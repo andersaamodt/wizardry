@@ -1,0 +1,20 @@
+#!/bin/sh
+
+if ! command -v path-wizard > /dev/null 2>&1; then
+	read -p "ao-mud is not installed, install now? [y/n]: " choice
+	
+	if [ "$choice" = "y" ]; then
+		SCRIPT_DIR=$( cd ${0%/*} && pwd -P )
+		$SCRIPT_DIR/spells/path-wizard add $SCRIPT_DIR/spells
+		$SCRIPT_DIR/spells/path-wizard add $SCRIPT_DIR/spells/cantrips
+		$SCRIPT_DIR/spells/path-wizard add $SCRIPT_DIR/spells/menu
+		$SCRIPT_DIR/spells/path-wizard add $SCRIPT_DIR/spells/menu/bitcoin
+		echo "Your spellbook has been activated, please open a fresh terminal now."
+		exit 0
+	else
+		echo "Ok, well the mud won't work until you install it by adding the spells directory to your PATH."
+		exit 1
+	fi
+else
+	echo "ao-mud is already installed. Run it with 'menu' or 'mud'."
+fi
