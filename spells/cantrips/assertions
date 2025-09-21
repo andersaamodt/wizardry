@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+
+# Functions unit tests, to test assertions. The point of an assertion is to crash if it isn't true.
+# Usage:
+# 	assert_equal $value1 $value2
+#		assert_output "./scriptname" "expected output"
+# 	assert_success $(command)
+#		assert_failure "./scriptname"
+
+# Helper function to compare two values
+assert_equal() {
+	if [ "$1" != "$2" ]; then
+  	echo "Assertion failed: $1 != $2"
+		exit 1
+ 	fi
+}
+
+# Helper function to compare the output of a given command to an expected value
+assert_output() {
+    local command=$1
+    local expected_output=$2
+  echo com $command
+  echo exp $expected_output
+  echo out $($command)
+    if [ "$($command)" != "$expected_output" ]; then
+        echo "Test failed: $command"
+        exit 1
+    fi
+}
+
+# Helper function to run a command and check for a non-zero exit status
+assert_success() {
+    local command=$1
+
+    if ! $command; then
+        echo "Test failed: $command"
+        exit 1
+    fi
+}
+
+# Helper function to run a command and check for a zero exit status
+assert_failure() {
+    local command=$1
+
+    if $command; then
+        echo "Test failed: $command"
+        exit 1
+    fi
+}
