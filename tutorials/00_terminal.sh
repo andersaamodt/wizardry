@@ -35,6 +35,6 @@ echo "For example, to repeat the last command with 'sudo', use: sudo !!"
 # Entering multi-line input before running a command
 echo "To enter multi-line input before running a command, press Ctrl-X followed by Ctrl-E"
 
-echo "Cast spell finished, check the code of the spell by using 'cat 23_terminal.sh' command"
+echo "Cast spell finished, check the code of the spell by using 'cat 00_terminal.sh' command"
 
 echo "Spell cast successfully!"
