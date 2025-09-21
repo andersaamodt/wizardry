@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+
+# This spell reveals the x and y coordinates of the cursor in the terminal window.
+
+# Define the function to calculate the position of the cursor
+fathom_cursor() {
+    local position
+    local x=false
+    local y=false
+    local verbose=false
+    while getopts 'vxy' flag; do
+        case "${flag}" in
+            --verbose|v) verbose=true ;;
+            x) x=true ;;
+            y) y=true ;;
+        esac
+    done
+
+    # Get the position of the cursor
+    position=$(IFS=';' read -sdR -p $'\E[6n' ROW COL; printf "%s;%s" "${ROW#*[}" "$COL")
+
+    if [ $x = true ] && [ $y = true ]; then
+        if [ $verbose = true ]; then
+        	printf "X: %s\n" "${position##*;}"
+         	printf "Y: %s\n" "${position%%;*}"
+        else
+        	printf "%s\n" "${position##*;}"
+         	printf "%s\n" "${position%%;*}"
+        fi
+    else
+        if [ $x = true ]; then
+            if [ $verbose = true ]; then
+                printf "X: "
+            fi
+            printf "%s\n" "${position##*;}"
+        elif [ $y = true ]; then
+            if [ $verbose = true ]; then
+                printf "Y: "
+            fi
+            printf "%s\n" "${position%%;*}"
+        else
+            if [ $verbose = true ]; then
+                printf "Position: "
+            fi
+            printf "%s\n" "$position"
+        fi
+    fi
+}
+
+test_fathom_cursor() {
+    assert_equal "$(./fathom-cursor -x)" "$(./fathom-cursor -y)" "fathom_cursor -x and -y outputs differ"
+    assert_equal "$(./fathom-cursor -x -v)" "X: $(./fathom-cursor -x)" "fathom_cursor -x and -x -v outputs differ"
+    assert_equal "$(./fathom-cursor -y -v)" "Y: $(./fathom-cursor -y)" "fathom_cursor -y and -y -v outputs differ"
+    assert_equal "$(./fathom-cursor -x -y -v)" "X: $(./fathom-cursor -x)\nY: $(./fathom-cursor -y)" "fathom_cursor -x -y and -x -y -v outputs differ"
+    assert_equal "$(./fathom-cursor -v -x -y)" "Position: $(./fathom-cursor -x -y)" "fathom_cursor -v -x -y and -x -y outputs differ"
+    assert_equal "$(./fathom-cursor -v)" "$(./fathom-cursor -x -y -v)" "fathom_cursor -v and -x -y -v outputs differ"
+    assert_equal "$(./fathom-cursor)" "$(./fathom-cursor -x -y)" "fathom_cursor and -x -y outputs differ"
+}
+
+fathom_cursor "$@"

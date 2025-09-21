@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+# This magical spell moves the cursor to the specified x and y coordinates in the terminal window, as if guided by an unseen hand.
+
+# Define the function to move the cursor
+move_cursor() {
+  x=$1
+  y=$2
+
+  # Move the cursor to the specified position
+  printf "\033[${y};${x}H"
+}
+
+# Unit test
+test_move_cursor() {
+	. assertions
+    initial_x=$(fathom-cursor -x)
+    initial_y=$(fathom-cursor -y)
+    move_cursor 3 4
+    final_position=$(fathom-cursor)
+    assert_equal $final_position "3;4"
+    move_cursor $initial_x $initial_y
+    echo "All tests passed"
+}
+
+move_cursor "$@"

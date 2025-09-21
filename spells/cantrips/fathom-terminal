@@ -1,0 +1,66 @@
+#!/usr/bin/env sh
+
+# This spell reveals the width and height of the terminal window.
+
+# Define the function to calculate the size of the terminal window
+fathom_terminal() {
+    width=false
+    height=false
+    verbose=false
+    while getopts "vwht" flag; do
+        case "${flag}" in
+            --verbose|v) verbose=true;;
+            --width|w) width=true;;
+            --height|h) height=true;;
+            --test|t) test_fathom_terminal; exit 0;;
+        esac
+    done
+
+    # Get the size of the terminal window
+    window_width=$(tput cols)
+    window_height=$(tput lines)
+    size="${window_width};${window_height}"
+    if [ $width = true ] && [ $height = true ]; then
+        if [ $verbose = true ]; then
+            printf "Width: %s\n" "${window_width}"
+            printf "Height: %s\n" "${window_height}"
+        else
+            printf "%s\n" "${window_width}"
+            printf "%s\n" "${window_height}"
+        fi
+    else
+        if [ $width = true ]; then
+            if [ $verbose = true ]; then
+                printf "Width: "
+            fi
+            printf "%s\n" "${window_width}"
+        elif [ $height = true ]; then
+            if [ $verbose = true ]; then
+                printf "Height: "
+            fi
+            printf "%s\n" "${window_height}"
+        else
+            if [ $verbose = true ]; then
+                printf "Size: "
+            fi
+            printf "%s\n" "$size"
+        fi
+    fi
+}
+
+# Unit test
+test_fathom_terminal() {
+  . "./assertions"
+  assert_output "fathom_terminal -w" "$(tput cols)"
+  assert_output "fathom_terminal --width" "$(tput cols)"
+  assert_output "fathom_terminal -h" "$(tput lines)"
+  assert_output "fathom_terminal --height" "$(tput lines)"
+  assert_output "fathom_terminal -w -v" "Width: $(tput cols)"
+  assert_output "fathom_terminal --width --verbose" "Width: $(tput cols)"
+  assert_output "fathom_terminal -h -v" "Height: $(tput lines)"
+  assert_output "fathom_terminal --height --verbose" "Height: $(tput lines)"
+  assert_output "fathom_terminal -h -v -w" "Height: $(tput lines)\nWidth: $(tput cols)"
+  assert_output "fathom_terminal --height --verbose --width" "Height: $(tput lines)\nWidth: $(tput cols)"
+}
+
+fathom_terminal "$@"

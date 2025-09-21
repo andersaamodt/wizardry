@@ -1,0 +1,60 @@
+#!/usr/bin/env sh
+
+# This magical knowledge serves as a colorful palette of hues and shades,
+# granting control over the appearance of the terminal.
+# Use these variables to add color to your writing.
+# Example: echo -en "${RED}Error:${RESET} An error message." 
+# This script contains all color codes in the POSIX standard.
+# You must source this script with 'source ./cursor' or '. ./cursor' to use it.
+
+# Reset all attributes to their default values
+RESET="\033[0m"
+
+# Colors
+BLACK="\033[30m"
+RED="\033[31m"
+GREEN="\033[32m"
+YELLOW="\033[33m"
+BLUE="\033[34m"
+PURPLE="\033[35m"
+CYAN="\033[36m"
+WHITE="\033[37m" # Or is this default/white?
+GREY="\033[2m"
+
+# Formatting
+BOLD="\033[1m"
+ITALICS="\033[3m" #or 3?
+UNDERLINED="\033[4m"
+BLINK="\033[5m"
+INVERT="\033[7m"
+STRIKE="\033[9m" # Strikethrough
+
+# Bright colors
+BRIGHT_BLACK="\033[30;1m"
+BRIGHT_RED="\033[31;1m"
+BRIGHT_GREEN="\033[32;1m"
+BRIGHT_YELLOW="\033[33;1m"
+BRIGHT_BLUE="\033[34;1m"
+BRIGHT_PURPLE="\033[35;1m"
+BRIGHT_CYAN="\033[36;1m"
+BRIGHT_WHITE="\033[37;1m"
+
+# Background colors
+BG_BLACK="\033[40m"
+BG_RED="\033[41m"
+BG_GREEN="\033[42m"
+BG_YELLOW="\033[43m"
+BG_BLUE="\033[44m"
+BG_PURPLE="\033[45m"
+BG_CYAN="\033[46m"
+BG_WHITE="\033[47m"
+
+# Bright background colors
+BG_BRIGHT_BLACK="\033[40;1m"
+BG_BRIGHT_RED="\033[41;1m"
+BG_BRIGHT_GREEN="\033[42;1m"
+BG_BRIGHT_YELLOW="\033[103m"
+BG_BRIGHT_BLUE="\033[104m"
+BG_BRIGHT_PURPLE="\033[105m"
+BG_BRIGHT_CYAN="\033[106m"
+BG_BRIGHT_WHITE="\033[107m"

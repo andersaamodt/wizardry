@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+
+# This magical spell captures and processes key presses.
+# Use it to capture key presses from the terminal and determine which key was pressed.
+# todo: Tab key not distinguished from Enter (\t case does not work) 
+
+# Define the function to handle key presses
+await_keypress() {
+  # Read a single character from the terminal
+  read -s -n1 key
+
+  # Check the value of the key
+  case "$key" in
+    # Enter key
+    $'\t')
+    	echo "tab"
+    	;;
+    $'\n')
+    	echo "enter"
+    	;;
+    '') # also fires for Tab key
+      echo "enter"
+      ;;
+    '')
+    	echo "backspace"
+    	;;
+    $'\b')
+    	echo "backspace"
+    	;;
+    # Escape sequence, could be any number of keys depending on next character
+    $'\e')
+    	read -rsn2 -t 0.1 key
+		  case "$key" in
+		  	'')
+		  		echo 'escape'
+		  		;;
+				# Up arrow key
+				$'[A')
+					echo "up"
+					;;
+				# Down arrow key
+				$'[B')
+					echo "down"
+					;;
+				# Right arrow key
+				$'[C')
+					echo "right"
+					;;
+				# Left arrow key
+				$'[D')
+					echo "left"
+					;;
+				$'[3')
+					echo "delete"
+					;;
+				*)
+					echo "escaped key: $key"
+					;;
+			esac
+			;;
+    # Any other key
+    *)
+      echo "$key"
+      # od -c <<< $key # debug
+      ;;
+  esac
+}
+
+await_keypress
