@@ -14,6 +14,8 @@ Principles:
 
 * Minimalism: The goal is to do as much as possible with the fewest number of moving parts.
 
+* Atomicity: Each script and part of wizardry is as small and self-contained a unit as possible. These small, reliable parts are then combined.
+
 * Non-commercial: This project is non-commercial, and so we always prefer free software over merely open-source software, and we always prefer the least commercialized software.
 
 * Interface-neutral: GUIs designed with wizardry are merely thin layers that pass commands through to shell scripts (or other UNIX tools). This makes it easy to swap out web platforms or build additional interfaces.
