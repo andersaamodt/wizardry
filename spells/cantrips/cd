@@ -1,0 +1,24 @@
+#!/bin/sh
+
+install_cd() {
+  if ! grep -q "alias cd=" ~/.bashrc; then
+    echo "Do you wish to memorize this spell, so that you look around rooms automatically as you use 'cd'? (yes/no)"
+    read -r answer
+    if [ "$answer" = "yes" ]; then
+      scriptpath="$(dirname $(readlink -f $0))"
+      filename="$(basename "$0")"
+      echo "alias cd=\". $scriptpath/$filename\"" >> ~/.bashrc
+      echo "Spell memorized in .bashrc, so the mud will always be active in the terminal."
+    else
+      echo "The mud will only run in this shell window."
+    fi
+  fi
+}
+
+install_cd
+
+# Call the standard cd command
+builtin cd "$@"
+	
+# Look around the room
+look

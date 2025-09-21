@@ -1,0 +1,38 @@
+#!/usr/bin/env sh
+
+# This magical spell reveals the maximum length of a list of strings.
+# Accepts either a list ("word1 word2 word3" or an array of strings
+# Usage: cast_max_length string1 string2 ...
+
+# Define the function to calculate the maximum length of the given strings
+max_length() {
+  if [ -z "$1" ]; then
+    echo "No arguments passed to max_length"
+    return 1
+  fi
+  if [[ "$1" == *" "* ]]; then
+    # Argument is a string containing multiple words
+    longest=0
+    for arg in $1; do
+      arg_length=${#arg}
+      if [ $arg_length -gt $longest ]; then
+        longest=$arg_length
+      fi
+    done
+  else
+    # Argument is an array # Todo: This never happens and also doesn't work if it does.
+    longest=0
+    for arg in "${!1}"; do
+      arg_length=${#arg}
+      if [ $arg_length -gt $longest ]; then
+        longest=$arg_length
+      fi
+    done
+  fi
+  if [ "$2" == "-v" ]; then
+    echo "Maximum length: $longest"
+  fi
+  echo $longest
+}
+
+max_length "$@"

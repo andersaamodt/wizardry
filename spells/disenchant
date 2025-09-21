@@ -1,0 +1,88 @@
+#!/bin/sh
+
+# This "disenchant" script allows you to remove an extended attribute from a file.
+# To use this script, pass the file and the key name as arguments. If no key name is specified, the script will provide
+# a menu of the extended attribute keys on the file and allow you to select one with the arrow keys to delete.
+# The menu is only displayed if there are at least two extended attributes (not counting the '# file:' line).
+# If only one extended attribute is found, the script will delete that attribute without displaying the menu.
+
+# Disenchant a single attribute from a file
+disenchant_one() {
+  key="$1"
+  file="$2"
+  if command -v xattr > /dev/null 2>&1; then
+    # xattr is available, use it
+    xattr -d "$key" "$file"
+  elif command -v attr > /dev/null 2>&1; then
+    # attr is available, use it
+    attr -r "$key" "$file"
+  elif command -v setfattr > /dev/null 2>&1; then
+    # setfattr is available, use it
+    setfattr -x "$key" "$file"
+  else
+    # xattr, attr, and setfattr are not available
+    echo "Error: xattr, attr, and setfattr are not available on this system."
+    exit 1
+  fi
+  echo "Disenchanted $key attribute from $file."
+}
+
+# Check if a file was given as an argument
+if [ -z "$1" ]; then
+  # If no file was given, print an error message and exit
+  echo "Error: No file specified. Usage: disenchant file [key]"
+  exit 1
+fi
+
+# Read the extended attribute keys from the file
+keys=$(read-magic "$1")
+# Extract the attribute keys from the output of read-magic
+keys=$(echo "$keys" | awk -F: '{print $1}' | tr -d ' ')
+
+# Check if a key name was given as an argument
+if [ -z "$2" ]; then
+  # If no key name was given, check if there are at least two extended attributes
+  if [ $(echo "$keys" | wc -l) -lt 2 ]; then
+    # If there is only one extended attribute, delete it
+    key=$(echo "$keys")
+    disenchant_one "$key" "$1"
+  else
+    # If there are at least two extended attributes, provide a menu of the keys and select one with the arrow keys
+    keys="$keys disenchant-all"
+    times=$(($(echo "$keys" | wc -l) + 1))
+    desc="# disenchant this"
+    descriptions=()
+    for ((i = 1; i <= $times; i++)); do
+    	descriptions+=("$desc")
+    done
+    echo "${descriptions[@]}"
+    menu "Choose which attribute to disenchant:" "$keys" $descriptions "menu_choice" # todo / problem: $descriptions needs to be a string but then it's only space-delimited so many commands cant work. solution is to refactor the menu script, splitting it up into many small and complete semantic scripts, and building a better more holistic and composed menu with lots of better building blocks. or using bmenu.
+    echo $menu_choice 
+    key=${keys[$menu_choice]}
+    if [ -n "$key" ]; then
+      if [ "$key" = "disenchant all" ]; then
+        # Disenchant all extended attributes
+        for key in $keys; do
+          disenchant_one "$key" "$1"
+         done
+        echo "Disenchanted all attributes from $1."
+        break
+      else
+        # Disenchant the selected attribute
+        echo KEY $key
+        echo FILE $1
+        disenchant_one "$key" "$1"
+        break
+      fi
+    else
+      # If no key was selected, print an error message and exit
+      echo "Error: No key selected."
+      exit 1
+    fi
+   fi
+else
+  # If a key name was given, use it as the key
+  key="$2"
+  # Disenchant the selected attribute
+  disenchant_one "$key" "$1"
+fi

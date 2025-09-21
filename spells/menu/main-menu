@@ -1,0 +1,26 @@
+#!/bin/sh
+
+# This spell displays the ao-mud main menu.
+
+. colors
+
+display_menu() {
+  mud="MUD menu%mud"
+  install="Install Free Software%install-menu"
+  update="Update all software%smart-update # Coming soon"
+  restart="Force restart%sudo shutdown -r now"
+  exit="Exit%kill -2 $$" # Commands are run with 'eval' by the menu script, so we can't simply say 'exit'. The keyword $$ gets this scripts PID and the -2 code is SIGINT aka Ctrl-C
+  
+  menu "Main Menu:" "$mud" "$install" "$update" "$restart" "$exit"
+}
+
+# Catch Ctrl-C and exit
+handle_ctrl_c() {
+  trap 'echo exiting; exit' INT
+}
+
+handle_ctrl_c
+
+while true; do
+  display_menu
+done

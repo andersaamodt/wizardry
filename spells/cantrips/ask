@@ -1,0 +1,20 @@
+#!/usr/bin/env sh
+
+# This magical incantation allows the terminal to ask a question and receive an answer.
+
+ask() {
+  # Display the prompt
+  echo "${1}"
+
+  # Read the user's input
+  read -r user_input
+
+  # Return the user's input
+  echo "${user_input}"
+}
+
+# Check if script is being sourced or executed
+if [ "${BASH_SOURCE[0]}" = "$0" ]; then
+  # Script is being executed, call the function and pass the arguments
+  ask "$@"
+fi

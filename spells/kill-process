@@ -1,0 +1,21 @@
+#!/bin/sh
+
+display_menu(){
+    echo "List of running processes:"
+    ps -ax | awk '{print $5}' | tail -n +2 | nl -w 2 -s ') '
+}
+
+PS_NAMES=($(ps -ax | awk '{print $5}' | tail -n +2))
+
+choice=""
+while [ -z "$choice" ] || [ "$choice" -lt 1 ] || [ "$choice" -gt ${#PS_NAMES[@]} ]; do
+    read -p "Enter the number of the process you want to kill: " choice
+done
+
+pid=$(ps -ax | awk '{print $1 " " $5}' | grep "${PS_NAMES[choice - 1]}" | awk '{print $1}')
+if [ -n "$pid" ]; then
+    if ask_Yn "Are you sure you want to kill process ${PS_NAMES[choice - 1]} with pid $pid"; then
+        kill $pid
+        echo "Process $pid (${PS_NAMES[choice - 1]}) has been killed."
+    fi
+fi

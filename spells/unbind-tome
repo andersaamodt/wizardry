@@ -1,0 +1,43 @@
+#!/bin/bash
+
+# A magical spell for slicing and dicing texts and lines. Reads a text file line by line and creates a new folder with the same name as the text file, with one file for each line in the text file inside that folder. Masks any characters that are not valid for use in Unix filenames.
+
+#!/bin/bash
+
+###############################################################################
+#
+# SCRIPT: slice_text_file.sh
+#
+# DESCRIPTION: A magical spell for slicing and dicing texts and lines.
+# Reads a text file line by line and creates a new folder with the same name
+# as the text file, with one file for each line in the text file inside that
+# folder. Masks any characters that are not valid for use in Unix filenames.
+#
+# USAGE: slice_text_file.sh path/to/text_file.txt
+#
+###############################################################################
+
+# Check that a file path was provided as an argument
+if [ "$#" -ne 1 ]; then
+  echo "Error: Please provide a file path as an argument."
+  exit 1
+fi
+
+# Create a folder with the same name as the text file
+folder_name=$(basename "$1" | sed 's/\.[^.]*$//')
+i=1
+while [ -d "$folder_name" ]; do
+  # If the folder already exists, append a number to the folder name
+  folder_name="$folder_name$i"
+  i=$((i+1))
+done
+mkdir "$folder_name"
+
+# Read the text file line by line and create a file for each line
+while read -r line; do
+  # Mask any characters that are not valid for use in Unix filenames
+  # Todo: file names are all prepended with the folder name (no slash), please fix so it's just the filename
+  file_name=$(echo "$line" | tr -dc '[:alnum:] .,;_-' | tr ' ' '_')
+  # Create the file
+  touch "$folder_name/$file_name"
+done < "$1"

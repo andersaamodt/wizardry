@@ -1,0 +1,85 @@
+#!/bin/sh
+
+# This 'jump' spell teleports you to the location marked by the 'mark-location' spell.
+# If no location has been marked, or if you are already at the marked location, the spell will fizzle.
+# Because the script uses 'cd' to change your location, you must source it. This can be accomplished with "source ./jump-to-marker".
+# Having to source the script explicitly can be avoided if the spell is 'memorized' (sourced in .bashrc).
+# The spell will offer to do this, installing 'jump' as a systemwide keyword for you.
+
+# todo: you can automatically source with 'exec bash'. this could simplify this script a lot
+
+# Check if the "jump" spell is already installed
+if ! grep -q "jump" ~/.bashrc; then
+  printf "You have not yet memorized the 'jump-to-marker' spell, so you can't cast it anywhere. This spell is so powerful that it must be memorized (sourced in .bashrc) to use it as a normal command. Memorize the 'jump' spell now? (y/n) "
+  read -r REPLY
+  
+  if [ "$REPLY" = "y" ] || [ "$REPLY" = "Y" ]; then
+    # Install the "jump" spell in the user's bashrc file
+    SCRIPT_DIR=$(dirname "$(realpath "${BASH_SOURCE[0]}")")
+    printf "source $SCRIPT_DIR/jump-to-marker\n" >> ~/.bashrc
+    printf "The 'jump' spell has been memorized. Use the 'spellbook' command to forget memorized spells. You must open a new terminal or 'source ~/.bashrc' before using 'jump'.\n"
+  fi
+fi
+
+# 'jump' spell function (will be loaded when this file is sourced by .bashrc)
+jump() {
+  # Set the path to the marker file
+  marker_file="$HOME/.mud/portal_marker"
+
+  # Check if the marker file exists
+  if [ -e "$marker_file" ]; then
+    # If the marker file exists, read the destination path from the file
+    destination="$(cat "$marker_file")"
+
+    # Check if the current directory is already the destination
+    if [ "$(pwd)" == "$destination" ]; then
+      # If the current directory is already the destination, inform the user
+      echo "You are already at the marked location."
+    else
+      # If the current directory is not the destination, change the current directory to the destination
+      cd "$destination"
+      
+      # Print a random teleportation message
+      messages=("You feel a sudden warmth as you are enveloped in a glowing aura. When it fades, you find yourself at your destination."
+              "A strange sensation comes over you as you close your eyes. When you open them again, you are standing at your destination."
+              "You focus your mind on the marked location and feel yourself being pulled through the fabric of space. You open your eyes to find yourself at your destination."
+              "You feel a jolt as you are momentarily suspended in midair. When you land, you find yourself at your destination."
+              "You close your eyes and take a deep breath. When you open them, you are standing at your destination."
+              "A swirling vortex appears before you. You take a step forward and find yourself at your destination."
+              "You feel a tug on your stomach as you are suddenly pulled through a tunnel of light. When you emerge, you are at your destination."
+              "You hold out your hand and a bright portal appears. You step through and find yourself at your destination."
+              "You feel a rush of wind as you are teleported to your destination."
+              "You hear a faint ringing in your ears as you are transported to your destination."
+              "You close your eyes and visualize your destination. When you open them, you are standing there."
+              "You step into a glowing portal and are immediately transported to your destination."
+              "You feel a tug on your ankle as you are pulled through a wormhole. When you emerge, you are at your destination."
+              "You hear a faint hum as you are enveloped in a field of energy. When it dissipates, you are at your destination."
+              "You feel a sudden pressure on your chest as you are teleported to your destination."
+              "You feel a surge of magical energy as you are transported through the veil of reality."
+		      "A glowing portal opens before you, and you step through it to your destination."
+		      "A shimmering aura envelops you, and when it fades, you find yourself at the marked location."
+		      "You close your eyes and focus, and when you open them again, you are standing at the marked location."
+		      "A burst of light and sound surrounds you, and when it subsides, you are at the marked location."
+		      "You feel a tug on your soul, and when it releases, you are standing at the marked location."
+		      "You focus your magical energy and teleport to the marked location."
+		      "A warp in the fabric of reality opens up, and you step through it to the marked location."
+		      "You feel a sudden jolt, and when you regain your bearings, you are at the marked location."
+		      "You close your eyes and visualize the marked location, and when you open them, you are there."
+		      "You call upon the power of the elements to transport you to the marked location."
+		      "You channel the energy of the celestial bodies to jump to the marked location."
+		      "You recite an ancient incantation, and a magical portal appears, taking you to the marked location.")
+      echo "${messages[$RANDOM % ${#messages[@]}]}"
+      
+      # Look around, since the modified 'cd' command won't be available in this subshell context
+      look
+    fi
+  else
+    # If the marker file does not exist, inform the user that no location has been marked
+    echo "No location has been marked. Use the 'mark-location' spell to mark a location before using the 'jump' spell."
+  fi
+}
+
+# If this script is no being called from within another script, call the main function and forward it our args (if sourced, it loads the function without running it)
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  jump "$@"
+fi

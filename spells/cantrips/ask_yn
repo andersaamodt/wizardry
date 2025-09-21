@@ -1,0 +1,46 @@
+#!/bin/sh
+
+question=$1
+default_answer=$(echo $2 | tr a-z A-Z)
+
+# Capitalize the default answer and construct the prompt
+if [ "$default_answer" = "Y" ]; then
+    prompt="${question} (Y/n)? "
+else
+    prompt="${question} (y/N)? "
+fi
+
+# Save stty configuration
+old_stty_cfg=$(stty -g)
+
+# Use stty to make read command work for single character input
+stty raw -echo
+printf "%s" "$prompt" >&2
+while true
+do
+    answer=$(dd bs=1 count=1 2>/dev/null)
+    if printf "%s" "$answer" | grep -iq "^y\|^n"; then
+        break
+    elif [ "$(printf "%d" "'$answer'")" -eq 3 ]; then
+        stty "$old_stty_cfg"
+        printf '\n'
+        exit 2
+    elif [ "$(printf "%d" "'$answer'")" -eq 13 ]; then
+        answer=""
+        break
+    fi
+done
+stty "$old_stty_cfg" >&2 # Restore original stty configuration
+
+# If no answer is given, use the default answer
+if [ -z "$answer" ]; then
+    answer=$default_answer
+fi
+
+# Print the answer and return appropriate exit code
+printf "%s\n" "$(echo $answer | tr a-z A-Z)" >&2
+if [ "$answer" = "Y" -o "$answer" = "y" ]; then
+    exit 0
+else
+    exit 1
+fi

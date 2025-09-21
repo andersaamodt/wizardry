@@ -1,0 +1,77 @@
+#!/bin/sh
+
+# Check for correct usage
+if [ $# -lt 1 ]; then
+    echo "Usage: $0 file [field]"
+    exit 1
+fi
+
+# Function to handle escaping in vCard field values
+handle_escapes() {
+    value="$1"
+    # Unescape comma, semicolon, backslash and newline
+    value=$(echo "$value" | awk '{gsub(/\\,/,",");gsub(/\\;/,"\n");gsub(/\\\\/,"\\");gsub(/\\n/,"\n");print}')
+    # Unescape other characters
+    value=$(echo "$value" | awk '{gsub(/\\\\([[:xdigit:]][[:xdigit:]])/,"\\x\1");print}')
+    # Remove backslashes before colons in URLs
+    value=$(echo "$value" | awk '{gsub(/\\\\:/,":");print}')
+    # Add spaces to comma-separated lists
+    value=$(echo "$value" | awk '{gsub(/,/,", ");print}')
+    echo "$value"
+}
+
+# Function to map field names to nicer names
+nicer_name() {
+    # Convert the field name to lower case and remove any type annotations
+    local field="$(echo "$1" | awk '{print tolower($0)}' | awk -F';' '{print $1}' | awk -F'.' '{print $NF}')"
+
+    case "$field" in
+        fn|fullname) echo "Full Name: " ;;
+        n|name|lastname|firstname) echo "Name: " ;;
+        org|organization) echo "Organization: " ;;
+        title|jobtitle) echo "Title: " ;;
+        email) echo "Email: " ;;
+        tel|phone|telephone) echo "Telephone: " ;;
+        adr|address) echo "Address: " ;;
+        bday|birthday) echo "Birthday: " ;;
+        rev|revision) echo "Revision: " ;;
+        nickname) echo "Nickname: " ;;
+        photo) echo "Photo: " ;;
+        url|website) echo "URL: " ;;
+        label) echo "Label: " ;;
+        role) echo "Role: " ;;
+        *) 
+            # Remove the X- prefix from custom fields
+            field=$(echo "$field" | awk '{gsub(/^x-/,"");print}')
+            # Convert the field name to title case
+            echo "$(echo "$field" | awk '{for(i=1;i<=NF;i++)sub(/./,toupper(substr($i,1,1)),$i)}1'): "
+            ;;
+    esac
+}
+
+# Function to extract and print a field from a vCard file
+print_field() {
+    local line=$(awk -F':' -v field="$2" '$1 ~ field { print; exit }' "$1")
+    if [ -z "$line" ]; then
+        echo "$2 not found" >&2
+        exit 1
+    fi
+    local field=$(echo "$line" | awk -F':' '{print $1}')
+    local value=$(echo "$line" | awk -F':' '{print substr($0, length($1) + 2)}')
+    value=$(handle_escapes "$value")
+    local name=$(nicer_name "$field")
+    echo "$name$value"
+}
+
+# Extract the requested field or all fields
+if [ $# -eq 2 ]; then
+    print_field "$1" "$2"
+else
+    awk -F':' '/:/{print}' "$1" | grep -v 'BEGIN:VCARD\|END:VCARD\|VERSION' | while IFS=':' read -r field value; do
+        name=$(nicer_name "$field")
+        value=$(handle_escapes "$value")
+        if [ ! -z "$name" ]; then
+            echo "$name$value"
+        fi
+    done
+fi

@@ -1,0 +1,45 @@
+#!/bin/bash
+
+# The YAML to Xattr Transmutation Spell
+# 
+# This powerful spell allows you to magically transmute the metadata contained in a YAML header into extended
+# attributes. Simply provide the path to the file as an argument, and the spell will do the rest. The original
+# YAML header will be removed from the file, leaving only pure, unadulterated content.
+# 
+# Usage: ./yaml_to_xattr.sh path/to/file.txt
+
+# Check if the number of arguments is correct
+if [ "$#" -ne 1 ]; then
+    echo "Error: incorrect number of arguments"
+    echo "Usage: ./yaml_to_xattr.sh path/to/file.txt"
+    exit 1
+fi
+
+# Check if the file exists
+if [ ! -f "$1" ]; then
+    echo "Error: file does not exist"
+    exit 1
+fi
+
+# Check if the file has a YAML header
+header=$(head -n 20 "$1" | grep "^---$")
+if [ -z "$header" ]; then
+    echo "Error: file does not have a YAML header"
+    exit 1
+fi
+
+# Extract the YAML header
+yaml_header=$(sed -n '/^---$/,/^---$/p' "$1" | head -n -1)
+
+# Convert the YAML header to extended attributes
+while read -r line; do
+    # Extract the key and value
+    key=$(echo "$line" | awk -F: '{print $1}')
+    value=$(echo "$line" | awk -F: '{$1=""; print $0}' | sed 's/^[ \t]*//g')
+
+    # Set the extended attribute
+    xattr -w "$key" "$value" "$1"
+done <<< "$yaml_header"
+
+# Remove the YAML header from the file
+sed -i '/^---$/,/^---$/d' "$1"

@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# The Tome Fusion Spell
+# 
+# This powerful spell allows you to magically bind together the scattered pages of a tome, creating a single
+# cohesive text file. Simply provide the path to the folder containing the sliced pages as an argument, and the
+# spell will do the rest. If you want to destroy the original pages after fusing them together, use the -d flag.
+# 
+# Usage: ./fuse_text_file_lines.sh path/to/folder [-d]
+# todo: see if we can shorten or replace this script with `cat folder/* > file.txt` which simply cats a folder of scripts together (no separators tho)
+
+# Check that a folder path was provided as an argument
+if [ "$#" -ne 1 ]; then
+  echo "Error: Please provide a folder path as an argument."
+  exit 1
+fi
+
+# Create a new text file with the same name as the folder
+folder_name=$(basename "$1")
+text_file="$folder_name.txt"
+touch "$text_file"
+
+# Read all the files in the folder and append their content to the text file, with a special line marking the beginning and end of each file
+for file in "$1"/*; do
+  filename=$(basename "$file")
+  echo "----- $filename -----" >> "$text_file"
+  cat "$file" >> "$text_file"
+  echo "----- End of $filename -----" >> "$text_file"
+done
+
+echo "Text file created: $text_file"
+
+# Check if the delete flag (-d) was provided as an argument
+while getopts "d" opt; do
+  case $opt in
+    d)
+      # If the delete flag was provided, delete all the original files
+      for file in "$1"/*; do
+        rm "$file"
+      done
+      echo "Original files deleted."
+      ;;
+  esac
+done

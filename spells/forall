@@ -1,0 +1,12 @@
+#!/bin/sh
+
+# This spell allows you to cast a magic spell on all the files in the current directory. Simply provide the spell as
+# an argument, and it will be cast on each file in turn.
+# 
+# Use this spell to perform powerful magic on all your files at once (or to simply perform a batch operation on
+# multiple files).
+
+for file in ./*; do
+	echo "${file#./}"
+    "$@" "$file" | awk '{print "   " $0}'
+done

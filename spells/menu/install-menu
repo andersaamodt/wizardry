@@ -1,0 +1,69 @@
+#!/bin/sh
+
+# This script displays a menu to install recommended free software.
+
+. colors
+
+# Catch Ctrl-C and exit
+handle_ctrl_c() {
+  trap 'echo exiting; exit' INT
+}
+
+handle_ctrl_c
+
+# Calculate the length of a string
+strlen() {
+  echo -n "$1" | wc -c
+}
+
+# Calculate maximum of two numbers
+max() {
+  [ "$1" -gt "$2" ] && echo "$1" || echo "$2"
+}
+
+script_dir="$(dirname "$0")"
+
+while true; do
+  max_name_length=0
+  max_status_length=0
+  formatted_items=""
+
+  # First pass: calculate maximum lengths
+  for d in $(find "$script_dir" -maxdepth 1 -mindepth 1 -type d); do
+    name=$(basename "$d")
+    status=$(command -v "${name}-status" >/dev/null 2>&1 && eval "${name}-status" || echo "coming soon")
+
+    # Update maximum lengths
+    max_name_length=$(max "$max_name_length" "$(strlen "$name")")
+    max_status_length=$(max "$max_status_length" "$(strlen "$status")")
+  done
+
+  # Second pass: create menu items using the maximum lengths
+  for d in $(find "$script_dir" -maxdepth 1 -mindepth 1 -type d); do
+    name=$(basename "$d")
+    status=$(command -v "${name}-status" >/dev/null 2>&1 && eval "${name}-status" || echo "coming soon")
+    menu_command="${name}-menu"
+
+    # Calculate padding for the name and status
+    name_padding=$(( max_name_length - $(strlen "$name") ))
+    status_length=$(strlen "$status")
+    total_padding=$(( max_status_length - status_length ))
+    left_padding=$(( total_padding / 2 ))
+    right_padding=$(( total_padding - left_padding ))
+
+    # Build the formatted item string piece by piece
+    formatted_item="${name}$(printf "%${name_padding}s")"
+    formatted_item="${formatted_item}$(printf "%${left_padding}s")"
+    formatted_item="${formatted_item}${status}"
+    formatted_item="${formatted_item}$(printf "%${right_padding}s")"
+
+    # Add formatted item to the list of menu items
+    formatted_items="${formatted_items} \"${formatted_item}%${menu_command}\""
+  done
+
+  # Add Exit command
+  formatted_items="${formatted_items} \"Exit%kill -2 $$\""
+
+  # Display the menu
+  eval "menu \"Install Menu:\" $formatted_items"
+done

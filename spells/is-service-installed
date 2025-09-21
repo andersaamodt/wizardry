@@ -1,0 +1,38 @@
+#!/bin/sh
+
+# This script serves as a scrying spell, checking if a given systemd service is installed
+
+if [ $# -lt 1 ]; then
+    echo "Usage: $0 service_name"
+    exit 1
+fi
+
+# Ensure systemd is available
+if ! command -v systemctl >/dev/null 2>&1; then
+    echo "Systemd is not installed or not in PATH. Exiting."
+    exit 1
+fi
+
+service_dir=/etc/systemd/system
+service_name=$1
+
+# Add .service if not present in the name
+case $service_name in
+    *.service) ;;
+    *) service_name="$service_name.service" ;;
+esac
+
+service_path="$service_dir/$service_name"
+
+# Check if service file exists
+if [ -f "$service_path" ]; then
+    if [ -t 1 ]; then  # Check if output is a terminal
+        echo "$service_name is installed."
+    fi
+    exit 0  # Service is installed (success)
+else
+    if [ -t 1 ]; then  # Check if output is a terminal
+        echo "$service_name is not installed."
+    fi
+    exit 1  # Service is not installed (failure)
+fi

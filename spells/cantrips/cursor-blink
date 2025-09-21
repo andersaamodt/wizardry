@@ -1,0 +1,24 @@
+#!/usr/bin/env sh
+
+# This spell awakens or stills the cyclic illumination of the cursor.
+
+# Define the function to turn the cursor blink on
+cursor_blink_on() {
+  # Turn the cursor blink on
+  printf "\033[?25h"
+}
+
+# Define the function to turn the cursor blink off
+cursor_blink_off() {
+  # Turn the cursor blink off
+  printf "\033[?25l"
+}
+
+# If not, call the appropriate function based on the command line argument
+if [ "$1" = "on" ]; then
+cursor_blink_on
+elif [ "$1" = "off" ]; then
+cursor_blink_off
+else
+echo "Usage: cast_cursor_blink on|off"
+fi

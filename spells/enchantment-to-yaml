@@ -1,0 +1,46 @@
+# The Xattr to YAML Transmutation Spell
+# 
+# This powerful spell allows you to magically transmute extended attributes into a YAML header. Simply provide the
+# path to the file as an argument, and the spell will do the rest. The resulting YAML header will be added to the
+# beginning of the file, and the extended attributes will be removed, leaving a clean and organized document.
+# 
+# Use this spell to turn your unruly and cluttered files into elegant and well-structured tomes. May your documents
+# be forever organized and easy to read!
+
+# Check if the number of arguments is correct
+if [ "$#" -ne 1 ]; then
+    echo "Error: incorrect number of arguments"
+    echo "Usage: ./xattr_to_yaml.sh path/to/file.txt"
+    exit 1
+fi
+
+# Check if the file exists
+if [ ! -f "$1" ]; then
+    echo "Error: file does not exist"
+    exit 1
+fi
+
+# Check if the file has extended attributes
+attributes=$(xattr "$1")
+if [ -z "$attributes" ]; then
+    echo "Error: file does not have extended attributes"
+    exit 1
+fi
+
+# Create the YAML header
+yaml_header="---\n"
+while read -r attribute; do
+    # Extract the key and value
+    key=$(echo "$attribute" | awk -F: '{print $1}')
+    value=$(echo "$attribute" | awk -F: '{print $2}' | sed 's/^[ \t]*//g')
+
+    # Add the key and value to the YAML header
+    yaml_header="$yaml_header$key: $value\n"
+done <<< "$attributes"
+yaml_header="$yaml_header---"
+
+# Add the YAML header to the file
+echo -e "$yaml_header\n" | cat - "$1" > temp && mv temp "$1"
+
+# Remove the extended attributes from the file
+xattr -c "$1"

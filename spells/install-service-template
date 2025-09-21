@@ -1,0 +1,66 @@
+#!/bin/sh
+
+# This script serves as a magic scroll that conjures a systemd service 
+# from a given template and a set of variable-value pairs
+
+if [ $# -lt 1 ]; then
+    echo "Usage: $0 /path/to/service/template key=value [key=value...]"
+    exit 1
+fi
+
+# Ensure systemd is available
+if ! command -v systemctl >/dev/null 2>&1; then
+    echo "Systemd is not installed or not in PATH. Exiting."
+    exit 1
+fi
+
+service_dir=/etc/systemd/system
+template_path=$1
+service_file=$(basename "$template_path")
+service_path="$service_dir/$service_file"
+
+# Ask for confirmation before overwriting an existing file
+if [ -f "$service_path" ]; then
+    if ask_yn "Service file $service_path already exists. Overwrite?" "N"; then
+        echo "User chose not to overwrite. Exiting."
+        exit 1
+    fi
+fi
+
+# Prepare a sed command based on the remaining arguments
+shift
+substitution_cmd=""
+for arg in "$@"; do
+    substitution_cmd="${substitution_cmd}s|\\\$${arg%%=*}|${arg#*=}|g;"
+done
+
+# Perform substitutions into a temporary file in /tmp
+tmp_file="/tmp/tmp_service"
+sed "$substitution_cmd" "$template_path" > "$tmp_file"
+
+# Ask for missing variables
+while IFS= read -r line; do
+    if echo "$line" | grep -q '\$'; then
+        var=$(echo "$line" | sed -n -e 's/^.*\$\([A-Z_]*\).*$/\1/p')
+        if [ -n "$var" ]; then
+            eval value=\$$var
+            if [ -z "$value" ]; then
+                echo "Enter a value for $var: "
+                read -r value
+            fi
+            sed -i "s|\$$var|$value|g" "$tmp_file"
+        fi
+    fi
+done < "$tmp_file"
+
+# Move the temporary file to the final destination
+sudo mv "$tmp_file" "$service_path"
+
+# Set permissions
+sudo chmod 644 "$service_path"
+
+# Reload systemd
+systemctl daemon-reload
+
+echo "Service installed at $service_path"
+exit 0

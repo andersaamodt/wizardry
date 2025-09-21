@@ -1,0 +1,33 @@
+#!/bin/sh
+
+# The Hash Spell
+# 
+# This powerful spell allows you to compute the CRC-32 hash of a text file, including its filename. Simply provide
+# the path to the file as an argument, and the spell will do the rest. The resulting hash will be displayed on the
+# command line.
+
+if [ "$#" != 1 ]; then
+    echo "Usage: hash file"
+    exit 1
+fi
+
+# Get the directory where the script is being called from
+script_dir="$(cd "$(dirname "$0")" >/dev/null 2>&1 && pwd)"
+
+# Get the file name specified as an argument
+file_name="$1"
+
+# Concatenate the script directory and the file name to get the full file path
+file="$script_dir/$file_name"
+
+if [ ! -f "$file" ]; then
+    echo "Your spell fizzles. There is no file."
+    exit 1
+fi
+
+echo $file
+# Compute the CRC-32 hash
+crc=$(cksum "$file" | awk '{print $1}')
+
+# Convert the hash to hexadecimal and display it
+printf "0x%x\n" "$crc"

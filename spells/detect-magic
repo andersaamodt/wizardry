@@ -1,0 +1,91 @@
+#!/bin/sh
+
+# This spell detects magic in the files in the current directory. It reveals any enchanted attributes hidden within the files and tells you how much magic it has detected.
+
+# Define colors
+blue="\033[36m"
+purple='\033[0;35m'
+reset='\033[0m'
+
+# Define a function to print a message based on the total number of enchanted attributes
+print_message() {
+  # Total number of enchanted attributes
+  count=$1
+	
+  # High intensity message
+  if [ "$count" -gt 120 ]; then
+    # High intensity messages
+    messages=(
+      "Whoa, this room is seriously ${purple}enchanted${reset}!"
+      "I can feel the ${purple}magic${reset} emanating from these files!"
+      "This room is practically pulsating with ${purple}magic${reset}!"
+      "I've never sensed this much ${purple}magic${reset} in one place before!"
+      "The amount of ${purple}magic${reset} in this room is off the charts!"
+      "These files are practically glowing with ${purple}magic${reset}!"
+      "I can hardly contain all this ${purple}magic${reset}!"
+    )
+    # Select a random message
+    message=${messages[$RANDOM % ${#messages[@]} ]}
+  # Medium intensity message
+  elif [ "$count" -gt 50 ]; then
+    # Medium intensity messages
+    messages=(
+      "There seems to be quite a bit of ${purple}magic${reset} in this room."
+      "This room is positively brimming with ${purple}magic${reset}."
+      "I can feel the ${purple}magic${reset} in the air."
+      "These files are infused with ${purple}magic${reset}."
+      "The ${purple}magic${reset} in this room is palpable."
+      "The ${purple}magic${reset} in these files is almost tangible."
+      "This room is filled with ${purple}magic${reset}."
+    )
+    # Select a random message
+    message=${messages[$RANDOM % ${#messages[@]} ]}
+  # Low intensity message
+  elif [ "$count" -gt 15 ]; then
+    # Low intensity messages
+    messages=(
+      "I sense a bit of ${purple}magic${reset} in this room."
+      "There seems to be a hint of ${purple}magic${reset} in these files."
+      "I can feel a faint aura of ${purple}magic${reset} in this room."
+      "These files have a touch of ${purple}magic${reset}."
+      "I detect a faint trace of ${purple}magic${reset} in this room."
+      "There is a subtle essence of ${purple}magic${reset} in these files."
+      "This room has a faint glimmer of ${purple}magic${reset}."
+    )
+    # Select a random message
+    message=${messages[$RANDOM % ${#messages[@]} ]}
+	fi
+   
+  # Print the message
+  echo -en "$message\n"
+}
+
+# Print a header row
+printf "${blue}File${reset}%-30s ${purple}Enchantments${reset}\n"
+
+# Iterate over all the files in the current directory
+for file in *; do
+  # Use the read-magic spell to get a list of enchanted attributes for the file
+  attrs=$(./read-magic "$file" 2> /dev/null)
+
+  # If the read-magic spell returns a non-empty list of attributes,
+  # print the file name and the number of attributes
+  if [ -n "$attrs" ]; then
+    # Count the number of lines in the attribute list
+    count=$(echo "$attrs" | wc -l)
+
+    # Print the file name and the number of attributes in purple
+    printf "%-40s ${purple}%d${reset}\n" "$file" "$count"
+
+    # Add the number of attributes to the total
+    total=$((total + count))
+  fi
+done
+
+# If the total number of attributes is greater than 0, print a message
+if [ "$total" -gt 0 ]; then
+  print_message "$total"
+fi
+
+# Reset the text color to the default
+echo -en "$reset"
