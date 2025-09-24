@@ -27,19 +27,22 @@ status=0
 if ! bash "$TEST_DIR/check_posix_bash.sh"; then
   status=1
 fi
-if compgen -G "$TEST_DIR/bats/*.bats" >/dev/null; then
+if compgen -G "$TEST_DIR"/test_*.bats >/dev/null; then
   if ! bats_path="$("$TEST_DIR/lib/ensure_bats.sh")"; then
     status=1
-  elif ! "$bats_path" --formatter tap "$TEST_DIR/bats"; then
-    status=1
+  else
+    mapfile -t bats_files < <(cd "$TEST_DIR" && printf '%s\n' test_*.bats | sort)
+    if [ ${#bats_files[@]} -gt 0 ]; then
+      bats_args=()
+      for file in "${bats_files[@]}"; do
+        bats_args+=("$TEST_DIR/$file")
+      done
+      if ! "$bats_path" --formatter tap "${bats_args[@]}"; then
+        status=1
+      fi
+    fi
   fi
 fi
-for test_file in "$TEST_DIR"/test_*.sh; do
-  echo "Running $(basename "$test_file")"
-  if ! bash "$test_file"; then
-    status=1
-  fi
-done
 
 if ! bash "$TEST_DIR/report_coverage.sh"; then
   status=1
