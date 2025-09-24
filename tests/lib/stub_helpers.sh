@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-set -euo pipefail
+
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  set -euo pipefail
+fi
 
 wizardry_stub_base_dir() {
   if [ -n "${TEST_TMPDIR:-}" ]; then
