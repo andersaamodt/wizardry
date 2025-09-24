@@ -1,7 +1,19 @@
 #!/usr/bin/env bash
-load 'vendor/bats-support/load'
-load 'vendor/bats-assert/load'
-load 'vendor/bats-mock/stub'
+
+wizardry_load_helper() {
+  local module=$1
+  local script=$2
+  local vendor_base="$BATS_TEST_DIRNAME/vendor/$module"
+  if [ -f "$vendor_base/$script.bash" ] || [ -f "$vendor_base/$script" ]; then
+    load "vendor/$module/$script"
+  else
+    load "$module/$script"
+  fi
+}
+
+wizardry_load_helper bats-support load
+wizardry_load_helper bats-assert load
+wizardry_load_helper bats-mock stub
 
 bats_require_minimum_version 1.5.0
 
