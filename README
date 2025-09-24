@@ -36,3 +36,22 @@ Target platforms:
 * MacOS
 * NixOS
 * Not yet supported: Windows, Android
+
+## Testing
+
+Wizardry ships a shell-based test suite in `tests/` that exercises every spell and
+verifies coverage. Run all checks with:
+
+```
+./tests/run.sh
+```
+
+The runner downloads bats-core and companion libraries on demand, so the shell
+tests can use Bats helpers without vendoring the framework. It also executes the
+legacy shell suites, captures `bash -x` traces for every spell invocation, and
+reports coverage across the entire `spells/` tree.
+
+During the run, `tests/check_posix_bash.sh` warns about spells that do not use
+the plain `#!/bin/sh` shebang so contributors can keep scripts POSIX-friendly.
+When the coverage report finds unexecuted lines, the script exits non-zero to
+ensure contributors notice any regressions.
