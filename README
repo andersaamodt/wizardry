@@ -1,4 +1,7 @@
 Wizardry is a collection of bash scripts to complete your terminal experience.
+It is stewarded as a body of knowledge created by a community of practice, so
+the project continuously captures the lessons required to get real systems
+working.
 
 Principles:
 
@@ -8,7 +11,12 @@ Principles:
 
 * Menu-driven: Wizardry includes a 'menu' command that displays an interactive menu. A user should be able to manage their entire system by typing 'menu', without having to remember or type commands.
 
-* Cross-platform: Scripts are POSIX-compliant and as cross-platform as possible.
+* Cross-platform: Scripts are POSIX-compliant and as cross-platform as possible,
+  with explicit documentation for the rare Bash-only exceptions such as the
+  interactive `menu` engine.
+* Assumption-checking: Spells proactively detect missing prerequisites and help
+  install the right free software so that users can reach a working state on
+  their platform.
 
 * File-first: All state is stored in files, ideally human-readable text files. No databases, because they enclose data in one opaque file (requiring import/export steps).
 

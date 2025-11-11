@@ -1,26 +1,41 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 
-# This magical spell moves the cursor to the specified x and y coordinates in the terminal window, as if guided by an unseen hand.
+# This spell moves the cursor to the provided column (x) and row (y).
 
-# Define the function to move the cursor
-move_cursor() {
-  x=$1
-  y=$2
-
-  # Move the cursor to the specified position
-  printf "\033[${y};${x}H"
+usage() {
+    printf '%s\n' 'Usage: move-cursor <x> <y>' >&2
+    exit 1
 }
 
-# Unit test
-test_move_cursor() {
-	. assertions
-    initial_x=$(fathom-cursor -x)
-    initial_y=$(fathom-cursor -y)
-    move_cursor 3 4
-    final_position=$(fathom-cursor)
-    assert_equal $final_position "3;4"
-    move_cursor $initial_x $initial_y
-    echo "All tests passed"
-}
+if [ "$#" -ne 2 ]; then
+    usage
+fi
 
-move_cursor "$@"
+x=$1
+y=$2
+
+# Validate that both coordinates are purely numeric.
+case "$x" in
+    *[!0-9]*)
+        printf '%s\n' "move-cursor: invalid column '$x'" >&2
+        exit 1
+        ;;
+    *) : ;;
+esac
+
+case "$y" in
+    *[!0-9]*)
+        printf '%s\n' "move-cursor: invalid row '$y'" >&2
+        exit 1
+        ;;
+    *) : ;;
+esac
+
+# ANSI escape sequences count from 1, so reject zero values early.
+if [ "$x" -eq 0 ] || [ "$y" -eq 0 ]; then
+    printf '%s\n' 'move-cursor: coordinates must be positive integers' >&2
+    exit 1
+fi
+
+# Emit the escape sequence that repositions the cursor.
+printf '\033[%s;%sH' "$y" "$x"

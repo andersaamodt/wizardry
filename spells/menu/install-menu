@@ -1,69 +1,90 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
-# This script displays a menu to install recommended free software.
+# Present a menu of spells that can install supporting software.
 
-. colors
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+cantrip_dir=$(dirname "$script_dir")/cantrips
 
-# Catch Ctrl-C and exit
-handle_ctrl_c() {
-  trap 'echo exiting; exit' INT
+if [ -n "${REQUIRE_COMMAND-}" ]; then
+    require_cmd=$REQUIRE_COMMAND
+elif [ -x "$cantrip_dir/require-command" ]; then
+    require_cmd="$cantrip_dir/require-command"
+else
+    require_cmd=require-command
+fi
+
+# Shared helper that ensures dependencies exist before we keep going.
+require() {
+    "$require_cmd" "$@"
 }
 
-handle_ctrl_c
+if [ -r "$cantrip_dir/colors" ]; then
+    . "$cantrip_dir/colors"
+else
+    # Continue gracefully without colour if the palette is unavailable.
+    RESET=''
+    CYAN=''
+    GREY=''
+fi
 
-# Calculate the length of a string
-strlen() {
-  echo -n "$1" | wc -c
+if ! require menu "The install-menu spell needs the 'menu' command to present choices."; then
+    exit 1
+fi
+
+# Let the user bail out with Ctrl+C while still printing a friendly message.
+trap 'printf "\nExiting install menu.\n" >&2; printf "%s\n" "exiting"; exit 0' INT
+
+list_entries() {
+    # INSTALL_MENU_DIRS can override discovery for tests or custom menus.
+    if [ -n "${INSTALL_MENU_DIRS-}" ]; then
+        for name in $INSTALL_MENU_DIRS; do
+            printf '%s\n' "$name"
+        done
+        return
+    fi
+
+    # Otherwise list each subdirectory as a potential install target.
+    for dir in "$script_dir"/*; do
+        [ -d "$dir" ] || continue
+        printf '%s\n' "$(basename "$dir")"
+    done
 }
 
-# Calculate maximum of two numbers
-max() {
-  [ "$1" -gt "$2" ] && echo "$1" || echo "$2"
-}
+while :; do
+    entries=$(list_entries)
 
-script_dir="$(dirname "$0")"
+    if [ -z "$entries" ]; then
+        printf '%s\n' 'install-menu: no installable spells found' >&2
+        exit 1
+    fi
 
-while true; do
-  max_name_length=0
-  max_status_length=0
-  formatted_items=""
+    set --
+    for name in $entries; do
+        if command -v "${name}-status" >/dev/null 2>&1; then
+            status=$("${name}-status")
+        else
+            status='coming soon'
+        fi
 
-  # First pass: calculate maximum lengths
-  for d in $(find "$script_dir" -maxdepth 1 -mindepth 1 -type d); do
-    name=$(basename "$d")
-    status=$(command -v "${name}-status" >/dev/null 2>&1 && eval "${name}-status" || echo "coming soon")
+        if command -v "${name}-menu" >/dev/null 2>&1; then
+            cmd="${name}-menu"
+        else
+            cmd='printf "This entry is not ready yet.\n"'
+        fi
 
-    # Update maximum lengths
-    max_name_length=$(max "$max_name_length" "$(strlen "$name")")
-    max_status_length=$(max "$max_status_length" "$(strlen "$status")")
-  done
+        label="$name"
+        if [ -n "$status" ]; then
+            label="$label - $status"
+        fi
 
-  # Second pass: create menu items using the maximum lengths
-  for d in $(find "$script_dir" -maxdepth 1 -mindepth 1 -type d); do
-    name=$(basename "$d")
-    status=$(command -v "${name}-status" >/dev/null 2>&1 && eval "${name}-status" || echo "coming soon")
-    menu_command="${name}-menu"
+        # Build the menu entry using the name%command convention expected by
+        # the menu cantrip.
+        set -- "$@" "${label}%$cmd"
+    done
 
-    # Calculate padding for the name and status
-    name_padding=$(( max_name_length - $(strlen "$name") ))
-    status_length=$(strlen "$status")
-    total_padding=$(( max_status_length - status_length ))
-    left_padding=$(( total_padding / 2 ))
-    right_padding=$(( total_padding - left_padding ))
+    set -- "$@" "Exit%kill -2 $$"
 
-    # Build the formatted item string piece by piece
-    formatted_item="${name}$(printf "%${name_padding}s")"
-    formatted_item="${formatted_item}$(printf "%${left_padding}s")"
-    formatted_item="${formatted_item}${status}"
-    formatted_item="${formatted_item}$(printf "%${right_padding}s")"
-
-    # Add formatted item to the list of menu items
-    formatted_items="${formatted_items} \"${formatted_item}%${menu_command}\""
-  done
-
-  # Add Exit command
-  formatted_items="${formatted_items} \"Exit%kill -2 $$\""
-
-  # Display the menu
-  eval "menu \"Install Menu:\" $formatted_items"
+    if ! menu "Install Menu:" "$@"; then
+        exit 1
+    fi
 done

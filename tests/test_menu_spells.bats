@@ -17,18 +17,6 @@ exit 0
 MENU
   chmod +x "$stub_dir/menu"
 
-  cat <<'FIND' >"$stub_dir/find"
-#!/usr/bin/env bash
-if [ "$1" = "$INSTALL_MENU_ROOT" ]; then
-  for entry in $INSTALL_MENU_DIRS; do
-    printf '%s/%s\n' "$INSTALL_MENU_ROOT" "$entry"
-  done
-else
-  /usr/bin/find "$@"
-fi
-FIND
-  chmod +x "$stub_dir/find"
-
   cat <<'ALPHA' >"$stub_dir/alpha-status"
 #!/usr/bin/env bash
 echo 'ready'
@@ -37,6 +25,22 @@ ALPHA
 
   touch "$stub_dir/alpha-menu" "$stub_dir/beta-menu"
   chmod +x "$stub_dir/alpha-menu" "$stub_dir/beta-menu"
+}
+
+make_require_stub() {
+  local fail_command=$1
+  local message=$2
+  local path="$BATS_TEST_TMPDIR/menu-require-${fail_command}"
+  cat <<STUB >"$path"
+#!/usr/bin/env sh
+if [ "\$1" = "$fail_command" ]; then
+  printf '%s\n' "require-command: $message" >&2
+  exit 1
+fi
+exec "$ROOT_DIR/spells/cantrips/require-command" "\$@"
+STUB
+  chmod +x "$path"
+  printf '%s\n' "$path"
 }
 
 teardown() {
@@ -50,16 +54,20 @@ with_menu_path() {
 
 @test 'install-menu reports available menu entries' {
   export MENU_LOG="$menu_log"
-  export INSTALL_MENU_ROOT="$ROOT_DIR/spells/menu"
   export INSTALL_MENU_DIRS='alpha beta'
   with_menu_path run_spell 'spells/menu/install-menu'
   assert_success
   assert_output --partial 'MENU:Install Menu:'
-  assert_output --partial 'alpha'
-  assert_output --partial 'ready'
-  assert_output --partial 'beta'
-  assert_output --partial 'coming soon'
+  assert_output --partial 'alpha - ready'
+  assert_output --partial 'beta - coming soon'
   assert_output --partial 'exiting'
+}
+
+@test 'install-menu reports missing menu command' {
+  stub=$(make_require_stub menu "The install-menu spell requires the 'menu' command to present choices.")
+  REQUIRE_COMMAND="$stub" run_spell 'spells/menu/install-menu'
+  assert_failure
+  assert_error --partial "install-menu spell requires the 'menu' command"
 }
 
 @test 'main-menu forwards options to menu command' {
@@ -68,7 +76,7 @@ with_menu_path() {
   with_menu_path run_spell 'spells/menu/main-menu'
   assert_success
   assert_output --partial 'MENU:Main Menu:'
-  assert_output --partial 'Install Menu%install-menu'
+  assert_output --partial 'Install Free Software%install-menu'
   assert_output --partial 'Exit%kill -2'
   assert_output --partial 'exiting'
 }

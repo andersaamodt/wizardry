@@ -2,23 +2,32 @@
 
 # This spell awakens or stills the cyclic illumination of the cursor.
 
-# Define the function to turn the cursor blink on
+# Emit the escape sequence that re-enables blinking.
 cursor_blink_on() {
-  # Turn the cursor blink on
-  printf "\033[?25h"
+  printf '\033[?25h'
 }
 
-# Define the function to turn the cursor blink off
+# Emit the escape sequence that freezes the cursor in place.
 cursor_blink_off() {
-  # Turn the cursor blink off
-  printf "\033[?25l"
+  printf '\033[?25l'
 }
 
-# If not, call the appropriate function based on the command line argument
-if [ "$1" = "on" ]; then
-cursor_blink_on
-elif [ "$1" = "off" ]; then
-cursor_blink_off
-else
-echo "Usage: cast_cursor_blink on|off"
+# The helper expects exactly one argument that declares the desired state.
+if [ "$#" -ne 1 ]; then
+  printf '%s\n' 'Usage: cursor-blink on|off' >&2
+  exit 1
 fi
+
+case "$1" in
+  on)
+    cursor_blink_on
+    ;;
+  off)
+    cursor_blink_off
+    ;;
+  *)
+    # Treat anything else as misuse so callers notice mistakes quickly.
+    printf '%s\n' 'Usage: cursor-blink on|off' >&2
+    exit 1
+    ;;
+esac

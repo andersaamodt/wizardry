@@ -3,9 +3,9 @@
 # This magical knowledge serves as a colorful palette of hues and shades,
 # granting control over the appearance of the terminal.
 # Use these variables to add color to your writing.
-# Example: echo -en "${RED}Error:${RESET} An error message." 
+# Example: printf '%sError:%s An error message.\n' "${RED}" "${RESET}"
 # This script contains all color codes in the POSIX standard.
-# You must source this script with 'source ./cursor' or '. ./cursor' to use it.
+# You must source this script with '. ./colors' (or an absolute path) to use it.
 
 # Reset all attributes to their default values
 RESET="\033[0m"

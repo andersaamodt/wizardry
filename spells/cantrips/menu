@@ -1,18 +1,73 @@
 #!/usr/bin/env bash
 
 # This script generates a menu from the given list of items. Choosing an item runs the command for that item.
-# Usage: 
+# Usage:
 #   change_my_password="Change my password%passwd"
 #   list_users="List all users%cut -d: -f1 /etc/passwd"
 #   exit="kill -2 $$"
 #   menu "User management options:" "$change_my_password" "$list_users" "$exit"
 # Use up/down arrow keys to select a menu item, then press Enter. Or cancel with ESC.
 
-. colors
+script_dir=$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+cantrip_dir=$script_dir
 
+if [ -n "${REQUIRE_COMMAND-}" ]; then
+  require_cmd=$REQUIRE_COMMAND
+elif [ -x "$cantrip_dir/require-command" ]; then
+  require_cmd="$cantrip_dir/require-command"
+elif command -v require-command >/dev/null 2>&1; then
+  require_cmd=require-command
+else
+  require_cmd=""
+fi
+
+# Centralise dependency checks so the menu can report missing commands with a
+# consistent message.
+require() {
+  local tool
+  tool=$1
+  shift
+  if [ -n "$require_cmd" ]; then
+    "$require_cmd" "$tool" "$@" || exit 1
+    return
+  fi
+
+  if command -v "$tool" >/dev/null 2>&1; then
+    return
+  fi
+
+  if [ "$#" -gt 0 ]; then
+    printf '%s\n' "menu: $*" >&2
+  else
+    printf '%s\n' "menu: missing required command '$tool'" >&2
+  fi
+  printf '%s\n' "Visit 'install-menu' to review installation options." >&2
+  exit 1
+}
+
+if [ -r "$cantrip_dir/colors" ]; then
+  # shellcheck disable=SC1090
+  . "$cantrip_dir/colors"
+elif command -v colors >/dev/null 2>&1; then
+  # shellcheck disable=SC1091
+  . colors
+else
+  # Fall back to no-op colour variables so the menu still renders legibly.
+  RESET=''
+  CYAN=''
+  GREY=''
+fi
+
+require fathom-cursor "The menu spell needs 'fathom-cursor' to place the menu." 
+require fathom-terminal "The menu spell needs 'fathom-terminal' to measure the screen." 
+require move-cursor "The menu spell needs 'move-cursor' to reposition the cursor." 
+require await-keypress "The menu spell needs 'await-keypress' to read input." 
+require cursor-blink "The menu spell needs 'cursor-blink' to restore the cursor." 
+
+# When invoked with no menu entries, fall back to the main wizardry menu.
 if [ ${#} -lt 2 ]; then
-	main-menu
-	exit 0
+        main-menu
+        exit 0
 fi
 
 description=$1
@@ -23,7 +78,7 @@ declare -a items
 # declare -a descriptions # not displayed so presently disabled
 declare -a commands
 while [ ${#} -gt 0 ]; do
-	IFS='%' read -r -a option <<< "$1"
+        IFS='%' read -r -a option <<< "$1"
     items+=("${option[0]}")
     #descriptions+=("$(option[1])") # not displayed so presently disabled
     commands+=("${option[1]}")
