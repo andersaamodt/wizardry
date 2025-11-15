@@ -53,7 +53,7 @@ teardown() {
   assert_success
   assert_output --partial 'The directory has been added to your PATH.'
   assert_output --partial 'new shells'
-  entry=$(printf 'export PATH=%s:\\$PATH' "$target_dir")
+  entry=$(printf 'export PATH="%s:$PATH"' "$target_dir")
   run grep -Fqx "$entry" "$HOME/.bashrc"
   assert_success
 
@@ -83,7 +83,7 @@ teardown() {
   run_spell 'spells/path-wizard' 'add'
   cd "$old_pwd"
   assert_success
-  default_entry=$(printf 'export PATH=%s:\\$PATH' "$default_dir")
+  default_entry=$(printf 'export PATH="%s:$PATH"' "$default_dir")
   run grep -Fqx "$default_entry" "$HOME/.bashrc"
   assert_success
 
@@ -94,7 +94,7 @@ teardown() {
   mkdir -p "$magic_dir"
   run_spell 'spells/path-wizard' 'add' '~/magic'
   assert_success
-  tilde_entry=$(printf 'export PATH=%s:\\$PATH' "$magic_dir")
+  tilde_entry=$(printf 'export PATH="%s:$PATH"' "$magic_dir")
   run grep -Fqx "$tilde_entry" "$HOME/.bashrc"
   assert_success
   run_spell 'spells/path-wizard' 'remove' "$magic_dir"
@@ -107,7 +107,7 @@ teardown() {
   run_spell 'spells/path-wizard' 'add' '.'
   cd "$old_pwd"
   assert_success
-  dot_entry=$(printf 'export PATH=%s:\\$PATH' "$dot_dir")
+  dot_entry=$(printf 'export PATH="%s:$PATH"' "$dot_dir")
   run grep -Fqx "$dot_entry" "$HOME/.bashrc"
   assert_success
   run_spell 'spells/path-wizard' 'remove' "$dot_dir"
@@ -120,10 +120,33 @@ teardown() {
   run_spell 'spells/path-wizard' 'add' 'relative'
   cd "$old_pwd"
   assert_success
-  relative_entry=$(printf 'export PATH=%s:\\$PATH' "$relative_dir")
+  relative_entry=$(printf 'export PATH="%s:$PATH"' "$relative_dir")
   run grep -Fqx "$relative_entry" "$HOME/.bashrc"
   assert_success
   run_spell 'spells/path-wizard' 'remove' "$relative_dir"
+  assert_success
+}
+
+
+@test 'path-wizard refreshes legacy escaped PATH entries' {
+  target_dir="$BATS_TEST_TMPDIR/legacy"
+  mkdir -p "$target_dir"
+
+  legacy_entry=$(printf 'export PATH=%s:\\$PATH' "$target_dir")
+  printf '%s\n' "$legacy_entry" >>"$HOME/.bashrc"
+
+  run_spell 'spells/path-wizard' 'add' "$target_dir"
+  assert_success
+  assert_output --partial 'refreshed'
+
+  fixed_entry=$(printf 'export PATH="%s:$PATH"' "$target_dir")
+  run grep -Fqx "$fixed_entry" "$HOME/.bashrc"
+  assert_success
+
+  run grep -Fqx "$legacy_entry" "$HOME/.bashrc"
+  assert_failure
+
+  run_spell 'spells/path-wizard' 'remove' "$target_dir"
   assert_success
 }
 
@@ -138,9 +161,9 @@ teardown() {
   run_spell 'spells/path-wizard' '-r' 'add' "$base_dir"
   assert_success
 
-  base_entry=$(printf 'export PATH=%s:\\$PATH' "$base_dir")
-  level1_entry=$(printf 'export PATH=%s:\\$PATH' "$base_dir/level1")
-  level2_entry=$(printf 'export PATH=%s:\\$PATH' "$base_dir/level1/level2")
+  base_entry=$(printf 'export PATH="%s:$PATH"' "$base_dir")
+  level1_entry=$(printf 'export PATH="%s:$PATH"' "$base_dir/level1")
+  level2_entry=$(printf 'export PATH="%s:$PATH"' "$base_dir/level1/level2")
 
   run grep -Fqx "$base_entry" "$HOME/.bashrc"
   assert_success
