@@ -1,6 +1,49 @@
 #!/usr/bin/env sh
 set -eu
 
+usage() {
+  cat <<'EOF'
+Usage: update-all [-v|--verbose]
+
+Options:
+  -v, --verbose   Print all command output while updating
+  -h, --help      Show this help message and exit
+EOF
+}
+
+VERBOSE=0
+
+while [ "$#" -gt 0 ]; do
+  case $1 in
+    -v|--verbose)
+      VERBOSE=1
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -*)
+      printf 'Unknown option: %s\n' "$1" >&2
+      usage >&2
+      exit 1
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
+if [ "$#" -ne 0 ]; then
+  printf 'Unexpected argument: %s\n' "$1" >&2
+  usage >&2
+  exit 1
+fi
+
 script_dir=$(cd "$(dirname "$0")" && pwd)
 
 if [ -f "$script_dir/cantrips/colors" ]; then
@@ -36,7 +79,11 @@ run_quiet() {
     return 0
   fi
   print_command "$@"
-  "$@" >/dev/null 2>&1
+  if [ "$VERBOSE" -eq 1 ]; then
+    "$@"
+  else
+    "$@" >/dev/null 2>&1
+  fi
 }
 
 progress_filter() {
@@ -70,6 +117,11 @@ run_with_progress() {
   fi
 
   print_command "$@"
+
+  if [ "$VERBOSE" -eq 1 ]; then
+    "$@"
+    return $?
+  fi
 
   progress_tmp=$(mktemp)
   (

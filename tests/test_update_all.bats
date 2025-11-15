@@ -67,6 +67,62 @@ STUB
   assert_output --partial 'apt-get:-o Dpkg::Progress-Fancy=1 -o Dpkg::Use-Pty=0 -y autoremove'
 }
 
+@test 'update-all -v surfaces apt output on Debian' {
+  cat <<'STUB' >"$STUB_TMPDIR/sudo"
+#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\n' "sudo:$*" >>"$UPDATE_ALL_LOG"
+"$@"
+STUB
+  chmod +x "$STUB_TMPDIR/sudo"
+
+  cat <<'STUB' >"$STUB_TMPDIR/apt-get"
+#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\n' "apt-get:$*" >>"$UPDATE_ALL_LOG"
+
+case " $* " in
+  *" full-upgrade"*)
+    printf '%s\n' 'Reading package lists...'
+    printf 'Progress: [ 10%%] upgrading core packages\r'
+    printf 'Progress: [ 65%%] upgrading core packages\r'
+    printf 'Progress: [100%%] upgrading core packages\r'
+    printf '\n'
+    ;;
+  *" autoremove"*)
+    printf 'Progress: [ 50%%] cleaning up\r'
+    printf 'Progress: [100%%] cleaning up\r'
+    printf '\n'
+    ;;
+  *)
+    printf '%s\n' 'Hit:1 http://example.test stable InRelease'
+    ;;
+esac
+STUB
+  chmod +x "$STUB_TMPDIR/apt-get"
+
+  WIZARDRY_UPDATE_ALL_DISTRO=debian \
+    WIZARDRY_UPDATE_ALL_ASSUME_YES=1 \
+    run_spell 'spells/update-all' -v
+
+  assert_success
+  assert_output --partial 'Detected platform: debian'
+  assert_output --partial '• Refreshing apt package lists'
+  assert_output --partial 'Hit:1 http://example.test stable InRelease'
+  assert_output --partial '• Installing upgrades'
+  assert_output --partial 'Reading package lists...'
+  assert_output --partial 'Progress: [ 65%] upgrading core packages'
+  assert_output --partial '• Removing unused packages'
+  assert_output --partial 'Progress: [100%] cleaning up'
+  assert_output --partial 'All updates complete.'
+
+  run cat "$UPDATE_ALL_LOG"
+  assert_success
+  assert_output --partial 'apt-get:update'
+  assert_output --partial 'apt-get:-o Dpkg::Progress-Fancy=1 -o Dpkg::Use-Pty=0 -y full-upgrade'
+  assert_output --partial 'apt-get:-o Dpkg::Progress-Fancy=1 -o Dpkg::Use-Pty=0 -y autoremove'
+}
+
 @test 'update-all refreshes pacman and pamac on Arch' {
   cat <<'STUB' >"$STUB_TMPDIR/sudo"
 #!/usr/bin/env bash
