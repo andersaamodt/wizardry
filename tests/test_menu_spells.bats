@@ -11,9 +11,34 @@ setup() {
   menu_log="$stub_dir/menu.log"
   cat <<'MENU' >"$stub_dir/menu"
 #!/usr/bin/env bash
+set -euo pipefail
+
+result=""
+if [ -n "${MENU_STUB_RESULTS_FILE-}" ] && [ -f "$MENU_STUB_RESULTS_FILE" ] && [ -s "$MENU_STUB_RESULTS_FILE" ]; then
+  result=$(head -n 1 "$MENU_STUB_RESULTS_FILE")
+  tmp="${MENU_STUB_RESULTS_FILE}.tmp"
+  tail -n +2 "$MENU_STUB_RESULTS_FILE" >"$tmp" 2>/dev/null || :
+  mv "$tmp" "$MENU_STUB_RESULTS_FILE"
+elif [ -n "${MENU_STUB_RESULT-}" ]; then
+  result="$MENU_STUB_RESULT"
+else
+  result="command"
+fi
+
 printf 'MENU:%s\n' "$@" | tee -a "$MENU_LOG"
-kill -2 "$PPID" 2>/dev/null || true
-exit 0
+
+escape_status=${MENU_ESCAPE_STATUS:-0}
+case "$result" in
+  escape)
+    exit "$escape_status"
+    ;;
+  error)
+    exit 1
+    ;;
+  *)
+    exit 0
+    ;;
+esac
 MENU
   chmod +x "$stub_dir/menu"
 
@@ -222,7 +247,7 @@ assert_move_cursor_log() {
   assert_output --partial 'MENU:Install Menu:'
   assert_output --partial 'alpha - ready'
   assert_output --partial 'beta - coming soon'
-  assert_output --partial 'exiting'
+  refute_output --partial 'exiting'
 }
 
 @test 'menu redraws selections without scrolling' {
@@ -393,12 +418,36 @@ assert_move_cursor_log() {
 @test 'main-menu forwards options to menu command' {
   export MENU_LOG="$menu_log"
   : >"$menu_log"
+  export MENU_STUB_RESULT=escape
   with_menu_path run_spell 'spells/menu/main-menu'
   assert_success
   assert_output --partial 'MENU:Main Menu:'
   assert_output --partial 'Install Free Software%install-menu'
   assert_output --partial 'Update all software%update-all'
   assert_output --partial 'Exit%kill -2'
-  assert_output --partial 'exiting'
+  refute_output --partial 'exiting'
+}
+
+@test 'main-menu keeps running until escape is selected' {
+  export MENU_LOG="$menu_log"
+  : >"$menu_log"
+  results_file="$BATS_TEST_TMPDIR/main_menu_results"
+  printf '%s\n' command escape >"$results_file"
+  export MENU_STUB_RESULTS_FILE="$results_file"
+  with_menu_path run_spell 'spells/menu/main-menu'
+  assert_success
+  menu_calls=$(wc -l <"$menu_log")
+  assert_equal "$menu_calls" 2
+}
+
+@test 'install-menu exits when escape is selected' {
+  export MENU_LOG="$menu_log"
+  : >"$menu_log"
+  export MENU_STUB_RESULT=escape
+  export INSTALL_MENU_DIRS='alpha beta'
+  with_menu_path run_spell 'spells/menu/install-menu'
+  assert_success
+  menu_calls=$(wc -l <"$menu_log")
+  assert_equal "$menu_calls" 1
 }
 

@@ -50,16 +50,27 @@ display_menu() {
     set -- "$@" "$nixos_rebuild"
   fi
   set -- "$@" "$restart" "$exit"
-  menu "Main Menu:" "$@"
+  MENU_ESCAPE_STATUS=$menu_escape_status menu "Main Menu:" "$@"
 }
 
 # Catch Ctrl-C and exit
 handle_ctrl_c() {
-  trap 'echo exiting; exit' INT
+  trap 'exit' INT
 }
 
 handle_ctrl_c
 
+menu_escape_status=113
+
 while true; do
   display_menu
+  status=$?
+
+  if [ "$status" -eq "$menu_escape_status" ]; then
+    break
+  fi
+
+  if [ "$status" -ne 0 ]; then
+    exit "$status"
+  fi
 done

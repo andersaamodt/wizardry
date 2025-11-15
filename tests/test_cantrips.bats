@@ -413,14 +413,15 @@ COL
   assert_success
   assert_output --partial 'Second'
   assert_output --partial 'first'
+  refute_output --partial $'\n\nfirst'
 
-  printf 'up\nescape\n' >"$keys"
+  printf 'up\nESC\n' >"$keys"
   export MENU_KEYS="$keys"
   pushd "$menu_workspace" >/dev/null
   run_spell 'spells/cantrips/menu' 'Leave:' 'Alpha%echo alpha' 'Beta%echo beta'
   popd >/dev/null
   assert_success
-  assert_output --partial 'ESC'
+  refute_output --partial 'ESC'
 }
 
 @test 'menu POSIX presents selections and executes commands' {
@@ -444,14 +445,15 @@ COL
   assert_success
   assert_output --partial 'Second'
   assert_output --partial 'second'
+  refute_output --partial $'\n\nsecond'
 
-  printf 'up\nescape\n' >"$keys"
+  printf 'up\nESC\n' >"$keys"
   export MENU_KEYS="$keys"
   pushd "$menu_workspace" >/dev/null
   run_spell 'spells/cantrips/menu' 'Leave:' 'Alpha%echo alpha' 'Beta%echo beta'
   popd >/dev/null
   assert_success
-  assert_output --partial 'ESC'
+  refute_output --partial 'ESC'
 }
 
 @test 'move-cursor prints ANSI sequence or usage' {
