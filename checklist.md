@@ -28,7 +28,7 @@
 - [ ] Detect the user's login shell on each platform (Linux Bash, macOS zsh, NixOS defaults) and update the appropriate rc/profile file without breaking alternative shells.
 
 ## Menu spell hardening
-- [ ] Document and isolate the Bash requirements in `spells/cantrips/menu` (accepted exception), ensuring its POSIX helpers satisfy the agreed shell baseline before attempting a future rewrite.
+- [ ] Document and isolate the Bash requirements in `spells/cantrips/menu_bash` (accepted exception), ensuring its POSIX helpers satisfy the agreed shell baseline before attempting a future rewrite.
 - [ ] Replace direct cursor-control calls with portable abstractions or wrap them so that macOS/BSD utilities can provide equivalents (e.g., use `tput` or terminfo queries).
 - [ ] Ensure `fathom-terminal`, `fathom-cursor`, and `move-cursor` work on Debian, macOS, and NixOS (fix reliance on GNU `stty`, `tput`, or `/proc`).
 - [ ] Validate that the menu keeps the terminal state consistent (restores cursor blink, handles SIGINT/SIGTERM) across shells.

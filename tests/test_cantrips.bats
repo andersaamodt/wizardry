@@ -353,7 +353,38 @@ MOVE
   printf '%s\n' "$dir"
 }
 
-@test 'menu runs selected commands and handles escape' {
+@test 'menu_bash runs selected commands and handles escape' {
+  menu_workspace="$BATS_TEST_TMPDIR/menu_bash_ws"
+  mkdir -p "$menu_workspace"
+  cat <<'COL' >"$menu_workspace/colors"
+RESET=""
+CYAN=""
+GREY=""
+COL
+  chmod +x "$menu_workspace/colors"
+
+  stubs=$(create_menu_stubs)
+  keys="$BATS_TEST_TMPDIR/menu_keys"
+  printf 'down\nenter\n' >"$keys"
+  export MENU_KEYS="$keys"
+  PATH="$stubs:$ORIGINAL_PATH"
+  pushd "$menu_workspace" >/dev/null
+  run_spell 'spells/cantrips/menu_bash' 'Choose:' 'First%echo first' 'Second%echo second'
+  popd >/dev/null
+  assert_success
+  assert_output --partial 'Second'
+  assert_output --partial 'first'
+
+  printf 'up\nescape\n' >"$keys"
+  export MENU_KEYS="$keys"
+  pushd "$menu_workspace" >/dev/null
+  run_spell 'spells/cantrips/menu_bash' 'Leave:' 'Alpha%echo alpha' 'Beta%echo beta'
+  popd >/dev/null
+  assert_success
+  assert_output --partial 'ESC'
+}
+
+@test 'menu presents selections and executes commands' {
   menu_workspace="$BATS_TEST_TMPDIR/menu_ws"
   mkdir -p "$menu_workspace"
   cat <<'COL' >"$menu_workspace/colors"
@@ -373,43 +404,12 @@ COL
   popd >/dev/null
   assert_success
   assert_output --partial 'Second'
-  assert_output --partial 'first'
-
-  printf 'up\nescape\n' >"$keys"
-  export MENU_KEYS="$keys"
-  pushd "$menu_workspace" >/dev/null
-  run_spell 'spells/cantrips/menu' 'Leave:' 'Alpha%echo alpha' 'Beta%echo beta'
-  popd >/dev/null
-  assert_success
-  assert_output --partial 'ESC'
-}
-
-@test 'menu_posix presents selections and executes commands' {
-  menu_workspace="$BATS_TEST_TMPDIR/menu_posix_ws"
-  mkdir -p "$menu_workspace"
-  cat <<'COL' >"$menu_workspace/colors"
-RESET=""
-CYAN=""
-GREY=""
-COL
-  chmod +x "$menu_workspace/colors"
-
-  stubs=$(create_menu_stubs)
-  keys="$BATS_TEST_TMPDIR/menu_posix_keys"
-  printf 'down\nenter\n' >"$keys"
-  export MENU_KEYS="$keys"
-  PATH="$stubs:$ORIGINAL_PATH"
-  pushd "$menu_workspace" >/dev/null
-  run_spell 'spells/cantrips/menu_posix' 'Choose:' 'First%echo first' 'Second%echo second'
-  popd >/dev/null
-  assert_success
-  assert_output --partial 'Second'
   assert_output --partial 'second'
 
   printf 'up\nescape\n' >"$keys"
   export MENU_KEYS="$keys"
   pushd "$menu_workspace" >/dev/null
-  run_spell 'spells/cantrips/menu_posix' 'Leave:' 'Alpha%echo alpha' 'Beta%echo beta'
+  run_spell 'spells/cantrips/menu' 'Leave:' 'Alpha%echo alpha' 'Beta%echo beta'
   popd >/dev/null
   assert_success
   assert_output --partial 'ESC'

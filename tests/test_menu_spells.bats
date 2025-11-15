@@ -166,7 +166,7 @@ STUB
   assert_output --partial 'exiting'
 }
 
-@test 'menu redraws selections without scrolling' {
+@test 'menu_bash redraws selections without scrolling' {
   local stub_dir
   stub_dir=$(create_menu_cantrip_stubs)
   local key_file="$stub_dir/keys"
@@ -180,7 +180,7 @@ STUB
   MOVE_CURSOR_LOG="$move_log" \
   PATH="$stub_dir:$ORIGINAL_PATH" \
   REQUIRE_COMMAND="$ROOT_DIR/spells/cantrips/require-command" \
-  run_spell 'spells/cantrips/menu' \
+  run_spell 'spells/cantrips/menu_bash' \
     'Demo Menu' \
     "First%printf 'chosen:first\\n'" \
     "Second%printf 'chosen:second\\n'"
@@ -197,7 +197,7 @@ STUB
   assert_equal "${move_calls[0]}" "1 ${expected_row}"
 }
 
-@test 'menu_posix redraws selections without scrolling' {
+@test 'menu redraws selections without scrolling' {
   local stub_dir
   stub_dir=$(create_menu_cantrip_stubs)
   local key_file="$stub_dir/keys"
@@ -211,7 +211,7 @@ STUB
   MOVE_CURSOR_LOG="$move_log" \
   PATH="$stub_dir:$ORIGINAL_PATH" \
   REQUIRE_COMMAND="$ROOT_DIR/spells/cantrips/require-command" \
-  run_spell 'spells/cantrips/menu_posix' \
+  run_spell 'spells/cantrips/menu' \
     'Demo Menu' \
     "First%printf 'chosen:first\\n'" \
     "Second%printf 'chosen:second\\n'"
