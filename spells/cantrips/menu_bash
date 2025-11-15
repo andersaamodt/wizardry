@@ -1,0 +1,149 @@
+#!/usr/bin/env bash
+
+# This script generates a menu from the given list of items. Choosing an item runs the command for that item.
+# Usage: 
+#   change_my_password="Change my password%passwd"
+#   list_users="List all users%cut -d: -f1 /etc/passwd"
+#   exit="kill -2 $$"
+#   menu "User management options:" "$change_my_password" "$list_users" "$exit"
+# Use up/down arrow keys to select a menu item, then press Enter. Or cancel with ESC.
+
+. colors
+
+if [ ${#} -lt 2 ]; then
+	main-menu
+	exit 0
+fi
+
+description=$1
+shift
+
+# Parse args. Each arg is "name%command"
+declare -a items
+# declare -a descriptions # not displayed so presently disabled
+declare -a commands
+while [ ${#} -gt 0 ]; do
+	IFS='%' read -r -a option <<< "$1"
+    items+=("${option[0]}")
+    #descriptions+=("$(option[1])") # not displayed so presently disabled
+    commands+=("${option[1]}")
+    shift
+done
+
+selected=0
+displayed=0
+
+# Calculate the position of the menu
+menu_x=$((0))
+menu_y=$(fathom-cursor -y)
+
+# Calculate the number of rows that the menu will occupy
+num_rows=${#items[@]}
+
+# Calculate the maximum length of the item names
+# Todo: abstract this out into a max-length function in another script. I gave up on trying to find an elegant way to pass a list of strings with spaces. Even separating them with newlines didn't work.
+max_name_length=0
+
+# Find the longest line
+for line in "${items[@]}"; do
+    line_length=${#line}
+    if [ $line_length -gt $max_name_length ]; then
+        max_name_length=$line_length
+    fi
+done
+
+# Make sure the menu items don't wrap, multiline menu items are not supported
+window_width=$(fathom-terminal -w)
+if [ $max_name_length -gt $window_width ]; then
+	max_name_length=$window_width
+fi
+
+# Define the function to display the menu
+display_menu() {
+  # Get the dimensions of the terminal window (again each time in case window is resized)
+  window_width=$(fathom-terminal -w)
+  window_height=$(fathom-terminal -h)
+  
+  # Recalculate the position of the menu
+  menu_y=$(fathom-cursor -y)
+  
+  # Move the cursor to the correct position
+  if [ $displayed -eq 0 ]; then
+    # Don't move the cursor or clear the screen the first time
+    displayed=1
+  else
+    if [ $((menu_y + num_rows)) -ge $window_height ]; then
+    	menu_y=$((window_height))
+    fi
+    move-cursor $menu_x $((menu_y - num_rows)) 
+  fi
+  
+  # Print the items and commands
+  for i in "${!items[@]}"; do
+  	# Truncate the command to the width of the screen # Todo: come up with a better solution that allows the user to see the full command.
+  	max_command_length=$(( $window_width - $max_name_length - 3 )) # -3 is for the > and the space between item and command
+  	truncated_command=$(echo "${commands[$i]}" | cut -c -$max_command_length)
+    if [ $i -eq $selected ]; then
+      printf "${CYAN}> %-${max_name_length}s${RESET} ${GREY}%s${RESET}\n" "${items[$i]}" "$truncated_command"
+    else
+    	# Print the menu item plus extra spaces to cover up its command, since it's not selected
+      printf "  %-${max_name_length}s %*s\n" "${items[$i]}" "${#truncated_command}"
+    fi
+  done
+}
+
+# Define the function to handle key presses
+handle_key() {
+  key=$(await-keypress)
+  case "$key" in
+    up)
+      selected=$((selected - 1))
+      if [ $selected -lt 0 ]; then
+        selected=$((num_rows - 1))
+      fi
+      ;;
+    down)
+      selected=$((selected + 1))
+      if [ $selected -ge $num_rows ]; then
+        selected=0
+      fi
+      ;;
+    enter)
+      cursor-blink on
+      command="${commands[$selected]}"
+      printf "\n"
+      eval $command 
+      exit 0
+      ;;
+    escape) 
+      cursor-blink on
+      echo ESC
+      exit
+      ;;
+    esac
+}
+
+# Catch Ctrl-C and restore the cursor blink, so the user doesn't get stuck with an invisible cursor
+handle_ctrl_c() {
+  trap 'cursor-blink on; exit' INT
+}
+
+handle_ctrl_c
+
+test_menu() {
+  assert_equal "$(./menu "Please choose" "item1 item2 item3" "ls cat command3" -v)" "Please choose\n1) item1\n2) item2\n3) item3\n" "menu -v output differs"
+  assert_equal "$(./menu "Please choose" "item1 item2 item3" "ls cat command3")" "1) item1\n2) item2\n3) item3\n" "menu output differs"
+}
+
+cursor-blink off
+
+# Display the menu's description
+if [ -n "$description" ]; then
+	printf "$description\n"
+fi
+
+# Menu loop
+while true; do
+  display_menu
+  handle_key $key
+done
