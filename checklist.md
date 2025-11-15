@@ -1,5 +1,13 @@
 # Menu Cross-Platform Readiness Checklist
 
+## Human checklist (rest is by and for AI)
+- [ ] Add mud menu and get all items on it working (the mud menu unit test needs to be redone to match)
+- [ ] Debug install-menu and add nginx or bitcoin to it
+- [ ] Add other spells I already have, make POSIX-compliant and tidy up
+- [ ] Review all existing spells for bugs and refactor
+- [ ] Test detect-magic, read-magic, enchanting and disenchanting items, hashchant
+- [ ] Eventually, add recursive language parser
+
 ## Foundational shell and environment work
 - [x] Decide on supported shell(s) (strict POSIX `sh` vs Bash) and document the requirement so that menu dependencies target the same baseline.
 - [x] Audit every helper the menu family sources (`colors`, `await-keypress`, `cursor-blink`, `fathom-*`, `move-cursor`, `assertions`) and refactor them to run with the chosen POSIX shell (replace Bash arrays, `${BASH_SOURCE}`, `[[` tests, etc.).
