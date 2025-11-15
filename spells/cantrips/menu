@@ -1,73 +1,18 @@
 #!/usr/bin/env bash
 
 # This script generates a menu from the given list of items. Choosing an item runs the command for that item.
-# Usage:
+# Usage: 
 #   change_my_password="Change my password%passwd"
 #   list_users="List all users%cut -d: -f1 /etc/passwd"
 #   exit="kill -2 $$"
 #   menu "User management options:" "$change_my_password" "$list_users" "$exit"
 # Use up/down arrow keys to select a menu item, then press Enter. Or cancel with ESC.
 
-script_dir=$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-cantrip_dir=$script_dir
+. colors
 
-if [ -n "${REQUIRE_COMMAND-}" ]; then
-  require_cmd=$REQUIRE_COMMAND
-elif [ -x "$cantrip_dir/require-command" ]; then
-  require_cmd="$cantrip_dir/require-command"
-elif command -v require-command >/dev/null 2>&1; then
-  require_cmd=require-command
-else
-  require_cmd=""
-fi
-
-# Centralise dependency checks so the menu can report missing commands with a
-# consistent message.
-require() {
-  local tool
-  tool=$1
-  shift
-  if [ -n "$require_cmd" ]; then
-    "$require_cmd" "$tool" "$@" || exit 1
-    return
-  fi
-
-  if command -v "$tool" >/dev/null 2>&1; then
-    return
-  fi
-
-  if [ "$#" -gt 0 ]; then
-    printf '%s\n' "menu: $*" >&2
-  else
-    printf '%s\n' "menu: missing required command '$tool'" >&2
-  fi
-  printf '%s\n' "Visit 'install-menu' to review installation options." >&2
-  exit 1
-}
-
-if [ -r "$cantrip_dir/colors" ]; then
-  # shellcheck disable=SC1090
-  . "$cantrip_dir/colors"
-elif command -v colors >/dev/null 2>&1; then
-  # shellcheck disable=SC1091
-  . colors
-else
-  # Fall back to no-op colour variables so the menu still renders legibly.
-  RESET=''
-  CYAN=''
-  GREY=''
-fi
-
-require fathom-cursor "The menu spell needs 'fathom-cursor' to place the menu." 
-require fathom-terminal "The menu spell needs 'fathom-terminal' to measure the screen." 
-require move-cursor "The menu spell needs 'move-cursor' to reposition the cursor." 
-require await-keypress "The menu spell needs 'await-keypress' to read input." 
-require cursor-blink "The menu spell needs 'cursor-blink' to restore the cursor." 
-
-# When invoked with no menu entries, fall back to the main wizardry menu.
 if [ ${#} -lt 2 ]; then
-        main-menu
-        exit 0
+	main-menu
+	exit 0
 fi
 
 description=$1
@@ -87,6 +32,9 @@ done
 
 selected=0
 
+# Track the anchor column for redraws. move-cursor counts from 1, so start at 1.
+menu_x=$((1))
+
 # Calculate the number of rows that the menu will occupy
 num_rows=${#items[@]}
 
@@ -105,54 +53,39 @@ done
 # Make sure the menu items don't wrap, multiline menu items are not supported
 window_width=$(fathom-terminal -w)
 if [ $max_name_length -gt $window_width ]; then
-        max_name_length=$window_width
+	max_name_length=$window_width
 fi
-
-# Track the starting position for the menu so redraws can simply return to the
-# same co-ordinates instead of printing a fresh copy that scrolls the screen.
-menu_origin_x=1
-menu_origin_y=1
 
 # Define the function to display the menu
 display_menu() {
-  # Get the dimensions of the terminal window (again each time in case window is resized)
+  # Measure the window on each redraw so truncation stays accurate if the user
+  # resizes their terminal mid-session.
   window_width=$(fathom-terminal -w)
 
-  max_command_length=$(( window_width - max_name_length - 3 ))
-  if (( max_command_length < 0 )); then
-    max_command_length=0
-  fi
-
-  # Reposition the cursor to the stored anchor and clear any leftover output so
-  # the menu redraws in-place.
-  move-cursor "$menu_origin_x" "$menu_origin_y"
+  # Ensure the cursor returns to the top-left corner of the menu before drawing
+  # so repeated renders do not scroll the screen.
+  move-cursor "$menu_x" "$menu_origin_y"
   printf '\033[J'
-
-  # Prepare a string of spaces large enough to cover the command column when a
-  # row becomes unselected.
-  if (( max_command_length > 0 )); then
-    blank_command=$(printf '%*s' "$max_command_length" '')
-  else
-    blank_command=''
-  fi
 
   # Print the items and commands
   for i in "${!items[@]}"; do
-    if (( max_command_length > 0 )); then
-      truncated_command=${commands[$i]:0:max_command_length}
-    else
-      truncated_command=''
-    fi
-
+        # Truncate the command to the width of the screen # Todo: come up with a better solution that allows the user to see the full command.
+        max_command_length=$(( window_width - max_name_length - 3 )) # -3 is for the > and the space between item and command
+        if [ $max_command_length -le 0 ]; then
+                truncated_command=""
+        else
+                truncated_command=$(echo "${commands[$i]}" | cut -c -$max_command_length)
+        fi
     if [ $i -eq $selected ]; then
       if [ -n "$truncated_command" ]; then
-        printf "%s> %-${max_name_length}s%s %s%s%s\n" "$CYAN" "${items[$i]}" "$RESET" "$GREY" "$truncated_command" "$RESET"
+        printf "${CYAN}> %-${max_name_length}s${RESET} ${GREY}%s${RESET}\n" "${items[$i]}" "$truncated_command"
       else
-        printf "%s> %-${max_name_length}s%s\n" "$CYAN" "${items[$i]}" "$RESET"
+        printf "${CYAN}> %-${max_name_length}s${RESET}\n" "${items[$i]}"
       fi
     else
-      if (( max_command_length > 0 )); then
-        printf "  %-${max_name_length}s %s\n" "${items[$i]}" "$blank_command"
+        # Print the menu item plus extra spaces to cover up its command, since it's not selected
+      if [ -n "$truncated_command" ]; then
+        printf "  %-${max_name_length}s %*s\n" "${items[$i]}" "${#truncated_command}"
       else
         printf "  %-${max_name_length}s\n" "${items[$i]}"
       fi
@@ -180,7 +113,7 @@ handle_key() {
       cursor-blink on
       command="${commands[$selected]}"
       printf "\n"
-      eval "$command"
+      eval $command 
       exit 0
       ;;
     escape) 
@@ -210,12 +143,9 @@ if [ -n "$description" ]; then
         printf "%s\n" "$description"
 fi
 
-# Capture the cursor row after printing the description so we can redraw the
-# menu in-place instead of continually appending to the screen.
+# Record the row where the menu begins so redraws can jump back to the same
+# position before printing updated selections.
 menu_origin_y=$(fathom-cursor -y)
-
-# Ensure the column anchor is set to the first printable column.
-menu_origin_x=1
 
 # Menu loop
 while true; do
