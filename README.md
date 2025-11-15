@@ -20,7 +20,7 @@ To use wizardry, simply type:
 ```
 menu
 ```
-Most (soon all) wizardry spells and features will be discoverable through the menu.
+This displays an interactive menu. Most (soon all) wizardry spells and features will be discoverable through the menu.
 
 ## Principles:
 
@@ -28,16 +28,16 @@ Most (soon all) wizardry spells and features will be discoverable through the me
 | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Didacticism             | Scripts are well-commented and written as clearly as possible.                                                                                                                                     |
 | Bash-first              | To use languages beyond POSIX-compliant bash, there must be a good reason. This skips debates about which other projects to include as dependencies in our project.                                |
-| Menu-driven             | Wizardry includes a 'menu' command that displays an interactive menu. A user should be able to manage their entire system by typing 'menu', without having to remember or type commands.           |
+| Menu-driven             | A user should be able to manage their entire system by typing 'menu', without having to remember or type commands.                                                                                 |
 | Cross-platform          | Scripts are POSIX-compliant and as cross-platform as possible.                                                                                                                                     |
 | File-first              | All state is stored in files, ideally human-readable text files. No databases, because they enclose data in one opaque file (requiring import/export steps).                                       |
-| Minimalism              | The goal is to do as much as possible with the fewest number of moving parts.                                                                                                                      |
+| Minimalism              | Do the most with the fewest moving parts.                                                                                                                                                          |
 | Atomicity               | Each script and part of wizardry is as small and self-contained a unit as possible. These small, reliable parts are then combined.                                                                 |
 | Non-commercial          | This project is non-commercial, and so we always prefer free software over merely open-source software, and we always prefer the least commercialized software.                                    |
-| Interface-neutral       | GUIs designed with wizardry are merely thin layers that pass commands through to shell scripts (or other UNIX tools). This makes it easy to swap out web platforms or build additional interfaces. |
-| Hand-finished AI code   | Using AI to generate reusable, well-commented bash scripts is a great use of AI; scripts should be hand-reviewed and tested. However, wizardry itself will not touch or interact with AI.          |
+| Interface-neutral       | GUIs are thin layers that simply pass commands through to shell scripts. This makes it easy to swap out web platforms or build additional interfaces.                                              |
+| Hand-finished AI code   | Using AI to generate reusable, well-commented bash scripts is a great use of AI; scripts should be hand-reviewed and tested. However, wizardry itself will not interface with AI.                  |
 | Test-driven development | Unit tests are used to specific and test code, with a goal of maintaining 100% unit test coverage.                                                                                                 |
-| Tight integration       | The goal of wizardry is to provide the glue that integrates other UNIX command-line tools together.                                                                                                |
+| Tight integration       | Wizardry provides the glue that integrates other UNIX command-line tools together.                                                                                                                 |
 | Grammar                 | Wizardry will include a recursive parser that can parse commands in a flexible yet deterministic way. This effectively extends the bash language.                                                  |
 | Useful                  | Wizardry is use-case-driven, developed to support specific, common, everyday computer tasks.                                                                                                       |
 
