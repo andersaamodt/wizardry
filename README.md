@@ -1,5 +1,7 @@
 # Wizardry is a collection of bash scripts to complete your terminal experience.
 
+**Current status:** `install` and `menu` work well on Debian. Wizardry is brand new, so not all spells have been tested and debugged yet.
+
 ## Principles:
 
 * Didacticism: Scripts are well-commented and written as clearly as possible.
