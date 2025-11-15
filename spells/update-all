@@ -1,0 +1,102 @@
+#!/usr/bin/env sh
+
+# Updates all system software.
+# Requires that your OS is supported and detected by the detect-distro spell.
+# On Arch-based distros, also offers to install pamac to automate rebuilding AUR packages with new changes to pull. 
+# -v for more verbose output
+
+# Requires say, ask_y, and wizard_eyes, also using colors, all currently located here:
+source ./colors
+source ./ask_Yn
+source ./say
+source ./wizard_eyes
+
+# Read arguments
+while getopts v flag
+do
+    case "${flag}" in
+        v) VERBOSE=true;;
+    esac
+done
+
+# Helper function for Arch to check if pamac is already installed
+check_pamac() {
+	wizard_eyes "pacman -Qi pamac # check if pamac is installed"
+	if pacman -Qi pamac &>/dev/null; then
+		PAMAC_INSTALLED=1
+	else
+	    PAMAC_INSTALLED=0
+	fi
+}
+
+# Helper function for Arch to install pamac
+install_pamac() {
+	wizard_eyes "sudo pacman -S pamac"
+	sudo pacman -S pamac --noconfirm
+}
+
+# Catch Ctrl-C and exit immediately it's pressed (otherwise it just kills current operation)
+# Help! This doesn't always work, or works with a delay for sudo prompts.
+quit() {
+	exit 1
+}
+trap quit INT
+
+wizard_eyes "You're a wizard, so executed terminal commands and other tips will display like this."
+
+# Detect what OS we are using using the detect-distro spell, which puts the result in the $DISTRO environment variable
+wizard_eyes "./detect-distro"
+source ./detect-distro >/dev/null 2>&1
+
+say "Updating system for ${GREEN}$DISTRO${RESET}." 
+if [ $VERBOSE ]; then say "You may be asked for your ${BLUE}sudo${RESET} password multiple times."; fi
+
+# Based on what distro was detected, update the system in the correct way
+case $DISTRO in
+    "debian")
+    	wizard_eyes "sudo apt update"
+        sudo apt update
+        wizard_eyes "sudo apt autoremove"
+        sudo apt autoremove
+        wizard_eyes "sudo apt upgrade"
+        sudo apt upgrade
+        ;;
+    "arch")
+		ask_Yn USE_PAMAC "Would you like to use ${BLUE}pamac${RESET} to automate rebuilding of updated AUR packages? (recommended)"
+		# If Yes, check for pamac install and offer to install it if it's not already installed
+		if [ "$USE_PAMAC" -eq 1 ]; then
+			check_pamac
+			if [ "$PAMAC_INSTALLED" -eq 0 ]; then
+				ask_Yn INSTALL_PAMAC "${BLUE}pamac${RESET} is not installed. Install it now?"
+				if [ "$INSTALL_PAMAC" -eq 1 ]; then
+					install_pamac
+				else
+					say "Ok, your AUR packages will not be automatically rebuilt, then."
+				fi
+			fi
+		fi
+		
+		wizard_eyes "pacman -Syu # update software packages"
+        sudo pacman -Syu --noconfirm
+        
+		# Use pamac to update repos
+		if [ "$USE_PAMAC" -eq 1 ] && [ "$PAMAC_INSTALLED" -eq 1 ]; then
+			say "Using pamac to rebuild AUR packages."
+			wizard_eyes "pamac update --aur --devel"
+			pamac update --aur --devel --no-confirm
+		fi
+
+        ;;
+    "fedora")
+    	wizard_eyes "sudo dnf update"
+        sudo dnf update
+        wizard_eyes "sudo dnf upgrade"
+        sudo dnf upgrade
+        ;;
+    "mac")
+        install
+        wizard_eyes "sudo brew update"
+        sudo brew update
+        ;;
+esac
+	
