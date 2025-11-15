@@ -155,6 +155,65 @@ STUB
   printf '%s\n' "$dir"
 }
 
+assert_move_cursor_log() {
+  local log_path=$1
+  local expected_row=$2
+  local menu_length=$3
+
+  mapfile -t move_calls <"$log_path"
+  if [ "${#move_calls[@]}" -lt $((menu_length + 2)) ]; then
+    fail "move-cursor produced too few calls: ${#move_calls[@]}"
+  fi
+
+  local below_row=$((expected_row + menu_length))
+  assert_equal "${move_calls[0]}" "1 ${expected_row}"
+
+  local index=1
+  local row_offset=0
+  while [ "$row_offset" -lt "$menu_length" ]; do
+    local call="${move_calls[$index]}"
+    local row=${call#* }
+    local want=$((expected_row + row_offset))
+    assert_equal "$row" "$want"
+    index=$((index + 1))
+    row_offset=$((row_offset + 1))
+  done
+
+  local initial_calls=$((menu_length + 2))
+  assert_equal "${move_calls[$((initial_calls - 1))]}" "1 ${below_row}"
+
+  local total=${#move_calls[@]}
+  local remaining=$((total - initial_calls))
+  if [ $((remaining % 3)) -ne 0 ]; then
+    fail "move-cursor log has incomplete refresh groups: ${move_calls[*]}"
+  fi
+
+  local idx=$initial_calls
+  while [ "$idx" -lt "$total" ]; do
+    local first_row=${move_calls[$idx]#* }
+    local second_row=${move_calls[$((idx + 1))]#* }
+    local third_row=${move_calls[$((idx + 2))]#* }
+
+    if [ "$first_row" -eq "$second_row" ]; then
+      fail "move-cursor repeated row in refresh group: ${move_calls[$idx]} / ${move_calls[$((idx + 1))]}"
+    fi
+
+    if [ "$first_row" -lt "$expected_row" ] || [ "$first_row" -gt "$((expected_row + menu_length - 1))" ]; then
+      fail "move-cursor targeted unexpected row: ${move_calls[$idx]}"
+    fi
+
+    if [ "$second_row" -lt "$expected_row" ] || [ "$second_row" -gt "$((expected_row + menu_length - 1))" ]; then
+      fail "move-cursor targeted unexpected row: ${move_calls[$((idx + 1))]}"
+    fi
+
+    if [ "$third_row" -ne "$below_row" ]; then
+      fail "move-cursor did not park below the menu: ${move_calls[$((idx + 2))]}"
+    fi
+
+    idx=$((idx + 3))
+  done
+}
+
 @test 'install-menu reports available menu entries' {
   export MENU_LOG="$menu_log"
   export INSTALL_MENU_DIRS='alpha beta'
@@ -188,10 +247,6 @@ STUB
   assert_success
   assert_output --partial 'chosen:second'
 
-  mapfile -t move_calls <"$move_log"
-  if [ "${#move_calls[@]}" -lt 1 ]; then
-    fail 'move-cursor was not invoked'
-  fi
   local menu_length=2
   local terminal_height=24
   local expected_row=$fake_y
@@ -205,15 +260,7 @@ STUB
   if [ "$expected_row" -lt 1 ]; then
     expected_row=1
   fi
-  assert_equal "${move_calls[0]}" "1 ${expected_row}"
-
-  local upper_bound=$((expected_row + 1))
-  for call in "${move_calls[@]}"; do
-    local row=${call#* }
-    if [ "$row" -lt "$expected_row" ] || [ "$row" -gt "$upper_bound" ]; then
-      fail "move-cursor jumped outside the menu rows: $call"
-    fi
-  done
+  assert_move_cursor_log "$move_log" "$expected_row" "$menu_length"
 }
 
 @test 'menu redraws selections without scrolling from alternate cursor start' {
@@ -238,10 +285,6 @@ STUB
   assert_success
   assert_output --partial 'chosen:second'
 
-  mapfile -t move_calls <"$move_log"
-  if [ "${#move_calls[@]}" -lt 1 ]; then
-    fail 'move-cursor was not invoked'
-  fi
   local menu_length=2
   local terminal_height=24
   local expected_row=$alternate_fake_y
@@ -255,15 +298,46 @@ STUB
   if [ "$expected_row" -lt 1 ]; then
     expected_row=1
   fi
-  assert_equal "${move_calls[0]}" "1 ${expected_row}"
+  assert_move_cursor_log "$move_log" "$expected_row" "$menu_length"
+}
 
-  local upper_bound=$((expected_row + 1))
-  for call in "${move_calls[@]}"; do
-    local row=${call#* }
-    if [ "$row" -lt "$expected_row" ] || [ "$row" -gt "$upper_bound" ]; then
-      fail "move-cursor jumped outside the menu rows: $call"
-    fi
-  done
+@test 'menu keeps cursor aligned through rapid navigation' {
+  local stub_dir
+  stub_dir=$(create_menu_cantrip_stubs)
+  local key_file="$stub_dir/keys"
+  printf 'down\nup\ndown\ndown\nup\nenter\n' >"$key_file"
+  local move_log="$stub_dir/move.log"
+  : >"$move_log"
+
+  local fake_y=8
+  FAKE_CURSOR_Y=$fake_y \
+  MENU_KEY_FILE="$key_file" \
+  MOVE_CURSOR_LOG="$move_log" \
+  PATH="$stub_dir:$ORIGINAL_PATH" \
+  REQUIRE_COMMAND="$ROOT_DIR/spells/cantrips/require-command" \
+  run_spell 'spells/cantrips/menu' \
+    'Demo Menu' \
+    "First%printf 'chosen:first\\n'" \
+    "Second%printf 'chosen:second\\n'"
+
+  assert_success
+  assert_output --partial 'chosen:second'
+
+  local menu_length=2
+  local terminal_height=24
+  local expected_row=$fake_y
+  local max_row=$((terminal_height - menu_length + 1))
+  if [ "$max_row" -lt 1 ]; then
+    max_row=1
+  fi
+  if [ "$expected_row" -gt "$max_row" ]; then
+    expected_row=$max_row
+  fi
+  if [ "$expected_row" -lt 1 ]; then
+    expected_row=1
+  fi
+
+  assert_move_cursor_log "$move_log" "$expected_row" "$menu_length"
 }
 
 @test 'install-menu reports missing menu command' {

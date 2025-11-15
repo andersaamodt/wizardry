@@ -162,20 +162,45 @@ render_row() {
         target_row=$((menu_row + row_index - 1))
         if move-cursor "$menu_column" "$target_row"; then
                 printf '\033[K'
+                if [ "$highlight" -eq 1 ]; then
+                        if [ "$max_command_length" -gt 0 ]; then
+                                printf '%b> %-*s%b %b%-*s%b' "$CYAN" "$max_name_length" "$label" "$RESET" "$GREY" "$max_command_length" "$truncated_command" "$RESET"
+                        else
+                                printf '%b> %-*s%b' "$CYAN" "$max_name_length" "$label" "$RESET"
+                        fi
+                else
+                        if [ "$max_command_length" -gt 0 ]; then
+                                printf '  %-*s %-*s' "$max_name_length" "$label" "$max_command_length" "$truncated_command"
+                        else
+                                printf '  %-*s' "$max_name_length" "$label"
+                        fi
+                fi
+                printf '\r'
+        else
+                if [ "$highlight" -eq 1 ]; then
+                        if [ "$max_command_length" -gt 0 ]; then
+                                printf '%b> %-*s%b %b%-*s%b\n' "$CYAN" "$max_name_length" "$label" "$RESET" "$GREY" "$max_command_length" "$truncated_command" "$RESET"
+                        else
+                                printf '%b> %-*s%b\n' "$CYAN" "$max_name_length" "$label" "$RESET"
+                        fi
+                else
+                        if [ "$max_command_length" -gt 0 ]; then
+                                printf '  %-*s %-*s\n' "$max_name_length" "$label" "$max_command_length" "$truncated_command"
+                        else
+                                printf '  %-*s\n' "$max_name_length" "$label"
+                        fi
+                fi
+        fi
+}
+
+position_cursor_below_menu() {
+        below_row=$((menu_row + menu_length))
+        if [ "$terminal_height" -gt 0 ] && [ "$below_row" -gt "$terminal_height" ]; then
+                below_row=$terminal_height
         fi
 
-        if [ "$highlight" -eq 1 ]; then
-                if [ "$max_command_length" -gt 0 ]; then
-                        printf '%b> %-*s%b %b%-*s%b\n' "$CYAN" "$max_name_length" "$label" "$RESET" "$GREY" "$max_command_length" "$truncated_command" "$RESET"
-                else
-                        printf '%b> %-*s%b\n' "$CYAN" "$max_name_length" "$label" "$RESET"
-                fi
-        else
-                if [ "$max_command_length" -gt 0 ]; then
-                        printf '  %-*s %-*s\n' "$max_name_length" "$label" "$max_command_length" "$truncated_command"
-                else
-                        printf '  %-*s\n' "$max_name_length" "$label"
-                fi
+        if ! move-cursor "$menu_column" "$below_row"; then
+                printf '\n'
         fi
 }
 
@@ -196,6 +221,8 @@ draw_menu() {
                 row=$((row + 1))
         done
 
+        position_cursor_below_menu
+
         menu_drawn=1
         previous_selected=$selected
 }
@@ -211,6 +238,7 @@ refresh_selection() {
                         render_row "$previous_selected" 0
                 fi
                 render_row "$selected" 1
+                position_cursor_below_menu
                 previous_selected=$selected
         fi
 }
