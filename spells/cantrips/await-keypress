@@ -25,6 +25,14 @@ fi
 
 TTY_DEVICE=${AWAIT_KEYPRESS_DEVICE:-/dev/tty}
 skip_stty=${AWAIT_KEYPRESS_SKIP_STTY:-0}
+keep_raw=${AWAIT_KEYPRESS_KEEP_RAW:-0}
+
+if [ "${AWAIT_KEYPRESS_BUFFER_FILE+set}" = "set" ]; then
+    buffer_file=$AWAIT_KEYPRESS_BUFFER_FILE
+else
+    buffer_key=$(printf '%s' "$TTY_DEVICE" | tr -c '[:alnum:]' '_')
+    buffer_file=${TMPDIR:-/tmp}/wizardry-await-keypress-buffer.${buffer_key}
+fi
 
 if [ "$skip_stty" -eq 1 ]; then
     # Allow tests to provide a preconfigured file descriptor instead of
@@ -91,33 +99,68 @@ codes_to_string() {
     printf '%b' "$result"
 }
 
-first_codes=$(read_codes 1)
-if [ -z "$first_codes" ]; then
-    exit 1
+string_to_codes() {
+    if [ -z "$1" ]; then
+        printf '%s' ''
+        return
+    fi
+
+    printf '%s' "$1" | od -An -t u1 -v | tr -s '[:space:]' ' ' | {
+        read -r line || :
+        line=${line# }
+        line=${line% }
+        printf '%s' "$line"
+    }
+}
+
+pending=''
+if [ -n "$buffer_file" ] && [ -f "$buffer_file" ] && [ -s "$buffer_file" ]; then
+    pending=$(cat "$buffer_file")
+    rm -f "$buffer_file"
 fi
 
-first_char=$(codes_to_string "$first_codes")
+had_buffer=0
+rest=''
+if [ -n "$pending" ]; then
+    had_buffer=1
+    first_char=$(printf '%s' "$pending" | dd bs=1 count=1 2>/dev/null)
+    first_codes=$(string_to_codes "$first_char")
+    rest=$(printf '%s' "$pending" | dd bs=1 skip=1 2>/dev/null)
+else
+    first_codes=$(read_codes 1)
+    if [ -z "$first_codes" ]; then
+        exit 1
+    fi
+
+    first_char=$(codes_to_string "$first_codes")
+fi
 
 # Allow escape sequences to provide additional bytes.
-if [ "$skip_stty" -eq 0 ]; then
+if [ "$skip_stty" -eq 0 ] && [ "$had_buffer" -eq 0 ]; then
     if ! stty -icanon -echo min 0 time 1 <&3 2>/dev/null; then
         printf '%s\n' 'await-keypress: unable to update terminal timing' >&2
         exit 1
     fi
 fi
 
-rest=''
-while :; do
-    codes=$(read_codes 1)
-    [ -z "$codes" ] && break
-    char=$(codes_to_string "$codes")
-    rest=${rest}${char}
-done
+if [ "$had_buffer" -eq 0 ]; then
+    while :; do
+        codes=$(read_codes 1)
+        [ -z "$codes" ] && break
+        char=$(codes_to_string "$codes")
+        rest=${rest}${char}
+    done
+fi
 
 trap - EXIT
-restore
+if [ "$skip_stty" -eq 0 ] && [ "$keep_raw" -eq 1 ]; then
+    exec 3>&- 2>/dev/null || :
+else
+    restore
+fi
 
 # Translate byte sequences into human-friendly key names.
+buffer_leftover=''
 case "$first_codes" in
     9)
         printf '%s\n' 'tab'
@@ -133,20 +176,25 @@ case "$first_codes" in
             '')
                 printf '%s\n' 'escape'
                 ;;
-            '[A')
+            '[A'*)
                 printf '%s\n' 'up'
+                buffer_leftover=${rest#"[A"}
                 ;;
-            '[B')
+            '[B'*)
                 printf '%s\n' 'down'
+                buffer_leftover=${rest#"[B"}
                 ;;
-            '[C')
+            '[C'*)
                 printf '%s\n' 'right'
+                buffer_leftover=${rest#"[C"}
                 ;;
-            '[D')
+            '[D'*)
                 printf '%s\n' 'left'
+                buffer_leftover=${rest#"[D"}
                 ;;
-            '[3~')
+            '[3~'*)
                 printf '%s\n' 'delete'
+                buffer_leftover=${rest#"[3~"}
                 ;;
             *)
                 printf '%s\n' "escaped key: $rest"
@@ -157,3 +205,11 @@ case "$first_codes" in
         printf '%s\n' "${first_char}${rest}"
         ;;
 esac
+
+if [ -n "$buffer_file" ]; then
+    if [ -n "$buffer_leftover" ]; then
+        printf '%s' "$buffer_leftover" >"$buffer_file"
+    else
+        rm -f "$buffer_file"
+    fi
+fi

@@ -45,6 +45,30 @@ require fathom-terminal "The menu spell needs 'fathom-terminal' to measure the s
 require move-cursor "The menu spell needs 'move-cursor' to reposition the cursor." || exit 1
 require await-keypress "The menu spell needs 'await-keypress' to read input." || exit 1
 require cursor-blink "The menu spell needs 'cursor-blink' to restore the cursor." || exit 1
+require stty "The menu spell needs 'stty' to manage terminal modes." || exit 1
+
+menu_tty=${AWAIT_KEYPRESS_DEVICE:-/dev/tty}
+if [ ! -r "$menu_tty" ] || [ ! -w "$menu_tty" ]; then
+        printf '%s\n' "menu: unable to access controlling terminal '$menu_tty'" >&2
+        exit 1
+fi
+
+if ! menu_saved_tty_state=$(stty -g <"$menu_tty" 2>/dev/null); then
+        printf '%s\n' 'menu: unable to read terminal settings' >&2
+        exit 1
+fi
+
+terminal_restored=0
+restore_terminal() {
+        if [ "$terminal_restored" -eq 1 ]; then
+                return
+        fi
+        terminal_restored=1
+        stty "$menu_saved_tty_state" <"$menu_tty" >/dev/null 2>&1 || :
+}
+
+AWAIT_KEYPRESS_KEEP_RAW=1
+export AWAIT_KEYPRESS_KEEP_RAW
 
 # Load colour helpers when present; otherwise fall back to plain text.
 if [ -r "$script_dir/colors" ]; then
@@ -82,6 +106,7 @@ cleanup() {
                 return
         fi
         cleanup_called=1
+        restore_terminal
         cursor-blink on >/dev/null 2>&1 || :
         rm -f "$items_file" "$commands_file"
 }
