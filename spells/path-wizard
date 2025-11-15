@@ -207,11 +207,14 @@ if [ "$recursive" -eq 1 ]; then
                         set -- "$@" --platform "$platform"
                 fi
                 set -- "$@" "$action" "$subdir"
-                if ! "$@"; then
-                        result=$?
+
+                "$@"
+                status=$?
+                if [ "$status" -ne 0 ]; then
+                        if [ "$result" -eq 0 ]; then
+                                result=$status
+                        fi
                         if [ "$action" = "status" ]; then
-                                break
-                        else
                                 break
                         fi
                 fi
