@@ -37,7 +37,7 @@ if [ -r /etc/os-release ] && grep -q '^ID=nixos' /etc/os-release; then
 fi
 
 display_menu() {
-  update_wizardry="Update Wizardry%update-wizardry"
+  update_wizardry="Update wizardry%update-wizardry"
   update_all="Update all software%update-all -v"
   restart="Force restart%sudo shutdown -r now"
   exit="Exit%kill -2 $$"

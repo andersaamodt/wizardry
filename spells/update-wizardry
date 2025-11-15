@@ -17,7 +17,7 @@ require() {
   "$require_cmd" "$@"
 }
 
-if ! require git "Update Wizardry needs 'git' to pull the latest changes."; then
+if ! require git "Update wizardry needs 'git' to pull the latest changes."; then
   exit 1
 fi
 
