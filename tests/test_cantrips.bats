@@ -138,6 +138,45 @@ run_keypress $'a' 'a'
   run_keypress $'\e[Z' 'escaped key: [Z'
 }
 
+@test 'await-keypress splits consecutive escape sequences' {
+  local file buffer
+  file=$(mktemp "$BATS_TEST_TMPDIR/repeat.XXXXXX")
+  buffer="$BATS_TEST_TMPDIR/await-buffer"
+  printf '%b' $'\e[A\e[A\e[B' >"$file"
+
+  TMPDIR="$BATS_TEST_TMPDIR" \
+    AWAIT_KEYPRESS_DEVICE="$file" \
+    AWAIT_KEYPRESS_SKIP_STTY=1 \
+    AWAIT_KEYPRESS_BUFFER_FILE="$buffer" \
+    run_spell 'spells/cantrips/await-keypress'
+  assert_success
+  assert_output 'up'
+  run cat "$buffer"
+  assert_success
+  assert_output '27 91 65 27 91 66'
+
+  TMPDIR="$BATS_TEST_TMPDIR" \
+    AWAIT_KEYPRESS_DEVICE="$file" \
+    AWAIT_KEYPRESS_SKIP_STTY=1 \
+    AWAIT_KEYPRESS_BUFFER_FILE="$buffer" \
+    run_spell 'spells/cantrips/await-keypress'
+  assert_success
+  assert_output 'up'
+  run cat "$buffer"
+  assert_success
+  assert_output '27 91 66'
+
+  TMPDIR="$BATS_TEST_TMPDIR" \
+    AWAIT_KEYPRESS_DEVICE="$file" \
+    AWAIT_KEYPRESS_SKIP_STTY=1 \
+    AWAIT_KEYPRESS_BUFFER_FILE="$buffer" \
+    run_spell 'spells/cantrips/await-keypress'
+  assert_success
+  assert_output 'down'
+  run test ! -e "$buffer"
+  assert_success
+}
+
 @test 'cd cantrip memorises spell optionally' {
   cd_home="$BATS_TEST_TMPDIR/cd"
   mkdir -p "$cd_home"
