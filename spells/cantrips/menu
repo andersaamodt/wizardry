@@ -289,14 +289,12 @@ case "$menu_row" in
                 ;;
 esac
 
-# When a heading is printed above the menu, the cursor ends up two rows lower
-# than where we want to anchor the first menu item (one for the heading's
-# newline and another for the blank line that separates the reserved padding
-# from the heading). Move the anchor up by an extra line so the first option
-# appears directly beneath the heading and the menu stays clear of the
-# terminal's bottom row.
+# When a heading is printed above the menu the cursor ends up one row lower
+# than where we want to anchor the first menu item. Pull the anchor up by a
+# single row so the first option appears directly beneath the heading while we
+# continue to keep the menu clear of the terminal's bottom row.
 if [ -n "$description" ]; then
-        menu_row=$((menu_row - 2))
+        menu_row=$((menu_row - 1))
 fi
 
 terminal_height=$(fathom-terminal -h)
