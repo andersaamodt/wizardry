@@ -37,10 +37,6 @@
 * NixOS
 * Not yet supported: Windows, Android
 
-### Spells that are not POSIX-compliant
-
-* None at the moment – every spell currently ships with a `#!/bin/sh` shebang.
-
 ## Testing
 
 Wizardry ships a shell-based test suite in `tests/` that exercises every spell and verifies coverage.
