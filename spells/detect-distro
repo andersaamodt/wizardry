@@ -1,44 +1,85 @@
 #!/usr/bin/env sh
 
-# Detects what OS you are running and outputs a short string to identify that OS.
-# Also saves the result in the $DISTRO environment variable.
-# -v for more verbose output
+# Identify the current operating system and print a short identifier such as
+# "debian", "mac", or "nixos". When invoked with -v the script emits a more
+# descriptive message while still exporting $DISTRO for callers.
 
-source colors
-source say
+set -eu
 
-# Read arguments
-while getopts v flag
+verbose=0
+while getopts v opt
 do
-    case "${flag}" in
-        v) VERBOSE=true
-        ;;
-    esac
+        case $opt in
+        v)
+                verbose=1
+                ;;
+        *)
+                printf '%s\n' 'Usage: detect-distro [-v]' >&2
+                exit 1
+                ;;
+        esac
 done
+shift $((OPTIND - 1))
 
-# Output welcome message
-if [ $VERBOSE ]; then say "Detecting which Linux distribution or other operating system you are using..."; fi
- 
-# Check for each known operating system one-by-one
-if [ -f "/etc/debian_version" ]; then
-	DISTRO="debian"
-	if [ $VERBOSE ]; then say "${GREEN}Debian${RESET}, Ubuntu, or Raspbian OS detected."; fi 
-elif [ -f "/etc/arch-release" ]; then
-	DISTRO="arch"
-	if [ $VERBOSE ]; then say "${GREEN}Arch or Manjaro-based${RESET} OS detected."; fi
-elif [ -f "/etc/fedora-release" ]; then
-	DISTRO="fedora"
-	if [ $VERBOSE ]; then say "${GREEN}Fedora${RESET} detected as the Operating System"; fi
-elif [ $(uname | grep -c "Darwin") -eq 1 ]; then
-	DISTRO="mac"
-	if [ $VERBOSE ]; then say "${GREEN}MacOS${RESET} detected."; fi
-else
-	# Failed to detect OS, so complain and exit
-	say unknown
-	exit 1
+if [ "$#" -ne 0 ]; then
+        printf '%s\n' 'Usage: detect-distro [-v]' >&2
+        exit 1
 fi
-	
-# Output the short string for the detected OS
-if [ ! $VERBOSE ]; then
-	say $DISTRO;
+
+detect_distro() {
+        if [ -f /etc/NIXOS ] || grep -i 'ID=nixos' /etc/os-release >/dev/null 2>&1; then
+                printf '%s' 'nixos'
+                return 0
+        fi
+        if [ -f /etc/debian_version ]; then
+                printf '%s' 'debian'
+                return 0
+        fi
+        if [ -f /etc/arch-release ]; then
+                printf '%s' 'arch'
+                return 0
+        fi
+        if [ -f /etc/fedora-release ]; then
+                printf '%s' 'fedora'
+                return 0
+        fi
+        if uname >/dev/null 2>&1; then
+                case $(uname) in
+                Darwin)
+                        printf '%s' 'mac'
+                        return 0
+                        ;;
+                esac
+        fi
+        return 1
+}
+
+if distro=$(detect_distro); then
+        DISTRO=$distro
+        export DISTRO
+else
+        printf '%s\n' 'unknown'
+        exit 1
+fi
+
+if [ "$verbose" -eq 1 ]; then
+        case $DISTRO in
+        debian)
+                printf '%s\n' 'Debian, Ubuntu, or Raspbian OS detected.'
+                ;;
+        arch)
+                printf '%s\n' 'Arch or Manjaro-based OS detected.'
+                ;;
+        fedora)
+                printf '%s\n' 'Fedora detected as the operating system.'
+                ;;
+        mac)
+                printf '%s\n' 'MacOS detected.'
+                ;;
+        nixos)
+                printf '%s\n' 'NixOS detected.'
+                ;;
+        esac
+else
+        printf '%s\n' "$DISTRO"
 fi
