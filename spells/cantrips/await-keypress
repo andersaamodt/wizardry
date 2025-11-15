@@ -99,40 +99,24 @@ codes_to_string() {
     printf '%b' "$result"
 }
 
-string_to_codes() {
-    if [ -z "$1" ]; then
-        printf '%s' ''
-        return
-    fi
-
-    printf '%s' "$1" | od -An -t u1 -v | tr -s '[:space:]' ' ' | {
-        read -r line || :
-        line=${line# }
-        line=${line% }
-        printf '%s' "$line"
-    }
-}
-
-pending=''
+buffer_codes=''
 if [ -n "$buffer_file" ] && [ -f "$buffer_file" ] && [ -s "$buffer_file" ]; then
-    pending=$(cat "$buffer_file")
+    buffer_codes=$(cat "$buffer_file")
     rm -f "$buffer_file"
 fi
 
+codes=''
 had_buffer=0
-rest=''
-if [ -n "$pending" ]; then
+if [ -n "$buffer_codes" ]; then
     had_buffer=1
-    first_char=$(printf '%s' "$pending" | dd bs=1 count=1 2>/dev/null)
-    first_codes=$(string_to_codes "$first_char")
-    rest=$(printf '%s' "$pending" | dd bs=1 skip=1 2>/dev/null)
+    codes=$buffer_codes
 else
     first_codes=$(read_codes 1)
     if [ -z "$first_codes" ]; then
         exit 1
     fi
 
-    first_char=$(codes_to_string "$first_codes")
+    codes=$first_codes
 fi
 
 # Allow escape sequences to provide additional bytes.
@@ -145,10 +129,13 @@ fi
 
 if [ "$had_buffer" -eq 0 ]; then
     while :; do
-        codes=$(read_codes 1)
-        [ -z "$codes" ] && break
-        char=$(codes_to_string "$codes")
-        rest=${rest}${char}
+        extra=$(read_codes 1)
+        [ -z "$extra" ] && break
+        if [ -n "$codes" ]; then
+            codes="$codes $extra"
+        else
+            codes=$extra
+        fi
     done
 fi
 
@@ -159,57 +146,125 @@ else
     restore
 fi
 
-# Translate byte sequences into human-friendly key names.
-buffer_leftover=''
-case "$first_codes" in
+codes=${codes# }
+codes=${codes% }
+if [ -z "$codes" ]; then
+    printf '\n'
+    exit 0
+fi
+
+set -- $codes
+if [ "$#" -eq 0 ]; then
+    printf '\n'
+    exit 0
+fi
+
+first=$1
+shift
+leftover="$*"
+output=''
+buffer_leftover_codes=''
+
+case "$first" in
     9)
-        printf '%s\n' 'tab'
+        output='tab'
         ;;
     10|13)
-        printf '%s\n' 'enter'
+        output='enter'
         ;;
     8|127)
-        printf '%s\n' 'backspace'
+        output='backspace'
         ;;
     27)
-        case "$rest" in
-            '')
-                printf '%s\n' 'escape'
-                ;;
-            '[A'*)
-                printf '%s\n' 'up'
-                buffer_leftover=${rest#"[A"}
-                ;;
-            '[B'*)
-                printf '%s\n' 'down'
-                buffer_leftover=${rest#"[B"}
-                ;;
-            '[C'*)
-                printf '%s\n' 'right'
-                buffer_leftover=${rest#"[C"}
-                ;;
-            '[D'*)
-                printf '%s\n' 'left'
-                buffer_leftover=${rest#"[D"}
-                ;;
-            '[3~'*)
-                printf '%s\n' 'delete'
-                buffer_leftover=${rest#"[3~"}
-                ;;
-            *)
-                printf '%s\n' "escaped key: $rest"
-                ;;
-        esac
+        escape_rest_codes="$leftover"
+        consumed="$first"
+        partial=0
+        if [ "$#" -eq 0 ]; then
+            output='escape'
+            buffer_leftover_codes=''
+        else
+            second=$1
+            shift
+            consumed="$consumed $second"
+            case "$second" in
+                91)
+                    if [ "$#" -eq 0 ]; then
+                        partial=1
+                    else
+                        third=$1
+                        shift
+                        consumed="$consumed $third"
+                        case "$third" in
+                            65)
+                                output='up'
+                                buffer_leftover_codes="$*"
+                                ;;
+                            66)
+                                output='down'
+                                buffer_leftover_codes="$*"
+                                ;;
+                            67)
+                                output='right'
+                                buffer_leftover_codes="$*"
+                                ;;
+                            68)
+                                output='left'
+                                buffer_leftover_codes="$*"
+                                ;;
+                            51)
+                                if [ "$#" -eq 0 ]; then
+                                    partial=1
+                                else
+                                    fourth=$1
+                                    shift
+                                    consumed="$consumed $fourth"
+                                    if [ "$fourth" -eq 126 ]; then
+                                        output='delete'
+                                        buffer_leftover_codes="$*"
+                                    else
+                                        output="escaped key: $(codes_to_string "$escape_rest_codes")"
+                                        buffer_leftover_codes=''
+                                    fi
+                                fi
+                                ;;
+                            *)
+                                output="escaped key: $(codes_to_string "$escape_rest_codes")"
+                                buffer_leftover_codes=''
+                                ;;
+                        esac
+                    fi
+                    ;;
+                *)
+                    output="escaped key: $(codes_to_string "$escape_rest_codes")"
+                    buffer_leftover_codes=''
+                    ;;
+            esac
+        fi
+
+        if [ "$partial" -eq 1 ]; then
+            output=''
+            buffer_leftover_codes="$consumed"
+        fi
         ;;
     *)
-        printf '%s\n' "${first_char}${rest}"
+        remainder=$first
+        if [ -n "$leftover" ]; then
+            remainder="$remainder $leftover"
+        fi
+        output=$(codes_to_string "$remainder")
+        buffer_leftover_codes=''
         ;;
 esac
 
+buffer_leftover_codes=${buffer_leftover_codes# }
+buffer_leftover_codes=${buffer_leftover_codes% }
+
 if [ -n "$buffer_file" ]; then
-    if [ -n "$buffer_leftover" ]; then
-        printf '%s' "$buffer_leftover" >"$buffer_file"
+    if [ -n "$buffer_leftover_codes" ]; then
+        printf '%s\n' "$buffer_leftover_codes" >"$buffer_file"
     else
         rm -f "$buffer_file"
     fi
 fi
+
+printf '%s\n' "$output"
