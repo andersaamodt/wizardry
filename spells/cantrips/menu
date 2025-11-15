@@ -127,6 +127,9 @@ last_max_command_length=0
 dimensions_changed=1
 
 update_dimensions() {
+        # Measure the terminal so we know how much horizontal space each menu
+        # row can safely use. We leave room for the two-character prefix ("> ")
+        # and at least one separating space before any command preview.
         window_width=$(fathom-terminal -w)
         max_command_length=$((window_width - max_name_length - 3))
         if [ "$max_command_length" -lt 0 ]; then
@@ -143,6 +146,9 @@ update_dimensions() {
 }
 
 render_row() {
+        # Render a single menu row either in its normal state or highlighted
+        # for the currently selected item. Each pass clears the existing row so
+        # repeated renders replace text in place instead of scrolling.
         row_index=$1
         highlight=$2
 
@@ -194,6 +200,9 @@ render_row() {
 }
 
 position_cursor_below_menu() {
+        # Park the cursor just beneath the menu so that any subsequent output
+        # (selected command logs, prompts, etc.) begins below the reserved
+        # region. This keeps the menu intact while commands run.
         below_row=$((menu_row + menu_length))
         if [ "$terminal_height" -gt 0 ] && [ "$below_row" -gt "$terminal_height" ]; then
                 below_row=$terminal_height
@@ -205,6 +214,8 @@ position_cursor_below_menu() {
 }
 
 draw_menu() {
+        # Redraw the entire menu from scratch. This runs the first time we
+        # display the menu or whenever the terminal size changes.
         if move-cursor "$menu_column" "$menu_row"; then
                 printf '\033[J'
         fi
@@ -228,6 +239,8 @@ draw_menu() {
 }
 
 refresh_selection() {
+        # Update only the rows that changed. If the dimensions changed or we
+        # have not drawn the menu yet, fall back to a full redraw.
         if [ "$menu_drawn" -eq 0 ] || [ "$dimensions_changed" -eq 1 ]; then
                 draw_menu
                 return
@@ -244,6 +257,8 @@ refresh_selection() {
 }
 
 execute_selection() {
+        # Run the command paired with the currently highlighted menu item. If
+        # there is no command we simply exit after cleaning up.
         command=$(sed -n "${selected}p" "$commands_file")
         if [ -n "$command" ]; then
                 printf '\n'
@@ -260,6 +275,7 @@ execute_selection() {
 cursor-blink off
 
 if [ -n "$description" ]; then
+        # Show the caller-provided heading so the menu has context for the user.
         printf '%s\n' "$description"
 fi
 
@@ -273,6 +289,14 @@ case "$menu_row" in
                 ;;
 esac
 
+# When a heading is printed above the menu, the cursor ends up one row lower
+# than where we want to anchor the first menu item. Move the anchor up a line
+# so the first option appears immediately under the heading and the menu stays
+# clear of the terminal's bottom row.
+if [ -n "$description" ]; then
+        menu_row=$((menu_row - 1))
+fi
+
 terminal_height=$(fathom-terminal -h)
 case "$terminal_height" in
         ''|*[!0-9]*)
@@ -283,6 +307,8 @@ case "$terminal_height" in
                 ;;
 esac
 
+# Reserve vertical space before drawing anything so that the menu can repaint
+# in place without pushing the terminal history around as selections change.
 padding=$menu_length
 while [ "$padding" -gt 0 ]; do
         printf '\n'
