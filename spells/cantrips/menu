@@ -81,6 +81,7 @@ else
         RESET=''
         CYAN=''
         GREY=''
+        WHITE=''
 fi
 
 if [ "$#" -lt 2 ]; then
@@ -201,7 +202,7 @@ render_row() {
                         fi
                 else
                         if [ "$max_command_length" -gt 0 ]; then
-                                printf '  %-*s %-*s' "$max_name_length" "$label" "$max_command_length" "$truncated_command"
+                                printf '  %-*s %b%-*s%b' "$max_name_length" "$label" "$GREY" "$max_command_length" "$truncated_command" "$RESET"
                         else
                                 printf '  %-*s' "$max_name_length" "$label"
                         fi
@@ -216,7 +217,7 @@ render_row() {
                         fi
                 else
                         if [ "$max_command_length" -gt 0 ]; then
-                                printf '  %-*s %-*s\n' "$max_name_length" "$label" "$max_command_length" "$truncated_command"
+                                printf '  %-*s %b%-*s%b\n' "$max_name_length" "$label" "$GREY" "$max_command_length" "$truncated_command" "$RESET"
                         else
                                 printf '  %-*s\n' "$max_name_length" "$label"
                         fi
