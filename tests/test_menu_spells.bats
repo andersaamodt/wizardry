@@ -249,7 +249,7 @@ assert_move_cursor_log() {
 
   local menu_length=2
   local terminal_height=24
-  local expected_row=$((fake_y - 1))
+  local expected_row=$fake_y
   local max_row=$((terminal_height - menu_length))
   if [ "$max_row" -lt 1 ]; then
     max_row=1
@@ -287,7 +287,7 @@ assert_move_cursor_log() {
 
   local menu_length=2
   local terminal_height=24
-  local expected_row=$((alternate_fake_y - 1))
+  local expected_row=$alternate_fake_y
   local max_row=$((terminal_height - menu_length))
   if [ "$max_row" -lt 1 ]; then
     max_row=1
@@ -325,7 +325,7 @@ assert_move_cursor_log() {
 
   local menu_length=2
   local terminal_height=24
-  local expected_row=$((fake_y - 1))
+  local expected_row=$fake_y
   local max_row=$((terminal_height - menu_length))
   if [ "$max_row" -lt 1 ]; then
     max_row=1
@@ -365,7 +365,7 @@ assert_move_cursor_log() {
 
   local menu_length=3
   local terminal_height=24
-  local expected_row=$((fake_y_near_bottom - 1))
+  local expected_row=$fake_y_near_bottom
   local max_row=$((terminal_height - menu_length))
   if [ "$max_row" -lt 1 ]; then
     max_row=1

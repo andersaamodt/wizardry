@@ -289,12 +289,10 @@ case "$menu_row" in
                 ;;
 esac
 
-# When a heading precedes the menu we want the first option to appear directly
-# beneath that title. The cursor is already one row lower after the newline, so
-# shift the anchor back up when possible before we begin redrawing the menu.
-if [ -n "$description" ] && [ "$menu_row" -gt 1 ]; then
-        menu_row=$((menu_row - 1))
-fi
+# At this stage the cursor sits on the row immediately following the menu
+# heading (or at the top of the screen when no heading was provided). That row
+# becomes the anchor for the first menu option so the items render directly
+# beneath the title.
 
 terminal_height=$(fathom-terminal -h)
 case "$terminal_height" in
