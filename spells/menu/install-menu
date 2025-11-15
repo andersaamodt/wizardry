@@ -84,7 +84,24 @@ while :; do
 
     set -- "$@" "Exit%kill -2 $$"
 
-    if ! menu "Install Menu:" "$@"; then
-        exit 1
+    selection_file=$(mktemp "${TMPDIR:-/tmp}/wizardry-install-menu.XXXXXX") || exit 1
+    MENU_RESULT_FILE="$selection_file"
+    export MENU_RESULT_FILE
+    menu "Install Menu:" "$@"
+    status=$?
+    unset MENU_RESULT_FILE
+
+    selection=""
+    if [ -f "$selection_file" ]; then
+        selection=$(cat "$selection_file")
+    fi
+    rm -f "$selection_file"
+
+    if [ "$selection" = "escape" ]; then
+        break
+    fi
+
+    if [ "$status" -ne 0 ] && [ -z "$selection" ]; then
+        exit "$status"
     fi
 done

@@ -61,5 +61,24 @@ handle_ctrl_c() {
 handle_ctrl_c
 
 while true; do
+  selection_file=$(mktemp "${TMPDIR:-/tmp}/wizardry-main-menu.XXXXXX") || exit 1
+  MENU_RESULT_FILE="$selection_file"
+  export MENU_RESULT_FILE
   display_menu
+  status=$?
+  unset MENU_RESULT_FILE
+
+  selection=""
+  if [ -f "$selection_file" ]; then
+    selection=$(cat "$selection_file")
+  fi
+  rm -f "$selection_file"
+
+  if [ "$selection" = "escape" ]; then
+    break
+  fi
+
+  if [ "$status" -ne 0 ] && [ -z "$selection" ]; then
+    exit "$status"
+  fi
 done

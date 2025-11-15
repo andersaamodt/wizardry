@@ -114,6 +114,14 @@ cleanup() {
 trap 'cleanup; exit 1' INT TERM
 trap 'cleanup' EXIT
 
+record_selection() {
+        if [ -z "${MENU_RESULT_FILE-}" ]; then
+                return
+        fi
+
+        printf '%s\n' "$1" >"$MENU_RESULT_FILE" 2>/dev/null || :
+}
+
 max_name_length=0
 menu_length=0
 
@@ -287,11 +295,13 @@ execute_selection() {
         # there is no command we simply exit after cleaning up.
         command=$(sed -n "${selected}p" "$commands_file")
         if [ -n "$command" ]; then
+                record_selection command
                 cleanup
                 trap - EXIT INT TERM
                 # shellcheck disable=SC2039,SC3045 # POSIX sh allows eval
                 eval "$command"
         else
+                record_selection command
                 cleanup
                 trap - EXIT INT TERM
         fi
@@ -375,6 +385,7 @@ do
                 exit 0
                 ;;
         escape|ESC|esc)
+                record_selection escape
                 cleanup
                 trap - EXIT INT TERM
                 exit 0
