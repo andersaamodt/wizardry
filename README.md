@@ -34,10 +34,14 @@
 
 ## Target platforms:
 
-* Standard Linux (e.g., Debian, Ubuntu, Arch)
-* MacOS
-* NixOS
-* Not yet supported: Windows, Android
+| OS                        | Shortname | Status                              |
+| ------------------------- | --------- | ----------------------------------- |
+| **Debian (and Ubuntu)**   | `debian`  | 🟢 **`install` + `menu` work well** |
+| **NixOS**                 | `nixos`   | 🟢 **`menu` works well**            |
+| **MacOS**                 | `macos`   | 🟡 **support planned**              |
+| **Arch**                  | `arch`    | 🟠 **support planned later**        |
+| **Android (Linux-based)** | —         | ✘ **no support planned**            |
+| **Windows**               | —         | ✘ **no support planned**            |
 
 ## Testing
 
