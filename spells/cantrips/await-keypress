@@ -25,6 +25,7 @@ fi
 
 TTY_DEVICE=${AWAIT_KEYPRESS_DEVICE:-/dev/tty}
 skip_stty=${AWAIT_KEYPRESS_SKIP_STTY:-0}
+keep_raw=${AWAIT_KEYPRESS_KEEP_RAW:-0}
 
 if [ "$skip_stty" -eq 1 ]; then
     # Allow tests to provide a preconfigured file descriptor instead of
@@ -115,7 +116,11 @@ while :; do
 done
 
 trap - EXIT
-restore
+if [ "$skip_stty" -eq 0 ] && [ "$keep_raw" -eq 1 ]; then
+    exec 3>&- 2>/dev/null || :
+else
+    restore
+fi
 
 # Translate byte sequences into human-friendly key names.
 case "$first_codes" in
