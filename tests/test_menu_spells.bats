@@ -192,7 +192,16 @@ STUB
   if [ "${#move_calls[@]}" -lt 1 ]; then
     fail 'move-cursor was not invoked'
   fi
-  local expected_row=$((fake_y - 2))
+  local menu_length=2
+  local terminal_height=24
+  local expected_row=$fake_y
+  local max_row=$((terminal_height - menu_length + 1))
+  if [ "$max_row" -lt 1 ]; then
+    max_row=1
+  fi
+  if [ "$expected_row" -gt "$max_row" ]; then
+    expected_row=$max_row
+  fi
   if [ "$expected_row" -lt 1 ]; then
     expected_row=1
   fi
@@ -233,7 +242,16 @@ STUB
   if [ "${#move_calls[@]}" -lt 1 ]; then
     fail 'move-cursor was not invoked'
   fi
-  local expected_row=$((alternate_fake_y - 2))
+  local menu_length=2
+  local terminal_height=24
+  local expected_row=$alternate_fake_y
+  local max_row=$((terminal_height - menu_length + 1))
+  if [ "$max_row" -lt 1 ]; then
+    max_row=1
+  fi
+  if [ "$expected_row" -gt "$max_row" ]; then
+    expected_row=$max_row
+  fi
   if [ "$expected_row" -lt 1 ]; then
     expected_row=1
   fi

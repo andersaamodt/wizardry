@@ -245,11 +245,35 @@ case "$menu_row" in
                 ;;
 esac
 
-anchor_row=$((menu_row - menu_length))
-if [ "$anchor_row" -lt 1 ]; then
-        anchor_row=1
+terminal_height=$(fathom-terminal -h)
+case "$terminal_height" in
+        ''|*[!0-9]*)
+                terminal_height=0
+                ;;
+        0)
+                terminal_height=0
+                ;;
+esac
+
+padding=$menu_length
+while [ "$padding" -gt 0 ]; do
+        printf '\n'
+        padding=$((padding - 1))
+done
+
+if [ "$terminal_height" -gt 0 ]; then
+        max_row=$((terminal_height - menu_length + 1))
+        if [ "$max_row" -lt 1 ]; then
+                max_row=1
+        fi
+        if [ "$menu_row" -gt "$max_row" ]; then
+                menu_row=$max_row
+        fi
 fi
-menu_row=$anchor_row
+
+if [ "$menu_row" -lt 1 ]; then
+        menu_row=1
+fi
 
 update_dimensions
 draw_menu
