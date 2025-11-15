@@ -1,20 +1,41 @@
 #!/bin/sh
 
-if ! command -v path-wizard > /dev/null 2>&1; then
-	read -p "ao-mud is not installed, install now? [y/n]: " choice
-	
-	if [ "$choice" = "y" ]; then
-		SCRIPT_DIR=$( cd ${0%/*} && pwd -P )
-		$SCRIPT_DIR/spells/path-wizard add $SCRIPT_DIR/spells
-		$SCRIPT_DIR/spells/path-wizard add $SCRIPT_DIR/spells/cantrips
-		$SCRIPT_DIR/spells/path-wizard add $SCRIPT_DIR/spells/menu
-		$SCRIPT_DIR/spells/path-wizard add $SCRIPT_DIR/spells/menu/bitcoin
-		echo "Your spellbook has been activated, please open a fresh terminal now."
-		exit 0
-	else
-		echo "Ok, well the mud won't work until you install it by adding the spells directory to your PATH."
-		exit 1
-	fi
+# Resolve the directory containing this installer without relying on
+# non-POSIX utilities so the script works on Debian's /bin/sh (dash).
+case $0 in
+        */*)
+                SCRIPT_DIR=${0%/*}
+                ;;
+        *)
+                SCRIPT_DIR=.
+                ;;
+esac
+
+# Disable CDPATH so that "cd" behaves predictably even if the user has a
+# custom search path configured in their environment.
+unset CDPATH
+
+if ! command -v path-wizard >/dev/null 2>&1; then
+        printf '%s' "ao-mud is not installed, install now? [y/n]: "
+        IFS= read -r choice || choice=
+
+        case $choice in
+                y|Y)
+                        # Convert SCRIPT_DIR to an absolute path before
+                        # invoking the path-wizard helper.
+                        ABS_DIR=$(cd "$SCRIPT_DIR" && pwd -P) || exit 1
+                        "$ABS_DIR"/spells/path-wizard add "$ABS_DIR"/spells || exit 1
+                        "$ABS_DIR"/spells/path-wizard add "$ABS_DIR"/spells/cantrips || exit 1
+                        "$ABS_DIR"/spells/path-wizard add "$ABS_DIR"/spells/menu || exit 1
+                        "$ABS_DIR"/spells/path-wizard add "$ABS_DIR"/spells/menu/bitcoin || exit 1
+                        printf '%s\n' "Your spellbook has been activated, please open a fresh terminal now."
+                        exit 0
+                        ;;
+                *)
+                        printf '%s\n' "Ok, well the mud won't work until you install it by adding the spells directory to your PATH."
+                        exit 1
+                        ;;
+        esac
 else
-	echo "ao-mud is already installed. Run it with 'menu' or 'mud'."
+        printf '%s\n' "ao-mud is already installed. Run it with 'menu' or 'mud'."
 fi
