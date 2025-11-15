@@ -3,15 +3,92 @@ set -eu
 
 script_dir=$(cd "$(dirname "$0")" && pwd)
 
+if [ -f "$script_dir/cantrips/colors" ]; then
+  # shellcheck disable=SC1090
+  . "$script_dir/cantrips/colors"
+else
+  GREY=''
+  RESET=''
+fi
+
 print_step() {
   printf '%s\n' "$1"
+}
+
+format_command() {
+  if [ "$#" -eq 0 ]; then
+    return 0
+  fi
+
+  printf '%s' "$1"
+  shift
+  for arg do
+    printf ' %s' "$arg"
+  done
+}
+
+print_command() {
+  printf '%b  $ %s%b\n' "${GREY:-}" "$(format_command "$@")" "${RESET:-}"
 }
 
 run_quiet() {
   if [ "$#" -eq 0 ]; then
     return 0
   fi
+  print_command "$@"
   "$@" >/dev/null 2>&1
+}
+
+progress_filter() {
+  last_progress=''
+  while IFS= read -r line || [ -n "$line" ]; do
+    case $line in
+      Progress:*)
+        last_progress=$line
+        printf '\r%s' "$line"
+        ;;
+      *)
+        if [ -n "$last_progress" ]; then
+          printf '\r%s\n' "$last_progress"
+          last_progress=''
+        fi
+        if [ -n "$line" ]; then
+          printf '%s\n' "$line"
+        fi
+        ;;
+    esac
+  done
+
+  if [ -n "$last_progress" ]; then
+    printf '\r%s\n' "$last_progress"
+  fi
+}
+
+run_with_progress() {
+  if [ "$#" -eq 0 ]; then
+    return 0
+  fi
+
+  print_command "$@"
+
+  progress_tmp=$(mktemp)
+  (
+    set +e
+    "$@" 2>&1
+    cmd_status=$?
+    set -e
+    printf '%s\n' "$cmd_status" >"$progress_tmp"
+    exit 0
+  ) | tr '\r' '\n' | progress_filter
+
+  status=$(cat "$progress_tmp" 2>/dev/null || printf '1\n')
+  rm -f "$progress_tmp"
+
+  case ${status:-} in
+    '' ) status=1 ;;
+  esac
+
+  return "$status"
 }
 
 assume_yes() {
@@ -73,9 +150,9 @@ case $distro in
     print_step '• Refreshing apt package lists'
     run_quiet sudo apt-get update
     print_step '• Installing upgrades'
-    run_quiet sudo apt-get -y full-upgrade
+    run_with_progress sudo apt-get -o Dpkg::Progress-Fancy=1 -o Dpkg::Use-Pty=0 -y full-upgrade
     print_step '• Removing unused packages'
-    run_quiet sudo apt-get -y autoremove
+    run_with_progress sudo apt-get -o Dpkg::Progress-Fancy=1 -o Dpkg::Use-Pty=0 -y autoremove
     ;;
   arch)
     print_step '• Synchronising pacman packages'
@@ -84,6 +161,16 @@ case $distro in
     run_quiet pamac update --no-confirm
     print_step '• Rebuilding Pamac AUR packages'
     run_quiet pamac build --no-confirm
+    ;;
+  nixos)
+    print_step '• Refreshing system channels'
+    run_quiet sudo nix-channel --update
+    print_step '• Rebuilding system configuration'
+    run_quiet sudo nixos-rebuild switch --upgrade
+    print_step '• Refreshing user channels'
+    run_quiet nix-channel --update
+    print_step '• Upgrading user packages'
+    run_quiet nix-env -u --always
     ;;
   *)
     printf 'Unsupported platform: %s\n' "$distro" >&2
