@@ -14,6 +14,15 @@ fi
 x=$1
 y=$2
 
+supports_cursor_positioning() {
+    case ${TERM-} in
+        ''|dumb|unknown)
+            return 1
+            ;;
+    esac
+    return 0
+}
+
 # Validate that both coordinates are purely numeric.
 case "$x" in
     *[!0-9]*)
@@ -35,6 +44,12 @@ esac
 if [ "$x" -eq 0 ] || [ "$y" -eq 0 ]; then
     printf '%s\n' 'move-cursor: coordinates must be positive integers' >&2
     exit 1
+fi
+
+if ! supports_cursor_positioning; then
+    # Skip emitting escape sequences when the terminal refuses them so menu
+    # helpers degrade gracefully.
+    exit 0
 fi
 
 # Emit the escape sequence that repositions the cursor.

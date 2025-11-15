@@ -153,6 +153,12 @@ case $RC_FILE in
                 ;;
 esac
 
+# Require explicit confirmation before editing configuration.nix on NixOS.
+FORCE_PROMPT=0
+if [ "$FORMAT" = "nix" ]; then
+        FORCE_PROMPT=1
+fi
+
 # Collect the directories whose PATH exports are absent from the chosen start-up
 # file so we can repair them in one pass.
 set --
@@ -182,7 +188,12 @@ do
         printf '  %s\n' "$dir"
 done
 
-if [ "${WIZARDRY_INSTALL_ASSUME_YES-}" = "1" ]; then
+if [ "$FORMAT" = "nix" ]; then
+        printf '\n%s\n' "NixOS detected: $(basename "$RC_FILE") will be updated and backed up before editing."
+fi
+
+choice=''
+if [ "$FORCE_PROMPT" -eq 0 ] && [ "${WIZARDRY_INSTALL_ASSUME_YES-}" = "1" ]; then
         choice=y
 else
         printf '%s' "Proceed with installation? [y/n]: "

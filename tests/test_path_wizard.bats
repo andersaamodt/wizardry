@@ -173,10 +173,18 @@ teardown() {
   assert_success
   assert_output --partial 'removed from your PATH.'
   assert_output --partial 'Rebuild your Nix environment'
+  assert_error --partial 'backed up'
   run grep -F "\"$target_dir\"" "$rc_file"
   assert_failure
   run grep -F '# wizardry PATH begin' "$rc_file"
   assert_failure
+
+  backup=$(ls "$rc_file".wizardry.* 2>/dev/null | head -n 1)
+  [ -n "$backup" ]
+
+  run cat "$backup"
+  assert_success
+  assert_output --partial 'wizardry PATH begin'
 
   run_spell 'spells/path-wizard' '--rc-file' "$rc_file" '--format' nix 'status' "$target_dir"
   assert_failure

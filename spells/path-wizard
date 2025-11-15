@@ -225,6 +225,8 @@ shell|nix) : ;;
         ;;
 esac
 
+nix_backup_created=0
+
 pattern=$(printf 'export PATH=%s:\\$PATH' "$directory")
 
 ensure_rc_directory() {
@@ -232,6 +234,35 @@ ensure_rc_directory() {
         if [ "$rc_dir" != "$rc_file" ] && [ ! -d "$rc_dir" ]; then
                 mkdir -p "$rc_dir"
         fi
+}
+
+backup_rc_file_once() {
+        if [ "$format" != "nix" ]; then
+                return 0
+        fi
+        if [ "$nix_backup_created" -eq 1 ]; then
+                return 0
+        fi
+        if [ ! -f "$rc_file" ]; then
+                return 0
+        fi
+
+        timestamp=$(date +%Y%m%d%H%M%S 2>/dev/null || date +%s 2>/dev/null || printf '%s' "$$")
+        suffix=$timestamp
+        backup="$rc_file.wizardry.$suffix"
+        while [ -e "$backup" ]; do
+                suffix=${suffix}x
+                backup="$rc_file.wizardry.$suffix"
+        done
+
+        if ! cp "$rc_file" "$backup"; then
+                printf '%s\n' "path-wizard: unable to back up '$rc_file'." >&2
+                exit 1
+        fi
+
+        printf '%s\n' "path-wizard: backed up '$rc_file' to '$backup'." >&2
+        nix_backup_created=1
+        return 0
 }
 
 shell_add() {
@@ -302,6 +333,7 @@ extract_nix_paths() {
 }
 
 remove_nix_block() {
+        backup_rc_file_once
         tmp_file="$rc_file.wizardry.$$"
         awk '
         /# wizardry PATH begin/ {skip=1; next}
@@ -379,6 +411,7 @@ generate_nix_block_file() {
 
 write_nix_paths() {
         ensure_rc_directory
+        backup_rc_file_once
         if [ "$#" -eq 0 ]; then
                 if [ -f "$rc_file" ] && grep -Fq '# wizardry PATH begin' "$rc_file" 2>/dev/null; then
                         remove_nix_block

@@ -16,7 +16,10 @@
   - [x] `spells/cantrips/fathom-cursor`: gate `dd`/`stty` usage, allow scripted input, and clarify failure messages.
   - [x] `spells/cantrips/fathom-terminal`: require `tput` before querying terminfo values.
   - [x] `spells/menu/install-menu`: drop the `awk` dependency and ensure the `menu` command is checked before use.
-- [ ] Ensure the helpers fall back gracefully when optional capabilities are missing (e.g., disable colours if the terminal lacks ANSI support).
+- [x] Ensure the helpers fall back gracefully when optional capabilities are missing (e.g., disable colours if the terminal lacks ANSI support).
+  - [x] `spells/cantrips/colors`: detect `NO_COLOR`, dumb terminals, or zero-colour terminfo entries and blank out the palette.
+  - [x] `spells/cantrips/cursor-blink`: skip emitting control sequences when the terminal lacks cursor controls.
+  - [x] `spells/cantrips/move-cursor`: gracefully no-op when cursor positioning is unavailable.
 
 ## Installation and discovery
 - [ ] Define a standard `--install` contract for spells: document what the flag does, how it edits shell rc files, and how scripts should behave when invoked non-interactively.

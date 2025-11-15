@@ -174,6 +174,12 @@ LOOK
   assert_output ''
 }
 
+@test 'colors disable palette when NO_COLOR requested' {
+  run env NO_COLOR=1 sh -c '. "$1"; [ -z "$RED" ] && [ "${WIZARDRY_COLORS_AVAILABLE:-1}" -eq 0 ] && printf ok' _ "$ROOT_DIR/spells/cantrips/colors"
+  assert_success
+  assert_output 'ok'
+}
+
 @test 'cursor-blink toggles visibility' {
   run_spell 'spells/cantrips/cursor-blink' on
   assert_success
@@ -186,6 +192,12 @@ LOOK
   run_spell 'spells/cantrips/cursor-blink'
   assert_failure
   assert_error --partial 'Usage: cursor-blink on|off'
+}
+
+@test 'cursor-blink becomes a no-op on dumb terminals' {
+  TERM=dumb run --separate-stderr -- wizardry_run_with_coverage spells/cantrips/cursor-blink on
+  assert_success
+  assert_output ''
 }
 
 fathom_cursor() {
@@ -411,6 +423,12 @@ COL
   run_spell 'spells/cantrips/move-cursor' 5
   assert_failure
   [[ "$stderr" == *'Usage'* ]]
+}
+
+@test 'move-cursor no-ops on dumb terminal' {
+  TERM=dumb run --separate-stderr -- wizardry_run_with_coverage spells/cantrips/move-cursor 2 2
+  assert_success
+  assert_output ''
 }
 
 @test 'say echoes joined arguments' {

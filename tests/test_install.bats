@@ -82,20 +82,39 @@ RC
 @test 'install writes to configuration.nix on NixOS' {
   rm -rf "$HOME/.config" "$HOME/.bashrc" "$HOME/.bash_profile" "$HOME/.profile"
 
-  WIZARDRY_INSTALL_ASSUME_YES=1 \
-    WIZARDRY_INSTALL_PLATFORM=nixos \
-    run_spell 'install'
+  mkdir -p "$HOME/.config/nixpkgs"
+  cat <<'CFG' >"$HOME/.config/nixpkgs/configuration.nix"
+# existing config
+{ config, pkgs, ... }:
+
+{
+  environment.sessionVariables.PATH = "original";
+}
+CFG
+
+  run --separate-stderr -- env ROOT_DIR="$ROOT_DIR" WIZARDRY_INSTALL_ASSUME_YES=1 WIZARDRY_INSTALL_PLATFORM=nixos \
+    sh -c "printf 'y\\n' | \"\$ROOT_DIR/install\""
 
   assert_success
   assert_output --partial 'via configuration.nix'
   assert_output --partial 'Rebuild your Nix environment'
+  assert_output --partial 'NixOS detected:'
 
   rc_file="$HOME/.config/nixpkgs/configuration.nix"
   [ -f "$rc_file" ]
+
+  backup=$(ls "$rc_file".wizardry.* 2>/dev/null | head -n 1)
+  [ -n "$backup" ]
+
+  run cat "$backup"
+  assert_success
+  assert_output --partial '# existing config'
 
   for rel in spells spells/cantrips spells/menu; do
     dir="$ROOT_DIR/$rel"
     nix_entries_present "$rc_file" "$dir"
     assert_success
   done
+
+  assert_error --partial 'backed up'
 }

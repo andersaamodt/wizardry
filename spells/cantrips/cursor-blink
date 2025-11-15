@@ -12,10 +12,25 @@ cursor_blink_off() {
   printf '\033[?25l'
 }
 
+supports_cursor_control() {
+  case ${TERM-} in
+    ''|dumb|unknown)
+      return 1
+      ;;
+  esac
+  return 0
+}
+
 # The helper expects exactly one argument that declares the desired state.
 if [ "$#" -ne 1 ]; then
   printf '%s\n' 'Usage: cursor-blink on|off' >&2
   exit 1
+fi
+
+if ! supports_cursor_control; then
+  # Quietly succeed so scripts keep running even when the terminal lacks ANSI
+  # support (for example, on "dumb" terminals).
+  exit 0
 fi
 
 case "$1" in
