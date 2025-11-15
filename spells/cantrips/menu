@@ -81,6 +81,7 @@ else
         RESET=''
         CYAN=''
         GREY=''
+        WHITE=''
 fi
 
 if [ "$#" -lt 2 ]; then
@@ -195,13 +196,13 @@ render_row() {
                 printf '\033[K'
                 if [ "$highlight" -eq 1 ]; then
                         if [ "$max_command_length" -gt 0 ]; then
-                                printf '%b> %-*s%b %b%-*s%b' "$CYAN" "$max_name_length" "$label" "$RESET" "$GREY" "$max_command_length" "$truncated_command" "$RESET"
+                                printf '%b> %-*s%b %b%-*s%b' "$CYAN" "$max_name_length" "$label" "$RESET" "$WHITE" "$max_command_length" "$truncated_command" "$RESET"
                         else
                                 printf '%b> %-*s%b' "$CYAN" "$max_name_length" "$label" "$RESET"
                         fi
                 else
                         if [ "$max_command_length" -gt 0 ]; then
-                                printf '  %-*s %-*s' "$max_name_length" "$label" "$max_command_length" "$truncated_command"
+                                printf '  %-*s %b%-*s%b' "$max_name_length" "$label" "$GREY" "$max_command_length" "$truncated_command" "$RESET"
                         else
                                 printf '  %-*s' "$max_name_length" "$label"
                         fi
@@ -210,13 +211,13 @@ render_row() {
         else
                 if [ "$highlight" -eq 1 ]; then
                         if [ "$max_command_length" -gt 0 ]; then
-                                printf '%b> %-*s%b %b%-*s%b\n' "$CYAN" "$max_name_length" "$label" "$RESET" "$GREY" "$max_command_length" "$truncated_command" "$RESET"
+                                printf '%b> %-*s%b %b%-*s%b\n' "$CYAN" "$max_name_length" "$label" "$RESET" "$WHITE" "$max_command_length" "$truncated_command" "$RESET"
                         else
                                 printf '%b> %-*s%b\n' "$CYAN" "$max_name_length" "$label" "$RESET"
                         fi
                 else
                         if [ "$max_command_length" -gt 0 ]; then
-                                printf '  %-*s %-*s\n' "$max_name_length" "$label" "$max_command_length" "$truncated_command"
+                                printf '  %-*s %b%-*s%b\n' "$max_name_length" "$label" "$GREY" "$max_command_length" "$truncated_command" "$RESET"
                         else
                                 printf '  %-*s\n' "$max_name_length" "$label"
                         fi
