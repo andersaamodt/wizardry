@@ -121,61 +121,98 @@ selected=1
 menu_column=1
 menu_row=1
 menu_drawn=0
+previous_selected=0
+last_window_width=0
+last_max_command_length=0
+dimensions_changed=1
 
-# Draw the menu starting at the recorded cursor position.
-display_menu() {
+update_dimensions() {
         window_width=$(fathom-terminal -w)
         max_command_length=$((window_width - max_name_length - 3))
         if [ "$max_command_length" -lt 0 ]; then
                 max_command_length=0
         fi
 
-        # Return to the recorded anchor so redraws replace the previous menu
-        # instead of appending to the bottom of the screen.
-        if [ "$menu_drawn" -eq 0 ]; then
-                if move-cursor "$menu_column" "$menu_row"; then
-                        printf '\033[J'
-                fi
-                menu_drawn=1
+        dimensions_changed=0
+        if [ "$window_width" -ne "$last_window_width" ] || [ "$max_command_length" -ne "$last_max_command_length" ]; then
+                dimensions_changed=1
+        fi
+
+        last_window_width=$window_width
+        last_max_command_length=$max_command_length
+}
+
+render_row() {
+        row_index=$1
+        highlight=$2
+
+        if [ "$row_index" -lt 1 ] || [ "$row_index" -gt "$menu_length" ]; then
+                return
+        fi
+
+        label=$(sed -n "${row_index}p" "$items_file")
+        command=$(sed -n "${row_index}p" "$commands_file")
+
+        if [ "$max_command_length" -gt 0 ]; then
+                truncated_command=$(printf '%s' "$command" | cut -c -"$max_command_length")
         else
-                if [ "$menu_length" -gt 0 ]; then
-                        printf '\033[%dF' "$menu_length"
+                truncated_command=''
+        fi
+
+        target_row=$((menu_row + row_index - 1))
+        if move-cursor "$menu_column" "$target_row"; then
+                printf '\033[K'
+        fi
+
+        if [ "$highlight" -eq 1 ]; then
+                if [ "$max_command_length" -gt 0 ]; then
+                        printf '%b> %-*s%b %b%-*s%b\n' "$CYAN" "$max_name_length" "$label" "$RESET" "$GREY" "$max_command_length" "$truncated_command" "$RESET"
+                else
+                        printf '%b> %-*s%b\n' "$CYAN" "$max_name_length" "$label" "$RESET"
                 fi
+        else
+                if [ "$max_command_length" -gt 0 ]; then
+                        printf '  %-*s %-*s\n' "$max_name_length" "$label" "$max_command_length" "$truncated_command"
+                else
+                        printf '  %-*s\n' "$max_name_length" "$label"
+                fi
+        fi
+}
+
+draw_menu() {
+        if move-cursor "$menu_column" "$menu_row"; then
                 printf '\033[J'
         fi
 
-        if [ "$max_command_length" -gt 0 ]; then
-                blank_command=$(printf '%*s' "$max_command_length" '')
-        else
-                blank_command=''
+        row=1
+        while [ "$row" -le "$menu_length" ]
+        do
+                if [ "$row" -eq "$selected" ]; then
+                        highlight=1
+                else
+                        highlight=0
+                fi
+                render_row "$row" "$highlight"
+                row=$((row + 1))
+        done
+
+        menu_drawn=1
+        previous_selected=$selected
+}
+
+refresh_selection() {
+        if [ "$menu_drawn" -eq 0 ] || [ "$dimensions_changed" -eq 1 ]; then
+                draw_menu
+                return
         fi
 
-        row=1
-        while IFS= read -r label || [ -n "$label" ]
-        do
-                command=$(sed -n "${row}p" "$commands_file")
-                if [ "$max_command_length" -gt 0 ]; then
-                        truncated_command=$(printf '%s' "$command" | cut -c -"$max_command_length")
-                else
-                        truncated_command=''
+        if [ "$selected" -ne "$previous_selected" ]; then
+                if [ "$previous_selected" -gt 0 ]; then
+                        render_row "$previous_selected" 0
                 fi
-
-                if [ "$row" -eq "$selected" ]; then
-                        if [ -n "$truncated_command" ]; then
-                                printf '%b> %-*s%b %b%s%b\n' "$CYAN" "$max_name_length" "$label" "$RESET" "$GREY" "$truncated_command" "$RESET"
-                        else
-                                printf '%b> %-*s%b\n' "$CYAN" "$max_name_length" "$label" "$RESET"
-                        fi
-                else
-                        if [ "$max_command_length" -gt 0 ]; then
-                                printf '  %-*s %s\n' "$max_name_length" "$label" "$blank_command"
-                        else
-                                printf '  %-*s\n' "$max_name_length" "$label"
-                        fi
-                fi
-
-                row=$((row + 1))
-        done <"$items_file"
+                render_row "$selected" 1
+                previous_selected=$selected
+        fi
 }
 
 execute_selection() {
@@ -214,7 +251,8 @@ if [ "$anchor_row" -lt 1 ]; then
 fi
 menu_row=$anchor_row
 
-display_menu
+update_dimensions
+draw_menu
 
 while :
 do
@@ -243,7 +281,8 @@ do
                 exit 0
                 ;;
         esac
-        display_menu
+        update_dimensions
+        refresh_selection
         # Avoid a tight loop if await-keypress returned empty.
         [ -n "$key" ] || sleep 0.05
 done

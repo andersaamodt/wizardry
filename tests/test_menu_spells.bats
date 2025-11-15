@@ -189,12 +189,22 @@ STUB
   assert_output --partial 'chosen:second'
 
   mapfile -t move_calls <"$move_log"
-  assert_equal "${#move_calls[@]}" "1"
+  if [ "${#move_calls[@]}" -lt 1 ]; then
+    fail 'move-cursor was not invoked'
+  fi
   local expected_row=$((fake_y - 2))
   if [ "$expected_row" -lt 1 ]; then
     expected_row=1
   fi
   assert_equal "${move_calls[0]}" "1 ${expected_row}"
+
+  local upper_bound=$((expected_row + 1))
+  for call in "${move_calls[@]}"; do
+    local row=${call#* }
+    if [ "$row" -lt "$expected_row" ] || [ "$row" -gt "$upper_bound" ]; then
+      fail "move-cursor jumped outside the menu rows: $call"
+    fi
+  done
 }
 
 @test 'menu redraws selections without scrolling from alternate cursor start' {
@@ -220,12 +230,22 @@ STUB
   assert_output --partial 'chosen:second'
 
   mapfile -t move_calls <"$move_log"
-  assert_equal "${#move_calls[@]}" "1"
+  if [ "${#move_calls[@]}" -lt 1 ]; then
+    fail 'move-cursor was not invoked'
+  fi
   local expected_row=$((alternate_fake_y - 2))
   if [ "$expected_row" -lt 1 ]; then
     expected_row=1
   fi
   assert_equal "${move_calls[0]}" "1 ${expected_row}"
+
+  local upper_bound=$((expected_row + 1))
+  for call in "${move_calls[@]}"; do
+    local row=${call#* }
+    if [ "$row" -lt "$expected_row" ] || [ "$row" -gt "$upper_bound" ]; then
+      fail "move-cursor jumped outside the menu rows: $call"
+    fi
+  done
 }
 
 @test 'install-menu reports missing menu command' {
