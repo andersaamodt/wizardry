@@ -1,0 +1,71 @@
+#!/bin/sh
+
+# Present the in-world mud menu with exploration spells.
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+spells_dir=$(dirname "$script_dir")
+cantrip_dir="$spells_dir/cantrips"
+
+if [ -n "${REQUIRE_COMMAND-}" ]; then
+  require_cmd=$REQUIRE_COMMAND
+elif [ -x "$cantrip_dir/require-command" ]; then
+  require_cmd="$cantrip_dir/require-command"
+else
+  require_cmd=require-command
+fi
+
+require() {
+  "$require_cmd" "$@"
+}
+
+if [ -r "$cantrip_dir/colors" ]; then
+  . "$cantrip_dir/colors"
+else
+  RESET=''
+  CYAN=''
+  GREY=''
+fi
+
+if ! require menu "The mud menu needs the 'menu' command to present options."; then
+  exit 1
+fi
+
+launch_submenu() {
+  printf '\n'
+  "$@"
+}
+
+display_menu() {
+  look="Look around%look"
+  mark="Mark this location%mark-location"
+  jump="Return to the marked location%jump-to-marker"
+  contacts="Review your contacts%read-contact"
+  install="Install supporting software%launch_submenu install-menu"
+  exit="Exit%kill -2 $$"
+
+  set -- "$look" "$mark" "$jump" "$contacts" "$install" "$exit"
+  MENU_ESCAPE_STATUS=$menu_escape_status menu "MUD Menu:" "$@"
+}
+
+handle_ctrl_c() {
+  trap 'exit' INT
+}
+
+handle_ctrl_c
+
+menu_escape_status=113
+
+while :; do
+  printf '\n'
+  display_menu
+  status=$?
+
+  if [ "$status" -eq "$menu_escape_status" ]; then
+    break
+  fi
+
+  if [ "$status" -ne 0 ]; then
+    exit "$status"
+  fi
+
+done

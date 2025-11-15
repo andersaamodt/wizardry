@@ -32,8 +32,8 @@ if ! require menu "The main menu needs the 'menu' command to present options."; 
 fi
 
 display_menu() {
-  mud="MUD menu%printf '\\n'; mud"
-  install="Install Free Software%printf '\\n'; install-menu"
+  mud="MUD menu%mud"
+  install="Install Free Software%install-menu"
   system="Manage System%system-menu"
   exit="Exit%kill -2 $$" # Commands are run with 'eval' by the menu script, so we can't simply say 'exit'. The keyword $$ gets this scripts PID and the -2 code is SIGINT aka Ctrl-C
 
