@@ -7,6 +7,7 @@
 - [ ] Review all existing spells for bugs and refactor
 - [ ] Test detect-magic, read-magic, enchanting and disenchanting items, hashchant
 - [ ] Eventually, add recursive language parser
+- [ ] selecting Exit menu item with Enter key should not print "exiting"
 
 ## Foundational shell and environment work
 - [x] Decide on supported shell(s) (strict POSIX `sh` vs Bash) and document the requirement so that menu dependencies target the same baseline.
