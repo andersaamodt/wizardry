@@ -246,7 +246,7 @@ assert_move_cursor_log() {
   with_menu_path run_spell 'spells/menu/install-menu'
   assert_success
   assert_output --partial 'MENU:Install Menu:'
-  assert_output --partial "alpha - ready%printf '\\n'; alpha-menu"
+  assert_output --partial 'alpha - ready%launch_submenu alpha-menu'
   assert_output --partial 'beta - coming soon'
   unset MENU_STUB_RESULT
 }
@@ -423,8 +423,8 @@ assert_move_cursor_log() {
   with_menu_path run_spell 'spells/menu/main-menu'
   assert_success
   assert_output --partial 'MENU:Main Menu:'
-  assert_output --partial "MUD menu%printf '\\n'; mud"
-  assert_output --partial "Install Free Software%printf '\\n'; install-menu"
+  assert_output --partial 'MUD menu%mud'
+  assert_output --partial 'Install Free Software%install-menu'
   assert_output --partial 'Manage System%system-menu'
   assert_output --partial 'Exit%kill -2'
   unset MENU_STUB_RESULT
@@ -441,6 +441,34 @@ assert_move_cursor_log() {
   menu_calls=$(grep -c '^MENU:Main Menu:' "$menu_log")
   assert_equal "$menu_calls" 2
   unset MENU_STUB_RESULTS_FILE
+}
+
+@test 'mud forwards options to menu command' {
+  export MENU_LOG="$menu_log"
+  : >"$menu_log"
+  export MENU_STUB_RESULT=escape
+  with_menu_path run_spell 'spells/menu/mud'
+  assert_success
+  assert_output --partial 'MENU:MUD Menu:'
+  assert_output --partial 'Look around%look'
+  assert_output --partial 'Mark this location%mark-location'
+  assert_output --partial 'Return to the marked location%jump-to-marker'
+  assert_output --partial 'Review your contacts%read-contact'
+  assert_output --partial 'Install supporting software%launch_submenu install-menu'
+  assert_output --partial 'Exit%kill -2'
+  unset MENU_STUB_RESULT
+}
+
+@test 'mud exits when escape is selected' {
+  export MENU_LOG="$menu_log"
+  : >"$menu_log"
+  export MENU_STUB_RESULT=escape
+  with_menu_path run_spell 'spells/menu/mud'
+  assert_success
+  menu_calls=$(grep -c '^MENU:MUD Menu:' "$menu_log")
+  assert_equal "$menu_calls" 1
+  [[ "$output" != *exiting* ]] || fail 'mud should not print an exiting message'
+  unset MENU_STUB_RESULT
 }
 
 @test 'main-menu shows single blank lines when entering and leaving system menu' {
@@ -462,46 +490,71 @@ for entry in "$@"; do
   printf 'MENU:%s\n' "$entry" >>"$MENU_LOG"
 done
 
-state_file="${MENU_LOG}.state"
-state=0
-if [ -f "$state_file" ]; then
-  state=$(cat "$state_file")
-fi
+  state_file="${MENU_LOG}.state"
+  state=0
+  if [ -f "$state_file" ]; then
+    state=$(cat "$state_file")
+  fi
 
-case "$title" in
+  case "$title" in
   'Main Menu:')
-    if [ "$state" -eq 0 ]; then
-      printf '1\n' >"$state_file"
-      for entry in "$@"; do
-        case "$entry" in
-          'Manage System%'* )
-            cmd=${entry#*%}
-            PATH="$ROOT_DIR/spells/menu:$PATH"
-            eval "$cmd"
-            ;;
-        esac
-      done
-      exit 0
-    else
-      exit "${MENU_ESCAPE_STATUS:-0}"
-    fi
+    case "$state" in
+      0)
+        printf '1\n' >"$state_file"
+        for entry in "$@"; do
+          case "$entry" in
+            'MUD menu%'* )
+              cmd=${entry#*%}
+              PATH="$ROOT_DIR/spells/menu:$PATH"
+              eval "$cmd"
+              ;;
+          esac
+        done
+        exit 0
+        ;;
+      1)
+        printf '2\n' >"$state_file"
+        for entry in "$@"; do
+          case "$entry" in
+            'Manage System%'* )
+              cmd=${entry#*%}
+              PATH="$ROOT_DIR/spells/menu:$PATH"
+              eval "$cmd"
+              ;;
+          esac
+        done
+        exit 0
+        ;;
+      *)
+        exit "${MENU_ESCAPE_STATUS:-0}"
+        ;;
+    esac
     ;;
-  'System Menu:')
+  'MUD Menu:'|'System Menu:')
     exit "${MENU_ESCAPE_STATUS:-0}"
     ;;
   *)
     exit 0
     ;;
-esac
+  esac
 MENU
   chmod +x "$stub_dir/menu"
 
   with_menu_path run_spell 'spells/menu/main-menu'
   assert_success
 
+  [[ "$output" == *$'\n\nMENU:MUD Menu:'* ]] || fail 'expected exactly one blank line before MUD Menu prompt'
+  [[ "$output" != *$'\n\n\nMENU:MUD Menu:'* ]] || fail 'found multiple blank lines before MUD Menu prompt'
   [[ "$output" == *$'\n\nMENU:System Menu:'* ]] || fail 'expected exactly one blank line before System Menu prompt'
   [[ "$output" != *$'\n\n\nMENU:System Menu:'* ]] || fail 'found multiple blank lines before System Menu prompt'
   [[ "$output" == *$'\n\nMENU:Main Menu:'* ]] || fail 'expected blank line before Main Menu prompt after returning'
+
+  rm -f "${MENU_LOG}.state"
+  if [ -f "$stub_dir/menu.default" ]; then
+    cp "$stub_dir/menu.default" "$stub_dir/menu"
+    chmod +x "$stub_dir/menu"
+    rm -f "$stub_dir/menu.default"
+  fi
 }
 
 @test 'install-menu exits when escape is selected' {
@@ -514,6 +567,84 @@ MENU
   menu_calls=$(grep -c '^MENU:Install Menu:' "$menu_log")
   assert_equal "$menu_calls" 1
   unset MENU_STUB_RESULT
+  unset INSTALL_MENU_DIRS
+}
+
+@test 'install-menu shows single blank lines when entering submenus' {
+  export MENU_LOG="$menu_log"
+  : >"$menu_log"
+
+  cat <<'MENU' >"$stub_dir/menu"
+#!/usr/bin/env bash
+set -euo pipefail
+
+title=$1
+shift
+
+printf 'MENU:%s\n' "$title"
+printf 'MENU:%s\n' "$title" >>"$MENU_LOG"
+
+case "$title" in
+  'Install Menu:')
+    for entry in "$@"; do
+      case "$entry" in
+        'alpha - ready%'* )
+          cmd=${entry#*%}
+          PATH="$ROOT_DIR/spells/menu:$PATH"
+          case "$cmd" in
+            'launch_submenu '*)
+              submenu=${cmd#launch_submenu }
+              printf '\n'
+              eval "$submenu"
+              ;;
+            *)
+              eval "$cmd"
+              ;;
+          esac
+          ;;
+      esac
+    done
+    exit "${MENU_ESCAPE_STATUS:-0}"
+    ;;
+  'Alpha Menu:')
+    exit "${MENU_ESCAPE_STATUS:-0}"
+    ;;
+  *)
+    exit 0
+    ;;
+esac
+MENU
+  chmod +x "$stub_dir/menu"
+
+  cp "$stub_dir/alpha-menu" "$stub_dir/alpha-menu.default"
+
+  cat <<'ALPHA' >"$stub_dir/alpha-menu"
+#!/usr/bin/env bash
+printf 'MENU:Alpha Menu:\n'
+ALPHA
+  chmod +x "$stub_dir/alpha-menu"
+
+  export INSTALL_MENU_DIRS='alpha'
+  with_menu_path run_spell 'spells/menu/install-menu'
+  assert_success
+
+  [[ "$output" == *$'\n\nMENU:Alpha Menu:'* ]] || fail 'expected exactly one blank line before Alpha Menu prompt'
+  [[ "$output" != *$'\n\n\nMENU:Alpha Menu:'* ]] || fail 'found multiple blank lines before Alpha Menu prompt'
+
+  if [ -f "$stub_dir/menu.default" ]; then
+    cp "$stub_dir/menu.default" "$stub_dir/menu"
+    chmod +x "$stub_dir/menu"
+    rm -f "$stub_dir/menu.default"
+  fi
+  if [ -f "$stub_dir/alpha-menu.default" ]; then
+    cp "$stub_dir/alpha-menu.default" "$stub_dir/alpha-menu"
+    chmod +x "$stub_dir/alpha-menu"
+    rm -f "$stub_dir/alpha-menu.default"
+  else
+    : >"$stub_dir/alpha-menu"
+    chmod +x "$stub_dir/alpha-menu"
+  fi
+  unset INSTALL_MENU_DIRS
 }
 
 @test 'system-menu forwards maintenance options to menu command' {
