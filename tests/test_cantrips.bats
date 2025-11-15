@@ -384,8 +384,8 @@ COL
   assert_output --partial 'ESC'
 }
 
-@test 'menu_posix presents selections and executes commands' {
-  menu_workspace="$BATS_TEST_TMPDIR/menu_posix_ws"
+@test 'menu presents selections and executes commands with portable stubs' {
+  menu_workspace="$BATS_TEST_TMPDIR/menu_portable_ws"
   mkdir -p "$menu_workspace"
   cat <<'COL' >"$menu_workspace/colors"
 RESET=""
@@ -395,12 +395,12 @@ COL
   chmod +x "$menu_workspace/colors"
 
   stubs=$(create_menu_stubs)
-  keys="$BATS_TEST_TMPDIR/menu_posix_keys"
+  keys="$BATS_TEST_TMPDIR/menu_portable_keys"
   printf 'down\nenter\n' >"$keys"
   export MENU_KEYS="$keys"
   PATH="$stubs:$ORIGINAL_PATH"
   pushd "$menu_workspace" >/dev/null
-  run_spell 'spells/cantrips/menu_posix' 'Choose:' 'First%echo first' 'Second%echo second'
+  run_spell 'spells/cantrips/menu' 'Choose:' 'First%echo first' 'Second%echo second'
   popd >/dev/null
   assert_success
   assert_output --partial 'Second'
@@ -409,7 +409,7 @@ COL
   printf 'up\nescape\n' >"$keys"
   export MENU_KEYS="$keys"
   pushd "$menu_workspace" >/dev/null
-  run_spell 'spells/cantrips/menu_posix' 'Leave:' 'Alpha%echo alpha' 'Beta%echo beta'
+  run_spell 'spells/cantrips/menu' 'Leave:' 'Alpha%echo alpha' 'Beta%echo beta'
   popd >/dev/null
   assert_success
   assert_output --partial 'ESC'

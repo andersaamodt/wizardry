@@ -1,149 +1,248 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 
-# This script generates a menu from the given list of items. Choosing an item runs the command for that item.
-# Usage: 
-#   change_my_password="Change my password%passwd"
-#   list_users="List all users%cut -d: -f1 /etc/passwd"
-#   exit="kill -2 $$"
-#   menu "User management options:" "$change_my_password" "$list_users" "$exit"
-# Use up/down arrow keys to select a menu item, then press Enter. Or cancel with ESC.
+# Present an interactive menu using only POSIX shell features. This spell does
+# not implement any terminal control codes itself; instead it relies on the
+# supporting cantrips to provide those capabilities in a portable way:
+#   * `await-keypress` must emit tokens like "up", "down", and "enter" without
+#     printing escape sequences so that the menu loop can stay shell-agnostic.
+#   * `fathom-terminal` reports the terminal dimensions so the menu knows how
+#     wide it can draw each row without wrapping.
+#   * `fathom-cursor` and `move-cursor` work together so the script can anchor
+#     the menu, redraw it in place, and avoid scrolling the rest of the screen.
+#   * `cursor-blink` is used to restore the prompt on exit even if the user hits
+#     Ctrl+C midway through navigation.
+# If any of these helpers change their interfaces, the menu will need to be
+# updated in tandem to preserve the seamless redraw behaviour.
 
-. colors
+# The spell is intentionally free of Bash extensions so that it can remain the
+# canonical menu implementation across macOS, Debian, NixOS, and other
+# POSIX-compatible systems.
 
-if [ ${#} -lt 2 ]; then
-	main-menu
-	exit 0
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+# Reuse the standard dependency checker when available so missing commands can
+# be reported consistently.
+if [ -n "${REQUIRE_COMMAND-}" ]; then
+        require_cmd=$REQUIRE_COMMAND
+elif [ -x "$script_dir/require-command" ]; then
+        require_cmd="$script_dir/require-command"
+else
+        require_cmd=""
+fi
+
+require() {
+        tool=$1
+        shift
+        if [ -n "$require_cmd" ]; then
+                "$require_cmd" "$tool" "$@"
+                return $?
+        fi
+
+        if command -v "$tool" >/dev/null 2>&1; then
+                return 0
+        fi
+
+        if [ "$#" -gt 0 ]; then
+                printf '%s\n' "$tool: $*" >&2
+        else
+                printf '%s\n' "menu: missing required command '$tool'" >&2
+        fi
+        printf '%s\n' "Visit 'install-menu' to review installation options." >&2
+        return 1
+}
+
+# Verify that all helper spells are ready before drawing the menu.
+require fathom-cursor "The menu spell needs 'fathom-cursor' to place the menu." || exit 1
+require fathom-terminal "The menu spell needs 'fathom-terminal' to measure the screen." || exit 1
+require move-cursor "The menu spell needs 'move-cursor' to reposition the cursor." || exit 1
+require await-keypress "The menu spell needs 'await-keypress' to read input." || exit 1
+require cursor-blink "The menu spell needs 'cursor-blink' to restore the cursor." || exit 1
+
+# Load colour helpers when present; otherwise fall back to plain text.
+if [ -r "$script_dir/colors" ]; then
+        # shellcheck disable=SC1090
+        . "$script_dir/colors"
+elif command -v colors >/dev/null 2>&1; then
+        # shellcheck disable=SC1091
+        . colors
+else
+        RESET=''
+        CYAN=''
+        GREY=''
+fi
+
+if [ "$#" -lt 2 ]; then
+        if command -v main-menu >/dev/null 2>&1; then
+                main-menu
+                exit 0
+        fi
+        printf '%s\n' "menu: no menu entries provided" >&2
+        exit 1
 fi
 
 description=$1
 shift
 
-# Parse args. Each arg is "name%command"
-declare -a items
-# declare -a descriptions # not displayed so presently disabled
-declare -a commands
-while [ ${#} -gt 0 ]; do
-	IFS='%' read -r -a option <<< "$1"
-    items+=("${option[0]}")
-    #descriptions+=("$(option[1])") # not displayed so presently disabled
-    commands+=("${option[1]}")
-    shift
-done
+TMPDIR=${TMPDIR:-/tmp}
+items_file="$TMPDIR/wizardry-menu-items.$$"
+commands_file="$TMPDIR/wizardry-menu-commands.$$"
+: >"$items_file"
+: >"$commands_file"
+cleanup_called=0
+cleanup() {
+        if [ "$cleanup_called" -eq 1 ]; then
+                return
+        fi
+        cleanup_called=1
+        cursor-blink on >/dev/null 2>&1 || :
+        rm -f "$items_file" "$commands_file"
+}
+trap 'cleanup; exit 1' INT TERM
+trap 'cleanup' EXIT
 
-selected=0
-displayed=0
-
-# Calculate the position of the menu
-menu_x=$((0))
-menu_y=$(fathom-cursor -y)
-
-# Calculate the number of rows that the menu will occupy
-num_rows=${#items[@]}
-
-# Calculate the maximum length of the item names
-# Todo: abstract this out into a max-length function in another script. I gave up on trying to find an elegant way to pass a list of strings with spaces. Even separating them with newlines didn't work.
 max_name_length=0
+menu_length=0
 
-# Find the longest line
-for line in "${items[@]}"; do
-    line_length=${#line}
-    if [ $line_length -gt $max_name_length ]; then
-        max_name_length=$line_length
-    fi
+for option in "$@"
+do
+        label=${option%%\%*}
+        case $option in
+        *%*)
+                command=${option#*%}
+                ;;
+        *)
+                command=''
+                ;;
+        esac
+        printf '%s\n' "$label" >>"$items_file"
+        printf '%s\n' "$command" >>"$commands_file"
+        length=$(printf '%s' "$label" | wc -c | tr -d ' ')
+        if [ "$length" -gt "$max_name_length" ]; then
+                max_name_length=$length
+        fi
+        menu_length=$((menu_length + 1))
+
 done
 
-# Make sure the menu items don't wrap, multiline menu items are not supported
-window_width=$(fathom-terminal -w)
-if [ $max_name_length -gt $window_width ]; then
-	max_name_length=$window_width
+if [ "$menu_length" -eq 0 ]; then
+        printf '%s\n' "menu: no menu entries provided" >&2
+        exit 1
 fi
 
-# Define the function to display the menu
+selected=1
+menu_column=1
+menu_row=1
+
+# Draw the menu starting at the recorded cursor position.
 display_menu() {
-  # Get the dimensions of the terminal window (again each time in case window is resized)
-  window_width=$(fathom-terminal -w)
-  window_height=$(fathom-terminal -h)
-  
-  # Recalculate the position of the menu
-  menu_y=$(fathom-cursor -y)
-  
-  # Move the cursor to the correct position
-  if [ $displayed -eq 0 ]; then
-    # Don't move the cursor or clear the screen the first time
-    displayed=1
-  else
-    if [ $((menu_y + num_rows)) -ge $window_height ]; then
-    	menu_y=$((window_height))
-    fi
-    move-cursor $menu_x $((menu_y - num_rows)) 
-  fi
-  
-  # Print the items and commands
-  for i in "${!items[@]}"; do
-  	# Truncate the command to the width of the screen # Todo: come up with a better solution that allows the user to see the full command.
-  	max_command_length=$(( $window_width - $max_name_length - 3 )) # -3 is for the > and the space between item and command
-  	truncated_command=$(echo "${commands[$i]}" | cut -c -$max_command_length)
-    if [ $i -eq $selected ]; then
-      printf "${CYAN}> %-${max_name_length}s${RESET} ${GREY}%s${RESET}\n" "${items[$i]}" "$truncated_command"
-    else
-    	# Print the menu item plus extra spaces to cover up its command, since it's not selected
-      printf "  %-${max_name_length}s %*s\n" "${items[$i]}" "${#truncated_command}"
-    fi
-  done
+        window_width=$(fathom-terminal -w)
+        max_command_length=$((window_width - max_name_length - 3))
+        if [ "$max_command_length" -lt 0 ]; then
+                max_command_length=0
+        fi
+
+        # Return to the recorded anchor so redraws replace the previous menu
+        # instead of appending to the bottom of the screen.
+        if move-cursor "$menu_column" "$menu_row"; then
+                printf '\033[J'
+        fi
+
+        if [ "$max_command_length" -gt 0 ]; then
+                blank_command=$(printf '%*s' "$max_command_length" '')
+        else
+                blank_command=''
+        fi
+
+        row=1
+        while IFS= read -r label || [ -n "$label" ]
+        do
+                command=$(sed -n "${row}p" "$commands_file")
+                if [ "$max_command_length" -gt 0 ]; then
+                        truncated_command=$(printf '%s' "$command" | cut -c -"$max_command_length")
+                else
+                        truncated_command=''
+                fi
+
+                if [ "$row" -eq "$selected" ]; then
+                        if [ -n "$truncated_command" ]; then
+                                printf '%s> %-*s%s %s%s%s\n' "$CYAN" "$max_name_length" "$label" "$RESET" "$GREY" "$truncated_command" "$RESET"
+                        else
+                                printf '%s> %-*s%s\n' "$CYAN" "$max_name_length" "$label" "$RESET"
+                        fi
+                else
+                        if [ "$max_command_length" -gt 0 ]; then
+                                printf '  %-*s %s\n' "$max_name_length" "$label" "$blank_command"
+                        else
+                                printf '  %-*s\n' "$max_name_length" "$label"
+                        fi
+                fi
+
+                row=$((row + 1))
+        done <"$items_file"
 }
 
-# Define the function to handle key presses
-handle_key() {
-  key=$(await-keypress)
-  case "$key" in
-    up)
-      selected=$((selected - 1))
-      if [ $selected -lt 0 ]; then
-        selected=$((num_rows - 1))
-      fi
-      ;;
-    down)
-      selected=$((selected + 1))
-      if [ $selected -ge $num_rows ]; then
-        selected=0
-      fi
-      ;;
-    enter)
-      cursor-blink on
-      command="${commands[$selected]}"
-      printf "\n"
-      eval $command 
-      exit 0
-      ;;
-    escape) 
-      cursor-blink on
-      echo ESC
-      exit
-      ;;
-    esac
-}
-
-# Catch Ctrl-C and restore the cursor blink, so the user doesn't get stuck with an invisible cursor
-handle_ctrl_c() {
-  trap 'cursor-blink on; exit' INT
-}
-
-handle_ctrl_c
-
-test_menu() {
-  assert_equal "$(./menu "Please choose" "item1 item2 item3" "ls cat command3" -v)" "Please choose\n1) item1\n2) item2\n3) item3\n" "menu -v output differs"
-  assert_equal "$(./menu "Please choose" "item1 item2 item3" "ls cat command3")" "1) item1\n2) item2\n3) item3\n" "menu output differs"
+execute_selection() {
+        command=$(sed -n "${selected}p" "$commands_file")
+        if [ -n "$command" ]; then
+                printf '\n'
+                cleanup
+                trap - EXIT INT TERM
+                # shellcheck disable=SC2039,SC3045 # POSIX sh allows eval
+                eval "$command"
+        else
+                cleanup
+                trap - EXIT INT TERM
+        fi
 }
 
 cursor-blink off
 
-# Display the menu's description
 if [ -n "$description" ]; then
-	printf "$description\n"
+        printf '%s\n' "$description"
 fi
 
-# Menu loop
-while true; do
-  display_menu
-  handle_key $key
+menu_row=$(fathom-cursor -y)
+case "$menu_row" in
+        ''|*[!0-9]*)
+                menu_row=1
+                ;;
+        0)
+                menu_row=1
+                ;;
+esac
+
+display_menu
+
+while :
+do
+        key=$(await-keypress)
+        case $key in
+        up)
+                selected=$((selected - 1))
+                if [ "$selected" -le 0 ]; then
+                        selected=$menu_length
+                fi
+                ;;
+        down)
+                selected=$((selected + 1))
+                if [ "$selected" -gt "$menu_length" ]; then
+                        selected=1
+                fi
+                ;;
+        enter)
+                execute_selection
+                exit 0
+                ;;
+        escape)
+                cleanup
+                trap - EXIT INT TERM
+                printf '%s\n' 'ESC'
+                exit 0
+                ;;
+        esac
+        display_menu
+        # Avoid a tight loop if await-keypress returned empty.
+        [ -n "$key" ] || sleep 0.05
 done

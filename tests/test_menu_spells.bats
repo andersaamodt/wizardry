@@ -189,15 +189,12 @@ STUB
   assert_output --partial 'chosen:second'
 
   mapfile -t move_calls <"$move_log"
-  assert_equal "${#move_calls[@]}" "1"
-  local expected_row=$((fake_y - 2))
-  if [ "$expected_row" -lt 1 ]; then
-    expected_row=1
-  fi
-  assert_equal "${move_calls[0]}" "1 ${expected_row}"
+  assert_equal "${#move_calls[@]}" "2"
+  assert_equal "${move_calls[0]}" "1 ${fake_y}"
+  assert_equal "${move_calls[1]}" "1 ${fake_y}"
 }
 
-@test 'menu_posix redraws selections without scrolling' {
+@test 'menu redraws selections without scrolling (POSIX implementation)' {
   local stub_dir
   stub_dir=$(create_menu_cantrip_stubs)
   local key_file="$stub_dir/keys"
@@ -211,7 +208,7 @@ STUB
   MOVE_CURSOR_LOG="$move_log" \
   PATH="$stub_dir:$ORIGINAL_PATH" \
   REQUIRE_COMMAND="$ROOT_DIR/spells/cantrips/require-command" \
-  run_spell 'spells/cantrips/menu_posix' \
+  run_spell 'spells/cantrips/menu' \
     'Demo Menu' \
     "First%printf 'chosen:first\\n'" \
     "Second%printf 'chosen:second\\n'"
