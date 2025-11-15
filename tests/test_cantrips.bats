@@ -425,6 +425,16 @@ COL
   [[ "$stderr" == *'Usage'* ]]
 }
 
+@test 'move-cursor treats zero as the first column and row' {
+  run_spell 'spells/cantrips/move-cursor' 0 3
+  assert_success
+  assert_output $'\033[3;1H'
+
+  run_spell 'spells/cantrips/move-cursor' 4 0
+  assert_success
+  assert_output $'\033[1;4H'
+}
+
 @test 'move-cursor no-ops on dumb terminal' {
   TERM=dumb run --separate-stderr -- wizardry_run_with_coverage spells/cantrips/move-cursor 2 2
   assert_success

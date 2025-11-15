@@ -104,7 +104,25 @@ STUB
 if [ -z "${MOVE_CURSOR_LOG:-}" ]; then
   exit 1
 fi
-printf '%s %s\n' "$1" "$2" >>"$MOVE_CURSOR_LOG"
+x=$1
+y=$2
+case "$x" in
+  ''|*[!0-9]*)
+    x=1
+    ;;
+  0)
+    x=1
+    ;;
+esac
+case "$y" in
+  ''|*[!0-9]*)
+    y=1
+    ;;
+  0)
+    y=1
+    ;;
+esac
+printf '%s %s\n' "$x" "$y" >>"$MOVE_CURSOR_LOG"
 exit 0
 STUB
   chmod +x "$dir/move-cursor"
@@ -156,7 +174,8 @@ STUB
   local move_log="$stub_dir/move.log"
   : >"$move_log"
 
-  FAKE_CURSOR_Y=7 \
+  local fake_y=7
+  FAKE_CURSOR_Y=$fake_y \
   MENU_KEY_FILE="$key_file" \
   MOVE_CURSOR_LOG="$move_log" \
   PATH="$stub_dir:$ORIGINAL_PATH" \
@@ -170,9 +189,12 @@ STUB
   assert_output --partial 'chosen:second'
 
   mapfile -t move_calls <"$move_log"
-  assert_equal "${#move_calls[@]}" "2"
-  assert_equal "${move_calls[0]}" '1 7'
-  assert_equal "${move_calls[1]}" '1 7'
+  assert_equal "${#move_calls[@]}" "1"
+  local expected_row=$((fake_y - 2))
+  if [ "$expected_row" -lt 1 ]; then
+    expected_row=1
+  fi
+  assert_equal "${move_calls[0]}" "1 ${expected_row}"
 }
 
 @test 'menu_posix redraws selections without scrolling' {
@@ -183,7 +205,8 @@ STUB
   local move_log="$stub_dir/move.log"
   : >"$move_log"
 
-  FAKE_CURSOR_Y=6 \
+  local posix_fake_y=6
+  FAKE_CURSOR_Y=$posix_fake_y \
   MENU_KEY_FILE="$key_file" \
   MOVE_CURSOR_LOG="$move_log" \
   PATH="$stub_dir:$ORIGINAL_PATH" \
@@ -198,8 +221,8 @@ STUB
 
   mapfile -t move_calls <"$move_log"
   assert_equal "${#move_calls[@]}" "2"
-  assert_equal "${move_calls[0]}" '1 6'
-  assert_equal "${move_calls[1]}" '1 6'
+  assert_equal "${move_calls[0]}" "1 ${posix_fake_y}"
+  assert_equal "${move_calls[1]}" "1 ${posix_fake_y}"
 }
 
 @test 'install-menu reports missing menu command' {

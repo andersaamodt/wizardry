@@ -23,7 +23,7 @@ declare -a items
 # declare -a descriptions # not displayed so presently disabled
 declare -a commands
 while [ ${#} -gt 0 ]; do
-        IFS='%' read -r -a option <<< "$1"
+	IFS='%' read -r -a option <<< "$1"
     items+=("${option[0]}")
     #descriptions+=("$(option[1])") # not displayed so presently disabled
     commands+=("${option[1]}")
@@ -31,9 +31,11 @@ while [ ${#} -gt 0 ]; do
 done
 
 selected=0
+displayed=0
 
-# Track the anchor column for redraws. move-cursor counts from 1, so start at 1.
-menu_x=$((1))
+# Calculate the position of the menu
+menu_x=$((0))
+menu_y=$(fathom-cursor -y)
 
 # Calculate the number of rows that the menu will occupy
 num_rows=${#items[@]}
@@ -58,37 +60,34 @@ fi
 
 # Define the function to display the menu
 display_menu() {
-  # Measure the window on each redraw so truncation stays accurate if the user
-  # resizes their terminal mid-session.
+  # Get the dimensions of the terminal window (again each time in case window is resized)
   window_width=$(fathom-terminal -w)
-
-  # Ensure the cursor returns to the top-left corner of the menu before drawing
-  # so repeated renders do not scroll the screen.
-  move-cursor "$menu_x" "$menu_origin_y"
-  printf '\033[J'
-
+  window_height=$(fathom-terminal -h)
+  
+  # Recalculate the position of the menu
+  menu_y=$(fathom-cursor -y)
+  
+  # Move the cursor to the correct position
+  if [ $displayed -eq 0 ]; then
+    # Don't move the cursor or clear the screen the first time
+    displayed=1
+  else
+    if [ $((menu_y + num_rows)) -ge $window_height ]; then
+    	menu_y=$((window_height))
+    fi
+    move-cursor $menu_x $((menu_y - num_rows)) 
+  fi
+  
   # Print the items and commands
   for i in "${!items[@]}"; do
-        # Truncate the command to the width of the screen # Todo: come up with a better solution that allows the user to see the full command.
-        max_command_length=$(( window_width - max_name_length - 3 )) # -3 is for the > and the space between item and command
-        if [ $max_command_length -le 0 ]; then
-                truncated_command=""
-        else
-                truncated_command=$(echo "${commands[$i]}" | cut -c -$max_command_length)
-        fi
+  	# Truncate the command to the width of the screen # Todo: come up with a better solution that allows the user to see the full command.
+  	max_command_length=$(( $window_width - $max_name_length - 3 )) # -3 is for the > and the space between item and command
+  	truncated_command=$(echo "${commands[$i]}" | cut -c -$max_command_length)
     if [ $i -eq $selected ]; then
-      if [ -n "$truncated_command" ]; then
-        printf "${CYAN}> %-${max_name_length}s${RESET} ${GREY}%s${RESET}\n" "${items[$i]}" "$truncated_command"
-      else
-        printf "${CYAN}> %-${max_name_length}s${RESET}\n" "${items[$i]}"
-      fi
+      printf "${CYAN}> %-${max_name_length}s${RESET} ${GREY}%s${RESET}\n" "${items[$i]}" "$truncated_command"
     else
-        # Print the menu item plus extra spaces to cover up its command, since it's not selected
-      if [ -n "$truncated_command" ]; then
-        printf "  %-${max_name_length}s %*s\n" "${items[$i]}" "${#truncated_command}"
-      else
-        printf "  %-${max_name_length}s\n" "${items[$i]}"
-      fi
+    	# Print the menu item plus extra spaces to cover up its command, since it's not selected
+      printf "  %-${max_name_length}s %*s\n" "${items[$i]}" "${#truncated_command}"
     fi
   done
 }
@@ -140,15 +139,11 @@ cursor-blink off
 
 # Display the menu's description
 if [ -n "$description" ]; then
-        printf "%s\n" "$description"
+	printf "$description\n"
 fi
-
-# Record the row where the menu begins so redraws can jump back to the same
-# position before printing updated selections.
-menu_origin_y=$(fathom-cursor -y)
 
 # Menu loop
 while true; do
   display_menu
-  handle_key
+  handle_key $key
 done

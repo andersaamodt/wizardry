@@ -131,8 +131,9 @@ display_menu() {
 
         # Return to the recorded anchor so redraws replace the previous menu
         # instead of appending to the bottom of the screen.
-        move-cursor "$menu_column" "$menu_row"
-        printf '\033[J'
+        if move-cursor "$menu_column" "$menu_row"; then
+                printf '\033[J'
+        fi
 
         if [ "$max_command_length" -gt 0 ]; then
                 blank_command=$(printf '%*s' "$max_command_length" '')
@@ -189,6 +190,14 @@ if [ -n "$description" ]; then
 fi
 
 menu_row=$(fathom-cursor -y)
+case "$menu_row" in
+        ''|*[!0-9]*)
+                menu_row=1
+                ;;
+        0)
+                menu_row=1
+                ;;
+esac
 
 display_menu
 
