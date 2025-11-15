@@ -290,6 +290,32 @@ backup_rc_file_once() {
         return 0
 }
 
+# Inspect a shell start-up file and return success only when a PATH assignment
+# already mentions the directory we plan to manage. Matching the broader line
+# instead of the full export statement lets us respect user customisations such
+# as different quoting styles, while still avoiding false positives from
+# comments or unrelated variables.
+shell_path_contains_directory() {
+        if [ ! -f "$rc_file" ]; then
+                return 1
+        fi
+        awk -v dir="$directory" '
+        /^[[:space:]]*#/ { next }
+        {
+                if ($0 ~ /(^|[[:space:]])PATH=/ && index($0, dir)) {
+                        found = 1
+                        exit
+                }
+        }
+        END {
+                if (found) {
+                        exit 0
+                }
+                exit 1
+        }
+        ' "$rc_file"
+}
+
 # Append the export line to POSIX shell rc files when it is not already
 # present. Each branch prints guidance so users know what changed.
 shell_add() {
@@ -297,7 +323,7 @@ shell_add() {
         if [ ! -f "$rc_file" ]; then
                 : >"$rc_file"
         fi
-        if grep -F "$directory" "$rc_file" >/dev/null 2>&1; then
+        if shell_path_contains_directory; then
                 printf '%s\n' "The directory is already in your PATH."
                 return 0
         fi
@@ -337,10 +363,7 @@ shell_remove() {
 # status returns success when the directory is already exported, allowing
 # callers to avoid duplicate additions.
 shell_status() {
-        if [ ! -f "$rc_file" ]; then
-                return 1
-        fi
-        if grep -F "$directory" "$rc_file" >/dev/null 2>&1; then
+        if shell_path_contains_directory; then
                 return 0
         fi
         return 1

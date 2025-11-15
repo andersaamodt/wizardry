@@ -149,6 +149,27 @@ EOF
   [ "$count" -eq 1 ]
 }
 
+@test 'path-wizard ignores directories mentioned outside PATH assignments' {
+  stray_dir="${BATS_TEST_TMPDIR}/stray"
+  mkdir -p "$stray_dir"
+
+  cat <<EOF >>"$HOME/.bashrc"
+# note: $stray_dir is referenced below but not exported
+alias straydir='$stray_dir'
+EOF
+
+  run_spell 'spells/path-wizard' 'status' "$stray_dir"
+  assert_failure
+
+  run_spell 'spells/path-wizard' 'add' "$stray_dir"
+  assert_success
+  assert_output --partial 'added to your PATH'
+
+  entry=$(printf 'export PATH=%s:\\$PATH' "$stray_dir")
+  run grep -Fqx "$entry" "$HOME/.bashrc"
+  assert_success
+}
+
 @test 'path-wizard requires a directory when checking status' {
   run_spell 'spells/path-wizard' 'status'
   assert_failure
