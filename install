@@ -171,7 +171,7 @@ do
                 continue
         fi
 
-        if "$PATH_WIZARD" --rc-file "$RC_FILE" --format "$FORMAT" --platform "$PLATFORM" status "$dir"; then
+        if "$PATH_WIZARD" -r --rc-file "$RC_FILE" --format "$FORMAT" --platform "$PLATFORM" status "$dir"; then
                 continue
         fi
         set -- "$@" "$dir"
@@ -217,7 +217,7 @@ case $choice in
                 fi
                 for dir
                 do
-                        "$PATH_WIZARD" --rc-file "$RC_FILE" --format "$FORMAT" --platform "$PLATFORM" add "$dir" || exit 1
+                        "$PATH_WIZARD" -r --rc-file "$RC_FILE" --format "$FORMAT" --platform "$PLATFORM" add "$dir" || exit 1
                 done
                 case $FORMAT in
                         nix)

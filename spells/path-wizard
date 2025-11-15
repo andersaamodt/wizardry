@@ -4,9 +4,9 @@ set -eu
 
 usage() {
         cat <<'USAGE' >&2
-Usage: path-wizard [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] add [DIRECTORY]
-       path-wizard [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] remove DIRECTORY
-       path-wizard [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] status DIRECTORY
+Usage: path-wizard [-r|--recursive] [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] add [DIRECTORY]
+       path-wizard [-r|--recursive] [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] remove DIRECTORY
+       path-wizard [-r|--recursive] [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] status DIRECTORY
 
 Formats: auto (default), shell, nix
 Platforms: debian, arch, fedora, mac, nixos, unknown
@@ -21,9 +21,18 @@ USAGE
 rc_file_override=""
 format="auto"
 platform="${PATH_WIZARD_PLATFORM-}"
+recursive=0
 
 while [ "$#" -gt 0 ]; do
         case $1 in
+        -r|--recursive)
+                recursive=1
+                shift
+                ;;
+        --recursive=*)
+                recursive=1
+                shift
+                ;;
         --rc-file)
                 if [ "$#" -lt 2 ]; then
                         printf '%s\n' "path-wizard: --rc-file expects a file path" >&2
@@ -165,6 +174,51 @@ else
         if [ "$#" -gt 0 ]; then
                 shift
         fi
+fi
+
+# When requested, operate recursively by invoking path-wizard on each
+# discovered directory.  This leverages the existing single-directory
+# implementation so we keep behaviour consistent across formats.
+if [ "$recursive" -eq 1 ]; then
+        tmp_file=${TMPDIR:-/tmp}/path-wizard.$$.dirs
+        sorted_tmp=$tmp_file.sorted
+        if ! find "$directory" -type d -print >"$tmp_file"; then
+                rm -f "$tmp_file"
+                printf '%s\n' "Error: Unable to enumerate directories under '$directory'." >&2
+                exit 1
+        fi
+        if ! sort "$tmp_file" >"$sorted_tmp"; then
+                rm -f "$tmp_file" "$sorted_tmp"
+                printf '%s\n' "Error: Unable to enumerate directories under '$directory'." >&2
+                exit 1
+        fi
+        rm -f "$tmp_file"
+        trap 'rm -f "$sorted_tmp"' EXIT HUP INT TERM
+        result=0
+        while IFS= read -r subdir; do
+                set -- "$0"
+                if [ -n "$rc_file_override" ]; then
+                        set -- "$@" --rc-file "$rc_file_override"
+                fi
+                if [ -n "$format" ]; then
+                        set -- "$@" --format "$format"
+                fi
+                if [ -n "$platform" ]; then
+                        set -- "$@" --platform "$platform"
+                fi
+                set -- "$@" "$action" "$subdir"
+                if ! "$@"; then
+                        result=$?
+                        if [ "$action" = "status" ]; then
+                                break
+                        else
+                                break
+                        fi
+                fi
+        done <"$sorted_tmp"
+        rm -f "$sorted_tmp"
+        trap - EXIT HUP INT TERM
+        exit $result
 fi
 
 # When the platform is unspecified, attempt a lightweight detection so we can

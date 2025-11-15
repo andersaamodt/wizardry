@@ -128,6 +128,45 @@ teardown() {
 }
 
 
+@test 'path-wizard recursively manages nested directories' {
+  base_dir="$BATS_TEST_TMPDIR/recursive"
+  mkdir -p "$base_dir/level1/level2"
+
+  run_spell 'spells/path-wizard' '-r' 'status' "$base_dir"
+  assert_failure
+
+  run_spell 'spells/path-wizard' '-r' 'add' "$base_dir"
+  assert_success
+
+  base_entry=$(printf 'export PATH=%s:\\$PATH' "$base_dir")
+  level1_entry=$(printf 'export PATH=%s:\\$PATH' "$base_dir/level1")
+  level2_entry=$(printf 'export PATH=%s:\\$PATH' "$base_dir/level1/level2")
+
+  run grep -Fqx "$base_entry" "$HOME/.bashrc"
+  assert_success
+  run grep -Fqx "$level1_entry" "$HOME/.bashrc"
+  assert_success
+  run grep -Fqx "$level2_entry" "$HOME/.bashrc"
+  assert_success
+
+  run_spell 'spells/path-wizard' '-r' 'status' "$base_dir"
+  assert_success
+
+  run_spell 'spells/path-wizard' '-r' 'remove' "$base_dir"
+  assert_success
+
+  run grep -Fqx "$base_entry" "$HOME/.bashrc"
+  assert_failure
+  run grep -Fqx "$level1_entry" "$HOME/.bashrc"
+  assert_failure
+  run grep -Fqx "$level2_entry" "$HOME/.bashrc"
+  assert_failure
+
+  run_spell 'spells/path-wizard' '-r' 'status' "$base_dir"
+  assert_failure
+}
+
+
 @test 'path-wizard recognises existing quoted PATH lines' {
   target_dir="${BATS_TEST_TMPDIR}/quoted"
   mkdir -p "$target_dir"
