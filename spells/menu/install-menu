@@ -32,7 +32,7 @@ if ! require menu "The install-menu spell needs the 'menu' command to present ch
 fi
 
 # Let the user bail out with Ctrl+C while still printing a friendly message.
-trap 'printf "\nExiting install menu.\n" >&2; printf "%s\n" "exiting"; exit 0' INT
+trap 'printf "\nExiting install menu.\n" >&2; exit 0' INT
 
 list_entries() {
     # INSTALL_MENU_DIRS can override discovery for tests or custom menus.
@@ -49,6 +49,8 @@ list_entries() {
         printf '%s\n' "$(basename "$dir")"
     done
 }
+
+menu_escape_status=113
 
 while :; do
     entries=$(list_entries)
@@ -84,7 +86,14 @@ while :; do
 
     set -- "$@" "Exit%kill -2 $$"
 
-    if ! menu "Install Menu:" "$@"; then
-        exit 1
+    MENU_ESCAPE_STATUS=$menu_escape_status menu "Install Menu:" "$@"
+    status=$?
+
+    if [ "$status" -eq "$menu_escape_status" ]; then
+        break
+    fi
+
+    if [ "$status" -ne 0 ]; then
+        exit "$status"
     fi
 done

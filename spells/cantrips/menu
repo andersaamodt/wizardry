@@ -6,6 +6,19 @@
 
 set -eu
 
+menu_escape_status=${MENU_ESCAPE_STATUS-0}
+case $menu_escape_status in
+        ''|*[!0-9]*)
+                printf '%s\n' "menu: MENU_ESCAPE_STATUS must be a non-negative integer" >&2
+                exit 1
+                ;;
+esac
+
+if [ "$menu_escape_status" -gt 255 ]; then
+        printf '%s\n' "menu: MENU_ESCAPE_STATUS must be between 0 and 255" >&2
+        exit 1
+fi
+
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 
 # Reuse the standard dependency checker when available so missing commands can
@@ -287,7 +300,6 @@ execute_selection() {
         # there is no command we simply exit after cleaning up.
         command=$(sed -n "${selected}p" "$commands_file")
         if [ -n "$command" ]; then
-                printf '\n'
                 cleanup
                 trap - EXIT INT TERM
                 # shellcheck disable=SC2039,SC3045 # POSIX sh allows eval
@@ -375,11 +387,10 @@ do
                 execute_selection
                 exit 0
                 ;;
-        escape)
+        escape|ESC|esc)
                 cleanup
                 trap - EXIT INT TERM
-                printf '%s\n' 'ESC'
-                exit 0
+                exit "$menu_escape_status"
                 ;;
         esac
         update_dimensions

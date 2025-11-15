@@ -11,9 +11,34 @@ setup() {
   menu_log="$stub_dir/menu.log"
   cat <<'MENU' >"$stub_dir/menu"
 #!/usr/bin/env bash
+set -euo pipefail
+
+result=""
+if [ -n "${MENU_STUB_RESULTS_FILE-}" ] && [ -f "$MENU_STUB_RESULTS_FILE" ] && [ -s "$MENU_STUB_RESULTS_FILE" ]; then
+  result=$(head -n 1 "$MENU_STUB_RESULTS_FILE")
+  tmp="${MENU_STUB_RESULTS_FILE}.tmp"
+  tail -n +2 "$MENU_STUB_RESULTS_FILE" >"$tmp" 2>/dev/null || :
+  mv "$tmp" "$MENU_STUB_RESULTS_FILE"
+elif [ -n "${MENU_STUB_RESULT-}" ]; then
+  result="$MENU_STUB_RESULT"
+else
+  result="command"
+fi
+
 printf 'MENU:%s\n' "$@" | tee -a "$MENU_LOG"
-kill -2 "$PPID" 2>/dev/null || true
-exit 0
+
+escape_status=${MENU_ESCAPE_STATUS:-0}
+case "$result" in
+  escape)
+    exit "$escape_status"
+    ;;
+  error)
+    exit 1
+    ;;
+  *)
+    exit 0
+    ;;
+esac
 MENU
   chmod +x "$stub_dir/menu"
 
@@ -392,6 +417,7 @@ assert_move_cursor_log() {
 @test 'main-menu forwards options to menu command' {
   export MENU_LOG="$menu_log"
   : >"$menu_log"
+  export MENU_STUB_RESULT=escape
   with_menu_path run_spell 'spells/menu/main-menu'
   assert_success
   assert_output --partial 'MENU:Main Menu:'
