@@ -1,66 +1,106 @@
 #!/usr/bin/env sh
 
-# This spell reveals the width and height of the terminal window.
+# Report terminal dimensions using terminfo via tput.
 
-# Define the function to calculate the size of the terminal window
-fathom_terminal() {
-    width=false
-    height=false
-    verbose=false
-    while getopts "vwht" flag; do
-        case "${flag}" in
-            --verbose|v) verbose=true;;
-            --width|w) width=true;;
-            --height|h) height=true;;
-            --test|t) test_fathom_terminal; exit 0;;
-        esac
-    done
+usage() {
+    printf '%s\n' 'Usage: fathom-terminal [-v|--verbose] [-w|--width] [-h|--height]' >&2
+    exit 1
+}
 
-    # Get the size of the terminal window
-    window_width=$(tput cols)
-    window_height=$(tput lines)
-    size="${window_width};${window_height}"
-    if [ $width = true ] && [ $height = true ]; then
-        if [ $verbose = true ]; then
-            printf "Width: %s\n" "${window_width}"
-            printf "Height: %s\n" "${window_height}"
-        else
-            printf "%s\n" "${window_width}"
-            printf "%s\n" "${window_height}"
-        fi
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+# Share the same require-command lookup logic with the other cantrips.
+if [ -n "${REQUIRE_COMMAND-}" ]; then
+    require_cmd=$REQUIRE_COMMAND
+elif [ -x "$script_dir/require-command" ]; then
+    require_cmd="$script_dir/require-command"
+else
+    require_cmd=require-command
+fi
+
+require() {
+    "$require_cmd" "$@"
+}
+
+verbose=0
+want_width=0
+want_height=0
+
+# Parse the small option set understood by the menu helper.
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        -v|--verbose)
+            verbose=1
+            ;;
+        -w|--width)
+            want_width=1
+            ;;
+        -h|--height)
+            want_height=1
+            ;;
+        --help)
+            usage
+            ;;
+        --)
+            shift
+            break
+            ;;
+        -*)
+            usage
+            ;;
+        *)
+            break
+            ;;
+    esac
+    shift
+done
+
+# Unless told otherwise, report both width and height.
+if [ "$want_width" -eq 0 ] && [ "$want_height" -eq 0 ]; then
+    want_width=1
+    want_height=1
+fi
+
+# tput is our interface to terminfo; fail loudly when it is absent.
+if ! require tput "The fathom-terminal spell needs 'tput' to query terminfo."; then
+    exit 1
+fi
+
+cols=$(tput cols 2>/dev/null)
+cols_status=$?
+lines=$(tput lines 2>/dev/null)
+lines_status=$?
+
+if [ "$want_width" -eq 1 ]; then
+    if [ $cols_status -ne 0 ] || [ -z "$cols" ]; then
+        printf '%s\n' 'fathom-terminal: unable to determine terminal width' >&2
+        exit 1
+    fi
+fi
+
+if [ "$want_height" -eq 1 ]; then
+    if [ $lines_status -ne 0 ] || [ -z "$lines" ]; then
+        printf '%s\n' 'fathom-terminal: unable to determine terminal height' >&2
+        exit 1
+    fi
+fi
+
+print_dimension() {
+    label=$1
+    value=$2
+    if [ "$verbose" -eq 1 ]; then
+        printf '%s: %s\n' "$label" "$value"
     else
-        if [ $width = true ]; then
-            if [ $verbose = true ]; then
-                printf "Width: "
-            fi
-            printf "%s\n" "${window_width}"
-        elif [ $height = true ]; then
-            if [ $verbose = true ]; then
-                printf "Height: "
-            fi
-            printf "%s\n" "${window_height}"
-        else
-            if [ $verbose = true ]; then
-                printf "Size: "
-            fi
-            printf "%s\n" "$size"
-        fi
+        printf '%s\n' "$value"
     fi
 }
 
-# Unit test
-test_fathom_terminal() {
-  . "./assertions"
-  assert_output "fathom_terminal -w" "$(tput cols)"
-  assert_output "fathom_terminal --width" "$(tput cols)"
-  assert_output "fathom_terminal -h" "$(tput lines)"
-  assert_output "fathom_terminal --height" "$(tput lines)"
-  assert_output "fathom_terminal -w -v" "Width: $(tput cols)"
-  assert_output "fathom_terminal --width --verbose" "Width: $(tput cols)"
-  assert_output "fathom_terminal -h -v" "Height: $(tput lines)"
-  assert_output "fathom_terminal --height --verbose" "Height: $(tput lines)"
-  assert_output "fathom_terminal -h -v -w" "Height: $(tput lines)\nWidth: $(tput cols)"
-  assert_output "fathom_terminal --height --verbose --width" "Height: $(tput lines)\nWidth: $(tput cols)"
-}
-
-fathom_terminal "$@"
+# Honour the caller's selection of width, height, or both.
+if [ "$want_width" -eq 1 ] && [ "$want_height" -eq 1 ]; then
+    print_dimension 'Width' "$cols"
+    print_dimension 'Height' "$lines"
+elif [ "$want_width" -eq 1 ]; then
+    print_dimension 'Width' "$cols"
+else
+    print_dimension 'Height' "$lines"
+fi

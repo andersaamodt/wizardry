@@ -4,6 +4,7 @@ load 'test_helper/load'
 
 setup_home() {
   HOME="$BATS_TEST_TMPDIR/path_home"
+  export HOME
   mkdir -p "$HOME"
   cat <<'RC' >"$HOME/.bashrc"
 # test bashrc
@@ -18,6 +19,7 @@ setup() {
 
 teardown() {
   HOME=$ORIGINAL_HOME
+  export HOME
   default_teardown
 }
 
@@ -30,28 +32,32 @@ teardown() {
 
   run_spell 'spells/path-wizard'
   assert_failure
-  assert_output --partial 'requires one or two arguments'
+  assert_error --partial 'Usage: path-wizard'
 
   run_spell 'spells/path-wizard' 'list'
   assert_failure
-  assert_output --partial "The first argument must be 'add' or 'remove'."
+  assert_error --partial "The first argument must be 'add', 'remove', or 'status'."
 
   run_spell 'spells/path-wizard' 'add' "$missing_dir"
   assert_failure
-  assert_output --partial 'The directory does not exist.'
+  assert_error --partial 'The directory does not exist.'
 
   mv "$HOME/.bashrc" "$HOME/.bashrc.bak"
   run_spell 'spells/path-wizard' 'add' "$target_dir"
-  assert_failure
-  assert_output --partial "The '.bashrc' file does not exist"
+  assert_success
+  assert_output --partial 'The directory has been added to your PATH.'
+  assert_output --partial 'new shells'
   mv "$HOME/.bashrc.bak" "$HOME/.bashrc"
 
   run_spell 'spells/path-wizard' 'add' "$target_dir"
   assert_success
   assert_output --partial 'The directory has been added to your PATH.'
-  assert_output --partial 'source ~/.bashrc'
-  entry="export PATH=$target_dir:\$PATH"
+  assert_output --partial 'new shells'
+  entry=$(printf 'export PATH=%s:\\$PATH' "$target_dir")
   run grep -Fqx "$entry" "$HOME/.bashrc"
+  assert_success
+
+  run_spell 'spells/path-wizard' 'status' "$target_dir"
   assert_success
 
   run_spell 'spells/path-wizard' 'add' "$target_dir"
@@ -61,20 +67,23 @@ teardown() {
   run_spell 'spells/path-wizard' 'remove' "$target_dir"
   assert_success
   assert_output --partial 'The directory has been removed from your PATH.'
-  assert_output --partial 'open a new terminal'
+  assert_output --partial 'new shells'
   run grep -Fqx "$entry" "$HOME/.bashrc"
+  assert_failure
+
+  run_spell 'spells/path-wizard' 'status' "$target_dir"
   assert_failure
 
   run_spell 'spells/path-wizard' 'remove' "$target_dir"
   assert_failure
-  assert_output --partial 'The directory is not in your PATH.'
+  assert_error --partial 'The directory is not in your PATH.'
 
   old_pwd=$(pwd)
   cd "$default_dir"
   run_spell 'spells/path-wizard' 'add'
   cd "$old_pwd"
   assert_success
-  default_entry="export PATH=$default_dir:\$PATH"
+  default_entry=$(printf 'export PATH=%s:\\$PATH' "$default_dir")
   run grep -Fqx "$default_entry" "$HOME/.bashrc"
   assert_success
 
@@ -85,7 +94,7 @@ teardown() {
   mkdir -p "$magic_dir"
   run_spell 'spells/path-wizard' 'add' '~/magic'
   assert_success
-  tilde_entry="export PATH=$magic_dir:\$PATH"
+  tilde_entry=$(printf 'export PATH=%s:\\$PATH' "$magic_dir")
   run grep -Fqx "$tilde_entry" "$HOME/.bashrc"
   assert_success
   run_spell 'spells/path-wizard' 'remove' "$magic_dir"
@@ -98,7 +107,7 @@ teardown() {
   run_spell 'spells/path-wizard' 'add' '.'
   cd "$old_pwd"
   assert_success
-  dot_entry="export PATH=$dot_dir:\$PATH"
+  dot_entry=$(printf 'export PATH=%s:\\$PATH' "$dot_dir")
   run grep -Fqx "$dot_entry" "$HOME/.bashrc"
   assert_success
   run_spell 'spells/path-wizard' 'remove' "$dot_dir"
@@ -111,10 +120,177 @@ teardown() {
   run_spell 'spells/path-wizard' 'add' 'relative'
   cd "$old_pwd"
   assert_success
-  relative_entry="export PATH=$relative_dir:\$PATH"
+  relative_entry=$(printf 'export PATH=%s:\\$PATH' "$relative_dir")
   run grep -Fqx "$relative_entry" "$HOME/.bashrc"
   assert_success
   run_spell 'spells/path-wizard' 'remove' "$relative_dir"
+  assert_success
+}
+
+
+@test 'path-wizard recognises existing quoted PATH lines' {
+  target_dir="${BATS_TEST_TMPDIR}/quoted"
+  mkdir -p "$target_dir"
+
+  cat <<EOF >>"$HOME/.bashrc"
+export PATH="${target_dir}:\$PATH"
+EOF
+
+  run_spell 'spells/path-wizard' 'status' "$target_dir"
+  assert_success
+
+  run_spell 'spells/path-wizard' 'add' "$target_dir"
+  assert_success
+  assert_output --partial 'already in your PATH'
+
+  run grep -F "$target_dir" "$HOME/.bashrc"
+  assert_success
+  count=$(grep -F "$target_dir" "$HOME/.bashrc" | wc -l | tr -d ' ')
+  [ "$count" -eq 1 ]
+}
+
+@test 'path-wizard recognises $HOME-based PATH entries' {
+  rel_dir="wizardry-home"
+  target_dir="$HOME/$rel_dir"
+  mkdir -p "$target_dir"
+
+  printf 'export PATH="$HOME/%s:$PATH"\n' "$rel_dir" >>"$HOME/.bashrc"
+
+  run_spell 'spells/path-wizard' 'status' "$target_dir"
+  assert_success
+
+  run_spell 'spells/path-wizard' 'add' "$target_dir"
+  assert_success
+  assert_output --partial 'already in your PATH'
+}
+
+@test 'path-wizard recognises tilde PATH entries' {
+  rel_dir="wizardry-tilde"
+  target_dir="$HOME/$rel_dir"
+  mkdir -p "$target_dir"
+
+  printf 'export PATH="~/%s:$PATH"\n' "$rel_dir" >>"$HOME/.bashrc"
+
+  run_spell 'spells/path-wizard' 'status' "$target_dir"
+  assert_success
+
+  run_spell 'spells/path-wizard' 'add' "$target_dir"
+  assert_success
+  assert_output --partial 'already in your PATH'
+}
+
+@test 'path-wizard ignores directories mentioned outside PATH assignments' {
+  stray_dir="${BATS_TEST_TMPDIR}/stray"
+  mkdir -p "$stray_dir"
+
+  cat <<EOF >>"$HOME/.bashrc"
+# note: $stray_dir is referenced below but not exported
+alias straydir='$stray_dir'
+EOF
+
+  run_spell 'spells/path-wizard' 'status' "$stray_dir"
+  assert_failure
+
+  run_spell 'spells/path-wizard' 'add' "$stray_dir"
+  assert_success
+  assert_output --partial 'added to your PATH'
+
+  entry=$(printf 'export PATH=%s:\\$PATH' "$stray_dir")
+  run grep -Fqx "$entry" "$HOME/.bashrc"
+  assert_success
+}
+
+@test 'path-wizard requires a directory when checking status' {
+  run_spell 'spells/path-wizard' 'status'
+  assert_failure
+  assert_error --partial "expects a directory argument"
+}
+
+@test 'path-wizard supports alternate rc files' {
+  target_dir="$BATS_TEST_TMPDIR/alt"
+  mkdir -p "$target_dir"
+  rc_file="$HOME/.zshrc"
+  rm -f "$rc_file"
+
+  run_spell 'spells/path-wizard' '--rc-file' "$rc_file" 'add' "$target_dir"
+  assert_success
+  assert_output --partial 'added to your PATH'
+  alt_entry=$(printf 'export PATH=%s:\\$PATH' "$target_dir")
+  run grep -Fqx "$alt_entry" "$rc_file"
+  assert_success
+
+  run_spell 'spells/path-wizard' '--rc-file' "$rc_file" 'remove' "$target_dir"
+  assert_success
+  assert_output --partial 'removed from your PATH'
+  run grep -Fqx "$alt_entry" "$rc_file"
+  assert_failure
+}
+
+@test 'path-wizard manages Nix configuration files' {
+  target_dir="$BATS_TEST_TMPDIR/nix_target"
+  mkdir -p "$target_dir"
+  rc_file="$HOME/.config/nixpkgs/configuration.nix"
+  rm -rf "$HOME/.config"
+
+  run_spell 'spells/path-wizard' '--rc-file' "$rc_file" '--format' nix 'add' "$target_dir"
+  assert_success
+  assert_output --partial 'The directory has been added to your PATH.'
+  assert_output --partial 'Rebuild your Nix environment'
+  run grep -F '# wizardry PATH begin' "$rc_file"
+  assert_success
+  run grep -F "\"$target_dir\"" "$rc_file"
+  assert_success
+
+  run_spell 'spells/path-wizard' '--rc-file' "$rc_file" '--format' nix 'status' "$target_dir"
+  assert_success
+
+  run_spell 'spells/path-wizard' '--rc-file' "$rc_file" '--format' nix 'add' "$target_dir"
+  assert_success
+  assert_output --partial 'already in your PATH.'
+
+  run_spell 'spells/path-wizard' '--rc-file' "$rc_file" '--format' nix 'remove' "$target_dir"
+  assert_success
+  assert_output --partial 'removed from your PATH.'
+  assert_output --partial 'Rebuild your Nix environment'
+  assert_error --partial 'backed up'
+  run grep -F "\"$target_dir\"" "$rc_file"
+  assert_failure
+  run grep -F '# wizardry PATH begin' "$rc_file"
+  assert_failure
+
+  backup=$(ls "$rc_file".wizardry.* 2>/dev/null | head -n 1)
+  [ -n "$backup" ]
+
+  run cat "$backup"
+  assert_success
+  assert_output --partial 'wizardry PATH begin'
+
+  run_spell 'spells/path-wizard' '--rc-file' "$rc_file" '--format' nix 'status' "$target_dir"
+  assert_failure
+}
+
+@test 'path-wizard infers nix format from rc file extension' {
+  target_dir="$BATS_TEST_TMPDIR/nix_auto"
+  mkdir -p "$target_dir"
+  rc_file="$HOME/.config/nixpkgs/configuration.nix"
+  mkdir -p "${rc_file%/*}"
+  cat <<'CFG' >"$rc_file"
+{ config, pkgs, ... }:
+
+{
+}
+CFG
+
+  run_spell 'spells/path-wizard' '--rc-file' "$rc_file" 'add' "$target_dir"
+  assert_success
+  assert_output --partial 'Rebuild your Nix environment'
+  run grep -F "\"$target_dir\"" "$rc_file"
+  assert_success
+
+  backup=$(ls "$rc_file".wizardry.* 2>/dev/null | head -n 1)
+  [ -n "$backup" ]
+
+  run_spell 'spells/path-wizard' '--rc-file' "$rc_file" 'status' "$target_dir"
   assert_success
 }
 

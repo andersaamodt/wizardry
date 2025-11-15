@@ -1,69 +1,159 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 
-# This magical spell captures and processes key presses.
-# Use it to capture key presses from the terminal and determine which key was pressed.
-# todo: Tab key not distinguished from Enter (\t case does not work) 
+# Read a single key press from the controlling terminal and report it in a
+# descriptive form ("enter", "up", literal text, etc.).
 
-# Define the function to handle key presses
-await_keypress() {
-  # Read a single character from the terminal
-  read -s -n1 key
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 
-  # Check the value of the key
-  case "$key" in
-    # Enter key
-    $'\t')
-    	echo "tab"
-    	;;
-    $'\n')
-    	echo "enter"
-    	;;
-    '') # also fires for Tab key
-      echo "enter"
-      ;;
-    '')
-    	echo "backspace"
-    	;;
-    $'\b')
-    	echo "backspace"
-    	;;
-    # Escape sequence, could be any number of keys depending on next character
-    $'\e')
-    	read -rsn2 -t 0.1 key
-		  case "$key" in
-		  	'')
-		  		echo 'escape'
-		  		;;
-				# Up arrow key
-				$'[A')
-					echo "up"
-					;;
-				# Down arrow key
-				$'[B')
-					echo "down"
-					;;
-				# Right arrow key
-				$'[C')
-					echo "right"
-					;;
-				# Left arrow key
-				$'[D')
-					echo "left"
-					;;
-				$'[3')
-					echo "delete"
-					;;
-				*)
-					echo "escaped key: $key"
-					;;
-			esac
-			;;
-    # Any other key
-    *)
-      echo "$key"
-      # od -c <<< $key # debug
-      ;;
-  esac
+# Resolve the helper to use for command verification.
+if [ -n "${REQUIRE_COMMAND-}" ]; then
+    require_cmd=$REQUIRE_COMMAND
+elif [ -x "$script_dir/require-command" ]; then
+    require_cmd="$script_dir/require-command"
+else
+    require_cmd=require-command
+fi
+
+require() {
+    "$require_cmd" "$@"
 }
 
-await_keypress
+# Capture raw bytes with dd; bail out immediately when it is missing.
+if ! require dd "The await-keypress spell needs 'dd' to capture raw key presses."; then
+    exit 1
+fi
+
+TTY_DEVICE=${AWAIT_KEYPRESS_DEVICE:-/dev/tty}
+skip_stty=${AWAIT_KEYPRESS_SKIP_STTY:-0}
+
+if [ "$skip_stty" -eq 1 ]; then
+    # Allow tests to provide a preconfigured file descriptor instead of
+    # toggling terminal attributes.
+    if [ ! -r "$TTY_DEVICE" ]; then
+        printf '%s\n' "await-keypress: unable to read from '$TTY_DEVICE'" >&2
+        exit 1
+    fi
+
+    exec 3<"$TTY_DEVICE" || exit 1
+    restore() {
+        exec 3>&- 2>/dev/null || :
+    }
+else
+    # When interacting with the real terminal, require stty for raw-mode
+    # management and open the device read/write.
+    if ! require stty "The await-keypress spell needs 'stty' to manage terminal modes."; then
+        exit 1
+    fi
+
+    if [ ! -r "$TTY_DEVICE" ] || [ ! -w "$TTY_DEVICE" ]; then
+        printf '%s\n' "await-keypress: unable to open controlling terminal '$TTY_DEVICE'" >&2
+        exit 1
+    fi
+
+    exec 3<>"$TTY_DEVICE" || exit 1
+
+    # Persist the existing terminal configuration so we can restore it later.
+    saved_state=$(stty -g <&3 2>/dev/null)
+    if [ -z "$saved_state" ]; then
+        printf '%s\n' 'await-keypress: unable to read terminal settings' >&2
+        exit 1
+    fi
+
+    restore() {
+        stty "$saved_state" <&3 >/dev/null 2>&1 || :
+        exec 3>&- 2>/dev/null || :
+    }
+
+    trap 'restore; exit 130' INT HUP TERM
+    trap 'restore' EXIT
+
+    # Configure canonical mode to wait for exactly one byte of input.
+    if ! stty -icanon -echo min 1 time 0 <&3 2>/dev/null; then
+        printf '%s\n' 'await-keypress: unable to configure terminal' >&2
+        exit 1
+    fi
+fi
+
+# Helper to slurp a specified number of bytes from the terminal.
+read_codes() {
+    codes=$(dd bs=1 count="$1" 2>/dev/null <&3 | od -An -t u1 -v | tr -s '[:space:]' ' ')
+    codes=${codes# }
+    codes=${codes% }
+    printf '%s' "$codes"
+}
+
+# Convert numeric byte values back to characters.
+codes_to_string() {
+    result=''
+    for code in $1; do
+        result=${result}$(printf '\\%03o' "$code")
+    done
+    printf '%b' "$result"
+}
+
+first_codes=$(read_codes 1)
+if [ -z "$first_codes" ]; then
+    exit 1
+fi
+
+first_char=$(codes_to_string "$first_codes")
+
+# Allow escape sequences to provide additional bytes.
+if [ "$skip_stty" -eq 0 ]; then
+    if ! stty -icanon -echo min 0 time 1 <&3 2>/dev/null; then
+        printf '%s\n' 'await-keypress: unable to update terminal timing' >&2
+        exit 1
+    fi
+fi
+
+rest=''
+while :; do
+    codes=$(read_codes 1)
+    [ -z "$codes" ] && break
+    char=$(codes_to_string "$codes")
+    rest=${rest}${char}
+done
+
+trap - EXIT
+restore
+
+# Translate byte sequences into human-friendly key names.
+case "$first_codes" in
+    9)
+        printf '%s\n' 'tab'
+        ;;
+    10|13)
+        printf '%s\n' 'enter'
+        ;;
+    8|127)
+        printf '%s\n' 'backspace'
+        ;;
+    27)
+        case "$rest" in
+            '')
+                printf '%s\n' 'escape'
+                ;;
+            '[A')
+                printf '%s\n' 'up'
+                ;;
+            '[B')
+                printf '%s\n' 'down'
+                ;;
+            '[C')
+                printf '%s\n' 'right'
+                ;;
+            '[D')
+                printf '%s\n' 'left'
+                ;;
+            '[3~')
+                printf '%s\n' 'delete'
+                ;;
+            *)
+                printf '%s\n' "escaped key: $rest"
+                ;;
+        esac
+        ;;
+    *)
+        printf '%s\n' "${first_char}${rest}"
+        ;;
+esac

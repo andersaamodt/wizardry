@@ -1,0 +1,34 @@
+#!/usr/bin/env sh
+
+# Guard a script against missing external commands by exiting with a
+# descriptive error if the binary is absent.
+
+usage() {
+    # Avoid silent failures when the helper is invoked incorrectly.
+    printf '%s\n' 'Usage: require-command <command> [message...]' >&2
+    exit 1
+}
+
+if [ "$#" -lt 1 ]; then
+    usage
+fi
+
+command_name=$1
+shift
+
+# Succeed immediately when the command is already available on PATH.
+if command -v -- "$command_name" >/dev/null 2>&1; then
+    exit 0
+fi
+
+if [ "$#" -gt 0 ]; then
+    message=$*
+else
+    # Point users toward the install menu so they can resolve the missing
+    # dependency the “Wizardry” way instead of reaching for system package
+    # managers manually.
+    message="The '${command_name}' command is required. Run 'install-menu' to review installation options."
+fi
+
+printf '%s\n' "require-command: $message" >&2
+exit 1

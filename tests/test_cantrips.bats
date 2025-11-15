@@ -25,6 +25,22 @@ STTY
   printf '%s\n' "$dir"
 }
 
+make_require_stub() {
+  local fail_command=$1
+  local message=$2
+  local path="$BATS_TEST_TMPDIR/require-${fail_command}"
+  cat <<STUB >"$path"
+#!/usr/bin/env sh
+if [ "\$1" = "$fail_command" ]; then
+  printf '%s\n' "require-command: $message" >&2
+  exit 1
+fi
+exec "$ROOT_DIR/spells/cantrips/require-command" "\$@"
+STUB
+  chmod +x "$path"
+  printf '%s\n' "$path"
+}
+
 @test 'ask prints prompt and captures response' {
   input="$BATS_TEST_TMPDIR/ask_input"
   printf 'response\n' >"$input"
@@ -57,6 +73,17 @@ STTY
   [[ "$stderr" == *'N'* ]]
 }
 
+@test 'require-command reports success and failure' {
+  run_spell 'spells/cantrips/require-command' printf
+  assert_success
+
+  run_spell 'spells/cantrips/require-command' missing-command
+  assert_failure
+  assert_output ''
+  assert_error --partial "missing-command"
+  assert_error --partial "install-menu"
+}
+
 @test 'assertions helper succeeds and fails appropriately' {
   helper_success="$BATS_TEST_TMPDIR/assert_success.sh"
   cat <<'SUCCESS' >"$helper_success"
@@ -82,7 +109,7 @@ FAIL
   chmod +x "$helper_failure"
   run_spell "$helper_failure"
   assert_failure
-  assert_output --partial 'Assertion failed'
+  assert_error --partial 'Assertion failed'
 }
 
 run_keypress() {
@@ -91,7 +118,7 @@ run_keypress() {
   local file
   file=$(mktemp "$BATS_TEST_TMPDIR/key.XXXXXX")
   printf '%b' "$content" >"$file"
-  run_spell 'spells/cantrips/await-keypress' <"$file"
+  AWAIT_KEYPRESS_DEVICE="$file" AWAIT_KEYPRESS_SKIP_STTY=1 run_spell 'spells/cantrips/await-keypress'
   assert_success
   assert_output "$expected"
 }
@@ -147,6 +174,12 @@ LOOK
   assert_output ''
 }
 
+@test 'colors disable palette when NO_COLOR requested' {
+  run env NO_COLOR=1 sh -c '. "$1"; [ -z "$RED" ] && [ "${WIZARDRY_COLORS_AVAILABLE:-1}" -eq 0 ] && printf ok' _ "$ROOT_DIR/spells/cantrips/colors"
+  assert_success
+  assert_output 'ok'
+}
+
 @test 'cursor-blink toggles visibility' {
   run_spell 'spells/cantrips/cursor-blink' on
   assert_success
@@ -158,7 +191,13 @@ LOOK
 
   run_spell 'spells/cantrips/cursor-blink'
   assert_failure
-  assert_output --partial 'Usage: cast_cursor_blink on|off'
+  assert_error --partial 'Usage: cursor-blink on|off'
+}
+
+@test 'cursor-blink becomes a no-op on dumb terminals' {
+  TERM=dumb run --separate-stderr -- wizardry_run_with_coverage spells/cantrips/cursor-blink on
+  assert_success
+  assert_output ''
 }
 
 fathom_cursor() {
@@ -167,7 +206,7 @@ fathom_cursor() {
   local file
   file=$(mktemp "$BATS_TEST_TMPDIR/fcursor.XXXXXX")
   printf '%s' "$input" >"$file"
-  run_spell 'spells/cantrips/fathom-cursor' "$@" <"$file"
+  FATHOM_CURSOR_DEVICE="$file" FATHOM_CURSOR_SKIP_STTY=1 run_spell 'spells/cantrips/fathom-cursor' "$@"
 }
 
 @test 'fathom-cursor parses coordinates' {
@@ -181,7 +220,7 @@ fathom_cursor() {
 
   fathom_cursor $'\e[12;34R'
   assert_success
-  assert_output '12;34'
+  assert_output $'34\n12'
 
   fathom_cursor $'\e[12;34R' -x -y
   assert_success
@@ -193,7 +232,21 @@ fathom_cursor() {
 
   fathom_cursor $'\e[12;34R' -v
   assert_success
-  assert_output 'Position: 12;34'
+  assert_output $'X: 34\nY: 12'
+}
+
+@test 'await-keypress reports missing dd command' {
+  stub=$(make_require_stub dd "The await-keypress spell needs 'dd' to capture raw key presses.")
+  REQUIRE_COMMAND="$stub" run_spell 'spells/cantrips/await-keypress'
+  assert_failure
+  assert_error --partial "await-keypress spell needs 'dd' to capture raw key presses"
+}
+
+@test 'fathom-cursor reports missing dd command' {
+  stub=$(make_require_stub dd "The fathom-cursor spell needs 'dd' to read the terminal response.")
+  REQUIRE_COMMAND="$stub" run_spell 'spells/cantrips/fathom-cursor'
+  assert_failure
+  assert_error --partial "fathom-cursor spell needs 'dd' to read the terminal response"
 }
 
 make_tput_stub() {
@@ -233,11 +286,19 @@ TPUT
 
   PATH="$tput_dir:$ORIGINAL_PATH" run_spell 'spells/cantrips/fathom-terminal' -v
   assert_success
-  assert_output 'Size: 80;24'
+  assert_line --index 0 'Width: 80'
+  assert_line --index 1 'Height: 24'
 
   PATH="$tput_dir:$ORIGINAL_PATH" run_spell 'spells/cantrips/fathom-terminal' -z
   assert_failure
   [[ "$stderr" == *'Usage:'* ]]
+}
+
+@test 'fathom-terminal reports missing tput command' {
+  stub=$(make_require_stub tput "The fathom-terminal spell requires the 'tput' command to read terminal dimensions.")
+  REQUIRE_COMMAND="$stub" run_spell 'spells/cantrips/fathom-terminal' -w
+  assert_failure
+  assert_error --partial "fathom-terminal spell requires the 'tput' command"
 }
 
 @test 'max-length computes lengths and handles verbosity' {
@@ -256,7 +317,7 @@ TPUT
 
   run_spell 'spells/cantrips/max-length'
   assert_failure
-  [[ "$stderr" == *'Usage'* ]]
+  [[ "$output" == *'No arguments passed to max_length'* ]]
 }
 
 create_menu_stubs() {
@@ -323,6 +384,37 @@ COL
   assert_output --partial 'ESC'
 }
 
+@test 'menu_posix presents selections and executes commands' {
+  menu_workspace="$BATS_TEST_TMPDIR/menu_posix_ws"
+  mkdir -p "$menu_workspace"
+  cat <<'COL' >"$menu_workspace/colors"
+RESET=""
+CYAN=""
+GREY=""
+COL
+  chmod +x "$menu_workspace/colors"
+
+  stubs=$(create_menu_stubs)
+  keys="$BATS_TEST_TMPDIR/menu_posix_keys"
+  printf 'down\nenter\n' >"$keys"
+  export MENU_KEYS="$keys"
+  PATH="$stubs:$ORIGINAL_PATH"
+  pushd "$menu_workspace" >/dev/null
+  run_spell 'spells/cantrips/menu_posix' 'Choose:' 'First%echo first' 'Second%echo second'
+  popd >/dev/null
+  assert_success
+  assert_output --partial 'Second'
+  assert_output --partial 'second'
+
+  printf 'up\nescape\n' >"$keys"
+  export MENU_KEYS="$keys"
+  pushd "$menu_workspace" >/dev/null
+  run_spell 'spells/cantrips/menu_posix' 'Leave:' 'Alpha%echo alpha' 'Beta%echo beta'
+  popd >/dev/null
+  assert_success
+  assert_output --partial 'ESC'
+}
+
 @test 'move-cursor prints ANSI sequence or usage' {
   run_spell 'spells/cantrips/move-cursor' 3 4
   assert_success
@@ -333,6 +425,22 @@ COL
   [[ "$stderr" == *'Usage'* ]]
 }
 
+@test 'move-cursor treats zero as the first column and row' {
+  run_spell 'spells/cantrips/move-cursor' 0 3
+  assert_success
+  assert_output $'\033[3;1H'
+
+  run_spell 'spells/cantrips/move-cursor' 4 0
+  assert_success
+  assert_output $'\033[1;4H'
+}
+
+@test 'move-cursor no-ops on dumb terminal' {
+  TERM=dumb run --separate-stderr -- wizardry_run_with_coverage spells/cantrips/move-cursor 2 2
+  assert_success
+  assert_output ''
+}
+
 @test 'say echoes joined arguments' {
   run_spell 'spells/cantrips/say' 'hello world'
   assert_success
@@ -340,6 +448,6 @@ COL
 
   run_spell 'spells/cantrips/say' 'inner' 'ignored'
   assert_success
-  assert_output 'inner ignored'
+  assert_output 'inner'
 }
 

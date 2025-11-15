@@ -3,14 +3,34 @@
 # This magical knowledge serves as a colorful palette of hues and shades,
 # granting control over the appearance of the terminal.
 # Use these variables to add color to your writing.
-# Example: echo -en "${RED}Error:${RESET} An error message." 
+# Example: printf '%sError:%s An error message.\n' "${RED}" "${RESET}"
 # This script contains all color codes in the POSIX standard.
-# You must source this script with 'source ./cursor' or '. ./cursor' to use it.
+# You must source this script with '. ./colors' (or an absolute path) to use it.
 
-# Reset all attributes to their default values
+# Record whether the terminal appears to support ANSI escape sequences so
+# callers can disable colour-aware features when needed.
+WIZARDRY_COLORS_AVAILABLE=1
+
+disable_palette() {
+        for name in \
+                RESET BLACK RED GREEN YELLOW BLUE PURPLE CYAN WHITE GREY \
+                BOLD ITALICS UNDERLINED BLINK INVERT STRIKE \
+                BRIGHT_BLACK BRIGHT_RED BRIGHT_GREEN BRIGHT_YELLOW \
+                BRIGHT_BLUE BRIGHT_PURPLE BRIGHT_CYAN BRIGHT_WHITE \
+                BG_BLACK BG_RED BG_GREEN BG_YELLOW BG_BLUE BG_PURPLE \
+                BG_CYAN BG_WHITE BG_BRIGHT_BLACK BG_BRIGHT_RED \
+                BG_BRIGHT_GREEN BG_BRIGHT_YELLOW BG_BRIGHT_BLUE \
+                BG_BRIGHT_PURPLE BG_BRIGHT_CYAN BG_BRIGHT_WHITE
+        do
+                eval "$name=''"
+        done
+        WIZARDRY_COLORS_AVAILABLE=0
+}
+
+# Reset all attributes to their default values.
 RESET="\033[0m"
 
-# Colors
+# Colours.
 BLACK="\033[30m"
 RED="\033[31m"
 GREEN="\033[32m"
@@ -21,7 +41,7 @@ CYAN="\033[36m"
 WHITE="\033[37m" # Or is this default/white?
 GREY="\033[2m"
 
-# Formatting
+# Formatting.
 BOLD="\033[1m"
 ITALICS="\033[3m" #or 3?
 UNDERLINED="\033[4m"
@@ -29,7 +49,7 @@ BLINK="\033[5m"
 INVERT="\033[7m"
 STRIKE="\033[9m" # Strikethrough
 
-# Bright colors
+# Bright colours.
 BRIGHT_BLACK="\033[30;1m"
 BRIGHT_RED="\033[31;1m"
 BRIGHT_GREEN="\033[32;1m"
@@ -39,7 +59,7 @@ BRIGHT_PURPLE="\033[35;1m"
 BRIGHT_CYAN="\033[36;1m"
 BRIGHT_WHITE="\033[37;1m"
 
-# Background colors
+# Background colours.
 BG_BLACK="\033[40m"
 BG_RED="\033[41m"
 BG_GREEN="\033[42m"
@@ -49,7 +69,7 @@ BG_PURPLE="\033[45m"
 BG_CYAN="\033[46m"
 BG_WHITE="\033[47m"
 
-# Bright background colors
+# Bright background colours.
 BG_BRIGHT_BLACK="\033[40;1m"
 BG_BRIGHT_RED="\033[41;1m"
 BG_BRIGHT_GREEN="\033[42;1m"
@@ -58,3 +78,25 @@ BG_BRIGHT_BLUE="\033[104m"
 BG_BRIGHT_PURPLE="\033[105m"
 BG_BRIGHT_CYAN="\033[106m"
 BG_BRIGHT_WHITE="\033[107m"
+
+# Allow the user or terminal capabilities to disable colour output entirely.
+case ${NO_COLOR-} in
+        '' ) : ;;
+        * ) disable_palette ;;
+esac
+
+case ${TERM-} in
+        ''|dumb|unknown)
+                disable_palette
+                ;;
+        *)
+                if command -v tput >/dev/null 2>&1; then
+                        colors=$(tput colors 2>/dev/null || printf '')
+                        case ${colors:-} in
+                                ''|0)
+                                        disable_palette
+                                        ;;
+                        esac
+                fi
+                ;;
+esac
