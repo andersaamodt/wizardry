@@ -180,22 +180,24 @@ fi
 # discovered directory.  This leverages the existing single-directory
 # implementation so we keep behaviour consistent across formats.
 if [ "$recursive" -eq 1 ]; then
-        tmp_file=${TMPDIR:-/tmp}/path-wizard.$$.dirs
-        sorted_tmp=$tmp_file.sorted
-        if ! find "$directory" -type d -print >"$tmp_file"; then
+        tmp_file=$(mktemp "${TMPDIR:-/tmp}/path-wizard.XXXXXX") || {
+                printf '%s\n' "Error: Unable to enumerate directories under '$directory'." >&2
+                exit 1
+        }
+        if ! find "$directory" -type d -print | sort >"$tmp_file"; then
                 rm -f "$tmp_file"
                 printf '%s\n' "Error: Unable to enumerate directories under '$directory'." >&2
                 exit 1
         fi
-        if ! sort "$tmp_file" >"$sorted_tmp"; then
-                rm -f "$tmp_file" "$sorted_tmp"
-                printf '%s\n' "Error: Unable to enumerate directories under '$directory'." >&2
-                exit 1
-        fi
-        rm -f "$tmp_file"
-        trap 'rm -f "$sorted_tmp"' EXIT HUP INT TERM
-        result=0
-        while IFS= read -r subdir; do
+
+        cleanup_tmp() {
+                rm -f "$tmp_file"
+        }
+
+        trap 'cleanup_tmp' EXIT HUP INT TERM
+
+        run_recursive_action() {
+                subdir=$1
                 set -- "$0"
                 if [ -n "$rc_file_override" ]; then
                         set -- "$@" --rc-file "$rc_file_override"
@@ -207,10 +209,15 @@ if [ "$recursive" -eq 1 ]; then
                         set -- "$@" --platform "$platform"
                 fi
                 set -- "$@" "$action" "$subdir"
-
                 "$@"
-                status=$?
-                if [ "$status" -ne 0 ]; then
+        }
+
+        result=0
+        while IFS= read -r subdir; do
+                if run_recursive_action "$subdir"; then
+                        :
+                else
+                        status=$?
                         if [ "$result" -eq 0 ]; then
                                 result=$status
                         fi
@@ -218,9 +225,10 @@ if [ "$recursive" -eq 1 ]; then
                                 break
                         fi
                 fi
-        done <"$sorted_tmp"
-        rm -f "$sorted_tmp"
+        done <"$tmp_file"
+
         trap - EXIT HUP INT TERM
+        cleanup_tmp
         exit $result
 fi
 
