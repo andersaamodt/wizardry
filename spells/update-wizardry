@@ -1,0 +1,43 @@
+#!/bin/sh
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+cantrip_dir="$script_dir/cantrips"
+
+require_cmd=${REQUIRE_COMMAND-}
+if [ -z "$require_cmd" ]; then
+  if [ -x "$cantrip_dir/require-command" ]; then
+    require_cmd="$cantrip_dir/require-command"
+  else
+    require_cmd=require-command
+  fi
+fi
+
+require() {
+  "$require_cmd" "$@"
+}
+
+if ! require git "Update Wizardry needs 'git' to pull the latest changes."; then
+  exit 1
+fi
+
+if [ -n "${WIZARDRY_DIR-}" ]; then
+  wizardry_dir=$WIZARDRY_DIR
+else
+  # Attempt to locate the wizardry repository based on this spell's location.
+  candidate=$(dirname "$script_dir")
+  if git -C "$candidate" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    wizardry_dir=$(git -C "$candidate" rev-parse --show-toplevel)
+  else
+    candidate=$(dirname "$candidate")
+    if git -C "$candidate" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+      wizardry_dir=$(git -C "$candidate" rev-parse --show-toplevel)
+    else
+      printf '%s\n' 'Unable to determine the wizardry repository. Set WIZARDRY_DIR to the checkout location.' >&2
+      exit 1
+    fi
+  fi
+fi
+
+printf 'Updating wizardry repository at %s\n' "$wizardry_dir"
+exec git -C "$wizardry_dir" pull --ff-only

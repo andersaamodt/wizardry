@@ -397,8 +397,20 @@ assert_move_cursor_log() {
   assert_success
   assert_output --partial 'MENU:Main Menu:'
   assert_output --partial 'Install Free Software%install-menu'
-  assert_output --partial 'Update all software%update-all'
+  assert_output --partial 'System tasks%system-menu'
   assert_output --partial 'Exit%kill -2'
   assert_output --partial 'exiting'
+}
+
+@test 'system-menu forwards maintenance options to menu command' {
+  export MENU_LOG="$menu_log"
+  : >"$menu_log"
+  with_menu_path run_spell 'spells/menu/system-menu'
+  assert_success
+  assert_output --partial 'MENU:System Menu:'
+  assert_output --partial 'Update all software%update-all'
+  assert_output --partial 'Update Wizardry%update-wizardry'
+  assert_output --partial 'Force restart%sudo shutdown -r now'
+  assert_output --partial 'Exit%kill -2'
 }
 
