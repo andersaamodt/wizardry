@@ -250,7 +250,7 @@ assert_move_cursor_log() {
   local menu_length=2
   local terminal_height=24
   local expected_row=$((fake_y - 1))
-  local max_row=$((terminal_height - menu_length + 1))
+  local max_row=$((terminal_height - menu_length))
   if [ "$max_row" -lt 1 ]; then
     max_row=1
   fi
@@ -288,7 +288,7 @@ assert_move_cursor_log() {
   local menu_length=2
   local terminal_height=24
   local expected_row=$((alternate_fake_y - 1))
-  local max_row=$((terminal_height - menu_length + 1))
+  local max_row=$((terminal_height - menu_length))
   if [ "$max_row" -lt 1 ]; then
     max_row=1
   fi
@@ -326,7 +326,7 @@ assert_move_cursor_log() {
   local menu_length=2
   local terminal_height=24
   local expected_row=$((fake_y - 1))
-  local max_row=$((terminal_height - menu_length + 1))
+  local max_row=$((terminal_height - menu_length))
   if [ "$max_row" -lt 1 ]; then
     max_row=1
   fi
@@ -338,6 +338,49 @@ assert_move_cursor_log() {
   fi
 
   assert_move_cursor_log "$move_log" "$expected_row" "$menu_length"
+}
+
+@test 'menu leaves the terminal's last row available for command output' {
+  local stub_dir
+  stub_dir=$(create_menu_cantrip_stubs)
+  local key_file="$stub_dir/keys"
+  printf 'enter\n' >"$key_file"
+  local move_log="$stub_dir/move.log"
+  : >"$move_log"
+
+  local fake_y_near_bottom=25
+  FAKE_CURSOR_Y=$fake_y_near_bottom \
+  MENU_KEY_FILE="$key_file" \
+  MOVE_CURSOR_LOG="$move_log" \
+  PATH="$stub_dir:$ORIGINAL_PATH" \
+  REQUIRE_COMMAND="$ROOT_DIR/spells/cantrips/require-command" \
+  run_spell 'spells/cantrips/menu' \
+    'Demo Menu' \
+    "First%printf 'chosen:first\\n'" \
+    "Second%printf 'chosen:second\\n'" \
+    "Third%printf 'chosen:third\\n'"
+
+  assert_success
+  assert_output --partial 'chosen:first'
+
+  local menu_length=3
+  local terminal_height=24
+  local expected_row=$((fake_y_near_bottom - 1))
+  local max_row=$((terminal_height - menu_length))
+  if [ "$max_row" -lt 1 ]; then
+    max_row=1
+  fi
+  if [ "$expected_row" -gt "$max_row" ]; then
+    expected_row=$max_row
+  fi
+  if [ "$expected_row" -lt 1 ]; then
+    expected_row=1
+  fi
+
+  assert_move_cursor_log "$move_log" "$expected_row" "$menu_length"
+
+  local final_menu_row=$((expected_row + menu_length - 1))
+  [ "$final_menu_row" -lt "$terminal_height" ] || fail "menu reached terminal's last row: $final_menu_row"
 }
 
 @test 'install-menu reports missing menu command' {

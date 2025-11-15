@@ -289,11 +289,10 @@ case "$menu_row" in
                 ;;
 esac
 
-# When a heading is printed above the menu the cursor ends up one row lower
-# than where we want to anchor the first menu item. Pull the anchor up by a
-# single row so the first option appears directly beneath the heading while we
-# continue to keep the menu clear of the terminal's bottom row.
-if [ -n "$description" ]; then
+# When a heading precedes the menu we want the first option to appear directly
+# beneath that title. The cursor is already one row lower after the newline, so
+# shift the anchor back up when possible before we begin redrawing the menu.
+if [ -n "$description" ] && [ "$menu_row" -gt 1 ]; then
         menu_row=$((menu_row - 1))
 fi
 
@@ -316,7 +315,7 @@ while [ "$padding" -gt 0 ]; do
 done
 
 if [ "$terminal_height" -gt 0 ]; then
-        max_row=$((terminal_height - menu_length + 1))
+        max_row=$((terminal_height - menu_length))
         if [ "$max_row" -lt 1 ]; then
                 max_row=1
         fi
