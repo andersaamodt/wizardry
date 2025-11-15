@@ -31,6 +31,12 @@ if ! require menu "The main menu needs the 'menu' command to present options."; 
   exit 1
 fi
 
+# Detect whether we are running on NixOS to offer system-specific actions.
+nixos_rebuild=""
+if [ -r /etc/os-release ] && grep -q '^ID=nixos' /etc/os-release; then
+  nixos_rebuild="Rebuild NixOS%sudo nixos-rebuild switch"
+fi
+
 display_menu() {
   mud="MUD menu%mud"
   install="Install Free Software%install-menu"
@@ -39,7 +45,12 @@ display_menu() {
   restart="Force restart%sudo shutdown -r now"
   exit="Exit%kill -2 $$" # Commands are run with 'eval' by the menu script, so we can't simply say 'exit'. The keyword $$ gets this scripts PID and the -2 code is SIGINT aka Ctrl-C
 
-  menu "Main Menu:" "$mud" "$install" "$update" "$restart" "$exit"
+  set -- "$mud" "$install" "$update"
+  if [ -n "$nixos_rebuild" ]; then
+    set -- "$@" "$nixos_rebuild"
+  fi
+  set -- "$@" "$restart" "$exit"
+  menu "Main Menu:" "$@"
 }
 
 # Catch Ctrl-C and exit
