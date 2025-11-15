@@ -1,220 +1,102 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
-# Keep the update spell approachable: explain each step, call out the tooling we
-# rely on, and hide noisy command output unless something fails.
+# Updates all system software.
+# Requires that your OS is supported and detected by the detect-distro spell.
+# On Arch-based distros, also offers to install pamac to automate rebuilding AUR packages with new changes to pull. 
+# -v for more verbose output
 
-set -eu
+# Requires say, ask_y, and wizard_eyes, also using colors, all currently located here:
+source ./colors
+source ./ask_Yn
+source ./say
+source ./wizard_eyes
 
-case $0 in
-        */*)
-                script_path=${0%/*}
-                ;;
-        *)
-                script_path=.
-                ;;
- esac
-script_dir=$(cd "$script_path" && pwd -P)
-cantrip_dir="$script_dir/cantrips"
-detect_script="$script_dir/detect-distro"
-TMPDIR=${TMPDIR:-/tmp}
-log_counter=0
+# Read arguments
+while getopts v flag
+do
+    case "${flag}" in
+        v) VERBOSE=true;;
+    esac
+done
 
-if [ -n "${REQUIRE_COMMAND-}" ]; then
-        require_cmd=$REQUIRE_COMMAND
-elif [ -x "$cantrip_dir/require-command" ]; then
-        require_cmd="$cantrip_dir/require-command"
-else
-        require_cmd=""
-fi
-
-require() {
-        tool=$1
-        shift
-        if [ -n "$require_cmd" ]; then
-                "$require_cmd" "$tool" "$@"
-                return $?
-        fi
-        if command -v "$tool" >/dev/null 2>&1; then
-                return 0
-        fi
-        if [ "$#" -gt 0 ]; then
-                printf '%s\n' "$tool: $*" >&2
-        else
-                printf '%s\n' "update-all: missing required command '$tool'" >&2
-        fi
-        printf '%s\n' "Visit 'install-menu' to review installation options." >&2
-        return 1
+# Helper function for Arch to check if pamac is already installed
+check_pamac() {
+	wizard_eyes "pacman -Qi pamac # check if pamac is installed"
+	if pacman -Qi pamac &>/dev/null; then
+		PAMAC_INSTALLED=1
+	else
+	    PAMAC_INSTALLED=0
+	fi
 }
 
-resolve_distro() {
-        if [ -n "${WIZARDRY_UPDATE_ALL_DISTRO-}" ]; then
-                printf '%s' "$WIZARDRY_UPDATE_ALL_DISTRO"
-                return 0
-        fi
-        if [ -x "$detect_script" ]; then
-                if distro=$("$detect_script"); then
-                        printf '%s' "$distro"
-                        return 0
-                fi
-        fi
-        printf '%s\n' "update-all: unable to detect the operating system." >&2
-        return 1
+# Helper function for Arch to install pamac
+install_pamac() {
+	wizard_eyes "sudo pacman -S pamac"
+	sudo pacman -S pamac --noconfirm
 }
 
-distro=$(resolve_distro) || exit 1
-printf '%s\n' "Detected platform: $distro"
-
-confirm_updates() {
-        if [ "${WIZARDRY_UPDATE_ALL_ASSUME_YES-}" = "1" ]; then
-                return 0
-        fi
-        printf '%s' "Proceed with system updates? [y/N]: "
-        IFS= read -r reply || reply=
-        case $reply in
-        y|Y)
-                return 0
-                ;;
-        *)
-                printf '%s\n' "update-all: cancelled by user." >&2
-                exit 1
-                ;;
-        esac
+# Catch Ctrl-C and exit immediately it's pressed (otherwise it just kills current operation)
+# Help! This doesn't always work, or works with a delay for sudo prompts.
+quit() {
+	exit 1
 }
+trap quit INT
 
-# Work out whether we can run privileged commands directly or should rely on
-# sudo. Explaining the intent keeps things readable for shell newcomers.
-SUDO_CHECKED=0
-SUDO_CMD=""
+wizard_eyes "You're a wizard, so executed terminal commands and other tips will display like this."
 
-ensure_privilege() {
-        if [ "$SUDO_CHECKED" -eq 1 ]; then
-                return 0
-        fi
-        SUDO_CHECKED=1
-        uid=$(id -u 2>/dev/null || printf '%s' "1")
-        if [ "$uid" -eq 0 ]; then
-                SUDO_CMD=""
-                return 0
-        fi
-        if command -v sudo >/dev/null 2>&1; then
-                SUDO_CMD=sudo
-                return 0
-        fi
-        printf '%s\n' "update-all: administrator privileges are required but 'sudo' is not available." >&2
-        printf '%s\n' "update-all: rerun this command as root or install sudo." >&2
-        exit 1
-}
+# Detect what OS we are using using the detect-distro spell, which puts the result in the $DISTRO environment variable
+wizard_eyes "./detect-distro"
+source ./detect-distro >/dev/null 2>&1
 
-# Wrap each update command so we can narrate the step and capture its output in
-# a temporary file. On success we discard the log; on failure we surface it so
-# the learner can debug.
-run_step() {
-        description=$1
-        shift
-        if [ "$#" -eq 0 ]; then
-                return 0
-        fi
-        printf '%s\n' "• $description"
-        if [ "${WIZARDRY_UPDATE_ALL_DRY_RUN-}" = "1" ]; then
-                return 0
-        fi
-        log_counter=$((log_counter + 1))
-        log_file="$TMPDIR/update-all.$$.${log_counter}"
-        if "$@" >"$log_file" 2>&1; then
-                rm -f "$log_file"
-                return 0
-        fi
-        printf '%s\n' "update-all: failed while $description" >&2
-        cat "$log_file" >&2
-        rm -f "$log_file"
-        exit 1
-}
+say "Updating system for ${GREEN}$DISTRO${RESET}." 
+if [ $VERBOSE ]; then say "You may be asked for your ${BLUE}sudo${RESET} password multiple times."; fi
 
-run_root_step() {
-        description=$1
-        shift
-        ensure_privilege
-        if [ -n "$SUDO_CMD" ]; then
-                run_step "$description" "$SUDO_CMD" "$@"
-        else
-                run_step "$description" "$@"
-        fi
-}
+# Based on what distro was detected, update the system in the correct way
+case $DISTRO in
+    "debian")
+    	wizard_eyes "sudo apt update"
+        sudo apt update
+        wizard_eyes "sudo apt autoremove"
+        sudo apt autoremove
+        wizard_eyes "sudo apt upgrade"
+        sudo apt upgrade
+        ;;
+    "arch")
+		ask_Yn USE_PAMAC "Would you like to use ${BLUE}pamac${RESET} to automate rebuilding of updated AUR packages? (recommended)"
+		# If Yes, check for pamac install and offer to install it if it's not already installed
+		if [ "$USE_PAMAC" -eq 1 ]; then
+			check_pamac
+			if [ "$PAMAC_INSTALLED" -eq 0 ]; then
+				ask_Yn INSTALL_PAMAC "${BLUE}pamac${RESET} is not installed. Install it now?"
+				if [ "$INSTALL_PAMAC" -eq 1 ]; then
+					install_pamac
+				else
+					say "Ok, your AUR packages will not be automatically rebuilt, then."
+				fi
+			fi
+		fi
+		
+		wizard_eyes "pacman -Syu # update software packages"
+        sudo pacman -Syu --noconfirm
+        
+		# Use pamac to update repos
+		if [ "$USE_PAMAC" -eq 1 ] && [ "$PAMAC_INSTALLED" -eq 1 ]; then
+			say "Using pamac to rebuild AUR packages."
+			wizard_eyes "pamac update --aur --devel"
+			pamac update --aur --devel --no-confirm
+		fi
 
-# Debian and Ubuntu both rely on apt; run the classic update, upgrade, and
-# autoremove flow so the system stays tidy.
-update_debian() {
-        require apt-get "The update-all spell needs 'apt-get' to manage Debian packages." || exit 1
-        run_root_step "Refreshing apt package lists" apt-get update
-        run_root_step "Applying apt upgrades" apt-get -y full-upgrade
-        run_root_step "Removing unused apt packages" apt-get -y autoremove
-}
-
-# Arch-based systems use pacman. When Pamac is available we also refresh the AUR
-# so self-built packages stay current.
-update_arch() {
-        require pacman "The update-all spell needs 'pacman' to refresh Arch packages." || exit 1
-        run_root_step "Synchronising pacman packages" pacman -Syu --noconfirm
-        if command -v pamac >/dev/null 2>&1; then
-                run_step "Refreshing Pamac-managed packages" pamac update --no-confirm
-                run_step "Rebuilding Pamac AUR packages" pamac build --no-confirm
-        else
-                printf '%s\n' "• Pamac not found; skipping AUR package updates."
-        fi
-}
-
-# Fedora prefers dnf. Refresh metadata first and then trim unused packages.
-update_fedora() {
-        require dnf "The update-all spell needs 'dnf' to refresh Fedora packages." || exit 1
-        run_root_step "Refreshing dnf metadata" dnf upgrade --refresh -y
-        run_root_step "Removing unused dnf packages" dnf autoremove -y
-}
-
-# Homebrew is the de-facto package manager on macOS. We chain the update,
-# upgrade, and cleanup phases and fall back to system updates when available.
-update_mac() {
-        require brew "The update-all spell needs 'brew' to manage Homebrew packages." || exit 1
-        run_step "Updating Homebrew formulae" brew update
-        run_step "Upgrading Homebrew packages" brew upgrade
-        run_step "Cleaning Homebrew caches" brew cleanup
-        if command -v softwareupdate >/dev/null 2>&1; then
-                run_root_step "Installing macOS software updates" softwareupdate --install --all
-        fi
-}
-
-# NixOS upgrades combine channel refreshes, a system rebuild, and per-user
-# profile updates.
-update_nixos() {
-        require nix-channel "The update-all spell needs 'nix-channel' to refresh channels." || exit 1
-        require nixos-rebuild "The update-all spell needs 'nixos-rebuild' to apply system updates." || exit 1
-        require nix-env "The update-all spell needs 'nix-env' to refresh user environments." || exit 1
-        run_root_step "Updating system channels" nix-channel --update
-        run_root_step "Rebuilding the NixOS configuration" nixos-rebuild switch --upgrade
-        run_step "Updating user profiles" nix-env -u '*'
-}
-
-confirm_updates
-
-case $distro in
-        debian)
-                update_debian
-                ;;
-        arch)
-                update_arch
-                ;;
-        fedora)
-                update_fedora
-                ;;
-        mac)
-                update_mac
-                ;;
-        nixos)
-                update_nixos
-                ;;
-        *)
-                printf '%s\n' "update-all: no update strategy for '$distro'." >&2
-                exit 1
-                ;;
- esac
-
-printf '%s\n' "All updates complete."
+        ;;
+    "fedora")
+    	wizard_eyes "sudo dnf update"
+        sudo dnf update
+        wizard_eyes "sudo dnf upgrade"
+        sudo dnf upgrade
+        ;;
+    "mac")
+        install
+        wizard_eyes "sudo brew update"
+        sudo brew update
+        ;;
+esac
+	
