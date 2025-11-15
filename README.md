@@ -1,6 +1,25 @@
 # Wizardry is a collection of bash scripts to complete your terminal experience.
 
-**Current status:** `install` and `menu` work well on Debian. Wizardry is brand new, so not all spells have been tested and debugged yet.
+**Current status:** 🟢 `install` and `menu` work well on Debian. Wizardry is brand new, so not all spells have been tested and debugged yet.
+
+## Installation
+
+To install wizardry:
+
+```
+git pull http://github.com/andersaamodt/wizardry/main
+chmod +x install
+./install
+```
+After installing, you must reopen your terminal window before wizardry spells will work.
+
+## Usage
+
+To use wizardry:
+
+```
+menu
+```
 
 ## Principles:
 
