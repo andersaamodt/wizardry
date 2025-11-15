@@ -287,7 +287,6 @@ execute_selection() {
         # there is no command we simply exit after cleaning up.
         command=$(sed -n "${selected}p" "$commands_file")
         if [ -n "$command" ]; then
-                printf '\n'
                 cleanup
                 trap - EXIT INT TERM
                 # shellcheck disable=SC2039,SC3045 # POSIX sh allows eval
@@ -375,7 +374,7 @@ do
                 execute_selection
                 exit 0
                 ;;
-        escape)
+        escape|ESC|esc)
                 cleanup
                 trap - EXIT INT TERM
                 exit 0
