@@ -38,7 +38,7 @@ display_menu() {
   exit="Exit%kill -2 $$" # Commands are run with 'eval' by the menu script, so we can't simply say 'exit'. The keyword $$ gets this scripts PID and the -2 code is SIGINT aka Ctrl-C
 
   set -- "$mud" "$install" "$system" "$exit"
-  menu "Main Menu:" "$@"
+  MENU_ESCAPE_STATUS=$menu_escape_status menu "Main Menu:" "$@"
 }
 
 # Catch Ctrl-C and exit

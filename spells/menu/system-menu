@@ -3,7 +3,9 @@
 # This spell displays system maintenance tasks.
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
-cantrip_dir=$(dirname "$script_dir")/cantrips
+spells_dir=$(dirname "$script_dir")
+cantrip_dir="$spells_dir/cantrips"
+repo_dir=$(dirname "$spells_dir")
 
 if [ -n "${REQUIRE_COMMAND-}" ]; then
   require_cmd=$REQUIRE_COMMAND
@@ -38,6 +40,7 @@ fi
 
 display_menu() {
   update_wizardry="Update wizardry%update-wizardry"
+  test_suite="Test all wizardry spells%(cd \"$repo_dir\" && ./tests/run.sh)"
   update_all="Update all software%update-all -v"
   restart="Force restart%sudo shutdown -r now"
   exit="Exit%kill -2 $$"
@@ -46,7 +49,7 @@ display_menu() {
   if [ -n "$nixos_rebuild" ]; then
     set -- "$@" "$nixos_rebuild"
   fi
-  set -- "$@" "$update_wizardry" "$restart" "$exit"
+  set -- "$@" "$update_wizardry" "$test_suite" "$restart" "$exit"
 
   menu "System Menu:" "$@"
 }
