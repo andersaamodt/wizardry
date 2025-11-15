@@ -49,6 +49,11 @@ ensure_default_release_state() {
     fi
   done
 
+  if [ -f /etc/NIXOS ]; then
+    backup_file /etc/NIXOS
+    rm -f /etc/NIXOS
+  fi
+
   if [ -f /etc/debian_version ]; then
     backup_file /etc/debian_version
   else
@@ -103,6 +108,7 @@ run_detect() {
   backup_file /etc/debian_version
   backup_file /etc/arch-release
   backup_file /etc/fedora-release
+  backup_file /etc/NIXOS
   rm -f /etc/fedora-release
   FAKE_UNAME_OUTPUT=Darwin run_detect
   assert_success
@@ -117,9 +123,28 @@ run_detect() {
   backup_file /etc/debian_version
   backup_file /etc/arch-release
   backup_file /etc/fedora-release
+  backup_file /etc/NIXOS
   rm -f /etc/debian_version /etc/arch-release /etc/fedora-release
   FAKE_UNAME_OUTPUT=Unknown run_detect
   assert_failure
   assert_output --partial 'unknown'
+}
+
+@test 'detect-distro recognises NixOS markers' {
+  backup_file /etc/debian_version
+  backup_file /etc/arch-release
+  backup_file /etc/fedora-release
+  backup_file /etc/NIXOS
+  rm -f /etc/debian_version /etc/arch-release /etc/fedora-release
+  printf '' >/etc/NIXOS
+  created_files+=(/etc/NIXOS)
+
+  run_detect
+  assert_success
+  assert_output --partial 'nixos'
+
+  run_detect -v
+  assert_success
+  assert_output --partial 'NixOS detected.'
 }
 

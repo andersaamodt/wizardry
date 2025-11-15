@@ -1,0 +1,199 @@
+#!/usr/bin/env sh
+
+# Present an interactive menu using only POSIX shell features. This variant
+# relies on existing cantrips (await-keypress, move-cursor, etc.) to handle the
+# terminal work so it can remain portable across macOS, Debian, and NixOS.
+
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+# Reuse the standard dependency checker when available so missing commands can
+# be reported consistently.
+if [ -n "${REQUIRE_COMMAND-}" ]; then
+        require_cmd=$REQUIRE_COMMAND
+elif [ -x "$script_dir/require-command" ]; then
+        require_cmd="$script_dir/require-command"
+else
+        require_cmd=""
+fi
+
+require() {
+        tool=$1
+        shift
+        if [ -n "$require_cmd" ]; then
+                "$require_cmd" "$tool" "$@"
+                return $?
+        fi
+
+        if command -v "$tool" >/dev/null 2>&1; then
+                return 0
+        fi
+
+        if [ "$#" -gt 0 ]; then
+                printf '%s\n' "$tool: $*" >&2
+        else
+                printf '%s\n' "menu_posix: missing required command '$tool'" >&2
+        fi
+        printf '%s\n' "Visit 'install-menu' to review installation options." >&2
+        return 1
+}
+
+# Verify that all helper spells are ready before drawing the menu.
+require fathom-cursor "The menu spell needs 'fathom-cursor' to place the menu." || exit 1
+require fathom-terminal "The menu spell needs 'fathom-terminal' to measure the screen." || exit 1
+require move-cursor "The menu spell needs 'move-cursor' to reposition the cursor." || exit 1
+require await-keypress "The menu spell needs 'await-keypress' to read input." || exit 1
+require cursor-blink "The menu spell needs 'cursor-blink' to restore the cursor." || exit 1
+
+# Load colour helpers when present; otherwise fall back to plain text.
+if [ -r "$script_dir/colors" ]; then
+        # shellcheck disable=SC1090
+        . "$script_dir/colors"
+elif command -v colors >/dev/null 2>&1; then
+        # shellcheck disable=SC1091
+        . colors
+else
+        RESET=''
+        CYAN=''
+        GREY=''
+fi
+
+if [ "$#" -lt 2 ]; then
+        if command -v main-menu >/dev/null 2>&1; then
+                main-menu
+                exit 0
+        fi
+        printf '%s\n' "menu_posix: no menu entries provided" >&2
+        exit 1
+fi
+
+description=$1
+shift
+
+TMPDIR=${TMPDIR:-/tmp}
+items_file="$TMPDIR/wizardry-menu-items.$$"
+commands_file="$TMPDIR/wizardry-menu-commands.$$"
+: >"$items_file"
+: >"$commands_file"
+cleanup_called=0
+cleanup() {
+        if [ "$cleanup_called" -eq 1 ]; then
+                return
+        fi
+        cleanup_called=1
+        cursor-blink on >/dev/null 2>&1 || :
+        rm -f "$items_file" "$commands_file"
+}
+trap 'cleanup; exit 1' INT TERM
+trap 'cleanup' EXIT
+
+max_name_length=0
+menu_length=0
+
+for option in "$@"
+do
+        label=${option%%\%*}
+        case $option in
+        *%*)
+                command=${option#*%}
+                ;;
+        *)
+                command=''
+                ;;
+        esac
+        printf '%s\n' "$label" >>"$items_file"
+        printf '%s\n' "$command" >>"$commands_file"
+        length=$(printf '%s' "$label" | wc -c | tr -d ' ')
+        if [ "$length" -gt "$max_name_length" ]; then
+                max_name_length=$length
+        fi
+        menu_length=$((menu_length + 1))
+
+done
+
+if [ "$menu_length" -eq 0 ]; then
+        printf '%s\n' "menu_posix: no menu entries provided" >&2
+        exit 1
+fi
+
+selected=1
+menu_column=1
+menu_row=$(fathom-cursor -y)
+
+# Draw the menu starting at the recorded cursor position.
+display_menu() {
+        move-cursor "$menu_column" "$menu_row"
+        printf '\033[J'
+        row=1
+        while IFS= read -r label || [ -n "$label" ]
+        do
+                command=$(sed -n "${row}p" "$commands_file")
+                if [ "$row" -eq "$selected" ]; then
+                        printf '%s> %-*s%s\n' "$CYAN" "$max_name_length" "$label" "$RESET"
+                        if [ -n "$command" ]; then
+                                printf '%s    %s%s\n' "$GREY" "$command" "$RESET"
+                        else
+                                printf '\n'
+                        fi
+                else
+                        printf '  %-*s\n' "$max_name_length" "$label"
+                        printf '    %*s\n' "$max_name_length" ''
+                fi
+                row=$((row + 1))
+        done <"$items_file"
+}
+
+execute_selection() {
+        command=$(sed -n "${selected}p" "$commands_file")
+        if [ -n "$command" ]; then
+                printf '\n'
+                cleanup
+                trap - EXIT INT TERM
+                # shellcheck disable=SC2039,SC3045 # POSIX sh allows eval
+                eval "$command"
+        else
+                cleanup
+                trap - EXIT INT TERM
+        fi
+}
+
+cursor-blink off
+
+if [ -n "$description" ]; then
+        printf '%s\n' "$description"
+fi
+
+display_menu
+
+while :
+do
+        key=$(await-keypress)
+        case $key in
+        up)
+                selected=$((selected - 1))
+                if [ "$selected" -le 0 ]; then
+                        selected=$menu_length
+                fi
+                ;;
+        down)
+                selected=$((selected + 1))
+                if [ "$selected" -gt "$menu_length" ]; then
+                        selected=1
+                fi
+                ;;
+        enter)
+                execute_selection
+                exit 0
+                ;;
+        escape)
+                cleanup
+                trap - EXIT INT TERM
+                printf '%s\n' 'ESC'
+                exit 0
+                ;;
+        esac
+        display_menu
+        # Avoid a tight loop if await-keypress returned empty.
+        [ -n "$key" ] || sleep 0.05
+done

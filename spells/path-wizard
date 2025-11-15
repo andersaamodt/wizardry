@@ -1,81 +1,162 @@
 #!/bin/sh
 
-# This spell allows you to add or remove directories from your PATH environment variable permanently.
-# It uses the 'grep' and 'sed' commands to search and edit the '.bashrc' file in your home directory.
+# Manage PATH entries in a shell start-up file. This helper is deliberately
+# conservative: it only prepends directories and removes the exact lines it
+# previously added so repeated invocations remain idempotent.
 
-# Check if the correct number of arguments was provided
-if [ "$#" -ne 1 ] && [ "$#" -ne 2 ]; then
-  echo "Error: This spell requires one or two arguments: 'add' or 'remove' and an optional directory path."
-  exit 1
+set -eu
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: path-wizard [--rc-file FILE] add [DIRECTORY]
+       path-wizard [--rc-file FILE] remove DIRECTORY
+USAGE
+}
+
+# Default to .bashrc for backwards compatibility while permitting callers to
+# override the profile via --rc-file or the PATH_WIZARD_RC environment variable.
+rc_file=${PATH_WIZARD_RC:-"$HOME/.bashrc"}
+
+while [ "$#" -gt 0 ]; do
+        case $1 in
+        --rc-file)
+                if [ "$#" -lt 2 ]; then
+                        printf '%s\n' "path-wizard: --rc-file expects a file path" >&2
+                        usage
+                        exit 1
+                fi
+                rc_file=$2
+                shift 2
+                ;;
+        --rc-file=*)
+                rc_file=${1#*=}
+                shift
+                ;;
+        --help|-h)
+                usage
+                exit 0
+                ;;
+        --)
+                shift
+                break
+                ;;
+        -*)
+                printf '%s\n' "path-wizard: unknown option '$1'" >&2
+                usage
+                exit 1
+                ;;
+        *)
+                break
+                ;;
+        esac
+done
+
+if [ "$#" -eq 0 ]; then
+        usage
+        exit 1
 fi
 
-# Set the action and directory variables
 action=$1
-directory=$2
+shift
 
-# Check if the action is 'add' or 'remove'
-if [ "$action" != "add" ] && [ "$action" != "remove" ]; then
-  echo "Error: The first argument must be 'add' or 'remove'."
-  exit 1
-fi
+case $action in
+add|remove) : ;;
+*)
+        printf '%s\n' "Error: The first argument must be 'add' or 'remove'." >&2
+        exit 1
+        ;;
+esac
 
-# Check if the directory path was provided
-if [ -z "$directory" ]; then
-  # If no directory path was provided, use the current directory
-  directory=$(pwd -P)
-else
-  # If a directory path was provided, expand the '~' character if necessary
-  directory="$(echo "$directory" | sed "s|^~|$HOME|")"
-  
-  # If the directory path is '.', convert it to the absolute path of the current directory
-  if [ "$directory" = "." ]; then
-    directory=$(pwd -P)
-  else
-    # If the directory is a relative path, convert it to an absolute path
-    if [ "${directory:0:1}" != "/" ]; then
-      directory=$(cd "$directory" && pwd -P)
-    fi
-  fi
-fi
-
-# Check if the directory exists
-if [ ! -d "$directory" ]; then
-  echo "Error: The directory does not exist."
-  exit 1
-fi
-
-# Check if the '.bashrc' file exists in the home directory
-if [ ! -f "$HOME/.bashrc" ]; then
-  echo "Error: The '.bashrc' file does not exist in your home directory."
-  exit 1
-fi
-
-# Check if the directory is already in the PATH variable
-if grep -q "export PATH=$directory:\$PATH$" "$HOME/.bashrc"; then
-  # If the directory is already in the PATH variable, check if the action is 'add'
-  if [ "$action" = "add" ]; then
-    echo "The directory is already in your PATH."
-    exit 0
-  fi
-
-  # If the action is 'remove' and the directory is already in the PATH variable, remove the directory from the PATH variable using the 'sed' command
-  sed -i "\|^export PATH=$directory:\$PATH$|d" "$HOME/.bashrc"
-  echo "The directory has been removed from your PATH."
-else
-  # If the directory is not in the PATH variable, check if the action is 'add'
-  if [ "$action" = "add" ]; then
-    # If the action is 'add', prepend the directory to the PATH variable in the '.bashrc' file
-    echo "export PATH=$directory:\$PATH" >> "$HOME/.bashrc"
-    echo "The directory has been added to your PATH."
-  else
-    # If the action is 'remove' and the directory is not in the PATH variable, display an error message
-    echo "Error: The directory is not in your PATH."
-    exit 1
-  fi
-fi
-
+# Determine the target directory. When adding and no directory is supplied use
+# the current working directory; removals always require an explicit path.
 if [ "$action" = "add" ]; then
-	echo "The changes to your PATH will not take effect until you open a new terminal or run the 'source ~/.bashrc' command in your current terminal."
+        if [ "$#" -eq 0 ]; then
+                directory=$(pwd -P)
+        else
+                directory=$1
+        fi
+elif [ "$#" -eq 0 ]; then
+        printf '%s\n' "Error: The 'remove' action expects a directory argument." >&2
+        exit 1
 else
-	echo "The changes to your PATH will not take effect until you open a new terminal."
+        directory=$1
 fi
+
+# Expand leading tildes by hand so the script works with POSIX sh.
+case $directory in
+"~")
+        directory=$HOME
+        ;;
+"~"/*)
+        directory=$HOME/${directory#\~/}
+        ;;
+esac
+
+if [ ! -d "$directory" ]; then
+        printf '%s\n' "Error: The directory does not exist." >&2
+        exit 1
+fi
+
+# Resolve relative paths to absolute ones so duplicate entries are avoided.
+case $directory in
+/*) : ;;
+.)
+        directory=$(pwd -P)
+        ;;
+..|../*|./*)
+        directory=$(cd "$directory" && pwd -P)
+        ;;
+*)
+        directory=$(cd "$directory" && pwd -P)
+        ;;
+esac
+
+# Create the rc file on demand for additions; removals still require the file to
+# exist so we do not silently succeed when nothing could have been changed.
+if [ ! -f "$rc_file" ]; then
+        if [ "$action" = "add" ]; then
+                if ! : >"$rc_file"; then
+                        printf '%s\n' "Error: Unable to create '$rc_file'." >&2
+                        exit 1
+                fi
+        else
+                printf '%s\n' "Error: The startup file '$rc_file' does not exist." >&2
+                exit 1
+        fi
+fi
+
+pattern="export PATH=$directory:\$PATH"
+
+case $action in
+add)
+        if grep -Fqx "$pattern" "$rc_file" 2>/dev/null; then
+                printf '%s\n' "The directory is already in your PATH."
+                exit 0
+        fi
+        printf '%s\n' "$pattern" >>"$rc_file"
+        printf '%s\n' "The directory has been added to your PATH."
+        printf '%s\n' "The changes to your PATH will take effect in new shells."
+        ;;
+remove)
+        if ! grep -Fqx "$pattern" "$rc_file" 2>/dev/null; then
+                printf '%s\n' "Error: The directory is not in your PATH." >&2
+                exit 1
+        fi
+        tmp_file="$rc_file.wizardry.$$"
+        if ! grep -Fv "$pattern" "$rc_file" >"$tmp_file"; then
+                status=$?
+                if [ "$status" -ge 2 ]; then
+                        rm -f "$tmp_file"
+                        printf '%s\n' "Error: Unable to update '$rc_file'." >&2
+                        exit 1
+                fi
+        fi
+        if ! mv "$tmp_file" "$rc_file"; then
+                rm -f "$tmp_file"
+                printf '%s\n' "Error: Unable to replace '$rc_file'." >&2
+                exit 1
+        fi
+        printf '%s\n' "The directory has been removed from your PATH."
+        printf '%s\n' "The changes to your PATH will take effect in new shells."
+        ;;
+esac

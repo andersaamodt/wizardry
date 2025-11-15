@@ -23,22 +23,128 @@ esac
 unset CDPATH
 
 ABS_DIR=$(cd "$SCRIPT_DIR" && pwd -P) || exit 1
-RC_FILE=$HOME/.bashrc
 PATH_WIZARD="$ABS_DIR/spells/path-wizard"
 REQUIRED_REL_DIRS="spells spells/cantrips spells/menu"
-
-if [ ! -f "$RC_FILE" ]; then
-        printf '%s\n' "Error: The '$RC_FILE' file does not exist in your home directory." >&2
-        exit 1
-fi
 
 if [ ! -x "$PATH_WIZARD" ]; then
         printf '%s\n' "Error: Expected helper '$PATH_WIZARD' is missing or not executable." >&2
         exit 1
 fi
 
-# Collect the directories whose PATH exports are absent from the user's
-# configuration so we can offer to repair them in one pass.
+detect_platform() {
+        if [ -n "${WIZARDRY_INSTALL_PLATFORM-}" ]; then
+                printf '%s' "$WIZARDRY_INSTALL_PLATFORM"
+                return 0
+        fi
+
+        if [ -f /etc/NIXOS ] || grep -qi 'ID=nixos' /etc/os-release 2>/dev/null; then
+                printf '%s' 'nixos'
+                return 0
+        fi
+        if [ -f /etc/debian_version ]; then
+                printf '%s' 'debian'
+                return 0
+        fi
+        if [ -f /etc/arch-release ]; then
+                printf '%s' 'arch'
+                return 0
+        fi
+        if [ -f /etc/fedora-release ]; then
+                printf '%s' 'fedora'
+                return 0
+        fi
+        if uname 2>/dev/null | grep -q 'Darwin'; then
+                printf '%s' 'mac'
+                return 0
+        fi
+        printf '%s' 'unknown'
+        return 1
+}
+
+add_candidate() {
+        file=$1
+        if [ -z "$file" ]; then
+                return
+        fi
+        for candidate in $RC_CANDIDATES
+        do
+                if [ "$candidate" = "$file" ]; then
+                        return
+                fi
+        done
+        if [ -z "$RC_CANDIDATES" ]; then
+                RC_CANDIDATES=$file
+        else
+                RC_CANDIDATES="$RC_CANDIDATES $file"
+        fi
+}
+
+PLATFORM=$(detect_platform)
+
+# Build a list of start-up files to consider based on the detected platform and
+# the user's preferred shell.
+RC_CANDIDATES=''
+
+case $PLATFORM in
+        mac)
+                add_candidate "$HOME/.zshrc"
+                add_candidate "$HOME/.zprofile"
+                add_candidate "$HOME/.bash_profile"
+                ;;
+        nixos)
+                add_candidate "$HOME/.bashrc"
+                add_candidate "$HOME/.bash_profile"
+                ;;
+        debian|arch|fedora)
+                add_candidate "$HOME/.bashrc"
+                add_candidate "$HOME/.profile"
+                ;;
+        *) : ;;
+esac
+
+case ${SHELL##*/} in
+        zsh)
+                add_candidate "$HOME/.zshrc"
+                add_candidate "$HOME/.zprofile"
+                ;;
+        bash)
+                add_candidate "$HOME/.bashrc"
+                add_candidate "$HOME/.bash_profile"
+                ;;
+        *)
+                add_candidate "$HOME/.profile"
+                ;;
+esac
+
+add_candidate "$HOME/.bashrc"
+add_candidate "$HOME/.profile"
+
+RC_FILE=''
+for candidate in $RC_CANDIDATES
+do
+        if [ -f "$candidate" ]; then
+                RC_FILE=$candidate
+                break
+        fi
+done
+
+if [ -z "$RC_FILE" ]; then
+        # Fall back to the first candidate; create it later once the user
+        # confirms the installation.
+        for candidate in $RC_CANDIDATES
+        do
+                RC_FILE=$candidate
+                break
+        done
+fi
+
+if [ -z "$RC_FILE" ]; then
+        printf '%s\n' "Error: Unable to determine which start-up file to modify." >&2
+        exit 1
+fi
+
+# Collect the directories whose PATH exports are absent from the chosen start-up
+# file so we can repair them in one pass.
 set --
 for rel in $REQUIRED_REL_DIRS
 do
@@ -49,10 +155,11 @@ do
                 continue
         fi
 
-        entry="export PATH=$dir:\\$PATH"
-        if ! grep -F "$entry" "$RC_FILE" >/dev/null 2>&1; then
-                set -- "$@" "$dir"
+        entry="export PATH=$dir:\$PATH"
+        if [ -f "$RC_FILE" ] && grep -F "$entry" "$RC_FILE" >/dev/null 2>&1; then
+                continue
         fi
+        set -- "$@" "$dir"
 done
 
 if [ "$#" -eq 0 ]; then
@@ -60,21 +167,32 @@ if [ "$#" -eq 0 ]; then
         exit 0
 fi
 
-printf '%s\n' "ao-mud needs to add the following directories to your PATH:"
+printf '%s\n' "ao-mud will ensure the following directories appear in your PATH (via $(basename "$RC_FILE")):"
 for dir
 do
         printf '  %s\n' "$dir"
 done
 
-printf '%s' "Proceed with installation? [y/n]: "
-IFS= read -r choice || choice=
+if [ "${WIZARDRY_INSTALL_ASSUME_YES-}" = "1" ]; then
+        choice=y
+else
+        printf '%s' "Proceed with installation? [y/n]: "
+        IFS= read -r choice || choice=
+fi
+
 case $choice in
         y|Y)
+                if [ ! -f "$RC_FILE" ]; then
+                        if ! : >"$RC_FILE"; then
+                                printf '%s\n' "Error: Unable to create '$RC_FILE'." >&2
+                                exit 1
+                        fi
+                fi
                 for dir
                 do
-                        "$PATH_WIZARD" add "$dir" || exit 1
+                        "$PATH_WIZARD" --rc-file "$RC_FILE" add "$dir" || exit 1
                 done
-                printf '%s\n' "Your spellbook has been activated, please open a fresh terminal now."
+                printf '%s\n' "Your spellbook has been activated. Open a fresh terminal to load $(basename "$RC_FILE")."
                 exit 0
                 ;;
         *)
