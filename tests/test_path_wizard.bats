@@ -127,6 +127,12 @@ teardown() {
   assert_success
 }
 
+@test 'path-wizard requires a directory when checking status' {
+  run_spell 'spells/path-wizard' 'status'
+  assert_failure
+  assert_error --partial "expects a directory argument"
+}
+
 @test 'path-wizard supports alternate rc files' {
   target_dir="$BATS_TEST_TMPDIR/alt"
   mkdir -p "$target_dir"
@@ -188,5 +194,30 @@ teardown() {
 
   run_spell 'spells/path-wizard' '--rc-file' "$rc_file" '--format' nix 'status' "$target_dir"
   assert_failure
+}
+
+@test 'path-wizard infers nix format from rc file extension' {
+  target_dir="$BATS_TEST_TMPDIR/nix_auto"
+  mkdir -p "$target_dir"
+  rc_file="$HOME/.config/nixpkgs/configuration.nix"
+  mkdir -p "${rc_file%/*}"
+  cat <<'CFG' >"$rc_file"
+{ config, pkgs, ... }:
+
+{
+}
+CFG
+
+  run_spell 'spells/path-wizard' '--rc-file' "$rc_file" 'add' "$target_dir"
+  assert_success
+  assert_output --partial 'Rebuild your Nix environment'
+  run grep -F "\"$target_dir\"" "$rc_file"
+  assert_success
+
+  backup=$(ls "$rc_file".wizardry.* 2>/dev/null | head -n 1)
+  [ -n "$backup" ]
+
+  run_spell 'spells/path-wizard' '--rc-file' "$rc_file" 'status' "$target_dir"
+  assert_success
 }
 

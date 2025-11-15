@@ -15,6 +15,9 @@ USAGE
 
 # shellcheck disable=SC2039 # POSIX compliant but we rely on some utilities like awk.
 
+# Track optional overrides for the file we edit, the output format we emit,
+# and the platform we are targeting. The defaults match the original behaviour
+# so existing callers keep working even if they do not pass new flags.
 rc_file_override=""
 format="auto"
 platform="${PATH_WIZARD_PLATFORM-}"
@@ -79,6 +82,9 @@ while [ "$#" -gt 0 ]; do
         esac
 done
 
+# We require at least one argument to decide whether we are adding, removing,
+# or checking the PATH entry. Showing usage keeps the interface self-documenting
+# for new Wizards-in-training.
 if [ "$#" -eq 0 ]; then
         usage
         exit 1
@@ -100,6 +106,8 @@ if [ "$action" = "status" ] && [ "$#" -eq 0 ]; then
         exit 1
 fi
 
+# Resolve the provided directory so that PATH entries are always absolute.
+# Normalising here means the rc files never contain brittle relative paths.
 normalize_directory() {
         directory=$1
         case $directory in
@@ -159,6 +167,9 @@ else
         fi
 fi
 
+# When the platform is unspecified, attempt a lightweight detection so we can
+# pick sensible defaults (for example, .zshrc on macOS or configuration.nix on
+# NixOS). This avoids forcing callers to learn every corner case up front.
 if [ -z "$platform" ]; then
         if [ -f /etc/NIXOS ] || grep -qi 'ID=nixos' /etc/os-release 2>/dev/null; then
                 platform=nixos
@@ -175,6 +186,9 @@ if [ -z "$platform" ]; then
         fi
 fi
 
+# Choose the most appropriate start-up file for the detected platform. The
+# installer can still override this decision via --rc-file when a user has a
+# custom setup.
 select_default_rc_file() {
         case $platform in
         mac)
@@ -206,6 +220,9 @@ if [ -z "$rc_file" ]; then
         rc_file=$(select_default_rc_file)
 fi
 
+# "auto" format detection keeps the CLI friendly: plain shell files get the
+# traditional export lines, while configuration.nix switches to declarative
+# Nix output.
 if [ "$format" = "auto" ]; then
         case $rc_file in
         *.nix)
@@ -227,8 +244,12 @@ esac
 
 nix_backup_created=0
 
+# This literal export line is the marker we insert and later search for when
+# updating shell rc files.
 pattern=$(printf 'export PATH=%s:\\$PATH' "$directory")
 
+# Create the parent directory for the rc file when it does not already exist.
+# This lets us initialise fresh environments without manual scaffolding.
 ensure_rc_directory() {
         rc_dir=${rc_file%/*}
         if [ "$rc_dir" != "$rc_file" ] && [ ! -d "$rc_dir" ]; then
@@ -236,6 +257,8 @@ ensure_rc_directory() {
         fi
 }
 
+# configuration.nix deserves extra care: before we rewrite anything, stash a
+# timestamped backup so users can inspect or restore the previous version.
 backup_rc_file_once() {
         if [ "$format" != "nix" ]; then
                 return 0
@@ -265,6 +288,8 @@ backup_rc_file_once() {
         return 0
 }
 
+# Append the export line to POSIX shell rc files when it is not already
+# present. Each branch prints guidance so users know what changed.
 shell_add() {
         ensure_rc_directory
         if [ ! -f "$rc_file" ]; then
@@ -279,6 +304,7 @@ shell_add() {
         printf '%s\n' "The changes to your PATH will take effect in new shells."
 }
 
+# Remove a previously added export line from shell rc files.
 shell_remove() {
         if [ ! -f "$rc_file" ]; then
                 printf '%s\n' "Error: The startup file '$rc_file' does not exist." >&2
@@ -306,6 +332,8 @@ shell_remove() {
         printf '%s\n' "The changes to your PATH will take effect in new shells."
 }
 
+# status returns success when the directory is already exported, allowing
+# callers to avoid duplicate additions.
 shell_status() {
         if [ ! -f "$rc_file" ]; then
                 return 1
@@ -316,6 +344,8 @@ shell_status() {
         return 1
 }
 
+# Parse the managed block in configuration.nix and echo each tracked path. The
+# caller can then compare or merge entries without re-reading the file.
 extract_nix_paths() {
         if [ ! -f "$rc_file" ]; then
                 return
@@ -332,6 +362,8 @@ extract_nix_paths() {
         ' "$rc_file"
 }
 
+# Delete the managed block from configuration.nix while keeping the rest of
+# the file untouched. This simplifies removal and ensures idempotence.
 remove_nix_block() {
         backup_rc_file_once
         tmp_file="$rc_file.wizardry.$$"
@@ -344,6 +376,9 @@ remove_nix_block() {
         mv "$tmp_file" "$rc_file"
 }
 
+# Insert the generated Nix block just before the closing brace of the
+# configuration. Falling back to appending keeps the file valid even when the
+# layout is unusual.
 insert_block_before_closing_brace() {
         block_file=$1
         tmp_file="$rc_file.wizardry.$$"
@@ -386,6 +421,8 @@ insert_block_before_closing_brace() {
         mv "$tmp_file" "$rc_file"
 }
 
+# Create a temporary file containing the declarative block we manage. The
+# helper keeps the formatting consistent every time we rewrite the file.
 generate_nix_block_file() {
         block_file=$1
         shift
@@ -409,6 +446,8 @@ generate_nix_block_file() {
         } >"$block_file"
 }
 
+# Replace (or create) the managed block in configuration.nix with the provided
+# list of directories.
 write_nix_paths() {
         ensure_rc_directory
         backup_rc_file_once
@@ -438,6 +477,8 @@ write_nix_paths() {
         rm -f "$block_tmp"
 }
 
+# Add a directory to the managed list inside configuration.nix. Duplicates are
+# ignored so repeated runs stay harmless.
 nix_add() {
         ensure_rc_directory
         existing_paths="$(extract_nix_paths)"
@@ -459,6 +500,8 @@ nix_add() {
         printf '%s\n' "Rebuild your Nix environment to activate the change."
 }
 
+# Remove a directory from configuration.nix. When the last entry is removed we
+# delete the managed block entirely to avoid leaving empty scaffolding.
 nix_remove() {
         if [ ! -f "$rc_file" ]; then
                         printf '%s\n' "Error: The startup file '$rc_file' does not exist." >&2
@@ -503,6 +546,8 @@ nix_remove() {
         printf '%s\n' "Rebuild your Nix environment to activate the change."
 }
 
+# status for configuration.nix mirrors the shell variant, returning success
+# only when the directory is already present.
 nix_status() {
         if [ ! -f "$rc_file" ]; then
                 return 1

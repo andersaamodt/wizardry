@@ -118,3 +118,25 @@ CFG
 
   assert_error --partial 'backed up'
 }
+
+@test 'install aborts when the user declines on NixOS' {
+  mkdir -p "$HOME/.config/nixpkgs"
+  rc_file="$HOME/.config/nixpkgs/configuration.nix"
+  cat <<'CFG' >"$rc_file"
+{ config, pkgs, ... }:
+
+{
+  environment.sessionVariables.PATH = "original";
+}
+CFG
+
+  run --separate-stderr -- env ROOT_DIR="$ROOT_DIR" WIZARDRY_INSTALL_PLATFORM=nixos \
+    sh -c "printf 'n\\n' | \"\$ROOT_DIR/install\""
+
+  assert_failure
+  assert_output --partial 'Proceed with installation?'
+  run grep -F 'original' "$rc_file"
+  assert_success
+  run ls "$rc_file".wizardry.*
+  assert_failure
+}
