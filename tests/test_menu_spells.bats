@@ -216,6 +216,7 @@ STUB
   assert_success
   assert_output --partial 'MENU:Main Menu:'
   assert_output --partial 'Install Free Software%install-menu'
+  assert_output --partial 'Update all software%update-all'
   assert_output --partial 'Exit%kill -2'
   assert_output --partial 'exiting'
 }

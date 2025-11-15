@@ -59,6 +59,26 @@ RC
   done
 }
 
+
+@test 'install skips directories already referenced with quotes' {
+  cat <<EOF >"$HOME/.bashrc"
+export PATH="$ROOT_DIR/spells:\$PATH"
+export PATH="$ROOT_DIR/spells/cantrips:\$PATH"
+export PATH="$ROOT_DIR/spells/menu:\$PATH"
+EOF
+
+  WIZARDRY_INSTALL_ASSUME_YES=1 run_spell 'install'
+  assert_success
+  assert_output --partial 'already installed'
+
+  for rel in spells spells/cantrips spells/menu; do
+    dir="$ROOT_DIR/$rel"
+    pattern=$(printf 'export PATH="%s:$PATH"' "$dir")
+    count=$(grep -F "$pattern" "$HOME/.bashrc" | wc -l | tr -d ' ')
+    [ "$count" -eq 1 ]
+  done
+}
+
 @test 'install selects zsh configuration on macOS' {
   rm -f "$HOME/.zshrc" "$HOME/.bash_profile" "$HOME/.bashrc"
 

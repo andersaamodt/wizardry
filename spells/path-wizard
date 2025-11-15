@@ -244,8 +244,10 @@ esac
 
 nix_backup_created=0
 
-# This literal export line is the marker we insert and later search for when
-# updating shell rc files.
+# This literal export line is the marker we insert when updating shell rc
+# files. When checking for existing entries we only look for the directory
+# portion so that we recognise user-customised lines such as
+# "export PATH=\"$dir:$PATH\"".
 pattern=$(printf 'export PATH=%s:\\$PATH' "$directory")
 
 # Create the parent directory for the rc file when it does not already exist.
@@ -295,7 +297,7 @@ shell_add() {
         if [ ! -f "$rc_file" ]; then
                 : >"$rc_file"
         fi
-        if grep -Fqx "$pattern" "$rc_file" 2>/dev/null; then
+        if grep -F "$directory" "$rc_file" >/dev/null 2>&1; then
                 printf '%s\n' "The directory is already in your PATH."
                 return 0
         fi
@@ -338,7 +340,7 @@ shell_status() {
         if [ ! -f "$rc_file" ]; then
                 return 1
         fi
-        if grep -Fqx "$pattern" "$rc_file" 2>/dev/null; then
+        if grep -F "$directory" "$rc_file" >/dev/null 2>&1; then
                 return 0
         fi
         return 1

@@ -127,6 +127,28 @@ teardown() {
   assert_success
 }
 
+
+@test 'path-wizard recognises existing quoted PATH lines' {
+  target_dir="${BATS_TEST_TMPDIR}/quoted"
+  mkdir -p "$target_dir"
+
+  cat <<EOF >>"$HOME/.bashrc"
+export PATH="${target_dir}:\$PATH"
+EOF
+
+  run_spell 'spells/path-wizard' 'status' "$target_dir"
+  assert_success
+
+  run_spell 'spells/path-wizard' 'add' "$target_dir"
+  assert_success
+  assert_output --partial 'already in your PATH'
+
+  run grep -F "$target_dir" "$HOME/.bashrc"
+  assert_success
+  count=$(grep -F "$target_dir" "$HOME/.bashrc" | wc -l | tr -d ' ')
+  [ "$count" -eq 1 ]
+}
+
 @test 'path-wizard requires a directory when checking status' {
   run_spell 'spells/path-wizard' 'status'
   assert_failure
