@@ -134,6 +134,7 @@ fi
 selected=1
 menu_column=1
 menu_row=1
+menu_drawn=0
 
 # Draw the menu starting at the recorded cursor position.
 display_menu() {
@@ -143,10 +144,14 @@ display_menu() {
                 max_command_length=0
         fi
 
-        # Return to the recorded anchor so redraws replace the previous menu
-        # instead of appending to the bottom of the screen.
-        if move-cursor "$menu_column" "$menu_row"; then
-                printf '\033[J'
+        # Only attempt to clear previous output after the menu has been drawn
+        # once. Clearing on the first render can erase the prompt that invoked
+        # the menu and give the appearance of the screen scrolling.
+        if [ "$menu_drawn" -eq 1 ]; then
+                move-cursor "$menu_column" "$menu_row" || :
+        else
+                move-cursor "$menu_column" "$menu_row" || :
+                menu_drawn=1
         fi
 
         if [ "$max_command_length" -gt 0 ]; then
