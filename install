@@ -1,5 +1,12 @@
 #!/bin/sh
 
+# Abort if unexpected arguments are supplied so we do not accidentally discard
+# them when repurposing the positional parameters to track missing directories.
+if [ "$#" -ne 0 ]; then
+        printf '%s\n' "Usage: install" >&2
+        exit 1
+fi
+
 # Resolve the directory containing this installer without relying on
 # non-POSIX utilities so the script works on Debian's /bin/sh (dash).
 case $0 in
@@ -15,27 +22,63 @@ esac
 # custom search path configured in their environment.
 unset CDPATH
 
-if ! command -v path-wizard >/dev/null 2>&1; then
-        printf '%s' "ao-mud is not installed, install now? [y/n]: "
-        IFS= read -r choice || choice=
+ABS_DIR=$(cd "$SCRIPT_DIR" && pwd -P) || exit 1
+RC_FILE=$HOME/.bashrc
+PATH_WIZARD="$ABS_DIR/spells/path-wizard"
+REQUIRED_REL_DIRS="spells spells/cantrips spells/menu"
 
-        case $choice in
-                y|Y)
-                        # Convert SCRIPT_DIR to an absolute path before
-                        # invoking the path-wizard helper.
-                        ABS_DIR=$(cd "$SCRIPT_DIR" && pwd -P) || exit 1
-                        "$ABS_DIR"/spells/path-wizard add "$ABS_DIR"/spells || exit 1
-                        "$ABS_DIR"/spells/path-wizard add "$ABS_DIR"/spells/cantrips || exit 1
-                        "$ABS_DIR"/spells/path-wizard add "$ABS_DIR"/spells/menu || exit 1
-                        "$ABS_DIR"/spells/path-wizard add "$ABS_DIR"/spells/menu/bitcoin || exit 1
-                        printf '%s\n' "Your spellbook has been activated, please open a fresh terminal now."
-                        exit 0
-                        ;;
-                *)
-                        printf '%s\n' "Ok, well the mud won't work until you install it by adding the spells directory to your PATH."
-                        exit 1
-                        ;;
-        esac
-else
-        printf '%s\n' "ao-mud is already installed. Run it with 'menu' or 'mud'."
+if [ ! -f "$RC_FILE" ]; then
+        printf '%s\n' "Error: The '$RC_FILE' file does not exist in your home directory." >&2
+        exit 1
 fi
+
+if [ ! -x "$PATH_WIZARD" ]; then
+        printf '%s\n' "Error: Expected helper '$PATH_WIZARD' is missing or not executable." >&2
+        exit 1
+fi
+
+# Collect the directories whose PATH exports are absent from the user's
+# configuration so we can offer to repair them in one pass.
+set --
+for rel in $REQUIRED_REL_DIRS
+do
+        dir="$ABS_DIR/$rel"
+
+        if [ ! -d "$dir" ]; then
+                printf '%s\n' "Warning: Expected directory '$dir' is missing; skipping." >&2
+                continue
+        fi
+
+        entry="export PATH=$dir:\\$PATH"
+        if ! grep -F "$entry" "$RC_FILE" >/dev/null 2>&1; then
+                set -- "$@" "$dir"
+        fi
+done
+
+if [ "$#" -eq 0 ]; then
+        printf '%s\n' "ao-mud is already installed. Run it with 'menu' or 'mud'."
+        exit 0
+fi
+
+printf '%s\n' "ao-mud needs to add the following directories to your PATH:"
+for dir
+do
+        printf '  %s\n' "$dir"
+done
+
+printf '%s' "Proceed with installation? [y/n]: "
+IFS= read -r choice || choice=
+case $choice in
+        y|Y)
+                for dir
+                do
+                        "$PATH_WIZARD" add "$dir" || exit 1
+                done
+                printf '%s\n' "Your spellbook has been activated, please open a fresh terminal now."
+                exit 0
+                ;;
+        *)
+                printf '%s\n' "Ok, well the mud won't work until you install it by adding the spells directory to your PATH."
+                exit 1
+                ;;
+esac
