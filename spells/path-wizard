@@ -4,9 +4,9 @@ set -eu
 
 usage() {
         cat <<'USAGE' >&2
-Usage: path-wizard [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] add [DIRECTORY]
-       path-wizard [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] remove DIRECTORY
-       path-wizard [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] status DIRECTORY
+Usage: path-wizard [-r|--recursive] [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] add [DIRECTORY]
+       path-wizard [-r|--recursive] [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] remove DIRECTORY
+       path-wizard [-r|--recursive] [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] status DIRECTORY
 
 Formats: auto (default), shell, nix
 Platforms: debian, arch, fedora, mac, nixos, unknown
@@ -21,9 +21,18 @@ USAGE
 rc_file_override=""
 format="auto"
 platform="${PATH_WIZARD_PLATFORM-}"
+recursive=0
 
 while [ "$#" -gt 0 ]; do
         case $1 in
+        -r|--recursive)
+                recursive=1
+                shift
+                ;;
+        --recursive=*)
+                recursive=1
+                shift
+                ;;
         --rc-file)
                 if [ "$#" -lt 2 ]; then
                         printf '%s\n' "path-wizard: --rc-file expects a file path" >&2
@@ -167,6 +176,62 @@ else
         fi
 fi
 
+# When requested, operate recursively by invoking path-wizard on each
+# discovered directory.  This leverages the existing single-directory
+# implementation so we keep behaviour consistent across formats.
+if [ "$recursive" -eq 1 ]; then
+        tmp_file=$(mktemp "${TMPDIR:-/tmp}/path-wizard.XXXXXX") || {
+                printf '%s\n' "Error: Unable to enumerate directories under '$directory'." >&2
+                exit 1
+        }
+        if ! find "$directory" -type d -print | sort >"$tmp_file"; then
+                rm -f "$tmp_file"
+                printf '%s\n' "Error: Unable to enumerate directories under '$directory'." >&2
+                exit 1
+        fi
+
+        cleanup_tmp() {
+                rm -f "$tmp_file"
+        }
+
+        trap 'cleanup_tmp' EXIT HUP INT TERM
+
+        run_recursive_action() {
+                subdir=$1
+                set -- "$0"
+                if [ -n "$rc_file_override" ]; then
+                        set -- "$@" --rc-file "$rc_file_override"
+                fi
+                if [ -n "$format" ]; then
+                        set -- "$@" --format "$format"
+                fi
+                if [ -n "$platform" ]; then
+                        set -- "$@" --platform "$platform"
+                fi
+                set -- "$@" "$action" "$subdir"
+                "$@"
+        }
+
+        result=0
+        while IFS= read -r subdir; do
+                if run_recursive_action "$subdir"; then
+                        :
+                else
+                        status=$?
+                        if [ "$result" -eq 0 ]; then
+                                result=$status
+                        fi
+                        if [ "$action" = "status" ]; then
+                                break
+                        fi
+                fi
+        done <"$tmp_file"
+
+        trap - EXIT HUP INT TERM
+        cleanup_tmp
+        exit $result
+fi
+
 # When the platform is unspecified, attempt a lightweight detection so we can
 # pick sensible defaults (for example, .zshrc on macOS or configuration.nix on
 # NixOS). This avoids forcing callers to learn every corner case up front.
@@ -244,11 +309,18 @@ esac
 
 nix_backup_created=0
 
-# This literal export line is the marker we insert when updating shell rc
-# files. When checking for existing entries we only look for the directory
-# portion so that we recognise user-customised lines such as
-# "export PATH=\"$dir:$PATH\"".
-pattern=$(printf 'export PATH=%s:\\$PATH' "$directory")
+# These literal export lines represent how we manage PATH entries inside shell
+# rc files. The quoted variant is the format we now write, while the legacy
+# string tracks the buggy form that escaped "$PATH" and therefore replaced the
+# variable with a literal. Retaining both lets us tidy older installs while
+# keeping removals idempotent.
+managed_export_line=$(printf 'export PATH="%s:$PATH"' "$directory")
+legacy_export_line=$(printf 'export PATH=%s:\\$PATH' "$directory")
+legacy_quoted_export_line=$(printf 'export PATH="%s:\\$PATH"' "$directory")
+
+# Track whether we refreshed a legacy export line so the caller can surface an
+# appropriate message to the user.
+legacy_export_refreshed=0
 
 # Create the parent directory for the rc file when it does not already exist.
 # This lets us initialise fresh environments without manual scaffolding.
@@ -290,6 +362,46 @@ backup_rc_file_once() {
         return 0
 }
 
+# Replace the historical buggy export line with the corrected form.  When no
+# legacy entry exists we leave the rc file untouched. The caller can consult
+# the legacy_export_refreshed flag to decide which message to print.
+refresh_legacy_shell_export() {
+        legacy_export_refreshed=0
+        if [ ! -f "$rc_file" ]; then
+                return 0
+        fi
+
+        tmp_file="$rc_file.wizardry.$$"
+        : >"$tmp_file"
+        changed=0
+
+        while IFS= read -r line; do
+                case $line in
+                "$legacy_export_line"|"$legacy_quoted_export_line")
+                        changed=1
+                        printf '%s\n' "$managed_export_line" >>"$tmp_file"
+                        ;;
+                *)
+                        printf '%s\n' "$line" >>"$tmp_file"
+                        ;;
+                esac
+        done <"$rc_file"
+
+        if [ "$changed" -eq 0 ]; then
+                rm -f "$tmp_file"
+                return 0
+        fi
+
+        if ! mv "$tmp_file" "$rc_file"; then
+                rm -f "$tmp_file"
+                printf '%s\n' "Error: Unable to refresh '$rc_file'." >&2
+                exit 1
+        fi
+
+        legacy_export_refreshed=1
+        return 0
+}
+
 # Append the export line to POSIX shell rc files when it is not already
 # present. Each branch prints guidance so users know what changed.
 shell_add() {
@@ -297,11 +409,17 @@ shell_add() {
         if [ ! -f "$rc_file" ]; then
                 : >"$rc_file"
         fi
+        refresh_legacy_shell_export
+        if [ "$legacy_export_refreshed" -eq 1 ]; then
+                printf '%s\n' "An existing PATH entry was refreshed to preserve your PATH."
+                printf '%s\n' "The changes to your PATH will take effect in new shells."
+                return 0
+        fi
         if shell_status; then
                 printf '%s\n' "The directory is already in your PATH."
                 return 0
         fi
-        printf '%s\n' "$pattern" >>"$rc_file"
+        printf '%s\n' "$managed_export_line" >>"$rc_file"
         printf '%s\n' "The directory has been added to your PATH."
         printf '%s\n' "The changes to your PATH will take effect in new shells."
 }
@@ -312,19 +430,32 @@ shell_remove() {
                 printf '%s\n' "Error: The startup file '$rc_file' does not exist." >&2
                 exit 1
         fi
-        if ! grep -Fqx "$pattern" "$rc_file" 2>/dev/null; then
+        has_managed=0
+        if grep -Fqx "$managed_export_line" "$rc_file" 2>/dev/null; then
+                has_managed=1
+        fi
+        has_legacy=0
+        if grep -Fqx "$legacy_export_line" "$rc_file" 2>/dev/null; then
+                has_legacy=1
+        fi
+        if grep -Fqx "$legacy_quoted_export_line" "$rc_file" 2>/dev/null; then
+                has_legacy=1
+        fi
+        if [ "$has_managed" -eq 0 ] && [ "$has_legacy" -eq 0 ]; then
                 printf '%s\n' "Error: The directory is not in your PATH." >&2
                 exit 1
         fi
         tmp_file="$rc_file.wizardry.$$"
-        if ! grep -Fv "$pattern" "$rc_file" >"$tmp_file"; then
-                status=$?
-                if [ "$status" -ge 2 ]; then
-                        rm -f "$tmp_file"
-                        printf '%s\n' "Error: Unable to update '$rc_file'." >&2
-                        exit 1
-                fi
-        fi
+        : >"$tmp_file"
+        while IFS= read -r line; do
+                case $line in
+                "$managed_export_line"|"$legacy_export_line"|"$legacy_quoted_export_line")
+                        ;;
+                *)
+                        printf '%s\n' "$line" >>"$tmp_file"
+                        ;;
+                esac
+        done <"$rc_file"
         if ! mv "$tmp_file" "$rc_file"; then
                 rm -f "$tmp_file"
                 printf '%s\n' "Error: Unable to replace '$rc_file'." >&2
