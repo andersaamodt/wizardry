@@ -92,6 +92,7 @@ case $PLATFORM in
                 add_candidate "$HOME/.bash_profile"
                 ;;
         nixos)
+                add_candidate "$HOME/.config/nixpkgs/configuration.nix"
                 add_candidate "$HOME/.bashrc"
                 add_candidate "$HOME/.bash_profile"
                 ;;
@@ -143,6 +144,15 @@ if [ -z "$RC_FILE" ]; then
         exit 1
 fi
 
+case $RC_FILE in
+        *.nix)
+                FORMAT=nix
+                ;;
+        *)
+                FORMAT=shell
+                ;;
+esac
+
 # Collect the directories whose PATH exports are absent from the chosen start-up
 # file so we can repair them in one pass.
 set --
@@ -155,8 +165,7 @@ do
                 continue
         fi
 
-        entry="export PATH=$dir:\$PATH"
-        if [ -f "$RC_FILE" ] && grep -F "$entry" "$RC_FILE" >/dev/null 2>&1; then
+        if "$PATH_WIZARD" --rc-file "$RC_FILE" --format "$FORMAT" --platform "$PLATFORM" status "$dir"; then
                 continue
         fi
         set -- "$@" "$dir"
@@ -182,6 +191,13 @@ fi
 
 case $choice in
         y|Y)
+                rc_dir=${RC_FILE%/*}
+                if [ "$rc_dir" != "$RC_FILE" ] && [ ! -d "$rc_dir" ]; then
+                        if ! mkdir -p "$rc_dir"; then
+                                printf '%s\n' "Error: Unable to create directory '$rc_dir'." >&2
+                                exit 1
+                        fi
+                fi
                 if [ ! -f "$RC_FILE" ]; then
                         if ! : >"$RC_FILE"; then
                                 printf '%s\n' "Error: Unable to create '$RC_FILE'." >&2
@@ -190,9 +206,16 @@ case $choice in
                 fi
                 for dir
                 do
-                        "$PATH_WIZARD" --rc-file "$RC_FILE" add "$dir" || exit 1
+                        "$PATH_WIZARD" --rc-file "$RC_FILE" --format "$FORMAT" --platform "$PLATFORM" add "$dir" || exit 1
                 done
-                printf '%s\n' "Your spellbook has been activated. Open a fresh terminal to load $(basename "$RC_FILE")."
+                case $FORMAT in
+                        nix)
+                                printf '%s\n' "Your spellbook has been activated. Rebuild your Nix environment or restart your shell to load $(basename "$RC_FILE")."
+                                ;;
+                        *)
+                                printf '%s\n' "Your spellbook has been activated. Open a fresh terminal to load $(basename "$RC_FILE")."
+                                ;;
+                esac
                 exit 0
                 ;;
         *)

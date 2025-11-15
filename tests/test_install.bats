@@ -19,7 +19,15 @@ teardown() {
 rc_entries_present() {
   local rc_file=$1
   local dir=$2
-  run grep -Fqx "export PATH=$dir:\$PATH" "$rc_file"
+  local pattern
+  pattern=$(printf 'export PATH=%s:\\$PATH' "$dir")
+  run grep -Fqx "$pattern" "$rc_file"
+}
+
+nix_entries_present() {
+  local rc_file=$1
+  local dir=$2
+  run grep -F "\"$dir\"" "$rc_file"
 }
 
 @test 'install populates bashrc and is idempotent' {
@@ -45,7 +53,8 @@ RC
 
   for rel in spells spells/cantrips spells/menu; do
     dir="$ROOT_DIR/$rel"
-    count=$(grep -F "export PATH=$dir:\$PATH" "$HOME/.bashrc" | wc -l | tr -d ' ')
+    pattern=$(printf 'export PATH=%s:\\$PATH' "$dir")
+    count=$(grep -F "$pattern" "$HOME/.bashrc" | wc -l | tr -d ' ')
     [ "$count" -eq 1 ]
   done
 }
@@ -70,18 +79,23 @@ RC
   done
 }
 
-@test 'install falls back to bashrc on NixOS when missing' {
-  rm -f "$HOME/.bashrc" "$HOME/.bash_profile" "$HOME/.profile"
+@test 'install writes to configuration.nix on NixOS' {
+  rm -rf "$HOME/.config" "$HOME/.bashrc" "$HOME/.bash_profile" "$HOME/.profile"
 
   WIZARDRY_INSTALL_ASSUME_YES=1 \
     WIZARDRY_INSTALL_PLATFORM=nixos \
     run_spell 'install'
 
   assert_success
-  assert_output --partial 'via .bashrc'
-  [ -f "$HOME/.bashrc" ]
+  assert_output --partial 'via configuration.nix'
+  assert_output --partial 'Rebuild your Nix environment'
 
-  dir="$ROOT_DIR/spells"
-  rc_entries_present "$HOME/.bashrc" "$dir"
-  assert_success
+  rc_file="$HOME/.config/nixpkgs/configuration.nix"
+  [ -f "$rc_file" ]
+
+  for rel in spells spells/cantrips spells/menu; do
+    dir="$ROOT_DIR/$rel"
+    nix_entries_present "$rc_file" "$dir"
+    assert_success
+  done
 }

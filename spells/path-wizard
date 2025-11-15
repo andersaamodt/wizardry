@@ -1,21 +1,23 @@
 #!/bin/sh
 
-# Manage PATH entries in a shell start-up file. This helper is deliberately
-# conservative: it only prepends directories and removes the exact lines it
-# previously added so repeated invocations remain idempotent.
-
 set -eu
 
 usage() {
         cat <<'USAGE' >&2
-Usage: path-wizard [--rc-file FILE] add [DIRECTORY]
-       path-wizard [--rc-file FILE] remove DIRECTORY
+Usage: path-wizard [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] add [DIRECTORY]
+       path-wizard [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] remove DIRECTORY
+       path-wizard [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] status DIRECTORY
+
+Formats: auto (default), shell, nix
+Platforms: debian, arch, fedora, mac, nixos, unknown
 USAGE
 }
 
-# Default to .bashrc for backwards compatibility while permitting callers to
-# override the profile via --rc-file or the PATH_WIZARD_RC environment variable.
-rc_file=${PATH_WIZARD_RC:-"$HOME/.bashrc"}
+# shellcheck disable=SC2039 # POSIX compliant but we rely on some utilities like awk.
+
+rc_file_override=""
+format="auto"
+platform="${PATH_WIZARD_PLATFORM-}"
 
 while [ "$#" -gt 0 ]; do
         case $1 in
@@ -25,11 +27,37 @@ while [ "$#" -gt 0 ]; do
                         usage
                         exit 1
                 fi
-                rc_file=$2
+                rc_file_override=$2
                 shift 2
                 ;;
         --rc-file=*)
-                rc_file=${1#*=}
+                rc_file_override=${1#*=}
+                shift
+                ;;
+        --format)
+                if [ "$#" -lt 2 ]; then
+                        printf '%s\n' "path-wizard: --format expects a value" >&2
+                        usage
+                        exit 1
+                fi
+                format=$2
+                shift 2
+                ;;
+        --format=*)
+                format=${1#*=}
+                shift
+                ;;
+        --platform)
+                if [ "$#" -lt 2 ]; then
+                        printf '%s\n' "path-wizard: --platform expects a value" >&2
+                        usage
+                        exit 1
+                fi
+                platform=$2
+                shift 2
+                ;;
+        --platform=*)
+                platform=${1#*=}
                 shift
                 ;;
         --help|-h)
@@ -60,84 +88,171 @@ action=$1
 shift
 
 case $action in
-add|remove) : ;;
+add|remove|status) : ;;
 *)
-        printf '%s\n' "Error: The first argument must be 'add' or 'remove'." >&2
+        printf '%s\n' "Error: The first argument must be 'add', 'remove', or 'status'." >&2
         exit 1
         ;;
 esac
 
-# Determine the target directory. When adding and no directory is supplied use
-# the current working directory; removals always require an explicit path.
-if [ "$action" = "add" ]; then
-        if [ "$#" -eq 0 ]; then
-                directory=$(pwd -P)
-        else
-                directory=$1
-        fi
-elif [ "$#" -eq 0 ]; then
-        printf '%s\n' "Error: The 'remove' action expects a directory argument." >&2
+if [ "$action" = "status" ] && [ "$#" -eq 0 ]; then
+        printf '%s\n' "Error: The 'status' action expects a directory argument." >&2
         exit 1
-else
+fi
+
+normalize_directory() {
         directory=$1
-fi
+        case $directory in
+        "~")
+                directory=$HOME
+                ;;
+        "~"/*)
+                directory=$HOME/${directory#\~/}
+                ;;
+        esac
 
-# Expand leading tildes by hand so the script works with POSIX sh.
-case $directory in
-"~")
-        directory=$HOME
-        ;;
-"~"/*)
-        directory=$HOME/${directory#\~/}
-        ;;
-esac
-
-if [ ! -d "$directory" ]; then
-        printf '%s\n' "Error: The directory does not exist." >&2
-        exit 1
-fi
-
-# Resolve relative paths to absolute ones so duplicate entries are avoided.
-case $directory in
-/*) : ;;
-.)
-        directory=$(pwd -P)
-        ;;
-..|../*|./*)
-        directory=$(cd "$directory" && pwd -P)
-        ;;
-*)
-        directory=$(cd "$directory" && pwd -P)
-        ;;
-esac
-
-# Create the rc file on demand for additions; removals still require the file to
-# exist so we do not silently succeed when nothing could have been changed.
-if [ ! -f "$rc_file" ]; then
-        if [ "$action" = "add" ]; then
-                if ! : >"$rc_file"; then
-                        printf '%s\n' "Error: Unable to create '$rc_file'." >&2
-                        exit 1
-                fi
-        else
-                printf '%s\n' "Error: The startup file '$rc_file' does not exist." >&2
+        if [ "$directory" = "" ]; then
+                printf '%s\n' "Error: The directory does not exist." >&2
                 exit 1
         fi
+
+        if [ ! -d "$directory" ]; then
+                printf '%s\n' "Error: The directory does not exist." >&2
+                exit 1
+        fi
+
+        case $directory in
+        /*) : ;;
+        .)
+                directory=$(pwd -P)
+                ;;
+        ..|../*|./*)
+                directory=$(cd "$directory" && pwd -P)
+                ;;
+        *)
+                directory=$(cd "$directory" && pwd -P)
+                ;;
+        esac
+
+        printf '%s' "$directory"
+}
+
+if [ "$action" = "add" ]; then
+        if [ "$#" -eq 0 ]; then
+                directory=$(normalize_directory "$(pwd -P)")
+        else
+                directory=$(normalize_directory "$1")
+        fi
+elif [ "$action" = "remove" ] || [ "$action" = "status" ]; then
+        if [ "$#" -eq 0 ]; then
+                printf '%s\n' "Error: The '$action' action expects a directory argument." >&2
+                exit 1
+        fi
+        directory=$(normalize_directory "$1")
 fi
 
-pattern="export PATH=$directory:\$PATH"
+if [ "$action" != "status" ] && [ "$#" -gt 1 ]; then
+        shift
+else
+        if [ "$#" -gt 0 ]; then
+                shift
+        fi
+fi
 
-case $action in
-add)
+if [ -z "$platform" ]; then
+        if [ -f /etc/NIXOS ] || grep -qi 'ID=nixos' /etc/os-release 2>/dev/null; then
+                platform=nixos
+        elif [ -f /etc/debian_version ]; then
+                platform=debian
+        elif [ -f /etc/arch-release ]; then
+                platform=arch
+        elif [ -f /etc/fedora-release ]; then
+                platform=fedora
+        elif uname 2>/dev/null | grep -q 'Darwin'; then
+                platform=mac
+        else
+                platform=unknown
+        fi
+fi
+
+select_default_rc_file() {
+        case $platform in
+        mac)
+                printf '%s' "$HOME/.zshrc"
+                ;;
+        nixos)
+                printf '%s' "$HOME/.config/nixpkgs/configuration.nix"
+                ;;
+        *)
+                shell_path=${SHELL-}
+                shell_name=${shell_path##*/}
+                case ${shell_name:-} in
+                zsh)
+                        printf '%s' "$HOME/.zshrc"
+                        ;;
+                bash)
+                        printf '%s' "$HOME/.bashrc"
+                        ;;
+                *)
+                        printf '%s' "$HOME/.bashrc"
+                        ;;
+                esac
+                ;;
+        esac
+}
+
+rc_file=${rc_file_override:-}
+if [ -z "$rc_file" ]; then
+        rc_file=$(select_default_rc_file)
+fi
+
+if [ "$format" = "auto" ]; then
+        case $rc_file in
+        *.nix)
+                format=nix
+                ;;
+        *)
+                format=shell
+                ;;
+        esac
+fi
+
+case $format in
+shell|nix) : ;;
+*)
+        printf '%s\n' "Error: Unsupported format '$format'." >&2
+        exit 1
+        ;;
+esac
+
+pattern=$(printf 'export PATH=%s:\\$PATH' "$directory")
+
+ensure_rc_directory() {
+        rc_dir=${rc_file%/*}
+        if [ "$rc_dir" != "$rc_file" ] && [ ! -d "$rc_dir" ]; then
+                mkdir -p "$rc_dir"
+        fi
+}
+
+shell_add() {
+        ensure_rc_directory
+        if [ ! -f "$rc_file" ]; then
+                : >"$rc_file"
+        fi
         if grep -Fqx "$pattern" "$rc_file" 2>/dev/null; then
                 printf '%s\n' "The directory is already in your PATH."
-                exit 0
+                return 0
         fi
         printf '%s\n' "$pattern" >>"$rc_file"
         printf '%s\n' "The directory has been added to your PATH."
         printf '%s\n' "The changes to your PATH will take effect in new shells."
-        ;;
-remove)
+}
+
+shell_remove() {
+        if [ ! -f "$rc_file" ]; then
+                printf '%s\n' "Error: The startup file '$rc_file' does not exist." >&2
+                exit 1
+        fi
         if ! grep -Fqx "$pattern" "$rc_file" 2>/dev/null; then
                 printf '%s\n' "Error: The directory is not in your PATH." >&2
                 exit 1
@@ -158,5 +273,247 @@ remove)
         fi
         printf '%s\n' "The directory has been removed from your PATH."
         printf '%s\n' "The changes to your PATH will take effect in new shells."
+}
+
+shell_status() {
+        if [ ! -f "$rc_file" ]; then
+                return 1
+        fi
+        if grep -Fqx "$pattern" "$rc_file" 2>/dev/null; then
+                return 0
+        fi
+        return 1
+}
+
+extract_nix_paths() {
+        if [ ! -f "$rc_file" ]; then
+                return
+        fi
+        awk '
+        /# wizardry PATH begin/ {in_block=1; next}
+        /# wizardry PATH end/ {in_block=0}
+        in_block && $0 ~ /^[[:space:]]*"[^"]*"[[:space:]]*$/ {
+                path=$0
+                gsub(/^[[:space:]]*"/, "", path)
+                gsub(/"[[:space:]]*$/, "", path)
+                print path
+        }
+        ' "$rc_file"
+}
+
+remove_nix_block() {
+        tmp_file="$rc_file.wizardry.$$"
+        awk '
+        /# wizardry PATH begin/ {skip=1; next}
+        /# wizardry PATH end/ {skip=0; next}
+        skip {next}
+        {print}
+        ' "$rc_file" >"$tmp_file"
+        mv "$tmp_file" "$rc_file"
+}
+
+insert_block_before_closing_brace() {
+        block_file=$1
+        tmp_file="$rc_file.wizardry.$$"
+        awk -v blockfile="$block_file" '
+        BEGIN {
+                while ((getline line < blockfile) > 0) {
+                        block_lines[++block_count] = line
+                }
+                close(blockfile)
+        }
+        {
+                lines[NR] = $0
+        }
+        END {
+                if (NR == 0) {
+                        for (i = 1; i <= block_count; i++) print block_lines[i]
+                        exit
+                }
+                last = NR
+                while (last > 0 && lines[last] ~ /^[[:space:]]*$/) {
+                        last--
+                }
+                if (last > 0 && lines[last] ~ /^[[:space:]]*}/) {
+                        for (i = 1; i < last; i++) print lines[i]
+                        if (last > 1 && lines[last-1] !~ /^[[:space:]]*$/) {
+                                print ""
+                        }
+                        for (i = 1; i <= block_count; i++) print block_lines[i]
+                        print lines[last]
+                        for (i = last + 1; i <= NR; i++) print lines[i]
+                } else {
+                        for (i = 1; i <= NR; i++) print lines[i]
+                        if (NR > 0 && lines[NR] !~ /^[[:space:]]*$/) {
+                                print ""
+                        }
+                        for (i = 1; i <= block_count; i++) print block_lines[i]
+                }
+        }
+        ' "$rc_file" >"$tmp_file"
+        mv "$tmp_file" "$rc_file"
+}
+
+generate_nix_block_file() {
+        block_file=$1
+        shift
+        {
+                printf '  # wizardry PATH begin\n'
+                printf '  environment.sessionVariables.PATH =\n'
+                printf '    let\n'
+                printf '      wizardryPaths = [\n'
+                for dir in "$@"; do
+                        printf '        "%s"\n' "$dir"
+                done
+                printf '      ];\n'
+                printf '      existingPath = if config.environment.sessionVariables ? PATH\n'
+                printf '        then config.environment.sessionVariables.PATH\n'
+                printf '        else "";\n'
+                printf '    in pkgs.lib.concatStringsSep ":" (\n'
+                printf '      wizardryPaths\n'
+                printf '      ++ pkgs.lib.optional (existingPath != "") existingPath\n'
+                printf '    );\n'
+                printf '  # wizardry PATH end\n'
+        } >"$block_file"
+}
+
+write_nix_paths() {
+        ensure_rc_directory
+        if [ "$#" -eq 0 ]; then
+                if [ -f "$rc_file" ] && grep -Fq '# wizardry PATH begin' "$rc_file" 2>/dev/null; then
+                        remove_nix_block
+                fi
+                return 0
+        fi
+        block_tmp="$rc_file.block.$$"
+        generate_nix_block_file "$block_tmp" "$@"
+        if [ ! -f "$rc_file" ] || [ ! -s "$rc_file" ]; then
+                {
+                        printf '{ config, pkgs, ... }:\n'
+                        printf '\n'
+                        printf '{\n'
+                        cat "$block_tmp"
+                        printf '}\n'
+                } >"$rc_file"
+                rm -f "$block_tmp"
+                return 0
+        fi
+        if grep -Fq '# wizardry PATH begin' "$rc_file" 2>/dev/null; then
+                remove_nix_block
+        fi
+        insert_block_before_closing_brace "$block_tmp"
+        rm -f "$block_tmp"
+}
+
+nix_add() {
+        ensure_rc_directory
+        existing_paths="$(extract_nix_paths)"
+        old_ifs=$IFS
+        IFS='
+'
+        # shellcheck disable=SC2086
+        set -- $existing_paths
+        IFS=$old_ifs
+        for path_entry in "$@"; do
+                if [ "$path_entry" = "$directory" ]; then
+                        printf '%s\n' "The directory is already in your PATH."
+                        return 0
+                fi
+        done
+        set -- "$@" "$directory"
+        write_nix_paths "$@"
+        printf '%s\n' "The directory has been added to your PATH."
+        printf '%s\n' "Rebuild your Nix environment to activate the change."
+}
+
+nix_remove() {
+        if [ ! -f "$rc_file" ]; then
+                        printf '%s\n' "Error: The startup file '$rc_file' does not exist." >&2
+                        exit 1
+        fi
+        existing_paths="$(extract_nix_paths)"
+        old_ifs=$IFS
+        IFS='
+'
+        # shellcheck disable=SC2086
+        set -- $existing_paths
+        IFS=$old_ifs
+        found=0
+        new_paths=""
+        for path_entry in "$@"; do
+                if [ "$path_entry" = "$directory" ]; then
+                        found=1
+                        continue
+                fi
+                if [ -z "$new_paths" ]; then
+                        new_paths=$path_entry
+                else
+                        new_paths="$new_paths\n$path_entry"
+                fi
+        done
+        if [ "$found" -eq 0 ]; then
+                printf '%s\n' "Error: The directory is not in your PATH." >&2
+                exit 1
+        fi
+        if [ -z "$new_paths" ]; then
+                write_nix_paths
+        else
+                old_ifs=$IFS
+                IFS='
+'
+                # shellcheck disable=SC2086
+                set -- $new_paths
+                IFS=$old_ifs
+                write_nix_paths "$@"
+        fi
+        printf '%s\n' "The directory has been removed from your PATH."
+        printf '%s\n' "Rebuild your Nix environment to activate the change."
+}
+
+nix_status() {
+        if [ ! -f "$rc_file" ]; then
+                return 1
+        fi
+        existing_paths="$(extract_nix_paths)"
+        old_ifs=$IFS
+        IFS='
+'
+        # shellcheck disable=SC2086
+        set -- $existing_paths
+        IFS=$old_ifs
+        for path_entry in "$@"; do
+                if [ "$path_entry" = "$directory" ]; then
+                        return 0
+                fi
+        done
+        return 1
+}
+
+case $format in
+shell)
+        case $action in
+        add)
+                shell_add
+                ;;
+        remove)
+                shell_remove
+                ;;
+        status)
+                shell_status
+                ;;
+        esac
+        ;;
+nix)
+        case $action in
+        add)
+                nix_add
+                ;;
+        remove)
+                nix_remove
+                ;;
+        status)
+                nix_status
+                ;;
+        esac
         ;;
 esac
