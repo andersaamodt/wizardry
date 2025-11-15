@@ -15,11 +15,12 @@ After installing, you must reopen your terminal window before wizardry spells wi
 
 ## Usage
 
-To use wizardry:
+To use wizardry, simply type:
 
 ```
 menu
 ```
+Most (soon all) wizardry spells and features will be discoverable through the menu.
 
 ## Principles:
 
