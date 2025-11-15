@@ -3,7 +3,9 @@
 # This spell displays system maintenance tasks.
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
-cantrip_dir=$(dirname "$script_dir")/cantrips
+spells_dir=$(dirname "$script_dir")
+cantrip_dir="$spells_dir/cantrips"
+repo_dir=$(dirname "$spells_dir")
 
 if [ -n "${REQUIRE_COMMAND-}" ]; then
   require_cmd=$REQUIRE_COMMAND
@@ -38,6 +40,7 @@ fi
 
 display_menu() {
   update_wizardry="Update wizardry%update-wizardry"
+  test_suite="Test all wizardry spells%(cd \"$repo_dir\" && ./tests/run.sh)"
   update_all="Update all software%update-all -v"
   restart="Force restart%sudo shutdown -r now"
   exit="Exit%kill -2 $$"
@@ -46,9 +49,9 @@ display_menu() {
   if [ -n "$nixos_rebuild" ]; then
     set -- "$@" "$nixos_rebuild"
   fi
-  set -- "$@" "$update_wizardry" "$restart" "$exit"
+  set -- "$@" "$update_wizardry" "$test_suite" "$restart" "$exit"
 
-  menu "System Menu:" "$@"
+  MENU_ESCAPE_STATUS=$menu_escape_status menu "System Menu:" "$@"
 }
 
 handle_ctrl_c() {
@@ -57,6 +60,18 @@ handle_ctrl_c() {
 
 handle_ctrl_c
 
+menu_escape_status=113
+
 while true; do
+  printf '\n'
   display_menu
+  status=$?
+
+  if [ "$status" -eq "$menu_escape_status" ]; then
+    break
+  fi
+
+  if [ "$status" -ne 0 ]; then
+    exit "$status"
+  fi
 done

@@ -60,6 +60,8 @@ while :; do
         exit 1
     fi
 
+    printf '\n'
+
     set --
     for name in $entries; do
         if command -v "${name}-status" >/dev/null 2>&1; then
@@ -69,7 +71,7 @@ while :; do
         fi
 
         if command -v "${name}-menu" >/dev/null 2>&1; then
-            cmd="${name}-menu"
+            cmd="printf '\\n'; ${name}-menu"
         else
             cmd='printf "This entry is not ready yet.\n"'
         fi

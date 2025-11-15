@@ -241,12 +241,14 @@ assert_move_cursor_log() {
 
 @test 'install-menu reports available menu entries' {
   export MENU_LOG="$menu_log"
+  export MENU_STUB_RESULT=escape
   export INSTALL_MENU_DIRS='alpha beta'
   with_menu_path run_spell 'spells/menu/install-menu'
   assert_success
   assert_output --partial 'MENU:Install Menu:'
-  assert_output --partial 'alpha - ready'
+  assert_output --partial "alpha - ready%printf '\\n'; alpha-menu"
   assert_output --partial 'beta - coming soon'
+  unset MENU_STUB_RESULT
 }
 
 @test 'menu redraws selections without scrolling' {
@@ -421,20 +423,61 @@ assert_move_cursor_log() {
   with_menu_path run_spell 'spells/menu/main-menu'
   assert_success
   assert_output --partial 'MENU:Main Menu:'
-  assert_output --partial 'Install Free Software%install-menu'
-  assert_output --partial 'Manage System%system-menu'
+  assert_output --partial "MUD menu%printf '\\n'; mud"
+  assert_output --partial "Install Free Software%printf '\\n'; install-menu"
+  assert_output --partial "Manage System%printf '\\n'; system-menu"
   assert_output --partial 'Exit%kill -2'
+  unset MENU_STUB_RESULT
+}
+
+@test 'main-menu keeps running until escape is selected' {
+  export MENU_LOG="$menu_log"
+  : >"$menu_log"
+  results_file="$BATS_TEST_TMPDIR/main_menu_results"
+  printf '%s\n' command escape >"$results_file"
+  export MENU_STUB_RESULTS_FILE="$results_file"
+  with_menu_path run_spell 'spells/menu/main-menu'
+  assert_success
+  menu_calls=$(grep -c '^MENU:Main Menu:' "$menu_log")
+  assert_equal "$menu_calls" 2
+  unset MENU_STUB_RESULTS_FILE
+}
+
+@test 'install-menu exits when escape is selected' {
+  export MENU_LOG="$menu_log"
+  : >"$menu_log"
+  export MENU_STUB_RESULT=escape
+  export INSTALL_MENU_DIRS='alpha beta'
+  with_menu_path run_spell 'spells/menu/install-menu'
+  assert_success
+  menu_calls=$(grep -c '^MENU:Install Menu:' "$menu_log")
+  assert_equal "$menu_calls" 1
+  unset MENU_STUB_RESULT
 }
 
 @test 'system-menu forwards maintenance options to menu command' {
   export MENU_LOG="$menu_log"
   : >"$menu_log"
+  export MENU_STUB_RESULT=escape
   with_menu_path run_spell 'spells/menu/system-menu'
   assert_success
   assert_output --partial 'MENU:System Menu:'
   assert_output --partial 'Update all software%update-all'
   assert_output --partial 'Update wizardry%update-wizardry'
+  assert_output --partial 'Test all wizardry spells%(cd '
   assert_output --partial 'Force restart%sudo shutdown -r now'
   assert_output --partial 'Exit%kill -2'
+  unset MENU_STUB_RESULT
+}
+
+@test 'system-menu exits when escape is selected' {
+  export MENU_LOG="$menu_log"
+  : >"$menu_log"
+  export MENU_STUB_RESULT=escape
+  with_menu_path run_spell 'spells/menu/system-menu'
+  assert_success
+  menu_calls=$(grep -c '^MENU:System Menu:' "$menu_log")
+  assert_equal "$menu_calls" 1
+  unset MENU_STUB_RESULT
 }
 
