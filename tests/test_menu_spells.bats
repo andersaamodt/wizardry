@@ -425,7 +425,7 @@ assert_move_cursor_log() {
   assert_output --partial 'MENU:Main Menu:'
   assert_output --partial "MUD menu%printf '\\n'; mud"
   assert_output --partial "Install Free Software%printf '\\n'; install-menu"
-  assert_output --partial "Manage System%printf '\\n'; system-menu"
+  assert_output --partial 'Manage System%system-menu'
   assert_output --partial 'Exit%kill -2'
   unset MENU_STUB_RESULT
 }
@@ -441,6 +441,67 @@ assert_move_cursor_log() {
   menu_calls=$(grep -c '^MENU:Main Menu:' "$menu_log")
   assert_equal "$menu_calls" 2
   unset MENU_STUB_RESULTS_FILE
+}
+
+@test 'main-menu shows single blank lines when entering and leaving system menu' {
+  export MENU_LOG="$menu_log"
+  : >"$menu_log"
+
+  cat <<'MENU' >"$stub_dir/menu"
+#!/usr/bin/env bash
+set -euo pipefail
+
+title=$1
+shift
+
+printf 'MENU:%s\n' "$title"
+printf 'MENU:%s\n' "$title" >>"$MENU_LOG"
+
+for entry in "$@"; do
+  printf 'MENU:%s\n' "$entry"
+  printf 'MENU:%s\n' "$entry" >>"$MENU_LOG"
+done
+
+state_file="${MENU_LOG}.state"
+state=0
+if [ -f "$state_file" ]; then
+  state=$(cat "$state_file")
+fi
+
+case "$title" in
+  'Main Menu:')
+    if [ "$state" -eq 0 ]; then
+      printf '1\n' >"$state_file"
+      for entry in "$@"; do
+        case "$entry" in
+          'Manage System%'* )
+            cmd=${entry#*%}
+            PATH="$ROOT_DIR/spells/menu:$PATH"
+            eval "$cmd"
+            ;;
+        esac
+      done
+      exit 0
+    else
+      exit "${MENU_ESCAPE_STATUS:-0}"
+    fi
+    ;;
+  'System Menu:')
+    exit "${MENU_ESCAPE_STATUS:-0}"
+    ;;
+  *)
+    exit 0
+    ;;
+esac
+MENU
+  chmod +x "$stub_dir/menu"
+
+  with_menu_path run_spell 'spells/menu/main-menu'
+  assert_success
+
+  [[ "$output" == *$'\n\nMENU:System Menu:'* ]] || fail 'expected exactly one blank line before System Menu prompt'
+  [[ "$output" != *$'\n\n\nMENU:System Menu:'* ]] || fail 'found multiple blank lines before System Menu prompt'
+  [[ "$output" == *$'\n\nMENU:Main Menu:'* ]] || fail 'expected blank line before Main Menu prompt after returning'
 }
 
 @test 'install-menu exits when escape is selected' {
