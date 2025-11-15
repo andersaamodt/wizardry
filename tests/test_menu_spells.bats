@@ -25,13 +25,20 @@ else
   result="command"
 fi
 
-if [ -n "${MENU_RESULT_FILE-}" ] && [ -n "$result" ]; then
-  printf '%s\n' "$result" >"$MENU_RESULT_FILE"
-fi
-
 printf 'MENU:%s\n' "$@" | tee -a "$MENU_LOG"
 
-exit "${MENU_EXIT_STATUS:-0}"
+escape_status=${MENU_ESCAPE_STATUS:-0}
+case "$result" in
+  escape)
+    exit "$escape_status"
+    ;;
+  error)
+    exit 1
+    ;;
+  *)
+    exit 0
+    ;;
+esac
 MENU
   chmod +x "$stub_dir/menu"
 
