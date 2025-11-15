@@ -1,81 +1,597 @@
 #!/bin/sh
 
-# This spell allows you to add or remove directories from your PATH environment variable permanently.
-# It uses the 'grep' and 'sed' commands to search and edit the '.bashrc' file in your home directory.
+set -eu
 
-# Check if the correct number of arguments was provided
-if [ "$#" -ne 1 ] && [ "$#" -ne 2 ]; then
-  echo "Error: This spell requires one or two arguments: 'add' or 'remove' and an optional directory path."
-  exit 1
+usage() {
+        cat <<'USAGE' >&2
+Usage: path-wizard [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] add [DIRECTORY]
+       path-wizard [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] remove DIRECTORY
+       path-wizard [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] status DIRECTORY
+
+Formats: auto (default), shell, nix
+Platforms: debian, arch, fedora, mac, nixos, unknown
+USAGE
+}
+
+# shellcheck disable=SC2039 # POSIX compliant but we rely on some utilities like awk.
+
+# Track optional overrides for the file we edit, the output format we emit,
+# and the platform we are targeting. The defaults match the original behaviour
+# so existing callers keep working even if they do not pass new flags.
+rc_file_override=""
+format="auto"
+platform="${PATH_WIZARD_PLATFORM-}"
+
+while [ "$#" -gt 0 ]; do
+        case $1 in
+        --rc-file)
+                if [ "$#" -lt 2 ]; then
+                        printf '%s\n' "path-wizard: --rc-file expects a file path" >&2
+                        usage
+                        exit 1
+                fi
+                rc_file_override=$2
+                shift 2
+                ;;
+        --rc-file=*)
+                rc_file_override=${1#*=}
+                shift
+                ;;
+        --format)
+                if [ "$#" -lt 2 ]; then
+                        printf '%s\n' "path-wizard: --format expects a value" >&2
+                        usage
+                        exit 1
+                fi
+                format=$2
+                shift 2
+                ;;
+        --format=*)
+                format=${1#*=}
+                shift
+                ;;
+        --platform)
+                if [ "$#" -lt 2 ]; then
+                        printf '%s\n' "path-wizard: --platform expects a value" >&2
+                        usage
+                        exit 1
+                fi
+                platform=$2
+                shift 2
+                ;;
+        --platform=*)
+                platform=${1#*=}
+                shift
+                ;;
+        --help|-h)
+                usage
+                exit 0
+                ;;
+        --)
+                shift
+                break
+                ;;
+        -*)
+                printf '%s\n' "path-wizard: unknown option '$1'" >&2
+                usage
+                exit 1
+                ;;
+        *)
+                break
+                ;;
+        esac
+done
+
+# We require at least one argument to decide whether we are adding, removing,
+# or checking the PATH entry. Showing usage keeps the interface self-documenting
+# for new Wizards-in-training.
+if [ "$#" -eq 0 ]; then
+        usage
+        exit 1
 fi
 
-# Set the action and directory variables
 action=$1
-directory=$2
+shift
 
-# Check if the action is 'add' or 'remove'
-if [ "$action" != "add" ] && [ "$action" != "remove" ]; then
-  echo "Error: The first argument must be 'add' or 'remove'."
-  exit 1
+case $action in
+add|remove|status) : ;;
+*)
+        printf '%s\n' "Error: The first argument must be 'add', 'remove', or 'status'." >&2
+        exit 1
+        ;;
+esac
+
+if [ "$action" = "status" ] && [ "$#" -eq 0 ]; then
+        printf '%s\n' "Error: The 'status' action expects a directory argument." >&2
+        exit 1
 fi
 
-# Check if the directory path was provided
-if [ -z "$directory" ]; then
-  # If no directory path was provided, use the current directory
-  directory=$(pwd -P)
-else
-  # If a directory path was provided, expand the '~' character if necessary
-  directory="$(echo "$directory" | sed "s|^~|$HOME|")"
-  
-  # If the directory path is '.', convert it to the absolute path of the current directory
-  if [ "$directory" = "." ]; then
-    directory=$(pwd -P)
-  else
-    # If the directory is a relative path, convert it to an absolute path
-    if [ "${directory:0:1}" != "/" ]; then
-      directory=$(cd "$directory" && pwd -P)
-    fi
-  fi
-fi
+# Resolve the provided directory so that PATH entries are always absolute.
+# Normalising here means the rc files never contain brittle relative paths.
+normalize_directory() {
+        directory=$1
+        case $directory in
+        "~")
+                directory=$HOME
+                ;;
+        "~"/*)
+                directory=$HOME/${directory#\~/}
+                ;;
+        esac
 
-# Check if the directory exists
-if [ ! -d "$directory" ]; then
-  echo "Error: The directory does not exist."
-  exit 1
-fi
+        if [ "$directory" = "" ]; then
+                printf '%s\n' "Error: The directory does not exist." >&2
+                exit 1
+        fi
 
-# Check if the '.bashrc' file exists in the home directory
-if [ ! -f "$HOME/.bashrc" ]; then
-  echo "Error: The '.bashrc' file does not exist in your home directory."
-  exit 1
-fi
+        if [ ! -d "$directory" ]; then
+                printf '%s\n' "Error: The directory does not exist." >&2
+                exit 1
+        fi
 
-# Check if the directory is already in the PATH variable
-if grep -q "export PATH=$directory:\$PATH$" "$HOME/.bashrc"; then
-  # If the directory is already in the PATH variable, check if the action is 'add'
-  if [ "$action" = "add" ]; then
-    echo "The directory is already in your PATH."
-    exit 0
-  fi
+        case $directory in
+        /*) : ;;
+        .)
+                directory=$(pwd -P)
+                ;;
+        ..|../*|./*)
+                directory=$(cd "$directory" && pwd -P)
+                ;;
+        *)
+                directory=$(cd "$directory" && pwd -P)
+                ;;
+        esac
 
-  # If the action is 'remove' and the directory is already in the PATH variable, remove the directory from the PATH variable using the 'sed' command
-  sed -i "\|^export PATH=$directory:\$PATH$|d" "$HOME/.bashrc"
-  echo "The directory has been removed from your PATH."
-else
-  # If the directory is not in the PATH variable, check if the action is 'add'
-  if [ "$action" = "add" ]; then
-    # If the action is 'add', prepend the directory to the PATH variable in the '.bashrc' file
-    echo "export PATH=$directory:\$PATH" >> "$HOME/.bashrc"
-    echo "The directory has been added to your PATH."
-  else
-    # If the action is 'remove' and the directory is not in the PATH variable, display an error message
-    echo "Error: The directory is not in your PATH."
-    exit 1
-  fi
-fi
+        printf '%s' "$directory"
+}
 
 if [ "$action" = "add" ]; then
-	echo "The changes to your PATH will not take effect until you open a new terminal or run the 'source ~/.bashrc' command in your current terminal."
-else
-	echo "The changes to your PATH will not take effect until you open a new terminal."
+        if [ "$#" -eq 0 ]; then
+                directory=$(normalize_directory "$(pwd -P)")
+        else
+                directory=$(normalize_directory "$1")
+        fi
+elif [ "$action" = "remove" ] || [ "$action" = "status" ]; then
+        if [ "$#" -eq 0 ]; then
+                printf '%s\n' "Error: The '$action' action expects a directory argument." >&2
+                exit 1
+        fi
+        directory=$(normalize_directory "$1")
 fi
+
+if [ "$action" != "status" ] && [ "$#" -gt 1 ]; then
+        shift
+else
+        if [ "$#" -gt 0 ]; then
+                shift
+        fi
+fi
+
+# When the platform is unspecified, attempt a lightweight detection so we can
+# pick sensible defaults (for example, .zshrc on macOS or configuration.nix on
+# NixOS). This avoids forcing callers to learn every corner case up front.
+if [ -z "$platform" ]; then
+        if [ -f /etc/NIXOS ] || grep -qi 'ID=nixos' /etc/os-release 2>/dev/null; then
+                platform=nixos
+        elif [ -f /etc/debian_version ]; then
+                platform=debian
+        elif [ -f /etc/arch-release ]; then
+                platform=arch
+        elif [ -f /etc/fedora-release ]; then
+                platform=fedora
+        elif uname 2>/dev/null | grep -q 'Darwin'; then
+                platform=mac
+        else
+                platform=unknown
+        fi
+fi
+
+# Choose the most appropriate start-up file for the detected platform. The
+# installer can still override this decision via --rc-file when a user has a
+# custom setup.
+select_default_rc_file() {
+        case $platform in
+        mac)
+                printf '%s' "$HOME/.zshrc"
+                ;;
+        nixos)
+                printf '%s' "$HOME/.config/nixpkgs/configuration.nix"
+                ;;
+        *)
+                shell_path=${SHELL-}
+                shell_name=${shell_path##*/}
+                case ${shell_name:-} in
+                zsh)
+                        printf '%s' "$HOME/.zshrc"
+                        ;;
+                bash)
+                        printf '%s' "$HOME/.bashrc"
+                        ;;
+                *)
+                        printf '%s' "$HOME/.bashrc"
+                        ;;
+                esac
+                ;;
+        esac
+}
+
+rc_file=${rc_file_override:-}
+if [ -z "$rc_file" ]; then
+        rc_file=$(select_default_rc_file)
+fi
+
+# "auto" format detection keeps the CLI friendly: plain shell files get the
+# traditional export lines, while configuration.nix switches to declarative
+# Nix output.
+if [ "$format" = "auto" ]; then
+        case $rc_file in
+        *.nix)
+                format=nix
+                ;;
+        *)
+                format=shell
+                ;;
+        esac
+fi
+
+case $format in
+shell|nix) : ;;
+*)
+        printf '%s\n' "Error: Unsupported format '$format'." >&2
+        exit 1
+        ;;
+esac
+
+nix_backup_created=0
+
+# This literal export line is the marker we insert and later search for when
+# updating shell rc files.
+pattern=$(printf 'export PATH=%s:\\$PATH' "$directory")
+
+# Create the parent directory for the rc file when it does not already exist.
+# This lets us initialise fresh environments without manual scaffolding.
+ensure_rc_directory() {
+        rc_dir=${rc_file%/*}
+        if [ "$rc_dir" != "$rc_file" ] && [ ! -d "$rc_dir" ]; then
+                mkdir -p "$rc_dir"
+        fi
+}
+
+# configuration.nix deserves extra care: before we rewrite anything, stash a
+# timestamped backup so users can inspect or restore the previous version.
+backup_rc_file_once() {
+        if [ "$format" != "nix" ]; then
+                return 0
+        fi
+        if [ "$nix_backup_created" -eq 1 ]; then
+                return 0
+        fi
+        if [ ! -f "$rc_file" ]; then
+                return 0
+        fi
+
+        timestamp=$(date +%Y%m%d%H%M%S 2>/dev/null || date +%s 2>/dev/null || printf '%s' "$$")
+        suffix=$timestamp
+        backup="$rc_file.wizardry.$suffix"
+        while [ -e "$backup" ]; do
+                suffix=${suffix}x
+                backup="$rc_file.wizardry.$suffix"
+        done
+
+        if ! cp "$rc_file" "$backup"; then
+                printf '%s\n' "path-wizard: unable to back up '$rc_file'." >&2
+                exit 1
+        fi
+
+        printf '%s\n' "path-wizard: backed up '$rc_file' to '$backup'." >&2
+        nix_backup_created=1
+        return 0
+}
+
+# Append the export line to POSIX shell rc files when it is not already
+# present. Each branch prints guidance so users know what changed.
+shell_add() {
+        ensure_rc_directory
+        if [ ! -f "$rc_file" ]; then
+                : >"$rc_file"
+        fi
+        if grep -Fqx "$pattern" "$rc_file" 2>/dev/null; then
+                printf '%s\n' "The directory is already in your PATH."
+                return 0
+        fi
+        printf '%s\n' "$pattern" >>"$rc_file"
+        printf '%s\n' "The directory has been added to your PATH."
+        printf '%s\n' "The changes to your PATH will take effect in new shells."
+}
+
+# Remove a previously added export line from shell rc files.
+shell_remove() {
+        if [ ! -f "$rc_file" ]; then
+                printf '%s\n' "Error: The startup file '$rc_file' does not exist." >&2
+                exit 1
+        fi
+        if ! grep -Fqx "$pattern" "$rc_file" 2>/dev/null; then
+                printf '%s\n' "Error: The directory is not in your PATH." >&2
+                exit 1
+        fi
+        tmp_file="$rc_file.wizardry.$$"
+        if ! grep -Fv "$pattern" "$rc_file" >"$tmp_file"; then
+                status=$?
+                if [ "$status" -ge 2 ]; then
+                        rm -f "$tmp_file"
+                        printf '%s\n' "Error: Unable to update '$rc_file'." >&2
+                        exit 1
+                fi
+        fi
+        if ! mv "$tmp_file" "$rc_file"; then
+                rm -f "$tmp_file"
+                printf '%s\n' "Error: Unable to replace '$rc_file'." >&2
+                exit 1
+        fi
+        printf '%s\n' "The directory has been removed from your PATH."
+        printf '%s\n' "The changes to your PATH will take effect in new shells."
+}
+
+# status returns success when the directory is already exported, allowing
+# callers to avoid duplicate additions.
+shell_status() {
+        if [ ! -f "$rc_file" ]; then
+                return 1
+        fi
+        if grep -Fqx "$pattern" "$rc_file" 2>/dev/null; then
+                return 0
+        fi
+        return 1
+}
+
+# Parse the managed block in configuration.nix and echo each tracked path. The
+# caller can then compare or merge entries without re-reading the file.
+extract_nix_paths() {
+        if [ ! -f "$rc_file" ]; then
+                return
+        fi
+        awk '
+        /# wizardry PATH begin/ {in_block=1; next}
+        /# wizardry PATH end/ {in_block=0}
+        in_block && $0 ~ /^[[:space:]]*"[^"]*"[[:space:]]*$/ {
+                path=$0
+                gsub(/^[[:space:]]*"/, "", path)
+                gsub(/"[[:space:]]*$/, "", path)
+                print path
+        }
+        ' "$rc_file"
+}
+
+# Delete the managed block from configuration.nix while keeping the rest of
+# the file untouched. This simplifies removal and ensures idempotence.
+remove_nix_block() {
+        backup_rc_file_once
+        tmp_file="$rc_file.wizardry.$$"
+        awk '
+        /# wizardry PATH begin/ {skip=1; next}
+        /# wizardry PATH end/ {skip=0; next}
+        skip {next}
+        {print}
+        ' "$rc_file" >"$tmp_file"
+        mv "$tmp_file" "$rc_file"
+}
+
+# Insert the generated Nix block just before the closing brace of the
+# configuration. Falling back to appending keeps the file valid even when the
+# layout is unusual.
+insert_block_before_closing_brace() {
+        block_file=$1
+        tmp_file="$rc_file.wizardry.$$"
+        awk -v blockfile="$block_file" '
+        BEGIN {
+                while ((getline line < blockfile) > 0) {
+                        block_lines[++block_count] = line
+                }
+                close(blockfile)
+        }
+        {
+                lines[NR] = $0
+        }
+        END {
+                if (NR == 0) {
+                        for (i = 1; i <= block_count; i++) print block_lines[i]
+                        exit
+                }
+                last = NR
+                while (last > 0 && lines[last] ~ /^[[:space:]]*$/) {
+                        last--
+                }
+                if (last > 0 && lines[last] ~ /^[[:space:]]*}/) {
+                        for (i = 1; i < last; i++) print lines[i]
+                        if (last > 1 && lines[last-1] !~ /^[[:space:]]*$/) {
+                                print ""
+                        }
+                        for (i = 1; i <= block_count; i++) print block_lines[i]
+                        print lines[last]
+                        for (i = last + 1; i <= NR; i++) print lines[i]
+                } else {
+                        for (i = 1; i <= NR; i++) print lines[i]
+                        if (NR > 0 && lines[NR] !~ /^[[:space:]]*$/) {
+                                print ""
+                        }
+                        for (i = 1; i <= block_count; i++) print block_lines[i]
+                }
+        }
+        ' "$rc_file" >"$tmp_file"
+        mv "$tmp_file" "$rc_file"
+}
+
+# Create a temporary file containing the declarative block we manage. The
+# helper keeps the formatting consistent every time we rewrite the file.
+generate_nix_block_file() {
+        block_file=$1
+        shift
+        {
+                printf '  # wizardry PATH begin\n'
+                printf '  environment.sessionVariables.PATH =\n'
+                printf '    let\n'
+                printf '      wizardryPaths = [\n'
+                for dir in "$@"; do
+                        printf '        "%s"\n' "$dir"
+                done
+                printf '      ];\n'
+                printf '      existingPath = if config.environment.sessionVariables ? PATH\n'
+                printf '        then config.environment.sessionVariables.PATH\n'
+                printf '        else "";\n'
+                printf '    in pkgs.lib.concatStringsSep ":" (\n'
+                printf '      wizardryPaths\n'
+                printf '      ++ pkgs.lib.optional (existingPath != "") existingPath\n'
+                printf '    );\n'
+                printf '  # wizardry PATH end\n'
+        } >"$block_file"
+}
+
+# Replace (or create) the managed block in configuration.nix with the provided
+# list of directories.
+write_nix_paths() {
+        ensure_rc_directory
+        backup_rc_file_once
+        if [ "$#" -eq 0 ]; then
+                if [ -f "$rc_file" ] && grep -Fq '# wizardry PATH begin' "$rc_file" 2>/dev/null; then
+                        remove_nix_block
+                fi
+                return 0
+        fi
+        block_tmp="$rc_file.block.$$"
+        generate_nix_block_file "$block_tmp" "$@"
+        if [ ! -f "$rc_file" ] || [ ! -s "$rc_file" ]; then
+                {
+                        printf '{ config, pkgs, ... }:\n'
+                        printf '\n'
+                        printf '{\n'
+                        cat "$block_tmp"
+                        printf '}\n'
+                } >"$rc_file"
+                rm -f "$block_tmp"
+                return 0
+        fi
+        if grep -Fq '# wizardry PATH begin' "$rc_file" 2>/dev/null; then
+                remove_nix_block
+        fi
+        insert_block_before_closing_brace "$block_tmp"
+        rm -f "$block_tmp"
+}
+
+# Add a directory to the managed list inside configuration.nix. Duplicates are
+# ignored so repeated runs stay harmless.
+nix_add() {
+        ensure_rc_directory
+        existing_paths="$(extract_nix_paths)"
+        old_ifs=$IFS
+        IFS='
+'
+        # shellcheck disable=SC2086
+        set -- $existing_paths
+        IFS=$old_ifs
+        for path_entry in "$@"; do
+                if [ "$path_entry" = "$directory" ]; then
+                        printf '%s\n' "The directory is already in your PATH."
+                        return 0
+                fi
+        done
+        set -- "$@" "$directory"
+        write_nix_paths "$@"
+        printf '%s\n' "The directory has been added to your PATH."
+        printf '%s\n' "Rebuild your Nix environment to activate the change."
+}
+
+# Remove a directory from configuration.nix. When the last entry is removed we
+# delete the managed block entirely to avoid leaving empty scaffolding.
+nix_remove() {
+        if [ ! -f "$rc_file" ]; then
+                        printf '%s\n' "Error: The startup file '$rc_file' does not exist." >&2
+                        exit 1
+        fi
+        existing_paths="$(extract_nix_paths)"
+        old_ifs=$IFS
+        IFS='
+'
+        # shellcheck disable=SC2086
+        set -- $existing_paths
+        IFS=$old_ifs
+        found=0
+        new_paths=""
+        for path_entry in "$@"; do
+                if [ "$path_entry" = "$directory" ]; then
+                        found=1
+                        continue
+                fi
+                if [ -z "$new_paths" ]; then
+                        new_paths=$path_entry
+                else
+                        new_paths="$new_paths\n$path_entry"
+                fi
+        done
+        if [ "$found" -eq 0 ]; then
+                printf '%s\n' "Error: The directory is not in your PATH." >&2
+                exit 1
+        fi
+        if [ -z "$new_paths" ]; then
+                write_nix_paths
+        else
+                old_ifs=$IFS
+                IFS='
+'
+                # shellcheck disable=SC2086
+                set -- $new_paths
+                IFS=$old_ifs
+                write_nix_paths "$@"
+        fi
+        printf '%s\n' "The directory has been removed from your PATH."
+        printf '%s\n' "Rebuild your Nix environment to activate the change."
+}
+
+# status for configuration.nix mirrors the shell variant, returning success
+# only when the directory is already present.
+nix_status() {
+        if [ ! -f "$rc_file" ]; then
+                return 1
+        fi
+        existing_paths="$(extract_nix_paths)"
+        old_ifs=$IFS
+        IFS='
+'
+        # shellcheck disable=SC2086
+        set -- $existing_paths
+        IFS=$old_ifs
+        for path_entry in "$@"; do
+                if [ "$path_entry" = "$directory" ]; then
+                        return 0
+                fi
+        done
+        return 1
+}
+
+case $format in
+shell)
+        case $action in
+        add)
+                shell_add
+                ;;
+        remove)
+                shell_remove
+                ;;
+        status)
+                shell_status
+                ;;
+        esac
+        ;;
+nix)
+        case $action in
+        add)
+                nix_add
+                ;;
+        remove)
+                nix_remove
+                ;;
+        status)
+                nix_status
+                ;;
+        esac
+        ;;
+esac

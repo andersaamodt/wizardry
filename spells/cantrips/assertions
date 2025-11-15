@@ -1,49 +1,70 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 
-# Functions unit tests, to test assertions. The point of an assertion is to crash if it isn't true.
-# Usage:
-# 	assert_equal $value1 $value2
-#		assert_output "./scriptname" "expected output"
-# 	assert_success $(command)
-#		assert_failure "./scriptname"
+# Minimal assertion helpers for shell-based tests. Each helper exits the
+# process with a failure code so calling test suites stop immediately when an
+# expectation is not met.
 
-# Helper function to compare two values
 assert_equal() {
-	if [ "$1" != "$2" ]; then
-  	echo "Assertion failed: $1 != $2"
-		exit 1
- 	fi
+    # Confirm two strings match exactly.
+    if [ "$#" -ne 2 ]; then
+        printf '%s\n' 'assert_equal: expected 2 arguments' >&2
+        exit 1
+    fi
+
+    if [ "$1" != "$2" ]; then
+        printf "Assertion failed: '%s' != '%s'\n" "$1" "$2" >&2
+        exit 1
+    fi
 }
 
-# Helper function to compare the output of a given command to an expected value
 assert_output() {
-    local command=$1
-    local expected_output=$2
-  echo com $command
-  echo exp $expected_output
-  echo out $($command)
-    if [ "$($command)" != "$expected_output" ]; then
-        echo "Test failed: $command"
+    # Run a command and compare its stdout to an expected literal.
+    if [ "$#" -ne 2 ]; then
+        printf '%s\n' 'assert_output: expected 2 arguments' >&2
+        exit 1
+    fi
+
+    command=$1
+    expected=$2
+
+    output=$(sh -c "$command" sh)
+    status=$?
+
+    if [ $status -ne 0 ]; then
+        printf "Assertion failed: '%s' exited with status %s\n" "$command" "$status" >&2
+        exit 1
+    fi
+
+    if [ "$output" != "$expected" ]; then
+        printf "Assertion failed: '%s' produced '%s' (expected '%s')\n" "$command" "$output" "$expected" >&2
         exit 1
     fi
 }
 
-# Helper function to run a command and check for a non-zero exit status
 assert_success() {
-    local command=$1
+    # Ensure a command terminates successfully.
+    if [ "$#" -ne 1 ]; then
+        printf '%s\n' 'assert_success: expected 1 argument' >&2
+        exit 1
+    fi
 
-    if ! $command; then
-        echo "Test failed: $command"
+    command=$1
+    if ! sh -c "$command" sh; then
+        printf "Assertion failed: '%s' did not succeed\n" "$command" >&2
         exit 1
     fi
 }
 
-# Helper function to run a command and check for a zero exit status
 assert_failure() {
-    local command=$1
+    # Ensure a command exits with a non-zero status.
+    if [ "$#" -ne 1 ]; then
+        printf '%s\n' 'assert_failure: expected 1 argument' >&2
+        exit 1
+    fi
 
-    if $command; then
-        echo "Test failed: $command"
+    command=$1
+    if sh -c "$command" sh; then
+        printf "Assertion failed: '%s' unexpectedly succeeded\n" "$command" >&2
         exit 1
     fi
 }
