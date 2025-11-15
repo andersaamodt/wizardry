@@ -34,7 +34,7 @@ fi
 display_menu() {
   mud="MUD menu%printf '\\n'; mud"
   install="Install Free Software%printf '\\n'; install-menu"
-  system="Manage System%printf '\\n'; system-menu"
+  system="Manage System%system-menu"
   exit="Exit%kill -2 $$" # Commands are run with 'eval' by the menu script, so we can't simply say 'exit'. The keyword $$ gets this scripts PID and the -2 code is SIGINT aka Ctrl-C
 
   set -- "$mud" "$install" "$system" "$exit"
@@ -50,7 +50,15 @@ handle_ctrl_c
 
 menu_escape_status=113
 
+first_run=1
+
 while true; do
+  if [ "$first_run" -eq 0 ]; then
+    printf '\n'
+  else
+    first_run=0
+  fi
+
   display_menu
   status=$?
 
