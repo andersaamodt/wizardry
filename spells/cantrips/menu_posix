@@ -119,27 +119,51 @@ fi
 
 selected=1
 menu_column=1
-menu_row=$(fathom-cursor -y)
+menu_row=1
 
 # Draw the menu starting at the recorded cursor position.
 display_menu() {
+        window_width=$(fathom-terminal -w)
+        max_command_length=$((window_width - max_name_length - 3))
+        if [ "$max_command_length" -lt 0 ]; then
+                max_command_length=0
+        fi
+
+        # Return to the recorded anchor so redraws replace the previous menu
+        # instead of appending to the bottom of the screen.
         move-cursor "$menu_column" "$menu_row"
         printf '\033[J'
+
+        if [ "$max_command_length" -gt 0 ]; then
+                blank_command=$(printf '%*s' "$max_command_length" '')
+        else
+                blank_command=''
+        fi
+
         row=1
         while IFS= read -r label || [ -n "$label" ]
         do
                 command=$(sed -n "${row}p" "$commands_file")
+                if [ "$max_command_length" -gt 0 ]; then
+                        truncated_command=$(printf '%s' "$command" | cut -c -"$max_command_length")
+                else
+                        truncated_command=''
+                fi
+
                 if [ "$row" -eq "$selected" ]; then
-                        printf '%s> %-*s%s\n' "$CYAN" "$max_name_length" "$label" "$RESET"
-                        if [ -n "$command" ]; then
-                                printf '%s    %s%s\n' "$GREY" "$command" "$RESET"
+                        if [ -n "$truncated_command" ]; then
+                                printf '%s> %-*s%s %s%s%s\n' "$CYAN" "$max_name_length" "$label" "$RESET" "$GREY" "$truncated_command" "$RESET"
                         else
-                                printf '\n'
+                                printf '%s> %-*s%s\n' "$CYAN" "$max_name_length" "$label" "$RESET"
                         fi
                 else
-                        printf '  %-*s\n' "$max_name_length" "$label"
-                        printf '    %*s\n' "$max_name_length" ''
+                        if [ "$max_command_length" -gt 0 ]; then
+                                printf '  %-*s %s\n' "$max_name_length" "$label" "$blank_command"
+                        else
+                                printf '  %-*s\n' "$max_name_length" "$label"
+                        fi
                 fi
+
                 row=$((row + 1))
         done <"$items_file"
 }
@@ -163,6 +187,8 @@ cursor-blink off
 if [ -n "$description" ]; then
         printf '%s\n' "$description"
 fi
+
+menu_row=$(fathom-cursor -y)
 
 display_menu
 

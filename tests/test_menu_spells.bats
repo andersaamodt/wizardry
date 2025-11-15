@@ -52,6 +52,91 @@ with_menu_path() {
   PATH="$stub_dir:$ORIGINAL_PATH" "$@"
 }
 
+create_menu_cantrip_stubs() {
+  local dir="$BATS_TEST_TMPDIR/menu_cantrip_stubs"
+  rm -rf "$dir"
+  mkdir -p "$dir"
+
+  cat <<'STUB' >"$dir/fathom-cursor"
+#!/usr/bin/env sh
+want_y=0
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -y)
+      want_y=1
+      ;;
+    -x)
+      printf '1\n'
+      exit 0
+      ;;
+    -v|--verbose)
+      ;;
+  esac
+  shift
+done
+if [ "$want_y" -eq 1 ]; then
+  printf '%s\n' "${FAKE_CURSOR_Y:-5}"
+else
+  printf '1\n'
+  printf '%s\n' "${FAKE_CURSOR_Y:-5}"
+fi
+STUB
+  chmod +x "$dir/fathom-cursor"
+
+  cat <<'STUB' >"$dir/fathom-terminal"
+#!/usr/bin/env sh
+case "$1" in
+  -w)
+    printf '80\n'
+    ;;
+  -h)
+    printf '24\n'
+    ;;
+  *)
+    printf '80\n'
+    ;;
+esac
+STUB
+  chmod +x "$dir/fathom-terminal"
+
+  cat <<'STUB' >"$dir/move-cursor"
+#!/usr/bin/env sh
+if [ -z "${MOVE_CURSOR_LOG:-}" ]; then
+  exit 1
+fi
+printf '%s %s\n' "$1" "$2" >>"$MOVE_CURSOR_LOG"
+exit 0
+STUB
+  chmod +x "$dir/move-cursor"
+
+  cat <<'STUB' >"$dir/await-keypress"
+#!/usr/bin/env sh
+if [ -z "${MENU_KEY_FILE:-}" ] || [ ! -f "$MENU_KEY_FILE" ]; then
+  exit 0
+fi
+if ! IFS= read -r key <"$MENU_KEY_FILE"; then
+  exit 0
+fi
+if [ -z "$key" ]; then
+  exit 0
+fi
+tmp="$MENU_KEY_FILE.tmp"
+tail -n +2 "$MENU_KEY_FILE" >"$tmp" 2>/dev/null || :
+mv "$tmp" "$MENU_KEY_FILE"
+printf '%s' "$key"
+exit 0
+STUB
+  chmod +x "$dir/await-keypress"
+
+  cat <<'STUB' >"$dir/cursor-blink"
+#!/usr/bin/env sh
+exit 0
+STUB
+  chmod +x "$dir/cursor-blink"
+
+  printf '%s\n' "$dir"
+}
+
 @test 'install-menu reports available menu entries' {
   export MENU_LOG="$menu_log"
   export INSTALL_MENU_DIRS='alpha beta'
@@ -61,6 +146,60 @@ with_menu_path() {
   assert_output --partial 'alpha - ready'
   assert_output --partial 'beta - coming soon'
   assert_output --partial 'exiting'
+}
+
+@test 'menu redraws selections without scrolling' {
+  local stub_dir
+  stub_dir=$(create_menu_cantrip_stubs)
+  local key_file="$stub_dir/keys"
+  printf 'down\nenter\n' >"$key_file"
+  local move_log="$stub_dir/move.log"
+  : >"$move_log"
+
+  FAKE_CURSOR_Y=7 \
+  MENU_KEY_FILE="$key_file" \
+  MOVE_CURSOR_LOG="$move_log" \
+  PATH="$stub_dir:$ORIGINAL_PATH" \
+  REQUIRE_COMMAND="$ROOT_DIR/spells/cantrips/require-command" \
+  run_spell 'spells/cantrips/menu' \
+    'Demo Menu' \
+    "First%printf 'chosen:first\\n'" \
+    "Second%printf 'chosen:second\\n'"
+
+  assert_success
+  assert_output --partial 'chosen:second'
+
+  mapfile -t move_calls <"$move_log"
+  assert_equal "${#move_calls[@]}" "2"
+  assert_equal "${move_calls[0]}" '1 7'
+  assert_equal "${move_calls[1]}" '1 7'
+}
+
+@test 'menu_posix redraws selections without scrolling' {
+  local stub_dir
+  stub_dir=$(create_menu_cantrip_stubs)
+  local key_file="$stub_dir/keys"
+  printf 'down\nenter\n' >"$key_file"
+  local move_log="$stub_dir/move.log"
+  : >"$move_log"
+
+  FAKE_CURSOR_Y=6 \
+  MENU_KEY_FILE="$key_file" \
+  MOVE_CURSOR_LOG="$move_log" \
+  PATH="$stub_dir:$ORIGINAL_PATH" \
+  REQUIRE_COMMAND="$ROOT_DIR/spells/cantrips/require-command" \
+  run_spell 'spells/cantrips/menu_posix' \
+    'Demo Menu' \
+    "First%printf 'chosen:first\\n'" \
+    "Second%printf 'chosen:second\\n'"
+
+  assert_success
+  assert_output --partial 'chosen:second'
+
+  mapfile -t move_calls <"$move_log"
+  assert_equal "${#move_calls[@]}" "2"
+  assert_equal "${move_calls[0]}" '1 6'
+  assert_equal "${move_calls[1]}" '1 6'
 }
 
 @test 'install-menu reports missing menu command' {
