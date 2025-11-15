@@ -471,21 +471,6 @@ case "$response" in
 STUB
   chmod +x "$dir/ask_yn"
 
-  cat <<'STUB' >"$dir/ask_Yn"
-#!/usr/bin/env bash
-set -euo pipefail
-if [ -z "${ASK_YN_STUB_RESPONSE:-}" ]; then
-  exit 1
-fi
-printf '%s\n' "$ASK_YN_STUB_RESPONSE" >&2
-case "$ASK_YN_STUB_RESPONSE" in
-  [Yy]*) exit 0 ;;
-  [Nn]*) exit 1 ;;
-  *) exit 1 ;;
- esac
-STUB
-  chmod +x "$dir/ask_Yn"
-
   cat <<'STUB' >"$dir/sudo"
 #!/usr/bin/env bash
 set -euo pipefail
