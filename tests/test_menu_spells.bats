@@ -222,7 +222,7 @@ assert_move_cursor_log() {
   assert_output --partial 'MENU:Install Menu:'
   assert_output --partial 'alpha - ready'
   assert_output --partial 'beta - coming soon'
-  assert_output --partial 'exiting'
+  refute_output --partial 'exiting'
 }
 
 @test 'menu redraws selections without scrolling' {
@@ -399,6 +399,6 @@ assert_move_cursor_log() {
   assert_output --partial 'Install Free Software%install-menu'
   assert_output --partial 'Update all software%update-all'
   assert_output --partial 'Exit%kill -2'
-  assert_output --partial 'exiting'
+  refute_output --partial 'exiting'
 }
 

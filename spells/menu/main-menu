@@ -55,7 +55,7 @@ display_menu() {
 
 # Catch Ctrl-C and exit
 handle_ctrl_c() {
-  trap 'echo exiting; exit' INT
+  trap 'exit' INT
 }
 
 handle_ctrl_c

@@ -420,7 +420,7 @@ COL
   run_spell 'spells/cantrips/menu' 'Leave:' 'Alpha%echo alpha' 'Beta%echo beta'
   popd >/dev/null
   assert_success
-  assert_output --partial 'ESC'
+  refute_output --partial 'ESC'
 }
 
 @test 'menu POSIX presents selections and executes commands' {
@@ -451,7 +451,7 @@ COL
   run_spell 'spells/cantrips/menu' 'Leave:' 'Alpha%echo alpha' 'Beta%echo beta'
   popd >/dev/null
   assert_success
-  assert_output --partial 'ESC'
+  refute_output --partial 'ESC'
 }
 
 @test 'move-cursor prints ANSI sequence or usage' {

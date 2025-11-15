@@ -378,7 +378,6 @@ do
         escape)
                 cleanup
                 trap - EXIT INT TERM
-                printf '%s\n' 'ESC'
                 exit 0
                 ;;
         esac
