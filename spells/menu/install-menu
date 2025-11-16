@@ -31,8 +31,8 @@ if ! require menu "The install-menu spell needs the 'menu' command to present ch
     exit 1
 fi
 
-# Let the user bail out with Ctrl+C while still printing a friendly message.
-trap 'printf "\nExiting install menu.\n" >&2; exit 0' INT
+# Let the user bail out with Ctrl+C without emitting extra output.
+trap 'exit 0' INT
 
 launch_submenu() {
     printf '\n'
