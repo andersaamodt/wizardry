@@ -9,7 +9,7 @@ if [ ! -x "$spellbook_store" ]; then
         if command -v spellbook-store >/dev/null 2>&1; then
                 spellbook_store=$(command -v spellbook-store)
         else
-                printf '%s\n' "spellbook: spellbook-store helper is missing." >&2
+                printf '%s\n' "spell-menu: spellbook-store helper is missing." >&2
                 exit 1
         fi
 fi
@@ -30,41 +30,18 @@ spellbook_list() {
         "$spellbook_store" list
 }
 
-spellbook_forget() {
-        if [ "$#" -ne 1 ]; then
-                printf '%s\n' "Usage: spellbook --forget NAME" >&2
-                exit 1
-        fi
-        name=$1
-        if "$spellbook_store" remove "$name"; then
-                printf "Forgot '%s'.\n" "$name"
-        fi
-}
-
-spellbook_show_list() {
-        entries=$(spellbook_list)
-        if [ -z "$entries" ]; then
-                return 1
-        fi
-        printf '%s\n' "$entries"
-        return 0
-}
-
 print_empty_message() {
-        printf '%s\n' "Your spellbook is empty."
+        printf '%s\n' "No spells are available to cast."
         printf '%s\n' "Add spells with: memorize alias <name> 'command'"
 }
 
-spellbook_menu() {
+spell_menu_loop() {
         menu_escape_status=113
-        first_run=1
         while :
         do
                 entries=$(spellbook_list)
                 if [ -z "$entries" ]; then
-                        if [ "$first_run" -eq 1 ]; then
-                                print_empty_message
-                        fi
+                        print_empty_message
                         break
                 fi
                 set --
@@ -72,43 +49,37 @@ spellbook_menu() {
                 do
                         [ -z "$alias" ] && continue
                         label=$(printf '%s – %s' "$alias" "$command")
-                        set -- "$@" "$(printf '%s%%spellbook --forget %s' "$label" "$alias")"
+                        set -- "$@" "$(printf '%s%%%s' "$label" "$command")"
                 done <<'SPELLS'
 $entries
 SPELLS
-                set -- "$@" "Close Spellbook%kill -2 $$"
-                MENU_ESCAPE_STATUS=$menu_escape_status menu "Spellbook:" "$@"
+                set -- "$@" "Exit%kill -2 $$"
+                MENU_ESCAPE_STATUS=$menu_escape_status menu "Cast a Spell:" "$@"
                 status=$?
                 if [ "$status" -eq "$menu_escape_status" ]; then
                         break
                 fi
-                first_run=0
                 printf '\n'
         done
 }
 
 usage() {
         cat <<'USAGE'
-Usage: spellbook [--list|--forget NAME]
+Usage: spell-menu [--list]
 
-  --list          Show the stored spells in NAME<TAB>COMMAND format.
-  --forget NAME   Remove the named spell from the spellbook.
-  --help          Show this help text.
+  --list   Show the stored spells in NAME<TAB>COMMAND format.
+  --help   Show this help text.
 
-Run without arguments to interactively manage your spellbook.
+Run without arguments to open the interactive casting menu.
 USAGE
 }
 
 case ${1-} in
         --list)
-                if spellbook_show_list; then
-                        :
+                entries=$(spellbook_list)
+                if [ -n "$entries" ]; then
+                        printf '%s\n' "$entries"
                 fi
-                exit 0
-                ;;
-        --forget)
-                shift
-                spellbook_forget "$@"
                 exit 0
                 ;;
         --help|-h)
@@ -127,8 +98,8 @@ case ${1-} in
                 ;;
 esac
 
-if ! require_tool menu "The spellbook menu needs the 'menu' command."; then
+if ! require_tool menu "The casting menu needs the 'menu' command."; then
         exit 1
 fi
 
-spellbook_menu
+spell_menu_loop

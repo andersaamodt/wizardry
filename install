@@ -241,7 +241,7 @@ do
                 continue
         fi
 
-        if "$PATH_WIZARD" -r status "$dir"; then
+        if "$PATH_WIZARD" status "$dir"; then
                 continue
         fi
         set -- "$@" "$dir"
@@ -302,7 +302,7 @@ path_updates_made=0
 for dir
 do
         path_log=$(mktemp "${TMPDIR:-/tmp}/wizardry-path.XXXXXX") || exit 1
-        if "$PATH_WIZARD" -r add "$dir" >"$path_log" 2>&1; then
+        if "$PATH_WIZARD" add "$dir" >"$path_log" 2>&1; then
                 path_updates_made=1
         else
                 cat "$path_log" >&2
@@ -331,12 +331,12 @@ fi
 mem_status=0
 if [ -x "$MEMORIZE" ]; then
         mem_log=$(mktemp "${TMPDIR:-/tmp}/wizardry-memorize.XXXXXX") || exit 1
-        if "$MEMORIZE" --recursive "$ABS_DIR/spells" >"$mem_log" 2>&1; then
-                sed '/^memorize: Skipping/d' "$mem_log"
+        if MEMORIZE_QUIET_SKIPS=1 "$MEMORIZE" --quiet-skips --recursive "$ABS_DIR/spells" >"$mem_log" 2>&1; then
+                cat "$mem_log"
                 printf '%s\n' "Spells memorized successfully."
         else
                 mem_status=$?
-                sed '/^memorize: Skipping/d' "$mem_log" >&2 || true
+                cat "$mem_log" >&2 || true
         fi
         rm -f "$mem_log"
 else

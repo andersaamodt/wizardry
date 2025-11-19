@@ -424,6 +424,8 @@ assert_move_cursor_log() {
   assert_success
   assert_output --partial 'MENU:Main Menu:'
   assert_output --partial 'MUD menu%mud'
+  assert_output --partial 'Cast a Spell%spell-menu'
+  assert_output --partial 'Spellbook%spellbook'
   assert_output --partial 'Install Free Software%install-menu'
   assert_output --partial 'Manage System%system-menu'
   assert_output --partial 'Exit%kill -2'
@@ -450,11 +452,14 @@ assert_move_cursor_log() {
   with_menu_path run_spell 'spells/menu/mud'
   assert_success
   assert_output --partial 'MENU:MUD Menu:'
-  assert_output --partial 'Look around%look'
-  assert_output --partial 'Mark this location%mark-location'
-  assert_output --partial 'Return to the marked location%jump-to-marker'
-  assert_output --partial 'Review your contacts%read-contact'
-  assert_output --partial 'Install supporting software%launch_submenu install-menu'
+  assert_output --partial 'Look Around%ls'
+  assert_output --partial 'Spellbook%spellbook'
+  assert_output --partial 'Teleport Home%cd'
+  assert_output --partial 'Teleport to Marker%jump'
+  assert_output --partial 'Teleport to Portal Chamber%cd /mnt'
+  assert_output --partial 'Install MUD%launch_submenu mud-install-menu'
+  assert_output --partial 'Admin MUD Hosting%launch_submenu mud-admin'
+  assert_output --partial 'MUD Settings%launch_submenu mud-settings'
   assert_output --partial 'Exit%kill -2'
   unset MENU_STUB_RESULT
 }

@@ -1,0 +1,87 @@
+#!/bin/sh
+
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+cantrip_dir=$(dirname "$script_dir")/cantrips
+
+if [ -n "${REQUIRE_COMMAND-}" ]; then
+  require_cmd=$REQUIRE_COMMAND
+elif [ -x "$cantrip_dir/require-command" ]; then
+  require_cmd="$cantrip_dir/require-command"
+else
+  require_cmd=require-command
+fi
+
+require() {
+  "$require_cmd" "$@"
+}
+
+if [ -r "$cantrip_dir/colors" ]; then
+  . "$cantrip_dir/colors"
+else
+  RESET=''
+  CYAN=''
+  GREY=''
+fi
+
+if ! require menu "The MUD menu needs the 'menu' command to present options."; then
+  exit 1
+fi
+
+launch_submenu() {
+  printf '\n'
+  "$@"
+}
+
+display_menu() {
+  look="Look Around%ls"
+  cast="Spellbook%spellbook"
+  home="Teleport Home%cd"
+  jump="Teleport to Marker%jump"
+  portal="Teleport to Portal Chamber%cd /mnt"
+  install="Install MUD%launch_submenu mud-install-menu"
+  admin="Admin MUD Hosting%launch_submenu mud-admin"
+  settings="MUD Settings%launch_submenu mud-settings"
+  exit="Exit%kill -2 $$"
+
+  set -- \
+    "$look" \
+    "$cast" \
+    "$home" \
+    "$jump" \
+    "$portal" \
+    "$install" \
+    "$admin" \
+    "$settings" \
+    "$exit"
+  MENU_ESCAPE_STATUS=$menu_escape_status menu "MUD Menu:" "$@"
+}
+
+menu_escape_status=113
+first_run=1
+
+printf '\n'
+
+while true; do
+  if [ "$first_run" -eq 0 ]; then
+    printf '\n'
+  else
+    first_run=0
+  fi
+
+  if display_menu; then
+    status=0
+  else
+    status=$?
+  fi
+
+  if [ "$status" -eq "$menu_escape_status" ]; then
+    break
+  fi
+
+  if [ "$status" -ne 0 ]; then
+    exit "$status"
+  fi
+
+done

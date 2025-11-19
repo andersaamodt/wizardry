@@ -40,8 +40,13 @@ memorize_jump() {
   assert_success
   assert_output --partial "Memorize the 'jump' spell now?"
   assert_output --partial "The 'jump' spell has been memorized"
+  assert_output --partial "Spellbook updated: 'jump' now casts 'jump-to-marker'."
   assert_output --partial 'No location has been marked'
   assert_output --partial 'Peering'
+
+  run cat "$HOME/.tower/spellbook"
+  assert_success
+  assert_output --partial $'jump\tjump-to-marker'
 
   run cat "$HOME/.bashrc"
   assert_success

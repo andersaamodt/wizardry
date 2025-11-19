@@ -8,7 +8,7 @@ Usage: scribe-spell --rc-file FILE --spell NAME {add|remove|status}
 
 Reads spell content from standard input for the 'add' action and wraps it with
 wizardry comment sentinels so future removals remain deterministic.
-Single-line spells receive an inline `# wizardry-spell: NAME` suffix, while
+Single-line spells receive an inline `# wizardry: NAME` suffix, while
 multi-line spells are wrapped with `begin`/`end` sentinels (including a lines
 count) to keep rc files readable.
 Spell names must contain only letters, digits, dashes, underscores, periods, and colons.
@@ -90,11 +90,16 @@ case $spell in
 *) : ;;
         esac
 
-spell_tag="# wizardry-spell: $spell"
+spell_tag="# wizardry: $spell"
+legacy_spell_tag="# wizardry-spell: $spell"
 inline_marker=" $spell_tag"
+legacy_inline_marker=" $legacy_spell_tag"
 block_start="$spell_tag begin"
+legacy_block_start="$legacy_spell_tag begin"
 block_end="$spell_tag end"
-legacy_prefix="$spell_tag lines="
+legacy_block_end="$legacy_spell_tag end"
+block_prefix="$spell_tag lines="
+legacy_prefix="$legacy_spell_tag lines="
 
 ensure_rc_directory() {
         dir=${rc_file%/*}
@@ -104,13 +109,16 @@ ensure_rc_directory() {
 }
 
 spell_status() {
-        if [ ! -f "$rc_file" ]; then
-                return 1
-        fi
-        if grep -Fq "$spell_tag" "$rc_file" 2>/dev/null; then
-                return 0
-        fi
-        return 1
+if [ ! -f "$rc_file" ]; then
+return 1
+fi
+if grep -Fq "$spell_tag" "$rc_file" 2>/dev/null; then
+return 0
+fi
+if grep -Fq "$legacy_spell_tag" "$rc_file" 2>/dev/null; then
+return 0
+fi
+return 1
 }
 
 ensure_trailing_newline() {
@@ -158,51 +166,66 @@ add_spell() {
 }
 
 remove_spell() {
-        if [ ! -f "$rc_file" ]; then
-                printf '%s\n' "scribe-spell: cannot remove from missing file '$rc_file'." >&2
-                exit 1
-        fi
-        tmp_file=$(mktemp "${TMPDIR:-/tmp}/scribe-spell.XXXXXX") || exit 1
-        removing_block=0
-        to_skip=0
-        removed=0
-        while IFS= read -r line || [ -n "$line" ]; do
-                if [ "$removing_block" -eq 1 ]; then
-                        if [ "$line" = "$block_end" ]; then
-                                removing_block=0
-                        fi
-                        continue
-                fi
-                if [ "$to_skip" -gt 0 ]; then
-                        to_skip=$((to_skip - 1))
-                        continue
-                fi
-                case $line in
-                "$block_start"*)
-                        removing_block=1
-                        removed=1
-                        continue
-                        ;;
-                "$legacy_prefix"*)
-                        count=${line#"$legacy_prefix"}
-                        case $count in
-                        *[!0-9]*)
-                                to_skip=0
-                                ;;
-                        *)
-                                to_skip=$count
-                                ;;
-                        esac
-                        removed=1
-                        continue
-                        ;;
-                *"$inline_marker")
-                        removed=1
-                        continue
-                        ;;
-                esac
-                printf '%s\n' "$line" >>"$tmp_file"
-        done <"$rc_file"
+if [ ! -f "$rc_file" ]; then
+printf '%s\n' "scribe-spell: cannot remove from missing file '$rc_file'." >&2
+exit 1
+fi
+tmp_file=$(mktemp "${TMPDIR:-/tmp}/scribe-spell.XXXXXX") || exit 1
+removing_block=0
+to_skip=0
+removed=0
+while IFS= read -r line || [ -n "$line" ]; do
+if [ "$removing_block" -eq 1 ]; then
+case $line in
+"$block_end"|"$legacy_block_end")
+removing_block=0
+;;
+esac
+continue
+fi
+if [ "$to_skip" -gt 0 ]; then
+to_skip=$((to_skip - 1))
+continue
+fi
+case $line in
+"$block_start"*|"$legacy_block_start"*)
+removing_block=1
+removed=1
+continue
+;;
+"$block_prefix"*)
+count=${line#"$block_prefix"}
+case $count in
+*[!0-9]*)
+to_skip=0
+;;
+*)
+to_skip=$count
+;;
+esac
+removed=1
+continue
+;;
+"$legacy_prefix"*)
+count=${line#"$legacy_prefix"}
+case $count in
+*[!0-9]*)
+to_skip=0
+;;
+*)
+to_skip=$count
+;;
+esac
+removed=1
+continue
+;;
+*"$inline_marker"|*"$legacy_inline_marker")
+removed=1
+continue
+;;
+esac
+printf '%s\n' "$line" >>"$tmp_file"
+done <"$rc_file"
         if [ "$removed" -eq 0 ]; then
                 rm -f "$tmp_file"
                 printf '%s\n' "scribe-spell: spell '$spell' not found in '$rc_file'." >&2
