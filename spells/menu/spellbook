@@ -1,0 +1,48 @@
+#!/bin/sh
+
+# 'Spellbook' spell
+# This 'spellbook' spell allows you to view and manage your collection of memorized spells.
+# To use this spell, simply cast it from any location. You will be presented with a list of spells that are currently memorized in your bashrc file, and a menu of options.
+
+# 'Spellbook' spell function
+
+spellbook() {
+  # Print a list of memorized spells
+  echo "Your current memorized spells are:"
+  spells=$(grep -o "source .*" ~/.bashrc | cut -d " " -f 2)
+  if [ -z "$spells" ]; then
+    echo "You have no memorized spells."
+  else
+    grep -o "source .*" ~/.bashrc | cut -d " " -f 2 | nl
+  fi
+
+  # Print a menu of options
+  echo "What do you want to do? "
+  options="Forget Exit"
+  select opt in $options; do
+    case "$opt" in
+      "Forget")
+        # Print a menu of spells to forget
+        echo "Which spell do you want to forget?"
+        select spell in $spells; do
+          # Remove the selected spell from the bashrc file
+          sed -i "\\|$spell|d" ~/.bashrc
+          break
+        done
+        break
+        ;;
+      "Exit")
+        # Exit the 'spellbook' spell
+        break
+        ;;
+      *)
+        # Print an error message if the input is invalid
+        echo "Invalid option. Please try again."
+        ;;
+    esac
+  done
+}
+
+if [ "$0" = "${BASH_SOURCE[0]}" ]; then
+  spellbook "$@"
+fi

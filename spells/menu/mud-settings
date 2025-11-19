@@ -1,0 +1,26 @@
+#!/bin/sh
+
+# This spell displays the ao-mud main menu.
+
+. colors
+
+display_menu() {
+	copy="Copy player key to clipboard%copy ~/.ssh/\$MUD_PLAYER.pub"
+	change="Change Player%select-player"
+  new="New Player%new-player"
+  install="Install%mud-install-menu"
+  exit="Exit%kill -2 $$" # Commands are run with 'eval' by the menu script, so we can't simply say 'exit'. The keyword $$ gets this scripts PID and the -2 code is SIGINT aka Ctrl-C
+  
+  menu "MUD main menu:" "$copy" "$change" "$new" "$install" "$exit"
+}
+
+# Catch Ctrl-C and exit
+handle_ctrl_c() {
+  trap 'echo exiting; exit' INT
+}
+
+handle_ctrl_c
+
+while true; do
+  display_menu
+done

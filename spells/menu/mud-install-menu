@@ -1,0 +1,25 @@
+#!/bin/sh
+
+# This spell displays the ao-mud install menu.
+
+. colors
+
+SCRIPT_DIR=$( cd ${0%/*} && pwd -P )
+
+display_menu() {
+	tor="Set up tor hidden service%$SCRIPT_DIR/../installers/setup-tor"
+  exit="Exit%kill -2 $$" # Commands are run with 'eval' by the menu script, so we can't simply say 'exit'. The keyword $$ gets this scripts PID and the -2 code is SIGINT aka Ctrl-C
+  
+  menu "MUD main menu:" "$tor" "$exit"
+}
+
+# Catch Ctrl-C and exit
+handle_ctrl_c() {
+  trap 'echo exiting; exit' INT
+}
+
+handle_ctrl_c
+
+while true; do
+  display_menu
+done
