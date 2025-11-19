@@ -76,6 +76,7 @@ This displays an interactive menu. Most (soon all) wizardry spells and features 
 | Interface-neutral   | GUIs are thin layers that simply pass commands through to shell scripts. This makes it easy to swap out web platforms or build additional interfaces. |
 | Test-driven development | Unit tests are used to specific and test code, with a goal of maintaining 100% unit test coverage. |
 | Assumption-checking    | Scripts confirm their assumptions (directories, dependencies, PATH entries) and repair gaps automatically so installations stay reliable. |
+| Document-in-place   | Include --help messages on every spell and include helpful messages and documentation for the user in standalone scripts and where they are needed. |
 
 ### Code Policies
 
