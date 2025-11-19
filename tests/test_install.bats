@@ -60,6 +60,7 @@ RC
     run_spell 'install'
   assert_success
   assert_output --partial 'ao-mud will ensure'
+  assert_output --partial "Wizardry directories recorded in '$HOME/.bashrc'."
   assert_output --partial 'Your spellbook has been activated'
   if [[ "$output" == *"Skipping"* ]] || [[ "$stderr" == *"Skipping"* ]]; then
     fail 'install output included memorize skip warnings'
@@ -175,6 +176,7 @@ CFG
     sh -c "printf 'y\\n' | \"\$ROOT_DIR/install\""
 
   assert_success
+  assert_output --partial "Wizardry directories recorded in '$HOME/.config/nixpkgs/configuration.nix'."
 
   rc_file="$HOME/.config/nixpkgs/configuration.nix"
   [ -f "$rc_file" ]

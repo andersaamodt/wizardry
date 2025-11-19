@@ -210,11 +210,17 @@ fi
 # Now that the wizardry tree is available, point at the helper spells we rely
 # on to update PATH entries and ask for confirmation.
 PATH_WIZARD="$ABS_DIR/spells/path-wizard"
+DETECT_RC_FILE="$ABS_DIR/spells/detect-rc-file"
 MEMORIZE="$ABS_DIR/spells/memorize"
 ASK_YN="$ABS_DIR/spells/cantrips/ask_yn"
 
 if [ ! -x "$PATH_WIZARD" ]; then
         printf '%s\n' "Error: Expected helper '$PATH_WIZARD' is missing or not executable." >&2
+        exit 1
+fi
+
+if [ ! -x "$DETECT_RC_FILE" ]; then
+        printf '%s\n' "Error: Required helper '$DETECT_RC_FILE' is missing." >&2
         exit 1
 fi
 
@@ -275,10 +281,49 @@ if [ "$proceed" -ne 1 ]; then
         exit 1
 fi
 
+detect_rc_file_value=""
+detect_format_value=""
+if detect_output="$($DETECT_RC_FILE 2>/dev/null)"; then
+        while IFS='=' read -r key value; do
+                case $key in
+                rc_file)
+                        detect_rc_file_value=$value
+                        ;;
+                format)
+                        detect_format_value=$value
+                        ;;
+                esac
+        done <<EOF
+$detect_output
+EOF
+fi
+
+path_updates_made=0
 for dir
 do
-        "$PATH_WIZARD" -r add "$dir" || exit 1
+        path_log=$(mktemp "${TMPDIR:-/tmp}/wizardry-path.XXXXXX") || exit 1
+        if "$PATH_WIZARD" -r add "$dir" >"$path_log" 2>&1; then
+                path_updates_made=1
+        else
+                cat "$path_log" >&2
+                rm -f "$path_log"
+                exit 1
+        fi
+        rm -f "$path_log"
 done
+
+if [ "$path_updates_made" -eq 1 ]; then
+        if [ -n "$detect_rc_file_value" ]; then
+                rc_destination=$(printf "'%s'" "$detect_rc_file_value")
+        else
+                rc_destination="your shell configuration file"
+        fi
+        if [ "$detect_format_value" = "nix" ]; then
+                printf 'Wizardry directories recorded in %s. Rebuild your Nix environment or restart your shell session to activate them.\n' "$rc_destination"
+        else
+                printf 'Wizardry directories recorded in %s. Open a new shell or source the file to activate them.\n' "$rc_destination"
+        fi
+fi
 
 # Memorizing spells pre-compiles wizardry's menus.  The memorization spell
 # prints helpful skip messages when run directly, but the installer filters
