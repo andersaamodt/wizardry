@@ -60,7 +60,6 @@ MEMORIZE_DETECTED=0
 MEMORIZE_PLATFORM=${WIZARDRY_PLATFORM-${MEMORIZE_PLATFORM-}}
 MEMORIZE_RC_FILE=${WIZARDRY_RC_FILE-${MEMORIZE_RC_FILE-}}
 MEMORIZE_FORMAT=${WIZARDRY_RC_FORMAT-${MEMORIZE_RC_FORMAT-}}
-MEMORIZE_REPORT_SKIPS=${MEMORIZE_REPORT_SKIPS-1}
 
 usage() {
         cat <<USAGE
@@ -81,13 +80,6 @@ USAGE
 
 warn() {
         printf '%s: %s\n' "$SCRIPT_NAME" "$1" >&2
-}
-
-warn_skipping() {
-        if [ "$MEMORIZE_REPORT_SKIPS" -eq 0 ]; then
-                return
-        fi
-        warn "$1"
 }
 
 ask_yes_no() {
@@ -238,18 +230,18 @@ run_install() {
 
 memorize_file() {
         path=$1
-        if [ ! -f "$path" ]; then
-                warn_skipping "Skipping '$path' (not a file)."
+	if [ ! -f "$path" ]; then
+		warn "Skipping '$path' (not a file)."
                 SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
                 return
         fi
-        if [ ! -x "$path" ]; then
-                warn_skipping "Skipping '$path' (not executable)."
+	if [ ! -x "$path" ]; then
+		warn "Skipping '$path' (not executable)."
                 SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
                 return
         fi
-        if ! have_install_function "$path"; then
-                warn_skipping "Skipping '$path' (no install() function detected)."
+	if ! have_install_function "$path"; then
+		warn "Skipping '$path' (no install() function detected)."
                 SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
                 return
         fi

@@ -287,6 +287,17 @@ confirm_install() {
 	return 1
 }
 
+filter_memorize_output() {
+	while IFS= read -r line; do
+		case $line in
+		"memorize: Skipping"*)
+			continue
+			;;
+		esac
+		printf '%s\n' "$line"
+	done
+}
+
 if ! confirm_install; then
 	printf '%s\n' "Ok, well the mud won't work until you install it by adding the spells directory to your PATH."
 	exit 1
@@ -299,11 +310,15 @@ done
 
 mem_status=0
 if [ -x "$MEMORIZE" ]; then
-        if MEMORIZE_REPORT_SKIPS=0 "$MEMORIZE" --recursive "$ABS_DIR/spells"; then
-                printf '%s\n' "Spells memorized successfully."
-        else
-                mem_status=$?
-        fi
+	mem_log=$(mktemp "${TMPDIR:-/tmp}/wizardry-memorize.XXXXXX") || exit 1
+	if "$MEMORIZE" --recursive "$ABS_DIR/spells" >"$mem_log" 2>&1; then
+		filter_memorize_output <"$mem_log"
+		printf '%s\n' "Spells memorized successfully."
+	else
+		mem_status=$?
+		filter_memorize_output <"$mem_log" >&2 || true
+	fi
+	rm -f "$mem_log"
 else
         printf '%s\n' "Warning: memorize spell is missing; skipping automatic memorization." >&2
 fi
