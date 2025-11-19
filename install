@@ -32,6 +32,12 @@ else
         PROMPT_DEFAULT=.tower
 fi
 
+if [ -n "${WIZARDRY_INSTALL_PLATFORM-}" ]; then
+        PATH_WIZARD_PLATFORM=$WIZARDRY_INSTALL_PLATFORM
+        DETECT_RC_FILE_PLATFORM=$WIZARDRY_INSTALL_PLATFORM
+        export PATH_WIZARD_PLATFORM DETECT_RC_FILE_PLATFORM
+fi
+
 cleanup_bootstrap() {
         # Clean up any temporary directory created during the download process.
         if [ -n "${BOOTSTRAP_TMP_DIR-}" ] && [ -d "$BOOTSTRAP_TMP_DIR" ]; then
@@ -121,7 +127,9 @@ prompt_install_dir() {
 
         message="Where should wizardry be installed? [$default_choice] "
         if [ -t 0 ]; then
-        printf '%s' "$message"
+        # Print the prompt to stderr so command substitutions that capture the
+        # chosen install path do not swallow the question itself.
+        printf '%s' "$message" >&2
         IFS= read -r response
         else
         printf '%s\n' "Info: No interactive input detected; using '$default_choice'." >&2
@@ -261,18 +269,27 @@ do
 done
 
 confirm_install() {
-        if [ "${WIZARDRY_INSTALL_ASSUME_YES-}" = "1" ]; then
-                return 0
-        fi
-        if "$ASK_YN" "Proceed with installation?" yes >/dev/null; then
-                return 0
-        fi
-        return 1
+	if [ "${WIZARDRY_INSTALL_ASSUME_YES-}" = "1" ]; then
+		return 0
+	fi
+
+	if [ ! -t 0 ] && [ -z "${ASK_CANTRIP_INPUT-}" ]; then
+		if ASK_CANTRIP_INPUT=none "$ASK_YN" "Proceed with installation?" yes >/dev/null; then
+			return 0
+		fi
+		return 1
+	fi
+
+	if "$ASK_YN" "Proceed with installation?" yes >/dev/null; then
+		return 0
+	fi
+
+	return 1
 }
 
 if ! confirm_install; then
-        printf '%s\n' "Ok, well the mud won't work until you install it by adding the spells directory to your PATH."
-        exit 1
+	printf '%s\n' "Ok, well the mud won't work until you install it by adding the spells directory to your PATH."
+	exit 1
 fi
 
 for dir

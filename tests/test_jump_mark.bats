@@ -36,7 +36,7 @@ memorize_jump() {
 @test 'jump-to-marker memorizes spell and warns when no marker exists' {
   input="$BATS_TEST_TMPDIR/input_yes"
   printf 'y\n' >"$input"
-  with_stub_path run_spell 'spells/jump-to-marker' <"$input"
+  ASK_CANTRIP_INPUT=stdin with_stub_path run_spell 'spells/jump-to-marker' <"$input"
   assert_success
   assert_output --partial "Memorize the 'jump' spell now?"
   assert_output --partial "The 'jump' spell has been memorized"

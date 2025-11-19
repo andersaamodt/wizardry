@@ -28,37 +28,69 @@ case $min in
         esac
 case $max in
 *[^0-9-]*|"" )
-        printf '%s\n' "ask_number: MAX must be an integer." >&2
-        exit 1
-        ;;
+printf '%s\n' "ask_number: MAX must be an integer." >&2
+exit 1
+;;
 *) : ;;
-        esac
+esac
 
 min=$(printf '%s' "$min")
 max=$(printf '%s' "$max")
 
 if [ "$min" -gt "$max" ]; then
-        printf '%s\n' "ask_number: MIN must be less than or equal to MAX." >&2
-        exit 1
+printf '%s\n' "ask_number: MIN must be less than or equal to MAX." >&2
+exit 1
 fi
+
+select_input() {
+case ${ASK_CANTRIP_INPUT:-auto} in
+stdin)
+printf '%s\n' stdin
+return 0
+;;
+none)
+return 1
+;;
+esac
+if [ -t 0 ]; then
+printf '%s\n' stdin
+return 0
+fi
+if [ -r /dev/tty ]; then
+printf '%s\n' tty
+return 0
+fi
+return 1
+}
 
 prompt() {
         printf '%s [%s-%s] ' "$question" "$min" "$max" >&2
 }
 
 read_value() {
-        if [ -r /dev/tty ]; then
-                IFS= read -r value </dev/tty || value=
-        else
-                IFS= read -r value || value=
-        fi
-        printf '%s' "$value"
+input=$(select_input) || return 1
+case $input in
+stdin)
+IFS= read -r value || value=
+;;
+tty)
+IFS= read -r value </dev/tty || value=
+;;
+*)
+return 1
+;;
+esac
+printf '%s' "$value"
+return 0
 }
 
 while :; do
         prompt
-        response=$(read_value)
-        case $response in
+if ! response=$(read_value); then
+printf '%s\n' "ask_number: No interactive input available." >&2
+exit 1
+fi
+case $response in
         *[^0-9-]*|"" )
                 printf '%s\n' "Please enter a whole number." >&2
                 continue
