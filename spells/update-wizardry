@@ -2,16 +2,8 @@
 set -eu
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
-cantrip_dir="$script_dir/cantrips"
 
-require_cmd=${REQUIRE_COMMAND-}
-if [ -z "$require_cmd" ]; then
-  if [ -x "$cantrip_dir/require-command" ]; then
-    require_cmd="$cantrip_dir/require-command"
-  else
-    require_cmd=require-command
-  fi
-fi
+require_cmd=${REQUIRE_COMMAND-require-command}
 
 require() {
   "$require_cmd" "$@"

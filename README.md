@@ -87,6 +87,7 @@ This displays an interactive menu. Most (soon all) wizardry spells and features 
 | Hand-finished AI code | Using AI to generate reusable, well-commented bash scripts is a great use of AI; scripts should be hand-reviewed and tested. However, wizardry itself will not interface with AI. |
 | Menu specialization | Wizardry organizes complex workflows as dedicated menus that call one spell per menu item. |
 | Script-like scripts  | Keep scripts script-like: favor flat flows with few functions so behavior stays readable and hackable from the shell. |
+| PATH-ready spells    | Spells can assume other wizardry spells are already on the PATH and should invoke them by name instead of repo-relative paths. |
 
 ## Unit tests
 
