@@ -90,34 +90,10 @@ This displays an interactive menu. Most (soon all) wizardry spells and features 
 
 ## Unit tests
 
-Wizardry ships a shell-based test suite in `tests/` that exercises every spell and verifies coverage.
-
-### Running the suite
-
-Run all checks with:
+Run the complete shell test suite with:
 
 ```
 ./tests/run.sh
 ```
 
-The script wipes the previous coverage workspace, enumerates all `test_*.bats` suites, runs them with Bats, and then aggregates the recorded `bash -x` traces into a coverage report. If any executable lines are missed the run exits non-zero so coverage regressions are easy to spot. The helper script `tests/check_posix_bash.sh` also prints advisory warnings about spells whose shebangs are not plain `#!/bin/sh`.
-
-### Selecting tests
-
-Pass `--list` to print the discovered test files without executing them, `--only PATTERN` to restrict the run to specific `.bats` files (the pattern is evaluated relative to `tests/`), `--no-coverage` to skip the coverage report, or `--` followed by any arguments you want to forward directly to the underlying Bats runner (for example `./tests/run.sh -- --filter copy`).
-
-### Offline usage and dependencies
-
-The harness downloads bats-core and companion libraries on demand so the shell tests can use Bats helpers without vendoring the framework. When a local installation is available you can override the download step with `BATS_BIN=/path/to/bats` or `BATS_DIR=/path/to/prepared/vendor` (containing the `bats-core`, `bats-support`, `bats-assert`, and `bats-mock` directories); the script also falls back to `command -v bats` before attempting to fetch anything.
-
-### Directory layout
-
-The `tests/` tree keeps reusable helpers out of the way of the individual test files:
-
-* `tests/run.sh` – entry point that drives the suites, coverage, and warnings.
-* `tests/lib/` – shared shell utilities used by the harness (coverage processing, stub helpers, Bats bootstrapping, and similar).
-* `tests/test_helper/` – loader invoked by each Bats test via `load 'test_helper/load'`; it wires up the vendored assertion libraries, exports convenience helpers, and sources the scripts in `tests/lib/`.
-* `tests/vendor/` – populated on demand with bats-core, bats-support, bats-assert, and bats-mock when they are downloaded.
-* `tests/report_coverage.sh` – aggregates traces and enforces 100% spell coverage.
-
-Individual Bats files continue to live directly under `tests/`, so contributors can find and run suites without digging into the helper directories.
+The script discovers every `test_*.bats` file, installs any missing Bats dependencies, and produces a coverage report so regressions fail fast. Pass `--list`, `--only PATTERN`, or `--no-coverage` for quick filtering, and forward additional flags to Bats after `--` when needed.
