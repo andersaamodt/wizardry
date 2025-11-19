@@ -3,12 +3,9 @@
 # Present a menu of spells that can install supporting software.
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
-cantrip_dir=$(dirname "$script_dir")/cantrips
 
 if [ -n "${REQUIRE_COMMAND-}" ]; then
     require_cmd=$REQUIRE_COMMAND
-elif [ -x "$cantrip_dir/require-command" ]; then
-    require_cmd="$cantrip_dir/require-command"
 else
     require_cmd=require-command
 fi
@@ -18,14 +15,19 @@ require() {
     "$require_cmd" "$@"
 }
 
-if [ -r "$cantrip_dir/colors" ]; then
-    . "$cantrip_dir/colors"
-else
-    # Continue gracefully without colour if the palette is unavailable.
-    RESET=''
-    CYAN=''
-    GREY=''
-fi
+load_colors() {
+    if color_path=$(command -v colors 2>/dev/null); then
+        # shellcheck source=/dev/null
+        . "$color_path"
+    else
+        # Continue gracefully without colour if the palette is unavailable.
+        RESET=''
+        CYAN=''
+        GREY=''
+    fi
+}
+
+load_colors
 
 if ! require menu "The install-menu spell needs the 'menu' command to present choices."; then
     exit 1

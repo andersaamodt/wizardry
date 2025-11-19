@@ -325,13 +325,12 @@ if [ "$path_updates_made" -eq 1 ]; then
         fi
 fi
 
-# Memorizing spells pre-compiles wizardry's menus.  The memorization spell
-# prints helpful skip messages when run directly, but the installer filters
-# them out so only successes and real problems reach the console.
+# Memorizing spells pre-compiles wizardry's menus so interactive commands are
+# ready before the user opens their first shell inside the new install.
 mem_status=0
 if [ -x "$MEMORIZE" ]; then
         mem_log=$(mktemp "${TMPDIR:-/tmp}/wizardry-memorize.XXXXXX") || exit 1
-        if MEMORIZE_QUIET_SKIPS=1 "$MEMORIZE" --quiet-skips --recursive "$ABS_DIR/spells" >"$mem_log" 2>&1; then
+        if "$MEMORIZE" --recursive "$ABS_DIR/spells" >"$mem_log" 2>&1; then
                 cat "$mem_log"
                 printf '%s\n' "Spells memorized successfully."
         else

@@ -1,46 +1,174 @@
 #!/bin/sh
 
-# This 'look' spell is the most basic command in the MUD.
-# Use it to look around a room (no arg provided), or look at a specific object (by providing its relative or absolute path).
-# When you look at a room or object, it will print that object's "description" extended attribute.
+set -eu
 
-source colors
-
-path=$1
-
-if [ -z "$path" ]; then
-  path="$PWD"
+SCRIPT_SOURCE=$0
+case $SCRIPT_SOURCE in
+*/*)
+        SCRIPT_DIR=${SCRIPT_SOURCE%/*}
+        ;;
+*)
+        resolved=$(command -v -- "$SCRIPT_SOURCE" 2>/dev/null || printf '%s' "$SCRIPT_SOURCE")
+        SCRIPT_DIR=${resolved%/*}
+        SCRIPT_SOURCE=$resolved
+        ;;
+esac
+if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
+        SCRIPT_DIR=.
 fi
+SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
+LOOK_SCRIPT_PATH="$SCRIPT_DIR/$(basename "$SCRIPT_SOURCE")"
 
-install_look(){
-  if ! grep -q "alias look='${BASH_SOURCE[0]}'" "$HOME/.bashrc" 2>/dev/null; then
-    echo "'Look' is a reserved keyword, so you must memorize this spell to change the meaning of the word 'look'."
-    if ! command -v ask_yn >/dev/null 2>&1; then
-      printf '%s\n' "look spell: ask_yn spell is missing; cannot prompt for installation." >&2
-      return 1
-    fi
-    if ask_yn "Memorize the 'look' spell so it is always available?" yes >/dev/null; then
-      echo "alias look='${BASH_SOURCE[0]}'" >> "$HOME/.bashrc"
-      echo "Spell memorized in .bashrc, so you will always be able to use it."
-    else
-      echo "The mud will only run in this shell window."
-    fi
-  fi
+look_warn() {
+        printf '%s\n' "look: $1" >&2
 }
 
-install_look
+resolve_rc_file() {
+        if [ -n "${LOOK_RC_FILE-}" ]; then
+                printf '%s\n' "$LOOK_RC_FILE"
+                return 0
+        fi
+        if [ -z "${HOME-}" ]; then
+                look_warn "HOME is not set; cannot memorize the spell."
+                return 1
+        fi
+        printf '%s/.bashrc\n' "$HOME"
+}
 
-name=$(read-magic "$path" name)
-description=$(read-magic "$path" description)
+look_block_present() {
+        rc_file=$1
+        if [ ! -f "$rc_file" ]; then
+                return 1
+        fi
+        if grep -Fq '# >>> wizardry look spell >>>' "$rc_file"; then
+                return 0
+        fi
+        if grep -Fq 'WIZARDRY_LOOK_SPELL' "$rc_file"; then
+                return 0
+        fi
+        if grep -Fq "alias look='$LOOK_SCRIPT_PATH'" "$rc_file"; then
+                return 0
+        fi
+        return 1
+}
 
-if [ "$name" != "Error: The attribute does not exist." ] || [ "$description" != "Error: The attribute does not exist." ]; then
-  if [ "$name" != "Error: The attribute does not exist." ]; then
-		printf "${BLUE}${BOLD}$name${RESET}\n"
-	fi
-	
-	if [ "$description" != "Error: The attribute does not exist." ]; then
-	  echo $description
-	fi
+ensure_rc_dir() {
+        target=$1
+        dir=${target%/*}
+        if [ "$dir" = "$target" ]; then
+                return 0
+        fi
+        if [ -d "$dir" ]; then
+                return 0
+        fi
+        if ! mkdir -p "$dir"; then
+                look_warn "unable to create directory '$dir'."
+                return 1
+        fi
+        return 0
+}
+
+write_look_block() {
+        rc_file=$1
+        if ! ensure_rc_dir "$rc_file"; then
+                return 1
+        fi
+        tmp_file=$(mktemp "${TMPDIR:-/tmp}/wizardry-look.XXXXXX") || return 1
+        if [ -f "$rc_file" ]; then
+                sed '/^# >>> wizardry look spell >>>$/,/^# <<< wizardry look spell <<</d' "$rc_file" >"$tmp_file"
+        else
+                : >"$tmp_file"
+        fi
+        cat <<BLOCK >>"$tmp_file"
+# >>> wizardry look spell >>>
+alias look='$LOOK_SCRIPT_PATH'
+# <<< wizardry look spell <<<
+BLOCK
+        if ! mv "$tmp_file" "$rc_file"; then
+                rm -f "$tmp_file"
+                look_warn "unable to update '$rc_file'."
+                return 1
+        fi
+        return 0
+}
+
+locate_ask_yn() {
+        if command -v ask_yn >/dev/null 2>&1; then
+                command -v ask_yn
+                return 0
+        fi
+        if [ -x "$SCRIPT_DIR/cantrips/ask_yn" ]; then
+                printf '%s\n' "$SCRIPT_DIR/cantrips/ask_yn"
+                return 0
+        fi
+        return 1
+}
+
+install_look() {
+        rc_file=$(resolve_rc_file) || return 0
+        if look_block_present "$rc_file"; then
+                return 0
+        fi
+        if ! ask_yn_cmd=$(locate_ask_yn); then
+                look_warn "ask_yn spell is missing; cannot prompt for installation."
+                return 0
+        fi
+        printf '%s\n' "'Look' is a reserved keyword, so you must memorize this spell to change the meaning of the word 'look'."
+        if "$ask_yn_cmd" "Memorize the 'look' spell so it is always available?" yes >/dev/null; then
+                if write_look_block "$rc_file"; then
+                        printf '%s\n' "Spell memorized in $(basename "$rc_file"), so you will always be able to use it."
+                fi
+        else
+                printf '%s\n' "The mud will only run in this shell window."
+        fi
+}
+
+load_colors() {
+        if [ -n "${LOOK_COLORS_PATH-}" ] && [ -f "$LOOK_COLORS_PATH" ]; then
+                # shellcheck disable=SC1090
+                . "$LOOK_COLORS_PATH"
+                return 0
+        fi
+        if colors_path=$(command -v colors 2>/dev/null); then
+                # shellcheck disable=SC1090
+                . "$colors_path"
+                return 0
+        fi
+        if [ -x "$SCRIPT_DIR/cantrips/colors" ]; then
+                # shellcheck disable=SC1090
+                . "$SCRIPT_DIR/cantrips/colors"
+                return 0
+        fi
+        return 1
+}
+
+if ! load_colors; then
+        BLUE=""
+        BOLD=""
+        RESET=""
+fi
+
+if ! command -v read-magic >/dev/null 2>&1; then
+        printf '%s\n' "look: read-magic spell is missing." >&2
+        exit 1
+fi
+
+path=${1:-$PWD}
+
+install_look || true
+
+name=$(read-magic "$path" name || true)
+description=$(read-magic "$path" description || true)
+
+missing_msg='Error: The attribute does not exist.'
+
+if [ "$name" != "$missing_msg" ] || [ "$description" != "$missing_msg" ]; then
+        if [ "$name" != "$missing_msg" ] && [ -n "$name" ]; then
+                printf '%s%s%s%s\n' "$BLUE" "$BOLD" "$name" "$RESET"
+        fi
+        if [ "$description" != "$missing_msg" ] && [ -n "$description" ]; then
+                printf '%s\n' "$description"
+        fi
 else
-  echo "You look, but you don't see anything."
+        printf '%s\n' "You look, but you don't see anything."
 fi

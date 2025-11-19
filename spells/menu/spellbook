@@ -2,22 +2,16 @@
 
 set -eu
 
-script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
-cantrip_dir=$(dirname "$script_dir")/cantrips
-spellbook_store="$cantrip_dir/spellbook-store"
-if [ ! -x "$spellbook_store" ]; then
-        if command -v spellbook-store >/dev/null 2>&1; then
-                spellbook_store=$(command -v spellbook-store)
-        else
-                printf '%s\n' "spellbook: spellbook-store helper is missing." >&2
-                exit 1
-        fi
+spellbook_store=${SPELLBOOK_STORE-spellbook-store}
+if spellbook_store_path=$(command -v "$spellbook_store" 2>/dev/null); then
+        spellbook_store=$spellbook_store_path
+else
+        printf '%s\n' "spellbook: spellbook-store helper is missing." >&2
+        exit 1
 fi
 
 if [ -n "${REQUIRE_COMMAND-}" ]; then
         require_cmd=$REQUIRE_COMMAND
-elif [ -x "$cantrip_dir/require-command" ]; then
-        require_cmd="$cantrip_dir/require-command"
 else
         require_cmd=require-command
 fi

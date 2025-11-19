@@ -1,7 +1,7 @@
 #!/bin/sh
 
-# restart-service bounces a unit through systemctl restart, which is safer than
-# manually stopping/starting because systemd tracks dependencies for us.
+# stop-service asks systemd to stop a running unit. It mirrors start-service so
+# users can read either script to understand the full lifecycle.
 
 set -eu
 
@@ -24,20 +24,20 @@ fi
 SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
 
 find_ask_text() {
-        if [ -n "${RESTART_SERVICE_ASK_TEXT-}" ]; then
-                printf '%s' "$RESTART_SERVICE_ASK_TEXT"
-                return 0
-        fi
-        if [ -x "$SCRIPT_DIR/cantrips/ask_text" ]; then
-                printf '%s' "$SCRIPT_DIR/cantrips/ask_text"
-                return 0
-        fi
-        if command -v ask_text >/dev/null 2>&1; then
-                command -v ask_text
-                return 0
-        fi
-        printf '%s\n' "$SCRIPT_NAME: ask_text spell not found; please install wizardry cantrips." >&2
-        exit 1
+if [ -n "${STOP_SERVICE_ASK_TEXT-}" ]; then
+printf '%s' "$STOP_SERVICE_ASK_TEXT"
+return 0
+fi
+if command -v ask_text >/dev/null 2>&1; then
+command -v ask_text
+return 0
+fi
+if [ -x "$SCRIPT_DIR/ask_text" ]; then
+printf '%s' "$SCRIPT_DIR/ask_text"
+return 0
+fi
+printf '%s\n' "$SCRIPT_NAME: ask_text spell not found; please install wizardry cantrips." >&2
+exit 1
 }
 
 ASK_TEXT_HELPER=$(find_ask_text)
@@ -76,12 +76,12 @@ normalize_unit() {
 
 service_name=${1-}
 if [ -z "$service_name" ]; then
-        service_name=$("$ASK_TEXT_HELPER" "Which service should I restart?")
+        service_name=$("$ASK_TEXT_HELPER" "Which service should I stop?")
 fi
 if [ -z "$service_name" ]; then
         printf '%s\n' "$SCRIPT_NAME: No service name supplied." >&2
         exit 1
 fi
 unit=$(normalize_unit "$service_name")
-printf 'Restarting %s via systemctl...\n' "$unit"
-run_systemctl restart "$unit"
+printf 'Stopping %s via systemctl...\n' "$unit"
+run_systemctl stop "$unit"
