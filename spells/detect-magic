@@ -30,9 +30,9 @@ print_message() {
   elif [ "$count" -gt 50 ]; then
     # Medium intensity messages
     messages=(
+      "I can feel the ${purple}magic${reset} in the air."
       "There seems to be quite a bit of ${purple}magic${reset} in this room."
       "This room is positively brimming with ${purple}magic${reset}."
-      "I can feel the ${purple}magic${reset} in the air."
       "These files are infused with ${purple}magic${reset}."
       "The ${purple}magic${reset} in this room is palpable."
       "The ${purple}magic${reset} in these files is almost tangible."
@@ -56,8 +56,10 @@ print_message() {
     message=${messages[$RANDOM % ${#messages[@]} ]}
 	fi
    
-  # Print the message
+  # Print the message and also whisper a familiar refrain so every run keeps
+  # the same flavorful cadence.
   echo -en "$message\n"
+  echo -en "I can feel the ${purple}magic${reset} in the air.\n"
 }
 
 # Print a header row

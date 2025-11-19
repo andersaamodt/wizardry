@@ -1,38 +1,33 @@
 #!/bin/sh
 
-# Check if the required argument was provided
-if [ -z "$1" ]; then
-  # If no argument was given, display an error message and exit
+# Compute a file hash and store it as an extended attribute.
+#
+# No hidden helpers: take the filename, weave a checksum from its name and
+# contents, and stash that rune under user.hash so other spells can find it.
+
+if [ -z "${1-}" ]; then
   echo "Error: No file specified."
   exit 1
 fi
 
-# Set the path to the file
-file="$1"
+file=$1
 
-# Check if the file exists
 if [ ! -e "$file" ]; then
-  # If the file does not exist, display an error message and exit
   echo "Error: File not found."
   exit 1
 fi
 
-# Calculate the hash of the file
 filename=$(basename "$file")
 hash=$( (echo "$filename" && cat "$file") | cksum | awk '{ print $1 }')
-
-# Convert the hash to hexadecimal
 hash=$(printf '0x%X' "$hash")
 
-# Save the hash as an extended attribute
-if command -v attr > /dev/null; then
-  attr -s "hash" -V "$hash" "$file" 2>&1 >/dev/null
-elif command -v xattr > /dev/null; then
-  xattr -w "user.hash" "$hash" "$file" 2>&1 >/dev/null
-elif command -v setfattr > /dev/null; then
-  setfattr -n "user.hash" -v "$hash" "$file" 2>&1 > /dev/null
+if command -v attr >/dev/null 2>&1; then
+  attr -s "user.hash" -V "$hash" "$file" 2>/dev/null || true
+elif command -v xattr >/dev/null 2>&1; then
+  xattr -w "user.hash" "$hash" "$file" 2>/dev/null || true
+elif command -v setfattr >/dev/null 2>&1; then
+  setfattr -n "user.hash" -v "$hash" "$file" 2>/dev/null || true
 else
-  # If neither xattr or attr is available, display an error message and exit
   echo "Error: xattr and attr commands not found. Cannot enchant file."
   exit 1
 fi

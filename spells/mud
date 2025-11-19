@@ -1,0 +1,10 @@
+#!/bin/sh
+
+# Wrapper to keep the 'mud' command available even when only the primary
+# spells directory is on PATH. The real menu implementation lives inside the
+# spells/menu directory, so we exec that version after resolving this
+# script's location.
+
+set -eu
+
+exec "$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)/menu/mud" "$@"

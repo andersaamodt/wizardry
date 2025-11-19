@@ -1,83 +1,123 @@
 #!/bin/sh
 
-# This spell reads the enchanted attributes from the specified file.
-# If a field name is provided as the second argument, it reads the attribute with that name.
-# If the file or attribute does not exist, it raises an error.
+# Read enchanted attributes from a file.
+#
+# The spell stays didactic and sequential: verify the scroll exists, decide
+# whether to list every sigil or summon one by name, and lean on whichever
+# attribute tool the system provides. Comments explain each fork so the flavor
+# text and intent survive future edits.
 
-# Check that the correct number of arguments was provided
-if [ $# -lt 1 ] || [ $# -gt 2 ]; then
-  echo "Error: This spell requires one or two arguments: a file path and an optional attribute name."
-  exit 1
-fi
-
-# Set the file path and attribute name variables
-file=$1
-attribute=$2
-
-# Check that the file exists
-if [ ! -f "$file" ] && [ ! -d "$file" ]; then
-  echo "Error: The file does not exist."
-  exit 1
-fi
-
-# Define a function to read the attribute value using the available commands
-read_attribute_value() {
-  # Try to read the attribute using the 'attr' command
-  real_path=$(readlink -f "$file")
-  attribute_value=$(attr -g "$attribute" "$real_path" 2> /dev/null | cut -d ":" -f 2 | xargs)
-
-  # If the 'attr' command is not available, try using the 'xattr' command
-  if [ -z "$attribute_value" ]; then
-    attribute_value=$(xattr -p "$attribute" "$real_path" 2> /dev/null | cut -d ":" -f 2 | xargs)
+require_args() {
+  if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
+    printf '%s\n' "Error: This spell requires one or two arguments: a file path and an optional attribute name."
+    return 1
   fi
-
-  # If the 'xattr' command is not available, try using the 'getfattr' command
-  if [ -z "$attribute_value" ]; then
-    attribute_value=$(getfattr -h -n "$attribute" --only-values "$file" 2> /dev/null)
-  fi
-
-  # Return the attribute value
-  echo "$attribute_value"
 }
 
-# If an attribute name was not provided, print all attributes in YAML format
-if [ -z "$attribute" ]; then
-  attributes_found=0
+file_exists() {
+  if [ ! -e "$1" ]; then
+    printf '%s\n' "Error: The file does not exist."
+    return 1
+  fi
+}
 
-  # Define a function to process each attribute
-  process_attribute() {
-    # Read the attribute value using the read_attribute_value function
-    value=$(read_attribute_value "$attribute" "$file")
+parse_attr_output() {
+  printf '%s' "$1" | sed 's/.*has a value:[[:space:]]*//'
+}
 
-    # Check if the attribute value was set
-    if [ -n "$value" ]; then
-      # Print the attribute and value in YAML format
-      printf "%s: %s\n" "$1" "$value"
-      attributes_found=$((attributes_found + 1))
+read_value() {
+  key=$1
+  file=$2
+
+  if command -v attr >/dev/null 2>&1; then
+    if output=$(attr -g "$key" "$file" 2>/dev/null); then
+      parse_attr_output "$output"
+      return 0
     fi
-  }
-
-  # Call the process_attribute function for each attribute
-  for attribute in $(getfattr -h -m ".*" -e hex "$file" | cut -d ":" -f 1 | cut -d "." -f 2 | tr -d ' '); do
-    process_attribute "$attribute"
-  done
-
-  # Check if no extended attributes were found
-  if [ "$attributes_found" -eq 0 ]; then
-    echo "No enchanted attributes found."
   fi
 
-# If an attribute name was provided, print the attribute value
-else
-  # Read the attribute value using the read_attribute_value function
-  value=$(read_attribute_value "$attribute" "$file")
+  if command -v xattr >/dev/null 2>&1; then
+    if output=$(xattr -p "$key" "$file" 2>/dev/null); then
+      printf '%s' "$output"
+      return 0
+    fi
+  fi
 
-  # Check if the attribute value was set
-  if [ -z "$value" ]; then
-    echo "Error: The attribute does not exist."
+  if command -v getfattr >/dev/null 2>&1; then
+    if output=$(getfattr -n "$key" --only-values "$file" 2>/dev/null); then
+      printf '%s' "$output"
+      return 0
+    fi
+  fi
+
+  return 1
+}
+
+list_keys() {
+  file=$1
+
+  if command -v attr >/dev/null 2>&1; then
+    if keys=$(attr -l "$file" 2>/dev/null); then
+      printf '%s\n' "$keys"
+      return 0
+    fi
+  fi
+
+  if command -v xattr >/dev/null 2>&1; then
+    if keys=$(xattr "$file" 2>/dev/null); then
+      printf '%s\n' "$keys"
+      return 0
+    fi
+  fi
+
+  if command -v getfattr >/dev/null 2>&1; then
+    if keys=$(getfattr -d "$file" 2>/dev/null); then
+      printf '%s' "$keys" | awk -F '=' '/^# / {next} {print $1}'
+      return 0
+    fi
+  fi
+
+  return 1
+}
+
+print_all_attributes() {
+  file=$1
+  found=0
+  for key in $(list_keys "$file"); do
+    [ -z "$key" ] && continue
+    value=$(read_value "$key" "$file" || printf '')
+    printf '%s: %s\n' "$key" "$value"
+    found=1
+  done
+
+  if [ "$found" -eq 0 ]; then
+    printf '%s\n' "No enchanted attributes found."
+  fi
+}
+
+main() {
+  if ! require_args "$@"; then
     exit 1
   fi
 
-  # Print the attribute value
-  echo "$value"
-fi
+  file=$1
+  attribute=${2-}
+
+  if ! file_exists "$file"; then
+    exit 1
+  fi
+
+  if [ -z "$attribute" ]; then
+    print_all_attributes "$file"
+    exit 0
+  fi
+
+  if value=$(read_value "$attribute" "$file"); then
+    printf '%s\n' "$value"
+  else
+    printf '%s\n' "Error: The attribute does not exist."
+    exit 1
+  fi
+}
+
+main "$@"
