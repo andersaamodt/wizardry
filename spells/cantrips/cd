@@ -1,13 +1,15 @@
 #!/bin/sh
 
 install_cd() {
-  if ! grep -q "alias cd=" ~/.bashrc; then
-    echo "Do you wish to memorize this spell, so that you look around rooms automatically as you use 'cd'? (yes/no)"
-    read -r answer
-    if [ "$answer" = "yes" ]; then
+  if ! grep -q "alias cd=" "$HOME/.bashrc" 2>/dev/null; then
+    if ! command -v ask_yn >/dev/null 2>&1; then
+      printf '%s\n' "cd cantrip: ask_yn spell is missing; cannot prompt for installation." >&2
+      return 1
+    fi
+    if ask_yn "Memorize the enhanced 'cd' spell so it always looks around?" yes >/dev/null; then
       scriptpath="$(dirname $(readlink -f $0))"
       filename="$(basename "$0")"
-      echo "alias cd=\". $scriptpath/$filename\"" >> ~/.bashrc
+      printf "alias cd=\". %s/%s\"\n" "$scriptpath" "$filename" >> "$HOME/.bashrc"
       echo "Spell memorized in .bashrc, so the mud will always be active in the terminal."
     else
       echo "The mud will only run in this shell window."

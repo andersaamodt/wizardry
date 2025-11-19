@@ -1,85 +1,358 @@
 #!/bin/sh
 
-# This 'jump' spell teleports you to the location marked by the 'mark-location' spell.
-# If no location has been marked, or if you are already at the marked location, the spell will fizzle.
-# Because the script uses 'cd' to change your location, you must source it. This can be accomplished with "source ./jump-to-marker".
-# Having to source the script explicitly can be avoided if the spell is 'memorized' (sourced in .bashrc).
-# The spell will offer to do this, installing 'jump' as a systemwide keyword for you.
+# The jump-to-marker spell defines the interactive "jump" incantation.  When it
+# is memorized (sourced in your shell's rc file) the spell lets you whisper
+# `jump` from any prompt and immediately teleport to the destination recorded by
+# the companion mark-location spell.  The code below keeps the whimsical
+# narration from the original mud experiment while layering in modern safety
+# rails (detect-rc-file, scribe-spell, and ask_* cantrips) so new apprentices can
+# see every moving piece.
 
-# todo: you can automatically source with 'exec bash'. this could simplify this script a lot
+RUNNING_AS_SCRIPT=0
+case $0 in
+*/jump-to-marker|jump-to-marker)
+        RUNNING_AS_SCRIPT=1
+        set -eu
+        ;;
+*) : ;;
+esac
 
-# Check if the "jump" spell is already installed
-if ! grep -q "jump" ~/.bashrc; then
-  printf "You have not yet memorized the 'jump-to-marker' spell, so you can't cast it anywhere. This spell is so powerful that it must be memorized (sourced in .bashrc) to use it as a normal command. Memorize the 'jump' spell now? (y/n) "
-  read -r REPLY
-  
-  if [ "$REPLY" = "y" ] || [ "$REPLY" = "Y" ]; then
-    # Install the "jump" spell in the user's bashrc file
-    SCRIPT_DIR=$(dirname "$(realpath "${BASH_SOURCE[0]}")")
-    printf "source $SCRIPT_DIR/jump-to-marker\n" >> ~/.bashrc
-    printf "The 'jump' spell has been memorized. Use the 'spellbook' command to forget memorized spells. You must open a new terminal or 'source ~/.bashrc' before using 'jump'.\n"
-  fi
-fi
+SPELL_NAME=jump-to-marker
+MARKER_FILE=${JUMP_TO_MARKER_FILE:-$HOME/.mud/portal_marker}
+JUMP_TO_MARKER_PATH=${JUMP_TO_MARKER_PATH-}
+JUMP_TO_MARKER_HELPERS_DIR=${JUMP_TO_MARKER_HELPERS_DIR-}
+JUMP_TO_MARKER_RC_FILE=${JUMP_TO_MARKER_RC_FILE-}
+JUMP_TO_MARKER_PLATFORM=${JUMP_TO_MARKER_PLATFORM-}
+JUMP_TO_MARKER_FORMAT=${JUMP_TO_MARKER_FORMAT-}
+JUMP_TO_MARKER_ASK=${JUMP_TO_MARKER_ASK-}
 
-# 'jump' spell function (will be loaded when this file is sourced by .bashrc)
-jump() {
-  # Set the path to the marker file
-  marker_file="$HOME/.mud/portal_marker"
-
-  # Check if the marker file exists
-  if [ -e "$marker_file" ]; then
-    # If the marker file exists, read the destination path from the file
-    destination="$(cat "$marker_file")"
-
-    # Check if the current directory is already the destination
-    if [ "$(pwd)" == "$destination" ]; then
-      # If the current directory is already the destination, inform the user
-      echo "You are already at the marked location."
-    else
-      # If the current directory is not the destination, change the current directory to the destination
-      cd "$destination"
-      
-      # Print a random teleportation message
-      messages=("You feel a sudden warmth as you are enveloped in a glowing aura. When it fades, you find yourself at your destination."
-              "A strange sensation comes over you as you close your eyes. When you open them again, you are standing at your destination."
-              "You focus your mind on the marked location and feel yourself being pulled through the fabric of space. You open your eyes to find yourself at your destination."
-              "You feel a jolt as you are momentarily suspended in midair. When you land, you find yourself at your destination."
-              "You close your eyes and take a deep breath. When you open them, you are standing at your destination."
-              "A swirling vortex appears before you. You take a step forward and find yourself at your destination."
-              "You feel a tug on your stomach as you are suddenly pulled through a tunnel of light. When you emerge, you are at your destination."
-              "You hold out your hand and a bright portal appears. You step through and find yourself at your destination."
-              "You feel a rush of wind as you are teleported to your destination."
-              "You hear a faint ringing in your ears as you are transported to your destination."
-              "You close your eyes and visualize your destination. When you open them, you are standing there."
-              "You step into a glowing portal and are immediately transported to your destination."
-              "You feel a tug on your ankle as you are pulled through a wormhole. When you emerge, you are at your destination."
-              "You hear a faint hum as you are enveloped in a field of energy. When it dissipates, you are at your destination."
-              "You feel a sudden pressure on your chest as you are teleported to your destination."
-              "You feel a surge of magical energy as you are transported through the veil of reality."
-		      "A glowing portal opens before you, and you step through it to your destination."
-		      "A shimmering aura envelops you, and when it fades, you find yourself at the marked location."
-		      "You close your eyes and focus, and when you open them again, you are standing at the marked location."
-		      "A burst of light and sound surrounds you, and when it subsides, you are at the marked location."
-		      "You feel a tug on your soul, and when it releases, you are standing at the marked location."
-		      "You focus your magical energy and teleport to the marked location."
-		      "A warp in the fabric of reality opens up, and you step through it to the marked location."
-		      "You feel a sudden jolt, and when you regain your bearings, you are at the marked location."
-		      "You close your eyes and visualize the marked location, and when you open them, you are there."
-		      "You call upon the power of the elements to transport you to the marked location."
-		      "You channel the energy of the celestial bodies to jump to the marked location."
-		      "You recite an ancient incantation, and a magical portal appears, taking you to the marked location.")
-      echo "${messages[$RANDOM % ${#messages[@]}]}"
-      
-      # Look around, since the modified 'cd' command won't be available in this subshell context
-      look
-    fi
-  else
-    # If the marker file does not exist, inform the user that no location has been marked
-    echo "No location has been marked. Use the 'mark-location' spell to mark a location before using the 'jump' spell."
-  fi
+# jump_self_path locates the currently running script so we can add a
+# `. "path"` line to the rc file when memorizing the spell.
+jump_self_path() {
+        if [ -n "$JUMP_TO_MARKER_PATH" ]; then
+                printf '%s' "$JUMP_TO_MARKER_PATH"
+                return 0
+        fi
+        hint=$0
+        if [ "$RUNNING_AS_SCRIPT" -ne 1 ]; then
+                hint=$(command -v -- jump-to-marker 2>/dev/null || printf '%s' '')
+        fi
+        if [ -z "$hint" ]; then
+                printf '%s\n' "jump-to-marker: unable to determine script path." >&2
+                return 1
+        fi
+        case $hint in
+        */*)
+                candidate=$hint
+                ;;
+        *)
+                candidate=$(command -v -- "$hint" 2>/dev/null || printf '%s' "$hint")
+                ;;
+        esac
+        dir=${candidate%/*}
+        file=${candidate##*/}
+        if [ -z "$dir" ] || [ "$dir" = "$candidate" ]; then
+                dir=.
+        fi
+        if abs_dir=$(cd "$dir" 2>/dev/null && pwd -P); then
+                JUMP_TO_MARKER_PATH="$abs_dir/$file"
+        else
+                JUMP_TO_MARKER_PATH="$candidate"
+        fi
+        printf '%s' "$JUMP_TO_MARKER_PATH"
 }
 
-# If this script is no being called from within another script, call the main function and forward it our args (if sourced, it loads the function without running it)
-if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
-  jump "$@"
+# jump_helpers_dir returns the directory that contains this spell plus nearby
+# helper spells such as detect-rc-file and scribe-spell.
+jump_helpers_dir() {
+        if [ -n "$JUMP_TO_MARKER_HELPERS_DIR" ]; then
+                printf '%s' "$JUMP_TO_MARKER_HELPERS_DIR"
+                return 0
+        fi
+        if ! self_path=$(jump_self_path); then
+                return 1
+        fi
+        dir=${self_path%/*}
+        JUMP_TO_MARKER_HELPERS_DIR=$dir
+        printf '%s' "$JUMP_TO_MARKER_HELPERS_DIR"
+}
+
+jump_detect_helper() {
+        if ! helpers=$(jump_helpers_dir); then
+                return 1
+        fi
+        detect="$helpers/detect-rc-file"
+        if [ ! -x "$detect" ] && command -v detect-rc-file >/dev/null 2>&1; then
+                detect=$(command -v detect-rc-file)
+        fi
+        if [ ! -x "$detect" ]; then
+                printf '%s\n' "jump-to-marker: required helper 'detect-rc-file' is missing." >&2
+                return 1
+        fi
+        printf '%s' "$detect"
+}
+
+jump_scribe_helper() {
+        if ! helpers=$(jump_helpers_dir); then
+                return 1
+        fi
+        scribe="$helpers/scribe-spell"
+        if [ ! -x "$scribe" ] && command -v scribe-spell >/dev/null 2>&1; then
+                scribe=$(command -v scribe-spell)
+        fi
+        if [ ! -x "$scribe" ]; then
+                printf '%s\n' "jump-to-marker: required helper 'scribe-spell' is missing." >&2
+                return 1
+        fi
+        printf '%s' "$scribe"
+}
+
+jump_ask_helper() {
+        if [ -n "$JUMP_TO_MARKER_ASK" ] && [ -x "$JUMP_TO_MARKER_ASK" ]; then
+                printf '%s' "$JUMP_TO_MARKER_ASK"
+                return 0
+        fi
+        if ! helpers=$(jump_helpers_dir); then
+                return 1
+        fi
+        ask="$helpers/cantrips/ask_yn"
+        if [ -x "$ask" ]; then
+                JUMP_TO_MARKER_ASK=$ask
+                printf '%s' "$JUMP_TO_MARKER_ASK"
+                return 0
+        fi
+        if command -v ask_yn >/dev/null 2>&1; then
+                JUMP_TO_MARKER_ASK=$(command -v ask_yn)
+                printf '%s' "$JUMP_TO_MARKER_ASK"
+                return 0
+        fi
+        printf '%s\n' "jump-to-marker: ask_yn spell is unavailable." >&2
+        return 1
+}
+
+jump_confirm() {
+        question=$1
+        default=${2:-no}
+        if ask_helper=$(jump_ask_helper); then
+                if "$ask_helper" "$question" "$default" >/dev/null; then
+                        return 0
+                fi
+                return 1
+        fi
+        return 1
+}
+
+# jump_detect_environment prefers the shared WIZARDRY_* environment variables
+# (populated by the memorize spell) and only shells out to detect-rc-file when
+# those overrides are missing.
+jump_detect_environment() {
+        if [ -n "$WIZARDRY_RC_FILE" ] && [ -z "$JUMP_TO_MARKER_RC_FILE" ]; then
+                JUMP_TO_MARKER_RC_FILE=$WIZARDRY_RC_FILE
+        fi
+        if [ -n "$WIZARDRY_PLATFORM" ] && [ -z "$JUMP_TO_MARKER_PLATFORM" ]; then
+                JUMP_TO_MARKER_PLATFORM=$WIZARDRY_PLATFORM
+        fi
+        if [ -n "$WIZARDRY_RC_FORMAT" ] && [ -z "$JUMP_TO_MARKER_FORMAT" ]; then
+                JUMP_TO_MARKER_FORMAT=$WIZARDRY_RC_FORMAT
+        fi
+        if [ -n "$JUMP_TO_MARKER_RC_FILE" ] && [ -n "$JUMP_TO_MARKER_PLATFORM" ] && [ -n "$JUMP_TO_MARKER_FORMAT" ]; then
+                return 0
+        fi
+        if ! detect=$(jump_detect_helper); then
+                return 1
+        fi
+        output=$("$detect")
+        rc_file=''
+        platform=''
+        format=''
+        while IFS='=' read -r key value; do
+                case $key in
+                rc_file)
+                        rc_file=$value
+                        ;;
+                platform)
+                        platform=$value
+                        ;;
+                format)
+                        format=$value
+                        ;;
+                esac
+        done <<EOF_ENV
+$output
+EOF_ENV
+        if [ -z "$rc_file" ]; then
+                printf '%s\n' "jump-to-marker: detect-rc-file did not provide an rc file." >&2
+                return 1
+        fi
+        if [ -z "$platform" ]; then
+                platform=unknown
+        fi
+        if [ -z "$format" ]; then
+                format=shell
+        fi
+        JUMP_TO_MARKER_RC_FILE=$rc_file
+        JUMP_TO_MARKER_PLATFORM=$platform
+        JUMP_TO_MARKER_FORMAT=$format
+}
+
+jump_spell_memorized() {
+	if ! jump_detect_environment; then
+		return 1
+	fi
+	if ! scribe=$(jump_scribe_helper); then
+		return 1
+	fi
+	if "$scribe" --rc-file "$JUMP_TO_MARKER_RC_FILE" --spell "$SPELL_NAME" status >/dev/null 2>&1; then
+		return 0
+	fi
+	return 1
+}
+
+install() {
+        if ! jump_detect_environment; then
+                return 1
+        fi
+        if ! scribe=$(jump_scribe_helper); then
+                return 1
+        fi
+        if ! script_path=$(jump_self_path); then
+                return 1
+        fi
+        line=$(printf '. "%s"' "$script_path")
+        if printf '%s\n' "$line" | "$scribe" --rc-file "$JUMP_TO_MARKER_RC_FILE" --spell "$SPELL_NAME" add; then
+                printf '%s\n' "The 'jump' spell has been etched into $(basename "$JUMP_TO_MARKER_RC_FILE")."
+                printf '%s\n' "Open a new terminal (or source the file) to summon portals anywhere."
+        fi
+}
+
+# jump_portal_messages preserves every line of flavor text from the original
+# spell and sprinkles in a few new sensations for modern teleportation.
+jump_portal_messages() {
+	cat <<'PORTAL'
+You feel a sudden warmth as you are enveloped in a glowing aura. When it fades, you find yourself at your destination.
+A strange sensation comes over you as you close your eyes. When you open them again, you are standing at your destination.
+You focus your mind on the marked location and feel yourself being pulled through the fabric of space. You open your eyes to find yourself at your destination.
+You feel a jolt as you are momentarily suspended in midair. When you land, you find yourself at your destination.
+You close your eyes and take a deep breath. When you open them, you are standing at your destination.
+A swirling vortex appears before you. You take a step forward and find yourself at your destination.
+You feel a tug on your stomach as you are suddenly pulled through a tunnel of light. When you emerge, you are at your destination.
+You hold out your hand and a bright portal appears. You step through and find yourself at your destination.
+You feel a rush of wind as you are teleported to your destination.
+You hear a faint ringing in your ears as you are transported to your destination.
+You close your eyes and visualize your destination. When you open them, you are standing there.
+You step into a glowing portal and are immediately transported to your destination.
+You feel a tug on your ankle as you are pulled through a wormhole. When you emerge, you are at your destination.
+You hear a faint hum as you are enveloped in a field of energy. When it dissipates, you are at your destination.
+You feel a sudden pressure on your chest as you are teleported to your destination.
+You feel a surge of magical energy as you are transported through the veil of reality.
+A glowing portal opens before you, and you step through it to your destination.
+A shimmering aura envelops you, and when it fades, you find yourself at the marked location.
+You close your eyes and focus, and when you open them again, you are standing at the marked location.
+A burst of light and sound surrounds you, and when it subsides, you are at the marked location.
+You feel a tug on your soul, and when it releases, you are standing at the marked location.
+You focus your magical energy and teleport to the marked location.
+A warp in the fabric of reality opens up, and you step through it to the marked location.
+You feel a sudden jolt, and when you regain your bearings, you are at the marked location.
+You close your eyes and visualize the marked location, and when you open them, you are there.
+You call upon the power of the elements to transport you to the marked location.
+You channel the energy of the celestial bodies to jump to the marked location.
+You recite an ancient incantation, and a magical portal appears, taking you to the marked location.
+A shimmering rune circle flares beneath your feet.
+You step through a swirling vortex of starlight.
+A gust of glittering dust whips past as space folds around you.
+Your stomach flips as ley-lines knit a tunnel through reality.
+A bell tolls softly as the air warps into a crystalline doorway.
+You whisper the coordinates and a ribbon of light drags you forward.
+A ripple of color cascades outward before snapping you elsewhere.
+The scent of ozone and old tomes surrounds you mid-teleport.
+A chalk sigil burns bright, then launches you into the void.
+You ride a comet of sparks toward the marked destination.
+A murmured incantation bends distance like molten glass.
+Reality hiccups; when it steadies, you are already in motion.
+PORTAL
+}
+
+jump_random_message() {
+        jump_portal_messages | awk 'BEGIN{srand();}{lines[NR]=$0}END{if (NR==0) exit 0; idx=int(rand()*NR)+1; print lines[idx];}'
+}
+
+jump() {
+	marker=${MARKER_FILE:-$HOME/.mud/portal_marker}
+	if [ ! -f "$marker" ]; then
+		printf '%s\n' "No location has been marked. Use the 'mark-location' spell to mark a location before using the 'jump' spell."
+		printf '%s\n' "The portal fizzles--no destination has been marked yet. Cast 'mark-location' first."
+		return 1
+	fi
+        destination=$(cat "$marker")
+        if [ -z "$destination" ]; then
+                printf '%s\n' "The rune is blank; the marked location has faded away."
+                return 1
+        fi
+        if [ ! -d "$destination" ]; then
+                printf '%s\n' "The ley-line remembers '$destination', but it no longer exists."
+                return 1
+        fi
+        current=$(pwd -P)
+        if [ "$current" = "$destination" ]; then
+                printf '%s\n' "You are already standing at the marked location."
+                return 0
+        fi
+        if ! cd "$destination"; then
+                printf '%s\n' "The portal refuses to stabilize; try marking again." >&2
+                return 1
+        fi
+        arrival=$(jump_random_message)
+        if [ -n "$arrival" ]; then
+                printf '%s\n' "$arrival"
+        fi
+        printf '%s\n' "You land in $(pwd -P)."
+        if command -v look >/dev/null 2>&1; then
+                look
+        fi
+}
+
+jump_prompt_memorize() {
+        if ! jump_detect_environment; then
+                return 1
+        fi
+        if ! scribe=$(jump_scribe_helper); then
+                return 1
+        fi
+        rc_display=$(basename "$JUMP_TO_MARKER_RC_FILE")
+        if "$scribe" --rc-file "$JUMP_TO_MARKER_RC_FILE" --spell "$SPELL_NAME" status >/dev/null 2>&1; then
+                printf '%s\n' "The 'jump' spell is already memorized via $rc_display."
+                return 0
+        fi
+        if jump_confirm "You have not yet memorized the 'jump' spell. Imprint it into $rc_display now?" yes; then
+                install
+        else
+                printf '%s\n' "Very well—cast 'memorize jump-to-marker' when you crave instant travel."
+        fi
+}
+
+jump_cli() {
+        case ${1-} in
+        --install)
+                install
+                ;;
+        --help|-h)
+                cat <<'USAGE'
+Usage: jump-to-marker [--install]
+
+Source this spell to define the 'jump' shell function. When executed directly it
+offers to memorize the spell for you so the portal is always ready.
+USAGE
+                ;;
+        "")
+                jump_prompt_memorize
+                ;;
+        *)
+                printf '%s\n' "jump-to-marker: unknown option '$1'." >&2
+                return 1
+                ;;
+        esac
+}
+
+if [ "$RUNNING_AS_SCRIPT" -eq 1 ]; then
+        jump_cli "$@"
 fi

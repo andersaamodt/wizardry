@@ -1,20 +1,22 @@
-#!/usr/bin/env sh
+#!/bin/sh
 
-# This magical incantation allows the terminal to ask a question and receive an answer.
+set -eu
 
-ask() {
-  # Display the prompt
-  echo "${1}"
+SCRIPT=$0
+case $SCRIPT in
+*/*)
+        SCRIPT_DIR=${SCRIPT%/*}
+        ;;
+*)
+        SCRIPT_DIR=.
+        ;;
+esac
+SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
+HELPER="$SCRIPT_DIR/ask_text"
 
-  # Read the user's input
-  read -r user_input
-
-  # Return the user's input
-  echo "${user_input}"
-}
-
-# Check if script is being sourced or executed
-if [ "${BASH_SOURCE[0]}" = "$0" ]; then
-  # Script is being executed, call the function and pass the arguments
-  ask "$@"
+if [ ! -x "$HELPER" ]; then
+        printf '%s\n' "ask: missing required helper '$HELPER'." >&2
+        exit 1
 fi
+
+exec "$HELPER" "$@"

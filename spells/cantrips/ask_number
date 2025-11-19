@@ -1,0 +1,73 @@
+#!/bin/sh
+
+set -eu
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: ask_number "Question" MIN MAX
+
+Prompts until the user supplies an integer within the inclusive range.
+USAGE
+}
+
+if [ "$#" -ne 3 ]; then
+        usage
+        exit 1
+fi
+
+question=$1
+min=$2
+max=$3
+
+case $min in
+*[^0-9-]*|"" )
+        printf '%s\n' "ask_number: MIN must be an integer." >&2
+        exit 1
+        ;;
+*) : ;;
+        esac
+case $max in
+*[^0-9-]*|"" )
+        printf '%s\n' "ask_number: MAX must be an integer." >&2
+        exit 1
+        ;;
+*) : ;;
+        esac
+
+min=$(printf '%s' "$min")
+max=$(printf '%s' "$max")
+
+if [ "$min" -gt "$max" ]; then
+        printf '%s\n' "ask_number: MIN must be less than or equal to MAX." >&2
+        exit 1
+fi
+
+prompt() {
+        printf '%s [%s-%s] ' "$question" "$min" "$max" >&2
+}
+
+read_value() {
+        if [ -r /dev/tty ]; then
+                IFS= read -r value </dev/tty || value=
+        else
+                IFS= read -r value || value=
+        fi
+        printf '%s' "$value"
+}
+
+while :; do
+        prompt
+        response=$(read_value)
+        case $response in
+        *[^0-9-]*|"" )
+                printf '%s\n' "Please enter a whole number." >&2
+                continue
+                ;;
+        esac
+        if [ "$response" -lt "$min" ] || [ "$response" -gt "$max" ]; then
+                printf '%s\n' "Please choose a number between $min and $max." >&2
+                continue
+        fi
+        printf '%s\n' "$response"
+        exit 0
+done

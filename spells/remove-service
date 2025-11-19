@@ -1,46 +1,95 @@
 #!/bin/sh
 
-# This script serves as an "undo" scroll for the service installation script,
-# removing a systemd service that was previously created
+# remove-service deletes a systemd unit file after confirming it exists. When
+# no service name is supplied the script politely prompts via ask_text so menu
+# entries can call it without additional flags.
 
-if [ $# -lt 1 ]; then
-    echo "Usage: $0 service_name"
-    exit 1
+set -eu
+
+SCRIPT_NAME=$(basename "$0")
+SERVICE_DIR=${SERVICE_DIR:-/etc/systemd/system}
+
+SCRIPT_SOURCE=$0
+case $SCRIPT_SOURCE in
+*/*)
+        SCRIPT_DIR=${SCRIPT_SOURCE%/*}
+        ;;
+*)
+        resolved=$(command -v -- "$SCRIPT_SOURCE" 2>/dev/null || printf '%s' "$SCRIPT_SOURCE")
+        SCRIPT_DIR=${resolved%/*}
+        SCRIPT_SOURCE=$resolved
+        ;;
+esac
+if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
+        SCRIPT_DIR=.
+fi
+SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
+
+find_ask_text() {
+        if [ -n "${REMOVE_SERVICE_ASK_TEXT-}" ]; then
+                printf '%s' "$REMOVE_SERVICE_ASK_TEXT"
+                return 0
+        fi
+        if [ -x "$SCRIPT_DIR/cantrips/ask_text" ]; then
+                printf '%s' "$SCRIPT_DIR/cantrips/ask_text"
+                return 0
+        fi
+        if command -v ask_text >/dev/null 2>&1; then
+                command -v ask_text
+                return 0
+        fi
+        printf '%s\n' "$SCRIPT_NAME: ask_text spell is required for prompts." >&2
+        exit 1
+}
+
+ASK_TEXT_HELPER=$(find_ask_text)
+
+if command -v systemctl >/dev/null 2>&1; then
+        SYSTEMCTL=$(command -v systemctl)
+else
+        printf '%s\n' "$SCRIPT_NAME: systemctl is not installed." >&2
+        exit 1
 fi
 
-# Ensure systemd is available
-if ! command -v systemctl >/dev/null 2>&1; then
-    echo "Systemd is not installed or not in PATH. Exiting."
-    exit 1
+require_privilege() {
+        if [ "$(id -u)" -eq 0 ]; then
+                "$@"
+                return 0
+        fi
+        if command -v sudo >/dev/null 2>&1; then
+                sudo "$@"
+                return 0
+        fi
+        printf '%s\n' "$SCRIPT_NAME: run as root or install sudo to modify $SERVICE_DIR." >&2
+        exit 1
+}
+
+service_name=${1-}
+if [ -z "$service_name" ]; then
+        service_name=$("$ASK_TEXT_HELPER" "Which service should I remove?")
 fi
-
-service_dir=/etc/systemd/system
-service_name=$1
-
-# Add .service if not present in the name
+if [ -z "$service_name" ]; then
+        printf '%s\n' "$SCRIPT_NAME: no service specified." >&2
+        exit 1
+fi
 case $service_name in
-    *.service) ;;
-    *) service_name="$service_name.service" ;;
+*.service) : ;;
+*) service_name="$service_name.service" ;;
 esac
 
-service_path="$service_dir/$service_name"
+service_path="$SERVICE_DIR/$service_name"
 
-# Check if service file exists
 if [ ! -f "$service_path" ]; then
-    echo "Service $service_name does not exist."
-    exit 1
+        printf '%s\n' "$SCRIPT_NAME: $service_name is not installed." >&2
+        exit 1
 fi
 
-# Stop and disable service if it's running
-if systemctl is-active --quiet "$service_name"; then
-    systemctl stop "$service_name"
+if "$SYSTEMCTL" is-active --quiet "$service_name"; then
+        printf '%s\n' "Stopping $service_name before removal..."
+        require_privilege "$SYSTEMCTL" stop "$service_name"
 fi
 
-# Remove the service file
-sudo rm -f "$service_path"
-
-# Reload systemd
-systemctl daemon-reload
-
-echo "Service $service_name removed."
-exit 0
+printf '%s\n' "Removing $service_name from $SERVICE_DIR..."
+require_privilege rm -f "$service_path"
+require_privilege "$SYSTEMCTL" daemon-reload
+printf '%s\n' "$service_name removed."

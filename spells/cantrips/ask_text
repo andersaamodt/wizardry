@@ -1,0 +1,44 @@
+#!/bin/sh
+
+set -eu
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: ask_text "Question" [default]
+
+Prompts the user with the provided question and echoes their response.
+When a default is supplied it will be used if the user presses Enter.
+USAGE
+}
+
+if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
+        usage
+        exit 1
+fi
+
+question=$1
+default_value=${2-}
+default_hint=""
+if [ "$#" -eq 2 ]; then
+        default_hint=" [$default_value]"
+fi
+
+prompt() {
+        printf '%s%s ' "$question" "$default_hint" >&2
+}
+
+read_line() {
+        if [ -r /dev/tty ]; then
+                IFS= read -r line </dev/tty || line=
+        else
+                IFS= read -r line || line=
+        fi
+        printf '%s' "$line"
+}
+
+prompt
+response=$(read_line)
+if [ -z "$response" ] && [ -n "$default_value" ]; then
+        response=$default_value
+fi
+printf '%s\n' "$response"
