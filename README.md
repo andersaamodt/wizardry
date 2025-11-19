@@ -10,12 +10,12 @@ Wizardry also includes a comprehensive set of bash tutorials.
 
 | OS                        | Shortname | Status                              |
 | ------------------------- | --------- | ----------------------------------- |
-| **Debian (and Ubuntu)**   | `debian`  | 🟢 **`install` + `menu` work well** |
-| **NixOS**                 | `nixos`   | 🟢 **`menu` works well**            |
-| **MacOS**                 | `macos`   | 🟡 **`install` + `menu` untested**  |
-| **Arch**                  | `arch`    | 🟠 **may support later**            |
-| **Android (Linux-based)** | —         | 🟠 **may support later**            |
-| **Windows**               | —         | ✘ **WSL support only**              |
+| **Debian (and Ubuntu)**   | `debian`  | 🟢 **`install` + `menu` work well**   |
+| **NixOS**                 | `nixos`   | 🟢 **`menu` works well**              |
+| **MacOS**                 | `macos`   | 🟡 **`install` + `menu` untested**    |
+| **Arch**                  | `arch`    | 🟠 **currently unsupported**          |
+| **Android (Linux-based)** | —         | 🟠 **currently unsupported**          |
+| **Windows**               | —         | ✘ **no support planned (except WSL)** |
 
 ## Installation
 
