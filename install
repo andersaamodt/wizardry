@@ -299,7 +299,7 @@ done
 
 mem_status=0
 if [ -x "$MEMORIZE" ]; then
-        if "$MEMORIZE" --recursive "$ABS_DIR/spells"; then
+        if MEMORIZE_REPORT_SKIPS=0 "$MEMORIZE" --recursive "$ABS_DIR/spells"; then
                 printf '%s\n' "Spells memorized successfully."
         else
                 mem_status=$?

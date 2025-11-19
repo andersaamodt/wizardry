@@ -61,6 +61,9 @@ RC
   assert_success
   assert_output --partial 'ao-mud will ensure'
   assert_output --partial 'Your spellbook has been activated'
+  if [[ "$output" == *"Skipping"* ]] || [[ "$stderr" == *"Skipping"* ]]; then
+    fail 'install output included memorize skip warnings'
+  fi
 
   for rel in spells spells/cantrips spells/menu; do
     dir="$ROOT_DIR/$rel"
