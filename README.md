@@ -1,8 +1,8 @@
-# Wizardry is the FOSS missing link
+# Wizardry is the terminal's missing link
 
 Wizardry is a collection of bash scripts to complete your terminal experience.
 Themed as a magical MUD (Multi-User Dungeon), wizardry turns folders into rooms, and files into items.
-Wizardry also includes a comprehensive set of bash tutorials.
+Wizardry also includes a comprehensive set of bash tutorials, and optional free software suite.
 
 ## Status for target platforms:
 
