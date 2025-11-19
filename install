@@ -7,26 +7,222 @@ if [ "$#" -ne 0 ]; then
         exit 1
 fi
 
-# Resolve the directory containing this installer without relying on
-# non-POSIX utilities so the script works on Debian's /bin/sh (dash).
-case $0 in
-        */*)
-                SCRIPT_DIR=${0%/*}
-                ;;
-        *)
-                SCRIPT_DIR=.
-                ;;
-esac
-
 # Disable CDPATH so that "cd" behaves predictably even if the user has a
 # custom search path configured in their environment.
 unset CDPATH
 
-ABS_DIR=$(cd "$SCRIPT_DIR" && pwd -P) || exit 1
+REQUIRED_REL_DIRS="spells spells/cantrips spells/menu"
+
+# Determine the default target directory shown in the install prompt. The
+# installer accepts three environment variables to steer non-interactive
+# installs:
+#   * WIZARDRY_INSTALL_DIR – fully overrides the prompt and is used directly.
+#   * WIZARDRY_ROOT        – legacy alias used as an override if set.
+#   * WIZARDRY_REMOTE_DIR  – retained for backwards compatibility; becomes the
+#                            prompt default when present.
+if [ -n "${WIZARDRY_INSTALL_DIR-}" ]; then
+        PROMPT_DEFAULT=$WIZARDRY_INSTALL_DIR
+elif [ -n "${WIZARDRY_ROOT-}" ]; then
+        PROMPT_DEFAULT=$WIZARDRY_ROOT
+elif [ -n "${WIZARDRY_REMOTE_DIR-}" ]; then
+        PROMPT_DEFAULT=$WIZARDRY_REMOTE_DIR
+elif [ -n "${HOME-}" ]; then
+        PROMPT_DEFAULT=$HOME/.tower
+else
+        PROMPT_DEFAULT=.tower
+fi
+
+cleanup_bootstrap() {
+        # Clean up any temporary directory created during the download process.
+        if [ -n "${BOOTSTRAP_TMP_DIR-}" ] && [ -d "$BOOTSTRAP_TMP_DIR" ]; then
+        rm -rf "$BOOTSTRAP_TMP_DIR"
+        fi
+}
+
+trap 'cleanup_bootstrap' EXIT HUP INT TERM
+
+download_file() {
+        # Fetch a remote archive using curl or wget, whichever is available.
+        dest=$1
+        url=$2
+        if command -v curl >/dev/null 2>&1; then
+        if curl -fsSL "$url" -o "$dest"; then
+        return 0
+        fi
+        fi
+        if command -v wget >/dev/null 2>&1; then
+        if wget -qO "$dest" "$url"; then
+        return 0
+        fi
+        fi
+        printf '%s\n' "Error: Neither curl nor wget is available to download wizardry." >&2
+        return 1
+}
+
+expand_home() {
+        # Expand a leading ~ into the user's HOME so prompts can accept shortcuts.
+        value=$1
+        case $value in
+        ~)
+        if [ -z "${HOME-}" ]; then
+        printf '%s\n' "Error: HOME is not set; cannot expand '~'." >&2
+        return 1
+        fi
+        printf '%s\n' "$HOME"
+        ;;
+        ~/*)
+        if [ -z "${HOME-}" ]; then
+        printf '%s\n' "Error: HOME is not set; cannot expand '~'." >&2
+        return 1
+        fi
+        printf '%s/%s\n' "$HOME" "${value#~/}"
+        ;;
+        *)
+        printf '%s\n' "$value"
+        ;;
+        esac
+}
+
+absolute_path() {
+        # Convert a user-supplied path (which may be relative) into an absolute path
+        # so later commands can safely change directories.
+        input=$1
+        expanded=$(expand_home "$input") || return 1
+        case $expanded in
+        /*)
+        printf '%s\n' "$expanded"
+        ;;
+        *)
+        cwd=$(pwd -P)
+        printf '%s/%s\n' "$cwd" "$expanded"
+        ;;
+        esac
+}
+
+prompt_install_dir() {
+        # Ask the user where wizardry should live, defaulting to ~/.tower. When
+        # running non-interactively (for example via wget | sh), the prompt falls back
+        # to the default automatically so the installer keeps moving.
+        default_choice=$1
+        if [ -z "$default_choice" ]; then
+        printf '%s\n' "Error: No default install location could be determined." >&2
+        return 1
+        fi
+
+        if [ -n "${WIZARDRY_INSTALL_DIR-}" ]; then
+        printf '%s\n' "$WIZARDRY_INSTALL_DIR"
+        return 0
+        fi
+
+        if [ -n "${WIZARDRY_ROOT-}" ]; then
+        printf '%s\n' "$WIZARDRY_ROOT"
+        return 0
+        fi
+
+        message="Where should wizardry be installed? [$default_choice] "
+        if [ -t 0 ]; then
+        printf '%s' "$message"
+        IFS= read -r response
+        elif [ -r /dev/tty ]; then
+        printf '%s' "$message" >/dev/tty
+        IFS= read -r response </dev/tty
+        else
+        printf '%s\n' "Info: No interactive input detected; using '$default_choice'." >&2
+        response=
+        fi
+
+        if [ -z "$response" ]; then
+        response=$default_choice
+        fi
+        printf '%s\n' "$response"
+}
+
+bootstrap_remote_tree() {
+        # Download the wizardry tarball, unpack it, and move it into the requested
+        # installation directory.
+        target=$1
+        archive_url=${WIZARDRY_REMOTE_ARCHIVE-https://github.com/andersaamodt/wizardry/archive/refs/heads/main.tar.gz}
+
+        if [ -d "$target/spells" ]; then
+        (cd "$target" && pwd -P)
+        return 0
+        fi
+
+        if [ -e "$target" ]; then
+        printf '%s\n' "Error: '$target' already exists but does not look like wizardry." >&2
+        return 1
+        fi
+
+        if ! command -v tar >/dev/null 2>&1; then
+        printf '%s\n' "Error: tar is required to unpack wizardry when installing remotely." >&2
+        return 1
+        fi
+
+        BOOTSTRAP_TMP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/wizardry-install.XXXXXX") || return 1
+        archive="$BOOTSTRAP_TMP_DIR/wizardry.tar.gz"
+
+        printf '%s\n' "Downloading wizardry to '$target'..."
+        if ! download_file "$archive" "$archive_url"; then
+        return 1
+        fi
+
+        if ! tar -xzf "$archive" -C "$BOOTSTRAP_TMP_DIR"; then
+        printf '%s\n' "Error: Failed to unpack wizardry archive." >&2
+        return 1
+        fi
+
+        extracted=
+        for candidate in "$BOOTSTRAP_TMP_DIR"/*; do
+        if [ -d "$candidate/spells" ]; then
+        extracted=$candidate
+        break
+        fi
+        done
+
+        if [ -z "$extracted" ]; then
+        printf '%s\n' "Error: Downloaded archive did not contain wizardry spells." >&2
+        return 1
+        fi
+
+        parent=${target%/*}
+        if [ "$parent" = "$target" ]; then
+        parent=.
+        fi
+        if ! mkdir -p "$parent"; then
+        printf '%s\n' "Error: Unable to create directory '$parent'." >&2
+        return 1
+        fi
+
+        if ! mv "$extracted" "$target"; then
+        printf '%s\n' "Error: Unable to move wizardry into '$target'." >&2
+        return 1
+        fi
+
+        printf '%s\n' "Wizardry downloaded to '$target'."
+        (cd "$target" && pwd -P)
+}
+
+resolve_install_root() {
+        # Accept the requested path, use it if the spells exist, or fall back to a
+        # remote download.
+        req=$1
+        if [ -d "$req/spells" ]; then
+        (cd "$req" && pwd -P)
+        return 0
+        fi
+
+        bootstrap_remote_tree "$req"
+}
+
+INSTALL_INPUT=$(prompt_install_dir "$PROMPT_DEFAULT") || exit 1
+INSTALL_DIR=$(absolute_path "$INSTALL_INPUT") || exit 1
+ABS_DIR=$(resolve_install_root "$INSTALL_DIR") || exit 1
+
+# Now that the wizardry tree is available, point at the helper spells we rely
+# on to update PATH entries and ask for confirmation.
 PATH_WIZARD="$ABS_DIR/spells/path-wizard"
 MEMORIZE="$ABS_DIR/spells/memorize"
 ASK_YN="$ABS_DIR/spells/cantrips/ask_yn"
-REQUIRED_REL_DIRS="spells spells/cantrips spells/menu"
 
 if [ ! -x "$PATH_WIZARD" ]; then
         printf '%s\n' "Error: Expected helper '$PATH_WIZARD' is missing or not executable." >&2

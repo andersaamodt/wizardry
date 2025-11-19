@@ -4,14 +4,27 @@
 
 ## Installation
 
-To install wizardry:
+### Install script
+
+Run the installer directly with `wget` (or `curl`). The script prompts for the install location and defaults to `~/.tower`, then downloads wizardry into that directory and adds the spells to your `PATH`:
+
+```
+wget -qO- https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh
+```
+
+Set `WIZARDRY_INSTALL_DIR=/path/to/location` (for example `WIZARDRY_INSTALL_DIR="$HOME/wizardry" wget ...`) if you need to run the installer non-interactively or want to change the default in advance. The install script requires `tar` plus either `curl` or `wget` to be available.
+
+### Install with git
+
+To install wizardry from a local checkout:
 
 ```
 git pull http://github.com/andersaamodt/wizardry/main
 chmod +x install
 ./install
 ```
-After installing, you must reopen your terminal window before wizardry spells will work.
+
+During installation the script will ask where the checkout should live (defaulting to `~/.tower`). After installing, you must reopen your terminal window before wizardry spells will work.
 
 ## Usage
 
