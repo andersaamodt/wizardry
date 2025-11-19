@@ -48,7 +48,7 @@ with_stubs() {
   : >"$kill_log"
   export KILL_LOG="$kill_log"
   export ASK_YN_STUB_RESPONSE=Y
-  with_stubs run_spell 'spells/kill-process' <"$BATS_TEST_TMPDIR/choice"
+  ASK_CANTRIP_INPUT=stdin with_stubs run_spell 'spells/kill-process' <"$BATS_TEST_TMPDIR/choice"
   unset ASK_YN_STUB_RESPONSE
   assert_success
   assert_output --partial 'List of running processes:'
@@ -63,7 +63,7 @@ with_stubs() {
   printf '1\n' >"$BATS_TEST_TMPDIR/choice_no"
   export KILL_LOG="$kill_log"
   export ASK_YN_STUB_RESPONSE=n
-  with_stubs run_spell 'spells/kill-process' <"$BATS_TEST_TMPDIR/choice_no"
+  ASK_CANTRIP_INPUT=stdin with_stubs run_spell 'spells/kill-process' <"$BATS_TEST_TMPDIR/choice_no"
   unset ASK_YN_STUB_RESPONSE
   assert_success
   [[ "$output" != *'has been killed'* ]]

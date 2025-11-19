@@ -6,6 +6,25 @@ setup() {
   default_setup
   ORIGINAL_PATH=$PATH
   system_stubs=$(wizardry_install_systemd_stubs)
+  ask_text_stub="$BATS_TEST_TMPDIR/ask_text_stub"
+  cat <<'STUB' >"$ask_text_stub"
+#!/usr/bin/env bash
+set -euo pipefail
+response_file="${ASK_TEXT_STUB_FILE:-}"
+if [ -n "$response_file" ] && [ -s "$response_file" ]; then
+  response=$(head -n1 "$response_file")
+  if [ "$(wc -l <"$response_file")" -gt 1 ]; then
+    tail -n +2 "$response_file" >"$response_file.tmp"
+    mv "$response_file.tmp" "$response_file"
+  else
+    : >"$response_file"
+  fi
+  printf '%s\n' "$response"
+  exit 0
+fi
+printf '%s\n' "${ASK_TEXT_STUB_RESPONSE:-}"
+STUB
+  chmod +x "$ask_text_stub"
   tmp_dir="$BATS_TEST_TMPDIR/service"
   mkdir -p "$tmp_dir"
   template="$tmp_dir/example.service"
@@ -30,7 +49,9 @@ teardown() {
 @test 'install-service-template overwrites file even when overwrite declined' {
   printf 'existing service' | "$system_stubs/sudo" tee "$service_path" >/dev/null
 
-  ASK_YN_STUB_RESPONSE=N PATH="$(wizardry_join_paths "$system_stubs" "$ORIGINAL_PATH")" \
+  ASK_YN_STUB_RESPONSE=N \
+    INSTALL_SERVICE_TEMPLATE_ASK_YN="$system_stubs/ask_yn" \
+    PATH="$(wizardry_join_paths "$system_stubs" "$ORIGINAL_PATH")" \
     run_spell 'spells/install-service-template' "$template"
   assert_failure
   run cat "$service_path"
@@ -40,7 +61,12 @@ teardown() {
 
 @test 'install-service-template fills template placeholders and reloads systemd' {
   rm -f "$service_path"
-  SYSTEMCTL_STATE_DIR="$tmp_dir" DESCRIPTION='Mystic Service' PORT=7777 \
+  placeholder_input="$BATS_TEST_TMPDIR/service_placeholders"
+  printf 'Mystic Service\n7777\n' >"$placeholder_input"
+
+  SYSTEMCTL_STATE_DIR="$tmp_dir" \
+    INSTALL_SERVICE_TEMPLATE_ASK_TEXT="$ask_text_stub" \
+    ASK_TEXT_STUB_FILE="$placeholder_input" \
     PATH="$(wizardry_join_paths "$system_stubs" "$ORIGINAL_PATH")" \
     run_spell 'spells/install-service-template' "$template" EXECUTABLE=magic
   assert_success

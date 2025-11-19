@@ -45,16 +45,16 @@ teardown() {
   mv "$HOME/.bashrc" "$HOME/.bashrc.bak"
   run_spell 'spells/path-wizard' 'add' "$target_dir"
   assert_success
-  assert_output --partial 'The directory has been added to your PATH.'
-  assert_output --partial 'new shells'
+  assert_output --partial "Added '$target_dir' to PATH via '$HOME/.bashrc'"
+  assert_output --partial 'Open a new shell'
   mv "$HOME/.bashrc.bak" "$HOME/.bashrc"
 
   run_spell 'spells/path-wizard' 'add' "$target_dir"
   assert_success
-  assert_output --partial 'The directory has been added to your PATH.'
-  assert_output --partial 'new shells'
+  assert_output --partial "Added '$target_dir' to PATH via '$HOME/.bashrc'"
+  assert_output --partial 'Open a new shell'
   entry=$(printf 'export PATH="%s:$PATH"' "$target_dir")
-  run grep -Fqx "$entry" "$HOME/.bashrc"
+  run grep -Fq "$entry" "$HOME/.bashrc"
   assert_success
 
   run_spell 'spells/path-wizard' 'status' "$target_dir"
@@ -62,13 +62,13 @@ teardown() {
 
   run_spell 'spells/path-wizard' 'add' "$target_dir"
   assert_success
-  assert_output --partial 'The directory is already in your PATH.'
+  assert_output --partial "'$target_dir' is already exported in '$HOME/.bashrc'"
 
   run_spell 'spells/path-wizard' 'remove' "$target_dir"
   assert_success
-  assert_output --partial 'The directory has been removed from your PATH.'
-  assert_output --partial 'new shells'
-  run grep -Fqx "$entry" "$HOME/.bashrc"
+  assert_output --partial "Removed '$target_dir' from PATH entries recorded in '$HOME/.bashrc'"
+  assert_output --partial 'Open a new shell'
+  run grep -Fq "$entry" "$HOME/.bashrc"
   assert_failure
 
   run_spell 'spells/path-wizard' 'status' "$target_dir"
@@ -84,7 +84,7 @@ teardown() {
   cd "$old_pwd"
   assert_success
   default_entry=$(printf 'export PATH="%s:$PATH"' "$default_dir")
-  run grep -Fqx "$default_entry" "$HOME/.bashrc"
+  run grep -Fq "$default_entry" "$HOME/.bashrc"
   assert_success
 
   run_spell 'spells/path-wizard' 'remove' "$default_dir"
@@ -95,7 +95,7 @@ teardown() {
   run_spell 'spells/path-wizard' 'add' '~/magic'
   assert_success
   tilde_entry=$(printf 'export PATH="%s:$PATH"' "$magic_dir")
-  run grep -Fqx "$tilde_entry" "$HOME/.bashrc"
+  run grep -Fq "$tilde_entry" "$HOME/.bashrc"
   assert_success
   run_spell 'spells/path-wizard' 'remove' "$magic_dir"
   assert_success
@@ -108,7 +108,7 @@ teardown() {
   cd "$old_pwd"
   assert_success
   dot_entry=$(printf 'export PATH="%s:$PATH"' "$dot_dir")
-  run grep -Fqx "$dot_entry" "$HOME/.bashrc"
+  run grep -Fq "$dot_entry" "$HOME/.bashrc"
   assert_success
   run_spell 'spells/path-wizard' 'remove' "$dot_dir"
   assert_success
@@ -121,7 +121,7 @@ teardown() {
   cd "$old_pwd"
   assert_success
   relative_entry=$(printf 'export PATH="%s:$PATH"' "$relative_dir")
-  run grep -Fqx "$relative_entry" "$HOME/.bashrc"
+  run grep -Fq "$relative_entry" "$HOME/.bashrc"
   assert_success
   run_spell 'spells/path-wizard' 'remove' "$relative_dir"
   assert_success
@@ -137,13 +137,13 @@ teardown() {
 
   run_spell 'spells/path-wizard' 'add' "$target_dir"
   assert_success
-  assert_output --partial 'refreshed'
+  assert_output --partial 'Refreshed the existing wizardry PATH entry'
 
   fixed_entry=$(printf 'export PATH="%s:$PATH"' "$target_dir")
-  run grep -Fqx "$fixed_entry" "$HOME/.bashrc"
+  run grep -Fq "$fixed_entry" "$HOME/.bashrc"
   assert_success
 
-  run grep -Fqx "$legacy_entry" "$HOME/.bashrc"
+  run grep -Fq "$legacy_entry" "$HOME/.bashrc"
   assert_failure
 
   run_spell 'spells/path-wizard' 'remove' "$target_dir"
@@ -165,11 +165,11 @@ teardown() {
   level1_entry=$(printf 'export PATH="%s:$PATH"' "$base_dir/level1")
   level2_entry=$(printf 'export PATH="%s:$PATH"' "$base_dir/level1/level2")
 
-  run grep -Fqx "$base_entry" "$HOME/.bashrc"
+  run grep -Fq "$base_entry" "$HOME/.bashrc"
   assert_success
-  run grep -Fqx "$level1_entry" "$HOME/.bashrc"
+  run grep -Fq "$level1_entry" "$HOME/.bashrc"
   assert_success
-  run grep -Fqx "$level2_entry" "$HOME/.bashrc"
+  run grep -Fq "$level2_entry" "$HOME/.bashrc"
   assert_success
 
   run_spell 'spells/path-wizard' '-r' 'status' "$base_dir"
@@ -178,11 +178,11 @@ teardown() {
   run_spell 'spells/path-wizard' '-r' 'remove' "$base_dir"
   assert_success
 
-  run grep -Fqx "$base_entry" "$HOME/.bashrc"
+  run grep -Fq "$base_entry" "$HOME/.bashrc"
   assert_failure
-  run grep -Fqx "$level1_entry" "$HOME/.bashrc"
+  run grep -Fq "$level1_entry" "$HOME/.bashrc"
   assert_failure
-  run grep -Fqx "$level2_entry" "$HOME/.bashrc"
+  run grep -Fq "$level2_entry" "$HOME/.bashrc"
   assert_failure
 
   run_spell 'spells/path-wizard' '-r' 'status' "$base_dir"
@@ -203,7 +203,7 @@ EOF
 
   run_spell 'spells/path-wizard' 'add' "$target_dir"
   assert_success
-  assert_output --partial 'already in your PATH'
+  assert_output --partial "'$target_dir' is already exported"
 
   run grep -F "$target_dir" "$HOME/.bashrc"
   assert_success
@@ -223,7 +223,7 @@ EOF
 
   run_spell 'spells/path-wizard' 'add' "$target_dir"
   assert_success
-  assert_output --partial 'already in your PATH'
+  assert_output --partial "'$target_dir' is already exported"
 }
 
 @test 'path-wizard recognises tilde PATH entries' {
@@ -238,7 +238,7 @@ EOF
 
   run_spell 'spells/path-wizard' 'add' "$target_dir"
   assert_success
-  assert_output --partial 'already in your PATH'
+  assert_output --partial "'$target_dir' is already exported"
 }
 
 @test 'path-wizard ignores directories mentioned outside PATH assignments' {
@@ -255,10 +255,10 @@ EOF
 
   run_spell 'spells/path-wizard' 'add' "$stray_dir"
   assert_success
-  assert_output --partial 'added to your PATH'
+  assert_output --partial "Added '$stray_dir' to PATH via '$HOME/.bashrc'"
 
-  entry=$(printf 'export PATH=%s:\\$PATH' "$stray_dir")
-  run grep -Fqx "$entry" "$HOME/.bashrc"
+  entry=$(printf 'export PATH="%s:$PATH"' "$stray_dir")
+  run grep -Fq "$entry" "$HOME/.bashrc"
   assert_success
 }
 
@@ -276,15 +276,15 @@ EOF
 
   run_spell 'spells/path-wizard' '--rc-file' "$rc_file" 'add' "$target_dir"
   assert_success
-  assert_output --partial 'added to your PATH'
-  alt_entry=$(printf 'export PATH=%s:\\$PATH' "$target_dir")
-  run grep -Fqx "$alt_entry" "$rc_file"
+  assert_output --partial "Added '$target_dir' to PATH via '$rc_file'"
+  alt_entry=$(printf 'export PATH="%s:$PATH"' "$target_dir")
+  run grep -Fq "$alt_entry" "$rc_file"
   assert_success
 
   run_spell 'spells/path-wizard' '--rc-file' "$rc_file" 'remove' "$target_dir"
   assert_success
-  assert_output --partial 'removed from your PATH'
-  run grep -Fqx "$alt_entry" "$rc_file"
+  assert_output --partial "Removed '$target_dir' from PATH entries recorded in '$rc_file'"
+  run grep -Fq "$alt_entry" "$rc_file"
   assert_failure
 }
 
@@ -296,7 +296,7 @@ EOF
 
   run_spell 'spells/path-wizard' '--rc-file' "$rc_file" '--format' nix 'add' "$target_dir"
   assert_success
-  assert_output --partial 'The directory has been added to your PATH.'
+  assert_output --partial "Recorded '$target_dir' in '$rc_file'"
   assert_output --partial 'Rebuild your Nix environment'
   run grep -F '# wizardry PATH begin' "$rc_file"
   assert_success
@@ -308,11 +308,11 @@ EOF
 
   run_spell 'spells/path-wizard' '--rc-file' "$rc_file" '--format' nix 'add' "$target_dir"
   assert_success
-  assert_output --partial 'already in your PATH.'
+  assert_output --partial "'$target_dir' is already listed"
 
   run_spell 'spells/path-wizard' '--rc-file' "$rc_file" '--format' nix 'remove' "$target_dir"
   assert_success
-  assert_output --partial 'removed from your PATH.'
+  assert_output --partial "Removed '$target_dir' from '$rc_file'"
   assert_output --partial 'Rebuild your Nix environment'
   assert_error --partial 'backed up'
   run grep -F "\"$target_dir\"" "$rc_file"

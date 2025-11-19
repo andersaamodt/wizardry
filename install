@@ -7,29 +7,220 @@ if [ "$#" -ne 0 ]; then
         exit 1
 fi
 
-# Resolve the directory containing this installer without relying on
-# non-POSIX utilities so the script works on Debian's /bin/sh (dash).
+# Disable CDPATH so that "cd" behaves predictably even if the user has a
+# custom search path configured in their environment.  This keeps the script
+# portable across login shells that set CDPATH to multiple directories.
+unset CDPATH
+
+REQUIRED_REL_DIRS="spells spells/cantrips spells/menu"
+
+# Determine the default target directory shown in the install prompt. The
+# installer accepts three environment variables to steer non-interactive
+# installs:
+#   * WIZARDRY_INSTALL_DIR – fully overrides the prompt and is used directly.
+#   * WIZARDRY_ROOT        – legacy alias used as an override if set.
+#   * WIZARDRY_REMOTE_DIR  – retained for backwards compatibility; becomes the
+#                            prompt default when present.
+if [ -n "${WIZARDRY_INSTALL_DIR-}" ]; then
+        PROMPT_DEFAULT=$WIZARDRY_INSTALL_DIR
+elif [ -n "${WIZARDRY_ROOT-}" ]; then
+        PROMPT_DEFAULT=$WIZARDRY_ROOT
+elif [ -n "${WIZARDRY_REMOTE_DIR-}" ]; then
+        PROMPT_DEFAULT=$WIZARDRY_REMOTE_DIR
+elif [ -n "${HOME-}" ]; then
+        PROMPT_DEFAULT=$HOME/.tower
+else
+        PROMPT_DEFAULT=.tower
+fi
+
+if [ -n "${WIZARDRY_INSTALL_PLATFORM-}" ]; then
+        PATH_WIZARD_PLATFORM=$WIZARDRY_INSTALL_PLATFORM
+        DETECT_RC_FILE_PLATFORM=$WIZARDRY_INSTALL_PLATFORM
+        export PATH_WIZARD_PLATFORM DETECT_RC_FILE_PLATFORM
+fi
+
+# Track whether we are running out of an existing checkout so local installs
+# can simply copy the files instead of downloading a fresh archive.  Piped
+# installs (wget|sh) expose the script through /bin/sh so we only find a
+# checkout when this file is run directly from disk.
+LOCAL_SOURCE=""
 case $0 in
         */*)
-                SCRIPT_DIR=${0%/*}
+                script_dir=${0%/*}
+                if [ -z "$script_dir" ]; then
+                        script_dir=.
+                fi
+                if script_dir_abs=$(cd "$script_dir" 2>/dev/null && pwd -P); then
+                        if [ -d "$script_dir_abs/spells" ]; then
+                                LOCAL_SOURCE=$script_dir_abs
+                        fi
+                fi
                 ;;
         *)
-                SCRIPT_DIR=.
+                if [ -n "${PWD-}" ] && [ -f "$PWD/$0" ]; then
+                        if script_dir_abs=$(cd "$PWD" 2>/dev/null && pwd -P); then
+                                if [ -d "$script_dir_abs/spells" ]; then
+                                        LOCAL_SOURCE=$script_dir_abs
+                                fi
+                        fi
+                fi
                 ;;
 esac
 
-# Disable CDPATH so that "cd" behaves predictably even if the user has a
-# custom search path configured in their environment.
-unset CDPATH
+cleanup_bootstrap() {
+        # Clean up any temporary directory created during the download process.
+        if [ -n "${BOOTSTRAP_TMP_DIR-}" ] && [ -d "$BOOTSTRAP_TMP_DIR" ]; then
+                rm -rf "$BOOTSTRAP_TMP_DIR"
+        fi
+}
 
-ABS_DIR=$(cd "$SCRIPT_DIR" && pwd -P) || exit 1
+# Remote installs create a throwaway working directory; trap its cleanup so
+# shells on every platform remove the temporary files even if the install
+# process exits early.
+trap 'cleanup_bootstrap' EXIT HUP INT TERM
+
+download_file() {
+        # Fetch a remote archive using curl or wget, whichever is available on the
+        # host platform.  Some of our supported OS images only ship one of the two
+        # tools by default, so we try both before giving up.
+        dest=$1
+        url=$2
+        if command -v curl >/dev/null 2>&1; then
+                if curl -fsSL "$url" -o "$dest"; then
+                        return 0
+                fi
+        fi
+        if command -v wget >/dev/null 2>&1; then
+                if wget -qO "$dest" "$url"; then
+                        return 0
+                fi
+        fi
+        printf '%s\n' "Error: Neither curl nor wget is available to download wizardry." >&2
+        return 1
+}
+
+INSTALL_INPUT=""
+if [ -n "${WIZARDRY_INSTALL_DIR-}" ]; then
+        INSTALL_INPUT=$WIZARDRY_INSTALL_DIR
+elif [ -n "${WIZARDRY_ROOT-}" ]; then
+        INSTALL_INPUT=$WIZARDRY_ROOT
+else
+        message="Where should wizardry be installed? [$PROMPT_DEFAULT] "
+        if [ -t 0 ]; then
+                # Print the prompt to stderr so the question is visible even if stdout is
+                # captured inside a subshell.
+                printf '%s' "$message" >&2
+                IFS= read -r INSTALL_INPUT
+        else
+                printf '%s\n' "Info: No interactive input detected; using '$PROMPT_DEFAULT'." >&2
+        fi
+fi
+
+if [ -z "$INSTALL_INPUT" ]; then
+        INSTALL_INPUT=$PROMPT_DEFAULT
+fi
+
+case $INSTALL_INPUT in
+        ~)
+                if [ -z "${HOME-}" ]; then
+                        printf '%s\n' "Error: HOME is not set; cannot expand '~'." >&2
+                        exit 1
+                fi
+                INSTALL_INPUT=$HOME
+                ;;
+        ~/*)
+                if [ -z "${HOME-}" ]; then
+                        printf '%s\n' "Error: HOME is not set; cannot expand '~'." >&2
+                        exit 1
+                fi
+                INSTALL_INPUT=$HOME/${INSTALL_INPUT#\~/}
+                ;;
+esac
+
+case $INSTALL_INPUT in
+        /*)
+                INSTALL_DIR=$INSTALL_INPUT
+                ;;
+        *)
+                cwd=$(pwd -P)
+                INSTALL_DIR=$cwd/$INSTALL_INPUT
+                ;;
+esac
+
+if [ -d "$INSTALL_DIR/spells" ]; then
+        ABS_DIR=$(cd "$INSTALL_DIR" && pwd -P)
+else
+        if [ -e "$INSTALL_DIR" ]; then
+                printf '%s\n' "Error: '$INSTALL_DIR' already exists but does not look like wizardry." >&2
+                exit 1
+        fi
+        parent=${INSTALL_DIR%/*}
+        if [ "$parent" = "$INSTALL_DIR" ]; then
+                parent=.
+        fi
+        if ! mkdir -p "$parent"; then
+                printf '%s\n' "Error: Unable to create directory '$parent'." >&2
+                exit 1
+        fi
+        if [ -n "$LOCAL_SOURCE" ]; then
+                printf '%s\n' "Copying wizardry from '$LOCAL_SOURCE' to '$INSTALL_DIR'..."
+                if ! cp -R "$LOCAL_SOURCE" "$INSTALL_DIR"; then
+                        printf '%s\n' "Error: Unable to copy wizardry from '$LOCAL_SOURCE'." >&2
+                        exit 1
+                fi
+        else
+                # We need to bootstrap wizardry by downloading a tarball.  Each supported
+                # platform provides tar, but some only ship curl or wget, so the
+                # download_file helper above checks both before failing.
+                archive_url=${WIZARDRY_REMOTE_ARCHIVE-https://github.com/andersaamodt/wizardry/archive/refs/heads/main.tar.gz}
+                if ! command -v tar >/dev/null 2>&1; then
+                        printf '%s\n' "Error: tar is required to unpack wizardry when installing remotely." >&2
+                        exit 1
+                fi
+                BOOTSTRAP_TMP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/wizardry-install.XXXXXX") || exit 1
+                archive="$BOOTSTRAP_TMP_DIR/wizardry.tar.gz"
+                printf '%s\n' "Downloading wizardry to '$INSTALL_DIR'..."
+                if ! download_file "$archive" "$archive_url"; then
+                        exit 1
+                fi
+                if ! tar -xzf "$archive" -C "$BOOTSTRAP_TMP_DIR"; then
+                        printf '%s\n' "Error: Failed to unpack wizardry archive." >&2
+                        exit 1
+                fi
+                extracted=""
+                for candidate in "$BOOTSTRAP_TMP_DIR"/*; do
+                        if [ -d "$candidate/spells" ]; then
+                                extracted=$candidate
+                                break
+                        fi
+                done
+                if [ -z "$extracted" ]; then
+                        printf '%s\n' "Error: Downloaded archive did not contain wizardry spells." >&2
+                        exit 1
+                fi
+                if ! mv "$extracted" "$INSTALL_DIR"; then
+                        printf '%s\n' "Error: Unable to move wizardry into '$INSTALL_DIR'." >&2
+                        exit 1
+                fi
+                printf '%s\n' "Wizardry downloaded to '$INSTALL_DIR'."
+        fi
+        ABS_DIR=$(cd "$INSTALL_DIR" && pwd -P)
+fi
+
+# Now that the wizardry tree is available, point at the helper spells we rely
+# on to update PATH entries and ask for confirmation.
 PATH_WIZARD="$ABS_DIR/spells/path-wizard"
+DETECT_RC_FILE="$ABS_DIR/spells/detect-rc-file"
 MEMORIZE="$ABS_DIR/spells/memorize"
 ASK_YN="$ABS_DIR/spells/cantrips/ask_yn"
-REQUIRED_REL_DIRS="spells spells/cantrips spells/menu"
 
 if [ ! -x "$PATH_WIZARD" ]; then
         printf '%s\n' "Error: Expected helper '$PATH_WIZARD' is missing or not executable." >&2
+        exit 1
+fi
+
+if [ ! -x "$DETECT_RC_FILE" ]; then
+        printf '%s\n' "Error: Required helper '$DETECT_RC_FILE' is missing." >&2
         exit 1
 fi
 
@@ -67,32 +258,91 @@ do
         printf '  %s\n' "$dir"
 done
 
-confirm_install() {
-        if [ "${WIZARDRY_INSTALL_ASSUME_YES-}" = "1" ]; then
-                return 0
+# Confirm with the user (or their automation) before editing their shell
+# startup files.  When stdin is not interactive we fall back to the
+# non-blocking ASK_CANTRIP_INPUT=none pathway so wget|sh installs do not hang.
+proceed=0
+if [ "${WIZARDRY_INSTALL_ASSUME_YES-}" = "1" ]; then
+        proceed=1
+else
+        if [ ! -t 0 ] && [ -z "${ASK_CANTRIP_INPUT-}" ]; then
+                if ASK_CANTRIP_INPUT=none "$ASK_YN" "Proceed with installation?" yes >/dev/null; then
+                        proceed=1
+                fi
+        else
+                if "$ASK_YN" "Proceed with installation?" yes >/dev/null; then
+                        proceed=1
+                fi
         fi
-        if "$ASK_YN" "Proceed with installation?" yes >/dev/null; then
-                return 0
-        fi
-        return 1
-}
+fi
 
-if ! confirm_install; then
+if [ "$proceed" -ne 1 ]; then
         printf '%s\n' "Ok, well the mud won't work until you install it by adding the spells directory to your PATH."
         exit 1
 fi
 
+detect_rc_file_value=""
+detect_format_value=""
+if detect_output="$($DETECT_RC_FILE 2>/dev/null)"; then
+        while IFS='=' read -r key value; do
+                case $key in
+                rc_file)
+                        detect_rc_file_value=$value
+                        ;;
+                format)
+                        detect_format_value=$value
+                        ;;
+                esac
+        done <<EOF
+$detect_output
+EOF
+fi
+
+path_updates_made=0
 for dir
 do
-        "$PATH_WIZARD" -r add "$dir" || exit 1
+        path_log=$(mktemp "${TMPDIR:-/tmp}/wizardry-path.XXXXXX") || exit 1
+        if "$PATH_WIZARD" -r add "$dir" >"$path_log" 2>&1; then
+                path_updates_made=1
+        else
+                cat "$path_log" >&2
+                rm -f "$path_log"
+                exit 1
+        fi
+        rm -f "$path_log"
 done
 
-if [ -x "$MEMORIZE" ]; then
-        if ! "$MEMORIZE" --recursive "$ABS_DIR/spells"; then
-                printf '%s\n' "Warning: memorize --recursive failed; run it manually to finish memorizing spells." >&2
+if [ "$path_updates_made" -eq 1 ]; then
+        if [ -n "$detect_rc_file_value" ]; then
+                rc_destination=$(printf "'%s'" "$detect_rc_file_value")
+        else
+                rc_destination="your shell configuration file"
         fi
+        if [ "$detect_format_value" = "nix" ]; then
+                printf 'Wizardry directories recorded in %s. Rebuild your Nix environment or restart your shell session to activate them.\n' "$rc_destination"
+        else
+                printf 'Wizardry directories recorded in %s. Open a new shell or source the file to activate them.\n' "$rc_destination"
+        fi
+fi
+
+# Memorizing spells pre-compiles wizardry's menus.  The memorization spell
+# prints helpful skip messages when run directly, but the installer filters
+# them out so only successes and real problems reach the console.
+mem_status=0
+if [ -x "$MEMORIZE" ]; then
+        mem_log=$(mktemp "${TMPDIR:-/tmp}/wizardry-memorize.XXXXXX") || exit 1
+        if "$MEMORIZE" --recursive "$ABS_DIR/spells" >"$mem_log" 2>&1; then
+                sed '/^memorize: Skipping/d' "$mem_log"
+                printf '%s\n' "Spells memorized successfully."
+        else
+                mem_status=$?
+                sed '/^memorize: Skipping/d' "$mem_log" >&2 || true
+        fi
+        rm -f "$mem_log"
 else
         printf '%s\n' "Warning: memorize spell is missing; skipping automatic memorization." >&2
 fi
 
 printf '%s\n' "Your spellbook has been activated. Open a fresh terminal or source your shell configuration to cast spells everywhere."
+
+exit "$mem_status"

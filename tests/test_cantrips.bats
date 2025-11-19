@@ -44,10 +44,10 @@ STUB
 @test 'ask prints prompt and captures response' {
   input="$BATS_TEST_TMPDIR/ask_input"
   printf 'response\n' >"$input"
-  run_spell 'spells/cantrips/ask' 'Your name?' <"$input"
+  ASK_CANTRIP_INPUT=stdin run_spell 'spells/cantrips/ask' 'Your name?' <"$input"
   assert_success
-  assert_line --index 0 'Your name?'
-  assert_line --index 1 'response'
+  assert_error --partial 'Your name?'
+  assert_line --index 0 'response'
 }
 
 @test 'ask_yn processes affirmative, default, and negative replies' {
@@ -55,22 +55,34 @@ STUB
   PATH="$stty_dir:$ORIGINAL_PATH"
 
   printf 'y' >"$BATS_TEST_TMPDIR/ask_yes"
-  run_spell 'spells/cantrips/ask_yn' 'Proceed?' 'y' <"$BATS_TEST_TMPDIR/ask_yes"
+  ASK_CANTRIP_INPUT=stdin run_spell 'spells/cantrips/ask_yn' 'Proceed?' 'y' <"$BATS_TEST_TMPDIR/ask_yes"
   assert_success
-  [[ "$stderr" == *'Proceed? (Y/n)?'* ]]
+  [[ "$stderr" == *'Proceed? [Y/n]'* ]]
   [[ "$stderr" == *'Y'* ]]
 
-  printf '\r' >"$BATS_TEST_TMPDIR/ask_default"
-  run_spell 'spells/cantrips/ask_yn' 'Continue?' 'n' <"$BATS_TEST_TMPDIR/ask_default"
+  printf '\n' >"$BATS_TEST_TMPDIR/ask_default"
+  ASK_CANTRIP_INPUT=stdin run_spell 'spells/cantrips/ask_yn' 'Continue?' 'n' <"$BATS_TEST_TMPDIR/ask_default"
   assert_failure
-  [[ "$stderr" == *'Continue? (y/N)?'* ]]
+  [[ "$stderr" == *'Continue? [y/N]'* ]]
   [[ "$stderr" == *'N'* ]]
 
-  printf 'n' >"$BATS_TEST_TMPDIR/ask_no"
-  run_spell 'spells/cantrips/ask_yn' 'Retry?' 'y' <"$BATS_TEST_TMPDIR/ask_no"
+  printf 'n\n' >"$BATS_TEST_TMPDIR/ask_no"
+  ASK_CANTRIP_INPUT=stdin run_spell 'spells/cantrips/ask_yn' 'Retry?' 'y' <"$BATS_TEST_TMPDIR/ask_no"
   assert_failure
-  [[ "$stderr" == *'Retry? (Y/n)?'* ]]
-  [[ "$stderr" == *'N'* ]]
+  [[ "$stderr" == *'Retry? [Y/n]'* ]]
+  [[ "$stderr" == *'n'* ]]
+}
+
+@test 'ask_yn falls back to defaults when stdin is unavailable' {
+  ASK_CANTRIP_INPUT=none run_spell 'spells/cantrips/ask_yn' 'Proceed?' 'yes'
+  assert_success
+  assert_line --index 0 'yes'
+}
+
+@test 'ask_yn errors without input or defaults' {
+  ASK_CANTRIP_INPUT=none run_spell 'spells/cantrips/ask_yn' 'Continue?'
+  assert_failure
+  assert_error --partial 'No interactive input available'
 }
 
 @test 'require-command reports success and failure' {
@@ -192,7 +204,7 @@ LOOK
   chmod +x "$look_stub/look"
 
   printf 'yes\n' >"$BATS_TEST_TMPDIR/cd_yes"
-  PATH="$look_stub:$ORIGINAL_PATH" run_spell 'spells/cantrips/cd' "$ROOT_DIR" <"$BATS_TEST_TMPDIR/cd_yes"
+  ASK_CANTRIP_INPUT=stdin PATH="$look_stub:$ORIGINAL_PATH" run_spell 'spells/cantrips/cd' "$ROOT_DIR" <"$BATS_TEST_TMPDIR/cd_yes"
   assert_success
   assert_output --partial 'Spell memorized'
   assert_output --partial 'LOOK:'
@@ -202,7 +214,7 @@ LOOK
 
   printf '' >"$HOME/.bashrc"
   printf 'no\n' >"$BATS_TEST_TMPDIR/cd_no"
-  PATH="$look_stub:$ORIGINAL_PATH" run_spell 'spells/cantrips/cd' "$ROOT_DIR" <"$BATS_TEST_TMPDIR/cd_no"
+  ASK_CANTRIP_INPUT=stdin PATH="$look_stub:$ORIGINAL_PATH" run_spell 'spells/cantrips/cd' "$ROOT_DIR" <"$BATS_TEST_TMPDIR/cd_no"
   assert_success
   assert_output --partial 'The mud will only run'
 }

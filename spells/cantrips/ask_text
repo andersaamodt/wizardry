@@ -20,25 +20,61 @@ question=$1
 default_value=${2-}
 default_hint=""
 if [ "$#" -eq 2 ]; then
-        default_hint=" [$default_value]"
+default_hint=" [$default_value]"
 fi
+
+select_input() {
+case ${ASK_CANTRIP_INPUT:-auto} in
+stdin)
+printf '%s\n' stdin
+return 0
+;;
+none)
+return 1
+;;
+esac
+if [ -t 0 ]; then
+printf '%s\n' stdin
+return 0
+fi
+if [ -r /dev/tty ]; then
+printf '%s\n' tty
+return 0
+fi
+return 1
+}
 
 prompt() {
         printf '%s%s ' "$question" "$default_hint" >&2
 }
 
 read_line() {
-        if [ -r /dev/tty ]; then
-                IFS= read -r line </dev/tty || line=
-        else
-                IFS= read -r line || line=
-        fi
-        printf '%s' "$line"
+input=$(select_input) || return 1
+case $input in
+stdin)
+IFS= read -r line || line=
+;;
+tty)
+IFS= read -r line </dev/tty || line=
+;;
+*)
+return 1
+;;
+esac
+printf '%s' "$line"
+return 0
 }
 
 prompt
-response=$(read_line)
+if ! response=$(read_line); then
+if [ -n "$default_value" ]; then
+printf '%s\n' "$default_value"
+exit 0
+fi
+printf '%s\n' "ask_text: No interactive input available." >&2
+exit 1
+fi
 if [ -z "$response" ] && [ -n "$default_value" ]; then
-        response=$default_value
+response=$default_value
 fi
 printf '%s\n' "$response"

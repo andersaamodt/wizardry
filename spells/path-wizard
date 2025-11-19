@@ -446,12 +446,11 @@ shell_add() {
         fi
         refresh_legacy_shell_export
         if [ "$legacy_export_refreshed" -eq 1 ]; then
-                printf '%s\n' "An existing PATH entry was refreshed to preserve your PATH."
-                printf '%s\n' "The changes to your PATH will take effect in new shells."
+                printf '%s\n' "Refreshed the existing wizardry PATH entry in '$rc_file' so '$directory' stays reachable; open a new shell or source the file to load it."
                 return 0
         fi
         if shell_status; then
-                printf '%s\n' "The directory is already in your PATH."
+                printf '%s\n' "'$directory' is already exported in '$rc_file'; nothing changed."
                 return 0
         fi
         spell_name=$(spell_identifier_for_directory "$directory")
@@ -459,8 +458,7 @@ shell_add() {
                 printf '%s\n' "path-wizard: unable to record the PATH entry." >&2
                 exit 1
         fi
-        printf '%s\n' "The directory has been added to your PATH."
-        printf '%s\n' "The changes to your PATH will take effect in new shells."
+        printf '%s\n' "Added '$directory' to PATH via '$rc_file'. Open a new shell or run '. %s' to pick up the change." "$rc_file"
 }
 
 # Remove a previously added export line from shell rc files.
@@ -472,8 +470,7 @@ shell_remove() {
         spell_name=$(spell_identifier_for_directory "$directory")
         if "$SCRIBE_SPELL" --rc-file "$rc_file" --spell "$spell_name" status >/dev/null 2>&1; then
                 "$SCRIBE_SPELL" --rc-file "$rc_file" --spell "$spell_name" remove
-                printf '%s\n' "The directory has been removed from your PATH."
-                printf '%s\n' "The changes to your PATH will take effect in new shells."
+                printf '%s\n' "Removed '$directory' from PATH entries recorded in '$rc_file'. Open a new shell or source the file to drop it."
                 return 0
         fi
         has_managed=0
@@ -507,8 +504,7 @@ shell_remove() {
                 printf '%s\n' "Error: Unable to replace '$rc_file'." >&2
                 exit 1
         fi
-        printf '%s\n' "The directory has been removed from your PATH."
-        printf '%s\n' "The changes to your PATH will take effect in new shells."
+        printf '%s\n' "Removed '$directory' from PATH entries recorded in '$rc_file'. Open a new shell or source the file to drop it."
 }
 
 # Identify whether the requested directory already appears in an export line
@@ -716,14 +712,13 @@ nix_add() {
         IFS=$old_ifs
         for path_entry in "$@"; do
                 if [ "$path_entry" = "$directory" ]; then
-                        printf '%s\n' "The directory is already in your PATH."
+                        printf '%s\n' "'$directory' is already listed in '$rc_file'; nothing changed."
                         return 0
                 fi
         done
         set -- "$@" "$directory"
         write_nix_paths "$@"
-        printf '%s\n' "The directory has been added to your PATH."
-        printf '%s\n' "Rebuild your Nix environment to activate the change."
+        printf '%s\n' "Recorded '$directory' in '$rc_file'. Rebuild your Nix environment to activate the change."
 }
 
 # Remove a directory from configuration.nix. When the last entry is removed we
@@ -768,8 +763,7 @@ nix_remove() {
                 IFS=$old_ifs
                 write_nix_paths "$@"
         fi
-        printf '%s\n' "The directory has been removed from your PATH."
-        printf '%s\n' "Rebuild your Nix environment to activate the change."
+        printf '%s\n' "Removed '$directory' from '$rc_file'. Rebuild your Nix environment to activate the change."
 }
 
 # status for configuration.nix mirrors the shell variant, returning success

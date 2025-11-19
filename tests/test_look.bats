@@ -59,7 +59,7 @@ with_look_path() {
 
   printf 'yes\n' >"$BATS_TEST_TMPDIR/yes"
   pushd "$workspace" >/dev/null
-  with_look_path run_spell 'spells/look' 'room.txt' <"$BATS_TEST_TMPDIR/yes"
+  ASK_CANTRIP_INPUT=stdin with_look_path run_spell 'spells/look' 'room.txt' <"$BATS_TEST_TMPDIR/yes"
   popd >/dev/null
 
   assert_success
@@ -85,7 +85,7 @@ EMPTY
 
   printf 'no\n' >"$BATS_TEST_TMPDIR/no"
   pushd "$workspace" >/dev/null
-  with_look_path run_spell 'spells/look' 'empty.txt' <"$BATS_TEST_TMPDIR/no"
+  ASK_CANTRIP_INPUT=stdin with_look_path run_spell 'spells/look' 'empty.txt' <"$BATS_TEST_TMPDIR/no"
   popd >/dev/null
 
   assert_success

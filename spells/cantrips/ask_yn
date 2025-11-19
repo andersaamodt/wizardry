@@ -33,27 +33,62 @@ if [ "$#" -eq 2 ]; then
                 printf '%s\n' "ask_yn: default must be 'yes' or 'no'." >&2
                 exit 1
                 ;;
-        esac
+esac
 fi
 
+select_input() {
+case ${ASK_CANTRIP_INPUT:-auto} in
+stdin)
+printf '%s\n' stdin
+return 0
+;;
+none)
+return 1
+;;
+esac
+if [ -t 0 ]; then
+printf '%s\n' stdin
+return 0
+fi
+if [ -r /dev/tty ]; then
+printf '%s\n' tty
+return 0
+fi
+return 1
+}
+
 prompt_and_read() {
-        printf '%s %s ' "$question" "$default_hint" >&2
-        if [ -r /dev/tty ]; then
-                IFS= read -r reply </dev/tty || reply=
-        else
-                IFS= read -r reply || reply=
-        fi
-        printf '%s' "$reply"
+printf '%s %s ' "$question" "$default_hint" >&2
+input=$(select_input) || return 1
+case $input in
+stdin)
+IFS= read -r reply || reply=
+;;
+tty)
+IFS= read -r reply </dev/tty || reply=
+;;
+*)
+return 1
+;;
+esac
+printf '%s' "$reply"
+return 0
 }
 
 while :; do
-        response=$(prompt_and_read)
-        if [ -z "$response" ] && [ -n "$default_choice" ]; then
-                response=$default_choice
-        fi
-        case $response in
-        y|Y|yes|YES)
-                printf '%s\n' "yes"
+if ! response=$(prompt_and_read); then
+if [ -n "$default_choice" ]; then
+response=$default_choice
+else
+printf '%s\n' "ask_yn: No interactive input available." >&2
+exit 1
+fi
+elif [ -z "$response" ] && [ -n "$default_choice" ]; then
+response=$default_choice
+fi
+case $response in
+y|Y|yes|YES)
+printf '%s\n' "yes"
                 exit 0
                 ;;
         n|N|no|NO)

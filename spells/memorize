@@ -230,18 +230,18 @@ run_install() {
 
 memorize_file() {
         path=$1
-        if [ ! -f "$path" ]; then
-                warn "Skipping '$path' (not a file)."
+	if [ ! -f "$path" ]; then
+		warn "Skipping '$path' (not a file)."
                 SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
                 return
         fi
-        if [ ! -x "$path" ]; then
-                warn "Skipping '$path' (not executable)."
+	if [ ! -x "$path" ]; then
+		warn "Skipping '$path' (not executable)."
                 SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
                 return
         fi
-        if ! have_install_function "$path"; then
-                warn "Skipping '$path' (no install() function detected)."
+	if ! have_install_function "$path"; then
+		warn "Skipping '$path' (no install() function detected)."
                 SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
                 return
         fi
