@@ -39,7 +39,7 @@ chmod +x install
 ./install
 ```
 
-During installation the script will ask where the checkout should live (defaulting to `~/.tower`). After installing, you must reopen your terminal window before wizardry spells will work.
+After installing, you must reopen your terminal window before wizardry spells will work.
 
 ## Usage
 
