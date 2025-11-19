@@ -123,9 +123,6 @@ prompt_install_dir() {
         if [ -t 0 ]; then
         printf '%s' "$message"
         IFS= read -r response
-        elif [ -r /dev/tty ]; then
-        printf '%s' "$message" >/dev/tty
-        IFS= read -r response </dev/tty
         else
         printf '%s\n' "Info: No interactive input detected; using '$default_choice'." >&2
         response=
