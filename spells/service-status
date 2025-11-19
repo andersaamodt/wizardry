@@ -1,0 +1,86 @@
+#!/bin/sh
+
+# service-status prints systemctl's status output for a unit. The --no-pager
+# flag keeps results readable even when systemctl is configured to invoke less.
+
+set -eu
+
+SCRIPT_NAME=$(basename "$0")
+
+SCRIPT_SOURCE=$0
+case $SCRIPT_SOURCE in
+*/*)
+        SCRIPT_DIR=${SCRIPT_SOURCE%/*}
+        ;;
+*)
+        resolved=$(command -v -- "$SCRIPT_SOURCE" 2>/dev/null || printf '%s' "$SCRIPT_SOURCE")
+        SCRIPT_DIR=${resolved%/*}
+        SCRIPT_SOURCE=$resolved
+        ;;
+esac
+if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
+        SCRIPT_DIR=.
+fi
+SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
+
+find_ask_text() {
+        if [ -n "${STATUS_SERVICE_ASK_TEXT-}" ]; then
+                printf '%s' "$STATUS_SERVICE_ASK_TEXT"
+                return 0
+        fi
+        if [ -x "$SCRIPT_DIR/cantrips/ask_text" ]; then
+                printf '%s' "$SCRIPT_DIR/cantrips/ask_text"
+                return 0
+        fi
+        if command -v ask_text >/dev/null 2>&1; then
+                command -v ask_text
+                return 0
+        fi
+        printf '%s\n' "$SCRIPT_NAME: ask_text spell not found; please install wizardry cantrips." >&2
+        exit 1
+}
+
+ASK_TEXT_HELPER=$(find_ask_text)
+
+if command -v systemctl >/dev/null 2>&1; then
+        SYSTEMCTL=$(command -v systemctl)
+else
+        printf '%s\n' "$SCRIPT_NAME: systemctl is not available on this system." >&2
+        exit 1
+fi
+
+normalize_unit() {
+        unit=$1
+        case $unit in
+        *.service)
+                printf '%s' "$unit"
+                ;;
+        *)
+                printf '%s.service' "$unit"
+                ;;
+        esac
+}
+
+show_status() {
+        if "$SYSTEMCTL" status --no-pager "$@"; then
+                return 0
+        fi
+        if [ "$(id -u)" -ne 0 ] && command -v sudo >/dev/null 2>&1; then
+                sudo "$SYSTEMCTL" status --no-pager "$@"
+                return 0
+        fi
+        printf '%s\n' "$SCRIPT_NAME: Unable to read service status; try running as root." >&2
+        return 1
+}
+
+service_name=${1-}
+if [ -z "$service_name" ]; then
+        service_name=$("$ASK_TEXT_HELPER" "Which service status should I check?")
+fi
+if [ -z "$service_name" ]; then
+        printf '%s\n' "$SCRIPT_NAME: No service name supplied." >&2
+        exit 1
+fi
+unit=$(normalize_unit "$service_name")
+printf 'Showing status for %s...\n' "$unit"
+show_status "$unit"

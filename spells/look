@@ -13,12 +13,14 @@ if [ -z "$path" ]; then
 fi
 
 install_look(){
-  if ! grep -q "alias look='${BASH_SOURCE[0]}'" ~/.bashrc; then
-    echo "'Look' is a reserved keyword, so you must memorize this spell to change the meaning of the word 'look'." 
-    echo "Do you wish to memorize this spell? (yes/no)"
-    read -r answer
-    if [ "$answer" == "yes" ]; then
-      echo "alias look='${BASH_SOURCE[0]}'" >> ~/.bashrc
+  if ! grep -q "alias look='${BASH_SOURCE[0]}'" "$HOME/.bashrc" 2>/dev/null; then
+    echo "'Look' is a reserved keyword, so you must memorize this spell to change the meaning of the word 'look'."
+    if ! command -v ask_yn >/dev/null 2>&1; then
+      printf '%s\n' "look spell: ask_yn spell is missing; cannot prompt for installation." >&2
+      return 1
+    fi
+    if ask_yn "Memorize the 'look' spell so it is always available?" yes >/dev/null; then
+      echo "alias look='${BASH_SOURCE[0]}'" >> "$HOME/.bashrc"
       echo "Spell memorized in .bashrc, so you will always be able to use it."
     else
       echo "The mud will only run in this shell window."

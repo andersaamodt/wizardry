@@ -1,66 +1,178 @@
 #!/bin/sh
 
-# This script serves as a magic scroll that conjures a systemd service 
-# from a given template and a set of variable-value pairs
+# install-service-template copies a template into /etc/systemd/system after
+# substituting placeholders. It prefers interactive prompts so the services menu
+# can call it without arguments.
 
-if [ $# -lt 1 ]; then
-    echo "Usage: $0 /path/to/service/template key=value [key=value...]"
-    exit 1
-fi
+set -eu
 
-# Ensure systemd is available
-if ! command -v systemctl >/dev/null 2>&1; then
-    echo "Systemd is not installed or not in PATH. Exiting."
-    exit 1
-fi
+SCRIPT_NAME=$(basename "$0")
+SERVICE_DIR=${SERVICE_DIR:-/etc/systemd/system}
 
-service_dir=/etc/systemd/system
-template_path=$1
-service_file=$(basename "$template_path")
-service_path="$service_dir/$service_file"
+usage() {
+        cat <<USAGE >&2
+Usage: $SCRIPT_NAME /path/to/template [KEY=value ...]
+USAGE
+}
 
-# Ask for confirmation before overwriting an existing file
-if [ -f "$service_path" ]; then
-    if ask_yn "Service file $service_path already exists. Overwrite?" "N"; then
-        echo "User chose not to overwrite. Exiting."
+find_helper() {
+        variable=$1
+        relative=$2
+        fallback=$3
+        value=$(eval "printf '%s' "\${$variable-}"")
+        if [ -n "$value" ]; then
+                printf '%s' "$value"
+                return 0
+        fi
+        if [ -x "$relative" ]; then
+                printf '%s' "$relative"
+                return 0
+        fi
+        if command -v "$fallback" >/dev/null 2>&1; then
+                command -v "$fallback"
+                return 0
+        fi
+        printf '%s\n' "$SCRIPT_NAME: unable to locate helper '$fallback'." >&2
         exit 1
-    fi
+}
+
+# escape_sed_replacement ensures CLI and interactive values can be embedded in
+# sed replacement strings without leaking metacharacters that could rewrite
+# unexpected portions of the template.
+escape_sed_replacement() {
+	printf '%s' "$1" | sed 's/[\\&|$"]/\\&/g'
+}
+
+# replace_placeholder rewrites the working copy in-place (via a temporary
+# buffer) so each placeholder substitution stays POSIX-friendly without sed -i.
+replace_placeholder() {
+	key=$1
+	value=$2
+	escaped=$(escape_sed_replacement "$value")
+	tmp_swap=$(mktemp "${TMPDIR:-/tmp}/wizardry-service.XXXXXX") || exit 1
+	pattern=$(printf '\\$%s' "$key")
+	sed "s|$pattern|$escaped|g" "$tmp_file" >"$tmp_swap"
+	mv "$tmp_swap" "$tmp_file"
+}
+
+# collect_placeholders lists the remaining $VARNAME tokens so we can prompt once
+# per variable instead of mutating the rc file while reading it.
+collect_placeholders() {
+	awk '{
+		line=$0
+		while (match(line, /\$[A-Z_][A-Z0-9_]*/)) {
+			var=substr(line, RSTART+1, RLENGTH-1)
+			print var
+			line=substr(line, RSTART+RLENGTH)
+		}
+	}' "$tmp_file" | sort -u
+}
+
+# prompt_placeholders walks through the unique placeholder list and politely
+# asks the user for each value before applying the substitutions.
+prompt_placeholders() {
+	placeholders_file=$(mktemp "${TMPDIR:-/tmp}/wizardry-placeholders.XXXXXX") || exit 1
+	collect_placeholders >"$placeholders_file"
+	if [ ! -s "$placeholders_file" ]; then
+		rm -f "$placeholders_file"
+		return
+	fi
+	while IFS= read -r var; do
+		if [ -z "$var" ]; then
+			continue
+		fi
+		value=$("$ASK_TEXT" "Enter a value for $var:")
+		replace_placeholder "$var" "$value"
+	done <"$placeholders_file"
+	rm -f "$placeholders_file"
+}
+
+SCRIPT_SOURCE=$0
+case $SCRIPT_SOURCE in
+*/*)
+        SCRIPT_DIR=${SCRIPT_SOURCE%/*}
+        ;;
+*)
+        resolved=$(command -v -- "$SCRIPT_SOURCE" 2>/dev/null || printf '%s' "$SCRIPT_SOURCE")
+        SCRIPT_DIR=${resolved%/*}
+        SCRIPT_SOURCE=$resolved
+        ;;
+esac
+if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
+        SCRIPT_DIR=.
+fi
+SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
+
+ASK_YN=$(find_helper INSTALL_SERVICE_TEMPLATE_ASK_YN "$SCRIPT_DIR/cantrips/ask_yn" ask_yn)
+ASK_TEXT=$(find_helper INSTALL_SERVICE_TEMPLATE_ASK_TEXT "$SCRIPT_DIR/cantrips/ask_text" ask_text)
+
+if command -v systemctl >/dev/null 2>&1; then
+        SYSTEMCTL=$(command -v systemctl)
+else
+        printf '%s\n' "$SCRIPT_NAME: systemctl is required for this spell." >&2
+        exit 1
 fi
 
-# Prepare a sed command based on the remaining arguments
-shift
-substitution_cmd=""
+require_privilege() {
+        if [ "$(id -u)" -eq 0 ]; then
+                "$@"
+                return 0
+        fi
+        if command -v sudo >/dev/null 2>&1; then
+                sudo "$@"
+                return 0
+        fi
+        printf '%s\n' "$SCRIPT_NAME: run as root or install sudo to write $SERVICE_DIR." >&2
+        exit 1
+}
+
+template_path=${1-}
+if [ -n "$template_path" ]; then
+        shift
+else
+        template_path=$("$ASK_TEXT" "Path to the service template:")
+fi
+if [ -z "$template_path" ]; then
+        usage
+        exit 1
+fi
+if [ ! -f "$template_path" ]; then
+        printf '%s\n' "$SCRIPT_NAME: template '$template_path' not found." >&2
+        exit 1
+fi
+
+service_file=$(basename "$template_path")
+service_path="$SERVICE_DIR/$service_file"
+
+if [ -f "$service_path" ]; then
+        if ! "$ASK_YN" "Service $service_file exists. Overwrite?" no >/dev/null; then
+                printf '%s\n' "Installation cancelled."
+                exit 1
+        fi
+fi
+
+tmp_file=$(mktemp "${TMPDIR:-/tmp}/wizardry-service.XXXXXX")
+trap 'rm -f "$tmp_file"' EXIT HUP INT TERM
+
+cp "$template_path" "$tmp_file"
+
 for arg in "$@"; do
-    substitution_cmd="${substitution_cmd}s|\\\$${arg%%=*}|${arg#*=}|g;"
+        case $arg in
+        *=*)
+                key=${arg%%=*}
+                value=${arg#*=}
+                replace_placeholder "$key" "$value"
+                ;;
+        *)
+                printf '%s\n' "$SCRIPT_NAME: ignoring malformed substitution '$arg'." >&2
+                ;;
+        esac
 done
 
-# Perform substitutions into a temporary file in /tmp
-tmp_file="/tmp/tmp_service"
-sed "$substitution_cmd" "$template_path" > "$tmp_file"
+prompt_placeholders
 
-# Ask for missing variables
-while IFS= read -r line; do
-    if echo "$line" | grep -q '\$'; then
-        var=$(echo "$line" | sed -n -e 's/^.*\$\([A-Z_]*\).*$/\1/p')
-        if [ -n "$var" ]; then
-            eval value=\$$var
-            if [ -z "$value" ]; then
-                echo "Enter a value for $var: "
-                read -r value
-            fi
-            sed -i "s|\$$var|$value|g" "$tmp_file"
-        fi
-    fi
-done < "$tmp_file"
+require_privilege cp "$tmp_file" "$service_path"
+require_privilege chmod 644 "$service_path"
+require_privilege "$SYSTEMCTL" daemon-reload
 
-# Move the temporary file to the final destination
-sudo mv "$tmp_file" "$service_path"
-
-# Set permissions
-sudo chmod 644 "$service_path"
-
-# Reload systemd
-systemctl daemon-reload
-
-echo "Service installed at $service_path"
-exit 0
+printf '%s\n' "Service installed at $service_path"

@@ -1,46 +1,67 @@
 #!/bin/sh
 
+set -eu
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: ask_yn "Question" [default]
+
+Prompt for a yes/no response. Defaults may be 'yes' or 'no'.
+Exit status 0 represents "yes", 1 represents "no".
+USAGE
+}
+
+if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
+        usage
+        exit 1
+fi
+
 question=$1
-default_answer=$(echo $2 | tr a-z A-Z)
-
-# Capitalize the default answer and construct the prompt
-if [ "$default_answer" = "Y" ]; then
-    prompt="${question} (Y/n)? "
-else
-    prompt="${question} (y/N)? "
+default_choice=""
+default_hint="[y/n]"
+if [ "$#" -eq 2 ]; then
+        case $2 in
+        y|Y|yes|YES)
+                default_choice=yes
+                default_hint="[Y/n]"
+                ;;
+        n|N|no|NO)
+                default_choice=no
+                default_hint="[y/N]"
+                ;;
+        *)
+                printf '%s\n' "ask_yn: default must be 'yes' or 'no'." >&2
+                exit 1
+                ;;
+        esac
 fi
 
-# Save stty configuration
-old_stty_cfg=$(stty -g)
+prompt_and_read() {
+        printf '%s %s ' "$question" "$default_hint" >&2
+        if [ -r /dev/tty ]; then
+                IFS= read -r reply </dev/tty || reply=
+        else
+                IFS= read -r reply || reply=
+        fi
+        printf '%s' "$reply"
+}
 
-# Use stty to make read command work for single character input
-stty raw -echo
-printf "%s" "$prompt" >&2
-while true
-do
-    answer=$(dd bs=1 count=1 2>/dev/null)
-    if printf "%s" "$answer" | grep -iq "^y\|^n"; then
-        break
-    elif [ "$(printf "%d" "'$answer'")" -eq 3 ]; then
-        stty "$old_stty_cfg"
-        printf '\n'
-        exit 2
-    elif [ "$(printf "%d" "'$answer'")" -eq 13 ]; then
-        answer=""
-        break
-    fi
+while :; do
+        response=$(prompt_and_read)
+        if [ -z "$response" ] && [ -n "$default_choice" ]; then
+                response=$default_choice
+        fi
+        case $response in
+        y|Y|yes|YES)
+                printf '%s\n' "yes"
+                exit 0
+                ;;
+        n|N|no|NO)
+                printf '%s\n' "no"
+                exit 1
+                ;;
+        esac
+        printf '%s\n' "Please answer yes or no." >&2
+        default_hint="[y/n]" # remove default hint after invalid input
+        default_choice=""
 done
-stty "$old_stty_cfg" >&2 # Restore original stty configuration
-
-# If no answer is given, use the default answer
-if [ -z "$answer" ]; then
-    answer=$default_answer
-fi
-
-# Print the answer and return appropriate exit code
-printf "%s\n" "$(echo $answer | tr a-z A-Z)" >&2
-if [ "$answer" = "Y" -o "$answer" = "y" ]; then
-    exit 0
-else
-    exit 1
-fi

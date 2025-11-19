@@ -2,9 +2,15 @@
 
 ## Human checklist (rest is by and for AI)
 - [ ] Add mud menu and get all items on it working (the mud menu unit test needs to be redone to match)
+- [ ] Restore `main-menu`/`mud` integration so menu-forwarding tests pass again
 - [ ] Debug install-menu and add nginx or bitcoin to it
 - [ ] Add other spells I already have, make POSIX-compliant and tidy up
 - [ ] Review all existing spells for bugs and refactor
+- [ ] Fix enchant/read-magic family regressions (argument validation, space handling, helper fallbacks, attribute listing)
+- [ ] Repair hashchant attr write failures so it stores the hash on POSIX systems
+- [ ] Make installation workflow reliable across shells (bashrc/zshrc handling, overwrite prompts)
+- [ ] Harden jump-to-marker/mark-location flows (prompting text, absolute path handling, rejecting missing paths)
+- [ ] Revisit path-wizard edge cases for non-PATH lines and alternate rc files
 - [ ] Test detect-magic, read-magic, enchanting and disenchanting items, hashchant
 - [ ] Eventually, add recursive language parser
 - [ ] selecting Exit menu item with Enter key should not print "exiting"

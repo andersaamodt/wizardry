@@ -39,13 +39,15 @@ if [ -r /etc/os-release ] && grep -q '^ID=nixos' /etc/os-release; then
 fi
 
 display_menu() {
+  services="Manage services%services-menu"
   update_wizardry="Update wizardry%update-wizardry"
   test_suite="Test all wizardry spells%(cd \"$repo_dir\" && ./tests/run.sh)"
   update_all="Update all software%update-all -v"
   restart="Force restart%sudo shutdown -r now"
   exit="Exit%kill -2 $$"
 
-  set -- "$update_all"
+  set -- "$services"
+  set -- "$@" "$update_all"
   if [ -n "$nixos_rebuild" ]; then
     set -- "$@" "$nixos_rebuild"
   fi

@@ -9,10 +9,12 @@ PS_NAMES=($(ps -ax | awk '{print $5}' | tail -n +2))
 
 display_menu
 
-choice=""
-while [ -z "$choice" ] || [ "$choice" -lt 1 ] || [ "$choice" -gt ${#PS_NAMES[@]} ]; do
-    read -p "Enter the number of the process you want to kill: " choice
-done
+if ! command -v ask_number >/dev/null 2>&1; then
+    echo "ask_number spell is required to choose a process." >&2
+    exit 1
+fi
+
+choice=$(ask_number "Enter the number of the process you want to kill:" 1 ${#PS_NAMES[@]})
 
 pid=$(ps -ax | awk '{print $1 " " $5}' | grep "${PS_NAMES[choice - 1]}" | awk '{print $1}')
 if [ -n "$pid" ]; then

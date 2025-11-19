@@ -24,6 +24,8 @@ unset CDPATH
 
 ABS_DIR=$(cd "$SCRIPT_DIR" && pwd -P) || exit 1
 PATH_WIZARD="$ABS_DIR/spells/path-wizard"
+MEMORIZE="$ABS_DIR/spells/memorize"
+ASK_YN="$ABS_DIR/spells/cantrips/ask_yn"
 REQUIRED_REL_DIRS="spells spells/cantrips spells/menu"
 
 if [ ! -x "$PATH_WIZARD" ]; then
@@ -31,132 +33,9 @@ if [ ! -x "$PATH_WIZARD" ]; then
         exit 1
 fi
 
-detect_platform() {
-        if [ -n "${WIZARDRY_INSTALL_PLATFORM-}" ]; then
-                printf '%s' "$WIZARDRY_INSTALL_PLATFORM"
-                return 0
-        fi
-
-        if [ -f /etc/NIXOS ] || grep -qi 'ID=nixos' /etc/os-release 2>/dev/null; then
-                printf '%s' 'nixos'
-                return 0
-        fi
-        if [ -f /etc/debian_version ]; then
-                printf '%s' 'debian'
-                return 0
-        fi
-        if [ -f /etc/arch-release ]; then
-                printf '%s' 'arch'
-                return 0
-        fi
-        if [ -f /etc/fedora-release ]; then
-                printf '%s' 'fedora'
-                return 0
-        fi
-        if uname 2>/dev/null | grep -q 'Darwin'; then
-                printf '%s' 'mac'
-                return 0
-        fi
-        printf '%s' 'unknown'
-        return 1
-}
-
-add_candidate() {
-        file=$1
-        if [ -z "$file" ]; then
-                return
-        fi
-        for candidate in $RC_CANDIDATES
-        do
-                if [ "$candidate" = "$file" ]; then
-                        return
-                fi
-        done
-        if [ -z "$RC_CANDIDATES" ]; then
-                RC_CANDIDATES=$file
-        else
-                RC_CANDIDATES="$RC_CANDIDATES $file"
-        fi
-}
-
-PLATFORM=$(detect_platform)
-
-# Build a list of start-up files to consider based on the detected platform and
-# the user's preferred shell.
-RC_CANDIDATES=''
-
-case $PLATFORM in
-        mac)
-                add_candidate "$HOME/.zshrc"
-                add_candidate "$HOME/.zprofile"
-                add_candidate "$HOME/.bash_profile"
-                ;;
-        nixos)
-                add_candidate "$HOME/.config/nixpkgs/configuration.nix"
-                add_candidate "$HOME/.bashrc"
-                add_candidate "$HOME/.bash_profile"
-                ;;
-        debian|arch|fedora)
-                add_candidate "$HOME/.bashrc"
-                add_candidate "$HOME/.profile"
-                ;;
-        *) : ;;
-esac
-
-case ${SHELL##*/} in
-        zsh)
-                add_candidate "$HOME/.zshrc"
-                add_candidate "$HOME/.zprofile"
-                ;;
-        bash)
-                add_candidate "$HOME/.bashrc"
-                add_candidate "$HOME/.bash_profile"
-                ;;
-        *)
-                add_candidate "$HOME/.profile"
-                ;;
-esac
-
-add_candidate "$HOME/.bashrc"
-add_candidate "$HOME/.profile"
-
-RC_FILE=''
-for candidate in $RC_CANDIDATES
-do
-        if [ -f "$candidate" ]; then
-                RC_FILE=$candidate
-                break
-        fi
-done
-
-if [ -z "$RC_FILE" ]; then
-        # Fall back to the first candidate; create it later once the user
-        # confirms the installation.
-        for candidate in $RC_CANDIDATES
-        do
-                RC_FILE=$candidate
-                break
-        done
-fi
-
-if [ -z "$RC_FILE" ]; then
-        printf '%s\n' "Error: Unable to determine which start-up file to modify." >&2
+if [ ! -x "$ASK_YN" ]; then
+        printf '%s\n' "Error: Required cantrip '$ASK_YN' is missing." >&2
         exit 1
-fi
-
-case $RC_FILE in
-        *.nix)
-                FORMAT=nix
-                ;;
-        *)
-                FORMAT=shell
-                ;;
-esac
-
-# Require explicit confirmation before editing configuration.nix on NixOS.
-FORCE_PROMPT=0
-if [ "$FORMAT" = "nix" ]; then
-        FORCE_PROMPT=1
 fi
 
 # Collect the directories whose PATH exports are absent from the chosen start-up
@@ -171,7 +50,7 @@ do
                 continue
         fi
 
-        if "$PATH_WIZARD" -r --rc-file "$RC_FILE" --format "$FORMAT" --platform "$PLATFORM" status "$dir"; then
+        if "$PATH_WIZARD" -r status "$dir"; then
                 continue
         fi
         set -- "$@" "$dir"
@@ -182,55 +61,38 @@ if [ "$#" -eq 0 ]; then
         exit 0
 fi
 
-printf '%s\n' "ao-mud will ensure the following directories appear in your PATH (via $(basename "$RC_FILE")):"
+printf '%s\n' "ao-mud will ensure the following directories appear in your PATH via your shell configuration file:"
 for dir
 do
         printf '  %s\n' "$dir"
 done
 
-if [ "$FORMAT" = "nix" ]; then
-        printf '\n%s\n' "NixOS detected: $(basename "$RC_FILE") will be updated and backed up before editing."
+confirm_install() {
+        if [ "${WIZARDRY_INSTALL_ASSUME_YES-}" = "1" ]; then
+                return 0
+        fi
+        if "$ASK_YN" "Proceed with installation?" yes >/dev/null; then
+                return 0
+        fi
+        return 1
+}
+
+if ! confirm_install; then
+        printf '%s\n' "Ok, well the mud won't work until you install it by adding the spells directory to your PATH."
+        exit 1
 fi
 
-choice=''
-if [ "$FORCE_PROMPT" -eq 0 ] && [ "${WIZARDRY_INSTALL_ASSUME_YES-}" = "1" ]; then
-        choice=y
+for dir
+do
+        "$PATH_WIZARD" -r add "$dir" || exit 1
+done
+
+if [ -x "$MEMORIZE" ]; then
+        if ! "$MEMORIZE" --recursive "$ABS_DIR/spells"; then
+                printf '%s\n' "Warning: memorize --recursive failed; run it manually to finish memorizing spells." >&2
+        fi
 else
-        printf '%s' "Proceed with installation? [y/n]: "
-        IFS= read -r choice || choice=
+        printf '%s\n' "Warning: memorize spell is missing; skipping automatic memorization." >&2
 fi
 
-case $choice in
-        y|Y)
-                rc_dir=${RC_FILE%/*}
-                if [ "$rc_dir" != "$RC_FILE" ] && [ ! -d "$rc_dir" ]; then
-                        if ! mkdir -p "$rc_dir"; then
-                                printf '%s\n' "Error: Unable to create directory '$rc_dir'." >&2
-                                exit 1
-                        fi
-                fi
-                if [ ! -f "$RC_FILE" ]; then
-                        if ! : >"$RC_FILE"; then
-                                printf '%s\n' "Error: Unable to create '$RC_FILE'." >&2
-                                exit 1
-                        fi
-                fi
-                for dir
-                do
-                        "$PATH_WIZARD" -r --rc-file "$RC_FILE" --format "$FORMAT" --platform "$PLATFORM" add "$dir" || exit 1
-                done
-                case $FORMAT in
-                        nix)
-                                printf '%s\n' "Your spellbook has been activated. Rebuild your Nix environment or restart your shell to load $(basename "$RC_FILE")."
-                                ;;
-                        *)
-                                printf '%s\n' "Your spellbook has been activated. Open a fresh terminal to load $(basename "$RC_FILE")."
-                                ;;
-                esac
-                exit 0
-                ;;
-        *)
-                printf '%s\n' "Ok, well the mud won't work until you install it by adding the spells directory to your PATH."
-                exit 1
-                ;;
-esac
+printf '%s\n' "Your spellbook has been activated. Open a fresh terminal or source your shell configuration to cast spells everywhere."

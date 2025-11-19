@@ -2,6 +2,34 @@
 
 set -eu
 
+SCRIPT_SOURCE=$0
+case $SCRIPT_SOURCE in
+*/*)
+        SCRIPT_DIR=${SCRIPT_SOURCE%/*}
+        ;;
+*)
+        resolved=$(command -v -- "$SCRIPT_SOURCE" 2>/dev/null || printf '%s' "$SCRIPT_SOURCE")
+        SCRIPT_DIR=${resolved%/*}
+        SCRIPT_SOURCE=$resolved
+        ;;
+esac
+if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
+        SCRIPT_DIR=.
+fi
+SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
+DETECT_RC_FILE=${DETECT_RC_FILE:-$SCRIPT_DIR/detect-rc-file}
+SCRIBE_SPELL=${SCRIBE_SPELL:-$SCRIPT_DIR/scribe-spell}
+
+if [ ! -x "$DETECT_RC_FILE" ]; then
+        printf '%s\n' "path-wizard: required helper '$DETECT_RC_FILE' is missing or not executable." >&2
+        exit 1
+fi
+
+if [ ! -x "$SCRIBE_SPELL" ]; then
+        printf '%s\n' "path-wizard: required helper '$SCRIBE_SPELL' is missing or not executable." >&2
+        exit 1
+fi
+
 usage() {
         cat <<'USAGE' >&2
 Usage: path-wizard [-r|--recursive] [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] add [DIRECTORY]
@@ -232,71 +260,71 @@ if [ "$recursive" -eq 1 ]; then
         exit $result
 fi
 
-# When the platform is unspecified, attempt a lightweight detection so we can
-# pick sensible defaults (for example, .zshrc on macOS or configuration.nix on
-# NixOS). This avoids forcing callers to learn every corner case up front.
-if [ -z "$platform" ]; then
-        if [ -f /etc/NIXOS ] || grep -qi 'ID=nixos' /etc/os-release 2>/dev/null; then
-                platform=nixos
-        elif [ -f /etc/debian_version ]; then
-                platform=debian
-        elif [ -f /etc/arch-release ]; then
-                platform=arch
-        elif [ -f /etc/fedora-release ]; then
-                platform=fedora
-        elif uname 2>/dev/null | grep -q 'Darwin'; then
-                platform=mac
+# Use detect-rc-file to derive sane defaults when callers do not provide
+# explicit overrides. This keeps the CLI consistent with the installer and any
+# other spell that edits shell start-up files.
+detected_platform=""
+detected_rc_file=""
+detected_format=""
+needs_detection=0
+if [ -z "$platform" ] || [ -z "$rc_file_override" ] || [ "$format" = "auto" ]; then
+        needs_detection=1
+fi
+
+if [ "$needs_detection" -eq 1 ]; then
+        if [ -n "$platform" ]; then
+                detect_output=$("$DETECT_RC_FILE" --platform "$platform")
         else
-                platform=unknown
+                detect_output=$("$DETECT_RC_FILE")
+        fi
+        while IFS='=' read -r key value; do
+                case $key in
+                platform)
+                        detected_platform=$value
+                        ;;
+                rc_file)
+                        detected_rc_file=$value
+                        ;;
+                format)
+                        detected_format=$value
+                        ;;
+                esac
+        done <<EOF
+$detect_output
+EOF
+fi
+
+if [ -z "$platform" ] && [ -n "$detected_platform" ]; then
+        platform=$detected_platform
+fi
+
+rc_file=$rc_file_override
+if [ -z "$rc_file" ]; then
+        rc_file=$detected_rc_file
+fi
+
+if [ -z "$rc_file" ]; then
+        printf '%s\n' "path-wizard: unable to determine a startup file." >&2
+        exit 1
+fi
+
+if [ "$format" = "auto" ]; then
+        if [ -n "$detected_format" ] && [ -z "$rc_file_override" ]; then
+                        format=$detected_format
+        else
+                case $rc_file in
+                *.nix)
+                        format=nix
+                        ;;
+                *)
+                        format=shell
+                        ;;
+                esac
         fi
 fi
 
-# Choose the most appropriate start-up file for the detected platform. The
-# installer can still override this decision via --rc-file when a user has a
-# custom setup.
-select_default_rc_file() {
-        case $platform in
-        mac)
-                printf '%s' "$HOME/.zshrc"
-                ;;
-        nixos)
-                printf '%s' "$HOME/.config/nixpkgs/configuration.nix"
-                ;;
-        *)
-                shell_path=${SHELL-}
-                shell_name=${shell_path##*/}
-                case ${shell_name:-} in
-                zsh)
-                        printf '%s' "$HOME/.zshrc"
-                        ;;
-                bash)
-                        printf '%s' "$HOME/.bashrc"
-                        ;;
-                *)
-                        printf '%s' "$HOME/.bashrc"
-                        ;;
-                esac
-                ;;
-        esac
-}
-
-rc_file=${rc_file_override:-}
-if [ -z "$rc_file" ]; then
-        rc_file=$(select_default_rc_file)
-fi
-
-# "auto" format detection keeps the CLI friendly: plain shell files get the
-# traditional export lines, while configuration.nix switches to declarative
-# Nix output.
-if [ "$format" = "auto" ]; then
-        case $rc_file in
-        *.nix)
-                format=nix
-                ;;
-        *)
-                format=shell
-                ;;
-        esac
+if [ -z "$platform" ]; then
+        platform=unknown
 fi
 
 case $format in
@@ -321,6 +349,13 @@ legacy_quoted_export_line=$(printf 'export PATH="%s:\\$PATH"' "$directory")
 # Track whether we refreshed a legacy export line so the caller can surface an
 # appropriate message to the user.
 legacy_export_refreshed=0
+
+spell_identifier_for_directory() {
+        dir=$1
+        checksum=$(printf '%s' "$dir" | cksum | awk '{print $1}')
+        safe=$(printf '%s' "$dir" | tr -c 'A-Za-z0-9._-' '_')
+        printf 'path-%s-%s' "$safe" "$checksum"
+}
 
 # Create the parent directory for the rc file when it does not already exist.
 # This lets us initialise fresh environments without manual scaffolding.
@@ -419,7 +454,11 @@ shell_add() {
                 printf '%s\n' "The directory is already in your PATH."
                 return 0
         fi
-        printf '%s\n' "$managed_export_line" >>"$rc_file"
+        spell_name=$(spell_identifier_for_directory "$directory")
+        if ! printf '%s\n' "$managed_export_line" | "$SCRIBE_SPELL" --rc-file "$rc_file" --spell "$spell_name" add; then
+                printf '%s\n' "path-wizard: unable to record the PATH entry." >&2
+                exit 1
+        fi
         printf '%s\n' "The directory has been added to your PATH."
         printf '%s\n' "The changes to your PATH will take effect in new shells."
 }
@@ -429,6 +468,13 @@ shell_remove() {
         if [ ! -f "$rc_file" ]; then
                 printf '%s\n' "Error: The startup file '$rc_file' does not exist." >&2
                 exit 1
+        fi
+        spell_name=$(spell_identifier_for_directory "$directory")
+        if "$SCRIBE_SPELL" --rc-file "$rc_file" --spell "$spell_name" status >/dev/null 2>&1; then
+                "$SCRIBE_SPELL" --rc-file "$rc_file" --spell "$spell_name" remove
+                printf '%s\n' "The directory has been removed from your PATH."
+                printf '%s\n' "The changes to your PATH will take effect in new shells."
+                return 0
         fi
         has_managed=0
         if grep -Fqx "$managed_export_line" "$rc_file" 2>/dev/null; then
