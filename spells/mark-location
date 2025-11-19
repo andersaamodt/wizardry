@@ -1,27 +1,52 @@
 #!/bin/sh
 
-# This "mark location" spell allows you to mark the current directory or file as the destination for a portal.
-# To create a portal, navigate to the destination folder or file and cast this spell, then navigate to the location where
-# you want to create the portal and cast the "create portal" spell.
-# If an argument is given, it will be used as the path to the destination file or directory.
-# If no argument is given, the current directory will be used as the destination.
+# Mark the current directory or a provided path for jump-to-marker.
+#
+# The ritual is straightforward: accept at most one destination, resolve it to
+# an absolute path (tilde and relative trails included), and write it to the
+# marker file with a reassuring status line.
 
-# Create ~/.mud direrctory if does not exist
-mkdir -p ~/.mud
+resolve_path() {
+  target=$1
+  case $target in
+    /*) printf '%s\n' "$(cd "$(dirname "$target")" && pwd -P)/$(basename "$target")" ;;
+    ~/*)
+      if [ -n "${HOME-}" ]; then
+        printf '%s\n' "$HOME/${target#~/}"
+      else
+        printf '%s\n' "$target"
+      fi
+      ;;
+    *) printf '%s\n' "$(pwd -P)/$target" ;;
+  esac
+}
 
-# Set the path to the marker file
-marker_file="$HOME/.mud/portal_marker"
+usage() {
+  printf '%s\n' "Usage: mark-location [path]" >&2
+}
 
-# Check if an argument was given
-if [ -z "$1" ]; then
-  # If no argument was given, use the current directory as the destination
-  destination="$(pwd)"
-else
-  # If an argument was given, use it as the destination
-  destination="$1"
-fi
+main() {
+  if [ "$#" -gt 1 ]; then
+    usage
+    exit 1
+  fi
 
-# Save the destination path to the marker file
-echo "$destination" > "$marker_file"
+  marker_dir="$HOME/.mud"
+  marker_file="$marker_dir/portal_marker"
+  mkdir -p "$marker_dir" || exit 1
 
-echo "Location marked at $destination."
+  if [ "$#" -eq 0 ]; then
+    destination=$(pwd -P)
+  else
+    if [ ! -e "$1" ]; then
+      printf 'Error: %s does not exist.\n' "$1" >&2
+      exit 1
+    fi
+    destination=$(resolve_path "$1")
+  fi
+
+  printf '%s\n' "$destination" >"$marker_file"
+  printf 'Location marked at %s.\n' "$destination"
+}
+
+main "$@"

@@ -1,46 +1,64 @@
 #!/bin/sh
 
-# This spell enchants the specified file with the given attribute and value.
-# If the attribute already exists, it is overwritten.
-# If the file or attribute does not exist, it raises an error.
+# Enchant a file with an extended attribute.
+# Usage: enchant <file> <attribute> <value> [helper]
+#
+# This incantation is intentionally linear: gather the ingredients, check the
+# reliquary (the file), and try each tool in turn until one binds the sigil.
+# The commentary stays close to the code so future wizards can trace the
+# ritual without hunting through helper libraries.
 
-# Check that the correct number of arguments was provided
-if [ $# -lt 3 ] | [ $# -gt 4 ]; then
-  echo "Error: This spell requires three or four arguments: a file path, an attribute name, and a value."
-  exit 1
-fi
-
-# Set the file path, attribute name, and attribute value variables
-file=$1
-attribute=$2
-value=$3
-
-# Check that the file exists
-if [ ! -f "$file" ] && [ ! -d "$file" ]; then
-  echo "Error: The file does not exist."
-  exit 1
-fi
-
-# Define a function to set the attribute value using the available commands
-set_attribute_value() {
-  # Try to set the attribute using the 'attr' command
-  attr -s "$1" -V "$2" "$3" 2>&1 >/dev/null ||
-
-  # If the 'attr' command is not available, try using the 'xattr' command
-  xattr -w "$1" "$2" "$3" 2>&1 > /dev/null ||
-
-  # If the 'xattr' command is not available, try using the 'setfattr' command
-  setfattr -n "$1" -v "$2" "$3" 2>&1 > /dev/null ||
-
-  # If none of the commands are available, raise an error
-  (
-    echo "Error: This spell requires the 'attr', 'xattr', or 'setfattr' command to be installed."
-    exit 1
-  )
+require_args() {
+  if [ "$#" -lt 3 ] || [ "$#" -gt 4 ]; then
+    printf '%s\n' "Error: This spell requires three or four arguments: a file path, an attribute name, and a value."
+    return 1
+  fi
 }
 
-# Set the attribute value using the set_attribute_value function
-value=$(printf "%q\n" "$value")
-set_attribute_value "$attribute" "$value" "$file"
+file_exists() {
+  if [ ! -e "$1" ]; then
+    printf '%s\n' "Error: The file does not exist."
+    return 1
+  fi
+}
 
-echo "The file has been enchanted with the attribute '$attribute' and value '$value'."
+set_with_attr() {
+  command -v attr >/dev/null 2>&1 && attr -s "$1" -V "$2" "$3"
+}
+
+set_with_xattr() {
+  command -v xattr >/dev/null 2>&1 && xattr -w "$1" "$2" "$3"
+}
+
+set_with_setfattr() {
+  command -v setfattr >/dev/null 2>&1 && setfattr -n "$1" -v "$2" "$3"
+}
+
+main() {
+  if ! require_args "$@"; then
+    exit 1
+  fi
+
+  file=$1
+  key=$2
+  value=$3
+
+  if ! file_exists "$file"; then
+    exit 1
+  fi
+
+  if set_with_attr "$key" "$value" "$file"; then
+    :
+  elif set_with_xattr "$key" "$value" "$file"; then
+    :
+  elif set_with_setfattr "$key" "$value" "$file"; then
+    :
+  else
+    printf "%s\n" "Error: This spell requires the 'attr', 'xattr', or 'setfattr' command to be installed."
+    exit 1
+  fi
+
+  printf "The file has been enchanted with the attribute '%s' and value '%s'.\n" "$key" "$value"
+}
+
+main "$@"

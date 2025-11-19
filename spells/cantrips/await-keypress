@@ -1,21 +1,29 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 # Read a single key press from the controlling terminal and report it in a
 # descriptive form ("enter", "up", literal text, etc.).
 
-script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+spell_dir() {
+    case $0 in
+        */*) CDPATH= cd -- "${0%/*}" && pwd -P ;;
+        *) CDPATH= cd -- . && pwd -P ;;
+    esac
+}
 
-# Resolve the helper to use for command verification.
-if [ -n "${REQUIRE_COMMAND-}" ]; then
-    require_cmd=$REQUIRE_COMMAND
-elif [ -x "$script_dir/require-command" ]; then
-    require_cmd="$script_dir/require-command"
-else
-    require_cmd=require-command
-fi
+resolve_require_command() {
+    if [ -n "${REQUIRE_COMMAND-}" ]; then
+        printf '%s\n' "$REQUIRE_COMMAND"
+        return 0
+    fi
+    if [ -x "$(spell_dir)/require-command" ]; then
+        printf '%s\n' "$(spell_dir)/require-command"
+        return 0
+    fi
+    printf '%s\n' require-command
+}
 
 require() {
-    "$require_cmd" "$@"
+    "$(resolve_require_command)" "$@"
 }
 
 # Capture raw bytes with dd; bail out immediately when it is missing.

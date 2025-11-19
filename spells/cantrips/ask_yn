@@ -46,7 +46,9 @@ none)
 return 1
 ;;
 esac
-if [ -t 0 ]; then
+# Prefer stdin whenever something is piped to us, even if a tty is also
+# present, so scripted callers can answer without interactivity.
+if [ -t 0 ] || [ -p /dev/stdin ] || [ -s /dev/stdin ]; then
 printf '%s\n' stdin
 return 0
 fi

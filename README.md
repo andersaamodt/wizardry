@@ -30,7 +30,7 @@ or:
 ```
 wget -qO- https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh
 ```
-Set `WIZARDRY_INSTALL_DIR=/path/to/location` (for example `WIZARDRY_INSTALL_DIR="$HOME/wizardry" curl ...`) if you need to run the installer non-interactively or want to change the default in advance. The install script requires `tar` plus either `curl` or `wget` to be available.
+The install script requires `tar` plus either `curl` or `wget` to be available.
 
 ### Install with git
 
@@ -93,6 +93,8 @@ This displays an interactive menu. Most (soon all) wizardry spells and features 
 | PATH-ready spells    | Spells can assume other wizardry spells are already on the PATH and should invoke them by name instead of repo-relative paths. |
 | Bootstrap awareness  | The standalone installer runs before wizardry is on PATH, so it must reference helper spells via absolute paths instead of relying on command lookups. |
 | Tiny incantations    | Prefer short, linear, well-commented scripts over elaborate plumbing so intent stays obvious at a glance. |
+| Preserve the lore    | Keep spell style, explanatory comments, and in-world flavor text intact unless a change is truly necessary, and replace any removed guidance with equally helpful narration. |
+| Arg-first helpers    | Pass information via positional parameters or stdout whenever possible instead of introducing new shell variables to shuttle data around. |
 
 ## Unit tests
 

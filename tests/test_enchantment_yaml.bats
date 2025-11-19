@@ -42,7 +42,7 @@ teardown() {
   assert_success
   run cat "$scroll"
   assert_success
-  assert_output $'---\nname:\nlevel:\n---\n\nplain body\n'
+  assert_output $'---\nname:\nlevel:\n---\n\nplain body'
 
   run "$attr_stubs/xattr" "$scroll"
   assert_success

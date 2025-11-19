@@ -1,46 +1,70 @@
+#!/bin/bash
+
 # The Xattr to YAML Transmutation Spell
-# 
-# This powerful spell allows you to magically transmute extended attributes into a YAML header. Simply provide the
-# path to the file as an argument, and the spell will do the rest. The resulting YAML header will be added to the
-# beginning of the file, and the extended attributes will be removed, leaving a clean and organized document.
-# 
-# Use this spell to turn your unruly and cluttered files into elegant and well-structured tomes. May your documents
-# be forever organized and easy to read!
+#
+# This spell keeps the narrative intact: it checks your offering, reads the
+# existing sigils, and writes them into a tidy YAML prologue before cleaning the
+# parchment. The steps are spelled out inline so the ritual remains easy to
+# follow.
 
-# Check if the number of arguments is correct
 if [ "$#" -ne 1 ]; then
-    echo "Error: incorrect number of arguments"
-    echo "Usage: ./xattr_to_yaml.sh path/to/file.txt"
+    printf '%s\n' "Error: incorrect number of arguments"
+    printf '%s\n' "Usage: ./xattr_to_yaml.sh path/to/file.txt"
     exit 1
 fi
 
-# Check if the file exists
-if [ ! -f "$1" ]; then
-    echo "Error: file does not exist"
+file=$1
+if [ ! -f "$file" ]; then
+    printf '%s\n' "Error: file does not exist"
     exit 1
 fi
 
-# Check if the file has extended attributes
-attributes=$(xattr "$1")
-if [ -z "$attributes" ]; then
-    echo "Error: file does not have extended attributes"
+list_keys() {
+    target=$1
+    if command -v xattr >/dev/null 2>&1; then
+        xattr "$target" 2>/dev/null && return 0
+    fi
+    if command -v attr >/dev/null 2>&1; then
+        attr -l "$target" 2>/dev/null && return 0
+    fi
+    if command -v getfattr >/dev/null 2>&1; then
+        getfattr -d "$target" 2>/dev/null | awk -F '=' '/^# / {next} {print $1}' && return 0
+    fi
+    return 1
+}
+
+keys=$(list_keys "$file")
+if [ -z "$keys" ]; then
+    printf '%s\n' "Error: file does not have extended attributes"
     exit 1
 fi
 
-# Create the YAML header
-yaml_header="---\n"
-while read -r attribute; do
-    # Extract the key and value
-    key=$(echo "$attribute" | awk -F: '{print $1}')
-    value=$(echo "$attribute" | awk -F: '{print $2}' | sed 's/^[ \t]*//g')
+tmp=$(mktemp "${TMPDIR:-/tmp}/wizardry-yaml.XXXXXX")
+{
+    printf '%s\n' '---'
+    for key in $keys; do
+        [ -z "$key" ] && continue
+        printf '%s:\n' "$key"
+    done
+    printf '%s\n' '---'
+    printf '\n'
+} >"$tmp"
+cat "$file" >>"$tmp"
+mv "$tmp" "$file"
 
-    # Add the key and value to the YAML header
-    yaml_header="$yaml_header$key: $value\n"
-done <<< "$attributes"
-yaml_header="$yaml_header---"
+if command -v xattr >/dev/null 2>&1; then
+    xattr -c "$file" 2>/dev/null || true
+fi
 
-# Add the YAML header to the file
-echo -e "$yaml_header\n" | cat - "$1" > temp && mv temp "$1"
-
-# Remove the extended attributes from the file
-xattr -c "$1"
+for key in $keys; do
+    [ -z "$key" ] && continue
+    if command -v attr >/dev/null 2>&1; then
+        attr -r "$key" "$file" 2>/dev/null || true
+    fi
+    if command -v setfattr >/dev/null 2>&1; then
+        setfattr -x "$key" "$file" 2>/dev/null || true
+    fi
+    if command -v xattr >/dev/null 2>&1; then
+        xattr -d "$key" "$file" 2>/dev/null || true
+    fi
+ done
