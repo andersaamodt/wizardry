@@ -57,10 +57,12 @@ This displays an interactive menu. Most (soon all) wizardry spells and features 
 | Cross-platform      | Scripts are POSIX-compliant and as cross-platform as possible. |
 | Menu specialization | Complex workflows graduate into dedicated menus that call one spell per menu item. |
 | Minimalism          | Do the most with the fewest moving parts. |
+| Script-like script  | Keep scripts script-like: favor flat flows with few functions so behavior stays readable and hackable from the shell. |
 | Atomicity           | Each script and part of wizardry is as small and self-contained a unit as possible. These small, reliable parts are then combined. |
 | Interface-neutral   | GUIs are thin layers that simply pass commands through to shell scripts. This makes it easy to swap out web platforms or build additional interfaces. |
 | Tight integration   | Wizardry provides the glue that integrates other UNIX command-line tools together. |
 | Grammar             | Wizardry will include a recursive parser that can parse commands in a flexible yet deterministic way. This effectively extends the bash language. |
+| Semantic synthesis   | Scripts evolve toward higher-order spellbooks by encapsulating platform details behind concise syntax and recursive grammar-aware parsers. |
 
 ### Code Policies
 
@@ -69,6 +71,7 @@ This displays an interactive menu. Most (soon all) wizardry spells and features 
 | Output-first          | Spells communicate by printing results so humans and spells consume the same text; exported environment variables are a fallback for rare cases. |
 | Hand-finished AI code | Using AI to generate reusable, well-commented bash scripts is a great use of AI; scripts should be hand-reviewed and tested. However, wizardry itself will not interface with AI. |
 | Test-driven development | Unit tests are used to specific and test code, with a goal of maintaining 100% unit test coverage. |
+| Assumption-checking    | Scripts confirm their assumptions (directories, dependencies, PATH entries) and repair gaps automatically so installations stay reliable. |
 
 ## Target platforms:
 

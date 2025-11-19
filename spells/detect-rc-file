@@ -121,7 +121,15 @@ debian|arch|fedora)
 *) : ;;
         esac
 
-case ${SHELL##*/} in
+shell_name=${SHELL-}
+if [ -z "$shell_name" ]; then
+# Some non-interactive shells (like dash) do not export SHELL, so default to
+# sh to keep the rc-file selection predictable even when the variable is
+# unset.
+shell_name=sh
+fi
+
+case ${shell_name##*/} in
 zsh)
         add_candidate "$HOME/.zshrc"
         add_candidate "$HOME/.zprofile"
