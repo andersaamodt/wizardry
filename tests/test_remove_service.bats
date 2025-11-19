@@ -24,17 +24,17 @@ with_system_path() {
 }
 
 @test 'remove-service requires systemctl and existing service' {
-  PATH=$ORIGINAL_PATH run_spell 'spells/remove-service' "$service_name"
+  PATH=$ORIGINAL_PATH run_spell 'spells/cantrips/remove-service' "$service_name"
   assert_failure
 
-  with_system_path run_spell 'spells/remove-service' "$service_name"
+  with_system_path run_spell 'spells/cantrips/remove-service' "$service_name"
   assert_failure
   assert_output --partial "Service ${service_name}.service does not exist."
 }
 
 @test 'remove-service deletes unit file and reloads daemon' {
   printf '[Unit]\nDescription=Remove Service Test\n' | "$system_stubs/sudo" tee "$service_file" >/dev/null
-  SYSTEMCTL_STATE_DIR="$tmp_dir" with_system_path run_spell 'spells/remove-service' "$service_name"
+  SYSTEMCTL_STATE_DIR="$tmp_dir" with_system_path run_spell 'spells/cantrips/remove-service' "$service_name"
   assert_success
   assert_output --partial "Service ${service_name}.service removed."
   [ ! -f "$service_file" ]
@@ -45,7 +45,7 @@ with_system_path() {
   printf '[Unit]\nDescription=Remove Service Test\n' | "$system_stubs/sudo" tee "$service_file" >/dev/null
   mkdir -p "$tmp_dir/systemctl"
   touch "$tmp_dir/systemctl/${service_name}.service.active"
-  SYSTEMCTL_STATE_DIR="$tmp_dir" with_system_path run_spell 'spells/remove-service' "$service_name"
+  SYSTEMCTL_STATE_DIR="$tmp_dir" with_system_path run_spell 'spells/cantrips/remove-service' "$service_name"
   assert_success
   [[ "$output" != *'does not exist'* ]]
   [ ! -f "$tmp_dir/systemctl/${service_name}.service.active" ]

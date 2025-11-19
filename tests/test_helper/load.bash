@@ -29,7 +29,8 @@ declare -a __wizardry_stubbed=()
 default_setup() {
   STUB_TMPDIR="$BATS_TEST_TMPDIR/stubs"
   mkdir -p "$STUB_TMPDIR"
-  PATH="$STUB_TMPDIR:$PATH"
+  local wizardry_paths="$ROOT_DIR/spells:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/menu"
+  PATH="$STUB_TMPDIR:$wizardry_paths:$PATH"
   TEST_TMPDIR="$BATS_TEST_TMPDIR"
   WIZARDRY_TMPDIR="$BATS_TEST_TMPDIR"
   export WIZARDRY_TMPDIR

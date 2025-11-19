@@ -18,20 +18,20 @@ teardown() {
 }
 
 @test 'is-service-installed fails when systemctl unavailable or service missing' {
-  PATH=$ORIGINAL_PATH run_spell 'spells/is-service-installed' "$service_name"
+  PATH=$ORIGINAL_PATH run_spell 'spells/cantrips/is-service-installed' "$service_name"
   assert_failure
 
-  PATH="$(wizardry_join_paths "$system_stubs" "$ORIGINAL_PATH")" run_spell 'spells/is-service-installed' "$service_name"
+  PATH="$(wizardry_join_paths "$system_stubs" "$ORIGINAL_PATH")" run_spell 'spells/cantrips/is-service-installed' "$service_name"
   assert_failure
 }
 
 @test 'is-service-installed detects installed services with optional suffix' {
   printf '[Unit]\nDescription=Wizardry test service\n' | "$system_stubs/sudo" tee "$service_file" >/dev/null
 
-  PATH="$(wizardry_join_paths "$system_stubs" "$ORIGINAL_PATH")" run_spell 'spells/is-service-installed' "$service_name"
+  PATH="$(wizardry_join_paths "$system_stubs" "$ORIGINAL_PATH")" run_spell 'spells/cantrips/is-service-installed' "$service_name"
   assert_success
 
-  PATH="$(wizardry_join_paths "$system_stubs" "$ORIGINAL_PATH")" run_spell 'spells/is-service-installed' "$service_name.service"
+  PATH="$(wizardry_join_paths "$system_stubs" "$ORIGINAL_PATH")" run_spell 'spells/cantrips/is-service-installed' "$service_name.service"
   assert_success
 }
 

@@ -1,26 +1,84 @@
 #!/bin/sh
 
-install_cd() {
-  if ! grep -q "alias cd=" "$HOME/.bashrc" 2>/dev/null; then
-    if ! command -v ask_yn >/dev/null 2>&1; then
-      printf '%s\n' "cd cantrip: ask_yn spell is missing; cannot prompt for installation." >&2
-      return 1
-    fi
-    if ask_yn "Memorize the enhanced 'cd' spell so it always looks around?" yes >/dev/null; then
-      scriptpath="$(dirname $(readlink -f $0))"
-      filename="$(basename "$0")"
-      printf "alias cd=\". %s/%s\"\n" "$scriptpath" "$filename" >> "$HOME/.bashrc"
-      echo "Spell memorized in .bashrc, so the mud will always be active in the terminal."
-    else
-      echo "The mud will only run in this shell window."
-    fi
-  fi
+# The cd cantrip keeps a tiny shell hook that immediately runs `look`
+# after every successful directory change. The hook stays intentionally
+# small so wizards can tweak it at a glance.
+
+warn() {
+        printf '%s\n' "cd cantrip: $1" >&2
 }
 
-install_cd
+absolute_spell_path() {
+        spell=${1:-$0}
+        case $spell in
+        /*)
+                printf '%s\n' "$spell"
+                return 0
+                ;;
+        *)
+                printf '%s/%s\n' "${PWD:-.}" "$spell"
+                ;;
+        esac
+}
 
-# Call the standard cd command
-builtin cd "$@"
-	
-# Look around the room
-look
+resolve_rc_file() {
+        if [ -n "${WIZARDRY_RC_FILE-}" ]; then
+                printf '%s\n' "$WIZARDRY_RC_FILE"
+                return 0
+        fi
+        if [ -z "${HOME-}" ]; then
+                warn "HOME is not set; cannot determine rc file."
+                return 1
+        fi
+        printf '%s/.bashrc\n' "$HOME"
+}
+
+install() {
+        cd_spell=$(absolute_spell_path "$WIZARDRY_CD_CANTRIP") || return 1
+        rc_file=$(resolve_rc_file) || return 1
+        rc_dir=${rc_file%/*}
+        [ "$rc_dir" = "$rc_file" ] && rc_dir=.
+        if ! mkdir -p "$rc_dir"; then
+                warn "unable to create directory '$rc_dir'."
+                return 1
+        fi
+        tmp_file=$(mktemp "${TMPDIR:-/tmp}/wizardry-cd.XXXXXX") || return 1
+        if [ -f "$rc_file" ]; then
+                sed '/^# >>> wizardry cd cantrip >>>$/,/^# <<< wizardry cd cantrip <<</d' "$rc_file" >"$tmp_file"
+        else
+                : >"$tmp_file"
+        fi
+        cat <<HOOK >>"$tmp_file"
+# >>> wizardry cd cantrip >>>
+WIZARDRY_CD_CANTRIP='$cd_spell'
+alias cd='. "$WIZARDRY_CD_CANTRIP"'
+# <<< wizardry cd cantrip <<<
+HOOK
+        if ! mv "$tmp_file" "$rc_file"; then
+                rm -f "$tmp_file"
+                warn "unable to update '$rc_file'."
+                return 1
+        fi
+        printf '%s\n' "cd cantrip: installed wizardry hooks in '$rc_file'."
+}
+
+wizardry_cd_cast_look() {
+        if command -v look >/dev/null 2>&1; then
+                look "$@"
+                return
+        fi
+        warn "look spell is not available."
+}
+
+wizardry_cd_main() {
+        if ! \cd "$@"; then
+                return $?
+        fi
+        wizardry_cd_cast_look
+}
+
+: "${WIZARDRY_CD_CANTRIP:=$(absolute_spell_path)}"
+
+if [ -z "${WIZARDRY_MEMORIZE_TARGET-}" ]; then
+        wizardry_cd_main "$@"
+fi
