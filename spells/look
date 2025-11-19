@@ -1,46 +1,62 @@
 #!/bin/sh
 
-# This 'look' spell is the most basic command in the MUD.
-# Use it to look around a room (no arg provided), or look at a specific object (by providing its relative or absolute path).
-# When you look at a room or object, it will print that object's "description" extended attribute.
+set -eu
 
-source colors
+SCRIPT_SOURCE=$0
+case $SCRIPT_SOURCE in
+*/*)
+        SCRIPT_DIR=${SCRIPT_SOURCE%/*}
+        ;;
+*)
+        SCRIPT_DIR=.
+        ;;
+esac
+SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
 
-path=$1
-
-if [ -z "$path" ]; then
-  path="$PWD"
-fi
-
-install_look(){
-  if ! grep -q "alias look='${BASH_SOURCE[0]}'" "$HOME/.bashrc" 2>/dev/null; then
-    echo "'Look' is a reserved keyword, so you must memorize this spell to change the meaning of the word 'look'."
-    if ! command -v ask_yn >/dev/null 2>&1; then
-      printf '%s\n' "look spell: ask_yn spell is missing; cannot prompt for installation." >&2
-      return 1
-    fi
-    if ask_yn "Memorize the 'look' spell so it is always available?" yes >/dev/null; then
-      echo "alias look='${BASH_SOURCE[0]}'" >> "$HOME/.bashrc"
-      echo "Spell memorized in .bashrc, so you will always be able to use it."
-    else
-      echo "The mud will only run in this shell window."
-    fi
-  fi
+load_colors() {
+        if [ -n "${LOOK_COLORS_PATH-}" ] && [ -f "$LOOK_COLORS_PATH" ]; then
+                # shellcheck disable=SC1090
+                . "$LOOK_COLORS_PATH"
+                return 0
+        fi
+        if colors_path=$(command -v colors 2>/dev/null); then
+                # shellcheck disable=SC1090
+                . "$colors_path"
+                return 0
+        fi
+        if [ -x "$SCRIPT_DIR/cantrips/colors" ]; then
+                # shellcheck disable=SC1090
+                . "$SCRIPT_DIR/cantrips/colors"
+                return 0
+        fi
+        return 1
 }
 
-install_look
+if ! load_colors; then
+        BLUE=""
+        BOLD=""
+        RESET=""
+fi
 
-name=$(read-magic "$path" name)
-description=$(read-magic "$path" description)
+if ! command -v read-magic >/dev/null 2>&1; then
+        printf '%s\n' "look: read-magic spell is missing." >&2
+        exit 1
+fi
 
-if [ "$name" != "Error: The attribute does not exist." ] || [ "$description" != "Error: The attribute does not exist." ]; then
-  if [ "$name" != "Error: The attribute does not exist." ]; then
-		printf "${BLUE}${BOLD}$name${RESET}\n"
-	fi
-	
-	if [ "$description" != "Error: The attribute does not exist." ]; then
-	  echo $description
-	fi
+path=${1:-$PWD}
+
+name=$(read-magic "$path" name || true)
+description=$(read-magic "$path" description || true)
+
+missing_msg='Error: The attribute does not exist.'
+
+if [ "$name" != "$missing_msg" ] || [ "$description" != "$missing_msg" ]; then
+        if [ "$name" != "$missing_msg" ] && [ -n "$name" ]; then
+                printf '%s%s%s%s\n' "$BLUE" "$BOLD" "$name" "$RESET"
+        fi
+        if [ "$description" != "$missing_msg" ] && [ -n "$description" ]; then
+                printf '%s\n' "$description"
+        fi
 else
-  echo "You look, but you don't see anything."
+        printf '%s\n' "You look, but you don't see anything."
 fi

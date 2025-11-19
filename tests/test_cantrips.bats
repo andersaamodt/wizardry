@@ -189,7 +189,7 @@ run_keypress $'a' 'a'
   assert_success
 }
 
-@test 'cd cantrip memorises spell optionally' {
+@test 'cd cantrip installs hooks and invokes look' {
   cd_home="$BATS_TEST_TMPDIR/cd"
   mkdir -p "$cd_home"
   export HOME="$cd_home"
@@ -203,20 +203,24 @@ echo "LOOK:$@"
 LOOK
   chmod +x "$look_stub/look"
 
-  printf 'yes\n' >"$BATS_TEST_TMPDIR/cd_yes"
-  ASK_CANTRIP_INPUT=stdin PATH="$look_stub:$ORIGINAL_PATH" run_spell 'spells/cantrips/cd' "$ROOT_DIR" <"$BATS_TEST_TMPDIR/cd_yes"
+  run env HOME="$cd_home" \
+    WIZARDRY_MEMORIZE_TARGET="$ROOT_DIR/spells/cantrips/cd" \
+    sh -c ". \"$ROOT_DIR/spells/cantrips/cd\"; install"
   assert_success
-  assert_output --partial 'Spell memorized'
-  assert_output --partial 'LOOK:'
+  assert_output --partial 'installed wizardry hooks'
+
   run cat "$HOME/.bashrc"
   assert_success
+  assert_output --partial '# >>> wizardry cd cantrip >>>'
   assert_output --partial 'alias cd='
+  assert_output --partial 'alias look='
 
-  printf '' >"$HOME/.bashrc"
-  printf 'no\n' >"$BATS_TEST_TMPDIR/cd_no"
-  ASK_CANTRIP_INPUT=stdin PATH="$look_stub:$ORIGINAL_PATH" run_spell 'spells/cantrips/cd' "$ROOT_DIR" <"$BATS_TEST_TMPDIR/cd_no"
+  run env WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/cantrips/cd" \
+    WIZARDRY_LOOK_SPELL="$look_stub/look" \
+    PATH="$look_stub:$ORIGINAL_PATH" \
+    "$ROOT_DIR/spells/cantrips/cd" "$ROOT_DIR"
   assert_success
-  assert_output --partial 'The mud will only run'
+  assert_output --partial 'LOOK:'
 }
 
 @test 'colors cantrip emits nothing' {

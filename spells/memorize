@@ -69,7 +69,6 @@ MEMORIZE_DETECTED=0
 MEMORIZE_PLATFORM=${WIZARDRY_PLATFORM-${MEMORIZE_PLATFORM-}}
 MEMORIZE_RC_FILE=${WIZARDRY_RC_FILE-${MEMORIZE_RC_FILE-}}
 MEMORIZE_FORMAT=${WIZARDRY_RC_FORMAT-${MEMORIZE_RC_FORMAT-}}
-MEMORIZE_SUPPRESS_SKIPS=${MEMORIZE_QUIET_SKIPS:-0}
 
 usage() {
         cat <<USAGE
@@ -80,7 +79,6 @@ Options:
                     with an install() function and memorize them.
   -r, --recursive   Recursively scan the supplied PATHS for installable spells.
                     This implies --all and requires at least one directory.
-  --quiet-skips     Suppress warnings for skipped files without install() spells.
   -h, --help        Show this message.
 
 Provide "alias NAME COMMAND" instead of a PATH to record the COMMAND in your
@@ -94,12 +92,6 @@ USAGE
 
 warn() {
         printf '%s: %s\n' "$SCRIPT_NAME" "$1" >&2
-}
-
-skip_notice() {
-        if [ "$MEMORIZE_SUPPRESS_SKIPS" -ne 1 ]; then
-                warn "$1"
-        fi
 }
 
 ask_yes_no() {
@@ -253,17 +245,14 @@ run_install() {
 memorize_file() {
         path=$1
         if [ ! -f "$path" ]; then
-                skip_notice "Skipping '$path' (not a file)."
                 SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
                 return
         fi
         if [ ! -x "$path" ]; then
-                skip_notice "Skipping '$path' (not executable)."
                 SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
                 return
         fi
         if ! have_install_function "$path"; then
-                skip_notice "Skipping '$path' (no install() function detected)."
                 SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
                 return
         fi
@@ -342,10 +331,6 @@ while [ $# -gt 0 ]; do
                 -r|--recursive)
                         ALL_MODE=1
                         RECURSIVE=1
-                        shift
-                        ;;
-                --quiet-skips)
-                        MEMORIZE_SUPPRESS_SKIPS=1
                         shift
                         ;;
                 -h|--help)

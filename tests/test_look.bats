@@ -50,26 +50,22 @@ STUB
 }
 
 with_look_path() {
-  PATH="$workspace/bin:$ORIGINAL_PATH" "$@"
+  LOOK_COLORS_PATH="$workspace/colors" PATH="$workspace/bin:$ORIGINAL_PATH" "$@"
 }
 
-@test 'look memorizes spell and reveals room details' {
+@test 'look reveals room details without modifying shell config' {
   room_path="$workspace/room.txt"
   : >"$room_path"
 
-  printf 'yes\n' >"$BATS_TEST_TMPDIR/yes"
   pushd "$workspace" >/dev/null
-  ASK_CANTRIP_INPUT=stdin with_look_path run_spell 'spells/look' 'room.txt' <"$BATS_TEST_TMPDIR/yes"
+  with_look_path run_spell 'spells/look' 'room.txt'
   popd >/dev/null
 
   assert_success
   assert_output --partial 'Grand Hall'
   assert_output --partial 'A vaulted chamber.'
-  assert_output --partial 'Spell memorized'
 
-  run cat "$HOME/.bashrc"
-  assert_success
-  assert_output --partial 'alias look'
+  [ ! -s "$HOME/.bashrc" ]
 }
 
 @test 'look falls back when attributes missing' {
@@ -83,13 +79,11 @@ EMPTY
   empty_path="$workspace/empty.txt"
   : >"$empty_path"
 
-  printf 'no\n' >"$BATS_TEST_TMPDIR/no"
   pushd "$workspace" >/dev/null
-  ASK_CANTRIP_INPUT=stdin with_look_path run_spell 'spells/look' 'empty.txt' <"$BATS_TEST_TMPDIR/no"
+  with_look_path run_spell 'spells/look' 'empty.txt'
   popd >/dev/null
 
   assert_success
-  assert_output --partial 'The mud will only run'
   assert_output --partial "You look, but you don't see anything."
 }
 

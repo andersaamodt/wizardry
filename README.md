@@ -88,6 +88,7 @@ This displays an interactive menu. Most (soon all) wizardry spells and features 
 | Menu specialization | Wizardry organizes complex workflows as dedicated menus that call one spell per menu item. |
 | Script-like scripts  | Keep scripts script-like: favor flat flows with few functions so behavior stays readable and hackable from the shell. |
 | PATH-ready spells    | Spells can assume other wizardry spells are already on the PATH and should invoke them by name instead of repo-relative paths. |
+| Bootstrap awareness  | The standalone installer runs before wizardry is on PATH, so it must reference helper spells via absolute paths instead of relying on command lookups. |
 
 ## Unit tests
 
