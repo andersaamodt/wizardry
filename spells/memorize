@@ -51,6 +51,15 @@ else
         exit 1
 fi
 
+SPELLBOOK_STORE=${MEMORIZE_SPELLBOOK_STORE:-$SCRIPT_DIR/cantrips/spellbook-store}
+if [ ! -x "$SPELLBOOK_STORE" ]; then
+        if command -v spellbook-store >/dev/null 2>&1; then
+                SPELLBOOK_STORE=$(command -v spellbook-store)
+        else
+                SPELLBOOK_STORE=""
+        fi
+fi
+
 ALL_MODE=0
 RECURSIVE=0
 MEMORIZED_COUNT=0
@@ -60,6 +69,7 @@ MEMORIZE_DETECTED=0
 MEMORIZE_PLATFORM=${WIZARDRY_PLATFORM-${MEMORIZE_PLATFORM-}}
 MEMORIZE_RC_FILE=${WIZARDRY_RC_FILE-${MEMORIZE_RC_FILE-}}
 MEMORIZE_FORMAT=${WIZARDRY_RC_FORMAT-${MEMORIZE_RC_FORMAT-}}
+MEMORIZE_SUPPRESS_SKIPS=${MEMORIZE_QUIET_SKIPS:-0}
 
 usage() {
         cat <<USAGE
@@ -70,7 +80,11 @@ Options:
                     with an install() function and memorize them.
   -r, --recursive   Recursively scan the supplied PATHS for installable spells.
                     This implies --all and requires at least one directory.
+  --quiet-skips     Suppress warnings for skipped files without install() spells.
   -h, --help        Show this message.
+
+Provide "alias NAME COMMAND" instead of a PATH to record the COMMAND in your
+spellbook under the chosen NAME.
 
 Without --all/--recursive, PATH arguments are treated as explicit spell files.
 If no PATH is supplied, memorize will ask whether it should try --all in the
@@ -80,6 +94,12 @@ USAGE
 
 warn() {
         printf '%s: %s\n' "$SCRIPT_NAME" "$1" >&2
+}
+
+skip_notice() {
+        if [ "$MEMORIZE_SUPPRESS_SKIPS" -ne 1 ]; then
+                warn "$1"
+        fi
 }
 
 ask_yes_no() {
@@ -165,7 +185,7 @@ cleanup_wrapper() {
 
 create_wrapper() {
         MEMORIZE_WRAPPER=$(mktemp "${TMPDIR:-/tmp}/memorize.XXXXXX") || exit 1
-        cat <<'WRAPPER' >"$MEMORIZE_WRAPPER"
+cat <<'WRAPPER' >"$MEMORIZE_WRAPPER"
 set -eu
 TARGET=$1
 shift
@@ -173,6 +193,8 @@ if [ ! -f "$TARGET" ]; then
         printf '%s\n' "memorize wrapper: missing target '$TARGET'" >&2
         exit 1
 fi
+WIZARDRY_MEMORIZE_TARGET="$TARGET"
+export WIZARDRY_MEMORIZE_TARGET
 . "$TARGET"
 if ! command -v install >/dev/null 2>&1; then
         printf '%s\n' "memorize wrapper: $TARGET does not define install()" >&2
@@ -230,18 +252,18 @@ run_install() {
 
 memorize_file() {
         path=$1
-	if [ ! -f "$path" ]; then
-		warn "Skipping '$path' (not a file)."
+        if [ ! -f "$path" ]; then
+                skip_notice "Skipping '$path' (not a file)."
                 SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
                 return
         fi
-	if [ ! -x "$path" ]; then
-		warn "Skipping '$path' (not executable)."
+        if [ ! -x "$path" ]; then
+                skip_notice "Skipping '$path' (not executable)."
                 SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
                 return
         fi
-	if ! have_install_function "$path"; then
-		warn "Skipping '$path' (no install() function detected)."
+        if ! have_install_function "$path"; then
+                skip_notice "Skipping '$path' (no install() function detected)."
                 SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
                 return
         fi
@@ -252,6 +274,31 @@ memorize_file() {
                 warn "Installation failed for '$path'."
                 SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
         fi
+}
+
+memorize_spellbook_alias() {
+if [ "$#" -lt 2 ]; then
+warn "alias requires a NAME and a COMMAND."
+exit 1
+fi
+if [ -z "$SPELLBOOK_STORE" ] || [ ! -x "$SPELLBOOK_STORE" ]; then
+printf '%s\n' "memorize: spellbook-store helper is unavailable; cannot record alias." >&2
+exit 1
+fi
+name=$1
+shift
+command_display=$*
+if [ -z "$command_display" ]; then
+warn "alias requires a COMMAND."
+exit 1
+fi
+if "$SPELLBOOK_STORE" add "$name" "$@"; then
+printf "Spellbook memorized: %s -> %s\n" "$name" "$command_display"
+printf '%s\n' "Cast it from the spellbook menu or run 'cast a spell'."
+exit 0
+fi
+warn "Unable to record spell '$name'."
+exit 1
 }
 
 scan_directory() {
@@ -297,6 +344,10 @@ while [ $# -gt 0 ]; do
                         RECURSIVE=1
                         shift
                         ;;
+                --quiet-skips)
+                        MEMORIZE_SUPPRESS_SKIPS=1
+                        shift
+                        ;;
                 -h|--help)
                         usage
                         exit 0
@@ -316,6 +367,11 @@ while [ $# -gt 0 ]; do
         esac
 
 done
+
+if [ "$#" -gt 0 ] && [ "$1" = "alias" ]; then
+        shift
+        memorize_spellbook_alias "$@"
+fi
 
 if [ $ALL_MODE -eq 0 ] && [ $# -eq 0 ]; then
         prompt_for_all
