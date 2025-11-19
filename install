@@ -297,12 +297,17 @@ do
         "$PATH_WIZARD" -r add "$dir" || exit 1
 done
 
+mem_status=0
 if [ -x "$MEMORIZE" ]; then
-        if ! "$MEMORIZE" --recursive "$ABS_DIR/spells"; then
-                printf '%s\n' "Warning: memorize --recursive failed; run it manually to finish memorizing spells." >&2
+        if "$MEMORIZE" --recursive "$ABS_DIR/spells"; then
+                printf '%s\n' "Spells memorized successfully."
+        else
+                mem_status=$?
         fi
 else
         printf '%s\n' "Warning: memorize spell is missing; skipping automatic memorization." >&2
 fi
 
 printf '%s\n' "Your spellbook has been activated. Open a fresh terminal or source your shell configuration to cast spells everywhere."
+
+exit "$mem_status"
