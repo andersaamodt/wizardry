@@ -87,6 +87,29 @@ RC
   done
 }
 
+@test 'install copies the local checkout instead of downloading' {
+  cat <<'RC' >"$HOME/.bashrc"
+# local copy shell config
+RC
+
+  target="$BATS_TEST_TMPDIR/copied"
+  rm -rf "$target"
+
+  wizardry_stub curl 'exit 1'
+  wizardry_stub wget 'exit 1'
+
+  SHELL=/bin/sh \
+    WIZARDRY_INSTALL_ASSUME_YES=1 \
+    WIZARDRY_INSTALL_DIR="$target" \
+    run_spell 'install'
+
+  assert_success
+  [ -d "$target/spells" ]
+
+  run cmp "$ROOT_DIR/install" "$target/install"
+  assert_success
+}
+
 
 @test 'install skips directories already referenced with quotes' {
   cat <<EOF >"$HOME/.bashrc"

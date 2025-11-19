@@ -39,6 +39,34 @@ if [ -n "${WIZARDRY_INSTALL_PLATFORM-}" ]; then
         export PATH_WIZARD_PLATFORM DETECT_RC_FILE_PLATFORM
 fi
 
+# Track whether we are running out of an existing checkout so local installs
+# can simply copy the files instead of downloading a fresh archive.  Piped
+# installs (wget|sh) expose the script through /bin/sh so we only find a
+# checkout when this file is run directly from disk.
+LOCAL_SOURCE=""
+case $0 in
+        */*)
+                script_dir=${0%/*}
+                if [ -z "$script_dir" ]; then
+                        script_dir=.
+                fi
+                if script_dir_abs=$(cd "$script_dir" 2>/dev/null && pwd -P); then
+                        if [ -d "$script_dir_abs/spells" ]; then
+                                LOCAL_SOURCE=$script_dir_abs
+                        fi
+                fi
+                ;;
+        *)
+                if [ -n "${PWD-}" ] && [ -f "$PWD/$0" ]; then
+                        if script_dir_abs=$(cd "$PWD" 2>/dev/null && pwd -P); then
+                                if [ -d "$script_dir_abs/spells" ]; then
+                                        LOCAL_SOURCE=$script_dir_abs
+                                fi
+                        fi
+                fi
+                ;;
+esac
+
 cleanup_bootstrap() {
         # Clean up any temporary directory created during the download process.
         if [ -n "${BOOTSTRAP_TMP_DIR-}" ] && [ -d "$BOOTSTRAP_TMP_DIR" ]; then
@@ -122,37 +150,8 @@ esac
 if [ -d "$INSTALL_DIR/spells" ]; then
         ABS_DIR=$(cd "$INSTALL_DIR" && pwd -P)
 else
-        # We need to bootstrap wizardry by downloading a tarball.  Each supported
-        # platform provides tar, but some only ship curl or wget, so the
-        # download_file helper above checks both before failing.
-        archive_url=${WIZARDRY_REMOTE_ARCHIVE-https://github.com/andersaamodt/wizardry/archive/refs/heads/main.tar.gz}
         if [ -e "$INSTALL_DIR" ]; then
                 printf '%s\n' "Error: '$INSTALL_DIR' already exists but does not look like wizardry." >&2
-                exit 1
-        fi
-        if ! command -v tar >/dev/null 2>&1; then
-                printf '%s\n' "Error: tar is required to unpack wizardry when installing remotely." >&2
-                exit 1
-        fi
-        BOOTSTRAP_TMP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/wizardry-install.XXXXXX") || exit 1
-        archive="$BOOTSTRAP_TMP_DIR/wizardry.tar.gz"
-        printf '%s\n' "Downloading wizardry to '$INSTALL_DIR'..."
-        if ! download_file "$archive" "$archive_url"; then
-                exit 1
-        fi
-        if ! tar -xzf "$archive" -C "$BOOTSTRAP_TMP_DIR"; then
-                printf '%s\n' "Error: Failed to unpack wizardry archive." >&2
-                exit 1
-        fi
-        extracted=""
-        for candidate in "$BOOTSTRAP_TMP_DIR"/*; do
-                if [ -d "$candidate/spells" ]; then
-                        extracted=$candidate
-                        break
-                fi
-        done
-        if [ -z "$extracted" ]; then
-                printf '%s\n' "Error: Downloaded archive did not contain wizardry spells." >&2
                 exit 1
         fi
         parent=${INSTALL_DIR%/*}
@@ -163,11 +162,48 @@ else
                 printf '%s\n' "Error: Unable to create directory '$parent'." >&2
                 exit 1
         fi
-        if ! mv "$extracted" "$INSTALL_DIR"; then
-                printf '%s\n' "Error: Unable to move wizardry into '$INSTALL_DIR'." >&2
-                exit 1
+        if [ -n "$LOCAL_SOURCE" ]; then
+                printf '%s\n' "Copying wizardry from '$LOCAL_SOURCE' to '$INSTALL_DIR'..."
+                if ! cp -R "$LOCAL_SOURCE" "$INSTALL_DIR"; then
+                        printf '%s\n' "Error: Unable to copy wizardry from '$LOCAL_SOURCE'." >&2
+                        exit 1
+                fi
+        else
+                # We need to bootstrap wizardry by downloading a tarball.  Each supported
+                # platform provides tar, but some only ship curl or wget, so the
+                # download_file helper above checks both before failing.
+                archive_url=${WIZARDRY_REMOTE_ARCHIVE-https://github.com/andersaamodt/wizardry/archive/refs/heads/main.tar.gz}
+                if ! command -v tar >/dev/null 2>&1; then
+                        printf '%s\n' "Error: tar is required to unpack wizardry when installing remotely." >&2
+                        exit 1
+                fi
+                BOOTSTRAP_TMP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/wizardry-install.XXXXXX") || exit 1
+                archive="$BOOTSTRAP_TMP_DIR/wizardry.tar.gz"
+                printf '%s\n' "Downloading wizardry to '$INSTALL_DIR'..."
+                if ! download_file "$archive" "$archive_url"; then
+                        exit 1
+                fi
+                if ! tar -xzf "$archive" -C "$BOOTSTRAP_TMP_DIR"; then
+                        printf '%s\n' "Error: Failed to unpack wizardry archive." >&2
+                        exit 1
+                fi
+                extracted=""
+                for candidate in "$BOOTSTRAP_TMP_DIR"/*; do
+                        if [ -d "$candidate/spells" ]; then
+                                extracted=$candidate
+                                break
+                        fi
+                done
+                if [ -z "$extracted" ]; then
+                        printf '%s\n' "Error: Downloaded archive did not contain wizardry spells." >&2
+                        exit 1
+                fi
+                if ! mv "$extracted" "$INSTALL_DIR"; then
+                        printf '%s\n' "Error: Unable to move wizardry into '$INSTALL_DIR'." >&2
+                        exit 1
+                fi
+                printf '%s\n' "Wizardry downloaded to '$INSTALL_DIR'."
         fi
-        printf '%s\n' "Wizardry downloaded to '$INSTALL_DIR'."
         ABS_DIR=$(cd "$INSTALL_DIR" && pwd -P)
 fi
 
