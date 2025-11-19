@@ -28,7 +28,7 @@ curl -fsSL https://raw.githubusercontent.com/andersaamodt/wizardry/main/install 
 ```
 or:
 ```
-wget -qO- ttps://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh
+wget -qO- https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh
 ```
 Set `WIZARDRY_INSTALL_DIR=/path/to/location` (for example `WIZARDRY_INSTALL_DIR="$HOME/wizardry" curl ...`) if you need to run the installer non-interactively or want to change the default in advance. The install script requires `tar` plus either `curl` or `wget` to be available.
 
