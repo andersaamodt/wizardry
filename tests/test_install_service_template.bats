@@ -52,7 +52,7 @@ teardown() {
   ASK_YN_STUB_RESPONSE=N \
     INSTALL_SERVICE_TEMPLATE_ASK_YN="$system_stubs/ask_yn" \
     PATH="$(wizardry_join_paths "$system_stubs" "$ORIGINAL_PATH")" \
-    run_spell 'spells/install-service-template' "$template"
+    run_spell 'spells/cantrips/install-service-template' "$template"
   assert_failure
   run cat "$service_path"
   assert_success
@@ -68,7 +68,7 @@ teardown() {
     INSTALL_SERVICE_TEMPLATE_ASK_TEXT="$ask_text_stub" \
     ASK_TEXT_STUB_FILE="$placeholder_input" \
     PATH="$(wizardry_join_paths "$system_stubs" "$ORIGINAL_PATH")" \
-    run_spell 'spells/install-service-template' "$template" EXECUTABLE=magic
+    run_spell 'spells/cantrips/install-service-template' "$template" EXECUTABLE=magic
   assert_success
   assert_output --partial 'Service installed'
 

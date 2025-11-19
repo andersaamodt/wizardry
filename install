@@ -331,7 +331,7 @@ fi
 mem_status=0
 if [ -x "$MEMORIZE" ]; then
         mem_log=$(mktemp "${TMPDIR:-/tmp}/wizardry-memorize.XXXXXX") || exit 1
-        if MEMORIZE_QUIET_SKIPS=1 "$MEMORIZE" --quiet-skips --recursive "$ABS_DIR/spells" >"$mem_log" 2>&1; then
+        if MEMORIZE_QUIET_SKIPS=1 "$MEMORIZE" --recursive "$ABS_DIR/spells" >"$mem_log" 2>&1; then
                 cat "$mem_log"
                 printf '%s\n' "Spells memorized successfully."
         else

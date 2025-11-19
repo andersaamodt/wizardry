@@ -20,20 +20,20 @@ find_helper() {
         relative=$2
         fallback=$3
         value=$(eval "printf '%s' "\${$variable-}"")
-        if [ -n "$value" ]; then
-                printf '%s' "$value"
-                return 0
-        fi
-        if [ -x "$relative" ]; then
-                printf '%s' "$relative"
-                return 0
-        fi
-        if command -v "$fallback" >/dev/null 2>&1; then
-                command -v "$fallback"
-                return 0
-        fi
-        printf '%s\n' "$SCRIPT_NAME: unable to locate helper '$fallback'." >&2
-        exit 1
+if [ -n "$value" ]; then
+printf '%s' "$value"
+return 0
+fi
+if command -v "$fallback" >/dev/null 2>&1; then
+command -v "$fallback"
+return 0
+fi
+if [ -x "$relative" ]; then
+printf '%s' "$relative"
+return 0
+fi
+printf '%s\n' "$SCRIPT_NAME: unable to locate helper '$fallback'." >&2
+exit 1
 }
 
 # escape_sed_replacement ensures CLI and interactive values can be embedded in
@@ -103,8 +103,8 @@ if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
 fi
 SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
 
-ASK_YN=$(find_helper INSTALL_SERVICE_TEMPLATE_ASK_YN "$SCRIPT_DIR/cantrips/ask_yn" ask_yn)
-ASK_TEXT=$(find_helper INSTALL_SERVICE_TEMPLATE_ASK_TEXT "$SCRIPT_DIR/cantrips/ask_text" ask_text)
+ASK_YN=$(find_helper INSTALL_SERVICE_TEMPLATE_ASK_YN "$SCRIPT_DIR/ask_yn" ask_yn)
+ASK_TEXT=$(find_helper INSTALL_SERVICE_TEMPLATE_ASK_TEXT "$SCRIPT_DIR/ask_text" ask_text)
 
 if command -v systemctl >/dev/null 2>&1; then
         SYSTEMCTL=$(command -v systemctl)

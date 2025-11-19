@@ -1,7 +1,6 @@
 #!/bin/sh
 
-# enable-service flips systemd's enable flag so units start automatically on
-# boot. It prompts for a service name when invoked without arguments.
+# disable-service removes a unit from systemd's boot sequence.
 
 set -eu
 
@@ -24,20 +23,20 @@ fi
 SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
 
 find_ask_text() {
-        if [ -n "${ENABLE_SERVICE_ASK_TEXT-}" ]; then
-                printf '%s' "$ENABLE_SERVICE_ASK_TEXT"
-                return 0
-        fi
-        if [ -x "$SCRIPT_DIR/cantrips/ask_text" ]; then
-                printf '%s' "$SCRIPT_DIR/cantrips/ask_text"
-                return 0
-        fi
-        if command -v ask_text >/dev/null 2>&1; then
-                command -v ask_text
-                return 0
-        fi
-        printf '%s\n' "$SCRIPT_NAME: ask_text spell not found; please install wizardry cantrips." >&2
-        exit 1
+if [ -n "${DISABLE_SERVICE_ASK_TEXT-}" ]; then
+printf '%s' "$DISABLE_SERVICE_ASK_TEXT"
+return 0
+fi
+if command -v ask_text >/dev/null 2>&1; then
+command -v ask_text
+return 0
+fi
+if [ -x "$SCRIPT_DIR/ask_text" ]; then
+printf '%s' "$SCRIPT_DIR/ask_text"
+return 0
+fi
+printf '%s\n' "$SCRIPT_NAME: ask_text spell not found; please install wizardry cantrips." >&2
+exit 1
 }
 
 ASK_TEXT_HELPER=$(find_ask_text)
@@ -76,13 +75,13 @@ normalize_unit() {
 
 service_name=${1-}
 if [ -z "$service_name" ]; then
-        service_name=$("$ASK_TEXT_HELPER" "Which service should I enable?")
+        service_name=$("$ASK_TEXT_HELPER" "Which service should I disable?")
 fi
 if [ -z "$service_name" ]; then
         printf '%s\n' "$SCRIPT_NAME: No service name supplied." >&2
         exit 1
 fi
 unit=$(normalize_unit "$service_name")
-printf 'Enabling %s so it starts at boot...\n' "$unit"
-run_systemctl enable "$unit"
-printf '%s\n' "systemd enablement request submitted."
+printf 'Disabling %s so it no longer starts at boot...\n' "$unit"
+run_systemctl disable "$unit"
+printf '%s\n' "systemd disable request submitted."
