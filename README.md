@@ -1,6 +1,21 @@
-# Wizardry is a collection of bash scripts to complete your terminal experience.
+# Wizardry is the FOSS missing link
+
+Wizardry is a collection of bash scripts to complete your terminal experience.
+Themed as a magical MUD (Multi-User Dungeon), wizardry turns folders into rooms, and files into items.
+Wizardry also includes a comprehensive set of bash tutorials.
+
+## Status for target platforms:
 
 **Current status:** 🟢 `install` and `menu` work well on Debian. Wizardry is brand new, so not all spells have been tested and debugged yet.
+
+| OS                        | Shortname | Status                              |
+| ------------------------- | --------- | ----------------------------------- |
+| **Debian (and Ubuntu)**   | `debian`  | 🟢 **`install` + `menu` work well** |
+| **NixOS**                 | `nixos`   | 🟢 **`menu` works well**            |
+| **MacOS**                 | `macos`   | 🟡 **`install` + `menu` untested**  |
+| **Arch**                  | `arch`    | 🟠 **may support later**            |
+| **Android (Linux-based)** | —         | 🟠 **may support later**            |
+| **Windows**               | —         | ✘ **WSL support only**              |
 
 ## Installation
 
@@ -72,18 +87,7 @@ This displays an interactive menu. Most (soon all) wizardry spells and features 
 | Menu specialization | Wizardry organizes complex workflows as dedicated menus that call one spell per menu item. |
 | Script-like scripts  | Keep scripts script-like: favor flat flows with few functions so behavior stays readable and hackable from the shell. |
 
-## Target platforms:
-
-| OS                        | Shortname | Status                              |
-| ------------------------- | --------- | ----------------------------------- |
-| **Debian (and Ubuntu)**   | `debian`  | 🟢 **`install` + `menu` work well** |
-| **NixOS**                 | `nixos`   | 🟢 **`menu` works well**            |
-| **MacOS**                 | `macos`   | 🟡 **support planned**              |
-| **Arch**                  | `arch`    | 🟠 **support planned later**        |
-| **Android (Linux-based)** | —         | ✘ **no support planned**            |
-| **Windows**               | —         | ✘ **no support planned**            |
-
-## Testing
+## Unit tests
 
 Wizardry ships a shell-based test suite in `tests/` that exercises every spell and verifies coverage.
 
