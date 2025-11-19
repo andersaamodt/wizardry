@@ -21,13 +21,13 @@ Wizardry also includes a comprehensive set of bash tutorials, and optional free 
 
 ### Easy install script
 
-Run the installer directly with `wget` (or `curl`). The script prompts for the install location and defaults to `~/.tower`, then downloads wizardry into that directory and adds the spells to your `PATH`:
+Run the installer directly with `curl` (or `wget`). The script prompts for the install location and defaults to `~/.tower`, then downloads wizardry into that directory and adds the spells to your `PATH`:
 
 ```
-wget -qO- https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh
+curl -fsSL https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh
 ```
 
-Set `WIZARDRY_INSTALL_DIR=/path/to/location` (for example `WIZARDRY_INSTALL_DIR="$HOME/wizardry" wget ...`) if you need to run the installer non-interactively or want to change the default in advance. The install script requires `tar` plus either `curl` or `wget` to be available.
+Set `WIZARDRY_INSTALL_DIR=/path/to/location` (for example `WIZARDRY_INSTALL_DIR="$HOME/wizardry" curl ...`) if you need to run the installer non-interactively or want to change the default in advance. The install script requires `tar` plus either `curl` or `wget` to be available.
 
 ### Install with git
 
