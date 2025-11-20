@@ -23,14 +23,14 @@ min=$2
 max=$3
 
 case $min in
-*[^0-9-]*|"")
+*[!0-9-]*|"")
         printf '%s\n' "ask_number: MIN must be an integer." >&2
         exit 1
         ;;
 *) : ;;
 esac
 case $max in
-*[^0-9-]*|"")
+*[!0-9-]*|"")
         printf '%s\n' "ask_number: MAX must be an integer." >&2
         exit 1
         ;;
@@ -56,7 +56,7 @@ select_input() {
                 return 1
                 ;;
         esac
-        if [ -t 0 ]; then
+        if [ -t 0 ] || [ -p /dev/stdin ] || [ -s /dev/stdin ]; then
                 printf '%s\n' stdin
                 return 0
         fi
@@ -96,7 +96,7 @@ while :; do
         fi
 
         case $response in
-        *[^0-9-]*|"")
+        *[!0-9-]*|"")
                 printf '%s\n' "Please enter a whole number." >&2
                 continue
                 ;;
