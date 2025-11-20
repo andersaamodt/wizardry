@@ -68,7 +68,7 @@ This displays an interactive menu. Most (soon all) wizardry spells and features 
 | File-first    | All state is stored in files, ideally human-readable text files. No databases, because they enclose data in one opaque file (requiring import/export steps). |
 | Cross-platform      | Scripts are POSIX-compliant and as cross-platform as possible. |
 | Semantic synthesis   | Scripts evolve toward higher-order spellbooks by encapsulating platform details behind concise syntax and deterministic, grammar-like recursive parser. This effectively extends the bash language. |
-| Magic theme       | Wizardry themes scripts as spells, and adds optional fantasy flavor text to the bash user experience. |
+| Fun       | Wizardry themes scripts as spells, and adds optional fantasy flavor text to the bash user experience. |
 
 ### Design Principles
 
@@ -93,12 +93,11 @@ This displays an interactive menu. Most (soon all) wizardry spells and features 
 | Wizardry available   | Spells can assume other wizardry spells are already in the PATH and should invoke them by name instead of long paths. |
 
 ### AI directives
-* Do not mutate the spec: At the top of each script there are spec comments; do not edit these.
+* Preserve the spec: Do not edit the spec comments at the top of script, nor the --help usage instructions of a script, unless specifically instructed.
 * Preserve the lore: Do not delete, modify, or add more flavor text unless specifically instructed.
 * Qualities of a good script: Brevity, well-commented for novice bash devs, flat / minimal functions / linear, clarity, portability (including cross-platform), composability, non-redundancy, minimalism.
 * No globals: Do not use shell variables unless absolutely necessary (use parameters or stdout instead).
 * Bootstrap awareness: The install script runs before wizardry is on PATH, so it alone cannot assume that wizardry spells are already available in PATH.
-* 
 
 ## Unit tests
 
