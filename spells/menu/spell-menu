@@ -39,12 +39,12 @@ spell_menu_loop() {
                         break
                 fi
                 set --
-                while IFS='\t' read -r alias command
+                while IFS=$(printf '\t') read -r alias command
                 do
                         [ -z "$alias" ] && continue
                         label=$(printf '%s – %s' "$alias" "$command")
                         set -- "$@" "$(printf '%s%%%s' "$label" "$command")"
-                done <<'SPELLS'
+                done <<SPELLS
 $entries
 SPELLS
                 set -- "$@" "Exit%kill -2 $$"

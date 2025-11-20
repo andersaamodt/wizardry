@@ -51,7 +51,7 @@ To use wizardry, simply type:
 ```
 menu
 ```
-This displays an interactive menu. Most (soon all) wizardry spells and features will be discoverable through the menu.
+This displays an interactive menu. Most (soon all) wizardry spells and features will be discoverable through the menu. Testing tools such as unit tests and coverage reporting can be launched from the system menu as well.
 
 ## Principles:
 
@@ -106,7 +106,15 @@ These values make the wizardry project what it is, and distinguish it from simil
 Run the complete shell test suite with:
 
 ```
-./tests/run.sh
+run-tests
 ```
 
-The script discovers every `test_*.bats` file, installs any missing Bats dependencies, and produces a coverage report so regressions fail fast. Pass `--list`, `--only PATTERN`, or `--no-coverage` for quick filtering, and forward additional flags to Bats after `--` when needed.
+The spell discovers every `test_*.sh` file and executes each in a sandboxed bubblewrap environment. Pass `--list` or `--only PATTERN` to filter which scripts run.
+
+View unit test coverage with:
+
+```
+test-coverage
+```
+
+Use `--run-tests` to execute the suite before reporting coverage.

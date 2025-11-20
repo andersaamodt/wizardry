@@ -5,6 +5,7 @@
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 spells_dir=$(dirname "$script_dir")
 repo_dir=$(dirname "$spells_dir")
+system_dir="$spells_dir/menu/system"
 
 if [ -n "${REQUIRE_COMMAND-}" ]; then
   require_cmd=$REQUIRE_COMMAND
@@ -43,7 +44,8 @@ fi
 display_menu() {
   services="Manage services%services-menu"
   update_wizardry="Update wizardry%update-wizardry"
-  test_suite="Test all wizardry spells%(cd \"$repo_dir\" && ./tests/run.sh)"
+  test_suite="Test all wizardry spells%$system_dir/run-tests"
+  unit_coverage="Unit test coverage%$system_dir/test-coverage --run-tests"
   update_all="Update all software%update-all -v"
   restart="Force restart%sudo shutdown -r now"
   exit="Exit%kill -2 $$"
@@ -53,7 +55,7 @@ display_menu() {
   if [ -n "$nixos_rebuild" ]; then
     set -- "$@" "$nixos_rebuild"
   fi
-  set -- "$@" "$update_wizardry" "$test_suite" "$restart" "$exit"
+  set -- "$@" "$update_wizardry" "$test_suite" "$unit_coverage" "$restart" "$exit"
 
   MENU_ESCAPE_STATUS=$menu_escape_status menu "System Menu:" "$@"
 }
