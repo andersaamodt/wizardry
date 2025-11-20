@@ -16,11 +16,11 @@ teardown() {
 @test 'enchantment-to-yaml validates inputs' {
   run_spell 'spells/enchantment-to-yaml'
   assert_failure
-  assert_output --partial 'incorrect number of arguments'
+  assert_error --partial 'incorrect number of arguments'
 
   run_spell 'spells/enchantment-to-yaml' "$BATS_TEST_TMPDIR/missing.txt"
   assert_failure
-  assert_output --partial 'Error: file does not exist'
+  assert_error --partial 'Error: file does not exist'
 }
 
 @test 'enchantment-to-yaml converts attributes into a header' {
@@ -52,17 +52,17 @@ teardown() {
 @test 'yaml-to-enchantment validates inputs and requires header' {
   run_spell 'spells/yaml-to-enchantment'
   assert_failure
-  assert_output --partial 'incorrect number of arguments'
+  assert_error --partial 'incorrect number of arguments'
 
   run_spell 'spells/yaml-to-enchantment' "$BATS_TEST_TMPDIR/void.txt"
   assert_failure
-  assert_output --partial 'Error: file does not exist'
+  assert_error --partial 'Error: file does not exist'
 
   no_header="$BATS_TEST_TMPDIR/no_header.txt"
   printf 'plain body\n' >"$no_header"
   run_spell 'spells/yaml-to-enchantment' "$no_header"
   assert_failure
-  assert_output --partial 'Error: file does not have a YAML header'
+  assert_error --partial 'Error: file does not have a YAML header'
 }
 
 @test 'yaml-to-enchantment restores attributes from YAML header' {

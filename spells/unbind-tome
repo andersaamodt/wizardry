@@ -1,43 +1,42 @@
-#!/bin/bash
+#!/bin/sh
 
-# A magical spell for slicing and dicing texts and lines. Reads a text file line by line and creates a new folder with the same name as the text file, with one file for each line in the text file inside that folder. Masks any characters that are not valid for use in Unix filenames.
+# Tome Unfurling Spell
+# This charm peels a bound tome back into individual pages, carving filenames
+# from each line so the lore is easy to sort and revisit.
 
-#!/bin/bash
+usage() {
+    printf '%s\n' "Usage: unbind-tome <tome-path>"
+}
 
-###############################################################################
-#
-# SCRIPT: slice_text_file.sh
-#
-# DESCRIPTION: A magical spell for slicing and dicing texts and lines.
-# Reads a text file line by line and creates a new folder with the same name
-# as the text file, with one file for each line in the text file inside that
-# folder. Masks any characters that are not valid for use in Unix filenames.
-#
-# USAGE: slice_text_file.sh path/to/text_file.txt
-#
-###############################################################################
-
-# Check that a file path was provided as an argument
-if [ "$#" -ne 1 ]; then
-  echo "Error: Please provide a file path as an argument."
-  exit 1
+if [ "$#" -lt 1 ]; then
+    printf '%s\n' "Error: Please provide a file path as an argument." >&2
+    usage >&2
+    exit 1
 fi
 
-# Create a folder with the same name as the text file
-folder_name=$(basename "$1" | sed 's/\.[^.]*$//')
-i=1
-while [ -d "$folder_name" ]; do
-  # If the folder already exists, append a number to the folder name
-  folder_name="$folder_name$i"
-  i=$((i+1))
-done
-mkdir "$folder_name"
+tome=$1
+if [ ! -f "$tome" ]; then
+    printf '%s\n' "Error: '$tome' is not a file." >&2
+    exit 1
+fi
 
-# Read the text file line by line and create a file for each line
-while read -r line; do
-  # Mask any characters that are not valid for use in Unix filenames
-  # Todo: file names are all prepended with the folder name (no slash), please fix so it's just the filename
-  file_name=$(echo "$line" | tr -dc '[:alnum:] .,;_-' | tr ' ' '_')
-  # Create the file
-  touch "$folder_name/$file_name"
-done < "$1"
+stem=$(basename -- "$tome")
+stem=${stem%.*}
+
+pages_dir=$stem
+suffix=1
+while [ -e "$pages_dir" ]; do
+    pages_dir="${stem}${suffix}"
+    suffix=$((suffix + 1))
+done
+mkdir -p "$pages_dir"
+
+page_number=1
+while IFS= read -r line || [ -n "$line" ]; do
+    clean_name=$(printf '%s' "$line" | tr -dc '[:alnum:] .,;_-' | tr ' ' '_')
+    if [ -z "$clean_name" ]; then
+        clean_name="page_${page_number}"
+    fi
+    printf '%s\n' "$line" >"$pages_dir/$clean_name"
+    page_number=$((page_number + 1))
+done <"$tome"

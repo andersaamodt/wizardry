@@ -85,6 +85,41 @@ STUB
   assert_error --partial 'No interactive input available'
 }
 
+@test 'ask_text collects replies and falls back to defaults' {
+  input="$BATS_TEST_TMPDIR/ask_text_input"
+  printf 'Merlin\n' >"$input"
+  ASK_CANTRIP_INPUT=stdin run_spell 'spells/cantrips/ask_text' 'Your name?' 'Gandalf' <"$input"
+  assert_success
+  assert_error --partial 'Your name? [Gandalf]'
+  assert_line --index 0 'Merlin'
+
+  ASK_CANTRIP_INPUT=none run_spell 'spells/cantrips/ask_text' 'Your name?' 'Gandalf'
+  assert_success
+  assert_line --index 0 'Gandalf'
+
+  ASK_CANTRIP_INPUT=none run_spell 'spells/cantrips/ask_text' 'Your name?'
+  assert_failure
+  assert_error --partial 'ask_text: No interactive input available.'
+}
+
+@test 'ask_number validates ranges and coerces input' {
+  ASK_CANTRIP_INPUT=stdin run_spell 'spells/cantrips/ask_number' 'Pick a rune count' 'a' '5'
+  assert_failure
+  assert_error --partial 'MIN must be an integer.'
+
+  ASK_CANTRIP_INPUT=stdin run_spell 'spells/cantrips/ask_number' 'Pick a rune count' 5 2
+  assert_failure
+  assert_error --partial 'MIN must be less than or equal to MAX.'
+
+  number_feed="$BATS_TEST_TMPDIR/ask_number_input"
+  printf 'not-a-number\n9\n3\n' >"$number_feed"
+  ASK_CANTRIP_INPUT=stdin run_spell 'spells/cantrips/ask_number' 'Pick a rune count' 1 5 <"$number_feed"
+  assert_success
+  assert_line --index 0 '3'
+  assert_error --partial 'Please enter a whole number.'
+  assert_error --partial 'Please choose a number between 1 and 5.'
+}
+
 @test 'require-command reports success and failure' {
   run_spell 'spells/cantrips/require-command' printf
   assert_success

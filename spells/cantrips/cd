@@ -2,7 +2,21 @@
 
 # The cd cantrip keeps a tiny shell hook that immediately runs `look`
 # after every successful directory change. The hook stays intentionally
-# small so wizards can tweak it at a glance.
+# small so wizards can tweak it at a glance while still whispering just
+# enough lore to keep the spell recognizable.
+
+set -eu
+
+SCRIPT_SOURCE=$0
+case $SCRIPT_SOURCE in
+*/*)
+        SCRIPT_DIR=${SCRIPT_SOURCE%/*}
+        ;;
+*)
+        SCRIPT_DIR=.
+        ;;
+esac
+SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
 
 warn() {
         printf '%s\n' "cd cantrip: $1" >&2
@@ -33,13 +47,38 @@ resolve_rc_file() {
         printf '%s/.bashrc\n' "$HOME"
 }
 
+cd_block_present() {
+        rc_file=$1
+        if [ ! -f "$rc_file" ]; then
+                return 1
+        fi
+        if grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file"; then
+                return 0
+        fi
+        if grep -Fq 'WIZARDRY_CD_CANTRIP' "$rc_file"; then
+                return 0
+        fi
+        return 1
+}
+
+ensure_rc_dir() {
+        target=$1
+        rc_dir=${target%/*}
+        [ "$rc_dir" = "$target" ] && rc_dir=.
+        if [ -d "$rc_dir" ]; then
+                return 0
+        fi
+        if mkdir -p "$rc_dir"; then
+                return 0
+        fi
+        warn "unable to create directory '$rc_dir'."
+        return 1
+}
+
 install() {
-        cd_spell=$(absolute_spell_path "$WIZARDRY_CD_CANTRIP") || return 1
+        cd_spell=$(absolute_spell_path "${WIZARDRY_CD_CANTRIP-}") || return 1
         rc_file=$(resolve_rc_file) || return 1
-        rc_dir=${rc_file%/*}
-        [ "$rc_dir" = "$rc_file" ] && rc_dir=.
-        if ! mkdir -p "$rc_dir"; then
-                warn "unable to create directory '$rc_dir'."
+        if ! ensure_rc_dir "$rc_file"; then
                 return 1
         fi
         tmp_file=$(mktemp "${TMPDIR:-/tmp}/wizardry-cd.XXXXXX") || return 1
@@ -62,6 +101,42 @@ HOOK
         printf '%s\n' "cd cantrip: installed wizardry hooks in '$rc_file'."
 }
 
+locate_ask_yn() {
+        if command -v ask_yn >/dev/null 2>&1; then
+                command -v ask_yn
+                return 0
+        fi
+        if [ -x "$SCRIPT_DIR/ask_yn" ]; then
+                printf '%s\n' "$SCRIPT_DIR/ask_yn"
+                return 0
+        fi
+        if [ -x "$SCRIPT_DIR/cantrips/ask_yn" ]; then
+                printf '%s\n' "$SCRIPT_DIR/cantrips/ask_yn"
+                return 0
+        fi
+        warn "ask_yn spell is missing; skipping installation prompt."
+        return 1
+}
+
+prompt_install_if_needed() {
+        rc_file=$(resolve_rc_file) || return
+        if cd_block_present "$rc_file"; then
+                return
+        fi
+        if ! ask_yn_cmd=$(locate_ask_yn); then
+                return
+        fi
+        spell_path=$(absolute_spell_path "${WIZARDRY_CD_CANTRIP-}")
+        rc_display=$(basename "$rc_file")
+        printf '%s\n' "The cd cantrip can sprinkle the 'look' spell on every hop."
+        if "$ask_yn_cmd" "Memorize the cd cantrip in $rc_display so each teleport reveals the room?" yes >/dev/null; then
+                WIZARDRY_CD_CANTRIP=$spell_path install || return
+                printf '%s\n' "The hook is etched into $rc_display."
+        else
+                printf '%s\n' "Very well—cast 'memorize spells/cantrips/cd' when you crave automatic scouting."
+        fi
+}
+
 wizardry_cd_cast_look() {
         if command -v look >/dev/null 2>&1; then
                 look "$@"
@@ -80,5 +155,6 @@ wizardry_cd_main() {
 : "${WIZARDRY_CD_CANTRIP:=$(absolute_spell_path)}"
 
 if [ -z "${WIZARDRY_MEMORIZE_TARGET-}" ]; then
+        prompt_install_if_needed || true
         wizardry_cd_main "$@"
 fi

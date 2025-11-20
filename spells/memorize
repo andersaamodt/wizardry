@@ -14,6 +14,10 @@
 # format.  The detected details are exported via WIZARDRY_* environment
 # variables so downstream spells can respect the project-wide conventions
 # without reinventing the detection logic.
+#
+# The script leans on small helper functions to make the flow readable for
+# novice shellcrafters: gather the helpers, parse options, detect the
+# environment once, then either memorize explicit files or sweep directories.
 
 set -eu
 
@@ -97,6 +101,8 @@ warn() {
 ask_yes_no() {
         question=$1
         default=${2:-no}
+        # ask_yn returns success for affirmative answers, so we mirror that
+        # convention to keep the calling code linear.
         if "$ASK_YN_HELPER" "$question" "$default" >/dev/null; then
                 return 0
         fi
@@ -181,6 +187,9 @@ cat <<'WRAPPER' >"$MEMORIZE_WRAPPER"
 set -eu
 TARGET=$1
 shift
+# Each installable spell is sourced so its install() function becomes
+# available. We pass along the original arguments verbatim so spells can
+# receive flags exactly as the user provided them.
 if [ ! -f "$TARGET" ]; then
         printf '%s\n' "memorize wrapper: missing target '$TARGET'" >&2
         exit 1
@@ -244,15 +253,9 @@ run_install() {
 
 memorize_file() {
         path=$1
-        if [ ! -f "$path" ]; then
-                SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
-                return
-        fi
-        if [ ! -x "$path" ]; then
-                SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
-                return
-        fi
-        if ! have_install_function "$path"; then
+        # Bail early for anything we cannot safely memorize. Collapsing the
+        # guards keeps the control flow short without hiding the reasons.
+        if [ ! -f "$path" ] || [ ! -x "$path" ] || ! have_install_function "$path"; then
                 SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
                 return
         fi
@@ -266,28 +269,30 @@ memorize_file() {
 }
 
 memorize_spellbook_alias() {
-if [ "$#" -lt 2 ]; then
-warn "alias requires a NAME and a COMMAND."
-exit 1
-fi
-if [ -z "$SPELLBOOK_STORE" ] || [ ! -x "$SPELLBOOK_STORE" ]; then
-printf '%s\n' "memorize: spellbook-store helper is unavailable; cannot record alias." >&2
-exit 1
-fi
-name=$1
-shift
-command_display=$*
-if [ -z "$command_display" ]; then
-warn "alias requires a COMMAND."
-exit 1
-fi
-if "$SPELLBOOK_STORE" add "$name" "$@"; then
-printf "Spellbook memorized: %s -> %s\n" "$name" "$command_display"
-printf '%s\n' "Cast it from the spellbook menu or run 'cast a spell'."
-exit 0
-fi
-warn "Unable to record spell '$name'."
-exit 1
+        if [ "$#" -lt 2 ]; then
+                warn "alias requires a NAME and a COMMAND."
+                exit 1
+        fi
+        if [ -z "$SPELLBOOK_STORE" ] || [ ! -x "$SPELLBOOK_STORE" ]; then
+                printf '%s\n' "memorize: spellbook-store helper is unavailable; cannot record alias." >&2
+                exit 1
+        fi
+        name=$1
+        shift
+        command_display=$*
+        # Capturing the command exactly as provided keeps the recording faithful
+        # when it is shown in menus later.
+        if [ -z "$command_display" ]; then
+                warn "alias requires a COMMAND."
+                exit 1
+        fi
+        if "$SPELLBOOK_STORE" add "$name" "$@"; then
+                printf "Spellbook memorized: %s -> %s\n" "$name" "$command_display"
+                printf '%s\n' "Cast it from the spellbook menu or run 'cast a spell'."
+                exit 0
+        fi
+        warn "Unable to record spell '$name'."
+        exit 1
 }
 
 scan_directory() {
