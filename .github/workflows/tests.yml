@@ -1,0 +1,18 @@
+name: Tests and Coverage
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install bubblewrap dependency
+        run: sudo apt-get update && sudo apt-get install -y bubblewrap
+      - name: Run unit tests
+        run: ./spells/menu/system/run-tests
+      - name: Report coverage
+        run: NO_COLOR=1 spells/menu/system/test-coverage
