@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# This spell selects the best shell rc file for PATH exports or memorization.
+# It prints platform, rc_file, and format hints so callers can update startup files safely.
+
 set -eu
 
 usage() {
@@ -70,36 +73,22 @@ add_candidate() {
         fi
 }
 
-detect_platform() {
-        if [ -n "$platform" ]; then
-                printf '%s' "$platform"
-                return 0
-        fi
+# Decide platform once so the downstream selection stays predictable.
+if [ -z "$platform" ]; then
         if [ -f /etc/NIXOS ] || grep -qi 'ID=nixos' /etc/os-release 2>/dev/null; then
-                printf '%s' 'nixos'
-                return 0
+                platform=nixos
+        elif [ -f /etc/debian_version ]; then
+                platform=debian
+        elif [ -f /etc/arch-release ]; then
+                platform=arch
+        elif [ -f /etc/fedora-release ]; then
+                platform=fedora
+        elif uname 2>/dev/null | grep -q 'Darwin'; then
+                platform=mac
+        else
+                platform=unknown
         fi
-        if [ -f /etc/debian_version ]; then
-                printf '%s' 'debian'
-                return 0
-        fi
-        if [ -f /etc/arch-release ]; then
-                printf '%s' 'arch'
-                return 0
-        fi
-        if [ -f /etc/fedora-release ]; then
-                printf '%s' 'fedora'
-                return 0
-        fi
-        if uname 2>/dev/null | grep -q 'Darwin'; then
-                printf '%s' 'mac'
-                return 0
-        fi
-        printf '%s' 'unknown'
-        return 0
-}
-
-platform=$(detect_platform)
+fi
 
 RC_CANDIDATES=''
 

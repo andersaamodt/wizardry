@@ -1,4 +1,24 @@
 #!/bin/sh
+
+# This spell fast-forwards the wizardry repository in place.
+# It locates the checkout directory or accepts WIZARDRY_DIR to target another path.
+
+show_usage() {
+        cat <<'USAGE'
+Usage: update-wizardry
+
+Update the wizardry repository by running a fast-forward git pull in the
+checkout directory inferred from this spell or provided via WIZARDRY_DIR.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
 set -eu
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)

@@ -1,11 +1,23 @@
 #!/bin/sh
 
-# Read enchanted attributes from a file.
-#
-# The spell stays didactic and sequential: verify the scroll exists, decide
-# whether to list every sigil or summon one by name, and lean on whichever
-# attribute tool the system provides. Comments explain each fork so the flavor
-# text and intent survive future edits.
+# This spell lists extended attributes from a file, optionally narrowing to one key.
+# It walks through existence checks and available helpers in a linear, didactic order.
+
+show_usage() {
+        cat <<'USAGE'
+Usage: read-magic <file> [attribute]
+
+List all extended attributes on a file, or print the value of a named
+attribute when provided. Supports attr, xattr, and getfattr as available.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
 
 require_args() {
   if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then

@@ -1,8 +1,27 @@
 #!/bin/sh
 
+# This spell reads a vCard and prints its fields with friendly labels.
+# Provide an optional field name to extract a single detail.
+
+show_usage() {
+        cat <<'USAGE'
+Usage: read-contact <vcard-file> [field]
+
+Print all fields from a vCard file, or a specific field when provided. Escapes
+are normalized for readability and friendly field labels are shown.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
 # Check for correct usage
 if [ $# -lt 1 ]; then
-    echo "Usage: $0 file [field]"
+    show_usage >&2
     exit 1
 fi
 

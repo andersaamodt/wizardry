@@ -1,52 +1,59 @@
 #!/bin/sh
 
-# Mark the current directory or a provided path for jump-to-marker.
-#
-# The ritual is straightforward: accept at most one destination, resolve it to
-# an absolute path (tilde and relative trails included), and write it to the
-# marker file with a reassuring status line.
-
-resolve_path() {
-  target=$1
-  case $target in
-    /*) printf '%s\n' "$(cd "$(dirname "$target")" && pwd -P)/$(basename "$target")" ;;
-    ~/*)
-      if [ -n "${HOME-}" ]; then
-        printf '%s\n' "$HOME/${target#~/}"
-      else
-        printf '%s\n' "$target"
-      fi
-      ;;
-    *) printf '%s\n' "$(pwd -P)/$target" ;;
-  esac
-}
+# This spell records the current directory (or a provided path) for jump-to-marker.
+# It resolves the destination to an absolute path and stores it in the marker file.
 
 usage() {
-  printf '%s\n' "Usage: mark-location [path]" >&2
+  cat <<'USAGE'
+Usage: mark-location [path]
+
+Record the absolute path (current directory by default) for jump-to-marker to
+return to later, writing it into ~/.mud/portal_marker.
+USAGE
 }
 
-main() {
-  if [ "$#" -gt 1 ]; then
-    usage
+case "${1-}" in
+--help|--usage|-h)
+  usage
+  exit 0
+  ;;
+esac
+
+if [ "$#" -gt 1 ]; then
+  usage
+  exit 1
+fi
+
+marker_dir="$HOME/.mud"
+marker_file="$marker_dir/portal_marker"
+
+# Store the marker alongside other MUD metadata.
+mkdir -p "$marker_dir" || exit 1
+
+if [ "$#" -eq 0 ]; then
+  destination=$(pwd -P)
+else
+  if [ ! -e "$1" ]; then
+    printf 'Error: %s does not exist.\n' "$1" >&2
     exit 1
   fi
+  # Expand the provided path to an absolute destination for consistent recall.
+  case $1 in
+    /*)
+      destination="$(cd "$(dirname "$1")" && pwd -P)/$(basename "$1")"
+      ;;
+    ~/*)
+      if [ -n "${HOME-}" ]; then
+        destination="$HOME/${1#~/}"
+      else
+        destination="$1"
+      fi
+      ;;
+    *)
+      destination="$(pwd -P)/$1"
+      ;;
+  esac
+fi
 
-  marker_dir="$HOME/.mud"
-  marker_file="$marker_dir/portal_marker"
-  mkdir -p "$marker_dir" || exit 1
-
-  if [ "$#" -eq 0 ]; then
-    destination=$(pwd -P)
-  else
-    if [ ! -e "$1" ]; then
-      printf 'Error: %s does not exist.\n' "$1" >&2
-      exit 1
-    fi
-    destination=$(resolve_path "$1")
-  fi
-
-  printf '%s\n' "$destination" >"$marker_file"
-  printf 'Location marked at %s.\n' "$destination"
-}
-
-main "$@"
+printf '%s\n' "$destination" >"$marker_file"
+printf 'Location marked at %s.\n' "$destination"

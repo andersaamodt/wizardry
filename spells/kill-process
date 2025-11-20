@@ -1,13 +1,29 @@
 #!/bin/sh
 
-display_menu(){
-    echo "List of running processes:"
-    ps -ax | awk '{print $5}' | tail -n +2 | nl -w 2 -s ') '
+# This spell lists running processes and interactively chooses one to terminate.
+# It prompts with ask cantrips and sends a kill signal, customizable via KILL_CMD.
+
+show_usage() {
+        cat <<'USAGE'
+Usage: kill-process
+
+List running processes, prompt for one by number using ask_number and ask_yn,
+then send a kill signal (override with KILL_CMD) to the selected pid.
+USAGE
 }
 
-PS_NAMES=($(ps -ax | awk '{print $5}' | tail -n +2))
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
 
-display_menu
+# Present the process list so the user can choose what to terminate.
+echo "List of running processes:"
+ps -ax | awk '{print $5}' | tail -n +2 | nl -w 2 -s ') '
+
+PS_NAMES=($(ps -ax | awk '{print $5}' | tail -n +2))
 
 if ! command -v ask_number >/dev/null 2>&1; then
     echo "ask_number spell is required to choose a process." >&2

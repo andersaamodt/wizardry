@@ -1,20 +1,34 @@
 #!/bin/sh
 
-# Tome Fusion Spell
-# This incantation threads scattered parchment pages into a single tome while
-# narrating each binding so the ritual remains transparent. Offer a directory
-# of pages; add -d to let the wind carry the loose pages away after the tome is
-# sealed.
+# This spell binds every file in a directory into a single tome.
+# Pass -d to recycle the loose pages after the binding completes.
 
 usage() {
-    printf '%s\n' "Usage: bind-tome [-d] <page-directory>"
+        cat <<'USAGE'
+Usage: bind-tome [-d] <page-directory>
+
+Bind every file in the provided directory into a single <dirname>.txt tome.
+Pass -d to delete the original pages after binding.
+USAGE
 }
 
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
+# Parse options early so -h works even with missing args.
 delete_sources=0
-while getopts ":d" opt; do
+while getopts ":dh" opt; do
     case "$opt" in
         d)
             delete_sources=1
+            ;;
+        h)
+            usage
+            exit 0
             ;;
         *)
             usage >&2
@@ -24,6 +38,7 @@ while getopts ":d" opt; do
 done
 shift $((OPTIND - 1))
 
+# Require a directory of pages to stitch together.
 if [ "$#" -lt 1 ]; then
     printf '%s\n' "Error: Please provide a folder path as an argument." >&2
     usage >&2
@@ -31,6 +46,7 @@ if [ "$#" -lt 1 ]; then
 fi
 
 pages_dir=$1
+# Fail fast if the provided path is not a directory of pages.
 if [ ! -d "$pages_dir" ]; then
     printf '%s\n' "Error: '$pages_dir' is not a directory." >&2
     exit 1
@@ -40,6 +56,7 @@ folder_name=$(basename -- "$pages_dir")
 text_file="${folder_name}.txt"
 : >"$text_file"
 
+# Append each page with headers so the merged tome is navigable.
 for page in "$pages_dir"/*; do
     [ -e "$page" ] || continue
     page_name=$(basename -- "$page")
@@ -50,6 +67,7 @@ done
 
 printf '%s\n' "Text file created: $text_file"
 
+# Optionally remove the original pages once the tome is complete.
 if [ "$delete_sources" -eq 1 ]; then
     for page in "$pages_dir"/*; do
         [ -e "$page" ] || continue

@@ -1,13 +1,27 @@
 #!/bin/sh
 
-# YAML to Xattr Transmutation Spell
-# This spell reads a front-matter prologue and breathes its keys back into
-# extended attributes, then leaves behind a tidy scroll containing only the
-# story.
+# This spell reads a YAML front matter block and restores its keys as attributes.
+# After the transfer, it trims the prologue so the file holds only its content.
+
+show_usage() {
+        cat <<'USAGE'
+Usage: yaml-to-enchantment <path-to-file>
+
+Parse a YAML front matter header, write each key/value into the file's extended
+attributes, and rewrite the file without the header.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
 
 if [ "$#" -ne 1 ]; then
     printf '%s\n' "Error: incorrect number of arguments" >&2
-    printf '%s\n' "Usage: yaml-to-enchantment <path-to-file>" >&2
+    show_usage >&2
     exit 1
 fi
 

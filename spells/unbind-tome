@@ -1,12 +1,23 @@
 #!/bin/sh
 
-# Tome Unfurling Spell
-# This charm peels a bound tome back into individual pages, carving filenames
-# from each line so the lore is easy to sort and revisit.
+# This spell splits a bound tome back into individual page files.
+# It derives filenames from page headers so the restored pages are easy to revisit.
 
 usage() {
-    printf '%s\n' "Usage: unbind-tome <tome-path>"
+    cat <<'USAGE'
+Usage: unbind-tome <tome-path>
+
+Split a bound tome back into individual files, naming each page from its
+contents and placing them in a directory derived from the tome name.
+USAGE
 }
+
+case "${1-}" in
+--help|--usage|-h)
+    usage
+    exit 0
+    ;;
+esac
 
 if [ "$#" -lt 1 ]; then
     printf '%s\n' "Error: Please provide a file path as an argument." >&2
