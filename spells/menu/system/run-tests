@@ -1,0 +1,129 @@
+#!/usr/bin/env bash
+# shellcheck disable=SC2016
+
+# Run the wizardry shell test suite in a bubblewrap sandbox.
+# The suite discovers test_*.sh scripts under tests/ and executes
+# each one as a standalone POSIX shell script. Bubblewrap keeps
+# the host safe from accidental writes while tests exercise spells.
+
+set -euo pipefail
+
+usage() {
+  cat <<'USAGE'
+Usage: run-tests [options]
+
+Execute the behavior-driven shell tests located in tests/.
+Each test_*.sh script runs inside bubblewrap to prevent host
+modifications.
+
+Options:
+  --only PATTERN   Run test scripts matching the glob PATTERN relative
+                   to tests/. May be repeated. When omitted, every
+                   test_*.sh file runs.
+  --list           Print the resolved test files and exit without running.
+  -h, --help       Show this help and exit.
+USAGE
+}
+
+# Resolve repository paths relative to this spell's location.
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+ROOT_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/../../.." && pwd -P)
+TEST_DIR="$ROOT_DIR/tests"
+
+# Ensure bubblewrap is available before running anything.
+if ! command -v bwrap >/dev/null 2>&1; then
+  echo "bubblewrap missing; attempting installation via install-bwrap"
+  if ! "$ROOT_DIR/spells/menu/install/core/install-bwrap"; then
+    echo "run-tests: failed to install bubblewrap" >&2
+    exit 1
+  fi
+fi
+
+declare -a only_patterns=()
+list_only=0
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --only)
+      if [ "$#" -lt 2 ]; then
+        echo "run-tests: --only requires a pattern" >&2
+        usage
+        exit 1
+      fi
+      only_patterns+=("$2")
+      shift 2
+      ;;
+    --list)
+      list_only=1
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    --)
+      shift
+      break
+      ;;
+    *)
+      echo "run-tests: unknown option '$1'" >&2
+      usage
+      exit 1
+      ;;
+  esac
+done
+
+select_tests() {
+  if [ ${#only_patterns[@]} -eq 0 ]; then
+    cd "$TEST_DIR"
+    for file in test_*.sh; do
+      [ -f "$file" ] && printf '%s\n' "$TEST_DIR/$file"
+    done
+    return 0
+  fi
+
+  for pattern in "${only_patterns[@]}"; do
+    if [[ $pattern == /* ]]; then
+      matches=($pattern)
+    else
+      matches=($TEST_DIR/$pattern)
+    fi
+    if [ ${#matches[@]} -eq 0 ]; then
+      echo "run-tests: pattern '$pattern' matched no tests" >&2
+      exit 1
+    fi
+    for match in "${matches[@]}"; do
+      if [ ! -f "$match" ]; then
+        echo "run-tests: resolved '$match' is not a file" >&2
+        exit 1
+      fi
+      printf '%s\n' "$match"
+    done
+  done
+}
+
+mapfile -t test_files < <(select_tests | sort -u)
+
+if [ ${#test_files[@]} -eq 0 ]; then
+  echo "run-tests: no tests discovered." >&2
+  exit 1
+fi
+
+if [ "$list_only" -eq 1 ]; then
+  for test in "${test_files[@]}"; do
+    rel=${test#"$ROOT_DIR/"}
+    printf '%s\n' "$rel"
+  done
+  exit 0
+fi
+
+status=0
+for test in "${test_files[@]}"; do
+  echo "Running ${test#"$ROOT_DIR/"}"
+  if ! sh "$test"; then
+    status=1
+  fi
+  echo
+done
+
+exit $status
