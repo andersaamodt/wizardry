@@ -121,12 +121,26 @@ if [ "$list_only" -eq 1 ]; then
 fi
 
 status=0
+pass_scripts=0
+fail_scripts=0
 for test in "${test_files[@]}"; do
   echo "Running ${test#"$ROOT_DIR/"}"
   if ! sh "$test"; then
     status=1
+    fail_scripts=$((fail_scripts + 1))
+  else
+    pass_scripts=$((pass_scripts + 1))
   fi
   echo
 done
+
+total_scripts=$((pass_scripts + fail_scripts))
+if [ "$total_scripts" -gt 0 ]; then
+  if [ "$fail_scripts" -gt 0 ]; then
+    echo "Test summary: $fail_scripts failed, $pass_scripts passed ($total_scripts total)"
+  else
+    echo "Test summary: all $pass_scripts test scripts passed"
+  fi
+fi
 
 exit $status
