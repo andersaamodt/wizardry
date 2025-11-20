@@ -76,3 +76,13 @@ spellbook_file() {
   assert_success
   assert_equal "$spellbook_list" "$output"
 }
+
+@test 'memorize prompts to scan current directory when no spells specified' {
+  input_no="$BATS_TEST_TMPDIR/mem_no"
+  printf 'n\n' >"$input_no"
+
+  ASK_CANTRIP_INPUT=stdin run_spell 'spells/memorize' <"$input_no"
+  assert_success
+  assert_error --partial 'No spells specified. Memorize everything in'
+  assert_output --partial 'No spells memorized.'
+}

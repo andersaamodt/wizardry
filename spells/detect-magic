@@ -1,93 +1,142 @@
 #!/bin/sh
 
-# This spell detects magic in the files in the current directory. It reveals any enchanted attributes hidden within the files and tells you how much magic it has detected.
+# detect-magic surveys the current directory for enchanted files. It relies on
+# the read-magic spell to list attributes, counts them, and whispers ambient
+# commentary so novices sense how much power swirls around their workbench.
+# The narration leans into coloured keywords when terminals allow it so even
+# apprentices feel the arcane glow.
 
-# Define colors
-blue="\033[36m"
-purple='\033[0;35m'
-reset='\033[0m'
+# The spell keeps its flow linear: discover the helper, decide on colour, walk
+# the room, then summarize the ambience. Each step is narrated so new
+# spellwrights can read along without chasing function indirection.
 
-# Define a function to print a message based on the total number of enchanted attributes
-print_message() {
-  # Total number of enchanted attributes
-  count=$1
-	
-  # High intensity message
-  if [ "$count" -gt 120 ]; then
-    # High intensity messages
-    messages=(
-      "Whoa, this room is seriously ${purple}enchanted${reset}!"
-      "I can feel the ${purple}magic${reset} emanating from these files!"
-      "This room is practically pulsating with ${purple}magic${reset}!"
-      "I've never sensed this much ${purple}magic${reset} in one place before!"
-      "The amount of ${purple}magic${reset} in this room is off the charts!"
-      "These files are practically glowing with ${purple}magic${reset}!"
-      "I can hardly contain all this ${purple}magic${reset}!"
-    )
-    # Select a random message
-    message=${messages[$RANDOM % ${#messages[@]} ]}
-  # Medium intensity message
-  elif [ "$count" -gt 50 ]; then
-    # Medium intensity messages
-    messages=(
-      "I can feel the ${purple}magic${reset} in the air."
-      "There seems to be quite a bit of ${purple}magic${reset} in this room."
-      "This room is positively brimming with ${purple}magic${reset}."
-      "These files are infused with ${purple}magic${reset}."
-      "The ${purple}magic${reset} in this room is palpable."
-      "The ${purple}magic${reset} in these files is almost tangible."
-      "This room is filled with ${purple}magic${reset}."
-    )
-    # Select a random message
-    message=${messages[$RANDOM % ${#messages[@]} ]}
-  # Low intensity message
-  elif [ "$count" -gt 15 ]; then
-    # Low intensity messages
-    messages=(
-      "I sense a bit of ${purple}magic${reset} in this room."
-      "There seems to be a hint of ${purple}magic${reset} in these files."
-      "I can feel a faint aura of ${purple}magic${reset} in this room."
-      "These files have a touch of ${purple}magic${reset}."
-      "I detect a faint trace of ${purple}magic${reset} in this room."
-      "There is a subtle essence of ${purple}magic${reset} in these files."
-      "This room has a faint glimmer of ${purple}magic${reset}."
-    )
-    # Select a random message
-    message=${messages[$RANDOM % ${#messages[@]} ]}
-	fi
-   
-  # Print the message and also whisper a familiar refrain so every run keeps
-  # the same flavorful cadence.
-  echo -en "$message\n"
-  echo -en "I can feel the ${purple}magic${reset} in the air.\n"
-}
+set -eu
 
-# Print a header row
-printf "${blue}File${reset}%-30s ${purple}Enchantments${reset}\n"
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd -P)
 
-# Iterate over all the files in the current directory
-for file in *; do
-  # Use the read-magic spell to get a list of enchanted attributes for the file
-  attrs=$(./read-magic "$file" 2> /dev/null)
-
-  # If the read-magic spell returns a non-empty list of attributes,
-  # print the file name and the number of attributes
-  if [ -n "$attrs" ]; then
-    # Count the number of lines in the attribute list
-    count=$(echo "$attrs" | wc -l)
-
-    # Print the file name and the number of attributes in purple
-    printf "%-40s ${purple}%d${reset}\n" "$file" "$count"
-
-    # Add the number of attributes to the total
-    total=$((total + count))
-  fi
-done
-
-# If the total number of attributes is greater than 0, print a message
-if [ "$total" -gt 0 ]; then
-  print_message "$total"
+# Let tests or callers override the helper path; otherwise look beside this
+# script first, then in PATH so the spell still works when installed globally.
+# This keeps installation optional while preserving predictability.
+READ_MAGIC=${DETECT_MAGIC_READ_MAGIC-}
+if [ -z "$READ_MAGIC" ]; then
+        if [ -x "$SCRIPT_DIR/read-magic" ]; then
+                READ_MAGIC="$SCRIPT_DIR/read-magic"
+        elif command -v read-magic >/dev/null 2>&1; then
+                READ_MAGIC=$(command -v read-magic)
+        else
+                printf '%s\n' "detect-magic: read-magic spell is missing." >&2
+                exit 1
+        fi
 fi
 
-# Reset the text color to the default
-echo -en "$reset"
+# Disable colour on plain terminals so the narration stays legible. The
+# keyword helpers collapse to plain words when colour disappears so the rest of
+# the spell can sprinkle colour without conditional branches.
+# We avoid external tput/printf colour helpers to stay POSIX-clean.
+if [ "${NO_COLOR-}" = "1" ] || [ "${NO_COLOR-}" = "true" ] || [ "${TERM:-}" = "dumb" ]; then
+        blue=""
+        purple=""
+        reset=""
+else
+        blue="\033[36m"
+        purple='\033[0;35m'
+        reset='\033[0m'
+fi
+magic_word="${purple}magic${reset}"
+enchanted_word="${purple}enchanted${reset}"
+enchantments_word="${purple}enchantments${reset}"
+
+total=0
+found_any=0
+
+# choose_message rotates through a themed collection of whispers depending on
+# how many enchantments were tallied. The modulo keeps the selection stable for
+# a given count without relying on non-POSIX random helpers.
+# Returning 1 when no messages match lets the caller silently skip the flourish
+# in sparse rooms.
+choose_message() {
+        count=$1
+        if [ "$count" -gt 120 ]; then
+                messages=$(cat <<'LINES'
+Whoa, this room is seriously __ENCHANTED__!
+I can feel the __MAGIC__ emanating from these files!
+This room is practically pulsating with __MAGIC__!
+I've never sensed this much __MAGIC__ in one place before!
+The amount of __MAGIC__ in this room is off the charts!
+These files are practically glowing with __MAGIC__!
+I can hardly contain all this __MAGIC__!
+LINES
+)
+        elif [ "$count" -gt 50 ]; then
+                messages=$(cat <<'LINES'
+I can feel the __MAGIC__ in the air.
+There seems to be quite a bit of __MAGIC__ in this room.
+This room is positively brimming with __MAGIC__.
+These files are infused with __MAGIC__.
+The __MAGIC__ in this room is palpable.
+The __MAGIC__ in these files is almost tangible.
+This room is filled with __MAGIC__.
+LINES
+)
+        elif [ "$count" -gt 15 ]; then
+                messages=$(cat <<'LINES'
+I sense a bit of __MAGIC__ in this room.
+There seems to be a hint of __MAGIC__ in these files.
+I can feel a faint aura of __MAGIC__ in this room.
+These files have a touch of __MAGIC__.
+I detect a faint trace of __MAGIC__ in this room.
+There is a subtle essence of __MAGIC__ in these files.
+This room has a faint glimmer of __MAGIC__.
+LINES
+)
+        else
+                messages=''
+        fi
+
+        if [ -z "$messages" ]; then
+                return 1
+        fi
+
+        lines=$(printf '%s\n' "$messages" | wc -l | tr -d ' ')
+        index=$((count % lines + 1))
+        printf '%s\n' "$messages" | awk -v line="$index" -v mark="$magic_word" -v glow="$enchanted_word" \
+                'NR==line { gsub("__MAGIC__", mark); gsub("__ENCHANTED__", glow); print; exit }'
+        return 0
+}
+
+# Open with a header so seers know which column holds names and which counts.
+printf "%s%-30s %s%s%s\n" "$blue" "File" "$purple" "$enchantments_word" "$reset"
+
+for entry in *; do
+        # Skip globs that did not match files and ignore directories.
+        [ -e "$entry" ] || continue
+        [ -f "$entry" ] || continue
+
+        # read-magic reports every incantation decorating the file. We quietly
+        # ignore unreadable files so the rest of the room still reports.
+        if ! attrs=$("$READ_MAGIC" "$entry" 2>/dev/null); then
+                continue
+        fi
+
+        # Count only non-blank lines so empty outputs do not skew totals.
+        count=$(printf '%s\n' "$attrs" | awk 'NF{c++} END{print c+0}')
+        if [ "$count" -eq 0 ]; then
+                continue
+        fi
+
+        printf '%-40s %s%d%s\n' "$entry" "$purple" "$count" "$reset"
+        total=$((total + count))
+        found_any=1
+
+done
+
+if [ "$found_any" -eq 1 ]; then
+        if message=$(choose_message "$total"); then
+                printf '%s\n' "$message"
+        fi
+        printf 'I can feel the %smagic%s in the air.\n' "$purple" "$reset"
+else
+        printf 'No enchantments reveal themselves today.\n'
+fi
+
+printf '%s' "$reset"

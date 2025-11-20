@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/sh
 
 # Read a single key press from the controlling terminal and report it in a
 # descriptive form ("enter", "up", literal text, etc.).

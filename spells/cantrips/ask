@@ -1,5 +1,9 @@
 #!/bin/sh
 
+# ask is the gentlest cantrip: it simply relays a question to ask_text so
+# callers can depend on a single entrypoint.  Keeping this shim separate lets
+# other spells import ask_text directly while users enjoy the concise ask name.
+
 set -eu
 
 SCRIPT=$0
@@ -19,4 +23,5 @@ if [ ! -x "$HELPER" ]; then
         exit 1
 fi
 
+# Pass every incantation straight through so ask behaves exactly like ask_text.
 exec "$HELPER" "$@"

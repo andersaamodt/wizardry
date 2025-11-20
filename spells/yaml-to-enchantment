@@ -1,45 +1,66 @@
-#!/bin/bash
+#!/bin/sh
 
-# The YAML to Xattr Transmutation Spell
-# 
-# This powerful spell allows you to magically transmute the metadata contained in a YAML header into extended
-# attributes. Simply provide the path to the file as an argument, and the spell will do the rest. The original
-# YAML header will be removed from the file, leaving only pure, unadulterated content.
-# 
-# Usage: ./yaml_to_xattr.sh path/to/file.txt
+# YAML to Xattr Transmutation Spell
+# This spell reads a front-matter prologue and breathes its keys back into
+# extended attributes, then leaves behind a tidy scroll containing only the
+# story.
 
-# Check if the number of arguments is correct
 if [ "$#" -ne 1 ]; then
-    echo "Error: incorrect number of arguments"
-    echo "Usage: ./yaml_to_xattr.sh path/to/file.txt"
+    printf '%s\n' "Error: incorrect number of arguments" >&2
+    printf '%s\n' "Usage: yaml-to-enchantment <path-to-file>" >&2
     exit 1
 fi
 
-# Check if the file exists
-if [ ! -f "$1" ]; then
-    echo "Error: file does not exist"
+scroll=$1
+if [ ! -f "$scroll" ]; then
+    printf '%s\n' "Error: file does not exist" >&2
     exit 1
 fi
 
-# Check if the file has a YAML header
-header=$(head -n 20 "$1" | grep "^---$")
-if [ -z "$header" ]; then
-    echo "Error: file does not have a YAML header"
+header_count=$(awk '/^---$/{c++} END{print c}' "$scroll")
+if [ "$header_count" -lt 2 ]; then
+    printf '%s\n' "Error: file does not have a YAML header" >&2
     exit 1
 fi
 
-# Extract the YAML header
-yaml_header=$(sed -n '/^---$/,/^---$/p' "$1" | head -n -1)
+yaml_header=$(awk '
+    /^---$/ {delim++; next}
+    delim==1 {print}
+' "$scroll")
 
-# Convert the YAML header to extended attributes
-while read -r line; do
-    # Extract the key and value
-    key=$(echo "$line" | awk -F: '{print $1}')
-    value=$(echo "$line" | awk -F: '{$1=""; print $0}' | sed 's/^[ \t]*//g')
+if [ -z "$yaml_header" ]; then
+    printf '%s\n' "Error: file does not have a YAML header" >&2
+    exit 1
+fi
 
-    # Set the extended attribute
-    xattr -w "$key" "$value" "$1"
-done <<< "$yaml_header"
+set_attr() {
+    key=$1
+    value=$2
 
-# Remove the YAML header from the file
-sed -i '/^---$/,/^---$/d' "$1"
+    if command -v attr >/dev/null 2>&1; then
+        attr -s "$key" -V "$value" "$scroll" 2>/dev/null && return 0
+    fi
+    if command -v setfattr >/dev/null 2>&1; then
+        setfattr -n "$key" -v "$value" "$scroll" 2>/dev/null && return 0
+    fi
+    if command -v xattr >/dev/null 2>&1; then
+        xattr -w "$key" "$value" "$scroll" 2>/dev/null && return 0
+    fi
+    return 1
+}
+
+printf '%s' "$yaml_header" |
+    while IFS= read -r line || [ -n "$line" ]; do
+        key=${line%%:*}
+        value=${line#*:}
+        value=${value# }
+        set_attr "$key" "$value"
+    done
+
+body_tmp=$(mktemp "${TMPDIR:-/tmp}/wizardry-body.XXXXXX") || exit 1
+awk '
+    /^---$/ {delim++; next}
+    delim<2 {next}
+    {print}
+' "$scroll" >"$body_tmp"
+mv "$body_tmp" "$scroll"

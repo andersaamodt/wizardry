@@ -1,44 +1,59 @@
-#!/bin/bash
+#!/bin/sh
 
-# The Tome Fusion Spell
-# 
-# This powerful spell allows you to magically bind together the scattered pages of a tome, creating a single
-# cohesive text file. Simply provide the path to the folder containing the sliced pages as an argument, and the
-# spell will do the rest. If you want to destroy the original pages after fusing them together, use the -d flag.
-# 
-# Usage: ./fuse_text_file_lines.sh path/to/folder [-d]
-# todo: see if we can shorten or replace this script with `cat folder/* > file.txt` which simply cats a folder of scripts together (no separators tho)
+# Tome Fusion Spell
+# This incantation threads scattered parchment pages into a single tome while
+# narrating each binding so the ritual remains transparent. Offer a directory
+# of pages; add -d to let the wind carry the loose pages away after the tome is
+# sealed.
 
-# Check that a folder path was provided as an argument
-if [ "$#" -ne 1 ]; then
-  echo "Error: Please provide a folder path as an argument."
-  exit 1
+usage() {
+    printf '%s\n' "Usage: bind-tome [-d] <page-directory>"
+}
+
+delete_sources=0
+while getopts ":d" opt; do
+    case "$opt" in
+        d)
+            delete_sources=1
+            ;;
+        *)
+            usage >&2
+            exit 1
+            ;;
+    esac
+done
+shift $((OPTIND - 1))
+
+if [ "$#" -lt 1 ]; then
+    printf '%s\n' "Error: Please provide a folder path as an argument." >&2
+    usage >&2
+    exit 1
 fi
 
-# Create a new text file with the same name as the folder
-folder_name=$(basename "$1")
-text_file="$folder_name.txt"
-touch "$text_file"
+pages_dir=$1
+if [ ! -d "$pages_dir" ]; then
+    printf '%s\n' "Error: '$pages_dir' is not a directory." >&2
+    exit 1
+fi
 
-# Read all the files in the folder and append their content to the text file, with a special line marking the beginning and end of each file
-for file in "$1"/*; do
-  filename=$(basename "$file")
-  echo "----- $filename -----" >> "$text_file"
-  cat "$file" >> "$text_file"
-  echo "----- End of $filename -----" >> "$text_file"
+folder_name=$(basename -- "$pages_dir")
+text_file="${folder_name}.txt"
+: >"$text_file"
+
+for page in "$pages_dir"/*; do
+    [ -e "$page" ] || continue
+    page_name=$(basename -- "$page")
+    printf '%s\n' "----- $page_name -----" >>"$text_file"
+    cat "$page" >>"$text_file"
+    printf '%s\n' "----- End of $page_name -----" >>"$text_file"
 done
 
-echo "Text file created: $text_file"
+printf '%s\n' "Text file created: $text_file"
 
-# Check if the delete flag (-d) was provided as an argument
-while getopts "d" opt; do
-  case $opt in
-    d)
-      # If the delete flag was provided, delete all the original files
-      for file in "$1"/*; do
-        rm "$file"
-      done
-      echo "Original files deleted."
-      ;;
-  esac
-done
+if [ "$delete_sources" -eq 1 ]; then
+    for page in "$pages_dir"/*; do
+        [ -e "$page" ] || continue
+        rm -- "$page"
+    done
+    printf '%s\n' "Original files deleted."
+fi

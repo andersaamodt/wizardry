@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# ask_yn coaxes a yes or no from the adventurer.  Defaults guide hesitant
+# wanderers, and every response is echoed so other spells can heed the choice.
+
 set -eu
 
 usage() {
@@ -33,64 +36,65 @@ if [ "$#" -eq 2 ]; then
                 printf '%s\n' "ask_yn: default must be 'yes' or 'no'." >&2
                 exit 1
                 ;;
-esac
+        esac
 fi
 
 select_input() {
-case ${ASK_CANTRIP_INPUT:-auto} in
-stdin)
-printf '%s\n' stdin
-return 0
-;;
-none)
-return 1
-;;
-esac
-# Prefer stdin whenever something is piped to us, even if a tty is also
-# present, so scripted callers can answer without interactivity.
-if [ -t 0 ] || [ -p /dev/stdin ] || [ -s /dev/stdin ]; then
-printf '%s\n' stdin
-return 0
-fi
-if [ -r /dev/tty ]; then
-printf '%s\n' tty
-return 0
-fi
-return 1
+        case ${ASK_CANTRIP_INPUT:-auto} in
+        stdin)
+                printf '%s\n' stdin
+                return 0
+                ;;
+        none)
+                return 1
+                ;;
+        esac
+        # Prefer stdin whenever something is piped to us, even if a tty is also
+        # present, so scripted callers can answer without interactivity.
+        if [ -t 0 ] || [ -p /dev/stdin ] || [ -s /dev/stdin ]; then
+                printf '%s\n' stdin
+                return 0
+        fi
+        if [ -r /dev/tty ]; then
+                printf '%s\n' tty
+                return 0
+        fi
+        return 1
 }
 
 prompt_and_read() {
-printf '%s %s ' "$question" "$default_hint" >&2
-input=$(select_input) || return 1
-case $input in
-stdin)
-IFS= read -r reply || reply=
-;;
-tty)
-IFS= read -r reply </dev/tty || reply=
-;;
-*)
-return 1
-;;
-esac
-printf '%s' "$reply"
-return 0
+        printf '%s %s ' "$question" "$default_hint" >&2
+        input=$(select_input) || return 1
+        case $input in
+        stdin)
+                IFS= read -r reply || reply=
+                ;;
+        tty)
+                IFS= read -r reply </dev/tty || reply=
+                ;;
+        *)
+                return 1
+                ;;
+        esac
+        printf '%s' "$reply"
+        return 0
 }
 
 while :; do
-if ! response=$(prompt_and_read); then
-if [ -n "$default_choice" ]; then
-response=$default_choice
-else
-printf '%s\n' "ask_yn: No interactive input available." >&2
-exit 1
-fi
-elif [ -z "$response" ] && [ -n "$default_choice" ]; then
-response=$default_choice
-fi
-case $response in
-y|Y|yes|YES)
-printf '%s\n' "yes"
+        if ! response=$(prompt_and_read); then
+                if [ -n "$default_choice" ]; then
+                        response=$default_choice
+                else
+                        printf '%s\n' "ask_yn: No interactive input available." >&2
+                        exit 1
+                fi
+        elif [ -z "$response" ] && [ -n "$default_choice" ]; then
+                response=$default_choice
+        fi
+
+        case $response in
+        y|Y|yes|YES)
+                printf '%s\n' "yes"
                 exit 0
                 ;;
         n|N|no|NO)
@@ -98,6 +102,7 @@ printf '%s\n' "yes"
                 exit 1
                 ;;
         esac
+
         printf '%s\n' "Please answer yes or no." >&2
         default_hint="[y/n]" # remove default hint after invalid input
         default_choice=""

@@ -13,7 +13,7 @@ teardown() {
 @test 'bind-tome requires a directory argument' {
   run_spell 'spells/bind-tome'
   assert_failure
-  assert_output --partial 'Error: Please provide a folder path as an argument.'
+  assert_error --partial 'Error: Please provide a folder path as an argument.'
 }
 
 @test 'bind-tome combines files into a tome' {
@@ -40,22 +40,38 @@ teardown() {
   assert_output --partial 'End of second'
 }
 
-@test 'bind-tome -d on missing directory emits placeholders' {
-  workdir="$BATS_TEST_TMPDIR/deletion"
-  mkdir -p "$workdir"
-  pushd "$workdir" >/dev/null
+@test 'bind-tome refuses missing directories' {
   run_spell 'spells/bind-tome' '-d'
+  assert_failure
+  assert_error --partial 'Error: Please provide a folder path as an argument.'
+
+  run_spell 'spells/bind-tome' '/no/such/place'
+  assert_failure
+  assert_error --partial "Error: '/no/such/place' is not a directory."
+}
+
+@test 'bind-tome deletes pages when -d is provided' {
+  workdir="$BATS_TEST_TMPDIR/deletion"
+  mkdir -p "$workdir/pages"
+  printf 'arcane\n' >"$workdir/pages/one"
+  printf 'mystic\n' >"$workdir/pages/two"
+
+  pushd "$workdir" >/dev/null
+  run_spell 'spells/bind-tome' '-d' 'pages'
   popd >/dev/null
 
   assert_success
+  assert_output --partial 'Text file created: pages.txt'
   assert_output --partial 'Original files deleted.'
-  assert_output --partial 'Text file created: .txt'
+
+  [ ! -e "$workdir/pages/one" ]
+  [ ! -e "$workdir/pages/two" ]
 }
 
 @test 'unbind-tome requires a file argument' {
   run_spell 'spells/unbind-tome'
   assert_failure
-  assert_output --partial 'Error: Please provide a file path as an argument.'
+  assert_error --partial 'Error: Please provide a file path as an argument.'
 }
 
 @test 'unbind-tome splits the tome into sanitised files' {
