@@ -57,16 +57,18 @@ This displays an interactive menu. Most (soon all) wizardry spells and features 
 
 ### Project Values
 
+These values make the wizardry project what it is, and distinguish it from similar projects.
+
 | Principle     | Description |
 | ------------- | ----------- |
 | Useful        | Wizardry is use-case-driven, developed to support specific, common, everyday computer tasks. |
-| FOSS missing link   | Wizardry provides the glue that integrates other UNIX command-line tools together. |
 | Menu-driven         | A user should be able to manage their entire system by typing 'menu', without having to remember or type commands. |
-| Didacticism   | Scripts are well-commented and written as clearly as possible. |
-| Non-commercial | This project is non-commercial, and so we always prefer free software over merely open-source software, and we always prefer the least commercialized software. |
+| Teaching community   | Scripts are well-commented and written as clearly as possible. Wizardry is community of practice; scripts codify collective knowledge. |
+| Cross-platform      | Scripts are POSIX-compliant and as cross-platform as possible. |
 | Bash-first          | To use languages beyond POSIX-compliant bash, there must be a good reason. This skips debates about which other projects to include as dependencies in our project. |
 | File-first    | All state is stored in files, ideally human-readable text files. No databases, because they enclose data in one opaque file (requiring import/export steps). |
-| Cross-platform      | Scripts are POSIX-compliant and as cross-platform as possible. |
+| Non-commercial | This project is non-commercial, and so we always prefer free software over merely open-source software, and we always prefer the least commercialized software. |
+| FOSS missing link   | Wizardry provides the glue that integrates other UNIX command-line tools together. |
 | Semantic synthesis   | Scripts evolve toward higher-order spellbooks by encapsulating platform details behind concise syntax and deterministic, grammar-like recursive parser. This effectively extends the bash language. |
 | Fun       | Wizardry themes scripts as spells, and adds optional fantasy flavor text to the bash user experience. |
 
@@ -77,9 +79,9 @@ This displays an interactive menu. Most (soon all) wizardry spells and features 
 | Minimalism          | Do the most with the fewest moving parts. |
 | Atomicity           | Each script and part of wizardry is as small and self-contained a unit as possible. These small, reliable parts are then combined. |
 | Interface-neutral   | GUIs are thin layers that simply pass commands through to shell scripts. This makes it easy to swap out web platforms or build additional interfaces. |
-| Test-driven development | Unit tests are used to specific and test code, with a goal of maintaining 100% unit test coverage. |
+| Test-driven development | Unit tests are used to specify and test code, with a goal of maintaining 100% unit test coverage. |
 | Assumption-checking    | Scripts confirm their assumptions (directories, dependencies, PATH entries) and repair gaps automatically so installations stay reliable. |
-| Document-in-place   | Include --help messages on every spell and include helpful messages and documentation for the user portably in scripts and where they are needed in UI. |
+| Document-in-place   | Every spell's --help message fully specifies the behavior and usage of that spell; helpful messages and documentation for the user are included portably in scripts and where they are needed in UI. |
 
 ### Code Policies
 
