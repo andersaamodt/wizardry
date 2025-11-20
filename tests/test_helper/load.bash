@@ -17,7 +17,19 @@ wizardry_load_helper bats-mock stub
 
 bats_require_minimum_version 1.5.0
 
-ROOT_DIR=$(cd "$BATS_TEST_DIRNAME/.." && pwd)
+wizardry_find_root() {
+  local dir="$BATS_TEST_DIRNAME"
+  while [ "$dir" != "/" ]; do
+    if [ -d "$dir/spells" ] && [ -d "$dir/tests" ]; then
+      printf '%s\n' "$dir"
+      return 0
+    fi
+    dir=$(dirname "$dir")
+  done
+  printf '%s\n' "$BATS_TEST_DIRNAME"
+}
+
+ROOT_DIR=$(wizardry_find_root)
 TEST_DIR="$ROOT_DIR/tests"
 # shellcheck disable=SC1090
 source "$ROOT_DIR/tests/lib/coverage.sh"
