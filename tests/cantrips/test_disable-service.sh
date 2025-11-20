@@ -32,10 +32,20 @@ EOF_INNER
   chmod +x "$dir/systemctl"
 }
 
+write_stub_sudo() {
+  dir=$1
+  cat >"$dir/sudo" <<'EOF_INNER'
+#!/bin/sh
+exec "$@"
+EOF_INNER
+  chmod +x "$dir/sudo"
+}
+
 disable_service_prompts_and_invokes() {
   stub_dir=$(make_stub_dir)
   write_stub_ask_text "$stub_dir" "epsilon"
   write_stub_systemctl "$stub_dir"
+  write_stub_sudo "$stub_dir"
   PATH="$stub_dir:$PATH" run_spell "spells/cantrips/disable-service"
   assert_success || return 1
   assert_output_contains "Disabling epsilon.service so it no longer starts at boot..." || return 1
