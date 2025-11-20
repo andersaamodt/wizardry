@@ -1,38 +1,36 @@
 #!/usr/bin/env sh
 
-# This magical spell reveals the maximum length of a list of strings.
-# Accepts either a list ("word1 word2 word3" or an array of strings
-# Usage: cast_max_length string1 string2 ...
+# Reveal the maximum length of the provided strings.
+# Usage: max-length <string1> [string2 ...] [-v]
 
-# Define the function to calculate the maximum length of the given strings
-max_length() {
-  if [ -z "$1" ]; then
-    echo "No arguments passed to max_length"
-    return 1
-  fi
-  if [[ "$1" == *" "* ]]; then
-    # Argument is a string containing multiple words
-    longest=0
-    for arg in $1; do
-      arg_length=${#arg}
-      if [ $arg_length -gt $longest ]; then
-        longest=$arg_length
-      fi
-    done
-  else
-    # Argument is an array # Todo: This never happens and also doesn't work if it does.
-    longest=0
-    for arg in "${!1}"; do
-      arg_length=${#arg}
-      if [ $arg_length -gt $longest ]; then
-        longest=$arg_length
-      fi
-    done
-  fi
-  if [ "$2" == "-v" ]; then
-    echo "Maximum length: $longest"
-  fi
-  echo $longest
-}
+verbose=0
+if [ "${1-}" = "-v" ]; then
+  verbose=1
+  shift
+fi
 
-max_length "$@"
+if [ "$#" -eq 0 ]; then
+  printf '%s\n' "No arguments passed to max_length"
+  exit 1
+fi
+
+# Preserve the intent of the previous implementation: when the caller passes a
+# single argument that contains spaces, treat it as a whitespace-delimited list
+# to measure each word individually.
+if [ "$#" -eq 1 ]; then
+  set -- $1
+fi
+
+longest=0
+for arg in "$@"; do
+  len=${#arg}
+  if [ "$len" -gt "$longest" ]; then
+    longest=$len
+  fi
+done
+
+if [ "$verbose" -eq 1 ]; then
+  printf '%s\n' "Maximum length: $longest"
+fi
+
+printf '%s\n' "$longest"
