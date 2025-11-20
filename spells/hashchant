@@ -1,9 +1,23 @@
 #!/bin/sh
 
-# Compute a file hash and store it as an extended attribute.
-#
-# No hidden helpers: take the filename, weave a checksum from its name and
-# contents, and stash that rune under user.hash so other spells can find it.
+# Hashchant spell: weave a checksum into a file's extended attributes.
+# Stores a CRC-32 derived from the filename and contents under user.hash.
+
+show_usage() {
+        cat <<'USAGE'
+Usage: hashchant <file>
+
+Compute a CRC-32 hash from the filename and contents, then write it to the
+file's user.hash extended attribute when supported. Prints the applied hash.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
 
 if [ -z "${1-}" ]; then
   echo "Error: No file specified."

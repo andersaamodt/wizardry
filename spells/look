@@ -1,5 +1,25 @@
 #!/bin/sh
 
+# This spell reads a location's extended attributes and presents its description.
+# It can prompt to memorize itself so the `look` incantation stays available.
+
+show_usage() {
+        cat <<'USAGE'
+Usage: look [path]
+
+Display a location's name and description extended attributes using read-magic,
+offering to memorize the spell into your shell rc for persistent availability.
+Defaults to the current directory when no path is supplied.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
 set -eu
 
 SCRIPT_SOURCE=$0

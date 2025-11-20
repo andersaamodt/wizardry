@@ -1,4 +1,7 @@
 #!/usr/bin/env sh
+
+# This spell refreshes the wizardry repository alongside other managed sources.
+# Pass --verbose to narrate each update step.
 set -eu
 
 usage() {

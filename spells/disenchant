@@ -1,10 +1,25 @@
 #!/bin/sh
 
-# This "disenchant" script allows you to remove an extended attribute from a file.
-# To use this script, pass the file and the key name as arguments. If no key name is specified, the script will provide
-# a menu of the extended attribute keys on the file and allow you to select one with the arrow keys to delete.
-# The menu is only displayed if there are at least two extended attributes (not counting the '# file:' line).
-# If only one extended attribute is found, the script will delete that attribute without displaying the menu.
+# This spell removes extended attributes from a target file.
+# Provide a key to delete it directly or choose interactively when several exist.
+
+show_usage() {
+  cat <<'USAGE'
+Usage: disenchant <file> [key]
+
+Remove an extended attribute from the given file. When a key is supplied, only
+that attribute is removed. With no key, the spell inspects the file: if a
+single attribute is present it is removed automatically; if multiple exist a
+menu is offered to choose one or all.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
 
 # Disenchant a single attribute from a file
 disenchant_one() {

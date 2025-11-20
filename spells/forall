@@ -1,12 +1,30 @@
 #!/bin/sh
 
-# This spell allows you to cast a magic spell on all the files in the current directory. Simply provide the spell as
-# an argument, and it will be cast on each file in turn.
-# 
-# Use this spell to perform powerful magic on all your files at once (or to simply perform a batch operation on
-# multiple files).
+# This spell runs a provided command against every file in the current directory.
+# Use it as a batch helper to apply one incantation across many files.
+
+show_usage() {
+        cat <<'USAGE'
+Usage: forall <spell> [args...]
+
+Run the provided spell or command against every file in the current directory,
+printing each filename before piping its output with indentation.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
+if [ "$#" -lt 1 ]; then
+        show_usage >&2
+        exit 1
+fi
 
 for file in ./*; do
-	echo "${file#./}"
+        echo "${file#./}"
     "$@" "$file" | awk '{print "   " $0}'
 done

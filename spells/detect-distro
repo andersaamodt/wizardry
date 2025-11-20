@@ -1,20 +1,41 @@
 #!/usr/bin/env sh
 
-# Identify the current operating system and print a short identifier such as
-# "debian", "mac", or "nixos". When invoked with -v the script emits a more
-# descriptive message while still exporting $DISTRO for callers.
+# This spell prints a short identifier for the current OS.
+# Use -v to narrate detection while exporting DISTRO for callers.
+
+show_usage() {
+        cat <<'USAGE'
+Usage: detect-distro [-v]
+
+Detect the host operating system and print a concise identifier such as
+"debian", "mac", or "nixos". With -v, also print a descriptive message while
+exporting DISTRO for callers to reuse.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage)
+        show_usage
+        exit 0
+        ;;
+esac
 
 set -eu
 
+# Parse flags for verbose output or help text.
 verbose=0
-while getopts v opt
+while getopts hv opt
 do
         case $opt in
         v)
                 verbose=1
                 ;;
+        h)
+                show_usage
+                exit 0
+                ;;
         *)
-                printf '%s\n' 'Usage: detect-distro [-v]' >&2
+                show_usage >&2
                 exit 1
                 ;;
         esac
@@ -22,39 +43,25 @@ done
 shift $((OPTIND - 1))
 
 if [ "$#" -ne 0 ]; then
-        printf '%s\n' 'Usage: detect-distro [-v]' >&2
+        show_usage >&2
         exit 1
 fi
 
-detect_distro() {
-        if [ -f /etc/NIXOS ] || grep -i 'ID=nixos' /etc/os-release >/dev/null 2>&1; then
-                printf '%s' 'nixos'
-                return 0
-        fi
-        if [ -f /etc/debian_version ]; then
-                printf '%s' 'debian'
-                return 0
-        fi
-        if [ -f /etc/arch-release ]; then
-                printf '%s' 'arch'
-                return 0
-        fi
-        if [ -f /etc/fedora-release ]; then
-                printf '%s' 'fedora'
-                return 0
-        fi
-        if uname >/dev/null 2>&1; then
-                case $(uname) in
-                Darwin)
-                        printf '%s' 'mac'
-                        return 0
-                        ;;
-                esac
-        fi
-        return 1
-}
+# Detect from specific markers toward the generic uname fallback.
+if [ -f /etc/NIXOS ] || grep -i 'ID=nixos' /etc/os-release >/dev/null 2>&1; then
+        distro='nixos'
+elif [ -f /etc/debian_version ]; then
+        distro='debian'
+elif [ -f /etc/arch-release ]; then
+        distro='arch'
+elif [ -f /etc/fedora-release ]; then
+        distro='fedora'
+elif uname >/dev/null 2>&1 && [ "$(uname)" = "Darwin" ]; then
+        distro='mac'
+fi
 
-if distro=$(detect_distro); then
+# Export the detection so callers can key off the result.
+if [ -n "${distro-}" ]; then
         DISTRO=$distro
         export DISTRO
 else

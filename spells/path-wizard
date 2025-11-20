@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# This spell finds the wizardry installation path and updates PATH accordingly.
+# It resolves helper scripts alongside itself before delegating to menu.
+
 set -eu
 
 SCRIPT_SOURCE=$0

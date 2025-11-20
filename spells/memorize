@@ -1,23 +1,15 @@
 #!/bin/sh
-# memorize installs ("memorizes") spells that expose an install() function.
-# It can accept individual files, scan an entire directory, or recurse through
-# subdirectories to batch-install every installable spell it finds.
-#
-# Usage examples:
-#   memorize spells/jump-to-marker
-#   memorize --all spells
+# This spell installs (memorizes) scripts that expose an install() function.
+# Point it at a file, a directory, or recurse to batch-install eligible spells.
 #   memorize --recursive spells
 #   memorize             # prompts to try --all in the current directory
 #
-# During installation, memorize consults the detect-rc-file spell so every
-# installable spell receives a consistent view of the platform, rc file, and
-# format.  The detected details are exported via WIZARDRY_* environment
-# variables so downstream spells can respect the project-wide conventions
-# without reinventing the detection logic.
+# During installation, memorize consults detect-rc-file so every installable
+# spell shares a consistent view of the platform, rc file, and format. The
+# detected details are exported via WIZARDRY_* variables for downstream spells.
 #
-# The script leans on small helper functions to make the flow readable for
-# novice shellcrafters: gather the helpers, parse options, detect the
-# environment once, then either memorize explicit files or sweep directories.
+# The flow stays linear: gather helpers, parse options, detect the environment
+# once, then either memorize explicit files or sweep directories.
 
 set -eu
 

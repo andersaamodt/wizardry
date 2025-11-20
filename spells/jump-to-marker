@@ -1,12 +1,7 @@
 #!/bin/sh
 
-# The jump-to-marker spell defines the interactive "jump" incantation.  When it
-# is memorized (sourced in your shell's rc file) the spell lets you whisper
-# `jump` from any prompt and immediately teleport to the destination recorded by
-# the companion mark-location spell.  The code below keeps the whimsical
-# narration from the original mud experiment while layering in modern safety
-# rails (detect-rc-file, scribe-spell, and ask_* cantrips) so new apprentices can
-# see every moving piece.
+# This spell installs the interactive `jump` incantation tied to mark-location.
+# Once memorized, it lets any shell teleport to the saved marker instantly.
 
 RUNNING_AS_SCRIPT=0
 case $0 in

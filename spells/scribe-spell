@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# This spell adds, removes, or reports a memorized spell in a shell rc file.
+# It rewrites the file through a temporary copy to keep sourcing safe.
+
 set -eu
 
 usage() {

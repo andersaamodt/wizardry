@@ -3,6 +3,22 @@
 # This spell copies the text file at the specified path to the clipboard.
 # It takes one argument, the path to the text file.
 
+show_usage() {
+        cat <<'USAGE'
+Usage: copy <file>
+
+Copy the contents of the specified text file to the system clipboard using
+pbcopy, xsel, or xclip. Prints a confirmation when successful.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
 if [ ! -f "$1" ]; then
 	echo "That file does not exist."
 	exit 1

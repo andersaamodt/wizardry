@@ -1,13 +1,27 @@
 #!/bin/sh
 
-# Xattr to YAML Transmutation Spell
-# This ritual copies every sigil (extended attribute) into a YAML prologue so
-# the lore rides alongside the text itself. Afterward the runes are scrubbed
-# clean, leaving the parchment carrying only its new header.
+# This spell copies extended attributes into a YAML prologue within the file.
+# After the runes are preserved in text, it clears the attributes from the file.
+
+show_usage() {
+        cat <<'USAGE'
+Usage: enchantment-to-yaml <path-to-file>
+
+Extract all extended attributes from the file, write them into a YAML front
+matter header, and strip the original attributes from the file.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
 
 if [ "$#" -ne 1 ]; then
     printf '%s\n' "Error: incorrect number of arguments" >&2
-    printf '%s\n' "Usage: enchantment-to-yaml <path-to-file>" >&2
+    show_usage >&2
     exit 1
 fi
 

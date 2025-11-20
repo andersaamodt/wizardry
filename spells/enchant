@@ -1,12 +1,23 @@
 #!/bin/sh
 
-# Enchant a file with an extended attribute.
-# Usage: enchant <file> <attribute> <value> [helper]
-#
-# This incantation is intentionally linear: gather the ingredients, check the
-# reliquary (the file), and try each tool in turn until one binds the sigil.
-# The commentary stays close to the code so future wizards can trace the
-# ritual without hunting through helper libraries.
+# This spell applies an extended attribute to a file.
+# Provide a file, attribute name, value, and optional helper preference.
+
+show_usage() {
+        cat <<'USAGE'
+Usage: enchant <file> <attribute> <value> [helper]
+
+Apply an extended attribute with the given name and value to the file, using
+attr, xattr, or setfattr. Optionally specify which helper to try first.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
 
 require_args() {
   if [ "$#" -lt 3 ] || [ "$#" -gt 4 ]; then

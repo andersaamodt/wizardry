@@ -1,10 +1,23 @@
 #!/bin/sh
 
-# The Hash Spell
-# 
-# This powerful spell allows you to compute the CRC-32 hash of a text file, including its filename. Simply provide
-# the path to the file as an argument, and the spell will do the rest. The resulting hash will be displayed on the
-# command line.
+# Hash spell: compute a CRC-32 checksum for a given file path.
+# Prints the checksum in hexadecimal alongside the resolved path.
+
+show_usage() {
+        cat <<'USAGE'
+Usage: hash <file>
+
+Compute the CRC-32 hash of the provided file path and print it in hexadecimal.
+The target file must exist; the path is resolved relative to the spell location.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
 
 if [ "$#" != 1 ]; then
     echo "Usage: hash file"

@@ -1,14 +1,27 @@
 #!/bin/sh
 
-# detect-magic surveys the current directory for enchanted files. It relies on
-# the read-magic spell to list attributes, counts them, and whispers ambient
-# commentary so novices sense how much power swirls around their workbench.
-# The narration leans into coloured keywords when terminals allow it so even
-# apprentices feel the arcane glow.
+# This spell surveys the current directory for enchanted files via read-magic.
+# It tallies each file's attributes and narrates the ambience with gentle colour.
 
-# The spell keeps its flow linear: discover the helper, decide on colour, walk
-# the room, then summarize the ambience. Each step is narrated so new
-# spellwrights can read along without chasing function indirection.
+# The flow stays linear: discover the helper, choose colour, scan the room, then
+# summarize the ambience so new spellwrights can follow along.
+
+show_usage() {
+        cat <<'USAGE'
+Usage: detect-magic
+
+Scan the current directory for files with extended attributes using the
+read-magic spell, tally how many enchantments each file holds, and print a
+whimsical summary of the ambient magic.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
 
 set -eu
 
@@ -49,61 +62,6 @@ enchantments_word="${purple}enchantments${reset}"
 total=0
 found_any=0
 
-# choose_message rotates through a themed collection of whispers depending on
-# how many enchantments were tallied. The modulo keeps the selection stable for
-# a given count without relying on non-POSIX random helpers.
-# Returning 1 when no messages match lets the caller silently skip the flourish
-# in sparse rooms.
-choose_message() {
-        count=$1
-        if [ "$count" -gt 120 ]; then
-                messages=$(cat <<'LINES'
-Whoa, this room is seriously __ENCHANTED__!
-I can feel the __MAGIC__ emanating from these files!
-This room is practically pulsating with __MAGIC__!
-I've never sensed this much __MAGIC__ in one place before!
-The amount of __MAGIC__ in this room is off the charts!
-These files are practically glowing with __MAGIC__!
-I can hardly contain all this __MAGIC__!
-LINES
-)
-        elif [ "$count" -gt 50 ]; then
-                messages=$(cat <<'LINES'
-I can feel the __MAGIC__ in the air.
-There seems to be quite a bit of __MAGIC__ in this room.
-This room is positively brimming with __MAGIC__.
-These files are infused with __MAGIC__.
-The __MAGIC__ in this room is palpable.
-The __MAGIC__ in these files is almost tangible.
-This room is filled with __MAGIC__.
-LINES
-)
-        elif [ "$count" -gt 15 ]; then
-                messages=$(cat <<'LINES'
-I sense a bit of __MAGIC__ in this room.
-There seems to be a hint of __MAGIC__ in these files.
-I can feel a faint aura of __MAGIC__ in this room.
-These files have a touch of __MAGIC__.
-I detect a faint trace of __MAGIC__ in this room.
-There is a subtle essence of __MAGIC__ in these files.
-This room has a faint glimmer of __MAGIC__.
-LINES
-)
-        else
-                messages=''
-        fi
-
-        if [ -z "$messages" ]; then
-                return 1
-        fi
-
-        lines=$(printf '%s\n' "$messages" | wc -l | tr -d ' ')
-        index=$((count % lines + 1))
-        printf '%s\n' "$messages" | awk -v line="$index" -v mark="$magic_word" -v glow="$enchanted_word" \
-                'NR==line { gsub("__MAGIC__", mark); gsub("__ENCHANTED__", glow); print; exit }'
-        return 0
-}
-
 # Open with a header so seers know which column holds names and which counts.
 printf "%s%-30s %s%s%s\n" "$blue" "File" "$purple" "$enchantments_word" "$reset"
 
@@ -131,8 +89,48 @@ for entry in *; do
 done
 
 if [ "$found_any" -eq 1 ]; then
-        if message=$(choose_message "$total"); then
-                printf '%s\n' "$message"
+        # Rotate through themed whispers based on how many charms fill the room.
+        message_pool=''
+        if [ "$total" -gt 120 ]; then
+                message_pool=$(cat <<'LINES'
+Whoa, this room is seriously __ENCHANTED__!
+I can feel the __MAGIC__ emanating from these files!
+This room is practically pulsating with __MAGIC__!
+I've never sensed this much __MAGIC__ in one place before!
+The amount of __MAGIC__ in this room is off the charts!
+These files are practically glowing with __MAGIC__!
+I can hardly contain all this __MAGIC__!
+LINES
+)
+        elif [ "$total" -gt 50 ]; then
+                message_pool=$(cat <<'LINES'
+I can feel the __MAGIC__ in the air.
+There seems to be quite a bit of __MAGIC__ in this room.
+This room is positively brimming with __MAGIC__.
+These files are infused with __MAGIC__.
+The __MAGIC__ in this room is palpable.
+The __MAGIC__ in these files is almost tangible.
+This room is filled with __MAGIC__.
+LINES
+)
+        elif [ "$total" -gt 15 ]; then
+                message_pool=$(cat <<'LINES'
+I sense a bit of __MAGIC__ in this room.
+There seems to be a hint of __MAGIC__ in these files.
+I can feel a faint aura of __MAGIC__ in this room.
+These files have a touch of __MAGIC__.
+I detect a faint trace of __MAGIC__ in this room.
+There is a subtle essence of __MAGIC__ in these files.
+This room has a faint glimmer of __MAGIC__.
+LINES
+)
+        fi
+
+        if [ -n "$message_pool" ]; then
+                lines=$(printf '%s\n' "$message_pool" | wc -l | tr -d ' ')
+                line_to_print=$((total % lines + 1))
+                printf '%s\n' "$message_pool" | awk -v line="$line_to_print" -v mark="$magic_word" -v glow="$enchanted_word" \
+                        'NR==line { gsub("__MAGIC__", mark); gsub("__ENCHANTED__", glow); print; exit }'
         fi
         printf 'I can feel the %smagic%s in the air.\n' "$purple" "$reset"
 else
