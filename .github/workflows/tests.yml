@@ -11,7 +11,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install bubblewrap dependency
-        run: sudo apt-get update && sudo apt-get install -y bubblewrap
+        run: sudo apt-get update && sudo apt-get install -y bubblewrap uidmap
+      - name: Verify bubblewrap setup
+        run: bwrap --unshare-user-try --ro-bind / / /bin/true
       - name: Run unit tests
         run: ./spells/menu/system/run-tests
       - name: Report coverage
