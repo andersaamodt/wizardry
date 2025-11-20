@@ -59,16 +59,16 @@ This displays an interactive menu. Most (soon all) wizardry spells and features 
 
 | Principle     | Description |
 | ------------- | ----------- |
+| Useful        | Wizardry is use-case-driven, developed to support specific, common, everyday computer tasks. |
+| FOSS missing link   | Wizardry provides the glue that integrates other UNIX command-line tools together. |
+| Menu-driven         | A user should be able to manage their entire system by typing 'menu', without having to remember or type commands. |
 | Didacticism   | Scripts are well-commented and written as clearly as possible. |
 | Non-commercial | This project is non-commercial, and so we always prefer free software over merely open-source software, and we always prefer the least commercialized software. |
-| Useful        | Wizardry is use-case-driven, developed to support specific, common, everyday computer tasks. |
 | Bash-first          | To use languages beyond POSIX-compliant bash, there must be a good reason. This skips debates about which other projects to include as dependencies in our project. |
-| Menu-driven         | A user should be able to manage their entire system by typing 'menu', without having to remember or type commands. |
 | File-first    | All state is stored in files, ideally human-readable text files. No databases, because they enclose data in one opaque file (requiring import/export steps). |
 | Cross-platform      | Scripts are POSIX-compliant and as cross-platform as possible. |
-| FOSS missing link   | Wizardry provides the glue that integrates other UNIX command-line tools together. |
 | Semantic synthesis   | Scripts evolve toward higher-order spellbooks by encapsulating platform details behind concise syntax and deterministic, grammar-like recursive parser. This effectively extends the bash language. |
-| Magic theme       | Wizardry themes scripts as spells, and adds fantasy flavor text to the bash user experience. |
+| Magic theme       | Wizardry themes scripts as spells, and adds optional fantasy flavor text to the bash user experience. |
 
 ### Design Principles
 
@@ -90,11 +90,15 @@ This displays an interactive menu. Most (soon all) wizardry spells and features 
 | Hand-finished AI code | Using AI to generate reusable, well-commented bash scripts is a great use of AI; scripts should be hand-reviewed and tested. However, wizardry itself will not interface with AI. |
 | Menu specialization | Wizardry organizes complex workflows as dedicated menus that call one spell per menu item. |
 | Script-like scripts  | Keep scripts script-like: favor flat flows with few functions so behavior stays readable and hackable from the shell. |
-| PATH-ready spells    | Spells can assume other wizardry spells are already on the PATH and should invoke them by name instead of repo-relative paths. |
-| Bootstrap awareness  | The standalone installer runs before wizardry is on PATH, so it must reference helper spells via absolute paths instead of relying on command lookups. |
-| Tiny incantations    | Prefer short, linear, well-commented scripts over elaborate plumbing so intent stays obvious at a glance. |
-| Preserve the lore    | Keep spell style, explanatory comments, and in-world flavor text intact unless a change is truly necessary, and replace any removed guidance with equally helpful narration. |
-| Arg-first helpers    | Pass information via positional parameters or stdout whenever possible instead of introducing new shell variables to shuttle data around. |
+| Wizardry available   | Spells can assume other wizardry spells are already in the PATH and should invoke them by name instead of long paths. |
+
+### AI directives
+* Do not mutate the spec: At the top of each script there are spec comments; do not edit these.
+* Preserve the lore: Do not delete, modify, or add more flavor text unless specifically instructed.
+* Qualities of a good script: Brevity, well-commented for novice bash devs, flat / minimal functions / linear, clarity, portability (including cross-platform), composability, non-redundancy, minimalism.
+* No globals: Do not use shell variables unless absolutely necessary (use parameters or stdout instead).
+* Bootstrap awareness: The install script runs before wizardry is on PATH, so it alone cannot assume that wizardry spells are already available in PATH.
+* 
 
 ## Unit tests
 
