@@ -1,13 +1,21 @@
 #!/bin/sh
 # Behavioral cases (derived from --help):
+# - copy shows usage text
 # - copy requires an existing file
-# - copy uses pbcopy when available
+# - copy refuses directories and missing targets
+# - copy prefers pbcopy over other helpers
 # - copy falls back to xsel and xclip
-# - copy fails when no clipboard utility is present
+# - copy reports when no clipboard helper is present
 
 set -eu
 
 . "$(dirname "$0")/lib/test_common.sh"
+
+copy_shows_usage() {
+  run_spell "spells/copy" --help
+  assert_success || return 1
+  assert_output_contains "Usage: copy" || return 1
+}
 
 copy_requires_existing_file() {
   run_spell "spells/copy" "$WIZARDRY_TMPDIR/nowhere.txt"
@@ -15,59 +23,117 @@ copy_requires_existing_file() {
   assert_output_contains "That file does not exist." || return 1
 }
 
-copy_uses_available_clipboard() {
+copy_rejects_directories_and_missing_target() {
+  tmpdir=$(make_tempdir)
+  mkdir -p "$tmpdir/dir"
+
+  run_spell "spells/copy" "$tmpdir/dir"
+  assert_failure || return 1
+  assert_output_contains "That file does not exist." || return 1
+
+  run_spell "spells/copy"
+  assert_failure || return 1
+  assert_output_contains "That file does not exist." || return 1
+}
+
+copy_prefers_pbcopy() {
   tmpdir=$(make_tempdir)
   file="$tmpdir/message.txt"
   printf 'hello world' >"$file"
 
   clipboard="$tmpdir/pbcopy.txt"
-  stubdir="$tmpdir/stubs_pbcopy"
+  stubdir="$tmpdir/stubs"
   mkdir -p "$stubdir"
+
   cat <<'STUB' >"$stubdir/pbcopy"
 #!/bin/sh
-cat >"${CLIPBOARD_FILE:?}" 
+cat >"${CLIPBOARD_FILE:?}"
 STUB
-  chmod +x "$stubdir/pbcopy"
+  cat <<'STUB' >"$stubdir/xsel"
+#!/bin/sh
+echo "xsel should not run" >&2
+exit 64
+STUB
+  cat <<'STUB' >"$stubdir/xclip"
+#!/bin/sh
+echo "xclip should not run" >&2
+exit 64
+STUB
+  chmod +x "$stubdir"/pbcopy "$stubdir"/xsel "$stubdir"/xclip
 
   PATH="$stubdir:$PATH" CLIPBOARD_FILE="$clipboard" run_spell "spells/copy" "$file"
   assert_success || return 1
   assert_output_contains "Copied $file to your clipboard." || return 1
-  copied=$(cat "$clipboard")
-  [ "$copied" = "hello world" ] || { TEST_FAILURE_REASON="clipboard did not receive contents"; return 1; }
+  [ "$(cat "$clipboard")" = "hello world" ] || { TEST_FAILURE_REASON="pbcopy stub not used"; return 1; }
 }
 
-copy_falls_back_to_xsel_and_xclip() {
+copy_uses_xsel_when_available() {
   tmpdir=$(make_tempdir)
   file="$tmpdir/message.txt"
   printf 'hi there' >"$file"
 
-  # xsel fallback
-  xsel_dir="$tmpdir/stubs_xsel"
-  mkdir -p "$xsel_dir"
-  cat <<'STUB' >"$xsel_dir/xsel"
-#!/bin/sh
-cat >"${CLIPBOARD_FILE:?}" 
-STUB
-  chmod +x "$xsel_dir/xsel"
-
   clipboard="$tmpdir/xsel.txt"
-  PATH="$xsel_dir:$PATH" CLIPBOARD_FILE="$clipboard" run_spell "spells/copy" "$file"
+  stubdir="$tmpdir/stubs_xsel"
+  mkdir -p "$stubdir"
+
+  cat <<'STUB' >"$stubdir/xsel"
+#!/bin/sh
+cat >"${CLIPBOARD_FILE:?}"
+STUB
+  chmod +x "$stubdir/xsel"
+
+  PATH="$stubdir:$PATH" CLIPBOARD_FILE="$clipboard" run_spell "spells/copy" "$file"
   assert_success || return 1
   [ "$(cat "$clipboard")" = "hi there" ] || { TEST_FAILURE_REASON="xsel stub not used"; return 1; }
+}
 
-  # xclip fallback when pbcopy and xsel missing
-  xclip_dir="$tmpdir/stubs_xclip"
-  mkdir -p "$xclip_dir"
-  cat <<'STUB' >"$xclip_dir/xclip"
-#!/bin/sh
-cat >"${CLIPBOARD_FILE:?}" 
-STUB
-  chmod +x "$xclip_dir/xclip"
+copy_uses_xclip_when_others_missing() {
+  tmpdir=$(make_tempdir)
+  file="$tmpdir/message more.txt"
+  printf 'clipboard ready' >"$file"
 
   clipboard="$tmpdir/xclip.txt"
-  PATH="$xclip_dir:$PATH" CLIPBOARD_FILE="$clipboard" run_spell "spells/copy" "$file"
+  stubdir="$tmpdir/stubs_xclip"
+  mkdir -p "$stubdir"
+
+  cat <<'STUB' >"$stubdir/xclip"
+#!/bin/sh
+cat >"${CLIPBOARD_FILE:?}"
+STUB
+  chmod +x "$stubdir/xclip"
+
+  PATH="$stubdir:$PATH" CLIPBOARD_FILE="$clipboard" run_spell "spells/copy" "$file"
   assert_success || return 1
-  [ "$(cat "$clipboard")" = "hi there" ] || { TEST_FAILURE_REASON="xclip stub not used"; return 1; }
+  assert_output_contains "Copied $file to your clipboard." || return 1
+  [ "$(cat "$clipboard")" = "clipboard ready" ] || { TEST_FAILURE_REASON="xclip stub not used"; return 1; }
+}
+
+copy_prefers_xsel_over_xclip() {
+  tmpdir=$(make_tempdir)
+  file="$tmpdir/prioritized.txt"
+  printf 'ordered' >"$file"
+
+  clipboard="$tmpdir/clipboard.txt"
+  stubdir="$tmpdir/stubs_xsel_first"
+  mkdir -p "$stubdir"
+
+  cat <<'STUB' >"$stubdir/xsel"
+#!/bin/sh
+cat >"${CLIPBOARD_FILE:?}"
+STUB
+  cat <<'STUB' >"$stubdir/xclip"
+#!/bin/sh
+echo "xclip should not be reached" >&2
+exit 77
+STUB
+  chmod +x "$stubdir/xsel" "$stubdir/xclip"
+
+  PATH="$stubdir:$PATH" CLIPBOARD_FILE="$clipboard" run_spell "spells/copy" "$file"
+  assert_success || return 1
+  [ "$(cat "$clipboard")" = "ordered" ] || { TEST_FAILURE_REASON="xsel stub not used"; return 1; }
+  case ${ERROR:-} in
+    *"xclip should not be reached"*) TEST_FAILURE_REASON="xclip unexpectedly executed"; return 1 ;;
+  esac
 }
 
 copy_fails_without_clipboard_tools() {
@@ -80,9 +146,34 @@ copy_fails_without_clipboard_tools() {
   assert_error_contains "Your spell fizzles." || return 1
 }
 
+copy_reports_success_with_path() {
+  tmpdir=$(make_tempdir)
+  file="$tmpdir/file with space.txt"
+  printf 'echo' >"$file"
+
+  clipboard="$tmpdir/output.txt"
+  stubdir="$tmpdir/stubs_message"
+  mkdir -p "$stubdir"
+  cat <<'STUB' >"$stubdir/pbcopy"
+#!/bin/sh
+cat >"${CLIPBOARD_FILE:?}"
+STUB
+  chmod +x "$stubdir/pbcopy"
+
+  PATH="$stubdir:$PATH" CLIPBOARD_FILE="$clipboard" run_spell "spells/copy" "$file"
+  assert_success || return 1
+  assert_output_contains "Copied $file to your clipboard." || return 1
+  [ "$(cat "$clipboard")" = "echo" ] || { TEST_FAILURE_REASON="clipboard contents unexpected"; return 1; }
+}
+
+run_test_case "copy shows usage text" copy_shows_usage
 run_test_case "copy requires an existing file" copy_requires_existing_file
-run_test_case "copy uses pbcopy when available" copy_uses_available_clipboard
-run_test_case "copy falls back to xsel and xclip" copy_falls_back_to_xsel_and_xclip
+run_test_case "copy rejects directories and missing target" copy_rejects_directories_and_missing_target
+run_test_case "copy prefers pbcopy when available" copy_prefers_pbcopy
+run_test_case "copy falls back to xsel" copy_uses_xsel_when_available
+run_test_case "copy falls back to xclip when others are missing" copy_uses_xclip_when_others_missing
+run_test_case "copy prefers xsel over xclip" copy_prefers_xsel_over_xclip
 run_test_case "copy fails when no clipboard utility is present" copy_fails_without_clipboard_tools
+run_test_case "copy reports success message with original path" copy_reports_success_with_path
 
 finish_tests
