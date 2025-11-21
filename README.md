@@ -37,12 +37,13 @@ The install script requires `tar` plus either `curl` or `wget` to be available.
 To download wizardry using git and then install it:
 
 ```
-git clone http://github.com/andersaamodt/wizardry/main
+git clone http://github.com/andersaamodt/wizardry/main ~/.tower
+cd ~/.tower
 chmod +x install
 ./install
 ```
 
-After installing, you must reopen your terminal window before wizardry spells will work.
+This downloads wizardry to the default install location, `~/.tower`. After installing, you must reopen your terminal window before wizardry spells will work.
 
 ## Usage
 
