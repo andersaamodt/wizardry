@@ -27,17 +27,19 @@ STUB
   chmod +x "$ask_text_stub"
   tmp_dir="$BATS_TEST_TMPDIR/service"
   mkdir -p "$tmp_dir"
+  service_dir="$tmp_dir/systemd"
+  mkdir -p "$service_dir"
   template="$tmp_dir/example.service"
   cat <<'SERVICE' >"$template"
 [Unit]
 Description=$DESCRIPTION
 
 [Service]
-ExecStart=/usr/bin/$EXECUTABLE
-Environment=PORT=$PORT
+  ExecStart=/usr/bin/$EXECUTABLE
+  Environment=PORT=$PORT
 SERVICE
   service_name=$(basename "$template")
-  service_path="/etc/systemd/system/$service_name"
+  service_path="$service_dir/$service_name"
 }
 
 teardown() {
@@ -51,6 +53,7 @@ teardown() {
 
   ASK_YN_STUB_RESPONSE=N \
     INSTALL_SERVICE_TEMPLATE_ASK_YN="$system_stubs/ask_yn" \
+    SERVICE_DIR="$service_dir" \
     PATH="$(wizardry_join_paths "$system_stubs" "$ORIGINAL_PATH")" \
     run_spell 'spells/cantrips/install-service-template' "$template"
   assert_failure
@@ -65,6 +68,7 @@ teardown() {
   printf 'Mystic Service\n7777\n' >"$placeholder_input"
 
   SYSTEMCTL_STATE_DIR="$tmp_dir" \
+    SERVICE_DIR="$service_dir" \
     INSTALL_SERVICE_TEMPLATE_ASK_TEXT="$ask_text_stub" \
     ASK_TEXT_STUB_FILE="$placeholder_input" \
     PATH="$(wizardry_join_paths "$system_stubs" "$ORIGINAL_PATH")" \
@@ -72,17 +76,11 @@ teardown() {
   assert_success
   assert_output --partial 'Service installed'
 
-  run grep '^Description=' "$service_path"
+  run cat "$service_path"
   assert_success
-  assert_output 'Description=Mystic Service'
-
-  run grep '^Environment=' "$service_path"
-  assert_success
-  assert_output 'Environment=PORT=7777'
-
-  run grep '^ExecStart' "$service_path"
-  assert_success
-  assert_output --partial 'magic'
+  assert_output --partial 'Description=Mystic Service'
+  assert_output --partial 'Environment=PORT=7777'
+  assert_output --partial 'ExecStart=/usr/bin/magic'
 
   [ -f "$tmp_dir/systemctl/daemon-reload" ]
 }

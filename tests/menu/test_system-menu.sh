@@ -1,7 +1,7 @@
 #!/bin/sh
 # Behavioral cases (derived from spell behavior):
 # - system-menu requires the menu dependency
-# - system-menu forwards system actions to the menu including coverage option
+# - system-menu forwards system actions to the menu
 
 . "$(CDPATH= cd "$(dirname "$0")" && pwd)/lib/test_common.sh"
 
@@ -41,7 +41,7 @@ test_system_menu_includes_test_utilities() {
   assert_success
   args=$(cat "$tmp/log")
   case "$args" in
-    *"System Menu:"*"Manage services%services-menu"*"Update wizardry%update-wizardry"*"Test all wizardry spells%"*"Unit test coverage%"*"Force restart%sudo shutdown -r now"*"Exit%kill -2"* ) : ;; 
+    *"System Menu:"*"Manage services%services-menu"*"Update wizardry%update-wizardry"*"Test all wizardry spells%"*"Force restart%sudo shutdown -r now"*"Exit%kill -2"* ) : ;;
     *) TEST_FAILURE_REASON="expected system actions missing"; return 1 ;;
   esac
 }

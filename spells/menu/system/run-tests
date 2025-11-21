@@ -2,12 +2,44 @@
 # shellcheck disable=SC2016
 
 # Run the wizardry shell test suite in a bubblewrap sandbox.
-# The suite discovers test_*.sh scripts under tests/ and executes
-# each one as a standalone POSIX shell script. Bubblewrap keeps
-# the host safe from accidental writes while tests exercise spells.
+#
+# Philosophy
+# ----------
+# * Keep the host safe: tests run inside bubblewrap when available.
+# * Be predictable: discover tests from the repository layout rather
+#   than a hard-coded list.
+# * Report clearly: colorize output when possible, indent sub-test
+#   output, and summarize both pass/fail counts and coverage stats.
+#
+# What this spell does
+# --------------------
+# 1. Gather every test_*.sh and test_*.bats file under tests/ (unless
+#    narrowed with --only), skipping helper directories.
+# 2. Ensure bubblewrap (and Bats for .bats files) is available.
+# 3. Run each script, indenting its output and printing a per-script
+#    PASS/FAIL summary.
+# 4. Scan spells/ for scripts without matching tests and print coverage
+#    totals.
+#
+# The goal is clarity over cleverness, so novice bash developers can
+# follow the control flow without surprises.
 
 set -euo pipefail
 
+# Optional ANSI styling for human-friendly output.
+# NO_COLOR and dumb terminals disable decoration.
+
+if [ -n "${NO_COLOR:-}" ] || [ "${TERM:-dumb}" = "dumb" ]; then
+  BOLD=""; RED=""; GREEN=""; YELLOW=""; RESET=""
+else
+  BOLD="\033[1m"
+  RED="\033[31m"
+  GREEN="\033[32m"
+  YELLOW="\033[33m"
+  RESET="\033[0m"
+fi
+
+# usage: print inline help text.
 usage() {
   cat <<'USAGE'
 Usage: run-tests [options]
@@ -25,12 +57,18 @@ Options:
 USAGE
 }
 
-# Resolve repository paths relative to this spell's location.
+# Resolve repository paths relative to this spell's location so callers
+# can execute the script from anywhere.
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 ROOT_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/../../.." && pwd -P)
 TEST_DIR="$ROOT_DIR/tests"
+BATS_BIN=""
+uncovered_spells=()
+coverage_total=0
+coverage_covered=0
 
-# Ensure bubblewrap is available before running anything.
+# Ensure bubblewrap is available before running anything; tests assume
+# filesystem isolation unless overridden externally.
 if ! command -v bwrap >/dev/null 2>&1; then
   echo "bubblewrap missing; attempting installation via install-bwrap"
   if ! "$ROOT_DIR/spells/menu/install/core/install-bwrap"; then
@@ -44,6 +82,8 @@ list_only=0
 
 shopt -s nullglob globstar
 
+# Parse command-line options. Keep the interface tiny: --only filters,
+# --list shows resolution, and --help prints usage.
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --only)
@@ -75,10 +115,92 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
+# spell_path_for_test: map tests/foo/test_bar.sh -> spells/foo/bar
+spell_path_for_test() {
+  local test_file=$1
+  local rel=${test_file#"$TEST_DIR/"}
+  local dir base
+  dir=$(dirname "$rel")
+  base=$(basename "$rel")
+  base=${base#test_}
+  base=${base%.*}
+  printf '%s/%s/%s\n' "$ROOT_DIR" "spells/$dir" "$base"
+}
+
+# find_matching_test_for_spell: locate a test script for a spell path,
+# preferring shell tests and falling back to Bats when no shell sibling
+# exists.
+find_matching_test_for_spell() {
+  local spell=$1
+  local rel=${spell#"$ROOT_DIR/"}
+  rel=${rel#spells/}
+  local dir base
+  dir=$(dirname "$rel")
+  base=$(basename "$rel")
+
+  local candidate_sh="$TEST_DIR/$dir/test_${base}.sh"
+  if [ -f "$candidate_sh" ]; then
+    printf '%s\n' "$candidate_sh"
+    return 0
+  fi
+
+  local candidate_bats="$TEST_DIR/$dir/test_${base}.bats"
+  if [ -f "$candidate_bats" ] && is_spell_bats_test "$candidate_bats"; then
+    printf '%s\n' "$candidate_bats"
+    return 0
+  fi
+
+  return 1
+}
+
+# is_spell_bats_test: true when the .bats file is the sole test for a
+# spell (no same-name .sh present) and the spell file exists.
+is_spell_bats_test() {
+  local test_file=$1
+  local sibling_sh=${test_file%.bats}.sh
+  if [ -f "$sibling_sh" ]; then
+    return 1
+  fi
+  local spell_path
+  spell_path=$(spell_path_for_test "$test_file")
+  [ -f "$spell_path" ]
+}
+
+# scan_coverage: walk spells/ and record which spells lack matching
+# tests. Coverage in this context measures test presence, not lines.
+scan_coverage() {
+  coverage_total=0
+  coverage_covered=0
+  uncovered_spells=()
+
+  while IFS= read -r spell; do
+    [ -n "$spell" ] || continue
+    rel=${spell#"$ROOT_DIR/"}
+    case "$rel" in
+      spells/menu/system/run-tests)
+        continue
+        ;;
+    esac
+    coverage_total=$((coverage_total + 1))
+    if find_matching_test_for_spell "$spell" >/dev/null; then
+      coverage_covered=$((coverage_covered + 1))
+    else
+      uncovered_spells+=("$rel")
+    fi
+  done < <(cd "$ROOT_DIR" && find spells -type f | sort)
+}
+
+# select_tests: choose test files according to --only filters (if any),
+# skipping helper folders. Returns a sorted list of paths.
 select_tests() {
   if [ ${#only_patterns[@]} -eq 0 ]; then
-    for file in "$TEST_DIR"/**/test_*.sh; do
+    for file in "$TEST_DIR"/**/test_*.sh "$TEST_DIR"/**/test_*.bats; do
       [[ $file == */lib/* ]] && continue
+      case "$file" in
+        *.bats)
+          is_spell_bats_test "$file" || continue
+          ;;
+      esac
       [ -f "$file" ] && printf '%s\n' "$file"
     done
     return 0
@@ -96,6 +218,11 @@ select_tests() {
     fi
     for match in "${matches[@]}"; do
       [[ $match == */lib/* ]] && continue
+      case "$match" in
+        *.bats)
+          is_spell_bats_test "$match" || continue
+          ;;
+      esac
       if [ ! -f "$match" ]; then
         echo "run-tests: resolved '$match' is not a file" >&2
         exit 1
@@ -105,6 +232,7 @@ select_tests() {
   done
 }
 
+# Finalize the list of test files.
 mapfile -t test_files < <(select_tests | sort -u)
 
 if [ ${#test_files[@]} -eq 0 ]; then
@@ -112,6 +240,7 @@ if [ ${#test_files[@]} -eq 0 ]; then
   exit 1
 fi
 
+# Listing mode prints resolved test paths and exits early.
 if [ "$list_only" -eq 1 ]; then
   for test in "${test_files[@]}"; do
     rel=${test#"$ROOT_DIR/"}
@@ -121,12 +250,71 @@ if [ "$list_only" -eq 1 ]; then
 fi
 
 status=0
+pass_scripts=0
+fail_scripts=0
+# Execute each test script, indenting its output for readability and
+# tallying pass/fail counts per script (not per individual assertion).
 for test in "${test_files[@]}"; do
-  echo "Running ${test#"$ROOT_DIR/"}"
-  if ! sh "$test"; then
-    status=1
-  fi
+  rel_path=${test#"$ROOT_DIR/"}
+  printf '%sRunning %s%s\n' "$BOLD" "$rel_path" "$RESET"
+  case "$test" in
+    *.bats)
+      if [ -z "$BATS_BIN" ]; then
+        if ! BATS_BIN=$("$TEST_DIR/lib/ensure_bats.sh"); then
+          echo "run-tests: failed to ensure bats" >&2
+          exit 1
+        fi
+      fi
+      bats_lib_path="$TEST_DIR:$TEST_DIR/test_helper:$TEST_DIR/vendor"
+      if output=$(BATS_LIB_PATH="$bats_lib_path" "$BATS_BIN" "$test" 2>&1); then
+        pass_scripts=$((pass_scripts + 1))
+        printf '%s\n' "$output" | sed 's/^/  /'
+        printf '  Summary: %sPASS%s\n' "$GREEN" "$RESET"
+      else
+        status=1
+        fail_scripts=$((fail_scripts + 1))
+        printf '%s\n' "$output" | sed 's/^/  /'
+        printf '  Summary: %sFAIL%s\n' "$RED" "$RESET"
+      fi
+      ;;
+    *)
+      if output=$(sh "$test" 2>&1); then
+        pass_scripts=$((pass_scripts + 1))
+        printf '%s\n' "$output" | sed 's/^/  /'
+        printf '  Summary: %sPASS%s\n' "$GREEN" "$RESET"
+      else
+        status=1
+        fail_scripts=$((fail_scripts + 1))
+        printf '%s\n' "$output" | sed 's/^/  /'
+        printf '  Summary: %sFAIL%s\n' "$RED" "$RESET"
+      fi
+      ;;
+  esac
   echo
 done
+
+# After execution, compute coverage stats to identify spells lacking
+# tests. This intentionally runs even if earlier scripts failed so the
+# summary stays informative.
+scan_coverage
+
+total_scripts=$((pass_scripts + fail_scripts))
+if [ "$total_scripts" -gt 0 ]; then
+  if [ "$fail_scripts" -gt 0 ]; then
+    printf 'Test summary: %s%d failed%s, %s%d passed%s (%d total)\n' "$RED" "$fail_scripts" "$RESET" "$GREEN" "$pass_scripts" "$RESET" "$total_scripts"
+  else
+    printf 'Test summary: %sall %d test scripts passed%s\n' "$GREEN" "$pass_scripts" "$RESET"
+  fi
+fi
+
+coverage_uncovered=$((coverage_total - coverage_covered))
+if [ "$coverage_total" -gt 0 ]; then
+  printf 'Coverage summary: %s%d uncovered%s, %s%d covered%s (%d total spells)\n' "$YELLOW" "$coverage_uncovered" "$RESET" "$GREEN" "$coverage_covered" "$RESET" "$coverage_total"
+  if [ "$coverage_uncovered" -gt 0 ]; then
+    for spell in "${uncovered_spells[@]}"; do
+      printf '  - %s%s%s\n' "$YELLOW" "$spell" "$RESET"
+    done
+  fi
+fi
 
 exit $status
