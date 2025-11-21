@@ -2,15 +2,35 @@
 
 # This spell displays the ao-mud install menu.
 
-. colors
+colors_bin=$(command -v colors 2>/dev/null) || {
+  echo "missing dependency: colors" >&2
+  exit 1
+}
+. "$colors_bin"
+
+menu_bin=$(command -v menu 2>/dev/null) || {
+  echo "missing dependency: menu" >&2
+  exit 1
+}
+
+loop_limit=${MENU_LOOP_LIMIT:-}
+
+if [ -n "$loop_limit" ] && ! printf '%s' "$loop_limit" | grep -Eq '^[0-9]+$'; then
+  echo "invalid MENU_LOOP_LIMIT: must be numeric" >&2
+  exit 1
+fi
 
 SCRIPT_DIR=$( cd ${0%/*} && pwd -P )
 
 display_menu() {
-	tor="Set up tor hidden service%$SCRIPT_DIR/../installers/setup-tor"
+tor="Set up tor hidden service%$SCRIPT_DIR/../installers/setup-tor"
   exit="Exit%kill -2 $$" # Commands are run with 'eval' by the menu script, so we can't simply say 'exit'. The keyword $$ gets this scripts PID and the -2 code is SIGINT aka Ctrl-C
-  
-  menu "MUD main menu:" "$tor" "$exit"
+
+  if ! "$menu_bin" "MUD main menu:" "$tor" "$exit"; then
+    status=$?
+    echo "menu failed with status $status" >&2
+    return "$status"
+  fi
 }
 
 # Catch Ctrl-C and exit
@@ -21,5 +41,14 @@ handle_ctrl_c() {
 handle_ctrl_c
 
 while true; do
-  display_menu
+  if ! display_menu; then
+    exit $?
+  fi
+
+  if [ -n "$loop_limit" ]; then
+    if [ "$loop_limit" -le 1 ] 2>/dev/null; then
+      break
+    fi
+    loop_limit=$((loop_limit - 1))
+  fi
 done

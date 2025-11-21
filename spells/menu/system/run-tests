@@ -13,9 +13,9 @@
 #
 # What this spell does
 # --------------------
-# 1. Gather every test_*.sh and test_*.bats file under tests/ (unless
-#    narrowed with --only), skipping helper directories.
-# 2. Ensure bubblewrap (and Bats for .bats files) is available.
+# 1. Gather every test_*.sh file under tests/ (unless narrowed with
+#    --only), skipping helper directories.
+# 2. Ensure bubblewrap is available.
 # 3. Run each script, indenting its output and printing a per-script
 #    PASS/FAIL summary.
 # 4. Scan spells/ for scripts without matching tests and print coverage
@@ -62,7 +62,6 @@ USAGE
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 ROOT_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/../../.." && pwd -P)
 TEST_DIR="$ROOT_DIR/tests"
-BATS_BIN=""
 uncovered_spells=()
 coverage_total=0
 coverage_covered=0
@@ -75,6 +74,53 @@ if ! command -v bwrap >/dev/null 2>&1; then
     echo "run-tests: failed to install bubblewrap" >&2
     exit 1
   fi
+fi
+
+# Detect whether bubblewrap will actually be used during tests. Mirror the
+# logic in tests/lib/test_common.sh so the summary here matches the behavior
+# inside each test script.
+BWRAP_AVAILABLE=1
+BWRAP_VIA_SUDO=0
+BWRAP_USE_UNSHARE=1
+
+if ! command -v bwrap >/dev/null 2>&1; then
+  BWRAP_AVAILABLE=0
+  BWRAP_REASON="bubblewrap not installed"
+elif bwrap --unshare-user-try --ro-bind / / /bin/true 2>/dev/null; then
+  :
+elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+  if sudo -n bwrap --unshare-user-try --ro-bind / / /bin/true 2>/dev/null; then
+    BWRAP_VIA_SUDO=1
+  elif sudo -n bwrap --ro-bind / / /bin/true 2>/dev/null; then
+    BWRAP_VIA_SUDO=1
+    BWRAP_USE_UNSHARE=0
+  else
+    BWRAP_AVAILABLE=0
+    BWRAP_REASON="bubblewrap unusable even via sudo"
+  fi
+else
+  BWRAP_AVAILABLE=0
+  BWRAP_REASON="bubblewrap unusable (user namespaces likely disabled)"
+fi
+
+if [ "$BWRAP_AVAILABLE" -eq 1 ]; then
+  if [ "$BWRAP_VIA_SUDO" -eq 1 ]; then
+    sudo_label="yes"
+  else
+    sudo_label="no"
+  fi
+
+  if [ "$BWRAP_USE_UNSHARE" -eq 1 ]; then
+    unshare_label="yes"
+  else
+    unshare_label="no"
+  fi
+
+  printf '%sUsing bubblewrap sandbox (sudo=%s, unshare=%s)%s\n' \
+    "$YELLOW" "$sudo_label" "$unshare_label" "$RESET"
+else
+  printf '%sWARNING: running tests without bubblewrap: %s%s\n' \
+    "$YELLOW" "$BWRAP_REASON" "$RESET" >&2
 fi
 
 declare -a only_patterns=()
@@ -144,26 +190,7 @@ find_matching_test_for_spell() {
     return 0
   fi
 
-  local candidate_bats="$TEST_DIR/$dir/test_${base}.bats"
-  if [ -f "$candidate_bats" ] && is_spell_bats_test "$candidate_bats"; then
-    printf '%s\n' "$candidate_bats"
-    return 0
-  fi
-
   return 1
-}
-
-# is_spell_bats_test: true when the .bats file is the sole test for a
-# spell (no same-name .sh present) and the spell file exists.
-is_spell_bats_test() {
-  local test_file=$1
-  local sibling_sh=${test_file%.bats}.sh
-  if [ -f "$sibling_sh" ]; then
-    return 1
-  fi
-  local spell_path
-  spell_path=$(spell_path_for_test "$test_file")
-  [ -f "$spell_path" ]
 }
 
 # scan_coverage: walk spells/ and record which spells lack matching
@@ -194,13 +221,8 @@ scan_coverage() {
 # skipping helper folders. Returns a sorted list of paths.
 select_tests() {
   if [ ${#only_patterns[@]} -eq 0 ]; then
-    for file in "$TEST_DIR"/**/test_*.sh "$TEST_DIR"/**/test_*.bats; do
+    for file in "$TEST_DIR"/**/test_*.sh; do
       [[ $file == */lib/* ]] && continue
-      case "$file" in
-        *.bats)
-          is_spell_bats_test "$file" || continue
-          ;;
-      esac
       [ -f "$file" ] && printf '%s\n' "$file"
     done
     return 0
@@ -218,11 +240,6 @@ select_tests() {
     fi
     for match in "${matches[@]}"; do
       [[ $match == */lib/* ]] && continue
-      case "$match" in
-        *.bats)
-          is_spell_bats_test "$match" || continue
-          ;;
-      esac
       if [ ! -f "$match" ]; then
         echo "run-tests: resolved '$match' is not a file" >&2
         exit 1
@@ -257,35 +274,14 @@ fail_scripts=0
 for test in "${test_files[@]}"; do
   rel_path=${test#"$ROOT_DIR/"}
   printf '%sRunning %s%s\n' "$BOLD" "$rel_path" "$RESET"
-  case "$test" in
-    *.bats)
-      if [ -z "$BATS_BIN" ]; then
-        if ! BATS_BIN=$("$TEST_DIR/lib/ensure_bats.sh"); then
-          echo "run-tests: failed to ensure bats" >&2
-          exit 1
-        fi
-      fi
-      bats_lib_path="$TEST_DIR:$TEST_DIR/test_helper:$TEST_DIR/vendor"
-      if output=$(BATS_LIB_PATH="$bats_lib_path" "$BATS_BIN" "$test" 2>&1); then
-        pass_scripts=$((pass_scripts + 1))
-        printf '%s\n' "$output" | sed 's/^/  /'
-      else
-        status=1
-        fail_scripts=$((fail_scripts + 1))
-        printf '%s\n' "$output" | sed 's/^/  /'
-      fi
-      ;;
-    *)
-      if output=$(sh "$test" 2>&1); then
-        pass_scripts=$((pass_scripts + 1))
-        printf '%s\n' "$output" | sed 's/^/  /'
-      else
-        status=1
-        fail_scripts=$((fail_scripts + 1))
-        printf '%s\n' "$output" | sed 's/^/  /'
-      fi
-      ;;
-  esac
+  if output=$(sh "$test" 2>&1); then
+    pass_scripts=$((pass_scripts + 1))
+    printf '%s\n' "$output" | sed 's/^/  /'
+  else
+    status=1
+    fail_scripts=$((fail_scripts + 1))
+    printf '%s\n' "$output" | sed 's/^/  /'
+  fi
 done
 
 # After execution, compute coverage stats to identify spells lacking

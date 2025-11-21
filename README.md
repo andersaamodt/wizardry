@@ -111,5 +111,12 @@ run-tests
 
 The spell discovers every `test_*.sh` file and executes each in a sandboxed bubblewrap environment. Pass `--list` or `--only PATTERN` to filter which scripts run.
 
-Run the complete shell test suite with `run-tests`; it discovers every `test_*.sh` script and runs it inside the POSIX bubblewrap harness.
+Testing guidelines:
+
+* Test files live in `tests/` and mirror the structure of the `spells/` directory so each spell's tests are easy to locate.
+* Shared helpers live in `tests/lib/` and are sourced by each test to keep setup and assertions consistent.
+* Each shell test script registers individual cases with `run_test_case` so failures are reported with descriptive names.
+* Tests prefer stubbed dependencies (for example, fake `ask_yn`, `ask_text`, or `systemctl` binaries in a temporary `PATH`) to keep them deterministic and portable across CI and local environments.
+* Each spell's `--help` usage notes are the behavioral spec; unit tests assert those documented flows rather than inventing new ones.
+* Menu-driven spells share a single `menu` implementation, so we focus interaction-heavy menu tests there while keeping per-menu scripts focused on their unique behaviors and dependency checks.
 
