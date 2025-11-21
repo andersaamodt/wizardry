@@ -51,7 +51,7 @@ To use wizardry, simply type:
 ```
 menu
 ```
-This displays an interactive menu. Most (soon all) wizardry spells and features will be discoverable through the menu. Testing tools such as unit tests and coverage reporting can be launched from the system menu as well.
+This displays an interactive menu. Most (soon all) wizardry spells and features will be discoverable through the menu. Testing tools such as unit tests can be launched from the system menu, and the run-tests spell now reports coverage alongside test pass and fail counts.
 
 ## Principles:
 
@@ -111,10 +111,3 @@ run-tests
 
 The spell discovers every `test_*.sh` file and executes each in a sandboxed bubblewrap environment. Pass `--list` or `--only PATTERN` to filter which scripts run.
 
-View unit test coverage with:
-
-```
-test-coverage
-```
-
-Use `--run-tests` to execute the suite before reporting coverage.

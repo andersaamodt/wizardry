@@ -1,4 +1,4 @@
-name: Tests and Coverage
+name: Tests
 
 on:
   push:
@@ -11,8 +11,27 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install bubblewrap dependency
-        run: sudo apt-get update && sudo apt-get install -y bubblewrap
+        run: sudo apt-get update && sudo apt-get install -y bubblewrap uidmap
+      - name: Configure bubblewrap user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      - name: Verify bubblewrap setup
+        run: |
+          if bwrap --unshare-user-try --ro-bind / / /bin/true; then
+            echo "bubblewrap usable with user namespaces"
+          elif sudo -n bwrap --unshare-user-try --ro-bind / / /bin/true; then
+            echo "bubblewrap usable via sudo with user namespaces"
+          elif sudo -n bwrap --ro-bind / / /bin/true; then
+            echo "bubblewrap usable via sudo"
+          else
+            echo "bubblewrap unusable" >&2
+            exit 1
+          fi
       - name: Run unit tests
         run: ./spells/menu/system/run-tests
-      - name: Report coverage
-        run: NO_COLOR=1 spells/menu/system/test-coverage
