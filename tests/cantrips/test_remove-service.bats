@@ -7,7 +7,9 @@ setup() {
   ORIGINAL_PATH=$PATH
   system_stubs=$(wizardry_install_systemd_stubs)
   service_name="wizardry-remove-$$"
-  service_file="/etc/systemd/system/$service_name.service"
+  service_dir="$BATS_TEST_TMPDIR/systemd"
+  mkdir -p "$service_dir"
+  service_file="$service_dir/$service_name.service"
   rm -f "$service_file"
   tmp_dir="$BATS_TEST_TMPDIR/system"
   mkdir -p "$tmp_dir"
@@ -27,14 +29,14 @@ with_system_path() {
   PATH=$ORIGINAL_PATH run_spell 'spells/cantrips/remove-service' "$service_name"
   assert_failure
 
-  with_system_path run_spell 'spells/cantrips/remove-service' "$service_name"
+  SERVICE_DIR="$service_dir" with_system_path run_spell 'spells/cantrips/remove-service' "$service_name"
   assert_failure
   assert_output --partial "Service ${service_name}.service does not exist."
 }
 
 @test 'remove-service deletes unit file and reloads daemon' {
   printf '[Unit]\nDescription=Remove Service Test\n' | "$system_stubs/sudo" tee "$service_file" >/dev/null
-  SYSTEMCTL_STATE_DIR="$tmp_dir" with_system_path run_spell 'spells/cantrips/remove-service' "$service_name"
+  SYSTEMCTL_STATE_DIR="$tmp_dir" SERVICE_DIR="$service_dir" with_system_path run_spell 'spells/cantrips/remove-service' "$service_name"
   assert_success
   assert_output --partial "Service ${service_name}.service removed."
   [ ! -f "$service_file" ]
@@ -45,7 +47,7 @@ with_system_path() {
   printf '[Unit]\nDescription=Remove Service Test\n' | "$system_stubs/sudo" tee "$service_file" >/dev/null
   mkdir -p "$tmp_dir/systemctl"
   touch "$tmp_dir/systemctl/${service_name}.service.active"
-  SYSTEMCTL_STATE_DIR="$tmp_dir" with_system_path run_spell 'spells/cantrips/remove-service' "$service_name"
+  SYSTEMCTL_STATE_DIR="$tmp_dir" SERVICE_DIR="$service_dir" with_system_path run_spell 'spells/cantrips/remove-service' "$service_name"
   assert_success
   [[ "$output" != *'does not exist'* ]]
   [ ! -f "$tmp_dir/systemctl/${service_name}.service.active" ]
