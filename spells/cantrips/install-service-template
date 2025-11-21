@@ -114,16 +114,20 @@ else
 fi
 
 require_privilege() {
-        if [ "$(id -u)" -eq 0 ]; then
-                "$@"
-                return 0
-        fi
-        if command -v sudo >/dev/null 2>&1; then
-                sudo "$@"
-                return 0
-        fi
-        printf '%s\n' "$SCRIPT_NAME: run as root or install sudo to write $SERVICE_DIR." >&2
-        exit 1
+if [ "$(id -u)" -eq 0 ]; then
+"$@"
+return 0
+fi
+if [ -w "$SERVICE_DIR" ]; then
+"$@"
+return 0
+fi
+if command -v sudo >/dev/null 2>&1; then
+sudo "$@"
+return 0
+fi
+printf '%s\n' "$SCRIPT_NAME: run as root or install sudo to write $SERVICE_DIR." >&2
+exit 1
 }
 
 template_path=${1-}

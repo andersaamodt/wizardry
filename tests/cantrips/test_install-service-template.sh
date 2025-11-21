@@ -115,7 +115,69 @@ SERVICE
   [ -f "$service_dir/state/daemon-reload" ] || { TEST_FAILURE_REASON="daemon-reload not triggered"; return 1; }
 }
 
+test_skips_sudo_when_service_dir_writable() {
+  stub_dir=$(make_stub_dir)
+  write_ask_yn_stub "$stub_dir"
+  write_ask_text_stub "$stub_dir"
+  write_systemctl_stub "$stub_dir"
+
+  printf '#!/bin/sh\nexit 99' >"$stub_dir/sudo"
+  chmod +x "$stub_dir/sudo"
+
+  service_dir=$(mktemp -d "$WIZARDRY_TMPDIR/services.XXXXXX") || return 1
+  template="$service_dir/example.service"
+  printf 'Name=$NAME\n' >"$template"
+
+  SERVICE_DIR="$service_dir" \
+  INSTALL_SERVICE_TEMPLATE_ASK_YN="$stub_dir/ask_yn" \
+  INSTALL_SERVICE_TEMPLATE_ASK_TEXT="$stub_dir/ask_text" \
+  PATH="$stub_dir:$PATH" run_spell "spells/cantrips/install-service-template" "$template" NAME=mere
+
+  assert_success
+  assert_output_contains "Service installed"
+  contents=$(cat "$service_dir/example.service")
+  case "$contents" in
+    *"Name=mere"*) : ;; *) TEST_FAILURE_REASON="NAME not replaced"; return 1;;
+  esac
+}
+
+test_replaces_special_characters() {
+  stub_dir=$(make_stub_dir)
+  write_ask_yn_stub "$stub_dir"
+  write_ask_text_stub "$stub_dir"
+  write_systemctl_stub "$stub_dir"
+
+  service_dir=$(mktemp -d "$WIZARDRY_TMPDIR/services.XXXXXX") || return 1
+  template="$service_dir/example.service"
+  cat >"$template" <<'SERVICE'
+[Service]
+ExecStart=/usr/bin/$EXEC
+Environment=EXTRA=$VALUE
+SERVICE
+  placeholders="$service_dir/placeholders"
+  printf 'a/path/with|pipes&slashes"\nquoted&value' >"$placeholders"
+  service_path="$service_dir/example.service"
+
+  SERVICE_DIR="$service_dir" \
+  SYSTEMCTL_STATE_DIR="$service_dir/state" \
+  INSTALL_SERVICE_TEMPLATE_ASK_YN="$stub_dir/ask_yn" \
+  INSTALL_SERVICE_TEMPLATE_ASK_TEXT="$stub_dir/ask_text" \
+  ASK_TEXT_STUB_FILE="$placeholders" \
+  PATH="$stub_dir:$PATH" run_spell "spells/cantrips/install-service-template" "$template"
+
+  assert_success
+  contents=$(cat "$service_path")
+  case "$contents" in
+    *"ExecStart=/usr/bin/a/path/with|pipes&slashes\""*) : ;; *) TEST_FAILURE_REASON="EXEC not replaced safely"; return 1;;
+  esac
+  case "$contents" in
+    *"Environment=EXTRA=quoted&value"*) : ;; *) TEST_FAILURE_REASON="VALUE not replaced safely"; return 1;;
+  esac
+}
+
 run_test_case "install-service-template cancels when overwrite declined" test_declines_overwrite
 run_test_case "install-service-template fills placeholders and reloads systemd" test_fills_placeholders_and_reloads
+run_test_case "install-service-template skips sudo when target writable" test_skips_sudo_when_service_dir_writable
+run_test_case "install-service-template handles special characters in placeholders" test_replaces_special_characters
 
 finish_tests

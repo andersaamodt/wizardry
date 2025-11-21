@@ -209,6 +209,22 @@ assert_error_contains() {
   esac
 }
 
+assert_file_contains() {
+  file=$1
+  substring=$2
+  if [ ! -f "$file" ]; then
+    TEST_FAILURE_REASON="expected file missing: $file"
+    return 1
+  fi
+
+  if grep -F -- "$substring" "$file" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  TEST_FAILURE_REASON="file $file missing substring: $substring"
+  return 1
+}
+
 assert_path_exists() {
   if [ ! -e "$1" ]; then
     TEST_FAILURE_REASON="expected path to exist: $1"
