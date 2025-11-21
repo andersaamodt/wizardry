@@ -1,11 +1,33 @@
 #!/usr/bin/env bash
 
+wizardry_find_root() {
+  local dir="${BATS_TEST_DIRNAME:-$(pwd)}"
+  while [ "$dir" != "/" ]; do
+    if [ -d "$dir/spells" ] && [ -d "$dir/tests" ]; then
+      printf '%s\n' "$dir"
+      return 0
+    fi
+    dir=$(dirname "$dir")
+  done
+  printf '%s\n' "$BATS_TEST_DIRNAME"
+}
+
+ROOT_DIR=$(wizardry_find_root)
+TEST_DIR="$ROOT_DIR/tests"
+
 wizardry_load_helper() {
   local module=$1
   local script=$2
-  local vendor_base="$BATS_TEST_DIRNAME/vendor/$module"
-  if [ -f "$vendor_base/$script.bash" ] || [ -f "$vendor_base/$script" ]; then
-    load "vendor/$module/$script"
+  local vendor_base="$TEST_DIR/vendor/$module"
+  local vendor_script=""
+  if [ -f "$vendor_base/$script.bash" ]; then
+    vendor_script="$vendor_base/$script.bash"
+  elif [ -f "$vendor_base/$script" ]; then
+    vendor_script="$vendor_base/$script"
+  fi
+
+  if [ -n "$vendor_script" ]; then
+    load "$vendor_script"
   else
     load "$module/$script"
   fi
@@ -17,12 +39,10 @@ wizardry_load_helper bats-mock stub
 
 bats_require_minimum_version 1.5.0
 
-ROOT_DIR=$(cd "$BATS_TEST_DIRNAME/.." && pwd)
-TEST_DIR="$ROOT_DIR/tests"
 # shellcheck disable=SC1090
-source "$ROOT_DIR/tests/lib/coverage.sh"
+source "$TEST_DIR/lib/coverage.sh"
 # shellcheck disable=SC1090
-source "$ROOT_DIR/tests/lib/stub_helpers.sh"
+source "$TEST_DIR/lib/stub_helpers.sh"
 
 declare -a __wizardry_stubbed=()
 

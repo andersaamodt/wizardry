@@ -45,7 +45,6 @@ display_menu() {
   services="Manage services%services-menu"
   update_wizardry="Update wizardry%update-wizardry"
   test_suite="Test all wizardry spells%$system_dir/run-tests"
-  unit_coverage="Unit test coverage%$system_dir/test-coverage --run-tests"
   update_all="Update all software%update-all -v"
   restart="Force restart%sudo shutdown -r now"
   exit="Exit%kill -2 $$"
@@ -55,7 +54,7 @@ display_menu() {
   if [ -n "$nixos_rebuild" ]; then
     set -- "$@" "$nixos_rebuild"
   fi
-  set -- "$@" "$update_wizardry" "$test_suite" "$unit_coverage" "$restart" "$exit"
+  set -- "$@" "$update_wizardry" "$test_suite" "$restart" "$exit"
 
   MENU_ESCAPE_STATUS=$menu_escape_status menu "System Menu:" "$@"
 }
