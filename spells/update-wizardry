@@ -35,6 +35,14 @@ fi
 
 if [ -n "${WIZARDRY_DIR-}" ]; then
   wizardry_dir=$WIZARDRY_DIR
+  if [ ! -d "$wizardry_dir" ]; then
+    printf '%s\n' "WIZARDRY_DIR does not exist or is not a directory: $wizardry_dir" >&2
+    exit 1
+  fi
+  if ! git -C "$wizardry_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    printf '%s\n' "WIZARDRY_DIR is not a git repository: $wizardry_dir" >&2
+    exit 1
+  fi
 else
   # Attempt to locate the wizardry repository based on this spell's location.
   candidate=$(dirname "$script_dir")
