@@ -33,18 +33,14 @@ mkdir -p "$marker_dir" || exit 1
 if [ "$#" -eq 0 ]; then
   destination=$(pwd -P)
 else
-  if [ ! -e "$1" ]; then
-    printf 'Error: %s does not exist.\n' "$1" >&2
-    exit 1
-  fi
   # Expand the provided path to an absolute destination for consistent recall.
   case $1 in
     /*)
       destination="$(cd "$(dirname "$1")" && pwd -P)/$(basename "$1")"
       ;;
-    ~/*)
+    "~/"*)
       if [ -n "${HOME-}" ]; then
-        destination="$HOME/${1#~/}"
+        destination="$HOME/${1#"~/"}"
       else
         destination="$1"
       fi
@@ -53,6 +49,10 @@ else
       destination="$(pwd -P)/$1"
       ;;
   esac
+  if [ ! -e "$destination" ]; then
+    printf 'Error: %s does not exist.\n' "$1" >&2
+    exit 1
+  fi
 fi
 
 printf '%s\n' "$destination" >"$marker_file"

@@ -4,10 +4,19 @@
 # - bind-tome combines files into a tome
 # - bind-tome refuses missing directories
 # - bind-tome deletes pages when -d is provided
+# - bind-tome prints helpful usage text
+# - bind-tome rejects invalid options and non-directories
 
 set -eu
 
 . "$(dirname "$0")/lib/test_common.sh"
+
+bind_shows_usage() {
+  run_spell "spells/bind-tome" --help
+  assert_success || return 1
+  assert_output_contains "Usage: bind-tome" || return 1
+  assert_output_contains "Bind every file" || return 1
+}
 
 require_arg_for_bind() {
   run_spell "spells/bind-tome"
@@ -44,6 +53,18 @@ bind_requires_existing_directory() {
   run_spell "spells/bind-tome" "/no/such/place"
   assert_failure || return 1
   assert_error_contains "Error: '/no/such/place' is not a directory." || return 1
+
+  file_path="$WIZARDRY_TMPDIR/bind-single.txt"
+  printf 'lone page' >"$file_path"
+  run_spell "spells/bind-tome" "$file_path"
+  assert_failure || return 1
+  assert_error_contains "is not a directory" || return 1
+}
+
+bind_rejects_unknown_option() {
+  run_spell "spells/bind-tome" -z
+  assert_failure || return 1
+  assert_error_contains "Usage: bind-tome" || return 1
 }
 
 bind_deletes_pages_with_flag() {
@@ -68,5 +89,7 @@ run_test_case "bind-tome requires a directory argument" require_arg_for_bind
 run_test_case "bind-tome combines files into a tome" binds_pages_into_tome
 run_test_case "bind-tome refuses missing directories" bind_requires_existing_directory
 run_test_case "bind-tome deletes pages when -d is provided" bind_deletes_pages_with_flag
+run_test_case "bind-tome shows usage text" bind_shows_usage
+run_test_case "bind-tome rejects unknown options" bind_rejects_unknown_option
 
 finish_tests
