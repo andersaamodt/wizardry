@@ -20,56 +20,93 @@ case "${1-}" in
 esac
 
 require_args() {
-  if [ "$#" -lt 3 ] || [ "$#" -gt 4 ]; then
-    printf '%s\n' "Error: This spell requires three or four arguments: a file path, an attribute name, and a value."
-    return 1
-  fi
+        if [ "$#" -lt 3 ] || [ "$#" -gt 4 ]; then
+                printf '%s\n' "Error: This spell requires three or four arguments: a file path, an attribute name, and a value." >&2
+                return 1
+        fi
 }
 
 file_exists() {
-  if [ ! -e "$1" ]; then
-    printf '%s\n' "Error: The file does not exist."
-    return 1
-  fi
+        if [ ! -e "$1" ]; then
+                printf '%s\n' "Error: The file does not exist." >&2
+                return 1
+        fi
 }
 
 set_with_attr() {
-  command -v attr >/dev/null 2>&1 && attr -s "$1" -V "$2" "$3"
+        command -v attr >/dev/null 2>&1 && attr -s "$1" -V "$2" "$3"
 }
 
 set_with_xattr() {
-  command -v xattr >/dev/null 2>&1 && xattr -w "$1" "$2" "$3"
+        command -v xattr >/dev/null 2>&1 && xattr -w "$1" "$2" "$3"
 }
 
 set_with_setfattr() {
-  command -v setfattr >/dev/null 2>&1 && setfattr -n "$1" -v "$2" "$3"
+        command -v setfattr >/dev/null 2>&1 && setfattr -n "$1" -v "$2" "$3"
+}
+
+helpers_for_preference() {
+        preferred=$1
+        case "$preferred" in
+        "")
+                printf '%s\n' attr xattr setfattr
+                ;;
+        attr|xattr|setfattr)
+                printf '%s\n' "$preferred"
+                for helper in attr xattr setfattr; do
+                        if [ "$helper" != "$preferred" ]; then
+                                printf '%s\n' "$helper"
+                        fi
+                done
+                ;;
+        *)
+                printf '%s\n' "Error: Unknown helper '$preferred'. Choose attr, xattr, or setfattr." >&2
+                return 1
+                ;;
+        esac
+}
+
+set_attribute() {
+        key=$1
+        value=$2
+        file=$3
+        preferred=${4-}
+        helpers=$(helpers_for_preference "$preferred") || return 1
+
+        for helper in $helpers; do
+                case "$helper" in
+                attr)
+                        set_with_attr "$key" "$value" "$file" && return 0 ;;
+                xattr)
+                        set_with_xattr "$key" "$value" "$file" && return 0 ;;
+                setfattr)
+                        set_with_setfattr "$key" "$value" "$file" && return 0 ;;
+                esac
+        done
+
+        printf "%s\n" "Error: This spell requires the 'attr', 'xattr', or 'setfattr' command to be installed." >&2
+        return 1
 }
 
 main() {
-  if ! require_args "$@"; then
-    exit 1
-  fi
+        if ! require_args "$@"; then
+                exit 1
+        fi
 
-  file=$1
-  key=$2
-  value=$3
+        file=$1
+        key=$2
+        value=$3
+        preferred=${4-}
 
-  if ! file_exists "$file"; then
-    exit 1
-  fi
+        if ! file_exists "$file"; then
+                exit 1
+        fi
 
-  if set_with_attr "$key" "$value" "$file"; then
-    :
-  elif set_with_xattr "$key" "$value" "$file"; then
-    :
-  elif set_with_setfattr "$key" "$value" "$file"; then
-    :
-  else
-    printf "%s\n" "Error: This spell requires the 'attr', 'xattr', or 'setfattr' command to be installed."
-    exit 1
-  fi
+        if ! set_attribute "$key" "$value" "$file" "$preferred"; then
+                exit 1
+        fi
 
-  printf "The file has been enchanted with the attribute '%s' and value '%s'.\n" "$key" "$value"
+        printf "The file has been enchanted with the attribute '%s' and value '%s'.\n" "$key" "$value"
 }
 
 main "$@"

@@ -111,3 +111,5 @@ run-tests
 
 The spell discovers every `test_*.sh` file and executes each in a sandboxed bubblewrap environment. Pass `--list` or `--only PATTERN` to filter which scripts run.
 
+Run the complete shell test suite with `run-tests`; it discovers every `test_*.sh` script and runs it inside the POSIX bubblewrap harness.
+

@@ -31,17 +31,54 @@ if [ ! -f "$file" ]; then
     exit 1
 fi
 
+parse_attr_output() {
+    printf '%s' "$1" | sed 's/.*has a value:[[:space:]]*//'
+}
+
 list_keys() {
     target=$1
     if command -v xattr >/dev/null 2>&1; then
-        xattr "$target" 2>/dev/null && return 0
+        if keys=$(xattr "$target" 2>/dev/null); then
+            printf '%s\n' "$keys"
+            return 0
+        fi
     fi
     if command -v attr >/dev/null 2>&1; then
-        attr -l "$target" 2>/dev/null && return 0
+        if keys=$(attr -l "$target" 2>/dev/null); then
+            printf '%s\n' "$keys" | awk -F '"' '/Attribute/ {print $2}'
+            return 0
+        fi
     fi
     if command -v getfattr >/dev/null 2>&1; then
-        getfattr -d "$target" 2>/dev/null |
-            awk -F '=' '/^# / {next} {print $1}' && return 0
+        if keys=$(getfattr -d "$target" 2>/dev/null); then
+            printf '%s' "$keys" | awk -F '=' '/^# / {next} {print $1}'
+            return 0
+        fi
+    fi
+    return 1
+}
+
+read_value() {
+    key=$1
+    target=$2
+
+    if command -v xattr >/dev/null 2>&1; then
+        if output=$(xattr -p "$key" "$target" 2>/dev/null); then
+            printf '%s' "$output"
+            return 0
+        fi
+    fi
+    if command -v attr >/dev/null 2>&1; then
+        if output=$(attr -g "$key" "$target" 2>/dev/null); then
+            parse_attr_output "$output"
+            return 0
+        fi
+    fi
+    if command -v getfattr >/dev/null 2>&1; then
+        if output=$(getfattr -n "$key" --only-values "$target" 2>/dev/null); then
+            printf '%s' "$output"
+            return 0
+        fi
     fi
     return 1
 }
@@ -57,13 +94,19 @@ tmp=$(mktemp "${TMPDIR:-/tmp}/wizardry-yaml.XXXXXX") || exit 1
     printf '%s\n' '---'
     for key in $keys; do
         [ -z "$key" ] && continue
-        printf '%s:\n' "$key"
+        value=$(read_value "$key" "$file" || printf '')
+        printf '%s: %s\n' "$key" "$value"
     done
     printf '%s\n' '---'
     printf '\n'
 } >"$tmp"
 cat "$file" >>"$tmp" || exit 1
 mv "$tmp" "$file"
+
+if ! (command -v xattr >/dev/null 2>&1 || command -v attr >/dev/null 2>&1 || command -v setfattr >/dev/null 2>&1); then
+    printf '%s\n' "Error: requires one of attr, xattr, or setfattr to clear attributes" >&2
+    exit 1
+fi
 
 if command -v xattr >/dev/null 2>&1; then
     xattr -c "$file" 2>/dev/null || true

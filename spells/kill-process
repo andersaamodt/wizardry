@@ -23,20 +23,33 @@ esac
 echo "List of running processes:"
 ps -ax | awk '{print $5}' | tail -n +2 | nl -w 2 -s ') '
 
-PS_NAMES=($(ps -ax | awk '{print $5}' | tail -n +2))
+PS_NAMES=$(ps -ax | awk '{print $5}' | tail -n +2)
 
 if ! command -v ask_number >/dev/null 2>&1; then
     echo "ask_number spell is required to choose a process." >&2
     exit 1
 fi
 
-choice=$(ask_number "Enter the number of the process you want to kill:" 1 ${#PS_NAMES[@]})
+if ! command -v ask_yn >/dev/null 2>&1; then
+    echo "ask_yn spell is required to confirm termination." >&2
+    exit 1
+fi
 
-pid=$(ps -ax | awk '{print $1 " " $5}' | grep "${PS_NAMES[choice - 1]}" | awk '{print $1}')
+total_processes=$(printf '%s\n' "$PS_NAMES" | sed '/^$/d' | wc -l | tr -d ' ')
+
+if [ "$total_processes" -eq 0 ]; then
+    echo "No processes available to kill." >&2
+    exit 1
+fi
+
+choice=$(ask_number "Enter the number of the process you want to kill:" 1 "$total_processes")
+selected_name=$(printf '%s\n' "$PS_NAMES" | sed -n "${choice}p")
+
+pid=$(ps -ax | awk '{print $1 " " $5}' | grep "$selected_name" | awk '{print $1}')
 if [ -n "$pid" ]; then
-    if ask_yn "Are you sure you want to kill process ${PS_NAMES[choice - 1]} with pid $pid"; then
+    if ask_yn "Are you sure you want to kill process $selected_name with pid $pid"; then
         kill_cmd=${KILL_CMD:-kill}
         "$kill_cmd" "$pid"
-        echo "Process $pid (${PS_NAMES[choice - 1]}) has been killed."
+        echo "Process $pid ($selected_name) has been killed."
     fi
 fi

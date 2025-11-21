@@ -21,83 +21,143 @@ case "${1-}" in
   ;;
 esac
 
-# Disenchant a single attribute from a file
-disenchant_one() {
-  key="$1"
-  file="$2"
-  if command -v xattr > /dev/null 2>&1; then
-    # xattr is available, use it
-    xattr -d "$key" "$file"
-  elif command -v attr > /dev/null 2>&1; then
-    # attr is available, use it
-    attr -r "$key" "$file"
-  elif command -v setfattr > /dev/null 2>&1; then
-    # setfattr is available, use it
-    setfattr -x "$key" "$file"
-  else
-    # xattr, attr, and setfattr are not available
-    echo "Error: xattr, attr, and setfattr are not available on this system."
-    exit 1
-  fi
-  echo "Disenchanted $key attribute from $file."
-}
-
-# Check if a file was given as an argument
-if [ -z "$1" ]; then
-  # If no file was given, print an error message and exit
-  echo "Error: No file specified. Usage: disenchant file [key]"
+if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
+  printf '%s\n' "Error: This spell requires one or two arguments: a file path and an optional attribute name." >&2
+  show_usage >&2
   exit 1
 fi
 
-# Read the extended attribute keys from the file
-keys=$(read-magic "$1")
-# Extract the attribute keys from the output of read-magic
-keys=$(echo "$keys" | awk -F: '{print $1}' | tr -d ' ')
+file=$1
+requested_key=${2-}
 
-# Check if a key name was given as an argument
-if [ -z "$2" ]; then
-  # If no key name was given, check if there are at least two extended attributes
-  if [ $(echo "$keys" | wc -l) -lt 2 ]; then
-    # If there is only one extended attribute, delete it
-    key=$(echo "$keys")
-    disenchant_one "$key" "$1"
-  else
-    # If there are at least two extended attributes, provide a menu of the keys and select one with the arrow keys
-    keys="$keys disenchant-all"
-    times=$(($(echo "$keys" | wc -l) + 1))
-    desc="# disenchant this"
-    descriptions=()
-    for ((i = 1; i <= $times; i++)); do
-    	descriptions+=("$desc")
-    done
-    echo "${descriptions[@]}"
-    menu "Choose which attribute to disenchant:" "$keys" $descriptions "menu_choice" # todo / problem: $descriptions needs to be a string but then it's only space-delimited so many commands cant work. solution is to refactor the menu script, splitting it up into many small and complete semantic scripts, and building a better more holistic and composed menu with lots of better building blocks. or using bmenu.
-    echo $menu_choice 
-    key=${keys[$menu_choice]}
-    if [ -n "$key" ]; then
-      if [ "$key" = "disenchant all" ]; then
-        # Disenchant all extended attributes
-        for key in $keys; do
-          disenchant_one "$key" "$1"
-         done
-        echo "Disenchanted all attributes from $1."
-        break
-      else
-        # Disenchant the selected attribute
-        echo KEY $key
-        echo FILE $1
-        disenchant_one "$key" "$1"
-        break
-      fi
-    else
-      # If no key was selected, print an error message and exit
-      echo "Error: No key selected."
-      exit 1
-    fi
-   fi
-else
-  # If a key name was given, use it as the key
-  key="$2"
-  # Disenchant the selected attribute
-  disenchant_one "$key" "$1"
+if [ ! -e "$file" ]; then
+  printf '%s\n' "Error: The file does not exist." >&2
+  exit 1
 fi
+
+parse_attr_keys() {
+  awk -F '"' '/Attribute/ {print $2}'
+}
+
+list_keys() {
+  target=$1
+
+  if command -v attr >/dev/null 2>&1; then
+    if keys=$(attr -l "$target" 2>/dev/null); then
+      printf '%s\n' "$keys" | parse_attr_keys
+      return 0
+    fi
+  fi
+
+  if command -v xattr >/dev/null 2>&1; then
+    if keys=$(xattr "$target" 2>/dev/null); then
+      printf '%s\n' "$keys"
+      return 0
+    fi
+  fi
+
+  if command -v getfattr >/dev/null 2>&1; then
+    if keys=$(getfattr -d "$target" 2>/dev/null); then
+      printf '%s' "$keys" | awk -F '=' '/^# / {next} {print $1}'
+      return 0
+    fi
+  fi
+
+  return 1
+}
+
+remove_with_helper() {
+  helper=$1
+  key=$2
+  target=$3
+
+  case "$helper" in
+    attr)
+      attr -r "$key" "$target"
+      ;;
+    xattr)
+      xattr -d "$key" "$target"
+      ;;
+    setfattr)
+      setfattr -x "$key" "$target"
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+disenchant_attr() {
+  key=$1
+  target=$2
+
+  for helper in attr xattr setfattr; do
+    if command -v "$helper" >/dev/null 2>&1; then
+      if remove_with_helper "$helper" "$key" "$target"; then
+        printf '%s\n' "Disenchanted $key attribute from $target."
+        return 0
+      fi
+    fi
+  done
+
+  printf '%s\n' "Error: requires the 'attr', 'xattr', or 'setfattr' helper to remove attributes." >&2
+  return 1
+}
+
+select_from_many() {
+  keys=$1
+  set -- $keys disenchant-all
+  count=$#
+
+  if [ "$count" -eq 0 ]; then
+    return 1
+  fi
+
+  if ! command -v ask_number >/dev/null 2>&1; then
+    printf '%s\n' "Error: multiple attributes found; install ask_number or specify a key." >&2
+    return 1
+  fi
+
+  printf '%s\n' "Available attributes:" >&2
+  idx=1
+  for key in "$@"; do
+    printf '  %s) %s\n' "$idx" "$key" >&2
+    idx=$((idx + 1))
+  done
+
+  choice=$(ask_number "Choose which attribute to disenchant" 1 "$count") || return 1
+  eval "printf '%s\n' \"\${$choice}\""
+}
+
+if [ -n "$requested_key" ]; then
+  disenchant_attr "$requested_key" "$file"
+  exit $?
+fi
+
+keys=$(list_keys "$file" || printf '')
+if [ -z "$keys" ]; then
+  printf '%s\n' "Error: No enchanted attributes found on $file." >&2
+  exit 1
+fi
+
+key_count=$(printf '%s\n' "$keys" | awk 'NF{c++} END{print c+0}')
+
+if [ "$key_count" -eq 1 ]; then
+  chosen_key=$(printf '%s\n' "$keys" | awk 'NF{print; exit}')
+else
+  chosen_key=$(select_from_many "$keys") || exit 1
+fi
+
+if [ "$chosen_key" = "disenchant-all" ]; then
+  failure=0
+  for key in $keys; do
+    if ! disenchant_attr "$key" "$file"; then
+      failure=1
+    fi
+  done
+  [ "$failure" -eq 0 ] || exit 1
+  printf '%s\n' "Disenchanted all attributes from $file."
+  exit 0
+fi
+
+disenchant_attr "$chosen_key" "$file"
