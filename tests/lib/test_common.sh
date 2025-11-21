@@ -24,10 +24,25 @@ export PATH
 export WIZARDRY_TMPDIR
 
 BWRAP_AVAILABLE=1
+BWRAP_VIA_SUDO=0
+BWRAP_USE_UNSHARE=1
+
 if ! command -v bwrap >/dev/null 2>&1; then
   BWRAP_AVAILABLE=0
   BWRAP_REASON="bubblewrap not installed"
-elif ! bwrap --unshare-user-try --ro-bind / / /bin/true 2>/dev/null; then
+elif bwrap --unshare-user-try --ro-bind / / /bin/true 2>/dev/null; then
+  :
+elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+  if sudo -n bwrap --unshare-user-try --ro-bind / / /bin/true 2>/dev/null; then
+    BWRAP_VIA_SUDO=1
+  elif sudo -n bwrap --ro-bind / / /bin/true 2>/dev/null; then
+    BWRAP_VIA_SUDO=1
+    BWRAP_USE_UNSHARE=0
+  else
+    BWRAP_AVAILABLE=0
+    BWRAP_REASON="bubblewrap unusable even via sudo"
+  fi
+else
   BWRAP_AVAILABLE=0
   BWRAP_REASON="bubblewrap unusable (user namespaces likely disabled)"
 fi
@@ -35,6 +50,14 @@ fi
 if [ "$BWRAP_AVAILABLE" -eq 0 ]; then
   printf '%s\n' "WARNING: proceeding without bubblewrap sandbox: $BWRAP_REASON" >&2
 fi
+
+run_bwrap() {
+  if [ "$BWRAP_VIA_SUDO" -eq 1 ]; then
+    sudo -n bwrap "$@"
+  else
+    bwrap "$@"
+  fi
+}
 
 _pass_count=0
 _fail_count=0
@@ -72,10 +95,12 @@ run_test_case() {
 
 finish_tests() {
   if [ "$_fail_count" -gt 0 ]; then
-    printf '\n%s tests failed, %s passed\n' "$_fail_count" "$_pass_count"
+    total=$((_pass_count + _fail_count))
+    printf '%s/%s tests failed, %s passed\n' "$_fail_count" "$total" "$_pass_count"
     return 1
   fi
-  printf '\nAll %s tests passed\n' "$_pass_count"
+  total=$((_pass_count + _fail_count))
+  printf '%s/%s tests passed\n' "$_pass_count" "$total"
   return 0
 }
 
@@ -94,9 +119,8 @@ run_cmd() {
   mkdir -p "$tmpdir" "$homedir"
 
   if [ "$BWRAP_AVAILABLE" -eq 1 ]; then
-    if bwrap \
+    set -- \
       --die-with-parent \
-      --unshare-user-try \
       --ro-bind / / \
       --dev-bind /dev /dev \
       --bind /proc /proc \
@@ -108,8 +132,13 @@ run_cmd() {
       --setenv HOME "$homedir" \
       --setenv TMPDIR "$tmpdir" \
       --setenv WIZARDRY_TMPDIR "$WIZARDRY_TMPDIR" \
-      -- "$@" \
-      >"$__stdout" 2>"$__stderr"; then
+      -- "$@"
+
+    if [ "$BWRAP_USE_UNSHARE" -eq 1 ]; then
+      set -- --unshare-user-try "$@"
+    fi
+
+    if run_bwrap "$@" >"$__stdout" 2>"$__stderr"; then
       STATUS=0
     else
       STATUS=$?
