@@ -2,9 +2,9 @@
 # shellcheck disable=SC2016
 
 # Run the wizardry shell test suite in a bubblewrap sandbox.
-# The suite discovers test_*.sh scripts under tests/ and executes
-# each one as a standalone POSIX shell script. Bubblewrap keeps
-# the host safe from accidental writes while tests exercise spells.
+# The suite discovers test_*.sh and test_*.bats scripts under tests/
+# and executes each one. Bubblewrap keeps the host safe from accidental
+# writes while tests exercise spells.
 
 set -euo pipefail
 
@@ -29,6 +29,10 @@ USAGE
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 ROOT_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/../../.." && pwd -P)
 TEST_DIR="$ROOT_DIR/tests"
+BATS_BIN=""
+uncovered_spells=()
+coverage_total=0
+coverage_covered=0
 
 # Ensure bubblewrap is available before running anything.
 if ! command -v bwrap >/dev/null 2>&1; then
@@ -75,10 +79,82 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
+spell_path_for_test() {
+  local test_file=$1
+  local rel=${test_file#"$TEST_DIR/"}
+  local dir base
+  dir=$(dirname "$rel")
+  base=$(basename "$rel")
+  base=${base#test_}
+  base=${base%.*}
+  printf '%s/%s/%s\n' "$ROOT_DIR" "spells/$dir" "$base"
+}
+
+find_matching_test_for_spell() {
+  local spell=$1
+  local rel=${spell#"$ROOT_DIR/"}
+  rel=${rel#spells/}
+  local dir base
+  dir=$(dirname "$rel")
+  base=$(basename "$rel")
+
+  local candidate_sh="$TEST_DIR/$dir/test_${base}.sh"
+  if [ -f "$candidate_sh" ]; then
+    printf '%s\n' "$candidate_sh"
+    return 0
+  fi
+
+  local candidate_bats="$TEST_DIR/$dir/test_${base}.bats"
+  if [ -f "$candidate_bats" ] && is_spell_bats_test "$candidate_bats"; then
+    printf '%s\n' "$candidate_bats"
+    return 0
+  fi
+
+  return 1
+}
+
+is_spell_bats_test() {
+  local test_file=$1
+  local sibling_sh=${test_file%.bats}.sh
+  if [ -f "$sibling_sh" ]; then
+    return 1
+  fi
+  local spell_path
+  spell_path=$(spell_path_for_test "$test_file")
+  [ -f "$spell_path" ]
+}
+
+scan_coverage() {
+  coverage_total=0
+  coverage_covered=0
+  uncovered_spells=()
+
+  while IFS= read -r spell; do
+    [ -n "$spell" ] || continue
+    rel=${spell#"$ROOT_DIR/"}
+    case "$rel" in
+      spells/menu/system/run-tests)
+        continue
+        ;;
+    esac
+    coverage_total=$((coverage_total + 1))
+    if find_matching_test_for_spell "$spell" >/dev/null; then
+      coverage_covered=$((coverage_covered + 1))
+    else
+      uncovered_spells+=("$rel")
+    fi
+  done < <(cd "$ROOT_DIR" && find spells -type f | sort)
+}
+
 select_tests() {
   if [ ${#only_patterns[@]} -eq 0 ]; then
-    for file in "$TEST_DIR"/**/test_*.sh; do
+    for file in "$TEST_DIR"/**/test_*.sh "$TEST_DIR"/**/test_*.bats; do
       [[ $file == */lib/* ]] && continue
+      case "$file" in
+        *.bats)
+          is_spell_bats_test "$file" || continue
+          ;;
+      esac
       [ -f "$file" ] && printf '%s\n' "$file"
     done
     return 0
@@ -96,6 +172,11 @@ select_tests() {
     fi
     for match in "${matches[@]}"; do
       [[ $match == */lib/* ]] && continue
+      case "$match" in
+        *.bats)
+          is_spell_bats_test "$match" || continue
+          ;;
+      esac
       if [ ! -f "$match" ]; then
         echo "run-tests: resolved '$match' is not a file" >&2
         exit 1
@@ -121,12 +202,57 @@ if [ "$list_only" -eq 1 ]; then
 fi
 
 status=0
+pass_scripts=0
+fail_scripts=0
 for test in "${test_files[@]}"; do
   echo "Running ${test#"$ROOT_DIR/"}"
-  if ! sh "$test"; then
-    status=1
-  fi
+  case "$test" in
+    *.bats)
+      if [ -z "$BATS_BIN" ]; then
+        if ! BATS_BIN=$("$TEST_DIR/lib/ensure_bats.sh"); then
+          echo "run-tests: failed to ensure bats" >&2
+          exit 1
+        fi
+      fi
+      bats_lib_path="$TEST_DIR:$TEST_DIR/test_helper:$TEST_DIR/vendor"
+      if ! BATS_LIB_PATH="$bats_lib_path" "$BATS_BIN" "$test"; then
+        status=1
+        fail_scripts=$((fail_scripts + 1))
+      else
+        pass_scripts=$((pass_scripts + 1))
+      fi
+      ;;
+    *)
+      if ! sh "$test"; then
+        status=1
+        fail_scripts=$((fail_scripts + 1))
+      else
+        pass_scripts=$((pass_scripts + 1))
+      fi
+      ;;
+  esac
   echo
 done
+
+scan_coverage
+
+total_scripts=$((pass_scripts + fail_scripts))
+if [ "$total_scripts" -gt 0 ]; then
+  if [ "$fail_scripts" -gt 0 ]; then
+    echo "Test summary: $fail_scripts failed, $pass_scripts passed ($total_scripts total)"
+  else
+    echo "Test summary: all $pass_scripts test scripts passed"
+  fi
+fi
+
+coverage_uncovered=$((coverage_total - coverage_covered))
+if [ "$coverage_total" -gt 0 ]; then
+  echo "Coverage summary: $coverage_uncovered uncovered, $coverage_covered covered ($coverage_total total spells)"
+  if [ "$coverage_uncovered" -gt 0 ]; then
+    for spell in "${uncovered_spells[@]}"; do
+      printf '  - %s\n' "$spell"
+    done
+  fi
+fi
 
 exit $status
