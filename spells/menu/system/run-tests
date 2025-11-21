@@ -269,6 +269,27 @@ fi
 status=0
 pass_scripts=0
 fail_scripts=0
+subtests_passed=0
+subtests_total=0
+
+record_subtests() {
+  local log=$1
+  if [[ $log =~ ([0-9]+)/([0-9]+)\ tests\ passed ]]; then
+    local passed=${BASH_REMATCH[1]}
+    local total=${BASH_REMATCH[2]}
+    subtests_passed=$((subtests_passed + passed))
+    subtests_total=$((subtests_total + total))
+    return
+  fi
+
+  if [[ $log =~ ([0-9]+)/([0-9]+)\ tests\ failed,\ ([0-9]+)\ passed ]]; then
+    local total=${BASH_REMATCH[2]}
+    local passed=${BASH_REMATCH[3]}
+    subtests_passed=$((subtests_passed + passed))
+    subtests_total=$((subtests_total + total))
+  fi
+}
+
 # Execute each test script, indenting its output for readability and
 # tallying pass/fail counts per script (not per individual assertion).
 for test in "${test_files[@]}"; do
@@ -276,10 +297,12 @@ for test in "${test_files[@]}"; do
   printf '%sRunning %s%s\n' "$BOLD" "$rel_path" "$RESET"
   if output=$(sh "$test" 2>&1); then
     pass_scripts=$((pass_scripts + 1))
+    record_subtests "$output"
     printf '%s\n' "$output" | sed 's/^/  /'
   else
     status=1
     fail_scripts=$((fail_scripts + 1))
+    record_subtests "$output"
     printf '%s\n' "$output" | sed 's/^/  /'
   fi
 done
@@ -291,10 +314,11 @@ scan_coverage
 
 total_scripts=$((pass_scripts + fail_scripts))
 coverage_uncovered=$((coverage_total - coverage_covered))
-printf 'Test summary: %s%d passed%s, %s%d failed%s, %s%d uncovered%s\n' \
+printf 'Test summary: %s%d passed%s, %s%d failed%s, %s%d uncovered%s, subtests %s%d/%d%s\n' \
   "$GREEN" "$pass_scripts" "$RESET" \
   "$RED" "$fail_scripts" "$RESET" \
-  "$YELLOW" "$coverage_uncovered" "$RESET"
+  "$YELLOW" "$coverage_uncovered" "$RESET" \
+  "$GREEN" "$subtests_passed" "$subtests_total" "$RESET"
 if [ "$coverage_uncovered" -gt 0 ]; then
   for spell in "${uncovered_spells[@]}"; do
     printf '  - %s%s%s\n' "$YELLOW" "$spell" "$RESET"
