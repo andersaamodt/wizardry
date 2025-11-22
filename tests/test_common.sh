@@ -141,32 +141,10 @@ finish_tests() {
   printf '%s/%s tests passed' "$_pass_count" "$total"
   if [ "$_fail_count" -gt 0 ]; then
     printf ' (%s failed)' "$_fail_count"
-    printf '\n'
-    if [ -n "$_fail_detail_lines" ]; then
-      failing=$(printf '%s\n' "$_fail_detail_lines" | while IFS= read -r line; do
-        desc=${line%%:*}
-        nums=${line#*:}
-        formatted=$(printf '%s' "$nums" | sed 's/,/, /g')
-        printf '%s (%s)\n' "$desc" "$formatted"
-      done | awk 'BEGIN {first=1} {if(!first) printf(", "); first=0; printf("%s", $0)}')
-      printf 'Failing tests (subtest #'"'"'s): %s\n' "$failing"
-      numbers=$(printf '%s\n' "$_fail_detail_lines" | awk -F ':' '
-        BEGIN { out="" }
-        NF < 2 { next }
-        {
-          gsub(",", ", ", $2)
-          if (out == "") {
-            out = $2
-          } else {
-            out = out ", " $2
-          }
-        }
-        END { print out }
-      ')
-      if [ -n "$numbers" ]; then
-        printf 'Failing subtest numbers: %s\n' "$numbers"
-      fi
+    if [ -n "${WIZARDRY_FAIL_DETAIL_FILE-}" ]; then
+      printf '%s\n' "$_fail_detail_lines" >"$WIZARDRY_FAIL_DETAIL_FILE" 2>/dev/null || true
     fi
+    printf '\n'
     return 1
   fi
   printf '\n'
@@ -265,16 +243,26 @@ assert_failure() {
 assert_output_contains() {
   substring=$1
   case "$OUTPUT" in
-    *"$substring"*) return 0 ;;
-    *) TEST_FAILURE_REASON="output missing substring: $substring"; return 1 ;;
+    *"$substring"*)
+      return 0
+      ;;
+    *)
+      TEST_FAILURE_REASON="output missing substring: $substring"
+      return 1
+      ;;
   esac
 }
 
 assert_error_contains() {
   substring=$1
   case "$ERROR" in
-    *"$substring"*) return 0 ;;
-    *) TEST_FAILURE_REASON="stderr missing substring: $substring"; return 1 ;;
+    *"$substring"*)
+      return 0
+      ;;
+    *)
+      TEST_FAILURE_REASON="stderr missing substring: $substring"
+      return 1
+      ;;
   esac
 }
 

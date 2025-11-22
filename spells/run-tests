@@ -183,15 +183,7 @@ failed_scripts=""
 
 record_failed_script() {
   script=$1
-  output=$2
-
-  numbers=$(printf '%s\n' "$output" | awk '
-    /^Failing subtest numbers:/ {
-      sub(/^Failing subtest numbers:[[:space:]]*/, "", $0)
-      print
-      exit
-    }
-  ')
+  numbers=$2
 
   if [ -n "$numbers" ]; then
     entry="$script ($numbers)"
@@ -212,7 +204,10 @@ while IFS= read -r test_path; do
   if [ "$verbose" -eq 1 ]; then
     printf 'Running %s\n' "$test_path"
   fi
-  if output=$(sh "$abs" 2>&1); then
+
+  fail_detail_file=$(mktemp "${TMPDIR:-/tmp}/wizardry-fail.XXXXXX") || exit 1
+
+  if output=$(WIZARDRY_FAIL_DETAIL_FILE="$fail_detail_file" sh "$abs" 2>&1); then
     pass=$((pass + 1))
     record_subtests "$output"
     if [ "$verbose" -eq 1 ]; then
@@ -222,9 +217,33 @@ while IFS= read -r test_path; do
     status=1
     fail=$((fail + 1))
     record_subtests "$output"
-    record_failed_script "$test_path" "$output"
+    numbers=$(awk -F ':' '
+      NF < 2 { next }
+      {
+        n = split($2, parts, ",")
+        for (i = 1; i <= n; i++) {
+          idx = parts[i]
+          gsub(/^ +| +$/, "", idx)
+          if (idx == "") {
+            continue
+          }
+          order[++count] = idx
+        }
+      }
+      END {
+        for (i = 1; i <= count; i++) {
+          if (i > 1) {
+            printf(", ")
+          }
+          printf("%s", order[i])
+        }
+        printf("\n")
+      }
+    ' "$fail_detail_file" 2>/dev/null | sed 's/[[:space:]]*$//')
+    record_failed_script "$test_path" "$numbers"
     printf '%s\n' "$output" | sed 's/^/  /'
   fi
+  rm -f "$fail_detail_file"
   printf '\n'
 done <<EOF_TESTS
 $test_files
