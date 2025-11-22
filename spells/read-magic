@@ -129,17 +129,15 @@ print_all_attributes() {
     return
   fi
 
-  found=0
-  while IFS= read -r key || [ -n "$key" ]; do
+  attributes=$(printf '%s\n' "$keys" | while IFS= read -r key || [ -n "$key" ]; do
     [ -z "$key" ] && continue
     value=$(read_value "$key" "$file" || printf '')
     printf '%s: %s\n' "$key" "$value"
-    found=1
-  done <<KEYS
-$(printf '%s\n' "$keys")
-KEYS
+  done)
 
-  if [ "$found" -eq 0 ]; then
+  if [ -n "$attributes" ]; then
+    printf '%s' "$attributes"
+  else
     printf '%s\n' "No enchanted attributes found."
   fi
 }
