@@ -181,14 +181,31 @@ subtests_passed=0
 subtests_total=0
 failed_scripts=""
 
+spell_name_for_test() {
+  test_path=$1
+  spell_path=$(spell_path_for_test "$test_path" 2>/dev/null || true)
+
+  if [ -n "$spell_path" ]; then
+    printf '%s\n' "$(basename "$spell_path")"
+    return
+  fi
+
+  base=${test_path##*/}
+  base=${base#test_}
+  base=${base%.sh}
+  printf '%s\n' "$base"
+}
+
 record_failed_script() {
   script=$1
   numbers=$2
 
+  name=$(spell_name_for_test "$script")
+
   if [ -n "$numbers" ]; then
-    entry="$script ($numbers)"
+    entry="$name ($numbers)"
   else
-    entry="$script"
+    entry="$name"
   fi
 
   if [ -n "$failed_scripts" ]; then
@@ -303,7 +320,7 @@ if [ "$coverage_uncovered" -gt 0 ]; then
 fi
 
 if [ "$status" -ne 0 ] && [ -n "$failed_scripts" ]; then
-  printf 'Failing tests (subtest #'"'"'s): %s\n' "$failed_scripts"
+  printf 'Failed tests (subtests): %s\n' "$failed_scripts"
 fi
 
 exit $status
