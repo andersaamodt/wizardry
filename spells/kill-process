@@ -49,7 +49,18 @@ pid=$(ps -ax | awk '{print $1 " " $5}' | grep "$selected_name" | awk '{print $1}
 if [ -n "$pid" ]; then
     if ask_yn "Are you sure you want to kill process $selected_name with pid $pid"; then
         kill_cmd=${KILL_CMD:-kill}
-        "$kill_cmd" "$pid"
-        echo "Process $pid ($selected_name) has been killed."
+
+        if ! command -v "$kill_cmd" >/dev/null 2>&1; then
+            echo "kill command '$kill_cmd' is required to terminate processes." >&2
+            exit 1
+        fi
+
+        if "$kill_cmd" "$pid"; then
+            echo "Process $pid ($selected_name) has been killed."
+        else
+            status=$?
+            echo "Failed to kill process $pid ($selected_name)." >&2
+            exit "$status"
+        fi
     fi
 fi

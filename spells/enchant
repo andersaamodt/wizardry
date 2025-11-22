@@ -34,15 +34,30 @@ file_exists() {
 }
 
 set_with_attr() {
-        command -v attr >/dev/null 2>&1 && attr -s "$1" -V "$2" "$3"
+        if command -v attr >/dev/null 2>&1; then
+                attr -s "$1" -V "$2" "$3"
+                return $?
+        fi
+
+        return 127
 }
 
 set_with_xattr() {
-        command -v xattr >/dev/null 2>&1 && xattr -w "$1" "$2" "$3"
+        if command -v xattr >/dev/null 2>&1; then
+                xattr -w "$1" "$2" "$3"
+                return $?
+        fi
+
+        return 127
 }
 
 set_with_setfattr() {
-        command -v setfattr >/dev/null 2>&1 && setfattr -n "$1" -v "$2" "$3"
+        if command -v setfattr >/dev/null 2>&1; then
+                setfattr -n "$1" -v "$2" "$3"
+                return $?
+        fi
+
+        return 127
 }
 
 helpers_for_preference() {
@@ -73,18 +88,38 @@ set_attribute() {
         preferred=${4-}
         helpers=$(helpers_for_preference "$preferred") || return 1
 
+        attempted_helper=""
+        attempt_status=0
+
         for helper in $helpers; do
                 case "$helper" in
                 attr)
-                        set_with_attr "$key" "$value" "$file" && return 0 ;;
+                        set_with_attr "$key" "$value" "$file" ;;
                 xattr)
-                        set_with_xattr "$key" "$value" "$file" && return 0 ;;
+                        set_with_xattr "$key" "$value" "$file" ;;
                 setfattr)
-                        set_with_setfattr "$key" "$value" "$file" && return 0 ;;
+                        set_with_setfattr "$key" "$value" "$file" ;;
+                esac
+
+                status=$?
+                case "$status" in
+                0)
+                        return 0 ;;
+                127)
+                        ;; # Helper unavailable; try the next option.
+                *)
+                        attempted_helper=$helper
+                        attempt_status=$status
+                        ;;
                 esac
         done
 
-        printf "%s\n" "Error: This spell requires the 'attr', 'xattr', or 'setfattr' command to be installed." >&2
+        if [ -n "$attempted_helper" ]; then
+                printf "%s\n" "Error: Failed to set attribute using '$attempted_helper' (exit $attempt_status)." >&2
+        else
+                printf "%s\n" "Error: This spell requires the 'attr', 'xattr', or 'setfattr' command to be installed." >&2
+        fi
+
         return 1
 }
 
