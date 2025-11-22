@@ -65,7 +65,7 @@ A spell is a specially-curated shell script:
 * Is cross-platform
 * Has no `.sh` extension for easy invocation
 * Has a brief opening description comment (~2 lines)
-* Has a --help usage note which ultimately *is* its spec
+* Has a `--help` usage note which ultimately *is* its spec
 * Ideally, has a test script at a corresponding path under tests/, which serves as a fully-specified operationalized spec
 * Is polished and fails elegantly
 * Works well when used in a menu (interactivity)
