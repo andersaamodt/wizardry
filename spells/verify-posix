@@ -1,0 +1,145 @@
+#!/bin/sh
+# Verify that shell scripts declare POSIX-friendly shebangs and parse with /bin/sh.
+#
+# Usage: verify-posix [FILE...]
+# With no arguments, every spell under the spells/ directory is checked. When
+# files are provided, each FILE is treated as relative to the repository root
+# unless an absolute path is given.
+
+set -eu
+
+usage() {
+  cat <<'USAGE'
+Usage: verify-posix [FILE...]
+
+Check shell scripts for basic POSIX compliance:
+- Require a /bin/sh (or env sh) shebang.
+- Ensure the file parses under /bin/sh -n.
+- Flag bashisms via checkbashisms.
+USAGE
+}
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+ROOT_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd -P)
+
+if [ -n "${CHECKBASHISMS-}" ]; then
+  checkbashisms_cmd=$CHECKBASHISMS
+elif checkbashisms_path=$(command -v checkbashisms 2>/dev/null); then
+  checkbashisms_cmd=$checkbashisms_path
+else
+  checkbashisms_cmd=""
+fi
+
+if ! command -v "$checkbashisms_cmd" >/dev/null 2>&1; then
+  printf '%s\n' "verify-posix: checkbashisms not found; run menu/install/install-checkbashisms" >&2
+  exit 1
+fi
+
+set -- "$@"
+if [ "$#" -eq 0 ]; then
+  while IFS= read -r path; do
+    set -- "$@" "${path#"$ROOT_DIR/"}"
+  done <<EOF
+$(cd "$ROOT_DIR" && find spells -type f | sort)
+EOF
+fi
+
+total=0
+failures=0
+status=0
+
+append_reason() {
+  current=$1
+  new=$2
+
+  if [ -z "$current" ]; then
+    printf '%s' "$new"
+  else
+    printf '%s; %s' "$current" "$new"
+  fi
+}
+
+for target in "$@"; do
+  total=$((total + 1))
+  reasons=""
+
+  case "$target" in
+    /*)
+      abs="$target"
+      rel="$target"
+      ;;
+    *)
+      abs="$ROOT_DIR/$target"
+      rel="$target"
+      ;;
+  esac
+
+  if [ ! -f "$abs" ]; then
+    reasons=$(append_reason "$reasons" "missing file")
+  else
+    if ! IFS= read -r first_line <"$abs"; then
+      first_line=""
+    fi
+
+    if [ "${first_line#\#!}" = "$first_line" ]; then
+      reasons=$(append_reason "$reasons" "lacks a shebang; expected #!/bin/sh")
+    else
+      shebang=${first_line#\#!}
+      shebang=${shebang# }
+      if [ -z "$shebang" ]; then
+        reasons=$(append_reason "$reasons" "has an empty shebang; expected #!/bin/sh")
+      else
+        set -- $shebang
+        interpreter=${1-}
+        arg=${2-}
+
+        shell_name=""
+        case "$interpreter" in
+          /usr/bin/env)
+            shell_name=$arg
+            ;;
+          *)
+            shell_name=$(basename "$interpreter")
+            ;;
+        esac
+
+        if [ "$shell_name" != "sh" ]; then
+          reasons=$(append_reason "$reasons" "uses $first_line; please use /bin/sh")
+        fi
+      fi
+
+      if [ -z "$reasons" ] && ! sh -n "$abs" >/dev/null 2>&1; then
+        reasons=$(append_reason "$reasons" "fails to parse with /bin/sh -n")
+      fi
+
+      if [ -z "$reasons" ]; then
+        if ! bashism_output=$("$checkbashisms_cmd" -f -p "$abs" 2>&1); then
+          if [ -n "$bashism_output" ]; then
+            reasons=$(append_reason "$reasons" "contains bashisms (checkbashisms: $bashism_output)")
+          else
+            reasons=$(append_reason "$reasons" "contains bashisms (checkbashisms)")
+          fi
+        fi
+      fi
+    fi
+  fi
+
+  if [ -z "$reasons" ]; then
+    printf 'PASS %s\n' "$rel"
+  else
+    printf 'FAIL %s: %s\n' "$rel" "$reasons"
+    failures=$((failures + 1))
+    status=1
+  fi
+
+done
+
+if [ "$total" -eq 0 ]; then
+  printf 'No scripts checked.\n'
+elif [ "$failures" -eq 0 ]; then
+  printf 'All %d scripts are POSIX-compliant.\n' "$total"
+else
+  printf '%d of %d scripts failed POSIX compliance.\n' "$failures" "$total"
+fi
+
+exit $status

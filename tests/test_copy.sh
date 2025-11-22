@@ -9,7 +9,12 @@
 
 set -eu
 
-. "$(dirname "$0")/lib/test_common.sh"
+test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+while [ ! -f "$test_root/test_common.sh" ] && [ "$test_root" != "/" ]; do
+  test_root=$(dirname "$test_root")
+done
+# shellcheck source=/dev/null
+. "$test_root/test_common.sh"
 
 copy_shows_usage() {
   run_spell "spells/copy" --help
