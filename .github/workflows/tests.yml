@@ -33,5 +33,7 @@ jobs:
             echo "bubblewrap unusable" >&2
             exit 1
           fi
+      - name: Install checkbashisms dependency
+        run: ./spells/menu/install/install-checkbashisms
       - name: Run unit tests
-        run: ./spells/menu/system/test-wizardry --verbose
+        run: ./spells/menu/system/test-magic --verbose
