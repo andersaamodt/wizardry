@@ -320,8 +320,43 @@ if [ "$coverage_uncovered" -gt 0 ]; then
 fi
 
 if [ "$status" -ne 0 ] && [ -n "$failed_scripts" ]; then
-  os_label=${WIZARDRY_OS_LABEL-$(uname -s 2>/dev/null || printf 'unknown')}
-  os_label=$(printf '%s' "$os_label" | tr ' A-Z' '_a-z')
+  detect_os_label() {
+    if [ -n "${WIZARDRY_OS_LABEL-}" ]; then
+      printf '%s\n' "$WIZARDRY_OS_LABEL"
+      return 0
+    fi
+
+    if [ -x "$root_dir/spells/detect-distro" ]; then
+      if label=$("$root_dir/spells/detect-distro" 2>/dev/null || true); then
+        if [ -n "$label" ]; then
+          printf '%s\n' "$label"
+          return 0
+        fi
+      fi
+    fi
+
+    if command -v detect-distro >/dev/null 2>&1; then
+      if label=$(detect-distro 2>/dev/null || true); then
+        if [ -n "$label" ]; then
+          printf '%s\n' "$label"
+          return 0
+        fi
+      fi
+    fi
+
+    if command -v uname >/dev/null 2>&1; then
+      label=$(uname -s 2>/dev/null || true)
+      label=$(printf '%s' "$label" | tr ' A-Z' '_a-z')
+      if [ -n "$label" ]; then
+        printf '%s\n' "$label"
+        return 0
+      fi
+    fi
+
+    printf 'unknown\n'
+  }
+
+  os_label=$(detect_os_label)
   printf 'Failed tests (%s): %s\n' "$os_label" "$failed_scripts"
 fi
 
