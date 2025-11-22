@@ -45,10 +45,6 @@ helper_usable() {
 
   resolved=$(command -v "$helper")
 
-  if [ -n "${WIZARDRY_SHIM_DIR-}" ] && [ "$resolved" = "$WIZARDRY_SHIM_DIR/$helper" ]; then
-    return 1
-  fi
-
   if [ "${WIZARDRY_TEST_HELPERS_ONLY-0}" -eq 1 ]; then
     case $resolved in
       "${WIZARDRY_TMPDIR}"/*)
