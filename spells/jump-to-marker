@@ -32,15 +32,11 @@ jump_self_path() {
         if [ -z "$hint" ] && [ -n "${WIZARDRY_MEMORIZE_TARGET-}" ]; then
                 hint=$WIZARDRY_MEMORIZE_TARGET
         fi
-        if [ -z "$hint" ] && [ -n "${BASH_SOURCE-}" ]; then
-                # shellcheck disable=SC2128
-                hint=${BASH_SOURCE:-}
-        fi
         if [ -z "$hint" ]; then
                 hint=$0
         fi
         if [ "$RUNNING_AS_SCRIPT" -ne 1 ] && [ "$hint" = "$0" ]; then
-                hint=$(command -v -- jump-to-marker 2>/dev/null || printf '%s' '')
+                hint=$(command -v jump-to-marker 2>/dev/null || printf '%s' '')
         fi
         if [ -z "$hint" ]; then
                 printf '%s\n' "jump-to-marker: unable to determine script path." >&2
@@ -51,7 +47,7 @@ jump_self_path() {
                 candidate=$hint
                 ;;
         *)
-                candidate=$(command -v -- "$hint" 2>/dev/null || printf '%s' "$hint")
+                candidate=$(command -v "$hint" 2>/dev/null || printf '%s' "$hint")
                 ;;
         esac
         dir=${candidate%/*}

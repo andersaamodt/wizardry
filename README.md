@@ -2,7 +2,7 @@
 
 Wizardry is a collection of shell scripts to complete your terminal experience.
 Themed as a magical MUD (Multi-User Dungeon), wizardry turns folders into rooms, and files into items.
-Wizardry also includes a comprehensive set of bash tutorials, and optional free software suite.
+Wizardry also includes a comprehensive set of POSIX shell tutorials, and optional free software suite.
 
 ## Status for target platforms:
 
@@ -84,12 +84,12 @@ These values make the wizardry project what it is, and distinguish it from simil
 | Menu-driven         | A user should be able to manage their entire system by typing 'menu', without having to remember or type commands. |
 | Teaching community   | Scripts are well-commented and written as clearly as possible. Wizardry is community of practice; scripts codify collective knowledge. |
 | Cross-platform      | Scripts are POSIX-compliant and as cross-platform as possible. |
-| Bash-first          | To use languages beyond POSIX-compliant bash, there must be a good reason. This skips debates about which other projects to include as dependencies in our project. |
+| POSIX sh-first          | To use languages beyond POSIX-compliant shell, there must be a good reason. This skips debates about which other projects to include as dependencies in our project. |
 | File-first    | All state is stored in files, ideally human-readable text files. No databases, because they enclose data in one opaque file (requiring import/export steps). |
 | Non-commercial | This project is non-commercial, and so we always prefer free software over merely open-source software, and we always prefer the least commercialized software. |
 | FOSS missing link   | Wizardry provides the glue that integrates other UNIX command-line tools together. |
-| Semantic synthesis   | Scripts evolve toward higher-order spellbooks by encapsulating platform details behind concise syntax and deterministic, grammar-like recursive parser. This effectively extends the bash language. |
-| Fun       | Wizardry themes scripts as spells, and adds optional fantasy flavor text to the bash user experience. |
+| Semantic synthesis   | Scripts evolve toward higher-order spellbooks by encapsulating platform details behind concise syntax and deterministic, grammar-like recursive parser. This effectively extends the POSIX shell language. |
+| Fun       | Wizardry themes scripts as spells, and adds optional fantasy flavor text to the shell user experience. |
 
 ### Design Principles
 
@@ -108,7 +108,7 @@ These values make the wizardry project what it is, and distinguish it from simil
 | --------------------- | ----------- |
 | Front-facing  | Every spell is a user-facing executable; no hidden library directories or helper files. |
 | Output-first          | Spells communicate by printing results so humans and spells consume the same text; exported environment variables are a fallback for rare cases. |
-| Hand-finished AI code | Using AI to generate reusable, well-commented bash scripts is a great use of AI; scripts should be hand-reviewed and tested. However, wizardry itself will not interface with AI. |
+| Hand-finished AI code | Using AI to generate reusable, well-commented POSIX shell scripts is a great use of AI; scripts should be hand-reviewed and tested. However, wizardry itself will not interface with AI. |
 | Menu specialization | Wizardry organizes complex workflows as dedicated menus that call one spell per menu item. |
 | Script-like scripts  | Keep scripts script-like: favor flat flows with few functions so behavior stays readable and hackable from the shell. |
 | Wizardry available   | Spells can assume other wizardry spells are already in the PATH and should invoke them by name instead of long paths. |
@@ -116,7 +116,7 @@ These values make the wizardry project what it is, and distinguish it from simil
 ### AI directives
 * Preserve the spec: Do not edit the spec comments at the top of script, nor the --help usage instructions of a script, unless specifically instructed.
 * Preserve the lore: Do not delete, modify, or add more flavor text unless specifically instructed.
-* Qualities of a good script: Brevity, well-commented for novice bash devs, flat / minimal functions / linear, clarity, portability (including cross-platform), composability, non-redundancy, minimalism.
+* Qualities of a good script: Brevity, well-commented for novice POSIX shell devs, flat / minimal functions / linear, clarity, portability (including cross-platform), composability, non-redundancy, minimalism.
 * No globals: Do not use shell variables unless absolutely necessary (use parameters or stdout instead).
 * Bootstrap awareness: The install script runs before wizardry is on PATH, so it alone cannot assume that wizardry spells are already available in PATH.
 
@@ -125,7 +125,7 @@ These values make the wizardry project what it is, and distinguish it from simil
 Run the complete shell test suite with:
 
 ```
-test-wizardry
+test-magic
 ```
 
 The spell discovers every `test_*.sh` file in `tests/` and executes each in a sandboxed bubblewrap environment.
