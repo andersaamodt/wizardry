@@ -51,6 +51,11 @@ fi
 
 warn_once_file=${WIZARDRY_BWRAP_WARN_FILE-${TMPDIR:-/tmp}/wizardry-bwrap-warning}
 
+if [ "$BWRAP_AVAILABLE" -eq 1 ] && ! command -v bwrap >/dev/null 2>&1; then
+  BWRAP_AVAILABLE=0
+  BWRAP_REASON="bubblewrap not installed"
+fi
+
 if [ "$BWRAP_AVAILABLE" -eq 0 ] && [ ! -f "$warn_once_file" ] && [ "${WIZARDRY_BWRAP_WARNING-0}" -eq 0 ]; then
   printf '%s\n' "WARNING: proceeding without bubblewrap sandbox: $BWRAP_REASON" >&2
   WIZARDRY_BWRAP_WARNING=1
