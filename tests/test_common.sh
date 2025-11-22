@@ -110,25 +110,30 @@ record_failure_detail() {
   desc=$1
   idx=$2
 
-  if printf '%s\n' "$_fail_detail_lines" | grep -F "${desc}:" >/dev/null 2>&1; then
-    _fail_detail_lines=$(printf '%s\n' "$_fail_detail_lines" | while IFS= read -r line; do
-      case $line in
-        "$desc":*)
-          numbers=${line#*:}
-          printf '%s:%s,%s\n' "$desc" "$numbers" "$idx"
-          ;;
-        *)
-          printf '%s\n' "$line"
-          ;;
-      esac
-    done)
-  else
-    if [ -n "$_fail_detail_lines" ]; then
-      _fail_detail_lines=$(printf '%s\n%s:%s' "$_fail_detail_lines" "$desc" "$idx")
-    else
-      _fail_detail_lines=$(printf '%s:%s' "$desc" "$idx")
-    fi
-  fi
+  _fail_detail_lines=$(printf '%s\n' "$_fail_detail_lines" | awk -v d="$desc" -v i="$idx" '
+    BEGIN { found=0 }
+    NF == 0 { next }
+    {
+      split($0, parts, ":")
+      name = parts[1]
+      rest = substr($0, length(name) + 2)
+      if (name == d) {
+        found=1
+        if (length(rest) > 0) {
+          print name ":" rest "," i
+        } else {
+          print name ":" i
+        }
+        next
+      }
+      print
+    }
+    END {
+      if (found == 0) {
+        print d ":" i
+      }
+    }
+  ')
 }
 
 finish_tests() {
@@ -143,8 +148,24 @@ finish_tests() {
         nums=${line#*:}
         formatted=$(printf '%s' "$nums" | sed 's/,/, /g')
         printf '%s (%s)\n' "$desc" "$formatted"
-      done | paste -sd ', ' -)
+      done | awk 'BEGIN {first=1} {if(!first) printf(", "); first=0; printf("%s", $0)}')
       printf 'Failing tests (subtest #'"'"'s): %s\n' "$failing"
+      numbers=$(printf '%s\n' "$_fail_detail_lines" | awk -F ':' '
+        BEGIN { out="" }
+        NF < 2 { next }
+        {
+          gsub(",", ", ", $2)
+          if (out == "") {
+            out = $2
+          } else {
+            out = out ", " $2
+          }
+        }
+        END { print out }
+      ')
+      if [ -n "$numbers" ]; then
+        printf 'Failing subtest numbers: %s\n' "$numbers"
+      fi
     fi
     return 1
   fi

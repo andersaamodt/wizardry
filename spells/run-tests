@@ -177,9 +177,34 @@ record_subtests() {
 status=0
 pass=0
 fail=0
-first_failure=""
 subtests_passed=0
 subtests_total=0
+failed_scripts=""
+
+record_failed_script() {
+  script=$1
+  output=$2
+
+  numbers=$(printf '%s\n' "$output" | awk '
+    /^Failing subtest numbers:/ {
+      sub(/^Failing subtest numbers:[[:space:]]*/, "", $0)
+      print
+      exit
+    }
+  ')
+
+  if [ -n "$numbers" ]; then
+    entry="$script ($numbers)"
+  else
+    entry="$script"
+  fi
+
+  if [ -n "$failed_scripts" ]; then
+    failed_scripts="$failed_scripts, $entry"
+  else
+    failed_scripts="$entry"
+  fi
+}
 
 while IFS= read -r test_path; do
   [ -n "$test_path" ] || continue
@@ -197,9 +222,7 @@ while IFS= read -r test_path; do
     status=1
     fail=$((fail + 1))
     record_subtests "$output"
-    if [ -z "$first_failure" ]; then
-      first_failure="$test_path"
-    fi
+    record_failed_script "$test_path" "$output"
     printf '%s\n' "$output" | sed 's/^/  /'
   fi
   printf '\n'
@@ -262,10 +285,8 @@ if [ "$coverage_uncovered" -gt 0 ]; then
   printf '  %s\n' "$uncovered_spells"
 fi
 
-if [ "$status" -ne 0 ]; then
-  if [ -n "$first_failure" ]; then
-    printf 'First failing script: %s\n' "$first_failure"
-  fi
+if [ "$status" -ne 0 ] && [ -n "$failed_scripts" ]; then
+  printf 'Failing tests (subtest #'"'"'s): %s\n' "$failed_scripts"
 fi
 
 exit $status
