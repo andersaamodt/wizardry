@@ -1,10 +1,15 @@
 #!/bin/sh
-# Verify that shell scripts declare POSIX-friendly shebangs and parse with /bin/sh.
+# Verify that shell scripts in the spellbook follow POSIX conventions.
+#
+# Responsibilities:
+# - Detect non-/bin/sh (or env sh) shebangs and empty shebangs.
+# - Ensure files parse with /bin/sh -n.
+# - Report bashisms via checkbashisms.
 #
 # Usage: verify-posix [FILE...]
-# With no arguments, every spell under the spells/ directory is checked. When
-# files are provided, each FILE is treated as relative to the repository root
-# unless an absolute path is given.
+# With no arguments, every spell under spells/ is checked. When files are
+# provided, each FILE is treated as relative to the repository root unless an
+# absolute path is given.
 
 set -eu
 
@@ -47,6 +52,7 @@ fi
 total=0
 failures=0
 status=0
+bashism_detail=""
 
 append_reason() {
   current=$1
@@ -62,6 +68,7 @@ append_reason() {
 for target in "$@"; do
   total=$((total + 1))
   reasons=""
+  bashism_detail=""
 
   case "$target" in
     /*)
@@ -113,12 +120,11 @@ for target in "$@"; do
       fi
 
       if [ -z "$reasons" ]; then
-        if ! bashism_output=$("$checkbashisms_cmd" -f -p "$abs" 2>&1); then
-          if [ -n "$bashism_output" ]; then
-            reasons=$(append_reason "$reasons" "contains bashisms (checkbashisms: $bashism_output)")
-          else
-            reasons=$(append_reason "$reasons" "contains bashisms (checkbashisms)")
-          fi
+        if bashism_output=$("$checkbashisms_cmd" -f -p "$abs" 2>&1); then
+          :
+        else
+          reasons=$(append_reason "$reasons" "contains bashisms (checkbashisms)")
+          bashism_detail=$bashism_output
         fi
       fi
     fi
@@ -128,6 +134,11 @@ for target in "$@"; do
     printf 'PASS %s\n' "$rel"
   else
     printf 'FAIL %s: %s\n' "$rel" "$reasons"
+    if [ -n "$bashism_detail" ]; then
+      printf '%s\n' "$bashism_detail" | while IFS= read -r line; do
+        printf '  %s\n' "$line"
+      done
+    fi
     failures=$((failures + 1))
     status=1
   fi
