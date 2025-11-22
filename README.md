@@ -58,16 +58,19 @@ This displays an interactive menu. Most (soon all) wizardry spells and features 
 
 A spell is a specially-curated shell script:
 
+* Lives in the `spells/` folder (or subfolder)
 * Does something useful or interesting
 * Is clearly-written and well-commented for novices
 * Is themed like a fantasy MUD
 * Is cross-platform
 * Has no `.sh` extension for easy invocation
-* Has a brief opening description comment
+* Has a brief opening description comment (~2 lines)
 * Has a --help usage note which ultimately *is* its spec
 * Ideally, has a test script at a corresponding path under tests/, which serves as a fully-specified operationalized spec
 * Is polished and fails elegantly
 * Works well when used in a menu (interactivity)
+
+This spec helps scripts evolve into living, polished exemplars of communal knowledge about best practies in using and optimizing the shell.
 
 ## Principles:
 
