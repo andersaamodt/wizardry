@@ -133,7 +133,7 @@ The spell discovers every `test_*.sh` file in `tests/` and executes each in a sa
 Principles of the testing suite:
 
 * Tests are simply POSIX-compliant shell scripts that exercise the expected behaviors of each spell.
-* Each spell's `--help` usage notes *are* its primary spec; each unit test is considered the full operationalized spec for a spell.
+* Each spell's `--help` usage note *is* its primary spec; each unit test is considered the full operationalized spec for a spell.
 * Test files live in `tests/` and mirror the structure of the `spells/` directory. One test script per spell.
 * Tests source `test_common.sh` to standardize testing procedures and logging.
 * Each test's subtests should cover all valid and failure modes. Since spells call each other, each spell's test should avoid redundancy with other spells' tests by focusing on unique behaviors.
