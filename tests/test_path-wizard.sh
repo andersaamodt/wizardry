@@ -2,7 +2,12 @@
 # Behavioral cases (derived from --help):
 # - path-wizard prints usage
 
-. "$(CDPATH= cd "$(dirname "$0")" && pwd)/lib/test_common.sh"
+test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+while [ ! -f "$test_root/test_common.sh" ] && [ "$test_root" != "/" ]; do
+  test_root=$(dirname "$test_root")
+done
+# shellcheck source=/dev/null
+. "$test_root/test_common.sh"
 
 test_help() {
   run_spell "spells/path-wizard" --help
