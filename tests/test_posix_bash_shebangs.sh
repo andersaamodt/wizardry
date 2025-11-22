@@ -1,12 +1,17 @@
 #!/bin/sh
 # Behavioral cases:
-# - check_posix_bash is quiet for POSIX sh shebangs
+# - verify-posix is quiet for POSIX sh shebangs
 # - warns when shebangs are missing, empty, or bash-oriented
-# - tolerates missing targets without crashing
+# - reports missing targets without crashing
 
 set -eu
 
-. "$(CDPATH= cd "$(dirname "$0")" && pwd)/lib/test_common.sh"
+test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+while [ ! -f "$test_root/test_common.sh" ] && [ "$test_root" != "/" ]; do
+  test_root=$(dirname "$test_root")
+done
+# shellcheck source=/dev/null
+. "$test_root/test_common.sh"
 
 make_repo_tempdir() {
   rel_dir="tests/tmp.posix.$$.${RANDOM:-0}"
@@ -15,11 +20,24 @@ make_repo_tempdir() {
   printf '%s\n' "$rel_dir"
 }
 
-run_check_posix_bash() {
-  COVERAGE_TARGETS="$1" run_cmd "$ROOT_DIR/tests/check_posix_bash.sh"
+prepare_checkbashisms_stub() {
+  stub_dir=$(mktemp -d "${WIZARDRY_TMPDIR}/checkbashisms.XXXXXX") || return 1
+  cat <<'SCRIPT' >"$stub_dir/checkbashisms"
+#!/bin/sh
+exit 0
+SCRIPT
+  chmod +x "$stub_dir/checkbashisms"
+  PATH="$stub_dir:$PATH"
+}
+
+run_verify_posix() {
+  targets=$1
+  # shellcheck disable=SC2086
+  run_cmd "$ROOT_DIR/spells/verify-posix" $targets
 }
 
 check_is_quiet_for_posix() {
+  prepare_checkbashisms_stub || return 1
   workrel=$(make_repo_tempdir)
   workdir="$ROOT_DIR/$workrel"
   cat <<'SCRIPT' >"$workdir/direct"
@@ -31,26 +49,27 @@ SCRIPT
 echo ok
 SCRIPT
 
-  run_check_posix_bash "$workrel/direct $workrel/env"
+  run_verify_posix "$workrel/direct $workrel/env"
   assert_success || return 1
   [ -z "${OUTPUT}" ] || { TEST_FAILURE_REASON="expected no stdout"; return 1; }
   [ -z "${ERROR}" ] || { TEST_FAILURE_REASON="expected no stderr"; return 1; }
 }
 
 warns_when_missing_shebang() {
+  prepare_checkbashisms_stub || return 1
   workrel=$(make_repo_tempdir)
   workdir="$ROOT_DIR/$workrel"
   cat <<'SCRIPT' >"$workdir/nameless"
 echo 'no interpreter'
 SCRIPT
 
-  run_check_posix_bash "$workrel/nameless"
-  assert_success || return 1
-  [ -z "${OUTPUT}" ] || { TEST_FAILURE_REASON="unexpected stdout"; return 1; }
-  assert_error_contains "does not declare a shebang" || return 1
+  run_verify_posix "$workrel/nameless"
+  assert_failure || return 1
+  assert_error_contains "lacks a shebang" || return 1
 }
 
 warns_for_bash_shebangs() {
+  prepare_checkbashisms_stub || return 1
   workrel=$(make_repo_tempdir)
   workdir="$ROOT_DIR/$workrel"
   cat <<'SCRIPT' >"$workdir/bashy"
@@ -58,22 +77,24 @@ warns_for_bash_shebangs() {
 echo 'bash heavy'
 SCRIPT
 
-  run_check_posix_bash "$workrel/bashy"
-  assert_success || return 1
-  assert_error_contains "rewrite it for plain POSIX Bash" || return 1
+  run_verify_posix "$workrel/bashy"
+  assert_failure || return 1
+  assert_error_contains "uses #!/usr/bin/env bash; please use /bin/sh" || return 1
 }
 
 warns_for_empty_shebang() {
+  prepare_checkbashisms_stub || return 1
   workrel=$(make_repo_tempdir)
   workdir="$ROOT_DIR/$workrel"
   printf '#!\n' >"$workdir/empty"
 
-  run_check_posix_bash "$workrel/empty"
-  assert_success || return 1
+  run_verify_posix "$workrel/empty"
+  assert_failure || return 1
   assert_error_contains "has an empty shebang" || return 1
 }
 
 warns_for_env_arguments() {
+  prepare_checkbashisms_stub || return 1
   workrel=$(make_repo_tempdir)
   workdir="$ROOT_DIR/$workrel"
   cat <<'SCRIPT' >"$workdir/argful"
@@ -81,12 +102,13 @@ warns_for_env_arguments() {
 echo argful
 SCRIPT
 
-  run_check_posix_bash "$workrel/argful"
-  assert_success || return 1
-  assert_error_contains "rewrite it for plain POSIX Bash" || return 1
+  run_verify_posix "$workrel/argful"
+  assert_failure || return 1
+  assert_error_contains "uses #!/usr/bin/env bash -l; please use /bin/sh" || return 1
 }
 
 warns_for_direct_bash_path() {
+  prepare_checkbashisms_stub || return 1
   workrel=$(make_repo_tempdir)
   workdir="$ROOT_DIR/$workrel"
   cat <<'SCRIPT' >"$workdir/direct_bash"
@@ -94,12 +116,13 @@ warns_for_direct_bash_path() {
 echo direct
 SCRIPT
 
-  run_check_posix_bash "$workrel/direct_bash"
-  assert_success || return 1
-  assert_error_contains "rewrite it for plain POSIX Bash" || return 1
+  run_verify_posix "$workrel/direct_bash"
+  assert_failure || return 1
+  assert_error_contains "uses #!/bin/bash; please use /bin/sh" || return 1
 }
 
 accepts_space_before_sh() {
+  prepare_checkbashisms_stub || return 1
   workrel=$(make_repo_tempdir)
   workdir="$ROOT_DIR/$workrel"
   cat <<'SCRIPT' >"$workdir/spaced"
@@ -107,26 +130,26 @@ accepts_space_before_sh() {
 echo ok
 SCRIPT
 
-  run_check_posix_bash "$workrel/spaced"
+  run_verify_posix "$workrel/spaced"
   assert_success || return 1
   [ -z "${OUTPUT}" ] || { TEST_FAILURE_REASON="expected no stdout"; return 1; }
   [ -z "${ERROR}" ] || { TEST_FAILURE_REASON="expected no stderr"; return 1; }
 }
 
-ignores_missing_targets() {
-  run_check_posix_bash "tests/tmp.posix.missing"
-  assert_success || return 1
-  [ -z "${OUTPUT}" ] || { TEST_FAILURE_REASON="unexpected stdout"; return 1; }
-  [ -z "${ERROR}" ] || { TEST_FAILURE_REASON="unexpected stderr"; return 1; }
+reports_missing_targets() {
+  prepare_checkbashisms_stub || return 1
+  run_verify_posix "tests/tmp.posix.missing"
+  assert_failure || return 1
+  assert_error_contains "missing file: tests/tmp.posix.missing" || return 1
 }
 
-run_test_case "check_posix_bash is quiet for POSIX sh shebangs" check_is_quiet_for_posix
-run_test_case "check_posix_bash warns when shebang is missing" warns_when_missing_shebang
-run_test_case "check_posix_bash warns about bash shebangs" warns_for_bash_shebangs
-run_test_case "check_posix_bash warns on empty shebang" warns_for_empty_shebang
-run_test_case "check_posix_bash warns on env args" warns_for_env_arguments
-run_test_case "check_posix_bash warns on direct bash path" warns_for_direct_bash_path
-run_test_case "check_posix_bash accepts spaced sh shebang" accepts_space_before_sh
-run_test_case "check_posix_bash ignores missing targets" ignores_missing_targets
+run_test_case "verify-posix is quiet for POSIX sh shebangs" check_is_quiet_for_posix
+run_test_case "verify-posix warns when shebang is missing" warns_when_missing_shebang
+run_test_case "verify-posix warns about bash shebangs" warns_for_bash_shebangs
+run_test_case "verify-posix warns on empty shebang" warns_for_empty_shebang
+run_test_case "verify-posix warns on env args" warns_for_env_arguments
+run_test_case "verify-posix warns on direct bash path" warns_for_direct_bash_path
+run_test_case "verify-posix accepts spaced sh shebang" accepts_space_before_sh
+run_test_case "verify-posix reports missing targets" reports_missing_targets
 
 finish_tests

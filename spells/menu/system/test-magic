@@ -1,0 +1,259 @@
+#!/bin/sh
+
+# Run the wizardry shell test suite without assuming bash features.
+
+set -eu
+
+usage() {
+  cat <<'USAGE'
+Usage: test-magic [options]
+
+Execute the behavior-driven shell tests located in tests/.
+Options:
+  --only PATTERN   Run tests whose path under tests/ matches PATTERN.
+  --list           Print the resolved test files and exit.
+  --verbose        Print per-test output while running.
+  -h, --help       Show this help and exit.
+USAGE
+}
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+root_dir=$(CDPATH= cd -- "$script_dir/../../.." && pwd -P)
+test_dir="$root_dir/tests"
+
+only_patterns=""
+list_only=0
+verbose=0
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --only)
+      if [ "$#" -lt 2 ]; then
+        echo "test-magic: --only requires a pattern" >&2
+        usage
+        exit 1
+      fi
+      if [ -n "$only_patterns" ]; then
+        only_patterns="$only_patterns\n$2"
+      else
+        only_patterns="$2"
+      fi
+      shift 2
+      ;;
+    --list)
+      list_only=1
+      shift
+      ;;
+    --verbose)
+      verbose=1
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    --)
+      shift
+      break
+      ;;
+    *)
+      echo "test-magic: unknown option '$1'" >&2
+      usage
+      exit 1
+      ;;
+  esac
+done
+
+find_tests() {
+  find "$test_dir" -type f -name 'test_*.sh' | sort
+}
+
+pattern_has_match() {
+  pattern=$1
+  found=1
+  while IFS= read -r path; do
+    case $path in
+      */lib/*) continue ;;
+    esac
+    rel=${path#"$test_dir/"}
+    case $rel in
+      test_common.sh) continue ;;
+    esac
+    case $rel in
+      $pattern)
+        found=0
+        break
+        ;;
+    esac
+  done <<EOF_TESTS
+$(find_tests)
+EOF_TESTS
+  return $found
+}
+
+matches_patterns() {
+  rel=$1
+  if [ -z "$only_patterns" ]; then
+    return 0
+  fi
+  match=1
+  while IFS= read -r pat; do
+    [ -n "$pat" ] || continue
+    case $rel in
+      $pat)
+        match=0
+        break
+        ;;
+    esac
+  done <<EOF_PATS
+$only_patterns
+EOF_PATS
+  return $match
+}
+
+test_files=""
+
+if [ -n "$only_patterns" ]; then
+  while IFS= read -r pat; do
+    [ -n "$pat" ] || continue
+    if ! pattern_has_match "$pat"; then
+      echo "test-magic: pattern '$pat' matched no tests" >&2
+      exit 1
+    fi
+  done <<EOF_PATS
+$only_patterns
+EOF_PATS
+fi
+
+  while IFS= read -r path; do
+    case $path in
+      */lib/*) continue ;;
+    esac
+    short=${path#"$test_dir/"}
+    case $short in
+      test_common.sh) continue ;;
+    esac
+    if matches_patterns "$short"; then
+      if [ -n "$test_files" ]; then
+        test_files=$(printf '%s\n%s' "$test_files" "$short")
+      else
+        test_files="$short"
+      fi
+    fi
+  done <<EOF_TESTS
+$(find_tests)
+EOF_TESTS
+
+if [ -z "$test_files" ]; then
+  echo "test-magic: no tests discovered." >&2
+  exit 1
+fi
+
+if [ "$list_only" -eq 1 ]; then
+  printf '%s\n' "$test_files"
+  exit 0
+fi
+
+bubblewrap_notice() {
+  if command -v bwrap >/dev/null 2>&1; then
+    echo "🛡️  bubblewrap detected; tests may run in a sandbox via test helpers."
+  else
+    echo "⚠️  bubblewrap missing; tests will run without sandboxing if they rely on it."
+  fi
+}
+
+spell_path_for_test() {
+  test_path=$1
+  rel=${test_path#"$test_dir/"}
+  dir=$(dirname "$rel")
+  base=$(basename "$rel")
+  base=${base#test_}
+  base=${base%.*}
+  printf '%s/%s/%s\n' "$root_dir" "spells/$dir" "$base"
+}
+
+add_unique() {
+  var=$1
+  value=$2
+  eval "current_value=\${$var-}"
+
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    if [ "$line" = "$value" ]; then
+      return 0
+    fi
+  done <<EOF_VALUES
+$current_value
+EOF_VALUES
+
+  if [ -n "$current_value" ]; then
+    current_value=$(printf '%s\n%s' "$current_value" "$value")
+  else
+    current_value="$value"
+  fi
+
+  eval "$var=\$current_value"
+}
+
+spell_targets=""
+while IFS= read -r test_path; do
+  [ -n "$test_path" ] || continue
+  abs="$test_dir/$test_path"
+  if [ ! -f "$abs" ]; then
+    continue
+  fi
+  spell=$(spell_path_for_test "$abs")
+  if [ -f "$spell" ]; then
+    rel_spell=${spell#"$root_dir/"}
+    add_unique spell_targets "$rel_spell"
+  fi
+done <<EOF_TESTS
+$test_files
+EOF_TESTS
+
+if [ -n "$spell_targets" ]; then
+  # shellcheck disable=SC2086
+  "$root_dir/spells/verify-posix" $spell_targets
+fi
+
+bubblewrap_notice
+
+status=0
+pass=0
+fail=0
+first_failure=""
+
+while IFS= read -r test_path; do
+  [ -n "$test_path" ] || continue
+  if [ "$verbose" -eq 1 ]; then
+    printf 'Running %s\n' "$test_path"
+  fi
+  abs="$test_dir/$test_path"
+  if output=$(sh "$abs" 2>&1); then
+    pass=$((pass + 1))
+    if [ "$verbose" -eq 1 ]; then
+      printf '%s\n' "$output" | sed 's/^/  /'
+    fi
+  else
+    status=1
+    fail=$((fail + 1))
+    if [ -z "$first_failure" ]; then
+      first_failure="$test_path"
+    fi
+    printf '%s\n' "$output" | sed 's/^/  /'
+  fi
+  printf '\n'
+done <<EOF_TESTS
+$test_files
+EOF_TESTS
+
+if [ "$status" -eq 0 ]; then
+  printf '✨ All %d test scripts completed.\n' "$pass"
+else
+  printf '⚠️  %d passed, %d failed.\n' "$pass" "$fail"
+  if [ -n "$first_failure" ]; then
+    printf 'First failure: %s\n' "$first_failure"
+  fi
+fi
+
+exit $status

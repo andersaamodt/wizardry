@@ -52,7 +52,7 @@ To use wizardry, simply type:
 ```
 menu
 ```
-This displays an interactive menu. Most (soon all) wizardry spells and features will be discoverable through the menu. Testing tools such as unit tests can be launched from the system menu, and the test-wizardry spell now reports coverage alongside test pass and fail counts.
+This displays an interactive menu. Most (soon all) wizardry spells and features will be discoverable through the menu. Testing tools such as unit tests can be launched from the system menu through the `test-magic` spell.
 
 ## Principles:
 
@@ -107,7 +107,7 @@ These values make the wizardry project what it is, and distinguish it from simil
 Run the complete shell test suite with:
 
 ```
-test-wizardry
+test-magic
 ```
 
 The spell discovers every `test_*.sh` file and executes each in a sandboxed bubblewrap environment. Pass `--list` or `--only PATTERN` to filter which scripts run.
@@ -115,7 +115,7 @@ The spell discovers every `test_*.sh` file and executes each in a sandboxed bubb
 Testing guidelines:
 
 * Test files live in `tests/` and mirror the structure of the `spells/` directory so each spell's tests are easy to locate.
-* Shared helpers live in `tests/lib/` and are sourced by each test to keep setup and assertions consistent.
+* Shared helpers live in `tests/test_common.sh` and are sourced by each test to keep setup and assertions consistent.
 * Each shell test script registers individual cases with `run_test_case` so failures are reported with descriptive names.
 * Tests prefer stubbed dependencies (for example, fake `ask_yn`, `ask_text`, or `systemctl` binaries in a temporary `PATH`) to keep them deterministic and portable across CI and local environments.
 * Each spell's `--help` usage notes are the behavioral spec; unit tests assert those documented flows rather than inventing new ones.

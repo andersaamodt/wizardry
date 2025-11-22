@@ -1,0 +1,113 @@
+#!/bin/sh
+# Verify that shell scripts declare POSIX-friendly shebangs and parse with /bin/sh.
+#
+# Usage: verify-posix [FILE...]
+# With no arguments, every spell under the spells/ directory is checked. When
+# files are provided, each FILE is treated as relative to the repository root
+# unless an absolute path is given.
+
+set -eu
+
+usage() {
+  cat <<'USAGE'
+Usage: verify-posix [FILE...]
+
+Check shell scripts for basic POSIX compliance:
+- Require a /bin/sh (or env sh) shebang.
+- Ensure the file parses under /bin/sh -n.
+- Flag bashisms when checkbashisms is available.
+USAGE
+}
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+ROOT_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd -P)
+
+if checkbashisms_path=$(command -v checkbashisms 2>/dev/null); then
+  checkbashisms_cmd=$checkbashisms_path
+else
+  checkbashisms_cmd=""
+fi
+checkbashisms_notice_shown=0
+
+set -- "$@"
+if [ "$#" -eq 0 ]; then
+  while IFS= read -r path; do
+    set -- "$@" "${path#"$ROOT_DIR/"}"
+  done <<EOF
+$(cd "$ROOT_DIR" && find spells -type f)
+EOF
+fi
+
+status=0
+for target in "$@"; do
+  case "$target" in
+    /*)
+      abs="$target"
+      rel="$target"
+      ;;
+    *)
+      abs="$ROOT_DIR/$target"
+      rel="$target"
+      ;;
+  esac
+
+  if [ ! -f "$abs" ]; then
+    printf 'verify-posix: missing file: %s\n' "$rel" >&2
+    status=1
+    continue
+  fi
+
+  if ! IFS= read -r first_line <"$abs"; then
+    first_line=""
+  fi
+
+  if [ "${first_line#\#!}" = "$first_line" ]; then
+    printf 'verify-posix: %s lacks a shebang; expected #!/bin/sh\n' "$rel" >&2
+    status=1
+    continue
+  fi
+
+  shebang=${first_line#\#!}
+  shebang=${shebang# }
+  if [ -z "$shebang" ]; then
+    printf 'verify-posix: %s has an empty shebang; expected #!/bin/sh\n' "$rel" >&2
+    status=1
+    continue
+  fi
+  set -- $shebang
+  interpreter=${1-}
+  arg=${2-}
+
+  shell_name=""
+  case "$interpreter" in
+    /usr/bin/env)
+      shell_name=$arg
+      ;;
+    *)
+      shell_name=$(basename "$interpreter")
+      ;;
+  esac
+
+  if [ "$shell_name" != "sh" ]; then
+    printf 'verify-posix: %s uses %s; please use /bin/sh\n' "$rel" "$first_line" >&2
+    status=1
+  fi
+
+  if ! sh -n "$abs" >/dev/null 2>&1; then
+    printf 'verify-posix: %s fails to parse with /bin/sh -n\n' "$rel" >&2
+    status=1
+  fi
+
+  if [ -n "$checkbashisms_cmd" ]; then
+    if ! "$checkbashisms_cmd" -f -p "$abs" >/dev/null 2>&1; then
+      printf 'verify-posix: %s contains bashisms (checkbashisms)\n' "$rel" >&2
+      status=1
+    fi
+  elif [ "$checkbashisms_notice_shown" -eq 0 ]; then
+    printf 'verify-posix: checkbashisms not found; bashism detection skipped\n' >&2
+    checkbashisms_notice_shown=1
+  fi
+
+done
+
+exit $status
