@@ -52,7 +52,7 @@ To use wizardry, simply type:
 ```
 menu
 ```
-This displays an interactive menu. Most (soon all) wizardry spells and features will be discoverable through the menu. Testing tools such as unit tests can be launched from the system menu, and the run-tests spell now reports coverage alongside test pass and fail counts.
+This displays an interactive menu. Most (soon all) wizardry spells and features will be discoverable through the menu. Testing tools such as unit tests can be launched from the system menu, and the test-wizardry spell now reports coverage alongside test pass and fail counts.
 
 ## Principles:
 
@@ -107,7 +107,7 @@ These values make the wizardry project what it is, and distinguish it from simil
 Run the complete shell test suite with:
 
 ```
-run-tests
+test-wizardry
 ```
 
 The spell discovers every `test_*.sh` file and executes each in a sandboxed bubblewrap environment. Pass `--list` or `--only PATTERN` to filter which scripts run.

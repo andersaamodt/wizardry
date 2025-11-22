@@ -44,7 +44,7 @@ fi
 display_menu() {
   services="Manage services%services-menu"
   update_wizardry="Update wizardry%update-wizardry"
-  test_suite="Test all wizardry spells%$system_dir/run-tests"
+  test_suite="Test all wizardry spells%$system_dir/test-wizardry"
   update_all="Update all software%update-all -v"
   restart="Force restart%sudo shutdown -r now"
   exit="Exit%kill -2 $$"

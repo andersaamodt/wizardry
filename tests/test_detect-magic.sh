@@ -7,7 +7,7 @@ detect_magic_reports_found_files() {
   cat <<'STUB' >"$stub"
 #!/bin/sh
 case "$1" in
-  a.txt) printf '%s\n' 'alpha' 'beta' ;;
+  a.txt) printf '%s\n' 'sigil:alpha' 'mark:beta' ;;
   b.txt) : ;; # no attributes so should be skipped
   *) exit 1 ;;
 esac
@@ -53,7 +53,7 @@ STUB
   chmod +x "$stub"
 
   printf 'note' >"$tmpdir/aura.txt"
-  RUN_CMD_WORKDIR="$tmpdir" run_cmd sh "$ROOT_DIR/spells/detect-magic"
+  NO_COLOR=1 DETECT_MAGIC_READ_MAGIC="$stub" RUN_CMD_WORKDIR="$tmpdir" run_cmd sh "$ROOT_DIR/spells/detect-magic"
   assert_success || return 1
   case "$OUTPUT" in
     *keep_out*) TEST_FAILURE_REASON="directory appeared in output"; return 1 ;;
@@ -160,6 +160,59 @@ STUB
   assert_output_contains "eager.txt" || return 1
 }
 
+detect_magic_reports_helper_errors_without_stopping() {
+  tmpdir=$(make_tempdir)
+  stub="$tmpdir/read-magic"
+  cat <<'STUB' >"$stub"
+#!/bin/sh
+case "$1" in
+  troubled.txt)
+    printf 'oh no\n' >&2
+    exit 3
+    ;;
+  steady.txt)
+    printf 'sigil:1\n'
+    ;;
+esac
+STUB
+  chmod +x "$stub"
+
+  : >"$tmpdir/troubled.txt"
+  : >"$tmpdir/steady.txt"
+
+  NO_COLOR=1 DETECT_MAGIC_READ_MAGIC="$stub" run_spell_in_dir "$tmpdir" "spells/detect-magic"
+  assert_success || return 1
+  assert_output_contains "steady.txt" || return 1
+  case "$OUTPUT" in
+    *troubled.txt*) TEST_FAILURE_REASON="failed file should be skipped"; return 1 ;;
+  esac
+  assert_error_contains "failed to read troubled.txt" || return 1
+}
+
+detect_magic_skips_malformed_helper_output() {
+  tmpdir=$(make_tempdir)
+  stub="$tmpdir/read-magic"
+  cat <<'STUB' >"$stub"
+#!/bin/sh
+case "$1" in
+  warped.txt) printf 'not-a-pair\n' ;;
+  good.txt) printf 'sigil:2\n' ;;
+esac
+STUB
+  chmod +x "$stub"
+
+  : >"$tmpdir/warped.txt"
+  : >"$tmpdir/good.txt"
+
+  NO_COLOR=1 DETECT_MAGIC_READ_MAGIC="$stub" run_spell_in_dir "$tmpdir" "spells/detect-magic"
+  assert_success || return 1
+  assert_output_contains "good.txt" || return 1
+  case "$OUTPUT" in
+    *warped.txt*) TEST_FAILURE_REASON="malformed file should be skipped"; return 1 ;;
+  esac
+  assert_error_contains "ignoring malformed output from warped.txt" || return 1
+}
+
 run_test_case "detect-magic lists files with attributes" detect_magic_reports_found_files
 run_test_case "detect-magic reports when nothing is enchanted" detect_magic_handles_empty_rooms
 run_test_case "detect-magic shows usage" detect_magic_shows_usage
@@ -169,5 +222,7 @@ run_test_case "detect-magic narrates dense rooms" detect_magic_handles_dense_roo
 run_test_case "detect-magic disables colour on request" detect_magic_handles_colour_toggle
 run_test_case "detect-magic warns when helper missing" detect_magic_reports_missing_helper
 run_test_case "detect-magic skips unreadable files" detect_magic_skips_unreadable_enchantments
+run_test_case "detect-magic reports helper failures" detect_magic_reports_helper_errors_without_stopping
+run_test_case "detect-magic skips malformed helper output" detect_magic_skips_malformed_helper_output
 
 finish_tests

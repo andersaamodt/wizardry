@@ -42,7 +42,7 @@ fi
 # usage: print inline help text.
 usage() {
   cat <<'USAGE'
-Usage: run-tests [options]
+Usage: test-wizardry [options]
 
 Execute the behavior-driven shell tests located in tests/.
 Each test_*.sh script runs inside bubblewrap to prevent host
@@ -53,6 +53,7 @@ Options:
                    to tests/. May be repeated. When omitted, every
                    test_*.sh file runs.
   --list           Print the resolved test files and exit without running.
+  --verbose        Print detailed progress for each test script.
   -h, --help       Show this help and exit.
 USAGE
 }
@@ -65,13 +66,14 @@ TEST_DIR="$ROOT_DIR/tests"
 uncovered_spells=()
 coverage_total=0
 coverage_covered=0
+verbose=0
 
 # Ensure bubblewrap is available before running anything; tests assume
 # filesystem isolation unless overridden externally.
 if ! command -v bwrap >/dev/null 2>&1; then
   echo "bubblewrap missing; attempting installation via install-bwrap"
   if ! "$ROOT_DIR/spells/menu/install/core/install-bwrap"; then
-    echo "run-tests: failed to install bubblewrap" >&2
+    echo "test-wizardry: failed to install bubblewrap" >&2
     exit 1
   fi
 fi
@@ -103,24 +105,32 @@ else
   BWRAP_REASON="bubblewrap unusable (user namespaces likely disabled)"
 fi
 
-if [ "$BWRAP_AVAILABLE" -eq 1 ]; then
-  if [ "$BWRAP_VIA_SUDO" -eq 1 ]; then
-    sudo_label="yes"
-  else
-    sudo_label="no"
-  fi
+if [ "$verbose" -eq 1 ]; then
+  if [ "$BWRAP_AVAILABLE" -eq 1 ]; then
+    if [ "$BWRAP_VIA_SUDO" -eq 1 ]; then
+      sudo_label="yes"
+    else
+      sudo_label="no"
+    fi
 
-  if [ "$BWRAP_USE_UNSHARE" -eq 1 ]; then
-    unshare_label="yes"
-  else
-    unshare_label="no"
-  fi
+    if [ "$BWRAP_USE_UNSHARE" -eq 1 ]; then
+      unshare_label="yes"
+    else
+      unshare_label="no"
+    fi
 
-  printf '%sUsing bubblewrap sandbox (sudo=%s, unshare=%s)%s\n' \
-    "$YELLOW" "$sudo_label" "$unshare_label" "$RESET"
+    printf '%sUsing bubblewrap sandbox (sudo=%s, unshare=%s)%s\n' \
+      "$YELLOW" "$sudo_label" "$unshare_label" "$RESET"
+  else
+    printf '%sWARNING: running tests without bubblewrap: %s%s\n' \
+      "$YELLOW" "$BWRAP_REASON" "$RESET" >&2
+  fi
 else
-  printf '%sWARNING: running tests without bubblewrap: %s%s\n' \
-    "$YELLOW" "$BWRAP_REASON" "$RESET" >&2
+  if [ "$BWRAP_AVAILABLE" -eq 1 ]; then
+    echo "🛡️  I weave a bubblewrap ward around the tests."
+  else
+    echo "🛡️  My protective circle is thin; I will test carefully without bubblewrap."
+  fi
 fi
 
 declare -a only_patterns=()
@@ -134,7 +144,7 @@ while [ "$#" -gt 0 ]; do
   case "$1" in
     --only)
       if [ "$#" -lt 2 ]; then
-        echo "run-tests: --only requires a pattern" >&2
+        echo "test-wizardry: --only requires a pattern" >&2
         usage
         exit 1
       fi
@@ -143,6 +153,10 @@ while [ "$#" -gt 0 ]; do
       ;;
     --list)
       list_only=1
+      shift
+      ;;
+    --verbose)
+      verbose=1
       shift
       ;;
     -h|--help)
@@ -154,7 +168,7 @@ while [ "$#" -gt 0 ]; do
       break
       ;;
     *)
-      echo "run-tests: unknown option '$1'" >&2
+      echo "test-wizardry: unknown option '$1'" >&2
       usage
       exit 1
       ;;
@@ -204,7 +218,7 @@ scan_coverage() {
     [ -n "$spell" ] || continue
     rel=${spell#"$ROOT_DIR/"}
     case "$rel" in
-      spells/menu/system/run-tests)
+      spells/menu/system/test-wizardry)
         continue
         ;;
     esac
@@ -235,13 +249,13 @@ select_tests() {
       matches=("$TEST_DIR"/**/$pattern)
     fi
     if [ ${#matches[@]} -eq 0 ]; then
-      echo "run-tests: pattern '$pattern' matched no tests" >&2
+      echo "test-wizardry: pattern '$pattern' matched no tests" >&2
       exit 1
     fi
     for match in "${matches[@]}"; do
       [[ $match == */lib/* ]] && continue
       if [ ! -f "$match" ]; then
-        echo "run-tests: resolved '$match' is not a file" >&2
+        echo "test-wizardry: resolved '$match' is not a file" >&2
         exit 1
       fi
       printf '%s\n' "$match"
@@ -253,7 +267,7 @@ select_tests() {
 mapfile -t test_files < <(select_tests | sort -u)
 
 if [ ${#test_files[@]} -eq 0 ]; then
-  echo "run-tests: no tests discovered." >&2
+  echo "test-wizardry: no tests discovered." >&2
   exit 1
 fi
 
@@ -266,21 +280,59 @@ if [ "$list_only" -eq 1 ]; then
   exit 0
 fi
 
+if [ "$verbose" -eq 0 ]; then
+  echo "✨ I gather my spell scrolls and step into the testing circle."
+fi
+
 status=0
 pass_scripts=0
 fail_scripts=0
+subtests_passed=0
+subtests_total=0
+first_failure=""
+
+record_subtests() {
+  local log=$1
+  if [[ $log =~ ([0-9]+)/([0-9]+)\ tests\ passed ]]; then
+    local passed=${BASH_REMATCH[1]}
+    local total=${BASH_REMATCH[2]}
+    subtests_passed=$((subtests_passed + passed))
+    subtests_total=$((subtests_total + total))
+    return
+  fi
+
+  if [[ $log =~ ([0-9]+)/([0-9]+)\ tests\ failed,\ ([0-9]+)\ passed ]]; then
+    local total=${BASH_REMATCH[2]}
+    local passed=${BASH_REMATCH[3]}
+    subtests_passed=$((subtests_passed + passed))
+    subtests_total=$((subtests_total + total))
+  fi
+}
+
 # Execute each test script, indenting its output for readability and
 # tallying pass/fail counts per script (not per individual assertion).
 for test in "${test_files[@]}"; do
   rel_path=${test#"$ROOT_DIR/"}
-  printf '%sRunning %s%s\n' "$BOLD" "$rel_path" "$RESET"
+  if [ "$verbose" -eq 1 ]; then
+    printf '%sRunning %s%s\n' "$BOLD" "$rel_path" "$RESET"
+  fi
+
   if output=$(sh "$test" 2>&1); then
     pass_scripts=$((pass_scripts + 1))
-    printf '%s\n' "$output" | sed 's/^/  /'
+    record_subtests "$output"
+    if [ "$verbose" -eq 1 ]; then
+      printf '%s\n' "$output" | sed 's/^/  /'
+    fi
   else
     status=1
     fail_scripts=$((fail_scripts + 1))
-    printf '%s\n' "$output" | sed 's/^/  /'
+    record_subtests "$output"
+    if [ -z "$first_failure" ]; then
+      first_failure="$rel_path"
+    fi
+    if [ "$verbose" -eq 1 ]; then
+      printf '%s\n' "$output" | sed 's/^/  /'
+    fi
   fi
 done
 
@@ -291,14 +343,36 @@ scan_coverage
 
 total_scripts=$((pass_scripts + fail_scripts))
 coverage_uncovered=$((coverage_total - coverage_covered))
-printf 'Test summary: %s%d passed%s, %s%d failed%s, %s%d uncovered%s\n' \
-  "$GREEN" "$pass_scripts" "$RESET" \
-  "$RED" "$fail_scripts" "$RESET" \
-  "$YELLOW" "$coverage_uncovered" "$RESET"
-if [ "$coverage_uncovered" -gt 0 ]; then
-  for spell in "${uncovered_spells[@]}"; do
-    printf '  - %s%s%s\n' "$YELLOW" "$spell" "$RESET"
-  done
+
+if [ "$verbose" -eq 1 ]; then
+  printf 'Test summary: %s%d passed%s, %s%d failed%s, %s%d uncovered%s, subtests %s%d/%d%s\n' \
+    "$GREEN" "$pass_scripts" "$RESET" \
+    "$RED" "$fail_scripts" "$RESET" \
+    "$YELLOW" "$coverage_uncovered" "$RESET" \
+    "$GREEN" "$subtests_passed" "$subtests_total" "$RESET"
+  if [ "$coverage_uncovered" -gt 0 ]; then
+    for spell in "${uncovered_spells[@]}"; do
+      printf '  - %s%s%s\n' "$YELLOW" "$spell" "$RESET"
+    done
+  fi
+else
+  if [ "$status" -eq 0 ]; then
+    echo "🔮 Each incantation shimmered as expected; the magic feels steady."
+  else
+    if [ -n "$first_failure" ]; then
+      echo "⚠️  One of the spells resisted my ritual: $first_failure."
+    else
+      echo "⚠️  Some spells resisted my ritual."
+    fi
+    echo "🧭 Try again with --verbose to read the full omens."
+  fi
+
+  if [ "$coverage_uncovered" -gt 0 ]; then
+    echo "📜 A few spells remain untested; I should study them soon."
+  fi
+
+  printf '✨ I sensed %d spell scrolls and %d/%d subtests stirring during the ritual.\n' \
+    "$total_scripts" "$subtests_passed" "$subtests_total"
 fi
 
 exit $status

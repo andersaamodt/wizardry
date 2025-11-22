@@ -314,7 +314,7 @@ jump_portal_messages | awk 'BEGIN{srand();}{lines[NR]=$0}END{if (NR==0) exit 0; 
 
 jump_describe_current_location() {
 if command -v look >/dev/null 2>&1; then
-look
+        look 2>/dev/null || true
 fi
 }
 

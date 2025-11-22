@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -eu
+
 # This spell reads a vCard and prints its fields with friendly labels.
 # Provide an optional field name to extract a single detail.
 
@@ -12,22 +14,8 @@ are normalized for readability and friendly field labels are shown.
 USAGE
 }
 
-case "${1-}" in
---help|--usage|-h)
-        show_usage
-        exit 0
-        ;;
-esac
-
-# Check for correct usage
-if [ $# -lt 1 ]; then
-    show_usage >&2
-    exit 1
-fi
-
-# Function to handle escaping in vCard field values
 handle_escapes() {
-    value="$1"
+    local value="$1"
     # Unescape comma, semicolon, backslash and newline
     value=$(echo "$value" | awk '{gsub(/\\,/,",");gsub(/\\;/,"\n");gsub(/\\\\/,"\\");gsub(/\\n/,"\n");print}')
     # Unescape other characters
@@ -39,7 +27,42 @@ handle_escapes() {
     echo "$value"
 }
 
-# Function to map field names to nicer names
+card_lines() {
+    awk -F':' '
+        { sub(/\r$/, "") }
+        /^BEGIN:VCARD$/ { in_card=1; next }
+        /^END:VCARD$/ { if (in_card) exit }
+        in_card && index($0, ":") { if ($1 != "VERSION") print }
+    ' "$1"
+}
+
+validate_card() {
+    local card_path="$1"
+
+    if [ ! -f "$card_path" ]; then
+        echo "vCard file not found: $card_path" >&2
+        exit 1
+    fi
+
+    local begins=$(tr -d '\r' <"$card_path" | grep -Ec '^BEGIN:VCARD$' || true)
+    local ends=$(tr -d '\r' <"$card_path" | grep -Ec '^END:VCARD$' || true)
+
+    if [ "$begins" -eq 0 ] && [ "$ends" -eq 0 ]; then
+        echo "No vCard entries found in $card_path" >&2
+        exit 1
+    fi
+
+    if [ "$begins" -ne "$ends" ]; then
+        echo "Unbalanced vCard entries in $card_path" >&2
+        exit 1
+    fi
+
+    if [ "$begins" -gt 1 ]; then
+        echo "Multiple vCard entries are not supported" >&2
+        exit 1
+    fi
+}
+
 nicer_name() {
     # Convert the field name to lower case and remove any type annotations
     local field="$(echo "$1" | awk '{print tolower($0)}' | awk -F';' '{print $1}' | awk -F'.' '{print $NF}')"
@@ -59,7 +82,7 @@ nicer_name() {
         url|website) echo "URL: " ;;
         label) echo "Label: " ;;
         role) echo "Role: " ;;
-        *) 
+        *)
             # Remove the X- prefix from custom fields
             field=$(echo "$field" | awk '{gsub(/^x-/,"");print}')
             # Convert the field name to title case
@@ -68,28 +91,45 @@ nicer_name() {
     esac
 }
 
-# Function to extract and print a field from a vCard file
 print_field() {
-    local line=$(awk -F':' -v field="$2" '$1 ~ field { print; exit }' "$1")
-    if [ -z "$line" ]; then
-        echo "$2 not found" >&2
+    local card_path="$1"
+    local requested_field="$2"
+
+    local line=$(card_lines "$card_path" | awk -F':' -v field="$requested_field" '$1 ~ field { print; exit }')
+    if [ -z "${line:-}" ]; then
+        echo "$requested_field not found" >&2
         exit 1
     fi
-    local field=$(echo "$line" | awk -F':' '{print $1}')
+
+    local field_name=$(echo "$line" | awk -F':' '{print $1}')
     local value=$(echo "$line" | awk -F':' '{print substr($0, length($1) + 2)}')
     value=$(handle_escapes "$value")
-    local name=$(nicer_name "$field")
+    local name=$(nicer_name "$field_name")
     echo "$name$value"
 }
 
-# Extract the requested field or all fields
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
+if [ $# -lt 1 ]; then
+    show_usage >&2
+    exit 1
+fi
+
+vcard_path="$1"
+validate_card "$vcard_path"
+
 if [ $# -eq 2 ]; then
-    print_field "$1" "$2"
+    print_field "$vcard_path" "$2"
 else
-    awk -F':' '/:/{print}' "$1" | grep -v 'BEGIN:VCARD\|END:VCARD\|VERSION' | while IFS=':' read -r field value; do
+    card_lines "$vcard_path" | while IFS=':' read -r field value; do
         name=$(nicer_name "$field")
         value=$(handle_escapes "$value")
-        if [ ! -z "$name" ]; then
+        if [ -n "$name" ]; then
             echo "$name$value"
         fi
     done
