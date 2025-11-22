@@ -12,6 +12,8 @@ jobs:
   ubuntu:
     name: Tests (Ubuntu)
     runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -43,6 +45,8 @@ jobs:
   macos:
     name: Tests (macOS)
     runs-on: macos-latest
+    env:
+      WIZARDRY_OS_LABEL: mac
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -53,6 +57,8 @@ jobs:
     name: Tests (Debian)
     runs-on: ubuntu-latest
     container: debian:stable-slim
+    env:
+      WIZARDRY_OS_LABEL: debian
     steps:
       - name: Install git for checkout
         run: apt-get update && apt-get install -y git
@@ -85,6 +91,8 @@ jobs:
     name: Tests (Arch Linux)
     runs-on: ubuntu-latest
     container: archlinux:latest
+    env:
+      WIZARDRY_OS_LABEL: arch
     steps:
       - name: Install git for checkout
         run: pacman -Sy --noconfirm git
@@ -116,6 +124,8 @@ jobs:
   nix:
     name: Tests (Nix)
     runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: nixos
     steps:
       - name: Checkout
         uses: actions/checkout@v4
