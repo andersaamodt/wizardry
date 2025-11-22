@@ -43,14 +43,20 @@ exit 1
 
 ASK_TEXT_HELPER=$(find_ask_text)
 
-if command -v systemctl >/dev/null 2>&1; then
-        SYSTEMCTL=$(command -v systemctl)
-else
-        printf '%s\n' "$SCRIPT_NAME: systemctl is not available on this system." >&2
-        exit 1
-fi
+find_systemctl() {
+        if [ -z "${SYSTEMCTL-}" ]; then
+                if command -v systemctl >/dev/null 2>&1; then
+                        SYSTEMCTL=$(command -v systemctl)
+                else
+                        printf '%s\n' "$SCRIPT_NAME: systemctl is not available on this system." >&2
+                        exit 1
+                fi
+        fi
+        printf '%s' "$SYSTEMCTL"
+}
 
 run_systemctl() {
+        SYSTEMCTL=$(find_systemctl)
         if [ "$(id -u)" -eq 0 ]; then
             "$SYSTEMCTL" "$@"
             return
