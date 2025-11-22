@@ -28,30 +28,39 @@ export WIZARDRY_TMPDIR
 BWRAP_AVAILABLE=1
 BWRAP_VIA_SUDO=0
 BWRAP_USE_UNSHARE=1
+BWRAP_BIN=${BWRAP_BIN-}
 
-if ! command -v bwrap >/dev/null 2>&1; then
-  BWRAP_AVAILABLE=0
-  BWRAP_REASON="bubblewrap not installed"
-elif bwrap --unshare-user-try --ro-bind / / /bin/true 2>/dev/null; then
-  :
-elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
-  if sudo -n bwrap --unshare-user-try --ro-bind / / /bin/true 2>/dev/null; then
-    BWRAP_VIA_SUDO=1
-  elif sudo -n bwrap --ro-bind / / /bin/true 2>/dev/null; then
-    BWRAP_VIA_SUDO=1
-    BWRAP_USE_UNSHARE=0
+if [ -z "$BWRAP_BIN" ]; then
+  if command -v bwrap >/dev/null 2>&1; then
+    BWRAP_BIN=$(command -v bwrap)
   else
     BWRAP_AVAILABLE=0
-    BWRAP_REASON="bubblewrap unusable even via sudo"
+    BWRAP_REASON="bubblewrap not installed"
   fi
-else
-  BWRAP_AVAILABLE=0
-  BWRAP_REASON="bubblewrap unusable (user namespaces likely disabled)"
+fi
+
+if [ "$BWRAP_AVAILABLE" -eq 1 ]; then
+  if "$BWRAP_BIN" --unshare-user-try --ro-bind / / /bin/true 2>/dev/null; then
+    :
+  elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+    if sudo -n "$BWRAP_BIN" --unshare-user-try --ro-bind / / /bin/true 2>/dev/null; then
+      BWRAP_VIA_SUDO=1
+    elif sudo -n "$BWRAP_BIN" --ro-bind / / /bin/true 2>/dev/null; then
+      BWRAP_VIA_SUDO=1
+      BWRAP_USE_UNSHARE=0
+    else
+      BWRAP_AVAILABLE=0
+      BWRAP_REASON="bubblewrap unusable even via sudo"
+    fi
+  else
+    BWRAP_AVAILABLE=0
+    BWRAP_REASON="bubblewrap unusable (user namespaces likely disabled)"
+  fi
 fi
 
 warn_once_file=${WIZARDRY_BWRAP_WARN_FILE-${TMPDIR:-/tmp}/wizardry-bwrap-warning}
 
-if [ "$BWRAP_AVAILABLE" -eq 1 ] && ! command -v bwrap >/dev/null 2>&1; then
+if [ "$BWRAP_AVAILABLE" -eq 1 ] && { [ -z "$BWRAP_BIN" ] || [ ! -x "$BWRAP_BIN" ]; }; then
   BWRAP_AVAILABLE=0
   BWRAP_REASON="bubblewrap not installed"
 fi
@@ -65,9 +74,9 @@ fi
 
 run_bwrap() {
   if [ "$BWRAP_VIA_SUDO" -eq 1 ]; then
-    sudo -n bwrap "$@"
+    sudo -n "$BWRAP_BIN" "$@"
   else
-    bwrap "$@"
+    "$BWRAP_BIN" "$@"
   fi
 }
 
