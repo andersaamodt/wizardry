@@ -56,7 +56,7 @@ This displays an interactive menu. Most (soon all) wizardry spells and features 
 
 ## Spells
 
-A spell is specially-curated shell script:
+A spell is a specially-curated shell script:
 
 * Does something useful or interesting
 * Is clearly-written and well-commented for novices
