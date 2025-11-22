@@ -38,7 +38,20 @@ parse_attr_output() {
 }
 
 helper_usable() {
-  command -v "$1" >/dev/null 2>&1
+  helper=$1
+  if ! command -v "$helper" >/dev/null 2>&1; then
+    return 1
+  fi
+
+  if [ "${WIZARDRY_TEST_HELPERS_ONLY-0}" -eq 1 ]; then
+    helper_path=$(command -v "$helper")
+    case "$helper_path" in
+      /usr/*|/bin/*|/sbin/*|/usr/local/*)
+        return 1 ;;
+    esac
+  fi
+
+  return 0
 }
 
 read_value() {
@@ -110,14 +123,12 @@ list_keys() {
 print_all_attributes() {
   file=$1
   found=0
-  while IFS= read -r key; do
+  list_keys "$file" | while IFS= read -r key || [ -n "$key" ]; do
     [ -z "$key" ] && continue
     value=$(read_value "$key" "$file" || printf '')
     printf '%s: %s\n' "$key" "$value"
     found=1
-  done <<EOF
-$(list_keys "$file")
-EOF
+  done
 
   if [ "$found" -eq 0 ]; then
     printf '%s\n' "No enchanted attributes found."
