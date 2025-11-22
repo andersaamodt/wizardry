@@ -39,23 +39,27 @@ parse_attr_output() {
 
 helper_usable() {
   helper=$1
-  if ! command -v "$helper" >/dev/null 2>&1; then
-    return 1
-  fi
-
-  resolved=$(command -v "$helper")
-
   if [ "${WIZARDRY_TEST_HELPERS_ONLY-0}" -eq 1 ]; then
-    case $resolved in
-      "${WIZARDRY_TMPDIR}"/*)
-        ;;
-      *)
-        return 1
-        ;;
-    esac
+    IFS_old=$IFS
+    IFS=:
+    resolved=
+    for dir in $PATH; do
+      case $dir in
+        "${WIZARDRY_TMPDIR}"/*)
+          if [ -x "$dir/$helper" ]; then
+            resolved="$dir/$helper"
+            break
+          fi
+          ;;
+      esac
+    done
+    IFS=$IFS_old
+
+    [ -n "$resolved" ] || return 1
+    return 0
   fi
 
-  return 0
+  command -v "$helper" >/dev/null 2>&1
 }
 
 read_value() {
