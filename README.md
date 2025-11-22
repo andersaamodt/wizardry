@@ -68,9 +68,9 @@ A spell is a specially-curated shell script:
 * Has a `--help` usage note which ultimately *is* its spec
 * Ideally, has a test script at a corresponding path under `tests/`, which serves as a fully-specified operationalized spec
 * Is polished and fails elegantly
-* Works well when used in a menu (interactivity)
+* Works well when used in a menu (interactively)
 
-This spec helps scripts evolve into living, polished exemplars of communal knowledge about best practies in using and optimizing the shell.
+This spec helps scripts evolve into living, polished exemplars of communal knowledge about best practices in using and optimizing the shell.
 
 ## Principles:
 
