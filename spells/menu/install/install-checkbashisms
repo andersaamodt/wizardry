@@ -1,0 +1,101 @@
+#!/usr/bin/env sh
+
+# Install the checkbashisms utility so verify-posix can detect non-POSIX shells.
+
+set -eu
+
+usage() {
+        cat <<'USAGE'
+Usage: install-checkbashisms
+
+Install the checkbashisms command using the system package manager when
+it is not already available. Supports common Linux distributions and macOS.
+USAGE
+}
+
+case "${1-}" in
+-h|--help|--usage)
+        usage
+        exit 0
+        ;;
+-*)
+        printf '%s\n' "install-checkbashisms: unknown option '$1'" >&2
+        usage
+        exit 1
+        ;;
+esac
+
+if [ "${INSTALL_CHECKBASHISMS_FORCE_INSTALL-}" != "1" ] && command -v checkbashisms >/dev/null 2>&1; then
+        printf '%s\n' "checkbashisms is already installed."
+        exit 0
+fi
+
+run_installer() {
+        cmd=$1
+        shift
+        if command -v sudo >/dev/null 2>&1; then
+                sudo "$cmd" "$@"
+        else
+                "$cmd" "$@"
+        fi
+}
+
+try_install() {
+        installer=$1
+        shift
+        if ! command -v "$installer" >/dev/null 2>&1; then
+            return 1
+        fi
+        run_installer "$installer" "$@"
+}
+
+# Debian/Ubuntu: checkbashisms is packaged within devscripts.
+if try_install apt-get -y update && try_install apt-get -y install devscripts; then
+        if command -v checkbashisms >/dev/null 2>&1; then
+                exit 0
+        fi
+fi
+
+# Fedora/RHEL based: devscripts-checkbashisms or devscripts depending on repo.
+if try_install dnf -y install devscripts-checkbashisms || try_install dnf -y install devscripts; then
+        if command -v checkbashisms >/dev/null 2>&1; then
+                exit 0
+        fi
+fi
+
+if try_install yum -y install devscripts-checkbashisms || try_install yum -y install devscripts; then
+        if command -v checkbashisms >/dev/null 2>&1; then
+                exit 0
+        fi
+fi
+
+# openSUSE and derivatives.
+if try_install zypper --non-interactive install devscripts-checkbashisms || try_install zypper --non-interactive install checkbashisms || try_install zypper --non-interactive install devscripts; then
+        if command -v checkbashisms >/dev/null 2>&1; then
+                exit 0
+        fi
+fi
+
+# Arch/Manjaro.
+if try_install pacman --noconfirm -Sy devscripts-checkbashisms || try_install pacman --noconfirm -Sy devscripts; then
+        if command -v checkbashisms >/dev/null 2>&1; then
+                exit 0
+        fi
+fi
+
+# Alpine.
+if try_install apk add --no-cache checkbashisms || try_install apk add --no-cache devscripts; then
+        if command -v checkbashisms >/dev/null 2>&1; then
+                exit 0
+        fi
+fi
+
+# Homebrew.
+if try_install brew install devscripts; then
+        if command -v checkbashisms >/dev/null 2>&1; then
+                exit 0
+        fi
+fi
+
+printf '%s\n' "install-checkbashisms: unable to install checkbashisms automatically. Please install it manually." >&2
+exit 1

@@ -2,7 +2,12 @@
 # Behavioral cases (derived from spell behavior):
 # - mud-install-menu offers tor setup and exits on interrupt
 
-. "$(CDPATH= cd "$(dirname "$0")" && pwd)/lib/test_common.sh"
+test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+while [ ! -f "$test_root/test_common.sh" ] && [ "$test_root" != "/" ]; do
+  test_root=$(dirname "$test_root")
+done
+# shellcheck source=/dev/null
+. "$test_root/test_common.sh"
 
 make_stub_menu() {
   tmp=$1

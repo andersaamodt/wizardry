@@ -3,7 +3,12 @@
 # - cd installs rc hook when user agrees
 # - cd skips installation and still casts look after successful directory change
 
-. "$(CDPATH= cd "$(dirname "$0")" && pwd)/lib/test_common.sh"
+test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+while [ ! -f "$test_root/test_common.sh" ] && [ "$test_root" != "/" ]; do
+  test_root=$(dirname "$test_root")
+done
+# shellcheck source=/dev/null
+. "$test_root/test_common.sh"
 
 test_cd_installs_hook_when_user_agrees() {
   tmp=$(make_tempdir)
