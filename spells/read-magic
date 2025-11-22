@@ -122,16 +122,9 @@ list_keys() {
 
 print_all_attributes() {
   file=$1
-  keys_file=$(mktemp "${TMPDIR:-/tmp}/read-magic.keys.XXXXXX") || exit 1
+  keys=$(list_keys "$file") || keys=
 
-  if ! list_keys "$file" >"$keys_file"; then
-    rm -f "$keys_file"
-    printf '%s\n' "No enchanted attributes found."
-    return
-  fi
-
-  if [ ! -s "$keys_file" ]; then
-    rm -f "$keys_file"
+  if [ -z "$keys" ]; then
     printf '%s\n' "No enchanted attributes found."
     return
   fi
@@ -142,13 +135,13 @@ print_all_attributes() {
     value=$(read_value "$key" "$file" || printf '')
     printf '%s: %s\n' "$key" "$value"
     found=1
-  done <"$keys_file"
+  done <<KEYS
+$(printf '%s\n' "$keys")
+KEYS
 
   if [ "$found" -eq 0 ]; then
     printf '%s\n' "No enchanted attributes found."
   fi
-
-  rm -f "$keys_file"
 }
 
 main() {
