@@ -177,9 +177,43 @@ record_subtests() {
 status=0
 pass=0
 fail=0
-first_failure=""
 subtests_passed=0
 subtests_total=0
+failed_scripts=""
+
+spell_name_for_test() {
+  test_path=$1
+  spell_path=$(spell_path_for_test "$test_path" 2>/dev/null || true)
+
+  if [ -n "$spell_path" ]; then
+    printf '%s\n' "$(basename "$spell_path")"
+    return
+  fi
+
+  base=${test_path##*/}
+  base=${base#test_}
+  base=${base%.sh}
+  printf '%s\n' "$base"
+}
+
+record_failed_script() {
+  script=$1
+  numbers=$2
+
+  name=$(spell_name_for_test "$script")
+
+  if [ -n "$numbers" ]; then
+    entry="$name ($numbers)"
+  else
+    entry="$name"
+  fi
+
+  if [ -n "$failed_scripts" ]; then
+    failed_scripts="$failed_scripts, $entry"
+  else
+    failed_scripts="$entry"
+  fi
+}
 
 while IFS= read -r test_path; do
   [ -n "$test_path" ] || continue
@@ -187,20 +221,43 @@ while IFS= read -r test_path; do
   if [ "$verbose" -eq 1 ]; then
     printf 'Running %s\n' "$test_path"
   fi
+
   if output=$(sh "$abs" 2>&1); then
     pass=$((pass + 1))
-    record_subtests "$output"
-    if [ "$verbose" -eq 1 ]; then
-      printf '%s\n' "$output" | sed 's/^/  /'
-    fi
+    cleaned_output=$(printf '%s\n' "$output" | sed '/^FAIL_DETAIL:/d')
+    record_subtests "$cleaned_output"
+    [ "$verbose" -eq 1 ] && printf '%s\n' "$cleaned_output" | sed 's/^/  /'
   else
     status=1
     fail=$((fail + 1))
-    record_subtests "$output"
-    if [ -z "$first_failure" ]; then
-      first_failure="$test_path"
-    fi
-    printf '%s\n' "$output" | sed 's/^/  /'
+    numbers=$(printf '%s\n' "$output" | awk -F ':' '
+      /^FAIL_DETAIL:/ {
+        if (NF >= 2) {
+          n = split($2, parts, ",")
+          for (i = 1; i <= n; i++) {
+            idx = parts[i]
+            gsub(/^ +| +$/, "", idx)
+            if (idx ~ /^[0-9]+$/) {
+              order[++count] = idx
+            }
+          }
+        }
+        next
+      }
+      END {
+        for (i = 1; i <= count; i++) {
+          if (i > 1) {
+            printf(", ")
+          }
+          printf("%s", order[i])
+        }
+        printf("\n")
+      }
+    ' | sed 's/[[:space:]]*$//')
+    cleaned_output=$(printf '%s\n' "$output" | sed '/^FAIL_DETAIL:/d')
+    record_subtests "$cleaned_output"
+    record_failed_script "$test_path" "$numbers"
+    printf '%s\n' "$cleaned_output" | sed 's/^/  /'
   fi
   printf '\n'
 done <<EOF_TESTS
@@ -262,10 +319,45 @@ if [ "$coverage_uncovered" -gt 0 ]; then
   printf '  %s\n' "$uncovered_spells"
 fi
 
-if [ "$status" -ne 0 ]; then
-  if [ -n "$first_failure" ]; then
-    printf 'First failing script: %s\n' "$first_failure"
-  fi
+if [ "$status" -ne 0 ] && [ -n "$failed_scripts" ]; then
+  detect_os_label() {
+    if [ -n "${WIZARDRY_OS_LABEL-}" ]; then
+      printf '%s\n' "$WIZARDRY_OS_LABEL"
+      return 0
+    fi
+
+    if [ -x "$root_dir/spells/detect-distro" ]; then
+      if label=$("$root_dir/spells/detect-distro" 2>/dev/null || true); then
+        if [ -n "$label" ]; then
+          printf '%s\n' "$label"
+          return 0
+        fi
+      fi
+    fi
+
+    if command -v detect-distro >/dev/null 2>&1; then
+      if label=$(detect-distro 2>/dev/null || true); then
+        if [ -n "$label" ]; then
+          printf '%s\n' "$label"
+          return 0
+        fi
+      fi
+    fi
+
+    if command -v uname >/dev/null 2>&1; then
+      label=$(uname -s 2>/dev/null || true)
+      label=$(printf '%s' "$label" | tr ' A-Z' '_a-z')
+      if [ -n "$label" ]; then
+        printf '%s\n' "$label"
+        return 0
+      fi
+    fi
+
+    printf 'unknown\n'
+  }
+
+  os_label=$(detect_os_label)
+  printf 'Failed tests (%s): %s\n' "$os_label" "$failed_scripts"
 fi
 
 exit $status
