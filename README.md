@@ -54,6 +54,21 @@ menu
 ```
 This displays an interactive menu. Most (soon all) wizardry spells and features will be discoverable through the menu. Testing tools such as unit tests can be launched from the system menu, and the test-wizardry spell now reports coverage alongside test pass and fail counts.
 
+## Spells
+
+A spell is specially-curated shell script:
+
+* Does something useful or interesting
+* Is clearly-written and well-commented for novices
+* Is themed like a fantasy MUD
+* Is cross-platform
+* Has no `.sh` extension for easy invocation
+* Has a brief opening description comment
+* Has a --help usage note which ultimately *is* its spec
+* Ideally, has a test script at a corresponding path under tests/, which serves as a fully-specified operationalized spec
+* Is polished and fails elegantly
+* Works well when used in a menu (interactivity)
+
 ## Principles:
 
 ### Project Values
@@ -102,7 +117,7 @@ These values make the wizardry project what it is, and distinguish it from simil
 * No globals: Do not use shell variables unless absolutely necessary (use parameters or stdout instead).
 * Bootstrap awareness: The install script runs before wizardry is on PATH, so it alone cannot assume that wizardry spells are already available in PATH.
 
-## Unit tests
+## Testing
 
 Run the complete shell test suite with:
 
@@ -110,14 +125,12 @@ Run the complete shell test suite with:
 test-wizardry
 ```
 
-The spell discovers every `test_*.sh` file and executes each in a sandboxed bubblewrap environment. Pass `--list` or `--only PATTERN` to filter which scripts run.
+The spell discovers every `test_*.sh` file in `tests/` and executes each in a sandboxed bubblewrap environment.
 
-Testing guidelines:
+Principles of the testing suite:
 
-* Test files live in `tests/` and mirror the structure of the `spells/` directory so each spell's tests are easy to locate.
-* Shared helpers live in `tests/lib/` and are sourced by each test to keep setup and assertions consistent.
-* Each shell test script registers individual cases with `run_test_case` so failures are reported with descriptive names.
-* Tests prefer stubbed dependencies (for example, fake `ask_yn`, `ask_text`, or `systemctl` binaries in a temporary `PATH`) to keep them deterministic and portable across CI and local environments.
-* Each spell's `--help` usage notes are the behavioral spec; unit tests assert those documented flows rather than inventing new ones.
-* Menu-driven spells share a single `menu` implementation, so we focus interaction-heavy menu tests there while keeping per-menu scripts focused on their unique behaviors and dependency checks.
-
+* Tests are simply POSIX-compliant shell scripts that exercise the expected behaviors of each spell.
+* Each spell's `--help` usage notes *are* its primary spec; each unit test is considered the full operationalized spec for a spell.
+* Test files live in `tests/` and mirror the structure of the `spells/` directory. One test script per spell.
+* Tests source `test_common.sh` to standardize testing procedures and logging.
+* Each test's subtests should cover all valid and failure modes. Since spells call each other, each spell's test should avoid redundancy with other spells' tests by focusing on unique behaviors.
