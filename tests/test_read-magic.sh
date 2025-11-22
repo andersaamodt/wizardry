@@ -2,7 +2,12 @@
 # Behavioral cases (derived from --help):
 # - read-magic prints usage
 
-. "$(CDPATH= cd "$(dirname "$0")" && pwd)/lib/test_common.sh"
+test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+while [ ! -f "$test_root/test_common.sh" ] && [ "$test_root" != "/" ]; do
+  test_root=$(dirname "$test_root")
+done
+# shellcheck source=/dev/null
+. "$test_root/test_common.sh"
 
 MKTEMP_BIN=$(command -v mktemp)
 TOUCH_BIN=$(command -v touch)
