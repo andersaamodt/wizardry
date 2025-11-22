@@ -34,4 +34,4 @@ jobs:
             exit 1
           fi
       - name: Run unit tests
-        run: ./spells/menu/system/test-wizardry --verbose
+        run: ./spells/menu/system/test-magic --verbose

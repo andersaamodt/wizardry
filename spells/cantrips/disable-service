@@ -12,7 +12,7 @@ case $SCRIPT_SOURCE in
         SCRIPT_DIR=${SCRIPT_SOURCE%/*}
         ;;
 *)
-        resolved=$(command -v -- "$SCRIPT_SOURCE" 2>/dev/null || printf '%s' "$SCRIPT_SOURCE")
+        resolved=$(command -v "$SCRIPT_SOURCE" 2>/dev/null || printf '%s' "$SCRIPT_SOURCE")
         SCRIPT_DIR=${resolved%/*}
         SCRIPT_SOURCE=$resolved
         ;;

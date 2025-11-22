@@ -17,7 +17,7 @@ command_name=$1
 shift
 
 # Succeed immediately when the command is already available on PATH.
-if command -v -- "$command_name" >/dev/null 2>&1; then
+if command -v "$command_name" >/dev/null 2>&1; then
     exit 0
 fi
 

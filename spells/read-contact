@@ -15,16 +15,16 @@ USAGE
 }
 
 handle_escapes() {
-    local value="$1"
+    escape_value=$1
     # Unescape comma, semicolon, backslash and newline
-    value=$(echo "$value" | awk '{gsub(/\\,/,",");gsub(/\\;/,"\n");gsub(/\\\\/,"\\");gsub(/\\n/,"\n");print}')
+    escape_value=$(echo "$escape_value" | awk '{gsub(/\\,/,",");gsub(/\\;/,"\n");gsub(/\\\\/,"\\");gsub(/\\n/,"\n");print}')
     # Unescape other characters
-    value=$(echo "$value" | awk '{gsub(/\\\\([[:xdigit:]][[:xdigit:]])/,"\\x\1");print}')
+    escape_value=$(echo "$escape_value" | awk '{gsub(/\\\\([[:xdigit:]][[:xdigit:]])/,"\\x\1");print}')
     # Remove backslashes before colons in URLs
-    value=$(echo "$value" | awk '{gsub(/\\\\:/,":");print}')
+    escape_value=$(echo "$escape_value" | awk '{gsub(/\\\\:/,":");print}')
     # Add spaces to comma-separated lists
-    value=$(echo "$value" | awk '{gsub(/,/,", ");print}')
-    echo "$value"
+    escape_value=$(echo "$escape_value" | awk '{gsub(/,/,", ");print}')
+    echo "$escape_value"
 }
 
 card_lines() {
@@ -37,15 +37,15 @@ card_lines() {
 }
 
 validate_card() {
-    local card_path="$1"
+    card_path=$1
 
     if [ ! -f "$card_path" ]; then
         echo "vCard file not found: $card_path" >&2
         exit 1
     fi
 
-    local begins=$(tr -d '\r' <"$card_path" | grep -Ec '^BEGIN:VCARD$' || true)
-    local ends=$(tr -d '\r' <"$card_path" | grep -Ec '^END:VCARD$' || true)
+    begins=$(tr -d '\r' <"$card_path" | grep -Ec '^BEGIN:VCARD$' || true)
+    ends=$(tr -d '\r' <"$card_path" | grep -Ec '^END:VCARD$' || true)
 
     if [ "$begins" -eq 0 ] && [ "$ends" -eq 0 ]; then
         echo "No vCard entries found in $card_path" >&2
@@ -65,9 +65,9 @@ validate_card() {
 
 nicer_name() {
     # Convert the field name to lower case and remove any type annotations
-    local field="$(echo "$1" | awk '{print tolower($0)}' | awk -F';' '{print $1}' | awk -F'.' '{print $NF}')"
+    normalized_field=$(echo "$1" | awk '{print tolower($0)}' | awk -F';' '{print $1}' | awk -F'.' '{print $NF}')
 
-    case "$field" in
+    case "$normalized_field" in
         fn|fullname) echo "Full Name: " ;;
         n|name|lastname|firstname) echo "Name: " ;;
         org|organization) echo "Organization: " ;;
@@ -84,28 +84,28 @@ nicer_name() {
         role) echo "Role: " ;;
         *)
             # Remove the X- prefix from custom fields
-            field=$(echo "$field" | awk '{gsub(/^x-/,"");print}')
+            normalized_field=$(echo "$normalized_field" | awk '{gsub(/^x-/,"");print}')
             # Convert the field name to title case
-            echo "$(echo "$field" | awk '{for(i=1;i<=NF;i++)sub(/./,toupper(substr($i,1,1)),$i)}1'): "
+            echo "$(echo "$normalized_field" | awk '{for(i=1;i<=NF;i++)sub(/./,toupper(substr($i,1,1)),$i)}1'): "
             ;;
     esac
 }
 
 print_field() {
-    local card_path="$1"
-    local requested_field="$2"
+    card_path=$1
+    requested_field=$2
 
-    local line=$(card_lines "$card_path" | awk -F':' -v field="$requested_field" '$1 ~ field { print; exit }')
-    if [ -z "${line:-}" ]; then
+    card_line=$(card_lines "$card_path" | awk -F':' -v field="$requested_field" '$1 ~ field { print; exit }')
+    if [ -z "${card_line:-}" ]; then
         echo "$requested_field not found" >&2
         exit 1
     fi
 
-    local field_name=$(echo "$line" | awk -F':' '{print $1}')
-    local value=$(echo "$line" | awk -F':' '{print substr($0, length($1) + 2)}')
-    value=$(handle_escapes "$value")
-    local name=$(nicer_name "$field_name")
-    echo "$name$value"
+    field_name=$(echo "$card_line" | awk -F':' '{print $1}')
+    field_value=$(echo "$card_line" | awk -F':' '{print substr($0, length($1) + 2)}')
+    field_value=$(handle_escapes "$field_value")
+    field_label=$(nicer_name "$field_name")
+    echo "$field_label$field_value"
 }
 
 case "${1-}" in
@@ -127,10 +127,10 @@ if [ $# -eq 2 ]; then
     print_field "$vcard_path" "$2"
 else
     card_lines "$vcard_path" | while IFS=':' read -r field value; do
-        name=$(nicer_name "$field")
+        field_label=$(nicer_name "$field")
         value=$(handle_escapes "$value")
-        if [ -n "$name" ]; then
-            echo "$name$value"
+        if [ -n "$field_label" ]; then
+            echo "$field_label$value"
         fi
     done
 fi

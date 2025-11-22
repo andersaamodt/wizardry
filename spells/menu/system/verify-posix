@@ -1,0 +1,18 @@
+#!/bin/sh
+
+# Run the POSIX compliance checker across wizardry spells.
+
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+repo_dir=$(CDPATH= cd -- "$script_dir/../../.." && pwd)
+verify_spell="$repo_dir/spells/verify-posix"
+
+if [ ! -x "$verify_spell" ]; then
+  echo "system verify-posix: missing spell at $verify_spell" >&2
+  exit 1
+fi
+
+cd "$repo_dir" || exit 1
+
+exec "$verify_spell"

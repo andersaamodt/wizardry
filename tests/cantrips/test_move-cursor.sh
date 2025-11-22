@@ -7,7 +7,12 @@
 
 set -eu
 
-. "$(dirname "$0")/lib/test_common.sh"
+test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+while [ ! -f "$test_root/test_common.sh" ] && [ "$test_root" != "/" ]; do
+  test_root=$(dirname "$test_root")
+done
+# shellcheck source=/dev/null
+. "$test_root/test_common.sh"
 
 move_cursor_requires_two_arguments() {
   run_spell "spells/cantrips/move-cursor" 5

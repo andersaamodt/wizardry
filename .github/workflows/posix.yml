@@ -1,0 +1,16 @@
+name: POSIX Compliance
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  posix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install checkbashisms dependency
+        run: ./spells/menu/install/install-checkbashisms
+      - name: Verify POSIX compliance
+        run: ./spells/verify-posix
