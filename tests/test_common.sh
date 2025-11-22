@@ -17,8 +17,12 @@ find_repo_root() {
 }
 
 ROOT_DIR=$(find_repo_root)
-PATH="$ROOT_DIR/spells:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/menu:$ROOT_DIR/spells/menu/system:$ROOT_DIR/spells/menu/install/core:$PATH"
+PATH="$ROOT_DIR/tests/shims:$ROOT_DIR/spells:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/menu:$ROOT_DIR/spells/menu/system:$ROOT_DIR/spells/menu/install/core:$PATH"
 export PATH
+WIZARDRY_SHIM_DIR="$ROOT_DIR/tests/shims"
+export WIZARDRY_SHIM_DIR
+WIZARDRY_TEST_HELPERS_ONLY=1
+export WIZARDRY_TEST_HELPERS_ONLY
 
 : "${WIZARDRY_TMPDIR:=$(mktemp -d "${TMPDIR:-/tmp}/wizardry-test.XXXXXX")}" || exit 1
 export WIZARDRY_TMPDIR
@@ -47,8 +51,13 @@ else
   BWRAP_REASON="bubblewrap unusable (user namespaces likely disabled)"
 fi
 
-if [ "$BWRAP_AVAILABLE" -eq 0 ]; then
+warn_once_file=${WIZARDRY_BWRAP_WARN_FILE-${TMPDIR:-/tmp}/wizardry-bwrap-warning}
+
+if [ "$BWRAP_AVAILABLE" -eq 0 ] && [ ! -f "$warn_once_file" ] && [ "${WIZARDRY_BWRAP_WARNING-0}" -eq 0 ]; then
   printf '%s\n' "WARNING: proceeding without bubblewrap sandbox: $BWRAP_REASON" >&2
+  WIZARDRY_BWRAP_WARNING=1
+  export WIZARDRY_BWRAP_WARNING
+  : >"$warn_once_file" 2>/dev/null || true
 fi
 
 run_bwrap() {
@@ -61,6 +70,8 @@ run_bwrap() {
 
 _pass_count=0
 _fail_count=0
+_test_index=0
+_fail_detail_lines=""
 
 # Record the result of a test case with a human-friendly label.
 report_result() {
@@ -84,23 +95,59 @@ report_result() {
 run_test_case() {
   desc=$1
   func=$2
+  _test_index=$((_test_index + 1))
   if "$func"; then
     report_result "$desc" 0
   else
     reason=${TEST_FAILURE_REASON-}
     report_result "$desc" 1 "$reason"
+    record_failure_detail "$desc" "$_test_index"
     unset TEST_FAILURE_REASON || true
   fi
 }
 
+record_failure_detail() {
+  desc=$1
+  idx=$2
+
+  _fail_detail_lines=$(printf '%s\n' "$_fail_detail_lines" | awk -v d="$desc" -v i="$idx" '
+    BEGIN { found=0 }
+    NF == 0 { next }
+    {
+      split($0, parts, ":")
+      name = parts[1]
+      rest = substr($0, length(name) + 2)
+      if (name == d) {
+        found=1
+        if (length(rest) > 0) {
+          print name ":" rest "," i
+        } else {
+          print name ":" i
+        }
+        next
+      }
+      print
+    }
+    END {
+      if (found == 0) {
+        print d ":" i
+      }
+    }
+  ')
+}
+
 finish_tests() {
+  total=$((_pass_count + _fail_count))
+  printf '%s/%s tests passed' "$_pass_count" "$total"
   if [ "$_fail_count" -gt 0 ]; then
-    total=$((_pass_count + _fail_count))
-    printf '%s/%s tests failed, %s passed\n' "$_fail_count" "$total" "$_pass_count"
+    printf ' (%s failed)\n' "$_fail_count"
+    printf '%s\n' "$_fail_detail_lines" | while IFS= read -r line; do
+      [ -n "$line" ] || continue
+      printf 'FAIL_DETAIL:%s\n' "$line"
+    done
     return 1
   fi
-  total=$((_pass_count + _fail_count))
-  printf '%s/%s tests passed\n' "$_pass_count" "$total"
+  printf '\n'
   return 0
 }
 
@@ -196,16 +243,26 @@ assert_failure() {
 assert_output_contains() {
   substring=$1
   case "$OUTPUT" in
-    *"$substring"*) return 0 ;;
-    *) TEST_FAILURE_REASON="output missing substring: $substring"; return 1 ;;
+    *"$substring"*)
+      return 0
+      ;;
+    *)
+      TEST_FAILURE_REASON="output missing substring: $substring"
+      return 1
+      ;;
   esac
 }
 
 assert_error_contains() {
   substring=$1
   case "$ERROR" in
-    *"$substring"*) return 0 ;;
-    *) TEST_FAILURE_REASON="stderr missing substring: $substring"; return 1 ;;
+    *"$substring"*)
+      return 0
+      ;;
+    *)
+      TEST_FAILURE_REASON="stderr missing substring: $substring"
+      return 1
+      ;;
   esac
 }
 
