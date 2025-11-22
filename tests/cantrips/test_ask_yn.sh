@@ -6,7 +6,12 @@
 # - ask_yn fails when input unavailable and no default
 # - ask_yn rejects invalid default
 
-. "$(CDPATH= cd "$(dirname "$0")" && pwd)/lib/test_common.sh"
+test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+while [ ! -f "$test_root/test_common.sh" ] && [ "$test_root" != "/" ]; do
+  test_root=$(dirname "$test_root")
+done
+# shellcheck source=/dev/null
+. "$test_root/test_common.sh"
 
 test_ask_yn_accepts_default_yes() {
   run_cmd sh -c "printf '\\n' | \"$ROOT_DIR/spells/cantrips/ask_yn\" 'Continue?' yes"
