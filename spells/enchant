@@ -33,9 +33,27 @@ file_exists() {
         fi
 }
 
+helper_path() {
+        helper=$1
+        if ! command -v "$helper" >/dev/null 2>&1; then
+                return 1
+        fi
+
+        path=$(command -v "$helper")
+        if [ "${WIZARDRY_TEST_HELPERS_ONLY-0}" -eq 1 ]; then
+                case "$path" in
+                /usr/*|/bin/*|/sbin/*|/usr/local/*)
+                        return 1 ;;
+                esac
+        fi
+
+        printf '%s\n' "$path"
+        return 0
+}
+
 set_with_attr() {
-        if command -v attr >/dev/null 2>&1; then
-                attr -s "$1" -V "$2" "$3"
+        if attr_path=$(helper_path attr); then
+                "$attr_path" -s "$1" -V "$2" "$3"
                 return $?
         fi
 
@@ -43,18 +61,18 @@ set_with_attr() {
 }
 
 set_with_xattr() {
-        if command -v xattr >/dev/null 2>&1; then
-                xattr -w "$1" "$2" "$3"
-                return $?
+        if xattr_path=$(helper_path xattr); then
+                        "$xattr_path" -w "$1" "$2" "$3"
+                        return $?
         fi
 
         return 127
 }
 
 set_with_setfattr() {
-        if command -v setfattr >/dev/null 2>&1; then
-                setfattr -n "$1" -v "$2" "$3"
-                return $?
+        if setfattr_path=$(helper_path setfattr); then
+                        "$setfattr_path" -n "$1" -v "$2" "$3"
+                        return $?
         fi
 
         return 127

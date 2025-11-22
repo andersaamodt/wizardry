@@ -43,15 +43,11 @@ helper_usable() {
     return 1
   fi
 
-  resolved=$(command -v "$helper")
-
   if [ "${WIZARDRY_TEST_HELPERS_ONLY-0}" -eq 1 ]; then
-    case $resolved in
-      "${WIZARDRY_TMPDIR}"/*)
-        ;;
-      *)
-        return 1
-        ;;
+    helper_path=$(command -v "$helper")
+    case "$helper_path" in
+      /usr/*|/bin/*|/sbin/*|/usr/local/*)
+        return 1 ;;
     esac
   fi
 
@@ -126,17 +122,19 @@ list_keys() {
 
 print_all_attributes() {
   file=$1
-  found=0
-  for key in $(list_keys "$file"); do
+
+  keys=$(list_keys "$file" || printf '')
+
+  if [ -z "$keys" ]; then
+    printf '%s\n' "No enchanted attributes found."
+    return
+  fi
+
+  printf '%s\n' "$keys" | while IFS= read -r key || [ -n "$key" ]; do
     [ -z "$key" ] && continue
     value=$(read_value "$key" "$file" || printf '')
     printf '%s: %s\n' "$key" "$value"
-    found=1
   done
-
-  if [ "$found" -eq 0 ]; then
-    printf '%s\n' "No enchanted attributes found."
-  fi
 }
 
 main() {

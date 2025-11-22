@@ -16,15 +16,9 @@ USAGE
 
 handle_escapes() {
     escape_value=$1
-    # Unescape comma, semicolon, backslash and newline
-    escape_value=$(echo "$escape_value" | awk '{gsub(/\\,/,",");gsub(/\\;/,"\n");gsub(/\\\\/,"\\");gsub(/\\n/,"\n");print}')
-    # Unescape other characters
-    escape_value=$(echo "$escape_value" | awk '{gsub(/\\\\([[:xdigit:]][[:xdigit:]])/,"\\x\1");print}')
-    # Remove backslashes before colons in URLs
-    escape_value=$(echo "$escape_value" | awk '{gsub(/\\\\:/,":");print}')
-    # Add spaces to comma-separated lists
-    escape_value=$(echo "$escape_value" | awk '{gsub(/,/,", ");print}')
-    echo "$escape_value"
+    printf '%s\n' "$escape_value" | awk '
+        { gsub(/\\n/,"\n"); gsub(/\\\\/,"\\"); gsub(/\\,/,", "); gsub(/\\;/,"\n"); print }
+    '
 }
 
 card_lines() {

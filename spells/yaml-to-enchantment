@@ -51,25 +51,42 @@ set_attr() {
     key=$1
     value=$2
 
-    if command -v attr >/dev/null 2>&1; then
-        if attr -s "$key" -V "$value" "$scroll" 2>/dev/null; then
+    if helper_path=$(resolve_helper attr); then
+        if "$helper_path" -s "$key" -V "$value" "$scroll" 2>/dev/null; then
             return 0
         fi
     fi
-    if command -v setfattr >/dev/null 2>&1; then
-        if setfattr -n "$key" -v "$value" "$scroll" 2>/dev/null; then
+    if helper_path=$(resolve_helper setfattr); then
+        if "$helper_path" -n "$key" -v "$value" "$scroll" 2>/dev/null; then
             return 0
         fi
     fi
-    if command -v xattr >/dev/null 2>&1; then
-        if xattr -w "$key" "$value" "$scroll" 2>/dev/null; then
+    if helper_path=$(resolve_helper xattr); then
+        if "$helper_path" -w "$key" "$value" "$scroll" 2>/dev/null; then
             return 0
         fi
     fi
     return 1
 }
 
-if ! (command -v attr >/dev/null 2>&1 || command -v setfattr >/dev/null 2>&1 || command -v xattr >/dev/null 2>&1); then
+resolve_helper() {
+    helper=$1
+    if ! command -v "$helper" >/dev/null 2>&1; then
+        return 1
+    fi
+
+    helper_path=$(command -v "$helper")
+    if [ "${WIZARDRY_TEST_HELPERS_ONLY-0}" -eq 1 ]; then
+        case "$helper_path" in
+            /usr/*|/bin/*|/sbin/*|/usr/local/*)
+                return 1 ;;
+        esac
+    fi
+
+    printf '%s\n' "$helper_path"
+}
+
+if ! (resolve_helper attr >/dev/null 2>&1 || resolve_helper setfattr >/dev/null 2>&1 || resolve_helper xattr >/dev/null 2>&1); then
     printf '%s\n' "Error: requires attr, setfattr, or xattr to restore enchantments" >&2
     exit 1
 fi
