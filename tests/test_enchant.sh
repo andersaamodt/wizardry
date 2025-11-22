@@ -63,6 +63,26 @@ STUB
   [ "$called" = "-n user.aura -v glow $target" ] || { TEST_FAILURE_REASON="unexpected setfattr call: $called"; return 1; }
 }
 
+test_prefers_other_helpers_when_first_missing() {
+  tmpdir=$(make_tempdir)
+  stub_dir="$tmpdir/stubs"
+  target="$tmpdir/target"
+  mkdir -p "$stub_dir"
+  : >"$target"
+
+  cat >"$stub_dir/setfattr" <<'STUB'
+#!/bin/sh
+printf '%s\n' "$*" >"${WIZARDRY_TMPDIR:?}/enchant.called"
+exit 0
+STUB
+  chmod +x "$stub_dir/setfattr"
+
+  PATH="$stub_dir:$PATH" run_spell "spells/enchant" "$target" user.pref other xattr
+  assert_success
+  called=$(cat "$WIZARDRY_TMPDIR/enchant.called")
+  [ "$called" = "-n user.pref -v other $target" ] || { TEST_FAILURE_REASON="unexpected setfattr call: $called"; return 1; }
+}
+
 test_rejects_unknown_helper() {
   tmpdir=$(make_tempdir)
   target="$tmpdir/target"
@@ -94,11 +114,33 @@ STUB
   assert_failure && assert_error_contains "requires the 'attr', 'xattr', or 'setfattr'"
 }
 
+test_reports_helper_failure() {
+  tmpdir=$(make_tempdir)
+  stub_dir="$tmpdir/stubs"
+  mkdir -p "$stub_dir"
+  cat >"$stub_dir/attr" <<'STUB'
+#!/bin/sh
+echo "no permission" >&2
+exit 2
+STUB
+  chmod +x "$stub_dir/attr"
+
+  target="$tmpdir/target"
+  : >"$target"
+
+  PATH="$stub_dir:$PATH" run_spell "spells/enchant" "$target" user.fail value attr
+  assert_failure
+  assert_error_contains "Failed to set attribute using 'attr'"
+  assert_error_contains "no permission"
+}
+
 run_test_case "enchant prints usage" test_help
 run_test_case "enchant enforces argument count" test_requires_arguments
 run_test_case "enchant fails for missing files" test_missing_file
 run_test_case "enchant honors preferred helper" test_prefers_requested_helper
 run_test_case "enchant falls back when preferred helper fails" test_falls_back_when_preference_missing
+run_test_case "enchant falls back when preferred helper is missing" test_prefers_other_helpers_when_first_missing
 run_test_case "enchant rejects unknown helper" test_rejects_unknown_helper
 run_test_case "enchant reports missing helpers" test_reports_missing_helpers
+run_test_case "enchant reports helper failures" test_reports_helper_failure
 finish_tests

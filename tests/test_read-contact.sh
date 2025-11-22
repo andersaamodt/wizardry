@@ -101,11 +101,70 @@ VCARD
   assert_output_contains "URL: https\\://example.com/path" || return 1
 }
 
+read_contact_rejects_missing_file() {
+  missing_path="/nonexistent/ghost.vcf"
+
+  run_spell "spells/read-contact" "$missing_path"
+  assert_failure || return 1
+  assert_error_contains "vCard file not found" || return 1
+}
+
+read_contact_rejects_malformed_cards() {
+  vcard_dir=$(make_tempdir)
+  empty_card="$vcard_dir/empty.vcf"
+  printf '' >"$empty_card"
+
+  run_spell "spells/read-contact" "$empty_card"
+  assert_failure || return 1
+  assert_error_contains "No vCard entries" || return 1
+
+  broken_card="$vcard_dir/broken.vcf"
+  cat <<'CARD' >"$broken_card"
+BEGIN:VCARD
+FN:Halfway
+CARD
+
+  run_spell "spells/read-contact" "$broken_card"
+  assert_failure || return 1
+  assert_error_contains "Unbalanced vCard entries" || return 1
+}
+
+read_contact_rejects_multiple_cards() {
+  card_dir=$(make_tempdir)
+  card_path="$card_dir/multiple.vcf"
+  cat <<'CARDS' >"$card_path"
+BEGIN:VCARD
+FN:First
+END:VCARD
+BEGIN:VCARD
+FN:Second
+END:VCARD
+CARDS
+
+  run_spell "spells/read-contact" "$card_path"
+  assert_failure || return 1
+  assert_error_contains "Multiple vCard entries" || return 1
+}
+
+read_contact_handles_crlf_cards() {
+  card_dir=$(make_tempdir)
+  card="$card_dir/crlf.vcf"
+  printf 'BEGIN:VCARD\r\nVERSION:3.0\r\nFN:CRLF Friend\r\nEND:VCARD\r\n' >"$card"
+
+  run_spell "spells/read-contact" "$card"
+  assert_success || return 1
+  assert_output_contains "Full Name: CRLF Friend" || return 1
+}
+
 run_test_case "read-contact prints usage" test_help
 run_test_case "read-contact requires a vcard path" read_contact_requires_path
 run_test_case "read-contact formats core vCard fields" read_contact_formats_fields
 run_test_case "read-contact extracts a requested field" read_contact_extracts_single_field
 run_test_case "read-contact reports when a requested field is missing" read_contact_reports_missing_field
 run_test_case "read-contact normalizes escapes and URLs" read_contact_normalizes_escapes_and_urls
+run_test_case "read-contact rejects missing files" read_contact_rejects_missing_file
+run_test_case "read-contact rejects malformed cards" read_contact_rejects_malformed_cards
+run_test_case "read-contact rejects multi-card vcf inputs" read_contact_rejects_multiple_cards
+run_test_case "read-contact handles CRLF vCards" read_contact_handles_crlf_cards
 
 finish_tests

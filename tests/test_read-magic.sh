@@ -99,6 +99,36 @@ STUB
   assert_success && assert_output_contains "sparkle"
 }
 
+test_lists_attributes_via_xattr_listing() {
+  reset_path
+  target=$(create_temp_file)
+  stub_dir=$(create_stub_dir)
+  cat >"$stub_dir/xattr" <<'STUB'
+#!/bin/sh
+case "$1" in
+  -p)
+    case "$2" in
+      user.sky)
+        printf 'azure'
+        ;;
+      *)
+        exit 1
+        ;;
+    esac
+    ;;
+  *)
+    printf '%s\n' 'user.sky' 'user.horizon'
+    ;;
+esac
+STUB
+  chmod +x "$stub_dir/xattr"
+
+  PATH="$stub_dir:$PATH" run_spell "spells/read-magic" "$target"
+  assert_success
+  assert_output_contains "user.sky: azure"
+  assert_output_contains "user.horizon:"
+}
+
 test_reads_attribute_via_xattr_when_attr_missing() {
   reset_path
   target=$(create_temp_file)
@@ -114,6 +144,41 @@ STUB
   chmod +x "$stub_dir/xattr"
   PATH="$stub_dir:$PATH" run_spell "spells/read-magic" "$target" user.charm
   assert_success && assert_output_contains "xattr-magic"
+}
+
+test_lists_attributes_via_getfattr_when_others_missing() {
+  reset_path
+  target=$(create_temp_file)
+  stub_dir=$(create_stub_dir)
+  cat >"$stub_dir/getfattr" <<'STUB'
+#!/bin/sh
+case "$1" in
+  -d)
+    printf '# file: %s\n' "$2"
+    printf '%s\n' 'user.first="one"' 'user.second="two"'
+    ;;
+  -n)
+    key=$2
+    case "$key" in
+      user.first)
+        printf 'one'
+        ;;
+      user.second)
+        printf 'two'
+        ;;
+      *)
+        exit 1
+        ;;
+    esac
+    ;;
+esac
+STUB
+  chmod +x "$stub_dir/getfattr"
+
+  PATH="$stub_dir:$PATH" run_spell "spells/read-magic" "$target"
+  assert_success
+  assert_output_contains "user.first: one"
+  assert_output_contains "user.second: two"
 }
 
 test_reads_attribute_via_getfattr_when_others_missing() {
@@ -173,7 +238,9 @@ run_test_case "read-magic rejects extra arguments" test_rejects_extra_argument
 run_test_case "read-magic fails on missing file" test_missing_file
 run_test_case "read-magic lists attributes via attr" test_lists_attributes_via_attr
 run_test_case "read-magic reads specific attribute via attr" test_reads_specific_attribute_via_attr
+run_test_case "read-magic lists attributes via xattr when attr is missing" test_lists_attributes_via_xattr_listing
 run_test_case "read-magic uses xattr when attr is missing" test_reads_attribute_via_xattr_when_attr_missing
+run_test_case "read-magic lists attributes via getfattr when other helpers are missing" test_lists_attributes_via_getfattr_when_others_missing
 run_test_case "read-magic uses getfattr as a final fallback" test_reads_attribute_via_getfattr_when_others_missing
 run_test_case "read-magic reports missing attribute" test_reports_missing_attribute
 run_test_case "read-magic reports no attributes without helpers" test_handles_missing_helpers
