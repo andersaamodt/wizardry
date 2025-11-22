@@ -47,8 +47,13 @@ else
   BWRAP_REASON="bubblewrap unusable (user namespaces likely disabled)"
 fi
 
-if [ "$BWRAP_AVAILABLE" -eq 0 ]; then
+warn_once_file=${WIZARDRY_BWRAP_WARN_FILE-${TMPDIR:-/tmp}/wizardry-bwrap-warning}
+
+if [ "$BWRAP_AVAILABLE" -eq 0 ] && [ ! -f "$warn_once_file" ] && [ "${WIZARDRY_BWRAP_WARNING-0}" -eq 0 ]; then
   printf '%s\n' "WARNING: proceeding without bubblewrap sandbox: $BWRAP_REASON" >&2
+  WIZARDRY_BWRAP_WARNING=1
+  export WIZARDRY_BWRAP_WARNING
+  : >"$warn_once_file" 2>/dev/null || true
 fi
 
 run_bwrap() {
@@ -94,13 +99,14 @@ run_test_case() {
 }
 
 finish_tests() {
+  total=$((_pass_count + _fail_count))
+  printf '%s/%s tests passed' "$_pass_count" "$total"
   if [ "$_fail_count" -gt 0 ]; then
-    total=$((_pass_count + _fail_count))
-    printf '%s/%s tests failed, %s passed\n' "$_fail_count" "$total" "$_pass_count"
+    printf ' (%s failed)' "$_fail_count"
+    printf '\n'
     return 1
   fi
-  total=$((_pass_count + _fail_count))
-  printf '%s/%s tests passed\n' "$_pass_count" "$total"
+  printf '\n'
   return 0
 }
 
