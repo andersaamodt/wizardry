@@ -197,7 +197,7 @@ SCRIPT
 
   run_verify_posix "$workrel/bashism"
   assert_failure || return 1
-  echo "$OUTPUT" | grep "^FAIL $workrel/bashism: contains bashisms (checkbashisms)$" >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected bashism message"; return 1; }
+  echo "$OUTPUT" | grep "^FAIL $workrel/bashism: contains bashisms$" >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected bashism message"; return 1; }
   echo "$OUTPUT" | grep "^  bashism detected$" >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected indented bashism output"; return 1; }
   summary=$(printf '%s\n' "$OUTPUT" | tail -n 1)
   case $summary in

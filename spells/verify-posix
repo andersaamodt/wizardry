@@ -123,7 +123,7 @@ for target in "$@"; do
         if bashism_output=$("$checkbashisms_cmd" -f -p "$abs" 2>&1); then
           :
         else
-          reasons=$(append_reason "$reasons" "contains bashisms (checkbashisms)")
+          reasons=$(append_reason "$reasons" "contains bashisms")
           bashism_detail=$bashism_output
         fi
       fi
