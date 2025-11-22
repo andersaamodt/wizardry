@@ -37,25 +37,50 @@ parse_attr_output() {
   printf '%s' "$1" | sed 's/.*has a value:[[:space:]]*//'
 }
 
+helper_usable() {
+  helper=$1
+  if ! command -v "$helper" >/dev/null 2>&1; then
+    return 1
+  fi
+
+  resolved=$(command -v "$helper")
+
+  if [ -n "${WIZARDRY_SHIM_DIR-}" ] && [ "$resolved" = "$WIZARDRY_SHIM_DIR/$helper" ]; then
+    return 1
+  fi
+
+  if [ "${WIZARDRY_TEST_HELPERS_ONLY-0}" -eq 1 ]; then
+    case $resolved in
+      "${WIZARDRY_TMPDIR}"/*)
+        ;;
+      *)
+        return 1
+        ;;
+    esac
+  fi
+
+  return 0
+}
+
 read_value() {
   key=$1
   file=$2
 
-  if command -v attr >/dev/null 2>&1; then
+  if helper_usable attr; then
     if output=$(attr -g "$key" "$file" 2>/dev/null); then
       parse_attr_output "$output"
       return 0
     fi
   fi
 
-  if command -v xattr >/dev/null 2>&1; then
+  if helper_usable xattr; then
     if output=$(xattr -p "$key" "$file" 2>/dev/null); then
       printf '%s' "$output"
       return 0
     fi
   fi
 
-  if command -v getfattr >/dev/null 2>&1; then
+  if helper_usable getfattr; then
     if output=$(getfattr -n "$key" --only-values "$file" 2>/dev/null); then
       printf '%s' "$output"
       return 0
@@ -68,24 +93,35 @@ read_value() {
 list_keys() {
   file=$1
 
-  if command -v attr >/dev/null 2>&1; then
+  if helper_usable attr; then
     if keys=$(attr -l "$file" 2>/dev/null); then
-      printf '%s\n' "$keys"
-      return 0
+      parsed=$(printf '%s\n' "$keys" | awk '
+        match($0,/Attribute "([^"]+)"/,m){print m[1]; next}
+        NF{print}
+      ')
+      if [ -n "$parsed" ]; then
+        printf '%s\n' "$parsed"
+        return 0
+      fi
     fi
   fi
 
-  if command -v xattr >/dev/null 2>&1; then
+  if helper_usable xattr; then
     if keys=$(xattr "$file" 2>/dev/null); then
-      printf '%s\n' "$keys"
-      return 0
+      if [ -n "$keys" ]; then
+        printf '%s\n' "$keys"
+        return 0
+      fi
     fi
   fi
 
-  if command -v getfattr >/dev/null 2>&1; then
+  if helper_usable getfattr; then
     if keys=$(getfattr -d "$file" 2>/dev/null); then
-      printf '%s' "$keys" | awk -F '=' '/^# / {next} {print $1}'
-      return 0
+      parsed=$(printf '%s' "$keys" | awk -F '=' '/^# / {next} {print $1}')
+      if [ -n "$parsed" ]; then
+        printf '%s' "$parsed"
+        return 0
+      fi
     fi
   fi
 

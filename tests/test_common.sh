@@ -17,8 +17,12 @@ find_repo_root() {
 }
 
 ROOT_DIR=$(find_repo_root)
-PATH="$ROOT_DIR/spells:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/menu:$ROOT_DIR/spells/menu/system:$ROOT_DIR/spells/menu/install/core:$PATH"
+PATH="$ROOT_DIR/tests/shims:$ROOT_DIR/spells:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/menu:$ROOT_DIR/spells/menu/system:$ROOT_DIR/spells/menu/install/core:$PATH"
 export PATH
+WIZARDRY_SHIM_DIR="$ROOT_DIR/tests/shims"
+export WIZARDRY_SHIM_DIR
+WIZARDRY_TEST_HELPERS_ONLY=1
+export WIZARDRY_TEST_HELPERS_ONLY
 
 : "${WIZARDRY_TMPDIR:=$(mktemp -d "${TMPDIR:-/tmp}/wizardry-test.XXXXXX")}" || exit 1
 export WIZARDRY_TMPDIR
@@ -66,6 +70,8 @@ run_bwrap() {
 
 _pass_count=0
 _fail_count=0
+_test_index=0
+_fail_detail_lines=""
 
 # Record the result of a test case with a human-friendly label.
 report_result() {
@@ -89,12 +95,39 @@ report_result() {
 run_test_case() {
   desc=$1
   func=$2
+  _test_index=$((_test_index + 1))
   if "$func"; then
     report_result "$desc" 0
   else
     reason=${TEST_FAILURE_REASON-}
     report_result "$desc" 1 "$reason"
+    record_failure_detail "$desc" "$_test_index"
     unset TEST_FAILURE_REASON || true
+  fi
+}
+
+record_failure_detail() {
+  desc=$1
+  idx=$2
+
+  if printf '%s\n' "$_fail_detail_lines" | grep -F "${desc}:" >/dev/null 2>&1; then
+    _fail_detail_lines=$(printf '%s\n' "$_fail_detail_lines" | while IFS= read -r line; do
+      case $line in
+        "$desc":*)
+          numbers=${line#*:}
+          printf '%s:%s,%s\n' "$desc" "$numbers" "$idx"
+          ;;
+        *)
+          printf '%s\n' "$line"
+          ;;
+      esac
+    done)
+  else
+    if [ -n "$_fail_detail_lines" ]; then
+      _fail_detail_lines=$(printf '%s\n%s:%s' "$_fail_detail_lines" "$desc" "$idx")
+    else
+      _fail_detail_lines=$(printf '%s:%s' "$desc" "$idx")
+    fi
   fi
 }
 
@@ -104,6 +137,15 @@ finish_tests() {
   if [ "$_fail_count" -gt 0 ]; then
     printf ' (%s failed)' "$_fail_count"
     printf '\n'
+    if [ -n "$_fail_detail_lines" ]; then
+      failing=$(printf '%s\n' "$_fail_detail_lines" | while IFS= read -r line; do
+        desc=${line%%:*}
+        nums=${line#*:}
+        formatted=$(printf '%s' "$nums" | sed 's/,/, /g')
+        printf '%s (%s)\n' "$desc" "$formatted"
+      done | paste -sd ', ' -)
+      printf 'Failing tests (subtest #'"'"'s): %s\n' "$failing"
+    fi
     return 1
   fi
   printf '\n'
