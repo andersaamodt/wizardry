@@ -76,28 +76,7 @@ parse_attr_output() {
 }
 
 helper_usable() {
-  helper=$1
-  if ! command -v "$helper" >/dev/null 2>&1; then
-    return 1
-  fi
-
-  # read-magic needs to exercise system-provided attr/xattr/getfattr during
-  # tests, even when helper filtering is enabled, because GitHub runners only
-  # ship those binaries in system locations.
-  case "$helper" in
-    attr|xattr|getfattr)
-      return 0 ;;
-  esac
-
-  if [ "${WIZARDRY_TEST_HELPERS_ONLY-0}" -eq 1 ]; then
-    helper_path=$(command -v "$helper")
-    case "$helper_path" in
-      /usr/*|/bin/*|/sbin/*|/usr/local/*)
-        return 1 ;;
-    esac
-  fi
-
-  return 0
+  command -v "$1" >/dev/null 2>&1
 }
 
 attr_shim=0
