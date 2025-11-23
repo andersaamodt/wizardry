@@ -37,23 +37,27 @@ parse_attr_output() {
   printf '%s\n' "$1" | awk '
     NF { lines[NR] = $0; last = NR }
     END {
-      # Prefer a "value for VALUE" clause anywhere in the output.
-      for (i = 1; i <= last; i++) {
-        line = lines[i]
-        if (match(line, /value for[[:space:]]*(.*)$/, m)) {
-          print m[1]
-          exit
-        }
+      # Multi-line outputs (e.g., attr -g) place the value on the final line.
+      if (last > 1) {
+        print lines[last]
+        exit
       }
 
-      # Next, try the final colon-delimited value on the last non-empty line.
       line = lines[last]
+
+      # Prefer a colon-delimited value on the sole line when present.
       if (match(line, /:[[:space:]]*(.*)$/, m)) {
         print m[1]
         exit
       }
 
-      # Fall back to the raw last line.
+      # As a last resort, trim after "value for" phrases to avoid returning file paths.
+      if (match(line, /value for[[:space:]]*([^:]+)$/, m)) {
+        print m[1]
+        exit
+      }
+
+      # Fall back to the raw line.
       print line
     }
   '
