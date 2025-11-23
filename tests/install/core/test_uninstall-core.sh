@@ -3,8 +3,6 @@ set -eu
 
 # shellcheck source=../../test_common.sh
 . "$(dirname "$0")/../../test_common.sh"
-# shellcheck source=./core_test_helpers.sh
-. "$(dirname "$0")/core_test_helpers.sh"
 
 uninstall_core_removes_installed_items() {
   fixture=$(make_fixture)

@@ -3,8 +3,6 @@ set -eu
 
 # shellcheck source=../../test_common.sh
 . "$(dirname "$0")/../../test_common.sh"
-# shellcheck source=./core_test_helpers.sh
-. "$(dirname "$0")/core_test_helpers.sh"
 
 manage_system_installs_when_missing() {
   fixture=$(make_fixture)
