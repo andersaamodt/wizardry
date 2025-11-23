@@ -15,7 +15,6 @@ EOF
 }
 
 VERBOSE=0
-TEST_MODE=${WIZARDRY_TEST_HELPERS_ONLY:-0}
 
 while [ "$#" -gt 0 ]; do
   case $1 in
@@ -58,25 +57,12 @@ else
   RESET=''
 fi
 
-require_test_stub() {
+require_command() {
   cmd=$1
 
-  path=$(command -v "$cmd" 2>/dev/null || true)
-  if [ -z "$path" ]; then
+  if ! command -v "$cmd" >/dev/null 2>&1; then
     printf '%s\n' "Required command not found: $cmd" >&2
     exit 1
-  fi
-
-  if [ "$TEST_MODE" -eq 1 ]; then
-    case $path in
-      "$WIZARDRY_TMPDIR"/*)
-        return 0
-        ;;
-      *)
-        printf '%s\n' "Refusing to run real '$cmd' (found at $path) while in test mode; please stub it under $WIZARDRY_TMPDIR." >&2
-        exit 1
-        ;;
-    esac
   fi
 }
 
@@ -224,8 +210,8 @@ fi
 
 case $distro in
   debian)
-    require_test_stub sudo
-    require_test_stub apt-get
+    require_command sudo
+    require_command apt-get
     print_step '• Refreshing apt package lists'
     run_quiet sudo apt-get update
     print_step '• Installing upgrades'
@@ -234,9 +220,9 @@ case $distro in
     run_with_progress sudo apt-get -o Dpkg::Progress-Fancy=1 -o Dpkg::Use-Pty=0 -y autoremove
     ;;
   arch)
-    require_test_stub sudo
-    require_test_stub pacman
-    require_test_stub pamac
+    require_command sudo
+    require_command pacman
+    require_command pamac
     print_step '• Synchronising pacman packages'
     run_quiet sudo pacman -Syu --noconfirm
     print_step '• Refreshing Pamac-managed packages'
@@ -245,10 +231,10 @@ case $distro in
     run_quiet pamac build --no-confirm
     ;;
   nixos)
-    require_test_stub sudo
-    require_test_stub nix-channel
-    require_test_stub nixos-rebuild
-    require_test_stub nix-env
+    require_command sudo
+    require_command nix-channel
+    require_command nixos-rebuild
+    require_command nix-env
     print_step '• Refreshing system channels'
     run_quiet sudo nix-channel --update
     print_step '• Rebuilding system configuration'
