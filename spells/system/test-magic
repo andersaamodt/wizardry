@@ -52,7 +52,8 @@ while [ "$#" -gt 0 ]; do
       fi
       rerun_args="$rerun_args --only $2"
       if [ -n "$only_patterns" ]; then
-        only_patterns="$only_patterns\n$2"
+        only_patterns="$only_patterns
+$2"
       else
         only_patterns="$2"
       fi
