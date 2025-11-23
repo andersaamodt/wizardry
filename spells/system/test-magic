@@ -7,6 +7,16 @@
 
 set -eu
 
+# Seed a baseline PATH before any helper filtering so reruns and grouped outputs
+# still have access to core utilities (mkdir, cat, rm) on macOS CI where the
+# inherited PATH may be empty.
+baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+case ":${PATH-}:" in
+  *":/usr/bin:"*) ;; # already present
+  *) PATH="$baseline_path:${PATH-}" ;;
+esac
+export PATH
+
 cmd_name=$(basename "$0")
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 root_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd -P)
@@ -365,9 +375,14 @@ if [ "$coverage_uncovered" -gt 0 ]; then
   printf '  %s\n' "$uncovered_spells"
 fi
 
+if [ "$very_verbose" -eq 1 ] && [ "$fail" -gt 10 ]; then
+  printf 'Too many failures (%d) for --very-verbose; skipping detailed output.\n' "$fail"
+  very_verbose=0
+fi
+
 if [ "$status" -ne 0 ] && [ -n "$failed_scripts" ]; then
   show_failure_output=0
-  if [ "$fail" -le 10 ]; then
+  if [ "$very_verbose" -eq 1 ] && [ "$fail" -le 10 ]; then
     show_failure_output=1
   fi
 
