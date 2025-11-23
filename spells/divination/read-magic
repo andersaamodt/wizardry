@@ -34,7 +34,7 @@ file_exists() {
 }
 
 parse_attr_output() {
-  printf '%s\n' "$1" | sed 's/.*:[[:space:]]*//' | tail -n 1
+  printf '%s\n' "$1" | sed 's/.*:[[:space:]]*//' | awk 'NF {last = $0} END {print last}'
 }
 
 helper_usable() {

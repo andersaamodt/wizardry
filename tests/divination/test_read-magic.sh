@@ -62,20 +62,20 @@ case "$1" in
   -l)
     printf '%s\n' "user.alpha" "user.beta"
     ;;
-  -g)
-    case "$2" in
-      user.alpha)
-        printf 'Attribute "user.alpha" had a 10 byte value for /tmp/example:\n'
-        printf 'alpha-value\n'
-        ;;
-      user.beta)
-        printf 'Attribute "user.beta" had a 9 byte value for /tmp/example:\n'
-        printf 'beta-value\n'
-        ;;
-      *)
-        exit 1
-        ;;
-    esac
+      -g)
+        case "$2" in
+          user.alpha)
+            printf 'Attribute "user.alpha" had a 10 byte value for /tmp/example:\n'
+            printf 'alpha-value\n'
+            ;;
+          user.beta)
+            printf 'Attribute "user.beta" had a 9 byte value for /tmp/example:\n'
+            printf 'beta-value\n\n'
+            ;;
+          *)
+            exit 1
+            ;;
+        esac
     ;;
   *)
     exit 1
