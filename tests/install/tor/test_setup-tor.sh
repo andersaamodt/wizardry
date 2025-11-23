@@ -9,16 +9,7 @@ done
 . "$test_root/test_common.sh"
 
 spell_is_executable() {
-  spell="$ROOT_DIR/spells/install/tor/setup-tor"
-  if [ ! -f "$spell" ]; then
-    echo "Expected $spell to exist" >&2
-    return 1
-  fi
-
-  if [ ! -x "$spell" ]; then
-    echo "Expected $spell to be executable; run 'chmod +x \"$spell\"'" >&2
-    return 1
-  fi
+  [ -x "$ROOT_DIR/spells/install/tor/setup-tor" ]
 }
 
 run_test_case "install/tor/setup-tor is executable" spell_is_executable

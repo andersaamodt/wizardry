@@ -9,16 +9,7 @@ done
 . "$test_root/test_common.sh"
 
 spell_is_executable() {
-  spell="$ROOT_DIR/spells/install/mud/mud"
-  if [ ! -f "$spell" ]; then
-    echo "Expected $spell to exist" >&2
-    return 1
-  fi
-
-  if [ ! -x "$spell" ]; then
-    echo "Expected $spell to be executable; run 'chmod +x \"$spell\"'" >&2
-    return 1
-  fi
+  [ -x "$ROOT_DIR/spells/install/mud/mud" ]
 }
 
 run_test_case "install/mud/mud is executable" spell_is_executable
