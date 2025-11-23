@@ -100,11 +100,23 @@ helper_usable() {
   return 0
 }
 
+attr_shim=0
+if ! command -v attr >/dev/null 2>&1 && helper_usable xattr; then
+  attr_shim=1
+fi
+
 read_value() {
   key=$1
   file=$2
 
-  if helper_usable attr; then
+  if helper_usable attr || [ "$attr_shim" -eq 1 ]; then
+    if [ "$attr_shim" -eq 1 ]; then
+      if output=$(xattr -p "$key" "$file" 2>/dev/null); then
+        printf '%s' "$output"
+        return 0
+      fi
+    fi
+
     if output=$(attr -q -g "$key" "$file" 2>/dev/null); then
       printf '%s' "$output"
       return 0
@@ -134,7 +146,16 @@ read_value() {
 list_keys() {
   file=$1
 
-  if helper_usable attr; then
+  if helper_usable attr || [ "$attr_shim" -eq 1 ]; then
+    if [ "$attr_shim" -eq 1 ]; then
+      if keys=$(xattr "$file" 2>/dev/null); then
+        if [ -n "$keys" ]; then
+          printf '%s\n' "$keys"
+          return 0
+        fi
+      fi
+    fi
+
     if keys=$(attr -l "$file" 2>/dev/null); then
       parsed=$(printf '%s\n' "$keys" | awk '
         match($0,/Attribute "([^"]+)"/,m){print m[1]; next}

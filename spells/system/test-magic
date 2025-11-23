@@ -7,6 +7,16 @@
 
 set -eu
 
+# Seed a baseline PATH before any helper filtering so reruns and grouped outputs
+# still have access to core utilities (mkdir, cat, rm) on macOS CI where the
+# inherited PATH may be empty.
+baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+case ":${PATH-}:" in
+  *":/usr/bin:"*) ;; # already present
+  *) PATH="$baseline_path:${PATH-}" ;;
+esac
+export PATH
+
 cmd_name=$(basename "$0")
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 root_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd -P)
