@@ -19,27 +19,52 @@ case "${1-}" in
         ;;
 esac
 
-if [ ! -f "$1" ]; then
-	echo "That file does not exist."
-	exit 1
+set -eu
+
+if [ "$#" -ne 1 ]; then
+        printf '%s\n' "That file does not exist."
+        exit 1
 fi
 
-# Check if the `pbcopy` command is available (only on macOS). If it is, use it to copy the contents of the file to the clipboard.
-if command -v pbcopy >/dev/null 2>&1; then
-    pbcopy < "$1"
+file=$1
 
-# If `pbcopy` is not available, check if the `xsel` command is available (only on some Unix-based systems). If it is, use it to copy the contents of the file to the clipboard.
-elif command -v xsel >/dev/null 2>&1; then
-    xsel --clipboard --input < "$1"
-
-# If neither `pbcopy` nor `xsel` is available, check if the `xclip` command is available (only on some Unix-based systems). If it is, use it to copy the contents of the file to the clipboard.
-elif command -v xclip >/dev/null 2>&1; then
-    xclip -selection clipboard < "$1"
-
-# If none of the above commands are available, print an error message.
-else
-    echo "Your spell fizzles. No clipboard utilities are available on this system. Please install xsel, xclip, or pbcopy (for mac)" >&2
-    exit 1
+if [ ! -f "$file" ]; then
+        printf '%s\n' "That file does not exist."
+        exit 1
 fi
 
-echo "Copied $1 to your clipboard."
+helper_usable() {
+        helper=$1
+        if ! command -v "$helper" >/dev/null 2>&1; then
+                return 1
+        fi
+
+        if [ "${WIZARDRY_TEST_HELPERS_ONLY-0}" -eq 1 ]; then
+                helper_path=$(command -v "$helper")
+                case "$helper_path" in
+                        /usr/*|/bin/*|/sbin/*|/usr/local/*)
+                                return 1 ;;
+                esac
+        fi
+
+        return 0
+}
+
+copied=0
+if helper_usable pbcopy; then
+        pbcopy <"$file"
+        copied=1
+elif helper_usable xsel; then
+        xsel --clipboard --input <"$file"
+        copied=1
+elif helper_usable xclip; then
+        xclip -selection clipboard <"$file"
+        copied=1
+fi
+
+if [ "$copied" -ne 1 ]; then
+        printf '%s\n' "Your spell fizzles. No clipboard utilities are available on this system. Please install xsel, xclip, or pbcopy (for mac)" >&2
+        exit 1
+fi
+
+printf 'Copied %s to your clipboard.\n' "$file"

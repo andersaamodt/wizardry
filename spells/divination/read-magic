@@ -34,7 +34,10 @@ file_exists() {
 }
 
 parse_attr_output() {
-  printf '%s' "$1" | sed 's/.*has a value:[[:space:]]*//'
+  printf '%s' "$1" | sed -E '
+    s/.*has a value:[[:space:]]*//
+    s/.*has a [0-9]+ byte value for[[:space:]]*//
+  '
 }
 
 helper_usable() {
