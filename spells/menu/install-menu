@@ -3,6 +3,8 @@
 # Present a menu of spells that can install supporting software.
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+spells_dir=$(CDPATH= cd -- "$script_dir/.." && pwd)
+install_dir=${INSTALL_MENU_ROOT:-$spells_dir/install}
 
 if [ -n "${REQUIRE_COMMAND-}" ]; then
     require_cmd=$REQUIRE_COMMAND
@@ -50,10 +52,13 @@ list_entries() {
         return
     fi
 
-    # Otherwise list each subdirectory as a potential install target.
-    for dir in "$script_dir"/*; do
-        [ -d "$dir" ] || continue
-        printf '%s\n' "$(basename "$dir")"
+    if [ ! -d "$install_dir" ]; then
+        return
+    fi
+
+    for entry in "$install_dir"/*; do
+        [ -e "$entry" ] || continue
+        printf '%s\n' "$(basename "$entry")"
     done
 }
 
@@ -79,6 +84,10 @@ while :; do
 
         if command -v "${name}-menu" >/dev/null 2>&1; then
             cmd="launch_submenu ${name}-menu"
+        elif [ -x "$install_dir/$name" ]; then
+            cmd="$install_dir/$name"
+        elif [ -x "$install_dir/$name/$name" ]; then
+            cmd="$install_dir/$name/$name"
         else
             cmd='printf "This entry is not ready yet.\n"'
         fi

@@ -12,7 +12,7 @@ fi
 # portable across login shells that set CDPATH to multiple directories.
 unset CDPATH
 
-REQUIRED_REL_DIRS="spells spells/cantrips spells/menu"
+REQUIRED_REL_DIRS="spells"
 
 # Determine the default target directory shown in the install prompt. The
 # installer accepts three environment variables to steer non-interactive
@@ -209,10 +209,11 @@ fi
 
 # Now that the wizardry tree is available, point at the helper spells we rely
 # on to update PATH entries and ask for confirmation.
-PATH_WIZARD="$ABS_DIR/spells/path-wizard"
-DETECT_RC_FILE="$ABS_DIR/spells/detect-rc-file"
-MEMORIZE="$ABS_DIR/spells/memorize"
+PATH_WIZARD="$ABS_DIR/spells/translocation/path-wizard"
+DETECT_RC_FILE="$ABS_DIR/spells/divination/detect-rc-file"
+MEMORIZE="$ABS_DIR/spells/spellcraft/memorize"
 ASK_YN="$ABS_DIR/spells/cantrips/ask_yn"
+PATH_WIZARD_FLAGS=${PATH_WIZARD_FLAGS:---recursive}
 
 if [ ! -x "$PATH_WIZARD" ]; then
         printf '%s\n' "Error: Expected helper '$PATH_WIZARD' is missing or not executable." >&2
@@ -241,7 +242,7 @@ do
                 continue
         fi
 
-        if "$PATH_WIZARD" status "$dir"; then
+        if "$PATH_WIZARD" $PATH_WIZARD_FLAGS status "$dir"; then
                 continue
         fi
         set -- "$@" "$dir"
@@ -302,7 +303,7 @@ path_updates_made=0
 for dir
 do
         path_log=$(mktemp "${TMPDIR:-/tmp}/wizardry-path.XXXXXX") || exit 1
-        if "$PATH_WIZARD" add "$dir" >"$path_log" 2>&1; then
+        if "$PATH_WIZARD" $PATH_WIZARD_FLAGS add "$dir" >"$path_log" 2>&1; then
                 path_updates_made=1
         else
                 cat "$path_log" >&2
