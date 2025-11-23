@@ -21,10 +21,9 @@ SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
 SPELLS_DIR=${SCRIPT_DIR%/*}
 
 usage() {
-        cat <<USAGE
-Usage:
-  $SCRIPT_NAME --rc-file FILE --spell NAME {add|remove|status}
-  $SCRIPT_NAME [OPTIONS] [PATH ...]
+        cat <<USAGE >&2
+Usage: $SCRIPT_NAME --rc-file FILE --spell NAME {add|remove|status}
+       $SCRIPT_NAME [OPTIONS] [PATH ...]
 
 RC mode:
   add|remove|status  Manage rc snippets tagged with the given spell name.
@@ -39,6 +38,12 @@ Install mode:
 Provide no rc options to use install mode.
 USAGE
 }
+
+# Reject empty invocations early so CI and CLI runs don't block on prompts.
+if [ "$#" -eq 0 ]; then
+        usage >&2
+        exit 1
+fi
 
 for arg in "$@"; do
         case $arg in
