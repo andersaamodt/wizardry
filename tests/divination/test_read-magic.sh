@@ -94,7 +94,8 @@ test_reads_specific_attribute_via_attr() {
   cat >"$stub_dir/attr" <<'STUB'
 #!/bin/sh
 if [ "$1" = "-g" ] && [ "$2" = "user.charm" ]; then
-  printf 'Attribute "user.charm" had a 7 byte value for /tmp/example: sparkle\n'
+  printf 'Attribute "user.charm" had a 7 byte value for /tmp/example:\n'
+  printf 'sparkle\n'
   exit 0
 fi
 exit 1
