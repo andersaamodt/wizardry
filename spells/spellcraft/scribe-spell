@@ -568,14 +568,13 @@ while [ $# -gt 0 ]; do
 done
 
 if [ $ALL_MODE -eq 0 ] && [ $# -eq 0 ]; then
-        if [ -t 0 ] && [ -t 1 ] && [ -t 2 ]; then
-                prompt_for_all
-                if [ -n "$PROMPTED_PATHS" ]; then
-                        set -- "$PROMPTED_PATHS"
-                fi
-        else
+        if [ "${MEMORIZE_PROMPT_ALLOWED-0}" -ne 1 ]; then
                 usage
                 exit 1
+        fi
+        prompt_for_all
+        if [ -n "$PROMPTED_PATHS" ]; then
+                set -- "$PROMPTED_PATHS"
         fi
 fi
 
