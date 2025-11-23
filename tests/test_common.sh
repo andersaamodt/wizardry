@@ -17,7 +17,15 @@ find_repo_root() {
 }
 
 ROOT_DIR=$(find_repo_root)
-initial_path=${PATH:-/bin:/usr/bin:/usr/sbin:/sbin}
+safe_base_path="/bin:/usr/bin:/usr/sbin:/sbin"
+initial_path=$safe_base_path
+if [ -n "${PATH-}" ]; then
+  case "$PATH" in
+    "") : ;;
+    *) initial_path="$safe_base_path:$PATH" ;;
+  esac
+fi
+
 PATH="$ROOT_DIR/spells"
 for dir in "$ROOT_DIR"/spells/*; do
   [ -d "$dir" ] || continue
