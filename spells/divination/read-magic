@@ -34,10 +34,7 @@ file_exists() {
 }
 
 parse_attr_output() {
-  printf '%s' "$1" | sed -E '
-    s/.*has a value:[[:space:]]*//
-    s/.*has a [0-9]+ byte value for[[:space:]]*//
-  '
+  printf '%s' "$1" | awk 'END{sub(/.*:[[:space:]]*/,"",$0); print}'
 }
 
 helper_usable() {

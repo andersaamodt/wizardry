@@ -49,7 +49,7 @@ case $input_path in
 *)
   # cd to the parent to honour any relative components (including ..) and use
   # pwd -P to strip symlinks for consistency across platforms.
-  primary_dir=$(cd "$(dirname "$input_path")" 2>/dev/null && pwd -P)
+  primary_dir=$(cd "$(dirname "$input_path")" 2>/dev/null && pwd)
   primary="$primary_dir/$(basename "$input_path")"
 
   resolved=""
@@ -59,7 +59,7 @@ case $input_path in
 
   fallback="$primary"
   if [ -z "$resolved" ] && [ -n "$script_dir" ]; then
-    if alt_dir=$(cd "$script_dir/$(dirname "$input_path")" 2>/dev/null && pwd -P); then
+    if alt_dir=$(cd "$script_dir/$(dirname "$input_path")" 2>/dev/null && pwd); then
       alt="$alt_dir/$(basename "$input_path")"
       fallback="$alt"
       if [ -f "$alt" ]; then
