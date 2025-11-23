@@ -91,6 +91,6 @@ forget)
                 printf '%s\n' "$SCRIPT_NAME: scribe-spell helper is unavailable; cannot memorize spells." >&2
                 exit 1
         fi
-        exec "$SCRIBER" "$@"
+        MEMORIZE_PROMPT_ALLOWED=1 exec "$SCRIBER" "$@"
         ;;
 esac

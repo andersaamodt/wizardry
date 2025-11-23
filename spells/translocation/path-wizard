@@ -22,10 +22,23 @@ fi
 SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
 DETECT_RC_FILE_DEFAULT="$SCRIPT_DIR/../divination/detect-rc-file"
 SCRIBE_SPELL_DEFAULT="$SCRIPT_DIR/../spellcraft/scribe-spell"
-DETECT_RC_FILE=${DETECT_RC_FILE:-$DETECT_RC_FILE_DEFAULT}
+
+detect_override=0
+if [ -n "${DETECT_RC_FILE-}" ]; then
+        detect_override=1
+        DETECT_RC_FILE=$DETECT_RC_FILE
+else
+        DETECT_RC_FILE=$DETECT_RC_FILE_DEFAULT
+fi
+
 SCRIBE_SPELL=${SCRIBE_SPELL:-$SCRIBE_SPELL_DEFAULT}
 
 if [ ! -x "$DETECT_RC_FILE" ]; then
+        if [ "$detect_override" -eq 1 ]; then
+                printf '%s\n' "path-wizard: required helper '$DETECT_RC_FILE' is missing or not executable." >&2
+                exit 1
+        fi
+
         if command -v detect-rc-file >/dev/null 2>&1; then
                 DETECT_RC_FILE=$(command -v detect-rc-file)
         else

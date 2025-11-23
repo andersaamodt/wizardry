@@ -60,7 +60,7 @@ exit 1
 EOF
   chmod +x "$temp_dir/detect-distro"
 
-  run_cmd "$temp_dir/update-all"
+  run_cmd env PATH="$temp_dir:$PATH" "$temp_dir/update-all"
   assert_failure && assert_error_contains "Unable to detect operating system"
 
   run_cmd env WIZARDRY_UPDATE_ALL_ASSUME_YES=1 WIZARDRY_UPDATE_ALL_DISTRO=plan9 "$(pwd)/spells/system/update-all"

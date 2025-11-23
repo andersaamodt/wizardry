@@ -57,6 +57,15 @@ else
   RESET=''
 fi
 
+require_command() {
+  cmd=$1
+
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    printf '%s\n' "Required command not found: $cmd" >&2
+    exit 1
+  fi
+}
+
 print_step() {
   printf '%s\n' "$1"
 }
@@ -164,7 +173,7 @@ confirm_updates() {
     return 1
   fi
   printf '%s\n' 'Proceed with system updates?'
-  if ASK_CANTRIP_INPUT=stdin ask_yn 'Proceed with system updates?' yes >/dev/null; then
+  if printf '\n' | ASK_CANTRIP_INPUT=stdin ask_yn 'Proceed with system updates?' yes >/dev/null; then
     return 0
   fi
   return 1
@@ -201,6 +210,8 @@ fi
 
 case $distro in
   debian)
+    require_command sudo
+    require_command apt-get
     print_step '• Refreshing apt package lists'
     run_quiet sudo apt-get update
     print_step '• Installing upgrades'
@@ -209,6 +220,9 @@ case $distro in
     run_with_progress sudo apt-get -o Dpkg::Progress-Fancy=1 -o Dpkg::Use-Pty=0 -y autoremove
     ;;
   arch)
+    require_command sudo
+    require_command pacman
+    require_command pamac
     print_step '• Synchronising pacman packages'
     run_quiet sudo pacman -Syu --noconfirm
     print_step '• Refreshing Pamac-managed packages'
@@ -217,6 +231,10 @@ case $distro in
     run_quiet pamac build --no-confirm
     ;;
   nixos)
+    require_command sudo
+    require_command nix-channel
+    require_command nixos-rebuild
+    require_command nix-env
     print_step '• Refreshing system channels'
     run_quiet sudo nix-channel --update
     print_step '• Rebuilding system configuration'
