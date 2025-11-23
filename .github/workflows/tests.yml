@@ -1,4 +1,4 @@
-name: Tests
+name: Unit tests
 
 on:
   push:
@@ -10,13 +10,15 @@ on:
 
 jobs:
   ubuntu:
-    name: Tests (Ubuntu)
+    name: Ubuntu unit tests
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: ubuntu
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Ensure installer spells are executable
+        run: chmod +x spells/install/mud/mud spells/install/tor/setup-tor
       - name: Install bubblewrap dependency
         run: sudo apt-get update && sudo apt-get install -y bubblewrap uidmap
       - name: Configure bubblewrap user namespaces
@@ -43,18 +45,20 @@ jobs:
         run: ./spells/system/test-magic --verbose
 
   macos:
-    name: Tests (macOS)
+    name: macOS unit tests
     runs-on: macos-latest
     env:
       WIZARDRY_OS_LABEL: mac
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Ensure installer spells are executable
+        run: chmod +x spells/install/mud/mud spells/install/tor/setup-tor
       - name: Run unit tests
         run: ./spells/system/test-magic --verbose
 
   debian:
-    name: Tests (Debian)
+    name: Debian unit tests
     runs-on: ubuntu-latest
     container: debian:stable-slim
     env:
@@ -64,6 +68,8 @@ jobs:
         run: apt-get update && apt-get install -y git
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Ensure installer spells are executable
+        run: chmod +x spells/install/mud/mud spells/install/tor/setup-tor
       - name: Install bubblewrap dependency
         run: apt-get update && apt-get install -y bubblewrap uidmap sudo
       - name: Configure bubblewrap user namespaces
@@ -88,7 +94,7 @@ jobs:
         run: ./spells/system/test-magic --verbose
 
   arch:
-    name: Tests (Arch Linux)
+    name: Arch Linux unit tests
     runs-on: ubuntu-latest
     container: archlinux:latest
     env:
@@ -98,6 +104,8 @@ jobs:
         run: pacman -Sy --noconfirm git
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Ensure installer spells are executable
+        run: chmod +x spells/install/mud/mud spells/install/tor/setup-tor
       - name: Install test dependencies
         run: pacman -Syu --noconfirm bubblewrap sudo shadow
       - name: Configure bubblewrap user namespaces
@@ -122,13 +130,15 @@ jobs:
         run: ./spells/system/test-magic --verbose
 
   nix:
-    name: Tests (Nix)
+    name: Nix unit tests
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: nixos
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Ensure installer spells are executable
+        run: chmod +x spells/install/mud/mud spells/install/tor/setup-tor
       - name: Install Nix
         uses: cachix/install-nix-action@v27
       - name: Configure nixpkgs channel

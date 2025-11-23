@@ -10,7 +10,8 @@ if [ -d "$default_dir" ]; then
   bitcoin_dir="$default_dir"
 else
   # Prompt the user to enter the path to the Bitcoin configuration directory
-  read -p "Enter the path to the Bitcoin configuration directory: " bitcoin_dir
+  printf '%s' "Enter the path to the Bitcoin configuration directory: "
+  IFS= read -r bitcoin_dir
 fi
 
 # Check if the provided directory exists
