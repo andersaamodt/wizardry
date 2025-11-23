@@ -173,7 +173,7 @@ confirm_updates() {
     return 1
   fi
   printf '%s\n' 'Proceed with system updates?'
-  if ASK_CANTRIP_INPUT=stdin ask_yn 'Proceed with system updates?' yes >/dev/null; then
+  if printf '\n' | ASK_CANTRIP_INPUT=stdin ask_yn 'Proceed with system updates?' yes >/dev/null; then
     return 0
   fi
   return 1
