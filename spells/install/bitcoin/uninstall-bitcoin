@@ -2,86 +2,91 @@
 
 # Function to check if a package is installed in Debian-based distributions
 is_deb_package_installed() {
-    dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -c "ok installed"
+  dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -c "ok installed"
 }
 
 # Function to check if a package is installed in Redhat-based distributions
 is_rpm_package_installed() {
-    rpm -q "$1" &> /dev/null
+  rpm -q "$1" >/dev/null 2>&1
 }
 
 # Function to check if a package is installed in Arch-based distributions
 is_arch_package_installed() {
-    pacman -Q "$1" &> /dev/null
+  pacman -Q "$1" >/dev/null 2>&1
 }
 
 # Uninstall Bitcoin from source
 uninstall_bitcoin_from_source() {
-    echo "Attempting to uninstall Bitcoin Core installed from source..."
-    make_directory=$(dirname "$(find / -name "Makefile.in" 2>/dev/null | grep "bitcoin")")
-    if [ -n "$make_directory" ]; then
-        cd "$make_directory" && sudo make uninstall > /dev/null 2>&1 && return 0
-    fi
-    return 1
+  echo "Attempting to uninstall Bitcoin Core installed from source..."
+  makefile_path=$(find / -name "Makefile.in" 2>/dev/null | grep "bitcoin" | head -n 1)
+  if [ -n "$makefile_path" ]; then
+    make_directory=$(dirname "$makefile_path")
+    (cd "$make_directory" && sudo make uninstall >/dev/null 2>&1) && return 0
+  fi
+  return 1
 }
 
 # Remove Bitcoin binaries explicitly
 remove_bitcoin_binaries() {
-    echo "Could not find Makefile. Uninstalling Bitcoin by removing binaries explicitly..."
-    bitcoin_bins="bitcoind bitcoin-tx bitcoin-wallet test_bitcoin bitcoin-cli bitcoin-qt bitcoin-util"
-    for bin in $bitcoin_bins; do
-        bin_path=$(which $bin)
-        [ -n "$bin_path" ] && sudo rm -f "$bin_path"
-    done
+  echo "Could not find Makefile. Uninstalling Bitcoin by removing binaries explicitly..."
+  bitcoin_bins="bitcoind bitcoin-tx bitcoin-wallet test_bitcoin bitcoin-cli bitcoin-qt bitcoin-util"
+  for bin in $bitcoin_bins; do
+    bin_path=$(command -v "$bin" 2>/dev/null || true)
+    [ -n "$bin_path" ] && sudo rm -f "$bin_path"
+  done
 }
 
 # Uninstall Bitcoin package
 uninstall_bitcoin_package() {
-    echo "Attempting to uninstall Bitcoin Core package..."
+  echo "Attempting to uninstall Bitcoin Core package..."
 
-    # Detect the operating system's package manager
-    if command -v apt &> /dev/null; then
-        if is_deb_package_installed bitcoin; then
-            sudo apt remove -y bitcoin && return 0
-        fi
-    elif command -v dnf &> /dev/null; then
-        if is_rpm_package_installed bitcoin; then
-            sudo dnf remove -y bitcoin && return 0
-        fi
-    elif command -v pacman &> /dev/null; then
-        if is_arch_package_installed bitcoin; then
-            sudo pacman -Rns bitcoin --noconfirm && return 0
-        fi
-    elif command -v brew &> /dev/null; then
-        if brew list --cask bitcoin-core; then
-            brew uninstall --cask bitcoin-core && return 0
-        fi
-    else
-        echo "Unsupported package manager"
-        return 1
+  # Detect the operating system's package manager
+  if command -v apt >/dev/null 2>&1; then
+    if is_deb_package_installed bitcoin; then
+      sudo apt remove -y bitcoin && return 0
     fi
+  elif command -v dnf >/dev/null 2>&1; then
+    if is_rpm_package_installed bitcoin; then
+      sudo dnf remove -y bitcoin && return 0
+    fi
+  elif command -v pacman >/dev/null 2>&1; then
+    if is_arch_package_installed bitcoin; then
+      sudo pacman -Rns bitcoin --noconfirm && return 0
+    fi
+  elif command -v brew >/dev/null 2>&1; then
+    if brew list --cask bitcoin-core >/dev/null 2>&1; then
+      brew uninstall --cask bitcoin-core && return 0
+    fi
+  else
+    echo "Unsupported package manager"
     return 1
+  fi
+  return 1
 }
 
 # Uninstall Bitcoin
 uninstall_bitcoin() {
-    read -p "This will uninstall Bitcoin Core and might delete your wallet data. Are you sure? (Y/n) " yn
+  while true; do
+    printf '%s' "This will uninstall Bitcoin Core and might delete your wallet data. Are you sure? (Y/n) "
+    IFS= read -r yn
     case $yn in
-        [Yy]* )
-            if ! uninstall_bitcoin_package; then
-                if ! uninstall_bitcoin_from_source; then
-                    remove_bitcoin_binaries
-                fi
-            fi
-            ;;
-        [Nn]* )
-            echo "Uninstallation cancelled"
-            ;;
-        * )
-            echo "Invalid input. Please answer with Y (yes) or N (no)"
-            uninstall_bitcoin
-            ;;
+      ''|[Yy]*)
+        if ! uninstall_bitcoin_package; then
+          if ! uninstall_bitcoin_from_source; then
+            remove_bitcoin_binaries
+          fi
+        fi
+        break
+        ;;
+      [Nn]*)
+        echo "Uninstallation cancelled"
+        break
+        ;;
+      *)
+        echo "Invalid input. Please answer with Y (yes) or N (no)"
+        ;;
     esac
+  done
 }
 
 # Start the uninstallation

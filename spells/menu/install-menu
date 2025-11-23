@@ -76,17 +76,30 @@ while :; do
 
     set --
     for name in $entries; do
+        status_cmd=""
         if command -v "${name}-status" >/dev/null 2>&1; then
-            status=$("${name}-status")
+            status_cmd="${name}-status"
+        elif [ -x "$install_dir/$name-status" ] && [ ! -d "$install_dir/$name-status" ]; then
+            status_cmd="$install_dir/$name-status"
+        elif [ -x "$install_dir/$name/$name-status" ] && [ ! -d "$install_dir/$name/$name-status" ]; then
+            status_cmd="$install_dir/$name/$name-status"
+        fi
+
+        if [ -n "$status_cmd" ]; then
+            status=$($status_cmd)
         else
             status='coming soon'
         fi
 
         if command -v "${name}-menu" >/dev/null 2>&1; then
             cmd="launch_submenu ${name}-menu"
-        elif [ -x "$install_dir/$name" ]; then
+        elif [ -x "$install_dir/$name-menu" ] && [ ! -d "$install_dir/$name-menu" ]; then
+            cmd="launch_submenu $install_dir/$name-menu"
+        elif [ -x "$install_dir/$name/$name-menu" ] && [ ! -d "$install_dir/$name/$name-menu" ]; then
+            cmd="launch_submenu $install_dir/$name/$name-menu"
+        elif [ -x "$install_dir/$name" ] && [ -f "$install_dir/$name" ]; then
             cmd="$install_dir/$name"
-        elif [ -x "$install_dir/$name/$name" ]; then
+        elif [ -x "$install_dir/$name/$name" ] && [ -f "$install_dir/$name/$name" ]; then
             cmd="$install_dir/$name/$name"
         else
             cmd='printf "This entry is not ready yet.\n"'

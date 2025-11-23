@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+
+# Report readiness of core prerequisites for wizardry.
+
+if command -v bwrap >/dev/null 2>&1; then
+  echo "ready"
+else
+  echo "missing bubblewrap"
+fi

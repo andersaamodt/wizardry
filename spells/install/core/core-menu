@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
-# This spell displays the ao-mud install menu.
+# Install and manage the core prerequisites for wizardry.
 
 colors_bin=$(command -v colors 2>/dev/null) || {
   echo "missing dependency: colors" >&2
@@ -20,29 +20,26 @@ if [ -n "$loop_limit" ] && ! printf '%s' "$loop_limit" | grep -Eq '^[0-9]+$'; th
   exit 1
 fi
 
-SCRIPT_DIR=$( cd ${0%/*} && pwd -P )
-
-display_menu() {
-tor="Set up tor hidden service%$SCRIPT_DIR/../install/tor/setup-tor"
-  exit="Exit%kill -2 $$" # Commands are run with 'eval' by the menu script, so we can't simply say 'exit'. The keyword $$ gets this scripts PID and the -2 code is SIGINT aka Ctrl-C
-
-  if ! "$menu_bin" "MUD main menu:" "$tor" "$exit"; then
-    status=$?
-    echo "menu failed with status $status" >&2
-    return "$status"
-  fi
-}
-
-# Catch Ctrl-C and exit
 handle_ctrl_c() {
   trap 'echo exiting; exit' INT
 }
 
 handle_ctrl_c
 
+title="${BOLD}${CYAN}Core prerequisites"
+exit_entry="Exit%kill -2 $$"
+
 while true; do
-  if ! display_menu; then
-    exit $?
+  if command -v bwrap >/dev/null 2>&1; then
+    install_bwrap_label="Reinstall bubblewrap%INSTALL_BWRAP_FORCE_INSTALL=1 install-bwrap"
+  else
+    install_bwrap_label="Install bubblewrap%install-bwrap"
+  fi
+
+  if ! "$menu_bin" "$title" "$install_bwrap_label" "$exit_entry"; then
+    status=$?
+    echo "menu failed with status $status" >&2
+    exit "$status"
   fi
 
   if [ -n "$loop_limit" ]; then
@@ -51,4 +48,5 @@ while true; do
     fi
     loop_limit=$((loop_limit - 1))
   fi
+
 done
