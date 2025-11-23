@@ -344,3 +344,17 @@ provide_basic_tools() {
   done
 }
 
+link_tools() {
+  dir=$1
+  shift
+  for tool in "$@"; do
+    if [ -e "$dir/$tool" ]; then
+      continue
+    fi
+    tool_path=$(command -v "$tool" 2>/dev/null || true)
+    if [ -n "$tool_path" ]; then
+      ln -s "$tool_path" "$dir/$tool"
+    fi
+  done
+}
+
