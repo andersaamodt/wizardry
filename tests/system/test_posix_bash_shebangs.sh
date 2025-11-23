@@ -6,6 +6,17 @@
 
 set -eu
 
+cleanup_dirs=""
+
+cleanup() {
+  for dir in $cleanup_dirs; do
+    rm -rf "$ROOT_DIR/$dir"
+  done
+  rm -rf "$ROOT_DIR"/tests/tmp.posix.*
+}
+
+trap cleanup EXIT INT TERM
+
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/test_common.sh" ] && [ "$test_root" != "/" ]; do
   test_root=$(dirname "$test_root")
@@ -17,6 +28,7 @@ make_repo_tempdir() {
   rel_dir="tests/tmp.posix.$$.${RANDOM:-0}"
   abs_dir="$ROOT_DIR/$rel_dir"
   mkdir -p "$abs_dir"
+  cleanup_dirs="${cleanup_dirs:+$cleanup_dirs }$rel_dir"
   printf '%s\n' "$rel_dir"
 }
 
@@ -88,10 +100,15 @@ SCRIPT
   run_verify_posix "$workrel/nameless"
   assert_failure || return 1
   echo "$OUTPUT" | grep "^FAIL $workrel/nameless: lacks a shebang; expected #!/bin/sh$" >/dev/null 2>&1 || { TEST_FAILURE_REASON="missing shebang message"; return 1; }
-  summary=$(printf '%s\n' "$OUTPUT" | tail -n 1)
+  summary=$(printf '%s\n' "$OUTPUT" | tail -n 2 | head -n 1)
   case $summary in
     "1 of 1 scripts failed POSIX compliance.") : ;;
     *) TEST_FAILURE_REASON="expected failure summary"; return 1 ;;
+  esac
+  failing=$(printf '%s\n' "$OUTPUT" | tail -n 1)
+  case $failing in
+    "Failing spells: $workrel/nameless") : ;;
+    *) TEST_FAILURE_REASON="expected failing spells list"; return 1 ;;
   esac
   [ -z "${ERROR}" ] || { TEST_FAILURE_REASON="expected no stderr"; return 1; }
 }
@@ -178,10 +195,15 @@ reports_missing_targets() {
   run_verify_posix "tests/tmp.posix.missing"
   assert_failure || return 1
   echo "$OUTPUT" | grep "^FAIL tests/tmp.posix.missing: missing file$" >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected missing file message"; return 1; }
-  summary=$(printf '%s\n' "$OUTPUT" | tail -n 1)
+  summary=$(printf '%s\n' "$OUTPUT" | tail -n 2 | head -n 1)
   case $summary in
     "1 of 1 scripts failed POSIX compliance.") : ;;
     *) TEST_FAILURE_REASON="expected summary for missing file"; return 1 ;;
+  esac
+  failing=$(printf '%s\n' "$OUTPUT" | tail -n 1)
+  case $failing in
+    "Failing spells: tests/tmp.posix.missing") : ;;
+    *) TEST_FAILURE_REASON="expected failing spells list"; return 1 ;;
   esac
   [ -z "${ERROR}" ] || { TEST_FAILURE_REASON="expected no stderr"; return 1; }
 }
@@ -199,10 +221,15 @@ SCRIPT
   assert_failure || return 1
   echo "$OUTPUT" | grep "^FAIL $workrel/bashism$" >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected bashism message"; return 1; }
   echo "$OUTPUT" | grep "^  bashism detected$" >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected indented bashism output"; return 1; }
-  summary=$(printf '%s\n' "$OUTPUT" | tail -n 1)
+  summary=$(printf '%s\n' "$OUTPUT" | tail -n 2 | head -n 1)
   case $summary in
     "1 of 1 scripts failed POSIX compliance.") : ;;
     *) TEST_FAILURE_REASON="expected bashism summary"; return 1 ;;
+  esac
+  failing=$(printf '%s\n' "$OUTPUT" | tail -n 1)
+  case $failing in
+    "Failing spells: $workrel/bashism") : ;;
+    *) TEST_FAILURE_REASON="expected failing spells list"; return 1 ;;
   esac
   [ -z "${ERROR}" ] || { TEST_FAILURE_REASON="expected no stderr"; return 1; }
 }
@@ -216,5 +243,7 @@ run_test_case "verify-posix warns on direct bash path" warns_for_direct_bash_pat
 run_test_case "verify-posix accepts spaced sh shebang" accepts_space_before_sh
 run_test_case "verify-posix reports missing targets" reports_missing_targets
 run_test_case "verify-posix flags bashisms and counts failures" flags_bashisms_and_counts_failures
+
+cleanup
 
 finish_tests
