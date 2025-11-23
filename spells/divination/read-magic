@@ -34,7 +34,7 @@ file_exists() {
 }
 
 parse_attr_output() {
-  printf '%s' "$1" | awk '{ sub(/.*:[[:space:]]*/, ""); value=$0 } END { print value }'
+  printf '%s\n' "$1" | sed 's/.*:[[:space:]]*//' | tail -n 1
 }
 
 helper_usable() {

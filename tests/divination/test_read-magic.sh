@@ -65,10 +65,12 @@ case "$1" in
   -g)
     case "$2" in
       user.alpha)
-        printf 'Attribute "user.alpha" has a value: alpha-value\n'
+        printf 'Attribute "user.alpha" had a 10 byte value for /tmp/example:\n'
+        printf 'alpha-value\n'
         ;;
       user.beta)
-        printf 'Attribute "user.beta" has a value: beta-value\n'
+        printf 'Attribute "user.beta" had a 9 byte value for /tmp/example:\n'
+        printf 'beta-value\n'
         ;;
       *)
         exit 1
