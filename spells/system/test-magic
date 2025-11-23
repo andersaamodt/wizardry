@@ -186,6 +186,7 @@ fail=0
 subtests_passed=0
 subtests_total=0
 failed_scripts=""
+failure_output_file=$(mktemp)
 
 spell_name_for_test() {
   test_path=$1
@@ -263,7 +264,10 @@ while IFS= read -r test_path; do
     cleaned_output=$(printf '%s\n' "$output" | sed '/^FAIL_DETAIL:/d')
     record_subtests "$cleaned_output"
     record_failed_script "$test_path" "$numbers"
-    printf '%s\n' "$cleaned_output" | sed 's/^/  /'
+    {
+      printf '=== %s ===\n' "$test_path"
+      printf '%s\n\n' "$cleaned_output"
+    } >>"$failure_output_file"
   fi
   printf '\n'
 done <<EOF_TESTS
@@ -326,6 +330,23 @@ if [ "$coverage_uncovered" -gt 0 ]; then
 fi
 
 if [ "$status" -ne 0 ] && [ -n "$failed_scripts" ]; then
+  show_failure_output=0
+  if [ "$fail" -le 10 ]; then
+    show_failure_output=1
+  fi
+
+  if [ "$show_failure_output" -eq 1 ] && [ -s "$failure_output_file" ]; then
+    printf 'Failure details (showing %d):\n' "$fail"
+    while IFS= read -r line; do
+      case $line in
+        "=== "*) printf '%s\n' "$line" ;;
+        *) printf '  %s\n' "$line" ;;
+      esac
+    done <"$failure_output_file"
+  elif [ "$fail" -gt 10 ]; then
+    printf 'Failure details suppressed because there are too many failures (%d).\n' "$fail"
+  fi
+
   detect_os_label() {
     if [ -n "${WIZARDRY_OS_LABEL-}" ]; then
       printf '%s\n' "$WIZARDRY_OS_LABEL"
@@ -365,5 +386,7 @@ if [ "$status" -ne 0 ] && [ -n "$failed_scripts" ]; then
   os_label=$(detect_os_label)
   printf 'Failed tests (%s): %s\n' "$os_label" "$failed_scripts"
 fi
+
+rm -f "$failure_output_file"
 
 exit $status
