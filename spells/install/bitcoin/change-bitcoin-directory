@@ -1,0 +1,78 @@
+#!/bin/sh
+
+# This spell alters the location of thy Bitcoin data chamber on your system.
+
+# Check if a command needs to be re-invoked with sudo
+retry_with_sudo() {
+    echo "Permission denied. Invoking the power of the super user..."
+    sudo "$@"
+    if [ $? -ne 0 ]; then
+        echo "Failed to execute with elevated privileges. Make certain thou hast the necessary permissions and try again."
+        exit 1
+    fi
+}
+
+# Check for the bitcoin.conf file
+if [ ! -f "$HOME/.bitcoin/bitcoin.conf" ]; then
+    echo "Unable to locate bitcoin.conf. Canst thou provide its location?"
+    read bitcoin_conf
+    if [ ! -f "$bitcoin_conf" ]; then
+        echo "bitcoin.conf file not found at the provided location. The spell must end here."
+        exit 1
+    fi
+else
+    bitcoin_conf="$HOME/.bitcoin/bitcoin.conf"
+fi
+
+# Get the current Bitcoin directory
+current_directory=$(grep "datadir" "$bitcoin_conf" | cut -d'=' -f2)
+if [ -z "$current_directory" ]; then
+    current_directory="$HOME/.bitcoin"
+else
+    # Confirm that the directory actually exists
+    if [ ! -d "$current_directory" ]; then
+        echo "The Bitcoin data chamber specified in bitcoin.conf doth not exist. Please ensure the correctness of the 'datadir' value in bitcoin.conf."
+        exit 1
+    fi
+    echo "Verified the existence of the Bitcoin data chamber at: $current_directory"
+fi
+
+# Ask for the new directory
+echo "Enter the new haven for thy Bitcoin data:"
+read new_directory
+
+# Create the new directory if it does not exist
+if [ ! -d "$new_directory" ]; then
+    mkdir "$new_directory" || retry_with_sudo mkdir "$new_directory"
+fi
+
+# Ask user what to move
+echo "What wouldst thou like to move to the new Bitcoin data haven?"
+echo "1. The entire Bitcoin data chamber"
+echo "2. Only the blockchain data"
+echo "3. Move naught"
+
+read move_choice
+
+case "$move_choice" in
+    1)
+        echo "Moving the entire Bitcoin data chamber..."
+        mv "$current_directory"/* "$new_directory" || retry_with_sudo mv "$current_directory"/* "$new_directory"
+        ;;
+    2)
+        echo "Moving only the blockchain data..."
+        mv "$current_directory/blocks" "$current_directory/chainstate" "$new_directory" || retry_with_sudo mv "$current_directory/blocks" "$current_directory/chainstate" "$new_directory"
+        ;;
+    3)
+        echo "Moving naught..."
+        ;;
+    *)
+        echo "Invalid choice, the spell ends here without moving anything."
+        exit 1
+        ;;
+esac
+
+# Update the bitcoin.conf file to point to the new directory
+awk -v path="$new_directory" '!/datadir/ {print} /datadir/ {$3 = path; print}' "$bitcoin_conf" | tee "$bitcoin_conf" >/dev/null || { retry_with_sudo awk -v path="$new_directory" '!/datadir/ {print} /datadir/ {$3 = path; print}' "$bitcoin_conf" | sudo tee "$bitcoin_conf" >/dev/null; }
+
+echo "The Bitcoin data chamber now resides in: $new_directory"

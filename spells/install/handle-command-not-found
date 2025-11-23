@@ -1,0 +1,26 @@
+#!/bin/bash
+
+echo "This spell will catch 'command not found' errors and echo an additional message 'parse recursively'"
+
+if grep -q "handle_command_not_found" ~/.bashrc; then
+    echo "Spell already memorized, use 'spellbook' command to forget previous version before memorizing it again."
+else
+    echo "Do you want to memorize the spell?"
+    read -p "(y/n) " answer
+
+    if [ "$answer" == "y" ]; then
+        echo "Memorizing the spell..."
+        {
+            echo 'handle_command_not_found() {'
+            echo '    if [ $? -eq 127 ]; then'
+            echo '        echo "parse recursively"'
+            echo '    fi'
+            echo '}'
+            echo 'trap "handle_command_not_found" ERR'
+        } >> ~/.bashrc
+        echo "Spell memorized!"
+        source ~/.bashrc
+    else
+        echo "Spell not memorized."
+    fi
+fi

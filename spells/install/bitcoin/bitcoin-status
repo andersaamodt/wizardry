@@ -1,0 +1,64 @@
+#!/bin/sh
+
+# Get Bitcoin sync status: 'syncing', 'synced', 'unknown', or 'error'
+
+. colors
+
+# Returns colored text based on status
+color_for_status() {
+  case "$1" in
+    "installed, running, synced")
+      printf "${GREEN}"
+      ;;
+    "not installed")
+      printf "${GRAY}"
+      ;;
+    "installed, not running"|"installed, running, syncing"*|"installed, running, not synced")
+      printf "${YELLOW}"
+      ;;
+    "installed, running, error"|"*")
+      printf "${RED}"
+      ;;
+  esac
+}
+
+get_sync_status() {
+  sync_status=$(bitcoin-cli getblockchaininfo 2>&1 | grep 'initialblockdownload' | awk '{print $2}' | tr -d ',')
+  if [ "$?" -ne "0" ]; then
+    echo "error"
+  elif [ "$sync_status" = "true" ]; then
+    echo "syncing"
+  elif [ "$sync_status" = "false" ]; then
+    echo "synced"
+  else
+    echo "unknown"
+  fi
+}
+
+# Returns colored status message
+get_status() {
+  if is-bitcoin-installed; then
+    if is-bitcoin-running > /dev/null; then
+      running_status="running"
+      sync_status=$(get_sync_status)
+      if [ "$sync_status" = "synced" ]; then
+        install_status="installed, $running_status, synced"
+      elif [ "$sync_status" = "syncing" ]; then
+        progress=$(bitcoin-cli getblockchaininfo | grep 'progress' | awk -F":" '{gsub(/,/, "", $2); printf "%.2f", $2*100}')
+        install_status="installed, $running_status, syncing $progress%%"
+      elif [ "$sync_status" = "unknown" ]; then
+        install_status="installed, $running_status, not synced"
+      elif [ "$sync_status" = "error" ]; then
+        install_status="installed, $running_status, error"
+      fi
+    else
+      install_status="installed, not running"
+    fi
+  else
+    install_status="not installed"
+  fi
+
+  printf "$(color_for_status "$install_status")$install_status${RESET}\n"
+}
+
+get_status

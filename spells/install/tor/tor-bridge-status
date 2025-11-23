@@ -1,0 +1,42 @@
+#!/bin/sh
+
+if [ "$(id -u)" != "0" ]; then
+   echo "This script must be run as root. Use sudo."
+   exit 1
+fi
+
+# Identify torrc file location based on OS
+case "$(uname -s)" in
+   Darwin)
+     torrc_location="/usr/local/etc/tor/torrc"
+     ;;
+   Linux)
+     if [ -f "/etc/tor/torrc" ]; then
+        torrc_location="/etc/tor/torrc"
+     elif [ -f "/usr/local/etc/tor/torrc" ]; then
+        torrc_location="/usr/local/etc/tor/torrc"
+     else
+        echo "Cannot locate torrc file. Exiting."
+        exit 1
+     fi
+     ;;
+   *)
+     echo "Unsupported OS. Exiting."
+     exit 1
+     ;;
+esac
+
+# Check if bridge mode is currently enabled
+bridge_enabled=$(awk '/^BridgeRelay 1/ {print $2}' "$torrc_location")
+
+if [ "$bridge_enabled" = "1" ]; then
+    if [ -t 1 ]; then
+        echo "Bridge mode is enabled."
+    fi
+    exit 0
+else
+    if [ -t 1 ]; then
+        echo "Bridge mode is disabled."
+    fi
+    exit 1
+fi

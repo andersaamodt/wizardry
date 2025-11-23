@@ -1,0 +1,25 @@
+#!/bin/sh
+
+# This script returns the file(s) in the current (or specified) directory that has the given hash.
+# Usage: get-card [HASH] [DIRECTORY]
+
+HASH="${1}"
+DIRECTORY="${2:-.}"  # Default to current directory if no directory is provided
+
+# Iterate over the files in the directory
+for file in "${DIRECTORY}"/*; do
+  # Ignore directories
+  if [ -f "${file}" ]; then
+    # Call read-magic on the file to get its hash
+    file_hash=$(read-magic "${file}" hash)
+
+    # If the hash matches the given hash, print out the full path of the file
+    if [ "${file_hash}" = "${HASH}" ]; then
+      echo "$(realpath "${file}")"
+      exit 0
+    fi
+  fi
+done
+
+echo "No file found for the given hash. Try 'forall hashchant' and then try again."
+exit 1

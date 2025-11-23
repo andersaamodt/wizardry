@@ -1,0 +1,115 @@
+
+
+configure_dhcp() {
+    # Ask for confirmation before proceeding
+    if ! ask_Yn "The spell of Dynamic Host Configuration Protocol will automatically configure your network settings based on the DHCP server. Would you like to proceed?"; then
+        return 1
+    fi
+
+    # Check if DHCP is already in use
+    if ip addr show | grep "dhclient" >/dev/null 2>&1 ; then
+        printf "DHCP is already in use.\n"
+        return 0
+    fi
+
+    # Backup the current network configuration
+    backup_file "/etc/network/interfaces"
+
+    # Configure the system to use DHCP
+    echo "auto lo" > /etc/network/interfaces
+    echo "iface lo inet loopback" >> /etc/network/interfaces
+    echo "auto eth0" >> /etc/network/interfaces
+    echo "iface eth0 inet dhcp" >> /etc/network/interfaces
+    service networking restart
+    printf "DHCP has been configured successfully.\n"
+}
+
+configure_static_ip() {
+    # Ask the user for the IP address, netmask, gateway, and DNS server
+    read -p "Enter the desired IP address: " ip_address
+    read -p "Enter the netmask (in CIDR notation, e.g. 24): " netmask
+    read -p "Enter the gateway IP: " gateway
+    read -p "Enter the DNS server IP: " dns_server
+
+    # Check if the static IP address is already configured
+    if ip addr show | grep -q "$ip_address/$netmask"; then
+        echo "The static IP address $ip_address/$netmask is already configured. Updating it."
+        # Delete the existing configuration
+        sudo ip addr del "$ip_address/$netmask" dev eth0
+    fi
+
+    # Add the new static IP address configuration
+    sudo ip addr add "$ip_address/$netmask" dev eth0
+
+    # Set the gateway
+    sudo ip route add default via "$gateway"
+
+    # Set the DNS server
+    sudo sed -i "s/^nameserver.*/nameserver $dns_server/" /etc/resolv.conf
+
+    echo "Static IP address configuration has been set to $ip_address/$netmask with gateway $gateway and DNS server $dns_server."
+}
+
+configure_dhcp() {
+    # Ask for confirmation before proceeding
+    ask_Yn "The spell of Dynamic Host Configuration Protocol will automatically configure your network settings based on the DHCP server. Would you like to proceed?"
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
+
+    # Check if DHCP is already in use
+    ip addr show | grep "dhclient" &>/dev/null
+    if [ $? -eq 0 ]; then
+        echo -e "${RED}DHCP is already in use.${RESET}"
+        return 0
+    fi
+
+    # Backup the current network configuration
+    backup_file "/etc/network/interfaces"
+
+    # Configure the system to use DHCP
+    echo "auto lo" > /etc/network/interfaces
+    echo "iface lo inet loopback" >> /etc/network/interfaces
+    echo "auto eth0" >> /etc/network/interfaces
+    echo "iface eth0 inet dhcp" >> /etc/network/interfaces
+    service networking restart
+    echo -e "${GREEN}DHCP has been configured successfully.${RESET}"
+}
+
+display_menu() {
+  # Get the dimensions of the terminal window
+  window_width=$(tput cols)
+  window_height=$(tput lines)
+  
+  # Calculate the number of rows that the menu will occupy
+  num_rows=$(( ${#items[@]})) 
+  
+  # Calculate the position of the menu
+  menu_x=$((0))
+  menu_y=$(row)
+
+  # Clear the area of the screen where the menu will be drawn
+  clear_area $menu_x $menu_y $num_rows $window_width
+  
+  # Print the menu title
+  echo -en "\033[$menu_y;$((menu_x + (window_width / 2 - ${#title} / 2)))H$title"
+  
+  # Print the items and commands
+  for i in "${!items[@]}"; do
+    echo -en "\033[$((menu_y + i + 1));$((menu_x + 2))H ${items[$i]}"
+  done
+
+  # Highlight the selected item
+  echo -en "\033[$((menu_y + selected + 1));$((menu_x + 2))H ${CYAN}${items[$selected]}${RESET}"
+  
+  # Move the cursor to the selected item
+  echo -en "\033[$((menu_y + selected + 1));$((menu_x + 2))H"
+}
+
+display_menu() {
+    description="Please choose an option to configure your network settings"
+    options=("Configure static IP" "Configure DHCP" "Reset to DHCP" "Exit")
+    commands=("configure_static_ip" "configure_dhcp" "reset_dhcp" "exit")
+    menu "$description" "${options[@]}" "${commands[@]}"
+}
+

@@ -1,0 +1,97 @@
+#!/bin/sh
+
+# Set Bitcoin version
+BITCOIN_VERSION="25.0"
+
+# Function to get Bitcoin binary based on architecture
+get_bitcoin_binary() {
+    local arch
+    arch=$(uname -m)
+    case "$arch" in
+        "x86_64")
+            echo "bitcoin-$BITCOIN_VERSION-x86_64-linux-gnu.tar.gz"
+            ;;
+        "aarch64")
+            echo "bitcoin-$BITCOIN_VERSION-aarch64-linux-gnu.tar.gz"
+            ;;
+        "armv7l")
+            echo "bitcoin-$BITCOIN_VERSION-arm-linux-gnueabihf.tar.gz"
+            ;;
+        *)
+            echo "Unsupported architecture: $arch"
+            exit 1
+    esac
+}
+
+# Function to install Bitcoin from source
+install_bitcoin_from_source() {
+    tmp_dir="/tmp/bitcoin-install-$(date +%s)"
+    mkdir -p "$tmp_dir"
+    cd "$tmp_dir" || exit 1
+    wget https://bitcoincore.org/bin/bitcoin-core-$BITCOIN_VERSION/bitcoin-$BITCOIN_VERSION.tar.gz 
+    tar -xvf bitcoin-$BITCOIN_VERSION.tar.gz
+    cd bitcoin-$BITCOIN_VERSION || exit 1
+    ./autogen.sh
+    ./configure --disable-wallet
+    make 
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
+    sudo make install
+    cd ../.. || exit 1
+    rm -rf "$tmp_dir"
+    return 0
+}
+
+# Function to install Bitcoin binary
+install_bitcoin_binary() {
+    binary_name=$(get_bitcoin_binary)
+    bitcoin_url="https://bitcoincore.org/bin/bitcoin-core-$BITCOIN_VERSION/$binary_name"
+    tmp_dir="/tmp/bitcoin-install-$(date +%s)"
+    mkdir -p "$tmp_dir"
+    cd "$tmp_dir" || exit 1
+    wget "$bitcoin_url"
+    tar -xzf "$binary_name"
+    sudo install -m 0755 -o root -g root -t /usr/local/bin bitcoin-$BITCOIN_VERSION/bin/*
+    cd - || exit 1
+    rm -rf "$tmp_dir"
+    echo "Bitcoin Core version $BITCOIN_VERSION has been installed successfully."
+}
+
+# Function to install Bitcoin for macOS
+install_bitcoin_macos() {
+    tmp_dir="/tmp/bitcoin-install-$(date +%s)"
+    mkdir -p "$tmp_dir"
+    cd "$tmp_dir" || exit 1
+    wget https://bitcoincore.org/bin/bitcoin-core-$BITCOIN_VERSION/bitcoin-$BITCOIN_VERSION-osx64.tar.gz
+    tar -xzf bitcoin-$BITCOIN_VERSION-osx64.tar.gz
+    sudo mv bitcoin-$BITCOIN_VERSION/bin/* /usr/local/bin/
+    cd - || exit 1
+    rm -rf "$tmp_dir"
+    echo "Bitcoin Core version $BITCOIN_VERSION has been installed successfully on macOS."
+}
+
+# Main function to install Bitcoin
+install_bitcoin() {
+    case "$(uname -s)" in
+        Darwin)
+            install_bitcoin_macos
+            ;;
+        Linux)
+            # If the operating system is Raspbian, we will skip compiling from source and go directly to binary installation.
+            if uname -a | grep -q 'raspberrypi'; then
+                install_bitcoin_binary
+            else
+                if ! install_bitcoin_from_source; then
+                    install_bitcoin_binary
+                fi
+            fi
+            ;;
+        *)
+            echo "Unsupported operating system"
+            exit 1
+    esac
+}
+
+# Run the install Bitcoin function
+install_bitcoin

@@ -1,0 +1,48 @@
+#!/bin/sh
+
+# This script is a magical tome of sorcery, commanding the elusive entity known as Bitcoin.
+
+. colors
+
+# Displays the menu
+display_menu() {
+  title="${BOLD}${CYAN}TOR: $(tor-status)"
+  set_config="Configure Tor%configure-tor"
+  repair_permissions="Repair Permissions%sudo repair-tor-permissions"
+  exit_option="Exit%kill -2 $$" # Commands are run with 'eval' by the menu script, so we can't simply say 'exit'. The keyword $$ gets this scripts PID and the -2 code is SIGINT aka Ctrl-C
+  
+  if is-installed tor > /dev/null; then
+    install_tor_option="Uninstall Tor%uninstall-tor"
+    if sudo tor-bridge-status; then
+    	bridge_option="Disable Bridge Mode%sudo configure-tor-bridge"
+    else
+        bridge_option="Enable Bridge Mode%sudo configure-tor-bridge"
+    fi
+    if is-service-installed tor > /dev/null; then
+    	install_service_option="Uninstall Tor Service%remove-service tor"
+    	service_status_option="View Tor Service Status%sudo systemctl status tor"
+	    if is-service-running tor > /dev/null; then
+	      tor_service_option="Stop Tor Service%sudo systemctl stop tor"
+	      menu "$title" "$set_config" "$repair_permissions" "$bridge_option" "$service_status_option" "$tor_service_option" "$install_service_option" "$install_tor_option" "$exit_option"
+	    else
+	      tor_service_option="Start Tor Service%sudo systemctl start tor"
+	      menu "$title" "$set_config" "$repair_permissions" "$bridge_option" "$service_status_option" "$tor_service_option" "$install_service_option" "$install_tor_option" "$exit_option"
+	    fi
+    else
+    	script_dir=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
+    	install_service_option="Install Tor Service%install-service-template $script_dir/tor.service \"TORPATH=`which tor`\" \"TORRCPATH=/etc/tor/torrc\""
+    	menu "$title" "$set_config" "$repair_permissions" "$bridge_option" "$install_service_option" "$install_tor_option" "$exit_option"
+	fi
+  else
+    install_tor_option="Install Tor%install-tor"
+    menu "$title" "$install_tor_option" "$exit_option"
+  fi
+}
+
+# Catch Ctrl-C and exit
+trap 'echo exiting; exit' INT
+
+# Main execution loop
+while true; do
+  display_menu
+done

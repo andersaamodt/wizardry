@@ -1,0 +1,59 @@
+#!/bin/sh
+
+if [ "$(id -u)" != "0" ]; then
+   echo "This script must be run as root. Use sudo."
+   exit 1
+fi
+
+user_owner="debian-tor"
+group_owner="debian-tor"
+
+case "$(uname -s)" in
+  Linux*)     
+    if [ -f /etc/debian_version ]; then
+        # It's a Debian-based system
+        user_owner="debian-tor"
+        group_owner="debian-tor"
+    elif [ -f /etc/arch-release ]; then
+        # It's an Arch Linux system
+        user_owner="tor"
+        group_owner="tor"
+    fi
+    ;;
+  Darwin*)
+    # It's a macOS system
+    user_owner="_tor"
+    group_owner="_tor"
+    ;;
+esac
+
+# Define a function to set permissions and ownership
+set_permissions() {
+    local path="$1"
+    local user="$2"
+    local group="$3"
+    local permissions="$4"
+
+    if [ ! -d "$path" ]; then
+        echo "Directory $path does not exist. Skipping."
+        return
+    fi
+
+    if [ "$(stat -c %U "$path")" != "$user" ] || [ "$(stat -c %G "$path")" != "$group" ]; then
+        chown -R "$user":"$group" "$path"
+        echo "Changed owner and group of $path to $user and $group."
+    else
+        echo "Owner and group of $path are correct."
+    fi
+
+    if [ "$(stat -c %a "$path")" != "$permissions" ]; then
+        chmod "$permissions" "$path"
+        echo "Changed permissions of $path to $permissions."
+    else
+        echo "Permissions of $path are correct."
+    fi
+}
+
+set_permissions "/etc/tor" "$user_owner" "$group_owner" "700"
+set_permissions "/var/lib/tor" "$user_owner" "$group_owner" "700"
+set_permissions "$HOME/.tor" "$user_owner" "$group_owner" "700"

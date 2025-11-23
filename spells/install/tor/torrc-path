@@ -1,0 +1,41 @@
+#!/bin/sh
+
+# This script outputs the location of the torrc file if it exists,
+# or the standard location for the current OS if it does not
+
+OS=$(uname)
+TORRC_PATHS=""
+
+# Define the standard locations for each OS
+case $OS in
+  "Linux")
+    # Check if the OS is Arch Linux
+    if grep -q "Arch Linux" /etc/os-release; then
+      TORRC_PATHS="/etc/tor/torrc"
+    else
+      TORRC_PATHS="/etc/tor/torrc /usr/local/etc/tor/torrc"
+    fi
+    ;;
+  "Darwin")
+    # macOS
+    TORRC_PATHS="/usr/local/etc/tor/torrc"
+    ;;
+  "FreeBSD"|"NetBSD"|"OpenBSD")
+    TORRC_PATHS="/usr/local/etc/tor/torrc"
+    ;;
+  *)
+    echo "Unsupported operating system: $OS" >&2
+    exit 1
+    ;;
+esac
+
+# Check each path for the existence of the torrc file
+for PATH in $TORRC_PATHS; do
+  if [ -f $PATH ]; then
+    echo $PATH
+    exit 0
+  fi
+done
+
+# If no torrc file is found, output the first standard path for the current OS
+echo $(echo $TORRC_PATHS | cut -d' ' -f1)

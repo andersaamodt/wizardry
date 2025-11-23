@@ -1,0 +1,42 @@
+#!/bin/sh
+
+# Import the colors and ask_Yn functions
+. "./colors"
+. "./ask_Yn"
+
+# Check if the user wants to cast the SSH Standard Barrier spell
+if ! ask_Yn "Do you wish to cast the SSH Standard Barrier spell?"; then
+  exit 0
+fi
+
+# Make a backup of the original SSH configuration file
+cp /etc/ssh/sshd_config /etc/ssh/sshd_config.original
+
+# Disable root login
+sed 's/#PermitRootLogin prohibit-password/PermitRootLogin no/g' /etc/ssh/sshd_config > /etc/ssh/sshd_config.modified
+mv /etc/ssh/sshd_config.modified /etc/ssh/sshd_config
+
+# Disable password authentication
+sed 's/#PasswordAuthentication yes/PasswordAuthentication no/g' /etc/ssh/sshd_config > /etc/ssh/sshd_config.modified
+mv /etc/ssh/sshd_config.modified /etc/ssh/sshd_config
+
+# Enable Public Key Authentication
+sed 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/g' /etc/ssh/sshd_config > /etc/ssh/sshd_config.modified
+mv /etc/ssh/sshd_config.modified /etc/ssh/sshd_config
+
+# Specify allowed users
+echo "AllowUsers $(id -un)" >> /etc/ssh/sshd_config
+
+# Change SSH default port
+sed 's/#Port 22/Port 2222/g' /etc/ssh/sshd_config > /etc/ssh/sshd_config.modified
+mv /etc/ssh/sshd_config.modified /etc/ssh/sshd_config
+
+# Enable X11 forwarding
+echo "X11Forwarding yes" >> /etc/ssh/sshd_config
+
+# Enable TCP keepalives
+echo "TCPKeepAlive yes" >> /etc/ssh/sshd_config
+
+# Enable key-based authentication
+echo "ClientAliveInterval 300" >> /etc/ssh/sshd_config
+echo "ClientAliveCountMax 0" >> /etc/ssh/sshd_config
