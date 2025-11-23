@@ -179,8 +179,8 @@ spell_path_for_test() {
 
 record_subtests() {
   counts=$(printf '%s\n' "$1" | awk '
-    /tests passed$/ {split($1,a,"/"); passed+=a[1]; total+=a[2]; next}
-    /tests failed,/ {split($1,a,"/"); total+=a[2]; passed+=$4}
+    match($0,/([0-9]+)\/([0-9]+) tests passed/,m){passed+=m[1]; total+=m[2]; next}
+    match($0,/([0-9]+) tests failed.*, ([0-9]+) total/,m){total+=m[2]; next}
     END {print (passed+0) " " (total+0)}
   ')
 
@@ -374,8 +374,6 @@ if [ "$status" -ne 0 ] && [ -n "$failed_scripts" ]; then
         *) printf '  %s\n' "$line" ;;
       esac
     done <"$failure_output_file"
-  elif [ "$fail" -gt 10 ]; then
-    printf 'Failure details suppressed because there are too many failures (%d).\n' "$fail"
   fi
 
   detect_os_label() {
