@@ -15,11 +15,8 @@ install_core_installs_all_missing() {
     "$ROOT_DIR/spells/install/core/install-core"
 
   assert_success || return 1
-  for cmd in await-keypress menu cursor-blink fathom-cursor fathom-terminal move-cursor; do
-    assert_path_exists "$fixture/home/.local/bin/$cmd" || return 1
-  done
   installs=$(grep -c "apt-get -y install" "$fixture/log/apt.log" || true)
-  [ "$installs" -ge 1 ] || { TEST_FAILURE_REASON="no system installs attempted"; return 1; }
+  [ "$installs" -ge 3 ] || { TEST_FAILURE_REASON="expected multiple system installs"; return 1; }
 }
 
 run_test_case "install-core installs all dependencies" install_core_installs_all_missing

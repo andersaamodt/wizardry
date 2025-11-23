@@ -68,10 +68,10 @@ fi
 if [ "$#" -gt 0 ]; then
     message=$*
 else
-    # Point users toward the install menu so they can resolve the missing
-    # dependency the “Wizardry” way instead of reaching for system package
-    # managers manually.
-    message="The '${command_name}' command is required. Run 'install-menu' to review installation options."
+    # Point users toward the core prerequisite menu so they can resolve the
+    # missing dependency the “Wizardry” way instead of reaching for system
+    # package managers manually.
+    message="The '${command_name}' command is required. Run 'core-menu' to review installation options."
 fi
 
 printf '%s\n' "require-command: $message" >&2

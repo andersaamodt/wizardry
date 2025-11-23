@@ -5,19 +5,10 @@
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 root_dir=$(CDPATH= cd -- "$script_dir/../../.." && pwd -P)
 
-require_cmd=${REQUIRE_COMMAND:-}
-if [ -z "$require_cmd" ]; then
-  if command -v require-command >/dev/null 2>&1; then
-    require_cmd=$(command -v require-command)
-  elif [ -x "$root_dir/spells/cantrips/require-command" ]; then
-    require_cmd="$root_dir/spells/cantrips/require-command"
-  else
-    echo "core-menu: missing dependency: require-command" >&2
-    exit 1
-  fi
+colors_bin=${COLORS_BIN-}
+if [ -z "$colors_bin" ]; then
+  colors_bin=$(command -v colors 2>/dev/null)
 fi
-
-colors_bin=$(command -v colors 2>/dev/null)
 if [ -z "$colors_bin" ] && [ -x "$root_dir/spells/cantrips/colors" ]; then
   colors_bin="$root_dir/spells/cantrips/colors"
 fi
@@ -26,7 +17,10 @@ if [ -z "$colors_bin" ]; then
   exit 1
 fi
 
-menu_bin=$(command -v menu 2>/dev/null)
+menu_bin=${MENU_BIN-}
+if [ -z "$menu_bin" ]; then
+  menu_bin=$(command -v menu 2>/dev/null)
+fi
 if [ -z "$menu_bin" ] && [ -x "$root_dir/spells/cantrips/menu" ]; then
   menu_bin="$root_dir/spells/cantrips/menu"
 fi
@@ -34,9 +28,6 @@ if [ -z "$menu_bin" ]; then
   echo "core-menu: missing dependency: menu" >&2
   exit 1
 fi
-
-export REQUIRE_COMMAND="$require_cmd"
-export REQUIRE_COMMAND_ASSUME_YES=1
 
 # shellcheck source=/dev/null
 . "$script_dir/install-core"
@@ -59,21 +50,6 @@ handle_ctrl_c
 
 title="${BOLD}${CYAN}Core prerequisites"
 exit_entry="Exit%kill -2 $$"
-
-bootstrap_menu_deps() {
-  for dep in fathom-terminal fathom-cursor move-cursor await-keypress cursor-blink stty; do
-    if command -v "$dep" >/dev/null 2>&1; then
-      continue
-    fi
-
-    if ! "$require_cmd" "$dep" "core-menu: installing '$dep' for menu support."; then
-      echo "core-menu: failed to prepare $dep" >&2
-      exit 1
-    fi
-  done
-}
-
-bootstrap_menu_deps
 
 resolve_spell() {
   spell_name=$1
@@ -116,7 +92,7 @@ while true; do
 $(core_dependencies)
 EOF
 
-  set -- "$@" "Install all%$script_dir/install-core" "$exit_entry"
+  set -- "$@" "Install all%ASSUME_YES=1 $script_dir/install-core" "$exit_entry"
 
   if ! "$menu_bin" "$title" "$@"; then
     status=$?

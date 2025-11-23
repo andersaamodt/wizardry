@@ -41,19 +41,12 @@ SH
   ln -s /bin/grep "$tmp/grep"
   ln -s /bin/cat "$tmp/cat"
 
-  MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/require.log" run_cmd env PATH="$tmp" MENU_LOOP_LIMIT=1 MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/require.log" REQUIRE_COMMAND="$tmp/require-command" \
+  MENU_LOG="$tmp/log" run_cmd env PATH="$tmp" MENU_LOOP_LIMIT=1 MENU_LOG="$tmp/log" COLORS_BIN="$tmp/colors" MENU_BIN="$tmp/menu" \
     "$ROOT_DIR/spells/install/core/core-menu"
 
   assert_success || return 1
   assert_path_exists "$tmp/log" || return 1
-  assert_path_exists "$tmp/require.log" || return 1
   log=$(cat "$tmp/log")
-
-  require_log=$(cat "$tmp/require.log")
-  case "$require_log" in
-    *"await-keypress"* ) : ;; 
-    *) TEST_FAILURE_REASON="menu dependencies were not bootstrapped"; return 1 ;;
-  esac
 
   case "$log" in
     *"Install Bubblewrap"* ) : ;;

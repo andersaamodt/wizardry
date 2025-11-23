@@ -24,7 +24,7 @@ require_command_reports_missing_with_default_message() {
   run_spell "spells/cantrips/require-command" definitely-not-a-real-command
   assert_failure || return 1
   assert_error_contains "require-command: The 'definitely-not-a-real-command' command is required." || return 1
-  assert_error_contains "install-menu" || return 1
+  assert_error_contains "core-menu" || return 1
 }
 
 require_command_supports_custom_message() {
