@@ -2,6 +2,10 @@
 
 # Install and manage the core prerequisites for wizardry.
 
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+# shellcheck source=/dev/null
+. "$script_dir/dependencies"
+
 colors_bin=$(command -v colors 2>/dev/null) || {
   echo "missing dependency: colors" >&2
   exit 1
@@ -29,14 +33,43 @@ handle_ctrl_c
 title="${BOLD}${CYAN}Core prerequisites"
 exit_entry="Exit%kill -2 $$"
 
-while true; do
-  if command -v bwrap >/dev/null 2>&1; then
-    install_bwrap_label="Reinstall bubblewrap%INSTALL_BWRAP_FORCE_INSTALL=1 install-bwrap"
-  else
-    install_bwrap_label="Install bubblewrap%install-bwrap"
+resolve_spell() {
+  spell_name=$1
+
+  if command -v "$spell_name" >/dev/null 2>&1; then
+    printf '%s\n' "$spell_name"
+    return 0
   fi
 
-  if ! "$menu_bin" "$title" "$install_bwrap_label" "$exit_entry"; then
+  if [ -x "$script_dir/$spell_name" ]; then
+    printf '%s\n' "$script_dir/$spell_name"
+    return 0
+  fi
+
+  printf '%s\n' "core-menu: missing helper '$spell_name'" >&2
+  return 1
+}
+
+while true; do
+  set --
+
+  while IFS=: read -r label command_name install_spell uninstall_spell; do
+    if command -v "$command_name" >/dev/null 2>&1; then
+      entry_label="Uninstall $label"
+      spell=$(resolve_spell "$uninstall_spell") || exit 1
+    else
+      entry_label="Install $label"
+      spell=$(resolve_spell "$install_spell") || exit 1
+    fi
+
+    set -- "$@" "${entry_label}%$spell"
+  done <<EOF
+$(core_dependencies)
+EOF
+
+  set -- "$@" "Install all%$script_dir/install-core-all" "$exit_entry"
+
+  if ! "$menu_bin" "$title" "$@"; then
     status=$?
     echo "menu failed with status $status" >&2
     exit "$status"

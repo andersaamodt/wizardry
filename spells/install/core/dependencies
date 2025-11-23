@@ -1,0 +1,17 @@
+#!/usr/bin/env sh
+
+core_dependencies() {
+  cat <<'EOF'
+Bubblewrap:bwrap:install-bwrap:uninstall-bwrap
+Git:git:install-git:uninstall-git
+Menu:menu:install-menu:uninstall-menu
+Fathom cursor:fathom-cursor:install-fathom-cursor:uninstall-fathom-cursor
+Fathom terminal:fathom-terminal:install-fathom-terminal:uninstall-fathom-terminal
+Move cursor:move-cursor:install-move-cursor:uninstall-move-cursor
+Await keypress:await-keypress:install-await-keypress:uninstall-await-keypress
+Cursor blink:cursor-blink:install-cursor-blink:uninstall-cursor-blink
+tput:tput:install-tput:uninstall-tput
+stty:stty:install-stty:uninstall-stty
+dd:dd:install-dd:uninstall-dd
+EOF
+}
