@@ -1,0 +1,62 @@
+name: Debian read-magic diagnostics
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'spells/divination/read-magic'
+      - 'tests/divination/**'
+      - '.github/workflows/debian-read-magic.yml'
+
+jobs:
+  debian-read-magic:
+    name: Debian read-magic probe
+    runs-on: ubuntu-latest
+    container:
+      image: debian:stable-slim
+    steps:
+      - name: Install tools
+        run: |
+          set -euo pipefail
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            ca-certificates git attr coreutils
+          update-ca-certificates
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show helper availability
+        run: |
+          set -euo pipefail
+          echo "PATH: $PATH"
+          for cmd in attr xattr getfattr; do
+            printf '%-10s' "$cmd:"
+            if command -v "$cmd" >/dev/null 2>&1; then
+              loc=$(command -v "$cmd")
+              printf ' %s' "$loc"
+              printf ' | %s' "$($cmd --version 2>/dev/null | head -n 1 || true)"
+            else
+              printf ' missing'
+            fi
+            printf '\n'
+          done
+
+      - name: Sample attr output
+        run: |
+          set -euo pipefail
+          tmp=$(mktemp)
+          printf 'sample' > "$tmp"
+          attr -s user.alpha -V alpha-value "$tmp"
+          attr -s user.beta -V beta-value "$tmp"
+          echo '# attr -l'
+          attr -l "$tmp" || true
+          echo '# attr -g user.beta'
+          attr -g user.beta "$tmp" || true
+          echo '# attr -q -g user.beta'
+          attr -q -g user.beta "$tmp" || true
+
+      - name: Run read-magic tests
+        run: |
+          set -euo pipefail
+          ./spells/system/test-magic --only divination/test_read-magic.sh --very-verbose
