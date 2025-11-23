@@ -3,19 +3,46 @@
 # Install and manage the core prerequisites for wizardry.
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+root_dir=$(CDPATH= cd -- "$script_dir/../../.." && pwd -P)
+
+require_cmd=${REQUIRE_COMMAND:-}
+if [ -z "$require_cmd" ]; then
+  if command -v require-command >/dev/null 2>&1; then
+    require_cmd=$(command -v require-command)
+  elif [ -x "$root_dir/spells/cantrips/require-command" ]; then
+    require_cmd="$root_dir/spells/cantrips/require-command"
+  else
+    echo "core-menu: missing dependency: require-command" >&2
+    exit 1
+  fi
+fi
+
+colors_bin=$(command -v colors 2>/dev/null)
+if [ -z "$colors_bin" ] && [ -x "$root_dir/spells/cantrips/colors" ]; then
+  colors_bin="$root_dir/spells/cantrips/colors"
+fi
+if [ -z "$colors_bin" ]; then
+  echo "core-menu: missing dependency: colors" >&2
+  exit 1
+fi
+
+menu_bin=$(command -v menu 2>/dev/null)
+if [ -z "$menu_bin" ] && [ -x "$root_dir/spells/cantrips/menu" ]; then
+  menu_bin="$root_dir/spells/cantrips/menu"
+fi
+if [ -z "$menu_bin" ]; then
+  echo "core-menu: missing dependency: menu" >&2
+  exit 1
+fi
+
+export REQUIRE_COMMAND="$require_cmd"
+export REQUIRE_COMMAND_ASSUME_YES=1
+
 # shellcheck source=/dev/null
 . "$script_dir/install-core"
 
-colors_bin=$(command -v colors 2>/dev/null) || {
-  echo "missing dependency: colors" >&2
-  exit 1
-}
+# shellcheck source=/dev/null
 . "$colors_bin"
-
-menu_bin=$(command -v menu 2>/dev/null) || {
-  echo "missing dependency: menu" >&2
-  exit 1
-}
 
 loop_limit=${MENU_LOOP_LIMIT:-}
 
@@ -32,6 +59,21 @@ handle_ctrl_c
 
 title="${BOLD}${CYAN}Core prerequisites"
 exit_entry="Exit%kill -2 $$"
+
+bootstrap_menu_deps() {
+  for dep in fathom-terminal fathom-cursor move-cursor await-keypress cursor-blink stty; do
+    if command -v "$dep" >/dev/null 2>&1; then
+      continue
+    fi
+
+    if ! "$require_cmd" "$dep" "core-menu: installing '$dep' for menu support."; then
+      echo "core-menu: failed to prepare $dep" >&2
+      exit 1
+    fi
+  done
+}
+
+bootstrap_menu_deps
 
 resolve_spell() {
   spell_name=$1
