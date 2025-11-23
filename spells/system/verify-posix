@@ -27,18 +27,17 @@ USAGE
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 ROOT_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd -P)
 
-checkbashisms_cmd=""
-checkbashisms_missing=0
-
 if [ -n "${CHECKBASHISMS-}" ]; then
   checkbashisms_cmd=$CHECKBASHISMS
 elif checkbashisms_path=$(command -v checkbashisms 2>/dev/null); then
   checkbashisms_cmd=$checkbashisms_path
+else
+  checkbashisms_cmd=""
 fi
 
-if [ -z "$checkbashisms_cmd" ] || ! command -v "$checkbashisms_cmd" >/dev/null 2>&1; then
-  checkbashisms_missing=1
-  checkbashisms_cmd=""
+if ! command -v "$checkbashisms_cmd" >/dev/null 2>&1; then
+  printf '%s\n' "verify-posix: checkbashisms not found; run spells/install/install-checkbashisms" >&2
+  exit 1
 fi
 
 set -- "$@"
@@ -121,7 +120,7 @@ for target in "$@"; do
         reasons=$(append_reason "$reasons" "fails to parse with /bin/sh -n")
       fi
 
-      if [ -z "$reasons" ] && [ "$checkbashisms_missing" -eq 0 ]; then
+      if [ -z "$reasons" ]; then
         if bashism_output=$("$checkbashisms_cmd" -f -p "$abs" 2>&1); then
           :
         else
@@ -157,10 +156,6 @@ elif [ "$failures" -eq 0 ]; then
   printf 'All %d scripts are POSIX-compliant.\n' "$total"
 else
   printf '%d of %d scripts failed POSIX compliance.\n' "$failures" "$total"
-fi
-
-if [ "$checkbashisms_missing" -eq 1 ]; then
-  printf '%s\n' "verify-posix: bashism checks skipped because checkbashisms is missing." >&2
 fi
 
 exit $status

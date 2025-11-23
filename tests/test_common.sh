@@ -17,15 +17,7 @@ find_repo_root() {
 }
 
 ROOT_DIR=$(find_repo_root)
-safe_base_path="/usr/local/bin:/usr/local/sbin:/bin:/usr/bin:/usr/sbin:/sbin"
-initial_path=$safe_base_path
-if [ -n "${PATH-}" ]; then
-  case "$PATH" in
-    "") : ;;
-    *) initial_path="$PATH:$safe_base_path" ;;
-  esac
-fi
-
+initial_path=$PATH
 PATH="$ROOT_DIR/spells"
 for dir in "$ROOT_DIR"/spells/*; do
   [ -d "$dir" ] || continue
@@ -33,8 +25,6 @@ for dir in "$ROOT_DIR"/spells/*; do
 done
 PATH="$PATH:$initial_path"
 export PATH
-BASE_TEST_PATH=$PATH
-export BASE_TEST_PATH
 WIZARDRY_TEST_HELPERS_ONLY=1
 export WIZARDRY_TEST_HELPERS_ONLY
 
@@ -162,34 +152,8 @@ run_cmd() {
   __stdout=$(mktemp "${WIZARDRY_TMPDIR}/stdout.XXXXXX") || return 1
   __stderr=$(mktemp "${WIZARDRY_TMPDIR}/stderr.XXXXXX") || return 1
 
-  effective_path=${PATH-}
-  if [ -z "$effective_path" ]; then
-    effective_path="$safe_base_path"
-  else
-    case "$effective_path" in
-      *"$safe_base_path"*) : ;;
-      *) effective_path="$effective_path:$safe_base_path" ;;
-    esac
-  fi
-
-  # Ensure core system utilities remain reachable even if PATH was cleared or
-  # overridden; macOS runners can otherwise lack mkdir/cat/rm when helpers are
-  # filtered. Prepending stable defaults keeps stubs ahead of system tools.
-  case ":$effective_path:" in
-    *":/bin:"*) : ;;
-    *) effective_path="/bin:$effective_path" ;;
-  esac
-  case ":$effective_path:" in
-    *":/usr/bin:"*) : ;;
-    *) effective_path="/usr/bin:$effective_path" ;;
-  esac
-  case ":$effective_path:" in
-    *":/usr/local/bin:"*) : ;;
-    *) effective_path="/usr/local/bin:$effective_path" ;;
-  esac
-
   workdir=${RUN_CMD_WORKDIR:-$(pwd)}
-  PATH="$effective_path" mkdir -p "$workdir"
+  mkdir -p "$workdir"
 
   sandbox=$(mktemp -d "${WIZARDRY_TMPDIR}/sandbox.XXXXXX") || return 1
   tmpdir="$sandbox/tmp"
@@ -206,7 +170,7 @@ run_cmd() {
       --bind "$WIZARDRY_TMPDIR" "$WIZARDRY_TMPDIR" \
       --ro-bind "$ROOT_DIR" "$ROOT_DIR" \
       --chdir "$workdir" \
-      --setenv PATH "$effective_path" \
+      --setenv PATH "$PATH" \
       --setenv HOME "$homedir" \
       --setenv TMPDIR "$tmpdir" \
       --setenv WIZARDRY_TMPDIR "$WIZARDRY_TMPDIR" \
@@ -222,7 +186,7 @@ run_cmd() {
       STATUS=$?
     fi
   else
-    if (cd "$workdir" && env PATH="$effective_path" HOME="$homedir" TMPDIR="$tmpdir" WIZARDRY_TMPDIR="$WIZARDRY_TMPDIR" "$@" \
+    if (cd "$workdir" && env PATH="$PATH" HOME="$homedir" TMPDIR="$tmpdir" WIZARDRY_TMPDIR="$WIZARDRY_TMPDIR" "$@" \
       >"$__stdout" 2>"$__stderr"); then
       STATUS=0
     else

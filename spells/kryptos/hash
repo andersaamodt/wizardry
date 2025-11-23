@@ -3,84 +3,44 @@
 # Hash spell: compute a CRC-32 checksum for a given file path.
 # Prints the checksum in hexadecimal alongside the resolved path.
 
-set -eu
-
 show_usage() {
-  cat <<'USAGE'
+        cat <<'USAGE'
 Usage: hash <file>
 
 Compute the CRC-32 hash of the provided file path and print it in hexadecimal.
-The target file must exist; the path is resolved relative to the caller.
+The target file must exist; the path is resolved relative to the spell location.
 USAGE
 }
 
 case "${1-}" in
 --help|--usage|-h)
-  show_usage
-  exit 0
-  ;;
+        show_usage
+        exit 0
+        ;;
 esac
 
-if [ "$#" -ne 1 ]; then
-  show_usage
-  exit 1
+if [ "$#" != 1 ]; then
+    echo "Usage: hash file"
+    exit 1
 fi
 
-input_path=$1
+# Get the directory where the script is being called from
+script_dir="$(cd "$(dirname "$0")" >/dev/null 2>&1 && pwd)"
 
-script_dir=$(cd "$(dirname "$0")" 2>/dev/null && pwd -P)
+# Get the file name specified as an argument
+file_name="$1"
 
-# Resolve the provided path to an absolute file so the reported location is
-# unambiguous regardless of where the spell resides. Relative paths prefer the
-# caller's working directory but fall back to the script's directory to match
-# historical behavior (useful when the spell is copied into a temporary area
-# for testing).
-case $input_path in
-/*)
-  resolved="$input_path"
-  ;;
-"~/"*)
-  if [ -n "${HOME-}" ]; then
-    resolved="$HOME/${input_path#"~/"}"
-  else
-    resolved="$input_path"
-  fi
-  ;;
-*)
-  # cd to the parent to honour any relative components (including ..) and use
-  # pwd -P to strip symlinks for consistency across platforms.
-  primary_dir=$(cd "$(dirname "$input_path")" 2>/dev/null && pwd)
-  primary="$primary_dir/$(basename "$input_path")"
+# Concatenate the script directory and the file name to get the full file path
+file="$script_dir/$file_name"
 
-  resolved=""
-  if [ -f "$primary" ]; then
-    resolved="$primary"
-  fi
-
-  fallback="$primary"
-  if [ -z "$resolved" ] && [ -n "$script_dir" ]; then
-    if alt_dir=$(cd "$script_dir/$(dirname "$input_path")" 2>/dev/null && pwd); then
-      alt="$alt_dir/$(basename "$input_path")"
-      fallback="$alt"
-      if [ -f "$alt" ]; then
-        resolved="$alt"
-      fi
-    fi
-  fi
-
-  if [ -z "$resolved" ]; then
-    resolved="$fallback"
-  fi
-  ;;
-esac
-
-if [ ! -f "$resolved" ]; then
-  echo "Your spell fizzles. There is no file."
-  exit 1
+if [ ! -f "$file" ]; then
+    echo "Your spell fizzles. There is no file."
+    exit 1
 fi
 
-printf '%s\n' "$resolved"
+echo $file
+# Compute the CRC-32 hash
+crc=$(cksum "$file" | awk '{print $1}')
 
-# Compute the CRC-32 hash and present it in hexadecimal form.
-crc=$(cksum "$resolved" | awk '{print $1}')
-printf '0x%x\n' "$crc"
+# Convert the hash to hexadecimal and display it
+printf "0x%x\n" "$crc"
