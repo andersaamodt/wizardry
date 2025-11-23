@@ -4,7 +4,7 @@
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 # shellcheck source=/dev/null
-. "$script_dir/dependencies"
+. "$script_dir/install-core"
 
 colors_bin=$(command -v colors 2>/dev/null) || {
   echo "missing dependency: colors" >&2
@@ -67,7 +67,7 @@ while true; do
 $(core_dependencies)
 EOF
 
-  set -- "$@" "Install all%$script_dir/install-core-all" "$exit_entry"
+  set -- "$@" "Install all%$script_dir/install-core" "$exit_entry"
 
   if ! "$menu_bin" "$title" "$@"; then
     status=$?

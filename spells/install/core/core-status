@@ -4,7 +4,7 @@
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 # shellcheck source=/dev/null
-. "$script_dir/dependencies"
+. "$script_dir/install-core"
 
 missing=""
 
