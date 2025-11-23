@@ -34,7 +34,19 @@ file_exists() {
 }
 
 parse_attr_output() {
-  printf '%s' "$1" | awk 'END{sub(/.*:[[:space:]]*/,"",$0); print}'
+  printf '%s\n' "$1" | awk '
+    NF { last = $0 }
+    END {
+      line = last
+      # Prefer content after the final colon on the last non-empty line.
+      if (match(line, /:[[:space:]]*(.*)$/, m)) {
+        print m[1]
+        exit
+      }
+      # Fall back to the raw line when no colon is present.
+      print line
+    }
+  '
 }
 
 helper_usable() {
