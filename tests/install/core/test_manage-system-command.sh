@@ -74,10 +74,33 @@ manage_system_reports_failure_when_uninstallers_fail() {
   assert_error_contains "unable to uninstall example" || return 1
 }
 
+manage_system_prefers_brew_on_darwin() {
+  fixture=$(make_fixture)
+  write_brew_stub "$fixture"
+  write_apt_stub "$fixture"
+  write_sudo_stub "$fixture"
+  provide_basic_tools "$fixture"
+
+  cat <<'STUB' >"$fixture/bin/uname"
+#!/bin/sh
+printf 'Darwin\n'
+STUB
+  chmod +x "$fixture/bin/uname"
+
+  PATH="$fixture/bin" BREW_LOG="$fixture/log/brew.log" APT_LOG="$fixture/log/apt.log" BREW_CANDIDATES="$fixture/opt/homebrew/bin/brew" run_cmd \
+    env PATH="$fixture/bin" BREW_LOG="$fixture/log/brew.log" APT_LOG="$fixture/log/apt.log" BREW_CANDIDATES="$fixture/opt/homebrew/bin/brew" \
+    "$ROOT_DIR/spells/install/core/manage-system-command" example example-pkg
+
+  assert_success || return 1
+  [ -f "$fixture/log/brew.log" ] || { TEST_FAILURE_REASON="brew not used"; return 1; }
+  [ ! -s "$fixture/log/apt.log" ] || { TEST_FAILURE_REASON="apt should not be used on Darwin"; return 1; }
+}
+
 run_test_case "manage-system-command installs when missing" manage_system_installs_when_missing
 run_test_case "manage-system-command skips when present" manage_system_skips_when_present
 run_test_case "manage-system-command reports failed installation" manage_system_reports_failure_when_installers_fail
 run_test_case "manage-system-command uninstalls when present" manage_system_uninstalls_when_present
 run_test_case "manage-system-command reports failed removal" manage_system_reports_failure_when_uninstallers_fail
+run_test_case "manage-system-command uses brew on Darwin" manage_system_prefers_brew_on_darwin
 
 finish_tests

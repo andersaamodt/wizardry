@@ -334,6 +334,28 @@ STUB
   chmod +x "$dir/$name"
 }
 
+write_brew_stub() {
+  fixture=$1
+  mkdir -p "$fixture/opt/homebrew/bin"
+  cat <<'STUB' >"$fixture/opt/homebrew/bin/brew"
+#!/bin/sh
+if [ "$1" = "install" ]; then
+  shift
+  printf 'brew install %s\n' "$*" >>"${BREW_LOG:?}" || exit 1
+  exit ${BREW_EXIT:-0}
+fi
+
+if [ "$1" = "uninstall" ]; then
+  shift
+  printf 'brew uninstall %s\n' "$*" >>"${BREW_LOG:?}" || exit 1
+  exit ${BREW_EXIT:-0}
+fi
+
+exit 1
+STUB
+  chmod +x "$fixture/opt/homebrew/bin/brew"
+}
+
 provide_basic_tools() {
   fixture=$1
   for cmd in mktemp mkdir rm cat env ln sh dirname readlink; do

@@ -2,14 +2,35 @@
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 
+detect_platform() {
+  if command -v uname >/dev/null 2>&1; then
+    uname -s 2>/dev/null || printf '%s' "unknown"
+  else
+    printf '%s' "unknown"
+  fi
+}
+
 core_dependencies() {
-  cat <<'EOF'
+  platform=$(detect_platform)
+  case $platform in
+    Darwin)
+      cat <<'EOF'
+Git:git:install-git:uninstall-git
+dd:dd:install-dd:uninstall-dd
+stty:stty:install-stty:uninstall-stty
+tput:tput:install-tput:uninstall-tput
+EOF
+      ;;
+    *)
+      cat <<'EOF'
 Git:git:install-git:uninstall-git
 Bubblewrap:bwrap:install-bwrap:uninstall-bwrap
 dd:dd:install-dd:uninstall-dd
 stty:stty:install-stty:uninstall-stty
 tput:tput:install-tput:uninstall-tput
 EOF
+      ;;
+  esac
 }
 
 resolve_spell() {
