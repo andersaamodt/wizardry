@@ -1,0 +1,18 @@
+#!/bin/sh
+
+# Run the full test suite from the system menu entry.
+
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+repo_dir=$(CDPATH= cd -- "$script_dir/../../.." && pwd)
+test_spell="$repo_dir/spells/system/test-magic"
+
+if [ ! -x "$test_spell" ]; then
+  echo "system test-magic: missing spell at $test_spell" >&2
+  exit 1
+fi
+
+cd "$repo_dir" || exit 1
+
+exec "$test_spell" "$@"
