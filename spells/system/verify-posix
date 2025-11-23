@@ -36,7 +36,7 @@ else
 fi
 
 if ! command -v "$checkbashisms_cmd" >/dev/null 2>&1; then
-  printf '%s\n' "verify-posix: checkbashisms not found; run menu/install/install-checkbashisms" >&2
+  printf '%s\n' "verify-posix: checkbashisms not found; run spells/install/install-checkbashisms" >&2
   exit 1
 fi
 
