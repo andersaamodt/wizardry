@@ -47,7 +47,15 @@ collect_targets "$@" >"$targets_file"
 while IFS= read -r target; do
   [ -n "$target" ] || continue
   total=$((total + 1))
-  path="$repo_dir/$target"
+
+  case $target in
+    /*)
+      path="$target"
+      ;;
+    *)
+      path="$repo_dir/$target"
+      ;;
+  esac
 
   if [ ! -e "$path" ]; then
     printf 'FAIL %s: missing file\n' "$target"

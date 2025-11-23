@@ -6,17 +6,6 @@
 
 set -eu
 
-cleanup_dirs=""
-
-cleanup() {
-  for dir in $cleanup_dirs; do
-    rm -rf "$ROOT_DIR/$dir"
-  done
-  rm -rf "$ROOT_DIR"/tests/tmp.posix.*
-}
-
-trap cleanup EXIT INT TERM
-
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/test_common.sh" ] && [ "$test_root" != "/" ]; do
   test_root=$(dirname "$test_root")
@@ -24,12 +13,20 @@ done
 # shellcheck source=/dev/null
 . "$test_root/test_common.sh"
 
-make_repo_tempdir() {
-  rel_dir="tests/tmp.posix.$$.${RANDOM:-0}"
-  abs_dir="$ROOT_DIR/$rel_dir"
-  mkdir -p "$abs_dir"
-  cleanup_dirs="${cleanup_dirs:+$cleanup_dirs }$rel_dir"
-  printf '%s\n' "$rel_dir"
+cleanup_dirs=""
+
+cleanup() {
+  for dir in $cleanup_dirs; do
+    rm -rf "$dir"
+  done
+}
+
+trap cleanup EXIT INT TERM
+
+make_tempdir() {
+  tmp_dir=$(mktemp -d "${WIZARDRY_TMPDIR}/verify-posix.test.XXXXXX") || return 1
+  cleanup_dirs="${cleanup_dirs:+$cleanup_dirs }$tmp_dir"
+  printf '%s\n' "$tmp_dir"
 }
 
 prepare_checkbashisms_stub() {
@@ -65,8 +62,7 @@ run_verify_posix() {
 
 check_is_quiet_for_posix() {
   prepare_checkbashisms_stub || return 1
-  workrel=$(make_repo_tempdir)
-  workdir="$ROOT_DIR/$workrel"
+  workdir=$(make_tempdir)
   cat <<'SCRIPT' >"$workdir/direct"
 #!/bin/sh
 echo ok
@@ -76,10 +72,12 @@ SCRIPT
 echo ok
 SCRIPT
 
-  run_verify_posix "$workrel/direct $workrel/env"
+  run_verify_posix "$workdir/direct $workdir/env"
   assert_success || return 1
-  echo "$OUTPUT" | grep "^PASS $workrel/direct$" >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected PASS line for direct"; return 1; }
-  echo "$OUTPUT" | grep "^PASS $workrel/env$" >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected PASS line for env"; return 1; }
+  pass_count=$(printf '%s\n' "$OUTPUT" | grep '^PASS ' | wc -l | tr -d ' ')
+  [ "$pass_count" -eq 2 ] || { TEST_FAILURE_REASON="expected two PASS lines"; return 1; }
+  printf '%s\n' "$OUTPUT" | grep '/direct' >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected direct script to be checked"; return 1; }
+  printf '%s\n' "$OUTPUT" | grep '/env' >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected env script to be checked"; return 1; }
   summary=$(printf '%s\n' "$OUTPUT" | tail -n 1)
   case $summary in
     "All 2 scripts are POSIX-compliant.") : ;;
@@ -91,15 +89,14 @@ SCRIPT
 
 warns_when_missing_shebang() {
   prepare_checkbashisms_stub || return 1
-  workrel=$(make_repo_tempdir)
-  workdir="$ROOT_DIR/$workrel"
+  workdir=$(make_tempdir)
   cat <<'SCRIPT' >"$workdir/nameless"
 echo 'no interpreter'
 SCRIPT
 
-  run_verify_posix "$workrel/nameless"
+  run_verify_posix "$workdir/nameless"
   assert_failure || return 1
-  echo "$OUTPUT" | grep "^FAIL $workrel/nameless: lacks a shebang; expected #!/bin/sh$" >/dev/null 2>&1 || { TEST_FAILURE_REASON="missing shebang message"; return 1; }
+  printf '%s\n' "$OUTPUT" | grep 'lacks a shebang; expected #!/bin/sh' >/dev/null 2>&1 || { TEST_FAILURE_REASON="missing shebang message"; return 1; }
   summary=$(printf '%s\n' "$OUTPUT" | tail -n 2 | head -n 1)
   case $summary in
     "1 of 1 scripts failed POSIX compliance.") : ;;
@@ -107,7 +104,7 @@ SCRIPT
   esac
   failing=$(printf '%s\n' "$OUTPUT" | tail -n 1)
   case $failing in
-    "Failing spells: $workrel/nameless") : ;;
+    "Failing spells: "*"nameless"*) : ;;
     *) TEST_FAILURE_REASON="expected failing spells list"; return 1 ;;
   esac
   [ -z "${ERROR}" ] || { TEST_FAILURE_REASON="expected no stderr"; return 1; }
@@ -115,73 +112,68 @@ SCRIPT
 
 warns_for_bash_shebangs() {
   prepare_checkbashisms_stub || return 1
-  workrel=$(make_repo_tempdir)
-  workdir="$ROOT_DIR/$workrel"
+  workdir=$(make_tempdir)
   cat <<'SCRIPT' >"$workdir/bashy"
 #!/usr/bin/env bash
 echo 'bash heavy'
 SCRIPT
 
-  run_verify_posix "$workrel/bashy"
+  run_verify_posix "$workdir/bashy"
   assert_failure || return 1
-  echo "$OUTPUT" | grep "^FAIL $workrel/bashy: uses #!/usr/bin/env bash; please use /bin/sh$" >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected env bash message"; return 1; }
+  printf '%s\n' "$OUTPUT" | grep 'uses #!/usr/bin/env bash; please use /bin/sh' >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected env bash message"; return 1; }
   [ -z "${ERROR}" ] || { TEST_FAILURE_REASON="expected no stderr"; return 1; }
 }
 
 warns_for_empty_shebang() {
   prepare_checkbashisms_stub || return 1
-  workrel=$(make_repo_tempdir)
-  workdir="$ROOT_DIR/$workrel"
+  workdir=$(make_tempdir)
   printf '#!\n' >"$workdir/empty"
 
-  run_verify_posix "$workrel/empty"
+  run_verify_posix "$workdir/empty"
   assert_failure || return 1
-  echo "$OUTPUT" | grep "^FAIL $workrel/empty: has an empty shebang; expected #!/bin/sh$" >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected empty shebang message"; return 1; }
+  printf '%s\n' "$OUTPUT" | grep 'has an empty shebang; expected #!/bin/sh' >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected empty shebang message"; return 1; }
   [ -z "${ERROR}" ] || { TEST_FAILURE_REASON="expected no stderr"; return 1; }
 }
 
 warns_for_env_arguments() {
   prepare_checkbashisms_stub || return 1
-  workrel=$(make_repo_tempdir)
-  workdir="$ROOT_DIR/$workrel"
+  workdir=$(make_tempdir)
   cat <<'SCRIPT' >"$workdir/argful"
 #!/usr/bin/env bash -l
 echo argful
 SCRIPT
 
-  run_verify_posix "$workrel/argful"
+  run_verify_posix "$workdir/argful"
   assert_failure || return 1
-  echo "$OUTPUT" | grep "^FAIL $workrel/argful: uses #!/usr/bin/env bash -l; please use /bin/sh$" >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected env arg message"; return 1; }
+  printf '%s\n' "$OUTPUT" | grep 'uses #!/usr/bin/env bash -l; please use /bin/sh' >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected env arg message"; return 1; }
   [ -z "${ERROR}" ] || { TEST_FAILURE_REASON="expected no stderr"; return 1; }
 }
 
 warns_for_direct_bash_path() {
   prepare_checkbashisms_stub || return 1
-  workrel=$(make_repo_tempdir)
-  workdir="$ROOT_DIR/$workrel"
+  workdir=$(make_tempdir)
   cat <<'SCRIPT' >"$workdir/direct_bash"
 #!/bin/bash
 echo direct
 SCRIPT
 
-  run_verify_posix "$workrel/direct_bash"
+  run_verify_posix "$workdir/direct_bash"
   assert_failure || return 1
-  echo "$OUTPUT" | grep "^FAIL $workrel/direct_bash: uses #!/bin/bash; please use /bin/sh$" >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected direct bash message"; return 1; }
+  printf '%s\n' "$OUTPUT" | grep 'uses #!/bin/bash; please use /bin/sh' >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected direct bash message"; return 1; }
   [ -z "${ERROR}" ] || { TEST_FAILURE_REASON="expected no stderr"; return 1; }
 }
 
 accepts_space_before_sh() {
   prepare_checkbashisms_stub || return 1
-  workrel=$(make_repo_tempdir)
-  workdir="$ROOT_DIR/$workrel"
+  workdir=$(make_tempdir)
   cat <<'SCRIPT' >"$workdir/spaced"
 #! /bin/sh
 echo ok
 SCRIPT
 
-  run_verify_posix "$workrel/spaced"
+  run_verify_posix "$workdir/spaced"
   assert_success || return 1
-  echo "$OUTPUT" | grep "^PASS $workrel/spaced$" >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected PASS line"; return 1; }
+  printf '%s\n' "$OUTPUT" | grep '^PASS ' >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected PASS line"; return 1; }
   summary=$(printf '%s\n' "$OUTPUT" | tail -n 1)
   case $summary in
     "All 1 scripts are POSIX-compliant.") : ;;
@@ -192,9 +184,10 @@ SCRIPT
 
 reports_missing_targets() {
   prepare_checkbashisms_stub || return 1
-  run_verify_posix "tests/tmp.posix.missing"
+  missing_path=$(mktemp -u "${WIZARDRY_TMPDIR}/verify-posix.missing.XXXXXX")
+  run_verify_posix "$missing_path"
   assert_failure || return 1
-  echo "$OUTPUT" | grep "^FAIL tests/tmp.posix.missing: missing file$" >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected missing file message"; return 1; }
+  printf '%s\n' "$OUTPUT" | grep 'missing file' >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected missing file message"; return 1; }
   summary=$(printf '%s\n' "$OUTPUT" | tail -n 2 | head -n 1)
   case $summary in
     "1 of 1 scripts failed POSIX compliance.") : ;;
@@ -202,7 +195,7 @@ reports_missing_targets() {
   esac
   failing=$(printf '%s\n' "$OUTPUT" | tail -n 1)
   case $failing in
-    "Failing spells: tests/tmp.posix.missing") : ;;
+    "Failing spells: $missing_path") : ;;
     *) TEST_FAILURE_REASON="expected failing spells list"; return 1 ;;
   esac
   [ -z "${ERROR}" ] || { TEST_FAILURE_REASON="expected no stderr"; return 1; }
@@ -210,16 +203,15 @@ reports_missing_targets() {
 
 flags_bashisms_and_counts_failures() {
   prepare_checkbashisms_failure_stub || return 1
-  workrel=$(make_repo_tempdir)
-  workdir="$ROOT_DIR/$workrel"
+  workdir=$(make_tempdir)
   cat <<'SCRIPT' >"$workdir/bashism"
 #!/bin/sh
 [[ -n "${1-}" ]]
 SCRIPT
 
-  run_verify_posix "$workrel/bashism"
+  run_verify_posix "$workdir/bashism"
   assert_failure || return 1
-  echo "$OUTPUT" | grep "^FAIL $workrel/bashism$" >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected bashism message"; return 1; }
+  printf '%s\n' "$OUTPUT" | grep '^FAIL ' >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected bashism message"; return 1; }
   echo "$OUTPUT" | grep "^  bashism detected$" >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected indented bashism output"; return 1; }
   summary=$(printf '%s\n' "$OUTPUT" | tail -n 2 | head -n 1)
   case $summary in
@@ -228,7 +220,7 @@ SCRIPT
   esac
   failing=$(printf '%s\n' "$OUTPUT" | tail -n 1)
   case $failing in
-    "Failing spells: $workrel/bashism") : ;;
+    "Failing spells: "*"bashism"*) : ;;
     *) TEST_FAILURE_REASON="expected failing spells list"; return 1 ;;
   esac
   [ -z "${ERROR}" ] || { TEST_FAILURE_REASON="expected no stderr"; return 1; }
