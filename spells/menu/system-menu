@@ -4,6 +4,7 @@
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 spells_dir=$(dirname "$script_dir")
+repo_dir=$(dirname "$spells_dir")
 
 if [ -n "${REQUIRE_COMMAND-}" ]; then
   require_cmd=$REQUIRE_COMMAND
@@ -43,7 +44,7 @@ display_menu() {
   services="Manage services%services-menu"
   verify_posix="Verify POSIX spells%verify-posix"
   update_wizardry="Update wizardry%update-wizardry"
-  test_suite="Test all wizardry spells%test-magic"
+  test_suite="Test all wizardry spells%$repo_dir/spells/system/test-magic"
   update_all="Update all software%update-all -v"
   restart="Force restart%sudo shutdown -r now"
   exit="Exit%kill -2 $$"
