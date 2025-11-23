@@ -306,10 +306,10 @@ spell_action_menu() {
                         eval "$command --help" || true
                         ;;
                 test)
-                        if command -v run-tests >/dev/null 2>&1; then
-                                run-tests --only "$name" || true
+                        if command -v test-magic >/dev/null 2>&1; then
+                                test-magic --only "$name" || true
                         else
-                                printf '%s\n' "run-tests is unavailable; cannot test $name." >&2
+                                printf '%s\n' "test-magic is unavailable; cannot test $name." >&2
                         fi
                         ;;
                 esac
