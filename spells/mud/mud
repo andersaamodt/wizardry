@@ -1,0 +1,27 @@
+#!/bin/sh
+
+# This wrapper keeps the `mud` command available when only the spells directory is on PATH.
+# It resolves the menu implementation alongside this file and execs the real script.
+
+show_usage() {
+        cat <<'USAGE'
+Usage: mud [args]
+
+Launch the wizardry menu spell from its installed location, forwarding any
+additional arguments to the menu implementation.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+spells_dir=$(CDPATH= cd -- "$script_dir/.." && pwd -P)
+
+exec "$spells_dir/menu/mud" "$@"

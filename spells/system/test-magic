@@ -1,0 +1,16 @@
+#!/bin/sh
+# Entrypoint for running the project test suite from the system menu.
+#
+# Responsibilities:
+# - Locate the repository root relative to the menu tree.
+# - Delegate to spells/system/run-tests for the actual filtering and execution logic.
+#
+# Keeping this script thin ensures the menu hook stays stable even if the
+# runner evolves.
+
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+root_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd -P)
+
+exec "$root_dir/spells/system/run-tests" "$@"

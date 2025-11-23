@@ -1,0 +1,96 @@
+#!/bin/sh
+
+# This spell routes memorization requests to the right specialist.
+# Use it to install installable spells (delegated to scribe-spell) or to
+# memorize one-line commands onto the Cast menu (delegated to
+# memorize-command).
+
+set -eu
+
+SCRIPT_NAME=$(basename "$0")
+SCRIPT_SOURCE=$0
+case $SCRIPT_SOURCE in
+*/*)
+        SCRIPT_DIR=${SCRIPT_SOURCE%/*}
+        ;;
+*)
+        SCRIPT_DIR=.
+        ;;
+esac
+SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
+SPELLS_DIR=${SCRIPT_DIR%/*}
+
+SCRIBER=${MEMORIZE_SCRIBE:-$SPELLS_DIR/spellcraft/scribe-spell}
+if [ ! -x "$SCRIBER" ] && command -v scribe-spell >/dev/null 2>&1; then
+        SCRIBER=$(command -v scribe-spell)
+fi
+
+MEMORIZER=${MEMORIZE_COMMAND_HELPER:-$SPELLS_DIR/cantrips/memorize-command}
+if [ ! -x "$MEMORIZER" ] && command -v memorize-command >/dev/null 2>&1; then
+        MEMORIZER=$(command -v memorize-command)
+fi
+
+usage() {
+        cat <<USAGE
+Usage: $SCRIPT_NAME [alias NAME COMMAND...|forget NAME|OPTIONS [PATH ...]]
+
+alias NAME COMMAND  Remember COMMAND on the Cast menu under NAME.
+forget NAME         Remove NAME from the Cast menu.
+OPTIONS             Passed through to scribe-spell to install installable spells.
+USAGE
+}
+
+case ${1-} in
+-h|--help)
+        usage
+        exit 0
+        ;;
+alias)
+        shift
+        if [ -z "$MEMORIZER" ] || [ ! -x "$MEMORIZER" ]; then
+                printf '%s\n' "$SCRIPT_NAME: memorize-command helper is unavailable; cannot record alias." >&2
+                exit 1
+        fi
+        if [ "$#" -lt 2 ]; then
+                printf '%s\n' "alias requires a NAME and a COMMAND." >&2
+                exit 1
+        fi
+        name=$1
+        shift
+        command_display=$*
+        if [ -z "$command_display" ]; then
+                printf '%s\n' "alias requires a COMMAND." >&2
+                exit 1
+        fi
+        if "$MEMORIZER" add "$name" "$@"; then
+                printf "Memorized: %s -> %s\n" "$name" "$command_display"
+                printf '%s\n' "Cast it from the Cast spell menu."
+                exit 0
+        fi
+        printf '%s\n' "Unable to record spell '$name'." >&2
+        exit 1
+        ;;
+forget)
+        shift
+        if [ -z "$MEMORIZER" ] || [ ! -x "$MEMORIZER" ]; then
+                printf '%s\n' "$SCRIPT_NAME: memorize-command helper is unavailable; cannot forget aliases." >&2
+                exit 1
+        fi
+        if [ "$#" -ne 1 ]; then
+                printf '%s\n' "forget expects exactly one NAME." >&2
+                exit 1
+        fi
+        if "$MEMORIZER" remove "$1"; then
+                printf "Forgotten: %s\n" "$1"
+                exit 0
+        fi
+        exit 1
+        ;;
+*)
+        if [ -z "$SCRIBER" ] || [ ! -x "$SCRIBER" ]; then
+                printf '%s\n' "$SCRIPT_NAME: scribe-spell helper is unavailable; cannot memorize spells." >&2
+                exit 1
+        fi
+        exec "$SCRIBER" "$@"
+        ;;
+esac

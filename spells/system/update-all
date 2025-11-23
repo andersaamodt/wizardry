@@ -1,0 +1,235 @@
+#!/usr/bin/env sh
+
+# This spell refreshes the wizardry repository alongside other managed sources.
+# Pass --verbose to narrate each update step.
+set -eu
+
+usage() {
+  cat <<'EOF'
+Usage: update-all [-v|--verbose]
+
+Options:
+  -v, --verbose   Print all command output while updating
+  -h, --help      Show this help message and exit
+EOF
+}
+
+VERBOSE=0
+
+while [ "$#" -gt 0 ]; do
+  case $1 in
+    -v|--verbose)
+      VERBOSE=1
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -*)
+      printf 'Unknown option: %s\n' "$1" >&2
+      usage >&2
+      exit 1
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
+if [ "$#" -ne 0 ]; then
+  printf 'Unexpected argument: %s\n' "$1" >&2
+  usage >&2
+  exit 1
+fi
+
+script_dir=$(cd "$(dirname "$0")" && pwd)
+
+if color_path=$(command -v colors 2>/dev/null); then
+  # shellcheck source=/dev/null
+  . "$color_path"
+else
+  GREY=''
+  RESET=''
+fi
+
+print_step() {
+  printf '%s\n' "$1"
+}
+
+format_command() {
+  if [ "$#" -eq 0 ]; then
+    return 0
+  fi
+
+  printf '%s' "$1"
+  shift
+  for arg do
+    printf ' %s' "$arg"
+  done
+}
+
+print_command() {
+  printf '%b  $ %s%b\n' "${GREY:-}" "$(format_command "$@")" "${RESET:-}"
+}
+
+run_quiet() {
+  if [ "$#" -eq 0 ]; then
+    return 0
+  fi
+  print_command "$@"
+  if [ "$VERBOSE" -eq 1 ]; then
+    "$@"
+  else
+    "$@" >/dev/null 2>&1
+  fi
+}
+
+progress_filter() {
+  last_progress=''
+  while IFS= read -r line || [ -n "$line" ]; do
+    case $line in
+      Progress:*)
+        last_progress=$line
+        printf '\r%s' "$line"
+        ;;
+      *)
+        if [ -n "$last_progress" ]; then
+          printf '\r%s\n' "$last_progress"
+          last_progress=''
+        fi
+        if [ -n "$line" ]; then
+          printf '%s\n' "$line"
+        fi
+        ;;
+    esac
+  done
+
+  if [ -n "$last_progress" ]; then
+    printf '\r%s\n' "$last_progress"
+  fi
+}
+
+run_with_progress() {
+  if [ "$#" -eq 0 ]; then
+    return 0
+  fi
+
+  print_command "$@"
+
+  if [ "$VERBOSE" -eq 1 ]; then
+    "$@"
+    return $?
+  fi
+
+  progress_tmp=$(mktemp)
+  (
+    set +e
+    "$@" 2>&1
+    cmd_status=$?
+    set -e
+    printf '%s\n' "$cmd_status" >"$progress_tmp"
+    exit 0
+  ) | tr '\r' '\n' | progress_filter
+
+  status=$(cat "$progress_tmp" 2>/dev/null || printf '1\n')
+  rm -f "$progress_tmp"
+
+  case ${status:-} in
+    '' ) status=1 ;;
+  esac
+
+  return "$status"
+}
+
+assume_yes() {
+  case ${WIZARDRY_UPDATE_ALL_ASSUME_YES:-} in
+    1|[Yy]|[Yy][Ee][Ss]|[Tt][Rr][Uu][Ee])
+      return 0
+      ;;
+  esac
+  return 1
+}
+
+confirm_updates() {
+  if assume_yes; then
+    return 0
+  fi
+  if ! command -v ask_yn >/dev/null 2>&1; then
+    printf '%s\n' 'ask_yn spell is missing; cannot confirm updates.' >&2
+    return 1
+  fi
+  printf '%s\n' 'Proceed with system updates?'
+  if ASK_CANTRIP_INPUT=stdin ask_yn 'Proceed with system updates?' yes >/dev/null; then
+    return 0
+  fi
+  return 1
+}
+
+resolve_distro() {
+  if [ -n "${WIZARDRY_UPDATE_ALL_DISTRO:-}" ]; then
+    printf '%s\n' "$WIZARDRY_UPDATE_ALL_DISTRO"
+    return 0
+  fi
+
+  if command -v detect-distro >/dev/null 2>&1; then
+    if distro=$(detect-distro 2>/dev/null); then
+      printf '%s\n' "$distro"
+      return 0
+    fi
+  fi
+
+  return 1
+}
+
+distro=$(resolve_distro)
+if [ -z "$distro" ]; then
+  printf '%s\n' 'Unable to detect operating system.' >&2
+  exit 1
+fi
+
+printf 'Detected platform: %s\n' "$distro"
+
+if ! confirm_updates; then
+  printf '%s\n' 'cancelled by user' >&2
+  exit 1
+fi
+
+case $distro in
+  debian)
+    print_step '• Refreshing apt package lists'
+    run_quiet sudo apt-get update
+    print_step '• Installing upgrades'
+    run_with_progress sudo apt-get -o Dpkg::Progress-Fancy=1 -o Dpkg::Use-Pty=0 -y full-upgrade
+    print_step '• Removing unused packages'
+    run_with_progress sudo apt-get -o Dpkg::Progress-Fancy=1 -o Dpkg::Use-Pty=0 -y autoremove
+    ;;
+  arch)
+    print_step '• Synchronising pacman packages'
+    run_quiet sudo pacman -Syu --noconfirm
+    print_step '• Refreshing Pamac-managed packages'
+    run_quiet pamac update --no-confirm
+    print_step '• Rebuilding Pamac AUR packages'
+    run_quiet pamac build --no-confirm
+    ;;
+  nixos)
+    print_step '• Refreshing system channels'
+    run_quiet sudo nix-channel --update
+    print_step '• Rebuilding system configuration'
+    run_quiet sudo nixos-rebuild switch --upgrade
+    print_step '• Refreshing user channels'
+    run_quiet nix-channel --update
+    print_step '• Upgrading user packages'
+    run_quiet nix-env -u --always
+    ;;
+  *)
+    printf 'Unsupported platform: %s\n' "$distro" >&2
+    exit 2
+    ;;
+esac
+
+print_step 'All updates complete.'

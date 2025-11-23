@@ -46,7 +46,7 @@ test_main_menu_passes_expected_entries() {
   assert_success
   args=$(cat "$tmp/log")
   case "$args" in
-    *"Main Menu:"*"MUD menu%mud"*"Cast a Spell%spell-menu"*"Spellbook%spellbook"*"Install Free Software%install-menu"*"Manage System%system-menu"*"Exit%kill -2"* ) : ;; 
+    *"Main Menu:"*"MUD menu%mud"*"Cast a Spell%cast"*"Spellbook%spellbook"*"Install Free Software%install-menu"*"Manage System%system-menu"*"Exit%kill -2"* ) : ;;
     *) TEST_FAILURE_REASON="menu entries missing"; return 1 ;;
   esac
 }

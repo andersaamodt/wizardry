@@ -17,7 +17,13 @@ find_repo_root() {
 }
 
 ROOT_DIR=$(find_repo_root)
-PATH="$ROOT_DIR/spells:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/menu:$ROOT_DIR/spells/menu/system:$ROOT_DIR/spells/menu/install/core:$PATH"
+initial_path=$PATH
+PATH="$ROOT_DIR/spells"
+for dir in "$ROOT_DIR"/spells/*; do
+  [ -d "$dir" ] || continue
+  PATH="$PATH:$dir"
+done
+PATH="$PATH:$initial_path"
 export PATH
 WIZARDRY_TEST_HELPERS_ONLY=1
 export WIZARDRY_TEST_HELPERS_ONLY

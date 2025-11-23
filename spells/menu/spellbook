@@ -2,11 +2,14 @@
 
 set -eu
 
-spellbook_store=${SPELLBOOK_STORE-spellbook-store}
-if spellbook_store_path=$(command -v "$spellbook_store" 2>/dev/null); then
-        spellbook_store=$spellbook_store_path
+menu_escape_status=113
+ROOT_DIR=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd -P)
+
+cast_store=${CAST_STORE-memorize-command}
+if cast_store_path=$(command -v "$cast_store" 2>/dev/null); then
+        cast_store=$cast_store_path
 else
-        printf '%s\n' "spellbook: spellbook-store helper is missing." >&2
+        printf '%s\n' "spellbook: memorize-command helper is missing." >&2
         exit 1
 fi
 
@@ -20,89 +23,411 @@ require_tool() {
         "$require_cmd" "$@"
 }
 
-spellbook_list() {
-        "$spellbook_store" list
+cast_dir=$($cast_store dir)
+
+resolve_spell_home() {
+        if [ -n "${WIZARDRY_SPELL_HOME-}" ]; then
+                printf '%s' "$WIZARDRY_SPELL_HOME"
+        elif [ -n "${SPELLBOOK_HOME-}" ]; then
+                printf '%s' "$SPELLBOOK_HOME"
+        elif [ -n "${SPELL_HOME-}" ]; then
+                printf '%s' "$SPELL_HOME"
+        elif [ -n "${XDG_DATA_HOME-}" ] && [ -n "$XDG_DATA_HOME" ]; then
+                printf '%s' "$XDG_DATA_HOME/wizardry/spellbook"
+        elif [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
+                printf '%s' "$HOME/.spellbook"
+        else
+                printf '%s' ".spellbook"
+        fi
 }
 
-spellbook_forget() {
-        if [ "$#" -ne 1 ]; then
-                printf '%s\n' "Usage: spellbook --forget NAME" >&2
+spell_home=$(resolve_spell_home)
+commands_file=${SPELLBOOK_COMMANDS_FILE-$spell_home/custom-commands}
+custom_spells_dir=${SPELLBOOK_CUSTOM_DIR-$spell_home/custom}
+
+if [ -d "$custom_spells_dir" ]; then
+        PATH="$custom_spells_dir:$PATH"
+fi
+
+ensure_parent_dir() {
+        file=$1
+        dir=${file%/*}
+        if [ "$dir" != "$file" ] && [ ! -d "$dir" ]; then
+                mkdir -p "$dir"
+        fi
+}
+
+validate_name() {
+        name=$1
+        case $name in
+        ''|*[!A-Za-z0-9._-]*)
+                printf '%s\n' "spellbook: names may contain only letters, digits, dots, underscores, and dashes." >&2
+                exit 1
+                ;;
+        -*)
+                printf '%s\n' "spellbook: names may not begin with a dash." >&2
+                exit 1
+                ;;
+        esac
+}
+
+validate_command() {
+        cmd=$1
+        if [ -z "$cmd" ]; then
+                printf '%s\n' "spellbook: command must not be empty." >&2
                 exit 1
         fi
-        name=$1
-        if "$spellbook_store" remove "$name"; then
-                printf "Forgot '%s'.\n" "$name"
+        if [ "$(printf '%s' "$cmd" | tr -d '\t')" != "$cmd" ]; then
+                printf '%s\n' "spellbook: command may not contain tabs." >&2
+                exit 1
+        fi
+        if [ "$(printf '%s' "$cmd" | tr -d '\n')" != "$cmd" ]; then
+                printf '%s\n' "spellbook: command must be a single line." >&2
+                exit 1
         fi
 }
 
-spellbook_show_list() {
-        entries=$(spellbook_list)
-        if [ -z "$entries" ]; then
+custom_spell_path() {
+        printf '%s/%s' "$custom_spells_dir" "$1"
+}
+
+write_custom_script() {
+        script_name=$1
+        cmd_text=$2
+        ensure_parent_dir "$(custom_spell_path "$script_name")"
+        mkdir -p "$custom_spells_dir"
+        escaped_cmd=$(printf '%s' "$cmd_text" | sed "s/'/'\\''/g")
+        cat >"$(custom_spell_path "$script_name")" <<EOF_SCRIPT
+#!/bin/sh
+exec sh -c '$escaped_cmd' "\$0" "\$@"
+EOF_SCRIPT
+        chmod +x "$(custom_spell_path "$script_name")"
+}
+
+categories() {
+        set --
+        for dir in "$ROOT_DIR"/spells/*; do
+                [ -d "$dir" ] || continue
+                [ "$(basename "$dir")" = "menu" ] && continue
+                set -- "$@" "$(basename "$dir")"
+        done
+        if [ -f "$commands_file" ]; then
+                while IFS=$(printf '\t') read -r category _ _ || [ -n "$category" ]; do
+                        [ -z "$category" ] && continue
+                        set -- "$@" "$category"
+                done <"$commands_file"
+        fi
+        printf '%s\n' "$@" | sort -u
+}
+
+safe_command_label() {
+        entry=$1
+        command=$2
+        printf '%s – %s' "$entry" "$command"
+}
+
+command_for_spell() {
+        spell_path=$1
+        name=$(basename "$spell_path")
+        if command -v "$name" >/dev/null 2>&1; then
+                printf '%s' "$name"
+        else
+                printf '%s' "$spell_path"
+        fi
+}
+
+list_category_spells() {
+        cat_name=$1
+        find "$ROOT_DIR/spells/$cat_name" -maxdepth 2 -type f -perm -111 | sort
+}
+
+list_custom_commands() {
+        cat_name=$1
+        if [ ! -f "$commands_file" ]; then
+                return 0
+        fi
+        while IFS=$(printf '\t') read -r category name command || [ -n "$category" ]; do
+                [ -z "$category" ] && continue
+                if [ "$category" = "$cat_name" ]; then
+                        printf '%s\t%s\t%s\n' "$category" "$name" "$command"
+                fi
+        done <"$commands_file"
+}
+
+record_custom_command() {
+        cat_name=$1
+        cmd_name=$2
+        shift 2
+        cmd=$1
+        shift || :
+        while [ "$#" -gt 0 ]; do
+                cmd="$cmd $1"
+                shift
+        done
+        validate_name "$cmd_name"
+        validate_command "$cmd"
+        ensure_parent_dir "$commands_file"
+        mkdir -p "$custom_spells_dir"
+        write_custom_script "$cmd_name" "$cmd"
+        tmp=$(mktemp "${TMPDIR:-/tmp}/spellbook-commands.XXXXXX") || exit 1
+        if [ -f "$commands_file" ]; then
+                while IFS= read -r line || [ -n "$line" ]; do
+                        entry_category=${line%%$(printf '\t')*}
+                        case $line in
+                        *$(printf '\t')*)
+                                entry_rest=${line#*$(printf '\t')}
+                                entry_name=${entry_rest%%$(printf '\t')*}
+                                ;;
+                        *)
+                                entry_name=''
+                                ;;
+                        esac
+                        if [ "$entry_category" = "$cat_name" ] && [ "$entry_name" = "$cmd_name" ]; then
+                                continue
+                        fi
+                        printf '%s\n' "$line" >>"$tmp"
+                done <"$commands_file"
+        fi
+        printf '%s\t%s\t%s\n' "$cat_name" "$cmd_name" "$cmd" >>"$tmp"
+        mv "$tmp" "$commands_file"
+}
+
+remove_custom_command() {
+        cat_name=$1
+        cmd_name=$2
+        [ -f "$commands_file" ] || return 1
+        tmp=$(mktemp "${TMPDIR:-/tmp}/spellbook-commands.XXXXXX") || exit 1
+        kept=0
+        removed=0
+        while IFS= read -r line || [ -n "$line" ]; do
+                        entry_category=${line%%$(printf '\t')*}
+                        case $line in
+                        *$(printf '\t')*)
+                                entry_rest=${line#*$(printf '\t')}
+                                entry_name=${entry_rest%%$(printf '\t')*}
+                                ;;
+                        *)
+                                entry_name=''
+                                ;;
+                        esac
+                        if [ "$entry_category" = "$cat_name" ] && [ "$entry_name" = "$cmd_name" ]; then
+                                removed=1
+                                continue
+                        fi
+                        kept=1
+                        printf '%s\n' "$line" >>"$tmp"
+        done <"$commands_file"
+        mv "$tmp" "$commands_file"
+        rm -f "$(custom_spell_path "$cmd_name")"
+        if [ "$kept" -eq 0 ] && [ ! -s "$commands_file" ]; then
+                rm -f "$commands_file"
+        fi
+        [ "$removed" -eq 1 ]
+}
+
+cast_list() {
+        "$cast_store" list
+}
+
+is_memorized() {
+        name=$1
+        while IFS=$(printf '\t') read -r alias _; do
+                if [ "$alias" = "$name" ]; then
+                        return 0
+                fi
+        done <<ENTRIES
+$(cast_list)
+ENTRIES
+        return 1
+}
+
+memorize_spell() {
+        name=$1
+        shift
+        "$cast_store" add "$name" "$@"
+}
+
+forget_spell() {
+        name=$1
+        "$cast_store" remove "$name"
+}
+
+prompt_for_input() {
+        prompt=$1
+        printf '%s' "$prompt"
+        IFS= read -r value
+        printf '%s' "$value"
+}
+
+scribe_command() {
+        cat_name=$(prompt_for_input "Category: ")
+        cmd_name=$(prompt_for_input "Name: ")
+        cmd_text=$(prompt_for_input "Command: ")
+        if [ -z "$cat_name" ] || [ -z "$cmd_name" ] || [ -z "$cmd_text" ]; then
+                printf '%s\n' "A category, name, and command are required." >&2
                 return 1
         fi
-        printf '%s\n' "$entries"
-        return 0
+        record_custom_command "$cat_name" "$cmd_name" "$cmd_text"
+        printf "Scribed '%s' into %s.\n" "$cmd_name" "$cat_name"
+        printf "Custom spells live in %s (add it to PATH to run by name).\n" "$custom_spells_dir"
 }
 
-print_empty_message() {
-        printf '%s\n' "Your spellbook is empty."
-        printf '%s\n' "Add spells with: memorize alias <name> 'command'"
+spell_action_menu() {
+        category=$1
+        name=$2
+        command=$3
+        display_command=${4-$command}
+        action=''
+        while :; do
+                if is_memorized "$name"; then
+                        memory_toggle="Forget%action=forget"
+                else
+                        memory_toggle="Memorize%action=memorize"
+                fi
+                set -- "Cast now%action=cast" "$memory_toggle" "Help%action=help" "Test spell%action=test" "Back%return"
+                MENU_ESCAPE_STATUS=$menu_escape_status menu "Spell: $name" "$@"
+                status=$?
+                if [ "$status" -eq "$menu_escape_status" ]; then
+                        break
+                fi
+                case ${action-} in
+                cast)
+                        eval "$command"
+                        ;;
+                memorize)
+                        memorize_spell "$name" "$command"
+                        ;;
+                forget)
+                        if is_memorized "$name"; then
+                                forget_spell "$name"
+                        fi
+                        ;;
+                help)
+                        eval "$command --help" || true
+                        ;;
+                test)
+                        if command -v run-tests >/dev/null 2>&1; then
+                                run-tests --only "$name" || true
+                        else
+                                printf '%s\n' "run-tests is unavailable; cannot test $name." >&2
+                        fi
+                        ;;
+                esac
+                action=''
+        done
+}
+
+category_menu() {
+        category=$1
+        while :; do
+                set --
+                for spell in $(list_category_spells "$category"); do
+                        spell_name=$(basename "$spell")
+                        cmd=$(command_for_spell "$spell")
+                        set -- "$@" "$(safe_command_label "$spell_name" "$cmd")%selected_name='$spell_name';selected_cmd='$cmd';selected_display='$cmd'"
+                done
+                while IFS=$(printf '\t') read -r _ custom_name custom_cmd; do
+                        [ -z "$custom_name" ] && continue
+                        spell_path=$(custom_spell_path "$custom_name")
+                        command_value=$spell_path
+                        set -- "$@" "$(safe_command_label "$custom_name" "$custom_cmd")%selected_name='$custom_name';selected_cmd='$command_value';selected_display='$custom_cmd'"
+                done <<CUSTOM
+$(list_custom_commands "$category")
+CUSTOM
+                set -- "$@" "Back%return"
+                selected_name=''
+                selected_cmd=''
+                selected_display=''
+                MENU_ESCAPE_STATUS=$menu_escape_status menu "$category:" "$@"
+                status=$?
+                if [ "$status" -eq "$menu_escape_status" ]; then
+                        break
+                fi
+                if [ -n "$selected_name" ] && [ -n "$selected_cmd" ]; then
+                        spell_action_menu "$category" "$selected_name" "$selected_cmd" "$selected_display"
+                fi
+                printf '\n'
+        done
 }
 
 spellbook_menu() {
-        menu_escape_status=113
-        first_run=1
-        while :
-        do
-                entries=$(spellbook_list)
-                if [ -z "$entries" ]; then
-                        if [ "$first_run" -eq 1 ]; then
-                                print_empty_message
-                        fi
-                        break
-                fi
+        while :; do
                 set --
-                while IFS='\t' read -r alias command
-                do
-                        [ -z "$alias" ] && continue
-                        label=$(printf '%s – %s' "$alias" "$command")
-                        set -- "$@" "$(printf '%s%%spellbook --forget %s' "$label" "$alias")"
-                done <<'SPELLS'
-$entries
-SPELLS
-                set -- "$@" "Close Spellbook%kill -2 $$"
+                for category in $(categories); do
+                        set -- "$@" "$(printf '%s%%category_choice=%s' "$category" "$category")"
+                done
+                set -- "$@" "Scribe command%category_choice=scribe" "Close Spellbook%kill -2 $$"
+                category_choice=''
                 MENU_ESCAPE_STATUS=$menu_escape_status menu "Spellbook:" "$@"
                 status=$?
                 if [ "$status" -eq "$menu_escape_status" ]; then
                         break
                 fi
-                first_run=0
+                case ${category_choice-} in
+                scribe)
+                        scribe_command
+                        ;;
+                "")
+                        :
+                        ;;
+                *)
+                        category_menu "$category_choice"
+                        ;;
+                esac
                 printf '\n'
         done
 }
 
 usage() {
         cat <<'USAGE'
-Usage: spellbook [--list|--forget NAME]
+Usage: spellbook [--memorize NAME COMMAND...|--forget NAME|--list|--scribe CATEGORY NAME COMMAND...]
 
-  --list          Show the stored spells in NAME<TAB>COMMAND format.
-  --forget NAME   Remove the named spell from the spellbook.
-  --help          Show this help text.
+Without arguments, opens the interactive spellbook to browse categories,
+scribe commands, and manage the cast menu.
 
-Run without arguments to interactively manage your spellbook.
+Custom commands are stored as executable spells under the user spell home
+(default: ~/.spellbook/custom or $XDG_DATA_HOME/wizardry/spellbook/custom).
 USAGE
 }
 
 case ${1-} in
-        --list)
-                if spellbook_show_list; then
-                        :
+        --memorize)
+                shift
+                if [ "$#" -lt 2 ]; then
+                        usage >&2
+                        exit 1
                 fi
+                name=$1
+                shift
+                memorize_spell "$name" "$@"
                 exit 0
                 ;;
         --forget)
                 shift
-                spellbook_forget "$@"
+                if [ "$#" -ne 1 ]; then
+                        usage >&2
+                        exit 1
+                fi
+                forget_spell "$1"
+                exit 0
+                ;;
+        --list)
+                cast_list
+                exit 0
+                ;;
+        --scribe)
+                shift
+                if [ "$#" -lt 3 ]; then
+                        usage >&2
+                        exit 1
+                fi
+                category=$1
+                shift
+                name=$1
+                shift
+                record_custom_command "$category" "$name" "$@"
+                printf "Scribed '%s' into %s.\n" "$name" "$category"
+                printf "Custom spells live in %s (add it to PATH to run by name).\n" "$custom_spells_dir"
                 exit 0
                 ;;
         --help|-h)
@@ -119,7 +444,7 @@ case ${1-} in
                 usage >&2
                 exit 1
                 ;;
-esac
+        esac
 
 if ! require_tool menu "The spellbook menu needs the 'menu' command."; then
         exit 1

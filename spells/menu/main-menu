@@ -33,7 +33,7 @@ fi
 
 display_menu() {
   mud="MUD menu%mud"
-  cast="Cast a Spell%spell-menu"
+  cast="Cast a Spell%cast"
   spellbook="Spellbook%spellbook"
   install="Install Free Software%install-menu"
   system="Manage System%system-menu"
