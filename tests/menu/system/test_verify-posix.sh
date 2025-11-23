@@ -22,7 +22,7 @@ SCRIPT
 
 runs_from_system_menu() {
   prepare_checkbashisms_stub || return 1
-  run_cmd "$ROOT_DIR/spells/menu/system/verify-posix"
+  run_cmd "$ROOT_DIR/spells/system/verify-posix"
   assert_success || return 1
   summary=$(printf '%s\n' "$OUTPUT" | tail -n 1)
   case $summary in

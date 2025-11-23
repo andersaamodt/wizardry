@@ -50,7 +50,7 @@ test_mud_install_menu_calls_tor_installer() {
   assert_success
   args=$(cat "$tmp/log")
   case "$args" in
-    *"MUD main menu:"*"setup-tor"*"Exit%kill -2"* ) : ;;
+    *"MUD main menu:"*"/install/tor/setup-tor"*"Exit%kill -2"* ) : ;;
     *) TEST_FAILURE_REASON="tor setup entry missing"; return 1 ;;
   esac
 }
