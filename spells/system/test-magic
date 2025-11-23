@@ -179,9 +179,14 @@ spell_path_for_test() {
 
 record_subtests() {
   counts=$(printf '%s\n' "$1" | awk '
-    match($0,/([0-9]+)\/([0-9]+) tests passed/,m){passed+=m[1]; total+=m[2]; next}
-    match($0,/([0-9]+) tests failed.*, ([0-9]+) total/,m){total+=m[2]; next}
-    END {print (passed+0) " " (total+0)}
+    /^[0-9]+\/[0-9]+ tests passed/ {
+      split($1, parts, "/")
+      passed += parts[1]
+      total += parts[2]
+      next
+    }
+    /^FAIL_DETAIL:/ { next }
+    END { print (passed+0) " " (total+0) }
   ')
 
   set -- $counts
