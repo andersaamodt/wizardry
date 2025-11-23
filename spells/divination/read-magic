@@ -35,15 +35,25 @@ file_exists() {
 
 parse_attr_output() {
   printf '%s\n' "$1" | awk '
-    NF { last = $0 }
+    NF { lines[NR] = $0; last = NR }
     END {
-      line = last
-      # Prefer content after the final colon on the last non-empty line.
+      # Prefer a "value for VALUE" clause anywhere in the output.
+      for (i = 1; i <= last; i++) {
+        line = lines[i]
+        if (match(line, /value for[[:space:]]*(.*)$/, m)) {
+          print m[1]
+          exit
+        }
+      }
+
+      # Next, try the final colon-delimited value on the last non-empty line.
+      line = lines[last]
       if (match(line, /:[[:space:]]*(.*)$/, m)) {
         print m[1]
         exit
       }
-      # Fall back to the raw line when no colon is present.
+
+      # Fall back to the raw last line.
       print line
     }
   '
