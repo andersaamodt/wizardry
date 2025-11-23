@@ -2,4 +2,19 @@
 set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-ASSUME_YES=1 "$SCRIPT_DIR/manage-wizardry-command" --uninstall await-keypress spells/cantrips/await-keypress
+ROOT_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/../../.." && pwd -P)
+INSTALL_DIR=${WIZARDRY_BIN_DIR:-$HOME/.local/bin}
+COMMAND_NAME=await-keypress
+SOURCE_PATH="$ROOT_DIR/spells/cantrips/$COMMAND_NAME"
+TARGET_PATH="$INSTALL_DIR/$COMMAND_NAME"
+
+if [ -L "$TARGET_PATH" ] && [ "$(readlink "$TARGET_PATH")" = "$SOURCE_PATH" ]; then
+  rm -f "$TARGET_PATH"
+  exit 0
+fi
+
+if [ ! -e "$TARGET_PATH" ]; then
+  exit 0
+fi
+
+printf '%s\n' "$COMMAND_NAME is not managed by wizardry." >&2

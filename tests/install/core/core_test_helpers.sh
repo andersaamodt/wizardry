@@ -38,7 +38,7 @@ STUB
 
 provide_basic_tools() {
   fixture=$1
-  for cmd in mktemp mkdir rm cat env ln sh dirname; do
+  for cmd in mktemp mkdir rm cat env ln sh dirname readlink; do
     tool_path=$(command -v "$cmd" 2>/dev/null || true)
     if [ -n "$tool_path" ]; then
       ln -s "$tool_path" "$fixture/bin/$cmd"
