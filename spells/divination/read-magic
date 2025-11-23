@@ -81,7 +81,10 @@ read_value() {
   file=$2
 
   if helper_usable attr; then
-    if output=$(attr -g "$key" "$file" 2>/dev/null); then
+    if output=$(attr -q -g "$key" "$file" 2>/dev/null); then
+      printf '%s' "$output"
+      return 0
+    elif output=$(attr -g "$key" "$file" 2>/dev/null); then
       parse_attr_output "$output"
       return 0
     fi
