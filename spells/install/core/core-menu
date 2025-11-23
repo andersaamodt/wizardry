@@ -54,7 +54,9 @@ while true; do
   set --
 
   while IFS=: read -r label command_name install_spell uninstall_spell; do
+    installed=0
     if command -v "$command_name" >/dev/null 2>&1; then
+      installed=1
       entry_label="Uninstall $label"
       spell=$(resolve_spell "$uninstall_spell") || exit 1
     else
@@ -62,7 +64,12 @@ while true; do
       spell=$(resolve_spell "$install_spell") || exit 1
     fi
 
-    set -- "$@" "${entry_label}%$spell"
+    display_label=$entry_label
+    if [ "$installed" -eq 1 ]; then
+      display_label="$entry_label (installed; select to uninstall — Install $label to reinstall)"
+    fi
+
+    set -- "$@" "${display_label}%$spell"
   done <<EOF
 $(core_dependencies)
 EOF

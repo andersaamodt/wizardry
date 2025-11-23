@@ -83,7 +83,7 @@ if [ "$action" = "install" ]; then
     exit 0
   fi
 
-  printf '%s\n' "manage-system-command: unable to install $command_name automatically. Please install it manually." >&2
+  printf '%s\n' "manage-system-command: unable to install $package_default automatically. Please install it manually." >&2
   exit 1
 fi
 
