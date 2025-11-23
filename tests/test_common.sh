@@ -172,6 +172,22 @@ run_cmd() {
     esac
   fi
 
+  # Ensure core system utilities remain reachable even if PATH was cleared or
+  # overridden; macOS runners can otherwise lack mkdir/cat/rm when helpers are
+  # filtered. Prepending stable defaults keeps stubs ahead of system tools.
+  case ":$effective_path:" in
+    *":/bin:"*) : ;;
+    *) effective_path="/bin:$effective_path" ;;
+  esac
+  case ":$effective_path:" in
+    *":/usr/bin:"*) : ;;
+    *) effective_path="/usr/bin:$effective_path" ;;
+  esac
+  case ":$effective_path:" in
+    *":/usr/local/bin:"*) : ;;
+    *) effective_path="/usr/local/bin:$effective_path" ;;
+  esac
+
   workdir=${RUN_CMD_WORKDIR:-$(pwd)}
   PATH="$effective_path" mkdir -p "$workdir"
 

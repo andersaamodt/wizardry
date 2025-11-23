@@ -35,15 +35,27 @@ file_exists() {
 
 parse_attr_output() {
   printf '%s\n' "$1" | awk '
-    NF { lines[NR] = $0; last = NR }
+    NF {
+      # Track the last non-empty line so we can pick the raw value when attr
+      # prints a header followed by the payload on the next line.
+      lines[NR] = $0
+      last = NR
+      last_nonempty = NR
+    }
     END {
-      # Multi-line outputs (e.g., attr -g) place the value on the final line.
-      if (last > 1) {
-        print lines[last]
+      if (last > 1 && last_nonempty > 0) {
+        print lines[last_nonempty]
         exit
       }
 
       line = lines[last]
+
+      # attr -g verbose output (and similar stubs) often look like:
+      #   Attribute "user.beta" has a value: beta-value
+      if (match(line, /has a [^:]*:[[:space:]]*(.*)$/, m)) {
+        print m[1]
+        exit
+      }
 
       # Prefer a colon-delimited value on the sole line when present.
       if (match(line, /:[[:space:]]*(.*)$/, m)) {
