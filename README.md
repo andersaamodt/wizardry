@@ -81,7 +81,7 @@ Wizardry includes a curated free software suite which can be easily and optional
 * Inclusions are opinilnsted; the free software suite is our recommendations of the best free software
 * No redundant apps; we will choose the best one to include for each purpose, or offer a clear choice if necessary
 
-Using the free software suite makes it easy to establish a standardized software environment across OSes, without having to use a heavier package manager or containerized solution. Wizardry helps you install the right software in the correct and standard way.
+Using the free software suite makes it easy to establish a standardized software environment across OSes, without having to use a heavier package manager or containerized solution. Wizardry helps you install the right software in the correct way, using built-in package managers on each OS when possible.
 
 ## Principles:
 
