@@ -9,8 +9,8 @@ done
 . "$test_root/test_common.sh"
 
 spell_is_executable() {
-  [ -x "$ROOT_DIR/spells/install/mud/mud" ]
+  [ -x "$ROOT_DIR/spells/install/mud/install-mud" ]
 }
 
-run_test_case "install/mud/mud is executable" spell_is_executable
+run_test_case "install/mud/install-mud is executable" spell_is_executable
 finish_tests

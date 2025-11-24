@@ -101,6 +101,8 @@ while :; do
             cmd="$install_dir/$name"
         elif [ -x "$install_dir/$name/$name" ] && [ -f "$install_dir/$name/$name" ]; then
             cmd="$install_dir/$name/$name"
+        elif [ -x "$install_dir/$name/install-$name" ] && [ -f "$install_dir/$name/install-$name" ]; then
+            cmd="$install_dir/$name/install-$name"
         else
             cmd='printf "This entry is not ready yet.\n"'
         fi
