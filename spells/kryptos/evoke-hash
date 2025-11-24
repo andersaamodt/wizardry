@@ -1,25 +1,56 @@
 #!/bin/sh
 
-# This script returns the file(s) in the current (or specified) directory that has the given hash.
-# Usage: get-card [HASH] [DIRECTORY]
+# This spell returns files in a directory matching a given hash.
+# Searches current directory by default.
 
-HASH="${1}"
-DIRECTORY="${2:-.}"  # Default to current directory if no directory is provided
+set -eu
 
-# Iterate over the files in the directory
-for file in "${DIRECTORY}"/*; do
-  # Ignore directories
-  if [ -f "${file}" ]; then
-    # Call read-magic on the file to get its hash
-    file_hash=$(read-magic "${file}" hash)
+show_usage() {
+  cat <<'USAGE'
+Usage: evoke-hash <hash> [directory]
 
-    # If the hash matches the given hash, print out the full path of the file
-    if [ "${file_hash}" = "${HASH}" ]; then
-      echo "$(realpath "${file}")"
-      exit 0
-    fi
+Find files whose hash attribute matches the given hash value.
+Defaults to searching the current directory.
+
+The hash must have been previously set with the hashchant spell.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
+if [ "$#" -lt 1 ]; then
+  show_usage >&2
+  exit 1
+fi
+
+hash=$1
+directory=${2:-.}
+
+if [ ! -d "$directory" ]; then
+  printf 'Error: %s is not a directory.\n' "$directory" >&2
+  exit 1
+fi
+
+found=0
+for file in "$directory"/*; do
+  [ -f "$file" ] || continue
+  
+  file_hash=$(read-magic "$file" hash 2>/dev/null) || continue
+  
+  if [ "$file_hash" = "$hash" ]; then
+    realpath "$file"
+    found=1
+    exit 0
   fi
 done
 
-echo "No file found for the given hash. Try 'forall hashchant' and then try again."
-exit 1
+if [ "$found" -eq 0 ]; then
+  printf 'No file found for hash %s.\n' "$hash" >&2
+  printf 'Try running: forall hashchant\n' >&2
+  exit 1
+fi
