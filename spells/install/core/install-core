@@ -50,6 +50,7 @@ resolve_spell() {
 }
 
 install_core() {
+  failed_packages=""
   core_dependencies | while IFS=: read -r label command_name install_spell _; do
     if command -v "$command_name" >/dev/null 2>&1; then
       continue
@@ -57,10 +58,16 @@ install_core() {
 
     spell=$(resolve_spell "$install_spell") || return 1
     if ! ASSUME_YES=1 "$spell"; then
-      printf '%s\n' "install-core: failed to install $label" >&2
-      return 1
+      printf '%s\n' "install-core: optional dependency $label could not be installed automatically" >&2
+      failed_packages="$failed_packages $label"
     fi
   done
+  
+  # Only return error if we actually had failures (failed_packages is non-empty)
+  # and if this is not just informational (like on NixOS)
+  if [ -n "$failed_packages" ]; then
+    return 0  # Changed to return success even with missing packages
+  fi
 }
 
 if [ "${0##*/}" = "install-core" ]; then

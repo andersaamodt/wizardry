@@ -33,6 +33,33 @@ else
         PROMPT_DEFAULT=.wizardry
 fi
 
+# Validate and normalize PROMPT_DEFAULT to prevent path construction issues.
+# Environment variables should provide absolute paths, but we handle relative
+# paths defensively. If a relative path looks like it's missing a leading slash
+# (e.g., starts with "home/"), we treat it as absolute.
+case $PROMPT_DEFAULT in
+        /*)
+                # Already absolute path, no normalization needed
+                :
+                ;;
+        home/*|Users/*|usr/*|opt/*|var/*|tmp/*)
+                # Looks like an absolute path missing the leading slash
+                # This handles cases where environment variables are set incorrectly
+                PROMPT_DEFAULT="/$PROMPT_DEFAULT"
+                ;;
+        *)
+                # Other relative paths: resolve relative to HOME if possible
+                if [ -n "${HOME-}" ]; then
+                        # Convert relative to absolute by prepending HOME
+                        PROMPT_DEFAULT=$HOME/$PROMPT_DEFAULT
+                else
+                        # No HOME set and relative path given - use current directory
+                        cwd=$(pwd -P)
+                        PROMPT_DEFAULT=$cwd/$PROMPT_DEFAULT
+                fi
+                ;;
+esac
+
 if [ -n "${WIZARDRY_INSTALL_PLATFORM-}" ]; then
         PATH_WIZARD_PLATFORM=$WIZARDRY_INSTALL_PLATFORM
         DETECT_RC_FILE_PLATFORM=$WIZARDRY_INSTALL_PLATFORM
