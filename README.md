@@ -11,7 +11,7 @@ Wizardry also includes a comprehensive set of POSIX shell tutorials, and optiona
 | OS                        | Shortname | Status                              |
 | ------------------------- | --------- | ----------------------------------- |
 | **Debian (and Ubuntu)**   | `debian`  | 🟢 **`install` + `menu` work well**   |
-| **NixOS**                 | `nixos`   | 🟢 **`menu` works well**              |
+| **NixOS**                 | `nixos`   | 🟢 **`install` + `menu` work well**   |
 | **MacOS**                 | `macos`   | 🟡 **`install` + `menu` untested**    |
 | **Arch**                  | `arch`    | 🟠 **currently unsupported**          |
 | **Android (Linux-based)** | —         | 🟠 **currently unsupported**          |
@@ -44,6 +44,19 @@ chmod +x install
 ```
 
 This downloads wizardry to the default install location, `~/.tower`. After installing, you must reopen your terminal window before wizardry spells will work.
+
+### NixOS Installation Notes
+
+On NixOS, the installer adds wizardry to your PATH via shell rc files (`.bashrc` or `.bash_profile`). This ensures PATH changes persist across sessions without requiring system rebuilds.
+
+If you prefer to manage wizardry through your NixOS configuration, you can manually add the spells directory to your PATH in `/etc/nixos/configuration.nix` or `~/.config/nixpkgs/home.nix` (if using home-manager):
+
+```nix
+environment.systemPackages = [ ];  # Or home.packages for home-manager
+environment.sessionVariables = {
+  PATH = [ "$HOME/.tower/spells" ];
+};
+```
 
 ## Usage
 

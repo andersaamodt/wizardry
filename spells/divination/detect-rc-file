@@ -99,9 +99,13 @@ mac)
         add_candidate "$HOME/.bash_profile"
         ;;
 nixos)
-        add_candidate "$HOME/.config/nixpkgs/configuration.nix"
+        # For NixOS, prefer shell rc files over configuration.nix.
+        # Only changes to configuration.nix persist through system rebuilds,
+        # but modifying it automatically is risky and many users don't use home-manager.
+        # Users who want to use configuration.nix can do so manually.
         add_candidate "$HOME/.bashrc"
         add_candidate "$HOME/.bash_profile"
+        add_candidate "$HOME/.profile"
         ;;
 debian|arch|fedora)
         add_candidate "$HOME/.bashrc"
