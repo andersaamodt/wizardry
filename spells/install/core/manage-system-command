@@ -28,7 +28,7 @@ if [ -d /etc/nixos ] || [ -f /etc/NIXOS ] || grep -qi 'ID=nixos' /etc/os-release
                 if ! command -v "$command_name" >/dev/null 2>&1; then
                         printf '%s\n' "Note: $package_default should be installed declaratively on NixOS."
                         printf '%s\n' "Add '$package_default' to environment.systemPackages in your configuration.nix,"
-                        printf '%s\n' "or for home-manager: home.packages in your home.nix"
+                        printf '%s\n' "or for home-manager: home.packages in your home.nix."
                         exit 0
                 fi
         fi

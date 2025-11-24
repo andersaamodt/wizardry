@@ -37,6 +37,8 @@ fi
 # Environment variables should provide absolute paths, but we handle relative
 # paths defensively. If a relative path looks like it's missing a leading slash
 # (e.g., starts with "home/"), we treat it as absolute.
+# Note: Using character classes for case-insensitive matching (e.g., [Hh]ome)
+# is POSIX-compliant and handles common variations without external tools.
 case $PROMPT_DEFAULT in
         /*)
                 # Already absolute path, no normalization needed

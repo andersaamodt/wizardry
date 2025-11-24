@@ -63,7 +63,6 @@ install_core() {
       # Continue with other packages rather than failing completely
     fi
   done
-  
   # Always return success - optional package installation failures are non-fatal
   return 0
 }
