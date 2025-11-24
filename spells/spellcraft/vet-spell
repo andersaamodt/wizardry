@@ -96,7 +96,7 @@ is_imp() {
 gather_default_targets() {
   find "$repo_dir/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) \
     -print | sort | while IFS= read -r file; do
-      first_line=$(sed -n '1p' "$file")
+      first_line=$(head -1 "$file")
       case $first_line in
         '#!/bin/sh'|'#! /bin/sh'|'#!/usr/bin/env sh'|'#! /usr/bin/env sh')
           rel_path=${file#"$repo_dir/"}
@@ -133,7 +133,7 @@ collect_targets() {
 
 check_shebang() {
   file=$1
-  first_line=$(sed -n '1p' "$file")
+  first_line=$(head -1 "$file")
   case $first_line in
     '#!/bin/sh'|'#! /bin/sh'|'#!/usr/bin/env sh'|'#! /usr/bin/env sh')
       return 0
@@ -147,8 +147,10 @@ check_shebang() {
 
 check_description_comment() {
   file=$1
-  second_line=$(sed -n '2p' "$file")
-  third_line=$(sed -n '3p' "$file")
+  # Read lines 2 and 3 in a single sed call
+  lines=$(sed -n '2p;3p' "$file")
+  second_line=$(printf '%s' "$lines" | head -1)
+  third_line=$(printf '%s' "$lines" | tail -1)
   
   # Check if second line is empty and third line is a comment
   if [ -z "$second_line" ] && [ -n "$third_line" ]; then
@@ -203,8 +205,9 @@ check_strict_mode() {
 check_trailing_space_assignment() {
   file=$1
   # Look for pattern: variable= followed by newline (trailing space assignment)
-  if grep -En '^[a-zA-Z_][a-zA-Z0-9_]*= $' "$file" 2>/dev/null | head -1 | grep -q .; then
-    line_num=$(grep -En '^[a-zA-Z_][a-zA-Z0-9_]*= $' "$file" 2>/dev/null | head -1 | cut -d: -f1)
+  match=$(grep -En '^[a-zA-Z_][a-zA-Z0-9_]*= $' "$file" 2>/dev/null | head -1) || true
+  if [ -n "$match" ]; then
+    line_num=$(printf '%s' "$match" | cut -d: -f1)
     printf 'trailing space in variable assignment at line %s' "$line_num"
     return 1
   fi
