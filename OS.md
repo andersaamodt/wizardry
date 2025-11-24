@@ -82,7 +82,7 @@ if command -v apt-get >/dev/null 2>&1; then
     install_cmd="apt-get install -y"
 elif command -v dnf >/dev/null 2>&1; then
     pkg_manager="dnf"
-    update_cmd="dnf check-update"
+    update_cmd="dnf makecache"  # or "dnf check-update || [ $? -eq 100 ]"
     install_cmd="dnf install -y"
 elif command -v pacman >/dev/null 2>&1; then
     pkg_manager="pacman"
@@ -93,7 +93,7 @@ elif command -v brew >/dev/null 2>&1; then
     update_cmd="brew update"
     install_cmd="brew install"
 else
-    echo "No supported package manager found" >&2
+    printf '%s\n' "No supported package manager found" >&2
     exit 1
 fi
 ```
@@ -513,7 +513,7 @@ prompt_user() {
   
   if [ -t 0 ]; then
     # Interactive: show prompt on stderr so it's visible even if stdout captured
-    printf '%s' "$prompt_text [$default_value] " >&2
+    printf '%s: [%s] ' "$prompt_text" "$default_value" >&2
     IFS= read -r input
     if [ -z "$input" ]; then
       printf '%s\n' "$default_value"
@@ -866,7 +866,9 @@ chmod +x "$stubdir/xsel"
 for util in sh sed cat printf test env basename dirname; do
   if command -v "$util" >/dev/null 2>&1; then
     util_path=$(command -v "$util")
-    ln -sf "$util_path" "$stubdir/$util" 2>/dev/null || true
+    if [ -x "$util_path" ]; then
+      ln -sf "$util_path" "$stubdir/$util"
+    fi
   fi
 done
 
@@ -1007,7 +1009,10 @@ STUB
   # Symlink essential utilities for both Linux and macOS
   for util in sh sed cat printf test env basename dirname; do
     if command -v "$util" >/dev/null 2>&1; then
-      ln -sf "$(command -v "$util")" "$stubdir/$util" 2>/dev/null || true
+      util_path=$(command -v "$util")
+      if [ -x "$util_path" ]; then
+        ln -sf "$util_path" "$stubdir/$util"
+      fi
     fi
   done
   
