@@ -9,7 +9,7 @@ done
 . "$test_root/test_common.sh"
 
 spell_exists() {
-  [ -f "$ROOT_DIR/spells/install/handle-command-not-found" ]
+  [ -f "$ROOT_DIR/spells/install/core/handle-command-not-found" ]
 }
 
 run_test_case "install/handle-command-not-found exists" spell_exists

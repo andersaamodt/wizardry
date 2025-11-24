@@ -20,7 +20,7 @@ SCRIPT
   PATH="$stub_dir:$PATH"
   export PATH
 
-  run_cmd "$ROOT_DIR/spells/install/install-checkbashisms"
+  run_cmd "$ROOT_DIR/spells/install/core/install-checkbashisms"
   assert_success || return 1
   assert_output_contains "checkbashisms is already installed." || return 1
 }

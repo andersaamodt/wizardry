@@ -38,11 +38,6 @@ fi
 # Let the user bail out with Ctrl+C while still printing a friendly message.
 trap 'printf "\nExiting install menu.\n" >&2; exit 0' INT
 
-launch_submenu() {
-    printf '\n'
-    "$@"
-}
-
 list_entries() {
     # INSTALL_MENU_DIRS can override discovery for tests or custom menus.
     if [ -n "${INSTALL_MENU_DIRS-}" ]; then
@@ -92,11 +87,11 @@ while :; do
         fi
 
         if command -v "${name}-menu" >/dev/null 2>&1; then
-            cmd="launch_submenu ${name}-menu"
+            cmd="${name}-menu"
         elif [ -x "$install_dir/$name-menu" ] && [ ! -d "$install_dir/$name-menu" ]; then
-            cmd="launch_submenu $install_dir/$name-menu"
+            cmd="$install_dir/$name-menu"
         elif [ -x "$install_dir/$name/$name-menu" ] && [ ! -d "$install_dir/$name/$name-menu" ]; then
-            cmd="launch_submenu $install_dir/$name/$name-menu"
+            cmd="$install_dir/$name/$name-menu"
         elif [ -x "$install_dir/$name" ] && [ -f "$install_dir/$name" ]; then
             cmd="$install_dir/$name"
         elif [ -x "$install_dir/$name/$name" ] && [ -f "$install_dir/$name/$name" ]; then
