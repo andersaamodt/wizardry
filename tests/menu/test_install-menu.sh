@@ -75,7 +75,7 @@ SH
   esac
 
   case "$menu_args" in
-    *"beta - ready%launch_submenu $install_root/beta-menu"* ) : ;;
+    *"beta - ready%$install_root/beta-menu"* ) : ;;
     *) TEST_FAILURE_REASON="beta entry missing submenu command"; return 1 ;;
   esac
 
@@ -113,7 +113,7 @@ SH
     assert_output_contains "Install Menu:"
   menu_args=$(cat "$MENU_LOG")
   case "$menu_args" in
-    *"alpha - ready%launch_submenu alpha-menu"* ) : ;; 
+    *"alpha - ready%alpha-menu"* ) : ;; 
     *) TEST_FAILURE_REASON="menu entries missing status"; return 1 ;;
   esac
 }

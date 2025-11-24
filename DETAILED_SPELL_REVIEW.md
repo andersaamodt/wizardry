@@ -376,8 +376,8 @@ printf '%s\n' "Run 'install-menu' to install system utilities." >&2
 **Missing tests for:**
 - `spells/system/update-all` (253 lines!)
 - `spells/system/update-wizardry` (63 lines)
-- `spells/install/install-checkbashisms`
-- `spells/install/handle-command-not-found`
+- `spells/install/core/install-checkbashisms`
+- `spells/install/core/handle-command-not-found`
 - Most spells in `spells/install/bitcoin/`
 - Most spells in `spells/install/tor/`
 
