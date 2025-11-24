@@ -72,6 +72,17 @@ A spell is a specially-curated shell script:
 
 This spec helps scripts evolve into living, polished exemplars of communal knowledge about best practices in using and optimizing the shell.
 
+## Free software suite
+
+Wizardry includes a curated free software suite which can be easily and optionally installed from the `menu`. Criteria for inclusion:
+
+* Software that helps user accomplish basic computer tasks (messaging, document editing, photos, sharing, etc.)
+* Free software is best; non-commercial open-source an acceptable alternative
+* Inclusions are opinilnsted; the free software suite is our recommendations of the best free software
+* No redundant apps; we will choose the best one to include for each purpose, or offer a clear choice if necessary
+
+Using the free software suite makes it easy to establish a standardized software environment across OSes, without having to use a heavier package manager or containerized solution. Wizardry helps you install the right software in the correct and standard way.
+
 ## Principles:
 
 ### Project Values
