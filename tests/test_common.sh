@@ -71,7 +71,7 @@ if [ "$SANDBOX_PLATFORM" = "Darwin" ]; then
   if command -v sandbox-exec >/dev/null 2>&1; then
     SANDBOX_EXEC_BIN=$(command -v sandbox-exec)
     # Test if sandbox-exec works with a simple profile
-    if printf '(version 1)\n(allow default)\n' | "$SANDBOX_EXEC_BIN" -p '(version 1) (allow default)' /usr/bin/true 2>/dev/null; then
+    if "$SANDBOX_EXEC_BIN" -p '(version 1) (allow default)' /usr/bin/true 2>/dev/null; then
       MACOS_SANDBOX_AVAILABLE=1
       # On macOS, prefer sandbox-exec over attempting bubblewrap
       BWRAP_AVAILABLE=0
@@ -138,7 +138,7 @@ run_bwrap() {
 
 run_macos_sandbox() {
   # Create a sandbox profile that allows most operations but provides isolation
-  # The profile allows default operations but restricts network and some file system access
+  # The profile restricts network access and limits file writes to test directories
   sandbox_profile='(version 1)
 (allow default)
 (deny network*)
@@ -156,14 +156,20 @@ run_macos_sandbox() {
 (allow mach-lookup)
 '
   
-  # Add HOME and WIZARDRY_TMPDIR to writable paths if they exist
-  if [ -n "${HOME-}" ]; then
-    sandbox_profile="${sandbox_profile}(allow file-write* (subpath \"$HOME\"))
-"
-  fi
+  # Add WIZARDRY_TMPDIR and test HOME to writable paths
+  # Note: HOME is the test-isolated home directory, not the user's real home
   if [ -n "${WIZARDRY_TMPDIR-}" ]; then
     sandbox_profile="${sandbox_profile}(allow file-write* (subpath \"$WIZARDRY_TMPDIR\"))
 "
+  fi
+  if [ -n "${HOME-}" ] && [ -n "${WIZARDRY_TMPDIR-}" ]; then
+    # Only allow writes to HOME if it's within the test sandbox
+    case "$HOME" in
+      "$WIZARDRY_TMPDIR"*)
+        sandbox_profile="${sandbox_profile}(allow file-write* (subpath \"$HOME\"))
+"
+        ;;
+    esac
   fi
   
   "$SANDBOX_EXEC_BIN" -p "$sandbox_profile" "$@"
