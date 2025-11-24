@@ -20,7 +20,7 @@ case "${1-}" in
 esac
 
 if [ ! -f "$1" ]; then
-	echo "That file does not exist."
+	printf 'That file does not exist.\n'
 	exit 1
 fi
 
@@ -38,10 +38,10 @@ elif command -v xclip >/dev/null 2>&1; then
 
 # If none of the above commands are available, print an error message.
 else
-    echo "Your spell fizzles. No clipboard utilities are available on this system. Please install xsel, xclip, or pbcopy (for mac)" >&2
+    printf 'Your spell fizzles. No clipboard utilities are available on this system. Please install xsel, xclip, or pbcopy (for mac)\n' >&2
     exit 1
 fi
 
 # Normalize path for display (macOS TMPDIR ends with /)
 display_path=$(printf '%s' "$1" | sed 's|//|/|g')
-echo "Copied $display_path to your clipboard."
+printf 'Copied %s to your clipboard.\n' "$display_path"
