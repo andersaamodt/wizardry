@@ -93,9 +93,10 @@ list_keys() {
       parsed=$(printf '%s\n' "$keys" | awk '
         /^Attribute "/ {
           # Extract key from quoted format: Attribute "key" ...
-          match($0, /"([^"]+)"/)
-          key = substr($0, RSTART+1, RLENGTH-2)
-          print key
+          if (match($0, /"([^"]+)"/)) {
+            key = substr($0, RSTART+1, RLENGTH-2)
+            print key
+          }
           next
         }
         NF { print }
