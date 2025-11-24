@@ -28,9 +28,9 @@ elif [ -n "${WIZARDRY_ROOT-}" ]; then
 elif [ -n "${WIZARDRY_REMOTE_DIR-}" ]; then
         PROMPT_DEFAULT=$WIZARDRY_REMOTE_DIR
 elif [ -n "${HOME-}" ]; then
-        PROMPT_DEFAULT=$HOME/.tower
+        PROMPT_DEFAULT=$HOME/.wizardry
 else
-        PROMPT_DEFAULT=.tower
+        PROMPT_DEFAULT=.wizardry
 fi
 
 if [ -n "${WIZARDRY_INSTALL_PLATFORM-}" ]; then
@@ -259,7 +259,7 @@ do
 done
 
 if [ "$#" -eq 0 ]; then
-        printf '%s\n' "ao-mud is already installed. Run it with 'menu' or 'mud'."
+        printf '%s\n' "Wizardry is already installed. Run it with 'menu' or 'mud'."
         exit 0
 fi
 
@@ -281,7 +281,7 @@ $detect_output
 EOF
 fi
 
-printf '%s\n' "ao-mud will ensure the following directories appear in your PATH:"
+printf '%s\n' "Wizardry will ensure the following directories appear in your PATH:"
 for dir
 do
         printf '  %s\n' "$dir"
