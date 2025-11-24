@@ -213,7 +213,7 @@ fi
 
 **Minimal** (main-menu):
 ```sh
-# This spell displays the ao-mud main menu.
+# This spell displays the wizardry main menu.
 ```
 
 **Recommendation:** Establish template for spell headers:

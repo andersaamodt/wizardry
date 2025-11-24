@@ -334,12 +334,12 @@ esac
 
 ```sh
 # spells/mud/mud - TOO BRIEF
-# This spell displays the ao-mud main menu.
+# This spell displays the wizardry main menu.
 ```
 
 **Better:**
 ```sh
-# This spell displays the ao-mud main menu.
+# This spell displays the wizardry main menu.
 # The MUD (Multi-User Dungeon) theme turns your terminal into an interactive
 # adventure, where directories are rooms and files are items.
 ```

@@ -16,7 +16,7 @@ echo "core installer invoked" >>"${CORE_LOG:?}"
 STUB
   chmod +x "$fixture/install-core-stub"
 
-  install_dir="$fixture/home/.tower"
+  install_dir="$fixture/home/.wizardry"
   PATH="$fixture/bin:$initial_path" CORE_LOG="$core_log" WIZARDRY_CORE_INSTALLER="$fixture/install-core-stub" \
     WIZARDRY_INSTALL_ASSUME_YES=1 WIZARDRY_INSTALL_DIR="$install_dir" run_cmd \
     env PATH="$fixture/bin:$initial_path" CORE_LOG="$core_log" WIZARDRY_CORE_INSTALLER="$fixture/install-core-stub" \
