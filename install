@@ -273,17 +273,23 @@ detect_installation_status() {
 }
 
 # Detect installation status for better user messaging
-install_status=0
-if detect_installation_status; then
-        install_mode="fresh"
-else
-        install_status=$?
-        if [ "$install_status" -eq 2 ]; then
-                install_mode="detected"
-        else
+detect_installation_status
+install_status=$?
+
+case $install_status in
+        0)
+                install_mode="fresh"
+                ;;
+        1)
                 install_mode="repair"
-        fi
-fi
+                ;;
+        2)
+                install_mode="detected"
+                ;;
+        *)
+                install_mode="fresh"
+                ;;
+esac
 
 # Collect the directories whose PATH exports are absent from the chosen start-up
 # file so we can repair them in one pass.
