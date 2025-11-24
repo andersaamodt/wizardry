@@ -89,8 +89,16 @@ cat >"${CLIPBOARD_FILE:?}"
 STUB
   chmod +x "$stubdir/xsel"
 
-  # Use a restricted PATH with just our stub and essential utilities (no pbcopy)
-  PATH="$stubdir:/usr/bin:/bin" CLIPBOARD_FILE="$clipboard" run_spell "spells/spellcraft/copy" "$file"
+  # Create symlinks to essential utilities in stub directory to avoid finding pbcopy
+  for util in sh sed cat printf test env basename dirname; do
+    if command -v "$util" >/dev/null 2>&1; then
+      util_path=$(command -v "$util")
+      ln -sf "$util_path" "$stubdir/$util" 2>/dev/null || true
+    fi
+  done
+
+  # Use a restricted PATH with just our stubs (no system paths that might have pbcopy)
+  PATH="$stubdir" CLIPBOARD_FILE="$clipboard" run_spell "spells/spellcraft/copy" "$file"
   assert_success || return 1
   [ "$(cat "$clipboard")" = "hi there" ] || { TEST_FAILURE_REASON="xsel stub not used"; return 1; }
 }
@@ -110,8 +118,16 @@ cat >"${CLIPBOARD_FILE:?}"
 STUB
   chmod +x "$stubdir/xclip"
 
-  # Use a restricted PATH with just our stub and essential utilities (no pbcopy or xsel)
-  PATH="$stubdir:/usr/bin:/bin" CLIPBOARD_FILE="$clipboard" run_spell "spells/spellcraft/copy" "$file"
+  # Create symlinks to essential utilities in stub directory to avoid finding pbcopy or xsel
+  for util in sh sed cat printf test env basename dirname; do
+    if command -v "$util" >/dev/null 2>&1; then
+      util_path=$(command -v "$util")
+      ln -sf "$util_path" "$stubdir/$util" 2>/dev/null || true
+    fi
+  done
+
+  # Use a restricted PATH with just our stubs (no system paths that might have pbcopy or xsel)
+  PATH="$stubdir" CLIPBOARD_FILE="$clipboard" run_spell "spells/spellcraft/copy" "$file"
   assert_success || return 1
   # Normalize the expected path to match what copy outputs
   file_normalized=$(printf '%s' "$file" | sed 's|//|/|g')
@@ -139,8 +155,16 @@ exit 77
 STUB
   chmod +x "$stubdir/xsel" "$stubdir/xclip"
 
-  # Use a restricted PATH with just our stubs and essential utilities (no pbcopy)
-  PATH="$stubdir:/usr/bin:/bin" CLIPBOARD_FILE="$clipboard" run_spell "spells/spellcraft/copy" "$file"
+  # Create symlinks to essential utilities in stub directory to avoid finding pbcopy
+  for util in sh sed cat printf test env basename dirname; do
+    if command -v "$util" >/dev/null 2>&1; then
+      util_path=$(command -v "$util")
+      ln -sf "$util_path" "$stubdir/$util" 2>/dev/null || true
+    fi
+  done
+
+  # Use a restricted PATH with just our stubs (no system paths that might have pbcopy)
+  PATH="$stubdir" CLIPBOARD_FILE="$clipboard" run_spell "spells/spellcraft/copy" "$file"
   assert_success || return 1
   [ "$(cat "$clipboard")" = "ordered" ] || { TEST_FAILURE_REASON="xsel stub not used"; return 1; }
   case ${ERROR:-} in
@@ -153,8 +177,19 @@ copy_fails_without_clipboard_tools() {
   file="$tmpdir/message.txt"
   printf 'spell' >"$file"
 
-  # Use a PATH with just essential utilities (no clipboard tools)
-  PATH="/usr/bin:/bin" run_spell "spells/spellcraft/copy" "$file"
+  stubdir="$tmpdir/stubs_none"
+  mkdir -p "$stubdir"
+
+  # Create symlinks to essential utilities but no clipboard tools
+  for util in sh sed cat printf test env basename dirname; do
+    if command -v "$util" >/dev/null 2>&1; then
+      util_path=$(command -v "$util")
+      ln -sf "$util_path" "$stubdir/$util" 2>/dev/null || true
+    fi
+  done
+
+  # Use a PATH with just essential utilities (no clipboard tools like pbcopy, xsel, xclip)
+  PATH="$stubdir" run_spell "spells/spellcraft/copy" "$file"
   assert_failure || return 1
   assert_error_contains "Your spell fizzles." || return 1
 }
