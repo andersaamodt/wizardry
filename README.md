@@ -47,13 +47,13 @@ This downloads wizardry to the default install location, `~/.tower`. After insta
 
 ### NixOS Installation
 
-On NixOS, the installer modifies your `~/.config/nixpkgs/configuration.nix` file (or `/etc/nixos/configuration.nix` if configured) to add wizardry paths. **The installer will ask for your permission before making any changes** and will automatically create a timestamped backup of your configuration file.
+On NixOS, the installer modifies `~/.config/nixpkgs/configuration.nix` (for home-manager users) to add wizardry paths. **The installer will ask for your permission before making any changes** and will automatically create a timestamped backup of your configuration file.
+
+If you use system-level configuration (`/etc/nixos/configuration.nix`), you'll need to manually add wizardry to your PATH in that file instead.
 
 After installation completes, run:
 ```bash
-nixos-rebuild switch    # For system-level configuration
-# OR
-home-manager switch     # If using home-manager
+home-manager switch     # If using home-manager with ~/.config/nixpkgs/configuration.nix
 ```
 
 The backup file is saved as `configuration.nix.wizardry.TIMESTAMP` in the same directory, allowing you to restore your previous configuration if needed.
