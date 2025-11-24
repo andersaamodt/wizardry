@@ -120,6 +120,16 @@ categories() {
         printf '%s\n' "$@" | sort -u
 }
 
+spell_categories() {
+        set --
+        for dir in "$ROOT_DIR"/spells/*; do
+                [ -d "$dir" ] || continue
+                [ "$(basename "$dir")" = "menu" ] && continue
+                set -- "$@" "$(basename "$dir")"
+        done
+        printf '%s\n' "$@" | sort
+}
+
 safe_command_label() {
         entry=$1
         command=$2
@@ -152,6 +162,32 @@ list_custom_commands() {
                         printf '%s\t%s\t%s\n' "$category" "$name" "$command"
                 fi
         done <"$commands_file"
+}
+
+list_all_custom_commands() {
+        if [ ! -f "$commands_file" ]; then
+                return 0
+        fi
+        while IFS=$(printf '\t') read -r category name command || [ -n "$category" ]; do
+                [ -z "$category" ] && continue
+                [ -z "$name" ] && continue
+                printf '%s\t%s\t%s\n' "$category" "$name" "$command"
+        done <"$commands_file"
+}
+
+is_custom_command() {
+        check_category=$1
+        check_name=$2
+        if [ ! -f "$commands_file" ]; then
+                return 1
+        fi
+        while IFS=$(printf '\t') read -r category name command || [ -n "$category" ]; do
+                [ -z "$category" ] && continue
+                if [ "$category" = "$check_category" ] && [ "$name" = "$check_name" ]; then
+                        return 0
+                fi
+        done <"$commands_file"
+        return 1
 }
 
 record_custom_command() {
@@ -284,7 +320,11 @@ spell_action_menu() {
                 else
                         memory_toggle="Memorize%action=memorize"
                 fi
-                set -- "Cast now%action=cast" "$memory_toggle" "Help%action=help" "Test spell%action=test" "Back%return"
+                if is_custom_command "$category" "$name"; then
+                        set -- "Cast now%action=cast" "$memory_toggle" "Help%action=help" "Test spell%action=test" "Delete command%action=delete" "Back%return"
+                else
+                        set -- "Cast now%action=cast" "$memory_toggle" "Help%action=help" "Test spell%action=test" "Back%return"
+                fi
                 MENU_ESCAPE_STATUS=$menu_escape_status menu "Spell: $name" "$@"
                 status=$?
                 if [ "$status" -eq "$menu_escape_status" ]; then
@@ -310,6 +350,16 @@ spell_action_menu() {
                                 test-magic --only "$name" || true
                         else
                                 printf '%s\n' "test-magic is unavailable; cannot test $name." >&2
+                        fi
+                        ;;
+                delete)
+                        if is_custom_command "$category" "$name"; then
+                                if remove_custom_command "$category" "$name"; then
+                                        printf "Deleted custom command '%s' from category '%s'.\n" "$name" "$category"
+                                        break
+                                else
+                                        printf "Failed to delete custom command '%s'.\n" "$name" >&2
+                                fi
                         fi
                         ;;
                 esac
@@ -353,27 +403,48 @@ CUSTOM
 spellbook_menu() {
         while :; do
                 set --
-                for category in $(categories); do
+                # First, add individual saved custom commands
+                while IFS=$(printf '\t') read -r cmd_category cmd_name cmd_text; do
+                        [ -z "$cmd_category" ] && continue
+                        [ -z "$cmd_name" ] && continue
+                        spell_path=$(custom_spell_path "$cmd_name")
+                        label=$(printf '%s (%s)' "$cmd_name" "$cmd_category")
+                        set -- "$@" "$(safe_command_label "$label" "$cmd_text")%selected_category='$cmd_category';selected_name='$cmd_name';selected_cmd='$spell_path';selected_display='$cmd_text'"
+                done <<CUSTOM_COMMANDS
+$(list_all_custom_commands)
+CUSTOM_COMMANDS
+                # Then, add spell categories
+                for category in $(spell_categories); do
                         set -- "$@" "$(printf '%s%%category_choice=%s' "$category" "$category")"
                 done
                 set -- "$@" "Scribe command%category_choice=scribe" "Close Spellbook%kill -2 $$"
                 category_choice=''
+                selected_category=''
+                selected_name=''
+                selected_cmd=''
+                selected_display=''
                 MENU_ESCAPE_STATUS=$menu_escape_status menu "Spellbook:" "$@"
                 status=$?
                 if [ "$status" -eq "$menu_escape_status" ]; then
                         break
                 fi
-                case ${category_choice-} in
-                scribe)
-                        scribe_command
-                        ;;
-                "")
-                        :
-                        ;;
-                *)
-                        category_menu "$category_choice"
-                        ;;
-                esac
+                # Handle custom command selection
+                if [ -n "$selected_category" ] && [ -n "$selected_name" ] && [ -n "$selected_cmd" ]; then
+                        spell_action_menu "$selected_category" "$selected_name" "$selected_cmd" "$selected_display"
+                # Handle category or scribe selection
+                elif [ -n "$category_choice" ]; then
+                        case ${category_choice-} in
+                        scribe)
+                                scribe_command
+                                ;;
+                        "")
+                                :
+                                ;;
+                        *)
+                                category_menu "$category_choice"
+                                ;;
+                        esac
+                fi
                 printf '\n'
         done
 }
