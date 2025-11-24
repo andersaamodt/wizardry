@@ -55,50 +55,76 @@ export WIZARDRY_SYSTEM_PATH
 : "${WIZARDRY_TMPDIR:=$(mktemp -d "${TMPDIR:-/tmp}/wizardry-test.XXXXXX")}" || exit 1
 export WIZARDRY_TMPDIR
 
+# Detect platform for sandbox selection
+SANDBOX_PLATFORM=$(uname -s 2>/dev/null || printf 'unknown')
+
+# Initialize sandbox availability flags
 BWRAP_AVAILABLE=1
 BWRAP_VIA_SUDO=0
 BWRAP_USE_UNSHARE=1
 BWRAP_BIN=${BWRAP_BIN-}
+MACOS_SANDBOX_AVAILABLE=0
+SANDBOX_EXEC_BIN=""
 
-if [ -z "$BWRAP_BIN" ]; then
-  if command -v bwrap >/dev/null 2>&1; then
-    BWRAP_BIN=$(command -v bwrap)
-  else
+# Check for macOS sandbox-exec
+if [ "$SANDBOX_PLATFORM" = "Darwin" ]; then
+  if command -v sandbox-exec >/dev/null 2>&1; then
+    SANDBOX_EXEC_BIN=$(command -v sandbox-exec)
+    # Test if sandbox-exec works with a simple profile
+    if printf '(version 1)\n(allow default)\n' | "$SANDBOX_EXEC_BIN" -p '(version 1) (allow default)' /usr/bin/true 2>/dev/null; then
+      MACOS_SANDBOX_AVAILABLE=1
+      # On macOS, prefer sandbox-exec over attempting bubblewrap
+      BWRAP_AVAILABLE=0
+      BWRAP_REASON="using macOS sandbox-exec instead"
+    fi
+  fi
+fi
+
+# Check for Linux bubblewrap (only if not using macOS sandboxing)
+if [ "$MACOS_SANDBOX_AVAILABLE" -eq 0 ]; then
+  if [ -z "$BWRAP_BIN" ]; then
+    if command -v bwrap >/dev/null 2>&1; then
+      BWRAP_BIN=$(command -v bwrap)
+    else
+      BWRAP_AVAILABLE=0
+      BWRAP_REASON="bubblewrap not installed"
+    fi
+  fi
+
+  if [ "$BWRAP_AVAILABLE" -eq 1 ]; then
+    if "$BWRAP_BIN" --unshare-user-try --ro-bind / / /bin/true 2>/dev/null; then
+      :
+    elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+      if sudo -n "$BWRAP_BIN" --unshare-user-try --ro-bind / / /bin/true 2>/dev/null; then
+        BWRAP_VIA_SUDO=1
+      elif sudo -n "$BWRAP_BIN" --ro-bind / / /bin/true 2>/dev/null; then
+        BWRAP_VIA_SUDO=1
+        BWRAP_USE_UNSHARE=0
+      else
+        BWRAP_AVAILABLE=0
+        BWRAP_REASON="bubblewrap unusable even via sudo"
+      fi
+    else
+      BWRAP_AVAILABLE=0
+      BWRAP_REASON="bubblewrap unusable (user namespaces likely disabled)"
+    fi
+  fi
+
+  if [ "$BWRAP_AVAILABLE" -eq 1 ] && { [ -z "$BWRAP_BIN" ] || [ ! -x "$BWRAP_BIN" ]; }; then
     BWRAP_AVAILABLE=0
     BWRAP_REASON="bubblewrap not installed"
   fi
 fi
 
-if [ "$BWRAP_AVAILABLE" -eq 1 ]; then
-  if "$BWRAP_BIN" --unshare-user-try --ro-bind / / /bin/true 2>/dev/null; then
-    :
-  elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
-    if sudo -n "$BWRAP_BIN" --unshare-user-try --ro-bind / / /bin/true 2>/dev/null; then
-      BWRAP_VIA_SUDO=1
-    elif sudo -n "$BWRAP_BIN" --ro-bind / / /bin/true 2>/dev/null; then
-      BWRAP_VIA_SUDO=1
-      BWRAP_USE_UNSHARE=0
-    else
-      BWRAP_AVAILABLE=0
-      BWRAP_REASON="bubblewrap unusable even via sudo"
-    fi
-  else
-    BWRAP_AVAILABLE=0
-    BWRAP_REASON="bubblewrap unusable (user namespaces likely disabled)"
-  fi
-fi
+warn_once_file=${WIZARDRY_BWRAP_WARN_FILE-${TMPDIR:-/tmp}/wizardry-sandbox-warning}
 
-warn_once_file=${WIZARDRY_BWRAP_WARN_FILE-${TMPDIR:-/tmp}/wizardry-bwrap-warning}
-
-if [ "$BWRAP_AVAILABLE" -eq 1 ] && { [ -z "$BWRAP_BIN" ] || [ ! -x "$BWRAP_BIN" ]; }; then
-  BWRAP_AVAILABLE=0
-  BWRAP_REASON="bubblewrap not installed"
-fi
-
-if [ "$BWRAP_AVAILABLE" -eq 0 ] && [ ! -f "$warn_once_file" ] && [ "${WIZARDRY_BWRAP_WARNING-0}" -eq 0 ]; then
-  printf '%s\n' "WARNING: proceeding without bubblewrap sandbox: $BWRAP_REASON" >&2
+if [ "$BWRAP_AVAILABLE" -eq 0 ] && [ "$MACOS_SANDBOX_AVAILABLE" -eq 0 ] && [ ! -f "$warn_once_file" ] && [ "${WIZARDRY_BWRAP_WARNING-0}" -eq 0 ]; then
+  printf '%s\n' "WARNING: proceeding without sandbox isolation: $BWRAP_REASON" >&2
   WIZARDRY_BWRAP_WARNING=1
   export WIZARDRY_BWRAP_WARNING
+  : >"$warn_once_file" 2>/dev/null || true
+elif [ "$MACOS_SANDBOX_AVAILABLE" -eq 1 ] && [ ! -f "$warn_once_file" ]; then
+  printf '%s\n' "INFO: using macOS sandbox-exec for test isolation" >&2
   : >"$warn_once_file" 2>/dev/null || true
 fi
 
@@ -108,6 +134,39 @@ run_bwrap() {
   else
     "$BWRAP_BIN" "$@"
   fi
+}
+
+run_macos_sandbox() {
+  # Create a sandbox profile that allows most operations but provides isolation
+  # The profile allows default operations but restricts network and some file system access
+  sandbox_profile='(version 1)
+(allow default)
+(deny network*)
+(allow network* (local ip))
+(allow file-read*)
+(allow file-write* (subpath "/tmp"))
+(allow file-write* (subpath "/private/tmp"))
+(allow file-write* (literal "/dev/null"))
+(allow file-write* (literal "/dev/stdout"))
+(allow file-write* (literal "/dev/stderr"))
+(allow process-exec*)
+(allow process-fork)
+(allow signal)
+(allow sysctl-read)
+(allow mach-lookup)
+'
+  
+  # Add HOME and WIZARDRY_TMPDIR to writable paths if they exist
+  if [ -n "${HOME-}" ]; then
+    sandbox_profile="${sandbox_profile}(allow file-write* (subpath \"$HOME\"))
+"
+  fi
+  if [ -n "${WIZARDRY_TMPDIR-}" ]; then
+    sandbox_profile="${sandbox_profile}(allow file-write* (subpath \"$WIZARDRY_TMPDIR\"))
+"
+  fi
+  
+  "$SANDBOX_EXEC_BIN" -p "$sandbox_profile" "$@"
 }
 
 _pass_count=0
@@ -170,8 +229,9 @@ finish_tests() {
   return 0
 }
 
-# Capture a command's stdout, stderr, and exit status inside a bubblewrap
-# sandbox. Results land in STATUS, OUTPUT, and ERROR variables.
+# Capture a command's stdout, stderr, and exit status inside a sandbox.
+# Uses bubblewrap on Linux or sandbox-exec on macOS when available.
+# Results land in STATUS, OUTPUT, and ERROR variables.
 run_cmd() {
   # Save the caller's PATH and temporarily use the system PATH for run_cmd's
   # internal operations (mktemp, mkdir, cat, rm, pwd). This ensures run_cmd
@@ -214,6 +274,14 @@ run_cmd() {
     fi
 
     if run_bwrap "$@" >"$_stdout" 2>"$_stderr"; then
+      STATUS=0
+    else
+      STATUS=$?
+    fi
+  elif [ "$MACOS_SANDBOX_AVAILABLE" -eq 1 ]; then
+    # Use macOS sandbox-exec for isolation
+    if (cd "$workdir" && env PATH="$PATH" HOME="$homedir" TMPDIR="$tmpdir" WIZARDRY_TMPDIR="$WIZARDRY_TMPDIR" \
+      run_macos_sandbox "$@" >"$_stdout" 2>"$_stderr"); then
       STATUS=0
     else
       STATUS=$?
