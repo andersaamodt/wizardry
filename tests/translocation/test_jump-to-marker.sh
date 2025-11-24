@@ -59,7 +59,9 @@ test_jump_rejects_missing_destination() {
 test_jump_detects_current_location() {
   destination="$WIZARDRY_TMPDIR/already-here"
   mkdir -p "$destination"
-  printf '%s\n' "$destination" >"$WIZARDRY_TMPDIR/marker"
+  # Write resolved path to marker to match what jump will compare
+  destination_resolved=$(cd "$destination" && pwd -P | sed 's|//|/|g')
+  printf '%s\n' "$destination_resolved" >"$WIZARDRY_TMPDIR/marker"
   run_jump "$WIZARDRY_TMPDIR/marker" "$destination"
   assert_success && assert_output_contains "already standing"
 }
@@ -68,9 +70,11 @@ test_jump_changes_directory() {
   start_dir="$WIZARDRY_TMPDIR/start"
   destination="$WIZARDRY_TMPDIR/portal"
   mkdir -p "$start_dir" "$destination"
-  printf '%s\n' "$destination" >"$WIZARDRY_TMPDIR/marker"
+  # Write resolved path to marker and expect it in output
+  destination_resolved=$(cd "$destination" && pwd -P | sed 's|//|/|g')
+  printf '%s\n' "$destination_resolved" >"$WIZARDRY_TMPDIR/marker"
   run_jump "$WIZARDRY_TMPDIR/marker" "$start_dir"
-  assert_success && assert_output_contains "You land in $destination"
+  assert_success && assert_output_contains "You land in $destination_resolved"
 }
 
 run_test_case "jump-to-marker prints usage" test_help
