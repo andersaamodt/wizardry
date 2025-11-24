@@ -1,0 +1,33 @@
+#!/bin/sh
+
+# Toggle cd hook on/off by installing or uninstalling the cd spell
+
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+CD_SPELL="$SCRIPT_DIR/cd"
+
+if [ ! -x "$CD_SPELL" ]; then
+        printf '%s\n' "Error: cd spell not found at '$CD_SPELL'." >&2
+        exit 1
+fi
+
+# Check if cd is currently installed
+uninstall_output=$(WIZARDRY_CD_CANTRIP="$CD_SPELL" "$CD_SPELL" uninstall 2>&1) || true
+
+if printf '%s\n' "$uninstall_output" | grep -q "not installed\|no rc file found"; then
+        # Not installed, so install it
+        printf '%s\n' "Installing cd hook..."
+        if WIZARDRY_CD_CANTRIP="$CD_SPELL" "$CD_SPELL" install; then
+                printf '%s\n' "✓ CD hook enabled. Each directory change will now display the room description."
+                printf '%s\n' "  (Restart your shell or source your rc file to activate)"
+        else
+                printf '%s\n' "✗ Failed to install cd hook." >&2
+                exit 1
+        fi
+else
+        # Was already installed and just uninstalled
+        printf '%s\n' "$uninstall_output"
+        printf '%s\n' "✓ CD hook disabled."
+        printf '%s\n' "  (Restart your shell or source your rc file to deactivate)"
+fi
