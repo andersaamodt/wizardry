@@ -20,14 +20,35 @@ esac
 SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
 SPELLS_DIR=${SCRIPT_DIR%/*}
 
-SCRIBER=${MEMORIZE_SCRIBE:-$SPELLS_DIR/spellcraft/scribe-spell}
-if [ ! -x "$SCRIBER" ] && command -v scribe-spell >/dev/null 2>&1; then
-        SCRIBER=$(command -v scribe-spell)
+# Track whether environment variables were explicitly set to avoid falling back
+# to PATH when an explicit path was provided.
+scriber_override=0
+if [ -n "${MEMORIZE_SCRIBE-}" ]; then
+        scriber_override=1
+        SCRIBER=$MEMORIZE_SCRIBE
+else
+        SCRIBER=$SPELLS_DIR/spellcraft/scribe-spell
 fi
 
-MEMORIZER=${MEMORIZE_COMMAND_HELPER:-$SPELLS_DIR/cantrips/memorize-command}
-if [ ! -x "$MEMORIZER" ] && command -v memorize-command >/dev/null 2>&1; then
-        MEMORIZER=$(command -v memorize-command)
+memorizer_override=0
+if [ -n "${MEMORIZE_COMMAND_HELPER-}" ]; then
+        memorizer_override=1
+        MEMORIZER=$MEMORIZE_COMMAND_HELPER
+else
+        MEMORIZER=$SPELLS_DIR/cantrips/memorize-command
+fi
+
+# Only fall back to command -v if no explicit override was set
+if [ ! -x "$SCRIBER" ] && [ "$scriber_override" -eq 0 ]; then
+        if command -v scribe-spell >/dev/null 2>&1; then
+                SCRIBER=$(command -v scribe-spell)
+        fi
+fi
+
+if [ ! -x "$MEMORIZER" ] && [ "$memorizer_override" -eq 0 ]; then
+        if command -v memorize-command >/dev/null 2>&1; then
+                MEMORIZER=$(command -v memorize-command)
+        fi
 fi
 
 usage() {

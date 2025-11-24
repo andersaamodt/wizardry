@@ -352,11 +352,21 @@ detect_environment() {
         if [ "$MEMORIZE_DETECTED" -eq 1 ]; then
                 return 0
         fi
-        if [ -z "$DETECT_RC_FILE" ]; then
-                DETECT_RC_FILE=${MEMORIZE_DETECT_RC_FILE:-$SPELLS_DIR/divination/detect-rc-file}
+        
+        # Track whether DETECT_RC_FILE was explicitly set via environment variable
+        detect_rc_override=0
+        if [ -n "${DETECT_RC_FILE-}" ]; then
+                # DETECT_RC_FILE environment variable is already set, use it
+                detect_rc_override=1
+        elif [ -n "${MEMORIZE_DETECT_RC_FILE-}" ]; then
+                DETECT_RC_FILE=$MEMORIZE_DETECT_RC_FILE
+        else
+                DETECT_RC_FILE=$SPELLS_DIR/divination/detect-rc-file
         fi
+        
         if [ ! -x "$DETECT_RC_FILE" ]; then
-                if command -v detect-rc-file >/dev/null 2>&1; then
+                # Only fall back to PATH if no explicit environment override was set
+                if [ "$detect_rc_override" -eq 0 ] && command -v detect-rc-file >/dev/null 2>&1; then
                         DETECT_RC_FILE=$(command -v detect-rc-file)
                 else
                         printf '%s\n' "$SCRIPT_NAME: detect-rc-file spell is missing; cannot determine rc file." >&2
