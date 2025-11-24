@@ -1,0 +1,10 @@
+#!/bin/sh
+# die [CODE] MESSAGE - print to stderr and exit (default code 1)
+# Examples: die "fatal error" | die 2 "file not found"
+
+case "$1" in
+[0-9]|[0-9][0-9]|[0-9][0-9][0-9]) code=$1; shift ;;
+*) code=1 ;;
+esac
+printf '%s\n' "$*" >&2
+exit "$code"

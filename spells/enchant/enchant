@@ -26,18 +26,9 @@ require_args() {
         fi
 }
 
-file_exists() {
-        if [ ! -e "$1" ]; then
-                printf '%s\n' "Error: The file does not exist." >&2
-                return 1
-        fi
-}
-
 helper_path() {
         helper=$1
-        if ! command -v "$helper" >/dev/null 2>&1; then
-                return 1
-        fi
+        lacks "$helper" && return 1
 
         path=$(command -v "$helper")
         if [ "${WIZARDRY_TEST_HELPERS_ONLY-0}" -eq 1 ]; then
@@ -151,9 +142,7 @@ main() {
         value=$3
         preferred=${4-}
 
-        if ! file_exists "$file"; then
-                exit 1
-        fi
+        gone "$file" && fail "Error: The file does not exist."
 
         if ! set_attribute "$key" "$value" "$file" "$preferred"; then
                 exit 1

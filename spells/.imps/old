@@ -1,0 +1,5 @@
+#!/bin/sh
+# older FILE1 FILE2 - test if FILE1 is older than FILE2 (or FILE2 is newer)
+# Example: older src.c src.o || compile src.c
+
+[ "$1" -ot "$2" ]

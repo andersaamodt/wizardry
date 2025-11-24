@@ -1,5 +1,0 @@
-#!/bin/sh
-# exists PATH - test if path exists (any type: file, dir, link, etc.)
-# Example: exists /etc/passwd && echo "found"
-
-[ -e "$1" ]

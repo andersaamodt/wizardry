@@ -1,5 +1,5 @@
 #!/bin/sh
-# Tests for data flow imps: first, lines, trim, lower, each, otherwise, either
+# Tests for data flow imps: first, last, lines, trim, lc, each, else, or
 
 . "${0%/*}/../test_common.sh"
 
@@ -21,6 +21,15 @@ test_first_from_file() {
   assert_output_contains "first"
 }
 
+test_last_from_file() {
+  tmpfile=$(mktemp "$WIZARDRY_TMPDIR/testfile.XXXXXX")
+  printf 'first\nsecond\nlast\n' > "$tmpfile"
+  run_spell spells/.imps/last "$tmpfile"
+  rm -f "$tmpfile"
+  assert_success
+  assert_output_contains "last"
+}
+
 test_lines_counts() {
   tmpfile=$(mktemp "$WIZARDRY_TMPDIR/testfile.XXXXXX")
   printf 'one\ntwo\nthree\n' > "$tmpfile"
@@ -36,8 +45,8 @@ test_trim_removes_whitespace() {
   assert_output_contains "hello"
 }
 
-test_lower_converts() {
-  run_cmd sh -c "printf 'HELLO' | '$ROOT_DIR/spells/.imps/lower'"
+test_lc_converts() {
+  run_cmd sh -c "printf 'HELLO' | '$ROOT_DIR/spells/.imps/lc'"
   assert_success
   assert_output_contains "hello"
 }
@@ -52,45 +61,46 @@ test_each_runs_for_lines() {
   assert_output_contains "item: b"
 }
 
-test_otherwise_uses_default() {
-  run_cmd sh -c "printf '' | '$ROOT_DIR/spells/.imps/otherwise' 'fallback'"
+test_else_uses_default() {
+  run_cmd sh -c "printf '' | '$ROOT_DIR/spells/.imps/else' 'fallback'"
   assert_success
   assert_output_contains "fallback"
 }
 
-test_otherwise_passes_through() {
-  run_cmd sh -c "printf 'original' | '$ROOT_DIR/spells/.imps/otherwise' 'fallback'"
+test_else_passes_through() {
+  run_cmd sh -c "printf 'original' | '$ROOT_DIR/spells/.imps/else' 'fallback'"
   assert_success
   assert_output_contains "original"
 }
 
-test_either_first() {
-  run_spell spells/.imps/either "first" "second"
+test_or_first() {
+  run_spell spells/.imps/or "first" "second"
   assert_success
   assert_output_contains "first"
 }
 
-test_either_second() {
-  run_spell spells/.imps/either "" "second"
+test_or_second() {
+  run_spell spells/.imps/or "" "second"
   assert_success
   assert_output_contains "second"
 }
 
-test_either_fails_both_empty() {
-  run_spell spells/.imps/either "" ""
+test_or_fails_both_empty() {
+  run_spell spells/.imps/or "" ""
   assert_failure
 }
 
 run_test_case "first reads from stdin" test_first_from_stdin
 run_test_case "first reads from file" test_first_from_file
+run_test_case "last reads from file" test_last_from_file
 run_test_case "lines counts correctly" test_lines_counts
 run_test_case "trim removes whitespace" test_trim_removes_whitespace
-run_test_case "lower converts to lowercase" test_lower_converts
+run_test_case "lc converts to lowercase" test_lc_converts
 run_test_case "each runs for each line" test_each_runs_for_lines
-run_test_case "otherwise uses default for empty" test_otherwise_uses_default
-run_test_case "otherwise passes through non-empty" test_otherwise_passes_through
-run_test_case "either returns first non-empty" test_either_first
-run_test_case "either returns second if first empty" test_either_second
-run_test_case "either fails if both empty" test_either_fails_both_empty
+run_test_case "else uses default for empty" test_else_uses_default
+run_test_case "else passes through non-empty" test_else_passes_through
+run_test_case "or returns first non-empty" test_or_first
+run_test_case "or returns second if first empty" test_or_second
+run_test_case "or fails if both empty" test_or_fails_both_empty
 
 finish_tests

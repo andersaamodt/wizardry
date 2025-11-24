@@ -1,8 +1,0 @@
-#!/bin/sh
-# either VAL1 VAL2 - output first non-empty value, or fail if both empty
-# Example: result=$(either "$USER" "$LOGNAME")
-
-if [ -n "$1" ]; then printf '%s' "$1"
-elif [ -n "$2" ]; then printf '%s' "$2"
-else exit 1
-fi

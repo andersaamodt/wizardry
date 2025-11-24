@@ -1,0 +1,5 @@
+#!/bin/sh
+# whereis COMMAND - print path to command if it exists, fail otherwise
+# Example: git_path=$(whereis git)
+
+command -v "$1" 2>/dev/null || exit 1

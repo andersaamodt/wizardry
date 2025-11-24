@@ -1,6 +1,0 @@
-#!/bin/sh
-# otherwise DEFAULT - output stdin if non-empty, else output default value
-# Example: echo "" | otherwise "fallback"
-
-input=$(cat)
-if [ -n "$input" ]; then printf '%s\n' "$input"; else printf '%s\n' "$1"; fi

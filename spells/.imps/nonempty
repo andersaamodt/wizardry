@@ -1,9 +1,0 @@
-#!/bin/sh
-# nonempty TYPE PATH - test if file has content or dir has entries (file/dir)
-# Examples: nonempty file /var/log/syslog | nonempty dir /home/user
-
-case "$1" in
-file) [ -s "$2" ] ;;
-dir)  [ -d "$2" ] && [ -n "$(ls -A "$2" 2>/dev/null)" ] ;;
-*)    exit 1 ;;
-esac

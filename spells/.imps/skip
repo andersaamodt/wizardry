@@ -1,0 +1,5 @@
+#!/bin/sh
+# skip N [FILE] - skip first N lines of input or file
+# Example: skip 1 file.txt | process   # skip header
+
+if [ "$#" -ge 2 ]; then tail -n +"$(($1 + 1))" "$2"; else tail -n +"$(($1 + 1))"; fi
