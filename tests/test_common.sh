@@ -187,7 +187,7 @@ run_cmd() {
       STATUS=$?
     fi
   else
-    if (cd "$workdir" && env PATH="$PATH" HOME="$homedir" TMPDIR="$tmpdir" WIZARDRY_TMPDIR="$WIZARDRY_TMPDIR" "$@" \
+    if (cd "$workdir" && env PATH="$PATH" HOME="$homedir" TMPDIR="$tmpdir" WIZARDRY_TMPDIR="$WIZARDRY_TMPDIR" WIZARDRY_TEST_HELPERS_ONLY="${WIZARDRY_TEST_HELPERS_ONLY-}" "$@" \
       >"$__stdout" 2>"$__stderr"); then
       STATUS=0
     else
