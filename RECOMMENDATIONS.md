@@ -259,8 +259,6 @@ fi
 
 **Issue:** Three spells significantly exceed recommended size limits:
 
-**Issue:** Three spells significantly exceed recommended size limits:
-
 1. **path-wizard** (843 lines) - 🔴 Largest spell
 2. **scribe-spell** (613 lines) - 🔴 Second largest
 3. **jump-to-marker** (406 lines) - 🟡 Large but manageable

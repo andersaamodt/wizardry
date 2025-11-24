@@ -59,13 +59,6 @@ realpath "${file}"
 # No help option
 ```
 
-3. **Missing error handling:**
-```sh
-# No set -eu
-# No usage function
-# No help option
-```
-
 **Fixes Needed:**
 ```sh
 #!/bin/sh
