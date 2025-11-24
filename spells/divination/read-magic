@@ -87,9 +87,18 @@ list_keys() {
 
   if helper_usable attr; then
     if keys=$(attr -l "$file" 2>/dev/null); then
+      # Parse attr -l output which may be in format:
+      # Attribute "key" has a value...
+      # or just: key
       parsed=$(printf '%s\n' "$keys" | awk '
-        match($0,/Attribute "([^"]+)"/,m){print m[1]; next}
-        NF{print}
+        /^Attribute "/ {
+          # Extract key from quoted format: Attribute "key" ...
+          match($0, /"([^"]+)"/)
+          key = substr($0, RSTART+1, RLENGTH-2)
+          print key
+          next
+        }
+        NF { print }
       ')
       if [ -n "$parsed" ]; then
         printf '%s\n' "$parsed"
