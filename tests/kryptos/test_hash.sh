@@ -60,7 +60,9 @@ hash_reports_path_and_checksum() {
 
   run_cmd "$tmpdir/hash" "sample.txt"
   assert_success || return 1
-  expected_output=$(printf '%s\n0x%x\n' "$sample_path" "$checksum")
+  # Normalize path for macOS compatibility (TMPDIR ends with /)
+  normalized_path=$(printf '%s' "$sample_path" | sed 's|//|/|g')
+  expected_output=$(printf '%s\n0x%x\n' "$normalized_path" "$checksum")
   [ "$OUTPUT" = "$expected_output" ] || {
     TEST_FAILURE_REASON="hash output did not match expected path and checksum"
     return 1

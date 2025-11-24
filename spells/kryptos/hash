@@ -20,7 +20,7 @@ case "${1-}" in
 esac
 
 if [ "$#" != 1 ]; then
-    echo "Usage: hash file"
+    printf 'Usage: hash file\n'
     exit 1
 fi
 
@@ -34,13 +34,13 @@ file_name="$1"
 file="$script_dir/$file_name"
 
 if [ ! -f "$file" ]; then
-    echo "Your spell fizzles. There is no file."
+    printf 'Your spell fizzles. There is no file.\n'
     exit 1
 fi
 
 # Normalize double slashes for macOS compatibility
-normalized_file=$(echo "$file" | sed 's|//|/|g')
-echo "$normalized_file"
+normalized_file=$(printf '%s' "$file" | sed 's|//|/|g')
+printf '%s\n' "$normalized_file"
 # Compute the CRC-32 hash
 crc=$(cksum "$file" | awk '{print $1}')
 

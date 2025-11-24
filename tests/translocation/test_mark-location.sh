@@ -46,7 +46,7 @@ test_overwrites_marker() {
   expected="$WIZARDRY_TMPDIR/mark-overwrite"
   run_cmd sh -c '
     set -e
-    expected="$WIZARDRY_TMPDIR/mark-overwrite"
+    expected="'"$expected"'"
     rm -rf "$expected"
     mkdir -p "$expected" "$HOME/.mud"
     printf "/previous\n" >"$HOME/.mud/portal_marker"
@@ -64,8 +64,8 @@ test_resolves_symlink_workdir() {
   link_dir="$WIZARDRY_TMPDIR/mark-link"
   run_cmd sh -c '
     set -e
-    real_dir="$WIZARDRY_TMPDIR/mark-real"
-    link_dir="$WIZARDRY_TMPDIR/mark-link"
+    real_dir="'"$real_dir"'"
+    link_dir="'"$link_dir"'"
     rm -rf "$real_dir" "$link_dir"
     mkdir -p "$real_dir"
     ln -s "$real_dir" "$link_dir"

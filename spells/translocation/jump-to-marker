@@ -333,7 +333,7 @@ fi
         fi
         # Normalize paths to handle macOS double slashes
         current=$(pwd -P | sed 's|//|/|g')
-        normalized_destination=$(echo "$destination" | sed 's|//|/|g')
+        normalized_destination=$(printf '%s' "$destination" | sed 's|//|/|g')
         if [ "$current" = "$normalized_destination" ]; then
                 printf '%s\n' "You are already standing at the marked location."
                 return 0
@@ -346,7 +346,9 @@ fi
         if [ -n "$arrival" ]; then
                 printf '%s\n' "$arrival"
         fi
-        printf '%s\n' "You land in $(pwd -P)."
+        # Normalize path for macOS compatibility (TMPDIR ends with /)
+        landing_path=$(pwd -P | sed 's|//|/|g')
+        printf '%s\n' "You land in $landing_path."
 jump_describe_current_location
 }
 
