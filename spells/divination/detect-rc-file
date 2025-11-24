@@ -74,20 +74,8 @@ add_candidate() {
 }
 
 # Decide platform once so the downstream selection stays predictable.
-if [ -z "$platform" ]; then
-        if [ -f /etc/NIXOS ] || grep -qi 'ID=nixos' /etc/os-release 2>/dev/null; then
-                platform=nixos
-        elif [ -f /etc/debian_version ]; then
-                platform=debian
-        elif [ -f /etc/arch-release ]; then
-                platform=arch
-        elif [ -f /etc/fedora-release ]; then
-                platform=fedora
-        elif uname 2>/dev/null | grep -q 'Darwin'; then
-                platform=mac
-        else
-                platform=unknown
-        fi
+if is unset "$platform"; then
+        platform=$(os)
 fi
 
 RC_CANDIDATES=''
@@ -137,23 +125,15 @@ add_candidate "$HOME/.profile"
 
 rc_file=''
 for candidate in $RC_CANDIDATES; do
-        if [ -f "$candidate" ]; then
-                rc_file=$candidate
-                break
-        fi
+        is file "$candidate" && rc_file=$candidate && break
 done
 
-if [ -z "$rc_file" ]; then
-        for candidate in $RC_CANDIDATES; do
-                rc_file=$candidate
-                break
-        done
-fi
+is unset "$rc_file" && for candidate in $RC_CANDIDATES; do
+        rc_file=$candidate
+        break
+done
 
-if [ -z "$rc_file" ]; then
-        printf '%s\n' "detect-rc-file: unable to determine a startup file." >&2
-        exit 1
-fi
+is unset "$rc_file" && die "detect-rc-file: unable to determine a startup file."
 
 case $rc_file in
 *.nix)
@@ -164,6 +144,6 @@ case $rc_file in
         ;;
         esac
 
-printf 'platform=%s\n' "$platform"
-printf 'rc_file=%s\n' "$rc_file"
-printf 'format=%s\n' "$format"
+say "platform=$platform"
+say "rc_file=$rc_file"
+say "format=$format"
