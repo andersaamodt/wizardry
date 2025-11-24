@@ -370,65 +370,6 @@ else
         printf '%s\n' "Warning: memorize spell is missing; skipping automatic memorization." >&2
 fi
 
-# Install the cd cantrip hook to add narration after directory changes
-CD_CANTRIP="$ABS_DIR/spells/cantrips/cd"
-if [ -x "$CD_CANTRIP" ]; then
-        # Check if cd cantrip is already installed by memorize step
-        rc_file=""
-        if detect_output="$($DETECT_RC_FILE 2>/dev/null)"; then
-                while IFS='=' read -r key value; do
-                        case $key in
-                        rc_file)
-                                rc_file=$value
-                                ;;
-                        esac
-                done <<EOF
-$detect_output
-EOF
-        fi
-        
-        cd_already_installed=0
-        if [ -n "$rc_file" ] && [ -f "$rc_file" ]; then
-                if grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" || grep -Fq 'WIZARDRY_CD_CANTRIP' "$rc_file"; then
-                        cd_already_installed=1
-                fi
-        fi
-        
-        if [ "$cd_already_installed" -eq 1 ]; then
-                : # cd cantrip already installed by memorize step, no action needed
-        elif [ "${WIZARDRY_INSTALL_ASSUME_YES-}" = "1" ]; then
-                # Non-interactive install: install cd cantrip automatically
-                printf '%s\n' "Installing cd cantrip hook to add narration after directory changes..."
-                cd_log=$(mktemp "${TMPDIR:-/tmp}/wizardry-cd.XXXXXX") || exit 1
-                if WIZARDRY_CD_CANTRIP="$CD_CANTRIP" "$CD_CANTRIP" install >"$cd_log" 2>&1; then
-                        cat "$cd_log"
-                else
-                        cat "$cd_log" >&2
-                fi
-                rm -f "$cd_log"
-        elif [ -t 0 ]; then
-                # Interactive install: prompt the user to install cd cantrip
-                printf '%s\n' ""
-                printf '%s\n' "The cd cantrip can sprinkle the 'look' spell on every hop."
-                if "$ASK_YN" "Install the cd cantrip hook so each directory change reveals the room?" yes >/dev/null; then
-                        cd_log=$(mktemp "${TMPDIR:-/tmp}/wizardry-cd.XXXXXX") || exit 1
-                        if WIZARDRY_CD_CANTRIP="$CD_CANTRIP" "$CD_CANTRIP" install >"$cd_log" 2>&1; then
-                                cat "$cd_log"
-                        else
-                                cat "$cd_log" >&2
-                        fi
-                        rm -f "$cd_log"
-                else
-                        printf '%s\n' "Very well—the cd cantrip will offer to install itself when you first use it."
-                fi
-        else
-                # Non-interactive but not ASSUME_YES: skip cd cantrip installation
-                : # cd cantrip will offer to install itself when first used
-        fi
-else
-        printf '%s\n' "Warning: cd cantrip not found at '$CD_CANTRIP'; skipping cd hook installation." >&2
-fi
-
 printf '%s\n' "Your spellbook has been activated. Open a fresh terminal or source your shell configuration to cast spells everywhere."
 
 exit "$mem_status"

@@ -23,10 +23,11 @@ fi
 SCRIPT_DIR=$( cd ${0%/*} && pwd -P )
 
 display_menu() {
+cd_narration="Toggle CD narration (look on directory change)%$SCRIPT_DIR/../install/mud/toggle-cd-narration"
 tor="Set up tor hidden service%$SCRIPT_DIR/../install/tor/setup-tor"
   exit="Exit%kill -2 $$" # Commands are run with 'eval' by the menu script, so we can't simply say 'exit'. The keyword $$ gets this scripts PID and the -2 code is SIGINT aka Ctrl-C
 
-  if ! "$menu_bin" "MUD main menu:" "$tor" "$exit"; then
+  if ! "$menu_bin" "MUD main menu:" "$cd_narration" "$tor" "$exit"; then
     status=$?
     echo "menu failed with status $status" >&2
     return "$status"
