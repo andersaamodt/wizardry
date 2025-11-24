@@ -49,13 +49,13 @@ This downloads wizardry to the default install location, `~/.wizardry`. After in
 
 On NixOS, the installer behavior depends on your setup:
 
-- **With home-manager**: If `home-manager` is installed or `~/.config/nixpkgs/configuration.nix` already exists, the installer modifies that file to add wizardry paths. A timestamped backup is created automatically.
+- **With system-level configuration**: If `/etc/nixos/configuration.nix` exists, the installer modifies that file to add wizardry paths (requires sudo). A timestamped backup is created automatically. After installation, the installer attempts to run `sudo nixos-rebuild switch` automatically.
 
-- **Without home-manager**: If home-manager is not installed and no existing Nix configuration exists, the installer falls back to shell RC files (`~/.bashrc`, `~/.bash_profile`, or `~/.profile`) to ensure PATH changes take effect immediately.
+- **With home-manager**: If `home-manager` is installed or `~/.config/nixpkgs/configuration.nix` already exists, the installer modifies that file to add wizardry paths. A timestamped backup is created automatically. After installation, the installer attempts to run `home-manager switch` automatically.
 
-If you use system-level configuration (`/etc/nixos/configuration.nix`), you'll need to manually add wizardry to your PATH in that file instead.
+- **Without either**: If no Nix configuration exists, the installer falls back to shell RC files (`~/.bashrc`, `~/.bash_profile`, or `~/.profile`) to ensure PATH changes take effect immediately.
 
-After installation completes:
+After installation completes, the installer will automatically attempt to rebuild your Nix environment. If this fails, you can manually run:
 ```bash
 # If using home-manager:
 home-manager switch

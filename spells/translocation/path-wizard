@@ -370,6 +370,34 @@ shell|nix) : ;;
         ;;
 esac
 
+# Determine if the rc file requires elevated privileges to modify.
+# System-level files like /etc/nixos/configuration.nix need sudo.
+needs_sudo=0
+case $rc_file in
+/etc/*)
+        if [ ! -w "$rc_file" ] 2>/dev/null && [ ! -w "$(dirname "$rc_file")" ] 2>/dev/null; then
+                needs_sudo=1
+        fi
+        ;;
+esac
+
+# Helper to run a command, optionally with sudo for system-level files.
+# Usage: run_maybe_sudo command [args...]
+run_maybe_sudo() {
+        if [ "$needs_sudo" -eq 1 ]; then
+                if command -v doas >/dev/null 2>&1; then
+                        doas "$@"
+                elif command -v sudo >/dev/null 2>&1; then
+                        sudo "$@"
+                else
+                        printf '%s\n' "path-wizard: sudo or doas required to modify '$rc_file'." >&2
+                        exit 1
+                fi
+        else
+                "$@"
+        fi
+}
+
 nix_backup_created=0
 
 # These literal export lines represent how we manage PATH entries inside shell
@@ -397,7 +425,7 @@ spell_identifier_for_directory() {
 ensure_rc_directory() {
         rc_dir=${rc_file%/*}
         if [ "$rc_dir" != "$rc_file" ] && [ ! -d "$rc_dir" ]; then
-                mkdir -p "$rc_dir"
+                run_maybe_sudo mkdir -p "$rc_dir"
         fi
 }
 
@@ -422,7 +450,7 @@ backup_rc_file_once() {
                 backup="$rc_file.wizardry.$suffix"
         done
 
-        if ! cp "$rc_file" "$backup"; then
+        if ! run_maybe_sudo cp "$rc_file" "$backup"; then
                 printf '%s\n' "path-wizard: unable to back up '$rc_file'." >&2
                 exit 1
         fi
@@ -630,7 +658,12 @@ remove_nix_block() {
         skip {next}
         {print}
         ' "$rc_file" >"$tmp_file"
-        mv "$tmp_file" "$rc_file"
+        if [ "$needs_sudo" -eq 1 ]; then
+                run_maybe_sudo cp "$tmp_file" "$rc_file"
+                rm -f "$tmp_file"
+        else
+                mv "$tmp_file" "$rc_file"
+        fi
 }
 
 # Insert the generated Nix block just before the closing brace of the
@@ -675,7 +708,12 @@ insert_block_before_closing_brace() {
                 }
         }
         ' "$rc_file" >"$tmp_file"
-        mv "$tmp_file" "$rc_file"
+        if [ "$needs_sudo" -eq 1 ]; then
+                run_maybe_sudo cp "$tmp_file" "$rc_file"
+                rm -f "$tmp_file"
+        else
+                mv "$tmp_file" "$rc_file"
+        fi
 }
 
 # Create a temporary file containing the declarative block we manage. The
@@ -717,13 +755,20 @@ write_nix_paths() {
         block_tmp="$rc_file.block.$$"
         generate_nix_block_file "$block_tmp" "$@"
         if [ ! -f "$rc_file" ] || [ ! -s "$rc_file" ]; then
+                new_content_tmp="$rc_file.new.$$"
                 {
                         printf '{ config, pkgs, ... }:\n'
                         printf '\n'
                         printf '{\n'
                         cat "$block_tmp"
                         printf '}\n'
-                } >"$rc_file"
+                } >"$new_content_tmp"
+                if [ "$needs_sudo" -eq 1 ]; then
+                        run_maybe_sudo cp "$new_content_tmp" "$rc_file"
+                        rm -f "$new_content_tmp"
+                else
+                        mv "$new_content_tmp" "$rc_file"
+                fi
                 rm -f "$block_tmp"
                 return 0
         fi
