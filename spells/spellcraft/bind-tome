@@ -40,17 +40,14 @@ shift $((OPTIND - 1))
 
 # Require a directory of pages to stitch together.
 if [ "$#" -lt 1 ]; then
-    printf '%s\n' "Error: Please provide a folder path as an argument." >&2
+    warn "Error: Please provide a folder path as an argument."
     usage >&2
     exit 1
 fi
 
 pages_dir=$1
 # Fail fast if the provided path is not a directory of pages.
-if [ ! -d "$pages_dir" ]; then
-    printf '%s\n' "Error: '$pages_dir' is not a directory." >&2
-    exit 1
-fi
+is dir "$pages_dir" || { warn "Error: '$pages_dir' is not a directory."; exit 1; }
 
 folder_name=$(basename -- "$pages_dir")
 text_file="${folder_name}.txt"
@@ -58,20 +55,20 @@ text_file="${folder_name}.txt"
 
 # Append each page with headers so the merged tome is navigable.
 for page in "$pages_dir"/*; do
-    [ -e "$page" ] || continue
+    there "$page" || continue
     page_name=$(basename -- "$page")
-    printf '%s\n' "----- $page_name -----" >>"$text_file"
+    say "----- $page_name -----" >>"$text_file"
     cat "$page" >>"$text_file"
-    printf '%s\n' "----- End of $page_name -----" >>"$text_file"
+    say "----- End of $page_name -----" >>"$text_file"
 done
 
-printf '%s\n' "Text file created: $text_file"
+say "Text file created: $text_file"
 
 # Optionally remove the original pages once the tome is complete.
 if [ "$delete_sources" -eq 1 ]; then
     for page in "$pages_dir"/*; do
-        [ -e "$page" ] || continue
+        there "$page" || continue
         rm -- "$page"
     done
-    printf '%s\n' "Original files deleted."
+    say "Original files deleted."
 fi
