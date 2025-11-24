@@ -68,7 +68,9 @@ STUB
 
   PATH="$stubdir:$PATH" CLIPBOARD_FILE="$clipboard" run_spell "spells/spellcraft/copy" "$file"
   assert_success || return 1
-  assert_output_contains "Copied $file to your clipboard." || return 1
+  # Normalize path for macOS compatibility (TMPDIR ends with /)
+  normalized_file=$(printf '%s' "$file" | sed 's|//|/|g')
+  assert_output_contains "Copied $normalized_file to your clipboard." || return 1
   [ "$(cat "$clipboard")" = "hello world" ] || { TEST_FAILURE_REASON="pbcopy stub not used"; return 1; }
 }
 
@@ -109,7 +111,9 @@ STUB
 
   PATH="$stubdir:$PATH" CLIPBOARD_FILE="$clipboard" run_spell "spells/spellcraft/copy" "$file"
   assert_success || return 1
-  assert_output_contains "Copied $file to your clipboard." || return 1
+  # Normalize path for macOS compatibility (TMPDIR ends with /)
+  normalized_file=$(printf '%s' "$file" | sed 's|//|/|g')
+  assert_output_contains "Copied $normalized_file to your clipboard." || return 1
   [ "$(cat "$clipboard")" = "clipboard ready" ] || { TEST_FAILURE_REASON="xclip stub not used"; return 1; }
 }
 
@@ -167,7 +171,9 @@ STUB
 
   PATH="$stubdir:$PATH" CLIPBOARD_FILE="$clipboard" run_spell "spells/spellcraft/copy" "$file"
   assert_success || return 1
-  assert_output_contains "Copied $file to your clipboard." || return 1
+  # Normalize path for macOS compatibility (TMPDIR ends with /)
+  normalized_file=$(printf '%s' "$file" | sed 's|//|/|g')
+  assert_output_contains "Copied $normalized_file to your clipboard." || return 1
   [ "$(cat "$clipboard")" = "echo" ] || { TEST_FAILURE_REASON="clipboard contents unexpected"; return 1; }
 }
 

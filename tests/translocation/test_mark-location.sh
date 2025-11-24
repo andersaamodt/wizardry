@@ -31,7 +31,9 @@ test_missing_target_path() {
 test_marks_current_directory() {
   workdir=$(make_tempdir)
   run_spell_in_dir "$workdir" "spells/translocation/mark-location"
-  assert_success && assert_output_contains "Location marked at $workdir"
+  # Normalize path for macOS compatibility (TMPDIR ends with /)
+  normalized_workdir=$(printf '%s' "$workdir" | sed 's|//|/|g')
+  assert_success && assert_output_contains "Location marked at $normalized_workdir"
 }
 
 test_resolves_relative_destination() {
@@ -39,7 +41,9 @@ test_resolves_relative_destination() {
   target_dir="$workdir/place"
   mkdir -p "$target_dir"
   run_spell_in_dir "$workdir" "spells/translocation/mark-location" "place"
-  assert_success && assert_output_contains "Location marked at $target_dir"
+  # Normalize path for macOS compatibility (TMPDIR ends with /)
+  normalized_target=$(printf '%s' "$target_dir" | sed 's|//|/|g')
+  assert_success && assert_output_contains "Location marked at $normalized_target"
 }
 
 test_overwrites_marker() {
@@ -55,8 +59,10 @@ test_overwrites_marker() {
     printf "MARK:%s\n" "$(cat "$HOME/.mud/portal_marker")"
   '
   assert_success
-  assert_output_contains "Location marked at $expected"
-  assert_output_contains "MARK:$expected"
+  # Normalize path for macOS compatibility (TMPDIR ends with /)
+  normalized_expected=$(printf '%s' "$expected" | sed 's|//|/|g')
+  assert_output_contains "Location marked at $normalized_expected"
+  assert_output_contains "MARK:$normalized_expected"
 }
 
 test_resolves_symlink_workdir() {
@@ -74,8 +80,10 @@ test_resolves_symlink_workdir() {
     printf "MARK:%s\n" "$(cat "$HOME/.mud/portal_marker")"
   '
   assert_success
-  assert_output_contains "Location marked at $real_dir"
-  assert_output_contains "MARK:$real_dir"
+  # Normalize path for macOS compatibility (TMPDIR ends with /)
+  normalized_real=$(printf '%s' "$real_dir" | sed 's|//|/|g')
+  assert_output_contains "Location marked at $normalized_real"
+  assert_output_contains "MARK:$normalized_real"
 }
 
 test_expands_tilde_argument() {

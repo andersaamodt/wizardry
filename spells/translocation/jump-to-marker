@@ -346,7 +346,9 @@ fi
         if [ -n "$arrival" ]; then
                 printf '%s\n' "$arrival"
         fi
-        printf '%s\n' "You land in $(pwd -P)."
+        # Normalize path for macOS compatibility (TMPDIR ends with /)
+        landing_path=$(pwd -P | sed 's|//|/|g')
+        printf '%s\n' "You land in $landing_path."
 jump_describe_current_location
 }
 

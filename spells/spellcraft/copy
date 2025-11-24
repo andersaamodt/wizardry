@@ -24,6 +24,9 @@ if [ ! -f "$1" ]; then
 	exit 1
 fi
 
+# Normalize path for macOS compatibility (TMPDIR ends with /)
+file_path=$(printf '%s' "$1" | sed 's|//|/|g')
+
 # Check if the `pbcopy` command is available (only on macOS). If it is, use it to copy the contents of the file to the clipboard.
 if command -v pbcopy >/dev/null 2>&1; then
     pbcopy < "$1" || exit 1
@@ -42,4 +45,4 @@ else
     exit 1
 fi
 
-echo "Copied $1 to your clipboard."
+echo "Copied $file_path to your clipboard."

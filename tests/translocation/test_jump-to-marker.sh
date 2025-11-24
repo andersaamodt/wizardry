@@ -70,7 +70,9 @@ test_jump_changes_directory() {
   mkdir -p "$start_dir" "$destination"
   printf '%s\n' "$destination" >"$WIZARDRY_TMPDIR/marker"
   run_jump "$WIZARDRY_TMPDIR/marker" "$start_dir"
-  assert_success && assert_output_contains "You land in $destination"
+  # Normalize path for macOS compatibility (TMPDIR ends with /)
+  normalized_dest=$(printf '%s' "$destination" | sed 's|//|/|g')
+  assert_success && assert_output_contains "You land in $normalized_dest"
 }
 
 run_test_case "jump-to-marker prints usage" test_help
