@@ -1,9 +1,22 @@
 #!/bin/sh
 
+# Handle --uninstall argument to run the uninstall script
+if [ "$#" -eq 1 ] && [ "$1" = "--uninstall" ]; then
+        script_dir=$(CDPATH='' cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || script_dir="."
+        uninstall_script="$script_dir/uninstall_wizardry"
+        if [ -x "$uninstall_script" ]; then
+                exec "$uninstall_script"
+        else
+                printf '%s\n' "Error: uninstall script not found at '$uninstall_script'." >&2
+                printf '%s\n' "Run the install script first to create it." >&2
+                exit 1
+        fi
+fi
+
 # Abort if unexpected arguments are supplied so we do not accidentally discard
 # them when repurposing the positional parameters to track missing directories.
 if [ "$#" -ne 0 ]; then
-        printf '%s\n' "Usage: install" >&2
+        printf '%s\n' "Usage: install [--uninstall]" >&2
         exit 1
 fi
 
@@ -244,6 +257,7 @@ DETECT_RC_FILE="$ABS_DIR/spells/divination/detect-rc-file"
 MEMORIZE="$ABS_DIR/spells/spellcraft/memorize"
 CORE_INSTALLER=${WIZARDRY_CORE_INSTALLER:-$ABS_DIR/spells/install/core/install-core}
 ASK_YN="$ABS_DIR/spells/cantrips/ask_yn"
+COLORS_SPELL="$ABS_DIR/spells/cantrips/colors"
 PATH_WIZARD_FLAGS=${PATH_WIZARD_FLAGS:---recursive}
 
 # Export environment variables for all helper spells so that they use the new
@@ -253,6 +267,42 @@ SCRIBE_SPELL="$ABS_DIR/spells/spellcraft/scribe-spell"
 MEMORIZE_SCRIBE="$ABS_DIR/spells/spellcraft/scribe-spell"
 MEMORIZE_COMMAND_HELPER="$ABS_DIR/spells/cantrips/memorize-command"
 export DETECT_RC_FILE SCRIBE_SPELL MEMORIZE_SCRIBE MEMORIZE_COMMAND_HELPER
+
+# Load colors for better formatted output
+load_colors() {
+        if [ -r "$COLORS_SPELL" ]; then
+                # shellcheck source=/dev/null
+                . "$COLORS_SPELL"
+        else
+                # Fallback to no colors
+                RESET=''
+                GREEN=''
+                CYAN=''
+                YELLOW=''
+                BLUE=''
+                BOLD=''
+                GREY=''
+        fi
+}
+
+load_colors
+
+# Helper functions for formatted messages
+info_msg() {
+        printf '%s==>%s %s\n' "$BOLD$CYAN" "$RESET" "$*"
+}
+
+success_msg() {
+        printf '%s✓%s %s\n' "$BOLD$GREEN" "$RESET" "$*"
+}
+
+section_msg() {
+        printf '\n%s===== %s =====%s\n' "$BOLD$BLUE" "$*" "$RESET"
+}
+
+substep_msg() {
+        printf '%s  ->%s %s\n' "$CYAN" "$RESET" "$*"
+}
 
 if [ ! -x "$PATH_WIZARD" ]; then
         printf '%s\n' "Error: Expected helper '$PATH_WIZARD' is missing or not executable." >&2
@@ -270,12 +320,14 @@ if [ ! -x "$ASK_YN" ]; then
 fi
 
 if [ -x "$CORE_INSTALLER" ]; then
-        printf '%s\n' "Ensuring core prerequisites are installed..."
+        section_msg "Installing Core Prerequisites"
         if ! ASSUME_YES=1 "$CORE_INSTALLER"; then
-                printf '%s\n' "Warning: Unable to install all core prerequisites automatically. Please install them manually." >&2
+                printf '%sWarning:%s Unable to install all core prerequisites automatically. Please install them manually.\n' "$YELLOW" "$RESET" >&2
+        else
+                success_msg "Core prerequisites installed"
         fi
 else
-        printf '%s\n' "Warning: Core installer not found at '$CORE_INSTALLER'; skipping core prerequisite setup." >&2
+        printf '%sWarning:%s Core installer not found; skipping core prerequisite setup.\n' "$YELLOW" "$RESET" >&2
 fi
 
 # Perform comprehensive installation detection across all RC files
@@ -354,12 +406,13 @@ fi
 
 # Inform user about installation mode
 if [ "$install_mode" = "repair" ]; then
-        printf '%s\n' "Detected incomplete wizardry installation. Repairing..."
+        info_msg "Detected incomplete wizardry installation. Repairing..."
 fi
 
 # Detect the rc file and format before prompting so we can give specific guidance
 detect_rc_file_value=""
 detect_format_value=""
+detect_platform_value=""
 if detect_output="$($DETECT_RC_FILE 2>/dev/null)"; then
         while IFS='=' read -r key value; do
                 case $key in
@@ -369,38 +422,61 @@ if detect_output="$($DETECT_RC_FILE 2>/dev/null)"; then
                 format)
                         detect_format_value=$value
                         ;;
+                platform)
+                        detect_platform_value=$value
+                        ;;
                 esac
         done <<EOF
 $detect_output
 EOF
 fi
 
-printf '%s\n' "Wizardry will ensure the following directories appear in your PATH:"
+section_msg "Installation Plan"
+
+# Count how many directories will be added (for recursion display)
+total_path_additions=0
+if [ "$PATH_WIZARD_FLAGS" = "--recursive" ]; then
+        for dir
+        do
+                if [ -d "$dir" ]; then
+                        subdir_count=$(find "$dir" -type d 2>/dev/null | wc -l | tr -d ' ')
+                        total_path_additions=$((total_path_additions + subdir_count))
+                fi
+        done
+else
+        total_path_additions=$#
+fi
+
+info_msg "Will add $total_path_additions directories to your PATH"
 for dir
 do
-        printf '  %s\n' "$dir"
+        substep_msg "$dir"
+        if [ "$PATH_WIZARD_FLAGS" = "--recursive" ]; then
+                substep_msg "  (and all subdirectories)"
+        fi
 done
 
 # Provide format-specific information about what file will be modified
+printf '\n'
 if [ "$detect_format_value" = "nix" ]; then
-        printf '\n'
-        printf '%s\n' "On NixOS, wizardry will modify your configuration file:"
+        info_msg "NixOS Configuration"
+        substep_msg "Configuration file to be modified:"
         if [ -n "$detect_rc_file_value" ]; then
-                printf '  %s\n' "$detect_rc_file_value"
+                printf '      %s\n' "$detect_rc_file_value"
         else
-                printf '  %s\n' "~/.config/nixpkgs/configuration.nix"
+                printf '      %s\n' "$HOME/.config/nixpkgs/configuration.nix"
         fi
-        printf '%s\n' ""
-        printf '%s\n' "A backup will be created automatically before any changes are made."
-        printf '%s\n' "After installation, run 'nixos-rebuild switch' or 'home-manager switch' to activate."
+        substep_msg "Backup: A timestamped backup will be created automatically"
+        substep_msg "After install: The installer will run 'sudo nixos-rebuild switch' or 'home-manager switch'"
 elif [ -n "$detect_rc_file_value" ]; then
-        printf '%s\n' "This will be added to: $detect_rc_file_value"
+        info_msg "Shell configuration to be modified: $detect_rc_file_value"
 fi
 
 # Confirm with the user (or their automation) before editing their configuration.
 # When stdin is not interactive we fall back to the non-blocking ASK_CANTRIP_INPUT=none
 # pathway so wget|sh installs do not hang.
 proceed=0
+printf '\n'
 if [ "${WIZARDRY_INSTALL_ASSUME_YES-}" = "1" ]; then
         proceed=1
 else
@@ -416,16 +492,20 @@ else
 fi
 
 if [ "$proceed" -ne 1 ]; then
-        printf '%s\n' "Ok, well wizardry won't work until you install it by adding the spells directory to your PATH."
+        printf '%s\n' "Installation cancelled."
         exit 1
 fi
+
+section_msg "Updating PATH"
 
 path_updates_made=0
 for dir
 do
         path_log=$(mktemp "${TMPDIR:-/tmp}/wizardry-path.XXXXXX") || exit 1
+        info_msg "Adding $dir to PATH..."
         if "$PATH_WIZARD" $PATH_WIZARD_FLAGS add "$dir" >"$path_log" 2>&1; then
                 path_updates_made=1
+                success_msg "Added to PATH"
         else
                 cat "$path_log" >&2
                 rm -f "$path_log"
@@ -440,8 +520,46 @@ if [ "$path_updates_made" -eq 1 ]; then
         else
                 rc_destination="your shell configuration file"
         fi
+        
+        success_msg "PATH configuration updated in $rc_destination"
+        
         if [ "$detect_format_value" = "nix" ]; then
-                printf 'Wizardry directories recorded in %s. Rebuild your Nix environment or restart your shell session to activate them.\n' "$rc_destination"
+                # On NixOS, attempt to run nixos-rebuild or home-manager switch
+                info_msg "Attempting to rebuild NixOS configuration..."
+                
+                rebuild_success=0
+                # Try to detect if we should use sudo or doas
+                priv_cmd=""
+                if command -v doas >/dev/null 2>&1; then
+                        priv_cmd="doas"
+                elif command -v sudo >/dev/null 2>&1; then
+                        priv_cmd="sudo"
+                fi
+                
+                # Try home-manager first (doesn't need privileges)
+                if command -v home-manager >/dev/null 2>&1; then
+                        info_msg "Running 'home-manager switch'..."
+                        if home-manager switch; then
+                                success_msg "NixOS environment rebuilt successfully"
+                                rebuild_success=1
+                        fi
+                fi
+                
+                # If home-manager didn't work and we have privilege escalation, try nixos-rebuild
+                if [ "$rebuild_success" -eq 0 ] && [ -n "$priv_cmd" ] && command -v nixos-rebuild >/dev/null 2>&1; then
+                        info_msg "Running '$priv_cmd nixos-rebuild switch'..."
+                        if $priv_cmd nixos-rebuild switch; then
+                                success_msg "NixOS environment rebuilt successfully"
+                                rebuild_success=1
+                        fi
+                fi
+                
+                if [ "$rebuild_success" -eq 0 ]; then
+                        printf '%sNote:%s Could not automatically rebuild NixOS configuration.\n' "$YELLOW" "$RESET"
+                        printf 'Please run one of these commands manually:\n'
+                        printf '  home-manager switch  (for home-manager users)\n'
+                        printf '  sudo nixos-rebuild switch  (for system-level configuration)\n'
+                fi
         else
                 printf 'Wizardry directories recorded in %s. Open a new shell or source the file to activate them.\n' "$rc_destination"
         fi
@@ -451,19 +569,146 @@ fi
 # ready before the user opens their first shell inside the new install.
 mem_status=0
 if [ -x "$MEMORIZE" ]; then
+        section_msg "Memorizing Spells"
         mem_log=$(mktemp "${TMPDIR:-/tmp}/wizardry-memorize.XXXXXX") || exit 1
         if "$MEMORIZE" --recursive "$ABS_DIR/spells" >"$mem_log" 2>&1; then
-                cat "$mem_log"
-                printf '%s\n' "Spells memorized successfully."
+                # Parse output to extract counts without the "skipped" message
+                memorized_count=$(grep -o 'Memorized [0-9]* spell' "$mem_log" | grep -o '[0-9]*' | head -1)
+                if [ -n "$memorized_count" ] && [ "$memorized_count" -gt 0 ]; then
+                        success_msg "Memorized $memorized_count spell(s)"
+                fi
         else
                 mem_status=$?
                 cat "$mem_log" >&2 || true
         fi
         rm -f "$mem_log"
 else
-        printf '%s\n' "Warning: memorize spell is missing; skipping automatic memorization." >&2
+        printf '%sWarning:%s memorize spell is missing; skipping automatic memorization.\n' "$YELLOW" "$RESET" >&2
 fi
 
-printf '%s\n' "Your spellbook has been activated. Open a fresh terminal or source your shell configuration to cast spells everywhere."
+# Create uninstall script
+create_uninstall_script() {
+        script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || script_dir="$ABS_DIR"
+        uninstall_script="$script_dir/uninstall_wizardry"
+        
+        cat >"$uninstall_script" <<'UNINSTALL_EOF'
+#!/bin/sh
+
+# Wizardry Uninstall Script
+# This script was automatically generated during installation.
+# It will reverse all changes made by the install script.
+
+set -eu
+
+UNINSTALL_EOF
+
+        # Add variables for the installation
+        cat >>"$uninstall_script" <<UNINSTALL_VARS
+INSTALL_DIR="$ABS_DIR"
+INSTALL_WAS_LOCAL="$LOCAL_SOURCE"
+RC_FILE="$detect_rc_file_value"
+RC_FORMAT="$detect_format_value"
+
+UNINSTALL_VARS
+
+        cat >>"$uninstall_script" <<'UNINSTALL_MAIN'
+# Load colors if available
+if [ -r "$INSTALL_DIR/spells/cantrips/colors" ]; then
+        # shellcheck source=/dev/null
+        . "$INSTALL_DIR/spells/cantrips/colors"
+else
+        RESET=''
+        RED=''
+        YELLOW=''
+        GREEN=''
+        BOLD=''
+        CYAN=''
+fi
+
+printf '\n%s===== Wizardry Uninstall =====%s\n\n' "$BOLD$CYAN" "$RESET"
+printf '%sThis will remove wizardry from your system:%s\n' "$YELLOW" "$RESET"
+printf '  - Remove PATH entries from %s\n' "$RC_FILE"
+if [ -z "$INSTALL_WAS_LOCAL" ]; then
+        printf '  - Delete wizardry directory: %s\n' "$INSTALL_DIR"
+else
+        printf '  - Keep wizardry directory (local source installation)\n'
+fi
+printf '\n'
+
+# Ask for confirmation
+printf '%sDo you want to proceed?%s [y/N] ' "$BOLD" "$RESET"
+read -r answer
+case $answer in
+        y|Y|yes|YES)
+                : # Continue
+                ;;
+        *)
+                printf 'Uninstall cancelled.\n'
+                exit 0
+                ;;
+esac
+
+printf '\n%s==> Removing PATH entries...%s\n' "$CYAN" "$RESET"
+
+# Use path-wizard to remove PATH entries
+PATH_WIZARD="$INSTALL_DIR/spells/translocation/path-wizard"
+if [ -x "$PATH_WIZARD" ]; then
+        for dir in "$INSTALL_DIR"/spells/*; do
+                [ -d "$dir" ] || continue
+                if "$PATH_WIZARD" --recursive remove "$dir" 2>/dev/null; then
+                        printf '  %s✓%s Removed %s\n' "$GREEN" "$RESET" "$dir"
+                fi
+        done
+        # Also try removing the main spells directory
+        if "$PATH_WIZARD" remove "$INSTALL_DIR/spells" 2>/dev/null; then
+                printf '  %s✓%s Removed %s\n' "$GREEN" "$RESET" "$INSTALL_DIR/spells"
+        fi
+else
+        printf '  %sWarning:%s Could not find path-wizard; manual PATH cleanup may be needed\n' "$YELLOW" "$RESET"
+fi
+
+# Remove wizardry directory if it was downloaded (not local source)
+if [ -z "$INSTALL_WAS_LOCAL" ]; then
+        printf '\n%s==> Removing wizardry directory...%s\n' "$CYAN" "$RESET"
+        if [ -d "$INSTALL_DIR" ]; then
+                if rm -rf "$INSTALL_DIR"; then
+                        printf '  %s✓%s Deleted %s\n' "$GREEN" "$RESET" "$INSTALL_DIR"
+                else
+                        printf '  %sError:%s Could not delete %s\n' "$RED" "$RESET" "$INSTALL_DIR"
+                        exit 1
+                fi
+        fi
+fi
+
+printf '\n%s✓ Wizardry uninstalled successfully%s\n' "$BOLD$GREEN" "$RESET"
+printf 'You may need to restart your shell or source your configuration file.\n\n'
+
+# Self-destruct
+SELF="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
+rm -f "$SELF"
+UNINSTALL_MAIN
+
+        chmod +x "$uninstall_script"
+        return 0
+}
+
+if create_uninstall_script; then
+        script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || script_dir="."
+        success_msg "Uninstall script created at: $script_dir/uninstall_wizardry"
+fi
+
+printf '\n'
+section_msg "Installation Complete!"
+success_msg "Wizardry has been successfully installed"
+printf '\n%sNext steps:%s\n' "$BOLD" "$RESET"
+if [ "$detect_format_value" = "nix" ]; then
+        printf '  1. Your NixOS configuration has been updated\n'
+        printf '  2. Run %smenu%s or %smud%s to start using wizardry\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
+else
+        printf '  1. Open a fresh terminal or run: %ssource %s%s\n' "$CYAN" "$detect_rc_file_value" "$RESET"
+        printf '  2. Run %smenu%s or %smud%s to start using wizardry\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
+fi
+printf '  3. To uninstall, run: %s./install --uninstall%s\n' "$CYAN" "$RESET"
+printf '\n'
 
 exit "$mem_status"
