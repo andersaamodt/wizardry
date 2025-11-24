@@ -29,28 +29,26 @@ test_missing_target_path() {
 }
 
 test_marks_current_directory() {
-  workdir=$(make_tempdir)
+  workdir=$(make_tempdir | sed 's|//|/|g')
   run_spell_in_dir "$workdir" "spells/translocation/mark-location"
-  # Normalize path for macOS compatibility (TMPDIR ends with /)
-  normalized_workdir=$(printf '%s' "$workdir" | sed 's|//|/|g')
-  assert_success && assert_output_contains "Location marked at $normalized_workdir"
+  assert_success && assert_output_contains "Location marked at $workdir"
 }
 
 test_resolves_relative_destination() {
-  workdir=$(make_tempdir)
+  workdir=$(make_tempdir | sed 's|//|/|g')
   target_dir="$workdir/place"
   mkdir -p "$target_dir"
   run_spell_in_dir "$workdir" "spells/translocation/mark-location" "place"
-  # Normalize path for macOS compatibility (TMPDIR ends with /)
-  normalized_target=$(printf '%s' "$target_dir" | sed 's|//|/|g')
-  assert_success && assert_output_contains "Location marked at $normalized_target"
+  assert_success && assert_output_contains "Location marked at $target_dir"
 }
 
 test_overwrites_marker() {
   expected="$WIZARDRY_TMPDIR/mark-overwrite"
+  # Normalize for macOS compatibility
+  expected=$(printf '%s' "$expected" | sed 's|//|/|g')
   run_cmd sh -c '
     set -e
-    expected="$WIZARDRY_TMPDIR/mark-overwrite"
+    expected="'"$expected"'"
     rm -rf "$expected"
     mkdir -p "$expected" "$HOME/.mud"
     printf "/previous\n" >"$HOME/.mud/portal_marker"
@@ -59,19 +57,20 @@ test_overwrites_marker() {
     printf "MARK:%s\n" "$(cat "$HOME/.mud/portal_marker")"
   '
   assert_success
-  # Normalize path for macOS compatibility (TMPDIR ends with /)
-  normalized_expected=$(printf '%s' "$expected" | sed 's|//|/|g')
-  assert_output_contains "Location marked at $normalized_expected"
-  assert_output_contains "MARK:$normalized_expected"
+  assert_output_contains "Location marked at $expected"
+  assert_output_contains "MARK:$expected"
 }
 
 test_resolves_symlink_workdir() {
   real_dir="$WIZARDRY_TMPDIR/mark-real"
   link_dir="$WIZARDRY_TMPDIR/mark-link"
+  # Normalize for macOS compatibility
+  real_dir=$(printf '%s' "$real_dir" | sed 's|//|/|g')
+  link_dir=$(printf '%s' "$link_dir" | sed 's|//|/|g')
   run_cmd sh -c '
     set -e
-    real_dir="$WIZARDRY_TMPDIR/mark-real"
-    link_dir="$WIZARDRY_TMPDIR/mark-link"
+    real_dir="'"$real_dir"'"
+    link_dir="'"$link_dir"'"
     rm -rf "$real_dir" "$link_dir"
     mkdir -p "$real_dir"
     ln -s "$real_dir" "$link_dir"
@@ -80,10 +79,8 @@ test_resolves_symlink_workdir() {
     printf "MARK:%s\n" "$(cat "$HOME/.mud/portal_marker")"
   '
   assert_success
-  # Normalize path for macOS compatibility (TMPDIR ends with /)
-  normalized_real=$(printf '%s' "$real_dir" | sed 's|//|/|g')
-  assert_output_contains "Location marked at $normalized_real"
-  assert_output_contains "MARK:$normalized_real"
+  assert_output_contains "Location marked at $real_dir"
+  assert_output_contains "MARK:$real_dir"
 }
 
 test_expands_tilde_argument() {

@@ -58,6 +58,8 @@ test_jump_rejects_missing_destination() {
 
 test_jump_detects_current_location() {
   destination="$WIZARDRY_TMPDIR/already-here"
+  # Normalize for macOS compatibility
+  destination=$(printf '%s' "$destination" | sed 's|//|/|g')
   mkdir -p "$destination"
   printf '%s\n' "$destination" >"$WIZARDRY_TMPDIR/marker"
   run_jump "$WIZARDRY_TMPDIR/marker" "$destination"
@@ -67,12 +69,13 @@ test_jump_detects_current_location() {
 test_jump_changes_directory() {
   start_dir="$WIZARDRY_TMPDIR/start"
   destination="$WIZARDRY_TMPDIR/portal"
+  # Normalize for macOS compatibility
+  start_dir=$(printf '%s' "$start_dir" | sed 's|//|/|g')
+  destination=$(printf '%s' "$destination" | sed 's|//|/|g')
   mkdir -p "$start_dir" "$destination"
   printf '%s\n' "$destination" >"$WIZARDRY_TMPDIR/marker"
   run_jump "$WIZARDRY_TMPDIR/marker" "$start_dir"
-  # Normalize path for macOS compatibility (TMPDIR ends with /)
-  normalized_dest=$(printf '%s' "$destination" | sed 's|//|/|g')
-  assert_success && assert_output_contains "You land in $normalized_dest"
+  assert_success && assert_output_contains "You land in $destination"
 }
 
 run_test_case "jump-to-marker prints usage" test_help
