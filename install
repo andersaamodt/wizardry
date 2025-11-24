@@ -42,9 +42,10 @@ case $PROMPT_DEFAULT in
                 # Already absolute path, no normalization needed
                 :
                 ;;
-        home/*|Users/*|usr/*|opt/*|var/*|tmp/*)
+        [Hh]ome/*|[Uu]sers/*|[Uu]sr/*|[Oo]pt/*|[Vv]ar/*|[Tt]mp/*|[Mm]nt/*|[Rr]oot/*)
                 # Looks like an absolute path missing the leading slash
                 # This handles cases where environment variables are set incorrectly
+                # Using case-insensitive patterns to catch common variations
                 PROMPT_DEFAULT="/$PROMPT_DEFAULT"
                 ;;
         *)

@@ -22,7 +22,8 @@ force_install=${FORCE_INSTALL:-0}
 
 # On NixOS, system packages must be installed declaratively in configuration.nix
 # Exit gracefully to allow the installer to continue without failing
-if [ -f /etc/NIXOS ] || grep -qi 'ID=nixos' /etc/os-release 2>/dev/null; then
+# Check for /etc/nixos directory (common) or ID=nixos in os-release
+if [ -d /etc/nixos ] || [ -f /etc/NIXOS ] || grep -qi 'ID=nixos' /etc/os-release 2>/dev/null; then
         if [ "$action" = "install" ]; then
                 if ! command -v "$command_name" >/dev/null 2>&1; then
                         printf '%s\n' "Note: $package_default should be installed declaratively on NixOS."
