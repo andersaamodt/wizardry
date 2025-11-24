@@ -72,8 +72,9 @@ if [ "${WIZARDRY_DISABLE_SANDBOX-0}" = "1" ]; then
   BWRAP_REASON="sandboxing disabled by WIZARDRY_DISABLE_SANDBOX"
   MACOS_SANDBOX_AVAILABLE=0
 else
-  # Check for macOS sandbox-exec
-  if [ "$SANDBOX_PLATFORM" = "Darwin" ]; then
+  # macOS sandboxing is disabled by default due to compatibility issues
+  # Enable with WIZARDRY_ENABLE_MACOS_SANDBOX=1 if needed
+  if [ "$SANDBOX_PLATFORM" = "Darwin" ] && [ "${WIZARDRY_ENABLE_MACOS_SANDBOX-0}" = "1" ]; then
     if command -v sandbox-exec >/dev/null 2>&1; then
       SANDBOX_EXEC_BIN=$(command -v sandbox-exec)
       # Test if sandbox-exec works with a simple profile
@@ -145,11 +146,14 @@ run_bwrap() {
 
 run_macos_sandbox() {
   # Create a permissive sandbox profile that provides minimal isolation
-  # NOTE: This profile is intentionally very permissive because:
+  # NOTE: macOS sandboxing is DISABLED BY DEFAULT due to compatibility issues
+  # Enable with WIZARDRY_ENABLE_MACOS_SANDBOX=1 if needed for testing
+  #
+  # This profile is intentionally very permissive because:
   # 1. macOS sandbox-exec is fundamentally more restrictive than Linux bubblewrap
   # 2. A more restrictive profile caused 75 out of 102 tests to fail
-  # 3. The primary benefit is process isolation and consistent environment, not security
-  # 4. Tests can still be run without sandboxing if WIZARDRY_DISABLE_SANDBOX=1
+  # 3. Even a permissive profile may cause test failures in GitHub Actions
+  # 4. The primary benefit is process isolation and consistent environment, not security
   #
   # The profile allows most operations to maintain test compatibility while still
   # providing basic process isolation that helps catch environment-related issues.
