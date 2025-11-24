@@ -90,6 +90,22 @@ test_handles_missing_home() {
   assert_output_contains "format=shell" || return 1
 }
 
+test_nixos_falls_back_to_shell_rc() {
+  # On NixOS without home-manager and without existing nix config,
+  # detect-rc-file should fall back to shell RC files
+  home_dir=$(make_tempdir)
+  run_cmd env DETECT_RC_FILE_PLATFORM=nixos HOME="$home_dir" SHELL=/bin/bash sh -c '
+    # No .config/nixpkgs/configuration.nix exists
+    # No home-manager in PATH
+    exec spells/divination/detect-rc-file
+  '
+
+  assert_success || return 1
+  assert_output_contains "platform=nixos" || return 1
+  assert_output_contains "rc_file=$home_dir/.bashrc" || return 1
+  assert_output_contains "format=shell" || return 1
+}
+
 run_test_case "detect-rc-file prints usage" test_help
 run_test_case "detect-rc-file validates arguments" test_rejects_bad_arguments
 run_test_case "detect-rc-file picks preferred files for platform" test_picks_known_platform_files
@@ -97,4 +113,5 @@ run_test_case "detect-rc-file emits nix formatting hints" test_emits_nix_format_
 run_test_case "detect-rc-file favors existing platform candidates" test_prefers_existing_platform_file
 run_test_case "detect-rc-file respects shell defaults on unknown platforms" test_prefers_shell_file_when_platform_unknown
 run_test_case "detect-rc-file tolerates missing HOME" test_handles_missing_home
+run_test_case "detect-rc-file falls back to shell on NixOS without home-manager" test_nixos_falls_back_to_shell_rc
 finish_tests
