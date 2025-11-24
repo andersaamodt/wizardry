@@ -33,14 +33,28 @@ card_lines() {
 validate_card() {
     card_path=$1
 
-    is file "$card_path" || die "vCard file not found: $card_path"
+    if [ ! -f "$card_path" ]; then
+        echo "vCard file not found: $card_path" >&2
+        exit 1
+    fi
 
     begins=$(tr -d '\r' <"$card_path" | grep -Ec '^BEGIN:VCARD$' || true)
     ends=$(tr -d '\r' <"$card_path" | grep -Ec '^END:VCARD$' || true)
 
-    [ "$begins" -eq 0 ] && [ "$ends" -eq 0 ] && die "No vCard entries found in $card_path"
-    [ "$begins" -ne "$ends" ] && die "Unbalanced vCard entries in $card_path"
-    [ "$begins" -gt 1 ] && die "Multiple vCard entries are not supported"
+    if [ "$begins" -eq 0 ] && [ "$ends" -eq 0 ]; then
+        echo "No vCard entries found in $card_path" >&2
+        exit 1
+    fi
+
+    if [ "$begins" -ne "$ends" ]; then
+        echo "Unbalanced vCard entries in $card_path" >&2
+        exit 1
+    fi
+
+    if [ "$begins" -gt 1 ]; then
+        echo "Multiple vCard entries are not supported" >&2
+        exit 1
+    fi
 }
 
 nicer_name() {
@@ -76,7 +90,10 @@ print_field() {
     requested_field=$2
 
     card_line=$(card_lines "$card_path" | awk -F':' -v field="$requested_field" '$1 ~ field { print; exit }')
-    is set "${card_line:-}" || die "$requested_field not found"
+    if [ -z "${card_line:-}" ]; then
+        echo "$requested_field not found" >&2
+        exit 1
+    fi
 
     field_name=$(echo "$card_line" | awk -F':' '{print $1}')
     field_value=$(echo "$card_line" | awk -F':' '{print substr($0, length($1) + 2)}')
