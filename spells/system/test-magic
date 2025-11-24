@@ -12,8 +12,13 @@ set -eu
 # inherited PATH may be empty.
 baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 case ":${PATH-}:" in
-  *":/usr/bin:"*) ;; # already present
-  *) PATH="$baseline_path:${PATH-}" ;;
+  *":/usr/bin:"*|*":/bin:"*) 
+    # Already has at least one standard directory
+    ;;
+  *) 
+    # PATH is empty or missing standard directories, prepend baseline
+    PATH="${baseline_path}${PATH:+:}${PATH-}"
+    ;;
 esac
 export PATH
 

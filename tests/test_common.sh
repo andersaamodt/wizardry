@@ -42,6 +42,12 @@ export PATH
 WIZARDRY_TEST_HELPERS_ONLY=1
 export WIZARDRY_TEST_HELPERS_ONLY
 
+# Save the system PATH for run_cmd to use internally
+# This ensures run_cmd can always find essential utilities like mktemp, mkdir, cat, rm
+# even when tests intentionally set a restricted PATH to test error conditions
+WIZARDRY_SYSTEM_PATH="$initial_path"
+export WIZARDRY_SYSTEM_PATH
+
 : "${WIZARDRY_TMPDIR:=$(mktemp -d "${TMPDIR:-/tmp}/wizardry-test.XXXXXX")}" || exit 1
 export WIZARDRY_TMPDIR
 
@@ -163,6 +169,12 @@ finish_tests() {
 # Capture a command's stdout, stderr, and exit status inside a bubblewrap
 # sandbox. Results land in STATUS, OUTPUT, and ERROR variables.
 run_cmd() {
+  # Save the caller's PATH and temporarily use the system PATH for run_cmd's
+  # internal operations (mktemp, mkdir, cat, rm, pwd). This ensures run_cmd
+  # works even when tests intentionally set a restricted PATH.
+  __saved_path=$PATH
+  PATH=${WIZARDRY_SYSTEM_PATH:-$PATH}
+  
   __stdout=$(mktemp "${WIZARDRY_TMPDIR}/stdout.XXXXXX") || return 1
   __stderr=$(mktemp "${WIZARDRY_TMPDIR}/stderr.XXXXXX") || return 1
 
@@ -173,6 +185,9 @@ run_cmd() {
   tmpdir="$sandbox/tmp"
   homedir="$sandbox/home"
   mkdir -p "$tmpdir" "$homedir"
+  
+  # Restore the caller's PATH for use in the sandbox
+  PATH=$__saved_path
 
   if [ "$BWRAP_AVAILABLE" -eq 1 ]; then
     set -- \
@@ -208,10 +223,15 @@ run_cmd() {
     fi
   fi
 
+  # Use system PATH again for cleanup operations
+  PATH=${WIZARDRY_SYSTEM_PATH:-$__saved_path}
   OUTPUT=$(cat "$__stdout")
   ERROR=$(cat "$__stderr")
   rm -f "$__stdout" "$__stderr"
   rm -rf "$sandbox"
+  
+  # Restore caller's PATH before returning
+  PATH=$__saved_path
 }
 
 run_spell() {
