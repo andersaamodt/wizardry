@@ -148,3 +148,4 @@ Principles of the testing suite:
 * Test files live in `tests/` and mirror the structure of the `spells/` directory. One test script per spell.
 * Tests source `test_common.sh` to standardize testing procedures and logging.
 * Each test's subtests should cover all valid and failure modes. Since spells call each other, each spell's test should avoid redundancy with other spells' tests by focusing on unique behaviors.
+* Shims exist only within tests; whenever a test needs a shim, that test script must create and manage it explicitly.

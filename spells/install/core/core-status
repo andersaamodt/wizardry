@@ -2,8 +2,28 @@
 
 # Report readiness of core prerequisites for wizardry.
 
-if command -v bwrap >/dev/null 2>&1; then
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+# shellcheck source=/dev/null
+. "$script_dir/install-core"
+
+missing=""
+
+while IFS=: read -r _ command_name _ _; do
+  if command -v "$command_name" >/dev/null 2>&1; then
+    continue
+  fi
+
+  if [ -z "$missing" ]; then
+    missing=$command_name
+  else
+    missing="$missing, $command_name"
+  fi
+done <<EOF
+$(core_dependencies)
+EOF
+
+if [ -z "$missing" ]; then
   echo "ready"
 else
-  echo "missing bubblewrap"
+  printf '%s\n' "missing $missing"
 fi

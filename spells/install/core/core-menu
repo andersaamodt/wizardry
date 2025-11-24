@@ -2,16 +2,38 @@
 
 # Install and manage the core prerequisites for wizardry.
 
-colors_bin=$(command -v colors 2>/dev/null) || {
-  echo "missing dependency: colors" >&2
-  exit 1
-}
-. "$colors_bin"
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+root_dir=$(CDPATH= cd -- "$script_dir/../../.." && pwd -P)
 
-menu_bin=$(command -v menu 2>/dev/null) || {
-  echo "missing dependency: menu" >&2
+colors_bin=${COLORS_BIN-}
+if [ -z "$colors_bin" ]; then
+  colors_bin=$(command -v colors 2>/dev/null)
+fi
+if [ -z "$colors_bin" ] && [ -x "$root_dir/spells/cantrips/colors" ]; then
+  colors_bin="$root_dir/spells/cantrips/colors"
+fi
+if [ -z "$colors_bin" ]; then
+  echo "core-menu: missing dependency: colors" >&2
   exit 1
-}
+fi
+
+menu_bin=${MENU_BIN-}
+if [ -z "$menu_bin" ]; then
+  menu_bin=$(command -v menu 2>/dev/null)
+fi
+if [ -z "$menu_bin" ] && [ -x "$root_dir/spells/cantrips/menu" ]; then
+  menu_bin="$root_dir/spells/cantrips/menu"
+fi
+if [ -z "$menu_bin" ]; then
+  echo "core-menu: missing dependency: menu" >&2
+  exit 1
+fi
+
+# shellcheck source=/dev/null
+. "$script_dir/install-core"
+
+# shellcheck source=/dev/null
+. "$colors_bin"
 
 loop_limit=${MENU_LOOP_LIMIT:-}
 
@@ -29,14 +51,50 @@ handle_ctrl_c
 title="${BOLD}${CYAN}Core prerequisites"
 exit_entry="Exit%kill -2 $$"
 
-while true; do
-  if command -v bwrap >/dev/null 2>&1; then
-    install_bwrap_label="Reinstall bubblewrap%INSTALL_BWRAP_FORCE_INSTALL=1 install-bwrap"
-  else
-    install_bwrap_label="Install bubblewrap%install-bwrap"
+resolve_spell() {
+  spell_name=$1
+
+  if command -v "$spell_name" >/dev/null 2>&1; then
+    printf '%s\n' "$spell_name"
+    return 0
   fi
 
-  if ! "$menu_bin" "$title" "$install_bwrap_label" "$exit_entry"; then
+  if [ -x "$script_dir/$spell_name" ]; then
+    printf '%s\n' "$script_dir/$spell_name"
+    return 0
+  fi
+
+  printf '%s\n' "core-menu: missing helper '$spell_name'" >&2
+  return 1
+}
+
+while true; do
+  set --
+
+  while IFS=: read -r label command_name install_spell uninstall_spell; do
+    installed=0
+    if command -v "$command_name" >/dev/null 2>&1; then
+      installed=1
+      entry_label="Uninstall $label"
+      spell=$(resolve_spell "$uninstall_spell") || exit 1
+    else
+      entry_label="Install $label"
+      spell=$(resolve_spell "$install_spell") || exit 1
+    fi
+
+    display_label=$entry_label
+    if [ "$installed" -eq 1 ]; then
+      display_label="$entry_label (installed; select to uninstall — Install $label to reinstall)"
+    fi
+
+    set -- "$@" "${display_label}%$spell"
+  done <<EOF
+$(core_dependencies)
+EOF
+
+  set -- "$@" "Install all%ASSUME_YES=1 $script_dir/install-core" "$exit_entry"
+
+  if ! "$menu_bin" "$title" "$@"; then
     status=$?
     echo "menu failed with status $status" >&2
     exit "$status"

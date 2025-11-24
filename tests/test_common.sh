@@ -297,3 +297,86 @@ make_tempdir() {
   mktemp -d "${WIZARDRY_TMPDIR}/case.XXXXXX"
 }
 
+# --- Core install test helpers ---
+
+make_fixture() {
+  fixture=$(make_tempdir)
+  mkdir -p "$fixture/bin" "$fixture/log" "$fixture/home/.local/bin"
+  printf '%s\n' "$fixture"
+}
+
+write_apt_stub() {
+  fixture=$1
+  cat <<'STUB' >"$fixture/bin/apt-get"
+#!/bin/sh
+echo "$0 $*" >>"${APT_LOG:?}" || exit 1
+exit ${APT_EXIT:-0}
+STUB
+  chmod +x "$fixture/bin/apt-get"
+}
+
+write_sudo_stub() {
+  fixture=$1
+  cat <<'STUB' >"$fixture/bin/sudo"
+#!/bin/sh
+exec "$@"
+STUB
+  chmod +x "$fixture/bin/sudo"
+}
+
+write_command_stub() {
+  dir=$1
+  name=$2
+  cat <<'STUB' >"$dir/$name"
+#!/bin/sh
+exit 0
+STUB
+  chmod +x "$dir/$name"
+}
+
+write_pkgin_stub() {
+  fixture=$1
+  mkdir -p "$fixture/opt/pkg/bin"
+  cat <<'STUB' >"$fixture/opt/pkg/bin/pkgin"
+#!/bin/sh
+if [ "$1" = "-y" ] && [ "$2" = "install" ]; then
+  shift 2
+  printf 'pkgin install %s\n' "$*" >>"${PKGIN_LOG:?}" || exit 1
+  exit ${PKGIN_EXIT:-0}
+fi
+
+if [ "$1" = "-y" ] && [ "$2" = "remove" ]; then
+  shift 2
+  printf 'pkgin remove %s\n' "$*" >>"${PKGIN_LOG:?}" || exit 1
+  exit ${PKGIN_EXIT:-0}
+fi
+
+exit 1
+STUB
+  chmod +x "$fixture/opt/pkg/bin/pkgin"
+}
+
+provide_basic_tools() {
+  fixture=$1
+  for cmd in mktemp mkdir rm cat env ln sh dirname readlink; do
+    tool_path=$(command -v "$cmd" 2>/dev/null || true)
+    if [ -n "$tool_path" ]; then
+      ln -s "$tool_path" "$fixture/bin/$cmd"
+    fi
+  done
+}
+
+link_tools() {
+  dir=$1
+  shift
+  for tool in "$@"; do
+    if [ -e "$dir/$tool" ]; then
+      continue
+    fi
+    tool_path=$(command -v "$tool" 2>/dev/null || true)
+    if [ -n "$tool_path" ]; then
+      ln -s "$tool_path" "$dir/$tool"
+    fi
+  done
+}
+

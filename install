@@ -212,6 +212,7 @@ fi
 PATH_WIZARD="$ABS_DIR/spells/translocation/path-wizard"
 DETECT_RC_FILE="$ABS_DIR/spells/divination/detect-rc-file"
 MEMORIZE="$ABS_DIR/spells/spellcraft/memorize"
+CORE_INSTALLER=${WIZARDRY_CORE_INSTALLER:-$ABS_DIR/spells/install/core/install-core}
 ASK_YN="$ABS_DIR/spells/cantrips/ask_yn"
 PATH_WIZARD_FLAGS=${PATH_WIZARD_FLAGS:---recursive}
 
@@ -228,6 +229,15 @@ fi
 if [ ! -x "$ASK_YN" ]; then
         printf '%s\n' "Error: Required cantrip '$ASK_YN' is missing." >&2
         exit 1
+fi
+
+if [ -x "$CORE_INSTALLER" ]; then
+        printf '%s\n' "Ensuring core prerequisites are installed..."
+        if ! ASSUME_YES=1 "$CORE_INSTALLER"; then
+                printf '%s\n' "Warning: Unable to install all core prerequisites automatically. Please install them manually." >&2
+        fi
+else
+        printf '%s\n' "Warning: Core installer not found at '$CORE_INSTALLER'; skipping core prerequisite setup." >&2
 fi
 
 # Collect the directories whose PATH exports are absent from the chosen start-up
