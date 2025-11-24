@@ -45,37 +45,18 @@ chmod +x install
 
 This downloads wizardry to the default install location, `~/.tower`. After installing, you must reopen your terminal window before wizardry spells will work.
 
-### NixOS Installation Notes
+### NixOS Installation
 
-On NixOS, the installer adds wizardry to your PATH via shell rc files (`.bashrc` or `.bash_profile`). This ensures PATH changes persist across sessions without requiring system rebuilds.
+On NixOS, the installer modifies your `~/.config/nixpkgs/configuration.nix` file (or `/etc/nixos/configuration.nix` if configured) to add wizardry paths. **The installer will ask for your permission before making any changes** and will automatically create a timestamped backup of your configuration file.
 
-If you prefer to manage wizardry through your NixOS configuration, you can manually add the spells directory to your PATH in `/etc/nixos/configuration.nix`:
-
-```nix
-# In /etc/nixos/configuration.nix
-{
-  environment.systemPackages = with pkgs; [
-    # your packages
-  ];
-  
-  environment.shellInit = ''
-    export PATH="$HOME/.tower/spells:$PATH"
-  '';
-}
+After installation completes, run:
+```bash
+nixos-rebuild switch    # For system-level configuration
+# OR
+home-manager switch     # If using home-manager
 ```
 
-Or if using home-manager in `~/.config/nixpkgs/home.nix`:
-
-```nix
-# In ~/.config/nixpkgs/home.nix
-{
-  home.sessionVariables = {
-    PATH = "$HOME/.tower/spells:$PATH";
-  };
-}
-```
-
-After making these changes, run `sudo nixos-rebuild switch` (for system config) or `home-manager switch` (for home-manager config).
+The backup file is saved as `configuration.nix.wizardry.TIMESTAMP` in the same directory, allowing you to restore your previous configuration if needed.
 
 ## Usage
 

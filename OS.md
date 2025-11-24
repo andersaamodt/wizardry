@@ -352,11 +352,9 @@ Different platforms use different shell configuration files:
 2. `~/.profile`
 
 ### NixOS
-1. `~/.bashrc`
-2. `~/.bash_profile`
-3. `~/.profile`
-
-**Note:** Wizardry uses shell rc files on NixOS instead of modifying `configuration.nix` or `home.nix`. This provides a simpler, safer installation that doesn't require understanding NixOS's declarative configuration system. Users who prefer to manage their PATH through NixOS configuration files can do so manually.
+1. `~/.config/nixpkgs/configuration.nix`
+2. `~/.bashrc`
+3. `~/.bash_profile`
 
 ## Text Processing
 

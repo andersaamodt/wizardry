@@ -40,17 +40,17 @@ test_picks_known_platform_files() {
   assert_output_contains "format=shell" || return 1
 }
 
-test_nixos_prefers_shell_rc_files() {
+test_emits_nix_format_hint() {
   run_cmd sh -c '
-    mkdir -p "$HOME"
-    touch "$HOME/.bashrc"
+    mkdir -p "$HOME/.config/nixpkgs"
+    touch "$HOME/.config/nixpkgs/configuration.nix"
     exec spells/divination/detect-rc-file --platform nixos
   '
   assert_success || return 1
   assert_output_contains "platform=nixos" || return 1
   assert_output_contains "rc_file=" || return 1
-  assert_output_contains ".bashrc" || return 1
-  assert_output_contains "format=shell" || return 1
+  assert_output_contains ".config/nixpkgs/configuration.nix" || return 1
+  assert_output_contains "format=nix" || return 1
 }
 
 test_prefers_existing_platform_file() {
@@ -93,7 +93,7 @@ test_handles_missing_home() {
 run_test_case "detect-rc-file prints usage" test_help
 run_test_case "detect-rc-file validates arguments" test_rejects_bad_arguments
 run_test_case "detect-rc-file picks preferred files for platform" test_picks_known_platform_files
-run_test_case "detect-rc-file prefers shell rc files on NixOS" test_nixos_prefers_shell_rc_files
+run_test_case "detect-rc-file emits nix formatting hints" test_emits_nix_format_hint
 run_test_case "detect-rc-file favors existing platform candidates" test_prefers_existing_platform_file
 run_test_case "detect-rc-file respects shell defaults on unknown platforms" test_prefers_shell_file_when_platform_unknown
 run_test_case "detect-rc-file tolerates missing HOME" test_handles_missing_home

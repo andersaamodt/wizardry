@@ -263,15 +263,49 @@ if [ "$#" -eq 0 ]; then
         exit 0
 fi
 
-printf '%s\n' "ao-mud will ensure the following directories appear in your PATH via your shell configuration file:"
+# Detect the rc file and format before prompting so we can give specific guidance
+detect_rc_file_value=""
+detect_format_value=""
+if detect_output="$($DETECT_RC_FILE 2>/dev/null)"; then
+        while IFS='=' read -r key value; do
+                case $key in
+                rc_file)
+                        detect_rc_file_value=$value
+                        ;;
+                format)
+                        detect_format_value=$value
+                        ;;
+                esac
+        done <<EOF
+$detect_output
+EOF
+fi
+
+printf '%s\n' "ao-mud will ensure the following directories appear in your PATH:"
 for dir
 do
         printf '  %s\n' "$dir"
 done
 
-# Confirm with the user (or their automation) before editing their shell
-# startup files.  When stdin is not interactive we fall back to the
-# non-blocking ASK_CANTRIP_INPUT=none pathway so wget|sh installs do not hang.
+# Provide format-specific information about what file will be modified
+if [ "$detect_format_value" = "nix" ]; then
+        printf '\n'
+        printf '%s\n' "On NixOS, wizardry will modify your configuration file:"
+        if [ -n "$detect_rc_file_value" ]; then
+                printf '  %s\n' "$detect_rc_file_value"
+        else
+                printf '  %s\n' "~/.config/nixpkgs/configuration.nix"
+        fi
+        printf '%s\n' ""
+        printf '%s\n' "A backup will be created automatically before any changes are made."
+        printf '%s\n' "After installation, run 'nixos-rebuild switch' or 'home-manager switch' to activate."
+elif [ -n "$detect_rc_file_value" ]; then
+        printf '%s\n' "This will be added to: $detect_rc_file_value"
+fi
+
+# Confirm with the user (or their automation) before editing their configuration.
+# When stdin is not interactive we fall back to the non-blocking ASK_CANTRIP_INPUT=none
+# pathway so wget|sh installs do not hang.
 proceed=0
 if [ "${WIZARDRY_INSTALL_ASSUME_YES-}" = "1" ]; then
         proceed=1
@@ -290,23 +324,6 @@ fi
 if [ "$proceed" -ne 1 ]; then
         printf '%s\n' "Ok, well the mud won't work until you install it by adding the spells directory to your PATH."
         exit 1
-fi
-
-detect_rc_file_value=""
-detect_format_value=""
-if detect_output="$($DETECT_RC_FILE 2>/dev/null)"; then
-        while IFS='=' read -r key value; do
-                case $key in
-                rc_file)
-                        detect_rc_file_value=$value
-                        ;;
-                format)
-                        detect_format_value=$value
-                        ;;
-                esac
-        done <<EOF
-$detect_output
-EOF
 fi
 
 path_updates_made=0
