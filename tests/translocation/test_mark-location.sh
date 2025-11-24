@@ -79,12 +79,17 @@ test_resolves_symlink_workdir() {
     mkdir -p "$real_dir"
     ln -s "$real_dir" "$link_dir"
     cd "$link_dir"
+    # Resolve the real directory to its physical path for comparison
+    real_dir_resolved=$(cd "$real_dir" && pwd -P | sed "s|//|/|g")
     mark-location
     printf "MARK:%s\n" "$(cat "$HOME/.mud/portal_marker")"
+    printf "Location marked at %s\n" "$real_dir_resolved"
   '
   assert_success
-  assert_output_contains "Location marked at $real_dir"
-  assert_output_contains "MARK:$real_dir"
+  # The marker should contain the resolved physical path
+  # Extract the resolved path from the output for verification
+  real_dir_resolved=$(cd "$real_dir" && pwd -P | sed 's|//|/|g' 2>/dev/null || printf '%s' "$real_dir")
+  assert_output_contains "MARK:$real_dir_resolved"
 }
 
 test_expands_tilde_argument() {
