@@ -2,6 +2,21 @@
 # Common test helpers for simple POSIX shell tests.
 # Provides minimal assertion helpers and a lightweight test runner.
 
+# CRITICAL: Set a baseline PATH BEFORE set -eu and before any commands
+# On macOS GitHub Actions, PATH may be completely empty, causing immediate failure
+# when we try to use dirname, cd, pwd, etc. in find_repo_root
+baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+case ":${PATH-}:" in
+  *":/usr/bin:"*|*":/bin:"*) 
+    # Already has at least one standard directory
+    ;;
+  *) 
+    # PATH is empty or missing standard directories, prepend baseline
+    PATH="${baseline_path}${PATH:+:}${PATH-}"
+    ;;
+esac
+export PATH
+
 set -eu
 
 find_repo_root() {
@@ -18,19 +33,8 @@ find_repo_root() {
 
 ROOT_DIR=$(find_repo_root)
 
-# Seed a baseline PATH on macOS where it may be empty or incomplete
-# Only prepend if PATH appears to be missing standard directories
-baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
-case ":${PATH-}:" in
-  *":/usr/bin:"*|*":/bin:"*) 
-    # Already has at least one standard directory
-    ;;
-  *) 
-    # PATH is empty or missing standard directories, prepend baseline
-    PATH="${baseline_path}${PATH:+:}${PATH-}"
-    ;;
-esac
-
+# The baseline PATH was already set at the top of this file.
+# Now add wizardry spells directories to PATH.
 initial_path=$PATH
 PATH="$ROOT_DIR/spells"
 for dir in "$ROOT_DIR"/spells/*; do
