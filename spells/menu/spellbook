@@ -104,12 +104,20 @@ EOF_SCRIPT
         chmod +x "$(custom_spell_path "$script_name")"
 }
 
-categories() {
+list_spell_directories() {
         set --
         for dir in "$ROOT_DIR"/spells/*; do
                 [ -d "$dir" ] || continue
                 [ "$(basename "$dir")" = "menu" ] && continue
                 set -- "$@" "$(basename "$dir")"
+        done
+        printf '%s\n' "$@"
+}
+
+categories() {
+        set --
+        for category in $(list_spell_directories); do
+                set -- "$@" "$category"
         done
         if [ -f "$commands_file" ]; then
                 while IFS=$(printf '\t') read -r category _ _ || [ -n "$category" ]; do
@@ -121,13 +129,7 @@ categories() {
 }
 
 spell_categories() {
-        set --
-        for dir in "$ROOT_DIR"/spells/*; do
-                [ -d "$dir" ] || continue
-                [ "$(basename "$dir")" = "menu" ] && continue
-                set -- "$@" "$(basename "$dir")"
-        done
-        printf '%s\n' "$@" | sort
+        list_spell_directories | sort
 }
 
 safe_command_label() {
