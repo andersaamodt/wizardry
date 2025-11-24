@@ -132,9 +132,29 @@ test_scribe_records_command() {
   fi
 }
 
+test_list_all_custom_commands() {
+  stub_dir=$(make_stub_dir)
+  write_memorize_command_stub "$stub_dir"
+  write_require_command_stub "$stub_dir"
+  COMMAND_FILE="$stub_dir/commands"
+  PATH="$stub_dir:$PATH" SPELLBOOK_COMMANDS_FILE="$COMMAND_FILE" SPELLBOOK_CUSTOM_DIR="$stub_dir/custom" run_spell "spells/menu/spellbook" --scribe fire spark1 "echo ignite1"
+  PATH="$stub_dir:$PATH" SPELLBOOK_COMMANDS_FILE="$COMMAND_FILE" SPELLBOOK_CUSTOM_DIR="$stub_dir/custom" run_spell "spells/menu/spellbook" --scribe water splash "echo splash"
+  [ -f "$COMMAND_FILE" ] || { TEST_FAILURE_REASON="commands file missing"; return 1; }
+  content=$(cat "$COMMAND_FILE")
+  case "$content" in
+    *fire*spark1*echo\ ignite1*) : ;;
+    *) TEST_FAILURE_REASON="spark1 command not found: $content"; return 1 ;;
+  esac
+  case "$content" in
+    *water*splash*echo\ splash*) : ;;
+    *) TEST_FAILURE_REASON="splash command not found: $content"; return 1 ;;
+  esac
+}
+
 run_test_case "spellbook fails when helper missing" test_errors_when_helper_missing
 run_test_case "spellbook lists stored entries" test_lists_entries
 run_test_case "spellbook memorize and forget" test_memorize_and_forget
 run_test_case "spellbook scribe command" test_scribe_records_command
+run_test_case "spellbook lists all custom commands" test_list_all_custom_commands
 
 finish_tests
