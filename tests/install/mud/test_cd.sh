@@ -23,7 +23,7 @@ exit 0
 SH
   chmod +x "$tmp/ask_yn"
 
-  run_cmd env PATH="$tmp:$PATH" WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd-narration" "$tmp"
+  run_cmd env PATH="$tmp:$PATH" WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd" "$tmp"
   assert_success && assert_path_exists "$tmp/rc" && assert_output_contains "installed wizardry hooks"
 }
 
@@ -43,14 +43,14 @@ SH
   target="$WIZARDRY_TMPDIR/room"
   mkdir -p "$target"
 
-  run_cmd env PATH="$tmp:$PATH" WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd-narration" "$target"
+  run_cmd env PATH="$tmp:$PATH" WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd" "$target"
   assert_success && assert_path_exists "$target/looked"
 }
 
 test_cd_install_command_installs_without_prompting() {
   tmp=$(make_tempdir)
   
-  run_cmd env WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd-narration" WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd-narration" install
+  run_cmd env WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd" install
   assert_success && assert_path_exists "$tmp/rc" && assert_output_contains "installed wizardry hooks"
   
   # Verify hook content
@@ -66,11 +66,11 @@ test_cd_install_is_idempotent() {
   tmp=$(make_tempdir)
   
   # First install
-  run_cmd env WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd-narration" WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd-narration" install
+  run_cmd env WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd" install
   assert_success
   
   # Second install should not duplicate
-  run_cmd env WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd-narration" WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd-narration" install
+  run_cmd env WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd" install
   assert_success
   
   # Count occurrences of the marker - should be exactly one
@@ -95,7 +95,7 @@ SH
   
   nonexistent="$tmp/does_not_exist"
   
-  run_cmd env PATH="$tmp:$PATH" WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd-narration" "$nonexistent"
+  run_cmd env PATH="$tmp:$PATH" WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd" "$nonexistent"
   assert_failure
 }
 
@@ -112,12 +112,12 @@ test_cd_uses_shell_specific_rc_file() {
   tmp=$(make_tempdir)
   
   # Test with zsh
-  run_cmd env WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd-narration" HOME="$tmp" SHELL="/bin/zsh" "$ROOT_DIR/spells/install/mud/cd-narration" install
+  run_cmd env WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" HOME="$tmp" SHELL="/bin/zsh" "$ROOT_DIR/spells/install/mud/cd" install
   assert_success && assert_path_exists "$tmp/.zshrc"
   
   # Test with bash
   tmp2=$(make_tempdir)
-  run_cmd env WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd-narration" HOME="$tmp2" SHELL="/bin/bash" "$ROOT_DIR/spells/install/mud/cd-narration" install
+  run_cmd env WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" HOME="$tmp2" SHELL="/bin/bash" "$ROOT_DIR/spells/install/mud/cd" install
   assert_success && assert_path_exists "$tmp2/.bashrc"
 }
 
@@ -140,7 +140,7 @@ EOF
   export PATH
   
   # Run cd install with our custom detect-rc-file
-  run_cmd env WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd-narration" HOME="$tmp" "$ROOT_DIR/spells/install/mud/cd-narration" install
+  run_cmd env WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" HOME="$tmp" "$ROOT_DIR/spells/install/mud/cd" install
   
   PATH=$old_path
   assert_success && assert_path_exists "$custom_rc"
