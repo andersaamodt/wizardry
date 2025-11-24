@@ -111,13 +111,14 @@ test_cd_handles_missing_look_gracefully() {
 test_cd_uses_shell_specific_rc_file() {
   tmp=$(make_tempdir)
   
-  # Test with zsh
-  run_cmd env WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" HOME="$tmp" SHELL="/bin/zsh" "$ROOT_DIR/spells/install/mud/cd" install
+  # Test with zsh - use a restricted PATH without detect-rc-file
+  # to test the shell-specific fallback logic
+  run_cmd sh -c "PATH=/bin:/usr/bin WIZARDRY_CD_CANTRIP='$ROOT_DIR/spells/install/mud/cd' HOME='$tmp' SHELL='/bin/zsh' '$ROOT_DIR/spells/install/mud/cd' install"
   assert_success && assert_path_exists "$tmp/.zshrc"
   
-  # Test with bash
+  # Test with bash - use a restricted PATH without detect-rc-file
   tmp2=$(make_tempdir)
-  run_cmd env WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" HOME="$tmp2" SHELL="/bin/bash" "$ROOT_DIR/spells/install/mud/cd" install
+  run_cmd sh -c "PATH=/bin:/usr/bin WIZARDRY_CD_CANTRIP='$ROOT_DIR/spells/install/mud/cd' HOME='$tmp2' SHELL='/bin/bash' '$ROOT_DIR/spells/install/mud/cd' install"
   assert_success && assert_path_exists "$tmp2/.bashrc"
 }
 
