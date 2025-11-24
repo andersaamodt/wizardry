@@ -412,7 +412,6 @@ fi
 # Detect the rc file and format before prompting so we can give specific guidance
 detect_rc_file_value=""
 detect_format_value=""
-detect_platform_value=""
 if detect_output="$($DETECT_RC_FILE 2>/dev/null)"; then
         while IFS='=' read -r key value; do
                 case $key in
@@ -421,9 +420,6 @@ if detect_output="$($DETECT_RC_FILE 2>/dev/null)"; then
                         ;;
                 format)
                         detect_format_value=$value
-                        ;;
-                platform)
-                        detect_platform_value=$value
                         ;;
                 esac
         done <<EOF
