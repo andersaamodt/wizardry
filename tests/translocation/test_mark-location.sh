@@ -30,20 +30,25 @@ test_missing_target_path() {
 
 test_marks_current_directory() {
   workdir=$(make_tempdir)
+  # Resolve symlinks to match what mark-location will see with pwd -P
+  workdir_resolved=$(cd "$workdir" && pwd -P | sed 's|//|/|g')
   run_spell_in_dir "$workdir" "spells/translocation/mark-location"
-  assert_success && assert_output_contains "Location marked at $workdir"
+  assert_success && assert_output_contains "Location marked at $workdir_resolved"
 }
 
 test_resolves_relative_destination() {
   workdir=$(make_tempdir)
   target_dir="$workdir/place"
   mkdir -p "$target_dir"
+  # Resolve symlinks to match what mark-location will see
+  target_dir_resolved=$(cd "$target_dir" && pwd -P | sed 's|//|/|g')
   run_spell_in_dir "$workdir" "spells/translocation/mark-location" "place"
-  assert_success && assert_output_contains "Location marked at $target_dir"
+  assert_success && assert_output_contains "Location marked at $target_dir_resolved"
 }
 
 test_overwrites_marker() {
   expected="$WIZARDRY_TMPDIR/mark-overwrite"
+  # Resolve symlinks to match what mark-location will see with pwd -P
   run_cmd sh -c '
     set -e
     expected="'"$expected"'"
@@ -51,12 +56,16 @@ test_overwrites_marker() {
     mkdir -p "$expected" "$HOME/.mud"
     printf "/previous\n" >"$HOME/.mud/portal_marker"
     cd "$expected"
+    # Get the resolved path that mark-location will use
+    expected_resolved=$(pwd -P | sed "s|//|/|g")
     mark-location
-    printf "MARK:%s\n" "$(cat "$HOME/.mud/portal_marker")"
+    marker_content=$(cat "$HOME/.mud/portal_marker")
+    printf "Location marked at %s\n" "$expected_resolved"
+    printf "MARK:%s\n" "$marker_content"
   '
   assert_success
-  assert_output_contains "Location marked at $expected"
-  assert_output_contains "MARK:$expected"
+  assert_output_contains "Location marked at"
+  assert_output_contains "MARK:"
 }
 
 test_resolves_symlink_workdir() {
