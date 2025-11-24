@@ -219,7 +219,6 @@ PATH_WIZARD_FLAGS=${PATH_WIZARD_FLAGS:---recursive}
 # Export environment variables for all helper spells so that they use the new
 # versions being installed, not any old versions that may be in PATH.
 # This prevents issues where a user has an old wizardry installation in PATH.
-DETECT_RC_FILE="$ABS_DIR/spells/divination/detect-rc-file"
 SCRIBE_SPELL="$ABS_DIR/spells/spellcraft/scribe-spell"
 MEMORIZE_SCRIBE="$ABS_DIR/spells/spellcraft/scribe-spell"
 MEMORIZE_COMMAND_HELPER="$ABS_DIR/spells/cantrips/memorize-command"
