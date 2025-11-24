@@ -173,7 +173,9 @@ These values make the wizardry project what it is, and distinguish it from simil
 * Preserve the lore: Do not delete, modify, or add more flavor text unless specifically instructed.
 * Qualities of a good script: Brevity, well-commented for novice POSIX shell devs, flat / minimal functions / linear, clarity, portability (including cross-platform), composability, non-redundancy, minimalism.
 * No globals: Do not use shell variables unless absolutely necessary (use parameters or stdout instead).
-* Bootstrap awareness: The install script runs before wizardry is on PATH, so it alone cannot assume that wizardry spells are already available in PATH.
+* No wrappers; all files are standalone, portable, and front-facing.
+* Bootstrap awareness: The install script (`./install`) and core install scripts (in `spells/install/core`) run before wizardry is on PATH, so they alone cannot assume that wizardry spells are already available in PATH.
+* Expose and use new documented (in `--help usage note`) arguments to pass data to scripts, instead of passing in shell variables.
 
 ## Testing
 
