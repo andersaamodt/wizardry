@@ -1,0 +1,5 @@
+#!/bin/sh
+# first [FILE] - return only the first line of input or file
+# Examples: ls | first | first /etc/passwd
+
+if [ "$#" -ge 1 ]; then head -n 1 "$1"; else head -n 1; fi

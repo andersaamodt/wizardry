@@ -1,0 +1,16 @@
+#!/bin/sh
+# is TYPE PATH - test if path meets condition (file/dir/link/exec/readable/writable/empty/set/unset)
+# Examples: is file /etc/passwd | is dir /tmp | is exec /bin/sh | is set "$VAR"
+
+case "$1" in
+file)     [ -f "$2" ] ;;
+dir)      [ -d "$2" ] ;;
+link)     [ -L "$2" ] ;;
+exec)     [ -x "$2" ] ;;
+readable) [ -r "$2" ] ;;
+writable) [ -w "$2" ] ;;
+empty)    if [ -f "$2" ]; then [ ! -s "$2" ]; elif [ -d "$2" ]; then [ -z "$(ls -A "$2" 2>/dev/null)" ]; else exit 1; fi ;;
+set)      [ -n "$2" ] ;;
+unset)    [ -z "$2" ] ;;
+*)        exit 1 ;;
+esac

@@ -116,6 +116,101 @@ Wizardry organizes spells into the following magical categories:
 
 When you select a spell from the Spellbook, you can cast it immediately, memorize it for the Cast menu, view its help documentation, or test it. Custom commands can also be deleted from the spell action menu.
 
+## Imps
+
+Imps (infraspells/microscripts) are the smallest semantic building blocks in wizardry. They live in `spells/.imps/` and abstract common shell patterns into readable, well-documented microscripts with short semantic names.
+
+### What are Imps?
+
+An **imp** is a microscript that:
+
+* Does exactly one thing
+* Has an aptly-chosen, semantic name that reads naturally in code
+* Uses space-separated arguments instead of `--flags`
+* Has no `--help` flag (just a comment header—imps are for coding, not running standalone)
+* Is cross-platform, abstracting OS differences behind a clean interface
+* Makes spells read almost like English while remaining POSIX-compliant
+
+### Imps vs Cantrips
+
+| Aspect | Cantrips | Imps |
+|--------|----------|------|
+| **Use case** | User-facing utilities | Building blocks for scripts |
+| **Invocation** | Command line or scripts | Primarily within scripts |
+| **Arguments** | `--flag` style with `--help` | Space-separated, positional |
+| **Standalone use** | Common | Rare (words in a script) |
+| **Examples** | `ask_yn`, `say`, `menu` | `is`, `on`, `has`, `ok` |
+
+### Why Imps?
+
+1. **Readability**: Spells become English-like while remaining POSIX-compliant
+2. **Cross-platform**: Platform differences hidden behind semantic names
+3. **Teaching**: Each imp is a paragon of good shell style
+4. **Correctness**: Battle-tested implementations avoid common shell pitfalls
+
+### Imp Design Principles
+
+* **Apt naming**: Names should be the most natural word for what the imp does
+* **Read like English**: `if on mac && has brew; then` reads naturally
+* **Cross-platform**: Abstract away OS detection, package managers, path differences
+* **Minimal**: No `--help`, no argument parsing complexity—just a comment and code
+* **Single-purpose**: One imp, one job
+
+### Example Usage
+
+Without imps:
+```sh
+if [ -d "$path" ] && [ -n "$(ls -A "$path" 2>/dev/null)" ]; then
+    # directory exists and is not empty
+fi
+
+case "$(uname -s)" in
+Darwin) brew install git ;;
+Linux) apt-get install git ;;
+esac
+```
+
+With imps:
+```sh
+if is dir "$path" && nonempty dir "$path"; then
+    # directory exists and is not empty
+fi
+
+on mac && brew install git
+on debian && apt-get install git
+```
+
+### Available Imps
+
+**Existence & Type Testing**
+* **is** `TYPE PATH` - test if path meets condition (file/dir/link/exec/readable/writable/empty/set/unset)
+* **exists** `PATH` - test if path exists (any type)
+* **missing** `PATH` - test if path does NOT exist
+* **nonempty** `TYPE PATH` - test if file has content or dir has entries
+
+**Command Availability**
+* **has** `CMD` - test if command exists on PATH
+* **lacks** `CMD` - test if command is NOT available
+* **need** `CMD [MSG]` - exit with error if command not found
+* **any** `CMD...` - return first available command from list
+
+**Platform Detection**
+* **on** `PLATFORM` - test if running on platform (mac/linux/debian/nixos/arch/fedora/bsd)
+* **os** - print current OS identifier
+
+**Data Flow**
+* **first** `[FILE]` - return first line of input or file
+* **lines** `[FILE]` - count lines
+* **trim** - remove leading/trailing whitespace
+* **lower** - convert to lowercase
+* **each** `CMD...` - run command for each line of stdin
+
+**Control Flow**
+* **ok** `CMD...` - run command silently, succeed if it succeeds
+* **fail** `MSG` - print to stderr and exit with failure
+* **either** `A B` - output first non-empty value
+* **otherwise** `DEFAULT` - output stdin if non-empty, else default
+
 ## Free software suite
 
 Wizardry includes a curated free software suite which can be easily and optionally installed from the `menu`. Criteria for inclusion:

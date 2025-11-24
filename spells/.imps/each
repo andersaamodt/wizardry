@@ -1,0 +1,5 @@
+#!/bin/sh
+# each COMMAND [ARGS...] - run command for each line of stdin (line appended as last arg)
+# Example: ls | each echo "File:"
+
+while IFS= read -r line; do "$@" "$line"; done

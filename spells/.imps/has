@@ -1,0 +1,5 @@
+#!/bin/sh
+# has COMMAND - test if command exists on PATH
+# Example: has git && git status
+
+command -v "$1" >/dev/null 2>&1
