@@ -55,5 +55,8 @@ else
   fi
 fi
 
+# Normalize any double slashes in the path (can occur on macOS where TMPDIR ends with /)
+destination=$(printf '%s\n' "$destination" | sed 's|//|/|g')
+
 printf '%s\n' "$destination" >"$marker_file"
 printf 'Location marked at %s.\n' "$destination"
