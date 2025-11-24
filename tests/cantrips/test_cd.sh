@@ -125,12 +125,12 @@ test_cd_respects_detect_rc_file() {
   tmp=$(make_tempdir)
   custom_rc="$tmp/custom_rc"
   # Create a custom detect-rc-file that returns a custom rc file path
-  cat >"$tmp/detect-rc-file" <<HEREDOC
+  cat >"$tmp/detect-rc-file" <<EOF
 #!/bin/sh
 printf 'platform=test\\n'
 printf 'rc_file=$custom_rc\\n'
 printf 'format=shell\\n'
-HEREDOC
+EOF
   chmod +x "$tmp/detect-rc-file"
   
   # Add tmp to beginning of PATH so our detect-rc-file is found first
