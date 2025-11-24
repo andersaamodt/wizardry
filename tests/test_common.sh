@@ -172,11 +172,11 @@ run_cmd() {
   # Save the caller's PATH and temporarily use the system PATH for run_cmd's
   # internal operations (mktemp, mkdir, cat, rm, pwd). This ensures run_cmd
   # works even when tests intentionally set a restricted PATH.
-  __saved_path=$PATH
+  _saved_path=$PATH
   PATH=${WIZARDRY_SYSTEM_PATH:-$PATH}
   
-  __stdout=$(mktemp "${WIZARDRY_TMPDIR}/stdout.XXXXXX") || return 1
-  __stderr=$(mktemp "${WIZARDRY_TMPDIR}/stderr.XXXXXX") || return 1
+  _stdout=$(mktemp "${WIZARDRY_TMPDIR}/stdout.XXXXXX") || return 1
+  _stderr=$(mktemp "${WIZARDRY_TMPDIR}/stderr.XXXXXX") || return 1
 
   workdir=${RUN_CMD_WORKDIR:-$(pwd)}
   mkdir -p "$workdir"
@@ -187,7 +187,7 @@ run_cmd() {
   mkdir -p "$tmpdir" "$homedir"
   
   # Restore the caller's PATH for use in the sandbox
-  PATH=$__saved_path
+  PATH=$_saved_path
 
   if [ "$BWRAP_AVAILABLE" -eq 1 ]; then
     set -- \
@@ -209,14 +209,14 @@ run_cmd() {
       set -- --unshare-user-try "$@"
     fi
 
-    if run_bwrap "$@" >"$__stdout" 2>"$__stderr"; then
+    if run_bwrap "$@" >"$_stdout" 2>"$_stderr"; then
       STATUS=0
     else
       STATUS=$?
     fi
   else
     if (cd "$workdir" && env PATH="$PATH" HOME="$homedir" TMPDIR="$tmpdir" WIZARDRY_TMPDIR="$WIZARDRY_TMPDIR" "$@" \
-      >"$__stdout" 2>"$__stderr"); then
+      >"$_stdout" 2>"$_stderr"); then
       STATUS=0
     else
       STATUS=$?
@@ -224,14 +224,14 @@ run_cmd() {
   fi
 
   # Use system PATH again for cleanup operations
-  PATH=${WIZARDRY_SYSTEM_PATH:-$__saved_path}
-  OUTPUT=$(cat "$__stdout")
-  ERROR=$(cat "$__stderr")
-  rm -f "$__stdout" "$__stderr"
+  PATH=${WIZARDRY_SYSTEM_PATH:-$PATH}
+  OUTPUT=$(cat "$_stdout")
+  ERROR=$(cat "$_stderr")
+  rm -f "$_stdout" "$_stderr"
   rm -rf "$sandbox"
   
   # Restore caller's PATH before returning
-  PATH=$__saved_path
+  PATH=$_saved_path
 }
 
 run_spell() {
