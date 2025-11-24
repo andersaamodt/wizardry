@@ -49,14 +49,33 @@ This downloads wizardry to the default install location, `~/.tower`. After insta
 
 On NixOS, the installer adds wizardry to your PATH via shell rc files (`.bashrc` or `.bash_profile`). This ensures PATH changes persist across sessions without requiring system rebuilds.
 
-If you prefer to manage wizardry through your NixOS configuration, you can manually add the spells directory to your PATH in `/etc/nixos/configuration.nix` or `~/.config/nixpkgs/home.nix` (if using home-manager):
+If you prefer to manage wizardry through your NixOS configuration, you can manually add the spells directory to your PATH in `/etc/nixos/configuration.nix`:
 
 ```nix
-environment.systemPackages = [ ];  # Or home.packages for home-manager
-environment.sessionVariables = {
-  PATH = [ "$HOME/.tower/spells" ];
-};
+# In /etc/nixos/configuration.nix
+{
+  environment.systemPackages = with pkgs; [
+    # your packages
+  ];
+  
+  environment.shellInit = ''
+    export PATH="$HOME/.tower/spells:$PATH"
+  '';
+}
 ```
+
+Or if using home-manager in `~/.config/nixpkgs/home.nix`:
+
+```nix
+# In ~/.config/nixpkgs/home.nix
+{
+  home.sessionVariables = {
+    PATH = "$HOME/.tower/spells:$PATH";
+  };
+}
+```
+
+After making these changes, run `sudo nixos-rebuild switch` (for system config) or `home-manager switch` (for home-manager config).
 
 ## Usage
 
