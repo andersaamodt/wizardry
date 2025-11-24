@@ -85,7 +85,7 @@ destination=$(printf '%s\n' "$destination" | sed 's|//|/|g')
 
 # When comparing paths
 current=$(pwd -P | sed 's|//|/|g')
-normalized_destination=$(echo "$destination" | sed 's|//|/|g')
+normalized_destination=$(printf '%s' "$destination" | sed 's|//|/|g')
 if [ "$current" = "$normalized_destination" ]; then
     # paths match
 fi
@@ -201,7 +201,7 @@ tmpdir=$(mktemp -d "${WIZARDRY_TMPDIR}/case.XXXXXX")
 
 # When using TMPDIR in paths, normalize double slashes (see Path Handling above)
 temp_file="$TMPDIR/myfile.txt"
-temp_file=$(echo "$temp_file" | sed 's|//|/|g')
+temp_file=$(printf '%s' "$temp_file" | sed 's|//|/|g')
 ```
 
 ## Shell RC File Detection
@@ -228,7 +228,7 @@ Different platforms use different shell configuration files:
 
 ```sh
 # Normalize double slashes
-path=$(echo "$path" | sed 's|//|/|g')
+path=$(printf '%s' "$path" | sed 's|//|/|g')
 
 # Use | as delimiter for paths (not /)
 # WRONG: sed 's/old/new/g'  # breaks with paths containing /

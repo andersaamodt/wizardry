@@ -333,7 +333,7 @@ fi
         fi
         # Normalize paths to handle macOS double slashes
         current=$(pwd -P | sed 's|//|/|g')
-        normalized_destination=$(echo "$destination" | sed 's|//|/|g')
+        normalized_destination=$(printf '%s' "$destination" | sed 's|//|/|g')
         if [ "$current" = "$normalized_destination" ]; then
                 printf '%s\n' "You are already standing at the marked location."
                 return 0

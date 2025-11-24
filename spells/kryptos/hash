@@ -39,7 +39,7 @@ if [ ! -f "$file" ]; then
 fi
 
 # Normalize double slashes for macOS compatibility
-normalized_file=$(echo "$file" | sed 's|//|/|g')
+normalized_file=$(printf '%s' "$file" | sed 's|//|/|g')
 echo "$normalized_file"
 # Compute the CRC-32 hash
 crc=$(cksum "$file" | awk '{print $1}')
