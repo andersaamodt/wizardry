@@ -40,11 +40,42 @@ resolve_rc_file() {
                 printf '%s\n' "$WIZARDRY_RC_FILE"
                 return 0
         fi
+        
+        # Try to use detect-rc-file for cross-platform support
+        if command -v detect-rc-file >/dev/null 2>&1; then
+                if detected=$(detect-rc-file 2>/dev/null); then
+                        # Parse rc_file= line using shell parameter expansion
+                        while IFS= read -r line; do
+                                case $line in
+                                rc_file=*)
+                                        rc_file=${line#rc_file=}
+                                        if [ -n "$rc_file" ]; then
+                                                printf '%s\n' "$rc_file"
+                                                return 0
+                                        fi
+                                        ;;
+                                esac
+                        done <<EOF
+$detected
+EOF
+                fi
+        fi
+        
+        # Fallback to shell-specific defaults
         if [ -z "${HOME-}" ]; then
                 warn "HOME is not set; cannot determine rc file."
                 return 1
         fi
-        printf '%s/.bashrc\n' "$HOME"
+        
+        shell_name=${SHELL-}
+        case ${shell_name##*/} in
+        zsh)
+                printf '%s/.zshrc\n' "$HOME"
+                ;;
+        *)
+                printf '%s/.bashrc\n' "$HOME"
+                ;;
+        esac
 }
 
 cd_block_present() {
@@ -101,6 +132,26 @@ HOOK
         printf '%s\n' "cd cantrip: installed wizardry hooks in '$rc_file'."
 }
 
+uninstall() {
+        rc_file=$(resolve_rc_file) || return 1
+        if [ ! -f "$rc_file" ]; then
+                printf '%s\n' "cd cantrip: no rc file found at '$rc_file'."
+                return 0
+        fi
+        if ! cd_block_present "$rc_file"; then
+                printf '%s\n' "cd cantrip: not installed in '$rc_file'."
+                return 0
+        fi
+        tmp_file=$(mktemp "${TMPDIR:-/tmp}/wizardry-cd.XXXXXX") || return 1
+        sed '/^# >>> wizardry cd cantrip >>>$/,/^# <<< wizardry cd cantrip <<</d' "$rc_file" >"$tmp_file"
+        if ! mv "$tmp_file" "$rc_file"; then
+                rm -f "$tmp_file"
+                warn "unable to update '$rc_file'."
+                return 1
+        fi
+        printf '%s\n' "cd cantrip: uninstalled wizardry hooks from '$rc_file'."
+}
+
 locate_ask_yn() {
         if command -v ask_yn >/dev/null 2>&1; then
                 command -v ask_yn
@@ -146,15 +197,25 @@ wizardry_cd_cast_look() {
 }
 
 wizardry_cd_main() {
-        if ! \cd "$@"; then
-                return $?
-        fi
-        wizardry_cd_cast_look
+        \cd "$@" && wizardry_cd_cast_look
 }
 
-: "${WIZARDRY_CD_CANTRIP:=$(absolute_spell_path)}"
+: "${WIZARDRY_CD_CANTRIP:=${WIZARDRY_MEMORIZE_TARGET:-$(absolute_spell_path)}}"
+
+# Handle command-line invocation for install/uninstall commands
+case "${1-}" in
+install)
+        install
+        exit $?
+        ;;
+uninstall)
+        uninstall
+        exit $?
+        ;;
+esac
 
 if [ -z "${WIZARDRY_MEMORIZE_TARGET-}" ]; then
         prompt_install_if_needed || true
         wizardry_cd_main "$@"
+        exit $?
 fi
