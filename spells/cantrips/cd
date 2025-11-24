@@ -212,7 +212,15 @@ Magical energies swirl around you."
         count=$(printf '%s\n' "$narrations" | wc -l)
         
         # Generate a pseudo-random number based on current time and PID
-        seed=$(($(date +%s) + $$ + RANDOM))
+        # Use /dev/urandom for better randomness if available, fallback to time+pid
+        if [ -r /dev/urandom ]; then
+                # Read a byte from urandom and convert to number
+                random_byte=$(od -An -N1 -tu1 /dev/urandom 2>/dev/null | tr -d ' ')
+                seed=$(($(date +%s) + $$ + random_byte))
+        else
+                # Fallback: use time and PID only
+                seed=$(($(date +%s) + $$))
+        fi
         index=$((seed % count + 1))
         
         # Get the selected narration
