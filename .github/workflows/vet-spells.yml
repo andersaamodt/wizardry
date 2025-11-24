@@ -1,0 +1,33 @@
+name: Spell style checks
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  vet:
+    name: Spell style vetting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install checkbashisms dependency
+        run: ./spells/install/core/install-checkbashisms
+
+      - name: Run vet-spell on all spells
+        run: |
+          echo "Running spell style checks..."
+          # Run vet-spell and capture output
+          # This is advisory - we report issues but don't fail CI
+          ./spells/spellcraft/vet-spell --verbose 2>&1 || true
+          echo ""
+          echo "Note: Style violations are advisory. See SPELL_STYLE_GUIDE.md for guidelines."
