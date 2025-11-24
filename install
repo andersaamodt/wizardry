@@ -439,7 +439,9 @@ if [ "$PATH_WIZARD_FLAGS" = "--recursive" ]; then
         for dir
         do
                 if [ -d "$dir" ]; then
-                        subdir_count=$(find "$dir" -type d 2>/dev/null | wc -l | tr -d ' ')
+                        subdir_count=$(find "$dir" -type d 2>/dev/null | wc -l)
+                        # Remove leading/trailing whitespace
+                        subdir_count=$(printf '%s' "$subdir_count" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
                         total_path_additions=$((total_path_additions + subdir_count))
                 fi
         done
@@ -588,7 +590,7 @@ fi
 
 # Create uninstall script
 create_uninstall_script() {
-        script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || script_dir="$ABS_DIR"
+        script_dir=$(CDPATH='' cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || script_dir="$ABS_DIR"
         uninstall_script="$script_dir/uninstall_wizardry"
         
         cat >"$uninstall_script" <<'UNINSTALL_EOF'
@@ -683,9 +685,12 @@ fi
 printf '\n%s✓ Wizardry uninstalled successfully%s\n' "$BOLD$GREEN" "$RESET"
 printf 'You may need to restart your shell or source your configuration file.\n\n'
 
-# Self-destruct
-SELF="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
-rm -f "$SELF"
+# Self-destruct - safely remove the uninstall script itself
+SELF_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)" || SELF_DIR="."
+SELF_NAME="$(basename "$0")"
+if [ -n "$SELF_DIR" ] && [ -n "$SELF_NAME" ]; then
+        rm -f "$SELF_DIR/$SELF_NAME"
+fi
 UNINSTALL_MAIN
 
         chmod +x "$uninstall_script"
