@@ -5,17 +5,22 @@
 # - Provide the full test runner logic in a single spell.
 # - Discover tests, filter them, and report coverage in the expected format.
 
-set -eu
-
-# Seed a baseline PATH before any helper filtering so reruns and grouped outputs
-# still have access to core utilities (mkdir, cat, rm) on macOS CI where the
-# inherited PATH may be empty.
+# CRITICAL: Seed a baseline PATH BEFORE set -eu and before any commands
+# On macOS GitHub Actions, PATH may be completely empty, causing immediate failure
+# when we try to use basename, dirname, cd, pwd, find, sort, awk, etc.
 baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 case ":${PATH-}:" in
-  *":/usr/bin:"*) ;; # already present
-  *) PATH="$baseline_path:${PATH-}" ;;
+  *":/usr/bin:"*|*":/bin:"*) 
+    # Already has at least one standard directory
+    ;;
+  *) 
+    # PATH is empty or missing standard directories, prepend baseline
+    PATH="${baseline_path}${PATH:+:}${PATH-}"
+    ;;
 esac
 export PATH
+
+set -eu
 
 cmd_name=$(basename "$0")
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)

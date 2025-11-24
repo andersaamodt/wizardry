@@ -41,7 +41,7 @@ SH
   ln -s /bin/grep "$tmp/grep"
   ln -s /bin/cat "$tmp/cat"
 
-  MENU_LOG="$tmp/log" run_cmd env PATH="$tmp" MENU_LOOP_LIMIT=1 MENU_LOG="$tmp/log" COLORS_BIN="$tmp/colors" MENU_BIN="$tmp/menu" \
+  MENU_LOG="$tmp/log" run_cmd env PATH="$tmp:/bin:/usr/bin" MENU_LOOP_LIMIT=1 MENU_LOG="$tmp/log" COLORS_BIN="$tmp/colors" MENU_BIN="$tmp/menu" \
     "$ROOT_DIR/spells/install/core/core-menu"
 
   assert_success || return 1

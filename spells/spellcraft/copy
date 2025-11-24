@@ -26,15 +26,15 @@ fi
 
 # Check if the `pbcopy` command is available (only on macOS). If it is, use it to copy the contents of the file to the clipboard.
 if command -v pbcopy >/dev/null 2>&1; then
-    pbcopy < "$1"
+    pbcopy < "$1" || exit 1
 
 # If `pbcopy` is not available, check if the `xsel` command is available (only on some Unix-based systems). If it is, use it to copy the contents of the file to the clipboard.
 elif command -v xsel >/dev/null 2>&1; then
-    xsel --clipboard --input < "$1"
+    xsel --clipboard --input < "$1" || exit 1
 
 # If neither `pbcopy` nor `xsel` is available, check if the `xclip` command is available (only on some Unix-based systems). If it is, use it to copy the contents of the file to the clipboard.
 elif command -v xclip >/dev/null 2>&1; then
-    xclip -selection clipboard < "$1"
+    xclip -selection clipboard < "$1" || exit 1
 
 # If none of the above commands are available, print an error message.
 else

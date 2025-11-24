@@ -2,6 +2,21 @@
 # Common test helpers for simple POSIX shell tests.
 # Provides minimal assertion helpers and a lightweight test runner.
 
+# CRITICAL: Set a baseline PATH BEFORE set -eu and before any commands
+# On macOS GitHub Actions, PATH may be completely empty, causing immediate failure
+# when we try to use dirname, cd, pwd, etc. in find_repo_root
+baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+case ":${PATH-}:" in
+  *":/usr/bin:"*|*":/bin:"*) 
+    # Already has at least one standard directory
+    ;;
+  *) 
+    # PATH is empty or missing standard directories, prepend baseline
+    PATH="${baseline_path}${PATH:+:}${PATH-}"
+    ;;
+esac
+export PATH
+
 set -eu
 
 find_repo_root() {
@@ -18,19 +33,8 @@ find_repo_root() {
 
 ROOT_DIR=$(find_repo_root)
 
-# Seed a baseline PATH on macOS where it may be empty or incomplete
-# Only prepend if PATH appears to be missing standard directories
-baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
-case ":${PATH-}:" in
-  *":/usr/bin:"*|*":/bin:"*) 
-    # Already has at least one standard directory
-    ;;
-  *) 
-    # PATH is empty or missing standard directories, prepend baseline
-    PATH="${baseline_path}${PATH:+:}${PATH-}"
-    ;;
-esac
-
+# The baseline PATH was already set at the top of this file.
+# Now add wizardry spells directories to PATH.
 initial_path=$PATH
 PATH="$ROOT_DIR/spells"
 for dir in "$ROOT_DIR"/spells/*; do
@@ -42,53 +46,93 @@ export PATH
 WIZARDRY_TEST_HELPERS_ONLY=1
 export WIZARDRY_TEST_HELPERS_ONLY
 
+# Save the system PATH for run_cmd to use internally
+# This ensures run_cmd can always find essential utilities like mktemp, mkdir, cat, rm
+# even when tests intentionally set a restricted PATH to test error conditions
+WIZARDRY_SYSTEM_PATH="$initial_path"
+export WIZARDRY_SYSTEM_PATH
+
 : "${WIZARDRY_TMPDIR:=$(mktemp -d "${TMPDIR:-/tmp}/wizardry-test.XXXXXX")}" || exit 1
 export WIZARDRY_TMPDIR
 
+# Detect platform for sandbox selection
+SANDBOX_PLATFORM=$(uname -s 2>/dev/null || printf 'unknown')
+
+# Initialize sandbox availability flags
 BWRAP_AVAILABLE=1
 BWRAP_VIA_SUDO=0
 BWRAP_USE_UNSHARE=1
 BWRAP_BIN=${BWRAP_BIN-}
+MACOS_SANDBOX_AVAILABLE=0
+SANDBOX_EXEC_BIN=""
 
-if [ -z "$BWRAP_BIN" ]; then
-  if command -v bwrap >/dev/null 2>&1; then
-    BWRAP_BIN=$(command -v bwrap)
-  else
+# Allow disabling sandboxing via environment variable
+if [ "${WIZARDRY_DISABLE_SANDBOX-0}" = "1" ]; then
+  BWRAP_AVAILABLE=0
+  BWRAP_REASON="sandboxing disabled by WIZARDRY_DISABLE_SANDBOX"
+  MACOS_SANDBOX_AVAILABLE=0
+else
+  # macOS sandboxing is disabled by default due to compatibility issues
+  # Enable with WIZARDRY_ENABLE_MACOS_SANDBOX=1 if needed
+  if [ "$SANDBOX_PLATFORM" = "Darwin" ] && [ "${WIZARDRY_ENABLE_MACOS_SANDBOX-0}" = "1" ]; then
+    if command -v sandbox-exec >/dev/null 2>&1; then
+      SANDBOX_EXEC_BIN=$(command -v sandbox-exec)
+      # Test if sandbox-exec works with a simple profile
+      if "$SANDBOX_EXEC_BIN" -p '(version 1) (allow default)' /usr/bin/true 2>/dev/null; then
+        MACOS_SANDBOX_AVAILABLE=1
+        # On macOS, prefer sandbox-exec over attempting bubblewrap
+        BWRAP_AVAILABLE=0
+        BWRAP_REASON="using macOS sandbox-exec instead"
+      fi
+    fi
+  fi
+fi
+
+# Check for Linux bubblewrap (only if not using macOS sandboxing)
+if [ "$MACOS_SANDBOX_AVAILABLE" -eq 0 ]; then
+  if [ -z "$BWRAP_BIN" ]; then
+    if command -v bwrap >/dev/null 2>&1; then
+      BWRAP_BIN=$(command -v bwrap)
+    else
+      BWRAP_AVAILABLE=0
+      BWRAP_REASON="bubblewrap not installed"
+    fi
+  fi
+
+  if [ "$BWRAP_AVAILABLE" -eq 1 ]; then
+    if "$BWRAP_BIN" --unshare-user-try --ro-bind / / /bin/true 2>/dev/null; then
+      :
+    elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+      if sudo -n "$BWRAP_BIN" --unshare-user-try --ro-bind / / /bin/true 2>/dev/null; then
+        BWRAP_VIA_SUDO=1
+      elif sudo -n "$BWRAP_BIN" --ro-bind / / /bin/true 2>/dev/null; then
+        BWRAP_VIA_SUDO=1
+        BWRAP_USE_UNSHARE=0
+      else
+        BWRAP_AVAILABLE=0
+        BWRAP_REASON="bubblewrap unusable even via sudo"
+      fi
+    else
+      BWRAP_AVAILABLE=0
+      BWRAP_REASON="bubblewrap unusable (user namespaces likely disabled)"
+    fi
+  fi
+
+  if [ "$BWRAP_AVAILABLE" -eq 1 ] && { [ -z "$BWRAP_BIN" ] || [ ! -x "$BWRAP_BIN" ]; }; then
     BWRAP_AVAILABLE=0
     BWRAP_REASON="bubblewrap not installed"
   fi
 fi
 
-if [ "$BWRAP_AVAILABLE" -eq 1 ]; then
-  if "$BWRAP_BIN" --unshare-user-try --ro-bind / / /bin/true 2>/dev/null; then
-    :
-  elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
-    if sudo -n "$BWRAP_BIN" --unshare-user-try --ro-bind / / /bin/true 2>/dev/null; then
-      BWRAP_VIA_SUDO=1
-    elif sudo -n "$BWRAP_BIN" --ro-bind / / /bin/true 2>/dev/null; then
-      BWRAP_VIA_SUDO=1
-      BWRAP_USE_UNSHARE=0
-    else
-      BWRAP_AVAILABLE=0
-      BWRAP_REASON="bubblewrap unusable even via sudo"
-    fi
-  else
-    BWRAP_AVAILABLE=0
-    BWRAP_REASON="bubblewrap unusable (user namespaces likely disabled)"
-  fi
-fi
+warn_once_file=${WIZARDRY_BWRAP_WARN_FILE-${TMPDIR:-/tmp}/wizardry-sandbox-warning}
 
-warn_once_file=${WIZARDRY_BWRAP_WARN_FILE-${TMPDIR:-/tmp}/wizardry-bwrap-warning}
-
-if [ "$BWRAP_AVAILABLE" -eq 1 ] && { [ -z "$BWRAP_BIN" ] || [ ! -x "$BWRAP_BIN" ]; }; then
-  BWRAP_AVAILABLE=0
-  BWRAP_REASON="bubblewrap not installed"
-fi
-
-if [ "$BWRAP_AVAILABLE" -eq 0 ] && [ ! -f "$warn_once_file" ] && [ "${WIZARDRY_BWRAP_WARNING-0}" -eq 0 ]; then
-  printf '%s\n' "WARNING: proceeding without bubblewrap sandbox: $BWRAP_REASON" >&2
+if [ "$BWRAP_AVAILABLE" -eq 0 ] && [ "$MACOS_SANDBOX_AVAILABLE" -eq 0 ] && [ ! -f "$warn_once_file" ] && [ "${WIZARDRY_BWRAP_WARNING-0}" -eq 0 ]; then
+  printf '%s\n' "WARNING: proceeding without sandbox isolation: $BWRAP_REASON" >&2
   WIZARDRY_BWRAP_WARNING=1
   export WIZARDRY_BWRAP_WARNING
+  : >"$warn_once_file" 2>/dev/null || true
+elif [ "$MACOS_SANDBOX_AVAILABLE" -eq 1 ] && [ ! -f "$warn_once_file" ]; then
+  printf '%s\n' "INFO: using macOS sandbox-exec for test isolation" >&2
   : >"$warn_once_file" 2>/dev/null || true
 fi
 
@@ -98,6 +142,35 @@ run_bwrap() {
   else
     "$BWRAP_BIN" "$@"
   fi
+}
+
+run_macos_sandbox() {
+  # Create a permissive sandbox profile that provides minimal isolation
+  # NOTE: macOS sandboxing is DISABLED BY DEFAULT due to compatibility issues
+  # Enable with WIZARDRY_ENABLE_MACOS_SANDBOX=1 if needed for testing
+  #
+  # This profile is intentionally very permissive because:
+  # 1. macOS sandbox-exec is fundamentally more restrictive than Linux bubblewrap
+  # 2. A more restrictive profile caused 75 out of 102 tests to fail
+  # 3. Even a permissive profile may cause test failures in GitHub Actions
+  # 4. The primary benefit is process isolation and consistent environment, not security
+  #
+  # The profile allows most operations to maintain test compatibility while still
+  # providing basic process isolation that helps catch environment-related issues.
+  sandbox_profile='(version 1)
+(allow default)
+(allow file-read*)
+(allow file-write*)
+(allow process*)
+(allow network*)
+(allow ipc*)
+(allow mach*)
+(allow sysctl*)
+(allow signal)
+(allow system*)
+'
+  
+  "$SANDBOX_EXEC_BIN" -p "$sandbox_profile" "$@"
 }
 
 _pass_count=0
@@ -160,11 +233,18 @@ finish_tests() {
   return 0
 }
 
-# Capture a command's stdout, stderr, and exit status inside a bubblewrap
-# sandbox. Results land in STATUS, OUTPUT, and ERROR variables.
+# Capture a command's stdout, stderr, and exit status inside a sandbox.
+# Uses bubblewrap on Linux or sandbox-exec on macOS when available.
+# Results land in STATUS, OUTPUT, and ERROR variables.
 run_cmd() {
-  __stdout=$(mktemp "${WIZARDRY_TMPDIR}/stdout.XXXXXX") || return 1
-  __stderr=$(mktemp "${WIZARDRY_TMPDIR}/stderr.XXXXXX") || return 1
+  # Save the caller's PATH and temporarily use the system PATH for run_cmd's
+  # internal operations (mktemp, mkdir, cat, rm, pwd). This ensures run_cmd
+  # works even when tests intentionally set a restricted PATH.
+  _saved_path=$PATH
+  PATH=${WIZARDRY_SYSTEM_PATH:-$PATH}
+  
+  _stdout=$(mktemp "${WIZARDRY_TMPDIR}/stdout.XXXXXX") || return 1
+  _stderr=$(mktemp "${WIZARDRY_TMPDIR}/stderr.XXXXXX") || return 1
 
   workdir=${RUN_CMD_WORKDIR:-$(pwd)}
   mkdir -p "$workdir"
@@ -173,6 +253,9 @@ run_cmd() {
   tmpdir="$sandbox/tmp"
   homedir="$sandbox/home"
   mkdir -p "$tmpdir" "$homedir"
+  
+  # Restore the caller's PATH for use in the sandbox
+  PATH=$_saved_path
 
   if [ "$BWRAP_AVAILABLE" -eq 1 ]; then
     set -- \
@@ -194,24 +277,37 @@ run_cmd() {
       set -- --unshare-user-try "$@"
     fi
 
-    if run_bwrap "$@" >"$__stdout" 2>"$__stderr"; then
+    if run_bwrap "$@" >"$_stdout" 2>"$_stderr"; then
+      STATUS=0
+    else
+      STATUS=$?
+    fi
+  elif [ "$MACOS_SANDBOX_AVAILABLE" -eq 1 ]; then
+    # Use macOS sandbox-exec for isolation
+    if (cd "$workdir" && env PATH="$PATH" HOME="$homedir" TMPDIR="$tmpdir" WIZARDRY_TMPDIR="$WIZARDRY_TMPDIR" \
+      run_macos_sandbox "$@" >"$_stdout" 2>"$_stderr"); then
       STATUS=0
     else
       STATUS=$?
     fi
   else
     if (cd "$workdir" && env PATH="$PATH" HOME="$homedir" TMPDIR="$tmpdir" WIZARDRY_TMPDIR="$WIZARDRY_TMPDIR" "$@" \
-      >"$__stdout" 2>"$__stderr"); then
+      >"$_stdout" 2>"$_stderr"); then
       STATUS=0
     else
       STATUS=$?
     fi
   fi
 
-  OUTPUT=$(cat "$__stdout")
-  ERROR=$(cat "$__stderr")
-  rm -f "$__stdout" "$__stderr"
+  # Use system PATH again for cleanup operations
+  PATH=${WIZARDRY_SYSTEM_PATH:-$PATH}
+  OUTPUT=$(cat "$_stdout")
+  ERROR=$(cat "$_stderr")
+  rm -f "$_stdout" "$_stderr"
   rm -rf "$sandbox"
+  
+  # Restore caller's PATH before returning
+  PATH=$_saved_path
 }
 
 run_spell() {

@@ -112,47 +112,44 @@ done
 
 if [ "$found_any" -eq 1 ]; then
         # Rotate through themed whispers based on how many charms fill the room.
-        message_pool=''
+        # Use case statements instead of heredocs for better cross-platform compatibility.
+        message_idx=$((total % 7 + 1))
+        
         if [ "$total" -gt 120 ]; then
-                message_pool=$(cat <<'LINES'
-Whoa, this room is seriously __ENCHANTED__!
-I can feel the __MAGIC__ emanating from these files!
-This room is practically pulsating with __MAGIC__!
-I've never sensed this much __MAGIC__ in one place before!
-The amount of __MAGIC__ in this room is off the charts!
-These files are practically glowing with __MAGIC__!
-I can hardly contain all this __MAGIC__!
-LINES
-)
+                case "$message_idx" in
+                        1) message="Whoa, this room is seriously __ENCHANTED__!" ;;
+                        2) message="I can feel the __MAGIC__ emanating from these files!" ;;
+                        3) message="This room is practically pulsating with __MAGIC__!" ;;
+                        4) message="I've never sensed this much __MAGIC__ in one place before!" ;;
+                        5) message="The amount of __MAGIC__ in this room is off the charts!" ;;
+                        6) message="These files are practically glowing with __MAGIC__!" ;;
+                        7) message="I can hardly contain all this __MAGIC__!" ;;
+                esac
         elif [ "$total" -gt 50 ]; then
-                message_pool=$(cat <<'LINES'
-I can feel the __MAGIC__ in the air.
-There seems to be quite a bit of __MAGIC__ in this room.
-This room is positively brimming with __MAGIC__.
-These files are infused with __MAGIC__.
-The __MAGIC__ in this room is palpable.
-The __MAGIC__ in these files is almost tangible.
-This room is filled with __MAGIC__.
-LINES
-)
+                case "$message_idx" in
+                        1) message="I can feel the __MAGIC__ in the air." ;;
+                        2) message="There seems to be quite a bit of __MAGIC__ in this room." ;;
+                        3) message="This room is positively brimming with __MAGIC__." ;;
+                        4) message="These files are infused with __MAGIC__." ;;
+                        5) message="The __MAGIC__ in this room is palpable." ;;
+                        6) message="The __MAGIC__ in these files is almost tangible." ;;
+                        7) message="This room is filled with __MAGIC__." ;;
+                esac
         elif [ "$total" -gt 15 ]; then
-                message_pool=$(cat <<'LINES'
-I sense a bit of __MAGIC__ in this room.
-There seems to be a hint of __MAGIC__ in these files.
-I can feel a faint aura of __MAGIC__ in this room.
-These files have a touch of __MAGIC__.
-I detect a faint trace of __MAGIC__ in this room.
-There is a subtle essence of __MAGIC__ in these files.
-This room has a faint glimmer of __MAGIC__.
-LINES
-)
+                case "$message_idx" in
+                        1) message="I sense a bit of __MAGIC__ in this room." ;;
+                        2) message="There seems to be a hint of __MAGIC__ in these files." ;;
+                        3) message="I can feel a faint aura of __MAGIC__ in this room." ;;
+                        4) message="These files have a touch of __MAGIC__." ;;
+                        5) message="I detect a faint trace of __MAGIC__ in this room." ;;
+                        6) message="There is a subtle essence of __MAGIC__ in these files." ;;
+                        7) message="This room has a faint glimmer of __MAGIC__." ;;
+                esac
         fi
 
-        if [ -n "$message_pool" ]; then
-                lines=$(printf '%s\n' "$message_pool" | wc -l | tr -d ' ')
-                line_to_print=$((total % lines + 1))
-                printf '%s\n' "$message_pool" | awk -v line="$line_to_print" -v mark="$magic_word" -v glow="$enchanted_word" \
-                        'NR==line { gsub("__MAGIC__", mark); gsub("__ENCHANTED__", glow); print; exit }'
+        if [ -n "${message-}" ]; then
+                message=$(printf '%s\n' "$message" | sed "s/__MAGIC__/$magic_word/g; s/__ENCHANTED__/$enchanted_word/g")
+                printf '%s\n' "$message"
         fi
         printf 'I can feel the %smagic%s in the air.\n' "$purple" "$reset"
 else
