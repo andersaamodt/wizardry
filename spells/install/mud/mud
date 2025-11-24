@@ -1,8 +1,0 @@
-#!/bin/sh
-
-# Wrapper script for backward compatibility with install-menu discovery.
-# This script delegates to install-mud.
-
-script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-
-exec "$script_dir/install-mud" "$@"
