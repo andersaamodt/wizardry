@@ -40,11 +40,42 @@ resolve_rc_file() {
                 printf '%s\n' "$WIZARDRY_RC_FILE"
                 return 0
         fi
+        
+        # Try to use detect-rc-file for cross-platform support
+        if command -v detect-rc-file >/dev/null 2>&1; then
+                if detected=$(detect-rc-file 2>/dev/null); then
+                        # Parse rc_file= line using shell parameter expansion
+                        while IFS= read -r line; do
+                                case $line in
+                                rc_file=*)
+                                        rc_file=${line#rc_file=}
+                                        if [ -n "$rc_file" ]; then
+                                                printf '%s\n' "$rc_file"
+                                                return 0
+                                        fi
+                                        ;;
+                                esac
+                        done <<EOF
+$detected
+EOF
+                fi
+        fi
+        
+        # Fallback to shell-specific defaults
         if [ -z "${HOME-}" ]; then
                 warn "HOME is not set; cannot determine rc file."
                 return 1
         fi
-        printf '%s/.bashrc\n' "$HOME"
+        
+        shell_name=${SHELL-}
+        case ${shell_name##*/} in
+        zsh)
+                printf '%s/.zshrc\n' "$HOME"
+                ;;
+        *)
+                printf '%s/.bashrc\n' "$HOME"
+                ;;
+        esac
 }
 
 cd_block_present() {
@@ -146,15 +177,19 @@ wizardry_cd_cast_look() {
 }
 
 wizardry_cd_main() {
-        if ! \cd "$@"; then
-                return $?
-        fi
-        wizardry_cd_cast_look
+        \cd "$@" && wizardry_cd_cast_look
 }
 
 : "${WIZARDRY_CD_CANTRIP:=$(absolute_spell_path)}"
 
+# Handle command-line invocation for install command
+if [ "${1-}" = "install" ]; then
+        install
+        exit $?
+fi
+
 if [ -z "${WIZARDRY_MEMORIZE_TARGET-}" ]; then
         prompt_install_if_needed || true
         wizardry_cd_main "$@"
+        exit $?
 fi
