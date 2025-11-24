@@ -618,6 +618,6 @@ else
         done
 fi
 
-printf 'Memorized %d spell(s); %d skipped.\n' "$MEMORIZED_COUNT" "$SKIPPED_COUNT"
+printf 'Memorized %d spell(s).\n' "$MEMORIZED_COUNT"
 
 exit 0

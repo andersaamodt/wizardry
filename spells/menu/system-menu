@@ -46,6 +46,7 @@ display_menu() {
   update_wizardry="Update wizardry%update-wizardry"
   test_suite="Test all wizardry spells%$repo_dir/spells/system/test-magic"
   update_all="Update all software%update-all -v"
+  uninstall_wizardry="Uninstall wizardry%$repo_dir/install --uninstall"
   restart="Force restart%sudo shutdown -r now"
   exit="Exit%kill -2 $$"
 
@@ -54,7 +55,7 @@ display_menu() {
   if [ -n "$nixos_rebuild" ]; then
     set -- "$@" "$nixos_rebuild"
   fi
-  set -- "$@" "$update_wizardry" "$test_suite" "$restart" "$exit"
+  set -- "$@" "$update_wizardry" "$test_suite" "$uninstall_wizardry" "$restart" "$exit"
 
   MENU_ESCAPE_STATUS=$menu_escape_status menu "System Menu:" "$@"
 }
