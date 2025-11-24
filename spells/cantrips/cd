@@ -180,7 +180,7 @@ wizardry_cd_main() {
         \cd "$@" && wizardry_cd_cast_look
 }
 
-: "${WIZARDRY_CD_CANTRIP:=$(absolute_spell_path)}"
+: "${WIZARDRY_CD_CANTRIP:=${WIZARDRY_MEMORIZE_TARGET:-$(absolute_spell_path)}}"
 
 # Handle command-line invocation for install command
 if [ "${1-}" = "install" ]; then
