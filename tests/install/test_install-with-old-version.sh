@@ -91,11 +91,14 @@ install_ignores_lying_old_path_wizard() {
   old_wizardry="$fixture/old-wizardry"
   mkdir -p "$old_wizardry/spells/translocation"
   
-  cat <<'LYING_WIZARD' >"$old_wizardry/spells/translocation/path-wizard"
+  # Create a log file in the fixture directory for tracking
+  log_file="$fixture/old-wizard-calls.log"
+  
+  cat <<LYING_WIZARD >"$old_wizardry/spells/translocation/path-wizard"
 #!/bin/sh
 # This old broken version lies about status and logs to show it was called
-echo "OLD_WIZARD_CALLED" >> /tmp/old-wizard-test.log
-if [ "${1:-}" = "status" ] || [ "${2:-}" = "status" ] || [ "${3:-}" = "status" ]; then
+echo "OLD_WIZARD_CALLED" >> "$log_file"
+if [ "\${1:-}" = "status" ] || [ "\${2:-}" = "status" ] || [ "\${3:-}" = "status" ]; then
   exit 0  # Falsely claim path is already set
 fi
 exit 1
@@ -103,9 +106,6 @@ LYING_WIZARD
   chmod +x "$old_wizardry/spells/translocation/path-wizard"
 
   install_dir="$fixture/home/.wizardry"
-  
-  # Create empty tracking file
-  rm -f /tmp/old-wizard-test.log
   
   # Run install with the lying old path-wizard in PATH
   # The install should use the NEW path-wizard (via explicit path), not the old one
@@ -122,14 +122,10 @@ LYING_WIZARD
   
   # Verify the old lying wizard was NOT called
   # If it was called, the log file would exist and contain "OLD_WIZARD_CALLED"
-  if [ -f /tmp/old-wizard-test.log ]; then
-    if grep -q "OLD_WIZARD_CALLED" /tmp/old-wizard-test.log 2>/dev/null; then
-      rm -f /tmp/old-wizard-test.log
-      TEST_FAILURE_REASON="Install called the old lying path-wizard from PATH instead of using the new one"
-      return 1
-    fi
+  if [ -f "$log_file" ] && grep -q "OLD_WIZARD_CALLED" "$log_file" 2>/dev/null; then
+    TEST_FAILURE_REASON="Install called the old lying path-wizard from PATH instead of using the new one"
+    return 1
   fi
-  rm -f /tmp/old-wizard-test.log
   
   return 0
 }
