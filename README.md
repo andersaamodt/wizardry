@@ -76,7 +76,7 @@ This spec helps scripts evolve into living, polished exemplars of communal knowl
 
 Wizardry includes a curated free software suite which can be easily and optionally installed from the `menu`. Criteria for inclusion:
 
-* Software that helps user accomplish basic computer tasks (messaging, document editing, photos, sharing, etc.)
+* Software that helps accomplish basic computer tasks (messaging, document editing, photos, sharing, etc.)
 * Free software is best; non-commercial open-source an acceptable alternative
 * Inclusions are opinilnsted; the free software suite is our recommendations of the best free software
 * No redundant apps; we will choose the best one to include for each purpose, or offer a clear choice if necessary
