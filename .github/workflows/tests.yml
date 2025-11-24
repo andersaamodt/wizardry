@@ -18,7 +18,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Ensure installer spells are executable
-        run: chmod +x spells/install/mud/mud spells/install/tor/setup-tor
+        run: chmod +x spells/install/mud/install-mud spells/install/tor/setup-tor
       - name: Install bubblewrap dependency
         run: sudo apt-get update && sudo apt-get install -y bubblewrap uidmap
       - name: Configure bubblewrap user namespaces
@@ -53,7 +53,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Ensure installer spells are executable
-        run: chmod +x spells/install/mud/mud spells/install/tor/setup-tor
+        run: chmod +x spells/install/mud/install-mud spells/install/tor/setup-tor
       - name: Run unit tests
         run: ./spells/system/test-magic --verbose
 
@@ -69,7 +69,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Ensure installer spells are executable
-        run: chmod +x spells/install/mud/mud spells/install/tor/setup-tor
+        run: chmod +x spells/install/mud/install-mud spells/install/tor/setup-tor
       - name: Install bubblewrap dependency
         run: apt-get update && apt-get install -y bubblewrap uidmap sudo
       - name: Configure bubblewrap user namespaces
@@ -105,7 +105,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Ensure installer spells are executable
-        run: chmod +x spells/install/mud/mud spells/install/tor/setup-tor
+        run: chmod +x spells/install/mud/install-mud spells/install/tor/setup-tor
       - name: Install test dependencies
         run: pacman -Syu --noconfirm bubblewrap sudo shadow
       - name: Configure bubblewrap user namespaces
@@ -138,7 +138,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Ensure installer spells are executable
-        run: chmod +x spells/install/mud/mud spells/install/tor/setup-tor
+        run: chmod +x spells/install/mud/install-mud spells/install/tor/setup-tor
       - name: Install Nix
         uses: cachix/install-nix-action@v27
       - name: Configure nixpkgs channel
