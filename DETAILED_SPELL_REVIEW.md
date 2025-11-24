@@ -37,10 +37,11 @@ done
 #### **spells/kryptos/evoke-hash** 🟡 MEDIUM
 **Multiple Issues:**
 
-1. **Non-POSIX parameter expansion:**
+1. **Parameter expansion is actually POSIX-compliant:**
 ```sh
-# Line 7: Not POSIX
-DIRECTORY="${2:-.}"  # ${var:-default} is POSIX, but ${var:-.} may not work in all shells
+# Line 7: This is fine, but could be clearer
+DIRECTORY="${2:-.}"  # ${var:-default} is POSIX-compliant and works correctly
+# No issue here, but for clarity could use: directory=${2:-.}
 ```
 
 2. **Useless echo:**
@@ -58,17 +59,11 @@ realpath "${file}"
 # No help option
 ```
 
-4. **Inconsistent quoting:**
+3. **Missing error handling:**
 ```sh
-# Lines 10, 12: Over-quoted variables
-for file in "${DIRECTORY}"/*; do  # Should be: "$DIRECTORY"/*
-  if [ -f "${file}" ]; then      # Should be: "$file"
-```
-
-5. **Usage comment doesn't match help pattern:**
-```sh
-# Line 4: Comment doesn't follow --help convention
-# Usage: get-card [HASH] [DIRECTORY]  # Wrong command name!
+# No set -eu
+# No usage function
+# No help option
 ```
 
 **Fixes Needed:**
@@ -267,9 +262,9 @@ esac
 
 **Fix:**
 ```sh
-\~/*|'~'/*)
+'~'/*)
   if [ -n "${HOME-}" ]; then
-    destination="$HOME/${1#\~/}"
+    destination="$HOME/${1#'~/'}"
   else
     printf 'Error: HOME not set, cannot expand ~\n' >&2
     exit 1
