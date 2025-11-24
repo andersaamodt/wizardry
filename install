@@ -353,6 +353,28 @@ else
         printf '%s\n' "Warning: memorize spell is missing; skipping automatic memorization." >&2
 fi
 
+# Install the cd cantrip hook to add narration and look spell after directory changes
+CD_CANTRIP="$ABS_DIR/spells/cantrips/cd"
+if [ -x "$CD_CANTRIP" ]; then
+        if [ "${WIZARDRY_INSTALL_ASSUME_YES-}" = "1" ]; then
+                cd_log=$(mktemp "${TMPDIR:-/tmp}/wizardry-cd.XXXXXX") || exit 1
+                if "$CD_CANTRIP" --install --silent >"$cd_log" 2>&1; then
+                        cat "$cd_log"
+                else
+                        cat "$cd_log" >&2 || true
+                fi
+                rm -f "$cd_log"
+        else
+                if [ ! -t 0 ] && [ -z "${ASK_CANTRIP_INPUT-}" ]; then
+                        ASK_CANTRIP_INPUT=none "$CD_CANTRIP" --install >/dev/null 2>&1 || true
+                else
+                        "$CD_CANTRIP" --install || true
+                fi
+        fi
+else
+        printf '%s\n' "Warning: cd cantrip not found; skipping automatic cd hook installation." >&2
+fi
+
 printf '%s\n' "Your spellbook has been activated. Open a fresh terminal or source your shell configuration to cast spells everywhere."
 
 exit "$mem_status"

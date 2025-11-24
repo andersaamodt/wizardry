@@ -1,9 +1,31 @@
 #!/bin/sh
 
 # The cd cantrip keeps a tiny shell hook that immediately runs `look`
-# after every successful directory change. The hook stays intentionally
-# small so wizards can tweak it at a glance while still whispering just
-# enough lore to keep the spell recognizable.
+# after every successful directory change, with optional random narration.
+# The hook stays intentionally small so wizards can tweak it at a glance
+# while still whispering just enough lore to keep the spell recognizable.
+
+show_usage() {
+        cat <<'USAGE'
+Usage: cd [directory]
+       cd --install [--silent]
+
+Changes the current directory and optionally displays its description.
+When used with --install, adds a hook to your shell rc file.
+
+Options:
+  --install     Install the cd hook to your shell configuration file
+  --silent      Skip confirmation prompts during installation
+  --help        Show this help message
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
 
 set -eu
 
@@ -35,6 +57,18 @@ absolute_spell_path() {
         esac
 }
 
+locate_detect_rc_file() {
+        if command -v detect-rc-file >/dev/null 2>&1; then
+                command -v detect-rc-file
+                return 0
+        fi
+        if [ -x "$SCRIPT_DIR/../divination/detect-rc-file" ]; then
+                printf '%s\n' "$SCRIPT_DIR/../divination/detect-rc-file"
+                return 0
+        fi
+        return 1
+}
+
 resolve_rc_file() {
         if [ -n "${WIZARDRY_RC_FILE-}" ]; then
                 printf '%s\n' "$WIZARDRY_RC_FILE"
@@ -44,6 +78,19 @@ resolve_rc_file() {
                 warn "HOME is not set; cannot determine rc file."
                 return 1
         fi
+        
+        # Try to use detect-rc-file for cross-platform support
+        if detect_rc_cmd=$(locate_detect_rc_file); then
+                if detect_output=$("$detect_rc_cmd" 2>/dev/null); then
+                        rc_file=$(printf '%s\n' "$detect_output" | grep '^rc_file=' | cut -d= -f2-)
+                        if [ -n "$rc_file" ]; then
+                                printf '%s\n' "$rc_file"
+                                return 0
+                        fi
+                fi
+        fi
+        
+        # Fallback to .bashrc for compatibility
         printf '%s/.bashrc\n' "$HOME"
 }
 
@@ -87,10 +134,13 @@ install() {
         else
                 : >"$tmp_file"
         fi
+        
+        # Enable narration by default (set to 0 to disable)
         cat <<HOOK >>"$tmp_file"
 # >>> wizardry cd cantrip >>>
 WIZARDRY_CD_CANTRIP='$cd_spell'
-alias cd='. "$WIZARDRY_CD_CANTRIP"'
+WIZARDRY_CD_NARRATION=1
+alias cd='. "\$WIZARDRY_CD_CANTRIP"'
 # <<< wizardry cd cantrip <<<
 HOOK
         if ! mv "$tmp_file" "$rc_file"; then
@@ -145,14 +195,88 @@ wizardry_cd_cast_look() {
         warn "look spell is not available."
 }
 
+get_random_narration() {
+        # Array of themed narration messages
+        narrations="You teleport through the mystical portal.
+The air shimmers as you step through the veil.
+A gentle breeze guides you to your destination.
+You feel the pull of arcane energies.
+The path unfolds before you.
+You traverse the ethereal plane.
+Ancient runes light your way.
+The spell of translocation carries you forward.
+You phase through reality to arrive.
+Magical energies swirl around you."
+        
+        # Count number of narrations
+        count=$(printf '%s\n' "$narrations" | wc -l)
+        
+        # Generate a pseudo-random number based on current time and PID
+        seed=$(($(date +%s) + $$ + RANDOM))
+        index=$((seed % count + 1))
+        
+        # Get the selected narration
+        printf '%s\n' "$narrations" | sed -n "${index}p"
+}
+
+wizardry_cd_show_narration() {
+        # Only show narration if WIZARDRY_CD_NARRATION is enabled
+        if [ "${WIZARDRY_CD_NARRATION-0}" = "1" ]; then
+                narration=$(get_random_narration)
+                printf '\033[2m%s\033[0m\n' "$narration"
+        fi
+}
+
 wizardry_cd_main() {
         if ! \cd "$@"; then
                 return $?
         fi
+        wizardry_cd_show_narration
         wizardry_cd_cast_look
 }
 
 : "${WIZARDRY_CD_CANTRIP:=$(absolute_spell_path)}"
+
+# Handle --install flag for use by the install script
+if [ "${1-}" = "--install" ]; then
+        shift
+        silent=0
+        if [ "${1-}" = "--silent" ]; then
+                silent=1
+                shift
+        fi
+        
+        spell_path=$(absolute_spell_path "${WIZARDRY_CD_CANTRIP-}")
+        WIZARDRY_CD_CANTRIP=$spell_path
+        
+        if [ "$silent" -eq 1 ]; then
+                install
+                exit $?
+        fi
+        
+        # Interactive install with prompt
+        if ! ask_yn_cmd=$(locate_ask_yn); then
+                install
+                exit $?
+        fi
+        
+        rc_file=$(resolve_rc_file) || exit 1
+        rc_display=$(basename "$rc_file")
+        
+        if cd_block_present "$rc_file"; then
+                printf '%s\n' "cd cantrip: hook already installed in '$rc_file'."
+                exit 0
+        fi
+        
+        printf '%s\n' "The cd cantrip adds themed narration and the 'look' spell to every directory change."
+        if "$ask_yn_cmd" "Install the cd cantrip hook in $rc_display?" yes >/dev/null; then
+                install
+                exit $?
+        else
+                printf '%s\n' "Installation skipped."
+                exit 0
+        fi
+fi
 
 if [ -z "${WIZARDRY_MEMORIZE_TARGET-}" ]; then
         prompt_install_if_needed || true
