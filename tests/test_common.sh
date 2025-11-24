@@ -160,21 +160,22 @@ run_cmd() {
   homedir="$sandbox/home"
   mkdir -p "$tmpdir" "$homedir"
 
-  if [ "$BWRAP_AVAILABLE" -eq 1 ]; then
-    set -- \
-      --die-with-parent \
-      --ro-bind / / \
-      --dev-bind /dev /dev \
-      --bind /proc /proc \
+    if [ "$BWRAP_AVAILABLE" -eq 1 ]; then
+      set -- \
+        --die-with-parent \
+        --ro-bind / / \
+        --dev-bind /dev /dev \
+        --bind /proc /proc \
       --tmpfs /tmp \
       --bind "$WIZARDRY_TMPDIR" "$WIZARDRY_TMPDIR" \
       --ro-bind "$ROOT_DIR" "$ROOT_DIR" \
       --chdir "$workdir" \
-      --setenv PATH "$PATH" \
-      --setenv HOME "$homedir" \
-      --setenv TMPDIR "$tmpdir" \
-      --setenv WIZARDRY_TMPDIR "$WIZARDRY_TMPDIR" \
-      -- "$@"
+        --setenv PATH "$PATH" \
+        --setenv HOME "$homedir" \
+        --setenv TMPDIR "$tmpdir" \
+        --setenv WIZARDRY_TMPDIR "$WIZARDRY_TMPDIR" \
+        --setenv WIZARDRY_TEST_HELPERS_ONLY "${WIZARDRY_TEST_HELPERS_ONLY-}" \
+        -- "$@"
 
     if [ "$BWRAP_USE_UNSHARE" -eq 1 ]; then
       set -- --unshare-user-try "$@"
