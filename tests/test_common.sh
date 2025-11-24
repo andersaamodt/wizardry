@@ -17,6 +17,20 @@ find_repo_root() {
 }
 
 ROOT_DIR=$(find_repo_root)
+
+# Seed a baseline PATH on macOS where it may be empty or incomplete
+# Only prepend if PATH appears to be missing standard directories
+baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+case ":${PATH-}:" in
+  *":/usr/bin:"*|*":/bin:"*) 
+    # Already has at least one standard directory
+    ;;
+  *) 
+    # PATH is empty or missing standard directories, prepend baseline
+    PATH="${baseline_path}${PATH:+:}${PATH-}"
+    ;;
+esac
+
 initial_path=$PATH
 PATH="$ROOT_DIR/spells"
 for dir in "$ROOT_DIR"/spells/*; do
