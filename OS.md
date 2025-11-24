@@ -864,11 +864,9 @@ chmod +x "$stubdir/xsel"
 # Create symlinks to essential POSIX utilities
 # This allows the spell and test harness to work without finding system commands
 for util in sh sed cat printf test env basename dirname; do
-  if command -v "$util" >/dev/null 2>&1; then
-    util_path=$(command -v "$util")
-    if [ -x "$util_path" ]; then
-      ln -sf "$util_path" "$stubdir/$util"
-    fi
+  util_path=$(command -v "$util" 2>/dev/null) || continue
+  if [ -x "$util_path" ]; then
+    ln -sf "$util_path" "$stubdir/$util"
   fi
 done
 
@@ -1008,11 +1006,9 @@ STUB
   
   # Symlink essential utilities for both Linux and macOS
   for util in sh sed cat printf test env basename dirname; do
-    if command -v "$util" >/dev/null 2>&1; then
-      util_path=$(command -v "$util")
-      if [ -x "$util_path" ]; then
-        ln -sf "$util_path" "$stubdir/$util"
-      fi
+    util_path=$(command -v "$util" 2>/dev/null) || continue
+    if [ -x "$util_path" ]; then
+      ln -sf "$util_path" "$stubdir/$util"
     fi
   done
   
