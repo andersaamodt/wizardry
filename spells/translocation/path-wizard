@@ -26,12 +26,16 @@ SCRIBE_SPELL_DEFAULT="$SCRIPT_DIR/../spellcraft/scribe-spell"
 detect_override=0
 if [ -n "${DETECT_RC_FILE-}" ]; then
         detect_override=1
-        DETECT_RC_FILE=$DETECT_RC_FILE
 else
         DETECT_RC_FILE=$DETECT_RC_FILE_DEFAULT
 fi
 
-SCRIBE_SPELL=${SCRIBE_SPELL:-$SCRIBE_SPELL_DEFAULT}
+scribe_override=0
+if [ -n "${SCRIBE_SPELL-}" ]; then
+        scribe_override=1
+else
+        SCRIBE_SPELL=$SCRIBE_SPELL_DEFAULT
+fi
 
 if [ ! -x "$DETECT_RC_FILE" ]; then
         if [ "$detect_override" -eq 1 ]; then
@@ -48,6 +52,11 @@ if [ ! -x "$DETECT_RC_FILE" ]; then
 fi
 
 if [ ! -x "$SCRIBE_SPELL" ]; then
+        if [ "$scribe_override" -eq 1 ]; then
+                printf '%s\n' "path-wizard: required helper '$SCRIBE_SPELL' is missing or not executable." >&2
+                exit 1
+        fi
+
         if command -v scribe-spell >/dev/null 2>&1; then
                 SCRIBE_SPELL=$(command -v scribe-spell)
         else

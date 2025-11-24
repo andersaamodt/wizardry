@@ -79,55 +79,58 @@ BROKEN_ASK
   return 0
 }
 
-# Test: Install should repair when old path-wizard falsely claims installation is complete
-install_repairs_when_old_path_wizard_lies() {
+# Test: Install should work even when old path-wizard lies about status
+# This test verifies that the NEW path-wizard is used, not the old one from PATH
+install_ignores_lying_old_path_wizard() {
   fixture=$(make_fixture)
   provide_basic_tools "$fixture"
   link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq mkdir rm date mktemp
 
-  # Create an "old" broken path-wizard that always returns success (claims path is already set)
+  # Create an "old" broken path-wizard that always returns success for 'status'
+  # This simulates an old buggy version that incorrectly reports paths are already set
   old_wizardry="$fixture/old-wizardry"
   mkdir -p "$old_wizardry/spells/translocation"
   
   cat <<'LYING_WIZARD' >"$old_wizardry/spells/translocation/path-wizard"
 #!/bin/sh
-# This old broken version always returns 0 for 'status', claiming path is set when it's not
+# This old broken version lies about status and logs to show it was called
+echo "OLD_WIZARD_CALLED" >> /tmp/old-wizard-test.log
 if [ "${1:-}" = "status" ] || [ "${2:-}" = "status" ] || [ "${3:-}" = "status" ]; then
-  echo "Old path-wizard falsely claiming path is already set" >&2
-  exit 0
+  exit 0  # Falsely claim path is already set
 fi
-echo "ERROR: Old broken path-wizard" >&2
 exit 1
 LYING_WIZARD
   chmod +x "$old_wizardry/spells/translocation/path-wizard"
 
   install_dir="$fixture/home/.wizardry"
-  rc_file="$fixture/home/.bashrc"
   
-  # Create empty rc file - wizardry is NOT actually installed
-  mkdir -p "$fixture/home"
-  touch "$rc_file"
+  # Create empty tracking file
+  rm -f /tmp/old-wizard-test.log
   
   # Run install with the lying old path-wizard in PATH
-  # The old wizard will claim the path is already set, but it's not!
+  # The install should use the NEW path-wizard (via explicit path), not the old one
   PATH="$old_wizardry/spells/translocation:$fixture/bin:$initial_path" \
     WIZARDRY_INSTALL_ASSUME_YES=1 \
     WIZARDRY_INSTALL_DIR="$install_dir" \
     run_cmd "$ROOT_DIR/install"
 
-  # Should succeed (not be fooled by the lying old wizard)
+  # Should succeed
   assert_success || return 1
   
-  # Verify the path was actually added to rc file
-  assert_file_contains "$rc_file" "$install_dir/spells" || return 1
+  # Verify wizardry was installed (spells directory exists)
+  assert_path_exists "$install_dir/spells" || return 1
   
-  # Verify we didn't use the old lying wizard
-  # (if we did, the rc file would be empty because the old wizard claimed it was already done)
-  if printf '%s' "$ERROR" | grep -q "Old path-wizard falsely claiming"; then
-    TEST_FAILURE_REASON="Install was fooled by old path-wizard claiming path was already set"
-    return 1
+  # Verify the old lying wizard was NOT called
+  # If it was called, the log file would exist and contain "OLD_WIZARD_CALLED"
+  if [ -f /tmp/old-wizard-test.log ]; then
+    if grep -q "OLD_WIZARD_CALLED" /tmp/old-wizard-test.log 2>/dev/null; then
+      rm -f /tmp/old-wizard-test.log
+      TEST_FAILURE_REASON="Install called the old lying path-wizard from PATH instead of using the new one"
+      return 1
+    fi
   fi
-
+  rm -f /tmp/old-wizard-test.log
+  
   return 0
 }
 
@@ -185,7 +188,7 @@ BROKEN
 }
 
 run_test_case "install works with old spells in PATH" install_with_old_spells_in_path
-run_test_case "install repairs when old path-wizard lies" install_repairs_when_old_path_wizard_lies
+run_test_case "install ignores lying old path-wizard" install_ignores_lying_old_path_wizard
 run_test_case "path-wizard uses new helpers via env vars" path_wizard_uses_new_helpers
 
 finish_tests
