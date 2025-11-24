@@ -79,10 +79,23 @@ jump_helpers_dir() {
 }
 
 jump_detect_helper() {
+        # Check if environment variable override is set first
+        if [ -n "${DETECT_RC_FILE-}" ]; then
+                if [ -x "$DETECT_RC_FILE" ]; then
+                        printf '%s' "$DETECT_RC_FILE"
+                        return 0
+                else
+                        printf '%s\n' "jump-to-marker: DETECT_RC_FILE is set but not executable." >&2
+                        return 1
+                fi
+        fi
+        
         if ! helpers=$(jump_helpers_dir); then
                 return 1
         fi
         detect="$helpers/detect-rc-file"
+        
+        # Only fall back to PATH if no explicit override was provided
         if [ ! -x "$detect" ] && command -v detect-rc-file >/dev/null 2>&1; then
                 detect=$(command -v detect-rc-file)
         fi
@@ -94,10 +107,23 @@ jump_detect_helper() {
 }
 
 jump_scribe_helper() {
+        # Check if environment variable override is set first
+        if [ -n "${SCRIBE_SPELL-}" ]; then
+                if [ -x "$SCRIBE_SPELL" ]; then
+                        printf '%s' "$SCRIBE_SPELL"
+                        return 0
+                else
+                        printf '%s\n' "jump-to-marker: SCRIBE_SPELL is set but not executable." >&2
+                        return 1
+                fi
+        fi
+        
         if ! helpers=$(jump_helpers_dir); then
                 return 1
         fi
         scribe="$helpers/scribe-spell"
+        
+        # Only fall back to PATH if no explicit override was provided
         if [ ! -x "$scribe" ] && command -v scribe-spell >/dev/null 2>&1; then
                 scribe=$(command -v scribe-spell)
         fi
