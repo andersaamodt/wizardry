@@ -335,7 +335,7 @@ fi
 detect_installation_status() {
         # Check common RC files for wizardry paths
         rc_files="$HOME/.bashrc $HOME/.bash_profile $HOME/.profile $HOME/.zshrc $HOME/.zprofile $HOME/.config/nixpkgs/configuration.nix"
-        
+
         found_in_any_rc=0
         for rc_file in $rc_files; do
                 if [ -f "$rc_file" ]; then
@@ -345,13 +345,13 @@ detect_installation_status() {
                         fi
                 fi
         done
-        
+
         # Check if spells directory exists
         spells_exist=0
         if [ -d "$ABS_DIR/spells" ]; then
                 spells_exist=1
         fi
-        
+
         # Return status: 0=not installed, 1=partially installed, 2=fully installed
         if [ "$found_in_any_rc" -eq 0 ] && [ "$spells_exist" -eq 0 ]; then
                 return 0  # Not installed
@@ -440,8 +440,6 @@ if [ "$PATH_WIZARD_FLAGS" = "--recursive" ]; then
         do
                 if [ -d "$dir" ]; then
                         subdir_count=$(find "$dir" -type d 2>/dev/null | wc -l)
-                        # Remove leading/trailing whitespace
-                        subdir_count=$(printf '%s' "$subdir_count" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
                         total_path_additions=$((total_path_additions + subdir_count))
                 fi
         done
@@ -522,13 +520,13 @@ if [ "$path_updates_made" -eq 1 ]; then
         else
                 rc_destination="your shell configuration file"
         fi
-        
+
         success_msg "PATH configuration updated in $rc_destination"
-        
+
         if [ "$detect_format_value" = "nix" ]; then
                 # On NixOS, attempt to run nixos-rebuild or home-manager switch
                 info_msg "Attempting to rebuild NixOS configuration..."
-                
+
                 rebuild_success=0
                 # Try to detect if we should use sudo or doas
                 priv_cmd=""
@@ -537,7 +535,7 @@ if [ "$path_updates_made" -eq 1 ]; then
                 elif command -v sudo >/dev/null 2>&1; then
                         priv_cmd="sudo"
                 fi
-                
+
                 # Try home-manager first (doesn't need privileges)
                 if command -v home-manager >/dev/null 2>&1; then
                         info_msg "Running 'home-manager switch'..."
@@ -546,7 +544,7 @@ if [ "$path_updates_made" -eq 1 ]; then
                                 rebuild_success=1
                         fi
                 fi
-                
+
                 # If home-manager didn't work and we have privilege escalation, try nixos-rebuild
                 if [ "$rebuild_success" -eq 0 ] && [ -n "$priv_cmd" ] && command -v nixos-rebuild >/dev/null 2>&1; then
                         info_msg "Running '$priv_cmd nixos-rebuild switch'..."
@@ -555,7 +553,7 @@ if [ "$path_updates_made" -eq 1 ]; then
                                 rebuild_success=1
                         fi
                 fi
-                
+
                 if [ "$rebuild_success" -eq 0 ]; then
                         printf '%sNote:%s Could not automatically rebuild NixOS configuration.\n' "$YELLOW" "$RESET"
                         printf 'Please run one of these commands manually:\n'
@@ -592,7 +590,7 @@ fi
 create_uninstall_script() {
         script_dir=$(CDPATH='' cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || script_dir="$ABS_DIR"
         uninstall_script="$script_dir/uninstall_wizardry"
-        
+
         cat >"$uninstall_script" <<'UNINSTALL_EOF'
 #!/bin/sh
 
@@ -698,7 +696,7 @@ UNINSTALL_MAIN
 }
 
 if create_uninstall_script; then
-        script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || script_dir="."
+        script_dir=$(CDPATH='' cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || script_dir="."
         success_msg "Uninstall script created at: $script_dir/uninstall_wizardry"
 fi
 
