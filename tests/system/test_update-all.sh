@@ -30,7 +30,7 @@ test_argument_validation() {
 }
 
 test_missing_confirmation_helper() {
-  run_cmd env PATH="/bin:/usr/bin" WIZARDRY_UPDATE_ALL_DISTRO=debian "$(pwd)/spells/system/update-all"
+  run_cmd env PATH="$ROOT_DIR/spells/.imps:/bin:/usr/bin" WIZARDRY_UPDATE_ALL_DISTRO=debian "$(pwd)/spells/system/update-all"
   assert_failure
   assert_output_contains "Detected platform: debian"
   assert_error_contains "ask_yn spell is missing"

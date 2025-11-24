@@ -37,6 +37,10 @@ ROOT_DIR=$(find_repo_root)
 # Now add wizardry spells directories to PATH.
 initial_path=$PATH
 PATH="$ROOT_DIR/spells"
+# Include .imps first so imps are available to all spells
+if [ -d "$ROOT_DIR/spells/.imps" ]; then
+  PATH="$PATH:$ROOT_DIR/spells/.imps"
+fi
 for dir in "$ROOT_DIR"/spells/*; do
   [ -d "$dir" ] || continue
   PATH="$PATH:$dir"
