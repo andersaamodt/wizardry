@@ -11,7 +11,7 @@ Wizardry also includes a comprehensive set of POSIX shell tutorials, and optiona
 | OS                        | Shortname | Status                              |
 | ------------------------- | --------- | ----------------------------------- |
 | **Debian (and Ubuntu)**   | `debian`  | 🟢 **`install` + `menu` work well**   |
-| **NixOS**                 | `nixos`   | 🟢 **`menu` works well**              |
+| **NixOS**                 | `nixos`   | 🟢 **`install` + `menu` work well**   |
 | **MacOS**                 | `macos`   | 🟡 **`install` + `menu` untested**    |
 | **Arch**                  | `arch`    | 🟠 **currently unsupported**          |
 | **Android (Linux-based)** | —         | 🟠 **currently unsupported**          |
@@ -44,6 +44,19 @@ chmod +x install
 ```
 
 This downloads wizardry to the default install location, `~/.tower`. After installing, you must reopen your terminal window before wizardry spells will work.
+
+### NixOS Installation
+
+On NixOS, the installer modifies `~/.config/nixpkgs/configuration.nix` (for home-manager users) to add wizardry paths. **The installer will ask for your permission before making any changes** and will automatically create a timestamped backup of your configuration file.
+
+If you use system-level configuration (`/etc/nixos/configuration.nix`), you'll need to manually add wizardry to your PATH in that file instead.
+
+After installation completes, run:
+```bash
+home-manager switch     # If using home-manager with ~/.config/nixpkgs/configuration.nix
+```
+
+The backup file is saved as `configuration.nix.wizardry.TIMESTAMP` in the same directory, allowing you to restore your previous configuration if needed.
 
 ## Usage
 
