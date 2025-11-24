@@ -52,10 +52,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Normalize line endings to LF
-        run: |
-          # Convert any CRLF to LF in all shell scripts and spells
-          find spells tests -type f -exec sed -i '' 's/\r$//' {} +
       - name: Ensure installer spells are executable
         run: chmod +x spells/install/mud/install-mud spells/install/tor/setup-tor
       - name: Run unit tests
