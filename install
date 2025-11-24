@@ -240,6 +240,51 @@ else
         printf '%s\n' "Warning: Core installer not found at '$CORE_INSTALLER'; skipping core prerequisite setup." >&2
 fi
 
+# Perform comprehensive installation detection across all RC files
+# This checks multiple RC files to see if wizardry is installed anywhere
+detect_installation_status() {
+        # Check common RC files for wizardry paths
+        rc_files="$HOME/.bashrc $HOME/.bash_profile $HOME/.profile $HOME/.zshrc $HOME/.zprofile $HOME/.config/nixpkgs/configuration.nix"
+        
+        found_in_any_rc=0
+        for rc_file in $rc_files; do
+                if [ -f "$rc_file" ]; then
+                        if grep -q "$ABS_DIR" "$rc_file" 2>/dev/null; then
+                                found_in_any_rc=1
+                                break
+                        fi
+                fi
+        done
+        
+        # Check if spells directory exists
+        spells_exist=0
+        if [ -d "$ABS_DIR/spells" ]; then
+                spells_exist=1
+        fi
+        
+        # Return status: 0=not installed, 1=partially installed, 2=fully installed
+        if [ "$found_in_any_rc" -eq 0 ] && [ "$spells_exist" -eq 0 ]; then
+                return 0  # Not installed
+        elif [ "$found_in_any_rc" -eq 1 ] && [ "$spells_exist" -eq 1 ]; then
+                return 2  # Fully installed
+        else
+                return 1  # Partially installed (needs repair)
+        fi
+}
+
+# Detect installation status for better user messaging
+install_status=0
+if detect_installation_status; then
+        install_mode="fresh"
+else
+        install_status=$?
+        if [ "$install_status" -eq 2 ]; then
+                install_mode="detected"
+        else
+                install_mode="repair"
+        fi
+fi
+
 # Collect the directories whose PATH exports are absent from the chosen start-up
 # file so we can repair them in one pass.
 set --
@@ -261,6 +306,11 @@ done
 if [ "$#" -eq 0 ]; then
         printf '%s\n' "Wizardry is already installed. Run it with 'menu' or 'mud'."
         exit 0
+fi
+
+# Inform user about installation mode
+if [ "$install_mode" = "repair" ]; then
+        printf '%s\n' "Detected incomplete wizardry installation. Repairing..."
 fi
 
 # Detect the rc file and format before prompting so we can give specific guidance
@@ -322,7 +372,7 @@ else
 fi
 
 if [ "$proceed" -ne 1 ]; then
-        printf '%s\n' "Ok, well the mud won't work until you install it by adding the spells directory to your PATH."
+        printf '%s\n' "Ok, well wizardry won't work until you install it by adding the spells directory to your PATH."
         exit 1
 fi
 
