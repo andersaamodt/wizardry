@@ -115,17 +115,13 @@ list_spell_directories() {
 }
 
 categories() {
-        set --
-        for category in $(list_spell_directories); do
-                set -- "$@" "$category"
-        done
+        list_spell_directories
         if [ -f "$commands_file" ]; then
                 while IFS=$(printf '\t') read -r category _ _ || [ -n "$category" ]; do
                         [ -z "$category" ] && continue
-                        set -- "$@" "$category"
+                        printf '%s\n' "$category"
                 done <"$commands_file"
-        fi
-        printf '%s\n' "$@" | sort -u
+        fi | sort -u
 }
 
 spell_categories() {
