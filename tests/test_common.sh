@@ -334,26 +334,26 @@ STUB
   chmod +x "$dir/$name"
 }
 
-write_brew_stub() {
+write_pkgin_stub() {
   fixture=$1
-  mkdir -p "$fixture/opt/homebrew/bin"
-  cat <<'STUB' >"$fixture/opt/homebrew/bin/brew"
+  mkdir -p "$fixture/opt/pkg/bin"
+  cat <<'STUB' >"$fixture/opt/pkg/bin/pkgin"
 #!/bin/sh
-if [ "$1" = "install" ]; then
-  shift
-  printf 'brew install %s\n' "$*" >>"${BREW_LOG:?}" || exit 1
-  exit ${BREW_EXIT:-0}
+if [ "$1" = "-y" ] && [ "$2" = "install" ]; then
+  shift 2
+  printf 'pkgin install %s\n' "$*" >>"${PKGIN_LOG:?}" || exit 1
+  exit ${PKGIN_EXIT:-0}
 fi
 
-if [ "$1" = "uninstall" ]; then
-  shift
-  printf 'brew uninstall %s\n' "$*" >>"${BREW_LOG:?}" || exit 1
-  exit ${BREW_EXIT:-0}
+if [ "$1" = "-y" ] && [ "$2" = "remove" ]; then
+  shift 2
+  printf 'pkgin remove %s\n' "$*" >>"${PKGIN_LOG:?}" || exit 1
+  exit ${PKGIN_EXIT:-0}
 fi
 
 exit 1
 STUB
-  chmod +x "$fixture/opt/homebrew/bin/brew"
+  chmod +x "$fixture/opt/pkg/bin/pkgin"
 }
 
 provide_basic_tools() {

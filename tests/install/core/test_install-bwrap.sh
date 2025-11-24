@@ -57,7 +57,7 @@ install_bwrap_reports_when_no_installer_available() {
   fixture=$(make_tempdir)
   mkdir -p "$fixture/bin"
 
-  for tool in apt-get dnf yum zypper pacman apk brew; do
+  for tool in apt-get dnf yum zypper pacman apk pkgin; do
     cat <<'STUB' >"$fixture/bin/$tool"
 #!/bin/sh
 exit 1

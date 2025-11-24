@@ -74,9 +74,9 @@ manage_system_reports_failure_when_uninstallers_fail() {
   assert_error_contains "unable to uninstall example" || return 1
 }
 
-manage_system_prefers_brew_on_darwin() {
+manage_system_prefers_pkgin_on_darwin() {
   fixture=$(make_fixture)
-  write_brew_stub "$fixture"
+  write_pkgin_stub "$fixture"
   write_apt_stub "$fixture"
   write_sudo_stub "$fixture"
   provide_basic_tools "$fixture"
@@ -87,12 +87,12 @@ printf 'Darwin\n'
 STUB
   chmod +x "$fixture/bin/uname"
 
-  PATH="$fixture/bin" BREW_LOG="$fixture/log/brew.log" APT_LOG="$fixture/log/apt.log" BREW_CANDIDATES="$fixture/opt/homebrew/bin/brew" run_cmd \
-    env PATH="$fixture/bin" BREW_LOG="$fixture/log/brew.log" APT_LOG="$fixture/log/apt.log" BREW_CANDIDATES="$fixture/opt/homebrew/bin/brew" \
+  PATH="$fixture/bin" PKGIN_LOG="$fixture/log/pkgin.log" APT_LOG="$fixture/log/apt.log" PKGIN_CANDIDATES="$fixture/opt/pkg/bin/pkgin" run_cmd \
+    env PATH="$fixture/bin" PKGIN_LOG="$fixture/log/pkgin.log" APT_LOG="$fixture/log/apt.log" PKGIN_CANDIDATES="$fixture/opt/pkg/bin/pkgin" \
     "$ROOT_DIR/spells/install/core/manage-system-command" example example-pkg
 
   assert_success || return 1
-  [ -f "$fixture/log/brew.log" ] || { TEST_FAILURE_REASON="brew not used"; return 1; }
+  [ -f "$fixture/log/pkgin.log" ] || { TEST_FAILURE_REASON="pkgin not used"; return 1; }
   [ ! -s "$fixture/log/apt.log" ] || { TEST_FAILURE_REASON="apt should not be used on Darwin"; return 1; }
 }
 
@@ -101,6 +101,6 @@ run_test_case "manage-system-command skips when present" manage_system_skips_whe
 run_test_case "manage-system-command reports failed installation" manage_system_reports_failure_when_installers_fail
 run_test_case "manage-system-command uninstalls when present" manage_system_uninstalls_when_present
 run_test_case "manage-system-command reports failed removal" manage_system_reports_failure_when_uninstallers_fail
-run_test_case "manage-system-command uses brew on Darwin" manage_system_prefers_brew_on_darwin
+run_test_case "manage-system-command uses pkgin on Darwin" manage_system_prefers_pkgin_on_darwin
 
 finish_tests

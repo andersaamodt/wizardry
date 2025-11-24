@@ -6,10 +6,6 @@
 set -eu
 
 action=install
-platform=unknown
-if command -v uname >/dev/null 2>&1; then
-  platform=$(uname -s 2>/dev/null || printf '%s' "unknown")
-fi
 if [ "${1-}" = "--uninstall" ]; then
   action=uninstall
   shift
@@ -31,11 +27,11 @@ yum_package=${YUM_PACKAGE:-$package_default}
 zypper_package=${ZYPPER_PACKAGE:-$package_default}
 pacman_package=${PACMAN_PACKAGE:-$package_default}
 apk_package=${APK_PACKAGE:-$package_default}
-brew_package=${BREW_PACKAGE:-$package_default}
-brew_candidates=${BREW_CANDIDATES:-/opt/homebrew/bin/brew /usr/local/bin/brew}
+pkgin_package=${PKGIN_PACKAGE:-$package_default}
+pkgin_candidates=${PKGIN_CANDIDATES:-/usr/pkg/bin/pkgin /opt/pkg/bin/pkgin /usr/local/pkg/bin/pkgin}
 
-if ! command -v brew >/dev/null 2>&1; then
-  for candidate in $brew_candidates; do
+if ! command -v pkgin >/dev/null 2>&1; then
+  for candidate in $pkgin_candidates; do
     if [ -x "$candidate" ]; then
       PATH="$(dirname "$candidate"):$PATH"
       export PATH
@@ -70,10 +66,8 @@ if [ "$action" = "install" ]; then
   fi
 
   # Prefer non-interactive installs when possible.
-  if [ "$platform" = "Darwin" ]; then
-    if try_action brew install "$brew_package"; then
-      exit 0
-    fi
+  if try_action pkgin -y install "$pkgin_package"; then
+    exit 0
   fi
 
   if try_action apt-get -y update && try_action apt-get -y install "$apt_package"; then
@@ -100,7 +94,7 @@ if [ "$action" = "install" ]; then
     exit 0
   fi
 
-  if try_action brew install "$brew_package"; then
+  if try_action pkgin -y install "$pkgin_package"; then
     exit 0
   fi
 
@@ -114,10 +108,8 @@ if ! command -v "$command_name" >/dev/null 2>&1; then
   exit 0
 fi
 
-if [ "$platform" = "Darwin" ]; then
-  if try_action brew uninstall "$brew_package"; then
-    exit 0
-  fi
+if try_action pkgin -y remove "$pkgin_package"; then
+  exit 0
 fi
 
 if try_action apt-get -y remove "$apt_package"; then
@@ -141,10 +133,6 @@ if try_action pacman --noconfirm -R "$pacman_package"; then
 fi
 
 if try_action apk del "$apk_package"; then
-  exit 0
-fi
-
-if try_action brew uninstall "$brew_package"; then
   exit 0
 fi
 
