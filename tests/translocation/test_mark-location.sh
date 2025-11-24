@@ -29,13 +29,13 @@ test_missing_target_path() {
 }
 
 test_marks_current_directory() {
-  workdir=$(make_tempdir | sed 's|//|/|g')
+  workdir=$(make_tempdir)
   run_spell_in_dir "$workdir" "spells/translocation/mark-location"
   assert_success && assert_output_contains "Location marked at $workdir"
 }
 
 test_resolves_relative_destination() {
-  workdir=$(make_tempdir | sed 's|//|/|g')
+  workdir=$(make_tempdir)
   target_dir="$workdir/place"
   mkdir -p "$target_dir"
   run_spell_in_dir "$workdir" "spells/translocation/mark-location" "place"
@@ -44,8 +44,6 @@ test_resolves_relative_destination() {
 
 test_overwrites_marker() {
   expected="$WIZARDRY_TMPDIR/mark-overwrite"
-  # Normalize for macOS compatibility
-  expected=$(printf '%s' "$expected" | sed 's|//|/|g')
   run_cmd sh -c '
     set -e
     expected="'"$expected"'"
@@ -64,9 +62,6 @@ test_overwrites_marker() {
 test_resolves_symlink_workdir() {
   real_dir="$WIZARDRY_TMPDIR/mark-real"
   link_dir="$WIZARDRY_TMPDIR/mark-link"
-  # Normalize for macOS compatibility
-  real_dir=$(printf '%s' "$real_dir" | sed 's|//|/|g')
-  link_dir=$(printf '%s' "$link_dir" | sed 's|//|/|g')
   run_cmd sh -c '
     set -e
     real_dir="'"$real_dir"'"

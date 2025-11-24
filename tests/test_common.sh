@@ -53,6 +53,8 @@ WIZARDRY_SYSTEM_PATH="$initial_path"
 export WIZARDRY_SYSTEM_PATH
 
 : "${WIZARDRY_TMPDIR:=$(mktemp -d "${TMPDIR:-/tmp}/wizardry-test.XXXXXX")}" || exit 1
+# Normalize path for macOS compatibility (TMPDIR ends with /)
+WIZARDRY_TMPDIR=$(printf '%s' "$WIZARDRY_TMPDIR" | sed 's|//|/|g')
 export WIZARDRY_TMPDIR
 
 # Detect platform for sandbox selection
@@ -404,7 +406,7 @@ assert_path_missing() {
 }
 
 make_tempdir() {
-  mktemp -d "${WIZARDRY_TMPDIR}/case.XXXXXX"
+  mktemp -d "${WIZARDRY_TMPDIR}/case.XXXXXX" | sed 's|//|/|g'
 }
 
 # --- Core install test helpers ---

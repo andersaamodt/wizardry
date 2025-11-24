@@ -75,7 +75,7 @@ STUB
 }
 
 copy_uses_xsel_when_available() {
-  tmpdir=$(make_tempdir | sed 's|//|/|g')
+  tmpdir=$(make_tempdir)
   file="$tmpdir/message.txt"
   printf 'hi there' >"$file"
 
@@ -95,7 +95,7 @@ STUB
 }
 
 copy_uses_xclip_when_others_missing() {
-  tmpdir=$(make_tempdir | sed 's|//|/|g')
+  tmpdir=$(make_tempdir)
   file="$tmpdir/message more.txt"
   printf 'clipboard ready' >"$file"
 
@@ -111,13 +111,13 @@ STUB
 
   PATH="$stubdir:$PATH" CLIPBOARD_FILE="$clipboard" run_spell "spells/spellcraft/copy" "$file"
   assert_success || return 1
-  # Path is already normalized via tmpdir
+  # Path is already normalized via make_tempdir
   assert_output_contains "Copied $file to your clipboard." || return 1
   [ "$(cat "$clipboard")" = "clipboard ready" ] || { TEST_FAILURE_REASON="xclip stub not used"; return 1; }
 }
 
 copy_prefers_xsel_over_xclip() {
-  tmpdir=$(make_tempdir | sed 's|//|/|g')
+  tmpdir=$(make_tempdir)
   file="$tmpdir/prioritized.txt"
   printf 'ordered' >"$file"
 
@@ -145,7 +145,7 @@ STUB
 }
 
 copy_fails_without_clipboard_tools() {
-  tmpdir=$(make_tempdir | sed 's|//|/|g')
+  tmpdir=$(make_tempdir)
   file="$tmpdir/message.txt"
   printf 'spell' >"$file"
 
