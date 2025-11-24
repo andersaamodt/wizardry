@@ -28,35 +28,32 @@ marker_dir="$HOME/.mud"
 marker_file="$marker_dir/portal_marker"
 
 # Store the marker alongside other MUD metadata.
-mkdir -p "$marker_dir" || exit 1
+make dir "$marker_dir" || exit 1
 
 if [ "$#" -eq 0 ]; then
-  destination=$(pwd -P | sed 's|//|/|g')
+  destination=$(here)
 else
   # Expand the provided path to an absolute destination for consistent recall.
   case $1 in
     /*)
-      destination="$(cd "$(dirname "$1")" && pwd -P | sed 's|//|/|g')/$(basename "$1")"
+      destination="$(cd "$(dirname "$1")" && here)/$(basename "$1")"
       ;;
     "~/"*)
-      if [ -n "${HOME-}" ]; then
+      if is set "${HOME-}"; then
         destination="$HOME/${1#"~/"}"
       else
         destination="$1"
       fi
       ;;
     *)
-      destination="$(pwd -P | sed 's|//|/|g')/$1"
+      destination="$(here)/$1"
       ;;
   esac
-  if [ ! -e "$destination" ]; then
-    printf 'Error: %s does not exist.\n' "$1" >&2
-    exit 1
-  fi
+  gone "$destination" && { warn "Error: $1 does not exist."; exit 1; }
 fi
 
 # Normalize any double slashes in the path (can occur on macOS where TMPDIR ends with /)
-destination=$(printf '%s\n' "$destination" | sed 's|//|/|g')
+destination=$(norm "$destination")
 
-printf '%s\n' "$destination" >"$marker_file"
-printf 'Location marked at %s.\n' "$destination"
+say "$destination" >"$marker_file"
+say "Location marked at $destination."
