@@ -98,7 +98,7 @@ test_lists_entries() {
   cast_dir="$stub_dir/custom-cast"
   WIZARDRY_CAST_DIR="$cast_dir" PATH="$stub_dir:$PATH" run_spell "spells/menu/spellbook" --memorize spark "echo cast"
   [ -f "$cast_dir/.memorized" ] || { TEST_FAILURE_REASON="cast file missing"; return 1; }
-  content=$(cat "$cast_dir/.memorized" | tr -d '\n')
+  content=$(tr -d '\n' < "$cast_dir/.memorized")
   case "$content" in
     spark*echo\ cast) : ;;
     *) TEST_FAILURE_REASON="memorize did not record entry: $content"; return 1 ;;
@@ -121,7 +121,7 @@ test_scribe_records_command() {
   COMMAND_FILE="$stub_dir/commands"
   PATH="$stub_dir:$PATH" SPELLBOOK_COMMANDS_FILE="$COMMAND_FILE" SPELLBOOK_CUSTOM_DIR="$stub_dir/custom" run_spell "spells/menu/spellbook" --scribe fire spark "echo ignite"
   [ -f "$COMMAND_FILE" ] || { TEST_FAILURE_REASON="commands file missing"; return 1; }
-  content=$(cat "$COMMAND_FILE" | tr -d '\n')
+  content=$(tr -d '\n' < "$COMMAND_FILE")
   case "$content" in
     fire*spark*echo\ ignite) : ;;
     *) TEST_FAILURE_REASON="unexpected command entry: $content"; return 1 ;;
