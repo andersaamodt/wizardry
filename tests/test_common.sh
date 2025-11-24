@@ -66,16 +66,23 @@ BWRAP_BIN=${BWRAP_BIN-}
 MACOS_SANDBOX_AVAILABLE=0
 SANDBOX_EXEC_BIN=""
 
-# Check for macOS sandbox-exec
-if [ "$SANDBOX_PLATFORM" = "Darwin" ]; then
-  if command -v sandbox-exec >/dev/null 2>&1; then
-    SANDBOX_EXEC_BIN=$(command -v sandbox-exec)
-    # Test if sandbox-exec works with a simple profile
-    if "$SANDBOX_EXEC_BIN" -p '(version 1) (allow default)' /usr/bin/true 2>/dev/null; then
-      MACOS_SANDBOX_AVAILABLE=1
-      # On macOS, prefer sandbox-exec over attempting bubblewrap
-      BWRAP_AVAILABLE=0
-      BWRAP_REASON="using macOS sandbox-exec instead"
+# Allow disabling sandboxing via environment variable
+if [ "${WIZARDRY_DISABLE_SANDBOX-0}" = "1" ]; then
+  BWRAP_AVAILABLE=0
+  BWRAP_REASON="sandboxing disabled by WIZARDRY_DISABLE_SANDBOX"
+  MACOS_SANDBOX_AVAILABLE=0
+else
+  # Check for macOS sandbox-exec
+  if [ "$SANDBOX_PLATFORM" = "Darwin" ]; then
+    if command -v sandbox-exec >/dev/null 2>&1; then
+      SANDBOX_EXEC_BIN=$(command -v sandbox-exec)
+      # Test if sandbox-exec works with a simple profile
+      if "$SANDBOX_EXEC_BIN" -p '(version 1) (allow default)' /usr/bin/true 2>/dev/null; then
+        MACOS_SANDBOX_AVAILABLE=1
+        # On macOS, prefer sandbox-exec over attempting bubblewrap
+        BWRAP_AVAILABLE=0
+        BWRAP_REASON="using macOS sandbox-exec instead"
+      fi
     fi
   fi
 fi
@@ -138,8 +145,14 @@ run_bwrap() {
 
 run_macos_sandbox() {
   # Create a permissive sandbox profile that provides minimal isolation
-  # The goal is process isolation without breaking test functionality
-  # macOS sandbox-exec is much more restrictive than bubblewrap, so we keep it minimal
+  # NOTE: This profile is intentionally very permissive because:
+  # 1. macOS sandbox-exec is fundamentally more restrictive than Linux bubblewrap
+  # 2. A more restrictive profile caused 75 out of 102 tests to fail
+  # 3. The primary benefit is process isolation and consistent environment, not security
+  # 4. Tests can still be run without sandboxing if WIZARDRY_DISABLE_SANDBOX=1
+  #
+  # The profile allows most operations to maintain test compatibility while still
+  # providing basic process isolation that helps catch environment-related issues.
   sandbox_profile='(version 1)
 (allow default)
 (allow file-read*)
