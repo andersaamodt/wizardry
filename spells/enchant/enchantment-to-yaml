@@ -20,24 +20,19 @@ case "${1-}" in
 esac
 
 if [ "$#" -ne 1 ]; then
-    printf '%s\n' "Error: incorrect number of arguments" >&2
+    warn "Error: incorrect number of arguments"
     show_usage >&2
     exit 1
 fi
 
 file=$1
-if [ ! -f "$file" ]; then
-    printf '%s\n' "Error: file does not exist" >&2
-    exit 1
-fi
+is file "$file" || { warn "Error: file does not exist"; exit 1; }
 
 helper_usable() {
     helper=$1
-    if ! command -v "$helper" >/dev/null 2>&1; then
-        return 1
-    fi
+    has "$helper" || return 1
 
-    resolved=$(command -v "$helper")
+    resolved=$(where "$helper")
 
   if [ "${WIZARDRY_TEST_HELPERS_ONLY-0}" -eq 1 ]; then
     case $resolved in
@@ -113,10 +108,7 @@ read_value() {
 }
 
 keys=$(list_keys "$file")
-if [ -z "$keys" ]; then
-    printf '%s\n' "Error: file does not have extended attributes" >&2
-    exit 1
-fi
+is unset "$keys" && { warn "Error: file does not have extended attributes"; exit 1; }
 
 tmp=$(mktemp "${TMPDIR:-/tmp}/wizardry-yaml.XXXXXX") || exit 1
 {
@@ -133,7 +125,7 @@ cat "$file" >>"$tmp" || exit 1
 mv "$tmp" "$file"
 
 if ! (helper_usable xattr || helper_usable attr || helper_usable setfattr); then
-    printf '%s\n' "Error: requires one of attr, xattr, or setfattr to clear attributes" >&2
+    warn "Error: requires one of attr, xattr, or setfattr to clear attributes"
     exit 1
 fi
 
