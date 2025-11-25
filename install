@@ -273,6 +273,17 @@ load_colors() {
         if [ -r "$COLORS_SPELL" ]; then
                 # shellcheck source=/dev/null
                 . "$COLORS_SPELL"
+                # Disable colors if stdout is not a terminal
+                if [ ! -t 1 ]; then
+                        RESET=''
+                        GREEN=''
+                        CYAN=''
+                        YELLOW=''
+                        BLUE=''
+                        BOLD=''
+                        GREY=''
+                        RED=''
+                fi
         else
                 # Fallback to no colors
                 RESET=''
@@ -282,6 +293,7 @@ load_colors() {
                 BLUE=''
                 BOLD=''
                 GREY=''
+                RED=''
         fi
 }
 
@@ -402,7 +414,7 @@ fi
 
 # Inform user about installation mode
 if [ "$install_mode" = "repair" ]; then
-        info_msg "Detected incomplete wizardry installation. Repairing..."
+        info_msg "Adding missing PATH configuration for existing wizardry installation"
 fi
 
 # Detect the rc file and format before prompting so we can give specific guidance
@@ -456,7 +468,7 @@ if [ "$detect_format_value" = "nix" ]; then
         if [ -n "$detect_rc_file_value" ]; then
                 printf '      %s\n' "$detect_rc_file_value"
         else
-                printf '      %s\n' "$HOME/.config/nixpkgs/configuration.nix"
+                printf '      (could not determine configuration file)\n'
         fi
         substep_msg "Backup: A timestamped backup will be created automatically"
         substep_msg "After install: The installer will run 'sudo nixos-rebuild switch' or 'home-manager switch'"
