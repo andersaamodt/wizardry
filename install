@@ -269,31 +269,28 @@ MEMORIZE_COMMAND_HELPER="$ABS_DIR/spells/cantrips/memorize-command"
 export DETECT_RC_FILE SCRIBE_SPELL MEMORIZE_SCRIBE MEMORIZE_COMMAND_HELPER
 
 # Load colors for better formatted output
+disable_colors() {
+        RESET=''
+        GREEN=''
+        CYAN=''
+        YELLOW=''
+        BLUE=''
+        BOLD=''
+        GREY=''
+        RED=''
+}
+
 load_colors() {
         if [ -r "$COLORS_SPELL" ]; then
                 # shellcheck source=/dev/null
                 . "$COLORS_SPELL"
                 # Disable colors if stdout is not a terminal
                 if [ ! -t 1 ]; then
-                        RESET=''
-                        GREEN=''
-                        CYAN=''
-                        YELLOW=''
-                        BLUE=''
-                        BOLD=''
-                        GREY=''
-                        RED=''
+                        disable_colors
                 fi
         else
                 # Fallback to no colors
-                RESET=''
-                GREEN=''
-                CYAN=''
-                YELLOW=''
-                BLUE=''
-                BOLD=''
-                GREY=''
-                RED=''
+                disable_colors
         fi
 }
 
