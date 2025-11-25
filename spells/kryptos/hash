@@ -33,7 +33,10 @@ file_name="$1"
 # Concatenate the script directory and the file name to get the full file path
 file="$script_dir/$file_name"
 
-is file "$file" || fail 'Your spell fizzles. There is no file.'
+if [ ! -f "$file" ]; then
+    printf 'Your spell fizzles. There is no file.\n'
+    exit 1
+fi
 
 # Normalize double slashes for macOS compatibility
 normalized_file=$(printf '%s' "$file" | sed 's|//|/|g')
