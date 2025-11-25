@@ -22,13 +22,13 @@ find_install_spell() {
     name=$1
     script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 
-    if command -v "install-$name" >/dev/null 2>&1; then
-        command -v "install-$name"
+    if has "install-$name"; then
+        where "install-$name"
         return 0
     fi
 
     if [ -x "$script_dir/../install/core/install-$name" ]; then
-        printf '%s\n' "$script_dir/../install/core/install-$name"
+        say "$script_dir/../install/core/install-$name"
         return 0
     fi
 
@@ -39,7 +39,7 @@ attempt_install() {
     install_spell=$(find_install_spell "$command_name") || return 1
 
     if [ "$auto_install" = "1" ] || ! [ -t 0 ]; then
-        ASSUME_YES=1 "$install_spell" && command -v "$command_name" >/dev/null 2>&1
+        ASSUME_YES=1 "$install_spell" && has "$command_name"
         return $?
     fi
 
@@ -47,7 +47,7 @@ attempt_install() {
     IFS= read -r reply || reply=""
     case $reply in
         y|Y|yes|YES)
-            ASSUME_YES=1 "$install_spell" && command -v "$command_name" >/dev/null 2>&1
+            ASSUME_YES=1 "$install_spell" && has "$command_name"
             return $?
             ;;
         *)
@@ -57,9 +57,7 @@ attempt_install() {
 }
 
 # Succeed immediately when the command is already available on PATH.
-if command -v "$command_name" >/dev/null 2>&1; then
-    exit 0
-fi
+has "$command_name" && exit 0
 
 if attempt_install; then
     exit 0
@@ -69,10 +67,10 @@ if [ "$#" -gt 0 ]; then
     message=$*
 else
     # Point users toward the core prerequisite menu so they can resolve the
-    # missing dependency the “Wizardry” way instead of reaching for system
+    # missing dependency the Wizardry way instead of reaching for system
     # package managers manually.
     message="The '${command_name}' command is required. Run 'core-menu' to review installation options."
 fi
 
-printf '%s\n' "require-command: $message" >&2
+warn "require-command: $message"
 exit 1

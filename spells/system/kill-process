@@ -20,25 +20,18 @@ case "${1-}" in
 esac
 
 # Present the process list so the user can choose what to terminate.
-echo "List of running processes:"
+say "List of running processes:"
 ps -ax | awk '{print $5}' | tail -n +2 | nl -w 2 -s ') '
 
 PS_NAMES=$(ps -ax | awk '{print $5}' | tail -n +2)
 
-if ! command -v ask_number >/dev/null 2>&1; then
-    echo "ask_number spell is required to choose a process." >&2
-    exit 1
-fi
-
-if ! command -v ask_yn >/dev/null 2>&1; then
-    echo "ask_yn spell is required to confirm termination." >&2
-    exit 1
-fi
+lacks ask_number && { warn "ask_number spell is required to choose a process."; exit 1; }
+lacks ask_yn && { warn "ask_yn spell is required to confirm termination."; exit 1; }
 
 total_processes=$(printf '%s\n' "$PS_NAMES" | sed '/^$/d' | wc -l | tr -d ' ')
 
 if [ "$total_processes" -eq 0 ]; then
-    echo "No processes available to kill." >&2
+    warn "No processes available to kill."
     exit 1
 fi
 
@@ -46,20 +39,17 @@ choice=$(ask_number "Enter the number of the process you want to kill:" 1 "$tota
 selected_name=$(printf '%s\n' "$PS_NAMES" | sed -n "${choice}p")
 
 pid=$(ps -ax | awk '{print $1 " " $5}' | grep "$selected_name" | awk '{print $1}')
-if [ -n "$pid" ]; then
+if is set "$pid"; then
     if ask_yn "Are you sure you want to kill process $selected_name with pid $pid"; then
         kill_cmd=${KILL_CMD:-kill}
 
-        if ! command -v "$kill_cmd" >/dev/null 2>&1; then
-            echo "kill command '$kill_cmd' is required to terminate processes." >&2
-            exit 1
-        fi
+        lacks "$kill_cmd" && { warn "kill command '$kill_cmd' is required to terminate processes."; exit 1; }
 
         if "$kill_cmd" "$pid"; then
-            echo "Process $pid ($selected_name) has been killed."
+            say "Process $pid ($selected_name) has been killed."
         else
             status=$?
-            echo "Failed to kill process $pid ($selected_name)." >&2
+            warn "Failed to kill process $pid ($selected_name)."
             exit "$status"
         fi
     fi
