@@ -26,10 +26,6 @@ Run the following line in a terminal to download and run the wizardry installer 
 ```
 curl -fsSL https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh
 ```
-or:
-```
-wget -qO- https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh
-```
 The install script requires `tar` plus either `curl` or `wget` to be available.
 
 ### Install with git
