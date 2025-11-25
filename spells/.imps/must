@@ -1,6 +1,7 @@
 #!/bin/sh
 # must TEST [ARGS...] - die with message if test fails
-# Examples: must there /etc/config "config missing" | must has git "git required"
+# Use with 'set -e' or '|| exit $?' to propagate failure to calling script
+# Examples: must there /etc/config "config missing" || exit $?
 
 test_type=$1
 shift

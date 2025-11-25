@@ -39,7 +39,7 @@ yaml_header=$(awk '
     delim==1 {print}
 ' "$scroll")
 
-is unset "$yaml_header" && { warn "Error: file does not have a YAML header"; exit 1; }
+empty "$yaml_header" && { warn "Error: file does not have a YAML header"; exit 1; }
 
 set_attr() {
     key=$1
@@ -84,11 +84,11 @@ if ! (resolve_helper attr >/dev/null 2>&1 || resolve_helper setfattr >/dev/null 
 fi
 
 printf '%s' "$yaml_header" |
-    while IFS= read -r line || is set "$line"; do
+    while IFS= read -r line || given "$line"; do
         key=${line%%:*}
         value=${line#*:}
         value=${value# }
-        is unset "$key" && continue
+        empty "$key" && continue
         if ! set_attr "$key" "$value"; then
             warn "Error: failed to set attribute $key"
             exit 1

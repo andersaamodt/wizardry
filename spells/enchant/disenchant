@@ -36,7 +36,7 @@ helper_usable() {
   helper=$1
   lacks "$helper" && return 1
 
-  resolved=$(command -v "$helper")
+  resolved=$(where "$helper")
 
   if [ "${WIZARDRY_TEST_HELPERS_ONLY-0}" -eq 1 ]; then
     case $resolved in
@@ -137,7 +137,7 @@ select_from_many() {
     return 1
   fi
 
-  if ! command -v ask_number >/dev/null 2>&1; then
+  if ! has ask_number; then
     printf '%s\n' "Error: multiple attributes found; install ask_number or specify a key." >&2
     return 1
   fi
@@ -153,13 +153,13 @@ select_from_many() {
   eval "printf '%s\n' \"\${$choice}\""
 }
 
-if [ -n "$requested_key" ]; then
+if given "$requested_key"; then
   disenchant_attr "$requested_key" "$file"
   exit $?
 fi
 
 keys=$(list_keys "$file" || printf '')
-if [ -z "$keys" ]; then
+if empty "$keys"; then
   printf '%s\n' "Error: No enchanted attributes found on $file." >&2
   exit 1
 fi
