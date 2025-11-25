@@ -8,9 +8,14 @@ script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 repo_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd -P)
 
 checkbashisms_cmd=${CHECKBASHISMS-}
-is unset "$checkbashisms_cmd" && has checkbashisms && checkbashisms_cmd=$(where checkbashisms)
+if [ -z "$checkbashisms_cmd" ] && command -v checkbashisms >/dev/null 2>&1; then
+  checkbashisms_cmd=$(command -v checkbashisms)
+fi
 
-is unset "$checkbashisms_cmd" && die "verify-posix: checkbashisms is required but not found in PATH."
+if [ -z "$checkbashisms_cmd" ]; then
+  printf '%s\n' "verify-posix: checkbashisms is required but not found in PATH." >&2
+  exit 1
+fi
 
 gather_default_targets() {
   find "$repo_dir/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) \
@@ -40,7 +45,7 @@ targets_file=$(mktemp "${TMPDIR:-/tmp}/verify-posix-targets.XXXXXX") || exit 1
 collect_targets "$@" >"$targets_file"
 
 while IFS= read -r target; do
-  is unset "$target" && continue
+  [ -n "$target" ] || continue
   total=$((total + 1))
 
   case $target in
@@ -52,11 +57,21 @@ while IFS= read -r target; do
       ;;
   esac
 
-  gone "$path" && say "FAIL $target: missing file" && failures=$((failures + 1)) && failed_targets=${failed_targets:+$failed_targets,}$target && continue
+  if [ ! -e "$path" ]; then
+    printf 'FAIL %s: missing file\n' "$target"
+    failures=$((failures + 1))
+    failed_targets=${failed_targets:+$failed_targets,}$target
+    continue
+  fi
 
-  is file "$path" || { say "FAIL $target: not a regular file"; failures=$((failures + 1)); failed_targets=${failed_targets:+$failed_targets,}$target; continue; }
+  if [ ! -f "$path" ]; then
+    printf 'FAIL %s: not a regular file\n' "$target"
+    failures=$((failures + 1))
+    failed_targets=${failed_targets:+$failed_targets,}$target
+    continue
+  fi
 
-  shebang=$(first "$path")
+  shebang=$(sed -n '1p' "$path")
 
   case $shebang in
     '')
@@ -119,9 +134,9 @@ done <"$targets_file"
 rm -f "$targets_file"
 
 if [ "$failures" -eq 0 ]; then
-  say "All $total scripts are POSIX-compliant."
+  printf 'All %d scripts are POSIX-compliant.\n' "$total"
 else
-  say "$failures of $total scripts failed POSIX compliance."
-  say "Failing spells: $failed_targets"
+  printf '%d of %d scripts failed POSIX compliance.\n' "$failures" "$total"
+  printf 'Failing spells: %s\n' "$failed_targets"
   exit 1
 fi
