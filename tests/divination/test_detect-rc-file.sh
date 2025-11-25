@@ -95,7 +95,7 @@ test_nixos_falls_back_to_shell_rc() {
   # detect-rc-file should fall back to shell RC files
   home_dir=$(make_tempdir)
   run_cmd env DETECT_RC_FILE_PLATFORM=nixos HOME="$home_dir" SHELL=/bin/bash sh -c '
-    # No .config/nixpkgs/configuration.nix exists
+    # No nix config files exist (e.g. /etc/nixos/configuration.nix or ~/.config/nixpkgs/home.nix)
     # No home-manager in PATH
     exec spells/divination/detect-rc-file
   '

@@ -352,7 +352,7 @@ Different platforms use different shell configuration files:
 2. `~/.profile`
 
 ### NixOS
-1. `~/.config/nixpkgs/configuration.nix`
+1. `/etc/nixos/configuration.nix`
 2. `~/.bashrc`
 3. `~/.bash_profile`
 
