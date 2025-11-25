@@ -5,6 +5,11 @@
 n=$1
 delim=${2-}
 
+# Validate n is a positive integer
+case "$n" in
+  ''|*[!0-9]*) exit 1 ;;
+esac
+
 if [ -n "$delim" ]; then
   cut -d"$delim" -f"$n"
 else

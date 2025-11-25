@@ -43,6 +43,16 @@ test_field_tab_delimiter() {
   esac
 }
 
+test_field_rejects_invalid_n() {
+  run_cmd sh -c "printf 'a:b:c' | '$ROOT_DIR/spells/.imps/field' 'abc' ':'"
+  assert_failure
+}
+
+test_field_rejects_empty_n() {
+  run_cmd sh -c "printf 'a:b:c' | '$ROOT_DIR/spells/.imps/field' '' ':'"
+  assert_failure
+}
+
 # matches tests
 test_matches_finds_regex() {
   tmpfile=$(mktemp "$WIZARDRY_TMPDIR/matches_test.XXXXXX")
@@ -107,6 +117,8 @@ run_test_case "field extracts with delimiter" test_field_with_delimiter
 run_test_case "field extracts first field" test_field_first_field
 run_test_case "field uses whitespace default" test_field_whitespace_default
 run_test_case "field handles tab delimiter" test_field_tab_delimiter
+run_test_case "field rejects invalid n" test_field_rejects_invalid_n
+run_test_case "field rejects empty n" test_field_rejects_empty_n
 run_test_case "matches finds regex" test_matches_finds_regex
 run_test_case "matches fails for no match" test_matches_fails_for_no_match
 run_test_case "matches finds pattern anywhere" test_matches_finds_pattern_anywhere
