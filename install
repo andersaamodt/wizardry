@@ -189,6 +189,20 @@ case $INSTALL_INPUT in
                 ;;
 esac
 
+# Normalize INSTALL_INPUT to handle paths that look like absolute paths but are
+# missing the leading slash (e.g., "home/username/.wizardry" -> "/home/username/.wizardry").
+# This prevents accidental path doubling like "/home/username/home/username/.wizardry".
+case $INSTALL_INPUT in
+        /*)
+                # Already absolute path, no normalization needed
+                :
+                ;;
+        [Hh]ome/*|[Uu]sers/*|[Uu]sr/*|[Oo]pt/*|[Vv]ar/*|[Tt]mp/*|[Mm]nt/*|[Rr]oot/*)
+                # Looks like an absolute path missing the leading slash
+                INSTALL_INPUT="/$INSTALL_INPUT"
+                ;;
+esac
+
 case $INSTALL_INPUT in
         /*)
                 INSTALL_DIR=$INSTALL_INPUT
@@ -474,6 +488,19 @@ if [ "$detect_platform_value" = "nixos" ] && [ "$detect_format_value" = "shell" 
                 case $user_nix_config in
                         ~/*)
                                 user_nix_config=$HOME/${user_nix_config#\~/}
+                                ;;
+                esac
+                
+                # Normalize paths that look like absolute paths but are missing
+                # the leading slash (e.g., "etc/nixos/configuration.nix").
+                case $user_nix_config in
+                        /*)
+                                # Already absolute path
+                                :
+                                ;;
+                        [Hh]ome/*|[Ee]tc/*|[Uu]sers/*|[Uu]sr/*|[Oo]pt/*|[Vv]ar/*|[Nn]ix/*)
+                                # Looks like an absolute path missing the leading slash
+                                user_nix_config="/$user_nix_config"
                                 ;;
                 esac
                 
