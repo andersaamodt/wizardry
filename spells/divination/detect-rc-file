@@ -106,8 +106,18 @@ nixos)
         if [ -f /etc/nixos/configuration.nix ]; then
                 add_candidate /etc/nixos/configuration.nix
         fi
-        if command -v home-manager >/dev/null 2>&1 || [ -f "$HOME/.config/nixpkgs/configuration.nix" ]; then
-                add_candidate "$HOME/.config/nixpkgs/configuration.nix"
+        # Check for home-manager configurations in both old and new paths.
+        # Newer home-manager uses ~/.config/home-manager/home.nix
+        # Older standalone home-manager uses ~/.config/nixpkgs/home.nix
+        if [ -f "$HOME/.config/home-manager/home.nix" ]; then
+                add_candidate "$HOME/.config/home-manager/home.nix"
+        fi
+        if [ -f "$HOME/.config/nixpkgs/home.nix" ]; then
+                add_candidate "$HOME/.config/nixpkgs/home.nix"
+        fi
+        # If home-manager is installed but no config exists yet, suggest the new path
+        if command -v home-manager >/dev/null 2>&1; then
+                add_candidate "$HOME/.config/home-manager/home.nix"
         fi
         add_candidate "$HOME/.bashrc"
         add_candidate "$HOME/.bash_profile"

@@ -2,6 +2,7 @@
 # Behavioral cases (derived from --help):
 # - colors enables palette on capable terminals
 # - colors disables palette when NO_COLOR set
+# - colors escape sequences work with printf %s
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/test_common.sh" ] && [ "$test_root" != "/" ]; do
@@ -27,6 +28,20 @@ test_colors_disable_when_requested() {
   esac
 }
 
+test_colors_printf_s_works() {
+  # Test that color codes work with printf '%s' (not just printf '%b')
+  # This was broken when colors used literal \033 strings
+  run_cmd env TERM=xterm sh -c ". \"$ROOT_DIR/spells/cantrips/colors\"; printf '%stest%s' \"\$GREEN\" \"\$RESET\" | cat -v"
+  if ! assert_success; then return 1; fi
+  # cat -v shows escape character as ^[ so we should see ^[[32m
+  case "$OUTPUT" in
+    *"^[["*) : ;;
+    *"\\033"*) TEST_FAILURE_REASON="colors contain literal \\033 instead of actual escape character"; return 1 ;;
+    *) TEST_FAILURE_REASON="expected escape character in output, got: $OUTPUT"; return 1 ;;
+  esac
+}
+
 run_test_case "colors enables palette on capable terminals" test_colors_enable_palette_by_default
 run_test_case "colors disables palette when NO_COLOR set" test_colors_disable_when_requested
+run_test_case "colors work with printf %s format" test_colors_printf_s_works
 finish_tests

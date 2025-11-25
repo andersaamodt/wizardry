@@ -43,13 +43,13 @@ test_picks_known_platform_files() {
 test_emits_nix_format_hint() {
   run_cmd sh -c '
     mkdir -p "$HOME/.config/nixpkgs"
-    touch "$HOME/.config/nixpkgs/configuration.nix"
+    touch "$HOME/.config/nixpkgs/home.nix"
     exec spells/divination/detect-rc-file --platform nixos
   '
   assert_success || return 1
   assert_output_contains "platform=nixos" || return 1
   assert_output_contains "rc_file=" || return 1
-  assert_output_contains ".config/nixpkgs/configuration.nix" || return 1
+  assert_output_contains ".config/nixpkgs/home.nix" || return 1
   assert_output_contains "format=nix" || return 1
 }
 
@@ -106,6 +106,21 @@ test_nixos_falls_back_to_shell_rc() {
   assert_output_contains "format=shell" || return 1
 }
 
+test_nixos_detects_new_home_manager_path() {
+  # On NixOS with the newer home-manager path ~/.config/home-manager/home.nix
+  home_dir=$(make_tempdir)
+  run_cmd env DETECT_RC_FILE_PLATFORM=nixos HOME="$home_dir" SHELL=/bin/bash sh -c '
+    mkdir -p "$HOME/.config/home-manager"
+    touch "$HOME/.config/home-manager/home.nix"
+    exec spells/divination/detect-rc-file
+  '
+
+  assert_success || return 1
+  assert_output_contains "platform=nixos" || return 1
+  assert_output_contains "rc_file=$home_dir/.config/home-manager/home.nix" || return 1
+  assert_output_contains "format=nix" || return 1
+}
+
 run_test_case "detect-rc-file prints usage" test_help
 run_test_case "detect-rc-file validates arguments" test_rejects_bad_arguments
 run_test_case "detect-rc-file picks preferred files for platform" test_picks_known_platform_files
@@ -114,4 +129,5 @@ run_test_case "detect-rc-file favors existing platform candidates" test_prefers_
 run_test_case "detect-rc-file respects shell defaults on unknown platforms" test_prefers_shell_file_when_platform_unknown
 run_test_case "detect-rc-file tolerates missing HOME" test_handles_missing_home
 run_test_case "detect-rc-file falls back to shell on NixOS without home-manager" test_nixos_falls_back_to_shell_rc
+run_test_case "detect-rc-file detects new home-manager path" test_nixos_detects_new_home_manager_path
 finish_tests
