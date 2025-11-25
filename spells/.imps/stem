@@ -1,0 +1,5 @@
+#!/bin/sh
+# stem PATH - extract filename from path (like basename but pure shell)
+# Example: name=$(stem /path/to/file.txt)  # outputs: file.txt
+
+printf '%s\n' "${1##*/}"
