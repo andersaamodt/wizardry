@@ -616,17 +616,20 @@ RC_FORMAT="$detect_format_value"
 UNINSTALL_VARS
 
         cat >>"$uninstall_script" <<'UNINSTALL_MAIN'
-# Load colors if available
-if [ -r "$INSTALL_DIR/spells/cantrips/colors" ]; then
-        # shellcheck source=/dev/null
-        . "$INSTALL_DIR/spells/cantrips/colors"
-else
-        RESET=''
-        RED=''
-        YELLOW=''
-        GREEN=''
-        BOLD=''
-        CYAN=''
+# Inline color definitions (consistent with install script)
+ESC=$(printf '\033')
+RESET="${ESC}[0m"
+RED="${ESC}[31m"
+YELLOW="${ESC}[33m"
+GREEN="${ESC}[32m"
+BOLD="${ESC}[1m"
+CYAN="${ESC}[36m"
+
+# Disable colors if stdout is not a terminal or NO_COLOR is set
+if [ ! -t 1 ]; then
+        RESET='' RED='' YELLOW='' GREEN='' BOLD='' CYAN=''
+elif [ -n "${NO_COLOR-}" ]; then
+        RESET='' RED='' YELLOW='' GREEN='' BOLD='' CYAN=''
 fi
 
 printf '\n%s===== Wizardry Uninstall =====%s\n\n' "$BOLD$CYAN" "$RESET"
