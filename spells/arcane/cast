@@ -3,10 +3,10 @@
 set -eu
 
 cast_store=${CAST_STORE-memorize-command}
-if cast_store_path=$(command -v "$cast_store" 2>/dev/null); then
-        cast_store=$cast_store_path
+if has "$cast_store"; then
+        cast_store=$(where "$cast_store")
 else
-        printf '%s\n' "cast: memorize-command helper is missing." >&2
+        warn "cast: memorize-command helper is missing."
         exit 1
 fi
 

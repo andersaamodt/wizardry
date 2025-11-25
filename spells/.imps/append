@@ -1,0 +1,5 @@
+#!/bin/sh
+# append FILE - append stdin to file
+# Example: echo "new line" | append log.txt
+
+cat >> "$1"

@@ -1,0 +1,8 @@
+#!/bin/sh
+# starts STRING PREFIX - test if string starts with prefix
+# Example: starts "$line" "#" && echo "comment"
+
+case "$1" in
+"$2"*) exit 0 ;;
+*) exit 1 ;;
+esac

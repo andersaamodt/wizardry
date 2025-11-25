@@ -1,0 +1,5 @@
+#!/bin/sh
+# slurp FILE - read entire file contents to stdout
+# Example: content=$(slurp config.txt)
+
+cat "$1"

@@ -1,0 +1,8 @@
+#!/bin/sh
+# yesno VALUE - test if value is affirmative (y/yes/true/1/Y/YES/TRUE)
+# Example: yesno "$VERBOSE" && echo "verbose mode"
+
+case "$1" in
+y|Y|yes|YES|Yes|true|TRUE|True|1) exit 0 ;;
+*) exit 1 ;;
+esac

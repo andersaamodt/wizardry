@@ -1,0 +1,8 @@
+#!/bin/sh
+# ensure dir PATH - create directory if missing (like mkdir -p but semantic)
+# Example: ensure dir ~/.config/myapp
+
+case "$1" in
+dir) mkdir -p "$2" ;;
+*) exit 1 ;;
+esac

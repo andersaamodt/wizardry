@@ -1,0 +1,8 @@
+#!/bin/sh
+# need COMMAND [MESSAGE] - exit with error if command not available
+# Example: need git | need curl "curl is required for downloads"
+
+if command -v "$1" >/dev/null 2>&1; then exit 0; fi
+msg=${2:-"required command not found: $1"}
+printf '%s\n' "$msg" >&2
+exit 1

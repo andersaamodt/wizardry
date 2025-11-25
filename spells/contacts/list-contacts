@@ -25,12 +25,12 @@ set -eu
 CONTACTS_DIR="${1:-$HOME/.contacts}"
 
 # Ensure the contacts directory exists
-mkdir -p "$CONTACTS_DIR"
+make dir "$CONTACTS_DIR"
 
 # Find all vCard files in the contacts directory (POSIX-compliant)
 find "$CONTACTS_DIR" -name '*.vcf' | while IFS= read -r file; do
   # Skip if file doesn't exist (empty directory case)
-  [ -f "$file" ] || continue
+  is file "$file" || continue
   
   # Attempt to extract the FN, ORG, or TEL field from the vCard
   name=$(perl -pe 's/\r\n[[:space:]]/ /g' "$file" |
@@ -42,10 +42,10 @@ find "$CONTACTS_DIR" -name '*.vcf' | while IFS= read -r file; do
       END     {print name != "" ? name : (org != "" ? org : tel)}
     ')
 
-  if [ -z "$name" ]; then
+  if is unset "$name"; then
     # No name, organization, or telephone found, print the filename
     name="<$(basename "$file")>"
   fi
 
-  echo "$name"
+  say "$name"
 done | sort

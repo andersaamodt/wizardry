@@ -20,34 +20,29 @@ case "${1-}" in
 esac
 
 if [ "$#" -lt 1 ]; then
-    printf '%s\n' "Error: Please provide a file path as an argument." >&2
+    warn "Error: Please provide a file path as an argument."
     usage >&2
     exit 1
 fi
 
 tome=$1
-if [ ! -f "$tome" ]; then
-    printf '%s\n' "Error: '$tome' is not a file." >&2
-    exit 1
-fi
+is file "$tome" || { warn "Error: '$tome' is not a file."; exit 1; }
 
 stem=$(basename -- "$tome")
 stem=${stem%.*}
 
 pages_dir=$stem
 suffix=1
-while [ -e "$pages_dir" ]; do
+while there "$pages_dir"; do
     pages_dir="${stem}${suffix}"
     suffix=$((suffix + 1))
 done
-mkdir -p "$pages_dir"
+make dir "$pages_dir"
 
 page_number=1
-while IFS= read -r line || [ -n "$line" ]; do
+while IFS= read -r line || is set "$line"; do
     clean_name=$(printf '%s' "$line" | tr -dc '[:alnum:] .,;_-' | tr ' ' '_')
-    if [ -z "$clean_name" ]; then
-        clean_name="page_${page_number}"
-    fi
-    printf '%s\n' "$line" >"$pages_dir/$clean_name"
+    is unset "$clean_name" && clean_name="page_${page_number}"
+    say "$line" >"$pages_dir/$clean_name"
     page_number=$((page_number + 1))
 done <"$tome"

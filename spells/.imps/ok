@@ -1,0 +1,5 @@
+#!/bin/sh
+# ok COMMAND [ARGS...] - run command silently, succeed if it succeeds
+# Example: ok mkdir -p /tmp/test && echo "created"
+
+"$@" >/dev/null 2>&1

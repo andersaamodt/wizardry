@@ -30,16 +30,11 @@ fi
 file=$1
 requested_key=${2-}
 
-if [ ! -e "$file" ]; then
-  printf '%s\n' "Error: The file does not exist." >&2
-  exit 1
-fi
+gone "$file" && fail "Error: The file does not exist."
 
 helper_usable() {
   helper=$1
-  if ! command -v "$helper" >/dev/null 2>&1; then
-    return 1
-  fi
+  lacks "$helper" && return 1
 
   resolved=$(command -v "$helper")
 

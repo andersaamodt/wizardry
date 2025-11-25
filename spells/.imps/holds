@@ -1,0 +1,8 @@
+#!/bin/sh
+# contains HAYSTACK NEEDLE - test if string contains substring
+# Example: contains "$PATH" "/usr/local/bin" && echo "found"
+
+case "$1" in
+*"$2"*) exit 0 ;;
+*) exit 1 ;;
+esac

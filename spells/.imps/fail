@@ -1,0 +1,6 @@
+#!/bin/sh
+# fail MESSAGE - print message to stderr and exit with failure
+# Example: has git || fail "git required"
+
+printf '%s\n' "$*" >&2
+exit 1

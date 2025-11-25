@@ -1,0 +1,5 @@
+#!/bin/sh
+# spit FILE - write stdin to file (overwrites)
+# Example: echo "hello" | spit output.txt
+
+cat > "$1"

@@ -1,0 +1,8 @@
+#!/bin/sh
+# ends STRING SUFFIX - test if string ends with suffix
+# Example: ends "$file" ".sh" && echo "shell script"
+
+case "$1" in
+*"$2") exit 0 ;;
+*) exit 1 ;;
+esac

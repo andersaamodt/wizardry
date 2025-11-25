@@ -1,0 +1,5 @@
+#!/bin/sh
+# there PATH - test if path exists (any type: file, dir, link, etc.)
+# Example: there /etc/passwd && echo "found"
+
+[ -e "$1" ]

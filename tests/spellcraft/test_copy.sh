@@ -98,7 +98,7 @@ STUB
   done
 
   # Use a restricted PATH with just our stubs (no system paths that might have pbcopy)
-  PATH="$stubdir" CLIPBOARD_FILE="$clipboard" run_spell "spells/spellcraft/copy" "$file"
+  PATH="$ROOT_DIR/spells/.imps:$stubdir" CLIPBOARD_FILE="$clipboard" run_spell "spells/spellcraft/copy" "$file"
   assert_success || return 1
   [ "$(cat "$clipboard")" = "hi there" ] || { TEST_FAILURE_REASON="xsel stub not used"; return 1; }
 }
@@ -127,7 +127,7 @@ STUB
   done
 
   # Use a restricted PATH with just our stubs (no system paths that might have pbcopy or xsel)
-  PATH="$stubdir" CLIPBOARD_FILE="$clipboard" run_spell "spells/spellcraft/copy" "$file"
+  PATH="$ROOT_DIR/spells/.imps:$stubdir" CLIPBOARD_FILE="$clipboard" run_spell "spells/spellcraft/copy" "$file"
   assert_success || return 1
   # Normalize the expected path to match what copy outputs
   file_normalized=$(printf '%s' "$file" | sed 's|//|/|g')
@@ -164,7 +164,7 @@ STUB
   done
 
   # Use a restricted PATH with just our stubs (no system paths that might have pbcopy)
-  PATH="$stubdir" CLIPBOARD_FILE="$clipboard" run_spell "spells/spellcraft/copy" "$file"
+  PATH="$ROOT_DIR/spells/.imps:$stubdir" CLIPBOARD_FILE="$clipboard" run_spell "spells/spellcraft/copy" "$file"
   assert_success || return 1
   [ "$(cat "$clipboard")" = "ordered" ] || { TEST_FAILURE_REASON="xsel stub not used"; return 1; }
   case ${ERROR:-} in
@@ -189,7 +189,7 @@ copy_fails_without_clipboard_tools() {
   done
 
   # Use a PATH with just essential utilities (no clipboard tools like pbcopy, xsel, xclip)
-  PATH="$stubdir" run_spell "spells/spellcraft/copy" "$file"
+  PATH="$ROOT_DIR/spells/.imps:$stubdir" run_spell "spells/spellcraft/copy" "$file"
   assert_failure || return 1
   assert_error_contains "Your spell fizzles." || return 1
 }

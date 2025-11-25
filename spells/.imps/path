@@ -1,0 +1,10 @@
+#!/bin/sh
+# abspath PATH - convert relative path to absolute, normalized
+# Example: abspath ./foo -> /current/dir/foo
+
+path=$1
+case "$path" in
+/*) : ;;
+*) path="$(pwd -P)/$path" ;;
+esac
+printf '%s' "$path" | sed 's|///*|/|g'

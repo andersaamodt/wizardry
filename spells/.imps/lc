@@ -1,0 +1,5 @@
+#!/bin/sh
+# lower - convert stdin to lowercase
+# Example: echo "HELLO" | lower
+
+tr '[:upper:]' '[:lower:]'

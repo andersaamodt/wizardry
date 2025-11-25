@@ -1,0 +1,5 @@
+#!/bin/sh
+# gone PATH - test if path does NOT exist
+# Example: gone /etc/config && echo "not found"
+
+[ ! -e "$1" ]

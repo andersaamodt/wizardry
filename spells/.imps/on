@@ -1,0 +1,25 @@
+#!/bin/sh
+# on PLATFORM - test if running on platform (mac/linux/debian/nixos/arch/fedora/bsd)
+# Example: on mac && brew install git
+
+platform=$1
+kernel=$(uname -s 2>/dev/null || echo unknown)
+
+case "$platform" in
+mac|macos|darwin)
+  [ "$kernel" = "Darwin" ] ;;
+linux)
+  [ "$kernel" = "Linux" ] ;;
+bsd|freebsd)
+  case "$kernel" in *BSD) true ;; *) false ;; esac ;;
+debian|ubuntu)
+  [ -f /etc/debian_version ] ;;
+nixos)
+  [ -f /etc/NIXOS ] ;;
+arch)
+  [ -f /etc/arch-release ] ;;
+fedora)
+  [ -f /etc/fedora-release ] ;;
+*)
+  exit 1 ;;
+esac

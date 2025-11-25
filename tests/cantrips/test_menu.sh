@@ -24,7 +24,7 @@ menu_rejects_out_of_range_escape_status() {
 }
 
 menu_requires_all_helpers() {
-  PATH="/bin:/usr/bin" run_cmd env PATH="/bin:/usr/bin" "$ROOT_DIR/spells/cantrips/menu" "Menu" "Item%echo hi"
+  PATH="$ROOT_DIR/spells/.imps:/bin:/usr/bin" run_cmd env PATH="$ROOT_DIR/spells/.imps:/bin:/usr/bin" "$ROOT_DIR/spells/cantrips/menu" "Menu" "Item%echo hi"
   assert_failure || return 1
   assert_error_contains "The menu spell needs 'fathom-cursor' to place the menu." || return 1
 }
@@ -36,7 +36,7 @@ menu_reports_missing_tty() {
     chmod +x "$stub_dir/$helper"
   done
 
-  PATH="$stub_dir:/bin:/usr/bin" run_cmd env PATH="$stub_dir:/bin:/usr/bin" AWAIT_KEYPRESS_DEVICE="$stub_dir/fake-tty" \
+  PATH="$ROOT_DIR/spells/.imps:$stub_dir:/bin:/usr/bin" run_cmd env PATH="$ROOT_DIR/spells/.imps:$stub_dir:/bin:/usr/bin" AWAIT_KEYPRESS_DEVICE="$stub_dir/fake-tty" \
     "$ROOT_DIR/spells/cantrips/menu" "Menu" "Item%echo hi"
   assert_failure || return 1
   assert_error_contains "menu: unable to access controlling terminal" || return 1
