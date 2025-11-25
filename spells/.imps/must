@@ -8,13 +8,53 @@ shift
 
 # The last argument is the error message if more than minimum args
 case "$test_type" in
-file|dir|link|exec|readable|writable)
+file)
   if [ "$#" -ge 2 ]; then
     target=$1; msg=$2
   else
-    target=$1; msg="$test_type not found: $target"
+    target=$1; msg="file not found: $target"
   fi
-  is "$test_type" "$target" || { printf '%s\n' "$msg" >&2; exit 1; }
+  [ -f "$target" ] || { printf '%s\n' "$msg" >&2; exit 1; }
+  ;;
+dir)
+  if [ "$#" -ge 2 ]; then
+    target=$1; msg=$2
+  else
+    target=$1; msg="directory not found: $target"
+  fi
+  [ -d "$target" ] || { printf '%s\n' "$msg" >&2; exit 1; }
+  ;;
+link)
+  if [ "$#" -ge 2 ]; then
+    target=$1; msg=$2
+  else
+    target=$1; msg="link not found: $target"
+  fi
+  [ -L "$target" ] || { printf '%s\n' "$msg" >&2; exit 1; }
+  ;;
+exec)
+  if [ "$#" -ge 2 ]; then
+    target=$1; msg=$2
+  else
+    target=$1; msg="executable not found: $target"
+  fi
+  [ -x "$target" ] || { printf '%s\n' "$msg" >&2; exit 1; }
+  ;;
+readable)
+  if [ "$#" -ge 2 ]; then
+    target=$1; msg=$2
+  else
+    target=$1; msg="not readable: $target"
+  fi
+  [ -r "$target" ] || { printf '%s\n' "$msg" >&2; exit 1; }
+  ;;
+writable)
+  if [ "$#" -ge 2 ]; then
+    target=$1; msg=$2
+  else
+    target=$1; msg="not writable: $target"
+  fi
+  [ -w "$target" ] || { printf '%s\n' "$msg" >&2; exit 1; }
   ;;
 set)
   if [ "$#" -ge 2 ]; then
