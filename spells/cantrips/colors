@@ -98,7 +98,9 @@ case ${TERM-} in
                 if command -v tput >/dev/null 2>&1; then
                         colors=$(tput colors 2>/dev/null || printf '')
                         case ${colors:-} in
-                                ''|0)
+                                ''|0|-*)
+                                        # Disable palette for empty, zero, or negative values
+                                        # (tput returns -1 when colors are not supported)
                                         disable_palette
                                         ;;
                         esac
