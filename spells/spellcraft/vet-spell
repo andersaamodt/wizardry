@@ -1,0 +1,354 @@
+#!/bin/sh
+
+# This spell vets other spells for style guide violations.
+# Run it against spell files to check formatting and code style compliance.
+
+show_usage() {
+  cat <<'USAGE'
+Usage: vet-spell [options] [file...]
+
+Vet spell files for style guide compliance. Checks for:
+  - Proper shebang (#!/bin/sh or #!/usr/bin/env sh)
+  - Opening description comment
+  - Usage function (show_usage or usage) [optional checks only]
+  - Help handler (--help) [optional checks only]
+  - Strict mode (set -eu or set -e)
+  - Proper variable assignment (no trailing spaces)
+  - POSIX compliance (via checkbashisms if available)
+
+When no files are specified, vets all spells in the spells/ directory.
+Imps (files in .imps directories) have relaxed requirements: they do not
+need a usage function or help handler.
+
+Options:
+  --only PATTERN   Vet only files matching PATTERN
+  --list           Print files that would be vetted and exit
+  --verbose        Print details for each check
+  --strict         Enable all checks (usage function, help handler)
+  -h, --help       Show this help and exit
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+repo_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd -P)
+
+verbose=0
+list_only=0
+pattern=''
+strict_mode=0
+
+while [ "$#" -gt 0 ]; do
+  case $1 in
+    --verbose)
+      verbose=1
+      shift
+      ;;
+    --list)
+      list_only=1
+      shift
+      ;;
+    --strict)
+      strict_mode=1
+      shift
+      ;;
+    --only)
+      if [ "$#" -lt 2 ]; then
+        printf '%s\n' "vet-spell: --only requires a pattern argument." >&2
+        exit 2
+      fi
+      pattern=$2
+      shift 2
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -*)
+      printf '%s\n' "vet-spell: unknown option: $1" >&2
+      show_usage >&2
+      exit 2
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
+is_imp() {
+  file=$1
+  case $file in
+    */.imps/*|*/.imps)
+      return 0
+      ;;
+  esac
+  return 1
+}
+
+gather_default_targets() {
+  find "$repo_dir/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) \
+    -print | sort | while IFS= read -r file; do
+      first_line=$(head -1 "$file")
+      case $first_line in
+        '#!/bin/sh'|'#! /bin/sh'|'#!/usr/bin/env sh'|'#! /usr/bin/env sh')
+          rel_path=${file#"$repo_dir/"}
+          if [ -n "$pattern" ]; then
+            case $rel_path in
+              *"$pattern"*)
+                printf '%s\n' "$rel_path"
+                ;;
+            esac
+          else
+            printf '%s\n' "$rel_path"
+          fi
+          ;;
+      esac
+    done
+}
+
+collect_targets() {
+  if [ "$#" -gt 0 ]; then
+    for arg in "$@"; do
+      case $arg in
+        /*)
+          printf '%s\n' "$arg"
+          ;;
+        *)
+          printf '%s\n' "$arg"
+          ;;
+      esac
+    done
+  else
+    gather_default_targets
+  fi
+}
+
+check_shebang() {
+  file=$1
+  first_line=$(head -1 "$file")
+  case $first_line in
+    '#!/bin/sh'|'#! /bin/sh'|'#!/usr/bin/env sh'|'#! /usr/bin/env sh')
+      return 0
+      ;;
+    *)
+      printf 'missing or incorrect shebang (expected #!/bin/sh)'
+      return 1
+      ;;
+  esac
+}
+
+check_description_comment() {
+  file=$1
+  # Read lines 2 and 3 in a single sed call
+  lines=$(sed -n '2p;3p' "$file")
+  second_line=$(printf '%s' "$lines" | head -1)
+  third_line=$(printf '%s' "$lines" | tail -1)
+  
+  # Check if second line is empty and third line is a comment
+  if [ -z "$second_line" ] && [ -n "$third_line" ]; then
+    case $third_line in
+      '#'*)
+        return 0
+        ;;
+    esac
+  fi
+  
+  # Check if second line is a comment
+  case $second_line in
+    '#'*)
+      return 0
+      ;;
+    *)
+      printf 'missing opening description comment after shebang'
+      return 1
+      ;;
+  esac
+}
+
+check_usage_function() {
+  file=$1
+  # Accept show_usage() or usage() as valid usage function names
+  if grep -qE '(show_usage|usage)\(\)' "$file" 2>/dev/null; then
+    return 0
+  fi
+  printf 'missing usage function (show_usage or usage)'
+  return 1
+}
+
+check_help_handler() {
+  file=$1
+  if grep -q '\-\-help' "$file" 2>/dev/null; then
+    return 0
+  fi
+  printf 'missing --help handler'
+  return 1
+}
+
+check_strict_mode() {
+  file=$1
+  # Accept set -eu, set -e, or set -e -u as valid strict mode
+  if grep -qE 'set -e' "$file" 2>/dev/null; then
+    return 0
+  fi
+  printf 'missing strict mode (set -e or set -eu)'
+  return 1
+}
+
+check_trailing_space_assignment() {
+  file=$1
+  # Look for pattern: variable= followed by newline (trailing space assignment)
+  match=$(grep -En '^[a-zA-Z_][a-zA-Z0-9_]*= $' "$file" 2>/dev/null | head -1) || true
+  if [ -n "$match" ]; then
+    line_num=$(printf '%s' "$match" | cut -d: -f1)
+    printf 'trailing space in variable assignment at line %s' "$line_num"
+    return 1
+  fi
+  return 0
+}
+
+check_posix_compliance() {
+  file=$1
+  checkbashisms_cmd=${CHECKBASHISMS-}
+  if [ -z "$checkbashisms_cmd" ] && command -v checkbashisms >/dev/null 2>&1; then
+    checkbashisms_cmd=$(command -v checkbashisms)
+  fi
+  
+  if [ -z "$checkbashisms_cmd" ]; then
+    # Skip POSIX check if checkbashisms not available
+    return 0
+  fi
+  
+  if "$checkbashisms_cmd" "$file" >/dev/null 2>&1; then
+    return 0
+  fi
+  printf 'POSIX compliance violation (run checkbashisms for details)'
+  return 1
+}
+
+failures=0
+total=0
+passed=0
+failed_targets=''
+
+targets_file=$(mktemp "${TMPDIR:-/tmp}/vet-spell-targets.XXXXXX") || exit 1
+collect_targets "$@" >"$targets_file"
+
+if [ "$list_only" -eq 1 ]; then
+  cat "$targets_file"
+  rm -f "$targets_file"
+  exit 0
+fi
+
+while IFS= read -r target; do
+  [ -n "$target" ] || continue
+  total=$((total + 1))
+  
+  case $target in
+    /*)
+      path="$target"
+      ;;
+    *)
+      path="$repo_dir/$target"
+      ;;
+  esac
+  
+  if [ ! -e "$path" ]; then
+    printf 'FAIL %s: file not found\n' "$target"
+    failures=$((failures + 1))
+    failed_targets=${failed_targets:+$failed_targets,}$target
+    continue
+  fi
+  
+  if [ ! -f "$path" ]; then
+    printf 'FAIL %s: not a regular file\n' "$target"
+    failures=$((failures + 1))
+    failed_targets=${failed_targets:+$failed_targets,}$target
+    continue
+  fi
+  
+  is_imp_file=0
+  if is_imp "$target" || is_imp "$path"; then
+    is_imp_file=1
+  fi
+  
+  issues=''
+  issue_count=0
+  
+  # Check shebang (required for all)
+  if ! result=$(check_shebang "$path"); then
+    issues=${issues:+$issues; }$result
+    issue_count=$((issue_count + 1))
+  fi
+  
+  # Check description comment (required for all)
+  if ! result=$(check_description_comment "$path"); then
+    issues=${issues:+$issues; }$result
+    issue_count=$((issue_count + 1))
+  fi
+  
+  # Check usage function (only in strict mode, not required for imps)
+  if [ "$strict_mode" -eq 1 ] && [ "$is_imp_file" -eq 0 ]; then
+    if ! result=$(check_usage_function "$path"); then
+      issues=${issues:+$issues; }$result
+      issue_count=$((issue_count + 1))
+    fi
+  fi
+  
+  # Check help handler (only in strict mode, not required for imps)
+  if [ "$strict_mode" -eq 1 ] && [ "$is_imp_file" -eq 0 ]; then
+    if ! result=$(check_help_handler "$path"); then
+      issues=${issues:+$issues; }$result
+      issue_count=$((issue_count + 1))
+    fi
+  fi
+  
+  # Check strict mode (required for all)
+  if ! result=$(check_strict_mode "$path"); then
+    issues=${issues:+$issues; }$result
+    issue_count=$((issue_count + 1))
+  fi
+  
+  # Check trailing space assignment (required for all)
+  if ! result=$(check_trailing_space_assignment "$path"); then
+    issues=${issues:+$issues; }$result
+    issue_count=$((issue_count + 1))
+  fi
+  
+  # Check POSIX compliance (required for all)
+  if ! result=$(check_posix_compliance "$path"); then
+    issues=${issues:+$issues; }$result
+    issue_count=$((issue_count + 1))
+  fi
+  
+  if [ "$issue_count" -eq 0 ]; then
+    if [ "$verbose" -eq 1 ]; then
+      printf 'PASS %s\n' "$target"
+    fi
+    passed=$((passed + 1))
+  else
+    printf 'FAIL %s: %s\n' "$target" "$issues"
+    failures=$((failures + 1))
+    failed_targets=${failed_targets:+$failed_targets,}$target
+  fi
+done <"$targets_file"
+
+rm -f "$targets_file"
+
+if [ "$failures" -eq 0 ]; then
+  printf 'All %d spells passed style checks.\n' "$total"
+  exit 0
+else
+  printf '%d of %d spells failed style checks.\n' "$failures" "$total"
+  if [ -n "$failed_targets" ]; then
+    printf 'Failing spells: %s\n' "$failed_targets"
+  fi
+  exit 1
+fi

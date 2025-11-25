@@ -47,13 +47,21 @@ This downloads wizardry to the default install location, `~/.wizardry`. After in
 
 ### NixOS Installation
 
-On NixOS, the installer modifies `~/.config/nixpkgs/configuration.nix` (for home-manager users) to add wizardry paths. **The installer will ask for your permission before making any changes** and will automatically create a timestamped backup of your configuration file.
+On NixOS, the installer behavior depends on your setup:
 
-If you use system-level configuration (`/etc/nixos/configuration.nix`), you'll need to manually add wizardry to your PATH in that file instead.
+- **With system-level configuration**: If `/etc/nixos/configuration.nix` exists, the installer modifies that file to add wizardry paths (requires sudo). A timestamped backup is created automatically. After installation, the installer attempts to run `sudo nixos-rebuild switch` automatically.
 
-After installation completes, run:
+- **With home-manager**: If `home-manager` is installed or `~/.config/nixpkgs/configuration.nix` already exists, the installer modifies that file to add wizardry paths. A timestamped backup is created automatically. After installation, the installer attempts to run `home-manager switch` automatically.
+
+- **Without either**: If no Nix configuration exists, the installer falls back to shell RC files (`~/.bashrc`, `~/.bash_profile`, or `~/.profile`) to ensure PATH changes take effect immediately.
+
+After installation completes, the installer will automatically attempt to rebuild your Nix environment. If this fails, you can manually run:
 ```bash
-home-manager switch     # If using home-manager with ~/.config/nixpkgs/configuration.nix
+# If using home-manager:
+home-manager switch
+
+# Or for system-level configuration:
+sudo nixos-rebuild switch
 ```
 
 The backup file is saved as `configuration.nix.wizardry.TIMESTAMP` in the same directory, allowing you to restore your previous configuration if needed.
