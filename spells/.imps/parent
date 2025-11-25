@@ -1,0 +1,9 @@
+#!/bin/sh
+# parent PATH - extract directory from path (like dirname but pure shell)
+# Example: dir=$(parent /path/to/file.txt)  # outputs: /path/to
+
+path=$1
+case "$path" in
+*/*) printf '%s\n' "${path%/*}" ;;
+*)   printf '%s\n' "." ;;
+esac

@@ -1,0 +1,5 @@
+#!/bin/sh
+# upper - convert stdin to uppercase
+# Example: echo "hello" | upper
+
+tr '[:lower:]' '[:upper:]'

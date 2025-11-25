@@ -1,5 +1,5 @@
 #!/bin/sh
-# Tests for data flow imps: first, last, lines, trim, lc, each, else, or
+# Tests for data flow imps: first, last, lines, trim, lower, each, else, or
 
 . "${0%/*}/../test_common.sh"
 
@@ -45,8 +45,8 @@ test_trim_removes_whitespace() {
   assert_output_contains "hello"
 }
 
-test_lc_converts() {
-  run_cmd sh -c "printf 'HELLO' | '$ROOT_DIR/spells/.imps/lc'"
+test_lower_converts() {
+  run_cmd sh -c "printf 'HELLO' | '$ROOT_DIR/spells/.imps/lower'"
   assert_success
   assert_output_contains "hello"
 }
@@ -95,7 +95,7 @@ run_test_case "first reads from file" test_first_from_file
 run_test_case "last reads from file" test_last_from_file
 run_test_case "lines counts correctly" test_lines_counts
 run_test_case "trim removes whitespace" test_trim_removes_whitespace
-run_test_case "lc converts to lowercase" test_lc_converts
+run_test_case "lower converts to lowercase" test_lower_converts
 run_test_case "each runs for each line" test_each_runs_for_lines
 run_test_case "else uses default for empty" test_else_uses_default
 run_test_case "else passes through non-empty" test_else_passes_through

@@ -1,0 +1,6 @@
+#!/bin/sh
+# temp [PREFIX] - create temp file with optional prefix (outputs path)
+# Example: f=$(temp myapp) && echo "content" > "$f"
+
+prefix=${1:-wizardry}
+mktemp "${TMPDIR:-/tmp}/${prefix}.XXXXXX"

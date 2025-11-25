@@ -1,0 +1,8 @@
+#!/bin/sh
+# no VALUE - test if value is negative (n/no/false/0/N/NO/FALSE)
+# Example: no "$VERBOSE" && echo "quiet mode"
+
+case "$1" in
+n|N|no|NO|No|false|FALSE|False|0) exit 0 ;;
+*) exit 1 ;;
+esac
