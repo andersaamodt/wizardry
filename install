@@ -620,10 +620,10 @@ if [ "$path_updates_made" -eq 1 ]; then
                 rebuild_success=0
                 # Try to detect if we should use sudo or doas
                 priv_cmd=""
-                if command -v doas >/dev/null 2>&1; then
-                        priv_cmd="doas"
-                elif command -v sudo >/dev/null 2>&1; then
+                if command -v sudo >/dev/null 2>&1; then
                         priv_cmd="sudo"
+                elif command -v doas >/dev/null 2>&1; then
+                        priv_cmd="doas"
                 fi
 
                 # Try home-manager first (doesn't need privileges)

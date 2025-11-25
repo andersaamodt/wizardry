@@ -385,10 +385,10 @@ esac
 # Usage: run_maybe_sudo command [args...]
 run_maybe_sudo() {
         if [ "$needs_sudo" -eq 1 ]; then
-                if command -v doas >/dev/null 2>&1; then
-                        doas "$@"
-                elif command -v sudo >/dev/null 2>&1; then
+                if command -v sudo >/dev/null 2>&1; then
                         sudo "$@"
+                elif command -v doas >/dev/null 2>&1; then
+                        doas "$@"
                 else
                         printf '%s\n' "path-wizard: sudo or doas required to modify '$rc_file'." >&2
                         exit 1
