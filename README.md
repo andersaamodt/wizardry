@@ -93,6 +93,10 @@ A spell is a specially-curated shell script:
 
 This spec helps scripts evolve into living, polished exemplars of communal knowledge about best practices in using and optimizing the shell.
 
+### Bootstrapping spells
+
+Most wizardry spells can assume that wizardry is installed (in `$PATH`) and that wizardry spells can be used. Spells used in the installation of wizardry itself are written without relying on other wizardry spells, since they might not be installed yet. The bootstrappable spells are `install` and spells in `spells/install/core/`.
+
 ## Spellbook
 
 The Spellbook is your personal grimoire for managing and organizing spells. Access it by typing `spellbook` or selecting it from the main menu.
@@ -126,7 +130,7 @@ When you select a spell from the Spellbook, you can cast it immediately, memoriz
 
 ## Imps
 
-Imps (infraspells/microscripts) are the smallest semantic building blocks in wizardry. They live in `spells/.imps/` and abstract common shell patterns into readable, well-documented microscripts with short semantic names.
+Imps are the smallest semantic building blocks in wizardry. They live in `spells/.imps/` and abstract common shell patterns into readable, well-documented microscripts with short semantic names.
 
 ### What are Imps?
 
@@ -139,115 +143,7 @@ An **imp** is a microscript that:
 * Is cross-platform, abstracting OS differences behind a clean interface
 * Makes spells read almost like English while remaining POSIX-compliant
 
-### Imps vs Cantrips
-
-| Aspect | Cantrips | Imps |
-|--------|----------|------|
-| **Use case** | User-facing utilities | Building blocks for scripts |
-| **Invocation** | Command line or scripts | Primarily within scripts |
-| **Arguments** | `--flag` style with `--help` | Space-separated, positional |
-| **Naming** | Can be multi-word | One word, ideally one syllable |
-| **Standalone use** | Common | Rare (words in a script) |
-| **Examples** | `ask_yn`, `say`, `menu` | `is`, `on`, `has`, `ok` |
-
-### Why Imps?
-
-1. **Readability**: Spells become English-like while remaining POSIX-compliant
-2. **Cross-platform**: Platform differences hidden behind semantic names
-3. **Teaching**: Each imp is a paragon of good shell style
-4. **Correctness**: Battle-tested implementations avoid common shell pitfalls
-
-### Imp Design Principles
-
-* **Apt naming**: One word, ideally one syllable, the most natural word for what the imp does
-* **Read like English**: `if on mac && has brew; then` reads naturally
-* **Cross-platform**: Abstract away OS detection, package managers, path differences
-* **Minimal**: No `--help`, no argument parsing complexity—just a comment and code
-* **Single-purpose**: One imp, one job
-* **Infernal force**: Push as much logic as possible into imps for maximum semanticization
-
-### Example Usage
-
-Without imps:
-```sh
-if [ -d "$path" ] && [ -n "$(ls -A "$path" 2>/dev/null)" ]; then
-    # directory exists and is not empty
-fi
-
-case "$(uname -s)" in
-Darwin) brew install git ;;
-Linux) apt-get install git ;;
-esac
-```
-
-With imps:
-```sh
-if is dir "$path" && full dir "$path"; then
-    # directory exists and is not empty
-fi
-
-on mac && brew install git
-on debian && apt-get install git
-```
-
-### Available Imps
-
-**Existence & Type Testing**
-* **is** `TYPE PATH` - test condition (file/dir/link/exec/readable/writable/empty/set/unset)
-* **there** `PATH` - test if path exists
-* **gone** `PATH` - test if path does NOT exist
-* **full** `TYPE PATH` - test if file has content or dir has entries
-
-**Command Availability**
-* **has** `CMD` - test if command exists on PATH
-* **lacks** `CMD` - test if command is NOT available
-* **need** `CMD [MSG]` - exit with error if command not found
-* **any** `CMD...` - return first available command from list
-* **where** `CMD` - print path to command
-
-**Platform Detection**
-* **on** `PLATFORM` - test if running on platform (mac/linux/debian/nixos/arch/fedora/bsd)
-* **os** - print current OS identifier
-
-**Output**
-* **say** `MSG` - print to stdout with newline
-* **warn** `MSG` - print to stderr (no exit)
-* **fail** `MSG` - print to stderr and exit 1
-* **die** `[CODE] MSG` - print to stderr and exit with code
-
-**Data Flow**
-* **first** `[FILE]` - first line of input
-* **last** `[FILE]` - last line of input
-* **take** `N [FILE]` - first N lines
-* **skip** `N [FILE]` - skip first N lines
-* **lines** `[FILE]` - count lines
-* **trim** - strip whitespace
-* **lc** - lowercase
-* **each** `CMD...` - run for each stdin line
-* **slurp** `FILE` - read file contents
-* **spit** `FILE` - write stdin to file
-* **append** `FILE` - append stdin to file
-
-**Paths**
-* **here** - current directory (normalized)
-* **path** `PATH` - convert to absolute path
-* **norm** `[PATH]` - normalize path (collapse //)
-
-**Values**
-* **or** `A B` - first non-empty value
-* **else** `DEFAULT` - stdin if non-empty, else default
-* **yes** `VAL` - test if value is affirmative (y/yes/true/1)
-
-**Control**
-* **ok** `CMD...` - run silently, return status
-* **hush** `CMD...` - run with output suppressed
-* **make** `dir PATH` - ensure directory exists
-* **old** `F1 F2` - test if F1 older than F2
-
-**String Tests**
-* **holds** `STR SUB` - test if string contains substring
-* **starts** `STR PRE` - test if string starts with prefix
-* **ends** `STR SUF` - test if string ends with suffix
+Push as much logic as possible into imps for maximum semanticization.
 
 ## Free software suite
 
