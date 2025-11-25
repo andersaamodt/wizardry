@@ -1,5 +1,5 @@
 #!/bin/sh
-# Tests for new imps: pick, now, empty, given, must
+# Tests for imps: pick, now, empty, nonempty, given (deprecated), must
 
 . "${0%/*}/../test_common.sh"
 
@@ -64,7 +64,28 @@ test_empty_false_for_value() {
   assert_failure
 }
 
-# given tests
+# nonempty tests (preferred over deprecated 'given')
+test_nonempty_true_for_value() {
+  run_spell spells/.imps/nonempty "some value"
+  assert_success
+}
+
+test_nonempty_false_for_empty() {
+  run_spell spells/.imps/nonempty ""
+  assert_failure
+}
+
+test_nonempty_with_whitespace() {
+  run_spell spells/.imps/nonempty "   "
+  assert_success
+}
+
+test_nonempty_with_zero() {
+  run_spell spells/.imps/nonempty "0"
+  assert_success
+}
+
+# given tests (deprecated, kept for backward compatibility)
 test_given_true_for_value() {
   run_spell spells/.imps/given "some value"
   assert_success
@@ -134,8 +155,12 @@ run_test_case "now outputs timestamp" test_now_outputs_timestamp
 run_test_case "now formats with pattern" test_now_with_format
 run_test_case "empty is true for empty string" test_empty_true_for_empty
 run_test_case "empty is false for value" test_empty_false_for_value
-run_test_case "given is true for value" test_given_true_for_value
-run_test_case "given is false for empty" test_given_false_for_empty
+run_test_case "nonempty is true for value" test_nonempty_true_for_value
+run_test_case "nonempty is false for empty" test_nonempty_false_for_empty
+run_test_case "nonempty is true for whitespace only" test_nonempty_with_whitespace
+run_test_case "nonempty is true for zero" test_nonempty_with_zero
+run_test_case "given (deprecated) is true for value" test_given_true_for_value
+run_test_case "given (deprecated) is false for empty" test_given_false_for_empty
 run_test_case "must has succeeds for existing command" test_must_has_succeeds
 run_test_case "must has fails with default message" test_must_has_fails_with_message
 run_test_case "must has fails with custom message" test_must_has_custom_message

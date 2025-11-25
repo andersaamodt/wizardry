@@ -153,7 +153,7 @@ select_from_many() {
   eval "printf '%s\n' \"\${$choice}\""
 }
 
-if given "$requested_key"; then
+if nonempty "$requested_key"; then
   disenchant_attr "$requested_key" "$file"
   exit $?
 fi

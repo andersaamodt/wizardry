@@ -205,7 +205,7 @@ record_custom_command() {
         write_custom_script "$cmd_name" "$cmd"
         tmp=$(mktemp "${TMPDIR:-/tmp}/spellbook-commands.XXXXXX") || exit 1
         if [ -f "$commands_file" ]; then
-                while IFS= read -r line || [ -n "$line" ]; do
+                while IFS= read -r line || nonempty "$line"; do
                         entry_category=${line%%$(printf '\t')*}
                         case $line in
                         *$(printf '\t')*)
@@ -233,7 +233,7 @@ remove_custom_command() {
         tmp=$(mktemp "${TMPDIR:-/tmp}/spellbook-commands.XXXXXX") || exit 1
         kept=0
         removed=0
-        while IFS= read -r line || [ -n "$line" ]; do
+        while IFS= read -r line || nonempty "$line"; do
                         entry_category=${line%%$(printf '\t')*}
                         case $line in
                         *$(printf '\t')*)
