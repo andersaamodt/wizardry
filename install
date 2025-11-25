@@ -173,14 +173,14 @@ if [ -z "$INSTALL_INPUT" ]; then
 fi
 
 case $INSTALL_INPUT in
-        ~)
+        "~")
                 if [ -z "${HOME-}" ]; then
                         printf '%s\n' "Error: HOME is not set; cannot expand '~'." >&2
                         exit 1
                 fi
                 INSTALL_INPUT=$HOME
                 ;;
-        ~/*)
+        "~/"*)
                 if [ -z "${HOME-}" ]; then
                         printf '%s\n' "Error: HOME is not set; cannot expand '~'." >&2
                         exit 1
