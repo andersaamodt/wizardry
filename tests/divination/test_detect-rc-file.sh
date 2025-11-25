@@ -121,6 +121,21 @@ test_nixos_detects_new_home_manager_path() {
   assert_output_contains "format=nix" || return 1
 }
 
+test_nixos_respects_nixos_config_env() {
+  # On NixOS, NIXOS_CONFIG env var should take precedence
+  config_dir=$(make_tempdir)
+  mkdir -p "$config_dir"
+  touch "$config_dir/my-config.nix"
+  run_cmd env DETECT_RC_FILE_PLATFORM=nixos NIXOS_CONFIG="$config_dir/my-config.nix" SHELL=/bin/bash sh -c '
+    exec spells/divination/detect-rc-file
+  '
+
+  assert_success || return 1
+  assert_output_contains "platform=nixos" || return 1
+  assert_output_contains "rc_file=$config_dir/my-config.nix" || return 1
+  assert_output_contains "format=nix" || return 1
+}
+
 run_test_case "detect-rc-file prints usage" test_help
 run_test_case "detect-rc-file validates arguments" test_rejects_bad_arguments
 run_test_case "detect-rc-file picks preferred files for platform" test_picks_known_platform_files
@@ -130,4 +145,5 @@ run_test_case "detect-rc-file respects shell defaults on unknown platforms" test
 run_test_case "detect-rc-file tolerates missing HOME" test_handles_missing_home
 run_test_case "detect-rc-file falls back to shell on NixOS without home-manager" test_nixos_falls_back_to_shell_rc
 run_test_case "detect-rc-file detects new home-manager path" test_nixos_detects_new_home_manager_path
+run_test_case "detect-rc-file respects NIXOS_CONFIG env var" test_nixos_respects_nixos_config_env
 finish_tests

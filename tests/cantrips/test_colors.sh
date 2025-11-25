@@ -41,7 +41,18 @@ test_colors_printf_s_works() {
   esac
 }
 
+test_colors_disable_for_dumb_terminal() {
+  # Colors should be disabled for TERM=dumb which returns -1 from tput colors
+  run_cmd env TERM=dumb sh -c ". \"$ROOT_DIR/spells/cantrips/colors\"; printf 'avail:%s green:%s\\n' \"\$WIZARDRY_COLORS_AVAILABLE\" \"\$GREEN\""
+  if ! assert_success; then return 1; fi
+  case "$OUTPUT" in
+    avail:0\ green:) : ;;
+    *) TEST_FAILURE_REASON="expected palette disabled for dumb terminal, got: $OUTPUT"; return 1 ;;
+  esac
+}
+
 run_test_case "colors enables palette on capable terminals" test_colors_enable_palette_by_default
 run_test_case "colors disables palette when NO_COLOR set" test_colors_disable_when_requested
 run_test_case "colors work with printf %s format" test_colors_printf_s_works
+run_test_case "colors disables palette for dumb terminal" test_colors_disable_for_dumb_terminal
 finish_tests
