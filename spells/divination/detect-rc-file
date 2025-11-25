@@ -107,9 +107,11 @@ nixos)
         if [ -n "${NIXOS_CONFIG-}" ] && [ -f "$NIXOS_CONFIG" ]; then
                 add_candidate "$NIXOS_CONFIG"
         fi
-        # Check for system-level configuration (requires sudo to edit).
-        if [ -f /etc/nixos/configuration.nix ]; then
-                add_candidate /etc/nixos/configuration.nix
+        # Check if home-manager is installed - if so, prioritize home-manager paths
+        # over system-level configuration to avoid requiring sudo.
+        home_manager_installed=0
+        if command -v home-manager >/dev/null 2>&1; then
+                home_manager_installed=1
         fi
         # Check for home-manager configurations in both old and new paths.
         # Newer home-manager uses ~/.config/home-manager/home.nix
@@ -121,8 +123,14 @@ nixos)
                 add_candidate "$HOME/.config/nixpkgs/home.nix"
         fi
         # If home-manager is installed but no config exists yet, suggest the new path
-        if command -v home-manager >/dev/null 2>&1; then
+        if [ "$home_manager_installed" -eq 1 ]; then
                 add_candidate "$HOME/.config/home-manager/home.nix"
+        fi
+        # Check for system-level configuration (requires sudo to edit).
+        # Only add this if home-manager is NOT installed, since home-manager
+        # is preferred when available (doesn't require sudo).
+        if [ "$home_manager_installed" -eq 0 ] && [ -f /etc/nixos/configuration.nix ]; then
+                add_candidate /etc/nixos/configuration.nix
         fi
         add_candidate "$HOME/.bashrc"
         add_candidate "$HOME/.bash_profile"
