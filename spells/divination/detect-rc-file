@@ -102,6 +102,10 @@ nixos)
         # On NixOS, prefer nix config if home-manager is available or the config
         # file already exists. Otherwise fall back to shell RC files to ensure
         # PATH changes take effect immediately.
+        # Check for system-level configuration first (requires sudo to edit).
+        if [ -f /etc/nixos/configuration.nix ]; then
+                add_candidate /etc/nixos/configuration.nix
+        fi
         if command -v home-manager >/dev/null 2>&1 || [ -f "$HOME/.config/nixpkgs/configuration.nix" ]; then
                 add_candidate "$HOME/.config/nixpkgs/configuration.nix"
         fi

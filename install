@@ -334,7 +334,7 @@ fi
 # This checks multiple RC files to see if wizardry is installed anywhere
 detect_installation_status() {
         # Check common RC files for wizardry paths
-        rc_files="$HOME/.bashrc $HOME/.bash_profile $HOME/.profile $HOME/.zshrc $HOME/.zprofile $HOME/.config/nixpkgs/configuration.nix"
+        rc_files="$HOME/.bashrc $HOME/.bash_profile $HOME/.profile $HOME/.zshrc $HOME/.zprofile $HOME/.config/nixpkgs/configuration.nix /etc/nixos/configuration.nix"
 
         found_in_any_rc=0
         for rc_file in $rc_files; do
