@@ -458,11 +458,14 @@ if [ "$detect_platform_value" = "nixos" ] && [ "$detect_format_value" = "shell" 
         printf '\n'
         
         # Check if we have input available (either terminal or piped)
+        # Also respect ASK_CANTRIP_INPUT=none to disable interactive prompts
         can_read_input=0
-        if [ -t 0 ]; then
+        if [ "${ASK_CANTRIP_INPUT-}" = "none" ]; then
+                can_read_input=0
+        elif [ -t 0 ]; then
                 can_read_input=1
-        elif [ -p /dev/stdin ] || [ -s /dev/stdin ]; then
-                # Input is piped or redirected
+        elif [ -p /dev/stdin ]; then
+                # Input is piped
                 can_read_input=1
         fi
         
