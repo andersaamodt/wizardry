@@ -31,20 +31,13 @@ install_exits_on_interrupt() {
   # Test that the install script properly handles SIGINT (Ctrl-C)
   # We verify this by checking that the trap is set correctly and the handler exits
   
-  # Parse the install script for the trap definition
-  trap_line=$(grep -n "trap 'handle_interrupt'" "$ROOT_DIR/install" | head -1)
-  if [ -z "$trap_line" ]; then
+  # Check that a trap handler for INT exists (flexible matching)
+  if ! grep -E "trap.*handle_interrupt.*INT" "$ROOT_DIR/install" >/dev/null; then
     TEST_FAILURE_REASON="trap handler for INT signal not found in install script"
     return 1
   fi
   
-  # Check that handle_interrupt function exists and contains exit
-  if ! grep -q "handle_interrupt()" "$ROOT_DIR/install"; then
-    TEST_FAILURE_REASON="handle_interrupt function not found"
-    return 1
-  fi
-  
-  # Check that handle_interrupt exits with code 130 (128 + SIGINT=2)
+  # Check that handle_interrupt function exists and contains exit 130
   if ! grep -A5 "handle_interrupt()" "$ROOT_DIR/install" | grep -q "exit 130"; then
     TEST_FAILURE_REASON="handle_interrupt should exit with code 130"
     return 1

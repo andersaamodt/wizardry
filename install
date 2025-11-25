@@ -458,49 +458,38 @@ if [ "$detect_platform_value" = "nixos" ] && [ "$detect_format_value" = "shell" 
         printf '\n'
         
         # Check if we have input available (either terminal or piped/redirected)
-        # Also respect ASK_CANTRIP_INPUT=none to disable interactive prompts
-        can_read_input=0
+        # Respect ASK_CANTRIP_INPUT=none to disable interactive prompts
         if [ "${ASK_CANTRIP_INPUT-}" = "none" ]; then
-                can_read_input=0
-        else
-                # stdin can be a terminal, pipe, or redirected file - all are readable
-                can_read_input=1
+                printf '%s\n' "Error: No NixOS configuration file found and no interactive input available." >&2
+                printf '%s\n' "Set NIXOS_CONFIG environment variable to specify the configuration file path." >&2
+                exit 1
         fi
         
-        if [ "$can_read_input" -eq 1 ]; then
-                printf '%s' "Enter the path to your configuration.nix: " >&2
-                IFS= read -r user_nix_config
+        printf '%s' "Enter the path to your configuration.nix: " >&2
+        IFS= read -r user_nix_config
+        
+        if [ -n "$user_nix_config" ]; then
+                # Expand ~/ patterns. Note: ~user/ patterns are not supported;
+                # users should provide absolute paths or use ~/ for their home.
+                case $user_nix_config in
+                        ~/*)
+                                user_nix_config=$HOME/${user_nix_config#\~/}
+                                ;;
+                esac
                 
-                if [ -n "$user_nix_config" ]; then
-                        # Expand ~ and ~/ patterns. Note: ~user/ patterns are not supported;
-                        # users should provide absolute paths or use ~ for their own home.
-                        case $user_nix_config in
-                                ~)
-                                        user_nix_config=$HOME
-                                        ;;
-                                ~/*)
-                                        user_nix_config=$HOME/${user_nix_config#\~/}
-                                        ;;
-                        esac
-                        
-                        if [ -f "$user_nix_config" ]; then
-                                detect_rc_file_value=$user_nix_config
-                                detect_format_value=nix
-                                # Export for path-wizard to use
-                                NIXOS_CONFIG=$user_nix_config
-                                export NIXOS_CONFIG
-                                success_msg "Using configuration file: $user_nix_config"
-                        else
-                                printf '%s\n' "Error: File not found: $user_nix_config" >&2
-                                exit 1
-                        fi
+                if [ -f "$user_nix_config" ]; then
+                        detect_rc_file_value=$user_nix_config
+                        detect_format_value=nix
+                        # Export for path-wizard to use
+                        NIXOS_CONFIG=$user_nix_config
+                        export NIXOS_CONFIG
+                        success_msg "Using configuration file: $user_nix_config"
                 else
-                        printf '%s\n' "Error: NixOS requires a configuration file path." >&2
+                        printf '%s\n' "Error: File not found: $user_nix_config" >&2
                         exit 1
                 fi
         else
-                printf '%s\n' "Error: No NixOS configuration file found and no interactive input available." >&2
-                printf '%s\n' "Set NIXOS_CONFIG environment variable to specify the configuration file path." >&2
+                printf '%s\n' "Error: NixOS requires a configuration file path." >&2
                 exit 1
         fi
 fi
