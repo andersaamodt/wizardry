@@ -1,0 +1,5 @@
+#!/bin/sh
+# empty VALUE - test if string is empty or unset
+# Example: empty "$VAR" && echo "no value provided"
+
+[ -z "$1" ]

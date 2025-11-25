@@ -1,6 +1,6 @@
 #!/bin/sh
-# abspath PATH - convert relative path to absolute, normalized
-# Example: abspath ./foo -> /current/dir/foo
+# path PATH - convert relative path to absolute, normalized
+# Example: path ./foo -> /current/dir/foo
 
 path=$1
 case "$path" in

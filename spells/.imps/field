@@ -1,0 +1,17 @@
+#!/bin/sh
+# field N [DELIM] - extract Nth field (1-based), default delimiter is whitespace
+# Example: echo "a:b:c" | field 2 ":"  # outputs: b
+
+n=$1
+delim=${2-}
+
+# Validate n is a positive integer
+case "$n" in
+  ''|*[!0-9]*) exit 1 ;;
+esac
+
+if [ -n "$delim" ]; then
+  cut -d"$delim" -f"$n"
+else
+  awk "{print \$$n}"
+fi

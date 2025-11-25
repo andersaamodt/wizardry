@@ -53,7 +53,7 @@ else
 fi
 
 # Normalize any double slashes in the path (can occur on macOS where TMPDIR ends with /)
-destination=$(norm "$destination")
+destination=$(norm-path "$destination")
 
 say "$destination" >"$marker_file"
 say "Location marked at $destination."

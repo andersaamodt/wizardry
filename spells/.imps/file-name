@@ -1,0 +1,5 @@
+#!/bin/sh
+# file-name PATH - extract filename from path (like basename but pure shell)
+# Example: name=$(file-name /path/to/file.txt)  # outputs: file.txt
+
+printf '%s\n' "${1##*/}"

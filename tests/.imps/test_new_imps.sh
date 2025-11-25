@@ -73,15 +73,15 @@ test_seeks_fails_missing_pattern() {
   assert_failure
 }
 
-# stem tests
-test_stem_extracts_filename() {
-  run_spell spells/.imps/stem "/path/to/file.txt"
+# file-name tests
+test_file_name_extracts_filename() {
+  run_spell spells/.imps/file-name "/path/to/file.txt"
   assert_success
   assert_output_contains "file.txt"
 }
 
-test_stem_handles_no_slash() {
-  run_spell spells/.imps/stem "filename.txt"
+test_file_name_handles_no_slash() {
+  run_spell spells/.imps/file-name "filename.txt"
   assert_success
   assert_output_contains "filename.txt"
 }
@@ -192,8 +192,8 @@ run_test_case "upper converts to uppercase" test_upper_converts
 run_test_case "lower converts to lowercase" test_lower_converts
 run_test_case "seeks finds pattern" test_seeks_finds_pattern
 run_test_case "seeks fails on missing pattern" test_seeks_fails_missing_pattern
-run_test_case "stem extracts filename" test_stem_extracts_filename
-run_test_case "stem handles filename without path" test_stem_handles_no_slash
+run_test_case "file-name extracts filename" test_file_name_extracts_filename
+run_test_case "file-name handles filename without path" test_file_name_handles_no_slash
 run_test_case "parent extracts directory" test_parent_extracts_directory
 run_test_case "parent returns dot for simple filename" test_parent_returns_dot_for_no_slash
 run_test_case "newer detects newer file" test_newer_detects_newer_file
