@@ -149,6 +149,52 @@ test_must_set_fails() {
   assert_error_contains "value not provided"
 }
 
+# Additional must tests for better coverage
+test_must_dir_succeeds() {
+  tmpdir=$(mktemp -d "$WIZARDRY_TMPDIR/must_dir.XXXXXX")
+  run_spell spells/.imps/must dir "$tmpdir"
+  rmdir "$tmpdir"
+  assert_success
+}
+
+test_must_dir_fails() {
+  run_spell spells/.imps/must dir "/nonexistent_dir_xyz123"
+  assert_failure
+  assert_error_contains "/nonexistent_dir_xyz123"
+}
+
+test_must_exec_succeeds() {
+  run_spell spells/.imps/must exec /bin/sh
+  assert_success
+}
+
+test_must_exec_fails() {
+  tmpfile=$(mktemp "$WIZARDRY_TMPDIR/must_noexec.XXXXXX")
+  chmod -x "$tmpfile"
+  run_spell spells/.imps/must exec "$tmpfile"
+  rm -f "$tmpfile"
+  assert_failure
+}
+
+test_must_readable_succeeds() {
+  tmpfile=$(mktemp "$WIZARDRY_TMPDIR/must_read.XXXXXX")
+  run_spell spells/.imps/must readable "$tmpfile"
+  rm -f "$tmpfile"
+  assert_success
+}
+
+test_must_unknown_type_fails() {
+  run_spell spells/.imps/must unknowntype "/tmp"
+  assert_failure
+  assert_error_contains "unknown test type"
+}
+
+test_must_custom_message() {
+  run_spell spells/.imps/must dir "/nonexistent_xyz" "custom dir error"
+  assert_failure
+  assert_error_contains "custom dir error"
+}
+
 run_test_case "pick extracts specific line" test_pick_line
 run_test_case "pick works with stdin" test_pick_from_stdin
 run_test_case "now outputs timestamp" test_now_outputs_timestamp
@@ -170,5 +216,12 @@ run_test_case "must file succeeds for file" test_must_file_succeeds
 run_test_case "must file fails for missing" test_must_file_fails
 run_test_case "must set succeeds for non-empty" test_must_set_succeeds
 run_test_case "must set fails for empty" test_must_set_fails
+run_test_case "must dir succeeds for directory" test_must_dir_succeeds
+run_test_case "must dir fails for missing" test_must_dir_fails
+run_test_case "must exec succeeds for executable" test_must_exec_succeeds
+run_test_case "must exec fails for non-executable" test_must_exec_fails
+run_test_case "must readable succeeds for readable file" test_must_readable_succeeds
+run_test_case "must unknown type fails" test_must_unknown_type_fails
+run_test_case "must dir with custom message" test_must_custom_message
 
 finish_tests
