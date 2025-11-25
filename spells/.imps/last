@@ -1,5 +1,5 @@
 #!/bin/sh
-# lastline [FILE] - return only the last line of input or file
-# Example: tail_entry=$(lastline log.txt)
+# last [FILE] - output only the last line of input or file
+# Example: tail_entry=$(last log.txt)
 
 if [ "$#" -ge 1 ]; then tail -n 1 "$1"; else tail -n 1; fi

@@ -1,0 +1,46 @@
+#!/bin/sh
+# must TEST [ARGS...] - die with message if test fails
+# Examples: must there /etc/config "config missing" | must has git "git required"
+
+test_type=$1
+shift
+
+# The last argument is the error message if more than minimum args
+case "$test_type" in
+file|dir|link|exec|readable|writable)
+  if [ "$#" -ge 2 ]; then
+    target=$1; msg=$2
+  else
+    target=$1; msg="$test_type not found: $target"
+  fi
+  is "$test_type" "$target" || { printf '%s\n' "$msg" >&2; exit 1; }
+  ;;
+set)
+  if [ "$#" -ge 2 ]; then
+    target=$1; msg=$2
+  else
+    target=$1; msg="value not provided"
+  fi
+  [ -n "$target" ] || { printf '%s\n' "$msg" >&2; exit 1; }
+  ;;
+there)
+  if [ "$#" -ge 2 ]; then
+    target=$1; msg=$2
+  else
+    target=$1; msg="path not found: $target"
+  fi
+  [ -e "$target" ] || { printf '%s\n' "$msg" >&2; exit 1; }
+  ;;
+has)
+  if [ "$#" -ge 2 ]; then
+    target=$1; msg=$2
+  else
+    target=$1; msg="command not found: $target"
+  fi
+  command -v "$target" >/dev/null 2>&1 || { printf '%s\n' "$msg" >&2; exit 1; }
+  ;;
+*)
+  printf '%s\n' "must: unknown test type '$test_type'" >&2
+  exit 1
+  ;;
+esac

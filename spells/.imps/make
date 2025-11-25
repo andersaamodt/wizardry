@@ -1,6 +1,6 @@
 #!/bin/sh
-# ensure dir PATH - create directory if missing (like mkdir -p but semantic)
-# Example: ensure dir ~/.config/myapp
+# make TYPE PATH - create resource if missing (currently only dir)
+# Example: make dir ~/.config/myapp
 
 case "$1" in
 dir) mkdir -p "$2" ;;

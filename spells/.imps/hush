@@ -1,5 +1,5 @@
 #!/bin/sh
-# quiet COMMAND [ARGS...] - run command with all output suppressed
-# Example: quiet rm -f /tmp/file
+# hush COMMAND [ARGS...] - run command with all output suppressed
+# Example: hush rm -f /tmp/file
 
 "$@" >/dev/null 2>&1
