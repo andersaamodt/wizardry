@@ -117,10 +117,19 @@ cleanup_bootstrap() {
         fi
 }
 
+# Handle interrupt signals (Ctrl-C, HUP, TERM) by cleaning up and exiting.
+# This ensures the script terminates immediately when the user presses Ctrl-C.
+handle_interrupt() {
+        cleanup_bootstrap
+        printf '\n%s\n' "Installation interrupted." >&2
+        exit 130
+}
+
 # Remote installs create a throwaway working directory; trap its cleanup so
 # shells on every platform remove the temporary files even if the install
 # process exits early.
-trap 'cleanup_bootstrap' EXIT HUP INT TERM
+trap 'cleanup_bootstrap' EXIT
+trap 'handle_interrupt' HUP INT TERM
 
 download_file() {
         # Fetch a remote archive using curl or wget, whichever is available on the
@@ -420,6 +429,7 @@ fi
 # Detect the rc file and format before prompting so we can give specific guidance
 detect_rc_file_value=""
 detect_format_value=""
+detect_platform_value=""
 if detect_output="$($DETECT_RC_FILE 2>/dev/null)"; then
         while IFS='=' read -r key value; do
                 case $key in
@@ -429,10 +439,68 @@ if detect_output="$($DETECT_RC_FILE 2>/dev/null)"; then
                 format)
                         detect_format_value=$value
                         ;;
+                platform)
+                        detect_platform_value=$value
+                        ;;
                 esac
         done <<EOF
 $detect_output
 EOF
+fi
+
+# On NixOS, if no nix config was found (format is shell), prompt for the config path
+# since NixOS systems always have a configuration.nix somewhere
+if [ "$detect_platform_value" = "nixos" ] && [ "$detect_format_value" = "shell" ]; then
+        info_msg "NixOS detected but no configuration file found at standard paths"
+        substep_msg "Checked: /etc/nixos/configuration.nix"
+        substep_msg "Checked: ~/.config/home-manager/home.nix"
+        substep_msg "Checked: ~/.config/nixpkgs/home.nix"
+        printf '\n'
+        
+        # Check if we have input available (either terminal or piped)
+        can_read_input=0
+        if [ -t 0 ]; then
+                can_read_input=1
+        elif [ -p /dev/stdin ] || [ -s /dev/stdin ]; then
+                # Input is piped or redirected
+                can_read_input=1
+        fi
+        
+        if [ "$can_read_input" -eq 1 ]; then
+                printf '%s' "Enter the path to your configuration.nix: " >&2
+                IFS= read -r user_nix_config
+                
+                if [ -n "$user_nix_config" ]; then
+                        # Expand ~ if present
+                        case $user_nix_config in
+                                ~)
+                                        user_nix_config=$HOME
+                                        ;;
+                                ~/*)
+                                        user_nix_config=$HOME/${user_nix_config#\~/}
+                                        ;;
+                        esac
+                        
+                        if [ -f "$user_nix_config" ]; then
+                                detect_rc_file_value=$user_nix_config
+                                detect_format_value=nix
+                                # Export for path-wizard to use
+                                NIXOS_CONFIG=$user_nix_config
+                                export NIXOS_CONFIG
+                                success_msg "Using configuration file: $user_nix_config"
+                        else
+                                printf '%s\n' "Error: File not found: $user_nix_config" >&2
+                                exit 1
+                        fi
+                else
+                        printf '%s\n' "Error: NixOS requires a configuration file path." >&2
+                        exit 1
+                fi
+        else
+                printf '%s\n' "Error: No NixOS configuration file found and no interactive input available." >&2
+                printf '%s\n' "Set NIXOS_CONFIG environment variable to specify the configuration file path." >&2
+                exit 1
+        fi
 fi
 
 section_msg "Installation Plan"
