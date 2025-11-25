@@ -257,7 +257,6 @@ DETECT_RC_FILE="$ABS_DIR/spells/divination/detect-rc-file"
 MEMORIZE="$ABS_DIR/spells/spellcraft/memorize"
 CORE_INSTALLER=${WIZARDRY_CORE_INSTALLER:-$ABS_DIR/spells/install/core/install-core}
 ASK_YN="$ABS_DIR/spells/cantrips/ask_yn"
-COLORS_SPELL="$ABS_DIR/spells/cantrips/colors"
 PATH_WIZARD_FLAGS=${PATH_WIZARD_FLAGS:---recursive}
 
 # Export environment variables for all helper spells so that they use the new
@@ -268,7 +267,10 @@ MEMORIZE_SCRIBE="$ABS_DIR/spells/spellcraft/scribe-spell"
 MEMORIZE_COMMAND_HELPER="$ABS_DIR/spells/cantrips/memorize-command"
 export DETECT_RC_FILE SCRIBE_SPELL MEMORIZE_SCRIBE MEMORIZE_COMMAND_HELPER
 
-# Load colors for better formatted output
+# Bootstrap color definitions (inline - cannot rely on wizardry spells during install)
+# Create the escape character in a POSIX-compliant way.
+ESC=$(printf '\033')
+
 disable_colors() {
         RESET=''
         GREEN=''
@@ -280,21 +282,22 @@ disable_colors() {
         RED=''
 }
 
-load_colors() {
-        if [ -r "$COLORS_SPELL" ]; then
-                # shellcheck source=/dev/null
-                . "$COLORS_SPELL"
-                # Disable colors if stdout is not a terminal
-                if [ ! -t 1 ]; then
-                        disable_colors
-                fi
-        else
-                # Fallback to no colors
-                disable_colors
-        fi
-}
+# Set up colors inline since install script cannot assume spells are available
+RESET="${ESC}[0m"
+GREEN="${ESC}[32m"
+CYAN="${ESC}[36m"
+YELLOW="${ESC}[33m"
+BLUE="${ESC}[34m"
+BOLD="${ESC}[1m"
+GREY="${ESC}[2m"
+RED="${ESC}[31m"
 
-load_colors
+# Disable colors if stdout is not a terminal or NO_COLOR is set
+if [ ! -t 1 ]; then
+        disable_colors
+elif [ -n "${NO_COLOR-}" ]; then
+        disable_colors
+fi
 
 # Helper functions for formatted messages
 info_msg() {
@@ -339,7 +342,7 @@ fi
 # This checks multiple RC files to see if wizardry is installed anywhere
 detect_installation_status() {
         # Check common RC files for wizardry paths
-        rc_files="$HOME/.bashrc $HOME/.bash_profile $HOME/.profile $HOME/.zshrc $HOME/.zprofile $HOME/.config/nixpkgs/configuration.nix /etc/nixos/configuration.nix"
+        rc_files="$HOME/.bashrc $HOME/.bash_profile $HOME/.profile $HOME/.zshrc $HOME/.zprofile $HOME/.config/home-manager/home.nix $HOME/.config/nixpkgs/home.nix /etc/nixos/configuration.nix"
 
         found_in_any_rc=0
         for rc_file in $rc_files; do
