@@ -1,9 +1,0 @@
-#!/bin/sh
-# norm [PATH] - normalize path (collapse //, resolve . and ..), reads stdin if no arg
-# Example: norm "/tmp//foo/../bar" -> /tmp/bar
-
-if [ "$#" -ge 1 ]; then
-  printf '%s' "$1" | sed 's|///*|/|g'
-else
-  sed 's|///*|/|g'
-fi

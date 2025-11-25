@@ -40,5 +40,5 @@ else
 fi
 
 # Normalize path for display (macOS TMPDIR ends with /)
-display_path=$(norm "$1")
+display_path=$(norm-path "$1")
 say "Copied $display_path to your clipboard."

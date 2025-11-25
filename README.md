@@ -105,14 +105,16 @@ When you select a spell from the Spellbook, you can cast it immediately, memoriz
 
 ## Imps
 
-Imps are the smallest semantic building blocks in wizardry. They live in `spells/.imps/` and abstract common shell patterns into readable, well-documented microscripts with short semantic names.
+Imps are the smallest semantic building blocks in wizardry. They live in `spells/.imps/` and abstract common shell patterns into readable, well-documented microscripts.
 
 ### What are Imps?
 
 An **imp** is a microscript that:
 
 * Does exactly one thing
-* Has a one-word, ideally one-syllable, aptly-chosen name
+* Has a clear, obvious name that novices can understand without looking it up
+* Prioritizes clarity over brevity—multi-word names are acceptable if they improve readability
+* Uses hyphens to separate words in multi-word names (e.g., `read-file`, `is-empty`)
 * Uses space-separated arguments instead of `--flags`
 * Has no `--help` flag (just a comment header—imps are for coding, not running standalone)
 * Is cross-platform, abstracting OS differences behind a clean interface

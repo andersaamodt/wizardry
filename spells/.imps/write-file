@@ -1,0 +1,5 @@
+#!/bin/sh
+# write-file FILE - write stdin to file (overwrites)
+# Example: echo "hello" | write-file output.txt
+
+cat > "$1"

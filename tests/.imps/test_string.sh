@@ -1,15 +1,15 @@
 #!/bin/sh
-# Tests for string imps: holds, starts, ends, say, warn
+# Tests for string imps: contains, starts, ends, say, warn
 
 . "${0%/*}/../test_common.sh"
 
-test_holds_contains() {
-  run_spell spells/.imps/holds "hello world" "wor"
+test_contains_finds_substring() {
+  run_spell spells/.imps/contains "hello world" "wor"
   assert_success
 }
 
-test_holds_not_contains() {
-  run_spell spells/.imps/holds "hello world" "xyz"
+test_contains_rejects_missing() {
+  run_spell spells/.imps/contains "hello world" "xyz"
   assert_failure
 }
 
@@ -70,8 +70,8 @@ test_yes_rejects_empty() {
   assert_failure
 }
 
-run_test_case "holds finds substring" test_holds_contains
-run_test_case "holds rejects missing substring" test_holds_not_contains
+run_test_case "contains finds substring" test_contains_finds_substring
+run_test_case "contains rejects missing substring" test_contains_rejects_missing
 run_test_case "starts matches prefix" test_starts_with
 run_test_case "starts rejects non-prefix" test_starts_not
 run_test_case "ends matches suffix" test_ends_with

@@ -1,5 +1,5 @@
 #!/bin/sh
-# Tests for control flow imps: ok, hush, fail, die, full, make
+# Tests for control flow imps: ok, quiet, fail, die, full, make
 
 . "${0%/*}/../test_common.sh"
 
@@ -23,11 +23,11 @@ test_ok_fails_silently() {
   fi
 }
 
-test_hush_succeeds_silently() {
-  run_spell spells/.imps/hush ls /
+test_quiet_succeeds_silently() {
+  run_spell spells/.imps/quiet ls /
   assert_success
   if [ -n "$OUTPUT" ]; then
-    TEST_FAILURE_REASON="hush should suppress output"
+    TEST_FAILURE_REASON="quiet should suppress output"
     return 1
   fi
 }
@@ -98,7 +98,7 @@ test_make_dir() {
 
 run_test_case "ok succeeds silently" test_ok_succeeds_silently
 run_test_case "ok fails silently" test_ok_fails_silently
-run_test_case "hush succeeds silently" test_hush_succeeds_silently
+run_test_case "quiet succeeds silently" test_quiet_succeeds_silently
 run_test_case "fail exits with error" test_fail_exits_with_error
 run_test_case "die exits with error" test_die_exits_with_error
 run_test_case "die with custom exit code" test_die_with_code

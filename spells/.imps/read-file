@@ -1,0 +1,5 @@
+#!/bin/sh
+# read-file FILE - read entire file contents to stdout
+# Example: content=$(read-file config.txt)
+
+cat "$1"
