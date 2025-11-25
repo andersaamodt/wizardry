@@ -27,57 +27,62 @@ disable_palette() {
         WIZARDRY_COLORS_AVAILABLE=0
 }
 
+# Create the escape character in a POSIX-compliant way.
+# This stores the actual escape character (ASCII 27) in the variable,
+# so that printf '%s' "$COLOR" works correctly.
+ESC=$(printf '\033')
+
 # Reset all attributes to their default values.
-RESET="\033[0m"
+RESET="${ESC}[0m"
 
 # Colours.
-BLACK="\033[30m"
-RED="\033[31m"
-GREEN="\033[32m"
-YELLOW="\033[33m"
-BLUE="\033[34m"
-PURPLE="\033[35m"
-CYAN="\033[36m"
-WHITE="\033[37m" # Or is this default/white?
-GREY="\033[2m"
+BLACK="${ESC}[30m"
+RED="${ESC}[31m"
+GREEN="${ESC}[32m"
+YELLOW="${ESC}[33m"
+BLUE="${ESC}[34m"
+PURPLE="${ESC}[35m"
+CYAN="${ESC}[36m"
+WHITE="${ESC}[37m" # Or is this default/white?
+GREY="${ESC}[2m"
 
 # Formatting.
-BOLD="\033[1m"
-ITALICS="\033[3m" #or 3?
-UNDERLINED="\033[4m"
-BLINK="\033[5m"
-INVERT="\033[7m"
-STRIKE="\033[9m" # Strikethrough
+BOLD="${ESC}[1m"
+ITALICS="${ESC}[3m" #or 3?
+UNDERLINED="${ESC}[4m"
+BLINK="${ESC}[5m"
+INVERT="${ESC}[7m"
+STRIKE="${ESC}[9m" # Strikethrough
 
 # Bright colours.
-BRIGHT_BLACK="\033[30;1m"
-BRIGHT_RED="\033[31;1m"
-BRIGHT_GREEN="\033[32;1m"
-BRIGHT_YELLOW="\033[33;1m"
-BRIGHT_BLUE="\033[34;1m"
-BRIGHT_PURPLE="\033[35;1m"
-BRIGHT_CYAN="\033[36;1m"
-BRIGHT_WHITE="\033[37;1m"
+BRIGHT_BLACK="${ESC}[30;1m"
+BRIGHT_RED="${ESC}[31;1m"
+BRIGHT_GREEN="${ESC}[32;1m"
+BRIGHT_YELLOW="${ESC}[33;1m"
+BRIGHT_BLUE="${ESC}[34;1m"
+BRIGHT_PURPLE="${ESC}[35;1m"
+BRIGHT_CYAN="${ESC}[36;1m"
+BRIGHT_WHITE="${ESC}[37;1m"
 
 # Background colours.
-BG_BLACK="\033[40m"
-BG_RED="\033[41m"
-BG_GREEN="\033[42m"
-BG_YELLOW="\033[43m"
-BG_BLUE="\033[44m"
-BG_PURPLE="\033[45m"
-BG_CYAN="\033[46m"
-BG_WHITE="\033[47m"
+BG_BLACK="${ESC}[40m"
+BG_RED="${ESC}[41m"
+BG_GREEN="${ESC}[42m"
+BG_YELLOW="${ESC}[43m"
+BG_BLUE="${ESC}[44m"
+BG_PURPLE="${ESC}[45m"
+BG_CYAN="${ESC}[46m"
+BG_WHITE="${ESC}[47m"
 
 # Bright background colours.
-BG_BRIGHT_BLACK="\033[40;1m"
-BG_BRIGHT_RED="\033[41;1m"
-BG_BRIGHT_GREEN="\033[42;1m"
-BG_BRIGHT_YELLOW="\033[103m"
-BG_BRIGHT_BLUE="\033[104m"
-BG_BRIGHT_PURPLE="\033[105m"
-BG_BRIGHT_CYAN="\033[106m"
-BG_BRIGHT_WHITE="\033[107m"
+BG_BRIGHT_BLACK="${ESC}[40;1m"
+BG_BRIGHT_RED="${ESC}[41;1m"
+BG_BRIGHT_GREEN="${ESC}[42;1m"
+BG_BRIGHT_YELLOW="${ESC}[103m"
+BG_BRIGHT_BLUE="${ESC}[104m"
+BG_BRIGHT_PURPLE="${ESC}[105m"
+BG_BRIGHT_CYAN="${ESC}[106m"
+BG_BRIGHT_WHITE="${ESC}[107m"
 
 # Allow the user or terminal capabilities to disable colour output entirely.
 case ${NO_COLOR-} in

@@ -51,17 +51,16 @@ resolve_spell() {
 
 install_core() {
   # Try to install each core dependency, but don't fail if optional packages
-  # can't be installed (e.g., on NixOS where packages must be installed declaratively)
+  # can't be installed (e.g., on NixOS where packages must be installed declaratively).
+  # We silently skip failures to avoid confusing novice users during first-time install.
   core_dependencies | while IFS=: read -r label command_name install_spell _; do
     if command -v "$command_name" >/dev/null 2>&1; then
       continue
     fi
 
-    spell=$(resolve_spell "$install_spell") || return 1
-    if ! ASSUME_YES=1 "$spell"; then
-      printf '%s\n' "install-core: optional dependency $label could not be installed automatically" >&2
-      # Continue with other packages rather than failing completely
-    fi
+    spell=$(resolve_spell "$install_spell" 2>/dev/null) || continue
+    # Run installation silently - failures are expected on some platforms
+    ASSUME_YES=1 "$spell" >/dev/null 2>&1 || true
   done
   # Always return success - optional package installation failures are non-fatal
   return 0

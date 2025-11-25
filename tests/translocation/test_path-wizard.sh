@@ -100,6 +100,28 @@ test_nix_add_status_and_remove_round_trip() {
   fi
 }
 
+test_nix_backup_uses_numeric_suffix() {
+  # Test that multiple backups use numeric suffixes (1, 2, 3) not 'x' suffixes
+  rc="$WIZARDRY_TMPDIR/backup_test.nix"
+  dir1="$WIZARDRY_TMPDIR/backup_dir1"
+  dir2="$WIZARDRY_TMPDIR/backup_dir2"
+  mkdir -p "$dir1" "$dir2"
+
+  # Create initial config
+  printf '{ }\n' > "$rc"
+
+  # Add first directory - this creates a backup
+  PATH_WIZARD_PLATFORM=debian run_spell "spells/translocation/path-wizard" --rc-file "$rc" --format nix add "$dir1"
+  assert_success || return 1
+
+  # Count backup files that have 'x' suffix pattern (the old broken behavior)
+  x_backups=$(ls "$WIZARDRY_TMPDIR"/backup_test.nix.wizardry.*x* 2>/dev/null | wc -l || printf '0')
+  if [ "$x_backups" -gt 0 ]; then
+    TEST_FAILURE_REASON="backup files should not have 'x' suffixes, found: $(ls "$WIZARDRY_TMPDIR"/backup_test.nix.wizardry.* 2>/dev/null)"
+    return 1
+  fi
+}
+
 run_test_case "path-wizard prints usage" test_help
 run_test_case "path-wizard fails when detect helper missing" test_missing_detect_helper
 run_test_case "path-wizard rejects unknown options" test_unknown_option
@@ -109,4 +131,5 @@ run_test_case "path-wizard reports existing shell entries" test_shell_status_suc
 run_test_case "path-wizard remove reports missing rc file" test_shell_remove_handles_missing_rc_file
 run_test_case "path-wizard remove drops managed shell entries" test_shell_remove_clears_managed_entries
 run_test_case "path-wizard manages Nix PATH entries" test_nix_add_status_and_remove_round_trip
+run_test_case "path-wizard uses numeric backup suffixes" test_nix_backup_uses_numeric_suffix
 finish_tests

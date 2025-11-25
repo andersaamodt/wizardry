@@ -443,12 +443,15 @@ backup_rc_file_once() {
         fi
 
         timestamp=$(date +%Y%m%d%H%M%S 2>/dev/null || date +%s 2>/dev/null || printf '%s' "$$")
-        suffix=$timestamp
-        backup="$rc_file.wizardry.$suffix"
-        while [ -e "$backup" ]; do
-                suffix=${suffix}x
-                backup="$rc_file.wizardry.$suffix"
-        done
+        backup="$rc_file.wizardry.$timestamp"
+        # If a backup with this timestamp exists, add a numeric counter
+        if [ -e "$backup" ]; then
+                counter=1
+                while [ -e "$rc_file.wizardry.$timestamp.$counter" ]; do
+                        counter=$((counter + 1))
+                done
+                backup="$rc_file.wizardry.$timestamp.$counter"
+        fi
 
         if ! run_maybe_sudo cp "$rc_file" "$backup"; then
                 printf '%s\n' "path-wizard: unable to back up '$rc_file'." >&2
