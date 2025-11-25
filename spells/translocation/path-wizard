@@ -259,6 +259,13 @@ if [ "$recursive" -eq 1 ]; then
 
         trap 'cleanup_tmp' EXIT HUP INT TERM
 
+        # Set a consistent timestamp for backups during this recursive session.
+        # This ensures all child processes use the same timestamp for deduplication.
+        if [ -z "${PATH_WIZARD_BACKUP_TIMESTAMP-}" ]; then
+                PATH_WIZARD_BACKUP_TIMESTAMP=$(date +%Y%m%d%H%M%S 2>/dev/null || date +%s 2>/dev/null || printf '%s' "$$")
+                export PATH_WIZARD_BACKUP_TIMESTAMP
+        fi
+
         run_recursive_action() {
                 subdir=$1
                 set -- "$0"
@@ -398,7 +405,9 @@ run_maybe_sudo() {
         fi
 }
 
-nix_backup_created=0
+# Track whether a backup has been created, including across recursive invocations.
+# The environment variable persists across child processes spawned during recursive mode.
+nix_backup_created=${PATH_WIZARD_NIX_BACKUP_CREATED:-0}
 
 # These literal export lines represent how we manage PATH entries inside shell
 # rc files. The quoted variant is the format we now write, while the legacy
@@ -442,15 +451,19 @@ backup_rc_file_once() {
                 return 0
         fi
 
-        timestamp=$(date +%Y%m%d%H%M%S 2>/dev/null || date +%s 2>/dev/null || printf '%s' "$$")
+        # Use shared timestamp from recursive parent if available, otherwise generate one.
+        # This ensures all recursive invocations check for the same backup file.
+        timestamp=${PATH_WIZARD_BACKUP_TIMESTAMP:-$(date +%Y%m%d%H%M%S 2>/dev/null || date +%s 2>/dev/null || printf '%s' "$$")}
         backup="$rc_file.wizardry.$timestamp"
-        # If a backup with this timestamp exists, add a numeric counter
+        
+        # If any backup from this timestamp already exists, another process in
+        # this recursive run already created it - skip to avoid duplicates.
+        # This handles the case where child processes run within the same second.
         if [ -e "$backup" ]; then
-                counter=1
-                while [ -e "$rc_file.wizardry.$timestamp.$counter" ]; do
-                        counter=$((counter + 1))
-                done
-                backup="$rc_file.wizardry.$timestamp.$counter"
+                nix_backup_created=1
+                PATH_WIZARD_NIX_BACKUP_CREATED=1
+                export PATH_WIZARD_NIX_BACKUP_CREATED
+                return 0
         fi
 
         if ! run_maybe_sudo cp "$rc_file" "$backup"; then
@@ -460,6 +473,9 @@ backup_rc_file_once() {
 
         printf '%s\n' "path-wizard: backed up '$rc_file' to '$backup'." >&2
         nix_backup_created=1
+        # Export the flag so recursive invocations know the backup was already made
+        PATH_WIZARD_NIX_BACKUP_CREATED=1
+        export PATH_WIZARD_NIX_BACKUP_CREATED
         return 0
 }
 

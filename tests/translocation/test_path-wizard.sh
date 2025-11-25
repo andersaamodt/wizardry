@@ -122,6 +122,29 @@ test_nix_backup_uses_numeric_suffix() {
   fi
 }
 
+test_nix_recursive_creates_single_backup() {
+  # Test that recursive mode creates only one backup, not one per subdirectory
+  # This was the bug reported in the issue where NixOS config would get
+  # backed up ~20 times (once per subdirectory) causing permission denied errors
+  rc="$WIZARDRY_TMPDIR/recursive_backup.nix"
+  base_dir="$WIZARDRY_TMPDIR/recursive_dir"
+  mkdir -p "$base_dir/sub1" "$base_dir/sub2" "$base_dir/sub3"
+
+  # Create initial config
+  printf '{ }\n' > "$rc"
+
+  # Add with --recursive flag - should create only ONE backup
+  PATH_WIZARD_PLATFORM=debian run_spell "spells/translocation/path-wizard" --recursive --rc-file "$rc" --format nix add "$base_dir"
+  assert_success || return 1
+
+  # Count backup files - should be exactly 1
+  backup_count=$(find "$WIZARDRY_TMPDIR" -maxdepth 1 -name 'recursive_backup.nix.wizardry.*' 2>/dev/null | wc -l)
+  if [ "$backup_count" -ne 1 ]; then
+    TEST_FAILURE_REASON="expected exactly 1 backup file, found $backup_count: $(find "$WIZARDRY_TMPDIR" -maxdepth 1 -name 'recursive_backup.nix.wizardry.*' 2>/dev/null | tr '\n' ' ')"
+    return 1
+  fi
+}
+
 run_test_case "path-wizard prints usage" test_help
 run_test_case "path-wizard fails when detect helper missing" test_missing_detect_helper
 run_test_case "path-wizard rejects unknown options" test_unknown_option
@@ -132,4 +155,5 @@ run_test_case "path-wizard remove reports missing rc file" test_shell_remove_han
 run_test_case "path-wizard remove drops managed shell entries" test_shell_remove_clears_managed_entries
 run_test_case "path-wizard manages Nix PATH entries" test_nix_add_status_and_remove_round_trip
 run_test_case "path-wizard uses numeric backup suffixes" test_nix_backup_uses_numeric_suffix
+run_test_case "path-wizard recursive creates single backup" test_nix_recursive_creates_single_backup
 finish_tests
