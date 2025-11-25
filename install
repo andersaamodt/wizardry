@@ -457,15 +457,13 @@ if [ "$detect_platform_value" = "nixos" ] && [ "$detect_format_value" = "shell" 
         substep_msg "Checked: ~/.config/nixpkgs/home.nix"
         printf '\n'
         
-        # Check if we have input available (either terminal or piped)
+        # Check if we have input available (either terminal or piped/redirected)
         # Also respect ASK_CANTRIP_INPUT=none to disable interactive prompts
         can_read_input=0
         if [ "${ASK_CANTRIP_INPUT-}" = "none" ]; then
                 can_read_input=0
-        elif [ -t 0 ]; then
-                can_read_input=1
-        elif [ -p /dev/stdin ]; then
-                # Input is piped
+        else
+                # stdin can be a terminal, pipe, or redirected file - all are readable
                 can_read_input=1
         fi
         
@@ -474,7 +472,8 @@ if [ "$detect_platform_value" = "nixos" ] && [ "$detect_format_value" = "shell" 
                 IFS= read -r user_nix_config
                 
                 if [ -n "$user_nix_config" ]; then
-                        # Expand ~ if present
+                        # Expand ~ and ~/ patterns. Note: ~user/ patterns are not supported;
+                        # users should provide absolute paths or use ~ for their own home.
                         case $user_nix_config in
                                 ~)
                                         user_nix_config=$HOME

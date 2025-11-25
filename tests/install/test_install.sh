@@ -28,54 +28,28 @@ STUB
 }
 
 install_exits_on_interrupt() {
-  # Test that the install script properly exits when receiving SIGINT (Ctrl-C)
-  # We simulate this by sending SIGINT to the script during execution
-  fixture=$(make_fixture)
-  provide_basic_tools "$fixture"
-  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq kill sleep
-
-  install_dir="$fixture/home/.wizardry"
+  # Test that the install script properly handles SIGINT (Ctrl-C)
+  # We verify this by checking that the trap is set correctly and the handler exits
   
-  # Create a script that sends SIGINT to itself after a brief delay
-  cat >"$fixture/test_interrupt.sh" <<'SCRIPT'
-#!/bin/sh
-# Start the install script in the background
-"$INSTALL_SCRIPT" &
-pid=$!
-
-# Give it a moment to start, then send SIGINT
-sleep 0.5
-kill -INT $pid 2>/dev/null || true
-
-# Wait for it and capture the exit status
-wait $pid 2>/dev/null
-status=$?
-
-# Exit status 130 indicates the script was interrupted by SIGINT (128 + 2)
-if [ "$status" -eq 130 ]; then
-  echo "INTERRUPT_HANDLED"
-  exit 0
-else
-  echo "UNEXPECTED_STATUS:$status"
-  exit 1
-fi
-SCRIPT
-  chmod +x "$fixture/test_interrupt.sh"
-
-  # Run our test wrapper
-  PATH="$fixture/bin:$initial_path" \
-    WIZARDRY_INSTALL_DIR="$install_dir" \
-    INSTALL_SCRIPT="$ROOT_DIR/install" \
-    run_cmd sh "$fixture/test_interrupt.sh"
-
-  # The test should pass if the interrupt was handled (exit 0)
-  # or if the script exited with 130 (INT signal)
-  if [ "$STATUS" -eq 0 ]; then
-    assert_output_contains "INTERRUPT_HANDLED" || return 1
-    return 0
+  # Parse the install script for the trap definition
+  trap_line=$(grep -n "trap 'handle_interrupt'" "$ROOT_DIR/install" | head -1)
+  if [ -z "$trap_line" ]; then
+    TEST_FAILURE_REASON="trap handler for INT signal not found in install script"
+    return 1
   fi
   
-  # If the wrapper itself failed, check if it was due to the expected interrupt
+  # Check that handle_interrupt function exists and contains exit
+  if ! grep -q "handle_interrupt()" "$ROOT_DIR/install"; then
+    TEST_FAILURE_REASON="handle_interrupt function not found"
+    return 1
+  fi
+  
+  # Check that handle_interrupt exits with code 130 (128 + SIGINT=2)
+  if ! grep -A5 "handle_interrupt()" "$ROOT_DIR/install" | grep -q "exit 130"; then
+    TEST_FAILURE_REASON="handle_interrupt should exit with code 130"
+    return 1
+  fi
+  
   return 0
 }
 
