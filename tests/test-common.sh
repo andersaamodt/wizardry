@@ -435,13 +435,13 @@ write_sudo_stub() {
   fixture=$1
   cat <<'STUB' >"$fixture/bin/sudo"
 #!/bin/sh
-# Strip sudo flags like -n (non-interactive) before executing
+# Strip common sudo flags before executing the actual command.
+# This stub handles flags used by wizardry spells; add more as needed.
 while [ $# -gt 0 ]; do
   case "$1" in
-    -n|--non-interactive) shift ;;
-    --)                   shift; break ;;
-    -*)                   shift ;;
-    *)                    break ;;
+    -n|--non-interactive) shift ;;  # Skip non-interactive flag
+    --)                   shift; break ;;  # End of options
+    *)                    break ;;  # First non-flag argument
   esac
 done
 exec "$@"
