@@ -290,10 +290,11 @@ get_subtest_total() {
 }
 
 # Check if test output contains a --help test case.
+# Looks for test case lines (PASS/FAIL) that mention help or usage.
 # $1 - test output
 # Returns 0 if help test found, 1 otherwise.
 has_help_test() {
-  printf '%s\n' "$1" | grep -qiE "(PASS|FAIL).*--help|help|usage"
+  printf '%s\n' "$1" | grep -qiE "(PASS|FAIL).*(--help|-h|help|usage)"
 }
 
 # Record a test that has fewer than required subtests or is missing help test.
@@ -374,11 +375,11 @@ while IFS= read -r test_path; do
       fi
       ;;
     *)
-      # Spells need a --help test plus MIN_SUBTESTS_IMP additional subtests
+      # Spells need a --help test plus additional behavioral subtests.
+      # Total must be at least MIN_SUBTESTS_SPELL (1 help + 2 behavioral = 3).
       if ! has_help_test "$cleaned_output"; then
         record_incomplete_test "$test_path" "missing --help test"
       fi
-      # Total should be at least MIN_SUBTESTS_SPELL (1 help + 2 behavioral)
       if [ -n "$test_subtest_count" ] && [ "$test_subtest_count" -lt "$MIN_SUBTESTS_SPELL" ]; then
         record_incomplete_test "$test_path" "$test_subtest_count subtests, need $MIN_SUBTESTS_SPELL"
       fi
