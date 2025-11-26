@@ -264,6 +264,8 @@ run_cmd() {
   PATH=$_saved_path
 
   if [ "$BWRAP_AVAILABLE" -eq 1 ]; then
+    # Pass through test-related environment variables that tests commonly set
+    # These are needed for test stubs (apt-get, pkgin, etc.) to log their actions
     set -- \
       --die-with-parent \
       --ro-bind / / \
@@ -278,6 +280,16 @@ run_cmd() {
       --setenv TMPDIR "$tmpdir" \
       --setenv WIZARDRY_TMPDIR "$WIZARDRY_TMPDIR" \
       -- "$@"
+    
+    # Optionally pass through test-related variables if they're set
+    # (add them BEFORE the -- separator in the command)
+    for envvar in APT_LOG APT_EXIT PKGIN_LOG PKGIN_EXIT PKGIN_CANDIDATES; do
+      eval "val=\${$envvar-}"
+      if [ -n "$val" ]; then
+        # Insert --setenv before the -- separator
+        set -- "--setenv" "$envvar" "$val" "$@"
+      fi
+    done
 
     if [ "$BWRAP_USE_UNSHARE" -eq 1 ]; then
       set -- --unshare-user-try "$@"
