@@ -352,10 +352,6 @@ scan_coverage() {
       spells/system/test-magic|spells/system/verify-posix)
         continue
         ;;
-      spells/.imps/*|spells/.imps/*)
-        # Imps are tested in grouped test files under tests/.imps/
-        continue
-        ;;
       *.service|*.gitkeep|*.gitignore)
         # Skip non-script files
         continue
@@ -376,7 +372,52 @@ $(cd "$root_dir" && find spells -type f | sort)
 EOF_SPELLS
 }
 
+scan_extraneous() {
+  extraneous_files=""
+  
+  while IFS= read -r test_file; do
+    [ -n "$test_file" ] || continue
+    
+    # Skip test_common.sh and lib files
+    case $test_file in
+      */test_common.sh|*/lib/*) continue ;;
+    esac
+    
+    # Extract spell path from test path
+    rel=${test_file#"$test_dir/"}
+    dir=$(dirname "$rel")
+    base=$(basename "$rel")
+    # Remove test_ prefix and .sh suffix
+    base=${base#test_}
+    base=${base%.sh}
+    
+    # Handle special cases for install tests (test the root install script)
+    case "$base" in
+      install|install-with-old-version)
+        if [ "$dir" = "install" ]; then
+          if [ -f "$root_dir/install" ]; then
+            continue
+          fi
+        fi
+        ;;
+    esac
+    
+    spell_path="$root_dir/spells/$dir/$base"
+    
+    if [ ! -f "$spell_path" ]; then
+      if [ -n "$extraneous_files" ]; then
+        extraneous_files=$(printf '%s\n%s' "$extraneous_files" "tests/$rel")
+      else
+        extraneous_files="tests/$rel"
+      fi
+    fi
+  done <<EOF_TESTS
+$(find "$test_dir" -type f -name 'test_*.sh' | sort)
+EOF_TESTS
+}
+
 scan_coverage
+scan_extraneous
 coverage_uncovered=$((coverage_total - coverage_covered))
 
 total_scripts=$((pass + fail))
@@ -386,6 +427,12 @@ printf 'Summary: %d passed, %d failed, %d uncovered, subtests %d/%d.\n' \
 if [ "$coverage_uncovered" -gt 0 ]; then
   printf 'Uncovered spells:\n'
   printf '  %s\n' "$uncovered_spells"
+  status=1
+fi
+
+if [ -n "$extraneous_files" ]; then
+  printf 'Extraneous test files (no corresponding spell):\n'
+  printf '  %s\n' "$extraneous_files"
   status=1
 fi
 
