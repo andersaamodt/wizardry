@@ -1,5 +1,5 @@
 #!/bin/sh
-# count-chars [STRING] - count characters in string or stdin
+# count-chars [STRING] - count bytes in string or stdin (note: counts bytes, not Unicode characters)
 # Example: n=$(count-chars "hello")   # outputs: 5
 
 if [ "$#" -ge 1 ]; then

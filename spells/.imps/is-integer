@@ -1,12 +1,12 @@
 #!/bin/sh
 # is-integer VALUE - test if value is a valid integer (positive, negative, or zero)
-# Example: is-integer "42" && echo "valid" | is-integer "-5" && echo "valid"
+# Example: is-integer "42" && echo "valid"
 
 case "$1" in
 '') exit 1 ;;           # empty string
 -) exit 1 ;;            # just a minus sign
--[0-9]*[0-9]) : ;;      # negative number with multiple digits
 -[0-9]) : ;;            # negative single digit
+-[0-9]*) : ;;           # negative multi-digit (validated below)
 [0-9]*) : ;;            # positive number or zero
 *) exit 1 ;;            # anything else
 esac

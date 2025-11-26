@@ -206,7 +206,7 @@ test_count_chars_with_spaces() {
 }
 
 test_count_chars_unicode() {
-  # Note: wc -c counts bytes, not characters, so this test uses ASCII
+  # Note: count-chars uses wc -c which counts bytes, not Unicode characters
   run_spell spells/.imps/count-chars "test"
   assert_success
   assert_output_contains "4"
