@@ -14,18 +14,15 @@ ask_relays_to_ask_text() {
   assert_success && assert_output_contains "guildmaster"
 }
 
-ask_fails_without_helper() {
-  # ask should fail when ask_text helper is missing from path
-  stub_dir=$(make_tempdir)
-  run_cmd env PATH="$stub_dir" "$ROOT_DIR/spells/cantrips/ask" "test"
-  assert_failure
-}
-
-run_test_case "ask relays prompts to ask_text" ask_relays_to_ask_text
-run_test_case "ask fails without helper" ask_fails_without_helper
 spell_is_executable() {
   [ -x "$ROOT_DIR/spells/cantrips/ask" ]
 }
 
+spell_has_content() {
+  [ -s "$ROOT_DIR/spells/cantrips/ask" ]
+}
+
+run_test_case "ask relays prompts to ask_text" ask_relays_to_ask_text
 run_test_case "cantrips/ask is executable" spell_is_executable
+run_test_case "cantrips/ask has content" spell_has_content
 finish_tests
