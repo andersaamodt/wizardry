@@ -18,4 +18,9 @@ spell_has_content() {
 
 run_test_case "menu/network-menu is executable" spell_is_executable
 run_test_case "menu/network-menu has content" spell_has_content
+spell_has_shebang() {
+  head -1 "$ROOT_DIR/spells/menu/network-menu" | grep -q "^#!"
+}
+
+run_test_case "menu/network-menu has shebang" spell_has_shebang
 finish_tests

@@ -23,4 +23,9 @@ ask_fails_without_helper() {
 
 run_test_case "ask relays prompts to ask_text" ask_relays_to_ask_text
 run_test_case "ask fails without helper" ask_fails_without_helper
+spell_is_executable() {
+  [ -x "$ROOT_DIR/spells/cantrips/ask" ]
+}
+
+run_test_case "cantrips/ask is executable" spell_is_executable
 finish_tests

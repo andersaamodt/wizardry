@@ -18,4 +18,9 @@ spell_has_content() {
 }
 
 run_test_case "install/tor/repair-tor-permissions has content" spell_has_content
+spell_has_shebang() {
+  head -1 "$ROOT_DIR/spells/install/tor/repair-tor-permissions" | grep -q "^#!"
+}
+
+run_test_case "install/tor/repair-tor-permissions has shebang" spell_has_shebang
 finish_tests

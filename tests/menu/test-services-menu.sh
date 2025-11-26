@@ -53,4 +53,9 @@ test_services_menu_presents_actions() {
 
 run_test_case "services-menu validates dependencies" test_services_menu_checks_dependencies
 run_test_case "services-menu sends service actions to menu" test_services_menu_presents_actions
+spell_has_shebang() {
+  head -1 "$ROOT_DIR/spells/menu/services-menu" | grep -q "^#!"
+}
+
+run_test_case "menu/services-menu has shebang" spell_has_shebang
 finish_tests

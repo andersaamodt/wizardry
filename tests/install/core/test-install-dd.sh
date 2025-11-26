@@ -25,4 +25,9 @@ spell_has_content() {
 run_test_case "install-dd installs via package manager" install_dd_installs_package
 run_test_case "install-dd has content" spell_has_content
 
+spell_has_shebang() {
+  head -1 "$ROOT_DIR/spells/install/core/install-dd" | grep -q "^#!"
+}
+
+run_test_case "install/core/install-dd has shebang" spell_has_shebang
 finish_tests

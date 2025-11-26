@@ -218,7 +218,10 @@ subtests_passed=0
 subtests_total=0
 failed_scripts=""
 incomplete_tests=""
-MIN_SUBTESTS=2
+# Imps have no --help flag, so they need 2 subtests minimum.
+# Spells have a --help flag which needs testing, plus 2 additional subtests.
+MIN_SUBTESTS_IMP=2
+MIN_SUBTESTS_SPELL=3
 failure_output_file=$(mktemp)
 cleanup_failure_output() {
   rm -f "$failure_output_file"
@@ -352,9 +355,18 @@ while IFS= read -r test_path; do
     } >>"$failure_output_file"
   fi
 
-  # Check minimum subtest count
+  # Check minimum subtest count based on test type.
+  # Imps (in .imps/) need MIN_SUBTESTS_IMP, spells need MIN_SUBTESTS_SPELL.
   test_subtest_count=$(get_subtest_total "$cleaned_output")
-  if [ -n "$test_subtest_count" ] && [ "$test_subtest_count" -lt "$MIN_SUBTESTS" ]; then
+  case "$test_path" in
+    .imps/*|*/.imps/*)
+      min_required=$MIN_SUBTESTS_IMP
+      ;;
+    *)
+      min_required=$MIN_SUBTESTS_SPELL
+      ;;
+  esac
+  if [ -n "$test_subtest_count" ] && [ "$test_subtest_count" -lt "$min_required" ]; then
     record_incomplete_test "$test_path" "$test_subtest_count"
   fi
 
@@ -475,7 +487,7 @@ if [ -n "$extraneous_files" ]; then
 fi
 
 if [ -n "$incomplete_tests" ]; then
-  printf 'Incomplete tests (fewer than %d subtests):\n' "$MIN_SUBTESTS"
+  printf 'Incomplete tests (imps need %d+ subtests, spells need %d+ including --help):\n' "$MIN_SUBTESTS_IMP" "$MIN_SUBTESTS_SPELL"
   printf '  %s\n' "$incomplete_tests"
   status=1
 fi

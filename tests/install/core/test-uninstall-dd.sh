@@ -30,4 +30,9 @@ test_uninstall_dd_uses_manage_system_command() {
 run_test_case "uninstall-dd is executable" test_uninstall_dd_is_executable
 run_test_case "uninstall-dd uses manage-system-command" test_uninstall_dd_uses_manage_system_command
 
+spell_has_shebang() {
+  head -1 "$ROOT_DIR/spells/install/core/uninstall-dd" | grep -q "^#!"
+}
+
+run_test_case "install/core/uninstall-dd has shebang" spell_has_shebang
 finish_tests

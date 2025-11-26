@@ -25,4 +25,9 @@ spell_has_content() {
 run_test_case "install-stty installs via package manager" install_stty_installs_package
 run_test_case "install-stty has content" spell_has_content
 
+spell_has_shebang() {
+  head -1 "$ROOT_DIR/spells/install/core/install-stty" | grep -q "^#!"
+}
+
+run_test_case "install/core/install-stty has shebang" spell_has_shebang
 finish_tests

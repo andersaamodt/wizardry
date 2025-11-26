@@ -69,4 +69,9 @@ restart_service_requires_name() {
 run_test_case "restart-service prompts then restarts unit" restart_service_prompts_and_invokes
 run_test_case "restart-service fails when name missing" restart_service_requires_name
 
+spell_is_executable() {
+  [ -x "$ROOT_DIR/spells/cantrips/restart-service" ]
+}
+
+run_test_case "cantrips/restart-service is executable" spell_is_executable
 finish_tests

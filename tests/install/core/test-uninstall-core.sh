@@ -52,4 +52,9 @@ STUB
 
 run_test_case "uninstall-core uses pkgin on Darwin" uninstall_core_uses_pkgin_on_darwin
 
+spell_has_shebang() {
+  head -1 "$ROOT_DIR/spells/install/core/uninstall-core" | grep -q "^#!"
+}
+
+run_test_case "install/core/uninstall-core has shebang" spell_has_shebang
 finish_tests

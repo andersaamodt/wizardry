@@ -47,4 +47,9 @@ STUB
 
 run_test_case "install-core uses pkgin on Darwin" install_core_uses_pkgin_on_darwin
 
+spell_has_shebang() {
+  head -1 "$ROOT_DIR/spells/install/core/install-core" | grep -q "^#!"
+}
+
+run_test_case "install/core/install-core has shebang" spell_has_shebang
 finish_tests

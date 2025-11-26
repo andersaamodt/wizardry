@@ -18,4 +18,9 @@ spell_has_content() {
 
 run_test_case "install/handle-command-not-found exists" spell_exists
 run_test_case "install/handle-command-not-found has content" spell_has_content
+spell_has_shebang() {
+  head -1 "$ROOT_DIR/spells/install/core/handle-command-not-found" | grep -q "^#!"
+}
+
+run_test_case "install/core/handle-command-not-found has shebang" spell_has_shebang
 finish_tests

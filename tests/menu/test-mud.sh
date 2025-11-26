@@ -29,4 +29,9 @@ spell_is_executable() {
 
 run_test_case "mud menu requires menu dependency" mud_requires_menu_dependency
 run_test_case "menu/mud is executable" spell_is_executable
+spell_has_shebang() {
+  head -1 "$ROOT_DIR/spells/menu/mud" | grep -q "^#!"
+}
+
+run_test_case "menu/mud has shebang" spell_has_shebang
 finish_tests

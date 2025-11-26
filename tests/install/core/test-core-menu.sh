@@ -72,4 +72,9 @@ SH
 
 run_test_case "install/core/core-menu is executable" spell_is_executable
 run_test_case "core menu lists install targets" core_menu_lists_dependencies
+spell_has_shebang() {
+  head -1 "$ROOT_DIR/spells/install/core/core-menu" | grep -q "^#!"
+}
+
+run_test_case "install/core/core-menu has shebang" spell_has_shebang
 finish_tests

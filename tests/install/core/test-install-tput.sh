@@ -25,4 +25,9 @@ spell_has_content() {
 run_test_case "install-tput installs via package manager" install_tput_installs_package
 run_test_case "install-tput has content" spell_has_content
 
+spell_has_shebang() {
+  head -1 "$ROOT_DIR/spells/install/core/install-tput" | grep -q "^#!"
+}
+
+run_test_case "install/core/install-tput has shebang" spell_has_shebang
 finish_tests

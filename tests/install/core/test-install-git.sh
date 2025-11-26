@@ -25,4 +25,9 @@ spell_has_content() {
 run_test_case "install-git installs via package manager" install_git_installs_package
 run_test_case "install-git has content" spell_has_content
 
+spell_has_shebang() {
+  head -1 "$ROOT_DIR/spells/install/core/install-git" | grep -q "^#!"
+}
+
+run_test_case "install/core/install-git has shebang" spell_has_shebang
 finish_tests

@@ -18,4 +18,9 @@ has_service_section() {
 
 run_test_case "install/tor/tor.service declares a Unit section" has_unit_section
 run_test_case "install/tor/tor.service declares a Service section" has_service_section
+has_install_section() {
+  grep -q "^\[Install\]" "$ROOT_DIR/spells/install/tor/tor.service"
+}
+
+run_test_case "install/tor/tor.service declares an Install section" has_install_section
 finish_tests

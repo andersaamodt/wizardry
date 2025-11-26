@@ -53,4 +53,9 @@ test_system_menu_includes_test_utilities() {
 
 run_test_case "system-menu requires menu dependency" test_system_menu_checks_requirements
 run_test_case "system-menu passes system actions to menu" test_system_menu_includes_test_utilities
+spell_has_shebang() {
+  head -1 "$ROOT_DIR/spells/menu/system-menu" | grep -q "^#!"
+}
+
+run_test_case "menu/system-menu has shebang" spell_has_shebang
 finish_tests

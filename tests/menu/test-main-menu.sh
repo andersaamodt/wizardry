@@ -53,4 +53,9 @@ test_main_menu_passes_expected_entries() {
 
 run_test_case "main-menu requires menu dependency" test_main_menu_checks_dependency
 run_test_case "main-menu forwards menu entries" test_main_menu_passes_expected_entries
+spell_has_shebang() {
+  head -1 "$ROOT_DIR/spells/menu/main-menu" | grep -q "^#!"
+}
+
+run_test_case "menu/main-menu has shebang" spell_has_shebang
 finish_tests
