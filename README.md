@@ -77,32 +77,20 @@ Most wizardry spells can assume that wizardry is installed (in `$PATH`) and that
 
 The Spellbook is your personal grimoire for managing and organizing spells. Access it by typing `spellbook` or selecting it from the main menu.
 
-### Features
+Spell categories:
 
-* **Browse spells by category**: Explore spells organized into magical categories
-* **Save custom commands**: Create and save your own shell commands for quick access
-* **Memorize spells**: Add frequently-used spells to your Cast menu for instant casting
-* **Delete custom commands**: Remove commands you no longer need
-
-### Spell Categories
-
-Wizardry organizes spells into the following magical categories:
-
-* **arcane**: Advanced magical operations and meta-commands
-* **cantrips**: Simple, frequently-used utility spells
-* **contacts**: Manage your address book and contacts
-* **divination**: Detect and discover information about your system
-* **enchant**: Transform and manipulate data formats
-* **install**: Install and manage software packages
-* **kryptos**: Cryptographic operations and secure hashing
-* **mud**: Multi-User Dungeon interface and commands
-* **spellcraft**: Tools for creating and managing your own spells
-* **system**: System management and maintenance tasks
-* **translocation**: Navigate directories and manage bookmarks
-* **war**: Process management and system monitoring
-* **wards**: Security and protection spells
-
-When you select a spell from the Spellbook, you can cast it immediately, memorize it for the Cast menu, view its help documentation, or test it. Custom commands can also be deleted from the spell action menu.
+* custom commands
+* arcane
+* cantrips
+* contacts
+* divination
+* enchantment  
+* kryptos
+* mud
+* spellcraft
+* translocation
+* war
+* wards
 
 ## Imps
 
