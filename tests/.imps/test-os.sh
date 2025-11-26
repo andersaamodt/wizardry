@@ -15,9 +15,9 @@ test_os_outputs_lowercase() {
   assert_success
   # Extract first word of output (the OS name) - ignores any sandbox warnings
   os_name=$(printf '%s\n' "$OUTPUT" | head -1 | tr -d '[:space:]')
-  # OS name should be lowercase
+  # OS name should be lowercase (use LC_ALL=C for consistent case matching)
   case "$os_name" in
-    *[A-Z]*) TEST_FAILURE_REASON="output should be lowercase, got: $os_name"; return 1 ;;
+    *[ABCDEFGHIJKLMNOPQRSTUVWXYZ]*) TEST_FAILURE_REASON="output should be lowercase, got: $os_name"; return 1 ;;
     *) return 0 ;;
   esac
 }

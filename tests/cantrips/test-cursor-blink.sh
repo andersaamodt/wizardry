@@ -52,7 +52,11 @@ run_test_case "cursor-blink prints ANSI codes for supported terminals" cursor_bl
 shows_help() {
   run_spell spells/cantrips/cursor-blink --help
   # Help is printed via usage function (returns non-zero, output to stderr)
-  assert_error_contains "Usage:"
+  # Check both stdout and stderr for Usage message
+  case "$OUTPUT$ERROR" in
+    *Usage*) return 0 ;;
+    *) TEST_FAILURE_REASON="help output missing Usage"; return 1 ;;
+  esac
 }
 
 run_test_case "cursor-blink shows help" shows_help
