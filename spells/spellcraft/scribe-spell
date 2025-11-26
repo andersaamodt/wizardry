@@ -185,7 +185,7 @@ rc_run() {
                 ensure_rc_directory
                 tmp_file=$(mktemp "${TMPDIR:-/tmp}/scribe-spell.XXXXXX") || exit 1
                 line_count=0
-                while IFS= read -r line || [ -n "$line" ]; do
+                while IFS= read -r line || nonempty "$line"; do
                         printf '%s\n' "$line" >>"$tmp_file"
                         line_count=$((line_count + 1))
                 done
@@ -224,7 +224,7 @@ rc_run() {
                 removing_block=0
                 to_skip=0
                 removed=0
-                while IFS= read -r line || [ -n "$line" ]; do
+                while IFS= read -r line || nonempty "$line"; do
                         if [ "$removing_block" -eq 1 ]; then
                                 case $line in
                                 "$block_end"|"$legacy_block_end")

@@ -40,7 +40,7 @@ done
 make dir "$pages_dir"
 
 page_number=1
-while IFS= read -r line || given "$line"; do
+while IFS= read -r line || nonempty "$line"; do
     clean_name=$(printf '%s' "$line" | tr -dc '[:alnum:] .,;_-' | tr ' ' '_')
     empty "$clean_name" && clean_name="page_${page_number}"
     say "$line" >"$pages_dir/$clean_name"

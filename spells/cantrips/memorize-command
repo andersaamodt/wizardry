@@ -155,7 +155,7 @@ add_entry() {
         ensure_parent_directory
         tmp=$(mktemp "${TMPDIR:-/tmp}/memorize-command.XXXXXX") || exit 1
         if [ -f "$command_file" ]; then
-                while IFS= read -r line || [ -n "$line" ]; do
+                while IFS= read -r line || nonempty "$line"; do
                         entry_name=$line
                         case $line in
                         *"$tab_char"*)
@@ -185,7 +185,7 @@ remove_entry() {
         fi
         tmp=$(mktemp "${TMPDIR:-/tmp}/memorize-command.XXXXXX") || exit 1
         removed=0
-        while IFS= read -r line || [ -n "$line" ]; do
+        while IFS= read -r line || nonempty "$line"; do
             entry_name=$line
             case $line in
             *"$tab_char"*)

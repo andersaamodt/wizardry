@@ -69,6 +69,29 @@ test_die_default_code() {
   assert_status 1
 }
 
+# Additional die tests
+test_die_with_zero_code() {
+  run_spell spells/.imps/die 0 "zero exit"
+  assert_status 0
+  assert_error_contains "zero exit"
+}
+
+test_die_with_three_digit_code() {
+  run_spell spells/.imps/die 127 "not found"
+  assert_status 127
+}
+
+test_fail_with_empty_message() {
+  run_spell spells/.imps/fail ""
+  assert_status 1
+}
+
+test_fail_with_multiple_words() {
+  run_spell spells/.imps/fail "this is a multi word error message"
+  assert_failure
+  assert_error_contains "multi word"
+}
+
 test_full_file_with_content() {
   tmpfile=$(mktemp "$WIZARDRY_TMPDIR/testfile.XXXXXX")
   printf 'content' > "$tmpfile"
@@ -157,9 +180,13 @@ run_test_case "quiet succeeds silently" test_quiet_succeeds_silently
 run_test_case "quiet fails silently" test_quiet_fails_silently
 run_test_case "fail exits with error" test_fail_exits_with_error
 run_test_case "fail returns status 1" test_fail_returns_status_1
+run_test_case "fail with empty message" test_fail_with_empty_message
+run_test_case "fail with multiple words" test_fail_with_multiple_words
 run_test_case "die exits with error" test_die_exits_with_error
 run_test_case "die with custom exit code" test_die_with_code
 run_test_case "die default code is 1" test_die_default_code
+run_test_case "die with zero code" test_die_with_zero_code
+run_test_case "die with three digit code" test_die_with_three_digit_code
 run_test_case "full file with content" test_full_file_with_content
 run_test_case "full file empty" test_full_file_empty
 run_test_case "full dir with entries" test_full_dir_with_entries

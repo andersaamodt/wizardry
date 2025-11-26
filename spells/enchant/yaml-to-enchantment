@@ -84,7 +84,7 @@ if ! (resolve_helper attr >/dev/null 2>&1 || resolve_helper setfattr >/dev/null 
 fi
 
 printf '%s' "$yaml_header" |
-    while IFS= read -r line || given "$line"; do
+    while IFS= read -r line || nonempty "$line"; do
         key=${line%%:*}
         value=${line#*:}
         value=${value# }
