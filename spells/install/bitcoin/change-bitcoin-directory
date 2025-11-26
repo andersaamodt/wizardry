@@ -3,6 +3,8 @@
 # This spell alters the location of thy Bitcoin data chamber on your system.
 
 # Check if a command needs to be re-invoked with sudo
+
+set -eu
 retry_with_sudo() {
     echo "Permission denied. Invoking the power of the super user..."
     sudo "$@"

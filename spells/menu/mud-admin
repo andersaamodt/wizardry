@@ -2,6 +2,8 @@
 
 # This spell displays the menu for adminning hosting a MUD server.
 
+
+set -eu
 colors_bin=$(command -v colors 2>/dev/null) || {
   echo "missing dependency: colors" >&2
   exit 1

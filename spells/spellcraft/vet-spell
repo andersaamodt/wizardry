@@ -147,10 +147,11 @@ check_shebang() {
 
 check_description_comment() {
   file=$1
-  # Read lines 2 and 3 in a single sed call
-  lines=$(sed -n '2p;3p' "$file")
-  second_line=$(printf '%s' "$lines" | head -1)
-  third_line=$(printf '%s' "$lines" | tail -1)
+  # Read lines 2, 3, and 4 to allow up to 3-line opening comments
+  lines=$(sed -n '2p;3p;4p' "$file")
+  second_line=$(printf '%s\n' "$lines" | sed -n '1p')
+  third_line=$(printf '%s\n' "$lines" | sed -n '2p')
+  fourth_line=$(printf '%s\n' "$lines" | sed -n '3p')
   
   # Check if second line is empty and third line is a comment
   if [ -z "$second_line" ] && [ -n "$third_line" ]; then
@@ -161,7 +162,7 @@ check_description_comment() {
     esac
   fi
   
-  # Check if second line is a comment
+  # Check if second line is a comment (allows up to 3 comment lines)
   case $second_line in
     '#'*)
       return 0
@@ -310,10 +311,12 @@ while IFS= read -r target; do
     fi
   fi
   
-  # Check strict mode (required for all)
-  if ! result=$(check_strict_mode "$path"); then
-    issues=${issues:+$issues; }$result
-    issue_count=$((issue_count + 1))
+  # Check strict mode (not required for imps - they often use exit codes for flow control)
+  if [ "$is_imp_file" -eq 0 ]; then
+    if ! result=$(check_strict_mode "$path"); then
+      issues=${issues:+$issues; }$result
+      issue_count=$((issue_count + 1))
+    fi
   fi
   
   # Check trailing space assignment (required for all)

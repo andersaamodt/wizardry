@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# This spell manages the spellbook storage file for quick-access spell shortcuts.
+
 set -eu
 
 tab_char=$(printf '\t')

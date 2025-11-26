@@ -1,4 +1,5 @@
 #!/bin/sh
+# This spell provides a menu interface for managing the spellbook.
 
 set -eu
 

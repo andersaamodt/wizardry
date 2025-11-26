@@ -3,6 +3,8 @@
 # Hashchant spell: weave a checksum into a file's extended attributes.
 # Stores a CRC-32 derived from the filename and contents under user.hash.
 
+
+set -eu
 show_usage() {
         cat <<'USAGE'
 Usage: hashchant <file>

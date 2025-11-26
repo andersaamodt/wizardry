@@ -2,6 +2,8 @@
 
 # Present a menu of spells that can install supporting software.
 
+
+set -eu
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 spells_dir=$(CDPATH= cd -- "$script_dir/.." && pwd)
 install_dir=${INSTALL_MENU_ROOT:-$spells_dir/install}

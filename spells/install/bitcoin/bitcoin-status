@@ -2,6 +2,8 @@
 
 # Get Bitcoin sync status: 'syncing', 'synced', 'unknown', or 'error'
 
+
+set -eu
 . colors
 
 # Returns colored text based on status

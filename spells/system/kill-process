@@ -3,6 +3,8 @@
 # This spell lists running processes and interactively chooses one to terminate.
 # It prompts with ask cantrips and sends a kill signal, customizable via KILL_CMD.
 
+
+set -eu
 show_usage() {
         cat <<'USAGE'
 Usage: kill-process

@@ -3,6 +3,8 @@
 # This spell copies extended attributes into a YAML prologue within the file.
 # After the runes are preserved in text, it clears the attributes from the file.
 
+
+set -eu
 show_usage() {
         cat <<'USAGE'
 Usage: enchantment-to-yaml <path-to-file>
@@ -107,7 +109,7 @@ read_value() {
     return 1
 }
 
-keys=$(list_keys "$file")
+keys=$(list_keys "$file" || true)
 empty "$keys" && { warn "Error: file does not have extended attributes"; exit 1; }
 
 tmp=$(mktemp "${TMPDIR:-/tmp}/wizardry-yaml.XXXXXX") || exit 1

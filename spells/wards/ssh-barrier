@@ -1,6 +1,8 @@
 #!/bin/sh
 
 # Import the colors and ask_Yn functions
+
+set -eu
 . "./colors"
 . "./ask_Yn"
 

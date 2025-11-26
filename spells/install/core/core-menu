@@ -2,6 +2,8 @@
 
 # Install and manage the core prerequisites for wizardry.
 
+
+set -eu
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 root_dir=$(CDPATH= cd -- "$script_dir/../../.." && pwd -P)
 

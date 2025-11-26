@@ -4,6 +4,8 @@
 # process with a failure code so calling test suites stop immediately when an
 # expectation is not met.
 
+
+set -eu
 assert_equal() {
     # Confirm two strings match exactly.
     if [ "$#" -ne 2 ]; then

@@ -2,6 +2,8 @@
 
 # This script is a magical tome of sorcery, commanding the elusive entity known as Bitcoin.
 
+
+set -eu
 . colors
 
 # Displays the menu

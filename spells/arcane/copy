@@ -1,0 +1,52 @@
+#!/bin/sh
+
+# This spell copies the text file at the specified path to the clipboard.
+# It takes one argument, the path to the text file.
+
+set -eu
+
+show_usage() {
+        cat <<'USAGE'
+Usage: copy <file>
+
+Copy the contents of the specified text file to the system clipboard using
+pbcopy, xsel, or xclip. Prints a confirmation when successful.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
+# Handle missing argument
+if [ "$#" -eq 0 ]; then
+    say 'That file does not exist.'
+    exit 1
+fi
+
+is file "$1" || { say 'That file does not exist.'; exit 1; }
+
+# Check if the `pbcopy` command is available (only on macOS). If it is, use it to copy the contents of the file to the clipboard.
+if has pbcopy; then
+    pbcopy < "$1" || exit 1
+
+# If `pbcopy` is not available, check if the `xsel` command is available (only on some Unix-based systems). If it is, use it to copy the contents of the file to the clipboard.
+elif has xsel; then
+    xsel --clipboard --input < "$1" || exit 1
+
+# If neither `pbcopy` nor `xsel` is available, check if the `xclip` command is available (only on some Unix-based systems). If it is, use it to copy the contents of the file to the clipboard.
+elif has xclip; then
+    xclip -selection clipboard < "$1" || exit 1
+
+# If none of the above commands are available, print an error message.
+else
+    warn 'Your spell fizzles. No clipboard utilities are available on this system. Please install xsel, xclip, or pbcopy (for mac)'
+    exit 1
+fi
+
+# Normalize path for display (macOS TMPDIR ends with /)
+display_path=$(norm-path "$1")
+say "Copied $display_path to your clipboard."

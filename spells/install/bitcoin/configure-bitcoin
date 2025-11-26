@@ -3,6 +3,8 @@
 # This spell facilitates the setting of the configurations for thy Bitcoin system.
 
 # Function to check if a command needs to be run with sudo
+
+set -eu
 retry_with_sudo() {
     echo "Permission denied. Invoking the power of the super user..."
     sudo "$@"

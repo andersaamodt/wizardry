@@ -3,6 +3,8 @@
 # services-menu collects all service-management spells in one place so users
 # never need to remember flags. Each menu item launches a single-purpose spell.
 
+
+set -eu
 set -u
 
 
@@ -69,8 +71,11 @@ display_menu() {
 
 while true; do
   printf '\n'
-  display_menu
-  status=$?
+  if display_menu; then
+    status=0
+  else
+    status=$?
+  fi
   if [ "$status" -eq "$menu_escape_status" ]; then
     break
   fi

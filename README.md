@@ -55,6 +55,7 @@ This displays an interactive menu. Most (soon all) wizardry spells and features 
 A spell is a specially-curated shell script:
 
 * Lives in the `spells/` folder (or subfolder)
+* Has a unique name (all spells are in PATH together)
 * Does something useful or interesting
 * Is clearly-written and well-commented for novices
 * Is themed like a fantasy MUD
@@ -62,7 +63,7 @@ A spell is a specially-curated shell script:
 * Has no `.sh` extension for easy invocation
 * Has a brief opening description comment (~2 lines)
 * Has a `--help` usage note which ultimately *is* its spec
-* Ideally, has a test script at a corresponding path under `tests/`, which serves as a fully-specified operationalized spec
+* Has a test script at a corresponding path under `tests/`, which serves as a fully-specified operationalized spec
 * Is polished and fails elegantly
 * Works well when used in a menu (interactively)
 
@@ -112,7 +113,7 @@ Imps are the smallest semantic building blocks in wizardry. They live in `spells
 An **imp** is a microscript that:
 
 * Does exactly one thing
-* Has a clear, obvious name that novices can understand without looking it up
+* Has a self-documenting name that novices can understand without looking it up
 * Prioritizes clarity over brevity—multi-word names are acceptable if they improve readability
 * Uses hyphens to separate words in multi-word names (e.g., `read-file`, `is-empty`)
 * Uses space-separated arguments instead of `--flags`

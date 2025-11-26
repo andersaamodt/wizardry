@@ -3,6 +3,8 @@
 # This spell binds every file in a directory into a single tome.
 # Pass -d to recycle the loose pages after the binding completes.
 
+
+set -eu
 usage() {
         cat <<'USAGE'
 Usage: bind-tome [-d] <page-directory>

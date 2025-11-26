@@ -1,6 +1,8 @@
 #!/bin/sh
 
 # Function to check if a package is installed in Debian-based distributions
+
+set -eu
 is_deb_package_installed() {
   dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -c "ok installed"
 }

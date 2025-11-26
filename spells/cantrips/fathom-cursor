@@ -3,6 +3,8 @@
 # Report the cursor position returned by the terminal in response to a DSR
 # (Device Status Report) query.
 
+
+set -eu
 usage() {
     printf '%s\n' 'Usage: fathom-cursor [-v|--verbose] [-x] [-y]' >&2
     exit 1

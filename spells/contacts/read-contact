@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# This spell reads a vCard and prints its fields with friendly labels.
+
 set -eu
 
 # This spell reads a vCard and prints its fields with friendly labels.

@@ -1,0 +1,6 @@
+#!/bin/sh
+# strict - enable shell strict mode (set -eu)
+# Testing imp - used primarily in test scripts to enable strict error handling
+# Example: . strict (sourced, not executed)
+
+set -eu

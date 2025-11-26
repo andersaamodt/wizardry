@@ -3,6 +3,8 @@
 # Reveal the maximum length of the provided strings.
 # Usage: max-length <string1> [string2 ...] [-v]
 
+
+set -eu
 verbose=0
 if [ "${1-}" = "-v" ]; then
   verbose=1

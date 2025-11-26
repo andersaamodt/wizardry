@@ -2,6 +2,8 @@
 
 # This spell moves the cursor to the provided column (x) and row (y).
 
+
+set -eu
 usage() {
     printf '%s\n' 'Usage: move-cursor <x> <y>' >&2
     exit 1

@@ -1,5 +1,7 @@
 #!/usr/bin/env sh
 
+# This spell installs the core wizardry dependencies required for spell execution.
+
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 
 detect_platform() {

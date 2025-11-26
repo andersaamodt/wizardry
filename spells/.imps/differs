@@ -1,0 +1,5 @@
+#!/bin/sh
+# differs A B - test if two strings are different (opposite of equals)
+# Example: differs "$old" "$new" && update
+
+[ "$1" != "$2" ]

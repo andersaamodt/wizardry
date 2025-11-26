@@ -3,6 +3,8 @@
 # This spell applies an extended attribute to a file.
 # Provide a file, attribute name, value, and optional helper preference.
 
+
+set -eu
 show_usage() {
         cat <<'USAGE'
 Usage: enchant <file> <attribute> <value> [helper]

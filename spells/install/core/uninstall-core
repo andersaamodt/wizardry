@@ -1,4 +1,5 @@
 #!/usr/bin/env sh
+# This spell uninstalls the core wizardry dependencies.
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 

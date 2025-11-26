@@ -3,6 +3,8 @@
 # This script sets the correct permissions on the Bitcoin configuration directory.
 
 # Set the default Bitcoin configuration directory
+
+set -eu
 default_dir="$HOME/.bitcoin"
 
 # Check if the default directory exists
