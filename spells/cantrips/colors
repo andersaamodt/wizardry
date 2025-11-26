@@ -9,6 +9,8 @@
 
 # Record whether the terminal appears to support ANSI escape sequences so
 # callers can disable colour-aware features when needed.
+
+set -eu
 WIZARDRY_COLORS_AVAILABLE=1
 
 disable_palette() {

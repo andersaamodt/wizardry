@@ -2,6 +2,8 @@
 
 # Report terminal dimensions using terminfo via tput.
 
+
+set -eu
 usage() {
     printf '%s\n' 'Usage: fathom-terminal [-v|--verbose] [-w|--width] [-h|--height]' >&2
     exit 1

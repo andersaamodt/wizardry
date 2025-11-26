@@ -3,6 +3,8 @@
 # Hash spell: compute a CRC-32 checksum for a given file path.
 # Prints the checksum in hexadecimal alongside the resolved path.
 
+
+set -eu
 show_usage() {
         cat <<'USAGE'
 Usage: hash <file>

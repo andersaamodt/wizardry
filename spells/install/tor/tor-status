@@ -1,5 +1,8 @@
 #!/bin/sh
+# This spell checks and displays the running status of Tor.
 
+
+set -eu
 . colors
 
 # Returns colored text based on status

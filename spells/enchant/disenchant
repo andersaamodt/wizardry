@@ -3,6 +3,8 @@
 # This spell removes extended attributes from a target file.
 # Provide a key to delete it directly or choose interactively when several exist.
 
+
+set -eu
 show_usage() {
   cat <<'USAGE'
 Usage: disenchant <file> [key]

@@ -2,6 +2,8 @@
 
 # This spell displays the ao-mud main menu.
 
+
+set -eu
 if [ -n "${REQUIRE_COMMAND-}" ]; then
   require_cmd=$REQUIRE_COMMAND
 else
@@ -61,8 +63,11 @@ while true; do
     first_run=0
   fi
 
-  display_menu
-  status=$?
+  if display_menu; then
+    status=0
+  else
+    status=$?
+  fi
 
   if [ "$status" -eq "$menu_escape_status" ]; then
     break

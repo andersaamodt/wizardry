@@ -1,6 +1,8 @@
 #!/bin/sh
 
 # Set Bitcoin version
+
+set -eu
 BITCOIN_VERSION="25.0"
 
 # Function to get Bitcoin binary based on architecture

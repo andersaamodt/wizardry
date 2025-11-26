@@ -3,6 +3,8 @@
 # This script outputs the location of the torrc file if it exists,
 # or the standard location for the current OS if it does not
 
+
+set -eu
 OS=$(uname)
 TORRC_PATHS=""
 

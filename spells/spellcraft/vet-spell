@@ -310,10 +310,12 @@ while IFS= read -r target; do
     fi
   fi
   
-  # Check strict mode (required for all)
-  if ! result=$(check_strict_mode "$path"); then
-    issues=${issues:+$issues; }$result
-    issue_count=$((issue_count + 1))
+  # Check strict mode (not required for imps - they often use exit codes for flow control)
+  if [ "$is_imp_file" -eq 0 ]; then
+    if ! result=$(check_strict_mode "$path"); then
+      issues=${issues:+$issues; }$result
+      issue_count=$((issue_count + 1))
+    fi
   fi
   
   # Check trailing space assignment (required for all)

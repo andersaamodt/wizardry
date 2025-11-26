@@ -2,6 +2,8 @@
 
 # This spell displays system maintenance tasks.
 
+
+set -eu
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 spells_dir=$(dirname "$script_dir")
 repo_dir=$(dirname "$spells_dir")
@@ -70,8 +72,11 @@ menu_escape_status=113
 
 while true; do
   printf '\n'
-  display_menu
-  status=$?
+  if display_menu; then
+    status=0
+  else
+    status=$?
+  fi
 
   if [ "$status" -eq "$menu_escape_status" ]; then
     break

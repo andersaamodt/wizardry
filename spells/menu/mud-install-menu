@@ -2,6 +2,8 @@
 
 # This spell displays the ao-mud install menu.
 
+
+set -eu
 colors_bin=$(command -v colors 2>/dev/null) || {
   echo "missing dependency: colors" >&2
   exit 1

@@ -3,6 +3,8 @@
 # This spell copies the text file at the specified path to the clipboard.
 # It takes one argument, the path to the text file.
 
+set -eu
+
 show_usage() {
         cat <<'USAGE'
 Usage: copy <file>
@@ -18,6 +20,12 @@ case "${1-}" in
         exit 0
         ;;
 esac
+
+# Handle missing argument
+if [ "$#" -eq 0 ]; then
+    say 'That file does not exist.'
+    exit 1
+fi
 
 is file "$1" || { say 'That file does not exist.'; exit 1; }
 

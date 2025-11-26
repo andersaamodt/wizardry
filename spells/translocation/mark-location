@@ -3,6 +3,8 @@
 # This spell records the current directory (or a provided path) for jump-to-marker.
 # It resolves the destination to an absolute path and stores it in the marker file.
 
+
+set -eu
 usage() {
   cat <<'USAGE'
 Usage: mark-location [path]

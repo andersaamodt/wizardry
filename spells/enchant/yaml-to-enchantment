@@ -3,6 +3,8 @@
 # This spell reads a YAML front matter block and restores its keys as attributes.
 # After the transfer, it trims the prologue so the file holds only its content.
 
+
+set -eu
 show_usage() {
         cat <<'USAGE'
 Usage: yaml-to-enchantment <path-to-file>

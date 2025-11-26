@@ -3,6 +3,8 @@
 # This spell splits a bound tome back into individual page files.
 # It derives filenames from page headers so the restored pages are easy to revisit.
 
+
+set -eu
 usage() {
     cat <<'USAGE'
 Usage: unbind-tome <tome-path>

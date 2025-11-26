@@ -3,6 +3,8 @@
 # Guard a script against missing external commands by exiting with a
 # descriptive error if the binary is absent.
 
+
+set -eu
 usage() {
     # Avoid silent failures when the helper is invoked incorrectly.
     printf '%s\n' 'Usage: require-command <command> [message...]' >&2

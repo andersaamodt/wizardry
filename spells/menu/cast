@@ -1,4 +1,5 @@
 #!/bin/sh
+# This spell casts previously memorized commands from the spellbook.
 
 set -eu
 

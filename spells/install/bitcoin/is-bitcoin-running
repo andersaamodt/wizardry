@@ -3,6 +3,8 @@
 # This script serves as a magic mirror, reflecting the running status of Bitcoin
 
 # Look for bitcoin process
+
+set -eu
 if ps -e | grep -q '[b]itcoind'; then
     if [ -t 1 ]; then  # Check if output is a terminal
         echo "Bitcoin is running."
