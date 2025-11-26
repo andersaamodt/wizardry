@@ -95,7 +95,7 @@ while [ "$#" -gt 0 ]; do
 done
 
 find_tests() {
-  find "$test_dir" -type f -name 'test_*.sh' | sort
+  find "$test_dir" -type f -name 'test-*.sh' | sort
 }
 
 pattern_has_match() {
@@ -378,17 +378,17 @@ scan_extraneous() {
   while IFS= read -r test_file; do
     [ -n "$test_file" ] || continue
     
-    # Skip test_common.sh and lib files
+    # Skip test-common.sh and lib files
     case $test_file in
-      */test_common.sh|*/lib/*) continue ;;
+      */test-common.sh|*/lib/*) continue ;;
     esac
     
     # Extract spell path from test path
     rel=${test_file#"$test_dir/"}
     dir=$(dirname "$rel")
     base=$(basename "$rel")
-    # Remove test_ prefix and .sh suffix
-    base=${base#test_}
+    # Remove test- prefix and .sh suffix
+    base=${base#test-}
     base=${base%.sh}
     
     # Handle special cases for install tests (test the root install script)
@@ -412,7 +412,7 @@ scan_extraneous() {
       fi
     fi
   done <<EOF_TESTS
-$(find "$test_dir" -type f -name 'test_*.sh' | sort)
+$(find "$test_dir" -type f -name 'test-*.sh' | sort)
 EOF_TESTS
 }
 
