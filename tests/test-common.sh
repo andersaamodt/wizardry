@@ -435,6 +435,15 @@ write_sudo_stub() {
   fixture=$1
   cat <<'STUB' >"$fixture/bin/sudo"
 #!/bin/sh
+# Strip sudo flags like -n (non-interactive) before executing
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -n|--non-interactive) shift ;;
+    --)                   shift; break ;;
+    -*)                   shift ;;
+    *)                    break ;;
+  esac
+done
 exec "$@"
 STUB
   chmod +x "$fixture/bin/sudo"
