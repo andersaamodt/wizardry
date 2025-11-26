@@ -332,7 +332,7 @@ find_matching_test_for_spell() {
   dir=$(dirname "$rel")
   base=$(basename "$rel")
 
-  candidate_sh="$test_dir/$dir/test_${base}.sh"
+  candidate_sh="$test_dir/$dir/test-${base}.sh"
   if [ -f "$candidate_sh" ]; then
     printf '%s\n' "$candidate_sh"
     return 0
