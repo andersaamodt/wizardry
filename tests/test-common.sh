@@ -266,14 +266,14 @@ run_cmd() {
   if [ "$BWRAP_AVAILABLE" -eq 1 ]; then
     # Pass through test-related environment variables that tests commonly set
     # These are needed for test stubs (apt-get, pkgin, etc.) to log their actions
-    # Note: We bind WIZARDRY_TMPDIR as writable to allow test fixtures to work.
+    # Note: We bind /tmp as writable to allow test fixtures and temp files.
     # The --bind makes it writable even though / is ro-bind.
     set -- \
       --die-with-parent \
       --ro-bind / / \
       --dev-bind /dev /dev \
       --bind /proc /proc \
-      --bind "$WIZARDRY_TMPDIR" "$WIZARDRY_TMPDIR" \
+      --bind /tmp /tmp \
       --ro-bind "$ROOT_DIR" "$ROOT_DIR" \
       --chdir "$workdir" \
       --setenv PATH "$PATH" \
