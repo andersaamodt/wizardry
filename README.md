@@ -71,11 +71,11 @@ This spec helps scripts evolve into living, polished exemplars of communal knowl
 
 ### Bootstrapping spells
 
-Most wizardry spells can assume that wizardry is installed (in `$PATH`) and that wizardry spells can be used. Spells used in the installation of wizardry itself are written without relying on other wizardry spells, since they might not be installed yet. The bootstrappable spells are `install` and spells in `spells/install/core/`.
+Most wizardry spells can assume that wizardry is installed (in `$PATH`) and that wizardry spells can be used. Spells used in the installation of wizardry itself are written without relying on other wizardry spells, since they might not be installed yet. These bootstrappable spells are `install` and spells in `spells/install/core/`.
 
 ## Spellbook
 
-The Spellbook is your personal grimoire for managing and organizing spells. Access it by typing `spellbook` or selecting it from the main menu.
+The Spellbook is your personal grimoire for casting and organizing spells. Access it by typing `spellbook` or selecting it from the main menu.
 
 Spell categories:
 
