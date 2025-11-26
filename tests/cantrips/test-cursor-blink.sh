@@ -49,4 +49,12 @@ run_test_case "cursor-blink rejects unknown states" cursor_blink_handles_unknown
 run_test_case "cursor-blink is a no-op on dumb terminals" cursor_blink_succeeds_silently_on_dumb_terminal
 run_test_case "cursor-blink prints ANSI codes for supported terminals" cursor_blink_emits_escape_sequences
 
+shows_help() {
+  run_spell spells/cantrips/cursor-blink --help
+  # Help is printed via usage function (returns non-zero, output to stderr)
+  assert_error_contains "Usage:"
+}
+
+run_test_case "cursor-blink shows help" shows_help
+
 finish_tests

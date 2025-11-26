@@ -48,4 +48,12 @@ run_test_case "move-cursor validates numeric coordinates" move_cursor_rejects_no
 run_test_case "move-cursor clamps coordinates and emits escape" move_cursor_clamps_and_emits_escape_sequence
 run_test_case "move-cursor is a no-op on dumb terminals" move_cursor_succeeds_quietly_on_dumb_terminal
 
+shows_help() {
+  run_spell spells/cantrips/move-cursor --help
+  # Help is printed via usage function (returns non-zero, output to stderr)
+  assert_error_contains "Usage:"
+}
+
+run_test_case "move-cursor shows help" shows_help
+
 finish_tests

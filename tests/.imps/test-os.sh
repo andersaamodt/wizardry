@@ -13,9 +13,11 @@ test_os_outputs_name() {
 test_os_outputs_lowercase() {
   run_spell spells/.imps/os
   assert_success
-  # Output should be lowercase
-  case "$OUTPUT" in
-    *[A-Z]*) TEST_FAILURE_REASON="output should be lowercase"; return 1 ;;
+  # Extract first word of output (the OS name) - ignores any sandbox warnings
+  os_name=$(printf '%s\n' "$OUTPUT" | head -1 | tr -d '[:space:]')
+  # OS name should be lowercase
+  case "$os_name" in
+    *[A-Z]*) TEST_FAILURE_REASON="output should be lowercase, got: $os_name"; return 1 ;;
     *) return 0 ;;
   esac
 }
