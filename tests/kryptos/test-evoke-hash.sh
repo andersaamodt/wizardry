@@ -12,5 +12,10 @@ spell_is_executable() {
   [ -x "$ROOT_DIR/spells/kryptos/evoke-hash" ]
 }
 
+spell_has_content() {
+  [ -s "$ROOT_DIR/spells/kryptos/evoke-hash" ]
+}
+
 run_test_case "kryptos/evoke-hash is executable" spell_is_executable
+run_test_case "kryptos/evoke-hash has content" spell_has_content
 finish_tests

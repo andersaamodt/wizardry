@@ -12,5 +12,10 @@ spell_is_executable() {
   [ -x "$ROOT_DIR/spells/install/core/core-status" ]
 }
 
+spell_has_content() {
+  [ -s "$ROOT_DIR/spells/install/core/core-status" ]
+}
+
 run_test_case "install/core/core-status is executable" spell_is_executable
+run_test_case "install/core/core-status has content" spell_has_content
 finish_tests

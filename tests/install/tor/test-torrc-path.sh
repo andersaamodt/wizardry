@@ -13,4 +13,9 @@ spell_is_executable() {
 }
 
 run_test_case "install/tor/torrc-path is executable" spell_is_executable
+spell_has_content() {
+  [ -s "$ROOT_DIR/spells/install/tor/torrc-path" ]
+}
+
+run_test_case "install/tor/torrc-path has content" spell_has_content
 finish_tests

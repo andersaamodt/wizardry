@@ -18,6 +18,11 @@ install_stty_installs_package() {
   assert_file_contains "$fixture/log/apt.log" "apt-get -y install coreutils" || return 1
 }
 
+spell_has_content() {
+  [ -s "$ROOT_DIR/spells/install/core/install-stty" ]
+}
+
 run_test_case "install-stty installs via package manager" install_stty_installs_package
+run_test_case "install-stty has content" spell_has_content
 
 finish_tests

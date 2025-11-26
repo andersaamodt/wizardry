@@ -13,4 +13,9 @@ spell_is_executable() {
 }
 
 run_test_case "install/tor/tor-menu is executable" spell_is_executable
+spell_has_content() {
+  [ -s "$ROOT_DIR/spells/install/tor/tor-menu" ]
+}
+
+run_test_case "install/tor/tor-menu has content" spell_has_content
 finish_tests

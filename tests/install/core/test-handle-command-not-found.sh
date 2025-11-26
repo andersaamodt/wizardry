@@ -12,5 +12,10 @@ spell_exists() {
   [ -f "$ROOT_DIR/spells/install/core/handle-command-not-found" ]
 }
 
+spell_has_content() {
+  [ -s "$ROOT_DIR/spells/install/core/handle-command-not-found" ]
+}
+
 run_test_case "install/handle-command-not-found exists" spell_exists
+run_test_case "install/handle-command-not-found has content" spell_has_content
 finish_tests

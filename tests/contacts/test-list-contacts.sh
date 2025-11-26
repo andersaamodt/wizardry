@@ -12,5 +12,12 @@ spell_is_executable() {
   [ -x "$ROOT_DIR/spells/contacts/list-contacts" ]
 }
 
+shows_help() {
+  run_spell spells/contacts/list-contacts --help
+  assert_success
+  assert_output_contains "Usage:"
+}
+
 run_test_case "contacts/list-contacts is executable" spell_is_executable
+run_test_case "list-contacts shows help" shows_help
 finish_tests

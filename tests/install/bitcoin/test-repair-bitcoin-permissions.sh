@@ -13,4 +13,9 @@ spell_is_executable() {
 }
 
 run_test_case "install/bitcoin/repair-bitcoin-permissions is executable" spell_is_executable
+spell_has_content() {
+  [ -s "$ROOT_DIR/spells/install/bitcoin/repair-bitcoin-permissions" ]
+}
+
+run_test_case "install/bitcoin/repair-bitcoin-permissions has content" spell_has_content
 finish_tests

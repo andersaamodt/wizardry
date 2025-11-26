@@ -18,6 +18,11 @@ install_tput_installs_package() {
   assert_file_contains "$fixture/log/apt.log" "apt-get -y install ncurses-bin" || return 1
 }
 
+spell_has_content() {
+  [ -s "$ROOT_DIR/spells/install/core/install-tput" ]
+}
+
 run_test_case "install-tput installs via package manager" install_tput_installs_package
+run_test_case "install-tput has content" spell_has_content
 
 finish_tests
