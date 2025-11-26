@@ -1,0 +1,13 @@
+#!/bin/sh
+# assert-success - test assertion that STATUS equals 0
+# Testing imp - fails if STATUS variable is not 0
+# Example: assert-success || return 1
+
+if [ "${STATUS:-1}" -ne 0 ]; then
+  if [ -n "${ERROR-}" ]; then
+    TEST_FAILURE_REASON="expected status 0 but got $STATUS; stderr: $ERROR"
+  else
+    TEST_FAILURE_REASON="expected status 0 but got $STATUS"
+  fi
+  exit 1
+fi

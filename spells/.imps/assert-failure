@@ -1,0 +1,9 @@
+#!/bin/sh
+# assert-failure - test assertion that STATUS is not 0
+# Testing imp - fails if STATUS variable equals 0
+# Example: assert-failure || return 1
+
+if [ "${STATUS:-0}" -eq 0 ]; then
+  TEST_FAILURE_REASON="expected failure status but got success"
+  exit 1
+fi
