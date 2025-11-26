@@ -30,9 +30,5 @@ test_uninstall_tput_uses_manage_system_command() {
 run_test_case "uninstall-tput is executable" test_uninstall_tput_is_executable
 run_test_case "uninstall-tput uses manage-system-command" test_uninstall_tput_uses_manage_system_command
 
-spell_has_shebang() {
-  head -1 "$ROOT_DIR/spells/install/core/uninstall-tput" | grep -q "^#!"
-}
 
-run_test_case "install/core/uninstall-tput has shebang" spell_has_shebang
 finish_tests

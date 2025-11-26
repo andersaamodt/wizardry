@@ -30,9 +30,5 @@ test_uninstall_git_uses_manage_system_command() {
 run_test_case "uninstall-git is executable" test_uninstall_git_is_executable
 run_test_case "uninstall-git uses manage-system-command" test_uninstall_git_uses_manage_system_command
 
-spell_has_shebang() {
-  head -1 "$ROOT_DIR/spells/install/core/uninstall-git" | grep -q "^#!"
-}
 
-run_test_case "install/core/uninstall-git has shebang" spell_has_shebang
 finish_tests

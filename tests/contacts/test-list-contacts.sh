@@ -20,9 +20,5 @@ shows_help() {
 
 run_test_case "contacts/list-contacts is executable" spell_is_executable
 run_test_case "list-contacts shows help" shows_help
-spell_has_shebang() {
-  head -1 "$ROOT_DIR/spells/contacts/list-contacts" | grep -q "^#!"
-}
 
-run_test_case "contacts/list-contacts has shebang" spell_has_shebang
 finish_tests

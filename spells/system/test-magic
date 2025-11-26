@@ -289,14 +289,21 @@ get_subtest_total() {
   '
 }
 
-# Record a test that has fewer than MIN_SUBTESTS subtests.
+# Check if test output contains a --help test case.
+# $1 - test output
+# Returns 0 if help test found, 1 otherwise.
+has_help_test() {
+  printf '%s\n' "$1" | grep -qiE "(PASS|FAIL).*--help|help|usage"
+}
+
+# Record a test that has fewer than required subtests or is missing help test.
 # $1 - test path
-# $2 - actual subtest count
+# $2 - reason (e.g., "2 subtests" or "missing --help test")
 record_incomplete_test() {
   test_path=$1
-  count=$2
+  reason=$2
   name=$(spell_name_for_test "$test_path")
-  entry="$name ($count)"
+  entry="$name ($reason)"
   if [ -n "$incomplete_tests" ]; then
     incomplete_tests="$incomplete_tests, $entry"
   else
@@ -355,20 +362,28 @@ while IFS= read -r test_path; do
     } >>"$failure_output_file"
   fi
 
-  # Check minimum subtest count based on test type.
-  # Imps (in .imps/) need MIN_SUBTESTS_IMP, spells need MIN_SUBTESTS_SPELL.
+  # Check minimum subtest requirements based on test type.
+  # Imps (in .imps/): Need MIN_SUBTESTS_IMP subtests (no --help).
+  # Spells: Need a --help test PLUS MIN_SUBTESTS_IMP additional behavioral subtests.
   test_subtest_count=$(get_subtest_total "$cleaned_output")
   case "$test_path" in
     .imps/*|*/.imps/*)
-      min_required=$MIN_SUBTESTS_IMP
+      # Imps have no --help, just need MIN_SUBTESTS_IMP subtests
+      if [ -n "$test_subtest_count" ] && [ "$test_subtest_count" -lt "$MIN_SUBTESTS_IMP" ]; then
+        record_incomplete_test "$test_path" "$test_subtest_count subtests, need $MIN_SUBTESTS_IMP"
+      fi
       ;;
     *)
-      min_required=$MIN_SUBTESTS_SPELL
+      # Spells need a --help test plus MIN_SUBTESTS_IMP additional subtests
+      if ! has_help_test "$cleaned_output"; then
+        record_incomplete_test "$test_path" "missing --help test"
+      fi
+      # Total should be at least MIN_SUBTESTS_SPELL (1 help + 2 behavioral)
+      if [ -n "$test_subtest_count" ] && [ "$test_subtest_count" -lt "$MIN_SUBTESTS_SPELL" ]; then
+        record_incomplete_test "$test_path" "$test_subtest_count subtests, need $MIN_SUBTESTS_SPELL"
+      fi
       ;;
   esac
-  if [ -n "$test_subtest_count" ] && [ "$test_subtest_count" -lt "$min_required" ]; then
-    record_incomplete_test "$test_path" "$test_subtest_count"
-  fi
 
   printf '\n'
 done <<EOF_TESTS

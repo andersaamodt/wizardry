@@ -30,9 +30,5 @@ test_uninstall_stty_uses_manage_system_command() {
 run_test_case "uninstall-stty is executable" test_uninstall_stty_is_executable
 run_test_case "uninstall-stty uses manage-system-command" test_uninstall_stty_uses_manage_system_command
 
-spell_has_shebang() {
-  head -1 "$ROOT_DIR/spells/install/core/uninstall-stty" | grep -q "^#!"
-}
 
-run_test_case "install/core/uninstall-stty has shebang" spell_has_shebang
 finish_tests

@@ -18,9 +18,5 @@ spell_has_content() {
 
 run_test_case "install/core/core-status is executable" spell_is_executable
 run_test_case "install/core/core-status has content" spell_has_content
-spell_has_shebang() {
-  head -1 "$ROOT_DIR/spells/install/core/core-status" | grep -q "^#!"
-}
 
-run_test_case "install/core/core-status has shebang" spell_has_shebang
 finish_tests

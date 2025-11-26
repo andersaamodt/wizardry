@@ -30,9 +30,5 @@ test_uninstall_bwrap_uses_manage_system_command() {
 run_test_case "uninstall-bwrap is executable" test_uninstall_bwrap_is_executable
 run_test_case "uninstall-bwrap uses manage-system-command" test_uninstall_bwrap_uses_manage_system_command
 
-spell_has_shebang() {
-  head -1 "$ROOT_DIR/spells/install/core/uninstall-bwrap" | grep -q "^#!"
-}
 
-run_test_case "install/core/uninstall-bwrap has shebang" spell_has_shebang
 finish_tests

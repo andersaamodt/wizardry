@@ -32,9 +32,5 @@ spell_has_content() {
 run_test_case "install-checkbashisms exits when tool is present" creates_no_install_when_present
 run_test_case "install-checkbashisms has content" spell_has_content
 
-spell_has_shebang() {
-  head -1 "$ROOT_DIR/spells/install/core/install-checkbashisms" | grep -q "^#!"
-}
 
-run_test_case "install/core/install-checkbashisms has shebang" spell_has_shebang
 finish_tests

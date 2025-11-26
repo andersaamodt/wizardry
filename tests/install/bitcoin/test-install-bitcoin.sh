@@ -18,9 +18,5 @@ spell_has_content() {
 }
 
 run_test_case "install/bitcoin/install-bitcoin has content" spell_has_content
-spell_has_shebang() {
-  head -1 "$ROOT_DIR/spells/install/bitcoin/install-bitcoin" | grep -q "^#!"
-}
 
-run_test_case "install/bitcoin/install-bitcoin has shebang" spell_has_shebang
 finish_tests

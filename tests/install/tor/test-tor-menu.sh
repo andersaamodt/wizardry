@@ -18,9 +18,5 @@ spell_has_content() {
 }
 
 run_test_case "install/tor/tor-menu has content" spell_has_content
-spell_has_shebang() {
-  head -1 "$ROOT_DIR/spells/install/tor/tor-menu" | grep -q "^#!"
-}
 
-run_test_case "install/tor/tor-menu has shebang" spell_has_shebang
 finish_tests

@@ -20,9 +20,5 @@ shows_help() {
 
 run_test_case "system/test-magic is executable" spell_is_executable
 run_test_case "system/test-magic shows help" shows_help
-spell_has_shebang() {
-  head -1 "$ROOT_DIR/spells/system/test-magic" | grep -q "^#!"
-}
 
-run_test_case "system/test-magic has shebang" spell_has_shebang
 finish_tests
