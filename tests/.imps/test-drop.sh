@@ -17,6 +17,13 @@ test_drop_removes_last_lines() {
   esac
 }
 
+test_drop_handles_empty_input() {
+  run_cmd sh -c "printf '' | $ROOT_DIR/spells/.imps/drop 1"
+  assert_success
+  [ -z "$OUTPUT" ] || { TEST_FAILURE_REASON="output should be empty"; return 1; }
+}
+
 run_test_case "drop removes last N lines" test_drop_removes_last_lines
+run_test_case "drop handles empty input" test_drop_handles_empty_input
 
 finish_tests

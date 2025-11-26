@@ -16,6 +16,16 @@ test_append_adds_to_file() {
   esac
 }
 
+test_append_creates_file_if_not_exists() {
+  tmpfile="$WIZARDRY_TMPDIR/append_new_$$"
+  run_cmd sh -c "printf 'new content' | '$ROOT_DIR/spells/.imps/append' '$tmpfile'"
+  assert_success
+  content=$(cat "$tmpfile" 2>/dev/null)
+  rm -f "$tmpfile"
+  [ "$content" = "new content" ] || { TEST_FAILURE_REASON="file should be created"; return 1; }
+}
+
 run_test_case "append adds to file" test_append_adds_to_file
+run_test_case "append creates file if not exists" test_append_creates_file_if_not_exists
 
 finish_tests

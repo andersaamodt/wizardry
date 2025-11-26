@@ -12,6 +12,16 @@ test_read_file_outputs_content() {
   assert_output_contains "test content"
 }
 
+test_read_file_handles_empty_file() {
+  tmpfile=$(mktemp "$WIZARDRY_TMPDIR/readfile_test.XXXXXX")
+  : > "$tmpfile"
+  run_spell spells/.imps/read-file "$tmpfile"
+  rm -f "$tmpfile"
+  assert_success
+  [ -z "$OUTPUT" ] || { TEST_FAILURE_REASON="output should be empty"; return 1; }
+}
+
 run_test_case "read-file outputs content" test_read_file_outputs_content
+run_test_case "read-file handles empty file" test_read_file_handles_empty_file
 
 finish_tests

@@ -12,6 +12,13 @@ test_last_from_file() {
   assert_output_contains "last"
 }
 
+test_last_handles_empty_input() {
+  run_cmd sh -c "printf '' | '$ROOT_DIR/spells/.imps/last'"
+  assert_success
+  [ -z "$OUTPUT" ] || { TEST_FAILURE_REASON="output should be empty"; return 1; }
+}
+
 run_test_case "last reads from file" test_last_from_file
+run_test_case "last handles empty input" test_last_handles_empty_input
 
 finish_tests

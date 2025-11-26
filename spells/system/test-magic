@@ -217,6 +217,8 @@ fail=0
 subtests_passed=0
 subtests_total=0
 failed_scripts=""
+incomplete_tests=""
+MIN_SUBTESTS=2
 failure_output_file=$(mktemp)
 cleanup_failure_output() {
   rm -f "$failure_output_file"
@@ -270,6 +272,29 @@ record_failed_script() {
   fi
 }
 
+get_subtest_total() {
+  printf '%s\n' "$1" | awk '
+    /^[0-9]+\/[0-9]+ tests passed/ {
+      split($1, parts, "/")
+      print parts[2]
+      exit
+    }
+    END { if (!NR) print 0 }
+  '
+}
+
+record_incomplete_test() {
+  test_path=$1
+  count=$2
+  name=$(spell_name_for_test "$test_path")
+  entry="$name ($count)"
+  if [ -n "$incomplete_tests" ]; then
+    incomplete_tests="$incomplete_tests, $entry"
+  else
+    incomplete_tests="$entry"
+  fi
+}
+
 while IFS= read -r test_path; do
   [ -n "$test_path" ] || continue
   abs="$test_dir/$test_path"
@@ -320,6 +345,13 @@ while IFS= read -r test_path; do
       printf '%s\n\n' "$cleaned_output"
     } >>"$failure_output_file"
   fi
+
+  # Check minimum subtest count
+  test_subtest_count=$(get_subtest_total "$cleaned_output")
+  if [ -n "$test_subtest_count" ] && [ "$test_subtest_count" -lt "$MIN_SUBTESTS" ]; then
+    record_incomplete_test "$test_path" "$test_subtest_count"
+  fi
+
   printf '\n'
 done <<EOF_TESTS
 $test_files
@@ -433,6 +465,12 @@ fi
 if [ -n "$extraneous_files" ]; then
   printf 'Extraneous test files (no corresponding spell):\n'
   printf '  %s\n' "$extraneous_files"
+  status=1
+fi
+
+if [ -n "$incomplete_tests" ]; then
+  printf 'Incomplete tests (fewer than %d subtests):\n' "$MIN_SUBTESTS"
+  printf '  %s\n' "$incomplete_tests"
   status=1
 fi
 

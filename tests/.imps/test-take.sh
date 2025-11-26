@@ -16,6 +16,13 @@ test_take_from_file() {
   esac
 }
 
+test_take_handles_empty_input() {
+  run_cmd sh -c "printf '' | '$ROOT_DIR/spells/.imps/take' 2"
+  assert_success
+  [ -z "$OUTPUT" ] || { TEST_FAILURE_REASON="output should be empty"; return 1; }
+}
+
 run_test_case "take from file" test_take_from_file
+run_test_case "take handles empty input" test_take_handles_empty_input
 
 finish_tests

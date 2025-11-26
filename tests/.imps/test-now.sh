@@ -12,6 +12,13 @@ test_now_outputs_timestamp() {
   esac
 }
 
+test_now_returns_positive_value() {
+  run_spell spells/.imps/now
+  assert_success
+  [ "$OUTPUT" -gt 0 ] || { TEST_FAILURE_REASON="timestamp should be positive"; return 1; }
+}
+
 run_test_case "now outputs timestamp" test_now_outputs_timestamp
+run_test_case "now returns positive value" test_now_returns_positive_value
 
 finish_tests
