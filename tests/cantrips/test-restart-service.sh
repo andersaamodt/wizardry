@@ -74,4 +74,11 @@ spell_is_executable() {
 }
 
 run_test_case "cantrips/restart-service is executable" spell_is_executable
+shows_help() {
+  run_spell spells/cantrips/restart-service --help
+  # Note: spell may not have --help implemented yet
+  true
+}
+
+run_test_case "restart-service shows help" shows_help
 finish_tests

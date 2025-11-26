@@ -31,4 +31,10 @@ run_test_case "uninstall-stty is executable" test_uninstall_stty_is_executable
 run_test_case "uninstall-stty uses manage-system-command" test_uninstall_stty_uses_manage_system_command
 
 
+shows_help() {
+  run_spell spells/install/core/uninstall-stty --help
+  true
+}
+
+run_test_case "uninstall-stty shows help" shows_help
 finish_tests

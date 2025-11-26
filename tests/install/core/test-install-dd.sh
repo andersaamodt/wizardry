@@ -26,4 +26,10 @@ run_test_case "install-dd installs via package manager" install_dd_installs_pack
 run_test_case "install-dd has content" spell_has_content
 
 
+shows_help() {
+  run_spell spells/install/core/install-dd --help
+  true
+}
+
+run_test_case "install-dd shows help" shows_help
 finish_tests

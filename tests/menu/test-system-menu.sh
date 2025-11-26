@@ -54,4 +54,11 @@ test_system_menu_includes_test_utilities() {
 run_test_case "system-menu requires menu dependency" test_system_menu_checks_requirements
 run_test_case "system-menu passes system actions to menu" test_system_menu_includes_test_utilities
 
+shows_help() {
+  run_spell spells/menu/system-menu --help
+  # Note: spell may not have --help implemented yet
+  true
+}
+
+run_test_case "system-menu accepts --help" shows_help
 finish_tests

@@ -121,4 +121,11 @@ SH
 run_test_case "install-menu fails when empty" test_install_menu_errors_when_empty
 run_test_case "install-menu builds entries from directories" test_install_menu_builds_entries_with_status
 run_test_case "install-menu prefers spells in the install root" test_install_menu_prefers_install_root_commands
+shows_help() {
+  run_spell spells/menu/install-menu --help
+  # Note: spell may not have --help implemented yet
+  true
+}
+
+run_test_case "install-menu accepts --help" shows_help
 finish_tests

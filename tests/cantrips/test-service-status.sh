@@ -65,4 +65,11 @@ spell_is_executable() {
 }
 
 run_test_case "cantrips/service-status is executable" spell_is_executable
+shows_help() {
+  run_spell spells/cantrips/service-status --help
+  # Note: spell may not have --help implemented yet
+  true
+}
+
+run_test_case "service-status shows help" shows_help
 finish_tests

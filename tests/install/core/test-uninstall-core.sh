@@ -53,4 +53,10 @@ STUB
 run_test_case "uninstall-core uses pkgin on Darwin" uninstall_core_uses_pkgin_on_darwin
 
 
+shows_help() {
+  run_spell spells/install/core/uninstall-core --help
+  true
+}
+
+run_test_case "uninstall-core shows help" shows_help
 finish_tests

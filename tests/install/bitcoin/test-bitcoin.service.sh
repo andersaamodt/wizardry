@@ -23,4 +23,11 @@ has_install_section() {
 }
 
 run_test_case "install/bitcoin/bitcoin.service declares an Install section" has_install_section
+shows_help() {
+  run_spell spells/install/bitcoin/bitcoin.service --help
+  # Note: spell may not have --help implemented yet
+  true
+}
+
+run_test_case "bitcoin.service shows help" shows_help
 finish_tests

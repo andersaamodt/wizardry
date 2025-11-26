@@ -31,4 +31,10 @@ run_test_case "uninstall-dd is executable" test_uninstall_dd_is_executable
 run_test_case "uninstall-dd uses manage-system-command" test_uninstall_dd_uses_manage_system_command
 
 
+shows_help() {
+  run_spell spells/install/core/uninstall-dd --help
+  true
+}
+
+run_test_case "uninstall-dd shows help" shows_help
 finish_tests

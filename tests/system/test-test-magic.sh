@@ -18,7 +18,12 @@ shows_help() {
   assert_output_contains "Usage:"
 }
 
+spell_has_content() {
+  [ -s "$ROOT_DIR/spells/system/test-magic" ]
+}
+
 run_test_case "system/test-magic is executable" spell_is_executable
 run_test_case "system/test-magic shows help" shows_help
+run_test_case "system/test-magic has content" spell_has_content
 
 finish_tests

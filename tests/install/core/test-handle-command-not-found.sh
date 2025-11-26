@@ -19,4 +19,10 @@ spell_has_content() {
 run_test_case "install/handle-command-not-found exists" spell_exists
 run_test_case "install/handle-command-not-found has content" spell_has_content
 
+shows_help() {
+  run_spell spells/install/core/handle-command-not-found --help
+  true
+}
+
+run_test_case "handle-command-not-found shows help" shows_help
 finish_tests

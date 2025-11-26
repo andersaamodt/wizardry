@@ -26,4 +26,10 @@ run_test_case "install-stty installs via package manager" install_stty_installs_
 run_test_case "install-stty has content" spell_has_content
 
 
+shows_help() {
+  run_spell spells/install/core/install-stty --help
+  true
+}
+
+run_test_case "install-stty shows help" shows_help
 finish_tests

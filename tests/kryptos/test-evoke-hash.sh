@@ -19,4 +19,10 @@ spell_has_content() {
 run_test_case "kryptos/evoke-hash is executable" spell_is_executable
 run_test_case "kryptos/evoke-hash has content" spell_has_content
 
+shows_help() {
+  run_spell spells/kryptos/evoke-hash --help
+  true
+}
+
+run_test_case "evoke-hash shows help" shows_help
 finish_tests

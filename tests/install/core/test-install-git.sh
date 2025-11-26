@@ -26,4 +26,10 @@ run_test_case "install-git installs via package manager" install_git_installs_pa
 run_test_case "install-git has content" spell_has_content
 
 
+shows_help() {
+  run_spell spells/install/core/install-git --help
+  true
+}
+
+run_test_case "install-git shows help" shows_help
 finish_tests

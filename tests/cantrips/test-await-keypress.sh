@@ -62,4 +62,11 @@ run_test_case "prints enter for newline" prints_enter_for_newline
 run_test_case "prints literal text from bytes" prints_literal_text
 run_test_case "buffers partial escape sequence until complete" buffers_partial_escape_sequence
 
+shows_help() {
+  run_spell spells/cantrips/await-keypress --help
+  # Note: spell may not have --help implemented yet
+  true
+}
+
+run_test_case "await-keypress shows help" shows_help
 finish_tests

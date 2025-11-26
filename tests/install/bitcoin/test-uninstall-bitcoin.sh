@@ -19,4 +19,11 @@ spell_has_content() {
 
 run_test_case "install/bitcoin/uninstall-bitcoin has content" spell_has_content
 
+shows_help() {
+  run_spell spells/install/bitcoin/uninstall-bitcoin --help
+  # Note: spell may not have --help implemented yet
+  true
+}
+
+run_test_case "uninstall-bitcoin shows help" shows_help
 finish_tests

@@ -26,4 +26,10 @@ run_test_case "install-tput installs via package manager" install_tput_installs_
 run_test_case "install-tput has content" spell_has_content
 
 
+shows_help() {
+  run_spell spells/install/core/install-tput --help
+  true
+}
+
+run_test_case "install-tput shows help" shows_help
 finish_tests

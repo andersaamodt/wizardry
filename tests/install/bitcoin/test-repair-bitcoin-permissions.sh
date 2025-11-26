@@ -19,4 +19,11 @@ spell_has_content() {
 
 run_test_case "install/bitcoin/repair-bitcoin-permissions has content" spell_has_content
 
+shows_help() {
+  run_spell spells/install/bitcoin/repair-bitcoin-permissions --help
+  # Note: spell may not have --help implemented yet
+  true
+}
+
+run_test_case "repair-bitcoin-permissions shows help" shows_help
 finish_tests

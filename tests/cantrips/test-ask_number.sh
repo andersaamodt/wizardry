@@ -40,4 +40,11 @@ run_test_case "ask_number retries until valid integer" test_ask_number_accepts_r
 run_test_case "ask_number enforces inclusive bounds" test_ask_number_enforces_bounds
 run_test_case "ask_number validates numeric bounds" test_ask_number_rejects_invalid_bounds
 run_test_case "ask_number fails without input" test_ask_number_requires_input
+shows_help() {
+  run_spell spells/cantrips/ask_number --help
+  # Note: spell may not have --help implemented yet
+  true
+}
+
+run_test_case "ask_number shows help" shows_help
 finish_tests

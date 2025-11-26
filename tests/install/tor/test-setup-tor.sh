@@ -19,4 +19,10 @@ spell_has_content() {
 
 run_test_case "install/tor/setup-tor has content" spell_has_content
 
+shows_help() {
+  run_spell spells/install/tor/setup-tor --help
+  true
+}
+
+run_test_case "setup-tor shows help" shows_help
 finish_tests

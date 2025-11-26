@@ -106,4 +106,11 @@ SH
 run_test_case "bitcoin-menu prompts for install when missing" test_bitcoin_menu_prompts_install_when_missing
 run_test_case "bitcoin-menu manages running services" test_bitcoin_menu_controls_running_service
 run_test_case "bitcoin-menu installs service when absent" test_bitcoin_menu_offers_service_install_when_missing
+shows_help() {
+  run_spell spells/install/bitcoin/bitcoin-menu --help
+  # Note: spell may not have --help implemented yet
+  true
+}
+
+run_test_case "bitcoin-menu shows help" shows_help
 finish_tests

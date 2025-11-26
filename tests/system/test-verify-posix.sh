@@ -252,4 +252,10 @@ run_test_case "verify-posix accepts spaced sh shebang" accepts_space_before_sh
 run_test_case "verify-posix reports missing targets" reports_missing_targets
 run_test_case "verify-posix flags bashisms and counts failures" flags_bashisms_and_counts_failures
 
+shows_help() {
+  run_spell spells/system/verify-posix --help
+  true
+}
+
+run_test_case "verify-posix shows help" shows_help
 finish_tests

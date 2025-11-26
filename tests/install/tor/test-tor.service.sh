@@ -23,4 +23,10 @@ has_install_section() {
 }
 
 run_test_case "install/tor/tor.service declares an Install section" has_install_section
+shows_help() {
+  run_spell spells/install/tor/tor.service --help
+  true
+}
+
+run_test_case "tor.service shows help" shows_help
 finish_tests

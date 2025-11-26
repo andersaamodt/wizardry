@@ -44,4 +44,10 @@ run_test_case "toggle-cd is executable" test_toggle_cd_is_executable
 run_test_case "toggle-cd requires cd spell" test_toggle_cd_requires_cd_spell
 run_test_case "toggle-cd handles install and uninstall" test_toggle_cd_has_install_and_uninstall
 
+shows_help() {
+  run_spell spells/install/mud/toggle-cd --help
+  true
+}
+
+run_test_case "toggle-cd shows help" shows_help
 finish_tests

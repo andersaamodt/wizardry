@@ -159,7 +159,7 @@ while IFS= read -r path; do
   esac
   short=${path#"$test_dir/"}
   case $short in
-    test_common.sh) continue ;;
+    test-common.sh) continue ;;
   esac
   if matches_patterns "$short"; then
     if [ -n "$test_files" ]; then

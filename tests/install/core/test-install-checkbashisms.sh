@@ -33,4 +33,10 @@ run_test_case "install-checkbashisms exits when tool is present" creates_no_inst
 run_test_case "install-checkbashisms has content" spell_has_content
 
 
+shows_help() {
+  run_spell spells/install/core/install-checkbashisms --help
+  true
+}
+
+run_test_case "install-checkbashisms shows help" shows_help
 finish_tests

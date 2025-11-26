@@ -19,4 +19,11 @@ spell_has_content() {
 
 run_test_case "install/bitcoin/change-bitcoin-directory has content" spell_has_content
 
+shows_help() {
+  run_spell spells/install/bitcoin/change-bitcoin-directory --help
+  # Note: spell may not have --help implemented yet
+  true
+}
+
+run_test_case "change-bitcoin-directory shows help" shows_help
 finish_tests

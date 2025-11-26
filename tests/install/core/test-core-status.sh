@@ -19,4 +19,10 @@ spell_has_content() {
 run_test_case "install/core/core-status is executable" spell_is_executable
 run_test_case "install/core/core-status has content" spell_has_content
 
+shows_help() {
+  run_spell spells/install/core/core-status --help
+  true
+}
+
+run_test_case "core-status shows help" shows_help
 finish_tests

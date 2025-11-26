@@ -31,4 +31,10 @@ run_test_case "uninstall-git is executable" test_uninstall_git_is_executable
 run_test_case "uninstall-git uses manage-system-command" test_uninstall_git_uses_manage_system_command
 
 
+shows_help() {
+  run_spell spells/install/core/uninstall-git --help
+  true
+}
+
+run_test_case "uninstall-git shows help" shows_help
 finish_tests

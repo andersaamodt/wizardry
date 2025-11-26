@@ -18,7 +18,12 @@ shows_help() {
   assert_output_contains "Usage:"
 }
 
+spell_has_content() {
+  [ -s "$ROOT_DIR/spells/contacts/list-contacts" ]
+}
+
 run_test_case "contacts/list-contacts is executable" spell_is_executable
 run_test_case "list-contacts shows help" shows_help
+run_test_case "contacts/list-contacts has content" spell_has_content
 
 finish_tests

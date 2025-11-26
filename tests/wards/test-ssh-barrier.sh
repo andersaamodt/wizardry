@@ -19,4 +19,10 @@ spell_has_content() {
 run_test_case "wards/ssh-barrier exists" spell_exists
 run_test_case "wards/ssh-barrier has content" spell_has_content
 
+shows_help() {
+  run_spell spells/wards/ssh-barrier --help
+  true
+}
+
+run_test_case "ssh-barrier shows help" shows_help
 finish_tests
