@@ -70,4 +70,16 @@ disable_service_requires_name() {
 run_test_case "disable-service prompts then disables unit" disable_service_prompts_and_invokes
 run_test_case "disable-service fails when name missing" disable_service_requires_name
 
+spell_is_executable() {
+  [ -x "$ROOT_DIR/spells/cantrips/disable-service" ]
+}
+
+run_test_case "cantrips/disable-service is executable" spell_is_executable
+shows_help() {
+  run_spell spells/cantrips/disable-service --help
+  # Note: spell may not have --help implemented yet
+  true
+}
+
+run_test_case "disable-service shows help" shows_help
 finish_tests

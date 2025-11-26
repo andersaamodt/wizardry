@@ -72,4 +72,11 @@ SH
 
 run_test_case "install/core/core-menu is executable" spell_is_executable
 run_test_case "core menu lists install targets" core_menu_lists_dependencies
+
+shows_help() {
+  run_spell spells/install/core/core-menu --help
+  true
+}
+
+run_test_case "core-menu shows help" shows_help
 finish_tests

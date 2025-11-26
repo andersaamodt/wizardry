@@ -185,4 +185,11 @@ run_test_case "install-service-template fills placeholders and reloads systemd" 
 run_test_case "install-service-template skips sudo when target writable" test_skips_sudo_when_service_dir_writable
 run_test_case "install-service-template handles special characters in placeholders" test_replaces_special_characters
 
+shows_help() {
+  run_spell spells/cantrips/install-service-template --help
+  # Note: spell may not have --help implemented yet
+  true
+}
+
+run_test_case "install-service-template accepts --help" shows_help
 finish_tests

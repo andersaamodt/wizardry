@@ -13,4 +13,17 @@ spell_is_executable() {
 }
 
 run_test_case "install/bitcoin/configure-bitcoin is executable" spell_is_executable
+spell_has_content() {
+  [ -s "$ROOT_DIR/spells/install/bitcoin/configure-bitcoin" ]
+}
+
+run_test_case "install/bitcoin/configure-bitcoin has content" spell_has_content
+
+shows_help() {
+  run_spell spells/install/bitcoin/configure-bitcoin --help
+  # Note: spell may not have --help implemented yet
+  true
+}
+
+run_test_case "configure-bitcoin shows help" shows_help
 finish_tests

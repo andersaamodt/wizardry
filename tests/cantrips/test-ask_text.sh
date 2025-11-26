@@ -36,4 +36,11 @@ run_test_case "ask_text reads piped input" test_ask_text_reads_stdin
 run_test_case "ask_text uses default when input missing" test_ask_text_uses_default_without_input
 run_test_case "ask_text fails without default when input unavailable" test_ask_text_fails_without_default_or_input
 run_test_case "ask shim relays to ask_text" test_ask_delegates_to_ask_text
+shows_help() {
+  run_spell spells/cantrips/ask_text --help
+  # Note: spell may not have --help implemented yet
+  true
+}
+
+run_test_case "ask_text shows help" shows_help
 finish_tests

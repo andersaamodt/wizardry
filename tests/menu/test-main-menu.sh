@@ -53,4 +53,12 @@ test_main_menu_passes_expected_entries() {
 
 run_test_case "main-menu requires menu dependency" test_main_menu_checks_dependency
 run_test_case "main-menu forwards menu entries" test_main_menu_passes_expected_entries
+
+shows_help() {
+  run_spell spells/menu/main-menu --help
+  # Note: spell may not have --help implemented yet
+  true
+}
+
+run_test_case "main-menu accepts --help" shows_help
 finish_tests

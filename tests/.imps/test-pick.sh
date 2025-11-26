@@ -12,6 +12,16 @@ test_pick_selects_line() {
   assert_output_contains "two"
 }
 
+test_pick_selects_first_line() {
+  tmpfile=$(mktemp "$WIZARDRY_TMPDIR/pick_test.XXXXXX")
+  printf 'first\nsecond\n' > "$tmpfile"
+  run_spell spells/.imps/pick 1 "$tmpfile"
+  rm -f "$tmpfile"
+  assert_success
+  assert_output_contains "first"
+}
+
 run_test_case "pick selects line by number" test_pick_selects_line
+run_test_case "pick selects first line" test_pick_selects_first_line
 
 finish_tests

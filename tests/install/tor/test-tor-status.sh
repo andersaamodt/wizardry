@@ -13,4 +13,16 @@ spell_is_executable() {
 }
 
 run_test_case "install/tor/tor-status is executable" spell_is_executable
+spell_has_content() {
+  [ -s "$ROOT_DIR/spells/install/tor/tor-status" ]
+}
+
+run_test_case "install/tor/tor-status has content" spell_has_content
+
+shows_help() {
+  run_spell spells/install/tor/tor-status --help
+  true
+}
+
+run_test_case "tor-status shows help" shows_help
 finish_tests

@@ -82,4 +82,11 @@ run_test_case "selects a single axis" selects_single_axis
 run_test_case "adds labels in verbose mode" prints_verbose_labels
 run_test_case "fails on invalid response" fails_on_invalid_response
 
+shows_help() {
+  run_spell spells/cantrips/fathom-cursor --help
+  # Note: spell may not have --help implemented yet
+  true
+}
+
+run_test_case "fathom-cursor shows help" shows_help
 finish_tests

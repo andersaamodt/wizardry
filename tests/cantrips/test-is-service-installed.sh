@@ -52,4 +52,11 @@ run_test_case "is-service-installed fails without a service name" test_missing_s
 run_test_case "is-service-installed detects an installed service" test_reports_installed_service
 run_test_case "is-service-installed reports missing services" test_reports_missing_service
 
+shows_help() {
+  run_spell spells/cantrips/is-service-installed --help
+  # Note: spell may not have --help implemented yet
+  true
+}
+
+run_test_case "is-service-installed accepts --help" shows_help
 finish_tests

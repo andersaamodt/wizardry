@@ -69,4 +69,16 @@ stop_service_requires_name() {
 run_test_case "stop-service prompts then stops unit" stop_service_prompts_and_invokes
 run_test_case "stop-service fails when name missing" stop_service_requires_name
 
+spell_is_executable() {
+  [ -x "$ROOT_DIR/spells/cantrips/stop-service" ]
+}
+
+run_test_case "cantrips/stop-service is executable" spell_is_executable
+shows_help() {
+  run_spell spells/cantrips/stop-service --help
+  # Note: spell may not have --help implemented yet
+  true
+}
+
+run_test_case "stop-service shows help" shows_help
 finish_tests

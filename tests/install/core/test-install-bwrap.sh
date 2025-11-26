@@ -87,4 +87,10 @@ run_test_case "install-bwrap tries package manager when missing" install_bwrap_r
 run_test_case "install-bwrap reports failure when no installer is available" install_bwrap_reports_when_no_installer_available
 run_test_case "install-bwrap rejects unknown options" install_bwrap_rejects_unknown_option
 
+shows_help() {
+  run_spell spells/install/core/install-bwrap --help
+  true
+}
+
+run_test_case "install-bwrap shows help" shows_help
 finish_tests

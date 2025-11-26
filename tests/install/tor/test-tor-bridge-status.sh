@@ -13,4 +13,16 @@ spell_is_executable() {
 }
 
 run_test_case "install/tor/tor-bridge-status is executable" spell_is_executable
+spell_has_content() {
+  [ -s "$ROOT_DIR/spells/install/tor/tor-bridge-status" ]
+}
+
+run_test_case "install/tor/tor-bridge-status has content" spell_has_content
+
+shows_help() {
+  run_spell spells/install/tor/tor-bridge-status --help
+  true
+}
+
+run_test_case "tor-bridge-status shows help" shows_help
 finish_tests

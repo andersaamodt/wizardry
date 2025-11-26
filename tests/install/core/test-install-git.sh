@@ -18,6 +18,18 @@ install_git_installs_package() {
   assert_file_contains "$fixture/log/apt.log" "apt-get -y install git" || return 1
 }
 
-run_test_case "install-git installs via package manager" install_git_installs_package
+spell_has_content() {
+  [ -s "$ROOT_DIR/spells/install/core/install-git" ]
+}
 
+run_test_case "install-git installs via package manager" install_git_installs_package
+run_test_case "install-git has content" spell_has_content
+
+
+shows_help() {
+  run_spell spells/install/core/install-git --help
+  true
+}
+
+run_test_case "install-git shows help" shows_help
 finish_tests

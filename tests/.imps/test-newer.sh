@@ -12,6 +12,16 @@ test_newer_file() {
   assert_success
 }
 
+test_newer_fails_for_older_file() {
+  old=$(mktemp "$WIZARDRY_TMPDIR/older.XXXXXX")
+  sleep 1
+  new=$(mktemp "$WIZARDRY_TMPDIR/newer.XXXXXX")
+  run_spell spells/.imps/newer "$old" "$new"
+  rm -f "$old" "$new"
+  assert_failure
+}
+
 run_test_case "newer detects newer file" test_newer_file
+run_test_case "newer fails for older file" test_newer_fails_for_older_file
 
 finish_tests

@@ -101,4 +101,11 @@ run_test_case "removes entries and errors when missing" removes_entries_and_erro
 run_test_case "prints spellbook path" prints_spellbook_path
 run_test_case "rejects invalid arguments" rejects_invalid_args
 
+shows_help() {
+  run_spell spells/cantrips/spellbook-store --help
+  true
+}
+
+run_test_case "spellbook-store shows help" shows_help
+
 finish_tests

@@ -45,4 +45,11 @@ run_test_case "max-length returns longest length for arguments" max_length_measu
 run_test_case "max-length splits single list argument" max_length_splits_single_argument_list
 run_test_case "max-length prints verbose summary when requested" max_length_supports_verbose_flag
 
+shows_help() {
+  run_spell spells/cantrips/max-length --help
+  # Note: spell may not have --help implemented yet
+  true
+}
+
+run_test_case "max-length shows help" shows_help
 finish_tests

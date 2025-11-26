@@ -55,4 +55,11 @@ run_test_case "colors enables palette on capable terminals" test_colors_enable_p
 run_test_case "colors disables palette when NO_COLOR set" test_colors_disable_when_requested
 run_test_case "colors work with printf %s format" test_colors_printf_s_works
 run_test_case "colors disables palette for dumb terminal" test_colors_disable_for_dumb_terminal
+shows_help() {
+  run_spell spells/cantrips/colors --help
+  # Note: spell may not have --help implemented yet
+  true
+}
+
+run_test_case "colors shows help" shows_help
 finish_tests

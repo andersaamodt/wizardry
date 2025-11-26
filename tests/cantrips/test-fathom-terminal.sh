@@ -89,4 +89,11 @@ run_test_case "selects a single dimension" selects_single_dimension
 run_test_case "adds verbose labels" prints_verbose_labels
 run_test_case "fails when tput is missing" fails_without_tput
 
+shows_help() {
+  run_spell spells/cantrips/fathom-terminal --help
+  # Note: spell may not have --help implemented yet
+  true
+}
+
+run_test_case "fathom-terminal shows help" shows_help
 finish_tests

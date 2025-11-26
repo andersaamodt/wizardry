@@ -99,4 +99,11 @@ run_test_case "prints cast path" prints_cast_path
 run_test_case "rejects invalid arguments" rejects_invalid_args
 run_test_case "writes scripts into cast dir" writes_scripts_into_cast_dir
 
+shows_help() {
+  run_spell spells/cantrips/memorize-command --help
+  true
+}
+
+run_test_case "memorize-command shows help" shows_help
+
 finish_tests

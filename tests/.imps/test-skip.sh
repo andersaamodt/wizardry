@@ -15,6 +15,13 @@ test_skip_from_file() {
   esac
 }
 
+test_skip_handles_empty_input() {
+  run_cmd sh -c "printf '' | '$ROOT_DIR/spells/.imps/skip' 1"
+  assert_success
+  [ -z "$OUTPUT" ] || { TEST_FAILURE_REASON="output should be empty"; return 1; }
+}
+
 run_test_case "skip from file" test_skip_from_file
+run_test_case "skip handles empty input" test_skip_handles_empty_input
 
 finish_tests

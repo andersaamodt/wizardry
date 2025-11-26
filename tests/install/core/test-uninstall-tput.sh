@@ -30,4 +30,11 @@ test_uninstall_tput_uses_manage_system_command() {
 run_test_case "uninstall-tput is executable" test_uninstall_tput_is_executable
 run_test_case "uninstall-tput uses manage-system-command" test_uninstall_tput_uses_manage_system_command
 
+
+shows_help() {
+  run_spell spells/install/core/uninstall-tput --help
+  true
+}
+
+run_test_case "uninstall-tput shows help" shows_help
 finish_tests

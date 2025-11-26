@@ -1,4 +1,4 @@
-name: Spell style checks
+name: Style checks
 
 on:
   push:
@@ -26,8 +26,4 @@ jobs:
       - name: Run vet-spell on all spells
         run: |
           echo "Running spell style checks..."
-          # Run vet-spell and capture output
-          # This is advisory - we report issues but don't fail CI
-          ./spells/spellcraft/vet-spell --verbose 2>&1 || true
-          echo ""
-          echo "Note: Style violations are advisory. See SPELL_STYLE_GUIDE.md for guidelines."
+          ./spells/spellcraft/vet-spell --verbose

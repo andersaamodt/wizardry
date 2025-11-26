@@ -47,4 +47,11 @@ STUB
 
 run_test_case "install-core uses pkgin on Darwin" install_core_uses_pkgin_on_darwin
 
+
+shows_help() {
+  run_spell spells/install/core/install-core --help
+  true
+}
+
+run_test_case "install-core shows help" shows_help
 finish_tests

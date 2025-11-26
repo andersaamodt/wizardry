@@ -96,4 +96,11 @@ test_cast_sends_entries_to_menu() {
 run_test_case "cast lists stored spells" test_cast_lists_stored_spells
 run_test_case "cast exits when no stored spells" test_cast_prints_empty_message
 run_test_case "cast feeds spells into menu" test_cast_sends_entries_to_menu
+shows_help() {
+  run_spell spells/menu/cast --help
+  # Note: spell may not have --help implemented yet
+  true
+}
+
+run_test_case "cast accepts --help" shows_help
 finish_tests

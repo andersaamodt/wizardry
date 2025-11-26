@@ -13,6 +13,12 @@ test_quiet_suppresses_output() {
   fi
 }
 
+test_quiet_preserves_exit_status() {
+  run_spell spells/.imps/quiet false
+  assert_failure
+}
+
 run_test_case "quiet suppresses output" test_quiet_suppresses_output
+run_test_case "quiet preserves exit status" test_quiet_preserves_exit_status
 
 finish_tests

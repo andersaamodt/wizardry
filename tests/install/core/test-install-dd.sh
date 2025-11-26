@@ -18,6 +18,18 @@ install_dd_installs_package() {
   assert_file_contains "$fixture/log/apt.log" "apt-get -y install coreutils" || return 1
 }
 
-run_test_case "install-dd installs via package manager" install_dd_installs_package
+spell_has_content() {
+  [ -s "$ROOT_DIR/spells/install/core/install-dd" ]
+}
 
+run_test_case "install-dd installs via package manager" install_dd_installs_package
+run_test_case "install-dd has content" spell_has_content
+
+
+shows_help() {
+  run_spell spells/install/core/install-dd --help
+  true
+}
+
+run_test_case "install-dd shows help" shows_help
 finish_tests

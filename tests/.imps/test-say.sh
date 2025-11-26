@@ -9,6 +9,12 @@ test_say_outputs() {
   assert_output_contains "test message"
 }
 
+test_say_handles_empty_message() {
+  run_spell spells/.imps/say ""
+  assert_success
+}
+
 run_test_case "say outputs to stdout" test_say_outputs
+run_test_case "say handles empty message" test_say_handles_empty_message
 
 finish_tests

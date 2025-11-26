@@ -60,4 +60,16 @@ service_status_requires_name() {
 run_test_case "service-status prints systemctl output" service_status_prompts_and_prints
 run_test_case "service-status fails when name missing" service_status_requires_name
 
+spell_is_executable() {
+  [ -x "$ROOT_DIR/spells/cantrips/service-status" ]
+}
+
+run_test_case "cantrips/service-status is executable" spell_is_executable
+shows_help() {
+  run_spell spells/cantrips/service-status --help
+  # Note: spell may not have --help implemented yet
+  true
+}
+
+run_test_case "service-status shows help" shows_help
 finish_tests

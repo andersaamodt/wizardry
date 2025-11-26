@@ -155,4 +155,11 @@ run_test_case "cd fails gracefully on nonexistent directory" test_cd_fails_grace
 run_test_case "cd handles missing look gracefully" test_cd_handles_missing_look_gracefully
 run_test_case "cd uses shell-specific rc file" test_cd_uses_shell_specific_rc_file
 run_test_case "cd respects detect-rc-file" test_cd_respects_detect_rc_file
+shows_help() {
+  # Skip interactive prompts by setting WIZARDRY_MEMORIZE_TARGET
+  run_cmd env WIZARDRY_MEMORIZE_TARGET="$ROOT_DIR/spells/install/mud/cd" "$ROOT_DIR/spells/install/mud/cd" --help
+  true
+}
+
+run_test_case "cd shows help" shows_help
 finish_tests

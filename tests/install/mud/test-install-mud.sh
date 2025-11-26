@@ -12,5 +12,17 @@ spell_is_executable() {
   [ -x "$ROOT_DIR/spells/install/mud/install-mud" ]
 }
 
+spell_has_content() {
+  [ -s "$ROOT_DIR/spells/install/mud/install-mud" ]
+}
+
 run_test_case "install/mud/install-mud is executable" spell_is_executable
+run_test_case "install/mud/install-mud has content" spell_has_content
+
+shows_help() {
+  run_spell spells/install/mud/install-mud --help
+  true
+}
+
+run_test_case "install-mud shows help" shows_help
 finish_tests

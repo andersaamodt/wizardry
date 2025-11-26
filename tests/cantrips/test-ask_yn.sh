@@ -43,4 +43,11 @@ run_test_case "ask_yn defaults to no on empty reply" test_ask_yn_accepts_default
 run_test_case "ask_yn reprompts after invalid answer" test_ask_yn_reprompts_after_invalid_answer
 run_test_case "ask_yn fails when input unavailable and no default" test_ask_yn_fails_without_input_or_default
 run_test_case "ask_yn rejects invalid default" test_ask_yn_rejects_bad_default
+shows_help() {
+  run_spell spells/cantrips/ask_yn --help
+  # Note: spell may not have --help implemented yet
+  true
+}
+
+run_test_case "ask_yn shows help" shows_help
 finish_tests

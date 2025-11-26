@@ -25,6 +25,18 @@ SCRIPT
   assert_output_contains "checkbashisms is already installed." || return 1
 }
 
-run_test_case "install-checkbashisms exits when tool is present" creates_no_install_when_present
+spell_has_content() {
+  [ -s "$ROOT_DIR/spells/install/core/install-checkbashisms" ]
+}
 
+run_test_case "install-checkbashisms exits when tool is present" creates_no_install_when_present
+run_test_case "install-checkbashisms has content" spell_has_content
+
+
+shows_help() {
+  run_spell spells/install/core/install-checkbashisms --help
+  true
+}
+
+run_test_case "install-checkbashisms shows help" shows_help
 finish_tests

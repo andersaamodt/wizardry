@@ -10,6 +10,13 @@ test_term_detects() {
   [ "$STATUS" -eq 0 ] || [ "$STATUS" -eq 1 ]
 }
 
+test_term_returns_valid_status() {
+  run_spell spells/.imps/term
+  # Status should be either 0 (in terminal) or 1 (not in terminal)
+  [ "$STATUS" -eq 0 ] || [ "$STATUS" -eq 1 ] || { TEST_FAILURE_REASON="status should be 0 or 1"; return 1; }
+}
+
 run_test_case "term detects terminal" test_term_detects
+run_test_case "term returns valid status" test_term_returns_valid_status
 
 finish_tests

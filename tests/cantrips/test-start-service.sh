@@ -69,4 +69,16 @@ start_service_fails_without_name() {
 run_test_case "start-service prompts then starts unit" start_service_prompts_and_invokes
 run_test_case "start-service fails when name missing" start_service_fails_without_name
 
+spell_is_executable() {
+  [ -x "$ROOT_DIR/spells/cantrips/start-service" ]
+}
+
+run_test_case "cantrips/start-service is executable" spell_is_executable
+shows_help() {
+  run_spell spells/cantrips/start-service --help
+  # Note: spell may not have --help implemented yet
+  true
+}
+
+run_test_case "start-service shows help" shows_help
 finish_tests

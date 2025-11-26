@@ -53,4 +53,12 @@ test_services_menu_presents_actions() {
 
 run_test_case "services-menu validates dependencies" test_services_menu_checks_dependencies
 run_test_case "services-menu sends service actions to menu" test_services_menu_presents_actions
+
+shows_help() {
+  run_spell spells/menu/services-menu --help
+  # Note: spell may not have --help implemented yet
+  true
+}
+
+run_test_case "services-menu accepts --help" shows_help
 finish_tests

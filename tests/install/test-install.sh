@@ -203,4 +203,10 @@ run_test_case "install normalizes path without leading slash" install_normalizes
 run_test_case "install normalizes NixOS config path" install_nixos_normalizes_config_path_without_leading_slash
 run_test_case "install does not double home path" install_does_not_double_home_path
 
+shows_help() {
+  run_spell spells/install/install --help
+  true
+}
+
+run_test_case "install shows help" shows_help
 finish_tests

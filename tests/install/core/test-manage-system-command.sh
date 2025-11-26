@@ -103,4 +103,10 @@ run_test_case "manage-system-command uninstalls when present" manage_system_unin
 run_test_case "manage-system-command reports failed removal" manage_system_reports_failure_when_uninstallers_fail
 run_test_case "manage-system-command uses pkgin on Darwin" manage_system_prefers_pkgin_on_darwin
 
+shows_help() {
+  run_spell spells/install/core/manage-system-command --help
+  true
+}
+
+run_test_case "manage-system-command shows help" shows_help
 finish_tests

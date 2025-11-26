@@ -43,4 +43,9 @@ SCRIPT
 
 run_test_case "assertions helpers pass through on success" test_assertions_succeed_for_happy_path
 run_test_case "assert_equal reports mismatch and exits" test_assert_equal_failure_exits_with_message
+spell_is_executable() {
+  [ -x "$ROOT_DIR/spells/cantrips/assertions" ]
+}
+
+run_test_case "cantrips/assertions is executable" spell_is_executable
 finish_tests

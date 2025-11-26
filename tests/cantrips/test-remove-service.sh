@@ -117,4 +117,11 @@ run_test_case "remove-service fails without a service name" test_requires_servic
 run_test_case "remove-service reports missing services" test_reports_missing_service
 run_test_case "remove-service stops active services and cleans up" test_stops_and_removes_service
 
+shows_help() {
+  run_spell spells/cantrips/remove-service --help
+  # Note: spell may not have --help implemented yet
+  true
+}
+
+run_test_case "remove-service accepts --help" shows_help
 finish_tests

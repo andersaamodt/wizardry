@@ -159,7 +159,7 @@ while IFS= read -r path; do
   esac
   short=${path#"$test_dir/"}
   case $short in
-    test_common.sh) continue ;;
+    test-common.sh) continue ;;
   esac
   if matches_patterns "$short"; then
     if [ -n "$test_files" ]; then
@@ -217,6 +217,11 @@ fail=0
 subtests_passed=0
 subtests_total=0
 failed_scripts=""
+incomplete_tests=""
+# Imps have no --help flag, so they need 2 subtests minimum.
+# Spells have a --help flag which needs testing, plus 2 additional subtests.
+MIN_SUBTESTS_IMP=2
+MIN_SUBTESTS_SPELL=3
 failure_output_file=$(mktemp)
 cleanup_failure_output() {
   rm -f "$failure_output_file"
@@ -270,6 +275,43 @@ record_failed_script() {
   fi
 }
 
+# Extract the total subtest count from test output.
+# $1 - test output containing "X/Y tests passed" summary line
+# Returns the total (Y) from the summary, or 0 if no summary found.
+get_subtest_total() {
+  printf '%s\n' "$1" | awk '
+    /^[0-9]+\/[0-9]+ tests passed/ {
+      split($1, parts, "/")
+      print parts[2]
+      exit
+    }
+    END { if (!NR) print 0 }
+  '
+}
+
+# Check if test output contains a --help test case.
+# Looks for test case lines (PASS/FAIL) that mention help or usage.
+# $1 - test output
+# Returns 0 if help test found, 1 otherwise.
+has_help_test() {
+  printf '%s\n' "$1" | grep -qiE "(PASS|FAIL).*(--help|-h|help|usage)"
+}
+
+# Record a test that has fewer than required subtests or is missing help test.
+# $1 - test path
+# $2 - reason (e.g., "2 subtests" or "missing --help test")
+record_incomplete_test() {
+  test_path=$1
+  reason=$2
+  name=$(spell_name_for_test "$test_path")
+  entry="$name ($reason)"
+  if [ -n "$incomplete_tests" ]; then
+    incomplete_tests="$incomplete_tests, $entry"
+  else
+    incomplete_tests="$entry"
+  fi
+}
+
 while IFS= read -r test_path; do
   [ -n "$test_path" ] || continue
   abs="$test_dir/$test_path"
@@ -320,6 +362,30 @@ while IFS= read -r test_path; do
       printf '%s\n\n' "$cleaned_output"
     } >>"$failure_output_file"
   fi
+
+  # Check minimum subtest requirements based on test type.
+  # Imps (in .imps/): Need MIN_SUBTESTS_IMP subtests (no --help).
+  # Spells: Need a --help test PLUS MIN_SUBTESTS_IMP additional behavioral subtests.
+  test_subtest_count=$(get_subtest_total "$cleaned_output")
+  case "$test_path" in
+    .imps/*|*/.imps/*)
+      # Imps have no --help, just need MIN_SUBTESTS_IMP subtests
+      if [ -n "$test_subtest_count" ] && [ "$test_subtest_count" -lt "$MIN_SUBTESTS_IMP" ]; then
+        record_incomplete_test "$test_path" "$test_subtest_count subtests, need $MIN_SUBTESTS_IMP"
+      fi
+      ;;
+    *)
+      # Spells need a --help test plus additional behavioral subtests.
+      # Total must be at least MIN_SUBTESTS_SPELL (1 help + 2 behavioral = 3).
+      if ! has_help_test "$cleaned_output"; then
+        record_incomplete_test "$test_path" "missing --help test"
+      fi
+      if [ -n "$test_subtest_count" ] && [ "$test_subtest_count" -lt "$MIN_SUBTESTS_SPELL" ]; then
+        record_incomplete_test "$test_path" "$test_subtest_count subtests, need $MIN_SUBTESTS_SPELL"
+      fi
+      ;;
+  esac
+
   printf '\n'
 done <<EOF_TESTS
 $test_files
@@ -433,6 +499,12 @@ fi
 if [ -n "$extraneous_files" ]; then
   printf 'Extraneous test files (no corresponding spell):\n'
   printf '  %s\n' "$extraneous_files"
+  status=1
+fi
+
+if [ -n "$incomplete_tests" ]; then
+  printf 'Incomplete tests (imps need %d+ subtests, spells need %d+ including --help):\n' "$MIN_SUBTESTS_IMP" "$MIN_SUBTESTS_SPELL"
+  printf '  %s\n' "$incomplete_tests"
   status=1
 fi
 

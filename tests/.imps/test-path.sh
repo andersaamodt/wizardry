@@ -13,6 +13,13 @@ test_path_normalizes() {
   esac
 }
 
+test_path_handles_absolute_input() {
+  run_spell spells/.imps/path "/tmp/test"
+  assert_success
+  assert_output_contains "/tmp/test"
+}
+
 run_test_case "path normalizes relative path" test_path_normalizes
+run_test_case "path handles absolute input" test_path_handles_absolute_input
 
 finish_tests

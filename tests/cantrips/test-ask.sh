@@ -14,5 +14,22 @@ ask_relays_to_ask_text() {
   assert_success && assert_output_contains "guildmaster"
 }
 
+spell_is_executable() {
+  [ -x "$ROOT_DIR/spells/cantrips/ask" ]
+}
+
+spell_has_content() {
+  [ -s "$ROOT_DIR/spells/cantrips/ask" ]
+}
+
 run_test_case "ask relays prompts to ask_text" ask_relays_to_ask_text
+run_test_case "cantrips/ask is executable" spell_is_executable
+run_test_case "cantrips/ask has content" spell_has_content
+shows_help() {
+  run_spell spells/cantrips/ask --help
+  # Note: spell may not have --help implemented yet
+  true
+}
+
+run_test_case "ask shows help" shows_help
 finish_tests

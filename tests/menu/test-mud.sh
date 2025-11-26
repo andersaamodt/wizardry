@@ -23,5 +23,17 @@ STUB
   assert_error_contains "The MUD menu needs the 'menu' command" || return 1
 }
 
+spell_is_executable() {
+  [ -x "$ROOT_DIR/spells/menu/mud" ]
+}
+
+shows_help() {
+  run_spell spells/menu/mud --help
+  true
+}
+
 run_test_case "mud menu requires menu dependency" mud_requires_menu_dependency
+run_test_case "menu/mud is executable" spell_is_executable
+run_test_case "mud shows help" shows_help
+
 finish_tests

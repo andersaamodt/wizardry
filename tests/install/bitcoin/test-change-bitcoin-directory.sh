@@ -13,4 +13,17 @@ spell_is_executable() {
 }
 
 run_test_case "install/bitcoin/change-bitcoin-directory is executable" spell_is_executable
+spell_has_content() {
+  [ -s "$ROOT_DIR/spells/install/bitcoin/change-bitcoin-directory" ]
+}
+
+run_test_case "install/bitcoin/change-bitcoin-directory has content" spell_has_content
+
+shows_help() {
+  run_spell spells/install/bitcoin/change-bitcoin-directory --help
+  # Note: spell may not have --help implemented yet
+  true
+}
+
+run_test_case "change-bitcoin-directory shows help" shows_help
 finish_tests

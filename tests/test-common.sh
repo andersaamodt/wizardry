@@ -70,6 +70,8 @@ BWRAP_VIA_SUDO=0
 BWRAP_USE_UNSHARE=1
 BWRAP_BIN=${BWRAP_BIN-}
 MACOS_SANDBOX_AVAILABLE=0
+# Save the real sudo path before tests might add a stub sudo to PATH
+REAL_SUDO_BIN=$(command -v sudo 2>/dev/null || true)
 SANDBOX_EXEC_BIN=""
 
 # Allow disabling sandboxing via environment variable
@@ -108,10 +110,10 @@ if [ "$MACOS_SANDBOX_AVAILABLE" -eq 0 ]; then
   if [ "$BWRAP_AVAILABLE" -eq 1 ]; then
     if "$BWRAP_BIN" --unshare-user-try --ro-bind / / /bin/true 2>/dev/null; then
       :
-    elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
-      if sudo -n "$BWRAP_BIN" --unshare-user-try --ro-bind / / /bin/true 2>/dev/null; then
-        BWRAP_VIA_SUDO=1
-      elif sudo -n "$BWRAP_BIN" --ro-bind / / /bin/true 2>/dev/null; then
+    elif [ -n "$REAL_SUDO_BIN" ] && "$REAL_SUDO_BIN" -n true 2>/dev/null; then
+      # When running via sudo, don't use --unshare-user-try as it can cause
+      # permission issues with bind mounts in some environments
+      if "$REAL_SUDO_BIN" -n "$BWRAP_BIN" --ro-bind / / /bin/true 2>/dev/null; then
         BWRAP_VIA_SUDO=1
         BWRAP_USE_UNSHARE=0
       else
@@ -144,7 +146,8 @@ fi
 
 run_bwrap() {
   if [ "$BWRAP_VIA_SUDO" -eq 1 ]; then
-    sudo -n "$BWRAP_BIN" "$@"
+    # Use REAL_SUDO_BIN to avoid picking up a test stub sudo from PATH
+    "$REAL_SUDO_BIN" -n "$BWRAP_BIN" "$@"
   else
     "$BWRAP_BIN" "$@"
   fi
@@ -264,12 +267,16 @@ run_cmd() {
   PATH=$_saved_path
 
   if [ "$BWRAP_AVAILABLE" -eq 1 ]; then
+    # Pass through test-related environment variables that tests commonly set
+    # These are needed for test stubs (apt-get, pkgin, etc.) to log their actions
+    # We bind both /tmp and WIZARDRY_TMPDIR explicitly to ensure test fixtures
+    # and temp files are writable across different bwrap versions and systems.
     set -- \
       --die-with-parent \
       --ro-bind / / \
       --dev-bind /dev /dev \
       --bind /proc /proc \
-      --tmpfs /tmp \
+      --bind /tmp /tmp \
       --bind "$WIZARDRY_TMPDIR" "$WIZARDRY_TMPDIR" \
       --ro-bind "$ROOT_DIR" "$ROOT_DIR" \
       --chdir "$workdir" \
@@ -278,6 +285,16 @@ run_cmd() {
       --setenv TMPDIR "$tmpdir" \
       --setenv WIZARDRY_TMPDIR "$WIZARDRY_TMPDIR" \
       -- "$@"
+    
+    # Optionally pass through test-related variables if they're set
+    # (add them BEFORE the -- separator in the command)
+    for envvar in APT_LOG APT_EXIT PKGIN_LOG PKGIN_EXIT PKGIN_CANDIDATES; do
+      eval "val=\${$envvar-}"
+      if [ -n "$val" ]; then
+        # Insert --setenv before the -- separator
+        set -- "--setenv" "$envvar" "$val" "$@"
+      fi
+    done
 
     if [ "$BWRAP_USE_UNSHARE" -eq 1 ]; then
       set -- --unshare-user-try "$@"
@@ -435,6 +452,15 @@ write_sudo_stub() {
   fixture=$1
   cat <<'STUB' >"$fixture/bin/sudo"
 #!/bin/sh
+# Strip common sudo flags before executing the actual command.
+# This stub handles flags used by wizardry spells; add more as needed.
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -n|--non-interactive) shift ;;  # Skip non-interactive flag
+    --)                   shift; break ;;  # End of options
+    *)                    break ;;  # First non-flag argument
+  esac
+done
 exec "$@"
 STUB
   chmod +x "$fixture/bin/sudo"
