@@ -30,25 +30,25 @@ create_temp_file() {
 
 test_help() {
   reset_path
-  run_spell "spells/divination/read-magic" --help
+  run_spell "spells/arcane/read-magic" --help
   assert_success && assert_output_contains "Usage: read-magic"
 }
 
 test_requires_argument() {
   reset_path
-  run_spell "spells/divination/read-magic"
+  run_spell "spells/arcane/read-magic"
   assert_failure && assert_output_contains "requires one or two arguments"
 }
 
 test_rejects_extra_argument() {
   reset_path
-  run_spell "spells/divination/read-magic" one two three
+  run_spell "spells/arcane/read-magic" one two three
   assert_failure && assert_output_contains "requires one or two arguments"
 }
 
 test_missing_file() {
   reset_path
-  run_spell "spells/divination/read-magic" "$WIZARDRY_TMPDIR/does-not-exist"
+  run_spell "spells/arcane/read-magic" "$WIZARDRY_TMPDIR/does-not-exist"
   assert_failure && assert_output_contains "The file does not exist"
 }
 
@@ -81,7 +81,7 @@ case "$1" in
 esac
 STUB
   chmod +x "$stub_dir/attr"
-  PATH="$stub_dir:$PATH" run_spell "spells/divination/read-magic" "$target"
+  PATH="$stub_dir:$PATH" run_spell "spells/arcane/read-magic" "$target"
   assert_success
   assert_output_contains "user.alpha: alpha-value"
   assert_output_contains "user.beta: beta-value"
@@ -100,7 +100,7 @@ fi
 exit 1
 STUB
   chmod +x "$stub_dir/attr"
-  PATH="$stub_dir:$PATH" run_spell "spells/divination/read-magic" "$target" user.charm
+  PATH="$stub_dir:$PATH" run_spell "spells/arcane/read-magic" "$target" user.charm
   assert_success && assert_output_contains "sparkle"
 }
 
@@ -128,7 +128,7 @@ esac
 STUB
   chmod +x "$stub_dir/xattr"
 
-  PATH="$stub_dir:$PATH" run_spell "spells/divination/read-magic" "$target"
+  PATH="$stub_dir:$PATH" run_spell "spells/arcane/read-magic" "$target"
   assert_success
   assert_output_contains "user.sky: azure"
   assert_output_contains "user.horizon:"
@@ -147,7 +147,7 @@ fi
 exit 1
 STUB
   chmod +x "$stub_dir/xattr"
-  PATH="$stub_dir:$PATH" run_spell "spells/divination/read-magic" "$target" user.charm
+  PATH="$stub_dir:$PATH" run_spell "spells/arcane/read-magic" "$target" user.charm
   assert_success && assert_output_contains "xattr-magic"
 }
 
@@ -180,7 +180,7 @@ esac
 STUB
   chmod +x "$stub_dir/getfattr"
 
-  PATH="$stub_dir:$PATH" run_spell "spells/divination/read-magic" "$target"
+  PATH="$stub_dir:$PATH" run_spell "spells/arcane/read-magic" "$target"
   assert_success
   assert_output_contains "user.first: one"
   assert_output_contains "user.second: two"
@@ -210,7 +210,7 @@ fi
 exit 1
 STUB
   chmod +x "$stub_dir/getfattr"
-  PATH="$stub_dir:$PATH" run_spell "spells/divination/read-magic" "$target" user.charisma
+  PATH="$stub_dir:$PATH" run_spell "spells/arcane/read-magic" "$target" user.charisma
   assert_success && assert_output_contains "shiny"
 }
 
@@ -223,7 +223,7 @@ test_reports_missing_attribute() {
 exit 1
 STUB
   chmod +x "$stub_dir/attr"
-  PATH="$stub_dir:$PATH" run_spell "spells/divination/read-magic" "$target" user.none
+  PATH="$stub_dir:$PATH" run_spell "spells/arcane/read-magic" "$target" user.none
   assert_failure && assert_output_contains "attribute does not exist"
 }
 
@@ -233,7 +233,7 @@ test_handles_missing_helpers() {
   stub_dir=$(create_stub_dir)
   PATH="$stub_dir:$PATH"
   export PATH
-  run_spell "spells/divination/read-magic" "$target"
+  run_spell "spells/arcane/read-magic" "$target"
   assert_success && assert_output_contains "No enchanted attributes found"
 }
 

@@ -197,7 +197,7 @@ EOF
 
 test_list_option() {
   run_spell "spells/spellcraft/vet-spell" --list --only "look"
-  assert_success && assert_output_contains "spells/arcane/look"
+  assert_success && assert_output_contains "spells/mud/look"
 }
 
 run_test_case "vet-spell prints usage" test_help

@@ -166,7 +166,7 @@ BROKEN
   PATH="$old_spell_dir:$fixture/bin:$initial_path" \
     DETECT_RC_FILE="$ROOT_DIR/spells/divination/detect-rc-file" \
     SCRIBE_SPELL="$ROOT_DIR/spells/spellcraft/scribe-spell" \
-    run_cmd "$ROOT_DIR/spells/translocation/path-wizard" \
+    run_cmd "$ROOT_DIR/spells/system/path-wizard" \
       --rc-file "$rc_file" \
       --format shell \
       add "$test_dir"

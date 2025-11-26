@@ -17,13 +17,13 @@ done
 . "$test_root/test_common.sh"
 
 copy_shows_usage() {
-  run_spell "spells/spellcraft/copy" --help
+  run_spell "spells/arcane/copy" --help
   assert_success || return 1
   assert_output_contains "Usage: copy" || return 1
 }
 
 copy_requires_existing_file() {
-  run_spell "spells/spellcraft/copy" "$WIZARDRY_TMPDIR/nowhere.txt"
+  run_spell "spells/arcane/copy" "$WIZARDRY_TMPDIR/nowhere.txt"
   assert_failure || return 1
   assert_output_contains "That file does not exist." || return 1
 }
@@ -32,11 +32,11 @@ copy_rejects_directories_and_missing_target() {
   tmpdir=$(make_tempdir)
   mkdir -p "$tmpdir/dir"
 
-  run_spell "spells/spellcraft/copy" "$tmpdir/dir"
+  run_spell "spells/arcane/copy" "$tmpdir/dir"
   assert_failure || return 1
   assert_output_contains "That file does not exist." || return 1
 
-  run_spell "spells/spellcraft/copy"
+  run_spell "spells/arcane/copy"
   assert_failure || return 1
   assert_output_contains "That file does not exist." || return 1
 }
@@ -66,7 +66,7 @@ exit 64
 STUB
   chmod +x "$stubdir"/pbcopy "$stubdir"/xsel "$stubdir"/xclip
 
-  PATH="$stubdir:$PATH" CLIPBOARD_FILE="$clipboard" run_spell "spells/spellcraft/copy" "$file"
+  PATH="$stubdir:$PATH" CLIPBOARD_FILE="$clipboard" run_spell "spells/arcane/copy" "$file"
   assert_success || return 1
   # Normalize path for macOS compatibility (TMPDIR ends with /)
   normalized_file=$(printf '%s' "$file" | sed 's|//|/|g')
@@ -98,7 +98,7 @@ STUB
   done
 
   # Use a restricted PATH with just our stubs (no system paths that might have pbcopy)
-  PATH="$ROOT_DIR/spells/.imps:$stubdir" CLIPBOARD_FILE="$clipboard" run_spell "spells/spellcraft/copy" "$file"
+  PATH="$ROOT_DIR/spells/.imps:$stubdir" CLIPBOARD_FILE="$clipboard" run_spell "spells/arcane/copy" "$file"
   assert_success || return 1
   [ "$(cat "$clipboard")" = "hi there" ] || { TEST_FAILURE_REASON="xsel stub not used"; return 1; }
 }
@@ -127,7 +127,7 @@ STUB
   done
 
   # Use a restricted PATH with just our stubs (no system paths that might have pbcopy or xsel)
-  PATH="$ROOT_DIR/spells/.imps:$stubdir" CLIPBOARD_FILE="$clipboard" run_spell "spells/spellcraft/copy" "$file"
+  PATH="$ROOT_DIR/spells/.imps:$stubdir" CLIPBOARD_FILE="$clipboard" run_spell "spells/arcane/copy" "$file"
   assert_success || return 1
   # Normalize the expected path to match what copy outputs
   file_normalized=$(printf '%s' "$file" | sed 's|//|/|g')
@@ -164,7 +164,7 @@ STUB
   done
 
   # Use a restricted PATH with just our stubs (no system paths that might have pbcopy)
-  PATH="$ROOT_DIR/spells/.imps:$stubdir" CLIPBOARD_FILE="$clipboard" run_spell "spells/spellcraft/copy" "$file"
+  PATH="$ROOT_DIR/spells/.imps:$stubdir" CLIPBOARD_FILE="$clipboard" run_spell "spells/arcane/copy" "$file"
   assert_success || return 1
   [ "$(cat "$clipboard")" = "ordered" ] || { TEST_FAILURE_REASON="xsel stub not used"; return 1; }
   case ${ERROR:-} in
@@ -189,7 +189,7 @@ copy_fails_without_clipboard_tools() {
   done
 
   # Use a PATH with just essential utilities (no clipboard tools like pbcopy, xsel, xclip)
-  PATH="$ROOT_DIR/spells/.imps:$stubdir" run_spell "spells/spellcraft/copy" "$file"
+  PATH="$ROOT_DIR/spells/.imps:$stubdir" run_spell "spells/arcane/copy" "$file"
   assert_failure || return 1
   assert_error_contains "Your spell fizzles." || return 1
 }
@@ -208,7 +208,7 @@ cat >"${CLIPBOARD_FILE:?}"
 STUB
   chmod +x "$stubdir/pbcopy"
 
-  PATH="$stubdir:$PATH" CLIPBOARD_FILE="$clipboard" run_spell "spells/spellcraft/copy" "$file"
+  PATH="$stubdir:$PATH" CLIPBOARD_FILE="$clipboard" run_spell "spells/arcane/copy" "$file"
   assert_success || return 1
   # Normalize path for macOS compatibility (TMPDIR ends with /)
   normalized_file=$(printf '%s' "$file" | sed 's|//|/|g')

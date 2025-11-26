@@ -352,6 +352,14 @@ scan_coverage() {
       spells/system/test-magic|spells/system/verify-posix)
         continue
         ;;
+      spells/.imps/*|spells/.imps/*)
+        # Imps are tested in grouped test files under tests/.imps/
+        continue
+        ;;
+      *.service|*.gitkeep|*.gitignore)
+        # Skip non-script files
+        continue
+        ;;
     esac
     coverage_total=$((coverage_total + 1))
     if find_matching_test_for_spell "$spell" >/dev/null 2>&1; then
@@ -378,6 +386,7 @@ printf 'Summary: %d passed, %d failed, %d uncovered, subtests %d/%d.\n' \
 if [ "$coverage_uncovered" -gt 0 ]; then
   printf 'Uncovered spells:\n'
   printf '  %s\n' "$uncovered_spells"
+  status=1
 fi
 
 if [ "$very_verbose" -eq 1 ] && [ "$fail" -gt 10 ]; then

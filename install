@@ -275,7 +275,7 @@ fi
 
 # Now that the wizardry tree is available, point at the helper spells we rely
 # on to update PATH entries and ask for confirmation.
-PATH_WIZARD="$ABS_DIR/spells/translocation/path-wizard"
+PATH_WIZARD="$ABS_DIR/spells/system/path-wizard"
 DETECT_RC_FILE="$ABS_DIR/spells/divination/detect-rc-file"
 MEMORIZE="$ABS_DIR/spells/spellcraft/memorize"
 CORE_INSTALLER=${WIZARDRY_CORE_INSTALLER:-$ABS_DIR/spells/install/core/install-core}
@@ -744,7 +744,7 @@ esac
 printf '\n%s==> Removing PATH entries...%s\n' "$CYAN" "$RESET"
 
 # Use path-wizard to remove PATH entries
-PATH_WIZARD="$INSTALL_DIR/spells/translocation/path-wizard"
+PATH_WIZARD="$INSTALL_DIR/spells/system/path-wizard"
 if [ -x "$PATH_WIZARD" ]; then
         for dir in "$INSTALL_DIR"/spells/*; do
                 [ -d "$dir" ] || continue

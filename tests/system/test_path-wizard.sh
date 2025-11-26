@@ -10,17 +10,17 @@ done
 . "$test_root/test_common.sh"
 
 test_help() {
-  run_spell "spells/translocation/path-wizard" --help
+  run_spell "spells/system/path-wizard" --help
   assert_success && assert_error_contains "Usage: path-wizard"
 }
 
 test_missing_detect_helper() {
-  DETECT_RC_FILE="$WIZARDRY_TMPDIR/missing-detect" run_spell "spells/translocation/path-wizard" --rc-file "$WIZARDRY_TMPDIR/rc" --format shell add 2>/dev/null
+  DETECT_RC_FILE="$WIZARDRY_TMPDIR/missing-detect" run_spell "spells/system/path-wizard" --rc-file "$WIZARDRY_TMPDIR/rc" --format shell add 2>/dev/null
   assert_failure && assert_error_contains "required helper"
 }
 
 test_unknown_option() {
-  run_spell "spells/translocation/path-wizard" --unknown
+  run_spell "spells/system/path-wizard" --unknown
   assert_failure && assert_error_contains "unknown option"
 }
 
@@ -33,14 +33,14 @@ printf 'platform=debian\nrc_file=%s\nformat=shell\n' "$WIZARDRY_TMPDIR/path_rc"
 EOF
   chmod +x "$detect_stub"
 
-  run_spell "spells/translocation/path-wizard" --rc-file "$rc" --format shell --platform debian add "$WIZARDRY_TMPDIR"
+  run_spell "spells/system/path-wizard" --rc-file "$rc" --format shell --platform debian add "$WIZARDRY_TMPDIR"
   assert_success
   assert_file_contains "$rc" "wizardry: path-"
   assert_file_contains "$rc" "export PATH=\"$WIZARDRY_TMPDIR:\$PATH\""
 }
 
 test_status_requires_directory() {
-  run_spell "spells/translocation/path-wizard" status
+  run_spell "spells/system/path-wizard" status
   assert_failure && assert_error_contains "expects a directory argument"
 }
 
@@ -49,10 +49,10 @@ test_shell_status_succeeds_when_present() {
   dir="$WIZARDRY_TMPDIR/shell_dir"
   mkdir -p "$dir"
 
-  PATH_WIZARD_PLATFORM=debian run_spell "spells/translocation/path-wizard" --rc-file "$rc" --format shell add "$dir"
+  PATH_WIZARD_PLATFORM=debian run_spell "spells/system/path-wizard" --rc-file "$rc" --format shell add "$dir"
   assert_success && assert_file_contains "$rc" "export PATH=\"$dir:\$PATH\""
 
-  PATH_WIZARD_PLATFORM=debian run_spell "spells/translocation/path-wizard" --rc-file "$rc" --format shell status "$dir"
+  PATH_WIZARD_PLATFORM=debian run_spell "spells/system/path-wizard" --rc-file "$rc" --format shell status "$dir"
   assert_success
 }
 
@@ -61,7 +61,7 @@ test_shell_remove_handles_missing_rc_file() {
   dir="$WIZARDRY_TMPDIR/rc_dir"
   mkdir -p "$dir"
 
-  PATH_WIZARD_PLATFORM=debian run_spell "spells/translocation/path-wizard" --rc-file "$rc" --format shell remove "$dir"
+  PATH_WIZARD_PLATFORM=debian run_spell "spells/system/path-wizard" --rc-file "$rc" --format shell remove "$dir"
   assert_failure && assert_error_contains "startup file '$rc' does not exist"
 }
 
@@ -70,10 +70,10 @@ test_shell_remove_clears_managed_entries() {
   dir="$WIZARDRY_TMPDIR/managed_dir"
   mkdir -p "$dir"
 
-  PATH_WIZARD_PLATFORM=debian run_spell "spells/translocation/path-wizard" --rc-file "$rc" --format shell add "$dir"
+  PATH_WIZARD_PLATFORM=debian run_spell "spells/system/path-wizard" --rc-file "$rc" --format shell add "$dir"
   assert_success && assert_file_contains "$rc" "export PATH=\"$dir:\$PATH\""
 
-  PATH_WIZARD_PLATFORM=debian run_spell "spells/translocation/path-wizard" --rc-file "$rc" --format shell remove "$dir"
+  PATH_WIZARD_PLATFORM=debian run_spell "spells/system/path-wizard" --rc-file "$rc" --format shell remove "$dir"
   assert_success
   if grep -F "$dir" "$rc" >/dev/null 2>&1; then
     TEST_FAILURE_REASON="expected removal of PATH entry for $dir"
@@ -86,13 +86,13 @@ test_nix_add_status_and_remove_round_trip() {
   dir="$WIZARDRY_TMPDIR/nix_dir"
   mkdir -p "$dir"
 
-  PATH_WIZARD_PLATFORM=debian run_spell "spells/translocation/path-wizard" --rc-file "$rc" --format nix add "$dir"
+  PATH_WIZARD_PLATFORM=debian run_spell "spells/system/path-wizard" --rc-file "$rc" --format nix add "$dir"
   assert_success && assert_file_contains "$rc" "$dir"
 
-  PATH_WIZARD_PLATFORM=debian run_spell "spells/translocation/path-wizard" --rc-file "$rc" --format nix status "$dir"
+  PATH_WIZARD_PLATFORM=debian run_spell "spells/system/path-wizard" --rc-file "$rc" --format nix status "$dir"
   assert_success
 
-  PATH_WIZARD_PLATFORM=debian run_spell "spells/translocation/path-wizard" --rc-file "$rc" --format nix remove "$dir"
+  PATH_WIZARD_PLATFORM=debian run_spell "spells/system/path-wizard" --rc-file "$rc" --format nix remove "$dir"
   assert_success
   if grep -F "$dir" "$rc" >/dev/null 2>&1; then
     TEST_FAILURE_REASON="expected Nix entry for $dir to be removed"
@@ -111,7 +111,7 @@ test_nix_backup_uses_numeric_suffix() {
   printf '{ }\n' > "$rc"
 
   # Add first directory - this creates a backup
-  PATH_WIZARD_PLATFORM=debian run_spell "spells/translocation/path-wizard" --rc-file "$rc" --format nix add "$dir1"
+  PATH_WIZARD_PLATFORM=debian run_spell "spells/system/path-wizard" --rc-file "$rc" --format nix add "$dir1"
   assert_success || return 1
 
   # Count backup files that have 'x' suffix pattern (the old broken behavior)
@@ -134,7 +134,7 @@ test_nix_recursive_creates_single_backup() {
   printf '{ }\n' > "$rc"
 
   # Add with --recursive flag - should create only ONE backup
-  PATH_WIZARD_PLATFORM=debian run_spell "spells/translocation/path-wizard" --recursive --rc-file "$rc" --format nix add "$base_dir"
+  PATH_WIZARD_PLATFORM=debian run_spell "spells/system/path-wizard" --recursive --rc-file "$rc" --format nix add "$base_dir"
   assert_success || return 1
 
   # Count backup files - should be exactly 1
