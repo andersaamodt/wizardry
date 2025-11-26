@@ -272,6 +272,7 @@ run_cmd() {
       --dev-bind /dev /dev \
       --bind /proc /proc \
       --tmpfs /tmp \
+      --dir "$WIZARDRY_TMPDIR" \
       --bind "$WIZARDRY_TMPDIR" "$WIZARDRY_TMPDIR" \
       --ro-bind "$ROOT_DIR" "$ROOT_DIR" \
       --chdir "$workdir" \

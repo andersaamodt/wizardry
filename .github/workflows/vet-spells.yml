@@ -1,4 +1,4 @@
-name: Spell style checks
+name: Style checks
 
 on:
   push:
