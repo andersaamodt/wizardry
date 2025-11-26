@@ -2,4 +2,5 @@
 # in-range VALUE MIN MAX - test if integer value is within inclusive range
 # Example: in-range 5 1 10 && echo "valid"
 
+[ "$#" -eq 3 ] || exit 1
 [ "$1" -ge "$2" ] && [ "$1" -le "$3" ] 2>/dev/null

@@ -107,6 +107,16 @@ test_in_range_far_below() {
   assert_failure
 }
 
+test_in_range_wrong_arg_count() {
+  run_spell spells/.imps/in-range 5 1
+  assert_failure
+}
+
+test_in_range_too_many_args() {
+  run_spell spells/.imps/in-range 5 1 10 20
+  assert_failure
+}
+
 # equals tests - success cases
 test_equals_same_string() {
   run_spell spells/.imps/equals "hello" "hello"
@@ -252,6 +262,8 @@ run_test_case "in-range accepts negative range" test_in_range_negative_range
 run_test_case "in-range rejects below min" test_in_range_below_min
 run_test_case "in-range rejects above max" test_in_range_above_max
 run_test_case "in-range rejects far below" test_in_range_far_below
+run_test_case "in-range rejects wrong arg count" test_in_range_wrong_arg_count
+run_test_case "in-range rejects too many args" test_in_range_too_many_args
 run_test_case "equals accepts same string" test_equals_same_string
 run_test_case "equals accepts same number" test_equals_same_number
 run_test_case "equals accepts empty strings" test_equals_empty_strings
