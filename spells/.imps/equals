@@ -1,0 +1,5 @@
+#!/bin/sh
+# equals A B - test if two strings are exactly equal
+# Example: equals "$choice" "yes" && proceed
+
+[ "$1" = "$2" ]

@@ -112,7 +112,7 @@ Imps are the smallest semantic building blocks in wizardry. They live in `spells
 An **imp** is a microscript that:
 
 * Does exactly one thing
-* Has a clear, obvious name that novices can understand without looking it up
+* Has a self-documenting name that novices can understand without looking it up
 * Prioritizes clarity over brevity—multi-word names are acceptable if they improve readability
 * Uses hyphens to separate words in multi-word names (e.g., `read-file`, `is-empty`)
 * Uses space-separated arguments instead of `--flags`

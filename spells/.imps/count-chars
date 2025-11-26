@@ -1,0 +1,9 @@
+#!/bin/sh
+# count-chars [STRING] - count characters in string or stdin
+# Example: n=$(count-chars "hello")   # outputs: 5
+
+if [ "$#" -ge 1 ]; then
+  printf '%s' "$1" | wc -c | tr -d ' '
+else
+  wc -c | tr -d ' '
+fi
