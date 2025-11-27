@@ -726,7 +726,11 @@ extract_nix_paths() {
         if [ ! -f "$rc_file" ]; then
                 return
         fi
-        run_maybe_sudo cat "$rc_file" | awk '
+        # Note: We don't use run_maybe_sudo for reading since system config files
+        # like /etc/nixos/configuration.nix are typically world-readable. Using
+        # sudo for reads would prompt the user unnecessarily before they've seen
+        # the installation plan.
+        cat "$rc_file" | awk '
         /# wizardry PATH begin/ {in_block=1; next}
         /# wizardry PATH end/ {in_block=0}
         in_block && $0 ~ /^[[:space:]]*"[^"]*"[[:space:]]*$/ {
@@ -742,7 +746,8 @@ extract_nix_paths() {
 # the file untouched. This simplifies removal and ensures idempotence.
 remove_nix_block() {
         backup_rc_file_once
-        tmp_file="$rc_file.wizardry.$$"
+        # Use /tmp for temp files to avoid permission issues with system config directories
+        tmp_file="${TMPDIR:-/tmp}/wizardry-nix.$$"
         run_maybe_sudo cat "$rc_file" | awk '
         /# wizardry PATH begin/ {skip=1; next}
         /# wizardry PATH end/ {skip=0; next}
@@ -762,7 +767,8 @@ remove_nix_block() {
 # layout is unusual.
 insert_block_before_closing_brace() {
         block_file=$1
-        tmp_file="$rc_file.wizardry.$$"
+        # Use /tmp for temp files to avoid permission issues with system config directories
+        tmp_file="${TMPDIR:-/tmp}/wizardry-nix.$$"
         run_maybe_sudo cat "$rc_file" | awk -v blockfile="$block_file" '
         BEGIN {
                 while ((getline line < blockfile) > 0) {
@@ -838,7 +844,7 @@ write_nix_paths() {
         ensure_rc_directory
         backup_rc_file_once
         if [ "$#" -eq 0 ]; then
-                if [ -f "$rc_file" ] && run_maybe_sudo grep -Fq '# wizardry PATH begin' "$rc_file" 2>/dev/null; then
+                if [ -f "$rc_file" ] && grep -Fq '# wizardry PATH begin' "$rc_file" 2>/dev/null; then
                         remove_nix_block
                 fi
                 return 0
@@ -864,7 +870,7 @@ write_nix_paths() {
                 rm -f "$block_tmp"
                 return 0
         fi
-        if run_maybe_sudo grep -Fq '# wizardry PATH begin' "$rc_file" 2>/dev/null; then
+        if grep -Fq '# wizardry PATH begin' "$rc_file" 2>/dev/null; then
                 remove_nix_block
         fi
         insert_block_before_closing_brace "$block_tmp"
@@ -881,9 +887,10 @@ nix_flakes_enabled() {
         # - nix.settings.experimental-features = [ "flakes" ... ]
         # - experimental-features = "nix-command flakes"
         # Use word boundary matching to avoid false positives
-        # Use run_maybe_sudo for system config files that need elevated read permissions
-        if run_maybe_sudo grep -q 'experimental-features' "$rc_file" 2>/dev/null; then
-                if run_maybe_sudo grep -qE '("|'\''| )flakes("|'\''| |])' "$rc_file" 2>/dev/null; then
+        # Note: We don't use run_maybe_sudo for reading since system config files
+        # like /etc/nixos/configuration.nix are typically world-readable.
+        if grep -q 'experimental-features' "$rc_file" 2>/dev/null; then
+                if grep -qE '("|'\''| )flakes("|'\''| |])' "$rc_file" 2>/dev/null; then
                         return 0
                 fi
         fi
@@ -908,7 +915,8 @@ enable_nix_flakes() {
         backup_rc_file_once
         
         # Insert flakes enablement before the closing brace of the configuration
-        tmp_file="$rc_file.wizardry.$$"
+        # Use /tmp for temp files to avoid permission issues with system config directories
+        tmp_file="${TMPDIR:-/tmp}/wizardry-nix.$$"
         run_maybe_sudo cat "$rc_file" | awk '
         BEGIN { inserted = 0 }
         {
