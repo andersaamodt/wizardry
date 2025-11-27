@@ -897,23 +897,33 @@ EOF
         # If no paths, don't write anything
         [ -z "$path_lines" ] && return 0
         
-        # Construct the block
-        block="  environment.sessionVariables.PATH = [
-$path_lines
-  ];"
+        # Write the block to a temp file (avoids BSD awk newline-in-variable issues)
+        block_file="${TMPDIR:-/tmp}/wizardry-block.$$"
+        {
+                printf '  environment.sessionVariables.PATH = [\n'
+                printf '%s\n' "$path_lines"
+                printf '  ];\n'
+        } >"$block_file"
         
         # Insert before the closing brace
         tmp_file="${TMPDIR:-/tmp}/wizardry-nix.$$"
         final_file="${TMPDIR:-/tmp}/wizardry-final.$$"
         run_maybe_sudo cat "$rc_file" >"$tmp_file"
         
-        awk -v newblock="$block" '
+        # Use awk with file reading instead of -v variable (BSD awk compatible)
+        awk -v blockfile="$block_file" '
+        BEGIN {
+                while ((getline line < blockfile) > 0) {
+                        block[++blen] = line
+                }
+                close(blockfile)
+        }
         {
                 lines[NR] = $0
         }
         END {
                 if (NR == 0) {
-                        print newblock
+                        for (i = 1; i <= blen; i++) print block[i]
                         exit
                 }
                 # Find the last closing brace
@@ -926,7 +936,7 @@ $path_lines
                         if (last > 1 && lines[last-1] !~ /^[[:space:]]*$/) {
                                 print ""
                         }
-                        print newblock
+                        for (i = 1; i <= blen; i++) print block[i]
                         print lines[last]
                         for (i = last + 1; i <= NR; i++) print lines[i]
                 } else {
@@ -934,10 +944,12 @@ $path_lines
                         if (NR > 0 && lines[NR] !~ /^[[:space:]]*$/) {
                                 print ""
                         }
-                        print newblock
+                        for (i = 1; i <= blen; i++) print block[i]
                 }
         }
         ' "$tmp_file" >"$final_file"
+        
+        rm -f "$block_file"
         
         if [ "$needs_sudo" -eq 1 ]; then
                 run_maybe_sudo cp "$final_file" "$rc_file"
