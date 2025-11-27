@@ -310,9 +310,10 @@ if [ "$recursive" -eq 1 ]; then
                         if run_single_setup; then
                                 recursive_nix_setup_done=1
                         else
+                                setup_status=$?
                                 trap - EXIT HUP INT TERM
                                 cleanup_tmp
-                                exit $?
+                                exit $setup_status
                         fi
                 fi
         fi
