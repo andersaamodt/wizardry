@@ -43,18 +43,26 @@ This downloads wizardry to the default install location, `~/.wizardry`. After in
 
 ### Install on NixOS (Flake-based)
 
-For NixOS users, wizardry provides a flake for declarative installation. This is the recommended approach as it integrates cleanly with your NixOS configuration.
+For NixOS users, the install script generates a `flake.nix` in your wizardry directory for declarative installation.
 
-**Using home-manager:**
+**Step 1: Run the standard install**
 
-Add wizardry to your `flake.nix` inputs:
+```sh
+curl -fsSL https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh
+```
+
+This installs wizardry to `~/.wizardry` and generates a `flake.nix` file there.
+
+**Step 2 (optional): Use with home-manager**
+
+Add the local wizardry flake to your `flake.nix` inputs:
 
 ```nix
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     home-manager.url = "github:nix-community/home-manager";
-    wizardry.url = "github:andersaamodt/wizardry";
+    wizardry.url = "path:/home/youruser/.wizardry";  # Point to your install
   };
   
   outputs = { self, nixpkgs, home-manager, wizardry, ... }: {
@@ -71,33 +79,12 @@ Add wizardry to your `flake.nix` inputs:
 }
 ```
 
-**Using NixOS system configuration:**
-
-```nix
-{
-  inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    wizardry.url = "github:andersaamodt/wizardry";
-  };
-  
-  outputs = { self, nixpkgs, wizardry, ... }: {
-    nixosConfigurations.yourhostname = nixpkgs.lib.nixosSystem {
-      # ... your config ...
-      modules = [
-        wizardry.nixosModules.default
-        {
-          programs.wizardry.enable = true;
-        }
-      ];
-    };
-  };
-}
-```
-
 **Try it temporarily:**
 
+After installing, you can try the flake:
+
 ```sh
-nix develop github:andersaamodt/wizardry
+nix develop ~/.wizardry
 ```
 
 This gives you a shell with wizardry available for testing.
