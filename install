@@ -3,7 +3,7 @@
 # Handle --uninstall argument to run the uninstall script
 if [ "$#" -eq 1 ] && [ "$1" = "--uninstall" ]; then
         script_dir=$(CDPATH='' cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || script_dir="."
-        uninstall_script="$script_dir/uninstall_wizardry"
+        uninstall_script="$script_dir/.uninstall"
         if [ -x "$uninstall_script" ]; then
                 exec "$uninstall_script"
         else
@@ -541,11 +541,7 @@ EOF
 }
 FLAKE_EOF
 
-        if [ -f "$flake_path" ]; then
-                success_msg "Generated flake.nix in $ABS_DIR for declarative NixOS installation"
-                substep_msg "Use 'nix develop $ABS_DIR' to try wizardry"
-                substep_msg "Or add to your flake inputs for permanent installation"
-        fi
+        # Silent - the main installer will show the flake creation message
 }
 
 # Detect installation status for better user messaging
@@ -628,7 +624,7 @@ if [ "$#" -eq 0 ]; then
                         ;;
                 3)
                         # Uninstall - use the uninstall script from the existing installation
-                        uninstall_script="$ABS_DIR/uninstall_wizardry"
+                        uninstall_script="$ABS_DIR/.uninstall"
                         if [ -x "$uninstall_script" ]; then
                                 exec "$uninstall_script"
                         else
@@ -649,11 +645,6 @@ if [ "$#" -eq 0 ]; then
                         exit 0
                         ;;
         esac
-fi
-
-# Inform user about installation mode
-if [ "$install_mode" = "repair" ]; then
-        info_msg "Adding missing PATH configuration for existing wizardry installation"
 fi
 
 # Detect the rc file and format before prompting so we can give specific guidance
@@ -988,9 +979,11 @@ if [ "$path_updates_made" -eq 1 ]; then
                 rc_destination="your shell configuration file"
         fi
 
-        success_msg "PATH configuration updated in $rc_destination"
-
         if [ "$detect_format_value" = "nix" ]; then
+                # Generate flake.nix in the wizardry directory for declarative NixOS usage
+                generate_flake_nix
+                success_msg "Wizardry flake created at '$ABS_DIR/flake.nix'"
+                
                 # On NixOS, attempt to run nixos-rebuild or home-manager switch
                 info_msg "Attempting to rebuild NixOS configuration..."
 
@@ -1027,10 +1020,8 @@ if [ "$path_updates_made" -eq 1 ]; then
                         printf '  home-manager switch  (for home-manager users)\n'
                         printf '  sudo nixos-rebuild switch  (for system-level configuration)\n'
                 fi
-
-                # Generate flake.nix in the wizardry directory for declarative NixOS usage
-                generate_flake_nix
         else
+                success_msg "PATH configuration updated in $rc_destination"
                 printf 'Wizardry directories recorded in %s. Open a new shell or source the file to activate them.\n' "$rc_destination"
         fi
 fi
@@ -1042,10 +1033,15 @@ if [ -x "$MEMORIZE" ]; then
         section_msg "Memorizing Spells"
         mem_log=$(mktemp "${TMPDIR:-/tmp}/wizardry-memorize.XXXXXX") || exit 1
         if "$MEMORIZE" --recursive "$ABS_DIR/spells" >"$mem_log" 2>&1; then
-                # Parse output to extract counts without the "skipped" message
+                # Parse output to extract counts and spell names
                 memorized_count=$(grep -o 'Memorized [0-9]* spell' "$mem_log" | grep -o '[0-9]*' | head -1)
                 if [ -n "$memorized_count" ] && [ "$memorized_count" -gt 0 ]; then
-                        success_msg "Memorized $memorized_count spell(s)"
+                        # Extract spell names from "Memorizing .../spellname..." lines
+                        spell_names=$(grep '^Memorizing ' "$mem_log" | sed 's|.*\/||; s|\.\.\.||')
+                        success_msg "Memorized $memorized_count spell(s):"
+                        for name in $spell_names; do
+                                substep_msg "$name"
+                        done
                 fi
         else
                 mem_status=$?
@@ -1058,8 +1054,7 @@ fi
 
 # Create uninstall script
 create_uninstall_script() {
-        script_dir=$(CDPATH='' cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || script_dir="$ABS_DIR"
-        uninstall_script="$script_dir/uninstall_wizardry"
+        uninstall_script="$ABS_DIR/.uninstall"
 
         cat >"$uninstall_script" <<'UNINSTALL_EOF'
 #!/bin/sh
@@ -1168,24 +1163,18 @@ UNINSTALL_MAIN
         return 0
 }
 
-if create_uninstall_script; then
-        script_dir=$(CDPATH='' cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || script_dir="."
-        success_msg "Uninstall script created at: $script_dir/uninstall_wizardry"
-fi
+# Create uninstall script silently - message will be shown after Installation Complete
+create_uninstall_script
 
 printf '\n'
 section_msg "Installation Complete!"
 success_msg "Wizardry has been successfully installed"
-printf '\n%sNext steps:%s\n' "$BOLD" "$RESET"
-if [ "$detect_format_value" = "nix" ]; then
-        printf '  1. Your NixOS configuration has been updated (using flakes)\n'
-        printf '  2. A flake.nix file has been generated in the wizardry directory\n'
-        printf '  3. Run %smenu%s or %smud%s to start using wizardry\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
-else
-        printf '  1. Open a fresh terminal or run: %ssource %s%s\n' "$CYAN" "$detect_rc_file_value" "$RESET"
-        printf '  2. Run %smenu%s or %smud%s to start using wizardry\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
-fi
-printf '  4. To uninstall, run: %s./install --uninstall%s\n' "$CYAN" "$RESET"
+
+# Show uninstall script location after Installation Complete heading
+success_msg "Uninstall script created at: $ABS_DIR/.uninstall"
+
+printf '\n'
+printf 'Run %smenu%s or %smud%s to start using wizardry.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
 printf '\n'
 
 exit "$mem_status"
