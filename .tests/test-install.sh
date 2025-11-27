@@ -948,7 +948,8 @@ install_non_nixos_shows_source_message() {
 # === Uninstall Script Tests ===
 
 uninstall_script_handles_imps_directory() {
-  # Test that the generated uninstall script includes .imps directory removal
+  # Test that the generated uninstall script uses remove-all to handle all PATH entries
+  # This includes .imps and other hidden directories that glob patterns might miss
   fixture=$(make_fixture)
   provide_basic_tools "$fixture"
   link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
@@ -966,8 +967,9 @@ uninstall_script_handles_imps_directory() {
   uninstall_script="$install_dir/.uninstall"
   assert_path_exists "$uninstall_script" || return 1
   
-  # Check that the uninstall script handles .imps directory
-  assert_file_contains "$uninstall_script" ".imps" || return 1
+  # Check that the uninstall script uses remove-all to handle all entries
+  # This is more reliable than iterating over directories (which could miss .imps)
+  assert_file_contains "$uninstall_script" "remove-all" || return 1
 }
 
 uninstall_script_nixos_includes_rebuild() {
@@ -1042,6 +1044,160 @@ EOF
   assert_file_contains "$uninstall_script" "log out" || return 1
 }
 
+# === Install Prompt Text Tests ===
+
+install_shows_revised_prompt_text() {
+  # Test that the install script uses the revised prompt text
+  # "Wizardry install directory?" instead of "Where should wizardry be installed?"
+  # This phrasing works for both fresh installs and reinstalls
+  if grep -q "Where should wizardry be installed" "$ROOT_DIR/install"; then
+    TEST_FAILURE_REASON="install script should use revised prompt 'Wizardry install directory?'"
+    return 1
+  fi
+  
+  if ! grep -q "Wizardry install directory?" "$ROOT_DIR/install"; then
+    TEST_FAILURE_REASON="install script should have prompt 'Wizardry install directory?'"
+    return 1
+  fi
+  
+  return 0
+}
+
+# === Path Wizard remove-all Tests ===
+
+path_wizard_remove_all_removes_all_nix_entries() {
+  # Test that path-wizard remove-all removes all wizardry entries from nix files
+  fixture=$(make_fixture)
+  provide_basic_tools "$fixture"
+  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq mkdir rm date mktemp wc
+
+  mkdir -p "$fixture/home/.config/home-manager"
+  mkdir -p "$fixture/test-dir1" "$fixture/test-dir2"
+  
+  # Create a nix file with multiple wizardry entries
+  cat >"$fixture/home/.config/home-manager/home.nix" <<EOF
+{ config, pkgs, ... }:
+
+{
+  home.username = "testuser";
+  
+  environment.sessionVariables.PATH = [
+    "$fixture/test-dir1" # wizardry
+    "$fixture/test-dir2" # wizardry
+    "$fixture/non-existent-dir" # wizardry
+  ];
+}
+EOF
+
+  # Run remove-all
+  run_cmd "$ROOT_DIR/spells/system/path-wizard" \
+      --rc-file "$fixture/home/.config/home-manager/home.nix" \
+      --format nix \
+      remove-all
+
+  assert_success || return 1
+  
+  # Check that all wizardry entries are removed
+  if grep -q "# wizardry" "$fixture/home/.config/home-manager/home.nix" 2>/dev/null; then
+    TEST_FAILURE_REASON="remove-all should remove all wizardry entries"
+    return 1
+  fi
+  
+  return 0
+}
+
+path_wizard_remove_all_reports_count() {
+  # Test that remove-all reports the count of entries removed
+  fixture=$(make_fixture)
+  provide_basic_tools "$fixture"
+  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq mkdir rm date mktemp wc
+
+  mkdir -p "$fixture/home/.config/home-manager"
+  mkdir -p "$fixture/test-dir1"
+  
+  # Create a nix file with wizardry entries
+  cat >"$fixture/home/.config/home-manager/home.nix" <<EOF
+{ config, pkgs, ... }:
+
+{
+  environment.sessionVariables.PATH = [
+    "$fixture/test-dir1" # wizardry
+    "$fixture/test-dir2" # wizardry
+  ];
+}
+EOF
+
+  run_cmd "$ROOT_DIR/spells/system/path-wizard" \
+      --rc-file "$fixture/home/.config/home-manager/home.nix" \
+      --format nix \
+      remove-all
+
+  assert_success || return 1
+  
+  # Check that the output mentions removing 2 entries
+  assert_output_contains "Removed 2" || return 1
+  
+  return 0
+}
+
+path_wizard_remove_all_handles_empty_file() {
+  # Test that remove-all handles files with no wizardry entries gracefully
+  fixture=$(make_fixture)
+  provide_basic_tools "$fixture"
+  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq mkdir rm date mktemp wc
+
+  mkdir -p "$fixture/home/.config/home-manager"
+  
+  # Create a nix file with NO wizardry entries
+  cat >"$fixture/home/.config/home-manager/home.nix" <<EOF
+{ config, pkgs, ... }:
+
+{
+  home.username = "testuser";
+}
+EOF
+
+  run_cmd "$ROOT_DIR/spells/system/path-wizard" \
+      --rc-file "$fixture/home/.config/home-manager/home.nix" \
+      --format nix \
+      remove-all
+
+  assert_success || return 1
+  
+  # Check that the output mentions no entries found
+  assert_output_contains "No wizardry PATH entries" || return 1
+  
+  return 0
+}
+
+# === Memorize Before Rebuild Tests ===
+
+install_memorizes_before_nixos_rebuild() {
+  # Test that the install script has the memorize section before nixos-rebuild
+  # This ensures spells are ready when the rebuild completes
+  
+  # Find line numbers of key sections
+  memorize_line=$(grep -n "section_msg.*Memorizing Spells" "$ROOT_DIR/install" | head -1 | cut -d: -f1)
+  rebuild_line=$(grep -n "nixos-rebuild switch" "$ROOT_DIR/install" | head -1 | cut -d: -f1)
+  
+  if [ -z "$memorize_line" ]; then
+    TEST_FAILURE_REASON="Memorizing Spells section not found in install script"
+    return 1
+  fi
+  
+  if [ -z "$rebuild_line" ]; then
+    # No nixos-rebuild in script (might be in different format), skip check
+    return 0
+  fi
+  
+  if [ "$memorize_line" -gt "$rebuild_line" ]; then
+    TEST_FAILURE_REASON="Memorizing Spells section should come before nixos-rebuild (memorize at line $memorize_line, rebuild at line $rebuild_line)"
+    return 1
+  fi
+  
+  return 0
+}
+
 # === Run Tests ===
 
 run_test_case "install runs core installer" install_invokes_core_installer
@@ -1077,5 +1233,10 @@ run_test_case "install non-NixOS shows source message" install_non_nixos_shows_s
 run_test_case "uninstall script handles .imps directory" uninstall_script_handles_imps_directory
 run_test_case "uninstall script NixOS includes rebuild" uninstall_script_nixos_includes_rebuild
 run_test_case "uninstall script NixOS includes logout message" uninstall_script_nixos_includes_logout_message
+run_test_case "install shows revised prompt text" install_shows_revised_prompt_text
+run_test_case "path-wizard remove-all removes all nix entries" path_wizard_remove_all_removes_all_nix_entries
+run_test_case "path-wizard remove-all reports count" path_wizard_remove_all_reports_count
+run_test_case "path-wizard remove-all handles empty file" path_wizard_remove_all_handles_empty_file
+run_test_case "install memorizes before nixos-rebuild" install_memorizes_before_nixos_rebuild
 
 finish_tests
