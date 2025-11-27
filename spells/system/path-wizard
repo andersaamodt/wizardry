@@ -69,6 +69,7 @@ usage() {
         cat <<'USAGE' >&2
 Usage: path-wizard [-r|--recursive] [--dry-run] [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] add [DIRECTORY]
        path-wizard [-r|--recursive] [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] remove DIRECTORY
+       path-wizard [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] remove-all
        path-wizard [-r|--recursive] [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] status DIRECTORY
 
 Options:
@@ -192,9 +193,9 @@ else
         shift
         
         case $action in
-        add|remove|status) : ;;
+        add|remove|remove-all|status) : ;;
         *)
-                printf '%s\n' "Error: The first argument must be 'add', 'remove', or 'status'." >&2
+                printf '%s\n' "Error: The first argument must be 'add', 'remove', 'remove-all', or 'status'." >&2
                 exit 1
                 ;;
         esac
@@ -244,8 +245,8 @@ normalize_directory() {
         printf '%s' "$directory"
 }
 
-# Skip directory normalization for batch mode
-if [ "$batch_mode" -eq 0 ]; then
+# Skip directory normalization for batch mode and remove-all action
+if [ "$batch_mode" -eq 0 ] && [ "$action" != "remove-all" ]; then
         if [ "$action" = "add" ]; then
                 if [ "$#" -eq 0 ]; then
                         directory=$(normalize_directory "$(pwd -P)")
@@ -742,6 +743,39 @@ shell_status() {
         shell_path_contains_directory "$rc_file" "$directory"
 }
 
+# Remove all wizardry-managed PATH entries from shell rc files.
+# Uses scribe-spell to remove all wizardry spell blocks.
+shell_remove_all() {
+        if [ ! -f "$rc_file" ]; then
+                printf '%s\n' "Error: The startup file '$rc_file' does not exist." >&2
+                exit 1
+        fi
+        
+        # Find all wizardry path spell identifiers and remove them
+        # scribe-spell blocks are marked with spell names like "path-<path>-<checksum>"
+        removed_count=0
+        tmp_spells="${TMPDIR:-/tmp}/wizardry-spells.$$"
+        
+        # Extract spell names from the rc file that look like path-wizard entries
+        # Format: # >>> <spell_name> >>>
+        grep -o '# >>> path-[^>]*>>>' "$rc_file" 2>/dev/null | sed 's/# >>> //;s/ >>>//' | sort -u >"$tmp_spells" || true
+        
+        while IFS= read -r spell_name; do
+                [ -z "$spell_name" ] && continue
+                if "$SCRIBE_SPELL" --rc-file "$rc_file" --spell "$spell_name" status >/dev/null 2>&1; then
+                        "$SCRIBE_SPELL" --rc-file "$rc_file" --spell "$spell_name" remove 2>/dev/null || true
+                        removed_count=$((removed_count + 1))
+                fi
+        done <"$tmp_spells"
+        rm -f "$tmp_spells"
+        
+        if [ "$removed_count" -gt 0 ]; then
+                printf '%s\n' "Removed $removed_count wizardry PATH entries from '$rc_file'. Open a new shell or source the file to drop them."
+        else
+                printf '%s\n' "No wizardry PATH entries found in '$rc_file'."
+        fi
+}
+
 # Check if a path is already in the wizardry-managed PATH entries.
 # Returns 0 if found, 1 otherwise.
 has_wizardry_nix_path() {
@@ -1074,6 +1108,25 @@ nix_status() {
         has_wizardry_nix_path "$directory"
 }
 
+# Remove all wizardry-managed PATH entries from configuration.nix.
+nix_remove_all() {
+        if [ ! -f "$rc_file" ]; then
+                printf '%s\n' "Error: The startup file '$rc_file' does not exist." >&2
+                exit 1
+        fi
+        
+        # Count paths before removal
+        path_count=$(extract_nix_paths | wc -l | tr -d ' ')
+        
+        if [ "$path_count" -eq 0 ]; then
+                printf '%s\n' "No wizardry PATH entries found in '$rc_file'."
+                return 0
+        fi
+        
+        remove_wizardry_nix_lines
+        printf '%s\n' "Removed $path_count wizardry PATH entries from '$rc_file'. Rebuild your Nix environment to activate the change."
+}
+
 # Handle batch add mode - process all directories from file at once
 if [ "$batch_mode" -eq 1 ]; then
         if [ "$format" != "nix" ]; then
@@ -1188,6 +1241,9 @@ shell)
         remove)
                 shell_remove
                 ;;
+        remove-all)
+                shell_remove_all
+                ;;
         status)
                 shell_status
                 ;;
@@ -1200,6 +1256,9 @@ nix)
                 ;;
         remove)
                 nix_remove
+                ;;
+        remove-all)
+                nix_remove_all
                 ;;
         status)
                 nix_status

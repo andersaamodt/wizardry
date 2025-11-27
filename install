@@ -157,7 +157,7 @@ if [ -n "${WIZARDRY_INSTALL_DIR-}" ]; then
 elif [ -n "${WIZARDRY_ROOT-}" ]; then
         INSTALL_INPUT=$WIZARDRY_ROOT
 else
-        message="Where should wizardry be installed? [$PROMPT_DEFAULT] "
+        message="Wizardry install directory? [$PROMPT_DEFAULT] "
         if [ -t 0 ]; then
                 # Print the prompt to stderr so the question is visible even if stdout is
                 # captured inside a subshell.
@@ -736,9 +736,39 @@ done
 
 if [ "$path_updates_made" -eq 1 ]; then
         success_msg "PATH configuration updated in $rc_destination"
+fi
 
+# Memorizing spells pre-compiles wizardry's menus so interactive commands are
+# ready before the user opens their first shell inside the new install.
+# This is done before nixos-rebuild so spells are ready when the rebuild completes.
+mem_status=0
+if [ -x "$MEMORIZE" ]; then
+        section_msg "Memorizing Spells"
+        mem_log=$(mktemp "${TMPDIR:-/tmp}/wizardry-memorize.XXXXXX") || exit 1
+        if "$MEMORIZE" --recursive "$ABS_DIR/spells" >"$mem_log" 2>&1; then
+                # Parse output to extract counts and spell names
+                memorized_count=$(grep -o 'Memorized [0-9]* spell' "$mem_log" | grep -o '[0-9]*' | head -1)
+                if [ -n "$memorized_count" ] && [ "$memorized_count" -gt 0 ]; then
+                        # Extract spell names from "Memorizing .../spellname..." lines
+                        success_msg "Memorized $memorized_count spell(s):"
+                        grep '^Memorizing ' "$mem_log" | sed 's#.*/##; s#\.\.\.##' | while IFS= read -r name; do
+                                substep_msg "$name"
+                        done
+                fi
+        else
+                mem_status=$?
+                cat "$mem_log" >&2 || true
+        fi
+        rm -f "$mem_log"
+else
+        printf '%sWarning:%s memorize spell is missing; skipping automatic memorization.\n' "$YELLOW" "$RESET" >&2
+fi
+
+# Handle platform-specific post-installation steps
+if [ "$path_updates_made" -eq 1 ]; then
         if [ "$detect_format_value" = "nix" ]; then
                 # On NixOS, attempt to run nixos-rebuild or home-manager switch
+                section_msg "Rebuilding NixOS Configuration"
                 info_msg "Attempting to rebuild NixOS configuration..."
 
                 # Try to detect if we should use sudo or doas
@@ -776,31 +806,6 @@ if [ "$path_updates_made" -eq 1 ]; then
         else
                 printf 'Open a new shell or source the file to activate the changes.\n'
         fi
-fi
-
-# Memorizing spells pre-compiles wizardry's menus so interactive commands are
-# ready before the user opens their first shell inside the new install.
-mem_status=0
-if [ -x "$MEMORIZE" ]; then
-        section_msg "Memorizing Spells"
-        mem_log=$(mktemp "${TMPDIR:-/tmp}/wizardry-memorize.XXXXXX") || exit 1
-        if "$MEMORIZE" --recursive "$ABS_DIR/spells" >"$mem_log" 2>&1; then
-                # Parse output to extract counts and spell names
-                memorized_count=$(grep -o 'Memorized [0-9]* spell' "$mem_log" | grep -o '[0-9]*' | head -1)
-                if [ -n "$memorized_count" ] && [ "$memorized_count" -gt 0 ]; then
-                        # Extract spell names from "Memorizing .../spellname..." lines
-                        success_msg "Memorized $memorized_count spell(s):"
-                        grep '^Memorizing ' "$mem_log" | sed 's#.*/##; s#\.\.\.##' | while IFS= read -r name; do
-                                substep_msg "$name"
-                        done
-                fi
-        else
-                mem_status=$?
-                cat "$mem_log" >&2 || true
-        fi
-        rm -f "$mem_log"
-else
-        printf '%sWarning:%s memorize spell is missing; skipping automatic memorization.\n' "$YELLOW" "$RESET" >&2
 fi
 
 # Create uninstall script
@@ -872,21 +877,12 @@ printf '\n%s==> Removing PATH entries...%s\n' "$CYAN" "$RESET"
 # Use path-wizard to remove PATH entries
 PATH_WIZARD="$INSTALL_DIR/spells/system/path-wizard"
 if [ -x "$PATH_WIZARD" ]; then
-        for dir in "$INSTALL_DIR"/spells/*; do
-                [ -d "$dir" ] || continue
-                if "$PATH_WIZARD" --recursive remove "$dir" 2>/dev/null; then
-                        printf '  %s✓%s Removed %s\n' "$GREEN" "$RESET" "$dir"
-                fi
-        done
-        # Remove .imps directory (hidden dirs not matched by glob *)
-        if [ -d "$INSTALL_DIR/spells/.imps" ]; then
-                if "$PATH_WIZARD" --recursive remove "$INSTALL_DIR/spells/.imps" 2>/dev/null; then
-                        printf '  %s✓%s Removed %s\n' "$GREEN" "$RESET" "$INSTALL_DIR/spells/.imps"
-                fi
-        fi
-        # Also try removing the main spells directory
-        if "$PATH_WIZARD" remove "$INSTALL_DIR/spells" 2>/dev/null; then
-                printf '  %s✓%s Removed %s\n' "$GREEN" "$RESET" "$INSTALL_DIR/spells"
+        # Use remove-all to remove all wizardry-managed PATH entries at once
+        # This is more reliable than iterating over directories (which might not exist)
+        if "$PATH_WIZARD" remove-all 2>/dev/null; then
+                printf '  %s✓%s Removed all wizardry PATH entries\n' "$GREEN" "$RESET"
+        else
+                printf '  %sNote:%s No wizardry PATH entries found to remove\n' "$YELLOW" "$RESET"
         fi
 else
         printf '  %sWarning:%s Could not find path-wizard; manual PATH cleanup may be needed\n' "$YELLOW" "$RESET"
