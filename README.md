@@ -99,6 +99,7 @@ Imps are the smallest semantic building blocks in wizardry. They live in `spells
 An **imp** is a microscript that:
 
 * Does exactly one thing
+* Does not contain functions
 * Has a self-documenting name that novices can understand without looking it up (use hyphens for multi-word names)
 * Uses space-separated arguments instead of `--flags`
 * Has no `--help` flag (just a comment header—imps are for coding, not running standalone)
@@ -168,6 +169,7 @@ These values make the wizardry project what it is, and distinguish it from simil
 * Bootstrap awareness: The install script (`./install`) and core install scripts (in `spells/install/core`) run before wizardry is on PATH, so they alone cannot assume that wizardry spells are already available in PATH.
 * Expose and use new documented (in `--help usage note`) arguments to pass data to scripts, instead of passing in shell variables.
 * All GitHub Actions and every test and subtest on every platform are required to pass, including style and test coverage checks (or we can't merge).
+* Instead of a common lib file, tests use imps in `spells/.imps`. Imps used only in tests have name beginning with `test-`.
 
 ## Testing
 
