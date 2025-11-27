@@ -831,7 +831,7 @@ install_does_not_show_uninstall_on_success() {
 }
 
 install_shows_simple_run_message() {
-  # The installer should show simple "Run menu or mud to start using wizardry"
+  # The installer should show simple message about running menu/mud
   # instead of "Next steps" section
   fixture=$(make_fixture)
   provide_basic_tools "$fixture"
@@ -846,8 +846,11 @@ install_shows_simple_run_message() {
 
   assert_success || return 1
   
-  # Should show simple run message
-  assert_output_contains "Run menu or mud to start using wizardry" || return 1
+  # Should show simple run message (with either "Run" or "Then run" prefix)
+  if ! printf '%s' "$OUTPUT" | grep -q "run.*menu.*or.*mud.*to start using wizardry"; then
+    TEST_FAILURE_REASON="output missing run message about menu or mud"
+    return 1
+  fi
   
   # Should NOT show "Next steps" heading
   if printf '%s' "$OUTPUT" | grep -q "Next steps"; then
@@ -884,6 +887,161 @@ install_does_not_show_adding_missing_path_on_fresh() {
   fi
 }
 
+# === NixOS Log Out/In Message Tests ===
+
+install_nixos_shows_logout_message() {
+  # On NixOS, the installer should show a message about logging out and back in
+  fixture=$(make_fixture)
+  provide_basic_tools "$fixture"
+  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+
+  # Create a fake home.nix
+  mkdir -p "$fixture/home/.config/home-manager"
+  cat >"$fixture/home/.config/home-manager/home.nix" <<'EOF'
+{ config, pkgs, ... }:
+
+{
+  home.username = "testuser";
+  home.homeDirectory = "/home/testuser";
+  programs.bash.enable = true;
+}
+EOF
+
+  install_dir="$fixture/home/.wizardry"
+  
+  run_cmd env DETECT_RC_FILE_PLATFORM=nixos \
+      WIZARDRY_INSTALL_DIR="$install_dir" \
+      HOME="$fixture/home" \
+      WIZARDRY_INSTALL_ASSUME_YES=1 \
+      "$ROOT_DIR/install"
+
+  assert_success || return 1
+  
+  # Should show log out message for NixOS
+  assert_output_contains "log out and log back in" || return 1
+}
+
+install_non_nixos_shows_source_message() {
+  # On non-NixOS platforms, the installer should show a message about sourcing the rc file
+  fixture=$(make_fixture)
+  provide_basic_tools "$fixture"
+  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+
+  install_dir="$fixture/home/.wizardry"
+  
+  run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
+      HOME="$fixture/home" \
+      WIZARDRY_INSTALL_ASSUME_YES=1 \
+      "$ROOT_DIR/install"
+
+  assert_success || return 1
+  
+  # Should show source message for non-NixOS (the . command)
+  assert_output_contains ". " || return 1
+  # Should mention opening a new terminal as alternative
+  if ! printf '%s' "$OUTPUT" | grep -qi "terminal"; then
+    TEST_FAILURE_REASON="output should mention terminal as alternative"
+    return 1
+  fi
+}
+
+# === Uninstall Script Tests ===
+
+uninstall_script_handles_imps_directory() {
+  # Test that the generated uninstall script includes .imps directory removal
+  fixture=$(make_fixture)
+  provide_basic_tools "$fixture"
+  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+
+  install_dir="$fixture/home/.wizardry"
+  
+  run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
+      HOME="$fixture/home" \
+      WIZARDRY_INSTALL_ASSUME_YES=1 \
+      "$ROOT_DIR/install"
+
+  assert_success || return 1
+  
+  # Check that the uninstall script exists
+  uninstall_script="$install_dir/.uninstall"
+  assert_path_exists "$uninstall_script" || return 1
+  
+  # Check that the uninstall script handles .imps directory
+  assert_file_contains "$uninstall_script" ".imps" || return 1
+}
+
+uninstall_script_nixos_includes_rebuild() {
+  # Test that the NixOS uninstall script includes nixos-rebuild switch
+  fixture=$(make_fixture)
+  provide_basic_tools "$fixture"
+  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+
+  # Create a fake home.nix
+  mkdir -p "$fixture/home/.config/home-manager"
+  cat >"$fixture/home/.config/home-manager/home.nix" <<'EOF'
+{ config, pkgs, ... }:
+
+{
+  home.username = "testuser";
+  home.homeDirectory = "/home/testuser";
+  programs.bash.enable = true;
+}
+EOF
+
+  install_dir="$fixture/home/.wizardry"
+  
+  run_cmd env DETECT_RC_FILE_PLATFORM=nixos \
+      WIZARDRY_INSTALL_DIR="$install_dir" \
+      HOME="$fixture/home" \
+      WIZARDRY_INSTALL_ASSUME_YES=1 \
+      "$ROOT_DIR/install"
+
+  assert_success || return 1
+  
+  # Check that the uninstall script exists
+  uninstall_script="$install_dir/.uninstall"
+  assert_path_exists "$uninstall_script" || return 1
+  
+  # Check that the uninstall script contains nixos-rebuild logic for NixOS
+  assert_file_contains "$uninstall_script" "nixos-rebuild" || return 1
+}
+
+uninstall_script_nixos_includes_logout_message() {
+  # Test that the NixOS uninstall script includes log out message
+  fixture=$(make_fixture)
+  provide_basic_tools "$fixture"
+  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+
+  # Create a fake home.nix
+  mkdir -p "$fixture/home/.config/home-manager"
+  cat >"$fixture/home/.config/home-manager/home.nix" <<'EOF'
+{ config, pkgs, ... }:
+
+{
+  home.username = "testuser";
+  home.homeDirectory = "/home/testuser";
+  programs.bash.enable = true;
+}
+EOF
+
+  install_dir="$fixture/home/.wizardry"
+  
+  run_cmd env DETECT_RC_FILE_PLATFORM=nixos \
+      WIZARDRY_INSTALL_DIR="$install_dir" \
+      HOME="$fixture/home" \
+      WIZARDRY_INSTALL_ASSUME_YES=1 \
+      "$ROOT_DIR/install"
+
+  assert_success || return 1
+  
+  # Check that the uninstall script exists
+  uninstall_script="$install_dir/.uninstall"
+  assert_path_exists "$uninstall_script" || return 1
+  
+  # Check that the uninstall script contains log out message for NixOS
+  assert_file_contains "$uninstall_script" "log out" || return 1
+}
+
 # === Run Tests ===
 
 run_test_case "install runs core installer" install_invokes_core_installer
@@ -914,5 +1072,10 @@ run_test_case "install shows simple run message" install_shows_simple_run_messag
 run_test_case "install no adding missing path on fresh" install_does_not_show_adding_missing_path_on_fresh
 run_test_case "install NixOS shows config file message" install_nixos_shows_config_file_message
 run_test_case "install NixOS shows path updated message" install_nixos_shows_path_updated_message
+run_test_case "install NixOS shows logout message" install_nixos_shows_logout_message
+run_test_case "install non-NixOS shows source message" install_non_nixos_shows_source_message
+run_test_case "uninstall script handles .imps directory" uninstall_script_handles_imps_directory
+run_test_case "uninstall script NixOS includes rebuild" uninstall_script_nixos_includes_rebuild
+run_test_case "uninstall script NixOS includes logout message" uninstall_script_nixos_includes_logout_message
 
 finish_tests
