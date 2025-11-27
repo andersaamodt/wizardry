@@ -41,54 +41,6 @@ chmod +x install
 
 This downloads wizardry to the default install location, `~/.wizardry`. After installing, you must reopen your terminal window before wizardry spells will work.
 
-### Install on NixOS (Flake-based)
-
-For NixOS users, the install script generates a `flake.nix` in your wizardry directory for declarative installation.
-
-**Step 1: Run the standard install**
-
-```sh
-curl -fsSL https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh
-```
-
-This installs wizardry to `~/.wizardry` and generates a `flake.nix` file there.
-
-**Step 2 (optional): Use with home-manager**
-
-Add the local wizardry flake to your `flake.nix` inputs:
-
-```nix
-{
-  inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    home-manager.url = "github:nix-community/home-manager";
-    wizardry.url = "path:/home/youruser/.wizardry";  # Point to your install
-  };
-  
-  outputs = { self, nixpkgs, home-manager, wizardry, ... }: {
-    homeConfigurations."youruser" = home-manager.lib.homeManagerConfiguration {
-      # ... your config ...
-      modules = [
-        wizardry.homeManagerModules.default
-        {
-          programs.wizardry.enable = true;
-        }
-      ];
-    };
-  };
-}
-```
-
-**Try it temporarily:**
-
-After installing, you can try the flake:
-
-```sh
-nix develop ~/.wizardry
-```
-
-This gives you a shell with wizardry available for testing.
-
 ## Usage
 
 To use wizardry, simply type:
