@@ -186,6 +186,57 @@ test_nix_enable_flakes_idempotent() {
   fi
 }
 
+test_dry_run_single_directory() {
+  dir="$WIZARDRY_TMPDIR/dryrun_dir"
+  mkdir -p "$dir"
+  
+  run_spell "spells/system/path-wizard" --dry-run add "$dir"
+  assert_success
+  # Dry run should output the directory path
+  case "$OUTPUT" in
+    *"$dir"*) : ;;
+    *) TEST_FAILURE_REASON="expected directory path in output: $dir"; return 1 ;;
+  esac
+}
+
+test_dry_run_recursive() {
+  base="$WIZARDRY_TMPDIR/dryrun_recursive"
+  mkdir -p "$base/sub1" "$base/sub2"
+  
+  run_spell "spells/system/path-wizard" --dry-run --recursive add "$base"
+  assert_success
+  # Dry run should output all directories
+  case "$OUTPUT" in
+    *"$base"*) : ;;
+    *) TEST_FAILURE_REASON="expected base directory in output"; return 1 ;;
+  esac
+  case "$OUTPUT" in
+    *"sub1"*) : ;;
+    *) TEST_FAILURE_REASON="expected sub1 in output"; return 1 ;;
+  esac
+  case "$OUTPUT" in
+    *"sub2"*) : ;;
+    *) TEST_FAILURE_REASON="expected sub2 in output"; return 1 ;;
+  esac
+}
+
+test_dry_run_does_not_modify_rc() {
+  rc="$WIZARDRY_TMPDIR/dryrun_rc"
+  dir="$WIZARDRY_TMPDIR/dryrun_nomod"
+  mkdir -p "$dir"
+  
+  # Create empty rc file
+  printf '' > "$rc"
+  
+  PATH_WIZARD_PLATFORM=debian run_spell "spells/system/path-wizard" --dry-run --rc-file "$rc" --format shell add "$dir"
+  assert_success
+  # RC file should remain empty (not modified)
+  if [ -s "$rc" ]; then
+    TEST_FAILURE_REASON="rc file should not be modified in dry-run mode"
+    return 1
+  fi
+}
+
 run_test_case "path-wizard prints usage" test_help
 run_test_case "path-wizard fails when detect helper missing" test_missing_detect_helper
 run_test_case "path-wizard rejects unknown options" test_unknown_option
@@ -199,4 +250,7 @@ run_test_case "path-wizard uses numeric backup suffixes" test_nix_backup_uses_nu
 run_test_case "path-wizard recursive creates single backup" test_nix_recursive_creates_single_backup
 run_test_case "path-wizard enable-flakes adds only flakes" test_nix_enable_flakes_only
 run_test_case "path-wizard enable-flakes is idempotent" test_nix_enable_flakes_idempotent
+run_test_case "path-wizard --dry-run shows single directory" test_dry_run_single_directory
+run_test_case "path-wizard --dry-run recursive shows all dirs" test_dry_run_recursive
+run_test_case "path-wizard --dry-run does not modify rc file" test_dry_run_does_not_modify_rc
 finish_tests

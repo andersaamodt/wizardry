@@ -33,6 +33,7 @@ Install mode:
                      with an install() function and scribe them.
   -r, --recursive    Recursively scan supplied PATHS for installable spells.
                      Implies --all and requires at least one directory.
+  --dry-run          List spells that would be memorized without executing them.
   -h, --help         Show this message.
 
 Provide no rc options to use install mode.
@@ -326,6 +327,7 @@ fi
 
 ALL_MODE=0
 RECURSIVE=0
+DRY_RUN=0
 MEMORIZED_COUNT=0
 SKIPPED_COUNT=0
 PROMPTED_PATHS=''
@@ -506,6 +508,12 @@ scribe_file() {
                 SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
                 return
         fi
+        # In dry-run mode, just print the path without executing
+        if [ "$DRY_RUN" -eq 1 ]; then
+                printf '%s\n' "$path"
+                MEMORIZED_COUNT=$((MEMORIZED_COUNT + 1))
+                return
+        fi
         printf 'Memorizing %s...\n' "$path"
         if run_install "$path"; then
                 MEMORIZED_COUNT=$((MEMORIZED_COUNT + 1))
@@ -555,6 +563,10 @@ while [ $# -gt 0 ]; do
                 -r|--recursive)
                         ALL_MODE=1
                         RECURSIVE=1
+                        shift
+                        ;;
+                --dry-run)
+                        DRY_RUN=1
                         shift
                         ;;
                 -h|--help)
@@ -618,6 +630,10 @@ else
         done
 fi
 
-printf 'Memorized %d spell(s).\n' "$MEMORIZED_COUNT"
+if [ "$DRY_RUN" -eq 1 ]; then
+        printf 'Would memorize %d spell(s).\n' "$MEMORIZED_COUNT"
+else
+        printf 'Memorized %d spell(s).\n' "$MEMORIZED_COUNT"
+fi
 
 exit 0
