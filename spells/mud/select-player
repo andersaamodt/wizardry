@@ -28,18 +28,18 @@ else
     printf '%s\n' "MUD_PLAYER is currently set to $MUD_PLAYER"
 fi
 
-# Build menu options from player keys
-options=""
+# Build menu options from player keys using set --
+set --
 for file in "$HOME"/.ssh/*.pub; do
     [ -f "$file" ] || continue
     player_name=$(basename "$file" ".pub")
-    if [ -n "$options" ]; then
-        options="$options \"$player_name%set-player $player_name\""
-    else
-        options="\"$player_name%set-player $player_name\""
-    fi
+    # Validate player name contains only safe characters
+    case "$player_name" in
+        *[!a-zA-Z0-9._-]*) continue ;;
+    esac
+    set -- "$@" "$player_name%set-player $player_name"
 done
-options="$options \"Cancel%return\""
+set -- "$@" "Cancel%return"
 
 # Execute menu with options
-eval "menu \"Choose your player:\" $options"
+menu "Choose your player:" "$@"
