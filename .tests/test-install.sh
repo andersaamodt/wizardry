@@ -348,6 +348,94 @@ EOF
   fi
 }
 
+install_nixos_shows_flakes_status_before_config_file() {
+  # On NixOS with flakes not enabled, the installer should show
+  # "Flakes are not currently enabled" BEFORE showing the configuration file
+  fixture=$(make_fixture)
+  provide_basic_tools "$fixture"
+  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+
+  # Create a configuration.nix without flakes enabled
+  mkdir -p "$fixture/etc/nixos"
+  cat >"$fixture/etc/nixos/configuration.nix" <<'EOF'
+{ config, pkgs, ... }:
+
+{
+  imports = [ ./hardware-configuration.nix ];
+  
+  boot.loader.grub.enable = true;
+  
+  environment.systemPackages = with pkgs; [
+    vim
+    git
+  ];
+}
+EOF
+
+  install_dir="$fixture/home/.wizardry"
+  
+  # Simulate user input: config path, then 'y' to enable flakes, then 'y' to proceed
+  run_cmd sh -c "
+    printf '%s\n%s\n%s\n' '$fixture/etc/nixos/configuration.nix' 'y' 'y' | \
+    env DETECT_RC_FILE_PLATFORM=nixos \
+        WIZARDRY_INSTALL_DIR='$install_dir' \
+        HOME='$fixture/home' \
+        '$ROOT_DIR/install'
+  "
+
+  assert_success || return 1
+  
+  # Check that the output shows the new message format
+  assert_output_contains "Flakes are not currently enabled" || return 1
+  assert_output_contains "Flakes will be enabled by editing this configuration file" || return 1
+}
+
+install_nixos_shows_flakes_already_enabled() {
+  # On NixOS with flakes already enabled, the installer should show
+  # "Flakes are already enabled" and mention the flake path
+  fixture=$(make_fixture)
+  provide_basic_tools "$fixture"
+  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+
+  # Create a configuration.nix with flakes already enabled
+  mkdir -p "$fixture/etc/nixos"
+  cat >"$fixture/etc/nixos/configuration.nix" <<'EOF'
+{ config, pkgs, ... }:
+
+{
+  imports = [ ./hardware-configuration.nix ];
+  
+  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  
+  environment.systemPackages = with pkgs; [
+    vim
+    git
+  ];
+}
+EOF
+
+  install_dir="$fixture/home/.wizardry"
+  
+  # Simulate user input: config path, then 'y' to proceed
+  run_cmd sh -c "
+    printf '%s\n%s\n' '$fixture/etc/nixos/configuration.nix' 'y' | \
+    env DETECT_RC_FILE_PLATFORM=nixos \
+        WIZARDRY_INSTALL_DIR='$install_dir' \
+        HOME='$fixture/home' \
+        '$ROOT_DIR/install'
+  "
+
+  assert_success || return 1
+  
+  # Check that the output shows flakes are already enabled
+  assert_output_contains "Flakes are already enabled" || return 1
+  # Should NOT show the old "Configuration file to be modified" message
+  if printf '%s' "$OUTPUT" | grep -q "Configuration file to be modified"; then
+    TEST_FAILURE_REASON="should not show 'Configuration file to be modified' when flakes are already enabled"
+    return 1
+  fi
+}
+
 # === Path Normalization Tests ===
 
 install_normalizes_path_without_leading_slash() {
@@ -664,7 +752,7 @@ install_shows_menu_when_already_installed() {
 # === Output Message Tests ===
 
 install_nixos_shows_flake_created_message() {
-  # On NixOS, the installer should show "Wizardry flake created at" instead of
+  # On NixOS, the installer should show "Wizardry flake available at" instead of
   # "PATH configuration updated in"
   fixture=$(make_fixture)
   provide_basic_tools "$fixture"
@@ -692,8 +780,11 @@ EOF
 
   assert_success || return 1
   
-  # Should show "Wizardry flake created at" message
-  assert_output_contains "Wizardry flake created at" || return 1
+  # Should show "Wizardry flake available at" or "Wizardry flake created at" message
+  if ! printf '%s' "$OUTPUT" | grep -q "Wizardry flake"; then
+    TEST_FAILURE_REASON="output should mention 'Wizardry flake'"
+    return 1
+  fi
   
   # Should NOT show "PATH configuration updated in /etc/nixos" for NixOS
   if printf '%s' "$OUTPUT" | grep -q "PATH configuration updated in .*nix"; then
@@ -869,5 +960,7 @@ run_test_case "install creates .uninstall script" install_creates_uninstall_scri
 run_test_case "install shows uninstall after complete" install_shows_uninstall_after_complete
 run_test_case "install shows simple run message" install_shows_simple_run_message
 run_test_case "install no adding missing path on fresh" install_does_not_show_adding_missing_path_on_fresh
+run_test_case "install NixOS shows flakes status before config file" install_nixos_shows_flakes_status_before_config_file
+run_test_case "install NixOS shows flakes already enabled" install_nixos_shows_flakes_already_enabled
 
 finish_tests

@@ -391,6 +391,7 @@ detect_installation_status() {
 
 # Generate a flake.nix file in the wizardry directory for NixOS users
 # This allows declarative installation via home-manager or NixOS modules
+# A symlink is also created at ~/.config/nix/wizardry for easier discovery
 generate_flake_nix() {
         flake_path="$ABS_DIR/flake.nix"
         if [ -f "$flake_path" ]; then
@@ -541,7 +542,23 @@ EOF
 }
 FLAKE_EOF
 
-        # Silent - the main installer will show the flake creation message
+        # Create a symlink at ~/.config/nix/flakes/wizardry for standard NixOS discovery
+        # This allows referencing the flake as: path:~/.config/nix/flakes/wizardry
+        symlink_dir="$HOME/.config/nix/flakes"
+        symlink_path="$symlink_dir/wizardry"
+        if mkdir -p "$symlink_dir" 2>/dev/null; then
+                # Remove existing symlink if it points somewhere else
+                if [ -L "$symlink_path" ]; then
+                        existing_target=$(readlink "$symlink_path" 2>/dev/null || true)
+                        if [ "$existing_target" != "$ABS_DIR" ]; then
+                                rm -f "$symlink_path"
+                        fi
+                fi
+                # Create symlink if it doesn't exist
+                if [ ! -e "$symlink_path" ]; then
+                        ln -s "$ABS_DIR" "$symlink_path" 2>/dev/null || true
+                fi
+        fi
 }
 
 # Detect installation status for better user messaging
@@ -758,16 +775,8 @@ printf '\n'
 nix_flakes_consent=0
 if [ "$detect_format_value" = "nix" ]; then
         info_msg "NixOS Configuration"
-        substep_msg "Configuration file to be modified:"
-        if [ -n "$detect_rc_file_value" ]; then
-                printf '      %s\n' "$detect_rc_file_value"
-        else
-                printf '      (could not determine configuration file)\n'
-        fi
-        substep_msg "Backup: A timestamped backup will be created automatically"
-        substep_msg "After install: The installer will run 'sudo nixos-rebuild switch' or 'home-manager switch'"
         
-        # Check if flakes are already enabled
+        # Check if flakes are already enabled FIRST, before showing file info
         flakes_already_enabled=0
         if [ -n "$detect_rc_file_value" ] && [ -f "$detect_rc_file_value" ]; then
                 if grep -q 'experimental-features' "$detect_rc_file_value" 2>/dev/null; then
@@ -777,12 +786,21 @@ if [ "$detect_format_value" = "nix" ]; then
                 fi
         fi
         
-        # If flakes not enabled, ask user if we should enable them (separate prompt)
-        if [ "$flakes_already_enabled" -eq 0 ]; then
-                printf '\n'
-                info_msg "Flakes are not currently enabled in your NixOS configuration"
-                substep_msg "Wizardry works best with Nix flakes enabled"
+        # Show flakes status and configuration file info based on whether flakes are enabled
+        if [ "$flakes_already_enabled" -eq 1 ]; then
+                substep_msg "Flakes are already enabled in your configuration"
+                substep_msg "Wizardry flake will be available at:"
+                printf '      %s/.config/nix/flakes/wizardry\n' "$HOME"
+        else
+                substep_msg "Flakes are not currently enabled"
+                substep_msg "Flakes will be enabled by editing this configuration file:"
+                if [ -n "$detect_rc_file_value" ]; then
+                        printf '      %s\n' "$detect_rc_file_value"
+                else
+                        printf '      (could not determine configuration file)\n'
+                fi
                 substep_msg "This will add: nix.settings.experimental-features = [ \"nix-command\" \"flakes\" ];"
+                substep_msg "Backup: A timestamped backup will be created automatically"
                 printf '\n'
                 
                 if [ "${WIZARDRY_INSTALL_ASSUME_YES-}" = "1" ]; then
@@ -805,9 +823,9 @@ if [ "$detect_format_value" = "nix" ]; then
                         # Non-interactive with no input: default to enabling flakes
                         nix_flakes_consent=1
                 fi
-        else
-                substep_msg "Flakes are already enabled in your configuration"
         fi
+        
+        substep_msg "After install: The installer will run 'sudo nixos-rebuild switch' or 'home-manager switch'"
 elif [ -n "$detect_rc_file_value" ]; then
         info_msg "Shell configuration to be modified: $detect_rc_file_value"
 fi
@@ -982,7 +1000,16 @@ if [ "$path_updates_made" -eq 1 ]; then
         if [ "$detect_format_value" = "nix" ]; then
                 # Generate flake.nix in the wizardry directory for declarative NixOS usage
                 generate_flake_nix
-                success_msg "Wizardry flake created at '$ABS_DIR/flake.nix'"
+                
+                # Show the standard flakes location if symlink was created
+                symlink_path="$HOME/.config/nix/flakes/wizardry"
+                if [ -L "$symlink_path" ]; then
+                        success_msg "Wizardry flake available at: $symlink_path"
+                        substep_msg "Add to your flake inputs: wizardry.url = \"path:$symlink_path\";"
+                else
+                        success_msg "Wizardry flake created at: $ABS_DIR/flake.nix"
+                        substep_msg "Add to your flake inputs: wizardry.url = \"path:$ABS_DIR\";"
+                fi
                 
                 # On NixOS, attempt to run nixos-rebuild or home-manager switch
                 info_msg "Attempting to rebuild NixOS configuration..."
