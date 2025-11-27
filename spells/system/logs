@@ -1,11 +1,25 @@
-#!/usr/bin/env bash
+#!/bin/sh
 
-# The "Logs" spell allows a wizard to easily browse and view the logs of their enchanted system.
-# By casting this spell, a wizard can access a menu of common log files and view them using the "less" command.
-# Specialized logs and platform-specific logs are also included in the menu, with the appropriate command for viewing them.
+# This spell displays a menu of system logs for easy viewing.
+# Use it to browse and view common log files on the system.
 
-options=("Apache,Auth,Boot,Cron,Daemon,Kernel,Mail,Syslog,Exit")
-commands=("sudo less /var/log/apache2/access.log,sudo less /var/log/auth.log,sudo less /var/log/boot.log,sudo less /var/log/cron.log,sudo less /var/log/daemon.log,sudo less /var/log/kern.log,sudo less /var/log/mail.log,sudo less /var/log/syslog,break")
+show_usage() {
+        cat <<'USAGE'
+Usage: logs
+
+Display an interactive menu of system log files to view. Log paths are
+automatically adjusted based on the detected operating system.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
+set -eu
 
 . colors
 
@@ -14,13 +28,13 @@ logs="/var/log/messages,/var/log/secure,/var/log/auth.log,"
 
 case "$distro" in
     "arch"|"fedora")
-        logs+="/var/log/pacman.log,/var/log/httpd/access_log,/var/log/httpd/error_log,/var/log/lighttpd/access.log,/var/log/lighttpd/error.log,/var/log/xorg.0.log"
+        logs="$logs/var/log/pacman.log,/var/log/httpd/access_log,/var/log/httpd/error_log,/var/log/lighttpd/access.log,/var/log/lighttpd/error.log,/var/log/xorg.0.log"
         ;;
     "debian"|"ubuntu")
-        logs+="/var/log/apt/history.log,/var/log/dpkg.log,/var/log/lighttpd/access.log,/var/log/lighttpd/error.log,/var/log/xorg.0.log"
+        logs="$logs/var/log/apt/history.log,/var/log/dpkg.log,/var/log/lighttpd/access.log,/var/log/lighttpd/error.log,/var/log/xorg.0.log"
         ;;
     "macos")
-        logs+="/var/log/install.log,/var/log/system.log"
+        logs="$logs/var/log/install.log,/var/log/system.log"
     ;;
 esac
 
