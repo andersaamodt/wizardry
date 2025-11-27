@@ -890,8 +890,12 @@ nix_flakes_enabled() {
 }
 
 # Enable flakes in configuration.nix if not already enabled.
-# This is needed for wizardry's flake-based installation on NixOS.
+# This is NixOS-specific and should only run when platform=nixos.
 enable_nix_flakes() {
+        # Only enable flakes on NixOS - other platforms using .nix files don't need this
+        if [ "$platform" != "nixos" ]; then
+                return 0
+        fi
         if nix_flakes_enabled; then
                 return 0
         fi
