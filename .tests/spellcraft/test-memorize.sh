@@ -237,6 +237,53 @@ test_detect_stub_without_rc_fails() {
 
   assert_failure && assert_error_contains "did not yield an rc file"
 }
+test_dry_run_lists_installable_spells() {
+  reset_logs
+  case_dir=$(make_tempdir)
+  spell=$(create_installable_spell "$case_dir")
+  
+  run_spell_in_dir "$case_dir" "spells/spellcraft/memorize" --dry-run "$spell"
+  
+  assert_success
+  # Dry run should output the spell path
+  case "$OUTPUT" in
+    *"$spell"*) : ;;
+    *) TEST_FAILURE_REASON="expected spell path in output: $spell"; return 1 ;;
+  esac
+  # Should NOT actually run the install (no log file created or log is empty)
+  if [ -f "$WIZARDRY_TMPDIR/memorize.log" ] && [ -s "$WIZARDRY_TMPDIR/memorize.log" ]; then
+    TEST_FAILURE_REASON="dry-run should not execute install function"
+    return 1
+  fi
+}
+
+test_dry_run_recursive() {
+  reset_logs
+  case_dir=$(make_tempdir)
+  subdir="$case_dir/sub"
+  mkdir -p "$subdir"
+  spell1=$(create_installable_spell "$case_dir")
+  spell2=$(create_installable_spell "$subdir")
+  printf '%s\n' "echo not installable" >"$case_dir/plain.sh"
+  chmod +x "$case_dir/plain.sh"
+  
+  run_spell_in_dir "$case_dir" "spells/spellcraft/memorize" --dry-run --recursive "$case_dir"
+  
+  assert_success
+  # Should list both installable spells
+  case "$OUTPUT" in
+    *"installable.sh"*) : ;;
+    *) TEST_FAILURE_REASON="expected installable.sh in output"; return 1 ;;
+  esac
+  # Should NOT include non-installable scripts
+  case "$OUTPUT" in
+    *"plain.sh"*) 
+      TEST_FAILURE_REASON="should not list non-installable plain.sh"
+      return 1
+      ;;
+    *) : ;;
+  esac
+}
 
 run_test_case "memorize prints usage" test_help
 run_test_case "memorize fails without detect-rc-file" test_missing_detect_helper_fails
@@ -250,4 +297,6 @@ run_test_case "memorize prompt yes scans directory" test_prompt_accept_scans_dir
 run_test_case "memorize --recursive requires a directory" test_recursive_requires_directory
 run_test_case "memorize reports failed installs" test_install_failures_are_reported
 run_test_case "memorize fails when detect-rc-file omits rc" test_detect_stub_without_rc_fails
+run_test_case "memorize --dry-run lists installable spells" test_dry_run_lists_installable_spells
+run_test_case "memorize --dry-run recursive works" test_dry_run_recursive
 finish_tests

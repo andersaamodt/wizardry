@@ -67,10 +67,13 @@ fi
 
 usage() {
         cat <<'USAGE' >&2
-Usage: path-wizard [-r|--recursive] [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] add [DIRECTORY]
+Usage: path-wizard [-r|--recursive] [--dry-run] [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] add [DIRECTORY]
        path-wizard [-r|--recursive] [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] remove DIRECTORY
        path-wizard [-r|--recursive] [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] status DIRECTORY
        path-wizard [--rc-file FILE] [--format nix] [--platform nixos] enable-flakes
+
+Options:
+  --dry-run    List paths that would be added without modifying any files
 
 Formats: auto (default), shell, nix
 Platforms: debian, arch, fedora, mac, nixos, unknown
@@ -87,11 +90,16 @@ format="auto"
 platform="${PATH_WIZARD_PLATFORM-}"
 recursive=0
 batch_add_file=""
+dry_run=0
 
 while [ "$#" -gt 0 ]; do
         case $1 in
         -r|--recursive)
                 recursive=1
+                shift
+                ;;
+        --dry-run)
+                dry_run=1
                 shift
                 ;;
         --recursive=*)
@@ -293,6 +301,14 @@ if [ "$recursive" -eq 1 ]; then
         }
 
         trap 'cleanup_tmp' EXIT HUP INT TERM
+
+        # In dry-run mode, just print paths that would be added
+        if [ "$dry_run" -eq 1 ] && [ "$action" = "add" ]; then
+                cat "$tmp_file"
+                trap - EXIT HUP INT TERM
+                cleanup_tmp
+                exit 0
+        fi
 
         # Detect format early for optimized recursive handling
         recursive_format=$format
@@ -1099,6 +1115,12 @@ $dir"
         rm -f "${batch_add_file}.merged"
         write_nix_paths "$@"
         printf '%s\n' "Recorded %d directories in '$rc_file'. Rebuild your Nix environment to activate the change." "$#"
+        exit 0
+fi
+
+# Handle dry-run mode for single directory (non-recursive case)
+if [ "$dry_run" -eq 1 ] && [ "$action" = "add" ]; then
+        printf '%s\n' "$directory"
         exit 0
 fi
 

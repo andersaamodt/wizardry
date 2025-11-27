@@ -58,6 +58,7 @@ Usage: $SCRIPT_NAME [alias NAME COMMAND...|forget NAME|OPTIONS [PATH ...]]
 alias NAME COMMAND  Remember COMMAND on the Cast menu under NAME.
 forget NAME         Remove NAME from the Cast menu.
 OPTIONS             Passed through to scribe-spell to install installable spells.
+                    Includes: -a|--all, -r|--recursive, --dry-run
 USAGE
 }
 
