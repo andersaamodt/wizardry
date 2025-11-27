@@ -162,7 +162,7 @@ EOF
 
   assert_success || return 1
   # Check that PATH block was written to config file
-  assert_file_contains "$fixture/home/.config/home-manager/home.nix" "# wizardry" || return 1
+  assert_file_contains "$fixture/home/.config/home-manager/home.nix" "# wizardry-path" || return 1
 }
 
 install_nixos_adds_path_to_system_config() {
@@ -202,7 +202,7 @@ EOF
   assert_success || return 1
   
   # Check that wizardry PATH block was added to configuration.nix
-  assert_file_contains "$fixture/etc/nixos/configuration.nix" "# wizardry" || return 1
+  assert_file_contains "$fixture/etc/nixos/configuration.nix" "# wizardry-path" || return 1
 }
 
 install_nixos_preserves_existing_config() {
@@ -249,7 +249,7 @@ EOF
   fi
   
   # Check that PATH block was added
-  assert_file_contains "$fixture/etc/nixos/configuration.nix" "# wizardry" || return 1
+  assert_file_contains "$fixture/etc/nixos/configuration.nix" "# wizardry-path" || return 1
 }
 
 install_nixos_writes_path_entries_to_config() {
@@ -331,7 +331,7 @@ EOF
   assert_success || return 1
   
   # Check that PATH block was added
-  assert_file_contains "$fixture/etc/nixos/configuration.nix" "# wizardry" || return 1
+  assert_file_contains "$fixture/etc/nixos/configuration.nix" "# wizardry-path" || return 1
 }
 
 install_nixos_shows_config_file_message() {
@@ -524,7 +524,7 @@ EOF
   
   # PATH entries should be in home.nix (not shell code, but Nix configuration)
   # The wizardry PATH block should be present
-  assert_file_contains "$fixture/home/.config/home-manager/home.nix" "# wizardry" || return 1
+  assert_file_contains "$fixture/home/.config/home-manager/home.nix" "# wizardry-path" || return 1
   
   return 0
 }
@@ -798,9 +798,9 @@ install_creates_uninstall_script_with_correct_name() {
   assert_path_missing "$install_dir/uninstall_wizardry" || return 1
 }
 
-install_shows_uninstall_after_complete() {
-  # The "Uninstall script created at:" message should appear after
-  # "Installation Complete!" heading
+install_does_not_show_uninstall_on_success() {
+  # The installer should NOT show "Uninstall script created at:" message
+  # on successful installation (per problem statement - only notify on failure)
   fixture=$(make_fixture)
   provide_basic_tools "$fixture"
   link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
@@ -814,25 +814,20 @@ install_shows_uninstall_after_complete() {
 
   assert_success || return 1
   
-  # Find positions of "Installation Complete" and "Uninstall script created"
-  complete_pos=$(printf '%s' "$OUTPUT" | grep -n "Installation Complete" | head -1 | cut -d: -f1)
-  uninstall_pos=$(printf '%s' "$OUTPUT" | grep -n "Uninstall script created" | head -1 | cut -d: -f1)
-  
-  if [ -z "$complete_pos" ]; then
+  # Should have Installation Complete message
+  if ! printf '%s' "$OUTPUT" | grep -q "Installation Complete"; then
     TEST_FAILURE_REASON="Installation Complete message not found"
     return 1
   fi
   
-  if [ -z "$uninstall_pos" ]; then
-    TEST_FAILURE_REASON="Uninstall script created message not found"
+  # Should NOT show uninstall script message on success
+  if printf '%s' "$OUTPUT" | grep -q "Uninstall script created"; then
+    TEST_FAILURE_REASON="should not show uninstall script message on success"
     return 1
   fi
   
-  # Uninstall message should come AFTER Installation Complete
-  if [ "$uninstall_pos" -le "$complete_pos" ]; then
-    TEST_FAILURE_REASON="Uninstall script message should appear after Installation Complete (got complete=$complete_pos, uninstall=$uninstall_pos)"
-    return 1
-  fi
+  # The uninstall script should still be created though
+  assert_path_exists "$install_dir/.uninstall" || return 1
 }
 
 install_shows_simple_run_message() {
@@ -914,7 +909,7 @@ run_test_case "install shows help" shows_help
 run_test_case "install NixOS shows PATH updated" install_nixos_shows_path_updated
 run_test_case "install shows spell names memorized" install_shows_spell_names_memorized
 run_test_case "install creates .uninstall script" install_creates_uninstall_script_with_correct_name
-run_test_case "install shows uninstall after complete" install_shows_uninstall_after_complete
+run_test_case "install does not show uninstall on success" install_does_not_show_uninstall_on_success
 run_test_case "install shows simple run message" install_shows_simple_run_message
 run_test_case "install no adding missing path on fresh" install_does_not_show_adding_missing_path_on_fresh
 run_test_case "install NixOS shows config file message" install_nixos_shows_config_file_message
