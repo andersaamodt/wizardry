@@ -598,8 +598,9 @@ if [ "$#" -eq 0 ]; then
         printf '\n'
         
         # Read user choice
-        if [ -t 0 ] || [ -p /dev/stdin ] || [ -s /dev/stdin ]; then
-                printf '%sEnter your choice (1-4, ESC to exit): %s' "$BOLD" "$RESET" >&2
+        # Check if we can read input (tty or pipe)
+        if [ -t 0 ] || [ -p /dev/stdin ]; then
+                printf '%sEnter your choice (1-4): %s' "$BOLD" "$RESET" >&2
                 IFS= read -r choice
         else
                 # Non-interactive mode - default to exit
@@ -626,18 +627,19 @@ if [ "$#" -eq 0 ]; then
                         set -- "$ABS_DIR/spells"
                         ;;
                 3)
-                        # Uninstall
-                        script_dir=$(CDPATH='' cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || script_dir="."
-                        uninstall_script="$script_dir/uninstall_wizardry"
+                        # Uninstall - use the uninstall script from the existing installation
+                        uninstall_script="$ABS_DIR/uninstall_wizardry"
                         if [ -x "$uninstall_script" ]; then
                                 exec "$uninstall_script"
                         else
-                                printf '%s\n' "Error: uninstall script not found. Run a fresh install first." >&2
+                                printf '%s\n' "Error: uninstall script not found at '$uninstall_script'." >&2
+                                printf '%s\n' "The uninstall script is created during installation." >&2
+                                printf '%s\n' "You may need to manually remove '$ABS_DIR' and PATH entries from your shell configuration." >&2
                                 exit 1
                         fi
                         ;;
-                4|""|$'\033')
-                        # Exit (also handles ESC key)
+                4|"")
+                        # Exit (empty input also exits)
                         printf '%s\n' "No changes made. Run 'menu' or 'mud' to use wizardry."
                         exit 0
                         ;;
@@ -794,7 +796,7 @@ if [ "$detect_format_value" = "nix" ]; then
                 
                 if [ "${WIZARDRY_INSTALL_ASSUME_YES-}" = "1" ]; then
                         nix_flakes_consent=1
-                elif [ -t 0 ] || [ -p /dev/stdin ] || [ -s /dev/stdin ]; then
+                elif [ -t 0 ] || [ -p /dev/stdin ]; then
                         # Can read from tty or piped input
                         printf '%sMay we enable flakes in your configuration.nix? [Y/n] %s' "$BOLD" "$RESET" >&2
                         IFS= read -r flakes_answer
