@@ -334,6 +334,82 @@ fi
 
 ---
 
+## Requiring Wizardry
+
+Spells that depend on wizardry features (imps, other spells) should handle the case when wizardry is not installed.
+
+### Using require-wizardry (Recommended)
+
+For most spells that can assume wizardry is on PATH, use the `require-wizardry` cantrip:
+
+```sh
+#!/bin/sh
+
+# Brief description of what this spell does.
+
+# Ensure wizardry is available before using any imps
+require-wizardry || exit 1
+
+set -eu
+
+# Now safe to use wizardry imps and spells
+say "Hello from wizardry!"
+```
+
+### Bootstrapping Snippet (for standalone scripts)
+
+For scripts that may run before wizardry is installed (like custom install scripts),
+embed the require-wizardry snippet directly in your script. Get the snippet with:
+
+```sh
+require-wizardry --snippet
+```
+
+The snippet provides a self-contained check that works without any wizardry dependencies:
+
+```sh
+#!/bin/sh
+
+# --- require-wizardry snippet ---
+_require_wizardry() {
+  if command -v menu >/dev/null 2>&1; then
+    return 0
+  fi
+  printf '%s\n' "Error: wizardry is not installed or not in PATH." >&2
+  printf '%s\n' "Install it with:" >&2
+  printf '%s\n' "  curl -fsSL https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh" >&2
+  exit 1
+}
+_require_wizardry
+# --- end require-wizardry snippet ---
+
+set -eu
+
+# Your script continues here...
+```
+
+### Graceful Fallbacks
+
+For spells that should work with or without wizardry (like `arcane/copy`),
+provide inline fallbacks:
+
+```sh
+# Helper that works with or without wizardry imps
+_say() {
+  if command -v say >/dev/null 2>&1; then
+    say "$@"
+  else
+    printf '%s\n' "$*"
+  fi
+}
+
+_has() {
+  command -v "$1" >/dev/null 2>&1
+}
+```
+
+---
+
 ## Documentation
 
 ### Spell Headers
