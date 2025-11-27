@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
 # Guard a script against wizardry not being installed by exiting with a
 # descriptive error or offering to install wizardry.
