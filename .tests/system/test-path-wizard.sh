@@ -145,47 +145,6 @@ test_nix_recursive_creates_single_backup() {
   fi
 }
 
-test_nix_enable_flakes_only() {
-  # Test that enable-flakes only adds flakes enablement, no PATH entries
-  rc="$WIZARDRY_TMPDIR/flakes_only.nix"
-  
-  # Create initial config without flakes
-  printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$rc"
-  
-  PATH_WIZARD_PLATFORM=nixos run_spell "spells/system/path-wizard" --rc-file "$rc" --format nix --platform nixos enable-flakes
-  assert_success || return 1
-  
-  # Verify flakes are enabled
-  if ! grep -q 'experimental-features' "$rc" 2>/dev/null; then
-    TEST_FAILURE_REASON="expected flakes to be enabled in config"
-    return 1
-  fi
-  
-  # Verify NO wizardry PATH block was added
-  if grep -q 'wizardry PATH begin' "$rc" 2>/dev/null; then
-    TEST_FAILURE_REASON="expected no PATH entries, but found wizardry PATH block"
-    return 1
-  fi
-}
-
-test_nix_enable_flakes_idempotent() {
-  # Test that enable-flakes is idempotent when flakes already enabled
-  rc="$WIZARDRY_TMPDIR/flakes_idem.nix"
-  
-  # Create config with flakes already enabled
-  printf '{ config, pkgs, ... }:\n\n{\n  nix.settings.experimental-features = [ "nix-command" "flakes" ];\n}\n' > "$rc"
-  
-  PATH_WIZARD_PLATFORM=nixos run_spell "spells/system/path-wizard" --rc-file "$rc" --format nix --platform nixos enable-flakes
-  assert_success || return 1
-  
-  # Verify only one flakes line exists (no duplicate)
-  flakes_count=$(grep -c 'experimental-features' "$rc" 2>/dev/null || printf '0')
-  if [ "$flakes_count" -ne 1 ]; then
-    TEST_FAILURE_REASON="expected exactly 1 flakes line, found $flakes_count"
-    return 1
-  fi
-}
-
 test_dry_run_single_directory() {
   dir="$WIZARDRY_TMPDIR/dryrun_dir"
   mkdir -p "$dir"
@@ -248,8 +207,6 @@ run_test_case "path-wizard remove drops managed shell entries" test_shell_remove
 run_test_case "path-wizard manages Nix PATH entries" test_nix_add_status_and_remove_round_trip
 run_test_case "path-wizard uses numeric backup suffixes" test_nix_backup_uses_numeric_suffix
 run_test_case "path-wizard recursive creates single backup" test_nix_recursive_creates_single_backup
-run_test_case "path-wizard enable-flakes adds only flakes" test_nix_enable_flakes_only
-run_test_case "path-wizard enable-flakes is idempotent" test_nix_enable_flakes_idempotent
 run_test_case "path-wizard --dry-run shows single directory" test_dry_run_single_directory
 run_test_case "path-wizard --dry-run recursive shows all dirs" test_dry_run_recursive
 run_test_case "path-wizard --dry-run does not modify rc file" test_dry_run_does_not_modify_rc

@@ -70,7 +70,6 @@ usage() {
 Usage: path-wizard [-r|--recursive] [--dry-run] [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] add [DIRECTORY]
        path-wizard [-r|--recursive] [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] remove DIRECTORY
        path-wizard [-r|--recursive] [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] status DIRECTORY
-       path-wizard [--rc-file FILE] [--format nix] [--platform nixos] enable-flakes
 
 Options:
   --dry-run    List paths that would be added without modifying any files
@@ -193,9 +192,9 @@ else
         shift
         
         case $action in
-        add|remove|status|enable-flakes) : ;;
+        add|remove|status) : ;;
         *)
-                printf '%s\n' "Error: The first argument must be 'add', 'remove', 'status', or 'enable-flakes'." >&2
+                printf '%s\n' "Error: The first argument must be 'add', 'remove', or 'status'." >&2
                 exit 1
                 ;;
         esac
@@ -245,8 +244,8 @@ normalize_directory() {
         printf '%s' "$directory"
 }
 
-# Skip directory normalization for batch mode and enable-flakes action
-if [ "$batch_mode" -eq 0 ] && [ "$action" != "enable-flakes" ]; then
+# Skip directory normalization for batch mode
+if [ "$batch_mode" -eq 0 ]; then
         if [ "$action" = "add" ]; then
                 if [ "$#" -eq 0 ]; then
                         directory=$(normalize_directory "$(pwd -P)")
@@ -517,7 +516,6 @@ nix_backup_created=0
 # string tracks the buggy form that escaped "$PATH" and therefore replaced the
 # variable with a literal. Retaining both lets us tidy older installs while
 # keeping removals idempotent.
-# Only define these when directory is set (not for enable-flakes action)
 managed_export_line=""
 legacy_export_line=""
 legacy_quoted_export_line=""
@@ -900,97 +898,10 @@ write_nix_paths() {
         rm -f "$block_tmp"
 }
 
-# Check if flakes are already enabled in the configuration.nix file.
-# Returns 0 if flakes are enabled, 1 if not.
-nix_flakes_enabled() {
-        if [ ! -f "$rc_file" ]; then
-                return 1
-        fi
-        # Check for common patterns that enable flakes:
-        # - nix.settings.experimental-features = [ "flakes" ... ]
-        # - experimental-features = "nix-command flakes"
-        # Use word boundary matching to avoid false positives
-        # Note: We don't use run_maybe_sudo for reading since system config files
-        # like /etc/nixos/configuration.nix are typically world-readable.
-        if grep -q 'experimental-features' "$rc_file" 2>/dev/null; then
-                if grep -qE '("|'\''| )flakes("|'\''| |])' "$rc_file" 2>/dev/null; then
-                        return 0
-                fi
-        fi
-        return 1
-}
-
-# Enable flakes in configuration.nix if not already enabled.
-# This is NixOS-specific and should only run when platform=nixos.
-# Respects WIZARDRY_NIX_FLAKES_CONSENT env var: if set to 0, skip enablement.
-enable_nix_flakes() {
-        # Only enable flakes on NixOS - other platforms using .nix files don't need this
-        if [ "$platform" != "nixos" ]; then
-                return 0
-        fi
-        # If user explicitly declined flakes enablement, skip it
-        if [ "${WIZARDRY_NIX_FLAKES_CONSENT-}" = "0" ]; then
-                return 0
-        fi
-        if nix_flakes_enabled; then
-                return 0
-        fi
-        backup_rc_file_once
-        
-        # Insert flakes enablement before the closing brace of the configuration
-        # Use /tmp for temp files to avoid permission issues with system config directories
-        tmp_file="${TMPDIR:-/tmp}/wizardry-nix.$$"
-        run_maybe_sudo cat "$rc_file" | awk '
-        BEGIN { inserted = 0 }
-        {
-                lines[NR] = $0
-        }
-        END {
-                if (NR == 0) {
-                        print "  # wizardry flakes enablement"
-                        print "  nix.settings.experimental-features = [ \"nix-command\" \"flakes\" ];"
-                        exit
-                }
-                last = NR
-                while (last > 0 && lines[last] ~ /^[[:space:]]*$/) {
-                        last--
-                }
-                if (last > 0 && lines[last] ~ /^[[:space:]]*}/) {
-                        for (i = 1; i < last; i++) print lines[i]
-                        if (last > 1 && lines[last-1] !~ /^[[:space:]]*$/) {
-                                print ""
-                        }
-                        print "  # wizardry flakes enablement"
-                        print "  nix.settings.experimental-features = [ \"nix-command\" \"flakes\" ];"
-                        print lines[last]
-                        for (i = last + 1; i <= NR; i++) print lines[i]
-                } else {
-                        for (i = 1; i <= NR; i++) print lines[i]
-                        if (NR > 0 && lines[NR] !~ /^[[:space:]]*$/) {
-                                print ""
-                        }
-                        print "  # wizardry flakes enablement"
-                        print "  nix.settings.experimental-features = [ \"nix-command\" \"flakes\" ];"
-                }
-        }
-        ' >"$tmp_file"
-        
-        if [ "$needs_sudo" -eq 1 ]; then
-                run_maybe_sudo cp "$tmp_file" "$rc_file"
-                rm -f "$tmp_file"
-        else
-                mv "$tmp_file" "$rc_file"
-        fi
-        
-        printf '%s\n' "path-wizard: enabled flakes in '$rc_file'." >&2
-}
-
 # Add a directory to the managed list inside configuration.nix. Duplicates are
 # ignored so repeated runs stay harmless.
 nix_add() {
         ensure_rc_directory
-        # Enable flakes if not already enabled (required for wizardry on NixOS)
-        enable_nix_flakes
         existing_paths="$(extract_nix_paths)"
         old_ifs=$IFS
         IFS='
@@ -1098,9 +1009,6 @@ $dir"
                 fi
         done <"$batch_add_file"
         
-        # Enable flakes first (only needs to happen once)
-        enable_nix_flakes
-        
         # Get existing paths and merge with new ones, using sort for dedup
         existing_paths="$(extract_nix_paths)"
         
@@ -1136,10 +1044,6 @@ shell)
         status)
                 shell_status
                 ;;
-        enable-flakes)
-                printf '%s\n' "Error: enable-flakes action is only valid for nix format." >&2
-                exit 1
-                ;;
         esac
         ;;
 nix)
@@ -1152,15 +1056,6 @@ nix)
                 ;;
         status)
                 nix_status
-                ;;
-        enable-flakes)
-                # Only enable flakes, don't add any PATH entries
-                ensure_rc_directory
-                if nix_flakes_enabled; then
-                        printf '%s\n' "Flakes already enabled in '$rc_file'."
-                        exit 0
-                fi
-                enable_nix_flakes
                 ;;
         esac
         ;;
