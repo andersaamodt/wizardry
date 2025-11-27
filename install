@@ -393,6 +393,165 @@ detect_installation_status() {
         fi
 }
 
+# Generate a flake.nix file in the wizardry directory for NixOS users
+# This allows declarative installation via home-manager or NixOS modules
+generate_flake_nix() {
+        flake_path="$ABS_DIR/flake.nix"
+        if [ -f "$flake_path" ]; then
+                return 0  # Already exists
+        fi
+        
+        cat > "$flake_path" << 'FLAKE_EOF'
+{
+  description = "Wizardry - the terminal's missing link";
+
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    flake-utils.url = "github:numtide/flake-utils";
+  };
+
+  outputs = { self, nixpkgs, flake-utils }:
+    flake-utils.lib.eachDefaultSystem (system:
+      let
+        pkgs = nixpkgs.legacyPackages.${system};
+        
+        wizardry = pkgs.stdenvNoCC.mkDerivation {
+          pname = "wizardry";
+          version = "0.1.0";
+          
+          src = ./.;
+          
+          dontBuild = true;
+          
+          installPhase = ''
+            runHook preInstall
+            
+            mkdir -p $out/share/wizardry
+            mkdir -p $out/bin
+            
+            cp -r spells $out/share/wizardry/
+            cp -r tests $out/share/wizardry/
+            cp -r tutorials $out/share/wizardry/ 2>/dev/null || true
+            cp install $out/share/wizardry/
+            cp README.md $out/share/wizardry/
+            
+            cat > $out/bin/menu <<EOF
+#!/bin/sh
+exec "$out/share/wizardry/spells/menu/menu" "\$@"
+EOF
+            chmod +x $out/bin/menu
+            
+            cat > $out/bin/mud <<EOF
+#!/bin/sh
+exec "$out/share/wizardry/spells/mud/mud" "\$@"
+EOF
+            chmod +x $out/bin/mud
+            
+            cat > $out/share/wizardry/setup.sh <<EOF
+WIZARDRY_ROOT="$out/share/wizardry"
+export WIZARDRY_ROOT
+EOF
+            
+            find $out/share/wizardry/spells -type d | while read -r dir; do
+              echo "export PATH=\"\$PATH:$dir\"" >> $out/share/wizardry/setup.sh
+            done
+            
+            runHook postInstall
+          '';
+          
+          meta = {
+            description = "Wizardry - shell scripts for terminal users";
+            homepage = "https://github.com/andersaamodt/wizardry";
+            platforms = pkgs.lib.platforms.unix;
+          };
+        };
+      in
+      {
+        packages = {
+          default = wizardry;
+          wizardry = wizardry;
+        };
+        
+        devShells.default = pkgs.mkShell {
+          packages = [ wizardry ];
+          shellHook = ''
+            export WIZARDRY_ROOT="${wizardry}/share/wizardry"
+            source "${wizardry}/share/wizardry/setup.sh"
+            echo "Wizardry is ready! Type 'menu' or 'mud' to start."
+          '';
+        };
+      }
+    ) // {
+      homeManagerModules.default = { config, lib, pkgs, ... }:
+        let
+          cfg = config.programs.wizardry;
+        in
+        {
+          options.programs.wizardry = {
+            enable = lib.mkEnableOption "wizardry shell scripts";
+            
+            package = lib.mkOption {
+              type = lib.types.package;
+              default = self.packages.${pkgs.system}.wizardry;
+              description = "The wizardry package to use.";
+            };
+          };
+          
+          config = lib.mkIf cfg.enable {
+            home.packages = [ cfg.package ];
+            
+            home.sessionVariables = {
+              WIZARDRY_ROOT = "${cfg.package}/share/wizardry";
+            };
+            
+            programs.bash.initExtra = lib.mkIf config.programs.bash.enable ''
+              source "${cfg.package}/share/wizardry/setup.sh"
+            '';
+            
+            programs.zsh.initExtra = lib.mkIf config.programs.zsh.enable ''
+              source "${cfg.package}/share/wizardry/setup.sh"
+            '';
+          };
+        };
+      
+      nixosModules.default = { config, lib, pkgs, ... }:
+        let
+          cfg = config.programs.wizardry;
+        in
+        {
+          options.programs.wizardry = {
+            enable = lib.mkEnableOption "wizardry shell scripts";
+            
+            package = lib.mkOption {
+              type = lib.types.package;
+              default = self.packages.${pkgs.system}.wizardry;
+              description = "The wizardry package to use.";
+            };
+          };
+          
+          config = lib.mkIf cfg.enable {
+            environment.systemPackages = [ cfg.package ];
+            
+            environment.sessionVariables = {
+              WIZARDRY_ROOT = "${cfg.package}/share/wizardry";
+            };
+            
+            environment.shellInit = ''
+              source "${cfg.package}/share/wizardry/setup.sh"
+            '';
+          };
+        };
+    };
+}
+FLAKE_EOF
+
+        if [ -f "$flake_path" ]; then
+                success_msg "Generated flake.nix in $ABS_DIR for declarative NixOS installation"
+                substep_msg "Use 'nix develop $ABS_DIR' to try wizardry"
+                substep_msg "Or add to your flake inputs for permanent installation"
+        fi
+}
+
 # Detect installation status for better user messaging
 detect_installation_status
 install_status=$?
@@ -650,6 +809,9 @@ if [ "$path_updates_made" -eq 1 ]; then
                         printf '  home-manager switch  (for home-manager users)\n'
                         printf '  sudo nixos-rebuild switch  (for system-level configuration)\n'
                 fi
+
+                # Generate flake.nix in the wizardry directory for declarative NixOS usage
+                generate_flake_nix
         else
                 printf 'Wizardry directories recorded in %s. Open a new shell or source the file to activate them.\n' "$rc_destination"
         fi

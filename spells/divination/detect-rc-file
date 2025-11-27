@@ -94,8 +94,13 @@ RC_CANDIDATES=''
 
 case $platform in
 mac)
-        add_candidate "$HOME/.zshrc"
+        # On macOS, Terminal.app and iTerm2 open login shells by default.
+        # Login shells source .zprofile (not .zshrc), so we prefer .zprofile
+        # for PATH additions to ensure they take effect in new terminal windows.
+        # If .zshrc exists but .zprofile doesn't, we use .zshrc since the user
+        # may have configured their terminal to use interactive shells.
         add_candidate "$HOME/.zprofile"
+        add_candidate "$HOME/.zshrc"
         add_candidate "$HOME/.bash_profile"
         ;;
 nixos)
