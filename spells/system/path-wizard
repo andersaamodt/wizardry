@@ -1041,7 +1041,7 @@ if [ "$batch_mode" -eq 1 ]; then
                 write_wizardry_nix_path_line "$full_path_list"
                 
                 # Count the directories we added
-                added_count=$(printf '%s' "$all_dirs" | tr ':' '\n' | wc -l)
+                added_count=$(printf '%s\n' "$all_dirs" | tr ':' '\n' | grep -c .)
         else
                 added_count=0
         fi
