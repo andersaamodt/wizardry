@@ -515,7 +515,8 @@ nix_backup_created=0
 # rc files. The quoted variant is the format we now write, while the legacy
 # string tracks the buggy form that escaped "$PATH" and therefore replaced the
 # variable with a literal. Retaining both lets us tidy older installs while
-# keeping removals idempotent.
+# keeping removals idempotent. Variables are only populated when a directory
+# argument is provided (add/remove/status actions require a directory).
 managed_export_line=""
 legacy_export_line=""
 legacy_quoted_export_line=""
