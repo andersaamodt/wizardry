@@ -598,7 +598,7 @@ if [ "$#" -eq 0 ]; then
         printf '\n'
         
         # Read user choice
-        if [ -t 0 ]; then
+        if [ -t 0 ] || [ -p /dev/stdin ] || [ -s /dev/stdin ]; then
                 printf '%sEnter your choice (1-4, ESC to exit): %s' "$BOLD" "$RESET" >&2
                 IFS= read -r choice
         else

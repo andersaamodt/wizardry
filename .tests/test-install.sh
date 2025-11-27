@@ -611,6 +611,43 @@ install_uses_only_bootstrappable_spells() {
   return 0
 }
 
+# === Already Installed Menu Tests ===
+
+install_shows_menu_when_already_installed() {
+  # When wizardry is already installed, the installer should show a numbered menu
+  # with options: repair, reinstall, uninstall, exit
+  fixture=$(make_fixture)
+  provide_basic_tools "$fixture"
+  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+
+  install_dir="$fixture/home/.wizardry"
+  
+  # First install wizardry
+  run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
+      HOME="$fixture/home" \
+      WIZARDRY_INSTALL_ASSUME_YES=1 \
+      "$ROOT_DIR/install"
+  
+  assert_success || return 1
+  
+  # Now run install again - should show menu. Choose exit (4)
+  run_cmd sh -c "
+    printf '4\n' | \
+    env WIZARDRY_INSTALL_DIR='$install_dir' \
+        HOME='$fixture/home' \
+        '$ROOT_DIR/install'
+  "
+  
+  assert_success || return 1
+  
+  # Check that menu options are shown
+  assert_output_contains "already installed" || return 1
+  assert_output_contains "Repair" || return 1
+  assert_output_contains "Reinstall" || return 1
+  assert_output_contains "Uninstall" || return 1
+  assert_output_contains "Exit" || return 1
+}
+
 # === Run Tests ===
 
 run_test_case "install runs core installer" install_invokes_core_installer
@@ -631,6 +668,7 @@ run_test_case "install uses explicit helper paths" install_uses_explicit_helper_
 run_test_case "path-wizard uses explicit helper paths" path_wizard_uses_explicit_helper_paths
 run_test_case "path-wizard accepts helper overrides" path_wizard_accepts_helper_overrides
 run_test_case "install uses only bootstrappable spells" install_uses_only_bootstrappable_spells
+run_test_case "install shows menu when already installed" install_shows_menu_when_already_installed
 run_test_case "install shows help" shows_help
 
 finish_tests
