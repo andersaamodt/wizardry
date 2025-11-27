@@ -1028,5 +1028,5 @@ run_test_case "spell works cross-platform" test_cross_platform_spell
 
 - POSIX Shell Command Language: https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html
 - Wizardry's `README.md` for project principles
-- Wizardry's `tests/test_common.sh` for testing patterns
+- Wizardry's `.tests/test_common.sh` for testing patterns
 - Individual spell implementations in `spells/` directory

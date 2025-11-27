@@ -22,7 +22,7 @@ set -eu
 find_repo_root() {
   dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
   while [ "$dir" != "/" ]; do
-    if [ -d "$dir/spells" ] && [ -d "$dir/tests" ]; then
+    if [ -d "$dir/spells" ] && [ -d "$dir/.tests" ]; then
       printf '%s\n' "$dir"
       return 0
     fi

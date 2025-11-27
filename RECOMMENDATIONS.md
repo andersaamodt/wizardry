@@ -98,9 +98,9 @@ Multiple issues:
 **Recommendation:**
 ```sh
 # Missing tests to add:
-tests/system/test_update-all.sh
-tests/system/test_update-wizardry.sh
-tests/install/test_install-checkbashisms.sh
+.tests/system/test_update-all.sh
+.tests/system/test_update-wizardry.sh
+.tests/install/test_install-checkbashisms.sh
 ```
 
 **Impact:** High - These are user-facing spells that modify system state.

@@ -369,7 +369,7 @@ USAGE
 
 Every spell should have a corresponding test file:
 
-- Location: `tests/<category>/test_<spell-name>.sh`
+- Location: `.tests/<category>/test_<spell-name>.sh`
 - Pattern: Source `test_common.sh`, use `run_test_case`, call `finish_tests`
 - Coverage: Test `--help`, success cases, error cases
 
@@ -419,7 +419,7 @@ Before submitting a spell, verify:
 - [ ] Empty variables use `var=''` not `var= `
 - [ ] Errors go to stderr with spell name prefix
 - [ ] Passes `checkbashisms`
-- [ ] Test file exists at `tests/<category>/test_<spell-name>.sh`
+- [ ] Test file exists at `.tests/<category>/test_<spell-name>.sh`
 
 ---
 
