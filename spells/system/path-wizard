@@ -804,10 +804,84 @@ write_nix_paths() {
         rm -f "$block_tmp"
 }
 
+# Check if flakes are already enabled in the configuration.nix file.
+# Returns 0 if flakes are enabled, 1 if not.
+nix_flakes_enabled() {
+        if [ ! -f "$rc_file" ]; then
+                return 1
+        fi
+        # Check for common patterns that enable flakes
+        if grep -qE 'experimental-features.*=.*\[.*"?flakes"?' "$rc_file" 2>/dev/null; then
+                return 0
+        fi
+        if grep -qE 'nix\.settings\.experimental-features.*flakes' "$rc_file" 2>/dev/null; then
+                return 0
+        fi
+        return 1
+}
+
+# Enable flakes in configuration.nix if not already enabled.
+# This is needed for wizardry's flake-based installation on NixOS.
+enable_nix_flakes() {
+        if nix_flakes_enabled; then
+                return 0
+        fi
+        backup_rc_file_once
+        
+        # Generate the flakes enablement block
+        flakes_block='  # wizardry flakes enablement
+  nix.settings.experimental-features = [ "nix-command" "flakes" ];'
+        
+        # Insert before the closing brace of the configuration
+        tmp_file="$rc_file.wizardry.$$"
+        awk -v block="$flakes_block" '
+        BEGIN { inserted = 0 }
+        {
+                lines[NR] = $0
+        }
+        END {
+                if (NR == 0) {
+                        print block
+                        exit
+                }
+                last = NR
+                while (last > 0 && lines[last] ~ /^[[:space:]]*$/) {
+                        last--
+                }
+                if (last > 0 && lines[last] ~ /^[[:space:]]*}/) {
+                        for (i = 1; i < last; i++) print lines[i]
+                        if (last > 1 && lines[last-1] !~ /^[[:space:]]*$/) {
+                                print ""
+                        }
+                        print block
+                        print lines[last]
+                        for (i = last + 1; i <= NR; i++) print lines[i]
+                } else {
+                        for (i = 1; i <= NR; i++) print lines[i]
+                        if (NR > 0 && lines[NR] !~ /^[[:space:]]*$/) {
+                                print ""
+                        }
+                        print block
+                }
+        }
+        ' "$rc_file" >"$tmp_file"
+        
+        if [ "$needs_sudo" -eq 1 ]; then
+                run_maybe_sudo cp "$tmp_file" "$rc_file"
+                rm -f "$tmp_file"
+        else
+                mv "$tmp_file" "$rc_file"
+        fi
+        
+        printf '%s\n' "path-wizard: enabled flakes in '$rc_file'." >&2
+}
+
 # Add a directory to the managed list inside configuration.nix. Duplicates are
 # ignored so repeated runs stay harmless.
 nix_add() {
         ensure_rc_directory
+        # Enable flakes if not already enabled (required for wizardry on NixOS)
+        enable_nix_flakes
         existing_paths="$(extract_nix_paths)"
         old_ifs=$IFS
         IFS='

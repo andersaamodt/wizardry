@@ -458,9 +458,12 @@ scan_extraneous() {
     base=${base%.sh}
     
     # Handle special cases for install tests (test the root install script)
+    # The install script is in the repo root (not spells/) so its test can be:
+    # 1. .tests/test-install.sh (dir="." base="install") 
+    # 2. .tests/install/test-install.sh (dir="install" base="install")
     case "$base" in
       install|install-with-old-version)
-        if [ "$dir" = "install" ]; then
+        if [ "$dir" = "install" ] || [ "$dir" = "." ]; then
           if [ -f "$root_dir/install" ]; then
             continue
           fi
