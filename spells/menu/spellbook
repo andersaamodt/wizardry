@@ -6,6 +6,17 @@ set -eu
 menu_escape_status=113
 ROOT_DIR=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd -P)
 
+# Load colors for display
+if command -v colors >/dev/null 2>&1; then
+        # shellcheck source=/dev/null
+        . "$(command -v colors)"
+else
+        RESET=''
+        CYAN=''
+        PURPLE=''
+        YELLOW=''
+fi
+
 cast_store=${CAST_STORE-memorize-command}
 if cast_store_path=$(command -v "$cast_store" 2>/dev/null); then
         cast_store=$cast_store_path
@@ -129,26 +140,31 @@ spell_categories() {
         list_spell_directories | sort
 }
 
-# Convert folder name to display name (capitalize, with exceptions)
+# Convert folder name to display name using the category-title imp
 category_display_name() {
         folder=$1
-        case $folder in
-                enchant)
-                        printf '%s' "Enchantment"
-                        ;;
-                mud)
-                        printf '%s' "MUD"
-                        ;;
-                mud-admin)
-                        printf '%s' "MUD Admin"
-                        ;;
-                *)
-                        # Capitalize first letter
-                        first=$(printf '%s' "$folder" | cut -c1 | tr '[:lower:]' '[:upper:]')
-                        rest=$(printf '%s' "$folder" | cut -c2-)
-                        printf '%s%s' "$first" "$rest"
-                        ;;
-        esac
+        if command -v category-title >/dev/null 2>&1; then
+                category-title "$folder"
+        else
+                # Fallback if imp not available
+                case $folder in
+                        enchant)
+                                printf '%s' "Enchantment"
+                                ;;
+                        mud)
+                                printf '%s' "MUD"
+                                ;;
+                        mud-admin)
+                                printf '%s' "MUD Admin"
+                                ;;
+                        *)
+                                # Capitalize first letter
+                                first=$(printf '%s' "$folder" | cut -c1 | tr '[:lower:]' '[:upper:]')
+                                rest=$(printf '%s' "$folder" | cut -c2-)
+                                printf '%s%s' "$first" "$rest"
+                                ;;
+                esac
+        fi
 }
 
 safe_command_label() {
@@ -423,6 +439,7 @@ CUSTOM
 }
 
 spellbook_menu() {
+        current_path=${1-}
         while :; do
                 set --
                 # First, add individual saved custom commands
@@ -435,18 +452,39 @@ spellbook_menu() {
                 done <<CUSTOM_COMMANDS
 $(list_all_custom_commands)
 CUSTOM_COMMANDS
-                # Then, add spell categories
-                for category in $(spell_categories); do
-                        display_name=$(category_display_name "$category")
-                        set -- "$@" "$(printf '%s%%category_choice=%s' "$display_name" "$category")"
-                done
-                set -- "$@" "Scribe command%category_choice=scribe" "Exit%return"
+                # Add "Scribe new spell" option
+                set -- "$@" "Scribe new spell%category_choice=scribe"
+                # Add divider between custom commands and categories
+                set -- "$@" "%--divider--"
+                # Then, add spell categories or subfolders
+                if [ -z "$current_path" ]; then
+                        # Root: show spell categories
+                        for category in $(spell_categories); do
+                                display_name=$(category_display_name "$category")
+                                set -- "$@" "${display_name}%category_choice=$category"
+                        done
+                else
+                        # Category view: show subfolders in this category
+                        for subdir in "$ROOT_DIR/spells/$current_path"/*; do
+                                [ -d "$subdir" ] || continue
+                                subname=$(basename "$subdir")
+                                display_name=$(category_display_name "$subname")
+                                set -- "$@" "${display_name}%category_choice=$current_path/$subname"
+                        done
+                fi
+                set -- "$@" "Back%return"
                 category_choice=''
                 selected_category=''
                 selected_name=''
                 selected_cmd=''
                 selected_display=''
-                MENU_ESCAPE_STATUS=$menu_escape_status menu "Spellbook:" "$@"
+                if [ -z "$current_path" ]; then
+                        menu_title="${CYAN}Spellbook:${RESET}"
+                else
+                        current_display=$(category_display_name "$(basename "$current_path")")
+                        menu_title="${CYAN}Spellbook${RESET} > ${YELLOW}${current_display}${RESET}:"
+                fi
+                MENU_ESCAPE_STATUS=$menu_escape_status menu "$menu_title" "$@"
                 status=$?
                 if [ "$status" -eq "$menu_escape_status" ]; then
                         break
@@ -464,7 +502,8 @@ CUSTOM_COMMANDS
                                 :
                                 ;;
                         *)
-                                category_menu "$category_choice"
+                                # Recursively call spellbook with the category path
+                                spellbook "$category_choice"
                                 ;;
                         esac
                 fi
@@ -474,15 +513,20 @@ CUSTOM_COMMANDS
 
 usage() {
         cat <<'USAGE'
-Usage: spellbook [--memorize NAME COMMAND...|--forget NAME|--list|--scribe CATEGORY NAME COMMAND...]
+Usage: spellbook [PATH|--memorize NAME COMMAND...|--forget NAME|--list|--scribe CATEGORY NAME COMMAND...]
 
 Without arguments, opens the interactive spellbook to browse categories,
 scribe commands, and manage the cast menu.
+
+With a PATH argument (e.g., 'arcane' or 'install/core'), opens the spellbook
+directly to that category.
 
 Custom commands are stored as executable spells under the user spell home
 (default: ~/.spellbook/custom or $XDG_DATA_HOME/wizardry/spellbook/custom).
 USAGE
 }
+
+spellbook_path=""
 
 case ${1-} in
         --memorize)
@@ -530,13 +574,18 @@ case ${1-} in
                 ;;
         --)
                 shift
+                spellbook_path=${1-}
                 ;;
         "")
                 :
                 ;;
-        *)
+        -*)
                 usage >&2
                 exit 1
+                ;;
+        *)
+                # Treat as a path to a category
+                spellbook_path=$1
                 ;;
         esac
 
@@ -544,4 +593,4 @@ if ! require_tool menu "The spellbook menu needs the 'menu' command."; then
         exit 1
 fi
 
-spellbook_menu
+spellbook_menu "$spellbook_path"

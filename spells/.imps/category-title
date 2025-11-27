@@ -1,0 +1,55 @@
+#!/bin/sh
+# category-title - convert spell category folder name to display title
+# Maps known category folder names to their proper display titles.
+# Example: category-title enchant -> Enchantment
+
+case $1 in
+	arcane)
+		printf 'Arcane'
+		;;
+	cantrips)
+		printf 'Cantrips'
+		;;
+	contacts)
+		printf 'Contacts'
+		;;
+	divination)
+		printf 'Divination'
+		;;
+	enchant)
+		printf 'Enchantment'
+		;;
+	install)
+		printf 'Install'
+		;;
+	kryptos)
+		printf 'Kryptos'
+		;;
+	mud)
+		printf 'MUD'
+		;;
+	mud-admin)
+		printf 'MUD Admin'
+		;;
+	priorities)
+		printf 'Priorities'
+		;;
+	spellcraft)
+		printf 'Spellcraft'
+		;;
+	system)
+		printf 'System'
+		;;
+	translocation)
+		printf 'Translocation'
+		;;
+	wards)
+		printf 'Wards'
+		;;
+	*)
+		# Fallback: capitalize first letter
+		first=$(printf '%s' "$1" | cut -c1 | tr '[:lower:]' '[:upper:]')
+		rest=$(printf '%s' "$1" | cut -c2-)
+		printf '%s%s' "$first" "$rest"
+		;;
+esac
