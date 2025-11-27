@@ -897,20 +897,17 @@ enable_nix_flakes() {
         fi
         backup_rc_file_once
         
-        # Generate the flakes enablement block
-        flakes_block='  # wizardry flakes enablement
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];'
-        
-        # Insert before the closing brace of the configuration
+        # Insert flakes enablement before the closing brace of the configuration
         tmp_file="$rc_file.wizardry.$$"
-        run_maybe_sudo cat "$rc_file" | awk -v block="$flakes_block" '
+        run_maybe_sudo cat "$rc_file" | awk '
         BEGIN { inserted = 0 }
         {
                 lines[NR] = $0
         }
         END {
                 if (NR == 0) {
-                        print block
+                        print "  # wizardry flakes enablement"
+                        print "  nix.settings.experimental-features = [ \"nix-command\" \"flakes\" ];"
                         exit
                 }
                 last = NR
@@ -922,7 +919,8 @@ enable_nix_flakes() {
                         if (last > 1 && lines[last-1] !~ /^[[:space:]]*$/) {
                                 print ""
                         }
-                        print block
+                        print "  # wizardry flakes enablement"
+                        print "  nix.settings.experimental-features = [ \"nix-command\" \"flakes\" ];"
                         print lines[last]
                         for (i = last + 1; i <= NR; i++) print lines[i]
                 } else {
@@ -930,7 +928,8 @@ enable_nix_flakes() {
                         if (NR > 0 && lines[NR] !~ /^[[:space:]]*$/) {
                                 print ""
                         }
-                        print block
+                        print "  # wizardry flakes enablement"
+                        print "  nix.settings.experimental-features = [ \"nix-command\" \"flakes\" ];"
                 }
         }
         ' >"$tmp_file"
