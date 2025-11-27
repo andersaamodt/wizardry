@@ -661,6 +661,186 @@ install_shows_menu_when_already_installed() {
   assert_output_contains "Exit" || return 1
 }
 
+# === Output Message Tests ===
+
+install_nixos_shows_flake_created_message() {
+  # On NixOS, the installer should show "Wizardry flake created at" instead of
+  # "PATH configuration updated in"
+  fixture=$(make_fixture)
+  provide_basic_tools "$fixture"
+  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+
+  # Create a fake home.nix
+  mkdir -p "$fixture/home/.config/home-manager"
+  cat >"$fixture/home/.config/home-manager/home.nix" <<'EOF'
+{ config, pkgs, ... }:
+
+{
+  home.username = "testuser";
+  home.homeDirectory = "/home/testuser";
+  programs.bash.enable = true;
+}
+EOF
+
+  install_dir="$fixture/home/.wizardry"
+  
+  run_cmd env DETECT_RC_FILE_PLATFORM=nixos \
+      WIZARDRY_INSTALL_DIR="$install_dir" \
+      HOME="$fixture/home" \
+      WIZARDRY_INSTALL_ASSUME_YES=1 \
+      "$ROOT_DIR/install"
+
+  assert_success || return 1
+  
+  # Should show "Wizardry flake created at" message
+  assert_output_contains "Wizardry flake created at" || return 1
+  
+  # Should NOT show "PATH configuration updated in /etc/nixos" for NixOS
+  if printf '%s' "$OUTPUT" | grep -q "PATH configuration updated in .*nix"; then
+    TEST_FAILURE_REASON="should not show 'PATH configuration updated' for NixOS"
+    return 1
+  fi
+}
+
+install_shows_spell_names_memorized() {
+  # The installer should list the names of spells that were memorized
+  fixture=$(make_fixture)
+  provide_basic_tools "$fixture"
+  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+
+  install_dir="$fixture/home/.wizardry"
+  
+  run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
+      HOME="$fixture/home" \
+      WIZARDRY_INSTALL_ASSUME_YES=1 \
+      "$ROOT_DIR/install"
+
+  assert_success || return 1
+  
+  # Should list spell names in output (e.g., "cd" spell)
+  # The output should contain the spell names that were memorized
+  if printf '%s' "$OUTPUT" | grep -q "Memorizing"; then
+    # If spells were memorized, check that names are listed
+    if printf '%s' "$OUTPUT" | grep -q "Memorized"; then
+      # Check that individual spell names are shown with ->
+      assert_output_contains "->" || return 1
+    fi
+  fi
+}
+
+install_creates_uninstall_script_with_correct_name() {
+  # The uninstall script should be named .uninstall not uninstall_wizardry
+  fixture=$(make_fixture)
+  provide_basic_tools "$fixture"
+  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+
+  install_dir="$fixture/home/.wizardry"
+  
+  run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
+      HOME="$fixture/home" \
+      WIZARDRY_INSTALL_ASSUME_YES=1 \
+      "$ROOT_DIR/install"
+
+  assert_success || return 1
+  
+  # Check that .uninstall script exists
+  assert_path_exists "$install_dir/.uninstall" || return 1
+  
+  # Check that old uninstall_wizardry does NOT exist
+  assert_path_missing "$install_dir/uninstall_wizardry" || return 1
+}
+
+install_shows_uninstall_after_complete() {
+  # The "Uninstall script created at:" message should appear after
+  # "Installation Complete!" heading
+  fixture=$(make_fixture)
+  provide_basic_tools "$fixture"
+  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+
+  install_dir="$fixture/home/.wizardry"
+  
+  run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
+      HOME="$fixture/home" \
+      WIZARDRY_INSTALL_ASSUME_YES=1 \
+      "$ROOT_DIR/install"
+
+  assert_success || return 1
+  
+  # Find positions of "Installation Complete" and "Uninstall script created"
+  complete_pos=$(printf '%s' "$OUTPUT" | grep -n "Installation Complete" | head -1 | cut -d: -f1)
+  uninstall_pos=$(printf '%s' "$OUTPUT" | grep -n "Uninstall script created" | head -1 | cut -d: -f1)
+  
+  if [ -z "$complete_pos" ]; then
+    TEST_FAILURE_REASON="Installation Complete message not found"
+    return 1
+  fi
+  
+  if [ -z "$uninstall_pos" ]; then
+    TEST_FAILURE_REASON="Uninstall script created message not found"
+    return 1
+  fi
+  
+  # Uninstall message should come AFTER Installation Complete
+  if [ "$uninstall_pos" -le "$complete_pos" ]; then
+    TEST_FAILURE_REASON="Uninstall script message should appear after Installation Complete (got complete=$complete_pos, uninstall=$uninstall_pos)"
+    return 1
+  fi
+}
+
+install_shows_simple_run_message() {
+  # The installer should show simple "Run menu or mud to start using wizardry"
+  # instead of "Next steps" section
+  fixture=$(make_fixture)
+  provide_basic_tools "$fixture"
+  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+
+  install_dir="$fixture/home/.wizardry"
+  
+  run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
+      HOME="$fixture/home" \
+      WIZARDRY_INSTALL_ASSUME_YES=1 \
+      "$ROOT_DIR/install"
+
+  assert_success || return 1
+  
+  # Should show simple run message
+  assert_output_contains "Run menu or mud to start using wizardry" || return 1
+  
+  # Should NOT show "Next steps" heading
+  if printf '%s' "$OUTPUT" | grep -q "Next steps"; then
+    TEST_FAILURE_REASON="should not show 'Next steps' heading"
+    return 1
+  fi
+  
+  # Should NOT show "To uninstall, run:" instruction
+  if printf '%s' "$OUTPUT" | grep -q "To uninstall"; then
+    TEST_FAILURE_REASON="should not show uninstall instructions"
+    return 1
+  fi
+}
+
+install_does_not_show_adding_missing_path_on_fresh() {
+  # The installer should not show "Adding missing PATH configuration" on fresh install
+  fixture=$(make_fixture)
+  provide_basic_tools "$fixture"
+  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+
+  install_dir="$fixture/home/.wizardry"
+  
+  run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
+      HOME="$fixture/home" \
+      WIZARDRY_INSTALL_ASSUME_YES=1 \
+      "$ROOT_DIR/install"
+
+  assert_success || return 1
+  
+  # Should NOT show "Adding missing PATH configuration" on fresh install
+  if printf '%s' "$OUTPUT" | grep -q "Adding missing PATH configuration"; then
+    TEST_FAILURE_REASON="should not show 'Adding missing PATH configuration' on fresh install"
+    return 1
+  fi
+}
+
 # === Run Tests ===
 
 run_test_case "install runs core installer" install_invokes_core_installer
@@ -683,5 +863,11 @@ run_test_case "path-wizard accepts helper overrides" path_wizard_accepts_helper_
 run_test_case "install uses only bootstrappable spells" install_uses_only_bootstrappable_spells
 run_test_case "install shows menu when already installed" install_shows_menu_when_already_installed
 run_test_case "install shows help" shows_help
+run_test_case "install NixOS shows flake created message" install_nixos_shows_flake_created_message
+run_test_case "install shows spell names memorized" install_shows_spell_names_memorized
+run_test_case "install creates .uninstall script" install_creates_uninstall_script_with_correct_name
+run_test_case "install shows uninstall after complete" install_shows_uninstall_after_complete
+run_test_case "install shows simple run message" install_shows_simple_run_message
+run_test_case "install no adding missing path on fresh" install_does_not_show_adding_missing_path_on_fresh
 
 finish_tests
