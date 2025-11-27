@@ -1037,9 +1037,8 @@ if [ -x "$MEMORIZE" ]; then
                 memorized_count=$(grep -o 'Memorized [0-9]* spell' "$mem_log" | grep -o '[0-9]*' | head -1)
                 if [ -n "$memorized_count" ] && [ "$memorized_count" -gt 0 ]; then
                         # Extract spell names from "Memorizing .../spellname..." lines
-                        spell_names=$(grep '^Memorizing ' "$mem_log" | sed 's|.*\/||; s|\.\.\.||')
                         success_msg "Memorized $memorized_count spell(s):"
-                        for name in $spell_names; do
+                        grep '^Memorizing ' "$mem_log" | sed 's#.*/##; s#\.\.\.##' | while IFS= read -r name; do
                                 substep_msg "$name"
                         done
                 fi
