@@ -1,22 +1,49 @@
-restart_ssh() {
-    # Check for the existence of systemctl
-    if command -v systemctl &> /dev/null; then
-        # Use systemctl to restart the ssh service
-        systemctl restart ssh
-    else
-        # Check for the existence of service
-        if command -v service &> /dev/null; then
-            # Use service to restart the ssh service
-            service ssh restart
-        else
-            # Check for the existence of /etc/init.d/ssh
-            if [ -f /etc/init.d/ssh ]; then
-                # Use /etc/init.d/ssh to restart the ssh service
-                /etc/init.d/ssh restart
-            else
-                # Use service to restart the ssh service
-                /etc/init.d/sshd restart
-            fi
-        fi
-    fi
+#!/bin/sh
+
+# This spell restarts the SSH service.
+# Use it to fully restart the SSH daemon after configuration changes.
+
+show_usage() {
+        cat <<'USAGE'
+Usage: restart-ssh
+
+Restart the SSH daemon. Detects the OS and uses the appropriate service
+management command (systemctl, service, or launchctl).
+USAGE
 }
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
+set -eu
+
+current_os=$(os)
+
+case "$current_os" in
+        debian|arch|fedora|nixos|linux)
+                if has systemctl; then
+                        sudo systemctl restart sshd 2>/dev/null || sudo systemctl restart ssh
+                elif has service; then
+                        sudo service ssh restart 2>/dev/null || sudo service sshd restart
+                elif is file "/etc/init.d/ssh"; then
+                        sudo /etc/init.d/ssh restart
+                elif is file "/etc/init.d/sshd"; then
+                        sudo /etc/init.d/sshd restart
+                else
+                        die "restart-ssh: no service manager found."
+                fi
+                ;;
+        mac)
+                sudo launchctl stop com.openssh.sshd
+                sudo launchctl start com.openssh.sshd
+                ;;
+        *)
+                die "restart-ssh: unsupported OS: $current_os"
+                ;;
+esac
+
+say "SSH service restarted."

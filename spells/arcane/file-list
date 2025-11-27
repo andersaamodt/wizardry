@@ -1,8 +1,29 @@
-#!/bin/bash
+#!/bin/sh
+
+# This spell creates a text file listing all filenames in a folder.
+# Use it to generate an index of files in a directory.
+
+show_usage() {
+        cat <<'USAGE'
+Usage: file-list <folder>
+
+Create a text file with the same name as the folder containing a list
+of all files in that folder.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
+set -eu
 
 # Check that a folder path was provided as an argument
 if [ "$#" -ne 1 ]; then
-  echo "Error: Please provide a folder path as an argument."
+  printf '%s\n' "Error: Please provide a folder path as an argument."
   exit 1
 fi
 
@@ -13,7 +34,7 @@ text_file="$folder_name.txt"
 # Read all the filenames in the folder and put them in the text file
 # Todo: Remove the folder/ name from before the filename
 for filename in "$1"/*; do
-  echo "$filename" >> "$text_file"
+  printf '%s\n' "$filename" >> "$text_file"
 done
 
-echo "Text file created: $text_file"
+printf '%s\n' "Text file created: $text_file"

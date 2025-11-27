@@ -1,27 +1,56 @@
 #!/bin/sh
 
-# POSIX-compliant script for mounting a remote directory using sshfs over Tor
+# This spell opens an SSH connection through Tor for anonymous remote access.
+# Use it to connect to remote servers while preserving anonymity.
+
+show_usage() {
+        cat <<'USAGE'
+Usage: open-teletype [remote_address] [user]
+
+Open an SSH connection over Tor for anonymous access to a remote server.
+Prompts for address and user if not provided as arguments.
+Uses MUD_PLAYER for SSH key identity.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
+set -eu
 
 # Check for required commands
-if ! command -v torify &> /dev/null; then
-    echo "Error: torify command not found. Please install tor and try again."
-    exit 1
+if ! has torify; then
+        die "open-teletype: torify not found. Please install tor."
 fi
 
-# Get player key
-if [ -z "$MUD_PLAYER" ]; then
-    echo "Error: MUD_PLAYER environment variable not set."
-    exit 1
+# Get player key from environment
+if is unset "${MUD_PLAYER-}"; then
+        die "open-teletype: MUD_PLAYER environment variable not set."
+fi
+player_key="$HOME/.ssh/$MUD_PLAYER"
+
+if ! is file "$player_key"; then
+        die "open-teletype: SSH key not found: $player_key"
 fi
 
-# Prompt user for tor address and remote directory
-echo "Enter the tor address:"
-read tor_address
-echo "Enter the remote directory:"
-read remote_dir
+# Get address and user from arguments or prompt
+tor_address=${1-}
+remote_user=${2-}
 
-# Strip or add trailing slashes as required
-remote_dir="${remote_dir%/}/"
+if is unset "$tor_address"; then
+        printf '%s' "Enter the Tor address: "
+        read -r tor_address
+fi
 
-# Connect to remote directory via ssh through torify
-torify ssh -i ~/.ssh/$MUD_PLAYER "$tor_address:$remote_dir"
+if is unset "$remote_user"; then
+        printf '%s' "Enter the remote user: "
+        read -r remote_user
+fi
+
+# Connect via ssh through torify
+say "Opening teletype to $remote_user@$tor_address..."
+torify ssh -i "$player_key" "$remote_user@$tor_address"

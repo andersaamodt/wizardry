@@ -1,75 +1,87 @@
 #!/bin/sh
 
-from=
-to=
+# This spell moves files or directories from one location to another.
+# Use it as a more intuitive wrapper around the mv command.
 
-handle_args(){
-    for arg in "$@"; do
-        case $arg in
-            "from")
-                from="$2"
-                shift 2
-                ;;
-            "to")
-                to="$2"
-                shift 2
-                ;;
-            *)
-                if [ -z "$from" ]; then
-                    from="$arg"
-                else
-                    to="$arg"
-                fi
-                ;;
+show_usage() {
+        cat <<'USAGE'
+Usage: move <source> <destination>
+       move <source> to <destination>
+       move from <source> to <destination>
+
+Move a file or directory to a new location. Supports natural language
+syntax with 'from' and 'to' keywords.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
+set -eu
+
+from=''
+to=''
+
+# Parse arguments supporting both simple and natural language forms
+while [ "$#" -gt 0 ]; do
+        case "$1" in
+                from)
+                        shift
+                        if [ "$#" -gt 0 ]; then
+                                from=$1
+                                shift
+                        fi
+                        ;;
+                to)
+                        shift
+                        if [ "$#" -gt 0 ]; then
+                                to=$1
+                                shift
+                        fi
+                        ;;
+                *)
+                        if is unset "$from"; then
+                                from=$1
+                        elif is unset "$to"; then
+                                to=$1
+                        fi
+                        shift
+                        ;;
         esac
-    done
-}
+done
 
-check_permission(){
-    if [ ! -r "$to" ]; then
-        echo "You do not have read permission on $to. Exiting."
+# Validate arguments
+if is unset "$from"; then
+        printf '%s\n' "move: source path required." >&2
+        show_usage >&2
         exit 1
-    fi
-}
+fi
 
-check_path(){
-    if [ -z "$to" ]; then
-        echo "Please specify the destination path."
+if is unset "$to"; then
+        printf '%s\n' "move: destination path required." >&2
+        show_usage >&2
         exit 1
-    fi
-}
+fi
 
-handle_menu(){
-    local choice
-    PS3="Choose action:"
-    options="Rename file Move to different folder Move to home directory Move up one level"
-    choice=$(echo $options | tr ' ' '\n' | nl -v 0 -w 2 | sort -k2 | awk '{print $1 ") " $2}' | tr '\n' ' ')
-    echo " $choice"
-    read -p "Choose an action: " action
-    case $action in
-        1)
-            read -p "Enter new file name: " newname
-            mv "$from" "$newname"
-            ;;
-        2)
-            read -p "Enter destination folder path: " to
-            mv "$from" "$to"
-            ;;
-        3)
-            to=$HOME
-            mv "$from" "$to"
-            ;;
-        4)
-            to=$(dirname "$from")
-            mv "$from" "$to"
-            ;;
-        *)
-            echo "Invalid option"
-            ;;
-    esac
-}
+# Check source exists
+if ! there "$from"; then
+        die "move: source not found: $from"
+fi
 
-handle_args "$@"
-check_path
-check_permission
-handle_menu
+# Check write permission on destination directory
+dest_dir=$(parent "$to")
+if [ "$dest_dir" = "." ]; then
+        dest_dir=$(here)
+fi
+
+if ! is writable "$dest_dir"; then
+        die "move: no write permission on: $dest_dir"
+fi
+
+# Perform the move
+mv "$from" "$to"
+say "Moved '$(file-name "$from")' to '$to'."

@@ -1,20 +1,55 @@
-#!/bin/bash
+#!/bin/sh
 
-# This "follow-portkey" script allows you to activate a "portkey" enchantment on a file and transport to the specified context.
-# To use this script, pass the file with the "portkey" enchantment as an argument. The script will read the "user.context"
-# extended attribute from the file and change the current working directory to the specified context.
+# This spell activates a portkey enchantment to teleport to the stored destination.
+# The destination is read from the file's 'context' extended attribute.
 
-# Check if an argument was given
-if [ -z "$1" ]; then
-  # If no argument was given, print an error message and exit
-  echo "Error: No file specified. Usage: follow-portkey file"
-  exit 1
+show_usage() {
+        cat <<'USAGE'
+Usage: follow-portkey <file>
+
+Read the destination from a portkey-enchanted file and print the cd command
+to teleport there. Use with eval: eval "$(follow-portkey file)"
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
+set -eu
+
+# Ensure file argument is provided
+if [ -z "${1-}" ]; then
+        printf '%s\n' "follow-portkey: file argument required." >&2
+        show_usage >&2
+        exit 1
 fi
 
-# Read the "user.context" extended attribute from the file
-context=$(xattr -p "user.context" "$1")
+file=$1
 
-# Change the current working directory to the specified context
-cd "$context"
+# Verify file exists
+if ! is file "$file"; then
+        die "follow-portkey: file not found: $file"
+fi
 
-echo "Followed portkey to $context."
+# Read the context attribute from the file
+context=$(read-magic "$file" context 2>/dev/null || true)
+
+# Verify context was found
+case "$context" in
+        ''|*Error*)
+                die "follow-portkey: no portkey enchantment on file: $file"
+                ;;
+esac
+
+# Verify destination exists
+if ! is dir "$context"; then
+        warn "follow-portkey: destination does not exist: $context"
+fi
+
+# Output the cd command for eval
+printf 'cd "%s"\n' "$context"
+say "Following portkey to $context."

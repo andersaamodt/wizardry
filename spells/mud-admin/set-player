@@ -1,22 +1,42 @@
 #!/bin/sh
 
-# This spell sets the current player in the MUD using an environment variable.
-# You must source this script with ". ./set-player playername" to change it immediately (or open a new terminal window).
+# This spell sets the current player identity for MUD connections.
+# Source this script with ". set-player playername" for immediate effect.
 
-player="$1"
+show_usage() {
+        cat <<'USAGE'
+Usage: set-player <playername>
+
+Set the MUD_PLAYER environment variable to the specified player name.
+The setting persists in ~/.bashrc. Source this script or open a new
+terminal for the change to take effect immediately.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
+set -eu
+
+player="${1-}"
 
 if [ -z "$player" ]; then
-    echo "Please provide a player name as an argument."
+    printf '%s\n' "set-player: player name argument required." >&2
+    show_usage >&2
     exit 1
 fi
 
-echo "Setting MUD_PLAYER to $player"
+printf '%s\n' "Setting MUD_PLAYER to $player"
 
 # Remove any existing line setting MUD_PLAYER in .bashrc
 sed -i '/^export MUD_PLAYER/d' ~/.bashrc
 
 # Append new line to .bashrc to set MUD_PLAYER and export it
-echo "export MUD_PLAYER=$player" >> ~/.bashrc
+printf '%s\n' "export MUD_PLAYER=$player" >> ~/.bashrc
 
 # Set MUD_PLAYER in current shell session
 export MUD_PLAYER="$player"

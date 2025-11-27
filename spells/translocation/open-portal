@@ -1,30 +1,75 @@
 #!/bin/sh
 
-# POSIX-compliant script for mounting a remote directory using sshfs over Tor
+# This spell mounts a remote directory using sshfs through Tor.
+# Use it to access remote servers anonymously via SSH filesystem.
+
+show_usage() {
+        cat <<'USAGE'
+Usage: open-portal <remote_address> <remote_directory> [local_mount_point]
+
+Mount a remote directory using sshfs over Tor. The local mount point defaults
+to ~/portals/<remote_address> if not specified.
+Uses MUD_PLAYER environment variable for SSH key identity.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
+set -eu
 
 # Check for required commands
-if ! command -v sshfs &> /dev/null; then
-    echo "Error: sshfs command not found. Please install sshfs and try again."
-    exit 1
-fi
-if ! command -v torify &> /dev/null; then
-    echo "Error: torify command not found. Please install tor and try again."
-    exit 1
+if ! has sshfs; then
+        die "open-portal: sshfs not found. Please install sshfs."
 fi
 
-# Get player key
-if [ -z "$MUD_PLAYER" ]; then
-    echo "Error: MUD_PLAYER environment variable not set."
-    exit 1
+if ! has torify; then
+        die "open-portal: torify not found. Please install tor."
+fi
+
+# Get player key from environment
+if is unset "${MUD_PLAYER-}"; then
+        die "open-portal: MUD_PLAYER environment variable not set."
 fi
 player_key="$HOME/.ssh/$MUD_PLAYER"
 
-# Get tor address and remote directory
-read -p "Enter the Tor address of the remote server (e.g. onion.example.com): " tor_address
-read -p "Enter the remote directory to mount (e.g. /mnt/remote): " remote_dir
+if ! is file "$player_key"; then
+        die "open-portal: SSH key not found: $player_key"
+fi
 
-# Strip or add trailing slashes as required by sshfs
-remote_dir="${remote_dir%/}/"
+# Get address and directory from arguments or prompt
+tor_address=${1-}
+remote_dir=${2-}
+local_mount=${3-}
+
+if is unset "$tor_address"; then
+        printf '%s' "Enter the Tor address of the remote server: "
+        read -r tor_address
+fi
+
+if is unset "$remote_dir"; then
+        printf '%s' "Enter the remote directory to mount: "
+        read -r remote_dir
+fi
+
+# Normalize remote path (remove trailing slash for consistency)
+remote_dir="${remote_dir%/}"
+
+# Set local mount point if not provided
+if is unset "$local_mount"; then
+        # Create a safe directory name from the address
+        safe_name=$(printf '%s' "$tor_address" | tr -c 'A-Za-z0-9.-' '_')
+        local_mount="$HOME/portals/$safe_name"
+fi
+
+# Ensure local mount point exists
+make dir "$local_mount" || die "open-portal: cannot create mount point: $local_mount"
 
 # Mount the remote directory using sshfs over tor
-torify sshfs -o IdentityFile="$player_key" "$tor_address:$remote_dir" "$remote_dir"
+torify sshfs -o "IdentityFile=$player_key" "$tor_address:$remote_dir" "$local_mount"
+
+say "Portal opened: $tor_address:$remote_dir mounted at $local_mount"

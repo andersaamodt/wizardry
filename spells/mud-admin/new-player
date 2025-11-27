@@ -1,16 +1,37 @@
 #!/bin/sh
 
+# This spell creates a new player identity with SSH keys for the MUD.
+# Use it to generate a new player key pair for connecting to MUD hosts.
+
+show_usage() {
+        cat <<'USAGE'
+Usage: new-player
+
+Interactively create a new player identity by generating an SSH key pair.
+Prompts for a player name and creates keys at ~/.ssh/<player_name>.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
+set -eu
+
 # Prompt user for player name
-echo "Enter a player name:"
-read player_name
+printf '%s' "Enter a player name: "
+read -r player_name
 
 # Check if key files already exist
-if [ -f ~/.ssh/${player_name} ] && [ -f ~/.ssh/${player_name}.pub ]; then
-    echo "Key files for player ${player_name} already exist. Please enter a different player name:"
-    read player_name
+if [ -f "$HOME/.ssh/${player_name}" ] && [ -f "$HOME/.ssh/${player_name}.pub" ]; then
+    printf '%s' "Key files for player ${player_name} already exist. Please enter a different player name: "
+    read -r player_name
 fi
 
 # Generate ssh key
-ssh-keygen -t rsa -b 4096 -C "${player_name}@MUD" -f ~/.ssh/${player_name} -q -N ""
+ssh-keygen -t rsa -b 4096 -C "${player_name}@MUD" -f "$HOME/.ssh/${player_name}" -q -N ""
 
-echo "New player ${player_name} created with ssh key files at ~/.ssh/${player_name} and ~/.ssh/${player_name}.pub"
+printf '%s\n' "New player ${player_name} created with ssh key files at ~/.ssh/${player_name} and ~/.ssh/${player_name}.pub"

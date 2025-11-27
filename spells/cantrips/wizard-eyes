@@ -1,17 +1,38 @@
-#!/usr/bin/env sh
+#!/bin/sh
 
-# A special version of say that prints the text in grey text, indented.
-# Use this to show commands before they are executed, to teach those on the path of wizardry.
+# This spell prints text in a subtle format only visible to wizards.
+# Use it to show commands before they are executed for teaching purposes.
 
-. colors
+show_usage() {
+        cat <<'USAGE'
+Usage: wizard-eyes <message>
 
-wizard_eyes() {
-	if [ -z $WIZARD ]; then check-wizard; fi
-	if [ -n "$WIZARD" ] && [ "$WIZARD" -eq 1 ]; then say "    ${GREY}${1}${RESET}"; fi
+Print the message in grey, indented text to indicate it's a command or
+technical detail visible to wizards learning the craft.
+USAGE
 }
 
-# Check if the script is being called from another script
-if [ "${BASH_SOURCE[0]}" = "$0" ]; then
-    # If not, call the function
-    wizard_eyes "$@"
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
+set -eu
+
+# Check if wizard mode is enabled (default to showing for teaching)
+wizard_mode=${WIZARD:-1}
+
+if [ "$wizard_mode" = "1" ]; then
+        # Load colors if available
+        if has colors; then
+                # shellcheck disable=SC1091
+                . colors
+        else
+                GREY=''
+                RESET=''
+        fi
+        
+        printf '    %s%s%s\n' "$GREY" "$*" "$RESET"
 fi

@@ -129,6 +129,28 @@ spell_categories() {
         list_spell_directories | sort
 }
 
+# Convert folder name to display name (capitalize, with exceptions)
+category_display_name() {
+        folder=$1
+        case $folder in
+                enchant)
+                        printf '%s' "Enchantment"
+                        ;;
+                mud)
+                        printf '%s' "MUD"
+                        ;;
+                mud-admin)
+                        printf '%s' "MUD Admin"
+                        ;;
+                *)
+                        # Capitalize first letter
+                        first=$(printf '%s' "$folder" | cut -c1 | tr '[:lower:]' '[:upper:]')
+                        rest=$(printf '%s' "$folder" | cut -c2-)
+                        printf '%s%s' "$first" "$rest"
+                        ;;
+        esac
+}
+
 safe_command_label() {
         entry=$1
         command=$2
@@ -368,6 +390,7 @@ spell_action_menu() {
 
 category_menu() {
         category=$1
+        display_name=$(category_display_name "$category")
         while :; do
                 set --
                 for spell in $(list_category_spells "$category"); do
@@ -387,7 +410,7 @@ CUSTOM
                 selected_name=''
                 selected_cmd=''
                 selected_display=''
-                MENU_ESCAPE_STATUS=$menu_escape_status menu "$category:" "$@"
+                MENU_ESCAPE_STATUS=$menu_escape_status menu "$display_name:" "$@"
                 status=$?
                 if [ "$status" -eq "$menu_escape_status" ]; then
                         break
@@ -414,9 +437,10 @@ $(list_all_custom_commands)
 CUSTOM_COMMANDS
                 # Then, add spell categories
                 for category in $(spell_categories); do
-                        set -- "$@" "$(printf '%s%%category_choice=%s' "$category" "$category")"
+                        display_name=$(category_display_name "$category")
+                        set -- "$@" "$(printf '%s%%category_choice=%s' "$display_name" "$category")"
                 done
-                set -- "$@" "Scribe command%category_choice=scribe" "Close Spellbook%kill -2 $$"
+                set -- "$@" "Scribe command%category_choice=scribe" "Exit%return"
                 category_choice=''
                 selected_category=''
                 selected_name=''

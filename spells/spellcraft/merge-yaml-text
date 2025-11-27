@@ -1,7 +1,32 @@
 #!/bin/sh
 
+# This spell merges YAML and text files with matching names in a directory.
+# Use it to combine .yaml metadata with .txt content into single files.
+
+show_usage() {
+        cat <<'USAGE'
+Usage: merge-yaml-text [directory] [-v|--verbose] [--dry-run]
+
+Merge .yaml and .txt files with matching basenames. The YAML content is
+wrapped in --- delimiters and the text content is appended.
+
+Options:
+  -v, --verbose   Print progress for each merged file
+  --dry-run       Show what would be merged without making changes
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
+set -eu
+
 # default directory is current directory unless given as a parameter
-dir=${1:-.}
+dir="${1:-.}"
 verbose=0
 dryrun=0
 
@@ -26,14 +51,20 @@ if [ $# -eq 0 ]; then
 fi
 
 # ensure directory ends with /
-[[ "$dir" != */ ]] && dir="$dir/"
+case "$dir" in
+  */) ;;
+  *) dir="$dir/" ;;
+esac
 
 # count total .yaml files in the directory
-total_files=$(ls -1q ${dir}*.yaml | wc -l)
+total_files=$(find "${dir}" -maxdepth 1 -name "*.yaml" 2>/dev/null | wc -l | tr -d ' ')
 
 # loop through .yaml files
 count=0
-for yaml in ${dir}*.yaml; do
+for yaml in "${dir}"*.yaml; do
+  # Skip if no yaml files found
+  [ -f "$yaml" ] || continue
+  
   # Remove directory and extension from filename
   yaml_base=$(basename "$yaml" .yaml)
   
@@ -41,17 +72,17 @@ for yaml in ${dir}*.yaml; do
   txt_filename="${yaml_base}.txt"
   
   # Find matching .txt file
-  txt_file=$(find "$dir" -name "$txt_filename")
+  txt_file="${dir}${txt_filename}"
   
   # Check if .txt file exists
-  if [[ -f "$txt_file" ]]; then
+  if [ -f "$txt_file" ]; then
     # create temp file
     touch "${dir}tempfile.tmp"
 
     # Check if yaml file starts with '---'
     first_line=$(head -n 1 "$yaml")
-    if [[ "$first_line" != "---" ]]; then
-      echo '---' > "${dir}tempfile.tmp"
+    if [ "$first_line" != "---" ]; then
+      printf '%s\n' '---' > "${dir}tempfile.tmp"
     fi
 
     # append the yaml content
@@ -59,8 +90,8 @@ for yaml in ${dir}*.yaml; do
 
     # Check if yaml file ends with '---'
     last_line=$(tail -n 1 "$yaml")
-    if [[ "$last_line" != "---" ]]; then
-      echo '---' >> "${dir}tempfile.tmp"
+    if [ "$last_line" != "---" ]; then
+      printf '%s\n' '---' >> "${dir}tempfile.tmp"
     fi
 
     # append the txt content
@@ -78,11 +109,11 @@ for yaml in ${dir}*.yaml; do
     fi
 
     # increase count
-    ((count++))
+    count=$((count + 1))
 
     # if verbose mode is on, print progress
     if [ "$verbose" -eq 1 ]; then
-      echo "($count/$total_files) Merged: $yaml"
+      printf '%s\n' "($count/$total_files) Merged: $yaml"
     fi
   fi
 done

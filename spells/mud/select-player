@@ -1,19 +1,45 @@
 #!/bin/sh
 
+# This spell displays a menu to select and set the current MUD player.
+# Use it to switch between player identities from available SSH keys.
+
+show_usage() {
+        cat <<'USAGE'
+Usage: select-player
+
+Display an interactive menu of available player identities (from ~/.ssh/*.pub)
+and set MUD_PLAYER to the selected player.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
+set -eu
+
 # check if the $MUD_PLAYER environment variable is set
-if [ -z "$MUD_PLAYER" ]; then
-    echo "MUD_PLAYER is not set."
+if [ -z "${MUD_PLAYER-}" ]; then
+    printf '%s\n' "MUD_PLAYER is not set."
 else
-    echo "MUD_PLAYER is currently set to $MUD_PLAYER"
+    printf '%s\n' "MUD_PLAYER is currently set to $MUD_PLAYER"
 fi
 
-# get a list of player names from the ~/.ssh/ directory
-#options=()
-declare -a options
-for file in $(find ~/.ssh/ -name "*.pub"); do
+# Build menu options from player keys using set --
+set --
+for file in "$HOME"/.ssh/*.pub; do
+    [ -f "$file" ] || continue
     player_name=$(basename "$file" ".pub")
-	options+=("$player_name%set-player $player_name")
+    # Validate player name contains only safe characters
+    case "$player_name" in
+        *[!a-zA-Z0-9._-]*) continue ;;
+    esac
+    set -- "$@" "$player_name%set-player $player_name"
 done
-options+=("Cancel%kill -2 $$")
+set -- "$@" "Cancel%return"
 
-menu "Choose your player:" "${options[@]}"
+# Execute menu with options
+menu "Choose your player:" "$@"

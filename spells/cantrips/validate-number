@@ -1,12 +1,36 @@
 #!/bin/sh
 
-# This script exits with 0 if the given string is a valid number, otherwise 1
+# This spell validates whether a string is a valid non-negative integer.
+# Use it to check numeric input before processing.
+
+show_usage() {
+        cat <<'USAGE'
+Usage: validate-number <string>
+
+Test if the given string is a valid non-negative integer.
+Exits 0 if valid, 1 if invalid.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
+set -eu
+
+# Check argument
+if [ -z "${1+x}" ]; then
+        exit 1
+fi
 
 case $1 in
-	''|*[!0-9]*)
-	    return 1
-	    ;;
-	*)
-	    return 0
-	    ;;
+        ''|*[!0-9]*)
+                exit 1
+                ;;
+        *)
+                exit 0
+                ;;
 esac

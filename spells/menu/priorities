@@ -1,5 +1,26 @@
 #!/bin/sh
 
+# This spell displays and manages prioritized items in the current directory.
+# Use it to view and reorder files by priority.
+
+show_usage() {
+        cat <<'USAGE'
+Usage: priorities [-v]
+
+Display prioritized items in the current directory as an interactive menu.
+Use -v for verbose mode to show priority numbers.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
+set -eu
+
 # Initialize verbose flag to 0
 verbose=0
 
@@ -7,7 +28,7 @@ verbose=0
 while getopts "v" opt; do
   case $opt in
     v) verbose=1 ;; # If -v is passed, set verbose to 1
-    \?) echo "Invalid option: -$OPTARG" >&2 ;; # Invalid option
+    \?) printf '%s\n' "Invalid option: -$OPTARG" >&2 ;; # Invalid option
   esac
 done
 shift $((OPTIND-1)) # Shift off the options and optional --.

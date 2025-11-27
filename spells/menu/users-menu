@@ -1,6 +1,25 @@
 #!/bin/sh
 
-# This script presents a menu of options for managing users on the system.
+# This spell presents a menu of options for managing users on the system.
+# Use it to manage passwords, groups, and user accounts.
+
+show_usage() {
+        cat <<'USAGE'
+Usage: users-menu
+
+Display an interactive menu for user and group management, including
+password changes, group memberships, and user account administration.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
+set -eu
 
 . colors
 
