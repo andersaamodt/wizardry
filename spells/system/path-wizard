@@ -764,17 +764,87 @@ has_existing_nix_path_definition() {
 }
 
 # Check for conflicting PATH definitions before modifying the nix file.
-# Errors out if the file already has a PATH definition that would conflict.
-# Silent if we already have a wizardry block (which we can safely update).
+# Returns 0 if we can proceed (either no existing PATH or we can modify it).
+# If there's an existing PATH definition we haven't touched, we'll modify it
+# instead of adding a new block.
 validate_no_nix_path_conflict() {
-        if has_existing_nix_path_definition; then
-                # Only error if we don't already have a wizardry block (which we manage)
-                if ! grep -Fq '# wizardry PATH begin' "$rc_file" 2>/dev/null; then
-                        printf '%s\n' "Error: '$rc_file' already contains an environment.sessionVariables.PATH definition." >&2
-                        printf '%s\n' "Adding a duplicate would cause nixos-rebuild to fail." >&2
-                        printf '%s\n' "Please manually add the wizardry spell paths to your existing PATH definition." >&2
-                        exit 1
-                fi
+        # If we already have a wizardry block, we can safely update it
+        if grep -Fq '# wizardry PATH begin' "$rc_file" 2>/dev/null; then
+                return 0
+        fi
+        # If there's an existing PATH definition, we'll modify it (handled by nix_add)
+        return 0
+}
+
+# Extract the original PATH value from a wizardry-modified block.
+# Returns the original PATH expression (e.g., "/usr/local/bin:$PATH") or empty.
+extract_original_nix_path() {
+        if [ ! -f "$rc_file" ]; then
+                return
+        fi
+        awk '
+        /# wizardry PATH begin/ {in_block=1; next}
+        /# wizardry PATH end/ {in_block=0}
+        in_block && /originalPath[[:space:]]*=/ {
+                match($0, /=[[:space:]]*/)
+                value = substr($0, RSTART + RLENGTH)
+                gsub(/;[[:space:]]*$/, "", value)
+                print value
+                exit
+        }
+        ' "$rc_file"
+}
+
+# Modify an existing environment.sessionVariables.PATH definition to include
+# our wizardry paths. This preserves the user's original PATH value.
+# Arguments: $@ = list of directories to add
+modify_existing_nix_path() {
+        backup_rc_file_once
+        tmp_file="${TMPDIR:-/tmp}/wizardry-nix.$$"
+        
+        # Build the wizardry paths list for Nix (each on its own line)
+        paths_nix=""
+        for dir in "$@"; do
+                paths_nix="$paths_nix        \"$dir\"
+"
+        done
+        
+        # Use awk to find and modify the existing PATH definition
+        # We wrap the original value with our paths prepended
+        run_maybe_sudo cat "$rc_file" | awk -v wizardry_paths="$paths_nix" '
+        /environment\.sessionVariables\.PATH[[:space:]]*=/ && !modified {
+                # Found the PATH definition line
+                # Extract the original value (everything after the =)
+                match($0, /=[[:space:]]*/)
+                prefix = substr($0, 1, RSTART)
+                original_value = substr($0, RSTART + RLENGTH)
+                # Remove trailing semicolon if present
+                gsub(/;[[:space:]]*$/, "", original_value)
+                
+                # Print the modified block with wizardry paths prepended
+                print "  # wizardry PATH begin"
+                print "  environment.sessionVariables.PATH ="
+                print "    let"
+                print "      wizardryPaths = ["
+                printf "%s", wizardry_paths
+                print "      ];"
+                print "      originalPath = " original_value ";"
+                print "    in pkgs.lib.concatStringsSep \":\" ("
+                print "      wizardryPaths"
+                print "      ++ pkgs.lib.optional (originalPath != \"\") originalPath"
+                print "    );"
+                print "  # wizardry PATH end"
+                modified = 1
+                next
+        }
+        {print}
+        ' >"$tmp_file"
+        
+        if [ "$needs_sudo" -eq 1 ]; then
+                run_maybe_sudo cp "$tmp_file" "$rc_file"
+                rm -f "$tmp_file"
+        else
+                mv "$tmp_file" "$rc_file"
         fi
 }
 
@@ -873,9 +943,19 @@ insert_block_before_closing_brace() {
 
 # Create a temporary file containing the declarative block we manage. The
 # helper keeps the formatting consistent every time we rewrite the file.
+# First argument is the output file, then optional --original-path VALUE,
+# then the list of directories.
 generate_nix_block_file() {
         block_file=$1
         shift
+        
+        original_path=""
+        if [ "$1" = "--original-path" ]; then
+                shift
+                original_path=$1
+                shift
+        fi
+        
         {
                 printf '  # wizardry PATH begin\n'
                 printf '  environment.sessionVariables.PATH =\n'
@@ -885,19 +965,25 @@ generate_nix_block_file() {
                         printf '        "%s"\n' "$dir"
                 done
                 printf '      ];\n'
-                printf '      existingPath = if config.environment.sessionVariables ? PATH\n'
-                printf '        then config.environment.sessionVariables.PATH\n'
-                printf '        else "";\n'
+                if [ -n "$original_path" ]; then
+                        # Preserve the user's original PATH expression
+                        printf '      originalPath = %s;\n' "$original_path"
+                else
+                        # Check for any PATH at runtime
+                        printf '      originalPath = if config.environment.sessionVariables ? PATH\n'
+                        printf '        then config.environment.sessionVariables.PATH\n'
+                        printf '        else "";\n'
+                fi
                 printf '    in pkgs.lib.concatStringsSep ":" (\n'
                 printf '      wizardryPaths\n'
-                printf '      ++ pkgs.lib.optional (existingPath != "") existingPath\n'
+                printf '      ++ pkgs.lib.optional (originalPath != "") originalPath\n'
                 printf '    );\n'
                 printf '  # wizardry PATH end\n'
         } >"$block_file"
 }
 
 # Replace (or create) the managed block in configuration.nix with the provided
-# list of directories.
+# list of directories. If the current block has an originalPath, preserve it.
 write_nix_paths() {
         ensure_rc_directory
         backup_rc_file_once
@@ -907,9 +993,17 @@ write_nix_paths() {
                 fi
                 return 0
         fi
+        
+        # Check if there's an originalPath to preserve
+        original_path_value="$(extract_original_nix_path)"
+        
         # Use /tmp for temp files to avoid permission issues with system config directories
         block_tmp="${TMPDIR:-/tmp}/wizardry-block.$$"
-        generate_nix_block_file "$block_tmp" "$@"
+        if [ -n "$original_path_value" ]; then
+                generate_nix_block_file "$block_tmp" --original-path "$original_path_value" "$@"
+        else
+                generate_nix_block_file "$block_tmp" "$@"
+        fi
         if [ ! -f "$rc_file" ] || [ ! -s "$rc_file" ]; then
                 new_content_tmp="${TMPDIR:-/tmp}/wizardry-new.$$"
                 {
@@ -942,6 +1036,14 @@ nix_add() {
         
         # Check for conflicting PATH definitions
         validate_no_nix_path_conflict
+        
+        # Check if there's an existing PATH definition (outside our block) that we need to modify
+        if has_existing_nix_path_definition && ! grep -Fq '# wizardry PATH begin' "$rc_file" 2>/dev/null; then
+                # Modify the existing PATH definition to include our path
+                modify_existing_nix_path "$directory"
+                printf '%s\n' "Modified existing PATH definition in '$rc_file' to include '$directory'. Rebuild your Nix environment to activate the change."
+                return 0
+        fi
         
         existing_paths="$(extract_nix_paths)"
         old_ifs=$IFS
@@ -1052,6 +1154,15 @@ if [ "$batch_mode" -eq 1 ]; then
 $dir"
                 fi
         done <"$batch_add_file"
+        
+        # Check if there's an existing PATH definition that we need to modify
+        if has_existing_nix_path_definition && ! grep -Fq '# wizardry PATH begin' "$rc_file" 2>/dev/null; then
+                # Modify the existing PATH definition to include all our paths
+                # shellcheck disable=SC2086
+                modify_existing_nix_path $batch_dirs
+                printf '%s\n' "Modified existing PATH definition in '$rc_file'. Rebuild your Nix environment to activate the change."
+                exit 0
+        fi
         
         # Get existing paths and merge with new ones, using sort for dedup
         existing_paths="$(extract_nix_paths)"

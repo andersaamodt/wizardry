@@ -196,11 +196,10 @@ test_dry_run_does_not_modify_rc() {
   fi
 }
 
-test_nix_detects_existing_path_definition() {
-  # Test that path-wizard fails when trying to add to a nix file that already
-  # has an environment.sessionVariables.PATH definition
+test_nix_modifies_existing_path_definition() {
+  # Test that path-wizard modifies an existing PATH definition instead of failing
   rc="$WIZARDRY_TMPDIR/existing_path.nix"
-  dir="$WIZARDRY_TMPDIR/nix_conflict_dir"
+  dir="$WIZARDRY_TMPDIR/nix_modify_dir"
   mkdir -p "$dir"
   
   # Create a nix file with an existing PATH definition
@@ -213,8 +212,12 @@ test_nix_detects_existing_path_definition() {
 EOF
   
   PATH_WIZARD_PLATFORM=nixos run_spell "spells/system/path-wizard" --rc-file "$rc" --format nix add "$dir"
-  assert_failure || return 1
-  assert_error_contains "already contains an environment.sessionVariables.PATH" || return 1
+  assert_success || return 1
+  
+  # The file should now contain the wizardry block with the original value preserved
+  assert_file_contains "$rc" "wizardry PATH begin" || return 1
+  assert_file_contains "$rc" "$dir" || return 1
+  assert_file_contains "$rc" "originalPath" || return 1
 }
 
 test_nix_allows_update_to_wizardry_managed_block() {
@@ -252,6 +255,6 @@ run_test_case "path-wizard recursive creates single backup" test_nix_recursive_c
 run_test_case "path-wizard --dry-run shows single directory" test_dry_run_single_directory
 run_test_case "path-wizard --dry-run recursive shows all dirs" test_dry_run_recursive
 run_test_case "path-wizard --dry-run does not modify rc file" test_dry_run_does_not_modify_rc
-run_test_case "path-wizard detects existing PATH definition" test_nix_detects_existing_path_definition
+run_test_case "path-wizard modifies existing PATH definition" test_nix_modifies_existing_path_definition
 run_test_case "path-wizard updates wizardry-managed block" test_nix_allows_update_to_wizardry_managed_block
 finish_tests
