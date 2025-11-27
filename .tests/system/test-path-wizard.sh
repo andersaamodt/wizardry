@@ -197,7 +197,7 @@ test_dry_run_does_not_modify_rc() {
 }
 
 test_nix_adds_with_inline_marker() {
-  # Test that path-wizard adds PATH with inline # wizardry marker
+  # Test that path-wizard adds PATH with inline # wizardry-path marker
   # and doesn't interfere with user's existing PATH definition
   rc="$WIZARDRY_TMPDIR/existing_path.nix"
   dir="$WIZARDRY_TMPDIR/nix_modify_dir"
@@ -215,15 +215,16 @@ EOF
   PATH_WIZARD_PLATFORM=nixos run_spell "spells/system/path-wizard" --rc-file "$rc" --format nix add "$dir"
   assert_success || return 1
   
-  # The file should contain inline wizardry marker
-  assert_file_contains "$rc" "# wizardry" || return 1
+  # The file should contain inline wizardry-path marker
+  assert_file_contains "$rc" "# wizardry-path" || return 1
   assert_file_contains "$rc" "$dir" || return 1
   # User's original PATH definition should be UNCHANGED
   assert_file_contains "$rc" "environment.sessionVariables.PATH = \"/usr/local/bin\"" || return 1
 }
 
 test_nix_allows_multiple_paths() {
-  # Test that path-wizard can add multiple paths with inline markers
+  # Test that path-wizard can add multiple paths
+  # With the new consolidated approach, all paths are in a single line
   rc="$WIZARDRY_TMPDIR/wizardry_managed.nix"
   dir1="$WIZARDRY_TMPDIR/managed_dir1"
   dir2="$WIZARDRY_TMPDIR/managed_dir2"
@@ -237,13 +238,14 @@ test_nix_allows_multiple_paths() {
   PATH_WIZARD_PLATFORM=debian run_spell "spells/system/path-wizard" --rc-file "$rc" --format nix add "$dir2"
   assert_success || return 1
   
-  # Both directories should be in the file with markers
+  # Both directories should be in the file
   assert_file_contains "$rc" "$dir1" || return 1
   assert_file_contains "$rc" "$dir2" || return 1
-  # Each should have its own inline marker
-  wizardry_count=$(grep -c "# wizardry" "$rc" 2>/dev/null || printf '0')
-  if [ "$wizardry_count" -lt 2 ]; then
-    TEST_FAILURE_REASON="expected at least 2 wizardry markers, found $wizardry_count"
+  # The new approach consolidates all paths into a single line with one marker
+  # This avoids NixOS attribute conflicts (extraInit can only be defined once)
+  wizardry_count=$(grep -c "# wizardry-path" "$rc" 2>/dev/null || printf '0')
+  if [ "$wizardry_count" -ne 1 ]; then
+    TEST_FAILURE_REASON="expected exactly 1 wizardry-path marker (consolidated), found $wizardry_count"
     return 1
   fi
 }

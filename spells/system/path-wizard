@@ -749,28 +749,27 @@ has_wizardry_nix_path() {
         if [ ! -f "$rc_file" ]; then
                 return 1
         fi
-        # Look for the path in lines with # wizardry marker
-        # The path appears as PATH="/path:$PATH" so we look for the path followed by :
-        grep -F "# wizardry" "$rc_file" 2>/dev/null | grep -Fq "\"$path_to_check:" 2>/dev/null
+        # Look for the path in the wizardry PATH block
+        # The path appears as either first in the list ("/path:" or just the path with colon)
+        grep -F "# wizardry-path" "$rc_file" 2>/dev/null | grep -Fq "$path_to_check" 2>/dev/null
 }
 
-# Parse lines with # wizardry marker in configuration.nix and echo each tracked path.
+# Parse the wizardry PATH block in configuration.nix and echo each tracked path.
 extract_nix_paths() {
         if [ ! -f "$rc_file" ]; then
-                return
+                return 0
         fi
-        # Extract paths from lines containing # wizardry marker
-        grep -F "# wizardry" "$rc_file" 2>/dev/null | while IFS= read -r line; do
-                # Extract path from environment.extraInit line (PATH="path:$PATH")
-                printf '%s\n' "$line" | sed -n 's/.*PATH="\([^:]*\):.*/\1/p'
-        done
+        # Extract paths from the wizardry PATH block
+        # Format: environment.shellInit = ''export PATH="path1:path2:...:$PATH"''; # wizardry-path
+        # Use || true to avoid exit on grep finding no matches
+        grep -F "# wizardry-path" "$rc_file" 2>/dev/null | sed -n 's/.*PATH="\([^"]*\)\$PATH.*/\1/p' | tr ':' '\n' | grep -v '^$' || true
 }
 
-# Remove all wizardry-marked lines from configuration.nix
+# Remove the wizardry PATH block from configuration.nix
 remove_wizardry_nix_lines() {
         backup_rc_file_once
         tmp_file="${TMPDIR:-/tmp}/wizardry-nix.$$"
-        run_maybe_sudo cat "$rc_file" | grep -v "# wizardry" >"$tmp_file"
+        run_maybe_sudo cat "$rc_file" | grep -v "# wizardry-path" >"$tmp_file"
         if [ "$needs_sudo" -eq 1 ]; then
                 run_maybe_sudo cp "$tmp_file" "$rc_file"
                 rm -f "$tmp_file"
@@ -779,42 +778,60 @@ remove_wizardry_nix_lines() {
         fi
 }
 
-# Remove a specific path from wizardry-marked lines
+# Remove a specific path from wizardry PATH block and rebuild
 remove_wizardry_nix_path() {
         path_to_remove=$1
         backup_rc_file_once
+        
+        # Get current paths
+        tmp_paths="${TMPDIR:-/tmp}/wizardry-paths.$$"
+        extract_nix_paths >"$tmp_paths"
+        
+        # Remove the wizardry line
         tmp_file="${TMPDIR:-/tmp}/wizardry-nix.$$"
-        # Remove lines that contain both # wizardry and the specific path
-        run_maybe_sudo cat "$rc_file" | awk -v path="$path_to_remove" '
-        /# wizardry/ && index($0, "\"" path ":") {next}
-        {print}
-        ' >"$tmp_file"
+        run_maybe_sudo cat "$rc_file" | grep -v "# wizardry-path" >"$tmp_file"
+        
         if [ "$needs_sudo" -eq 1 ]; then
                 run_maybe_sudo cp "$tmp_file" "$rc_file"
-                rm -f "$tmp_file"
         else
                 mv "$tmp_file" "$rc_file"
         fi
+        rm -f "$tmp_file"
+        
+        # Build new path list excluding the removed path, then re-add
+        new_path_list=""
+        while IFS= read -r p; do
+                [ -z "$p" ] && continue
+                [ "$p" = "$path_to_remove" ] && continue
+                if [ -z "$new_path_list" ]; then
+                        new_path_list="$p"
+                else
+                        new_path_list="$new_path_list:$p"
+                fi
+        done <"$tmp_paths"
+        rm -f "$tmp_paths"
+        
+        # If there are remaining paths, add them back
+        if [ -n "$new_path_list" ]; then
+                # Re-add the line with remaining paths
+                write_wizardry_nix_path_line "$new_path_list"
+        fi
 }
 
-# Add a path entry to configuration.nix with inline wizardry marker.
-# Uses environment.extraInit to prepend to PATH without conflicting with
-# any existing environment.sessionVariables.PATH definition.
-add_wizardry_nix_path() {
-        path_to_add=$1
-        backup_rc_file_once
+# Write the wizardry PATH line with the given colon-separated path list
+write_wizardry_nix_path_line() {
+        path_list=$1
         
-        # Check if this exact path is already added
-        if has_wizardry_nix_path "$path_to_add"; then
-                return 0
-        fi
-        
-        # The line we'll add - uses environment.extraInit to prepend to PATH
-        new_line="  environment.extraInit = ''export PATH=\"$path_to_add:\$PATH\"''; # wizardry"
+        # The line we'll add - uses environment.shellInit to set PATH
+        # This avoids conflicts with existing extraInit or sessionVariables.PATH
+        new_line="  environment.shellInit = ''export PATH=\"$path_list:\$PATH\"''; # wizardry-path"
         
         # Insert before the closing brace
         tmp_file="${TMPDIR:-/tmp}/wizardry-nix.$$"
-        run_maybe_sudo cat "$rc_file" | awk -v newline="$new_line" '
+        final_file="${TMPDIR:-/tmp}/wizardry-final.$$"
+        run_maybe_sudo cat "$rc_file" >"$tmp_file"
+        
+        awk -v newline="$new_line" '
         {
                 lines[NR] = $0
         }
@@ -844,14 +861,54 @@ add_wizardry_nix_path() {
                         print newline
                 }
         }
-        ' >"$tmp_file"
+        ' "$tmp_file" >"$final_file"
         
         if [ "$needs_sudo" -eq 1 ]; then
-                run_maybe_sudo cp "$tmp_file" "$rc_file"
+                run_maybe_sudo cp "$final_file" "$rc_file"
+                rm -f "$tmp_file" "$final_file"
+        else
+                mv "$final_file" "$rc_file"
                 rm -f "$tmp_file"
+        fi
+}
+
+# Add a path entry to configuration.nix with inline wizardry marker.
+# Uses environment.shellInit to prepend paths, avoiding conflicts with
+# existing extraInit or sessionVariables.PATH definitions.
+# All wizardry paths are collected into a single line.
+add_wizardry_nix_path() {
+        path_to_add=$1
+        backup_rc_file_once
+        
+        # Check if this exact path is already added
+        if has_wizardry_nix_path "$path_to_add"; then
+                return 0
+        fi
+        
+        # Get existing paths and build new list
+        tmp_paths="${TMPDIR:-/tmp}/wizardry-paths.$$"
+        extract_nix_paths >"$tmp_paths"
+        
+        # Build path list: existing paths + new path
+        new_path_list="$path_to_add"
+        while IFS= read -r p; do
+                [ -z "$p" ] && continue
+                new_path_list="$new_path_list:$p"
+        done <"$tmp_paths"
+        rm -f "$tmp_paths"
+        
+        # Remove existing wizardry line if present
+        tmp_file="${TMPDIR:-/tmp}/wizardry-nix.$$"
+        run_maybe_sudo cat "$rc_file" | grep -v "# wizardry-path" >"$tmp_file"
+        if [ "$needs_sudo" -eq 1 ]; then
+                run_maybe_sudo cp "$tmp_file" "$rc_file"
         else
                 mv "$tmp_file" "$rc_file"
         fi
+        rm -f "$tmp_file"
+        
+        # Write the new line with all paths
+        write_wizardry_nix_path_line "$new_path_list"
 }
 
 # Add a directory to the managed list inside configuration.nix. Duplicates are
@@ -937,8 +994,8 @@ if [ "$batch_mode" -eq 1 ]; then
                 fi
         fi
         
-        # Read all directories and add each one with inline marker
-        added_count=0
+        # Read all directories and build a single path list
+        all_dirs=""
         while IFS= read -r dir; do
                 [ -d "$dir" ] || continue
                 case $dir in
@@ -946,10 +1003,48 @@ if [ "$batch_mode" -eq 1 ]; then
                 *) dir=$(cd "$dir" 2>/dev/null && pwd -P) || continue ;;
                 esac
                 if ! has_wizardry_nix_path "$dir"; then
-                        add_wizardry_nix_path "$dir"
-                        added_count=$((added_count + 1))
+                        if [ -z "$all_dirs" ]; then
+                                all_dirs="$dir"
+                        else
+                                all_dirs="$all_dirs:$dir"
+                        fi
                 fi
         done <"$batch_add_file"
+        
+        # Add all directories at once
+        if [ -n "$all_dirs" ]; then
+                # Backup the config file before modifying
+                backup_rc_file_once
+                
+                # Get existing paths and prepend new ones
+                tmp_paths="${TMPDIR:-/tmp}/wizardry-paths.$$"
+                extract_nix_paths >"$tmp_paths"
+                
+                full_path_list="$all_dirs"
+                while IFS= read -r p; do
+                        [ -z "$p" ] && continue
+                        full_path_list="$full_path_list:$p"
+                done <"$tmp_paths"
+                rm -f "$tmp_paths"
+                
+                # Remove existing wizardry line if present
+                tmp_file="${TMPDIR:-/tmp}/wizardry-nix.$$"
+                run_maybe_sudo cat "$rc_file" | grep -v "# wizardry-path" >"$tmp_file"
+                if [ "$needs_sudo" -eq 1 ]; then
+                        run_maybe_sudo cp "$tmp_file" "$rc_file"
+                else
+                        mv "$tmp_file" "$rc_file"
+                fi
+                rm -f "$tmp_file"
+                
+                # Write the new line with all paths
+                write_wizardry_nix_path_line "$full_path_list"
+                
+                # Count the directories we added
+                added_count=$(printf '%s\n' "$all_dirs" | tr ':' '\n' | grep -c .)
+        else
+                added_count=0
+        fi
         
         printf '%s\n' "Recorded $added_count directories in '$rc_file'. Rebuild your Nix environment to activate the change."
         exit 0
