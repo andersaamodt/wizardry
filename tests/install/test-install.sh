@@ -203,6 +203,57 @@ run_test_case "install normalizes path without leading slash" install_normalizes
 run_test_case "install normalizes NixOS config path" install_nixos_normalizes_config_path_without_leading_slash
 run_test_case "install does not double home path" install_does_not_double_home_path
 
+install_nixos_does_not_write_shell_code_to_nix_file() {
+  # When format is nix, the installer should not write shell code (like the cd cantrip
+  # or jump-to-marker source lines) to the .nix configuration file.
+  fixture=$(make_fixture)
+  provide_basic_tools "$fixture"
+  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+
+  # Create a fake home.nix
+  mkdir -p "$fixture/home/.config/home-manager"
+  cat >"$fixture/home/.config/home-manager/home.nix" <<'EOF'
+{ config, pkgs, ... }:
+
+{
+  home.username = "testuser";
+  home.homeDirectory = "/home/testuser";
+  programs.bash.enable = true;
+}
+EOF
+
+  install_dir="$fixture/home/.wizardry"
+  
+  run_cmd env DETECT_RC_FILE_PLATFORM=nixos \
+      WIZARDRY_INSTALL_DIR="$install_dir" \
+      HOME="$fixture/home" \
+      WIZARDRY_INSTALL_ASSUME_YES=1 \
+      "$ROOT_DIR/install" 2>&1
+
+  assert_success || return 1
+  
+  # The nix file should not contain shell code markers
+  if grep -q '# >>> wizardry cd cantrip >>>' "$fixture/home/.config/home-manager/home.nix" 2>/dev/null; then
+    TEST_FAILURE_REASON="shell code (cd cantrip) was written to .nix file"
+    return 1
+  fi
+  
+  if grep -q 'source.*jump-to-marker' "$fixture/home/.config/home-manager/home.nix" 2>/dev/null; then
+    TEST_FAILURE_REASON="shell code (jump-to-marker source) was written to .nix file"
+    return 1
+  fi
+  
+  # But the nix file SHOULD contain the PATH configuration
+  if ! grep -q '# wizardry PATH begin' "$fixture/home/.config/home-manager/home.nix" 2>/dev/null; then
+    TEST_FAILURE_REASON="PATH configuration was not written to .nix file"
+    return 1
+  fi
+  
+  return 0
+}
+
+run_test_case "install does not write shell code to nix file" install_nixos_does_not_write_shell_code_to_nix_file
+
 shows_help() {
   run_spell spells/install/install --help
   true

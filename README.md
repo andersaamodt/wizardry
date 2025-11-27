@@ -41,6 +41,67 @@ chmod +x install
 
 This downloads wizardry to the default install location, `~/.wizardry`. After installing, you must reopen your terminal window before wizardry spells will work.
 
+### Install on NixOS (Flake-based)
+
+For NixOS users, wizardry provides a flake for declarative installation. This is the recommended approach as it integrates cleanly with your NixOS configuration.
+
+**Using home-manager:**
+
+Add wizardry to your `flake.nix` inputs:
+
+```nix
+{
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    home-manager.url = "github:nix-community/home-manager";
+    wizardry.url = "github:andersaamodt/wizardry";
+  };
+  
+  outputs = { self, nixpkgs, home-manager, wizardry, ... }: {
+    homeConfigurations."youruser" = home-manager.lib.homeManagerConfiguration {
+      # ... your config ...
+      modules = [
+        wizardry.homeManagerModules.default
+        {
+          programs.wizardry.enable = true;
+        }
+      ];
+    };
+  };
+}
+```
+
+**Using NixOS system configuration:**
+
+```nix
+{
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    wizardry.url = "github:andersaamodt/wizardry";
+  };
+  
+  outputs = { self, nixpkgs, wizardry, ... }: {
+    nixosConfigurations.yourhostname = nixpkgs.lib.nixosSystem {
+      # ... your config ...
+      modules = [
+        wizardry.nixosModules.default
+        {
+          programs.wizardry.enable = true;
+        }
+      ];
+    };
+  };
+}
+```
+
+**Try it temporarily:**
+
+```sh
+nix develop github:andersaamodt/wizardry
+```
+
+This gives you a shell with wizardry available for testing.
+
 ## Usage
 
 To use wizardry, simply type:
