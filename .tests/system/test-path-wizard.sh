@@ -196,6 +196,48 @@ test_dry_run_does_not_modify_rc() {
   fi
 }
 
+test_nix_detects_existing_path_definition() {
+  # Test that path-wizard fails when trying to add to a nix file that already
+  # has an environment.sessionVariables.PATH definition
+  rc="$WIZARDRY_TMPDIR/existing_path.nix"
+  dir="$WIZARDRY_TMPDIR/nix_conflict_dir"
+  mkdir -p "$dir"
+  
+  # Create a nix file with an existing PATH definition
+  cat >"$rc" <<'EOF'
+{ config, pkgs, ... }:
+
+{
+  environment.sessionVariables.PATH = "/usr/local/bin";
+}
+EOF
+  
+  PATH_WIZARD_PLATFORM=nixos run_spell "spells/system/path-wizard" --rc-file "$rc" --format nix add "$dir"
+  assert_failure || return 1
+  assert_error_contains "already contains an environment.sessionVariables.PATH" || return 1
+}
+
+test_nix_allows_update_to_wizardry_managed_block() {
+  # Test that path-wizard can update its own managed block even if it contains
+  # a PATH definition (since we manage it)
+  rc="$WIZARDRY_TMPDIR/wizardry_managed.nix"
+  dir1="$WIZARDRY_TMPDIR/managed_dir1"
+  dir2="$WIZARDRY_TMPDIR/managed_dir2"
+  mkdir -p "$dir1" "$dir2"
+  
+  # First, add a directory (creates wizardry managed block)
+  PATH_WIZARD_PLATFORM=debian run_spell "spells/system/path-wizard" --rc-file "$rc" --format nix add "$dir1"
+  assert_success || return 1
+  
+  # Now add another directory - should succeed since we manage the block
+  PATH_WIZARD_PLATFORM=debian run_spell "spells/system/path-wizard" --rc-file "$rc" --format nix add "$dir2"
+  assert_success || return 1
+  
+  # Both directories should be in the file
+  assert_file_contains "$rc" "$dir1" || return 1
+  assert_file_contains "$rc" "$dir2" || return 1
+}
+
 run_test_case "path-wizard prints usage" test_help
 run_test_case "path-wizard fails when detect helper missing" test_missing_detect_helper
 run_test_case "path-wizard rejects unknown options" test_unknown_option
@@ -210,4 +252,6 @@ run_test_case "path-wizard recursive creates single backup" test_nix_recursive_c
 run_test_case "path-wizard --dry-run shows single directory" test_dry_run_single_directory
 run_test_case "path-wizard --dry-run recursive shows all dirs" test_dry_run_recursive
 run_test_case "path-wizard --dry-run does not modify rc file" test_dry_run_does_not_modify_rc
+run_test_case "path-wizard detects existing PATH definition" test_nix_detects_existing_path_definition
+run_test_case "path-wizard updates wizardry-managed block" test_nix_allows_update_to_wizardry_managed_block
 finish_tests

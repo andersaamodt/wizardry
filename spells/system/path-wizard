@@ -742,6 +742,42 @@ shell_status() {
         shell_path_contains_directory "$rc_file" "$directory"
 }
 
+# Check if configuration.nix already has an environment.sessionVariables.PATH
+# definition outside of the wizardry managed block. This would cause a conflict
+# if we add our own PATH definition.
+# Returns 0 if existing PATH definition found, 1 otherwise.
+has_existing_nix_path_definition() {
+        if [ ! -f "$rc_file" ]; then
+                return 1
+        fi
+        # Look for PATH definitions outside the wizardry block
+        # This awk script:
+        # 1. Tracks when we're inside the wizardry block (skip those lines)
+        # 2. Looks for environment.sessionVariables.PATH outside the block
+        awk '
+        /# wizardry PATH begin/ {in_block=1; next}
+        /# wizardry PATH end/ {in_block=0; next}
+        in_block {next}
+        /environment\.sessionVariables\.PATH[[:space:]]*=/ {found=1; exit}
+        END {exit (found ? 0 : 1)}
+        ' "$rc_file"
+}
+
+# Check for conflicting PATH definitions before modifying the nix file.
+# Errors out if the file already has a PATH definition that would conflict.
+# Silent if we already have a wizardry block (which we can safely update).
+validate_no_nix_path_conflict() {
+        if has_existing_nix_path_definition; then
+                # Only error if we don't already have a wizardry block (which we manage)
+                if ! grep -Fq '# wizardry PATH begin' "$rc_file" 2>/dev/null; then
+                        printf '%s\n' "Error: '$rc_file' already contains an environment.sessionVariables.PATH definition." >&2
+                        printf '%s\n' "Adding a duplicate would cause nixos-rebuild to fail." >&2
+                        printf '%s\n' "Please manually add the wizardry spell paths to your existing PATH definition." >&2
+                        exit 1
+                fi
+        fi
+}
+
 # Parse the managed block in configuration.nix and echo each tracked path. The
 # caller can then compare or merge entries without re-reading the file.
 extract_nix_paths() {
@@ -752,7 +788,7 @@ extract_nix_paths() {
         # like /etc/nixos/configuration.nix are typically world-readable. Using
         # sudo for reads would prompt the user unnecessarily before they've seen
         # the installation plan.
-        cat "$rc_file" | awk '
+        awk '
         /# wizardry PATH begin/ {in_block=1; next}
         /# wizardry PATH end/ {in_block=0}
         in_block && $0 ~ /^[[:space:]]*"[^"]*"[[:space:]]*$/ {
@@ -761,7 +797,7 @@ extract_nix_paths() {
                 gsub(/"[[:space:]]*$/, "", path)
                 print path
         }
-        '
+        ' "$rc_file"
 }
 
 # Delete the managed block from configuration.nix while keeping the rest of
@@ -903,6 +939,10 @@ write_nix_paths() {
 # ignored so repeated runs stay harmless.
 nix_add() {
         ensure_rc_directory
+        
+        # Check for conflicting PATH definitions
+        validate_no_nix_path_conflict
+        
         existing_paths="$(extract_nix_paths)"
         old_ifs=$IFS
         IFS='
@@ -993,6 +1033,9 @@ if [ "$batch_mode" -eq 1 ]; then
                 printf '%s\n' "Error: Batch add mode is only supported for nix format." >&2
                 exit 1
         fi
+        
+        # Check for conflicting PATH definitions
+        validate_no_nix_path_conflict
         
         # Read all directories and normalize them
         batch_dirs=""
