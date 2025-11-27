@@ -837,7 +837,7 @@ remove_wizardry_nix_path() {
                 next
         }
         in_block && !/^[[:space:]]*$/ && !/^[[:space:]]*\[/ {
-                # Non-wizardry content in block, dont skip
+                # Non-wizardry content in block, do not skip
                 skip_block = 0
         }
         in_block {
@@ -879,21 +879,23 @@ $p"
 write_wizardry_nix_path_block() {
         paths_input=$1
         
-        # Build the multi-line array content
+        # Build the multi-line array content directly (avoid subshell/temp file overhead)
         path_lines=""
-        # Process each path on a separate line
-        printf '%s\n' "$paths_input" | while IFS= read -r p; do
+        # Use a here-string approach with a while loop in the current shell
+        while IFS= read -r p; do
                 [ -z "$p" ] && continue
-                printf '    "%s" # wizardry\n' "$p"
-        done > "${TMPDIR:-/tmp}/wizardry-pathlines.$$"
-        path_lines=$(cat "${TMPDIR:-/tmp}/wizardry-pathlines.$$" 2>/dev/null || true)
-        rm -f "${TMPDIR:-/tmp}/wizardry-pathlines.$$"
+                if [ -z "$path_lines" ]; then
+                        path_lines="    \"$p\" # wizardry"
+                else
+                        path_lines="$path_lines
+    \"$p\" # wizardry"
+                fi
+        done <<EOF
+$paths_input
+EOF
         
         # If no paths, don't write anything
         [ -z "$path_lines" ] && return 0
-        
-        # Remove trailing newline from path_lines for proper formatting
-        path_lines=$(printf '%s' "$path_lines" | sed '$s/$//')
         
         # Construct the block
         block="  environment.sessionVariables.PATH = [
