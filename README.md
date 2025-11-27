@@ -63,7 +63,7 @@ A spell is a specially-curated shell script:
 * Has no `.sh` extension for easy invocation
 * Has a brief opening description comment (~2 lines)
 * Has a `--help` usage note which ultimately *is* its spec
-* Has a test script at a corresponding path under `tests/`, which serves as a fully-specified operationalized spec
+* Has a test script at a corresponding path under `.tests/`, which serves as a fully-specified operationalized spec
 * Is polished and fails elegantly
 * Works well when used in a menu (interactively)
 
@@ -176,13 +176,13 @@ Run the complete shell test suite with:
 test-magic
 ```
 
-The spell discovers every `test_*.sh` file in `tests/` and executes each in a sandboxed bubblewrap environment.
+The spell discovers every `test_*.sh` file in `.tests/` and executes each in a sandboxed bubblewrap environment.
 
 Principles of the testing suite:
 
 * Tests are simply POSIX-compliant shell scripts that exercise the expected behaviors of each spell.
 * Each spell's `--help` usage note *is* its primary spec; each unit test is considered the full operationalized spec for a spell.
-* Test files live in `tests/` and mirror the structure of the `spells/` directory. One test script per spell.
+* Test files live in `.tests/` and mirror the structure of the `spells/` directory. One test script per spell.
 * Tests source `test_common.sh` to standardize testing procedures and logging.
 * Each test's subtests should cover all valid and failure modes. Since spells call each other, each spell's test should avoid redundancy with other spells' tests by focusing on unique behaviors.
 * Shims exist only within tests; whenever a test needs a shim, that test script must create and manage it explicitly.

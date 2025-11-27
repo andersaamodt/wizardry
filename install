@@ -430,7 +430,7 @@ generate_flake_nix() {
             mkdir -p $out/bin
             
             cp -r spells $out/share/wizardry/
-            cp -r tests $out/share/wizardry/
+            cp -r .tests $out/share/wizardry/
             cp -r tutorials $out/share/wizardry/ 2>/dev/null || true
             cp install $out/share/wizardry/
             cp README.md $out/share/wizardry/

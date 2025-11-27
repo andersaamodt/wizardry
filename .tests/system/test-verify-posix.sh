@@ -54,7 +54,7 @@ runs_quietly_across_all_spells() {
 
 accepts_individual_targets() {
   prepare_checkbashisms_stub || return 1
-  rel_tmp="tests/tmp.verify.$$.${RANDOM:-0}"
+  rel_tmp=".tests/tmp.verify.$$.${RANDOM:-0}"
   abs_tmp="$ROOT_DIR/$rel_tmp"
   mkdir -p "$(dirname "$abs_tmp")"
   cat <<'SCRIPT' >"$abs_tmp"

@@ -25,15 +25,15 @@ set -eu
 cmd_name=$(basename "$0")
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 root_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd -P)
-test_dir="$root_dir/tests"
+test_dir="$root_dir/.tests"
 
 usage() {
   cat <<USAGE
 Usage: $cmd_name [options]
 
-Execute the behavior-driven shell tests located in tests/.
+Execute the behavior-driven shell tests located in .tests/.
 Options:
-  --only PATTERN   Run tests whose path under tests/ matches PATTERN.
+  --only PATTERN   Run tests whose path under .tests/ matches PATTERN.
   --list           Print the resolved test files and exit.
   --verbose        Print per-test output while running.
   --very-verbose   Show only failing subtests with error output.
@@ -472,9 +472,9 @@ scan_extraneous() {
     
     if [ ! -f "$spell_path" ]; then
       if [ -n "$extraneous_files" ]; then
-        extraneous_files=$(printf '%s\n%s' "$extraneous_files" "tests/$rel")
+        extraneous_files=$(printf '%s\n%s' "$extraneous_files" ".tests/$rel")
       else
-        extraneous_files="tests/$rel"
+        extraneous_files=".tests/$rel"
       fi
     fi
   done <<EOF_TESTS
