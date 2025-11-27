@@ -761,7 +761,7 @@ if [ "$path_updates_made" -eq 1 ]; then
                 # If home-manager didn't work and we have privilege escalation, try nixos-rebuild
                 if [ "$rebuild_success" -eq 0 ] && [ -n "$priv_cmd" ] && command -v nixos-rebuild >/dev/null 2>&1; then
                         info_msg "Running '$priv_cmd nixos-rebuild switch'..."
-                        if $priv_cmd nixos-rebuild switch; then
+                        if "$priv_cmd" nixos-rebuild switch; then
                                 success_msg "NixOS environment rebuilt successfully"
                                 rebuild_success=1
                         fi
@@ -918,7 +918,7 @@ if [ "$RC_FORMAT" = "nix" ]; then
         # If home-manager didn't work and we have privilege escalation, try nixos-rebuild
         if [ "$rebuild_success" -eq 0 ] && [ -n "$priv_cmd" ] && command -v nixos-rebuild >/dev/null 2>&1; then
                 printf '  Running %s nixos-rebuild switch...\n' "$priv_cmd"
-                if $priv_cmd nixos-rebuild switch; then
+                if "$priv_cmd" nixos-rebuild switch; then
                         printf '  %s✓%s NixOS environment rebuilt successfully\n' "$GREEN" "$RESET"
                         rebuild_success=1
                 fi
