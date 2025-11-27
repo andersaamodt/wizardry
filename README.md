@@ -167,6 +167,7 @@ These values make the wizardry project what it is, and distinguish it from simil
 * No wrappers; all files are standalone, portable, and front-facing.
 * Bootstrap awareness: The install script (`./install`) and core install scripts (in `spells/install/core`) run before wizardry is on PATH, so they alone cannot assume that wizardry spells are already available in PATH.
 * Expose and use new documented (in `--help usage note`) arguments to pass data to scripts, instead of passing in shell variables.
+* All GitHub Actions and every test and subtest on every platform are required to pass, including style and test coverage checks (or we can't merge).
 
 ## Testing
 
