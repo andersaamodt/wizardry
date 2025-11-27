@@ -354,12 +354,8 @@ if [ ! -x "$ASK_YN" ]; then
         exit 1
 fi
 
-if [ -x "$CORE_INSTALLER" ]; then
-        section_msg "Installing Core Prerequisites"
-        # Run core installer - it returns success even if some optional deps fail
-        ASSUME_YES=1 "$CORE_INSTALLER" >/dev/null 2>&1 || true
-        success_msg "Core prerequisites checked"
-fi
+# Note: Core prerequisite installation is deferred until after the install plan is shown
+# This avoids prompting for sudo before the user understands what will happen
 
 # Perform comprehensive installation detection across all RC files
 # This checks multiple RC files to see if wizardry is installed anywhere
@@ -590,8 +586,69 @@ do
 done
 
 if [ "$#" -eq 0 ]; then
-        printf '%s\n' "Wizardry is already installed. Run it with 'menu' or 'mud'."
-        exit 0
+        # Wizardry is already installed - offer options via simple text menu
+        printf '\n'
+        info_msg "Wizardry is already installed at: $ABS_DIR"
+        printf '\n'
+        printf '%sWhat would you like to do?%s\n' "$BOLD" "$RESET"
+        printf '  1) %sRepair%s - Fix PATH configuration if needed\n' "$CYAN" "$RESET"
+        printf '  2) %sReinstall%s - Reinstall wizardry (keeps current location)\n' "$CYAN" "$RESET"
+        printf '  3) %sUninstall%s - Remove wizardry from your system\n' "$CYAN" "$RESET"
+        printf '  4) %sExit%s - Do nothing and exit\n' "$CYAN" "$RESET"
+        printf '\n'
+        
+        # Read user choice
+        # Check if we can read input (tty or pipe)
+        if [ -t 0 ] || [ -p /dev/stdin ]; then
+                printf '%sEnter your choice (1-4): %s' "$BOLD" "$RESET" >&2
+                IFS= read -r choice
+        else
+                # Non-interactive mode - default to exit
+                if [ "${WIZARDRY_INSTALL_ASSUME_YES-}" = "1" ]; then
+                        # In automated mode with ASSUME_YES, default to repair
+                        choice="1"
+                        printf '%s\n' "Non-interactive mode: defaulting to repair (option 1)"
+                else
+                        printf '%s\n' "Wizardry is already installed. Run 'menu' or 'mud' to use it."
+                        exit 0
+                fi
+        fi
+        
+        case $choice in
+                1)
+                        # Repair - continue with normal flow to check/fix PATH
+                        info_msg "Repairing wizardry installation..."
+                        # Force re-add all paths even if they appear present
+                        set -- "$ABS_DIR/spells"
+                        ;;
+                2)
+                        # Reinstall - continue with normal installation flow
+                        info_msg "Reinstalling wizardry..."
+                        set -- "$ABS_DIR/spells"
+                        ;;
+                3)
+                        # Uninstall - use the uninstall script from the existing installation
+                        uninstall_script="$ABS_DIR/uninstall_wizardry"
+                        if [ -x "$uninstall_script" ]; then
+                                exec "$uninstall_script"
+                        else
+                                printf '%s\n' "Error: uninstall script not found at '$uninstall_script'." >&2
+                                printf '%s\n' "The uninstall script is created during installation." >&2
+                                printf '%s\n' "You may need to manually remove '$ABS_DIR' and PATH entries from your shell configuration." >&2
+                                exit 1
+                        fi
+                        ;;
+                4|"")
+                        # Exit (empty input also exits)
+                        printf '%s\n' "No changes made. Run 'menu' or 'mud' to use wizardry."
+                        exit 0
+                        ;;
+                *)
+                        # Invalid choice - treat as exit
+                        printf '%s\n' "Invalid choice. No changes made."
+                        exit 0
+                        ;;
+        esac
 fi
 
 # Inform user about installation mode
@@ -707,8 +764,9 @@ done
 
 # Provide format-specific information about what file will be modified
 printf '\n'
+nix_flakes_consent=0
 if [ "$detect_format_value" = "nix" ]; then
-        info_msg "NixOS Configuration (using flakes)"
+        info_msg "NixOS Configuration"
         substep_msg "Configuration file to be modified:"
         if [ -n "$detect_rc_file_value" ]; then
                 printf '      %s\n' "$detect_rc_file_value"
@@ -716,8 +774,49 @@ if [ "$detect_format_value" = "nix" ]; then
                 printf '      (could not determine configuration file)\n'
         fi
         substep_msg "Backup: A timestamped backup will be created automatically"
-        substep_msg "Flakes will be enabled in your configuration if not already enabled"
         substep_msg "After install: The installer will run 'sudo nixos-rebuild switch' or 'home-manager switch'"
+        
+        # Check if flakes are already enabled
+        flakes_already_enabled=0
+        if [ -n "$detect_rc_file_value" ] && [ -f "$detect_rc_file_value" ]; then
+                if grep -q 'experimental-features' "$detect_rc_file_value" 2>/dev/null; then
+                        if grep -qE '("|'\''| )flakes("|'\''| |])' "$detect_rc_file_value" 2>/dev/null; then
+                                flakes_already_enabled=1
+                        fi
+                fi
+        fi
+        
+        # If flakes not enabled, ask user if we should enable them (separate prompt)
+        if [ "$flakes_already_enabled" -eq 0 ]; then
+                printf '\n'
+                info_msg "Flakes are not currently enabled in your NixOS configuration"
+                substep_msg "Wizardry works best with Nix flakes enabled"
+                substep_msg "This will add: nix.settings.experimental-features = [ \"nix-command\" \"flakes\" ];"
+                printf '\n'
+                
+                if [ "${WIZARDRY_INSTALL_ASSUME_YES-}" = "1" ]; then
+                        nix_flakes_consent=1
+                elif [ -t 0 ] || [ -p /dev/stdin ]; then
+                        # Can read from tty or piped input
+                        printf '%sMay we enable flakes in your configuration.nix? [Y/n] %s' "$BOLD" "$RESET" >&2
+                        IFS= read -r flakes_answer
+                        case $flakes_answer in
+                                n|N|no|NO)
+                                        nix_flakes_consent=0
+                                        substep_msg "Skipping flakes enablement (you can enable manually later)"
+                                        ;;
+                                *)
+                                        nix_flakes_consent=1
+                                        substep_msg "Will enable flakes during installation"
+                                        ;;
+                        esac
+                else
+                        # Non-interactive with no input: default to enabling flakes
+                        nix_flakes_consent=1
+                fi
+        else
+                substep_msg "Flakes are already enabled in your configuration"
+        fi
 elif [ -n "$detect_rc_file_value" ]; then
         info_msg "Shell configuration to be modified: $detect_rc_file_value"
 fi
@@ -746,7 +845,94 @@ if [ "$proceed" -ne 1 ]; then
         exit 1
 fi
 
+# Install core prerequisites now that user has confirmed and seen the plan
+# This is where we might ask for sudo on some platforms, so it comes after showing the plan
+if [ -x "$CORE_INSTALLER" ]; then
+        section_msg "Checking Core Prerequisites"
+        
+        # Show what we're checking with a sublist
+        info_msg "Verifying required tools:"
+        
+        # Check and display status of each core dependency
+        # List common prerequisites
+        prereq_git_ok=0
+        prereq_tar_ok=0
+        prereq_curl_wget_ok=0
+        
+        if command -v git >/dev/null 2>&1; then
+                prereq_git_ok=1
+                substep_msg "git: ${GREEN}✓ installed${RESET}"
+        else
+                substep_msg "git: ${YELLOW}not found (will attempt install)${RESET}"
+        fi
+        
+        if command -v tar >/dev/null 2>&1; then
+                prereq_tar_ok=1
+                substep_msg "tar: ${GREEN}✓ installed${RESET}"
+        else
+                substep_msg "tar: ${RED}✗ missing (required)${RESET}"
+        fi
+        
+        if command -v curl >/dev/null 2>&1; then
+                prereq_curl_wget_ok=1
+                substep_msg "curl: ${GREEN}✓ installed${RESET}"
+        elif command -v wget >/dev/null 2>&1; then
+                prereq_curl_wget_ok=1
+                substep_msg "wget: ${GREEN}✓ installed${RESET}"
+        else
+                substep_msg "curl/wget: ${YELLOW}neither found (needed for remote downloads)${RESET}"
+        fi
+        
+        # Platform-specific checks
+        case $(uname -s 2>/dev/null) in
+                Darwin)
+                        # macOS specific
+                        if command -v stty >/dev/null 2>&1; then
+                                substep_msg "stty: ${GREEN}✓ installed${RESET}"
+                        else
+                                substep_msg "stty: ${YELLOW}not found (will attempt install)${RESET}"
+                        fi
+                        if command -v tput >/dev/null 2>&1; then
+                                substep_msg "tput: ${GREEN}✓ installed${RESET}"
+                        else
+                                substep_msg "tput: ${YELLOW}not found (will attempt install)${RESET}"
+                        fi
+                        ;;
+                *)
+                        # Linux
+                        if command -v bwrap >/dev/null 2>&1; then
+                                substep_msg "bubblewrap: ${GREEN}✓ installed${RESET}"
+                        else
+                                substep_msg "bubblewrap: ${YELLOW}not found (optional, for test sandboxing)${RESET}"
+                        fi
+                        if command -v stty >/dev/null 2>&1; then
+                                substep_msg "stty: ${GREEN}✓ installed${RESET}"
+                        else
+                                substep_msg "stty: ${YELLOW}not found (will attempt install)${RESET}"
+                        fi
+                        if command -v tput >/dev/null 2>&1; then
+                                substep_msg "tput: ${GREEN}✓ installed${RESET}"
+                        else
+                                substep_msg "tput: ${YELLOW}not found (will attempt install)${RESET}"
+                        fi
+                        ;;
+        esac
+        
+        printf '\n'
+        # Run core installer - it returns success even if some optional deps fail
+        ASSUME_YES=1 "$CORE_INSTALLER" >/dev/null 2>&1 || true
+        success_msg "Core prerequisites verified"
+fi
+
 section_msg "Updating PATH"
+
+# Export flakes consent for NixOS path-wizard
+if [ "$nix_flakes_consent" -eq 1 ]; then
+        WIZARDRY_NIX_FLAKES_CONSENT=1
+else
+        WIZARDRY_NIX_FLAKES_CONSENT=0
+fi
+export WIZARDRY_NIX_FLAKES_CONSENT
 
 path_updates_made=0
 for dir

@@ -843,10 +843,11 @@ write_nix_paths() {
                 fi
                 return 0
         fi
-        block_tmp="$rc_file.block.$$"
+        # Use /tmp for temp files to avoid permission issues with system config directories
+        block_tmp="${TMPDIR:-/tmp}/wizardry-block.$$"
         generate_nix_block_file "$block_tmp" "$@"
         if [ ! -f "$rc_file" ] || [ ! -s "$rc_file" ]; then
-                new_content_tmp="$rc_file.new.$$"
+                new_content_tmp="${TMPDIR:-/tmp}/wizardry-new.$$"
                 {
                         printf '{ config, pkgs, ... }:\n'
                         printf '\n'
@@ -891,9 +892,14 @@ nix_flakes_enabled() {
 
 # Enable flakes in configuration.nix if not already enabled.
 # This is NixOS-specific and should only run when platform=nixos.
+# Respects WIZARDRY_NIX_FLAKES_CONSENT env var: if set to 0, skip enablement.
 enable_nix_flakes() {
         # Only enable flakes on NixOS - other platforms using .nix files don't need this
         if [ "$platform" != "nixos" ]; then
+                return 0
+        fi
+        # If user explicitly declined flakes enablement, skip it
+        if [ "${WIZARDRY_NIX_FLAKES_CONSENT-}" = "0" ]; then
                 return 0
         fi
         if nix_flakes_enabled; then

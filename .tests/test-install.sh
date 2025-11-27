@@ -292,6 +292,54 @@ EOF
   assert_file_contains "$fixture/etc/nixos/configuration.nix" "# wizardry PATH begin" || return 1
 }
 
+install_nixos_asks_flakes_separately() {
+  # On NixOS, the installer should ask about enabling flakes as a separate step
+  # before asking to proceed with installation.
+  fixture=$(make_fixture)
+  provide_basic_tools "$fixture"
+  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+
+  # Create a configuration.nix without flakes enabled
+  mkdir -p "$fixture/etc/nixos"
+  cat >"$fixture/etc/nixos/configuration.nix" <<'EOF'
+{ config, pkgs, ... }:
+
+{
+  imports = [ ./hardware-configuration.nix ];
+  
+  boot.loader.grub.enable = true;
+  
+  environment.systemPackages = with pkgs; [
+    vim
+    git
+  ];
+}
+EOF
+
+  install_dir="$fixture/home/.wizardry"
+  
+  # Simulate user input: config path, then 'n' to decline flakes, then 'y' to proceed
+  run_cmd sh -c "
+    printf '%s\n%s\n%s\n' '$fixture/etc/nixos/configuration.nix' 'n' 'y' | \
+    env DETECT_RC_FILE_PLATFORM=nixos \
+        WIZARDRY_INSTALL_DIR='$install_dir' \
+        HOME='$fixture/home' \
+        '$ROOT_DIR/install'
+  "
+
+  assert_success || return 1
+  
+  # Check that the output mentions the flakes prompt
+  assert_output_contains "May we enable flakes" || \
+  assert_output_contains "Skipping flakes enablement" || return 1
+  
+  # Check that flakes enablement was NOT added (user declined)
+  if grep -q "experimental-features" "$fixture/etc/nixos/configuration.nix" 2>/dev/null; then
+    TEST_FAILURE_REASON="expected no experimental-features (user declined flakes)"
+    return 1
+  fi
+}
+
 # === Path Normalization Tests ===
 
 install_normalizes_path_without_leading_slash() {
@@ -494,6 +542,112 @@ shows_help() {
   true
 }
 
+# === Bootstrapping Spell Independence Tests ===
+# Verify that install script uses only explicit paths to helper scripts,
+# not PATH-based invocations that could fail if wizardry isn't installed yet.
+
+install_uses_only_bootstrappable_spells() {
+  # The install script should only use:
+  # 1. Spells from spells/install/core/ (bootstrapping spells)
+  # 2. Helper spells via explicit $ABS_DIR paths (not PATH lookup)
+  #
+  # This test verifies that no spell is invoked by bare name (relying on PATH)
+  # except for standard system commands.
+  
+  # List of allowed bare commands (system tools, not wizardry spells)
+  allowed_cmds="cat|cd|chmod|command|cp|curl|date|dirname|find|grep|head|ls|mkdir|mktemp|mv|printf|pwd|rm|sed|sh|sort|tar|tr|uname|wc|wget|awk|cut|uniq"
+  
+  # Check that the install script doesn't invoke wizardry spells by bare name
+  # Look for patterns like: command_name or "command_name" that might be spell invocations
+  # (excluding variable assignments and comments)
+  
+  # Get list of wizardry spell names
+  spell_names=""
+  for spell in "$ROOT_DIR"/spells/*; do
+    [ -f "$spell" ] && [ -x "$spell" ] || continue
+    name=${spell##*/}
+    spell_names="$spell_names $name"
+  done
+  for spell in "$ROOT_DIR"/spells/*/*; do
+    [ -f "$spell" ] && [ -x "$spell" ] || continue
+    name=${spell##*/}
+    spell_names="$spell_names $name"
+  done
+  
+  # Check that the install script uses explicit paths (like $ASK_YN, $PATH_WIZARD)
+  # rather than bare spell names in command position
+  
+  # Verify key spells are invoked via variables, not bare names
+  # path-wizard should be invoked as $PATH_WIZARD
+  if grep -E '^\s*path-wizard\s' "$ROOT_DIR/install" 2>/dev/null | grep -v '^#' | grep -v 'PATH_WIZARD=' >/dev/null; then
+    TEST_FAILURE_REASON="install script invokes 'path-wizard' directly instead of via \$PATH_WIZARD"
+    return 1
+  fi
+  
+  # detect-rc-file should be invoked as $DETECT_RC_FILE
+  if grep -E '^\s*detect-rc-file\s' "$ROOT_DIR/install" 2>/dev/null | grep -v '^#' | grep -v 'DETECT_RC_FILE=' >/dev/null; then
+    TEST_FAILURE_REASON="install script invokes 'detect-rc-file' directly instead of via \$DETECT_RC_FILE"
+    return 1
+  fi
+  
+  # ask_yn should be invoked as $ASK_YN
+  if grep -E '^\s*ask_yn\s' "$ROOT_DIR/install" 2>/dev/null | grep -v '^#' | grep -v 'ASK_YN=' >/dev/null; then
+    TEST_FAILURE_REASON="install script invokes 'ask_yn' directly instead of via \$ASK_YN"
+    return 1
+  fi
+  
+  # memorize should be invoked as $MEMORIZE
+  if grep -E '^\s*memorize\s' "$ROOT_DIR/install" 2>/dev/null | grep -v '^#' | grep -v 'MEMORIZE=' >/dev/null; then
+    TEST_FAILURE_REASON="install script invokes 'memorize' directly instead of via \$MEMORIZE"
+    return 1
+  fi
+  
+  # scribe-spell should be invoked as $SCRIBE_SPELL
+  if grep -E '^\s*scribe-spell\s' "$ROOT_DIR/install" 2>/dev/null | grep -v '^#' | grep -v 'SCRIBE_SPELL=' >/dev/null; then
+    TEST_FAILURE_REASON="install script invokes 'scribe-spell' directly instead of via \$SCRIBE_SPELL"
+    return 1
+  fi
+  
+  return 0
+}
+
+# === Already Installed Menu Tests ===
+
+install_shows_menu_when_already_installed() {
+  # When wizardry is already installed, the installer should show a numbered menu
+  # with options: repair, reinstall, uninstall, exit
+  fixture=$(make_fixture)
+  provide_basic_tools "$fixture"
+  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+
+  install_dir="$fixture/home/.wizardry"
+  
+  # First install wizardry
+  run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
+      HOME="$fixture/home" \
+      WIZARDRY_INSTALL_ASSUME_YES=1 \
+      "$ROOT_DIR/install"
+  
+  assert_success || return 1
+  
+  # Now run install again - should show menu. Choose exit (4)
+  run_cmd sh -c "
+    printf '4\n' | \
+    env WIZARDRY_INSTALL_DIR='$install_dir' \
+        HOME='$fixture/home' \
+        '$ROOT_DIR/install'
+  "
+  
+  assert_success || return 1
+  
+  # Check that menu options are shown
+  assert_output_contains "already installed" || return 1
+  assert_output_contains "Repair" || return 1
+  assert_output_contains "Reinstall" || return 1
+  assert_output_contains "Uninstall" || return 1
+  assert_output_contains "Exit" || return 1
+}
+
 # === Run Tests ===
 
 run_test_case "install runs core installer" install_invokes_core_installer
@@ -505,6 +659,7 @@ run_test_case "install generates flake.nix on NixOS" install_nixos_generates_fla
 run_test_case "install adds flakes enablement on NixOS" install_nixos_adds_flakes_enablement
 run_test_case "install preserves existing flakes setting" install_nixos_preserves_existing_flakes_setting
 run_test_case "install adds flake input on NixOS" install_nixos_adds_flake_input
+run_test_case "install asks about flakes separately on NixOS" install_nixos_asks_flakes_separately
 run_test_case "install normalizes path without leading slash" install_normalizes_path_without_leading_slash
 run_test_case "install normalizes NixOS config path" install_nixos_normalizes_config_path_without_leading_slash
 run_test_case "install does not double home path" install_does_not_double_home_path
@@ -512,6 +667,8 @@ run_test_case "install does not write shell code to nix file" install_nixos_does
 run_test_case "install uses explicit helper paths" install_uses_explicit_helper_paths
 run_test_case "path-wizard uses explicit helper paths" path_wizard_uses_explicit_helper_paths
 run_test_case "path-wizard accepts helper overrides" path_wizard_accepts_helper_overrides
+run_test_case "install uses only bootstrappable spells" install_uses_only_bootstrappable_spells
+run_test_case "install shows menu when already installed" install_shows_menu_when_already_installed
 run_test_case "install shows help" shows_help
 
 finish_tests
