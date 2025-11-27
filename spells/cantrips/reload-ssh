@@ -1,18 +1,45 @@
-reload_ssh(){
-    detect_distro
-    case $distro in
-        "arch")
-            sudo systemctl reload ssh
-            ;;
-        "debian")
-            sudo service ssh reload
-            ;;
-        "fedora")
-            sudo systemctl reload ssh
-            ;;
-        "macos")
-            sudo launchctl stop com.openssh.sshd
-            sudo launchctl start com.openssh.sshd
-            ;;
-    esac
+#!/bin/sh
+
+# This spell reloads the SSH service configuration without restarting.
+# Use it after modifying sshd_config to apply changes.
+
+show_usage() {
+        cat <<'USAGE'
+Usage: reload-ssh
+
+Reload the SSH daemon configuration. Detects the OS and uses the
+appropriate service management command (systemctl, service, or launchctl).
+USAGE
 }
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
+set -eu
+
+current_os=$(os)
+
+case "$current_os" in
+        debian|arch|fedora|nixos|linux)
+                if has systemctl; then
+                        sudo systemctl reload sshd 2>/dev/null || sudo systemctl reload ssh
+                elif has service; then
+                        sudo service ssh reload 2>/dev/null || sudo service sshd reload
+                else
+                        die "reload-ssh: no service manager found."
+                fi
+                ;;
+        mac)
+                sudo launchctl stop com.openssh.sshd
+                sudo launchctl start com.openssh.sshd
+                ;;
+        *)
+                die "reload-ssh: unsupported OS: $current_os"
+                ;;
+esac
+
+say "SSH service reloaded."

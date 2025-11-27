@@ -1,6 +1,41 @@
 #!/bin/sh
 
-# Todo: add an optional arg that is the number of levels to go up
-# Todo: this probably doesn't work unless it is sourced
+# This spell outputs a cd command to navigate up directory levels.
+# Source it or use with eval: eval "$(up)" or eval "$(up 2)"
 
-cd ..
+show_usage() {
+        cat <<'USAGE'
+Usage: up [levels]
+
+Print a cd command to navigate up the specified number of directory levels.
+Defaults to 1 level. Use with eval: eval "$(up 2)"
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
+set -eu
+
+levels=${1:-1}
+
+# Validate levels is a positive integer
+case "$levels" in
+        ''|*[!0-9]*|0)
+                die "up: levels must be a positive integer."
+                ;;
+esac
+
+# Build the relative path
+path=".."
+i=1
+while [ "$i" -lt "$levels" ]; do
+        path="$path/.."
+        i=$((i + 1))
+done
+
+printf 'cd "%s"\n' "$path"

@@ -1,23 +1,65 @@
 #!/bin/sh
 
-# POSIX compliant regular expressions
-# Matches any string that contains a null byte or begins or ends with a /
-REGEX1='(^/|/$|\\0)'
-# Matches any string longer than 255 characters (for a single filename)
-REGEX2='^.{256,}$'
-# Matches any string longer than 4096 characters (for a full path)
-REGEX3='^.{4097,}$'
+# This spell validates whether a string is a valid UNIX path.
+# Use it to check path input before file operations.
 
-if echo "$1" | grep -Eq "$REGEX1" || echo "$1" | grep -Eq "$REGEX2" || echo "$1" | grep -Eq "$REGEX3"; then
-    # If any regex matches, this is an invalid path
-    if [ -t 1 ]; then  # Check if output is a terminal
-        echo "Valid UNIX path."
-    fi
-    exit 0
-else
-    # Otherwise, it's valid
-    if [ -t 1 ]; then  # Check if output is a terminal
-        echo "Invalid UNIX path."
-    fi
-    exit 1
+show_usage() {
+        cat <<'USAGE'
+Usage: validate-path <path>
+
+Test if the given string is a valid UNIX path (reasonable length for path
+and components). Exits 0 if valid, 1 if invalid.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
+set -eu
+
+# Check argument provided
+if [ -z "${1+x}" ]; then
+        exit 1
 fi
+
+path=$1
+
+# Empty path is invalid
+if [ -z "$path" ]; then
+        exit 1
+fi
+
+# Check path length (4096 is typical max for full path)
+length=$(printf '%s' "$path" | wc -c | tr -d ' ')
+if [ "$length" -gt 4096 ]; then
+        exit 1
+fi
+
+# Check each component length (255 is typical max for filename)
+# Split on / and check each part
+remaining=$path
+while [ -n "$remaining" ]; do
+        case "$remaining" in
+                */*)
+                        component=${remaining%%/*}
+                        remaining=${remaining#*/}
+                        ;;
+                *)
+                        component=$remaining
+                        remaining=''
+                        ;;
+        esac
+        
+        if [ -n "$component" ]; then
+                comp_length=$(printf '%s' "$component" | wc -c | tr -d ' ')
+                if [ "$comp_length" -gt 255 ]; then
+                        exit 1
+                fi
+        fi
+done
+
+exit 0

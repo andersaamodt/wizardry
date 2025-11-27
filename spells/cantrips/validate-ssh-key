@@ -1,11 +1,57 @@
-!/bin/sh
+#!/bin/sh
 
-read -p "Enter the SSH key: " ssh_key
+# This spell validates whether a string is a valid SSH public key format.
+# Use it to check SSH key input before adding to authorized_keys.
 
-# Check if the SSH key is in the correct format
-if ! echo "$ssh_key" | grep -E '^ssh-([a-zA-Z0-9]+) ([A-Za-z0-9+/]+=*) ([A-Za-z0-9]+@[A-Za-z0-9]+)?$' > /dev/null; then
-    echo "Invalid SSH key format."
-    exit 1
+show_usage() {
+        cat <<'USAGE'
+Usage: validate-ssh-key <key>
+
+Test if the given string matches the format of an SSH public key.
+Expects format: ssh-<type> <base64-data> [comment]
+Exits 0 if valid, 1 if invalid.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
+set -eu
+
+# Check argument
+if [ -z "${1+x}" ]; then
+        printf '%s\n' "validate-ssh-key: key argument required." >&2
+        exit 1
 fi
 
-echo "Valid SSH key."
+ssh_key=$1
+
+# SSH key format: ssh-<type> <base64-data> [optional-comment]
+# Common types: ssh-rsa, ssh-ed25519, ssh-dss, ecdsa-sha2-*
+case "$ssh_key" in
+        ssh-rsa\ *|ssh-ed25519\ *|ssh-dss\ *|ecdsa-sha2-*\ *)
+                # Valid key type prefix
+                ;;
+        *)
+                exit 1
+                ;;
+esac
+
+# Extract the base64 portion (second field)
+key_data=$(printf '%s' "$ssh_key" | cut -d' ' -f2)
+
+# Check that key_data looks like base64 (alphanumeric, +, /, and = for padding)
+case "$key_data" in
+        *[!A-Za-z0-9+/=]*)
+                exit 1
+                ;;
+        '')
+                exit 1
+                ;;
+esac
+
+exit 0

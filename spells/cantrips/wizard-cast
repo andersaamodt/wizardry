@@ -1,17 +1,38 @@
-#!/usr/bin/env sh
+#!/bin/sh
 
-# Displays the command with wizard-eyes before casting (executing) it.
-# Use this to show commands before they are executed, to teach those on the path of wizardry.
+# This spell displays a command before executing it for teaching purposes.
+# Use it to show commands to those learning the path of wizardry.
 
-# The wizard-cast spell first uses wizard-eyes to display the given command as text only wizards can see.
-# Then it executes the command. This saves a line when writing a lot of wizard-eyes statements.
-wizard_cast() {
-	wizard-eyes $@
-	eval $@
+show_usage() {
+        cat <<'USAGE'
+Usage: wizard-cast <command> [arguments...]
+
+Display the command using wizard-eyes, then execute it. Useful for
+demonstrating commands to novice wizards while they learn.
+USAGE
 }
 
-# Check if the script is being called from another script
-if [ "${BASH_SOURCE[0]}" = "$0" ]; then
-    # If not, call the function
-    wizard_cast "$@"
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
+set -eu
+
+# Check argument
+if [ -z "${1-}" ]; then
+        printf '%s\n' "wizard-cast: command required." >&2
+        exit 1
 fi
+
+# Display the command using wizard-eyes if available
+if has wizard-eyes; then
+        wizard-eyes "$*"
+else
+        printf '    %s\n' "$*" >&2
+fi
+
+# Execute the command
+"$@"

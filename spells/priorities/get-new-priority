@@ -1,59 +1,68 @@
 #!/bin/sh
 
-# This script gets the new priority for a given file.
-# Usage: get-new-priority [FILE]
+# This spell determines the next appropriate priority for a file in a directory.
+# Use it to find what priority value to assign when adding a file to a priority list.
 
-FILE="${1}"
+show_usage() {
+        cat <<'USAGE'
+Usage: get-new-priority <file>
 
-# Hash the file
-hashchant "${FILE}" > /dev/null
-file_hash=$(read-magic "${FILE}" hash)
+Compute the next priority value for a file within its directory's priority list.
+Examines existing priorities and returns the highest priority plus one, or 1 if
+no priorities exist.
+USAGE
+}
 
-# Get the directory of the file
-DIR="$(dirname "${FILE}")"
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
+set -eu
+
+# Ensure file argument is provided
+if [ -z "${1-}" ]; then
+        printf '%s\n' "get-new-priority: file argument required." >&2
+        show_usage >&2
+        exit 1
+fi
+
+file=$1
+
+# Verify file exists
+if ! is file "$file"; then
+        die "get-new-priority: file not found: $file"
+fi
+
+# Get the directory containing the file
+dir=$(parent "$file")
+if [ "$dir" = "." ]; then
+        dir=$(here)
+fi
 
 # Start with a highest priority of 0
 highest_priority=0
 
-# Loop through all files in the directory
-for f in "${DIR}"/*; do
-  # Get the file's priority
-  file_priority=$(read-magic "${f}" priority 2>/dev/null)
+# Loop through all files in the directory to find the highest priority
+for f in "$dir"/*; do
+        # Skip if not a file
+        is file "$f" || continue
 
-  # Check if the priority is a number
-  if [ "${file_priority}" -eq "${file_priority}" ] 2>/dev/null; then
-    # If the file's priority is higher than the current highest priority, update highest_priority
-    [ "${file_priority}" -gt "${highest_priority}" ] && highest_priority="${file_priority}"
-  fi
+        # Get the file's priority
+        file_priority=$(read-magic "$f" priority 2>/dev/null || true)
+
+        # Skip if no priority or error
+        case "$file_priority" in
+                ''|*Error*|*[!0-9]*) continue ;;
+        esac
+
+        # Update highest if this priority is higher
+        if [ "$file_priority" -gt "$highest_priority" ]; then
+                highest_priority=$file_priority
+        fi
 done
 
-# Get the current priorities of the directory
-dir_priorities=$(read-magic "${DIR}" priorities)
-
-# If there's no other file in the directory, the new priority is 1
-if [ -z "${dir_priorities}" ]; then
-  echo "1"
-  exit 0
-fi
-
-# Check if the file is in the highest echelon
-echo "${dir_priorities}" | tr ',' '\n' | while read -r priority_hash; do
-  # Get the priority file
-  priority_file=$(get-card "${priority_hash}")
-
-  # Get priority of the file
-  file_priority=$(read-magic "${priority_file}" priority)
-
-  # Check if the priority is a number
-  if [ "${file_priority}" -eq "${file_priority}" ] 2>/dev/null; then
-    # If the current file's priority is not the highest priority, 
-    # the new priority is the same as the highest priority
-    if [ "${file_priority}" -ne "${highest_priority}" ]; then
-      echo "${highest_priority}"
-      exit 0
-    fi
-  fi
-done
-
-# If the file is in the highest echelon, its new priority is one higher than the highest priority
-echo "$((highest_priority + 1))"
+# The new priority is one higher than the highest
+say "$((highest_priority + 1))"

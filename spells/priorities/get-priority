@@ -1,8 +1,49 @@
 #!/bin/sh
-# Usage: get-priority [CRC32 hash]
-# Outputs the priority for the given card hash (in the curent directory)
 
-FILE_HASH="${1}"
+# This spell retrieves the priority value of a file from its extended attributes.
+# Use it to check the relative importance of files within a directory.
 
-# Search for the file using the hash and get its priority
-find . -type f -exec read-magic '{}' hash \; | grep "${FILE_HASH}" | awk '{print $1}' | xargs read-magic priority
+show_usage() {
+        cat <<'USAGE'
+Usage: get-priority <file>
+
+Read and print the priority extended attribute from the specified file.
+Outputs the priority number, or nothing if not set.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
+set -eu
+
+# Ensure file argument is provided
+if [ -z "${1-}" ]; then
+        printf '%s\n' "get-priority: file argument required." >&2
+        show_usage >&2
+        exit 1
+fi
+
+file=$1
+
+# Verify file exists
+if ! is file "$file"; then
+        die "get-priority: file not found: $file"
+fi
+
+# Read and print the priority
+priority=$(read-magic "$file" priority 2>/dev/null || true)
+
+# Handle error messages or empty values
+case "$priority" in
+        *Error*|'')
+                exit 0
+                ;;
+        *)
+                say "$priority"
+                ;;
+esac
