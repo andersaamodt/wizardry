@@ -196,8 +196,9 @@ test_dry_run_does_not_modify_rc() {
   fi
 }
 
-test_nix_modifies_existing_path_definition() {
-  # Test that path-wizard modifies an existing PATH definition instead of failing
+test_nix_adds_with_inline_marker() {
+  # Test that path-wizard adds PATH with inline # wizardry marker
+  # and doesn't interfere with user's existing PATH definition
   rc="$WIZARDRY_TMPDIR/existing_path.nix"
   dir="$WIZARDRY_TMPDIR/nix_modify_dir"
   mkdir -p "$dir"
@@ -214,31 +215,37 @@ EOF
   PATH_WIZARD_PLATFORM=nixos run_spell "spells/system/path-wizard" --rc-file "$rc" --format nix add "$dir"
   assert_success || return 1
   
-  # The file should now contain the wizardry block with the original value preserved
-  assert_file_contains "$rc" "wizardry PATH begin" || return 1
+  # The file should contain inline wizardry marker
+  assert_file_contains "$rc" "# wizardry" || return 1
   assert_file_contains "$rc" "$dir" || return 1
-  assert_file_contains "$rc" "originalPath" || return 1
+  # User's original PATH definition should be UNCHANGED
+  assert_file_contains "$rc" "environment.sessionVariables.PATH = \"/usr/local/bin\"" || return 1
 }
 
-test_nix_allows_update_to_wizardry_managed_block() {
-  # Test that path-wizard can update its own managed block even if it contains
-  # a PATH definition (since we manage it)
+test_nix_allows_multiple_paths() {
+  # Test that path-wizard can add multiple paths with inline markers
   rc="$WIZARDRY_TMPDIR/wizardry_managed.nix"
   dir1="$WIZARDRY_TMPDIR/managed_dir1"
   dir2="$WIZARDRY_TMPDIR/managed_dir2"
   mkdir -p "$dir1" "$dir2"
   
-  # First, add a directory (creates wizardry managed block)
+  # First, add a directory
   PATH_WIZARD_PLATFORM=debian run_spell "spells/system/path-wizard" --rc-file "$rc" --format nix add "$dir1"
   assert_success || return 1
   
-  # Now add another directory - should succeed since we manage the block
+  # Now add another directory
   PATH_WIZARD_PLATFORM=debian run_spell "spells/system/path-wizard" --rc-file "$rc" --format nix add "$dir2"
   assert_success || return 1
   
-  # Both directories should be in the file
+  # Both directories should be in the file with markers
   assert_file_contains "$rc" "$dir1" || return 1
   assert_file_contains "$rc" "$dir2" || return 1
+  # Each should have its own inline marker
+  wizardry_count=$(grep -c "# wizardry" "$rc" 2>/dev/null || printf '0')
+  if [ "$wizardry_count" -lt 2 ]; then
+    TEST_FAILURE_REASON="expected at least 2 wizardry markers, found $wizardry_count"
+    return 1
+  fi
 }
 
 run_test_case "path-wizard prints usage" test_help
@@ -255,6 +262,6 @@ run_test_case "path-wizard recursive creates single backup" test_nix_recursive_c
 run_test_case "path-wizard --dry-run shows single directory" test_dry_run_single_directory
 run_test_case "path-wizard --dry-run recursive shows all dirs" test_dry_run_recursive
 run_test_case "path-wizard --dry-run does not modify rc file" test_dry_run_does_not_modify_rc
-run_test_case "path-wizard modifies existing PATH definition" test_nix_modifies_existing_path_definition
-run_test_case "path-wizard updates wizardry-managed block" test_nix_allows_update_to_wizardry_managed_block
+run_test_case "path-wizard nix adds with inline marker" test_nix_adds_with_inline_marker
+run_test_case "path-wizard nix allows multiple paths" test_nix_allows_multiple_paths
 finish_tests

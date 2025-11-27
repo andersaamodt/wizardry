@@ -162,7 +162,7 @@ EOF
 
   assert_success || return 1
   # Check that PATH block was written to config file
-  assert_file_contains "$fixture/home/.config/home-manager/home.nix" "wizardry PATH begin" || return 1
+  assert_file_contains "$fixture/home/.config/home-manager/home.nix" "# wizardry" || return 1
 }
 
 install_nixos_adds_path_to_system_config() {
@@ -202,7 +202,7 @@ EOF
   assert_success || return 1
   
   # Check that wizardry PATH block was added to configuration.nix
-  assert_file_contains "$fixture/etc/nixos/configuration.nix" "wizardry PATH begin" || return 1
+  assert_file_contains "$fixture/etc/nixos/configuration.nix" "# wizardry" || return 1
 }
 
 install_nixos_preserves_existing_config() {
@@ -249,7 +249,7 @@ EOF
   fi
   
   # Check that PATH block was added
-  assert_file_contains "$fixture/etc/nixos/configuration.nix" "wizardry PATH begin" || return 1
+  assert_file_contains "$fixture/etc/nixos/configuration.nix" "# wizardry" || return 1
 }
 
 install_nixos_writes_path_entries_to_config() {
@@ -287,7 +287,7 @@ EOF
   assert_success || return 1
   
   # Check that wizardry PATH block was added to configuration.nix
-  if ! grep -q '# wizardry PATH begin' "$fixture/etc/nixos/configuration.nix" 2>/dev/null; then
+  if ! grep -q '# wizardry' "$fixture/etc/nixos/configuration.nix" 2>/dev/null; then
     TEST_FAILURE_REASON="PATH entries should be in configuration.nix"
     return 1
   fi
@@ -331,7 +331,7 @@ EOF
   assert_success || return 1
   
   # Check that PATH block was added
-  assert_file_contains "$fixture/etc/nixos/configuration.nix" "wizardry PATH begin" || return 1
+  assert_file_contains "$fixture/etc/nixos/configuration.nix" "# wizardry" || return 1
 }
 
 install_nixos_shows_config_file_message() {
@@ -524,7 +524,7 @@ EOF
   
   # PATH entries should be in home.nix (not shell code, but Nix configuration)
   # The wizardry PATH block should be present
-  assert_file_contains "$fixture/home/.config/home-manager/home.nix" "wizardry PATH begin" || return 1
+  assert_file_contains "$fixture/home/.config/home-manager/home.nix" "# wizardry" || return 1
   
   return 0
 }
