@@ -547,15 +547,16 @@ FLAKE_EOF
         symlink_dir="$HOME/.config/nix/flakes"
         symlink_path="$symlink_dir/wizardry"
         if mkdir -p "$symlink_dir" 2>/dev/null; then
-                # Remove existing symlink if it points somewhere else
+                # Remove existing symlink if it points somewhere else or is broken
                 if [ -L "$symlink_path" ]; then
                         existing_target=$(readlink "$symlink_path" 2>/dev/null || true)
                         if [ "$existing_target" != "$ABS_DIR" ]; then
                                 rm -f "$symlink_path"
                         fi
                 fi
-                # Create symlink if it doesn't exist
-                if [ ! -e "$symlink_path" ]; then
+                # Create symlink if it doesn't exist (check for symlink specifically,
+                # not just any file, to handle the case of a broken symlink)
+                if [ ! -L "$symlink_path" ] && [ ! -e "$symlink_path" ]; then
                         ln -s "$ABS_DIR" "$symlink_path" 2>/dev/null || true
                 fi
         fi
