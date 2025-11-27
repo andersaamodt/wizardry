@@ -85,6 +85,7 @@ rc_file_override=""
 format="auto"
 platform="${PATH_WIZARD_PLATFORM-}"
 recursive=0
+nix_setup_done=0
 
 while [ "$#" -gt 0 ]; do
         case $1 in
@@ -133,6 +134,11 @@ while [ "$#" -gt 0 ]; do
                 ;;
         --platform=*)
                 platform=${1#*=}
+                shift
+                ;;
+        --nix-setup-done)
+                # Internal flag: parent already handled backup and flakes enablement
+                nix_setup_done=1
                 shift
                 ;;
         --help|-h)
@@ -265,11 +271,50 @@ if [ "$recursive" -eq 1 ]; then
 
         trap 'cleanup_tmp' EXIT HUP INT TERM
 
-        # Set a consistent timestamp for backups during this recursive session.
-        # This ensures all child processes use the same timestamp for deduplication.
-        if [ -z "${PATH_WIZARD_BACKUP_TIMESTAMP-}" ]; then
-                PATH_WIZARD_BACKUP_TIMESTAMP=$(generate_backup_timestamp)
-                export PATH_WIZARD_BACKUP_TIMESTAMP
+        # For nix format with add action, handle one-time setup (backup and flakes)
+        # at the parent level before spawning child processes.
+        recursive_nix_setup_done=0
+        if [ "$action" = "add" ]; then
+                # Detect format for one-time setup decision
+                recursive_format=$format
+                if [ "$recursive_format" = "auto" ]; then
+                        if [ -n "$rc_file_override" ]; then
+                                case $rc_file_override in
+                                *.nix) recursive_format=nix ;;
+                                *) recursive_format=shell ;;
+                                esac
+                        else
+                                recursive_detect=$("$DETECT_RC_FILE" ${platform:+--platform "$platform"} 2>/dev/null) || true
+                                recursive_format=$(printf '%s\n' "$recursive_detect" | while IFS='=' read -r k v; do
+                                        [ "$k" = "format" ] && printf '%s' "$v"
+                                done)
+                                [ -z "$recursive_format" ] && recursive_format=shell
+                        fi
+                fi
+                
+                # For nix format, run single-directory add on the root to trigger setup
+                if [ "$recursive_format" = "nix" ]; then
+                        # Run once on root directory to do backup and flakes enablement
+                        run_single_setup() {
+                                set -- "$0"
+                                if [ -n "$rc_file_override" ]; then
+                                        set -- "$@" --rc-file "$rc_file_override"
+                                fi
+                                set -- "$@" --format "$recursive_format"
+                                if [ -n "$platform" ]; then
+                                        set -- "$@" --platform "$platform"
+                                fi
+                                set -- "$@" add "$directory"
+                                "$@"
+                        }
+                        if run_single_setup; then
+                                recursive_nix_setup_done=1
+                        else
+                                trap - EXIT HUP INT TERM
+                                cleanup_tmp
+                                exit $?
+                        fi
+                fi
         fi
 
         run_recursive_action() {
@@ -284,12 +329,23 @@ if [ "$recursive" -eq 1 ]; then
                 if [ -n "$platform" ]; then
                         set -- "$@" --platform "$platform"
                 fi
+                # Pass flag to skip nix setup in children if parent already did it
+                if [ "$recursive_nix_setup_done" -eq 1 ]; then
+                        set -- "$@" --nix-setup-done
+                fi
                 set -- "$@" "$action" "$subdir"
                 "$@"
         }
 
         result=0
+        first_dir=1
         while IFS= read -r subdir; do
+                # Skip the root directory if we already processed it for nix setup
+                if [ "$recursive_nix_setup_done" -eq 1 ] && [ "$first_dir" -eq 1 ]; then
+                        first_dir=0
+                        continue
+                fi
+                first_dir=0
                 if run_recursive_action "$subdir"; then
                         :
                 else
@@ -411,12 +467,9 @@ run_maybe_sudo() {
         fi
 }
 
-# Track whether a backup has been created, including across recursive invocations.
-# The environment variable persists across child processes spawned during recursive mode.
-nix_backup_created=${PATH_WIZARD_NIX_BACKUP_CREATED:-0}
-
-# Track whether flakes have been enabled, so we only do it once in recursive mode.
-nix_flakes_enabled_done=${PATH_WIZARD_FLAKES_ENABLED:-0}
+# Track whether a backup has been created. In recursive mode, the parent
+# handles backup before spawning children that pass --nix-setup-done.
+nix_backup_created=0
 
 # These literal export lines represent how we manage PATH entries inside shell
 # rc files. The quoted variant is the format we now write, while the legacy
@@ -449,6 +502,7 @@ ensure_rc_directory() {
 
 # configuration.nix deserves extra care: before we rewrite anything, stash a
 # timestamped backup so users can inspect or restore the previous version.
+# In recursive mode, the parent handles this before spawning children.
 backup_rc_file_once() {
         if [ "$format" != "nix" ]; then
                 return 0
@@ -456,24 +510,16 @@ backup_rc_file_once() {
         if [ "$nix_backup_created" -eq 1 ]; then
                 return 0
         fi
+        # If parent already did setup, skip backup
+        if [ "$nix_setup_done" -eq 1 ]; then
+                return 0
+        fi
         if [ ! -f "$rc_file" ]; then
                 return 0
         fi
 
-        # Use shared timestamp from recursive parent if available, otherwise generate one.
-        # This ensures all recursive invocations check for the same backup file.
-        timestamp=${PATH_WIZARD_BACKUP_TIMESTAMP:-$(generate_backup_timestamp)}
+        timestamp=$(generate_backup_timestamp)
         backup="$rc_file.wizardry.$timestamp"
-        
-        # If any backup from this timestamp already exists, another process in
-        # this recursive run already created it - skip to avoid duplicates.
-        # Use run_maybe_sudo for the check since we may need elevated privileges.
-        if run_maybe_sudo test -e "$backup" 2>/dev/null; then
-                nix_backup_created=1
-                PATH_WIZARD_NIX_BACKUP_CREATED=1
-                export PATH_WIZARD_NIX_BACKUP_CREATED
-                return 0
-        fi
 
         if ! run_maybe_sudo cp "$rc_file" "$backup"; then
                 printf '%s\n' "path-wizard: unable to back up '$rc_file'." >&2
@@ -482,9 +528,6 @@ backup_rc_file_once() {
 
         printf '%s\n' "path-wizard: backed up '$rc_file' to '$backup'." >&2
         nix_backup_created=1
-        # Export the flag so recursive invocations know the backup was already made
-        PATH_WIZARD_NIX_BACKUP_CREATED=1
-        export PATH_WIZARD_NIX_BACKUP_CREATED
         return 0
 }
 
@@ -828,17 +871,13 @@ nix_flakes_enabled() {
 
 # Enable flakes in configuration.nix if not already enabled.
 # This is needed for wizardry's flake-based installation on NixOS.
-# Uses an environment variable to ensure this only runs once in recursive mode.
+# In recursive mode, the parent handles this before spawning children.
 enable_nix_flakes() {
-        # Skip if we've already enabled flakes in this recursive session
-        if [ "$nix_flakes_enabled_done" -eq 1 ]; then
+        # Skip if parent already did nix setup in recursive mode
+        if [ "$nix_setup_done" -eq 1 ]; then
                 return 0
         fi
         if nix_flakes_enabled; then
-                # Mark as done so we don't check again in child processes
-                nix_flakes_enabled_done=1
-                PATH_WIZARD_FLAKES_ENABLED=1
-                export PATH_WIZARD_FLAKES_ENABLED
                 return 0
         fi
         backup_rc_file_once
@@ -887,11 +926,6 @@ enable_nix_flakes() {
         else
                 mv "$tmp_file" "$rc_file"
         fi
-        
-        # Mark as done so child processes don't try again
-        nix_flakes_enabled_done=1
-        PATH_WIZARD_FLAKES_ENABLED=1
-        export PATH_WIZARD_FLAKES_ENABLED
         
         printf '%s\n' "path-wizard: enabled flakes in '$rc_file'." >&2
 }
