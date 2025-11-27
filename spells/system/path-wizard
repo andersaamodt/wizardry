@@ -1048,7 +1048,7 @@ if [ "$batch_mode" -eq 1 ]; then
                 [ -d "$dir" ] || continue
                 case $dir in
                 /*) : ;;
-                *) dir=$(cd "$dir" && pwd -P) ;;
+                *) dir=$(cd "$dir" 2>/dev/null && pwd -P) || continue ;;
                 esac
                 if [ -z "$batch_dirs" ]; then
                         batch_dirs="$dir"
@@ -1061,53 +1061,18 @@ $dir"
         # Enable flakes first (only needs to happen once)
         enable_nix_flakes
         
-        # Get existing paths and merge with new ones
+        # Get existing paths and merge with new ones, using sort for dedup
         existing_paths="$(extract_nix_paths)"
         
-        # Combine existing and new paths, removing duplicates
-        all_paths=""
-        # Add existing paths first
-        if [ -n "$existing_paths" ]; then
-                old_ifs=$IFS
-                IFS='
-'
-                for p in $existing_paths; do
-                        if [ -z "$all_paths" ]; then
-                                all_paths="$p"
-                        else
-                                all_paths="$all_paths
-$p"
-                        fi
-                done
-                IFS=$old_ifs
-        fi
+        # Combine existing and new paths, remove duplicates using sort -u
+        {
+                printf '%s\n' "$existing_paths"
+                printf '%s\n' "$batch_dirs"
+        } | grep -v '^$' | sort -u > "${batch_add_file}.merged"
         
-        # Add new paths if not already present
-        old_ifs=$IFS
-        IFS='
-'
-        for new_path in $batch_dirs; do
-                is_dup=0
-                for existing in $all_paths; do
-                        if [ "$new_path" = "$existing" ]; then
-                                is_dup=1
-                                break
-                        fi
-                done
-                if [ "$is_dup" -eq 0 ]; then
-                        if [ -z "$all_paths" ]; then
-                                all_paths="$new_path"
-                        else
-                                all_paths="$all_paths
-$new_path"
-                        fi
-                fi
-        done
-        IFS=$old_ifs
-        
-        # Write all paths in single operation
-        # shellcheck disable=SC2086
-        set -- $all_paths
+        # shellcheck disable=SC2046
+        set -- $(cat "${batch_add_file}.merged")
+        rm -f "${batch_add_file}.merged"
         write_nix_paths "$@"
         printf '%s\n' "Recorded %d directories in '$rc_file'. Rebuild your Nix environment to activate the change." "$#"
         exit 0
