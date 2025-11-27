@@ -111,10 +111,11 @@ install() {
         rc_format=${WIZARDRY_RC_FORMAT-}
         if [ -z "$rc_format" ]; then
                 # Try to detect format from rc file extension
-                rc_file_hint=$(resolve_rc_file 2>/dev/null) || rc_file_hint=""
-                case $rc_file_hint in
-                *.nix) rc_format=nix ;;
-                esac
+                if rc_file_hint=$(resolve_rc_file 2>/dev/null); then
+                        case $rc_file_hint in
+                        *.nix) rc_format=nix ;;
+                        esac
+                fi
         fi
         if [ "$rc_format" = "nix" ]; then
                 printf '%s\n' "cd cantrip: skipping installation for NixOS (shell hooks cannot be written to .nix files)."

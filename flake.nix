@@ -7,15 +7,6 @@
   };
 
   outputs = { self, nixpkgs, flake-utils }:
-    let
-      # Collect all spell directories for PATH
-      spellDirs = dir:
-        let
-          entries = builtins.readDir dir;
-          subdirs = builtins.filter (name: entries.${name} == "directory") (builtins.attrNames entries);
-        in
-          [ dir ] ++ builtins.concatMap (subdir: spellDirs "${dir}/${subdir}") subdirs;
-    in
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
@@ -46,46 +37,34 @@
             
             # Create wrapper scripts for main commands
             # The menu command
-            cat > $out/bin/menu <<'EOF'
+            cat > $out/bin/menu <<EOF
 #!/bin/sh
-exec "$WIZARDRY_ROOT/spells/menu/menu" "$@"
+exec "$out/share/wizardry/spells/menu/menu" "\$@"
 EOF
             chmod +x $out/bin/menu
             
             # The mud command
-            cat > $out/bin/mud <<'EOF'
+            cat > $out/bin/mud <<EOF
 #!/bin/sh
-exec "$WIZARDRY_ROOT/spells/mud/mud" "$@"
+exec "$out/share/wizardry/spells/mud/mud" "\$@"
 EOF
             chmod +x $out/bin/mud
             
             # Create a setup script that adds all spell directories to PATH
-            cat > $out/share/wizardry/setup.sh <<'SETUP'
+            cat > $out/share/wizardry/setup.sh <<EOF
 # Wizardry setup script - source this to add spells to PATH
 # Usage: . /path/to/wizardry/setup.sh
 
-WIZARDRY_ROOT="${WIZARDRY_ROOT:-@out@/share/wizardry}"
+WIZARDRY_ROOT="$out/share/wizardry"
 export WIZARDRY_ROOT
 
 # Add all spell directories to PATH
-SETUP
+EOF
             
-            # Add each spell directory to the setup script
-            for dir in $out/share/wizardry/spells $out/share/wizardry/spells/*; do
-              if [ -d "$dir" ]; then
-                echo "export PATH=\"\$PATH:$dir\"" >> $out/share/wizardry/setup.sh
-              fi
+            # Recursively find all directories under spells and add to setup.sh
+            find $out/share/wizardry/spells -type d | while read -r dir; do
+              echo "export PATH=\"\$PATH:$dir\"" >> $out/share/wizardry/setup.sh
             done
-            
-            # Substitute the output path in the setup script
-            substituteInPlace $out/share/wizardry/setup.sh \
-              --replace "@out@" "$out"
-            
-            # Also substitute in wrapper scripts
-            substituteInPlace $out/bin/menu \
-              --replace '$WIZARDRY_ROOT' "$out/share/wizardry"
-            substituteInPlace $out/bin/mud \
-              --replace '$WIZARDRY_ROOT' "$out/share/wizardry"
             
             runHook postInstall
           '';
