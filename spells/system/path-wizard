@@ -85,7 +85,7 @@ rc_file_override=""
 format="auto"
 platform="${PATH_WIZARD_PLATFORM-}"
 recursive=0
-nix_setup_done=0
+batch_add_file=""
 
 while [ "$#" -gt 0 ]; do
         case $1 in
@@ -136,10 +136,14 @@ while [ "$#" -gt 0 ]; do
                 platform=${1#*=}
                 shift
                 ;;
-        --nix-setup-done)
-                # Internal flag: parent already handled backup and flakes enablement
-                nix_setup_done=1
-                shift
+        --batch-add-from-file)
+                # Internal flag: add all directories listed in file in single operation
+                if [ "$#" -lt 2 ]; then
+                        printf '%s\n' "path-wizard: --batch-add-from-file expects a file path" >&2
+                        exit 1
+                fi
+                batch_add_file=$2
+                shift 2
                 ;;
         --help|-h)
                 usage
@@ -160,28 +164,37 @@ while [ "$#" -gt 0 ]; do
         esac
 done
 
-# We require at least one argument to decide whether we are adding, removing,
-# or checking the PATH entry. Showing usage keeps the interface self-documenting
-# for new Wizards-in-training.
-if [ "$#" -eq 0 ]; then
-        usage
-        exit 1
-fi
-
-action=$1
-shift
-
-case $action in
-add|remove|status) : ;;
-*)
-        printf '%s\n' "Error: The first argument must be 'add', 'remove', or 'status'." >&2
-        exit 1
-        ;;
-esac
-
-if [ "$action" = "status" ] && [ "$#" -eq 0 ]; then
-        printf '%s\n' "Error: The 'status' action expects a directory argument." >&2
-        exit 1
+# Handle batch add mode specially - it doesn't need action/directory arguments
+if [ -n "$batch_add_file" ]; then
+        action="add"
+        directory=""
+        batch_mode=1
+else
+        batch_mode=0
+        
+        # We require at least one argument to decide whether we are adding, removing,
+        # or checking the PATH entry. Showing usage keeps the interface self-documenting
+        # for new Wizards-in-training.
+        if [ "$#" -eq 0 ]; then
+                usage
+                exit 1
+        fi
+        
+        action=$1
+        shift
+        
+        case $action in
+        add|remove|status) : ;;
+        *)
+                printf '%s\n' "Error: The first argument must be 'add', 'remove', or 'status'." >&2
+                exit 1
+                ;;
+        esac
+        
+        if [ "$action" = "status" ] && [ "$#" -eq 0 ]; then
+                printf '%s\n' "Error: The 'status' action expects a directory argument." >&2
+                exit 1
+        fi
 fi
 
 # Resolve the provided directory so that PATH entries are always absolute.
@@ -223,25 +236,28 @@ normalize_directory() {
         printf '%s' "$directory"
 }
 
-if [ "$action" = "add" ]; then
-        if [ "$#" -eq 0 ]; then
-                directory=$(normalize_directory "$(pwd -P)")
-        else
+# Skip directory normalization for batch mode
+if [ "$batch_mode" -eq 0 ]; then
+        if [ "$action" = "add" ]; then
+                if [ "$#" -eq 0 ]; then
+                        directory=$(normalize_directory "$(pwd -P)")
+                else
+                        directory=$(normalize_directory "$1")
+                fi
+        elif [ "$action" = "remove" ] || [ "$action" = "status" ]; then
+                if [ "$#" -eq 0 ]; then
+                        printf '%s\n' "Error: The '$action' action expects a directory argument." >&2
+                        exit 1
+                fi
                 directory=$(normalize_directory "$1")
         fi
-elif [ "$action" = "remove" ] || [ "$action" = "status" ]; then
-        if [ "$#" -eq 0 ]; then
-                printf '%s\n' "Error: The '$action' action expects a directory argument." >&2
-                exit 1
-        fi
-        directory=$(normalize_directory "$1")
-fi
-
-if [ "$action" != "status" ] && [ "$#" -gt 1 ]; then
-        shift
-else
-        if [ "$#" -gt 0 ]; then
+        
+        if [ "$action" != "status" ] && [ "$#" -gt 1 ]; then
                 shift
+        else
+                if [ "$#" -gt 0 ]; then
+                        shift
+                fi
         fi
 fi
 
@@ -250,6 +266,12 @@ fi
 generate_backup_timestamp() {
         date +%Y%m%d%H%M%S 2>/dev/null || date +%s 2>/dev/null || printf 'pid%s' "$$"
 }
+
+# Validate batch add file if specified
+if [ "$batch_mode" -eq 1 ] && [ ! -f "$batch_add_file" ]; then
+        printf '%s\n' "Error: Batch file '$batch_add_file' not found." >&2
+        exit 1
+fi
 
 # When requested, operate recursively by invoking path-wizard on each
 # discovered directory.  This leverages the existing single-directory
@@ -271,50 +293,62 @@ if [ "$recursive" -eq 1 ]; then
 
         trap 'cleanup_tmp' EXIT HUP INT TERM
 
-        # For nix format with add action, handle one-time setup (backup and flakes)
-        # at the parent level before spawning child processes.
-        recursive_nix_setup_done=0
-        if [ "$action" = "add" ]; then
-                # Detect format for one-time setup decision
-                recursive_format=$format
-                if [ "$recursive_format" = "auto" ]; then
-                        if [ -n "$rc_file_override" ]; then
-                                case $rc_file_override in
-                                *.nix) recursive_format=nix ;;
-                                *) recursive_format=shell ;;
-                                esac
-                        else
-                                recursive_detect=$("$DETECT_RC_FILE" ${platform:+--platform "$platform"} 2>/dev/null) || true
-                                recursive_format=$(printf '%s\n' "$recursive_detect" | while IFS='=' read -r k v; do
-                                        [ "$k" = "format" ] && printf '%s' "$v"
-                                done)
-                                [ -z "$recursive_format" ] && recursive_format=shell
-                        fi
+        # Detect format early for optimized recursive handling
+        recursive_format=$format
+        if [ "$recursive_format" = "auto" ]; then
+                if [ -n "$rc_file_override" ]; then
+                        case $rc_file_override in
+                        *.nix) recursive_format=nix ;;
+                        *) recursive_format=shell ;;
+                        esac
+                else
+                        recursive_detect=$("$DETECT_RC_FILE" ${platform:+--platform "$platform"} 2>/dev/null) || true
+                        recursive_format=$(printf '%s\n' "$recursive_detect" | while IFS='=' read -r k v; do
+                                [ "$k" = "format" ] && printf '%s' "$v"
+                        done)
+                        [ -z "$recursive_format" ] && recursive_format=shell
                 fi
-                
-                # For nix format, run single-directory add on the root to trigger setup
-                if [ "$recursive_format" = "nix" ]; then
-                        # Run once on root directory to do backup and flakes enablement
-                        run_single_setup() {
-                                set -- "$0"
-                                if [ -n "$rc_file_override" ]; then
-                                        set -- "$@" --rc-file "$rc_file_override"
-                                fi
-                                set -- "$@" --format "$recursive_format"
-                                if [ -n "$platform" ]; then
-                                        set -- "$@" --platform "$platform"
-                                fi
-                                set -- "$@" add "$directory"
-                                "$@"
-                        }
-                        if run_single_setup; then
-                                recursive_nix_setup_done=1
+        fi
+
+        # For nix format, collect all directories and add them in a single operation.
+        # This is more efficient than invoking nix_add per directory since nix_add
+        # already rewrites the entire block each time.
+        if [ "$recursive_format" = "nix" ] && [ "$action" = "add" ]; then
+                # Collect all directories into a list
+                all_dirs=""
+                while IFS= read -r subdir; do
+                        if [ -z "$all_dirs" ]; then
+                                all_dirs="$subdir"
                         else
-                                setup_status=$?
-                                trap - EXIT HUP INT TERM
-                                cleanup_tmp
-                                exit $setup_status
+                                all_dirs="$all_dirs
+$subdir"
                         fi
+                done <"$tmp_file"
+                
+                # Run single invocation with all directories passed as arguments
+                # (We pass them through a temp file since command line length limits)
+                run_nix_batch_add() {
+                        set -- "$0"
+                        if [ -n "$rc_file_override" ]; then
+                                set -- "$@" --rc-file "$rc_file_override"
+                        fi
+                        set -- "$@" --format nix
+                        if [ -n "$platform" ]; then
+                                set -- "$@" --platform "$platform"
+                        fi
+                        set -- "$@" --batch-add-from-file "$tmp_file"
+                        "$@"
+                }
+                
+                if run_nix_batch_add; then
+                        trap - EXIT HUP INT TERM
+                        cleanup_tmp
+                        exit 0
+                else
+                        status=$?
+                        trap - EXIT HUP INT TERM
+                        cleanup_tmp
+                        exit $status
                 fi
         fi
 
@@ -330,23 +364,12 @@ if [ "$recursive" -eq 1 ]; then
                 if [ -n "$platform" ]; then
                         set -- "$@" --platform "$platform"
                 fi
-                # Pass flag to skip nix setup in children if parent already did it
-                if [ "$recursive_nix_setup_done" -eq 1 ]; then
-                        set -- "$@" --nix-setup-done
-                fi
                 set -- "$@" "$action" "$subdir"
                 "$@"
         }
 
         result=0
-        first_dir=1
         while IFS= read -r subdir; do
-                # Skip the root directory if we already processed it for nix setup
-                if [ "$recursive_nix_setup_done" -eq 1 ] && [ "$first_dir" -eq 1 ]; then
-                        first_dir=0
-                        continue
-                fi
-                first_dir=0
                 if run_recursive_action "$subdir"; then
                         :
                 else
@@ -509,10 +532,6 @@ backup_rc_file_once() {
                 return 0
         fi
         if [ "$nix_backup_created" -eq 1 ]; then
-                return 0
-        fi
-        # If parent already did setup, skip backup
-        if [ "$nix_setup_done" -eq 1 ]; then
                 return 0
         fi
         if [ ! -f "$rc_file" ]; then
@@ -872,12 +891,7 @@ nix_flakes_enabled() {
 
 # Enable flakes in configuration.nix if not already enabled.
 # This is needed for wizardry's flake-based installation on NixOS.
-# In recursive mode, the parent handles this before spawning children.
 enable_nix_flakes() {
-        # Skip if parent already did nix setup in recursive mode
-        if [ "$nix_setup_done" -eq 1 ]; then
-                return 0
-        fi
         if nix_flakes_enabled; then
                 return 0
         fi
@@ -1020,6 +1034,84 @@ nix_status() {
         done
         return 1
 }
+
+# Handle batch add mode - process all directories from file at once
+if [ "$batch_mode" -eq 1 ]; then
+        if [ "$format" != "nix" ]; then
+                printf '%s\n' "Error: Batch add mode is only supported for nix format." >&2
+                exit 1
+        fi
+        
+        # Read all directories and normalize them
+        batch_dirs=""
+        while IFS= read -r dir; do
+                [ -d "$dir" ] || continue
+                case $dir in
+                /*) : ;;
+                *) dir=$(cd "$dir" && pwd -P) ;;
+                esac
+                if [ -z "$batch_dirs" ]; then
+                        batch_dirs="$dir"
+                else
+                        batch_dirs="$batch_dirs
+$dir"
+                fi
+        done <"$batch_add_file"
+        
+        # Enable flakes first (only needs to happen once)
+        enable_nix_flakes
+        
+        # Get existing paths and merge with new ones
+        existing_paths="$(extract_nix_paths)"
+        
+        # Combine existing and new paths, removing duplicates
+        all_paths=""
+        # Add existing paths first
+        if [ -n "$existing_paths" ]; then
+                old_ifs=$IFS
+                IFS='
+'
+                for p in $existing_paths; do
+                        if [ -z "$all_paths" ]; then
+                                all_paths="$p"
+                        else
+                                all_paths="$all_paths
+$p"
+                        fi
+                done
+                IFS=$old_ifs
+        fi
+        
+        # Add new paths if not already present
+        old_ifs=$IFS
+        IFS='
+'
+        for new_path in $batch_dirs; do
+                is_dup=0
+                for existing in $all_paths; do
+                        if [ "$new_path" = "$existing" ]; then
+                                is_dup=1
+                                break
+                        fi
+                done
+                if [ "$is_dup" -eq 0 ]; then
+                        if [ -z "$all_paths" ]; then
+                                all_paths="$new_path"
+                        else
+                                all_paths="$all_paths
+$new_path"
+                        fi
+                fi
+        done
+        IFS=$old_ifs
+        
+        # Write all paths in single operation
+        # shellcheck disable=SC2086
+        set -- $all_paths
+        write_nix_paths "$@"
+        printf '%s\n' "Recorded %d directories in '$rc_file'. Rebuild your Nix environment to activate the change." "$#"
+        exit 0
+fi
 
 case $format in
 shell)
