@@ -5,10 +5,11 @@
 
 show_usage() {
         cat <<'USAGE'
-Usage: open-portal [remote_address] [remote_directory]
+Usage: open-portal <remote_address> <remote_directory> [local_mount_point]
 
-Mount a remote directory using sshfs over Tor. Prompts for address and
-directory if not provided as arguments. Uses MUD_PLAYER for SSH key identity.
+Mount a remote directory using sshfs over Tor. The local mount point defaults
+to ~/portals/<remote_address> if not specified.
+Uses MUD_PLAYER environment variable for SSH key identity.
 USAGE
 }
 
@@ -43,6 +44,7 @@ fi
 # Get address and directory from arguments or prompt
 tor_address=${1-}
 remote_dir=${2-}
+local_mount=${3-}
 
 if is unset "$tor_address"; then
         printf '%s' "Enter the Tor address of the remote server: "
@@ -54,13 +56,20 @@ if is unset "$remote_dir"; then
         read -r remote_dir
 fi
 
-# Normalize trailing slashes
-remote_dir="${remote_dir%/}/"
+# Normalize remote path (remove trailing slash for consistency)
+remote_dir="${remote_dir%/}"
+
+# Set local mount point if not provided
+if is unset "$local_mount"; then
+        # Create a safe directory name from the address
+        safe_name=$(printf '%s' "$tor_address" | tr -c 'A-Za-z0-9.-' '_')
+        local_mount="$HOME/portals/$safe_name"
+fi
 
 # Ensure local mount point exists
-make dir "$remote_dir" || die "open-portal: cannot create mount point: $remote_dir"
+make dir "$local_mount" || die "open-portal: cannot create mount point: $local_mount"
 
 # Mount the remote directory using sshfs over tor
-torify sshfs -o "IdentityFile=$player_key" "$tor_address:$remote_dir" "$remote_dir"
+torify sshfs -o "IdentityFile=$player_key" "$tor_address:$remote_dir" "$local_mount"
 
-say "Portal opened to $tor_address:$remote_dir"
+say "Portal opened: $tor_address:$remote_dir mounted at $local_mount"

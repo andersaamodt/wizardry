@@ -82,10 +82,9 @@ if equals "$target_hash" "$first_hash"; then
 fi
 
 # Filter the target hash from the current priorities list to avoid duplicates
-filtered=$(printf '%s' "$priorities" | tr ',' '\n' | while read -r h; do
-        equals "$h" "$target_hash" || printf '%s,' "$h"
-done)
-# Remove trailing comma
+# Using sed to remove the target hash from the comma-separated list
+filtered=$(printf '%s' "$priorities" | sed "s/^${target_hash},//;s/,${target_hash},/,/;s/,${target_hash}\$//;s/^${target_hash}\$//")
+# Remove trailing comma if any
 filtered=${filtered%,}
 
 # Prepend the target hash to make it highest priority
