@@ -810,12 +810,14 @@ nix_flakes_enabled() {
         if [ ! -f "$rc_file" ]; then
                 return 1
         fi
-        # Check for common patterns that enable flakes
-        if grep -qE 'experimental-features.*=.*\[.*"?flakes"?' "$rc_file" 2>/dev/null; then
-                return 0
-        fi
-        if grep -qE 'nix\.settings\.experimental-features.*flakes' "$rc_file" 2>/dev/null; then
-                return 0
+        # Check for common patterns that enable flakes:
+        # - nix.settings.experimental-features = [ "flakes" ... ]
+        # - experimental-features = "nix-command flakes"
+        # Use word boundary matching to avoid false positives
+        if grep -q 'experimental-features' "$rc_file" 2>/dev/null; then
+                if grep -qE '("|'\''| )flakes("|'\''| |])' "$rc_file" 2>/dev/null; then
+                        return 0
+                fi
         fi
         return 1
 }
