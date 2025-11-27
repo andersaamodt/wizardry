@@ -70,6 +70,7 @@ usage() {
 Usage: path-wizard [-r|--recursive] [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] add [DIRECTORY]
        path-wizard [-r|--recursive] [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] remove DIRECTORY
        path-wizard [-r|--recursive] [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] status DIRECTORY
+       path-wizard [--rc-file FILE] [--format nix] [--platform nixos] enable-flakes
 
 Formats: auto (default), shell, nix
 Platforms: debian, arch, fedora, mac, nixos, unknown
@@ -184,9 +185,9 @@ else
         shift
         
         case $action in
-        add|remove|status) : ;;
+        add|remove|status|enable-flakes) : ;;
         *)
-                printf '%s\n' "Error: The first argument must be 'add', 'remove', or 'status'." >&2
+                printf '%s\n' "Error: The first argument must be 'add', 'remove', 'status', or 'enable-flakes'." >&2
                 exit 1
                 ;;
         esac
@@ -236,8 +237,8 @@ normalize_directory() {
         printf '%s' "$directory"
 }
 
-# Skip directory normalization for batch mode
-if [ "$batch_mode" -eq 0 ]; then
+# Skip directory normalization for batch mode and enable-flakes action
+if [ "$batch_mode" -eq 0 ] && [ "$action" != "enable-flakes" ]; then
         if [ "$action" = "add" ]; then
                 if [ "$#" -eq 0 ]; then
                         directory=$(normalize_directory "$(pwd -P)")
@@ -500,9 +501,15 @@ nix_backup_created=0
 # string tracks the buggy form that escaped "$PATH" and therefore replaced the
 # variable with a literal. Retaining both lets us tidy older installs while
 # keeping removals idempotent.
-managed_export_line=$(printf 'export PATH="%s:$PATH"' "$directory")
-legacy_export_line=$(printf 'export PATH=%s:\\$PATH' "$directory")
-legacy_quoted_export_line=$(printf 'export PATH="%s:\\$PATH"' "$directory")
+# Only define these when directory is set (not for enable-flakes action)
+managed_export_line=""
+legacy_export_line=""
+legacy_quoted_export_line=""
+if [ -n "${directory-}" ]; then
+        managed_export_line=$(printf 'export PATH="%s:$PATH"' "$directory")
+        legacy_export_line=$(printf 'export PATH=%s:\\$PATH' "$directory")
+        legacy_quoted_export_line=$(printf 'export PATH="%s:\\$PATH"' "$directory")
+fi
 
 # Track whether we refreshed a legacy export line so the caller can surface an
 # appropriate message to the user.
@@ -1107,6 +1114,10 @@ shell)
         status)
                 shell_status
                 ;;
+        enable-flakes)
+                printf '%s\n' "Error: enable-flakes action is only valid for nix format." >&2
+                exit 1
+                ;;
         esac
         ;;
 nix)
@@ -1119,6 +1130,15 @@ nix)
                 ;;
         status)
                 nix_status
+                ;;
+        enable-flakes)
+                # Only enable flakes, don't add any PATH entries
+                ensure_rc_directory
+                if nix_flakes_enabled; then
+                        printf '%s\n' "Flakes already enabled in '$rc_file'."
+                        exit 0
+                fi
+                enable_nix_flakes
                 ;;
         esac
         ;;
