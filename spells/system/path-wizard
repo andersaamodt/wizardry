@@ -747,7 +747,7 @@ shell_status() {
 # Uses scribe-spell to remove all wizardry spell blocks.
 shell_remove_all() {
         if [ ! -f "$rc_file" ]; then
-                printf '%s\n' "Error: The startup file '$rc_file' does not exist." >&2
+                printf '%s\n' "Error: The configuration file '$rc_file' does not exist." >&2
                 exit 1
         fi
         
@@ -1111,7 +1111,7 @@ nix_status() {
 # Remove all wizardry-managed PATH entries from configuration.nix.
 nix_remove_all() {
         if [ ! -f "$rc_file" ]; then
-                printf '%s\n' "Error: The startup file '$rc_file' does not exist." >&2
+                printf '%s\n' "Error: The configuration file '$rc_file' does not exist." >&2
                 exit 1
         fi
         
