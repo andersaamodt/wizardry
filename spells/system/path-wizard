@@ -85,6 +85,7 @@ rc_file_override=""
 format="auto"
 platform="${PATH_WIZARD_PLATFORM-}"
 recursive=0
+batch_add_file=""
 
 while [ "$#" -gt 0 ]; do
         case $1 in
@@ -135,6 +136,15 @@ while [ "$#" -gt 0 ]; do
                 platform=${1#*=}
                 shift
                 ;;
+        --batch-add-from-file)
+                # Internal flag: add all directories listed in file in single operation
+                if [ "$#" -lt 2 ]; then
+                        printf '%s\n' "path-wizard: --batch-add-from-file expects a file path" >&2
+                        exit 1
+                fi
+                batch_add_file=$2
+                shift 2
+                ;;
         --help|-h)
                 usage
                 exit 0
@@ -154,28 +164,37 @@ while [ "$#" -gt 0 ]; do
         esac
 done
 
-# We require at least one argument to decide whether we are adding, removing,
-# or checking the PATH entry. Showing usage keeps the interface self-documenting
-# for new Wizards-in-training.
-if [ "$#" -eq 0 ]; then
-        usage
-        exit 1
-fi
-
-action=$1
-shift
-
-case $action in
-add|remove|status) : ;;
-*)
-        printf '%s\n' "Error: The first argument must be 'add', 'remove', or 'status'." >&2
-        exit 1
-        ;;
-esac
-
-if [ "$action" = "status" ] && [ "$#" -eq 0 ]; then
-        printf '%s\n' "Error: The 'status' action expects a directory argument." >&2
-        exit 1
+# Handle batch add mode specially - it doesn't need action/directory arguments
+if [ -n "$batch_add_file" ]; then
+        action="add"
+        directory=""
+        batch_mode=1
+else
+        batch_mode=0
+        
+        # We require at least one argument to decide whether we are adding, removing,
+        # or checking the PATH entry. Showing usage keeps the interface self-documenting
+        # for new Wizards-in-training.
+        if [ "$#" -eq 0 ]; then
+                usage
+                exit 1
+        fi
+        
+        action=$1
+        shift
+        
+        case $action in
+        add|remove|status) : ;;
+        *)
+                printf '%s\n' "Error: The first argument must be 'add', 'remove', or 'status'." >&2
+                exit 1
+                ;;
+        esac
+        
+        if [ "$action" = "status" ] && [ "$#" -eq 0 ]; then
+                printf '%s\n' "Error: The 'status' action expects a directory argument." >&2
+                exit 1
+        fi
 fi
 
 # Resolve the provided directory so that PATH entries are always absolute.
@@ -217,25 +236,28 @@ normalize_directory() {
         printf '%s' "$directory"
 }
 
-if [ "$action" = "add" ]; then
-        if [ "$#" -eq 0 ]; then
-                directory=$(normalize_directory "$(pwd -P)")
-        else
+# Skip directory normalization for batch mode
+if [ "$batch_mode" -eq 0 ]; then
+        if [ "$action" = "add" ]; then
+                if [ "$#" -eq 0 ]; then
+                        directory=$(normalize_directory "$(pwd -P)")
+                else
+                        directory=$(normalize_directory "$1")
+                fi
+        elif [ "$action" = "remove" ] || [ "$action" = "status" ]; then
+                if [ "$#" -eq 0 ]; then
+                        printf '%s\n' "Error: The '$action' action expects a directory argument." >&2
+                        exit 1
+                fi
                 directory=$(normalize_directory "$1")
         fi
-elif [ "$action" = "remove" ] || [ "$action" = "status" ]; then
-        if [ "$#" -eq 0 ]; then
-                printf '%s\n' "Error: The '$action' action expects a directory argument." >&2
-                exit 1
-        fi
-        directory=$(normalize_directory "$1")
-fi
-
-if [ "$action" != "status" ] && [ "$#" -gt 1 ]; then
-        shift
-else
-        if [ "$#" -gt 0 ]; then
+        
+        if [ "$action" != "status" ] && [ "$#" -gt 1 ]; then
                 shift
+        else
+                if [ "$#" -gt 0 ]; then
+                        shift
+                fi
         fi
 fi
 
@@ -244,6 +266,12 @@ fi
 generate_backup_timestamp() {
         date +%Y%m%d%H%M%S 2>/dev/null || date +%s 2>/dev/null || printf 'pid%s' "$$"
 }
+
+# Validate batch add file if specified
+if [ "$batch_mode" -eq 1 ] && [ ! -f "$batch_add_file" ]; then
+        printf '%s\n' "Error: Batch file '$batch_add_file' not found." >&2
+        exit 1
+fi
 
 # When requested, operate recursively by invoking path-wizard on each
 # discovered directory.  This leverages the existing single-directory
@@ -265,11 +293,63 @@ if [ "$recursive" -eq 1 ]; then
 
         trap 'cleanup_tmp' EXIT HUP INT TERM
 
-        # Set a consistent timestamp for backups during this recursive session.
-        # This ensures all child processes use the same timestamp for deduplication.
-        if [ -z "${PATH_WIZARD_BACKUP_TIMESTAMP-}" ]; then
-                PATH_WIZARD_BACKUP_TIMESTAMP=$(generate_backup_timestamp)
-                export PATH_WIZARD_BACKUP_TIMESTAMP
+        # Detect format early for optimized recursive handling
+        recursive_format=$format
+        if [ "$recursive_format" = "auto" ]; then
+                if [ -n "$rc_file_override" ]; then
+                        case $rc_file_override in
+                        *.nix) recursive_format=nix ;;
+                        *) recursive_format=shell ;;
+                        esac
+                else
+                        recursive_detect=$("$DETECT_RC_FILE" ${platform:+--platform "$platform"} 2>/dev/null) || true
+                        recursive_format=$(printf '%s\n' "$recursive_detect" | while IFS='=' read -r k v; do
+                                [ "$k" = "format" ] && printf '%s' "$v"
+                        done)
+                        [ -z "$recursive_format" ] && recursive_format=shell
+                fi
+        fi
+
+        # For nix format, collect all directories and add them in a single operation.
+        # This is more efficient than invoking nix_add per directory since nix_add
+        # already rewrites the entire block each time.
+        if [ "$recursive_format" = "nix" ] && [ "$action" = "add" ]; then
+                # Collect all directories into a list
+                all_dirs=""
+                while IFS= read -r subdir; do
+                        if [ -z "$all_dirs" ]; then
+                                all_dirs="$subdir"
+                        else
+                                all_dirs="$all_dirs
+$subdir"
+                        fi
+                done <"$tmp_file"
+                
+                # Run single invocation with all directories passed as arguments
+                # (We pass them through a temp file since command line length limits)
+                run_nix_batch_add() {
+                        set -- "$0"
+                        if [ -n "$rc_file_override" ]; then
+                                set -- "$@" --rc-file "$rc_file_override"
+                        fi
+                        set -- "$@" --format nix
+                        if [ -n "$platform" ]; then
+                                set -- "$@" --platform "$platform"
+                        fi
+                        set -- "$@" --batch-add-from-file "$tmp_file"
+                        "$@"
+                }
+                
+                if run_nix_batch_add; then
+                        trap - EXIT HUP INT TERM
+                        cleanup_tmp
+                        exit 0
+                else
+                        status=$?
+                        trap - EXIT HUP INT TERM
+                        cleanup_tmp
+                        exit $status
+                fi
         fi
 
         run_recursive_action() {
@@ -411,9 +491,9 @@ run_maybe_sudo() {
         fi
 }
 
-# Track whether a backup has been created, including across recursive invocations.
-# The environment variable persists across child processes spawned during recursive mode.
-nix_backup_created=${PATH_WIZARD_NIX_BACKUP_CREATED:-0}
+# Track whether a backup has been created. In recursive mode, the parent
+# handles backup before spawning children that pass --nix-setup-done.
+nix_backup_created=0
 
 # These literal export lines represent how we manage PATH entries inside shell
 # rc files. The quoted variant is the format we now write, while the legacy
@@ -446,6 +526,7 @@ ensure_rc_directory() {
 
 # configuration.nix deserves extra care: before we rewrite anything, stash a
 # timestamped backup so users can inspect or restore the previous version.
+# In recursive mode, the parent handles this before spawning children.
 backup_rc_file_once() {
         if [ "$format" != "nix" ]; then
                 return 0
@@ -457,20 +538,8 @@ backup_rc_file_once() {
                 return 0
         fi
 
-        # Use shared timestamp from recursive parent if available, otherwise generate one.
-        # This ensures all recursive invocations check for the same backup file.
-        timestamp=${PATH_WIZARD_BACKUP_TIMESTAMP:-$(generate_backup_timestamp)}
+        timestamp=$(generate_backup_timestamp)
         backup="$rc_file.wizardry.$timestamp"
-        
-        # If any backup from this timestamp already exists, another process in
-        # this recursive run already created it - skip to avoid duplicates.
-        # This handles the case where child processes run within the same second.
-        if [ -e "$backup" ]; then
-                nix_backup_created=1
-                PATH_WIZARD_NIX_BACKUP_CREATED=1
-                export PATH_WIZARD_NIX_BACKUP_CREATED
-                return 0
-        fi
 
         if ! run_maybe_sudo cp "$rc_file" "$backup"; then
                 printf '%s\n' "path-wizard: unable to back up '$rc_file'." >&2
@@ -479,9 +548,6 @@ backup_rc_file_once() {
 
         printf '%s\n' "path-wizard: backed up '$rc_file' to '$backup'." >&2
         nix_backup_created=1
-        # Export the flag so recursive invocations know the backup was already made
-        PATH_WIZARD_NIX_BACKUP_CREATED=1
-        export PATH_WIZARD_NIX_BACKUP_CREATED
         return 0
 }
 
@@ -660,7 +726,7 @@ extract_nix_paths() {
         if [ ! -f "$rc_file" ]; then
                 return
         fi
-        awk '
+        run_maybe_sudo cat "$rc_file" | awk '
         /# wizardry PATH begin/ {in_block=1; next}
         /# wizardry PATH end/ {in_block=0}
         in_block && $0 ~ /^[[:space:]]*"[^"]*"[[:space:]]*$/ {
@@ -669,7 +735,7 @@ extract_nix_paths() {
                 gsub(/"[[:space:]]*$/, "", path)
                 print path
         }
-        ' "$rc_file"
+        '
 }
 
 # Delete the managed block from configuration.nix while keeping the rest of
@@ -677,12 +743,12 @@ extract_nix_paths() {
 remove_nix_block() {
         backup_rc_file_once
         tmp_file="$rc_file.wizardry.$$"
-        awk '
+        run_maybe_sudo cat "$rc_file" | awk '
         /# wizardry PATH begin/ {skip=1; next}
         /# wizardry PATH end/ {skip=0; next}
         skip {next}
         {print}
-        ' "$rc_file" >"$tmp_file"
+        ' >"$tmp_file"
         if [ "$needs_sudo" -eq 1 ]; then
                 run_maybe_sudo cp "$tmp_file" "$rc_file"
                 rm -f "$tmp_file"
@@ -697,7 +763,7 @@ remove_nix_block() {
 insert_block_before_closing_brace() {
         block_file=$1
         tmp_file="$rc_file.wizardry.$$"
-        awk -v blockfile="$block_file" '
+        run_maybe_sudo cat "$rc_file" | awk -v blockfile="$block_file" '
         BEGIN {
                 while ((getline line < blockfile) > 0) {
                         block_lines[++block_count] = line
@@ -732,7 +798,7 @@ insert_block_before_closing_brace() {
                         for (i = 1; i <= block_count; i++) print block_lines[i]
                 }
         }
-        ' "$rc_file" >"$tmp_file"
+        ' >"$tmp_file"
         if [ "$needs_sudo" -eq 1 ]; then
                 run_maybe_sudo cp "$tmp_file" "$rc_file"
                 rm -f "$tmp_file"
@@ -772,7 +838,7 @@ write_nix_paths() {
         ensure_rc_directory
         backup_rc_file_once
         if [ "$#" -eq 0 ]; then
-                if [ -f "$rc_file" ] && grep -Fq '# wizardry PATH begin' "$rc_file" 2>/dev/null; then
+                if [ -f "$rc_file" ] && run_maybe_sudo grep -Fq '# wizardry PATH begin' "$rc_file" 2>/dev/null; then
                         remove_nix_block
                 fi
                 return 0
@@ -797,17 +863,97 @@ write_nix_paths() {
                 rm -f "$block_tmp"
                 return 0
         fi
-        if grep -Fq '# wizardry PATH begin' "$rc_file" 2>/dev/null; then
+        if run_maybe_sudo grep -Fq '# wizardry PATH begin' "$rc_file" 2>/dev/null; then
                 remove_nix_block
         fi
         insert_block_before_closing_brace "$block_tmp"
         rm -f "$block_tmp"
 }
 
+# Check if flakes are already enabled in the configuration.nix file.
+# Returns 0 if flakes are enabled, 1 if not.
+nix_flakes_enabled() {
+        if [ ! -f "$rc_file" ]; then
+                return 1
+        fi
+        # Check for common patterns that enable flakes:
+        # - nix.settings.experimental-features = [ "flakes" ... ]
+        # - experimental-features = "nix-command flakes"
+        # Use word boundary matching to avoid false positives
+        # Use run_maybe_sudo for system config files that need elevated read permissions
+        if run_maybe_sudo grep -q 'experimental-features' "$rc_file" 2>/dev/null; then
+                if run_maybe_sudo grep -qE '("|'\''| )flakes("|'\''| |])' "$rc_file" 2>/dev/null; then
+                        return 0
+                fi
+        fi
+        return 1
+}
+
+# Enable flakes in configuration.nix if not already enabled.
+# This is NixOS-specific and should only run when platform=nixos.
+enable_nix_flakes() {
+        # Only enable flakes on NixOS - other platforms using .nix files don't need this
+        if [ "$platform" != "nixos" ]; then
+                return 0
+        fi
+        if nix_flakes_enabled; then
+                return 0
+        fi
+        backup_rc_file_once
+        
+        # Insert flakes enablement before the closing brace of the configuration
+        tmp_file="$rc_file.wizardry.$$"
+        run_maybe_sudo cat "$rc_file" | awk '
+        BEGIN { inserted = 0 }
+        {
+                lines[NR] = $0
+        }
+        END {
+                if (NR == 0) {
+                        print "  # wizardry flakes enablement"
+                        print "  nix.settings.experimental-features = [ \"nix-command\" \"flakes\" ];"
+                        exit
+                }
+                last = NR
+                while (last > 0 && lines[last] ~ /^[[:space:]]*$/) {
+                        last--
+                }
+                if (last > 0 && lines[last] ~ /^[[:space:]]*}/) {
+                        for (i = 1; i < last; i++) print lines[i]
+                        if (last > 1 && lines[last-1] !~ /^[[:space:]]*$/) {
+                                print ""
+                        }
+                        print "  # wizardry flakes enablement"
+                        print "  nix.settings.experimental-features = [ \"nix-command\" \"flakes\" ];"
+                        print lines[last]
+                        for (i = last + 1; i <= NR; i++) print lines[i]
+                } else {
+                        for (i = 1; i <= NR; i++) print lines[i]
+                        if (NR > 0 && lines[NR] !~ /^[[:space:]]*$/) {
+                                print ""
+                        }
+                        print "  # wizardry flakes enablement"
+                        print "  nix.settings.experimental-features = [ \"nix-command\" \"flakes\" ];"
+                }
+        }
+        ' >"$tmp_file"
+        
+        if [ "$needs_sudo" -eq 1 ]; then
+                run_maybe_sudo cp "$tmp_file" "$rc_file"
+                rm -f "$tmp_file"
+        else
+                mv "$tmp_file" "$rc_file"
+        fi
+        
+        printf '%s\n' "path-wizard: enabled flakes in '$rc_file'." >&2
+}
+
 # Add a directory to the managed list inside configuration.nix. Duplicates are
 # ignored so repeated runs stay harmless.
 nix_add() {
         ensure_rc_directory
+        # Enable flakes if not already enabled (required for wizardry on NixOS)
+        enable_nix_flakes
         existing_paths="$(extract_nix_paths)"
         old_ifs=$IFS
         IFS='
@@ -891,6 +1037,49 @@ nix_status() {
         done
         return 1
 }
+
+# Handle batch add mode - process all directories from file at once
+if [ "$batch_mode" -eq 1 ]; then
+        if [ "$format" != "nix" ]; then
+                printf '%s\n' "Error: Batch add mode is only supported for nix format." >&2
+                exit 1
+        fi
+        
+        # Read all directories and normalize them
+        batch_dirs=""
+        while IFS= read -r dir; do
+                [ -d "$dir" ] || continue
+                case $dir in
+                /*) : ;;
+                *) dir=$(cd "$dir" 2>/dev/null && pwd -P) || continue ;;
+                esac
+                if [ -z "$batch_dirs" ]; then
+                        batch_dirs="$dir"
+                else
+                        batch_dirs="$batch_dirs
+$dir"
+                fi
+        done <"$batch_add_file"
+        
+        # Enable flakes first (only needs to happen once)
+        enable_nix_flakes
+        
+        # Get existing paths and merge with new ones, using sort for dedup
+        existing_paths="$(extract_nix_paths)"
+        
+        # Combine existing and new paths, remove duplicates using sort -u
+        {
+                printf '%s\n' "$existing_paths"
+                printf '%s\n' "$batch_dirs"
+        } | grep -v '^$' | sort -u > "${batch_add_file}.merged"
+        
+        # shellcheck disable=SC2046
+        set -- $(cat "${batch_add_file}.merged")
+        rm -f "${batch_add_file}.merged"
+        write_nix_paths "$@"
+        printf '%s\n' "Recorded %d directories in '$rc_file'. Rebuild your Nix environment to activate the change." "$#"
+        exit 0
+fi
 
 case $format in
 shell)
