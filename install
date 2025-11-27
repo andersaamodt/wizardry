@@ -878,12 +878,58 @@ if [ -x "$PATH_WIZARD" ]; then
                         printf '  %s✓%s Removed %s\n' "$GREEN" "$RESET" "$dir"
                 fi
         done
+        # Remove .imps directory (hidden dirs not matched by glob *)
+        if [ -d "$INSTALL_DIR/spells/.imps" ]; then
+                if "$PATH_WIZARD" --recursive remove "$INSTALL_DIR/spells/.imps" 2>/dev/null; then
+                        printf '  %s✓%s Removed %s\n' "$GREEN" "$RESET" "$INSTALL_DIR/spells/.imps"
+                fi
+        fi
         # Also try removing the main spells directory
         if "$PATH_WIZARD" remove "$INSTALL_DIR/spells" 2>/dev/null; then
                 printf '  %s✓%s Removed %s\n' "$GREEN" "$RESET" "$INSTALL_DIR/spells"
         fi
 else
         printf '  %sWarning:%s Could not find path-wizard; manual PATH cleanup may be needed\n' "$YELLOW" "$RESET"
+fi
+
+# On NixOS, run nixos-rebuild to apply the configuration changes
+if [ "$RC_FORMAT" = "nix" ]; then
+        printf '\n%s==> Rebuilding NixOS configuration...%s\n' "$CYAN" "$RESET"
+
+        rebuild_success=0
+        
+        # Try to detect if we should use sudo or doas
+        priv_cmd=""
+        if command -v sudo >/dev/null 2>&1; then
+                priv_cmd="sudo"
+        elif command -v doas >/dev/null 2>&1; then
+                priv_cmd="doas"
+        fi
+
+        # Try home-manager first (doesn't need privileges)
+        if command -v home-manager >/dev/null 2>&1; then
+                printf '  Running home-manager switch...\n'
+                if home-manager switch; then
+                        printf '  %s✓%s NixOS environment rebuilt successfully\n' "$GREEN" "$RESET"
+                        rebuild_success=1
+                fi
+        fi
+
+        # If home-manager didn't work and we have privilege escalation, try nixos-rebuild
+        if [ "$rebuild_success" -eq 0 ] && [ -n "$priv_cmd" ] && command -v nixos-rebuild >/dev/null 2>&1; then
+                printf '  Running %s nixos-rebuild switch...\n' "$priv_cmd"
+                if $priv_cmd nixos-rebuild switch; then
+                        printf '  %s✓%s NixOS environment rebuilt successfully\n' "$GREEN" "$RESET"
+                        rebuild_success=1
+                fi
+        fi
+
+        if [ "$rebuild_success" -eq 0 ]; then
+                printf '  %sNote:%s Could not automatically rebuild NixOS configuration.\n' "$YELLOW" "$RESET"
+                printf '  Please run one of these commands manually:\n'
+                printf '    home-manager switch  (for home-manager users)\n'
+                printf '    sudo nixos-rebuild switch  (for system-level configuration)\n'
+        fi
 fi
 
 # Remove wizardry directory if it was downloaded (not local source)
@@ -900,7 +946,13 @@ if [ -z "$INSTALL_WAS_LOCAL" ]; then
 fi
 
 printf '\n%s✓ Wizardry uninstalled successfully%s\n' "$BOLD$GREEN" "$RESET"
-printf 'You may need to restart your shell or source your configuration file.\n\n'
+
+# Show platform-specific guidance for when changes take effect
+if [ "$RC_FORMAT" = "nix" ]; then
+        printf '\n%sNote:%s On NixOS, you must log out and log back in for PATH changes to take effect.\n\n' "$YELLOW" "$RESET"
+else
+        printf '\nTo apply changes immediately, run: %s. %s%s\n\n' "$CYAN" "$RC_FILE" "$RESET"
+fi
 
 # Self-destruct - safely remove the uninstall script itself
 SELF_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)" || SELF_DIR="."
@@ -928,8 +980,16 @@ else
         printf '%sNote:%s Wizardry files are installed, but NixOS configuration needs to be rebuilt manually.\n' "$YELLOW" "$RESET"
 fi
 
+# Show platform-specific guidance for when changes take effect
 printf '\n'
-printf 'Run %smenu%s or %smud%s to start using wizardry.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
+if [ "$detect_format_value" = "nix" ]; then
+        printf '%sNote:%s On NixOS, you must log out and log back in for PATH changes to take effect.\n' "$YELLOW" "$RESET"
+elif [ -n "$detect_rc_file_value" ]; then
+        printf 'To start using wizardry immediately, run: %s. %s%s\n' "$CYAN" "$detect_rc_file_value" "$RESET"
+        printf '(Otherwise, open a new terminal window.)\n'
+fi
+printf '\n'
+printf 'Then run %smenu%s or %smud%s to start using wizardry.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
 printf '\n'
 
 exit "$mem_status"
