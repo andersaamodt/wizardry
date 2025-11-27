@@ -630,6 +630,10 @@ else
         done
 fi
 
-printf 'Memorized %d spell(s).\n' "$MEMORIZED_COUNT"
+if [ "$DRY_RUN" -eq 1 ]; then
+        printf 'Would memorize %d spell(s).\n' "$MEMORIZED_COUNT"
+else
+        printf 'Memorized %d spell(s).\n' "$MEMORIZED_COUNT"
+fi
 
 exit 0
