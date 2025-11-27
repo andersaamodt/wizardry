@@ -1,0 +1,12 @@
+#!/bin/sh
+
+# This script exits with 0 if the given string is a valid number, otherwise 1
+
+case $1 in
+	''|*[!0-9]*)
+	    return 1
+	    ;;
+	*)
+	    return 0
+	    ;;
+esac

@@ -1,0 +1,23 @@
+#!/bin/bash
+
+. "./detect-distro"
+. "./cantrips/colors"
+
+distro=detect_distro
+
+case $distro in
+  "arch")
+    pacman -Q pacman &> /dev/null && echo -e "${GREEN}✔ pacman${RESET} (default package manager on Arch Linux)" || echo -e "${RED}✘ pacman${RESET} (default package manager on Arch Linux)"
+    yay -V &> /dev/null && echo -e "${GREEN}✔ yay${RESET} (AUR helper for Arch Linux)" || echo -e "${RED}✘ yay${RESET} (AUR helper for Arch Linux)"
+    ;;
+  "debian")
+    apt-get -v &> /dev/null && echo -e "${GREEN}✔ apt${RESET} (default package manager on Debian and Ubuntu)" || echo -e "${RED}✘ apt${RESET} (default package manager on Debian and Ubuntu)"
+    ;;
+  "fedora")
+    dnf --version &> /dev/null && echo -e "${GREEN}✔ dnf${RESET} (default package manager on Fedora)" || echo -e "${RED}✘ dnf${RESET} (default package manager on Fedora)"
+    ;;
+  "macos")
+    brew --version &> /dev/null && echo -e "${GREEN}✔ brew${RESET} (default package manager on macOS)" || echo -e "${RED}✘ brew${RESET} (default package manager on macOS)"
+    port -v &> /dev/null && echo -e "${GREEN}✔ port${RESET} (default package manager on macOS)" || echo -e "${RED}✘ port${RESET} (default package manager on macOS)"
+    ;;
+esac

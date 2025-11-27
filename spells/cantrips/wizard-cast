@@ -1,0 +1,17 @@
+#!/usr/bin/env sh
+
+# Displays the command with wizard-eyes before casting (executing) it.
+# Use this to show commands before they are executed, to teach those on the path of wizardry.
+
+# The wizard-cast spell first uses wizard-eyes to display the given command as text only wizards can see.
+# Then it executes the command. This saves a line when writing a lot of wizard-eyes statements.
+wizard_cast() {
+	wizard-eyes $@
+	eval $@
+}
+
+# Check if the script is being called from another script
+if [ "${BASH_SOURCE[0]}" = "$0" ]; then
+    # If not, call the function
+    wizard_cast "$@"
+fi

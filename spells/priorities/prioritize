@@ -1,0 +1,90 @@
+#!/bin/sh
+
+# Usage: prioritize [FILE] [OPTIONAL_DIRECTORY]
+file_path=$1
+directory=$2
+
+# Check if the target file exists
+if [ ! -f "$file_path" ]; then
+  echo "Error: The file '$file_path' does not exist."
+  exit 1
+fi
+
+# Get the hash of the target file
+hashchant "$file_path" > /dev/null
+target_hash=$(read-magic "$file_path" hash 2>/dev/null)
+
+# Get the directory the file is in, if a target directory was not provided as the second optional argument
+if [ -z "$directory" ]; then
+  directory=$(dirname "$file_path")
+fi
+
+# Get the file's priority, or default to 0
+target_priority=$(read-magic "$file_path" priority 2>/dev/null || echo 0)
+
+# Retrieving the priority list from the directory's extended attributes
+priorities=$(read-magic "$directory" priorities 2>/dev/null)
+
+# If there are no priorities, we add the target file as the only priority
+if [ -z "$priorities" ] || [ "$priorities" = "Error: The attribute does not exist." ]; then
+  enchant "$directory" priorities "$target_hash" > /dev/null
+  enchant "$file_path" priority 1 > /dev/null
+  echo "Prioritized '$(basename "$file_path")' as the only priority."
+  exit 0
+fi
+
+# Get the priority of the first item in the current list of priorities
+first_hash=$(echo "$priorities" | cut -d',' -f1)
+first_file=$(get-card "$first_hash")
+first_priority=$(read-magic "$first_file" priority 2>/dev/null || echo 0)
+
+# If the target file is already the first priority, we exit
+if [ "$target_hash" = "$first_hash" ]; then
+  echo "'$(basename "$file_path")' is already the highest priority."
+  exit 0
+fi
+
+# Filter the target hash from the current priorities list, so it doesn't duplicate
+priorities=$(echo "$priorities" | tr ',' '\n' | sed "/^$target_hash\$/d" | tr '\n' ',' | sed 's/,$//')
+
+# If the target file's priority is already equal the first item's priority, reprioritize it with a higher priority
+if [ "$first_priority" -gt "0" ] && [ "$target_priority" = "$first_priority" ]; then
+	rebuilt_priorities="$target_hash,$priorities"
+	enchant "$file_path" priority $(($first_priority + 1)) > /dev/null
+	enchant "$directory" priorities "$rebuilt_priorities" > /dev/null
+	echo "Reprioritized '$(basename "$file_path")'."
+	exit 0
+fi
+
+# Loop through the comma-delimited string of hashes in a POSIX-compliant way
+rebuilt_priorities=""
+added=0
+for hash in $(echo "$priorities" | tr ',' ' '); do
+  file=$(get-card "$hash")
+  current_priority=$(read-magic "$file" priority 2>/dev/null || echo 0)
+  
+  # If the target file's priority is already higher than the current hash's priority
+  # or the current hash's priority is different from the first hash's priority
+  # we insert the target file's hash at this point
+  if [ ! $added ] && [ "$target_priority" -gt "$current_priority" ] || [ "$current_priority" != "$first_priority" ]; then
+    rebuilt_priorities="$rebuilt_priorities$target_hash,"
+    added=1
+  fi
+  rebuilt_priorities="$rebuilt_priorities$hash,"
+done
+
+# If we reached the end of the loop without adding the target hash, add it now
+if [ "$added" -eq 0 ]; then
+  rebuilt_priorities="$rebuilt_priorities$target_hash"
+fi
+
+# Trim trailing comma
+rebuilt_priorities=$(echo "$rebuilt_priorities" | sed 's/,$//')
+
+# Setting the priority value of the target file to the value of the first item's priority
+enchant "$file_path" priority "$first_priority" > /dev/null
+
+# Updating the directory's extended attributes with the new priorities list
+enchant "$directory" priorities "$rebuilt_priorities" > /dev/null
+
+echo "Prioritized '$(basename "$file_path")'."

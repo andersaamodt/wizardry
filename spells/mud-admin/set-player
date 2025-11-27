@@ -1,0 +1,22 @@
+#!/bin/sh
+
+# This spell sets the current player in the MUD using an environment variable.
+# You must source this script with ". ./set-player playername" to change it immediately (or open a new terminal window).
+
+player="$1"
+
+if [ -z "$player" ]; then
+    echo "Please provide a player name as an argument."
+    exit 1
+fi
+
+echo "Setting MUD_PLAYER to $player"
+
+# Remove any existing line setting MUD_PLAYER in .bashrc
+sed -i '/^export MUD_PLAYER/d' ~/.bashrc
+
+# Append new line to .bashrc to set MUD_PLAYER and export it
+echo "export MUD_PLAYER=$player" >> ~/.bashrc
+
+# Set MUD_PLAYER in current shell session
+export MUD_PLAYER="$player"

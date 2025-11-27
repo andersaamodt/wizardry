@@ -1,0 +1,11 @@
+!/bin/sh
+
+read -p "Enter the SSH key: " ssh_key
+
+# Check if the SSH key is in the correct format
+if ! echo "$ssh_key" | grep -E '^ssh-([a-zA-Z0-9]+) ([A-Za-z0-9+/]+=*) ([A-Za-z0-9]+@[A-Za-z0-9]+)?$' > /dev/null; then
+    echo "Invalid SSH key format."
+    exit 1
+fi
+
+echo "Valid SSH key."

@@ -1,0 +1,23 @@
+#!/bin/sh
+
+# POSIX compliant regular expressions
+# Matches any string that contains a null byte or begins or ends with a /
+REGEX1='(^/|/$|\\0)'
+# Matches any string longer than 255 characters (for a single filename)
+REGEX2='^.{256,}$'
+# Matches any string longer than 4096 characters (for a full path)
+REGEX3='^.{4097,}$'
+
+if echo "$1" | grep -Eq "$REGEX1" || echo "$1" | grep -Eq "$REGEX2" || echo "$1" | grep -Eq "$REGEX3"; then
+    # If any regex matches, this is an invalid path
+    if [ -t 1 ]; then  # Check if output is a terminal
+        echo "Valid UNIX path."
+    fi
+    exit 0
+else
+    # Otherwise, it's valid
+    if [ -t 1 ]; then  # Check if output is a terminal
+        echo "Invalid UNIX path."
+    fi
+    exit 1
+fi

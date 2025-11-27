@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# Set the file to update
+file=$1
+
+# Check if the file exists
+if [ ! -f "$file" ]; then
+  echo "Error: file not found."
+  exit 1
+fi
+
+# Check if the upvotes attribute is already set
+if getfattr -n user.upvotes "$file" > /dev/null 2>&1; then
+  # If the attribute is already set, increment it by 1
+  upvotes=$(getfattr -n user.upvotes -e hex "$file" | cut -d "=" -f 2 | xxd -r -p)
+  upvotes=$((upvotes + 1))
+  setfattr -n user.upvotes -v "$upvotes" "$file"
+else
+  # If the attribute is not set, set it to 1
+  setfattr -n user.upvotes -v 1 "$file"
+fi
+
+# Print the current value of the upvotes attribute
+echo "Upvotes: $(getfattr -n user.upvotes "$file" | cut -d "=" -f 2)"

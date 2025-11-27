@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# This "portkey" spell allows you to enchant a file with a "portkey" that transports you to a specified context when activated.
+# To use this spell, pass the file and the context folder as arguments. The context folder should be specified as an absolute path.
+# If no argument is given, the script will use the path stored in the "~/.mud/portal_marker" file as the default context.
+# The file will be enchanted with an extended attribute containing the path to the context folder, with the key "user.context".
+
+# Set the path to the marker file
+marker_file="~/.mud/portal_marker"
+
+# Check if an argument was given
+if [ -z "$1" ]; then
+  # If no argument was given, check if the marker file exists
+  if [ -f "$marker_file" ]; then
+    # If the marker file exists, read the destination path from the file
+    context=$(cat "$marker_file")
+  else
+    # If the marker file does not exist, print an error message and exit
+    echo "Error: No context provided and no portal marker found. Set a portal marker or specify a context folder."
+    exit 1
+  fi
+else
+  # If an argument was given, use it as the context
+  context="$1"
+fi
+
+# Add the extended attribute to the file
+xattr -w "user.context" "$context" "$2"
+
+echo "Portkey enchantment applied to $2. Activate the portkey by opening the file."

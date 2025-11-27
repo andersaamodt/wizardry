@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# Check that a folder path was provided as an argument
+if [ "$#" -ne 1 ]; then
+  echo "Error: Please provide a folder path as an argument."
+  exit 1
+fi
+
+# Create a text file with the same name as the folder
+folder_name=$(basename "$1")
+text_file="$folder_name.txt"
+
+# Read all the filenames in the folder and put them in the text file
+# Todo: Remove the folder/ name from before the filename
+for filename in "$1"/*; do
+  echo "$filename" >> "$text_file"
+done
+
+echo "Text file created: $text_file"

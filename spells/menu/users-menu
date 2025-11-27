@@ -1,0 +1,37 @@
+#!/bin/sh
+
+# This script presents a menu of options for managing users on the system.
+
+. colors
+
+display_menu() {
+  change_my_password="Change my password%passwd"
+  list_users="List all users%cut -d: -f1 /etc/passwd"
+  change_other_password="Change other user's password%read -p \"Enter username: \" username; sudo passwd \$username"
+  view_my_groups="View my group memberships%groups"
+  view_other_groups="View other user's group membership%read -p \"Enter username: \" username; groups \$username"
+  list_groups="List all groups%cut -d: -f1 /etc/group"
+  create_group="Create new group%read -p \"Enter new group name: \" groupname; sudo groupadd \$groupname"
+  delete_group="Delete group%read -p \"Enter group to delete: \" groupname; sudo groupdel \$groupname"
+  join_group="Join group%read -p \"Enter group name to join: \" groupname; sudo usermod -a -G \$groupname \$USER"
+  leave_group="Leave group%read -p \"Enter group name to leave: \" group; sudo gpasswd -d \$USER \$group"
+  list_users_in_group="List users in group%read -p \"Enter group name to list members: \" group; getent group \$group"
+  add_user_to_group="Add other user to group%read -p \"Enter username: \" username; read -p \"Enter group name to add them to: \" group; sudo usermod -a -G \$group \$username"
+  remove_user_from_group="Remove other user from group%read -p \"Enter username: \" username; read -p \"Enter group to remove them from: \" group; sudo gpasswd -d \$username \$group"
+  create_user="Create new user%read -p \"Enter new username: \" username; sudo useradd \$username; printf \"Please remember to set a password for the new user with the 'Change other user's password' option.\""
+  delete_user="Delete user%read -p \"Enter username of user to delete: \" username; sudo userdel \$username"
+  exit="Exit%kill -2 $$" # $$ is my pid. Commands are run with 'eval' by the menu script, so we can't simply say 'exit'. The keyword $$ gets this scripts PID and the -2 code is SIGINT aka Ctrl-C
+  
+  menu "User management options:" "$change_my_password" "$list_users" "$change_other_password" "$view_my_groups" "$view_other_groups" "$list_groups" "$create_group" "$delete_group" "$join_group" "$leave_group" "$list_users_in_group" "$add_user_to_group" "$remove_user_from_group" "$create_user" "$delete_user" "$exit"
+}
+
+# Catch Ctrl-C and exit
+handle_ctrl_c() {
+  trap 'echo exiting; exit' INT
+}
+
+handle_ctrl_c
+
+while true; do
+  display_menu
+done

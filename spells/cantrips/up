@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# Todo: add an optional arg that is the number of levels to go up
+# Todo: this probably doesn't work unless it is sourced
+
+cd ..

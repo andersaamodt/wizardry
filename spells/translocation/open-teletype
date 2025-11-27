@@ -1,0 +1,27 @@
+#!/bin/sh
+
+# POSIX-compliant script for mounting a remote directory using sshfs over Tor
+
+# Check for required commands
+if ! command -v torify &> /dev/null; then
+    echo "Error: torify command not found. Please install tor and try again."
+    exit 1
+fi
+
+# Get player key
+if [ -z "$MUD_PLAYER" ]; then
+    echo "Error: MUD_PLAYER environment variable not set."
+    exit 1
+fi
+
+# Prompt user for tor address and remote directory
+echo "Enter the tor address:"
+read tor_address
+echo "Enter the remote directory:"
+read remote_dir
+
+# Strip or add trailing slashes as required
+remote_dir="${remote_dir%/}/"
+
+# Connect to remote directory via ssh through torify
+torify ssh -i ~/.ssh/$MUD_PLAYER "$tor_address:$remote_dir"

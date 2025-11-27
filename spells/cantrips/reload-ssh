@@ -1,0 +1,18 @@
+reload_ssh(){
+    detect_distro
+    case $distro in
+        "arch")
+            sudo systemctl reload ssh
+            ;;
+        "debian")
+            sudo service ssh reload
+            ;;
+        "fedora")
+            sudo systemctl reload ssh
+            ;;
+        "macos")
+            sudo launchctl stop com.openssh.sshd
+            sudo launchctl start com.openssh.sshd
+            ;;
+    esac
+}

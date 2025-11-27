@@ -1,0 +1,19 @@
+#!/bin/sh
+
+# check if the $MUD_PLAYER environment variable is set
+if [ -z "$MUD_PLAYER" ]; then
+    echo "MUD_PLAYER is not set."
+else
+    echo "MUD_PLAYER is currently set to $MUD_PLAYER"
+fi
+
+# get a list of player names from the ~/.ssh/ directory
+#options=()
+declare -a options
+for file in $(find ~/.ssh/ -name "*.pub"); do
+    player_name=$(basename "$file" ".pub")
+	options+=("$player_name%set-player $player_name")
+done
+options+=("Cancel%kill -2 $$")
+
+menu "Choose your player:" "${options[@]}"

@@ -1,0 +1,22 @@
+restart_ssh() {
+    # Check for the existence of systemctl
+    if command -v systemctl &> /dev/null; then
+        # Use systemctl to restart the ssh service
+        systemctl restart ssh
+    else
+        # Check for the existence of service
+        if command -v service &> /dev/null; then
+            # Use service to restart the ssh service
+            service ssh restart
+        else
+            # Check for the existence of /etc/init.d/ssh
+            if [ -f /etc/init.d/ssh ]; then
+                # Use /etc/init.d/ssh to restart the ssh service
+                /etc/init.d/ssh restart
+            else
+                # Use service to restart the ssh service
+                /etc/init.d/sshd restart
+            fi
+        fi
+    fi
+}

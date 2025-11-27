@@ -1,0 +1,37 @@
+#!/bin/sh
+
+# Script to run on the mud host/server to authorize new players who will connect to the MUD on the host/server.
+# It first prompts the user for a player name and an SSH key.
+# It then checks if a user with that player name and SSH key already exists, and if so, exits.
+# If the user and key combination do not already exist, it adds the key to the authorized_keys file and creates the corresponding user.
+
+echo "This spell authorizes a new player to connect to this computer via their player key (SSH key). Run this on the MUD host computer."
+echo "A new user account will be created on your system with limited permissions for the new player."
+echo "MUD users are in the group \"mud\", and this group only has access to your shared rooms (folders) in the MUD."
+
+echo "Enter player name:"
+read playername
+
+# Check if user already exists. Check now so they don't have to enter the SSH key over and over.
+if id "$playername" >/dev/null 2>&1; then
+    echo "Error: user $playername already exists. Please delete the existing user first and try again."
+    exit 1
+fi
+
+echo "Enter SSH key:"
+read sshkey
+
+# Check if key already exists in authorized_keys file
+if grep -q "$sshkey" ~/.ssh/authorized_keys; then
+    echo "Error: key already exists in authorized_keys file. Please delete the existing key first and try again."
+    exit 1
+fi
+
+# Create new system user
+useradd "$playername"
+
+# Create the directories on this path, if they don't exist
+mkdir -p /home/$playername/.ssh
+
+# Add key to authorized_keys file in their home directory, so they can log in as themselves
+echo "$sshkey $playername@mud" >> /home/$playername/.ssh/authorized_keys

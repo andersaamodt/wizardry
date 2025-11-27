@@ -1,0 +1,33 @@
+#!/bin/sh
+
+# This spell displays a menu of commands for a prioritized file or folder. Use 'priorities' to easily select a priority with this menu.
+# Usage: priority-menu [FILE]
+
+. colors
+
+FILE="${1}"
+
+display_menu() {
+	checked_state=$(read-magic "${FILE}" checked)
+	if [ "${checked_state}" = "Error: The attribute does not exist." ]; then
+	  check_item="Check%echo 'Placeholder: Check command'"
+	else
+	  check_item="Uncheck%echo 'Placeholder: Uncheck command'"
+	fi
+	
+	filename=$(basename "$FILE")
+	
+  menu "${GREEN}${BOLD}${filename}${RESET}" \
+       "Prioritize (upboat)%prioritize \"$FILE\"; kill -2 $$" \
+       "${check_item}" \
+       "Discard from priorities (downboat)%echo 'Placeholder: Discard command'" \
+       "Edit Card%echo 'Placeholder: Edit command'" \
+       "Browse Within%echo 'Placeholder: Browse files within this file/folder'" \
+       "Exit%kill -2 $$"
+}
+
+trap 'exit' INT
+
+while true; do
+  display_menu
+done

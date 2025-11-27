@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# This "follow-portkey" script allows you to activate a "portkey" enchantment on a file and transport to the specified context.
+# To use this script, pass the file with the "portkey" enchantment as an argument. The script will read the "user.context"
+# extended attribute from the file and change the current working directory to the specified context.
+
+# Check if an argument was given
+if [ -z "$1" ]; then
+  # If no argument was given, print an error message and exit
+  echo "Error: No file specified. Usage: follow-portkey file"
+  exit 1
+fi
+
+# Read the "user.context" extended attribute from the file
+context=$(xattr -p "user.context" "$1")
+
+# Change the current working directory to the specified context
+cd "$context"
+
+echo "Followed portkey to $context."

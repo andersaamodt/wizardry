@@ -1,0 +1,17 @@
+#!/usr/bin/env sh
+
+# A special version of say that prints the text in grey text, indented.
+# Use this to show commands before they are executed, to teach those on the path of wizardry.
+
+. colors
+
+wizard_eyes() {
+	if [ -z $WIZARD ]; then check-wizard; fi
+	if [ -n "$WIZARD" ] && [ "$WIZARD" -eq 1 ]; then say "    ${GREY}${1}${RESET}"; fi
+}
+
+# Check if the script is being called from another script
+if [ "${BASH_SOURCE[0]}" = "$0" ]; then
+    # If not, call the function
+    wizard_eyes "$@"
+fi

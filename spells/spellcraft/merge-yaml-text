@@ -1,0 +1,88 @@
+#!/bin/sh
+
+# default directory is current directory unless given as a parameter
+dir=${1:-.}
+verbose=0
+dryrun=0
+
+# check for verbose and dry-run flags
+for arg in "$@"
+do
+  case $arg in
+    -v|--verbose)
+      verbose=1
+      shift # Remove --verbose from processing
+      ;;
+    --dry-run)
+      dryrun=1
+      shift # Remove --dry-run from processing
+      ;;
+  esac
+done
+
+# if directory is not passed as a parameter after flags, set as current directory
+if [ $# -eq 0 ]; then
+  dir='.'
+fi
+
+# ensure directory ends with /
+[[ "$dir" != */ ]] && dir="$dir/"
+
+# count total .yaml files in the directory
+total_files=$(ls -1q ${dir}*.yaml | wc -l)
+
+# loop through .yaml files
+count=0
+for yaml in ${dir}*.yaml; do
+  # Remove directory and extension from filename
+  yaml_base=$(basename "$yaml" .yaml)
+  
+  # Formulate the .txt filename
+  txt_filename="${yaml_base}.txt"
+  
+  # Find matching .txt file
+  txt_file=$(find "$dir" -name "$txt_filename")
+  
+  # Check if .txt file exists
+  if [[ -f "$txt_file" ]]; then
+    # create temp file
+    touch "${dir}tempfile.tmp"
+
+    # Check if yaml file starts with '---'
+    first_line=$(head -n 1 "$yaml")
+    if [[ "$first_line" != "---" ]]; then
+      echo '---' > "${dir}tempfile.tmp"
+    fi
+
+    # append the yaml content
+    cat "$yaml" >> "${dir}tempfile.tmp"
+
+    # Check if yaml file ends with '---'
+    last_line=$(tail -n 1 "$yaml")
+    if [[ "$last_line" != "---" ]]; then
+      echo '---' >> "${dir}tempfile.tmp"
+    fi
+
+    # append the txt content
+    cat "$txt_file" >> "${dir}tempfile.tmp"
+
+    # if not a dry-run, replace original yaml with the new file and remove the txt file
+    if [ "$dryrun" -ne 1 ]; then
+      mv "${dir}tempfile.tmp" "$yaml"
+      rm -f "$txt_file"
+    else
+      # if a dry-run, display the constructed content
+      cat "${dir}tempfile.tmp"
+      # delete the temporary file
+      rm -f "${dir}tempfile.tmp"
+    fi
+
+    # increase count
+    ((count++))
+
+    # if verbose mode is on, print progress
+    if [ "$verbose" -eq 1 ]; then
+      echo "($count/$total_files) Merged: $yaml"
+    fi
+  fi
+done
