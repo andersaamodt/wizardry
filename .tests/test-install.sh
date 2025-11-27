@@ -252,13 +252,14 @@ EOF
   fi
 }
 
-install_nixos_adds_flake_input() {
-  # On NixOS, the installer should add the wizardry flake input to configuration.nix
+install_nixos_uses_flake_for_paths() {
+  # On NixOS with flakes, the installer should NOT add PATH entries to configuration.nix
+  # Instead, PATH configuration should be in the generated flake.nix
   fixture=$(make_fixture)
   provide_basic_tools "$fixture"
   link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
 
-  # Create a configuration.nix
+  # Create a configuration.nix with flakes already enabled
   mkdir -p "$fixture/etc/nixos"
   cat >"$fixture/etc/nixos/configuration.nix" <<'EOF'
 { config, pkgs, ... }:
@@ -288,8 +289,15 @@ EOF
 
   assert_success || return 1
   
-  # Check that the wizardry PATH block was added
-  assert_file_contains "$fixture/etc/nixos/configuration.nix" "# wizardry PATH begin" || return 1
+  # Check that NO wizardry PATH block was added to configuration.nix
+  # PATH entries should only be in flake.nix, not configuration.nix
+  if grep -q '# wizardry PATH begin' "$fixture/etc/nixos/configuration.nix" 2>/dev/null; then
+    TEST_FAILURE_REASON="PATH entries should not be in configuration.nix when using flakes approach"
+    return 1
+  fi
+  
+  # Check that flake.nix was generated (which contains PATH setup)
+  assert_path_exists "$install_dir/flake.nix" || return 1
 }
 
 install_nixos_asks_flakes_separately() {
@@ -415,6 +423,7 @@ install_does_not_double_home_path() {
 
 install_nixos_does_not_write_shell_code_to_nix_file() {
   # When format is nix, the installer should not write shell code to the .nix file.
+  # PATH configuration should be in flake.nix, not home.nix
   fixture=$(make_fixture)
   provide_basic_tools "$fixture"
   link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
@@ -452,11 +461,15 @@ EOF
     return 1
   fi
   
-  # But the nix file SHOULD contain the PATH configuration
-  if ! grep -q '# wizardry PATH begin' "$fixture/home/.config/home-manager/home.nix" 2>/dev/null; then
-    TEST_FAILURE_REASON="PATH configuration was not written to .nix file"
+  # With flakes approach, PATH entries should NOT be in home.nix
+  # PATH configuration should be in the generated flake.nix instead
+  if grep -q '# wizardry PATH begin' "$fixture/home/.config/home-manager/home.nix" 2>/dev/null; then
+    TEST_FAILURE_REASON="PATH entries should not be in home.nix when using flakes approach"
     return 1
   fi
+  
+  # Verify that flake.nix was generated with PATH setup
+  assert_path_exists "$install_dir/flake.nix" || return 1
   
   return 0
 }
@@ -658,7 +671,7 @@ run_test_case "install mentions flakes in NixOS output" install_nixos_mentions_f
 run_test_case "install generates flake.nix on NixOS" install_nixos_generates_flake_nix
 run_test_case "install adds flakes enablement on NixOS" install_nixos_adds_flakes_enablement
 run_test_case "install preserves existing flakes setting" install_nixos_preserves_existing_flakes_setting
-run_test_case "install adds flake input on NixOS" install_nixos_adds_flake_input
+run_test_case "install uses flake for paths on NixOS" install_nixos_uses_flake_for_paths
 run_test_case "install asks about flakes separately on NixOS" install_nixos_asks_flakes_separately
 run_test_case "install normalizes path without leading slash" install_normalizes_path_without_leading_slash
 run_test_case "install normalizes NixOS config path" install_nixos_normalizes_config_path_without_leading_slash

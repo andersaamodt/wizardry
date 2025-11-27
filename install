@@ -935,20 +935,48 @@ fi
 export WIZARDRY_NIX_FLAKES_CONSENT
 
 path_updates_made=0
-for dir
-do
-        path_log=$(mktemp "${TMPDIR:-/tmp}/wizardry-path.XXXXXX") || exit 1
-        info_msg "Adding $dir to PATH..."
-        if "$PATH_WIZARD" $PATH_WIZARD_FLAGS add "$dir" >"$path_log" 2>&1; then
-                path_updates_made=1
-                success_msg "Added to PATH"
-        else
-                cat "$path_log" >&2
+
+# For NixOS with nix format: Use flake-based approach instead of adding PATH entries
+# to configuration.nix. Only enable flakes in configuration.nix if consented.
+if [ "$detect_format_value" = "nix" ] && [ "$detect_platform_value" = "nixos" ]; then
+        # On NixOS with flakes approach: don't add PATH entries to configuration.nix
+        # The flake.nix will handle all PATH setup via setup.sh
+        if [ "$nix_flakes_consent" -eq 1 ]; then
+                info_msg "Enabling flakes in configuration.nix..."
+                path_log=$(mktemp "${TMPDIR:-/tmp}/wizardry-path.XXXXXX") || exit 1
+                if "$PATH_WIZARD" --format nix --platform nixos enable-flakes >"$path_log" 2>&1; then
+                        success_msg "Flakes enabled in configuration.nix"
+                        path_updates_made=1
+                else
+                        # enable-flakes may fail if flakes already enabled, check log
+                        if grep -q "already enabled" "$path_log" 2>/dev/null; then
+                                success_msg "Flakes already enabled"
+                                path_updates_made=1
+                        else
+                                cat "$path_log" >&2
+                        fi
+                fi
                 rm -f "$path_log"
-                exit 1
         fi
-        rm -f "$path_log"
-done
+        info_msg "PATH configuration will be handled via flake.nix"
+        path_updates_made=1
+else
+        # For non-NixOS platforms or shell format: use traditional PATH exports
+        for dir
+        do
+                path_log=$(mktemp "${TMPDIR:-/tmp}/wizardry-path.XXXXXX") || exit 1
+                info_msg "Adding $dir to PATH..."
+                if "$PATH_WIZARD" $PATH_WIZARD_FLAGS add "$dir" >"$path_log" 2>&1; then
+                        path_updates_made=1
+                        success_msg "Added to PATH"
+                else
+                        cat "$path_log" >&2
+                        rm -f "$path_log"
+                        exit 1
+                fi
+                rm -f "$path_log"
+        done
+fi
 
 if [ "$path_updates_made" -eq 1 ]; then
         if [ -n "$detect_rc_file_value" ]; then
