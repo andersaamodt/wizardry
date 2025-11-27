@@ -944,17 +944,20 @@ if [ "$detect_format_value" = "nix" ] && [ "$detect_platform_value" = "nixos" ];
         if [ "$nix_flakes_consent" -eq 1 ]; then
                 info_msg "Enabling flakes in configuration.nix..."
                 path_log=$(mktemp "${TMPDIR:-/tmp}/wizardry-path.XXXXXX") || exit 1
+                # enable-flakes returns success (exit 0) whether flakes were newly enabled
+                # or already enabled, so we just check the exit code
                 if "$PATH_WIZARD" --format nix --platform nixos enable-flakes >"$path_log" 2>&1; then
-                        success_msg "Flakes enabled in configuration.nix"
-                        path_updates_made=1
-                else
-                        # enable-flakes may fail if flakes already enabled, check log
+                        # Check if message indicates already enabled or newly enabled
                         if grep -q "already enabled" "$path_log" 2>/dev/null; then
                                 success_msg "Flakes already enabled"
-                                path_updates_made=1
                         else
-                                cat "$path_log" >&2
+                                success_msg "Flakes enabled in configuration.nix"
                         fi
+                        path_updates_made=1
+                else
+                        cat "$path_log" >&2
+                        rm -f "$path_log"
+                        exit 1
                 fi
                 rm -f "$path_log"
         fi
