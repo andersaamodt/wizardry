@@ -389,179 +389,6 @@ detect_installation_status() {
         fi
 }
 
-# Generate a flake.nix file in the wizardry directory for NixOS users
-# This allows declarative installation via home-manager or NixOS modules
-# A symlink is also created at ~/.config/nix/wizardry for easier discovery
-generate_flake_nix() {
-        flake_path="$ABS_DIR/flake.nix"
-        if [ -f "$flake_path" ]; then
-                return 0  # Already exists
-        fi
-        
-        cat > "$flake_path" << 'FLAKE_EOF'
-{
-  description = "Wizardry - the terminal's missing link";
-
-  inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    flake-utils.url = "github:numtide/flake-utils";
-  };
-
-  outputs = { self, nixpkgs, flake-utils }:
-    flake-utils.lib.eachDefaultSystem (system:
-      let
-        pkgs = nixpkgs.legacyPackages.${system};
-        
-        wizardry = pkgs.stdenvNoCC.mkDerivation {
-          pname = "wizardry";
-          version = "0.1.0";
-          
-          src = ./.;
-          
-          dontBuild = true;
-          
-          installPhase = ''
-            runHook preInstall
-            
-            mkdir -p $out/share/wizardry
-            mkdir -p $out/bin
-            
-            cp -r spells $out/share/wizardry/
-            cp -r .tests $out/share/wizardry/
-            cp -r tutorials $out/share/wizardry/ 2>/dev/null || true
-            cp install $out/share/wizardry/
-            cp README.md $out/share/wizardry/
-            
-            cat > $out/bin/menu <<EOF
-#!/bin/sh
-exec "$out/share/wizardry/spells/menu/menu" "\$@"
-EOF
-            chmod +x $out/bin/menu
-            
-            cat > $out/bin/mud <<EOF
-#!/bin/sh
-exec "$out/share/wizardry/spells/mud/mud" "\$@"
-EOF
-            chmod +x $out/bin/mud
-            
-            cat > $out/share/wizardry/setup.sh <<EOF
-WIZARDRY_ROOT="$out/share/wizardry"
-export WIZARDRY_ROOT
-EOF
-            
-            find $out/share/wizardry/spells -type d | while read -r dir; do
-              echo "export PATH=\"\$PATH:$dir\"" >> $out/share/wizardry/setup.sh
-            done
-            
-            runHook postInstall
-          '';
-          
-          meta = {
-            description = "Wizardry - shell scripts for terminal users";
-            homepage = "https://github.com/andersaamodt/wizardry";
-            platforms = pkgs.lib.platforms.unix;
-          };
-        };
-      in
-      {
-        packages = {
-          default = wizardry;
-          wizardry = wizardry;
-        };
-        
-        devShells.default = pkgs.mkShell {
-          packages = [ wizardry ];
-          shellHook = ''
-            export WIZARDRY_ROOT="${wizardry}/share/wizardry"
-            source "${wizardry}/share/wizardry/setup.sh"
-            echo "Wizardry is ready! Type 'menu' or 'mud' to start."
-          '';
-        };
-      }
-    ) // {
-      homeManagerModules.default = { config, lib, pkgs, ... }:
-        let
-          cfg = config.programs.wizardry;
-        in
-        {
-          options.programs.wizardry = {
-            enable = lib.mkEnableOption "wizardry shell scripts";
-            
-            package = lib.mkOption {
-              type = lib.types.package;
-              default = self.packages.${pkgs.system}.wizardry;
-              description = "The wizardry package to use.";
-            };
-          };
-          
-          config = lib.mkIf cfg.enable {
-            home.packages = [ cfg.package ];
-            
-            home.sessionVariables = {
-              WIZARDRY_ROOT = "${cfg.package}/share/wizardry";
-            };
-            
-            programs.bash.initExtra = lib.mkIf config.programs.bash.enable ''
-              source "${cfg.package}/share/wizardry/setup.sh"
-            '';
-            
-            programs.zsh.initExtra = lib.mkIf config.programs.zsh.enable ''
-              source "${cfg.package}/share/wizardry/setup.sh"
-            '';
-          };
-        };
-      
-      nixosModules.default = { config, lib, pkgs, ... }:
-        let
-          cfg = config.programs.wizardry;
-        in
-        {
-          options.programs.wizardry = {
-            enable = lib.mkEnableOption "wizardry shell scripts";
-            
-            package = lib.mkOption {
-              type = lib.types.package;
-              default = self.packages.${pkgs.system}.wizardry;
-              description = "The wizardry package to use.";
-            };
-          };
-          
-          config = lib.mkIf cfg.enable {
-            environment.systemPackages = [ cfg.package ];
-            
-            environment.sessionVariables = {
-              WIZARDRY_ROOT = "${cfg.package}/share/wizardry";
-            };
-            
-            environment.shellInit = ''
-              source "${cfg.package}/share/wizardry/setup.sh"
-            '';
-          };
-        };
-    };
-}
-FLAKE_EOF
-
-        # Create a symlink at ~/.config/nix/flakes/wizardry for standard NixOS discovery
-        # This allows referencing the flake as: path:~/.config/nix/flakes/wizardry
-        symlink_dir="$HOME/.config/nix/flakes"
-        symlink_path="$symlink_dir/wizardry"
-        if mkdir -p "$symlink_dir" 2>/dev/null; then
-                # Remove existing symlink if it points somewhere else or is broken
-                if [ -L "$symlink_path" ]; then
-                        existing_target=$(readlink "$symlink_path" 2>/dev/null || true)
-                        if [ "$existing_target" != "$ABS_DIR" ]; then
-                                rm -f "$symlink_path"
-                        fi
-                fi
-                # Create symlink if it doesn't exist (check for symlink specifically,
-                # not just any file, to handle the case of a broken symlink)
-                if [ ! -L "$symlink_path" ] && [ ! -e "$symlink_path" ]; then
-                        ln -s "$ABS_DIR" "$symlink_path" 2>/dev/null || true
-                fi
-        fi
-}
-
 # Detect installation status for better user messaging
 detect_installation_status
 install_status=$?
@@ -773,62 +600,8 @@ done
 
 # Provide format-specific information about what file will be modified
 printf '\n'
-nix_flakes_consent=0
-if [ "$detect_format_value" = "nix" ]; then
-        info_msg "NixOS Configuration"
-        
-        # Check if flakes are already enabled FIRST, before showing file info
-        flakes_already_enabled=0
-        if [ -n "$detect_rc_file_value" ] && [ -f "$detect_rc_file_value" ]; then
-                if grep -q 'experimental-features' "$detect_rc_file_value" 2>/dev/null; then
-                        if grep -qE '("|'\''| )flakes("|'\''| |])' "$detect_rc_file_value" 2>/dev/null; then
-                                flakes_already_enabled=1
-                        fi
-                fi
-        fi
-        
-        # Show flakes status and configuration file info based on whether flakes are enabled
-        if [ "$flakes_already_enabled" -eq 1 ]; then
-                substep_msg "Flakes are already enabled in your configuration"
-                substep_msg "Wizardry flake will be available at:"
-                printf '      %s/.config/nix/flakes/wizardry\n' "$HOME"
-        else
-                substep_msg "Flakes are not currently enabled"
-                substep_msg "Flakes will be enabled by editing this configuration file:"
-                if [ -n "$detect_rc_file_value" ]; then
-                        printf '      %s\n' "$detect_rc_file_value"
-                else
-                        printf '      (could not determine configuration file)\n'
-                fi
-                substep_msg "This will add: nix.settings.experimental-features = [ \"nix-command\" \"flakes\" ];"
-                substep_msg "Backup: A timestamped backup will be created automatically"
-                printf '\n'
-                
-                if [ "${WIZARDRY_INSTALL_ASSUME_YES-}" = "1" ]; then
-                        nix_flakes_consent=1
-                elif [ -t 0 ] || [ -p /dev/stdin ]; then
-                        # Can read from tty or piped input
-                        printf '%sMay we enable flakes in your configuration.nix? [Y/n] %s' "$BOLD" "$RESET" >&2
-                        IFS= read -r flakes_answer
-                        case $flakes_answer in
-                                n|N|no|NO)
-                                        nix_flakes_consent=0
-                                        substep_msg "Skipping flakes enablement (you can enable manually later)"
-                                        ;;
-                                *)
-                                        nix_flakes_consent=1
-                                        substep_msg "Will enable flakes during installation"
-                                        ;;
-                        esac
-                else
-                        # Non-interactive with no input: default to enabling flakes
-                        nix_flakes_consent=1
-                fi
-        fi
-        
-        substep_msg "After install: The installer will run 'sudo nixos-rebuild switch' or 'home-manager switch'"
-elif [ -n "$detect_rc_file_value" ]; then
-        info_msg "Shell configuration to be modified: $detect_rc_file_value"
+if [ -n "$detect_rc_file_value" ]; then
+        info_msg "Configuration file to be modified: $detect_rc_file_value"
 fi
 
 # Confirm with the user (or their automation) before editing their configuration.
@@ -936,60 +709,23 @@ fi
 
 section_msg "Updating PATH"
 
-# Export flakes consent for NixOS path-wizard
-if [ "$nix_flakes_consent" -eq 1 ]; then
-        WIZARDRY_NIX_FLAKES_CONSENT=1
-else
-        WIZARDRY_NIX_FLAKES_CONSENT=0
-fi
-export WIZARDRY_NIX_FLAKES_CONSENT
-
 path_updates_made=0
 
-# For NixOS with nix format: Use flake-based approach instead of adding PATH entries
-# to configuration.nix. Only enable flakes in configuration.nix if consented.
-if [ "$detect_format_value" = "nix" ] && [ "$detect_platform_value" = "nixos" ]; then
-        # On NixOS with flakes approach: don't add PATH entries to configuration.nix
-        # The flake.nix will handle all PATH setup via setup.sh
-        if [ "$nix_flakes_consent" -eq 1 ]; then
-                info_msg "Enabling flakes in configuration.nix..."
-                path_log=$(mktemp "${TMPDIR:-/tmp}/wizardry-path.XXXXXX") || exit 1
-                # enable-flakes returns success (exit 0) whether flakes were newly enabled
-                # or already enabled, so we just check the exit code
-                if "$PATH_WIZARD" --format nix --platform nixos enable-flakes >"$path_log" 2>&1; then
-                        # Check if message indicates already enabled or newly enabled
-                        if grep -q "already enabled" "$path_log" 2>/dev/null; then
-                                success_msg "Flakes already enabled"
-                        else
-                                success_msg "Flakes enabled in configuration.nix"
-                        fi
-                        path_updates_made=1
-                else
-                        cat "$path_log" >&2
-                        rm -f "$path_log"
-                        exit 1
-                fi
+# Add directories to PATH using traditional approach for all platforms
+for dir
+do
+        path_log=$(mktemp "${TMPDIR:-/tmp}/wizardry-path.XXXXXX") || exit 1
+        info_msg "Adding $dir to PATH..."
+        if "$PATH_WIZARD" $PATH_WIZARD_FLAGS add "$dir" >"$path_log" 2>&1; then
+                path_updates_made=1
+                success_msg "Added to PATH"
+        else
+                cat "$path_log" >&2
                 rm -f "$path_log"
+                exit 1
         fi
-        info_msg "PATH configuration will be handled via flake.nix"
-        path_updates_made=1
-else
-        # For non-NixOS platforms or shell format: use traditional PATH exports
-        for dir
-        do
-                path_log=$(mktemp "${TMPDIR:-/tmp}/wizardry-path.XXXXXX") || exit 1
-                info_msg "Adding $dir to PATH..."
-                if "$PATH_WIZARD" $PATH_WIZARD_FLAGS add "$dir" >"$path_log" 2>&1; then
-                        path_updates_made=1
-                        success_msg "Added to PATH"
-                else
-                        cat "$path_log" >&2
-                        rm -f "$path_log"
-                        exit 1
-                fi
-                rm -f "$path_log"
-        done
-fi
+        rm -f "$path_log"
+done
 
 if [ "$path_updates_made" -eq 1 ]; then
         if [ -n "$detect_rc_file_value" ]; then
@@ -999,18 +735,8 @@ if [ "$path_updates_made" -eq 1 ]; then
         fi
 
         if [ "$detect_format_value" = "nix" ]; then
-                # Generate flake.nix in the wizardry directory for declarative NixOS usage
-                generate_flake_nix
-                
-                # Show the standard flakes location if symlink was created
-                symlink_path="$HOME/.config/nix/flakes/wizardry"
-                if [ -L "$symlink_path" ]; then
-                        success_msg "Wizardry flake available at: $symlink_path"
-                        substep_msg "Add to your flake inputs: wizardry.url = \"path:$symlink_path\";"
-                else
-                        success_msg "Wizardry flake created at: $ABS_DIR/flake.nix"
-                        substep_msg "Add to your flake inputs: wizardry.url = \"path:$ABS_DIR\";"
-                fi
+                success_msg "PATH configuration updated in $rc_destination"
+                printf 'Wizardry directories recorded in %s.\n' "$rc_destination"
                 
                 # On NixOS, attempt to run nixos-rebuild or home-manager switch
                 info_msg "Attempting to rebuild NixOS configuration..."

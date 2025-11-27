@@ -103,9 +103,8 @@ install_nixos_fails_without_config_path() {
   assert_error_contains "No NixOS configuration file found" || return 1
 }
 
-install_nixos_mentions_flakes_in_output() {
-  # On NixOS, the installer should mention flakes in the output
-  # since that's how wizardry is installed on NixOS.
+install_nixos_adds_path_to_config() {
+  # On NixOS, the installer should add PATH entries to configuration.nix
   fixture=$(make_fixture)
   provide_basic_tools "$fixture"
   link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
@@ -131,12 +130,12 @@ EOF
       "$ROOT_DIR/install"
 
   assert_success || return 1
-  # Check that the output mentions flakes
-  assert_output_contains "flake" || return 1
+  # Check that the output mentions PATH configuration
+  assert_output_contains "PATH configuration" || return 1
 }
 
-install_nixos_generates_flake_nix() {
-  # On NixOS, the installer should generate a flake.nix in the wizardry directory
+install_nixos_writes_path_block() {
+  # On NixOS, the installer should write a PATH block to configuration.nix
   fixture=$(make_fixture)
   provide_basic_tools "$fixture"
   link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
@@ -162,18 +161,17 @@ EOF
       "$ROOT_DIR/install"
 
   assert_success || return 1
-  # Check that flake.nix was generated
-  assert_path_exists "$install_dir/flake.nix" || return 1
+  # Check that PATH block was written to config file
+  assert_file_contains "$fixture/home/.config/home-manager/home.nix" "# wizardry" || return 1
 }
 
-install_nixos_adds_flakes_enablement() {
-  # On NixOS, the installer should add flakes enablement to configuration.nix
-  # if flakes are not already enabled.
+install_nixos_adds_path_to_system_config() {
+  # On NixOS, the installer should add PATH entries to configuration.nix
   fixture=$(make_fixture)
   provide_basic_tools "$fixture"
   link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
 
-  # Create a configuration.nix without flakes enabled
+  # Create a configuration.nix
   mkdir -p "$fixture/etc/nixos"
   cat >"$fixture/etc/nixos/configuration.nix" <<'EOF'
 { config, pkgs, ... }:
@@ -203,18 +201,17 @@ EOF
 
   assert_success || return 1
   
-  # Check that flakes enablement was added to configuration.nix
-  assert_file_contains "$fixture/etc/nixos/configuration.nix" "nix.settings.experimental-features" || return 1
+  # Check that wizardry PATH block was added to configuration.nix
+  assert_file_contains "$fixture/etc/nixos/configuration.nix" "# wizardry" || return 1
 }
 
-install_nixos_preserves_existing_flakes_setting() {
-  # If flakes are already enabled in configuration.nix, the installer should
-  # not add duplicate enablement.
+install_nixos_preserves_existing_config() {
+  # The installer should preserve existing content in configuration.nix
   fixture=$(make_fixture)
   provide_basic_tools "$fixture"
   link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
 
-  # Create a configuration.nix with flakes already enabled
+  # Create a configuration.nix with existing content
   mkdir -p "$fixture/etc/nixos"
   cat >"$fixture/etc/nixos/configuration.nix" <<'EOF'
 { config, pkgs, ... }:
@@ -244,30 +241,30 @@ EOF
 
   assert_success || return 1
   
-  # Count occurrences of experimental-features - should be exactly 1
+  # Count occurrences of experimental-features - should be exactly 1 (preserved, not duplicated)
   count=$(grep -c "experimental-features" "$fixture/etc/nixos/configuration.nix" 2>/dev/null || printf '0')
   if [ "$count" -ne 1 ]; then
     TEST_FAILURE_REASON="expected exactly 1 occurrence of experimental-features, got $count"
     return 1
   fi
+  
+  # Check that PATH block was added
+  assert_file_contains "$fixture/etc/nixos/configuration.nix" "# wizardry" || return 1
 }
 
-install_nixos_uses_flake_for_paths() {
-  # On NixOS with flakes, the installer should NOT add PATH entries to configuration.nix
-  # Instead, PATH configuration should be in the generated flake.nix
+install_nixos_writes_path_entries_to_config() {
+  # On NixOS, PATH entries should be written to configuration.nix
   fixture=$(make_fixture)
   provide_basic_tools "$fixture"
   link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
 
-  # Create a configuration.nix with flakes already enabled
+  # Create a configuration.nix
   mkdir -p "$fixture/etc/nixos"
   cat >"$fixture/etc/nixos/configuration.nix" <<'EOF'
 { config, pkgs, ... }:
 
 {
   imports = [ ./hardware-configuration.nix ];
-  
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
   
   environment.systemPackages = with pkgs; [
     vim
@@ -289,25 +286,21 @@ EOF
 
   assert_success || return 1
   
-  # Check that NO wizardry PATH block was added to configuration.nix
-  # PATH entries should only be in flake.nix, not configuration.nix
-  if grep -q '# wizardry PATH begin' "$fixture/etc/nixos/configuration.nix" 2>/dev/null; then
-    TEST_FAILURE_REASON="PATH entries should not be in configuration.nix when using flakes approach"
+  # Check that wizardry PATH block was added to configuration.nix
+  if ! grep -q '# wizardry' "$fixture/etc/nixos/configuration.nix" 2>/dev/null; then
+    TEST_FAILURE_REASON="PATH entries should be in configuration.nix"
     return 1
   fi
-  
-  # Check that flake.nix was generated (which contains PATH setup)
-  assert_path_exists "$install_dir/flake.nix" || return 1
 }
 
-install_nixos_asks_flakes_separately() {
-  # On NixOS, the installer should ask about enabling flakes as a separate step
-  # before asking to proceed with installation.
+install_nixos_simple_input() {
+  # Test that NixOS installer only needs config path and confirmation
+  # (no separate flakes consent prompt)
   fixture=$(make_fixture)
   provide_basic_tools "$fixture"
   link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
 
-  # Create a configuration.nix without flakes enabled
+  # Create a configuration.nix
   mkdir -p "$fixture/etc/nixos"
   cat >"$fixture/etc/nixos/configuration.nix" <<'EOF'
 { config, pkgs, ... }:
@@ -326,9 +319,9 @@ EOF
 
   install_dir="$fixture/home/.wizardry"
   
-  # Simulate user input: config path, then 'n' to decline flakes, then 'y' to proceed
+  # Simulate user input: config path, then 'y' to proceed (only 2 prompts now)
   run_cmd sh -c "
-    printf '%s\n%s\n%s\n' '$fixture/etc/nixos/configuration.nix' 'n' 'y' | \
+    printf '%s\n%s\n' '$fixture/etc/nixos/configuration.nix' 'y' | \
     env DETECT_RC_FILE_PLATFORM=nixos \
         WIZARDRY_INSTALL_DIR='$install_dir' \
         HOME='$fixture/home' \
@@ -337,25 +330,17 @@ EOF
 
   assert_success || return 1
   
-  # Check that the output mentions the flakes prompt
-  assert_output_contains "May we enable flakes" || \
-  assert_output_contains "Skipping flakes enablement" || return 1
-  
-  # Check that flakes enablement was NOT added (user declined)
-  if grep -q "experimental-features" "$fixture/etc/nixos/configuration.nix" 2>/dev/null; then
-    TEST_FAILURE_REASON="expected no experimental-features (user declined flakes)"
-    return 1
-  fi
+  # Check that PATH block was added
+  assert_file_contains "$fixture/etc/nixos/configuration.nix" "# wizardry" || return 1
 }
 
-install_nixos_shows_flakes_status_before_config_file() {
-  # On NixOS with flakes not enabled, the installer should show
-  # "Flakes are not currently enabled" BEFORE showing the configuration file
+install_nixos_shows_config_file_message() {
+  # On NixOS, the installer should show "Configuration file to be modified" 
   fixture=$(make_fixture)
   provide_basic_tools "$fixture"
   link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
 
-  # Create a configuration.nix without flakes enabled
+  # Create a configuration.nix
   mkdir -p "$fixture/etc/nixos"
   cat >"$fixture/etc/nixos/configuration.nix" <<'EOF'
 { config, pkgs, ... }:
@@ -364,19 +349,14 @@ install_nixos_shows_flakes_status_before_config_file() {
   imports = [ ./hardware-configuration.nix ];
   
   boot.loader.grub.enable = true;
-  
-  environment.systemPackages = with pkgs; [
-    vim
-    git
-  ];
 }
 EOF
 
   install_dir="$fixture/home/.wizardry"
   
-  # Simulate user input: config path, then 'y' to enable flakes, then 'y' to proceed
+  # Simulate user input: config path, then 'y' to proceed
   run_cmd sh -c "
-    printf '%s\n%s\n%s\n' '$fixture/etc/nixos/configuration.nix' 'y' 'y' | \
+    printf '%s\n%s\n' '$fixture/etc/nixos/configuration.nix' 'y' | \
     env DETECT_RC_FILE_PLATFORM=nixos \
         WIZARDRY_INSTALL_DIR='$install_dir' \
         HOME='$fixture/home' \
@@ -385,19 +365,17 @@ EOF
 
   assert_success || return 1
   
-  # Check that the output shows the new message format
-  assert_output_contains "Flakes are not currently enabled" || return 1
-  assert_output_contains "Flakes will be enabled by editing this configuration file" || return 1
+  # Check that the output shows "Configuration file to be modified"
+  assert_output_contains "Configuration file to be modified" || return 1
 }
 
-install_nixos_shows_flakes_already_enabled() {
-  # On NixOS with flakes already enabled, the installer should show
-  # "Flakes are already enabled" and mention the flake path
+install_nixos_shows_path_updated_message() {
+  # On NixOS, the installer should show "PATH configuration updated" message
   fixture=$(make_fixture)
   provide_basic_tools "$fixture"
   link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
 
-  # Create a configuration.nix with flakes already enabled
+  # Create a configuration.nix
   mkdir -p "$fixture/etc/nixos"
   cat >"$fixture/etc/nixos/configuration.nix" <<'EOF'
 { config, pkgs, ... }:
@@ -427,13 +405,8 @@ EOF
 
   assert_success || return 1
   
-  # Check that the output shows flakes are already enabled
-  assert_output_contains "Flakes are already enabled" || return 1
-  # Should NOT show the old "Configuration file to be modified" message
-  if printf '%s' "$OUTPUT" | grep -q "Configuration file to be modified"; then
-    TEST_FAILURE_REASON="should not show 'Configuration file to be modified' when flakes are already enabled"
-    return 1
-  fi
+  # Check that the output shows PATH configuration message
+  assert_output_contains "PATH configuration updated" || return 1
 }
 
 # === Path Normalization Tests ===
@@ -549,15 +522,9 @@ EOF
     return 1
   fi
   
-  # With flakes approach, PATH entries should NOT be in home.nix
-  # PATH configuration should be in the generated flake.nix instead
-  if grep -q '# wizardry PATH begin' "$fixture/home/.config/home-manager/home.nix" 2>/dev/null; then
-    TEST_FAILURE_REASON="PATH entries should not be in home.nix when using flakes approach"
-    return 1
-  fi
-  
-  # Verify that flake.nix was generated with PATH setup
-  assert_path_exists "$install_dir/flake.nix" || return 1
+  # PATH entries should be in home.nix (not shell code, but Nix configuration)
+  # The wizardry PATH block should be present
+  assert_file_contains "$fixture/home/.config/home-manager/home.nix" "# wizardry" || return 1
   
   return 0
 }
@@ -751,9 +718,8 @@ install_shows_menu_when_already_installed() {
 
 # === Output Message Tests ===
 
-install_nixos_shows_flake_created_message() {
-  # On NixOS, the installer should show "Wizardry flake available at" instead of
-  # "PATH configuration updated in"
+install_nixos_shows_path_updated() {
+  # On NixOS, the installer should show "PATH configuration updated"
   fixture=$(make_fixture)
   provide_basic_tools "$fixture"
   link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
@@ -780,17 +746,8 @@ EOF
 
   assert_success || return 1
   
-  # Should show "Wizardry flake available at" or "Wizardry flake created at" message
-  if ! printf '%s' "$OUTPUT" | grep -q "Wizardry flake"; then
-    TEST_FAILURE_REASON="output should mention 'Wizardry flake'"
-    return 1
-  fi
-  
-  # Should NOT show "PATH configuration updated in /etc/nixos" for NixOS
-  if printf '%s' "$OUTPUT" | grep -q "PATH configuration updated in .*nix"; then
-    TEST_FAILURE_REASON="should not show 'PATH configuration updated' for NixOS"
-    return 1
-  fi
+  # Should show "PATH configuration updated" message for NixOS
+  assert_output_contains "PATH configuration updated" || return 1
 }
 
 install_shows_spell_names_memorized() {
@@ -938,12 +895,12 @@ run_test_case "install runs core installer" install_invokes_core_installer
 run_test_case "install exits on interrupt signal" install_exits_on_interrupt
 run_test_case "install prompts for NixOS config path" install_nixos_prompts_for_config_path
 run_test_case "install fails on NixOS without config path" install_nixos_fails_without_config_path
-run_test_case "install mentions flakes in NixOS output" install_nixos_mentions_flakes_in_output
-run_test_case "install generates flake.nix on NixOS" install_nixos_generates_flake_nix
-run_test_case "install adds flakes enablement on NixOS" install_nixos_adds_flakes_enablement
-run_test_case "install preserves existing flakes setting" install_nixos_preserves_existing_flakes_setting
-run_test_case "install uses flake for paths on NixOS" install_nixos_uses_flake_for_paths
-run_test_case "install asks about flakes separately on NixOS" install_nixos_asks_flakes_separately
+run_test_case "install NixOS adds PATH to config" install_nixos_adds_path_to_config
+run_test_case "install NixOS writes PATH block" install_nixos_writes_path_block
+run_test_case "install NixOS adds PATH to system config" install_nixos_adds_path_to_system_config
+run_test_case "install NixOS preserves existing config" install_nixos_preserves_existing_config
+run_test_case "install NixOS writes PATH entries to config" install_nixos_writes_path_entries_to_config
+run_test_case "install NixOS simple input" install_nixos_simple_input
 run_test_case "install normalizes path without leading slash" install_normalizes_path_without_leading_slash
 run_test_case "install normalizes NixOS config path" install_nixos_normalizes_config_path_without_leading_slash
 run_test_case "install does not double home path" install_does_not_double_home_path
@@ -954,13 +911,13 @@ run_test_case "path-wizard accepts helper overrides" path_wizard_accepts_helper_
 run_test_case "install uses only bootstrappable spells" install_uses_only_bootstrappable_spells
 run_test_case "install shows menu when already installed" install_shows_menu_when_already_installed
 run_test_case "install shows help" shows_help
-run_test_case "install NixOS shows flake created message" install_nixos_shows_flake_created_message
+run_test_case "install NixOS shows PATH updated" install_nixos_shows_path_updated
 run_test_case "install shows spell names memorized" install_shows_spell_names_memorized
 run_test_case "install creates .uninstall script" install_creates_uninstall_script_with_correct_name
 run_test_case "install shows uninstall after complete" install_shows_uninstall_after_complete
 run_test_case "install shows simple run message" install_shows_simple_run_message
 run_test_case "install no adding missing path on fresh" install_does_not_show_adding_missing_path_on_fresh
-run_test_case "install NixOS shows flakes status before config file" install_nixos_shows_flakes_status_before_config_file
-run_test_case "install NixOS shows flakes already enabled" install_nixos_shows_flakes_already_enabled
+run_test_case "install NixOS shows config file message" install_nixos_shows_config_file_message
+run_test_case "install NixOS shows path updated message" install_nixos_shows_path_updated_message
 
 finish_tests

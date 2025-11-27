@@ -145,47 +145,6 @@ test_nix_recursive_creates_single_backup() {
   fi
 }
 
-test_nix_enable_flakes_only() {
-  # Test that enable-flakes only adds flakes enablement, no PATH entries
-  rc="$WIZARDRY_TMPDIR/flakes_only.nix"
-  
-  # Create initial config without flakes
-  printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$rc"
-  
-  PATH_WIZARD_PLATFORM=nixos run_spell "spells/system/path-wizard" --rc-file "$rc" --format nix --platform nixos enable-flakes
-  assert_success || return 1
-  
-  # Verify flakes are enabled
-  if ! grep -q 'experimental-features' "$rc" 2>/dev/null; then
-    TEST_FAILURE_REASON="expected flakes to be enabled in config"
-    return 1
-  fi
-  
-  # Verify NO wizardry PATH block was added
-  if grep -q 'wizardry PATH begin' "$rc" 2>/dev/null; then
-    TEST_FAILURE_REASON="expected no PATH entries, but found wizardry PATH block"
-    return 1
-  fi
-}
-
-test_nix_enable_flakes_idempotent() {
-  # Test that enable-flakes is idempotent when flakes already enabled
-  rc="$WIZARDRY_TMPDIR/flakes_idem.nix"
-  
-  # Create config with flakes already enabled
-  printf '{ config, pkgs, ... }:\n\n{\n  nix.settings.experimental-features = [ "nix-command" "flakes" ];\n}\n' > "$rc"
-  
-  PATH_WIZARD_PLATFORM=nixos run_spell "spells/system/path-wizard" --rc-file "$rc" --format nix --platform nixos enable-flakes
-  assert_success || return 1
-  
-  # Verify only one flakes line exists (no duplicate)
-  flakes_count=$(grep -c 'experimental-features' "$rc" 2>/dev/null || printf '0')
-  if [ "$flakes_count" -ne 1 ]; then
-    TEST_FAILURE_REASON="expected exactly 1 flakes line, found $flakes_count"
-    return 1
-  fi
-}
-
 test_dry_run_single_directory() {
   dir="$WIZARDRY_TMPDIR/dryrun_dir"
   mkdir -p "$dir"
@@ -237,6 +196,58 @@ test_dry_run_does_not_modify_rc() {
   fi
 }
 
+test_nix_adds_with_inline_marker() {
+  # Test that path-wizard adds PATH with inline # wizardry marker
+  # and doesn't interfere with user's existing PATH definition
+  rc="$WIZARDRY_TMPDIR/existing_path.nix"
+  dir="$WIZARDRY_TMPDIR/nix_modify_dir"
+  mkdir -p "$dir"
+  
+  # Create a nix file with an existing PATH definition
+  cat >"$rc" <<'EOF'
+{ config, pkgs, ... }:
+
+{
+  environment.sessionVariables.PATH = "/usr/local/bin";
+}
+EOF
+  
+  PATH_WIZARD_PLATFORM=nixos run_spell "spells/system/path-wizard" --rc-file "$rc" --format nix add "$dir"
+  assert_success || return 1
+  
+  # The file should contain inline wizardry marker
+  assert_file_contains "$rc" "# wizardry" || return 1
+  assert_file_contains "$rc" "$dir" || return 1
+  # User's original PATH definition should be UNCHANGED
+  assert_file_contains "$rc" "environment.sessionVariables.PATH = \"/usr/local/bin\"" || return 1
+}
+
+test_nix_allows_multiple_paths() {
+  # Test that path-wizard can add multiple paths with inline markers
+  rc="$WIZARDRY_TMPDIR/wizardry_managed.nix"
+  dir1="$WIZARDRY_TMPDIR/managed_dir1"
+  dir2="$WIZARDRY_TMPDIR/managed_dir2"
+  mkdir -p "$dir1" "$dir2"
+  
+  # First, add a directory
+  PATH_WIZARD_PLATFORM=debian run_spell "spells/system/path-wizard" --rc-file "$rc" --format nix add "$dir1"
+  assert_success || return 1
+  
+  # Now add another directory
+  PATH_WIZARD_PLATFORM=debian run_spell "spells/system/path-wizard" --rc-file "$rc" --format nix add "$dir2"
+  assert_success || return 1
+  
+  # Both directories should be in the file with markers
+  assert_file_contains "$rc" "$dir1" || return 1
+  assert_file_contains "$rc" "$dir2" || return 1
+  # Each should have its own inline marker
+  wizardry_count=$(grep -c "# wizardry" "$rc" 2>/dev/null || printf '0')
+  if [ "$wizardry_count" -lt 2 ]; then
+    TEST_FAILURE_REASON="expected at least 2 wizardry markers, found $wizardry_count"
+    return 1
+  fi
+}
+
 run_test_case "path-wizard prints usage" test_help
 run_test_case "path-wizard fails when detect helper missing" test_missing_detect_helper
 run_test_case "path-wizard rejects unknown options" test_unknown_option
@@ -248,9 +259,9 @@ run_test_case "path-wizard remove drops managed shell entries" test_shell_remove
 run_test_case "path-wizard manages Nix PATH entries" test_nix_add_status_and_remove_round_trip
 run_test_case "path-wizard uses numeric backup suffixes" test_nix_backup_uses_numeric_suffix
 run_test_case "path-wizard recursive creates single backup" test_nix_recursive_creates_single_backup
-run_test_case "path-wizard enable-flakes adds only flakes" test_nix_enable_flakes_only
-run_test_case "path-wizard enable-flakes is idempotent" test_nix_enable_flakes_idempotent
 run_test_case "path-wizard --dry-run shows single directory" test_dry_run_single_directory
 run_test_case "path-wizard --dry-run recursive shows all dirs" test_dry_run_recursive
 run_test_case "path-wizard --dry-run does not modify rc file" test_dry_run_does_not_modify_rc
+run_test_case "path-wizard nix adds with inline marker" test_nix_adds_with_inline_marker
+run_test_case "path-wizard nix allows multiple paths" test_nix_allows_multiple_paths
 finish_tests

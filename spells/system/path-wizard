@@ -70,7 +70,6 @@ usage() {
 Usage: path-wizard [-r|--recursive] [--dry-run] [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] add [DIRECTORY]
        path-wizard [-r|--recursive] [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] remove DIRECTORY
        path-wizard [-r|--recursive] [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] status DIRECTORY
-       path-wizard [--rc-file FILE] [--format nix] [--platform nixos] enable-flakes
 
 Options:
   --dry-run    List paths that would be added without modifying any files
@@ -193,9 +192,9 @@ else
         shift
         
         case $action in
-        add|remove|status|enable-flakes) : ;;
+        add|remove|status) : ;;
         *)
-                printf '%s\n' "Error: The first argument must be 'add', 'remove', 'status', or 'enable-flakes'." >&2
+                printf '%s\n' "Error: The first argument must be 'add', 'remove', or 'status'." >&2
                 exit 1
                 ;;
         esac
@@ -245,8 +244,8 @@ normalize_directory() {
         printf '%s' "$directory"
 }
 
-# Skip directory normalization for batch mode and enable-flakes action
-if [ "$batch_mode" -eq 0 ] && [ "$action" != "enable-flakes" ]; then
+# Skip directory normalization for batch mode
+if [ "$batch_mode" -eq 0 ]; then
         if [ "$action" = "add" ]; then
                 if [ "$#" -eq 0 ]; then
                         directory=$(normalize_directory "$(pwd -P)")
@@ -516,8 +515,8 @@ nix_backup_created=0
 # rc files. The quoted variant is the format we now write, while the legacy
 # string tracks the buggy form that escaped "$PATH" and therefore replaced the
 # variable with a literal. Retaining both lets us tidy older installs while
-# keeping removals idempotent.
-# Only define these when directory is set (not for enable-flakes action)
+# keeping removals idempotent. Variables are only populated when a directory
+# argument is provided (add/remove/status actions require a directory).
 managed_export_line=""
 legacy_export_line=""
 legacy_quoted_export_line=""
@@ -743,38 +742,51 @@ shell_status() {
         shell_path_contains_directory "$rc_file" "$directory"
 }
 
-# Parse the managed block in configuration.nix and echo each tracked path. The
-# caller can then compare or merge entries without re-reading the file.
+# Check if a path is already in the wizardry-managed PATH entries.
+# Returns 0 if found, 1 otherwise.
+has_wizardry_nix_path() {
+        path_to_check=$1
+        if [ ! -f "$rc_file" ]; then
+                return 1
+        fi
+        # Look for the path in lines with # wizardry marker
+        # The path appears as PATH="/path:$PATH" so we look for the path followed by :
+        grep -F "# wizardry" "$rc_file" 2>/dev/null | grep -Fq "\"$path_to_check:" 2>/dev/null
+}
+
+# Parse lines with # wizardry marker in configuration.nix and echo each tracked path.
 extract_nix_paths() {
         if [ ! -f "$rc_file" ]; then
                 return
         fi
-        # Note: We don't use run_maybe_sudo for reading since system config files
-        # like /etc/nixos/configuration.nix are typically world-readable. Using
-        # sudo for reads would prompt the user unnecessarily before they've seen
-        # the installation plan.
-        cat "$rc_file" | awk '
-        /# wizardry PATH begin/ {in_block=1; next}
-        /# wizardry PATH end/ {in_block=0}
-        in_block && $0 ~ /^[[:space:]]*"[^"]*"[[:space:]]*$/ {
-                path=$0
-                gsub(/^[[:space:]]*"/, "", path)
-                gsub(/"[[:space:]]*$/, "", path)
-                print path
-        }
-        '
+        # Extract paths from lines containing # wizardry marker
+        grep -F "# wizardry" "$rc_file" 2>/dev/null | while IFS= read -r line; do
+                # Extract path from environment.extraInit line (PATH="path:$PATH")
+                printf '%s\n' "$line" | sed -n 's/.*PATH="\([^:]*\):.*/\1/p'
+        done
 }
 
-# Delete the managed block from configuration.nix while keeping the rest of
-# the file untouched. This simplifies removal and ensures idempotence.
-remove_nix_block() {
+# Remove all wizardry-marked lines from configuration.nix
+remove_wizardry_nix_lines() {
         backup_rc_file_once
-        # Use /tmp for temp files to avoid permission issues with system config directories
         tmp_file="${TMPDIR:-/tmp}/wizardry-nix.$$"
-        run_maybe_sudo cat "$rc_file" | awk '
-        /# wizardry PATH begin/ {skip=1; next}
-        /# wizardry PATH end/ {skip=0; next}
-        skip {next}
+        run_maybe_sudo cat "$rc_file" | grep -v "# wizardry" >"$tmp_file"
+        if [ "$needs_sudo" -eq 1 ]; then
+                run_maybe_sudo cp "$tmp_file" "$rc_file"
+                rm -f "$tmp_file"
+        else
+                mv "$tmp_file" "$rc_file"
+        fi
+}
+
+# Remove a specific path from wizardry-marked lines
+remove_wizardry_nix_path() {
+        path_to_remove=$1
+        backup_rc_file_once
+        tmp_file="${TMPDIR:-/tmp}/wizardry-nix.$$"
+        # Remove lines that contain both # wizardry and the specific path
+        run_maybe_sudo cat "$rc_file" | awk -v path="$path_to_remove" '
+        /# wizardry/ && index($0, "\"" path ":") {next}
         {print}
         ' >"$tmp_file"
         if [ "$needs_sudo" -eq 1 ]; then
@@ -785,28 +797,33 @@ remove_nix_block() {
         fi
 }
 
-# Insert the generated Nix block just before the closing brace of the
-# configuration. Falling back to appending keeps the file valid even when the
-# layout is unusual.
-insert_block_before_closing_brace() {
-        block_file=$1
-        # Use /tmp for temp files to avoid permission issues with system config directories
+# Add a path entry to configuration.nix with inline wizardry marker.
+# Uses environment.extraInit to prepend to PATH without conflicting with
+# any existing environment.sessionVariables.PATH definition.
+add_wizardry_nix_path() {
+        path_to_add=$1
+        backup_rc_file_once
+        
+        # Check if this exact path is already added
+        if has_wizardry_nix_path "$path_to_add"; then
+                return 0
+        fi
+        
+        # The line we'll add - uses environment.extraInit to prepend to PATH
+        new_line="  environment.extraInit = ''export PATH=\"$path_to_add:\$PATH\"''; # wizardry"
+        
+        # Insert before the closing brace
         tmp_file="${TMPDIR:-/tmp}/wizardry-nix.$$"
-        run_maybe_sudo cat "$rc_file" | awk -v blockfile="$block_file" '
-        BEGIN {
-                while ((getline line < blockfile) > 0) {
-                        block_lines[++block_count] = line
-                }
-                close(blockfile)
-        }
+        run_maybe_sudo cat "$rc_file" | awk -v newline="$new_line" '
         {
                 lines[NR] = $0
         }
         END {
                 if (NR == 0) {
-                        for (i = 1; i <= block_count; i++) print block_lines[i]
+                        print newline
                         exit
                 }
+                # Find the last closing brace
                 last = NR
                 while (last > 0 && lines[last] ~ /^[[:space:]]*$/) {
                         last--
@@ -816,7 +833,7 @@ insert_block_before_closing_brace() {
                         if (last > 1 && lines[last-1] !~ /^[[:space:]]*$/) {
                                 print ""
                         }
-                        for (i = 1; i <= block_count; i++) print block_lines[i]
+                        print newline
                         print lines[last]
                         for (i = last + 1; i <= NR; i++) print lines[i]
                 } else {
@@ -824,10 +841,11 @@ insert_block_before_closing_brace() {
                         if (NR > 0 && lines[NR] !~ /^[[:space:]]*$/) {
                                 print ""
                         }
-                        for (i = 1; i <= block_count; i++) print block_lines[i]
+                        print newline
                 }
         }
         ' >"$tmp_file"
+        
         if [ "$needs_sudo" -eq 1 ]; then
                 run_maybe_sudo cp "$tmp_file" "$rc_file"
                 rm -f "$tmp_file"
@@ -836,52 +854,18 @@ insert_block_before_closing_brace() {
         fi
 }
 
-# Create a temporary file containing the declarative block we manage. The
-# helper keeps the formatting consistent every time we rewrite the file.
-generate_nix_block_file() {
-        block_file=$1
-        shift
-        {
-                printf '  # wizardry PATH begin\n'
-                printf '  environment.sessionVariables.PATH =\n'
-                printf '    let\n'
-                printf '      wizardryPaths = [\n'
-                for dir in "$@"; do
-                        printf '        "%s"\n' "$dir"
-                done
-                printf '      ];\n'
-                printf '      existingPath = if config.environment.sessionVariables ? PATH\n'
-                printf '        then config.environment.sessionVariables.PATH\n'
-                printf '        else "";\n'
-                printf '    in pkgs.lib.concatStringsSep ":" (\n'
-                printf '      wizardryPaths\n'
-                printf '      ++ pkgs.lib.optional (existingPath != "") existingPath\n'
-                printf '    );\n'
-                printf '  # wizardry PATH end\n'
-        } >"$block_file"
-}
-
-# Replace (or create) the managed block in configuration.nix with the provided
-# list of directories.
-write_nix_paths() {
+# Add a directory to the managed list inside configuration.nix. Duplicates are
+# ignored so repeated runs stay harmless. Uses inline # wizardry markers.
+nix_add() {
         ensure_rc_directory
-        backup_rc_file_once
-        if [ "$#" -eq 0 ]; then
-                if [ -f "$rc_file" ] && grep -Fq '# wizardry PATH begin' "$rc_file" 2>/dev/null; then
-                        remove_nix_block
-                fi
-                return 0
-        fi
-        # Use /tmp for temp files to avoid permission issues with system config directories
-        block_tmp="${TMPDIR:-/tmp}/wizardry-block.$$"
-        generate_nix_block_file "$block_tmp" "$@"
+        
+        # Create a minimal config file if none exists
         if [ ! -f "$rc_file" ] || [ ! -s "$rc_file" ]; then
                 new_content_tmp="${TMPDIR:-/tmp}/wizardry-new.$$"
                 {
                         printf '{ config, pkgs, ... }:\n'
                         printf '\n'
                         printf '{\n'
-                        cat "$block_tmp"
                         printf '}\n'
                 } >"$new_content_tmp"
                 if [ "$needs_sudo" -eq 1 ]; then
@@ -890,189 +874,42 @@ write_nix_paths() {
                 else
                         mv "$new_content_tmp" "$rc_file"
                 fi
-                rm -f "$block_tmp"
-                return 0
-        fi
-        if grep -Fq '# wizardry PATH begin' "$rc_file" 2>/dev/null; then
-                remove_nix_block
-        fi
-        insert_block_before_closing_brace "$block_tmp"
-        rm -f "$block_tmp"
-}
-
-# Check if flakes are already enabled in the configuration.nix file.
-# Returns 0 if flakes are enabled, 1 if not.
-nix_flakes_enabled() {
-        if [ ! -f "$rc_file" ]; then
-                return 1
-        fi
-        # Check for common patterns that enable flakes:
-        # - nix.settings.experimental-features = [ "flakes" ... ]
-        # - experimental-features = "nix-command flakes"
-        # Use word boundary matching to avoid false positives
-        # Note: We don't use run_maybe_sudo for reading since system config files
-        # like /etc/nixos/configuration.nix are typically world-readable.
-        if grep -q 'experimental-features' "$rc_file" 2>/dev/null; then
-                if grep -qE '("|'\''| )flakes("|'\''| |])' "$rc_file" 2>/dev/null; then
-                        return 0
-                fi
-        fi
-        return 1
-}
-
-# Enable flakes in configuration.nix if not already enabled.
-# This is NixOS-specific and should only run when platform=nixos.
-# Respects WIZARDRY_NIX_FLAKES_CONSENT env var: if set to 0, skip enablement.
-enable_nix_flakes() {
-        # Only enable flakes on NixOS - other platforms using .nix files don't need this
-        if [ "$platform" != "nixos" ]; then
-                return 0
-        fi
-        # If user explicitly declined flakes enablement, skip it
-        if [ "${WIZARDRY_NIX_FLAKES_CONSENT-}" = "0" ]; then
-                return 0
-        fi
-        if nix_flakes_enabled; then
-                return 0
-        fi
-        backup_rc_file_once
-        
-        # Insert flakes enablement before the closing brace of the configuration
-        # Use /tmp for temp files to avoid permission issues with system config directories
-        tmp_file="${TMPDIR:-/tmp}/wizardry-nix.$$"
-        run_maybe_sudo cat "$rc_file" | awk '
-        BEGIN { inserted = 0 }
-        {
-                lines[NR] = $0
-        }
-        END {
-                if (NR == 0) {
-                        print "  # wizardry flakes enablement"
-                        print "  nix.settings.experimental-features = [ \"nix-command\" \"flakes\" ];"
-                        exit
-                }
-                last = NR
-                while (last > 0 && lines[last] ~ /^[[:space:]]*$/) {
-                        last--
-                }
-                if (last > 0 && lines[last] ~ /^[[:space:]]*}/) {
-                        for (i = 1; i < last; i++) print lines[i]
-                        if (last > 1 && lines[last-1] !~ /^[[:space:]]*$/) {
-                                print ""
-                        }
-                        print "  # wizardry flakes enablement"
-                        print "  nix.settings.experimental-features = [ \"nix-command\" \"flakes\" ];"
-                        print lines[last]
-                        for (i = last + 1; i <= NR; i++) print lines[i]
-                } else {
-                        for (i = 1; i <= NR; i++) print lines[i]
-                        if (NR > 0 && lines[NR] !~ /^[[:space:]]*$/) {
-                                print ""
-                        }
-                        print "  # wizardry flakes enablement"
-                        print "  nix.settings.experimental-features = [ \"nix-command\" \"flakes\" ];"
-                }
-        }
-        ' >"$tmp_file"
-        
-        if [ "$needs_sudo" -eq 1 ]; then
-                run_maybe_sudo cp "$tmp_file" "$rc_file"
-                rm -f "$tmp_file"
-        else
-                mv "$tmp_file" "$rc_file"
         fi
         
-        printf '%s\n' "path-wizard: enabled flakes in '$rc_file'." >&2
-}
-
-# Add a directory to the managed list inside configuration.nix. Duplicates are
-# ignored so repeated runs stay harmless.
-nix_add() {
-        ensure_rc_directory
-        # Enable flakes if not already enabled (required for wizardry on NixOS)
-        enable_nix_flakes
-        existing_paths="$(extract_nix_paths)"
-        old_ifs=$IFS
-        IFS='
-'
-        # shellcheck disable=SC2086
-        set -- $existing_paths
-        IFS=$old_ifs
-        for path_entry in "$@"; do
-                if [ "$path_entry" = "$directory" ]; then
-                        printf '%s\n' "'$directory' is already listed in '$rc_file'; nothing changed."
-                        return 0
-                fi
-        done
-        set -- "$@" "$directory"
-        write_nix_paths "$@"
+        # Check if this path is already added
+        if has_wizardry_nix_path "$directory"; then
+                printf '%s\n' "'$directory' is already listed in '$rc_file'; nothing changed."
+                return 0
+        fi
+        
+        add_wizardry_nix_path "$directory"
         printf '%s\n' "Recorded '$directory' in '$rc_file'. Rebuild your Nix environment to activate the change."
 }
 
-# Remove a directory from configuration.nix. When the last entry is removed we
-# delete the managed block entirely to avoid leaving empty scaffolding.
+# Remove a directory from configuration.nix. Only removes wizardry-marked lines.
 nix_remove() {
         if [ ! -f "$rc_file" ]; then
-                        printf '%s\n' "Error: The startup file '$rc_file' does not exist." >&2
-                        exit 1
+                printf '%s\n' "Error: The startup file '$rc_file' does not exist." >&2
+                exit 1
         fi
-        existing_paths="$(extract_nix_paths)"
-        old_ifs=$IFS
-        IFS='
-'
-        # shellcheck disable=SC2086
-        set -- $existing_paths
-        IFS=$old_ifs
-        found=0
-        new_paths=""
-        for path_entry in "$@"; do
-                if [ "$path_entry" = "$directory" ]; then
-                        found=1
-                        continue
-                fi
-                if [ -z "$new_paths" ]; then
-                        new_paths=$path_entry
-                else
-                        new_paths="$new_paths\n$path_entry"
-                fi
-        done
-        if [ "$found" -eq 0 ]; then
+        
+        # Check if this path exists in wizardry-marked lines
+        if ! has_wizardry_nix_path "$directory"; then
                 printf '%s\n' "Error: The directory is not in your PATH." >&2
                 exit 1
         fi
-        if [ -z "$new_paths" ]; then
-                write_nix_paths
-        else
-                old_ifs=$IFS
-                IFS='
-'
-                # shellcheck disable=SC2086
-                set -- $new_paths
-                IFS=$old_ifs
-                write_nix_paths "$@"
-        fi
+        
+        remove_wizardry_nix_path "$directory"
         printf '%s\n' "Removed '$directory' from '$rc_file'. Rebuild your Nix environment to activate the change."
 }
 
-# status for configuration.nix mirrors the shell variant, returning success
-# only when the directory is already present.
+# status for configuration.nix - returns success only when the directory
+# is present in wizardry-marked lines.
 nix_status() {
         if [ ! -f "$rc_file" ]; then
                 return 1
         fi
-        existing_paths="$(extract_nix_paths)"
-        old_ifs=$IFS
-        IFS='
-'
-        # shellcheck disable=SC2086
-        set -- $existing_paths
-        IFS=$old_ifs
-        for path_entry in "$@"; do
-                if [ "$path_entry" = "$directory" ]; then
-                        return 0
-                fi
-        done
-        return 1
+        has_wizardry_nix_path "$directory"
 }
 
 # Handle batch add mode - process all directories from file at once
@@ -1082,39 +919,39 @@ if [ "$batch_mode" -eq 1 ]; then
                 exit 1
         fi
         
-        # Read all directories and normalize them
-        batch_dirs=""
+        # Create a minimal config file if none exists
+        if [ ! -f "$rc_file" ] || [ ! -s "$rc_file" ]; then
+                ensure_rc_directory
+                new_content_tmp="${TMPDIR:-/tmp}/wizardry-new.$$"
+                {
+                        printf '{ config, pkgs, ... }:\n'
+                        printf '\n'
+                        printf '{\n'
+                        printf '}\n'
+                } >"$new_content_tmp"
+                if [ "$needs_sudo" -eq 1 ]; then
+                        run_maybe_sudo cp "$new_content_tmp" "$rc_file"
+                        rm -f "$new_content_tmp"
+                else
+                        mv "$new_content_tmp" "$rc_file"
+                fi
+        fi
+        
+        # Read all directories and add each one with inline marker
+        added_count=0
         while IFS= read -r dir; do
                 [ -d "$dir" ] || continue
                 case $dir in
                 /*) : ;;
                 *) dir=$(cd "$dir" 2>/dev/null && pwd -P) || continue ;;
                 esac
-                if [ -z "$batch_dirs" ]; then
-                        batch_dirs="$dir"
-                else
-                        batch_dirs="$batch_dirs
-$dir"
+                if ! has_wizardry_nix_path "$dir"; then
+                        add_wizardry_nix_path "$dir"
+                        added_count=$((added_count + 1))
                 fi
         done <"$batch_add_file"
         
-        # Enable flakes first (only needs to happen once)
-        enable_nix_flakes
-        
-        # Get existing paths and merge with new ones, using sort for dedup
-        existing_paths="$(extract_nix_paths)"
-        
-        # Combine existing and new paths, remove duplicates using sort -u
-        {
-                printf '%s\n' "$existing_paths"
-                printf '%s\n' "$batch_dirs"
-        } | grep -v '^$' | sort -u > "${batch_add_file}.merged"
-        
-        # shellcheck disable=SC2046
-        set -- $(cat "${batch_add_file}.merged")
-        rm -f "${batch_add_file}.merged"
-        write_nix_paths "$@"
-        printf '%s\n' "Recorded %d directories in '$rc_file'. Rebuild your Nix environment to activate the change." "$#"
+        printf '%s\n' "Recorded $added_count directories in '$rc_file'. Rebuild your Nix environment to activate the change."
         exit 0
 fi
 
@@ -1136,10 +973,6 @@ shell)
         status)
                 shell_status
                 ;;
-        enable-flakes)
-                printf '%s\n' "Error: enable-flakes action is only valid for nix format." >&2
-                exit 1
-                ;;
         esac
         ;;
 nix)
@@ -1152,15 +985,6 @@ nix)
                 ;;
         status)
                 nix_status
-                ;;
-        enable-flakes)
-                # Only enable flakes, don't add any PATH entries
-                ensure_rc_directory
-                if nix_flakes_enabled; then
-                        printf '%s\n' "Flakes already enabled in '$rc_file'."
-                        exit 0
-                fi
-                enable_nix_flakes
                 ;;
         esac
         ;;
