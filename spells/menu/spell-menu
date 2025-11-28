@@ -1,0 +1,237 @@
+#!/bin/sh
+# spell-menu - Display action menu for a spell or custom command
+# Shows options: Cast now, Memorize/Forget, Help, Test spell, Delete (for custom)
+
+set -eu
+
+menu_escape_status=113
+
+# Load colors for display
+if command -v colors >/dev/null 2>&1; then
+        # shellcheck source=/dev/null
+        . "$(command -v colors)"
+else
+        RESET=''
+        CYAN=''
+fi
+
+if [ -n "${REQUIRE_COMMAND-}" ]; then
+        require_cmd=$REQUIRE_COMMAND
+else
+        require_cmd=require-command
+fi
+
+require_tool() {
+        "$require_cmd" "$@"
+}
+
+cast_store=${CAST_STORE-memorize-command}
+if cast_store_path=$(command -v "$cast_store" 2>/dev/null); then
+        cast_store=$cast_store_path
+else
+        printf '%s\n' "spell-menu: memorize-command helper is missing." >&2
+        exit 1
+fi
+
+resolve_spell_home() {
+        if [ -n "${WIZARDRY_SPELL_HOME-}" ]; then
+                printf '%s' "$WIZARDRY_SPELL_HOME"
+        elif [ -n "${SPELLBOOK_HOME-}" ]; then
+                printf '%s' "$SPELLBOOK_HOME"
+        elif [ -n "${SPELL_HOME-}" ]; then
+                printf '%s' "$SPELL_HOME"
+        elif [ -n "${XDG_DATA_HOME-}" ] && [ -n "$XDG_DATA_HOME" ]; then
+                printf '%s' "$XDG_DATA_HOME/wizardry/spellbook"
+        elif [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
+                printf '%s' "$HOME/.spellbook"
+        else
+                printf '%s' ".spellbook"
+        fi
+}
+
+spell_home=$(resolve_spell_home)
+commands_file=${SPELLBOOK_COMMANDS_FILE-$spell_home/custom-commands}
+custom_spells_dir=${SPELLBOOK_CUSTOM_DIR-$spell_home/custom}
+
+cast_list() {
+        "$cast_store" list
+}
+
+is_memorized() {
+        check_name=$1
+        while IFS=$(printf '\t') read -r alias _; do
+                if [ "$alias" = "$check_name" ]; then
+                        return 0
+                fi
+        done <<ENTRIES
+$(cast_list)
+ENTRIES
+        return 1
+}
+
+do_memorize() {
+        mem_name=$1
+        shift
+        "$cast_store" add "$mem_name" "$@"
+}
+
+do_forget() {
+        mem_name=$1
+        "$cast_store" remove "$mem_name"
+}
+
+is_custom_command() {
+        check_category=$1
+        check_name=$2
+        if [ ! -f "$commands_file" ]; then
+                return 1
+        fi
+        while IFS=$(printf '\t') read -r category name _ || [ -n "$category" ]; do
+                [ -z "$category" ] && continue
+                if [ "$category" = "$check_category" ] && [ "$name" = "$check_name" ]; then
+                        return 0
+                fi
+        done <"$commands_file"
+        return 1
+}
+
+remove_custom_command() {
+        cat_name=$1
+        cmd_name=$2
+        [ -f "$commands_file" ] || return 1
+        tmp=$(mktemp "${TMPDIR:-/tmp}/spell-menu-commands.XXXXXX") || exit 1
+        kept=0
+        removed=0
+        while IFS= read -r line || [ -n "$line" ]; do
+                entry_category=${line%%$(printf '\t')*}
+                case $line in
+                *$(printf '\t')*)
+                        entry_rest=${line#*$(printf '\t')}
+                        entry_name=${entry_rest%%$(printf '\t')*}
+                        ;;
+                *)
+                        entry_name=''
+                        ;;
+                esac
+                if [ "$entry_category" = "$cat_name" ] && [ "$entry_name" = "$cmd_name" ]; then
+                        removed=1
+                        continue
+                fi
+                kept=1
+                printf '%s\n' "$line" >>"$tmp"
+        done <"$commands_file"
+        mv "$tmp" "$commands_file"
+        rm -f "$custom_spells_dir/$cmd_name"
+        if [ "$kept" -eq 0 ] && [ ! -s "$commands_file" ]; then
+                rm -f "$commands_file"
+        fi
+        [ "$removed" -eq 1 ]
+}
+
+usage() {
+        cat <<'USAGE'
+Usage: spell-menu CATEGORY NAME COMMAND [DISPLAY_COMMAND]
+       spell-menu --cast COMMAND
+       spell-menu --memorize NAME COMMAND
+       spell-menu --forget NAME
+       spell-menu --help-spell COMMAND
+       spell-menu --test NAME
+       spell-menu --delete CATEGORY NAME
+
+Display an action menu for a spell with options to cast, memorize, get help, test, or delete.
+
+Arguments:
+  CATEGORY         The category the spell belongs to
+  NAME             The spell name
+  COMMAND          The command to execute
+  DISPLAY_COMMAND  Optional display text for the command (defaults to COMMAND)
+USAGE
+}
+
+# Handle action flags (called by menu via subprocess)
+case ${1-} in
+        --cast)
+                shift
+                eval "$*"
+                exit 0
+                ;;
+        --memorize)
+                shift
+                name=$1
+                shift
+                do_memorize "$name" "$@"
+                exit 0
+                ;;
+        --forget)
+                shift
+                do_forget "$1"
+                exit 0
+                ;;
+        --help-spell)
+                shift
+                eval "$* --help" || true
+                exit 0
+                ;;
+        --test)
+                shift
+                name=$1
+                if command -v test-magic >/dev/null 2>&1; then
+                        test-magic --only "$name" || true
+                else
+                        printf '%s\n' "test-magic is unavailable; cannot test $name." >&2
+                fi
+                exit 0
+                ;;
+        --delete)
+                shift
+                category=$1
+                name=$2
+                if remove_custom_command "$category" "$name"; then
+                        printf "Deleted custom command '%s' from category '%s'.\n" "$name" "$category"
+                else
+                        printf "Failed to delete custom command '%s'.\n" "$name" >&2
+                fi
+                exit 0
+                ;;
+        -h|--help)
+                usage
+                exit 0
+                ;;
+esac
+
+if [ "$#" -lt 3 ]; then
+        usage >&2
+        exit 1
+fi
+
+category=$1
+name=$2
+command=$3
+display_command=${4-$command}
+
+if ! require_tool menu "The spell menu needs the 'menu' command."; then
+        exit 1
+fi
+
+# Escape single quotes in command for safe passing
+escaped_command=$(printf '%s' "$command" | sed "s/'/'\\\\''/g")
+
+while :; do
+        if is_memorized "$name"; then
+                memory_toggle="Forget%spell-menu --forget '$name'"
+        else
+                memory_toggle="Memorize%spell-menu --memorize '$name' '$escaped_command'"
+        fi
+        if is_custom_command "$category" "$name"; then
+                set -- "Cast now%spell-menu --cast '$escaped_command'" "$memory_toggle" "Help%spell-menu --help-spell '$escaped_command'" "Test spell%spell-menu --test '$name'" "Delete command%spell-menu --delete '$category' '$name'" "Exit%return"
+        else
+                set -- "Cast now%spell-menu --cast '$escaped_command'" "$memory_toggle" "Help%spell-menu --help-spell '$escaped_command'" "Test spell%spell-menu --test '$name'" "Exit%return"
+        fi
+        
+        MENU_ESCAPE_STATUS=$menu_escape_status menu "Spell: $name" "$@"
+        status=$?
+        if [ "$status" -eq "$menu_escape_status" ]; then
+                break
+        fi
+        printf '\n'
+done

@@ -183,9 +183,44 @@ command_for_spell() {
         fi
 }
 
+# Resolve a category path by searching in multiple locations.
+# If the path starts with ./ or /, use it directly.
+# Otherwise, search in: spells/, ~/.spellbook, current directory
+resolve_category_path() {
+        category=$1
+        case $category in
+                /*|./*)
+                        # Absolute or explicit relative path - use directly
+                        if [ -d "$category" ]; then
+                                printf '%s' "$category"
+                                return 0
+                        fi
+                        return 1
+                        ;;
+        esac
+        # Search in spells/ directory first
+        if [ -d "$ROOT_DIR/spells/$category" ]; then
+                printf '%s' "$ROOT_DIR/spells/$category"
+                return 0
+        fi
+        # Search in ~/.spellbook (user spell home)
+        if [ -d "$spell_home/$category" ]; then
+                printf '%s' "$spell_home/$category"
+                return 0
+        fi
+        # Search in current directory
+        if [ -d "$category" ]; then
+                printf '%s' "$category"
+                return 0
+        fi
+        return 1
+}
+
 list_category_spells() {
         cat_name=$1
-        find "$ROOT_DIR/spells/$cat_name" -maxdepth 2 -type f -perm -111 | sort
+        # Use resolve_category_path to find the actual directory
+        resolved_path=$(resolve_category_path "$cat_name") || resolved_path="$ROOT_DIR/spells/$cat_name"
+        find "$resolved_path" -maxdepth 2 -type f -perm -111 2>/dev/null | sort
 }
 
 list_custom_commands() {
@@ -449,7 +484,7 @@ spellbook_menu() {
                         [ -z "$cmd_name" ] && continue
                         spell_path=$(custom_spell_path "$cmd_name")
                         label=$(printf '%s (%s)' "$cmd_name" "$cmd_category")
-                        set -- "$@" "$(safe_command_label "$label" "$cmd_text")%$spell_path"
+                        set -- "$@" "$(safe_command_label "$label" "$cmd_text")%spell-menu '$cmd_category' '$cmd_name' '$spell_path' '$cmd_text'"
                 done <<CUSTOM_COMMANDS
 $(list_all_custom_commands)
 CUSTOM_COMMANDS
@@ -462,15 +497,27 @@ CUSTOM_COMMANDS
                         # Root: show spell categories
                         for category in $(spell_categories); do
                                 display_name=$(category_display_name "$category")
-                                set -- "$@" "${display_name}%spellbook $ROOT_DIR/spells/$category"
+                                set -- "$@" "${display_name}%spellbook $category"
                         done
                 else
-                        # Category view: show subfolders in this category
-                        for subdir in "$ROOT_DIR/spells/$current_path"/*; do
+                        # Category view: show spells and subfolders in this category
+                        if ! resolved_path=$(resolve_category_path "$current_path"); then
+                                printf '%s\n' "spellbook: category '$current_path' not found" >&2
+                                return 1
+                        fi
+                        # List executable spells in this directory
+                        for spell in $(find "$resolved_path" -maxdepth 1 -type f -perm -111 2>/dev/null | sort); do
+                                spell_name=$(basename "$spell")
+                                cmd=$(command_for_spell "$spell")
+                                display_name=$spell_name
+                                set -- "$@" "$(safe_command_label "$display_name" "$cmd")%spell-menu '$current_path' '$spell_name' '$cmd' '$cmd'"
+                        done
+                        # List subdirectories
+                        for subdir in "$resolved_path"/*; do
                                 [ -d "$subdir" ] || continue
                                 subname=$(basename "$subdir")
                                 display_name=$(category_display_name "$subname")
-                                set -- "$@" "${display_name}%spellbook $ROOT_DIR/spells/$current_path/$subname"
+                                set -- "$@" "${display_name}%spellbook $current_path/$subname"
                         done
                 fi
                 exit_label=$(exit-label)
@@ -498,7 +545,12 @@ Without arguments, opens the interactive spellbook to browse categories,
 scribe commands, and manage the cast menu.
 
 With a PATH argument (e.g., 'arcane' or 'install/core'), opens the spellbook
-directly to that category.
+directly to that category. PATH is resolved by searching in:
+  1. $WIZARDRY_ROOT/spells/ (wizardry installation)
+  2. ~/.spellbook/ (user spell home)
+  3. Current directory
+
+Use './category' to search only in the current directory.
 
 Options:
   --interactive-scribe  Prompt for category, name, and command to scribe a new spell.
