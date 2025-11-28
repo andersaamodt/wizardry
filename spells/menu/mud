@@ -33,12 +33,12 @@ fi
 # Add visual spacing before launching a submenu command
 launch_submenu() {
   printf '\n'
-  WIZARDRY_SUBMENU=1 "$@"
+  "$@"
 }
 
 display_menu() {
   look="Look Around%look"
-  cast="Spellbook%WIZARDRY_SUBMENU=1 spellbook"
+  cast="Spellbook%spellbook"
   home="Teleport Home%cd"
   jump="Teleport to Marker%jump-to-marker"
   portal="Teleport to Portal Chamber%cd /mnt"

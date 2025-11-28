@@ -1,9 +1,5 @@
 #!/bin/sh
-# exit-label - return "Back" if called from a parent menu, "Exit" otherwise
+# exit-label - return the label for menu exit items
 # Example: exit_item="$(exit-label)%kill -2 $$"
 
-if [ "${WIZARDRY_SUBMENU-}" = "1" ]; then
-    printf '%s' "Back"
-else
-    printf '%s' "Exit"
-fi
+printf '%s' "Exit"
