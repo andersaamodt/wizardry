@@ -122,7 +122,7 @@ record_custom_command() {
 
 prompt_for_input() {
         prompt=$1
-        printf '%s' "$prompt"
+        printf '%s' "$prompt" >&2
         IFS= read -r value
         printf '%s' "$value"
 }
