@@ -518,7 +518,7 @@ CUSTOM_COMMANDS
                         for spell in $(find "$resolved_path" -maxdepth 1 -type f -perm -111 2>/dev/null | sort); do
                                 spell_name=$(basename "$spell")
                                 cmd=$(command_for_spell "$spell")
-                                set -- "$@" "$(safe_command_label "$spell_name")%spell-menu $current_path $spell_name $cmd"
+                                set -- "$@" "${spell_name}%spell-menu $current_path $spell_name $cmd"
                         done
                         # List subdirectories
                         for subdir in "$resolved_path"/*; do
