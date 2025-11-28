@@ -6,7 +6,7 @@ pm=$(pkg-manager) || { printf '%s\n' "pkg-update: no supported package manager" 
 
 case $pm in
 apt)    sudo apt-get update ;;
-dnf)    sudo dnf check-update || [ $? -eq 100 ] ;;
+dnf)    sudo dnf check-update || [ $? -eq 100 ] ;;  # dnf returns 100 when updates are available
 pacman) sudo pacman -Sy ;;
 brew)   brew update ;;
 nix)    nix-channel --update ;;

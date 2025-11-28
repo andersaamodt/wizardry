@@ -13,6 +13,6 @@ dnf)    rpm -q "$package" >/dev/null 2>&1 ;;
 pacman) pacman -Q "$package" >/dev/null 2>&1 ;;
 brew)   brew list "$package" >/dev/null 2>&1 ;;
 nix)    nix-env -q "$package" >/dev/null 2>&1 ;;
-pkgin)  pkgin list 2>/dev/null | grep -q "^$package" ;;
+pkgin)  pkgin list 2>/dev/null | grep -q "^${package}-" ;;  # match exact package name prefix
 apk)    apk info -e "$package" >/dev/null 2>&1 ;;
 esac

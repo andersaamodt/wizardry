@@ -13,8 +13,8 @@ test_clip_copy_no_utility_fails_gracefully() {
 }
 
 test_clip_copy_from_stdin() {
-  # Test that piped input is handled
-  run_cmd sh -c 'echo "test" | clip-copy'
+  # Test that piped input is handled - use full path via run_spell
+  run_cmd sh -c "echo 'test' | $ROOT_DIR/spells/.imps/fs/clip-copy"
   # Either succeeds or fails gracefully depending on clipboard availability
 }
 
