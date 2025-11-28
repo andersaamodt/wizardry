@@ -97,6 +97,13 @@ else
         WHITE=''
 fi
 
+# Check for --spell-mode flag (label is command, right side is description)
+spell_mode=0
+if [ "${1-}" = "--spell-mode" ]; then
+        spell_mode=1
+        shift
+fi
+
 if [ "$#" -lt 2 ]; then
         if command -v main-menu >/dev/null 2>&1; then
                 main-menu
@@ -412,12 +419,17 @@ refresh_selection() {
 execute_selection() {
         # Run the command paired with the currently highlighted menu item. If
         # there is no command we simply exit after cleaning up.
-        command=$(sed -n "${selected}p" "$commands_file")
-        if [ -n "$command" ]; then
+        # In spell mode, run the label (spell name) instead of the command (description).
+        if [ "$spell_mode" -eq 1 ]; then
+                to_run=$(sed -n "${selected}p" "$items_file")
+        else
+                to_run=$(sed -n "${selected}p" "$commands_file")
+        fi
+        if [ -n "$to_run" ]; then
                 cleanup
                 trap - EXIT INT TERM
                 # shellcheck disable=SC2039,SC3045 # POSIX sh allows eval
-                eval "$command"
+                eval "$to_run"
         else
                 cleanup
                 trap - EXIT INT TERM

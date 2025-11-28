@@ -254,20 +254,24 @@ while :; do
                 cast_toggle="[ ] Show in Cast menu%spell-menu --memorize '$name' '$escaped_command'"
         fi
         # Build menu items - Cast runs the command directly (using escaped version for safety)
+        exit_label=$(exit-label)
+        exit_item="${exit_label}%kill -2 $$"
         if is_custom_command "$category" "$name"; then
-                set -- "Cast%$escaped_command" "$cast_toggle" "Help%$escaped_command --help" "Test spell%spell-menu --test '$name'" "Delete command%spell-menu --delete '$category' '$name'" "Exit%exit $menu_escape_status"
+                set -- "Cast%$escaped_command" "$cast_toggle" "Help%$escaped_command --help" "Test spell%spell-menu --test '$name'" "Delete command%spell-menu --delete '$category' '$name'" "$exit_item"
         elif is_installable "$command"; then
                 # Show Install option for spells with install() function
-                set -- "Cast%$escaped_command" "$cast_toggle" "Install to shell%spell-menu --install '$escaped_command'" "Help%$escaped_command --help" "Test spell%spell-menu --test '$name'" "Exit%exit $menu_escape_status"
+                set -- "Cast%$escaped_command" "$cast_toggle" "Install to shell%spell-menu --install '$escaped_command'" "Help%$escaped_command --help" "Test spell%spell-menu --test '$name'" "$exit_item"
         else
-                set -- "Cast%$escaped_command" "$cast_toggle" "Help%$escaped_command --help" "Test spell%spell-menu --test '$name'" "Exit%exit $menu_escape_status"
+                set -- "Cast%$escaped_command" "$cast_toggle" "Help%$escaped_command --help" "Test spell%spell-menu --test '$name'" "$exit_item"
         fi
         
-        menu_title="${CYAN}Spell:${RESET} $name"
-        MENU_ESCAPE_STATUS=$menu_escape_status menu "$menu_title" "$@"
+        MENU_ESCAPE_STATUS=$menu_escape_status menu "Spell Menu:" "$@"
         status=$?
         if [ "$status" -eq "$menu_escape_status" ]; then
                 break
+        fi
+        if [ "$status" -ne 0 ]; then
+                exit "$status"
         fi
         printf '\n'
 done
