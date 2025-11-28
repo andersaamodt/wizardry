@@ -1,6 +1,7 @@
 #!/bin/sh
 # is-submenu - check if current menu was called from another menu
-# Returns 0 (true) if WIZARDRY_SUBMENU is set, 1 (false) otherwise
+# Always returns 1 (false) since submenu detection is not reliably possible
+# without using environment variables, which is against project policy.
 # Example: if is-submenu; then exit_label="Back"; else exit_label="Exit"; fi
 
-[ "${WIZARDRY_SUBMENU-}" = "1" ]
+exit 1

@@ -43,7 +43,7 @@ if [ -r /etc/os-release ] && grep -q '^ID=nixos' /etc/os-release; then
 fi
 
 display_menu() {
-  services="Manage services%WIZARDRY_SUBMENU=1 services-menu"
+  services="Manage services%services-menu"
   verify_posix="Verify POSIX spells%verify-posix"
   update_wizardry="Update wizardry%update-wizardry"
   test_suite="Test all wizardry spells%$repo_dir/spells/system/test-magic"
