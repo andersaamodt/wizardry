@@ -115,14 +115,26 @@ EOF_SCRIPT
 }
 
 # Extract the command from a scribed script file
+# Returns empty string if not a valid scribed script format
 extract_command_from_script() {
         script_path=$1
         if [ ! -f "$script_path" ]; then
                 return 1
         fi
+        # Verify script starts with expected shebang
+        first_line=$(head -n 1 "$script_path")
+        case "$first_line" in
+                "#!/bin/sh") : ;;
+                *) return 1 ;;
+        esac
         # Scripts are in format: exec sh -c 'COMMAND' "$0" "$@"
         # Extract the command between single quotes on the exec line
-        sed -n "s/^exec sh -c '\\(.*\\)' \"\\\$0\" \"\\\$@\"$/\\1/p" "$script_path" | sed "s/'\\\\''/'/g"
+        result=$(sed -n "s/^exec sh -c '\\(.*\\)' \"\\\$0\" \"\\\$@\"$/\\1/p" "$script_path" | sed "s/'\\\\''/'/g")
+        # Return empty if no match found (not a scribed script)
+        if [ -z "$result" ]; then
+                return 1
+        fi
+        printf '%s' "$result"
 }
 
 list_spell_directories() {
@@ -233,7 +245,11 @@ list_scribed_commands() {
         if [ ! -d "$spell_home" ]; then
                 return 0
         fi
+        # Handle empty directory by checking if glob matches anything
+        set +f  # Enable globbing
         for script in "$spell_home"/*; do
+                # Skip if glob didn't match (no files exist)
+                [ -e "$script" ] || continue
                 [ -f "$script" ] || continue
                 [ -x "$script" ] || continue
                 script_name=$(basename "$script")
