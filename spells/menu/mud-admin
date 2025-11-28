@@ -42,7 +42,11 @@ display_menu() {
   MENU_ESCAPE_STATUS=$menu_escape_status menu "MUD Admin:" "$@"
 }
 
+# Catch Ctrl-C and exit cleanly
+trap 'exit' INT
+
 menu_escape_status=113
+loop_limit=${MENU_LOOP_LIMIT:-}
 first_run=1
 
 while true; do
@@ -64,5 +68,13 @@ while true; do
 
   if [ "$status" -ne 0 ]; then
     exit "$status"
+  fi
+
+  # Support MENU_LOOP_LIMIT for testing
+  if [ -n "$loop_limit" ]; then
+    loop_limit=$((loop_limit - 1))
+    if [ "$loop_limit" -le 0 ]; then
+      break
+    fi
   fi
 done

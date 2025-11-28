@@ -59,7 +59,8 @@ if [ "${WIZARDRY_SUBMENU-}" = "1" ]; then printf '%s' "Back"; else printf '%s' "
 SH
   chmod +x "$tmp/exit-label"
   # Test as submenu (as it would be called from mud menu)
-  run_cmd env WIZARDRY_SUBMENU=1 REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MENU_ESCAPE_STATUS=113 "$ROOT_DIR/spells/menu/mud-admin"
+  # Use MENU_LOOP_LIMIT=1 to exit after one iteration
+  run_cmd env WIZARDRY_SUBMENU=1 REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MENU_LOOP_LIMIT=1 "$ROOT_DIR/spells/menu/mud-admin"
   assert_success
   args=$(cat "$tmp/log")
   case "$args" in
@@ -91,7 +92,13 @@ test_mud_admin_reports_menu_failure() {
 command -v "$1" >/dev/null 2>&1
 SH
   chmod +x "$tmp/require-command"
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MENU_ESCAPE_STATUS=113 "$ROOT_DIR/spells/menu/mud-admin"
+  # Stub exit-label
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$tmp/exit-label"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MENU_LOOP_LIMIT=1 "$ROOT_DIR/spells/menu/mud-admin"
   assert_status 7
   assert_file_contains "$tmp/log" "MUD Admin:"
 }
