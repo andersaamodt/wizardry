@@ -13,13 +13,13 @@ test_tty_save_without_tty_fails() {
   # We just ensure it doesn't crash unexpectedly
 }
 
-test_tty_save_custom_fd_fails() {
-  # Running with invalid fd should fail
-  run_spell spells/.imps/input/tty-save 99
-  assert_failure
+test_tty_save_ignores_extra_args() {
+  # Extra arguments should be ignored (POSIX-compliant imps are simpler)
+  run_spell spells/.imps/input/tty-save ignored_arg
+  # Still fails due to no TTY, but shouldn't crash
 }
 
 run_test_case "tty-save handles missing tty" test_tty_save_without_tty_fails
-run_test_case "tty-save invalid fd fails" test_tty_save_custom_fd_fails
+run_test_case "tty-save ignores extra args" test_tty_save_ignores_extra_args
 
 finish_tests
