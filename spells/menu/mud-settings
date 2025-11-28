@@ -31,6 +31,7 @@ if ! require menu "The MUD Settings menu needs the 'menu' command to present opt
   exit 1
 fi
 
+# Add visual spacing before launching a submenu command
 launch_submenu() {
   printf '\n'
   "$@"
