@@ -29,8 +29,8 @@ fi
 
 is file "$1" || { say 'That file does not exist.'; exit 1; }
 
-# Copy file contents to clipboard using the clipboard imp
-if ! clipboard copy < "$1"; then
+# Copy file contents to clipboard using the clip-copy imp
+if ! clip-copy < "$1"; then
     warn 'Your spell fizzles. No clipboard utilities are available on this system. Please install xsel, xclip, or pbcopy (for mac)'
     exit 1
 fi

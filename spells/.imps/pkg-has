@@ -1,0 +1,18 @@
+#!/bin/sh
+# pkg-has PACKAGE - test if a package is installed
+# Example: pkg-has git && echo "git is installed"
+
+package=${1:-}
+[ -z "$package" ] && { printf '%s\n' "pkg-has: package name required" >&2; exit 1; }
+
+pm=$(pkg-manager) || { printf '%s\n' "pkg-has: no supported package manager" >&2; exit 1; }
+
+case $pm in
+apt)    dpkg -l "$package" 2>/dev/null | grep -q "^ii" ;;
+dnf)    rpm -q "$package" >/dev/null 2>&1 ;;
+pacman) pacman -Q "$package" >/dev/null 2>&1 ;;
+brew)   brew list "$package" >/dev/null 2>&1 ;;
+nix)    nix-env -q "$package" >/dev/null 2>&1 ;;
+pkgin)  pkgin list 2>/dev/null | grep -q "^$package" ;;
+apk)    apk info -e "$package" >/dev/null 2>&1 ;;
+esac
