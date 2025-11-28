@@ -217,18 +217,21 @@ fi
 escaped_command=$(printf '%s' "$command" | sed "s/'/'\\\\''/g")
 
 while :; do
+        # Show checkbox for Cast menu visibility (toggleable)
         if is_memorized "$name"; then
-                memory_toggle="Forget%spell-menu --forget '$name'"
+                cast_toggle="[X] Show in Cast menu%spell-menu --forget '$name'"
         else
-                memory_toggle="Memorize%spell-menu --memorize '$name' '$escaped_command'"
+                cast_toggle="[ ] Show in Cast menu%spell-menu --memorize '$name' '$escaped_command'"
         fi
+        # Build menu items - Cast runs the command directly
         if is_custom_command "$category" "$name"; then
-                set -- "Cast now%spell-menu --cast '$escaped_command'" "$memory_toggle" "Help%spell-menu --help-spell '$escaped_command'" "Test spell%spell-menu --test '$name'" "Delete command%spell-menu --delete '$category' '$name'" "Exit%exit $menu_escape_status"
+                set -- "Cast%$command" "$cast_toggle" "Help%$escaped_command --help" "Test spell%spell-menu --test '$name'" "Delete command%spell-menu --delete '$category' '$name'" "Exit%exit $menu_escape_status"
         else
-                set -- "Cast now%spell-menu --cast '$escaped_command'" "$memory_toggle" "Help%spell-menu --help-spell '$escaped_command'" "Test spell%spell-menu --test '$name'" "Exit%exit $menu_escape_status"
+                set -- "Cast%$command" "$cast_toggle" "Help%$escaped_command --help" "Test spell%spell-menu --test '$name'" "Exit%exit $menu_escape_status"
         fi
         
-        MENU_ESCAPE_STATUS=$menu_escape_status menu "Spell: $name" "$@"
+        menu_title="${CYAN}Spell:${RESET} $name"
+        MENU_ESCAPE_STATUS=$menu_escape_status menu "$menu_title" "$@"
         status=$?
         if [ "$status" -eq "$menu_escape_status" ]; then
                 break
