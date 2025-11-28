@@ -215,9 +215,12 @@ case ${1-} in
                 ;;
         --install)
                 shift
-                cmd=$1
+                # The command is already escaped when passed to this handler
                 # Run the spell with --install flag to trigger its install() function
-                eval "$cmd --install" || true
+                cmd=$1
+                # Use eval since command might contain arguments/quotes
+                # The caller has already escaped the command properly
+                eval "$cmd" --install || true
                 exit 0
                 ;;
         -h|--help)
@@ -250,14 +253,14 @@ while :; do
         else
                 cast_toggle="[ ] Show in Cast menu%spell-menu --memorize '$name' '$escaped_command'"
         fi
-        # Build menu items - Cast runs the command directly
+        # Build menu items - Cast runs the command directly (using escaped version for safety)
         if is_custom_command "$category" "$name"; then
-                set -- "Cast%$command" "$cast_toggle" "Help%$escaped_command --help" "Test spell%spell-menu --test '$name'" "Delete command%spell-menu --delete '$category' '$name'" "Exit%exit $menu_escape_status"
+                set -- "Cast%$escaped_command" "$cast_toggle" "Help%$escaped_command --help" "Test spell%spell-menu --test '$name'" "Delete command%spell-menu --delete '$category' '$name'" "Exit%exit $menu_escape_status"
         elif is_installable "$command"; then
                 # Show Install option for spells with install() function
-                set -- "Cast%$command" "$cast_toggle" "Install to shell%spell-menu --install '$escaped_command'" "Help%$escaped_command --help" "Test spell%spell-menu --test '$name'" "Exit%exit $menu_escape_status"
+                set -- "Cast%$escaped_command" "$cast_toggle" "Install to shell%spell-menu --install '$escaped_command'" "Help%$escaped_command --help" "Test spell%spell-menu --test '$name'" "Exit%exit $menu_escape_status"
         else
-                set -- "Cast%$command" "$cast_toggle" "Help%$escaped_command --help" "Test spell%spell-menu --test '$name'" "Exit%exit $menu_escape_status"
+                set -- "Cast%$escaped_command" "$cast_toggle" "Help%$escaped_command --help" "Test spell%spell-menu --test '$name'" "Exit%exit $menu_escape_status"
         fi
         
         menu_title="${CYAN}Spell:${RESET} $name"
