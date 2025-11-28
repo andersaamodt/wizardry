@@ -50,8 +50,6 @@ resolve_spell_home() {
 }
 
 spell_home=$(resolve_spell_home)
-commands_file=${SPELLBOOK_COMMANDS_FILE-$spell_home/custom-commands}
-custom_spells_dir=${SPELLBOOK_CUSTOM_DIR-$spell_home/custom}
 
 cast_list() {
         "$cast_store" list
@@ -80,52 +78,21 @@ do_forget() {
         "$cast_store" remove "$mem_name"
 }
 
-is_custom_command() {
-        check_category=$1
-        check_name=$2
-        if [ ! -f "$commands_file" ]; then
-                return 1
-        fi
-        while IFS=$(printf '\t') read -r category name _ || [ -n "$category" ]; do
-                [ -z "$category" ] && continue
-                if [ "$category" = "$check_category" ] && [ "$name" = "$check_name" ]; then
-                        return 0
-                fi
-        done <"$commands_file"
-        return 1
+# Check if a script is a scribed command (exists as executable in spell_home)
+is_scribed_command() {
+        check_name=$1
+        script_path="$spell_home/$check_name"
+        [ -f "$script_path" ] && [ -x "$script_path" ]
 }
 
-remove_custom_command() {
-        cat_name=$1
-        cmd_name=$2
-        [ -f "$commands_file" ] || return 1
-        tmp=$(mktemp "${TMPDIR:-/tmp}/spell-menu-commands.XXXXXX") || exit 1
-        kept=0
-        removed=0
-        while IFS= read -r line || [ -n "$line" ]; do
-                entry_category=${line%%$(printf '\t')*}
-                case $line in
-                *$(printf '\t')*)
-                        entry_rest=${line#*$(printf '\t')}
-                        entry_name=${entry_rest%%$(printf '\t')*}
-                        ;;
-                *)
-                        entry_name=''
-                        ;;
-                esac
-                if [ "$entry_category" = "$cat_name" ] && [ "$entry_name" = "$cmd_name" ]; then
-                        removed=1
-                        continue
-                fi
-                kept=1
-                printf '%s\n' "$line" >>"$tmp"
-        done <"$commands_file"
-        mv "$tmp" "$commands_file"
-        rm -f "$custom_spells_dir/$cmd_name"
-        if [ "$kept" -eq 0 ] && [ ! -s "$commands_file" ]; then
-                rm -f "$commands_file"
+remove_scribed_command() {
+        cmd_name=$1
+        script_path="$spell_home/$cmd_name"
+        if [ -f "$script_path" ]; then
+                rm -f "$script_path"
+                return 0
         fi
-        [ "$removed" -eq 1 ]
+        return 1
 }
 
 # Check if a spell has an install() function (making it installable)
@@ -151,11 +118,9 @@ usage() {
         cat <<'USAGE'
 Usage: spell-menu CATEGORY NAME COMMAND [DISPLAY_COMMAND]
        spell-menu --cast COMMAND
-       spell-menu --memorize NAME COMMAND
-       spell-menu --forget NAME
        spell-menu --help-spell COMMAND
        spell-menu --test NAME
-       spell-menu --delete CATEGORY NAME
+       spell-menu --delete NAME
        spell-menu --install COMMAND
 
 Display an action menu for a spell with options to cast, memorize, get help, test, or delete.
@@ -175,18 +140,6 @@ case ${1-} in
                 eval "$*"
                 exit 0
                 ;;
-        --memorize)
-                shift
-                name=$1
-                shift
-                do_memorize "$name" "$@"
-                exit 0
-                ;;
-        --forget)
-                shift
-                do_forget "$1"
-                exit 0
-                ;;
         --help-spell)
                 shift
                 eval "$* --help" || true
@@ -204,12 +157,11 @@ case ${1-} in
                 ;;
         --delete)
                 shift
-                category=$1
-                name=$2
-                if remove_custom_command "$category" "$name"; then
-                        printf "Deleted custom command '%s' from category '%s'.\n" "$name" "$category"
+                name=$1
+                if remove_scribed_command "$name"; then
+                        printf "Deleted scribed command '%s'.\n" "$name"
                 else
-                        printf "Failed to delete custom command '%s'.\n" "$name" >&2
+                        printf "Failed to delete scribed command '%s'.\n" "$name" >&2
                 fi
                 exit 0
                 ;;
@@ -248,16 +200,17 @@ escaped_command=$(printf '%s' "$command" | sed "s/'/'\\\\''/g")
 
 while :; do
         # Show checkbox for Cast menu visibility (toggleable)
+        # Use standalone memorize-command instead of spell-menu flags
         if is_memorized "$name"; then
-                cast_toggle="[X] Show in Cast menu%spell-menu --forget '$name'"
+                cast_toggle="[X] Show in Cast menu%memorize-command remove '$name'"
         else
-                cast_toggle="[ ] Show in Cast menu%spell-menu --memorize '$name' '$escaped_command'"
+                cast_toggle="[ ] Show in Cast menu%memorize-command add '$name' '$escaped_command'"
         fi
         # Build menu items - Cast runs the command directly (using escaped version for safety)
         exit_label=$(exit-label)
         exit_item="${exit_label}%kill -2 $$"
-        if is_custom_command "$category" "$name"; then
-                set -- "Cast%$escaped_command" "$cast_toggle" "Help%$escaped_command --help" "Test spell%spell-menu --test '$name'" "Delete command%spell-menu --delete '$category' '$name'" "$exit_item"
+        if is_scribed_command "$name"; then
+                set -- "Cast%$escaped_command" "$cast_toggle" "Help%$escaped_command --help" "Test spell%spell-menu --test '$name'" "Delete command%spell-menu --delete '$name'" "$exit_item"
         elif is_installable "$command"; then
                 # Show Install option for spells with install() function
                 set -- "Cast%$escaped_command" "$cast_toggle" "Install to shell%spell-menu --install '$escaped_command'" "Help%$escaped_command --help" "Test spell%spell-menu --test '$name'" "$exit_item"

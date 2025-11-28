@@ -1,10 +1,10 @@
 #!/bin/sh
 # Tests for scribe-command spell
 # - prints usage with --help
-# - scribes commands non-interactively with 3+ arguments
-# - fails with too few arguments (1-2)
-# - creates script file with correct content
-# - creates commands file entry
+# - scribes commands non-interactively with 2+ arguments (NAME COMMAND)
+# - fails with only 1 argument (needs name and command)
+# - creates script file with correct content in ~/.spellbook
+# - rejects names with spaces
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/test-common.sh" ] && [ "$test_root" != "/" ]; do
@@ -25,26 +25,16 @@ test_shows_help_with_h_flag() {
 
 test_noninteractive_scribes_command() {
   case_dir=$(make_tempdir)
-  commands_file="$case_dir/commands"
-  custom_dir="$case_dir/custom"
   
-  SPELLBOOK_COMMANDS_FILE="$commands_file" SPELLBOOK_CUSTOM_DIR="$custom_dir" \
-    run_spell "spells/spellcraft/scribe-command" fire spark "echo ignite"
+  WIZARDRY_SPELL_HOME="$case_dir" \
+    run_spell "spells/spellcraft/scribe-command" spark "echo ignite"
   
   assert_success || return 1
-  assert_output_contains "Scribed 'spark' into fire." || return 1
-  [ -f "$commands_file" ] || { TEST_FAILURE_REASON="commands file missing"; return 1; }
-  [ -x "$custom_dir/spark" ] || { TEST_FAILURE_REASON="custom script missing"; return 1; }
-  
-  # Check commands file content
-  content=$(cat "$commands_file")
-  case "$content" in
-    *fire*spark*echo\ ignite*) : ;;
-    *) TEST_FAILURE_REASON="unexpected command entry: $content"; return 1 ;;
-  esac
+  assert_output_contains "Scribed 'spark' to" || return 1
+  [ -x "$case_dir/spark" ] || { TEST_FAILURE_REASON="script missing at $case_dir/spark"; return 1; }
   
   # Check script content
-  script_content=$(cat "$custom_dir/spark")
+  script_content=$(cat "$case_dir/spark")
   case "$script_content" in
     *"echo ignite"*) : ;;
     *) TEST_FAILURE_REASON="script missing command: $script_content"; return 1 ;;
@@ -52,46 +42,60 @@ test_noninteractive_scribes_command() {
 }
 
 test_fails_with_partial_args() {
-  # Only category
-  run_spell "spells/spellcraft/scribe-command" fire
+  # Only name (needs name and command)
+  run_spell "spells/spellcraft/scribe-command" spark
   assert_failure || return 1
   case "$ERROR" in
     *"Usage:"*) : ;;
     *) TEST_FAILURE_REASON="expected Usage in stderr"; return 1 ;;
   esac
-  
-  # Category and name only
-  run_spell "spells/spellcraft/scribe-command" fire spark
-  assert_failure || return 1
 }
 
 test_rejects_invalid_name() {
   case_dir=$(make_tempdir)
   
   # Name with spaces
-  SPELLBOOK_COMMANDS_FILE="$case_dir/commands" SPELLBOOK_CUSTOM_DIR="$case_dir/custom" \
-    run_spell "spells/spellcraft/scribe-command" fire "spark fire" "echo ignite"
+  WIZARDRY_SPELL_HOME="$case_dir" \
+    run_spell "spells/spellcraft/scribe-command" "spark fire" "echo ignite"
   assert_failure || return 1
   
   # Name starting with dash
-  SPELLBOOK_COMMANDS_FILE="$case_dir/commands" SPELLBOOK_CUSTOM_DIR="$case_dir/custom" \
-    run_spell "spells/spellcraft/scribe-command" fire "-spark" "echo ignite"
+  WIZARDRY_SPELL_HOME="$case_dir" \
+    run_spell "spells/spellcraft/scribe-command" "-spark" "echo ignite"
   assert_failure || return 1
 }
 
 test_multiword_command() {
   case_dir=$(make_tempdir)
-  commands_file="$case_dir/commands"
-  custom_dir="$case_dir/custom"
   
-  SPELLBOOK_COMMANDS_FILE="$commands_file" SPELLBOOK_CUSTOM_DIR="$custom_dir" \
-    run_spell "spells/spellcraft/scribe-command" test test-cmd "echo" "hello" "world"
+  WIZARDRY_SPELL_HOME="$case_dir" \
+    run_spell "spells/spellcraft/scribe-command" test-cmd "echo" "hello" "world"
   
   assert_success || return 1
-  content=$(cat "$commands_file")
-  case "$content" in
-    *echo\ hello\ world*) : ;;
-    *) TEST_FAILURE_REASON="multi-word command not joined: $content"; return 1 ;;
+  [ -x "$case_dir/test-cmd" ] || { TEST_FAILURE_REASON="script missing"; return 1; }
+  
+  # Check script content contains joined command
+  script_content=$(cat "$case_dir/test-cmd")
+  case "$script_content" in
+    *"echo hello world"*) : ;;
+    *) TEST_FAILURE_REASON="multi-word command not joined: $script_content"; return 1 ;;
+  esac
+}
+
+test_script_is_executable() {
+  case_dir=$(make_tempdir)
+  
+  WIZARDRY_SPELL_HOME="$case_dir" \
+    run_spell "spells/spellcraft/scribe-command" myspell "echo hello"
+  
+  assert_success || return 1
+  [ -x "$case_dir/myspell" ] || { TEST_FAILURE_REASON="script not executable"; return 1; }
+  
+  # Run the script and check output
+  output=$("$case_dir/myspell")
+  case "$output" in
+    *hello*) : ;;
+    *) TEST_FAILURE_REASON="script did not execute correctly: $output"; return 1 ;;
   esac
 }
 
@@ -101,5 +105,6 @@ run_test_case "scribe-command scribes non-interactively" test_noninteractive_scr
 run_test_case "scribe-command fails with partial args" test_fails_with_partial_args
 run_test_case "scribe-command rejects invalid names" test_rejects_invalid_name
 run_test_case "scribe-command joins multi-word commands" test_multiword_command
+run_test_case "scribe-command creates executable scripts" test_script_is_executable
 
 finish_tests

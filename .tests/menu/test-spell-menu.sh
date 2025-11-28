@@ -4,9 +4,7 @@
 # - shows usage with --help
 # - requires minimum 3 arguments
 # - --cast executes the given command
-# - --memorize adds spell to cast list
-# - --forget removes spell from cast list
-# - --delete removes custom command
+# - --delete removes scribed command
 
 set -eu
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
@@ -136,69 +134,31 @@ test_cast_action_executes_command() {
   esac
 }
 
-test_memorize_action_adds_spell() {
+test_delete_action_removes_scribed_command() {
   stub_dir=$(make_stub_dir)
   write_memorize_command_stub "$stub_dir"
-  cast_dir="$stub_dir/custom-cast"
-  WIZARDRY_CAST_DIR="$cast_dir" PATH="$stub_dir:$PATH" run_spell "spells/menu/spell-menu" --memorize spark "echo ignite"
-  assert_success || return 1
-  [ -f "$cast_dir/.memorized" ] || { TEST_FAILURE_REASON="cast file missing"; return 1; }
-  content=$(cat "$cast_dir/.memorized")
-  case "$content" in
-    *spark*echo\ ignite*) : ;;
-    *) TEST_FAILURE_REASON="memorize did not record entry: $content"; return 1 ;;
-  esac
-}
-
-test_forget_action_removes_spell() {
-  stub_dir=$(make_stub_dir)
-  write_memorize_command_stub "$stub_dir"
-  cast_dir="$stub_dir/custom-cast"
-  # First memorize a spell
-  WIZARDRY_CAST_DIR="$cast_dir" PATH="$stub_dir:$PATH" run_spell "spells/menu/spell-menu" --memorize spark "echo ignite"
-  # Then forget it
-  WIZARDRY_CAST_DIR="$cast_dir" PATH="$stub_dir:$PATH" run_spell "spells/menu/spell-menu" --forget spark
-  assert_success || return 1
-  # Check that the spell was removed
-  if [ -f "$cast_dir/.memorized" ]; then
-    content=$(cat "$cast_dir/.memorized")
-    case "$content" in
-      *spark*) TEST_FAILURE_REASON="forget did not remove entry: $content"; return 1 ;;
-    esac
-  fi
-}
-
-test_delete_action_removes_custom_command() {
-  stub_dir=$(make_stub_dir)
-  write_memorize_command_stub "$stub_dir"
-  commands_file="$stub_dir/commands"
-  custom_dir="$stub_dir/custom"
-  mkdir -p "$custom_dir"
-  # Create a custom command entry
-  printf 'fire\tspark\techo ignite\n' >"$commands_file"
-  printf '#!/bin/sh\necho ignite\n' >"$custom_dir/spark"
-  chmod +x "$custom_dir/spark"
+  spellbook_dir="$stub_dir/spellbook"
+  mkdir -p "$spellbook_dir"
+  # Create a scribed command
+  printf '#!/bin/sh\necho ignite\n' >"$spellbook_dir/spark"
+  chmod +x "$spellbook_dir/spark"
   # Delete it
-  SPELLBOOK_COMMANDS_FILE="$commands_file" SPELLBOOK_CUSTOM_DIR="$custom_dir" PATH="$stub_dir:$PATH" run_spell "spells/menu/spell-menu" --delete fire spark
+  WIZARDRY_SPELL_HOME="$spellbook_dir" PATH="$stub_dir:$PATH" run_spell "spells/menu/spell-menu" --delete spark
   assert_success || return 1
   case "$OUTPUT" in
-    *"Deleted custom command"*) : ;;
+    *"Deleted scribed command"*) : ;;
     *) TEST_FAILURE_REASON="delete should confirm removal: $OUTPUT"; return 1 ;;
   esac
-  # Verify file is empty or removed
-  if [ -f "$commands_file" ] && [ -s "$commands_file" ]; then
-    content=$(cat "$commands_file")
-    case "$content" in
-      *spark*) TEST_FAILURE_REASON="delete did not remove entry: $content"; return 1 ;;
-    esac
+  # Verify file is removed
+  if [ -f "$spellbook_dir/spark" ]; then
+    TEST_FAILURE_REASON="delete did not remove script file"
+    return 1
   fi
 }
 
 run_test_case "spell-menu shows usage with --help" test_shows_usage_with_help
 run_test_case "spell-menu requires minimum arguments" test_requires_minimum_arguments
 run_test_case "spell-menu --cast executes command" test_cast_action_executes_command
-run_test_case "spell-menu --memorize adds spell" test_memorize_action_adds_spell
-run_test_case "spell-menu --forget removes spell" test_forget_action_removes_spell
-run_test_case "spell-menu --delete removes custom command" test_delete_action_removes_custom_command
+run_test_case "spell-menu --delete removes scribed command" test_delete_action_removes_scribed_command
 
 finish_tests
