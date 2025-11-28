@@ -47,31 +47,46 @@ test_mud_admin_calls_menu_with_actions() {
   tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_colors "$tmp"
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MENU_LOOP_LIMIT=1 "$ROOT_DIR/spells/menu/mud-admin"
+  cat >"$tmp/require-command" <<'SH'
+#!/bin/sh
+command -v "$1" >/dev/null 2>&1
+SH
+  chmod +x "$tmp/require-command"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MENU_ESCAPE_STATUS=113 "$ROOT_DIR/spells/menu/mud-admin"
   assert_success
   args=$(cat "$tmp/log")
   case "$args" in
-    *"MUD main menu:"*"Add authorized player%add-player"*"List authorized players%new-player"*"List shared rooms%list-rooms"*"Exit%kill -2"* ) : ;;
-    *) TEST_FAILURE_REASON="menu not invoked with expected actions"; return 1 ;;
+    *"MUD Admin:"*"Add authorized player%add-player"*"List authorized players%new-player"*"List shared rooms%list-rooms"*"Back%kill -2"* ) : ;;
+    *) TEST_FAILURE_REASON="menu not invoked with expected actions: $args"; return 1 ;;
   esac
 }
 
 test_mud_admin_requires_menu_helper() {
   tmp=$(make_tempdir)
   make_stub_colors "$tmp"
-  run_cmd env PATH="$tmp" MENU_LOG="$tmp/log" MENU_LOOP_LIMIT=1 "$ROOT_DIR/spells/menu/mud-admin"
+  cat >"$tmp/require-command" <<'SH'
+#!/bin/sh
+printf '%s\n' "The MUD Admin menu needs the 'menu' command to present options." >&2
+exit 1
+SH
+  chmod +x "$tmp/require-command"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud-admin"
   assert_failure
-  assert_error_contains "missing dependency: menu"
+  assert_error_contains "The MUD Admin menu needs the 'menu' command"
 }
 
 test_mud_admin_reports_menu_failure() {
   tmp=$(make_tempdir)
   make_stub_colors "$tmp"
   make_failing_menu "$tmp"
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MENU_LOOP_LIMIT=1 "$ROOT_DIR/spells/menu/mud-admin"
+  cat >"$tmp/require-command" <<'SH'
+#!/bin/sh
+command -v "$1" >/dev/null 2>&1
+SH
+  chmod +x "$tmp/require-command"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MENU_ESCAPE_STATUS=113 "$ROOT_DIR/spells/menu/mud-admin"
   assert_status 7
-  assert_error_contains "menu failed with status 7"
-  assert_file_contains "$tmp/log" "MUD main menu:"
+  assert_file_contains "$tmp/log" "MUD Admin:"
 }
 
 run_test_case "mud-admin presents admin actions" test_mud_admin_calls_menu_with_actions

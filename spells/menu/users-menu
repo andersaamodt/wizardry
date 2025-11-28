@@ -21,7 +21,32 @@ esac
 
 set -eu
 
-. colors
+if [ -n "${REQUIRE_COMMAND-}" ]; then
+  require_cmd=$REQUIRE_COMMAND
+else
+  require_cmd=require-command
+fi
+
+require() {
+  "$require_cmd" "$@"
+}
+
+load_colors() {
+  if color_path=$(command -v colors 2>/dev/null); then
+    # shellcheck source=/dev/null
+    . "$color_path"
+  else
+    RESET=''
+    CYAN=''
+    GREY=''
+  fi
+}
+
+load_colors
+
+if ! require menu "The Users menu needs the 'menu' command to present options."; then
+  exit 1
+fi
 
 display_menu() {
   change_my_password="Change my password%passwd"
@@ -39,18 +64,33 @@ display_menu() {
   remove_user_from_group="Remove other user from group%read -p \"Enter username: \" username; read -p \"Enter group to remove them from: \" group; sudo gpasswd -d \$username \$group"
   create_user="Create new user%read -p \"Enter new username: \" username; sudo useradd \$username; printf \"Please remember to set a password for the new user with the 'Change other user's password' option.\""
   delete_user="Delete user%read -p \"Enter username of user to delete: \" username; sudo userdel \$username"
-  exit="Exit%kill -2 $$" # $$ is my pid. Commands are run with 'eval' by the menu script, so we can't simply say 'exit'. The keyword $$ gets this scripts PID and the -2 code is SIGINT aka Ctrl-C
-  
-  menu "User management options:" "$change_my_password" "$list_users" "$change_other_password" "$view_my_groups" "$view_other_groups" "$list_groups" "$create_group" "$delete_group" "$join_group" "$leave_group" "$list_users_in_group" "$add_user_to_group" "$remove_user_from_group" "$create_user" "$delete_user" "$exit"
+  back="Back%kill -2 $$"
+
+  set -- "$change_my_password" "$list_users" "$change_other_password" "$view_my_groups" "$view_other_groups" "$list_groups" "$create_group" "$delete_group" "$join_group" "$leave_group" "$list_users_in_group" "$add_user_to_group" "$remove_user_from_group" "$create_user" "$delete_user" "$back"
+  MENU_ESCAPE_STATUS=$menu_escape_status menu "Users Menu:" "$@"
 }
 
-# Catch Ctrl-C and exit
-handle_ctrl_c() {
-  trap 'echo exiting; exit' INT
-}
-
-handle_ctrl_c
+menu_escape_status=113
+first_run=1
 
 while true; do
-  display_menu
+  if [ "$first_run" -eq 0 ]; then
+    printf '\n'
+  else
+    first_run=0
+  fi
+
+  if display_menu; then
+    status=0
+  else
+    status=$?
+  fi
+
+  if [ "$status" -eq "$menu_escape_status" ]; then
+    break
+  fi
+
+  if [ "$status" -ne 0 ]; then
+    exit "$status"
+  fi
 done

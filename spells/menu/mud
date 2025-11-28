@@ -62,8 +62,6 @@ display_menu() {
 menu_escape_status=113
 first_run=1
 
-printf '\n'
-
 while true; do
   if [ "$first_run" -eq 0 ]; then
     printf '\n'

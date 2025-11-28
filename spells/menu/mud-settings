@@ -1,57 +1,73 @@
 #!/bin/sh
 
-# This spell displays the ao-mud main menu.
-
+# This spell displays the MUD settings menu.
 
 set -eu
-colors_bin=$(command -v colors 2>/dev/null) || {
-  echo "missing dependency: colors" >&2
-  exit 1
+
+if [ -n "${REQUIRE_COMMAND-}" ]; then
+  require_cmd=$REQUIRE_COMMAND
+else
+  require_cmd=require-command
+fi
+
+require() {
+  "$require_cmd" "$@"
 }
-. "$colors_bin"
 
-menu_bin=$(command -v menu 2>/dev/null) || {
-  echo "missing dependency: menu" >&2
-  exit 1
+load_colors() {
+  if color_path=$(command -v colors 2>/dev/null); then
+    # shellcheck source=/dev/null
+    . "$color_path"
+  else
+    RESET=''
+    CYAN=''
+    GREY=''
+  fi
 }
 
-loop_limit=${MENU_LOOP_LIMIT:-}
+load_colors
 
-if [ -n "$loop_limit" ] && ! printf '%s' "$loop_limit" | grep -Eq '^[0-9]+$'; then
-  echo "invalid MENU_LOOP_LIMIT: must be numeric" >&2
+if ! require menu "The MUD Settings menu needs the 'menu' command to present options."; then
   exit 1
 fi
 
+launch_submenu() {
+  printf '\n'
+  "$@"
+}
+
 display_menu() {
-        copy="Copy player key to clipboard%copy ~/.ssh/\$MUD_PLAYER.pub"
-        change="Change Player%select-player"
+  copy="Copy player key to clipboard%copy ~/.ssh/\$MUD_PLAYER.pub"
+  change="Change Player%select-player"
   new="New Player%new-player"
-  install="Install%mud-install-menu"
-  exit="Exit%kill -2 $$" # Commands are run with 'eval' by the menu script, so we can't simply say 'exit'. The keyword $$ gets this scripts PID and the -2 code is SIGINT aka Ctrl-C
+  install="Install%launch_submenu mud-install-menu"
+  back="Back%kill -2 $$"
 
-  if ! "$menu_bin" "MUD main menu:" "$copy" "$change" "$new" "$install" "$exit"; then
-    status=$?
-    echo "menu failed with status $status" >&2
-    return "$status"
-  fi
+  set -- "$copy" "$change" "$new" "$install" "$back"
+  MENU_ESCAPE_STATUS=$menu_escape_status menu "MUD Settings:" "$@"
 }
 
-# Catch Ctrl-C and exit
-handle_ctrl_c() {
-  trap 'echo exiting; exit' INT
-}
-
-handle_ctrl_c
+menu_escape_status=113
+first_run=1
 
 while true; do
-  if ! display_menu; then
-    exit $?
+  if [ "$first_run" -eq 0 ]; then
+    printf '\n'
+  else
+    first_run=0
   fi
 
-  if [ -n "$loop_limit" ]; then
-    if [ "$loop_limit" -le 1 ] 2>/dev/null; then
-      break
-    fi
-    loop_limit=$((loop_limit - 1))
+  if display_menu; then
+    status=0
+  else
+    status=$?
+  fi
+
+  if [ "$status" -eq "$menu_escape_status" ]; then
+    break
+  fi
+
+  if [ "$status" -ne 0 ]; then
+    exit "$status"
   fi
 done
