@@ -25,9 +25,9 @@ test_help_h_flag() {
 }
 
 test_sources_colors() {
-  # Verify the spell sources the colors file
-  grep -q ". colors" "$ROOT_DIR/spells/menu/users-menu" || {
-    TEST_FAILURE_REASON="spell does not source colors"
+  # Verify the spell has a load_colors function
+  grep -q "load_colors" "$ROOT_DIR/spells/menu/users-menu" || {
+    TEST_FAILURE_REASON="spell does not load colors"
     return 1
   }
 }

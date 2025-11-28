@@ -701,7 +701,6 @@ if [ -x "$CORE_INSTALLER" ]; then
                         ;;
         esac
         
-        printf '\n'
         # Run core installer - it returns success even if some optional deps fail
         ASSUME_YES=1 "$CORE_INSTALLER" >/dev/null 2>&1 || true
         success_msg "Core prerequisites verified"
@@ -967,7 +966,6 @@ if ! create_uninstall_script; then
         printf '%sWarning:%s Could not create uninstall script at %s/.uninstall\n' "$YELLOW" "$RESET" "$ABS_DIR" >&2
 fi
 
-printf '\n'
 section_msg "Installation Complete!"
 # Only claim success if NixOS rebuild succeeded (or it's not a NixOS install)
 if [ "$detect_format_value" != "nix" ] || [ "$rebuild_success" -eq 1 ]; then

@@ -114,7 +114,8 @@ while :; do
         set -- "$@" "${label}%$cmd"
     done
 
-    set -- "$@" "Exit%kill -2 $$"
+    exit_label=$(exit-label)
+    set -- "$@" "${exit_label}%kill -2 $$"
 
     MENU_ESCAPE_STATUS=$menu_escape_status menu "Install Menu:" "$@"
     status=$?

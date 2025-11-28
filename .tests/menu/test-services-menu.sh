@@ -42,12 +42,19 @@ test_services_menu_presents_actions() {
   tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/services-menu"
+  # Stub exit-label to return "Back" for submenu behavior
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+if [ "${WIZARDRY_SUBMENU-}" = "1" ]; then printf '%s' "Back"; else printf '%s' "Exit"; fi
+SH
+  chmod +x "$tmp/exit-label"
+  # Test as submenu (as it would be called from system-menu)
+  run_cmd env WIZARDRY_SUBMENU=1 PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/services-menu"
   assert_success
   args=$(cat "$tmp/log")
   case "$args" in
     *"Services Menu:"*"Start a service%start-service"*"Stop a service%stop-service"*"Restart a service%restart-service"*"Enable a service at boot%enable-service"*"Disable a service at boot%disable-service"*"Check service status%service-status"*"Check if a service is installed%is-service-installed"*"Remove a service%remove-service"*"Install service from template%install-service-template"*"Back%kill -2"* ) : ;; 
-    *) TEST_FAILURE_REASON="menu actions missing"; return 1 ;;
+    *) TEST_FAILURE_REASON="menu actions missing: $args"; return 1 ;;
   esac
 }
 

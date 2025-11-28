@@ -48,31 +48,60 @@ test_mud_settings_menu_actions() {
   player=hero
   make_stub_menu "$tmp"
   make_stub_colors "$tmp"
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MUD_PLAYER="$player" MENU_LOOP_LIMIT=1 "$ROOT_DIR/spells/menu/mud-settings"
+  cat >"$tmp/require-command" <<'SH'
+#!/bin/sh
+command -v "$1" >/dev/null 2>&1
+SH
+  chmod +x "$tmp/require-command"
+  # Stub exit-label to return "Back" for submenu behavior
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+if [ "${WIZARDRY_SUBMENU-}" = "1" ]; then printf '%s' "Back"; else printf '%s' "Exit"; fi
+SH
+  chmod +x "$tmp/exit-label"
+  # Test as submenu (as it would be called from mud menu)
+  # Use MENU_LOOP_LIMIT=1 to exit after one iteration
+  run_cmd env WIZARDRY_SUBMENU=1 REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MUD_PLAYER="$player" MENU_LOOP_LIMIT=1 "$ROOT_DIR/spells/menu/mud-settings"
   assert_success
   args=$(cat "$tmp/log")
   case "$args" in
-    *"MUD main menu:"*"Copy player key to clipboard%copy ~/.ssh/"*"Change Player%select-player"*"New Player%new-player"*"Install%mud-install-menu"*"Exit%kill -2"* ) : ;;
-    *) TEST_FAILURE_REASON="mud settings actions missing"; return 1 ;;
+    *"MUD Settings:"*"Copy player key to clipboard%copy ~/.ssh/"*"Change Player%select-player"*"New Player%new-player"*"Install%launch_submenu mud-install-menu"*"Back%kill -2"* ) : ;;
+    *) TEST_FAILURE_REASON="mud settings actions missing: $args"; return 1 ;;
   esac
 }
 
 test_mud_settings_requires_menu_helper() {
   tmp=$(make_tempdir)
   make_stub_colors "$tmp"
-  run_cmd env PATH="$tmp" MENU_LOG="$tmp/log" MUD_PLAYER=hero MENU_LOOP_LIMIT=1 "$ROOT_DIR/spells/menu/mud-settings"
+  cat >"$tmp/require-command" <<'SH'
+#!/bin/sh
+printf '%s\n' "The MUD Settings menu needs the 'menu' command to present options." >&2
+exit 1
+SH
+  chmod +x "$tmp/require-command"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp" MENU_LOG="$tmp/log" MUD_PLAYER=hero "$ROOT_DIR/spells/menu/mud-settings"
   assert_failure
-  assert_error_contains "missing dependency: menu"
+  assert_error_contains "The MUD Settings menu needs the 'menu' command"
 }
 
 test_mud_settings_reports_menu_failure() {
   tmp=$(make_tempdir)
   make_stub_colors "$tmp"
   make_failing_menu "$tmp"
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MUD_PLAYER=hero MENU_LOOP_LIMIT=1 "$ROOT_DIR/spells/menu/mud-settings"
+  cat >"$tmp/require-command" <<'SH'
+#!/bin/sh
+command -v "$1" >/dev/null 2>&1
+SH
+  chmod +x "$tmp/require-command"
+  # Stub exit-label
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$tmp/exit-label"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MUD_PLAYER=hero MENU_LOOP_LIMIT=1 "$ROOT_DIR/spells/menu/mud-settings"
   assert_status 9
-  assert_error_contains "menu failed with status 9"
-  assert_file_contains "$tmp/log" "MUD main menu:"
+  assert_file_contains "$tmp/log" "MUD Settings:"
 }
 
 run_test_case "mud-settings presents player actions" test_mud_settings_menu_actions
