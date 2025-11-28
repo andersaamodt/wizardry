@@ -165,6 +165,66 @@ last_window_width=0
 last_max_command_length=0
 dimensions_changed=1
 
+find_next_selectable() {
+        # Find the next selectable (non-divider) item after current position
+        # Wraps around to beginning if needed
+        start=$selected
+        pos=$selected
+        pos=$((pos + 1))
+        if [ "$pos" -gt "$menu_length" ]; then
+                pos=1
+        fi
+        while [ "$pos" -ne "$start" ]; do
+                if ! is_divider "$pos"; then
+                        selected=$pos
+                        return 0
+                fi
+                pos=$((pos + 1))
+                if [ "$pos" -gt "$menu_length" ]; then
+                        pos=1
+                fi
+        done
+        # No selectable items found (shouldn't happen in practice)
+        return 1
+}
+
+find_prev_selectable() {
+        # Find the previous selectable (non-divider) item before current position
+        # Wraps around to end if needed
+        start=$selected
+        pos=$selected
+        pos=$((pos - 1))
+        if [ "$pos" -le 0 ]; then
+                pos=$menu_length
+        fi
+        while [ "$pos" -ne "$start" ]; do
+                if ! is_divider "$pos"; then
+                        selected=$pos
+                        return 0
+                fi
+                pos=$((pos - 1))
+                if [ "$pos" -le 0 ]; then
+                        pos=$menu_length
+                fi
+        done
+        # No selectable items found (shouldn't happen in practice)
+        return 1
+}
+
+find_first_selectable() {
+        # Find the first selectable item (skip initial dividers)
+        pos=1
+        while [ "$pos" -le "$menu_length" ]; do
+                if ! is_divider "$pos"; then
+                        selected=$pos
+                        return 0
+                fi
+                pos=$((pos + 1))
+        done
+        # No selectable items found
+        return 1
+}
+
 update_dimensions() {
         # Measure the terminal so we know how much horizontal space each menu
         # row can safely use. We leave room for the two-character prefix ("> ")
@@ -184,6 +244,31 @@ update_dimensions() {
         last_max_command_length=$max_command_length
 }
 
+is_divider() {
+        # Check if a row is an unselectable divider
+        row_idx=$1
+        cmd=$(sed -n "${row_idx}p" "$commands_file")
+        case $cmd in
+                --divider--) return 0 ;;
+                *) return 1 ;;
+        esac
+}
+
+render_divider() {
+        # Render a horizontal divider line
+        divider_width=$((max_name_length + 2))
+        if [ "$max_command_length" -gt 0 ]; then
+                divider_width=$((divider_width + max_command_length + 1))
+        fi
+        line=""
+        i=0
+        while [ "$i" -lt "$divider_width" ]; do
+                line="${line}─"
+                i=$((i + 1))
+        done
+        printf '%b  %s%b' "$GREY" "$line" "$RESET"
+}
+
 render_row() {
         # Render a single menu row either in its normal state or highlighted
         # for the currently selected item. Each pass clears the existing row so
@@ -197,6 +282,20 @@ render_row() {
 
         label=$(sed -n "${row_index}p" "$items_file")
         command=$(sed -n "${row_index}p" "$commands_file")
+
+        # Handle divider rows
+        if [ "$command" = "--divider--" ]; then
+                target_row=$((menu_row + row_index - 1))
+                if move-cursor "$menu_column" "$target_row"; then
+                        printf '\033[K'
+                        render_divider
+                        printf '\r'
+                else
+                        render_divider
+                        printf '\n'
+                fi
+                return
+        fi
 
         if [ "$max_command_length" -gt 0 ]; then
                 truncated_command=$(printf '%s' "$command" | cut -c -"$max_command_length")
@@ -365,6 +464,8 @@ if [ "$menu_row" -lt 1 ]; then
 fi
 
 update_dimensions
+# Ensure we start on a selectable item
+find_first_selectable || :
 draw_menu
 
 while :
@@ -372,16 +473,10 @@ do
         key=$(await-keypress)
         case $key in
         up)
-                selected=$((selected - 1))
-                if [ "$selected" -le 0 ]; then
-                        selected=$menu_length
-                fi
+                find_prev_selectable || :
                 ;;
         down)
-                selected=$((selected + 1))
-                if [ "$selected" -gt "$menu_length" ]; then
-                        selected=1
-                fi
+                find_next_selectable || :
                 ;;
         enter)
                 execute_selection

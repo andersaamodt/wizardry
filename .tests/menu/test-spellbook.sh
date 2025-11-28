@@ -151,10 +151,24 @@ test_list_all_custom_commands() {
   esac
 }
 
+test_path_argument_accepted() {
+  stub_dir=$(make_stub_dir)
+  write_memorize_command_stub "$stub_dir"
+  write_require_command_stub "$stub_dir"
+  # Test that spellbook --help includes the PATH usage
+  PATH="$stub_dir:$PATH" run_spell "spells/menu/spellbook" --help
+  assert_success || return 1
+  case "$OUTPUT" in
+    *"[PATH|"*) : ;;
+    *) TEST_FAILURE_REASON="help text should mention PATH argument: $OUTPUT"; return 1 ;;
+  esac
+}
+
 run_test_case "spellbook fails when helper missing" test_errors_when_helper_missing
 run_test_case "spellbook lists stored entries" test_lists_entries
 run_test_case "spellbook memorize and forget" test_memorize_and_forget
 run_test_case "spellbook scribe command" test_scribe_records_command
 run_test_case "spellbook lists all custom commands" test_list_all_custom_commands
+run_test_case "spellbook accepts path argument" test_path_argument_accepted
 
 finish_tests
