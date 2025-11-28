@@ -51,7 +51,14 @@ test_mud_install_menu_calls_tor_installer() {
 command -v "$1" >/dev/null 2>&1
 SH
   chmod +x "$tmp/require-command"
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MENU_ESCAPE_STATUS=113 "$ROOT_DIR/spells/menu/mud-install-menu"
+  # Stub exit-label to return "Back" for submenu behavior
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+if [ "${WIZARDRY_SUBMENU-}" = "1" ]; then printf '%s' "Back"; else printf '%s' "Exit"; fi
+SH
+  chmod +x "$tmp/exit-label"
+  # Test as submenu (as it would be called from mud menu)
+  run_cmd env WIZARDRY_SUBMENU=1 REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MENU_ESCAPE_STATUS=113 "$ROOT_DIR/spells/menu/mud-install-menu"
   assert_success
   args=$(cat "$tmp/log")
   case "$args" in

@@ -34,7 +34,7 @@ fi
 # Add visual spacing before launching a submenu command
 launch_submenu() {
   printf '\n'
-  "$@"
+  WIZARDRY_SUBMENU=1 "$@"
 }
 
 display_menu() {
@@ -42,9 +42,10 @@ display_menu() {
   change="Change Player%select-player"
   new="New Player%new-player"
   install="Install%launch_submenu mud-install-menu"
-  back="Back%kill -2 $$"
+  exit_label=$(exit-label)
+  exit_item="${exit_label}%kill -2 $$"
 
-  set -- "$copy" "$change" "$new" "$install" "$back"
+  set -- "$copy" "$change" "$new" "$install" "$exit_item"
   MENU_ESCAPE_STATUS=$menu_escape_status menu "MUD Settings:" "$@"
 }
 

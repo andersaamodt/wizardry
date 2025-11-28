@@ -60,7 +60,8 @@ display_menu() {
   installed_item="Check if a service is installed%is-service-installed"
   remove_item="Remove a service%remove-service"
   install_item="Install service from template%install-service-template"
-  exit_item="Back%kill -2 $$"
+  exit_label=$(exit-label)
+  exit_item="${exit_label}%kill -2 $$"
 
   set -- "$start_item" "$stop_item" "$restart_item" \
     "$enable_item" "$disable_item" "$status_item" \

@@ -36,9 +36,10 @@ SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 display_menu() {
   cd_hook="Toggle CD hook (look on directory change)%$SCRIPT_DIR/../install/mud/toggle-cd"
   tor="Set up tor hidden service%$SCRIPT_DIR/../install/tor/setup-tor"
-  back="Back%kill -2 $$"
+  exit_label=$(exit-label)
+  exit_item="${exit_label}%kill -2 $$"
 
-  set -- "$cd_hook" "$tor" "$back"
+  set -- "$cd_hook" "$tor" "$exit_item"
   MENU_ESCAPE_STATUS=$menu_escape_status menu "MUD Install:" "$@"
 }
 

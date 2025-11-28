@@ -34,14 +34,15 @@ if ! require menu "The main menu needs the 'menu' command to present options."; 
 fi
 
 display_menu() {
-  mud="MUD menu%mud"
-  cast="Cast a Spell%cast"
-  spellbook="Spellbook%spellbook"
-  install="Install Free Software%install-menu"
-  system="Manage System%system-menu"
-  exit="Exit%kill -2 $$" # Commands are run with 'eval' by the menu script, so we can't simply say 'exit'. The keyword $$ gets this scripts PID and the -2 code is SIGINT aka Ctrl-C
+  mud="MUD menu%WIZARDRY_SUBMENU=1 mud"
+  cast="Cast a Spell%WIZARDRY_SUBMENU=1 cast"
+  spellbook="Spellbook%WIZARDRY_SUBMENU=1 spellbook"
+  install="Install Free Software%WIZARDRY_SUBMENU=1 install-menu"
+  system="Manage System%WIZARDRY_SUBMENU=1 system-menu"
+  exit_label=$(exit-label)
+  exit_item="${exit_label}%kill -2 $$"
 
-  set -- "$mud" "$cast" "$spellbook" "$install" "$system" "$exit"
+  set -- "$mud" "$cast" "$spellbook" "$install" "$system" "$exit_item"
   MENU_ESCAPE_STATUS=$menu_escape_status menu "Main Menu:" "$@"
 }
 

@@ -42,12 +42,18 @@ test_main_menu_passes_expected_entries() {
   tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
+  # Stub exit-label to return "Exit" for top-level behavior
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+if [ "${WIZARDRY_SUBMENU-}" = "1" ]; then printf '%s' "Back"; else printf '%s' "Exit"; fi
+SH
+  chmod +x "$tmp/exit-label"
   run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/main-menu"
   assert_success
   args=$(cat "$tmp/log")
   case "$args" in
-    *"Main Menu:"*"MUD menu%mud"*"Cast a Spell%cast"*"Spellbook%spellbook"*"Install Free Software%install-menu"*"Manage System%system-menu"*"Exit%kill -2"* ) : ;;
-    *) TEST_FAILURE_REASON="menu entries missing"; return 1 ;;
+    *"Main Menu:"*"MUD menu%"*"mud"*"Cast a Spell%"*"cast"*"Spellbook%"*"spellbook"*"Install Free Software%"*"install-menu"*"Manage System%"*"system-menu"*"Exit%kill -2"* ) : ;;
+    *) TEST_FAILURE_REASON="menu entries missing: $args"; return 1 ;;
   esac
 }
 

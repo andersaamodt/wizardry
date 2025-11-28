@@ -35,9 +35,10 @@ display_menu() {
   add="Add authorized player%add-player"
   list_players="List authorized players%new-player"
   list_rooms="List shared rooms%list-rooms"
-  back="Back%kill -2 $$"
+  exit_label=$(exit-label)
+  exit_item="${exit_label}%kill -2 $$"
 
-  set -- "$add" "$list_players" "$list_rooms" "$back"
+  set -- "$add" "$list_players" "$list_rooms" "$exit_item"
   MENU_ESCAPE_STATUS=$menu_escape_status menu "MUD Admin:" "$@"
 }
 

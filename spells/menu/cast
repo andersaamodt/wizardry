@@ -54,7 +54,8 @@ spell_menu_loop() {
                 done <<SPELLS
 $entries
 SPELLS
-                set -- "$@" "Exit%kill -2 $$"
+                exit_label=$(exit-label)
+                set -- "$@" "${exit_label}%kill -2 $$"
                 MENU_ESCAPE_STATUS=$menu_escape_status menu "Cast a Spell:" "$@"
                 status=$?
                 if [ "$status" -eq "$menu_escape_status" ]; then

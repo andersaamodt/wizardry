@@ -66,14 +66,15 @@ display_menu() {
         fi
 
         filename=$(basename "$FILE")
-        back="Back%kill -2 $$"
+        exit_label=$(exit-label)
+        exit_item="${exit_label}%kill -2 $$"
 
         set -- "Prioritize (upboat)%prioritize \"$FILE\"; kill -2 $$" \
                "${check_item}" \
                "Discard from priorities (downboat)%echo 'Placeholder: Discard command'" \
                "Edit Card%echo 'Placeholder: Edit command'" \
                "Browse Within%echo 'Placeholder: Browse files within this file/folder'" \
-               "$back"
+               "$exit_item"
         MENU_ESCAPE_STATUS=$menu_escape_status menu "${GREEN}${BOLD}${filename}${RESET}:" "$@"
 }
 

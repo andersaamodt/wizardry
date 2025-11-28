@@ -42,12 +42,18 @@ test_system_menu_includes_test_utilities() {
   tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
+  # Stub exit-label to return appropriate label
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+if [ "${WIZARDRY_SUBMENU-}" = "1" ]; then printf '%s' "Back"; else printf '%s' "Exit"; fi
+SH
+  chmod +x "$tmp/exit-label"
   run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/system-menu"
   assert_success
   args=$(cat "$tmp/log")
   case "$args" in
-    *"System Menu:"*"Manage services%services-menu"*"Update wizardry%update-wizardry"*"Test all wizardry spells%$ROOT_DIR/spells/system/test-magic"*"Force restart%sudo shutdown -r now"*"Exit%kill -2"* ) : ;;
-    *) TEST_FAILURE_REASON="expected system actions missing"; return 1 ;;
+    *"System Menu:"*"Manage services%"*"services-menu"*"Update wizardry%update-wizardry"*"Test all wizardry spells%$ROOT_DIR/spells/system/test-magic"*"Force restart%sudo shutdown -r now"*"Exit%kill -2"* ) : ;;
+    *) TEST_FAILURE_REASON="expected system actions missing: $args"; return 1 ;;
   esac
 }
 

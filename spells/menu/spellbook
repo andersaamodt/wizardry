@@ -4,7 +4,7 @@
 set -eu
 
 menu_escape_status=113
-ROOT_DIR=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd -P)
+ROOT_DIR=$(CDPATH= cd -- "$(dirname "$0")/../.." && pwd -P)
 
 # Load colors for display
 if command -v colors >/dev/null 2>&1; then
@@ -422,7 +422,8 @@ category_menu() {
                 done <<CUSTOM
 $(list_custom_commands "$category")
 CUSTOM
-                set -- "$@" "Back%return"
+                exit_label=$(exit-label)
+                set -- "$@" "${exit_label}%return"
                 selected_name=''
                 selected_cmd=''
                 selected_display=''
@@ -472,7 +473,8 @@ CUSTOM_COMMANDS
                                 set -- "$@" "${display_name}%category_choice=$current_path/$subname"
                         done
                 fi
-                set -- "$@" "Back%return"
+                exit_label=$(exit-label)
+                set -- "$@" "${exit_label}%return"
                 category_choice=''
                 selected_category=''
                 selected_name=''
