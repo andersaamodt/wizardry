@@ -37,10 +37,10 @@ launch_submenu() {
 }
 
 display_menu() {
-  look="Look Around%ls"
+  look="Look Around%look"
   cast="Spellbook%WIZARDRY_SUBMENU=1 spellbook"
   home="Teleport Home%cd"
-  jump="Teleport to Marker%jump"
+  jump="Teleport to Marker%jump-to-marker"
   portal="Teleport to Portal Chamber%cd /mnt"
   install="Install MUD%launch_submenu mud-install-menu"
   admin="Admin MUD Hosting%launch_submenu mud-admin"
