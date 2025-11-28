@@ -1,0 +1,18 @@
+#!/bin/sh
+# pkg-remove PACKAGE - remove a package using the system package manager
+# Example: pkg-remove vim
+
+package=${1:-}
+[ -z "$package" ] && { printf '%s\n' "pkg-remove: package name required" >&2; exit 1; }
+
+pm=$(pkg-manager) || { printf '%s\n' "pkg-remove: no supported package manager" >&2; exit 1; }
+
+case $pm in
+apt)    sudo apt-get -y remove "$package" ;;
+dnf)    sudo dnf -y remove "$package" ;;
+pacman) sudo pacman --noconfirm -R "$package" ;;
+brew)   brew uninstall "$package" ;;
+nix)    nix-env -e "$package" ;;
+pkgin)  sudo pkgin -y remove "$package" ;;
+apk)    sudo apk del "$package" ;;
+esac

@@ -1,0 +1,19 @@
+#!/bin/sh
+# backup FILE [SUFFIX] - create backup copy of file (default suffix: .bak)
+# Example: backup /etc/ssh/sshd_config | backup myfile .orig
+
+file=${1:-}
+suffix=${2:-.bak}
+
+if [ -z "$file" ]; then
+  printf '%s\n' "backup: file argument required" >&2
+  exit 1
+fi
+
+if [ ! -f "$file" ]; then
+  printf '%s\n' "backup: not a file: $file" >&2
+  exit 1
+fi
+
+cp "$file" "${file}${suffix}" || exit 1
+printf '%s\n' "${file}${suffix}"

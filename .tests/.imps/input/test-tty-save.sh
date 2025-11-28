@@ -1,0 +1,25 @@
+#!/bin/sh
+# Tests for the 'tty-save' imp
+
+. "${0%/*}/../../test-common.sh"
+
+# Note: tty-save requires an actual terminal for full functionality
+# In CI, we test basic invocation (it will fail without a tty, but shouldn't crash)
+
+test_tty_save_without_tty_fails() {
+  # Running without a terminal should fail gracefully
+  run_spell spells/.imps/input/tty-save
+  # It should fail (no TTY) or succeed (if somehow there is one)
+  # We just ensure it doesn't crash unexpectedly
+}
+
+test_tty_save_ignores_extra_args() {
+  # Extra arguments should be ignored (POSIX-compliant imps are simpler)
+  run_spell spells/.imps/input/tty-save ignored_arg
+  # Still fails due to no TTY, but shouldn't crash
+}
+
+run_test_case "tty-save handles missing tty" test_tty_save_without_tty_fails
+run_test_case "tty-save ignores extra args" test_tty_save_ignores_extra_args
+
+finish_tests

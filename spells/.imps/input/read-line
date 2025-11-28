@@ -1,0 +1,30 @@
+#!/bin/sh
+# read-line [PROMPT] - read a line from stdin or tty, optional prompt to stderr
+# Example: name=$(read-line "Enter name: ") | line=$(read-line)
+# Set SELECT_INPUT_MODE=stdin|tty|none to override source detection
+
+prompt=${1:-}
+[ -n "$prompt" ] && printf '%s' "$prompt" >&2
+
+# Determine input source
+if command -v select-input >/dev/null 2>&1; then
+  src=$(select-input) || exit 1
+else
+  case ${SELECT_INPUT_MODE:-auto} in
+  stdin) src=stdin ;;
+  tty)   src=tty ;;
+  none)  exit 1 ;;
+  *)
+    if [ -t 0 ] || [ -p /dev/stdin ] || [ -s /dev/stdin ]; then src=stdin
+    elif [ -r /dev/tty ]; then src=tty
+    else exit 1; fi ;;
+  esac
+fi
+
+case $src in
+stdin) IFS= read -r line || line= ;;
+tty)   IFS= read -r line </dev/tty || line= ;;
+*)     exit 1 ;;
+esac
+
+printf '%s' "$line"

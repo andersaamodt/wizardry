@@ -1,0 +1,18 @@
+#!/bin/sh
+# pkg-install PACKAGE - install a package using the system package manager
+# Example: pkg-install git
+
+package=${1:-}
+[ -z "$package" ] && { printf '%s\n' "pkg-install: package name required" >&2; exit 1; }
+
+pm=$(pkg-manager) || { printf '%s\n' "pkg-install: no supported package manager" >&2; exit 1; }
+
+case $pm in
+apt)    sudo apt-get -y install "$package" ;;
+dnf)    sudo dnf -y install "$package" ;;
+pacman) sudo pacman --noconfirm -S "$package" ;;
+brew)   brew install "$package" ;;
+nix)    nix-env -iA "nixpkgs.$package" ;;
+pkgin)  sudo pkgin -y install "$package" ;;
+apk)    sudo apk add "$package" ;;
+esac
