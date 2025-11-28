@@ -484,20 +484,23 @@ spellbook_menu() {
         current_path=${1-}
         while :; do
                 set --
-                # First, add individual saved custom commands
-                while IFS=$(printf '\t') read -r cmd_category cmd_name cmd_text; do
-                        [ -z "$cmd_category" ] && continue
-                        [ -z "$cmd_name" ] && continue
-                        spell_path=$(custom_spell_path "$cmd_name")
-                        label=$(printf '%s (%s)' "$cmd_name" "$cmd_category")
-                        set -- "$@" "$(safe_command_label "$label")%spell-menu '$cmd_category' '$cmd_name' '$spell_path' '$cmd_text'"
-                done <<CUSTOM_COMMANDS
+                # Only show custom commands, scribe option, and divider at root level
+                if [ -z "$current_path" ]; then
+                        # First, add individual saved custom commands
+                        while IFS=$(printf '\t') read -r cmd_category cmd_name cmd_text; do
+                                [ -z "$cmd_category" ] && continue
+                                [ -z "$cmd_name" ] && continue
+                                spell_path=$(custom_spell_path "$cmd_name")
+                                label=$(printf '%s (%s)' "$cmd_name" "$cmd_category")
+                                set -- "$@" "$(safe_command_label "$label")%spell-menu $cmd_category $cmd_name $spell_path"
+                        done <<CUSTOM_COMMANDS
 $(list_all_custom_commands)
 CUSTOM_COMMANDS
-                # Add "Scribe new spell" option
-                set -- "$@" "Scribe Spell%scribe-spell"
-                # Add divider between custom commands and categories
-                set -- "$@" "%--divider--"
+                        # Add "Scribe new spell" option
+                        set -- "$@" "Scribe Spell%scribe-command"
+                        # Add divider between custom commands and categories
+                        set -- "$@" "%--divider--"
+                fi
                 # Then, add spell categories or subfolders
                 if [ -z "$current_path" ]; then
                         # Root: show spell categories
@@ -515,7 +518,7 @@ CUSTOM_COMMANDS
                         for spell in $(find "$resolved_path" -maxdepth 1 -type f -perm -111 2>/dev/null | sort); do
                                 spell_name=$(basename "$spell")
                                 cmd=$(command_for_spell "$spell")
-                                set -- "$@" "$(safe_command_label "$spell_name")%spell-menu '$current_path' '$spell_name' '$cmd' '$cmd'"
+                                set -- "$@" "$(safe_command_label "$spell_name")%spell-menu $current_path $spell_name $cmd"
                         done
                         # List subdirectories
                         for subdir in "$resolved_path"/*; do
@@ -525,7 +528,12 @@ CUSTOM_COMMANDS
                                 set -- "$@" "${display_name}%spellbook $current_path/$subname"
                         done
                 fi
-                exit_label=$(exit-label)
+                # Use "Back" when in a submenu, "Exit" at root
+                if [ -z "$current_path" ]; then
+                        exit_label=$(exit-label)
+                else
+                        exit_label="Back"
+                fi
                 set -- "$@" "${exit_label}%exit $menu_escape_status"
                 if [ -z "$current_path" ]; then
                         menu_title="${CYAN}Spellbook:${RESET}"

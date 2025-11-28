@@ -128,6 +128,25 @@ remove_custom_command() {
         [ "$removed" -eq 1 ]
 }
 
+# Check if a spell has an install() function (making it installable)
+# Uses the is-installable imp if available, otherwise falls back to inline check
+is_installable() {
+        spell_cmd=$1
+        if command -v is-installable >/dev/null 2>&1; then
+                is-installable "$spell_cmd"
+                return $?
+        fi
+        # Fallback: inline check
+        spell_path=$(command -v "$spell_cmd" 2>/dev/null) || spell_path=$spell_cmd
+        if [ ! -r "$spell_path" ]; then
+                return 1
+        fi
+        if grep -Eq '^[[:space:]]*install[[:space:]]*\(\)' "$spell_path" 2>/dev/null; then
+                return 0
+        fi
+        return 1
+}
+
 usage() {
         cat <<'USAGE'
 Usage: spell-menu CATEGORY NAME COMMAND [DISPLAY_COMMAND]
@@ -137,6 +156,7 @@ Usage: spell-menu CATEGORY NAME COMMAND [DISPLAY_COMMAND]
        spell-menu --help-spell COMMAND
        spell-menu --test NAME
        spell-menu --delete CATEGORY NAME
+       spell-menu --install COMMAND
 
 Display an action menu for a spell with options to cast, memorize, get help, test, or delete.
 
@@ -193,6 +213,16 @@ case ${1-} in
                 fi
                 exit 0
                 ;;
+        --install)
+                shift
+                # The command is already escaped when passed to this handler
+                # Run the spell with --install flag to trigger its install() function
+                cmd=$1
+                # Use eval since command might contain arguments/quotes
+                # The caller has already escaped the command properly
+                eval "$cmd" --install || true
+                exit 0
+                ;;
         -h|--help)
                 usage
                 exit 0
@@ -217,18 +247,24 @@ fi
 escaped_command=$(printf '%s' "$command" | sed "s/'/'\\\\''/g")
 
 while :; do
+        # Show checkbox for Cast menu visibility (toggleable)
         if is_memorized "$name"; then
-                memory_toggle="Forget%spell-menu --forget '$name'"
+                cast_toggle="[X] Show in Cast menu%spell-menu --forget '$name'"
         else
-                memory_toggle="Memorize%spell-menu --memorize '$name' '$escaped_command'"
+                cast_toggle="[ ] Show in Cast menu%spell-menu --memorize '$name' '$escaped_command'"
         fi
+        # Build menu items - Cast runs the command directly (using escaped version for safety)
         if is_custom_command "$category" "$name"; then
-                set -- "Cast now%spell-menu --cast '$escaped_command'" "$memory_toggle" "Help%spell-menu --help-spell '$escaped_command'" "Test spell%spell-menu --test '$name'" "Delete command%spell-menu --delete '$category' '$name'" "Exit%exit $menu_escape_status"
+                set -- "Cast%$escaped_command" "$cast_toggle" "Help%$escaped_command --help" "Test spell%spell-menu --test '$name'" "Delete command%spell-menu --delete '$category' '$name'" "Exit%exit $menu_escape_status"
+        elif is_installable "$command"; then
+                # Show Install option for spells with install() function
+                set -- "Cast%$escaped_command" "$cast_toggle" "Install to shell%spell-menu --install '$escaped_command'" "Help%$escaped_command --help" "Test spell%spell-menu --test '$name'" "Exit%exit $menu_escape_status"
         else
-                set -- "Cast now%spell-menu --cast '$escaped_command'" "$memory_toggle" "Help%spell-menu --help-spell '$escaped_command'" "Test spell%spell-menu --test '$name'" "Exit%exit $menu_escape_status"
+                set -- "Cast%$escaped_command" "$cast_toggle" "Help%$escaped_command --help" "Test spell%spell-menu --test '$name'" "Exit%exit $menu_escape_status"
         fi
         
-        MENU_ESCAPE_STATUS=$menu_escape_status menu "Spell: $name" "$@"
+        menu_title="${CYAN}Spell:${RESET} $name"
+        MENU_ESCAPE_STATUS=$menu_escape_status menu "$menu_title" "$@"
         status=$?
         if [ "$status" -eq "$menu_escape_status" ]; then
                 break

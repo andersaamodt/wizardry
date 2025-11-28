@@ -1,0 +1,23 @@
+#!/bin/sh
+# is-installable - check if a spell has an install() function
+# Usage: is-installable COMMAND
+# Returns 0 if the spell has an install() function, 1 otherwise
+
+if [ -z "${1-}" ]; then
+        exit 1
+fi
+
+spell_cmd=$1
+
+# Find the spell path
+spell_path=$(command -v "$spell_cmd" 2>/dev/null) || spell_path=$spell_cmd
+
+if [ ! -r "$spell_path" ]; then
+        exit 1
+fi
+
+if grep -Eq '^[[:space:]]*install[[:space:]]*\(\)' "$spell_path" 2>/dev/null; then
+        exit 0
+fi
+
+exit 1
