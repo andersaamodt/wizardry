@@ -497,7 +497,7 @@ spellbook_menu() {
 $(list_all_custom_commands)
 CUSTOM_COMMANDS
                         # Add "Scribe new spell" option
-                        set -- "$@" "Scribe Spell%spellbook --interactive-scribe"
+                        set -- "$@" "Scribe Spell%scribe-command"
                         # Add divider between custom commands and categories
                         set -- "$@" "%--divider--"
                 fi
