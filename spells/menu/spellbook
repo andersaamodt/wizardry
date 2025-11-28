@@ -171,7 +171,7 @@ category_display_name() {
 filename_to_display() {
         name=$1
         # Convert hyphens to spaces and titlecase each word
-        printf '%s' "$name" | tr '-' ' ' | awk '{for(i=1;i<=NF;i++){$i=toupper(substr($i,1,1))tolower(substr($i,2))}}1'
+        printf '%s' "$name" | awk '{gsub(/-/," "); for(i=1;i<=NF;i++){$i=toupper(substr($i,1,1))tolower(substr($i,2))}}1'
 }
 
 safe_command_label() {
