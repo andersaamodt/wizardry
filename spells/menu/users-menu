@@ -65,7 +65,7 @@ display_menu() {
   create_user="Create new user%read -p \"Enter new username: \" username; sudo useradd \$username; printf \"Please remember to set a password for the new user with the 'Change other user's password' option.\""
   delete_user="Delete user%read -p \"Enter username of user to delete: \" username; sudo userdel \$username"
   exit_label=$(exit-label)
-  exit_item="${exit_label}%kill -2 $$"
+  exit_item="${exit_label}%exit $menu_escape_status"
 
   set -- "$change_my_password" "$list_users" "$change_other_password" "$view_my_groups" "$view_other_groups" "$list_groups" "$create_group" "$delete_group" "$join_group" "$leave_group" "$list_users_in_group" "$add_user_to_group" "$remove_user_from_group" "$create_user" "$delete_user" "$exit_item"
   MENU_ESCAPE_STATUS=$menu_escape_status menu "Users Menu:" "$@"

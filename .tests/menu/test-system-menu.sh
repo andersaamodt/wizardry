@@ -52,7 +52,7 @@ SH
   assert_success
   args=$(cat "$tmp/log")
   case "$args" in
-    *"System Menu:"*"Manage services%"*"services-menu"*"Update wizardry%update-wizardry"*"Test all wizardry spells%$ROOT_DIR/spells/system/test-magic"*"Force restart%sudo shutdown -r now"*"Exit%kill -2"* ) : ;;
+    *"System Menu:"*"Manage services%"*"services-menu"*"Update wizardry%update-wizardry"*"Test all wizardry spells%$ROOT_DIR/spells/system/test-magic"*"Force restart%sudo shutdown -r now"*"Exit%exit 113"* ) : ;;
     *) TEST_FAILURE_REASON="expected system actions missing: $args"; return 1 ;;
   esac
 }

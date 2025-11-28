@@ -208,7 +208,7 @@ while :; do
         fi
         # Build menu items - Cast runs the command directly (using escaped version for safety)
         exit_label=$(exit-label)
-        exit_item="${exit_label}%kill -2 $$"
+        exit_item="${exit_label}%exit $menu_escape_status"
         if is_scribed_command "$name"; then
                 set -- "Cast%$escaped_command" "$cast_toggle" "Help%$escaped_command --help" "Test spell%spell-menu --test '$name'" "Delete command%spell-menu --delete '$name'" "$exit_item"
         elif is_installable "$command"; then
