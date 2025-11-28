@@ -167,10 +167,16 @@ category_display_name() {
         fi
 }
 
+# Convert filename to display name: hyphens to spaces, titlecase
+filename_to_display() {
+        name=$1
+        # Convert hyphens to spaces and titlecase each word
+        printf '%s' "$name" | tr '-' ' ' | awk '{for(i=1;i<=NF;i++){$i=toupper(substr($i,1,1))tolower(substr($i,2))}}1'
+}
+
 safe_command_label() {
-        entry=$1
-        command=$2
-        printf '%s – %s' "$entry" "$command"
+        filename=$1
+        printf '%s' "$(filename_to_display "$filename")"
 }
 
 command_for_spell() {
@@ -393,9 +399,9 @@ spell_action_menu() {
                         memory_toggle="Memorize%action=memorize"
                 fi
                 if is_custom_command "$category" "$name"; then
-                        set -- "Cast now%action=cast" "$memory_toggle" "Help%action=help" "Test spell%action=test" "Delete command%action=delete" "Back%return"
+                        set -- "Cast now%action=cast" "$memory_toggle" "Help%action=help" "Test spell%action=test" "Delete command%action=delete" "Back%exit $menu_escape_status"
                 else
-                        set -- "Cast now%action=cast" "$memory_toggle" "Help%action=help" "Test spell%action=test" "Back%return"
+                        set -- "Cast now%action=cast" "$memory_toggle" "Help%action=help" "Test spell%action=test" "Back%exit $menu_escape_status"
                 fi
                 MENU_ESCAPE_STATUS=$menu_escape_status menu "Spell: $name" "$@"
                 status=$?
@@ -447,18 +453,18 @@ category_menu() {
                 for spell in $(list_category_spells "$category"); do
                         spell_name=$(basename "$spell")
                         cmd=$(command_for_spell "$spell")
-                        set -- "$@" "$(safe_command_label "$spell_name" "$cmd")%selected_name='$spell_name';selected_cmd='$cmd';selected_display='$cmd'"
+                        set -- "$@" "$(safe_command_label "$spell_name")%selected_name='$spell_name';selected_cmd='$cmd';selected_display='$cmd'"
                 done
                 while IFS=$(printf '\t') read -r _ custom_name custom_cmd; do
                         [ -z "$custom_name" ] && continue
                         spell_path=$(custom_spell_path "$custom_name")
                         command_value=$spell_path
-                        set -- "$@" "$(safe_command_label "$custom_name" "$custom_cmd")%selected_name='$custom_name';selected_cmd='$command_value';selected_display='$custom_cmd'"
+                        set -- "$@" "$(safe_command_label "$custom_name")%selected_name='$custom_name';selected_cmd='$command_value';selected_display='$custom_cmd'"
                 done <<CUSTOM
 $(list_custom_commands "$category")
 CUSTOM
                 exit_label=$(exit-label)
-                set -- "$@" "${exit_label}%return"
+                set -- "$@" "${exit_label}%exit $menu_escape_status"
                 selected_name=''
                 selected_cmd=''
                 selected_display=''
@@ -484,12 +490,12 @@ spellbook_menu() {
                         [ -z "$cmd_name" ] && continue
                         spell_path=$(custom_spell_path "$cmd_name")
                         label=$(printf '%s (%s)' "$cmd_name" "$cmd_category")
-                        set -- "$@" "$(safe_command_label "$label" "$cmd_text")%spell-menu '$cmd_category' '$cmd_name' '$spell_path' '$cmd_text'"
+                        set -- "$@" "$(safe_command_label "$label")%spell-menu '$cmd_category' '$cmd_name' '$spell_path' '$cmd_text'"
                 done <<CUSTOM_COMMANDS
 $(list_all_custom_commands)
 CUSTOM_COMMANDS
                 # Add "Scribe new spell" option
-                set -- "$@" "Scribe new spell%spellbook --interactive-scribe"
+                set -- "$@" "Scribe Spell%scribe-spell"
                 # Add divider between custom commands and categories
                 set -- "$@" "%--divider--"
                 # Then, add spell categories or subfolders
@@ -509,8 +515,7 @@ CUSTOM_COMMANDS
                         for spell in $(find "$resolved_path" -maxdepth 1 -type f -perm -111 2>/dev/null | sort); do
                                 spell_name=$(basename "$spell")
                                 cmd=$(command_for_spell "$spell")
-                                display_name=$spell_name
-                                set -- "$@" "$(safe_command_label "$display_name" "$cmd")%spell-menu '$current_path' '$spell_name' '$cmd' '$cmd'"
+                                set -- "$@" "$(safe_command_label "$spell_name")%spell-menu '$current_path' '$spell_name' '$cmd' '$cmd'"
                         done
                         # List subdirectories
                         for subdir in "$resolved_path"/*; do
@@ -521,7 +526,7 @@ CUSTOM_COMMANDS
                         done
                 fi
                 exit_label=$(exit-label)
-                set -- "$@" "${exit_label}%return"
+                set -- "$@" "${exit_label}%exit $menu_escape_status"
                 if [ -z "$current_path" ]; then
                         menu_title="${CYAN}Spellbook:${RESET}"
                 else

@@ -38,7 +38,6 @@ launch_submenu() {
 
 display_menu() {
   look="Look Around%look"
-  cast="Spellbook%spellbook"
   home="Teleport Home%cd"
   jump="Teleport to Marker%jump-to-marker"
   portal="Teleport to Portal Chamber%cd /mnt"
@@ -50,7 +49,6 @@ display_menu() {
 
   set -- \
     "$look" \
-    "$cast" \
     "$home" \
     "$jump" \
     "$portal" \

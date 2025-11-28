@@ -223,9 +223,9 @@ while :; do
                 memory_toggle="Memorize%spell-menu --memorize '$name' '$escaped_command'"
         fi
         if is_custom_command "$category" "$name"; then
-                set -- "Cast now%spell-menu --cast '$escaped_command'" "$memory_toggle" "Help%spell-menu --help-spell '$escaped_command'" "Test spell%spell-menu --test '$name'" "Delete command%spell-menu --delete '$category' '$name'" "Exit%return"
+                set -- "Cast now%spell-menu --cast '$escaped_command'" "$memory_toggle" "Help%spell-menu --help-spell '$escaped_command'" "Test spell%spell-menu --test '$name'" "Delete command%spell-menu --delete '$category' '$name'" "Exit%exit $menu_escape_status"
         else
-                set -- "Cast now%spell-menu --cast '$escaped_command'" "$memory_toggle" "Help%spell-menu --help-spell '$escaped_command'" "Test spell%spell-menu --test '$name'" "Exit%return"
+                set -- "Cast now%spell-menu --cast '$escaped_command'" "$memory_toggle" "Help%spell-menu --help-spell '$escaped_command'" "Test spell%spell-menu --test '$name'" "Exit%exit $menu_escape_status"
         fi
         
         MENU_ESCAPE_STATUS=$menu_escape_status menu "Spell: $name" "$@"
