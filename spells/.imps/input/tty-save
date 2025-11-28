@@ -1,0 +1,9 @@
+#!/bin/sh
+# tty-save [FD] - save terminal settings (default fd 0)
+# Example: state=$(tty-save) && ... && tty-restore "$state"
+
+fd=${1:-0}
+if ! stty -g <&"$fd" 2>/dev/null; then
+  printf '%s\n' "tty-save: unable to read terminal settings" >&2
+  exit 1
+fi

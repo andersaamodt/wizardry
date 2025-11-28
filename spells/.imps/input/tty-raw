@@ -1,0 +1,6 @@
+#!/bin/sh
+# tty-raw [FD] - set terminal to raw mode for single-character reads
+# Example: tty-raw && dd bs=1 count=1 2>/dev/null
+
+fd=${1:-0}
+stty -icanon -echo min 1 time 0 <&"$fd" 2>/dev/null || exit 1

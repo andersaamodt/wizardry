@@ -1,44 +1,68 @@
 #!/bin/sh
 
-# Import the colors and ask_Yn functions
+# This spell hardens SSH configuration with security best practices.
+# It backs up the original config and applies secure settings.
 
 set -eu
-. "./colors"
-. "./ask_Yn"
 
-# Check if the user wants to cast the SSH Standard Barrier spell
-if ! ask_Yn "Do you wish to cast the SSH Standard Barrier spell?"; then
+show_usage() {
+        cat <<'USAGE'
+Usage: ssh-barrier
+
+Harden the SSH server configuration with security best practices:
+- Disables root login
+- Disables password authentication
+- Enables public key authentication
+- Restricts to current user
+- Changes default port to 2222
+- Enables X11 forwarding and TCP keepalives
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
+# Source colors for colored output
+. colors
+
+sshd_config="/etc/ssh/sshd_config"
+
+# Confirm before proceeding
+if ! ask_yn "Do you wish to cast the SSH Standard Barrier spell?" no; then
+  say "Spell cancelled."
   exit 0
 fi
 
 # Make a backup of the original SSH configuration file
-cp /etc/ssh/sshd_config /etc/ssh/sshd_config.original
+backup "$sshd_config" ".original" || die "Cannot backup $sshd_config"
 
 # Disable root login
-sed 's/#PermitRootLogin prohibit-password/PermitRootLogin no/g' /etc/ssh/sshd_config > /etc/ssh/sshd_config.modified
-mv /etc/ssh/sshd_config.modified /etc/ssh/sshd_config
+sed-inplace 's/#PermitRootLogin prohibit-password/PermitRootLogin no/g' "$sshd_config"
 
 # Disable password authentication
-sed 's/#PasswordAuthentication yes/PasswordAuthentication no/g' /etc/ssh/sshd_config > /etc/ssh/sshd_config.modified
-mv /etc/ssh/sshd_config.modified /etc/ssh/sshd_config
+sed-inplace 's/#PasswordAuthentication yes/PasswordAuthentication no/g' "$sshd_config"
 
 # Enable Public Key Authentication
-sed 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/g' /etc/ssh/sshd_config > /etc/ssh/sshd_config.modified
-mv /etc/ssh/sshd_config.modified /etc/ssh/sshd_config
+sed-inplace 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/g' "$sshd_config"
 
 # Specify allowed users
-echo "AllowUsers $(id -un)" >> /etc/ssh/sshd_config
+printf '%s\n' "AllowUsers $(id -un)" >> "$sshd_config"
 
 # Change SSH default port
-sed 's/#Port 22/Port 2222/g' /etc/ssh/sshd_config > /etc/ssh/sshd_config.modified
-mv /etc/ssh/sshd_config.modified /etc/ssh/sshd_config
+sed-inplace 's/#Port 22/Port 2222/g' "$sshd_config"
 
 # Enable X11 forwarding
-echo "X11Forwarding yes" >> /etc/ssh/sshd_config
+printf '%s\n' "X11Forwarding yes" >> "$sshd_config"
 
 # Enable TCP keepalives
-echo "TCPKeepAlive yes" >> /etc/ssh/sshd_config
+printf '%s\n' "TCPKeepAlive yes" >> "$sshd_config"
 
-# Enable key-based authentication
-echo "ClientAliveInterval 300" >> /etc/ssh/sshd_config
-echo "ClientAliveCountMax 0" >> /etc/ssh/sshd_config
+# Enable key-based authentication timeout
+printf '%s\n' "ClientAliveInterval 300" >> "$sshd_config"
+printf '%s\n' "ClientAliveCountMax 0" >> "$sshd_config"
+
+say "SSH barrier spell cast successfully. Restart sshd to apply changes."

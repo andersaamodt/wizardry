@@ -1,0 +1,23 @@
+#!/bin/sh
+# select-input - detect best input source (stdin/tty/none)
+# Example: src=$(select-input) && case $src in stdin) read line ;; tty) read line </dev/tty ;; esac
+# Set SELECT_INPUT_MODE=stdin|tty|none to override auto-detection
+
+case ${SELECT_INPUT_MODE:-auto} in
+stdin) printf '%s\n' stdin; exit 0 ;;
+tty)   printf '%s\n' tty;   exit 0 ;;
+none)  exit 1 ;;
+esac
+
+# Prefer stdin when something is piped, even if tty is also available
+if [ -t 0 ] || [ -p /dev/stdin ] || [ -s /dev/stdin ]; then
+  printf '%s\n' stdin
+  exit 0
+fi
+
+if [ -r /dev/tty ]; then
+  printf '%s\n' tty
+  exit 0
+fi
+
+exit 1
