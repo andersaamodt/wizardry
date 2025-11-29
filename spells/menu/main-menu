@@ -33,12 +33,18 @@ if ! require menu "The main menu needs the 'menu' command to present options."; 
   exit 1
 fi
 
+# Add visual spacing before launching a submenu command
+launch_submenu() {
+  printf '\n'
+  WIZARDRY_SUBMENU=1 "$@"
+}
+
 display_menu() {
-  mud="MUD menu%mud"
-  cast="Cast a Spell%cast"
-  spellbook="Spellbook%spellbook"
-  install="Install Free Software%install-menu"
-  system="Manage System%system-menu"
+  mud="MUD menu%launch_submenu mud"
+  cast="Cast a Spell%launch_submenu cast"
+  spellbook="Spellbook%launch_submenu spellbook"
+  install="Install Free Software%launch_submenu install-menu"
+  system="Manage System%launch_submenu system-menu"
   exit_label=$(exit-label)
   exit_item="${exit_label}%exit $menu_escape_status"
 

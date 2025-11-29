@@ -52,13 +52,56 @@ SH
   assert_success
   args=$(cat "$tmp/log")
   case "$args" in
-    *"Main Menu:"*"MUD menu%"*"mud"*"Cast a Spell%"*"cast"*"Spellbook%"*"spellbook"*"Install Free Software%"*"install-menu"*"Manage System%"*"system-menu"*"Exit%exit 113"* ) : ;;
+    *"Main Menu:"*"MUD menu%launch_submenu mud"*"Cast a Spell%launch_submenu cast"*"Spellbook%launch_submenu spellbook"*"Install Free Software%launch_submenu install-menu"*"Manage System%launch_submenu system-menu"*"Exit%exit 113"* ) : ;;
     *) TEST_FAILURE_REASON="menu entries missing: $args"; return 1 ;;
   esac
 }
 
 run_test_case "main-menu requires menu dependency" test_main_menu_checks_dependency
 run_test_case "main-menu forwards menu entries" test_main_menu_passes_expected_entries
+
+# Test ESC and Exit behavior for both nested and unnested scenarios
+test_esc_exit_behavior() {
+  tmp=$(make_tempdir)
+  make_stub_require "$tmp"
+  
+  # Create menu stub that logs entries and returns escape status
+  cat >"$tmp/menu" <<'SH'
+#!/bin/sh
+printf '%s\n' "$@" >>"$MENU_LOG"
+exit 113
+SH
+  chmod +x "$tmp/menu"
+  
+  # Test 1: Top-level (unnested) - should show "Exit"
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+if [ "${WIZARDRY_SUBMENU-}" = "1" ]; then printf '%s' "Back"; else printf '%s' "Exit"; fi
+SH
+  chmod +x "$tmp/exit-label"
+  
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/main-menu"
+  assert_success || { TEST_FAILURE_REASON="unnested exit failed"; return 1; }
+  
+  args=$(cat "$tmp/log")
+  case "$args" in
+    *"Exit%exit 113"*) : ;;
+    *) TEST_FAILURE_REASON="unnested should show Exit label: $args"; return 1 ;;
+  esac
+  
+  # Test 2: As submenu (nested) - should show "Back"
+  : >"$tmp/log"
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_SUBMENU=1 "$ROOT_DIR/spells/menu/main-menu"
+  assert_success || { TEST_FAILURE_REASON="nested exit failed"; return 1; }
+  
+  args=$(cat "$tmp/log")
+  case "$args" in
+    *"Back%exit 113"*) : ;;
+    *) TEST_FAILURE_REASON="nested should show Back label: $args"; return 1 ;;
+  esac
+}
+
+run_test_case "main-menu ESC/Exit handles nested and unnested" test_esc_exit_behavior
 
 shows_help() {
   run_spell spells/menu/main-menu --help

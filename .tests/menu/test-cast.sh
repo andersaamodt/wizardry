@@ -98,6 +98,45 @@ test_cast_sends_entries_to_menu() {
 run_test_case "cast lists stored spells" test_cast_lists_stored_spells
 run_test_case "cast exits when no stored spells" test_cast_prints_empty_message
 run_test_case "cast feeds spells into menu" test_cast_sends_entries_to_menu
+
+# Test ESC and Exit behavior for both nested and unnested scenarios
+test_esc_exit_behavior() {
+  tmp=$(make_tempdir)
+  make_stub_cast_list "$tmp" fizz "cast fizz"
+  make_stub_menu "$tmp"
+  make_stub_require "$tmp"
+  
+  # Create exit-label stub
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+if [ "${WIZARDRY_SUBMENU-}" = "1" ]; then printf '%s' "Back"; else printf '%s' "Exit"; fi
+SH
+  chmod +x "$tmp/exit-label"
+  
+  # Test 1: Top-level (unnested) - should show "Exit"
+  run_cmd env PATH="$tmp:$PATH" CAST_STORE="$tmp/memorize" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/cast"
+  assert_success || { TEST_FAILURE_REASON="unnested exit failed"; return 1; }
+  
+  args=$(cat "$tmp/log")
+  case "$args" in
+    *"Exit%exit 113"*) : ;;
+    *) TEST_FAILURE_REASON="unnested should show Exit label: $args"; return 1 ;;
+  esac
+  
+  # Test 2: As submenu (nested) - should show "Back"
+  : >"$tmp/log"
+  run_cmd env PATH="$tmp:$PATH" CAST_STORE="$tmp/memorize" MENU_LOG="$tmp/log" WIZARDRY_SUBMENU=1 "$ROOT_DIR/spells/menu/cast"
+  assert_success || { TEST_FAILURE_REASON="nested exit failed"; return 1; }
+  
+  args=$(cat "$tmp/log")
+  case "$args" in
+    *"Back%exit 113"*) : ;;
+    *) TEST_FAILURE_REASON="nested should show Back label: $args"; return 1 ;;
+  esac
+}
+
+run_test_case "cast ESC/Exit handles nested and unnested" test_esc_exit_behavior
+
 shows_help() {
   run_spell spells/menu/cast --help
   # Note: spell may not have --help implemented yet

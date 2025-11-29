@@ -247,8 +247,11 @@ while :; do
                 fi
         fi
         
-        MENU_ESCAPE_STATUS=$menu_escape_status MENU_START_SELECTION=$start_selection menu "Spell: $name" "$@"
-        status=$?
+        if MENU_ESCAPE_STATUS=$menu_escape_status MENU_START_SELECTION=$start_selection menu "Spell: $name" "$@"; then
+                status=0
+        else
+                status=$?
+        fi
         if [ "$status" -eq "$menu_escape_status" ]; then
                 break
         fi

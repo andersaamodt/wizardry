@@ -121,6 +121,53 @@ SH
 run_test_case "install-menu fails when empty" test_install_menu_errors_when_empty
 run_test_case "install-menu builds entries from directories" test_install_menu_builds_entries_with_status
 run_test_case "install-menu prefers spells in the install root" test_install_menu_prefers_install_root_commands
+
+# Test ESC and Exit behavior for both nested and unnested scenarios
+test_esc_exit_behavior() {
+  tmp=$(make_tempdir)
+  make_stub_menu_env "$tmp"
+  make_stub_require "$tmp"
+  
+  # Create exit-label stub
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+if [ "${WIZARDRY_SUBMENU-}" = "1" ]; then printf '%s' "Back"; else printf '%s' "Exit"; fi
+SH
+  chmod +x "$tmp/exit-label"
+  
+  # Create a minimal install dir
+  install_root="$tmp/install"
+  mkdir -p "$install_root/test"
+  cat >"$install_root/test/test-status" <<'SH'
+#!/bin/sh
+echo ready
+SH
+  chmod +x "$install_root/test/test-status"
+  
+  # Test 1: Top-level (unnested) - should show "Exit"
+  run_cmd env PATH="$tmp:$PATH" INSTALL_MENU_ROOT="$install_root" INSTALL_MENU_DIRS="test" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/install-menu"
+  assert_success || { TEST_FAILURE_REASON="unnested exit failed"; return 1; }
+  
+  args=$(cat "$tmp/log")
+  case "$args" in
+    *"Exit%exit 113"*) : ;;
+    *) TEST_FAILURE_REASON="unnested should show Exit label: $args"; return 1 ;;
+  esac
+  
+  # Test 2: As submenu (nested) - should show "Back"
+  : >"$tmp/log"
+  run_cmd env PATH="$tmp:$PATH" INSTALL_MENU_ROOT="$install_root" INSTALL_MENU_DIRS="test" MENU_LOG="$tmp/log" WIZARDRY_SUBMENU=1 "$ROOT_DIR/spells/menu/install-menu"
+  assert_success || { TEST_FAILURE_REASON="nested exit failed"; return 1; }
+  
+  args=$(cat "$tmp/log")
+  case "$args" in
+    *"Back%exit 113"*) : ;;
+    *) TEST_FAILURE_REASON="nested should show Back label: $args"; return 1 ;;
+  esac
+}
+
+run_test_case "install-menu ESC/Exit handles nested and unnested" test_esc_exit_behavior
+
 shows_help() {
   run_spell spells/menu/install-menu --help
   # Note: spell may not have --help implemented yet

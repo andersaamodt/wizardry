@@ -34,7 +34,7 @@ fi
 # Add visual spacing before launching a submenu command
 launch_submenu() {
   printf '\n'
-  "$@"
+  WIZARDRY_SUBMENU=1 "$@"
 }
 
 display_menu() {

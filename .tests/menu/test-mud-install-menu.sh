@@ -105,4 +105,55 @@ SH
 run_test_case "mud-install-menu invokes tor setup" test_mud_install_menu_calls_tor_installer
 run_test_case "mud-install-menu fails fast when menu helper is missing" test_mud_install_menu_requires_menu_helper
 run_test_case "mud-install-menu surfaces menu failures" test_mud_install_menu_reports_menu_failure
+
+# Test ESC and Exit behavior for both nested and unnested scenarios
+test_esc_exit_behavior() {
+  tmp=$(make_tempdir)
+  make_stub_colors "$tmp"
+  
+  # Create menu stub that returns escape status
+  cat >"$tmp/menu" <<'SH'
+#!/bin/sh
+printf '%s\n' "$@" >>"$MENU_LOG"
+exit 113
+SH
+  chmod +x "$tmp/menu"
+  
+  cat >"$tmp/require-command" <<'SH'
+#!/bin/sh
+exit 0
+SH
+  chmod +x "$tmp/require-command"
+  
+  # Create exit-label stub
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+if [ "${WIZARDRY_SUBMENU-}" = "1" ]; then printf '%s' "Back"; else printf '%s' "Exit"; fi
+SH
+  chmod +x "$tmp/exit-label"
+  
+  # Test 1: Top-level (unnested) - should show "Exit"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud-install-menu"
+  assert_success || { TEST_FAILURE_REASON="unnested exit failed"; return 1; }
+  
+  args=$(cat "$tmp/log")
+  case "$args" in
+    *"Exit%exit 113"*) : ;;
+    *) TEST_FAILURE_REASON="unnested should show Exit label: $args"; return 1 ;;
+  esac
+  
+  # Test 2: As submenu (nested) - should show "Back"
+  : >"$tmp/log"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_SUBMENU=1 "$ROOT_DIR/spells/menu/mud-install-menu"
+  assert_success || { TEST_FAILURE_REASON="nested exit failed"; return 1; }
+  
+  args=$(cat "$tmp/log")
+  case "$args" in
+    *"Back%exit 113"*) : ;;
+    *) TEST_FAILURE_REASON="nested should show Back label: $args"; return 1 ;;
+  esac
+}
+
+run_test_case "mud-install-menu ESC/Exit handles nested and unnested" test_esc_exit_behavior
+
 finish_tests

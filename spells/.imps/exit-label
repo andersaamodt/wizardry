@@ -1,5 +1,10 @@
 #!/bin/sh
 # exit-label - return the label for menu exit items
-# Example: exit_item="$(exit-label)%kill -2 $$"
+# Returns "Back" when WIZARDRY_SUBMENU=1 (nested menu), "Exit" otherwise.
+# Example: exit_item="$(exit-label)%exit $menu_escape_status"
 
-printf '%s' "Exit"
+if [ "${WIZARDRY_SUBMENU-}" = "1" ]; then
+  printf '%s' "Back"
+else
+  printf '%s' "Exit"
+fi
