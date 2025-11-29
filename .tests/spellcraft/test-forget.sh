@@ -3,7 +3,7 @@
 # - prints usage
 # - removes a spell from the cast menu
 # - fails when spell name is missing
-# - fails when memorize helper is missing
+# - fails when spell is not memorized
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/test-common.sh" ] && [ "$test_root" != "/" ]; do
@@ -12,35 +12,48 @@ done
 # shellcheck source=/dev/null
 . "$test_root/test-common.sh"
 
-reset_logs() {
-  rm -f "$WIZARDRY_TMPDIR/spellbook.log"
+cast_env() {
+  dir=$(mktemp -d "${WIZARDRY_TMPDIR}/cast.XXXXXX")
+  mkdir -p "$dir"
+  printf 'WIZARDRY_CAST_DIR=%s' "$dir"
+}
+
+run_memorize() {
+  env_var=$1
+  shift
+  run_cmd env "$env_var" "$ROOT_DIR/spells/cantrips/memorize" "$@"
+}
+
+run_forget() {
+  env_var=$1
+  shift
+  run_cmd env "$env_var" "$ROOT_DIR/spells/spellcraft/forget" "$@"
 }
 
 test_help() {
-  reset_logs
   run_spell "spells/spellcraft/forget" --help
   assert_success && assert_output_contains "Usage:"
 }
 
 test_forget_removes_spell() {
-  reset_logs
-  case_dir=$(make_tempdir)
-  store="$case_dir/memorize"
-  cat >"$store" <<'SCRIPT'
-#!/bin/sh
-printf '%s\n' "$*" >>"${WIZARDRY_TMPDIR}/spellbook.log"
-SCRIPT
-  chmod +x "$store"
-
-  MEMORIZE_SPELL_HELPER="$store" run_spell "spells/spellcraft/forget" myspell
-
+  env_var=$(cast_env)
+  # First memorize a spell
+  run_memorize "$env_var" myspell
   assert_success
-  assert_output_contains "Forgotten: myspell"
-  assert_path_exists "$WIZARDRY_TMPDIR/spellbook.log"
-  recorded=$(cat "$WIZARDRY_TMPDIR/spellbook.log")
-  case "$recorded" in
-    "remove myspell") : ;;
-    *) TEST_FAILURE_REASON="unexpected spellbook invocation: $recorded"; return 1 ;;
+  
+  # Verify it's memorized
+  run_memorize "$env_var" list
+  assert_output_contains "myspell"
+  
+  # Now forget it
+  run_forget "$env_var" myspell
+  assert_success
+  
+  # Verify it's gone
+  run_memorize "$env_var" list
+  case "$OUTPUT" in
+    *myspell*) TEST_FAILURE_REASON="spell should have been forgotten"; return 1 ;;
+    *) : ;;
   esac
 }
 
@@ -49,17 +62,15 @@ test_forget_requires_name() {
   assert_failure && assert_error_contains "spell name required"
 }
 
-test_forget_fails_when_helper_missing() {
-  reset_logs
-  missing="$(make_tempdir)/memorize"
-  PATH=/usr/bin:/bin MEMORIZE_SPELL_HELPER="$missing" \
-    run_spell "spells/spellcraft/forget" myspell
-  assert_failure && assert_error_contains "memorize helper is unavailable"
+test_forget_fails_when_not_memorized() {
+  env_var=$(cast_env)
+  run_forget "$env_var" nonexistent
+  assert_failure && assert_error_contains "not memorized"
 }
 
 run_test_case "forget prints usage" test_help
 run_test_case "forget removes spell from cast menu" test_forget_removes_spell
 run_test_case "forget requires spell name" test_forget_requires_name
-run_test_case "forget fails when helper is missing" test_forget_fails_when_helper_missing
+run_test_case "forget fails when spell not memorized" test_forget_fails_when_not_memorized
 
 finish_tests

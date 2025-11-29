@@ -238,11 +238,11 @@ while :; do
         fi
 
         # Show checkbox for Cast menu visibility (toggleable)
-        # Use standalone memorize instead of spell-menu flags
+        # Use standalone memorize and forget spells
         if is_memorized "$name"; then
-                cast_toggle="[X] Forget%memorize remove '$name'"
+                cast_toggle="[X] Forget%forget '$name'"
         else
-                cast_toggle="[ ] Memorize%memorize add '$name'"
+                cast_toggle="[ ] Memorize%memorize '$name'"
         fi
         # Build menu items - Cast now runs the command directly (using escaped version for safety)
         exit_label=$(exit-label)

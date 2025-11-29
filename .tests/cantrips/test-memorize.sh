@@ -1,5 +1,5 @@
 #!/bin/sh
-# Behavior from --help: manage the prioritized cast list.
+# Behavior from --help: memorize spells to the Cast menu.
 
 set -eu
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
@@ -20,7 +20,7 @@ cast_env() {
   printf 'WIZARDRY_CAST_DIR=%s' "$dir"
 }
 
-run_store() {
+run_memorize() {
   env_var=$1
   shift
   run_cmd env "$env_var" "$ROOT_DIR/spells/cantrips/memorize" "$@"
@@ -30,12 +30,12 @@ normalize_output() {
   printf '%s' "$OUTPUT" | tr '\n' '|'
 }
 
-adds_and_lists_entries() {
+memorizes_and_lists_entries() {
   env_var=$(cast_env)
-  run_store "$env_var" add blink
+  run_memorize "$env_var" blink
   [ "$STATUS" -eq 0 ] || return 1
 
-  run_store "$env_var" list
+  run_memorize "$env_var" list
   expected=$(tabbed "blink")
   case "$(normalize_output)" in
     "$expected"|"$expected|") : ;; 
@@ -45,53 +45,42 @@ adds_and_lists_entries() {
 
 pushes_updates_to_front() {
   env_var=$(cast_env)
-  run_store "$env_var" add blink
-  run_store "$env_var" add gust
-  run_store "$env_var" add blink
-  run_store "$env_var" list
+  run_memorize "$env_var" blink
+  run_memorize "$env_var" gust
+  run_memorize "$env_var" blink
+  run_memorize "$env_var" list
   first_line=$(printf '%s' "$OUTPUT" | head -n1)
   expected=$(printf 'blink\t%s' "blink")
   [ "$first_line" = "$expected" ] || { TEST_FAILURE_REASON="expected blink to be first"; return 1; }
 }
 
-removes_entries_and_errors_when_missing() {
-  env_var=$(cast_env)
-  run_store "$env_var" add blink
-  run_store "$env_var" remove blink
-  [ "$STATUS" -eq 0 ] || return 1
-
-  run_store "$env_var" remove blink
-  [ "$STATUS" -ne 0 ] || { TEST_FAILURE_REASON="expected failure for missing"; return 1; }
-}
-
 prints_cast_path() {
   env_var=$(cast_env)
   file=${env_var#*=}/.memorized
-  run_store "$env_var" path
+  run_memorize "$env_var" path
   [ "$STATUS" -eq 0 ] || return 1
   [ "$OUTPUT" = "$file" ] || { TEST_FAILURE_REASON="unexpected path output"; return 1; }
 }
 
 rejects_invalid_args() {
   env_var=$(cast_env)
-  run_store "$env_var" add "bad name"
+  run_memorize "$env_var" "bad name"
   [ "$STATUS" -ne 0 ] || { TEST_FAILURE_REASON="expected invalid name failure"; return 1; }
 
-  run_store "$env_var" list extra
+  run_memorize "$env_var" list extra
   [ "$STATUS" -ne 0 ] || { TEST_FAILURE_REASON="expected usage failure"; return 1; }
 }
 
 writes_scripts_into_cast_dir() {
   env_var=$(cast_env)
   cast_dir=${env_var#*=}
-  run_store "$env_var" add spark
+  run_memorize "$env_var" spark
   [ -x "$cast_dir/spark" ] || { TEST_FAILURE_REASON="cast spell wrapper missing"; return 1; }
   # The wrapper should run "spark" (which is the spell name)
 }
 
-run_test_case "adds and lists entries" adds_and_lists_entries
+run_test_case "memorizes and lists entries" memorizes_and_lists_entries
 run_test_case "pushes updates to the front" pushes_updates_to_front
-run_test_case "removes entries and errors when missing" removes_entries_and_errors_when_missing
 run_test_case "prints cast path" prints_cast_path
 run_test_case "rejects invalid arguments" rejects_invalid_args
 run_test_case "writes scripts into cast dir" writes_scripts_into_cast_dir
