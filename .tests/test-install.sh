@@ -664,15 +664,9 @@ install_uses_only_bootstrappable_spells() {
     return 1
   fi
   
-  # memorize should be invoked as $MEMORIZE
-  if grep -E '^\s*memorize\s' "$ROOT_DIR/install" 2>/dev/null | grep -v '^#' | grep -v 'MEMORIZE=' >/dev/null; then
-    TEST_FAILURE_REASON="install script invokes 'memorize' directly instead of via \$MEMORIZE"
-    return 1
-  fi
-  
-  # scribe-spell should be invoked as $SCRIBE_SPELL
-  if grep -E '^\s*scribe-spell\s' "$ROOT_DIR/install" 2>/dev/null | grep -v '^#' | grep -v 'SCRIBE_SPELL=' >/dev/null; then
-    TEST_FAILURE_REASON="install script invokes 'scribe-spell' directly instead of via \$SCRIBE_SPELL"
+  # scribe-spell (for installing spells) should be invoked as $SPELL_INSTALLER
+  if grep -E '^\s*scribe-spell\s' "$ROOT_DIR/install" 2>/dev/null | grep -v '^#' | grep -v 'SCRIBE_SPELL=' | grep -v 'SPELL_INSTALLER=' >/dev/null; then
+    TEST_FAILURE_REASON="install script invokes 'scribe-spell' directly instead of via \$SPELL_INSTALLER"
     return 1
   fi
   
@@ -750,8 +744,8 @@ EOF
   assert_output_contains "PATH configuration updated" || return 1
 }
 
-install_shows_spell_names_memorized() {
-  # The installer should list the names of spells that were memorized
+install_shows_spell_names_installed() {
+  # The installer should list the names of spells that were installed
   fixture=$(make_fixture)
   provide_basic_tools "$fixture"
   link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
@@ -766,10 +760,10 @@ install_shows_spell_names_memorized() {
   assert_success || return 1
   
   # Should list spell names in output (e.g., "cd" spell)
-  # The output should contain the spell names that were memorized
+  # The output should contain the spell names that were installed
   if printf '%s' "$OUTPUT" | grep -q "Memorizing"; then
-    # If spells were memorized, check that names are listed
-    if printf '%s' "$OUTPUT" | grep -q "Memorized"; then
+    # If spells were installed, check that names are listed
+    if printf '%s' "$OUTPUT" | grep -q "Installed"; then
       # Check that individual spell names are shown with ->
       assert_output_contains "->" || return 1
     fi
@@ -1170,18 +1164,18 @@ EOF
   return 0
 }
 
-# === Memorize Before Rebuild Tests ===
+# === Install Spells Before Rebuild Tests ===
 
-install_memorizes_before_nixos_rebuild() {
-  # Test that the install script has the memorize section before nixos-rebuild
+install_spells_before_nixos_rebuild() {
+  # Test that the install script has the spell installation section before nixos-rebuild
   # This ensures spells are ready when the rebuild completes
   
   # Find line numbers of key sections
-  memorize_line=$(grep -n "section_msg.*Memorizing Spells" "$ROOT_DIR/install" | head -1 | cut -d: -f1)
+  install_spells_line=$(grep -n "section_msg.*Installing Spells" "$ROOT_DIR/install" | head -1 | cut -d: -f1)
   rebuild_line=$(grep -n "nixos-rebuild switch" "$ROOT_DIR/install" | head -1 | cut -d: -f1)
   
-  if [ -z "$memorize_line" ]; then
-    TEST_FAILURE_REASON="Memorizing Spells section not found in install script"
+  if [ -z "$install_spells_line" ]; then
+    TEST_FAILURE_REASON="Installing Spells section not found in install script"
     return 1
   fi
   
@@ -1190,8 +1184,8 @@ install_memorizes_before_nixos_rebuild() {
     return 0
   fi
   
-  if [ "$memorize_line" -gt "$rebuild_line" ]; then
-    TEST_FAILURE_REASON="Memorizing Spells section should come before nixos-rebuild (memorize at line $memorize_line, rebuild at line $rebuild_line)"
+  if [ "$install_spells_line" -gt "$rebuild_line" ]; then
+    TEST_FAILURE_REASON="Installing Spells section should come before nixos-rebuild (install spells at line $install_spells_line, rebuild at line $rebuild_line)"
     return 1
   fi
   
@@ -1221,7 +1215,7 @@ run_test_case "install uses only bootstrappable spells" install_uses_only_bootst
 run_test_case "install shows menu when already installed" install_shows_menu_when_already_installed
 run_test_case "install shows help" shows_help
 run_test_case "install NixOS shows PATH updated" install_nixos_shows_path_updated
-run_test_case "install shows spell names memorized" install_shows_spell_names_memorized
+run_test_case "install shows spell names installed" install_shows_spell_names_installed
 run_test_case "install creates .uninstall script" install_creates_uninstall_script_with_correct_name
 run_test_case "install does not show uninstall on success" install_does_not_show_uninstall_on_success
 run_test_case "install shows simple run message" install_shows_simple_run_message
@@ -1237,6 +1231,6 @@ run_test_case "install shows revised prompt text" install_shows_revised_prompt_t
 run_test_case "learn-spellbook remove-all removes all nix entries" path_wizard_remove_all_removes_all_nix_entries
 run_test_case "learn-spellbook remove-all reports count" path_wizard_remove_all_reports_count
 run_test_case "learn-spellbook remove-all handles empty file" path_wizard_remove_all_handles_empty_file
-run_test_case "install memorizes before nixos-rebuild" install_memorizes_before_nixos_rebuild
+run_test_case "install installs spells before nixos-rebuild" install_spells_before_nixos_rebuild
 
 finish_tests

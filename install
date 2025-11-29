@@ -277,7 +277,8 @@ fi
 # on to update PATH entries and ask for confirmation.
 LEARN_SPELLBOOK="$ABS_DIR/spells/spellcraft/learn-spellbook"
 DETECT_RC_FILE="$ABS_DIR/spells/divination/detect-rc-file"
-MEMORIZE="$ABS_DIR/spells/spellcraft/memorize"
+# Use scribe-spell for installing spells to shell (it has --recursive support)
+SPELL_INSTALLER="$ABS_DIR/spells/spellcraft/scribe-spell"
 CORE_INSTALLER=${WIZARDRY_CORE_INSTALLER:-$ABS_DIR/spells/install/core/install-core}
 ASK_YN="$ABS_DIR/spells/cantrips/ask_yn"
 LEARN_SPELLBOOK_FLAGS=${LEARN_SPELLBOOK_FLAGS:---recursive}
@@ -287,8 +288,8 @@ LEARN_SPELLBOOK_FLAGS=${LEARN_SPELLBOOK_FLAGS:---recursive}
 # This prevents issues where a user has an old wizardry installation in PATH.
 SCRIBE_SPELL="$ABS_DIR/spells/spellcraft/scribe-spell"
 MEMORIZE_SCRIBE="$ABS_DIR/spells/spellcraft/scribe-spell"
-MEMORIZE_COMMAND_HELPER="$ABS_DIR/spells/cantrips/memorize-spell"
-export DETECT_RC_FILE SCRIBE_SPELL MEMORIZE_SCRIBE MEMORIZE_COMMAND_HELPER
+MEMORIZE_SPELL_HELPER="$ABS_DIR/spells/cantrips/memorize-spell"
+export DETECT_RC_FILE SCRIBE_SPELL MEMORIZE_SCRIBE MEMORIZE_SPELL_HELPER
 
 # Bootstrap color definitions (inline - cannot rely on wizardry spells during install)
 # Create the escape character in a POSIX-compliant way.
@@ -737,19 +738,19 @@ if [ "$path_updates_made" -eq 1 ]; then
         success_msg "PATH configuration updated in $rc_destination"
 fi
 
-# Memorizing spells pre-compiles wizardry's menus so interactive commands are
+# Installing spells pre-compiles wizardry's menus so interactive commands are
 # ready before the user opens their first shell inside the new install.
 # This is done before nixos-rebuild so spells are ready when the rebuild completes.
 mem_status=0
-if [ -x "$MEMORIZE" ]; then
-        section_msg "Memorizing Spells"
-        mem_log=$(mktemp "${TMPDIR:-/tmp}/wizardry-memorize.XXXXXX") || exit 1
-        if "$MEMORIZE" --recursive "$ABS_DIR/spells" >"$mem_log" 2>&1; then
+if [ -x "$SPELL_INSTALLER" ]; then
+        section_msg "Installing Spells"
+        mem_log=$(mktemp "${TMPDIR:-/tmp}/wizardry-install.XXXXXX") || exit 1
+        if "$SPELL_INSTALLER" --recursive "$ABS_DIR/spells" >"$mem_log" 2>&1; then
                 # Parse output to extract counts and spell names
                 memorized_count=$(grep -o 'Memorized [0-9]* spell' "$mem_log" | grep -o '[0-9]*' | head -1)
                 if [ -n "$memorized_count" ] && [ "$memorized_count" -gt 0 ]; then
                         # Extract spell names from "Memorizing .../spellname..." lines
-                        success_msg "Memorized $memorized_count spell(s):"
+                        success_msg "Installed $memorized_count spell(s):"
                         grep '^Memorizing ' "$mem_log" | sed 's#.*/##; s#\.\.\.##' | while IFS= read -r name; do
                                 substep_msg "$name"
                         done
@@ -760,7 +761,7 @@ if [ -x "$MEMORIZE" ]; then
         fi
         rm -f "$mem_log"
 else
-        printf '%sWarning:%s memorize spell is missing; skipping automatic memorization.\n' "$YELLOW" "$RESET" >&2
+        printf '%sWarning:%s scribe-spell is missing; skipping automatic spell installation.\n' "$YELLOW" "$RESET" >&2
 fi
 
 # Handle platform-specific post-installation steps
