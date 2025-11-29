@@ -79,6 +79,7 @@ do_forget() {
 }
 
 # Check if a script is a custom spell (exists as executable in spell_home or its subfolders)
+# This also checks if the resolved command path is under spell_home (e.g. ~/.spellbook/*)
 is_custom_spell() {
         check_name=$1
         # Check in spell_home root
@@ -94,10 +95,10 @@ is_custom_spell() {
                         return 0
                 fi
         done
-        # Also check if the command path itself is under spell_home
+        # Also check if the command path itself is under spell_home (with trailing slash check)
         cmd_path=$(command -v "$check_name" 2>/dev/null) || return 1
         case "$cmd_path" in
-                "$spell_home"*) return 0 ;;
+                "$spell_home"/*) return 0 ;;
         esac
         return 1
 }
