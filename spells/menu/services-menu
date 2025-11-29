@@ -70,8 +70,15 @@ display_menu() {
   MENU_ESCAPE_STATUS=$menu_escape_status menu "Services Menu:" "$@"
 }
 
+first_run=1
+
 while true; do
-  printf '\n'
+  if [ "$first_run" -eq 0 ]; then
+    printf '\n'
+  else
+    first_run=0
+  fi
+
   if display_menu; then
     status=0
   else

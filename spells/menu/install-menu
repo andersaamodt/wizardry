@@ -60,6 +60,7 @@ list_entries() {
 }
 
 menu_escape_status=113
+first_run=1
 
 while :; do
     entries=$(list_entries)
@@ -69,7 +70,11 @@ while :; do
         exit 1
     fi
 
-    printf '\n'
+    if [ "$first_run" -eq 0 ]; then
+        printf '\n'
+    else
+        first_run=0
+    fi
 
     set --
     for name in $entries; do

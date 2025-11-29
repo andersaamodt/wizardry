@@ -116,7 +116,7 @@ is_installable() {
 
 usage() {
         cat <<'USAGE'
-Usage: spell-menu CATEGORY NAME COMMAND [DISPLAY_COMMAND]
+Usage: spell-menu SPELLNAME
        spell-menu --cast COMMAND
        spell-menu --help-spell COMMAND
        spell-menu --test NAME
@@ -126,10 +126,7 @@ Usage: spell-menu CATEGORY NAME COMMAND [DISPLAY_COMMAND]
 Display an action menu for a spell with options to cast, memorize, get help, test, or delete.
 
 Arguments:
-  CATEGORY         The category the spell belongs to
-  NAME             The spell name
-  COMMAND          The command to execute
-  DISPLAY_COMMAND  Optional display text for the command (defaults to COMMAND)
+  SPELLNAME        The name of the spell or command to show the menu for
 USAGE
 }
 
@@ -181,15 +178,14 @@ case ${1-} in
                 ;;
 esac
 
-if [ "$#" -lt 3 ]; then
+if [ "$#" -lt 1 ]; then
         usage >&2
         exit 1
 fi
 
-category=$1
-name=$2
-command=$3
-display_command=${4-$command}
+name=$1
+# The command is the spell name (which is executable either as scribed command or from PATH)
+command=$name
 
 if ! require_tool menu "The spell menu needs the 'menu' command."; then
         exit 1
@@ -198,7 +194,15 @@ fi
 # Escape single quotes in command for safe passing
 escaped_command=$(printf '%s' "$command" | sed "s/'/'\\\\''/g")
 
+first_run=1
+
 while :; do
+        if [ "$first_run" -eq 0 ]; then
+                printf '\n'
+        else
+                first_run=0
+        fi
+
         # Show checkbox for Cast menu visibility (toggleable)
         # Use standalone memorize-command instead of spell-menu flags
         if is_memorized "$name"; then
@@ -210,11 +214,13 @@ while :; do
         exit_label=$(exit-label)
         exit_item="${exit_label}%exit $menu_escape_status"
         if is_scribed_command "$name"; then
+                # Scribed (custom) commands show Delete option
                 set -- "Cast%$escaped_command" "$cast_toggle" "Help%$escaped_command --help" "Test spell%spell-menu --test '$name'" "Delete command%spell-menu --delete '$name'" "$exit_item"
         elif is_installable "$command"; then
                 # Show Install option for spells with install() function
                 set -- "Cast%$escaped_command" "$cast_toggle" "Install to shell%spell-menu --install '$escaped_command'" "Help%$escaped_command --help" "Test spell%spell-menu --test '$name'" "$exit_item"
         else
+                # Built-in spells: no Delete option
                 set -- "Cast%$escaped_command" "$cast_toggle" "Help%$escaped_command --help" "Test spell%spell-menu --test '$name'" "$exit_item"
         fi
         
@@ -226,5 +232,4 @@ while :; do
         if [ "$status" -ne 0 ]; then
                 exit "$status"
         fi
-        printf '\n'
 done
