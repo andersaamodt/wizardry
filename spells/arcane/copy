@@ -2,6 +2,7 @@
 
 # This spell copies the text file at the specified path to the clipboard.
 # It takes one argument, the path to the text file.
+# When run without arguments, it prompts for the file path interactively.
 
 set -eu
 
@@ -11,6 +12,8 @@ Usage: copy <file>
 
 Copy the contents of the specified text file to the system clipboard using
 pbcopy, xsel, or xclip. Prints a confirmation when successful.
+
+When run without arguments, prompts for the file path interactively.
 USAGE
 }
 
@@ -21,10 +24,19 @@ case "${1-}" in
         ;;
 esac
 
-# Handle missing argument
+# Handle missing argument - prompt interactively
 if [ "$#" -eq 0 ]; then
-    say 'That file does not exist.'
-    exit 1
+    if command -v ask_text >/dev/null 2>&1; then
+        file_path=$(ask_text "Enter file path to copy to clipboard:")
+        if [ -z "$file_path" ]; then
+            say 'No file path provided.'
+            exit 1
+        fi
+        set -- "$file_path"
+    else
+        show_usage >&2
+        exit 1
+    fi
 fi
 
 is file "$1" || { say 'That file does not exist.'; exit 1; }

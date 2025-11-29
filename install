@@ -77,9 +77,9 @@ case $PROMPT_DEFAULT in
 esac
 
 if [ -n "${WIZARDRY_INSTALL_PLATFORM-}" ]; then
-        PATH_WIZARD_PLATFORM=$WIZARDRY_INSTALL_PLATFORM
+        LEARN_SPELLBOOK_PLATFORM=$WIZARDRY_INSTALL_PLATFORM
         DETECT_RC_FILE_PLATFORM=$WIZARDRY_INSTALL_PLATFORM
-        export PATH_WIZARD_PLATFORM DETECT_RC_FILE_PLATFORM
+        export LEARN_SPELLBOOK_PLATFORM DETECT_RC_FILE_PLATFORM
 fi
 
 # Track whether we are running out of an existing checkout so local installs
@@ -275,20 +275,21 @@ fi
 
 # Now that the wizardry tree is available, point at the helper spells we rely
 # on to update PATH entries and ask for confirmation.
-PATH_WIZARD="$ABS_DIR/spells/system/path-wizard"
+LEARN_SPELLBOOK="$ABS_DIR/spells/spellcraft/learn-spellbook"
 DETECT_RC_FILE="$ABS_DIR/spells/divination/detect-rc-file"
-MEMORIZE="$ABS_DIR/spells/spellcraft/memorize"
+# Use scribe-spell for installing spells to shell (it has --recursive support)
+SPELL_INSTALLER="$ABS_DIR/spells/spellcraft/scribe-spell"
 CORE_INSTALLER=${WIZARDRY_CORE_INSTALLER:-$ABS_DIR/spells/install/core/install-core}
 ASK_YN="$ABS_DIR/spells/cantrips/ask_yn"
-PATH_WIZARD_FLAGS=${PATH_WIZARD_FLAGS:---recursive}
+LEARN_SPELLBOOK_FLAGS=${LEARN_SPELLBOOK_FLAGS:---recursive}
 
 # Export environment variables for all helper spells so that they use the new
 # versions being installed, not any old versions that may be in PATH.
 # This prevents issues where a user has an old wizardry installation in PATH.
 SCRIBE_SPELL="$ABS_DIR/spells/spellcraft/scribe-spell"
 MEMORIZE_SCRIBE="$ABS_DIR/spells/spellcraft/scribe-spell"
-MEMORIZE_COMMAND_HELPER="$ABS_DIR/spells/cantrips/memorize-command"
-export DETECT_RC_FILE SCRIBE_SPELL MEMORIZE_SCRIBE MEMORIZE_COMMAND_HELPER
+MEMORIZE_SPELL_HELPER="$ABS_DIR/spells/cantrips/memorize"
+export DETECT_RC_FILE SCRIBE_SPELL MEMORIZE_SCRIBE MEMORIZE_SPELL_HELPER
 
 # Bootstrap color definitions (inline - cannot rely on wizardry spells during install)
 # Create the escape character in a POSIX-compliant way.
@@ -339,8 +340,8 @@ substep_msg() {
         printf '%s  ->%s %s\n' "$CYAN" "$RESET" "$*"
 }
 
-if [ ! -x "$PATH_WIZARD" ]; then
-        printf '%s\n' "Error: Expected helper '$PATH_WIZARD' is missing or not executable." >&2
+if [ ! -x "$LEARN_SPELLBOOK" ]; then
+        printf '%s\n' "Error: Expected helper '$LEARN_SPELLBOOK' is missing or not executable." >&2
         exit 1
 fi
 
@@ -420,7 +421,7 @@ do
                 continue
         fi
 
-        if "$PATH_WIZARD" $PATH_WIZARD_FLAGS status "$dir"; then
+        if "$LEARN_SPELLBOOK" $LEARN_SPELLBOOK_FLAGS status "$dir"; then
                 continue
         fi
         set -- "$@" "$dir"
@@ -559,7 +560,7 @@ if [ "$detect_platform_value" = "nixos" ] && [ "$detect_format_value" = "shell" 
                 if [ -f "$user_nix_config" ]; then
                         detect_rc_file_value=$user_nix_config
                         detect_format_value=nix
-                        # Export for path-wizard to use
+                        # Export for learn-spellbook to use
                         NIXOS_CONFIG=$user_nix_config
                         export NIXOS_CONFIG
                         success_msg "Using configuration file: $user_nix_config"
@@ -577,7 +578,7 @@ section_msg "Installation Plan"
 
 # Count how many directories will be added (for recursion display)
 total_path_additions=0
-if [ "$PATH_WIZARD_FLAGS" = "--recursive" ]; then
+if [ "$LEARN_SPELLBOOK_FLAGS" = "--recursive" ]; then
         for dir
         do
                 if [ -d "$dir" ]; then
@@ -593,7 +594,7 @@ info_msg "Will add $total_path_additions directories to your PATH"
 for dir
 do
         substep_msg "$dir"
-        if [ "$PATH_WIZARD_FLAGS" = "--recursive" ]; then
+        if [ "$LEARN_SPELLBOOK_FLAGS" = "--recursive" ]; then
                 substep_msg "  (and all subdirectories)"
         fi
 done
@@ -723,7 +724,7 @@ for dir
 do
         path_log=$(mktemp "${TMPDIR:-/tmp}/wizardry-path.XXXXXX") || exit 1
         info_msg "Updating $rc_destination..."
-        if "$PATH_WIZARD" $PATH_WIZARD_FLAGS add "$dir" >"$path_log" 2>&1; then
+        if "$LEARN_SPELLBOOK" $LEARN_SPELLBOOK_FLAGS add "$dir" >"$path_log" 2>&1; then
                 path_updates_made=1
         else
                 cat "$path_log" >&2
@@ -733,23 +734,44 @@ do
         rm -f "$path_log"
 done
 
+# Add ~/.spellbook to PATH for custom spells
+spell_home_dir=""
+if [ -n "${XDG_DATA_HOME-}" ]; then
+        spell_home_dir="$XDG_DATA_HOME/wizardry/spellbook"
+elif [ -n "${HOME-}" ]; then
+        spell_home_dir="$HOME/.spellbook"
+fi
+if [ -n "$spell_home_dir" ]; then
+        # Create the directory if it doesn't exist
+        mkdir -p "$spell_home_dir"
+        # Check if already in PATH config
+        if ! "$LEARN_SPELLBOOK" status "$spell_home_dir" 2>/dev/null; then
+                path_log=$(mktemp "${TMPDIR:-/tmp}/wizardry-path.XXXXXX") || exit 1
+                info_msg "Adding custom spellbook to PATH..."
+                if "$LEARN_SPELLBOOK" add "$spell_home_dir" >"$path_log" 2>&1; then
+                        path_updates_made=1
+                fi
+                rm -f "$path_log"
+        fi
+fi
+
 if [ "$path_updates_made" -eq 1 ]; then
         success_msg "PATH configuration updated in $rc_destination"
 fi
 
-# Memorizing spells pre-compiles wizardry's menus so interactive commands are
+# Installing spells pre-compiles wizardry's menus so interactive commands are
 # ready before the user opens their first shell inside the new install.
 # This is done before nixos-rebuild so spells are ready when the rebuild completes.
 mem_status=0
-if [ -x "$MEMORIZE" ]; then
-        section_msg "Memorizing Spells"
-        mem_log=$(mktemp "${TMPDIR:-/tmp}/wizardry-memorize.XXXXXX") || exit 1
-        if "$MEMORIZE" --recursive "$ABS_DIR/spells" >"$mem_log" 2>&1; then
+if [ -x "$SPELL_INSTALLER" ]; then
+        section_msg "Installing Spells"
+        mem_log=$(mktemp "${TMPDIR:-/tmp}/wizardry-install.XXXXXX") || exit 1
+        if "$SPELL_INSTALLER" --recursive "$ABS_DIR/spells" >"$mem_log" 2>&1; then
                 # Parse output to extract counts and spell names
                 memorized_count=$(grep -o 'Memorized [0-9]* spell' "$mem_log" | grep -o '[0-9]*' | head -1)
                 if [ -n "$memorized_count" ] && [ "$memorized_count" -gt 0 ]; then
                         # Extract spell names from "Memorizing .../spellname..." lines
-                        success_msg "Memorized $memorized_count spell(s):"
+                        success_msg "Installed $memorized_count spell(s):"
                         grep '^Memorizing ' "$mem_log" | sed 's#.*/##; s#\.\.\.##' | while IFS= read -r name; do
                                 substep_msg "$name"
                         done
@@ -760,7 +782,7 @@ if [ -x "$MEMORIZE" ]; then
         fi
         rm -f "$mem_log"
 else
-        printf '%sWarning:%s memorize spell is missing; skipping automatic memorization.\n' "$YELLOW" "$RESET" >&2
+        printf '%sWarning:%s scribe-spell is missing; skipping automatic spell installation.\n' "$YELLOW" "$RESET" >&2
 fi
 
 # Handle platform-specific post-installation steps
@@ -873,18 +895,18 @@ esac
 
 printf '\n%s==> Removing PATH entries...%s\n' "$CYAN" "$RESET"
 
-# Use path-wizard to remove PATH entries
-PATH_WIZARD="$INSTALL_DIR/spells/system/path-wizard"
-if [ -x "$PATH_WIZARD" ]; then
+# Use learn-spellbook to remove PATH entries
+LEARN_SPELLBOOK="$INSTALL_DIR/spells/spellcraft/learn-spellbook"
+if [ -x "$LEARN_SPELLBOOK" ]; then
         # Use remove-all to remove all wizardry-managed PATH entries at once
         # This is more reliable than iterating over directories (which might not exist)
-        if "$PATH_WIZARD" remove-all 2>/dev/null; then
+        if "$LEARN_SPELLBOOK" remove-all 2>/dev/null; then
                 printf '  %s✓%s Removed all wizardry PATH entries\n' "$GREEN" "$RESET"
         else
                 printf '  %sNote:%s No wizardry PATH entries found to remove\n' "$YELLOW" "$RESET"
         fi
 else
-        printf '  %sWarning:%s Could not find path-wizard; manual PATH cleanup may be needed\n' "$YELLOW" "$RESET"
+        printf '  %sWarning:%s Could not find learn-spellbook; manual PATH cleanup may be needed\n' "$YELLOW" "$RESET"
 fi
 
 # On NixOS, run nixos-rebuild to apply the configuration changes

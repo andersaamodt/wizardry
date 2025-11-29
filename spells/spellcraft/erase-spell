@@ -1,0 +1,125 @@
+#!/bin/sh
+# erase-spell - Delete a custom spell from ~/.spellbook
+# Asks for confirmation before deleting.
+
+set -eu
+
+resolve_spell_home() {
+        if [ -n "${WIZARDRY_SPELL_HOME-}" ]; then
+                printf '%s' "$WIZARDRY_SPELL_HOME"
+        elif [ -n "${SPELLBOOK_HOME-}" ]; then
+                printf '%s' "$SPELLBOOK_HOME"
+        elif [ -n "${SPELL_HOME-}" ]; then
+                printf '%s' "$SPELL_HOME"
+        elif [ -n "${XDG_DATA_HOME-}" ] && [ -n "$XDG_DATA_HOME" ]; then
+                printf '%s' "$XDG_DATA_HOME/wizardry/spellbook"
+        elif [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
+                printf '%s' "$HOME/.spellbook"
+        else
+                printf '%s' ".spellbook"
+        fi
+}
+
+spell_home=$(resolve_spell_home)
+
+usage() {
+        cat <<'USAGE'
+Usage: erase-spell NAME [--force]
+
+Delete a custom spell from ~/.spellbook. This action cannot be undone.
+
+Options:
+  --force, -f   Skip confirmation prompt
+  --help, -h    Show this help message
+USAGE
+}
+
+find_custom_spell() {
+        name=$1
+        # Check in spell_home root
+        script_path="$spell_home/$name"
+        if [ -f "$script_path" ] && [ -x "$script_path" ]; then
+                printf '%s' "$script_path"
+                return 0
+        fi
+        # Check in spell_home subfolders
+        for subdir in "$spell_home"/*; do
+                [ -d "$subdir" ] || continue
+                script_path="$subdir/$name"
+                if [ -f "$script_path" ] && [ -x "$script_path" ]; then
+                        printf '%s' "$script_path"
+                        return 0
+                fi
+        done
+        return 1
+}
+
+force=0
+name=""
+
+while [ "$#" -gt 0 ]; do
+        case $1 in
+                --help|-h)
+                        usage
+                        exit 0
+                        ;;
+                --force|-f)
+                        force=1
+                        shift
+                        ;;
+                -*)
+                        printf 'erase-spell: unknown option: %s\n' "$1" >&2
+                        exit 1
+                        ;;
+                *)
+                        if [ -z "$name" ]; then
+                                name=$1
+                        else
+                                printf 'erase-spell: unexpected argument: %s\n' "$1" >&2
+                                exit 1
+                        fi
+                        shift
+                        ;;
+        esac
+done
+
+if [ -z "$name" ]; then
+        usage >&2
+        exit 1
+fi
+
+# Find the spell
+script_path=$(find_custom_spell "$name") || {
+        printf 'erase-spell: spell "%s" not found in %s\n' "$name" "$spell_home" >&2
+        exit 1
+}
+
+# Check if it's actually in spell_home (not a built-in spell)
+case "$script_path" in
+        "$spell_home"/*)
+                : # OK, it's a custom spell
+                ;;
+        *)
+                printf 'erase-spell: "%s" is not a custom spell and cannot be erased\n' "$name" >&2
+                exit 1
+                ;;
+esac
+
+# Ask for confirmation unless --force
+if [ "$force" -eq 0 ]; then
+        printf 'Erase spell "%s"? This cannot be undone. (y/N) ' "$name"
+        read -r answer
+        case $answer in
+                [Yy]|[Yy][Ee][Ss])
+                        : # proceed
+                        ;;
+                *)
+                        printf 'Aborted.\n'
+                        exit 0
+                        ;;
+        esac
+fi
+
+# Delete the spell
+rm -f "$script_path"
+printf 'Erased spell "%s".\n' "$name"

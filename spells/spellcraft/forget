@@ -1,0 +1,157 @@
+#!/bin/sh
+
+# This spell forgets (removes) a spell from the Cast menu.
+# Use this to remove memorized spells from the Cast menu.
+#
+# Usage: forget SPELL_NAME
+
+set -eu
+
+spell_name="forget"
+tab_char=$(printf '\t')
+
+expand_tilde() {
+	path=$1
+	case $path in
+	\~)
+		if [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
+			path=$HOME
+		fi
+		;;
+	\~/*)
+		if [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
+			path=$HOME/${path#\~/}
+		fi
+		;;
+	esac
+	printf '%s' "$path"
+}
+
+resolve_cast_dir() {
+	if [ -n "${WIZARDRY_CAST_DIR-}" ]; then
+		dir=$(expand_tilde "$WIZARDRY_CAST_DIR")
+		printf '%s' "$dir"
+		return 0
+	fi
+
+	resolve_spell_home
+}
+
+resolve_spell_home() {
+	if [ -n "${WIZARDRY_SPELL_HOME-}" ]; then
+		dir=$(expand_tilde "$WIZARDRY_SPELL_HOME")
+	elif [ -n "${SPELLBOOK_HOME-}" ]; then
+		dir=$(expand_tilde "$SPELLBOOK_HOME")
+	elif [ -n "${SPELL_HOME-}" ]; then
+		dir=$(expand_tilde "$SPELL_HOME")
+	elif [ -n "${XDG_DATA_HOME-}" ] && [ -n "$XDG_DATA_HOME" ]; then
+		dir=$XDG_DATA_HOME/wizardry/spellbook
+	elif [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
+		dir=$HOME/.spellbook
+	else
+		dir=.spellbook
+	fi
+	printf '%s' "$dir"
+}
+
+resolve_command_file() {
+	cast_dir=$1
+	if [ -n "${WIZARDRY_CAST_FILE-}" ]; then
+		file=$(expand_tilde "$WIZARDRY_CAST_FILE")
+	elif [ -n "${MEMORIZE_COMMAND_FILE-}" ]; then
+		file=$(expand_tilde "$MEMORIZE_COMMAND_FILE")
+	else
+		file=$cast_dir/.memorized
+	fi
+	printf '%s' "$file"
+}
+
+usage() {
+	cat <<USAGE
+Usage: $spell_name SPELL_NAME
+       $spell_name --help
+
+Remove a spell from the Cast menu.
+
+Arguments:
+  SPELL_NAME  The name of the spell to forget.
+
+Examples:
+  $spell_name my-custom-spell
+  $spell_name colors
+USAGE
+}
+
+cast_dir=$(resolve_cast_dir)
+command_file=$(resolve_command_file "$cast_dir")
+
+nonempty() {
+	[ -n "$1" ]
+}
+
+validate_name() {
+	name=$1
+	case $name in
+	''|*[!A-Za-z0-9._-]*)
+		printf '%s\n' "$spell_name: names may contain only letters, digits, dots, underscores, and dashes." >&2
+		exit 1
+		;;
+	-*)
+		printf '%s\n' "$spell_name: names may not begin with a dash." >&2
+		exit 1
+		;;
+	esac
+}
+
+remove_spell() {
+	name=$1
+	validate_name "$name"
+	if [ ! -f "$command_file" ]; then
+		printf '%s\n' "$spell_name: spell '$name' is not memorized." >&2
+		exit 1
+	fi
+	tmp=$(mktemp "${TMPDIR:-/tmp}/forget.XXXXXX") || exit 1
+	removed=0
+	while IFS= read -r line || nonempty "$line"; do
+		entry_name=$line
+		case $line in
+		*"$tab_char"*)
+			entry_name=${line%%"$tab_char"*}
+			;;
+		esac
+		if [ "$entry_name" = "$name" ] || [ -z "$entry_name" ]; then
+			if [ "$entry_name" = "$name" ]; then
+				removed=1
+				continue
+			fi
+			continue
+		fi
+		printf '%s\n' "$line" >>"$tmp"
+	done <"$command_file"
+	if [ "$removed" -eq 0 ]; then
+		rm -f "$tmp"
+		printf '%s\n' "$spell_name: spell '$name' is not memorized." >&2
+		exit 1
+	fi
+	mv "$tmp" "$command_file"
+	rm -f "$cast_dir/$name"
+}
+
+case ${1-} in
+-h|--help)
+	usage
+	exit 0
+	;;
+"")
+	printf '%s\n' "$spell_name: spell name required." >&2
+	usage >&2
+	exit 1
+	;;
+-*)
+	printf '%s\n' "$spell_name: unknown option '$1'" >&2
+	usage >&2
+	exit 1
+	;;
+esac
+
+remove_spell "$1"

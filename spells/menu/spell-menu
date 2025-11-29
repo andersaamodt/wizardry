@@ -25,11 +25,11 @@ require_tool() {
         "$require_cmd" "$@"
 }
 
-cast_store=${CAST_STORE-memorize-command}
+cast_store=${CAST_STORE-memorize}
 if cast_store_path=$(command -v "$cast_store" 2>/dev/null); then
         cast_store=$cast_store_path
 else
-        printf '%s\n' "spell-menu: memorize-command helper is missing." >&2
+        printf '%s\n' "spell-menu: memorize helper is missing." >&2
         exit 1
 fi
 
@@ -78,20 +78,28 @@ do_forget() {
         "$cast_store" remove "$mem_name"
 }
 
-# Check if a script is a scribed command (exists as executable in spell_home)
-is_scribed_command() {
+# Check if a script is a custom spell (exists as executable in spell_home or its subfolders)
+# This also checks if the resolved command path is under spell_home (e.g. ~/.spellbook/*)
+is_custom_spell() {
         check_name=$1
+        # Check in spell_home root
         script_path="$spell_home/$check_name"
-        [ -f "$script_path" ] && [ -x "$script_path" ]
-}
-
-remove_scribed_command() {
-        cmd_name=$1
-        script_path="$spell_home/$cmd_name"
-        if [ -f "$script_path" ]; then
-                rm -f "$script_path"
+        if [ -f "$script_path" ] && [ -x "$script_path" ]; then
                 return 0
         fi
+        # Check in spell_home subfolders
+        for subdir in "$spell_home"/*; do
+                [ -d "$subdir" ] || continue
+                script_path="$subdir/$check_name"
+                if [ -f "$script_path" ] && [ -x "$script_path" ]; then
+                        return 0
+                fi
+        done
+        # Also check if the command path itself is under spell_home (with trailing slash check)
+        cmd_path=$(command -v "$check_name" 2>/dev/null) || return 1
+        case "$cmd_path" in
+                "$spell_home"/*) return 0 ;;
+        esac
         return 1
 }
 
@@ -114,16 +122,28 @@ is_installable() {
         return 1
 }
 
+# Check if a spell has a --help option
+has_help_option() {
+        spell_cmd=$1
+        spell_path=$(command -v "$spell_cmd" 2>/dev/null) || spell_path=$spell_cmd
+        if [ ! -r "$spell_path" ]; then
+                return 1
+        fi
+        # Check if the script contains --help or -h handling
+        if grep -Eq '(--help|-h\))' "$spell_path" 2>/dev/null; then
+                return 0
+        fi
+        return 1
+}
+
 usage() {
         cat <<'USAGE'
 Usage: spell-menu SPELLNAME
        spell-menu --cast COMMAND
        spell-menu --help-spell COMMAND
-       spell-menu --test NAME
-       spell-menu --delete NAME
        spell-menu --install COMMAND
 
-Display an action menu for a spell with options to cast, memorize, get help, test, or delete.
+Display an action menu for a spell with options to cast, memorize, get help, or erase.
 
 Arguments:
   SPELLNAME        The name of the spell or command to show the menu for
@@ -140,26 +160,6 @@ case ${1-} in
         --help-spell)
                 shift
                 eval "$* --help" || true
-                exit 0
-                ;;
-        --test)
-                shift
-                name=$1
-                if command -v test-magic >/dev/null 2>&1; then
-                        test-magic --only "$name" || true
-                else
-                        printf '%s\n' "test-magic is unavailable; cannot test $name." >&2
-                fi
-                exit 0
-                ;;
-        --delete)
-                shift
-                name=$1
-                if remove_scribed_command "$name"; then
-                        printf "Deleted scribed command '%s'.\n" "$name"
-                else
-                        printf "Failed to delete scribed command '%s'.\n" "$name" >&2
-                fi
                 exit 0
                 ;;
         --install)
@@ -195,36 +195,59 @@ fi
 escaped_command=$(printf '%s' "$command" | sed "s/'/'\\\\''/g")
 
 first_run=1
+start_selection=1
 
 while :; do
         if [ "$first_run" -eq 0 ]; then
                 printf '\n'
+                # After first run (toggle actions), start on the Memorize/Forget item (item 2)
+                start_selection=2
         else
                 first_run=0
         fi
 
         # Show checkbox for Cast menu visibility (toggleable)
-        # Use standalone memorize-command instead of spell-menu flags
+        # Use standalone memorize and forget spells
         if is_memorized "$name"; then
-                cast_toggle="[X] Show in Cast menu%memorize-command remove '$name'"
+                cast_toggle="[X] Forget%forget '$name'"
         else
-                cast_toggle="[ ] Show in Cast menu%memorize-command add '$name' '$escaped_command'"
+                cast_toggle="[ ] Memorize%memorize '$name'"
         fi
-        # Build menu items - Cast runs the command directly (using escaped version for safety)
+        # Build menu items - Cast now runs the command directly (using escaped version for safety)
         exit_label=$(exit-label)
         exit_item="${exit_label}%exit $menu_escape_status"
-        if is_scribed_command "$name"; then
-                # Scribed (custom) commands show Delete option
-                set -- "Cast%$escaped_command" "$cast_toggle" "Help%$escaped_command --help" "Test spell%spell-menu --test '$name'" "Delete command%spell-menu --delete '$name'" "$exit_item"
-        elif is_installable "$command"; then
-                # Show Install option for spells with install() function
-                set -- "Cast%$escaped_command" "$cast_toggle" "Install to shell%spell-menu --install '$escaped_command'" "Help%$escaped_command --help" "Test spell%spell-menu --test '$name'" "$exit_item"
-        else
-                # Built-in spells: no Delete option
-                set -- "Cast%$escaped_command" "$cast_toggle" "Help%$escaped_command --help" "Test spell%spell-menu --test '$name'" "$exit_item"
+        
+        # Check if spell has --help option
+        help_item=""
+        if has_help_option "$command"; then
+                help_item="Help%$escaped_command --help"
         fi
         
-        MENU_ESCAPE_STATUS=$menu_escape_status menu "Spell Menu:" "$@"
+        if is_custom_spell "$name"; then
+                # Custom spells (in ~/.spellbook or subfolders) show Erase spell option
+                # Use erase-spell which asks for confirmation then exits the menu
+                if [ -n "$help_item" ]; then
+                        set -- "Cast now%$escaped_command" "$cast_toggle" "$help_item" "Erase spell%erase-spell '$name' && exit $menu_escape_status" "$exit_item"
+                else
+                        set -- "Cast now%$escaped_command" "$cast_toggle" "Erase spell%erase-spell '$name' && exit $menu_escape_status" "$exit_item"
+                fi
+        elif is_installable "$command"; then
+                # Show Learn option for spells with install() function
+                if [ -n "$help_item" ]; then
+                        set -- "Cast now%$escaped_command" "$cast_toggle" "Learn%spell-menu --install '$escaped_command'" "$help_item" "$exit_item"
+                else
+                        set -- "Cast now%$escaped_command" "$cast_toggle" "Learn%spell-menu --install '$escaped_command'" "$exit_item"
+                fi
+        else
+                # Built-in spells: no Erase option
+                if [ -n "$help_item" ]; then
+                        set -- "Cast now%$escaped_command" "$cast_toggle" "$help_item" "$exit_item"
+                else
+                        set -- "Cast now%$escaped_command" "$cast_toggle" "$exit_item"
+                fi
+        fi
+        
+        MENU_ESCAPE_STATUS=$menu_escape_status MENU_START_SELECTION=$start_selection menu "Spell: $name" "$@"
         status=$?
         if [ "$status" -eq "$menu_escape_status" ]; then
                 break

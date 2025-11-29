@@ -104,6 +104,14 @@ if [ "${1-}" = "--spell-mode" ]; then
         shift
 fi
 
+# Check for --start-selection flag (start cursor on specific item)
+start_selection=${MENU_START_SELECTION-1}
+if [ "${1-}" = "--start-selection" ]; then
+        shift
+        start_selection=${1-1}
+        shift
+fi
+
 if [ "$#" -lt 2 ]; then
         if command -v main-menu >/dev/null 2>&1; then
                 main-menu
@@ -137,6 +145,11 @@ trap 'cleanup' EXIT
 max_name_length=0
 menu_length=0
 
+# Function to strip ANSI escape codes for length calculation
+strip_ansi() {
+        printf '%s' "$1" | sed 's/\x1b\[[0-9;]*m//g'
+}
+
 for option in "$@"
 do
         label=${option%%\%*}
@@ -150,7 +163,9 @@ do
         esac
         printf '%s\n' "$label" >>"$items_file"
         printf '%s\n' "$command" >>"$commands_file"
-        length=$(printf '%s' "$label" | wc -c | tr -d ' ')
+        # Strip ANSI codes before calculating visible length
+        clean_label=$(strip_ansi "$label")
+        length=$(printf '%s' "$clean_label" | wc -c | tr -d ' ')
         if [ "$length" -gt "$max_name_length" ]; then
                 max_name_length=$length
         fi
@@ -163,7 +178,18 @@ if [ "$menu_length" -eq 0 ]; then
         exit 1
 fi
 
+# Use start_selection if valid, otherwise default to 1
 selected=1
+case $start_selection in
+        ''|*[!0-9]*)
+                selected=1
+                ;;
+        *)
+                if [ "$start_selection" -ge 1 ] && [ "$start_selection" -le "$menu_length" ]; then
+                        selected=$start_selection
+                fi
+                ;;
+esac
 menu_column=1
 menu_row=1
 menu_drawn=0
@@ -263,16 +289,21 @@ is_divider() {
 
 render_divider() {
         # Render a horizontal divider line (~16 chars, centered within menu width)
+        # Menu width is based on max item (label) width, limited by window width
+        # The menu width should be the max_name_length + 2 (for "> " prefix)
         menu_width=$((max_name_length + 2))
-        if [ "$max_command_length" -gt 0 ]; then
-                menu_width=$((menu_width + max_command_length + 1))
+        
+        # Limit menu_width to window_width (whichever is less)
+        if [ "$window_width" -gt 0 ] && [ "$menu_width" -gt "$window_width" ]; then
+                menu_width=$window_width
         fi
+        
         # Fixed divider width of 16 chars (or menu_width if smaller)
         divider_width=16
         if [ "$divider_width" -gt "$menu_width" ]; then
                 divider_width=$menu_width
         fi
-        # Calculate left padding to center the divider
+        # Calculate left padding to center the divider within menu_width
         padding=$(( (menu_width - divider_width) / 2 ))
         # Build padding string
         pad=""
@@ -325,35 +356,44 @@ render_row() {
                 truncated_command=''
         fi
 
+        # Calculate visible length (without ANSI codes) for proper padding
+        clean_label=$(strip_ansi "$label")
+        visible_length=$(printf '%s' "$clean_label" | wc -c | tr -d ' ')
+        # Calculate extra padding needed to compensate for invisible ANSI codes
+        raw_length=$(printf '%s' "$label" | wc -c | tr -d ' ')
+        ansi_extra=$((raw_length - visible_length))
+        # Adjust the padding width to account for ANSI codes in label
+        adjusted_width=$((max_name_length + ansi_extra))
+
         target_row=$((menu_row + row_index - 1))
         if move-cursor "$menu_column" "$target_row"; then
                 printf '\033[K'
                 if [ "$highlight" -eq 1 ]; then
                         if [ "$max_command_length" -gt 0 ]; then
-                                printf '%b> %-*s%b %b%-*s%b' "$CYAN" "$max_name_length" "$label" "$RESET" "$GREY" "$max_command_length" "$truncated_command" "$RESET"
+                                printf '%b> %-*s%b %b%-*s%b' "$CYAN" "$adjusted_width" "$label" "$RESET" "$GREY" "$max_command_length" "$truncated_command" "$RESET"
                         else
-                                printf '%b> %-*s%b' "$CYAN" "$max_name_length" "$label" "$RESET"
+                                printf '%b> %-*s%b' "$CYAN" "$adjusted_width" "$label" "$RESET"
                         fi
                 else
                         if [ "$max_command_length" -gt 0 ]; then
-                                printf '  %-*s %b%-*s%b' "$max_name_length" "$label" "$GREY" "$max_command_length" "$truncated_command" "$RESET"
+                                printf '  %-*s %b%-*s%b' "$adjusted_width" "$label" "$GREY" "$max_command_length" "$truncated_command" "$RESET"
                         else
-                                printf '  %-*s' "$max_name_length" "$label"
+                                printf '  %-*s' "$adjusted_width" "$label"
                         fi
                 fi
                 printf '\r'
         else
                 if [ "$highlight" -eq 1 ]; then
                         if [ "$max_command_length" -gt 0 ]; then
-                                printf '%b> %-*s%b %b%-*s%b\n' "$CYAN" "$max_name_length" "$label" "$RESET" "$GREY" "$max_command_length" "$truncated_command" "$RESET"
+                                printf '%b> %-*s%b %b%-*s%b\n' "$CYAN" "$adjusted_width" "$label" "$RESET" "$GREY" "$max_command_length" "$truncated_command" "$RESET"
                         else
-                                printf '%b> %-*s%b\n' "$CYAN" "$max_name_length" "$label" "$RESET"
+                                printf '%b> %-*s%b\n' "$CYAN" "$adjusted_width" "$label" "$RESET"
                         fi
                 else
                         if [ "$max_command_length" -gt 0 ]; then
-                                printf '  %-*s %b%-*s%b\n' "$max_name_length" "$label" "$GREY" "$max_command_length" "$truncated_command" "$RESET"
+                                printf '  %-*s %b%-*s%b\n' "$adjusted_width" "$label" "$GREY" "$max_command_length" "$truncated_command" "$RESET"
                         else
-                                printf '  %-*s\n' "$max_name_length" "$label"
+                                printf '  %-*s\n' "$adjusted_width" "$label"
                         fi
                 fi
         fi

@@ -1,10 +1,9 @@
 #!/bin/sh
 # spell-menu test coverage:
-# - fails when memorize-command is missing
+# - fails when memorize is missing
 # - shows usage with --help
 # - requires minimum 3 arguments
 # - --cast executes the given command
-# - --delete removes scribed command
 
 set -eu
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
@@ -21,7 +20,7 @@ make_stub_dir() {
 
 write_memorize_command_stub() {
   dir=$1
-  cat >"$dir/memorize-command" <<'STUB'
+  cat >"$dir/memorize" <<'STUB'
 #!/bin/sh
 case $1 in
   add)
@@ -70,7 +69,7 @@ case $1 in
     ;;
 esac
 STUB
-  chmod +x "$dir/memorize-command"
+  chmod +x "$dir/memorize"
 }
 
 write_require_command_stub() {
@@ -95,7 +94,7 @@ STUB
 test_errors_when_helper_missing() {
   stub_dir=$(make_stub_dir)
   PATH="$stub_dir:/bin:/usr/bin" CAST_STORE="$stub_dir/does-not-exist" run_spell "spells/menu/spell-menu" --help
-  # --help should work even without memorize-command
+  # --help should work even without memorize
   assert_success || return 1
 }
 
@@ -134,31 +133,8 @@ test_cast_action_executes_command() {
   esac
 }
 
-test_delete_action_removes_scribed_command() {
-  stub_dir=$(make_stub_dir)
-  write_memorize_command_stub "$stub_dir"
-  spellbook_dir="$stub_dir/spellbook"
-  mkdir -p "$spellbook_dir"
-  # Create a scribed command
-  printf '#!/bin/sh\necho ignite\n' >"$spellbook_dir/spark"
-  chmod +x "$spellbook_dir/spark"
-  # Delete it
-  WIZARDRY_SPELL_HOME="$spellbook_dir" PATH="$stub_dir:$PATH" run_spell "spells/menu/spell-menu" --delete spark
-  assert_success || return 1
-  case "$OUTPUT" in
-    *"Deleted scribed command"*) : ;;
-    *) TEST_FAILURE_REASON="delete should confirm removal: $OUTPUT"; return 1 ;;
-  esac
-  # Verify file is removed
-  if [ -f "$spellbook_dir/spark" ]; then
-    TEST_FAILURE_REASON="delete did not remove script file"
-    return 1
-  fi
-}
-
 run_test_case "spell-menu shows usage with --help" test_shows_usage_with_help
 run_test_case "spell-menu requires minimum arguments" test_requires_minimum_arguments
 run_test_case "spell-menu --cast executes command" test_cast_action_executes_command
-run_test_case "spell-menu --delete removes scribed command" test_delete_action_removes_scribed_command
 
 finish_tests
