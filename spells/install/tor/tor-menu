@@ -6,12 +6,15 @@
 set -eu
 . colors
 
+menu_escape_status=113
+
 # Displays the menu
 display_menu() {
   title="${BOLD}${CYAN}TOR: $(tor-status)"
   set_config="Configure Tor%configure-tor"
   repair_permissions="Repair Permissions%sudo repair-tor-permissions"
-  exit_option="Exit%kill -2 $$" # Commands are run with 'eval' by the menu script, so we can't simply say 'exit'. The keyword $$ gets this scripts PID and the -2 code is SIGINT aka Ctrl-C
+  exit_label=$(exit-label)
+  exit_option="${exit_label}%exit $menu_escape_status"
   
   if is-installed tor > /dev/null; then
     install_tor_option="Uninstall Tor%uninstall-tor"
@@ -25,26 +28,46 @@ display_menu() {
     	service_status_option="View Tor Service Status%sudo systemctl status tor"
 	    if is-service-running tor > /dev/null; then
 	      tor_service_option="Stop Tor Service%sudo systemctl stop tor"
-	      menu "$title" "$set_config" "$repair_permissions" "$bridge_option" "$service_status_option" "$tor_service_option" "$install_service_option" "$install_tor_option" "$exit_option"
+	      MENU_ESCAPE_STATUS=$menu_escape_status menu "$title" "$set_config" "$repair_permissions" "$bridge_option" "$service_status_option" "$tor_service_option" "$install_service_option" "$install_tor_option" "$exit_option"
 	    else
 	      tor_service_option="Start Tor Service%sudo systemctl start tor"
-	      menu "$title" "$set_config" "$repair_permissions" "$bridge_option" "$service_status_option" "$tor_service_option" "$install_service_option" "$install_tor_option" "$exit_option"
+	      MENU_ESCAPE_STATUS=$menu_escape_status menu "$title" "$set_config" "$repair_permissions" "$bridge_option" "$service_status_option" "$tor_service_option" "$install_service_option" "$install_tor_option" "$exit_option"
 	    fi
     else
     	script_dir=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
-    	install_service_option="Install Tor Service%install-service-template $script_dir/tor.service \"TORPATH=`which tor`\" \"TORRCPATH=/etc/tor/torrc\""
-    	menu "$title" "$set_config" "$repair_permissions" "$bridge_option" "$install_service_option" "$install_tor_option" "$exit_option"
+    	install_service_option="Install Tor Service%install-service-template $script_dir/tor.service \"TORPATH=\`which tor\`\" \"TORRCPATH=/etc/tor/torrc\""
+    	MENU_ESCAPE_STATUS=$menu_escape_status menu "$title" "$set_config" "$repair_permissions" "$bridge_option" "$install_service_option" "$install_tor_option" "$exit_option"
 	fi
   else
     install_tor_option="Install Tor%install-tor"
-    menu "$title" "$install_tor_option" "$exit_option"
+    MENU_ESCAPE_STATUS=$menu_escape_status menu "$title" "$install_tor_option" "$exit_option"
   fi
 }
 
 # Catch Ctrl-C and exit
 trap 'echo exiting; exit' INT
 
+first_run=1
+
 # Main execution loop
 while true; do
-  display_menu
+  if [ "$first_run" -eq 0 ]; then
+    printf '\n'
+  else
+    first_run=0
+  fi
+
+  if display_menu; then
+    status=0
+  else
+    status=$?
+  fi
+
+  if [ "$status" -eq "$menu_escape_status" ]; then
+    break
+  fi
+
+  if [ "$status" -ne 0 ]; then
+    exit "$status"
+  fi
 done
