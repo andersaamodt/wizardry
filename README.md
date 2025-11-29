@@ -78,7 +78,7 @@ Most wizardry spells can assume that wizardry is installed (in `$PATH`) and that
 Wizardry uses specific terms for managing spells:
 
 * **Learn** — Some spells must be **learned** before they can be used. Use `spell --install` or `learn <path to spell>` to learn these spells (usually this means sourcing them in your RC file).
-* **Memorize** — **Memorized** spells appear in the Cast menu. Memorize a spell with `memorize <path to spell>` or from the Spellbook menu. Forget a spell the same ways with `memorize forget`.
+* **Memorize** — **Memorized** spells appear in the Cast menu. Memorize a spell with `memorize <spell name>` or from the Spellbook menu. Forget a spell the same ways with `forget <spell name>`.
 * **Scribe** — **Scribe** a new spell to create a custom spell script in `~/.spellbook`. Use `scribe-command` or the Spellbook menu to do this.
 * **Learn-spellbook** — Use `learn-spellbook` to add or remove a folder to your PATH permanently.
 

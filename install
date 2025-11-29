@@ -734,6 +734,27 @@ do
         rm -f "$path_log"
 done
 
+# Add ~/.spellbook to PATH for custom spells
+spell_home_dir=""
+if [ -n "${XDG_DATA_HOME-}" ]; then
+        spell_home_dir="$XDG_DATA_HOME/wizardry/spellbook"
+elif [ -n "${HOME-}" ]; then
+        spell_home_dir="$HOME/.spellbook"
+fi
+if [ -n "$spell_home_dir" ]; then
+        # Create the directory if it doesn't exist
+        mkdir -p "$spell_home_dir"
+        # Check if already in PATH config
+        if ! "$LEARN_SPELLBOOK" status "$spell_home_dir" 2>/dev/null; then
+                path_log=$(mktemp "${TMPDIR:-/tmp}/wizardry-path.XXXXXX") || exit 1
+                info_msg "Adding custom spellbook to PATH..."
+                if "$LEARN_SPELLBOOK" add "$spell_home_dir" >"$path_log" 2>&1; then
+                        path_updates_made=1
+                fi
+                rm -f "$path_log"
+        fi
+fi
+
 if [ "$path_updates_made" -eq 1 ]; then
         success_msg "PATH configuration updated in $rc_destination"
 fi
