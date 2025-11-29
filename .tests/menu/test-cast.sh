@@ -33,9 +33,11 @@ SH
   chmod +x "$tmp/memorize-spell"
   mkdir -p "$tmp"
   if [ -n "$alias_name" ] && [ -n "$command_text" ]; then
+    # Create spell script in same format as memorize-spell write_spell_script
+    escaped_cmd=$(printf '%s' "$command_text" | sed "s/'/'\\\\''/g")
     cat >"$tmp/$alias_name" <<EOF
 #!/bin/sh
-printf '%s' "$command_text"
+exec sh -c '$escaped_cmd' "\$0" "\$@"
 EOF
     chmod +x "$tmp/$alias_name"
   fi
