@@ -146,7 +146,7 @@ test_delete_action_removes_scribed_command() {
   WIZARDRY_SPELL_HOME="$spellbook_dir" PATH="$stub_dir:$PATH" run_spell "spells/menu/spell-menu" --delete spark
   assert_success || return 1
   case "$OUTPUT" in
-    *"Deleted scribed command"*) : ;;
+    *"Erased spell"*) : ;;
     *) TEST_FAILURE_REASON="delete should confirm removal: $OUTPUT"; return 1 ;;
   esac
   # Verify file is removed
