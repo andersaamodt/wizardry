@@ -203,6 +203,10 @@ while :; do
                 # After first run (toggle actions), start on the Memorize/Forget item (item 2)
                 start_selection=2
         else
+                # Print newline before first display if called as submenu
+                if [ "${MENU_NEWLINE-}" = "1" ]; then
+                        printf '\n'
+                fi
                 first_run=0
         fi
 
