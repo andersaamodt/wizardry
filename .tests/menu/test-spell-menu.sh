@@ -114,8 +114,8 @@ test_requires_minimum_arguments() {
   stub_dir=$(make_stub_dir)
   write_memorize_command_stub "$stub_dir"
   write_require_command_stub "$stub_dir"
-  # Call with only 2 arguments (needs 3)
-  PATH="$stub_dir:$PATH" run_spell "spells/menu/spell-menu" arcane spark
+  # Call with no arguments (needs 1)
+  PATH="$stub_dir:$PATH" run_spell "spells/menu/spell-menu"
   assert_failure || return 1
   case "$OUTPUT$ERROR" in
     *"Usage:"*) : ;;

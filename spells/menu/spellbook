@@ -347,7 +347,14 @@ spell_action_menu() {
         command=$3
         display_command=${4-$command}
         action=''
+        first_run=1
         while :; do
+                if [ "$first_run" -eq 0 ]; then
+                        printf '\n'
+                else
+                        first_run=0
+                fi
+
                 if is_memorized "$name"; then
                         memory_toggle="Forget%action=forget"
                 else
@@ -362,6 +369,9 @@ spell_action_menu() {
                 status=$?
                 if [ "$status" -eq "$menu_escape_status" ]; then
                         break
+                fi
+                if [ "$status" -ne 0 ]; then
+                        exit "$status"
                 fi
                 case ${action-} in
                 cast)
@@ -403,7 +413,14 @@ spell_action_menu() {
 category_menu() {
         category=$1
         display_name=$(category_display_name "$category")
+        first_run=1
         while :; do
+                if [ "$first_run" -eq 0 ]; then
+                        printf '\n'
+                else
+                        first_run=0
+                fi
+
                 set --
                 for spell in $(list_category_spells "$category"); do
                         spell_name=$(basename "$spell")
@@ -420,26 +437,34 @@ category_menu() {
                 if [ "$status" -eq "$menu_escape_status" ]; then
                         break
                 fi
+                if [ "$status" -ne 0 ]; then
+                        exit "$status"
+                fi
                 if [ -n "$selected_name" ] && [ -n "$selected_cmd" ]; then
                         spell_action_menu "$category" "$selected_name" "$selected_cmd" "$selected_display"
                 fi
-                printf '\n'
         done
 }
 
 spellbook_menu() {
         current_path=${1-}
+        first_run=1
         while :; do
+                if [ "$first_run" -eq 0 ]; then
+                        printf '\n'
+                else
+                        first_run=0
+                fi
+
                 set --
                 # Only show scribed commands, scribe option, and divider at root level
                 if [ -z "$current_path" ]; then
                         # First, add individual saved scribed commands (showing command content)
                         while IFS=$(printf '\t') read -r cmd_name cmd_text; do
                                 [ -z "$cmd_name" ] && continue
-                                spell_path=$(scribed_spell_path "$cmd_name")
                                 # Show the command text as the label (requirement: show command for name)
                                 label=$(printf '%s' "$cmd_text")
-                                set -- "$@" "$label%spell-menu scribed $cmd_name $spell_path '$cmd_text'"
+                                set -- "$@" "$label%spell-menu $cmd_name"
                         done <<SCRIBED_COMMANDS
 $(list_scribed_commands)
 SCRIBED_COMMANDS
@@ -464,8 +489,7 @@ SCRIBED_COMMANDS
                         # List executable spells in this directory
                         for spell in $(find "$resolved_path" -maxdepth 1 -type f -perm -111 2>/dev/null | sort); do
                                 spell_name=$(basename "$spell")
-                                cmd=$(command_for_spell "$spell")
-                                set -- "$@" "${spell_name}%spell-menu $current_path $spell_name $cmd"
+                                set -- "$@" "${spell_name}%spell-menu $spell_name"
                         done
                         # List subdirectories
                         for subdir in "$resolved_path"/*; do
@@ -493,7 +517,9 @@ SCRIBED_COMMANDS
                 if [ "$status" -eq "$menu_escape_status" ]; then
                         break
                 fi
-                printf '\n'
+                if [ "$status" -ne 0 ]; then
+                        exit "$status"
+                fi
         done
 }
 
