@@ -533,8 +533,6 @@ spellbook_menu() {
                         done <<SCRIBED_COMMANDS
 $(list_scribed_commands)
 SCRIBED_COMMANDS
-                        # Add "Scribe new spell" at end of commands section
-                        set -- "$@" "Scribe new spell%scribe-command"
                         
                         # SECTION 2: User folders in ~/.spellbook (if any exist, excluding those matching built-in)
                         user_folders=$(list_user_folders)
@@ -544,7 +542,7 @@ SCRIBED_COMMANDS
                                 while IFS= read -r folder_name; do
                                         [ -z "$folder_name" ] && continue
                                         # Don't capitalize - just use the folder name
-                                        set -- "$@" "${folder_name}%spellbook $spell_home/$folder_name"
+                                        set -- "$@" "${folder_name}%printf '\\n'; spellbook $spell_home/$folder_name"
                                 done <<USER_FOLDERS
 $user_folders
 USER_FOLDERS
@@ -555,7 +553,7 @@ USER_FOLDERS
                         set -- "$@" "%--divider--"
                         for category in $(spell_categories); do
                                 # Don't capitalize - just use the folder name
-                                set -- "$@" "${category}%spellbook $category"
+                                set -- "$@" "${category}%printf '\\n'; spellbook $category"
                         done
                 else
                         # Non-root view: show spells from both built-in and custom folders combined
@@ -567,7 +565,7 @@ USER_FOLDERS
                         if [ -d "$builtin_dir" ]; then
                                 for spell in $(find "$builtin_dir" -maxdepth 1 -type f -perm -111 2>/dev/null | sort); do
                                         spell_name=$(basename "$spell")
-                                        set -- "$@" "${spell_name}%spell-menu $spell_name"
+                                        set -- "$@" "${spell_name}%printf '\\n'; spell-menu $spell_name"
                                 done
                         fi
                         
@@ -576,7 +574,7 @@ USER_FOLDERS
                                 for spell in $(find "$custom_dir" -maxdepth 1 -type f -perm -111 2>/dev/null | sort); do
                                         spell_name=$(basename "$spell")
                                         # Use CYAN for custom spell names
-                                        set -- "$@" "${CYAN}${spell_name}${RESET}%spell-menu $spell_name"
+                                        set -- "$@" "${CYAN}${spell_name}${RESET}%printf '\\n'; spell-menu $spell_name"
                                 done
                         fi
                         
@@ -585,11 +583,17 @@ USER_FOLDERS
                                 for subdir in "$resolved_path"/*; do
                                         [ -d "$subdir" ] || continue
                                         subname=$(basename "$subdir")
-                                        set -- "$@" "${subname}%spellbook $resolved_path/$subname"
+                                        set -- "$@" "${subname}%printf '\\n'; spellbook $resolved_path/$subname"
                                 done
                         fi
-                        
-                        # Add "Scribe new spell" for all categories (creates in ~/.spellbook/<category>)
+                fi
+                
+                # Add "Scribe new spell" as penultimate menu item
+                if [ -z "$current_path" ]; then
+                        # Root level - create in ~/.spellbook
+                        set -- "$@" "Scribe new spell%scribe-command"
+                else
+                        # Category level - create in ~/.spellbook/<category>
                         set -- "$@" "Scribe new spell%scribe-command --dir $spell_home/$category_name"
                 fi
                 
@@ -600,10 +604,13 @@ USER_FOLDERS
                         exit_label="Back"
                 fi
                 set -- "$@" "${exit_label}%exit $menu_escape_status"
+                
+                # Build menu title - use titlecase for category names
                 if [ -z "$current_path" ]; then
-                        menu_title="${CYAN}Spellbook:${RESET}"
+                        menu_title="Spellbook:"
                 else
-                        menu_title="${CYAN}Spellbook${RESET} > ${YELLOW}${category_name}${RESET}:"
+                        display_category=$(category_display_name "$category_name")
+                        menu_title="${display_category}:"
                 fi
                 MENU_ESCAPE_STATUS=$menu_escape_status menu "$menu_title" "$@"
                 status=$?

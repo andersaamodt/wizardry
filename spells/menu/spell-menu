@@ -78,20 +78,47 @@ do_forget() {
         "$cast_store" remove "$mem_name"
 }
 
-# Check if a script is a scribed command (exists as executable in spell_home)
-is_scribed_command() {
+# Check if a script is a custom spell (exists as executable in spell_home or its subfolders)
+is_custom_spell() {
         check_name=$1
+        # Check in spell_home root
         script_path="$spell_home/$check_name"
-        [ -f "$script_path" ] && [ -x "$script_path" ]
+        if [ -f "$script_path" ] && [ -x "$script_path" ]; then
+                return 0
+        fi
+        # Check in spell_home subfolders
+        for subdir in "$spell_home"/*; do
+                [ -d "$subdir" ] || continue
+                script_path="$subdir/$check_name"
+                if [ -f "$script_path" ] && [ -x "$script_path" ]; then
+                        return 0
+                fi
+        done
+        # Also check if the command path itself is under spell_home
+        cmd_path=$(command -v "$check_name" 2>/dev/null) || return 1
+        case "$cmd_path" in
+                "$spell_home"*) return 0 ;;
+        esac
+        return 1
 }
 
-remove_scribed_command() {
+remove_custom_spell() {
         cmd_name=$1
+        # Check in spell_home root
         script_path="$spell_home/$cmd_name"
         if [ -f "$script_path" ]; then
                 rm -f "$script_path"
                 return 0
         fi
+        # Check in spell_home subfolders
+        for subdir in "$spell_home"/*; do
+                [ -d "$subdir" ] || continue
+                script_path="$subdir/$cmd_name"
+                if [ -f "$script_path" ]; then
+                        rm -f "$script_path"
+                        return 0
+                fi
+        done
         return 1
 }
 
@@ -158,7 +185,7 @@ case ${1-} in
         --delete)
                 shift
                 name=$1
-                if remove_scribed_command "$name"; then
+                if remove_custom_spell "$name"; then
                         printf "Erased spell '%s'.\n" "$name"
                 else
                         printf "Failed to erase spell '%s'.\n" "$name" >&2
@@ -223,8 +250,8 @@ while :; do
                 help_item="Help%$escaped_command --help"
         fi
         
-        if is_scribed_command "$name"; then
-                # Scribed (custom) commands show Erase spell option
+        if is_custom_spell "$name"; then
+                # Custom spells (in ~/.spellbook or subfolders) show Erase spell option
                 if [ -n "$help_item" ]; then
                         set -- "Cast now%$escaped_command" "$cast_toggle" "$help_item" "Erase spell%spell-menu --delete '$name'" "$exit_item"
                 else

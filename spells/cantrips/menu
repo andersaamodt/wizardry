@@ -263,21 +263,21 @@ is_divider() {
 
 render_divider() {
         # Render a horizontal divider line (~16 chars, centered within menu width)
-        # Menu width is based on max item width or window width (whichever is less)
+        # Menu width is based on max item (label) width, limited by window width
+        # The menu width should be the max_name_length + 2 (for "> " prefix)
         menu_width=$((max_name_length + 2))
-        if [ "$max_command_length" -gt 0 ]; then
-                menu_width=$((menu_width + max_command_length + 1))
-        fi
-        # Limit menu_width to window_width
+        
+        # Limit menu_width to window_width (whichever is less)
         if [ "$window_width" -gt 0 ] && [ "$menu_width" -gt "$window_width" ]; then
                 menu_width=$window_width
         fi
+        
         # Fixed divider width of 16 chars (or menu_width if smaller)
         divider_width=16
         if [ "$divider_width" -gt "$menu_width" ]; then
                 divider_width=$menu_width
         fi
-        # Calculate left padding to center the divider
+        # Calculate left padding to center the divider within menu_width
         padding=$(( (menu_width - divider_width) / 2 ))
         # Build padding string
         pad=""
