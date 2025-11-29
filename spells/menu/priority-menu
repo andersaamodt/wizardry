@@ -67,9 +67,9 @@ display_menu() {
 
         filename=$(basename "$FILE")
         exit_label=$(exit-label)
-        exit_item="${exit_label}%kill -2 $$"
+        exit_item="${exit_label}%exit $menu_escape_status"
 
-        set -- "Prioritize (upboat)%prioritize \"$FILE\"; kill -2 $$" \
+        set -- "Prioritize (upboat)%prioritize \"$FILE\"; exit $menu_escape_status" \
                "${check_item}" \
                "Discard from priorities (downboat)%echo 'Placeholder: Discard command'" \
                "Edit Card%echo 'Placeholder: Edit command'" \

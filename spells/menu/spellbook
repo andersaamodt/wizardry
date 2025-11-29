@@ -54,11 +54,9 @@ resolve_spell_home() {
 }
 
 spell_home=$(resolve_spell_home)
-commands_file=${SPELLBOOK_COMMANDS_FILE-$spell_home/custom-commands}
-custom_spells_dir=${SPELLBOOK_CUSTOM_DIR-$spell_home/custom}
 
-if [ -d "$custom_spells_dir" ]; then
-        PATH="$custom_spells_dir:$PATH"
+if [ -d "$spell_home" ]; then
+        PATH="$spell_home:$PATH"
 fi
 
 ensure_parent_dir() {
@@ -73,7 +71,7 @@ validate_name() {
         name=$1
         case $name in
         ''|*[!A-Za-z0-9._-]*)
-                printf '%s\n' "spellbook: names may contain only letters, digits, dots, underscores, and dashes." >&2
+                printf '%s\n' "spellbook: names may contain only letters, digits, dots, underscores, and dashes (no spaces)." >&2
                 exit 1
                 ;;
         -*)
@@ -99,21 +97,44 @@ validate_command() {
         fi
 }
 
-custom_spell_path() {
-        printf '%s/%s' "$custom_spells_dir" "$1"
+scribed_spell_path() {
+        printf '%s/%s' "$spell_home" "$1"
 }
 
-write_custom_script() {
+write_scribed_script() {
         script_name=$1
         cmd_text=$2
-        ensure_parent_dir "$(custom_spell_path "$script_name")"
-        mkdir -p "$custom_spells_dir"
+        ensure_parent_dir "$(scribed_spell_path "$script_name")"
+        mkdir -p "$spell_home"
         escaped_cmd=$(printf '%s' "$cmd_text" | sed "s/'/'\\''/g")
-        cat >"$(custom_spell_path "$script_name")" <<EOF_SCRIPT
+        cat >"$(scribed_spell_path "$script_name")" <<EOF_SCRIPT
 #!/bin/sh
 exec sh -c '$escaped_cmd' "\$0" "\$@"
 EOF_SCRIPT
-        chmod +x "$(custom_spell_path "$script_name")"
+        chmod +x "$(scribed_spell_path "$script_name")"
+}
+
+# Extract the command from a scribed script file
+# Returns empty string if not a valid scribed script format
+extract_command_from_script() {
+        script_path=$1
+        if [ ! -f "$script_path" ]; then
+                return 1
+        fi
+        # Verify script starts with expected shebang
+        first_line=$(head -n 1 "$script_path")
+        case "$first_line" in
+                "#!/bin/sh") : ;;
+                *) return 1 ;;
+        esac
+        # Scripts are in format: exec sh -c 'COMMAND' "$0" "$@"
+        # Extract the command between single quotes on the exec line
+        result=$(sed -n "s/^exec sh -c '\\(.*\\)' \"\\\$0\" \"\\\$@\"$/\\1/p" "$script_path" | sed "s/'\\\\''/'/g")
+        # Return empty if no match found (not a scribed script)
+        if [ -z "$result" ]; then
+                return 1
+        fi
+        printf '%s' "$result"
 }
 
 list_spell_directories() {
@@ -124,16 +145,6 @@ list_spell_directories() {
                 set -- "$@" "$(basename "$dir")"
         done
         printf '%s\n' "$@"
-}
-
-categories() {
-        list_spell_directories
-        if [ -f "$commands_file" ]; then
-                while IFS=$(printf '\t') read -r category _ _ || [ -n "$category" ]; do
-                        [ -z "$category" ] && continue
-                        printf '%s\n' "$category"
-                done <"$commands_file"
-        fi | sort -u
 }
 
 spell_categories() {
@@ -229,49 +240,40 @@ list_category_spells() {
         find "$resolved_path" -maxdepth 2 -type f -perm -111 2>/dev/null | sort
 }
 
-list_custom_commands() {
-        cat_name=$1
-        if [ ! -f "$commands_file" ]; then
+# List all scribed commands (executable files in spell_home, excluding hidden and .memorized)
+list_scribed_commands() {
+        if [ ! -d "$spell_home" ]; then
                 return 0
         fi
-        while IFS=$(printf '\t') read -r category name command || [ -n "$category" ]; do
-                [ -z "$category" ] && continue
-                if [ "$category" = "$cat_name" ]; then
-                        printf '%s\t%s\t%s\n' "$category" "$name" "$command"
+        # Handle empty directory by checking if glob matches anything
+        set +f  # Enable globbing
+        for script in "$spell_home"/*; do
+                # Skip if glob didn't match (no files exist)
+                [ -e "$script" ] || continue
+                [ -f "$script" ] || continue
+                [ -x "$script" ] || continue
+                script_name=$(basename "$script")
+                # Skip hidden files and the .memorized file
+                case $script_name in
+                        .*) continue ;;
+                esac
+                cmd_text=$(extract_command_from_script "$script")
+                if [ -n "$cmd_text" ]; then
+                        printf '%s\t%s\n' "$script_name" "$cmd_text"
                 fi
-        done <"$commands_file"
+        done
 }
 
-list_all_custom_commands() {
-        if [ ! -f "$commands_file" ]; then
-                return 0
-        fi
-        while IFS=$(printf '\t') read -r category name command || [ -n "$category" ]; do
-                [ -z "$category" ] && continue
-                [ -z "$name" ] && continue
-                printf '%s\t%s\t%s\n' "$category" "$name" "$command"
-        done <"$commands_file"
+# Check if a script is a scribed command (exists as executable in spell_home)
+is_scribed_command() {
+        check_name=$1
+        script_path=$(scribed_spell_path "$check_name")
+        [ -f "$script_path" ] && [ -x "$script_path" ]
 }
 
-is_custom_command() {
-        check_category=$1
-        check_name=$2
-        if [ ! -f "$commands_file" ]; then
-                return 1
-        fi
-        while IFS=$(printf '\t') read -r category name command || [ -n "$category" ]; do
-                [ -z "$category" ] && continue
-                if [ "$category" = "$check_category" ] && [ "$name" = "$check_name" ]; then
-                        return 0
-                fi
-        done <"$commands_file"
-        return 1
-}
-
-record_custom_command() {
-        cat_name=$1
-        cmd_name=$2
-        shift 2
+record_scribed_command() {
+        cmd_name=$1
+        shift
         cmd=$1
         shift || :
         while [ "$#" -gt 0 ]; do
@@ -280,63 +282,18 @@ record_custom_command() {
         done
         validate_name "$cmd_name"
         validate_command "$cmd"
-        ensure_parent_dir "$commands_file"
-        mkdir -p "$custom_spells_dir"
-        write_custom_script "$cmd_name" "$cmd"
-        tmp=$(mktemp "${TMPDIR:-/tmp}/spellbook-commands.XXXXXX") || exit 1
-        if [ -f "$commands_file" ]; then
-                while IFS= read -r line || nonempty "$line"; do
-                        entry_category=${line%%$(printf '\t')*}
-                        case $line in
-                        *$(printf '\t')*)
-                                entry_rest=${line#*$(printf '\t')}
-                                entry_name=${entry_rest%%$(printf '\t')*}
-                                ;;
-                        *)
-                                entry_name=''
-                                ;;
-                        esac
-                        if [ "$entry_category" = "$cat_name" ] && [ "$entry_name" = "$cmd_name" ]; then
-                                continue
-                        fi
-                        printf '%s\n' "$line" >>"$tmp"
-                done <"$commands_file"
-        fi
-        printf '%s\t%s\t%s\n' "$cat_name" "$cmd_name" "$cmd" >>"$tmp"
-        mv "$tmp" "$commands_file"
+        mkdir -p "$spell_home"
+        write_scribed_script "$cmd_name" "$cmd"
 }
 
-remove_custom_command() {
-        cat_name=$1
-        cmd_name=$2
-        [ -f "$commands_file" ] || return 1
-        tmp=$(mktemp "${TMPDIR:-/tmp}/spellbook-commands.XXXXXX") || exit 1
-        kept=0
-        removed=0
-        while IFS= read -r line || nonempty "$line"; do
-                        entry_category=${line%%$(printf '\t')*}
-                        case $line in
-                        *$(printf '\t')*)
-                                entry_rest=${line#*$(printf '\t')}
-                                entry_name=${entry_rest%%$(printf '\t')*}
-                                ;;
-                        *)
-                                entry_name=''
-                                ;;
-                        esac
-                        if [ "$entry_category" = "$cat_name" ] && [ "$entry_name" = "$cmd_name" ]; then
-                                removed=1
-                                continue
-                        fi
-                        kept=1
-                        printf '%s\n' "$line" >>"$tmp"
-        done <"$commands_file"
-        mv "$tmp" "$commands_file"
-        rm -f "$(custom_spell_path "$cmd_name")"
-        if [ "$kept" -eq 0 ] && [ ! -s "$commands_file" ]; then
-                rm -f "$commands_file"
+remove_scribed_command() {
+        cmd_name=$1
+        script_path=$(scribed_spell_path "$cmd_name")
+        if [ -f "$script_path" ]; then
+                rm -f "$script_path"
+                return 0
         fi
-        [ "$removed" -eq 1 ]
+        return 1
 }
 
 cast_list() {
@@ -373,17 +330,15 @@ prompt_for_input() {
         printf '%s' "$value"
 }
 
-scribe_command() {
-        cat_name=$(prompt_for_input "Category: ")
+scribe_command_interactive() {
         cmd_name=$(prompt_for_input "Name: ")
         cmd_text=$(prompt_for_input "Command: ")
-        if [ -z "$cat_name" ] || [ -z "$cmd_name" ] || [ -z "$cmd_text" ]; then
-                printf '%s\n' "A category, name, and command are required." >&2
+        if [ -z "$cmd_name" ] || [ -z "$cmd_text" ]; then
+                printf '%s\n' "A name and command are required." >&2
                 return 1
         fi
-        record_custom_command "$cat_name" "$cmd_name" "$cmd_text"
-        printf "Scribed '%s' into %s.\n" "$cmd_name" "$cat_name"
-        printf "Custom spells live in %s (add it to PATH to run by name).\n" "$custom_spells_dir"
+        record_scribed_command "$cmd_name" "$cmd_text"
+        printf "Scribed '%s' to %s.\n" "$cmd_name" "$spell_home"
 }
 
 spell_action_menu() {
@@ -398,7 +353,7 @@ spell_action_menu() {
                 else
                         memory_toggle="Memorize%action=memorize"
                 fi
-                if is_custom_command "$category" "$name"; then
+                if is_scribed_command "$name"; then
                         set -- "Cast now%action=cast" "$memory_toggle" "Help%action=help" "Test spell%action=test" "Delete command%action=delete" "Back%exit $menu_escape_status"
                 else
                         set -- "Cast now%action=cast" "$memory_toggle" "Help%action=help" "Test spell%action=test" "Back%exit $menu_escape_status"
@@ -431,12 +386,12 @@ spell_action_menu() {
                         fi
                         ;;
                 delete)
-                        if is_custom_command "$category" "$name"; then
-                                if remove_custom_command "$category" "$name"; then
-                                        printf "Deleted custom command '%s' from category '%s'.\n" "$name" "$category"
+                        if is_scribed_command "$name"; then
+                                if remove_scribed_command "$name"; then
+                                        printf "Deleted scribed command '%s'.\n" "$name"
                                         break
                                 else
-                                        printf "Failed to delete custom command '%s'.\n" "$name" >&2
+                                        printf "Failed to delete scribed command '%s'.\n" "$name" >&2
                                 fi
                         fi
                         ;;
@@ -455,14 +410,6 @@ category_menu() {
                         cmd=$(command_for_spell "$spell")
                         set -- "$@" "$(safe_command_label "$spell_name")%selected_name='$spell_name';selected_cmd='$cmd';selected_display='$cmd'"
                 done
-                while IFS=$(printf '\t') read -r _ custom_name custom_cmd; do
-                        [ -z "$custom_name" ] && continue
-                        spell_path=$(custom_spell_path "$custom_name")
-                        command_value=$spell_path
-                        set -- "$@" "$(safe_command_label "$custom_name")%selected_name='$custom_name';selected_cmd='$command_value';selected_display='$custom_cmd'"
-                done <<CUSTOM
-$(list_custom_commands "$category")
-CUSTOM
                 exit_label=$(exit-label)
                 set -- "$@" "${exit_label}%exit $menu_escape_status"
                 selected_name=''
@@ -484,21 +431,21 @@ spellbook_menu() {
         current_path=${1-}
         while :; do
                 set --
-                # Only show custom commands, scribe option, and divider at root level
+                # Only show scribed commands, scribe option, and divider at root level
                 if [ -z "$current_path" ]; then
-                        # First, add individual saved custom commands
-                        while IFS=$(printf '\t') read -r cmd_category cmd_name cmd_text; do
-                                [ -z "$cmd_category" ] && continue
+                        # First, add individual saved scribed commands (showing command content)
+                        while IFS=$(printf '\t') read -r cmd_name cmd_text; do
                                 [ -z "$cmd_name" ] && continue
-                                spell_path=$(custom_spell_path "$cmd_name")
-                                label=$(printf '%s (%s)' "$cmd_name" "$cmd_category")
-                                set -- "$@" "$(safe_command_label "$label")%spell-menu $cmd_category $cmd_name $spell_path"
-                        done <<CUSTOM_COMMANDS
-$(list_all_custom_commands)
-CUSTOM_COMMANDS
+                                spell_path=$(scribed_spell_path "$cmd_name")
+                                # Show the command text as the label (requirement: show command for name)
+                                label=$(printf '%s' "$cmd_text")
+                                set -- "$@" "$label%spell-menu scribed $cmd_name $spell_path '$cmd_text'"
+                        done <<SCRIBED_COMMANDS
+$(list_scribed_commands)
+SCRIBED_COMMANDS
                         # Add "Scribe new spell" option
                         set -- "$@" "Scribe Spell%scribe-command"
-                        # Add divider between custom commands and categories
+                        # Add divider between scribed commands and categories
                         set -- "$@" "%--divider--"
                 fi
                 # Then, add spell categories or subfolders
@@ -552,7 +499,7 @@ CUSTOM_COMMANDS
 
 usage() {
         cat <<'USAGE'
-Usage: spellbook [PATH|--memorize NAME COMMAND...|--forget NAME|--list|--scribe CATEGORY NAME COMMAND...|--interactive-scribe]
+Usage: spellbook [PATH|--memorize NAME COMMAND...|--forget NAME|--list|--scribe NAME COMMAND...|--interactive-scribe]
 
 Without arguments, opens the interactive spellbook to browse categories,
 scribe commands, and manage the cast menu.
@@ -566,14 +513,15 @@ directly to that category. PATH is resolved by searching in:
 Use './category' to search only in the current directory.
 
 Options:
-  --interactive-scribe  Prompt for category, name, and command to scribe a new spell.
-  --scribe CATEGORY NAME COMMAND...  Scribe a new custom command directly.
+  --interactive-scribe  Prompt for name and command to scribe a new spell.
+  --scribe NAME COMMAND...  Scribe a new command directly.
   --memorize NAME COMMAND...  Add a spell to the cast menu.
   --forget NAME  Remove a spell from the cast menu.
   --list  Show the stored spells.
 
-Custom commands are stored as executable spells under the user spell home
-(default: ~/.spellbook/custom or $XDG_DATA_HOME/wizardry/spellbook/custom).
+Scribed commands are stored as executable scripts in ~/.spellbook
+(or $XDG_DATA_HOME/wizardry/spellbook). Each command is a separate
+file with the name as filename and the command as content.
 USAGE
 }
 
@@ -606,21 +554,18 @@ case ${1-} in
                 ;;
         --scribe)
                 shift
-                if [ "$#" -lt 3 ]; then
+                if [ "$#" -lt 2 ]; then
                         usage >&2
                         exit 1
                 fi
-                category=$1
-                shift
                 name=$1
                 shift
-                record_custom_command "$category" "$name" "$@"
-                printf "Scribed '%s' into %s.\n" "$name" "$category"
-                printf "Custom spells live in %s (add it to PATH to run by name).\n" "$custom_spells_dir"
+                record_scribed_command "$name" "$@"
+                printf "Scribed '%s' to %s.\n" "$name" "$spell_home"
                 exit 0
                 ;;
         --interactive-scribe)
-                scribe_command
+                scribe_command_interactive
                 exit $?
                 ;;
         --help|-h)

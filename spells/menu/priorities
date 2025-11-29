@@ -92,7 +92,7 @@ display_priorities() {
   done
 
   # Add exit command
-  menu_command="${menu_command} \"Exit%kill -2 $$\""
+  menu_command="${menu_command} \"Exit%exit $menu_escape_status\""
 
   # Execute the constructed menu command
   eval "${menu_command}"

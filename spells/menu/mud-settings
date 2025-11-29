@@ -43,7 +43,7 @@ display_menu() {
   new="New Player%new-player"
   install="Install%launch_submenu mud-install-menu"
   exit_label=$(exit-label)
-  exit_item="${exit_label}%kill -2 $$"
+  exit_item="${exit_label}%exit $menu_escape_status"
 
   set -- "$copy" "$change" "$new" "$install" "$exit_item"
   MENU_ESCAPE_STATUS=$menu_escape_status menu "MUD Settings:" "$@"

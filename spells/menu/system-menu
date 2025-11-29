@@ -51,7 +51,7 @@ display_menu() {
   uninstall_wizardry="Uninstall wizardry%$repo_dir/install --uninstall"
   restart="Force restart%sudo shutdown -r now"
   exit_label=$(exit-label)
-  exit_item="${exit_label}%kill -2 $$"
+  exit_item="${exit_label}%exit $menu_escape_status"
 
   set -- "$services" "$verify_posix"
   set -- "$@" "$update_all"

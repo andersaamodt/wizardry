@@ -3,7 +3,7 @@
 # - fails when memorize-command is missing
 # - lists entries via --list
 # - uses --memorize/--forget to manage the cast list
-# - --scribe records custom commands by category
+# - --scribe records commands as standalone scripts
 
 set -eu
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
@@ -118,37 +118,34 @@ test_scribe_records_command() {
   stub_dir=$(make_stub_dir)
   write_memorize_command_stub "$stub_dir"
   write_require_command_stub "$stub_dir"
-  COMMAND_FILE="$stub_dir/commands"
-  PATH="$stub_dir:$PATH" SPELLBOOK_COMMANDS_FILE="$COMMAND_FILE" SPELLBOOK_CUSTOM_DIR="$stub_dir/custom" run_spell "spells/menu/spellbook" --scribe fire spark "echo ignite"
-  [ -f "$COMMAND_FILE" ] || { TEST_FAILURE_REASON="commands file missing"; return 1; }
-  content=$(tr -d '\n' < "$COMMAND_FILE")
-  case "$content" in
-    fire*spark*echo\ ignite) : ;;
-    *) TEST_FAILURE_REASON="unexpected command entry: $content"; return 1 ;;
+  spellbook_dir="$stub_dir/spellbook"
+  mkdir -p "$spellbook_dir"
+  
+  PATH="$stub_dir:$PATH" WIZARDRY_SPELL_HOME="$spellbook_dir" run_spell "spells/menu/spellbook" --scribe spark "echo ignite"
+  
+  assert_success || return 1
+  [ -x "$spellbook_dir/spark" ] || { TEST_FAILURE_REASON="scribed script was not created"; return 1; }
+  
+  # Check script content
+  script_content=$(cat "$spellbook_dir/spark")
+  case "$script_content" in
+    *"echo ignite"*) : ;;
+    *) TEST_FAILURE_REASON="script missing command: $script_content"; return 1 ;;
   esac
-  if [ ! -x "$stub_dir/custom/spark" ]; then
-    TEST_FAILURE_REASON="custom command script was not created"
-    return 1
-  fi
 }
 
-test_list_all_custom_commands() {
+test_scribe_multiple_commands() {
   stub_dir=$(make_stub_dir)
   write_memorize_command_stub "$stub_dir"
   write_require_command_stub "$stub_dir"
-  COMMAND_FILE="$stub_dir/commands"
-  PATH="$stub_dir:$PATH" SPELLBOOK_COMMANDS_FILE="$COMMAND_FILE" SPELLBOOK_CUSTOM_DIR="$stub_dir/custom" run_spell "spells/menu/spellbook" --scribe fire spark1 "echo ignite1"
-  PATH="$stub_dir:$PATH" SPELLBOOK_COMMANDS_FILE="$COMMAND_FILE" SPELLBOOK_CUSTOM_DIR="$stub_dir/custom" run_spell "spells/menu/spellbook" --scribe water splash "echo splash"
-  [ -f "$COMMAND_FILE" ] || { TEST_FAILURE_REASON="commands file missing"; return 1; }
-  content=$(cat "$COMMAND_FILE")
-  case "$content" in
-    *fire*spark1*echo\ ignite1*) : ;;
-    *) TEST_FAILURE_REASON="spark1 command not found: $content"; return 1 ;;
-  esac
-  case "$content" in
-    *water*splash*echo\ splash*) : ;;
-    *) TEST_FAILURE_REASON="splash command not found: $content"; return 1 ;;
-  esac
+  spellbook_dir="$stub_dir/spellbook"
+  mkdir -p "$spellbook_dir"
+  
+  PATH="$stub_dir:$PATH" WIZARDRY_SPELL_HOME="$spellbook_dir" run_spell "spells/menu/spellbook" --scribe spark1 "echo ignite1"
+  PATH="$stub_dir:$PATH" WIZARDRY_SPELL_HOME="$spellbook_dir" run_spell "spells/menu/spellbook" --scribe splash "echo splash"
+  
+  [ -x "$spellbook_dir/spark1" ] || { TEST_FAILURE_REASON="spark1 script not found"; return 1; }
+  [ -x "$spellbook_dir/splash" ] || { TEST_FAILURE_REASON="splash script not found"; return 1; }
 }
 
 test_path_argument_accepted() {
@@ -168,7 +165,7 @@ run_test_case "spellbook fails when helper missing" test_errors_when_helper_miss
 run_test_case "spellbook lists stored entries" test_lists_entries
 run_test_case "spellbook memorize and forget" test_memorize_and_forget
 run_test_case "spellbook scribe command" test_scribe_records_command
-run_test_case "spellbook lists all custom commands" test_list_all_custom_commands
+run_test_case "spellbook scribes multiple commands" test_scribe_multiple_commands
 run_test_case "spellbook accepts path argument" test_path_argument_accepted
 
 finish_tests

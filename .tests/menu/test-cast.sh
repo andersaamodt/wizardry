@@ -88,7 +88,7 @@ test_cast_sends_entries_to_menu() {
   fi
   args=$(cat "$tmp/log")
   case "$args" in
-    *"Cast a Spell:"*"fizz – cast fizz%$tmp/fizz"*"Exit%kill -2"* ) : ;;
+    *"Cast a Spell:"*"fizz – cast fizz%$tmp/fizz"*"Exit%exit 113"* ) : ;;
     *) TEST_FAILURE_REASON="menu did not receive stored spells"; return 1 ;;
   esac
 }

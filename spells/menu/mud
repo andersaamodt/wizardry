@@ -45,7 +45,7 @@ display_menu() {
   admin="Admin MUD Hosting%launch_submenu mud-admin"
   settings="MUD Settings%launch_submenu mud-settings"
   exit_label=$(exit-label)
-  exit_item="${exit_label}%kill -2 $$"
+  exit_item="${exit_label}%exit $menu_escape_status"
 
   set -- \
     "$look" \
