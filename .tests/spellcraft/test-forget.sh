@@ -3,7 +3,7 @@
 # - prints usage
 # - removes a spell from the cast menu
 # - fails when spell name is missing
-# - fails when memorize-spell helper is missing
+# - fails when memorize helper is missing
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/test-common.sh" ] && [ "$test_root" != "/" ]; do
@@ -25,7 +25,7 @@ test_help() {
 test_forget_removes_spell() {
   reset_logs
   case_dir=$(make_tempdir)
-  store="$case_dir/memorize-spell"
+  store="$case_dir/memorize"
   cat >"$store" <<'SCRIPT'
 #!/bin/sh
 printf '%s\n' "$*" >>"${WIZARDRY_TMPDIR}/spellbook.log"
@@ -51,10 +51,10 @@ test_forget_requires_name() {
 
 test_forget_fails_when_helper_missing() {
   reset_logs
-  missing="$(make_tempdir)/memorize-spell"
+  missing="$(make_tempdir)/memorize"
   PATH=/usr/bin:/bin MEMORIZE_SPELL_HELPER="$missing" \
     run_spell "spells/spellcraft/forget" myspell
-  assert_failure && assert_error_contains "memorize-spell helper is unavailable"
+  assert_failure && assert_error_contains "memorize helper is unavailable"
 }
 
 run_test_case "forget prints usage" test_help

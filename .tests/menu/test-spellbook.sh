@@ -1,6 +1,6 @@
 #!/bin/sh
 # Spellbook menu helper coverage:
-# - fails when memorize-spell is missing
+# - fails when memorize is missing
 # - lists entries via --list
 # - uses --memorize/--forget to manage the cast list
 # - --scribe records commands as standalone scripts
@@ -20,7 +20,7 @@ make_stub_dir() {
 
 write_memorize_command_stub() {
   dir=$1
-  cat >"$dir/memorize-spell" <<'STUB'
+  cat >"$dir/memorize" <<'STUB'
 #!/bin/sh
 case $1 in
   add)
@@ -69,7 +69,7 @@ case $1 in
     ;;
 esac
 STUB
-  chmod +x "$dir/memorize-spell"
+  chmod +x "$dir/memorize"
 }
 
 write_require_command_stub() {
@@ -86,7 +86,7 @@ test_errors_when_helper_missing() {
   PATH="$stub_dir:/bin:/usr/bin" CAST_STORE="$stub_dir/does-not-exist" run_spell "spells/menu/spellbook" --list
   assert_failure || return 1
   case "$OUTPUT$ERROR" in
-    *"memorize-spell helper is missing"*) : ;;
+    *"memorize helper is missing"*) : ;;
     *) TEST_FAILURE_REASON="helper missing warning not shown"; return 1 ;;
   esac
 }

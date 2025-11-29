@@ -6,7 +6,7 @@
 
 set -eu
 
-spell_name="memorize-spell"
+spell_name="memorize"
 tab_char=$(printf '\t')
 newline_char=$(printf '\ny')
 newline_char=${newline_char%y}
@@ -146,7 +146,7 @@ add_entry() {
         ensure_parent_directory
         # Use the spell name as both the name and command (spell runs itself)
         cmd=$name
-        tmp=$(mktemp "${TMPDIR:-/tmp}/memorize-spell.XXXXXX") || exit 1
+        tmp=$(mktemp "${TMPDIR:-/tmp}/memorize.XXXXXX") || exit 1
         if [ -f "$command_file" ]; then
                 while IFS= read -r line || nonempty "$line"; do
                         entry_name=$line
@@ -176,7 +176,7 @@ remove_entry() {
                 printf '%s\n' "$spell_name: spell '$name' is not memorized." >&2
                 exit 1
         fi
-        tmp=$(mktemp "${TMPDIR:-/tmp}/memorize-spell.XXXXXX") || exit 1
+        tmp=$(mktemp "${TMPDIR:-/tmp}/memorize.XXXXXX") || exit 1
         removed=0
         while IFS= read -r line || nonempty "$line"; do
             entry_name=$line

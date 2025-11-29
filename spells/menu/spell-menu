@@ -25,11 +25,11 @@ require_tool() {
         "$require_cmd" "$@"
 }
 
-cast_store=${CAST_STORE-memorize-spell}
+cast_store=${CAST_STORE-memorize}
 if cast_store_path=$(command -v "$cast_store" 2>/dev/null); then
         cast_store=$cast_store_path
 else
-        printf '%s\n' "spell-menu: memorize-spell helper is missing." >&2
+        printf '%s\n' "spell-menu: memorize helper is missing." >&2
         exit 1
 fi
 
@@ -238,11 +238,11 @@ while :; do
         fi
 
         # Show checkbox for Cast menu visibility (toggleable)
-        # Use standalone memorize-spell instead of spell-menu flags
+        # Use standalone memorize instead of spell-menu flags
         if is_memorized "$name"; then
-                cast_toggle="[X] Forget%memorize-spell remove '$name'"
+                cast_toggle="[X] Forget%memorize remove '$name'"
         else
-                cast_toggle="[ ] Memorize%memorize-spell add '$name'"
+                cast_toggle="[ ] Memorize%memorize add '$name'"
         fi
         # Build menu items - Cast now runs the command directly (using escaped version for safety)
         exit_label=$(exit-label)

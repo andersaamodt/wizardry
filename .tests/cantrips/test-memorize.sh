@@ -23,7 +23,7 @@ cast_env() {
 run_store() {
   env_var=$1
   shift
-  run_cmd env "$env_var" "$ROOT_DIR/spells/cantrips/memorize-spell" "$@"
+  run_cmd env "$env_var" "$ROOT_DIR/spells/cantrips/memorize" "$@"
 }
 
 normalize_output() {
@@ -97,10 +97,10 @@ run_test_case "rejects invalid arguments" rejects_invalid_args
 run_test_case "writes scripts into cast dir" writes_scripts_into_cast_dir
 
 shows_help() {
-  run_spell spells/cantrips/memorize-spell --help
+  run_spell spells/cantrips/memorize --help
   true
 }
 
-run_test_case "memorize-spell shows help" shows_help
+run_test_case "memorize shows help" shows_help
 
 finish_tests

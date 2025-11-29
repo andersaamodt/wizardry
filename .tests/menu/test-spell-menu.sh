@@ -1,6 +1,6 @@
 #!/bin/sh
 # spell-menu test coverage:
-# - fails when memorize-spell is missing
+# - fails when memorize is missing
 # - shows usage with --help
 # - requires minimum 3 arguments
 # - --cast executes the given command
@@ -21,7 +21,7 @@ make_stub_dir() {
 
 write_memorize_command_stub() {
   dir=$1
-  cat >"$dir/memorize-spell" <<'STUB'
+  cat >"$dir/memorize" <<'STUB'
 #!/bin/sh
 case $1 in
   add)
@@ -70,7 +70,7 @@ case $1 in
     ;;
 esac
 STUB
-  chmod +x "$dir/memorize-spell"
+  chmod +x "$dir/memorize"
 }
 
 write_require_command_stub() {
@@ -95,7 +95,7 @@ STUB
 test_errors_when_helper_missing() {
   stub_dir=$(make_stub_dir)
   PATH="$stub_dir:/bin:/usr/bin" CAST_STORE="$stub_dir/does-not-exist" run_spell "spells/menu/spell-menu" --help
-  # --help should work even without memorize-spell
+  # --help should work even without memorize
   assert_success || return 1
 }
 

@@ -17,11 +17,11 @@ else
         YELLOW=''
 fi
 
-cast_store=${CAST_STORE-memorize-spell}
+cast_store=${CAST_STORE-memorize}
 if cast_store_path=$(command -v "$cast_store" 2>/dev/null); then
         cast_store=$cast_store_path
 else
-        printf '%s\n' "spellbook: memorize-spell helper is missing." >&2
+        printf '%s\n' "spellbook: memorize helper is missing." >&2
         exit 1
 fi
 
@@ -605,12 +605,11 @@ USER_FOLDERS
                 fi
                 set -- "$@" "${exit_label}%exit $menu_escape_status"
                 
-                # Build menu title - use titlecase for category names
+                # Build menu title - use original folder name for category
                 if [ -z "$current_path" ]; then
                         menu_title="Spellbook:"
                 else
-                        display_category=$(category_display_name "$category_name")
-                        menu_title="${display_category}:"
+                        menu_title="${category_name}:"
                 fi
                 MENU_ESCAPE_STATUS=$menu_escape_status menu "$menu_title" "$@"
                 status=$?

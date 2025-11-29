@@ -288,7 +288,7 @@ LEARN_SPELLBOOK_FLAGS=${LEARN_SPELLBOOK_FLAGS:---recursive}
 # This prevents issues where a user has an old wizardry installation in PATH.
 SCRIBE_SPELL="$ABS_DIR/spells/spellcraft/scribe-spell"
 MEMORIZE_SCRIBE="$ABS_DIR/spells/spellcraft/scribe-spell"
-MEMORIZE_SPELL_HELPER="$ABS_DIR/spells/cantrips/memorize-spell"
+MEMORIZE_SPELL_HELPER="$ABS_DIR/spells/cantrips/memorize"
 export DETECT_RC_FILE SCRIBE_SPELL MEMORIZE_SCRIBE MEMORIZE_SPELL_HELPER
 
 # Bootstrap color definitions (inline - cannot rely on wizardry spells during install)
