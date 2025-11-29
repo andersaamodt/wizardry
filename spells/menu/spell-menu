@@ -184,13 +184,8 @@ if [ "$#" -lt 1 ]; then
 fi
 
 name=$1
-# Resolve the command - either from scribed command or by looking it up in PATH
-if is_scribed_command "$name"; then
-        command=$name
-else
-        # Look up in PATH
-        command=$name
-fi
+# The command is the spell name (which is executable either as scribed command or from PATH)
+command=$name
 
 if ! require_tool menu "The spell menu needs the 'menu' command."; then
         exit 1
