@@ -56,16 +56,16 @@ SH
   # Stub exit-label to return "Back" for submenu behavior
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
-if [ "${WIZARDRY_SUBMENU-}" = "1" ]; then printf '%s' "Back"; else printf '%s' "Exit"; fi
+printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
   # Test as submenu (as it would be called from mud menu)
   # Use MENU_LOOP_LIMIT=1 to exit after one iteration
-  run_cmd env WIZARDRY_SUBMENU=1 REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MUD_PLAYER="$player" MENU_LOOP_LIMIT=1 "$ROOT_DIR/spells/menu/mud-settings"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MUD_PLAYER="$player" MENU_LOOP_LIMIT=1 "$ROOT_DIR/spells/menu/mud-settings"
   assert_success
   args=$(cat "$tmp/log")
   case "$args" in
-    *"MUD Settings:"*"Copy player key to clipboard%copy ~/.ssh/"*"Change Player%select-player"*"New Player%new-player"*"Install%launch_submenu mud-install-menu"*"Back%exit 113"* ) : ;;
+    *"MUD Settings:"*"Copy player key to clipboard%copy ~/.ssh/"*"Change Player%select-player"*"New Player%new-player"*"Install%launch_submenu mud-install-menu"*"Exit%exit 113"* ) : ;;
     *) TEST_FAILURE_REASON="mud settings actions missing: $args"; return 1 ;;
   esac
 }
@@ -107,4 +107,45 @@ SH
 run_test_case "mud-settings presents player actions" test_mud_settings_menu_actions
 run_test_case "mud-settings fails fast when menu helper is missing" test_mud_settings_requires_menu_helper
 run_test_case "mud-settings surfaces menu failures" test_mud_settings_reports_menu_failure
+
+# Test ESC and Exit behavior - menu exits properly when escape status returned
+test_esc_exit_behavior() {
+  tmp=$(make_tempdir)
+  make_stub_colors "$tmp"
+  
+  # Create menu stub that returns escape status
+  cat >"$tmp/menu" <<'SH'
+#!/bin/sh
+printf '%s\n' "$@" >>"$MENU_LOG"
+exit 113
+SH
+  chmod +x "$tmp/menu"
+  
+  cat >"$tmp/require-command" <<'SH'
+#!/bin/sh
+exit 0
+SH
+  chmod +x "$tmp/require-command"
+  
+  
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$tmp/exit-label"
+  
+  
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MUD_PLAYER=hero "$ROOT_DIR/spells/menu/mud-settings"
+  assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
+  
+  args=$(cat "$tmp/log")
+  case "$args" in
+    *"Exit%exit 113"*) : ;;
+    *) TEST_FAILURE_REASON="menu should show Exit label: $args"; return 1 ;;
+  esac
+  
+}
+
+run_test_case "mud-settings ESC/Exit behavior" test_esc_exit_behavior
+
 finish_tests

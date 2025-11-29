@@ -168,4 +168,39 @@ run_test_case "spellbook scribe command" test_scribe_records_command
 run_test_case "spellbook scribes multiple commands" test_scribe_multiple_commands
 run_test_case "spellbook accepts path argument" test_path_argument_accepted
 
+# Test ESC and Exit behavior - menu exits properly when escape status returned
+test_esc_exit_behavior() {
+  stub_dir=$(make_stub_dir)
+  write_memorize_command_stub "$stub_dir"
+  write_require_command_stub "$stub_dir"
+  
+  # Create menu stub that returns escape status
+  cat >"$stub_dir/menu" <<'SH'
+#!/bin/sh
+printf '%s\n' "$@" >>"$MENU_LOG"
+exit 113
+SH
+  chmod +x "$stub_dir/menu"
+  
+  
+  cat >"$stub_dir/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$stub_dir/exit-label"
+  
+  
+  run_cmd env PATH="$stub_dir:$PATH" MENU_LOG="$stub_dir/log" "$ROOT_DIR/spells/menu/spellbook"
+  assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
+  
+  args=$(cat "$stub_dir/log")
+  case "$args" in
+    *"Exit%exit 113"*) : ;;
+    *) TEST_FAILURE_REASON="menu should show Exit label: $args"; return 1 ;;
+  esac
+  
+}
+
+run_test_case "spellbook ESC/Exit behavior" test_esc_exit_behavior
+
 finish_tests

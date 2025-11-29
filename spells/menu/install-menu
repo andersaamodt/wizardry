@@ -122,8 +122,11 @@ while :; do
     exit_label=$(exit-label)
     set -- "$@" "${exit_label}%exit $menu_escape_status"
 
-    MENU_ESCAPE_STATUS=$menu_escape_status menu "Install Menu:" "$@"
-    status=$?
+    if MENU_ESCAPE_STATUS=$menu_escape_status menu "Install Menu:" "$@"; then
+        status=0
+    else
+        status=$?
+    fi
 
     if [ "$status" -eq "$menu_escape_status" ]; then
         break

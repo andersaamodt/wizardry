@@ -413,8 +413,11 @@ spell_action_menu() {
                 else
                         set -- "Cast now%action=cast" "$memory_toggle" "Help%action=help" "Test spell%action=test" "Back%exit $menu_escape_status"
                 fi
-                MENU_ESCAPE_STATUS=$menu_escape_status menu "Spell: $name" "$@"
-                status=$?
+                if MENU_ESCAPE_STATUS=$menu_escape_status menu "Spell: $name" "$@"; then
+                        status=0
+                else
+                        status=$?
+                fi
                 if [ "$status" -eq "$menu_escape_status" ]; then
                         break
                 fi
@@ -480,8 +483,11 @@ category_menu() {
                 selected_name=''
                 selected_cmd=''
                 selected_display=''
-                MENU_ESCAPE_STATUS=$menu_escape_status menu "$display_name:" "$@"
-                status=$?
+                if MENU_ESCAPE_STATUS=$menu_escape_status menu "$display_name:" "$@"; then
+                        status=0
+                else
+                        status=$?
+                fi
                 if [ "$status" -eq "$menu_escape_status" ]; then
                         break
                 fi
@@ -611,8 +617,11 @@ USER_FOLDERS
                 else
                         menu_title="${category_name}:"
                 fi
-                MENU_ESCAPE_STATUS=$menu_escape_status menu "$menu_title" "$@"
-                status=$?
+                if MENU_ESCAPE_STATUS=$menu_escape_status menu "$menu_title" "$@"; then
+                        status=0
+                else
+                        status=$?
+                fi
                 if [ "$status" -eq "$menu_escape_status" ]; then
                         break
                 fi

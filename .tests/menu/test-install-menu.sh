@@ -121,6 +121,43 @@ SH
 run_test_case "install-menu fails when empty" test_install_menu_errors_when_empty
 run_test_case "install-menu builds entries from directories" test_install_menu_builds_entries_with_status
 run_test_case "install-menu prefers spells in the install root" test_install_menu_prefers_install_root_commands
+
+# Test ESC and Exit behavior - menu exits properly when escape status returned
+test_esc_exit_behavior() {
+  tmp=$(make_tempdir)
+  make_stub_menu_env "$tmp"
+  make_stub_require "$tmp"
+  
+  
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$tmp/exit-label"
+  
+  # Create a minimal install dir
+  install_root="$tmp/install"
+  mkdir -p "$install_root/test"
+  cat >"$install_root/test/test-status" <<'SH'
+#!/bin/sh
+echo ready
+SH
+  chmod +x "$install_root/test/test-status"
+  
+  
+  run_cmd env PATH="$tmp:$PATH" INSTALL_MENU_ROOT="$install_root" INSTALL_MENU_DIRS="test" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/install-menu"
+  assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
+  
+  args=$(cat "$tmp/log")
+  case "$args" in
+    *"Exit%exit 113"*) : ;;
+    *) TEST_FAILURE_REASON="menu should show Exit label: $args"; return 1 ;;
+  esac
+  
+}
+
+run_test_case "install-menu ESC/Exit behavior" test_esc_exit_behavior
+
 shows_help() {
   run_spell spells/menu/install-menu --help
   # Note: spell may not have --help implemented yet

@@ -98,6 +98,35 @@ test_cast_sends_entries_to_menu() {
 run_test_case "cast lists stored spells" test_cast_lists_stored_spells
 run_test_case "cast exits when no stored spells" test_cast_prints_empty_message
 run_test_case "cast feeds spells into menu" test_cast_sends_entries_to_menu
+
+# Test ESC and Exit behavior - menu exits properly when escape status returned
+test_esc_exit_behavior() {
+  tmp=$(make_tempdir)
+  make_stub_cast_list "$tmp" fizz "cast fizz"
+  make_stub_menu "$tmp"
+  make_stub_require "$tmp"
+  
+  
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$tmp/exit-label"
+  
+  
+  run_cmd env PATH="$tmp:$PATH" CAST_STORE="$tmp/memorize" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/cast"
+  assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
+  
+  args=$(cat "$tmp/log")
+  case "$args" in
+    *"Exit%exit 113"*) : ;;
+    *) TEST_FAILURE_REASON="menu should show Exit label: $args"; return 1 ;;
+  esac
+  
+}
+
+run_test_case "cast ESC/Exit behavior" test_esc_exit_behavior
+
 shows_help() {
   run_spell spells/menu/cast --help
   # Note: spell may not have --help implemented yet

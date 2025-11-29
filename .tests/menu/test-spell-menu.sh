@@ -137,4 +137,39 @@ run_test_case "spell-menu shows usage with --help" test_shows_usage_with_help
 run_test_case "spell-menu requires minimum arguments" test_requires_minimum_arguments
 run_test_case "spell-menu --cast executes command" test_cast_action_executes_command
 
+# Test ESC and Exit behavior - menu exits properly when escape status returned
+test_esc_exit_behavior() {
+  stub_dir=$(make_stub_dir)
+  write_memorize_command_stub "$stub_dir"
+  write_require_command_stub "$stub_dir"
+  
+  # Create menu stub that logs entries and returns escape status
+  cat >"$stub_dir/menu" <<'SH'
+#!/bin/sh
+printf '%s\n' "$@" >>"$MENU_LOG"
+exit 113
+SH
+  chmod +x "$stub_dir/menu"
+  
+  
+  cat >"$stub_dir/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$stub_dir/exit-label"
+  
+  
+  run_cmd env PATH="$stub_dir:$PATH" MENU_LOG="$stub_dir/log" "$ROOT_DIR/spells/menu/spell-menu" testspell
+  assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
+  
+  args=$(cat "$stub_dir/log")
+  case "$args" in
+    *"Exit%exit 113"*) : ;;
+    *) TEST_FAILURE_REASON="menu should show Exit label: $args"; return 1 ;;
+  esac
+  
+}
+
+run_test_case "spell-menu ESC/Exit behavior" test_esc_exit_behavior
+
 finish_tests
