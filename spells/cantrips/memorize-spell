@@ -1,12 +1,12 @@
 #!/bin/sh
 
-# This spell memorizes one-line shell commands for the Cast menu.
-# It keeps a tiny spellbook of "NAME<TAB>COMMAND" entries in a dotfile so
+# This spell memorizes spells for the Cast menu.
+# It keeps a tiny spellbook of spell names in a dotfile so
 # Wizards can queue their favorite incantations without editing menus by hand.
 
 set -eu
 
-spell_name="memorize-command"
+spell_name="memorize-spell"
 tab_char=$(printf '\t')
 newline_char=$(printf '\ny')
 newline_char=${newline_char%y}
@@ -40,17 +40,16 @@ resolve_cast_dir() {
 
 usage() {
         cat <<USAGE >&2
-Usage: $spell_name {add NAME COMMAND...|remove NAME|list|path|dir}
+Usage: $spell_name {add NAME|remove NAME|list|path|dir}
 
-add NAME COMMAND  Record or update a command under NAME at the top of the list.
-                  COMMAND must be a single line without tabs.
+add NAME          Add spell NAME to the Cast menu (spell must exist in PATH or ~/.spellbook).
 remove NAME       Remove the named entry.
-list              Print every stored entry as "NAME<TAB>COMMAND".
+list              Print every stored spell name.
 path              Print the command list file path.
 dir               Print the directory holding generated cast spells.
 
 The cast directory (dir) is safe for PATH addition (default: ~/.spellbook
-or $XDG_DATA_HOME/wizardry/spellbook). Use it to run memorized commands by
+or $XDG_DATA_HOME/wizardry/spellbook). Use it to run memorized spells by
 name outside the Cast menu.
 USAGE
 }
@@ -143,17 +142,11 @@ validate_command() {
 
 add_entry() {
         name=$1
-        shift
-        cmd=$1
-        shift || :
-        while [ "$#" -gt 0 ]; do
-                cmd="$cmd $1"
-                shift
-        done
         validate_name "$name"
-        validate_command "$cmd"
         ensure_parent_directory
-        tmp=$(mktemp "${TMPDIR:-/tmp}/memorize-command.XXXXXX") || exit 1
+        # Use the spell name as both the name and command (spell runs itself)
+        cmd=$name
+        tmp=$(mktemp "${TMPDIR:-/tmp}/memorize-spell.XXXXXX") || exit 1
         if [ -f "$command_file" ]; then
                 while IFS= read -r line || nonempty "$line"; do
                         entry_name=$line
@@ -180,10 +173,10 @@ remove_entry() {
         name=$1
         validate_name "$name"
         if [ ! -f "$command_file" ]; then
-                printf '%s\n' "$spell_name: spell '$name' is not recorded." >&2
+                printf '%s\n' "$spell_name: spell '$name' is not memorized." >&2
                 exit 1
         fi
-        tmp=$(mktemp "${TMPDIR:-/tmp}/memorize-command.XXXXXX") || exit 1
+        tmp=$(mktemp "${TMPDIR:-/tmp}/memorize-spell.XXXXXX") || exit 1
         removed=0
         while IFS= read -r line || nonempty "$line"; do
             entry_name=$line
@@ -203,7 +196,7 @@ remove_entry() {
         done <"$command_file"
         if [ "$removed" -eq 0 ]; then
                 rm -f "$tmp"
-                printf '%s\n' "$spell_name: spell '$name' is not recorded." >&2
+                printf '%s\n' "$spell_name: spell '$name' is not memorized." >&2
                 exit 1
         fi
         mv "$tmp" "$command_file"
@@ -226,12 +219,12 @@ shift
 
 case $action in
 add)
-        if [ "$#" -lt 2 ]; then
-                printf '%s\n' "$spell_name: add expects a NAME followed by COMMAND words." >&2
+        if [ "$#" -ne 1 ]; then
+                printf '%s\n' "$spell_name: add expects a spell NAME." >&2
                 usage
                 exit 1
         fi
-        add_entry "$@"
+        add_entry "$1"
         ;;
 remove)
         if [ "$#" -ne 1 ]; then

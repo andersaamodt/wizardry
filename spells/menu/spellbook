@@ -17,11 +17,11 @@ else
         YELLOW=''
 fi
 
-cast_store=${CAST_STORE-memorize-command}
+cast_store=${CAST_STORE-memorize-spell}
 if cast_store_path=$(command -v "$cast_store" 2>/dev/null); then
         cast_store=$cast_store_path
 else
-        printf '%s\n' "spellbook: memorize-command helper is missing." >&2
+        printf '%s\n' "spellbook: memorize-spell helper is missing." >&2
         exit 1
 fi
 
@@ -264,11 +264,12 @@ list_scribed_commands() {
         done
 }
 
-# List user folders in ~/.spellbook (excluding hidden folders)
+# List user folders in ~/.spellbook (excluding hidden folders and folders matching built-in categories)
 list_user_folders() {
         if [ ! -d "$spell_home" ]; then
                 return 0
         fi
+        builtin_cats=$(spell_categories)
         for folder in "$spell_home"/*; do
                 [ -d "$folder" ] || continue
                 folder_name=$(basename "$folder")
@@ -276,8 +277,28 @@ list_user_folders() {
                 case $folder_name in
                         .*) continue ;;
                 esac
+                # Skip folders that match a built-in category
+                is_builtin=0
+                for cat in $builtin_cats; do
+                        if [ "$folder_name" = "$cat" ]; then
+                                is_builtin=1
+                                break
+                        fi
+                done
+                [ "$is_builtin" -eq 1 ] && continue
                 printf '%s\n' "$folder_name"
         done
+}
+
+# Check if a category name is a built-in category
+is_builtin_category() {
+        check_name=$1
+        for cat in $(spell_categories); do
+                if [ "$check_name" = "$cat" ]; then
+                        return 0
+                fi
+        done
+        return 1
 }
 
 # Check if a path is inside the spell_home directory (custom spellbook)
@@ -487,7 +508,10 @@ spellbook_menu() {
                 # Determine the resolved path for non-root views
                 resolved_path=""
                 in_custom_folder=0
+                category_name=""
                 if [ -n "$current_path" ]; then
+                        # Get the category name (last component of path)
+                        category_name=$(basename "$current_path")
                         if resolved_path=$(resolve_category_path "$current_path"); then
                                 if is_in_spell_home "$resolved_path"; then
                                         in_custom_folder=1
@@ -512,15 +536,15 @@ SCRIBED_COMMANDS
                         # Add "Scribe new spell" at end of commands section
                         set -- "$@" "Scribe new spell%scribe-command"
                         
-                        # SECTION 2: User folders in ~/.spellbook (if any exist)
+                        # SECTION 2: User folders in ~/.spellbook (if any exist, excluding those matching built-in)
                         user_folders=$(list_user_folders)
                         if [ -n "$user_folders" ]; then
                                 # Add divider between commands and user folders
                                 set -- "$@" "%--divider--"
                                 while IFS= read -r folder_name; do
                                         [ -z "$folder_name" ] && continue
-                                        display_name=$(category_display_name "$folder_name")
-                                        set -- "$@" "${display_name}%spellbook $spell_home/$folder_name"
+                                        # Don't capitalize - just use the folder name
+                                        set -- "$@" "${folder_name}%spellbook $spell_home/$folder_name"
                                 done <<USER_FOLDERS
 $user_folders
 USER_FOLDERS
@@ -530,29 +554,43 @@ USER_FOLDERS
                         # Add divider between user folders and built-in categories
                         set -- "$@" "%--divider--"
                         for category in $(spell_categories); do
-                                display_name=$(category_display_name "$category")
-                                set -- "$@" "${display_name}%spellbook $category"
+                                # Don't capitalize - just use the folder name
+                                set -- "$@" "${category}%spellbook $category"
                         done
                 else
-                        # Non-root view: only show spells in this directory
-                        # List executable spells in this directory
-                        for spell in $(find "$resolved_path" -maxdepth 1 -type f -perm -111 2>/dev/null | sort); do
-                                spell_name=$(basename "$spell")
-                                set -- "$@" "${spell_name}%spell-menu $spell_name"
-                        done
-                        # List subdirectories (only for navigation, shown after spells)
-                        for subdir in "$resolved_path"/*; do
-                                [ -d "$subdir" ] || continue
-                                subname=$(basename "$subdir")
-                                display_name=$(category_display_name "$subname")
-                                set -- "$@" "${display_name}%spellbook $resolved_path/$subname"
-                        done
-                        # Add "Scribe new spell" only for custom spellbook folders (not built-in)
-                        if [ "$in_custom_folder" -eq 1 ]; then
-                                # Get just the folder name relative to spell_home
-                                rel_folder=${resolved_path#"$spell_home"/}
-                                set -- "$@" "Scribe new spell%scribe-command --category $rel_folder"
+                        # Non-root view: show spells from both built-in and custom folders combined
+                        # First, list built-in spells
+                        builtin_dir="$ROOT_DIR/spells/$category_name"
+                        custom_dir="$spell_home/$category_name"
+                        
+                        # List built-in spells
+                        if [ -d "$builtin_dir" ]; then
+                                for spell in $(find "$builtin_dir" -maxdepth 1 -type f -perm -111 2>/dev/null | sort); do
+                                        spell_name=$(basename "$spell")
+                                        set -- "$@" "${spell_name}%spell-menu $spell_name"
+                                done
                         fi
+                        
+                        # List custom spells from ~/.spellbook/<category> with light blue (cyan) color
+                        if [ -d "$custom_dir" ]; then
+                                for spell in $(find "$custom_dir" -maxdepth 1 -type f -perm -111 2>/dev/null | sort); do
+                                        spell_name=$(basename "$spell")
+                                        # Use CYAN for custom spell names
+                                        set -- "$@" "${CYAN}${spell_name}${RESET}%spell-menu $spell_name"
+                                done
+                        fi
+                        
+                        # List subdirectories (only for navigation, shown after spells)
+                        if [ -d "$resolved_path" ]; then
+                                for subdir in "$resolved_path"/*; do
+                                        [ -d "$subdir" ] || continue
+                                        subname=$(basename "$subdir")
+                                        set -- "$@" "${subname}%spellbook $resolved_path/$subname"
+                                done
+                        fi
+                        
+                        # Add "Scribe new spell" for all categories (creates in ~/.spellbook/<category>)
+                        set -- "$@" "Scribe new spell%scribe-command --dir $spell_home/$category_name"
                 fi
                 
                 # Use "Back" when in a submenu, "Exit" at root
@@ -565,8 +603,7 @@ USER_FOLDERS
                 if [ -z "$current_path" ]; then
                         menu_title="${CYAN}Spellbook:${RESET}"
                 else
-                        current_display=$(category_display_name "$(basename "$current_path")")
-                        menu_title="${CYAN}Spellbook${RESET} > ${YELLOW}${current_display}${RESET}:"
+                        menu_title="${CYAN}Spellbook${RESET} > ${YELLOW}${category_name}${RESET}:"
                 fi
                 MENU_ESCAPE_STATUS=$menu_escape_status menu "$menu_title" "$@"
                 status=$?

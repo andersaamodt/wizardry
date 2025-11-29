@@ -15,7 +15,7 @@ make_stub_cast_list() {
   tmp=$1
   alias_name=$2
   command_text=$3
-  cat >"$tmp/memorize-command" <<SH
+  cat >"$tmp/memorize-spell" <<SH
 #!/bin/sh
 case "\$1" in
   list)
@@ -30,7 +30,7 @@ case "\$1" in
     ;;
 esac
 SH
-  chmod +x "$tmp/memorize-command"
+  chmod +x "$tmp/memorize-spell"
   mkdir -p "$tmp"
   if [ -n "$alias_name" ] && [ -n "$command_text" ]; then
     cat >"$tmp/$alias_name" <<EOF
@@ -63,7 +63,7 @@ SH
 test_cast_lists_stored_spells() {
   tmp=$(make_tempdir)
   make_stub_cast_list "$tmp" fire "cast fire"
-  PATH="$tmp:$PATH" run_cmd env CAST_STORE="$tmp/memorize-command" "$ROOT_DIR/spells/menu/cast" --list
+  PATH="$tmp:$PATH" run_cmd env CAST_STORE="$tmp/memorize-spell" "$ROOT_DIR/spells/menu/cast" --list
   assert_success && assert_output_contains "$(printf 'fire\tcast fire')"
 }
 
@@ -71,7 +71,7 @@ test_cast_prints_empty_message() {
   tmp=$(make_tempdir)
   make_stub_cast_list "$tmp" "" ""
   make_stub_require "$tmp"
-  PATH="$tmp:$PATH" run_cmd env CAST_STORE="$tmp/memorize-command" "$ROOT_DIR/spells/menu/cast"
+  PATH="$tmp:$PATH" run_cmd env CAST_STORE="$tmp/memorize-spell" "$ROOT_DIR/spells/menu/cast"
   assert_success && assert_output_contains "No spells are available to cast."
 }
 
@@ -80,7 +80,7 @@ test_cast_sends_entries_to_menu() {
   make_stub_cast_list "$tmp" fizz "cast fizz"
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
-  PATH="$tmp:$PATH" run_cmd env CAST_STORE="$tmp/memorize-command" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/cast"
+  PATH="$tmp:$PATH" run_cmd env CAST_STORE="$tmp/memorize-spell" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/cast"
   assert_success
   if [ ! -f "$tmp/log" ]; then
     TEST_FAILURE_REASON="menu was not invoked"

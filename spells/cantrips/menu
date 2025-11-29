@@ -263,9 +263,14 @@ is_divider() {
 
 render_divider() {
         # Render a horizontal divider line (~16 chars, centered within menu width)
+        # Menu width is based on max item width or window width (whichever is less)
         menu_width=$((max_name_length + 2))
         if [ "$max_command_length" -gt 0 ]; then
                 menu_width=$((menu_width + max_command_length + 1))
+        fi
+        # Limit menu_width to window_width
+        if [ "$window_width" -gt 0 ] && [ "$menu_width" -gt "$window_width" ]; then
+                menu_width=$window_width
         fi
         # Fixed divider width of 16 chars (or menu_width if smaller)
         divider_width=16

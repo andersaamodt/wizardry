@@ -1,7 +1,7 @@
 #!/bin/sh
 
-# This spell memorizes a spell to the Cast menu.
-# Memorized spells appear in the Cast menu for quick access.
+# This spell forgets (removes) a spell from the Cast menu.
+# Use this to remove memorized spells from the Cast menu.
 
 set -eu
 
@@ -38,10 +38,10 @@ usage() {
 Usage: $SCRIPT_NAME SPELL_NAME
        $SCRIPT_NAME --help
 
-Add a spell to the Cast menu so it appears when running 'cast'.
+Remove a spell from the Cast menu.
 
 Arguments:
-  SPELL_NAME  The name of the spell to memorize.
+  SPELL_NAME  The name of the spell to forget.
 
 Examples:
   $SCRIPT_NAME my-custom-spell
@@ -73,9 +73,8 @@ if [ -z "$MEMORIZER" ] || [ ! -x "$MEMORIZER" ]; then
         exit 1
 fi
 
-if "$MEMORIZER" add "$spell_name"; then
-        printf "Memorized: %s\n" "$spell_name"
+if "$MEMORIZER" remove "$spell_name"; then
+        printf "Forgotten: %s\n" "$spell_name"
         exit 0
 fi
-printf '%s\n' "Unable to memorize spell '$spell_name'." >&2
 exit 1

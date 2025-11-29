@@ -165,25 +165,30 @@ prompt_for_input() {
 
 usage() {
         cat <<USAGE
-Usage: $SCRIPT_NAME [--category CATEGORY] [NAME COMMAND...]
+Usage: $SCRIPT_NAME [--category CATEGORY] [--dir DIR] [NAME COMMAND...]
        $SCRIPT_NAME
 
 Scribe (create) a custom spell in your spellbook, or provide
 arguments directly to scribe non-interactively.
 
-Without arguments, prompts for name, command text, and optionally a category.
+Without arguments, prompts for command text first, then name, and optionally a category.
 With arguments, uses NAME and remaining args as COMMAND.
 
 Options:
   --category CATEGORY  Place the spell in a category folder within ~/.spellbook.
                        If the category doesn't exist, it will be created and
                        added to your PATH.
+  --dir DIR            Create the spell directly in DIR instead of ~/.spellbook.
+                       Used when scribing in a specific subfolder.
 
 Custom spells are stored as executable scripts in ~/.spellbook
 (or \$XDG_DATA_HOME/wizardry/spellbook). Each spell is a separate
 file with the name as filename and the command as content.
 USAGE
 }
+
+# Override directory (for creating spells in subfolders)
+override_dir=""
 
 # Parse arguments
 while [ "$#" -gt 0 ]; do
@@ -206,6 +211,18 @@ while [ "$#" -gt 0 ]; do
                         validate_category "$current_category" || exit 1
                         shift
                         ;;
+                --dir)
+                        if [ "$#" -lt 2 ]; then
+                                printf '%s\n' "$SCRIPT_NAME: --dir requires a value." >&2
+                                exit 1
+                        fi
+                        override_dir=$2
+                        shift 2
+                        ;;
+                --dir=*)
+                        override_dir=${1#*=}
+                        shift
+                        ;;
                 --)
                         shift
                         break
@@ -219,6 +236,13 @@ while [ "$#" -gt 0 ]; do
                         ;;
         esac
 done
+
+# If override_dir is set, use it instead of spell_home
+if [ -n "$override_dir" ]; then
+        spell_home=$override_dir
+        # Clear category since we're using a specific dir
+        current_category=""
+fi
 
 # Non-interactive mode with arguments
 if [ "$#" -ge 2 ]; then
@@ -239,17 +263,17 @@ if [ "$#" -eq 1 ]; then
         exit 1
 fi
 
-# Interactive mode
-cmd_name=$(prompt_for_input "Name: ")
+# Interactive mode - ask for command FIRST, then name
 cmd_text=$(prompt_for_input "Command: ")
+cmd_name=$(prompt_for_input "Name: ")
 
 if [ -z "$cmd_name" ] || [ -z "$cmd_text" ]; then
         printf '%s\n' "A name and command are required." >&2
         exit 1
 fi
 
-# If no category was provided via --category, ask if user wants to categorize
-if [ -z "$current_category" ]; then
+# If no category was provided via --category or --dir, ask if user wants to categorize
+if [ -z "$current_category" ] && [ -z "$override_dir" ]; then
         printf 'Would you like to categorize this spell? [y/N] ' >&2
         read -r categorize_answer
         case $categorize_answer in

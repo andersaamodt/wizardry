@@ -3,11 +3,11 @@
 
 set -eu
 
-cast_store=${CAST_STORE-memorize-command}
+cast_store=${CAST_STORE-memorize-spell}
 if has "$cast_store"; then
         cast_store=$(where "$cast_store")
 else
-        warn "cast: memorize-command helper is missing."
+        warn "cast: memorize-spell helper is missing."
         exit 1
 fi
 

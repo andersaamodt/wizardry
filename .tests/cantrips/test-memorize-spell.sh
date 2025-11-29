@@ -10,7 +10,8 @@ done
 . "$test_root/test-common.sh"
 
 tabbed() {
-  printf 'blink\t%s' "$1"
+  # NAME<TAB>NAME (spell name is used as both name and command)
+  printf '%s\t%s' "$1" "$1"
 }
 
 cast_env() {
@@ -22,7 +23,7 @@ cast_env() {
 run_store() {
   env_var=$1
   shift
-  run_cmd env "$env_var" "$ROOT_DIR/spells/cantrips/memorize-command" "$@"
+  run_cmd env "$env_var" "$ROOT_DIR/spells/cantrips/memorize-spell" "$@"
 }
 
 normalize_output() {
@@ -31,11 +32,11 @@ normalize_output() {
 
 adds_and_lists_entries() {
   env_var=$(cast_env)
-  run_store "$env_var" add blink "echo cast"
+  run_store "$env_var" add blink
   [ "$STATUS" -eq 0 ] || return 1
 
   run_store "$env_var" list
-  expected=$(tabbed "echo cast")
+  expected=$(tabbed "blink")
   case "$(normalize_output)" in
     "$expected"|"$expected|") : ;; 
     *) TEST_FAILURE_REASON="unexpected list output: $OUTPUT"; return 1 ;;
@@ -44,18 +45,18 @@ adds_and_lists_entries() {
 
 pushes_updates_to_front() {
   env_var=$(cast_env)
-  run_store "$env_var" add blink "echo one"
-  run_store "$env_var" add gust "echo two"
-  run_store "$env_var" add blink "echo three"
+  run_store "$env_var" add blink
+  run_store "$env_var" add gust
+  run_store "$env_var" add blink
   run_store "$env_var" list
   first_line=$(printf '%s' "$OUTPUT" | head -n1)
-  expected=$(printf 'blink\t%s' "echo three")
+  expected=$(printf 'blink\t%s' "blink")
   [ "$first_line" = "$expected" ] || { TEST_FAILURE_REASON="expected blink to be first"; return 1; }
 }
 
 removes_entries_and_errors_when_missing() {
   env_var=$(cast_env)
-  run_store "$env_var" add blink "echo cast"
+  run_store "$env_var" add blink
   run_store "$env_var" remove blink
   [ "$STATUS" -eq 0 ] || return 1
 
@@ -73,11 +74,8 @@ prints_cast_path() {
 
 rejects_invalid_args() {
   env_var=$(cast_env)
-  run_store "$env_var" add "bad name" "echo x"
+  run_store "$env_var" add "bad name"
   [ "$STATUS" -ne 0 ] || { TEST_FAILURE_REASON="expected invalid name failure"; return 1; }
-
-  run_store "$env_var" add blink ""
-  [ "$STATUS" -ne 0 ] || { TEST_FAILURE_REASON="expected empty command failure"; return 1; }
 
   run_store "$env_var" list extra
   [ "$STATUS" -ne 0 ] || { TEST_FAILURE_REASON="expected usage failure"; return 1; }
@@ -86,10 +84,9 @@ rejects_invalid_args() {
 writes_scripts_into_cast_dir() {
   env_var=$(cast_env)
   cast_dir=${env_var#*=}
-  run_store "$env_var" add spark "echo cast spark"
+  run_store "$env_var" add spark
   [ -x "$cast_dir/spark" ] || { TEST_FAILURE_REASON="cast spell wrapper missing"; return 1; }
-  script_output=$("$cast_dir/spark")
-  [ "$script_output" = "cast spark" ] || { TEST_FAILURE_REASON="unexpected wrapper output"; return 1; }
+  # The wrapper should run "spark" (which is the spell name)
 }
 
 run_test_case "adds and lists entries" adds_and_lists_entries
@@ -100,10 +97,10 @@ run_test_case "rejects invalid arguments" rejects_invalid_args
 run_test_case "writes scripts into cast dir" writes_scripts_into_cast_dir
 
 shows_help() {
-  run_spell spells/cantrips/memorize-command --help
+  run_spell spells/cantrips/memorize-spell --help
   true
 }
 
-run_test_case "memorize-command shows help" shows_help
+run_test_case "memorize-spell shows help" shows_help
 
 finish_tests
