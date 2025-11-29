@@ -569,12 +569,12 @@ USER_FOLDERS
                                 done
                         fi
                         
-                        # List custom spells from ~/.spellbook/<category> with light blue (cyan) color
+                        # List custom spells from ~/.spellbook/<category> with yellow color
                         if [ -d "$custom_dir" ]; then
                                 for spell in $(find "$custom_dir" -maxdepth 1 -type f -perm -111 2>/dev/null | sort); do
                                         spell_name=$(basename "$spell")
-                                        # Use CYAN for custom spell names
-                                        set -- "$@" "${CYAN}${spell_name}${RESET}%printf '\\n'; spell-menu $spell_name"
+                                        # Use YELLOW for custom spell names (distinct from CYAN highlight)
+                                        set -- "$@" "${YELLOW}${spell_name}${RESET}%printf '\\n'; spell-menu $spell_name"
                                 done
                         fi
                         

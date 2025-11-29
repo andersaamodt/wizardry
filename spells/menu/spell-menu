@@ -103,26 +103,6 @@ is_custom_spell() {
         return 1
 }
 
-remove_custom_spell() {
-        cmd_name=$1
-        # Check in spell_home root
-        script_path="$spell_home/$cmd_name"
-        if [ -f "$script_path" ]; then
-                rm -f "$script_path"
-                return 0
-        fi
-        # Check in spell_home subfolders
-        for subdir in "$spell_home"/*; do
-                [ -d "$subdir" ] || continue
-                script_path="$subdir/$cmd_name"
-                if [ -f "$script_path" ]; then
-                        rm -f "$script_path"
-                        return 0
-                fi
-        done
-        return 1
-}
-
 # Check if a spell has an install() function (making it installable)
 # Uses the is-installable imp if available, otherwise falls back to inline check
 is_installable() {
@@ -161,10 +141,9 @@ usage() {
 Usage: spell-menu SPELLNAME
        spell-menu --cast COMMAND
        spell-menu --help-spell COMMAND
-       spell-menu --delete NAME
        spell-menu --install COMMAND
 
-Display an action menu for a spell with options to cast, memorize, get help, or delete.
+Display an action menu for a spell with options to cast, memorize, get help, or erase.
 
 Arguments:
   SPELLNAME        The name of the spell or command to show the menu for
@@ -181,16 +160,6 @@ case ${1-} in
         --help-spell)
                 shift
                 eval "$* --help" || true
-                exit 0
-                ;;
-        --delete)
-                shift
-                name=$1
-                if remove_custom_spell "$name"; then
-                        printf "Erased spell '%s'.\n" "$name"
-                else
-                        printf "Failed to erase spell '%s'.\n" "$name" >&2
-                fi
                 exit 0
                 ;;
         --install)
@@ -256,10 +225,11 @@ while :; do
         
         if is_custom_spell "$name"; then
                 # Custom spells (in ~/.spellbook or subfolders) show Erase spell option
+                # Use erase-spell which asks for confirmation then exits the menu
                 if [ -n "$help_item" ]; then
-                        set -- "Cast now%$escaped_command" "$cast_toggle" "$help_item" "Erase spell%spell-menu --delete '$name'" "$exit_item"
+                        set -- "Cast now%$escaped_command" "$cast_toggle" "$help_item" "Erase spell%erase-spell '$name' && exit $menu_escape_status" "$exit_item"
                 else
-                        set -- "Cast now%$escaped_command" "$cast_toggle" "Erase spell%spell-menu --delete '$name'" "$exit_item"
+                        set -- "Cast now%$escaped_command" "$cast_toggle" "Erase spell%erase-spell '$name' && exit $menu_escape_status" "$exit_item"
                 fi
         elif is_installable "$command"; then
                 # Show Learn option for spells with install() function

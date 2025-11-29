@@ -145,6 +145,11 @@ trap 'cleanup' EXIT
 max_name_length=0
 menu_length=0
 
+# Function to strip ANSI escape codes for length calculation
+strip_ansi() {
+        printf '%s' "$1" | sed 's/\x1b\[[0-9;]*m//g'
+}
+
 for option in "$@"
 do
         label=${option%%\%*}
@@ -158,7 +163,9 @@ do
         esac
         printf '%s\n' "$label" >>"$items_file"
         printf '%s\n' "$command" >>"$commands_file"
-        length=$(printf '%s' "$label" | wc -c | tr -d ' ')
+        # Strip ANSI codes before calculating visible length
+        clean_label=$(strip_ansi "$label")
+        length=$(printf '%s' "$clean_label" | wc -c | tr -d ' ')
         if [ "$length" -gt "$max_name_length" ]; then
                 max_name_length=$length
         fi
@@ -349,35 +356,44 @@ render_row() {
                 truncated_command=''
         fi
 
+        # Calculate visible length (without ANSI codes) for proper padding
+        clean_label=$(strip_ansi "$label")
+        visible_length=$(printf '%s' "$clean_label" | wc -c | tr -d ' ')
+        # Calculate extra padding needed to compensate for invisible ANSI codes
+        raw_length=$(printf '%s' "$label" | wc -c | tr -d ' ')
+        ansi_extra=$((raw_length - visible_length))
+        # Adjust the padding width to account for ANSI codes in label
+        adjusted_width=$((max_name_length + ansi_extra))
+
         target_row=$((menu_row + row_index - 1))
         if move-cursor "$menu_column" "$target_row"; then
                 printf '\033[K'
                 if [ "$highlight" -eq 1 ]; then
                         if [ "$max_command_length" -gt 0 ]; then
-                                printf '%b> %-*s%b %b%-*s%b' "$CYAN" "$max_name_length" "$label" "$RESET" "$GREY" "$max_command_length" "$truncated_command" "$RESET"
+                                printf '%b> %-*s%b %b%-*s%b' "$CYAN" "$adjusted_width" "$label" "$RESET" "$GREY" "$max_command_length" "$truncated_command" "$RESET"
                         else
-                                printf '%b> %-*s%b' "$CYAN" "$max_name_length" "$label" "$RESET"
+                                printf '%b> %-*s%b' "$CYAN" "$adjusted_width" "$label" "$RESET"
                         fi
                 else
                         if [ "$max_command_length" -gt 0 ]; then
-                                printf '  %-*s %b%-*s%b' "$max_name_length" "$label" "$GREY" "$max_command_length" "$truncated_command" "$RESET"
+                                printf '  %-*s %b%-*s%b' "$adjusted_width" "$label" "$GREY" "$max_command_length" "$truncated_command" "$RESET"
                         else
-                                printf '  %-*s' "$max_name_length" "$label"
+                                printf '  %-*s' "$adjusted_width" "$label"
                         fi
                 fi
                 printf '\r'
         else
                 if [ "$highlight" -eq 1 ]; then
                         if [ "$max_command_length" -gt 0 ]; then
-                                printf '%b> %-*s%b %b%-*s%b\n' "$CYAN" "$max_name_length" "$label" "$RESET" "$GREY" "$max_command_length" "$truncated_command" "$RESET"
+                                printf '%b> %-*s%b %b%-*s%b\n' "$CYAN" "$adjusted_width" "$label" "$RESET" "$GREY" "$max_command_length" "$truncated_command" "$RESET"
                         else
-                                printf '%b> %-*s%b\n' "$CYAN" "$max_name_length" "$label" "$RESET"
+                                printf '%b> %-*s%b\n' "$CYAN" "$adjusted_width" "$label" "$RESET"
                         fi
                 else
                         if [ "$max_command_length" -gt 0 ]; then
-                                printf '  %-*s %b%-*s%b\n' "$max_name_length" "$label" "$GREY" "$max_command_length" "$truncated_command" "$RESET"
+                                printf '  %-*s %b%-*s%b\n' "$adjusted_width" "$label" "$GREY" "$max_command_length" "$truncated_command" "$RESET"
                         else
-                                printf '  %-*s\n' "$max_name_length" "$label"
+                                printf '  %-*s\n' "$adjusted_width" "$label"
                         fi
                 fi
         fi
