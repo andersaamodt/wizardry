@@ -168,7 +168,7 @@ run_test_case "spellbook scribe command" test_scribe_records_command
 run_test_case "spellbook scribes multiple commands" test_scribe_multiple_commands
 run_test_case "spellbook accepts path argument" test_path_argument_accepted
 
-# Test ESC and Exit behavior for both nested and unnested scenarios
+# Test ESC and Exit behavior - menu exits properly when escape status returned
 test_esc_exit_behavior() {
   stub_dir=$(make_stub_dir)
   write_memorize_command_stub "$stub_dir"
@@ -182,35 +182,25 @@ exit 113
 SH
   chmod +x "$stub_dir/menu"
   
-  # Create exit-label stub
+  
   cat >"$stub_dir/exit-label" <<'SH'
 #!/bin/sh
-if [ "${WIZARDRY_SUBMENU-}" = "1" ]; then printf '%s' "Back"; else printf '%s' "Exit"; fi
+printf '%s' "Exit"
 SH
   chmod +x "$stub_dir/exit-label"
   
-  # Test 1: Top-level (unnested) - should show "Exit"
+  
   run_cmd env PATH="$stub_dir:$PATH" MENU_LOG="$stub_dir/log" "$ROOT_DIR/spells/menu/spellbook"
-  assert_success || { TEST_FAILURE_REASON="unnested exit failed"; return 1; }
+  assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
   
   args=$(cat "$stub_dir/log")
   case "$args" in
     *"Exit%exit 113"*) : ;;
-    *) TEST_FAILURE_REASON="unnested should show Exit label: $args"; return 1 ;;
+    *) TEST_FAILURE_REASON="menu should show Exit label: $args"; return 1 ;;
   esac
   
-  # Test 2: As submenu (nested) - should show "Back"
-  : >"$stub_dir/log"
-  run_cmd env PATH="$stub_dir:$PATH" MENU_LOG="$stub_dir/log" WIZARDRY_SUBMENU=1 "$ROOT_DIR/spells/menu/spellbook"
-  assert_success || { TEST_FAILURE_REASON="nested exit failed"; return 1; }
-  
-  args=$(cat "$stub_dir/log")
-  case "$args" in
-    *"Back%exit 113"*) : ;;
-    *) TEST_FAILURE_REASON="nested should show Back label: $args"; return 1 ;;
-  esac
 }
 
-run_test_case "spellbook ESC/Exit handles nested and unnested" test_esc_exit_behavior
+run_test_case "spellbook ESC/Exit behavior" test_esc_exit_behavior
 
 finish_tests

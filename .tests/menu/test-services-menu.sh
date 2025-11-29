@@ -45,15 +45,15 @@ test_services_menu_presents_actions() {
   # Stub exit-label to return "Back" for submenu behavior
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
-if [ "${WIZARDRY_SUBMENU-}" = "1" ]; then printf '%s' "Back"; else printf '%s' "Exit"; fi
+printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
   # Test as submenu (as it would be called from system-menu)
-  run_cmd env WIZARDRY_SUBMENU=1 PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/services-menu"
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/services-menu"
   assert_success
   args=$(cat "$tmp/log")
   case "$args" in
-    *"Services Menu:"*"Start a service%start-service"*"Stop a service%stop-service"*"Restart a service%restart-service"*"Enable a service at boot%enable-service"*"Disable a service at boot%disable-service"*"Check service status%service-status"*"Check if a service is installed%is-service-installed"*"Remove a service%remove-service"*"Install service from template%install-service-template"*"Back%exit 113"* ) : ;; 
+    *"Services Menu:"*"Start a service%start-service"*"Stop a service%stop-service"*"Restart a service%restart-service"*"Enable a service at boot%enable-service"*"Disable a service at boot%disable-service"*"Check service status%service-status"*"Check if a service is installed%is-service-installed"*"Remove a service%remove-service"*"Install service from template%install-service-template"*"Exit%exit 113"* ) : ;; 
     *) TEST_FAILURE_REASON="menu actions missing: $args"; return 1 ;;
   esac
 }
@@ -61,42 +61,32 @@ SH
 run_test_case "services-menu validates dependencies" test_services_menu_checks_dependencies
 run_test_case "services-menu sends service actions to menu" test_services_menu_presents_actions
 
-# Test ESC and Exit behavior for both nested and unnested scenarios
+# Test ESC and Exit behavior - menu exits properly when escape status returned
 test_esc_exit_behavior() {
   tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
   
-  # Create exit-label stub
+  
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
-if [ "${WIZARDRY_SUBMENU-}" = "1" ]; then printf '%s' "Back"; else printf '%s' "Exit"; fi
+printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
   
-  # Test 1: Top-level (unnested) - should show "Exit"
+  
   run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/services-menu"
-  assert_success || { TEST_FAILURE_REASON="unnested exit failed"; return 1; }
+  assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
   
   args=$(cat "$tmp/log")
   case "$args" in
     *"Exit%exit 113"*) : ;;
-    *) TEST_FAILURE_REASON="unnested should show Exit label: $args"; return 1 ;;
+    *) TEST_FAILURE_REASON="menu should show Exit label: $args"; return 1 ;;
   esac
   
-  # Test 2: As submenu (nested) - should show "Back"
-  : >"$tmp/log"
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_SUBMENU=1 "$ROOT_DIR/spells/menu/services-menu"
-  assert_success || { TEST_FAILURE_REASON="nested exit failed"; return 1; }
-  
-  args=$(cat "$tmp/log")
-  case "$args" in
-    *"Back%exit 113"*) : ;;
-    *) TEST_FAILURE_REASON="nested should show Back label: $args"; return 1 ;;
-  esac
 }
 
-run_test_case "services-menu ESC/Exit handles nested and unnested" test_esc_exit_behavior
+run_test_case "services-menu ESC/Exit behavior" test_esc_exit_behavior
 
 shows_help() {
   run_spell spells/menu/services-menu --help

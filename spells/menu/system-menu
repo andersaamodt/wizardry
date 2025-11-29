@@ -36,12 +36,6 @@ if ! require menu "The system menu needs the 'menu' command to present options."
   exit 1
 fi
 
-# Add visual spacing before launching a submenu command
-launch_submenu() {
-  printf '\n'
-  WIZARDRY_SUBMENU=1 "$@"
-}
-
 # Detect whether we are running on NixOS to offer system-specific actions.
 nixos_rebuild=""
 if [ -r /etc/os-release ] && grep -q '^ID=nixos' /etc/os-release; then
@@ -49,7 +43,7 @@ if [ -r /etc/os-release ] && grep -q '^ID=nixos' /etc/os-release; then
 fi
 
 display_menu() {
-  services="Manage services%launch_submenu services-menu"
+  services="Manage services%services-menu"
   verify_posix="Verify POSIX spells%verify-posix"
   update_wizardry="Update wizardry%update-wizardry"
   test_suite="Test all wizardry spells%$repo_dir/spells/system/test-magic"
