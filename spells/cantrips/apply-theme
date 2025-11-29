@@ -2,41 +2,10 @@
 
 # This spell defines semantic color names for the wizardry interface.
 # It imports the base colors palette and maps them to named UI purposes.
-# Source this script to use themed colors like MENU_COMMAND and MENU_HIGHLIGHT.
+# You must source this script with '. apply-theme' to use it.
+# Example: printf '%sSelect an option:%s\n' "$MENU_HIGHLIGHT" "$RESET"
 
 set -eu
-
-show_usage() {
-	cat <<'USAGE'
-Usage: . apply-theme
-
-Define semantic color variables for wizardry's user interface. This spell
-must be sourced (not executed) to make the color variables available.
-
-Semantic colors defined:
-  MENU_COMMAND    - Color for menu command text
-  MENU_HIGHLIGHT  - Color for highlighted/selected items
-  MENU_TITLE      - Color for menu titles and headers
-  MENU_BORDER     - Color for menu borders and separators
-  MENU_DISABLED   - Color for disabled or unavailable items
-  ERROR_TEXT      - Color for error messages
-  SUCCESS_TEXT    - Color for success messages
-  WARNING_TEXT    - Color for warning messages
-  PROMPT_TEXT     - Color for interactive prompts
-  SPELL_NAME      - Color for spell names in output
-
-Example:
-  . apply-theme
-  printf '%sSelect an option:%s\n' "$MENU_HIGHLIGHT" "$RESET"
-USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-	show_usage
-	exit 0
-	;;
-esac
 
 # Source the base colors palette.
 # This gives us access to RED, GREEN, BLUE, CYAN, YELLOW, PURPLE, etc.
@@ -47,7 +16,7 @@ elif command -v colors >/dev/null 2>&1; then
 	. "$(command -v colors)"
 else
 	# Fallback: define empty values so scripts don't break.
-	RESET='' RED='' GREEN='' YELLOW='' BLUE='' PURPLE='' CYAN='' WHITE='' 
+	RESET='' RED='' GREEN='' YELLOW='' BLUE='' PURPLE='' CYAN='' WHITE=''
 	BOLD='' BRIGHT_CYAN='' BRIGHT_YELLOW='' GREY=''
 fi
 
@@ -71,9 +40,3 @@ WARNING_TEXT="$YELLOW"
 
 PROMPT_TEXT="$BRIGHT_YELLOW"
 SPELL_NAME="$PURPLE"
-
-# Export all theme variables so subshells can use them.
-
-export MENU_COMMAND MENU_HIGHLIGHT MENU_TITLE MENU_BORDER MENU_DISABLED
-export ERROR_TEXT SUCCESS_TEXT WARNING_TEXT
-export PROMPT_TEXT SPELL_NAME
