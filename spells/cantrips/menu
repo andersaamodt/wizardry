@@ -104,6 +104,14 @@ if [ "${1-}" = "--spell-mode" ]; then
         shift
 fi
 
+# Check for --start-selection flag (start cursor on specific item)
+start_selection=${MENU_START_SELECTION-1}
+if [ "${1-}" = "--start-selection" ]; then
+        shift
+        start_selection=${1-1}
+        shift
+fi
+
 if [ "$#" -lt 2 ]; then
         if command -v main-menu >/dev/null 2>&1; then
                 main-menu
@@ -163,7 +171,18 @@ if [ "$menu_length" -eq 0 ]; then
         exit 1
 fi
 
+# Use start_selection if valid, otherwise default to 1
 selected=1
+case $start_selection in
+        ''|*[!0-9]*)
+                selected=1
+                ;;
+        *)
+                if [ "$start_selection" -ge 1 ] && [ "$start_selection" -le "$menu_length" ]; then
+                        selected=$start_selection
+                fi
+                ;;
+esac
 menu_column=1
 menu_row=1
 menu_drawn=0

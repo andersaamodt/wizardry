@@ -226,10 +226,13 @@ fi
 escaped_command=$(printf '%s' "$command" | sed "s/'/'\\\\''/g")
 
 first_run=1
+start_selection=1
 
 while :; do
         if [ "$first_run" -eq 0 ]; then
                 printf '\n'
+                # After first run (toggle actions), start on the Memorize/Forget item (item 2)
+                start_selection=2
         else
                 first_run=0
         fi
@@ -274,7 +277,7 @@ while :; do
                 fi
         fi
         
-        MENU_ESCAPE_STATUS=$menu_escape_status menu "Spell: $name" "$@"
+        MENU_ESCAPE_STATUS=$menu_escape_status MENU_START_SELECTION=$start_selection menu "Spell: $name" "$@"
         status=$?
         if [ "$status" -eq "$menu_escape_status" ]; then
                 break
