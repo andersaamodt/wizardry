@@ -1,6 +1,6 @@
 #!/bin/sh
-# This spell interactively creates a custom command in the spellbook.
-# It prompts for name and command text, then records the command.
+# This spell scribes (creates) a custom spell in your spellbook.
+# It prompts for name, command text, and optionally a category.
 
 set -eu
 
@@ -24,6 +24,9 @@ resolve_spell_home() {
 }
 
 spell_home=$(resolve_spell_home)
+
+# Category can be passed via --category argument
+current_category=""
 
 ensure_parent_dir() {
         file=$1
@@ -63,21 +66,75 @@ validate_command() {
         fi
 }
 
+# Validate category name (folder name)
+validate_category() {
+        cat_name=$1
+        case $cat_name in
+        ''|*[!A-Za-z0-9._-]*)
+                printf '%s\n' "$SCRIPT_NAME: category names may contain only letters, digits, dots, underscores, and dashes." >&2
+                return 1
+                ;;
+        -*)
+                printf '%s\n' "$SCRIPT_NAME: category names may not begin with a dash." >&2
+                return 1
+                ;;
+        esac
+}
+
 spell_path() {
-        printf '%s/%s' "$spell_home" "$1"
+        if [ -n "$current_category" ]; then
+                printf '%s/%s/%s' "$spell_home" "$current_category" "$1"
+        else
+                printf '%s/%s' "$spell_home" "$1"
+        fi
 }
 
 write_spell_script() {
         script_name=$1
         cmd_text=$2
-        ensure_parent_dir "$(spell_path "$script_name")"
-        mkdir -p "$spell_home"
+        target_path=$(spell_path "$script_name")
+        ensure_parent_dir "$target_path"
+        if [ -n "$current_category" ]; then
+                mkdir -p "$spell_home/$current_category"
+        else
+                mkdir -p "$spell_home"
+        fi
         escaped_cmd=$(printf '%s' "$cmd_text" | sed "s/'/'\\''/g")
-        cat >"$(spell_path "$script_name")" <<EOF_SCRIPT
+        cat >"$target_path" <<EOF_SCRIPT
 #!/bin/sh
 exec sh -c '$escaped_cmd' "\$0" "\$@"
 EOF_SCRIPT
-        chmod +x "$(spell_path "$script_name")"
+        chmod +x "$target_path"
+}
+
+# Add a new category folder to PATH using learn-spellbook
+add_category_to_path() {
+        cat_name=$1
+        cat_path="$spell_home/$cat_name"
+        
+        # Find learn-spellbook
+        if command -v learn-spellbook >/dev/null 2>&1; then
+                learn_spellbook=$(command -v learn-spellbook)
+        else
+                # Try relative path from this script
+                SCRIPT_SOURCE=$0
+                case $SCRIPT_SOURCE in
+                */*)
+                        SCRIPT_DIR=${SCRIPT_SOURCE%/*}
+                        ;;
+                *)
+                        SCRIPT_DIR=.
+                        ;;
+                esac
+                SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
+                learn_spellbook="$SCRIPT_DIR/learn-spellbook"
+                if [ ! -x "$learn_spellbook" ]; then
+                        printf '%s\n' "Note: learn-spellbook not found; category folder created but not added to PATH." >&2
+                        return 0
+                fi
+        fi
+        
+        "$learn_spellbook" add "$cat_path" 2>/dev/null || true
 }
 
 record_command() {
@@ -91,7 +148,11 @@ record_command() {
         done
         validate_name "$cmd_name" || return 1
         validate_command "$cmd" || return 1
-        mkdir -p "$spell_home"
+        if [ -n "$current_category" ]; then
+                mkdir -p "$spell_home/$current_category"
+        else
+                mkdir -p "$spell_home"
+        fi
         write_spell_script "$cmd_name" "$cmd"
 }
 
@@ -104,35 +165,71 @@ prompt_for_input() {
 
 usage() {
         cat <<USAGE
-Usage: $SCRIPT_NAME [NAME COMMAND...]
+Usage: $SCRIPT_NAME [--category CATEGORY] [NAME COMMAND...]
        $SCRIPT_NAME
 
-Interactively create a custom command in the spellbook, or provide
-arguments directly to scribe a command non-interactively.
+Scribe (create) a custom spell in your spellbook, or provide
+arguments directly to scribe non-interactively.
 
-Without arguments, prompts for name and command text.
+Without arguments, prompts for name, command text, and optionally a category.
 With arguments, uses NAME and remaining args as COMMAND.
 
-Custom commands are stored as executable scripts in ~/.spellbook
-(or \$XDG_DATA_HOME/wizardry/spellbook). Each command is a separate
+Options:
+  --category CATEGORY  Place the spell in a category folder within ~/.spellbook.
+                       If the category doesn't exist, it will be created and
+                       added to your PATH.
+
+Custom spells are stored as executable scripts in ~/.spellbook
+(or \$XDG_DATA_HOME/wizardry/spellbook). Each spell is a separate
 file with the name as filename and the command as content.
 USAGE
 }
 
-# Handle --help
-case ${1-} in
-        --help|-h)
-                usage
-                exit 0
-                ;;
-esac
+# Parse arguments
+while [ "$#" -gt 0 ]; do
+        case ${1-} in
+                --help|-h)
+                        usage
+                        exit 0
+                        ;;
+                --category)
+                        if [ "$#" -lt 2 ]; then
+                                printf '%s\n' "$SCRIPT_NAME: --category requires a value." >&2
+                                exit 1
+                        fi
+                        current_category=$2
+                        validate_category "$current_category" || exit 1
+                        shift 2
+                        ;;
+                --category=*)
+                        current_category=${1#*=}
+                        validate_category "$current_category" || exit 1
+                        shift
+                        ;;
+                --)
+                        shift
+                        break
+                        ;;
+                -*)
+                        printf '%s\n' "$SCRIPT_NAME: unknown option '$1'" >&2
+                        exit 1
+                        ;;
+                *)
+                        break
+                        ;;
+        esac
+done
 
 # Non-interactive mode with arguments
 if [ "$#" -ge 2 ]; then
         name=$1
         shift
         record_command "$name" "$@" || exit 1
-        printf "Scribed '%s' to %s.\n" "$name" "$spell_home"
+        if [ -n "$current_category" ]; then
+                printf "Scribed '%s' to %s/%s.\n" "$name" "$spell_home" "$current_category"
+        else
+                printf "Scribed '%s' to %s.\n" "$name" "$spell_home"
+        fi
         exit 0
 fi
 
@@ -151,5 +248,29 @@ if [ -z "$cmd_name" ] || [ -z "$cmd_text" ]; then
         exit 1
 fi
 
+# If no category was provided via --category, ask if user wants to categorize
+if [ -z "$current_category" ]; then
+        printf 'Would you like to categorize this spell? [y/N] ' >&2
+        read -r categorize_answer
+        case $categorize_answer in
+                y|Y|yes|YES)
+                        category_name=$(prompt_for_input "Category name: ")
+                        if [ -n "$category_name" ]; then
+                                validate_category "$category_name" || exit 1
+                                current_category=$category_name
+                                # Create the category folder and add to PATH if it's new
+                                if [ ! -d "$spell_home/$current_category" ]; then
+                                        mkdir -p "$spell_home/$current_category"
+                                        add_category_to_path "$current_category"
+                                fi
+                        fi
+                        ;;
+        esac
+fi
+
 record_command "$cmd_name" "$cmd_text" || exit 1
-printf "Scribed '%s' to %s.\n" "$cmd_name" "$spell_home"
+if [ -n "$current_category" ]; then
+        printf "Scribed '%s' to %s/%s.\n" "$cmd_name" "$spell_home" "$current_category"
+else
+        printf "Scribed '%s' to %s.\n" "$cmd_name" "$spell_home"
+fi

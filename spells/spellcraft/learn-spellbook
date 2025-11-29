@@ -1,7 +1,7 @@
 #!/bin/sh
 
-# This spell finds the wizardry installation path and updates PATH accordingly.
-# It resolves helper scripts alongside itself before delegating to menu.
+# This spell adds or removes a folder to your PATH permanently.
+# Use learn-spellbook to manage which directories are available in your shell.
 
 set -eu
 
@@ -39,38 +39,38 @@ fi
 
 if [ ! -x "$DETECT_RC_FILE" ]; then
         if [ "$detect_override" -eq 1 ]; then
-                printf '%s\n' "path-wizard: required helper '$DETECT_RC_FILE' is missing or not executable." >&2
+                printf '%s\n' "learn-spellbook: required helper '$DETECT_RC_FILE' is missing or not executable." >&2
                 exit 1
         fi
 
         if command -v detect-rc-file >/dev/null 2>&1; then
                 DETECT_RC_FILE=$(command -v detect-rc-file)
         else
-                printf '%s\n' "path-wizard: required helper '$DETECT_RC_FILE' is missing or not executable." >&2
+                printf '%s\n' "learn-spellbook: required helper '$DETECT_RC_FILE' is missing or not executable." >&2
                 exit 1
         fi
 fi
 
 if [ ! -x "$SCRIBE_SPELL" ]; then
         if [ "$scribe_override" -eq 1 ]; then
-                printf '%s\n' "path-wizard: required helper '$SCRIBE_SPELL' is missing or not executable." >&2
+                printf '%s\n' "learn-spellbook: required helper '$SCRIBE_SPELL' is missing or not executable." >&2
                 exit 1
         fi
 
         if command -v scribe-spell >/dev/null 2>&1; then
                 SCRIBE_SPELL=$(command -v scribe-spell)
         else
-                printf '%s\n' "path-wizard: required helper '$SCRIBE_SPELL' is missing or not executable." >&2
+                printf '%s\n' "learn-spellbook: required helper '$SCRIBE_SPELL' is missing or not executable." >&2
                 exit 1
         fi
 fi
 
 usage() {
         cat <<'USAGE' >&2
-Usage: path-wizard [-r|--recursive] [--dry-run] [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] add [DIRECTORY]
-       path-wizard [-r|--recursive] [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] remove DIRECTORY
-       path-wizard [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] remove-all
-       path-wizard [-r|--recursive] [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] status DIRECTORY
+Usage: learn-spellbook [-r|--recursive] [--dry-run] [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] add [DIRECTORY]
+       learn-spellbook [-r|--recursive] [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] remove DIRECTORY
+       learn-spellbook [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] remove-all
+       learn-spellbook [-r|--recursive] [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] status DIRECTORY
 
 Options:
   --dry-run    List paths that would be added without modifying any files
@@ -87,7 +87,7 @@ USAGE
 # so existing callers keep working even if they do not pass new flags.
 rc_file_override=""
 format="auto"
-platform="${PATH_WIZARD_PLATFORM-}"
+platform="${LEARN_SPELLBOOK_PLATFORM-}"
 recursive=0
 batch_add_file=""
 dry_run=0
@@ -108,7 +108,7 @@ while [ "$#" -gt 0 ]; do
                 ;;
         --rc-file)
                 if [ "$#" -lt 2 ]; then
-                        printf '%s\n' "path-wizard: --rc-file expects a file path" >&2
+                        printf '%s\n' "learn-spellbook: --rc-file expects a file path" >&2
                         usage
                         exit 1
                 fi
@@ -121,7 +121,7 @@ while [ "$#" -gt 0 ]; do
                 ;;
         --format)
                 if [ "$#" -lt 2 ]; then
-                        printf '%s\n' "path-wizard: --format expects a value" >&2
+                        printf '%s\n' "learn-spellbook: --format expects a value" >&2
                         usage
                         exit 1
                 fi
@@ -134,7 +134,7 @@ while [ "$#" -gt 0 ]; do
                 ;;
         --platform)
                 if [ "$#" -lt 2 ]; then
-                        printf '%s\n' "path-wizard: --platform expects a value" >&2
+                        printf '%s\n' "learn-spellbook: --platform expects a value" >&2
                         usage
                         exit 1
                 fi
@@ -148,7 +148,7 @@ while [ "$#" -gt 0 ]; do
         --batch-add-from-file)
                 # Internal flag: add all directories listed in file in single operation
                 if [ "$#" -lt 2 ]; then
-                        printf '%s\n' "path-wizard: --batch-add-from-file expects a file path" >&2
+                        printf '%s\n' "learn-spellbook: --batch-add-from-file expects a file path" >&2
                         exit 1
                 fi
                 batch_add_file=$2
@@ -163,7 +163,7 @@ while [ "$#" -gt 0 ]; do
                 break
                 ;;
         -*)
-                printf '%s\n' "path-wizard: unknown option '$1'" >&2
+                printf '%s\n' "learn-spellbook: unknown option '$1'" >&2
                 usage
                 exit 1
                 ;;
@@ -282,11 +282,11 @@ if [ "$batch_mode" -eq 1 ] && [ ! -f "$batch_add_file" ]; then
         exit 1
 fi
 
-# When requested, operate recursively by invoking path-wizard on each
+# When requested, operate recursively by invoking learn-spellbook on each
 # discovered directory.  This leverages the existing single-directory
 # implementation so we keep behaviour consistent across formats.
 if [ "$recursive" -eq 1 ]; then
-        tmp_file=$(mktemp "${TMPDIR:-/tmp}/path-wizard.XXXXXX") || {
+        tmp_file=$(mktemp "${TMPDIR:-/tmp}/learn-spellbook.XXXXXX") || {
                 printf '%s\n' "Error: Unable to enumerate directories under '$directory'." >&2
                 exit 1
         }
@@ -449,7 +449,7 @@ if [ -z "$rc_file" ]; then
 fi
 
 if [ -z "$rc_file" ]; then
-        printf '%s\n' "path-wizard: unable to determine a startup file." >&2
+        printf '%s\n' "learn-spellbook: unable to determine a startup file." >&2
         exit 1
 fi
 
@@ -500,7 +500,7 @@ run_maybe_sudo() {
                 elif command -v doas >/dev/null 2>&1; then
                         doas "$@"
                 else
-                        printf '%s\n' "path-wizard: sudo or doas required to modify '$rc_file'." >&2
+                        printf '%s\n' "learn-spellbook: sudo or doas required to modify '$rc_file'." >&2
                         exit 1
                 fi
         else
@@ -565,11 +565,11 @@ backup_rc_file_once() {
         backup="$rc_file.wizardry.$timestamp"
 
         if ! run_maybe_sudo cp "$rc_file" "$backup"; then
-                printf '%s\n' "path-wizard: unable to back up '$rc_file'." >&2
+                printf '%s\n' "learn-spellbook: unable to back up '$rc_file'." >&2
                 exit 1
         fi
 
-        printf '%s\n' "path-wizard: backed up '$rc_file' to '$backup'." >&2
+        printf '%s\n' "learn-spellbook: backed up '$rc_file' to '$backup'." >&2
         nix_backup_created=1
         return 0
 }
@@ -632,7 +632,7 @@ shell_add() {
         fi
         spell_name=$(spell_identifier_for_directory "$directory")
         if ! printf '%s\n' "$managed_export_line" | "$SCRIBE_SPELL" --rc-file "$rc_file" --spell "$spell_name" add; then
-                printf '%s\n' "path-wizard: unable to record the PATH entry." >&2
+                printf '%s\n' "learn-spellbook: unable to record the PATH entry." >&2
                 exit 1
         fi
         printf '%s\n' "Added '$directory' to PATH via '$rc_file'. Open a new shell or run '. %s' to pick up the change." "$rc_file"
@@ -756,7 +756,7 @@ shell_remove_all() {
         removed_count=0
         tmp_spells="${TMPDIR:-/tmp}/wizardry-spells.$$"
         
-        # Extract spell names from the rc file that look like path-wizard entries
+        # Extract spell names from the rc file that look like learn-spellbook entries
         # Format: # >>> <spell_name> >>>
         grep -o '# >>> path-[^>]*>>>' "$rc_file" 2>/dev/null | sed 's/# >>> //;s/ >>>//' | sort -u >"$tmp_spells" || true
         

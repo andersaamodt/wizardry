@@ -73,7 +73,16 @@ This spec helps scripts evolve into living, polished exemplars of communal knowl
 
 Most wizardry spells can assume that wizardry is installed (in `$PATH`) and that wizardry spells can be used. Spells used in the installation of wizardry itself are written without relying on other wizardry spells, since they might not be installed yet. These bootstrappable spells are `install` and spells in `spells/install/core/`.
 
-## Spellbook
+### Spellbook Terminology
+
+Wizardry uses specific terms for managing spells:
+
+* **Learn** — Some spells must be **learned** before they can be used. Use `spell --install` or `learn <path to spell>` to learn these spells (usually this means sourcing them in your RC file).
+* **Memorize** — **Memorized** spells appear in the Cast menu. Memorize a spell with `memorize <path to spell>` or from the Spellbook menu. Forget a spell the same ways with `memorize forget`.
+* **Scribe** — **Scribe** a new spell to create a custom spell script in `~/.spellbook`. Use `scribe-command` or the Spellbook menu to do this.
+* **Learn-spellbook** — Use `learn-spellbook` to add or remove a folder to your PATH permanently.
+
+### Spellbook
 
 The Spellbook is your personal grimoire for casting and organizing spells. Access it by typing `spellbook` or selecting it from the main menu.
 
@@ -92,7 +101,7 @@ Spell categories:
 * war
 * wards
 
-## Imps
+### Imps
 
 Imps are the smallest semantic building blocks in wizardry. They live in `spells/.imps/` and abstract common shell patterns into readable, well-documented microscripts.
 

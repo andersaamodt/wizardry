@@ -206,25 +206,25 @@ while :; do
         # Show checkbox for Cast menu visibility (toggleable)
         # Use standalone memorize-command instead of spell-menu flags
         if is_memorized "$name"; then
-                cast_toggle="[X] Show in Cast menu%memorize-command remove '$name'"
+                cast_toggle="[X] Forget%memorize-command remove '$name'"
         else
-                cast_toggle="[ ] Show in Cast menu%memorize-command add '$name' '$escaped_command'"
+                cast_toggle="[ ] Memorize%memorize-command add '$name' '$escaped_command'"
         fi
-        # Build menu items - Cast runs the command directly (using escaped version for safety)
+        # Build menu items - Cast now runs the command directly (using escaped version for safety)
         exit_label=$(exit-label)
         exit_item="${exit_label}%exit $menu_escape_status"
         if is_scribed_command "$name"; then
-                # Scribed (custom) commands show Delete option
-                set -- "Cast%$escaped_command" "$cast_toggle" "Help%$escaped_command --help" "Test spell%spell-menu --test '$name'" "Delete command%spell-menu --delete '$name'" "$exit_item"
+                # Scribed (custom) commands show Erase spell option
+                set -- "Cast now%$escaped_command" "$cast_toggle" "Help%$escaped_command --help" "Test spell%spell-menu --test '$name'" "Erase spell%spell-menu --delete '$name'" "$exit_item"
         elif is_installable "$command"; then
-                # Show Install option for spells with install() function
-                set -- "Cast%$escaped_command" "$cast_toggle" "Install to shell%spell-menu --install '$escaped_command'" "Help%$escaped_command --help" "Test spell%spell-menu --test '$name'" "$exit_item"
+                # Show Learn option for spells with install() function
+                set -- "Cast now%$escaped_command" "$cast_toggle" "Learn%spell-menu --install '$escaped_command'" "Help%$escaped_command --help" "Test spell%spell-menu --test '$name'" "$exit_item"
         else
-                # Built-in spells: no Delete option
-                set -- "Cast%$escaped_command" "$cast_toggle" "Help%$escaped_command --help" "Test spell%spell-menu --test '$name'" "$exit_item"
+                # Built-in spells: no Erase option
+                set -- "Cast now%$escaped_command" "$cast_toggle" "Help%$escaped_command --help" "Test spell%spell-menu --test '$name'" "$exit_item"
         fi
         
-        MENU_ESCAPE_STATUS=$menu_escape_status menu "Spell Menu:" "$@"
+        MENU_ESCAPE_STATUS=$menu_escape_status menu "Spell: $name" "$@"
         status=$?
         if [ "$status" -eq "$menu_escape_status" ]; then
                 break

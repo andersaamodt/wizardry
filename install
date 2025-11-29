@@ -77,9 +77,9 @@ case $PROMPT_DEFAULT in
 esac
 
 if [ -n "${WIZARDRY_INSTALL_PLATFORM-}" ]; then
-        PATH_WIZARD_PLATFORM=$WIZARDRY_INSTALL_PLATFORM
+        LEARN_SPELLBOOK_PLATFORM=$WIZARDRY_INSTALL_PLATFORM
         DETECT_RC_FILE_PLATFORM=$WIZARDRY_INSTALL_PLATFORM
-        export PATH_WIZARD_PLATFORM DETECT_RC_FILE_PLATFORM
+        export LEARN_SPELLBOOK_PLATFORM DETECT_RC_FILE_PLATFORM
 fi
 
 # Track whether we are running out of an existing checkout so local installs
@@ -275,12 +275,12 @@ fi
 
 # Now that the wizardry tree is available, point at the helper spells we rely
 # on to update PATH entries and ask for confirmation.
-PATH_WIZARD="$ABS_DIR/spells/system/path-wizard"
+LEARN_SPELLBOOK="$ABS_DIR/spells/spellcraft/learn-spellbook"
 DETECT_RC_FILE="$ABS_DIR/spells/divination/detect-rc-file"
 MEMORIZE="$ABS_DIR/spells/spellcraft/memorize"
 CORE_INSTALLER=${WIZARDRY_CORE_INSTALLER:-$ABS_DIR/spells/install/core/install-core}
 ASK_YN="$ABS_DIR/spells/cantrips/ask_yn"
-PATH_WIZARD_FLAGS=${PATH_WIZARD_FLAGS:---recursive}
+LEARN_SPELLBOOK_FLAGS=${LEARN_SPELLBOOK_FLAGS:---recursive}
 
 # Export environment variables for all helper spells so that they use the new
 # versions being installed, not any old versions that may be in PATH.
@@ -339,8 +339,8 @@ substep_msg() {
         printf '%s  ->%s %s\n' "$CYAN" "$RESET" "$*"
 }
 
-if [ ! -x "$PATH_WIZARD" ]; then
-        printf '%s\n' "Error: Expected helper '$PATH_WIZARD' is missing or not executable." >&2
+if [ ! -x "$LEARN_SPELLBOOK" ]; then
+        printf '%s\n' "Error: Expected helper '$LEARN_SPELLBOOK' is missing or not executable." >&2
         exit 1
 fi
 
@@ -420,7 +420,7 @@ do
                 continue
         fi
 
-        if "$PATH_WIZARD" $PATH_WIZARD_FLAGS status "$dir"; then
+        if "$LEARN_SPELLBOOK" $LEARN_SPELLBOOK_FLAGS status "$dir"; then
                 continue
         fi
         set -- "$@" "$dir"
@@ -559,7 +559,7 @@ if [ "$detect_platform_value" = "nixos" ] && [ "$detect_format_value" = "shell" 
                 if [ -f "$user_nix_config" ]; then
                         detect_rc_file_value=$user_nix_config
                         detect_format_value=nix
-                        # Export for path-wizard to use
+                        # Export for learn-spellbook to use
                         NIXOS_CONFIG=$user_nix_config
                         export NIXOS_CONFIG
                         success_msg "Using configuration file: $user_nix_config"
@@ -577,7 +577,7 @@ section_msg "Installation Plan"
 
 # Count how many directories will be added (for recursion display)
 total_path_additions=0
-if [ "$PATH_WIZARD_FLAGS" = "--recursive" ]; then
+if [ "$LEARN_SPELLBOOK_FLAGS" = "--recursive" ]; then
         for dir
         do
                 if [ -d "$dir" ]; then
@@ -593,7 +593,7 @@ info_msg "Will add $total_path_additions directories to your PATH"
 for dir
 do
         substep_msg "$dir"
-        if [ "$PATH_WIZARD_FLAGS" = "--recursive" ]; then
+        if [ "$LEARN_SPELLBOOK_FLAGS" = "--recursive" ]; then
                 substep_msg "  (and all subdirectories)"
         fi
 done
@@ -723,7 +723,7 @@ for dir
 do
         path_log=$(mktemp "${TMPDIR:-/tmp}/wizardry-path.XXXXXX") || exit 1
         info_msg "Updating $rc_destination..."
-        if "$PATH_WIZARD" $PATH_WIZARD_FLAGS add "$dir" >"$path_log" 2>&1; then
+        if "$LEARN_SPELLBOOK" $LEARN_SPELLBOOK_FLAGS add "$dir" >"$path_log" 2>&1; then
                 path_updates_made=1
         else
                 cat "$path_log" >&2
@@ -873,18 +873,18 @@ esac
 
 printf '\n%s==> Removing PATH entries...%s\n' "$CYAN" "$RESET"
 
-# Use path-wizard to remove PATH entries
-PATH_WIZARD="$INSTALL_DIR/spells/system/path-wizard"
-if [ -x "$PATH_WIZARD" ]; then
+# Use learn-spellbook to remove PATH entries
+LEARN_SPELLBOOK="$INSTALL_DIR/spells/spellcraft/learn-spellbook"
+if [ -x "$LEARN_SPELLBOOK" ]; then
         # Use remove-all to remove all wizardry-managed PATH entries at once
         # This is more reliable than iterating over directories (which might not exist)
-        if "$PATH_WIZARD" remove-all 2>/dev/null; then
+        if "$LEARN_SPELLBOOK" remove-all 2>/dev/null; then
                 printf '  %s✓%s Removed all wizardry PATH entries\n' "$GREEN" "$RESET"
         else
                 printf '  %sNote:%s No wizardry PATH entries found to remove\n' "$YELLOW" "$RESET"
         fi
 else
-        printf '  %sWarning:%s Could not find path-wizard; manual PATH cleanup may be needed\n' "$YELLOW" "$RESET"
+        printf '  %sWarning:%s Could not find learn-spellbook; manual PATH cleanup may be needed\n' "$YELLOW" "$RESET"
 fi
 
 # On NixOS, run nixos-rebuild to apply the configuration changes

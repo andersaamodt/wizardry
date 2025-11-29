@@ -1,6 +1,6 @@
 #!/bin/sh
 # Behavioral cases (derived from --help):
-# - path-wizard prints usage
+# - learn-spellbook prints usage
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/test-common.sh" ] && [ "$test_root" != "/" ]; do
@@ -10,16 +10,16 @@ done
 . "$test_root/test-common.sh"
 
 test_help() {
-  run_spell "spells/system/path-wizard" --help
-  assert_success && assert_error_contains "Usage: path-wizard"
+  run_spell "spells/spellcraft/learn-spellbook" --help
+  assert_success && assert_error_contains "Usage: learn-spellbook"
 }
 
 test_missing_detect_helper() {
-  # When DETECT_RC_FILE is explicitly set to a missing file, path-wizard should fail
+  # When DETECT_RC_FILE is explicitly set to a missing file, learn-spellbook should fail
   # Note: We create a stub detect-rc-file that doesn't exist to test this path
   stub_dir="$WIZARDRY_TMPDIR/detect-stub-dir"
   mkdir -p "$stub_dir"
-  # Create a wrapper script that sets DETECT_RC_FILE and runs path-wizard
+  # Create a wrapper script that sets DETECT_RC_FILE and runs learn-spellbook
   cat >"$stub_dir/test-script" <<'SCRIPT'
 #!/bin/sh
 export DETECT_RC_FILE="$1"
@@ -29,12 +29,12 @@ SCRIPT
   chmod +x "$stub_dir/test-script"
   
   run_cmd "$stub_dir/test-script" "$WIZARDRY_TMPDIR/missing-detect" \
-    "$ROOT_DIR/spells/system/path-wizard" --rc-file "$WIZARDRY_TMPDIR/rc" --format shell add
+    "$ROOT_DIR/spells/spellcraft/learn-spellbook" --rc-file "$WIZARDRY_TMPDIR/rc" --format shell add
   assert_failure && assert_error_contains "required helper"
 }
 
 test_unknown_option() {
-  run_spell "spells/system/path-wizard" --unknown
+  run_spell "spells/spellcraft/learn-spellbook" --unknown
   assert_failure && assert_error_contains "unknown option"
 }
 
@@ -47,14 +47,14 @@ printf 'platform=debian\nrc_file=%s\nformat=shell\n' "$WIZARDRY_TMPDIR/path_rc"
 EOF
   chmod +x "$detect_stub"
 
-  run_spell "spells/system/path-wizard" --rc-file "$rc" --format shell --platform debian add "$WIZARDRY_TMPDIR"
+  run_spell "spells/spellcraft/learn-spellbook" --rc-file "$rc" --format shell --platform debian add "$WIZARDRY_TMPDIR"
   assert_success
   assert_file_contains "$rc" "wizardry: path-"
   assert_file_contains "$rc" "export PATH=\"$WIZARDRY_TMPDIR:\$PATH\""
 }
 
 test_status_requires_directory() {
-  run_spell "spells/system/path-wizard" status
+  run_spell "spells/spellcraft/learn-spellbook" status
   assert_failure && assert_error_contains "expects a directory argument"
 }
 
@@ -63,10 +63,10 @@ test_shell_status_succeeds_when_present() {
   dir="$WIZARDRY_TMPDIR/shell_dir"
   mkdir -p "$dir"
 
-  PATH_WIZARD_PLATFORM=debian run_spell "spells/system/path-wizard" --rc-file "$rc" --format shell add "$dir"
+  PATH_WIZARD_PLATFORM=debian run_spell "spells/spellcraft/learn-spellbook" --rc-file "$rc" --format shell add "$dir"
   assert_success && assert_file_contains "$rc" "export PATH=\"$dir:\$PATH\""
 
-  PATH_WIZARD_PLATFORM=debian run_spell "spells/system/path-wizard" --rc-file "$rc" --format shell status "$dir"
+  PATH_WIZARD_PLATFORM=debian run_spell "spells/spellcraft/learn-spellbook" --rc-file "$rc" --format shell status "$dir"
   assert_success
 }
 
@@ -75,7 +75,7 @@ test_shell_remove_handles_missing_rc_file() {
   dir="$WIZARDRY_TMPDIR/rc_dir"
   mkdir -p "$dir"
 
-  PATH_WIZARD_PLATFORM=debian run_spell "spells/system/path-wizard" --rc-file "$rc" --format shell remove "$dir"
+  PATH_WIZARD_PLATFORM=debian run_spell "spells/spellcraft/learn-spellbook" --rc-file "$rc" --format shell remove "$dir"
   assert_failure && assert_error_contains "startup file '$rc' does not exist"
 }
 
@@ -84,10 +84,10 @@ test_shell_remove_clears_managed_entries() {
   dir="$WIZARDRY_TMPDIR/managed_dir"
   mkdir -p "$dir"
 
-  PATH_WIZARD_PLATFORM=debian run_spell "spells/system/path-wizard" --rc-file "$rc" --format shell add "$dir"
+  PATH_WIZARD_PLATFORM=debian run_spell "spells/spellcraft/learn-spellbook" --rc-file "$rc" --format shell add "$dir"
   assert_success && assert_file_contains "$rc" "export PATH=\"$dir:\$PATH\""
 
-  PATH_WIZARD_PLATFORM=debian run_spell "spells/system/path-wizard" --rc-file "$rc" --format shell remove "$dir"
+  PATH_WIZARD_PLATFORM=debian run_spell "spells/spellcraft/learn-spellbook" --rc-file "$rc" --format shell remove "$dir"
   assert_success
   if grep -F "$dir" "$rc" >/dev/null 2>&1; then
     TEST_FAILURE_REASON="expected removal of PATH entry for $dir"
@@ -100,13 +100,13 @@ test_nix_add_status_and_remove_round_trip() {
   dir="$WIZARDRY_TMPDIR/nix_dir"
   mkdir -p "$dir"
 
-  PATH_WIZARD_PLATFORM=debian run_spell "spells/system/path-wizard" --rc-file "$rc" --format nix add "$dir"
+  PATH_WIZARD_PLATFORM=debian run_spell "spells/spellcraft/learn-spellbook" --rc-file "$rc" --format nix add "$dir"
   assert_success && assert_file_contains "$rc" "$dir"
 
-  PATH_WIZARD_PLATFORM=debian run_spell "spells/system/path-wizard" --rc-file "$rc" --format nix status "$dir"
+  PATH_WIZARD_PLATFORM=debian run_spell "spells/spellcraft/learn-spellbook" --rc-file "$rc" --format nix status "$dir"
   assert_success
 
-  PATH_WIZARD_PLATFORM=debian run_spell "spells/system/path-wizard" --rc-file "$rc" --format nix remove "$dir"
+  PATH_WIZARD_PLATFORM=debian run_spell "spells/spellcraft/learn-spellbook" --rc-file "$rc" --format nix remove "$dir"
   assert_success
   if grep -F "$dir" "$rc" >/dev/null 2>&1; then
     TEST_FAILURE_REASON="expected Nix entry for $dir to be removed"
@@ -125,7 +125,7 @@ test_nix_backup_uses_numeric_suffix() {
   printf '{ }\n' > "$rc"
 
   # Add first directory - this creates a backup
-  PATH_WIZARD_PLATFORM=debian run_spell "spells/system/path-wizard" --rc-file "$rc" --format nix add "$dir1"
+  PATH_WIZARD_PLATFORM=debian run_spell "spells/spellcraft/learn-spellbook" --rc-file "$rc" --format nix add "$dir1"
   assert_success || return 1
 
   # Count backup files that have 'x' suffix pattern (the old broken behavior)
@@ -148,7 +148,7 @@ test_nix_recursive_creates_single_backup() {
   printf '{ }\n' > "$rc"
 
   # Add with --recursive flag - should create only ONE backup
-  PATH_WIZARD_PLATFORM=debian run_spell "spells/system/path-wizard" --recursive --rc-file "$rc" --format nix add "$base_dir"
+  PATH_WIZARD_PLATFORM=debian run_spell "spells/spellcraft/learn-spellbook" --recursive --rc-file "$rc" --format nix add "$base_dir"
   assert_success || return 1
 
   # Count backup files - should be exactly 1
@@ -163,7 +163,7 @@ test_dry_run_single_directory() {
   dir="$WIZARDRY_TMPDIR/dryrun_dir"
   mkdir -p "$dir"
   
-  run_spell "spells/system/path-wizard" --dry-run add "$dir"
+  run_spell "spells/spellcraft/learn-spellbook" --dry-run add "$dir"
   assert_success
   # Dry run should output the directory path
   case "$OUTPUT" in
@@ -176,7 +176,7 @@ test_dry_run_recursive() {
   base="$WIZARDRY_TMPDIR/dryrun_recursive"
   mkdir -p "$base/sub1" "$base/sub2"
   
-  run_spell "spells/system/path-wizard" --dry-run --recursive add "$base"
+  run_spell "spells/spellcraft/learn-spellbook" --dry-run --recursive add "$base"
   assert_success
   # Dry run should output all directories
   case "$OUTPUT" in
@@ -201,7 +201,7 @@ test_dry_run_does_not_modify_rc() {
   # Create empty rc file
   printf '' > "$rc"
   
-  PATH_WIZARD_PLATFORM=debian run_spell "spells/system/path-wizard" --dry-run --rc-file "$rc" --format shell add "$dir"
+  PATH_WIZARD_PLATFORM=debian run_spell "spells/spellcraft/learn-spellbook" --dry-run --rc-file "$rc" --format shell add "$dir"
   assert_success
   # RC file should remain empty (not modified)
   if [ -s "$rc" ]; then
@@ -211,7 +211,7 @@ test_dry_run_does_not_modify_rc() {
 }
 
 test_nix_adds_with_inline_marker() {
-  # Test that path-wizard adds PATH with inline # wizardry marker
+  # Test that learn-spellbook adds PATH with inline # wizardry marker
   # using environment.sessionVariables.PATH as a multi-line array
   rc="$WIZARDRY_TMPDIR/existing_path.nix"
   dir="$WIZARDRY_TMPDIR/nix_modify_dir"
@@ -226,7 +226,7 @@ test_nix_adds_with_inline_marker() {
 }
 EOF
   
-  PATH_WIZARD_PLATFORM=nixos run_spell "spells/system/path-wizard" --rc-file "$rc" --format nix add "$dir"
+  PATH_WIZARD_PLATFORM=nixos run_spell "spells/spellcraft/learn-spellbook" --rc-file "$rc" --format nix add "$dir"
   assert_success || return 1
   
   # The file should contain inline wizardry marker
@@ -239,7 +239,7 @@ EOF
 }
 
 test_nix_allows_multiple_paths() {
-  # Test that path-wizard can add multiple paths
+  # Test that learn-spellbook can add multiple paths
   # With the new format, all paths are in environment.sessionVariables.PATH array
   rc="$WIZARDRY_TMPDIR/wizardry_managed.nix"
   dir1="$WIZARDRY_TMPDIR/managed_dir1"
@@ -247,11 +247,11 @@ test_nix_allows_multiple_paths() {
   mkdir -p "$dir1" "$dir2"
   
   # First, add a directory
-  PATH_WIZARD_PLATFORM=debian run_spell "spells/system/path-wizard" --rc-file "$rc" --format nix add "$dir1"
+  PATH_WIZARD_PLATFORM=debian run_spell "spells/spellcraft/learn-spellbook" --rc-file "$rc" --format nix add "$dir1"
   assert_success || return 1
   
   # Now add another directory
-  PATH_WIZARD_PLATFORM=debian run_spell "spells/system/path-wizard" --rc-file "$rc" --format nix add "$dir2"
+  PATH_WIZARD_PLATFORM=debian run_spell "spells/spellcraft/learn-spellbook" --rc-file "$rc" --format nix add "$dir2"
   assert_success || return 1
   
   # Both directories should be in the file
@@ -266,20 +266,20 @@ test_nix_allows_multiple_paths() {
   fi
 }
 
-run_test_case "path-wizard prints usage" test_help
-run_test_case "path-wizard fails when detect helper missing" test_missing_detect_helper
-run_test_case "path-wizard rejects unknown options" test_unknown_option
-run_test_case "path-wizard adds shell PATH entries" test_adds_shell_path_entry
-run_test_case "path-wizard status without directory fails" test_status_requires_directory
-run_test_case "path-wizard reports existing shell entries" test_shell_status_succeeds_when_present
-run_test_case "path-wizard remove reports missing rc file" test_shell_remove_handles_missing_rc_file
-run_test_case "path-wizard remove drops managed shell entries" test_shell_remove_clears_managed_entries
-run_test_case "path-wizard manages Nix PATH entries" test_nix_add_status_and_remove_round_trip
-run_test_case "path-wizard uses numeric backup suffixes" test_nix_backup_uses_numeric_suffix
-run_test_case "path-wizard recursive creates single backup" test_nix_recursive_creates_single_backup
-run_test_case "path-wizard --dry-run shows single directory" test_dry_run_single_directory
-run_test_case "path-wizard --dry-run recursive shows all dirs" test_dry_run_recursive
-run_test_case "path-wizard --dry-run does not modify rc file" test_dry_run_does_not_modify_rc
-run_test_case "path-wizard nix adds with inline marker" test_nix_adds_with_inline_marker
-run_test_case "path-wizard nix allows multiple paths" test_nix_allows_multiple_paths
+run_test_case "learn-spellbook prints usage" test_help
+run_test_case "learn-spellbook fails when detect helper missing" test_missing_detect_helper
+run_test_case "learn-spellbook rejects unknown options" test_unknown_option
+run_test_case "learn-spellbook adds shell PATH entries" test_adds_shell_path_entry
+run_test_case "learn-spellbook status without directory fails" test_status_requires_directory
+run_test_case "learn-spellbook reports existing shell entries" test_shell_status_succeeds_when_present
+run_test_case "learn-spellbook remove reports missing rc file" test_shell_remove_handles_missing_rc_file
+run_test_case "learn-spellbook remove drops managed shell entries" test_shell_remove_clears_managed_entries
+run_test_case "learn-spellbook manages Nix PATH entries" test_nix_add_status_and_remove_round_trip
+run_test_case "learn-spellbook uses numeric backup suffixes" test_nix_backup_uses_numeric_suffix
+run_test_case "learn-spellbook recursive creates single backup" test_nix_recursive_creates_single_backup
+run_test_case "learn-spellbook --dry-run shows single directory" test_dry_run_single_directory
+run_test_case "learn-spellbook --dry-run recursive shows all dirs" test_dry_run_recursive
+run_test_case "learn-spellbook --dry-run does not modify rc file" test_dry_run_does_not_modify_rc
+run_test_case "learn-spellbook nix adds with inline marker" test_nix_adds_with_inline_marker
+run_test_case "learn-spellbook nix allows multiple paths" test_nix_allows_multiple_paths
 finish_tests

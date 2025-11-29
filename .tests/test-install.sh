@@ -537,9 +537,9 @@ install_uses_explicit_helper_paths() {
   # Verify that the install script references helpers using explicit paths,
   # not relying on PATH which could contain old broken versions.
   
-  # Check that path-wizard is referenced with an explicit path
-  if ! grep -q 'PATH_WIZARD=.*\$ABS_DIR/spells/system/path-wizard' "$ROOT_DIR/install"; then
-    TEST_FAILURE_REASON="install script should use explicit path to path-wizard"
+  # Check that learn-spellbook is referenced with an explicit path
+  if ! grep -q 'LEARN_SPELLBOOK=.*\$ABS_DIR/spells/spellcraft/learn-spellbook' "$ROOT_DIR/install"; then
+    TEST_FAILURE_REASON="install script should use explicit path to learn-spellbook"
     return 1
   fi
   
@@ -559,16 +559,16 @@ install_uses_explicit_helper_paths() {
 }
 
 path_wizard_uses_explicit_helper_paths() {
-  # Verify that path-wizard references helpers using explicit paths when available.
+  # Verify that learn-spellbook references helpers using explicit paths when available.
   
-  # Check that path-wizard has default paths for DETECT_RC_FILE and SCRIBE_SPELL
-  if ! grep -q 'DETECT_RC_FILE_DEFAULT=.*\$SCRIPT_DIR' "$ROOT_DIR/spells/system/path-wizard"; then
-    TEST_FAILURE_REASON="path-wizard should have explicit default path for DETECT_RC_FILE"
+  # Check that learn-spellbook has default paths for DETECT_RC_FILE and SCRIBE_SPELL
+  if ! grep -q 'DETECT_RC_FILE_DEFAULT=.*\$SCRIPT_DIR' "$ROOT_DIR/spells/spellcraft/learn-spellbook"; then
+    TEST_FAILURE_REASON="learn-spellbook should have explicit default path for DETECT_RC_FILE"
     return 1
   fi
   
-  if ! grep -q 'SCRIBE_SPELL_DEFAULT=.*\$SCRIPT_DIR' "$ROOT_DIR/spells/system/path-wizard"; then
-    TEST_FAILURE_REASON="path-wizard should have explicit default path for SCRIBE_SPELL"
+  if ! grep -q 'SCRIBE_SPELL_DEFAULT=.*\$SCRIPT_DIR' "$ROOT_DIR/spells/spellcraft/learn-spellbook"; then
+    TEST_FAILURE_REASON="learn-spellbook should have explicit default path for SCRIBE_SPELL"
     return 1
   fi
   
@@ -576,7 +576,7 @@ path_wizard_uses_explicit_helper_paths() {
 }
 
 path_wizard_accepts_helper_overrides() {
-  # Test that path-wizard respects DETECT_RC_FILE and SCRIBE_SPELL env vars,
+  # Test that learn-spellbook respects DETECT_RC_FILE and SCRIBE_SPELL env vars,
   # allowing the install script to force use of new helpers.
   fixture=$(make_fixture)
   provide_basic_tools "$fixture"
@@ -589,10 +589,10 @@ path_wizard_accepts_helper_overrides() {
   # Set up environment with explicit helper paths
   rc_file="$fixture/.testrc"
   
-  # Run path-wizard with explicit helper env vars
+  # Run learn-spellbook with explicit helper env vars
   DETECT_RC_FILE="$ROOT_DIR/spells/divination/detect-rc-file" \
     SCRIBE_SPELL="$ROOT_DIR/spells/spellcraft/scribe-spell" \
-    run_cmd "$ROOT_DIR/spells/system/path-wizard" \
+    run_cmd "$ROOT_DIR/spells/spellcraft/learn-spellbook" \
       --rc-file "$rc_file" \
       --format shell \
       add "$test_dir"
@@ -642,13 +642,13 @@ install_uses_only_bootstrappable_spells() {
     spell_names="$spell_names $name"
   done
   
-  # Check that the install script uses explicit paths (like $ASK_YN, $PATH_WIZARD)
+  # Check that the install script uses explicit paths (like $ASK_YN, $LEARN_SPELLBOOK)
   # rather than bare spell names in command position
   
   # Verify key spells are invoked via variables, not bare names
-  # path-wizard should be invoked as $PATH_WIZARD
-  if grep -E '^\s*path-wizard\s' "$ROOT_DIR/install" 2>/dev/null | grep -v '^#' | grep -v 'PATH_WIZARD=' >/dev/null; then
-    TEST_FAILURE_REASON="install script invokes 'path-wizard' directly instead of via \$PATH_WIZARD"
+  # learn-spellbook should be invoked as $LEARN_SPELLBOOK
+  if grep -E '^\s*learn-spellbook\s' "$ROOT_DIR/install" 2>/dev/null | grep -v '^#' | grep -v 'LEARN_SPELLBOOK=' >/dev/null; then
+    TEST_FAILURE_REASON="install script invokes 'learn-spellbook' directly instead of via \$LEARN_SPELLBOOK"
     return 1
   fi
   
@@ -1066,7 +1066,7 @@ install_shows_revised_prompt_text() {
 # === Path Wizard remove-all Tests ===
 
 path_wizard_remove_all_removes_all_nix_entries() {
-  # Test that path-wizard remove-all removes all wizardry entries from nix files
+  # Test that learn-spellbook remove-all removes all wizardry entries from nix files
   fixture=$(make_fixture)
   provide_basic_tools "$fixture"
   link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq mkdir rm date mktemp wc
@@ -1090,7 +1090,7 @@ path_wizard_remove_all_removes_all_nix_entries() {
 EOF
 
   # Run remove-all
-  run_cmd "$ROOT_DIR/spells/system/path-wizard" \
+  run_cmd "$ROOT_DIR/spells/spellcraft/learn-spellbook" \
       --rc-file "$fixture/home/.config/home-manager/home.nix" \
       --format nix \
       remove-all
@@ -1127,7 +1127,7 @@ path_wizard_remove_all_reports_count() {
 }
 EOF
 
-  run_cmd "$ROOT_DIR/spells/system/path-wizard" \
+  run_cmd "$ROOT_DIR/spells/spellcraft/learn-spellbook" \
       --rc-file "$fixture/home/.config/home-manager/home.nix" \
       --format nix \
       remove-all
@@ -1157,7 +1157,7 @@ path_wizard_remove_all_handles_empty_file() {
 }
 EOF
 
-  run_cmd "$ROOT_DIR/spells/system/path-wizard" \
+  run_cmd "$ROOT_DIR/spells/spellcraft/learn-spellbook" \
       --rc-file "$fixture/home/.config/home-manager/home.nix" \
       --format nix \
       remove-all
@@ -1215,8 +1215,8 @@ run_test_case "install normalizes NixOS config path" install_nixos_normalizes_co
 run_test_case "install does not double home path" install_does_not_double_home_path
 run_test_case "install does not write shell code to nix file" install_nixos_does_not_write_shell_code_to_nix_file
 run_test_case "install uses explicit helper paths" install_uses_explicit_helper_paths
-run_test_case "path-wizard uses explicit helper paths" path_wizard_uses_explicit_helper_paths
-run_test_case "path-wizard accepts helper overrides" path_wizard_accepts_helper_overrides
+run_test_case "learn-spellbook uses explicit helper paths" path_wizard_uses_explicit_helper_paths
+run_test_case "learn-spellbook accepts helper overrides" path_wizard_accepts_helper_overrides
 run_test_case "install uses only bootstrappable spells" install_uses_only_bootstrappable_spells
 run_test_case "install shows menu when already installed" install_shows_menu_when_already_installed
 run_test_case "install shows help" shows_help
@@ -1234,9 +1234,9 @@ run_test_case "uninstall script handles .imps directory" uninstall_script_handle
 run_test_case "uninstall script NixOS includes rebuild" uninstall_script_nixos_includes_rebuild
 run_test_case "uninstall script NixOS includes logout message" uninstall_script_nixos_includes_logout_message
 run_test_case "install shows revised prompt text" install_shows_revised_prompt_text
-run_test_case "path-wizard remove-all removes all nix entries" path_wizard_remove_all_removes_all_nix_entries
-run_test_case "path-wizard remove-all reports count" path_wizard_remove_all_reports_count
-run_test_case "path-wizard remove-all handles empty file" path_wizard_remove_all_handles_empty_file
+run_test_case "learn-spellbook remove-all removes all nix entries" path_wizard_remove_all_removes_all_nix_entries
+run_test_case "learn-spellbook remove-all reports count" path_wizard_remove_all_reports_count
+run_test_case "learn-spellbook remove-all handles empty file" path_wizard_remove_all_handles_empty_file
 run_test_case "install memorizes before nixos-rebuild" install_memorizes_before_nixos_rebuild
 
 finish_tests
