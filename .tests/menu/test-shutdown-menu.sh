@@ -104,7 +104,7 @@ SH
   chmod +x "$tmp/exit-label"
   
   # Create a stub systemctl that returns "Unknown command verb" for can-suspend
-  # but still exists (simulates NixOS behavior)
+  # but still exists and works for other commands (simulates NixOS behavior)
   cat >"$tmp/systemctl" <<'SH'
 #!/bin/sh
 case "$1" in
@@ -112,8 +112,11 @@ case "$1" in
     printf '%s\n' "Unknown command verb '$1'" >&2
     exit 1
     ;;
+  *)
+    # Allow other systemctl commands to succeed (e.g., suspend, hibernate)
+    exit 0
+    ;;
 esac
-exit 0
 SH
   chmod +x "$tmp/systemctl"
   
@@ -150,6 +153,7 @@ SH
   chmod +x "$tmp/exit-label"
   
   # Create a stub systemctl that returns "Unknown command verb" for can-hibernate
+  # but still works for other commands (simulates NixOS behavior)
   cat >"$tmp/systemctl" <<'SH'
 #!/bin/sh
 case "$1" in
@@ -157,8 +161,11 @@ case "$1" in
     printf '%s\n' "Unknown command verb '$1'" >&2
     exit 1
     ;;
+  *)
+    # Allow other systemctl commands to succeed (e.g., suspend, hibernate)
+    exit 0
+    ;;
 esac
-exit 0
 SH
   chmod +x "$tmp/systemctl"
   
