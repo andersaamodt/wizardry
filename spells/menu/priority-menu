@@ -41,6 +41,7 @@ load_colors() {
     GREY=''
     GREEN=''
     BOLD=''
+    THEME_HEADING=''
   fi
 }
 
@@ -75,7 +76,7 @@ display_menu() {
                "Edit Card%echo 'Placeholder: Edit command'" \
                "Browse Within%echo 'Placeholder: Browse files within this file/folder'" \
                "$exit_item"
-        MENU_ESCAPE_STATUS=$menu_escape_status menu "${GREEN}${BOLD}${filename}${RESET}:" "$@"
+        MENU_ESCAPE_STATUS=$menu_escape_status menu "${THEME_HEADING}${filename}${RESET}:" "$@"
 }
 
 menu_escape_status=113

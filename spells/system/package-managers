@@ -28,40 +28,40 @@ distro=$(detect-distro)
 case $distro in
   "arch")
     if pacman -Q pacman >/dev/null 2>&1; then
-        printf '%b✔ pacman%b (default package manager on Arch Linux)\n' "$GREEN" "$RESET"
+        printf '%b✔ pacman%b (default package manager on Arch Linux)\n' "$THEME_SUCCESS" "$RESET"
     else
-        printf '%b✘ pacman%b (default package manager on Arch Linux)\n' "$RED" "$RESET"
+        printf '%b✘ pacman%b (default package manager on Arch Linux)\n' "$THEME_ERROR" "$RESET"
     fi
     if yay -V >/dev/null 2>&1; then
-        printf '%b✔ yay%b (AUR helper for Arch Linux)\n' "$GREEN" "$RESET"
+        printf '%b✔ yay%b (AUR helper for Arch Linux)\n' "$THEME_SUCCESS" "$RESET"
     else
-        printf '%b✘ yay%b (AUR helper for Arch Linux)\n' "$RED" "$RESET"
+        printf '%b✘ yay%b (AUR helper for Arch Linux)\n' "$THEME_ERROR" "$RESET"
     fi
     ;;
   "debian")
     if apt-get -v >/dev/null 2>&1; then
-        printf '%b✔ apt%b (default package manager on Debian and Ubuntu)\n' "$GREEN" "$RESET"
+        printf '%b✔ apt%b (default package manager on Debian and Ubuntu)\n' "$THEME_SUCCESS" "$RESET"
     else
-        printf '%b✘ apt%b (default package manager on Debian and Ubuntu)\n' "$RED" "$RESET"
+        printf '%b✘ apt%b (default package manager on Debian and Ubuntu)\n' "$THEME_ERROR" "$RESET"
     fi
     ;;
   "fedora")
     if dnf --version >/dev/null 2>&1; then
-        printf '%b✔ dnf%b (default package manager on Fedora)\n' "$GREEN" "$RESET"
+        printf '%b✔ dnf%b (default package manager on Fedora)\n' "$THEME_SUCCESS" "$RESET"
     else
-        printf '%b✘ dnf%b (default package manager on Fedora)\n' "$RED" "$RESET"
+        printf '%b✘ dnf%b (default package manager on Fedora)\n' "$THEME_ERROR" "$RESET"
     fi
     ;;
   "macos"|"mac")
     if brew --version >/dev/null 2>&1; then
-        printf '%b✔ brew%b (default package manager on macOS)\n' "$GREEN" "$RESET"
+        printf '%b✔ brew%b (default package manager on macOS)\n' "$THEME_SUCCESS" "$RESET"
     else
-        printf '%b✘ brew%b (default package manager on macOS)\n' "$RED" "$RESET"
+        printf '%b✘ brew%b (default package manager on macOS)\n' "$THEME_ERROR" "$RESET"
     fi
     if port -v >/dev/null 2>&1; then
-        printf '%b✔ port%b (MacPorts on macOS)\n' "$GREEN" "$RESET"
+        printf '%b✔ port%b (MacPorts on macOS)\n' "$THEME_SUCCESS" "$RESET"
     else
-        printf '%b✘ port%b (MacPorts on macOS)\n' "$RED" "$RESET"
+        printf '%b✘ port%b (MacPorts on macOS)\n' "$THEME_ERROR" "$RESET"
     fi
     ;;
 esac

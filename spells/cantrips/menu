@@ -95,6 +95,9 @@ else
         CYAN=''
         GREY=''
         WHITE=''
+        THEME_HIGHLIGHT=''
+        THEME_MUTED=''
+        THEME_DIVIDER=''
 fi
 
 # Check for --spell-mode flag (label is command, right side is description)
@@ -319,7 +322,7 @@ render_divider() {
                 line="${line}─"
                 i=$((i + 1))
         done
-        printf '%b  %s%s%b' "$GREY" "$pad" "$line" "$RESET"
+        printf '%b  %s%s%b' "$THEME_DIVIDER" "$pad" "$line" "$RESET"
 }
 
 render_row() {
@@ -371,13 +374,13 @@ render_row() {
                 if [ "$highlight" -eq 1 ]; then
                         # Use clean_label (ANSI stripped) so highlight color takes precedence
                         if [ "$max_command_length" -gt 0 ]; then
-                                printf '%b> %-*s%b %b%-*s%b' "$CYAN" "$max_name_length" "$clean_label" "$RESET" "$GREY" "$max_command_length" "$truncated_command" "$RESET"
+                                printf '%b> %-*s%b %b%-*s%b' "$THEME_HIGHLIGHT" "$max_name_length" "$clean_label" "$RESET" "$THEME_MUTED" "$max_command_length" "$truncated_command" "$RESET"
                         else
-                                printf '%b> %-*s%b' "$CYAN" "$max_name_length" "$clean_label" "$RESET"
+                                printf '%b> %-*s%b' "$THEME_HIGHLIGHT" "$max_name_length" "$clean_label" "$RESET"
                         fi
                 else
                         if [ "$max_command_length" -gt 0 ]; then
-                                printf '  %-*s %b%-*s%b' "$adjusted_width" "$label" "$GREY" "$max_command_length" "$truncated_command" "$RESET"
+                                printf '  %-*s %b%-*s%b' "$adjusted_width" "$label" "$THEME_MUTED" "$max_command_length" "$truncated_command" "$RESET"
                         else
                                 printf '  %-*s' "$adjusted_width" "$label"
                         fi
@@ -387,13 +390,13 @@ render_row() {
                 if [ "$highlight" -eq 1 ]; then
                         # Use clean_label (ANSI stripped) so highlight color takes precedence
                         if [ "$max_command_length" -gt 0 ]; then
-                                printf '%b> %-*s%b %b%-*s%b\n' "$CYAN" "$max_name_length" "$clean_label" "$RESET" "$GREY" "$max_command_length" "$truncated_command" "$RESET"
+                                printf '%b> %-*s%b %b%-*s%b\n' "$THEME_HIGHLIGHT" "$max_name_length" "$clean_label" "$RESET" "$THEME_MUTED" "$max_command_length" "$truncated_command" "$RESET"
                         else
-                                printf '%b> %-*s%b\n' "$CYAN" "$max_name_length" "$clean_label" "$RESET"
+                                printf '%b> %-*s%b\n' "$THEME_HIGHLIGHT" "$max_name_length" "$clean_label" "$RESET"
                         fi
                 else
                         if [ "$max_command_length" -gt 0 ]; then
-                                printf '  %-*s %b%-*s%b\n' "$adjusted_width" "$label" "$GREY" "$max_command_length" "$truncated_command" "$RESET"
+                                printf '  %-*s %b%-*s%b\n' "$adjusted_width" "$label" "$THEME_MUTED" "$max_command_length" "$truncated_command" "$RESET"
                         else
                                 printf '  %-*s\n' "$adjusted_width" "$label"
                         fi

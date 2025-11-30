@@ -32,7 +32,8 @@ if [ "$wizard_mode" = "1" ]; then
         else
                 GREY=''
                 RESET=''
+                THEME_MUTED=''
         fi
         
-        printf '    %s%s%s\n' "$GREY" "$*" "$RESET"
+        printf '    %s%s%s\n' "${THEME_MUTED:-$GREY}" "$*" "$RESET"
 fi
