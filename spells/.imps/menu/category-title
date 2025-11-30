@@ -10,8 +10,8 @@ case $1 in
 	cantrips)
 		printf 'Cantrips'
 		;;
-	contacts)
-		printf 'Contacts'
+	psi)
+		printf 'Psi'
 		;;
 	divination)
 		printf 'Divination'

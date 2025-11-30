@@ -81,7 +81,7 @@ Spell categories:
 * custom commands
 * arcane
 * cantrips
-* contacts
+* psi
 * divination
 * enchantment  
 * kryptos
