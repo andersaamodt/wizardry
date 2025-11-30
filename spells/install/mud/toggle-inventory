@@ -1,0 +1,42 @@
+#!/bin/sh
+
+# Toggle inventory feature on/off in MUD config.
+# This is a planned feature that will enable inventory management.
+
+show_usage() {
+        cat <<'USAGE'
+Usage: toggle-inventory
+
+Toggle the inventory feature on or off. When enabled, wizardry
+tracks items you pick up and lets you manage your inventory.
+
+This is a planned feature. Currently, toggling this option only
+updates the configuration file at ~/.spellbook/.mud/config.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+MUD_CONFIG="$SCRIPT_DIR/mud-config"
+
+if [ ! -x "$MUD_CONFIG" ]; then
+        printf '%s\n' "Error: mud-config not found at '$MUD_CONFIG'." >&2
+        exit 1
+fi
+
+# Toggle the feature and report state
+new_state=$("$MUD_CONFIG" toggle inventory)
+
+if [ "$new_state" = "1" ]; then
+        printf '%s\n' "✓ Inventory feature enabled (planned feature)."
+else
+        printf '%s\n' "✓ Inventory feature disabled."
+fi

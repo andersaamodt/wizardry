@@ -65,7 +65,7 @@ SH
   assert_success
   args=$(cat "$tmp/log")
   case "$args" in
-    *"MUD Settings:"*"Copy player key to clipboard%copy ~/.ssh/"*"Change Player%select-player"*"New Player%new-player"*"Install%launch_submenu mud-install-menu"*"Exit%exit 113"* ) : ;;
+    *"MUD Settings:"*"Copy player key to clipboard%copy ~/.ssh/"*"Change Player%select-player"*"New Player%new-player"*"Install%launch_submenu mud-menu"*"Exit%exit 113"* ) : ;;
     *) TEST_FAILURE_REASON="mud settings actions missing: $args"; return 1 ;;
   esac
 }

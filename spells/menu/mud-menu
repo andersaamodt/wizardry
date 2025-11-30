@@ -6,11 +6,17 @@ show_usage() {
   cat <<'USAGE'
 Usage: mud-install-menu
 
-Display the MUD installation menu with options to:
-  - Toggle the CD hook (runs 'look' on every directory change)
+Display the MUD installation menu with toggleable MUD features:
+  - CD hook (runs 'look' on every directory change)
+  - Command not found hook (planned)
+  - Touch hook (planned)
+  - Fantasy theme (planned)
+  - Inventory feature (planned)
+  - HP/MP and combat (planned)
+  - Enable/Disable all features
   - Set up tor hidden service
 
-The CD hook toggle shows [X] when enabled and [ ] when disabled.
+Each toggle shows [X] when enabled and [ ] when disabled.
 USAGE
 }
 
@@ -52,6 +58,8 @@ fi
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 CD_SPELL="$SCRIPT_DIR/../install/mud/cd"
+MUD_CONFIG="$SCRIPT_DIR/../install/mud/mud-config"
+MUD_INSTALL_DIR="$SCRIPT_DIR/../install/mud"
 
 # Check if cd hook is currently installed by looking for the marker in rc file
 is_cd_hook_installed() {
@@ -101,18 +109,81 @@ EOF
   return 1
 }
 
+# Check if a MUD config feature is enabled
+is_feature_enabled() {
+  feature=$1
+  if [ ! -x "$MUD_CONFIG" ]; then
+    return 1
+  fi
+  value=$("$MUD_CONFIG" get "$feature" 2>/dev/null) || return 1
+  [ "$value" = "1" ]
+}
+
+# Check if all config-based MUD features are enabled
+are_all_features_enabled() {
+  for feature in command-not-found touch-hook fantasy-theme inventory combat; do
+    if ! is_feature_enabled "$feature"; then
+      return 1
+    fi
+  done
+  return 0
+}
+
 display_menu() {
   # Build cd hook toggle label based on current state
   if is_cd_hook_installed; then
-    cd_hook="[X] CD hook (look on directory change)%$SCRIPT_DIR/../install/mud/toggle-cd"
+    cd_hook="[X] CD hook (look on directory change)%$MUD_INSTALL_DIR/toggle-cd"
   else
-    cd_hook="[ ] CD hook (look on directory change)%$SCRIPT_DIR/../install/mud/toggle-cd"
+    cd_hook="[ ] CD hook (look on directory change)%$MUD_INSTALL_DIR/toggle-cd"
   fi
+  
+  # Build command-not-found toggle
+  if is_feature_enabled "command-not-found"; then
+    cnf_hook="[X] Command not found hook (planned)%$MUD_INSTALL_DIR/toggle-command-not-found"
+  else
+    cnf_hook="[ ] Command not found hook (planned)%$MUD_INSTALL_DIR/toggle-command-not-found"
+  fi
+  
+  # Build touch hook toggle
+  if is_feature_enabled "touch-hook"; then
+    touch_hook="[X] Touch hook (planned)%$MUD_INSTALL_DIR/toggle-touch-hook"
+  else
+    touch_hook="[ ] Touch hook (planned)%$MUD_INSTALL_DIR/toggle-touch-hook"
+  fi
+  
+  # Build fantasy theme toggle
+  if is_feature_enabled "fantasy-theme"; then
+    fantasy="[X] Fantasy theme (planned)%$MUD_INSTALL_DIR/toggle-fantasy-theme"
+  else
+    fantasy="[ ] Fantasy theme (planned)%$MUD_INSTALL_DIR/toggle-fantasy-theme"
+  fi
+  
+  # Build inventory toggle
+  if is_feature_enabled "inventory"; then
+    inventory="[X] Inventory feature (planned)%$MUD_INSTALL_DIR/toggle-inventory"
+  else
+    inventory="[ ] Inventory feature (planned)%$MUD_INSTALL_DIR/toggle-inventory"
+  fi
+  
+  # Build combat toggle
+  if is_feature_enabled "combat"; then
+    combat="[X] HP/MP and combat (planned)%$MUD_INSTALL_DIR/toggle-combat"
+  else
+    combat="[ ] HP/MP and combat (planned)%$MUD_INSTALL_DIR/toggle-combat"
+  fi
+  
+  # Build enable/disable all toggle
+  if are_all_features_enabled; then
+    toggle_all="[X] Enable all MUD features%$MUD_INSTALL_DIR/toggle-all-mud --disable"
+  else
+    toggle_all="[ ] Enable all MUD features%$MUD_INSTALL_DIR/toggle-all-mud --enable"
+  fi
+  
   tor="Set up tor hidden service%$SCRIPT_DIR/../install/tor/setup-tor"
   exit_label=$(exit-label)
   exit_item="${exit_label}%exit $menu_escape_status"
 
-  set -- "$cd_hook" "$tor" "$exit_item"
+  set -- "$cd_hook" "$cnf_hook" "$touch_hook" "$fantasy" "$inventory" "$combat" "$toggle_all" "$tor" "$exit_item"
   MENU_ESCAPE_STATUS=$menu_escape_status menu --start-selection "$start_selection" "MUD Install:" "$@"
 }
 
