@@ -131,9 +131,12 @@ trash_macos() {
     abs_path="$(pwd)/$file"
     ;;
   esac
-  
+
+  # Escape double quotes and backslashes in the path for AppleScript
+  escaped_path=$(printf '%s' "$abs_path" | sed 's/\\/\\\\/g; s/"/\\"/g')
+
   # Use Finder to move to Trash
-  osascript -e "tell application \"Finder\" to delete POSIX file \"$abs_path\"" >/dev/null 2>&1
+  osascript -e "tell application \"Finder\" to delete POSIX file \"$escaped_path\"" >/dev/null 2>&1
 }
 
 # Move a file to trash using gio
@@ -202,14 +205,14 @@ for file in "$@"; do
     exit_status=1
     continue
   fi
-  
+
   # Check if it's a directory and -r is not specified
   if [ -d "$file" ] && [ "$recursive" -eq 0 ]; then
     printf '%s\n' "trash: cannot trash '$file': Is a directory (use -r to trash directories)" >&2
     exit_status=1
     continue
   fi
-  
+
   # Perform the trash operation based on available command
   case "$trash_cmd" in
   osascript)
