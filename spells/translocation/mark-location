@@ -3,6 +3,8 @@
 # This spell records the current directory (or a provided path) for jump-to-marker.
 # It resolves the destination to an absolute path and stores it in a named marker file.
 
+# Ensure wizardry is available before using any imps
+require-wizardry || exit 1
 
 set -eu
 usage() {

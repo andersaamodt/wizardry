@@ -123,7 +123,8 @@ jump_detect_helper() {
         if ! helpers=$(jump_helpers_dir); then
                 return 1
         fi
-        detect="$helpers/detect-rc-file"
+        # Look in divination directory where detect-rc-file lives
+        detect="$helpers/../divination/detect-rc-file"
         
         # Only fall back to PATH if no explicit override was provided
         if [ ! -x "$detect" ] && command -v detect-rc-file >/dev/null 2>&1; then
@@ -161,7 +162,8 @@ jump_learn_helper() {
         if ! helpers=$(jump_helpers_dir); then
                 return 1
         fi
-        learn="$helpers/learn"
+        # Look in spellcraft directory where learn lives
+        learn="$helpers/../spellcraft/learn"
         
         # Only fall back to PATH if no explicit override was provided
         if [ ! -x "$learn" ] && command -v learn >/dev/null 2>&1; then
@@ -182,7 +184,8 @@ jump_ask_helper() {
         if ! helpers=$(jump_helpers_dir); then
                 return 1
         fi
-        ask="$helpers/cantrips/ask_yn"
+        # Look in cantrips directory where ask_yn lives
+        ask="$helpers/../cantrips/ask_yn"
         if [ -x "$ask" ]; then
                 JUMP_TO_MARKER_ASK=$ask
                 printf '%s' "$JUMP_TO_MARKER_ASK"
