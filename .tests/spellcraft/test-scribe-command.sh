@@ -5,6 +5,8 @@
 # - fails with only 1 argument (needs name and command)
 # - creates script file with correct content in ~/.spellbook
 # - rejects names with spaces
+# - rejects names that conflict with existing commands
+# - rejects names of spells already in spellbook or subfolders
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/test-common.sh" ] && [ "$test_root" != "/" ]; do
@@ -99,6 +101,52 @@ test_script_is_executable() {
   esac
 }
 
+test_rejects_existing_command_name() {
+  case_dir=$(make_tempdir)
+  
+  # Try to create a spell with the same name as 'ls' (a common built-in command)
+  WIZARDRY_SPELL_HOME="$case_dir" \
+    run_spell "spells/spellcraft/scribe-command" ls "echo listing"
+  
+  assert_failure || return 1
+  assert_error_contains "conflicts with an existing command" || return 1
+  # Verify no spell was created
+  [ ! -e "$case_dir/ls" ] || { TEST_FAILURE_REASON="spell file was created despite conflict"; return 1; }
+}
+
+test_rejects_duplicate_spell_in_spellbook() {
+  case_dir=$(make_tempdir)
+  
+  # First, create a spell
+  WIZARDRY_SPELL_HOME="$case_dir" \
+    run_spell "spells/spellcraft/scribe-command" myuniquespell "echo first"
+  
+  assert_success || return 1
+  
+  # Try to create another spell with the same name
+  WIZARDRY_SPELL_HOME="$case_dir" \
+    run_spell "spells/spellcraft/scribe-command" myuniquespell "echo second"
+  
+  assert_failure || return 1
+  assert_error_contains "already exists in your spellbook" || return 1
+}
+
+test_rejects_duplicate_spell_in_subfolder() {
+  case_dir=$(make_tempdir)
+  
+  # Create a subfolder with a spell in it
+  mkdir -p "$case_dir/mycat"
+  printf '#!/bin/sh\necho test\n' > "$case_dir/mycat/subspell"
+  chmod +x "$case_dir/mycat/subspell"
+  
+  # Try to create a spell with the same name in the root
+  WIZARDRY_SPELL_HOME="$case_dir" \
+    run_spell "spells/spellcraft/scribe-command" subspell "echo new"
+  
+  assert_failure || return 1
+  assert_error_contains "already exists in your spellbook" || return 1
+}
+
 run_test_case "scribe-command shows usage" test_shows_help
 run_test_case "scribe-command shows usage with -h" test_shows_help_with_h_flag
 run_test_case "scribe-command scribes non-interactively" test_noninteractive_scribes_command
@@ -106,5 +154,8 @@ run_test_case "scribe-command fails with partial args" test_fails_with_partial_a
 run_test_case "scribe-command rejects invalid names" test_rejects_invalid_name
 run_test_case "scribe-command joins multi-word commands" test_multiword_command
 run_test_case "scribe-command creates executable scripts" test_script_is_executable
+run_test_case "scribe-command rejects existing command names" test_rejects_existing_command_name
+run_test_case "scribe-command rejects duplicate spell in spellbook" test_rejects_duplicate_spell_in_spellbook
+run_test_case "scribe-command rejects duplicate spell in subfolder" test_rejects_duplicate_spell_in_subfolder
 
 finish_tests
