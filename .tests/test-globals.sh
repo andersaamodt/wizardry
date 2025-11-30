@@ -203,7 +203,7 @@ test_test_files_have_matching_spells() {
   find "$ROOT_DIR/.tests" -type f -name 'test-*.sh' -print | while IFS= read -r test_file; do
     # Skip special files
     case $test_file in
-      */test-common.sh|*/test-install.sh|*/test-global-checks.sh|*/lib/*) continue ;;
+      */test-common.sh|*/test-install.sh|*/test-globals.sh|*/lib/*) continue ;;
     esac
     
     # Extract expected spell path
