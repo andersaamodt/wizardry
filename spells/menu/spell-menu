@@ -260,7 +260,7 @@ while :; do
                 fi
         fi
         
-        if MENU_ESCAPE_STATUS=$menu_escape_status MENU_START_SELECTION=$start_selection menu "Spell: $name" "$@"; then
+        if MENU_ESCAPE_STATUS=$menu_escape_status menu --start-selection "$start_selection" "Spell: $name" "$@"; then
                 status=0
         else
                 status=$?
