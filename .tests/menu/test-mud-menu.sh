@@ -418,4 +418,232 @@ run_test_case "Command not found toggle shows [X] when enabled" test_command_not
 run_test_case "Enable all MUD features toggle shown" test_all_features_toggle_shown
 run_test_case "All planned MUD features shown" test_all_planned_features_shown
 
+# Test that toggle selection keeps cursor position
+test_toggle_keeps_cursor_position_cd_hook() {
+  tmp=$(make_tempdir)
+  make_stub_colors "$tmp"
+  
+  cat >"$tmp/require-command" <<'SH'
+#!/bin/sh
+exit 0
+SH
+  chmod +x "$tmp/require-command"
+  
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$tmp/exit-label"
+  
+  # Create a menu stub that logs --start-selection argument and simulates toggle action
+  call_count_file="$tmp/call_count"
+  printf '0\n' >"$call_count_file"
+  
+  # Use a temp rc file that doesn't have the cd hook installed
+  rc_file="$tmp/rc"
+  : >"$rc_file"
+  config_dir="$tmp/mud"
+  mkdir -p "$config_dir"
+  
+  # Menu stub that simulates CD hook toggle by directly modifying the rc file
+  cat >"$tmp/menu" <<'SH'
+#!/bin/sh
+call_count=$(cat "$CALL_COUNT_FILE")
+# Parse --start-selection argument
+start_sel=1
+while [ "$#" -gt 0 ]; do
+  case $1 in
+    --start-selection)
+      start_sel=$2
+      shift 2
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+printf '%s\n' "START_SELECTION=$start_sel" >>"$MENU_LOG"
+call_count=$((call_count + 1))
+printf '%s\n' "$call_count" >"$CALL_COUNT_FILE"
+if [ "$call_count" -eq 1 ]; then
+  # First call: simulate CD hook toggle by directly modifying rc file
+  rc_file=${WIZARDRY_RC_FILE:-$HOME/.bashrc}
+  printf '%s\n' '# >>> wizardry cd cantrip >>>' >> "$rc_file"
+  printf '%s\n' 'WIZARDRY_CD_CANTRIP=/path/to/cd' >> "$rc_file"
+  printf '%s\n' '# <<< wizardry cd cantrip <<<' >> "$rc_file"
+  exit 0
+fi
+# Second call: exit
+exit 113
+SH
+  chmod +x "$tmp/menu"
+  
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH:/usr/bin:/bin" MENU_LOG="$tmp/log" CALL_COUNT_FILE="$call_count_file" WIZARDRY_RC_FILE="$rc_file" WIZARDRY_MUD_CONFIG_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
+  assert_success || { TEST_FAILURE_REASON="menu should exit successfully"; return 1; }
+  
+  log_content=$(cat "$tmp/log")
+  # First call should have start_selection=1
+  # Second call (after toggle) should have start_selection=1 (stayed on CD hook item)
+  first_selection=$(printf '%s\n' "$log_content" | head -1 | sed 's/.*START_SELECTION=//')
+  second_selection=$(printf '%s\n' "$log_content" | sed -n '2p' | sed 's/.*START_SELECTION=//')
+  
+  if [ "$first_selection" != "1" ]; then
+    TEST_FAILURE_REASON="first menu call should have start_selection=1, got $first_selection"
+    return 1
+  fi
+  
+  if [ "$second_selection" != "1" ]; then
+    TEST_FAILURE_REASON="after CD hook toggle, menu should have start_selection=1, got $second_selection (log: $log_content)"
+    return 1
+  fi
+}
+
+# Test that command-not-found toggle keeps cursor at position 2
+test_toggle_keeps_cursor_position_cnf() {
+  tmp=$(make_tempdir)
+  make_stub_colors "$tmp"
+  
+  cat >"$tmp/require-command" <<'SH'
+#!/bin/sh
+exit 0
+SH
+  chmod +x "$tmp/require-command"
+  
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$tmp/exit-label"
+  
+  call_count_file="$tmp/call_count"
+  printf '0\n' >"$call_count_file"
+  
+  rc_file="$tmp/rc"
+  : >"$rc_file"
+  config_dir="$tmp/mud"
+  mkdir -p "$config_dir"
+  
+  # Menu stub that simulates CNF toggle by directly modifying the config file
+  cat >"$tmp/menu" <<'SH'
+#!/bin/sh
+call_count=$(cat "$CALL_COUNT_FILE")
+start_sel=1
+while [ "$#" -gt 0 ]; do
+  case $1 in
+    --start-selection)
+      start_sel=$2
+      shift 2
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+printf '%s\n' "START_SELECTION=$start_sel" >>"$MENU_LOG"
+call_count=$((call_count + 1))
+printf '%s\n' "$call_count" >"$CALL_COUNT_FILE"
+if [ "$call_count" -eq 1 ]; then
+  # First call: simulate CNF toggle by directly modifying config file
+  config_dir=${WIZARDRY_MUD_CONFIG_DIR:-$HOME/.wizardry/mud}
+  mkdir -p "$config_dir"
+  printf '%s\n' "command-not-found=1" >> "$config_dir/config"
+  exit 0
+fi
+exit 113
+SH
+  chmod +x "$tmp/menu"
+  
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH:/usr/bin:/bin" MENU_LOG="$tmp/log" CALL_COUNT_FILE="$call_count_file" WIZARDRY_RC_FILE="$rc_file" WIZARDRY_MUD_CONFIG_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
+  assert_success || { TEST_FAILURE_REASON="menu should exit successfully"; return 1; }
+  
+  log_content=$(cat "$tmp/log")
+  first_selection=$(printf '%s\n' "$log_content" | head -1 | sed 's/.*START_SELECTION=//')
+  second_selection=$(printf '%s\n' "$log_content" | sed -n '2p' | sed 's/.*START_SELECTION=//')
+  
+  if [ "$first_selection" != "1" ]; then
+    TEST_FAILURE_REASON="first menu call should have start_selection=1, got $first_selection"
+    return 1
+  fi
+  
+  if [ "$second_selection" != "2" ]; then
+    TEST_FAILURE_REASON="after CNF toggle, menu should have start_selection=2, got $second_selection (log: $log_content)"
+    return 1
+  fi
+}
+
+# Test that non-toggle action resets cursor to first item
+test_non_toggle_resets_cursor() {
+  tmp=$(make_tempdir)
+  make_stub_colors "$tmp"
+  
+  cat >"$tmp/require-command" <<'SH'
+#!/bin/sh
+exit 0
+SH
+  chmod +x "$tmp/require-command"
+  
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$tmp/exit-label"
+  
+  call_count_file="$tmp/call_count"
+  printf '0\n' >"$call_count_file"
+  
+  rc_file="$tmp/rc"
+  : >"$rc_file"
+  config_dir="$tmp/mud"
+  mkdir -p "$config_dir"
+  
+  # Menu stub that just exits 0 on first call (simulating non-state-changing action)
+  # and exits 113 on second call
+  cat >"$tmp/menu" <<'SH'
+#!/bin/sh
+call_count=$(cat "$CALL_COUNT_FILE")
+start_sel=1
+while [ "$#" -gt 0 ]; do
+  case $1 in
+    --start-selection)
+      start_sel=$2
+      shift 2
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+printf '%s\n' "START_SELECTION=$start_sel" >>"$MENU_LOG"
+call_count=$((call_count + 1))
+printf '%s\n' "$call_count" >"$CALL_COUNT_FILE"
+if [ "$call_count" -eq 1 ]; then
+  # First call: return success without changing any state
+  exit 0
+fi
+exit 113
+SH
+  chmod +x "$tmp/menu"
+  
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH:/usr/bin:/bin" MENU_LOG="$tmp/log" CALL_COUNT_FILE="$call_count_file" WIZARDRY_RC_FILE="$rc_file" WIZARDRY_MUD_CONFIG_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
+  assert_success || { TEST_FAILURE_REASON="menu should exit successfully"; return 1; }
+  
+  log_content=$(cat "$tmp/log")
+  first_selection=$(printf '%s\n' "$log_content" | head -1 | sed 's/.*START_SELECTION=//')
+  second_selection=$(printf '%s\n' "$log_content" | sed -n '2p' | sed 's/.*START_SELECTION=//')
+  
+  if [ "$first_selection" != "1" ]; then
+    TEST_FAILURE_REASON="first menu call should have start_selection=1, got $first_selection"
+    return 1
+  fi
+  
+  if [ "$second_selection" != "1" ]; then
+    TEST_FAILURE_REASON="after non-toggle action, menu should have start_selection=1, got $second_selection (log: $log_content)"
+    return 1
+  fi
+}
+
+run_test_case "mud-menu CD hook toggle keeps cursor position" test_toggle_keeps_cursor_position_cd_hook
+run_test_case "mud-menu CNF toggle keeps cursor at position 2" test_toggle_keeps_cursor_position_cnf
+run_test_case "mud-menu non-toggle resets cursor" test_non_toggle_resets_cursor
+
 finish_tests

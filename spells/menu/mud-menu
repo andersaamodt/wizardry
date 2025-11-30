@@ -195,14 +195,56 @@ loop_limit=${MENU_LOOP_LIMIT:-}
 first_run=1
 start_selection=1
 
+# Track toggle states: 1=CD hook, 2=CNF, 3=touch, 4=fantasy, 5=inventory, 6=combat, 7=all
+was_cd=0
+was_cnf=0
+was_touch=0
+was_fantasy=0
+was_inventory=0
+was_combat=0
+was_all=0
+
 while true; do
   if [ "$first_run" -eq 0 ]; then
     printf '\n'
-    # Keep cursor on CD hook toggle item (item 1) after any action
-    start_selection=1
+    # Check which toggle changed and keep cursor there
+    if is_cd_hook_installed; then now_cd=1; else now_cd=0; fi
+    if is_feature_enabled "command-not-found"; then now_cnf=1; else now_cnf=0; fi
+    if is_feature_enabled "touch-hook"; then now_touch=1; else now_touch=0; fi
+    if is_feature_enabled "fantasy-theme"; then now_fantasy=1; else now_fantasy=0; fi
+    if is_feature_enabled "inventory"; then now_inventory=1; else now_inventory=0; fi
+    if is_feature_enabled "combat"; then now_combat=1; else now_combat=0; fi
+    if are_all_features_enabled; then now_all=1; else now_all=0; fi
+
+    if [ "$was_cd" != "$now_cd" ]; then
+      start_selection=1
+    elif [ "$was_cnf" != "$now_cnf" ]; then
+      start_selection=2
+    elif [ "$was_touch" != "$now_touch" ]; then
+      start_selection=3
+    elif [ "$was_fantasy" != "$now_fantasy" ]; then
+      start_selection=4
+    elif [ "$was_inventory" != "$now_inventory" ]; then
+      start_selection=5
+    elif [ "$was_combat" != "$now_combat" ]; then
+      start_selection=6
+    elif [ "$was_all" != "$now_all" ]; then
+      start_selection=7
+    else
+      start_selection=1
+    fi
   else
     first_run=0
   fi
+
+  # Save toggle states before displaying menu (for comparison on next iteration)
+  if is_cd_hook_installed; then was_cd=1; else was_cd=0; fi
+  if is_feature_enabled "command-not-found"; then was_cnf=1; else was_cnf=0; fi
+  if is_feature_enabled "touch-hook"; then was_touch=1; else was_touch=0; fi
+  if is_feature_enabled "fantasy-theme"; then was_fantasy=1; else was_fantasy=0; fi
+  if is_feature_enabled "inventory"; then was_inventory=1; else was_inventory=0; fi
+  if is_feature_enabled "combat"; then was_combat=1; else was_combat=0; fi
+  if are_all_features_enabled; then was_all=1; else was_all=0; fi
 
   if display_menu; then
     status=0
