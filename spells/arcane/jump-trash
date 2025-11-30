@@ -1,0 +1,411 @@
+#!/bin/sh
+
+# This spell teleports you to your system trash directory.
+# Once memorized, it lets any shell jump to the trash instantly.
+
+show_usage() {
+  cat <<'USAGE'
+Usage: jump-trash [--install]
+
+Source this spell to define the 'jtrash' shell function. When executed directly
+it offers to memorize the spell for you so teleporting to trash is always ready.
+
+Options:
+  --install    Install the spell to your shell rc file without prompting
+
+Supports:
+  - macOS: ~/.Trash
+  - Linux: ~/.local/share/Trash/files (or $XDG_DATA_HOME/Trash/files)
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
+RUNNING_AS_SCRIPT=0
+case $0 in
+*/jump-trash|jump-trash)
+  RUNNING_AS_SCRIPT=1
+  set -eu
+  ;;
+*) : ;;
+esac
+
+SPELL_NAME=jump-trash
+JUMP_TRASH_PATH=${JUMP_TRASH_PATH-}
+JUMP_TRASH_HELPERS_DIR=${JUMP_TRASH_HELPERS_DIR-}
+JUMP_TRASH_RC_FILE=${JUMP_TRASH_RC_FILE-}
+JUMP_TRASH_PLATFORM=${JUMP_TRASH_PLATFORM-}
+JUMP_TRASH_FORMAT=${JUMP_TRASH_FORMAT-}
+JUMP_TRASH_ASK=${JUMP_TRASH_ASK-}
+
+# jtrash_self_path locates the currently running script so we can add a
+# `. "path"` line to the rc file when memorizing the spell.
+jtrash_self_path() {
+  if [ -n "$JUMP_TRASH_PATH" ]; then
+    printf '%s' "$JUMP_TRASH_PATH"
+    return 0
+  fi
+  hint=${JUMP_TRASH_SOURCE_HINT-}
+  if [ -z "$hint" ] && [ -n "${WIZARDRY_MEMORIZE_TARGET-}" ]; then
+    hint=$WIZARDRY_MEMORIZE_TARGET
+  fi
+  if [ -z "$hint" ]; then
+    hint=$0
+  fi
+  if [ "$RUNNING_AS_SCRIPT" -ne 1 ] && [ "$hint" = "$0" ]; then
+    hint=$(command -v jump-trash 2>/dev/null || printf '%s' '')
+  fi
+  if [ -z "$hint" ]; then
+    printf '%s\n' "jump-trash: unable to determine script path." >&2
+    return 1
+  fi
+  case $hint in
+  */*)
+    candidate=$hint
+    ;;
+  *)
+    candidate=$(command -v "$hint" 2>/dev/null || printf '%s' "$hint")
+    ;;
+  esac
+  dir=${candidate%/*}
+  file=${candidate##*/}
+  if [ -z "$dir" ] || [ "$dir" = "$candidate" ]; then
+    dir=.
+  fi
+  if abs_dir=$(cd "$dir" 2>/dev/null && pwd -P); then
+    JUMP_TRASH_PATH="$abs_dir/$file"
+  else
+    JUMP_TRASH_PATH="$candidate"
+  fi
+  printf '%s' "$JUMP_TRASH_PATH"
+}
+
+# jtrash_helpers_dir returns the directory that contains this spell plus nearby
+# helper spells such as detect-rc-file and learn.
+jtrash_helpers_dir() {
+  if [ -n "$JUMP_TRASH_HELPERS_DIR" ]; then
+    printf '%s' "$JUMP_TRASH_HELPERS_DIR"
+    return 0
+  fi
+  if ! self_path=$(jtrash_self_path); then
+    return 1
+  fi
+  dir=${self_path%/*}
+  JUMP_TRASH_HELPERS_DIR=$dir
+  printf '%s' "$JUMP_TRASH_HELPERS_DIR"
+}
+
+jtrash_detect_helper() {
+  if [ -n "${DETECT_RC_FILE-}" ]; then
+    if [ -x "$DETECT_RC_FILE" ]; then
+      printf '%s' "$DETECT_RC_FILE"
+      return 0
+    else
+      printf '%s\n' "jump-trash: DETECT_RC_FILE is set but not executable." >&2
+      return 1
+    fi
+  fi
+  
+  if ! helpers=$(jtrash_helpers_dir); then
+    return 1
+  fi
+  # Look in translocation directory where detect-rc-file lives
+  detect="$helpers/../translocation/detect-rc-file"
+  
+  if [ ! -x "$detect" ] && command -v detect-rc-file >/dev/null 2>&1; then
+    detect=$(command -v detect-rc-file)
+  fi
+  if [ ! -x "$detect" ]; then
+    printf '%s\n' "jump-trash: required helper 'detect-rc-file' is missing." >&2
+    return 1
+  fi
+  printf '%s' "$detect"
+}
+
+jtrash_learn_helper() {
+  if [ -n "${LEARN_SPELL-}" ]; then
+    if [ -x "$LEARN_SPELL" ]; then
+      printf '%s' "$LEARN_SPELL"
+      return 0
+    else
+      printf '%s\n' "jump-trash: LEARN_SPELL is set but not executable." >&2
+      return 1
+    fi
+  fi
+  
+  if ! helpers=$(jtrash_helpers_dir); then
+    return 1
+  fi
+  # Look in spellcraft directory where learn lives
+  learn="$helpers/../spellcraft/learn"
+  
+  if [ ! -x "$learn" ] && command -v learn >/dev/null 2>&1; then
+    learn=$(command -v learn)
+  fi
+  if [ ! -x "$learn" ]; then
+    printf '%s\n' "jump-trash: required helper 'learn' is missing." >&2
+    return 1
+  fi
+  printf '%s' "$learn"
+}
+
+jtrash_spellbook_store_helper() {
+  if ! helpers=$(jtrash_helpers_dir); then
+    return 1
+  fi
+  store="$helpers/../cantrips/spellbook-store"
+  if [ ! -x "$store" ] && command -v spellbook-store >/dev/null 2>&1; then
+    store=$(command -v spellbook-store)
+  fi
+  if [ ! -x "$store" ]; then
+    return 1
+  fi
+  printf '%s' "$store"
+}
+
+jtrash_ask_helper() {
+  if [ -n "$JUMP_TRASH_ASK" ] && [ -x "$JUMP_TRASH_ASK" ]; then
+    printf '%s' "$JUMP_TRASH_ASK"
+    return 0
+  fi
+  if ! helpers=$(jtrash_helpers_dir); then
+    return 1
+  fi
+  ask="$helpers/../cantrips/ask_yn"
+  if [ -x "$ask" ]; then
+    JUMP_TRASH_ASK=$ask
+    printf '%s' "$JUMP_TRASH_ASK"
+    return 0
+  fi
+  if command -v ask_yn >/dev/null 2>&1; then
+    JUMP_TRASH_ASK=$(command -v ask_yn)
+    printf '%s' "$JUMP_TRASH_ASK"
+    return 0
+  fi
+  printf '%s\n' "jump-trash: ask_yn spell is unavailable." >&2
+  return 1
+}
+
+jtrash_confirm() {
+  question=$1
+  default=${2:-no}
+  if ask_helper=$(jtrash_ask_helper); then
+    if "$ask_helper" "$question" "$default" >/dev/null; then
+      return 0
+    fi
+    return 1
+  fi
+  return 1
+}
+
+jtrash_detect_environment() {
+  if [ -n "${WIZARDRY_RC_FILE-}" ] && [ -z "$JUMP_TRASH_RC_FILE" ]; then
+    JUMP_TRASH_RC_FILE=$WIZARDRY_RC_FILE
+  fi
+  if [ -n "${WIZARDRY_PLATFORM-}" ] && [ -z "$JUMP_TRASH_PLATFORM" ]; then
+    JUMP_TRASH_PLATFORM=$WIZARDRY_PLATFORM
+  fi
+  if [ -n "${WIZARDRY_RC_FORMAT-}" ] && [ -z "$JUMP_TRASH_FORMAT" ]; then
+    JUMP_TRASH_FORMAT=$WIZARDRY_RC_FORMAT
+  fi
+  if [ -n "$JUMP_TRASH_RC_FILE" ] && [ -n "$JUMP_TRASH_PLATFORM" ] && [ -n "$JUMP_TRASH_FORMAT" ]; then
+    return 0
+  fi
+  if ! detect=$(jtrash_detect_helper); then
+    return 1
+  fi
+  output=$("$detect")
+  rc_file=''
+  platform=''
+  format=''
+  while IFS='=' read -r key value; do
+    case $key in
+    rc_file)
+      rc_file=$value
+      ;;
+    platform)
+      platform=$value
+      ;;
+    format)
+      format=$value
+      ;;
+    esac
+  done <<EOF_ENV
+$output
+EOF_ENV
+  if [ -z "$rc_file" ]; then
+    printf '%s\n' "jump-trash: detect-rc-file did not provide an rc file." >&2
+    return 1
+  fi
+  if [ -z "$platform" ]; then
+    platform=unknown
+  fi
+  if [ -z "$format" ]; then
+    format=shell
+  fi
+  JUMP_TRASH_RC_FILE=$rc_file
+  JUMP_TRASH_PLATFORM=$platform
+  JUMP_TRASH_FORMAT=$format
+}
+
+jtrash_spell_memorized() {
+  if ! jtrash_detect_environment; then
+    return 1
+  fi
+  if ! learn=$(jtrash_learn_helper); then
+    return 1
+  fi
+  if "$learn" --rc-file "$JUMP_TRASH_RC_FILE" --spell "$SPELL_NAME" status >/dev/null 2>&1; then
+    return 0
+  fi
+  if [ -f "$JUMP_TRASH_RC_FILE" ] && grep -Fq "jump-trash" "$JUMP_TRASH_RC_FILE" 2>/dev/null; then
+    return 0
+  fi
+  return 1
+}
+
+jtrash_register_spellbook_alias() {
+  if ! store=$(jtrash_spellbook_store_helper); then
+    return 0
+  fi
+  alias_line="jtrash\tjump-trash"
+  if "$store" list 2>/dev/null | grep -Fqx "$alias_line"; then
+    return 0
+  fi
+  if "$store" add jtrash jump-trash >/dev/null 2>&1; then
+    printf '%s\n' "Spellbook updated: 'jtrash' now casts 'jump-trash'."
+  fi
+}
+
+jtrash_install() {
+  if ! jtrash_detect_environment; then
+    return 1
+  fi
+  if [ "$JUMP_TRASH_FORMAT" = "nix" ]; then
+    printf '%s\n' "jump-trash: skipping installation for NixOS (shell code cannot be written to .nix files)."
+    printf '%s\n' "Hint: Source jump-trash from your shell profile after adding wizardry to PATH."
+    jtrash_register_spellbook_alias
+    return 0
+  fi
+  if ! learn=$(jtrash_learn_helper); then
+    return 1
+  fi
+  if ! script_path=$(jtrash_self_path); then
+    return 1
+  fi
+  line=$(printf 'source "%s"' "$script_path")
+  if printf '%s\n' "$line" | "$learn" --rc-file "$JUMP_TRASH_RC_FILE" --spell "$SPELL_NAME" add; then
+    printf '%s\n' "The 'jtrash' spell has been memorized (etched into $(basename "$JUMP_TRASH_RC_FILE"))."
+    printf '%s\n' "Open a new terminal (or source the file) to teleport to trash anywhere."
+    jtrash_register_spellbook_alias
+  fi
+}
+
+# Get the trash path using detect-trash or inline detection
+_jtrash_get_path() {
+  if command -v detect-trash >/dev/null 2>&1; then
+    detect-trash
+    return
+  fi
+  
+  # Inline fallback if detect-trash is not available
+  kernel=$(uname -s 2>/dev/null || printf 'unknown')
+  case "$kernel" in
+  Darwin)
+    printf '%s/.Trash\n' "$HOME"
+    ;;
+  Linux)
+    xdg_data="${XDG_DATA_HOME:-$HOME/.local/share}"
+    printf '%s/Trash/files\n' "$xdg_data"
+    ;;
+  *)
+    printf '%s\n' "jump-trash: unsupported operating system: $kernel" >&2
+    return 1
+    ;;
+  esac
+}
+
+# The actual jump function that changes directory
+jtrash() {
+  case "${1-}" in
+  --help|--usage|-h)
+    cat <<'USAGE'
+Usage: jtrash
+
+Teleport to the system trash directory.
+
+Supports:
+  - macOS: ~/.Trash
+  - Linux: ~/.local/share/Trash/files (or $XDG_DATA_HOME/Trash/files)
+USAGE
+    return 0
+    ;;
+  esac
+
+  trash_path=$(_jtrash_get_path)
+  if [ -z "$trash_path" ]; then
+    return 1
+  fi
+
+  if [ ! -d "$trash_path" ]; then
+    printf '%s\n' "jump-trash: trash directory does not exist: $trash_path" >&2
+    printf '%s\n' "The trash may be empty or the directory has not been created yet." >&2
+    return 1
+  fi
+
+  cd "$trash_path" || return 1
+  printf '%s\n' "You teleport to the trash at $trash_path"
+}
+
+jtrash_prompt_memorize() {
+  if jtrash_spell_memorized; then
+    rc_display="your shell configuration file"
+    if [ -n "$JUMP_TRASH_RC_FILE" ]; then
+      rc_display=$(basename "$JUMP_TRASH_RC_FILE")
+    fi
+    printf '%s\n' "The 'jtrash' spell is already memorized via $rc_display."
+    return 0
+  fi
+  if ! jtrash_detect_environment; then
+    return 1
+  fi
+  if ! learn=$(jtrash_learn_helper); then
+    return 1
+  fi
+  rc_display=$(basename "$JUMP_TRASH_RC_FILE")
+  prompt_message="Memorize the 'jtrash' spell now? It will be etched into $rc_display."
+  printf '%s\n' "$prompt_message"
+  if jtrash_confirm "$prompt_message" yes; then
+    jtrash_install
+  else
+    printf '%s\n' "Very well—cast 'memorize jump-trash' when you want instant trash teleportation."
+  fi
+}
+
+jtrash_cli() {
+  case ${1-} in
+  --install)
+    jtrash_install
+    ;;
+  --help|-h)
+    show_usage
+    ;;
+  "")
+    jtrash_prompt_memorize || true
+    jtrash || true
+    ;;
+  *)
+    printf '%s\n' "jump-trash: unknown option '$1'." >&2
+    return 1
+    ;;
+  esac
+}
+
+if [ "$RUNNING_AS_SCRIPT" -eq 1 ]; then
+  jtrash_cli "$@"
+fi

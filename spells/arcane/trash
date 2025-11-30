@@ -1,0 +1,249 @@
+#!/bin/sh
+
+# This spell moves files or folders to the system trash (recycle bin) safely.
+# Use this instead of `rm` when you want items to be recoverable.
+
+show_usage() {
+  cat <<'USAGE'
+Usage: trash [-r] <file|folder>...
+
+Move one or more files or folders to the system trash.
+
+Options:
+  -r, --recursive    Allow trashing directories (required for folders)
+  -f, --force        Ignore nonexistent files without error
+  --help, -h         Show this help message
+
+Examples:
+  trash file.txt           Move a single file to trash
+  trash -r my_folder       Move a folder to trash
+  trash file1.txt file2.txt   Move multiple files to trash
+
+Supports:
+  - macOS: Uses Finder via osascript
+  - Linux (GNOME/GTK): Uses gio trash
+  - Linux (fallback): Uses trash-put (trash-cli)
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
+set -eu
+
+recursive=0
+force=0
+
+# Parse options
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+  -r|--recursive)
+    recursive=1
+    shift
+    ;;
+  -f|--force)
+    force=1
+    shift
+    ;;
+  -rf|-fr)
+    recursive=1
+    force=1
+    shift
+    ;;
+  --)
+    shift
+    break
+    ;;
+  -*)
+    printf '%s\n' "trash: unknown option: $1" >&2
+    printf '%s\n' "Run 'trash --help' for usage." >&2
+    exit 2
+    ;;
+  *)
+    break
+    ;;
+  esac
+done
+
+if [ "$#" -eq 0 ]; then
+  printf '%s\n' "trash: missing file operand" >&2
+  printf '%s\n' "Run 'trash --help' for usage." >&2
+  exit 2
+fi
+
+# Detect the OS
+detect_os() {
+  kernel=$(uname -s 2>/dev/null || printf 'unknown')
+  case "$kernel" in
+  Darwin)
+    printf 'mac'
+    ;;
+  Linux)
+    printf 'linux'
+    ;;
+  *)
+    printf 'unknown'
+    ;;
+  esac
+}
+
+# Detect the best trash command available
+detect_trash_cmd() {
+  os=$1
+  case "$os" in
+  mac)
+    if command -v osascript >/dev/null 2>&1; then
+      printf 'osascript'
+    else
+      printf 'none'
+    fi
+    ;;
+  linux)
+    if command -v gio >/dev/null 2>&1; then
+      printf 'gio'
+    elif command -v trash-put >/dev/null 2>&1; then
+      printf 'trash-put'
+    elif command -v kioclient5 >/dev/null 2>&1; then
+      printf 'kioclient5'
+    else
+      printf 'none'
+    fi
+    ;;
+  *)
+    printf 'none'
+    ;;
+  esac
+}
+
+# Move a file to trash on macOS using osascript
+trash_macos() {
+  file=$1
+  # Convert to absolute path
+  case "$file" in
+  /*)
+    abs_path=$file
+    ;;
+  *)
+    abs_path="$(pwd)/$file"
+    ;;
+  esac
+
+  # Escape double quotes and backslashes in the path for AppleScript
+  escaped_path=$(printf '%s' "$abs_path" | sed 's/\\/\\\\/g; s/"/\\"/g')
+
+  # Use Finder to move to Trash
+  osascript -e "tell application \"Finder\" to delete POSIX file \"$escaped_path\"" >/dev/null 2>&1
+}
+
+# Move a file to trash using gio
+trash_gio() {
+  file=$1
+  if [ "$force" -eq 1 ]; then
+    gio trash -f -- "$file" 2>/dev/null || true
+  else
+    gio trash -- "$file"
+  fi
+}
+
+# Move a file to trash using trash-put
+trash_put() {
+  file=$1
+  if [ "$force" -eq 1 ]; then
+    trash-put -- "$file" 2>/dev/null || true
+  else
+    trash-put -- "$file"
+  fi
+}
+
+# Move a file to trash using kioclient5
+trash_kioclient() {
+  file=$1
+  # kioclient5 requires absolute paths
+  case "$file" in
+  /*)
+    abs_path=$file
+    ;;
+  *)
+    abs_path="$(pwd)/$file"
+    ;;
+  esac
+  if [ "$force" -eq 1 ]; then
+    kioclient5 move "$abs_path" trash:/ 2>/dev/null || true
+  else
+    kioclient5 move "$abs_path" trash:/
+  fi
+}
+
+os=$(detect_os)
+trash_cmd=$(detect_trash_cmd "$os")
+
+if [ "$trash_cmd" = "none" ]; then
+  printf '%s\n' "trash: no supported trash utility found for your system." >&2
+  case "$os" in
+  mac)
+    printf '%s\n' "On macOS, osascript should be available by default." >&2
+    ;;
+  linux)
+    printf '%s\n' "Install one of: gio, trash-cli (for trash-put), or kde-cli-tools (for kioclient5)." >&2
+    ;;
+  *)
+    printf '%s\n' "Your operating system is not supported." >&2
+    ;;
+  esac
+  exit 1
+fi
+
+exit_status=0
+
+for file in "$@"; do
+  # Check if file exists
+  if [ ! -e "$file" ]; then
+    if [ "$force" -eq 1 ]; then
+      continue
+    fi
+    printf '%s\n' "trash: cannot trash '$file': No such file or directory" >&2
+    exit_status=1
+    continue
+  fi
+
+  # Check if it's a directory and -r is not specified
+  if [ -d "$file" ] && [ "$recursive" -eq 0 ]; then
+    printf '%s\n' "trash: cannot trash '$file': Is a directory (use -r to trash directories)" >&2
+    exit_status=1
+    continue
+  fi
+
+  # Perform the trash operation based on available command
+  case "$trash_cmd" in
+  osascript)
+    if ! trash_macos "$file"; then
+      printf '%s\n' "trash: failed to trash '$file'" >&2
+      exit_status=1
+    fi
+    ;;
+  gio)
+    if ! trash_gio "$file"; then
+      printf '%s\n' "trash: failed to trash '$file'" >&2
+      exit_status=1
+    fi
+    ;;
+  trash-put)
+    if ! trash_put "$file"; then
+      printf '%s\n' "trash: failed to trash '$file'" >&2
+      exit_status=1
+    fi
+    ;;
+  kioclient5)
+    if ! trash_kioclient "$file"; then
+      printf '%s\n' "trash: failed to trash '$file'" >&2
+      exit_status=1
+    fi
+    ;;
+  esac
+done
+
+exit $exit_status
