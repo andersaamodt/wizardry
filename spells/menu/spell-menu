@@ -196,21 +196,34 @@ escaped_command=$(printf '%s' "$command" | sed "s/'/'\\\\''/g")
 
 first_run=1
 start_selection=1
+was_memorized=0
 
 while :; do
         if [ "$first_run" -eq 0 ]; then
                 printf '\n'
-                # After first run (toggle actions), start on the Memorize/Forget item (item 2)
-                start_selection=2
+                # Check if memorization state changed (toggle was used)
+                if is_memorized "$name"; then
+                        now_memorized=1
+                else
+                        now_memorized=0
+                fi
+                if [ "$was_memorized" != "$now_memorized" ]; then
+                        # Toggle was selected - keep cursor on toggle item (item 2)
+                        start_selection=2
+                else
+                        # Other action - reset to first item
+                        start_selection=1
+                fi
         else
                 first_run=0
         fi
 
-        # Show checkbox for Cast menu visibility (toggleable)
-        # Use standalone memorize and forget spells
+        # Check current memorization state and build toggle label
         if is_memorized "$name"; then
+                was_memorized=1
                 cast_toggle="[X] Forget%forget '$name'"
         else
+                was_memorized=0
                 cast_toggle="[ ] Memorize%memorize '$name'"
         fi
         # Build menu items - Cast now runs the command directly (using escaped version for safety)

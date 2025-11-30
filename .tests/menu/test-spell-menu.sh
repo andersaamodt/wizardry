@@ -67,6 +67,18 @@ case $1 in
     cast_dir=${WIZARDRY_CAST_DIR:-${HOME:-.}/.spellbook}
     printf '%s\n' "$cast_dir"
     ;;
+  *)
+    # Default action: memorize the spell (same as add with spell name as command)
+    name=$1
+    cmd=$name
+    cast_dir=${WIZARDRY_CAST_DIR:-${HOME:-.}/.spellbook}
+    cast_file_default=$cast_dir/.memorized
+    cast_file=${WIZARDRY_CAST_FILE:-$cast_file_default}
+    mkdir -p "$cast_dir"
+    printf '%s\t%s\n' "$name" "$cmd" >>"$cast_file"
+    printf '%s\n' "$cmd" >"$cast_dir/$name"
+    chmod +x "$cast_dir/$name"
+    ;;
 esac
 STUB
   chmod +x "$dir/memorize"
@@ -171,5 +183,131 @@ SH
 }
 
 run_test_case "spell-menu ESC/Exit behavior" test_esc_exit_behavior
+
+# Test that toggle selection keeps cursor position, other actions reset to first item
+test_toggle_keeps_cursor_position() {
+  stub_dir=$(make_stub_dir)
+  write_memorize_command_stub "$stub_dir"
+  write_require_command_stub "$stub_dir"
+  
+  cat >"$stub_dir/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$stub_dir/exit-label"
+  
+  # Create a menu stub that logs MENU_START_SELECTION and simulates actions
+  # First call: run memorize (toggle), second call: exit
+  call_count_file="$stub_dir/call_count"
+  printf '0\n' >"$call_count_file"
+  
+  cat >"$stub_dir/menu" <<'SH'
+#!/bin/sh
+call_count=$(cat "$CALL_COUNT_FILE")
+printf '%s\n' "MENU_START_SELECTION=$MENU_START_SELECTION" >>"$MENU_LOG"
+call_count=$((call_count + 1))
+printf '%s\n' "$call_count" >"$CALL_COUNT_FILE"
+if [ "$call_count" -eq 1 ]; then
+  # First call: execute the memorize command (second argument, which is the toggle)
+  # Find the toggle command (contains memorize or forget)
+  for arg in "$@"; do
+    case "$arg" in
+      *Memorize%*|*Forget%*)
+        cmd=${arg#*%}
+        eval "$cmd"
+        exit 0
+        ;;
+    esac
+  done
+  exit 0
+fi
+# Second call: exit
+exit 113
+SH
+  chmod +x "$stub_dir/menu"
+  
+  run_cmd env PATH="$stub_dir:$PATH:/usr/bin:/bin" MENU_LOG="$stub_dir/log" CALL_COUNT_FILE="$call_count_file" "$ROOT_DIR/spells/menu/spell-menu" testspell
+  assert_success || { TEST_FAILURE_REASON="menu should exit successfully"; return 1; }
+  
+  log_content=$(cat "$stub_dir/log")
+  # First call should have start_selection=1
+  # Second call (after toggle) should have start_selection=2
+  first_selection=$(printf '%s\n' "$log_content" | head -1 | sed 's/.*MENU_START_SELECTION=//')
+  second_selection=$(printf '%s\n' "$log_content" | sed -n '2p' | sed 's/.*MENU_START_SELECTION=//')
+  
+  if [ "$first_selection" != "1" ]; then
+    TEST_FAILURE_REASON="first menu call should have start_selection=1, got $first_selection"
+    return 1
+  fi
+  
+  if [ "$second_selection" != "2" ]; then
+    TEST_FAILURE_REASON="after toggle, menu should have start_selection=2, got $second_selection (log: $log_content)"
+    return 1
+  fi
+}
+
+run_test_case "spell-menu toggle keeps cursor position" test_toggle_keeps_cursor_position
+
+# Test that non-toggle actions reset cursor to first item
+test_non_toggle_resets_cursor() {
+  stub_dir=$(make_stub_dir)
+  write_memorize_command_stub "$stub_dir"
+  write_require_command_stub "$stub_dir"
+  
+  cat >"$stub_dir/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$stub_dir/exit-label"
+  
+  # Create a menu stub that logs MENU_START_SELECTION and simulates cast action
+  call_count_file="$stub_dir/call_count"
+  printf '0\n' >"$call_count_file"
+  
+  cat >"$stub_dir/menu" <<'SH'
+#!/bin/sh
+call_count=$(cat "$CALL_COUNT_FILE")
+printf '%s\n' "MENU_START_SELECTION=$MENU_START_SELECTION" >>"$MENU_LOG"
+call_count=$((call_count + 1))
+printf '%s\n' "$call_count" >"$CALL_COUNT_FILE"
+if [ "$call_count" -eq 1 ]; then
+  # First call: execute the cast command (first argument)
+  for arg in "$@"; do
+    case "$arg" in
+      "Cast now%"*)
+        cmd=${arg#*%}
+        eval "$cmd" 2>/dev/null || true
+        exit 0
+        ;;
+    esac
+  done
+  exit 0
+fi
+# Second call: exit
+exit 113
+SH
+  chmod +x "$stub_dir/menu"
+  
+  run_cmd env PATH="$stub_dir:$PATH:/usr/bin:/bin" MENU_LOG="$stub_dir/log" CALL_COUNT_FILE="$call_count_file" "$ROOT_DIR/spells/menu/spell-menu" testspell
+  assert_success || { TEST_FAILURE_REASON="menu should exit successfully"; return 1; }
+  
+  log_content=$(cat "$stub_dir/log")
+  # First call should have start_selection=1
+  # Second call (after cast action, NOT toggle) should have start_selection=1 (reset)
+  first_selection=$(printf '%s\n' "$log_content" | head -1 | sed 's/.*MENU_START_SELECTION=//')
+  second_selection=$(printf '%s\n' "$log_content" | sed -n '2p' | sed 's/.*MENU_START_SELECTION=//')
+  
+  if [ "$first_selection" != "1" ]; then
+    TEST_FAILURE_REASON="first menu call should have start_selection=1, got $first_selection"
+    return 1
+  fi
+  
+  if [ "$second_selection" != "1" ]; then
+    TEST_FAILURE_REASON="after non-toggle action, menu should have start_selection=1, got $second_selection (log: $log_content)"
+    return 1
+  fi
+}
+
+run_test_case "spell-menu non-toggle resets cursor" test_non_toggle_resets_cursor
 
 finish_tests
