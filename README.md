@@ -73,16 +73,6 @@ This spec helps scripts evolve into living, polished exemplars of communal knowl
 
 Most wizardry spells can assume that wizardry is installed (in `$PATH`) and that wizardry spells can be used. Spells used in the installation of wizardry itself are written without relying on other wizardry spells, since they might not be installed yet. These bootstrappable spells are `install` and spells in `spells/install/core/`.
 
-### Spellbook Terminology
-
-Wizardry uses specific terms for managing spells:
-
-* **Learn** — Some spells must be **learned** before they can be used. Use `spell --install` or `learn <path to spell>` to learn these spells (usually this means sourcing them in your RC file).
-* **Memorize** — **Memorized** spells appear in the Cast menu. Memorize a spell with `memorize <spell name>` or from the Spellbook menu. Forget a spell the same ways with `forget <spell name>`.
-* **Scribe** — **Scribe** a new spell to create a custom spell script in `~/.spellbook`. Use `scribe-spell` or the Spellbook menu to do this.
-* **Erase** — **Erase** a custom spell to permanently delete it from `~/.spellbook`. Use `erase-spell <spell name>` or select "Erase spell" from the spell menu. This cannot be undone.
-* **Learn-spellbook** — Use `learn-spellbook` to add or remove a folder to your PATH permanently.
-
 ### Spellbook
 
 The Spellbook is your personal grimoire for casting and organizing spells. Access it by typing `spellbook` or selecting it from the main menu.
@@ -141,10 +131,12 @@ Using the free software suite makes it easy to establish a standardized software
 | **Cast** | To execute a spell. Memorized spells appear in the Cast menu for quick access. |
 | **Divination** | Spells that detect or discover information about your system, found in `spells/divination/`. |
 | **Enchant** / **Enchantment** | Spells that add or manage extended attributes (metadata) on files, found in `spells/enchant/`. |
+| **Erase** | Permanently delete a custom spell from `~/.spellbook`. Use `erase-spell <spell name>` or select "Erase spell" from the spell menu. This cannot be undone. |
 | **Forget** | Remove a spell from your memorized list. Use `forget <spell name>` or the Spellbook menu. |
 | **Imp** | The smallest building block—a microscript that does exactly one thing. Lives in `spells/.imps/`. |
 | **Kryptos** | Cryptographic spells for hashing and security, found in `spells/kryptos/`. |
-| **Learn** | Add a spell to your shell environment. Use `spell --install` or `learn <path to spell>` to make a spell permanently available. |
+| **Learn** | Add a spell to your shell environment. Use `spell --install` or `learn <path to spell>` to make a spell permanently available (usually by sourcing it in your RC file). |
+| **Learn-spellbook** | Add or remove a folder to your PATH permanently. Use `learn-spellbook` to manage custom spell folders. |
 | **Memorize** | Add a spell to your Cast menu for quick access. Use `memorize <spell name>` or the Spellbook menu. |
 | **Portal** | A persistent connection between two computers via SSH, created with `open-portal`. |
 | **Portkey** | A bookmark to a remote location. Use `enchant-portkey` to create one and `follow-portkey` to teleport there. |
