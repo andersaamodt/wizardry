@@ -424,6 +424,7 @@ jump_list_markers() {
 
 # Get the most recently used marker (by mtime)
 # Returns empty if all markers have the same mtime (fresh state)
+# or if the most recent marker is older than 4 hours (reset timeout)
 jump_most_recent_marker() {
         markers_dir=${MARKERS_DIR:-$HOME/.spellbook/markers}
         if [ ! -d "$markers_dir" ]; then
@@ -448,6 +449,14 @@ jump_most_recent_marker() {
                       oldest_mtime=$(stat -f %m "$markers_dir/$oldest" 2>/dev/null)
         
         if [ "$recent_mtime" != "$oldest_mtime" ]; then
+                # Check if the most recent marker is older than 4 hours
+                # If so, reset cycling (return empty to start at "1")
+                current_time=$(date +%s)
+                four_hours=$((4 * 60 * 60))
+                age=$((current_time - recent_mtime))
+                if [ "$age" -gt "$four_hours" ]; then
+                        return 1
+                fi
                 printf '%s\n' "$recent"
                 return 0
         fi
