@@ -6,6 +6,13 @@ set -eu
 
 menu_escape_status=113
 
+# Temp file for tracking toggle selection
+toggle_flag_file="${TMPDIR:-/tmp}/wizardry-spell-menu-toggle.$$"
+cleanup_toggle_flag() {
+        rm -f "$toggle_flag_file"
+}
+trap 'cleanup_toggle_flag' EXIT
+
 # Load colors for display
 if command -v colors >/dev/null 2>&1; then
         # shellcheck source=/dev/null
@@ -200,18 +207,24 @@ start_selection=1
 while :; do
         if [ "$first_run" -eq 0 ]; then
                 printf '\n'
-                # After first run (toggle actions), start on the Memorize/Forget item (item 2)
-                start_selection=2
+                # Check if toggle was selected - if so, keep cursor on toggle item (item 2)
+                # Otherwise reset to first item for other actions
+                if [ -f "$toggle_flag_file" ]; then
+                        start_selection=2
+                        rm -f "$toggle_flag_file"
+                else
+                        start_selection=1
+                fi
         else
                 first_run=0
         fi
 
         # Show checkbox for Cast menu visibility (toggleable)
-        # Use standalone memorize and forget spells
+        # Use standalone memorize and forget spells - touch flag file to keep cursor position
         if is_memorized "$name"; then
-                cast_toggle="[X] Forget%forget '$name'"
+                cast_toggle="[X] Forget%forget '$name'; touch '$toggle_flag_file'"
         else
-                cast_toggle="[ ] Memorize%memorize '$name'"
+                cast_toggle="[ ] Memorize%memorize '$name'; touch '$toggle_flag_file'"
         fi
         # Build menu items - Cast now runs the command directly (using escaped version for safety)
         exit_label=$(exit-label)
