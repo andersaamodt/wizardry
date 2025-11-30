@@ -285,22 +285,25 @@ install() {
         if ! jump_detect_environment; then
                 return 1
         fi
-        # For nix format, find a shell rc file instead - we can't source shell code from .nix files
+        # For nix format, try to find a shell rc file - we can't source shell code from .nix files
         if [ "$JUMP_TO_MARKER_FORMAT" = "nix" ]; then
                 # Try common shell rc files
                 shell_rc=""
-                for candidate in "$HOME/.bashrc" "$HOME/.bash_profile" "$HOME/.profile" "$HOME/.zshrc"; do
+                for candidate in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.bash_profile" "$HOME/.profile"; do
                         if [ -f "$candidate" ]; then
                                 shell_rc=$candidate
                                 break
                         fi
                 done
                 if [ -z "$shell_rc" ]; then
-                        # Create .bashrc if no rc file exists
-                        shell_rc="$HOME/.bashrc"
+                        printf '%s\n' "jump-to-marker: shell code cannot be written to .nix files."
+                        printf '%s\n' "Add 'source <path-to-jump-to-marker>' to your shell profile to enable the 'jump' alias."
+                        printf '%s\n' "Or use 'jump-to-marker' directly since wizardry is on PATH."
+                        return 0
                 fi
                 JUMP_TO_MARKER_RC_FILE=$shell_rc
                 JUMP_TO_MARKER_FORMAT=shell
+                printf '%s\n' "Detected NixOS - using $shell_rc for shell configuration."
         fi
         if ! learn=$(jump_learn_helper); then
                 return 1
