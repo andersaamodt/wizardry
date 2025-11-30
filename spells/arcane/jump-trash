@@ -1,0 +1,43 @@
+#!/bin/sh
+
+# This spell prints the path to your system trash directory.
+# Use it with cd: cd "$(jump-trash)" to navigate to your trash.
+
+show_usage() {
+  cat <<'USAGE'
+Usage: jump-trash
+
+Print the path to the system trash directory. Use with cd to navigate there:
+
+  cd "$(jump-trash)"
+
+Supports:
+  - macOS: ~/.Trash
+  - Linux: ~/.local/share/Trash/files (or $XDG_DATA_HOME/Trash/files)
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
+set -eu
+
+# Use the detect-trash imp to get the trash path
+if ! command -v detect-trash >/dev/null 2>&1; then
+  printf '%s\n' "jump-trash: detect-trash imp not found" >&2
+  exit 1
+fi
+
+trash_path=$(detect-trash)
+
+if [ ! -d "$trash_path" ]; then
+  printf '%s\n' "jump-trash: trash directory does not exist: $trash_path" >&2
+  printf '%s\n' "The trash may be empty or the directory has not been created yet." >&2
+  exit 1
+fi
+
+printf '%s\n' "$trash_path"

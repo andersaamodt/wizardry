@@ -1,0 +1,26 @@
+#!/bin/sh
+# detect-trash - print the path to the user's trash directory
+# Returns the correct trash directory path for the current OS.
+# Example: cd "$(detect-trash)"
+
+set -eu
+
+kernel=$(uname -s 2>/dev/null || printf 'unknown')
+
+case "$kernel" in
+Darwin)
+  # macOS uses ~/.Trash
+  printf '%s/.Trash\n' "$HOME"
+  ;;
+Linux)
+  # Linux (freedesktop.org spec) uses ~/.local/share/Trash/files
+  # XDG_DATA_HOME may override the default location
+  xdg_data="${XDG_DATA_HOME:-$HOME/.local/share}"
+  printf '%s/Trash/files\n' "$xdg_data"
+  ;;
+*)
+  # Unsupported OS
+  printf '%s\n' "detect-trash: unsupported operating system: $kernel" >&2
+  exit 1
+  ;;
+esac
