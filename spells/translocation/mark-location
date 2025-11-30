@@ -1,16 +1,29 @@
 #!/bin/sh
 
 # This spell records the current directory (or a provided path) for jump-to-marker.
-# It resolves the destination to an absolute path and stores it in the marker file.
+# It resolves the destination to an absolute path and stores it in a named marker file.
 
+require-wizardry || exit 1
 
 set -eu
 usage() {
   cat <<'USAGE'
-Usage: mark-location [path]
+Usage: mark-location [marker] [path]
+       mark [marker] [path]
 
 Record the absolute path (current directory by default) for jump-to-marker to
-return to later, writing it into ~/.mud/portal_marker.
+return to later. Markers are stored in ~/.spellbook/.markers/.
+
+Arguments:
+  marker  Optional name or number for the marker. If omitted, uses the next
+          available number (auto-increments). Use any alphanumeric name.
+  path    Optional path to mark. If omitted, marks the current directory.
+
+Examples:
+  mark-location           # Mark current dir as next number (e.g., "1")
+  mark-location alpha     # Mark current dir as "alpha"
+  mark-location 5         # Mark current dir as "5"
+  mark-location home ~    # Mark home directory as "home"
 USAGE
 }
 
@@ -21,41 +34,101 @@ case "${1-}" in
   ;;
 esac
 
-if [ "$#" -gt 1 ]; then
+if [ "$#" -gt 2 ]; then
   usage
   exit 1
 fi
 
-marker_dir="$HOME/.mud"
-marker_file="$marker_dir/portal_marker"
+markers_dir="$HOME/.spellbook/.markers"
 
-# Store the marker alongside other MUD metadata.
-make dir "$marker_dir" || exit 1
+# Store the markers in ~/.spellbook/.markers/ (persists across wizardry resets).
+make dir "$markers_dir" || exit 1
+
+# Determine marker name: if first arg looks like a path, it's the path, not name
+marker_name=""
+target_path=""
 
 if [ "$#" -eq 0 ]; then
+  # No args: auto-increment marker, mark current directory
+  target_path=""
+elif [ "$#" -eq 1 ]; then
+  # One arg: could be marker name OR path
+  # Treat as path if it contains / or starts with . or ~, otherwise marker name
+  case "$1" in
+    /*|./*|../*|~|~/*)
+      # Looks like a path
+      target_path="$1"
+      ;;
+    *)
+      # Treat as marker name if it exists as directory, otherwise as marker
+      if [ -d "$1" ]; then
+        target_path="$1"
+      else
+        marker_name="$1"
+      fi
+      ;;
+  esac
+else
+  # Two args: first is marker, second is path
+  marker_name="$1"
+  target_path="$2"
+fi
+
+# Get next marker number if no name given using O_EXCL loop
+# This finds the first available number without needing a .next file
+if [ -z "$marker_name" ]; then
+  n=1
+  while [ -e "$markers_dir/$n" ]; do
+    n=$((n + 1))
+  done
+  marker_name=$n
+fi
+
+# Validate marker name (alphanumeric, dashes, underscores only)
+case "$marker_name" in
+  *[!A-Za-z0-9_-]*)
+    warn "Error: marker name may only contain letters, numbers, dashes, and underscores."
+    exit 1
+    ;;
+esac
+
+# Determine destination path
+if [ -z "$target_path" ]; then
   destination=$(here)
 else
   # Expand the provided path to an absolute destination for consistent recall.
-  case $1 in
+  case "$target_path" in
     /*)
-      destination="$(cd "$(dirname "$1")" && here)/$(basename "$1")"
+      if [ -d "$target_path" ]; then
+        destination=$(cd "$target_path" && here)
+      else
+        destination="$(cd "$(dirname "$target_path")" && here)/$(basename "$target_path")"
+      fi
       ;;
     "~/"*)
       if is set "${HOME-}"; then
-        destination="$HOME/${1#"~/"}"
+        destination="$HOME/${target_path#"~/"}"
       else
-        destination="$1"
+        destination="$target_path"
+      fi
+      ;;
+    "~")
+      if is set "${HOME-}"; then
+        destination="$HOME"
+      else
+        destination="$target_path"
       fi
       ;;
     *)
-      destination="$(here)/$1"
+      destination="$(here)/$target_path"
       ;;
   esac
-  gone "$destination" && { warn "Error: $1 does not exist."; exit 1; }
+  gone "$destination" && { warn "Error: $target_path does not exist."; exit 1; }
 fi
 
 # Normalize any double slashes in the path (can occur on macOS where TMPDIR ends with /)
 destination=$(norm-path "$destination")
 
+marker_file="$markers_dir/$marker_name"
 say "$destination" >"$marker_file"
-say "Location marked at $destination."
+say "Marked location $marker_name at $destination."
