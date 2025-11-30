@@ -129,7 +129,7 @@ Using the free software suite makes it easy to establish a standardized software
 | **Arcanum** (pl. **Arcana**) | A grand working—a spell that installs and configures software across supported platforms, presented as a menu of functions. Also refers to the apps themselves. |
 | **Bootstrap spell** | A spell that can run before wizardry is fully installed. These self-contained scripts (like `install` and spells in `spells/install/core/`) don't rely on other wizardry spells. |
 | **Cantrip** | A small utility spell for common tasks, found in `spells/cantrips/`. |
-| **Cast** | To execute a spell. Memorized spells appear in the Cast menu for quick access. |
+| **Cast** | To execute a spell. Memorized spells appear in the `cast` menu for quick access. |
 | **Daemon** | A background process that runs continuously, typically started at system boot and providing services (e.g., web servers, schedulers). |
 | **Demon family** | A subfolder within `spells/.imps/` that groups related imps by function. Each folder represents a family of imps that share a common purpose (e.g., `str/` for string operations, `fs/` for filesystem operations). |
 | **Divination** | Spells that detect or discover information about your system, found in `spells/divination/`. |
