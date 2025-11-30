@@ -123,33 +123,14 @@ menu_escape_status=113
 loop_limit=${MENU_LOOP_LIMIT:-}
 first_run=1
 start_selection=1
-was_cd_installed=0
 
 while true; do
   if [ "$first_run" -eq 0 ]; then
     printf '\n'
-    # Check if cd hook state changed (toggle was used)
-    if is_cd_hook_installed; then
-      now_cd_installed=1
-    else
-      now_cd_installed=0
-    fi
-    if [ "$was_cd_installed" != "$now_cd_installed" ]; then
-      # Toggle was selected - keep cursor on toggle item (item 1)
-      start_selection=1
-    else
-      # Other action - reset to first item
-      start_selection=1
-    fi
+    # Keep cursor on CD hook toggle item (item 1) after any action
+    start_selection=1
   else
     first_run=0
-  fi
-
-  # Track current cd hook state for detecting toggle
-  if is_cd_hook_installed; then
-    was_cd_installed=1
-  else
-    was_cd_installed=0
   fi
 
   if display_menu; then
