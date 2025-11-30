@@ -548,7 +548,7 @@ SCRIBED_COMMANDS
                                 while IFS= read -r folder_name; do
                                         [ -z "$folder_name" ] && continue
                                         # Don't capitalize - just use the folder name
-                                        set -- "$@" "${folder_name}%MENU_NEWLINE=1 spellbook $spell_home/$folder_name"
+                                        set -- "$@" "${folder_name}%spellbook $spell_home/$folder_name"
                                 done <<USER_FOLDERS
 $user_folders
 USER_FOLDERS
@@ -559,7 +559,7 @@ USER_FOLDERS
                         set -- "$@" "%--divider--"
                         for category in $(spell_categories); do
                                 # Don't capitalize - just use the folder name
-                                set -- "$@" "${category}%MENU_NEWLINE=1 spellbook $category"
+                                set -- "$@" "${category}%spellbook $category"
                         done
                 else
                         # Non-root view: show spells from both built-in and custom folders combined
@@ -571,7 +571,7 @@ USER_FOLDERS
                         if [ -d "$builtin_dir" ]; then
                                 for spell in $(find "$builtin_dir" -maxdepth 1 -type f -perm -111 2>/dev/null | sort); do
                                         spell_name=$(basename "$spell")
-                                        set -- "$@" "${spell_name}%MENU_NEWLINE=1 spell-menu $spell_name"
+                                        set -- "$@" "${spell_name}%spell-menu $spell_name"
                                 done
                         fi
                         
@@ -580,7 +580,7 @@ USER_FOLDERS
                                 for spell in $(find "$custom_dir" -maxdepth 1 -type f -perm -111 2>/dev/null | sort); do
                                         spell_name=$(basename "$spell")
                                         # Use YELLOW for custom spell names (distinct from CYAN highlight)
-                                        set -- "$@" "${YELLOW}${spell_name}${RESET}%MENU_NEWLINE=1 spell-menu $spell_name"
+                                        set -- "$@" "${YELLOW}${spell_name}${RESET}%spell-menu $spell_name"
                                 done
                         fi
                         
@@ -589,7 +589,7 @@ USER_FOLDERS
                                 for subdir in "$resolved_path"/*; do
                                         [ -d "$subdir" ] || continue
                                         subname=$(basename "$subdir")
-                                        set -- "$@" "${subname}%MENU_NEWLINE=1 spellbook $resolved_path/$subname"
+                                        set -- "$@" "${subname}%spellbook $resolved_path/$subname"
                                 done
                         fi
                 fi

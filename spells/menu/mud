@@ -30,14 +30,20 @@ if ! require menu "The MUD menu needs the 'menu' command to present options."; t
   exit 1
 fi
 
+# Add visual spacing before launching a submenu command
+launch_submenu() {
+  printf '\n'
+  "$@"
+}
+
 display_menu() {
   look="Look Around%look"
   home="Teleport Home%cd"
   jump="Teleport to Marker%jump-to-marker"
   portal="Teleport to Portal Chamber%cd /mnt"
-  install="Install MUD%MENU_NEWLINE=1 mud-install-menu"
-  admin="Admin MUD Hosting%MENU_NEWLINE=1 mud-admin"
-  settings="MUD Settings%MENU_NEWLINE=1 mud-settings"
+  install="Install MUD%launch_submenu mud-install-menu"
+  admin="Admin MUD Hosting%launch_submenu mud-admin"
+  settings="MUD Settings%launch_submenu mud-settings"
   exit_label=$(exit-label)
   exit_item="${exit_label}%exit $menu_escape_status"
 

@@ -34,11 +34,11 @@ if ! require menu "The main menu needs the 'menu' command to present options."; 
 fi
 
 display_menu() {
-  mud="MUD menu%MENU_NEWLINE=1 mud"
-  cast="Cast a Spell%MENU_NEWLINE=1 cast"
-  spellbook="Spellbook%MENU_NEWLINE=1 spellbook"
-  install="Install Free Software%MENU_NEWLINE=1 install-menu"
-  system="Manage System%MENU_NEWLINE=1 system-menu"
+  mud="MUD menu%mud"
+  cast="Cast a Spell%cast"
+  spellbook="Spellbook%spellbook"
+  install="Install Free Software%install-menu"
+  system="Manage System%system-menu"
   exit_label=$(exit-label)
   exit_item="${exit_label}%exit $menu_escape_status"
 
