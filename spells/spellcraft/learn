@@ -3,7 +3,7 @@
 # This spell learns knowledge into your shell: it can either install
 # installable spells (those with an install() function) or edit rc files to
 # add, remove, or inspect snippets. The install flow mirrors the classic
-# memorize spell while the rc flow preserves the original learn spell magic.
+# memorize spell while the rc flow provides rc file management functionality.
 
 set -eu
 
