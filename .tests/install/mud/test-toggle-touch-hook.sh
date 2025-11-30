@@ -34,8 +34,20 @@ test_toggle_disables_feature() {
   assert_output_contains "disabled" || return 1
 }
 
+test_fails_when_mud_config_missing() {
+  tmp=$(make_tempdir)
+  # Copy the toggle script to a temp location without mud-config
+  cp "$ROOT_DIR/spells/install/mud/toggle-touch-hook" "$tmp/toggle-touch-hook"
+  chmod +x "$tmp/toggle-touch-hook"
+  
+  run_cmd env WIZARDRY_MUD_CONFIG_DIR="$tmp" "$tmp/toggle-touch-hook"
+  assert_failure || return 1
+  assert_error_contains "mud-config not found" || return 1
+}
+
 run_test_case "toggle-touch-hook --help shows usage" test_help_shows_usage
 run_test_case "toggle-touch-hook enables feature" test_toggle_enables_feature
 run_test_case "toggle-touch-hook toggles feature off" test_toggle_disables_feature
+run_test_case "toggle-touch-hook fails when mud-config missing" test_fails_when_mud_config_missing
 
 finish_tests
