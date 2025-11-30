@@ -43,21 +43,21 @@ if [ -r /etc/os-release ] && grep -q '^ID=nixos' /etc/os-release; then
 fi
 
 display_menu() {
+  restart_menu="Restart...%shutdown-menu"
   services="Manage services%services-menu"
   verify_posix="Verify POSIX spells%verify-posix"
   update_wizardry="Update wizardry%update-wizardry"
   test_suite="Test all wizardry spells%$repo_dir/spells/system/test-magic"
   update_all="Update all software%update-all -v"
   uninstall_wizardry="Uninstall wizardry%$repo_dir/install --uninstall"
-  restart="Force restart%sudo shutdown -r now"
   exit_label=$(exit-label)
   exit_item="${exit_label}%exit $menu_escape_status"
 
-  set -- "$update_all" "$update_wizardry" "$services"
+  set -- "$restart_menu" "$update_all" "$update_wizardry" "$services"
   if [ -n "$nixos_rebuild" ]; then
     set -- "$@" "$nixos_rebuild"
   fi
-  set -- "$@" "$verify_posix" "$test_suite" "$uninstall_wizardry" "$restart" "$exit_item"
+  set -- "$@" "$verify_posix" "$test_suite" "$uninstall_wizardry" "$exit_item"
 
   MENU_ESCAPE_STATUS=$menu_escape_status menu "System Menu:" "$@"
 }
