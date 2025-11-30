@@ -41,7 +41,7 @@ display_menu() {
   copy="Copy player key to clipboard%copy ~/.ssh/\$MUD_PLAYER.pub"
   change="Change Player%select-player"
   new="New Player%new-player"
-  install="Install%launch_submenu mud-install-menu"
+  install="Install%launch_submenu mud-menu"
   exit_label=$(exit-label)
   exit_item="${exit_label}%exit $menu_escape_status"
 

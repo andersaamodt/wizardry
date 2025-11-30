@@ -1,7 +1,7 @@
 #!/bin/sh
 # Behavioral cases (derived from spell behavior):
-# - mud-install-menu offers tor setup and exits on interrupt
-# - mud-install-menu shows CD hook toggle with [X]/[ ] status
+# - mud-menu offers tor setup and exits on interrupt
+# - mud-menu shows CD hook toggle with [X]/[ ] status
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/test-common.sh" ] && [ "$test_root" != "/" ]; do
@@ -60,7 +60,7 @@ SH
   chmod +x "$tmp/exit-label"
   # Test as submenu (as it would be called from mud menu)
   # Use MENU_LOOP_LIMIT=1 to exit after one iteration
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MENU_LOOP_LIMIT=1 "$ROOT_DIR/spells/menu/mud-install-menu"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MENU_LOOP_LIMIT=1 "$ROOT_DIR/spells/menu/mud-menu"
   assert_success
   args=$(cat "$tmp/log")
   case "$args" in
@@ -78,7 +78,7 @@ printf '%s\n' "The MUD Install menu needs the 'menu' command to present options.
 exit 1
 SH
   chmod +x "$tmp/require-command"
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud-install-menu"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud-menu"
   assert_failure
   assert_error_contains "The MUD Install menu needs the 'menu' command"
 }
@@ -98,14 +98,14 @@ SH
 printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MENU_LOOP_LIMIT=1 "$ROOT_DIR/spells/menu/mud-install-menu"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MENU_LOOP_LIMIT=1 "$ROOT_DIR/spells/menu/mud-menu"
   assert_status 5
   assert_file_contains "$tmp/log" "MUD Install:"
 }
 
-run_test_case "mud-install-menu invokes tor setup" test_mud_install_menu_calls_tor_installer
-run_test_case "mud-install-menu fails fast when menu helper is missing" test_mud_install_menu_requires_menu_helper
-run_test_case "mud-install-menu surfaces menu failures" test_mud_install_menu_reports_menu_failure
+run_test_case "mud-menu invokes tor setup" test_mud_install_menu_calls_tor_installer
+run_test_case "mud-menu fails fast when menu helper is missing" test_mud_install_menu_requires_menu_helper
+run_test_case "mud-menu surfaces menu failures" test_mud_install_menu_reports_menu_failure
 
 # Test ESC and Exit behavior - menu exits properly when escape status returned
 test_esc_exit_behavior() {
@@ -134,7 +134,7 @@ SH
   chmod +x "$tmp/exit-label"
   
   
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud-install-menu"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud-menu"
   assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
   
   args=$(cat "$tmp/log")
@@ -145,7 +145,7 @@ SH
   
 }
 
-run_test_case "mud-install-menu ESC/Exit behavior" test_esc_exit_behavior
+run_test_case "mud-menu ESC/Exit behavior" test_esc_exit_behavior
 
 # Test CD hook toggle shows [ ] when not installed
 test_cd_hook_toggle_unchecked() {
@@ -176,7 +176,7 @@ SH
   rc_file="$tmp/rc"
   : >"$rc_file"
   
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" "$ROOT_DIR/spells/menu/mud-install-menu"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" "$ROOT_DIR/spells/menu/mud-menu"
   assert_success || return 1
   
   args=$(cat "$tmp/log")
@@ -220,7 +220,7 @@ alias cd='. "$WIZARDRY_CD_CANTRIP"'
 # <<< wizardry cd cantrip <<<
 RC
   
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" "$ROOT_DIR/spells/menu/mud-install-menu"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" "$ROOT_DIR/spells/menu/mud-menu"
   assert_success || return 1
   
   args=$(cat "$tmp/log")
@@ -232,7 +232,7 @@ RC
 
 # Test --help shows usage
 test_mud_install_menu_help() {
-  run_cmd "$ROOT_DIR/spells/menu/mud-install-menu" --help
+  run_cmd "$ROOT_DIR/spells/menu/mud-menu" --help
   assert_success || return 1
   assert_output_contains "Usage:" || return 1
   assert_output_contains "CD hook" || return 1
@@ -240,7 +240,7 @@ test_mud_install_menu_help() {
 
 run_test_case "CD hook toggle shows [ ] when not installed" test_cd_hook_toggle_unchecked
 run_test_case "CD hook toggle shows [X] when installed" test_cd_hook_toggle_checked
-run_test_case "mud-install-menu --help shows usage" test_mud_install_menu_help
+run_test_case "mud-menu --help shows usage" test_mud_install_menu_help
 
 # Test new MUD feature toggles
 test_command_not_found_toggle_unchecked() {
@@ -273,7 +273,7 @@ SH
   config_dir="$tmp/mud"
   mkdir -p "$config_dir"
   
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" WIZARDRY_MUD_CONFIG_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-install-menu"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" WIZARDRY_MUD_CONFIG_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
   assert_success || return 1
   
   args=$(cat "$tmp/log")
@@ -313,7 +313,7 @@ SH
   mkdir -p "$config_dir"
   printf '%s\n' "command-not-found=1" >"$config_dir/config"
   
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" WIZARDRY_MUD_CONFIG_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-install-menu"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" WIZARDRY_MUD_CONFIG_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
   assert_success || return 1
   
   args=$(cat "$tmp/log")
@@ -351,7 +351,7 @@ SH
   config_dir="$tmp/mud"
   mkdir -p "$config_dir"
   
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" WIZARDRY_MUD_CONFIG_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-install-menu"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" WIZARDRY_MUD_CONFIG_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
   assert_success || return 1
   
   args=$(cat "$tmp/log")
@@ -390,7 +390,7 @@ SH
   config_dir="$tmp/mud"
   mkdir -p "$config_dir"
   
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" WIZARDRY_MUD_CONFIG_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-install-menu"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" WIZARDRY_MUD_CONFIG_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
   assert_success || return 1
   
   args=$(cat "$tmp/log")
