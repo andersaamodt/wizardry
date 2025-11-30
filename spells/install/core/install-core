@@ -13,23 +13,26 @@ detect_platform() {
 }
 
 core_dependencies() {
+  # Format: label:command_name:install_spell:uninstall_spell:essential
+  # essential=1 means the command is critical for shell/wizardry operation
+  # and should not be uninstalled
   platform=$(detect_platform)
   case $platform in
     Darwin)
       cat <<'EOF'
-Git:git:install-git:uninstall-git
-dd:dd:install-dd:uninstall-dd
-stty:stty:install-stty:uninstall-stty
-tput:tput:install-tput:uninstall-tput
+Git:git:install-git:uninstall-git:0
+dd:dd:install-dd:uninstall-dd:1
+stty:stty:install-stty:uninstall-stty:1
+tput:tput:install-tput:uninstall-tput:1
 EOF
       ;;
     *)
       cat <<'EOF'
-Git:git:install-git:uninstall-git
-Bubblewrap:bwrap:install-bwrap:uninstall-bwrap
-dd:dd:install-dd:uninstall-dd
-stty:stty:install-stty:uninstall-stty
-tput:tput:install-tput:uninstall-tput
+Git:git:install-git:uninstall-git:0
+Bubblewrap:bwrap:install-bwrap:uninstall-bwrap:0
+dd:dd:install-dd:uninstall-dd:1
+stty:stty:install-stty:uninstall-stty:1
+tput:tput:install-tput:uninstall-tput:1
 EOF
       ;;
   esac
@@ -55,7 +58,7 @@ install_core() {
   # Try to install each core dependency, but don't fail if optional packages
   # can't be installed (e.g., on NixOS where packages must be installed declaratively).
   # We silently skip failures to avoid confusing novice users during first-time install.
-  core_dependencies | while IFS=: read -r label command_name install_spell _; do
+  core_dependencies | while IFS=: read -r label command_name install_spell _ _; do
     if command -v "$command_name" >/dev/null 2>&1; then
       continue
     fi

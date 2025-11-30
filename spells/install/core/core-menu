@@ -95,23 +95,47 @@ while true; do
 
   set --
 
-  while IFS=: read -r label command_name install_spell uninstall_spell; do
+  while IFS=: read -r label command_name install_spell uninstall_spell essential; do
     installed=0
     if command -v "$command_name" >/dev/null 2>&1; then
       installed=1
-      entry_label="Uninstall $label"
-      spell=$(resolve_spell "$uninstall_spell") || exit 1
+    fi
+
+    # Handle essential commands differently
+    if [ "$essential" = "1" ]; then
+      if [ "$installed" -eq 1 ]; then
+        display_label="$label - installed"
+      else
+        display_label="$label - not installed"
+      fi
+      # For essential commands, use the install spell if not installed
+      # or show the essential message if installed
+      if [ "$installed" -eq 1 ]; then
+        # When selected, show message that this is essential
+        # The label comes from the controlled core_dependencies function
+        # and contains only alphanumeric characters, making it safe to use
+        set -- "$@" "${display_label}%printf '\\n%s is essential for the shell to function and should not be uninstalled.\\n' '$label'; printf 'Press Enter to continue...'; read dummy"
+      else
+        spell=$(resolve_spell "$install_spell") || exit 1
+        set -- "$@" "${display_label}%$spell"
+      fi
     else
-      entry_label="Install $label"
-      spell=$(resolve_spell "$install_spell") || exit 1
-    fi
+      # Non-essential command handling (original logic)
+      if [ "$installed" -eq 1 ]; then
+        entry_label="Uninstall $label"
+        spell=$(resolve_spell "$uninstall_spell") || exit 1
+      else
+        entry_label="Install $label"
+        spell=$(resolve_spell "$install_spell") || exit 1
+      fi
 
-    display_label=$entry_label
-    if [ "$installed" -eq 1 ]; then
-      display_label="$entry_label (installed; select to uninstall — Install $label to reinstall)"
-    fi
+      display_label=$entry_label
+      if [ "$installed" -eq 1 ]; then
+        display_label="$entry_label (installed; select to uninstall — Install $label to reinstall)"
+      fi
 
-    set -- "$@" "${display_label}%$spell"
+      set -- "$@" "${display_label}%$spell"
+    fi
   done <<EOF
 $(core_dependencies)
 EOF
