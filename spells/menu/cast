@@ -91,7 +91,12 @@ spell_menu_loop() {
                         if one_liner=$(extract_one_line_command "$entry_cmd"); then
                                 display_cmd=$one_liner
                         fi
-                        label=$(printf '%s – %s' "$alias" "$display_cmd")
+                        # Avoid duplicate display when alias equals command
+                        if [ "$alias" = "$display_cmd" ]; then
+                                label=$alias
+                        else
+                                label=$(printf '%s – %s' "$alias" "$display_cmd")
+                        fi
                         set -- "$@" "$(printf '%s%%%s' "$label" "$entry_cmd")"
                 done <<SPELLS
 $entries

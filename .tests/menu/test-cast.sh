@@ -175,6 +175,37 @@ run_test_case "cast invalid argument shows usage" test_cast_invalid_argument_sho
 run_test_case "cast --list with no spells returns empty" test_cast_list_empty_returns_nothing
 run_test_case "cast extracts one-line command" test_cast_extracts_one_line_command
 
+# Test that spell name equals command doesn't show duplicate
+test_cast_no_duplicate_when_alias_equals_command() {
+  tmp=$(make_tempdir)
+  # Create a memorize stub where alias = command (e.g., "myspell" and "myspell")
+  make_stub_cast_list "$tmp" myspell "myspell"
+  make_stub_menu "$tmp"
+  make_stub_require "$tmp"
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$tmp/exit-label"
+  PATH="$tmp:$PATH" run_cmd env CAST_STORE="$tmp/memorize" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/cast"
+  assert_success || return 1
+  args=$(cat "$tmp/log")
+  # Should show just "myspell" not "myspell – myspell"
+  case "$args" in
+    *"myspell – myspell%"*)
+      TEST_FAILURE_REASON="duplicate spell name in menu: $args"
+      return 1
+      ;;
+    *"myspell%"*) : ;;
+    *)
+      TEST_FAILURE_REASON="expected spell name in menu: $args"
+      return 1
+      ;;
+  esac
+}
+
+run_test_case "cast no duplicate when alias equals command" test_cast_no_duplicate_when_alias_equals_command
+
 # Test ESC and Exit behavior - menu exits properly when escape status returned
 test_esc_exit_behavior() {
   tmp=$(make_tempdir)
