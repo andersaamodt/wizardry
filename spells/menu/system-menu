@@ -53,12 +53,11 @@ display_menu() {
   exit_label=$(exit-label)
   exit_item="${exit_label}%exit $menu_escape_status"
 
-  set -- "$services" "$verify_posix"
-  set -- "$@" "$update_all"
+  set -- "$update_all" "$update_wizardry" "$services"
   if [ -n "$nixos_rebuild" ]; then
     set -- "$@" "$nixos_rebuild"
   fi
-  set -- "$@" "$update_wizardry" "$test_suite" "$uninstall_wizardry" "$restart" "$exit_item"
+  set -- "$@" "$verify_posix" "$test_suite" "$uninstall_wizardry" "$restart" "$exit_item"
 
   MENU_ESCAPE_STATUS=$menu_escape_status menu "System Menu:" "$@"
 }
