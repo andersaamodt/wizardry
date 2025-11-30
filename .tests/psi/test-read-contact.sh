@@ -16,14 +16,14 @@ done
 . "$test_root/test-common.sh"
 
 test_help() {
-  run_spell "spells/contacts/read-contact" --help
+  run_spell "spells/psi/read-contact" --help
   assert_success || return 1
   assert_output_contains "Usage: read-contact" || return 1
   assert_output_contains "Print all fields from a vCard file" || return 1
 }
 
 read_contact_requires_path() {
-  run_spell "spells/contacts/read-contact"
+  run_spell "spells/psi/read-contact"
   assert_failure || return 1
   assert_error_contains "Usage: read-contact" || return 1
 }
@@ -41,7 +41,7 @@ URL:https\://example.com/profile
 END:VCARD
 CARD
 
-  run_spell "spells/contacts/read-contact" "$card"
+  run_spell "spells/psi/read-contact" "$card"
   assert_success || return 1
   assert_output_contains "Full Name: Alex Example" || return 1
   assert_output_contains "Email: alex@example.com" || return 1
@@ -60,7 +60,7 @@ TEL;TYPE=cell:+123456789
 END:VCARD
 CARD
 
-  run_spell "spells/contacts/read-contact" "$card" TEL
+  run_spell "spells/psi/read-contact" "$card" TEL
   assert_success || return 1
   assert_output_contains "Telephone: +123456789" || return 1
   expected_output=$(printf 'Telephone: +123456789\n')
@@ -78,7 +78,7 @@ EMAIL;TYPE=INTERNET:merlin@example.com
 END:VCARD
 CARD
 
-  run_spell "spells/contacts/read-contact" "$card" TEL
+  run_spell "spells/psi/read-contact" "$card" TEL
   assert_failure || return 1
   assert_error_contains "TEL not found" || return 1
 }
@@ -96,7 +96,7 @@ URL:https\://example.com/path
 END:VCARD
 VCARD
 
-  run_spell "spells/contacts/read-contact" "$card"
+  run_spell "spells/psi/read-contact" "$card"
   assert_success || return 1
   assert_output_contains "Address: 123" || return 1
   assert_output_contains "Main St" || return 1
@@ -109,7 +109,7 @@ VCARD
 read_contact_rejects_missing_file() {
   missing_path="/nonexistent/ghost.vcf"
 
-  run_spell "spells/contacts/read-contact" "$missing_path"
+  run_spell "spells/psi/read-contact" "$missing_path"
   assert_failure || return 1
   assert_error_contains "vCard file not found" || return 1
 }
@@ -119,7 +119,7 @@ read_contact_rejects_malformed_cards() {
   empty_card="$vcard_dir/empty.vcf"
   printf '' >"$empty_card"
 
-  run_spell "spells/contacts/read-contact" "$empty_card"
+  run_spell "spells/psi/read-contact" "$empty_card"
   assert_failure || return 1
   assert_error_contains "No vCard entries" || return 1
 
@@ -129,7 +129,7 @@ BEGIN:VCARD
 FN:Halfway
 CARD
 
-  run_spell "spells/contacts/read-contact" "$broken_card"
+  run_spell "spells/psi/read-contact" "$broken_card"
   assert_failure || return 1
   assert_error_contains "Unbalanced vCard entries" || return 1
 }
@@ -146,7 +146,7 @@ FN:Second
 END:VCARD
 CARDS
 
-  run_spell "spells/contacts/read-contact" "$card_path"
+  run_spell "spells/psi/read-contact" "$card_path"
   assert_failure || return 1
   assert_error_contains "Multiple vCard entries" || return 1
 }
@@ -156,7 +156,7 @@ read_contact_handles_crlf_cards() {
   card="$card_dir/crlf.vcf"
   printf 'BEGIN:VCARD\r\nVERSION:3.0\r\nFN:CRLF Friend\r\nEND:VCARD\r\n' >"$card"
 
-  run_spell "spells/contacts/read-contact" "$card"
+  run_spell "spells/psi/read-contact" "$card"
   assert_success || return 1
   assert_output_contains "Full Name: CRLF Friend" || return 1
 }
