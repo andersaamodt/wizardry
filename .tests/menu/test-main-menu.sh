@@ -63,7 +63,7 @@ SH
   assert_success
   args=$(cat "$tmp/log")
   case "$args" in
-    *"Main Menu:"*"MUD menu%"*"mud"*"Cast a Spell%"*"cast"*"Spellbook%"*"spellbook"*"Arcana%"*"install-menu"*"Manage System%"*"system-menu"*"Exit%exit 113"* ) : ;;
+    *"Main Menu:"*"Cast%"*"cast"*"MUD%"*"mud"*"Spellbook%"*"spellbook"*"Arcana%"*"install-menu"*"Computer%"*"system-menu"*"Exit%exit 113"* ) : ;;
     *) TEST_FAILURE_REASON="menu entries missing: $args"; return 1 ;;
   esac
 }
