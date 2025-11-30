@@ -320,6 +320,122 @@ test_warn_global_variables() {
   return 0
 }
 
+# --- Warning Check: Use command -v instead of which ---
+# POSIX compliance: which is not POSIX-standard, use command -v instead
+
+test_warn_which_usage() {
+  found_which=""
+  
+  find "$ROOT_DIR/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r spell; do
+    name=$(basename "$spell")
+    should_skip_file "$name" && continue
+    is_posix_shell_script "$spell" || continue
+    
+    # Check for 'which' command usage (excluding comments)
+    if grep -E '(^|[^a-zA-Z_])which[[:space:]]' "$spell" 2>/dev/null | grep -v '^[[:space:]]*#' | grep -q .; then
+      printf '%s\n' "$name"
+    fi
+  done > "${WIZARDRY_TMPDIR}/which-usage.txt"
+  
+  found_which=$(cat "${WIZARDRY_TMPDIR}/which-usage.txt" 2>/dev/null | sort -u | tr '\n' ', ' | sed 's/,$//')
+  rm -f "${WIZARDRY_TMPDIR}/which-usage.txt"
+  
+  if [ -n "$found_which" ]; then
+    printf 'WARNING: spells using "which" (use "command -v" instead for POSIX compliance): %s\n' "$found_which" >&2
+  fi
+  return 0
+}
+
+# --- Warning Check: Use $() instead of backticks ---
+# Code style: Use $() for command substitution, not backticks
+
+test_warn_backtick_usage() {
+  found_backticks=""
+  
+  find "$ROOT_DIR/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r spell; do
+    name=$(basename "$spell")
+    should_skip_file "$name" && continue
+    is_posix_shell_script "$spell" || continue
+    
+    # Check for backtick usage (excluding comments)
+    # Match backticks that appear to be command substitution
+    if grep -E '\`[^\`]+\`' "$spell" 2>/dev/null | grep -v '^[[:space:]]*#' | grep -q .; then
+      printf '%s\n' "$name"
+    fi
+  done > "${WIZARDRY_TMPDIR}/backtick-usage.txt"
+  
+  found_backticks=$(cat "${WIZARDRY_TMPDIR}/backtick-usage.txt" 2>/dev/null | sort -u | tr '\n' ', ' | sed 's/,$//')
+  rm -f "${WIZARDRY_TMPDIR}/backtick-usage.txt"
+  
+  if [ -n "$found_backticks" ]; then
+    printf 'WARNING: spells using backticks (use $() instead): %s\n' "$found_backticks" >&2
+  fi
+  return 0
+}
+
+# --- Warning Check: Non-imp spells should have show_usage or usage function ---
+# Per AGENTS.md, spells (not imps) should have a usage function
+
+test_warn_missing_usage_function() {
+  missing_usage=""
+  
+  find "$ROOT_DIR/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r spell; do
+    # Skip imps (they don't need --help)
+    case $spell in
+      */.imps/*) continue ;;
+    esac
+    
+    name=$(basename "$spell")
+    should_skip_file "$name" && continue
+    is_posix_shell_script "$spell" || continue
+    
+    # Check for show_usage() or usage() function
+    if ! grep -qE '^(show_usage|usage)\(\)' "$spell" 2>/dev/null; then
+      printf '%s\n' "$name"
+    fi
+  done > "${WIZARDRY_TMPDIR}/no-usage.txt"
+  
+  missing_usage=$(cat "${WIZARDRY_TMPDIR}/no-usage.txt" 2>/dev/null | head -5 | tr '\n' ', ' | sed 's/,$//')
+  rm -f "${WIZARDRY_TMPDIR}/no-usage.txt"
+  
+  if [ -n "$missing_usage" ]; then
+    # Warning only - there are pre-existing spells without usage functions
+    printf 'WARNING: spells missing show_usage() or usage() function: %s\n' "$missing_usage" >&2
+  fi
+  return 0
+}
+
+# --- Warning Check: Spells should prefer printf over echo ---
+# Per code style, printf is more reliable than echo across platforms
+
+test_warn_echo_usage() {
+  found_echo=""
+  
+  find "$ROOT_DIR/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r spell; do
+    name=$(basename "$spell")
+    should_skip_file "$name" && continue
+    is_posix_shell_script "$spell" || continue
+    
+    # Count echo usages (excluding comments and heredocs)
+    # Only flag spells with more than 3 echo usages as concerning
+    echo_count=$(grep -cE '^[[:space:]]*(echo|echo -)' "$spell" 2>/dev/null || true)
+    echo_count=${echo_count:-0}
+    # Trim any whitespace/newlines
+    echo_count=$(printf '%s' "$echo_count" | tr -d '[:space:]')
+    if [ -n "$echo_count" ] && [ "$echo_count" -gt 3 ] 2>/dev/null; then
+      printf '%s (%d uses)\n' "$name" "$echo_count"
+    fi
+  done > "${WIZARDRY_TMPDIR}/echo-usage.txt"
+  
+  found_echo=$(cat "${WIZARDRY_TMPDIR}/echo-usage.txt" 2>/dev/null | head -5 | tr '\n' ', ' | sed 's/,$//')
+  rm -f "${WIZARDRY_TMPDIR}/echo-usage.txt"
+  
+  if [ -n "$found_echo" ]; then
+    printf 'WARNING: spells with heavy echo usage (consider printf for reliability): %s\n' "$found_echo" >&2
+  fi
+  return 0
+}
+
 # --- Run all test cases ---
 
 run_test_case "no duplicate spell names" test_no_duplicate_spell_names
@@ -330,5 +446,9 @@ run_test_case "spells use strict mode" test_spells_use_strict_mode
 run_test_case "test files have matching spells" test_test_files_have_matching_spells
 run_test_case "warn about spell naming" test_warn_spell_naming
 run_test_case "warn about global variables" test_warn_global_variables
+run_test_case "warn about which usage" test_warn_which_usage
+run_test_case "warn about backtick usage" test_warn_backtick_usage
+run_test_case "warn about missing usage function" test_warn_missing_usage_function
+run_test_case "warn about echo usage" test_warn_echo_usage
 
 finish_tests
