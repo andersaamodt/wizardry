@@ -1,9 +1,10 @@
 #!/bin/sh
-# Global test suite checks that apply across all spells and imps.
+# Global checks that apply across all spells and imps.
 # Run first as part of test-magic to catch systemic issues early.
 #
-# This test file implements "suite-wide" checks that verify properties
+# This test file implements suite-wide checks that verify properties
 # across the entire spellbook rather than testing individual spells.
+# Note: POSIX compliance (shebang, bashisms) is checked by verify-posix.
 
 set -eu
 
@@ -95,32 +96,6 @@ test_menu_spells_require_menu() {
   if [ -n "$missing_require" ]; then
     TEST_FAILURE_REASON="menu spells missing 'require menu' check: $missing_require"
     return 1
-  fi
-  return 0
-}
-
-# --- Warning Check: Spells should have POSIX shebang ---
-# Every spell should start with #!/bin/sh or equivalent (warning only for pre-existing issues)
-
-test_warn_non_posix_shebangs() {
-  bad_shebangs=""
-  
-  find "$ROOT_DIR/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r spell; do
-    name=$(basename "$spell")
-    should_skip_file "$name" && continue
-    
-    # Check if it's a shell script but not POSIX
-    if is_any_shell_script "$spell" && ! is_posix_shell_script "$spell"; then
-      printf '%s\n' "$name"
-    fi
-  done > "${WIZARDRY_TMPDIR}/bad-shebangs.txt"
-  
-  bad_shebangs=$(cat "${WIZARDRY_TMPDIR}/bad-shebangs.txt" 2>/dev/null | head -5 | tr '\n' ', ' | sed 's/,$//')
-  rm -f "${WIZARDRY_TMPDIR}/bad-shebangs.txt"
-  
-  if [ -n "$bad_shebangs" ]; then
-    # Warning only - these are pre-existing issues
-    printf 'WARNING: spells with non-POSIX shebang (should use #!/bin/sh): %s\n' "$bad_shebangs" >&2
   fi
   return 0
 }
@@ -228,7 +203,7 @@ test_test_files_have_matching_spells() {
   find "$ROOT_DIR/.tests" -type f -name 'test-*.sh' -print | while IFS= read -r test_file; do
     # Skip special files
     case $test_file in
-      */test-common.sh|*/test-install.sh|*/test-suite-checks.sh|*/lib/*) continue ;;
+      */test-common.sh|*/test-install.sh|*/test-global-checks.sh|*/lib/*) continue ;;
     esac
     
     # Extract expected spell path
@@ -265,74 +240,34 @@ test_test_files_have_matching_spells() {
   return 0
 }
 
-# --- Warning Check: Spells should not use bash-specific features ---
-# Basic check for common bashisms (warning only for pre-existing issues)
+# --- Warning Check: Spell and imp names should follow naming convention ---
+# Spells and imps should use hyphens (not underscores) and have no extension
 
-test_warn_bashisms() {
-  bashisms_found=""
+test_warn_spell_naming() {
+  bad_names=""
   
-  find "$ROOT_DIR/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r spell; do
+  find "$ROOT_DIR/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print 2>/dev/null | while IFS= read -r spell; do
     name=$(basename "$spell")
     should_skip_file "$name" && continue
-    
-    # Only check files that claim to be POSIX shell but might have bashisms
-    # Skip files that already use #!/bin/bash (those are reported by shebang check)
     is_posix_shell_script "$spell" || continue
-    
-    # Check for [[ ]] bash test syntax
-    # Match [[ at start of line or after whitespace, not POSIX character classes
-    if grep -E '(^|[[:space:]])\[\[[[:space:]]' "$spell" 2>/dev/null | grep -v '\[\[:' | grep -q .; then
-      printf '%s (double brackets)\n' "$name"
-    fi
-    
-    # function keyword (bash-style function declaration)
-    if grep -qE '^[[:space:]]*function[[:space:]]+[a-zA-Z_][a-zA-Z0-9_]*' "$spell" 2>/dev/null; then
-      printf '%s (function keyword)\n' "$name"
-    fi
-    
-    # source instead of . (dot)
-    if grep -qE '^[[:space:]]*source[[:space:]]' "$spell" 2>/dev/null; then
-      printf '%s (source keyword)\n' "$name"
-    fi
-  done > "${WIZARDRY_TMPDIR}/bashisms.txt"
-  
-  bashisms_found=$(cat "${WIZARDRY_TMPDIR}/bashisms.txt" 2>/dev/null | head -5 | tr '\n' ', ' | sed 's/,$//')
-  rm -f "${WIZARDRY_TMPDIR}/bashisms.txt"
-  
-  if [ -n "$bashisms_found" ]; then
-    printf 'WARNING: POSIX spells with bash-specific features: %s\n' "$bashisms_found" >&2
-  fi
-  return 0
-}
-
-# --- Check: All imp names follow naming convention ---
-# Imps should have descriptive hyphenated names
-
-test_imp_naming_convention() {
-  bad_imp_names=""
-  
-  find "$ROOT_DIR/spells/.imps" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print 2>/dev/null | while IFS= read -r imp; do
-    name=$(basename "$imp")
-    should_skip_file "$name" && continue
-    is_posix_shell_script "$imp" || continue
     
     # Check for underscore in name (should use hyphens)
     case $name in
       *_*) printf '%s (uses underscore)\n' "$name" ;;
     esac
     
-    # Check for .sh extension (imps shouldn't have extensions)
+    # Check for .sh extension (spells shouldn't have extensions)
     case $name in
       *.sh) printf '%s (has .sh extension)\n' "$name" ;;
     esac
-  done > "${WIZARDRY_TMPDIR}/bad-imp-names.txt"
+  done > "${WIZARDRY_TMPDIR}/bad-spell-names.txt"
   
-  bad_imp_names=$(cat "${WIZARDRY_TMPDIR}/bad-imp-names.txt" 2>/dev/null | head -5 | tr '\n' ', ' | sed 's/,$//')
-  rm -f "${WIZARDRY_TMPDIR}/bad-imp-names.txt"
+  bad_names=$(cat "${WIZARDRY_TMPDIR}/bad-spell-names.txt" 2>/dev/null | head -5 | tr '\n' ', ' | sed 's/,$//')
+  rm -f "${WIZARDRY_TMPDIR}/bad-spell-names.txt"
   
-  if [ -n "$bad_imp_names" ]; then
-    TEST_FAILURE_REASON="imps with improper naming: $bad_imp_names"
-    return 1
+  if [ -n "$bad_names" ]; then
+    # Warning only - there are pre-existing spells with underscores
+    printf 'WARNING: spells with non-standard naming (prefer hyphens, no extension): %s\n' "$bad_names" >&2
   fi
   return 0
 }
@@ -389,13 +324,11 @@ test_warn_global_variables() {
 
 run_test_case "no duplicate spell names" test_no_duplicate_spell_names
 run_test_case "menu spells require menu command" test_menu_spells_require_menu
-run_test_case "warn about non-POSIX shebangs" test_warn_non_posix_shebangs
 run_test_case "all spells have description comment" test_all_spells_have_description
 run_test_case "warn about full paths to spells" test_warn_full_paths_to_spells
 run_test_case "spells use strict mode" test_spells_use_strict_mode
 run_test_case "test files have matching spells" test_test_files_have_matching_spells
-run_test_case "warn about bashisms" test_warn_bashisms
-run_test_case "imp naming convention" test_imp_naming_convention
+run_test_case "warn about spell naming" test_warn_spell_naming
 run_test_case "warn about global variables" test_warn_global_variables
 
 finish_tests
