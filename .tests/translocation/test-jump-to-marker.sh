@@ -1,6 +1,9 @@
 #!/bin/sh
 # Behavioral cases (derived from --help):
 # - jump-to-marker prints usage
+# - jump to specific marker
+# - jump cycles through markers when called repeatedly
+# - jump fails when no markers exist
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/test-common.sh" ] && [ "$test_root" != "/" ]; do
@@ -11,7 +14,7 @@ done
 
 test_help() {
   run_spell "spells/translocation/jump-to-marker" --help
-  assert_success && assert_output_contains "Usage: jump-to-marker"
+  assert_success && assert_output_contains "Usage: jump"
 }
 
 test_unknown_option_fails() {
@@ -22,67 +25,112 @@ test_unknown_option_fails() {
 test_install_requires_helpers() {
   helpers_dir="$WIZARDRY_TMPDIR/helpers-missing"
   mkdir -p "$helpers_dir"
-  PATH="/bin:/usr/bin" JUMP_TO_MARKER_HELPERS_DIR="$helpers_dir" MARKER_FILE="$WIZARDRY_TMPDIR/marker" \
+  PATH="/bin:/usr/bin" JUMP_TO_MARKER_HELPERS_DIR="$helpers_dir" JUMP_TO_MARKERS_DIR="$WIZARDRY_TMPDIR/markers" \
     run_spell "spells/translocation/jump-to-marker" --install
   assert_failure && assert_error_contains "required helper 'detect-rc-file' is missing"
 }
 
 run_jump() {
-  marker=$1
-  RUN_CMD_WORKDIR=${2:-$WIZARDRY_TMPDIR}
+  marker_arg=${1:-}
+  markers_dir=${2:-$WIZARDRY_TMPDIR/markers}
+  RUN_CMD_WORKDIR=${3:-$WIZARDRY_TMPDIR}
   PATH="/bin:/usr/bin"
-  JUMP_TO_MARKER_FILE="$marker"
-  export JUMP_TO_MARKER_FILE PATH
-  run_cmd sh -c ". \"$ROOT_DIR/spells/translocation/jump-to-marker\"; jump"
+  JUMP_TO_MARKERS_DIR="$markers_dir"
+  export JUMP_TO_MARKERS_DIR PATH
+  if [ -n "$marker_arg" ]; then
+    run_cmd sh -c ". \"$ROOT_DIR/spells/translocation/jump-to-marker\"; jump \"$marker_arg\""
+  else
+    run_cmd sh -c ". \"$ROOT_DIR/spells/translocation/jump-to-marker\"; jump"
+  fi
 }
 
-test_jump_requires_marker_file() {
-  missing_marker="$WIZARDRY_TMPDIR/no-marker"
-  run_jump "$missing_marker"
-  assert_failure && assert_output_contains "No location has been marked"
+test_jump_requires_markers_dir() {
+  missing_dir="$WIZARDRY_TMPDIR/no-markers"
+  rm -rf "$missing_dir"
+  run_jump "" "$missing_dir"
+  assert_failure && assert_output_contains "No markers have been set"
+}
+
+test_jump_requires_specific_marker() {
+  markers_dir="$WIZARDRY_TMPDIR/markers-test"
+  mkdir -p "$markers_dir"
+  run_jump "nonexistent" "$markers_dir"
+  assert_failure && assert_output_contains "No marker 'nonexistent' found"
 }
 
 test_jump_rejects_blank_marker() {
-  blank_marker="$WIZARDRY_TMPDIR/blank-marker"
-  : >"$blank_marker"
-  run_jump "$blank_marker"
-  assert_failure && assert_output_contains "rune is blank"
+  markers_dir="$WIZARDRY_TMPDIR/markers-blank"
+  mkdir -p "$markers_dir"
+  : >"$markers_dir/1"
+  run_jump "1" "$markers_dir"
+  assert_failure && assert_output_contains "is blank"
 }
 
 test_jump_rejects_missing_destination() {
-  missing_target="$WIZARDRY_TMPDIR/missing-destination"
-  printf '%s\n' "$missing_target" >"$WIZARDRY_TMPDIR/marker"
-  run_jump "$WIZARDRY_TMPDIR/marker"
+  markers_dir="$WIZARDRY_TMPDIR/markers-missing-dest"
+  mkdir -p "$markers_dir"
+  printf '%s\n' "$WIZARDRY_TMPDIR/nonexistent" >"$markers_dir/1"
+  run_jump "1" "$markers_dir"
   assert_failure && assert_output_contains "no longer exists"
 }
 
 test_jump_detects_current_location() {
   destination="$WIZARDRY_TMPDIR/already-here"
-  mkdir -p "$destination"
+  markers_dir="$WIZARDRY_TMPDIR/markers-here"
+  mkdir -p "$destination" "$markers_dir"
   # Write resolved path to marker to match what jump will compare
   destination_resolved=$(cd "$destination" && pwd -P | sed 's|//|/|g')
-  printf '%s\n' "$destination_resolved" >"$WIZARDRY_TMPDIR/marker"
-  run_jump "$WIZARDRY_TMPDIR/marker" "$destination"
+  printf '%s\n' "$destination_resolved" >"$markers_dir/1"
+  run_jump "1" "$markers_dir" "$destination"
   assert_success && assert_output_contains "already standing"
 }
 
 test_jump_changes_directory() {
   start_dir="$WIZARDRY_TMPDIR/start"
   destination="$WIZARDRY_TMPDIR/portal"
-  mkdir -p "$start_dir" "$destination"
+  markers_dir="$WIZARDRY_TMPDIR/markers-jump"
+  mkdir -p "$start_dir" "$destination" "$markers_dir"
   # Write resolved path to marker and expect it in output
   destination_resolved=$(cd "$destination" && pwd -P | sed 's|//|/|g')
-  printf '%s\n' "$destination_resolved" >"$WIZARDRY_TMPDIR/marker"
-  run_jump "$WIZARDRY_TMPDIR/marker" "$start_dir"
-  assert_success && assert_output_contains "You land in $destination_resolved"
+  printf '%s\n' "$destination_resolved" >"$markers_dir/1"
+  run_jump "1" "$markers_dir" "$start_dir"
+  assert_success && assert_output_contains "You land at marker '1': $destination_resolved"
+}
+
+test_jump_to_named_marker() {
+  start_dir="$WIZARDRY_TMPDIR/start-named"
+  destination="$WIZARDRY_TMPDIR/portal-named"
+  markers_dir="$WIZARDRY_TMPDIR/markers-named"
+  mkdir -p "$start_dir" "$destination" "$markers_dir"
+  destination_resolved=$(cd "$destination" && pwd -P | sed 's|//|/|g')
+  printf '%s\n' "$destination_resolved" >"$markers_dir/alpha"
+  run_jump "alpha" "$markers_dir" "$start_dir"
+  assert_success && assert_output_contains "You land at marker 'alpha': $destination_resolved"
+}
+
+test_jump_lists_available_markers() {
+  markers_dir="$WIZARDRY_TMPDIR/markers-list"
+  dest="$WIZARDRY_TMPDIR/dest-list"
+  mkdir -p "$markers_dir" "$dest"
+  dest_resolved=$(cd "$dest" && pwd -P | sed 's|//|/|g')
+  printf '%s\n' "$dest_resolved" >"$markers_dir/1"
+  printf '%s\n' "$dest_resolved" >"$markers_dir/alpha"
+  run_jump "nonexistent" "$markers_dir"
+  assert_failure
+  assert_output_contains "Available markers:"
+  assert_output_contains "1"
+  assert_output_contains "alpha"
 }
 
 run_test_case "jump-to-marker prints usage" test_help
 run_test_case "jump-to-marker rejects unknown options" test_unknown_option_fails
 run_test_case "jump-to-marker install fails when helpers missing" test_install_requires_helpers
-run_test_case "jump-to-marker fails when marker is missing" test_jump_requires_marker_file
+run_test_case "jump-to-marker fails when markers dir is missing" test_jump_requires_markers_dir
+run_test_case "jump-to-marker fails when specific marker is missing" test_jump_requires_specific_marker
 run_test_case "jump-to-marker fails when marker is blank" test_jump_rejects_blank_marker
 run_test_case "jump-to-marker fails when destination is missing" test_jump_rejects_missing_destination
 run_test_case "jump-to-marker reports when already at destination" test_jump_detects_current_location
 run_test_case "jump-to-marker jumps to marked directory" test_jump_changes_directory
+run_test_case "jump-to-marker jumps to named marker" test_jump_to_named_marker
+run_test_case "jump-to-marker lists available markers on error" test_jump_lists_available_markers
 finish_tests

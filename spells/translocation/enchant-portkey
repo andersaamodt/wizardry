@@ -8,7 +8,7 @@ show_usage() {
 Usage: enchant-portkey <file> [destination]
 
 Enchant a file with a portkey that stores a destination path. When no
-destination is provided, uses the path from ~/.mud/portal_marker.
+destination is provided, uses the path from marker 1 (~/.mud/markers/1).
 Activate the portkey with follow-portkey to teleport to the location.
 USAGE
 }
@@ -31,7 +31,8 @@ fi
 
 file=$1
 destination=${2-}
-marker_file="$HOME/.mud/portal_marker"
+markers_dir="$HOME/.mud/markers"
+marker_file="$markers_dir/1"
 
 # Verify file exists
 if ! is file "$file"; then
@@ -43,7 +44,7 @@ if is unset "$destination"; then
         if is file "$marker_file"; then
                 destination=$(read-file "$marker_file")
         else
-                die "enchant-portkey: no destination provided and no portal marker found."
+                die "enchant-portkey: no destination provided and no marker 1 found."
         fi
 fi
 
