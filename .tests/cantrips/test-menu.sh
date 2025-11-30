@@ -47,8 +47,8 @@ run_test_case "menu rejects escape status above 255" menu_rejects_out_of_range_e
 run_test_case "menu requires helper spells" menu_requires_all_helpers
 run_test_case "menu reports missing controlling terminal" menu_reports_missing_tty
 
-# Test MENU_START_SELECTION - Issue #198
-# When MENU_START_SELECTION=2, pressing enter should select the second item
+# Test --start-selection argument - Issue #198
+# When --start-selection 2 is passed, pressing enter should select the second item
 menu_respects_start_selection() {
   stub_dir=$(make_tempdir)
   
@@ -105,19 +105,18 @@ esac
 STUB
   chmod +x "$stub_dir/stty"
   
-  # Run menu with MENU_START_SELECTION=2 and press enter immediately
+  # Run menu with --start-selection 2 and press enter immediately
   # Should execute the second item's command (printf second)
   PATH="$ROOT_DIR/spells/.imps:$stub_dir:/bin:/usr/bin" run_cmd env \
     PATH="$ROOT_DIR/spells/.imps:$stub_dir:/bin:/usr/bin" \
-    MENU_START_SELECTION=2 \
     AWAIT_KEYPRESS_DEVICE="$stub_dir/fake-tty" \
-    "$ROOT_DIR/spells/cantrips/menu" "Test:" \
+    "$ROOT_DIR/spells/cantrips/menu" --start-selection 2 "Test:" \
     "First%printf first" \
     "Second%printf second" \
     "Third%printf third"
   
   assert_success || return 1
-  # The second item should have been selected since MENU_START_SELECTION=2
+  # The second item should have been selected since --start-selection 2
   case "$OUTPUT" in
     *second*)
       return 0
@@ -129,6 +128,6 @@ STUB
   esac
 }
 
-run_test_case "menu respects MENU_START_SELECTION (Issue #198)" menu_respects_start_selection
+run_test_case "menu respects --start-selection (Issue #198)" menu_respects_start_selection
 
 finish_tests

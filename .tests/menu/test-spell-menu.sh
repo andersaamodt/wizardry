@@ -196,7 +196,7 @@ printf '%s' "Exit"
 SH
   chmod +x "$stub_dir/exit-label"
   
-  # Create a menu stub that logs MENU_START_SELECTION and simulates actions
+  # Create a menu stub that logs --start-selection argument and simulates actions
   # First call: run memorize (toggle), second call: exit
   call_count_file="$stub_dir/call_count"
   printf '0\n' >"$call_count_file"
@@ -204,7 +204,20 @@ SH
   cat >"$stub_dir/menu" <<'SH'
 #!/bin/sh
 call_count=$(cat "$CALL_COUNT_FILE")
-printf '%s\n' "MENU_START_SELECTION=$MENU_START_SELECTION" >>"$MENU_LOG"
+# Parse --start-selection argument
+start_sel=1
+while [ "$#" -gt 0 ]; do
+  case $1 in
+    --start-selection)
+      start_sel=$2
+      shift 2
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+printf '%s\n' "START_SELECTION=$start_sel" >>"$MENU_LOG"
 call_count=$((call_count + 1))
 printf '%s\n' "$call_count" >"$CALL_COUNT_FILE"
 if [ "$call_count" -eq 1 ]; then
@@ -232,8 +245,8 @@ SH
   log_content=$(cat "$stub_dir/log")
   # First call should have start_selection=1
   # Second call (after toggle) should have start_selection=2
-  first_selection=$(printf '%s\n' "$log_content" | head -1 | sed 's/.*MENU_START_SELECTION=//')
-  second_selection=$(printf '%s\n' "$log_content" | sed -n '2p' | sed 's/.*MENU_START_SELECTION=//')
+  first_selection=$(printf '%s\n' "$log_content" | head -1 | sed 's/.*START_SELECTION=//')
+  second_selection=$(printf '%s\n' "$log_content" | sed -n '2p' | sed 's/.*START_SELECTION=//')
   
   if [ "$first_selection" != "1" ]; then
     TEST_FAILURE_REASON="first menu call should have start_selection=1, got $first_selection"
@@ -260,14 +273,27 @@ printf '%s' "Exit"
 SH
   chmod +x "$stub_dir/exit-label"
   
-  # Create a menu stub that logs MENU_START_SELECTION and simulates cast action
+  # Create a menu stub that logs --start-selection argument and simulates cast action
   call_count_file="$stub_dir/call_count"
   printf '0\n' >"$call_count_file"
   
   cat >"$stub_dir/menu" <<'SH'
 #!/bin/sh
 call_count=$(cat "$CALL_COUNT_FILE")
-printf '%s\n' "MENU_START_SELECTION=$MENU_START_SELECTION" >>"$MENU_LOG"
+# Parse --start-selection argument
+start_sel=1
+while [ "$#" -gt 0 ]; do
+  case $1 in
+    --start-selection)
+      start_sel=$2
+      shift 2
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+printf '%s\n' "START_SELECTION=$start_sel" >>"$MENU_LOG"
 call_count=$((call_count + 1))
 printf '%s\n' "$call_count" >"$CALL_COUNT_FILE"
 if [ "$call_count" -eq 1 ]; then
@@ -294,8 +320,8 @@ SH
   log_content=$(cat "$stub_dir/log")
   # First call should have start_selection=1
   # Second call (after cast action, NOT toggle) should have start_selection=1 (reset)
-  first_selection=$(printf '%s\n' "$log_content" | head -1 | sed 's/.*MENU_START_SELECTION=//')
-  second_selection=$(printf '%s\n' "$log_content" | sed -n '2p' | sed 's/.*MENU_START_SELECTION=//')
+  first_selection=$(printf '%s\n' "$log_content" | head -1 | sed 's/.*START_SELECTION=//')
+  second_selection=$(printf '%s\n' "$log_content" | sed -n '2p' | sed 's/.*START_SELECTION=//')
   
   if [ "$first_selection" != "1" ]; then
     TEST_FAILURE_REASON="first menu call should have start_selection=1, got $first_selection"

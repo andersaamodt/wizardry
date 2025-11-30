@@ -396,33 +396,16 @@ spell_action_menu() {
         display_command=${4-$command}
         action=''
         first_run=1
-        start_selection=1
-        was_memorized=0
         while :; do
                 if [ "$first_run" -eq 0 ]; then
                         printf '\n'
-                        # Check if memorization state changed (toggle was used)
-                        if is_memorized "$name"; then
-                                now_memorized=1
-                        else
-                                now_memorized=0
-                        fi
-                        if [ "$was_memorized" != "$now_memorized" ]; then
-                                # Toggle was selected - keep cursor on toggle item (item 2)
-                                start_selection=2
-                        else
-                                # Other action - reset to first item
-                                start_selection=1
-                        fi
                 else
                         first_run=0
                 fi
 
                 if is_memorized "$name"; then
-                        was_memorized=1
                         memory_toggle="Forget%action=forget"
                 else
-                        was_memorized=0
                         memory_toggle="Memorize%action=memorize"
                 fi
                 if is_scribed_command "$name"; then
@@ -430,7 +413,7 @@ spell_action_menu() {
                 else
                         set -- "Cast now%action=cast" "$memory_toggle" "Help%action=help" "Test spell%action=test" "Back%exit $menu_escape_status"
                 fi
-                if MENU_ESCAPE_STATUS=$menu_escape_status MENU_START_SELECTION=$start_selection menu "Spell: $name" "$@"; then
+                if MENU_ESCAPE_STATUS=$menu_escape_status menu "Spell: $name" "$@"; then
                         status=0
                 else
                         status=$?
