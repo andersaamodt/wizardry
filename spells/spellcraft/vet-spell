@@ -10,11 +10,16 @@ Usage: vet-spell [options] [file...]
 Vet spell files for style guide compliance. Checks for:
   - Proper shebang (#!/bin/sh or #!/usr/bin/env sh)
   - Opening description comment
-  - Usage function (show_usage or usage) [optional checks only]
-  - Help handler (--help) [optional checks only]
   - Strict mode (set -eu or set -e)
   - Proper variable assignment (no trailing spaces)
   - POSIX compliance (via checkbashisms if available)
+
+Strict mode (--strict) additionally checks:
+  - Usage function (show_usage or usage)
+  - Help handler (--help)
+  - Avoid "which" (use "command -v" instead)
+  - Avoid backticks (use $() instead)
+  - Spell naming convention (hyphens, no extension)
 
 When no files are specified, vets all spells in the spells/ directory.
 Imps (files in .imps directories) have relaxed requirements: they do not
@@ -24,7 +29,7 @@ Options:
   --only PATTERN   Vet only files matching PATTERN
   --list           Print files that would be vetted and exit
   --verbose        Print details for each check
-  --strict         Enable all checks (usage function, help handler)
+  --strict         Enable all style checks
   -h, --help       Show this help and exit
 USAGE
 }
@@ -234,6 +239,49 @@ check_posix_compliance() {
   return 1
 }
 
+check_which_usage() {
+  file=$1
+  # Check for 'which' command usage (excluding comments)
+  if grep -E '(^|[^a-zA-Z_])which[[:space:]]' "$file" 2>/dev/null | grep -v '^[[:space:]]*#' | grep -q .; then
+    printf 'uses "which" (prefer "command -v" for POSIX compliance)'
+    return 1
+  fi
+  return 0
+}
+
+check_backtick_usage() {
+  file=$1
+  # Check for backtick usage (excluding comments)
+  if grep -E '\`[^\`]+\`' "$file" 2>/dev/null | grep -v '^[[:space:]]*#' | grep -q .; then
+    printf 'uses backticks (prefer $() for command substitution)'
+    return 1
+  fi
+  return 0
+}
+
+check_spell_naming() {
+  file=$1
+  name=$(basename "$file")
+  
+  # Check for underscore in name (should use hyphens)
+  case $name in
+    *_*)
+      printf 'spell name uses underscore (prefer hyphens)'
+      return 1
+      ;;
+  esac
+  
+  # Check for .sh extension (spells shouldn't have extensions)
+  case $name in
+    *.sh)
+      printf 'spell has .sh extension (spells should have no extension)'
+      return 1
+      ;;
+  esac
+  
+  return 0
+}
+
 failures=0
 total=0
 passed=0
@@ -329,6 +377,30 @@ while IFS= read -r target; do
   if ! result=$(check_posix_compliance "$path"); then
     issues=${issues:+$issues; }$result
     issue_count=$((issue_count + 1))
+  fi
+  
+  # Check which usage (only in strict mode)
+  if [ "$strict_mode" -eq 1 ]; then
+    if ! result=$(check_which_usage "$path"); then
+      issues=${issues:+$issues; }$result
+      issue_count=$((issue_count + 1))
+    fi
+  fi
+  
+  # Check backtick usage (only in strict mode)
+  if [ "$strict_mode" -eq 1 ]; then
+    if ! result=$(check_backtick_usage "$path"); then
+      issues=${issues:+$issues; }$result
+      issue_count=$((issue_count + 1))
+    fi
+  fi
+  
+  # Check spell naming convention (only in strict mode)
+  if [ "$strict_mode" -eq 1 ]; then
+    if ! result=$(check_spell_naming "$path"); then
+      issues=${issues:+$issues; }$result
+      issue_count=$((issue_count + 1))
+    fi
   fi
   
   if [ "$issue_count" -eq 0 ]; then
