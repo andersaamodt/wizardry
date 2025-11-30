@@ -28,7 +28,7 @@ test_requires_torify() {
       ln -sf "$(command -v "$util")" "$stubdir/$util" 2>/dev/null || true
     fi
   done
-  PATH="$ROOT_DIR/spells/.imps:$stubdir" run_spell "spells/translocation/open-teletype"
+  PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$stubdir" run_spell "spells/translocation/open-teletype"
   assert_failure || return 1
   assert_error_contains "torify not found" || return 1
 }
@@ -48,7 +48,7 @@ EOF
     fi
   done
   # Run without MUD_PLAYER set
-  MUD_PLAYER="" PATH="$ROOT_DIR/spells/.imps:$stubdir" run_spell "spells/translocation/open-teletype"
+  MUD_PLAYER="" PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$stubdir" run_spell "spells/translocation/open-teletype"
   assert_failure || return 1
   assert_error_contains "MUD_PLAYER" || return 1
 }

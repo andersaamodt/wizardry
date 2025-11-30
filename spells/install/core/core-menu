@@ -35,8 +35,8 @@ exit_label_bin=${EXIT_LABEL_BIN-}
 if [ -z "$exit_label_bin" ]; then
   exit_label_bin=$(command -v exit-label 2>/dev/null) || exit_label_bin=""
 fi
-if [ -z "$exit_label_bin" ] && [ -x "$root_dir/spells/.imps/exit-label" ]; then
-  exit_label_bin="$root_dir/spells/.imps/exit-label"
+if [ -z "$exit_label_bin" ] && [ -x "$root_dir/spells/.imps/menu/exit-label" ]; then
+  exit_label_bin="$root_dir/spells/.imps/menu/exit-label"
 fi
 
 # shellcheck source=/dev/null
