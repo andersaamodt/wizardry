@@ -25,7 +25,7 @@ test_help() {
 
 test_missing_read_magic() {
   stub=$(make_stub_dir)
-  PATH="$ROOT_DIR/spells/.imps:$stub:/bin:/usr/bin" run_spell "spells/mud/look" "$WIZARDRY_TMPDIR"
+  PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:$stub:/bin:/usr/bin" run_spell "spells/mud/look" "$WIZARDRY_TMPDIR"
   assert_failure && assert_error_contains "look: read-magic spell is missing."
 }
 
@@ -77,7 +77,7 @@ printf '%s\n' 'Error: The attribute does not exist.'
 EOF
   chmod +x "$stub/read-magic"
   rc_file="$WIZARDRY_TMPDIR/lookrc-install"
-  LOOK_RC_FILE="$rc_file" PATH="$ROOT_DIR/spells/.imps:$stub:/bin:/usr/bin" run_spell "spells/mud/look" "$WIZARDRY_TMPDIR"
+  LOOK_RC_FILE="$rc_file" PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:$stub:/bin:/usr/bin" run_spell "spells/mud/look" "$WIZARDRY_TMPDIR"
   assert_success && assert_path_exists "$rc_file" && grep -q "wizardry look spell" "$rc_file"
 }
 
@@ -97,7 +97,7 @@ EOF
   rc_file="$WIZARDRY_TMPDIR/lookrc-decline"
   rm -f "$rc_file"
   prompt_log="$WIZARDRY_TMPDIR/prompt.txt"
-  ASK_LOG="$prompt_log" LOOK_RC_FILE="$rc_file" PATH="$ROOT_DIR/spells/.imps:$stub:/bin:/usr/bin" run_spell "spells/mud/look" "$WIZARDRY_TMPDIR"
+  ASK_LOG="$prompt_log" LOOK_RC_FILE="$rc_file" PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:$stub:/bin:/usr/bin" run_spell "spells/mud/look" "$WIZARDRY_TMPDIR"
   assert_success && assert_path_missing "$rc_file" && assert_output_contains "The mud will only run in this shell window." &&
     assert_file_contains "$prompt_log" "Memorize the 'look' spell so it is always available?"
 }
