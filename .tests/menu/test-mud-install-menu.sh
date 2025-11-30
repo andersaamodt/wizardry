@@ -1,6 +1,7 @@
 #!/bin/sh
 # Behavioral cases (derived from spell behavior):
 # - mud-install-menu offers tor setup and exits on interrupt
+# - mud-install-menu shows CD hook toggle with [X]/[ ] status
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/test-common.sh" ] && [ "$test_root" != "/" ]; do
@@ -145,5 +146,100 @@ SH
 }
 
 run_test_case "mud-install-menu ESC/Exit behavior" test_esc_exit_behavior
+
+# Test CD hook toggle shows [ ] when not installed
+test_cd_hook_toggle_unchecked() {
+  tmp=$(make_tempdir)
+  make_stub_colors "$tmp"
+  
+  # Create menu stub that logs and exits
+  cat >"$tmp/menu" <<'SH'
+#!/bin/sh
+printf '%s\n' "$@" >>"$MENU_LOG"
+exit 113
+SH
+  chmod +x "$tmp/menu"
+  
+  cat >"$tmp/require-command" <<'SH'
+#!/bin/sh
+exit 0
+SH
+  chmod +x "$tmp/require-command"
+  
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$tmp/exit-label"
+  
+  # Use a temp rc file that doesn't have the cd hook installed
+  rc_file="$tmp/rc"
+  : >"$rc_file"
+  
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" "$ROOT_DIR/spells/menu/mud-install-menu"
+  assert_success || return 1
+  
+  args=$(cat "$tmp/log")
+  case "$args" in
+    *"[ ] CD hook"*) : ;;
+    *) TEST_FAILURE_REASON="CD hook should show [ ] when not installed: $args"; return 1 ;;
+  esac
+}
+
+# Test CD hook toggle shows [X] when installed
+test_cd_hook_toggle_checked() {
+  tmp=$(make_tempdir)
+  make_stub_colors "$tmp"
+  
+  # Create menu stub that logs and exits
+  cat >"$tmp/menu" <<'SH'
+#!/bin/sh
+printf '%s\n' "$@" >>"$MENU_LOG"
+exit 113
+SH
+  chmod +x "$tmp/menu"
+  
+  cat >"$tmp/require-command" <<'SH'
+#!/bin/sh
+exit 0
+SH
+  chmod +x "$tmp/require-command"
+  
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$tmp/exit-label"
+  
+  # Use a temp rc file with the cd hook marker installed
+  rc_file="$tmp/rc"
+  cat >"$rc_file" <<'RC'
+# >>> wizardry cd cantrip >>>
+WIZARDRY_CD_CANTRIP='/path/to/cd'
+alias cd='. "$WIZARDRY_CD_CANTRIP"'
+# <<< wizardry cd cantrip <<<
+RC
+  
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" "$ROOT_DIR/spells/menu/mud-install-menu"
+  assert_success || return 1
+  
+  args=$(cat "$tmp/log")
+  case "$args" in
+    *"[X] CD hook"*) : ;;
+    *) TEST_FAILURE_REASON="CD hook should show [X] when installed: $args"; return 1 ;;
+  esac
+}
+
+# Test --help shows usage
+test_mud_install_menu_help() {
+  run_cmd "$ROOT_DIR/spells/menu/mud-install-menu" --help
+  assert_success || return 1
+  assert_output_contains "Usage:" || return 1
+  assert_output_contains "CD hook" || return 1
+}
+
+run_test_case "CD hook toggle shows [ ] when not installed" test_cd_hook_toggle_unchecked
+run_test_case "CD hook toggle shows [X] when installed" test_cd_hook_toggle_checked
+run_test_case "mud-install-menu --help shows usage" test_mud_install_menu_help
 
 finish_tests
