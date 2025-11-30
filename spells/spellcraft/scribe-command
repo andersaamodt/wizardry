@@ -64,13 +64,15 @@ check_duplicate_name() {
                 return 1
         fi
         # Check subfolders of the spellbook for existing spells
-        for subdir in "$spell_home"/*; do
-                [ -d "$subdir" ] || continue
-                if [ -e "$subdir/$name" ]; then
-                        printf '%s\n' "$SCRIPT_NAME: '$name' already exists in your spellbook." >&2
-                        return 1
-                fi
-        done
+        if [ -d "$spell_home" ]; then
+                for subdir in "$spell_home"/*; do
+                        [ -d "$subdir" ] || continue
+                        if [ -e "$subdir/$name" ]; then
+                                printf '%s\n' "$SCRIPT_NAME: '$name' already exists in your spellbook." >&2
+                                return 1
+                        fi
+                done
+        fi
 }
 
 validate_command() {
