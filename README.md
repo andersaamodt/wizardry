@@ -128,6 +128,8 @@ Using the free software suite makes it easy to establish a standardized software
 | **Bootstrap spell** | A spell that can run before wizardry is fully installed. These self-contained scripts (like `install` and spells in `spells/install/core/`) don't rely on other wizardry spells. |
 | **Cantrip** | A small utility spell for common tasks, found in `spells/cantrips/`. |
 | **Cast** | To execute a spell. Memorized spells appear in the Cast menu for quick access. |
+| **Daemon** | A background process that runs continuously, typically started at system boot and providing services (e.g., web servers, schedulers). In UNIX tradition, daemons are named after supernatural beings that work invisibly. |
+| **Demon family** | A subfolder within `spells/.imps/` that groups related imps by function. Each folder represents a family of imps that share a common purpose (e.g., `str/` for string operations, `fs/` for filesystem operations). |
 | **Divination** | Spells that detect or discover information about your system, found in `spells/divination/`. |
 | **Enchant** / **Enchantment** | Spells that add or manage extended attributes (metadata) on files, found in `spells/enchant/`. |
 | **Erase** | Permanently delete a custom spell from `~/.spellbook`. Use `erase-spell <spell name>` or select "Erase spell" from the spell menu. This cannot be undone. |

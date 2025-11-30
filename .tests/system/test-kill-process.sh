@@ -31,7 +31,7 @@ OUT
 STUB
   chmod +x "$tmpdir/ps"
 
-  PATH="$ROOT_DIR/spells/.imps:$tmpdir:/bin:/usr/bin" run_spell "spells/system/kill-process"
+  PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:$tmpdir:/bin:/usr/bin" run_spell "spells/system/kill-process"
   assert_failure || return 1
   assert_error_contains "ask_number spell is required" || return 1
 }
@@ -52,7 +52,7 @@ echo 1
 STUB
   chmod +x "$tmpdir"/ps "$tmpdir"/ask_number
 
-  PATH="$ROOT_DIR/spells/.imps:$tmpdir:/bin:/usr/bin" run_spell "spells/system/kill-process"
+  PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:$tmpdir:/bin:/usr/bin" run_spell "spells/system/kill-process"
   assert_failure || return 1
   assert_error_contains "ask_yn spell is required" || return 1
 }
@@ -83,7 +83,7 @@ STUB
   chmod +x "$tmpdir"/ps "$tmpdir"/ask_number "$tmpdir"/ask_yn "$tmpdir/kill"
 
   kill_log="$tmpdir/kill.log"
-  PATH="$ROOT_DIR/spells/.imps:$tmpdir:/bin:/usr/bin" KILL_LOG="$kill_log" KILL_CMD="$tmpdir/kill" run_spell "spells/system/kill-process"
+  PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:$tmpdir:/bin:/usr/bin" KILL_LOG="$kill_log" KILL_CMD="$tmpdir/kill" run_spell "spells/system/kill-process"
   assert_success || return 1
   assert_output_contains "Process 222" || return 1
   [ "$(cat "$kill_log")" = "222" ] || { TEST_FAILURE_REASON="kill command not called"; return 1; }
@@ -106,7 +106,7 @@ exit 1
 STUB
   chmod +x "$tmpdir"/ps "$tmpdir"/ask_number "$tmpdir"/ask_yn
 
-  PATH="$ROOT_DIR/spells/.imps:$tmpdir:/bin:/usr/bin" run_spell "spells/system/kill-process"
+  PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:$tmpdir:/bin:/usr/bin" run_spell "spells/system/kill-process"
   assert_failure || return 1
   assert_error_contains "No processes available to kill." || return 1
 }
@@ -137,7 +137,7 @@ STUB
   chmod +x "$tmpdir"/ps "$tmpdir"/ask_number "$tmpdir"/ask_yn "$tmpdir/kill"
 
   kill_log="$tmpdir/kill.log"
-  PATH="$ROOT_DIR/spells/.imps:$tmpdir:/bin:/usr/bin" KILL_LOG="$kill_log" KILL_CMD="$tmpdir/kill" run_spell "spells/system/kill-process"
+  PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:$tmpdir:/bin:/usr/bin" KILL_LOG="$kill_log" KILL_CMD="$tmpdir/kill" run_spell "spells/system/kill-process"
   assert_success || return 1
   case ${OUTPUT:-} in
     *"has been killed"*) TEST_FAILURE_REASON="process should not be reported killed"; return 1 ;;
@@ -165,7 +165,7 @@ exit 0
 STUB
   chmod +x "$tmpdir"/ps "$tmpdir"/ask_number "$tmpdir"/ask_yn
 
-  PATH="$ROOT_DIR/spells/.imps:$tmpdir:/bin:/usr/bin" KILL_CMD="$tmpdir/not-here" run_spell "spells/system/kill-process"
+  PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:$tmpdir:/bin:/usr/bin" KILL_CMD="$tmpdir/not-here" run_spell "spells/system/kill-process"
   assert_failure || return 1
   assert_error_contains "kill command" || return 1
   assert_error_contains "not-here" || return 1
@@ -196,7 +196,7 @@ exit 1
 STUB
   chmod +x "$tmpdir"/ps "$tmpdir"/ask_number "$tmpdir"/ask_yn "$tmpdir/kill"
 
-  PATH="$ROOT_DIR/spells/.imps:$tmpdir:/bin:/usr/bin" KILL_CMD="$tmpdir/kill" run_spell "spells/system/kill-process"
+  PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:$tmpdir:/bin:/usr/bin" KILL_CMD="$tmpdir/kill" run_spell "spells/system/kill-process"
   assert_failure || return 1
   assert_error_contains "Failed to kill process 303" || return 1
   case ${OUTPUT:-} in
