@@ -50,6 +50,29 @@ validate_name() {
         esac
 }
 
+# Check if a spell name conflicts with an existing command or spell
+check_duplicate_name() {
+        name=$1
+        # Check if name conflicts with an existing command in PATH
+        if command -v "$name" >/dev/null 2>&1; then
+                printf '%s\n' "$SCRIPT_NAME: '$name' conflicts with an existing command." >&2
+                return 1
+        fi
+        # Check if spell already exists in the spellbook directory
+        if [ -e "$spell_home/$name" ]; then
+                printf '%s\n' "$SCRIPT_NAME: '$name' already exists in your spellbook." >&2
+                return 1
+        fi
+        # Check subfolders of the spellbook for existing spells
+        for subdir in "$spell_home"/*; do
+                [ -d "$subdir" ] || continue
+                if [ -e "$subdir/$name" ]; then
+                        printf '%s\n' "$SCRIPT_NAME: '$name' already exists in your spellbook." >&2
+                        return 1
+                fi
+        done
+}
+
 validate_command() {
         cmd=$1
         if [ -z "$cmd" ]; then
@@ -147,6 +170,7 @@ record_command() {
                 shift
         done
         validate_name "$cmd_name" || return 1
+        check_duplicate_name "$cmd_name" || return 1
         validate_command "$cmd" || return 1
         if [ -n "$current_category" ]; then
                 mkdir -p "$spell_home/$current_category"
@@ -173,6 +197,10 @@ arguments directly to scribe non-interactively.
 
 Without arguments, prompts for command text first, then name, and optionally a category.
 With arguments, uses NAME and remaining args as COMMAND.
+
+Spell names must be unique. A spell cannot be created if its name
+conflicts with an existing command in PATH or a spell already in your
+spellbook (including subfolders).
 
 Options:
   --category CATEGORY  Place the spell in a category folder within ~/.spellbook.
