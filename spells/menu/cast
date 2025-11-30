@@ -27,36 +27,6 @@ cast_list() {
         "$cast_store" list
 }
 
-# Extract the single executable line from a spell script if it has exactly one
-# Returns the extracted command if successful, empty string otherwise
-extract_one_line_command() {
-        spell_path=$1
-        if [ ! -f "$spell_path" ]; then
-                return 1
-        fi
-        # Count non-comment, non-empty, non-set-eu lines
-        # Skip shebang (#!/...), comments (#...), set commands (set -eu), and empty lines
-        exec_lines=$(grep -v '^[[:space:]]*#' "$spell_path" 2>/dev/null | grep -v '^[[:space:]]*$' | grep -v '^[[:space:]]*set[[:space:]]' | wc -l | tr -d ' ')
-        if [ "$exec_lines" -eq 1 ]; then
-                # Get the single executable line
-                cmd_line=$(grep -v '^[[:space:]]*#' "$spell_path" 2>/dev/null | grep -v '^[[:space:]]*$' | grep -v '^[[:space:]]*set[[:space:]]' | head -1)
-                # If it's an exec sh -c 'command' pattern, extract the inner command
-                case "$cmd_line" in
-                        *"exec sh -c '"*"'"*)
-                                # Extract the command from exec sh -c 'command' "$0" "$@"
-                                inner_cmd=$(printf '%s' "$cmd_line" | sed "s/.*exec sh -c '\\([^']*\\)'.*/\\1/")
-                                printf '%s' "$inner_cmd"
-                                return 0
-                                ;;
-                        *)
-                                printf '%s' "$cmd_line"
-                                return 0
-                                ;;
-                esac
-        fi
-        return 1
-}
-
 print_empty_message() {
         printf '%s\n' "No spells are available to cast."
         printf '%s\n' "Add spells from the Spellbook menu."
@@ -86,18 +56,8 @@ spell_menu_loop() {
                         if [ ! -x "$entry_cmd" ]; then
                                 entry_cmd=$command
                         fi
-                        # Check if spell has exactly one executable line
-                        display_cmd=$command
-                        if one_liner=$(extract_one_line_command "$entry_cmd"); then
-                                display_cmd=$one_liner
-                        fi
-                        # Avoid duplicate display when alias equals command
-                        if [ "$alias" = "$display_cmd" ]; then
-                                label=$alias
-                        else
-                                label=$(printf '%s – %s' "$alias" "$display_cmd")
-                        fi
-                        set -- "$@" "$(printf '%s%%%s' "$label" "$entry_cmd")"
+                        # Label is just the alias; menu shows and executes entry_cmd on the right
+                        set -- "$@" "$(printf '%s%%%s' "$alias" "$entry_cmd")"
                 done <<SPELLS
 $entries
 SPELLS
