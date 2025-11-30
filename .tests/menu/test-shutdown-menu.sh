@@ -51,7 +51,9 @@ SH
   run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/shutdown-menu"
   assert_success
   args=$(cat "$tmp/log")
+  # Logout command varies: loginctl terminate-user on systemd, pkill -TERM otherwise
   case "$args" in
+    *"Restart / Shutdown:"*"Restart%sudo shutdown -r +0"*"Shutdown%sudo shutdown -h +0"*"Logout%loginctl terminate-user"*"Force restart%sudo reboot -f"*"Force shutdown%sudo poweroff -f"*"Force logout%pkill -KILL"*"Back%exit 113"* ) : ;;
     *"Restart / Shutdown:"*"Restart%sudo shutdown -r +0"*"Shutdown%sudo shutdown -h +0"*"Logout%pkill -TERM"*"Force restart%sudo reboot -f"*"Force shutdown%sudo poweroff -f"*"Force logout%pkill -KILL"*"Back%exit 113"* ) : ;;
     *) TEST_FAILURE_REASON="expected shutdown actions missing: $args"; return 1 ;;
   esac
