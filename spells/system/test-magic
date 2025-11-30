@@ -469,19 +469,12 @@ scan_extraneous() {
     # The install script is in the repo root (not spells/) so its test can be:
     # 1. .tests/test-install.sh (dir="." base="install") 
     # 2. .tests/install/test-install.sh (dir="install" base="install")
-    # Also handle test-common.sh which is a global test with no corresponding spell
     case "$base" in
       install|install-with-old-version)
         if [ "$dir" = "install" ] || [ "$dir" = "." ]; then
           if [ -f "$root_dir/install" ]; then
             continue
           fi
-        fi
-        ;;
-      common)
-        # Common checks test - no corresponding spell
-        if [ "$dir" = "." ]; then
-          continue
         fi
         ;;
     esac
