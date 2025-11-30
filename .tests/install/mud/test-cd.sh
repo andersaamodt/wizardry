@@ -207,4 +207,40 @@ run_test_case "cd respects detect-rc-file" test_cd_respects_detect_rc_file
 run_test_case "cd uninstall removes hook" test_cd_uninstall_removes_hook
 run_test_case "cd uninstall reports when not installed" test_cd_uninstall_reports_not_installed
 run_test_case "cd --help shows usage" test_cd_help_shows_usage
+
+test_cd_nixos_uses_shell_rc_fallback() {
+  # Test that on NixOS (nix format), cd falls back to shell rc file
+  tmp=$(make_tempdir)
+  
+  # Create a bashrc file to find
+  touch "$tmp/.bashrc"
+  
+  # Create detect-rc-file that returns nix format
+  cat >"$tmp/detect-rc-file" <<STUB
+#!/bin/sh
+printf 'platform=nixos\n'
+printf 'rc_file=/etc/nixos/configuration.nix\n'
+printf 'format=nix\n'
+STUB
+  chmod +x "$tmp/detect-rc-file"
+  
+  # Run cd install with our detect-rc-file
+  run_cmd env PATH="$tmp:$PATH" WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" HOME="$tmp" "$ROOT_DIR/spells/install/mud/cd" install
+  assert_success || return 1
+  
+  # Check that the output mentions using bashrc for NixOS
+  assert_output_contains "Detected NixOS" || return 1
+  assert_output_contains ".bashrc" || return 1
+  
+  # Verify it installed to bashrc, not configuration.nix
+  assert_path_exists "$tmp/.bashrc" || return 1
+  if grep -q ">>> wizardry cd cantrip >>>" "$tmp/.bashrc"; then
+    return 0
+  fi
+  TEST_FAILURE_REASON="Hook not found in .bashrc"
+  return 1
+}
+
+run_test_case "cd uses shell rc fallback on NixOS" test_cd_nixos_uses_shell_rc_fallback
+
 finish_tests

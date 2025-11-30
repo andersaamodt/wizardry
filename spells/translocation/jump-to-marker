@@ -287,14 +287,20 @@ install() {
         fi
         # For nix format, try to find a shell rc file - we can't source shell code from .nix files
         if [ "$JUMP_TO_MARKER_FORMAT" = "nix" ]; then
-                # Try common shell rc files
+                # Try to use shell-rc imp if available, otherwise inline fallback
                 shell_rc=""
-                for candidate in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.bash_profile" "$HOME/.profile"; do
-                        if [ -f "$candidate" ]; then
-                                shell_rc=$candidate
-                                break
-                        fi
-                done
+                if command -v shell-rc >/dev/null 2>&1; then
+                        shell_rc=$(shell-rc 2>/dev/null) || shell_rc=""
+                fi
+                # Inline fallback if imp not available
+                if [ -z "$shell_rc" ]; then
+                        for candidate in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.bash_profile" "$HOME/.profile"; do
+                                if [ -f "$candidate" ]; then
+                                        shell_rc=$candidate
+                                        break
+                                fi
+                        done
+                fi
                 if [ -z "$shell_rc" ]; then
                         printf '%s\n' "jump-to-marker: shell code cannot be written to .nix files."
                         printf '%s\n' "Add 'source <path-to-jump-to-marker>' to your shell profile to enable the 'jump' alias."
