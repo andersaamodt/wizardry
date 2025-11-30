@@ -96,6 +96,22 @@ STUB
   [ ! -s "$fixture/log/apt.log" ] || { TEST_FAILURE_REASON="apt should not be used on Darwin"; return 1; }
 }
 
+manage_system_rejects_missing_arguments() {
+  # No arguments should trigger usage error
+  run_cmd "$ROOT_DIR/spells/install/core/manage-system-command"
+  assert_failure || return 1
+  assert_error_contains "Usage: manage-system-command" || return 1
+}
+
+manage_system_rejects_single_argument() {
+  # One argument is not enough - need both command and package
+  run_cmd "$ROOT_DIR/spells/install/core/manage-system-command" some-command
+  assert_failure || return 1
+  assert_error_contains "Usage: manage-system-command" || return 1
+}
+
+run_test_case "manage-system-command rejects missing arguments" manage_system_rejects_missing_arguments
+run_test_case "manage-system-command rejects single argument" manage_system_rejects_single_argument
 run_test_case "manage-system-command installs when missing" manage_system_installs_when_missing
 run_test_case "manage-system-command skips when present" manage_system_skips_when_present
 run_test_case "manage-system-command reports failed installation" manage_system_reports_failure_when_installers_fail
