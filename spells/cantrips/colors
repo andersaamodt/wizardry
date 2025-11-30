@@ -22,7 +22,9 @@ disable_palette() {
                 BG_BLACK BG_RED BG_GREEN BG_YELLOW BG_BLUE BG_PURPLE \
                 BG_CYAN BG_WHITE BG_BRIGHT_BLACK BG_BRIGHT_RED \
                 BG_BRIGHT_GREEN BG_BRIGHT_YELLOW BG_BRIGHT_BLUE \
-                BG_BRIGHT_PURPLE BG_BRIGHT_CYAN BG_BRIGHT_WHITE
+                BG_BRIGHT_PURPLE BG_BRIGHT_CYAN BG_BRIGHT_WHITE \
+                THEME_HIGHLIGHT THEME_MUTED THEME_CUSTOM THEME_SUCCESS \
+                THEME_ERROR THEME_HEADING THEME_DIVIDER THEME_LOCATION
         do
                 eval "$name=''"
         done
@@ -85,6 +87,17 @@ BG_BRIGHT_BLUE="${ESC}[104m"
 BG_BRIGHT_PURPLE="${ESC}[105m"
 BG_BRIGHT_CYAN="${ESC}[106m"
 BG_BRIGHT_WHITE="${ESC}[107m"
+
+# Semantic theme colours for consistent UI styling.
+# Use these throughout wizardry spells for a unified look.
+THEME_HIGHLIGHT="$CYAN"          # Menu highlight / selected item
+THEME_MUTED="$GREY"              # Secondary text / commands on right side of menu
+THEME_CUSTOM="$YELLOW"           # User-created spell names
+THEME_SUCCESS="$GREEN"           # Success indicators
+THEME_ERROR="$RED"               # Error indicators
+THEME_HEADING="${GREEN}${BOLD}"  # Priority/heading highlight
+THEME_DIVIDER="$GREY"            # Menu dividers
+THEME_LOCATION="${BLUE}${BOLD}"  # Location/room names in MUD
 
 # Allow the user or terminal capabilities to disable colour output entirely.
 case ${NO_COLOR-} in

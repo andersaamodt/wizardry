@@ -15,6 +15,7 @@ else
         CYAN=''
         PURPLE=''
         YELLOW=''
+        THEME_CUSTOM=''
 fi
 
 cast_store=${CAST_STORE-memorize}
@@ -464,12 +465,12 @@ USER_FOLDERS
                                 done
                         fi
                         
-                        # List custom spells from ~/.spellbook/<category> with yellow color
+                        # List custom spells from ~/.spellbook/<category> with custom theme color
                         if [ -d "$custom_dir" ]; then
                                 for spell in $(find "$custom_dir" -maxdepth 1 -type f -perm -111 2>/dev/null | sort); do
                                         spell_name=$(basename "$spell")
-                                        # Use YELLOW for custom spell names (distinct from CYAN highlight)
-                                        set -- "$@" "${YELLOW}${spell_name}${RESET}%spell-menu $spell_name"
+                                        # Use THEME_CUSTOM for custom spell names (distinct from highlight)
+                                        set -- "$@" "${THEME_CUSTOM}${spell_name}${RESET}%spell-menu $spell_name"
                                 done
                         fi
                         

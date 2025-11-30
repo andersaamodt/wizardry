@@ -45,15 +45,23 @@ fi
 # Disable colour on plain terminals so the narration stays legible. The
 # keyword helpers collapse to plain words when colour disappears so the rest of
 # the spell can sprinkle colour without conditional branches.
-# We avoid external tput/printf colour helpers to stay POSIX-clean.
+# Load colors when available, falling back to inline escape codes.
 if [ "${NO_COLOR-}" = "1" ] || [ "${NO_COLOR-}" = "true" ] || [ "${TERM:-}" = "dumb" ]; then
         blue=""
         purple=""
         reset=""
+elif command -v colors >/dev/null 2>&1; then
+        # shellcheck disable=SC1091
+        . colors
+        blue="$CYAN"
+        purple="$PURPLE"
+        reset="$RESET"
 else
-        blue="\033[36m"
-        purple='\033[0;35m'
-        reset='\033[0m'
+        # Fallback to hardcoded escape sequences if colors script is not available
+        ESC=$(printf '\033')
+        blue="${ESC}[36m"
+        purple="${ESC}[0;35m"
+        reset="${ESC}[0m"
 fi
 magic_word="${purple}magic${reset}"
 enchanted_word="${purple}enchanted${reset}"
