@@ -1,0 +1,90 @@
+#!/bin/sh
+
+# Toggle all MUD features on or off.
+# This enables or disables all MUD features at once.
+
+show_usage() {
+        cat <<'USAGE'
+Usage: toggle-all-mud [--enable | --disable]
+
+Toggle all MUD features on or off.
+
+Options:
+  --enable   Enable all MUD features
+  --disable  Disable all MUD features
+
+Without arguments, toggles based on current state:
+  - If any feature is disabled, enables all features
+  - If all features are enabled, disables all features
+
+Note: The CD hook is a separate shell hook and is not affected by this toggle.
+Use toggle-cd to manage the CD hook separately.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+MUD_CONFIG="$SCRIPT_DIR/mud-config"
+
+if [ ! -x "$MUD_CONFIG" ]; then
+        printf '%s\n' "Error: mud-config not found at '$MUD_CONFIG'." >&2
+        exit 1
+fi
+
+# List of config-based features (not including CD hook which is a shell hook)
+FEATURES="command-not-found touch-hook fantasy-theme inventory combat"
+
+# Determine action based on arguments or current state
+action=""
+case "${1-}" in
+        --enable)
+                action="enable"
+                ;;
+        --disable)
+                action="disable"
+                ;;
+        "")
+                # Auto-detect: if any is disabled, enable all; otherwise disable all
+                all_enabled=1
+                for feature in $FEATURES; do
+                        state=$("$MUD_CONFIG" get "$feature")
+                        if [ "$state" = "disabled" ]; then
+                                all_enabled=0
+                                break
+                        fi
+                done
+                if [ "$all_enabled" -eq 1 ]; then
+                        action="disable"
+                else
+                        action="enable"
+                fi
+                ;;
+        *)
+                printf '%s\n' "toggle-all-mud: unknown option '$1'" >&2
+                show_usage >&2
+                exit 1
+                ;;
+esac
+
+# Apply action to all features
+if [ "$action" = "enable" ]; then
+        printf '%s\n' "Enabling all MUD features..."
+        for feature in $FEATURES; do
+                "$MUD_CONFIG" set "$feature" enabled
+        done
+        printf '%s\n' "✓ All MUD features enabled."
+else
+        printf '%s\n' "Disabling all MUD features..."
+        for feature in $FEATURES; do
+                "$MUD_CONFIG" set "$feature" disabled
+        done
+        printf '%s\n' "✓ All MUD features disabled."
+fi

@@ -242,4 +242,180 @@ run_test_case "CD hook toggle shows [ ] when not installed" test_cd_hook_toggle_
 run_test_case "CD hook toggle shows [X] when installed" test_cd_hook_toggle_checked
 run_test_case "mud-install-menu --help shows usage" test_mud_install_menu_help
 
+# Test new MUD feature toggles
+test_command_not_found_toggle_unchecked() {
+  tmp=$(make_tempdir)
+  make_stub_colors "$tmp"
+  
+  # Create menu stub that logs and exits
+  cat >"$tmp/menu" <<'SH'
+#!/bin/sh
+printf '%s\n' "$@" >>"$MENU_LOG"
+exit 113
+SH
+  chmod +x "$tmp/menu"
+  
+  cat >"$tmp/require-command" <<'SH'
+#!/bin/sh
+exit 0
+SH
+  chmod +x "$tmp/require-command"
+  
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$tmp/exit-label"
+  
+  # Use a temp rc file and config dir with no features enabled
+  rc_file="$tmp/rc"
+  : >"$rc_file"
+  config_dir="$tmp/mud"
+  mkdir -p "$config_dir"
+  
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" WIZARDRY_MUD_CONFIG_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-install-menu"
+  assert_success || return 1
+  
+  args=$(cat "$tmp/log")
+  case "$args" in
+    *"[ ] Command not found hook"*) : ;;
+    *) TEST_FAILURE_REASON="Command not found hook should show [ ] when not enabled: $args"; return 1 ;;
+  esac
+}
+
+test_command_not_found_toggle_checked() {
+  tmp=$(make_tempdir)
+  make_stub_colors "$tmp"
+  
+  cat >"$tmp/menu" <<'SH'
+#!/bin/sh
+printf '%s\n' "$@" >>"$MENU_LOG"
+exit 113
+SH
+  chmod +x "$tmp/menu"
+  
+  cat >"$tmp/require-command" <<'SH'
+#!/bin/sh
+exit 0
+SH
+  chmod +x "$tmp/require-command"
+  
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$tmp/exit-label"
+  
+  # Use a temp rc file and config dir with feature enabled
+  rc_file="$tmp/rc"
+  : >"$rc_file"
+  config_dir="$tmp/mud"
+  mkdir -p "$config_dir"
+  printf '%s\n' "command-not-found=enabled" >"$config_dir/config"
+  
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" WIZARDRY_MUD_CONFIG_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-install-menu"
+  assert_success || return 1
+  
+  args=$(cat "$tmp/log")
+  case "$args" in
+    *"[X] Command not found hook"*) : ;;
+    *) TEST_FAILURE_REASON="Command not found hook should show [X] when enabled: $args"; return 1 ;;
+  esac
+}
+
+test_all_features_toggle_shown() {
+  tmp=$(make_tempdir)
+  make_stub_colors "$tmp"
+  
+  cat >"$tmp/menu" <<'SH'
+#!/bin/sh
+printf '%s\n' "$@" >>"$MENU_LOG"
+exit 113
+SH
+  chmod +x "$tmp/menu"
+  
+  cat >"$tmp/require-command" <<'SH'
+#!/bin/sh
+exit 0
+SH
+  chmod +x "$tmp/require-command"
+  
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$tmp/exit-label"
+  
+  rc_file="$tmp/rc"
+  : >"$rc_file"
+  config_dir="$tmp/mud"
+  mkdir -p "$config_dir"
+  
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" WIZARDRY_MUD_CONFIG_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-install-menu"
+  assert_success || return 1
+  
+  args=$(cat "$tmp/log")
+  # Should show "Enable all MUD features" item
+  case "$args" in
+    *"Enable all MUD features"*) : ;;
+    *) TEST_FAILURE_REASON="Menu should show 'Enable all MUD features' toggle: $args"; return 1 ;;
+  esac
+}
+
+test_all_planned_features_shown() {
+  tmp=$(make_tempdir)
+  make_stub_colors "$tmp"
+  
+  cat >"$tmp/menu" <<'SH'
+#!/bin/sh
+printf '%s\n' "$@" >>"$MENU_LOG"
+exit 113
+SH
+  chmod +x "$tmp/menu"
+  
+  cat >"$tmp/require-command" <<'SH'
+#!/bin/sh
+exit 0
+SH
+  chmod +x "$tmp/require-command"
+  
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$tmp/exit-label"
+  
+  rc_file="$tmp/rc"
+  : >"$rc_file"
+  config_dir="$tmp/mud"
+  mkdir -p "$config_dir"
+  
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" WIZARDRY_MUD_CONFIG_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-install-menu"
+  assert_success || return 1
+  
+  args=$(cat "$tmp/log")
+  # Check all planned features are shown
+  case "$args" in
+    *"Touch hook"*) : ;;
+    *) TEST_FAILURE_REASON="Menu should show Touch hook: $args"; return 1 ;;
+  esac
+  case "$args" in
+    *"Fantasy theme"*) : ;;
+    *) TEST_FAILURE_REASON="Menu should show Fantasy theme: $args"; return 1 ;;
+  esac
+  case "$args" in
+    *"Inventory feature"*) : ;;
+    *) TEST_FAILURE_REASON="Menu should show Inventory feature: $args"; return 1 ;;
+  esac
+  case "$args" in
+    *"HP/MP and combat"*) : ;;
+    *) TEST_FAILURE_REASON="Menu should show HP/MP and combat: $args"; return 1 ;;
+  esac
+}
+
+run_test_case "Command not found toggle shows [ ] when disabled" test_command_not_found_toggle_unchecked
+run_test_case "Command not found toggle shows [X] when enabled" test_command_not_found_toggle_checked
+run_test_case "Enable all MUD features toggle shown" test_all_features_toggle_shown
+run_test_case "All planned MUD features shown" test_all_planned_features_shown
+
 finish_tests

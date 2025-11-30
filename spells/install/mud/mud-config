@@ -1,0 +1,170 @@
+#!/bin/sh
+
+# Manage MUD feature configuration stored in ~/.spellbook/.mud/config
+# This is a helper for reading and writing MUD feature toggle states.
+
+show_usage() {
+        cat <<'USAGE'
+Usage: mud-config get FEATURE
+       mud-config set FEATURE VALUE
+       mud-config toggle FEATURE
+       mud-config list
+
+Manage MUD feature toggles stored in ~/.spellbook/.mud/config
+
+Commands:
+  get FEATURE       Get the value of a feature (prints 'enabled' or 'disabled')
+  set FEATURE VALUE Set a feature to 'enabled' or 'disabled'
+  toggle FEATURE    Toggle a feature between enabled/disabled
+  list              List all features and their states
+
+Features:
+  command-not-found   Command not found hook (planned)
+  touch-hook          Touch hook (planned)
+  fantasy-theme       Fantasy theme (planned)
+  inventory           Inventory feature (planned)
+  combat              HP/MP and combat (planned)
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
+set -eu
+
+# Resolve config directory
+resolve_config_dir() {
+        if [ -n "${WIZARDRY_MUD_CONFIG_DIR-}" ]; then
+                printf '%s' "$WIZARDRY_MUD_CONFIG_DIR"
+        elif [ -n "${SPELLBOOK_HOME-}" ]; then
+                printf '%s' "$SPELLBOOK_HOME/.mud"
+        elif [ -n "${HOME-}" ]; then
+                printf '%s' "$HOME/.spellbook/.mud"
+        else
+                printf '%s\n' "mud-config: cannot determine config directory" >&2
+                return 1
+        fi
+}
+
+config_dir=$(resolve_config_dir) || exit 1
+config_file="$config_dir/config"
+
+# Ensure config directory exists
+ensure_config_dir() {
+        if [ ! -d "$config_dir" ]; then
+                mkdir -p "$config_dir" || {
+                        printf '%s\n' "mud-config: cannot create config directory '$config_dir'" >&2
+                        return 1
+                }
+        fi
+}
+
+# Get feature value (returns 'enabled' or 'disabled')
+get_feature() {
+        feature=$1
+        if [ ! -f "$config_file" ]; then
+                printf '%s\n' "disabled"
+                return 0
+        fi
+        value=$(grep "^${feature}=" "$config_file" 2>/dev/null | cut -d= -f2 | head -1)
+        if [ "$value" = "enabled" ]; then
+                printf '%s\n' "enabled"
+        else
+                printf '%s\n' "disabled"
+        fi
+}
+
+# Set feature value
+set_feature() {
+        feature=$1
+        value=$2
+        case "$value" in
+                enabled|disabled) ;;
+                *)
+                        printf '%s\n' "mud-config: value must be 'enabled' or 'disabled'" >&2
+                        return 1
+                        ;;
+        esac
+        ensure_config_dir || return 1
+        
+        # Create or update config file
+        if [ -f "$config_file" ]; then
+                # Remove old entry and add new one
+                tmp_file=$(mktemp "${TMPDIR:-/tmp}/mud-config.XXXXXX") || return 1
+                grep -v "^${feature}=" "$config_file" >"$tmp_file" 2>/dev/null || true
+                printf '%s=%s\n' "$feature" "$value" >>"$tmp_file"
+                mv "$tmp_file" "$config_file" || {
+                        rm -f "$tmp_file"
+                        return 1
+                }
+        else
+                printf '%s=%s\n' "$feature" "$value" >"$config_file"
+        fi
+}
+
+# Toggle feature between enabled/disabled
+toggle_feature() {
+        feature=$1
+        current=$(get_feature "$feature")
+        if [ "$current" = "enabled" ]; then
+                set_feature "$feature" "disabled"
+                printf '%s\n' "disabled"
+        else
+                set_feature "$feature" "enabled"
+                printf '%s\n' "enabled"
+        fi
+}
+
+# List all features
+list_features() {
+        features="command-not-found touch-hook fantasy-theme inventory combat"
+        for feature in $features; do
+                value=$(get_feature "$feature")
+                printf '%s=%s\n' "$feature" "$value"
+        done
+}
+
+# Main command dispatch
+if [ "$#" -lt 1 ]; then
+        show_usage >&2
+        exit 1
+fi
+
+cmd=$1
+shift
+
+case "$cmd" in
+        get)
+                if [ "$#" -lt 1 ]; then
+                        printf '%s\n' "mud-config: get requires a feature name" >&2
+                        exit 1
+                fi
+                get_feature "$1"
+                ;;
+        set)
+                if [ "$#" -lt 2 ]; then
+                        printf '%s\n' "mud-config: set requires a feature name and value" >&2
+                        exit 1
+                fi
+                set_feature "$1" "$2"
+                ;;
+        toggle)
+                if [ "$#" -lt 1 ]; then
+                        printf '%s\n' "mud-config: toggle requires a feature name" >&2
+                        exit 1
+                fi
+                toggle_feature "$1"
+                ;;
+        list)
+                list_features
+                ;;
+        *)
+                printf '%s\n' "mud-config: unknown command '$cmd'" >&2
+                show_usage >&2
+                exit 1
+                ;;
+esac
