@@ -59,11 +59,13 @@ handle_ctrl_c() {
 handle_ctrl_c
 
 display_menu() {
-  restart_item="Restart%sudo shutdown -r now"
-  shutdown_item="Shutdown%sudo shutdown -h now"
+  # Graceful restart/shutdown give processes time to clean up
+  restart_item="Restart%sudo shutdown -r +0"
+  shutdown_item="Shutdown%sudo shutdown -h +0"
   logout_item="Logout%pkill -KILL -u \"\$USER\""
-  force_restart_item="Force restart%sudo shutdown -r now"
-  force_shutdown_item="Force shutdown%sudo shutdown -h now"
+  # Force operations bypass graceful shutdown procedures
+  force_restart_item="Force restart%sudo reboot -f"
+  force_shutdown_item="Force shutdown%sudo poweroff -f"
   exit_label=$(exit-label)
   exit_item="${exit_label}%exit $menu_escape_status"
 
