@@ -12,7 +12,7 @@ Jump to a named marker location set with mark-location.
 
 Arguments:
   marker  Optional marker name or number. Defaults to "1".
-          If called repeatedly without arguments, cycles through all markers
+          Use "0" or no argument to cycle through all markers
           (numbered markers first in order, then alphabetical).
 
 Options:
@@ -20,6 +20,7 @@ Options:
 
 Examples:
   jump           # Jump to marker 1 (or cycle if called repeatedly)
+  jump 0         # Same as jump with no args - cycles through markers
   jump 2         # Jump to marker 2
   jump alpha     # Jump to marker named "alpha"
 USAGE
@@ -42,7 +43,7 @@ case $0 in
 esac
 
 SPELL_NAME=jump-to-marker
-MARKERS_DIR=${JUMP_TO_MARKERS_DIR:-$HOME/.mud/markers}
+MARKERS_DIR=${JUMP_TO_MARKERS_DIR:-$HOME/.spellbook/markers}
 JUMP_TO_MARKER_PATH=${JUMP_TO_MARKER_PATH-}
 JUMP_TO_MARKER_HELPERS_DIR=${JUMP_TO_MARKER_HELPERS_DIR-}
 JUMP_TO_MARKER_RC_FILE=${JUMP_TO_MARKER_RC_FILE-}
@@ -388,7 +389,7 @@ fi
 
 # Get all available marker names, sorted with numbers first then alphabetical
 jump_list_markers() {
-        markers_dir=${MARKERS_DIR:-$HOME/.mud/markers}
+        markers_dir=${MARKERS_DIR:-$HOME/.spellbook/markers}
         if [ ! -d "$markers_dir" ]; then
                 return 1
         fi
@@ -424,7 +425,7 @@ jump_list_markers() {
 # Get next marker in sequence for cycling
 jump_next_marker() {
         current=$1
-        markers_dir=${MARKERS_DIR:-$HOME/.mud/markers}
+        markers_dir=${MARKERS_DIR:-$HOME/.spellbook/markers}
         all_markers=$(jump_list_markers)
         if [ -z "$all_markers" ]; then
                 printf '%s\n' "1"
@@ -449,13 +450,14 @@ jump_next_marker() {
 }
 
 jump() {
-        markers_dir=${MARKERS_DIR:-$HOME/.mud/markers}
+        markers_dir=${MARKERS_DIR:-$HOME/.spellbook/markers}
         last_file="$markers_dir/.last"
         marker_name="${1:-}"
         
-        # If no marker specified, determine which one to use
-        if [ -z "$marker_name" ]; then
-                # Check if last command was also jump with no args (cycling behavior)
+        # If no marker specified OR marker is "0", cycle through markers
+        # (jump 0 is equivalent to jump with no args)
+        if [ -z "$marker_name" ] || [ "$marker_name" = "0" ]; then
+                # Check if last command was also jump (cycling behavior)
                 if [ -f "$last_file" ]; then
                         last_marker=$(cat "$last_file" 2>/dev/null || printf '')
                         if [ -n "$last_marker" ]; then

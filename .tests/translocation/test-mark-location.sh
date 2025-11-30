@@ -71,13 +71,13 @@ test_overwrites_marker() {
     set -e
     expected="'"$expected"'"
     rm -rf "$expected"
-    mkdir -p "$expected" "$HOME/.mud/markers"
-    printf "/previous\n" >"$HOME/.mud/markers/1"
+    mkdir -p "$expected" "$HOME/.spellbook/markers"
+    printf "/previous\n" >"$HOME/.spellbook/markers/1"
     cd "$expected"
     # Get the resolved path that mark-location will use
     expected_resolved=$(pwd -P | sed "s|//|/|g")
     mark-location 1
-    marker_content=$(cat "$HOME/.mud/markers/1")
+    marker_content=$(cat "$HOME/.spellbook/markers/1")
     printf "Marked location 1 at %s\n" "$expected_resolved"
     printf "MARK:%s\n" "$marker_content"
   '
@@ -100,7 +100,7 @@ test_resolves_symlink_workdir() {
     # Resolve the real directory to its physical path for comparison
     real_dir_resolved=$(cd "$real_dir" && pwd -P | sed "s|//|/|g")
     mark-location testlink
-    printf "MARK:%s\n" "$(cat "$HOME/.mud/markers/testlink")"
+    printf "MARK:%s\n" "$(cat "$HOME/.spellbook/markers/testlink")"
     printf "Marked location testlink at %s\n" "$real_dir_resolved"
   '
   assert_success
@@ -115,7 +115,7 @@ test_expands_tilde_argument() {
     set -e
     mkdir -p "$HOME/special/place"
     mark-location tildetest "~/special/place"
-    printf "MARK:%s\n" "$(cat "$HOME/.mud/markers/tildetest")"
+    printf "MARK:%s\n" "$(cat "$HOME/.spellbook/markers/tildetest")"
   '
   assert_success
   case "$OUTPUT" in
@@ -128,22 +128,23 @@ test_expands_tilde_argument() {
 test_marker_dir_blocked() {
   run_cmd sh -c '
     set -e
-    rm -rf "$HOME/.mud"
-    touch "$HOME/.mud"
+    rm -rf "$HOME/.spellbook"
+    mkdir -p "$HOME/.spellbook"
+    touch "$HOME/.spellbook/markers"
     mark-location
   '
   assert_failure
-  assert_error_contains ".mud"
+  assert_error_contains "markers"
 }
 
 test_auto_increments_marker() {
   run_cmd sh -c '
     set -e
-    rm -rf "$HOME/.mud/markers"
+    rm -rf "$HOME/.spellbook/markers"
     mark-location
     mark-location
     mark-location
-    ls "$HOME/.mud/markers/"
+    ls "$HOME/.spellbook/markers/"
   '
   assert_success
   assert_output_contains "1"

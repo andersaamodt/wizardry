@@ -122,6 +122,21 @@ test_jump_lists_available_markers() {
   assert_output_contains "alpha"
 }
 
+test_jump_zero_cycles() {
+  start_dir="$WIZARDRY_TMPDIR/start-zero"
+  dest1="$WIZARDRY_TMPDIR/dest1"
+  dest2="$WIZARDRY_TMPDIR/dest2"
+  markers_dir="$WIZARDRY_TMPDIR/markers-zero"
+  mkdir -p "$start_dir" "$dest1" "$dest2" "$markers_dir"
+  dest1_resolved=$(cd "$dest1" && pwd -P | sed 's|//|/|g')
+  dest2_resolved=$(cd "$dest2" && pwd -P | sed 's|//|/|g')
+  printf '%s\n' "$dest1_resolved" >"$markers_dir/1"
+  printf '%s\n' "$dest2_resolved" >"$markers_dir/2"
+  # jump 0 should behave like jump with no args (start at 1)
+  run_jump "0" "$markers_dir" "$start_dir"
+  assert_success && assert_output_contains "You land at marker '1'"
+}
+
 run_test_case "jump-to-marker prints usage" test_help
 run_test_case "jump-to-marker rejects unknown options" test_unknown_option_fails
 run_test_case "jump-to-marker install fails when helpers missing" test_install_requires_helpers
@@ -133,4 +148,5 @@ run_test_case "jump-to-marker reports when already at destination" test_jump_det
 run_test_case "jump-to-marker jumps to marked directory" test_jump_changes_directory
 run_test_case "jump-to-marker jumps to named marker" test_jump_to_named_marker
 run_test_case "jump-to-marker lists available markers on error" test_jump_lists_available_markers
+run_test_case "jump 0 cycles like jump with no args" test_jump_zero_cycles
 finish_tests

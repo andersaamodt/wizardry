@@ -8,7 +8,7 @@ show_usage() {
 Usage: enchant-portkey <file> [destination]
 
 Enchant a file with a portkey that stores a destination path. When no
-destination is provided, uses the path from marker 1 (~/.mud/markers/1).
+destination is provided, uses the path from marker 1 (~/.spellbook/markers/1).
 Activate the portkey with follow-portkey to teleport to the location.
 USAGE
 }
@@ -31,7 +31,7 @@ fi
 
 file=$1
 destination=${2-}
-markers_dir="$HOME/.mud/markers"
+markers_dir="$HOME/.spellbook/markers"
 marker_file="$markers_dir/1"
 
 # Verify file exists

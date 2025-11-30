@@ -11,7 +11,7 @@ Usage: mark-location [marker] [path]
        mark [marker] [path]
 
 Record the absolute path (current directory by default) for jump-to-marker to
-return to later. Markers are stored in ~/.mud/markers/.
+return to later. Markers are stored in ~/.spellbook/markers/.
 
 Arguments:
   marker  Optional name or number for the marker. If omitted, uses the next
@@ -38,10 +38,9 @@ if [ "$#" -gt 2 ]; then
   exit 1
 fi
 
-markers_dir="$HOME/.mud/markers"
-next_file="$markers_dir/.next"
+markers_dir="$HOME/.spellbook/markers"
 
-# Store the markers in ~/.mud/markers/ alongside other MUD metadata.
+# Store the markers in ~/.spellbook/markers/ (persists across wizardry resets).
 make dir "$markers_dir" || exit 1
 
 # Determine marker name: if first arg looks like a path, it's the path, not name
@@ -74,16 +73,14 @@ else
   target_path="$2"
 fi
 
-# Get next marker number if no name given
+# Get next marker number if no name given using O_EXCL loop
+# This finds the first available number without needing a .next file
 if [ -z "$marker_name" ]; then
-  if [ -f "$next_file" ]; then
-    marker_name=$(cat "$next_file")
-  else
-    marker_name=1
-  fi
-  # Increment for next time
-  next_num=$((marker_name + 1))
-  say "$next_num" >"$next_file"
+  n=1
+  while [ -e "$markers_dir/$n" ]; do
+    n=$((n + 1))
+  done
+  marker_name=$n
 fi
 
 # Validate marker name (alphanumeric, dashes, underscores only)
