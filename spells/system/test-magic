@@ -367,10 +367,17 @@ while IFS= read -r test_path; do
   # Check minimum subtest requirements based on test type.
   # Imps (in .imps/): Need MIN_SUBTESTS_IMP subtests (no --help).
   # Spells: Need a --help test PLUS MIN_SUBTESTS_IMP additional behavioral subtests.
+  # Global tests (test-install.sh, test-suite-checks.sh): Exempt from --help requirement.
   test_subtest_count=$(get_subtest_total "$cleaned_output")
   case "$test_path" in
     .imps/*|*/.imps/*)
       # Imps have no --help, just need MIN_SUBTESTS_IMP subtests
+      if [ -n "$test_subtest_count" ] && [ "$test_subtest_count" -lt "$MIN_SUBTESTS_IMP" ]; then
+        record_incomplete_test "$test_path" "$test_subtest_count subtests, need $MIN_SUBTESTS_IMP"
+      fi
+      ;;
+    test-install.sh|test-suite-checks.sh)
+      # Global/special tests don't need --help test
       if [ -n "$test_subtest_count" ] && [ "$test_subtest_count" -lt "$MIN_SUBTESTS_IMP" ]; then
         record_incomplete_test "$test_path" "$test_subtest_count subtests, need $MIN_SUBTESTS_IMP"
       fi
@@ -462,12 +469,19 @@ scan_extraneous() {
     # The install script is in the repo root (not spells/) so its test can be:
     # 1. .tests/test-install.sh (dir="." base="install") 
     # 2. .tests/install/test-install.sh (dir="install" base="install")
+    # Also handle test-suite-checks.sh which is a global test with no corresponding spell
     case "$base" in
       install|install-with-old-version)
         if [ "$dir" = "install" ] || [ "$dir" = "." ]; then
           if [ -f "$root_dir/install" ]; then
             continue
           fi
+        fi
+        ;;
+      suite-checks)
+        # Global test suite checks - no corresponding spell
+        if [ "$dir" = "." ]; then
+          continue
         fi
         ;;
     esac
