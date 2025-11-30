@@ -608,15 +608,15 @@ printf '%s\n' "Run 'install-menu' to install system utilities." >&2
 - Good dispatcher pattern
 - Clear delegation logic
 
-#### **scribe-spell** (613 lines) 🔴 LARGEST SPELL
+#### **learn** (613 lines) 🔴 LARGEST SPELL
 - Most complex spell in repository
 - SC2129: Style suggestion
 - Functions well but violates "script-like scripts" principle
 - Consider splitting into:
-  - `scribe-spell-install` (installation logic)
-  - `scribe-spell-rc` (rc file management)
-  - `scribe-spell-inspect` (inspection logic)
-  - `scribe-spell` (dispatcher)
+  - `learn-install` (installation logic)
+  - `learn-rc` (rc file management)
+  - `learn-inspect` (inspection logic)
+  - `learn` (dispatcher)
 
 #### **unbind-tome** (53 lines) ✅ GOOD
 - Inverse of bind-tome
@@ -654,7 +654,7 @@ printf '%s\n' "Run 'install-menu' to install system utilities." >&2
 ### Translocation (3 spells)
 
 #### **jump-to-marker** (406 lines) 🟡 LARGE
-- Second-largest spell after scribe-spell
+- Second-largest spell after learn
 - Complex self-installation logic
 - SC2269: Self-assignment (line 29) - harmless but odd
 - Consider splitting if it grows more
@@ -718,7 +718,7 @@ printf '%s\n' "Run 'install-menu' to install system utilities." >&2
 - **Small (50-100 lines):** 31 spells
 - **Medium (100-200 lines):** 24 spells
 - **Large (200-500 lines):** 7 spells
-- **Very Large (500+ lines):** 2 spells (path-wizard, scribe-spell)
+- **Very Large (500+ lines):** 2 spells (path-wizard, learn)
 
 ---
 
@@ -739,7 +739,7 @@ printf '%s\n' "Run 'install-menu' to install system utilities." >&2
 
 ### Phase 3: Refactoring (Sprint 2)
 10. 🔄 Refactor path-wizard into modules
-11. 🔄 Consider splitting scribe-spell
+11. 🔄 Consider splitting learn
 12. 🔄 Standardize spell headers across all spells
 
 ### Phase 4: Enhancement (Backlog)

@@ -197,7 +197,7 @@ Wizardry compares favorably to other shell tool collections:
 - Active maintenance visible in commit history
 
 ### Areas to Monitor 👀
-- Two very large spells (path-wizard, scribe-spell) are maintenance challenges
+- Two very large spells (path-wizard, learn) are maintenance challenges
 - Missing tests for update spells is risky
 - Duplicate spells create confusion
 - POSIX violations could break on some systems

@@ -597,10 +597,10 @@ USER_FOLDERS
                 # Add "Scribe new spell" as penultimate menu item
                 if [ -z "$current_path" ]; then
                         # Root level - create in ~/.spellbook
-                        set -- "$@" "Scribe new spell%scribe-command"
+                        set -- "$@" "Scribe new spell%scribe-spell"
                 else
                         # Category level - create in ~/.spellbook/<category>
-                        set -- "$@" "Scribe new spell%scribe-command --dir $spell_home/$category_name"
+                        set -- "$@" "Scribe new spell%scribe-spell --dir $spell_home/$category_name"
                 fi
                 
                 # Use "Back" when in a submenu, "Exit" at root

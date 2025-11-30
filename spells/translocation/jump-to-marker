@@ -64,7 +64,7 @@ jump_self_path() {
 }
 
 # jump_helpers_dir returns the directory that contains this spell plus nearby
-# helper spells such as detect-rc-file and scribe-spell.
+# helper spells such as detect-rc-file and learn.
 jump_helpers_dir() {
         if [ -n "$JUMP_TO_MARKER_HELPERS_DIR" ]; then
                 printf '%s' "$JUMP_TO_MARKER_HELPERS_DIR"
@@ -106,8 +106,18 @@ jump_detect_helper() {
         printf '%s' "$detect"
 }
 
-jump_scribe_helper() {
+jump_learn_helper() {
         # Check if environment variable override is set first
+        if [ -n "${LEARN_SPELL-}" ]; then
+                if [ -x "$LEARN_SPELL" ]; then
+                        printf '%s' "$LEARN_SPELL"
+                        return 0
+                else
+                        printf '%s\n' "jump-to-marker: LEARN_SPELL is set but not executable." >&2
+                        return 1
+                fi
+        fi
+        # Legacy environment variable for backwards compatibility
         if [ -n "${SCRIBE_SPELL-}" ]; then
                 if [ -x "$SCRIBE_SPELL" ]; then
                         printf '%s' "$SCRIBE_SPELL"
@@ -121,17 +131,17 @@ jump_scribe_helper() {
         if ! helpers=$(jump_helpers_dir); then
                 return 1
         fi
-        scribe="$helpers/scribe-spell"
+        learn="$helpers/learn"
         
         # Only fall back to PATH if no explicit override was provided
-        if [ ! -x "$scribe" ] && command -v scribe-spell >/dev/null 2>&1; then
-                scribe=$(command -v scribe-spell)
+        if [ ! -x "$learn" ] && command -v learn >/dev/null 2>&1; then
+                learn=$(command -v learn)
         fi
-        if [ ! -x "$scribe" ]; then
-                printf '%s\n' "jump-to-marker: required helper 'scribe-spell' is missing." >&2
+        if [ ! -x "$learn" ]; then
+                printf '%s\n' "jump-to-marker: required helper 'learn' is missing." >&2
                 return 1
         fi
-        printf '%s' "$scribe"
+        printf '%s' "$learn"
 }
 
 jump_spellbook_store_helper() {
@@ -240,10 +250,10 @@ jump_spell_memorized() {
         if ! jump_detect_environment; then
                 return 1
         fi
-	if ! scribe=$(jump_scribe_helper); then
+	if ! learn=$(jump_learn_helper); then
 		return 1
 	fi
-if "$scribe" --rc-file "$JUMP_TO_MARKER_RC_FILE" --spell "$SPELL_NAME" status >/dev/null 2>&1; then
+if "$learn" --rc-file "$JUMP_TO_MARKER_RC_FILE" --spell "$SPELL_NAME" status >/dev/null 2>&1; then
 return 0
 fi
 if [ -f "$JUMP_TO_MARKER_RC_FILE" ] && grep -Fq "jump-to-marker" "$JUMP_TO_MARKER_RC_FILE" 2>/dev/null; then
@@ -276,14 +286,14 @@ install() {
                 jump_register_spellbook_alias
                 return 0
         fi
-        if ! scribe=$(jump_scribe_helper); then
+        if ! learn=$(jump_learn_helper); then
                 return 1
         fi
         if ! script_path=$(jump_self_path); then
                 return 1
         fi
         line=$(printf 'source "%s"' "$script_path")
-if printf '%s\n' "$line" | "$scribe" --rc-file "$JUMP_TO_MARKER_RC_FILE" --spell "$SPELL_NAME" add; then
+if printf '%s\n' "$line" | "$learn" --rc-file "$JUMP_TO_MARKER_RC_FILE" --spell "$SPELL_NAME" add; then
 printf '%s\n' "The 'jump' spell has been memorized (etched into $(basename "$JUMP_TO_MARKER_RC_FILE"))."
                 printf '%s\n' "Open a new terminal (or source the file) to summon portals anywhere."
                 jump_register_spellbook_alias
@@ -397,7 +407,7 @@ jump_prompt_memorize() {
         if ! jump_detect_environment; then
                 return 1
         fi
-        if ! scribe=$(jump_scribe_helper); then
+        if ! learn=$(jump_learn_helper); then
                 return 1
         fi
         rc_display=$(basename "$JUMP_TO_MARKER_RC_FILE")

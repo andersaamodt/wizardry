@@ -79,7 +79,7 @@ Wizardry uses specific terms for managing spells:
 
 * **Learn** — Some spells must be **learned** before they can be used. Use `spell --install` or `learn <path to spell>` to learn these spells (usually this means sourcing them in your RC file).
 * **Memorize** — **Memorized** spells appear in the Cast menu. Memorize a spell with `memorize <spell name>` or from the Spellbook menu. Forget a spell the same ways with `forget <spell name>`.
-* **Scribe** — **Scribe** a new spell to create a custom spell script in `~/.spellbook`. Use `scribe-command` or the Spellbook menu to do this.
+* **Scribe** — **Scribe** a new spell to create a custom spell script in `~/.spellbook`. Use `scribe-spell` or the Spellbook menu to do this.
 * **Erase** — **Erase** a custom spell to permanently delete it from `~/.spellbook`. Use `erase-spell <spell name>` or select "Erase spell" from the spell menu. This cannot be undone.
 * **Learn-spellbook** — Use `learn-spellbook` to add or remove a folder to your PATH permanently.
 
