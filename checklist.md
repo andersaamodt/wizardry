@@ -11,3 +11,13 @@
 - [ ] Add unit tests for ask_* cantrips to capture empty input handling, default selection, and NO_COLOR behaviour.
 - [ ] Expand coverage for menu spells (spellbook, spell-menu, mud) to lock in prompt text and spell listing parity.
 - [ ] Cover error handling paths in detect-rc-file, path-wizard, and installer wrappers so platform variance stays predictable.
+- [ ] Fix POSIX violation in list-contacts (replace bash-specific `read -d` with portable alternative).
+- [ ] Rewrite evoke-hash with `set -eu`, usage function, and proper error handling.
+- [ ] Add tests for update-all and update-wizardry system spells.
+- [ ] Remove duplicate spells (war/kill-process, divination/read-contact) or convert to symlinks.
+- [ ] Fix `var= ` assignment patterns to `var=''` in 13 affected files.
+- [ ] Fix tilde expansion in mark-location (line 41).
+- [ ] Fix pattern matching issues in enchant and yaml-to-enchantment spells.
+- [ ] Fix typo in README.md ("opinilnsted" → "opinionated").
+- [ ] Improve error messages across spells with actionable guidance.
+- [ ] Create CONTRIBUTING.md with spell contribution template.
