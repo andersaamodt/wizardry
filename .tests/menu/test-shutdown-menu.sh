@@ -1,7 +1,8 @@
 #!/bin/sh
 # Behavioral cases (derived from spell behavior):
-# - system-menu requires the menu dependency
-# - system-menu forwards system actions to the menu
+# - shutdown-menu requires the menu dependency
+# - shutdown-menu forwards shutdown/restart actions to the menu
+# - shutdown-menu includes optional Sleep and Hibernate when available
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/test-common.sh" ] && [ "$test_root" != "/" ]; do
@@ -30,34 +31,34 @@ SH
   chmod +x "$tmp/require-command"
 }
 
-test_system_menu_checks_requirements() {
+test_shutdown_menu_checks_requirements() {
   tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/req" "$ROOT_DIR/spells/menu/system-menu"
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/req" "$ROOT_DIR/spells/menu/shutdown-menu"
   assert_success && assert_path_exists "$tmp/req"
 }
 
-test_system_menu_includes_test_utilities() {
+test_shutdown_menu_includes_core_actions() {
   tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
-printf '%s' "Exit"
+printf '%s' "Back"
 SH
   chmod +x "$tmp/exit-label"
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/system-menu"
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/shutdown-menu"
   assert_success
   args=$(cat "$tmp/log")
   case "$args" in
-    *"System Menu:"*"Restart...%shutdown-menu"*"Update all software%update-all -v"*"Update wizardry%update-wizardry"*"Manage services%"*"services-menu"*"Test all wizardry spells%$ROOT_DIR/spells/system/test-magic"*"Exit%exit 113"* ) : ;;
-    *) TEST_FAILURE_REASON="expected system actions missing: $args"; return 1 ;;
+    *"Restart / Shutdown:"*"Restart%sudo shutdown -r +0"*"Shutdown%sudo shutdown -h +0"*"Logout%pkill -TERM"*"Force restart%sudo reboot -f"*"Force shutdown%sudo poweroff -f"*"Force logout%pkill -KILL"*"Back%exit 113"* ) : ;;
+    *) TEST_FAILURE_REASON="expected shutdown actions missing: $args"; return 1 ;;
   esac
 }
 
-run_test_case "system-menu requires menu dependency" test_system_menu_checks_requirements
-run_test_case "system-menu passes system actions to menu" test_system_menu_includes_test_utilities
+run_test_case "shutdown-menu requires menu dependency" test_shutdown_menu_checks_requirements
+run_test_case "shutdown-menu passes shutdown actions to menu" test_shutdown_menu_includes_core_actions
 
 # Test ESC and Exit behavior - menu exits properly when escape status returned
 test_esc_exit_behavior() {
@@ -67,27 +68,27 @@ test_esc_exit_behavior() {
   
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
-printf '%s' "Exit"
+printf '%s' "Back"
 SH
   chmod +x "$tmp/exit-label"
   
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/system-menu"
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/shutdown-menu"
   assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
   
   args=$(cat "$tmp/log")
   case "$args" in
-    *"Exit%exit 113"*) : ;;
-    *) TEST_FAILURE_REASON="menu should show Exit label: $args"; return 1 ;;
+    *"Back%exit 113"*) : ;;
+    *) TEST_FAILURE_REASON="menu should show Back label: $args"; return 1 ;;
   esac
 }
 
-run_test_case "system-menu ESC/Exit behavior" test_esc_exit_behavior
+run_test_case "shutdown-menu ESC/Exit behavior" test_esc_exit_behavior
 
 shows_help() {
-  run_spell spells/menu/system-menu --help
+  run_spell spells/menu/shutdown-menu --help
   # Note: spell may not have --help implemented yet
   true
 }
 
-run_test_case "system-menu accepts --help" shows_help
+run_test_case "shutdown-menu accepts --help" shows_help
 finish_tests
