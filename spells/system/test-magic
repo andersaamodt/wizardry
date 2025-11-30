@@ -159,7 +159,7 @@ while IFS= read -r path; do
   esac
   short=${path#"$test_dir/"}
   case $short in
-    test-common.sh) continue ;;
+    test-common.sh|test-suite.sh) continue ;;
   esac
   if matches_patterns "$short"; then
     if [ -n "$test_files" ]; then
@@ -367,7 +367,7 @@ while IFS= read -r test_path; do
   # Check minimum subtest requirements based on test type.
   # Imps (in .imps/): Need MIN_SUBTESTS_IMP subtests (no --help).
   # Spells: Need a --help test PLUS MIN_SUBTESTS_IMP additional behavioral subtests.
-  # Global tests (test-install.sh, test-common.sh): Exempt from --help requirement.
+  # Global tests (test-install.sh, test-suite.sh): Exempt from --help requirement.
   test_subtest_count=$(get_subtest_total "$cleaned_output")
   case "$test_path" in
     .imps/*|*/.imps/*)
@@ -376,7 +376,7 @@ while IFS= read -r test_path; do
         record_incomplete_test "$test_path" "$test_subtest_count subtests, need $MIN_SUBTESTS_IMP"
       fi
       ;;
-    test-install.sh|test-common.sh)
+    test-install.sh|test-suite.sh)
       # Global/special tests don't need --help test
       if [ -n "$test_subtest_count" ] && [ "$test_subtest_count" -lt "$MIN_SUBTESTS_IMP" ]; then
         record_incomplete_test "$test_path" "$test_subtest_count subtests, need $MIN_SUBTESTS_IMP"
@@ -452,9 +452,9 @@ scan_extraneous() {
   while IFS= read -r test_file; do
     [ -n "$test_file" ] || continue
     
-    # Skip test-common.sh and lib files
+    # Skip test-common.sh, test-suite.sh and lib files
     case $test_file in
-      */test-common.sh|*/lib/*) continue ;;
+      */test-common.sh|*/test-suite.sh|*/lib/*) continue ;;
     esac
     
     # Extract spell path from test path
