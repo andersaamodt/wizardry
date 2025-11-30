@@ -311,7 +311,7 @@ SH
   : >"$rc_file"
   config_dir="$tmp/mud"
   mkdir -p "$config_dir"
-  printf '%s\n' "command-not-found=enabled" >"$config_dir/config"
+  printf '%s\n' "command-not-found=1" >"$config_dir/config"
   
   run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" WIZARDRY_MUD_CONFIG_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-install-menu"
   assert_success || return 1

@@ -24,7 +24,7 @@ test_toggle_enables_feature() {
   # Verify state
   run_cmd env WIZARDRY_MUD_CONFIG_DIR="$tmp" "$ROOT_DIR/spells/install/mud/mud-config" get command-not-found
   assert_success || return 1
-  assert_output_contains "enabled" || return 1
+  assert_output_contains "1" || return 1
 }
 
 test_toggle_disables_feature() {

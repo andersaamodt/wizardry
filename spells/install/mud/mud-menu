@@ -1,0 +1,18 @@
+#!/bin/sh
+
+# Wrapper to open the MUD install menu from the install menu.
+# This delegates to mud-install-menu which is in spells/menu/.
+
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+MUD_INSTALL_MENU="$SCRIPT_DIR/../../menu/mud-install-menu"
+
+if [ -x "$MUD_INSTALL_MENU" ]; then
+        exec "$MUD_INSTALL_MENU" "$@"
+elif command -v mud-install-menu >/dev/null 2>&1; then
+        exec mud-install-menu "$@"
+else
+        printf '%s\n' "mud-menu: mud-install-menu not found" >&2
+        exit 1
+fi

@@ -25,11 +25,11 @@ test_enable_flag_enables_all() {
   # Verify all features are enabled
   run_cmd env WIZARDRY_MUD_CONFIG_DIR="$tmp" "$ROOT_DIR/spells/install/mud/mud-config" list
   assert_success || return 1
-  assert_output_contains "command-not-found=enabled" || return 1
-  assert_output_contains "touch-hook=enabled" || return 1
-  assert_output_contains "fantasy-theme=enabled" || return 1
-  assert_output_contains "inventory=enabled" || return 1
-  assert_output_contains "combat=enabled" || return 1
+  assert_output_contains "command-not-found=1" || return 1
+  assert_output_contains "touch-hook=1" || return 1
+  assert_output_contains "fantasy-theme=1" || return 1
+  assert_output_contains "inventory=1" || return 1
+  assert_output_contains "combat=1" || return 1
 }
 
 test_disable_flag_disables_all() {
@@ -46,11 +46,11 @@ test_disable_flag_disables_all() {
   # Verify all features are disabled
   run_cmd env WIZARDRY_MUD_CONFIG_DIR="$tmp" "$ROOT_DIR/spells/install/mud/mud-config" list
   assert_success || return 1
-  assert_output_contains "command-not-found=disabled" || return 1
-  assert_output_contains "touch-hook=disabled" || return 1
-  assert_output_contains "fantasy-theme=disabled" || return 1
-  assert_output_contains "inventory=disabled" || return 1
-  assert_output_contains "combat=disabled" || return 1
+  assert_output_contains "command-not-found=0" || return 1
+  assert_output_contains "touch-hook=0" || return 1
+  assert_output_contains "fantasy-theme=0" || return 1
+  assert_output_contains "inventory=0" || return 1
+  assert_output_contains "combat=0" || return 1
 }
 
 test_auto_toggle_enables_when_any_disabled() {

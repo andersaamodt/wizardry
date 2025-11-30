@@ -116,7 +116,7 @@ is_feature_enabled() {
     return 1
   fi
   value=$("$MUD_CONFIG" get "$feature" 2>/dev/null) || return 1
-  [ "$value" = "enabled" ]
+  [ "$value" = "1" ]
 }
 
 # Check if all config-based MUD features are enabled

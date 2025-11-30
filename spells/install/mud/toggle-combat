@@ -35,7 +35,7 @@ fi
 # Toggle the feature and report state
 new_state=$("$MUD_CONFIG" toggle combat)
 
-if [ "$new_state" = "enabled" ]; then
+if [ "$new_state" = "1" ]; then
         printf '%s\n' "✓ HP/MP and combat feature enabled (planned feature)."
 else
         printf '%s\n' "✓ HP/MP and combat feature disabled."

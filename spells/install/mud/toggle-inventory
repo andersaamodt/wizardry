@@ -35,7 +35,7 @@ fi
 # Toggle the feature and report state
 new_state=$("$MUD_CONFIG" toggle inventory)
 
-if [ "$new_state" = "enabled" ]; then
+if [ "$new_state" = "1" ]; then
         printf '%s\n' "✓ Inventory feature enabled (planned feature)."
 else
         printf '%s\n' "✓ Inventory feature disabled."

@@ -35,7 +35,7 @@ fi
 # Toggle the feature and report state
 new_state=$("$MUD_CONFIG" toggle fantasy-theme)
 
-if [ "$new_state" = "enabled" ]; then
+if [ "$new_state" = "1" ]; then
         printf '%s\n' "✓ Fantasy theme enabled (planned feature)."
 else
         printf '%s\n' "✓ Fantasy theme disabled."

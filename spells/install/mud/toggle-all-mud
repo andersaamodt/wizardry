@@ -56,7 +56,7 @@ case "${1-}" in
                 all_enabled=1
                 for feature in $FEATURES; do
                         state=$("$MUD_CONFIG" get "$feature")
-                        if [ "$state" = "disabled" ]; then
+                        if [ "$state" = "0" ]; then
                                 all_enabled=0
                                 break
                         fi
@@ -78,13 +78,13 @@ esac
 if [ "$action" = "enable" ]; then
         printf '%s\n' "Enabling all MUD features..."
         for feature in $FEATURES; do
-                "$MUD_CONFIG" set "$feature" enabled
+                "$MUD_CONFIG" set "$feature" 1
         done
         printf '%s\n' "✓ All MUD features enabled."
 else
         printf '%s\n' "Disabling all MUD features..."
         for feature in $FEATURES; do
-                "$MUD_CONFIG" set "$feature" disabled
+                "$MUD_CONFIG" set "$feature" 0
         done
         printf '%s\n' "✓ All MUD features disabled."
 fi
