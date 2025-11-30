@@ -131,6 +131,29 @@ Wizardry includes a curated free software suite which can be easily and optional
 
 Using the free software suite makes it easy to establish a standardized software environment across OSes, without having to use a heavier package manager or containerized solution. Wizardry helps you install the right software in the correct way, using built-in package managers on each OS when possible.
 
+## Magical Glossary
+
+| Term | Definition |
+| ---- | ---------- |
+| **Arcanum** (pl. **Arcana**) | A grand working—a spell that installs and configures software across supported platforms, presented as a menu of functions. Also refers to the apps themselves. |
+| **Bootstrap spell** | A spell that can run before wizardry is fully installed. These self-contained scripts (like `install` and spells in `spells/install/core/`) don't rely on other wizardry spells. |
+| **Cantrip** | A small utility spell for common tasks, found in `spells/cantrips/`. |
+| **Cast** | To execute a spell. Memorized spells appear in the Cast menu for quick access. |
+| **Divination** | Spells that detect or discover information about your system, found in `spells/divination/`. |
+| **Enchant** / **Enchantment** | Spells that add or manage extended attributes (metadata) on files, found in `spells/enchant/`. |
+| **Forget** | Remove a spell from your memorized list. Use `forget <spell name>` or the Spellbook menu. |
+| **Imp** | The smallest building block—a microscript that does exactly one thing. Lives in `spells/.imps/`. |
+| **Kryptos** | Cryptographic spells for hashing and security, found in `spells/kryptos/`. |
+| **Learn** | Add a spell to your shell environment. Use `spell --install` or `learn <path to spell>` to make a spell permanently available. |
+| **Memorize** | Add a spell to your Cast menu for quick access. Use `memorize <spell name>` or the Spellbook menu. |
+| **Portal** | A persistent connection between two computers via SSH, created with `open-portal`. |
+| **Portkey** | A bookmark to a remote location. Use `enchant-portkey` to create one and `follow-portkey` to teleport there. |
+| **Scribe** | Create a new custom spell. Use `scribe-spell` or the Spellbook menu to write spells to `~/.spellbook`. |
+| **Spell** | A specially-curated shell script that lives in `spells/`, has a unique name, and follows wizardry conventions. |
+| **Spellbook** | Your personal grimoire for organizing and casting spells. Access it with `spellbook` or from the main menu. Also refers to custom spell folders. |
+| **Spellcraft** | Spells for creating and managing other spells, found in `spells/spellcraft/`. |
+| **Ward** | Protective spells for security and access control, found in `spells/wards/`. |
+
 ## Principles:
 
 ### Project Values
