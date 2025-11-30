@@ -4,9 +4,9 @@ Wizardry is a collection of shell scripts to complete your terminal experience.
 Themed as a magical MUD (Multi-User Dungeon), wizardry turns folders into rooms, and files into items.
 Wizardry also includes a comprehensive set of POSIX shell tutorials, and optional free software suite.
 
-Remembering complex shell commands is hard, and figuring out the correct way to accomplish tasks across different operating systems is even harder. Wizardry assembles cross-platform UNIX knowledge into usable menus and memorable commands, so you can skip the hassle.
+Remembering complex shell commands is hard, and figuring out the correct way to accomplish tasks across different operating systems is even harder. Wizardry assembles cross-platform UNIX knowledge into usable, transparent menus and memorable commands, so you can skip the hassle.
 
-The language of magic—rich in evocative words for hidden forces and transformations—is a natural fit for extending the terminal's vocabulary, binding the worlds of thought and command together.
+The language of magic—a human heirloom—is rich in evocative words for hidden forces and abstract transformations, making it a natural fit for extending the terminal's vocabulary, binding the worlds of thought and command together.
 
 ## Status for target platforms:
 
