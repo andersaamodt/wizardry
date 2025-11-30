@@ -468,6 +468,8 @@ execute_selection() {
         if [ -n "$to_run" ]; then
                 cleanup
                 trap - EXIT INT TERM
+                # Print newline before running command for visual separation
+                printf '\n'
                 # shellcheck disable=SC2039,SC3045 # POSIX sh allows eval
                 eval "$to_run"
         else
