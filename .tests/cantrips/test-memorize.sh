@@ -38,7 +38,7 @@ memorizes_and_lists_entries() {
   run_memorize "$env_var" list
   expected=$(tabbed "blink")
   case "$(normalize_output)" in
-    "$expected"|"$expected|") : ;; 
+    "$expected"|"$expected|") : ;;
     *) TEST_FAILURE_REASON="unexpected list output: $OUTPUT"; return 1 ;;
   esac
 }
@@ -211,17 +211,17 @@ recursive_sweep_multiple_spells() {
   assert_success || return 1
   run_memorize "$env_var" spell5
   assert_success || return 1
-  
+
   run_memorize "$env_var" list
   assert_success || return 1
-  
+
   # Verify all spells are in the list
   assert_output_contains "spell1" || return 1
   assert_output_contains "spell2" || return 1
   assert_output_contains "spell3" || return 1
   assert_output_contains "spell4" || return 1
   assert_output_contains "spell5" || return 1
-  
+
   # Most recent spell should be first (spell5)
   first_line=$(printf '%s' "$OUTPUT" | head -n1)
   case "$first_line" in
@@ -238,22 +238,22 @@ recursive_sweep_reorder() {
   run_memorize "$env_var" alpha
   run_memorize "$env_var" beta
   run_memorize "$env_var" gamma
-  
+
   # Re-memorize alpha to move it to the front
   run_memorize "$env_var" alpha
-  
+
   run_memorize "$env_var" list
   first_line=$(printf '%s' "$OUTPUT" | head -n1)
   case "$first_line" in
     alpha*) : ;;
     *) TEST_FAILURE_REASON="expected alpha to be first after re-memorize"; return 1 ;;
   esac
-  
+
   # Verify all three are still in the list
   assert_output_contains "alpha" || return 1
   assert_output_contains "beta" || return 1
   assert_output_contains "gamma" || return 1
-  
+
   # Count lines to ensure no duplicates (add trailing newline for correct wc -l count)
   line_count=$(printf '%s\n' "$OUTPUT" | grep -c .)
   [ "$line_count" -eq 3 ] || { TEST_FAILURE_REASON="expected 3 entries, got: $line_count"; return 1; }
@@ -267,14 +267,14 @@ generated_script_content() {
   cast_dir=${env_var#*=}
   run_memorize "$env_var" testspell
   assert_success || return 1
-  
+
   [ -f "$cast_dir/testspell" ] || { TEST_FAILURE_REASON="script file not created"; return 1; }
   [ -x "$cast_dir/testspell" ] || { TEST_FAILURE_REASON="script not executable"; return 1; }
-  
+
   # Verify script contains shebang
   first_line=$(head -n1 "$cast_dir/testspell")
   [ "$first_line" = "#!/bin/sh" ] || { TEST_FAILURE_REASON="missing shebang"; return 1; }
-  
+
   # Verify script contains exec command
   grep -q "exec sh -c" "$cast_dir/testspell" || { TEST_FAILURE_REASON="missing exec in script"; return 1; }
 }
@@ -286,7 +286,7 @@ custom_cast_file() {
   tmpdir=$(make_tempdir)
   mkdir -p "$tmpdir/custom"
   custom_file="$tmpdir/custom/my-memorized"
-  
+
   run_cmd env "WIZARDRY_CAST_DIR=$tmpdir" "WIZARDRY_CAST_FILE=$custom_file" \
     "$ROOT_DIR/spells/cantrips/memorize" path
   assert_success || return 1
@@ -300,7 +300,7 @@ legacy_command_file() {
   tmpdir=$(make_tempdir)
   mkdir -p "$tmpdir/legacy"
   legacy_file="$tmpdir/legacy/legacy-memorized"
-  
+
   run_cmd env "WIZARDRY_CAST_DIR=$tmpdir" "MEMORIZE_COMMAND_FILE=$legacy_file" \
     "$ROOT_DIR/spells/cantrips/memorize" path
   assert_success || return 1
@@ -313,7 +313,7 @@ run_test_case "custom cast file via MEMORIZE_COMMAND_FILE" legacy_command_file
 spell_home_fallback() {
   tmpdir=$(make_tempdir)
   spell_home="$tmpdir/spell-home"
-  
+
   run_cmd env "WIZARDRY_SPELL_HOME=$spell_home" \
     "$ROOT_DIR/spells/cantrips/memorize" dir
   assert_success || return 1
@@ -327,7 +327,7 @@ xdg_data_home_fallback() {
   tmpdir=$(make_tempdir)
   xdg_home="$tmpdir/xdg-data"
   expected="$xdg_home/wizardry/spellbook"
-  
+
   run_cmd env "XDG_DATA_HOME=$xdg_home" \
     "$ROOT_DIR/spells/cantrips/memorize" dir
   assert_success || return 1
@@ -341,7 +341,7 @@ tilde_expansion_cast_dir() {
   tmpdir=$(make_tempdir)
   fake_home="$tmpdir/home"
   mkdir -p "$fake_home/.test-spellbook"
-  
+
   run_cmd env "HOME=$fake_home" "WIZARDRY_CAST_DIR=~/.test-spellbook" \
     "$ROOT_DIR/spells/cantrips/memorize" dir
   assert_success || return 1
