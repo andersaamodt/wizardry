@@ -35,10 +35,20 @@ fi
 # Detect whether sleep is available (systemd or pmset on macOS)
 sleep_available=""
 if command -v systemctl >/dev/null 2>&1; then
-  # Use can-suspend to check if suspend is actually configured
-  if systemctl can-suspend 2>/dev/null | grep -q yes; then
-    sleep_available="Sleep%sudo systemctl suspend"
-  fi
+  # Try can-suspend first; fall back to kernel power state if unavailable
+  # (NixOS and older systemd versions may not support can-suspend)
+  can_suspend_result=$(systemctl can-suspend 2>&1) || true
+  case "$can_suspend_result" in
+    yes)
+      sleep_available="Sleep%sudo systemctl suspend"
+      ;;
+    *)
+      # Check kernel power states as fallback (mem = suspend/sleep)
+      if [ -r /sys/power/state ] && grep -qw mem /sys/power/state 2>/dev/null; then
+        sleep_available="Sleep%sudo systemctl suspend"
+      fi
+      ;;
+  esac
 elif command -v pmset >/dev/null 2>&1; then
   sleep_available="Sleep%sudo pmset sleepnow"
 fi
@@ -46,10 +56,20 @@ fi
 # Detect whether hibernate is available (systemd only)
 hibernate_available=""
 if command -v systemctl >/dev/null 2>&1; then
-  # Use can-hibernate to check if hibernate is actually configured
-  if systemctl can-hibernate 2>/dev/null | grep -q yes; then
-    hibernate_available="Hibernate%sudo systemctl hibernate"
-  fi
+  # Try can-hibernate first; fall back to kernel power state if unavailable
+  # (NixOS and older systemd versions may not support can-hibernate)
+  can_hibernate_result=$(systemctl can-hibernate 2>&1) || true
+  case "$can_hibernate_result" in
+    yes)
+      hibernate_available="Hibernate%sudo systemctl hibernate"
+      ;;
+    *)
+      # Check kernel power states as fallback (disk = hibernate)
+      if [ -r /sys/power/state ] && grep -qw disk /sys/power/state 2>/dev/null; then
+        hibernate_available="Hibernate%sudo systemctl hibernate"
+      fi
+      ;;
+  esac
 fi
 
 # Detect whether loginctl is available for graceful logout (systemd only)
