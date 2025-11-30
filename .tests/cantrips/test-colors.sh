@@ -93,12 +93,54 @@ test_theme_colors_cleared_when_disabled() {
   esac
 }
 
+test_mud_colors_defined_when_enabled() {
+  # MUD colors should be defined when the palette is enabled
+  run_cmd env TERM=xterm sh -c ". \"$ROOT_DIR/spells/cantrips/colors\"; printf 'location:%s item:%s handle:%s spell:%s monster:%s\\n' \"\$MUD_LOCATION\" \"\$MUD_ITEM\" \"\$MUD_HANDLE\" \"\$MUD_SPELL\" \"\$MUD_MONSTER\""
+  if ! assert_success; then return 1; fi
+  # Verify MUD colors are non-empty
+  case "$OUTPUT" in
+    *location:\ *|*item:\ *|*handle:\ *|*spell:\ *|*monster:\ *)
+      TEST_FAILURE_REASON="expected MUD colors to be defined, got: $OUTPUT"
+      return 1
+      ;;
+    *)
+      # Check that all MUD color fields are present
+      case "$OUTPUT" in
+        *location:*item:*handle:*spell:*monster:*)
+          : # All fields present
+          ;;
+        *)
+          TEST_FAILURE_REASON="unexpected output format: $OUTPUT"
+          return 1
+          ;;
+      esac
+      ;;
+  esac
+}
+
+test_mud_colors_cleared_when_disabled() {
+  # MUD colors should be empty when the palette is disabled
+  run_cmd env TERM=xterm NO_COLOR=1 sh -c ". \"$ROOT_DIR/spells/cantrips/colors\"; printf 'location:[%s] item:[%s] handle:[%s] spell:[%s] monster:[%s]\\n' \"\$MUD_LOCATION\" \"\$MUD_ITEM\" \"\$MUD_HANDLE\" \"\$MUD_SPELL\" \"\$MUD_MONSTER\""
+  if ! assert_success; then return 1; fi
+  case "$OUTPUT" in
+    *"location:[] item:[] handle:[] spell:[] monster:[]"*)
+      : # All MUD colors are empty as expected
+      ;;
+    *)
+      TEST_FAILURE_REASON="expected MUD colors to be empty when palette disabled, got: $OUTPUT"
+      return 1
+      ;;
+  esac
+}
+
 run_test_case "colors enables palette on capable terminals" test_colors_enable_palette_by_default
 run_test_case "colors disables palette when NO_COLOR set" test_colors_disable_when_requested
 run_test_case "colors work with printf %s format" test_colors_printf_s_works
 run_test_case "colors disables palette for dumb terminal" test_colors_disable_for_dumb_terminal
 run_test_case "theme colors are defined when palette is enabled" test_theme_colors_defined_when_enabled
 run_test_case "theme colors are cleared when palette is disabled" test_theme_colors_cleared_when_disabled
+run_test_case "MUD colors are defined when palette is enabled" test_mud_colors_defined_when_enabled
+run_test_case "MUD colors are cleared when palette is disabled" test_mud_colors_cleared_when_disabled
 shows_help() {
   run_spell spells/cantrips/colors --help
   # Note: spell may not have --help implemented yet

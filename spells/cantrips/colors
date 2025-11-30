@@ -24,7 +24,8 @@ disable_palette() {
                 BG_BRIGHT_GREEN BG_BRIGHT_YELLOW BG_BRIGHT_BLUE \
                 BG_BRIGHT_PURPLE BG_BRIGHT_CYAN BG_BRIGHT_WHITE \
                 THEME_HIGHLIGHT THEME_MUTED THEME_CUSTOM THEME_SUCCESS \
-                THEME_ERROR THEME_HEADING THEME_DIVIDER THEME_LOCATION
+                THEME_ERROR THEME_HEADING THEME_DIVIDER \
+                MUD_LOCATION MUD_ITEM MUD_HANDLE MUD_SPELL MUD_MONSTER
         do
                 eval "$name=''"
         done
@@ -97,7 +98,13 @@ THEME_SUCCESS="$GREEN"           # Success indicators
 THEME_ERROR="$RED"               # Error indicators
 THEME_HEADING="${GREEN}${BOLD}"  # Priority/heading highlight
 THEME_DIVIDER="$GREY"            # Menu dividers
-THEME_LOCATION="${BLUE}${BOLD}"  # Location/room names in MUD
+
+# MUD-specific colours for fantasy game elements.
+MUD_LOCATION="${BLUE}${BOLD}"    # Location/room names
+MUD_ITEM="${YELLOW}"             # Items and objects
+MUD_HANDLE="${CYAN}"             # Player names/handles
+MUD_SPELL="${PURPLE}"            # Spell names
+MUD_MONSTER="${RED}"             # Monster/enemy names
 
 # Allow the user or terminal capabilities to disable colour output entirely.
 case ${NO_COLOR-} in

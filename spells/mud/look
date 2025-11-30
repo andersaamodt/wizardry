@@ -166,7 +166,7 @@ if ! load_colors; then
         BLUE=""
         BOLD=""
         RESET=""
-        THEME_LOCATION=""
+        MUD_LOCATION=""
 fi
 
 if lacks read-magic; then
@@ -185,7 +185,7 @@ missing_msg='Error: The attribute does not exist.'
 
 if [ "$name" != "$missing_msg" ] || [ "$description" != "$missing_msg" ]; then
         if [ "$name" != "$missing_msg" ] && [ -n "$name" ]; then
-                printf '%s%s%s\n' "$THEME_LOCATION" "$name" "$RESET"
+                printf '%s%s%s\n' "$MUD_LOCATION" "$name" "$RESET"
         fi
         if [ "$description" != "$missing_msg" ] && [ -n "$description" ]; then
                 printf '%s\n' "$description"
