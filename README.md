@@ -68,10 +68,6 @@ A spell is a specially-curated shell script:
 
 This spec helps scripts evolve into living, polished exemplars of communal knowledge about best practices in using and optimizing the shell.
 
-### Bootstrapping spells
-
-Most wizardry spells can assume that wizardry is installed (in `$PATH`) and that wizardry spells can be used. Spells used in the installation of wizardry itself are written without relying on other wizardry spells, since they might not be installed yet. These bootstrappable spells are `install` and spells in `spells/install/core/`.
-
 ### Spellbook
 
 The Spellbook is your personal grimoire for casting and organizing spells. Access it by typing `spellbook` or selecting it from the main menu.
@@ -107,11 +103,17 @@ An **imp** is a microscript that:
 
 Push as much logic as possible into imps for maximum semanticization.
 
+### Bootstrapping spells
+
+Most wizardry spells can assume that wizardry is installed (in `$PATH`) and that wizardry spells can be used. Spells used in the installation of wizardry itself are written without relying on other wizardry spells, since they might not be installed yet. These bootstrappable spells are `install` and spells in `spells/install/core/`.
+
 ## Arcana
 
-An arcana is a grand working, a spell that knows the proper way to install and correctly configure a certain piece of software across all our supported platforms. A sort of wizard, in computing parlance, but presented as a menu of functions. The word arcana can also be used to refer to the apps thus installed, which are after all by definition each an arcane feat of computing, or we could just accomplish their functionality in POSIX sh.
+An arcana is a grand working, a spell that knows the proper way to install and correctly configure a certain piece of software across all supported platforms.
 
-Wizardry includes a curated free software suite which can be easily and optionally installed from the `menu`. Criteria for inclusion:
+Wizardry includes a curated free software suite which can be easily and optionally installed from the `menu`.
+
+Criteria for inclusion:
 
 * Software that helps accomplish basic computer tasks (messaging, document editing, photos, sharing, etc.)
 * Free software is best; non-commercial open-source an acceptable alternative
@@ -128,23 +130,22 @@ Using the free software suite makes it easy to establish a standardized software
 | **Bootstrap spell** | A spell that can run before wizardry is fully installed. These self-contained scripts (like `install` and spells in `spells/install/core/`) don't rely on other wizardry spells. |
 | **Cantrip** | A small utility spell for common tasks, found in `spells/cantrips/`. |
 | **Cast** | To execute a spell. Memorized spells appear in the Cast menu for quick access. |
-| **Daemon** | A background process that runs continuously, typically started at system boot and providing services (e.g., web servers, schedulers). In UNIX tradition, daemons are named after supernatural beings that work invisibly. |
+| **Daemon** | A background process that runs continuously, typically started at system boot and providing services (e.g., web servers, schedulers). |
 | **Demon family** | A subfolder within `spells/.imps/` that groups related imps by function. Each folder represents a family of imps that share a common purpose (e.g., `str/` for string operations, `fs/` for filesystem operations). |
 | **Divination** | Spells that detect or discover information about your system, found in `spells/divination/`. |
 | **Enchant** / **Enchantment** | Spells that add or manage extended attributes (metadata) on files, found in `spells/enchant/`. |
-| **Erase** | Permanently delete a custom spell from `~/.spellbook`. Use `erase-spell <spell name>` or select "Erase spell" from the spell menu. This cannot be undone. |
 | **Forget** | Remove a spell from your memorized list. Use `forget <spell name>` or the Spellbook menu. |
-| **Imp** | The smallest building block—a microscript that does exactly one thing. Lives in `spells/.imps/`. |
+| **Imp** | The smallest building block of magic—a microscript that does exactly one thing. Lives in `spells/.imps/`. |
 | **Kryptos** | Cryptographic spells for hashing and security, found in `spells/kryptos/`. |
-| **Learn** | Add a spell to your shell environment. Use `spell --install` or `learn <path to spell>` to make a spell permanently available (usually by sourcing it in your RC file). |
-| **Learn-spellbook** | Add or remove a folder to your PATH permanently. Use `learn-spellbook` to manage custom spell folders. |
+| **Learn** | Add a spell to your shell environment. Use `spell --install` or `learn <path to spell>` to make a spell permanently available. Some spells must be learned before use. |
 | **Memorize** | Add a spell to your Cast menu for quick access. Use `memorize <spell name>` or the Spellbook menu. |
-| **Portal** | A persistent connection between two computers via SSH, created with `open-portal`. |
-| **Portkey** | A bookmark to a remote location. Use `enchant-portkey` to create one and `follow-portkey` to teleport there. |
+| **Portal** | A persistent connection between two computers via SSH, created with `open-portal`, for MUD travel. |
+| **Portkey** | A bookmark to a remote location. Use `enchant-portkey` to create one and `follow-portkey` to teleport there. (Future: If you have the `touch` hook installed (`install-menu->mud`), touching a portkey will also activate it.) |
 | **Scribe** | Create a new custom spell. Use `scribe-spell` or the Spellbook menu to write spells to `~/.spellbook`. |
 | **Spell** | A specially-curated shell script that lives in `spells/`, has a unique name, and follows wizardry conventions. |
 | **Spellbook** | Your personal grimoire for organizing and casting spells. Access it with `spellbook` or from the main menu. Also refers to custom spell folders. |
 | **Spellcraft** | Spells for creating and managing other spells, found in `spells/spellcraft/`. |
+| **Tome** | A text file containing the contents of several other text files concatenated together, so a whole folder of spells can be sent or carried easily. |
 | **Ward** | Protective spells for security and access control, found in `spells/wards/`. |
 
 ## Principles:
@@ -172,10 +173,10 @@ These values make the wizardry project what it is, and distinguish it from simil
 | ------------------- | ----------- |
 | Minimalism          | Do the most with the fewest moving parts. |
 | Atomicity           | Each script and part of wizardry is as small and self-contained a unit as possible. These small, reliable parts are then combined. |
-| Interface-neutral   | GUIs are thin layers that simply pass commands through to shell scripts. This makes it easy to swap out web platforms or build additional interfaces. |
 | Test-driven development | Unit tests are used to specify and test code, with a goal of maintaining 100% unit test coverage. |
 | Assumption-checking    | Scripts confirm their assumptions (directories, dependencies, PATH entries) and repair gaps automatically so installations stay reliable. |
 | Document-in-place   | Every spell's --help message fully specifies the behavior and usage of that spell; helpful messages and documentation for the user are included portably in scripts and where they are needed in UI. |
+| Interface-neutral   | GUIs are thin layers that simply pass commands through to shell scripts. This makes it easy to swap out web platforms or build additional interfaces. |
 
 ### Code Policies
 
@@ -187,6 +188,7 @@ These values make the wizardry project what it is, and distinguish it from simil
 | Menu specialization | Wizardry organizes complex workflows as dedicated menus that call one spell per menu item. |
 | Script-like scripts  | Keep scripts script-like: favor flat flows with few functions so behavior stays readable and hackable from the shell. |
 | Wizardry available   | Spells can assume other wizardry spells are already in the PATH and should invoke them by name instead of long paths. |
+| No globals, no wrappers, minimal functions | No global env variables unless absolutely necessary. No wrappers as they break front-facing. Linear flat scripts preferred to functions. |
 
 ## Testing
 
