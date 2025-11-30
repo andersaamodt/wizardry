@@ -3,8 +3,23 @@
 # This spell records the current directory (or a provided path) for jump-to-marker.
 # It resolves the destination to an absolute path and stores it in a named marker file.
 
-# Ensure wizardry is available before using any imps
-require-wizardry || exit 1
+# --- require-wizardry snippet ---
+_require_wizardry() {
+	if command -v menu >/dev/null 2>&1; then
+		return 0
+	fi
+	printf '%s\n' "Error: wizardry is not installed or not in PATH." >&2
+	printf '%s\n' "" >&2
+	printf '%s\n' "This script requires wizardry. Install it with:" >&2
+	printf '%s\n' "  curl -fsSL https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh" >&2
+	printf '%s\n' "" >&2
+	printf '%s\n' "Or clone and install manually:" >&2
+	printf '%s\n' "  git clone https://github.com/andersaamodt/wizardry ~/.wizardry" >&2
+	printf '%s\n' "  cd ~/.wizardry && ./install" >&2
+	exit 1
+}
+_require_wizardry
+# --- end require-wizardry snippet ---
 
 set -eu
 usage() {
