@@ -62,10 +62,11 @@ display_menu() {
   # Graceful restart/shutdown give processes time to clean up
   restart_item="Restart%sudo shutdown -r +0"
   shutdown_item="Shutdown%sudo shutdown -h +0"
-  logout_item="Logout%pkill -KILL -u \"\$USER\""
+  logout_item="Logout%pkill -TERM -u \"\$USER\""
   # Force operations bypass graceful shutdown procedures
   force_restart_item="Force restart%sudo reboot -f"
   force_shutdown_item="Force shutdown%sudo poweroff -f"
+  force_logout_item="Force logout%pkill -KILL -u \"\$USER\""
   exit_label=$(exit-label)
   exit_item="${exit_label}%exit $menu_escape_status"
 
@@ -76,7 +77,7 @@ display_menu() {
   if [ -n "$hibernate_available" ]; then
     set -- "$@" "$hibernate_available"
   fi
-  set -- "$@" "$force_restart_item" "$force_shutdown_item" "$exit_item"
+  set -- "$@" "$force_restart_item" "$force_shutdown_item" "$force_logout_item" "$exit_item"
 
   MENU_ESCAPE_STATUS=$menu_escape_status menu "Restart / Shutdown:" "$@"
 }

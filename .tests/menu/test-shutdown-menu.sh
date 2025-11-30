@@ -52,7 +52,7 @@ SH
   assert_success
   args=$(cat "$tmp/log")
   case "$args" in
-    *"Restart / Shutdown:"*"Restart%sudo shutdown -r +0"*"Shutdown%sudo shutdown -h +0"*"Logout%pkill -KILL"*"Force restart%sudo reboot -f"*"Force shutdown%sudo poweroff -f"*"Back%exit 113"* ) : ;;
+    *"Restart / Shutdown:"*"Restart%sudo shutdown -r +0"*"Shutdown%sudo shutdown -h +0"*"Logout%pkill -TERM"*"Force restart%sudo reboot -f"*"Force shutdown%sudo poweroff -f"*"Force logout%pkill -KILL"*"Back%exit 113"* ) : ;;
     *) TEST_FAILURE_REASON="expected shutdown actions missing: $args"; return 1 ;;
   esac
 }
