@@ -112,9 +112,9 @@ while true; do
       # or show the essential message if installed
       if [ "$installed" -eq 1 ]; then
         # When selected, show message that this is essential
-        # Use printf with a read to pause for user acknowledgment
-        msg_cmd="printf '\\n$label is essential for the shell to function and should not be uninstalled.\\n'; printf 'Press Enter to continue...'; read dummy"
-        set -- "$@" "${display_label}%sh -c \"$msg_cmd\""
+        # The label comes from the controlled core_dependencies function
+        # and contains only alphanumeric characters, making it safe to use
+        set -- "$@" "${display_label}%printf '\\n%s is essential for the shell to function and should not be uninstalled.\\n' '$label'; printf 'Press Enter to continue...'; read dummy"
       else
         spell=$(resolve_spell "$install_spell") || exit 1
         set -- "$@" "${display_label}%$spell"
