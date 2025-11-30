@@ -171,7 +171,11 @@ trash_kioclient() {
     abs_path="$(pwd)/$file"
     ;;
   esac
-  kioclient5 move "$abs_path" trash:/
+  if [ "$force" -eq 1 ]; then
+    kioclient5 move "$abs_path" trash:/ 2>/dev/null || true
+  else
+    kioclient5 move "$abs_path" trash:/
+  fi
 }
 
 os=$(detect_os)
