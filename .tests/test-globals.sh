@@ -2,8 +2,9 @@
 # Global checks that apply across all spells and imps.
 # Run first as part of test-magic to catch systemic issues early.
 #
-# This test file implements suite-wide checks that verify properties
-# across the entire spellbook rather than testing individual spells.
+# This test file implements behavioral and structural checks that verify
+# properties across the entire spellbook. Style/opinionated checks belong
+# in vet-spell instead.
 # Note: POSIX compliance (shebang, bashisms) is checked by verify-posix.
 
 set -eu
@@ -44,6 +45,7 @@ should_skip_file() {
 
 # --- Check: No duplicate spell names ---
 # All spells (including imps) must have unique names since they share PATH
+# This is a structural check - prevents PATH conflicts
 
 test_no_duplicate_spell_names() {
   # Collect all spell and imp names
@@ -73,6 +75,7 @@ test_no_duplicate_spell_names() {
 
 # --- Check: All menu spells require the menu command ---
 # Menu spells in spells/menu/ should check for menu dependency
+# This is a behavioral check - applies to specific category of spells
 
 test_menu_spells_require_menu() {
   missing_require=""
@@ -100,38 +103,9 @@ test_menu_spells_require_menu() {
   return 0
 }
 
-# --- Check: All spells have description comment ---
-# Every spell should have a description comment after the shebang
-
-test_all_spells_have_description() {
-  missing_desc=""
-  
-  find "$ROOT_DIR/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r spell; do
-    name=$(basename "$spell")
-    should_skip_file "$name" && continue
-    is_posix_shell_script "$spell" || continue
-    
-    # Check lines 2-4 for a comment (description should be in first few lines)
-    # Use grep to check for comment lines in lines 2-4
-    if sed -n '2p;3p;4p' "$spell" 2>/dev/null | grep -q '^#'; then
-      : # Has comment, skip
-    else
-      printf '%s\n' "$name"
-    fi
-  done > "${WIZARDRY_TMPDIR}/missing-desc.txt"
-  
-  missing_desc=$(cat "${WIZARDRY_TMPDIR}/missing-desc.txt" 2>/dev/null | head -5 | tr '\n' ', ' | sed 's/,$//')
-  rm -f "${WIZARDRY_TMPDIR}/missing-desc.txt"
-  
-  if [ -n "$missing_desc" ]; then
-    TEST_FAILURE_REASON="spells missing description comment: $missing_desc"
-    return 1
-  fi
-  return 0
-}
-
 # --- Warning Check: No full paths to spell names in non-bootstrap spells ---
 # Spells should invoke other spells by name, not full path (except bootstrap spells)
+# This is a behavioral check - enforces wizardry design principle
 
 test_warn_full_paths_to_spells() {
   found_paths=""
@@ -162,40 +136,9 @@ test_warn_full_paths_to_spells() {
   return 0
 }
 
-# --- Check: Non-imp spells have set -e or set -eu ---
-# All spells (except imps, which may use exit codes for flow) should have strict mode
-
-test_spells_use_strict_mode() {
-  missing_strict=""
-  
-  find "$ROOT_DIR/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r spell; do
-    # Skip imps (they may legitimately not use set -e)
-    case $spell in
-      */.imps/*) continue ;;
-    esac
-    
-    name=$(basename "$spell")
-    should_skip_file "$name" && continue
-    is_posix_shell_script "$spell" || continue
-    
-    # Check for set -e anywhere in the file
-    if ! grep -qE 'set -e' "$spell" 2>/dev/null; then
-      printf '%s\n' "$name"
-    fi
-  done > "${WIZARDRY_TMPDIR}/no-strict.txt"
-  
-  missing_strict=$(cat "${WIZARDRY_TMPDIR}/no-strict.txt" 2>/dev/null | head -5 | tr '\n' ', ' | sed 's/,$//')
-  rm -f "${WIZARDRY_TMPDIR}/no-strict.txt"
-  
-  if [ -n "$missing_strict" ]; then
-    TEST_FAILURE_REASON="spells missing strict mode (set -e or set -eu): $missing_strict"
-    return 1
-  fi
-  return 0
-}
-
 # --- Check: Test files mirror spell structure ---
-# Each test file should correspond to a spell (covered by test-magic, but good to verify)
+# Each test file should correspond to a spell
+# This is a structural check - maintains test suite integrity
 
 test_test_files_have_matching_spells() {
   orphan_tests=""
@@ -240,215 +183,11 @@ test_test_files_have_matching_spells() {
   return 0
 }
 
-# --- Warning Check: Spell and imp names should follow naming convention ---
-# Spells and imps should use hyphens (not underscores) and have no extension
-
-test_warn_spell_naming() {
-  bad_names=""
-  
-  find "$ROOT_DIR/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print 2>/dev/null | while IFS= read -r spell; do
-    name=$(basename "$spell")
-    should_skip_file "$name" && continue
-    is_posix_shell_script "$spell" || continue
-    
-    # Check for underscore in name (should use hyphens)
-    case $name in
-      *_*) printf '%s (uses underscore)\n' "$name" ;;
-    esac
-    
-    # Check for .sh extension (spells shouldn't have extensions)
-    case $name in
-      *.sh) printf '%s (has .sh extension)\n' "$name" ;;
-    esac
-  done > "${WIZARDRY_TMPDIR}/bad-spell-names.txt"
-  
-  bad_names=$(cat "${WIZARDRY_TMPDIR}/bad-spell-names.txt" 2>/dev/null | head -5 | tr '\n' ', ' | sed 's/,$//')
-  rm -f "${WIZARDRY_TMPDIR}/bad-spell-names.txt"
-  
-  if [ -n "$bad_names" ]; then
-    # Warning only - there are pre-existing spells with underscores
-    printf 'WARNING: spells with non-standard naming (prefer hyphens, no extension): %s\n' "$bad_names" >&2
-  fi
-  return 0
-}
-
-# --- Warning Check: Global variables in spells ---
-# Spells should minimize use of global/environment variables per AGENTS.md
-
-test_warn_global_variables() {
-  # This check warns about shell variables that appear to be global
-  # (uppercase names that are declared or used without being local)
-  # Excludes well-known environment variables and common patterns
-  
-  # Known acceptable global variables (environment, special, or standard)
-  # These are either read from environment or are standard shell variables
-  known_vars="HOME|PATH|PWD|OLDPWD|USER|SHELL|TERM|LANG|LC_ALL|LC_CTYPE"
-  known_vars="$known_vars|TMPDIR|XDG_CONFIG_HOME|XDG_DATA_HOME|XDG_CACHE_HOME"
-  known_vars="$known_vars|EDITOR|VISUAL|PAGER|BROWSER|DISPLAY"
-  known_vars="$known_vars|IFS|PS1|PS2|PS4|CDPATH"
-  known_vars="$known_vars|WIZARDRY_[A-Z_]*"  # Wizardry-specific env vars
-  known_vars="$known_vars|GITHUB_[A-Z_]*"    # CI environment
-  known_vars="$known_vars|CI|RUNNER_[A-Z_]*" # CI environment
-  known_vars="$known_vars|STATUS|OUTPUT|ERROR"  # Test framework variables
-  known_vars="$known_vars|ROOT_DIR|RESET|CYAN|GREY|PURPLE|YELLOW|BLUE|RED|GREEN"  # Colors and test vars
-  known_vars="$known_vars|TEST_[A-Z_]*"      # Test variables
-  
-  vars_found=""
-  
-  find "$ROOT_DIR/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r spell; do
-    name=$(basename "$spell")
-    should_skip_file "$name" && continue
-    is_posix_shell_script "$spell" || continue
-    
-    # Find uppercase variable assignments (VAR=value or VAR=$(cmd))
-    # Exclude function-local patterns and known variables
-    grep -oE '^[[:space:]]*[A-Z][A-Z0-9_]*=' "$spell" 2>/dev/null | \
-      sed 's/^[[:space:]]*//; s/=$//' | \
-      grep -vE "^($known_vars)$" | \
-      while IFS= read -r var; do
-        [ -n "$var" ] && printf '%s:%s\n' "$name" "$var"
-      done
-  done > "${WIZARDRY_TMPDIR}/global-vars.txt"
-  
-  # Count unique spells with global variables
-  spells_with_globals=$(cut -d: -f1 "${WIZARDRY_TMPDIR}/global-vars.txt" 2>/dev/null | sort -u | head -10 | tr '\n' ', ' | sed 's/,$//')
-  rm -f "${WIZARDRY_TMPDIR}/global-vars.txt"
-  
-  if [ -n "$spells_with_globals" ]; then
-    printf 'WARNING: spells declaring uppercase variables (consider using parameters/stdout instead): %s\n' "$spells_with_globals" >&2
-  fi
-  return 0
-}
-
-# --- Warning Check: Use command -v instead of which ---
-# POSIX compliance: which is not POSIX-standard, use command -v instead
-
-test_warn_which_usage() {
-  found_which=""
-  
-  find "$ROOT_DIR/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r spell; do
-    name=$(basename "$spell")
-    should_skip_file "$name" && continue
-    is_posix_shell_script "$spell" || continue
-    
-    # Check for 'which' command usage (excluding comments)
-    if grep -E '(^|[^a-zA-Z_])which[[:space:]]' "$spell" 2>/dev/null | grep -v '^[[:space:]]*#' | grep -q .; then
-      printf '%s\n' "$name"
-    fi
-  done > "${WIZARDRY_TMPDIR}/which-usage.txt"
-  
-  found_which=$(cat "${WIZARDRY_TMPDIR}/which-usage.txt" 2>/dev/null | sort -u | tr '\n' ', ' | sed 's/,$//')
-  rm -f "${WIZARDRY_TMPDIR}/which-usage.txt"
-  
-  if [ -n "$found_which" ]; then
-    printf 'WARNING: spells using "which" (use "command -v" instead for POSIX compliance): %s\n' "$found_which" >&2
-  fi
-  return 0
-}
-
-# --- Warning Check: Use $() instead of backticks ---
-# Code style: Use $() for command substitution, not backticks
-
-test_warn_backtick_usage() {
-  found_backticks=""
-  
-  find "$ROOT_DIR/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r spell; do
-    name=$(basename "$spell")
-    should_skip_file "$name" && continue
-    is_posix_shell_script "$spell" || continue
-    
-    # Check for backtick usage (excluding comments)
-    # Match backticks that appear to be command substitution
-    if grep -E '\`[^\`]+\`' "$spell" 2>/dev/null | grep -v '^[[:space:]]*#' | grep -q .; then
-      printf '%s\n' "$name"
-    fi
-  done > "${WIZARDRY_TMPDIR}/backtick-usage.txt"
-  
-  found_backticks=$(cat "${WIZARDRY_TMPDIR}/backtick-usage.txt" 2>/dev/null | sort -u | tr '\n' ', ' | sed 's/,$//')
-  rm -f "${WIZARDRY_TMPDIR}/backtick-usage.txt"
-  
-  if [ -n "$found_backticks" ]; then
-    printf 'WARNING: spells using backticks (use $() instead): %s\n' "$found_backticks" >&2
-  fi
-  return 0
-}
-
-# --- Warning Check: Non-imp spells should have show_usage or usage function ---
-# Per AGENTS.md, spells (not imps) should have a usage function
-
-test_warn_missing_usage_function() {
-  missing_usage=""
-  
-  find "$ROOT_DIR/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r spell; do
-    # Skip imps (they don't need --help)
-    case $spell in
-      */.imps/*) continue ;;
-    esac
-    
-    name=$(basename "$spell")
-    should_skip_file "$name" && continue
-    is_posix_shell_script "$spell" || continue
-    
-    # Check for show_usage() or usage() function
-    if ! grep -qE '^(show_usage|usage)\(\)' "$spell" 2>/dev/null; then
-      printf '%s\n' "$name"
-    fi
-  done > "${WIZARDRY_TMPDIR}/no-usage.txt"
-  
-  missing_usage=$(cat "${WIZARDRY_TMPDIR}/no-usage.txt" 2>/dev/null | head -5 | tr '\n' ', ' | sed 's/,$//')
-  rm -f "${WIZARDRY_TMPDIR}/no-usage.txt"
-  
-  if [ -n "$missing_usage" ]; then
-    # Warning only - there are pre-existing spells without usage functions
-    printf 'WARNING: spells missing show_usage() or usage() function: %s\n' "$missing_usage" >&2
-  fi
-  return 0
-}
-
-# --- Warning Check: Spells should prefer printf over echo ---
-# Per code style, printf is more reliable than echo across platforms
-
-test_warn_echo_usage() {
-  found_echo=""
-  
-  find "$ROOT_DIR/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r spell; do
-    name=$(basename "$spell")
-    should_skip_file "$name" && continue
-    is_posix_shell_script "$spell" || continue
-    
-    # Count echo usages (excluding comments and heredocs)
-    # Only flag spells with more than 3 echo usages as concerning
-    echo_count=$(grep -cE '^[[:space:]]*(echo|echo -)' "$spell" 2>/dev/null || true)
-    echo_count=${echo_count:-0}
-    # Trim any whitespace/newlines
-    echo_count=$(printf '%s' "$echo_count" | tr -d '[:space:]')
-    if [ -n "$echo_count" ] && [ "$echo_count" -gt 3 ] 2>/dev/null; then
-      printf '%s (%d uses)\n' "$name" "$echo_count"
-    fi
-  done > "${WIZARDRY_TMPDIR}/echo-usage.txt"
-  
-  found_echo=$(cat "${WIZARDRY_TMPDIR}/echo-usage.txt" 2>/dev/null | head -5 | tr '\n' ', ' | sed 's/,$//')
-  rm -f "${WIZARDRY_TMPDIR}/echo-usage.txt"
-  
-  if [ -n "$found_echo" ]; then
-    printf 'WARNING: spells with heavy echo usage (consider printf for reliability): %s\n' "$found_echo" >&2
-  fi
-  return 0
-}
-
 # --- Run all test cases ---
 
 run_test_case "no duplicate spell names" test_no_duplicate_spell_names
 run_test_case "menu spells require menu command" test_menu_spells_require_menu
-run_test_case "all spells have description comment" test_all_spells_have_description
 run_test_case "warn about full paths to spells" test_warn_full_paths_to_spells
-run_test_case "spells use strict mode" test_spells_use_strict_mode
 run_test_case "test files have matching spells" test_test_files_have_matching_spells
-run_test_case "warn about spell naming" test_warn_spell_naming
-run_test_case "warn about global variables" test_warn_global_variables
-run_test_case "warn about which usage" test_warn_which_usage
-run_test_case "warn about backtick usage" test_warn_backtick_usage
-run_test_case "warn about missing usage function" test_warn_missing_usage_function
-run_test_case "warn about echo usage" test_warn_echo_usage
 
 finish_tests
