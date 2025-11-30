@@ -6,8 +6,10 @@ set -eu
 
 menu_escape_status=113
 
-# Temp file for tracking toggle selection
+# Temp file for tracking toggle selection (using /tmp as base, which should not contain special chars)
 toggle_flag_file="${TMPDIR:-/tmp}/wizardry-spell-menu-toggle.$$"
+# Escape single quotes in the path for safe embedding in command strings
+escaped_toggle_flag_file=$(printf '%s' "$toggle_flag_file" | sed "s/'/'\\\\''/g")
 cleanup_toggle_flag() {
         rm -f "$toggle_flag_file"
 }
@@ -222,9 +224,9 @@ while :; do
         # Show checkbox for Cast menu visibility (toggleable)
         # Use standalone memorize and forget spells - touch flag file to keep cursor position
         if is_memorized "$name"; then
-                cast_toggle="[X] Forget%forget '$name'; touch '$toggle_flag_file'"
+                cast_toggle="[X] Forget%forget '$name'; touch '$escaped_toggle_flag_file'"
         else
-                cast_toggle="[ ] Memorize%memorize '$name'; touch '$toggle_flag_file'"
+                cast_toggle="[ ] Memorize%memorize '$name'; touch '$escaped_toggle_flag_file'"
         fi
         # Build menu items - Cast now runs the command directly (using escaped version for safety)
         exit_label=$(exit-label)

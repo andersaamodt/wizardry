@@ -214,13 +214,6 @@ exit 113
 SH
   chmod +x "$stub_dir/menu"
   
-  # Create touch command stub
-  cat >"$stub_dir/touch" <<'SH'
-#!/bin/sh
-/usr/bin/touch "$@"
-SH
-  chmod +x "$stub_dir/touch"
-  
   run_cmd env PATH="$stub_dir:$PATH:/usr/bin:/bin" MENU_LOG="$stub_dir/log" CALL_COUNT_FILE="$call_count_file" "$ROOT_DIR/spells/menu/spell-menu" testspell
   assert_success || { TEST_FAILURE_REASON="menu should exit successfully"; return 1; }
   
