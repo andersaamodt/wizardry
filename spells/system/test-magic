@@ -218,6 +218,8 @@ subtests_passed=0
 subtests_total=0
 failed_scripts=""
 incomplete_tests=""
+test_number=0
+test_total=$(printf '%s\n' "$test_files" | grep -c .)
 # Imps have no --help flag, so they need 2 subtests minimum.
 # Spells have a --help flag which needs testing, plus 2 additional subtests.
 MIN_SUBTESTS_IMP=2
@@ -315,9 +317,8 @@ record_incomplete_test() {
 while IFS= read -r test_path; do
   [ -n "$test_path" ] || continue
   abs="$test_dir/$test_path"
-  if [ "$verbose" -eq 1 ]; then
-    printf 'Running %s\n' "$test_path"
-  fi
+  test_number=$((test_number + 1))
+  printf '[%d/%d] %s\n' "$test_number" "$test_total" "$test_path"
 
   if output=$(sh "$abs" 2>&1); then
     pass=$((pass + 1))
