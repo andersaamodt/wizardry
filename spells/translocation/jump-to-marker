@@ -422,6 +422,38 @@ jump_list_markers() {
         done
 }
 
+# Get the most recently used marker (by mtime)
+# Returns empty if all markers have the same mtime (fresh state)
+jump_most_recent_marker() {
+        markers_dir=${MARKERS_DIR:-$HOME/.spellbook/markers}
+        if [ ! -d "$markers_dir" ]; then
+                return 1
+        fi
+        # Find the most recently modified marker file (excluding hidden files)
+        # Using ls -t to sort by mtime, newest first
+        sorted=$(ls -t "$markers_dir" 2>/dev/null)
+        recent=$(printf '%s\n' "$sorted" | head -1)
+        oldest=$(printf '%s\n' "$sorted" | tail -1)
+        
+        # Need at least two different files to have meaningful "most recent"
+        if [ -z "$recent" ] || [ ! -f "$markers_dir/$recent" ] || [ "$recent" = "$oldest" ]; then
+                return 1
+        fi
+        
+        # Check if mtimes are actually different (ls -t may sort alphabetically when equal)
+        # Use stat to get mtime: -c %Y for GNU/Linux, -f %m for BSD/macOS
+        recent_mtime=$(stat -c %Y "$markers_dir/$recent" 2>/dev/null) || \
+                      recent_mtime=$(stat -f %m "$markers_dir/$recent" 2>/dev/null)
+        oldest_mtime=$(stat -c %Y "$markers_dir/$oldest" 2>/dev/null) || \
+                      oldest_mtime=$(stat -f %m "$markers_dir/$oldest" 2>/dev/null)
+        
+        if [ "$recent_mtime" != "$oldest_mtime" ]; then
+                printf '%s\n' "$recent"
+                return 0
+        fi
+        return 1
+}
+
 # Get next marker in sequence for cycling
 jump_next_marker() {
         current=$1
@@ -451,20 +483,18 @@ jump_next_marker() {
 
 jump() {
         markers_dir=${MARKERS_DIR:-$HOME/.spellbook/markers}
-        last_file="$markers_dir/.last"
         marker_name="${1:-}"
         
         # If no marker specified OR marker is "0", cycle through markers
         # (jump 0 is equivalent to jump with no args)
         if [ -z "$marker_name" ] || [ "$marker_name" = "0" ]; then
-                # Check if last command was also jump (cycling behavior)
-                if [ -f "$last_file" ]; then
-                        last_marker=$(cat "$last_file" 2>/dev/null || printf '')
-                        if [ -n "$last_marker" ]; then
-                                marker_name=$(jump_next_marker "$last_marker")
-                        else
-                                marker_name="1"
-                        fi
+                # Find the most recently used marker (by mtime) and get the next one
+                # This enables cycling: jump touches the marker, making it "most recent",
+                # then next jump cycles to the following marker
+                # If no recent marker found (all same mtime = fresh state), start at "1"
+                last_marker=$(jump_most_recent_marker)
+                if [ -n "$last_marker" ]; then
+                        marker_name=$(jump_next_marker "$last_marker")
                 else
                         marker_name="1"
                 fi
@@ -506,8 +536,8 @@ jump() {
         normalized_destination=$(printf '%s' "$destination" | sed 's|//|/|g')
         if [ "$current" = "$normalized_destination" ]; then
                 printf '%s\n' "You are already standing at marker '$marker_name'."
-                # Still record this as last marker for cycling
-                printf '%s\n' "$marker_name" >"$last_file"
+                # Touch marker to update mtime for cycling
+                touch "$marker_file"
                 return 0
         fi
         if ! cd "$destination"; then
@@ -522,8 +552,8 @@ jump() {
         landing_path=$(pwd -P | sed 's|//|/|g')
         printf '%s\n' "You land at marker '$marker_name': $landing_path"
         
-        # Record last jumped marker for cycling
-        printf '%s\n' "$marker_name" >"$last_file"
+        # Touch marker to update mtime for cycling
+        touch "$marker_file"
         
 jump_describe_current_location
 }
