@@ -137,17 +137,10 @@ test_all_spells_have_description() {
     is_posix_shell_script "$spell" || continue
     
     # Check lines 2-4 for a comment (description should be in first few lines)
-    has_comment=0
-    sed -n '2p;3p;4p' "$spell" 2>/dev/null | while IFS= read -r line; do
-      case $line in
-        '#'*) 
-          printf 'found'
-          break
-          ;;
-      esac
-    done | grep -q 'found' && has_comment=1
-    
-    if [ "$has_comment" -eq 0 ]; then
+    # Use grep to check for comment lines in lines 2-4
+    if sed -n '2p;3p;4p' "$spell" 2>/dev/null | grep -q '^#'; then
+      : # Has comment, skip
+    else
       printf '%s\n' "$name"
     fi
   done > "${WIZARDRY_TMPDIR}/missing-desc.txt"
@@ -180,7 +173,7 @@ test_warn_full_paths_to_spells() {
     
     # Check for patterns like $ROOT_DIR/spells/ or absolute paths to spells
     # excluding comments and variable definitions
-    if grep -E '\$ROOT_DIR/spells/|\$ABS_DIR/spells/' "$spell" 2>/dev/null | grep -v '^\s*#' | grep -v '^\s*[A-Z_]*=' | grep -q .; then
+    if grep -E '\$ROOT_DIR/spells/|\$ABS_DIR/spells/' "$spell" 2>/dev/null | grep -v '^[[:space:]]*#' | grep -v '^[[:space:]]*[A-Z_]*=' | grep -q .; then
       printf '%s\n' "$name"
     fi
   done > "${WIZARDRY_TMPDIR}/full-paths.txt"
@@ -287,14 +280,13 @@ test_warn_bashisms() {
     is_posix_shell_script "$spell" || continue
     
     # Check for [[ ]] bash test syntax
-    # Match [[ but not POSIX character classes like [[:space:]]
-    # Also exclude escape sequences like \[[
-    if grep -E '([^\\]|^)\[\[[[:space:]]' "$spell" 2>/dev/null | grep -v '\[\[:' | grep -q .; then
+    # Match [[ at start of line or after whitespace, not POSIX character classes
+    if grep -E '(^|[[:space:]])\[\[[[:space:]]' "$spell" 2>/dev/null | grep -v '\[\[:' | grep -q .; then
       printf '%s (double brackets)\n' "$name"
     fi
     
     # function keyword (bash-style function declaration)
-    if grep -qE '^[[:space:]]*function[[:space:]]+[a-zA-Z_]' "$spell" 2>/dev/null; then
+    if grep -qE '^[[:space:]]*function[[:space:]]+[a-zA-Z_][a-zA-Z0-9_]*' "$spell" 2>/dev/null; then
       printf '%s (function keyword)\n' "$name"
     fi
     
