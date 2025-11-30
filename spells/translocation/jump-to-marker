@@ -8,21 +8,8 @@ show_usage() {
 Usage: jump [marker]
        jump-to-marker [--install] [marker]
 
-Jump to a named marker location set with mark-location.
-
-Arguments:
-  marker  Optional marker name or number. Defaults to "1".
-          Use "0" or no argument to cycle through all markers
-          (numbered markers first in order, then alphabetical).
-
-Options:
-  --install  Memorize the jump spell into your shell configuration.
-
-Examples:
-  jump           # Jump to marker 1 (or cycle if called repeatedly)
-  jump 0         # Same as jump with no args - cycles through markers
-  jump 2         # Jump to marker 2
-  jump alpha     # Jump to marker named "alpha"
+Jump to a named marker set with mark-location. Use --install to memorize
+the spell. Defaults to marker "1", or use "0" to cycle through all markers.
 USAGE
 }
 

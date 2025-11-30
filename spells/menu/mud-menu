@@ -6,16 +6,7 @@ show_usage() {
   cat <<'USAGE'
 Usage: mud-install-menu
 
-Display the MUD installation menu with toggleable MUD features:
-  - CD hook (runs 'look' on every directory change)
-  - Command not found hook (planned)
-  - Touch hook (planned)
-  - Fantasy theme (planned)
-  - Inventory feature (planned)
-  - HP/MP and combat (planned)
-  - Enable/Disable all features
-  - Set up tor hidden service
-
+Display the MUD installation menu with toggleable features.
 Each toggle shows [X] when enabled and [ ] when disabled.
 USAGE
 }

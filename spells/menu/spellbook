@@ -523,29 +523,10 @@ USER_FOLDERS
 
 usage() {
         cat <<'USAGE'
-Usage: spellbook [PATH|--memorize NAME COMMAND...|--forget NAME|--list|--scribe NAME COMMAND...|--interactive-scribe]
+Usage: spellbook [PATH]
 
-Without arguments, opens the interactive spellbook to browse categories,
-scribe commands, and manage the cast menu.
-
-With a PATH argument (e.g., 'arcane' or 'install/core'), opens the spellbook
-directly to that category. PATH is resolved by searching in:
-  1. $WIZARDRY_ROOT/spells/ (wizardry installation)
-  2. ~/.spellbook/ (user spell home)
-  3. Current directory
-
-Use './category' to search only in the current directory.
-
-Options:
-  --interactive-scribe  Prompt for name and command to scribe a new spell.
-  --scribe NAME COMMAND...  Scribe a new command directly.
-  --memorize NAME COMMAND...  Add a spell to the cast menu.
-  --forget NAME  Remove a spell from the cast menu.
-  --list  Show the stored spells.
-
-Scribed commands are stored as executable scripts in ~/.spellbook
-(or $XDG_DATA_HOME/wizardry/spellbook). Each command is a separate
-file with the name as filename and the command as content.
+Open the interactive spellbook to browse categories, scribe commands,
+and manage the cast menu. Optionally pass a PATH to jump to a category.
 USAGE
 }
 

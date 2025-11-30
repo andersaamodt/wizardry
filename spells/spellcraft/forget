@@ -68,17 +68,9 @@ resolve_command_file() {
 
 usage() {
 	cat <<USAGE
-Usage: $spell_name SPELL_NAME
-       $spell_name --help
+Usage: $spell_name <spell-name>
 
 Remove a spell from the Cast menu.
-
-Arguments:
-  SPELL_NAME  The name of the spell to forget.
-
-Examples:
-  $spell_name my-custom-spell
-  $spell_name colors
 USAGE
 }
 
