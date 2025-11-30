@@ -21,7 +21,7 @@ if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
 fi
 SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
 DETECT_RC_FILE_DEFAULT="$SCRIPT_DIR/../divination/detect-rc-file"
-SCRIBE_SPELL_DEFAULT="$SCRIPT_DIR/../spellcraft/scribe-spell"
+LEARN_DEFAULT="$SCRIPT_DIR/../spellcraft/learn"
 
 detect_override=0
 if [ -n "${DETECT_RC_FILE-}" ]; then
@@ -30,11 +30,16 @@ else
         DETECT_RC_FILE=$DETECT_RC_FILE_DEFAULT
 fi
 
-scribe_override=0
-if [ -n "${SCRIBE_SPELL-}" ]; then
-        scribe_override=1
+learn_override=0
+if [ -n "${LEARN_SPELL-}" ]; then
+        learn_override=1
+        LEARN=$LEARN_SPELL
+elif [ -n "${SCRIBE_SPELL-}" ]; then
+        # Legacy environment variable for backwards compatibility
+        learn_override=1
+        LEARN=$SCRIBE_SPELL
 else
-        SCRIBE_SPELL=$SCRIBE_SPELL_DEFAULT
+        LEARN=$LEARN_DEFAULT
 fi
 
 if [ ! -x "$DETECT_RC_FILE" ]; then
@@ -51,16 +56,16 @@ if [ ! -x "$DETECT_RC_FILE" ]; then
         fi
 fi
 
-if [ ! -x "$SCRIBE_SPELL" ]; then
-        if [ "$scribe_override" -eq 1 ]; then
-                printf '%s\n' "learn-spellbook: required helper '$SCRIBE_SPELL' is missing or not executable." >&2
+if [ ! -x "$LEARN" ]; then
+        if [ "$learn_override" -eq 1 ]; then
+                printf '%s\n' "learn-spellbook: required helper '$LEARN' is missing or not executable." >&2
                 exit 1
         fi
 
-        if command -v scribe-spell >/dev/null 2>&1; then
-                SCRIBE_SPELL=$(command -v scribe-spell)
+        if command -v learn >/dev/null 2>&1; then
+                LEARN=$(command -v learn)
         else
-                printf '%s\n' "learn-spellbook: required helper '$SCRIBE_SPELL' is missing or not executable." >&2
+                printf '%s\n' "learn-spellbook: required helper '$LEARN' is missing or not executable." >&2
                 exit 1
         fi
 fi
@@ -631,7 +636,7 @@ shell_add() {
                 return 0
         fi
         spell_name=$(spell_identifier_for_directory "$directory")
-        if ! printf '%s\n' "$managed_export_line" | "$SCRIBE_SPELL" --rc-file "$rc_file" --spell "$spell_name" add; then
+        if ! printf '%s\n' "$managed_export_line" | "$LEARN" --rc-file "$rc_file" --spell "$spell_name" add; then
                 printf '%s\n' "learn-spellbook: unable to record the PATH entry." >&2
                 exit 1
         fi
@@ -645,8 +650,8 @@ shell_remove() {
                 exit 1
         fi
         spell_name=$(spell_identifier_for_directory "$directory")
-        if "$SCRIBE_SPELL" --rc-file "$rc_file" --spell "$spell_name" status >/dev/null 2>&1; then
-                "$SCRIBE_SPELL" --rc-file "$rc_file" --spell "$spell_name" remove
+        if "$LEARN" --rc-file "$rc_file" --spell "$spell_name" status >/dev/null 2>&1; then
+                "$LEARN" --rc-file "$rc_file" --spell "$spell_name" remove
                 printf '%s\n' "Removed '$directory' from PATH entries recorded in '$rc_file'. Open a new shell or source the file to drop it."
                 return 0
         fi
@@ -744,7 +749,7 @@ shell_status() {
 }
 
 # Remove all wizardry-managed PATH entries from shell rc files.
-# Uses scribe-spell to remove all wizardry spell blocks.
+# Uses learn to remove all wizardry spell blocks.
 shell_remove_all() {
         if [ ! -f "$rc_file" ]; then
                 printf '%s\n' "Error: The configuration file '$rc_file' does not exist." >&2
@@ -752,7 +757,7 @@ shell_remove_all() {
         fi
         
         # Find all wizardry path spell identifiers and remove them
-        # scribe-spell blocks are marked with spell names like "path-<path>-<checksum>"
+        # learn blocks are marked with spell names like "path-<path>-<checksum>"
         removed_count=0
         tmp_spells="${TMPDIR:-/tmp}/wizardry-spells.$$"
         
@@ -762,8 +767,8 @@ shell_remove_all() {
         
         while IFS= read -r spell_name; do
                 [ -z "$spell_name" ] && continue
-                if "$SCRIBE_SPELL" --rc-file "$rc_file" --spell "$spell_name" status >/dev/null 2>&1; then
-                        "$SCRIBE_SPELL" --rc-file "$rc_file" --spell "$spell_name" remove 2>/dev/null || true
+                if "$LEARN" --rc-file "$rc_file" --spell "$spell_name" status >/dev/null 2>&1; then
+                        "$LEARN" --rc-file "$rc_file" --spell "$spell_name" remove 2>/dev/null || true
                         removed_count=$((removed_count + 1))
                 fi
         done <"$tmp_spells"

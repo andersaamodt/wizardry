@@ -260,7 +260,7 @@ fi
 **Issue:** Three spells significantly exceed recommended size limits:
 
 1. **path-wizard** (843 lines) - 🔴 Largest spell
-2. **scribe-spell** (613 lines) - 🔴 Second largest
+2. **learn** (613 lines) - 🔴 Second largest
 3. **jump-to-marker** (406 lines) - 🟡 Large but manageable
 
 **Observation:** These violate the "Script-like scripts" principle (README line 124):
@@ -276,12 +276,12 @@ fi
 - Main `path-wizard` becomes a dispatcher
 - Each sub-spell remains under 200 lines
 
-**Recommendation for scribe-spell:**
+**Recommendation for learn:**
 - Split into:
-  - `scribe-spell-install` (installation logic)
-  - `scribe-spell-rc` (rc file management)
-  - `scribe-spell-inspect` (inspection logic)
-  - `scribe-spell` (dispatcher)
+  - `learn-install` (installation logic)
+  - `learn-rc` (rc file management)
+  - `learn-inspect` (inspection logic)
+  - `learn` (dispatcher)
 
 **Tradeoff:** Breaks single-file portability but improves maintainability and testability.
 
@@ -477,7 +477,7 @@ After analyzing all 106 spells individually:
 - **Small (50-100 lines):** 31 spells (29%)
 - **Medium (100-200 lines):** 24 spells (23%)
 - **Large (200-500 lines):** 7 spells (7%)
-- **Very Large (500+ lines):** 2 spells (2%) - path-wizard, scribe-spell
+- **Very Large (500+ lines):** 2 spells (2%) - path-wizard, learn
 
 ### Model Spells to Emulate
 1. **look** - Perfect usage function, error handling, self-installation
@@ -687,7 +687,7 @@ Reviewing against core values (README lines 88-103):
 
 ### Consider For Future (Backlog)
 15. 🟡 Refactor path-wizard for maintainability (6-8 hours)
-16. 🟡 Consider splitting scribe-spell (4-6 hours)
+16. 🟡 Consider splitting learn (4-6 hours)
 17. 💡 Spell dependency declaration system (8-12 hours)
 18. 💡 Spell versioning strategy (4-6 hours)
 19. 💡 Performance optimization (ongoing)

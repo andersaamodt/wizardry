@@ -561,14 +561,14 @@ install_uses_explicit_helper_paths() {
 path_wizard_uses_explicit_helper_paths() {
   # Verify that learn-spellbook references helpers using explicit paths when available.
   
-  # Check that learn-spellbook has default paths for DETECT_RC_FILE and SCRIBE_SPELL
+  # Check that learn-spellbook has default paths for DETECT_RC_FILE and LEARN
   if ! grep -q 'DETECT_RC_FILE_DEFAULT=.*\$SCRIPT_DIR' "$ROOT_DIR/spells/spellcraft/learn-spellbook"; then
     TEST_FAILURE_REASON="learn-spellbook should have explicit default path for DETECT_RC_FILE"
     return 1
   fi
   
-  if ! grep -q 'SCRIBE_SPELL_DEFAULT=.*\$SCRIPT_DIR' "$ROOT_DIR/spells/spellcraft/learn-spellbook"; then
-    TEST_FAILURE_REASON="learn-spellbook should have explicit default path for SCRIBE_SPELL"
+  if ! grep -q 'LEARN_DEFAULT=.*\$SCRIPT_DIR' "$ROOT_DIR/spells/spellcraft/learn-spellbook"; then
+    TEST_FAILURE_REASON="learn-spellbook should have explicit default path for LEARN"
     return 1
   fi
   
@@ -576,7 +576,7 @@ path_wizard_uses_explicit_helper_paths() {
 }
 
 path_wizard_accepts_helper_overrides() {
-  # Test that learn-spellbook respects DETECT_RC_FILE and SCRIBE_SPELL env vars,
+  # Test that learn-spellbook respects DETECT_RC_FILE and LEARN_SPELL env vars,
   # allowing the install script to force use of new helpers.
   fixture=$(make_fixture)
   provide_basic_tools "$fixture"
@@ -591,7 +591,7 @@ path_wizard_accepts_helper_overrides() {
   
   # Run learn-spellbook with explicit helper env vars
   DETECT_RC_FILE="$ROOT_DIR/spells/divination/detect-rc-file" \
-    SCRIBE_SPELL="$ROOT_DIR/spells/spellcraft/scribe-spell" \
+    LEARN_SPELL="$ROOT_DIR/spells/spellcraft/learn" \
     run_cmd "$ROOT_DIR/spells/spellcraft/learn-spellbook" \
       --rc-file "$rc_file" \
       --format shell \
@@ -664,9 +664,9 @@ install_uses_only_bootstrappable_spells() {
     return 1
   fi
   
-  # scribe-spell (for installing spells) should be invoked as $SPELL_INSTALLER
-  if grep -E '^\s*scribe-spell\s' "$ROOT_DIR/install" 2>/dev/null | grep -v '^#' | grep -v 'SCRIBE_SPELL=' | grep -v 'SPELL_INSTALLER=' >/dev/null; then
-    TEST_FAILURE_REASON="install script invokes 'scribe-spell' directly instead of via \$SPELL_INSTALLER"
+  # learn (for installing spells) should be invoked as $SPELL_INSTALLER
+  if grep -E '^\s*learn\s' "$ROOT_DIR/install" 2>/dev/null | grep -v '^#' | grep -v 'LEARN_SPELL=' | grep -v 'SPELL_INSTALLER=' >/dev/null; then
+    TEST_FAILURE_REASON="install script invokes 'learn' directly instead of via \$SPELL_INSTALLER"
     return 1
   fi
   

@@ -277,8 +277,8 @@ fi
 # on to update PATH entries and ask for confirmation.
 LEARN_SPELLBOOK="$ABS_DIR/spells/spellcraft/learn-spellbook"
 DETECT_RC_FILE="$ABS_DIR/spells/divination/detect-rc-file"
-# Use scribe-spell for installing spells to shell (it has --recursive support)
-SPELL_INSTALLER="$ABS_DIR/spells/spellcraft/scribe-spell"
+# Use learn for installing spells to shell (it has --recursive support)
+SPELL_INSTALLER="$ABS_DIR/spells/spellcraft/learn"
 CORE_INSTALLER=${WIZARDRY_CORE_INSTALLER:-$ABS_DIR/spells/install/core/install-core}
 ASK_YN="$ABS_DIR/spells/cantrips/ask_yn"
 LEARN_SPELLBOOK_FLAGS=${LEARN_SPELLBOOK_FLAGS:---recursive}
@@ -286,10 +286,10 @@ LEARN_SPELLBOOK_FLAGS=${LEARN_SPELLBOOK_FLAGS:---recursive}
 # Export environment variables for all helper spells so that they use the new
 # versions being installed, not any old versions that may be in PATH.
 # This prevents issues where a user has an old wizardry installation in PATH.
-SCRIBE_SPELL="$ABS_DIR/spells/spellcraft/scribe-spell"
-MEMORIZE_SCRIBE="$ABS_DIR/spells/spellcraft/scribe-spell"
+LEARN_SPELL="$ABS_DIR/spells/spellcraft/learn"
+MEMORIZE_LEARN="$ABS_DIR/spells/spellcraft/learn"
 MEMORIZE_SPELL_HELPER="$ABS_DIR/spells/cantrips/memorize"
-export DETECT_RC_FILE SCRIBE_SPELL MEMORIZE_SCRIBE MEMORIZE_SPELL_HELPER
+export DETECT_RC_FILE LEARN_SPELL MEMORIZE_LEARN MEMORIZE_SPELL_HELPER
 
 # Bootstrap color definitions (inline - cannot rely on wizardry spells during install)
 # Create the escape character in a POSIX-compliant way.
@@ -782,7 +782,7 @@ if [ -x "$SPELL_INSTALLER" ]; then
         fi
         rm -f "$mem_log"
 else
-        printf '%sWarning:%s scribe-spell is missing; skipping automatic spell installation.\n' "$YELLOW" "$RESET" >&2
+        printf '%sWarning:%s learn spell is missing; skipping automatic spell installation.\n' "$YELLOW" "$RESET" >&2
 fi
 
 # Handle platform-specific post-installation steps
