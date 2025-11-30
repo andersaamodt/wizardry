@@ -1,43 +1,111 @@
 #!/bin/sh
 
-# This spell prints the path to your system trash directory.
-# Use it with cd: cd "$(jump-trash)" to navigate to your trash.
+# This spell teleports you to your system trash directory.
+# Source it to define the 'jtrash' function, or run it directly.
+
+RUNNING_AS_SCRIPT=0
+case $0 in
+*/jump-trash|jump-trash)
+  RUNNING_AS_SCRIPT=1
+  ;;
+*) : ;;
+esac
 
 show_usage() {
   cat <<'USAGE'
 Usage: jump-trash
 
-Print the path to the system trash directory. Use with cd to navigate there:
+Teleport to the system trash directory.
 
-  cd "$(jump-trash)"
+When sourced, defines a 'jtrash' function that changes to the trash directory.
+When run directly, prints instructions for changing to trash (scripts cannot
+change the parent shell's directory).
 
 Supports:
   - macOS: ~/.Trash
   - Linux: ~/.local/share/Trash/files (or $XDG_DATA_HOME/Trash/files)
+
+To use:
+  . jump-trash    # Source to define the function
+  jtrash          # Call the function to cd to trash
+  
+Or add to your shell rc file:
+  . /path/to/jump-trash
 USAGE
 }
 
-case "${1-}" in
---help|--usage|-h)
-  show_usage
-  exit 0
-  ;;
-esac
+# Get the trash path using detect-trash or inline detection
+_jtrash_get_path() {
+  if command -v detect-trash >/dev/null 2>&1; then
+    detect-trash
+    return
+  fi
+  
+  # Inline fallback if detect-trash is not available
+  kernel=$(uname -s 2>/dev/null || printf 'unknown')
+  case "$kernel" in
+  Darwin)
+    printf '%s/.Trash\n' "$HOME"
+    ;;
+  Linux)
+    xdg_data="${XDG_DATA_HOME:-$HOME/.local/share}"
+    printf '%s/Trash/files\n' "$xdg_data"
+    ;;
+  *)
+    printf '%s\n' "jump-trash: unsupported operating system: $kernel" >&2
+    return 1
+    ;;
+  esac
+}
 
-set -eu
+# The actual jump function that changes directory
+jtrash() {
+  case "${1-}" in
+  --help|--usage|-h)
+    show_usage
+    return 0
+    ;;
+  esac
 
-# Use the detect-trash imp to get the trash path
-if ! command -v detect-trash >/dev/null 2>&1; then
-  printf '%s\n' "jump-trash: detect-trash imp not found" >&2
-  exit 1
+  trash_path=$(_jtrash_get_path)
+  if [ -z "$trash_path" ]; then
+    return 1
+  fi
+
+  if [ ! -d "$trash_path" ]; then
+    printf '%s\n' "jump-trash: trash directory does not exist: $trash_path" >&2
+    printf '%s\n' "The trash may be empty or the directory has not been created yet." >&2
+    return 1
+  fi
+
+  cd "$trash_path" || return 1
+  printf '%s\n' "You teleport to the trash at $trash_path"
+}
+
+# When run as a script (not sourced), explain how to use it
+if [ "$RUNNING_AS_SCRIPT" -eq 1 ]; then
+  case "${1-}" in
+  --help|--usage|-h)
+    show_usage
+    exit 0
+    ;;
+  esac
+  
+  set -eu
+  
+  trash_path=$(_jtrash_get_path)
+  if [ -z "$trash_path" ]; then
+    exit 1
+  fi
+
+  if [ ! -d "$trash_path" ]; then
+    printf '%s\n' "jump-trash: trash directory does not exist: $trash_path" >&2
+    printf '%s\n' "The trash may be empty or the directory has not been created yet." >&2
+    exit 1
+  fi
+
+  printf '%s\n' "To change to the trash directory, source this spell:"
+  printf '%s\n' "  . jump-trash && jtrash"
+  printf '%s\n' ""
+  printf '%s\n' "Or use: cd \"$trash_path\""
 fi
-
-trash_path=$(detect-trash)
-
-if [ ! -d "$trash_path" ]; then
-  printf '%s\n' "jump-trash: trash directory does not exist: $trash_path" >&2
-  printf '%s\n' "The trash may be empty or the directory has not been created yet." >&2
-  exit 1
-fi
-
-printf '%s\n' "$trash_path"
