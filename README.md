@@ -118,7 +118,9 @@ An **imp** is a microscript that:
 
 Push as much logic as possible into imps for maximum semanticization.
 
-## Free software suite
+## Arcana
+
+An arcana is a grand working, a spell that knows the proper way to install and correctly configure a certain piece of software across all our supported platforms. A sort of wizard, in computing parlance, but presented as a menu of functions. The word arcana can also be used to refer to the apps thus installed, which are after all by definition each an arcane feat of computing, or we could just accomplish their functionality in POSIX sh.
 
 Wizardry includes a curated free software suite which can be easily and optionally installed from the `menu`. Criteria for inclusion:
 

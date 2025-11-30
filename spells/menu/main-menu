@@ -37,7 +37,7 @@ display_menu() {
   mud="MUD menu%mud"
   cast="Cast a Spell%cast"
   spellbook="Spellbook%spellbook"
-  install="Install Free Software%install-menu"
+  install="Arcana%install-menu"
   system="Manage System%system-menu"
   exit_label=$(exit-label)
   exit_item="${exit_label}%exit $menu_escape_status"
