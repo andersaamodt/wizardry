@@ -35,7 +35,8 @@ fi
 # Detect whether sleep is available (systemd or pmset on macOS)
 sleep_available=""
 if command -v systemctl >/dev/null 2>&1; then
-  if systemctl --help 2>/dev/null | grep -q suspend 2>/dev/null; then
+  # Use can-suspend to check if suspend is actually configured
+  if systemctl can-suspend 2>/dev/null | grep -q yes; then
     sleep_available="Sleep%sudo systemctl suspend"
   fi
 elif command -v pmset >/dev/null 2>&1; then
@@ -45,9 +46,18 @@ fi
 # Detect whether hibernate is available (systemd only)
 hibernate_available=""
 if command -v systemctl >/dev/null 2>&1; then
-  if systemctl --help 2>/dev/null | grep -q hibernate 2>/dev/null; then
+  # Use can-hibernate to check if hibernate is actually configured
+  if systemctl can-hibernate 2>/dev/null | grep -q yes; then
     hibernate_available="Hibernate%sudo systemctl hibernate"
   fi
+fi
+
+# Detect whether loginctl is available for graceful logout (systemd only)
+logout_cmd=""
+if command -v loginctl >/dev/null 2>&1; then
+  logout_cmd="loginctl terminate-user \"\$USER\""
+else
+  logout_cmd="pkill -TERM -u \"\$USER\""
 fi
 
 menu_escape_status=113
@@ -62,7 +72,7 @@ display_menu() {
   # Graceful restart/shutdown give processes time to clean up
   restart_item="Restart%sudo shutdown -r +0"
   shutdown_item="Shutdown%sudo shutdown -h +0"
-  logout_item="Logout%pkill -TERM -u \"\$USER\""
+  logout_item="Logout%$logout_cmd"
   # Force operations bypass graceful shutdown procedures
   force_restart_item="Force restart%sudo reboot -f"
   force_shutdown_item="Force shutdown%sudo poweroff -f"
