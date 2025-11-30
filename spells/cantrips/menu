@@ -533,10 +533,10 @@ if [ "$menu_row" -lt 1 ]; then
 fi
 
 update_dimensions
-# Ensure we start on a selectable item - if start_selection is valid and selectable,
-# use it; otherwise find the first selectable item
+# Ensure we start on a selectable item - if selected position (from MENU_START_SELECTION)
+# is valid and not a divider, use it; otherwise find the first selectable item
 if [ "$selected" -ge 1 ] && [ "$selected" -le "$menu_length" ] && ! is_divider "$selected"; then
-        : # start_selection is valid and not a divider, use it
+        : # selected position is valid and not a divider, use it
 else
         find_first_selectable || :
 fi
