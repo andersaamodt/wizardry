@@ -2,6 +2,28 @@
 
 # Toggle cd hook on/off by installing or uninstalling the cd spell
 
+show_usage() {
+        cat <<'USAGE'
+Usage: toggle-cd
+
+Toggle the cd hook on or off. When enabled, every directory change
+automatically runs 'look' to display the room description.
+
+The toggle detects the current state and flips it:
+  - If the hook is installed, it will be uninstalled
+  - If the hook is not installed, it will be installed
+
+After toggling, restart your shell or source your rc file to apply changes.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
 set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)

@@ -5,6 +5,31 @@
 # small so wizards can tweak it at a glance while still whispering just
 # enough lore to keep the spell recognizable.
 
+show_usage() {
+        cat <<'USAGE'
+Usage: cd [DIRECTORY]
+       cd install
+       cd uninstall
+
+Replace the builtin cd command to run 'look' after every successful
+directory change, revealing the room description as you teleport around.
+
+Commands:
+  install    Add the cd hook to your shell rc file
+  uninstall  Remove the cd hook from your shell rc file
+
+When sourced as the cd alias, any valid DIRECTORY argument is passed
+through to the real cd builtin, and 'look' runs automatically on success.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
 set -eu
 
 SCRIPT_SOURCE=$0
