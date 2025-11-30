@@ -507,10 +507,6 @@ spellbook_menu() {
                 if [ "$first_run" -eq 0 ]; then
                         printf '\n'
                 else
-                        # Print newline before first display if called as submenu
-                        if [ "${MENU_NEWLINE-}" = "1" ]; then
-                                printf '\n'
-                        fi
                         first_run=0
                 fi
 

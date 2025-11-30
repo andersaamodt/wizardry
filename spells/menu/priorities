@@ -83,7 +83,7 @@ display_priorities() {
           menu_command="${menu_command}${file_priority} "
         fi
         item_name=$(basename "$priority_file")
-        menu_command="${menu_command}$item_name%priority-menu \\\"${priority_file}\\\"\""
+        menu_command="${menu_command}$item_name%MENU_NEWLINE=1 priority-menu \\\"${priority_file}\\\"\""
 
         # Update the highest priority
         highest_priority="${file_priority}"

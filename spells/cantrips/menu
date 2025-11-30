@@ -478,6 +478,11 @@ execute_selection() {
 
 cursor-blink off
 
+# Print newline before menu if called as submenu
+if [ "${MENU_NEWLINE-}" = "1" ]; then
+        printf '\n'
+fi
+
 if [ -n "$description" ]; then
         # Show the caller-provided heading so the menu has context for the user.
         printf '%s\n' "$description"
