@@ -6,15 +6,6 @@ set -eu
 
 menu_escape_status=113
 
-# Temp file for tracking toggle selection (using /tmp as base, which should not contain special chars)
-toggle_flag_file="${TMPDIR:-/tmp}/wizardry-spell-menu-toggle.$$"
-# Escape single quotes in the path for safe embedding in command strings
-escaped_toggle_flag_file=$(printf '%s' "$toggle_flag_file" | sed "s/'/'\\\\''/g")
-cleanup_toggle_flag() {
-        rm -f "$toggle_flag_file"
-}
-trap 'cleanup_toggle_flag' EXIT
-
 # Load colors for display
 if command -v colors >/dev/null 2>&1; then
         # shellcheck source=/dev/null
@@ -205,28 +196,35 @@ escaped_command=$(printf '%s' "$command" | sed "s/'/'\\\\''/g")
 
 first_run=1
 start_selection=1
+was_memorized=0
 
 while :; do
         if [ "$first_run" -eq 0 ]; then
                 printf '\n'
-                # Check if toggle was selected - if so, keep cursor on toggle item (item 2)
-                # Otherwise reset to first item for other actions
-                if [ -f "$toggle_flag_file" ]; then
-                        start_selection=2
-                        rm -f "$toggle_flag_file"
+                # Check if memorization state changed (toggle was used)
+                if is_memorized "$name"; then
+                        now_memorized=1
                 else
+                        now_memorized=0
+                fi
+                if [ "$was_memorized" != "$now_memorized" ]; then
+                        # Toggle was selected - keep cursor on toggle item (item 2)
+                        start_selection=2
+                else
+                        # Other action - reset to first item
                         start_selection=1
                 fi
         else
                 first_run=0
         fi
 
-        # Show checkbox for Cast menu visibility (toggleable)
-        # Use standalone memorize and forget spells - touch flag file to keep cursor position
+        # Check current memorization state and build toggle label
         if is_memorized "$name"; then
-                cast_toggle="[X] Forget%forget '$name'; touch '$escaped_toggle_flag_file'"
+                was_memorized=1
+                cast_toggle="[X] Forget%forget '$name'"
         else
-                cast_toggle="[ ] Memorize%memorize '$name'; touch '$escaped_toggle_flag_file'"
+                was_memorized=0
+                cast_toggle="[ ] Memorize%memorize '$name'"
         fi
         # Build menu items - Cast now runs the command directly (using escaped version for safety)
         exit_label=$(exit-label)

@@ -67,6 +67,18 @@ case $1 in
     cast_dir=${WIZARDRY_CAST_DIR:-${HOME:-.}/.spellbook}
     printf '%s\n' "$cast_dir"
     ;;
+  *)
+    # Default action: memorize the spell (same as add with spell name as command)
+    name=$1
+    cmd=$name
+    cast_dir=${WIZARDRY_CAST_DIR:-${HOME:-.}/.spellbook}
+    cast_file_default=$cast_dir/.memorized
+    cast_file=${WIZARDRY_CAST_FILE:-$cast_file_default}
+    mkdir -p "$cast_dir"
+    printf '%s\t%s\n' "$name" "$cmd" >>"$cast_file"
+    printf '%s\n' "$cmd" >"$cast_dir/$name"
+    chmod +x "$cast_dir/$name"
+    ;;
 esac
 STUB
   chmod +x "$dir/memorize"
