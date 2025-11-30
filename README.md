@@ -172,17 +172,6 @@ These values make the wizardry project what it is, and distinguish it from simil
 | Script-like scripts  | Keep scripts script-like: favor flat flows with few functions so behavior stays readable and hackable from the shell. |
 | Wizardry available   | Spells can assume other wizardry spells are already in the PATH and should invoke them by name instead of long paths. |
 
-### AI directives
-* Preserve the spec: Do not edit the spec comments at the top of script, nor the --help usage instructions of a script, unless specifically instructed.
-* Preserve the lore: Do not delete, modify, or add more flavor text unless specifically instructed.
-* Qualities of a good script: Brevity, well-commented for novice POSIX shell devs, flat / minimal functions / linear, clarity, portability (including cross-platform), composability, non-redundancy, minimalism.
-* No globals: Do not use shell variables unless absolutely necessary (use parameters or stdout instead).
-* No wrappers; all files are standalone, portable, and front-facing.
-* Bootstrap awareness: The install script (`./install`) and core install scripts (in `spells/install/core`) run before wizardry is on PATH, so they alone cannot assume that wizardry spells are already available in PATH.
-* Expose and use new documented (in `--help usage note`) arguments to pass data to scripts, instead of passing in shell variables.
-* All GitHub Actions and every test and subtest on every platform are required to pass, including style and test coverage checks (or we can't merge).
-* Instead of a common lib file, tests use imps in `spells/.imps`. Imps used only in tests have name beginning with `test-`.
-
 ## Testing
 
 Run the complete shell test suite with:
