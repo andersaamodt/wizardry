@@ -52,10 +52,10 @@ _require_wizardry() {
 
 	printf '%s\n' "Error: wizardry is not installed or not in PATH." >&2
 	printf '%s\n' "" >&2
-	printf '%s\n' "This script requires wizardry. Install it with:" >&2
+	printf '%s\n' "This script requires wizardry. To install:" >&2
 	printf '%s\n' "  curl -fsSL https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh" >&2
 	printf '%s\n' "" >&2
-	printf '%s\n' "Or clone and install manually:" >&2
+	printf '%s\n' "Or clone and install with git:" >&2
 	printf '%s\n' "  git clone https://github.com/andersaamodt/wizardry ~/.wizardry" >&2
 	printf '%s\n' "  cd ~/.wizardry && ./install" >&2
 	exit 1
@@ -93,16 +93,16 @@ offer_install() {
 				;;
 			*)
 				printf '%s\n' "" >&2
-				printf '%s\n' "To install wizardry manually, run:" >&2
+				printf '%s\n' "To install wizardry, run:" >&2
 				printf '%s\n' "  curl -fsSL https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh" >&2
 				return 1
 				;;
 		esac
 	else
-		printf '%s\n' "This script requires wizardry. Install it with:" >&2
+		printf '%s\n' "This script requires wizardry. To install:" >&2
 		printf '%s\n' "  curl -fsSL https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh" >&2
 		printf '%s\n' "" >&2
-		printf '%s\n' "Or clone and install manually:" >&2
+		printf '%s\n' "Or clone and install with git:" >&2
 		printf '%s\n' "  git clone https://github.com/andersaamodt/wizardry ~/.wizardry" >&2
 		printf '%s\n' "  cd ~/.wizardry && ./install" >&2
 		return 1

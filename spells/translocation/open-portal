@@ -24,11 +24,11 @@ set -eu
 
 # Check for required commands
 if ! has sshfs; then
-        die "open-portal: sshfs not found. Please install sshfs."
+        die "open-portal: sshfs not found."
 fi
 
 if ! has torify; then
-        die "open-portal: torify not found. Please install tor."
+        die "open-portal: torify (tor) not found."
 fi
 
 # Get player key from environment

@@ -134,7 +134,7 @@ SCRIPT
 
   run_verify_posix "$workdir/bashy"
   assert_failure || return 1
-  printf '%s\n' "$OUTPUT" | grep 'uses #!/usr/bin/env bash; please use /bin/sh' >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected env bash message"; return 1; }
+  printf '%s\n' "$OUTPUT" | grep 'uses #!/usr/bin/env bash (should use /bin/sh)' >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected env bash message"; return 1; }
   [ -z "${ERROR}" ] || { TEST_FAILURE_REASON="expected no stderr"; return 1; }
 }
 
@@ -159,7 +159,7 @@ SCRIPT
 
   run_verify_posix "$workdir/argful"
   assert_failure || return 1
-  printf '%s\n' "$OUTPUT" | grep 'uses #!/usr/bin/env bash -l; please use /bin/sh' >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected env arg message"; return 1; }
+  printf '%s\n' "$OUTPUT" | grep 'uses #!/usr/bin/env bash -l (should use /bin/sh)' >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected env arg message"; return 1; }
   [ -z "${ERROR}" ] || { TEST_FAILURE_REASON="expected no stderr"; return 1; }
 }
 
@@ -173,7 +173,7 @@ SCRIPT
 
   run_verify_posix "$workdir/direct_bash"
   assert_failure || return 1
-  printf '%s\n' "$OUTPUT" | grep 'uses #!/bin/bash; please use /bin/sh' >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected direct bash message"; return 1; }
+  printf '%s\n' "$OUTPUT" | grep 'uses #!/bin/bash (should use /bin/sh)' >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected direct bash message"; return 1; }
   [ -z "${ERROR}" ] || { TEST_FAILURE_REASON="expected no stderr"; return 1; }
 }
 

@@ -33,7 +33,7 @@ if [ -z "$current_directory" ]; then
 else
     # Confirm that the directory actually exists
     if [ ! -d "$current_directory" ]; then
-        echo "The Bitcoin data chamber specified in bitcoin.conf doth not exist. Please ensure the correctness of the 'datadir' value in bitcoin.conf."
+        echo "The Bitcoin data chamber specified in bitcoin.conf doth not exist. Check the 'datadir' value in bitcoin.conf."
         exit 1
     fi
     echo "Verified the existence of the Bitcoin data chamber at: $current_directory"

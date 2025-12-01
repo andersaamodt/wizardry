@@ -97,5 +97,5 @@ if try_install brew install devscripts; then
         fi
 fi
 
-printf '%s\n' "install-checkbashisms: unable to install checkbashisms automatically. Please install it manually." >&2
+printf '%s\n' "install-checkbashisms: unable to install checkbashisms automatically." >&2
 exit 1

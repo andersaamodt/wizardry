@@ -42,7 +42,7 @@ shift $((OPTIND - 1))
 
 # Require a directory of pages to stitch together.
 if [ "$#" -lt 1 ]; then
-    warn "Error: Please provide a folder path as an argument."
+    warn "bind-tome: missing folder path argument."
     usage >&2
     exit 1
 fi

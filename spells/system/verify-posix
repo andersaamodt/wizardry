@@ -105,13 +105,13 @@ while IFS= read -r target; do
       :
       ;;
     '/usr/bin/env bash'*|'/bin/bash'*)
-      printf 'FAIL %s: uses %s; please use /bin/sh\n' "$target" "$shebang"
+      printf 'FAIL %s: uses %s (should use /bin/sh)\n' "$target" "$shebang"
       failures=$((failures + 1))
       failed_targets=${failed_targets:+$failed_targets,}$target
       continue
       ;;
     *)
-      printf 'FAIL %s: uses %s; please use /bin/sh\n' "$target" "$shebang"
+      printf 'FAIL %s: uses %s (should use /bin/sh)\n' "$target" "$shebang"
       failures=$((failures + 1))
       failed_targets=${failed_targets:+$failed_targets,}$target
       continue

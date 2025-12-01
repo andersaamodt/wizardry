@@ -85,7 +85,7 @@ uninstall_bitcoin() {
         break
         ;;
       *)
-        echo "Invalid input. Please answer with Y (yes) or N (no)"
+        echo "Invalid input. Answer with Y (yes) or N (no)"
         ;;
     esac
   done

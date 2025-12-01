@@ -112,7 +112,7 @@ if [ "$action" = "install" ]; then
     exit 0
   fi
 
-  printf '%s\n' "manage-system-command: unable to install $package_default automatically. Please install it manually." >&2
+  printf '%s\n' "manage-system-command: unable to install $package_default automatically." >&2
   exit 1
 fi
 
@@ -150,5 +150,5 @@ if try_action apk del "$apk_package"; then
   exit 0
 fi
 
-printf '%s\n' "manage-system-command: unable to uninstall $command_name automatically. Please remove it manually." >&2
+printf '%s\n' "manage-system-command: unable to uninstall $command_name automatically." >&2
 exit 1
