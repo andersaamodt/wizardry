@@ -124,20 +124,21 @@ run_test_case "jump-trash uses inline fallback without detect-trash" test_uses_i
 run_test_case "jump-trash fails if trash dir missing" test_fails_if_trash_dir_missing
 run_test_case "jtrash function shows help" test_jtrash_function_help
 
-test_nixos_uses_shell_rc_fallback() {
-  # Test that on NixOS (nix format), jump-trash falls back to shell rc file
+test_nixos_uses_nix_format() {
+  # Test that on NixOS (nix format), jump-trash uses learn --format nix
   stub=$(make_tempdir)
   fake_home="$stub/home"
   mkdir -p "$fake_home"
   
-  # Create a bashrc file to find
-  touch "$fake_home/.bashrc"
+  # Create a nix config file
+  nix_config="$fake_home/configuration.nix"
+  printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$nix_config"
   
   # Create detect-rc-file stub that returns nix format
   cat >"$stub/detect-rc-file" <<STUB
 #!/bin/sh
 printf 'platform=nixos\n'
-printf 'rc_file=/etc/nixos/configuration.nix\n'
+printf 'rc_file=$nix_config\n'
 printf 'format=nix\n'
 STUB
   chmod +x "$stub/detect-rc-file"
@@ -147,6 +148,7 @@ STUB
   cat >"$stub/learn" <<STUB
 #!/bin/sh
 printf '%s\n' "\$*" >>"$learn_log"
+# Simulate success
 exit 0
 STUB
   chmod +x "$stub/learn"
@@ -160,7 +162,7 @@ STUB
   
   link_tools "$stub" sh printf grep cat test sed basename command pwd
   
-  # Run jtrash_install and check it uses .bashrc instead of configuration.nix
+  # Run jtrash_install
   run_cmd sh -c "
     PATH='$stub:/bin:/usr/bin'
     HOME='$fake_home'
@@ -173,22 +175,18 @@ STUB
   "
   assert_success || return 1
   
-  # Check that the output mentions using bashrc for NixOS
-  assert_output_contains "Detected NixOS - using" || return 1
-  assert_output_contains ".bashrc" || return 1
-  
-  # Check that learn was called with the bashrc file, not configuration.nix
+  # Check that learn was called with --format nix
   if [ -f "$learn_log" ]; then
-    if grep -q ".bashrc" "$learn_log"; then
+    if grep -q "\-\-format nix" "$learn_log"; then
       return 0
     fi
-    if grep -q "configuration.nix" "$learn_log"; then
-      TEST_FAILURE_REASON="learn was called with configuration.nix instead of .bashrc"
-      return 1
-    fi
+    TEST_FAILURE_REASON="learn was not called with --format nix: $(cat "$learn_log")"
+    return 1
   fi
+  TEST_FAILURE_REASON="learn was not called"
+  return 1
 }
 
-run_test_case "jump-trash uses shell rc fallback on NixOS" test_nixos_uses_shell_rc_fallback
+run_test_case "jump-trash uses nix format on NixOS" test_nixos_uses_nix_format
 
 finish_tests

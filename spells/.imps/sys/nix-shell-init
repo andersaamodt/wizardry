@@ -1,0 +1,270 @@
+#!/bin/sh
+# nix-shell-init - add shell init code to nix configuration files
+# Manages programs.bash.interactiveShellInit or programs.zsh.initExtra blocks
+# Usage: nix-shell-init add|remove|status [--shell bash|zsh] --name NAME --file FILE [CODE]
+# Exit code: 0 on success, 1 on failure
+# Example: echo 'source "/path/to/spell"' | nix-shell-init add --shell bash --name myspell --file config.nix
+
+set -eu
+
+show_usage() {
+  cat <<'USAGE' >&2
+Usage: nix-shell-init add|remove|status [OPTIONS]
+
+Actions:
+  add       Add shell init code (reads from stdin)
+  remove    Remove shell init code by name
+  status    Check if named shell init code exists
+
+Options:
+  --shell SHELL  Shell type: bash (default) or zsh
+  --name NAME    Unique identifier for the shell init block
+  --file FILE    Path to nix configuration file
+
+Example:
+  echo 'source "/path/to/spell"' | nix-shell-init add --shell bash --name jtrash --file ~/.config/home-manager/home.nix
+USAGE
+}
+
+action=""
+shell_type="bash"
+block_name=""
+nix_file=""
+
+while [ "$#" -gt 0 ]; do
+  case $1 in
+  add|remove|status)
+    action=$1
+    shift
+    ;;
+  --shell)
+    [ "$#" -lt 2 ] && { printf '%s\n' "nix-shell-init: --shell requires value" >&2; exit 1; }
+    shell_type=$2
+    shift 2
+    ;;
+  --shell=*)
+    shell_type=${1#*=}
+    shift
+    ;;
+  --name)
+    [ "$#" -lt 2 ] && { printf '%s\n' "nix-shell-init: --name requires value" >&2; exit 1; }
+    block_name=$2
+    shift 2
+    ;;
+  --name=*)
+    block_name=${1#*=}
+    shift
+    ;;
+  --file)
+    [ "$#" -lt 2 ] && { printf '%s\n' "nix-shell-init: --file requires value" >&2; exit 1; }
+    nix_file=$2
+    shift 2
+    ;;
+  --file=*)
+    nix_file=${1#*=}
+    shift
+    ;;
+  --help|-h)
+    show_usage
+    exit 0
+    ;;
+  *)
+    printf '%s\n' "nix-shell-init: unknown argument '$1'" >&2
+    show_usage
+    exit 1
+    ;;
+  esac
+done
+
+if [ -z "$action" ] || [ -z "$block_name" ] || [ -z "$nix_file" ]; then
+  printf '%s\n' "nix-shell-init: action, --name, and --file are required" >&2
+  show_usage
+  exit 1
+fi
+
+# Validate shell type
+case $shell_type in
+bash|zsh) : ;;
+*)
+  printf '%s\n' "nix-shell-init: shell must be 'bash' or 'zsh'" >&2
+  exit 1
+  ;;
+esac
+
+# Determine the nix option based on shell type
+# For NixOS system config: programs.bash.interactiveShellInit
+# For home-manager: programs.bash.initExtra
+# We'll use initExtra as it works for both home-manager and system configs
+case $shell_type in
+bash) nix_option="programs.bash.initExtra" ;;
+zsh)  nix_option="programs.zsh.initExtra" ;;
+esac
+
+# Marker format: # wizardry-shell: NAME
+marker="# wizardry-shell: $block_name"
+
+# Check if file needs sudo
+needs_sudo=0
+if [ -f "$nix_file" ] && [ ! -w "$nix_file" ]; then
+  needs_sudo=1
+fi
+
+run_maybe_sudo() {
+  if [ "$needs_sudo" -eq 1 ]; then
+    if command -v sudo >/dev/null 2>&1; then
+      sudo "$@"
+    elif command -v doas >/dev/null 2>&1; then
+      doas "$@"
+    else
+      "$@"
+    fi
+  else
+    "$@"
+  fi
+}
+
+# Check if block exists
+block_exists() {
+  [ -f "$nix_file" ] && grep -Fq "$marker" "$nix_file" 2>/dev/null
+}
+
+# Status check
+do_status() {
+  if block_exists; then
+    return 0
+  fi
+  return 1
+}
+
+# Escape shell code for nix string (double quotes need escaping)
+escape_for_nix() {
+  # In nix strings, backslash and double quotes need escaping
+  # Use '' string syntax which requires escaping '' and ${ only
+  # But for simplicity, we'll use double quotes with proper escaping
+  sed 's/\\/\\\\/g; s/"/\\"/g; s/\${/\\${/g'
+}
+
+# Add shell init code
+do_add() {
+  if block_exists; then
+    return 0  # Already exists, nothing to do
+  fi
+  
+  # Read shell code from stdin
+  shell_code=""
+  while IFS= read -r line || [ -n "$line" ]; do
+    if [ -z "$shell_code" ]; then
+      shell_code=$line
+    else
+      shell_code="$shell_code
+$line"
+    fi
+  done
+  
+  if [ -z "$shell_code" ]; then
+    printf '%s\n' "nix-shell-init: no shell code provided on stdin" >&2
+    exit 1
+  fi
+  
+  # Escape the shell code for nix
+  escaped_code=$(printf '%s' "$shell_code" | escape_for_nix)
+  
+  # Create the nix block
+  # Format: programs.bash.initExtra = "code"; # wizardry-shell: NAME
+  # For multi-line, use ''...'' syntax
+  nix_block="  $nix_option = ''
+    $marker
+$shell_code
+  ''; $marker"
+  
+  # Create file if it doesn't exist with minimal nix structure
+  if [ ! -f "$nix_file" ]; then
+    dir=${nix_file%/*}
+    [ "$dir" != "$nix_file" ] && [ ! -d "$dir" ] && mkdir -p "$dir"
+    printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$nix_file"
+  fi
+  
+  # Insert the block before the closing brace
+  tmp_file="${TMPDIR:-/tmp}/nix-shell-init.$$"
+  run_maybe_sudo cat "$nix_file" | awk -v block="$nix_block" '
+  {
+    lines[NR] = $0
+  }
+  END {
+    # Find last closing brace
+    last = NR
+    while (last > 0 && lines[last] ~ /^[[:space:]]*$/) last--
+    
+    if (last > 0 && lines[last] ~ /^[[:space:]]*}/) {
+      for (i = 1; i < last; i++) print lines[i]
+      print ""
+      print block
+      print lines[last]
+      for (i = last + 1; i <= NR; i++) print lines[i]
+    } else {
+      for (i = 1; i <= NR; i++) print lines[i]
+      print ""
+      print block
+    }
+  }
+  ' > "$tmp_file"
+  
+  if [ "$needs_sudo" -eq 1 ]; then
+    run_maybe_sudo cp "$tmp_file" "$nix_file"
+    rm -f "$tmp_file"
+  else
+    mv "$tmp_file" "$nix_file"
+  fi
+}
+
+# Remove shell init code
+do_remove() {
+  if [ ! -f "$nix_file" ]; then
+    printf '%s\n' "nix-shell-init: file not found: $nix_file" >&2
+    exit 1
+  fi
+  
+  if ! block_exists; then
+    return 0  # Nothing to remove
+  fi
+  
+  # Remove the block - everything between matching markers
+  tmp_file="${TMPDIR:-/tmp}/nix-shell-init.$$"
+  run_maybe_sudo cat "$nix_file" | awk -v marker="$marker" '
+  BEGIN { in_block = 0 }
+  # Start of initExtra block with our marker at the end
+  /programs\.(bash|zsh)\.(initExtra|interactiveShellInit)[[:space:]]*=/ && $0 ~ marker {
+    in_block = 1
+    next
+  }
+  # Also match standalone marker lines inside block
+  $0 ~ marker {
+    next
+  }
+  # End of multi-line string block
+  in_block && /^[[:space:]]*'\'''\''[[:space:]]*;/ {
+    in_block = 0
+    next
+  }
+  # End of single-line or closing
+  in_block && /;[[:space:]]*$/ && !/'\'''\''/ {
+    in_block = 0
+    next
+  }
+  in_block { next }
+  { print }
+  ' > "$tmp_file"
+  
+  if [ "$needs_sudo" -eq 1 ]; then
+    run_maybe_sudo cp "$tmp_file" "$nix_file"
+    rm -f "$tmp_file"
+  else
+    mv "$tmp_file" "$nix_file"
+  fi
+}
+
+case $action in
+add)    do_add ;;
+remove) do_remove ;;
+status) do_status ;;
+esac

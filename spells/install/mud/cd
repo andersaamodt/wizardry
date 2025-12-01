@@ -132,7 +132,7 @@ ensure_rc_dir() {
 }
 
 install() {
-        # Check for nix format - shell code cannot be written to .nix files
+        # Check for nix format
         rc_format=${WIZARDRY_RC_FORMAT-}
         if [ -z "$rc_format" ]; then
                 # Try to detect format from rc file extension
@@ -142,36 +142,40 @@ install() {
                         esac
                 fi
         fi
-        # For nix format, try to find a shell rc file
-        if [ "$rc_format" = "nix" ]; then
-                # Try to use shell-rc imp if available, otherwise inline fallback
-                shell_rc=""
-                if command -v shell-rc >/dev/null 2>&1; then
-                        shell_rc=$(shell-rc 2>/dev/null) || shell_rc=""
-                fi
-                # Inline fallback if imp not available
-                if [ -z "$shell_rc" ]; then
-                        for candidate in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.bash_profile" "$HOME/.profile"; do
-                                if [ -f "$candidate" ]; then
-                                        shell_rc=$candidate
-                                        break
-                                fi
-                        done
-                fi
-                if [ -z "$shell_rc" ]; then
-                        printf '%s\n' "cd cantrip: shell hooks cannot be written to .nix files."
-                        printf '%s\n' "Add the cd hook manually to your shell profile to enable automatic 'look' on directory change."
-                        return 0
-                fi
-                # Override rc file and format for shell-based installation
-                WIZARDRY_RC_FILE=$shell_rc
-                WIZARDRY_RC_FORMAT=shell
-                rc_format=shell
-                printf '%s\n' "Detected NixOS - using $shell_rc for shell configuration."
-        fi
 
         cd_spell=$(absolute_spell_path "${WIZARDRY_CD_CANTRIP-}") || return 1
         rc_file=$(resolve_rc_file) || return 1
+        
+        # For nix format, use nix-shell-init imp to add shell init code
+        if [ "$rc_format" = "nix" ]; then
+                # Find nix-shell-init helper
+                nix_helper=""
+                if [ -x "$SCRIPT_DIR/../../.imps/sys/nix-shell-init" ]; then
+                        nix_helper="$SCRIPT_DIR/../../.imps/sys/nix-shell-init"
+                elif command -v nix-shell-init >/dev/null 2>&1; then
+                        nix_helper=$(command -v nix-shell-init)
+                fi
+                
+                if [ -z "$nix_helper" ]; then
+                        printf '%s\n' "cd cantrip: nix-shell-init imp not found for NixOS installation."
+                        return 1
+                fi
+                
+                # Create the shell hook code
+                hook_code="WIZARDRY_CD_CANTRIP='$cd_spell'
+alias cd='. \"\$WIZARDRY_CD_CANTRIP\"'"
+                
+                if printf '%s\n' "$hook_code" | "$nix_helper" add --shell bash --name cd-cantrip --file "$rc_file"; then
+                        printf '%s\n' "cd cantrip: installed wizardry hooks in '$rc_file'."
+                        printf '%s\n' "Rebuild your NixOS configuration to activate the change."
+                else
+                        warn "unable to update '$rc_file'."
+                        return 1
+                fi
+                return 0
+        fi
+
+        # Standard shell format installation
         if ! ensure_rc_dir "$rc_file"; then
                 return 1
         fi

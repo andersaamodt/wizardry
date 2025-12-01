@@ -94,4 +94,94 @@ run_test_case "learn adds blocks idempotently" test_adds_and_readds_block_spell_
 run_test_case "learn fails to remove missing files" test_remove_reports_missing_file
 run_test_case "learn removes previously added blocks" test_remove_cleans_block
 run_test_case "learn status tracks presence" test_status_reflects_presence
+
+# Nix format tests
+test_nix_format_adds_shell_init() {
+  rc="$WIZARDRY_TMPDIR/test_nix.nix"
+  printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$rc"
+  
+  run_spell "spells/spellcraft/learn" --rc-file "$rc" --spell myspell --format nix add <<'EOF'
+source "/path/to/spell"
+EOF
+  assert_success || return 1
+  assert_file_contains "$rc" "programs.bash.initExtra" || return 1
+  assert_file_contains "$rc" "wizardry-shell: myspell" || return 1
+  assert_file_contains "$rc" 'source "/path/to/spell"' || return 1
+}
+
+test_nix_format_auto_detects_from_extension() {
+  rc="$WIZARDRY_TMPDIR/auto_detect.nix"
+  printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$rc"
+  
+  # Don't specify --format, let it auto-detect from .nix extension
+  run_spell "spells/spellcraft/learn" --rc-file "$rc" --spell autospell add <<'EOF'
+source "/path/to/spell"
+EOF
+  assert_success || return 1
+  assert_file_contains "$rc" "programs.bash.initExtra" || return 1
+}
+
+test_nix_format_status_works() {
+  rc="$WIZARDRY_TMPDIR/status_nix.nix"
+  printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$rc"
+  
+  # Status should fail when not present
+  run_spell "spells/spellcraft/learn" --rc-file "$rc" --spell nixstatus --format nix status
+  assert_failure || return 1
+  
+  # Add the spell
+  run_spell "spells/spellcraft/learn" --rc-file "$rc" --spell nixstatus --format nix add <<'EOF'
+source "/path/to/spell"
+EOF
+  assert_success || return 1
+  
+  # Status should succeed when present
+  run_spell "spells/spellcraft/learn" --rc-file "$rc" --spell nixstatus --format nix status
+  assert_success || return 1
+}
+
+test_nix_format_remove_works() {
+  rc="$WIZARDRY_TMPDIR/remove_nix.nix"
+  printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$rc"
+  
+  # Add the spell
+  run_spell "spells/spellcraft/learn" --rc-file "$rc" --spell nixremove --format nix add <<'EOF'
+source "/path/to/spell"
+EOF
+  assert_success || return 1
+  
+  # Verify it was added
+  if ! grep -q "wizardry-shell: nixremove" "$rc"; then
+    TEST_FAILURE_REASON="spell was not added"
+    return 1
+  fi
+  
+  # Remove it
+  run_spell "spells/spellcraft/learn" --rc-file "$rc" --spell nixremove --format nix remove
+  assert_success || return 1
+  
+  # Verify it was removed
+  if grep -q "wizardry-shell: nixremove" "$rc"; then
+    TEST_FAILURE_REASON="spell was not removed"
+    return 1
+  fi
+}
+
+test_nix_format_zsh_shell_option() {
+  rc="$WIZARDRY_TMPDIR/zsh_nix.nix"
+  printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$rc"
+  
+  run_spell "spells/spellcraft/learn" --rc-file "$rc" --spell zshspell --format nix --shell zsh add <<'EOF'
+source "/path/to/spell"
+EOF
+  assert_success || return 1
+  assert_file_contains "$rc" "programs.zsh.initExtra" || return 1
+}
+
+run_test_case "learn nix format adds shell init" test_nix_format_adds_shell_init
+run_test_case "learn nix format auto-detects from extension" test_nix_format_auto_detects_from_extension
+run_test_case "learn nix format status works" test_nix_format_status_works
+run_test_case "learn nix format remove works" test_nix_format_remove_works
+run_test_case "learn nix format zsh shell option" test_nix_format_zsh_shell_option
+
 finish_tests

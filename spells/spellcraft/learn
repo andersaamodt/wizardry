@@ -58,13 +58,21 @@ done
 
 rc_usage() {
         cat <<'RCUSAGE' >&2
-Usage: learn --rc-file FILE --spell NAME {add|remove|status}
+Usage: learn --rc-file FILE --spell NAME [--format FORMAT] {add|remove|status}
 
 Reads spell content from standard input for the 'add' action and wraps it with
 wizardry comment sentinels so future removals remain deterministic.
 Single-line spells receive an inline `# wizardry: NAME` suffix, while
 multi-line spells are wrapped with `begin`/`end` sentinels (including a lines
 count) to keep rc files readable.
+
+For nix format (--format nix), uses programs.bash.initExtra or programs.zsh.initExtra
+to properly add shell code to nix configuration files.
+
+Options:
+  --format FORMAT  Output format: shell (default) or nix
+  --shell SHELL    Shell type for nix format: bash (default) or zsh
+
 Spell names must contain only letters, digits, dashes, underscores, periods, and colons.
 RCUSAGE
 }
@@ -73,6 +81,8 @@ rc_run() {
         action=""
         rc_file=""
         spell=""
+        rc_format="shell"
+        shell_type="bash"
 
         while [ "$#" -gt 0 ]; do
                 case $1 in
@@ -100,6 +110,32 @@ rc_run() {
                         ;;
                 --spell=*)
                         spell=${1#*=}
+                        shift
+                        ;;
+                --format)
+                        if [ "$#" -lt 2 ]; then
+                                printf '%s\n' "learn: --format expects a value." >&2
+                                rc_usage
+                                exit 1
+                        fi
+                        rc_format=$2
+                        shift 2
+                        ;;
+                --format=*)
+                        rc_format=${1#*=}
+                        shift
+                        ;;
+                --shell)
+                        if [ "$#" -lt 2 ]; then
+                                printf '%s\n' "learn: --shell expects a value." >&2
+                                rc_usage
+                                exit 1
+                        fi
+                        shell_type=$2
+                        shift 2
+                        ;;
+                --shell=*)
+                        shell_type=${1#*=}
                         shift
                         ;;
                 add|remove|status)
@@ -132,6 +168,22 @@ rc_run() {
                 rc_usage
                 exit 1
         fi
+
+        # Validate format
+        case $rc_format in
+        shell|nix) : ;;
+        *)
+                printf '%s\n' "learn: format must be 'shell' or 'nix'." >&2
+                exit 1
+                ;;
+        esac
+
+        # Auto-detect format from file extension
+        case $rc_file in
+        *.nix)
+                rc_format=nix
+                ;;
+        esac
 
         case $spell in
         *[!A-Za-z0-9._:-]*)
@@ -285,24 +337,91 @@ rc_run() {
                 mv "$tmp_file" "$rc_file"
         }
 
-        case $action in
-        add)
-                add_spell
-                ;;
-        remove)
-                remove_spell
-                ;;
-        status)
-                if spell_status; then
-                        exit 0
+        # Find nix-shell-init helper
+        find_nix_shell_init() {
+                if [ -n "${NIX_SHELL_INIT-}" ] && [ -x "$NIX_SHELL_INIT" ]; then
+                        printf '%s' "$NIX_SHELL_INIT"
+                        return 0
                 fi
+                # Look relative to script location
+                helper="$SCRIPT_DIR/../.imps/sys/nix-shell-init"
+                if [ -x "$helper" ]; then
+                        printf '%s' "$helper"
+                        return 0
+                fi
+                # Try PATH
+                if command -v nix-shell-init >/dev/null 2>&1; then
+                        command -v nix-shell-init
+                        return 0
+                fi
+                return 1
+        }
+
+        # Nix format handlers using nix-shell-init imp
+        nix_spell_status() {
+                if ! nix_helper=$(find_nix_shell_init); then
+                        printf '%s\n' "learn: nix-shell-init imp not found." >&2
                         exit 1
-                ;;
-        *)
-                rc_usage
-                exit 1
-                ;;
-        esac
+                fi
+                "$nix_helper" status --shell "$shell_type" --name "$spell" --file "$rc_file"
+        }
+
+        nix_add_spell() {
+                if ! nix_helper=$(find_nix_shell_init); then
+                        printf '%s\n' "learn: nix-shell-init imp not found." >&2
+                        exit 1
+                fi
+                "$nix_helper" add --shell "$shell_type" --name "$spell" --file "$rc_file"
+        }
+
+        nix_remove_spell() {
+                if ! nix_helper=$(find_nix_shell_init); then
+                        printf '%s\n' "learn: nix-shell-init imp not found." >&2
+                        exit 1
+                fi
+                "$nix_helper" remove --shell "$shell_type" --name "$spell" --file "$rc_file"
+        }
+
+        # Execute the appropriate action based on format
+        if [ "$rc_format" = "nix" ]; then
+                case $action in
+                add)
+                        nix_add_spell
+                        ;;
+                remove)
+                        nix_remove_spell
+                        ;;
+                status)
+                        if nix_spell_status; then
+                                exit 0
+                        fi
+                        exit 1
+                        ;;
+                *)
+                        rc_usage
+                        exit 1
+                        ;;
+                esac
+        else
+                case $action in
+                add)
+                        add_spell
+                        ;;
+                remove)
+                        remove_spell
+                        ;;
+                status)
+                        if spell_status; then
+                                exit 0
+                        fi
+                        exit 1
+                        ;;
+                *)
+                        rc_usage
+                        exit 1
+                        ;;
+                esac
+        fi
 }
 
 if [ "${MODE-}" = "rc" ]; then

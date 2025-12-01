@@ -208,39 +208,38 @@ run_test_case "cd uninstall removes hook" test_cd_uninstall_removes_hook
 run_test_case "cd uninstall reports when not installed" test_cd_uninstall_reports_not_installed
 run_test_case "cd --help shows usage" test_cd_help_shows_usage
 
-test_cd_nixos_uses_shell_rc_fallback() {
-  # Test that on NixOS (nix format), cd falls back to shell rc file
+test_cd_nixos_uses_nix_format() {
+  # Test that on NixOS (nix format), cd uses nix-shell-init to add shell code
   tmp=$(make_tempdir)
   
-  # Create a bashrc file to find
-  touch "$tmp/.bashrc"
+  # Create a nix config file
+  nix_config="$tmp/configuration.nix"
+  printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$nix_config"
   
   # Create detect-rc-file that returns nix format
   cat >"$tmp/detect-rc-file" <<STUB
 #!/bin/sh
 printf 'platform=nixos\n'
-printf 'rc_file=/etc/nixos/configuration.nix\n'
+printf 'rc_file=$nix_config\n'
 printf 'format=nix\n'
 STUB
   chmod +x "$tmp/detect-rc-file"
   
   # Run cd install with our detect-rc-file
-  run_cmd env PATH="$tmp:$PATH" WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" HOME="$tmp" "$ROOT_DIR/spells/install/mud/cd" install
+  run_cmd env PATH="$tmp:$PATH" WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" WIZARDRY_RC_FORMAT=nix WIZARDRY_RC_FILE="$nix_config" HOME="$tmp" "$ROOT_DIR/spells/install/mud/cd" install
   assert_success || return 1
   
-  # Check that the output mentions using bashrc for NixOS
-  assert_output_contains "Detected NixOS" || return 1
-  assert_output_contains ".bashrc" || return 1
-  
-  # Verify it installed to bashrc, not configuration.nix
-  assert_path_exists "$tmp/.bashrc" || return 1
-  if grep -q ">>> wizardry cd cantrip >>>" "$tmp/.bashrc"; then
+  # Verify it installed to configuration.nix using nix format
+  if grep -q "programs.bash.initExtra" "$nix_config"; then
     return 0
   fi
-  TEST_FAILURE_REASON="Hook not found in .bashrc"
+  if grep -q "wizardry-shell: cd-cantrip" "$nix_config"; then
+    return 0
+  fi
+  TEST_FAILURE_REASON="Nix shell init not found in configuration.nix"
   return 1
 }
 
-run_test_case "cd uses shell rc fallback on NixOS" test_cd_nixos_uses_shell_rc_fallback
+run_test_case "cd uses nix format on NixOS" test_cd_nixos_uses_nix_format
 
 finish_tests

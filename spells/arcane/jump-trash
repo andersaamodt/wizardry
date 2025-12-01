@@ -286,33 +286,6 @@ jtrash_install() {
   if ! jtrash_detect_environment; then
     return 1
   fi
-  # For nix format, try to find a shell rc file - we can't source shell code from .nix files
-  if [ "$JUMP_TRASH_FORMAT" = "nix" ]; then
-    # Try to use shell-rc imp if available, otherwise inline fallback
-    shell_rc=""
-    if command -v shell-rc >/dev/null 2>&1; then
-      shell_rc=$(shell-rc 2>/dev/null) || shell_rc=""
-    fi
-    # Inline fallback if imp not available
-    if [ -z "$shell_rc" ]; then
-      for candidate in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.bash_profile" "$HOME/.profile"; do
-        if [ -f "$candidate" ]; then
-          shell_rc=$candidate
-          break
-        fi
-      done
-    fi
-    if [ -z "$shell_rc" ]; then
-      printf '%s\n' "jump-trash: shell code cannot be written to .nix files."
-      printf '%s\n' "Add 'source <path-to-jump-trash>' to your shell profile to enable the 'jtrash' alias."
-      printf '%s\n' "Or use 'jump-trash' directly since wizardry is on PATH."
-      jtrash_register_spellbook_alias
-      return 0
-    fi
-    JUMP_TRASH_RC_FILE=$shell_rc
-    JUMP_TRASH_FORMAT=shell
-    printf '%s\n' "Detected NixOS - using $shell_rc for shell configuration."
-  fi
   if ! learn=$(jtrash_learn_helper); then
     return 1
   fi
@@ -320,10 +293,21 @@ jtrash_install() {
     return 1
   fi
   line=$(printf 'source "%s"' "$script_path")
-  if printf '%s\n' "$line" | "$learn" --rc-file "$JUMP_TRASH_RC_FILE" --spell "$SPELL_NAME" add; then
-    printf '%s\n' "The 'jtrash' spell has been memorized (etched into $(basename "$JUMP_TRASH_RC_FILE"))."
-    printf '%s\n' "Open a new terminal (or source the file) to teleport to trash anywhere."
-    jtrash_register_spellbook_alias
+  
+  # For nix format, use learn with --format nix to properly add shell init code
+  # to nix configuration using programs.bash.initExtra
+  if [ "$JUMP_TRASH_FORMAT" = "nix" ]; then
+    if printf '%s\n' "$line" | "$learn" --rc-file "$JUMP_TRASH_RC_FILE" --spell "$SPELL_NAME" --format nix add; then
+      printf '%s\n' "The 'jtrash' spell has been memorized (etched into $(basename "$JUMP_TRASH_RC_FILE"))."
+      printf '%s\n' "Rebuild your NixOS configuration to activate the change."
+      jtrash_register_spellbook_alias
+    fi
+  else
+    if printf '%s\n' "$line" | "$learn" --rc-file "$JUMP_TRASH_RC_FILE" --spell "$SPELL_NAME" add; then
+      printf '%s\n' "The 'jtrash' spell has been memorized (etched into $(basename "$JUMP_TRASH_RC_FILE"))."
+      printf '%s\n' "Open a new terminal (or source the file) to teleport to trash anywhere."
+      jtrash_register_spellbook_alias
+    fi
   fi
 }
 
