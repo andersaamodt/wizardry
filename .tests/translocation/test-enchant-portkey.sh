@@ -22,7 +22,7 @@ test_help() {
 test_requires_argument() {
   run_spell "spells/translocation/enchant-portkey"
   assert_failure || return 1
-  assert_error_contains "file argument required" || return 1
+  assert_error_contains "file path required" || return 1
 }
 
 test_fails_on_missing_file() {

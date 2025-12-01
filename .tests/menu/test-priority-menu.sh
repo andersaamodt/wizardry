@@ -37,7 +37,7 @@ make_read_magic_stub() {
   tmp=$1
   cat >"$tmp/read-magic" <<'SH'
 #!/bin/sh
-echo "Error: The attribute does not exist."
+echo "read-magic: attribute does not exist."
 SH
   chmod +x "$tmp/read-magic"
 }
@@ -51,7 +51,7 @@ test_help() {
 test_requires_file_argument() {
   run_spell "spells/menu/priority-menu"
   assert_failure || return 1
-  assert_error_contains "file argument required" || return 1
+  assert_error_contains "file path required" || return 1
 }
 
 test_help_h_flag() {
@@ -143,7 +143,7 @@ test_priority_menu_shows_uncheck_when_checked() {
 if [ "$2" = "checked" ]; then
   echo "true"
 else
-  echo "Error: The attribute does not exist."
+  echo "read-magic: attribute does not exist."
 fi
 SH
   chmod +x "$tmp/read-magic"

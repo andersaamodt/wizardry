@@ -38,7 +38,7 @@ EOF
   chmod +x "$stub/ask_yn"
   cat >"$stub/read-magic" <<'EOF'
 #!/bin/sh
-printf '%s\n' 'Error: The attribute does not exist.'
+printf '%s\n' 'read-magic: attribute does not exist.'
 EOF
   chmod +x "$stub/read-magic"
   PATH="$stub:/bin:/usr/bin" run_spell "spells/mud/look" "$WIZARDRY_TMPDIR"
@@ -73,7 +73,7 @@ EOF
   chmod +x "$stub/ask_yn"
   cat >"$stub/read-magic" <<'EOF'
 #!/bin/sh
-printf '%s\n' 'Error: The attribute does not exist.'
+printf '%s\n' 'read-magic: attribute does not exist.'
 EOF
   chmod +x "$stub/read-magic"
   rc_file="$WIZARDRY_TMPDIR/lookrc-install"
@@ -91,7 +91,7 @@ EOF
   chmod +x "$stub/ask_yn"
   cat >"$stub/read-magic" <<'EOF'
 #!/bin/sh
-printf '%s\n' 'Error: The attribute does not exist.'
+printf '%s\n' 'read-magic: attribute does not exist.'
 EOF
   chmod +x "$stub/read-magic"
   rc_file="$WIZARDRY_TMPDIR/lookrc-decline"
@@ -112,7 +112,7 @@ EOF
   chmod +x "$stub/ask_yn"
   cat >"$stub/read-magic" <<'EOF'
 #!/bin/sh
-printf '%s\n' 'Error: The attribute does not exist.'
+printf '%s\n' 'read-magic: attribute does not exist.'
 EOF
   chmod +x "$stub/read-magic"
   rc_file="$WIZARDRY_TMPDIR/lookrc-preexisting"
