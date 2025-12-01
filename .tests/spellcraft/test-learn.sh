@@ -11,7 +11,7 @@ done
 
 test_help() {
   run_spell "spells/spellcraft/learn" --help
-  assert_success && assert_error_contains "Usage: learn"
+  assert_success && assert_output_contains "Usage: learn"
 }
 
 test_missing_args() {

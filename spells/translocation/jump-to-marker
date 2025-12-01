@@ -126,6 +126,16 @@ jump_detect_helper() {
 
 jump_learn_helper() {
         # Check if environment variable override is set first
+        if [ -n "${LEARN_RC_SPELL-}" ]; then
+                if [ -x "$LEARN_RC_SPELL" ]; then
+                        printf '%s' "$LEARN_RC_SPELL"
+                        return 0
+                else
+                        printf '%s\n' "jump-to-marker: LEARN_RC_SPELL is set but not executable." >&2
+                        return 1
+                fi
+        fi
+        # Legacy support for LEARN_SPELL
         if [ -n "${LEARN_SPELL-}" ]; then
                 if [ -x "$LEARN_SPELL" ]; then
                         printf '%s' "$LEARN_SPELL"
@@ -149,18 +159,25 @@ jump_learn_helper() {
         if ! helpers=$(jump_helpers_dir); then
                 return 1
         fi
-        # Look in spellcraft directory where learn lives
-        learn="$helpers/../spellcraft/learn"
+        # Look in spellcraft directory where learn-rc lives
+        learn_rc="$helpers/../spellcraft/learn-rc"
         
         # Only fall back to PATH if no explicit override was provided
-        if [ ! -x "$learn" ] && command -v learn >/dev/null 2>&1; then
-                learn=$(command -v learn)
+        if [ ! -x "$learn_rc" ] && command -v learn-rc >/dev/null 2>&1; then
+                learn_rc=$(command -v learn-rc)
         fi
-        if [ ! -x "$learn" ]; then
-                printf '%s\n' "jump-to-marker: required helper 'learn' is missing." >&2
+        # Fall back to learn for backward compatibility
+        if [ ! -x "$learn_rc" ]; then
+                learn_rc="$helpers/../spellcraft/learn"
+                if [ ! -x "$learn_rc" ] && command -v learn >/dev/null 2>&1; then
+                        learn_rc=$(command -v learn)
+                fi
+        fi
+        if [ ! -x "$learn_rc" ]; then
+                printf '%s\n' "jump-to-marker: required helper 'learn-rc' is missing." >&2
                 return 1
         fi
-        printf '%s' "$learn"
+        printf '%s' "$learn_rc"
 }
 
 jump_ask_helper() {
