@@ -291,7 +291,7 @@ jtrash_install() {
   
   # learn auto-detects rc file and format
   if printf '%s\n' "$line" | "$learn" --spell "$SPELL_NAME" add; then
-    printf '%s\n' "The 'jtrash' spell has been memorized."
+    printf '%s\n' "The 'jump-trash' spell has been memorized."
     if [ "$JUMP_TRASH_FORMAT" = "nix" ]; then
       printf '%s\n' "Rebuild your NixOS configuration to activate the change."
     else

@@ -9,6 +9,21 @@ done
 # shellcheck source=/dev/null
 . "$test_root/test-common.sh"
 
+# Helper to create a stub detect-rc-file for a specific rc file
+make_detect_stub() {
+  target_rc=$1
+  stub_dir=$(make_tempdir)
+  stub="$stub_dir/detect-rc-file"
+  cat >"$stub" <<EOF
+#!/bin/sh
+printf 'rc_file=$target_rc\n'
+printf 'platform=debian\n'
+printf 'format=shell\n'
+EOF
+  chmod +x "$stub"
+  printf '%s' "$stub"
+}
+
 test_help() {
   run_spell "spells/spellcraft/learn" --help
   assert_success && assert_error_contains "Usage: learn"
@@ -20,7 +35,9 @@ test_missing_args() {
 }
 
 test_rejects_invalid_name() {
-  run_spell "spells/spellcraft/learn" --rc-file "$WIZARDRY_TMPDIR/rc" --spell "bad name" add <<'EOF'
+  rc="$WIZARDRY_TMPDIR/rc"
+  stub=$(make_detect_stub "$rc")
+  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell "bad name" add <<'EOF'
 echo hi
 EOF
   assert_failure && assert_error_contains "spell names may contain only"
@@ -28,7 +45,8 @@ EOF
 
 test_adds_inline_spell() {
   rc="$WIZARDRY_TMPDIR/inline_rc"
-  run_spell "spells/spellcraft/learn" --rc-file "$rc" --spell summon add <<'EOF'
+  stub=$(make_detect_stub "$rc")
+  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell summon add <<'EOF'
 export HELLO=WORLD
 EOF
   assert_success
@@ -37,14 +55,15 @@ EOF
 
 test_adds_and_readds_block_spell_idempotently() {
   rc="$WIZARDRY_TMPDIR/block_rc"
-  run_spell "spells/spellcraft/learn" --rc-file "$rc" --spell portal add <<'EOF'
+  stub=$(make_detect_stub "$rc")
+  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell portal add <<'EOF'
 echo first
 echo second
 EOF
   assert_success
   first="$(cat "$rc")"
 
-  run_spell "spells/spellcraft/learn" --rc-file "$rc" --spell portal add <<'EOF'
+  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell portal add <<'EOF'
 echo first
 echo second
 EOF
@@ -57,32 +76,35 @@ EOF
 
 test_remove_reports_missing_file() {
   missing="$WIZARDRY_TMPDIR/absent_rc"
-  run_spell "spells/spellcraft/learn" --rc-file "$missing" --spell phantom remove
+  stub=$(make_detect_stub "$missing")
+  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell phantom remove
   assert_failure && assert_error_contains "cannot remove from missing file"
 }
 
 test_remove_cleans_block() {
   rc="$WIZARDRY_TMPDIR/cleanup_rc"
-  run_spell "spells/spellcraft/learn" --rc-file "$rc" --spell vanish add <<'EOF'
+  stub=$(make_detect_stub "$rc")
+  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell vanish add <<'EOF'
 echo vanish
 echo more
 EOF
   assert_success
-  run_spell "spells/spellcraft/learn" --rc-file "$rc" --spell vanish remove
+  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell vanish remove
   assert_success
   [ ! -s "$rc" ] || { TEST_FAILURE_REASON="expected file empty after remove"; return 1; }
 }
 
 test_status_reflects_presence() {
   rc="$WIZARDRY_TMPDIR/status_rc"
-  run_spell "spells/spellcraft/learn" --rc-file "$rc" --spell statuser status
+  stub=$(make_detect_stub "$rc")
+  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell statuser status
   assert_failure
 
-  run_spell "spells/spellcraft/learn" --rc-file "$rc" --spell statuser add <<'EOF'
+  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell statuser add <<'EOF'
 echo status
 EOF
   assert_success
-  run_spell "spells/spellcraft/learn" --rc-file "$rc" --spell statuser status
+  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell statuser status
   assert_success
 }
 
@@ -95,12 +117,28 @@ run_test_case "learn fails to remove missing files" test_remove_reports_missing_
 run_test_case "learn removes previously added blocks" test_remove_cleans_block
 run_test_case "learn status tracks presence" test_status_reflects_presence
 
+# Helper to create a stub detect-rc-file for nix format
+make_nix_detect_stub() {
+  target_rc=$1
+  stub_dir=$(make_tempdir)
+  stub="$stub_dir/detect-rc-file"
+  cat >"$stub" <<EOF
+#!/bin/sh
+printf 'rc_file=$target_rc\n'
+printf 'platform=nixos\n'
+printf 'format=nix\n'
+EOF
+  chmod +x "$stub"
+  printf '%s' "$stub"
+}
+
 # Nix format tests
 test_nix_format_adds_shell_init() {
   rc="$WIZARDRY_TMPDIR/test_nix.nix"
   printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$rc"
+  stub=$(make_nix_detect_stub "$rc")
   
-  run_spell "spells/spellcraft/learn" --rc-file "$rc" --spell myspell --format nix add <<'EOF'
+  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell myspell --format nix add <<'EOF'
 source "/path/to/spell"
 EOF
   assert_success || return 1
@@ -112,9 +150,10 @@ EOF
 test_nix_format_auto_detects_from_extension() {
   rc="$WIZARDRY_TMPDIR/auto_detect.nix"
   printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$rc"
+  stub=$(make_nix_detect_stub "$rc")
   
   # Don't specify --format, let it auto-detect from .nix extension
-  run_spell "spells/spellcraft/learn" --rc-file "$rc" --spell autospell add <<'EOF'
+  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell autospell add <<'EOF'
 source "/path/to/spell"
 EOF
   assert_success || return 1
@@ -124,28 +163,30 @@ EOF
 test_nix_format_status_works() {
   rc="$WIZARDRY_TMPDIR/status_nix.nix"
   printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$rc"
+  stub=$(make_nix_detect_stub "$rc")
   
   # Status should fail when not present
-  run_spell "spells/spellcraft/learn" --rc-file "$rc" --spell nixstatus --format nix status
+  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell nixstatus --format nix status
   assert_failure || return 1
   
   # Add the spell
-  run_spell "spells/spellcraft/learn" --rc-file "$rc" --spell nixstatus --format nix add <<'EOF'
+  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell nixstatus --format nix add <<'EOF'
 source "/path/to/spell"
 EOF
   assert_success || return 1
   
   # Status should succeed when present
-  run_spell "spells/spellcraft/learn" --rc-file "$rc" --spell nixstatus --format nix status
+  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell nixstatus --format nix status
   assert_success || return 1
 }
 
 test_nix_format_remove_works() {
   rc="$WIZARDRY_TMPDIR/remove_nix.nix"
   printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$rc"
+  stub=$(make_nix_detect_stub "$rc")
   
   # Add the spell
-  run_spell "spells/spellcraft/learn" --rc-file "$rc" --spell nixremove --format nix add <<'EOF'
+  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell nixremove --format nix add <<'EOF'
 source "/path/to/spell"
 EOF
   assert_success || return 1
@@ -157,7 +198,7 @@ EOF
   fi
   
   # Remove it
-  run_spell "spells/spellcraft/learn" --rc-file "$rc" --spell nixremove --format nix remove
+  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell nixremove --format nix remove
   assert_success || return 1
   
   # Verify it was removed
@@ -170,8 +211,9 @@ EOF
 test_nix_format_zsh_shell_option() {
   rc="$WIZARDRY_TMPDIR/zsh_nix.nix"
   printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$rc"
+  stub=$(make_nix_detect_stub "$rc")
   
-  run_spell "spells/spellcraft/learn" --rc-file "$rc" --spell zshspell --format nix --shell zsh add <<'EOF'
+  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell zshspell --format nix --shell zsh add <<'EOF'
 source "/path/to/spell"
 EOF
   assert_success || return 1
@@ -179,26 +221,12 @@ EOF
 }
 
 test_learn_auto_detects_rc_file() {
-  # Test that learn can auto-detect rc file when --rc-file is not provided
+  # Test that learn always auto-detects rc file
   tmpdir=$(make_tempdir)
   rc="$tmpdir/.bashrc"
+  stub=$(make_detect_stub "$rc")
   
-  # Create a detect-rc-file stub
-  stub_detect="$tmpdir/detect-rc-file"
-  cat >"$stub_detect" <<STUB
-#!/bin/sh
-printf 'rc_file=$rc\n'
-printf 'platform=debian\n'
-printf 'format=shell\n'
-STUB
-  chmod +x "$stub_detect"
-  
-  # Run learn without --rc-file
-  run_spell "spells/spellcraft/learn" --spell autospell add <<'EOF'
-source "/path/to/spell"
-EOF
-  # This will fail without detect-rc-file in PATH, so we use env override
-  DETECT_RC_FILE="$stub_detect" run_spell "spells/spellcraft/learn" --spell autospell add <<'EOF'
+  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell autospell add <<'EOF'
 source "/path/to/spell"
 EOF
   assert_success || return 1

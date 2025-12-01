@@ -22,7 +22,7 @@ SPELLS_DIR=${SCRIPT_DIR%/*}
 
 usage() {
         cat <<USAGE >&2
-Usage: $SCRIPT_NAME --rc-file FILE --spell NAME {add|remove|status}
+Usage: $SCRIPT_NAME --spell NAME {add|remove|status}
        $SCRIPT_NAME [OPTIONS] [PATH ...]
 
 RC mode:
@@ -46,7 +46,7 @@ for arg in "$@"; do
                 usage
                 exit 0
                 ;;
-        --rc-file|--rc-file=*|--spell|--spell=*)
+        --spell|--spell=*)
                 MODE=rc
                 ;;
         esac
@@ -58,7 +58,7 @@ done
 
 rc_usage() {
         cat <<'RCUSAGE' >&2
-Usage: learn [--rc-file FILE] --spell NAME [--format FORMAT] {add|remove|status}
+Usage: learn --spell NAME [--format FORMAT] {add|remove|status}
 
 Reads spell content from standard input for the 'add' action and wraps it with
 wizardry comment sentinels so future removals remain deterministic.
@@ -66,12 +66,11 @@ Single-line spells receive an inline `# wizardry: NAME` suffix, while
 multi-line spells are wrapped with `begin`/`end` sentinels (including a lines
 count) to keep rc files readable.
 
-For nix files (auto-detected from .nix extension or platform), uses
-programs.bash.initExtra or programs.zsh.initExtra to properly add shell code
-to nix configuration files.
+The rc file is auto-detected via detect-rc-file. For nix files (auto-detected
+from .nix extension or platform), uses programs.bash.initExtra or
+programs.zsh.initExtra to properly add shell code to nix configuration files.
 
 Options:
-  --rc-file FILE   Target rc file (auto-detected via detect-rc-file if omitted)
   --format FORMAT  Output format: shell (default) or nix (auto-detected)
   --shell SHELL    Shell type for nix format: bash (default) or zsh
 
@@ -143,6 +142,7 @@ rc_run() {
         while [ "$#" -gt 0 ]; do
                 case $1 in
                 --rc-file)
+                        # Internal option for learn-spellbook integration
                         if [ "$#" -lt 2 ]; then
                                 printf '%s\n' "learn: --rc-file expects a file path." >&2
                                 rc_usage
