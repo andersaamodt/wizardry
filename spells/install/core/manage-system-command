@@ -20,19 +20,14 @@ command_name=$1
 package_default=$2
 force_install=${FORCE_INSTALL:-0}
 
-# On NixOS, system packages must be installed declaratively in configuration.nix
-# Exit gracefully to allow the installer to continue without failing
-# Check for /etc/nixos directory (common) or ID=nixos in os-release
+# Detect NixOS for automatic installation via nix-env
+is_nixos=0
 if [ -d /etc/nixos ] || [ -f /etc/NIXOS ] || grep -qi 'ID=nixos' /etc/os-release 2>/dev/null; then
-        if [ "$action" = "install" ]; then
-                if ! command -v "$command_name" >/dev/null 2>&1; then
-                        printf '%s\n' "On NixOS, $package_default should be installed declaratively."
-                        printf '%s\n' "Add '$package_default' to environment.systemPackages in your configuration.nix,"
-                        printf '%s\n' "or for home-manager: home.packages in your home.nix."
-                        exit 0
-                fi
-        fi
+        is_nixos=1
 fi
+
+# Allow per-manager nix package override
+nix_package=${NIX_PACKAGE:-$package_default}
 
 # Allow per-manager package overrides when names diverge across distros.
 apt_package=${APT_PACKAGE:-$package_default}
@@ -80,6 +75,13 @@ if [ "$action" = "install" ]; then
   fi
 
   # Prefer non-interactive installs when possible.
+  # Try nix-env first on NixOS for user-local installation
+  if [ "$is_nixos" -eq 1 ] && command -v nix-env >/dev/null 2>&1; then
+    if nix-env -iA "nixpkgs.$nix_package" 2>/dev/null; then
+      exit 0
+    fi
+  fi
+
   if try_action pkgin -y install "$pkgin_package"; then
     exit 0
   fi
@@ -120,6 +122,13 @@ fi
 if ! command -v "$command_name" >/dev/null 2>&1; then
   printf '%s\n' "${command_name} is not installed."
   exit 0
+fi
+
+# Try nix-env first on NixOS
+if [ "$is_nixos" -eq 1 ] && command -v nix-env >/dev/null 2>&1; then
+  if nix-env -e "$nix_package" 2>/dev/null; then
+    exit 0
+  fi
 fi
 
 if try_action pkgin -y remove "$pkgin_package"; then
