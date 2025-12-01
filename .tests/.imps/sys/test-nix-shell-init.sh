@@ -193,4 +193,30 @@ run_test_case "nix-shell-init requires action" test_nix_shell_init_requires_acti
 run_test_case "nix-shell-init requires name" test_nix_shell_init_requires_name
 run_test_case "nix-shell-init requires file" test_nix_shell_init_requires_file
 
+test_nix_shell_init_escapes_special_chars() {
+  tmpdir=$(make_tempdir)
+  nix_file="$tmpdir/test.nix"
+  
+  # Create minimal nix file
+  printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$nix_file"
+  
+  # Add shell code with special characters that need escaping
+  # The ${ needs to be escaped as ''${ in nix '' strings
+  printf 'echo "${HOME}/test"' | "$ROOT_DIR/spells/.imps/sys/nix-shell-init" add --shell bash --name escapespell --file "$nix_file"
+  
+  # Verify the file is valid (the escaping worked)
+  if ! grep -q "wizardry-shell: escapespell" "$nix_file"; then
+    TEST_FAILURE_REASON="spell was not added"
+    return 1
+  fi
+  
+  # The original shell code should be preserved (with escaping)
+  if ! grep -q 'HOME' "$nix_file"; then
+    TEST_FAILURE_REASON="shell code content not found"
+    return 1
+  fi
+}
+
+run_test_case "nix-shell-init escapes special chars" test_nix_shell_init_escapes_special_chars
+
 finish_tests
