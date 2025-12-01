@@ -58,7 +58,7 @@ done
 
 rc_usage() {
         cat <<'RCUSAGE' >&2
-Usage: learn --rc-file FILE --spell NAME [--format FORMAT] {add|remove|status}
+Usage: learn [--rc-file FILE] --spell NAME [--format FORMAT] {add|remove|status}
 
 Reads spell content from standard input for the 'add' action and wraps it with
 wizardry comment sentinels so future removals remain deterministic.
@@ -66,15 +66,71 @@ Single-line spells receive an inline `# wizardry: NAME` suffix, while
 multi-line spells are wrapped with `begin`/`end` sentinels (including a lines
 count) to keep rc files readable.
 
-For nix files (auto-detected from .nix extension), uses programs.bash.initExtra
-or programs.zsh.initExtra to properly add shell code to nix configuration files.
+For nix files (auto-detected from .nix extension or platform), uses
+programs.bash.initExtra or programs.zsh.initExtra to properly add shell code
+to nix configuration files.
 
 Options:
-  --format FORMAT  Output format: shell (default) or nix (auto-detected from .nix extension)
+  --rc-file FILE   Target rc file (auto-detected via detect-rc-file if omitted)
+  --format FORMAT  Output format: shell (default) or nix (auto-detected)
   --shell SHELL    Shell type for nix format: bash (default) or zsh
 
 Spell names must contain only letters, digits, dashes, underscores, periods, and colons.
 RCUSAGE
+}
+
+# Find detect-rc-file helper
+find_detect_rc_file() {
+        if [ -n "${DETECT_RC_FILE-}" ] && [ -x "$DETECT_RC_FILE" ]; then
+                printf '%s' "$DETECT_RC_FILE"
+                return 0
+        fi
+        # Look relative to script location
+        helper="$SPELLS_DIR/divination/detect-rc-file"
+        if [ -x "$helper" ]; then
+                printf '%s' "$helper"
+                return 0
+        fi
+        # Try PATH
+        if command -v detect-rc-file >/dev/null 2>&1; then
+                command -v detect-rc-file
+                return 0
+        fi
+        return 1
+}
+
+# Auto-detect rc file using detect-rc-file helper
+auto_detect_rc() {
+        if ! detect_helper=$(find_detect_rc_file); then
+                printf '%s\n' "learn: detect-rc-file helper not found." >&2
+                return 1
+        fi
+        output=$("$detect_helper")
+        rc_file_detected=''
+        platform_detected=''
+        format_detected=''
+        while IFS='=' read -r key value; do
+                case $key in
+                rc_file)
+                        rc_file_detected=$value
+                        ;;
+                platform)
+                        platform_detected=$value
+                        ;;
+                format)
+                        format_detected=$value
+                        ;;
+                esac
+        done <<EOF_ENV
+$output
+EOF_ENV
+        if [ -z "$rc_file_detected" ]; then
+                printf '%s\n' "learn: detect-rc-file did not provide an rc file." >&2
+                return 1
+        fi
+        printf '%s\n' "rc_file=$rc_file_detected"
+        printf '%s\n' "platform=${platform_detected:-unknown}"
+        printf '%s\n' "format=${format_detected:-shell}"
 }
 
 rc_run() {
@@ -164,9 +220,31 @@ rc_run() {
                 esac
         done
 
-        if [ -z "$action" ] || [ -z "$rc_file" ] || [ -z "$spell" ]; then
+        if [ -z "$action" ] || [ -z "$spell" ]; then
                 rc_usage
                 exit 1
+        fi
+
+        # Auto-detect rc file if not provided
+        if [ -z "$rc_file" ]; then
+                if ! detect_output=$(auto_detect_rc); then
+                        exit 1
+                fi
+                while IFS='=' read -r key value; do
+                        case $key in
+                        rc_file)
+                                rc_file=$value
+                                ;;
+                        format)
+                                # Only use detected format if not explicitly set
+                                if [ "$rc_format" = "shell" ]; then
+                                        rc_format=$value
+                                fi
+                                ;;
+                        esac
+                done <<EOF_DETECT
+$detect_output
+EOF_DETECT
         fi
 
         # Validate format
@@ -178,7 +256,7 @@ rc_run() {
                 ;;
         esac
 
-        # Auto-detect format from file extension
+        # Auto-detect format from file extension (overrides detected format)
         case $rc_file in
         *.nix)
                 rc_format=nix

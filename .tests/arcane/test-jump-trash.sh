@@ -125,7 +125,8 @@ run_test_case "jump-trash fails if trash dir missing" test_fails_if_trash_dir_mi
 run_test_case "jtrash function shows help" test_jtrash_function_help
 
 test_nixos_uses_nix_format() {
-  # Test that on NixOS (nix format), jump-trash uses nix config file
+  # Test that on NixOS (nix format), jump-trash calls learn without --rc-file
+  # (learn auto-detects rc file and format)
   stub=$(make_tempdir)
   fake_home="$stub/home"
   mkdir -p "$fake_home"
@@ -175,12 +176,12 @@ STUB
   "
   assert_success || return 1
   
-  # Check that learn was called with the .nix file (auto-detection uses extension)
+  # Check that learn was called with --spell (not --rc-file since learn auto-detects)
   if [ -f "$learn_log" ]; then
-    if grep -q "configuration.nix" "$learn_log"; then
+    if grep -q "\-\-spell jump-trash" "$learn_log"; then
       return 0
     fi
-    TEST_FAILURE_REASON="learn was not called with nix config file: $(cat "$learn_log")"
+    TEST_FAILURE_REASON="learn was not called with --spell: $(cat "$learn_log")"
     return 1
   fi
   TEST_FAILURE_REASON="learn was not called"

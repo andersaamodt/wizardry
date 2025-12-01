@@ -178,10 +178,38 @@ EOF
   assert_file_contains "$rc" "programs.zsh.initExtra" || return 1
 }
 
+test_learn_auto_detects_rc_file() {
+  # Test that learn can auto-detect rc file when --rc-file is not provided
+  tmpdir=$(make_tempdir)
+  rc="$tmpdir/.bashrc"
+  
+  # Create a detect-rc-file stub
+  stub_detect="$tmpdir/detect-rc-file"
+  cat >"$stub_detect" <<STUB
+#!/bin/sh
+printf 'rc_file=$rc\n'
+printf 'platform=debian\n'
+printf 'format=shell\n'
+STUB
+  chmod +x "$stub_detect"
+  
+  # Run learn without --rc-file
+  run_spell "spells/spellcraft/learn" --spell autospell add <<'EOF'
+source "/path/to/spell"
+EOF
+  # This will fail without detect-rc-file in PATH, so we use env override
+  DETECT_RC_FILE="$stub_detect" run_spell "spells/spellcraft/learn" --spell autospell add <<'EOF'
+source "/path/to/spell"
+EOF
+  assert_success || return 1
+  assert_file_contains "$rc" "source \"/path/to/spell\"" || return 1
+}
+
 run_test_case "learn nix format adds shell init" test_nix_format_adds_shell_init
 run_test_case "learn nix format auto-detects from extension" test_nix_format_auto_detects_from_extension
 run_test_case "learn nix format status works" test_nix_format_status_works
 run_test_case "learn nix format remove works" test_nix_format_remove_works
 run_test_case "learn nix format zsh shell option" test_nix_format_zsh_shell_option
+run_test_case "learn auto-detects rc file" test_learn_auto_detects_rc_file
 
 finish_tests
