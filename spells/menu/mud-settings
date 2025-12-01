@@ -37,7 +37,10 @@ has_player_key() {
     return 0
   fi
   # Check for any player key in ~/.ssh with common naming patterns
+  # Use nullglob-safe pattern matching
   for key in "$HOME"/.ssh/*.pub; do
+    # Skip if glob didn't match (returns literal *.pub)
+    [ -e "$key" ] || continue
     [ -f "$key" ] && return 0
   done
   return 1
