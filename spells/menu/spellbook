@@ -523,7 +523,7 @@ USER_FOLDERS
 
 usage() {
         cat <<'USAGE'
-Usage: spellbook [PATH]
+Usage: spellbook [PATH|--memorize NAME CMD|--forget NAME|--scribe NAME CMD|--list]
 
 Open the interactive spellbook to browse categories, scribe commands,
 and manage the cast menu. Optionally pass a PATH to jump to a category.

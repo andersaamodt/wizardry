@@ -6,8 +6,8 @@ show_usage() {
   cat <<'USAGE'
 Usage: mud-install-menu
 
-Display the MUD installation menu with toggleable features.
-Each toggle shows [X] when enabled and [ ] when disabled.
+Display the MUD installation menu with toggleable features including
+CD hook, command-not-found, and more. Shows [X] when enabled, [ ] when disabled.
 USAGE
 }
 
