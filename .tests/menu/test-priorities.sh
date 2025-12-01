@@ -45,7 +45,7 @@ test_no_priorities_exits_gracefully() {
   # Create read-magic stub that says no priorities
   cat >"$tmp/read-magic" <<'SH'
 #!/bin/sh
-echo "Error: The attribute does not exist."
+echo "read-magic: attribute does not exist."
 SH
   chmod +x "$tmp/read-magic"
   

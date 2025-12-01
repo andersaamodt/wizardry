@@ -5,7 +5,7 @@
 state=${1:-}
 
 if [ -z "$state" ]; then
-  printf '%s\n' "tty-restore: state argument required" >&2
+  printf '%s\n' "tty-restore: state required" >&2
   exit 1
 fi
 

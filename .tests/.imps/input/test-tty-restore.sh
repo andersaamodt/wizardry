@@ -9,13 +9,13 @@
 test_tty_restore_no_args_fails() {
   run_spell spells/.imps/input/tty-restore
   assert_failure
-  assert_error_contains "state argument required"
+  assert_error_contains "state required"
 }
 
 test_tty_restore_empty_state_fails() {
   run_spell spells/.imps/input/tty-restore ""
   assert_failure
-  assert_error_contains "state argument required"
+  assert_error_contains "state required"
 }
 
 run_test_case "tty-restore no args fails" test_tty_restore_no_args_fails

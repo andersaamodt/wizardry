@@ -30,7 +30,7 @@ test_ask_yn_accepts_default_no() {
 
 test_ask_yn_reprompts_after_invalid_answer() {
   run_cmd sh -c "printf 'maybe\\ny\\n' | \"$ROOT_DIR/spells/cantrips/ask_yn\" 'Ready?' yes"
-  assert_success && assert_output_contains "yes" && assert_error_contains "Please answer yes or no."
+  assert_success && assert_output_contains "yes" && assert_error_contains "Yes or no?"
 }
 
 test_ask_yn_fails_without_input_or_default() {

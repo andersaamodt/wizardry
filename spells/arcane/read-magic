@@ -23,14 +23,14 @@ esac
 
 require_args() {
   if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
-    printf '%s\n' "Error: This spell requires one or two arguments: a file path and an optional attribute name."
+    printf '%s\n' "read-magic: one or two parameters expected (file path and optional attribute name)."
     return 1
   fi
 }
 
 file_exists() {
   if [ ! -e "$1" ]; then
-    printf '%s\n' "Error: The file does not exist."
+    printf '%s\n' "read-magic: file does not exist."
     return 1
   fi
 }
@@ -169,7 +169,7 @@ main() {
   if value=$(read_value "$attribute" "$file"); then
     printf '%s\n' "$value"
   else
-    printf '%s\n' "Error: The attribute does not exist."
+    printf '%s\n' "read-magic: attribute does not exist."
     exit 1
   fi
 }

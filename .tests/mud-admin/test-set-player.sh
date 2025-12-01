@@ -22,7 +22,7 @@ test_help() {
 test_requires_argument() {
   run_spell "spells/mud-admin/set-player"
   assert_failure || return 1
-  assert_error_contains "player name argument required" || return 1
+  assert_error_contains "player name required" || return 1
 }
 
 test_help_h_flag() {

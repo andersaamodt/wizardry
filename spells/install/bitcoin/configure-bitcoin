@@ -67,7 +67,7 @@ if [ "$prune" = 0 ]; then
         elif validate_number "$max_disk"; then
             valid_number=true
         else
-            printf "Invalid input. Please enter a valid number.\n"
+            printf "Invalid input. Enter a valid number.\n"
         fi
     done
 
@@ -95,7 +95,7 @@ ask_yn "Wouldst thou like to store the blockchain in the default location ($defa
 alt_storage=$?
 if [ "$alt_storage" = 1 ]; then
 	while true; do
-    	printf "Please type the alternate path thou wouldst like to use for blockchain storage: "
+    	printf "Type the alternate path thou wouldst like to use for blockchain storage: "
 	    read -r alt_path
 	    if validate-path "$alt_path"; then
 	    	break

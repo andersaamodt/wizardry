@@ -23,7 +23,8 @@ set -eu
 
 # Check that a folder path was provided as an argument
 if [ "$#" -ne 1 ]; then
-  printf '%s\n' "Error: Please provide a folder path as an argument."
+  printf '%s\n' "file-list: folder path required."
+  show_usage >&2
   exit 1
 fi
 

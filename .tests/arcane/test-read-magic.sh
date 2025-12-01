@@ -37,19 +37,19 @@ test_help() {
 test_requires_argument() {
   reset_path
   run_spell "spells/arcane/read-magic"
-  assert_failure && assert_output_contains "requires one or two arguments"
+  assert_failure && assert_output_contains "one or two parameters expected"
 }
 
 test_rejects_extra_argument() {
   reset_path
   run_spell "spells/arcane/read-magic" one two three
-  assert_failure && assert_output_contains "requires one or two arguments"
+  assert_failure && assert_output_contains "one or two parameters expected"
 }
 
 test_missing_file() {
   reset_path
   run_spell "spells/arcane/read-magic" "$WIZARDRY_TMPDIR/does-not-exist"
-  assert_failure && assert_output_contains "The file does not exist"
+  assert_failure && assert_output_contains "file does not exist"
 }
 
 test_lists_attributes_via_attr() {
