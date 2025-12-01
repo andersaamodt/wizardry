@@ -9,21 +9,9 @@ set -eu
 usage() {
   cat <<'USAGE'
 Usage: mark-location [marker] [path]
-       mark [marker] [path]
 
-Record the absolute path (current directory by default) for jump-to-marker to
-return to later. Markers are stored in ~/.spellbook/.markers/.
-
-Arguments:
-  marker  Optional name or number for the marker. If omitted, uses the next
-          available number (auto-increments). Use any alphanumeric name.
-  path    Optional path to mark. If omitted, marks the current directory.
-
-Examples:
-  mark-location           # Mark current dir as next number (e.g., "1")
-  mark-location alpha     # Mark current dir as "alpha"
-  mark-location 5         # Mark current dir as "5"
-  mark-location home ~    # Mark home directory as "home"
+Record the current directory (or path) for jump-to-marker to return to later.
+Markers are stored in ~/.spellbook/.markers/.
 USAGE
 }
 

@@ -10,16 +10,7 @@ show_usage() {
 Usage: compile-spell <spell-name> [os]
 
 Compile a spell into a standalone script by inlining all imp dependencies.
-If an OS is specified (linux, mac, nixos, etc), platform-specific code is
-optimized for that platform.
-
-Arguments:
-  spell-name  Name of the spell to compile (e.g., 'look' or 'menu/cast')
-  os          Optional target OS (linux, mac, darwin, nixos, debian, arch)
-
-Examples:
-  compile-spell look              # Cross-platform compilation
-  compile-spell menu/cast linux   # Linux-specific compilation
+Optionally specify a target OS (linux, mac, nixos, debian, arch).
 USAGE
 }
 

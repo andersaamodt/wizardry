@@ -7,12 +7,7 @@ show_usage() {
         cat <<'USAGE'
 Usage: merge-yaml-text [directory] [-v|--verbose] [--dry-run]
 
-Merge .yaml and .txt files with matching basenames. The YAML content is
-wrapped in --- delimiters and the text content is appended.
-
-Options:
-  -v, --verbose   Print progress for each merged file
-  --dry-run       Show what would be merged without making changes
+Merge .yaml and .txt files with matching basenames into combined files.
 USAGE
 }
 

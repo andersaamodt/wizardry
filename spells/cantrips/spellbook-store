@@ -10,13 +10,9 @@ newline_char=${newline_char%y}
 
 usage() {
 	cat <<'USAGE' >&2
-Usage: spellbook-store {add NAME COMMAND...|remove NAME|list|path}
+Usage: spellbook-store {add NAME CMD|remove NAME|list|path}
 
-add NAME COMMAND  Add or update a spellbook entry. COMMAND must be a single line
-                   without tabs.
-remove NAME       Remove the named spellbook entry.
-list              Print every stored entry as "NAME<TAB>COMMAND".
-path              Print the spellbook file path.
+Manage the spellbook storage file for quick-access spell shortcuts.
 USAGE
 }
 

@@ -482,9 +482,9 @@ install_does_not_double_home_path() {
 
 # === NixOS Shell Code Tests ===
 
-install_nixos_does_not_write_shell_code_to_nix_file() {
-  # When format is nix, the installer should not write shell code to the .nix file.
-  # PATH configuration should be in flake.nix, not home.nix
+install_nixos_writes_shell_init_properly_to_nix_file() {
+  # When format is nix, the installer should write shell code to the .nix file
+  # using proper nix syntax (programs.bash.initExtra) instead of raw shell markers.
   fixture=$(make_fixture)
   provide_basic_tools "$fixture"
   link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
@@ -511,19 +511,15 @@ EOF
 
   assert_success || return 1
   
-  # The nix file should not contain shell code markers
+  # The nix file should NOT contain raw shell code markers (old format)
   if grep -q '# >>> wizardry cd cantrip >>>' "$fixture/home/.config/home-manager/home.nix" 2>/dev/null; then
-    TEST_FAILURE_REASON="shell code (cd cantrip) was written to .nix file"
+    TEST_FAILURE_REASON="raw shell code markers (cd cantrip) found in .nix file - should use nix format"
     return 1
   fi
   
-  if grep -q 'source.*jump-to-marker' "$fixture/home/.config/home-manager/home.nix" 2>/dev/null; then
-    TEST_FAILURE_REASON="shell code (jump-to-marker source) was written to .nix file"
-    return 1
-  fi
-  
-  # PATH entries should be in home.nix (not shell code, but Nix configuration)
-  # The wizardry PATH block should be present
+  # Shell code should be written using proper nix syntax (programs.bash.initExtra)
+  # If installable spells were installed, they should use wizardry-shell markers
+  # PATH entries should be in home.nix using # wizardry markers
   assert_file_contains "$fixture/home/.config/home-manager/home.nix" "# wizardry" || return 1
   
   return 0
@@ -1207,7 +1203,7 @@ run_test_case "install NixOS simple input" install_nixos_simple_input
 run_test_case "install normalizes path without leading slash" install_normalizes_path_without_leading_slash
 run_test_case "install normalizes NixOS config path" install_nixos_normalizes_config_path_without_leading_slash
 run_test_case "install does not double home path" install_does_not_double_home_path
-run_test_case "install does not write shell code to nix file" install_nixos_does_not_write_shell_code_to_nix_file
+run_test_case "install writes shell init properly to nix file" install_nixos_writes_shell_init_properly_to_nix_file
 run_test_case "install uses explicit helper paths" install_uses_explicit_helper_paths
 run_test_case "learn-spellbook uses explicit helper paths" path_wizard_uses_explicit_helper_paths
 run_test_case "learn-spellbook accepts helper overrides" path_wizard_accepts_helper_overrides

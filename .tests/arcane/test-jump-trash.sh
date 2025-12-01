@@ -124,4 +124,70 @@ run_test_case "jump-trash uses inline fallback without detect-trash" test_uses_i
 run_test_case "jump-trash fails if trash dir missing" test_fails_if_trash_dir_missing
 run_test_case "jtrash function shows help" test_jtrash_function_help
 
+test_nixos_uses_nix_format() {
+  # Test that on NixOS (nix format), jump-trash calls learn without --rc-file
+  # (learn auto-detects rc file and format)
+  stub=$(make_tempdir)
+  fake_home="$stub/home"
+  mkdir -p "$fake_home"
+  
+  # Create a nix config file
+  nix_config="$fake_home/configuration.nix"
+  printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$nix_config"
+  
+  # Create detect-rc-file stub that returns nix format
+  cat >"$stub/detect-rc-file" <<STUB
+#!/bin/sh
+printf 'platform=nixos\n'
+printf 'rc_file=$nix_config\n'
+printf 'format=nix\n'
+STUB
+  chmod +x "$stub/detect-rc-file"
+  
+  # Create learn stub that records what it was called with
+  learn_log="$stub/learn.log"
+  cat >"$stub/learn" <<STUB
+#!/bin/sh
+printf '%s\n' "\$*" >>"$learn_log"
+# Simulate success
+exit 0
+STUB
+  chmod +x "$stub/learn"
+  
+  # Create ask_yn stub that always says yes
+  cat >"$stub/ask_yn" <<'STUB'
+#!/bin/sh
+exit 0
+STUB
+  chmod +x "$stub/ask_yn"
+  
+  link_tools "$stub" sh printf grep cat test sed basename command pwd
+  
+  # Run jtrash_install
+  run_cmd sh -c "
+    PATH='$stub:/bin:/usr/bin'
+    HOME='$fake_home'
+    DETECT_RC_FILE='$stub/detect-rc-file'
+    LEARN_SPELL='$stub/learn'
+    JUMP_TRASH_PATH='$ROOT_DIR/spells/arcane/jump-trash'
+    export PATH HOME DETECT_RC_FILE LEARN_SPELL JUMP_TRASH_PATH
+    . '$ROOT_DIR/spells/arcane/jump-trash'
+    jtrash_install
+  "
+  assert_success || return 1
+  
+  # Check that learn was called with --spell (not --rc-file since learn auto-detects)
+  if [ -f "$learn_log" ]; then
+    if grep -q "\-\-spell jump-trash" "$learn_log"; then
+      return 0
+    fi
+    TEST_FAILURE_REASON="learn was not called with --spell: $(cat "$learn_log")"
+    return 1
+  fi
+  TEST_FAILURE_REASON="learn was not called"
+  return 1
+}
+
+run_test_case "jump-trash uses nix format on NixOS" test_nixos_uses_nix_format
+
 finish_tests

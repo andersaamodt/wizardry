@@ -8,21 +8,8 @@ show_usage() {
 Usage: jump [marker]
        jump-to-marker [--install] [marker]
 
-Jump to a named marker location set with mark-location.
-
-Arguments:
-  marker  Optional marker name or number. Defaults to "1".
-          Use "0" or no argument to cycle through all markers
-          (numbered markers first in order, then alphabetical).
-
-Options:
-  --install  Memorize the jump spell into your shell configuration.
-
-Examples:
-  jump           # Jump to marker 1 (or cycle if called repeatedly)
-  jump 0         # Same as jump with no args - cycles through markers
-  jump 2         # Jump to marker 2
-  jump alpha     # Jump to marker named "alpha"
+Jump to a named marker set with mark-location. Use --install to memorize
+the spell. Defaults to marker "1", or use "0" to cycle through all markers.
 USAGE
 }
 
@@ -285,26 +272,6 @@ install() {
         if ! jump_detect_environment; then
                 return 1
         fi
-        # For nix format, try to find a shell rc file - we can't source shell code from .nix files
-        if [ "$JUMP_TO_MARKER_FORMAT" = "nix" ]; then
-                # Try common shell rc files
-                shell_rc=""
-                for candidate in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.bash_profile" "$HOME/.profile"; do
-                        if [ -f "$candidate" ]; then
-                                shell_rc=$candidate
-                                break
-                        fi
-                done
-                if [ -z "$shell_rc" ]; then
-                        printf '%s\n' "jump-to-marker: shell code cannot be written to .nix files."
-                        printf '%s\n' "Add 'source <path-to-jump-to-marker>' to your shell profile to enable the 'jump' alias."
-                        printf '%s\n' "Or use 'jump-to-marker' directly since wizardry is on PATH."
-                        return 0
-                fi
-                JUMP_TO_MARKER_RC_FILE=$shell_rc
-                JUMP_TO_MARKER_FORMAT=shell
-                printf '%s\n' "Detected NixOS - using $shell_rc for shell configuration."
-        fi
         if ! learn=$(jump_learn_helper); then
                 return 1
         fi
@@ -312,9 +279,15 @@ install() {
                 return 1
         fi
         line=$(printf 'source "%s"' "$script_path")
-if printf '%s\n' "$line" | "$learn" --rc-file "$JUMP_TO_MARKER_RC_FILE" --spell "$SPELL_NAME" add; then
-printf '%s\n' "The 'jump' spell has been learned (etched into $(basename "$JUMP_TO_MARKER_RC_FILE"))."
-                printf '%s\n' "Open a new terminal (or source the file) to summon portals anywhere."
+        
+        # learn auto-detects rc file and format
+        if printf '%s\n' "$line" | "$learn" --spell "$SPELL_NAME" add; then
+                printf '%s\n' "The 'jump' spell has been learned."
+                if [ "$JUMP_TO_MARKER_FORMAT" = "nix" ]; then
+                        printf '%s\n' "Rebuild your NixOS configuration to activate the change."
+                else
+                        printf '%s\n' "Open a new terminal (or source the file) to summon portals anywhere."
+                fi
         fi
 }
 

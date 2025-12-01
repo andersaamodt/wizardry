@@ -7,18 +7,8 @@ show_usage() {
 	cat <<'USAGE'
 Usage: require-wizardry [--check|--offer|--snippet]
 
-Verify that wizardry is properly installed and available on PATH.
-
-Modes:
-  --check    Exit 0 if wizardry is installed, 1 otherwise (no output on success)
-  --offer    If wizardry is not installed, prompt to install it (default)
-  --snippet  Print a POSIX snippet that can be embedded in scripts
-
-When wizardry is not installed and --offer is used interactively, the user
-is prompted to install wizardry. In non-interactive mode, prints guidance.
-
-The --snippet option outputs a self-contained POSIX-compliant code block
-that can be copied into scripts that cannot assume wizardry is available.
+Verify wizardry is installed. Use --check for silent exit code,
+--offer to prompt for installation, or --snippet for embeddable code.
 USAGE
 }
 
