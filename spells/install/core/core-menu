@@ -39,15 +39,6 @@ if [ -z "$exit_label_bin" ] && [ -x "$root_dir/spells/.imps/menu/exit-label" ]; 
   exit_label_bin="$root_dir/spells/.imps/menu/exit-label"
 fi
 
-# Resolve exit-menu helper
-exit_menu_bin=${EXIT_MENU_BIN-}
-if [ -z "$exit_menu_bin" ]; then
-  exit_menu_bin=$(command -v exit-menu 2>/dev/null) || exit_menu_bin=""
-fi
-if [ -z "$exit_menu_bin" ] && [ -x "$root_dir/spells/.imps/menu/exit-menu" ]; then
-  exit_menu_bin="$root_dir/spells/.imps/menu/exit-menu"
-fi
-
 # shellcheck source=/dev/null
 . "$script_dir/install-core"
 
@@ -71,12 +62,8 @@ else
   exit_label="Exit"
 fi
 
-# Use exit-menu if available, otherwise fall back to kill
-if [ -n "$exit_menu_bin" ]; then
-  exit_entry="${exit_label}%$exit_menu_bin"
-else
-  exit_entry="${exit_label}%kill -TERM \$PPID"
-fi
+# Use exit-menu helper for uniform exit behavior
+exit_entry="${exit_label}%exit-menu"
 
 resolve_spell() {
   spell_name=$1
