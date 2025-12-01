@@ -168,7 +168,7 @@ cd_block_present() {
                 return 0
         fi
         # Check for nix format marker (used by nix-shell-init)
-        if grep -Fq '# wizardry-shell: cd-cantrip' "$rc_file"; then
+        if grep -Fq '#wizardry: cd-cantrip' "$rc_file"; then
                 return 0
         fi
         # Legacy check for WIZARDRY_CD_CANTRIP variable

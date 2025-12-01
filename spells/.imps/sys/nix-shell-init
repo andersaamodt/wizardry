@@ -114,8 +114,8 @@ else
   esac
 fi
 
-# Marker format: # wizardry-shell: NAME
-marker="# wizardry-shell: $block_name"
+# Marker format: #wizardry: NAME
+marker="#wizardry: $block_name"
 
 # Check if file needs sudo
 needs_sudo=0
@@ -181,13 +181,13 @@ $line"
   # Escape the shell code for nix '' multi-line string
   escaped_code=$(printf '%s' "$shell_code" | escape_for_nix_multiline)
   
-  # Mark every line with # wizardry marker so we can identify and remove them later
+  # Mark every line with #wizardry marker so we can identify and remove them later
   # Each line gets the marker appended to ensure clean removal
   marked_code=$(printf '%s' "$escaped_code" | sed "s/$/ $marker/")
   
   # Create the nix block using escaped code
   # Format: programs.bash.initExtra = ''...'' syntax for multi-line
-  # Every line is marked with # wizardry-shell: NAME for easy identification and removal
+  # Every line is marked with #wizardry: NAME for easy identification and removal
   nix_block="  $nix_option = '' $marker
 $marked_code
   ''; $marker"
@@ -244,7 +244,7 @@ do_remove() {
   fi
   
   # Remove all lines containing our marker
-  # Since every wizardry-managed line has # wizardry-shell: NAME appended,
+  # Since every wizardry-managed line has #wizardry: NAME appended,
   # we can simply filter out all lines containing that marker
   tmp_file="${TMPDIR:-/tmp}/nix-shell-init.$$"
   run_maybe_sudo cat "$nix_file" | grep -v -F "$marker" > "$tmp_file"
