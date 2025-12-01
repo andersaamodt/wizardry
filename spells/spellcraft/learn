@@ -1,256 +1,826 @@
 #!/bin/sh
 
-# This spell installs spells with an install() function into your shell
-# environment. For rc file snippet management, use learn-rc directly.
-
-show_usage() {
-  cat <<'USAGE'
-Usage: learn [-r] [PATH...]
-
-Install spells that define an install() function. Scans paths for installable
-spells and runs their install(). Defaults to current directory if no path given.
-
-Options:
-  -r, --recursive  Recursively scan subdirectories
-  -h, --help       Show this help message
-USAGE
-}
-
-# Handle help and detect rc mode for backward compatibility
-for arg in "$@"; do
-  case $arg in
-  --help|--usage|-h)
-    show_usage
-    exit 0
-    ;;
-  --spell|--spell=*)
-    # Backward compatibility: delegate to learn-rc
-    SCRIPT_SOURCE=$0
-    case $SCRIPT_SOURCE in
-    */*) SCRIPT_DIR=${SCRIPT_SOURCE%/*} ;;
-    *) SCRIPT_DIR=. ;;
-    esac
-    SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
-    LEARN_RC="$SCRIPT_DIR/learn-rc"
-    if [ ! -x "$LEARN_RC" ]; then
-      if command -v learn-rc >/dev/null 2>&1; then
-        LEARN_RC=$(command -v learn-rc)
-      else
-        printf '%s\n' "learn: learn-rc helper is missing for rc mode." >&2
-        exit 1
-      fi
-    fi
-    exec "$LEARN_RC" "$@"
-    ;;
-  esac
-done
+# This spell learns knowledge into your shell: it can either install
+# installable spells (those with an install() function) or edit rc files to
+# add, remove, or inspect snippets. The install flow mirrors the classic
+# memorize spell while the rc flow provides rc file management functionality.
 
 set -eu
 
 SCRIPT_NAME=$(basename "$0")
 SCRIPT_SOURCE=$0
 case $SCRIPT_SOURCE in
-*/*) SCRIPT_DIR=${SCRIPT_SOURCE%/*} ;;
-*) SCRIPT_DIR=. ;;
+*/*)
+        SCRIPT_DIR=${SCRIPT_SOURCE%/*}
+        ;;
+*)
+        SCRIPT_DIR=.
+        ;;
 esac
 SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
 SPELLS_DIR=${SCRIPT_DIR%/*}
 
-# Find detect-rc-file helper
-find_detect_rc_file() {
-  if [ -n "${DETECT_RC_FILE-}" ] && [ -x "$DETECT_RC_FILE" ]; then
-    printf '%s' "$DETECT_RC_FILE"
-    return 0
-  fi
-  helper="$SPELLS_DIR/divination/detect-rc-file"
-  if [ -x "$helper" ]; then
-    printf '%s' "$helper"
-    return 0
-  fi
-  if command -v detect-rc-file >/dev/null 2>&1; then
-    command -v detect-rc-file
-    return 0
-  fi
-  return 1
+usage() {
+        cat <<USAGE >&2
+Usage: $SCRIPT_NAME --spell NAME {add|remove|status}
+       $SCRIPT_NAME [OPTIONS] [PATH ...]
+
+Manage rc file snippets or install spells with an install() function.
+Use --rc-file and --spell for rc mode, otherwise operates in install mode.
+USAGE
 }
 
+for arg in "$@"; do
+        case $arg in
+        --help|-h)
+                usage
+                exit 0
+                ;;
+        --spell|--spell=*)
+                MODE=rc
+                ;;
+        esac
+done
+
+# ---------------------
+# RC MODE IMPLEMENTATION
+# ---------------------
+
+rc_usage() {
+        cat <<'RCUSAGE' >&2
+Usage: learn --spell NAME [--format FORMAT] {add|remove|status}
+
+Reads spell content from standard input for the 'add' action and wraps it with
+wizardry comment sentinels so future removals remain deterministic.
+Single-line spells receive an inline `# wizardry: NAME` suffix, while
+multi-line spells are wrapped with `begin`/`end` sentinels (including a lines
+count) to keep rc files readable.
+
+The rc file is auto-detected via detect-rc-file. For nix files (auto-detected
+from .nix extension or platform), uses programs.bash.initExtra or
+programs.zsh.initExtra to properly add shell code to nix configuration files.
+
+Options:
+  --format FORMAT  Output format: shell (default) or nix (auto-detected)
+  --shell SHELL    Shell type for nix format: bash (default) or zsh
+
+Spell names must contain only letters, digits, dashes, underscores, periods, and colons.
+RCUSAGE
+}
+
+# Find detect-rc-file helper
+find_detect_rc_file() {
+        if [ -n "${DETECT_RC_FILE-}" ] && [ -x "$DETECT_RC_FILE" ]; then
+                printf '%s' "$DETECT_RC_FILE"
+                return 0
+        fi
+        # Look relative to script location
+        helper="$SPELLS_DIR/divination/detect-rc-file"
+        if [ -x "$helper" ]; then
+                printf '%s' "$helper"
+                return 0
+        fi
+        # Try PATH
+        if command -v detect-rc-file >/dev/null 2>&1; then
+                command -v detect-rc-file
+                return 0
+        fi
+        return 1
+}
+
+# Auto-detect rc file using detect-rc-file helper
+auto_detect_rc() {
+        if ! detect_helper=$(find_detect_rc_file); then
+                printf '%s\n' "learn: detect-rc-file helper not found." >&2
+                return 1
+        fi
+        output=$("$detect_helper")
+        rc_file_detected=''
+        platform_detected=''
+        format_detected=''
+        while IFS='=' read -r key value; do
+                case $key in
+                rc_file)
+                        rc_file_detected=$value
+                        ;;
+                platform)
+                        platform_detected=$value
+                        ;;
+                format)
+                        format_detected=$value
+                        ;;
+                esac
+        done <<EOF_ENV
+$output
+EOF_ENV
+        if [ -z "$rc_file_detected" ]; then
+                printf '%s\n' "learn: detect-rc-file did not provide an rc file." >&2
+                return 1
+        fi
+        printf '%s\n' "rc_file=$rc_file_detected"
+        printf '%s\n' "platform=${platform_detected:-unknown}"
+        printf '%s\n' "format=${format_detected:-shell}"
+}
+
+rc_run() {
+        action=""
+        rc_file=""
+        spell=""
+        rc_format="shell"
+        shell_type="bash"
+
+        while [ "$#" -gt 0 ]; do
+                case $1 in
+                --rc-file)
+                        # Internal option for learn-spellbook integration
+                        if [ "$#" -lt 2 ]; then
+                                printf '%s\n' "learn: --rc-file expects a file path." >&2
+                                rc_usage
+                                exit 1
+                        fi
+                        rc_file=$2
+                        shift 2
+                        ;;
+                --rc-file=*)
+                        rc_file=${1#*=}
+                        shift
+                        ;;
+                --spell)
+                        if [ "$#" -lt 2 ]; then
+                                printf '%s\n' "learn: --spell expects a name." >&2
+                                rc_usage
+                                exit 1
+                        fi
+                        spell=$2
+                        shift 2
+                        ;;
+                --spell=*)
+                        spell=${1#*=}
+                        shift
+                        ;;
+                --format)
+                        if [ "$#" -lt 2 ]; then
+                                printf '%s\n' "learn: --format expects a value." >&2
+                                rc_usage
+                                exit 1
+                        fi
+                        rc_format=$2
+                        shift 2
+                        ;;
+                --format=*)
+                        rc_format=${1#*=}
+                        shift
+                        ;;
+                --shell)
+                        if [ "$#" -lt 2 ]; then
+                                printf '%s\n' "learn: --shell expects a value." >&2
+                                rc_usage
+                                exit 1
+                        fi
+                        shell_type=$2
+                        shift 2
+                        ;;
+                --shell=*)
+                        shell_type=${1#*=}
+                        shift
+                        ;;
+                add|remove|status)
+                        if [ -n "$action" ]; then
+                                printf '%s\n' "learn: only one action may be specified." >&2
+                                rc_usage
+                                exit 1
+                        fi
+                        action=$1
+                        shift
+                        ;;
+                --)
+                        shift
+                        break
+                        ;;
+                -*)
+                        printf '%s\n' "learn: unknown option '$1'." >&2
+                        rc_usage
+                        exit 1
+                        ;;
+                *)
+                        printf '%s\n' "learn: unexpected argument '$1'." >&2
+                        rc_usage
+                        exit 1
+                        ;;
+                esac
+        done
+
+        if [ -z "$action" ] || [ -z "$spell" ]; then
+                rc_usage
+                exit 1
+        fi
+
+        # Auto-detect rc file if not provided
+        if [ -z "$rc_file" ]; then
+                if ! detect_output=$(auto_detect_rc); then
+                        exit 1
+                fi
+                while IFS='=' read -r key value; do
+                        case $key in
+                        rc_file)
+                                rc_file=$value
+                                ;;
+                        format)
+                                # Only use detected format if not explicitly set
+                                if [ "$rc_format" = "shell" ]; then
+                                        rc_format=$value
+                                fi
+                                ;;
+                        esac
+                done <<EOF_DETECT
+$detect_output
+EOF_DETECT
+        fi
+
+        # Validate format
+        case $rc_format in
+        shell|nix) : ;;
+        *)
+                printf '%s\n' "learn: format must be 'shell' or 'nix'." >&2
+                exit 1
+                ;;
+        esac
+
+        # Auto-detect format from file extension (overrides detected format)
+        case $rc_file in
+        *.nix)
+                rc_format=nix
+                ;;
+        esac
+
+        case $spell in
+        *[!A-Za-z0-9._:-]*)
+                printf '%s\n' "learn: spell names may contain only letters, digits, dots, underscores, dashes, and colons." >&2
+                exit 1
+                ;;
+        *) : ;;
+        esac
+
+        spell_tag="# wizardry: $spell"
+        legacy_spell_tag="# wizardry-spell: $spell"
+        inline_marker=" $spell_tag"
+        legacy_inline_marker=" $legacy_spell_tag"
+        block_start="$spell_tag begin"
+        legacy_block_start="$legacy_spell_tag begin"
+        block_end="$spell_tag end"
+        legacy_block_end="$legacy_spell_tag end"
+        block_prefix="$spell_tag lines="
+        legacy_prefix="$legacy_spell_tag lines="
+
+        ensure_rc_directory() {
+                dir=${rc_file%/*}
+                if [ "$dir" != "$rc_file" ] && [ ! -d "$dir" ]; then
+                        mkdir -p "$dir"
+                fi
+        }
+
+        spell_status() {
+                if [ ! -f "$rc_file" ]; then
+                        return 1
+                fi
+                if grep -Fq "$spell_tag" "$rc_file" 2>/dev/null; then
+                        return 0
+                fi
+                if grep -Fq "$legacy_spell_tag" "$rc_file" 2>/dev/null; then
+                        return 0
+                fi
+                return 1
+        }
+
+        ensure_trailing_newline() {
+                if [ ! -f "$rc_file" ] || [ ! -s "$rc_file" ]; then
+                        return 0
+                fi
+                last_char=$(tail -c 1 "$rc_file" 2>/dev/null | od -An -t o1 | tr -d ' ')
+                if [ "$last_char" != "012" ]; then
+                        printf '\n' >>"$rc_file"
+                fi
+        }
+
+        add_spell() {
+                ensure_rc_directory
+                tmp_file=$(mktemp "${TMPDIR:-/tmp}/learn.XXXXXX") || exit 1
+                line_count=0
+                while IFS= read -r line || nonempty "$line"; do
+                        printf '%s\n' "$line" >>"$tmp_file"
+                        line_count=$((line_count + 1))
+                done
+                if [ "$line_count" -eq 0 ]; then
+                        rm -f "$tmp_file"
+                        printf '%s\n' "learn: no spell content provided on stdin." >&2
+                        exit 1
+                fi
+                if spell_status; then
+                        rm -f "$tmp_file"
+                        return 0
+                fi
+                if [ ! -f "$rc_file" ]; then
+                        : >"$rc_file"
+                fi
+                ensure_trailing_newline
+                if [ "$line_count" -eq 1 ]; then
+                        first_line=$(sed -n '1p' "$tmp_file")
+                        printf '%s%s\n' "$first_line" "$inline_marker" >>"$rc_file"
+                        rm -f "$tmp_file"
+                        return 0
+                fi
+                block_header="$block_start lines=$line_count"
+                printf '%s\n' "$block_header" >>"$rc_file"
+                cat "$tmp_file" >>"$rc_file"
+                printf '%s\n' "$block_end" >>"$rc_file"
+                rm -f "$tmp_file"
+        }
+
+        remove_spell() {
+                if [ ! -f "$rc_file" ]; then
+                        printf '%s\n' "learn: cannot remove from missing file '$rc_file'." >&2
+                        exit 1
+                fi
+                tmp_file=$(mktemp "${TMPDIR:-/tmp}/learn.XXXXXX") || exit 1
+                removing_block=0
+                to_skip=0
+                removed=0
+                while IFS= read -r line || nonempty "$line"; do
+                        if [ "$removing_block" -eq 1 ]; then
+                                case $line in
+                                "$block_end"|"$legacy_block_end")
+                                        removing_block=0
+                                        ;;
+                                esac
+                                continue
+                        fi
+                        if [ "$to_skip" -gt 0 ]; then
+                                to_skip=$((to_skip - 1))
+                                continue
+                        fi
+                        case $line in
+                        "$block_start"*|"$legacy_block_start"*)
+                                removing_block=1
+                                removed=1
+                                continue
+                                ;;
+                        "$block_prefix"*)
+                                count=${line#"$block_prefix"}
+                                case $count in
+                                *[!0-9]*)
+                                        to_skip=0
+                                        ;;
+                                *)
+                                        to_skip=$count
+                                        ;;
+                                esac
+                                removed=1
+                                continue
+                                ;;
+                        "$legacy_prefix"*)
+                                count=${line#"$legacy_prefix"}
+                                case $count in
+                                *[!0-9]*)
+                                        to_skip=0
+                                        ;;
+                                *)
+                                        to_skip=$count
+                                        ;;
+                                esac
+                                removed=1
+                                continue
+                                ;;
+                        *"$inline_marker"|*"$legacy_inline_marker")
+                                removed=1
+                                continue
+                                ;;
+                        esac
+                        printf '%s\n' "$line" >>"$tmp_file"
+                done <"$rc_file"
+                if [ "$removed" -eq 0 ]; then
+                        rm -f "$tmp_file"
+                        printf '%s\n' "learn: spell '$spell' not found in '$rc_file'." >&2
+                        exit 1
+                fi
+                mv "$tmp_file" "$rc_file"
+        }
+
+        # Find nix-shell-init helper
+        find_nix_shell_init() {
+                if [ -n "${NIX_SHELL_INIT-}" ] && [ -x "$NIX_SHELL_INIT" ]; then
+                        printf '%s' "$NIX_SHELL_INIT"
+                        return 0
+                fi
+                # Look relative to script location
+                helper="$SCRIPT_DIR/../.imps/sys/nix-shell-init"
+                if [ -x "$helper" ]; then
+                        printf '%s' "$helper"
+                        return 0
+                fi
+                # Try PATH
+                if command -v nix-shell-init >/dev/null 2>&1; then
+                        command -v nix-shell-init
+                        return 0
+                fi
+                return 1
+        }
+
+        # Nix format handlers using nix-shell-init imp
+        nix_spell_status() {
+                if ! nix_helper=$(find_nix_shell_init); then
+                        printf '%s\n' "learn: nix-shell-init imp not found." >&2
+                        exit 1
+                fi
+                "$nix_helper" status --shell "$shell_type" --name "$spell" --file "$rc_file"
+        }
+
+        nix_add_spell() {
+                if ! nix_helper=$(find_nix_shell_init); then
+                        printf '%s\n' "learn: nix-shell-init imp not found." >&2
+                        exit 1
+                fi
+                "$nix_helper" add --shell "$shell_type" --name "$spell" --file "$rc_file"
+        }
+
+        nix_remove_spell() {
+                if ! nix_helper=$(find_nix_shell_init); then
+                        printf '%s\n' "learn: nix-shell-init imp not found." >&2
+                        exit 1
+                fi
+                "$nix_helper" remove --shell "$shell_type" --name "$spell" --file "$rc_file"
+        }
+
+        # Execute the appropriate action based on format
+        if [ "$rc_format" = "nix" ]; then
+                case $action in
+                add)
+                        nix_add_spell
+                        ;;
+                remove)
+                        nix_remove_spell
+                        ;;
+                status)
+                        if nix_spell_status; then
+                                exit 0
+                        fi
+                        exit 1
+                        ;;
+                *)
+                        rc_usage
+                        exit 1
+                        ;;
+                esac
+        else
+                case $action in
+                add)
+                        add_spell
+                        ;;
+                remove)
+                        remove_spell
+                        ;;
+                status)
+                        if spell_status; then
+                                exit 0
+                        fi
+                        exit 1
+                        ;;
+                *)
+                        rc_usage
+                        exit 1
+                        ;;
+                esac
+        fi
+}
+
+if [ "${MODE-}" = "rc" ]; then
+        rc_run "$@"
+        exit $?
+fi
+
+# ------------------------
+# INSTALL MODE (MEMORIZE)
+# ------------------------
+
+if [ -n "${MEMORIZE_ASK_YN-}" ]; then
+        ASK_YN_HELPER=$MEMORIZE_ASK_YN
+elif [ -x "$SPELLS_DIR/cantrips/ask_yn" ]; then
+        ASK_YN_HELPER="$SPELLS_DIR/cantrips/ask_yn"
+elif command -v ask_yn >/dev/null 2>&1; then
+        ASK_YN_HELPER=$(command -v ask_yn)
+else
+        printf '%s\n' "$SCRIPT_NAME: ask_yn spell not found; cannot prompt." >&2
+        exit 1
+fi
+
+ALL_MODE=0
+RECURSIVE=0
+DRY_RUN=0
 MEMORIZED_COUNT=0
 SKIPPED_COUNT=0
+PROMPTED_PATHS=''
 MEMORIZE_DETECTED=0
-MEMORIZE_PLATFORM=${WIZARDRY_PLATFORM-}
-MEMORIZE_RC_FILE=${WIZARDRY_RC_FILE-}
-MEMORIZE_FORMAT=${WIZARDRY_RC_FORMAT-}
+MEMORIZE_PLATFORM=${WIZARDRY_PLATFORM-${MEMORIZE_PLATFORM-}}
+MEMORIZE_RC_FILE=${WIZARDRY_RC_FILE-${MEMORIZE_RC_FILE-}}
+MEMORIZE_FORMAT=${WIZARDRY_RC_FORMAT-${MEMORIZE_RC_FORMAT-}}
+DETECT_RC_FILE=${MEMORIZE_DETECT_RC_FILE-}
 
 warn() {
-  printf '%s: %s\n' "$SCRIPT_NAME" "$1" >&2
+        printf '%s: %s\n' "$SCRIPT_NAME" "$1" >&2
+}
+
+ask_yes_no() {
+        question=$1
+        default=${2:-no}
+        if "$ASK_YN_HELPER" "$question" "$default" >/dev/null; then
+                return 0
+        fi
+        return 1
 }
 
 detect_environment() {
-  if [ "$MEMORIZE_DETECTED" -eq 1 ]; then
-    return 0
-  fi
-  if ! detect_helper=$(find_detect_rc_file); then
-    printf '%s\n' "$SCRIPT_NAME: detect-rc-file spell is missing." >&2
-    exit 1
-  fi
-  platform=$MEMORIZE_PLATFORM
-  rc_file=$MEMORIZE_RC_FILE
-  format=$MEMORIZE_FORMAT
-  if [ -z "$platform" ] || [ -z "$rc_file" ] || [ -z "$format" ]; then
-    output=$("$detect_helper")
-    while IFS='=' read -r key value; do
-      case $key in
-      platform) [ -z "$platform" ] && platform=$value ;;
-      rc_file) [ -z "$rc_file" ] && rc_file=$value ;;
-      format) [ -z "$format" ] && format=$value ;;
-      esac
-    done <<EOF_DETECT
+        if [ "$MEMORIZE_DETECTED" -eq 1 ]; then
+                return 0
+        fi
+        
+        # Track whether DETECT_RC_FILE was explicitly set via environment variable
+        detect_rc_override=0
+        if [ -n "${DETECT_RC_FILE-}" ]; then
+                # DETECT_RC_FILE environment variable is already set, use it
+                detect_rc_override=1
+        elif [ -n "${MEMORIZE_DETECT_RC_FILE-}" ]; then
+                DETECT_RC_FILE=$MEMORIZE_DETECT_RC_FILE
+        else
+                DETECT_RC_FILE=$SPELLS_DIR/divination/detect-rc-file
+        fi
+        
+        if [ ! -x "$DETECT_RC_FILE" ]; then
+                # Only fall back to PATH if no explicit environment override was set
+                if [ "$detect_rc_override" -eq 0 ] && command -v detect-rc-file >/dev/null 2>&1; then
+                        DETECT_RC_FILE=$(command -v detect-rc-file)
+                else
+                        printf '%s\n' "$SCRIPT_NAME: detect-rc-file spell is missing; cannot determine rc file." >&2
+                        exit 1
+                fi
+        fi
+        platform=$MEMORIZE_PLATFORM
+        rc_file=$MEMORIZE_RC_FILE
+        format=$MEMORIZE_FORMAT
+        if [ -z "$platform" ] || [ -z "$rc_file" ] || [ -z "$format" ]; then
+                output=$("$DETECT_RC_FILE")
+                while IFS='=' read -r key value; do
+                        case $key in
+                        platform)
+                                if [ -z "$platform" ]; then
+                                        platform=$value
+                                fi
+                                ;;
+                        rc_file)
+                                if [ -z "$rc_file" ]; then
+                                        rc_file=$value
+                                fi
+                                ;;
+                        format)
+                                if [ -z "$format" ]; then
+                                        format=$value
+                                fi
+                                ;;
+                        esac
+                done <<EOF_DETECT
 $output
 EOF_DETECT
-  fi
-  if [ -z "$rc_file" ]; then
-    printf '%s\n' "$SCRIPT_NAME: detect-rc-file did not yield an rc file." >&2
-    exit 1
-  fi
-  : "${platform:=unknown}"
-  : "${format:=shell}"
-  MEMORIZE_PLATFORM=$platform
-  MEMORIZE_RC_FILE=$rc_file
-  MEMORIZE_FORMAT=$format
-  export WIZARDRY_PLATFORM=$MEMORIZE_PLATFORM
-  export WIZARDRY_RC_FILE=$MEMORIZE_RC_FILE
-  export WIZARDRY_RC_FORMAT=$MEMORIZE_FORMAT
-  MEMORIZE_DETECTED=1
+        fi
+        if [ -z "$rc_file" ]; then
+                printf '%s\n' "$SCRIPT_NAME: detect-rc-file did not yield an rc file." >&2
+                exit 1
+        fi
+        if [ -z "$platform" ]; then
+                platform=unknown
+        fi
+        if [ -z "$format" ]; then
+                format=shell
+        fi
+        MEMORIZE_PLATFORM=$platform
+        MEMORIZE_RC_FILE=$rc_file
+        MEMORIZE_FORMAT=$format
+        export WIZARDRY_PLATFORM=$MEMORIZE_PLATFORM
+        export WIZARDRY_RC_FILE=$MEMORIZE_RC_FILE
+        export WIZARDRY_RC_FORMAT=$MEMORIZE_FORMAT
+        MEMORIZE_DETECTED=1
 }
 
 have_install_function() {
-  file=$1
-  [ -r "$file" ] || return 1
-  grep -Eq '^[[:space:]]*install[[:space:]]*\(\)' "$file" 2>/dev/null
+        file=$1
+        if ! [ -r "$file" ]; then
+                return 1
+        fi
+        if ! grep -Eq '^[[:space:]]*install[[:space:]]*\(\)' "$file" 2>/dev/null; then
+                return 1
+        fi
+        return 0
 }
 
 cleanup_wrapper() {
-  [ -n "${MEMORIZE_WRAPPER-}" ] && [ -f "$MEMORIZE_WRAPPER" ] && rm -f "$MEMORIZE_WRAPPER"
+        if [ -n "${MEMORIZE_WRAPPER-}" ] && [ -f "$MEMORIZE_WRAPPER" ]; then
+                rm -f "$MEMORIZE_WRAPPER"
+        fi
 }
 
 create_wrapper() {
-  MEMORIZE_WRAPPER=$(mktemp "${TMPDIR:-/tmp}/learn.XXXXXX") || exit 1
-  cat <<'WRAPPER' >"$MEMORIZE_WRAPPER"
+        MEMORIZE_WRAPPER=$(mktemp "${TMPDIR:-/tmp}/learn.XXXXXX") || exit 1
+cat <<'WRAPPER' >"$MEMORIZE_WRAPPER"
 set -eu
 TARGET=$1
 shift
-[ -f "$TARGET" ] || { printf '%s\n' "learn wrapper: missing target '$TARGET'" >&2; exit 1; }
+if [ ! -f "$TARGET" ]; then
+        printf '%s\n' "learn wrapper: missing target '$TARGET'" >&2
+        exit 1
+fi
 WIZARDRY_MEMORIZE_TARGET="$TARGET"
 export WIZARDRY_MEMORIZE_TARGET
 . "$TARGET"
-command -v install >/dev/null 2>&1 || { printf '%s\n' "learn wrapper: $TARGET does not define install()" >&2; exit 1; }
+if ! command -v install >/dev/null 2>&1; then
+        printf '%s\n' "learn wrapper: $TARGET does not define install()" >&2
+        exit 1
+fi
 install "$@"
 WRAPPER
-  trap cleanup_wrapper EXIT HUP INT TERM
+        trap cleanup_wrapper EXIT HUP INT TERM
 }
 
 get_interpreter() {
-  target=$1
-  first_line=''
-  IFS= read -r first_line <"$target" || true
-  case $first_line in
-  '#!'*) first_line=${first_line#\#!} ;;
-  *) first_line=/bin/sh ;;
-  esac
-  printf '%s' "$first_line" | tr -d '\r'
+        target=$1
+        first_line=''
+        if IFS= read -r first_line <"$target"; then
+                :
+        fi
+        case $first_line in
+                '#!'*)
+                        first_line=${first_line#\#!}
+                        ;;
+                *)
+                        first_line=/bin/sh
+                        ;;
+        esac
+        first_line=$(printf '%s' "$first_line" | tr -d '\r')
+        printf '%s' "$first_line"
 }
 
 run_install() {
-  target=$1
-  [ -z "${MEMORIZE_WRAPPER-}" ] || [ ! -f "$MEMORIZE_WRAPPER" ] && create_wrapper
-  detect_environment || return 1
-  interpreter=$(get_interpreter "$target")
-  : "${interpreter:=/bin/sh}"
-  (
-    export WIZARDRY_PLATFORM=$MEMORIZE_PLATFORM
-    export WIZARDRY_RC_FILE=$MEMORIZE_RC_FILE
-    export WIZARDRY_RC_FORMAT=$MEMORIZE_FORMAT
-    set -- $interpreter
-    [ "$#" -eq 0 ] && set -- /bin/sh
-    "$@" "$MEMORIZE_WRAPPER" "$target"
-  )
+        target=$1
+        if [ -z "${MEMORIZE_WRAPPER-}" ] || [ ! -f "$MEMORIZE_WRAPPER" ]; then
+                create_wrapper
+        fi
+        if ! detect_environment; then
+                return 1
+        fi
+        interpreter=$(get_interpreter "$target")
+        if [ -z "$interpreter" ]; then
+                interpreter=/bin/sh
+        fi
+        (
+                export WIZARDRY_PLATFORM=$MEMORIZE_PLATFORM
+                export WIZARDRY_RC_FILE=$MEMORIZE_RC_FILE
+                export WIZARDRY_RC_FORMAT=$MEMORIZE_FORMAT
+                set -- $interpreter
+                if [ "$#" -eq 0 ]; then
+                        set -- /bin/sh
+                fi
+                "$@" "$MEMORIZE_WRAPPER" "$target"
+        )
 }
 
 scribe_file() {
-  path=$1
-  if [ ! -f "$path" ] || [ ! -x "$path" ] || ! have_install_function "$path"; then
-    SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
-    return
-  fi
-  printf 'Memorizing %s...\n' "$path"
-  if run_install "$path"; then
-    MEMORIZED_COUNT=$((MEMORIZED_COUNT + 1))
-  else
-    warn "Installation failed for '$path'."
-    SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
-  fi
+        path=$1
+        if [ ! -f "$path" ] || [ ! -x "$path" ] || ! have_install_function "$path"; then
+                SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
+                return
+        fi
+        # In dry-run mode, just print the path without executing
+        if [ "$DRY_RUN" -eq 1 ]; then
+                printf '%s\n' "$path"
+                MEMORIZED_COUNT=$((MEMORIZED_COUNT + 1))
+                return
+        fi
+        printf 'Memorizing %s...\n' "$path"
+        if run_install "$path"; then
+                MEMORIZED_COUNT=$((MEMORIZED_COUNT + 1))
+        else
+                warn "Installation failed for '$path'."
+                SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
+        fi
 }
 
 scan_directory() {
-  dir=$1
-  if [ ! -d "$dir" ]; then
-    warn "'$dir' is not a directory."
-    SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
-    return
-  fi
-  for entry in "$dir"/*; do
-    [ -e "$entry" ] || continue
-    if [ -d "$entry" ] && [ "$RECURSIVE" -eq 1 ]; then
-      scan_directory "$entry"
-    elif [ -f "$entry" ]; then
-      scribe_file "$entry"
-    fi
-  done
+        dir=$1
+        if [ ! -d "$dir" ]; then
+                warn "'$dir' is not a directory."
+                SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
+                return
+        fi
+        for entry in "$dir"/*; do
+                if [ ! -e "$entry" ]; then
+                        continue
+                fi
+                if [ -d "$entry" ] && [ "$RECURSIVE" -eq 1 ]; then
+                        scan_directory "$entry"
+                        continue
+                fi
+                if [ -f "$entry" ]; then
+                        scribe_file "$entry"
+                fi
+        done
 }
 
-# Parse arguments - default to current directory
-RECURSIVE=0
-paths=""
+prompt_for_all() {
+        if ask_yes_no "No spells specified. Memorize everything in $PWD?" no; then
+                ALL_MODE=1
+                PROMPTED_PATHS='.'
+                return
+        fi
+        printf 'No spells memorized.\n'
+        exit 0
+}
+
 while [ $# -gt 0 ]; do
-  case $1 in
-  -r|--recursive)
-    RECURSIVE=1
-    shift
-    ;;
-  --)
-    shift
-    break
-    ;;
-  -*)
-    warn "Unknown option: $1"
-    show_usage >&2
-    exit 1
-    ;;
-  *)
-    paths="$paths $1"
-    shift
-    ;;
-  esac
+        case $1 in
+                -a|--all)
+                        ALL_MODE=1
+                        shift
+                        ;;
+                -r|--recursive)
+                        ALL_MODE=1
+                        RECURSIVE=1
+                        shift
+                        ;;
+                --dry-run)
+                        DRY_RUN=1
+                        shift
+                        ;;
+                -h|--help)
+                        usage
+                        exit 0
+                        ;;
+                --)
+                        shift
+                        break
+                        ;;
+                -*)
+                        warn "Unknown option: $1"
+                        usage >&2
+                        exit 1
+                        ;;
+                *)
+                        break
+                        ;;
+        esac
+
 done
 
-# Add remaining args after --
-for arg in "$@"; do
-  paths="$paths $arg"
-done
-
-# Default to current directory
-if [ -z "$paths" ]; then
-  paths="."
+if [ $ALL_MODE -eq 0 ] && [ $# -eq 0 ]; then
+        if [ "${MEMORIZE_PROMPT_ALLOWED-0}" -ne 1 ]; then
+                usage
+                exit 1
+        fi
+        prompt_for_all
+        if [ -n "$PROMPTED_PATHS" ]; then
+                set -- "$PROMPTED_PATHS"
+        fi
 fi
 
-# Process paths
-for path in $paths; do
-  if [ -d "$path" ]; then
-    scan_directory "$path"
-  else
-    scribe_file "$path"
-  fi
-done
+if [ $ALL_MODE -eq 1 ]; then
+        if [ $RECURSIVE -eq 1 ]; then
+                if [ $# -eq 0 ]; then
+                        warn '--recursive requires an explicit directory path.'
+                        exit 1
+                fi
+        elif [ $# -eq 0 ]; then
+                set -- .
+        fi
+        for path in "$@"; do
+                if [ $RECURSIVE -eq 1 ]; then
+                        scan_directory "$path"
+                else
+                        if [ -d "$path" ]; then
+                                scan_directory "$path"
+                        else
+                                scribe_file "$path"
+                        fi
+                fi
+        done
+else
+        if [ $# -eq 0 ]; then
+                warn 'No spells provided.'
+                exit 1
+        fi
+        for path in "$@"; do
+                scribe_file "$path"
+        done
+fi
 
-printf 'Memorized %d spell(s).\n' "$MEMORIZED_COUNT"
+if [ "$DRY_RUN" -eq 1 ]; then
+        printf 'Would memorize %d spell(s).\n' "$MEMORIZED_COUNT"
+else
+        printf 'Memorized %d spell(s).\n' "$MEMORIZED_COUNT"
+fi
+
 exit 0

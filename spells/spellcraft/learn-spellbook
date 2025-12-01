@@ -21,7 +21,7 @@ if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
 fi
 SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
 DETECT_RC_FILE_DEFAULT="$SCRIPT_DIR/../divination/detect-rc-file"
-LEARN_RC_DEFAULT="$SCRIPT_DIR/learn-rc"
+LEARN_DEFAULT="$SCRIPT_DIR/../spellcraft/learn"
 
 detect_override=0
 if [ -n "${DETECT_RC_FILE-}" ]; then
@@ -30,20 +30,16 @@ else
         DETECT_RC_FILE=$DETECT_RC_FILE_DEFAULT
 fi
 
-learn_rc_override=0
-if [ -n "${LEARN_RC_SPELL-}" ]; then
-        learn_rc_override=1
-        LEARN_RC=$LEARN_RC_SPELL
-elif [ -n "${LEARN_SPELL-}" ]; then
-        # Legacy: LEARN_SPELL now means learn-rc for this spell
-        learn_rc_override=1
-        LEARN_RC=$LEARN_SPELL
+learn_override=0
+if [ -n "${LEARN_SPELL-}" ]; then
+        learn_override=1
+        LEARN=$LEARN_SPELL
 elif [ -n "${SCRIBE_SPELL-}" ]; then
         # Legacy environment variable for backwards compatibility
-        learn_rc_override=1
-        LEARN_RC=$SCRIBE_SPELL
+        learn_override=1
+        LEARN=$SCRIBE_SPELL
 else
-        LEARN_RC=$LEARN_RC_DEFAULT
+        LEARN=$LEARN_DEFAULT
 fi
 
 if [ ! -x "$DETECT_RC_FILE" ]; then
@@ -60,19 +56,16 @@ if [ ! -x "$DETECT_RC_FILE" ]; then
         fi
 fi
 
-if [ ! -x "$LEARN_RC" ]; then
-        if [ "$learn_rc_override" -eq 1 ]; then
-                printf '%s\n' "learn-spellbook: required helper '$LEARN_RC' is missing or not executable." >&2
+if [ ! -x "$LEARN" ]; then
+        if [ "$learn_override" -eq 1 ]; then
+                printf '%s\n' "learn-spellbook: required helper '$LEARN' is missing or not executable." >&2
                 exit 1
         fi
 
-        if command -v learn-rc >/dev/null 2>&1; then
-                LEARN_RC=$(command -v learn-rc)
-        elif command -v learn >/dev/null 2>&1; then
-                # Fall back to learn for backward compatibility
-                LEARN_RC=$(command -v learn)
+        if command -v learn >/dev/null 2>&1; then
+                LEARN=$(command -v learn)
         else
-                printf '%s\n' "learn-spellbook: required helper '$LEARN_RC' is missing or not executable." >&2
+                printf '%s\n' "learn-spellbook: required helper '$LEARN' is missing or not executable." >&2
                 exit 1
         fi
 fi
@@ -637,7 +630,7 @@ shell_add() {
                 return 0
         fi
         spell_name=$(spell_identifier_for_directory "$directory")
-        if ! printf '%s\n' "$managed_export_line" | "$LEARN_RC" --rc-file "$rc_file" --spell "$spell_name" add; then
+        if ! printf '%s\n' "$managed_export_line" | "$LEARN" --rc-file "$rc_file" --spell "$spell_name" add; then
                 printf '%s\n' "learn-spellbook: unable to record the PATH entry." >&2
                 exit 1
         fi
@@ -651,8 +644,8 @@ shell_remove() {
                 exit 1
         fi
         spell_name=$(spell_identifier_for_directory "$directory")
-        if "$LEARN_RC" --rc-file "$rc_file" --spell "$spell_name" status >/dev/null 2>&1; then
-                "$LEARN_RC" --rc-file "$rc_file" --spell "$spell_name" remove
+        if "$LEARN" --rc-file "$rc_file" --spell "$spell_name" status >/dev/null 2>&1; then
+                "$LEARN" --rc-file "$rc_file" --spell "$spell_name" remove
                 printf '%s\n' "Removed '$directory' from PATH entries recorded in '$rc_file'. Open a new shell or source the file to drop it."
                 return 0
         fi
@@ -768,8 +761,8 @@ shell_remove_all() {
         
         while IFS= read -r spell_name; do
                 [ -z "$spell_name" ] && continue
-                if "$LEARN_RC" --rc-file "$rc_file" --spell "$spell_name" status >/dev/null 2>&1; then
-                        "$LEARN_RC" --rc-file "$rc_file" --spell "$spell_name" remove 2>/dev/null || true
+                if "$LEARN" --rc-file "$rc_file" --spell "$spell_name" status >/dev/null 2>&1; then
+                        "$LEARN" --rc-file "$rc_file" --spell "$spell_name" remove 2>/dev/null || true
                         removed_count=$((removed_count + 1))
                 fi
         done <"$tmp_spells"
