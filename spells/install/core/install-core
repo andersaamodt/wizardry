@@ -66,7 +66,7 @@ core_dependencies() {
   case $platform in
     Darwin)
       # macOS has pbcopy built-in, so no clipboard utilities needed in menu
-      cat <<EOF
+      cat <<'EOF'
 Git:git:install-git:uninstall-git:0
 dd:dd:install-dd:uninstall-dd:1
 stty:stty:install-stty:uninstall-stty:1
