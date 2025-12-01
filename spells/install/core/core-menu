@@ -97,7 +97,13 @@ while true; do
 
   while IFS=: read -r label command_name install_spell uninstall_spell essential; do
     installed=0
-    if command -v "$command_name" >/dev/null 2>&1; then
+    
+    # Special handling for clipboard helper marker
+    if [ "$command_name" = "__clipboard_helper__" ]; then
+      if clipboard_helper_installed; then
+        installed=1
+      fi
+    elif command -v "$command_name" >/dev/null 2>&1; then
       installed=1
     fi
 

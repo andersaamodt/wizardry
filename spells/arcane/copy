@@ -44,17 +44,15 @@ is file "$1" || { say 'That file does not exist.'; exit 1; }
 # Copy file contents to clipboard using the clip-copy imp
 # Suppress clip-copy's error to avoid duplicate messages
 if ! clip-copy < "$1" 2>/dev/null; then
-    # Attempt to install a clipboard utility and retry
-    installed=0
-    for installer in install-xsel install-xclip install-wl-clipboard; do
-        if command -v "$installer" >/dev/null 2>&1; then
-            if "$installer" >/dev/null 2>&1 && clip-copy < "$1" 2>/dev/null; then
-                installed=1
-                break
-            fi
+    # Attempt to install a clipboard utility using the unified installer
+    if command -v install-clipboard-helper >/dev/null 2>&1; then
+        if install-clipboard-helper >/dev/null 2>&1 && clip-copy < "$1" 2>/dev/null; then
+            : # Installation succeeded and copy worked
+        else
+            warn 'Your spell fizzles. No clipboard utility available (xsel, xclip, wl-copy, or pbcopy).'
+            exit 1
         fi
-    done
-    if [ "$installed" -eq 0 ]; then
+    else
         warn 'Your spell fizzles. No clipboard utility available (xsel, xclip, wl-copy, or pbcopy).'
         exit 1
     fi
