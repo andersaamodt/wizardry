@@ -293,16 +293,12 @@ install() {
         fi
         line=$(printf 'source "%s"' "$script_path")
         
-        # For nix format, use learn with --format nix to properly add shell init code
-        # to nix configuration using programs.bash.initExtra
-        if [ "$JUMP_TO_MARKER_FORMAT" = "nix" ]; then
-                if printf '%s\n' "$line" | "$learn" --rc-file "$JUMP_TO_MARKER_RC_FILE" --spell "$SPELL_NAME" --format nix add; then
-                        printf '%s\n' "The 'jump' spell has been learned (etched into $(basename "$JUMP_TO_MARKER_RC_FILE"))."
+        # learn auto-detects nix format from .nix file extension
+        if printf '%s\n' "$line" | "$learn" --rc-file "$JUMP_TO_MARKER_RC_FILE" --spell "$SPELL_NAME" add; then
+                printf '%s\n' "The 'jump' spell has been learned (etched into $(basename "$JUMP_TO_MARKER_RC_FILE"))."
+                if [ "$JUMP_TO_MARKER_FORMAT" = "nix" ]; then
                         printf '%s\n' "Rebuild your NixOS configuration to activate the change."
-                fi
-        else
-                if printf '%s\n' "$line" | "$learn" --rc-file "$JUMP_TO_MARKER_RC_FILE" --spell "$SPELL_NAME" add; then
-                        printf '%s\n' "The 'jump' spell has been learned (etched into $(basename "$JUMP_TO_MARKER_RC_FILE"))."
+                else
                         printf '%s\n' "Open a new terminal (or source the file) to summon portals anywhere."
                 fi
         fi

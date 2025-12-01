@@ -66,11 +66,11 @@ Single-line spells receive an inline `# wizardry: NAME` suffix, while
 multi-line spells are wrapped with `begin`/`end` sentinels (including a lines
 count) to keep rc files readable.
 
-For nix format (--format nix), uses programs.bash.initExtra or programs.zsh.initExtra
-to properly add shell code to nix configuration files.
+For nix files (auto-detected from .nix extension), uses programs.bash.initExtra
+or programs.zsh.initExtra to properly add shell code to nix configuration files.
 
 Options:
-  --format FORMAT  Output format: shell (default) or nix
+  --format FORMAT  Output format: shell (default) or nix (auto-detected from .nix extension)
   --shell SHELL    Shell type for nix format: bash (default) or zsh
 
 Spell names must contain only letters, digits, dashes, underscores, periods, and colons.
