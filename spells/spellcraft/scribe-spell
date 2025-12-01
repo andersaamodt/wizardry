@@ -154,7 +154,7 @@ add_category_to_path() {
                 SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
                 learn_spellbook="$SCRIPT_DIR/learn-spellbook"
                 if [ ! -x "$learn_spellbook" ]; then
-                        printf '%s\n' "Note: learn-spellbook not found; category folder created but not added to PATH." >&2
+                        printf '%s\n' "learn-spellbook not found; category folder created but not added to PATH." >&2
                         return 0
                 fi
         fi

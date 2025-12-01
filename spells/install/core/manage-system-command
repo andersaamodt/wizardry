@@ -26,7 +26,7 @@ force_install=${FORCE_INSTALL:-0}
 if [ -d /etc/nixos ] || [ -f /etc/NIXOS ] || grep -qi 'ID=nixos' /etc/os-release 2>/dev/null; then
         if [ "$action" = "install" ]; then
                 if ! command -v "$command_name" >/dev/null 2>&1; then
-                        printf '%s\n' "Note: $package_default should be installed declaratively on NixOS."
+                        printf '%s\n' "On NixOS, $package_default should be installed declaratively."
                         printf '%s\n' "Add '$package_default' to environment.systemPackages in your configuration.nix,"
                         printf '%s\n' "or for home-manager: home.packages in your home.nix."
                         exit 0
