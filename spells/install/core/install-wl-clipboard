@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+# This spell installs wl-clipboard (provides wl-copy/wl-paste) for Wayland.
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+ASSUME_YES=1 "$SCRIPT_DIR/manage-system-command" wl-copy wl-clipboard

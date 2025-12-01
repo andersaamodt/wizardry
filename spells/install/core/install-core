@@ -19,6 +19,7 @@ core_dependencies() {
   platform=$(detect_platform)
   case $platform in
     Darwin)
+      # macOS has pbcopy built-in, so no clipboard utilities needed
       cat <<'EOF'
 Git:git:install-git:uninstall-git:0
 dd:dd:install-dd:uninstall-dd:1
@@ -27,8 +28,13 @@ tput:tput:install-tput:uninstall-tput:1
 EOF
       ;;
     *)
+      # Linux needs clipboard utilities (xsel preferred, xclip as fallback)
+      # wl-clipboard is for Wayland environments
       cat <<'EOF'
 Git:git:install-git:uninstall-git:0
+xsel (clipboard):xsel:install-xsel:uninstall-xsel:0
+xclip (clipboard):xclip:install-xclip:uninstall-xclip:0
+wl-clipboard (Wayland):wl-copy:install-wl-clipboard:uninstall-wl-clipboard:0
 Bubblewrap:bwrap:install-bwrap:uninstall-bwrap:0
 dd:dd:install-dd:uninstall-dd:1
 stty:stty:install-stty:uninstall-stty:1
