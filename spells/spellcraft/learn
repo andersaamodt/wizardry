@@ -5,21 +5,21 @@
 
 show_usage() {
   cat <<'USAGE'
-Usage: learn [-a|--all] [-r|--recursive] [--dry-run] [PATH...]
+Usage: learn [PATH...]
 
 Install spells that define an install() function. Scans paths for installable
-spells and runs their install(). Use -a for all in current dir, -r recursive.
+spells and runs their install(). Defaults to current directory if no path given.
 USAGE
 }
 
-# Handle help before set -eu and detect rc mode for backward compatibility
+# Handle help and detect rc mode for backward compatibility
 for arg in "$@"; do
   case $arg in
   --help|--usage|-h)
     show_usage
     exit 0
     ;;
-  --rc-file|--rc-file=*|--spell|--spell=*)
+  --spell|--spell=*)
     # Backward compatibility: delegate to learn-rc
     SCRIPT_SOURCE=$0
     case $SCRIPT_SOURCE in
@@ -52,326 +52,192 @@ esac
 SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
 SPELLS_DIR=${SCRIPT_DIR%/*}
 
-# ------------------------
-# INSTALL MODE (MEMORIZE)
-# ------------------------
-
-if [ -n "${MEMORIZE_ASK_YN-}" ]; then
-        ASK_YN_HELPER=$MEMORIZE_ASK_YN
-elif [ -x "$SPELLS_DIR/cantrips/ask_yn" ]; then
-        ASK_YN_HELPER="$SPELLS_DIR/cantrips/ask_yn"
-elif command -v ask_yn >/dev/null 2>&1; then
-        ASK_YN_HELPER=$(command -v ask_yn)
-else
-        printf '%s\n' "$SCRIPT_NAME: ask_yn spell not found; cannot prompt." >&2
-        exit 1
-fi
-
-ALL_MODE=0
-RECURSIVE=0
-DRY_RUN=0
-MEMORIZED_COUNT=0
-SKIPPED_COUNT=0
-PROMPTED_PATHS=''
-MEMORIZE_DETECTED=0
-MEMORIZE_PLATFORM=${WIZARDRY_PLATFORM-${MEMORIZE_PLATFORM-}}
-MEMORIZE_RC_FILE=${WIZARDRY_RC_FILE-${MEMORIZE_RC_FILE-}}
-MEMORIZE_FORMAT=${WIZARDRY_RC_FORMAT-${MEMORIZE_RC_FORMAT-}}
-DETECT_RC_FILE=${MEMORIZE_DETECT_RC_FILE-}
-
-warn() {
-        printf '%s: %s\n' "$SCRIPT_NAME" "$1" >&2
+# Find detect-rc-file helper
+find_detect_rc_file() {
+  if [ -n "${DETECT_RC_FILE-}" ] && [ -x "$DETECT_RC_FILE" ]; then
+    printf '%s' "$DETECT_RC_FILE"
+    return 0
+  fi
+  helper="$SPELLS_DIR/divination/detect-rc-file"
+  if [ -x "$helper" ]; then
+    printf '%s' "$helper"
+    return 0
+  fi
+  if command -v detect-rc-file >/dev/null 2>&1; then
+    command -v detect-rc-file
+    return 0
+  fi
+  return 1
 }
 
-ask_yes_no() {
-        question=$1
-        default=${2:-no}
-        if "$ASK_YN_HELPER" "$question" "$default" >/dev/null; then
-                return 0
-        fi
-        return 1
+MEMORIZED_COUNT=0
+SKIPPED_COUNT=0
+MEMORIZE_DETECTED=0
+MEMORIZE_PLATFORM=${WIZARDRY_PLATFORM-}
+MEMORIZE_RC_FILE=${WIZARDRY_RC_FILE-}
+MEMORIZE_FORMAT=${WIZARDRY_RC_FORMAT-}
+
+warn() {
+  printf '%s: %s\n' "$SCRIPT_NAME" "$1" >&2
 }
 
 detect_environment() {
-        if [ "$MEMORIZE_DETECTED" -eq 1 ]; then
-                return 0
-        fi
-        
-        # Track whether DETECT_RC_FILE was explicitly set via environment variable
-        detect_rc_override=0
-        if [ -n "${DETECT_RC_FILE-}" ]; then
-                # DETECT_RC_FILE environment variable is already set, use it
-                detect_rc_override=1
-        elif [ -n "${MEMORIZE_DETECT_RC_FILE-}" ]; then
-                DETECT_RC_FILE=$MEMORIZE_DETECT_RC_FILE
-        else
-                DETECT_RC_FILE=$SPELLS_DIR/divination/detect-rc-file
-        fi
-        
-        if [ ! -x "$DETECT_RC_FILE" ]; then
-                # Only fall back to PATH if no explicit environment override was set
-                if [ "$detect_rc_override" -eq 0 ] && command -v detect-rc-file >/dev/null 2>&1; then
-                        DETECT_RC_FILE=$(command -v detect-rc-file)
-                else
-                        printf '%s\n' "$SCRIPT_NAME: detect-rc-file spell is missing; cannot determine rc file." >&2
-                        exit 1
-                fi
-        fi
-        platform=$MEMORIZE_PLATFORM
-        rc_file=$MEMORIZE_RC_FILE
-        format=$MEMORIZE_FORMAT
-        if [ -z "$platform" ] || [ -z "$rc_file" ] || [ -z "$format" ]; then
-                output=$("$DETECT_RC_FILE")
-                while IFS='=' read -r key value; do
-                        case $key in
-                        platform)
-                                if [ -z "$platform" ]; then
-                                        platform=$value
-                                fi
-                                ;;
-                        rc_file)
-                                if [ -z "$rc_file" ]; then
-                                        rc_file=$value
-                                fi
-                                ;;
-                        format)
-                                if [ -z "$format" ]; then
-                                        format=$value
-                                fi
-                                ;;
-                        esac
-                done <<EOF_DETECT
+  if [ "$MEMORIZE_DETECTED" -eq 1 ]; then
+    return 0
+  fi
+  if ! detect_helper=$(find_detect_rc_file); then
+    printf '%s\n' "$SCRIPT_NAME: detect-rc-file spell is missing." >&2
+    exit 1
+  fi
+  platform=$MEMORIZE_PLATFORM
+  rc_file=$MEMORIZE_RC_FILE
+  format=$MEMORIZE_FORMAT
+  if [ -z "$platform" ] || [ -z "$rc_file" ] || [ -z "$format" ]; then
+    output=$("$detect_helper")
+    while IFS='=' read -r key value; do
+      case $key in
+      platform) [ -z "$platform" ] && platform=$value ;;
+      rc_file) [ -z "$rc_file" ] && rc_file=$value ;;
+      format) [ -z "$format" ] && format=$value ;;
+      esac
+    done <<EOF_DETECT
 $output
 EOF_DETECT
-        fi
-        if [ -z "$rc_file" ]; then
-                printf '%s\n' "$SCRIPT_NAME: detect-rc-file did not yield an rc file." >&2
-                exit 1
-        fi
-        if [ -z "$platform" ]; then
-                platform=unknown
-        fi
-        if [ -z "$format" ]; then
-                format=shell
-        fi
-        MEMORIZE_PLATFORM=$platform
-        MEMORIZE_RC_FILE=$rc_file
-        MEMORIZE_FORMAT=$format
-        export WIZARDRY_PLATFORM=$MEMORIZE_PLATFORM
-        export WIZARDRY_RC_FILE=$MEMORIZE_RC_FILE
-        export WIZARDRY_RC_FORMAT=$MEMORIZE_FORMAT
-        MEMORIZE_DETECTED=1
+  fi
+  if [ -z "$rc_file" ]; then
+    printf '%s\n' "$SCRIPT_NAME: detect-rc-file did not yield an rc file." >&2
+    exit 1
+  fi
+  : "${platform:=unknown}"
+  : "${format:=shell}"
+  MEMORIZE_PLATFORM=$platform
+  MEMORIZE_RC_FILE=$rc_file
+  MEMORIZE_FORMAT=$format
+  export WIZARDRY_PLATFORM=$MEMORIZE_PLATFORM
+  export WIZARDRY_RC_FILE=$MEMORIZE_RC_FILE
+  export WIZARDRY_RC_FORMAT=$MEMORIZE_FORMAT
+  MEMORIZE_DETECTED=1
 }
 
 have_install_function() {
-        file=$1
-        if ! [ -r "$file" ]; then
-                return 1
-        fi
-        if ! grep -Eq '^[[:space:]]*install[[:space:]]*\(\)' "$file" 2>/dev/null; then
-                return 1
-        fi
-        return 0
+  file=$1
+  [ -r "$file" ] || return 1
+  grep -Eq '^[[:space:]]*install[[:space:]]*\(\)' "$file" 2>/dev/null
 }
 
 cleanup_wrapper() {
-        if [ -n "${MEMORIZE_WRAPPER-}" ] && [ -f "$MEMORIZE_WRAPPER" ]; then
-                rm -f "$MEMORIZE_WRAPPER"
-        fi
+  [ -n "${MEMORIZE_WRAPPER-}" ] && [ -f "$MEMORIZE_WRAPPER" ] && rm -f "$MEMORIZE_WRAPPER"
 }
 
 create_wrapper() {
-        MEMORIZE_WRAPPER=$(mktemp "${TMPDIR:-/tmp}/learn.XXXXXX") || exit 1
-cat <<'WRAPPER' >"$MEMORIZE_WRAPPER"
+  MEMORIZE_WRAPPER=$(mktemp "${TMPDIR:-/tmp}/learn.XXXXXX") || exit 1
+  cat <<'WRAPPER' >"$MEMORIZE_WRAPPER"
 set -eu
 TARGET=$1
 shift
-if [ ! -f "$TARGET" ]; then
-        printf '%s\n' "learn wrapper: missing target '$TARGET'" >&2
-        exit 1
-fi
+[ -f "$TARGET" ] || { printf '%s\n' "learn wrapper: missing target '$TARGET'" >&2; exit 1; }
 WIZARDRY_MEMORIZE_TARGET="$TARGET"
 export WIZARDRY_MEMORIZE_TARGET
 . "$TARGET"
-if ! command -v install >/dev/null 2>&1; then
-        printf '%s\n' "learn wrapper: $TARGET does not define install()" >&2
-        exit 1
-fi
+command -v install >/dev/null 2>&1 || { printf '%s\n' "learn wrapper: $TARGET does not define install()" >&2; exit 1; }
 install "$@"
 WRAPPER
-        trap cleanup_wrapper EXIT HUP INT TERM
+  trap cleanup_wrapper EXIT HUP INT TERM
 }
 
 get_interpreter() {
-        target=$1
-        first_line=''
-        if IFS= read -r first_line <"$target"; then
-                :
-        fi
-        case $first_line in
-                '#!'*)
-                        first_line=${first_line#\#!}
-                        ;;
-                *)
-                        first_line=/bin/sh
-                        ;;
-        esac
-        first_line=$(printf '%s' "$first_line" | tr -d '\r')
-        printf '%s' "$first_line"
+  target=$1
+  first_line=''
+  IFS= read -r first_line <"$target" || true
+  case $first_line in
+  '#!'*) first_line=${first_line#\#!} ;;
+  *) first_line=/bin/sh ;;
+  esac
+  printf '%s' "$first_line" | tr -d '\r'
 }
 
 run_install() {
-        target=$1
-        if [ -z "${MEMORIZE_WRAPPER-}" ] || [ ! -f "$MEMORIZE_WRAPPER" ]; then
-                create_wrapper
-        fi
-        if ! detect_environment; then
-                return 1
-        fi
-        interpreter=$(get_interpreter "$target")
-        if [ -z "$interpreter" ]; then
-                interpreter=/bin/sh
-        fi
-        (
-                export WIZARDRY_PLATFORM=$MEMORIZE_PLATFORM
-                export WIZARDRY_RC_FILE=$MEMORIZE_RC_FILE
-                export WIZARDRY_RC_FORMAT=$MEMORIZE_FORMAT
-                set -- $interpreter
-                if [ "$#" -eq 0 ]; then
-                        set -- /bin/sh
-                fi
-                "$@" "$MEMORIZE_WRAPPER" "$target"
-        )
+  target=$1
+  [ -z "${MEMORIZE_WRAPPER-}" ] || [ ! -f "$MEMORIZE_WRAPPER" ] && create_wrapper
+  detect_environment || return 1
+  interpreter=$(get_interpreter "$target")
+  : "${interpreter:=/bin/sh}"
+  (
+    export WIZARDRY_PLATFORM=$MEMORIZE_PLATFORM
+    export WIZARDRY_RC_FILE=$MEMORIZE_RC_FILE
+    export WIZARDRY_RC_FORMAT=$MEMORIZE_FORMAT
+    set -- $interpreter
+    [ "$#" -eq 0 ] && set -- /bin/sh
+    "$@" "$MEMORIZE_WRAPPER" "$target"
+  )
 }
 
 scribe_file() {
-        path=$1
-        if [ ! -f "$path" ] || [ ! -x "$path" ] || ! have_install_function "$path"; then
-                SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
-                return
-        fi
-        # In dry-run mode, just print the path without executing
-        if [ "$DRY_RUN" -eq 1 ]; then
-                printf '%s\n' "$path"
-                MEMORIZED_COUNT=$((MEMORIZED_COUNT + 1))
-                return
-        fi
-        printf 'Memorizing %s...\n' "$path"
-        if run_install "$path"; then
-                MEMORIZED_COUNT=$((MEMORIZED_COUNT + 1))
-        else
-                warn "Installation failed for '$path'."
-                SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
-        fi
+  path=$1
+  if [ ! -f "$path" ] || [ ! -x "$path" ] || ! have_install_function "$path"; then
+    SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
+    return
+  fi
+  printf 'Memorizing %s...\n' "$path"
+  if run_install "$path"; then
+    MEMORIZED_COUNT=$((MEMORIZED_COUNT + 1))
+  else
+    warn "Installation failed for '$path'."
+    SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
+  fi
 }
 
 scan_directory() {
-        dir=$1
-        if [ ! -d "$dir" ]; then
-                warn "'$dir' is not a directory."
-                SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
-                return
-        fi
-        for entry in "$dir"/*; do
-                if [ ! -e "$entry" ]; then
-                        continue
-                fi
-                if [ -d "$entry" ] && [ "$RECURSIVE" -eq 1 ]; then
-                        scan_directory "$entry"
-                        continue
-                fi
-                if [ -f "$entry" ]; then
-                        scribe_file "$entry"
-                fi
-        done
+  dir=$1
+  if [ ! -d "$dir" ]; then
+    warn "'$dir' is not a directory."
+    SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
+    return
+  fi
+  for entry in "$dir"/*; do
+    [ -e "$entry" ] || continue
+    [ -f "$entry" ] && scribe_file "$entry"
+  done
 }
 
-prompt_for_all() {
-        if ask_yes_no "No spells specified. Memorize everything in $PWD?" no; then
-                ALL_MODE=1
-                PROMPTED_PATHS='.'
-                return
-        fi
-        printf 'No spells memorized.\n'
-        exit 0
-}
-
+# Parse arguments - default to current directory
+paths=""
 while [ $# -gt 0 ]; do
-        case $1 in
-                -a|--all)
-                        ALL_MODE=1
-                        shift
-                        ;;
-                -r|--recursive)
-                        ALL_MODE=1
-                        RECURSIVE=1
-                        shift
-                        ;;
-                --dry-run)
-                        DRY_RUN=1
-                        shift
-                        ;;
-                --)
-                        shift
-                        break
-                        ;;
-                -*)
-                        warn "Unknown option: $1"
-                        show_usage >&2
-                        exit 1
-                        ;;
-                *)
-                        break
-                        ;;
-        esac
-
+  case $1 in
+  --)
+    shift
+    break
+    ;;
+  -*)
+    warn "Unknown option: $1"
+    show_usage >&2
+    exit 1
+    ;;
+  *)
+    paths="$paths $1"
+    shift
+    ;;
+  esac
 done
 
-if [ $ALL_MODE -eq 0 ] && [ $# -eq 0 ]; then
-        if [ "${MEMORIZE_PROMPT_ALLOWED-0}" -ne 1 ]; then
-                show_usage >&2
-                exit 1
-        fi
-        prompt_for_all
-        if [ -n "$PROMPTED_PATHS" ]; then
-                set -- "$PROMPTED_PATHS"
-        fi
+# Add remaining args after --
+for arg in "$@"; do
+  paths="$paths $arg"
+done
+
+# Default to current directory
+if [ -z "$paths" ]; then
+  paths="."
 fi
 
-if [ $ALL_MODE -eq 1 ]; then
-        if [ $RECURSIVE -eq 1 ]; then
-                if [ $# -eq 0 ]; then
-                        warn '--recursive requires an explicit directory path.'
-                        exit 1
-                fi
-        elif [ $# -eq 0 ]; then
-                set -- .
-        fi
-        for path in "$@"; do
-                if [ $RECURSIVE -eq 1 ]; then
-                        scan_directory "$path"
-                else
-                        if [ -d "$path" ]; then
-                                scan_directory "$path"
-                        else
-                                scribe_file "$path"
-                        fi
-                fi
-        done
-else
-        if [ $# -eq 0 ]; then
-                warn 'No spells provided.'
-                exit 1
-        fi
-        for path in "$@"; do
-                scribe_file "$path"
-        done
-fi
+# Process paths
+for path in $paths; do
+  if [ -d "$path" ]; then
+    scan_directory "$path"
+  else
+    scribe_file "$path"
+  fi
+done
 
-if [ "$DRY_RUN" -eq 1 ]; then
-        printf 'Would memorize %d spell(s).\n' "$MEMORIZED_COUNT"
-else
-        printf 'Memorized %d spell(s).\n' "$MEMORIZED_COUNT"
-fi
-
+printf 'Memorized %d spell(s).\n' "$MEMORIZED_COUNT"
 exit 0

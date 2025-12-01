@@ -5,11 +5,10 @@
 
 show_usage() {
   cat <<'USAGE'
-Usage: learn-rc --rc-file FILE --spell NAME {add|remove|status}
+Usage: learn-rc --spell NAME {add|remove|status}
 
-Manage shell rc file snippets wrapped in wizardry comment sentinels.
-Reads spell content from stdin for add; single-line gets inline suffix,
-multi-line gets begin/end block markers. Names: letters, digits, -_.:
+Add, remove, or check shell rc file snippets wrapped in wizardry sentinels.
+Reads content from stdin for add. RC file and format are auto-detected.
 USAGE
 }
 
@@ -22,22 +21,74 @@ esac
 
 set -eu
 
+SCRIPT_SOURCE=$0
+case $SCRIPT_SOURCE in
+*/*) SCRIPT_DIR=${SCRIPT_SOURCE%/*} ;;
+*) SCRIPT_DIR=. ;;
+esac
+SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
+SPELLS_DIR=${SCRIPT_DIR%/*}
+
 # Helper to test for non-empty strings (used in read loop)
 nonempty() {
   [ -n "$1" ]
+}
+
+# Find detect-rc-file helper
+find_detect_rc_file() {
+  if [ -n "${DETECT_RC_FILE-}" ] && [ -x "$DETECT_RC_FILE" ]; then
+    printf '%s' "$DETECT_RC_FILE"
+    return 0
+  fi
+  helper="$SPELLS_DIR/divination/detect-rc-file"
+  if [ -x "$helper" ]; then
+    printf '%s' "$helper"
+    return 0
+  fi
+  if command -v detect-rc-file >/dev/null 2>&1; then
+    command -v detect-rc-file
+    return 0
+  fi
+  return 1
+}
+
+# Auto-detect rc file
+auto_detect_rc() {
+  if ! detect_helper=$(find_detect_rc_file); then
+    printf '%s\n' "learn-rc: detect-rc-file helper not found." >&2
+    return 1
+  fi
+  output=$("$detect_helper")
+  rc_file_detected=''
+  format_detected=''
+  while IFS='=' read -r key value; do
+    case $key in
+    rc_file) rc_file_detected=$value ;;
+    format) format_detected=$value ;;
+    esac
+  done <<EOF_ENV
+$output
+EOF_ENV
+  if [ -z "$rc_file_detected" ]; then
+    printf '%s\n' "learn-rc: detect-rc-file did not provide an rc file." >&2
+    return 1
+  fi
+  printf '%s\n' "rc_file=$rc_file_detected"
+  printf '%s\n' "format=${format_detected:-shell}"
 }
 
 # Parse command line arguments
 action=""
 rc_file=""
 spell=""
+rc_format=""
 
 while [ "$#" -gt 0 ]; do
   case $1 in
   --rc-file)
+    # Internal option for learn-spellbook integration
     if [ "$#" -lt 2 ]; then
       printf '%s\n' "learn-rc: --rc-file expects a file path." >&2
-      show_usage >&2
       exit 1
     fi
     rc_file=$2
@@ -58,6 +109,19 @@ while [ "$#" -gt 0 ]; do
     ;;
   --spell=*)
     spell=${1#*=}
+    shift
+    ;;
+  --format)
+    # Internal option for backward compatibility
+    if [ "$#" -lt 2 ]; then
+      printf '%s\n' "learn-rc: --format expects a value." >&2
+      exit 1
+    fi
+    rc_format=$2
+    shift 2
+    ;;
+  --format=*)
+    rc_format=${1#*=}
     shift
     ;;
   add|remove|status)
@@ -87,12 +151,35 @@ while [ "$#" -gt 0 ]; do
 done
 
 # Validate required arguments
-if [ -z "$action" ] || [ -z "$rc_file" ] || [ -z "$spell" ]; then
+if [ -z "$action" ] || [ -z "$spell" ]; then
   show_usage >&2
   exit 1
 fi
 
-# Validate spell name: only letters, digits, dots, underscores, dashes, colons
+# Auto-detect rc file if not provided
+if [ -z "$rc_file" ]; then
+  if ! detect_output=$(auto_detect_rc); then
+    exit 1
+  fi
+  while IFS='=' read -r key value; do
+    case $key in
+    rc_file) rc_file=$value ;;
+    format) [ -z "$rc_format" ] && rc_format=$value ;;
+    esac
+  done <<EOF_DETECT
+$detect_output
+EOF_DETECT
+fi
+
+# Default format
+: "${rc_format:=shell}"
+
+# Auto-detect format from file extension
+case $rc_file in
+*.nix) rc_format=nix ;;
+esac
+
+# Validate spell name
 case $spell in
 *[!A-Za-z0-9._:-]*)
   printf '%s\n' "learn-rc: spell names may contain only letters, digits, dots, underscores, dashes, and colons." >&2
@@ -100,7 +187,7 @@ case $spell in
   ;;
 esac
 
-# Define sentinels for identifying wizardry-managed content
+# Define sentinels
 spell_tag="# wizardry: $spell"
 legacy_spell_tag="# wizardry-spell: $spell"
 inline_marker=" $spell_tag"
@@ -112,7 +199,6 @@ legacy_block_end="$legacy_spell_tag end"
 block_prefix="$spell_tag lines="
 legacy_prefix="$legacy_spell_tag lines="
 
-# Create the rc file's parent directory if needed
 ensure_rc_directory() {
   dir=${rc_file%/*}
   if [ "$dir" != "$rc_file" ] && [ ! -d "$dir" ]; then
@@ -120,7 +206,6 @@ ensure_rc_directory() {
   fi
 }
 
-# Check if spell is already present in rc file (returns 0 if found)
 spell_status() {
   if [ ! -f "$rc_file" ]; then
     return 1
@@ -134,7 +219,6 @@ spell_status() {
   return 1
 }
 
-# Ensure rc file ends with a newline before appending
 ensure_trailing_newline() {
   if [ ! -f "$rc_file" ] || [ ! -s "$rc_file" ]; then
     return 0
@@ -145,47 +229,33 @@ ensure_trailing_newline() {
   fi
 }
 
-# Add spell content from stdin to rc file with wizardry sentinels
 add_spell() {
   ensure_rc_directory
-
-  # Read stdin into a temp file, counting lines
   tmp_file=$(mktemp "${TMPDIR:-/tmp}/learn-rc.XXXXXX") || exit 1
   line_count=0
   while IFS= read -r line || nonempty "$line"; do
     printf '%s\n' "$line" >>"$tmp_file"
     line_count=$((line_count + 1))
   done
-
-  # Bail if nothing provided
   if [ "$line_count" -eq 0 ]; then
     rm -f "$tmp_file"
     printf '%s\n' "learn-rc: no spell content provided on stdin." >&2
     exit 1
   fi
-
-  # Skip if already present (idempotent)
   if spell_status; then
     rm -f "$tmp_file"
     return 0
   fi
-
-  # Create rc file if missing
   if [ ! -f "$rc_file" ]; then
     : >"$rc_file"
   fi
-
   ensure_trailing_newline
-
-  # Single-line: use inline marker suffix
   if [ "$line_count" -eq 1 ]; then
     first_line=$(sed -n '1p' "$tmp_file")
     printf '%s%s\n' "$first_line" "$inline_marker" >>"$rc_file"
     rm -f "$tmp_file"
     return 0
   fi
-
-  # Multi-line: wrap with begin/end block markers
   block_header="$block_start lines=$line_count"
   printf '%s\n' "$block_header" >>"$rc_file"
   cat "$tmp_file" >>"$rc_file"
@@ -193,20 +263,16 @@ add_spell() {
   rm -f "$tmp_file"
 }
 
-# Remove spell content from rc file (handles inline and block formats)
 remove_spell() {
   if [ ! -f "$rc_file" ]; then
     printf '%s\n' "learn-rc: cannot remove from missing file '$rc_file'." >&2
     exit 1
   fi
-
   tmp_file=$(mktemp "${TMPDIR:-/tmp}/learn-rc.XXXXXX") || exit 1
   removing_block=0
   to_skip=0
   removed=0
-
   while IFS= read -r line || nonempty "$line"; do
-    # Inside a begin/end block: skip until we hit the end marker
     if [ "$removing_block" -eq 1 ]; then
       case $line in
       "$block_end"|"$legacy_block_end")
@@ -215,21 +281,16 @@ remove_spell() {
       esac
       continue
     fi
-
-    # Skipping lines from legacy "lines=N" format
     if [ "$to_skip" -gt 0 ]; then
       to_skip=$((to_skip - 1))
       continue
     fi
-
     case $line in
-    # Begin block marker: start skipping
     "$block_start"*|"$legacy_block_start"*)
       removing_block=1
       removed=1
       continue
       ;;
-    # Legacy lines=N format
     "$block_prefix"*)
       count=${line#"$block_prefix"}
       case $count in
@@ -248,41 +309,81 @@ remove_spell() {
       removed=1
       continue
       ;;
-    # Inline marker: skip this line
     *"$inline_marker"|*"$legacy_inline_marker")
       removed=1
       continue
       ;;
     esac
-
     printf '%s\n' "$line" >>"$tmp_file"
   done <"$rc_file"
-
   if [ "$removed" -eq 0 ]; then
     rm -f "$tmp_file"
     printf '%s\n' "learn-rc: spell '$spell' not found in '$rc_file'." >&2
     exit 1
   fi
-
   mv "$tmp_file" "$rc_file"
 }
 
-# Execute the requested action
-case $action in
-add)
-  add_spell
-  ;;
-remove)
-  remove_spell
-  ;;
-status)
-  if spell_status; then
-    exit 0
+# Find nix-shell-init helper
+find_nix_shell_init() {
+  if [ -n "${NIX_SHELL_INIT-}" ] && [ -x "$NIX_SHELL_INIT" ]; then
+    printf '%s' "$NIX_SHELL_INIT"
+    return 0
   fi
-  exit 1
-  ;;
-*)
-  show_usage >&2
-  exit 1
-  ;;
-esac
+  helper="$SCRIPT_DIR/../.imps/sys/nix-shell-init"
+  if [ -x "$helper" ]; then
+    printf '%s' "$helper"
+    return 0
+  fi
+  if command -v nix-shell-init >/dev/null 2>&1; then
+    command -v nix-shell-init
+    return 0
+  fi
+  return 1
+}
+
+# Nix format handlers
+nix_spell_status() {
+  if ! nix_helper=$(find_nix_shell_init); then
+    printf '%s\n' "learn-rc: nix-shell-init imp not found." >&2
+    exit 1
+  fi
+  "$nix_helper" status --shell bash --name "$spell" --file "$rc_file"
+}
+
+nix_add_spell() {
+  if ! nix_helper=$(find_nix_shell_init); then
+    printf '%s\n' "learn-rc: nix-shell-init imp not found." >&2
+    exit 1
+  fi
+  "$nix_helper" add --shell bash --name "$spell" --file "$rc_file"
+}
+
+nix_remove_spell() {
+  if ! nix_helper=$(find_nix_shell_init); then
+    printf '%s\n' "learn-rc: nix-shell-init imp not found." >&2
+    exit 1
+  fi
+  "$nix_helper" remove --shell bash --name "$spell" --file "$rc_file"
+}
+
+# Execute action based on format
+if [ "$rc_format" = "nix" ]; then
+  case $action in
+  add) nix_add_spell ;;
+  remove) nix_remove_spell ;;
+  status)
+    if nix_spell_status; then exit 0; fi
+    exit 1
+    ;;
+  esac
+else
+  case $action in
+  add) add_spell ;;
+  remove) remove_spell ;;
+  status)
+    if spell_status; then exit 0; fi
+    exit 1
+    ;;
+  esac
+fi

@@ -14,9 +14,11 @@ test_help() {
   assert_success && assert_output_contains "Usage: learn"
 }
 
-test_missing_args() {
-  run_spell "spells/spellcraft/learn"
-  assert_failure && assert_error_contains "Usage: learn"
+test_runs_in_current_dir() {
+  # learn without args defaults to current directory
+  tmpdir=$(make_tempdir)
+  run_spell_in_dir "$tmpdir" "spells/spellcraft/learn"
+  assert_success && assert_output_contains "Memorized 0 spell(s)"
 }
 
 test_rejects_invalid_name() {
@@ -87,7 +89,7 @@ EOF
 }
 
 run_test_case "learn prints usage" test_help
-run_test_case "learn errors without required arguments" test_missing_args
+run_test_case "learn runs in current dir by default" test_runs_in_current_dir
 run_test_case "learn rejects invalid spell names" test_rejects_invalid_name
 run_test_case "learn adds inline spell content" test_adds_inline_spell
 run_test_case "learn adds blocks idempotently" test_adds_and_readds_block_spell_idempotently
