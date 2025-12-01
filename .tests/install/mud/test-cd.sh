@@ -240,6 +240,80 @@ STUB
   return 1
 }
 
+test_cd_auto_detects_nix_format() {
+  # Test that cd automatically detects nix format from detect-rc-file without
+  # needing WIZARDRY_RC_FORMAT to be explicitly set
+  tmp=$(make_tempdir)
+  
+  # Create a nix config file
+  nix_config="$tmp/home.nix"
+  printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$nix_config"
+  
+  # Create detect-rc-file that returns nix format (note: no WIZARDRY_RC_FORMAT)
+  cat >"$tmp/detect-rc-file" <<STUB
+#!/bin/sh
+printf 'platform=nixos\n'
+printf 'rc_file=$nix_config\n'
+printf 'format=nix\n'
+STUB
+  chmod +x "$tmp/detect-rc-file"
+  
+  # Run cd install WITHOUT WIZARDRY_RC_FORMAT - it should auto-detect from detect-rc-file
+  run_cmd env PATH="$tmp:$PATH" WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" HOME="$tmp" "$ROOT_DIR/spells/install/mud/cd" install
+  assert_success || return 1
+  
+  # Verify it installed to configuration.nix using nix format
+  if grep -q "programs.bash.initExtra" "$nix_config"; then
+    return 0
+  fi
+  if grep -q "wizardry-shell: cd-cantrip" "$nix_config"; then
+    return 0
+  fi
+  TEST_FAILURE_REASON="Nix format was not auto-detected from detect-rc-file output"
+  return 1
+}
+
+test_cd_uninstall_nix_format() {
+  # Test that cd uninstall works correctly for nix format
+  tmp=$(make_tempdir)
+  
+  # Create a nix config file
+  nix_config="$tmp/configuration.nix"
+  printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$nix_config"
+  
+  # Create detect-rc-file that returns nix format
+  cat >"$tmp/detect-rc-file" <<STUB
+#!/bin/sh
+printf 'platform=nixos\n'
+printf 'rc_file=$nix_config\n'
+printf 'format=nix\n'
+STUB
+  chmod +x "$tmp/detect-rc-file"
+  
+  # First install the hook
+  run_cmd env PATH="$tmp:$PATH" WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" HOME="$tmp" "$ROOT_DIR/spells/install/mud/cd" install
+  assert_success || return 1
+  
+  # Verify hook was installed
+  if ! grep -q "wizardry-shell: cd-cantrip" "$nix_config"; then
+    TEST_FAILURE_REASON="Hook was not installed before uninstall test"
+    return 1
+  fi
+  
+  # Now uninstall
+  run_cmd env PATH="$tmp:$PATH" WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" HOME="$tmp" "$ROOT_DIR/spells/install/mud/cd" uninstall
+  assert_success || return 1
+  assert_output_contains "uninstalled wizardry hooks" || return 1
+  
+  # Verify hook was removed
+  if grep -q "wizardry-shell: cd-cantrip" "$nix_config"; then
+    TEST_FAILURE_REASON="Hook still present after uninstall"
+    return 1
+  fi
+}
+
 run_test_case "cd uses nix format on NixOS" test_cd_nixos_uses_nix_format
+run_test_case "cd auto-detects nix format from detect-rc-file" test_cd_auto_detects_nix_format
+run_test_case "cd uninstall works for nix format" test_cd_uninstall_nix_format
 
 finish_tests
