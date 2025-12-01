@@ -96,7 +96,8 @@ esac
 # For home-manager (~/.config/home-manager/home.nix): programs.bash.initExtra
 is_system_config=0
 case $nix_file in
-/etc/nixos/*|*/configuration.nix)
+/etc/nixos/configuration.nix|/etc/nixos/*)
+  # Only files directly under /etc/nixos/ are system configuration
   is_system_config=1
   ;;
 esac

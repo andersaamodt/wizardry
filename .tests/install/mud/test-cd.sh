@@ -210,6 +210,8 @@ run_test_case "cd --help shows usage" test_cd_help_shows_usage
 
 test_cd_nixos_uses_nix_format() {
   # Test that on NixOS (nix format), cd uses nix-shell-init to add shell code
+  # Note: Since we use temp paths, it will use initExtra (home-manager style)
+  # Real /etc/nixos/configuration.nix would use interactiveShellInit
   tmp=$(make_tempdir)
   
   # Create a nix config file
@@ -229,8 +231,8 @@ STUB
   run_cmd env PATH="$tmp:$PATH" WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" WIZARDRY_RC_FORMAT=nix WIZARDRY_RC_FILE="$nix_config" WIZARDRY_SKIP_NIX_REBUILD=1 HOME="$tmp" "$ROOT_DIR/spells/install/mud/cd" install
   assert_success || return 1
   
-  # Verify it installed to configuration.nix using nix format (interactiveShellInit for system config)
-  if grep -q "programs.bash.interactiveShellInit" "$nix_config"; then
+  # Verify it installed to configuration.nix using nix format (initExtra since not at /etc/nixos/)
+  if grep -q "programs.bash.initExtra" "$nix_config"; then
     return 0
   fi
   if grep -q "wizardry-shell: cd-cantrip" "$nix_config"; then
