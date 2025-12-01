@@ -54,7 +54,7 @@ fi
 FILE="${1-}"
 
 if [ -z "$FILE" ]; then
-        printf '%s\n' "priority-menu: file argument required." >&2
+        printf '%s\n' "priority-menu: file path required." >&2
         exit 1
 fi
 

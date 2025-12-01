@@ -24,7 +24,7 @@ set -eu
 
 # Check argument
 if [ -z "${1+x}" ]; then
-        printf '%s\n' "validate-ssh-key: key argument required." >&2
+        printf '%s\n' "validate-ssh-key: key required." >&2
         exit 1
 fi
 

@@ -97,13 +97,13 @@ while :; do
 
         case $response in
         *[!0-9-]*|"")
-                printf '%s\n' "Enter a whole number." >&2
+                printf '%s\n' "Whole number expected." >&2
                 continue
                 ;;
         esac
 
         if [ "$response" -lt "$min" ] || [ "$response" -gt "$max" ]; then
-                printf '%s\n' "Choose a number between $min and $max." >&2
+                printf '%s\n' "Number must be between $min and $max." >&2
                 continue
         fi
 
