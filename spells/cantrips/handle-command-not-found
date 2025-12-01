@@ -1,0 +1,12 @@
+# In theory, handle_command_not_found is a built-in function, and sourcing this file in .bashrc will overload it
+# Overloading this function allows all commands that produce "command not found" to be automatically run through another command.
+# In this case, we will use our recursive parser to try parsing everything that isn't a native terminal command already.
+
+handle_command_not_found() {
+    if [ $? -eq 127 ]; then
+        echo "parse recursively"
+    fi
+}
+
+trap 'handle_command_not_found' ERR
+  
