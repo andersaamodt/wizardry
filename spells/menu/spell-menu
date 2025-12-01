@@ -78,11 +78,27 @@ do_forget() {
         "$cast_store" remove "$mem_name"
 }
 
-# Check if a script is a custom spell (exists as executable in spell_home or its subfolders)
-# This also checks if the resolved command path is under spell_home (e.g. ~/.spellbook/*)
+# Check if a script is a custom spell (user-created, not a built-in spell)
+# Custom spells are user-created commands that exist ONLY in spell_home (not in system PATH)
+# Built-in spells that happen to be in PATH are NOT custom spells
 is_custom_spell() {
         check_name=$1
-        # Check in spell_home root
+        
+        # First, check if this is a built-in spell (exists in PATH outside of spell_home)
+        # If so, it's NOT a custom spell, even if memorized
+        if cmd_path=$(command -v "$check_name" 2>/dev/null); then
+                case "$cmd_path" in
+                        "$spell_home"/*) 
+                                # Found in spell_home - could be custom, check below
+                                ;;
+                        *)
+                                # Found elsewhere in PATH - this is a built-in spell, not custom
+                                return 1
+                                ;;
+                esac
+        fi
+        
+        # Check if custom script exists in spell_home root
         script_path="$spell_home/$check_name"
         if [ -f "$script_path" ] && [ -x "$script_path" ]; then
                 return 0
@@ -95,11 +111,6 @@ is_custom_spell() {
                         return 0
                 fi
         done
-        # Also check if the command path itself is under spell_home (with trailing slash check)
-        cmd_path=$(command -v "$check_name" 2>/dev/null) || return 1
-        case "$cmd_path" in
-                "$spell_home"/*) return 0 ;;
-        esac
         return 1
 }
 

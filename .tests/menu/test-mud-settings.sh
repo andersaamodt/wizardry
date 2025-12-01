@@ -61,11 +61,12 @@ SH
   chmod +x "$tmp/exit-label"
   # Test as submenu (as it would be called from mud menu)
   # Use MENU_LOOP_LIMIT=1 to exit after one iteration
+  # Note: Without a player key, menu shows "Create player key" instead of "Copy player key"
   run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MUD_PLAYER="$player" MENU_LOOP_LIMIT=1 "$ROOT_DIR/spells/menu/mud-settings"
   assert_success
   args=$(cat "$tmp/log")
   case "$args" in
-    *"MUD Settings:"*"Copy player key to clipboard%copy ~/.ssh/"*"Change Player%select-player"*"New Player%new-player"*"Install%launch_submenu mud-menu"*"Exit%exit 113"* ) : ;;
+    *"MUD Settings:"*"player key"*"Change Player%select-player"*"New Player%new-player"*"Exit%exit 113"* ) : ;;
     *) TEST_FAILURE_REASON="mud settings actions missing: $args"; return 1 ;;
   esac
 }

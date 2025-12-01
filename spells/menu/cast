@@ -52,10 +52,8 @@ spell_menu_loop() {
                 while IFS=$(printf '\t') read -r alias command
                 do
                         [ -z "$alias" ] && continue
-                        entry_cmd=$cast_dir/$alias
-                        if [ ! -x "$entry_cmd" ]; then
-                                entry_cmd=$command
-                        fi
+                        # Memorized spells are called directly by name
+                        entry_cmd=$command
                         # Label is just the alias; menu shows and executes entry_cmd on the right
                         set -- "$@" "$(printf '%s%%%s' "$alias" "$entry_cmd")"
                 done <<SPELLS
