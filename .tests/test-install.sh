@@ -563,8 +563,9 @@ path_wizard_uses_explicit_helper_paths() {
     return 1
   fi
   
-  if ! grep -q 'LEARN_DEFAULT=.*\$SCRIPT_DIR' "$ROOT_DIR/spells/spellcraft/learn-spellbook"; then
-    TEST_FAILURE_REASON="learn-spellbook should have explicit default path for LEARN"
+  # learn-spellbook now uses learn-rc for RC file management
+  if ! grep -q 'LEARN_RC_DEFAULT=.*\$SCRIPT_DIR' "$ROOT_DIR/spells/spellcraft/learn-spellbook"; then
+    TEST_FAILURE_REASON="learn-spellbook should have explicit default path for LEARN_RC"
     return 1
   fi
   

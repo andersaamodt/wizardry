@@ -60,7 +60,7 @@ fi
 
 display_menu() {
         checked_state=$(read-magic "${FILE}" checked)
-        if [ "${checked_state}" = "Error: The attribute does not exist." ]; then
+        if [ "${checked_state}" = "read-magic: attribute does not exist." ]; then
           check_item="Check%echo 'Placeholder: Check command'"
         else
           check_item="Uncheck%echo 'Placeholder: Uncheck command'"

@@ -21,7 +21,7 @@ if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
 fi
 SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
 DETECT_RC_FILE_DEFAULT="$SCRIPT_DIR/../divination/detect-rc-file"
-LEARN_DEFAULT="$SCRIPT_DIR/../spellcraft/learn"
+LEARN_RC_DEFAULT="$SCRIPT_DIR/learn-rc"
 
 detect_override=0
 if [ -n "${DETECT_RC_FILE-}" ]; then
@@ -30,16 +30,20 @@ else
         DETECT_RC_FILE=$DETECT_RC_FILE_DEFAULT
 fi
 
-learn_override=0
-if [ -n "${LEARN_SPELL-}" ]; then
-        learn_override=1
-        LEARN=$LEARN_SPELL
+learn_rc_override=0
+if [ -n "${LEARN_RC_SPELL-}" ]; then
+        learn_rc_override=1
+        LEARN_RC=$LEARN_RC_SPELL
+elif [ -n "${LEARN_SPELL-}" ]; then
+        # Legacy: LEARN_SPELL now means learn-rc for this spell
+        learn_rc_override=1
+        LEARN_RC=$LEARN_SPELL
 elif [ -n "${SCRIBE_SPELL-}" ]; then
         # Legacy environment variable for backwards compatibility
-        learn_override=1
-        LEARN=$SCRIBE_SPELL
+        learn_rc_override=1
+        LEARN_RC=$SCRIBE_SPELL
 else
-        LEARN=$LEARN_DEFAULT
+        LEARN_RC=$LEARN_RC_DEFAULT
 fi
 
 if [ ! -x "$DETECT_RC_FILE" ]; then
@@ -56,16 +60,19 @@ if [ ! -x "$DETECT_RC_FILE" ]; then
         fi
 fi
 
-if [ ! -x "$LEARN" ]; then
-        if [ "$learn_override" -eq 1 ]; then
-                printf '%s\n' "learn-spellbook: required helper '$LEARN' is missing or not executable." >&2
+if [ ! -x "$LEARN_RC" ]; then
+        if [ "$learn_rc_override" -eq 1 ]; then
+                printf '%s\n' "learn-spellbook: required helper '$LEARN_RC' is missing or not executable." >&2
                 exit 1
         fi
 
-        if command -v learn >/dev/null 2>&1; then
-                LEARN=$(command -v learn)
+        if command -v learn-rc >/dev/null 2>&1; then
+                LEARN_RC=$(command -v learn-rc)
+        elif command -v learn >/dev/null 2>&1; then
+                # Fall back to learn for backward compatibility
+                LEARN_RC=$(command -v learn)
         else
-                printf '%s\n' "learn-spellbook: required helper '$LEARN' is missing or not executable." >&2
+                printf '%s\n' "learn-spellbook: required helper '$LEARN_RC' is missing or not executable." >&2
                 exit 1
         fi
 fi
@@ -194,13 +201,13 @@ else
         case $action in
         add|remove|remove-all|status) : ;;
         *)
-                printf '%s\n' "learn-spellbook: The first argument must be 'add', 'remove', 'remove-all', or 'status'." >&2
+                printf '%s\n' "Error: The first argument must be 'add', 'remove', 'remove-all', or 'status'." >&2
                 exit 1
                 ;;
         esac
         
         if [ "$action" = "status" ] && [ "$#" -eq 0 ]; then
-                printf '%s\n' "learn-spellbook: The 'status' action expects a directory argument." >&2
+                printf '%s\n' "Error: The 'status' action expects a directory argument." >&2
                 exit 1
         fi
 fi
@@ -219,12 +226,12 @@ normalize_directory() {
         esac
 
         if [ "$directory" = "" ]; then
-                printf '%s\n' "learn-spellbook: The directory does not exist." >&2
+                printf '%s\n' "Error: The directory does not exist." >&2
                 exit 1
         fi
 
         if [ ! -d "$directory" ]; then
-                printf '%s\n' "learn-spellbook: The directory does not exist." >&2
+                printf '%s\n' "Error: The directory does not exist." >&2
                 exit 1
         fi
 
@@ -254,7 +261,7 @@ if [ "$batch_mode" -eq 0 ] && [ "$action" != "remove-all" ]; then
                 fi
         elif [ "$action" = "remove" ] || [ "$action" = "status" ]; then
                 if [ "$#" -eq 0 ]; then
-                        printf '%s\n' "learn-spellbook: The '$action' action expects a directory argument." >&2
+                        printf '%s\n' "Error: The '$action' action expects a directory argument." >&2
                         exit 1
                 fi
                 directory=$(normalize_directory "$1")
@@ -277,7 +284,7 @@ generate_backup_timestamp() {
 
 # Validate batch add file if specified
 if [ "$batch_mode" -eq 1 ] && [ ! -f "$batch_add_file" ]; then
-        printf '%s\n' "learn-spellbook: Batch file '$batch_add_file' not found." >&2
+        printf '%s\n' "Error: Batch file '$batch_add_file' not found." >&2
         exit 1
 fi
 
@@ -286,12 +293,12 @@ fi
 # implementation so we keep behaviour consistent across formats.
 if [ "$recursive" -eq 1 ]; then
         tmp_file=$(mktemp "${TMPDIR:-/tmp}/learn-spellbook.XXXXXX") || {
-                printf '%s\n' "learn-spellbook: Unable to enumerate directories under '$directory'." >&2
+                printf '%s\n' "Error: Unable to enumerate directories under '$directory'." >&2
                 exit 1
         }
         if ! find "$directory" -type d -print | sort >"$tmp_file"; then
                 rm -f "$tmp_file"
-                printf '%s\n' "learn-spellbook: Unable to enumerate directories under '$directory'." >&2
+                printf '%s\n' "Error: Unable to enumerate directories under '$directory'." >&2
                 exit 1
         fi
 
@@ -474,7 +481,7 @@ fi
 case $format in
 shell|nix) : ;;
 *)
-        printf '%s\n' "learn-spellbook: Unsupported format '$format'." >&2
+        printf '%s\n' "Error: Unsupported format '$format'." >&2
         exit 1
         ;;
 esac
@@ -605,7 +612,7 @@ refresh_legacy_shell_export() {
 
         if ! mv "$tmp_file" "$rc_file"; then
                 rm -f "$tmp_file"
-                printf '%s\n' "learn-spellbook: Unable to refresh '$rc_file'." >&2
+                printf '%s\n' "Error: Unable to refresh '$rc_file'." >&2
                 exit 1
         fi
 
@@ -630,7 +637,7 @@ shell_add() {
                 return 0
         fi
         spell_name=$(spell_identifier_for_directory "$directory")
-        if ! printf '%s\n' "$managed_export_line" | "$LEARN" --rc-file "$rc_file" --spell "$spell_name" add; then
+        if ! printf '%s\n' "$managed_export_line" | "$LEARN_RC" --rc-file "$rc_file" --spell "$spell_name" add; then
                 printf '%s\n' "learn-spellbook: unable to record the PATH entry." >&2
                 exit 1
         fi
@@ -640,12 +647,12 @@ shell_add() {
 # Remove a previously added export line from shell rc files.
 shell_remove() {
         if [ ! -f "$rc_file" ]; then
-                printf '%s\n' "learn-spellbook: The startup file '$rc_file' does not exist." >&2
+                printf '%s\n' "Error: The startup file '$rc_file' does not exist." >&2
                 exit 1
         fi
         spell_name=$(spell_identifier_for_directory "$directory")
-        if "$LEARN" --rc-file "$rc_file" --spell "$spell_name" status >/dev/null 2>&1; then
-                "$LEARN" --rc-file "$rc_file" --spell "$spell_name" remove
+        if "$LEARN_RC" --rc-file "$rc_file" --spell "$spell_name" status >/dev/null 2>&1; then
+                "$LEARN_RC" --rc-file "$rc_file" --spell "$spell_name" remove
                 printf '%s\n' "Removed '$directory' from PATH entries recorded in '$rc_file'. Open a new shell or source the file to drop it."
                 return 0
         fi
@@ -661,7 +668,7 @@ shell_remove() {
                 has_legacy=1
         fi
         if [ "$has_managed" -eq 0 ] && [ "$has_legacy" -eq 0 ]; then
-                printf '%s\n' "learn-spellbook: The directory is not in your PATH." >&2
+                printf '%s\n' "Error: The directory is not in your PATH." >&2
                 exit 1
         fi
         tmp_file="$rc_file.wizardry.$$"
@@ -677,7 +684,7 @@ shell_remove() {
         done <"$rc_file"
         if ! mv "$tmp_file" "$rc_file"; then
                 rm -f "$tmp_file"
-                printf '%s\n' "learn-spellbook: Unable to replace '$rc_file'." >&2
+                printf '%s\n' "Error: Unable to replace '$rc_file'." >&2
                 exit 1
         fi
         printf '%s\n' "Removed '$directory' from PATH entries recorded in '$rc_file'. Open a new shell or source the file to drop it."
@@ -746,7 +753,7 @@ shell_status() {
 # Uses learn to remove all wizardry spell blocks.
 shell_remove_all() {
         if [ ! -f "$rc_file" ]; then
-                printf '%s\n' "learn-spellbook: The configuration file '$rc_file' does not exist." >&2
+                printf '%s\n' "Error: The configuration file '$rc_file' does not exist." >&2
                 exit 1
         fi
         
@@ -761,8 +768,8 @@ shell_remove_all() {
         
         while IFS= read -r spell_name; do
                 [ -z "$spell_name" ] && continue
-                if "$LEARN" --rc-file "$rc_file" --spell "$spell_name" status >/dev/null 2>&1; then
-                        "$LEARN" --rc-file "$rc_file" --spell "$spell_name" remove 2>/dev/null || true
+                if "$LEARN_RC" --rc-file "$rc_file" --spell "$spell_name" status >/dev/null 2>&1; then
+                        "$LEARN_RC" --rc-file "$rc_file" --spell "$spell_name" remove 2>/dev/null || true
                         removed_count=$((removed_count + 1))
                 fi
         done <"$tmp_spells"
@@ -1084,13 +1091,13 @@ nix_add() {
 # Remove a directory from configuration.nix. Only removes wizardry-marked lines.
 nix_remove() {
         if [ ! -f "$rc_file" ]; then
-                printf '%s\n' "learn-spellbook: The startup file '$rc_file' does not exist." >&2
+                printf '%s\n' "Error: The startup file '$rc_file' does not exist." >&2
                 exit 1
         fi
         
         # Check if this path exists in wizardry-marked lines
         if ! has_wizardry_nix_path "$directory"; then
-                printf '%s\n' "learn-spellbook: The directory is not in your PATH." >&2
+                printf '%s\n' "Error: The directory is not in your PATH." >&2
                 exit 1
         fi
         
@@ -1110,7 +1117,7 @@ nix_status() {
 # Remove all wizardry-managed PATH entries from configuration.nix.
 nix_remove_all() {
         if [ ! -f "$rc_file" ]; then
-                printf '%s\n' "learn-spellbook: The configuration file '$rc_file' does not exist." >&2
+                printf '%s\n' "Error: The configuration file '$rc_file' does not exist." >&2
                 exit 1
         fi
         
@@ -1129,7 +1136,7 @@ nix_remove_all() {
 # Handle batch add mode - process all directories from file at once
 if [ "$batch_mode" -eq 1 ]; then
         if [ "$format" != "nix" ]; then
-                printf '%s\n' "learn-spellbook: Batch add mode is only supported for nix format." >&2
+                printf '%s\n' "Error: Batch add mode is only supported for nix format." >&2
                 exit 1
         fi
         
