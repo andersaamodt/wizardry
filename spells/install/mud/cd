@@ -5,6 +5,18 @@
 # small so wizards can tweak it at a glance while still whispering just
 # enough lore to keep the spell recognizable.
 
+# When sourced via alias, only run the cd and look, then return early
+# This avoids affecting the user's shell with set -eu or exit
+if [ -n "${WIZARDRY_CD_CANTRIP-}" ] && [ "${0##*/}" != "cd" ]; then
+        # Sourced via alias - just do the cd and look
+        command cd "$@" && {
+                if command -v look >/dev/null 2>&1; then
+                        look 2>/dev/null || true
+                fi
+        }
+        return 0 2>/dev/null || exit 0
+fi
+
 show_usage() {
         cat <<'USAGE'
 Usage: cd [DIRECTORY]
@@ -256,7 +268,8 @@ wizardry_cd_cast_look() {
 }
 
 wizardry_cd_main() {
-        \cd "$@" && wizardry_cd_cast_look
+        # Use 'command cd' to call the builtin cd and avoid alias recursion
+        command cd "$@" && wizardry_cd_cast_look
 }
 
 : "${WIZARDRY_CD_CANTRIP:=${WIZARDRY_MEMORIZE_TARGET:-$(absolute_spell_path)}}"
@@ -273,8 +286,9 @@ uninstall)
         ;;
 esac
 
+# If run directly (not sourced via alias and not install/uninstall),
+# prompt to install and then run the cd
 if [ -z "${WIZARDRY_MEMORIZE_TARGET-}" ]; then
         prompt_install_if_needed || true
         wizardry_cd_main "$@"
-        exit $?
 fi
