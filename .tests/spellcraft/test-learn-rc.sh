@@ -87,27 +87,23 @@ EOF
   assert_success
 }
 
-test_requires_all_args() {
+test_requires_spell_and_action() {
   # Missing spell name
-  run_spell "spells/spellcraft/learn-rc" --rc-file "$WIZARDRY_TMPDIR/rc" add
-  assert_failure && assert_error_contains "Usage:"
-  
-  # Missing rc-file
-  run_spell "spells/spellcraft/learn-rc" --spell test add
+  run_spell "spells/spellcraft/learn-rc" --rc-file "$WIZARDRY_TMPDIR/rc" add </dev/null
   assert_failure && assert_error_contains "Usage:"
   
   # Missing action
-  run_spell "spells/spellcraft/learn-rc" --rc-file "$WIZARDRY_TMPDIR/rc" --spell test
+  run_spell "spells/spellcraft/learn-rc" --rc-file "$WIZARDRY_TMPDIR/rc" --spell test </dev/null
   assert_failure && assert_error_contains "Usage:"
 }
 
 test_unknown_option() {
-  run_spell "spells/spellcraft/learn-rc" --unknown-flag
+  run_spell "spells/spellcraft/learn-rc" --unknown-flag </dev/null
   assert_failure && assert_error_contains "unknown option"
 }
 
 test_unexpected_argument() {
-  run_spell "spells/spellcraft/learn-rc" --rc-file "$WIZARDRY_TMPDIR/rc" --spell test add extra_arg
+  run_spell "spells/spellcraft/learn-rc" --rc-file "$WIZARDRY_TMPDIR/rc" --spell test add extra_arg </dev/null
   assert_failure && assert_error_contains "unexpected argument"
 }
 
@@ -119,7 +115,7 @@ run_test_case "learn-rc adds blocks idempotently" test_adds_and_readds_block_spe
 run_test_case "learn-rc fails to remove missing files" test_remove_reports_missing_file
 run_test_case "learn-rc removes previously added blocks" test_remove_cleans_block
 run_test_case "learn-rc status tracks presence" test_status_reflects_presence
-run_test_case "learn-rc requires all arguments" test_requires_all_args
+run_test_case "learn-rc requires spell and action" test_requires_spell_and_action
 run_test_case "learn-rc rejects unknown options" test_unknown_option
 run_test_case "learn-rc rejects unexpected arguments" test_unexpected_argument
 finish_tests
