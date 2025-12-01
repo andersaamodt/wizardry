@@ -27,7 +27,7 @@ read -r player_name
 
 # Check if key files already exist
 if [ -f "$HOME/.ssh/${player_name}" ] && [ -f "$HOME/.ssh/${player_name}.pub" ]; then
-    printf '%s' "Key files for player ${player_name} already exist. Please enter a different player name: "
+    printf '%s' "Key files for player ${player_name} already exist. Enter a different player name: "
     read -r player_name
 fi
 

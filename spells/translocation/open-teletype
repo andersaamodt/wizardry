@@ -24,7 +24,7 @@ set -eu
 
 # Check for required commands
 if ! has torify; then
-        die "open-teletype: torify not found. Please install tor."
+        die "open-teletype: torify (tor) not found."
 fi
 
 # Get player key from environment

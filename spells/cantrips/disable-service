@@ -35,7 +35,7 @@ if [ -x "$SCRIPT_DIR/ask_text" ]; then
 printf '%s' "$SCRIPT_DIR/ask_text"
 return 0
 fi
-printf '%s\n' "$SCRIPT_NAME: ask_text spell not found; please install wizardry cantrips." >&2
+printf '%s\n' "$SCRIPT_NAME: ask_text spell not found." >&2
 exit 1
 }
 

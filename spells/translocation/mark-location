@@ -75,7 +75,7 @@ fi
 # Validate marker name (alphanumeric, dashes, underscores only)
 case "$marker_name" in
   *[!A-Za-z0-9_-]*)
-    warn "Error: marker name may only contain letters, numbers, dashes, and underscores."
+    warn "mark-location: marker name may only contain letters, numbers, dashes, and underscores."
     exit 1
     ;;
 esac
@@ -111,7 +111,7 @@ else
       destination="$(here)/$target_path"
       ;;
   esac
-  gone "$destination" && { warn "Error: $target_path does not exist."; exit 1; }
+  gone "$destination" && { warn "mark-location: $target_path does not exist."; exit 1; }
 fi
 
 # Normalize any double slashes in the path (can occur on macOS where TMPDIR ends with /)

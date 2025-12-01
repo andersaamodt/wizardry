@@ -70,8 +70,8 @@ if [ "$#" -gt 0 ]; then
 else
     # Point users toward the core prerequisite menu so they can resolve the
     # missing dependency the Wizardry way instead of reaching for system
-    # package managers manually.
-    message="The '${command_name}' command is required. Run 'core-menu' to review installation options."
+    # package managers.
+    message="The '${command_name}' command is required. See 'core-menu' for installation options."
 fi
 
 warn "require-command: $message"

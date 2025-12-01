@@ -51,6 +51,6 @@ done
 
 if [ "$found" -eq 0 ]; then
   printf 'No file found for hash %s.\n' "$hash" >&2
-  printf 'Try running: forall hashchant\n' >&2
+  printf 'Tip: use "forall hashchant" to hash files in this directory.\n' >&2
   exit 1
 fi

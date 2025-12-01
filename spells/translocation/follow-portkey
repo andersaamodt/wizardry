@@ -23,7 +23,7 @@ set -eu
 
 # Ensure file argument is provided
 if [ -z "${1-}" ]; then
-        printf '%s\n' "follow-portkey: file argument required." >&2
+        printf '%s\n' "follow-portkey: file path required." >&2
         show_usage >&2
         exit 1
 fi

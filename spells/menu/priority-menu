@@ -54,13 +54,13 @@ fi
 FILE="${1-}"
 
 if [ -z "$FILE" ]; then
-        printf '%s\n' "priority-menu: file argument required." >&2
+        printf '%s\n' "priority-menu: file path required." >&2
         exit 1
 fi
 
 display_menu() {
         checked_state=$(read-magic "${FILE}" checked)
-        if [ "${checked_state}" = "Error: The attribute does not exist." ]; then
+        if [ "${checked_state}" = "read-magic: attribute does not exist." ]; then
           check_item="Check%echo 'Placeholder: Check command'"
         else
           check_item="Uncheck%echo 'Placeholder: Uncheck command'"

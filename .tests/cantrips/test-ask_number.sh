@@ -23,14 +23,14 @@ test_ask_number_accepts_range_after_retry() {
   tmp=$(make_tempdir)
   printf 'abc\n7\n' >"$tmp/answers"
   run_cmd env ASK_CANTRIP_INPUT=stdin sh -c "\"$ROOT_DIR/spells/cantrips/ask_number\" 'Pick' 5 10 < \"$tmp/answers\""
-  assert_success && assert_output_contains "7" && assert_error_contains "Please enter a whole number."
+  assert_success && assert_output_contains "7" && assert_error_contains "Whole number expected."
 }
 
 test_ask_number_enforces_bounds() {
   tmp=$(make_tempdir)
   printf '4\n5\n' >"$tmp/answers"
   run_cmd env ASK_CANTRIP_INPUT=stdin sh -c "\"$ROOT_DIR/spells/cantrips/ask_number\" 'Choose' 5 6 < \"$tmp/answers\""
-  assert_success && assert_output_contains "5" && assert_error_contains "Please choose a number between 5 and 6."
+  assert_success && assert_output_contains "5" && assert_error_contains "Number must be between 5 and 6."
 }
 
 test_ask_number_rejects_invalid_bounds() {
@@ -60,7 +60,7 @@ test_ask_number_rejects_above_max() {
   tmp=$(make_tempdir)
   printf '11\n10\n' >"$tmp/answers"
   run_cmd env ASK_CANTRIP_INPUT=stdin sh -c "\"$ROOT_DIR/spells/cantrips/ask_number\" 'Pick' 5 10 < \"$tmp/answers\""
-  assert_success && assert_output_contains "10" && assert_error_contains "Please choose a number between 5 and 10."
+  assert_success && assert_output_contains "10" && assert_error_contains "Number must be between 5 and 10."
 }
 
 # Test accepts negative numbers when range includes them
@@ -80,7 +80,7 @@ test_ask_number_reprompts_on_empty() {
   tmp=$(make_tempdir)
   printf '\n7\n' >"$tmp/answers"
   run_cmd env ASK_CANTRIP_INPUT=stdin sh -c "\"$ROOT_DIR/spells/cantrips/ask_number\" 'Pick' 5 10 < \"$tmp/answers\""
-  assert_success && assert_output_contains "7" && assert_error_contains "Please enter a whole number."
+  assert_success && assert_output_contains "7" && assert_error_contains "Whole number expected."
 }
 
 # Test rejects non-integer MAX

@@ -6,7 +6,7 @@ file=${1:-}
 suffix=${2:-.bak}
 
 if [ -z "$file" ]; then
-  printf '%s\n' "backup: file argument required" >&2
+  printf '%s\n' "backup: file path required" >&2
   exit 1
 fi
 

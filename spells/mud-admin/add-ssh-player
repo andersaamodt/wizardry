@@ -30,7 +30,7 @@ read -r playername
 
 # Check if user already exists. Check now so they don't have to enter the SSH key over and over.
 if id "$playername" >/dev/null 2>&1; then
-    printf '%s\n' "Error: user $playername already exists. Please delete the existing user first and try again."
+    printf '%s\n' "add-ssh-player: user $playername already exists."
     exit 1
 fi
 
@@ -39,7 +39,7 @@ read -r sshkey
 
 # Check if key already exists in authorized_keys file
 if grep -q "$sshkey" ~/.ssh/authorized_keys 2>/dev/null; then
-    printf '%s\n' "Error: key already exists in authorized_keys file. Please delete the existing key first and try again."
+    printf '%s\n' "add-ssh-player: key already exists in authorized_keys file."
     exit 1
 fi
 

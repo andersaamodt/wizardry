@@ -107,7 +107,7 @@ display_menu() {
 }
 
 display_menu() {
-    description="Please choose an option to configure your network settings"
+    description="Network configuration options"
     options=("Configure static IP" "Configure DHCP" "Reset to DHCP" "Exit")
     commands=("configure_static_ip" "configure_dhcp" "reset_dhcp" "exit")
     menu "$description" "${options[@]}" "${commands[@]}"

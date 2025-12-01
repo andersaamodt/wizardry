@@ -103,7 +103,7 @@ while :; do
                 ;;
         esac
 
-        printf '%s\n' "Please answer yes or no." >&2
+        printf '%s\n' "Yes or no?" >&2
         default_hint="[y/n]" # remove default hint after invalid input
         default_choice=""
 done

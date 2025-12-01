@@ -181,7 +181,7 @@ install_look || true
 name=$(read-magic "$path" name || true)
 description=$(read-magic "$path" description || true)
 
-missing_msg='Error: The attribute does not exist.'
+missing_msg='read-magic: attribute does not exist.'
 
 if [ "$name" != "$missing_msg" ] || [ "$description" != "$missing_msg" ]; then
         if [ "$name" != "$missing_msg" ] && [ -n "$name" ]; then

@@ -40,7 +40,7 @@ test_rejects_invalid_format() {
 test_requires_argument() {
   run_spell "spells/cantrips/validate-ssh-key"
   assert_failure || return 1
-  assert_error_contains "key argument required" || return 1
+  assert_error_contains "key required" || return 1
 }
 
 run_test_case "validate-ssh-key shows usage text" test_help

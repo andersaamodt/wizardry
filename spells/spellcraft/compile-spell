@@ -22,7 +22,7 @@ case "${1-}" in
 esac
 
 if [ "$#" -lt 1 ]; then
-  warn "Error: spell name required"
+  warn "compile-spell: spell name required"
   show_usage >&2
   exit 1
 fi
@@ -45,7 +45,7 @@ for dir in "$repo_dir/spells" "$repo_dir/spells"/*; do
 done
 
 if [ -z "$spell_path" ] || [ ! -f "$spell_path" ]; then
-  warn "Error: spell '$spell_name' not found"
+  warn "compile-spell: spell '$spell_name' not found"
   exit 1
 fi
 
