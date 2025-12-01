@@ -181,11 +181,15 @@ $line"
   # Escape the shell code for nix '' multi-line string
   escaped_code=$(printf '%s' "$shell_code" | escape_for_nix_multiline)
   
+  # Mark every line with # wizardry marker so we can identify and remove them later
+  # Each line gets the marker appended to ensure clean removal
+  marked_code=$(printf '%s' "$escaped_code" | sed "s/$/ $marker/")
+  
   # Create the nix block using escaped code
   # Format: programs.bash.initExtra = ''...'' syntax for multi-line
-  nix_block="  $nix_option = ''
-    $marker
-$escaped_code
+  # Every line is marked with # wizardry-shell: NAME for easy identification and removal
+  nix_block="  $nix_option = '' $marker
+$marked_code
   ''; $marker"
   
   # Create file if it doesn't exist with minimal nix structure
@@ -239,32 +243,11 @@ do_remove() {
     return 0  # Nothing to remove
   fi
   
-  # Remove the block - everything between matching markers
+  # Remove all lines containing our marker
+  # Since every wizardry-managed line has # wizardry-shell: NAME appended,
+  # we can simply filter out all lines containing that marker
   tmp_file="${TMPDIR:-/tmp}/nix-shell-init.$$"
-  run_maybe_sudo cat "$nix_file" | awk -v marker="$marker" '
-  BEGIN { in_block = 0 }
-  # Start of initExtra block with our marker at the end
-  /programs\.(bash|zsh)\.(initExtra|interactiveShellInit)[[:space:]]*=/ && $0 ~ marker {
-    in_block = 1
-    next
-  }
-  # Also match standalone marker lines inside block
-  $0 ~ marker {
-    next
-  }
-  # End of multi-line string block
-  in_block && /^[[:space:]]*'\'''\''[[:space:]]*;/ {
-    in_block = 0
-    next
-  }
-  # End of single-line or closing
-  in_block && /;[[:space:]]*$/ && !/'\'''\''/ {
-    in_block = 0
-    next
-  }
-  in_block { next }
-  { print }
-  ' > "$tmp_file"
+  run_maybe_sudo cat "$nix_file" | grep -v -F "$marker" > "$tmp_file"
   
   if [ "$needs_sudo" -eq 1 ]; then
     run_maybe_sudo cp "$tmp_file" "$nix_file"
