@@ -225,12 +225,12 @@ printf 'format=nix\n'
 STUB
   chmod +x "$tmp/detect-rc-file"
   
-  # Run cd install with our detect-rc-file
-  run_cmd env PATH="$tmp:$PATH" WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" WIZARDRY_RC_FORMAT=nix WIZARDRY_RC_FILE="$nix_config" HOME="$tmp" "$ROOT_DIR/spells/install/mud/cd" install
+  # Run cd install with our detect-rc-file (skip rebuild in tests)
+  run_cmd env PATH="$tmp:$PATH" WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" WIZARDRY_RC_FORMAT=nix WIZARDRY_RC_FILE="$nix_config" WIZARDRY_SKIP_NIX_REBUILD=1 HOME="$tmp" "$ROOT_DIR/spells/install/mud/cd" install
   assert_success || return 1
   
-  # Verify it installed to configuration.nix using nix format
-  if grep -q "programs.bash.initExtra" "$nix_config"; then
+  # Verify it installed to configuration.nix using nix format (interactiveShellInit for system config)
+  if grep -q "programs.bash.interactiveShellInit" "$nix_config"; then
     return 0
   fi
   if grep -q "wizardry-shell: cd-cantrip" "$nix_config"; then
@@ -245,7 +245,7 @@ test_cd_auto_detects_nix_format() {
   # needing WIZARDRY_RC_FORMAT to be explicitly set
   tmp=$(make_tempdir)
   
-  # Create a nix config file
+  # Create a nix config file (home.nix uses initExtra)
   nix_config="$tmp/home.nix"
   printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$nix_config"
   
@@ -258,11 +258,11 @@ printf 'format=nix\n'
 EOF
   chmod +x "$tmp/detect-rc-file"
   
-  # Run cd install WITHOUT WIZARDRY_RC_FORMAT - it should auto-detect from detect-rc-file
-  run_cmd env PATH="$tmp:$PATH" WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" HOME="$tmp" "$ROOT_DIR/spells/install/mud/cd" install
+  # Run cd install WITHOUT WIZARDRY_RC_FORMAT - it should auto-detect from detect-rc-file (skip rebuild in tests)
+  run_cmd env PATH="$tmp:$PATH" WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" WIZARDRY_SKIP_NIX_REBUILD=1 HOME="$tmp" "$ROOT_DIR/spells/install/mud/cd" install
   assert_success || return 1
   
-  # Verify it installed to configuration.nix using nix format
+  # Verify it installed to home.nix using nix format (initExtra for home-manager)
   if grep -q "programs.bash.initExtra" "$nix_config"; then
     return 0
   fi
@@ -290,8 +290,8 @@ printf 'format=nix\n'
 EOF
   chmod +x "$tmp/detect-rc-file"
   
-  # First install the hook
-  run_cmd env PATH="$tmp:$PATH" WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" HOME="$tmp" "$ROOT_DIR/spells/install/mud/cd" install
+  # First install the hook (skip rebuild in tests)
+  run_cmd env PATH="$tmp:$PATH" WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" WIZARDRY_SKIP_NIX_REBUILD=1 HOME="$tmp" "$ROOT_DIR/spells/install/mud/cd" install
   assert_success || return 1
   
   # Verify hook was installed
@@ -300,8 +300,8 @@ EOF
     return 1
   fi
   
-  # Now uninstall
-  run_cmd env PATH="$tmp:$PATH" WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" HOME="$tmp" "$ROOT_DIR/spells/install/mud/cd" uninstall
+  # Now uninstall (skip rebuild in tests)
+  run_cmd env PATH="$tmp:$PATH" WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" WIZARDRY_SKIP_NIX_REBUILD=1 HOME="$tmp" "$ROOT_DIR/spells/install/mud/cd" uninstall
   assert_success || return 1
   assert_output_contains "uninstalled wizardry hooks" || return 1
   

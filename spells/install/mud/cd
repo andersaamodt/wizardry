@@ -220,7 +220,6 @@ alias cd='. \"\$WIZARDRY_CD_CANTRIP\"'"
                 
                 if printf '%s\n' "$hook_code" | "$nix_helper" add --shell bash --name cd-cantrip --file "$rc_file"; then
                         printf '%s\n' "cd cantrip: installed wizardry hooks in '$rc_file'."
-                        printf '%s\n' "Rebuild your NixOS configuration to activate the change."
                 else
                         warn "unable to update '$rc_file'."
                         return 1
@@ -276,7 +275,6 @@ uninstall() {
                 if [ -n "$nix_helper" ]; then
                         if "$nix_helper" remove --shell bash --name cd-cantrip --file "$rc_file"; then
                                 printf '%s\n' "cd cantrip: uninstalled wizardry hooks from '$rc_file'."
-                                printf '%s\n' "Rebuild your NixOS configuration to apply the change."
                                 return 0
                         else
                                 warn "unable to update '$rc_file'."

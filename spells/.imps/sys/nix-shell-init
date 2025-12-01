@@ -91,14 +91,27 @@ bash|zsh) : ;;
   ;;
 esac
 
-# Determine the nix option based on shell type
-# For NixOS system config: programs.bash.interactiveShellInit
-# For home-manager: programs.bash.initExtra
-# We'll use initExtra as it works for both home-manager and system configs
-case $shell_type in
-bash) nix_option="programs.bash.initExtra" ;;
-zsh)  nix_option="programs.zsh.initExtra" ;;
+# Determine the nix option based on shell type and config file type
+# For NixOS system config (/etc/nixos/configuration.nix): programs.bash.interactiveShellInit
+# For home-manager (~/.config/home-manager/home.nix): programs.bash.initExtra
+is_system_config=0
+case $nix_file in
+/etc/nixos/*|*/configuration.nix)
+  is_system_config=1
+  ;;
 esac
+
+if [ "$is_system_config" -eq 1 ]; then
+  case $shell_type in
+  bash) nix_option="programs.bash.interactiveShellInit" ;;
+  zsh)  nix_option="programs.zsh.interactiveShellInit" ;;
+  esac
+else
+  case $shell_type in
+  bash) nix_option="programs.bash.initExtra" ;;
+  zsh)  nix_option="programs.zsh.initExtra" ;;
+  esac
+fi
 
 # Marker format: # wizardry-shell: NAME
 marker="# wizardry-shell: $block_name"
@@ -260,8 +273,48 @@ do_remove() {
   fi
 }
 
+# Rebuild NixOS configuration after changes
+do_rebuild() {
+  # Skip rebuild if WIZARDRY_SKIP_NIX_REBUILD is set (for testing)
+  if [ "${WIZARDRY_SKIP_NIX_REBUILD-}" = "1" ]; then
+    return 0
+  fi
+  
+  printf '%s\n' "Rebuilding NixOS configuration..."
+  
+  if [ "$is_system_config" -eq 1 ]; then
+    # System configuration - use nixos-rebuild
+    if command -v nixos-rebuild >/dev/null 2>&1; then
+      if run_maybe_sudo nixos-rebuild switch; then
+        printf '%s\n' "NixOS configuration rebuilt successfully."
+        return 0
+      else
+        printf '%s\n' "nix-shell-init: nixos-rebuild failed" >&2
+        return 1
+      fi
+    else
+      printf '%s\n' "nix-shell-init: nixos-rebuild not found" >&2
+      return 1
+    fi
+  else
+    # Home-manager configuration
+    if command -v home-manager >/dev/null 2>&1; then
+      if home-manager switch; then
+        printf '%s\n' "Home Manager configuration rebuilt successfully."
+        return 0
+      else
+        printf '%s\n' "nix-shell-init: home-manager switch failed" >&2
+        return 1
+      fi
+    else
+      printf '%s\n' "nix-shell-init: home-manager not found" >&2
+      return 1
+    fi
+  fi
+}
+
 case $action in
-add)    do_add ;;
-remove) do_remove ;;
+add)    do_add && do_rebuild ;;
+remove) do_remove && do_rebuild ;;
 status) do_status ;;
 esac
