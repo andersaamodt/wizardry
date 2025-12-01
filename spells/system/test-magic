@@ -29,15 +29,9 @@ test_dir="$root_dir/.tests"
 
 usage() {
   cat <<USAGE
-Usage: $cmd_name [options]
+Usage: $cmd_name [--only PATTERN] [--list] [--verbose]
 
 Execute the behavior-driven shell tests located in .tests/.
-Options:
-  --only PATTERN   Run tests whose path under .tests/ matches PATTERN.
-  --list           Print the resolved test files and exit.
-  --verbose        Print per-test output while running.
-  --very-verbose   Show only failing subtests with error output.
-  -h, --help       Show this help and exit.
 USAGE
 }
 

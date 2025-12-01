@@ -25,18 +25,8 @@ usage() {
 Usage: $SCRIPT_NAME --spell NAME {add|remove|status}
        $SCRIPT_NAME [OPTIONS] [PATH ...]
 
-RC mode:
-  add|remove|status  Manage rc snippets tagged with the given spell name.
-
-Install mode:
-  -a, --all          Scan the current directory (or supplied PATHS) for spells
-                     with an install() function and scribe them.
-  -r, --recursive    Recursively scan supplied PATHS for installable spells.
-                     Implies --all and requires at least one directory.
-  --dry-run          List spells that would be memorized without executing them.
-  -h, --help         Show this message.
-
-Provide no rc options to use install mode.
+Manage rc file snippets or install spells with an install() function.
+Use --rc-file and --spell for rc mode, otherwise operates in install mode.
 USAGE
 }
 

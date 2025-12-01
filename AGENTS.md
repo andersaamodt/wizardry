@@ -124,7 +124,7 @@ show_usage() {
   cat <<'USAGE'
 Usage: spell-name [options] [arguments]
 
-Description of the spell and its arguments.
+Brief description of what the spell does and how to use it.
 USAGE
 }
 ```
@@ -132,8 +132,47 @@ USAGE
 Guidelines:
 - Use single-quoted heredoc delimiter `'USAGE'` to prevent variable expansion
 - First line: `Usage:` followed by synopsis
-- Include all options and arguments
 - The --help message **is** the spell's spec
+- **Keep usage notes short**: 2-5 lines after the `Usage:` line is ideal
+- **Avoid long argument lists**: Spells with many arguments may need refactoring
+- **No detailed option descriptions**: If options need explanation, the spell is too complex
+- **One sentence per line**: Each line should convey one clear idea
+
+**Good usage note** (brief, clear):
+
+```sh
+show_usage() {
+  cat <<'USAGE'
+Usage: look [path]
+
+Display a location's name and description extended attributes using read-magic,
+offering to memorize the spell into your shell rc for persistent availability.
+Defaults to the current directory when no path is supplied.
+USAGE
+}
+```
+
+**Anti-pattern** (too verbose, too many options):
+
+```sh
+# AVOID: Long usage notes with many options suggest the spell needs refactoring
+show_usage() {
+  cat <<'USAGE'
+Usage: complex-spell [--option1] [--option2 VALUE] [--option3] ...
+
+Arguments:
+  --option1       First option that does X
+  --option2 VALUE Second option requiring a value
+  --option3       Third option that does Y
+  ...
+USAGE
+}
+```
+
+If a spell requires extensive documentation, consider:
+1. Breaking it into smaller, focused spells
+2. Moving complexity into helper imps
+3. Using subcommands via separate spells instead of flags
 
 #### 5. Help Handler (Recommended)
 
@@ -282,6 +321,40 @@ result=`command`
 - `0`: Success
 - `1`: General error
 - `2`: Usage error (wrong arguments)
+
+---
+
+### Spell Complexity
+
+Spells should be **simple and focused**. Complex argument structures are a code smell.
+
+#### Signs a Spell Needs Refactoring
+
+- **Many flags or options**: More than 2-3 optional flags suggests splitting the spell
+- **Multiple modes**: If `--help` shows different "Usage:" lines, break into separate spells
+- **Long usage notes**: More than 5-10 lines of help text indicates complexity
+- **Subcommands**: Patterns like `spell action [args]` should be separate spells (e.g., `spell-add`, `spell-remove`)
+- **Deeply nested logic**: Complex conditionals handling many argument combinations
+
+#### Refactoring Strategies
+
+1. **Split by mode**: `learn --rc-file ... add` → separate `learn-rc-add` spell
+2. **Extract helpers**: Move shared logic to imps in `spells/.imps/`
+3. **Use composition**: Small spells that pipe to each other
+4. **Default to sensible behavior**: Fewer options needed when defaults are good
+
+#### Example: Good vs Complex
+
+```sh
+# GOOD: Simple, focused spell
+# Usage: mark-location [marker] [path]
+
+# COMPLEX: Multiple modes, many options - consider refactoring
+# Usage: learn --rc-file FILE --spell NAME {add|remove|status}
+#        learn [OPTIONS] [PATH ...]
+```
+
+When a spell grows complex, ask: "Can this be 2-3 simpler spells instead?"
 
 ---
 
@@ -441,7 +514,9 @@ Model header:
 
 #### Help Text
 
-Model help:
+Help text should be **brief and scannable**. Aim for 2-5 lines after the `Usage:` line.
+
+Model help (good):
 
 ```sh
 show_usage() {
@@ -454,6 +529,18 @@ Defaults to the current directory when no path is supplied.
 USAGE
 }
 ```
+
+Principles for help text:
+- **Brevity over completeness**: Users can read the source for details
+- **No argument tables**: If you need a table, the spell is too complex
+- **One-liner descriptions**: Each option/argument should be obvious from its name
+- **Defaults stated simply**: "Defaults to current directory" not elaborate explanations
+
+Signs that help text (and the spell) needs refactoring:
+- More than 10 lines in the usage block
+- Multiple `Usage:` lines for different modes
+- Argument descriptions longer than one line
+- Options that require their own sub-options
 
 ---
 

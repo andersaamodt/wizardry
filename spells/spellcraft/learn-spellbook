@@ -72,16 +72,10 @@ fi
 
 usage() {
         cat <<'USAGE' >&2
-Usage: learn-spellbook [-r|--recursive] [--dry-run] [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] add [DIRECTORY]
-       learn-spellbook [-r|--recursive] [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] remove DIRECTORY
-       learn-spellbook [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] remove-all
-       learn-spellbook [-r|--recursive] [--rc-file FILE] [--format FORMAT] [--platform PLATFORM] status DIRECTORY
+Usage: learn-spellbook {add|remove|remove-all|status} [DIRECTORY]
 
-Options:
-  --dry-run    List paths that would be added without modifying any files
-
-Formats: auto (default), shell, nix
-Platforms: debian, arch, fedora, mac, nixos, unknown
+Add or remove directories to/from your shell PATH via rc file.
+Use -r for recursive scanning, --dry-run to preview changes.
 USAGE
 }
 

@@ -5,24 +5,10 @@
 
 show_usage() {
   cat <<'USAGE'
-Usage: trash [-r] <file|folder>...
+Usage: trash [-r] [-f] <file|folder>...
 
-Move one or more files or folders to the system trash.
-
-Options:
-  -r, --recursive    Allow trashing directories (required for folders)
-  -f, --force        Ignore nonexistent files without error
-  --help, -h         Show this help message
-
-Examples:
-  trash file.txt           Move a single file to trash
-  trash -r my_folder       Move a folder to trash
-  trash file1.txt file2.txt   Move multiple files to trash
-
-Supports:
-  - macOS: Uses Finder via osascript
-  - Linux (GNOME/GTK): Uses gio trash
-  - Linux (fallback): Uses trash-put (trash-cli)
+Move files or folders to the system trash (recoverable unlike rm).
+Use -r for directories, -f to ignore missing files.
 USAGE
 }
 

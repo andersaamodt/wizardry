@@ -45,21 +45,11 @@ resolve_cast_dir() {
 
 usage() {
 	cat <<USAGE >&2
-Usage: $spell_name SPELL_NAME
-       $spell_name list
-       $spell_name path
-       $spell_name dir
+Usage: $spell_name <spell-name>
+       $spell_name {list|path|dir}
 
-Memorize a spell to add it to the Cast menu.
-
-SPELL_NAME        Add spell to the Cast menu (spell must exist in PATH or ~/.spellbook).
-list              Print every memorized spell.
-path              Print the command list file path.
-dir               Print the directory holding generated cast spells.
-
-The cast directory (dir) is safe for PATH addition (default: ~/.spellbook
-or \$XDG_DATA_HOME/wizardry/spellbook). Use it to run memorized spells by
-name outside the Cast menu.
+Add a spell to the Cast menu, or use list/path/dir to inspect the spellbook.
+Spells must exist in PATH or ~/.spellbook.
 USAGE
 }
 

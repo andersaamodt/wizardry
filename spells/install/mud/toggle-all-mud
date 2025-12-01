@@ -5,20 +5,10 @@
 
 show_usage() {
         cat <<'USAGE'
-Usage: toggle-all-mud [--enable | --disable]
+Usage: toggle-all-mud [--enable|--disable]
 
-Toggle all MUD features on or off.
-
-Options:
-  --enable   Enable all MUD features
-  --disable  Disable all MUD features
-
-Without arguments, toggles based on current state:
-  - If any feature is disabled, enables all features
-  - If all features are enabled, disables all features
-
-Note: The CD hook is a separate shell hook and is not affected by this toggle.
-Use toggle-cd to manage the CD hook separately.
+Toggle all MUD features on or off. Without arguments, flips based on
+current state. The CD hook is managed separately via toggle-cd.
 USAGE
 }
 

@@ -8,18 +8,10 @@
 show_usage() {
         cat <<'USAGE'
 Usage: cd [DIRECTORY]
-       cd install
-       cd uninstall
+       cd {install|uninstall}
 
-Replace the builtin cd command to run 'look' after every successful
-directory change, revealing the room description as you teleport around.
-
-Commands:
-  install    Add the cd hook to your shell rc file
-  uninstall  Remove the cd hook from your shell rc file
-
-When sourced as the cd alias, any valid DIRECTORY argument is passed
-through to the real cd builtin, and 'look' runs automatically on success.
+Replace builtin cd to run 'look' after each directory change.
+Use install/uninstall to manage the shell hook.
 USAGE
 }
 
