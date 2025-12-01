@@ -22,7 +22,7 @@ case "${1-}" in
 esac
 
 if [ "$#" -lt 1 ]; then
-    warn "unbind-tome: missing file path argument."
+    warn "unbind-tome: file path required."
     usage >&2
     exit 1
 fi

@@ -26,7 +26,7 @@ bind_shows_usage() {
 require_arg_for_bind() {
   run_spell "spells/spellcraft/bind-tome"
   assert_failure || return 1
-  assert_error_contains "bind-tome: missing folder path argument." || return 1
+  assert_error_contains "bind-tome: folder path required." || return 1
 }
 
 binds_pages_into_tome() {
@@ -53,7 +53,7 @@ binds_pages_into_tome() {
 bind_requires_existing_directory() {
   run_spell "spells/spellcraft/bind-tome" "-d"
   assert_failure || return 1
-  assert_error_contains "bind-tome: missing folder path argument." || return 1
+  assert_error_contains "bind-tome: folder path required." || return 1
 
   run_spell "spells/spellcraft/bind-tome" "/no/such/place"
   assert_failure || return 1

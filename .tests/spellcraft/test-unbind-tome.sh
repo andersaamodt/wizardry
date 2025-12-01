@@ -25,7 +25,7 @@ unbind_shows_usage() {
 require_arg_for_unbind() {
   run_spell "spells/spellcraft/unbind-tome"
   assert_failure || return 1
-  assert_error_contains "unbind-tome: missing file path argument." || return 1
+  assert_error_contains "unbind-tome: file path required." || return 1
 }
 
 unbind_requires_a_file() {
