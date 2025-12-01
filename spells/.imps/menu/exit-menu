@@ -1,0 +1,6 @@
+#!/bin/sh
+# exit-menu - signal the parent process to exit its menu loop
+# Sends TERM signal to $PPID, causing the calling menu script to exit cleanly.
+# This provides a uniform exit mechanism for all menu scripts.
+
+kill -TERM "$PPID" 2>/dev/null || exit 0

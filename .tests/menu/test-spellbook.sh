@@ -178,7 +178,7 @@ test_esc_exit_behavior() {
   cat >"$stub_dir/menu" <<'SH'
 #!/bin/sh
 printf '%s\n' "$@" >>"$MENU_LOG"
-exit 113
+kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
 SH
   chmod +x "$stub_dir/menu"
   
@@ -195,7 +195,7 @@ SH
   
   args=$(cat "$stub_dir/log")
   case "$args" in
-    *"Exit%exit 113"*) : ;;
+    *"Exit%exit-menu"*) : ;;
     *) TEST_FAILURE_REASON="menu should show Exit label: $args"; return 1 ;;
   esac
   

@@ -51,7 +51,7 @@ display_menu() {
   update_all="Update all software%update-all -v"
   uninstall_wizardry="Uninstall wizardry%$repo_dir/install --uninstall"
   exit_label=$(exit-label)
-  exit_item="${exit_label}%exit $menu_escape_status"
+  exit_item="${exit_label}%exit-menu"
 
   set -- "$restart_menu" "$update_all" "$update_wizardry" "$services"
   if [ -n "$nixos_rebuild" ]; then
@@ -59,16 +59,12 @@ display_menu() {
   fi
   set -- "$@" "$verify_posix" "$test_suite" "$uninstall_wizardry" "$exit_item"
 
-  MENU_ESCAPE_STATUS=$menu_escape_status menu "System Menu:" "$@"
+  menu "System Menu:" "$@"
 }
 
-handle_ctrl_c() {
-  trap 'echo exiting; exit' INT
-}
+# Catch Ctrl-C and TERM signal to exit cleanly
+trap 'exit 0' INT TERM
 
-handle_ctrl_c
-
-menu_escape_status=113
 first_run=1
 
 while true; do
@@ -78,17 +74,5 @@ while true; do
     first_run=0
   fi
 
-  if display_menu; then
-    status=0
-  else
-    status=$?
-  fi
-
-  if [ "$status" -eq "$menu_escape_status" ]; then
-    break
-  fi
-
-  if [ "$status" -ne 0 ]; then
-    exit "$status"
-  fi
+  display_menu || true
 done

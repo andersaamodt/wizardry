@@ -39,6 +39,15 @@ if [ -z "$exit_label_bin" ] && [ -x "$root_dir/spells/.imps/menu/exit-label" ]; 
   exit_label_bin="$root_dir/spells/.imps/menu/exit-label"
 fi
 
+# Resolve exit-menu helper
+exit_menu_bin=${EXIT_MENU_BIN-}
+if [ -z "$exit_menu_bin" ]; then
+  exit_menu_bin=$(command -v exit-menu 2>/dev/null) || exit_menu_bin=""
+fi
+if [ -z "$exit_menu_bin" ] && [ -x "$root_dir/spells/.imps/menu/exit-menu" ]; then
+  exit_menu_bin="$root_dir/spells/.imps/menu/exit-menu"
+fi
+
 # shellcheck source=/dev/null
 . "$script_dir/install-core"
 
@@ -52,20 +61,22 @@ if [ -n "$loop_limit" ] && ! printf '%s' "$loop_limit" | grep -Eq '^[0-9]+$'; th
   exit 1
 fi
 
-handle_ctrl_c() {
-  trap 'echo exiting; exit' INT
-}
+# Catch Ctrl-C and TERM signal to exit cleanly
+trap 'exit 0' INT TERM
 
-handle_ctrl_c
-
-menu_escape_status=113
 title="${BOLD}${CYAN}Core prerequisites"
 if [ -n "$exit_label_bin" ]; then
   exit_label=$($exit_label_bin)
 else
   exit_label="Exit"
 fi
-exit_entry="${exit_label}%exit $menu_escape_status"
+
+# Use exit-menu if available, otherwise fall back to kill
+if [ -n "$exit_menu_bin" ]; then
+  exit_entry="${exit_label}%$exit_menu_bin"
+else
+  exit_entry="${exit_label}%kill -TERM \$PPID"
+fi
 
 resolve_spell() {
   spell_name=$1
@@ -142,19 +153,7 @@ EOF
 
   set -- "$@" "Install all%ASSUME_YES=1 $script_dir/install-core" "$exit_entry"
 
-  if MENU_ESCAPE_STATUS=$menu_escape_status "$menu_bin" "$title" "$@"; then
-    status=0
-  else
-    status=$?
-  fi
-
-  if [ "$status" -eq "$menu_escape_status" ]; then
-    break
-  fi
-
-  if [ "$status" -ne 0 ]; then
-    exit "$status"
-  fi
+  "$menu_bin" "$title" "$@" || true
 
   if [ -n "$loop_limit" ]; then
     if [ "$loop_limit" -le 1 ] 2>/dev/null; then

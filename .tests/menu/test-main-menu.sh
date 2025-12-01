@@ -1,7 +1,7 @@
 #!/bin/sh
 # Behavioral cases (derived from spell behavior):
 # - main-menu requires menu dependency before running
-# - main-menu invokes menu with expected options and honors escape status
+# - main-menu invokes menu with expected options and exits on TERM signal
 # - main-menu fails when menu dependency is missing
 # - main-menu loads colors gracefully
 
@@ -17,7 +17,9 @@ make_stub_menu() {
   cat >"$tmp/menu" <<'SH'
 #!/bin/sh
 printf '%s\n' "$@" >>"$MENU_LOG"
-exit 113
+# Send TERM signal to parent to simulate exit-menu or ESC behavior
+kill -TERM "$PPID" 2>/dev/null || exit 0
+exit 0
 SH
   chmod +x "$tmp/menu"
 }
@@ -64,7 +66,7 @@ SH
   args=$(cat "$tmp/log")
   # MUD is not shown by default (requires enabling via mud-config)
   case "$args" in
-    *"Main Menu:"*"Cast%"*"cast"*"Spellbook%"*"spellbook"*"Arcana%"*"install-menu"*"Computer%"*"system-menu"*"Exit%exit 113"* ) : ;;
+    *"Main Menu:"*"Cast%"*"cast"*"Spellbook%"*"spellbook"*"Arcana%"*"install-menu"*"Computer%"*"system-menu"*"Exit%exit-menu"* ) : ;;
     *) TEST_FAILURE_REASON="menu entries missing: $args"; return 1 ;;
   esac
 }
@@ -108,16 +110,18 @@ run_test_case "main-menu fails without menu dependency" test_main_menu_fails_wit
 run_test_case "main-menu shows title" test_main_menu_shows_title
 run_test_case "main-menu loads colors gracefully" test_main_menu_loads_colors_gracefully
 
-# Test ESC and Exit behavior - menu exits properly when escape status returned
+# Test ESC and Exit behavior - menu exits properly when TERM signal is sent
 test_esc_exit_behavior() {
   tmp=$(make_tempdir)
   make_stub_require "$tmp"
   
-  # Create menu stub that logs entries and returns escape status
+  # Create menu stub that logs entries and sends TERM to parent
   cat >"$tmp/menu" <<'SH'
 #!/bin/sh
 printf '%s\n' "$@" >>"$MENU_LOG"
-exit 113
+# Send TERM signal to parent to simulate exit-menu or ESC behavior
+kill -TERM "$PPID" 2>/dev/null || exit 0
+exit 0
 SH
   chmod +x "$tmp/menu"
   
@@ -128,11 +132,11 @@ SH
   chmod +x "$tmp/exit-label"
   
   run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/main-menu"
-  assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
+  assert_success || { TEST_FAILURE_REASON="menu should exit successfully on TERM signal"; return 1; }
   
   args=$(cat "$tmp/log")
   case "$args" in
-    *"Exit%exit 113"*) : ;;
+    *"Exit%exit-menu"*) : ;;
     *) TEST_FAILURE_REASON="menu should show Exit label: $args"; return 1 ;;
   esac
 }
@@ -174,8 +178,16 @@ SH
 run_test_case "main-menu shows MUD when enabled" test_main_menu_shows_mud_when_enabled
 
 shows_help() {
-  run_spell spells/menu/main-menu --help
-  # Note: spell may not have --help implemented yet
+  tmp=$(make_tempdir)
+  make_stub_menu "$tmp"
+  make_stub_require "$tmp"
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$tmp/exit-label"
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/main-menu" --help
+  # Note: spell may not have --help implemented yet, so we just ensure it doesn't crash
   true
 }
 
