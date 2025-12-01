@@ -22,8 +22,8 @@ SPELLS_DIR=${SCRIPT_DIR%/*}
 
 usage() {
         cat <<USAGE >&2
-Usage: $SCRIPT_NAME [--rc-file FILE --spell NAME {add|remove|status}]
-       $SCRIPT_NAME [-a|--all] [-r|--recursive] [--dry-run] [PATH...]
+Usage: $SCRIPT_NAME --spell NAME {add|remove|status}
+       $SCRIPT_NAME [OPTIONS] [PATH ...]
 
 Manage rc file snippets or install spells with an install() function.
 Use --rc-file and --spell for rc mode, otherwise operates in install mode.
@@ -36,7 +36,7 @@ for arg in "$@"; do
                 usage
                 exit 0
                 ;;
-        --rc-file|--rc-file=*|--spell|--spell=*)
+        --spell|--spell=*)
                 MODE=rc
                 ;;
         esac
@@ -48,25 +48,91 @@ done
 
 rc_usage() {
         cat <<'RCUSAGE' >&2
-Usage: learn --rc-file FILE --spell NAME {add|remove|status}
+Usage: learn --spell NAME [--format FORMAT] {add|remove|status}
 
 Reads spell content from standard input for the 'add' action and wraps it with
 wizardry comment sentinels so future removals remain deterministic.
 Single-line spells receive an inline `# wizardry: NAME` suffix, while
 multi-line spells are wrapped with `begin`/`end` sentinels (including a lines
 count) to keep rc files readable.
+
+The rc file is auto-detected via detect-rc-file. For nix files (auto-detected
+from .nix extension or platform), uses programs.bash.initExtra or
+programs.zsh.initExtra to properly add shell code to nix configuration files.
+
+Options:
+  --format FORMAT  Output format: shell (default) or nix (auto-detected)
+  --shell SHELL    Shell type for nix format: bash (default) or zsh
+
 Spell names must contain only letters, digits, dashes, underscores, periods, and colons.
 RCUSAGE
+}
+
+# Find detect-rc-file helper
+find_detect_rc_file() {
+        if [ -n "${DETECT_RC_FILE-}" ] && [ -x "$DETECT_RC_FILE" ]; then
+                printf '%s' "$DETECT_RC_FILE"
+                return 0
+        fi
+        # Look relative to script location
+        helper="$SPELLS_DIR/divination/detect-rc-file"
+        if [ -x "$helper" ]; then
+                printf '%s' "$helper"
+                return 0
+        fi
+        # Try PATH
+        if command -v detect-rc-file >/dev/null 2>&1; then
+                command -v detect-rc-file
+                return 0
+        fi
+        return 1
+}
+
+# Auto-detect rc file using detect-rc-file helper
+auto_detect_rc() {
+        if ! detect_helper=$(find_detect_rc_file); then
+                printf '%s\n' "learn: detect-rc-file helper not found." >&2
+                return 1
+        fi
+        output=$("$detect_helper")
+        rc_file_detected=''
+        platform_detected=''
+        format_detected=''
+        while IFS='=' read -r key value; do
+                case $key in
+                rc_file)
+                        rc_file_detected=$value
+                        ;;
+                platform)
+                        platform_detected=$value
+                        ;;
+                format)
+                        format_detected=$value
+                        ;;
+                esac
+        done <<EOF_ENV
+$output
+EOF_ENV
+        if [ -z "$rc_file_detected" ]; then
+                printf '%s\n' "learn: detect-rc-file did not provide an rc file." >&2
+                return 1
+        fi
+        printf '%s\n' "rc_file=$rc_file_detected"
+        printf '%s\n' "platform=${platform_detected:-unknown}"
+        printf '%s\n' "format=${format_detected:-shell}"
 }
 
 rc_run() {
         action=""
         rc_file=""
         spell=""
+        rc_format="shell"
+        shell_type="bash"
 
         while [ "$#" -gt 0 ]; do
                 case $1 in
                 --rc-file)
+                        # Internal option for learn-spellbook integration
                         if [ "$#" -lt 2 ]; then
                                 printf '%s\n' "learn: --rc-file expects a file path." >&2
                                 rc_usage
@@ -90,6 +156,32 @@ rc_run() {
                         ;;
                 --spell=*)
                         spell=${1#*=}
+                        shift
+                        ;;
+                --format)
+                        if [ "$#" -lt 2 ]; then
+                                printf '%s\n' "learn: --format expects a value." >&2
+                                rc_usage
+                                exit 1
+                        fi
+                        rc_format=$2
+                        shift 2
+                        ;;
+                --format=*)
+                        rc_format=${1#*=}
+                        shift
+                        ;;
+                --shell)
+                        if [ "$#" -lt 2 ]; then
+                                printf '%s\n' "learn: --shell expects a value." >&2
+                                rc_usage
+                                exit 1
+                        fi
+                        shell_type=$2
+                        shift 2
+                        ;;
+                --shell=*)
+                        shell_type=${1#*=}
                         shift
                         ;;
                 add|remove|status)
@@ -118,10 +210,48 @@ rc_run() {
                 esac
         done
 
-        if [ -z "$action" ] || [ -z "$rc_file" ] || [ -z "$spell" ]; then
+        if [ -z "$action" ] || [ -z "$spell" ]; then
                 rc_usage
                 exit 1
         fi
+
+        # Auto-detect rc file if not provided
+        if [ -z "$rc_file" ]; then
+                if ! detect_output=$(auto_detect_rc); then
+                        exit 1
+                fi
+                while IFS='=' read -r key value; do
+                        case $key in
+                        rc_file)
+                                rc_file=$value
+                                ;;
+                        format)
+                                # Only use detected format if not explicitly set
+                                if [ "$rc_format" = "shell" ]; then
+                                        rc_format=$value
+                                fi
+                                ;;
+                        esac
+                done <<EOF_DETECT
+$detect_output
+EOF_DETECT
+        fi
+
+        # Validate format
+        case $rc_format in
+        shell|nix) : ;;
+        *)
+                printf '%s\n' "learn: format must be 'shell' or 'nix'." >&2
+                exit 1
+                ;;
+        esac
+
+        # Auto-detect format from file extension (overrides detected format)
+        case $rc_file in
+        *.nix)
+                rc_format=nix
+                ;;
+        esac
 
         case $spell in
         *[!A-Za-z0-9._:-]*)
@@ -275,24 +405,91 @@ rc_run() {
                 mv "$tmp_file" "$rc_file"
         }
 
-        case $action in
-        add)
-                add_spell
-                ;;
-        remove)
-                remove_spell
-                ;;
-        status)
-                if spell_status; then
-                        exit 0
+        # Find nix-shell-init helper
+        find_nix_shell_init() {
+                if [ -n "${NIX_SHELL_INIT-}" ] && [ -x "$NIX_SHELL_INIT" ]; then
+                        printf '%s' "$NIX_SHELL_INIT"
+                        return 0
                 fi
+                # Look relative to script location
+                helper="$SCRIPT_DIR/../.imps/sys/nix-shell-init"
+                if [ -x "$helper" ]; then
+                        printf '%s' "$helper"
+                        return 0
+                fi
+                # Try PATH
+                if command -v nix-shell-init >/dev/null 2>&1; then
+                        command -v nix-shell-init
+                        return 0
+                fi
+                return 1
+        }
+
+        # Nix format handlers using nix-shell-init imp
+        nix_spell_status() {
+                if ! nix_helper=$(find_nix_shell_init); then
+                        printf '%s\n' "learn: nix-shell-init imp not found." >&2
                         exit 1
-                ;;
-        *)
-                rc_usage
-                exit 1
-                ;;
-        esac
+                fi
+                "$nix_helper" status --shell "$shell_type" --name "$spell" --file "$rc_file"
+        }
+
+        nix_add_spell() {
+                if ! nix_helper=$(find_nix_shell_init); then
+                        printf '%s\n' "learn: nix-shell-init imp not found." >&2
+                        exit 1
+                fi
+                "$nix_helper" add --shell "$shell_type" --name "$spell" --file "$rc_file"
+        }
+
+        nix_remove_spell() {
+                if ! nix_helper=$(find_nix_shell_init); then
+                        printf '%s\n' "learn: nix-shell-init imp not found." >&2
+                        exit 1
+                fi
+                "$nix_helper" remove --shell "$shell_type" --name "$spell" --file "$rc_file"
+        }
+
+        # Execute the appropriate action based on format
+        if [ "$rc_format" = "nix" ]; then
+                case $action in
+                add)
+                        nix_add_spell
+                        ;;
+                remove)
+                        nix_remove_spell
+                        ;;
+                status)
+                        if nix_spell_status; then
+                                exit 0
+                        fi
+                        exit 1
+                        ;;
+                *)
+                        rc_usage
+                        exit 1
+                        ;;
+                esac
+        else
+                case $action in
+                add)
+                        add_spell
+                        ;;
+                remove)
+                        remove_spell
+                        ;;
+                status)
+                        if spell_status; then
+                                exit 0
+                        fi
+                        exit 1
+                        ;;
+                *)
+                        rc_usage
+                        exit 1
+                        ;;
+                esac
+        fi
 }
 
 if [ "${MODE-}" = "rc" ]; then
