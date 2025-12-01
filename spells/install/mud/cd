@@ -65,6 +65,8 @@ absolute_spell_path() {
 }
 
 # Cache for detect-rc-file output to avoid multiple calls
+# This cache is intentionally global so that resolve_rc_file() and resolve_rc_format()
+# can share the same detect-rc-file output without running the command multiple times.
 _detect_rc_cache=""
 
 _run_detect_rc_file() {
@@ -281,7 +283,9 @@ uninstall() {
                                 return 1
                         fi
                 fi
-                # Fall through to shell method if nix helper not found
+                # nix-shell-init helper not found - warn and attempt shell method fallback
+                # This may not work correctly for nix format files
+                warn "nix-shell-init imp not found; attempting shell-style removal which may not work for nix files."
         fi
         
         # Shell format: use sed to remove the block

@@ -250,12 +250,12 @@ test_cd_auto_detects_nix_format() {
   printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$nix_config"
   
   # Create detect-rc-file that returns nix format (note: no WIZARDRY_RC_FORMAT)
-  cat >"$tmp/detect-rc-file" <<STUB
+  cat >"$tmp/detect-rc-file" <<EOF
 #!/bin/sh
 printf 'platform=nixos\n'
 printf 'rc_file=$nix_config\n'
 printf 'format=nix\n'
-STUB
+EOF
   chmod +x "$tmp/detect-rc-file"
   
   # Run cd install WITHOUT WIZARDRY_RC_FORMAT - it should auto-detect from detect-rc-file
@@ -282,12 +282,12 @@ test_cd_uninstall_nix_format() {
   printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$nix_config"
   
   # Create detect-rc-file that returns nix format
-  cat >"$tmp/detect-rc-file" <<STUB
+  cat >"$tmp/detect-rc-file" <<EOF
 #!/bin/sh
 printf 'platform=nixos\n'
 printf 'rc_file=$nix_config\n'
 printf 'format=nix\n'
-STUB
+EOF
   chmod +x "$tmp/detect-rc-file"
   
   # First install the hook
