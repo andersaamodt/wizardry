@@ -57,7 +57,7 @@ display_menu() {
   admin="Admin MUD Hosting%mud-admin"
   settings="MUD Settings%mud-settings"
   exit_label=$(exit-label)
-  exit_item="${exit_label}%exit-menu"
+  exit_item="${exit_label}%kill -TERM $PPID"
 
   set -- \
     "$look" \

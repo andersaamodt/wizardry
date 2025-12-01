@@ -56,7 +56,7 @@ display_menu() {
   remove_item="Remove a service%remove-service"
   install_item="Install service from template%install-service-template"
   exit_label=$(exit-label)
-  exit_item="${exit_label}%exit-menu"
+  exit_item="${exit_label}%kill -TERM $PPID"
 
   set -- "$start_item" "$stop_item" "$restart_item" \
     "$enable_item" "$disable_item" "$status_item" \

@@ -53,8 +53,8 @@ SH
   args=$(cat "$tmp/log")
   # Logout command varies: loginctl terminate-user on systemd, pkill -TERM otherwise
   case "$args" in
-    *"Restart / Shutdown:"*"Restart%sudo shutdown -r +0"*"Shutdown%sudo shutdown -h +0"*"Logout%loginctl terminate-user"*"Force restart%sudo reboot -f"*"Force shutdown%sudo poweroff -f"*"Force logout%pkill -KILL"*"Back%exit-menu"* ) : ;;
-    *"Restart / Shutdown:"*"Restart%sudo shutdown -r +0"*"Shutdown%sudo shutdown -h +0"*"Logout%pkill -TERM"*"Force restart%sudo reboot -f"*"Force shutdown%sudo poweroff -f"*"Force logout%pkill -KILL"*"Back%exit-menu"* ) : ;;
+    *"Restart / Shutdown:"*"Restart%sudo shutdown -r +0"*"Shutdown%sudo shutdown -h +0"*"Logout%loginctl terminate-user"*"Force restart%sudo reboot -f"*"Force shutdown%sudo poweroff -f"*"Force logout%pkill -KILL"*"Back%kill -TERM "[0-9]* ) : ;;
+    *"Restart / Shutdown:"*"Restart%sudo shutdown -r +0"*"Shutdown%sudo shutdown -h +0"*"Logout%pkill -TERM"*"Force restart%sudo reboot -f"*"Force shutdown%sudo poweroff -f"*"Force logout%pkill -KILL"*"Back%kill -TERM "[0-9]* ) : ;;
     *) TEST_FAILURE_REASON="expected shutdown actions missing: $args"; return 1 ;;
   esac
 }
@@ -79,7 +79,7 @@ SH
   
   args=$(cat "$tmp/log")
   case "$args" in
-    *"Back%exit-menu"*) : ;;
+    *"Back%kill -TERM "[0-9]*) : ;;
     *) TEST_FAILURE_REASON="menu should show Back label: $args"; return 1 ;;
   esac
 }

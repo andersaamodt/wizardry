@@ -81,7 +81,7 @@ SH
   args=$(cat "$tmp/log")
   # Verify key user management actions are present
   case "$args" in
-    *"Users Menu:"*"Change my password%passwd"*"List all users%"*"View my group memberships%groups"*"Exit%exit-menu"* ) : ;;
+    *"Users Menu:"*"Change my password%passwd"*"List all users%"*"View my group memberships%groups"*"Exit%kill -TERM "[0-9]* ) : ;;
     *) TEST_FAILURE_REASON="expected user actions missing: $args"; return 1 ;;
   esac
 }
@@ -161,7 +161,7 @@ SH
   
   args=$(cat "$tmp/log")
   case "$args" in
-    *"Exit%exit-menu"*) : ;;
+    *"Exit%kill -TERM "[0-9]*) : ;;
     *) TEST_FAILURE_REASON="menu should show Exit label: $args"; return 1 ;;
   esac
 }

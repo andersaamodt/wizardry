@@ -17,7 +17,7 @@ make_stub_menu() {
   cat >"$tmp/menu" <<'SH'
 #!/bin/sh
 printf '%s\n' "$@" >>"$MENU_LOG"
-# Send TERM signal to parent to simulate exit-menu or ESC behavior
+# Send TERM signal to parent to simulate ESC behavior
 kill -TERM "$PPID" 2>/dev/null || exit 0
 exit 0
 SH
@@ -65,8 +65,9 @@ SH
   assert_success
   args=$(cat "$tmp/log")
   # MUD is not shown by default (requires enabling via mud-config)
+  # The Exit command uses kill -TERM $PPID which expands to the actual PID at runtime
   case "$args" in
-    *"Main Menu:"*"Cast%"*"cast"*"Spellbook%"*"spellbook"*"Arcana%"*"install-menu"*"Computer%"*"system-menu"*"Exit%exit-menu"* ) : ;;
+    *"Main Menu:"*"Cast%"*"cast"*"Spellbook%"*"spellbook"*"Arcana%"*"install-menu"*"Computer%"*"system-menu"*"Exit%kill -TERM "[0-9]* ) : ;;
     *) TEST_FAILURE_REASON="menu entries missing: $args"; return 1 ;;
   esac
 }
@@ -119,7 +120,7 @@ test_esc_exit_behavior() {
   cat >"$tmp/menu" <<'SH'
 #!/bin/sh
 printf '%s\n' "$@" >>"$MENU_LOG"
-# Send TERM signal to parent to simulate exit-menu or ESC behavior
+# Send TERM signal to parent to simulate ESC behavior
 kill -TERM "$PPID" 2>/dev/null || exit 0
 exit 0
 SH
@@ -135,8 +136,9 @@ SH
   assert_success || { TEST_FAILURE_REASON="menu should exit successfully on TERM signal"; return 1; }
   
   args=$(cat "$tmp/log")
+  # The Exit command uses kill -TERM $PPID which expands to the actual PID at runtime
   case "$args" in
-    *"Exit%exit-menu"*) : ;;
+    *"Exit%kill -TERM "[0-9]*) : ;;
     *) TEST_FAILURE_REASON="menu should show Exit label: $args"; return 1 ;;
   esac
 }

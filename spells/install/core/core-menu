@@ -62,8 +62,8 @@ else
   exit_label="Exit"
 fi
 
-# Use exit-menu helper for uniform exit behavior
-exit_entry="${exit_label}%exit-menu"
+# Signal parent process to exit menu loop
+exit_entry="${exit_label}%kill -TERM \$PPID"
 
 resolve_spell() {
   spell_name=$1

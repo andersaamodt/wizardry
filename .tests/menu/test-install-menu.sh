@@ -15,7 +15,7 @@ make_stub_menu_env() {
   cat >"$tmp/menu" <<'SH'
 #!/bin/sh
 printf '%s\n' "$@" >>"$MENU_LOG"
-# Send TERM signal to parent to simulate exit-menu or ESC behavior
+# Send TERM signal to parent to simulate ESC behavior
 kill -TERM "$PPID" 2>/dev/null || exit 0
 exit 0
 SH
@@ -152,7 +152,7 @@ SH
   
   args=$(cat "$tmp/log")
   case "$args" in
-    *"Exit%exit-menu"*) : ;;
+    *"Exit%kill -TERM "[0-9]*) : ;;
     *) TEST_FAILURE_REASON="menu should show Exit label: $args"; return 1 ;;
   esac
   

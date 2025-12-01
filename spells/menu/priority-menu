@@ -71,9 +71,9 @@ display_menu() {
 
         filename=$(basename "$FILE")
         exit_label=$(exit-label)
-        exit_item="${exit_label}%exit-menu"
+        exit_item="${exit_label}%kill -TERM $PPID"
 
-        set -- "Prioritize (upboat)%prioritize \"$FILE\"; exit-menu" \
+        set -- "Prioritize (upboat)%prioritize \"$FILE\"; kill -TERM \$PPID" \
                "${check_item}" \
                "Discard from priorities (downboat)%echo 'Placeholder: Discard command'" \
                "Edit Card%echo 'Placeholder: Edit command'" \

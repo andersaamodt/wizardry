@@ -50,7 +50,7 @@ display_menu() {
   install="Arcana%install-menu"
   system="Computer%system-menu"
   exit_label=$(exit-label)
-  exit_item="${exit_label}%exit-menu"
+  exit_item="${exit_label}%kill -TERM $PPID"
 
   # Only show MUD menu if enabled in config
   if is_mud_enabled; then

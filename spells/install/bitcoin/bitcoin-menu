@@ -18,7 +18,7 @@ display_menu() {
   clear_cache="Clear Bitcoin Cache%# coming soon"
   repair_permissions="Repair Permissions%repair-bitcoin-permissions"
   exit_label=$(exit-label)
-  exit_option="${exit_label}%exit-menu"
+  exit_option="${exit_label}%kill -TERM \$PPID"
   
   if is-bitcoin-installed; then
     install_bitcoin_option="Uninstall Bitcoin%uninstall-bitcoin"

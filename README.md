@@ -190,6 +190,7 @@ These values make the wizardry project what it is, and distinguish it from simil
 | Output-first          | Spells communicate by printing results so humans and spells consume the same text; exported environment variables are a fallback for rare cases. |
 | Hand-finished AI code | Using AI to generate reusable, well-commented POSIX shell scripts is a great use of AI; scripts should be hand-reviewed and tested. However, wizardry itself will not interface with AI. |
 | Menu specialization | Wizardry organizes complex workflows as dedicated menus that call one spell per menu item. |
+| Menu transparency | Menu item commands should be didactic—clear one-line commands using standard tools, not wizardry scripts, so users learn real shell commands. |
 | Script-like scripts  | Keep scripts script-like: favor flat flows with few functions so behavior stays readable and hackable from the shell. |
 | Wizardry available   | Spells can assume other wizardry spells are already in the PATH and should invoke them by name instead of long paths. |
 | No globals, no wrappers, minimal functions | No global env variables unless absolutely necessary. No wrappers as they break front-facing. Linear flat scripts preferred to functions. |

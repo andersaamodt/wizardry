@@ -15,7 +15,7 @@ display_menu() {
   set_config="Configure Tor%configure-tor"
   repair_permissions="Repair Permissions%sudo repair-tor-permissions"
   exit_label=$(exit-label)
-  exit_option="${exit_label}%exit-menu"
+  exit_option="${exit_label}%kill -TERM \$PPID"
   
   if is-installed tor > /dev/null; then
     install_tor_option="Uninstall Tor%uninstall-tor"

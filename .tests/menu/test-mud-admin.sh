@@ -64,7 +64,7 @@ SH
   assert_success
   args=$(cat "$tmp/log")
   case "$args" in
-    *"MUD Admin:"*"Add authorized player%add-player"*"List authorized players%new-player"*"List shared rooms%list-rooms"*"Exit%exit-menu"* ) : ;;
+    *"MUD Admin:"*"Add authorized player%add-player"*"List authorized players%new-player"*"List shared rooms%list-rooms"*"Exit%kill -TERM "[0-9]* ) : ;;
     *) TEST_FAILURE_REASON="menu not invoked with expected actions: $args"; return 1 ;;
   esac
 }
@@ -139,7 +139,7 @@ SH
   
   args=$(cat "$tmp/log")
   case "$args" in
-    *"Exit%exit-menu"*) : ;;
+    *"Exit%kill -TERM "[0-9]*) : ;;
     *) TEST_FAILURE_REASON="menu should show Exit label: $args"; return 1 ;;
   esac
   

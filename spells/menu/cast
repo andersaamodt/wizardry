@@ -62,7 +62,7 @@ spell_menu_loop() {
 $entries
 SPELLS
                 exit_label=$(exit-label)
-                set -- "$@" "${exit_label}%exit-menu"
+                set -- "$@" "${exit_label}%kill -TERM $PPID"
                 menu "Cast a Spell:" "$@" || true
         done
 }
