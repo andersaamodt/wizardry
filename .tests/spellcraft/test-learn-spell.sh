@@ -30,7 +30,7 @@ test_rejects_unknown_options() {
 
 test_handles_nonexistent_path() {
   run_spell "spells/spellcraft/learn-spell" "/nonexistent/path"
-  assert_failure || assert_error_contains "not a file or directory"
+  assert_failure && assert_error_contains "not a file or directory"
 }
 
 test_dry_run_shows_spells() {
