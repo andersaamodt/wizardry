@@ -191,29 +191,10 @@ prompt_for_input() {
 
 usage() {
         cat <<USAGE
-Usage: $SCRIPT_NAME [--category CATEGORY] [--dir DIR] [NAME COMMAND...]
-       $SCRIPT_NAME
+Usage: $SCRIPT_NAME [--category CAT] [NAME COMMAND...]
 
-Scribe (create) a custom spell in your spellbook, or provide
-arguments directly to scribe non-interactively.
-
-Without arguments, prompts for command text first, then name, and optionally a category.
-With arguments, uses NAME and remaining args as COMMAND.
-
-Spell names must be unique. A spell cannot be created if its name
-conflicts with an existing command in PATH or a spell already in your
-spellbook (including subfolders).
-
-Options:
-  --category CATEGORY  Place the spell in a category folder within ~/.spellbook.
-                       If the category doesn't exist, it will be created and
-                       added to your PATH.
-  --dir DIR            Create the spell directly in DIR instead of ~/.spellbook.
-                       Used when scribing in a specific subfolder.
-
-Custom spells are stored as executable scripts in ~/.spellbook
-(or \$XDG_DATA_HOME/wizardry/spellbook). Each spell is a separate
-file with the name as filename and the command as content.
+Scribe (create) a custom spell in your spellbook. Without arguments,
+prompts interactively. Names must be unique and not conflict with PATH.
 USAGE
 }
 

@@ -5,25 +5,10 @@
 
 show_usage() {
         cat <<'USAGE'
-Usage: mud-config get FEATURE
-       mud-config set FEATURE VALUE
-       mud-config toggle FEATURE
-       mud-config list
+Usage: mud-config {get|set|toggle|list} [FEATURE] [VALUE]
 
-Manage MUD feature toggles stored in ~/.spellbook/.mud/config
-
-Commands:
-  get FEATURE       Get the value of a feature (prints '1' for enabled, '0' for disabled)
-  set FEATURE VALUE Set a feature to '1' (enabled) or '0' (disabled)
-  toggle FEATURE    Toggle a feature between 1/0
-  list              List all features and their states
-
-Features:
-  command-not-found   Command not found hook (planned)
-  touch-hook          Touch hook (planned)
-  fantasy-theme       Fantasy theme (planned)
-  inventory           Inventory feature (planned)
-  combat              HP/MP and combat (planned)
+Manage MUD feature toggles stored in ~/.spellbook/.mud/config.
+Features: command-not-found, touch-hook, fantasy-theme, inventory, combat.
 USAGE
 }
 

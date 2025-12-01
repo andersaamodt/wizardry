@@ -138,15 +138,10 @@ has_help_option() {
 
 usage() {
         cat <<'USAGE'
-Usage: spell-menu SPELLNAME
-       spell-menu --cast COMMAND
-       spell-menu --help-spell COMMAND
-       spell-menu --install COMMAND
+Usage: spell-menu <spell-name>
 
-Display an action menu for a spell with options to cast, memorize, get help, or erase.
-
-Arguments:
-  SPELLNAME        The name of the spell or command to show the menu for
+Display an action menu for a spell with options to cast, memorize,
+get help, or erase.
 USAGE
 }
 
