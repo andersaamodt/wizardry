@@ -1,0 +1,39 @@
+#!/bin/sh
+
+# Toggle MUD visibility in the main menu.
+# When enabled, MUD appears in the main menu. When disabled, it is hidden.
+
+show_usage() {
+	cat <<'USAGE'
+Usage: toggle-mud-menu
+
+Toggle whether the MUD menu appears in the main menu.
+Shows the current state after toggling.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+	show_usage
+	exit 0
+	;;
+esac
+
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+MUD_CONFIG="$SCRIPT_DIR/mud-config"
+
+if [ ! -x "$MUD_CONFIG" ]; then
+	printf '%s\n' "Error: mud-config not found at '$MUD_CONFIG'." >&2
+	exit 1
+fi
+
+# Toggle the mud-enabled setting
+new_state=$("$MUD_CONFIG" toggle "mud-enabled")
+
+if [ "$new_state" = "1" ]; then
+	printf '%s\n' "✓ MUD menu enabled in main menu."
+else
+	printf '%s\n' "✓ MUD menu hidden from main menu."
+fi
