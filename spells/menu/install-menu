@@ -53,9 +53,19 @@ list_entries() {
         return
     fi
 
+    # Preferred order: mud first, then others alphabetically
+    # First output 'mud' if it exists
+    if [ -e "$install_dir/mud" ]; then
+        printf '%s\n' "mud"
+    fi
+    
+    # Then output all other entries alphabetically
     for entry in "$install_dir"/*; do
         [ -e "$entry" ] || continue
-        printf '%s\n' "$(basename "$entry")"
+        entry_name=$(basename "$entry")
+        # Skip 'mud' since we already listed it first
+        [ "$entry_name" = "mud" ] && continue
+        printf '%s\n' "$entry_name"
     done
 }
 

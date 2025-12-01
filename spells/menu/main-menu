@@ -33,16 +33,32 @@ if ! require menu "The main menu needs the 'menu' command to present options."; 
   exit 1
 fi
 
+# Check if MUD is enabled in config
+is_mud_enabled() {
+  # Check if mud-config exists and mud-enabled is set to 1
+  if command -v mud-config >/dev/null 2>&1; then
+    value=$(mud-config get mud-enabled 2>/dev/null) || return 1
+    [ "$value" = "1" ]
+  else
+    return 1
+  fi
+}
+
 display_menu() {
   cast="Cast%cast"
-  mud="MUD%mud"
   spellbook="Spellbook%spellbook"
   install="Arcana%install-menu"
   system="Computer%system-menu"
   exit_label=$(exit-label)
   exit_item="${exit_label}%exit $menu_escape_status"
 
-  set -- "$cast" "$mud" "$spellbook" "$install" "$system" "$exit_item"
+  # Only show MUD menu if enabled in config
+  if is_mud_enabled; then
+    mud="MUD%mud"
+    set -- "$cast" "$mud" "$spellbook" "$install" "$system" "$exit_item"
+  else
+    set -- "$cast" "$spellbook" "$install" "$system" "$exit_item"
+  fi
   MENU_ESCAPE_STATUS=$menu_escape_status menu "Main Menu:" "$@"
 }
 

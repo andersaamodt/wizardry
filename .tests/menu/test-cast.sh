@@ -91,9 +91,9 @@ test_cast_sends_entries_to_menu() {
     return 1
   fi
   args=$(cat "$tmp/log")
-  # Label is just alias; command (after %) is the spell path shown on right
+  # Label is just alias; command (after %) is now the spell name directly (no wrapper scripts)
   case "$args" in
-    *"Cast a Spell:"*"fizz%$tmp/fizz"*"Exit%exit 113"* ) : ;;
+    *"Cast a Spell:"*"fizz%cast fizz"*"Exit%exit 113"* ) : ;;
     *) TEST_FAILURE_REASON="menu did not receive stored spells"; return 1 ;;
   esac
 }
@@ -158,10 +158,10 @@ SH
   chmod +x "$tmp/exit-label"
   PATH="$tmp:$PATH" run_cmd env CAST_STORE="$tmp/memorize" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/cast"
   assert_success || return 1
-  # The menu label should just be the alias, not "alias – command"
+  # The menu label is the alias, and command (after %) is the spell name directly
   args=$(cat "$tmp/log")
   case "$args" in
-    *"spark%$tmp/spark"*) : ;;
+    *"spark%echo spark"*) : ;;
     *) TEST_FAILURE_REASON="expected alias-only label in menu: $args"; return 1 ;;
   esac
 }

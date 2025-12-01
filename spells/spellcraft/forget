@@ -126,7 +126,6 @@ remove_spell() {
 		exit 1
 	fi
 	mv "$tmp" "$command_file"
-	rm -f "$cast_dir/$name"
 }
 
 case ${1-} in

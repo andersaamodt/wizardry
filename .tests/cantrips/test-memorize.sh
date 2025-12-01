@@ -71,19 +71,20 @@ rejects_invalid_args() {
   [ "$STATUS" -ne 0 ] || { TEST_FAILURE_REASON="expected usage failure"; return 1; }
 }
 
-writes_scripts_into_cast_dir() {
+writes_entries_to_memorized_file() {
   env_var=$(cast_env)
   cast_dir=${env_var#*=}
   run_memorize "$env_var" spark
-  [ -x "$cast_dir/spark" ] || { TEST_FAILURE_REASON="cast spell wrapper missing"; return 1; }
-  # The wrapper should run "spark" (which is the spell name)
+  # Memorize only adds entries to .memorized file, no wrapper scripts
+  [ -f "$cast_dir/.memorized" ] || { TEST_FAILURE_REASON=".memorized file missing"; return 1; }
+  grep -q "spark" "$cast_dir/.memorized" || { TEST_FAILURE_REASON="spark not in .memorized"; return 1; }
 }
 
 run_test_case "memorizes and lists entries" memorizes_and_lists_entries
 run_test_case "pushes updates to the front" pushes_updates_to_front
 run_test_case "prints cast path" prints_cast_path
 run_test_case "rejects invalid arguments" rejects_invalid_args
-run_test_case "writes scripts into cast dir" writes_scripts_into_cast_dir
+run_test_case "writes entries to memorized file" writes_entries_to_memorized_file
 
 shows_help() {
   run_spell spells/cantrips/memorize --help
@@ -261,25 +262,21 @@ recursive_sweep_reorder() {
 
 run_test_case "recursive sweep reorder" recursive_sweep_reorder
 
-# Test generated script content
-generated_script_content() {
+# Test that entries are recorded in .memorized file
+memorized_file_content() {
   env_var=$(cast_env)
   cast_dir=${env_var#*=}
   run_memorize "$env_var" testspell
   assert_success || return 1
 
-  [ -f "$cast_dir/testspell" ] || { TEST_FAILURE_REASON="script file not created"; return 1; }
-  [ -x "$cast_dir/testspell" ] || { TEST_FAILURE_REASON="script not executable"; return 1; }
+  # Memorize only records entries in .memorized file (no wrapper scripts)
+  [ -f "$cast_dir/.memorized" ] || { TEST_FAILURE_REASON=".memorized file not created"; return 1; }
 
-  # Verify script contains shebang
-  first_line=$(head -n1 "$cast_dir/testspell")
-  [ "$first_line" = "#!/bin/sh" ] || { TEST_FAILURE_REASON="missing shebang"; return 1; }
-
-  # Verify script contains exec command
-  grep -q "exec sh -c" "$cast_dir/testspell" || { TEST_FAILURE_REASON="missing exec in script"; return 1; }
+  # Verify entry is recorded with correct format (name<TAB>name)
+  grep -q "testspell	testspell" "$cast_dir/.memorized" || { TEST_FAILURE_REASON="testspell entry not in .memorized"; return 1; }
 }
 
-run_test_case "generated script content" generated_script_content
+run_test_case "memorized file content" memorized_file_content
 
 # Test WIZARDRY_CAST_FILE environment variable
 custom_cast_file() {

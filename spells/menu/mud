@@ -30,20 +30,29 @@ if ! require menu "The MUD menu needs the 'menu' command to present options."; t
   exit 1
 fi
 
-# Add visual spacing before launching a submenu command
-launch_submenu() {
-  printf '\n'
-  "$@"
+# Get platform-specific portal chamber location
+get_portal_location() {
+  case "$(uname -s 2>/dev/null)" in
+    Darwin)
+      # macOS uses /Volumes for mounted drives
+      printf '%s' "/Volumes"
+      ;;
+    *)
+      # Linux and others use /mnt
+      printf '%s' "/mnt"
+      ;;
+  esac
 }
 
 display_menu() {
+  portal_location=$(get_portal_location)
+  
   look="Look Around%look"
   home="Teleport Home%cd"
   jump="Teleport to Marker%jump-to-marker"
-  portal="Teleport to Portal Chamber%cd /mnt"
-  install="Install MUD%launch_submenu mud-install-menu"
-  admin="Admin MUD Hosting%launch_submenu mud-admin"
-  settings="MUD Settings%launch_submenu mud-settings"
+  portal="Teleport to Portal Chamber%cd $portal_location"
+  admin="Admin MUD Hosting%mud-admin"
+  settings="MUD Settings%mud-settings"
   exit_label=$(exit-label)
   exit_item="${exit_label}%exit $menu_escape_status"
 
@@ -52,7 +61,6 @@ display_menu() {
     "$home" \
     "$jump" \
     "$portal" \
-    "$install" \
     "$admin" \
     "$settings" \
     "$exit_item"

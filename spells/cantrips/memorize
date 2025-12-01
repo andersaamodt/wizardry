@@ -95,18 +95,6 @@ ensure_parent_directory() {
 	fi
 }
 
-write_spell_script() {
-	name=$1
-	cmd=$2
-	spell_path=$cast_dir/$name
-	escaped_cmd=$(printf '%s' "$cmd" | sed "s/'/'\\''/g")
-	cat >"$spell_path" <<EOF
-#!/bin/sh
-exec sh -c '$escaped_cmd' "\$0" "\$@"
-EOF
-	chmod +x "$spell_path"
-}
-
 validate_name() {
 	name=$1
 	case $name in
@@ -129,7 +117,8 @@ add_spell() {
 	name=$1
 	validate_name "$name"
 	ensure_parent_directory
-	# Use the spell name as both the name and command (spell runs itself)
+	# Memorize just lists existing spells by name - no wrapper scripts needed
+	# The spell must already exist in PATH or spellbook
 	cmd=$name
 	tmp=$(mktemp "${TMPDIR:-/tmp}/memorize.XXXXXX") || exit 1
 	if [ -f "$command_file" ]; then
@@ -151,7 +140,6 @@ add_spell() {
 		cat "$tmp" >>"$command_file"
 		rm -f "$tmp"
 	fi
-	write_spell_script "$name" "$cmd"
 }
 
 list_entries() {

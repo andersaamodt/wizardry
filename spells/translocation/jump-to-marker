@@ -529,11 +529,7 @@ jump_describe_current_location
 
 jump_prompt_memorize() {
         if jump_spell_memorized; then
-                rc_display="your shell configuration file"
-                if [ -n "$JUMP_TO_MARKER_RC_FILE" ]; then
-                        rc_display=$(basename "$JUMP_TO_MARKER_RC_FILE")
-                fi
-                printf '%s\n' "The 'jump' spell is already learned via $rc_display."
+                # Already learned - silently continue without breaking the fourth wall
                 return 0
         fi
         if ! jump_detect_environment; then

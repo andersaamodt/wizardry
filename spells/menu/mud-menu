@@ -163,6 +163,13 @@ display_menu() {
     combat="[ ] HP/MP and combat (planned)%$MUD_INSTALL_DIR/toggle-combat"
   fi
   
+  # Build show/hide MUD in main menu toggle
+  if is_feature_enabled "mud-enabled"; then
+    mud_menu="[X] Show MUD in main menu%$MUD_INSTALL_DIR/toggle-mud-menu"
+  else
+    mud_menu="[ ] Show MUD in main menu%$MUD_INSTALL_DIR/toggle-mud-menu"
+  fi
+  
   # Build enable/disable all toggle
   if are_all_features_enabled; then
     toggle_all="[X] Enable all MUD features%$MUD_INSTALL_DIR/toggle-all-mud --disable"
@@ -174,7 +181,7 @@ display_menu() {
   exit_label=$(exit-label)
   exit_item="${exit_label}%exit $menu_escape_status"
 
-  set -- "$cd_hook" "$cnf_hook" "$touch_hook" "$fantasy" "$inventory" "$combat" "$toggle_all" "$tor" "$exit_item"
+  set -- "$mud_menu" "$cd_hook" "$cnf_hook" "$touch_hook" "$fantasy" "$inventory" "$combat" "$toggle_all" "$tor" "$exit_item"
   MENU_ESCAPE_STATUS=$menu_escape_status menu --start-selection "$start_selection" "MUD Install:" "$@"
 }
 

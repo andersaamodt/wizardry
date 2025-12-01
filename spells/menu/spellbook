@@ -241,7 +241,9 @@ list_category_spells() {
         find "$resolved_path" -maxdepth 2 -type f -perm -111 2>/dev/null | sort
 }
 
-# List all scribed commands (executable files in spell_home, excluding hidden and .memorized)
+# List all scribed commands (custom commands in spell_home, excluding built-in spells)
+# Only shows truly custom user-created commands, not built-in spells that might have
+# been memorized (those should only appear in the Cast menu)
 list_scribed_commands() {
         if [ ! -d "$spell_home" ]; then
                 return 0
@@ -258,6 +260,18 @@ list_scribed_commands() {
                 case $script_name in
                         .*) continue ;;
                 esac
+                # Skip if this command exists elsewhere in PATH (it's a built-in spell, not custom)
+                if cmd_path=$(command -v "$script_name" 2>/dev/null); then
+                        case "$cmd_path" in
+                                "$spell_home"/*) 
+                                        # Only found in spell_home - this is a custom command
+                                        ;;
+                                *)
+                                        # Found in system PATH - skip this built-in spell
+                                        continue
+                                        ;;
+                        esac
+                fi
                 cmd_text=$(extract_command_from_script "$script")
                 if [ -n "$cmd_text" ]; then
                         printf '%s\t%s\n' "$script_name" "$cmd_text"
