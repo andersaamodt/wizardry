@@ -62,7 +62,7 @@ display_menu() {
   list_users_in_group="List users in group%read -p \"Enter group name to list members: \" group; getent group \$group"
   add_user_to_group="Add other user to group%read -p \"Enter username: \" username; read -p \"Enter group name to add them to: \" group; sudo usermod -a -G \$group \$username"
   remove_user_from_group="Remove other user from group%read -p \"Enter username: \" username; read -p \"Enter group to remove them from: \" group; sudo gpasswd -d \$username \$group"
-  create_user="Create new user%read -p \"Enter new username: \" username; sudo useradd \$username; printf \"Please remember to set a password for the new user with the 'Change other user's password' option.\""
+  create_user="Create new user%read -p \"Enter new username: \" username; sudo useradd \$username; printf \"Note: Set a password for the new user with 'Change other user's password'.\""
   delete_user="Delete user%read -p \"Enter username of user to delete: \" username; sudo userdel \$username"
   exit_label=$(exit-label)
   exit_item="${exit_label}%exit $menu_escape_status"
