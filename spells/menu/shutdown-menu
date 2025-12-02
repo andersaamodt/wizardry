@@ -3,6 +3,14 @@
 # This spell displays shutdown, restart, logout, and power management options.
 # Commands are invoked directly via the menu without external spell dependencies.
 
+case "${1-}" in
+  -h|--help)
+    printf 'Usage: shutdown-menu\n'
+    printf 'Displays the shutdown and power management menu.\n'
+    exit 0
+    ;;
+esac
+
 set -eu
 
 if [ -n "${REQUIRE_COMMAND-}" ]; then

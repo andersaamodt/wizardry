@@ -88,7 +88,12 @@ SH
 
 run_test_case "services-menu ESC/Exit behavior" test_esc_exit_behavior
 
-# Note: services-menu does not have --help handling, so we skip that test
-# to avoid entering the infinite menu loop
+test_shows_help() {
+  run_cmd "$ROOT_DIR/spells/menu/services-menu" --help
+  assert_success
+  assert_output_contains "Usage: services-menu"
+}
+
+run_test_case "services-menu --help shows usage" test_shows_help
 
 finish_tests

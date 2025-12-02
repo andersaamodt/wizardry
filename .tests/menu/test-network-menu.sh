@@ -19,7 +19,12 @@ spell_has_content() {
 run_test_case "menu/network-menu is executable" spell_is_executable
 run_test_case "menu/network-menu has content" spell_has_content
 
-# Note: network-menu does not have --help handling, so we skip that test
-# to avoid entering the infinite menu loop
+test_shows_help() {
+  run_cmd "$ROOT_DIR/spells/menu/network-menu" --help
+  assert_success
+  assert_output_contains "Usage: network-menu"
+}
+
+run_test_case "network-menu --help shows usage" test_shows_help
 
 finish_tests

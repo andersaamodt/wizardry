@@ -145,8 +145,14 @@ SH
 
 run_test_case "mud menu requires menu dependency" mud_requires_menu_dependency
 run_test_case "menu/mud is executable" spell_is_executable
-# Note: mud does not have --help handling, so we skip that test
-# to avoid entering the infinite menu loop
+
+test_shows_help() {
+  run_cmd "$ROOT_DIR/spells/menu/mud" --help
+  assert_success
+  assert_output_contains "Usage: mud"
+}
+
+run_test_case "mud --help shows usage" test_shows_help
 run_test_case "mud presents navigation options" test_mud_presents_navigation_options
 run_test_case "mud presents admin options" test_mud_presents_admin_options
 run_test_case "mud shows menu title" test_mud_shows_menu_title

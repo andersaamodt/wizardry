@@ -184,7 +184,12 @@ SH
 
 run_test_case "shutdown-menu uses kernel fallback for hibernate detection" test_hibernate_kernel_fallback
 
-# Note: shutdown-menu does not have --help handling, so we skip that test
-# to avoid entering the infinite menu loop
+test_shows_help() {
+  run_cmd "$ROOT_DIR/spells/menu/shutdown-menu" --help
+  assert_success
+  assert_output_contains "Usage: shutdown-menu"
+}
+
+run_test_case "shutdown-menu --help shows usage" test_shows_help
 
 finish_tests

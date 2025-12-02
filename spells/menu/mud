@@ -1,6 +1,14 @@
 #!/bin/sh
 # This spell displays the main MUD (Multi-User Dungeon) menu interface.
 
+case "${1-}" in
+  -h|--help)
+    printf 'Usage: mud\n'
+    printf 'Displays the MUD (Multi-User Dungeon) menu.\n'
+    exit 0
+    ;;
+esac
+
 set -eu
 
 # Catch Ctrl-C and TERM signal to exit cleanly

@@ -119,7 +119,12 @@ run_test_case "bitcoin-menu prompts for install when missing" test_bitcoin_menu_
 run_test_case "bitcoin-menu manages running services" test_bitcoin_menu_controls_running_service
 run_test_case "bitcoin-menu installs service when absent" test_bitcoin_menu_offers_service_install_when_missing
 
-# Note: bitcoin-menu does not have --help handling, so we skip that test
-# to avoid entering the infinite menu loop
+test_shows_help() {
+  run_cmd "$ROOT_DIR/spells/install/bitcoin/bitcoin-menu" --help
+  assert_success
+  assert_output_contains "Usage: bitcoin-menu"
+}
+
+run_test_case "bitcoin-menu --help shows usage" test_shows_help
 
 finish_tests

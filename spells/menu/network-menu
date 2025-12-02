@@ -1,4 +1,13 @@
+#!/bin/sh
+# Network configuration menu - work in progress
 
+case "${1-}" in
+  -h|--help)
+    printf 'Usage: network-menu\n'
+    printf 'Displays network configuration options.\n'
+    exit 0
+    ;;
+esac
 
 configure_dhcp() {
     # Ask for confirmation before proceeding

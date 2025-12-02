@@ -2,6 +2,13 @@
 
 # Install and manage the core prerequisites for wizardry.
 
+case "${1-}" in
+  -h|--help)
+    printf 'Usage: core-menu\n'
+    printf 'Displays the core prerequisites management menu.\n'
+    exit 0
+    ;;
+esac
 
 set -eu
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)

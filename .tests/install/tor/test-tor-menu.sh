@@ -19,7 +19,12 @@ spell_has_content() {
 
 run_test_case "install/tor/tor-menu has content" spell_has_content
 
-# Note: tor-menu does not have --help handling, so we skip that test
-# to avoid entering the infinite menu loop
+test_shows_help() {
+  run_cmd "$ROOT_DIR/spells/install/tor/tor-menu" --help
+  assert_success
+  assert_output_contains "Usage: tor-menu"
+}
+
+run_test_case "tor-menu --help shows usage" test_shows_help
 
 finish_tests

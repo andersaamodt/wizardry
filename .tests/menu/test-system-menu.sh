@@ -83,7 +83,12 @@ SH
 
 run_test_case "system-menu ESC/Exit behavior" test_esc_exit_behavior
 
-# Note: system-menu does not have --help handling, so we skip that test
-# to avoid entering the infinite menu loop
+test_shows_help() {
+  run_cmd "$ROOT_DIR/spells/menu/system-menu" --help
+  assert_success
+  assert_output_contains "Usage: system-menu"
+}
+
+run_test_case "system-menu --help shows usage" test_shows_help
 
 finish_tests
