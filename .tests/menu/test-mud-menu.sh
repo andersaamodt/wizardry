@@ -219,8 +219,16 @@ CD_CANTRIP='/path/to/cd'
 alias cd='. "$CD_CANTRIP"'
 # <<< wizardry cd cantrip <<<
 RC
+
+  # Create detect-rc-file stub that returns the test rc file
+  cat >"$tmp/detect-rc-file" <<SH
+#!/bin/sh
+printf '%s\n' "rc_file=$rc_file"
+printf '%s\n' "format=posix"
+SH
+  chmod +x "$tmp/detect-rc-file"
   
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" LEARN_SPELL_RC_FILE="$rc_file" "$ROOT_DIR/spells/menu/mud-menu"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud-menu"
   assert_success || return 1
   
   args=$(cat "$tmp/log")
