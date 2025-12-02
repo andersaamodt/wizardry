@@ -130,55 +130,40 @@ check_shebang() {
 
 check_description_comment() {
   file=$1
-  # Read lines 2, 3, and 4 to allow up to 3-line opening comments
-  lines=$(sed -n '2p;3p;4p;5p' "$file")
-  second_line=$(printf '%s\n' "$lines" | sed -n '1p')
-  third_line=$(printf '%s\n' "$lines" | sed -n '2p')
-  fourth_line=$(printf '%s\n' "$lines" | sed -n '3p')
-  fifth_line=$(printf '%s\n' "$lines" | sed -n '4p')
+  # Read lines 2-4 to check for opening description comment
+  second_line=$(sed -n '2p' "$file")
+  third_line=$(sed -n '3p' "$file")
+  fourth_line=$(sed -n '4p' "$file")
   
-  # Check if second line is '. declare-globals' - if so, check line 3 for comment
+  # Check if second line is '. declare-globals' - if so, check lines 3-4 for comment
   case $second_line in
     '. declare-globals'|'source declare-globals')
-      # Line 2 is declare-globals, check if line 3 or 4 is a comment
+      # Line 2 is declare-globals, comment can be on line 3 (blank line optional) or 4
       case $third_line in
-        '#'*|'')
-          case $fourth_line in
-            '#'*)
-              return 0
-              ;;
-          esac
-          case $third_line in
-            '#'*)
-              return 0
-              ;;
-          esac
-          ;;
+        '#'*) return 0 ;;
+      esac
+      case $fourth_line in
+        '#'*) return 0 ;;
       esac
       printf 'missing opening description comment after declare-globals'
       return 1
       ;;
   esac
   
-  # Check if second line is empty and third line is a comment
-  if [ -z "$second_line" ] && [ -n "$third_line" ]; then
-    case $third_line in
-      '#'*)
-        return 0
-        ;;
-    esac
-  fi
-  
-  # Check if second line is a comment (allows up to 3 comment lines)
+  # Standard case: check line 2 for comment, or line 3 if line 2 is blank
   case $second_line in
     '#'*)
       return 0
       ;;
-    *)
-      printf 'missing opening description comment after shebang'
-      return 1
+    '')
+      case $third_line in
+        '#'*) return 0 ;;
+      esac
       ;;
   esac
+  
+  printf 'missing opening description comment after shebang'
+  return 1
 }
 
 check_usage_function() {
@@ -289,8 +274,23 @@ check_declare_globals() {
   # Check if the spell uses any declared globals
   # If it does, it must source declare-globals in the first 15 lines
   
-  # List of declared globals (excluding WIZARDRY_TEST_* which are test-only)
-  declared_globals='WIZARDRY_DIR|INSTALL_DIR|BIN_DIR|CORE_INSTALLER|SPELLBOOK_DIR|MEMORIZE_TARGET|RC_FILE|RC_FORMAT|PLATFORM|MUD_DIR|CD_CANTRIP|LOOK_SPELL|COLORS_AVAILABLE|OS_LABEL|SUBMENU|SKIP_CONFIRM|SKIP_NIX_REBUILD|INSTALL_ASSUME_YES|UPDATE_ASSUME_YES|UPDATE_DISTRO'
+  # Extract declared globals from declare-globals file dynamically
+  # Excludes WIZARDRY_TEST_* which are test-only
+  declare_globals_file="$repo_dir/spells/.imps/declare-globals"
+  if [ -f "$declare_globals_file" ]; then
+    declared_globals=$(grep '^\: "\${' "$declare_globals_file" | \
+      sed 's/.*\${\([A-Z_]*\).*/\1/' | \
+      grep -v '^WIZARDRY_TEST' | \
+      grep -v '^WIZARDRY_TMPDIR' | \
+      grep -v '^WIZARDRY_SYSTEM' | \
+      grep -v '^WIZARDRY_DISABLE' | \
+      grep -v '^WIZARDRY_ENABLE' | \
+      grep -v '^WIZARDRY_BWRAP' | \
+      tr '\n' '|' | sed 's/|$//')
+  else
+    # Fallback: hardcoded list if file not found
+    declared_globals='WIZARDRY_DIR|INSTALL_DIR|BIN_DIR|CORE_INSTALLER|SPELLBOOK_DIR|MEMORIZE_TARGET|RC_FILE|RC_FORMAT|PLATFORM|MUD_DIR|CD_CANTRIP|LOOK_SPELL|COLORS_AVAILABLE|OS_LABEL|SUBMENU|SKIP_CONFIRM|SKIP_NIX_REBUILD|INSTALL_ASSUME_YES|UPDATE_ASSUME_YES|UPDATE_DISTRO'
+  fi
   
   # Check if file uses any declared globals (excluding comments)
   if grep -v '^[[:space:]]*#' "$file" 2>/dev/null | grep -qE '\$\{?('"$declared_globals"')'; then
