@@ -5,10 +5,10 @@
 
 show_usage() {
   cat <<'USAGE'
-Usage: vet-spell [--strict] [--only PATTERN] [--list] [--verbose] [file...]
+Usage: vet-spell [--only PATTERN] [--list] [--verbose] [file...]
 
 Vet spell files for style guide compliance. Without files, vets all spells.
-Use --strict for additional checks (usage function, --help handler, naming).
+Includes strict checks: usage function, --help handler, naming, globals, set -u.
 USAGE
 }
 
@@ -27,7 +27,6 @@ repo_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd -P)
 verbose=0
 list_only=0
 pattern=''
-strict_mode=0
 
 while [ "$#" -gt 0 ]; do
   case $1 in
@@ -37,10 +36,6 @@ while [ "$#" -gt 0 ]; do
       ;;
     --list)
       list_only=1
-      shift
-      ;;
-    --strict)
-      strict_mode=1
       shift
       ;;
     --only)
@@ -187,11 +182,12 @@ check_help_handler() {
 
 check_strict_mode() {
   file=$1
-  # Accept set -eu, set -e, or set -e -u as valid strict mode
-  if grep -qE 'set -e' "$file" 2>/dev/null; then
+  # Check for set -u in first 25 lines (required for strict variable handling)
+  # Accept set -eu, set -u, set -e -u, or set -u -e
+  if head -25 "$file" | grep -qE 'set[[:space:]]+-[eu]*u[eu]*|set[[:space:]]+-e[[:space:]]+-u|set[[:space:]]+-u[[:space:]]+-e'; then
     return 0
   fi
-  printf 'missing strict mode (set -e or set -eu)'
+  printf 'missing set -u in first 25 lines (use set -eu for strict mode)'
   return 1
 }
 
@@ -364,16 +360,16 @@ while IFS= read -r target; do
     issue_count=$((issue_count + 1))
   fi
   
-  # Check usage function (only in strict mode, not required for imps)
-  if [ "$strict_mode" -eq 1 ] && [ "$is_imp_file" -eq 0 ]; then
+  # Check usage function (not required for imps)
+  if [ "$is_imp_file" -eq 0 ]; then
     if ! result=$(check_usage_function "$path"); then
       issues=${issues:+$issues; }$result
       issue_count=$((issue_count + 1))
     fi
   fi
   
-  # Check help handler (only in strict mode, not required for imps)
-  if [ "$strict_mode" -eq 1 ] && [ "$is_imp_file" -eq 0 ]; then
+  # Check help handler (not required for imps)
+  if [ "$is_imp_file" -eq 0 ]; then
     if ! result=$(check_help_handler "$path"); then
       issues=${issues:+$issues; }$result
       issue_count=$((issue_count + 1))
@@ -400,32 +396,26 @@ while IFS= read -r target; do
     issue_count=$((issue_count + 1))
   fi
   
-  # Check which usage (only in strict mode)
-  if [ "$strict_mode" -eq 1 ]; then
-    if ! result=$(check_which_usage "$path"); then
-      issues=${issues:+$issues; }$result
-      issue_count=$((issue_count + 1))
-    fi
+  # Check which usage
+  if ! result=$(check_which_usage "$path"); then
+    issues=${issues:+$issues; }$result
+    issue_count=$((issue_count + 1))
   fi
   
-  # Check backtick usage (only in strict mode)
-  if [ "$strict_mode" -eq 1 ]; then
-    if ! result=$(check_backtick_usage "$path"); then
-      issues=${issues:+$issues; }$result
-      issue_count=$((issue_count + 1))
-    fi
+  # Check backtick usage
+  if ! result=$(check_backtick_usage "$path"); then
+    issues=${issues:+$issues; }$result
+    issue_count=$((issue_count + 1))
   fi
   
-  # Check spell naming convention (only in strict mode)
-  if [ "$strict_mode" -eq 1 ]; then
-    if ! result=$(check_spell_naming "$path"); then
-      issues=${issues:+$issues; }$result
-      issue_count=$((issue_count + 1))
-    fi
+  # Check spell naming convention
+  if ! result=$(check_spell_naming "$path"); then
+    issues=${issues:+$issues; }$result
+    issue_count=$((issue_count + 1))
   fi
   
-  # Check declare-globals usage (only in strict mode, not for imps or declare-globals itself)
-  if [ "$strict_mode" -eq 1 ] && [ "$is_imp_file" -eq 0 ]; then
+  # Check declare-globals usage (not for imps or declare-globals itself)
+  if [ "$is_imp_file" -eq 0 ]; then
     case $target in
       *declare-globals*) ;;
       *)

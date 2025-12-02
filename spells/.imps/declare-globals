@@ -42,20 +42,24 @@
 # Target path during spell memorization. Required for learn-spell to
 # communicate target paths to spell scripts during the learning process.
 : "${MEMORIZE_TARGET:=}"
+: "${WIZARDRY_MEMORIZE_TARGET:=}"
 
 # --- Shell Configuration ---
 
 # Shell RC file path. Required for learn-spell and install commands
 # to know which shell config file to modify.
 : "${RC_FILE:=}"
+: "${WIZARDRY_RC_FILE:=}"
 
 # Format of the shell RC file (bash/zsh/fish/sh). Required for commands
 # that modify shell config to use correct syntax.
 : "${RC_FORMAT:=}"
+: "${WIZARDRY_RC_FORMAT:=}"
 
 # Shell platform identifier. Required for learn-spell and install commands
 # to apply platform-specific configurations.
 : "${PLATFORM:=}"
+: "${WIZARDRY_PLATFORM:=}"
 
 # --- MUD Features ---
 
@@ -66,46 +70,56 @@
 # Path to the cd cantrip script. Required for the MUD cd hook to know
 # which script to source when changing directories.
 : "${CD_CANTRIP:=}"
+: "${WIZARDRY_CD_CANTRIP:=}"
 
 # Name of look spell to use. Required for MUD cd hook to know which
 # spell displays room descriptions when entering directories.
 : "${LOOK_SPELL:=}"
+: "${WIZARDRY_LOOK_SPELL:=}"
 
 # --- Terminal & Display ---
 
 # Flag indicating whether terminal supports ANSI colors. Required for
 # scripts to conditionally disable color output when terminal lacks support.
 : "${COLORS_AVAILABLE:=}"
+: "${WIZARDRY_COLORS_AVAILABLE:=}"
 
 # Operating system label for output. Required for test-magic and other
 # scripts to display OS-specific information in reports.
 : "${OS_LABEL:=}"
+: "${WIZARDRY_OS_LABEL:=}"
 
 # Flag for submenu context. Required for menu system to know when
 # displaying a submenu vs main menu for proper navigation.
 : "${SUBMENU:=}"
+: "${WIZARDRY_SUBMENU:=}"
 
 # --- Automation Flags ---
 
 # Skip confirmation prompts. Required for automated/scripted installations
 # to proceed without user interaction.
 : "${SKIP_CONFIRM:=}"
+: "${WIZARDRY_SKIP_CONFIRM:=}"
 
 # Skip NixOS rebuild during updates. Required for faster test iterations
 # and when rebuild should be deferred to a separate step.
 : "${SKIP_NIX_REBUILD:=}"
+: "${WIZARDRY_SKIP_NIX_REBUILD:=}"
 
 # Assume yes during installation. Required for non-interactive
 # installation in CI/CD or scripted environments.
 : "${INSTALL_ASSUME_YES:=}"
+: "${WIZARDRY_INSTALL_ASSUME_YES:=}"
 
 # Assume yes to update-all prompts. Required for automated system updates
 # to proceed without user confirmation.
 : "${UPDATE_ASSUME_YES:=}"
+: "${WIZARDRY_UPDATE_ALL_ASSUME_YES:=}"
 
 # Distribution override for update-all. Required for testing update-all
 # on different platforms without actual detection.
 : "${UPDATE_DISTRO:=}"
+: "${WIZARDRY_UPDATE_ALL_DISTRO:=}"
 
 # --- Test Infrastructure ---
 # (These keep WIZARDRY_ prefix for namespacing in test environments)
