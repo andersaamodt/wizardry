@@ -17,9 +17,7 @@ done
 # shellcheck source=/dev/null
 . "$test_root/test-common.sh"
 
-# Skip nix rebuild and confirmation in tests
-export WIZARDRY_SKIP_NIX_REBUILD=1
-export WIZARDRY_SKIP_CONFIRM=1
+# Note: Tests now use flags and LEARN_SPELL_* variables instead of WIZARDRY_* env vars
 
 test_cd_installs_hook_when_user_agrees() {
   tmp=$(make_tempdir)
@@ -29,7 +27,7 @@ exit 0
 SH
   chmod +x "$tmp/ask_yn"
 
-  run_cmd env PATH="$tmp:$PATH" WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd" "$tmp"
+  run_cmd env PATH="$tmp:$PATH" LEARN_SPELL_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd" "$tmp"
   assert_success && assert_path_exists "$tmp/rc" && assert_output_contains "installed wizardry hooks"
 }
 
@@ -49,19 +47,19 @@ SH
   target="$WIZARDRY_TMPDIR/room"
   mkdir -p "$target"
 
-  run_cmd env PATH="$tmp:$PATH" WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd" "$target"
+  run_cmd env PATH="$tmp:$PATH" LEARN_SPELL_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd" "$target"
   assert_success && assert_path_exists "$target/looked"
 }
 
 test_cd_install_command_installs_without_prompting() {
   tmp=$(make_tempdir)
   
-  run_cmd env WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd" install
+  run_cmd env LEARN_SPELL_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd" install
   assert_success && assert_path_exists "$tmp/rc" && assert_output_contains "installed wizardry hooks"
   
-  # Verify hook content
-  if ! grep -q "WIZARDRY_CD_CANTRIP" "$tmp/rc"; then
-    TEST_FAILURE_REASON="Hook not found in rc file"
+  # Verify hook content - now uses wizardry_cd function
+  if ! grep -q "wizardry_cd" "$tmp/rc"; then
+    TEST_FAILURE_REASON="wizardry_cd function not found in rc file"
     return 1
   fi
   if ! grep -q "alias cd=" "$tmp/rc"; then
@@ -74,11 +72,11 @@ test_cd_install_is_idempotent() {
   tmp=$(make_tempdir)
   
   # First install
-  run_cmd env WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd" install
+  run_cmd env LEARN_SPELL_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd" install
   assert_success || return 1
   
   # Second install should not duplicate
-  run_cmd env WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd" install
+  run_cmd env LEARN_SPELL_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd" install
   assert_success || return 1
   
   # Count occurrences of the marker - should be exactly one
@@ -104,7 +102,7 @@ SH
   
   nonexistent="$tmp/does_not_exist"
   
-  run_cmd env PATH="$tmp:$PATH" WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd" "$nonexistent"
+  run_cmd env PATH="$tmp:$PATH" LEARN_SPELL_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd" "$nonexistent"
   assert_failure
 }
 
@@ -120,14 +118,14 @@ test_cd_handles_missing_look_gracefully() {
 test_cd_uses_shell_specific_rc_file() {
   tmp=$(make_tempdir)
   
-  # Test with zsh - use a restricted PATH without detect-rc-file
-  # to test the shell-specific fallback logic
-  run_cmd sh -c "PATH=/bin:/usr/bin WIZARDRY_CD_CANTRIP='$ROOT_DIR/spells/install/mud/cd' HOME='$tmp' SHELL='/bin/zsh' '$ROOT_DIR/spells/install/mud/cd' install"
+  # Test with zsh - use a restricted PATH that includes declare-globals
+  # to test the shell-specific fallback logic (no detect-rc-file)
+  run_cmd sh -c "PATH='$ROOT_DIR/spells/.imps:/bin:/usr/bin' HOME='$tmp' SHELL='/bin/zsh' '$ROOT_DIR/spells/install/mud/cd' install"
   assert_success && assert_path_exists "$tmp/.zshrc"
   
-  # Test with bash - use a restricted PATH without detect-rc-file
+  # Test with bash - use a restricted PATH that includes declare-globals
   tmp2=$(make_tempdir)
-  run_cmd sh -c "PATH=/bin:/usr/bin WIZARDRY_CD_CANTRIP='$ROOT_DIR/spells/install/mud/cd' HOME='$tmp2' SHELL='/bin/bash' '$ROOT_DIR/spells/install/mud/cd' install"
+  run_cmd sh -c "PATH='$ROOT_DIR/spells/.imps:/bin:/usr/bin' HOME='$tmp2' SHELL='/bin/bash' '$ROOT_DIR/spells/install/mud/cd' install"
   assert_success && assert_path_exists "$tmp2/.bashrc"
 }
 
@@ -150,7 +148,7 @@ EOF
   export PATH
   
   # Run cd install with our custom detect-rc-file
-  run_cmd env WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" HOME="$tmp" "$ROOT_DIR/spells/install/mud/cd" install
+  run_cmd env CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" HOME="$tmp" "$ROOT_DIR/spells/install/mud/cd" install
   
   PATH=$old_path
   assert_success && assert_path_exists "$custom_rc"
@@ -160,7 +158,7 @@ test_cd_uninstall_removes_hook() {
   tmp=$(make_tempdir)
   
   # First install the hook
-  run_cmd env WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd" install
+  run_cmd env CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" LEARN_SPELL_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd" install
   assert_success || return 1
   assert_path_exists "$tmp/rc" || return 1
   
@@ -171,7 +169,7 @@ test_cd_uninstall_removes_hook() {
   fi
   
   # Uninstall the hook
-  run_cmd env WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd" uninstall
+  run_cmd env CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" LEARN_SPELL_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd" uninstall
   assert_success || return 1
   assert_output_contains "uninstalled wizardry hooks" || return 1
   
@@ -187,7 +185,7 @@ test_cd_uninstall_reports_not_installed() {
   # Create an empty rc file without the hook
   : >"$tmp/rc"
   
-  run_cmd env WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd" uninstall
+  run_cmd env CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" LEARN_SPELL_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd" uninstall
   assert_success || return 1
   assert_output_contains "not installed" || return 1
 }
@@ -232,7 +230,7 @@ STUB
   chmod +x "$tmp/detect-rc-file"
   
   # Run cd install with our detect-rc-file (skip rebuild in tests)
-  run_cmd env PATH="$tmp:$PATH" WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" WIZARDRY_RC_FORMAT=nix WIZARDRY_RC_FILE="$nix_config" WIZARDRY_SKIP_NIX_REBUILD=1 HOME="$tmp" "$ROOT_DIR/spells/install/mud/cd" install
+  run_cmd env PATH="$tmp:$PATH" LEARN_SPELL_RC_FORMAT=nix LEARN_SPELL_RC_FILE="$nix_config" HOME="$tmp" "$ROOT_DIR/spells/install/mud/cd" install --skip-rebuild --skip-confirm
   assert_success || return 1
   
   # Verify it installed to configuration.nix using nix format (initExtra since not at /etc/nixos/)
@@ -265,7 +263,7 @@ EOF
   chmod +x "$tmp/detect-rc-file"
   
   # Run cd install WITHOUT WIZARDRY_RC_FORMAT - it should auto-detect from detect-rc-file (skip rebuild in tests)
-  run_cmd env PATH="$tmp:$PATH" WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" WIZARDRY_SKIP_NIX_REBUILD=1 HOME="$tmp" "$ROOT_DIR/spells/install/mud/cd" install
+  run_cmd env PATH="$tmp:$PATH" HOME="$tmp" "$ROOT_DIR/spells/install/mud/cd" install --skip-rebuild --skip-confirm
   assert_success || return 1
   
   # Verify it installed to home.nix using nix format (initExtra for home-manager)
@@ -297,7 +295,7 @@ EOF
   chmod +x "$tmp/detect-rc-file"
   
   # First install the hook (skip rebuild in tests)
-  run_cmd env PATH="$tmp:$PATH" WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" WIZARDRY_SKIP_NIX_REBUILD=1 HOME="$tmp" "$ROOT_DIR/spells/install/mud/cd" install
+  run_cmd env PATH="$tmp:$PATH" HOME="$tmp" "$ROOT_DIR/spells/install/mud/cd" install --skip-rebuild --skip-confirm
   assert_success || return 1
   
   # Verify hook was installed
@@ -307,7 +305,7 @@ EOF
   fi
   
   # Now uninstall (skip rebuild in tests)
-  run_cmd env PATH="$tmp:$PATH" WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" WIZARDRY_SKIP_NIX_REBUILD=1 HOME="$tmp" "$ROOT_DIR/spells/install/mud/cd" uninstall
+  run_cmd env PATH="$tmp:$PATH" HOME="$tmp" "$ROOT_DIR/spells/install/mud/cd" uninstall --skip-rebuild --skip-confirm
   assert_success || return 1
   assert_output_contains "uninstalled wizardry hooks" || return 1
   

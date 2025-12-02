@@ -14,10 +14,14 @@ fi
 
 set -eu
 
+# Flags for testing - passed through to nix-shell-init
+_cd_skip_rebuild=0
+_cd_skip_confirm=0
+
 show_usage() {
         cat <<'USAGE'
 Usage: cd [DIRECTORY]
-       cd {install|uninstall}
+       cd {install|uninstall} [--skip-rebuild] [--skip-confirm]
 
 Replace builtin cd to run 'look' after each directory change.
 Use install/uninstall to manage the shell hook.
@@ -215,7 +219,11 @@ alias cd='wizardry_cd'"
                         return 1
                 fi
                 
-                if printf '%s\n' "$hook_code" | "$nix_helper" add --shell bash --name cd-cantrip --file "$rc_file"; then
+                nix_args=""
+                [ "$_cd_skip_rebuild" -eq 1 ] && nix_args="$nix_args --skip-rebuild"
+                [ "$_cd_skip_confirm" -eq 1 ] && nix_args="$nix_args --skip-confirm"
+                # shellcheck disable=SC2086
+                if printf '%s\n' "$hook_code" | "$nix_helper" add $nix_args --shell bash --name cd-cantrip --file "$rc_file"; then
                         printf '%s\n' "cd cantrip: installed wizardry hooks in '$rc_file'."
                 else
                         warn "unable to update '$rc_file'."
@@ -269,7 +277,11 @@ uninstall() {
                 fi
                 
                 if [ -n "$nix_helper" ]; then
-                        if "$nix_helper" remove --shell bash --name cd-cantrip --file "$rc_file"; then
+                        nix_args=""
+                        [ "$_cd_skip_rebuild" -eq 1 ] && nix_args="$nix_args --skip-rebuild"
+                        [ "$_cd_skip_confirm" -eq 1 ] && nix_args="$nix_args --skip-confirm"
+                        # shellcheck disable=SC2086
+                        if "$nix_helper" remove $nix_args --shell bash --name cd-cantrip --file "$rc_file"; then
                                 printf '%s\n' "cd cantrip: uninstalled wizardry hooks from '$rc_file'."
                                 return 0
                         else
@@ -342,13 +354,48 @@ wizardry_cd_main() {
         command cd "$@" && wizardry_cd_cast_look
 }
 
+# Parse flags for install/uninstall commands
+while [ "$#" -gt 0 ]; do
+        case "${1-}" in
+        --skip-rebuild)
+                _cd_skip_rebuild=1
+                shift
+                ;;
+        --skip-confirm)
+                _cd_skip_confirm=1
+                shift
+                ;;
+        *)
+                break
+                ;;
+        esac
+done
+
 # Handle command-line invocation for install/uninstall commands
 case "${1-}" in
 install)
+        shift
+        # Check for any remaining flags after install command
+        while [ "$#" -gt 0 ]; do
+                case "${1-}" in
+                --skip-rebuild) _cd_skip_rebuild=1; shift ;;
+                --skip-confirm) _cd_skip_confirm=1; shift ;;
+                *) break ;;
+                esac
+        done
         install
         exit $?
         ;;
 uninstall)
+        shift
+        # Check for any remaining flags after uninstall command
+        while [ "$#" -gt 0 ]; do
+                case "${1-}" in
+                --skip-rebuild) _cd_skip_rebuild=1; shift ;;
+                --skip-confirm) _cd_skip_confirm=1; shift ;;
+                *) break ;;
+                esac
+        done
         uninstall
         exit $?
         ;;
