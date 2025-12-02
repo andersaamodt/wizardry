@@ -115,11 +115,22 @@ test_fails_missing_strict_mode() {
 
 # This spell lacks strict mode.
 
+show_usage() {
+  echo "Usage: bad-spell"
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
 echo "bad"
 EOF
   chmod +x "$spell_dir/bad-spell"
-  # --strict is needed to check for set -u
-  run_spell "spells/spellcraft/vet-spell" --strict "$spell_dir/bad-spell"
+  # vet-spell is now always strict, no --strict flag needed
+  run_spell "spells/spellcraft/vet-spell" "$spell_dir/bad-spell"
   assert_failure && assert_output_contains "set -u"
 }
 
@@ -162,8 +173,8 @@ echo "hello"
 EOF
   chmod +x "$spell_dir/no-usage-spell"
   
-  # --strict is needed to check for usage function
-  run_spell "spells/spellcraft/vet-spell" --strict "$spell_dir/no-usage-spell"
+  # vet-spell is now always strict, no --strict flag needed
+  run_spell "spells/spellcraft/vet-spell" "$spell_dir/no-usage-spell"
   assert_failure && assert_output_contains "usage function"
 }
 
@@ -184,8 +195,8 @@ echo "hello"
 EOF
   chmod +x "$spell_dir/no-help-spell"
   
-  # --strict is needed to check for help handler
-  run_spell "spells/spellcraft/vet-spell" --strict "$spell_dir/no-help-spell"
+  # vet-spell is now always strict, no --strict flag needed
+  run_spell "spells/spellcraft/vet-spell" "$spell_dir/no-help-spell"
   assert_failure && assert_output_contains "help"
 }
 

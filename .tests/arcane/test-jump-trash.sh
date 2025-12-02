@@ -62,8 +62,9 @@ STUB
   link_tools "$stub" sh printf test cd
 
   # Source the spell and call the jtrash function with custom HOME
+  # Include imps directory in PATH for declare-globals
   run_cmd sh -c "
-    PATH='$stub:/bin:/usr/bin'
+    PATH='$stub:$ROOT_DIR/spells/.imps:/bin:/usr/bin'
     HOME='$fake_home'
     export PATH HOME
     . '$ROOT_DIR/spells/arcane/jump-trash'
@@ -163,9 +164,9 @@ STUB
   
   link_tools "$stub" sh printf grep cat test sed basename command pwd
   
-  # Run jtrash_install
+  # Run jtrash_install - include imps directory for declare-globals
   run_cmd sh -c "
-    PATH='$stub:/bin:/usr/bin'
+    PATH='$stub:$ROOT_DIR/spells/.imps:/bin:/usr/bin'
     HOME='$fake_home'
     DETECT_RC_FILE='$stub/detect-rc-file'
     LEARN_SPELL='$stub/learn'

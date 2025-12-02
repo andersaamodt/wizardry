@@ -57,9 +57,9 @@ test_cd_install_command_installs_without_prompting() {
   run_cmd env LEARN_SPELL_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd" install
   assert_success && assert_path_exists "$tmp/rc" && assert_output_contains "installed wizardry hooks"
   
-  # Verify hook content - now uses wizardry_cd function
-  if ! grep -q "wizardry_cd" "$tmp/rc"; then
-    TEST_FAILURE_REASON="wizardry_cd function not found in rc file"
+  # Verify hook content - uses wzcd function and cd alias
+  if ! grep -q "wzcd" "$tmp/rc"; then
+    TEST_FAILURE_REASON="wzcd function not found in rc file"
     return 1
   fi
   if ! grep -q "alias cd=" "$tmp/rc"; then

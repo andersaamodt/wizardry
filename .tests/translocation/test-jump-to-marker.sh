@@ -25,7 +25,8 @@ test_unknown_option_fails() {
 test_install_requires_helpers() {
   helpers_dir="$WIZARDRY_TMPDIR/helpers-missing"
   mkdir -p "$helpers_dir"
-  PATH="/bin:/usr/bin" JUMP_TO_MARKER_HELPERS_DIR="$helpers_dir" JUMP_TO_MARKERS_DIR="$WIZARDRY_TMPDIR/markers" \
+  # Include imps dir for declare-globals but custom helpers dir for the missing detect-rc-file test
+  PATH="$ROOT_DIR/spells/.imps:/bin:/usr/bin" JUMP_TO_MARKER_HELPERS_DIR="$helpers_dir" JUMP_TO_MARKERS_DIR="$WIZARDRY_TMPDIR/markers" \
     run_spell "spells/translocation/jump-to-marker" --install
   assert_failure && assert_error_contains "required helper 'detect-rc-file' is missing"
 }
@@ -34,7 +35,8 @@ run_jump() {
   marker_arg=${1:-}
   markers_dir=${2:-$WIZARDRY_TMPDIR/markers}
   RUN_CMD_WORKDIR=${3:-$WIZARDRY_TMPDIR}
-  PATH="/bin:/usr/bin"
+  # Include imps directory for declare-globals
+  PATH="$ROOT_DIR/spells/.imps:/bin:/usr/bin"
   JUMP_TO_MARKERS_DIR="$markers_dir"
   export JUMP_TO_MARKERS_DIR PATH
   if [ -n "$marker_arg" ]; then
