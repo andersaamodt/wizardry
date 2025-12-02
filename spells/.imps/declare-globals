@@ -10,144 +10,81 @@
 #
 # After sourcing, scripts with `set -u` will fail if they reference undeclared globals.
 # Add new globals here with a justification comment when absolutely necessary.
+# PREFER passing --flag arguments over globals for configuration.
 
 # =============================================================================
 # DECLARED GLOBALS (each must have a justification comment above it)
 # =============================================================================
 
-# --- Installation & Core ---
+# --- Core Installation ---
 
 # Directory where wizardry is installed. Required for scripts to locate
 # resources relative to the installation root.
 : "${WIZARDRY_DIR:=}"
 
-# Installation target directory. Required for the installer to know
-# where wizardry should be placed on the filesystem.
-: "${INSTALL_DIR:=}"
-
-# Binary directory for wizardry installation. Required for installation
-# scripts to know where to place executable files.
-: "${BIN_DIR:=}"
-
-# Core installer script path. Required for bootstrap installation to
-# locate the main installation entry point.
-: "${CORE_INSTALLER:=}"
-
-# --- Spellbook ---
+# --- User Data ---
 
 # Directory for user's spellbook. Contains user-created spells and the
-# .memorized file for the cast menu. Required for spell storage.
+# .memorized file for the cast menu. Required for spell storage coordination.
 : "${SPELLBOOK_DIR:=}"
-
-# Target path during spell memorization. Required for learn-spell to
-# communicate target paths to spell scripts during the learning process.
-: "${MEMORIZE_TARGET:=}"
-: "${WIZARDRY_MEMORIZE_TARGET:=}"
-
-# --- Shell Configuration ---
-
-# Shell RC file path. Required for learn-spell and install commands
-# to know which shell config file to modify.
-: "${RC_FILE:=}"
-: "${WIZARDRY_RC_FILE:=}"
-
-# Format of the shell RC file (bash/zsh/fish/sh). Required for commands
-# that modify shell config to use correct syntax.
-: "${RC_FORMAT:=}"
-: "${WIZARDRY_RC_FORMAT:=}"
-
-# Shell platform identifier. Required for learn-spell and install commands
-# to apply platform-specific configurations.
-: "${PLATFORM:=}"
-: "${WIZARDRY_PLATFORM:=}"
-
-# --- MUD Features ---
 
 # MUD configuration directory. Required for MUD features to know where
 # to store room descriptions and other MUD-related configuration.
 : "${MUD_DIR:=}"
 
-# Path to the cd cantrip script. Required for the MUD cd hook to know
-# which script to source when changing directories.
-: "${CD_CANTRIP:=}"
-: "${WIZARDRY_CD_CANTRIP:=}"
+# --- Shell Configuration (learn-spell chain) ---
 
-# Name of look spell to use. Required for MUD cd hook to know which
-# spell displays room descriptions when entering directories.
-: "${LOOK_SPELL:=}"
-: "${WIZARDRY_LOOK_SPELL:=}"
+# Shell RC file path. Required for learn-spell to pass detected shell config
+# to spell install() functions without redundant re-detection.
+: "${WIZARDRY_RC_FILE:=}"
 
-# --- Terminal & Display ---
+# Format of the shell RC file (bash/zsh/fish/sh). Required for spell install()
+# functions to generate correct shell-specific syntax.
+: "${WIZARDRY_RC_FORMAT:=}"
 
-# Flag indicating whether terminal supports ANSI colors. Required for
-# scripts to conditionally disable color output when terminal lacks support.
-: "${COLORS_AVAILABLE:=}"
-: "${WIZARDRY_COLORS_AVAILABLE:=}"
+# Shell platform identifier. Required for learn-spell to coordinate platform
+# detection across nested spell installations.
+: "${WIZARDRY_PLATFORM:=}"
 
-# Operating system label for output. Required for test-magic and other
-# scripts to display OS-specific information in reports.
-: "${OS_LABEL:=}"
-: "${WIZARDRY_OS_LABEL:=}"
-
-# Flag for submenu context. Required for menu system to know when
-# displaying a submenu vs main menu for proper navigation.
-: "${SUBMENU:=}"
-: "${WIZARDRY_SUBMENU:=}"
+# Target path during spell memorization. Required for learn-spell to
+# communicate the spell's installation path to install() functions.
+: "${WIZARDRY_MEMORIZE_TARGET:=}"
 
 # --- Automation Flags ---
+# These are needed for non-interactive scripted installations (CI/CD)
 
-# Skip confirmation prompts. Required for automated/scripted installations
-# to proceed without user interaction.
-: "${SKIP_CONFIRM:=}"
+# Skip confirmation prompts in system-modifying scripts.
 : "${WIZARDRY_SKIP_CONFIRM:=}"
 
-# Skip NixOS rebuild during updates. Required for faster test iterations
-# and when rebuild should be deferred to a separate step.
-: "${SKIP_NIX_REBUILD:=}"
+# Skip NixOS rebuild during updates (for testing).
 : "${WIZARDRY_SKIP_NIX_REBUILD:=}"
 
-# Assume yes during installation. Required for non-interactive
-# installation in CI/CD or scripted environments.
-: "${INSTALL_ASSUME_YES:=}"
-: "${WIZARDRY_INSTALL_ASSUME_YES:=}"
-
-# Assume yes to update-all prompts. Required for automated system updates
-# to proceed without user confirmation.
-: "${UPDATE_ASSUME_YES:=}"
+# Assume yes to update-all prompts (automated updates).
 : "${WIZARDRY_UPDATE_ALL_ASSUME_YES:=}"
 
-# Distribution override for update-all. Required for testing update-all
-# on different platforms without actual detection.
-: "${UPDATE_DISTRO:=}"
+# Distribution override for update-all (testing).
 : "${WIZARDRY_UPDATE_ALL_DISTRO:=}"
 
 # --- Test Infrastructure ---
-# (These keep WIZARDRY_ prefix for namespacing in test environments)
+# (WIZARDRY_ prefix for namespacing in test environments)
 
-# Flag to load only test helpers, not full spell functionality. Required for
-# test infrastructure to source spells for testing without side effects.
+# Flag to load only test helpers, not full spell functionality.
 : "${WIZARDRY_TEST_HELPERS_ONLY:=}"
 
-# Temporary directory for wizardry operations. Required for test suite to
-# manage temporary files in a controlled, cleanable location.
+# Temporary directory for wizardry test operations.
 : "${WIZARDRY_TMPDIR:=}"
 
-# System PATH saved before test PATH modifications. Required for run_cmd
-# to access essential utilities even when tests set restricted PATH.
+# System PATH saved before test PATH modifications.
 : "${WIZARDRY_SYSTEM_PATH:=}"
 
-# Flag to disable sandbox in tests. Required for environments where
-# bubblewrap or sandbox-exec cannot run.
+# Flag to disable sandbox in tests.
 : "${WIZARDRY_DISABLE_SANDBOX:=}"
 
-# Flag to enable macOS sandbox (disabled by default). Required for optional
-# sandbox isolation on macOS in test environments.
+# Flag to enable macOS sandbox (disabled by default).
 : "${WIZARDRY_ENABLE_MACOS_SANDBOX:=}"
 
-# Flag indicating sandbox warning already shown. Required to avoid
-# repeating the warning message for every test.
+# Flag indicating sandbox warning already shown.
 : "${WIZARDRY_BWRAP_WARNING:=}"
 
-# Path to sandbox warning flag file. Required to coordinate warning
-# suppression across multiple test processes.
+# Path to sandbox warning flag file.
 : "${WIZARDRY_BWRAP_WARN_FILE:=}"

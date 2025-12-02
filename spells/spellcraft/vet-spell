@@ -224,8 +224,9 @@ check_posix_compliance() {
 
 check_which_usage() {
   file=$1
-  # Check for 'which' command usage (excluding comments)
-  if grep -E '(^|[^a-zA-Z_])which[[:space:]]' "$file" 2>/dev/null | grep -v '^[[:space:]]*#' | grep -q .; then
+  # Check for 'which' command usage (excluding comments and strings)
+  # Only detect actual 'which' commands, not the word in comments or strings
+  if grep -E '(^|[^a-zA-Z_"\x27])which[[:space:]]' "$file" 2>/dev/null | grep -v '^[[:space:]]*#' | grep -v 'printf\|warn\|echo' | grep -q .; then
     printf 'uses "which" (prefer "command -v" for POSIX compliance)'
     return 1
   fi
@@ -271,7 +272,7 @@ check_declare_globals() {
   # If it does, it must source declare-globals in the first 15 lines
   
   # Extract declared globals from declare-globals file dynamically
-  # Excludes WIZARDRY_TEST_* which are test-only
+  # Excludes WIZARDRY_TEST_*, WIZARDRY_TMPDIR, etc. which are test-only
   declare_globals_file="$repo_dir/spells/.imps/declare-globals"
   if [ -f "$declare_globals_file" ]; then
     declared_globals=$(grep '^\: "\${' "$declare_globals_file" | \
@@ -285,7 +286,7 @@ check_declare_globals() {
       tr '\n' '|' | sed 's/|$//')
   else
     # Fallback: hardcoded list if file not found
-    declared_globals='WIZARDRY_DIR|INSTALL_DIR|BIN_DIR|CORE_INSTALLER|SPELLBOOK_DIR|MEMORIZE_TARGET|RC_FILE|RC_FORMAT|PLATFORM|MUD_DIR|CD_CANTRIP|LOOK_SPELL|COLORS_AVAILABLE|OS_LABEL|SUBMENU|SKIP_CONFIRM|SKIP_NIX_REBUILD|INSTALL_ASSUME_YES|UPDATE_ASSUME_YES|UPDATE_DISTRO'
+    declared_globals='WIZARDRY_DIR|SPELLBOOK_DIR|MUD_DIR|WIZARDRY_RC_FILE|WIZARDRY_RC_FORMAT|WIZARDRY_PLATFORM|WIZARDRY_MEMORIZE_TARGET|WIZARDRY_SKIP_CONFIRM|WIZARDRY_SKIP_NIX_REBUILD|WIZARDRY_UPDATE_ALL_ASSUME_YES|WIZARDRY_UPDATE_ALL_DISTRO'
   fi
   
   # Check if file uses any declared globals (excluding comments)

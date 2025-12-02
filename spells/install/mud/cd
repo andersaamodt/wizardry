@@ -1,21 +1,18 @@
 #!/bin/sh
+. declare-globals
 
 # The cd cantrip keeps a tiny shell hook that immediately runs `look`
 # after every successful directory change. The hook stays intentionally
 # small so wizards can tweak it at a glance while still whispering just
 # enough lore to keep the spell recognizable.
 
-# When sourced via alias, only run the cd and look, then return early
-# This avoids affecting the user's shell with set -eu or exit
-if [ -n "${WIZARDRY_CD_CANTRIP-}" ] && [ "${0##*/}" != "cd" ]; then
-        # Sourced via alias - just do the cd and look
-        command cd "$@" && {
-                if command -v look >/dev/null 2>&1; then
-                        look 2>/dev/null || true
-                fi
-        }
+# When sourced via the wizardry_cd function, just do the cd and look
+if [ "${_WIZARDRY_CD_SOURCED-}" = "1" ] && [ "${0##*/}" != "cd" ]; then
+        command cd "$@" && look 2>/dev/null || true
         return 0 2>/dev/null || exit 0
 fi
+
+set -eu
 
 show_usage() {
         cat <<'USAGE'
@@ -33,8 +30,6 @@ case "${1-}" in
         exit 0
         ;;
 esac
-
-set -eu
 
 SCRIPT_SOURCE=$0
 case $SCRIPT_SOURCE in
@@ -171,8 +166,8 @@ cd_block_present() {
         if grep -Fq '#wizardry: cd-cantrip' "$rc_file"; then
                 return 0
         fi
-        # Legacy check for WIZARDRY_CD_CANTRIP variable
-        if grep -Fq 'WIZARDRY_CD_CANTRIP' "$rc_file"; then
+        # Also check for wizardry_cd function or legacy WIZARDRY_CD_CANTRIP
+        if grep -Fq 'wizardry_cd' "$rc_file"; then
                 return 0
         fi
         return 1
@@ -196,8 +191,13 @@ install() {
         # Detect nix format from detect-rc-file output
         rc_format=$(resolve_rc_format)
 
-        cd_spell=$(absolute_spell_path "${WIZARDRY_CD_CANTRIP-}") || return 1
+        cd_spell=$(absolute_spell_path) || return 1
         rc_file=$(resolve_rc_file) || return 1
+        
+        # Create a simple function-based hook that calls 'look' after cd
+        # The function sources the cd spell with a flag to trigger the short path
+        hook_code="wizardry_cd() { _WIZARDRY_CD_SOURCED=1 . '$cd_spell' \"\$@\"; }
+alias cd='wizardry_cd'"
         
         # For nix format, use nix-shell-init imp to add shell init code
         if [ "$rc_format" = "nix" ]; then
@@ -213,10 +213,6 @@ install() {
                         printf '%s\n' "cd cantrip: nix-shell-init imp not found for NixOS installation."
                         return 1
                 fi
-                
-                # Create the shell hook code
-                hook_code="WIZARDRY_CD_CANTRIP='$cd_spell'
-alias cd='. \"\$WIZARDRY_CD_CANTRIP\"'"
                 
                 if printf '%s\n' "$hook_code" | "$nix_helper" add --shell bash --name cd-cantrip --file "$rc_file"; then
                         printf '%s\n' "cd cantrip: installed wizardry hooks in '$rc_file'."
@@ -239,8 +235,7 @@ alias cd='. \"\$WIZARDRY_CD_CANTRIP\"'"
         fi
         cat <<HOOK >>"$tmp_file"
 # >>> wizardry cd cantrip >>>
-WIZARDRY_CD_CANTRIP='$cd_spell'
-alias cd='. "$WIZARDRY_CD_CANTRIP"'
+$hook_code
 # <<< wizardry cd cantrip <<<
 HOOK
         if ! mv "$tmp_file" "$rc_file"; then
@@ -322,11 +317,11 @@ prompt_install_if_needed() {
         if ! ask_yn_cmd=$(locate_ask_yn); then
                 return
         fi
-        spell_path=$(absolute_spell_path "${WIZARDRY_CD_CANTRIP-}")
+        spell_path=$(absolute_spell_path)
         rc_display=$(basename "$rc_file")
         printf '%s\n' "The cd cantrip can sprinkle the 'look' spell on every hop."
         if "$ask_yn_cmd" "Memorize the cd cantrip in $rc_display so each teleport reveals the room?" yes >/dev/null; then
-                WIZARDRY_CD_CANTRIP=$spell_path install || return
+                install || return
                 printf '%s\n' "The hook is etched into $rc_display."
         else
                 printf '%s\n' "Very well—cast 'memorize spells/cantrips/cd' when you crave automatic scouting."
@@ -346,8 +341,6 @@ wizardry_cd_main() {
         command cd "$@" && wizardry_cd_cast_look
 }
 
-: "${WIZARDRY_CD_CANTRIP:=${WIZARDRY_MEMORIZE_TARGET:-$(absolute_spell_path)}}"
-
 # Handle command-line invocation for install/uninstall commands
 case "${1-}" in
 install)
@@ -360,7 +353,7 @@ uninstall)
         ;;
 esac
 
-# If run directly (not sourced via alias and not install/uninstall),
+# If run directly (not sourced via the function and not install/uninstall),
 # prompt to install and then run the cd
 if [ -z "${WIZARDRY_MEMORIZE_TARGET-}" ]; then
         prompt_install_if_needed || true

@@ -535,11 +535,6 @@ if [ "$status" -ne 0 ] && [ -n "$failed_scripts" ]; then
   fi
 
   detect_os_label() {
-    if [ -n "${WIZARDRY_OS_LABEL-}" ]; then
-      printf '%s\n' "$WIZARDRY_OS_LABEL"
-      return 0
-    fi
-
     if [ -x "$root_dir/spells/divination/detect-distro" ]; then
       if label=$("$root_dir/spells/divination/detect-distro" 2>/dev/null || true); then
         if [ -n "$label" ]; then

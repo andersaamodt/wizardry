@@ -63,9 +63,6 @@ look_block_present() {
         if grep -Fq '# >>> wizardry look spell >>>' "$rc_file"; then
                 return 0
         fi
-        if grep -Fq 'WIZARDRY_LOOK_SPELL' "$rc_file"; then
-                return 0
-        fi
         if grep -Fq "alias look='$LOOK_SCRIPT_PATH'" "$rc_file"; then
                 return 0
         fi

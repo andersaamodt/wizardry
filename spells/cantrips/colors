@@ -7,11 +7,11 @@
 # This script contains all color codes in the POSIX standard.
 # You must source this script with '. ./colors' (or an absolute path) to use it.
 
-# Record whether the terminal appears to support ANSI escape sequences so
-# callers can disable colour-aware features when needed.
+# Record whether the terminal appears to support ANSI escape sequences.
+# This is a local variable used only within this script.
 
 set -eu
-WIZARDRY_COLORS_AVAILABLE=1
+_colors_available=1
 
 disable_palette() {
         for name in \
@@ -29,7 +29,7 @@ disable_palette() {
         do
                 eval "$name=''"
         done
-        WIZARDRY_COLORS_AVAILABLE=0
+        _colors_available=0
 }
 
 # Create the escape character in a POSIX-compliant way.
