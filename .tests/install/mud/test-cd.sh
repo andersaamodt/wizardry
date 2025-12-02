@@ -17,6 +17,10 @@ done
 # shellcheck source=/dev/null
 . "$test_root/test-common.sh"
 
+# Skip nix rebuild and confirmation in tests
+export WIZARDRY_SKIP_NIX_REBUILD=1
+export WIZARDRY_SKIP_CONFIRM=1
+
 test_cd_installs_hook_when_user_agrees() {
   tmp=$(make_tempdir)
   cat >"$tmp/ask_yn" <<'SH'
@@ -210,6 +214,8 @@ run_test_case "cd --help shows usage" test_cd_help_shows_usage
 
 test_cd_nixos_uses_nix_format() {
   # Test that on NixOS (nix format), cd uses nix-shell-init to add shell code
+  # Note: Since we use temp paths, it will use initExtra (home-manager style)
+  # Real /etc/nixos/configuration.nix would use interactiveShellInit
   tmp=$(make_tempdir)
   
   # Create a nix config file
@@ -225,21 +231,95 @@ printf 'format=nix\n'
 STUB
   chmod +x "$tmp/detect-rc-file"
   
-  # Run cd install with our detect-rc-file
-  run_cmd env PATH="$tmp:$PATH" WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" WIZARDRY_RC_FORMAT=nix WIZARDRY_RC_FILE="$nix_config" HOME="$tmp" "$ROOT_DIR/spells/install/mud/cd" install
+  # Run cd install with our detect-rc-file (skip rebuild in tests)
+  run_cmd env PATH="$tmp:$PATH" WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" WIZARDRY_RC_FORMAT=nix WIZARDRY_RC_FILE="$nix_config" WIZARDRY_SKIP_NIX_REBUILD=1 HOME="$tmp" "$ROOT_DIR/spells/install/mud/cd" install
   assert_success || return 1
   
-  # Verify it installed to configuration.nix using nix format
+  # Verify it installed to configuration.nix using nix format (initExtra since not at /etc/nixos/)
   if grep -q "programs.bash.initExtra" "$nix_config"; then
     return 0
   fi
-  if grep -q "wizardry-shell: cd-cantrip" "$nix_config"; then
+  if grep -q "# wizardry: cd-cantrip" "$nix_config"; then
     return 0
   fi
   TEST_FAILURE_REASON="Nix shell init not found in configuration.nix"
   return 1
 }
 
+test_cd_auto_detects_nix_format() {
+  # Test that cd automatically detects nix format from detect-rc-file without
+  # needing WIZARDRY_RC_FORMAT to be explicitly set
+  tmp=$(make_tempdir)
+  
+  # Create a nix config file (home.nix uses initExtra)
+  nix_config="$tmp/home.nix"
+  printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$nix_config"
+  
+  # Create detect-rc-file that returns nix format (note: no WIZARDRY_RC_FORMAT)
+  cat >"$tmp/detect-rc-file" <<EOF
+#!/bin/sh
+printf 'platform=nixos\n'
+printf 'rc_file=$nix_config\n'
+printf 'format=nix\n'
+EOF
+  chmod +x "$tmp/detect-rc-file"
+  
+  # Run cd install WITHOUT WIZARDRY_RC_FORMAT - it should auto-detect from detect-rc-file (skip rebuild in tests)
+  run_cmd env PATH="$tmp:$PATH" WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" WIZARDRY_SKIP_NIX_REBUILD=1 HOME="$tmp" "$ROOT_DIR/spells/install/mud/cd" install
+  assert_success || return 1
+  
+  # Verify it installed to home.nix using nix format (initExtra for home-manager)
+  if grep -q "programs.bash.initExtra" "$nix_config"; then
+    return 0
+  fi
+  if grep -q "# wizardry: cd-cantrip" "$nix_config"; then
+    return 0
+  fi
+  TEST_FAILURE_REASON="Nix format was not auto-detected from detect-rc-file output"
+  return 1
+}
+
+test_cd_uninstall_nix_format() {
+  # Test that cd uninstall works correctly for nix format
+  tmp=$(make_tempdir)
+  
+  # Create a nix config file
+  nix_config="$tmp/configuration.nix"
+  printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$nix_config"
+  
+  # Create detect-rc-file that returns nix format
+  cat >"$tmp/detect-rc-file" <<EOF
+#!/bin/sh
+printf 'platform=nixos\n'
+printf 'rc_file=$nix_config\n'
+printf 'format=nix\n'
+EOF
+  chmod +x "$tmp/detect-rc-file"
+  
+  # First install the hook (skip rebuild in tests)
+  run_cmd env PATH="$tmp:$PATH" WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" WIZARDRY_SKIP_NIX_REBUILD=1 HOME="$tmp" "$ROOT_DIR/spells/install/mud/cd" install
+  assert_success || return 1
+  
+  # Verify hook was installed
+  if ! grep -q "# wizardry: cd-cantrip" "$nix_config"; then
+    TEST_FAILURE_REASON="Hook was not installed before uninstall test"
+    return 1
+  fi
+  
+  # Now uninstall (skip rebuild in tests)
+  run_cmd env PATH="$tmp:$PATH" WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" WIZARDRY_SKIP_NIX_REBUILD=1 HOME="$tmp" "$ROOT_DIR/spells/install/mud/cd" uninstall
+  assert_success || return 1
+  assert_output_contains "uninstalled wizardry hooks" || return 1
+  
+  # Verify hook was removed
+  if grep -q "# wizardry: cd-cantrip" "$nix_config"; then
+    TEST_FAILURE_REASON="Hook still present after uninstall"
+    return 1
+  fi
+}
+
 run_test_case "cd uses nix format on NixOS" test_cd_nixos_uses_nix_format
+run_test_case "cd auto-detects nix format from detect-rc-file" test_cd_auto_detects_nix_format
+run_test_case "cd uninstall works for nix format" test_cd_uninstall_nix_format
 
 finish_tests
