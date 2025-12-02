@@ -378,11 +378,14 @@ while IFS= read -r target; do
     fi
   fi
   
-  # Check set -u mode (not required for imps)
+  # Check set -u mode (only required for scripts that source declare-globals)
   if [ "$is_imp_file" -eq 0 ]; then
-    if ! result=$(check_strict_mode "$path"); then
-      issues=${issues:+$issues; }$result
-      issue_count=$((issue_count + 1))
+    # Only check for set -u if the script sources declare-globals
+    if head -15 "$path" | grep -qE '\.[[:space:]]+declare-globals'; then
+      if ! result=$(check_strict_mode "$path"); then
+        issues=${issues:+$issues; }$result
+        issue_count=$((issue_count + 1))
+      fi
     fi
   fi
   
