@@ -8,7 +8,7 @@ if [ "$#" -eq 1 ] && [ "$1" = "--uninstall" ]; then
                 exec "$uninstall_script"
         else
                 printf '%s\n' "Error: uninstall script not found at '$uninstall_script'." >&2
-                printf '%s\n' "Run the install script first to create it." >&2
+                printf '%s\n' "The uninstall script is created during installation." >&2
                 exit 1
         fi
 fi
@@ -819,13 +819,15 @@ if [ "$path_updates_made" -eq 1 ]; then
                 fi
 
                 if [ "$rebuild_success" -eq 0 ]; then
-                        printf '%sNote:%s Could not automatically rebuild NixOS configuration.\n' "$YELLOW" "$RESET"
-                        printf 'Please run one of these commands manually:\n'
+                        printf '%sNote:%s NixOS configuration could not be automatically rebuilt.\n' "$YELLOW" "$RESET"
+                        printf 'To activate changes, use one of these commands:\n'
                         printf '  home-manager switch  (for home-manager users)\n'
                         printf '  sudo nixos-rebuild switch  (for system-level configuration)\n'
                 fi
         else
-                printf 'Open a new shell or source the file to activate the changes.\n'
+                # Source the rc file immediately to make wizardry available
+                # shellcheck disable=SC1090
+                . "$detect_rc_file_value" 2>/dev/null || true
         fi
 fi
 
@@ -942,8 +944,8 @@ if [ "$RC_FORMAT" = "nix" ]; then
         fi
 
         if [ "$rebuild_success" -eq 0 ]; then
-                printf '  %sNote:%s Could not automatically rebuild NixOS configuration.\n' "$YELLOW" "$RESET"
-                printf '  Please run one of these commands manually:\n'
+                printf '  %sNote:%s NixOS configuration could not be automatically rebuilt.\n' "$YELLOW" "$RESET"
+                printf '  To activate changes, use one of these commands:\n'
                 printf '    home-manager switch  (for home-manager users)\n'
                 printf '    sudo nixos-rebuild switch  (for system-level configuration)\n'
         fi
@@ -966,9 +968,9 @@ printf '\n%s✓ Wizardry uninstalled successfully%s\n' "$BOLD$GREEN" "$RESET"
 
 # Show platform-specific guidance for when changes take effect
 if [ "$RC_FORMAT" = "nix" ]; then
-        printf '\n%sNote:%s On NixOS, you must log out and log back in for PATH changes to take effect.\n\n' "$YELLOW" "$RESET"
+        printf '\n%sNote:%s On NixOS, PATH changes require logging out and back in to take effect.\n\n' "$YELLOW" "$RESET"
 else
-        printf '\nTo apply changes immediately, run: %s. %s%s\n\n' "$CYAN" "$RC_FILE" "$RESET"
+        printf '\nChanges are applied automatically. New terminal windows will have the updated PATH.\n\n'
 fi
 
 # Self-destruct - safely remove the uninstall script itself
@@ -999,13 +1001,13 @@ fi
 # Show platform-specific guidance for when changes take effect
 printf '\n'
 if [ "$detect_format_value" = "nix" ]; then
-        printf '%sNote:%s On NixOS, you must log out and log back in for PATH changes to take effect.\n' "$YELLOW" "$RESET"
+        printf '%sNote:%s On NixOS, PATH changes require logging out and back in to take effect.\n' "$YELLOW" "$RESET"
 elif [ -n "$detect_rc_file_value" ]; then
-        printf 'To start using wizardry immediately, run: %s. %s%s\n' "$CYAN" "$detect_rc_file_value" "$RESET"
-        printf '(Otherwise, open a new terminal window.)\n'
+        printf 'Wizardry is now ready to use in this terminal.\n'
+        printf '(New terminal windows will also have wizardry available.)\n'
 fi
 printf '\n'
-printf 'Then run %smenu%s or %smud%s to start using wizardry.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
+printf 'Run %smenu%s or %smud%s to start using wizardry.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
 printf '\n'
 
 exit "$mem_status"

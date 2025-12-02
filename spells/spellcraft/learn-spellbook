@@ -609,7 +609,7 @@ shell_add() {
         fi
         refresh_legacy_shell_export
         if [ "$legacy_export_refreshed" -eq 1 ]; then
-                printf '%s\n' "Refreshed the existing wizardry PATH entry in '$rc_file' so '$directory' stays reachable; open a new shell or source the file to load it."
+                printf '%s\n' "Refreshed the existing wizardry PATH entry in '$rc_file' so '$directory' stays reachable. The change takes effect in new shell sessions."
                 return 0
         fi
         if shell_status; then
@@ -621,7 +621,7 @@ shell_add() {
                 printf '%s\n' "learn-spellbook: unable to record the PATH entry." >&2
                 exit 1
         fi
-        printf '%s\n' "Added '$directory' to PATH via '$rc_file'. Open a new shell or run '. %s' to pick up the change." "$rc_file"
+        printf '%s\n' "Added '$directory' to PATH via '$rc_file'. The change takes effect in new shell sessions."
 }
 
 # Remove a previously added export line from shell rc files.
@@ -633,7 +633,7 @@ shell_remove() {
         spell_name=$(spell_identifier_for_directory "$directory")
         if "$LEARN" --rc-file "$rc_file" --spell "$spell_name" status >/dev/null 2>&1; then
                 "$LEARN" --rc-file "$rc_file" --spell "$spell_name" remove
-                printf '%s\n' "Removed '$directory' from PATH entries recorded in '$rc_file'. Open a new shell or source the file to drop it."
+                printf '%s\n' "Removed '$directory' from PATH entries recorded in '$rc_file'. The change takes effect in new shell sessions."
                 return 0
         fi
         has_managed=0
@@ -667,7 +667,7 @@ shell_remove() {
                 printf '%s\n' "Error: Unable to replace '$rc_file'." >&2
                 exit 1
         fi
-        printf '%s\n' "Removed '$directory' from PATH entries recorded in '$rc_file'. Open a new shell or source the file to drop it."
+        printf '%s\n' "Removed '$directory' from PATH entries recorded in '$rc_file'. The change takes effect in new shell sessions."
 }
 
 # Identify whether the requested directory already appears in an export line
@@ -756,7 +756,7 @@ shell_remove_all() {
         rm -f "$tmp_spells"
         
         if [ "$removed_count" -gt 0 ]; then
-                printf '%s\n' "Removed $removed_count wizardry PATH entries from '$rc_file'. Open a new shell or source the file to drop them."
+                printf '%s\n' "Removed $removed_count wizardry PATH entries from '$rc_file'. The change takes effect in new shell sessions."
         else
                 printf '%s\n' "No wizardry PATH entries found in '$rc_file'."
         fi

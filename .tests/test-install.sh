@@ -836,8 +836,8 @@ install_shows_simple_run_message() {
 
   assert_success || return 1
   
-  # Should show simple run message (with either "Run" or "Then run" prefix)
-  if ! printf '%s' "$OUTPUT" | grep -q "run.*menu.*or.*mud.*to start using wizardry"; then
+  # Should show simple run message (with either "Run" or "run" prefix)
+  if ! printf '%s' "$OUTPUT" | grep -iq "run.*menu.*or.*mud.*to start using wizardry"; then
     TEST_FAILURE_REASON="output missing run message about menu or mud"
     return 1
   fi
@@ -907,12 +907,12 @@ EOF
 
   assert_success || return 1
   
-  # Should show log out message for NixOS
-  assert_output_contains "log out and log back in" || return 1
+  # Should show log out message for NixOS (new message uses "logging out")
+  assert_output_contains "logging out" || return 1
 }
 
 install_non_nixos_shows_source_message() {
-  # On non-NixOS platforms, the installer should show a message about sourcing the rc file
+  # On non-NixOS platforms, the installer should show that wizardry is ready
   fixture=$(make_fixture)
   provide_basic_tools "$fixture"
   link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
@@ -926,11 +926,11 @@ install_non_nixos_shows_source_message() {
 
   assert_success || return 1
   
-  # Should show source message for non-NixOS (the . command)
-  assert_output_contains ". " || return 1
-  # Should mention opening a new terminal as alternative
+  # Should indicate wizardry is ready in this terminal
+  assert_output_contains "ready to use" || return 1
+  # Should mention new terminal windows will also have wizardry
   if ! printf '%s' "$OUTPUT" | grep -qi "terminal"; then
-    TEST_FAILURE_REASON="output should mention terminal as alternative"
+    TEST_FAILURE_REASON="output should mention terminal windows"
     return 1
   fi
 }
@@ -1030,8 +1030,8 @@ EOF
   uninstall_script="$install_dir/.uninstall"
   assert_path_exists "$uninstall_script" || return 1
   
-  # Check that the uninstall script contains log out message for NixOS
-  assert_file_contains "$uninstall_script" "log out" || return 1
+  # Check that the uninstall script contains logout message for NixOS
+  assert_file_contains "$uninstall_script" "logging out" || return 1
 }
 
 # === Install Prompt Text Tests ===
