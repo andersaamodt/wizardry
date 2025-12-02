@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+# This spell uninstalls wl-clipboard (provides wl-copy/wl-paste).
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+"$SCRIPT_DIR/manage-system-command" --uninstall wl-copy wl-clipboard

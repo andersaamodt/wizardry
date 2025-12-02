@@ -1,0 +1,46 @@
+#!/usr/bin/env sh
+# This spell uninstalls the currently installed clipboard helper.
+
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+
+# Detect which clipboard helper is installed (other than pbcopy which is built-in)
+detect_installed_helper() {
+  if command -v xsel >/dev/null 2>&1; then
+    printf 'xsel'
+  elif command -v xclip >/dev/null 2>&1; then
+    printf 'xclip'
+  elif command -v wl-copy >/dev/null 2>&1; then
+    printf 'wl-copy'
+  else
+    printf ''
+  fi
+}
+
+uninstall_clipboard_helper() {
+  installed=$(detect_installed_helper)
+  
+  if [ -z "$installed" ]; then
+    printf '%s\n' "No removable clipboard helper installed."
+    return 0
+  fi
+  
+  case "$installed" in
+    xsel)
+      "$SCRIPT_DIR/uninstall-xsel"
+      ;;
+    xclip)
+      "$SCRIPT_DIR/uninstall-xclip"
+      ;;
+    wl-copy)
+      "$SCRIPT_DIR/uninstall-wl-clipboard"
+      ;;
+    *)
+      printf '%s\n' "Unknown clipboard helper: $installed" >&2
+      return 1
+      ;;
+  esac
+}
+
+uninstall_clipboard_helper

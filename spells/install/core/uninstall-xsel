@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+# This spell uninstalls the xsel clipboard utility.
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+"$SCRIPT_DIR/manage-system-command" --uninstall xsel xsel
