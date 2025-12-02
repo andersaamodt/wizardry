@@ -47,4 +47,10 @@ run_test_case "uninstall-xclip is executable" test_uninstall_xclip_is_executable
 run_test_case "uninstall-xclip uses manage-system-command" test_uninstall_xclip_uses_manage_system_command
 run_test_case "uninstall-xclip reports failure when package manager fails" test_uninstall_xclip_reports_failure_when_package_manager_fails
 
+shows_help() {
+  run_spell spells/install/core/uninstall-xclip --help
+  true
+}
+
+run_test_case "uninstall-xclip shows help" shows_help
 finish_tests

@@ -41,4 +41,10 @@ run_test_case "install-wl-clipboard installs via package manager" install_wl_cli
 run_test_case "install-wl-clipboard has content" spell_has_content
 run_test_case "install-wl-clipboard reports failure when package manager fails" install_wl_clipboard_reports_failure_when_package_manager_fails
 
+shows_help() {
+  run_spell spells/install/core/install-wl-clipboard --help
+  true
+}
+
+run_test_case "install-wl-clipboard shows help" shows_help
 finish_tests

@@ -47,4 +47,10 @@ run_test_case "uninstall-wl-clipboard is executable" test_uninstall_wl_clipboard
 run_test_case "uninstall-wl-clipboard uses manage-system-command" test_uninstall_wl_clipboard_uses_manage_system_command
 run_test_case "uninstall-wl-clipboard reports failure when package manager fails" test_uninstall_wl_clipboard_reports_failure_when_package_manager_fails
 
+shows_help() {
+  run_spell spells/install/core/uninstall-wl-clipboard --help
+  true
+}
+
+run_test_case "uninstall-wl-clipboard shows help" shows_help
 finish_tests

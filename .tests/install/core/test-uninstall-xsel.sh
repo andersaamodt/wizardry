@@ -47,4 +47,10 @@ run_test_case "uninstall-xsel is executable" test_uninstall_xsel_is_executable
 run_test_case "uninstall-xsel uses manage-system-command" test_uninstall_xsel_uses_manage_system_command
 run_test_case "uninstall-xsel reports failure when package manager fails" test_uninstall_xsel_reports_failure_when_package_manager_fails
 
+shows_help() {
+  run_spell spells/install/core/uninstall-xsel --help
+  true
+}
+
+run_test_case "uninstall-xsel shows help" shows_help
 finish_tests

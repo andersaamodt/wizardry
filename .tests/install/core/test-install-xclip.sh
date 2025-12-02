@@ -41,4 +41,10 @@ run_test_case "install-xclip installs via package manager" install_xclip_install
 run_test_case "install-xclip has content" spell_has_content
 run_test_case "install-xclip reports failure when package manager fails" install_xclip_reports_failure_when_package_manager_fails
 
+shows_help() {
+  run_spell spells/install/core/install-xclip --help
+  true
+}
+
+run_test_case "install-xclip shows help" shows_help
 finish_tests

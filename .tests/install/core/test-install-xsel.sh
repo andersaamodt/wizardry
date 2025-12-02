@@ -41,4 +41,10 @@ run_test_case "install-xsel installs via package manager" install_xsel_installs_
 run_test_case "install-xsel has content" spell_has_content
 run_test_case "install-xsel reports failure when package manager fails" install_xsel_reports_failure_when_package_manager_fails
 
+shows_help() {
+  run_spell spells/install/core/install-xsel --help
+  true
+}
+
+run_test_case "install-xsel shows help" shows_help
 finish_tests
