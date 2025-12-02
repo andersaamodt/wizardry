@@ -711,6 +711,7 @@ section_msg "Updating PATH"
 
 path_updates_made=0
 rebuild_success=0
+sourcing_succeeded=0
 
 # Determine the destination description for messages
 if [ -n "$detect_rc_file_value" ]; then
@@ -825,9 +826,15 @@ if [ "$path_updates_made" -eq 1 ]; then
                         printf '  sudo nixos-rebuild switch  (for system-level configuration)\n'
                 fi
         else
-                # Source the rc file immediately to make wizardry available
+                # Source the rc file immediately to make wizardry available in the current shell
+                # Note: This sources the user's own shell config (e.g., .bashrc), which they already
+                # trust since it runs on every shell startup. We redirect stderr and ignore failures
+                # since rc files may contain interactive-only code that errors in non-interactive mode.
                 # shellcheck disable=SC1090
-                . "$detect_rc_file_value" 2>/dev/null || true
+                sourcing_succeeded=0
+                if . "$detect_rc_file_value" 2>/dev/null; then
+                        sourcing_succeeded=1
+                fi
         fi
 fi
 
@@ -1003,7 +1010,11 @@ printf '\n'
 if [ "$detect_format_value" = "nix" ]; then
         printf '%sNote:%s On NixOS, PATH changes require logging out and back in to take effect.\n' "$YELLOW" "$RESET"
 elif [ -n "$detect_rc_file_value" ]; then
-        printf 'Wizardry is now ready to use in this terminal.\n'
+        if [ "$sourcing_succeeded" -eq 1 ]; then
+                printf 'Wizardry is now ready to use in this terminal.\n'
+        else
+                printf 'Wizardry will be available when you open a new terminal window.\n'
+        fi
         printf '(New terminal windows will also have wizardry available.)\n'
 fi
 printf '\n'
