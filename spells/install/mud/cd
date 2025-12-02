@@ -6,7 +6,7 @@
 # small so wizards can tweak it at a glance while still whispering just
 # enough lore to keep the spell recognizable.
 
-# When sourced via the wizardry_cd function, just do the cd and look
+# When sourced via the wzcd function, just do the cd and look
 if [ "${_WIZARDRY_CD_SOURCED-}" = "1" ] && [ "${0##*/}" != "cd" ]; then
         command cd "$@" && look 2>/dev/null || true
         return 0 2>/dev/null || exit 0
@@ -171,8 +171,8 @@ cd_block_present() {
         if grep -Fq '#wizardry: cd-cantrip' "$rc_file"; then
                 return 0
         fi
-        # Also check for wizardry_cd function or legacy WIZARDRY_CD_CANTRIP
-        if grep -Fq 'wizardry_cd' "$rc_file"; then
+        # Also check for wzcd function or legacy WIZARDRY_CD_CANTRIP
+        if grep -Fq 'wzcd' "$rc_file"; then
                 return 0
         fi
         return 1
@@ -201,8 +201,12 @@ install() {
         
         # Create a simple function-based hook that calls 'look' after cd
         # The function sources the cd spell with a flag to trigger the short path
-        hook_code="wizardry_cd() { _WIZARDRY_CD_SOURCED=1 . '$cd_spell' \"\$@\"; }
-alias cd='wizardry_cd'"
+        # shellcheck disable=SC1078,SC1079
+        hook_code=$(cat <<HOOK_END
+wzcd() { _WIZARDRY_CD_SOURCED=1 . '$cd_spell' "\$@"; }
+alias cd='wzcd'
+HOOK_END
+)
         
         # For nix format, use nix-shell-init imp to add shell init code
         if [ "$rc_format" = "nix" ]; then
@@ -341,7 +345,7 @@ prompt_install_if_needed() {
         fi
 }
 
-wizardry_cd_cast_look() {
+wzcd_cast_look() {
         if command -v look >/dev/null 2>&1; then
                 look "$@"
                 return
@@ -349,9 +353,9 @@ wizardry_cd_cast_look() {
         warn "look spell is not available."
 }
 
-wizardry_cd_main() {
+wzcd_main() {
         # Use 'command cd' to call the builtin cd and avoid alias recursion
-        command cd "$@" && wizardry_cd_cast_look
+        command cd "$@" && wzcd_cast_look
 }
 
 # Parse flags for install/uninstall commands
@@ -405,5 +409,5 @@ esac
 # prompt to install and then run the cd
 if [ -z "${LEARN_SPELL_TARGET-}" ]; then
         prompt_install_if_needed || true
-        wizardry_cd_main "$@"
+        wzcd_main "$@"
 fi

@@ -132,7 +132,7 @@ check_description_comment() {
   
   # Check if second line is '. declare-globals' - if so, check lines 3-4 for comment
   case $second_line in
-    '. declare-globals'|'source declare-globals')
+    '. declare-globals')
       # Line 2 is declare-globals, comment can be on line 3 (blank line optional) or 4
       case $third_line in
         '#'*) return 0 ;;
@@ -292,7 +292,7 @@ check_declare_globals() {
   # Check if file uses any declared globals (excluding comments)
   if grep -v '^[[:space:]]*#' "$file" 2>/dev/null | grep -qE '\$\{?('"$declared_globals"')'; then
     # File uses globals, check if it sources declare-globals in first 15 lines
-    if ! head -15 "$file" | grep -qE '\. declare-globals|source declare-globals'; then
+    if ! head -15 "$file" | grep -qE '\.[[:space:]]+declare-globals'; then
       printf 'uses globals but does not source declare-globals in first 15 lines'
       return 1
     fi
