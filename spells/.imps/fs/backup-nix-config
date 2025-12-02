@@ -1,10 +1,8 @@
 #!/bin/sh
-# backup-nix-config FILE - back up nix config file before editing (only once)
-# Returns the backup path on stdout and prints user notification to stderr.
-# Only creates backup once per session; subsequent calls return 0 without backing up.
-# Uses WIZARDRY_NIX_CONFIG_BACKED_UP_<hash> env var to track backup state.
+# backup-nix-config FILE - back up nix config file before editing
+# Prints the backup path to stderr for user notification.
+# Callers are responsible for calling this only once per operation.
 # Example: backup-nix-config /etc/nixos/configuration.nix
-# Exit code: 0 on success (whether backup created or already done), 1 on error
 
 set -eu
 
@@ -16,33 +14,9 @@ if [ -z "$file" ]; then
 fi
 
 if [ ! -f "$file" ]; then
-  # File doesn't exist yet, nothing to back up
   exit 0
 fi
 
-# Generate a deterministic hash for this file path to create a unique env var name
-# Using cksum to create a checksum of the path - cksum output is always numeric,
-# making the resulting variable name safe (WIZARDRY_NIX_BACKUP_<numeric>)
-checksum=$(printf '%s' "$file" | cksum | awk '{print $1}')
-backup_marker_var="WIZARDRY_NIX_BACKUP_${checksum}"
-
-# Validate that the variable name contains only safe characters (letters, digits, underscore)
-case $backup_marker_var in
-  *[!A-Za-z0-9_]*)
-    printf '%s\n' "backup-nix-config: internal error: invalid variable name" >&2
-    exit 1
-    ;;
-esac
-
-# Check if backup was already done for this file in this session
-# shellcheck disable=SC2154  # var name is dynamic
-eval "backup_done=\${${backup_marker_var}:-}"
-if [ "$backup_done" = "1" ]; then
-  # Backup already done, return success without doing anything
-  exit 0
-fi
-
-# Generate timestamp for backup file naming
 timestamp=$(date +%Y%m%d%H%M%S 2>/dev/null || date +%s 2>/dev/null || printf 'pid%s' "$$")
 backup="${file}.wizardry.${timestamp}"
 
@@ -56,36 +30,19 @@ case $file in
   ;;
 esac
 
-# Run command with sudo if needed
-run_maybe_sudo() {
-  if [ "$needs_sudo" -eq 1 ]; then
-    if command -v sudo >/dev/null 2>&1; then
-      sudo "$@"
-    elif command -v doas >/dev/null 2>&1; then
-      doas "$@"
-    else
-      "$@"
-    fi
+if [ "$needs_sudo" -eq 1 ]; then
+  if command -v sudo >/dev/null 2>&1; then
+    sudo cp "$file" "$backup"
+  elif command -v doas >/dev/null 2>&1; then
+    doas cp "$file" "$backup"
   else
-    "$@"
+    cp "$file" "$backup"
   fi
-}
-
-# Create the backup
-if ! run_maybe_sudo cp "$file" "$backup"; then
+else
+  cp "$file" "$backup"
+fi || {
   printf '%s\n' "backup-nix-config: unable to back up '$file'" >&2
   exit 1
-fi
+}
 
-# Mark this file as backed up for this session
-# Note: This only works within the same process; callers should set the exported
-# var if they want child processes to see it
-# Variable name was validated above to contain only safe characters
-eval "${backup_marker_var}=1"
-export "${backup_marker_var}"
-
-# Print user notification to stderr
 printf '%s\n' "Backed up '$file' to '$backup'" >&2
-
-# Return the backup path on stdout
-printf '%s\n' "$backup"

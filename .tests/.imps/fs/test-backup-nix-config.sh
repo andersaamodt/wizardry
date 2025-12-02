@@ -11,13 +11,13 @@ test_backup_nix_config_creates_backup() {
   run_spell spells/.imps/fs/backup-nix-config "$nix_file"
   assert_success
   
-  # Output should contain the backup path with .wizardry. suffix
-  case "$OUTPUT" in
+  # Stderr should contain the backup path with .wizardry. suffix
+  case "$ERROR" in
     *".wizardry."*)
       : # Found
       ;;
     *)
-      TEST_FAILURE_REASON="output should contain backup path with .wizardry. suffix: $OUTPUT"
+      TEST_FAILURE_REASON="stderr should contain backup path with .wizardry. suffix: $ERROR"
       return 1
       ;;
   esac
@@ -56,14 +56,13 @@ test_backup_nix_config_timestamp_suffix() {
   run_spell spells/.imps/fs/backup-nix-config "$nix_file"
   assert_success
   
-  # Output should contain timestamp pattern (YYYYMMDDHHMMSS or epoch seconds)
-  # The backup path should match .wizardry.<timestamp>
-  case "$OUTPUT" in
+  # Stderr should contain timestamp pattern (YYYYMMDDHHMMSS or epoch seconds)
+  case "$ERROR" in
     *".wizardry."[0-9]*)
       : # Valid timestamp
       ;;
     *)
-      TEST_FAILURE_REASON="backup should have numeric timestamp suffix"
+      TEST_FAILURE_REASON="backup should have numeric timestamp suffix: $ERROR"
       return 1
       ;;
   esac
@@ -75,11 +74,14 @@ test_backup_nix_config_preserves_content() {
   original_content='{ pkgs, ... }: { programs.bash.enable = true; }'
   printf '%s\n' "$original_content" > "$nix_file"
   
-  # Run directly without sandbox to verify content preservation
-  backup_path=$("$ROOT_DIR/spells/.imps/fs/backup-nix-config" "$nix_file" 2>/dev/null)
+  # Run directly and capture stderr to find backup path
+  stderr=$("$ROOT_DIR/spells/.imps/fs/backup-nix-config" "$nix_file" 2>&1)
+  
+  # Extract backup path from stderr message
+  backup_path=$(printf '%s' "$stderr" | sed -n "s/.*to '\([^']*\)'.*/\1/p")
   
   if [ -z "$backup_path" ]; then
-    TEST_FAILURE_REASON="backup path was not returned"
+    TEST_FAILURE_REASON="could not extract backup path from: $stderr"
     return 1
   fi
   
