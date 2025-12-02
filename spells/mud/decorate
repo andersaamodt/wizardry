@@ -34,7 +34,7 @@ if lacks enchant; then
         exit 1
 fi
 
-# Determine path (default to current directory)
+# Determine target path (defaults to current directory if no argument provided)
 path=${1:-.}
 
 # Resolve to absolute path
