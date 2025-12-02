@@ -41,13 +41,14 @@ test_unknown_option() {
 test_adds_shell_path_entry() {
   rc="$WIZARDRY_TMPDIR/path_rc"
   detect_stub="$WIZARDRY_TMPDIR/detect-rc-file"
-  cat >"$detect_stub" <<'EOF'
+  cat >"$detect_stub" <<EOF
 #!/bin/sh
-printf 'platform=debian\nrc_file=%s\nformat=shell\n' "$WIZARDRY_TMPDIR/path_rc"
+printf 'platform=debian\nrc_file=$rc\nformat=shell\n'
 EOF
   chmod +x "$detect_stub"
 
-  run_spell "spells/spellcraft/learn-spellbook" --rc-file "$rc" --format shell --platform debian add "$WIZARDRY_TMPDIR"
+  # Set DETECT_RC_FILE so both learn-spellbook and learn use the test stub
+  DETECT_RC_FILE="$detect_stub" run_spell "spells/spellcraft/learn-spellbook" --rc-file "$rc" --format shell --platform debian add "$WIZARDRY_TMPDIR"
   assert_success
   assert_file_contains "$rc" "wizardry: path-"
   assert_file_contains "$rc" "export PATH=\"$WIZARDRY_TMPDIR:\$PATH\""
@@ -62,11 +63,18 @@ test_shell_status_succeeds_when_present() {
   rc="$WIZARDRY_TMPDIR/shell_rc"
   dir="$WIZARDRY_TMPDIR/shell_dir"
   mkdir -p "$dir"
+  
+  detect_stub="$WIZARDRY_TMPDIR/detect-rc-file-status"
+  cat >"$detect_stub" <<EOF
+#!/bin/sh
+printf 'platform=debian\nrc_file=$rc\nformat=shell\n'
+EOF
+  chmod +x "$detect_stub"
 
-  PATH_WIZARD_PLATFORM=debian run_spell "spells/spellcraft/learn-spellbook" --rc-file "$rc" --format shell add "$dir"
+  DETECT_RC_FILE="$detect_stub" PATH_WIZARD_PLATFORM=debian run_spell "spells/spellcraft/learn-spellbook" --rc-file "$rc" --format shell add "$dir"
   assert_success && assert_file_contains "$rc" "export PATH=\"$dir:\$PATH\""
 
-  PATH_WIZARD_PLATFORM=debian run_spell "spells/spellcraft/learn-spellbook" --rc-file "$rc" --format shell status "$dir"
+  DETECT_RC_FILE="$detect_stub" PATH_WIZARD_PLATFORM=debian run_spell "spells/spellcraft/learn-spellbook" --rc-file "$rc" --format shell status "$dir"
   assert_success
 }
 

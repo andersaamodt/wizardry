@@ -617,7 +617,7 @@ shell_add() {
                 return 0
         fi
         spell_name=$(spell_identifier_for_directory "$directory")
-        if ! printf '%s\n' "$managed_export_line" | "$LEARN" --rc-file "$rc_file" --spell "$spell_name" add; then
+        if ! printf '%s\n' "$managed_export_line" | "$LEARN" --spell "$spell_name" add; then
                 printf '%s\n' "learn-spellbook: unable to record the PATH entry." >&2
                 exit 1
         fi
@@ -631,8 +631,8 @@ shell_remove() {
                 exit 1
         fi
         spell_name=$(spell_identifier_for_directory "$directory")
-        if "$LEARN" --rc-file "$rc_file" --spell "$spell_name" status >/dev/null 2>&1; then
-                "$LEARN" --rc-file "$rc_file" --spell "$spell_name" remove
+        if "$LEARN" --spell "$spell_name" status >/dev/null 2>&1; then
+                "$LEARN" --spell "$spell_name" remove
                 printf '%s\n' "Removed '$directory' from PATH entries recorded in '$rc_file'. The change takes effect in new shell sessions."
                 return 0
         fi
@@ -748,8 +748,8 @@ shell_remove_all() {
         
         while IFS= read -r spell_name; do
                 [ -z "$spell_name" ] && continue
-                if "$LEARN" --rc-file "$rc_file" --spell "$spell_name" status >/dev/null 2>&1; then
-                        "$LEARN" --rc-file "$rc_file" --spell "$spell_name" remove 2>/dev/null || true
+                if "$LEARN" --spell "$spell_name" status >/dev/null 2>&1; then
+                        "$LEARN" --spell "$spell_name" remove 2>/dev/null || true
                         removed_count=$((removed_count + 1))
                 fi
         done <"$tmp_spells"
