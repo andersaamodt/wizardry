@@ -12,13 +12,60 @@ detect_platform() {
   fi
 }
 
+# Get the clipboard helper label (shows which is installed or preferred)
+get_clipboard_label() {
+  # Check installed helpers first
+  if command -v pbcopy >/dev/null 2>&1; then
+    printf 'Clipboard (pbcopy)'
+    return
+  elif command -v xsel >/dev/null 2>&1; then
+    printf 'Clipboard (xsel)'
+    return
+  elif command -v xclip >/dev/null 2>&1; then
+    printf 'Clipboard (xclip)'
+    return
+  elif command -v wl-copy >/dev/null 2>&1; then
+    printf 'Clipboard (wl-copy)'
+    return
+  fi
+  
+  # No helper installed, show preferred
+  if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+    printf 'Clipboard (pbcopy)'
+    return
+  fi
+  
+  # Check for Wayland session
+  if [ "${XDG_SESSION_TYPE:-}" = "wayland" ] || [ -n "${WAYLAND_DISPLAY:-}" ]; then
+    printf 'Clipboard (wl-copy)'
+    return
+  fi
+  
+  # Default to xsel for X11
+  printf 'Clipboard (xsel)'
+}
+
+# Check if any clipboard helper is installed
+clipboard_helper_installed() {
+  command -v pbcopy >/dev/null 2>&1 || \
+  command -v xsel >/dev/null 2>&1 || \
+  command -v xclip >/dev/null 2>&1 || \
+  command -v wl-copy >/dev/null 2>&1
+}
+
+# A special command name marker for clipboard that's checked differently
+CLIPBOARD_MARKER="__clipboard_helper__"
+
 core_dependencies() {
   # Format: label:command_name:install_spell:uninstall_spell:essential
   # essential=1 means the command is critical for shell/wizardry operation
   # and should not be uninstalled
+  # Note: __clipboard_helper__ is a special marker handled by core-menu
   platform=$(detect_platform)
+  clipboard_label=$(get_clipboard_label)
   case $platform in
     Darwin)
+      # macOS has pbcopy built-in, so no clipboard utilities needed in menu
       cat <<'EOF'
 Git:git:install-git:uninstall-git:0
 dd:dd:install-dd:uninstall-dd:1
@@ -27,8 +74,10 @@ tput:tput:install-tput:uninstall-tput:1
 EOF
       ;;
     *)
-      cat <<'EOF'
+      # Linux needs a clipboard utility - unified under install-clipboard-helper
+      cat <<EOF
 Git:git:install-git:uninstall-git:0
+${clipboard_label}:${CLIPBOARD_MARKER}:install-clipboard-helper:uninstall-clipboard-helper:0
 Bubblewrap:bwrap:install-bwrap:uninstall-bwrap:0
 dd:dd:install-dd:uninstall-dd:1
 stty:stty:install-stty:uninstall-stty:1

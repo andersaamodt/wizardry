@@ -31,7 +31,7 @@ fi
 # Check if cd is currently installed
 uninstall_output=$(WIZARDRY_CD_CANTRIP="$CD_SPELL" "$CD_SPELL" uninstall 2>&1) || true
 
-if printf '%s\n' "$uninstall_output" | grep -q "not installed\|no rc file found"; then
+if printf '%s\n' "$uninstall_output" | grep -Eq "not installed|no rc file found"; then
         # Not installed, so install it
         printf '%s\n' "Installing cd hook..."
         if WIZARDRY_CD_CANTRIP="$CD_SPELL" "$CD_SPELL" install; then

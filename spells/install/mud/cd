@@ -64,6 +64,25 @@ absolute_spell_path() {
         esac
 }
 
+# Cache for detect-rc-file output to avoid multiple calls
+# This cache is intentionally global so that resolve_rc_file() and resolve_rc_format()
+# can share the same detect-rc-file output without running the command multiple times.
+_detect_rc_cache=""
+
+_run_detect_rc_file() {
+        if [ -n "$_detect_rc_cache" ]; then
+                printf '%s\n' "$_detect_rc_cache"
+                return 0
+        fi
+        if command -v detect-rc-file >/dev/null 2>&1; then
+                if _detect_rc_cache=$(detect-rc-file 2>/dev/null); then
+                        printf '%s\n' "$_detect_rc_cache"
+                        return 0
+                fi
+        fi
+        return 1
+}
+
 resolve_rc_file() {
         if [ -n "${WIZARDRY_RC_FILE-}" ]; then
                 printf '%s\n' "$WIZARDRY_RC_FILE"
@@ -71,23 +90,21 @@ resolve_rc_file() {
         fi
         
         # Try to use detect-rc-file for cross-platform support
-        if command -v detect-rc-file >/dev/null 2>&1; then
-                if detected=$(detect-rc-file 2>/dev/null); then
-                        # Parse rc_file= line using shell parameter expansion
-                        while IFS= read -r line; do
-                                case $line in
-                                rc_file=*)
-                                        rc_file=${line#rc_file=}
-                                        if [ -n "$rc_file" ]; then
-                                                printf '%s\n' "$rc_file"
-                                                return 0
-                                        fi
-                                        ;;
-                                esac
-                        done <<EOF
+        if detected=$(_run_detect_rc_file); then
+                # Parse rc_file= line using shell parameter expansion
+                while IFS= read -r line; do
+                        case $line in
+                        rc_file=*)
+                                rc_file=${line#rc_file=}
+                                if [ -n "$rc_file" ]; then
+                                        printf '%s\n' "$rc_file"
+                                        return 0
+                                fi
+                                ;;
+                        esac
+                done <<EOF
 $detected
 EOF
-                fi
         fi
         
         # Fallback to shell-specific defaults
@@ -107,14 +124,54 @@ EOF
         esac
 }
 
+resolve_rc_format() {
+        # Check env var override first
+        if [ -n "${WIZARDRY_RC_FORMAT-}" ]; then
+                printf '%s\n' "$WIZARDRY_RC_FORMAT"
+                return 0
+        fi
+        
+        # Try to get format from detect-rc-file output
+        if detected=$(_run_detect_rc_file); then
+                while IFS= read -r line; do
+                        case $line in
+                        format=*)
+                                format=${line#format=}
+                                if [ -n "$format" ]; then
+                                        printf '%s\n' "$format"
+                                        return 0
+                                fi
+                                ;;
+                        esac
+                done <<EOF
+$detected
+EOF
+        fi
+        
+        # Fallback: detect from file extension
+        if rc_file=$(resolve_rc_file 2>/dev/null); then
+                case $rc_file in
+                *.nix) printf 'nix\n'; return 0 ;;
+                esac
+        fi
+        
+        printf 'shell\n'
+}
+
 cd_block_present() {
         rc_file=$1
         if [ ! -f "$rc_file" ]; then
                 return 1
         fi
+        # Check for shell format marker
         if grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file"; then
                 return 0
         fi
+        # Check for nix format marker (used by nix-shell-init)
+        if grep -Fq '#wizardry: cd-cantrip' "$rc_file"; then
+                return 0
+        fi
+        # Legacy check for WIZARDRY_CD_CANTRIP variable
         if grep -Fq 'WIZARDRY_CD_CANTRIP' "$rc_file"; then
                 return 0
         fi
@@ -136,16 +193,8 @@ ensure_rc_dir() {
 }
 
 install() {
-        # Check for nix format
-        rc_format=${WIZARDRY_RC_FORMAT-}
-        if [ -z "$rc_format" ]; then
-                # Try to detect format from rc file extension
-                if rc_file_hint=$(resolve_rc_file 2>/dev/null); then
-                        case $rc_file_hint in
-                        *.nix) rc_format=nix ;;
-                        esac
-                fi
-        fi
+        # Detect nix format from detect-rc-file output
+        rc_format=$(resolve_rc_format)
 
         cd_spell=$(absolute_spell_path "${WIZARDRY_CD_CANTRIP-}") || return 1
         rc_file=$(resolve_rc_file) || return 1
@@ -171,7 +220,6 @@ alias cd='. \"\$WIZARDRY_CD_CANTRIP\"'"
                 
                 if printf '%s\n' "$hook_code" | "$nix_helper" add --shell bash --name cd-cantrip --file "$rc_file"; then
                         printf '%s\n' "cd cantrip: installed wizardry hooks in '$rc_file'."
-                        printf '%s\n' "Rebuild your NixOS configuration to activate the change."
                 else
                         warn "unable to update '$rc_file'."
                         return 1
@@ -204,6 +252,7 @@ HOOK
 }
 
 uninstall() {
+        rc_format=$(resolve_rc_format)
         rc_file=$(resolve_rc_file) || return 1
         if [ ! -f "$rc_file" ]; then
                 printf '%s\n' "cd cantrip: no rc file found at '$rc_file'."
@@ -213,6 +262,31 @@ uninstall() {
                 printf '%s\n' "cd cantrip: not installed in '$rc_file'."
                 return 0
         fi
+        
+        # For nix format, use nix-shell-init to remove the block
+        if [ "$rc_format" = "nix" ]; then
+                nix_helper=""
+                if [ -x "$SCRIPT_DIR/../../.imps/sys/nix-shell-init" ]; then
+                        nix_helper="$SCRIPT_DIR/../../.imps/sys/nix-shell-init"
+                elif command -v nix-shell-init >/dev/null 2>&1; then
+                        nix_helper=$(command -v nix-shell-init)
+                fi
+                
+                if [ -n "$nix_helper" ]; then
+                        if "$nix_helper" remove --shell bash --name cd-cantrip --file "$rc_file"; then
+                                printf '%s\n' "cd cantrip: uninstalled wizardry hooks from '$rc_file'."
+                                return 0
+                        else
+                                warn "unable to update '$rc_file'."
+                                return 1
+                        fi
+                fi
+                # nix-shell-init helper not found - warn and attempt shell method fallback
+                # This may not work correctly for nix format files
+                warn "nix-shell-init imp not found; attempting shell-style removal which may not work for nix files."
+        fi
+        
+        # Shell format: use sed to remove the block
         tmp_file=$(mktemp "${TMPDIR:-/tmp}/wizardry-cd.XXXXXX") || return 1
         sed '/^# >>> wizardry cd cantrip >>>$/,/^# <<< wizardry cd cantrip <<</d' "$rc_file" >"$tmp_file"
         if ! mv "$tmp_file" "$rc_file"; then

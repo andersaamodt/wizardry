@@ -9,6 +9,11 @@ done
 # shellcheck source=/dev/null
 . "$test_root/test-common.sh"
 
+# Skip nix rebuild in tests since nixos-rebuild and home-manager aren't available
+export WIZARDRY_SKIP_NIX_REBUILD=1
+# Skip confirmation prompts in tests
+export WIZARDRY_SKIP_CONFIRM=1
+
 # Helper to create a stub detect-rc-file for a specific rc file
 make_detect_stub() {
   target_rc=$1
@@ -143,7 +148,7 @@ source "/path/to/spell"
 EOF
   assert_success || return 1
   assert_file_contains "$rc" "programs.bash.initExtra" || return 1
-  assert_file_contains "$rc" "wizardry-shell: myspell" || return 1
+  assert_file_contains "$rc" "wizardry: myspell" || return 1
   assert_file_contains "$rc" 'source "/path/to/spell"' || return 1
 }
 
@@ -192,7 +197,7 @@ EOF
   assert_success || return 1
   
   # Verify it was added
-  if ! grep -q "wizardry-shell: nixremove" "$rc"; then
+  if ! grep -q "wizardry: nixremove" "$rc"; then
     TEST_FAILURE_REASON="spell was not added"
     return 1
   fi
@@ -202,7 +207,7 @@ EOF
   assert_success || return 1
   
   # Verify it was removed
-  if grep -q "wizardry-shell: nixremove" "$rc"; then
+  if grep -q "wizardry: nixremove" "$rc"; then
     TEST_FAILURE_REASON="spell was not removed"
     return 1
   fi

@@ -313,6 +313,23 @@ SH
   mkdir -p "$config_dir"
   printf '%s\n' "command-not-found=1" >"$config_dir/config"
   
+  # Create mud-config stub that reads from WIZARDRY_MUD_CONFIG_DIR
+  cat >"$tmp/mud-config" <<'SH'
+#!/bin/sh
+config_dir=${WIZARDRY_MUD_CONFIG_DIR:-$HOME/.spellbook/.mud}
+config_file="$config_dir/config"
+case $1 in
+  get)
+    feature=$2
+    if [ -f "$config_file" ]; then
+      value=$(grep "^$feature=" "$config_file" 2>/dev/null | cut -d= -f2)
+      printf '%s\n' "$value"
+    fi
+    ;;
+esac
+SH
+  chmod +x "$tmp/mud-config"
+  
   run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" WIZARDRY_MUD_CONFIG_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
   assert_success || return 1
   
@@ -514,6 +531,23 @@ SH
 printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
+  
+  # Create mud-config stub that reads from WIZARDRY_MUD_CONFIG_DIR
+  cat >"$tmp/mud-config" <<'SH'
+#!/bin/sh
+config_dir=${WIZARDRY_MUD_CONFIG_DIR:-$HOME/.spellbook/.mud}
+config_file="$config_dir/config"
+case $1 in
+  get)
+    feature=$2
+    if [ -f "$config_file" ]; then
+      value=$(grep "^$feature=" "$config_file" 2>/dev/null | cut -d= -f2)
+      printf '%s\n' "$value"
+    fi
+    ;;
+esac
+SH
+  chmod +x "$tmp/mud-config"
   
   call_count_file="$tmp/call_count"
   printf '0\n' >"$call_count_file"
