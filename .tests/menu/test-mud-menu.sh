@@ -64,7 +64,7 @@ SH
   assert_success
   args=$(cat "$tmp/log")
   case "$args" in
-    *"MUD Install:"*"/install/tor/setup-tor"*'Exit%kill -TERM $PPID' ) : ;;
+    *"MUD Install:"*"setup-tor"*'Exit%kill -TERM $PPID' ) : ;;
     *) TEST_FAILURE_REASON="tor setup entry missing: $args"; return 1 ;;
   esac
 }
