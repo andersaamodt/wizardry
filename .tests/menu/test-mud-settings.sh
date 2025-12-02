@@ -66,7 +66,7 @@ SH
   assert_success
   args=$(cat "$tmp/log")
   case "$args" in
-    *"MUD Settings:"*"player key"*"Change Player%select-player"*"New Player%new-player"*"Exit%kill -TERM "[0-9]* ) : ;;
+    *"MUD Settings:"*"player key"*"Change Player%select-player"*"New Player%new-player"*'Exit%kill -TERM $PPID' ) : ;;
     *) TEST_FAILURE_REASON="mud settings actions missing: $args"; return 1 ;;
   esac
 }
@@ -141,7 +141,7 @@ SH
   
   args=$(cat "$tmp/log")
   case "$args" in
-    *"Exit%kill -TERM "[0-9]*) : ;;
+    *'Exit%kill -TERM $PPID') : ;;
     *) TEST_FAILURE_REASON="menu should show Exit label: $args"; return 1 ;;
   esac
   

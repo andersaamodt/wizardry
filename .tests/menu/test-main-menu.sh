@@ -65,9 +65,9 @@ SH
   assert_success
   args=$(cat "$tmp/log")
   # MUD is not shown by default (requires enabling via mud-config)
-  # The Exit command uses kill -TERM $PPID which expands to the actual PID at runtime
+  # The Exit command shows kill -TERM $PPID literally for didactic purposes
   case "$args" in
-    *"Main Menu:"*"Cast%"*"cast"*"Spellbook%"*"spellbook"*"Arcana%"*"install-menu"*"Computer%"*"system-menu"*"Exit%kill -TERM "[0-9]* ) : ;;
+    *"Main Menu:"*"Cast%"*"cast"*"Spellbook%"*"spellbook"*"Arcana%"*"install-menu"*"Computer%"*"system-menu"*'Exit%kill -TERM $PPID'* ) : ;;
     *) TEST_FAILURE_REASON="menu entries missing: $args"; return 1 ;;
   esac
 }
@@ -136,9 +136,9 @@ SH
   assert_success || { TEST_FAILURE_REASON="menu should exit successfully on TERM signal"; return 1; }
   
   args=$(cat "$tmp/log")
-  # The Exit command uses kill -TERM $PPID which expands to the actual PID at runtime
+  # The Exit command shows kill -TERM $PPID literally for didactic purposes
   case "$args" in
-    *"Exit%kill -TERM "[0-9]*) : ;;
+    *'Exit%kill -TERM $PPID'*) : ;;
     *) TEST_FAILURE_REASON="menu should show Exit label: $args"; return 1 ;;
   esac
 }

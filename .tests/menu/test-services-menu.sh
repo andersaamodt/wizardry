@@ -53,7 +53,7 @@ SH
   assert_success
   args=$(cat "$tmp/log")
   case "$args" in
-    *"Services Menu:"*"Start a service%start-service"*"Stop a service%stop-service"*"Restart a service%restart-service"*"Enable a service at boot%enable-service"*"Disable a service at boot%disable-service"*"Check service status%service-status"*"Check if a service is installed%is-service-installed"*"Remove a service%remove-service"*"Install service from template%install-service-template"*"Exit%kill -TERM "[0-9]* ) : ;; 
+    *"Services Menu:"*"Start a service%start-service"*"Stop a service%stop-service"*"Restart a service%restart-service"*"Enable a service at boot%enable-service"*"Disable a service at boot%disable-service"*"Check service status%service-status"*"Check if a service is installed%is-service-installed"*"Remove a service%remove-service"*"Install service from template%install-service-template"*'Exit%kill -TERM $PPID' ) : ;; 
     *) TEST_FAILURE_REASON="menu actions missing: $args"; return 1 ;;
   esac
 }
@@ -80,7 +80,7 @@ SH
   
   args=$(cat "$tmp/log")
   case "$args" in
-    *"Exit%kill -TERM "[0-9]*) : ;;
+    *'Exit%kill -TERM $PPID') : ;;
     *) TEST_FAILURE_REASON="menu should show Exit label: $args"; return 1 ;;
   esac
   

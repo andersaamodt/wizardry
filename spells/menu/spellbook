@@ -515,7 +515,7 @@ USER_FOLDERS
                 else
                         exit_label="Back"
                 fi
-                set -- "$@" "${exit_label}%kill -TERM $PPID"
+                set -- "$@" "${exit_label}%kill -TERM \$PPID"
                 
                 # Build menu title - use original folder name for category
                 if [ -z "$current_path" ]; then

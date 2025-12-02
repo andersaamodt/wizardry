@@ -129,7 +129,7 @@ while :; do
     done
 
     exit_label=$(exit-label)
-    set -- "$@" "${exit_label}%kill -TERM $PPID"
+    set -- "$@" "${exit_label}%kill -TERM \$PPID"
 
     menu "Install Menu:" "$@" || true
 done

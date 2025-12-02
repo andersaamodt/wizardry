@@ -176,7 +176,7 @@ SH
   
   args=$(cat "$stub_dir/log")
   case "$args" in
-    *"Exit%kill -TERM "[0-9]*) : ;;
+    *'Exit%kill -TERM $PPID') : ;;
     *) TEST_FAILURE_REASON="menu should show Exit label: $args"; return 1 ;;
   esac
   

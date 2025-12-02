@@ -93,7 +93,7 @@ test_cast_sends_entries_to_menu() {
   args=$(cat "$tmp/log")
   # Label is just alias; command (after %) is now the spell name directly (no wrapper scripts)
   case "$args" in
-    *"Cast a Spell:"*"fizz%cast fizz"*"Exit%kill -TERM "[0-9]* ) : ;;
+    *"Cast a Spell:"*"fizz%cast fizz"*'Exit%kill -TERM $PPID' ) : ;;
     *) TEST_FAILURE_REASON="menu did not receive stored spells"; return 1 ;;
   esac
 }
@@ -225,7 +225,7 @@ SH
   
   args=$(cat "$tmp/log")
   case "$args" in
-    *"Exit%kill -TERM "[0-9]*) : ;;
+    *'Exit%kill -TERM $PPID') : ;;
     *) TEST_FAILURE_REASON="menu should show Exit label: $args"; return 1 ;;
   esac
 }
