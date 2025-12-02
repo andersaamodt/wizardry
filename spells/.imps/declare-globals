@@ -33,6 +33,10 @@
 # .memorized file for the cast menu. Required for spell storage coordination.
 : "${SPELLBOOK_DIR:=}"
 
+# Spellbook storage file location. Used by spellbook-store for testing purposes.
+# Internal/test use only - default location is $HOME/.tower/spellbook.
+: "${SPELLBOOK_FILE:=}"
+
 # MUD configuration directory. Required for MUD features to know where
 # to store room descriptions and other MUD-related configuration.
 : "${MUD_DIR:=}"

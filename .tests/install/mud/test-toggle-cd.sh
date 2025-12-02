@@ -47,7 +47,7 @@ test_toggle_cd_installs_when_not_present() {
   # Create an empty rc file without the hook
   : >"$tmp/rc"
   
-  run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/toggle-cd"
+  run_cmd env LEARN_SPELL_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/toggle-cd"
   assert_success || return 1
   assert_output_contains "CD hook enabled" || return 1
   
@@ -62,11 +62,11 @@ test_toggle_cd_uninstalls_when_present() {
   tmp=$(make_tempdir)
   
   # First install the hook
-  run_cmd env WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd" install
+  run_cmd env CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" LEARN_SPELL_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd" install
   assert_success || return 1
   
   # Now toggle should uninstall it
-  run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/toggle-cd"
+  run_cmd env LEARN_SPELL_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/toggle-cd"
   assert_success || return 1
   assert_output_contains "CD hook disabled" || return 1
   

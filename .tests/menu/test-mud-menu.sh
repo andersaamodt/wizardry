@@ -176,7 +176,7 @@ SH
   rc_file="$tmp/rc"
   : >"$rc_file"
   
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" "$ROOT_DIR/spells/menu/mud-menu"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" LEARN_SPELL_RC_FILE="$rc_file" "$ROOT_DIR/spells/menu/mud-menu"
   assert_success || return 1
   
   args=$(cat "$tmp/log")
@@ -215,12 +215,12 @@ SH
   rc_file="$tmp/rc"
   cat >"$rc_file" <<'RC'
 # >>> wizardry cd cantrip >>>
-WIZARDRY_CD_CANTRIP='/path/to/cd'
-alias cd='. "$WIZARDRY_CD_CANTRIP"'
+CD_CANTRIP='/path/to/cd'
+alias cd='. "$CD_CANTRIP"'
 # <<< wizardry cd cantrip <<<
 RC
   
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" "$ROOT_DIR/spells/menu/mud-menu"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" LEARN_SPELL_RC_FILE="$rc_file" "$ROOT_DIR/spells/menu/mud-menu"
   assert_success || return 1
   
   args=$(cat "$tmp/log")
@@ -273,7 +273,7 @@ SH
   config_dir="$tmp/mud"
   mkdir -p "$config_dir"
   
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" WIZARDRY_MUD_CONFIG_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" LEARN_SPELL_RC_FILE="$rc_file" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
   assert_success || return 1
   
   args=$(cat "$tmp/log")
@@ -313,10 +313,10 @@ SH
   mkdir -p "$config_dir"
   printf '%s\n' "command-not-found=1" >"$config_dir/config"
   
-  # Create mud-config stub that reads from WIZARDRY_MUD_CONFIG_DIR
+  # Create mud-config stub that reads from MUD_DIR
   cat >"$tmp/mud-config" <<'SH'
 #!/bin/sh
-config_dir=${WIZARDRY_MUD_CONFIG_DIR:-$HOME/.spellbook/.mud}
+config_dir=${MUD_DIR:-$HOME/.spellbook/.mud}
 config_file="$config_dir/config"
 case $1 in
   get)
@@ -330,7 +330,7 @@ esac
 SH
   chmod +x "$tmp/mud-config"
   
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" WIZARDRY_MUD_CONFIG_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" LEARN_SPELL_RC_FILE="$rc_file" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
   assert_success || return 1
   
   args=$(cat "$tmp/log")
@@ -368,7 +368,7 @@ SH
   config_dir="$tmp/mud"
   mkdir -p "$config_dir"
   
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" WIZARDRY_MUD_CONFIG_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" LEARN_SPELL_RC_FILE="$rc_file" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
   assert_success || return 1
   
   args=$(cat "$tmp/log")
@@ -407,7 +407,7 @@ SH
   config_dir="$tmp/mud"
   mkdir -p "$config_dir"
   
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" WIZARDRY_MUD_CONFIG_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" LEARN_SPELL_RC_FILE="$rc_file" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
   assert_success || return 1
   
   args=$(cat "$tmp/log")
@@ -484,9 +484,9 @@ call_count=$((call_count + 1))
 printf '%s\n' "$call_count" >"$CALL_COUNT_FILE"
 if [ "$call_count" -eq 1 ]; then
   # First call: simulate CD hook toggle by directly modifying rc file
-  rc_file=${WIZARDRY_RC_FILE:-$HOME/.bashrc}
+  rc_file=${LEARN_SPELL_RC_FILE:-$HOME/.bashrc}
   printf '%s\n' '# >>> wizardry cd cantrip >>>' >> "$rc_file"
-  printf '%s\n' 'WIZARDRY_CD_CANTRIP=/path/to/cd' >> "$rc_file"
+  printf '%s\n' 'CD_CANTRIP=/path/to/cd' >> "$rc_file"
   printf '%s\n' '# <<< wizardry cd cantrip <<<' >> "$rc_file"
   exit 0
 fi
@@ -495,7 +495,7 @@ exit 113
 SH
   chmod +x "$tmp/menu"
   
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH:/usr/bin:/bin" MENU_LOG="$tmp/log" CALL_COUNT_FILE="$call_count_file" WIZARDRY_RC_FILE="$rc_file" WIZARDRY_MUD_CONFIG_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH:/usr/bin:/bin" MENU_LOG="$tmp/log" CALL_COUNT_FILE="$call_count_file" LEARN_SPELL_RC_FILE="$rc_file" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
   assert_success || { TEST_FAILURE_REASON="menu should exit successfully"; return 1; }
   
   log_content=$(cat "$tmp/log")
@@ -532,10 +532,10 @@ printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
   
-  # Create mud-config stub that reads from WIZARDRY_MUD_CONFIG_DIR
+  # Create mud-config stub that reads from MUD_DIR
   cat >"$tmp/mud-config" <<'SH'
 #!/bin/sh
-config_dir=${WIZARDRY_MUD_CONFIG_DIR:-$HOME/.spellbook/.mud}
+config_dir=${MUD_DIR:-$HOME/.spellbook/.mud}
 config_file="$config_dir/config"
 case $1 in
   get)
@@ -578,7 +578,7 @@ call_count=$((call_count + 1))
 printf '%s\n' "$call_count" >"$CALL_COUNT_FILE"
 if [ "$call_count" -eq 1 ]; then
   # First call: simulate CNF toggle by directly modifying config file
-  config_dir=${WIZARDRY_MUD_CONFIG_DIR:-$HOME/.wizardry/mud}
+  config_dir=${MUD_DIR:-$HOME/.wizardry/mud}
   mkdir -p "$config_dir"
   printf '%s\n' "command-not-found=1" >> "$config_dir/config"
   exit 0
@@ -587,7 +587,7 @@ exit 113
 SH
   chmod +x "$tmp/menu"
   
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH:/usr/bin:/bin" MENU_LOG="$tmp/log" CALL_COUNT_FILE="$call_count_file" WIZARDRY_RC_FILE="$rc_file" WIZARDRY_MUD_CONFIG_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH:/usr/bin:/bin" MENU_LOG="$tmp/log" CALL_COUNT_FILE="$call_count_file" LEARN_SPELL_RC_FILE="$rc_file" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
   assert_success || { TEST_FAILURE_REASON="menu should exit successfully"; return 1; }
   
   log_content=$(cat "$tmp/log")
@@ -658,7 +658,7 @@ exit 113
 SH
   chmod +x "$tmp/menu"
   
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH:/usr/bin:/bin" MENU_LOG="$tmp/log" CALL_COUNT_FILE="$call_count_file" WIZARDRY_RC_FILE="$rc_file" WIZARDRY_MUD_CONFIG_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH:/usr/bin:/bin" MENU_LOG="$tmp/log" CALL_COUNT_FILE="$call_count_file" LEARN_SPELL_RC_FILE="$rc_file" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
   assert_success || { TEST_FAILURE_REASON="menu should exit successfully"; return 1; }
   
   log_content=$(cat "$tmp/log")

@@ -33,9 +33,9 @@ case $1 in
       cmd="$cmd $1"
       shift
     done
-    cast_dir=${WIZARDRY_CAST_DIR:-${HOME:-.}/.spellbook}
+    cast_dir=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
     cast_file_default=$cast_dir/.memorized
-    cast_file=${WIZARDRY_CAST_FILE:-$cast_file_default}
+    cast_file=${SPELLBOOK_FILE:-$cast_file_default}
     mkdir -p "$cast_dir"
     printf '%s\t%s\n' "$name" "$cmd" >>"$cast_file"
     printf '%s\n' "$cmd" >"$cast_dir/$name"
@@ -44,9 +44,9 @@ case $1 in
   remove)
     shift
     name=$1
-    cast_dir=${WIZARDRY_CAST_DIR:-${HOME:-.}/.spellbook}
+    cast_dir=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
     cast_file_default=$cast_dir/.memorized
-    cast_file=${WIZARDRY_CAST_FILE:-$cast_file_default}
+    cast_file=${SPELLBOOK_FILE:-$cast_file_default}
     tmp=$(mktemp)
     while IFS= read -r line || [ -n "$line" ]; do
       case $line in
@@ -58,22 +58,22 @@ case $1 in
     rm -f "$cast_dir/$name"
     ;;
   list)
-    cast_dir=${WIZARDRY_CAST_DIR:-${HOME:-.}/.spellbook}
+    cast_dir=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
     cast_file_default=$cast_dir/.memorized
-    cast_file=${WIZARDRY_CAST_FILE:-$cast_file_default}
+    cast_file=${SPELLBOOK_FILE:-$cast_file_default}
     cat "$cast_file" 2>/dev/null || true
     ;;
   dir)
-    cast_dir=${WIZARDRY_CAST_DIR:-${HOME:-.}/.spellbook}
+    cast_dir=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
     printf '%s\n' "$cast_dir"
     ;;
   *)
     # Default action: memorize the spell (same as add with spell name as command)
     name=$1
     cmd=$name
-    cast_dir=${WIZARDRY_CAST_DIR:-${HOME:-.}/.spellbook}
+    cast_dir=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
     cast_file_default=$cast_dir/.memorized
-    cast_file=${WIZARDRY_CAST_FILE:-$cast_file_default}
+    cast_file=${SPELLBOOK_FILE:-$cast_file_default}
     mkdir -p "$cast_dir"
     printf '%s\t%s\n' "$name" "$cmd" >>"$cast_file"
     printf '%s\n' "$cmd" >"$cast_dir/$name"

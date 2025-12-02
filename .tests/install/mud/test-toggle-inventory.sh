@@ -17,7 +17,7 @@ test_help_shows_usage() {
 
 test_toggle_enables_feature() {
   tmp=$(make_tempdir)
-  run_cmd env WIZARDRY_MUD_CONFIG_DIR="$tmp" "$ROOT_DIR/spells/install/mud/toggle-inventory"
+  run_cmd env MUD_DIR="$tmp" "$ROOT_DIR/spells/install/mud/toggle-inventory"
   assert_success || return 1
   assert_output_contains "enabled" || return 1
 }
@@ -25,11 +25,11 @@ test_toggle_enables_feature() {
 test_toggle_disables_feature() {
   tmp=$(make_tempdir)
   # First enable
-  run_cmd env WIZARDRY_MUD_CONFIG_DIR="$tmp" "$ROOT_DIR/spells/install/mud/toggle-inventory"
+  run_cmd env MUD_DIR="$tmp" "$ROOT_DIR/spells/install/mud/toggle-inventory"
   assert_success || return 1
   
   # Then disable
-  run_cmd env WIZARDRY_MUD_CONFIG_DIR="$tmp" "$ROOT_DIR/spells/install/mud/toggle-inventory"
+  run_cmd env MUD_DIR="$tmp" "$ROOT_DIR/spells/install/mud/toggle-inventory"
   assert_success || return 1
   assert_output_contains "disabled" || return 1
 }
@@ -40,7 +40,7 @@ test_fails_when_mud_config_missing() {
   cp "$ROOT_DIR/spells/install/mud/toggle-inventory" "$tmp/toggle-inventory"
   chmod +x "$tmp/toggle-inventory"
   
-  run_cmd env WIZARDRY_MUD_CONFIG_DIR="$tmp" "$tmp/toggle-inventory"
+  run_cmd env MUD_DIR="$tmp" "$tmp/toggle-inventory"
   assert_failure || return 1
   assert_error_contains "mud-config not found" || return 1
 }

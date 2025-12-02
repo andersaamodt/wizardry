@@ -15,7 +15,7 @@ done
 cast_env() {
   dir=$(mktemp -d "${WIZARDRY_TMPDIR}/cast.XXXXXX")
   mkdir -p "$dir"
-  printf 'WIZARDRY_CAST_DIR=%s' "$dir"
+  printf 'SPELLBOOK_DIR=%s' "$dir"
 }
 
 run_memorize() {

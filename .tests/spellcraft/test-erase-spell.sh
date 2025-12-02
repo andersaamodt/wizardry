@@ -38,7 +38,7 @@ test_requires_spell_name() {
 
 test_errors_when_spell_not_found() {
   spellbook_dir=$(make_spellbook_dir)
-  WIZARDRY_SPELL_HOME="$spellbook_dir" run_spell "spells/spellcraft/erase-spell" nonexistent
+  SPELLBOOK_DIR="$spellbook_dir" run_spell "spells/spellcraft/erase-spell" nonexistent
   assert_failure || return 1
   case "$OUTPUT$ERROR" in
     *"not found"*) : ;;
@@ -52,7 +52,7 @@ test_force_deletes_spell_without_confirmation() {
   printf '#!/bin/sh\necho hello\n' >"$spellbook_dir/test-spell"
   chmod +x "$spellbook_dir/test-spell"
   # Delete with --force
-  WIZARDRY_SPELL_HOME="$spellbook_dir" run_spell "spells/spellcraft/erase-spell" --force test-spell
+  SPELLBOOK_DIR="$spellbook_dir" run_spell "spells/spellcraft/erase-spell" --force test-spell
   assert_success || return 1
   case "$OUTPUT" in
     *"Erased spell"*) : ;;
@@ -72,7 +72,7 @@ test_force_deletes_spell_in_subfolder() {
   printf '#!/bin/sh\necho hello\n' >"$spellbook_dir/category/sub-spell"
   chmod +x "$spellbook_dir/category/sub-spell"
   # Delete with --force
-  WIZARDRY_SPELL_HOME="$spellbook_dir" run_spell "spells/spellcraft/erase-spell" --force sub-spell
+  SPELLBOOK_DIR="$spellbook_dir" run_spell "spells/spellcraft/erase-spell" --force sub-spell
   assert_success || return 1
   # Verify file is removed
   if [ -f "$spellbook_dir/category/sub-spell" ]; then
