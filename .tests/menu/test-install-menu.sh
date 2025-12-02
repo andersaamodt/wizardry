@@ -222,9 +222,6 @@ run_test_case "install-menu no exit message on ESC" test_no_exit_message_on_esc
 test_nested_menu_spacing() {
   tmp=$(make_tempdir)
   
-  # Track menu invocations
-  invocation_count=0
-  
   # Create a menu that records when it's called, and on second call sends TERM
   cat >"$tmp/menu" <<'SH'
 #!/bin/sh
