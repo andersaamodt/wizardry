@@ -10,7 +10,12 @@
 #
 # After sourcing, scripts with `set -u` will fail if they reference undeclared globals.
 # Add new globals here with a justification comment when absolutely necessary.
-# PREFER passing --flag arguments over globals for configuration.
+#
+# IMPORTANT: Use globals only for true global state, not as arguments!
+# - PREFER: Pass configuration via --flag arguments
+# - AVOID: Using globals to pass values between scripts (use args instead)
+# - OK: Directory paths that coordinate multiple independent spells
+# - OK: Test infrastructure state that spans multiple test processes
 
 # =============================================================================
 # DECLARED GLOBALS (each must have a justification comment above it)
@@ -32,38 +37,22 @@
 # to store room descriptions and other MUD-related configuration.
 : "${MUD_DIR:=}"
 
-# --- Shell Configuration (learn-spell chain) ---
+# --- learn-spell Inter-Process Communication ---
+# (These are set by learn-spell wrapper, not user-facing globals)
 
-# Shell RC file path. Required for learn-spell to pass detected shell config
-# to spell install() functions without redundant re-detection.
-: "${WIZARDRY_RC_FILE:=}"
+# Shell RC file path from learn-spell. Set by the wrapper script to pass
+# detected shell config to install() functions without re-detection.
+: "${LEARN_SPELL_RC_FILE:=}"
 
-# Format of the shell RC file (bash/zsh/fish/sh). Required for spell install()
-# functions to generate correct shell-specific syntax.
-: "${WIZARDRY_RC_FORMAT:=}"
+# Format of the shell RC file. Set by wrapper to pass format info.
+: "${LEARN_SPELL_RC_FORMAT:=}"
 
-# Shell platform identifier. Required for learn-spell to coordinate platform
-# detection across nested spell installations.
-: "${WIZARDRY_PLATFORM:=}"
+# Shell platform identifier. Set by wrapper to pass platform info.
+: "${LEARN_SPELL_PLATFORM:=}"
 
-# Target path during spell memorization. Required for learn-spell to
-# communicate the spell's installation path to install() functions.
-: "${WIZARDRY_MEMORIZE_TARGET:=}"
-
-# --- Automation Flags ---
-# These are needed for non-interactive scripted installations (CI/CD)
-
-# Skip confirmation prompts in system-modifying scripts.
-: "${WIZARDRY_SKIP_CONFIRM:=}"
-
-# Skip NixOS rebuild during updates (for testing).
-: "${WIZARDRY_SKIP_NIX_REBUILD:=}"
-
-# Assume yes to update-all prompts (automated updates).
-: "${WIZARDRY_UPDATE_ALL_ASSUME_YES:=}"
-
-# Distribution override for update-all (testing).
-: "${WIZARDRY_UPDATE_ALL_DISTRO:=}"
+# Target spell path during installation. Set by wrapper to communicate
+# the spell's path to install() functions.
+: "${LEARN_SPELL_TARGET:=}"
 
 # --- Test Infrastructure ---
 # (WIZARDRY_ prefix for namespacing in test environments)

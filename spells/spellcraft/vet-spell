@@ -286,7 +286,7 @@ check_declare_globals() {
       tr '\n' '|' | sed 's/|$//')
   else
     # Fallback: hardcoded list if file not found
-    declared_globals='WIZARDRY_DIR|SPELLBOOK_DIR|MUD_DIR|WIZARDRY_RC_FILE|WIZARDRY_RC_FORMAT|WIZARDRY_PLATFORM|WIZARDRY_MEMORIZE_TARGET|WIZARDRY_SKIP_CONFIRM|WIZARDRY_SKIP_NIX_REBUILD|WIZARDRY_UPDATE_ALL_ASSUME_YES|WIZARDRY_UPDATE_ALL_DISTRO'
+    declared_globals='WIZARDRY_DIR|SPELLBOOK_DIR|MUD_DIR|LEARN_SPELL_RC_FILE|LEARN_SPELL_RC_FORMAT|LEARN_SPELL_PLATFORM|LEARN_SPELL_TARGET'
   fi
   
   # Check if file uses any declared globals (excluding comments)

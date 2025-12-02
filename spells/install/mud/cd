@@ -79,8 +79,9 @@ _run_detect_rc_file() {
 }
 
 resolve_rc_file() {
-        if [ -n "${WIZARDRY_RC_FILE-}" ]; then
-                printf '%s\n' "$WIZARDRY_RC_FILE"
+        # Use LEARN_SPELL_RC_FILE if set (from learn-spell wrapper)
+        if [ -n "${LEARN_SPELL_RC_FILE-}" ]; then
+                printf '%s\n' "$LEARN_SPELL_RC_FILE"
                 return 0
         fi
         
@@ -120,9 +121,9 @@ EOF
 }
 
 resolve_rc_format() {
-        # Check env var override first
-        if [ -n "${WIZARDRY_RC_FORMAT-}" ]; then
-                printf '%s\n' "$WIZARDRY_RC_FORMAT"
+        # Use LEARN_SPELL_RC_FORMAT if set (from learn-spell wrapper)
+        if [ -n "${LEARN_SPELL_RC_FORMAT-}" ]; then
+                printf '%s\n' "$LEARN_SPELL_RC_FORMAT"
                 return 0
         fi
         
@@ -355,7 +356,7 @@ esac
 
 # If run directly (not sourced via the function and not install/uninstall),
 # prompt to install and then run the cd
-if [ -z "${WIZARDRY_MEMORIZE_TARGET-}" ]; then
+if [ -z "${LEARN_SPELL_TARGET-}" ]; then
         prompt_install_if_needed || true
         wizardry_cd_main "$@"
 fi

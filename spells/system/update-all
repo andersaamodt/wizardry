@@ -6,20 +6,37 @@ set -eu
 
 usage() {
   cat <<'EOF'
-Usage: update-all [-v|--verbose]
+Usage: update-all [-v|--verbose] [-y|--yes] [--distro DISTRO]
 
 Options:
-  -v, --verbose   Print all command output while updating
-  -h, --help      Show this help message and exit
+  -v, --verbose     Print all command output while updating
+  -y, --yes         Assume yes to all prompts (non-interactive)
+  --distro DISTRO   Override detected distribution
+  -h, --help        Show this help message and exit
 EOF
 }
 
 VERBOSE=0
+ASSUME_YES=0
+DISTRO_OVERRIDE=""
 
 while [ "$#" -gt 0 ]; do
   case $1 in
     -v|--verbose)
       VERBOSE=1
+      shift
+      ;;
+    -y|--yes)
+      ASSUME_YES=1
+      shift
+      ;;
+    --distro)
+      [ "$#" -lt 2 ] && { printf '%s\n' "update-all: --distro requires value" >&2; exit 1; }
+      DISTRO_OVERRIDE=$2
+      shift 2
+      ;;
+    --distro=*)
+      DISTRO_OVERRIDE=${1#*=}
       shift
       ;;
     -h|--help)
@@ -152,11 +169,9 @@ run_with_progress() {
 }
 
 assume_yes() {
-  case ${WIZARDRY_UPDATE_ALL_ASSUME_YES:-} in
-    1|[Yy]|[Yy][Ee][Ss]|[Tt][Rr][Uu][Ee])
-      return 0
-      ;;
-  esac
+  if [ "$ASSUME_YES" -eq 1 ]; then
+    return 0
+  fi
   return 1
 }
 
@@ -173,8 +188,8 @@ confirm_updates() {
 }
 
 resolve_distro() {
-  if is set "${WIZARDRY_UPDATE_ALL_DISTRO:-}"; then
-    printf '%s\n' "$WIZARDRY_UPDATE_ALL_DISTRO"
+  if [ -n "$DISTRO_OVERRIDE" ]; then
+    printf '%s\n' "$DISTRO_OVERRIDE"
     return 0
   fi
 

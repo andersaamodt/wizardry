@@ -44,8 +44,8 @@ jtrash_self_path() {
     return 0
   fi
   hint=${JUMP_TRASH_SOURCE_HINT-}
-  if [ -z "$hint" ] && [ -n "${WIZARDRY_MEMORIZE_TARGET-}" ]; then
-    hint=$WIZARDRY_MEMORIZE_TARGET
+  if [ -z "$hint" ] && [ -n "${LEARN_SPELL_TARGET-}" ]; then
+    hint=$LEARN_SPELL_TARGET
   fi
   if [ -z "$hint" ]; then
     hint=$0
@@ -197,14 +197,15 @@ jtrash_confirm() {
 }
 
 jtrash_detect_environment() {
-  if [ -n "${WIZARDRY_RC_FILE-}" ] && [ -z "$JUMP_TRASH_RC_FILE" ]; then
-    JUMP_TRASH_RC_FILE=$WIZARDRY_RC_FILE
+  # Use LEARN_SPELL_* variables if set (from learn-spell wrapper)
+  if [ -n "${LEARN_SPELL_RC_FILE-}" ] && [ -z "$JUMP_TRASH_RC_FILE" ]; then
+    JUMP_TRASH_RC_FILE=$LEARN_SPELL_RC_FILE
   fi
-  if [ -n "${WIZARDRY_PLATFORM-}" ] && [ -z "$JUMP_TRASH_PLATFORM" ]; then
-    JUMP_TRASH_PLATFORM=$WIZARDRY_PLATFORM
+  if [ -n "${LEARN_SPELL_PLATFORM-}" ] && [ -z "$JUMP_TRASH_PLATFORM" ]; then
+    JUMP_TRASH_PLATFORM=$LEARN_SPELL_PLATFORM
   fi
-  if [ -n "${WIZARDRY_RC_FORMAT-}" ] && [ -z "$JUMP_TRASH_FORMAT" ]; then
-    JUMP_TRASH_FORMAT=$WIZARDRY_RC_FORMAT
+  if [ -n "${LEARN_SPELL_RC_FORMAT-}" ] && [ -z "$JUMP_TRASH_FORMAT" ]; then
+    JUMP_TRASH_FORMAT=$LEARN_SPELL_RC_FORMAT
   fi
   if [ -n "$JUMP_TRASH_RC_FILE" ] && [ -n "$JUMP_TRASH_PLATFORM" ] && [ -n "$JUMP_TRASH_FORMAT" ]; then
     return 0

@@ -46,8 +46,8 @@ jump_self_path() {
                 return 0
         fi
         hint=${JUMP_TO_MARKER_SOURCE_HINT-}
-        if [ -z "$hint" ] && [ -n "${WIZARDRY_MEMORIZE_TARGET-}" ]; then
-                hint=$WIZARDRY_MEMORIZE_TARGET
+        if [ -z "$hint" ] && [ -n "${LEARN_SPELL_TARGET-}" ]; then
+                hint=$LEARN_SPELL_TARGET
         fi
         if [ -z "$hint" ]; then
                 hint=$0
@@ -199,18 +199,18 @@ jump_confirm() {
         return 1
 }
 
-# jump_detect_environment prefers the shared WIZARDRY_* environment variables
-# (populated by the memorize spell) and only shells out to detect-rc-file when
+# jump_detect_environment prefers the shared LEARN_SPELL_* environment variables
+# (populated by the learn-spell wrapper) and only shells out to detect-rc-file when
 # those overrides are missing.
 jump_detect_environment() {
-if [ -n "${WIZARDRY_RC_FILE-}" ] && [ -z "$JUMP_TO_MARKER_RC_FILE" ]; then
-JUMP_TO_MARKER_RC_FILE=$WIZARDRY_RC_FILE
+if [ -n "${LEARN_SPELL_RC_FILE-}" ] && [ -z "$JUMP_TO_MARKER_RC_FILE" ]; then
+JUMP_TO_MARKER_RC_FILE=$LEARN_SPELL_RC_FILE
 fi
-if [ -n "${WIZARDRY_PLATFORM-}" ] && [ -z "$JUMP_TO_MARKER_PLATFORM" ]; then
-JUMP_TO_MARKER_PLATFORM=$WIZARDRY_PLATFORM
+if [ -n "${LEARN_SPELL_PLATFORM-}" ] && [ -z "$JUMP_TO_MARKER_PLATFORM" ]; then
+JUMP_TO_MARKER_PLATFORM=$LEARN_SPELL_PLATFORM
 fi
-if [ -n "${WIZARDRY_RC_FORMAT-}" ] && [ -z "$JUMP_TO_MARKER_FORMAT" ]; then
-JUMP_TO_MARKER_FORMAT=$WIZARDRY_RC_FORMAT
+if [ -n "${LEARN_SPELL_RC_FORMAT-}" ] && [ -z "$JUMP_TO_MARKER_FORMAT" ]; then
+JUMP_TO_MARKER_FORMAT=$LEARN_SPELL_RC_FORMAT
 fi
         if [ -n "$JUMP_TO_MARKER_RC_FILE" ] && [ -n "$JUMP_TO_MARKER_PLATFORM" ] && [ -n "$JUMP_TO_MARKER_FORMAT" ]; then
                 return 0

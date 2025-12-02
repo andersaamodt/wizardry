@@ -53,9 +53,9 @@ DRY_RUN=0
 MEMORIZED_COUNT=0
 SKIPPED_COUNT=0
 MEMORIZE_DETECTED=0
-MEMORIZE_PLATFORM=${WIZARDRY_PLATFORM-${MEMORIZE_PLATFORM-}}
-MEMORIZE_RC_FILE=${WIZARDRY_RC_FILE-${MEMORIZE_RC_FILE-}}
-MEMORIZE_FORMAT=${WIZARDRY_RC_FORMAT-${MEMORIZE_RC_FORMAT-}}
+MEMORIZE_PLATFORM=
+MEMORIZE_RC_FILE=
+MEMORIZE_FORMAT=
 DETECT_RC_FILE=${MEMORIZE_DETECT_RC_FILE-}
 
 warn() {
@@ -67,7 +67,7 @@ detect_environment() {
     return 0
   fi
   
-  # Track whether DETECT_RC_FILE was explicitly set
+  # Find detect-rc-file helper
   detect_rc_override=0
   if [ -n "${DETECT_RC_FILE-}" ]; then
     detect_rc_override=1
@@ -86,37 +86,26 @@ detect_environment() {
     fi
   fi
   
-  platform=$MEMORIZE_PLATFORM
-  rc_file=$MEMORIZE_RC_FILE
-  format=$MEMORIZE_FORMAT
-  
-  if [ -z "$platform" ] || [ -z "$rc_file" ] || [ -z "$format" ]; then
-    output=$("$DETECT_RC_FILE")
-    while IFS='=' read -r key value; do
-      case $key in
-      platform) [ -z "$platform" ] && platform=$value ;;
-      rc_file) [ -z "$rc_file" ] && rc_file=$value ;;
-      format) [ -z "$format" ] && format=$value ;;
-      esac
-    done <<EOF_DETECT
+  # Call detect-rc-file to get environment info
+  output=$("$DETECT_RC_FILE")
+  while IFS='=' read -r key value; do
+    case $key in
+    platform) MEMORIZE_PLATFORM=$value ;;
+    rc_file) MEMORIZE_RC_FILE=$value ;;
+    format) MEMORIZE_FORMAT=$value ;;
+    esac
+  done <<EOF_DETECT
 $output
 EOF_DETECT
-  fi
   
-  if [ -z "$rc_file" ]; then
+  if [ -z "$MEMORIZE_RC_FILE" ]; then
     printf '%s\n' "$SCRIPT_NAME: detect-rc-file did not yield an rc file." >&2
     exit 1
   fi
   
-  : "${platform:=unknown}"
-  : "${format:=shell}"
+  : "${MEMORIZE_PLATFORM:=unknown}"
+  : "${MEMORIZE_FORMAT:=shell}"
   
-  MEMORIZE_PLATFORM=$platform
-  MEMORIZE_RC_FILE=$rc_file
-  MEMORIZE_FORMAT=$format
-  export WIZARDRY_PLATFORM=$MEMORIZE_PLATFORM
-  export WIZARDRY_RC_FILE=$MEMORIZE_RC_FILE
-  export WIZARDRY_RC_FORMAT=$MEMORIZE_FORMAT
   MEMORIZE_DETECTED=1
 }
 
@@ -132,13 +121,19 @@ cleanup_wrapper() {
 
 create_wrapper() {
   MEMORIZE_WRAPPER=$(mktemp "${TMPDIR:-/tmp}/learn-spell.XXXXXX") || exit 1
+  # The wrapper receives: TARGET RC_FILE RC_FORMAT PLATFORM
+  # These are passed as positional arguments, not globals
   cat <<'WRAPPER' >"$MEMORIZE_WRAPPER"
 set -eu
 TARGET=$1
-shift
+LEARN_SPELL_RC_FILE=$2
+LEARN_SPELL_RC_FORMAT=$3
+LEARN_SPELL_PLATFORM=$4
+shift 4
 [ -f "$TARGET" ] || { printf '%s\n' "learn-spell: missing target '$TARGET'" >&2; exit 1; }
-WIZARDRY_MEMORIZE_TARGET="$TARGET"
-export WIZARDRY_MEMORIZE_TARGET
+# Export for install() function access
+export LEARN_SPELL_RC_FILE LEARN_SPELL_RC_FORMAT LEARN_SPELL_PLATFORM
+export LEARN_SPELL_TARGET="$TARGET"
 . "$TARGET"
 command -v install >/dev/null 2>&1 || { printf '%s\n' "learn-spell: $TARGET does not define install()" >&2; exit 1; }
 install "$@"
@@ -164,12 +159,9 @@ run_install() {
   interpreter=$(get_interpreter "$target")
   : "${interpreter:=/bin/sh}"
   (
-    export WIZARDRY_PLATFORM=$MEMORIZE_PLATFORM
-    export WIZARDRY_RC_FILE=$MEMORIZE_RC_FILE
-    export WIZARDRY_RC_FORMAT=$MEMORIZE_FORMAT
     set -- $interpreter
     [ "$#" -eq 0 ] && set -- /bin/sh
-    "$@" "$MEMORIZE_WRAPPER" "$target"
+    "$@" "$MEMORIZE_WRAPPER" "$target" "$MEMORIZE_RC_FILE" "$MEMORIZE_FORMAT" "$MEMORIZE_PLATFORM"
   )
 }
 

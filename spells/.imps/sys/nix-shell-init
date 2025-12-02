@@ -30,6 +30,8 @@ action=""
 shell_type="bash"
 block_name=""
 nix_file=""
+skip_confirm=0
+skip_rebuild=0
 
 while [ "$#" -gt 0 ]; do
   case $1 in
@@ -62,6 +64,14 @@ while [ "$#" -gt 0 ]; do
     ;;
   --file=*)
     nix_file=${1#*=}
+    shift
+    ;;
+  --skip-confirm)
+    skip_confirm=1
+    shift
+    ;;
+  --skip-rebuild)
+    skip_rebuild=1
     shift
     ;;
   --help|-h)
@@ -171,7 +181,7 @@ do_add() {
   fi
   
   # Ask for confirmation before editing system config
-  if [ "$is_system_config" -eq 1 ] && [ "${WIZARDRY_SKIP_CONFIRM-}" != "1" ]; then
+  if [ "$is_system_config" -eq 1 ] && [ "$skip_confirm" -ne 1 ]; then
     printf '%s\n' "This will edit $nix_file to add shell initialization code."
     printf '%s ' "Continue? [y/N]" >&2
     read -r confirm </dev/tty 2>/dev/null || confirm=""
@@ -298,7 +308,7 @@ do_remove() {
   fi
   
   # Ask for confirmation before editing system config
-  if [ "$is_system_config" -eq 1 ] && [ "${WIZARDRY_SKIP_CONFIRM-}" != "1" ]; then
+  if [ "$is_system_config" -eq 1 ] && [ "$skip_confirm" -ne 1 ]; then
     printf '%s\n' "This will edit $nix_file to remove shell initialization code."
     printf '%s ' "Continue? [y/N]" >&2
     read -r confirm </dev/tty 2>/dev/null || confirm=""
@@ -330,8 +340,8 @@ do_remove() {
 
 # Rebuild NixOS configuration after changes
 do_rebuild() {
-  # Skip rebuild if WIZARDRY_SKIP_NIX_REBUILD is set (for testing)
-  if [ "${WIZARDRY_SKIP_NIX_REBUILD-}" = "1" ]; then
+  # Skip rebuild if --skip-rebuild flag was passed
+  if [ "$skip_rebuild" -eq 1 ]; then
     return 0
   fi
   
