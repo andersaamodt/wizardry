@@ -139,10 +139,12 @@ run_test_case "install/core/core-menu is executable" spell_is_executable
 run_test_case "core menu lists install targets" core_menu_lists_dependencies
 run_test_case "essential commands show status not uninstall" essential_commands_show_status_not_uninstall
 
-shows_help() {
-  run_spell spells/install/core/core-menu --help
-  true
+test_shows_help() {
+  run_cmd "$ROOT_DIR/spells/install/core/core-menu" --help
+  assert_success
+  assert_output_contains "Usage: core-menu"
 }
 
-run_test_case "core-menu shows help" shows_help
+run_test_case "core-menu --help shows usage" test_shows_help
+
 finish_tests

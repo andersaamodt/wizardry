@@ -16,7 +16,7 @@ make_stub_menu() {
   cat >"$tmp/menu" <<'SH'
 #!/bin/sh
 printf '%s\n' "$@" >>"$MENU_LOG"
-exit 113
+kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
 SH
   chmod +x "$tmp/menu"
 }
@@ -53,8 +53,8 @@ SH
   args=$(cat "$tmp/log")
   # Logout command varies: loginctl terminate-user on systemd, pkill -TERM otherwise
   case "$args" in
-    *"Restart / Shutdown:"*"Restart%sudo shutdown -r +0"*"Shutdown%sudo shutdown -h +0"*"Logout%loginctl terminate-user"*"Force restart%sudo reboot -f"*"Force shutdown%sudo poweroff -f"*"Force logout%pkill -KILL"*"Back%exit 113"* ) : ;;
-    *"Restart / Shutdown:"*"Restart%sudo shutdown -r +0"*"Shutdown%sudo shutdown -h +0"*"Logout%pkill -TERM"*"Force restart%sudo reboot -f"*"Force shutdown%sudo poweroff -f"*"Force logout%pkill -KILL"*"Back%exit 113"* ) : ;;
+    *"Restart / Shutdown:"*"Restart%sudo shutdown -r +0"*"Shutdown%sudo shutdown -h +0"*"Logout%loginctl terminate-user"*"Force restart%sudo reboot -f"*"Force shutdown%sudo poweroff -f"*"Force logout%pkill -KILL"*'Back%kill -TERM $PPID' ) : ;;
+    *"Restart / Shutdown:"*"Restart%sudo shutdown -r +0"*"Shutdown%sudo shutdown -h +0"*"Logout%pkill -TERM"*"Force restart%sudo reboot -f"*"Force shutdown%sudo poweroff -f"*"Force logout%pkill -KILL"*'Back%kill -TERM $PPID' ) : ;;
     *) TEST_FAILURE_REASON="expected shutdown actions missing: $args"; return 1 ;;
   esac
 }
@@ -79,7 +79,7 @@ SH
   
   args=$(cat "$tmp/log")
   case "$args" in
-    *"Back%exit 113"*) : ;;
+    *'Back%kill -TERM $PPID') : ;;
     *) TEST_FAILURE_REASON="menu should show Back label: $args"; return 1 ;;
   esac
 }
@@ -184,11 +184,12 @@ SH
 
 run_test_case "shutdown-menu uses kernel fallback for hibernate detection" test_hibernate_kernel_fallback
 
-shows_help() {
-  run_spell spells/menu/shutdown-menu --help
-  # Note: spell may not have --help implemented yet
-  true
+test_shows_help() {
+  run_cmd "$ROOT_DIR/spells/menu/shutdown-menu" --help
+  assert_success
+  assert_output_contains "Usage: shutdown-menu"
 }
 
-run_test_case "shutdown-menu accepts --help" shows_help
+run_test_case "shutdown-menu --help shows usage" test_shows_help
+
 finish_tests

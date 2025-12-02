@@ -48,6 +48,9 @@ if ! require menu "The Users menu needs the 'menu' command to present options.";
   exit 1
 fi
 
+# Catch Ctrl-C and TERM signal to exit cleanly
+trap 'exit 0' INT TERM
+
 display_menu() {
   change_my_password="Change my password%passwd"
   list_users="List all users%cut -d: -f1 /etc/passwd"
@@ -65,13 +68,12 @@ display_menu() {
   create_user="Create new user%read -p \"Enter new username: \" username; sudo useradd \$username; printf \"The new user needs a password (use 'Change other user's password').\""
   delete_user="Delete user%read -p \"Enter username of user to delete: \" username; sudo userdel \$username"
   exit_label=$(exit-label)
-  exit_item="${exit_label}%exit $menu_escape_status"
+  exit_item="${exit_label}%kill -TERM \$PPID"
 
   set -- "$change_my_password" "$list_users" "$change_other_password" "$view_my_groups" "$view_other_groups" "$list_groups" "$create_group" "$delete_group" "$join_group" "$leave_group" "$list_users_in_group" "$add_user_to_group" "$remove_user_from_group" "$create_user" "$delete_user" "$exit_item"
-  MENU_ESCAPE_STATUS=$menu_escape_status menu "Users Menu:" "$@"
+  menu "Users Menu:" "$@"
 }
 
-menu_escape_status=113
 first_run=1
 
 while true; do
@@ -81,17 +83,5 @@ while true; do
     first_run=0
   fi
 
-  if display_menu; then
-    status=0
-  else
-    status=$?
-  fi
-
-  if [ "$status" -eq "$menu_escape_status" ]; then
-    break
-  fi
-
-  if [ "$status" -ne 0 ]; then
-    exit "$status"
-  fi
+  display_menu || true
 done

@@ -19,10 +19,12 @@ spell_has_content() {
 
 run_test_case "install/tor/tor-menu has content" spell_has_content
 
-shows_help() {
-  run_spell spells/install/tor/tor-menu --help
-  true
+test_shows_help() {
+  run_cmd "$ROOT_DIR/spells/install/tor/tor-menu" --help
+  assert_success
+  assert_output_contains "Usage: tor-menu"
 }
 
-run_test_case "tor-menu shows help" shows_help
+run_test_case "tor-menu --help shows usage" test_shows_help
+
 finish_tests

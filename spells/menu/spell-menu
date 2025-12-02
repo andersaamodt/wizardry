@@ -4,7 +4,8 @@
 
 set -eu
 
-menu_escape_status=113
+# Catch Ctrl-C and TERM signal to exit cleanly
+trap 'exit 0' INT TERM
 
 # Load colors for display
 if command -v colors >/dev/null 2>&1; then
@@ -234,7 +235,7 @@ while :; do
         fi
         # Build menu items - Cast now runs the command directly (using escaped version for safety)
         exit_label=$(exit-label)
-        exit_item="${exit_label}%exit $menu_escape_status"
+        exit_item="${exit_label}%kill -TERM \$PPID"
         
         # Check if spell has --help option
         help_item=""
@@ -246,9 +247,9 @@ while :; do
                 # Custom spells (in ~/.spellbook or subfolders) show Erase spell option
                 # Use erase-spell which asks for confirmation then exits the menu
                 if [ -n "$help_item" ]; then
-                        set -- "Cast now%$escaped_command" "$cast_toggle" "$help_item" "Erase spell%erase-spell '$name' && exit $menu_escape_status" "$exit_item"
+                        set -- "Cast now%$escaped_command" "$cast_toggle" "$help_item" "Erase spell%erase-spell '$name' && kill -TERM \$PPID" "$exit_item"
                 else
-                        set -- "Cast now%$escaped_command" "$cast_toggle" "Erase spell%erase-spell '$name' && exit $menu_escape_status" "$exit_item"
+                        set -- "Cast now%$escaped_command" "$cast_toggle" "Erase spell%erase-spell '$name' && kill -TERM \$PPID" "$exit_item"
                 fi
         elif is_installable "$command"; then
                 # Show Learn option for spells with install() function
@@ -266,15 +267,5 @@ while :; do
                 fi
         fi
         
-        if MENU_ESCAPE_STATUS=$menu_escape_status menu --start-selection "$start_selection" "Spell: $name" "$@"; then
-                status=0
-        else
-                status=$?
-        fi
-        if [ "$status" -eq "$menu_escape_status" ]; then
-                break
-        fi
-        if [ "$status" -ne 0 ]; then
-                exit "$status"
-        fi
+        menu --start-selection "$start_selection" "Spell: $name" "$@" || true
 done

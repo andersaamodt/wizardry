@@ -1,5 +1,5 @@
 #!/bin/sh
 # exit-label - return the label for menu exit items
-# Example: exit_item="$(exit-label)%kill -2 $$"
+# Example: exit_item="$(exit-label)%kill -TERM \$PPID"
 
 printf '%s' "Exit"

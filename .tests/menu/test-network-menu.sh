@@ -18,11 +18,13 @@ spell_has_content() {
 
 run_test_case "menu/network-menu is executable" spell_is_executable
 run_test_case "menu/network-menu has content" spell_has_content
-shows_help() {
-  run_spell spells/menu/network-menu --help
-  # Note: spell may not have --help implemented yet
-  true
+
+test_shows_help() {
+  run_cmd "$ROOT_DIR/spells/menu/network-menu" --help
+  assert_success
+  assert_output_contains "Usage: network-menu"
 }
 
-run_test_case "network-menu accepts --help" shows_help
+run_test_case "network-menu --help shows usage" test_shows_help
+
 finish_tests

@@ -15,7 +15,7 @@ make_stub_menu() {
   cat >"$tmp/menu" <<'SH'
 #!/bin/sh
 printf '%s\n' "$@" >>"$MENU_LOG"
-exit 113
+kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
 SH
   chmod +x "$tmp/menu"
 }
@@ -45,11 +45,6 @@ STUB
 
 spell_is_executable() {
   [ -x "$ROOT_DIR/spells/menu/mud" ]
-}
-
-shows_help() {
-  run_spell spells/menu/mud --help
-  true
 }
 
 test_mud_presents_navigation_options() {
@@ -143,14 +138,21 @@ SH
   
   args=$(cat "$tmp/log")
   case "$args" in
-    *"Exit%exit 113"*) : ;;
+    *'Exit%kill -TERM $PPID') : ;;
     *) TEST_FAILURE_REASON="menu should show Exit label: $args"; return 1 ;;
   esac
 }
 
 run_test_case "mud menu requires menu dependency" mud_requires_menu_dependency
 run_test_case "menu/mud is executable" spell_is_executable
-run_test_case "mud shows help" shows_help
+
+test_shows_help() {
+  run_cmd "$ROOT_DIR/spells/menu/mud" --help
+  assert_success
+  assert_output_contains "Usage: mud"
+}
+
+run_test_case "mud --help shows usage" test_shows_help
 run_test_case "mud presents navigation options" test_mud_presents_navigation_options
 run_test_case "mud presents admin options" test_mud_presents_admin_options
 run_test_case "mud shows menu title" test_mud_shows_menu_title

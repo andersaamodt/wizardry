@@ -3,7 +3,9 @@
 
 set -eu
 
-menu_escape_status=113
+# Catch Ctrl-C and TERM signal to exit cleanly
+trap 'exit 0' INT TERM
+
 ROOT_DIR=$(CDPATH= cd -- "$(dirname "$0")/../.." && pwd -P)
 
 # Load colors for display
@@ -513,7 +515,7 @@ USER_FOLDERS
                 else
                         exit_label="Back"
                 fi
-                set -- "$@" "${exit_label}%exit $menu_escape_status"
+                set -- "$@" "${exit_label}%kill -TERM \$PPID"
                 
                 # Build menu title - use original folder name for category
                 if [ -z "$current_path" ]; then
@@ -521,17 +523,7 @@ USER_FOLDERS
                 else
                         menu_title="${category_name}:"
                 fi
-                if MENU_ESCAPE_STATUS=$menu_escape_status menu "$menu_title" "$@"; then
-                        status=0
-                else
-                        status=$?
-                fi
-                if [ "$status" -eq "$menu_escape_status" ]; then
-                        break
-                fi
-                if [ "$status" -ne 0 ]; then
-                        exit "$status"
-                fi
+                menu "$menu_title" "$@" || true
         done
 }
 

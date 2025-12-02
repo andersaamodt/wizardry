@@ -2,6 +2,13 @@
 
 # Install and manage the core prerequisites for wizardry.
 
+case "${1-}" in
+  -h|--help)
+    printf 'Usage: core-menu\n'
+    printf 'Displays the core prerequisites management menu.\n'
+    exit 0
+    ;;
+esac
 
 set -eu
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
@@ -52,20 +59,18 @@ if [ -n "$loop_limit" ] && ! printf '%s' "$loop_limit" | grep -Eq '^[0-9]+$'; th
   exit 1
 fi
 
-handle_ctrl_c() {
-  trap 'echo exiting; exit' INT
-}
+# Catch Ctrl-C and TERM signal to exit cleanly
+trap 'exit 0' INT TERM
 
-handle_ctrl_c
-
-menu_escape_status=113
 title="${BOLD}${CYAN}Core prerequisites"
 if [ -n "$exit_label_bin" ]; then
   exit_label=$($exit_label_bin)
 else
   exit_label="Exit"
 fi
-exit_entry="${exit_label}%exit $menu_escape_status"
+
+# Signal parent process to exit menu loop
+exit_entry="${exit_label}%kill -TERM \$PPID"
 
 resolve_spell() {
   spell_name=$1
@@ -148,19 +153,7 @@ EOF
 
   set -- "$@" "Install all%ASSUME_YES=1 $script_dir/install-core" "$exit_entry"
 
-  if MENU_ESCAPE_STATUS=$menu_escape_status "$menu_bin" "$title" "$@"; then
-    status=0
-  else
-    status=$?
-  fi
-
-  if [ "$status" -eq "$menu_escape_status" ]; then
-    break
-  fi
-
-  if [ "$status" -ne 0 ]; then
-    exit "$status"
-  fi
+  "$menu_bin" "$title" "$@" || true
 
   if [ -n "$loop_limit" ]; then
     if [ "$loop_limit" -le 1 ] 2>/dev/null; then

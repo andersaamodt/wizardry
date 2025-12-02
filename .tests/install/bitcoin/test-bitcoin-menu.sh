@@ -32,6 +32,15 @@ SH
   chmod +x "$tmp/colors"
 }
 
+make_stub_exit_label() {
+  tmp=$1
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$tmp/exit-label"
+}
+
 make_status_stub() {
   tmp=$1
   status=$2
@@ -56,6 +65,7 @@ test_bitcoin_menu_prompts_install_when_missing() {
   tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_colors "$tmp"
+  make_stub_exit_label "$tmp"
   make_status_stub "$tmp" "missing"
   make_boolean_stub "$tmp/is-bitcoin-installed" 1
   make_boolean_stub "$tmp/is-service-installed" 1
@@ -71,6 +81,7 @@ test_bitcoin_menu_controls_running_service() {
   tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_colors "$tmp"
+  make_stub_exit_label "$tmp"
   make_status_stub "$tmp" "ready"
   make_boolean_stub "$tmp/is-bitcoin-installed" 0
   make_boolean_stub "$tmp/is-service-installed" 0
@@ -87,6 +98,7 @@ test_bitcoin_menu_offers_service_install_when_missing() {
   tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_colors "$tmp"
+  make_stub_exit_label "$tmp"
   make_status_stub "$tmp" "ready"
   make_boolean_stub "$tmp/is-bitcoin-installed" 0
   make_boolean_stub "$tmp/is-service-installed" 1
@@ -106,11 +118,13 @@ SH
 run_test_case "bitcoin-menu prompts for install when missing" test_bitcoin_menu_prompts_install_when_missing
 run_test_case "bitcoin-menu manages running services" test_bitcoin_menu_controls_running_service
 run_test_case "bitcoin-menu installs service when absent" test_bitcoin_menu_offers_service_install_when_missing
-shows_help() {
-  run_spell spells/install/bitcoin/bitcoin-menu --help
-  # Note: spell may not have --help implemented yet
-  true
+
+test_shows_help() {
+  run_cmd "$ROOT_DIR/spells/install/bitcoin/bitcoin-menu" --help
+  assert_success
+  assert_output_contains "Usage: bitcoin-menu"
 }
 
-run_test_case "bitcoin-menu shows help" shows_help
+run_test_case "bitcoin-menu --help shows usage" test_shows_help
+
 finish_tests

@@ -3,6 +3,14 @@
 # This spell displays shutdown, restart, logout, and power management options.
 # Commands are invoked directly via the menu without external spell dependencies.
 
+case "${1-}" in
+  -h|--help)
+    printf 'Usage: shutdown-menu\n'
+    printf 'Displays the shutdown and power management menu.\n'
+    exit 0
+    ;;
+esac
+
 set -eu
 
 if [ -n "${REQUIRE_COMMAND-}" ]; then
@@ -80,13 +88,8 @@ else
   logout_cmd="pkill -TERM -u \"\$USER\""
 fi
 
-menu_escape_status=113
-
-handle_ctrl_c() {
-  trap 'exit' INT
-}
-
-handle_ctrl_c
+# Catch Ctrl-C and TERM signal to exit cleanly
+trap 'exit 0' INT TERM
 
 display_menu() {
   # Graceful restart/shutdown give processes time to clean up
@@ -98,7 +101,7 @@ display_menu() {
   force_shutdown_item="Force shutdown%sudo poweroff -f"
   force_logout_item="Force logout%pkill -KILL -u \"\$USER\""
   exit_label=$(exit-label)
-  exit_item="${exit_label}%exit $menu_escape_status"
+  exit_item="${exit_label}%kill -TERM \$PPID"
 
   set -- "$restart_item" "$shutdown_item" "$logout_item"
   if [ -n "$sleep_available" ]; then
@@ -109,7 +112,7 @@ display_menu() {
   fi
   set -- "$@" "$force_restart_item" "$force_shutdown_item" "$force_logout_item" "$exit_item"
 
-  MENU_ESCAPE_STATUS=$menu_escape_status menu "Restart / Shutdown:" "$@"
+  menu "Restart / Shutdown:" "$@"
 }
 
 first_run=1
@@ -121,15 +124,5 @@ while true; do
     first_run=0
   fi
 
-  if display_menu; then
-    status=0
-  else
-    status=$?
-  fi
-  if [ "$status" -eq "$menu_escape_status" ]; then
-    break
-  fi
-  if [ "$status" -ne 0 ]; then
-    exit "$status"
-  fi
+  display_menu || true
 done

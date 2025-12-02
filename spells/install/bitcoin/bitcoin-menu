@@ -2,11 +2,19 @@
 
 # This script is a magical tome of sorcery, commanding the elusive entity known as Bitcoin.
 
+case "${1-}" in
+  -h|--help)
+    printf 'Usage: bitcoin-menu\n'
+    printf 'Displays the Bitcoin management menu.\n'
+    exit 0
+    ;;
+esac
 
 set -eu
 . colors
 
-menu_escape_status=113
+# Catch Ctrl-C and TERM signal to exit cleanly
+trap 'exit 0' INT TERM
 
 # Displays the menu
 display_menu() {
@@ -17,7 +25,7 @@ display_menu() {
   clear_cache="Clear Bitcoin Cache%# coming soon"
   repair_permissions="Repair Permissions%repair-bitcoin-permissions"
   exit_label=$(exit-label)
-  exit_option="${exit_label}%exit $menu_escape_status"
+  exit_option="${exit_label}%kill -TERM \$PPID"
   
   if is-bitcoin-installed; then
     install_bitcoin_option="Uninstall Bitcoin%uninstall-bitcoin"
@@ -26,24 +34,21 @@ display_menu() {
     	service_status_option="View Bitcoin Service Status%sudo systemctl status bitcoin"
 	    if is-bitcoin-running; then
 	      bitcoin_service_option="Stop Bitcoin Service%sudo systemctl stop bitcoin"
-	      MENU_ESCAPE_STATUS=$menu_escape_status menu "$title" "$blockchain_info" "$set_config" "$change_directory" "$clear_cache" "$repair_permissions" "$service_status_option" "$bitcoin_service_option" "$install_service_option" "$install_bitcoin_option" "$exit_option"
+	      menu "$title" "$blockchain_info" "$set_config" "$change_directory" "$clear_cache" "$repair_permissions" "$service_status_option" "$bitcoin_service_option" "$install_service_option" "$install_bitcoin_option" "$exit_option"
 	    else
 	      bitcoin_service_option="Start Bitcoin Service%sudo systemctl start bitcoin"
-	      MENU_ESCAPE_STATUS=$menu_escape_status menu "$title" "$set_config" "$change_directory" "$clear_cache" "$repair_permissions" "$service_status_option" "$bitcoin_service_option" "$install_service_option" "$install_bitcoin_option" "$exit_option"
+	      menu "$title" "$set_config" "$change_directory" "$clear_cache" "$repair_permissions" "$service_status_option" "$bitcoin_service_option" "$install_service_option" "$install_bitcoin_option" "$exit_option"
 	    fi
     else
     	script_dir=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
     	install_service_option="Install Bitcoin Service%install-service-template $script_dir/bitcoin.service \"BITCOIND=\`which bitcoind\`\""
-    	MENU_ESCAPE_STATUS=$menu_escape_status menu "$title" "$set_config" "$change_directory" "$clear_cache" "$repair_permissions" "$install_service_option" "$install_bitcoin_option" "$exit_option"
+    	menu "$title" "$set_config" "$change_directory" "$clear_cache" "$repair_permissions" "$install_service_option" "$install_bitcoin_option" "$exit_option"
 	fi
   else
     install_bitcoin_option="Install Bitcoin%install-bitcoin"
-    MENU_ESCAPE_STATUS=$menu_escape_status menu "$title" "$install_bitcoin_option" "$exit_option"
+    menu "$title" "$install_bitcoin_option" "$exit_option"
   fi
 }
-
-# Catch Ctrl-C and exit
-trap 'echo exiting; exit' INT
 
 first_run=1
 
@@ -55,17 +60,5 @@ while true; do
     first_run=0
   fi
 
-  if display_menu; then
-    status=0
-  else
-    status=$?
-  fi
-
-  if [ "$status" -eq "$menu_escape_status" ]; then
-    break
-  fi
-
-  if [ "$status" -ne 0 ]; then
-    exit "$status"
-  fi
+  display_menu || true
 done

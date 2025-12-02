@@ -15,7 +15,7 @@ make_stub_menu() {
   cat >"$tmp/menu" <<'SH'
 #!/bin/sh
 printf '%s\n' "$@" >>"$MENU_LOG"
-exit 113
+kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
 SH
   chmod +x "$tmp/menu"
 }
@@ -51,7 +51,7 @@ SH
   assert_success
   args=$(cat "$tmp/log")
   case "$args" in
-    *"System Menu:"*"Restart...%shutdown-menu"*"Update all software%update-all -v"*"Update wizardry%update-wizardry"*"Manage services%"*"services-menu"*"Test all wizardry spells%$ROOT_DIR/spells/system/test-magic"*"Exit%exit 113"* ) : ;;
+    *"System Menu:"*"Restart...%shutdown-menu"*"Update all software%update-all -v"*"Update wizardry%update-wizardry"*"Manage services%"*"services-menu"*"Test all wizardry spells%$ROOT_DIR/spells/system/test-magic"*'Exit%kill -TERM $PPID' ) : ;;
     *) TEST_FAILURE_REASON="expected system actions missing: $args"; return 1 ;;
   esac
 }
@@ -76,18 +76,19 @@ SH
   
   args=$(cat "$tmp/log")
   case "$args" in
-    *"Exit%exit 113"*) : ;;
+    *'Exit%kill -TERM $PPID') : ;;
     *) TEST_FAILURE_REASON="menu should show Exit label: $args"; return 1 ;;
   esac
 }
 
 run_test_case "system-menu ESC/Exit behavior" test_esc_exit_behavior
 
-shows_help() {
-  run_spell spells/menu/system-menu --help
-  # Note: spell may not have --help implemented yet
-  true
+test_shows_help() {
+  run_cmd "$ROOT_DIR/spells/menu/system-menu" --help
+  assert_success
+  assert_output_contains "Usage: system-menu"
 }
 
-run_test_case "system-menu accepts --help" shows_help
+run_test_case "system-menu --help shows usage" test_shows_help
+
 finish_tests

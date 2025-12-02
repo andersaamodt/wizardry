@@ -21,6 +21,9 @@ esac
 
 set -eu
 
+# Catch Ctrl-C and TERM signal to exit cleanly
+trap 'exit 0' INT TERM
+
 # Initialize verbose flag to 0
 verbose=0
 
@@ -93,17 +96,12 @@ display_priorities() {
 
   # Add exit command
   exit_label=$(exit-label)
-  menu_command="${menu_command} \"${exit_label}%exit $menu_escape_status\""
+  menu_command="${menu_command} \"${exit_label}%kill -TERM \$PPID\""
 
   # Execute the constructed menu command
-  MENU_ESCAPE_STATUS=$menu_escape_status eval "${menu_command}"
+  eval "${menu_command}"
 }
 
-# This script displays a list of the prioritized cards in the current directory.
-# Catch Ctrl-C
-trap "exit" INT
-
-menu_escape_status=113
 first_run=1
 
 while true; do
@@ -113,17 +111,5 @@ while true; do
     first_run=0
   fi
 
-  if display_priorities; then
-    status=0
-  else
-    status=$?
-  fi
-
-  if [ "$status" -eq "$menu_escape_status" ]; then
-    break
-  fi
-
-  if [ "$status" -ne 0 ]; then
-    exit "$status"
-  fi
+  display_priorities || true
 done
