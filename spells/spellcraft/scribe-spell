@@ -1,4 +1,5 @@
 #!/bin/sh
+. declare-globals
 # This spell scribes (creates) a custom spell in your spellbook.
 # It prompts for name, command text, and optionally a category.
 
@@ -6,14 +7,10 @@ set -eu
 
 SCRIPT_NAME=$(basename "$0")
 
-# Resolve the spell home directory
-resolve_spell_home() {
-        if [ -n "${WIZARDRY_SPELL_HOME-}" ]; then
-                printf '%s' "$WIZARDRY_SPELL_HOME"
-        elif [ -n "${SPELLBOOK_HOME-}" ]; then
-                printf '%s' "$SPELLBOOK_HOME"
-        elif [ -n "${SPELL_HOME-}" ]; then
-                printf '%s' "$SPELL_HOME"
+# Resolve the spellbook directory
+resolve_spellbook_dir() {
+        if [ -n "${SPELLBOOK_DIR-}" ]; then
+                printf '%s' "$SPELLBOOK_DIR"
         elif [ -n "${XDG_DATA_HOME-}" ] && [ -n "$XDG_DATA_HOME" ]; then
                 printf '%s' "$XDG_DATA_HOME/wizardry/spellbook"
         elif [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
@@ -23,7 +20,7 @@ resolve_spell_home() {
         fi
 }
 
-spell_home=$(resolve_spell_home)
+spellbook_dir=$(resolve_spellbook_dir)
 
 # Category can be passed via --category argument
 current_category=""
@@ -59,13 +56,13 @@ check_duplicate_name() {
                 return 1
         fi
         # Check if spell already exists in the spellbook directory
-        if [ -e "$spell_home/$name" ]; then
+        if [ -e "$spellbook_dir/$name" ]; then
                 printf '%s\n' "$SCRIPT_NAME: '$name' already exists in your spellbook." >&2
                 return 1
         fi
         # Check subfolders of the spellbook for existing spells
-        if [ -d "$spell_home" ]; then
-                for subdir in "$spell_home"/*; do
+        if [ -d "$spellbook_dir" ]; then
+                for subdir in "$spellbook_dir"/*; do
                         [ -d "$subdir" ] || continue
                         if [ -e "$subdir/$name" ]; then
                                 printf '%s\n' "$SCRIPT_NAME: '$name' already exists in your spellbook." >&2
@@ -108,9 +105,9 @@ validate_category() {
 
 spell_path() {
         if [ -n "$current_category" ]; then
-                printf '%s/%s/%s' "$spell_home" "$current_category" "$1"
+                printf '%s/%s/%s' "$spellbook_dir" "$current_category" "$1"
         else
-                printf '%s/%s' "$spell_home" "$1"
+                printf '%s/%s' "$spellbook_dir" "$1"
         fi
 }
 
@@ -120,9 +117,9 @@ write_spell_script() {
         target_path=$(spell_path "$script_name")
         ensure_parent_dir "$target_path"
         if [ -n "$current_category" ]; then
-                mkdir -p "$spell_home/$current_category"
+                mkdir -p "$spellbook_dir/$current_category"
         else
-                mkdir -p "$spell_home"
+                mkdir -p "$spellbook_dir"
         fi
         escaped_cmd=$(printf '%s' "$cmd_text" | sed "s/'/'\\''/g")
         cat >"$target_path" <<EOF_SCRIPT
@@ -135,7 +132,7 @@ EOF_SCRIPT
 # Add a new category folder to PATH using learn-spellbook
 add_category_to_path() {
         cat_name=$1
-        cat_path="$spell_home/$cat_name"
+        cat_path="$spellbook_dir/$cat_name"
         
         # Find learn-spellbook
         if command -v learn-spellbook >/dev/null 2>&1; then
@@ -175,9 +172,9 @@ record_command() {
         check_duplicate_name "$cmd_name" || return 1
         validate_command "$cmd" || return 1
         if [ -n "$current_category" ]; then
-                mkdir -p "$spell_home/$current_category"
+                mkdir -p "$spellbook_dir/$current_category"
         else
-                mkdir -p "$spell_home"
+                mkdir -p "$spellbook_dir"
         fi
         write_spell_script "$cmd_name" "$cmd"
 }
@@ -248,9 +245,9 @@ while [ "$#" -gt 0 ]; do
         esac
 done
 
-# If override_dir is set, use it instead of spell_home
+# If override_dir is set, use it instead of spellbook_dir
 if [ -n "$override_dir" ]; then
-        spell_home=$override_dir
+        spellbook_dir=$override_dir
         # Clear category since we're using a specific dir
         current_category=""
 fi
@@ -261,9 +258,9 @@ if [ "$#" -ge 2 ]; then
         shift
         record_command "$name" "$@" || exit 1
         if [ -n "$current_category" ]; then
-                printf "Scribed '%s' to %s/%s.\n" "$name" "$spell_home" "$current_category"
+                printf "Scribed '%s' to %s/%s.\n" "$name" "$spellbook_dir" "$current_category"
         else
-                printf "Scribed '%s' to %s.\n" "$name" "$spell_home"
+                printf "Scribed '%s' to %s.\n" "$name" "$spellbook_dir"
         fi
         exit 0
 fi
@@ -294,8 +291,8 @@ if [ -z "$current_category" ] && [ -z "$override_dir" ]; then
                                 validate_category "$category_name" || exit 1
                                 current_category=$category_name
                                 # Create the category folder and add to PATH if it's new
-                                if [ ! -d "$spell_home/$current_category" ]; then
-                                        mkdir -p "$spell_home/$current_category"
+                                if [ ! -d "$spellbook_dir/$current_category" ]; then
+                                        mkdir -p "$spellbook_dir/$current_category"
                                         add_category_to_path "$current_category"
                                 fi
                         fi
@@ -305,7 +302,7 @@ fi
 
 record_command "$cmd_name" "$cmd_text" || exit 1
 if [ -n "$current_category" ]; then
-        printf "Scribed '%s' to %s/%s.\n" "$cmd_name" "$spell_home" "$current_category"
+        printf "Scribed '%s' to %s/%s.\n" "$cmd_name" "$spellbook_dir" "$current_category"
 else
-        printf "Scribed '%s' to %s.\n" "$cmd_name" "$spell_home"
+        printf "Scribed '%s' to %s.\n" "$cmd_name" "$spellbook_dir"
 fi

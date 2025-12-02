@@ -1,4 +1,5 @@
 #!/bin/sh
+. declare-globals
 
 # This spell forgets (removes) a spell from the Cast menu.
 # Use this to remove memorized spells from the Cast menu.
@@ -27,23 +28,9 @@ expand_tilde() {
 	printf '%s' "$path"
 }
 
-resolve_cast_dir() {
-	if [ -n "${WIZARDRY_CAST_DIR-}" ]; then
-		dir=$(expand_tilde "$WIZARDRY_CAST_DIR")
-		printf '%s' "$dir"
-		return 0
-	fi
-
-	resolve_spell_home
-}
-
-resolve_spell_home() {
-	if [ -n "${WIZARDRY_SPELL_HOME-}" ]; then
-		dir=$(expand_tilde "$WIZARDRY_SPELL_HOME")
-	elif [ -n "${SPELLBOOK_HOME-}" ]; then
-		dir=$(expand_tilde "$SPELLBOOK_HOME")
-	elif [ -n "${SPELL_HOME-}" ]; then
-		dir=$(expand_tilde "$SPELL_HOME")
+resolve_spellbook_dir() {
+	if [ -n "${SPELLBOOK_DIR-}" ]; then
+		dir=$(expand_tilde "$SPELLBOOK_DIR")
 	elif [ -n "${XDG_DATA_HOME-}" ] && [ -n "$XDG_DATA_HOME" ]; then
 		dir=$XDG_DATA_HOME/wizardry/spellbook
 	elif [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
@@ -54,18 +41,6 @@ resolve_spell_home() {
 	printf '%s' "$dir"
 }
 
-resolve_command_file() {
-	cast_dir=$1
-	if [ -n "${WIZARDRY_CAST_FILE-}" ]; then
-		file=$(expand_tilde "$WIZARDRY_CAST_FILE")
-	elif [ -n "${MEMORIZE_COMMAND_FILE-}" ]; then
-		file=$(expand_tilde "$MEMORIZE_COMMAND_FILE")
-	else
-		file=$cast_dir/.memorized
-	fi
-	printf '%s' "$file"
-}
-
 usage() {
 	cat <<USAGE
 Usage: $spell_name <spell-name>
@@ -74,8 +49,8 @@ Remove a spell from the Cast menu.
 USAGE
 }
 
-cast_dir=$(resolve_cast_dir)
-command_file=$(resolve_command_file "$cast_dir")
+spellbook_dir=$(resolve_spellbook_dir)
+command_file=$spellbook_dir/.memorized
 
 nonempty() {
 	[ -n "$1" ]

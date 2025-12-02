@@ -1,4 +1,5 @@
 #!/bin/sh
+. declare-globals
 
 # This spell memorizes spells for the Cast menu.
 # It keeps a tiny spellbook of spell names in a dotfile so
@@ -7,7 +8,7 @@
 # Usage: memorize SPELL_NAME
 #        memorize list         - list all memorized spells
 #        memorize path         - print the command list file path
-#        memorize dir          - print the cast directory
+#        memorize dir          - print the spellbook directory
 
 set -eu
 
@@ -33,14 +34,17 @@ expand_tilde() {
 	printf '%s' "$path"
 }
 
-resolve_cast_dir() {
-	if [ -n "${WIZARDRY_CAST_DIR-}" ]; then
-		dir=$(expand_tilde "$WIZARDRY_CAST_DIR")
-		printf '%s' "$dir"
-		return 0
+resolve_spellbook_dir() {
+	if [ -n "${SPELLBOOK_DIR-}" ]; then
+		dir=$(expand_tilde "$SPELLBOOK_DIR")
+	elif [ -n "${XDG_DATA_HOME-}" ] && [ -n "$XDG_DATA_HOME" ]; then
+		dir=$XDG_DATA_HOME/wizardry/spellbook
+	elif [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
+		dir=$HOME/.spellbook
+	else
+		dir=.spellbook
 	fi
-
-	resolve_spell_home
+	printf '%s' "$dir"
 }
 
 usage() {
@@ -53,45 +57,12 @@ Spells must exist in PATH or ~/.spellbook.
 USAGE
 }
 
-resolve_command_file() {
-	cast_dir=$1
-	if [ -n "${WIZARDRY_CAST_FILE-}" ]; then
-		file=$(expand_tilde "$WIZARDRY_CAST_FILE")
-	elif [ -n "${MEMORIZE_COMMAND_FILE-}" ]; then
-		file=$(expand_tilde "$MEMORIZE_COMMAND_FILE")
-	else
-		file=$cast_dir/.memorized
-	fi
-	printf '%s' "$file"
-}
-
-resolve_spell_home() {
-	if [ -n "${WIZARDRY_SPELL_HOME-}" ]; then
-		dir=$(expand_tilde "$WIZARDRY_SPELL_HOME")
-	elif [ -n "${SPELLBOOK_HOME-}" ]; then
-		dir=$(expand_tilde "$SPELLBOOK_HOME")
-	elif [ -n "${SPELL_HOME-}" ]; then
-		dir=$(expand_tilde "$SPELL_HOME")
-	elif [ -n "${XDG_DATA_HOME-}" ] && [ -n "$XDG_DATA_HOME" ]; then
-		dir=$XDG_DATA_HOME/wizardry/spellbook
-	elif [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
-		dir=$HOME/.spellbook
-	else
-		dir=.spellbook
-	fi
-	printf '%s' "$dir"
-}
-
-cast_dir=$(resolve_cast_dir)
-command_file=$(resolve_command_file "$cast_dir")
+spellbook_dir=$(resolve_spellbook_dir)
+command_file=$spellbook_dir/.memorized
 
 ensure_parent_directory() {
-	if [ ! -d "$cast_dir" ]; then
-		mkdir -p "$cast_dir"
-	fi
-	dir=${command_file%/*}
-	if [ "$dir" != "$command_file" ] && [ ! -d "$dir" ]; then
-		mkdir -p "$dir"
+	if [ ! -d "$spellbook_dir" ]; then
+		mkdir -p "$spellbook_dir"
 	fi
 }
 
@@ -175,7 +146,7 @@ dir)
 		usage
 		exit 1
 	fi
-	printf '%s\n' "$cast_dir"
+	printf '%s\n' "$spellbook_dir"
 	;;
 --help|-h)
 	usage

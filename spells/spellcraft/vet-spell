@@ -131,10 +131,34 @@ check_shebang() {
 check_description_comment() {
   file=$1
   # Read lines 2, 3, and 4 to allow up to 3-line opening comments
-  lines=$(sed -n '2p;3p;4p' "$file")
+  lines=$(sed -n '2p;3p;4p;5p' "$file")
   second_line=$(printf '%s\n' "$lines" | sed -n '1p')
   third_line=$(printf '%s\n' "$lines" | sed -n '2p')
   fourth_line=$(printf '%s\n' "$lines" | sed -n '3p')
+  fifth_line=$(printf '%s\n' "$lines" | sed -n '4p')
+  
+  # Check if second line is '. declare-globals' - if so, check line 3 for comment
+  case $second_line in
+    '. declare-globals'|'source declare-globals')
+      # Line 2 is declare-globals, check if line 3 or 4 is a comment
+      case $third_line in
+        '#'*|'')
+          case $fourth_line in
+            '#'*)
+              return 0
+              ;;
+          esac
+          case $third_line in
+            '#'*)
+              return 0
+              ;;
+          esac
+          ;;
+      esac
+      printf 'missing opening description comment after declare-globals'
+      return 1
+      ;;
+  esac
   
   # Check if second line is empty and third line is a comment
   if [ -z "$second_line" ] && [ -n "$third_line" ]; then
@@ -260,6 +284,25 @@ check_spell_naming() {
   return 0
 }
 
+check_declare_globals() {
+  file=$1
+  # Check if the spell uses any declared globals
+  # If it does, it must source declare-globals in the first 15 lines
+  
+  # List of declared globals (excluding WIZARDRY_TEST_* which are test-only)
+  declared_globals='WIZARDRY_DIR|INSTALL_DIR|BIN_DIR|CORE_INSTALLER|SPELLBOOK_DIR|MEMORIZE_TARGET|RC_FILE|RC_FORMAT|PLATFORM|MUD_DIR|CD_CANTRIP|LOOK_SPELL|COLORS_AVAILABLE|OS_LABEL|SUBMENU|SKIP_CONFIRM|SKIP_NIX_REBUILD|INSTALL_ASSUME_YES|UPDATE_ASSUME_YES|UPDATE_DISTRO'
+  
+  # Check if file uses any declared globals (excluding comments)
+  if grep -v '^[[:space:]]*#' "$file" 2>/dev/null | grep -qE '\$\{?('"$declared_globals"')'; then
+    # File uses globals, check if it sources declare-globals in first 15 lines
+    if ! head -15 "$file" | grep -qE '\. declare-globals|source declare-globals'; then
+      printf 'uses globals but does not source declare-globals in first 15 lines'
+      return 1
+    fi
+  fi
+  return 0
+}
+
 failures=0
 total=0
 passed=0
@@ -379,6 +422,19 @@ while IFS= read -r target; do
       issues=${issues:+$issues; }$result
       issue_count=$((issue_count + 1))
     fi
+  fi
+  
+  # Check declare-globals usage (only in strict mode, not for imps or declare-globals itself)
+  if [ "$strict_mode" -eq 1 ] && [ "$is_imp_file" -eq 0 ]; then
+    case $target in
+      *declare-globals*) ;;
+      *)
+        if ! result=$(check_declare_globals "$path"); then
+          issues=${issues:+$issues; }$result
+          issue_count=$((issue_count + 1))
+        fi
+        ;;
+    esac
   fi
   
   if [ "$issue_count" -eq 0 ]; then

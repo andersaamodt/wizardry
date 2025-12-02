@@ -33,19 +33,11 @@
 # locate the main installation entry point.
 : "${CORE_INSTALLER:=}"
 
-# --- Spellbook & Cast Menu ---
+# --- Spellbook ---
 
-# Directory for user's spellbook and cast menu. Contains user-created spells
-# and the .memorized file for the cast menu. Required for spell storage.
+# Directory for user's spellbook. Contains user-created spells and the
+# .memorized file for the cast menu. Required for spell storage.
 : "${SPELLBOOK_DIR:=}"
-
-# User's custom spell directory. Required for scribe-spell and other
-# spellcraft commands to know where to save user-created spells.
-: "${SPELL_HOME:=}"
-
-# User's spellbook metadata file. Required for the spellbook feature
-# to persist spell metadata.
-: "${SPELLBOOK_FILE:=}"
 
 # Target path during spell memorization. Required for learn-spell to
 # communicate target paths to spell scripts during the learning process.
@@ -69,7 +61,7 @@
 
 # MUD configuration directory. Required for MUD features to know where
 # to store room descriptions and other MUD-related configuration.
-: "${MUD_CONFIG_DIR:=}"
+: "${MUD_DIR:=}"
 
 # Path to the cd cantrip script. Required for the MUD cd hook to know
 # which script to source when changing directories.

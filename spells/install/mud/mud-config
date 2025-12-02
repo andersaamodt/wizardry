@@ -1,4 +1,5 @@
 #!/bin/sh
+. declare-globals
 
 # Manage MUD feature configuration stored in ~/.spellbook/.mud/config
 # This is a helper for reading and writing MUD feature toggle states.
@@ -23,10 +24,10 @@ set -eu
 
 # Resolve config directory
 resolve_config_dir() {
-        if [ -n "${WIZARDRY_MUD_CONFIG_DIR-}" ]; then
-                printf '%s' "$WIZARDRY_MUD_CONFIG_DIR"
-        elif [ -n "${SPELLBOOK_HOME-}" ]; then
-                printf '%s' "$SPELLBOOK_HOME/.mud"
+        if [ -n "${MUD_DIR-}" ]; then
+                printf '%s' "$MUD_DIR"
+        elif [ -n "${SPELLBOOK_DIR-}" ]; then
+                printf '%s' "$SPELLBOOK_DIR/.mud"
         elif [ -n "${HOME-}" ]; then
                 printf '%s' "$HOME/.spellbook/.mud"
         else

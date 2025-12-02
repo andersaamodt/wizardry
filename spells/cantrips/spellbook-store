@@ -17,27 +17,11 @@ USAGE
 }
 
 resolve_spellbook_file() {
-	if [ -n "${WIZARDRY_SPELLBOOK_FILE-}" ]; then
-		file=$WIZARDRY_SPELLBOOK_FILE
+	if [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
+		file=$HOME/.tower/spellbook
 	else
-		if [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
-			file=$HOME/.tower/spellbook
-		else
-			file=.wizardry_spellbook
-		fi
+		file=.wizardry_spellbook
 	fi
-	case $file in
-	\~)
-		if [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
-			file=$HOME
-		fi
-		;;
-	\~/*)
-		if [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
-			file=$HOME/${file#\~/}
-		fi
-		;;
-	esac
 	printf '%s' "$file"
 }
 

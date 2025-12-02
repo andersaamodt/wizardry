@@ -1,4 +1,5 @@
 #!/bin/sh
+. declare-globals
 # This spell provides a menu interface for managing the spellbook.
 
 set -eu
@@ -38,13 +39,9 @@ require_tool() {
 
 cast_dir=$($cast_store dir)
 
-resolve_spell_home() {
-        if [ -n "${WIZARDRY_SPELL_HOME-}" ]; then
-                printf '%s' "$WIZARDRY_SPELL_HOME"
-        elif [ -n "${SPELLBOOK_HOME-}" ]; then
-                printf '%s' "$SPELLBOOK_HOME"
-        elif [ -n "${SPELL_HOME-}" ]; then
-                printf '%s' "$SPELL_HOME"
+resolve_spellbook_dir() {
+        if [ -n "${SPELLBOOK_DIR-}" ]; then
+                printf '%s' "$SPELLBOOK_DIR"
         elif [ -n "${XDG_DATA_HOME-}" ] && [ -n "$XDG_DATA_HOME" ]; then
                 printf '%s' "$XDG_DATA_HOME/wizardry/spellbook"
         elif [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
@@ -54,10 +51,10 @@ resolve_spell_home() {
         fi
 }
 
-spell_home=$(resolve_spell_home)
+spellbook_dir=$(resolve_spellbook_dir)
 
-if [ -d "$spell_home" ]; then
-        PATH="$spell_home:$PATH"
+if [ -d "$spellbook_dir" ]; then
+        PATH="$spellbook_dir:$PATH"
 fi
 
 ensure_parent_dir() {
@@ -99,14 +96,14 @@ validate_command() {
 }
 
 scribed_spell_path() {
-        printf '%s/%s' "$spell_home" "$1"
+        printf '%s/%s' "$spellbook_dir" "$1"
 }
 
 write_scribed_script() {
         script_name=$1
         cmd_text=$2
         ensure_parent_dir "$(scribed_spell_path "$script_name")"
-        mkdir -p "$spell_home"
+        mkdir -p "$spellbook_dir"
         escaped_cmd=$(printf '%s' "$cmd_text" | sed "s/'/'\\''/g")
         cat >"$(scribed_spell_path "$script_name")" <<EOF_SCRIPT
 #!/bin/sh
@@ -222,8 +219,8 @@ resolve_category_path() {
                 return 0
         fi
         # Search in ~/.spellbook (user spell home)
-        if [ -d "$spell_home/$category" ]; then
-                printf '%s' "$spell_home/$category"
+        if [ -d "$spellbook_dir/$category" ]; then
+                printf '%s' "$spellbook_dir/$category"
                 return 0
         fi
         # Search in current directory
@@ -241,16 +238,16 @@ list_category_spells() {
         find "$resolved_path" -maxdepth 2 -type f -perm -111 2>/dev/null | sort
 }
 
-# List all scribed commands (custom commands in spell_home, excluding built-in spells)
+# List all scribed commands (custom commands in spellbook_dir, excluding built-in spells)
 # Only shows truly custom user-created commands, not built-in spells that might have
 # been memorized (those should only appear in the Cast menu)
 list_scribed_commands() {
-        if [ ! -d "$spell_home" ]; then
+        if [ ! -d "$spellbook_dir" ]; then
                 return 0
         fi
         # Handle empty directory by checking if glob matches anything
         set +f  # Enable globbing
-        for script in "$spell_home"/*; do
+        for script in "$spellbook_dir"/*; do
                 # Skip if glob didn't match (no files exist)
                 [ -e "$script" ] || continue
                 [ -f "$script" ] || continue
@@ -263,8 +260,8 @@ list_scribed_commands() {
                 # Skip if this command exists elsewhere in PATH (it's a built-in spell, not custom)
                 if cmd_path=$(command -v "$script_name" 2>/dev/null); then
                         case "$cmd_path" in
-                                "$spell_home"/*) 
-                                        # Only found in spell_home - this is a custom command
+                                "$spellbook_dir"/*) 
+                                        # Only found in spellbook_dir - this is a custom command
                                         ;;
                                 *)
                                         # Found in system PATH - skip this built-in spell
@@ -281,11 +278,11 @@ list_scribed_commands() {
 
 # List user folders in ~/.spellbook (excluding hidden folders and folders matching built-in categories)
 list_user_folders() {
-        if [ ! -d "$spell_home" ]; then
+        if [ ! -d "$spellbook_dir" ]; then
                 return 0
         fi
         builtin_cats=$(spell_categories)
-        for folder in "$spell_home"/*; do
+        for folder in "$spellbook_dir"/*; do
                 [ -d "$folder" ] || continue
                 folder_name=$(basename "$folder")
                 # Skip hidden folders
@@ -316,18 +313,18 @@ is_builtin_category() {
         return 1
 }
 
-# Check if a path is inside the spell_home directory (custom spellbook)
-is_in_spell_home() {
+# Check if a path is inside the spellbook_dir directory (custom spellbook)
+is_in_spellbook_dir() {
         check_path=$1
         case "$check_path" in
-                "$spell_home"*)
+                "$spellbook_dir"*)
                         return 0
                         ;;
         esac
         return 1
 }
 
-# Check if a script is a scribed command (exists as executable in spell_home)
+# Check if a script is a scribed command (exists as executable in spellbook_dir)
 is_scribed_command() {
         check_name=$1
         script_path=$(scribed_spell_path "$check_name")
@@ -345,7 +342,7 @@ record_scribed_command() {
         done
         validate_name "$cmd_name"
         validate_command "$cmd"
-        mkdir -p "$spell_home"
+        mkdir -p "$spellbook_dir"
         write_scribed_script "$cmd_name" "$cmd"
 }
 
@@ -401,7 +398,7 @@ scribe_command_interactive() {
                 return 1
         fi
         record_scribed_command "$cmd_name" "$cmd_text"
-        printf "Scribed '%s' to %s.\n" "$cmd_name" "$spell_home"
+        printf "Scribed '%s' to %s.\n" "$cmd_name" "$spellbook_dir"
 }
 
 spellbook_menu() {
@@ -423,7 +420,7 @@ spellbook_menu() {
                         # Get the category name (last component of path)
                         category_name=$(basename "$current_path")
                         if resolved_path=$(resolve_category_path "$current_path"); then
-                                if is_in_spell_home "$resolved_path"; then
+                                if is_in_spellbook_dir "$resolved_path"; then
                                         in_custom_folder=1
                                 fi
                         else
@@ -452,7 +449,7 @@ SCRIBED_COMMANDS
                                 while IFS= read -r folder_name; do
                                         [ -z "$folder_name" ] && continue
                                         # Don't capitalize - just use the folder name
-                                        set -- "$@" "${folder_name}%spellbook $spell_home/$folder_name"
+                                        set -- "$@" "${folder_name}%spellbook $spellbook_dir/$folder_name"
                                 done <<USER_FOLDERS
 $user_folders
 USER_FOLDERS
@@ -469,7 +466,7 @@ USER_FOLDERS
                         # Non-root view: show spells from both built-in and custom folders combined
                         # First, list built-in spells
                         builtin_dir="$ROOT_DIR/spells/$category_name"
-                        custom_dir="$spell_home/$category_name"
+                        custom_dir="$spellbook_dir/$category_name"
                         
                         # List built-in spells
                         if [ -d "$builtin_dir" ]; then
@@ -504,7 +501,7 @@ USER_FOLDERS
                         set -- "$@" "Scribe new spell%scribe-spell"
                 else
                         # Category level - create in ~/.spellbook/<category>
-                        set -- "$@" "Scribe new spell%scribe-spell --dir $spell_home/$category_name"
+                        set -- "$@" "Scribe new spell%scribe-spell --dir $spellbook_dir/$category_name"
                 fi
                 
                 # Use "Back" when in a submenu, "Exit" at root
@@ -580,7 +577,7 @@ case ${1-} in
                 name=$1
                 shift
                 record_scribed_command "$name" "$@"
-                printf "Scribed '%s' to %s.\n" "$name" "$spell_home"
+                printf "Scribed '%s' to %s.\n" "$name" "$spellbook_dir"
                 exit 0
                 ;;
         --interactive-scribe)
