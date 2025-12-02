@@ -137,6 +137,14 @@ run_maybe_sudo() {
   fi
 }
 
+# Back up nix config file before modifying it
+backup_nix_config() {
+  if ! backup-nix-config "$nix_file"; then
+    printf '%s\n' "nix-shell-init: unable to back up '$nix_file'" >&2
+    exit 1
+  fi
+}
+
 # Check if block exists
 block_exists() {
   [ -f "$nix_file" ] && grep -Fq "$marker" "$nix_file" 2>/dev/null
@@ -191,6 +199,9 @@ $line"
     printf '%s\n' "nix-shell-init: no shell code provided on stdin" >&2
     exit 1
   fi
+  
+  # Back up the config file before making any modifications
+  backup_nix_config
   
   # Escape the shell code for nix '' multi-line string
   escaped_code=$(printf '%s' "$shell_code" | escape_for_nix_multiline)
@@ -299,6 +310,9 @@ do_remove() {
         ;;
     esac
   fi
+  
+  # Back up the config file before making any modifications
+  backup_nix_config
   
   # Remove all lines containing our marker
   # Since every wizardry-managed content line has #wizardry: NAME appended,
