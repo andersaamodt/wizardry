@@ -3,6 +3,9 @@
 
 . "${0%/*}/../../test-common.sh"
 
+# Skip nix rebuild in tests since nixos-rebuild and home-manager aren't available
+export WIZARDRY_SKIP_NIX_REBUILD=1
+
 test_nix_shell_init_help() {
   run_spell "spells/.imps/sys/nix-shell-init" --help
   assert_success
@@ -27,7 +30,7 @@ test_nix_shell_init_add_creates_block() {
     TEST_FAILURE_REASON="expected programs.bash.initExtra in file"
     return 1
   fi
-  if ! grep -q "wizardry-shell: testspell" "$nix_file"; then
+  if ! grep -q "wizardry: testspell" "$nix_file"; then
     TEST_FAILURE_REASON="expected wizardry-shell marker in file"
     return 1
   fi
@@ -48,10 +51,11 @@ test_nix_shell_init_add_is_idempotent() {
   printf 'source "/path/to/spell"' | "$ROOT_DIR/spells/.imps/sys/nix-shell-init" add --shell bash --name testspell --file "$nix_file"
   printf 'source "/path/to/spell"' | "$ROOT_DIR/spells/.imps/sys/nix-shell-init" add --shell bash --name testspell --file "$nix_file"
   
-  # Count markers - should be exactly 2 (one inside block, one at end of line)
-  marker_count=$(grep -c "wizardry-shell: testspell" "$nix_file" || printf '0')
-  if [ "$marker_count" -ne 2 ]; then
-    TEST_FAILURE_REASON="expected exactly 2 markers (idempotent), found $marker_count"
+  # Count markers - should be exactly 3 (opening line, content line, closing line)
+  # Each line is marked with #wizardry: NAME for clean removal
+  marker_count=$(grep -c "wizardry: testspell" "$nix_file" || printf '0')
+  if [ "$marker_count" -ne 3 ]; then
+    TEST_FAILURE_REASON="expected exactly 3 markers (idempotent), found $marker_count"
     return 1
   fi
 }
@@ -90,7 +94,7 @@ test_nix_shell_init_remove_clears_block() {
   printf 'source "/path/to/spell"' | "$ROOT_DIR/spells/.imps/sys/nix-shell-init" add --shell bash --name testspell --file "$nix_file"
   
   # Verify it was added
-  if ! grep -q "wizardry-shell: testspell" "$nix_file"; then
+  if ! grep -q "wizardry: testspell" "$nix_file"; then
     TEST_FAILURE_REASON="block was not added"
     return 1
   fi
@@ -99,7 +103,7 @@ test_nix_shell_init_remove_clears_block() {
   "$ROOT_DIR/spells/.imps/sys/nix-shell-init" remove --shell bash --name testspell --file "$nix_file"
   
   # Verify it was removed
-  if grep -q "wizardry-shell: testspell" "$nix_file"; then
+  if grep -q "wizardry: testspell" "$nix_file"; then
     TEST_FAILURE_REASON="block was not removed"
     return 1
   fi
@@ -205,7 +209,7 @@ test_nix_shell_init_escapes_special_chars() {
   printf 'echo "${HOME}/test"' | "$ROOT_DIR/spells/.imps/sys/nix-shell-init" add --shell bash --name escapespell --file "$nix_file"
   
   # Verify the file is valid (the escaping worked)
-  if ! grep -q "wizardry-shell: escapespell" "$nix_file"; then
+  if ! grep -q "wizardry: escapespell" "$nix_file"; then
     TEST_FAILURE_REASON="spell was not added"
     return 1
   fi
