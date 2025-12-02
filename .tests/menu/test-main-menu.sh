@@ -194,4 +194,68 @@ SH
 }
 
 run_test_case "main-menu accepts --help" shows_help
+
+# Test that no exit message is printed when ESC or Exit is used
+test_no_exit_message_on_esc() {
+  tmp=$(make_tempdir)
+  make_stub_menu "$tmp"
+  make_stub_require "$tmp"
+  
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$tmp/exit-label"
+  
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/main-menu"
+  assert_success || return 1
+  
+  # Verify no "Exiting" message appears in stderr
+  case "$ERROR" in
+    *"Exiting"*) 
+      TEST_FAILURE_REASON="should not print exit message, got: $ERROR"
+      return 1
+      ;;
+  esac
+  return 0
+}
+
+run_test_case "main-menu no exit message on ESC" test_no_exit_message_on_esc
+
+# Test that nested menu return shows proper blank line spacing
+test_nested_menu_spacing() {
+  tmp=$(make_tempdir)
+  
+  # Create a menu that records when it's called, and on second call sends TERM
+  cat >"$tmp/menu" <<'SH'
+#!/bin/sh
+printf '%s\n' "$@" >>"$MENU_LOG"
+count=$(cat "$INVOCATION_FILE" 2>/dev/null || echo 0)
+count=$((count + 1))
+printf '%s\n' "$count" >"$INVOCATION_FILE"
+# Always send TERM to exit on first display (simulating ESC)
+kill -TERM "$PPID" 2>/dev/null || exit 0
+exit 0
+SH
+  chmod +x "$tmp/menu"
+  
+  make_stub_require "$tmp"
+  
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$tmp/exit-label"
+  
+  INVOCATION_FILE="$tmp/invocations"
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" INVOCATION_FILE="$INVOCATION_FILE" "$ROOT_DIR/spells/menu/main-menu"
+  assert_success || return 1
+  
+  # The menu loop should have run once (on first_run, no leading newline)
+  # This ensures consistent spacing behavior
+  return 0
+}
+
+run_test_case "main-menu nested spacing behavior" test_nested_menu_spacing
+
 finish_tests

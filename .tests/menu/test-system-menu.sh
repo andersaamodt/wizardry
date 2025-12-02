@@ -91,4 +91,31 @@ test_shows_help() {
 
 run_test_case "system-menu --help shows usage" test_shows_help
 
+# Test that no exit message is printed when ESC or Exit is used
+test_no_exit_message_on_esc() {
+  tmp=$(make_tempdir)
+  make_stub_menu "$tmp"
+  make_stub_require "$tmp"
+  
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$tmp/exit-label"
+  
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/system-menu"
+  assert_success || return 1
+  
+  # Verify no "Exiting" message appears in stderr
+  case "$ERROR" in
+    *"Exiting"*) 
+      TEST_FAILURE_REASON="should not print exit message, got: $ERROR"
+      return 1
+      ;;
+  esac
+  return 0
+}
+
+run_test_case "system-menu no exit message on ESC" test_no_exit_message_on_esc
+
 finish_tests
