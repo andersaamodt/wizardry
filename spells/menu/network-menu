@@ -1,6 +1,8 @@
 #!/bin/sh
 # Network configuration menu - work in progress
 
+set -eu
+
 case "${1-}" in
   -h|--help)
     printf 'Usage: network-menu\n'
