@@ -134,7 +134,3 @@
 # Name of look spell to use. Required for MUD cd hook to know which
 # spell displays room descriptions when entering directories.
 : "${WIZARDRY_LOOK_SPELL:=}"
-
-# General-purpose wizardry variable. Reserved for temporary internal use
-# by wizardry scripts that need to pass data between components.
-: "${WIZARDRY_VAR:=}"
