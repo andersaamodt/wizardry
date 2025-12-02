@@ -98,7 +98,8 @@ EOF
 # Check if a MUD config feature is enabled
 is_feature_enabled() {
   feature=$1
-  if ! command -v mud-config >/dev/null 2>&1; then
+  mud_config_path=$(command -v mud-config 2>/dev/null) || return 1
+  if [ -z "$mud_config_path" ] || [ ! -x "$mud_config_path" ]; then
     return 1
   fi
   value=$(mud-config get "$feature" 2>/dev/null) || return 1
