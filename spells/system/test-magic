@@ -212,6 +212,7 @@ subtests_passed=0
 subtests_total=0
 failed_scripts=""
 incomplete_tests=""
+incomplete_count=0
 test_number=0
 test_total=$(printf '%s\n' "$test_files" | grep -c .)
 # Imps have no --help flag, so they need 2 subtests minimum.
@@ -363,17 +364,20 @@ while IFS= read -r test_path; do
   # Spells: Need a --help test PLUS MIN_SUBTESTS_IMP additional behavioral subtests.
   # Global tests (test-install.sh, test-suite.sh): Exempt from --help requirement.
   test_subtest_count=$(get_subtest_total "$cleaned_output")
+  test_incomplete_reasons=""
   case "$test_path" in
     .imps/*|*/.imps/*)
       # Imps have no --help, just need MIN_SUBTESTS_IMP subtests
       if [ -n "$test_subtest_count" ] && [ "$test_subtest_count" -lt "$MIN_SUBTESTS_IMP" ]; then
         record_incomplete_test "$test_path" "$test_subtest_count subtests, need $MIN_SUBTESTS_IMP"
+        test_incomplete_reasons="$test_subtest_count subtests, need $MIN_SUBTESTS_IMP"
       fi
       ;;
     test-install.sh|test-suite.sh)
       # Global/special tests don't need --help test
       if [ -n "$test_subtest_count" ] && [ "$test_subtest_count" -lt "$MIN_SUBTESTS_IMP" ]; then
         record_incomplete_test "$test_path" "$test_subtest_count subtests, need $MIN_SUBTESTS_IMP"
+        test_incomplete_reasons="$test_subtest_count subtests, need $MIN_SUBTESTS_IMP"
       fi
       ;;
     *)
@@ -381,12 +385,24 @@ while IFS= read -r test_path; do
       # Total must be at least MIN_SUBTESTS_SPELL (1 help + 2 behavioral = 3).
       if ! has_help_test "$cleaned_output"; then
         record_incomplete_test "$test_path" "missing --help test"
+        test_incomplete_reasons="missing --help test"
       fi
       if [ -n "$test_subtest_count" ] && [ "$test_subtest_count" -lt "$MIN_SUBTESTS_SPELL" ]; then
         record_incomplete_test "$test_path" "$test_subtest_count subtests, need $MIN_SUBTESTS_SPELL"
+        if [ -n "$test_incomplete_reasons" ]; then
+          test_incomplete_reasons="$test_incomplete_reasons; $test_subtest_count subtests, need $MIN_SUBTESTS_SPELL"
+        else
+          test_incomplete_reasons="$test_subtest_count subtests, need $MIN_SUBTESTS_SPELL"
+        fi
       fi
       ;;
   esac
+
+  # Print inline incomplete warning using LACK (not PASS/FAIL)
+  if [ -n "$test_incomplete_reasons" ]; then
+    incomplete_count=$((incomplete_count + 1))
+    printf 'LACK %s (%s)\n' "$(spell_name_for_test "$test_path")" "$test_incomplete_reasons"
+  fi
 
   printf '\n'
 done <<EOF_TESTS
@@ -492,8 +508,8 @@ scan_extraneous
 coverage_uncovered=$((coverage_total - coverage_covered))
 
 total_scripts=$((pass + fail))
-printf 'Summary: %d passed, %d failed, %d uncovered, subtests %d/%d.\n' \
-  "$pass" "$fail" "$coverage_uncovered" "$subtests_passed" "$subtests_total"
+printf 'Summary: %d passed, %d failed, %d uncovered, %d incomplete, subtests %d/%d.\n' \
+  "$pass" "$fail" "$coverage_uncovered" "$incomplete_count" "$subtests_passed" "$subtests_total"
 
 if [ "$coverage_uncovered" -gt 0 ]; then
   printf 'Uncovered spells:\n'
