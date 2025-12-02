@@ -879,8 +879,9 @@ install_does_not_show_adding_missing_path_on_fresh() {
 
 # === NixOS Log Out/In Message Tests ===
 
-install_nixos_shows_logout_message() {
-  # On NixOS, the installer should show a message about logging out and back in
+install_nixos_shows_appropriate_message() {
+  # On NixOS, the installer should show a message about when wizardry is available
+  # This could be "ready to use" (if sourcing succeeded) or "new terminal" (if not)
   fixture=$(make_fixture)
   provide_basic_tools "$fixture"
   link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
@@ -907,8 +908,11 @@ EOF
 
   assert_success || return 1
   
-  # Should show log out message for NixOS (new message uses "logging out")
-  assert_output_contains "logging out" || return 1
+  # Should show availability message for NixOS (either "ready to use" or "new terminal")
+  if ! printf '%s' "$OUTPUT" | grep -qE "(ready to use|new terminal|After rebuilding)"; then
+    TEST_FAILURE_REASON="output should indicate when wizardry will be available"
+    return 1
+  fi
 }
 
 install_non_nixos_shows_source_message() {
@@ -1002,8 +1006,8 @@ EOF
   assert_file_contains "$uninstall_script" "nixos-rebuild" || return 1
 }
 
-uninstall_script_nixos_includes_logout_message() {
-  # Test that the NixOS uninstall script includes log out message
+uninstall_script_nixos_includes_terminal_message() {
+  # Test that the NixOS uninstall script tells users to open a new terminal
   fixture=$(make_fixture)
   provide_basic_tools "$fixture"
   link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
@@ -1034,8 +1038,8 @@ EOF
   uninstall_script="$install_dir/.uninstall"
   assert_path_exists "$uninstall_script" || return 1
   
-  # Check that the uninstall script contains logout message for NixOS
-  assert_file_contains "$uninstall_script" "logging out" || return 1
+  # Check that the uninstall script mentions opening a new terminal for NixOS
+  assert_file_contains "$uninstall_script" "new terminal" || return 1
 }
 
 # === Install Prompt Text Tests ===
@@ -1222,11 +1226,11 @@ run_test_case "install shows simple run message" install_shows_simple_run_messag
 run_test_case "install no adding missing path on fresh" install_does_not_show_adding_missing_path_on_fresh
 run_test_case "install NixOS shows config file message" install_nixos_shows_config_file_message
 run_test_case "install NixOS shows path updated message" install_nixos_shows_path_updated_message
-run_test_case "install NixOS shows logout message" install_nixos_shows_logout_message
+run_test_case "install NixOS shows appropriate message" install_nixos_shows_appropriate_message
 run_test_case "install non-NixOS shows source message" install_non_nixos_shows_source_message
 run_test_case "uninstall script handles .imps directory" uninstall_script_handles_imps_directory
 run_test_case "uninstall script NixOS includes rebuild" uninstall_script_nixos_includes_rebuild
-run_test_case "uninstall script NixOS includes logout message" uninstall_script_nixos_includes_logout_message
+run_test_case "uninstall script NixOS includes terminal message" uninstall_script_nixos_includes_terminal_message
 run_test_case "install shows revised prompt text" install_shows_revised_prompt_text
 run_test_case "learn-spellbook remove-all removes all nix entries" path_wizard_remove_all_removes_all_nix_entries
 run_test_case "learn-spellbook remove-all reports count" path_wizard_remove_all_reports_count
