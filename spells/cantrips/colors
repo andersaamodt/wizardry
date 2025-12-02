@@ -25,7 +25,7 @@ disable_palette() {
                 BG_BRIGHT_PURPLE BG_BRIGHT_CYAN BG_BRIGHT_WHITE \
                 THEME_HIGHLIGHT THEME_MUTED THEME_CUSTOM THEME_SUCCESS \
                 THEME_ERROR THEME_HEADING THEME_DIVIDER \
-                MUD_LOCATION MUD_ITEM MUD_HANDLE MUD_SPELL MUD_MONSTER
+                MUD_LOCATION MUD_DESCRIPTION MUD_ITEM MUD_HANDLE MUD_SPELL MUD_MONSTER
         do
                 eval "$name=''"
         done
@@ -100,7 +100,8 @@ THEME_HEADING="${GREEN}${BOLD}"  # Priority/heading highlight
 THEME_DIVIDER="$GREY"            # Menu dividers
 
 # MUD-specific colours for fantasy game elements.
-MUD_LOCATION="${BLUE}${BOLD}"    # Location/room names
+MUD_LOCATION="${BLUE}${BOLD}"    # Location/room titles
+MUD_DESCRIPTION="${WHITE}"       # Room/item descriptions
 MUD_ITEM="${YELLOW}"             # Items and objects
 MUD_HANDLE="${CYAN}"             # Player names/handles
 MUD_SPELL="${PURPLE}"            # Spell names

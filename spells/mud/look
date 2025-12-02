@@ -167,6 +167,7 @@ if ! load_colors; then
         BOLD=""
         RESET=""
         MUD_LOCATION=""
+        MUD_DESCRIPTION=""
 fi
 
 if lacks read-magic; then
@@ -188,7 +189,7 @@ if [ "$name" != "$missing_msg" ] || [ "$description" != "$missing_msg" ]; then
                 printf '%s%s%s\n' "$MUD_LOCATION" "$name" "$RESET"
         fi
         if [ "$description" != "$missing_msg" ] && [ -n "$description" ]; then
-                printf '%s\n' "$description"
+                printf '%s%s%s\n' "$MUD_DESCRIPTION" "$description" "$RESET"
         fi
 else
         printf '%s\n' "You look, but you don't see anything."
