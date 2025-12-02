@@ -279,37 +279,11 @@ do_remove() {
   tmp_file="${TMPDIR:-/tmp}/nix-shell-init.$$"
   run_maybe_sudo cat "$nix_file" | grep -v -F "$marker" > "$tmp_file"
   
-  # Clean up any empty initExtra/interactiveShellInit blocks left behind
-  # These look like: programs.bash.initExtra = '' ''; or multiline empty blocks
-  tmp_file2="${TMPDIR:-/tmp}/nix-shell-init-clean.$$"
-  awk '
-    # Start of potential empty multi-line block
-    /programs\.(bash|zsh)\.(initExtra|interactiveShellInit)[[:space:]]*=[[:space:]]*'"'"''"'"'[[:space:]]*$/ {
-      getline next_line
-      # Check if closing line (just '')
-      if (next_line ~ /^[[:space:]]*'"'"''"'"'';[[:space:]]*$/) {
-        # Empty block, skip both lines
-        next
-      } else {
-        # Not empty, print both
-        print
-        print next_line
-      }
-      next
-    }
-    # Skip single-line empty blocks: programs.bash.initExtra = '"'"''"'"' '"'"''"'"'';
-    /programs\.(bash|zsh)\.(initExtra|interactiveShellInit)[[:space:]]*=[[:space:]]*'"'"''"'"'[[:space:]]*'"'"''"'"'';/ {
-      next
-    }
-    { print }
-  ' "$tmp_file" > "$tmp_file2"
-  
   if [ "$needs_sudo" -eq 1 ]; then
-    run_maybe_sudo cp "$tmp_file2" "$nix_file"
-    rm -f "$tmp_file" "$tmp_file2"
-  else
-    mv "$tmp_file2" "$nix_file"
+    run_maybe_sudo cp "$tmp_file" "$nix_file"
     rm -f "$tmp_file"
+  else
+    mv "$tmp_file" "$nix_file"
   fi
 }
 
