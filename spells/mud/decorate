@@ -1,0 +1,73 @@
+#!/bin/sh
+
+# This spell decorates a location with a description, making it visible to 'look'.
+# It's a convenient wrapper around 'enchant' for setting room descriptions.
+
+show_usage() {
+        cat <<'USAGE'
+Usage: decorate [path] [description]
+
+Decorate a location (folder or file) with a description that will be shown
+when using the 'look' spell. If no path is provided, decorates the current
+directory. The description can be provided as the second argument or will
+be prompted for interactively.
+
+Examples:
+  decorate                     # Interactively decorate current directory
+  decorate .                   # Same as above
+  decorate ~/projects          # Decorate a specific folder
+  decorate . "A cozy chamber"  # Decorate with inline description
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
+set -eu
+
+if lacks enchant; then
+        warn "decorate: enchant spell is missing."
+        exit 1
+fi
+
+# Determine path (default to current directory)
+path=${1:-.}
+
+# Resolve to absolute path
+if [ -d "$path" ]; then
+        path=$(cd "$path" && pwd)
+elif [ -f "$path" ]; then
+        path=$(cd "$(dirname "$path")" && pwd)/$(basename "$path")
+else
+        warn "decorate: path does not exist: $path"
+        exit 1
+fi
+
+# Get description from argument or prompt
+if [ $# -ge 2 ]; then
+        description=$2
+else
+        if has ask_text; then
+                description=$(ask_text "Enter description for this location:")
+        else
+                printf '%s' "Enter description: "
+                read -r description
+        fi
+fi
+
+if [ -z "$description" ]; then
+        warn "decorate: description cannot be empty."
+        exit 1
+fi
+
+# Apply the description using enchant
+if enchant "$path" description "$description"; then
+        printf '%s\n' "The location has been decorated with the description."
+else
+        warn "decorate: failed to apply description."
+        exit 1
+fi
