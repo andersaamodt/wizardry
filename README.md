@@ -4,9 +4,9 @@ Wizardry is a collection of shell scripts to complete your terminal experience.
 Themed as a magical MUD (Multi-User Dungeon), wizardry turns folders into rooms, and files into items.
 Wizardry also includes a comprehensive set of POSIX shell tutorials, and optional free software suite.
 
-Remembering complex shell commands is hard, and figuring out the correct way to accomplish tasks across different operating systems is even harder. Wizardry assembles cross-platform UNIX knowledge into usable, transparent menus and memorable commands, so you can skip the hassle.
+Wizardry includes a set of interactive menus that transparently show what command each menu item will call, making discovering and using the command line much easier. Wizardry assembles cross-platform UNIX knowledge into usable menus and memorable commands.
 
-The language of magic—a human heirloom—is rich in evocative words for hidden forces and abstract transformations, making it a natural fit for extending the terminal's vocabulary, binding the worlds of thought and command together.
+The language of magic—a human heirloom—is rich in evocative words for hidden forces and abstract transformations, making it a natural fit for extending the terminal's vocabulary, binding the worlds of thought and myth together as effective language.
 
 ## Status for target platforms:
 
@@ -17,7 +17,7 @@ The language of magic—a human heirloom—is rich in evocative words for hidden
 | **Debian (and Ubuntu)**   | `debian`  | 🟢 **`install` + `menu` work well**   |
 | **NixOS**                 | `nixos`   | 🟢 **`install` + `menu` work well**   |
 | **MacOS**                 | `macos`   | 🟡 **`install` + `menu` untested**    |
-| **Arch**                  | `arch`    | 🟠 **currently unsupported**          |
+| **Arch**                  | `arch`    | 🟠 **untested**          |
 | **Android (Linux-based)** | —         | 🟠 **currently unsupported**          |
 | **Windows**               | —         | ✘ **no support planned (except WSL)** |
 
