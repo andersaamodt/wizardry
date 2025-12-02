@@ -1,4 +1,5 @@
 #!/bin/sh
+. declare-globals
 
 # This spell installs the interactive `jump` incantation tied to mark-location.
 # Once memorized, it lets any shell teleport to named markers instantly.

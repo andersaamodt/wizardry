@@ -7,7 +7,7 @@
 # - vet-spell fails spells missing strict mode
 # - vet-spell fails spells with trailing space assignment
 # - vet-spell skips usage/help checks for imps
-# - vet-spell is always strict (requires usage function and help handler)
+# - vet-spell --strict requires usage function and help handler
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/test-common.sh" ] && [ "$test_root" != "/" ]; do
@@ -118,8 +118,9 @@ test_fails_missing_strict_mode() {
 echo "bad"
 EOF
   chmod +x "$spell_dir/bad-spell"
-  run_spell "spells/spellcraft/vet-spell" "$spell_dir/bad-spell"
-  assert_failure && assert_output_contains "strict mode"
+  # --strict is needed to check for set -u
+  run_spell "spells/spellcraft/vet-spell" --strict "$spell_dir/bad-spell"
+  assert_failure && assert_output_contains "set -u"
 }
 
 test_fails_trailing_space_assignment() {
@@ -161,8 +162,8 @@ echo "hello"
 EOF
   chmod +x "$spell_dir/no-usage-spell"
   
-  # vet-spell is now always strict - should fail for spells (not imps)
-  run_spell "spells/spellcraft/vet-spell" "$spell_dir/no-usage-spell"
+  # --strict is needed to check for usage function
+  run_spell "spells/spellcraft/vet-spell" --strict "$spell_dir/no-usage-spell"
   assert_failure && assert_output_contains "usage function"
 }
 
@@ -183,8 +184,8 @@ echo "hello"
 EOF
   chmod +x "$spell_dir/no-help-spell"
   
-  # vet-spell is now always strict - should fail for spells (not imps)
-  run_spell "spells/spellcraft/vet-spell" "$spell_dir/no-help-spell"
+  # --strict is needed to check for help handler
+  run_spell "spells/spellcraft/vet-spell" --strict "$spell_dir/no-help-spell"
   assert_failure && assert_output_contains "help"
 }
 
