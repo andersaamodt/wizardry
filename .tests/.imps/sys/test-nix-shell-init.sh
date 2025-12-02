@@ -5,6 +5,8 @@
 
 # Skip nix rebuild in tests since nixos-rebuild and home-manager aren't available
 export WIZARDRY_SKIP_NIX_REBUILD=1
+# Skip confirmation prompts in tests
+export WIZARDRY_SKIP_CONFIRM=1
 
 test_nix_shell_init_help() {
   run_spell "spells/.imps/sys/nix-shell-init" --help
@@ -31,7 +33,7 @@ test_nix_shell_init_add_creates_block() {
     return 1
   fi
   if ! grep -q "wizardry: testspell" "$nix_file"; then
-    TEST_FAILURE_REASON="expected wizardry-shell marker in file"
+    TEST_FAILURE_REASON="expected wizardry marker in file"
     return 1
   fi
   if ! grep -q 'source "/path/to/spell"' "$nix_file"; then
@@ -51,11 +53,11 @@ test_nix_shell_init_add_is_idempotent() {
   printf 'source "/path/to/spell"' | "$ROOT_DIR/spells/.imps/sys/nix-shell-init" add --shell bash --name testspell --file "$nix_file"
   printf 'source "/path/to/spell"' | "$ROOT_DIR/spells/.imps/sys/nix-shell-init" add --shell bash --name testspell --file "$nix_file"
   
-  # Count markers - should be exactly 3 (opening line, content line, closing line)
-  # Each line is marked with #wizardry: NAME for clean removal
+  # Count markers - should be exactly 1 (only content line is marked, not opening/closing syntax)
+  # The opening programs.bash.initExtra = '' and closing ''; are NOT marked
   marker_count=$(grep -c "wizardry: testspell" "$nix_file" || printf '0')
-  if [ "$marker_count" -ne 3 ]; then
-    TEST_FAILURE_REASON="expected exactly 3 markers (idempotent), found $marker_count"
+  if [ "$marker_count" -ne 1 ]; then
+    TEST_FAILURE_REASON="expected exactly 1 marker (only content line), found $marker_count"
     return 1
   fi
 }
@@ -222,5 +224,51 @@ test_nix_shell_init_escapes_special_chars() {
 }
 
 run_test_case "nix-shell-init escapes special chars" test_nix_shell_init_escapes_special_chars
+
+# Test that only content lines are marked, not the opening/closing nix syntax
+test_nix_shell_init_only_marks_content_lines() {
+  tmpdir=$(make_tempdir)
+  nix_file="$tmpdir/test.nix"
+  
+  # Create minimal nix file
+  printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$nix_file"
+  
+  # Add shell init code with multiple lines
+  printf 'export FOO=bar\nexport BAZ=qux' | "$ROOT_DIR/spells/.imps/sys/nix-shell-init" add --shell bash --name marktest --file "$nix_file"
+  
+  # The opening line (programs.bash.initExtra = '') should NOT have the marker
+  if grep -q "programs.bash.initExtra.*#wizardry" "$nix_file"; then
+    TEST_FAILURE_REASON="opening line should NOT be marked"
+    return 1
+  fi
+  
+  # The closing line ('';) should NOT have the marker
+  if grep -q "''.*#wizardry" "$nix_file"; then
+    # Check if this is the closing line, not a content line
+    if grep -q "^[[:space:]]*'';.*#wizardry" "$nix_file"; then
+      TEST_FAILURE_REASON="closing line should NOT be marked"
+      return 1
+    fi
+  fi
+  
+  # Content lines should have the marker
+  if ! grep -q "export FOO=bar.*#wizardry: marktest" "$nix_file"; then
+    TEST_FAILURE_REASON="content line FOO should be marked"
+    return 1
+  fi
+  if ! grep -q "export BAZ=qux.*#wizardry: marktest" "$nix_file"; then
+    TEST_FAILURE_REASON="content line BAZ should be marked"
+    return 1
+  fi
+  
+  # Count should be exactly 2 (two content lines)
+  marker_count=$(grep -c "#wizardry: marktest" "$nix_file" || printf '0')
+  if [ "$marker_count" -ne 2 ]; then
+    TEST_FAILURE_REASON="expected exactly 2 markers (2 content lines), found $marker_count"
+    return 1
+  fi
+}
+
+run_test_case "nix-shell-init only marks content lines" test_nix_shell_init_only_marks_content_lines
 
 finish_tests

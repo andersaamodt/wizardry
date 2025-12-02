@@ -11,6 +11,8 @@ done
 
 # Skip nix rebuild in tests since nixos-rebuild and home-manager aren't available
 export WIZARDRY_SKIP_NIX_REBUILD=1
+# Skip confirmation prompts in tests
+export WIZARDRY_SKIP_CONFIRM=1
 
 # Helper to create a stub detect-rc-file for a specific rc file
 make_detect_stub() {

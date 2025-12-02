@@ -17,6 +17,10 @@ done
 # shellcheck source=/dev/null
 . "$test_root/test-common.sh"
 
+# Skip nix rebuild and confirmation in tests
+export WIZARDRY_SKIP_NIX_REBUILD=1
+export WIZARDRY_SKIP_CONFIRM=1
+
 test_cd_installs_hook_when_user_agrees() {
   tmp=$(make_tempdir)
   cat >"$tmp/ask_yn" <<'SH'

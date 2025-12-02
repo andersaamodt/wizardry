@@ -162,6 +162,20 @@ do_add() {
     return 0  # Already exists, nothing to do
   fi
   
+  # Ask for confirmation before editing system config
+  if [ "$is_system_config" -eq 1 ] && [ "${WIZARDRY_SKIP_CONFIRM-}" != "1" ]; then
+    printf '%s\n' "This will edit $nix_file to add shell initialization code."
+    printf '%s ' "Continue? [y/N]" >&2
+    read -r confirm </dev/tty 2>/dev/null || confirm=""
+    case $confirm in
+      y|Y|yes|YES) : ;;
+      *)
+        printf '%s\n' "Aborted."
+        exit 1
+        ;;
+    esac
+  fi
+  
   # Read shell code from stdin
   shell_code=""
   while IFS= read -r line || [ -n "$line" ]; do
@@ -181,16 +195,18 @@ $line"
   # Escape the shell code for nix '' multi-line string
   escaped_code=$(printf '%s' "$shell_code" | escape_for_nix_multiline)
   
-  # Mark every line with #wizardry marker so we can identify and remove them later
-  # Each line gets the marker appended to ensure clean removal
+  # Mark every content line with #wizardry marker so we can identify and remove them later
+  # Each content line gets the marker appended to ensure clean removal
+  # The opening and closing nix syntax lines are NOT marked, so they are preserved
+  # if the user has other content in that block
   marked_code=$(printf '%s' "$escaped_code" | sed "s/$/ $marker/")
   
   # Create the nix block using escaped code
   # Format: programs.bash.initExtra = ''...'' syntax for multi-line
-  # Every line is marked with #wizardry: NAME for easy identification and removal
-  nix_block="  $nix_option = '' $marker
+  # Only content lines are marked with #wizardry: NAME - the opening/closing syntax is NOT marked
+  nix_block="  $nix_option = ''
 $marked_code
-  ''; $marker"
+  '';"
   
   # Create file if it doesn't exist with minimal nix structure
   if [ ! -f "$nix_file" ]; then
@@ -243,17 +259,57 @@ do_remove() {
     return 0  # Nothing to remove
   fi
   
+  # Ask for confirmation before editing system config
+  if [ "$is_system_config" -eq 1 ] && [ "${WIZARDRY_SKIP_CONFIRM-}" != "1" ]; then
+    printf '%s\n' "This will edit $nix_file to remove shell initialization code."
+    printf '%s ' "Continue? [y/N]" >&2
+    read -r confirm </dev/tty 2>/dev/null || confirm=""
+    case $confirm in
+      y|Y|yes|YES) : ;;
+      *)
+        printf '%s\n' "Aborted."
+        exit 1
+        ;;
+    esac
+  fi
+  
   # Remove all lines containing our marker
-  # Since every wizardry-managed line has #wizardry: NAME appended,
+  # Since every wizardry-managed content line has #wizardry: NAME appended,
   # we can simply filter out all lines containing that marker
   tmp_file="${TMPDIR:-/tmp}/nix-shell-init.$$"
   run_maybe_sudo cat "$nix_file" | grep -v -F "$marker" > "$tmp_file"
   
+  # Clean up any empty initExtra/interactiveShellInit blocks left behind
+  # These look like: programs.bash.initExtra = '' ''; or multiline empty blocks
+  tmp_file2="${TMPDIR:-/tmp}/nix-shell-init-clean.$$"
+  awk '
+    # Start of potential empty multi-line block
+    /programs\.(bash|zsh)\.(initExtra|interactiveShellInit)[[:space:]]*=[[:space:]]*'"'"''"'"'[[:space:]]*$/ {
+      getline next_line
+      # Check if closing line (just '')
+      if (next_line ~ /^[[:space:]]*'"'"''"'"'';[[:space:]]*$/) {
+        # Empty block, skip both lines
+        next
+      } else {
+        # Not empty, print both
+        print
+        print next_line
+      }
+      next
+    }
+    # Skip single-line empty blocks: programs.bash.initExtra = '"'"''"'"' '"'"''"'"'';
+    /programs\.(bash|zsh)\.(initExtra|interactiveShellInit)[[:space:]]*=[[:space:]]*'"'"''"'"'[[:space:]]*'"'"''"'"'';/ {
+      next
+    }
+    { print }
+  ' "$tmp_file" > "$tmp_file2"
+  
   if [ "$needs_sudo" -eq 1 ]; then
-    run_maybe_sudo cp "$tmp_file" "$nix_file"
-    rm -f "$tmp_file"
+    run_maybe_sudo cp "$tmp_file2" "$nix_file"
+    rm -f "$tmp_file" "$tmp_file2"
   else
-    mv "$tmp_file" "$nix_file"
+    mv "$tmp_file2" "$nix_file"
+    rm -f "$tmp_file"
   fi
 }
 
