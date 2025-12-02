@@ -10,12 +10,13 @@ test_declare_globals_is_sourceable() {
 }
 
 test_declare_globals_sets_empty_defaults() {
-  # After sourcing, a sample WIZARDRY_* variable should exist (even if empty)
+  # After sourcing, declared variables should exist (even if empty)
   run_cmd sh -c '
     . "$1"
     # If variable is declared (even empty), this exits 0 with set -u
     set -u
     : "${WIZARDRY_DIR}"
+    : "${SPELLBOOK_DIR}"
   ' _ "$ROOT_DIR/spells/.imps/declare-globals"
   assert_success
 }
