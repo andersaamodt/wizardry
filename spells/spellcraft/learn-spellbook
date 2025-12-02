@@ -549,6 +549,7 @@ ensure_rc_directory() {
 # configuration.nix deserves extra care: before we rewrite anything, stash a
 # timestamped backup so users can inspect or restore the previous version.
 # In recursive mode, the parent handles this before spawning children.
+# Uses the backup-nix-config imp to standardize backup behavior across the project.
 backup_rc_file_once() {
         if [ "$format" != "nix" ]; then
                 return 0
@@ -560,15 +561,33 @@ backup_rc_file_once() {
                 return 0
         fi
 
-        timestamp=$(generate_backup_timestamp)
-        backup="$rc_file.wizardry.$timestamp"
-
-        if ! run_maybe_sudo cp "$rc_file" "$backup"; then
-                printf '%s\n' "learn-spellbook: unable to back up '$rc_file'." >&2
-                exit 1
+        # Locate the backup-nix-config imp
+        backup_imp=""
+        if [ -x "$SCRIPT_DIR/../.imps/fs/backup-nix-config" ]; then
+                backup_imp="$SCRIPT_DIR/../.imps/fs/backup-nix-config"
+        elif command -v backup-nix-config >/dev/null 2>&1; then
+                backup_imp=$(command -v backup-nix-config)
         fi
 
-        printf '%s\n' "learn-spellbook: backed up '$rc_file' to '$backup'." >&2
+        if [ -n "$backup_imp" ]; then
+                # Use the imp - it handles sudo internally and reports to stderr
+                if ! "$backup_imp" "$rc_file" >/dev/null; then
+                        printf '%s\n' "learn-spellbook: unable to back up '$rc_file'." >&2
+                        exit 1
+                fi
+        else
+                # Fallback: inline backup if imp not found
+                timestamp=$(generate_backup_timestamp)
+                backup="$rc_file.wizardry.$timestamp"
+
+                if ! run_maybe_sudo cp "$rc_file" "$backup"; then
+                        printf '%s\n' "learn-spellbook: unable to back up '$rc_file'." >&2
+                        exit 1
+                fi
+
+                printf '%s\n' "Backed up '$rc_file' to '$backup'" >&2
+        fi
+
         nix_backup_created=1
         return 0
 }

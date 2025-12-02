@@ -7,6 +7,21 @@
 
 set -eu
 
+# Determine script directory to locate sibling imps
+SCRIPT_SOURCE=$0
+case $SCRIPT_SOURCE in
+*/*)
+  SCRIPT_DIR=${SCRIPT_SOURCE%/*}
+  ;;
+*)
+  resolved=$(command -v "$SCRIPT_SOURCE" 2>/dev/null || printf '%s' "$SCRIPT_SOURCE")
+  SCRIPT_DIR=${resolved%/*}
+  ;;
+esac
+if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
+  SCRIPT_DIR=.
+fi
+
 show_usage() {
   cat <<'USAGE' >&2
 Usage: nix-shell-init add|remove|status [OPTIONS]
@@ -137,6 +152,23 @@ run_maybe_sudo() {
   fi
 }
 
+# Back up nix config file before modifying it (only once per session)
+# Uses the backup-nix-config imp if available
+backup_nix_config_once() {
+  # Locate the backup-nix-config imp
+  backup_imp=""
+  if [ -x "$SCRIPT_DIR/../fs/backup-nix-config" ]; then
+    backup_imp="$SCRIPT_DIR/../fs/backup-nix-config"
+  elif command -v backup-nix-config >/dev/null 2>&1; then
+    backup_imp=$(command -v backup-nix-config)
+  fi
+
+  if [ -n "$backup_imp" ]; then
+    # Use the imp - it handles "only once" internally and reports to stderr
+    "$backup_imp" "$nix_file" >/dev/null || true
+  fi
+}
+
 # Check if block exists
 block_exists() {
   [ -f "$nix_file" ] && grep -Fq "$marker" "$nix_file" 2>/dev/null
@@ -191,6 +223,9 @@ $line"
     printf '%s\n' "nix-shell-init: no shell code provided on stdin" >&2
     exit 1
   fi
+  
+  # Back up the config file before making any modifications
+  backup_nix_config_once
   
   # Escape the shell code for nix '' multi-line string
   escaped_code=$(printf '%s' "$shell_code" | escape_for_nix_multiline)
@@ -299,6 +334,9 @@ do_remove() {
         ;;
     esac
   fi
+  
+  # Back up the config file before making any modifications
+  backup_nix_config_once
   
   # Remove all lines containing our marker
   # Since every wizardry-managed content line has #wizardry: NAME appended,

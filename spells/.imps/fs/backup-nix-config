@@ -1,0 +1,81 @@
+#!/bin/sh
+# backup-nix-config FILE - back up nix config file before editing (only once)
+# Returns the backup path on stdout and prints user notification to stderr.
+# Only creates backup once per session; subsequent calls return 0 without backing up.
+# Uses WIZARDRY_NIX_CONFIG_BACKED_UP_<hash> env var to track backup state.
+# Example: backup-nix-config /etc/nixos/configuration.nix
+# Exit code: 0 on success (whether backup created or already done), 1 on error
+
+set -eu
+
+file=${1:-}
+
+if [ -z "$file" ]; then
+  printf '%s\n' "backup-nix-config: file path required" >&2
+  exit 1
+fi
+
+if [ ! -f "$file" ]; then
+  # File doesn't exist yet, nothing to back up
+  exit 0
+fi
+
+# Generate a deterministic hash for this file path to create a unique env var name
+# Using cksum to create a checksum of the path
+checksum=$(printf '%s' "$file" | cksum | awk '{print $1}')
+backup_marker_var="WIZARDRY_NIX_BACKUP_${checksum}"
+
+# Check if backup was already done for this file in this session
+# shellcheck disable=SC2154  # var name is dynamic
+eval "backup_done=\${${backup_marker_var}:-}"
+if [ "$backup_done" = "1" ]; then
+  # Backup already done, return success without doing anything
+  exit 0
+fi
+
+# Generate timestamp for backup file naming
+timestamp=$(date +%Y%m%d%H%M%S 2>/dev/null || date +%s 2>/dev/null || printf 'pid%s' "$$")
+backup="${file}.wizardry.${timestamp}"
+
+# Determine if we need sudo for system-level files
+needs_sudo=0
+case $file in
+/etc/*)
+  if [ ! -w "$file" ] 2>/dev/null && [ ! -w "$(dirname "$file")" ] 2>/dev/null; then
+    needs_sudo=1
+  fi
+  ;;
+esac
+
+# Run command with sudo if needed
+run_maybe_sudo() {
+  if [ "$needs_sudo" -eq 1 ]; then
+    if command -v sudo >/dev/null 2>&1; then
+      sudo "$@"
+    elif command -v doas >/dev/null 2>&1; then
+      doas "$@"
+    else
+      "$@"
+    fi
+  else
+    "$@"
+  fi
+}
+
+# Create the backup
+if ! run_maybe_sudo cp "$file" "$backup"; then
+  printf '%s\n' "backup-nix-config: unable to back up '$file'" >&2
+  exit 1
+fi
+
+# Mark this file as backed up for this session
+# Note: This only works within the same process; callers should set the exported
+# var if they want child processes to see it
+eval "${backup_marker_var}=1"
+export "${backup_marker_var}"
+
+# Print user notification to stderr
+printf '%s\n' "Backed up '$file' to '$backup'" >&2
+
+# Return the backup path on stdout
+printf '%s\n' "$backup"
