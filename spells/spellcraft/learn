@@ -148,9 +148,19 @@ rc_run() {
   spell=""
   rc_format="shell"
   shell_type="bash"
+  skip_rebuild=0
+  skip_confirm=0
 
   while [ "$#" -gt 0 ]; do
     case $1 in
+    --skip-rebuild)
+      skip_rebuild=1
+      shift
+      ;;
+    --skip-confirm)
+      skip_confirm=1
+      shift
+      ;;
     --rc-file)
       if [ "$#" -lt 2 ]; then
         printf '%s\n' "learn: --rc-file expects a file path." >&2
@@ -441,7 +451,11 @@ EOF_DETECT
       printf '%s\n' "learn: nix-shell-init imp not found." >&2
       exit 1
     fi
-    "$nix_helper" add --shell "$shell_type" --name "$spell" --file "$rc_file"
+    nix_args=""
+    [ "$skip_rebuild" -eq 1 ] && nix_args="$nix_args --skip-rebuild"
+    [ "$skip_confirm" -eq 1 ] && nix_args="$nix_args --skip-confirm"
+    # shellcheck disable=SC2086
+    "$nix_helper" add $nix_args --shell "$shell_type" --name "$spell" --file "$rc_file"
   }
 
   nix_remove_spell() {
@@ -449,7 +463,11 @@ EOF_DETECT
       printf '%s\n' "learn: nix-shell-init imp not found." >&2
       exit 1
     fi
-    "$nix_helper" remove --shell "$shell_type" --name "$spell" --file "$rc_file"
+    nix_args=""
+    [ "$skip_rebuild" -eq 1 ] && nix_args="$nix_args --skip-rebuild"
+    [ "$skip_confirm" -eq 1 ] && nix_args="$nix_args --skip-confirm"
+    # shellcheck disable=SC2086
+    "$nix_helper" remove $nix_args --shell "$shell_type" --name "$spell" --file "$rc_file"
   }
 
   if [ "$rc_format" = "nix" ]; then

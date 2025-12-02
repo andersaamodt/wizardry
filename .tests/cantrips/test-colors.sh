@@ -14,12 +14,12 @@ done
 . "$test_root/test-common.sh"
 
 test_colors_enable_palette_by_default() {
-  run_cmd env TERM=xterm sh -c ". \"$ROOT_DIR/spells/cantrips/colors\"; printf 'avail:%s red:%s\\n' \"\$WIZARDRY_COLORS_AVAILABLE\" \"\$RED\""
+  run_cmd env TERM=xterm sh -c ". \"$ROOT_DIR/spells/cantrips/colors\"; printf 'avail:%s red:%s\\n' \"\$_colors_available\" \"\$RED\""
   assert_success && case "$OUTPUT" in avail:1\ red:*) : ;; *) TEST_FAILURE_REASON="expected colors to be available"; return 1 ;; esac
 }
 
 test_colors_disable_when_requested() {
-  run_cmd env TERM=xterm NO_COLOR=1 sh -c ". \"$ROOT_DIR/spells/cantrips/colors\"; printf 'avail:%s red:%s\\n' \"\$WIZARDRY_COLORS_AVAILABLE\" \"\$RED\""
+  run_cmd env TERM=xterm NO_COLOR=1 sh -c ". \"$ROOT_DIR/spells/cantrips/colors\"; printf 'avail:%s red:%s\\n' \"\$_colors_available\" \"\$RED\""
   if ! assert_success; then return 1; fi
   case "$OUTPUT" in
     avail:0\ red:*) ;;
@@ -45,7 +45,7 @@ test_colors_printf_s_works() {
 
 test_colors_disable_for_dumb_terminal() {
   # Colors should be disabled for TERM=dumb which returns -1 from tput colors
-  run_cmd env TERM=dumb sh -c ". \"$ROOT_DIR/spells/cantrips/colors\"; printf 'avail:%s green:%s\\n' \"\$WIZARDRY_COLORS_AVAILABLE\" \"\$GREEN\""
+  run_cmd env TERM=dumb sh -c ". \"$ROOT_DIR/spells/cantrips/colors\"; printf 'avail:%s green:%s\\n' \"\$_colors_available\" \"\$GREEN\""
   if ! assert_success; then return 1; fi
   case "$OUTPUT" in
     avail:0\ green:) : ;;

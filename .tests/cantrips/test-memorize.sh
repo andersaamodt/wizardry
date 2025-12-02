@@ -17,7 +17,7 @@ tabbed() {
 cast_env() {
   dir=$(mktemp -d "${WIZARDRY_TMPDIR}/cast.XXXXXX")
   mkdir -p "$dir"
-  printf 'WIZARDRY_CAST_DIR=%s' "$dir"
+  printf 'SPELLBOOK_DIR=%s' "$dir"
 }
 
 run_memorize() {
@@ -278,46 +278,19 @@ memorized_file_content() {
 
 run_test_case "memorized file content" memorized_file_content
 
-# Test WIZARDRY_CAST_FILE environment variable
-custom_cast_file() {
+# Test SPELLBOOK_DIR environment variable (now .memorized is always in SPELLBOOK_DIR)
+custom_spellbook_dir() {
   tmpdir=$(make_tempdir)
   mkdir -p "$tmpdir/custom"
-  custom_file="$tmpdir/custom/my-memorized"
+  expected_file="$tmpdir/custom/.memorized"
 
-  run_cmd env "WIZARDRY_CAST_DIR=$tmpdir" "WIZARDRY_CAST_FILE=$custom_file" \
+  run_cmd env "SPELLBOOK_DIR=$tmpdir/custom" \
     "$ROOT_DIR/spells/cantrips/memorize" path
   assert_success || return 1
-  [ "$OUTPUT" = "$custom_file" ] || { TEST_FAILURE_REASON="expected custom file path: $custom_file, got: $OUTPUT"; return 1; }
+  [ "$OUTPUT" = "$expected_file" ] || { TEST_FAILURE_REASON="expected file path: $expected_file, got: $OUTPUT"; return 1; }
 }
 
-run_test_case "custom cast file via WIZARDRY_CAST_FILE" custom_cast_file
-
-# Test MEMORIZE_COMMAND_FILE environment variable (legacy)
-legacy_command_file() {
-  tmpdir=$(make_tempdir)
-  mkdir -p "$tmpdir/legacy"
-  legacy_file="$tmpdir/legacy/legacy-memorized"
-
-  run_cmd env "WIZARDRY_CAST_DIR=$tmpdir" "MEMORIZE_COMMAND_FILE=$legacy_file" \
-    "$ROOT_DIR/spells/cantrips/memorize" path
-  assert_success || return 1
-  [ "$OUTPUT" = "$legacy_file" ] || { TEST_FAILURE_REASON="expected legacy file path"; return 1; }
-}
-
-run_test_case "custom cast file via MEMORIZE_COMMAND_FILE" legacy_command_file
-
-# Test WIZARDRY_SPELL_HOME fallback
-spell_home_fallback() {
-  tmpdir=$(make_tempdir)
-  spell_home="$tmpdir/spell-home"
-
-  run_cmd env "WIZARDRY_SPELL_HOME=$spell_home" \
-    "$ROOT_DIR/spells/cantrips/memorize" dir
-  assert_success || return 1
-  [ "$OUTPUT" = "$spell_home" ] || { TEST_FAILURE_REASON="expected spell home dir: $spell_home, got: $OUTPUT"; return 1; }
-}
-
-run_test_case "WIZARDRY_SPELL_HOME fallback" spell_home_fallback
+run_test_case "custom spellbook dir via SPELLBOOK_DIR" custom_spellbook_dir
 
 # Test XDG_DATA_HOME fallback
 xdg_data_home_fallback() {
@@ -333,20 +306,20 @@ xdg_data_home_fallback() {
 
 run_test_case "XDG_DATA_HOME fallback" xdg_data_home_fallback
 
-# Test tilde expansion in WIZARDRY_CAST_DIR
-tilde_expansion_cast_dir() {
+# Test tilde expansion in SPELLBOOK_DIR
+tilde_expansion_spellbook_dir() {
   tmpdir=$(make_tempdir)
   fake_home="$tmpdir/home"
   mkdir -p "$fake_home/.test-spellbook"
 
-  run_cmd env "HOME=$fake_home" "WIZARDRY_CAST_DIR=~/.test-spellbook" \
+  run_cmd env "HOME=$fake_home" "SPELLBOOK_DIR=~/.test-spellbook" \
     "$ROOT_DIR/spells/cantrips/memorize" dir
   assert_success || return 1
   expected="$fake_home/.test-spellbook"
   [ "$OUTPUT" = "$expected" ] || { TEST_FAILURE_REASON="tilde not expanded: $OUTPUT vs $expected"; return 1; }
 }
 
-run_test_case "tilde expansion in WIZARDRY_CAST_DIR" tilde_expansion_cast_dir
+run_test_case "tilde expansion in SPELLBOOK_DIR" tilde_expansion_spellbook_dir
 
 # Test path extra args rejected
 path_extra_args_rejected() {

@@ -3,10 +3,7 @@
 
 . "${0%/*}/../../test-common.sh"
 
-# Skip nix rebuild in tests since nixos-rebuild and home-manager aren't available
-export WIZARDRY_SKIP_NIX_REBUILD=1
-# Skip confirmation prompts in tests
-export WIZARDRY_SKIP_CONFIRM=1
+# Note: Tests now use --skip-rebuild and --skip-confirm flags instead of env vars
 
 test_nix_shell_init_help() {
   run_spell "spells/.imps/sys/nix-shell-init" --help
@@ -21,8 +18,8 @@ test_nix_shell_init_add_creates_block() {
   # Create minimal nix file
   printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$nix_file"
   
-  # Add shell init code
-  result=$(printf 'source "/path/to/spell"' | HOME="$tmpdir" "$ROOT_DIR/spells/.imps/sys/nix-shell-init" add --shell bash --name testspell --file "$nix_file" 2>&1) || {
+  # Add shell init code (using flags to skip rebuild and confirm)
+  result=$(printf 'source "/path/to/spell"' | HOME="$tmpdir" "$ROOT_DIR/spells/.imps/sys/nix-shell-init" add --skip-rebuild --skip-confirm --shell bash --name testspell --file "$nix_file" --skip-rebuild --skip-confirm 2>&1) || {
     TEST_FAILURE_REASON="nix-shell-init add failed: $result"
     return 1
   }
@@ -50,8 +47,8 @@ test_nix_shell_init_add_is_idempotent() {
   printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$nix_file"
   
   # Add shell init code twice
-  printf 'source "/path/to/spell"' | "$ROOT_DIR/spells/.imps/sys/nix-shell-init" add --shell bash --name testspell --file "$nix_file"
-  printf 'source "/path/to/spell"' | "$ROOT_DIR/spells/.imps/sys/nix-shell-init" add --shell bash --name testspell --file "$nix_file"
+  printf 'source "/path/to/spell"' | "$ROOT_DIR/spells/.imps/sys/nix-shell-init" add --skip-rebuild --skip-confirm --shell bash --name testspell --file "$nix_file"
+  printf 'source "/path/to/spell"' | "$ROOT_DIR/spells/.imps/sys/nix-shell-init" add --skip-rebuild --skip-confirm --shell bash --name testspell --file "$nix_file"
   
   # Count markers - should be exactly 1 (only content line is marked, not opening/closing syntax)
   # The opening programs.bash.initExtra = '' and closing ''; are NOT marked
@@ -76,7 +73,7 @@ test_nix_shell_init_status_returns_correct_result() {
   fi
   
   # Add the block
-  printf 'source "/path/to/spell"' | "$ROOT_DIR/spells/.imps/sys/nix-shell-init" add --shell bash --name testspell --file "$nix_file"
+  printf 'source "/path/to/spell"' | "$ROOT_DIR/spells/.imps/sys/nix-shell-init" add --skip-rebuild --skip-confirm --shell bash --name testspell --file "$nix_file"
   
   # Status should succeed when present
   if ! "$ROOT_DIR/spells/.imps/sys/nix-shell-init" status --shell bash --name testspell --file "$nix_file" 2>/dev/null; then
@@ -93,7 +90,7 @@ test_nix_shell_init_remove_clears_block() {
   printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$nix_file"
   
   # Add shell init code
-  printf 'source "/path/to/spell"' | "$ROOT_DIR/spells/.imps/sys/nix-shell-init" add --shell bash --name testspell --file "$nix_file"
+  printf 'source "/path/to/spell"' | "$ROOT_DIR/spells/.imps/sys/nix-shell-init" add --skip-rebuild --skip-confirm --shell bash --name testspell --file "$nix_file"
   
   # Verify it was added
   if ! grep -q "wizardry: testspell" "$nix_file"; then
@@ -102,7 +99,7 @@ test_nix_shell_init_remove_clears_block() {
   fi
   
   # Remove it
-  "$ROOT_DIR/spells/.imps/sys/nix-shell-init" remove --shell bash --name testspell --file "$nix_file"
+  "$ROOT_DIR/spells/.imps/sys/nix-shell-init" remove --skip-rebuild --skip-confirm --shell bash --name testspell --file "$nix_file"
   
   # Verify it was removed
   if grep -q "wizardry: testspell" "$nix_file"; then
@@ -119,7 +116,7 @@ test_nix_shell_init_zsh_uses_correct_option() {
   printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$nix_file"
   
   # Add shell init code for zsh
-  printf 'source "/path/to/spell"' | "$ROOT_DIR/spells/.imps/sys/nix-shell-init" add --shell zsh --name testspell --file "$nix_file"
+  printf 'source "/path/to/spell"' | "$ROOT_DIR/spells/.imps/sys/nix-shell-init" add --skip-rebuild --skip-confirm --shell zsh --name testspell --file "$nix_file"
   
   # Verify it uses programs.zsh.initExtra
   if ! grep -q "programs.zsh.initExtra" "$nix_file"; then
@@ -133,7 +130,7 @@ test_nix_shell_init_creates_file_if_missing() {
   nix_file="$tmpdir/subdir/test.nix"
   
   # File doesn't exist yet
-  printf 'source "/path/to/spell"' | "$ROOT_DIR/spells/.imps/sys/nix-shell-init" add --shell bash --name testspell --file "$nix_file"
+  printf 'source "/path/to/spell"' | "$ROOT_DIR/spells/.imps/sys/nix-shell-init" add --skip-rebuild --skip-confirm --shell bash --name testspell --file "$nix_file"
   
   # Verify file was created with proper structure
   if [ ! -f "$nix_file" ]; then
@@ -154,7 +151,7 @@ test_nix_shell_init_multiline_code() {
   printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$nix_file"
   
   # Add multi-line shell init code
-  printf 'if [ -f "/path/to/spell" ]; then\n  source "/path/to/spell"\nfi' | "$ROOT_DIR/spells/.imps/sys/nix-shell-init" add --shell bash --name testspell --file "$nix_file"
+  printf 'if [ -f "/path/to/spell" ]; then\n  source "/path/to/spell"\nfi' | "$ROOT_DIR/spells/.imps/sys/nix-shell-init" add --skip-rebuild --skip-confirm --shell bash --name testspell --file "$nix_file"
   
   # Verify multi-line content is present
   if ! grep -q 'source "/path/to/spell"' "$nix_file"; then
@@ -208,7 +205,7 @@ test_nix_shell_init_escapes_special_chars() {
   
   # Add shell code with special characters that need escaping
   # The ${ needs to be escaped as ''${ in nix '' strings
-  printf 'echo "${HOME}/test"' | "$ROOT_DIR/spells/.imps/sys/nix-shell-init" add --shell bash --name escapespell --file "$nix_file"
+  printf 'echo "${HOME}/test"' | "$ROOT_DIR/spells/.imps/sys/nix-shell-init" add --skip-rebuild --skip-confirm --shell bash --name escapespell --file "$nix_file"
   
   # Verify the file is valid (the escaping worked)
   if ! grep -q "wizardry: escapespell" "$nix_file"; then
@@ -234,7 +231,7 @@ test_nix_shell_init_only_marks_content_lines() {
   printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$nix_file"
   
   # Add shell init code with multiple lines
-  printf 'export FOO=bar\nexport BAZ=qux' | "$ROOT_DIR/spells/.imps/sys/nix-shell-init" add --shell bash --name marktest --file "$nix_file"
+  printf 'export FOO=bar\nexport BAZ=qux' | "$ROOT_DIR/spells/.imps/sys/nix-shell-init" add --skip-rebuild --skip-confirm --shell bash --name marktest --file "$nix_file"
   
   # The opening line (programs.bash.initExtra = '') should NOT have the marker
   if grep -q "programs.bash.initExtra.*#wizardry" "$nix_file"; then
@@ -289,7 +286,7 @@ test_nix_shell_init_inserts_into_existing_block() {
 EOF
   
   # Add our spell - should insert into the existing block
-  printf 'export WIZARDRY_VAR=magic' | "$ROOT_DIR/spells/.imps/sys/nix-shell-init" add --shell bash --name inserttest --file "$nix_file"
+  printf 'export WIZARDRY_VAR=magic' | "$ROOT_DIR/spells/.imps/sys/nix-shell-init" add --skip-rebuild --skip-confirm --shell bash --name inserttest --file "$nix_file"
   
   # Verify the existing content is still there
   if ! grep -q "EXISTING_VAR=value" "$nix_file"; then

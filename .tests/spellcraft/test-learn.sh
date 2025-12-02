@@ -9,10 +9,7 @@ done
 # shellcheck source=/dev/null
 . "$test_root/test-common.sh"
 
-# Skip nix rebuild in tests since nixos-rebuild and home-manager aren't available
-export WIZARDRY_SKIP_NIX_REBUILD=1
-# Skip confirmation prompts in tests
-export WIZARDRY_SKIP_CONFIRM=1
+# Note: Tests now use --skip-rebuild and --skip-confirm flags instead of env vars
 
 # Helper to create a stub detect-rc-file for a specific rc file
 make_detect_stub() {
@@ -143,7 +140,7 @@ test_nix_format_adds_shell_init() {
   printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$rc"
   stub=$(make_nix_detect_stub "$rc")
   
-  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell myspell --format nix add <<'EOF'
+  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --skip-rebuild --skip-confirm --spell myspell --format nix add <<'EOF'
 source "/path/to/spell"
 EOF
   assert_success || return 1
@@ -158,7 +155,7 @@ test_nix_format_auto_detects_from_extension() {
   stub=$(make_nix_detect_stub "$rc")
   
   # Don't specify --format, let it auto-detect from .nix extension
-  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell autospell add <<'EOF'
+  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --skip-rebuild --skip-confirm --spell autospell add <<'EOF'
 source "/path/to/spell"
 EOF
   assert_success || return 1
@@ -175,7 +172,7 @@ test_nix_format_status_works() {
   assert_failure || return 1
   
   # Add the spell
-  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell nixstatus --format nix add <<'EOF'
+  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --skip-rebuild --skip-confirm --spell nixstatus --format nix add <<'EOF'
 source "/path/to/spell"
 EOF
   assert_success || return 1
@@ -191,7 +188,7 @@ test_nix_format_remove_works() {
   stub=$(make_nix_detect_stub "$rc")
   
   # Add the spell
-  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell nixremove --format nix add <<'EOF'
+  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --skip-rebuild --skip-confirm --spell nixremove --format nix add <<'EOF'
 source "/path/to/spell"
 EOF
   assert_success || return 1
@@ -203,7 +200,7 @@ EOF
   fi
   
   # Remove it
-  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell nixremove --format nix remove
+  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --skip-rebuild --skip-confirm --spell nixremove --format nix remove
   assert_success || return 1
   
   # Verify it was removed
@@ -218,7 +215,7 @@ test_nix_format_zsh_shell_option() {
   printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$rc"
   stub=$(make_nix_detect_stub "$rc")
   
-  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell zshspell --format nix --shell zsh add <<'EOF'
+  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --skip-rebuild --skip-confirm --spell zshspell --format nix --shell zsh add <<'EOF'
 source "/path/to/spell"
 EOF
   assert_success || return 1

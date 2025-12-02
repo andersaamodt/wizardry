@@ -30,7 +30,7 @@ test_argument_validation() {
 }
 
 test_missing_confirmation_helper() {
-  run_cmd env PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:/bin:/usr/bin" WIZARDRY_UPDATE_ALL_DISTRO=debian "$(pwd)/spells/system/update-all"
+  run_cmd env PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:/bin:/usr/bin" "$(pwd)/spells/system/update-all" --distro debian
   assert_failure
   assert_output_contains "Detected platform: debian"
   assert_error_contains "ask_yn spell is missing"
@@ -45,7 +45,7 @@ exit 1
 EOF
   chmod +x "$stub_dir/ask_yn"
 
-  run_cmd env PATH="$stub_dir:$PATH" WIZARDRY_UPDATE_ALL_DISTRO=debian "$(pwd)/spells/system/update-all"
+  run_cmd env PATH="$stub_dir:$PATH" "$(pwd)/spells/system/update-all" --distro debian
   assert_failure
   assert_output_contains "Detected platform: debian"
   assert_error_contains "cancelled by user"
@@ -63,7 +63,7 @@ EOF
   run_cmd env PATH="$temp_dir:$PATH" "$temp_dir/update-all"
   assert_failure && assert_error_contains "Unable to detect operating system"
 
-  run_cmd env WIZARDRY_UPDATE_ALL_ASSUME_YES=1 WIZARDRY_UPDATE_ALL_DISTRO=plan9 "$(pwd)/spells/system/update-all"
+  run_cmd "$(pwd)/spells/system/update-all" --yes --distro plan9
   assert_status 2
   assert_error_contains "Unsupported platform: plan9"
 }
@@ -88,7 +88,7 @@ exit 0
 EOF
   chmod +x "$stub_dir/apt-get"
 
-  run_cmd env PATH="$stub_dir:$PATH" WIZARDRY_UPDATE_ALL_ASSUME_YES=1 WIZARDRY_UPDATE_ALL_DISTRO=debian "$(pwd)/spells/system/update-all"
+  run_cmd env PATH="$stub_dir:$PATH" "$(pwd)/spells/system/update-all" --yes --distro debian
   assert_success
   assert_output_contains "Detected platform: debian"
   assert_output_contains "All updates complete"
@@ -120,7 +120,7 @@ exit 0
 EOF
   chmod +x "$stub_dir/apt-get"
 
-  run_cmd env PATH="$stub_dir:$PATH" WIZARDRY_UPDATE_ALL_ASSUME_YES=1 WIZARDRY_UPDATE_ALL_DISTRO=debian "$(pwd)/spells/system/update-all"
+  run_cmd env PATH="$stub_dir:$PATH" "$(pwd)/spells/system/update-all" --yes --distro debian
   assert_status 9
   assert_file_contains "$log" "apt-get -o Dpkg::Progress-Fancy=1 -o Dpkg::Use-Pty=0 -y full-upgrade"
 }
@@ -153,7 +153,7 @@ exit 0
 EOF
   chmod +x "$stub_dir/pamac"
 
-  run_cmd env PATH="$stub_dir:$PATH" WIZARDRY_UPDATE_ALL_ASSUME_YES=1 WIZARDRY_UPDATE_ALL_DISTRO=arch "$(pwd)/spells/system/update-all"
+  run_cmd env PATH="$stub_dir:$PATH" "$(pwd)/spells/system/update-all" --yes --distro arch
   assert_success
   assert_file_contains "$log" "sudo pacman -Syu --noconfirm"
   assert_file_contains "$log" "pamac update --no-confirm"
@@ -182,7 +182,7 @@ EOF
     chmod +x "$stub_dir/$cmd"
   done
 
-  run_cmd env PATH="$stub_dir:$PATH" WIZARDRY_UPDATE_ALL_ASSUME_YES=1 WIZARDRY_UPDATE_ALL_DISTRO=nixos "$(pwd)/spells/system/update-all"
+  run_cmd env PATH="$stub_dir:$PATH" "$(pwd)/spells/system/update-all" --yes --distro nixos
   assert_success
   assert_file_contains "$log" "sudo nix-channel --update"
   assert_file_contains "$log" "sudo nixos-rebuild switch --upgrade"
