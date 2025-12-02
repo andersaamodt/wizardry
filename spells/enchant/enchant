@@ -32,15 +32,23 @@ case "${1-}" in
         ;;
 esac
 
-# Check if argument looks like an attribute=value pair
+# Check if argument looks like a valid attribute=value pair
+# Returns 0 if it's a valid attr=value (non-empty attr and value)
 is_attr_value() {
         case "$1" in
-        *=*) return 0 ;;
+        *=*)
+                # Also check that both sides are non-empty
+                _av_attr="${1%%=*}"
+                _av_val="${1#*=}"
+                [ -n "$_av_attr" ] && [ -n "$_av_val" ] && return 0
+                return 1
+                ;;
         *) return 1 ;;
         esac
 }
 
 # Parse attribute=value into separate parts
+# Caller should use is_attr_value first to ensure valid format
 parse_attr_value() {
         _attr_val=$1
         _attr="${_attr_val%%=*}"
@@ -193,15 +201,11 @@ parse_arguments() {
                         key=$(printf '%s' "$parsed" | sed -n '1p')
                         value=$(printf '%s' "$parsed" | sed -n '2p')
                 else
-                        # Neither has =, check if first is a file path
-                        if [ -e "$1" ]; then
-                                # Looks like old format without value - error
-                                printf '%s\n' "Error: Missing value. Use 'attribute=value' format or provide three arguments." >&2
-                                return 1
-                        else
-                                printf '%s\n' "Error: Neither argument is in attribute=value format and first is not a file." >&2
-                                return 1
-                        fi
+                        # Neither has valid attr=value format
+                        # Provide consistent error message regardless of whether args exist as files
+                        printf '%s\n' "Error: Two-argument format requires one argument to be in 'attribute=value' format." >&2
+                        printf '%s\n' "       Use 'enchant <file> attr=value' or 'enchant attr=value <file>'" >&2
+                        return 1
                 fi
         elif [ $# -eq 3 ] || [ $# -eq 4 ]; then
                 # Legacy 3-4 arg format: file, attribute, value, [helper]
@@ -214,7 +218,8 @@ parse_arguments() {
                 return 1
         fi
 
-        # Validate we have all required parts
+        # Validate we have all required parts (mainly for legacy 3-arg format
+        # where empty args might be passed)
         if [ -z "$file" ] || [ -z "$key" ] || [ -z "$value" ]; then
                 printf '%s\n' "Error: File, attribute, and value are all required." >&2
                 return 1
