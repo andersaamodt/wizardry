@@ -252,17 +252,17 @@ test_nix_shell_init_only_marks_content_lines() {
   fi
   
   # Content lines should have the marker
-  if ! grep -q "export FOO=bar.*#wizardry: marktest" "$nix_file"; then
+  if ! grep -q "export FOO=bar.*# wizardry: marktest" "$nix_file"; then
     TEST_FAILURE_REASON="content line FOO should be marked"
     return 1
   fi
-  if ! grep -q "export BAZ=qux.*#wizardry: marktest" "$nix_file"; then
+  if ! grep -q "export BAZ=qux.*# wizardry: marktest" "$nix_file"; then
     TEST_FAILURE_REASON="content line BAZ should be marked"
     return 1
   fi
   
   # Count should be exactly 2 (two content lines)
-  marker_count=$(grep -c "#wizardry: marktest" "$nix_file" || printf '0')
+  marker_count=$(grep -c "# wizardry: marktest" "$nix_file" || printf '0')
   if [ "$marker_count" -ne 2 ]; then
     TEST_FAILURE_REASON="expected exactly 2 markers (2 content lines), found $marker_count"
     return 1
@@ -270,5 +270,40 @@ test_nix_shell_init_only_marks_content_lines() {
 }
 
 run_test_case "nix-shell-init only marks content lines" test_nix_shell_init_only_marks_content_lines
+
+# Test inserting content into an existing interactiveShellInit block
+test_nix_shell_init_inserts_into_existing_block() {
+  tmpdir=$(make_tempdir)
+  nix_file="$tmpdir/test.nix"
+  
+  # Create nix file with existing interactiveShellInit block
+  cat > "$nix_file" << 'EOF'
+{ config, pkgs, ... }:
+
+{
+  programs.bash.initExtra = ''
+    # existing user code
+    export EXISTING_VAR=value
+  '';
+}
+EOF
+  
+  # Add our spell - should insert into the existing block
+  printf 'export WIZARDRY_VAR=magic' | "$ROOT_DIR/spells/.imps/sys/nix-shell-init" add --shell bash --name inserttest --file "$nix_file"
+  
+  # Verify the existing content is still there
+  if ! grep -q "EXISTING_VAR=value" "$nix_file"; then
+    TEST_FAILURE_REASON="existing content was removed"
+    return 1
+  fi
+  
+  # Verify our content was added with marker
+  if ! grep -q "export WIZARDRY_VAR=magic.*# wizardry: inserttest" "$nix_file"; then
+    TEST_FAILURE_REASON="wizardry content was not added"
+    return 1
+  fi
+}
+
+run_test_case "nix-shell-init inserts into existing block" test_nix_shell_init_inserts_into_existing_block
 
 finish_tests

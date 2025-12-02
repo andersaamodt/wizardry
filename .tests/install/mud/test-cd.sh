@@ -239,7 +239,7 @@ STUB
   if grep -q "programs.bash.initExtra" "$nix_config"; then
     return 0
   fi
-  if grep -q "#wizardry: cd-cantrip" "$nix_config"; then
+  if grep -q "# wizardry: cd-cantrip" "$nix_config"; then
     return 0
   fi
   TEST_FAILURE_REASON="Nix shell init not found in configuration.nix"
@@ -272,7 +272,7 @@ EOF
   if grep -q "programs.bash.initExtra" "$nix_config"; then
     return 0
   fi
-  if grep -q "#wizardry: cd-cantrip" "$nix_config"; then
+  if grep -q "# wizardry: cd-cantrip" "$nix_config"; then
     return 0
   fi
   TEST_FAILURE_REASON="Nix format was not auto-detected from detect-rc-file output"
@@ -301,7 +301,7 @@ EOF
   assert_success || return 1
   
   # Verify hook was installed
-  if ! grep -q "#wizardry: cd-cantrip" "$nix_config"; then
+  if ! grep -q "# wizardry: cd-cantrip" "$nix_config"; then
     TEST_FAILURE_REASON="Hook was not installed before uninstall test"
     return 1
   fi
@@ -312,7 +312,7 @@ EOF
   assert_output_contains "uninstalled wizardry hooks" || return 1
   
   # Verify hook was removed
-  if grep -q "#wizardry: cd-cantrip" "$nix_config"; then
+  if grep -q "# wizardry: cd-cantrip" "$nix_config"; then
     TEST_FAILURE_REASON="Hook still present after uninstall"
     return 1
   fi
