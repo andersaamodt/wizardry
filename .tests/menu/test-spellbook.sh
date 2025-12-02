@@ -33,9 +33,8 @@ case $1 in
       cmd="$cmd $1"
       shift
     done
-    cast_dir=${WIZARDRY_CAST_DIR:-${HOME:-.}/.spellbook}
-    cast_file_default=$cast_dir/.memorized
-    cast_file=${WIZARDRY_CAST_FILE:-$cast_file_default}
+    cast_dir=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
+    cast_file=$cast_dir/.memorized
     mkdir -p "$cast_dir"
     printf '%s\t%s\n' "$name" "$cmd" >>"$cast_file"
     printf '%s\n' "$cmd" >"$cast_dir/$name"
@@ -44,9 +43,8 @@ case $1 in
   remove)
     shift
     name=$1
-    cast_dir=${WIZARDRY_CAST_DIR:-${HOME:-.}/.spellbook}
-    cast_file_default=$cast_dir/.memorized
-    cast_file=${WIZARDRY_CAST_FILE:-$cast_file_default}
+    cast_dir=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
+    cast_file=$cast_dir/.memorized
     tmp=$(mktemp)
     while IFS= read -r line || [ -n "$line" ]; do
       case $line in
@@ -58,13 +56,13 @@ case $1 in
     rm -f "$cast_dir/$name"
     ;;
   list)
-    cast_dir=${WIZARDRY_CAST_DIR:-${HOME:-.}/.spellbook}
+    cast_dir=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
     cast_file_default=$cast_dir/.memorized
-    cast_file=${WIZARDRY_CAST_FILE:-$cast_file_default}
+    cast_file=${SPELLBOOK_FILE:-$cast_file_default}
     cat "$cast_file" 2>/dev/null
     ;;
   dir)
-    cast_dir=${WIZARDRY_CAST_DIR:-${HOME:-.}/.spellbook}
+    cast_dir=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
     printf '%s\n' "$cast_dir"
     ;;
 esac
@@ -83,7 +81,8 @@ STUB
 
 test_errors_when_helper_missing() {
   stub_dir=$(make_stub_dir)
-  PATH="$stub_dir:/bin:/usr/bin" CAST_STORE="$stub_dir/does-not-exist" run_spell "spells/menu/spellbook" --list
+  # Include spells/.imps for declare-globals, but not the full PATH so memorize is missing
+  PATH="$stub_dir:$ROOT_DIR/spells/.imps:/bin:/usr/bin" CAST_STORE="$stub_dir/does-not-exist" run_spell "spells/menu/spellbook" --list
   assert_failure || return 1
   case "$OUTPUT$ERROR" in
     *"memorize helper is missing"*) : ;;
@@ -96,7 +95,7 @@ test_lists_entries() {
   write_memorize_command_stub "$stub_dir"
   write_require_command_stub "$stub_dir"
   cast_dir="$stub_dir/custom-cast"
-  WIZARDRY_CAST_DIR="$cast_dir" PATH="$stub_dir:$PATH" run_spell "spells/menu/spellbook" --memorize spark "echo cast"
+  SPELLBOOK_DIR="$cast_dir" PATH="$stub_dir:$PATH" run_spell "spells/menu/spellbook" --memorize spark "echo cast"
   [ -f "$cast_dir/.memorized" ] || { TEST_FAILURE_REASON="cast file missing"; return 1; }
   content=$(tr -d '\n' < "$cast_dir/.memorized")
   case "$content" in
@@ -109,8 +108,8 @@ test_memorize_and_forget() {
   stub_dir=$(make_stub_dir)
   write_memorize_command_stub "$stub_dir"
   write_require_command_stub "$stub_dir"
-  WIZARDRY_CAST_DIR="$stub_dir/custom-cast" PATH="$stub_dir:$PATH" run_spell "spells/menu/spellbook" --memorize spark "echo cast"
-  WIZARDRY_CAST_DIR="$stub_dir/custom-cast" PATH="$stub_dir:$PATH" run_spell "spells/menu/spellbook" --forget spark
+  SPELLBOOK_DIR="$stub_dir/custom-cast" PATH="$stub_dir:$PATH" run_spell "spells/menu/spellbook" --memorize spark "echo cast"
+  SPELLBOOK_DIR="$stub_dir/custom-cast" PATH="$stub_dir:$PATH" run_spell "spells/menu/spellbook" --forget spark
   assert_success
 }
 
@@ -121,7 +120,7 @@ test_scribe_records_command() {
   spellbook_dir="$stub_dir/spellbook"
   mkdir -p "$spellbook_dir"
   
-  PATH="$stub_dir:$PATH" WIZARDRY_SPELL_HOME="$spellbook_dir" run_spell "spells/menu/spellbook" --scribe spark "echo ignite"
+  PATH="$stub_dir:$PATH" SPELLBOOK_DIR="$spellbook_dir" run_spell "spells/menu/spellbook" --scribe spark "echo ignite"
   
   assert_success || return 1
   [ -x "$spellbook_dir/spark" ] || { TEST_FAILURE_REASON="scribed script was not created"; return 1; }
@@ -141,8 +140,8 @@ test_scribe_multiple_commands() {
   spellbook_dir="$stub_dir/spellbook"
   mkdir -p "$spellbook_dir"
   
-  PATH="$stub_dir:$PATH" WIZARDRY_SPELL_HOME="$spellbook_dir" run_spell "spells/menu/spellbook" --scribe spark1 "echo ignite1"
-  PATH="$stub_dir:$PATH" WIZARDRY_SPELL_HOME="$spellbook_dir" run_spell "spells/menu/spellbook" --scribe splash "echo splash"
+  PATH="$stub_dir:$PATH" SPELLBOOK_DIR="$spellbook_dir" run_spell "spells/menu/spellbook" --scribe spark1 "echo ignite1"
+  PATH="$stub_dir:$PATH" SPELLBOOK_DIR="$spellbook_dir" run_spell "spells/menu/spellbook" --scribe splash "echo splash"
   
   [ -x "$spellbook_dir/spark1" ] || { TEST_FAILURE_REASON="spark1 script not found"; return 1; }
   [ -x "$spellbook_dir/splash" ] || { TEST_FAILURE_REASON="splash script not found"; return 1; }

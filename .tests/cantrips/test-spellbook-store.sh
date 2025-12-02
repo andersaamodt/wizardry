@@ -20,7 +20,7 @@ tabbed() {
 
 spellbook_env() {
   dir=$(mktemp -d "${WIZARDRY_TMPDIR}/spellbook.XXXXXX")
-  printf '%s' "WIZARDRY_SPELLBOOK_FILE=$dir/book"
+  printf '%s' "SPELLBOOK_FILE=$dir/book"
 }
 
 run_store() {

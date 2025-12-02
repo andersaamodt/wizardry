@@ -17,7 +17,10 @@ USAGE
 }
 
 resolve_spellbook_file() {
-	if [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
+	# Internal: allow override via SPELLBOOK_FILE for testing
+	if [ -n "${SPELLBOOK_FILE-}" ]; then
+		file=$SPELLBOOK_FILE
+	elif [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
 		file=$HOME/.tower/spellbook
 	else
 		file=.wizardry_spellbook
