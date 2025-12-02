@@ -100,7 +100,7 @@ THEME_HEADING="${GREEN}${BOLD}"  # Priority/heading highlight
 THEME_DIVIDER="$GREY"            # Menu dividers
 
 # MUD-specific colours for fantasy game elements.
-MUD_LOCATION="${BRIGHT_BLUE}"    # Location/room titles
+MUD_LOCATION="${BLUE}${BOLD}"    # Location/room titles
 MUD_DESCRIPTION="${WHITE}"       # Room/item descriptions
 MUD_ITEM="${YELLOW}"             # Items and objects
 MUD_HANDLE="${CYAN}"             # Player names/handles
