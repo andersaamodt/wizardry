@@ -1,0 +1,140 @@
+#!/bin/sh
+# declare-globals - centralized declaration of all allowed WIZARDRY global environment variables.
+#
+# When sourced in a script that uses `set -u`, this imp prevents undeclared global
+# environment variables from being used. Every WIZARDRY_* global must be declared here
+# with a justification comment explaining why it is required.
+#
+# Usage: . declare-globals
+#        (Source this file at the start of scripts that need strict global checking.)
+#
+# After sourcing, scripts with `set -u` will fail if they reference undeclared globals.
+# Add new globals here with a justification comment when absolutely necessary.
+
+# =============================================================================
+# DECLARED GLOBALS (each must have a justification comment above it)
+# =============================================================================
+
+# Directory where wizardry is installed. Required for scripts to locate
+# resources relative to the installation root.
+: "${WIZARDRY_DIR:=}"
+
+# Directory for user's cast menu spell shortcuts. Required for the cast menu
+# feature to store user-configured quick-access spell names.
+: "${WIZARDRY_CAST_DIR:=}"
+
+# File path for the cast command file. Required for memorize/cast commands
+# to store the list of memorized spells.
+: "${WIZARDRY_CAST_FILE:=}"
+
+# Path to the cd cantrip script. Required for the MUD cd hook to know
+# which script to source when changing directories.
+: "${WIZARDRY_CD_CANTRIP:=}"
+
+# Flag indicating whether terminal supports ANSI colors. Required for scripts
+# to conditionally disable color output when terminal lacks support.
+: "${WIZARDRY_COLORS_AVAILABLE:=}"
+
+# User's custom spell directory (spellbook). Required for scribe-spell
+# and other spellcraft commands to know where to save user-created spells.
+: "${WIZARDRY_SPELL_HOME:=}"
+
+# User's spellbook file for spellbook-store. Required for the spellbook
+# feature to persist spell metadata.
+: "${WIZARDRY_SPELLBOOK_FILE:=}"
+
+# Shell RC file path for wizardry. Required for learn-spell and install
+# commands to know which shell config file to modify.
+: "${WIZARDRY_RC_FILE:=}"
+
+# Format of the shell RC file (bash/zsh/fish/sh). Required for commands
+# that modify shell config to use correct syntax.
+: "${WIZARDRY_RC_FORMAT:=}"
+
+# Shell platform identifier. Required for learn-spell and install commands
+# to apply platform-specific configurations.
+: "${WIZARDRY_PLATFORM:=}"
+
+# Target path during spell memorization. Required for learn-spell to communicate
+# target paths to spell scripts during the learning process.
+: "${WIZARDRY_MEMORIZE_TARGET:=}"
+
+# MUD configuration directory. Required for MUD features to know where to
+# store room descriptions and other MUD-related configuration.
+: "${WIZARDRY_MUD_CONFIG_DIR:=}"
+
+# Operating system label for test output. Required for test-magic to display
+# OS-specific failure information in CI/test reports.
+: "${WIZARDRY_OS_LABEL:=}"
+
+# Skip confirmation prompts. Required for automated/scripted installations
+# to proceed without user interaction.
+: "${WIZARDRY_SKIP_CONFIRM:=}"
+
+# Skip NixOS rebuild during updates. Required for faster test iterations
+# and when rebuild should be deferred to a separate step.
+: "${WIZARDRY_SKIP_NIX_REBUILD:=}"
+
+# Assume yes to update-all prompts. Required for automated system updates
+# to proceed without user confirmation.
+: "${WIZARDRY_UPDATE_ALL_ASSUME_YES:=}"
+
+# Distribution override for update-all. Required for testing update-all
+# on different platforms without actual detection.
+: "${WIZARDRY_UPDATE_ALL_DISTRO:=}"
+
+# Flag to load only test helpers, not full spell functionality. Required for
+# test infrastructure to source spells for testing without side effects.
+: "${WIZARDRY_TEST_HELPERS_ONLY:=}"
+
+# Temporary directory for wizardry operations. Required for test suite to
+# manage temporary files in a controlled, cleanable location.
+: "${WIZARDRY_TMPDIR:=}"
+
+# System PATH saved before test PATH modifications. Required for run_cmd
+# to access essential utilities even when tests set restricted PATH.
+: "${WIZARDRY_SYSTEM_PATH:=}"
+
+# Flag to disable sandbox in tests. Required for environments where
+# bubblewrap or sandbox-exec cannot run.
+: "${WIZARDRY_DISABLE_SANDBOX:=}"
+
+# Flag to enable macOS sandbox (disabled by default). Required for optional
+# sandbox isolation on macOS in test environments.
+: "${WIZARDRY_ENABLE_MACOS_SANDBOX:=}"
+
+# Flag indicating sandbox warning already shown. Required to avoid
+# repeating the warning message for every test.
+: "${WIZARDRY_BWRAP_WARNING:=}"
+
+# Path to sandbox warning flag file. Required to coordinate warning
+# suppression across multiple test processes.
+: "${WIZARDRY_BWRAP_WARN_FILE:=}"
+
+# Binary directory for wizardry installation. Required for installation
+# scripts to know where to place executable files.
+: "${WIZARDRY_BIN_DIR:=}"
+
+# Core installer script path. Required for bootstrap installation to
+# locate the main installation entry point.
+: "${WIZARDRY_CORE_INSTALLER:=}"
+
+# Assume yes during installation. Required for non-interactive
+# installation in CI/CD or scripted environments.
+: "${WIZARDRY_INSTALL_ASSUME_YES:=}"
+
+# Installation target directory. Required for the installer to know
+# where wizardry should be placed on the filesystem.
+: "${WIZARDRY_INSTALL_DIR:=}"
+
+# Flag for submenu context. Required for menu system to know when
+# displaying a submenu vs main menu for proper navigation.
+: "${WIZARDRY_SUBMENU:=}"
+
+# Name of look spell to use. Required for MUD cd hook to know which
+# spell displays room descriptions when entering directories.
+: "${WIZARDRY_LOOK_SPELL:=}"
+
+# General-purpose wizardry variable. Reserved for temporary internal use
+# by wizardry scripts that need to pass data between components.
+: "${WIZARDRY_VAR:=}"

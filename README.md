@@ -192,7 +192,7 @@ These values make the wizardry project what it is, and distinguish it from simil
 | Menu specialization | Wizardry organizes complex workflows as dedicated menus that call one spell per menu item. |
 | Script-like scripts  | Keep scripts script-like: favor flat flows with few functions so behavior stays readable and hackable from the shell. |
 | Wizardry available   | Spells can assume other wizardry spells are already in the PATH and should invoke them by name instead of long paths. |
-| No globals, no wrappers, minimal functions | No global env variables unless absolutely necessary. No wrappers as they break front-facing. Linear flat scripts preferred to functions. |
+| No globals, no wrappers, minimal functions | No global env variables unless absolutely necessary. All allowed globals are declared with justifications in `spells/.imps/declare-globals`; scripts can source this imp and use `set -u` to enforce that only declared globals are used. No wrappers as they break front-facing. Linear flat scripts preferred to functions. |
 | Self-healing failures | When a spell encounters a missing prerequisite or failed assumption, it should fix the problem automatically or offer to fix it—never quit with an error that tells the user to fix it themselves. Error messages must not be written in the imperative (e.g., "Please install X" or "Run Y to fix"). |
 
 ## Testing
