@@ -21,9 +21,18 @@ if [ ! -f "$file" ]; then
 fi
 
 # Generate a deterministic hash for this file path to create a unique env var name
-# Using cksum to create a checksum of the path
+# Using cksum to create a checksum of the path - cksum output is always numeric,
+# making the resulting variable name safe (WIZARDRY_NIX_BACKUP_<numeric>)
 checksum=$(printf '%s' "$file" | cksum | awk '{print $1}')
 backup_marker_var="WIZARDRY_NIX_BACKUP_${checksum}"
+
+# Validate that the variable name contains only safe characters (letters, digits, underscore)
+case $backup_marker_var in
+  *[!A-Za-z0-9_]*)
+    printf '%s\n' "backup-nix-config: internal error: invalid variable name" >&2
+    exit 1
+    ;;
+esac
 
 # Check if backup was already done for this file in this session
 # shellcheck disable=SC2154  # var name is dynamic
@@ -41,7 +50,7 @@ backup="${file}.wizardry.${timestamp}"
 needs_sudo=0
 case $file in
 /etc/*)
-  if [ ! -w "$file" ] 2>/dev/null && [ ! -w "$(dirname "$file")" ] 2>/dev/null; then
+  if [ ! -w "$file" ] && [ ! -w "$(dirname "$file")" ] 2>/dev/null; then
     needs_sudo=1
   fi
   ;;
@@ -71,6 +80,7 @@ fi
 # Mark this file as backed up for this session
 # Note: This only works within the same process; callers should set the exported
 # var if they want child processes to see it
+# Variable name was validated above to contain only safe characters
 eval "${backup_marker_var}=1"
 export "${backup_marker_var}"
 
