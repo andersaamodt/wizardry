@@ -1,7 +1,22 @@
 #!/usr/bin/env sh
 
 # Reveal the maximum length of the provided strings.
-# Usage: max-length <string1> [string2 ...] [-v]
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: max-length <string1> [string2 ...] [-v]
+
+Reports the length of the longest argument, optionally echoing a labeled result when -v is supplied. A single quoted argument w
+ith spaces is split into words for measurement.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
 
 
 set -eu

@@ -8,11 +8,10 @@ set -eu
 # Provide an optional field name to extract a single detail.
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: read-contact <vcard-file> [field]
 
-Print all fields from a vCard file, or a specific field when provided. Escapes
-are normalized for readability and friendly field labels are shown.
+Print all fields from a vCard file or a specific field when you name one. Escapes are normalized for readability and friendly labels make the details easy to scan.
 USAGE
 }
 

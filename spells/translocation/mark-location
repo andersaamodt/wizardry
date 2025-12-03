@@ -10,8 +10,7 @@ usage() {
   cat <<'USAGE'
 Usage: mark-location [marker] [path]
 
-Record the current directory (or path) for jump-to-marker to return to later.
-Markers are stored in $SPELLBOOK_DIR/.markers/.
+Record the current directory or a provided path so jump-to-marker can return there later. Markers are stored in ~/.spellbook/.markers/.
 USAGE
 }
 

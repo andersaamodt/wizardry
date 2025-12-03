@@ -4,14 +4,10 @@
 # This is a planned feature that will enable inventory management.
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: toggle-inventory
 
-Toggle the inventory feature on or off. When enabled, wizardry
-tracks items you pick up and lets you manage your inventory.
-
-This is a planned feature. Currently, toggling this option only
-updates the configuration file at ~/.spellbook/.mud/config.
+Toggle the planned inventory feature on or off. When enabled it will track items you collect and let you manage them; for now the toggle just updates ~/.spellbook/.mud/config.
 USAGE
 }
 

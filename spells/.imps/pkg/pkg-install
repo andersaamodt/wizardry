@@ -2,6 +2,22 @@
 # pkg-install PACKAGE - install a package using the system package manager
 # Example: pkg-install git
 
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: pkg-install PACKAGE
+
+Install a package using the system package manager. Example: pkg-install git.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 package=${1:-}
 [ -z "$package" ] && { printf '%s\n' "pkg-install: package name required" >&2; exit 1; }
 

@@ -3,6 +3,21 @@
 # stop-service asks systemd to stop a running unit. It mirrors start-service so
 # users can read either script to understand the full lifecycle.
 
+usage() {
+        cat <<'USAGE' >&2
+Usage: stop-service UNIT
+
+Stops the specified systemd service and reports the result, prompting for a unit name when omitted.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 set -eu
 
 SCRIPT_NAME=$(basename "$0")

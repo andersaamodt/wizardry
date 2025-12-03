@@ -6,11 +6,10 @@
 
 set -eu
 usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: bind-tome [-d] <page-directory>
 
-Bind every file in the provided directory into a single <dirname>.txt tome.
-Pass -d to delete the original pages after binding.
+Bind every file in a directory into a single <dirname>.txt tome. Use -d to delete the original pages after binding if you want to keep only the finished book.
 USAGE
 }
 

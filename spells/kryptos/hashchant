@@ -6,11 +6,10 @@
 
 set -eu
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: hashchant <file>
 
-Compute a CRC-32 hash from the filename and contents, then write it to the
-file's user.hash extended attribute when supported. Prints the applied hash.
+Compute a CRC-32 hash from the filename and contents, write it to the file's user.hash extended attribute when supported, and print the applied value.
 USAGE
 }
 

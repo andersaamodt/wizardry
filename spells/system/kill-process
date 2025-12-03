@@ -6,11 +6,10 @@
 
 set -eu
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: kill-process
 
-List running processes, prompt for one by number using ask_number and ask_yn,
-then send a kill signal (override with KILL_CMD) to the selected pid.
+List running processes, prompt you to pick one by number, and then send a kill signal to that PID. Uses ask_number and ask_yn for a gentle, confirmed termination, and you can override the signal command with KILL_CMD.
 USAGE
 }
 

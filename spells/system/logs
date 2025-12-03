@@ -4,11 +4,10 @@
 # Use it to browse and view common log files on the system.
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: logs
 
-Display an interactive menu of system log files to view. Log paths are
-automatically adjusted based on the detected operating system.
+Open an interactive menu of system log files to view. The list adapts to your operating system so you can jump straight into the right logs.
 USAGE
 }
 

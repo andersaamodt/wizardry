@@ -6,6 +6,24 @@
 
 set -eu
 
+usage() {
+        cat <<'USAGE' >&2
+Usage: menu [--spell-mode] [--start-selection N] "Title" "Label%command"...
+
+Draw a keyboard-driven terminal menu using wizardry's cursor and input helpers.
+Provide a title followed by one or more "Label%command" entries; --spell-mode
+shows the command text as the label, and --start-selection picks the initial
+highlighted item.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 
 # Reuse the standard dependency checker when available so missing commands can

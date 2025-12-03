@@ -2,6 +2,21 @@
 
 # Present a menu of spells that can install supporting software.
 
+usage() {
+        cat <<'USAGE' >&2
+Usage: install-menu
+
+Opens the installation menu so you can browse and launch installer spells for wizardry's optional software.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 
 set -eu
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)

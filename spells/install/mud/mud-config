@@ -4,11 +4,10 @@
 # This is a helper for reading and writing MUD feature toggle states.
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: mud-config {get|set|toggle|list} [FEATURE] [VALUE]
 
-Manage MUD feature toggles stored in ~/.spellbook/.mud/config.
-Features: command-not-found, touch-hook, fantasy-theme, inventory, combat.
+Manage MUD feature toggles stored in ~/.spellbook/.mud/config. Supports get, set, toggle, and list for features like command-not-found, touch-hook, fantasy-theme, inventory, and combat.
 USAGE
 }
 

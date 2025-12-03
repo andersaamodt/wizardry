@@ -4,11 +4,10 @@
 # Use it to check the relative importance of files within a directory.
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: get-priority <file>
 
-Read and print the priority extended attribute from the specified file.
-Outputs the priority number, or nothing if not set.
+Read and print the priority extended attribute from a file, outputting the number if set.
 USAGE
 }
 

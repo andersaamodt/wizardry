@@ -1,5 +1,22 @@
 #!/bin/sh
 
+usage() {
+        cat <<'USAGE' >&2
+Usage: change-bitcoin-directory
+
+Prompts for a new Bitcoin data directory, moves your existing datadir or selected pieces into place, and rewrites bitcoin.conf t
+o point to the new location.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
+
 # This spell alters the location of thy Bitcoin data chamber on your system.
 
 # Check if a command needs to be re-invoked with sudo

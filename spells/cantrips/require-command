@@ -6,10 +6,20 @@
 
 set -eu
 usage() {
-    # Avoid silent failures when the helper is invoked incorrectly.
-    printf '%s\n' 'Usage: require-command <command> [message...]' >&2
-    exit 1
+        cat <<'USAGE' >&2
+Usage: require-command <command> [message...]
+
+Checks for a required binary, optionally offers to install it through wizardry installers, and exits non-zero with a helpful me
+ssage when the dependency is missing.
+USAGE
 }
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
 
 if [ "$#" -lt 1 ]; then
     usage

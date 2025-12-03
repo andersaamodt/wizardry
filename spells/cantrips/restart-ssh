@@ -4,11 +4,10 @@
 # Use it to fully restart the SSH daemon after configuration changes.
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: restart-ssh
 
-Restart the SSH daemon. Detects the OS and uses the appropriate service
-management command (systemctl, service, or launchctl).
+Fully restart the SSH daemon when you need a clean slate after configuration changes. Detects your OS and uses the right service manager to stop and start sshd.
 USAGE
 }
 

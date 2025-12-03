@@ -4,6 +4,21 @@
 # none is provided. The script intentionally narrates each step so new users
 # can see how wizardry interacts with systemctl.
 
+usage() {
+        cat <<'USAGE' >&2
+Usage: start-service [unit]
+
+Starts the requested systemd service, prompting for a unit name when none is supplied. Narrates each systemctl step so new casters can follow along.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 set -eu
 
 SCRIPT_NAME=$(basename "$0")

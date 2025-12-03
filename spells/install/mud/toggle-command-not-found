@@ -4,14 +4,10 @@
 # This is a planned feature that will catch command not found errors.
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: toggle-command-not-found
 
-Toggle the command-not-found hook on or off. When enabled, wizardry
-will display helpful messages when an unknown command is entered.
-
-This is a planned feature. Currently, toggling this option only
-updates the configuration file at ~/.spellbook/.mud/config.
+Toggle the planned command-not-found hook on or off. When enabled it will display helpful messages for unknown commands; for now the toggle only updates ~/.spellbook/.mud/config.
 USAGE
 }
 

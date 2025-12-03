@@ -1,5 +1,21 @@
 #!/bin/sh
 
+usage() {
+        cat <<'USAGE' >&2
+Usage: repair-bitcoin-permissions
+
+Fixes ownership and permissions on bitcoin directories and files so the node can start cleanly after migrations or backups.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
+
 # This script sets the correct permissions on the Bitcoin configuration directory.
 
 # Set the default Bitcoin configuration directory

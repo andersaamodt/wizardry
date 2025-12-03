@@ -7,8 +7,7 @@ show_usage() {
   cat <<'USAGE'
 Usage: jump-trash [--install]
 
-Teleport to your system trash directory. Source this spell to define
-the 'jump-trash' function, or run directly to memorize it to your shell rc.
+Teleport to your system trash directory. Source this spell to add the jump-trash command to your shell, or run it once to memorize it into your shell rc.
 USAGE
 }
 
@@ -325,11 +324,7 @@ jtrash() {
     cat <<'USAGE'
 Usage: jump-trash
 
-Teleport to the system trash directory.
-
-Supports:
-  - macOS: ~/.Trash
-  - Linux: ~/.local/share/Trash/files (or $XDG_DATA_HOME/Trash/files)
+Teleport to the system trash directory (macOS: ~/.Trash; Linux: ~/.local/share/Trash/files or $XDG_DATA_HOME/Trash/files).
 USAGE
     return 0
     ;;

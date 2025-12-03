@@ -3,11 +3,10 @@
 # Toggle cd hook on/off by installing or uninstalling the cd spell
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: toggle-cd
 
-Toggle the cd hook that runs 'look' after each directory change.
-Restart your shell or source your rc file after toggling.
+Turn the cd hook that runs 'look' after each directory change on or off. Restart your shell or source your rc file after toggling.
 USAGE
 }
 

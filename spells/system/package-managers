@@ -4,11 +4,10 @@
 # Use it to see which package managers are available.
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: package-managers
 
-Display the status of package managers available on the system,
-showing which ones are installed and available.
+Show which package managers are available on this system and whether they are installed. Helps you quickly see the tools you can use to manage software on your platform.
 USAGE
 }
 

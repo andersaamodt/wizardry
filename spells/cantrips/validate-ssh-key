@@ -4,12 +4,10 @@
 # Use it to check SSH key input before adding to authorized_keys.
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: validate-ssh-key <key>
 
-Test if the given string matches the format of an SSH public key.
-Expects format: ssh-<type> <base64-data> [comment]
-Exits 0 if valid, 1 if invalid.
+Check whether a string matches the SSH public key format: ssh-<type> <base64-data> [comment]. Exits 0 when the prefix and encoded data look valid, and 1 when they do not.
 USAGE
 }
 

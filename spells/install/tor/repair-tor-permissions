@@ -1,6 +1,22 @@
 #!/bin/sh
 # This spell repairs Tor file and directory permissions.
 
+usage() {
+        cat <<'USAGE' >&2
+Usage: repair-tor-permissions
+
+Resets ownership and permissions on Tor configuration and runtime directories for your platform so the service can start safely
+.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 
 set -eu
 if [ "$(id -u)" != "0" ]; then

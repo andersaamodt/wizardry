@@ -4,11 +4,10 @@
 # Use it after modifying sshd_config to apply changes.
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: reload-ssh
 
-Reload the SSH daemon configuration. Detects the OS and uses the
-appropriate service management command (systemctl, service, or launchctl).
+Reload the SSH daemon configuration without a full restart. Detects the operating system and calls the right service manager so sshd_config changes take effect immediately.
 USAGE
 }
 

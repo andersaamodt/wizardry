@@ -2,6 +2,22 @@
 
 # Verify that wizardry spells use POSIX-compliant shell practices.
 
+usage() {
+        cat <<'USAGE' >&2
+Usage: verify-posix [script ...]
+
+Checks the provided spells—or every executable spell by default—for POSIX sh shebangs and common bashism pitfalls using checkb
+ashisms.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 set -eu
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)

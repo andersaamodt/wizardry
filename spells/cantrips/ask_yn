@@ -3,8 +3,6 @@
 # ask_yn coaxes a yes or no from the adventurer.  Defaults guide hesitant
 # wanderers, and every response is echoed so other spells can heed the choice.
 
-set -eu
-
 usage() {
         cat <<'USAGE' >&2
 Usage: ask_yn "Question" [default]
@@ -13,6 +11,15 @@ Prompt for a yes/no response. Defaults may be 'yes' or 'no'.
 Exit status 0 represents "yes", 1 represents "no".
 USAGE
 }
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
+set -eu
 
 if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
         usage

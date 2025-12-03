@@ -4,11 +4,10 @@
 # Use it to show commands to those learning the path of wizardry.
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: wizard-cast <command> [arguments...]
 
-Display the command using wizard-eyes, then execute it. Useful for
-demonstrating commands to novice wizards while they learn.
+Show a command with wizard-eyes before executing it so learners can see exactly what will run. Ideal for demonstrating spells or shell commands to novices while keeping execution transparent.
 USAGE
 }
 

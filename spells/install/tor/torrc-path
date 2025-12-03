@@ -3,6 +3,22 @@
 # This script outputs the location of the torrc file if it exists,
 # or the standard location for the current OS if it does not
 
+usage() {
+        cat <<'USAGE' >&2
+Usage: torrc-path
+
+Prints the path to the active torrc configuration if one exists, or the standard location for your platform so you know where t
+o create it.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 
 set -eu
 OS=$(uname)

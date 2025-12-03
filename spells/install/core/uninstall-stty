@@ -1,5 +1,20 @@
 #!/usr/bin/env sh
 # This spell uninstalls the stty command using the system package manager.
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: uninstall-stty
+
+Removes the stty command via the platform package manager using manage-system-command with assume-yes defaults.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
 set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)

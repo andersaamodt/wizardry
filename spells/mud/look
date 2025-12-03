@@ -4,12 +4,10 @@
 # It can prompt to memorize itself so the `look` incantation stays available.
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: look [path]
 
-Display a location's name and description extended attributes using read-magic,
-offering to memorize the spell into your shell rc for persistent availability.
-Defaults to the current directory when no path is supplied.
+Display a location's name and description attributes with read-magic, offering to memorize the spell into your shell rc for easy reuse. Defaults to the current directory when no path is supplied.
 USAGE
 }
 

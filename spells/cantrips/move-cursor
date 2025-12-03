@@ -5,9 +5,20 @@
 
 set -eu
 usage() {
-    printf '%s\n' 'Usage: move-cursor <x> <y>' >&2
-    exit 1
+        cat <<'USAGE' >&2
+Usage: move-cursor <x> <y>
+
+Moves the terminal cursor to the requested column and row using ANSI escapes, clamping any zero or negative values to the first
+ position.
+USAGE
 }
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
 
 if [ "$#" -ne 2 ]; then
     usage
