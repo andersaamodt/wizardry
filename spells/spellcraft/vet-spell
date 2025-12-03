@@ -183,12 +183,13 @@ check_help_handler() {
 
 check_strict_mode() {
   file=$1
-  # Check for set -u in first 25 lines (required for strict variable handling)
+  # Check for set -u anywhere in the file (required for strict variable handling)
   # Accept set -eu, set -u, set -e -u, or set -u -e
-  if head -25 "$file" | grep -qE 'set[[:space:]]+-[eu]*u[eu]*|set[[:space:]]+-e[[:space:]]+-u|set[[:space:]]+-u[[:space:]]+-e'; then
+  # Some scripts use set -eu conditionally (e.g., only when running as script, not sourced)
+  if grep -qE 'set[[:space:]]+-[eu]*u[eu]*|set[[:space:]]+-e[[:space:]]+-u|set[[:space:]]+-u[[:space:]]+-e' "$file"; then
     return 0
   fi
-  printf 'missing set -u in first 25 lines (use set -eu for strict mode)'
+  printf 'missing set -u (use set -eu for strict mode)'
   return 1
 }
 
