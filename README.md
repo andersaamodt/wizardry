@@ -137,13 +137,13 @@ Push as much logic as possible into imps for maximum semanticization.
 | `forget` | Remove a spell from your memorized list. Use `forget <spell name>` or the Spellbook menu. |
 | **Imp** | The smallest building block of magic—a microscript that does exactly one thing. Imos dwell in `spells/.imps/`. |
 | **Kryptos** | Cryptographic spells for hashing and security. |
-| **Learn** | Add a spell to your shell environment, making it spell permanently available. Some spells must be learned before use. |
+| `learn` | Add a spell to your shell environment, making it spell permanently available. Some spells must be learned before use. |
 | `memorize` | Add a spell to your Cast menu for quick access. |
 | **Portal** | A persistent connection between two computers via SSH, created with `open-portal`, for MUD travel. |
 | **Portkey** | A bookmark to a remote location. Use `enchant-portkey` to create one and `follow-portkey` to teleport there. (Future: If you have the `touch` hook installed, touching a portkey will also activate it.) |
 | **Scribe** | Create a new custom spell. |
 | **Spell** | A specially-curated shell script that lives in `spells/`, has a unique name, and follows wizardry conventions. |
-| **Spellbook** | Your personal grimoire for organizing and casting spells. Access it with `spellbook` or from the main menu. Also refers to custom spell folders. |
+| `spellbook` | Your personal grimoire for organizing and casting spells. Access it with `spellbook` or from the main menu. Also refers to custom spell folders. |
 | **Spellcraft** | The writing of shell scripts. |
 | **Tome** | A text file containing the contents of several other text files concatenated together, so a whole folder of spells can be sent or carried easily. |
 | **Ward** | A protective spell for security or access control. |
