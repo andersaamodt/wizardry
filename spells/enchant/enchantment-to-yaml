@@ -6,11 +6,10 @@
 
 set -eu
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: enchantment-to-yaml <path-to-file>
 
-Extract all extended attributes from the file, write them into a YAML front
-matter header, and strip the original attributes from the file.
+Extract all extended attributes from a file, write them into a YAML front matter header, and strip the original attributes from the file.
 USAGE
 }
 

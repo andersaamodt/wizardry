@@ -4,11 +4,10 @@
 # Source it or use with eval: eval "$(up)" or eval "$(up 2)"
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: up [levels]
 
-Print a cd command to navigate up the specified number of directory levels.
-Defaults to 1 level. Use with eval: eval "$(up 2)"
+Print a cd command that climbs the given number of directory levels. Defaults to one level and is meant to be wrapped with eval or sourced so your shell follows the path.
 USAGE
 }
 

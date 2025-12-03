@@ -4,6 +4,22 @@
 # process with a failure code so calling test suites stop immediately when an
 # expectation is not met.
 
+usage() {
+        cat <<'USAGE' >&2
+Usage: assertions (source)
+
+Sources assertion helpers for shell-based tests, providing assert_equal, assert_output, assert_success, and assert_failure tha
+t exit on mismatches.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 
 set -eu
 assert_equal() {

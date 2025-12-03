@@ -3,6 +3,22 @@
 # Testing imp - fails if STATUS variable equals 0
 # Example: assert-failure || return 1
 
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: assert-failure
+
+Test assertion that STATUS is not 0 Testing imp - fails if STATUS variable equals 0. Example: assert-failure || return 1.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 if [ "${STATUS:-0}" -eq 0 ]; then
   TEST_FAILURE_REASON="expected failure status but got success"
   exit 1

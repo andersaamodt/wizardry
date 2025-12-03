@@ -4,14 +4,10 @@
 # This is a planned feature that will activate special behavior on touch.
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: toggle-touch-hook
 
-Toggle the touch hook on or off. When enabled, touching a portkey
-or other special file will activate its function.
-
-This is a planned feature. Currently, toggling this option only
-updates the configuration file at ~/.spellbook/.mud/config.
+Toggle the planned touch hook on or off. When enabled it will fire actions when you touch a portkey or other special file; for now the toggle only updates ~/.spellbook/.mud/config.
 USAGE
 }
 

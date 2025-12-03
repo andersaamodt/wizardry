@@ -4,12 +4,10 @@
 # Use -v to narrate detection while exporting DISTRO for callers.
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: detect-distro [-v]
 
-Detect the host operating system and print a concise identifier such as
-"debian", "mac", or "nixos". With -v, also print a descriptive message while
-exporting DISTRO for callers to reuse.
+Detect the host operating system and print a concise identifier such as "debian", "mac", or "nixos". Use -v for narrated detection while exporting DISTRO for callers.
 USAGE
 }
 

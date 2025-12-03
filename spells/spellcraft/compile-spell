@@ -9,8 +9,7 @@ show_usage() {
   cat <<'USAGE'
 Usage: compile-spell <spell-name> [os]
 
-Compile a spell into a standalone script by inlining all imp dependencies.
-Optionally specify a target OS (linux, mac, nixos, debian, arch).
+Compile a spell into a standalone script by inlining all of its imps. Optionally specify linux, mac, nixos, debian, or arch to tailor the output for one platform.
 USAGE
 }
 

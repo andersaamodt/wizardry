@@ -2,6 +2,22 @@
 # tty-restore STATE - restore previously saved terminal settings
 # Example: state=$(tty-save) && ... && tty-restore "$state"
 
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: tty-restore STATE
+
+Restore previously saved terminal settings. Example: state=$(tty-save) && ... && tty-restore "$state".
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 state=${1:-}
 
 if [ -z "$state" ]; then

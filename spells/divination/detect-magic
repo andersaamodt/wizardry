@@ -7,12 +7,10 @@
 # summarize the ambience so new spellwrights can follow along.
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: detect-magic
 
-Scan the current directory for files with extended attributes using the
-read-magic spell, tally how many enchantments each file holds, and print a
-whimsical summary of the ambient magic.
+Scan the current directory for files with extended attributes using the read-magic spell, tally how many enchantments each file holds, and print a whimsical summary of the ambient magic.
 USAGE
 }
 

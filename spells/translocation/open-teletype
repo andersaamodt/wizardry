@@ -4,12 +4,10 @@
 # Use it to connect to remote servers while preserving anonymity.
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: open-teletype [remote_address] [user]
 
-Open an SSH connection over Tor for anonymous access to a remote server.
-Prompts for address and user if not provided as arguments.
-Uses MUD_PLAYER for SSH key identity.
+Open an SSH connection over Tor for anonymous access to a remote server. Prompts for address and user if you don't pass them and uses the MUD_PLAYER key as your SSH identity.
 USAGE
 }
 

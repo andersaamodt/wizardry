@@ -4,6 +4,21 @@
 # callers can depend on a single entrypoint.  Keeping this shim separate lets
 # other spells import ask_text directly while users enjoy the concise ask name.
 
+usage() {
+        cat <<'USAGE' >&2
+Usage: ask "Question" [default]
+
+Prompts with the given question and echoes the response, forwarding all arguments to ask_text. Accepts an optional default that is used when the user presses Enter.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 set -eu
 
 SCRIPT=$0

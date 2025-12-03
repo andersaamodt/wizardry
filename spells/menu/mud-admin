@@ -2,6 +2,21 @@
 
 # This spell displays the menu for adminning hosting a MUD server.
 
+usage() {
+        cat <<'USAGE' >&2
+Usage: mud-admin
+
+Opens the MUD admin menu so you can manage authorized players, review shared rooms, and oversee your hosted server.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 set -eu
 
 # Catch Ctrl-C and TERM signal to exit cleanly

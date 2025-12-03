@@ -1,6 +1,22 @@
 #!/usr/bin/env sh
 # This spell uninstalls the currently installed clipboard helper.
 
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: uninstall-clipboard-helper
+
+This spell uninstalls the currently installed clipboard helper.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)

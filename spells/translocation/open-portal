@@ -4,12 +4,10 @@
 # Use it to access remote servers anonymously via SSH filesystem.
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: open-portal <remote_address> <remote_directory> [local_mount_point]
 
-Mount a remote directory using sshfs over Tor. The local mount point defaults
-to ~/portals/<remote_address> if not specified.
-Uses MUD_PLAYER environment variable for SSH key identity.
+Mount a remote directory using sshfs over Tor for anonymous access. The local mount point defaults to ~/portals/<remote_address> if not specified and uses the MUD_PLAYER key for authentication.
 USAGE
 }
 

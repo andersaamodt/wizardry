@@ -2,6 +2,22 @@
 # os - print current OS identifier (mac/linux/debian/nixos/arch/fedora/unknown)
 # Example: case $(os) in debian) apt-get ;; mac) brew ;; esac
 
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: os
+
+Print current OS identifier (mac/linux/debian/nixos/arch/fedora/unknown). Example: case $(os) in debian) apt-get ;; mac) brew ;; esac.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 kernel=$(uname -s 2>/dev/null || echo unknown)
 
 if [ -f /etc/NIXOS ]; then echo nixos

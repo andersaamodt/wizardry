@@ -4,11 +4,10 @@
 # Use it to check numeric input before processing.
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: validate-number <string>
 
-Test if the given string is a valid non-negative integer.
-Exits 0 if valid, 1 if invalid.
+Check whether a string is a non-negative integer. Exits 0 when the value is digits only and 1 when it is not.
 USAGE
 }
 

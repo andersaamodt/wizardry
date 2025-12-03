@@ -1,5 +1,22 @@
 #!/bin/bash
 
+usage() {
+        cat <<'USAGE' >&2
+Usage: handle-command-not-found
+
+Adds a simple bash handler for "command not found" errors that reminds you to search wizardry's menus, updating ~/.bashrc when
+ you choose to memorize it.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
+
 echo "This spell will catch 'command not found' errors and echo an additional message 'parse recursively'"
 
 if grep -q "handle_command_not_found" ~/.bashrc; then

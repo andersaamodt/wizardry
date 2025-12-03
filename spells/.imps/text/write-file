@@ -2,4 +2,20 @@
 # write-file FILE - write stdin to file (overwrites)
 # Example: echo "hello" | write-file output.txt
 
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: write-file FILE
+
+Write stdin to file (overwrites). Example: echo "hello" | write-file output.txt.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 cat > "$1"

@@ -4,14 +4,10 @@
 # This is a planned feature that will enable combat mechanics.
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: toggle-combat
 
-Toggle the HP/MP and combat feature on or off. When enabled,
-wizardry tracks your health/mana points and enables combat.
-
-This is a planned feature. Currently, toggling this option only
-updates the configuration file at ~/.spellbook/.mud/config.
+Toggle the planned HP/MP combat feature on or off. When enabled it will track health and mana once the feature lands; for now it simply updates ~/.spellbook/.mud/config.
 USAGE
 }
 

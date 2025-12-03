@@ -4,12 +4,10 @@
 # Source this script with ". set-player playername" for immediate effect.
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: set-player <playername>
 
-Set the MUD_PLAYER environment variable to the specified player name.
-The setting persists in ~/.bashrc. Source this script or open a new
-terminal for the change to take effect immediately.
+Set the MUD_PLAYER environment variable to the given player name and persist it in ~/.bashrc. Source the script or open a new terminal for the change to take effect immediately.
 USAGE
 }
 

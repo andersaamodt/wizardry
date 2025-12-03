@@ -4,12 +4,10 @@
 # Activate the portkey with follow-portkey to teleport to the stored location.
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: enchant-portkey <file> [destination]
 
-Enchant a file with a portkey that stores a destination path. When no
-destination is provided, uses the path from marker 1 (~/.spellbook/markers/1).
-Activate the portkey with follow-portkey to teleport to the location.
+Enchant a file with a portkey that stores a destination path, defaulting to marker 1 (~/.spellbook/markers/1) when none is provided. Activate the portkey later with follow-portkey to teleport to the stored location.
 USAGE
 }
 

@@ -4,21 +4,10 @@
 # It's a convenient wrapper around 'enchant' for setting room descriptions.
 
 show_usage() {
-        cat <<'USAGE'
-Usage: decorate [description]
-       decorate [path] [description]
-       decorate [description] [path]
+cat <<'USAGE'
+Usage: decorate [path] [description]
 
-Decorate a location (folder or file) with a description that will be shown
-when using the 'look' spell. If no path is provided, decorates the current
-directory. With two arguments, the spell detects which is the path and which
-is the description.
-
-Examples:
-  decorate                        # Interactively decorate current directory
-  decorate "A cozy chamber"       # Decorate current directory with description
-  decorate ~/projects "Workshop"  # Decorate a specific folder
-  decorate "Workshop" ~/projects  # Same as above (order doesn't matter)
+Decorate a location (folder or file) with a description shown when using the look spell. Defaults to the current directory and accepts either order when both a path and description are provided.
 USAGE
 }
 

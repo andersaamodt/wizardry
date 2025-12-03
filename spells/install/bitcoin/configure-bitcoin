@@ -1,5 +1,21 @@
 #!/bin/sh
 
+usage() {
+        cat <<'USAGE' >&2
+Usage: configure-bitcoin
+
+Creates or updates bitcoin.conf with sensible defaults for paths, RPC, and pruning so a fresh Bitcoin Core install can start.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
+
 # This spell facilitates the setting of the configurations for thy Bitcoin system.
 
 # Function to check if a command needs to be run with sudo

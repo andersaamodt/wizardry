@@ -1,6 +1,20 @@
 #!/bin/sh
 # This spell checks and displays the status of Tor bridges.
 
+usage() {
+        cat <<'USAGE' >&2
+Usage: tor-bridge-status
+
+Checks the local torrc to see if bridge mode is enabled. Requires root; exits 0 when bridges are on and 1 otherwise.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
 
 set -eu
 if [ "$(id -u)" != "0" ]; then

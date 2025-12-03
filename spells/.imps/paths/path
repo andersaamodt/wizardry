@@ -2,6 +2,22 @@
 # path PATH - convert relative path to absolute, normalized
 # Example: path ./foo -> /current/dir/foo
 
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: path PATH
+
+Convert relative path to absolute, normalized. Example: path ./foo -> /current/dir/foo.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 path=$1
 case "$path" in
 /*) : ;;

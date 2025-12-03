@@ -1,6 +1,22 @@
 #!/usr/bin/env sh
 # This spell uninstalls the core wizardry dependencies.
 
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: uninstall-core
+
+This spell uninstalls the core wizardry dependencies.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 
 detect_platform() {

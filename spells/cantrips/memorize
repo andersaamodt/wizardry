@@ -44,7 +44,7 @@ resolve_cast_dir() {
 }
 
 usage() {
-	cat <<USAGE >&2
+        cat <<USAGE >&2
 Usage: $spell_name <spell-name>
        $spell_name {list|path|dir}
 
@@ -52,6 +52,13 @@ Add a spell to the Cast menu, or use list/path/dir to inspect the spellbook.
 Spells must exist in PATH or ~/.spellbook.
 USAGE
 }
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
 
 resolve_command_file() {
 	cast_dir=$1

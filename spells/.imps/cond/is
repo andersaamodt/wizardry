@@ -2,6 +2,22 @@
 # is TYPE PATH - test if path meets condition (file/dir/link/exec/readable/writable/empty/set/unset)
 # Examples: is file /etc/passwd | is dir /tmp | is exec /bin/sh | is set "$VAR"
 
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: is TYPE PATH
+
+Test if path meets condition (file/dir/link/exec/readable/writable/empty/set/unset) Examples: is file /etc/passwd | is dir /tmp | is exec /bin/sh | is set "$VAR".
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 case "$1" in
 file)     [ -f "$2" ] ;;
 dir)      [ -d "$2" ] ;;

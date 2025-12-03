@@ -6,11 +6,10 @@
 set -eu
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: ssh-barrier
 
-Harden the SSH server configuration with security best practices.
-Backs up original config, disables root login and password auth.
+Harden the SSH server configuration with security best practices. Backs up the original config, disables root login, and turns off password authentication.
 USAGE
 }
 

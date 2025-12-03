@@ -4,11 +4,10 @@
 # Use it to manage passwords, groups, and user accounts.
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: users-menu
 
-Display an interactive menu for user and group management, including
-password changes, group memberships, and user account administration.
+Display an interactive menu for user and group management, covering password changes, group memberships, and user account administration.
 USAGE
 }
 

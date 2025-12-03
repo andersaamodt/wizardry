@@ -2,4 +2,20 @@
 # equals A B - test if two strings are exactly equal
 # Example: equals "$choice" "yes" && proceed
 
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: equals A B
+
+Test if two strings are exactly equal. Example: equals "$choice" "yes" && proceed.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 [ "$1" = "$2" ]

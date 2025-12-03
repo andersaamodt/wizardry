@@ -4,12 +4,11 @@
 # Once memorized, it lets any shell teleport to named markers instantly.
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: jump [marker]
        jump-to-marker [--install] [marker]
 
-Jump to a named marker set with mark-location. Use --install to memorize
-the spell. Defaults to marker "1", or use "0" to cycle through all markers.
+Teleport to a marker set with mark-location. Defaults to marker "1", marker "0" cycles through all saved locations, and --install memorizes the spell for easier casting.
 USAGE
 }
 

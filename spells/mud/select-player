@@ -4,11 +4,10 @@
 # Use it to switch between player identities from available SSH keys.
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: select-player
 
-Display an interactive menu of available player identities (from ~/.ssh/*.pub)
-and set MUD_PLAYER to the selected player.
+Display an interactive menu of player identities from ~/.ssh/*.pub and set MUD_PLAYER to the one you choose.
 USAGE
 }
 

@@ -7,6 +7,22 @@
 # This script contains all color codes in the POSIX standard.
 # You must source this script with '. ./colors' (or an absolute path) to use it.
 
+usage() {
+        cat <<'USAGE' >&2
+Usage: colors (source)
+
+Sources a palette of ANSI escape variables and wizardry theme accents so scripts can style output, gracefully disabling colour
+ when the terminal cannot render it.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 # Record whether the terminal appears to support ANSI escape sequences so
 # callers can disable colour-aware features when needed.
 

@@ -3,6 +3,22 @@
 # Read a single key press from the controlling terminal and report it in a
 # descriptive form ("enter", "up", literal text, etc.).
 
+usage() {
+        cat <<'USAGE' >&2
+Usage: await-keypress
+
+Listens for one key press on the controlling terminal, translating escape sequences into readable names and restoring the term
+inal to its prior state afterward.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 
 set -eu
 spell_dir() {

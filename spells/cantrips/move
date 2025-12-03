@@ -4,13 +4,10 @@
 # Use it as a more intuitive wrapper around the mv command.
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: move <source> <destination>
-       move <source> to <destination>
-       move from <source> to <destination>
 
-Move a file or directory to a new location. Supports natural language
-syntax with 'from' and 'to' keywords.
+Move a file or directory to a new location. Accepts natural language forms like "move <source> to <destination>" or "move from <source> to <destination>" so the command reads like a sentence.
 USAGE
 }
 

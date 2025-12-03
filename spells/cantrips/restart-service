@@ -3,6 +3,21 @@
 # restart-service bounces a unit through systemctl restart, which is safer than
 # manually stopping/starting because systemd tracks dependencies for us.
 
+usage() {
+        cat <<'USAGE' >&2
+Usage: restart-service UNIT
+
+Restarts the specified systemd service through systemctl and lets you know if it comes back cleanly. Prompts for the unit name when omitted.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 set -eu
 
 SCRIPT_NAME=$(basename "$0")

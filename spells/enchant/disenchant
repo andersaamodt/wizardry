@@ -9,10 +9,7 @@ show_usage() {
   cat <<'USAGE'
 Usage: disenchant <file> [key]
 
-Remove an extended attribute from the given file. When a key is supplied, only
-that attribute is removed. With no key, the spell inspects the file: if a
-single attribute is present it is removed automatically; if multiple exist a
-menu is offered to choose one or all.
+Remove an extended attribute from a file. Provide a key to delete that one directly; otherwise the spell inspects the file and either removes the single attribute it finds or lets you pick from a menu when several exist.
 USAGE
 }
 

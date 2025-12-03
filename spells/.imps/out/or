@@ -2,6 +2,22 @@
 # or A B - output first non-empty value, fail if both empty
 # Example: name=$(or "$NICK" "$USER")
 
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: or A B
+
+Output first non-empty value, fail if both empty. Example: name=$(or "$NICK" "$USER").
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 if [ -n "$1" ]; then printf '%s' "$1"
 elif [ -n "$2" ]; then printf '%s' "$2"
 else exit 1

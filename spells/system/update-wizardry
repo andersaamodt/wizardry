@@ -4,11 +4,10 @@
 # It locates the checkout directory or accepts WIZARDRY_DIR to target another path.
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: update-wizardry
 
-Update the wizardry repository by running a fast-forward git pull in the
-checkout directory inferred from this spell or provided via WIZARDRY_DIR.
+Fast-forward the wizardry repository by running git pull in the checkout directory. Finds the repo next to this spell or follows WIZARDRY_DIR if you point it elsewhere.
 USAGE
 }
 

@@ -7,8 +7,7 @@ show_usage() {
   cat <<'USAGE'
 Usage: vet-spell [--strict] [--only PATTERN] [--list] [--verbose] [file...]
 
-Vet spell files for style guide compliance. Without files, vets all spells.
-Use --strict for additional checks (usage function, --help handler, naming).
+Check spells for style-guide compliance. With no files provided it scans the whole spellbook; use --strict for extra checks, --only to filter by pattern, --list to show targets, and --verbose for detailed output.
 USAGE
 }
 

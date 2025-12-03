@@ -3,6 +3,21 @@
 # service-status prints systemctl's status output for a unit. The --no-pager
 # flag keeps results readable even when systemctl is configured to invoke less.
 
+usage() {
+        cat <<'USAGE' >&2
+Usage: service-status UNIT
+
+Shows the current status of the specified systemd unit with paging disabled. Prompts for a unit when none is provided.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 set -eu
 
 SCRIPT_NAME=$(basename "$0")

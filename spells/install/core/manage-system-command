@@ -1,5 +1,22 @@
 #!/usr/bin/env sh
 
+usage() {
+        cat <<'USAGE' >&2
+Usage: manage-system-command [--uninstall] <command> <default-package>
+
+Installs or removes a system command via the available package manager, falling back to the provided default package name when
+ no override is set. Respects FORCE_INSTALL to reinstall an already present command.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
+
 # Install or uninstall a system command using the available package manager.
 # Usage: manage-system-command [--uninstall] <command> <default-package>
 
