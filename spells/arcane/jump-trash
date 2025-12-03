@@ -386,9 +386,9 @@ jtrash_cli() {
     # When run as a script (not sourced), cd won't persist to the parent shell.
     # We need to inform the user about this and prompt to memorize.
     if jtrash_spell_memorized; then
-      # Already memorized - inform user they need to source it
+      # Already memorized - inform user they need to load the shell function
       printf '%s\n' "Note: Running 'jump-trash' as a command won't change your current directory."
-      printf '%s\n' "Use the 'jtrash' function instead (source your shell config or start a new terminal)."
+      printf '%s\n' "Use the 'jtrash' function instead (reload your shell config or start a new terminal)."
       # Still show the path for reference
       trash_path=$(_jtrash_get_path)
       if [ -n "$trash_path" ] && [ -d "$trash_path" ]; then
