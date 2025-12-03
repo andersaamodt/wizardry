@@ -9,8 +9,7 @@ usage() {
         cat <<'USAGE' >&2
 Usage: require-command <command> [message...]
 
-Checks for a required binary, optionally offers to install it through wizardry installers, and exits non-zero with a helpful me
-ssage when the dependency is missing.
+Checks for a required binary, optionally offers to install it through wizardry installers, and exits non-zero with a helpful message when the dependency is missing.
 USAGE
 }
 

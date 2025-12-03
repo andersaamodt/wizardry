@@ -4,8 +4,7 @@ usage() {
         cat <<'USAGE' >&2
 Usage: handle-command-not-found
 
-Adds a simple bash handler for "command not found" errors that reminds you to search wizardry's menus, updating ~/.bashrc when
- you choose to memorize it.
+Adds a simple bash handler for "command not found" errors that reminds you to search wizardry's menus, updating ~/.bashrc when you choose to memorize it.
 USAGE
 }
 

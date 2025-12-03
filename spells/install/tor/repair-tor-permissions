@@ -5,8 +5,7 @@ usage() {
         cat <<'USAGE' >&2
 Usage: repair-tor-permissions
 
-Resets ownership and permissions on Tor configuration and runtime directories for your platform so the service can start safely
-.
+Resets ownership and permissions on Tor configuration and runtime directories for your platform so the service can start safely.
 USAGE
 }
 

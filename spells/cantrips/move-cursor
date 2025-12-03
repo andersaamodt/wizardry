@@ -8,8 +8,7 @@ usage() {
         cat <<'USAGE' >&2
 Usage: move-cursor <x> <y>
 
-Moves the terminal cursor to the requested column and row using ANSI escapes, clamping any zero or negative values to the first
- position.
+Moves the terminal cursor to the requested column and row using ANSI escapes, clamping any zero or negative values to the first position.
 USAGE
 }
 
