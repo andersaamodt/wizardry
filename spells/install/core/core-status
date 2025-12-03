@@ -1,5 +1,7 @@
 #!/usr/bin/env sh
 
+# Report readiness of core prerequisites for wizardry.
+
 usage() {
         cat <<'USAGE' >&2
 Usage: core-status

@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# This spell alters the location of thy Bitcoin data chamber on your system.
+
 usage() {
         cat <<'USAGE' >&2
 Usage: change-bitcoin-directory

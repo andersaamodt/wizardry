@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# Returns 0 (true) if Bitcoin is installed, 1 (false) if not
+
 usage() {
         cat <<'USAGE' >&2
 Usage: is-bitcoin-installed

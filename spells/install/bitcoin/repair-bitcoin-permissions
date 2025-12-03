@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# This script sets the correct permissions on the Bitcoin configuration directory.
+
 usage() {
         cat <<'USAGE' >&2
 Usage: repair-bitcoin-permissions

@@ -1,5 +1,7 @@
 #!/usr/bin/env sh
 
+# Install or uninstall a system command using the available package manager.
+
 usage() {
         cat <<'USAGE' >&2
 Usage: manage-system-command [--uninstall] <command> <default-package>

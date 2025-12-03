@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# This spell facilitates the setting of the configurations for thy Bitcoin system.
+
 usage() {
         cat <<'USAGE' >&2
 Usage: configure-bitcoin
