@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# This script serves as a magic mirror, reflecting the running status of Bitcoin
+# Check if Bitcoin daemon is currently running.
 
 usage() {
         cat <<'USAGE' >&2

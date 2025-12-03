@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Function to check if a package is installed in Debian-based distributions
+# Uninstall Bitcoin Core binaries and optionally remove data/config files.
 
 usage() {
         cat <<'USAGE' >&2

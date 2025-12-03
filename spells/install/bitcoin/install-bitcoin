@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Set Bitcoin version
+# Install Bitcoin Core binaries on the system.
 
 usage() {
         cat <<'USAGE' >&2
