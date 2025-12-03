@@ -33,7 +33,7 @@ display_menu() {
 	    fi
     else
     	script_dir=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
-    	install_service_option="Install Bitcoin Service%install-service-template $script_dir/bitcoin.service \"BITCOIND=\`which bitcoind\`\""
+    	install_service_option="Install Bitcoin Service%install-service-template $script_dir/bitcoin.service \"BITCOIND=\`command -v bitcoind\`\""
     	MENU_ESCAPE_STATUS=$menu_escape_status menu "$title" "$set_config" "$change_directory" "$clear_cache" "$repair_permissions" "$install_service_option" "$install_bitcoin_option" "$exit_option"
 	fi
   else

@@ -7,7 +7,8 @@
 # - vet-spell fails spells missing strict mode
 # - vet-spell fails spells with trailing space assignment
 # - vet-spell skips usage/help checks for imps
-# - vet-spell --strict requires usage function and help handler
+# - vet-spell requires usage function for non-exempt spells
+# - vet-spell requires help handler for non-exempt spells
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/test-common.sh" ] && [ "$test_root" != "/" ]; do
@@ -112,8 +113,9 @@ test_fails_missing_strict_mode() {
   spell_dir=$(make_spell_dir)
   cat >"$spell_dir/bad-spell" <<'EOF'
 #!/bin/sh
+. declare-globals
 
-# This spell lacks strict mode.
+# This spell lacks strict mode but sources declare-globals.
 
 show_usage() {
   echo "Usage: bad-spell"
@@ -129,7 +131,7 @@ esac
 echo "bad"
 EOF
   chmod +x "$spell_dir/bad-spell"
-  # vet-spell is now always strict, no --strict flag needed
+  # set -u is required for scripts that source declare-globals
   run_spell "spells/spellcraft/vet-spell" "$spell_dir/bad-spell"
   assert_failure && assert_output_contains "set -u"
 }
@@ -162,7 +164,8 @@ EOF
 
 test_strict_requires_usage_function() {
   spell_dir=$(make_spell_dir)
-  cat >"$spell_dir/no-usage-spell" <<'EOF'
+  mkdir -p "$spell_dir/system"
+  cat >"$spell_dir/system/no-usage-spell" <<'EOF'
 #!/bin/sh
 
 # This spell has no usage function.
@@ -171,16 +174,17 @@ set -eu
 
 echo "hello"
 EOF
-  chmod +x "$spell_dir/no-usage-spell"
+  chmod +x "$spell_dir/system/no-usage-spell"
   
-  # --strict flag required for usage function check
-  run_spell "spells/spellcraft/vet-spell" --strict "$spell_dir/no-usage-spell"
+  # Usage function check runs for non-cantrip/menu/install spells
+  run_spell "spells/spellcraft/vet-spell" "$spell_dir/system/no-usage-spell"
   assert_failure && assert_output_contains "usage function"
 }
 
 test_strict_requires_help_handler() {
   spell_dir=$(make_spell_dir)
-  cat >"$spell_dir/no-help-spell" <<'EOF'
+  mkdir -p "$spell_dir/system"
+  cat >"$spell_dir/system/no-help-spell" <<'EOF'
 #!/bin/sh
 
 # This spell has no help handler.
@@ -193,10 +197,10 @@ set -eu
 
 echo "hello"
 EOF
-  chmod +x "$spell_dir/no-help-spell"
+  chmod +x "$spell_dir/system/no-help-spell"
   
-  # --strict flag required for help handler check
-  run_spell "spells/spellcraft/vet-spell" --strict "$spell_dir/no-help-spell"
+  # Help handler check runs for non-cantrip/menu/install spells
+  run_spell "spells/spellcraft/vet-spell" "$spell_dir/system/no-help-spell"
   assert_failure && assert_output_contains "help"
 }
 

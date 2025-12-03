@@ -2,6 +2,22 @@
 
 # Verify that wizardry spells use POSIX-compliant shell practices.
 
+show_usage() {
+  cat <<'USAGE'
+Usage: verify-posix [file...]
+
+Verify that wizardry spells use POSIX-compliant shell practices.
+Without arguments, checks all spells in the repository.
+USAGE
+}
+
+case "${1-}" in
+--help|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
 set -eu
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)

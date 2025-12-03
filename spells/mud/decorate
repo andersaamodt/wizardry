@@ -11,7 +11,7 @@ Usage: decorate [description]
 
 Decorate a location (folder or file) with a description that will be shown
 when using the 'look' spell. If no path is provided, decorates the current
-directory. With two arguments, the spell detects which is the path and which
+directory. With two arguments, the spell detects command -v is the path and which
 is the description.
 
 Examples:
@@ -36,7 +36,7 @@ if lacks enchant; then
         exit 1
 fi
 
-# Parse arguments - detect which is path and which is description
+# Parse arguments - detect command -v is path and command -v is description
 path=""
 description=""
 
@@ -54,7 +54,7 @@ elif [ $# -eq 1 ]; then
                 description=$1
         fi
 elif [ $# -eq 2 ]; then
-        # Two arguments: detect which is the path
+        # Two arguments: detect command -v is the path
         # Note: empty strings are not valid descriptions
         if [ -e "$1" ] && [ -n "$2" ] && [ ! -e "$2" ]; then
                 # First is path, second is description

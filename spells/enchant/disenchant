@@ -151,7 +151,7 @@ select_from_many() {
     idx=$((idx + 1))
   done
 
-  choice=$(ask_number "Choose which attribute to disenchant" 1 "$count") || return 1
+  choice=$(ask_number "Choose command -v attribute to disenchant" 1 "$count") || return 1
   eval "printf '%s\n' \"\${$choice}\""
 }
 

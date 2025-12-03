@@ -10,7 +10,7 @@ show_usage() {
 Usage: enchant <file> <attribute> <value> [helper]
 
 Apply an extended attribute with the given name and value to the file, using
-attr, xattr, or setfattr. Optionally specify which helper to try first.
+attr, xattr, or setfattr. Optionally specify command -v helper to try first.
 USAGE
 }
 

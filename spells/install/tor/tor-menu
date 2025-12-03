@@ -35,7 +35,7 @@ display_menu() {
 	    fi
     else
     	script_dir=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
-    	install_service_option="Install Tor Service%install-service-template $script_dir/tor.service \"TORPATH=\`which tor\`\" \"TORRCPATH=/etc/tor/torrc\""
+    	install_service_option="Install Tor Service%install-service-template $script_dir/tor.service \"TORPATH=\`command -v tor\`\" \"TORRCPATH=/etc/tor/torrc\""
     	MENU_ESCAPE_STATUS=$menu_escape_status menu "$title" "$set_config" "$repair_permissions" "$bridge_option" "$install_service_option" "$install_tor_option" "$exit_option"
 	fi
   else

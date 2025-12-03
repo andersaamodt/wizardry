@@ -1,14 +1,14 @@
 #!/bin/sh
 
 # This spell displays the status of package managers on the system.
-# Use it to see which package managers are available.
+# Use it to see command -v package managers are available.
 
 show_usage() {
         cat <<'USAGE'
 Usage: package-managers
 
 Display the status of package managers available on the system,
-showing which ones are installed and available.
+showing command -v ones are installed and available.
 USAGE
 }
 
