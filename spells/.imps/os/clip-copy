@@ -1,6 +1,6 @@
 #!/bin/sh
 # clip-copy [TEXT] - copy stdin or argument to system clipboard
-# Examples: echo "text" | clip-copy | clip-copy "direct text"
+# Examples: echo "text" | clip-copy OR clip-copy "direct text"
 
 if command -v pbcopy >/dev/null 2>&1; then
   if [ $# -gt 0 ]; then printf '%s' "$*" | pbcopy; else pbcopy; fi
