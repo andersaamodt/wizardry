@@ -384,7 +384,7 @@ EOF_DETECT
       printf '%s' "$NIX_SHELL_INIT"
       return 0
     fi
-    helper="$SCRIPT_DIR/../.imps/sys/nix-shell-init"
+    helper="$SCRIPT_DIR/../.imps/os/nix-shell-init"
     if [ -x "$helper" ]; then
       printf '%s' "$helper"
       return 0

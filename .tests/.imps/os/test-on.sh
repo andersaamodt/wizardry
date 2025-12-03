@@ -4,14 +4,14 @@
 . "${0%/*}/../../test-common.sh"
 
 test_on_linux() {
-  run_spell spells/.imps/sys/on linux
+  run_spell spells/.imps/os/on linux
   # This should succeed on Linux, fail on other platforms
   # Either way it should not crash
   [ "$STATUS" -eq 0 ] || [ "$STATUS" -eq 1 ]
 }
 
 test_on_unknown_fails() {
-  run_spell spells/.imps/sys/on unknownplatform
+  run_spell spells/.imps/os/on unknownplatform
   assert_failure
 }
 
