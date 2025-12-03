@@ -11,9 +11,6 @@ case "${1-}" in
 esac
 
 set -eu
-script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
-spells_dir=$(dirname "$script_dir")
-repo_dir=$(dirname "$spells_dir")
 
 if [ -n "${REQUIRE_COMMAND-}" ]; then
   require_cmd=$REQUIRE_COMMAND
@@ -54,9 +51,9 @@ display_menu() {
   services="Manage services%services-menu"
   verify_posix="Verify POSIX spells%verify-posix"
   update_wizardry="Update wizardry%update-wizardry"
-  test_suite="Test all wizardry spells%$repo_dir/spells/system/test-magic"
+  test_suite="Test all wizardry spells%test-magic"
   update_all="Update all software%update-all -v"
-  uninstall_wizardry="Uninstall wizardry%$repo_dir/install --uninstall"
+  uninstall_wizardry="Uninstall wizardry%uninstall-wizardry"
   exit_label=$(exit-label)
   exit_item="${exit_label}%kill -TERM \$PPID"
 
