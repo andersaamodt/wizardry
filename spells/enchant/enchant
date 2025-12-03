@@ -1,16 +1,27 @@
 #!/bin/sh
 
 # This spell applies an extended attribute to a file.
-# Provide a file, attribute name, value, and optional helper preference.
+# With 2 or fewer args, it autodetects order: one is a file, one is attribute=value.
 
 
 set -eu
 show_usage() {
         cat <<'USAGE'
-Usage: enchant <file> <attribute> <value> [helper]
+Usage: enchant [file] attribute=value
+       enchant attribute=value [file]
+       enchant <file> <attribute> <value> [helper]
 
-Apply an extended attribute with the given name and value to the file, using
-attr, xattr, or setfattr. Optionally specify which helper to try first.
+Apply an extended attribute with the given name and value to a file, using
+attr, xattr, or setfattr. With two arguments, the spell detects which is
+the file and which is the attribute=value pair. If no file is provided,
+uses the current directory. The legacy three-argument format is also
+supported for backward compatibility.
+
+Examples:
+  enchant myfile.txt owner=alice        # Set 'owner' to 'alice' on myfile.txt
+  enchant owner=alice myfile.txt        # Same as above (order doesn't matter)
+  enchant owner=alice                   # Enchant current directory
+  enchant myfile.txt owner alice        # Legacy 3-arg format
 USAGE
 }
 
@@ -21,11 +32,28 @@ case "${1-}" in
         ;;
 esac
 
-require_args() {
-        if [ "$#" -lt 3 ] || [ "$#" -gt 4 ]; then
-                printf '%s\n' "Error: This spell requires three or four arguments: a file path, an attribute name, and a value." >&2
+# Check if argument looks like a valid attribute=value pair
+# Returns 0 if it's a valid attr=value (non-empty attr and value)
+is_attr_value() {
+        case "$1" in
+        *=*)
+                # Also check that both sides are non-empty
+                _av_attr="${1%%=*}"
+                _av_val="${1#*=}"
+                [ -n "$_av_attr" ] && [ -n "$_av_val" ] && return 0
                 return 1
-        fi
+                ;;
+        *) return 1 ;;
+        esac
+}
+
+# Parse attribute=value into separate parts
+# Caller should use is_attr_value first to ensure valid format
+parse_attr_value() {
+        _attr_val=$1
+        _attr="${_attr_val%%=*}"
+        _val="${_attr_val#*=}"
+        printf '%s\n%s\n' "$_attr" "$_val"
 }
 
 helper_path() {
@@ -134,15 +162,85 @@ set_attribute() {
         return 1
 }
 
+# Parse arguments - supports both new 2-arg and legacy 3-arg formats
+parse_arguments() {
+        file=""
+        key=""
+        value=""
+        preferred=""
+
+        if [ $# -eq 0 ]; then
+                printf '%s\n' "Error: At least one argument is required (attribute=value)." >&2
+                return 1
+        elif [ $# -eq 1 ]; then
+                # One arg: must be attribute=value, use current directory
+                if is_attr_value "$1"; then
+                        parsed=$(parse_attr_value "$1")
+                        key=$(printf '%s' "$parsed" | sed -n '1p')
+                        value=$(printf '%s' "$parsed" | sed -n '2p')
+                        file=$PWD
+                else
+                        printf '%s\n' "Error: Single argument must be attribute=value format." >&2
+                        return 1
+                fi
+        elif [ $# -eq 2 ]; then
+                # Two args: detect which is file and which is attribute=value
+                if is_attr_value "$1" && is_attr_value "$2"; then
+                        printf '%s\n' "Error: Both arguments look like attribute=value pairs." >&2
+                        return 1
+                elif is_attr_value "$1"; then
+                        # First is attr=val, second is file
+                        parsed=$(parse_attr_value "$1")
+                        key=$(printf '%s' "$parsed" | sed -n '1p')
+                        value=$(printf '%s' "$parsed" | sed -n '2p')
+                        file=$2
+                elif is_attr_value "$2"; then
+                        # First is file, second is attr=val
+                        file=$1
+                        parsed=$(parse_attr_value "$2")
+                        key=$(printf '%s' "$parsed" | sed -n '1p')
+                        value=$(printf '%s' "$parsed" | sed -n '2p')
+                else
+                        # Neither has valid attr=value format
+                        # Provide consistent error message regardless of whether args exist as files
+                        printf '%s\n' "Error: Two-argument format requires one argument to be in 'attribute=value' format." >&2
+                        printf '%s\n' "       Use 'enchant <file> attr=value' or 'enchant attr=value <file>'" >&2
+                        return 1
+                fi
+        elif [ $# -eq 3 ] || [ $# -eq 4 ]; then
+                # Legacy 3-4 arg format: file, attribute, value, [helper]
+                file=$1
+                key=$2
+                value=$3
+                preferred=${4-}
+        else
+                printf '%s\n' "Error: Too many arguments provided." >&2
+                return 1
+        fi
+
+        # Validate we have all required parts (mainly for legacy 3-arg format
+        # where empty args might be passed)
+        if [ -z "$file" ] || [ -z "$key" ] || [ -z "$value" ]; then
+                printf '%s\n' "Error: File, attribute, and value are all required." >&2
+                return 1
+        fi
+
+        # Export for use in main
+        ENCHANT_FILE=$file
+        ENCHANT_KEY=$key
+        ENCHANT_VALUE=$value
+        ENCHANT_PREFERRED=$preferred
+}
+
 main() {
-        if ! require_args "$@"; then
+        if ! parse_arguments "$@"; then
                 exit 1
         fi
 
-        file=$1
-        key=$2
-        value=$3
-        preferred=${4-}
+        file=$ENCHANT_FILE
+        key=$ENCHANT_KEY
+        value=$ENCHANT_VALUE
+        preferred=$ENCHANT_PREFERRED
 
         gone "$file" && fail "Error: The file does not exist."
 

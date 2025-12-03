@@ -259,7 +259,7 @@ jump_spell_memorized() {
 	if ! learn=$(jump_learn_helper); then
 		return 1
 	fi
-if "$learn" --rc-file "$JUMP_TO_MARKER_RC_FILE" --spell "$SPELL_NAME" status >/dev/null 2>&1; then
+if "$learn" --spell "$SPELL_NAME" status >/dev/null 2>&1; then
 return 0
 fi
 if [ -f "$JUMP_TO_MARKER_RC_FILE" ] && grep -Fq "jump-to-marker" "$JUMP_TO_MARKER_RC_FILE" 2>/dev/null; then

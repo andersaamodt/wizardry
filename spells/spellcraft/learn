@@ -77,7 +77,7 @@ nonempty() {
 
 rc_usage() {
   cat <<'RCUSAGE' >&2
-Usage: learn --spell NAME [--format FORMAT] {add|remove|status}
+Usage: learn --spell NAME {add|remove|status}
 
 Reads spell content from standard input for the 'add' action and wraps it with
 wizardry comment sentinels so future removals remain deterministic.
@@ -85,12 +85,11 @@ Single-line spells receive an inline `# wizardry: NAME` suffix, while
 multi-line spells are wrapped with `begin`/`end` sentinels (including a lines
 count) to keep rc files readable.
 
-The rc file is auto-detected via detect-rc-file. For nix files (auto-detected
-from .nix extension or platform), uses programs.bash.initExtra or
-programs.zsh.initExtra to properly add shell code to nix configuration files.
+The rc file and format are auto-detected via detect-rc-file. For nix files
+(auto-detected from .nix extension or platform), uses programs.bash.initExtra
+or programs.zsh.initExtra to properly add shell code to nix configuration files.
 
 Options:
-  --format FORMAT  Output format: shell (default) or nix (auto-detected)
   --shell SHELL    Shell type for nix format: bash (default) or zsh
 
 Spell names must contain only letters, digits, dashes, underscores, periods, and colons.
@@ -144,26 +143,12 @@ EOF_ENV
 
 rc_run() {
   action=""
-  rc_file=""
   spell=""
-  rc_format="shell"
+  rc_format=""
   shell_type="bash"
 
   while [ "$#" -gt 0 ]; do
     case $1 in
-    --rc-file)
-      if [ "$#" -lt 2 ]; then
-        printf '%s\n' "learn: --rc-file expects a file path." >&2
-        rc_usage
-        exit 1
-      fi
-      rc_file=$2
-      shift 2
-      ;;
-    --rc-file=*)
-      rc_file=${1#*=}
-      shift
-      ;;
     --spell)
       if [ "$#" -lt 2 ]; then
         printf '%s\n' "learn: --spell expects a name." >&2
@@ -175,19 +160,6 @@ rc_run() {
       ;;
     --spell=*)
       spell=${1#*=}
-      shift
-      ;;
-    --format)
-      if [ "$#" -lt 2 ]; then
-        printf '%s\n' "learn: --format expects a value." >&2
-        rc_usage
-        exit 1
-      fi
-      rc_format=$2
-      shift 2
-      ;;
-    --format=*)
-      rc_format=${1#*=}
       shift
       ;;
     --shell)
@@ -234,35 +206,31 @@ rc_run() {
     exit 1
   fi
 
-  # Auto-detect rc file if not provided
-  if [ -z "$rc_file" ]; then
-    if ! detect_output=$(auto_detect_rc); then
-      exit 1
-    fi
-    while IFS='=' read -r key value; do
-      case $key in
-      rc_file) rc_file=$value ;;
-      format)
-        if [ "$rc_format" = "shell" ]; then
-          rc_format=$value
-        fi
-        ;;
-      esac
-    done <<EOF_DETECT
+  # Always auto-detect rc file and format
+  if ! detect_output=$(auto_detect_rc); then
+    exit 1
+  fi
+  rc_file=""
+  while IFS='=' read -r key value; do
+    case $key in
+    rc_file) rc_file=$value ;;
+    format) rc_format=$value ;;
+    esac
+  done <<EOF_DETECT
 $detect_output
 EOF_DETECT
+
+  if [ -z "$rc_file" ]; then
+    printf '%s\n' "learn: unable to determine rc file." >&2
+    exit 1
   fi
 
-  # Validate format
-  case $rc_format in
-  shell|nix) : ;;
-  *)
-    printf '%s\n' "learn: format must be 'shell' or 'nix'." >&2
-    exit 1
-    ;;
-  esac
+  # Default format to shell if not detected
+  if [ -z "$rc_format" ]; then
+    rc_format="shell"
+  fi
 
-  # Auto-detect format from file extension
+  # Auto-detect format from file extension (overrides detected format)
   case $rc_file in
   *.nix) rc_format=nix ;;
   esac

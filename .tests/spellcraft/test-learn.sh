@@ -143,7 +143,8 @@ test_nix_format_adds_shell_init() {
   printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$rc"
   stub=$(make_nix_detect_stub "$rc")
   
-  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell myspell --format nix add <<'EOF'
+  # Auto-detects nix format from .nix extension
+  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell myspell add <<'EOF'
 source "/path/to/spell"
 EOF
   assert_success || return 1
@@ -171,17 +172,17 @@ test_nix_format_status_works() {
   stub=$(make_nix_detect_stub "$rc")
   
   # Status should fail when not present
-  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell nixstatus --format nix status
+  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell nixstatus status
   assert_failure || return 1
   
   # Add the spell
-  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell nixstatus --format nix add <<'EOF'
+  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell nixstatus add <<'EOF'
 source "/path/to/spell"
 EOF
   assert_success || return 1
   
   # Status should succeed when present
-  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell nixstatus --format nix status
+  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell nixstatus status
   assert_success || return 1
 }
 
@@ -191,7 +192,7 @@ test_nix_format_remove_works() {
   stub=$(make_nix_detect_stub "$rc")
   
   # Add the spell
-  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell nixremove --format nix add <<'EOF'
+  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell nixremove add <<'EOF'
 source "/path/to/spell"
 EOF
   assert_success || return 1
@@ -203,7 +204,7 @@ EOF
   fi
   
   # Remove it
-  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell nixremove --format nix remove
+  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell nixremove remove
   assert_success || return 1
   
   # Verify it was removed
@@ -218,7 +219,7 @@ test_nix_format_zsh_shell_option() {
   printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$rc"
   stub=$(make_nix_detect_stub "$rc")
   
-  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell zshspell --format nix --shell zsh add <<'EOF'
+  DETECT_RC_FILE="$stub" run_spell "spells/spellcraft/learn" --spell zshspell --shell zsh add <<'EOF'
 source "/path/to/spell"
 EOF
   assert_success || return 1
