@@ -2,4 +2,20 @@
 # here - output current directory path (normalized pwd -P)
 # Example: dir=$(here)
 
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: here
+
+Output current directory path (normalized pwd -P). Example: dir=$(here).
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 pwd -P | sed 's|///*|/|g'

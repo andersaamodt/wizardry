@@ -19,13 +19,7 @@ show_usage() {
   cat <<'USAGE' >&2
 Usage: learn-spell [-r] PATH...
 
-Install spells that define an install() function. Scans paths for installable
-spells and runs their install(). Use -r for recursive directory scanning.
-
-Options:
-  -r, --recursive  Recursively scan subdirectories
-  --dry-run        Show what would be installed without executing
-  -h, --help       Show this help message
+Install spells that define an install() function by scanning the given paths and running each install hook. Use -r to recurse through directories and --dry-run to see what would be installed without changing anything.
 USAGE
 }
 

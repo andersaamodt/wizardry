@@ -4,11 +4,10 @@
 # Use it to generate a new player key pair for connecting to MUD hosts.
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: new-player
 
-Interactively create a new player identity by generating an SSH key pair.
-Prompts for a player name and creates keys at ~/.ssh/<player_name>.
+Interactively create a new player identity by generating an SSH key pair at ~/.ssh/<player_name> after prompting for a name.
 USAGE
 }
 

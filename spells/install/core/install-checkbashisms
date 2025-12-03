@@ -5,11 +5,10 @@
 set -eu
 
 usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: install-checkbashisms
 
-Install the checkbashisms command using the system package manager when
-it is not already available. Supports common Linux distributions and macOS.
+Install the checkbashisms command with your system package manager if it's missing, supporting common Linux distributions and macOS.
 USAGE
 }
 

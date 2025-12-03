@@ -2,4 +2,20 @@
 # lower - convert stdin to lowercase
 # Example: echo "HELLO" | lower
 
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: lower
+
+Convert stdin to lowercase. Example: echo "HELLO" | lower.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 tr '[:upper:]' '[:lower:]'

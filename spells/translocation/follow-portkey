@@ -4,11 +4,10 @@
 # The destination is read from the file's 'context' extended attribute.
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: follow-portkey <file>
 
-Read the destination from a portkey-enchanted file and print the cd command
-to teleport there. Use with eval: eval "$(follow-portkey file)"
+Read the destination from a portkey-enchanted file and print the cd command needed to teleport there. Use with eval, for example: eval "$(follow-portkey file)".
 USAGE
 }
 

@@ -2,4 +2,20 @@
 # say MESSAGE - print message to stdout with newline
 # Example: say "Hello world"
 
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: say MESSAGE
+
+Print message to stdout with newline. Example: say "Hello world".
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 printf '%s\n' "$*"

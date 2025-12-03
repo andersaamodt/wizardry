@@ -1,5 +1,24 @@
 #!/bin/sh
 
+# Install Bitcoin Core binaries on the system.
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: install-bitcoin
+
+Installs Bitcoin Core by downloading the appropriate binary (or building from source), placing bitcoind and bitcoin-cli in /usr
+/local/bin, and announcing the installed version.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
+
 # Set Bitcoin version
 
 set -eu

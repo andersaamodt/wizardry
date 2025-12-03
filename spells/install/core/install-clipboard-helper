@@ -5,6 +5,22 @@
 # - Wayland: wl-copy (from wl-clipboard)
 # - X11: xsel (preferred) or xclip (fallback)
 
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: install-clipboard-helper
+
+Installs a clipboard helper for the current environment. Detects if one is already installed and prefers the best option for the platform (macOS: pbcopy, Wayland: wl-copy, X11: xsel or xclip).
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)

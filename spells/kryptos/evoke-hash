@@ -9,10 +9,7 @@ show_usage() {
   cat <<'USAGE'
 Usage: evoke-hash <hash> [directory]
 
-Find files whose hash attribute matches the given hash value.
-Defaults to searching the current directory.
-
-The hash must have been previously set with the hashchant spell.
+Find files whose hash attribute matches a given value, searching the current directory by default. The hash should be set beforehand with the hashchant spell.
 USAGE
 }
 

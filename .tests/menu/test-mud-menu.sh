@@ -235,7 +235,7 @@ test_mud_install_menu_help() {
   run_cmd "$ROOT_DIR/spells/menu/mud-menu" --help
   assert_success || return 1
   assert_output_contains "Usage:" || return 1
-  assert_output_contains "CD hook" || return 1
+  assert_output_contains "cd hook" || return 1
 }
 
 run_test_case "CD hook toggle shows [ ] when not installed" test_cd_hook_toggle_unchecked

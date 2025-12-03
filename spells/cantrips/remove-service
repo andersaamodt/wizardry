@@ -4,6 +4,21 @@
 # no service name is supplied the script politely prompts via ask_text so menu
 # entries can call it without additional flags.
 
+usage() {
+        cat <<'USAGE' >&2
+Usage: remove-service UNIT
+
+Deletes the specified systemd unit file after confirming it exists, prompting for a name when none is given.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 set -eu
 
 SCRIPT_NAME=$(basename "$0")

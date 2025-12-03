@@ -4,11 +4,10 @@
 # When enabled, MUD appears in the main menu. When disabled, it is hidden.
 
 show_usage() {
-	cat <<'USAGE'
+cat <<'USAGE'
 Usage: toggle-mud-menu
 
-Toggle whether the MUD menu appears in the main menu.
-Shows the current state after toggling.
+Show or hide the MUD entry in the main menu. The spell flips the current state and tells you whether the menu is now visible.
 USAGE
 }
 

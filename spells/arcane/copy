@@ -7,13 +7,10 @@
 set -eu
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: copy <file>
 
-Copy the contents of the specified text file to the system clipboard using
-pbcopy, xsel, or xclip. Prints a confirmation when successful.
-
-When run without arguments, prompts for the file path interactively.
+Copy the contents of a text file to the system clipboard using pbcopy, xsel, or xclip. Prompts for a path when none is given and prints a confirmation when successful.
 USAGE
 }
 

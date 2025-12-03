@@ -6,11 +6,10 @@
 
 set -eu
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: yaml-to-enchantment <path-to-file>
 
-Parse a YAML front matter header, write each key/value into the file's extended
-attributes, and rewrite the file without the header.
+Parse a YAML front matter header, write each key/value into the file's extended attributes, and rewrite the file without the header.
 USAGE
 }
 

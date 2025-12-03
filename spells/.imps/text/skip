@@ -2,4 +2,20 @@
 # skip N [FILE] - skip first N lines of input or file
 # Example: skip 1 file.txt | process   # skip header
 
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: skip N [FILE]
+
+Skip first N lines of input or file. Example: skip 1 file.txt | process   # skip header.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 if [ "$#" -ge 2 ]; then tail -n +"$(($1 + 1))" "$2"; else tail -n +"$(($1 + 1))"; fi

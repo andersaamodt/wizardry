@@ -2,4 +2,20 @@
 # append FILE - append stdin to file
 # Example: echo "new line" | append log.txt
 
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: append FILE
+
+Append stdin to file. Example: echo "new line" | append log.txt.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 cat >> "$1"

@@ -2,6 +2,24 @@
 
 # Report readiness of core prerequisites for wizardry.
 
+usage() {
+        cat <<'USAGE' >&2
+Usage: core-status
+
+Reports whether wizardry's core prerequisites are installed, printing "ready" or a comma-separated list of missing commands.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
+
+# Report readiness of core prerequisites for wizardry.
+
 
 set -eu
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)

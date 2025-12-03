@@ -4,11 +4,10 @@
 # Use it to show commands before they are executed for teaching purposes.
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: wizard-eyes <message>
 
-Print the message in grey, indented text to indicate it's a command or
-technical detail visible to wizards learning the craft.
+Print a message in muted, indented text to mark it as a command or technical aside. Helpful for teaching moments when you want learners to see the command without shouting it.
 USAGE
 }
 

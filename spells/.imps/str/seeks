@@ -2,4 +2,20 @@
 # seeks PATTERN FILE - silently test if file contains literal pattern
 # Example: seeks "error" log.txt && echo "found errors"
 
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: seeks PATTERN FILE
+
+Silently test if file contains literal pattern. Example: seeks "error" log.txt && echo "found errors".
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 grep -Fq -- "$1" "$2" 2>/dev/null

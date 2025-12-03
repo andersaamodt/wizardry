@@ -6,11 +6,10 @@
 
 set -eu
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: hash <file>
 
-Compute the CRC-32 hash of the provided file path and print it in hexadecimal.
-The target file must exist; the path is resolved relative to the spell location.
+Compute the CRC-32 hash of a file and print it in hexadecimal, resolving the path relative to this spell when needed.
 USAGE
 }
 

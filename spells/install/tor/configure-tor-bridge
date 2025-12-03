@@ -2,6 +2,21 @@
 
 # Ensure user is root
 
+usage() {
+        cat <<'USAGE' >&2
+Usage: configure-tor-bridge
+
+Guides a root user through enabling or disabling Tor bridge mode by updating torrc and restarting tor after confirmation.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 set -eu
 if [ "$(id -u)" -ne 0 ]; then
     echo "configure-tor-bridge: root privileges required."

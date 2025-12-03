@@ -1,5 +1,23 @@
 #!/bin/sh
 
+# Check if Bitcoin daemon is currently running.
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: is-bitcoin-running
+
+Checks whether bitcoind is active by probing the bitcoin-cli RPC; emits "Yes" or "No" for easy scripting.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
+
 # This script serves as a magic mirror, reflecting the running status of Bitcoin
 
 # Look for bitcoin process

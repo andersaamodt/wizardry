@@ -9,12 +9,21 @@ newline_char=$(printf '\ny')
 newline_char=${newline_char%y}
 
 usage() {
-	cat <<'USAGE' >&2
+        cat <<'USAGE' >&2
 Usage: spellbook-store {add NAME CMD|remove NAME|list|path}
 
-Manage the spellbook storage file for quick-access spell shortcuts.
+Manage the spellbook storage file for quick-access spell shortcuts. Use add to
+save a named command, remove to drop it, list to review entries, and path to
+print the backing file location.
 USAGE
 }
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
 
 resolve_spellbook_file() {
 	if [ -n "${WIZARDRY_SPELLBOOK_FILE-}" ]; then

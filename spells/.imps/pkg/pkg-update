@@ -2,6 +2,22 @@
 # pkg-update - refresh package repository lists
 # Example: pkg-update && pkg-install git
 
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: pkg-update
+
+Refresh package repository lists. Example: pkg-update && pkg-install git.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 pm=$(pkg-manager) || { printf '%s\n' "pkg-update: no supported package manager" >&2; exit 1; }
 
 case $pm in

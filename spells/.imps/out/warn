@@ -2,4 +2,20 @@
 # warn MESSAGE - print message to stderr (does not exit)
 # Example: warn "Something unexpected happened"
 
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: warn MESSAGE
+
+Print message to stderr (does not exit). Example: warn "Something unexpected happened".
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 printf '%s\n' "$*" >&2

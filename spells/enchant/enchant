@@ -6,22 +6,10 @@
 
 set -eu
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: enchant [file] attribute=value
-       enchant attribute=value [file]
-       enchant <file> <attribute> <value> [helper]
 
-Apply an extended attribute with the given name and value to a file, using
-attr, xattr, or setfattr. With two arguments, the spell detects which is
-the file and which is the attribute=value pair. If no file is provided,
-uses the current directory. The legacy three-argument format is also
-supported for backward compatibility.
-
-Examples:
-  enchant myfile.txt owner=alice        # Set 'owner' to 'alice' on myfile.txt
-  enchant owner=alice myfile.txt        # Same as above (order doesn't matter)
-  enchant owner=alice                   # Enchant current directory
-  enchant myfile.txt owner alice        # Legacy 3-arg format
+Apply an extended attribute with the given name and value to a file using attr, xattr, or setfattr. With two arguments the spell figures out which is the path and which is attribute=value, defaulting to the current directory, and the legacy <file> <attribute> <value> [helper] form still works.
 USAGE
 }
 

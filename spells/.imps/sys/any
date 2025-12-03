@@ -2,6 +2,22 @@
 # any CMD [CMD...] - return first available command from list
 # Example: pkg=$(any apt-get brew pkgin) && $pkg install foo
 
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: any CMD [CMD...]
+
+Return first available command from list. Example: pkg=$(any apt-get brew pkgin) && $pkg install foo.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 for cmd in "$@"; do
   if command -v "$cmd" >/dev/null 2>&1; then
     printf '%s' "$cmd"

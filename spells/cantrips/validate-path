@@ -4,11 +4,10 @@
 # Use it to check path input before file operations.
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: validate-path <path>
 
-Test if the given string is a valid UNIX path (reasonable length for path
-and components). Exits 0 if valid, 1 if invalid.
+Check whether a string looks like a safe UNIX path, including reasonable lengths for the path and its components. Exits 0 when the path passes basic sanity checks and 1 when it does not.
 USAGE
 }
 

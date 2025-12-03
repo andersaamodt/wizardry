@@ -3,4 +3,20 @@
 # Testing imp - used primarily in test scripts to enable strict error handling
 # Example: . strict (sourced, not executed)
 
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: strict
+
+Enable shell strict mode (set -eu) Testing imp - used primarily in test scripts to enable strict error handling. Example: . strict (sourced, not executed).
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 set -eu

@@ -1,5 +1,23 @@
 #!/bin/sh
 
+# Uninstall Bitcoin Core binaries and optionally remove data/config files.
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: uninstall-bitcoin
+
+Stops bitcoind, removes Bitcoin Core binaries, and cleans up related configuration and data files when you confirm.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
+
 # Function to check if a package is installed in Debian-based distributions
 
 set -eu

@@ -4,16 +4,25 @@
 # substituting placeholders. It prefers interactive prompts so the services menu
 # can call it without arguments.
 
-set -eu
-
 SCRIPT_NAME=$(basename "$0")
 SERVICE_DIR=${SERVICE_DIR:-/etc/systemd/system}
 
 usage() {
         cat <<USAGE >&2
 Usage: $SCRIPT_NAME /path/to/template [KEY=value ...]
+
+Copies a systemd service template into the system directory, substituting KEY=value pairs into the file. Prompts for missing values to keep menu-driven installs friendly.
 USAGE
 }
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
+set -eu
 
 find_helper() {
         variable=$1

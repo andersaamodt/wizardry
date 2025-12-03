@@ -4,11 +4,10 @@
 # Use it to view and reorder files by priority.
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: priorities [-v]
 
-Display prioritized items in the current directory as an interactive menu.
-Use -v for verbose mode to show priority numbers.
+Display prioritized items in the current directory as an interactive menu, with -v to show priority numbers.
 USAGE
 }
 

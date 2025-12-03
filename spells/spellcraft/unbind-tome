@@ -9,8 +9,7 @@ usage() {
     cat <<'USAGE'
 Usage: unbind-tome <tome-path>
 
-Split a bound tome back into individual files, naming each page from its
-contents and placing them in a directory derived from the tome name.
+Split a bound tome back into individual files, naming each page from its contents and placing them in a directory derived from the tome name.
 USAGE
 }
 

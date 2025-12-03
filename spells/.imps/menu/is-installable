@@ -3,6 +3,22 @@
 # Usage: is-installable COMMAND
 # Returns 0 if the spell has an install() function, 1 otherwise
 
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: is-installable
+
+Check if a spell has an install() function Usage: is-installable COMMAND Returns 0 if the spell has an install() function, 1 otherwise.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 if [ -z "${1-}" ]; then
         exit 1
 fi

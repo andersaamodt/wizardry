@@ -4,11 +4,10 @@
 # Run it on the MUD host computer to add players with limited permissions.
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: add-ssh-player
 
-Interactively create a new player account on the MUD host. Prompts for
-player name and SSH key, then creates a system user with the key.
+Interactively create a new player account on the MUD host by prompting for a player name and SSH key, then creating a limited system user with that key.
 USAGE
 }
 

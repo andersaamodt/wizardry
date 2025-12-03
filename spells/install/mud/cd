@@ -18,12 +18,11 @@ if [ -n "${WIZARDRY_CD_CANTRIP-}" ] && [ "${0##*/}" != "cd" ]; then
 fi
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: cd [DIRECTORY]
        cd {install|uninstall}
 
-Replace builtin cd to run 'look' after each directory change.
-Use install/uninstall to manage the shell hook.
+Replace builtin cd so it runs 'look' after each directory change, keeping the MUD view in sync. Use install or uninstall to add or remove the hook from your shell.
 USAGE
 }
 

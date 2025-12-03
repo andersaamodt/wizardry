@@ -6,8 +6,13 @@
 
 set -eu
 usage() {
-    printf '%s\n' 'Usage: fathom-cursor [-v|--verbose] [-x] [-y]' >&2
-    exit 1
+    cat <<'USAGE' >&2
+Usage: fathom-cursor [-v|--verbose] [-x] [-y]
+
+Query the terminal with a Device Status Report and print the cursor's current
+column and row. Use -x or -y to request a single axis; -v adds labels so menu
+scripts can present the measurements clearly.
+USAGE
 }
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
@@ -42,8 +47,9 @@ while [ "$#" -gt 0 ]; do
         -y)
             want_y=1
             ;;
-        --help)
+        --help|--usage|-h)
             usage
+            exit 0
             ;;
         --)
             shift

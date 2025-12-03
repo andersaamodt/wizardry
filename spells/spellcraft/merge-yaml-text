@@ -4,10 +4,10 @@
 # Use it to combine .yaml metadata with .txt content into single files.
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: merge-yaml-text [directory] [-v|--verbose] [--dry-run]
 
-Merge .yaml and .txt files with matching basenames into combined files.
+Merge .yaml metadata and .txt content that share a basename into a single combined file. Works in the current directory by default, with verbose output or dry-run mode available for careful runs.
 USAGE
 }
 

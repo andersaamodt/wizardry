@@ -4,11 +4,10 @@
 # Use it to track popularity or priority through file metadata.
 
 show_usage() {
-        cat <<'USAGE'
+cat <<'USAGE'
 Usage: upvote <file>
 
-Increment the upvote count stored in the file's extended attribute 'upvotes'.
-If no upvotes attribute exists, initializes it to 1.
+Increment the upvote count stored in a file's 'upvotes' attribute, creating it with a value of 1 if it doesn't exist yet.
 USAGE
 }
 

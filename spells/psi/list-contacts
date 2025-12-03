@@ -7,8 +7,7 @@ show_usage() {
   cat <<'USAGE'
 Usage: list-contacts [directory]
 
-List all contacts from vCard files in the specified directory.
-Defaults to ~/.contacts if no directory is provided.
+List contacts from vCard files in a directory, defaulting to ~/.contacts when none is provided.
 USAGE
 }
 

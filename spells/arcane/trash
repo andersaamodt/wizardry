@@ -7,8 +7,7 @@ show_usage() {
   cat <<'USAGE'
 Usage: trash [-r] [-f] <file|folder>...
 
-Move files or folders to the system trash (recoverable unlike rm).
-Use -r for directories, -f to ignore missing files.
+Move files or folders to the system trash so they remain recoverable. Use -r for directories and -f to ignore missing files.
 USAGE
 }
 

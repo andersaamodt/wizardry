@@ -4,11 +4,10 @@
 # descriptive error or offering to install wizardry.
 
 show_usage() {
-	cat <<'USAGE'
+cat <<'USAGE'
 Usage: require-wizardry [--check|--offer|--snippet]
 
-Verify wizardry is installed. Use --check for silent exit code,
---offer to prompt for installation, or --snippet for embeddable code.
+Verify wizardry is available before running scripts that depend on it. Run with no flag or --check for a silent status check, --offer to guide the user through installing, or --snippet to print embeddable guard code.
 USAGE
 }
 

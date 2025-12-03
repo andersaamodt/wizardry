@@ -2,6 +2,21 @@
 
 # This spell displays the ao-mud main menu.
 
+usage() {
+        cat <<'USAGE' >&2
+Usage: main-menu
+
+Opens the Wizardry main menu so you can cast spells, browse your spellbook, install arcana, or jump into system tools.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 
 set -eu
 if [ -n "${REQUIRE_COMMAND-}" ]; then

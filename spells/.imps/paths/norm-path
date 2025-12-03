@@ -2,6 +2,22 @@
 # norm-path [PATH] - normalize path (collapse //, resolve . and ..), reads stdin if no arg
 # Example: norm-path "/tmp//foo/../bar" -> /tmp/bar
 
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: norm-path [PATH]
+
+Normalize path (collapse //, resolve . and ..), reads stdin if no arg. Example: norm-path "/tmp//foo/../bar" -> /tmp/bar.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 if [ "$#" -ge 1 ]; then
   printf '%s' "$1" | sed 's|///*|/|g'
 else

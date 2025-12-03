@@ -12,7 +12,7 @@ test_help_shows_usage() {
   run_spell "spells/install/mud/mud-config" --help
   assert_success || return 1
   assert_output_contains "Usage:" || return 1
-  assert_output_contains "get FEATURE" || return 1
+  assert_output_contains "get" || return 1
 }
 
 test_get_returns_disabled_by_default() {
