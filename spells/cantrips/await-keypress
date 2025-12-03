@@ -3,6 +3,22 @@
 # Read a single key press from the controlling terminal and report it in a
 # descriptive form ("enter", "up", literal text, etc.).
 
+show_usage() {
+        cat <<'USAGE'
+Usage: await-keypress
+
+Wait for and capture a single key press from the terminal.
+Outputs a descriptive name for the key (enter, up, down, tab, etc.)
+or the literal character pressed.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
 
 set -eu
 spell_dir() {

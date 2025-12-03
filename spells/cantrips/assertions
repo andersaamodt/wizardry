@@ -4,6 +4,24 @@
 # process with a failure code so calling test suites stop immediately when an
 # expectation is not met.
 
+show_usage() {
+        cat <<'USAGE'
+Usage: . assertions  (source this file)
+
+Provides assertion functions for shell-based tests:
+  assert_equal A B    - Confirm two strings match exactly
+  assert_output CMD X - Run command and compare stdout to expected
+  assert_success CMD  - Ensure command terminates successfully
+  assert_failure CMD  - Ensure command exits with non-zero status
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
 
 set -eu
 assert_equal() {

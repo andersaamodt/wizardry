@@ -3,6 +3,22 @@
 # is-service-installed checks whether a unit file exists under the systemd
 # directory. It exits 0 when present so other spells can branch on the result.
 
+show_usage() {
+  cat <<'USAGE'
+Usage: is-service-installed [SERVICE_NAME]
+
+Check if a systemd service unit file exists.
+Exits 0 if installed, 1 if not installed.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
 set -eu
 
 SCRIPT_NAME=$(basename "$0")

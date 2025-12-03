@@ -14,6 +14,13 @@ Exit status 0 represents "yes", 1 represents "no".
 USAGE
 }
 
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
         usage
         exit 1

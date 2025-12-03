@@ -12,8 +12,17 @@ SERVICE_DIR=${SERVICE_DIR:-/etc/systemd/system}
 usage() {
         cat <<USAGE >&2
 Usage: $SCRIPT_NAME /path/to/template [KEY=value ...]
+
+Install a systemd service from a template file, substituting placeholders.
 USAGE
 }
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
 
 find_helper() {
         variable=$1

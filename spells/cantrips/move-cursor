@@ -2,6 +2,20 @@
 
 # This spell moves the cursor to the provided column (x) and row (y).
 
+show_usage() {
+    cat <<'USAGE'
+Usage: move-cursor <x> <y>
+
+Move the terminal cursor to the specified column (x) and row (y).
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+    show_usage
+    exit 0
+    ;;
+esac
 
 set -eu
 usage() {

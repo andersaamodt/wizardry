@@ -7,6 +7,24 @@
 # This script contains all color codes in the POSIX standard.
 # You must source this script with '. ./colors' (or an absolute path) to use it.
 
+show_usage() {
+        cat <<'USAGE'
+Usage: . colors  (source this file)
+
+Defines color variables for terminal output styling.
+Variables include: RESET, BLACK, RED, GREEN, YELLOW, BLUE, PURPLE, CYAN, WHITE
+Plus: BOLD, ITALICS, UNDERLINED, BLINK, INVERT, STRIKE
+And theme colors: THEME_HIGHLIGHT, THEME_MUTED, THEME_SUCCESS, THEME_ERROR, etc.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
 # Record whether the terminal appears to support ANSI escape sequences.
 # This is a local variable used only within this script.
 

@@ -4,6 +4,22 @@
 # relies on existing cantrips (await-keypress, move-cursor, etc.) to handle the
 # terminal work so it can remain portable across macOS, Debian, and NixOS.
 
+show_usage() {
+  cat <<'USAGE'
+Usage: menu [OPTIONS] [ITEM...]
+
+Display an interactive menu. Pass menu items as arguments or pipe them via stdin.
+Use arrow keys to navigate and Enter to select.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
 set -eu
 
 menu_escape_status=${MENU_ESCAPE_STATUS-0}

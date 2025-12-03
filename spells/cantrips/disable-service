@@ -2,6 +2,22 @@
 
 # disable-service removes a unit from systemd's boot sequence.
 
+show_usage() {
+  cat <<'USAGE'
+Usage: disable-service [SERVICE_NAME]
+
+Disable a systemd service so it no longer starts at boot.
+If no service name is provided, you will be prompted to enter one.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
 set -eu
 
 SCRIPT_NAME=$(basename "$0")

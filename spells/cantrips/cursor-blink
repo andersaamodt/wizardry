@@ -2,6 +2,23 @@
 
 # This spell awakens or stills the cyclic illumination of the cursor.
 
+show_usage() {
+  cat <<'USAGE'
+Usage: cursor-blink on|off
+
+Control the visibility of the terminal cursor.
+  on   - Show/enable cursor blinking
+  off  - Hide/disable cursor blinking
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
 # Emit the escape sequence that re-enables blinking.
 
 set -eu

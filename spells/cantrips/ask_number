@@ -13,6 +13,13 @@ Prompts until the user supplies an integer within the inclusive range.
 USAGE
 }
 
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
 if [ "$#" -ne 3 ]; then
         usage
         exit 1

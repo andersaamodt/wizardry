@@ -3,6 +3,21 @@
 # Guard a script against missing external commands by exiting with a
 # descriptive error if the binary is absent.
 
+show_usage() {
+    cat <<'USAGE'
+Usage: require-command <command> [message...]
+
+Check if a command exists. If not, print an error message and exit.
+Optionally offers to install the missing command if an installer exists.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+    show_usage
+    exit 0
+    ;;
+esac
 
 set -eu
 usage() {

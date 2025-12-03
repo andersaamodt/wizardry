@@ -3,6 +3,22 @@
 # enable-service flips systemd's enable flag so units start automatically on
 # boot. It prompts for a service name when invoked without arguments.
 
+show_usage() {
+  cat <<'USAGE'
+Usage: enable-service [SERVICE_NAME]
+
+Enable a systemd service so it starts automatically at boot.
+If no service name is provided, you will be prompted to enter one.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
 set -eu
 
 SCRIPT_NAME=$(basename "$0")

@@ -1,8 +1,22 @@
 #!/usr/bin/env sh
 
 # Reveal the maximum length of the provided strings.
-# Usage: max-length <string1> [string2 ...] [-v]
 
+show_usage() {
+  cat <<'USAGE'
+Usage: max-length [-v] <string1> [string2 ...]
+
+Find the maximum length among the provided strings.
+  -v   Verbose output (prefix "Maximum length:")
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
 
 set -eu
 verbose=0

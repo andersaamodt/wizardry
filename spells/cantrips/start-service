@@ -4,6 +4,22 @@
 # none is provided. The script intentionally narrates each step so new users
 # can see how wizardry interacts with systemctl.
 
+show_usage() {
+  cat <<'USAGE'
+Usage: start-service [SERVICE_NAME]
+
+Start a systemd service using systemctl start.
+If no service name is provided, you will be prompted to enter one.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
 set -eu
 
 SCRIPT_NAME=$(basename "$0")

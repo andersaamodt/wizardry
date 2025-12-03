@@ -362,24 +362,16 @@ while IFS= read -r target; do
     issue_count=$((issue_count + 1))
   fi
   
-  # Check usage function (not required for imps, cantrips, menu scripts, or install scripts)
-  is_cantrip=0
-  is_menu=0
-  is_install=0
-  case "$target" in
-    *cantrips/*) is_cantrip=1 ;;
-    *menu/*|*-menu) is_menu=1 ;;
-    *install/*) is_install=1 ;;
-  esac
-  if [ "$is_imp_file" -eq 0 ] && [ "$is_cantrip" -eq 0 ] && [ "$is_menu" -eq 0 ] && [ "$is_install" -eq 0 ]; then
+  # Check usage function (required for all non-imps)
+  if [ "$is_imp_file" -eq 0 ]; then
     if ! result=$(check_usage_function "$path"); then
       issues=${issues:+$issues; }$result
       issue_count=$((issue_count + 1))
     fi
   fi
   
-  # Check help handler (not required for imps, cantrips, menu scripts, or install scripts)
-  if [ "$is_imp_file" -eq 0 ] && [ "$is_cantrip" -eq 0 ] && [ "$is_menu" -eq 0 ] && [ "$is_install" -eq 0 ]; then
+  # Check help handler (required for all non-imps)
+  if [ "$is_imp_file" -eq 0 ]; then
     if ! result=$(check_help_handler "$path"); then
       issues=${issues:+$issues; }$result
       issue_count=$((issue_count + 1))
