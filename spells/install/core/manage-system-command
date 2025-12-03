@@ -4,8 +4,7 @@ usage() {
         cat <<'USAGE' >&2
 Usage: manage-system-command [--uninstall] <command> <default-package>
 
-Installs or removes a system command via the available package manager, falling back to the provided default package name when
- no override is set. Respects FORCE_INSTALL to reinstall an already present command.
+Installs or removes a system command via the available package manager, falling back to the provided default package name when no override is set. Respects FORCE_INSTALL to reinstall an already present command.
 USAGE
 }
 

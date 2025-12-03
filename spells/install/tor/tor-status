@@ -1,5 +1,4 @@
 #!/bin/sh
-#!/bin/sh
 
 # This spell checks and displays the running status of Tor.
 

@@ -7,8 +7,7 @@ usage() {
         cat <<'USAGE' >&2
 Usage: torrc-path
 
-Prints the path to the active torrc configuration if one exists, or the standard location for your platform so you know where t
-o create it.
+Prints the path to the active torrc configuration if one exists, or the standard location for your platform so you know where to create it.
 USAGE
 }
 

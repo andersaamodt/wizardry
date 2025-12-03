@@ -10,7 +10,7 @@ usage() {
         cat <<'USAGE' >&2
 Usage: install-clipboard-helper
 
-This spell installs a clipboard helper for the current environment. It detects if one is already installed and prefers the best option for the platform: - macOS: pbcopy (built-in, no installation needed) - Wayland: wl-copy (from wl-clipboard) - X11: xsel (preferred) or xclip (fallback).
+Installs a clipboard helper for the current environment. Detects if one is already installed and prefers the best option for the platform (macOS: pbcopy, Wayland: wl-copy, X11: xsel or xclip).
 USAGE
 }
 
