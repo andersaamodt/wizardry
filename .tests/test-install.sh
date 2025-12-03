@@ -1222,6 +1222,153 @@ install_spells_before_nixos_rebuild() {
   return 0
 }
 
+# === MUD Installation Tests ===
+
+install_installs_spells_explicitly() {
+  # Test that the install script installs learnable spells explicitly by name
+  # rather than using recursive learn-spell
+  fixture=$(make_fixture)
+  provide_basic_tools "$fixture"
+  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+
+  install_dir="$fixture/home/.wizardry"
+  
+  run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
+      HOME="$fixture/home" \
+      WIZARDRY_INSTALL_ASSUME_YES=1 \
+      "$ROOT_DIR/install"
+
+  assert_success || return 1
+  
+  # Should show individual spell names being installed
+  assert_output_contains "jump-to-marker" || return 1
+  
+  # Should NOT use recursive flag in spell installation output
+  if printf '%s' "$OUTPUT" | grep -q "Memorized.*spell"; then
+    # Old recursive style output - this should not appear
+    TEST_FAILURE_REASON="should not use recursive spell installation"
+    return 1
+  fi
+}
+
+install_mud_installs_cd_hook() {
+  # Test that MUD installation installs the CD hook
+  fixture=$(make_fixture)
+  provide_basic_tools "$fixture"
+  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+
+  install_dir="$fixture/home/.wizardry"
+  rc_file="$fixture/home/.bashrc"
+  
+  # Create the rc file before the sandbox runs (for proper permissions)
+  touch "$rc_file"
+  
+  run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
+      HOME="$fixture/home" \
+      WIZARDRY_RC_FILE="$rc_file" \
+      WIZARDRY_INSTALL_ASSUME_YES=1 \
+      WIZARDRY_INSTALL_MUD=1 \
+      "$ROOT_DIR/install"
+
+  assert_success || return 1
+  
+  # Should show MUD installation section
+  assert_output_contains "Installing MUD" || return 1
+  
+  # Should install CD hook (verify via output since bwrap permissions prevent file read)
+  assert_output_contains "CD hook" || return 1
+  
+  # Verify the cd cantrip was installed (via output message)
+  assert_output_contains "runs 'look' on directory change" || return 1
+}
+
+install_mud_enables_config_features() {
+  # Test that MUD installation enables all MUD config features
+  fixture=$(make_fixture)
+  provide_basic_tools "$fixture"
+  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq mkdir
+
+  install_dir="$fixture/home/.wizardry"
+  rc_file="$fixture/home/.bashrc"
+  spellbook_home="$fixture/home/.spellbook"
+  
+  # Create the rc file before the sandbox runs (for proper permissions)
+  touch "$rc_file"
+  mkdir -p "$spellbook_home/.mud"
+  
+  run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
+      HOME="$fixture/home" \
+      WIZARDRY_RC_FILE="$rc_file" \
+      SPELLBOOK_HOME="$spellbook_home" \
+      WIZARDRY_INSTALL_ASSUME_YES=1 \
+      WIZARDRY_INSTALL_MUD=1 \
+      "$ROOT_DIR/install"
+
+  assert_success || return 1
+  
+  # Should show MUD installation section  
+  assert_output_contains "Installing MUD" || return 1
+  
+  # Should enable MUD features (verify via output)
+  assert_output_contains "Enabling MUD features" || return 1
+  assert_output_contains "Command not found hook" || return 1
+  assert_output_contains "MUD features installed" || return 1
+}
+
+install_without_mud_skips_mud_section() {
+  # Test that install without MUD skips the MUD installation section
+  fixture=$(make_fixture)
+  provide_basic_tools "$fixture"
+  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+
+  install_dir="$fixture/home/.wizardry"
+  rc_file="$fixture/home/.bashrc"
+  
+  # Create the rc file before the sandbox runs (for proper permissions)
+  touch "$rc_file"
+  
+  run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
+      HOME="$fixture/home" \
+      WIZARDRY_RC_FILE="$rc_file" \
+      WIZARDRY_INSTALL_ASSUME_YES=1 \
+      "$ROOT_DIR/install"
+
+  assert_success || return 1
+  
+  # Should NOT show MUD installation section
+  if printf '%s' "$OUTPUT" | grep -q "Installing MUD"; then
+    TEST_FAILURE_REASON="should not show MUD installation when not requested"
+    return 1
+  fi
+  
+  # CD hook should NOT be in the rc file
+  if grep -q "wizardry cd cantrip" "$rc_file" 2>/dev/null; then
+    TEST_FAILURE_REASON="CD hook should not be installed when MUD is not requested"
+    return 1
+  fi
+}
+
+install_mud_shows_planned_features() {
+  # Test that MUD installation mentions the planned features
+  fixture=$(make_fixture)
+  provide_basic_tools "$fixture"
+  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq mkdir
+
+  install_dir="$fixture/home/.wizardry"
+  
+  run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
+      HOME="$fixture/home" \
+      WIZARDRY_INSTALL_ASSUME_YES=1 \
+      WIZARDRY_INSTALL_MUD=1 \
+      "$ROOT_DIR/install"
+
+  assert_success || return 1
+  
+  # Should show planned features
+  assert_output_contains "Command not found hook" || return 1
+  assert_output_contains "planned feature" || return 1
+}
+
 # === Run Tests ===
 
 run_test_case "install runs core installer" install_invokes_core_installer
@@ -1262,5 +1409,10 @@ run_test_case "learn-spellbook remove-all removes all nix entries" path_wizard_r
 run_test_case "learn-spellbook remove-all reports count" path_wizard_remove_all_reports_count
 run_test_case "learn-spellbook remove-all handles empty file" path_wizard_remove_all_handles_empty_file
 run_test_case "install installs spells before nixos-rebuild" install_spells_before_nixos_rebuild
+run_test_case "install installs spells explicitly" install_installs_spells_explicitly
+run_test_case "install MUD installs CD hook" install_mud_installs_cd_hook
+run_test_case "install MUD enables config features" install_mud_enables_config_features
+run_test_case "install without MUD skips MUD section" install_without_mud_skips_mud_section
+run_test_case "install MUD shows planned features" install_mud_shows_planned_features
 
 finish_tests
