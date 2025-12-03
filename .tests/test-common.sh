@@ -311,14 +311,14 @@ run_cmd() {
     fi
   elif [ "$MACOS_SANDBOX_AVAILABLE" -eq 1 ]; then
     # Use macOS sandbox-exec for isolation
-    if (cd "$workdir" && env PATH="$PATH" HOME="$homedir" TMPDIR="$tmpdir" WIZARDRY_TMPDIR="$WIZARDRY_TMPDIR" DETECT_RC_FILE="${DETECT_RC_FILE-}" \
+    if (cd "$workdir" && env PATH="$PATH" HOME="$homedir" TMPDIR="$tmpdir" WIZARDRY_TMPDIR="$WIZARDRY_TMPDIR" DETECT_RC_FILE="${DETECT_RC_FILE-}" WIZARDRY_SKIP_NIX_REBUILD="${WIZARDRY_SKIP_NIX_REBUILD-}" WIZARDRY_SKIP_CONFIRM="${WIZARDRY_SKIP_CONFIRM-}" \
       run_macos_sandbox "$@" >"$_stdout" 2>"$_stderr"); then
       STATUS=0
     else
       STATUS=$?
     fi
   else
-    if (cd "$workdir" && env PATH="$PATH" HOME="$homedir" TMPDIR="$tmpdir" WIZARDRY_TMPDIR="$WIZARDRY_TMPDIR" DETECT_RC_FILE="${DETECT_RC_FILE-}" "$@" \
+    if (cd "$workdir" && env PATH="$PATH" HOME="$homedir" TMPDIR="$tmpdir" WIZARDRY_TMPDIR="$WIZARDRY_TMPDIR" DETECT_RC_FILE="${DETECT_RC_FILE-}" WIZARDRY_SKIP_NIX_REBUILD="${WIZARDRY_SKIP_NIX_REBUILD-}" WIZARDRY_SKIP_CONFIRM="${WIZARDRY_SKIP_CONFIRM-}" "$@" \
       >"$_stdout" 2>"$_stderr"); then
       STATUS=0
     else

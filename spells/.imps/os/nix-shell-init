@@ -249,33 +249,41 @@ $line"
     rm -f "$input_file"
   else
     # No existing block - create a new one
-    nix_block="  $nix_option = ''
-$marked_code
-  '';"
+    # Write the nix block to a temp file to avoid awk multiline issues on macOS
+    block_file="${TMPDIR:-/tmp}/nix-shell-init-block.$$"
+    printf '  %s = '"''"'\n' "$nix_option" > "$block_file"
+    printf '%s\n' "$marked_code" >> "$block_file"
+    printf "  '';\n" >> "$block_file"
     
-    # Insert the block before the closing brace
-    run_maybe_sudo cat "$nix_file" | awk -v block="$nix_block" '
-    {
-      lines[NR] = $0
-    }
-    END {
-      # Find last closing brace
-      last = NR
-      while (last > 0 && lines[last] ~ /^[[:space:]]*$/) last--
-      
-      if (last > 0 && lines[last] ~ /^[[:space:]]*}/) {
-        for (i = 1; i < last; i++) print lines[i]
-        print ""
-        print block
-        print lines[last]
-        for (i = last + 1; i <= NR; i++) print lines[i]
-      } else {
-        for (i = 1; i <= NR; i++) print lines[i]
-        print ""
-        print block
-      }
-    }
-    ' > "$tmp_file"
+    # Insert the block before the closing brace using shell
+    input_file="${TMPDIR:-/tmp}/nix-shell-init-input2.$$"
+    run_maybe_sudo cat "$nix_file" > "$input_file"
+    
+    # Find the last closing brace and insert before it
+    total_lines=$(wc -l < "$input_file" | tr -d ' ')
+    last_brace=0
+    line_num=0
+    while IFS= read -r line; do
+      line_num=$((line_num + 1))
+      case "$line" in
+        *"}"*) last_brace=$line_num ;;
+      esac
+    done < "$input_file"
+    
+    if [ "$last_brace" -gt 0 ]; then
+      # Print lines before the last brace
+      head -n "$((last_brace - 1))" "$input_file" > "$tmp_file"
+      printf '\n' >> "$tmp_file"
+      cat "$block_file" >> "$tmp_file"
+      tail -n "+$last_brace" "$input_file" >> "$tmp_file"
+    else
+      # No closing brace found, append at end
+      cat "$input_file" > "$tmp_file"
+      printf '\n' >> "$tmp_file"
+      cat "$block_file" >> "$tmp_file"
+    fi
+    
+    rm -f "$input_file" "$block_file"
   fi
   
   if [ "$needs_sudo" -eq 1 ]; then
