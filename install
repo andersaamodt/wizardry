@@ -821,7 +821,7 @@ fi
 
 if [ "$install_mud" -eq 1 ]; then
         section_msg "Installing MUD"
-        
+
         # Install the CD hook (runs 'look' on directory change)
         if [ -x "$MUD_CD_SPELL" ]; then
                 info_msg "Installing CD hook..."
@@ -831,7 +831,7 @@ if [ "$install_mud" -eq 1 ]; then
                         printf '%sNote:%s CD hook installation skipped.\n' "$YELLOW" "$RESET" >&2
                 fi
         fi
-        
+
         # Enable MUD config features (including command-not-found which is planned)
         if [ -x "$MUD_CONFIG" ]; then
                 info_msg "Enabling MUD features..."
@@ -845,7 +845,7 @@ if [ "$install_mud" -eq 1 ]; then
                 substep_msg "Inventory feature (planned feature)"
                 substep_msg "HP/MP and combat (planned feature)"
         fi
-        
+
         success_msg "MUD features installed"
 fi
 
