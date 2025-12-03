@@ -135,15 +135,15 @@ Push as much logic as possible into imps for maximum semanticization.
 | **demon family** | A subfolder within `spells/.imps/` that groups related imps by function. Each folder represents a family of imps that share a common purpose (e.g., `str/` for string operations, `fs/` for filesystem operations). |
 | **divination** | Spells that detect or discover information. |
 | **enchant** / **enchantment** | Spells that add or manipulate extended attributes (metadata) on files. |
-| `forget` | Remove a spell from your memorized list. Use `forget <spell name>` or the Spellbook menu. |
-| **imp** | The smallest building block of magic—a microscript that does exactly one thing. Imos dwell in `spells/.imps/`. |
+| `forget` | Remove a spell from your memorized list. Use `forget <spell name>` or the `spellbook` menu. |
+| **imp** | The smallest building block of magic—a microscript that does exactly one thing. Imps dwell in `spells/.imps/`. |
 | `learn` | Add a spell to your shell environment, making it spell permanently available. Some spells must be learned before use. |
-| `memorize` | Add a spell to your Cast menu for quick access. |
+| `memorize` | Add a spell to your `cast` menu for quick access. |
 | **portal** | A persistent connection between two computers via SSH, created with `open-portal`, for MUD travel. |
 | **portkey** | A bookmark to a remote location. Use `enchant-portkey` to create one and `follow-portkey` to teleport there. (Future: If you have the `touch` hook installed, touching a portkey will also activate it.) |
 | **scribe** | Create a new custom spell. |
 | **spell** | A specially-curated shell script that lives in `spells/`, has a unique name, and follows wizardry conventions. |
-| `spellbook` | Your personal grimoire for organizing and casting spells. Access it with `spellbook` or from the main menu. Also refers to custom spell folders. |
+| `spellbook` | Your personal grimoire for organizing and casting spells. Access it with `spellbook` or from the main `menu`. Also refers to custom spell folders. |
 | **spellcraft** | The writing of shell scripts. |
 | **tome** | A text file containing the contents of several other text files concatenated together, so a whole folder of spells can be sent or carried easily. |
 | **ward** | A protective spell for security or access control. |
