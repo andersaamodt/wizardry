@@ -5,7 +5,7 @@
 # other spells import ask_text directly while users enjoy the concise ask name.
 
 usage() {
-        cat <<'USAGE' >&2
+        cat <<'USAGE'
 Usage: ask "Question" [default]
 
 Prompts with the given question and echoes the response, forwarding all arguments to ask_text. Accepts an optional default that is used when the user presses Enter.

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Behavioral cases (derived from --help and script behavior):
 # - jump-trash prints usage with --help
-# - jump-trash cds to trash when sourced (via jtrash function)
+# - jump-trash cds to trash when sourced (via jump_trash function)
 # - jump-trash uses inline fallback when detect-trash is missing
 # - jump-trash fails if trash directory does not exist
 # - jump-trash prompts to memorize when run directly
@@ -30,12 +30,12 @@ printf '%s\n' "$trash_dir"
 STUB
   chmod +x "$stub/detect-trash"
 
-  # Source the spell and call the jtrash function
+  # Source the spell and call the jump_trash function
   run_cmd sh -c "
     PATH='$stub:$PATH'
     export PATH
     . '$ROOT_DIR/spells/arcane/jump-trash'
-    jtrash
+    jump_trash
     pwd
   "
   assert_success || return 1
@@ -61,13 +61,13 @@ STUB
   # Provide only basic utilities, no detect-trash
   link_tools "$stub" sh printf test cd
 
-  # Source the spell and call the jtrash function with custom HOME
+  # Source the spell and call the jump_trash function with custom HOME
   run_cmd sh -c "
     PATH='$stub:/bin:/usr/bin'
     HOME='$fake_home'
     export PATH HOME
     . '$ROOT_DIR/spells/arcane/jump-trash'
-    jtrash
+    jump_trash
     pwd
   "
   assert_success || return 1
@@ -85,18 +85,18 @@ printf '%s\n' "$nonexistent_dir"
 STUB
   chmod +x "$stub/detect-trash"
 
-  # Source and call the jtrash function
+  # Source and call the jump_trash function
   run_cmd sh -c "
     PATH='$stub:$PATH'
     export PATH
     . '$ROOT_DIR/spells/arcane/jump-trash'
-    jtrash
+    jump_trash
   "
   assert_failure || return 1
   assert_error_contains "trash directory does not exist" || return 1
 }
 
-test_jtrash_function_help() {
+test_jump_trash_function_help() {
   stub=$(make_tempdir)
   trash_dir="$stub/Trash"
   mkdir -p "$trash_dir"
@@ -107,12 +107,12 @@ printf '%s\n' "$trash_dir"
 STUB
   chmod +x "$stub/detect-trash"
 
-  # Test jtrash function --help
+  # Test jump_trash function --help
   run_cmd sh -c "
     PATH='$stub:$PATH'
     export PATH
     . '$ROOT_DIR/spells/arcane/jump-trash'
-    jtrash --help
+    jump_trash --help
   "
   assert_success || return 1
   assert_output_contains "Usage: jump-trash" || return 1
@@ -122,7 +122,7 @@ run_test_case "jump-trash prints usage" test_help
 run_test_case "jump-trash cds when sourced" test_cds_when_sourced
 run_test_case "jump-trash uses inline fallback without detect-trash" test_uses_inline_fallback
 run_test_case "jump-trash fails if trash dir missing" test_fails_if_trash_dir_missing
-run_test_case "jtrash function shows help" test_jtrash_function_help
+run_test_case "jump_trash function shows help" test_jump_trash_function_help
 
 test_nixos_uses_nix_format() {
   # Test that on NixOS (nix format), jump-trash calls learn without --rc-file
@@ -163,7 +163,7 @@ STUB
   
   link_tools "$stub" sh printf grep cat test sed basename command pwd
   
-  # Run jtrash_install
+  # Run jump_trash_install
   run_cmd sh -c "
     PATH='$stub:/bin:/usr/bin'
     HOME='$fake_home'
@@ -172,7 +172,7 @@ STUB
     JUMP_TRASH_PATH='$ROOT_DIR/spells/arcane/jump-trash'
     export PATH HOME DETECT_RC_FILE LEARN_SPELL JUMP_TRASH_PATH
     . '$ROOT_DIR/spells/arcane/jump-trash'
-    jtrash_install
+    jump_trash_install
   "
   assert_success || return 1
   

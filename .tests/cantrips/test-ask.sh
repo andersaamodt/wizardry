@@ -58,10 +58,9 @@ test_ask_user_overrides_default() {
 # Test --help - ask shim does not directly handle help, it delegates to ask_text
 # ask_text reads it as a question argument, which is the intended simple shim behavior
 test_ask_help_behavior() {
-  # ask shim passes --help as a question to ask_text, not as a flag
-  # This is intentional: ask is a simple relay that doesn't add its own options
-  run_cmd env ASK_CANTRIP_INPUT=none "$ROOT_DIR/spells/cantrips/ask" "--help" "default"
-  assert_success && assert_output_contains "default"
+  # ask now shows help when --help is passed
+  run_cmd "$ROOT_DIR/spells/cantrips/ask" "--help"
+  assert_success && assert_output_contains "Usage:"
 }
 
 run_test_case "ask relays prompts to ask_text" ask_relays_to_ask_text
