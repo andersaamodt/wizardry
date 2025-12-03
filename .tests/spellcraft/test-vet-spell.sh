@@ -173,8 +173,8 @@ echo "hello"
 EOF
   chmod +x "$spell_dir/no-usage-spell"
   
-  # vet-spell is now always strict, no --strict flag needed
-  run_spell "spells/spellcraft/vet-spell" "$spell_dir/no-usage-spell"
+  # --strict flag required for usage function check
+  run_spell "spells/spellcraft/vet-spell" --strict "$spell_dir/no-usage-spell"
   assert_failure && assert_output_contains "usage function"
 }
 
@@ -195,8 +195,8 @@ echo "hello"
 EOF
   chmod +x "$spell_dir/no-help-spell"
   
-  # vet-spell is now always strict, no --strict flag needed
-  run_spell "spells/spellcraft/vet-spell" "$spell_dir/no-help-spell"
+  # --strict flag required for help handler check
+  run_spell "spells/spellcraft/vet-spell" --strict "$spell_dir/no-help-spell"
   assert_failure && assert_output_contains "help"
 }
 
