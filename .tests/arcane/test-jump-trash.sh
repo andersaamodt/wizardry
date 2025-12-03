@@ -115,7 +115,7 @@ STUB
     jtrash --help
   "
   assert_success || return 1
-  assert_output_contains "Usage: jtrash" || return 1
+  assert_output_contains "Usage: jump-trash" || return 1
 }
 
 run_test_case "jump-trash prints usage" test_help

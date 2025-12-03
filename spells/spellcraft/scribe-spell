@@ -192,14 +192,18 @@ prompt_for_input() {
 usage() {
         cat <<USAGE
 Usage: $SCRIPT_NAME [--category CAT] [NAME COMMAND...]
+       $SCRIPT_NAME --new-category [NAME]
 
 Scribe (create) a custom spell in your spellbook. Without arguments,
 prompts interactively. Names must be unique and not conflict with PATH.
+Use --new-category to create an empty category folder.
 USAGE
 }
 
 # Override directory (for creating spells in subfolders)
 override_dir=""
+# Flag for creating a new category only (no spell)
+new_category_mode=0
 
 # Parse arguments
 while [ "$#" -gt 0 ]; do
@@ -207,6 +211,10 @@ while [ "$#" -gt 0 ]; do
                 --help|-h)
                         usage
                         exit 0
+                        ;;
+                --new-category)
+                        new_category_mode=1
+                        shift
                         ;;
                 --category)
                         if [ "$#" -lt 2 ]; then
@@ -253,6 +261,28 @@ if [ -n "$override_dir" ]; then
         spell_home=$override_dir
         # Clear category since we're using a specific dir
         current_category=""
+fi
+
+# Handle --new-category mode
+if [ "$new_category_mode" -eq 1 ]; then
+        if [ "$#" -ge 1 ]; then
+                category_name=$1
+        else
+                category_name=$(prompt_for_input "Category name: ")
+        fi
+        if [ -z "$category_name" ]; then
+                printf '%s\n' "A category name is required." >&2
+                exit 1
+        fi
+        validate_category "$category_name" || exit 1
+        if [ -d "$spell_home/$category_name" ]; then
+                printf '%s\n' "Category '$category_name' already exists." >&2
+                exit 1
+        fi
+        mkdir -p "$spell_home/$category_name"
+        add_category_to_path "$category_name"
+        printf "Created category '%s' in %s.\n" "$category_name" "$spell_home"
+        exit 0
 fi
 
 # Non-interactive mode with arguments

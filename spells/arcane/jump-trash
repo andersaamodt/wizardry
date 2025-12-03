@@ -8,7 +8,7 @@ show_usage() {
 Usage: jump-trash [--install]
 
 Teleport to your system trash directory. Source this spell to define
-the 'jtrash' function, or run directly to memorize it to your shell rc.
+the 'jump-trash' function, or run directly to memorize it to your shell rc.
 USAGE
 }
 
@@ -323,7 +323,7 @@ jtrash() {
   case "${1-}" in
   --help|--usage|-h)
     cat <<'USAGE'
-Usage: jtrash
+Usage: jump-trash
 
 Teleport to the system trash directory.
 
@@ -356,7 +356,7 @@ jtrash_prompt_memorize() {
     if [ -n "$JUMP_TRASH_RC_FILE" ]; then
       rc_display=$(basename "$JUMP_TRASH_RC_FILE")
     fi
-    printf '%s\n' "The 'jtrash' spell is already memorized via $rc_display."
+    printf '%s\n' "The 'jump-trash' spell is already memorized via $rc_display."
     return 0
   fi
   if ! jtrash_detect_environment; then
@@ -366,8 +366,7 @@ jtrash_prompt_memorize() {
     return 1
   fi
   rc_display=$(basename "$JUMP_TRASH_RC_FILE")
-  prompt_message="Memorize the 'jtrash' spell now? It will be etched into $rc_display."
-  printf '%s\n' "$prompt_message"
+  prompt_message="Memorize the 'jump-trash' spell now? It will be etched into $rc_display."
   if jtrash_confirm "$prompt_message" yes; then
     jtrash_install
   else
@@ -384,8 +383,20 @@ jtrash_cli() {
     show_usage
     ;;
   "")
-    jtrash_prompt_memorize || true
-    jtrash || true
+    # When run as a script (not sourced), cd won't persist to the parent shell.
+    # We need to inform the user about this and prompt to memorize.
+    if jtrash_spell_memorized; then
+      # Already memorized - inform user they need to load the shell function
+      printf '%s\n' "Note: Running 'jump-trash' as a command won't change your current directory."
+      printf '%s\n' "Use the 'jtrash' function instead (reload your shell config or start a new terminal)."
+      # Still show the path for reference
+      trash_path=$(_jtrash_get_path)
+      if [ -n "$trash_path" ] && [ -d "$trash_path" ]; then
+        printf '%s\n' "Trash location: $trash_path"
+      fi
+    else
+      jtrash_prompt_memorize || true
+    fi
     ;;
   *)
     printf '%s\n' "jump-trash: unknown option '$1'." >&2

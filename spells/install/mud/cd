@@ -203,8 +203,8 @@ install() {
         if [ "$rc_format" = "nix" ]; then
                 # Find nix-shell-init helper
                 nix_helper=""
-                if [ -x "$SCRIPT_DIR/../../.imps/os/nix-shell-init" ]; then
-                        nix_helper="$SCRIPT_DIR/../../.imps/os/nix-shell-init"
+                if [ -x "$SCRIPT_DIR/../../.imps/sys/nix-shell-init" ]; then
+                        nix_helper="$SCRIPT_DIR/../../.imps/sys/nix-shell-init"
                 elif command -v nix-shell-init >/dev/null 2>&1; then
                         nix_helper=$(command -v nix-shell-init)
                 fi
@@ -266,8 +266,8 @@ uninstall() {
         # For nix format, use nix-shell-init to remove the block
         if [ "$rc_format" = "nix" ]; then
                 nix_helper=""
-                if [ -x "$SCRIPT_DIR/../../.imps/os/nix-shell-init" ]; then
-                        nix_helper="$SCRIPT_DIR/../../.imps/os/nix-shell-init"
+                if [ -x "$SCRIPT_DIR/../../.imps/sys/nix-shell-init" ]; then
+                        nix_helper="$SCRIPT_DIR/../../.imps/sys/nix-shell-init"
                 elif command -v nix-shell-init >/dev/null 2>&1; then
                         nix_helper=$(command -v nix-shell-init)
                 fi
