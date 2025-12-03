@@ -7,7 +7,7 @@ usage() {
         cat <<'USAGE' >&2
 Usage: first [FILE]
 
-Output first line of input or file Examples: ls | first   # or: first /etc/passwd.
+Output first line of input or file. Examples: ls | first   # or: first /etc/passwd
 USAGE
 }
 
