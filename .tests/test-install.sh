@@ -585,13 +585,18 @@ path_wizard_accepts_helper_overrides() {
   # Set up environment with explicit helper paths
   rc_file="$fixture/.testrc"
   
+  # Create detect stub that returns our test rc file
+  detect_stub="$fixture/detect-stub"
+  cat >"$detect_stub" <<EOF
+#!/bin/sh
+printf 'platform=debian\nrc_file=$rc_file\nformat=shell\n'
+EOF
+  chmod +x "$detect_stub"
+  
   # Run learn-spellbook with explicit helper env vars
-  DETECT_RC_FILE="$ROOT_DIR/spells/divination/detect-rc-file" \
+  DETECT_RC_FILE="$detect_stub" \
     LEARN_SPELL="$ROOT_DIR/spells/spellcraft/learn" \
-    run_cmd "$ROOT_DIR/spells/spellcraft/learn-spellbook" \
-      --rc-file "$rc_file" \
-      --format shell \
-      add "$test_dir"
+    run_cmd "$ROOT_DIR/spells/spellcraft/learn-spellbook" add "$test_dir"
 
   # Should succeed
   assert_success || return 1
@@ -1072,8 +1077,10 @@ path_wizard_remove_all_removes_all_nix_entries() {
   mkdir -p "$fixture/home/.config/home-manager"
   mkdir -p "$fixture/test-dir1" "$fixture/test-dir2"
   
+  rc_file="$fixture/home/.config/home-manager/home.nix"
+  
   # Create a nix file with multiple wizardry entries
-  cat >"$fixture/home/.config/home-manager/home.nix" <<EOF
+  cat >"$rc_file" <<EOF
 { config, pkgs, ... }:
 
 {
@@ -1086,17 +1093,22 @@ path_wizard_remove_all_removes_all_nix_entries() {
   ];
 }
 EOF
+  
+  # Create detect stub
+  detect_stub="$fixture/detect-rc-file"
+  cat >"$detect_stub" <<EOF
+#!/bin/sh
+printf 'platform=nixos\nrc_file=$rc_file\nformat=nix\n'
+EOF
+  chmod +x "$detect_stub"
 
   # Run remove-all
-  run_cmd "$ROOT_DIR/spells/spellcraft/learn-spellbook" \
-      --rc-file "$fixture/home/.config/home-manager/home.nix" \
-      --format nix \
-      remove-all
+  DETECT_RC_FILE="$detect_stub" run_cmd "$ROOT_DIR/spells/spellcraft/learn-spellbook" remove-all
 
   assert_success || return 1
   
   # Check that all wizardry entries are removed
-  if grep -q "# wizardry" "$fixture/home/.config/home-manager/home.nix" 2>/dev/null; then
+  if grep -q "# wizardry" "$rc_file" 2>/dev/null; then
     TEST_FAILURE_REASON="remove-all should remove all wizardry entries"
     return 1
   fi
@@ -1113,8 +1125,10 @@ path_wizard_remove_all_reports_count() {
   mkdir -p "$fixture/home/.config/home-manager"
   mkdir -p "$fixture/test-dir1"
   
+  rc_file="$fixture/home/.config/home-manager/home.nix"
+  
   # Create a nix file with wizardry entries
-  cat >"$fixture/home/.config/home-manager/home.nix" <<EOF
+  cat >"$rc_file" <<EOF
 { config, pkgs, ... }:
 
 {
@@ -1124,11 +1138,16 @@ path_wizard_remove_all_reports_count() {
   ];
 }
 EOF
+  
+  # Create detect stub
+  detect_stub="$fixture/detect-rc-file"
+  cat >"$detect_stub" <<EOF
+#!/bin/sh
+printf 'platform=nixos\nrc_file=$rc_file\nformat=nix\n'
+EOF
+  chmod +x "$detect_stub"
 
-  run_cmd "$ROOT_DIR/spells/spellcraft/learn-spellbook" \
-      --rc-file "$fixture/home/.config/home-manager/home.nix" \
-      --format nix \
-      remove-all
+  DETECT_RC_FILE="$detect_stub" run_cmd "$ROOT_DIR/spells/spellcraft/learn-spellbook" remove-all
 
   assert_success || return 1
   
@@ -1146,19 +1165,26 @@ path_wizard_remove_all_handles_empty_file() {
 
   mkdir -p "$fixture/home/.config/home-manager"
   
+  rc_file="$fixture/home/.config/home-manager/home.nix"
+  
   # Create a nix file with NO wizardry entries
-  cat >"$fixture/home/.config/home-manager/home.nix" <<EOF
+  cat >"$rc_file" <<EOF
 { config, pkgs, ... }:
 
 {
   home.username = "testuser";
 }
 EOF
+  
+  # Create detect stub
+  detect_stub="$fixture/detect-rc-file"
+  cat >"$detect_stub" <<EOF
+#!/bin/sh
+printf 'platform=nixos\nrc_file=$rc_file\nformat=nix\n'
+EOF
+  chmod +x "$detect_stub"
 
-  run_cmd "$ROOT_DIR/spells/spellcraft/learn-spellbook" \
-      --rc-file "$fixture/home/.config/home-manager/home.nix" \
-      --format nix \
-      remove-all
+  DETECT_RC_FILE="$detect_stub" run_cmd "$ROOT_DIR/spells/spellcraft/learn-spellbook" remove-all
 
   assert_success || return 1
   

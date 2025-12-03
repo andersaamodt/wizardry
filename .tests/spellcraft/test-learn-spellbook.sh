@@ -47,8 +47,8 @@ printf 'platform=debian\nrc_file=$rc\nformat=shell\n'
 EOF
   chmod +x "$detect_stub"
 
-  # Set DETECT_RC_FILE so both learn-spellbook and learn use the test stub
-  DETECT_RC_FILE="$detect_stub" run_spell "spells/spellcraft/learn-spellbook" --rc-file "$rc" --format shell --platform debian add "$WIZARDRY_TMPDIR"
+  # Set DETECT_RC_FILE so learn-spellbook and learn use the test stub
+  DETECT_RC_FILE="$detect_stub" run_spell "spells/spellcraft/learn-spellbook" add "$WIZARDRY_TMPDIR"
   assert_success
   assert_file_contains "$rc" "wizardry: path-"
   assert_file_contains "$rc" "export PATH=\"$WIZARDRY_TMPDIR:\$PATH\""
@@ -71,10 +71,10 @@ printf 'platform=debian\nrc_file=$rc\nformat=shell\n'
 EOF
   chmod +x "$detect_stub"
 
-  DETECT_RC_FILE="$detect_stub" PATH_WIZARD_PLATFORM=debian run_spell "spells/spellcraft/learn-spellbook" --rc-file "$rc" --format shell add "$dir"
+  DETECT_RC_FILE="$detect_stub" run_spell "spells/spellcraft/learn-spellbook" add "$dir"
   assert_success && assert_file_contains "$rc" "export PATH=\"$dir:\$PATH\""
 
-  DETECT_RC_FILE="$detect_stub" PATH_WIZARD_PLATFORM=debian run_spell "spells/spellcraft/learn-spellbook" --rc-file "$rc" --format shell status "$dir"
+  DETECT_RC_FILE="$detect_stub" run_spell "spells/spellcraft/learn-spellbook" status "$dir"
   assert_success
 }
 
@@ -82,8 +82,15 @@ test_shell_remove_handles_missing_rc_file() {
   rc="$WIZARDRY_TMPDIR/missing_rc"
   dir="$WIZARDRY_TMPDIR/rc_dir"
   mkdir -p "$dir"
+  
+  detect_stub="$WIZARDRY_TMPDIR/detect-rc-file-missing"
+  cat >"$detect_stub" <<EOF
+#!/bin/sh
+printf 'platform=debian\nrc_file=$rc\nformat=shell\n'
+EOF
+  chmod +x "$detect_stub"
 
-  PATH_WIZARD_PLATFORM=debian run_spell "spells/spellcraft/learn-spellbook" --rc-file "$rc" --format shell remove "$dir"
+  DETECT_RC_FILE="$detect_stub" run_spell "spells/spellcraft/learn-spellbook" remove "$dir"
   assert_failure && assert_error_contains "startup file '$rc' does not exist"
 }
 
@@ -91,11 +98,18 @@ test_shell_remove_clears_managed_entries() {
   rc="$WIZARDRY_TMPDIR/managed_rc"
   dir="$WIZARDRY_TMPDIR/managed_dir"
   mkdir -p "$dir"
+  
+  detect_stub="$WIZARDRY_TMPDIR/detect-rc-file-managed"
+  cat >"$detect_stub" <<EOF
+#!/bin/sh
+printf 'platform=debian\nrc_file=$rc\nformat=shell\n'
+EOF
+  chmod +x "$detect_stub"
 
-  PATH_WIZARD_PLATFORM=debian run_spell "spells/spellcraft/learn-spellbook" --rc-file "$rc" --format shell add "$dir"
+  DETECT_RC_FILE="$detect_stub" run_spell "spells/spellcraft/learn-spellbook" add "$dir"
   assert_success && assert_file_contains "$rc" "export PATH=\"$dir:\$PATH\""
 
-  PATH_WIZARD_PLATFORM=debian run_spell "spells/spellcraft/learn-spellbook" --rc-file "$rc" --format shell remove "$dir"
+  DETECT_RC_FILE="$detect_stub" run_spell "spells/spellcraft/learn-spellbook" remove "$dir"
   assert_success
   if grep -F "$dir" "$rc" >/dev/null 2>&1; then
     TEST_FAILURE_REASON="expected removal of PATH entry for $dir"
@@ -107,14 +121,21 @@ test_nix_add_status_and_remove_round_trip() {
   rc="$WIZARDRY_TMPDIR/configuration.nix"
   dir="$WIZARDRY_TMPDIR/nix_dir"
   mkdir -p "$dir"
+  
+  detect_stub="$WIZARDRY_TMPDIR/detect-rc-file-nix"
+  cat >"$detect_stub" <<EOF
+#!/bin/sh
+printf 'platform=nixos\nrc_file=$rc\nformat=nix\n'
+EOF
+  chmod +x "$detect_stub"
 
-  PATH_WIZARD_PLATFORM=debian run_spell "spells/spellcraft/learn-spellbook" --rc-file "$rc" --format nix add "$dir"
+  DETECT_RC_FILE="$detect_stub" run_spell "spells/spellcraft/learn-spellbook" add "$dir"
   assert_success && assert_file_contains "$rc" "$dir"
 
-  PATH_WIZARD_PLATFORM=debian run_spell "spells/spellcraft/learn-spellbook" --rc-file "$rc" --format nix status "$dir"
+  DETECT_RC_FILE="$detect_stub" run_spell "spells/spellcraft/learn-spellbook" status "$dir"
   assert_success
 
-  PATH_WIZARD_PLATFORM=debian run_spell "spells/spellcraft/learn-spellbook" --rc-file "$rc" --format nix remove "$dir"
+  DETECT_RC_FILE="$detect_stub" run_spell "spells/spellcraft/learn-spellbook" remove "$dir"
   assert_success
   if grep -F "$dir" "$rc" >/dev/null 2>&1; then
     TEST_FAILURE_REASON="expected Nix entry for $dir to be removed"
@@ -131,9 +152,16 @@ test_nix_backup_uses_numeric_suffix() {
 
   # Create initial config
   printf '{ }\n' > "$rc"
+  
+  detect_stub="$WIZARDRY_TMPDIR/detect-rc-file-backup"
+  cat >"$detect_stub" <<EOF
+#!/bin/sh
+printf 'platform=nixos\nrc_file=$rc\nformat=nix\n'
+EOF
+  chmod +x "$detect_stub"
 
   # Add first directory - this creates a backup
-  PATH_WIZARD_PLATFORM=debian run_spell "spells/spellcraft/learn-spellbook" --rc-file "$rc" --format nix add "$dir1"
+  DETECT_RC_FILE="$detect_stub" run_spell "spells/spellcraft/learn-spellbook" add "$dir1"
   assert_success || return 1
 
   # Count backup files that have 'x' suffix pattern (the old broken behavior)
@@ -154,9 +182,16 @@ test_nix_recursive_creates_single_backup() {
 
   # Create initial config
   printf '{ }\n' > "$rc"
+  
+  detect_stub="$WIZARDRY_TMPDIR/detect-rc-file-recursive"
+  cat >"$detect_stub" <<EOF
+#!/bin/sh
+printf 'platform=nixos\nrc_file=$rc\nformat=nix\n'
+EOF
+  chmod +x "$detect_stub"
 
   # Add with --recursive flag - should create only ONE backup
-  PATH_WIZARD_PLATFORM=debian run_spell "spells/spellcraft/learn-spellbook" --recursive --rc-file "$rc" --format nix add "$base_dir"
+  DETECT_RC_FILE="$detect_stub" run_spell "spells/spellcraft/learn-spellbook" --recursive add "$base_dir"
   assert_success || return 1
 
   # Count backup files - should be exactly 1
@@ -209,7 +244,14 @@ test_dry_run_does_not_modify_rc() {
   # Create empty rc file
   printf '' > "$rc"
   
-  PATH_WIZARD_PLATFORM=debian run_spell "spells/spellcraft/learn-spellbook" --dry-run --rc-file "$rc" --format shell add "$dir"
+  detect_stub="$WIZARDRY_TMPDIR/detect-rc-file-dryrun"
+  cat >"$detect_stub" <<EOF
+#!/bin/sh
+printf 'platform=debian\nrc_file=$rc\nformat=shell\n'
+EOF
+  chmod +x "$detect_stub"
+  
+  DETECT_RC_FILE="$detect_stub" run_spell "spells/spellcraft/learn-spellbook" --dry-run add "$dir"
   assert_success
   # RC file should remain empty (not modified)
   if [ -s "$rc" ]; then
@@ -234,7 +276,14 @@ test_nix_adds_with_inline_marker() {
 }
 EOF
   
-  PATH_WIZARD_PLATFORM=nixos run_spell "spells/spellcraft/learn-spellbook" --rc-file "$rc" --format nix add "$dir"
+  detect_stub="$WIZARDRY_TMPDIR/detect-rc-file-nixmarker"
+  cat >"$detect_stub" <<EOF
+#!/bin/sh
+printf 'platform=nixos\nrc_file=$rc\nformat=nix\n'
+EOF
+  chmod +x "$detect_stub"
+  
+  DETECT_RC_FILE="$detect_stub" run_spell "spells/spellcraft/learn-spellbook" add "$dir"
   assert_success || return 1
   
   # The file should contain inline wizardry marker
@@ -254,12 +303,19 @@ test_nix_allows_multiple_paths() {
   dir2="$WIZARDRY_TMPDIR/managed_dir2"
   mkdir -p "$dir1" "$dir2"
   
+  detect_stub="$WIZARDRY_TMPDIR/detect-rc-file-multipaths"
+  cat >"$detect_stub" <<EOF
+#!/bin/sh
+printf 'platform=nixos\nrc_file=$rc\nformat=nix\n'
+EOF
+  chmod +x "$detect_stub"
+  
   # First, add a directory
-  PATH_WIZARD_PLATFORM=debian run_spell "spells/spellcraft/learn-spellbook" --rc-file "$rc" --format nix add "$dir1"
+  DETECT_RC_FILE="$detect_stub" run_spell "spells/spellcraft/learn-spellbook" add "$dir1"
   assert_success || return 1
   
   # Now add another directory
-  PATH_WIZARD_PLATFORM=debian run_spell "spells/spellcraft/learn-spellbook" --rc-file "$rc" --format nix add "$dir2"
+  DETECT_RC_FILE="$detect_stub" run_spell "spells/spellcraft/learn-spellbook" add "$dir2"
   assert_success || return 1
   
   # Both directories should be in the file
