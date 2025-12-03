@@ -277,11 +277,19 @@ fi
 # on to update PATH entries and ask for confirmation.
 LEARN_SPELLBOOK="$ABS_DIR/spells/spellcraft/learn-spellbook"
 DETECT_RC_FILE="$ABS_DIR/spells/divination/detect-rc-file"
-# Use learn for installing spells to shell (it has --recursive support)
-SPELL_INSTALLER="$ABS_DIR/spells/spellcraft/learn"
+# Use learn-spell for installing spells to shell (explicit spell installation)
+LEARN_SPELL_INSTALLER="$ABS_DIR/spells/spellcraft/learn-spell"
 CORE_INSTALLER=${WIZARDRY_CORE_INSTALLER:-$ABS_DIR/spells/install/core/install-core}
 ASK_YN="$ABS_DIR/spells/cantrips/ask_yn"
 LEARN_SPELLBOOK_FLAGS=${LEARN_SPELLBOOK_FLAGS:---recursive}
+
+# MUD-related helpers (these are used in the optional MUD installation section)
+MUD_CD_SPELL="$ABS_DIR/spells/install/mud/cd"
+MUD_CONFIG="$ABS_DIR/spells/install/mud/mud-config"
+
+# Learnable spells that are NOT part of the MUD (install these by default)
+# These are spells with install() functions that set up shell integration
+LEARNABLE_SPELLS="$ABS_DIR/spells/translocation/jump-to-marker"
 
 # Export environment variables for all helper spells so that they use the new
 # versions being installed, not any old versions that may be in PATH.
@@ -763,27 +771,82 @@ fi
 # Installing spells pre-compiles wizardry's menus so interactive commands are
 # ready before the user opens their first shell inside the new install.
 # This is done before nixos-rebuild so spells are ready when the rebuild completes.
+# Install each learnable spell explicitly (not recursively) for transparency.
 mem_status=0
-if [ -x "$SPELL_INSTALLER" ]; then
+if [ -x "$LEARN_SPELL_INSTALLER" ]; then
         section_msg "Installing Spells"
         mem_log=$(mktemp "${TMPDIR:-/tmp}/wizardry-install.XXXXXX") || exit 1
-        if "$SPELL_INSTALLER" --recursive "$ABS_DIR/spells" >"$mem_log" 2>&1; then
-                # Parse output to extract counts and spell names
-                memorized_count=$(grep -o 'Memorized [0-9]* spell' "$mem_log" | grep -o '[0-9]*' | head -1)
-                if [ -n "$memorized_count" ] && [ "$memorized_count" -gt 0 ]; then
-                        # Extract spell names from "Memorizing .../spellname..." lines
-                        success_msg "Installed $memorized_count spell(s):"
-                        grep '^Memorizing ' "$mem_log" | sed 's#.*/##; s#\.\.\.##' | while IFS= read -r name; do
-                                substep_msg "$name"
-                        done
+        spell_count=0
+        # Install each learnable spell explicitly by name
+        for spell in $LEARNABLE_SPELLS; do
+                if [ -x "$spell" ]; then
+                        spell_name=$(basename "$spell")
+                        if "$LEARN_SPELL_INSTALLER" "$spell" >>"$mem_log" 2>&1; then
+                                spell_count=$((spell_count + 1))
+                                substep_msg "$spell_name"
+                        else
+                                printf '%sNote:%s Installation of %s skipped.\n' "$YELLOW" "$RESET" "$spell_name" >&2
+                        fi
                 fi
-        else
-                mem_status=$?
-                cat "$mem_log" >&2 || true
+        done
+        if [ "$spell_count" -gt 0 ]; then
+                success_msg "Installed $spell_count spell(s)"
         fi
         rm -f "$mem_log"
 else
-        printf '%sWarning:%s learn spell is missing; skipping automatic spell installation.\n' "$YELLOW" "$RESET" >&2
+        printf '%sWarning:%s learn-spell is missing; skipping automatic spell installation.\n' "$YELLOW" "$RESET" >&2
+fi
+
+# MUD Installation (optional)
+# After installing core spells, ask if user wants to install the MUD features
+install_mud=0
+if [ "${WIZARDRY_INSTALL_ASSUME_YES-}" = "1" ]; then
+        # In non-interactive mode, skip MUD installation by default
+        # unless explicitly requested via environment variable
+        if [ "${WIZARDRY_INSTALL_MUD-}" = "1" ]; then
+                install_mud=1
+        fi
+else
+        if [ ! -t 0 ] && [ -z "${ASK_CANTRIP_INPUT-}" ]; then
+                # Non-interactive mode - use ASK_CANTRIP_INPUT=none to allow the default
+                if ASK_CANTRIP_INPUT=none "$ASK_YN" "Install the MUD (multi-user dungeon) features?" yes >/dev/null; then
+                        install_mud=1
+                fi
+        else
+                if "$ASK_YN" "Install the MUD (multi-user dungeon) features?" yes >/dev/null; then
+                        install_mud=1
+                fi
+        fi
+fi
+
+if [ "$install_mud" -eq 1 ]; then
+        section_msg "Installing MUD"
+        
+        # Install the CD hook (runs 'look' on directory change)
+        if [ -x "$MUD_CD_SPELL" ]; then
+                info_msg "Installing CD hook..."
+                if WIZARDRY_CD_CANTRIP="$MUD_CD_SPELL" "$MUD_CD_SPELL" install >/dev/null 2>&1; then
+                        substep_msg "CD hook (runs 'look' on directory change)"
+                else
+                        printf '%sNote:%s CD hook installation skipped.\n' "$YELLOW" "$RESET" >&2
+                fi
+        fi
+        
+        # Enable MUD config features (including command-not-found which is planned)
+        if [ -x "$MUD_CONFIG" ]; then
+                info_msg "Enabling MUD features..."
+                # Enable all MUD config features
+                for feature in command-not-found touch-hook fantasy-theme inventory combat mud-enabled; do
+                        "$MUD_CONFIG" set "$feature" 1 >/dev/null 2>&1 || true
+                done
+                substep_msg "Command not found hook (planned feature)"
+                substep_msg "Touch hook (planned feature)"
+                substep_msg "Fantasy theme (planned feature)"
+                substep_msg "Inventory feature (planned feature)"
+                substep_msg "HP/MP and combat (planned feature)"
+        fi
+        
+        success_msg "MUD features installed"
 fi
 
 # Handle platform-specific post-installation steps
