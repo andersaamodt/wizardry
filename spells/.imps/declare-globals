@@ -1,0 +1,21 @@
+#!/bin/sh
+# Centralized declaration of allowed global environment variables.
+# Source at script start. Scripts with set -u will fail on undeclared globals.
+
+# Core directories - coordinate paths across spells
+: "${WIZARDRY_DIR:=}"        # Installation root
+: "${SPELLBOOK_DIR:=}"       # User spellbook location
+: "${MUD_DIR:=}"             # MUD configuration
+
+# learn-spell IPC - wrapper passes to install() functions
+: "${LEARN_SPELL_RC_FILE:=}" # Detected RC file path
+: "${LEARN_SPELL_RC_FORMAT:=}"  # RC file format
+: "${LEARN_SPELL_PLATFORM:=}"   # Platform identifier
+: "${LEARN_SPELL_TARGET:=}"     # Target spell path
+
+# Test infrastructure - namespaced for isolation
+: "${WIZARDRY_TMPDIR:=}"         # Test temp directory
+: "${WIZARDRY_SYSTEM_PATH:=}"    # Original PATH backup
+: "${WIZARDRY_DISABLE_SANDBOX:=}"      # Disable sandbox flag
+: "${WIZARDRY_ENABLE_MACOS_SANDBOX:=}" # Enable macOS sandbox
+: "${WIZARDRY_BWRAP_WARNING:=}"        # Warning shown flag
