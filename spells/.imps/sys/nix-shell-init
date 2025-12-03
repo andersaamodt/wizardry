@@ -170,19 +170,9 @@ do_add() {
     return 0  # Already exists, nothing to do
   fi
   
-  # Ask for confirmation before editing system config
-  if [ "$is_system_config" -eq 1 ] && [ "${WIZARDRY_SKIP_CONFIRM-}" != "1" ]; then
-    printf '%s\n' "This will edit $nix_file to add shell initialization code."
-    printf '%s ' "Continue? [y/N]" >&2
-    read -r confirm </dev/tty 2>/dev/null || confirm=""
-    case $confirm in
-      y|Y|yes|YES) : ;;
-      *)
-        printf '%s\n' "Aborted."
-        exit 1
-        ;;
-    esac
-  fi
+  # Note: Caller is responsible for confirming with user before calling this imp.
+  # The caller's prompt already mentions the file being edited, so we don't need
+  # to ask for confirmation here.
   
   # Read shell code from stdin
   shell_code=""
@@ -297,19 +287,7 @@ do_remove() {
     return 0  # Nothing to remove
   fi
   
-  # Ask for confirmation before editing system config
-  if [ "$is_system_config" -eq 1 ] && [ "${WIZARDRY_SKIP_CONFIRM-}" != "1" ]; then
-    printf '%s\n' "This will edit $nix_file to remove shell initialization code."
-    printf '%s ' "Continue? [y/N]" >&2
-    read -r confirm </dev/tty 2>/dev/null || confirm=""
-    case $confirm in
-      y|Y|yes|YES) : ;;
-      *)
-        printf '%s\n' "Aborted."
-        exit 1
-        ;;
-    esac
-  fi
+  # Note: Caller is responsible for confirming with user before calling this imp.
   
   # Back up the config file before making any modifications
   backup_nix_config
@@ -328,48 +306,14 @@ do_remove() {
   fi
 }
 
-# Rebuild NixOS configuration after changes
-do_rebuild() {
-  # Skip rebuild if WIZARDRY_SKIP_NIX_REBUILD is set (for testing)
-  if [ "${WIZARDRY_SKIP_NIX_REBUILD-}" = "1" ]; then
-    return 0
-  fi
-  
-  printf '%s\n' "Rebuilding NixOS configuration..."
-  
-  if [ "$is_system_config" -eq 1 ]; then
-    # System configuration - use nixos-rebuild
-    if command -v nixos-rebuild >/dev/null 2>&1; then
-      if run_maybe_sudo nixos-rebuild switch; then
-        printf '%s\n' "NixOS configuration rebuilt successfully."
-        return 0
-      else
-        printf '%s\n' "nix-shell-init: nixos-rebuild failed" >&2
-        return 1
-      fi
-    else
-      printf '%s\n' "nix-shell-init: nixos-rebuild not found" >&2
-      return 1
-    fi
-  else
-    # Home-manager configuration
-    if command -v home-manager >/dev/null 2>&1; then
-      if home-manager switch; then
-        printf '%s\n' "Home Manager configuration rebuilt successfully."
-        return 0
-      else
-        printf '%s\n' "nix-shell-init: home-manager switch failed" >&2
-        return 1
-      fi
-    else
-      printf '%s\n' "nix-shell-init: home-manager not found" >&2
-      return 1
-    fi
-  fi
-}
-
 case $action in
-add)    do_add && do_rebuild ;;
-remove) do_remove && do_rebuild ;;
-status) do_status ;;
+add)
+  do_add
+  ;;
+remove)
+  do_remove
+  ;;
+status)
+  do_status
+  ;;
 esac

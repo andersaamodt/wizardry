@@ -119,25 +119,33 @@ EOF_SCRIPT
 
 # Extract the command from a scribed script file
 # Returns empty string if not a valid scribed script format
+# For non-scribed scripts, returns the command if there's exactly one line of sh code
+# (excluding shebang, comments, and whitespace)
 extract_command_from_script() {
         script_path=$1
         if [ ! -f "$script_path" ]; then
                 return 1
         fi
-        # Verify script starts with expected shebang
-        first_line=$(head -n 1 "$script_path")
-        case "$first_line" in
-                "#!/bin/sh") : ;;
-                *) return 1 ;;
-        esac
+        # First try to extract from scribed format
         # Scripts are in format: exec sh -c 'COMMAND' "$0" "$@"
-        # Extract the command between single quotes on the exec line
         result=$(sed -n "s/^exec sh -c '\\(.*\\)' \"\\\$0\" \"\\\$@\"$/\\1/p" "$script_path" | sed "s/'\\\\''/'/g")
-        # Return empty if no match found (not a scribed script)
-        if [ -z "$result" ]; then
-                return 1
+        if [ -n "$result" ]; then
+                printf '%s' "$result"
+                return 0
         fi
-        printf '%s' "$result"
+        
+        # For non-scribed scripts, check if there's exactly one line of code
+        # Count meaningful lines (excluding shebang, comments, and whitespace)
+        code_lines=$(grep -v '^[[:space:]]*$' "$script_path" | grep -v '^[[:space:]]*#' | wc -l | tr -d ' ')
+        if [ "$code_lines" -eq 1 ]; then
+                # Return the single code line
+                result=$(grep -v '^[[:space:]]*$' "$script_path" | grep -v '^[[:space:]]*#' | head -n 1)
+                if [ -n "$result" ]; then
+                        printf '%s' "$result"
+                        return 0
+                fi
+        fi
+        return 1
 }
 
 list_spell_directories() {
@@ -329,6 +337,34 @@ is_in_spell_home() {
         return 1
 }
 
+# Check if a custom category folder is empty (no executable files)
+is_custom_category_empty() {
+        check_path=$1
+        # Must be in spell_home to be a custom category
+        if ! is_in_spell_home "$check_path"; then
+                return 1
+        fi
+        # Check if directory has any executable files
+        if find "$check_path" -maxdepth 1 -type f -perm -111 2>/dev/null | grep -q .; then
+                return 1
+        fi
+        return 0
+}
+
+# Delete an empty custom category folder
+delete_custom_category() {
+        cat_path=$1
+        if [ -d "$cat_path" ] && is_in_spell_home "$cat_path"; then
+                # Only delete if empty of executable files
+                if is_custom_category_empty "$cat_path"; then
+                        rm -rf "$cat_path"
+                        printf '%s\n' "Deleted category: $(basename "$cat_path")"
+                        return 0
+                fi
+        fi
+        return 1
+}
+
 # Check if a script is a scribed command (exists as executable in spell_home)
 is_scribed_command() {
         check_name=$1
@@ -498,6 +534,18 @@ USER_FOLDERS
                                         set -- "$@" "${subname}%spellbook $resolved_path/$subname"
                                 done
                         fi
+                fi
+                
+                # Add "Delete category" option for empty custom category folders
+                if [ -n "$current_path" ] && [ -n "$resolved_path" ] && is_custom_category_empty "$resolved_path"; then
+                        # Use escaped path in the command
+                        escaped_path=$(printf '%s' "$resolved_path" | sed "s/'/'\\\\''/g")
+                        set -- "$@" "Delete category%rm -rf '$escaped_path' && kill -TERM \$PPID"
+                fi
+                
+                # Add "New category" at root level (third-to-last item)
+                if [ -z "$current_path" ]; then
+                        set -- "$@" "New category%scribe-spell --new-category"
                 fi
                 
                 # Add "Scribe new spell" as penultimate menu item
