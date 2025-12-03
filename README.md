@@ -81,9 +81,9 @@ Spell categories:
 * custom commands
 * arcane
 * cantrips
+* crypto
 * divination
 * enchantment  
-* kryptos
 * mud
 * psi
 * spellcraft
@@ -126,27 +126,27 @@ Push as much logic as possible into imps for maximum semanticization.
 
 | Term | Definition |
 | ---- | ---------- |
-| **Arcanum** (pl. **Arcana**) | A grand working—a spell that installs and configures software across supported platforms, presented as a menu of functions. Also refers to the apps themselves. |
-| **Bootstrap spell** | A spell that can run before wizardry is fully installed. These self-contained scripts (namely `install` and spells in `spells/install/core/`) don't rely on other wizardry spells. |
-| **Cantrip** | A small utility spell for common tasks. |
+| **arcanum** (pl. **arcana**) | A grand working—a spell that installs and configures software across supported platforms, presented as a menu of functions. Also refers to the apps themselves. |
+| **bootstrap spell** | A spell that can run before wizardry is fully installed. These self-contained scripts (namely `install` and spells in `spells/install/core/`) don't rely on other wizardry spells. |
+| **cantrip** | A small utility spell for common tasks. |
 | `cast` | To execute a spell. Memorized spells appear in the `cast` menu for quick access. |
-| **Daemon** | A background process that runs continuously, typically started at system boot and providing services (e.g., web servers, schedulers). |
-| **Demon family** | A subfolder within `spells/.imps/` that groups related imps by function. Each folder represents a family of imps that share a common purpose (e.g., `str/` for string operations, `fs/` for filesystem operations). |
-| **Divination** | Spells that detect or discover information. |
-| **Enchant** / **Enchantment** | Spells that add or manipulate extended attributes (metadata) on files. |
+| **crypto** | Cryptographic spells for hashing and security. |
+| **daemon** | A background process that runs continuously, typically started at system boot and providing services (e.g., web servers, schedulers). |
+| **demon family** | A subfolder within `spells/.imps/` that groups related imps by function. Each folder represents a family of imps that share a common purpose (e.g., `str/` for string operations, `fs/` for filesystem operations). |
+| **divination** | Spells that detect or discover information. |
+| **enchant** / **enchantment** | Spells that add or manipulate extended attributes (metadata) on files. |
 | `forget` | Remove a spell from your memorized list. Use `forget <spell name>` or the Spellbook menu. |
-| **Imp** | The smallest building block of magic—a microscript that does exactly one thing. Imos dwell in `spells/.imps/`. |
-| **Kryptos** | Cryptographic spells for hashing and security. |
+| **imp** | The smallest building block of magic—a microscript that does exactly one thing. Imos dwell in `spells/.imps/`. |
 | `learn` | Add a spell to your shell environment, making it spell permanently available. Some spells must be learned before use. |
 | `memorize` | Add a spell to your Cast menu for quick access. |
-| **Portal** | A persistent connection between two computers via SSH, created with `open-portal`, for MUD travel. |
-| **Portkey** | A bookmark to a remote location. Use `enchant-portkey` to create one and `follow-portkey` to teleport there. (Future: If you have the `touch` hook installed, touching a portkey will also activate it.) |
-| **Scribe** | Create a new custom spell. |
-| **Spell** | A specially-curated shell script that lives in `spells/`, has a unique name, and follows wizardry conventions. |
+| **portal** | A persistent connection between two computers via SSH, created with `open-portal`, for MUD travel. |
+| **portkey** | A bookmark to a remote location. Use `enchant-portkey` to create one and `follow-portkey` to teleport there. (Future: If you have the `touch` hook installed, touching a portkey will also activate it.) |
+| **scribe** | Create a new custom spell. |
+| **spell** | A specially-curated shell script that lives in `spells/`, has a unique name, and follows wizardry conventions. |
 | `spellbook` | Your personal grimoire for organizing and casting spells. Access it with `spellbook` or from the main menu. Also refers to custom spell folders. |
-| **Spellcraft** | The writing of shell scripts. |
-| **Tome** | A text file containing the contents of several other text files concatenated together, so a whole folder of spells can be sent or carried easily. |
-| **Ward** | A protective spell for security or access control. |
+| **spellcraft** | The writing of shell scripts. |
+| **tome** | A text file containing the contents of several other text files concatenated together, so a whole folder of spells can be sent or carried easily. |
+| **ward** | A protective spell for security or access control. |
 
 ## Principles:
 
