@@ -30,7 +30,30 @@ case $0 in
 esac
 
 SPELL_NAME=jump-to-marker
-MARKERS_DIR=${JUMP_TO_MARKERS_DIR:-$HOME/.spellbook/.markers}
+
+# Resolve the spell home directory (same logic as spellbook menu)
+_jump_resolve_spell_home() {
+  if [ -n "${WIZARDRY_SPELL_HOME-}" ]; then
+    printf '%s' "$WIZARDRY_SPELL_HOME"
+  elif [ -n "${SPELLBOOK_HOME-}" ]; then
+    printf '%s' "$SPELLBOOK_HOME"
+  elif [ -n "${SPELL_HOME-}" ]; then
+    printf '%s' "$SPELL_HOME"
+  elif [ -n "${XDG_DATA_HOME-}" ] && [ -n "$XDG_DATA_HOME" ]; then
+    printf '%s' "$XDG_DATA_HOME/wizardry/spellbook"
+  elif [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
+    printf '%s' "$HOME/.spellbook"
+  else
+    printf '%s' ".spellbook"
+  fi
+}
+
+if [ -n "${JUMP_TO_MARKERS_DIR-}" ]; then
+  MARKERS_DIR=$JUMP_TO_MARKERS_DIR
+else
+  _spell_home=$(_jump_resolve_spell_home)
+  MARKERS_DIR="$_spell_home/.markers"
+fi
 JUMP_TO_MARKER_PATH=${JUMP_TO_MARKER_PATH-}
 JUMP_TO_MARKER_HELPERS_DIR=${JUMP_TO_MARKER_HELPERS_DIR-}
 JUMP_TO_MARKER_RC_FILE=${JUMP_TO_MARKER_RC_FILE-}
@@ -350,7 +373,7 @@ fi
 
 # Get all available marker names, sorted with numbers first then alphabetical
 jump_list_markers() {
-        markers_dir=${MARKERS_DIR:-$HOME/.spellbook/markers}
+        markers_dir=$MARKERS_DIR
         if [ ! -d "$markers_dir" ]; then
                 return 1
         fi
@@ -387,7 +410,7 @@ jump_list_markers() {
 # Returns empty if all markers have the same mtime (fresh state)
 # or if the most recent marker is older than 4 hours (reset timeout)
 jump_most_recent_marker() {
-        markers_dir=${MARKERS_DIR:-$HOME/.spellbook/markers}
+        markers_dir=$MARKERS_DIR
         if [ ! -d "$markers_dir" ]; then
                 return 1
         fi
@@ -427,7 +450,7 @@ jump_most_recent_marker() {
 # Get next marker in sequence for cycling
 jump_next_marker() {
         current=$1
-        markers_dir=${MARKERS_DIR:-$HOME/.spellbook/markers}
+        markers_dir=$MARKERS_DIR
         all_markers=$(jump_list_markers)
         if [ -z "$all_markers" ]; then
                 printf '%s\n' "1"
@@ -452,7 +475,7 @@ jump_next_marker() {
 }
 
 jump() {
-        markers_dir=${MARKERS_DIR:-$HOME/.spellbook/markers}
+        markers_dir=$MARKERS_DIR
         marker_name="${1:-}"
         
         # If no marker specified OR marker is "0", cycle through markers

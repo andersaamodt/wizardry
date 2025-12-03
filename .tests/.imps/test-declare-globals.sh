@@ -1,30 +1,30 @@
 #!/bin/sh
 # Tests for the 'declare-globals' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../test-common.sh"
 
 test_declare_globals_is_sourceable() {
   # declare-globals should be sourceable without error
-  run_cmd sh -c ". '$ROOT_DIR/spells/.imps/sys/declare-globals'"
+  run_cmd sh -c ". '$ROOT_DIR/spells/.imps/declare-globals'"
   assert_success
 }
 
 test_declare_globals_allows_set_u() {
   # After sourcing, scripts with set -u should not fail on declared globals
-  run_cmd sh -c "set -u; . '$ROOT_DIR/spells/.imps/sys/declare-globals'; : \"\$WIZARDRY_DIR\""
+  run_cmd sh -c "set -u; . '$ROOT_DIR/spells/.imps/declare-globals'; : \"\$WIZARDRY_DIR\""
   assert_success
 }
 
 test_declare_globals_sets_empty_defaults() {
   # Globals should default to empty string, not cause unbound variable error
-  run_cmd sh -c ". '$ROOT_DIR/spells/.imps/sys/declare-globals'; printf '%s' \"\$WIZARDRY_DIR\""
+  run_cmd sh -c ". '$ROOT_DIR/spells/.imps/declare-globals'; printf '%s' \"\$WIZARDRY_DIR\""
   assert_success
   [ -z "$OUTPUT" ] || { TEST_FAILURE_REASON="expected empty default"; return 1; }
 }
 
 test_declare_globals_preserves_existing_values() {
   # If a global is already set, declare-globals should preserve it
-  run_cmd sh -c "WIZARDRY_DIR=/test/path; . '$ROOT_DIR/spells/.imps/sys/declare-globals'; printf '%s' \"\$WIZARDRY_DIR\""
+  run_cmd sh -c "WIZARDRY_DIR=/test/path; . '$ROOT_DIR/spells/.imps/declare-globals'; printf '%s' \"\$WIZARDRY_DIR\""
   assert_success
   [ "$OUTPUT" = "/test/path" ] || { TEST_FAILURE_REASON="expected /test/path but got $OUTPUT"; return 1; }
 }

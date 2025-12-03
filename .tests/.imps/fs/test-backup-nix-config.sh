@@ -8,7 +8,7 @@ test_backup_nix_config_creates_backup() {
   nix_file="$tmpdir/test.nix"
   printf '{ }\n' > "$nix_file"
   
-  run_spell spells/.imps/os/backup-nix-config "$nix_file"
+  run_spell spells/.imps/fs/backup-nix-config "$nix_file"
   assert_success
   
   # Stderr should contain the backup path with .wizardry. suffix
@@ -28,7 +28,7 @@ test_backup_nix_config_notifies_user() {
   nix_file="$tmpdir/test.nix"
   printf '{ }\n' > "$nix_file"
   
-  run_spell spells/.imps/os/backup-nix-config "$nix_file"
+  run_spell spells/.imps/fs/backup-nix-config "$nix_file"
   assert_success
   
   # Stderr should contain user notification
@@ -38,12 +38,12 @@ test_backup_nix_config_notifies_user() {
 
 test_backup_nix_config_missing_file_succeeds() {
   # When file doesn't exist, there's nothing to back up - this should succeed
-  run_spell spells/.imps/os/backup-nix-config "/nonexistent/file.nix"
+  run_spell spells/.imps/fs/backup-nix-config "/nonexistent/file.nix"
   assert_success
 }
 
 test_backup_nix_config_no_args_fails() {
-  run_spell spells/.imps/os/backup-nix-config
+  run_spell spells/.imps/fs/backup-nix-config
   assert_failure
   assert_error_contains "file path required"
 }
@@ -53,7 +53,7 @@ test_backup_nix_config_timestamp_suffix() {
   nix_file="$tmpdir/test.nix"
   printf '{ }\n' > "$nix_file"
   
-  run_spell spells/.imps/os/backup-nix-config "$nix_file"
+  run_spell spells/.imps/fs/backup-nix-config "$nix_file"
   assert_success
   
   # Stderr should contain timestamp pattern (YYYYMMDDHHMMSS or epoch seconds)
@@ -75,7 +75,7 @@ test_backup_nix_config_preserves_content() {
   printf '%s\n' "$original_content" > "$nix_file"
   
   # Run directly and capture stderr to find backup path
-  stderr=$("$ROOT_DIR/spells/.imps/os/backup-nix-config" "$nix_file" 2>&1)
+  stderr=$("$ROOT_DIR/spells/.imps/fs/backup-nix-config" "$nix_file" 2>&1)
   
   # Extract backup path from stderr message
   backup_path=$(printf '%s' "$stderr" | sed -n "s/.*to '\([^']*\)'.*/\1/p")

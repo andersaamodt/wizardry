@@ -8,13 +8,13 @@
 test_clip_copy_no_utility_fails_gracefully() {
   # This test runs in sandbox without clipboard utilities
   # It should fail gracefully with an error message
-  run_spell spells/.imps/os/clip-copy "test text"
+  run_spell spells/.imps/fs/clip-copy "test text"
   # Either succeeds (if clipboard util available) or fails gracefully
 }
 
 test_clip_copy_from_stdin() {
   # Test that piped input is handled - use full path via run_spell
-  run_cmd sh -c "echo 'test' | $ROOT_DIR/spells/.imps/os/clip-copy"
+  run_cmd sh -c "echo 'test' | $ROOT_DIR/spells/.imps/fs/clip-copy"
   # Either succeeds or fails gracefully depending on clipboard availability
 }
 

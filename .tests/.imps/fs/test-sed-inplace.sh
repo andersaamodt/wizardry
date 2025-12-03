@@ -6,7 +6,7 @@
 test_sed_inplace_substitutes() {
   tmpfile=$(mktemp "$WIZARDRY_TMPDIR/testfile.XXXXXX")
   printf 'hello world' > "$tmpfile"
-  run_spell spells/.imps/os/sed-inplace 's/world/universe/' "$tmpfile"
+  run_spell spells/.imps/fs/sed-inplace 's/world/universe/' "$tmpfile"
   assert_success
   content=$(cat "$tmpfile")
   [ "$content" = "hello universe" ] || { TEST_FAILURE_REASON="expected 'hello universe' got '$content'"; return 1; }
@@ -16,7 +16,7 @@ test_sed_inplace_substitutes() {
 test_sed_inplace_global() {
   tmpfile=$(mktemp "$WIZARDRY_TMPDIR/testfile.XXXXXX")
   printf 'foo foo foo' > "$tmpfile"
-  run_spell spells/.imps/os/sed-inplace 's/foo/bar/g' "$tmpfile"
+  run_spell spells/.imps/fs/sed-inplace 's/foo/bar/g' "$tmpfile"
   assert_success
   content=$(cat "$tmpfile")
   [ "$content" = "bar bar bar" ] || { TEST_FAILURE_REASON="expected 'bar bar bar' got '$content'"; return 1; }
@@ -24,23 +24,23 @@ test_sed_inplace_global() {
 }
 
 test_sed_inplace_missing_file_fails() {
-  run_spell spells/.imps/os/sed-inplace 's/a/b/' "/nonexistent/file"
+  run_spell spells/.imps/fs/sed-inplace 's/a/b/' "/nonexistent/file"
   assert_failure
 }
 
 test_sed_inplace_no_pattern_fails() {
-  run_spell spells/.imps/os/sed-inplace
+  run_spell spells/.imps/fs/sed-inplace
   assert_failure
 }
 
 test_sed_inplace_no_file_fails() {
-  run_spell spells/.imps/os/sed-inplace 's/a/b/'
+  run_spell spells/.imps/fs/sed-inplace 's/a/b/'
   assert_failure
 }
 
 test_sed_inplace_directory_fails() {
   tmpdir=$(mktemp -d "$WIZARDRY_TMPDIR/testdir.XXXXXX")
-  run_spell spells/.imps/os/sed-inplace 's/a/b/' "$tmpdir"
+  run_spell spells/.imps/fs/sed-inplace 's/a/b/' "$tmpdir"
   rmdir "$tmpdir"
   assert_failure
 }

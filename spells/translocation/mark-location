@@ -11,7 +11,7 @@ usage() {
 Usage: mark-location [marker] [path]
 
 Record the current directory (or path) for jump-to-marker to return to later.
-Markers are stored in ~/.spellbook/.markers/.
+Markers are stored in $SPELLBOOK_DIR/.markers/.
 USAGE
 }
 
@@ -27,9 +27,27 @@ if [ "$#" -gt 2 ]; then
   exit 1
 fi
 
-markers_dir="$HOME/.spellbook/.markers"
+# Resolve the spell home directory (same logic as spellbook menu)
+resolve_spell_home() {
+  if [ -n "${WIZARDRY_SPELL_HOME-}" ]; then
+    printf '%s' "$WIZARDRY_SPELL_HOME"
+  elif [ -n "${SPELLBOOK_HOME-}" ]; then
+    printf '%s' "$SPELLBOOK_HOME"
+  elif [ -n "${SPELL_HOME-}" ]; then
+    printf '%s' "$SPELL_HOME"
+  elif [ -n "${XDG_DATA_HOME-}" ] && [ -n "$XDG_DATA_HOME" ]; then
+    printf '%s' "$XDG_DATA_HOME/wizardry/spellbook"
+  elif [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
+    printf '%s' "$HOME/.spellbook"
+  else
+    printf '%s' ".spellbook"
+  fi
+}
 
-# Store the markers in ~/.spellbook/.markers/ (persists across wizardry resets).
+spell_home=$(resolve_spell_home)
+markers_dir="$spell_home/.markers"
+
+# Store the markers in $SPELLBOOK_DIR/.markers/ (persists across wizardry resets).
 make dir "$markers_dir" || exit 1
 
 # Determine marker name: if first arg looks like a path, it's the path, not name
