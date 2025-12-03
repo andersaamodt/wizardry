@@ -2,6 +2,22 @@
 
 # This spell installs the core wizardry dependencies required for spell execution.
 
+show_usage() {
+  cat <<'USAGE'
+Usage: install-core
+
+Install all core wizardry dependencies (stty, tput, dd, git, etc.).
+Detects your platform and uses the appropriate package manager.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 
 detect_platform() {

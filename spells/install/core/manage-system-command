@@ -1,7 +1,24 @@
 #!/usr/bin/env sh
 
 # Install or uninstall a system command using the available package manager.
-# Usage: manage-system-command [--uninstall] <command> <default-package>
+
+show_usage() {
+  cat <<'USAGE'
+Usage: manage-system-command [--uninstall] <command> <default-package>
+
+Install or uninstall a system command using the available package manager.
+  --uninstall  Remove the package instead of installing
+  <command>    The command name to install/check
+  <package>    The default package name (can be overridden via env vars)
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
 
 set -eu
 

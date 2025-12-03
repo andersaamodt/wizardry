@@ -2,6 +2,21 @@
 
 # Get Bitcoin sync status: 'syncing', 'synced', 'unknown', or 'error'
 
+show_usage() {
+  cat <<'USAGE'
+Usage: bitcoin-status
+
+Display the current status of Bitcoin (installed, running, sync state).
+Outputs colored status text for use in menus.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
 
 set -eu
 . colors

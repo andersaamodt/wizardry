@@ -2,6 +2,22 @@
 
 # Set Bitcoin version
 
+show_usage() {
+  cat <<'USAGE'
+Usage: install-bitcoin
+
+Install Bitcoin Core on this system.
+Downloads, verifies, and installs the official Bitcoin binaries.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
 set -eu
 BITCOIN_VERSION="25.0"
 

@@ -1,5 +1,23 @@
 #!/bin/sh
 
+# Configure Tor bridge settings.
+
+show_usage() {
+  cat <<'USAGE'
+Usage: configure-tor-bridge
+
+Configure Tor to use bridge relays for censorship circumvention.
+Requires root privileges.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
 # Ensure user is root
 
 set -eu

@@ -2,6 +2,21 @@
 
 # This spell displays system maintenance tasks.
 
+show_usage() {
+  cat <<'USAGE'
+Usage: system-menu
+
+Display the system maintenance menu.
+Access system information, updates, and maintenance tasks.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
 
 set -eu
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)

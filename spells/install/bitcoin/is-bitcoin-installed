@@ -2,5 +2,21 @@
 
 # Returns 0 (true) if Bitcoin is installed, 1 (false) if not
 
+show_usage() {
+  cat <<'USAGE'
+Usage: is-bitcoin-installed
+
+Check if Bitcoin Core is installed on this system.
+Exits 0 if installed, 1 if not installed.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
 set -eu
 command -v bitcoin-cli >/dev/null 2>&1

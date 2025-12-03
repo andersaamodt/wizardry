@@ -2,6 +2,22 @@
 
 # This spell facilitates the setting of the configurations for thy Bitcoin system.
 
+show_usage() {
+  cat <<'USAGE'
+Usage: configure-bitcoin
+
+Interactively configure Bitcoin settings.
+Manages bitcoin.conf file and related configuration.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
 # Function to check if a command needs to be run with sudo
 
 set -eu

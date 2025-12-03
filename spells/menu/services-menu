@@ -3,9 +3,23 @@
 # services-menu collects all service-management spells in one place so users
 # never need to remember flags. Each menu item launches a single-purpose spell.
 
+show_usage() {
+  cat <<'USAGE'
+Usage: services-menu
+
+Display the systemd services management menu.
+Start, stop, enable, disable, and monitor system services.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
 
 set -eu
-set -u
 
 
 if [ -n "${REQUIRE_COMMAND-}" ]; then

@@ -2,6 +2,22 @@
 
 # This script sets the correct permissions on the Bitcoin configuration directory.
 
+show_usage() {
+  cat <<'USAGE'
+Usage: repair-bitcoin-permissions
+
+Fix file permissions on the Bitcoin data directory.
+Ensures proper ownership and access rights for Bitcoin files.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
 # Set the default Bitcoin configuration directory
 
 set -eu

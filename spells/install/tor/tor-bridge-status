@@ -1,6 +1,21 @@
 #!/bin/sh
 # This spell checks and displays the status of Tor bridges.
 
+show_usage() {
+  cat <<'USAGE'
+Usage: tor-bridge-status
+
+Check and display the status of configured Tor bridges.
+Requires root privileges.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
 
 set -eu
 if [ "$(id -u)" != "0" ]; then

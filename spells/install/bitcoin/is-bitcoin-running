@@ -2,6 +2,22 @@
 
 # This script serves as a magic mirror, reflecting the running status of Bitcoin
 
+show_usage() {
+  cat <<'USAGE'
+Usage: is-bitcoin-running
+
+Check if Bitcoin daemon (bitcoind) is currently running.
+Exits 0 if running, 1 if not running.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
 # Look for bitcoin process
 
 set -eu

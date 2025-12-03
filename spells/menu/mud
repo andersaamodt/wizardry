@@ -1,6 +1,22 @@
 #!/bin/sh
 # This spell displays the main MUD (Multi-User Dungeon) menu interface.
 
+show_usage() {
+  cat <<'USAGE'
+Usage: mud
+
+Display the MUD (Multi-User Dungeon) main menu.
+Navigate the fantasy-themed shell experience.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
 set -eu
 
 if [ -n "${REQUIRE_COMMAND-}" ]; then

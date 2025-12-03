@@ -2,6 +2,22 @@
 
 # This spell alters the location of thy Bitcoin data chamber on your system.
 
+show_usage() {
+  cat <<'USAGE'
+Usage: change-bitcoin-directory
+
+Interactively change the Bitcoin data directory location.
+Moves existing data and updates configuration.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
 # Check if a command needs to be re-invoked with sudo
 
 set -eu

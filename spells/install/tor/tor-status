@@ -1,6 +1,21 @@
 #!/bin/sh
 # This spell checks and displays the running status of Tor.
 
+show_usage() {
+  cat <<'USAGE'
+Usage: tor-status
+
+Check and display the current running status of Tor.
+Outputs colored status text for use in menus.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
 
 set -eu
 . colors

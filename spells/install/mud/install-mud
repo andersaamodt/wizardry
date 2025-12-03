@@ -2,6 +2,22 @@
 
 # This spell installs and starts the MUD. It is the MUD's main loop and installer script.
 
+show_usage() {
+  cat <<'USAGE'
+Usage: install-mud
+
+Install and configure the MUD (Multi-User Dungeon) shell experience.
+Sets up shell hooks for the fantasy-themed directory navigation.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
 script_path=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)/${0##*/}
 
 mud_main_loop() {

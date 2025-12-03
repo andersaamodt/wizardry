@@ -1,7 +1,22 @@
 #!/bin/sh
 
-# This script is a magical tome of sorcery, commanding the elusive entity known as Bitcoin.
+# This script is a magical tome of sorcery, commanding the elusive entity known as Tor.
 
+show_usage() {
+  cat <<'USAGE'
+Usage: tor-menu
+
+Display an interactive menu for Tor management.
+Options include: configuration, status, install/uninstall, etc.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
 
 set -eu
 . colors

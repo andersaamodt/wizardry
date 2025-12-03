@@ -2,6 +2,21 @@
 
 # This spell displays the ao-mud main menu.
 
+show_usage() {
+  cat <<'USAGE'
+Usage: main-menu
+
+Display the main wizardry menu interface.
+Access all wizardry features from a single entry point.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
 
 set -eu
 if [ -n "${REQUIRE_COMMAND-}" ]; then

@@ -1,5 +1,21 @@
 #!/usr/bin/env sh
 # This spell uninstalls the xsel clipboard utility.
+
+show_usage() {
+  cat <<'USAGE'
+Usage: uninstall-xsel
+
+Uninstall the xsel clipboard utility.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
 set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)

@@ -3,6 +3,22 @@
 # This spell displays shutdown, restart, logout, and power management options.
 # Commands are invoked directly via the menu without external spell dependencies.
 
+show_usage() {
+  cat <<'USAGE'
+Usage: shutdown-menu
+
+Display the shutdown and power management menu.
+Options include: shutdown, restart, logout, sleep, hibernate.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
 set -eu
 
 if [ -n "${REQUIRE_COMMAND-}" ]; then

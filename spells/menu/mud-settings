@@ -2,6 +2,22 @@
 
 # This spell displays the MUD settings menu.
 
+show_usage() {
+  cat <<'USAGE'
+Usage: mud-settings
+
+Display the MUD settings menu.
+Configure MUD appearance and behavior options.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
 set -eu
 
 if [ -n "${REQUIRE_COMMAND-}" ]; then

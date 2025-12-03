@@ -1,5 +1,21 @@
 #!/usr/bin/env sh
 # This spell installs the git command using the system package manager.
+
+show_usage() {
+  cat <<'USAGE'
+Usage: install-git
+
+Install git using the system package manager.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
 set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)

@@ -2,6 +2,21 @@
 
 # Present a menu of spells that can install supporting software.
 
+show_usage() {
+  cat <<'USAGE'
+Usage: install-menu
+
+Display an interactive menu of software installation options.
+Browse and install arcana (curated software packages).
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
 
 set -eu
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)

@@ -1,5 +1,23 @@
 #!/bin/sh
 
+# Uninstall Bitcoin Core from this system.
+
+show_usage() {
+  cat <<'USAGE'
+Usage: uninstall-bitcoin
+
+Remove Bitcoin Core from this system.
+Removes binaries and optionally data files.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
 # Function to check if a package is installed in Debian-based distributions
 
 set -eu
