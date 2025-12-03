@@ -1,0 +1,51 @@
+#!/bin/sh
+# Centralized declaration of allowed global environment variables.
+# Each global requires two comment lines: description and justification.
+
+# Installation root directory path.
+# Required for spells to locate resources relative to install location.
+: "${WIZARDRY_DIR:=}"
+
+# User's personal spellbook directory.
+# Required for coordinating custom spell storage across multiple spells.
+: "${SPELLBOOK_DIR:=}"
+
+# MUD configuration directory.
+# Required for MUD features to share room descriptions and settings.
+: "${MUD_DIR:=}"
+
+# Shell RC file path detected by learn-spell wrapper.
+# Required for install() functions to receive detected config without re-detection.
+: "${LEARN_SPELL_RC_FILE:=}"
+
+# Format of the shell RC file (bash, zsh, nix, etc).
+# Required for install() to write correct syntax to shell config.
+: "${LEARN_SPELL_RC_FORMAT:=}"
+
+# Platform identifier from learn-spell wrapper.
+# Required for install() to handle platform-specific installation steps.
+: "${LEARN_SPELL_PLATFORM:=}"
+
+# Target spell path during installation.
+# Required for install() to know which spell is being installed.
+: "${LEARN_SPELL_TARGET:=}"
+
+# Temporary directory for test operations.
+# Required for test isolation and cleanup across test processes.
+: "${WIZARDRY_TMPDIR:=}"
+
+# Original PATH before test modifications.
+# Required to restore system PATH after tests modify it.
+: "${WIZARDRY_SYSTEM_PATH:=}"
+
+# Flag to disable sandbox in tests.
+# Required for environments where bubblewrap is unavailable.
+: "${WIZARDRY_DISABLE_SANDBOX:=}"
+
+# Flag to enable macOS sandbox (disabled by default).
+# Required because macOS sandbox-exec has compatibility issues.
+: "${WIZARDRY_ENABLE_MACOS_SANDBOX:=}"
+
+# Flag indicating sandbox warning was already shown.
+# Required to avoid duplicate warnings during test runs.
+: "${WIZARDRY_BWRAP_WARNING:=}"
