@@ -192,34 +192,8 @@ These values make the wizardry project what it is, and distinguish it from simil
 | No globals, no wrappers, minimal functions | No global env variables unless absolutely necessary. No wrappers as they break front-facing. Linear flat scripts preferred to functions. |
 | Self-healing failures | When a spell encounters a missing prerequisite or failed assumption, it should fix the problem automatically or offer to fix it—never quit with an error that tells the user to fix it themselves. Error messages must not be written in the imperative (e.g., "Please install X" or "Run Y to fix"). |
 
-## Standardization checklist
+## Standardization
 
-Wizardry codifies its coding stance so newcomers can reason about every script. Each bullet is a single idea with a clear rationale.
-
-### Already standardized
-
-* **Single-shell stance**: Everything runs as POSIX `sh` with a strict shebang so behavior stays identical across systems.
-* **Early descriptiveness**: Scripts open with a 1–3 line comment describing purpose so readers learn intent before code.
-* **Help-on-tap**: Each executable answers `--help`/`-h`/`--usage` with concrete usage, making interfaces self-evident.
-* **Strict-yet-lean flows**: Scripts enable `set -e` while keeping control flow flat so failures are surfaced without obscuring readability.
-* **Hyphenated, extensionless names**: Spells use hyphens and omit `.sh` so commands read cleanly and stay shell-friendly.
-* **Tests as the spec**: Spell paths are mirrored under `.tests/`, turning expectations into runnable documentation.
-* **Gentle error contract**: Failures try to self-heal, explain plainly, and only return non-zero when work truly failed.
-* **Portable pathing**: Platform and PATH choices are explicit so reviewers can see how portability is achieved.
-* **Deliberate temp handling**: Temporary files are created intentionally and cleaned predictably to avoid leaks.
-* **POSIX-safe idioms**: Style checks reject non-portable crutches like backticks or `which`, favoring `$( )` and `command -v`.
-
-### Being standardized now
-
-* Unified logging/output tone plus consistent interruption semantics.
-* A single pattern for flag/argument parsing across scripts.
-* Shared helpers for normalizing user paths and other inputs.
-* Default formatting and linting settings for POSIX shell.
-* Common helpers for standard exit codes and error shaping.
-* One directory-resolution idiom for locating sibling resources.
-* A reusable validation helper suite for common input checks.
-* Platform detection and abstraction helpers to centralize OS branching.
-* A consistent naming scheme for functions and verbs across the codebase.
 Wizardry is converging on a comprehensive set of standards so every spell, imp, menu, and test feels familiar and reliable. These checkpoints summarize what is already standardized (and what we plan to keep enforcing) across the codebase:
 
 * **Language and headers**: POSIX `sh` only, `#!/bin/sh` shebangs, `set -eu` strict mode, and careful quoting everywhere; avoid Bash-isms, prefer `printf`, and use `command -v` for capability checks.
@@ -229,7 +203,8 @@ Wizardry is converging on a comprehensive set of standards so every spell, imp, 
 * **Testing conventions**: Every spell owns a mirrored test under `.tests/` that doubles as its operational spec; `test-magic` aggregates the suite and preserves the assumption-checking patterns from `test_common.sh`.
 * **Cross-platform habits**: Normalize paths with `pwd -P`, guard `PATH` setup in bootstrap scripts, detect kernels with `uname`, prefer `curl`/`wget` fallbacks, create temp files with `mktemp`, and avoid non-portable tools like `realpath`.
 * **Error handling and messaging**: Scripts self-heal missing prerequisites, prefix errors clearly without imperatives, and favor stdout communication so spells and humans consume the same outputs.
-* **Menu- and spell-first ergonomics**: All user-facing behavior is implemented as front-facing spells (no hidden libraries or wrappers), with menu specialization and transparency guiding how complex workflows are exposed.
+* **Portable pathing**: Platform and PATH choices are explicit so reviewers can see how portability is achieved.
+* **Deliberate temp handling**: Temporary files are created intentionally and cleaned predictably to avoid leaks.
 * **Planned tightening**: Continue expanding `vet-spell --strict` coverage, raising cross-platform parity for every spell, and extending menu coverage so every capability remains discoverable and consistent.
 
 ## Testing
