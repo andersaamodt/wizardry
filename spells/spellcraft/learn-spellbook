@@ -654,7 +654,11 @@ shell_remove_all() {
         # Find all wizardry path spell identifiers and remove them
         # learn blocks are marked with spell names like "path-<path>-<checksum>"
         removed_count=0
-        tmp_spells="${TMPDIR:-/tmp}/wizardry-spells.$$"
+        tmp_spells=$(mktemp "${TMPDIR:-/tmp}/wizardry-spells.XXXXXX") || exit 1
+        cleanup_tmp_spells() {
+                [ -n "${tmp_spells-}" ] && [ -f "$tmp_spells" ] && rm -f "$tmp_spells"
+        }
+        trap cleanup_tmp_spells EXIT HUP INT TERM
         
         # Extract spell names from the rc file that look like learn-spellbook entries
         # Format: # >>> <spell_name> >>>
@@ -667,6 +671,7 @@ shell_remove_all() {
                         removed_count=$((removed_count + 1))
                 fi
         done <"$tmp_spells"
+        trap - EXIT HUP INT TERM
         rm -f "$tmp_spells"
         
         if [ "$removed_count" -gt 0 ]; then
