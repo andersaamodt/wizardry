@@ -292,7 +292,7 @@ run_cmd() {
     
     # Optionally pass through test-related variables if they're set
     # (add them BEFORE the -- separator in the command)
-    for envvar in APT_LOG APT_EXIT PKGIN_LOG PKGIN_EXIT PKGIN_CANDIDATES DETECT_RC_FILE LOOK_RC_FILE ASK_LOG LOOK_COLORS_PATH; do
+    for envvar in APT_LOG APT_EXIT PKGIN_LOG PKGIN_EXIT PKGIN_CANDIDATES DETECT_RC_FILE LOOK_RC_FILE ASK_LOG LOOK_COLORS_PATH SSHD_CONFIG; do
       eval "val=\${$envvar-}"
       if [ -n "$val" ]; then
         # Insert --setenv before the -- separator
@@ -311,14 +311,14 @@ run_cmd() {
     fi
   elif [ "$MACOS_SANDBOX_AVAILABLE" -eq 1 ]; then
     # Use macOS sandbox-exec for isolation
-    if (cd "$workdir" && env PATH="$PATH" HOME="$homedir" TMPDIR="$tmpdir" WIZARDRY_TMPDIR="$WIZARDRY_TMPDIR" DETECT_RC_FILE="${DETECT_RC_FILE-}" WIZARDRY_SKIP_NIX_REBUILD="${WIZARDRY_SKIP_NIX_REBUILD-}" WIZARDRY_SKIP_CONFIRM="${WIZARDRY_SKIP_CONFIRM-}" \
+    if (cd "$workdir" && env PATH="$PATH" HOME="$homedir" TMPDIR="$tmpdir" WIZARDRY_TMPDIR="$WIZARDRY_TMPDIR" DETECT_RC_FILE="${DETECT_RC_FILE-}" WIZARDRY_SKIP_NIX_REBUILD="${WIZARDRY_SKIP_NIX_REBUILD-}" WIZARDRY_SKIP_CONFIRM="${WIZARDRY_SKIP_CONFIRM-}" SSHD_CONFIG="${SSHD_CONFIG-}" \
       run_macos_sandbox "$@" >"$_stdout" 2>"$_stderr"); then
       STATUS=0
     else
       STATUS=$?
     fi
   else
-    if (cd "$workdir" && env PATH="$PATH" HOME="$homedir" TMPDIR="$tmpdir" WIZARDRY_TMPDIR="$WIZARDRY_TMPDIR" DETECT_RC_FILE="${DETECT_RC_FILE-}" WIZARDRY_SKIP_NIX_REBUILD="${WIZARDRY_SKIP_NIX_REBUILD-}" WIZARDRY_SKIP_CONFIRM="${WIZARDRY_SKIP_CONFIRM-}" "$@" \
+    if (cd "$workdir" && env PATH="$PATH" HOME="$homedir" TMPDIR="$tmpdir" WIZARDRY_TMPDIR="$WIZARDRY_TMPDIR" DETECT_RC_FILE="${DETECT_RC_FILE-}" WIZARDRY_SKIP_NIX_REBUILD="${WIZARDRY_SKIP_NIX_REBUILD-}" WIZARDRY_SKIP_CONFIRM="${WIZARDRY_SKIP_CONFIRM-}" SSHD_CONFIG="${SSHD_CONFIG-}" "$@" \
       >"$_stdout" 2>"$_stderr"); then
       STATUS=0
     else
