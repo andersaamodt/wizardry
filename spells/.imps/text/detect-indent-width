@@ -12,8 +12,7 @@ if [ -z "$file" ] || [ ! -f "$file" ]; then
 	exit 0
 fi
 
-# Extract leading whitespace from indented lines, measure shortest indent
-# that isn't just a continuation or comment
+# Extract leading whitespace from indented lines and find shortest indent
 awk '
 /^[ ]+[^ ]/ {
 	match($0, /^[ ]+/)
