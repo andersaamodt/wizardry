@@ -1,90 +1,38 @@
 #!/bin/sh
 
-# Toggle command-not-found hook on/off by installing or uninstalling the hook spell.
+# Toggle command-not-found hook on/off in MUD config.
+# This is a planned feature that will catch command not found errors.
 
 show_usage() {
 cat <<'USAGE'
 Usage: toggle-command-not-found
 
-Turn the command-not-found hook on or off. When enabled, unknown commands display a helpful message suggesting the menu. Restart your shell or source your rc file after toggling.
+Toggle the planned command-not-found hook on or off. When enabled it will display helpful messages for unknown commands; for now the toggle only updates ~/.spellbook/.mud/config.
 USAGE
 }
 
 case "${1-}" in
 --help|--usage|-h)
-	show_usage
-	exit 0
-	;;
+        show_usage
+        exit 0
+        ;;
 esac
 
 set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-CNF_SPELL="$SCRIPT_DIR/handle-command-not-found"
+MUD_CONFIG="$SCRIPT_DIR/mud-config"
 
-if [ ! -x "$CNF_SPELL" ]; then
-	printf '%s\n' "toggle-command-not-found: handle-command-not-found spell not found at '$CNF_SPELL'." >&2
-	exit 1
+if [ ! -x "$MUD_CONFIG" ]; then
+        printf '%s\n' "Error: mud-config not found at '$MUD_CONFIG'." >&2
+        exit 1
 fi
 
-# Check if the hook is currently installed by checking the rc file
-is_installed=0
-rc_file=""
-if [ -n "${WIZARDRY_RC_FILE-}" ]; then
-	rc_file="$WIZARDRY_RC_FILE"
-elif command -v detect-rc-file >/dev/null 2>&1; then
-	if detected=$(detect-rc-file 2>/dev/null); then
-		while IFS= read -r line; do
-			case $line in
-			rc_file=*)
-				rc_file="${line#rc_file=}"
-				break
-				;;
-			esac
-		done <<EOF
-$detected
-EOF
-	fi
-fi
+# Toggle the feature and report state
+new_state=$("$MUD_CONFIG" toggle command-not-found)
 
-# Fallback to shell-specific defaults
-if [ -z "$rc_file" ] && [ -n "${HOME-}" ]; then
-	shell_name="${SHELL-}"
-	case ${shell_name##*/} in
-	zsh)
-		rc_file="$HOME/.zshrc"
-		;;
-	*)
-		rc_file="$HOME/.bashrc"
-		;;
-	esac
-fi
-
-# Check if the hook is installed by looking for markers
-if [ -n "$rc_file" ] && [ -f "$rc_file" ]; then
-	if grep -Eq '# >>> wizardry command-not-found >>>|#wizardry: command-not-found|WIZARDRY_COMMAND_NOT_FOUND' "$rc_file" 2>/dev/null; then
-		is_installed=1
-	fi
-fi
-
-if [ "$is_installed" -eq 0 ]; then
-	# Not installed, so install it
-	printf '%s\n' "Installing command-not-found hook..."
-	if "$CNF_SPELL" install; then
-		printf '%s\n' "✓ Command not found hook enabled. Unknown commands will now show a helpful message."
-		printf '%s\n' "  (Restart your shell or source your rc file to activate)"
-	else
-		printf '%s\n' "✗ Failed to install command-not-found hook." >&2
-		exit 1
-	fi
+if [ "$new_state" = "1" ]; then
+        printf '%s\n' "✓ Command not found hook enabled (planned feature)."
 else
-	# Hook is installed, so uninstall it
-	printf '%s\n' "Uninstalling command-not-found hook..."
-	if "$CNF_SPELL" uninstall; then
-		printf '%s\n' "✓ Command not found hook disabled."
-		printf '%s\n' "  (Restart your shell or source your rc file to deactivate)"
-	else
-		printf '%s\n' "✗ Failed to uninstall command-not-found hook." >&2
-		exit 1
-	fi
+        printf '%s\n' "✓ Command not found hook disabled."
 fi
