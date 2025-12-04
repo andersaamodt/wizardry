@@ -53,4 +53,8 @@ Every spell must have:
 
 - See `README.md` for project principles and values
 - See `.AGENTS.md` for detailed style guide and cross-platform patterns
-- See `.github/instructions/` for topic-specific guidance
+- See `.github/instructions/` for topic-specific guidance:
+  - `spells.instructions.md` — Spell style guide
+  - `imps.instructions.md` — Imp (micro-helper) guide
+  - `cross-platform.instructions.md` — Platform compatibility
+  - `tests.instructions.md` — Testing patterns
