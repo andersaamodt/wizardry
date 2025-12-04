@@ -243,8 +243,15 @@ jump_trash_spell_memorized() {
 }
 
 # Run nixos-rebuild or home-manager switch to apply NixOS configuration changes.
-# Returns 0 if rebuild succeeded or was skipped, 1 if it could not be run.
+# Uses the shared nix-rebuild imp if available, otherwise falls back to inline logic.
 run_nix_rebuild() {
+  # Use the shared nix-rebuild imp if available
+  if command -v nix-rebuild >/dev/null 2>&1; then
+    nix-rebuild
+    return $?
+  fi
+
+  # Fallback: inline implementation for when imp is not in PATH
   # Allow tests to skip the rebuild
   if [ "${WIZARDRY_SKIP_NIX_REBUILD-}" = "1" ]; then
     return 0
