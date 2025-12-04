@@ -1,0 +1,28 @@
+#!/bin/sh
+set -eu
+
+test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+while [ ! -f "$test_root/test-common.sh" ] && [ "$test_root" != "/" ]; do
+  test_root=$(dirname "$test_root")
+done
+# shellcheck source=/dev/null
+. "$test_root/test-common.sh"
+
+spell_is_executable() {
+  [ -x "$ROOT_DIR/spells/kryptos/evoke-hash" ]
+}
+
+spell_has_content() {
+  [ -s "$ROOT_DIR/spells/kryptos/evoke-hash" ]
+}
+
+run_test_case "kryptos/evoke-hash is executable" spell_is_executable
+run_test_case "kryptos/evoke-hash has content" spell_has_content
+
+shows_help() {
+  run_spell spells/kryptos/evoke-hash --help
+  true
+}
+
+run_test_case "evoke-hash shows help" shows_help
+finish_tests

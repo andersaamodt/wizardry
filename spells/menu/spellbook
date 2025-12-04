@@ -176,6 +176,9 @@ category_display_name() {
                         mud)
                                 printf '%s' "MUD"
                                 ;;
+                        mud-admin)
+                                printf '%s' "MUD Admin"
+                                ;;
                         *)
                                 # Capitalize first letter
                                 first=$(printf '%s' "$folder" | cut -c1 | tr '[:lower:]' '[:upper:]')

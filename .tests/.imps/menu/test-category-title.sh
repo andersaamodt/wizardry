@@ -27,6 +27,15 @@ test_mud_becomes_uppercase() {
   esac
 }
 
+test_mud_admin_title() {
+  run_spell "spells/.imps/menu/category-title" "mud-admin"
+  assert_success || return 1
+  case "$OUTPUT" in
+    *"MUD Admin"*) : ;;
+    *) TEST_FAILURE_REASON="expected 'MUD Admin' but got '$OUTPUT'"; return 1 ;;
+  esac
+}
+
 test_arcane_capitalizes() {
   run_spell "spells/.imps/menu/category-title" "arcane"
   assert_success || return 1
@@ -47,6 +56,7 @@ test_unknown_capitalizes_first() {
 
 run_test_case "enchant becomes Enchantment" test_enchant_becomes_enchantment
 run_test_case "mud becomes MUD" test_mud_becomes_uppercase
+run_test_case "mud-admin becomes MUD Admin" test_mud_admin_title
 run_test_case "arcane becomes Arcane" test_arcane_capitalizes
 run_test_case "unknown categories capitalize first letter" test_unknown_capitalizes_first
 

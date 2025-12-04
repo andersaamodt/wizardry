@@ -1,0 +1,53 @@
+#!/bin/sh
+
+# This spell returns files in a directory matching a given hash.
+# Searches current directory by default.
+
+set -eu
+
+show_usage() {
+  cat <<'USAGE'
+Usage: evoke-hash <hash> [directory]
+
+Find files whose hash attribute matches a given value, searching the current directory by default. The hash should be set beforehand with the hashchant spell.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
+if [ "$#" -lt 1 ]; then
+  show_usage >&2
+  exit 1
+fi
+
+hash=$1
+directory=${2:-.}
+
+if [ ! -d "$directory" ]; then
+  printf 'Error: %s is not a directory.\n' "$directory" >&2
+  exit 1
+fi
+
+found=0
+for file in "$directory"/*; do
+  [ -f "$file" ] || continue
+  
+  file_hash=$(read-magic "$file" hash 2>/dev/null) || continue
+  
+  if [ "$file_hash" = "$hash" ]; then
+    realpath "$file"
+    found=1
+    exit 0
+  fi
+done
+
+if [ "$found" -eq 0 ]; then
+  printf 'No file found for hash %s.\n' "$hash" >&2
+  printf 'Tip: use "forall hashchant" to hash files in this directory.\n' >&2
+  exit 1
+fi

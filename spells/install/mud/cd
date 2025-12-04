@@ -253,6 +253,7 @@ install() {
                         nix_helper=$(command -v nix-shell-init)
                 fi
 
+                
                 if [ -z "$nix_helper" ]; then
                         printf '%s\n' "cd cantrip: nix-shell-init imp not found for NixOS installation."
                         return 1
