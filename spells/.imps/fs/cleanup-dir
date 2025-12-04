@@ -1,0 +1,9 @@
+#!/bin/sh
+# cleanup-dir DIR - remove temp directory if it exists (silent on missing)
+# Example: trap 'cleanup-dir "$tmpdir"' EXIT
+
+set -eu
+
+dir=${1:-}
+[ -n "$dir" ] && [ -d "$dir" ] && rm -rf "$dir"
+exit 0

@@ -98,7 +98,7 @@ STUB
   target="$WIZARDRY_TMPDIR/yaml-missing"
   printf 'content\n' >"$target"
 
-  PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$stub_dir:/usr/bin:/bin" run_spell "spells/enchant/enchantment-to-yaml" "$target"
+  PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/fs:$stub_dir:/usr/bin:/bin" run_spell "spells/enchant/enchantment-to-yaml" "$target"
   assert_failure && assert_error_contains "requires one of attr, xattr, or setfattr"
 }
 

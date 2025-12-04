@@ -1,0 +1,9 @@
+#!/bin/sh
+# cleanup-file FILE - remove temp file if it exists (silent on missing)
+# Example: trap 'cleanup-file "$tmp"' EXIT
+
+set -eu
+
+file=${1:-}
+[ -n "$file" ] && [ -f "$file" ] && rm -f "$file"
+exit 0
