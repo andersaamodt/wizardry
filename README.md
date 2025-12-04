@@ -249,3 +249,4 @@ Principles of the testing suite:
 | Full mode coverage    | Subtests cover all valid paths and error conditions. |
 | Explicit shims        | Shims exist only within tests; each test that needs one creates and manages it explicitly. |
 | Sandboxed execution   | The `test-magic` spell discovers and runs all tests in an isolated bubblewrap environment. |
+| Tests required | All tests are required to pass before new code may be merged. |
