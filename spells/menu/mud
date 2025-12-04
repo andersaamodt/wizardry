@@ -1,10 +1,17 @@
 #!/bin/sh
 # This spell displays the main MUD (Multi-User Dungeon) menu interface.
 
+show_usage() {
+  cat <<'USAGE'
+Usage: mud
+
+Displays the MUD (Multi-User Dungeon) menu.
+USAGE
+}
+
 case "${1-}" in
-  -h|--help)
-    printf 'Usage: mud\n'
-    printf 'Displays the MUD (Multi-User Dungeon) menu.\n'
+  --help|--usage|-h)
+    show_usage
     exit 0
     ;;
 esac

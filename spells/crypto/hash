@@ -4,7 +4,6 @@
 # Prints the checksum in hexadecimal alongside the resolved path.
 
 
-set -eu
 show_usage() {
 cat <<'USAGE'
 Usage: hash <file>
@@ -19,6 +18,7 @@ case "${1-}" in
         exit 0
         ;;
 esac
+set -eu
 
 if [ "$#" != 1 ]; then
     printf 'Usage: hash file\n'

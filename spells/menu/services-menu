@@ -3,10 +3,17 @@
 # services-menu collects all service-management spells in one place so users
 # never need to remember flags. Each menu item launches a single-purpose spell.
 
+show_usage() {
+  cat <<'USAGE'
+Usage: services-menu
+
+Displays the system services management menu.
+USAGE
+}
+
 case "${1-}" in
-  -h|--help)
-    printf 'Usage: services-menu\n'
-    printf 'Displays the system services management menu.\n'
+  --help|--usage|-h)
+    show_usage
     exit 0
     ;;
 esac

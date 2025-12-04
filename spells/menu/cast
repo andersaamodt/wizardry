@@ -1,7 +1,6 @@
 #!/bin/sh
 # This spell casts previously memorized commands from the spellbook.
 
-set -eu
 
 # Catch Ctrl-C and TERM signal to exit cleanly
 trap 'exit 0' INT TERM
@@ -67,7 +66,7 @@ SPELLS
         done
 }
 
-usage() {
+show_usage() {
         cat <<'USAGE'
 Usage: cast [--list|--dir]
 
@@ -91,8 +90,8 @@ case ${1-} in
                 printf '%s\n' "$cast_dir"
                 exit 0
                 ;;
-        --help|-h)
-                usage
+        --help|--usage|-h)
+                show_usage
                 exit 0
                 ;;
         --)
@@ -102,10 +101,11 @@ case ${1-} in
                 :
                 ;;
         *)
-                usage >&2
+                show_usage >&2
                 exit 1
                 ;;
 esac
+set -eu
 
 if ! require_tool menu "The casting menu needs the 'menu' command."; then
         exit 1

@@ -1,54 +1,59 @@
-#!/bin/bash
+#!/usr/bin/env sh
 
-# Ask the user if they want to set up a hidden service
-read -p "Do you want to set up a Tor hidden service? [y/n]: " choice
+# Set up a Tor hidden service for the MUD gateway.
+# Appends a HiddenService configuration to torrc and restarts Tor.
 
-if [ "$choice" = "y" ]; then
-  # Detect the user's operating system
-  distro=$(detect-distro)
+show_usage() {
+        cat <<'USAGE'
+Usage: setup-tor
 
-  # Set the path to the Tor configuration file based on the operating system
-  if [ "$distro" = "arch" ]; then
-    tor_config_path="/etc/tor/torrc"
-  elif [ "$distro" = "debian" ]; then
-    tor_config_path="/etc/tor/torrc"
-  elif [ "$distro" = "fedora" ]; then
-    tor_config_path="/etc/tor/torrc"
-  elif [ "$distro" = "macos" ]; then
-    tor_config_path="/usr/local/etc/tor/torrc"
-  else
-    echo "Error: Unsupported operating system"
-    exit 1
-  fi
+Configure a basic Tor hidden service for the MUD gateway.
+Prompts for confirmation before writing to torrc and restarting Tor.
+USAGE
+}
 
-  # Generate a new hidden service address
-  new_address=$(tor --quiet --hash-password mypassword | awk '{print $4}')
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
 
-  mud_dir="/var/lib/tor/mud/"
+set -eu
 
-  # Add the hidden service configuration to the Tor configuration file
-  echo "HiddenServiceDir $mud_dir" | sudo tee -a $tor_config_path
-  echo "HiddenServicePort 80 127.0.0.1:80" | sudo tee -a $tor_config_path
-  #echo "HiddenServiceAuthorizeClient stealth mypassword" | sudo tee -a $tor_config_path #obsolete
+printf '%s' "Do you want to set up a Tor hidden service? [y/n]: "
+IFS= read -r choice || exit 1
 
-  # Create the directory if it does not exist
-  mkdir -p $mud_dir
+case $choice in
+y|Y)
+        if command -v detect-distro >/dev/null 2>&1; then
+                distro=$(detect-distro)
+        else
+                distro="unknown"
+        fi
 
-  # Restart the tor service
-  if [ "$distro" = "arch" ]; then
-    sudo systemctl restart tor.service
-  elif [ "$distro" = "debian" ]; then
-    sudo service tor restart
-  elif [ "$distro" = "fedora" ]; then
-    sudo systemctl restart tor
-  elif [ "$distro" = "macos" ]; then
-    sudo brew services restart tor
-  fi
+        case $distro in
+        arch|debian|fedora)
+                tor_config_path="/etc/tor/torrc"
+                ;;
+        macos)
+                tor_config_path="/usr/local/etc/tor/torrc"
+                ;;
+        *)
+                printf '%s\n' "Error: Unsupported operating system" >&2
+                exit 1
+                ;;
+        esac
 
-  # Output the new hidden service address and path
-  echo "Your new hidden service address is: $new_address.onion"
-  echo "Your hidden service directory is located at: $mud_dir"
+        new_address=$(tor --quiet --hash-password mypassword | awk '{print $4}')
+        mud_dir="/var/lib/tor/mud/"
 
-else
-  echo "Exiting without setting up a hidden service."
-fi
+        printf 'HiddenServiceDir %s\n' "$mud_dir" | sudo tee -a "$tor_config_path"
+        printf '%s\n' "HiddenServicePort 80 127.0.0.1:8080" | sudo tee -a "$tor_config_path"
+        sudo systemctl restart tor
+        printf 'New hidden service address: %s\n' "$new_address"
+        ;;
+*)
+        printf '%s\n' "Tor setup skipped."
+        ;;
+esac

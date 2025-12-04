@@ -5,7 +5,6 @@
 # - learn-spellbook for folders (adds directories to PATH)
 # It also handles --spell mode for RC file snippet management.
 
-set -eu
 
 SCRIPT_NAME=$(basename "$0")
 SCRIPT_SOURCE=$0
@@ -13,10 +12,8 @@ case $SCRIPT_SOURCE in
 */*) SCRIPT_DIR=${SCRIPT_SOURCE%/*} ;;
 *) SCRIPT_DIR=. ;;
 esac
-SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
-SPELLS_DIR=${SCRIPT_DIR%/*}
 
-usage() {
+show_usage() {
   cat <<USAGE >&2
 Usage: $SCRIPT_NAME [-r] PATH...
        $SCRIPT_NAME --spell NAME {add|remove|status}
@@ -26,11 +23,23 @@ Use -r for recursive processing. Use --spell mode for RC file snippets.
 USAGE
 }
 
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
+set -eu
+
+SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
+SPELLS_DIR=${SCRIPT_DIR%/*}
+
 # Check for --spell mode first (RC file management)
 for arg in "$@"; do
   case $arg in
-  --help|-h)
-    usage
+  --help|--usage|-h)
+    show_usage
     exit 0
     ;;
   --spell|--spell=*)
@@ -462,8 +471,8 @@ while [ $# -gt 0 ]; do
     RECURSIVE=1
     shift
     ;;
-  -h|--help)
-    usage
+  --help|--usage|-h)
+    show_usage
     exit 0
     ;;
   --)
@@ -472,7 +481,7 @@ while [ $# -gt 0 ]; do
     ;;
   -*)
     printf '%s\n' "learn: unknown option '$1'." >&2
-    usage
+    show_usage
     exit 1
     ;;
   *)
@@ -489,7 +498,7 @@ done
 
 # Require at least one path
 if [ -z "$paths" ]; then
-  usage
+  show_usage
   exit 1
 fi
 

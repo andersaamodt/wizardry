@@ -2,10 +2,17 @@
 
 # Manage Lightning wallets directly through lightning-cli.
 
+show_usage() {
+  cat <<'USAGE'
+Usage: lightning-wallet-menu
+
+Displays wallet-focused Lightning commands.
+USAGE
+}
+
 case "${1-}" in
-  -h|--help)
-    printf 'Usage: lightning-wallet-menu\n'
-    printf 'Displays wallet-focused Lightning commands.\n'
+  --help|--usage|-h)
+    show_usage
     exit 0
     ;;
 esac

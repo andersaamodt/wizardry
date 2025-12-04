@@ -4,9 +4,8 @@
 # When a default is whispered, pressing Enter adopts it so scripts can fall
 # through gracefully even when silence answers back.
 
-set -eu
 
-usage() {
+show_usage() {
         cat <<'USAGE' >&2
 Usage: ask_text "Question" [default]
 
@@ -17,13 +16,14 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        usage
+        show_usage
         exit 0
         ;;
 esac
+set -eu
 
 if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
-        usage
+        show_usage
         exit 1
 fi
 

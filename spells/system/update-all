@@ -2,9 +2,8 @@
 
 # This spell refreshes the wizardry repository alongside other managed sources.
 # Pass --verbose to narrate each update step.
-set -eu
 
-usage() {
+show_usage() {
   cat <<'EOF'
 Usage: update-all [-v|--verbose]
 
@@ -22,8 +21,8 @@ while [ "$#" -gt 0 ]; do
       VERBOSE=1
       shift
       ;;
-    -h|--help)
-      usage
+    --help|--usage|-h)
+      show_usage
       exit 0
       ;;
     --)
@@ -32,18 +31,20 @@ while [ "$#" -gt 0 ]; do
       ;;
     -*)
       printf 'Unknown option: %s\n' "$1" >&2
-      usage >&2
+      show_usage >&2
       exit 1
       ;;
     *)
       break
       ;;
   esac
+set -eu
+
 done
 
 if [ "$#" -ne 0 ]; then
   printf 'Unexpected argument: %s\n' "$1" >&2
-  usage >&2
+  show_usage >&2
   exit 1
 fi
 

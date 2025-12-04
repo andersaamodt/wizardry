@@ -4,7 +4,6 @@
 # It prompts with ask cantrips and sends a kill signal, customizable via KILL_CMD.
 
 
-set -eu
 show_usage() {
 cat <<'USAGE'
 Usage: kill-process
@@ -19,6 +18,7 @@ case "${1-}" in
         exit 0
         ;;
 esac
+set -eu
 
 # Present the process list so the user can choose what to terminate.
 say "List of running processes:"

@@ -2,7 +2,7 @@
 
 # Configure the local torrc with common options.
 
-usage() {
+show_usage() {
         cat <<'USAGE' >&2
 Usage: configure-tor
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        usage
+        show_usage
         exit 0
         ;;
 esac

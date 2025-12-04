@@ -2,6 +2,14 @@
 
 # This spell installs the core wizardry dependencies required for spell execution.
 
+show_usage() {
+  cat <<'USAGE'
+Usage: install-core
+
+Install the core wizardry dependencies required for running spells.
+USAGE
+}
+
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 
 detect_platform() {
@@ -113,6 +121,13 @@ install_core() {
 }
 
 if [ "${0##*/}" = "install-core" ]; then
+  case "${1-}" in
+    --help|--usage|-h)
+      show_usage
+      exit 0
+      ;;
+  esac
+
   set -eu
   install_core "$@"
 fi

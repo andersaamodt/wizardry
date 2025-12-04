@@ -3,10 +3,17 @@
 # This spell displays shutdown, restart, logout, and power management options.
 # Commands are invoked directly via the menu without external spell dependencies.
 
+show_usage() {
+  cat <<'USAGE'
+Usage: shutdown-menu
+
+Displays the shutdown and power management menu.
+USAGE
+}
+
 case "${1-}" in
-  -h|--help)
-    printf 'Usage: shutdown-menu\n'
-    printf 'Displays the shutdown and power management menu.\n'
+  --help|--usage|-h)
+    show_usage
     exit 0
     ;;
 esac

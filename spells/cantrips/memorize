@@ -9,41 +9,13 @@
 #        memorize path         - print the command list file path
 #        memorize dir          - print the cast directory
 
-set -eu
 
 spell_name="memorize"
 tab_char=$(printf '\t')
 newline_char=$(printf '\ny')
 newline_char=${newline_char%y}
 
-expand_tilde() {
-	path=$1
-	case $path in
-	\~)
-		if [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
-			path=$HOME
-		fi
-		;;
-	\~/*)
-		if [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
-			path=$HOME/${path#\~/}
-		fi
-		;;
-	esac
-	printf '%s' "$path"
-}
-
-resolve_cast_dir() {
-	if [ -n "${WIZARDRY_CAST_DIR-}" ]; then
-		dir=$(expand_tilde "$WIZARDRY_CAST_DIR")
-		printf '%s' "$dir"
-		return 0
-	fi
-
-	resolve_spell_home
-}
-
-usage() {
+show_usage() {
         cat <<USAGE >&2
 Usage: $spell_name <spell-name>
        $spell_name {list|path|dir}
@@ -55,10 +27,40 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        usage
+        show_usage
         exit 0
         ;;
 esac
+
+set -eu
+
+expand_tilde() {
+        path=$1
+        case $path in
+        \~)
+                if [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
+                        path=$HOME
+                fi
+                ;;
+        \~/*)
+                if [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
+                        path=$HOME/${path#\~/}
+                fi
+                ;;
+        esac
+
+        printf '%s' "$path"
+}
+
+resolve_cast_dir() {
+        if [ -n "${WIZARDRY_CAST_DIR-}" ]; then
+                dir=$(expand_tilde "$WIZARDRY_CAST_DIR")
+                printf '%s' "$dir"
+                return 0
+        fi
+
+        resolve_spell_home
+}
 
 resolve_command_file() {
 	cast_dir=$1
@@ -156,7 +158,7 @@ list_entries() {
 }
 
 if [ "$#" -eq 0 ]; then
-	usage
+	show_usage
 	exit 1
 fi
 
@@ -165,38 +167,38 @@ action=$1
 case $action in
 list)
 	if [ "$#" -ne 1 ]; then
-		usage
+		show_usage
 		exit 1
 	fi
 	list_entries
 	;;
 path)
 	if [ "$#" -ne 1 ]; then
-		usage
+		show_usage
 		exit 1
 	fi
 	printf '%s\n' "$command_file"
 	;;
 dir)
 	if [ "$#" -ne 1 ]; then
-		usage
+		show_usage
 		exit 1
 	fi
 	printf '%s\n' "$cast_dir"
 	;;
---help|-h)
-	usage
+--help|--usage|-h)
+	show_usage
 	;;
 -*)
 	printf '%s\n' "$spell_name: unknown option '$action'" >&2
-	usage
+	show_usage
 	exit 1
 	;;
 *)
 	# Default action: memorize the spell
 	if [ "$#" -ne 1 ]; then
 		printf '%s\n' "$spell_name: expects exactly one spell name." >&2
-		usage
+		show_usage
 		exit 1
 	fi
 	add_spell "$action"

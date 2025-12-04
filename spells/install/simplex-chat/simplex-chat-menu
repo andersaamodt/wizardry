@@ -2,10 +2,17 @@
 
 # Present the simplex-chat management menu.
 
+show_usage() {
+  cat <<'USAGE'
+Usage: simplex-chat-menu
+
+Displays the simplex-chat management menu.
+USAGE
+}
+
 case "${1-}" in
-  -h|--help|--usage)
-    printf 'Usage: simplex-chat-menu\n'
-    printf 'Displays the simplex-chat management menu.\n'
+  --help|--usage|-h)
+    show_usage
     exit 0
     ;;
 esac

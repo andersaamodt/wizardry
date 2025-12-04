@@ -574,7 +574,7 @@ jump_cli() {
         --install)
                 install
                 ;;
-        --help|-h)
+        --help|--usage|-h)
                 show_usage
                 ;;
 "")

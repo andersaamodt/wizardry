@@ -2,10 +2,17 @@
 
 # Present the Lightning management menu.
 
+show_usage() {
+  cat <<'USAGE'
+Usage: lightning-menu
+
+Displays the Lightning management menu.
+USAGE
+}
+
 case "${1-}" in
-  -h|--help)
-    printf 'Usage: lightning-menu\n'
-    printf 'Displays the Lightning management menu.\n'
+  --help|--usage|-h)
+    show_usage
     exit 0
     ;;
 esac

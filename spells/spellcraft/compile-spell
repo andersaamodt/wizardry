@@ -3,7 +3,6 @@
 # This spell compiles a spell into a standalone script by inlining all imp calls.
 # Optionally compiles for a specific OS, removing cross-platform conditionals.
 
-set -eu
 
 show_usage() {
   cat <<'USAGE'
@@ -19,6 +18,7 @@ case "${1-}" in
   exit 0
   ;;
 esac
+set -eu
 
 if [ "$#" -lt 1 ]; then
   warn "compile-spell: spell name required"

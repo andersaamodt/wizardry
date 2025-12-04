@@ -2,9 +2,8 @@
 
 # Install the checkbashisms utility so verify-posix can detect non-POSIX shells.
 
-set -eu
 
-usage() {
+show_usage() {
 cat <<'USAGE'
 Usage: install-checkbashisms
 
@@ -13,16 +12,17 @@ USAGE
 }
 
 case "${1-}" in
--h|--help|--usage)
-        usage
+--help|--usage|-h)
+        show_usage
         exit 0
         ;;
 -*)
         printf '%s\n' "install-checkbashisms: unknown option '$1'" >&2
-        usage
+        show_usage
         exit 1
         ;;
 esac
+set -eu
 
 if [ "${INSTALL_CHECKBASHISMS_FORCE_INSTALL-}" != "1" ] && command -v checkbashisms >/dev/null 2>&1; then
         printf '%s\n' "checkbashisms is already installed."

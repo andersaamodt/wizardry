@@ -2,7 +2,6 @@
 # erase-spell - Delete a custom spell from ~/.spellbook
 # Asks for confirmation before deleting.
 
-set -eu
 
 resolve_spell_home() {
         if [ -n "${WIZARDRY_SPELL_HOME-}" ]; then
@@ -22,7 +21,7 @@ resolve_spell_home() {
 
 spell_home=$(resolve_spell_home)
 
-usage() {
+show_usage() {
         cat <<'USAGE'
 Usage: erase-spell NAME [--force]
 
@@ -59,8 +58,8 @@ name=""
 
 while [ "$#" -gt 0 ]; do
         case $1 in
-                --help|-h)
-                        usage
+                --help|--usage|-h)
+                        show_usage
                         exit 0
                         ;;
                 --force|-f)
@@ -81,10 +80,12 @@ while [ "$#" -gt 0 ]; do
                         shift
                         ;;
         esac
+set -eu
+
 done
 
 if [ -z "$name" ]; then
-        usage >&2
+        show_usage >&2
         exit 1
 fi
 

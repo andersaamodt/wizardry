@@ -4,8 +4,7 @@
 # descriptive error if the binary is absent.
 
 
-set -eu
-usage() {
+show_usage() {
         cat <<'USAGE' >&2
 Usage: require-command <command> [message...]
 
@@ -15,13 +14,14 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        usage
+        show_usage
         exit 0
         ;;
 esac
+set -eu
 
 if [ "$#" -lt 1 ]; then
-    usage
+    show_usage
 fi
 
 command_name=$1

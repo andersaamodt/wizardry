@@ -4,7 +4,6 @@
 # It scans files for install() and runs them to set up shell integration.
 # Bootstrappable - does not rely on wizardry scripts being installed.
 
-set -eu
 
 SCRIPT_NAME=$(basename "$0")
 SCRIPT_SOURCE=$0
@@ -12,8 +11,6 @@ case $SCRIPT_SOURCE in
 */*) SCRIPT_DIR=${SCRIPT_SOURCE%/*} ;;
 *) SCRIPT_DIR=. ;;
 esac
-SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
-SPELLS_DIR=${SCRIPT_DIR%/*}
 
 show_usage() {
   cat <<'USAGE' >&2
@@ -29,6 +26,11 @@ case "${1-}" in
   exit 0
   ;;
 esac
+
+set -eu
+
+SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
+SPELLS_DIR=${SCRIPT_DIR%/*}
 
 # Find ask_yn helper
 if [ -n "${MEMORIZE_ASK_YN-}" ]; then
@@ -215,7 +217,7 @@ while [ $# -gt 0 ]; do
     DRY_RUN=1
     shift
     ;;
-  -h|--help)
+  --help|--usage|-h)
     show_usage
     exit 0
     ;;

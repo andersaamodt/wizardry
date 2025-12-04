@@ -3,7 +3,7 @@
 # ask_number keeps watch over numeric ranges, nudging travelers toward a value
 # between the provided bounds.  It repeats until a valid integer arrives.
 
-usage() {
+show_usage() {
         cat <<'USAGE' >&2
 Usage: ask_number "Question" MIN MAX
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        usage
+        show_usage
         exit 0
         ;;
 esac
@@ -21,7 +21,7 @@ esac
 set -eu
 
 if [ "$#" -ne 3 ]; then
-        usage
+        show_usage
         exit 1
 fi
 

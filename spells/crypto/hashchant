@@ -4,7 +4,6 @@
 # Stores a CRC-32 derived from the filename and contents under user.hash.
 
 
-set -eu
 show_usage() {
 cat <<'USAGE'
 Usage: hashchant <file>
@@ -19,6 +18,7 @@ case "${1-}" in
         exit 0
         ;;
 esac
+set -eu
 
 if [ -z "${1-}" ]; then
   echo "Error: No file specified."

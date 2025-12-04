@@ -2,7 +2,6 @@
 
 # This spell reads a vCard and prints its fields with friendly labels.
 
-set -eu
 
 # This spell reads a vCard and prints its fields with friendly labels.
 # Provide an optional field name to extract a single detail.
@@ -84,6 +83,8 @@ nicer_name() {
             echo "$(echo "$normalized_field" | awk '{for(i=1;i<=NF;i++)sub(/./,toupper(substr($i,1,1)),$i)}1'): "
             ;;
     esac
+set -eu
+
 }
 
 print_field() {

@@ -158,20 +158,19 @@ check_description_comment() {
 
 check_usage_function() {
   file=$1
-  # Accept show_usage() or usage() as valid usage function names
-  if grep -qE '(show_usage|usage)\(\)' "$file" 2>/dev/null; then
+  if grep -qE '^[[:space:]]*show_usage\(\)' "$file" 2>/dev/null; then
     return 0
   fi
-  printf 'missing usage function (show_usage or usage)'
+  printf 'missing usage function (show_usage)'
   return 1
 }
 
 check_help_handler() {
   file=$1
-  if grep -q '\-\-help' "$file" 2>/dev/null; then
+  if grep -qF -- '--help|--usage|-h)' "$file" 2>/dev/null; then
     return 0
   fi
-  printf 'missing --help handler'
+  printf 'missing --help|--usage|-h handler'
   return 1
 }
 

@@ -3,16 +3,24 @@
 # Report terminal dimensions using terminfo via tput.
 
 
-set -eu
-usage() {
+show_usage() {
     cat <<'USAGE' >&2
-Usage: fathom-terminal [-v|--verbose] [-w|--width] [-h|--height]
+Usage: fathom-terminal [-v|--verbose] [--width|--height]
 
 Read terminal dimensions from terminfo and print the width, height, or both.
-Pass -w or -h to request a single measurement; -v annotates the numbers with
-friendly labels for menu output.
+Pass --width or --height to request a single measurement; -v annotates the
+numbers with friendly labels for menu output.
 USAGE
 }
+
+case "${1-}" in
+--help|--usage|-h)
+    show_usage
+    exit 0
+    ;;
+esac
+
+set -eu
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 
@@ -40,27 +48,29 @@ while [ "$#" -gt 0 ]; do
             verbose=1
             ;;
         -w|--width)
-            want_width=1
-            ;;
-        -h|--height)
-            want_height=1
-            ;;
+        want_width=1
+        ;;
         --help|--usage|-h)
-            usage
+            show_usage
             exit 0
+            ;;
+        --height)
+            want_height=1
             ;;
         --)
             shift
             break
             ;;
         -*)
-            usage
+            show_usage >&2
+            exit 1
             ;;
         *)
             break
             ;;
-    esac
-    shift
+        esac
+
+        shift
 done
 
 # Unless told otherwise, report both width and height.
