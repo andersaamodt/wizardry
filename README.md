@@ -199,7 +199,7 @@ Wizardry is converging on a comprehensive set of standards so every spell, imp, 
 ### Already standardized
 
 * **Single-shell stance**: Everything runs as POSIX `sh` with `#!/bin/sh` shebangs and `set -eu` strict mode so behavior stays identical across systems.
-* **Early descriptiveness**: Scripts open with a 1–2 line comment describing purpose so readers learn intent before code.
+* **Early descriptiveness**: Scripts open with a 1-2 line comment describing purpose so readers learn intent before code.
 * **Help-on-tap**: Each executable answers `--help`/`-h`/`--usage` with concrete usage, making interfaces self-evident.
 * **Strict-yet-lean flows**: Scripts enable `set -eu` while keeping control flow flat so failures are surfaced without obscuring readability.
 * **Hyphenated, extensionless names**: Spells use hyphens and omit `.sh` so commands read cleanly and stay shell-friendly.
