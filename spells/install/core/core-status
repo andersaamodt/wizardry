@@ -6,7 +6,7 @@ usage() {
         cat <<'USAGE' >&2
 Usage: core-status
 
-Reports whether wizardry's core prerequisites are installed, printing "ready" or a comma-separated list of missing commands.
+Reports whether wizardry's core prerequisites are installed, printing "installed", "not installed", or "partial install".
 USAGE
 }
 
@@ -26,24 +26,27 @@ script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 # shellcheck source=/dev/null
 . "$script_dir/install-core"
 
-missing=""
+total=0
+installed=0
 
 while IFS=: read -r _ command_name _ _; do
-  if command -v "$command_name" >/dev/null 2>&1; then
-    continue
-  fi
-
-  if [ -z "$missing" ]; then
-    missing=$command_name
-  else
-    missing="$missing, $command_name"
+  total=$((total + 1))
+  # Handle the special clipboard helper marker
+  if [ "$command_name" = "$CLIPBOARD_MARKER" ]; then
+    if clipboard_helper_installed; then
+      installed=$((installed + 1))
+    fi
+  elif command -v "$command_name" >/dev/null 2>&1; then
+    installed=$((installed + 1))
   fi
 done <<EOF
 $(core_dependencies)
 EOF
 
-if [ -z "$missing" ]; then
-  echo "ready"
+if [ "$installed" -eq "$total" ]; then
+  printf '%s\n' "installed"
+elif [ "$installed" -eq 0 ]; then
+  printf '%s\n' "not installed"
 else
-  printf '%s\n' "missing $missing"
+  printf '%s\n' "partial install"
 fi
