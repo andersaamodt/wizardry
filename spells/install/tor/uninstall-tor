@@ -1,0 +1,101 @@
+#!/bin/sh
+
+# Uninstall Tor and attempt to undo configuration changes.
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: uninstall-tor
+
+Removes Tor binaries where possible and undoes NixOS configuration entries added by install-tor.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
+set -eu
+
+is_nixos() {
+  if [ -f /etc/NIXOS ]; then
+    return 0
+  fi
+  if [ -r /etc/os-release ] && grep -qi '^ID=nixos' /etc/os-release; then
+    return 0
+  fi
+  return 1
+}
+
+remove_nixos_entries() {
+  config=${1:-/etc/nixos/configuration.nix}
+  if [ ! -f "$config" ]; then
+    return 0
+  fi
+
+  if command -v backup-nix-config >/dev/null 2>&1; then
+    backup-nix-config "$config" >&2 || true
+  fi
+
+  removed=0
+  if grep -q 'environment.systemPackages' "$config" && grep -q 'tor' "$config"; then
+    sudo sed -i '/tor/d' "$config"
+    removed=1
+  fi
+
+  if grep -q 'services.tor.enable' "$config"; then
+    sudo sed -i '/services\.tor\.enable/d' "$config"
+    removed=1
+  fi
+
+  if [ "$removed" -eq 1 ]; then
+    printf '%s\n' "Rebuilding NixOS after Tor removal..."
+    sudo nixos-rebuild all
+  fi
+}
+
+uninstall_tor() {
+  distro="$(detect-distro 2>/dev/null || os)"
+  case $distro in
+    debian|ubuntu|linux)
+      if command -v sudo >/dev/null 2>&1; then
+        sudo apt-get remove -y tor || true
+      else
+        apt-get remove -y tor || true
+      fi
+      ;;
+    arch)
+      if command -v sudo >/dev/null 2>&1; then
+        sudo pacman -R --noconfirm tor || true
+      else
+        pacman -R --noconfirm tor || true
+      fi
+      ;;
+    mac|macos)
+      if command -v brew >/dev/null 2>&1; then
+        brew uninstall tor 2>/dev/null || true
+      fi
+      ;;
+    nixos)
+      remove_nixos_entries "/etc/nixos/configuration.nix"
+      ;;
+    *)
+      printf '%s\n' 'Unsupported distribution for automatic removal.'
+      ;;
+  esac
+
+  if command -v systemctl >/dev/null 2>&1; then
+    sudo systemctl stop tor 2>/dev/null || true
+    sudo systemctl disable tor 2>/dev/null || true
+  fi
+
+  if command -v tor >/dev/null 2>&1; then
+    printf '%s\n' 'Tor may still be present; some files might require manual cleanup.'
+  else
+    printf '%s\n' 'Tor has been removed.'
+  fi
+}
+
+uninstall_tor

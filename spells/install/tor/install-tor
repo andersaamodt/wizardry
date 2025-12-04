@@ -1,0 +1,174 @@
+#!/bin/sh
+
+# Install and configure Tor across supported platforms.
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: install-tor
+
+Guides you through installing Tor. On NixOS, this will update configuration.nix
+when possible and run sudo nixos-rebuild all for you.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
+set -eu
+
+ask() {
+  prompt=${1-}
+  default=${2-}
+  if [ -n "$default" ]; then
+    printf "%s [%s]: " "$prompt" "$default"
+  else
+    printf "%s: " "$prompt"
+  fi
+  read -r reply
+  if [ -z "$reply" ] && [ -n "$default" ]; then
+    reply=$default
+  fi
+  printf '%s' "$reply"
+}
+
+ask_yes_no() {
+  prompt=${1-}
+  default=${2:-y}
+  default=${default# } # trim spaces
+  default_lower=$(printf '%s' "$default" | tr 'A-Z' 'a-z')
+  case "$default_lower" in
+    y|yes) hint='Y/n' ; default_answer=0 ;;
+    n|no) hint='y/N' ; default_answer=1 ;;
+    *) hint='y/n' ; default_answer=1 ;;
+  esac
+  printf "%s [%s]: " "$prompt" "$hint"
+  read -r reply
+  reply=${reply:-$default_lower}
+  case "$reply" in
+    y|Y|yes|Yes) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+is_nixos() {
+  if [ -f /etc/NIXOS ]; then
+    return 0
+  fi
+  if [ -r /etc/os-release ] && grep -qi '^ID=nixos' /etc/os-release; then
+    return 0
+  fi
+  return 1
+}
+
+install_on_debian() {
+  printf '%s\n' 'Installing tor via apt...'
+  if command -v sudo >/dev/null 2>&1; then
+    sudo apt-get update
+    sudo apt-get install -y tor
+  else
+    apt-get update
+    apt-get install -y tor
+  fi
+}
+
+install_on_arch() {
+  printf '%s\n' 'Installing tor via pacman...'
+  if command -v sudo >/dev/null 2>&1; then
+    sudo pacman -Sy --noconfirm tor
+  else
+    pacman -Sy --noconfirm tor
+  fi
+}
+
+install_on_mac() {
+  printf '%s\n' 'Installing tor via Homebrew...'
+  if ! command -v brew >/dev/null 2>&1; then
+    printf '%s\n' 'Homebrew is required to install Tor on macOS.'
+    return 1
+  fi
+  brew install tor
+}
+
+add_tor_to_nixos() {
+  config=${1:-/etc/nixos/configuration.nix}
+  changes=0
+
+  if [ ! -f "$config" ]; then
+    printf '%s\n' "NixOS configuration file $config was not found."
+    return 1
+  fi
+
+  if command -v backup-nix-config >/dev/null 2>&1; then
+    backup-nix-config "$config" >&2 || true
+  fi
+
+  if grep -q 'environment.systemPackages' "$config"; then
+    if ! grep -q 'tor' "$config"; then
+      printf '%s\n' 'Adding tor to environment.systemPackages...'
+      sudo perl -0pi -e 's/(environment\.systemPackages\s*=\s*with\s+pkgs;\s*\[[^]]*)\]/$1\n  tor\n]/' "$config" \
+        || sudo perl -0pi -e 's/(environment\.systemPackages\s*=\s*\[[^]]*)\]/$1\n  tor\n]/' "$config"
+      changes=1
+    fi
+  fi
+
+  if ! grep -q 'services.tor.enable' "$config"; then
+    printf '%s\n' 'Enabling Tor service in configuration.nix...'
+    sudo perl -0pi -e 's/(\n\})/\n  services.tor.enable = true;\n$1/' "$config"
+    changes=1
+  fi
+
+  if [ "$changes" -eq 1 ]; then
+    printf '%s\n' 'Rebuilding NixOS to apply Tor installation...'
+    sudo nixos-rebuild all
+  else
+    printf '%s\n' 'Tor already present in configuration.nix.'
+  fi
+}
+
+start_service_if_available() {
+  service_name="tor"
+  if command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files | grep -q "^${service_name}\.service"; then
+    if ask_yes_no "Enable and start tor.service now?" "y"; then
+      sudo systemctl enable --now "$service_name" || sudo systemctl start "$service_name" || true
+    fi
+  fi
+}
+
+install_tor() {
+  printf '%s\n' 'Welcome to the Tor installation wizard.'
+  distro="$(detect-distro 2>/dev/null || os)"
+  printf 'Detected platform: %s\n' "$distro"
+
+  case $distro in
+    debian|ubuntu|linux)
+      install_on_debian
+      ;;
+    arch)
+      install_on_arch
+      ;;
+    mac|macos)
+      install_on_mac
+      ;;
+    nixos)
+      config_path=$(ask "Path to NixOS configuration" "/etc/nixos/configuration.nix")
+      add_tor_to_nixos "$config_path"
+      ;;
+    *)
+      printf '%s\n' "Unsupported distribution for automatic Tor installation."
+      return 1
+      ;;
+  esac
+
+  if command -v tor >/dev/null 2>&1; then
+    printf '%s\n' 'Tor installation complete.'
+    start_service_if_available
+  else
+    printf '%s\n' 'Tor installation attempted, but the tor binary is not yet available. Check logs.'
+  fi
+}
+
+install_tor
