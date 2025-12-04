@@ -243,54 +243,27 @@ jump_trash_spell_memorized() {
 }
 
 # Run nixos-rebuild or home-manager switch to apply NixOS configuration changes.
-# Uses the shared nix-rebuild imp if available, otherwise falls back to inline logic.
+# Uses the shared nix-rebuild imp if available, otherwise logs a warning.
 run_nix_rebuild() {
+  # Allow tests to skip the rebuild
+  if [ "${WIZARDRY_SKIP_NIX_REBUILD-}" = "1" ]; then
+    return 0
+  fi
+
   # Use the shared nix-rebuild imp if available
   if command -v nix-rebuild >/dev/null 2>&1; then
     nix-rebuild
     return $?
   fi
 
-  # Fallback: inline implementation for when imp is not in PATH
-  # Allow tests to skip the rebuild
-  if [ "${WIZARDRY_SKIP_NIX_REBUILD-}" = "1" ]; then
-    return 0
-  fi
-
-  rebuild_success=0
-
-  # Try to detect if we should use sudo or doas
-  priv_cmd=""
-  if command -v sudo >/dev/null 2>&1; then
-    priv_cmd="sudo"
-  elif command -v doas >/dev/null 2>&1; then
-    priv_cmd="doas"
-  fi
-
-  # Try home-manager first (doesn't need privileges)
+  # Fallback: attempt home-manager if available (most common case)
   if command -v home-manager >/dev/null 2>&1; then
     printf '%s\n' "jump-trash: running home-manager switch..."
-    if home-manager switch; then
-      printf '%s\n' "jump-trash: user environment rebuilt successfully."
-      rebuild_success=1
-    fi
+    home-manager switch && return 0
   fi
 
-  # If home-manager didn't work and we have privilege escalation, try nixos-rebuild
-  if [ "$rebuild_success" -eq 0 ] && [ -n "$priv_cmd" ] && command -v nixos-rebuild >/dev/null 2>&1; then
-    printf '%s\n' "jump-trash: running $priv_cmd nixos-rebuild switch..."
-    if "$priv_cmd" nixos-rebuild switch; then
-      printf '%s\n' "jump-trash: NixOS system rebuilt successfully."
-      rebuild_success=1
-    fi
-  fi
-
-  if [ "$rebuild_success" -eq 0 ]; then
-    printf '%s\n' "jump-trash: NixOS configuration could not be automatically rebuilt." >&2
-    return 1
-  fi
-
-  return 0
+  printf '%s\n' "jump-trash: NixOS configuration could not be automatically rebuilt." >&2
+  return 1
 }
 
 jump_trash_install() {
