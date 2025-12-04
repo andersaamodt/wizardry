@@ -1,5 +1,6 @@
 #!/bin/sh
 # Behavioral cases (derived from spell behavior):
+# - mud-settings shows usage with --help
 # - mud-settings presents player management and install actions
 # - mud-settings exits when interrupted by menu stub
 
@@ -115,6 +116,13 @@ SH
   assert_file_contains "$tmp/log" "MUD Settings:"
 }
 
+test_shows_help() {
+  run_spell "spells/menu/mud-settings" --help
+  assert_success || return 1
+  assert_error_contains "Usage:" || return 1
+}
+
+run_test_case "mud-settings shows usage" test_shows_help
 run_test_case "mud-settings presents player actions" test_mud_settings_menu_actions
 run_test_case "mud-settings fails fast when menu helper is missing" test_mud_settings_requires_menu_helper
 run_test_case "mud-settings surfaces menu failures" test_mud_settings_reports_menu_failure

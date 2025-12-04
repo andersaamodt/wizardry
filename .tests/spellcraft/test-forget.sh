@@ -1,6 +1,7 @@
 #!/bin/sh
 # Behavioral coverage for forget:
 # - prints usage
+# - rejects unknown options
 # - removes a spell from the cast menu
 # - fails when spell name is missing
 # - fails when spell is not memorized
@@ -68,7 +69,13 @@ test_forget_fails_when_not_memorized() {
   assert_failure && assert_error_contains "not memorized"
 }
 
+test_unknown_option() {
+  run_spell "spells/spellcraft/forget" --unknown
+  assert_failure && assert_error_contains "unknown option"
+}
+
 run_test_case "forget prints usage" test_help
+run_test_case "forget rejects unknown option" test_unknown_option
 run_test_case "forget removes spell from cast menu" test_forget_removes_spell
 run_test_case "forget requires spell name" test_forget_requires_name
 run_test_case "forget fails when spell not memorized" test_forget_fails_when_not_memorized

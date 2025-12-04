@@ -1,6 +1,7 @@
 #!/bin/sh
 # Behavioral cases (derived from --help and script behavior):
 # - jump-trash prints usage with --help
+# - jump-trash rejects unknown options
 # - jump-trash cds to trash when sourced (via jump_trash function)
 # - jump-trash uses inline fallback when detect-trash is missing
 # - jump-trash fails if trash directory does not exist
@@ -118,7 +119,13 @@ STUB
   assert_output_contains "Usage: jump-trash" || return 1
 }
 
+test_unknown_option() {
+  run_spell "spells/arcane/jump-trash" --unknown
+  assert_failure && assert_error_contains "unknown option"
+}
+
 run_test_case "jump-trash prints usage" test_help
+run_test_case "jump-trash rejects unknown option" test_unknown_option
 run_test_case "jump-trash cds when sourced" test_cds_when_sourced
 run_test_case "jump-trash uses inline fallback without detect-trash" test_uses_inline_fallback
 run_test_case "jump-trash fails if trash dir missing" test_fails_if_trash_dir_missing

@@ -5,6 +5,7 @@
 # - cast feeds stored spells into the menu and honors escape status
 # - cast --dir prints the directory containing spell scripts
 # - cast --help shows usage information
+# - cast fails when menu dependency is missing
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/test-common.sh" ] && [ "$test_root" != "/" ]; do
@@ -62,6 +63,25 @@ make_stub_require() {
 exit 0
 SH
   chmod +x "$tmp/require-command"
+}
+
+make_failing_require() {
+  tmp=$1
+  cat >"$tmp/require" <<'SH'
+#!/bin/sh
+printf '%s\n' "The casting menu needs the '\''menu'\'' command." >&2
+exit 1
+SH
+  chmod +x "$tmp/require"
+}
+
+test_cast_fails_without_menu_dependency() {
+  tmp=$(make_tempdir)
+  make_stub_cast_list "$tmp" fire "cast fire"
+  make_failing_require "$tmp"
+  PATH="$tmp:$PATH" run_cmd env CAST_STORE="$tmp/memorize" "$ROOT_DIR/spells/menu/cast"
+  assert_failure || return 1
+  assert_error_contains "menu" || return 1
 }
 
 test_cast_lists_stored_spells() {
@@ -175,6 +195,7 @@ run_test_case "cast -h shows usage" test_cast_h_flag_shows_usage
 run_test_case "cast invalid argument shows usage" test_cast_invalid_argument_shows_usage
 run_test_case "cast --list with no spells returns empty" test_cast_list_empty_returns_nothing
 run_test_case "cast shows alias without command in label" test_cast_shows_alias_without_command_in_label
+run_test_case "cast fails without menu dependency" test_cast_fails_without_menu_dependency
 
 # Test that spell name equals command doesn't show duplicate
 test_cast_no_duplicate_when_alias_equals_command() {

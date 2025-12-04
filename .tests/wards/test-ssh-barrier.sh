@@ -1,4 +1,9 @@
 #!/bin/sh
+# Behavioral coverage for ssh-barrier:
+# - shows usage with --help
+# - shows usage with -h
+# - spell file exists and has content
+
 set -eu
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)

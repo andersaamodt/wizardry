@@ -1,6 +1,7 @@
 #!/bin/sh
 # Tests for scribe-spell spell
 # - prints usage with --help
+# - rejects unknown options
 # - scribes commands non-interactively with 2+ arguments (NAME COMMAND)
 # - fails with only 1 argument (needs name and command)
 # - creates script file with correct content in ~/.spellbook
@@ -147,8 +148,15 @@ test_rejects_duplicate_spell_in_subfolder() {
   assert_error_contains "already exists in your spellbook" || return 1
 }
 
+test_unknown_option() {
+  run_spell "spells/spellcraft/scribe-spell" --unknown
+  assert_failure || return 1
+  assert_error_contains "unknown option" || return 1
+}
+
 run_test_case "scribe-spell shows usage" test_shows_help
 run_test_case "scribe-spell shows usage with -h" test_shows_help_with_h_flag
+run_test_case "scribe-spell rejects unknown option" test_unknown_option
 run_test_case "scribe-spell scribes non-interactively" test_noninteractive_scribes_command
 run_test_case "scribe-spell fails with partial args" test_fails_with_partial_args
 run_test_case "scribe-spell rejects invalid names" test_rejects_invalid_name
