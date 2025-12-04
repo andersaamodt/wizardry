@@ -84,7 +84,6 @@ Spell categories:
 * crypto
 * divination
 * enchantment  
-* kryptos
 * mud
 * psi
 * spellcraft
@@ -138,7 +137,6 @@ Push as much logic as possible into imps for maximum semanticization.
 | **enchant** / **enchantment** | Spells that add or manipulate extended attributes (metadata) on files. |
 | `forget` | Remove a spell from your memorized (`cast`) list. |
 | **imp** | The smallest building block of magic—a microscript that does exactly one thing. Imps dwell in `spells/.imps/`. |
-| **kryptos** | Cryptographic spells for hashing and security. |
 | `learn` | Add a spell to your shell environment, making it permanently available. Some spells must be learned before use. |
 | `memorize` | Add a spell to your `cast` menu for quick access. |
 | **portal** | A persistent connection between two computers via SSH, created with `open-portal`, for MUD travel. |
