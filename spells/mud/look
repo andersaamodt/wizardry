@@ -178,18 +178,48 @@ path=${1:-$PWD}
 
 install_look || true
 
-title=$(read-magic "$path" title || true)
-description=$(read-magic "$path" description || true)
+# Message returned by read-magic when attribute doesn't exist
+MISSING_ATTR_MSG='read-magic: attribute does not exist.'
 
-missing_msg='read-magic: attribute does not exist.'
+# Default descriptions for rooms without enchanted description attributes
+get_default_description() {
+        # Use a checksum of the path to pick a consistent random description
+        path_hash=$(printf '%s' "$1" | cksum | cut -d' ' -f1)
+        case $((path_hash % 5)) in
+                0) printf '%s' "An ordinary room." ;;
+                1) printf '%s' "A plain chamber." ;;
+                2) printf '%s' "A nondescript space." ;;
+                3) printf '%s' "An unremarkable area." ;;
+                4) printf '%s' "A simple room." ;;
+        esac
+}
 
-if [ "$title" != "$missing_msg" ] || [ "$description" != "$missing_msg" ]; then
-        if [ "$title" != "$missing_msg" ] && [ -n "$title" ]; then
-                printf '%s%s%s\n' "$MUD_TITLE" "$title" "$RESET"
+# Get title from attribute or fall back to folder name
+get_room_title() {
+        room_path=$1
+        attr_title=$(read-magic "$room_path" title 2>/dev/null || true)
+        if [ "$attr_title" != "$MISSING_ATTR_MSG" ] && [ -n "$attr_title" ]; then
+                printf '%s' "$attr_title"
+        else
+                # Use the folder/file name as the title
+                basename "$room_path"
         fi
-        if [ "$description" != "$missing_msg" ] && [ -n "$description" ]; then
-                printf '%s%s%s\n' "$MUD_DESCRIPTION" "$description" "$RESET"
+}
+
+# Get description from attribute or fall back to default
+get_room_description() {
+        room_path=$1
+        attr_desc=$(read-magic "$room_path" description 2>/dev/null || true)
+        if [ "$attr_desc" != "$MISSING_ATTR_MSG" ] && [ -n "$attr_desc" ]; then
+                printf '%s' "$attr_desc"
+        else
+                get_default_description "$room_path"
         fi
-else
-        printf '%s' "You look, but you don't see anything."
-fi
+}
+
+# Display MUD-formatted room description
+room_title=$(get_room_title "$path")
+room_description=$(get_room_description "$path")
+
+printf '%s%s%s\n' "$MUD_TITLE" "$room_title" "$RESET"
+printf '%s%s%s\n' "$MUD_DESCRIPTION" "$room_description" "$RESET"
