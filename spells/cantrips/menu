@@ -26,38 +26,8 @@ esac
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 
-# Reuse the standard dependency checker when available so missing commands can
-# be reported consistently.
-if [ -n "${REQUIRE_COMMAND-}" ]; then
-        require_cmd=$REQUIRE_COMMAND
-elif [ -x "$script_dir/require-command" ]; then
-        require_cmd="$script_dir/require-command"
-else
-        require_cmd=""
-fi
-
-require() {
-        tool=$1
-        shift
-        if [ -n "$require_cmd" ]; then
-                "$require_cmd" "$tool" "$@"
-                return $?
-        fi
-
-        if command -v "$tool" >/dev/null 2>&1; then
-                return 0
-        fi
-
-        if [ "$#" -gt 0 ]; then
-                printf '%s\n' "$tool: $*" >&2
-        else
-                printf '%s\n' "menu: missing required command '$tool'" >&2
-        fi
-        printf '%s\n' "Visit 'install-menu' to review installation options." >&2
-        return 1
-}
-
 # Verify that all helper spells are ready before drawing the menu.
+# Uses the shared 'require' imp for dependency checking.
 require fathom-cursor "The menu spell needs 'fathom-cursor' to place the menu." || exit 1
 require fathom-terminal "The menu spell needs 'fathom-terminal' to measure the screen." || exit 1
 require move-cursor "The menu spell needs 'move-cursor' to reposition the cursor." || exit 1
