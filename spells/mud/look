@@ -183,9 +183,9 @@ MISSING_ATTR_MSG='read-magic: attribute does not exist.'
 
 # Default descriptions for rooms without enchanted description attributes
 get_default_description() {
-        # Use a hash of the path to pick a consistent random description
-        hash=$(printf '%s' "$1" | cksum | cut -d' ' -f1)
-        case $((hash % 5)) in
+        # Use a checksum of the path to pick a consistent random description
+        path_hash=$(printf '%s' "$1" | cksum | cut -d' ' -f1)
+        case $((path_hash % 5)) in
                 0) printf '%s' "An ordinary room." ;;
                 1) printf '%s' "A plain chamber." ;;
                 2) printf '%s' "A nondescript space." ;;
