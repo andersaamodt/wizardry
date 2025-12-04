@@ -1,13 +1,13 @@
 #!/bin/sh
-# or A B - output first non-empty value, fail if both empty
-# Example: name=$(or "$NICK" "$USER")
+# first-of A B - output first non-empty value, fail if both empty
+# Example: name=$(first-of "$NICK" "$USER")
 
 
 usage() {
         cat <<'USAGE' >&2
-Usage: or A B
+Usage: first-of A B
 
-Output first non-empty value, fail if both empty. Example: name=$(or "$NICK" "$USER").
+Output first non-empty value, fail if both empty. Example: name=$(first-of "$NICK" "$USER").
 USAGE
 }
 

@@ -38,13 +38,13 @@ test_parse_imperative_and_chaining() {
 }
 
 test_parse_imperative_or_fallback() {
-  run_spell "spells/.imps/lex/parse" false or-else echo fallback
+  run_spell "spells/.imps/lex/parse" false or echo fallback
   assert_success || return 1
   assert_output_contains "fallback" || return 1
 }
 
 test_parse_imperative_or_success_skips() {
-  run_spell "spells/.imps/lex/parse" true or-else echo shouldnt_appear
+  run_spell "spells/.imps/lex/parse" true or echo shouldnt_appear
   assert_success || return 1
   # Should NOT contain the fallback message
   case "$OUTPUT" in
@@ -133,8 +133,8 @@ run_test_case "parse no args succeeds" test_parse_imperative_no_args
 run_test_case "parse runs simple command" test_parse_imperative_simple_command
 run_test_case "parse chains with then" test_parse_imperative_then_chaining
 run_test_case "parse chains with and" test_parse_imperative_and_chaining
-run_test_case "parse or-else fallback on failure" test_parse_imperative_or_fallback
-run_test_case "parse or-else skips on success" test_parse_imperative_or_success_skips
+run_test_case "parse or fallback on failure" test_parse_imperative_or_fallback
+run_test_case "parse or skips on success" test_parse_imperative_or_success_skips
 run_test_case "parse to target reordering" test_parse_imperative_to_target
 run_test_case "parse into target reordering" test_parse_imperative_into_target
 run_test_case "parse unknown command returns 127" test_parse_imperative_unknown_command
