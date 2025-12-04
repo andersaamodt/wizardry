@@ -1,0 +1,18 @@
+#!/bin/sh
+# from SOURCE CMD... - prepend SOURCE to command arguments (source linking word)
+# Transforms "from SOURCE CMD TARGET" → "CMD SOURCE TARGET"
+# Example: from /etc/hosts cp /tmp/hosts → cp /etc/hosts /tmp/hosts
+
+set -eu
+
+if [ $# -lt 2 ]; then
+  exit 1
+fi
+
+source=$1
+shift
+cmd=$1
+shift
+
+# Execute command with source followed by remaining args
+exec "$cmd" "$source" "$@"

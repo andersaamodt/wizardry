@@ -1,0 +1,19 @@
+#!/bin/sh
+# into TARGET CMD... - prepend TARGET to command arguments (target linking word)
+# Transforms "into TARGET CMD A B" → "CMD A B TARGET"
+# Used in natural language: "copy file into folder" → "copy file folder"
+# Example: into /tmp cp file.txt → cp file.txt /tmp
+
+set -eu
+
+if [ $# -lt 2 ]; then
+  exit 1
+fi
+
+target=$1
+shift
+cmd=$1
+shift
+
+# Execute command with original args followed by target
+exec "$cmd" "$@" "$target"

@@ -1,0 +1,18 @@
+#!/bin/sh
+# to TARGET CMD... - prepend TARGET to command arguments (destination linking word)
+# Alias for 'into' - transforms "to TARGET CMD A B" → "CMD A B TARGET"
+# Example: to /tmp cp file.txt → cp file.txt /tmp
+
+set -eu
+
+if [ $# -lt 2 ]; then
+  exit 1
+fi
+
+target=$1
+shift
+cmd=$1
+shift
+
+# Execute command with original args followed by target
+exec "$cmd" "$@" "$target"

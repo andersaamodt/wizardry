@@ -1,0 +1,12 @@
+#!/bin/sh
+# then CMD... - execute remaining arguments as a command (identity linking word)
+# Used by parse-imperative to chain commands: parse-imperative A then B → A && parse-imperative B
+# Example: then echo hello → echo hello
+
+set -eu
+
+if [ $# -eq 0 ]; then
+  exit 0
+fi
+
+exec "$@"

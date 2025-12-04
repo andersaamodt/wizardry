@@ -1,0 +1,12 @@
+#!/bin/sh
+# and CMD... - execute remaining arguments as a command (conjunction linking word)
+# Alias for 'then' - used in natural language constructs like "do X and Y"
+# Example: and echo hello → echo hello
+
+set -eu
+
+if [ $# -eq 0 ]; then
+  exit 0
+fi
+
+exec "$@"

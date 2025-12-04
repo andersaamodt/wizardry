@@ -1,0 +1,165 @@
+#!/bin/sh
+# parse-imperative CMD [ARGS...] - recursively parse and execute written imperatives
+# Handles linking words (then, and, or, into, to, from) that chain or modify commands.
+# Unknown commands fall through to the shell with an appropriate error message.
+# Example: parse-imperative echo hello then echo world → echo hello && echo world
+
+set -eu
+
+# If no arguments, nothing to do
+if [ $# -eq 0 ]; then
+  exit 0
+fi
+
+# Locate the lex imps directory
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+lex_dir="$script_dir"
+
+# Check if first word is a linking word that needs special handling
+first=$1
+shift
+
+case $first in
+  # Sequential/conjunction linking words - execute remainder
+  then|and)
+    if [ $# -eq 0 ]; then
+      exit 0
+    fi
+    exec "$0" "$@"
+    ;;
+  
+  # Alternation linking word - execute remainder (called after prior failure)
+  or)
+    if [ $# -eq 0 ]; then
+      exit 0
+    fi
+    exec "$0" "$@"
+    ;;
+  
+  # Target linking word - reorder arguments
+  into|to)
+    if [ $# -lt 2 ]; then
+      printf '%s: %s requires a target and command\n' "parse-imperative" "$first" >&2
+      exit 1
+    fi
+    target=$1
+    shift
+    cmd=$1
+    shift
+    # Execute: cmd [args...] target
+    exec "$cmd" "$@" "$target"
+    ;;
+  
+  # Source linking word - reorder arguments  
+  from)
+    if [ $# -lt 2 ]; then
+      printf '%s: from requires a source and command\n' "parse-imperative" >&2
+      exit 1
+    fi
+    source=$1
+    shift
+    cmd=$1
+    shift
+    # Execute: cmd source [args...]
+    exec "$cmd" "$source" "$@"
+    ;;
+esac
+
+# Not a linking word - try to find a command
+# Collect arguments up to the next linking word
+cmd=$first
+args=''
+link_word=''
+link_args=''
+
+# Scan for linking words in the argument list
+while [ $# -gt 0 ]; do
+  arg=$1
+  shift
+  
+  case $arg in
+    then|and|or|into|to|from)
+      link_word=$arg
+      # Remaining args go to the linking word handler
+      link_args="$*"
+      break
+      ;;
+    *)
+      args="$args $arg"
+      ;;
+  esac
+done
+
+# Execute the command
+# Using eval to handle the collected args string properly
+if [ -n "$args" ]; then
+  # shellcheck disable=SC2086
+  set -- $args
+else
+  set --
+fi
+
+# If there's a linking word, handle chaining
+if [ -n "$link_word" ]; then
+  case $link_word in
+    then|and)
+      # Sequential: run cmd, then continue parsing
+      if "$cmd" "$@"; then
+        # shellcheck disable=SC2086
+        exec "$0" $link_args
+      else
+        exit $?
+      fi
+      ;;
+    or)
+      # Alternation: run cmd, on failure continue parsing
+      if "$cmd" "$@"; then
+        exit 0
+      else
+        # shellcheck disable=SC2086
+        exec "$0" $link_args
+      fi
+      ;;
+    into|to)
+      # Target reorder: into TARGET means append target to cmd args
+      # link_args = "TARGET remaining..."
+      # shellcheck disable=SC2086
+      set -- $link_args
+      if [ $# -lt 1 ]; then
+        printf '%s: %s requires a target\n' "parse-imperative" "$link_word" >&2
+        exit 1
+      fi
+      target=$1
+      shift
+      # Execute cmd with original args + target, then continue
+      if [ $# -gt 0 ]; then
+        # More args after target - could be another linking word
+        # For now, just execute with target appended
+        exec "$cmd" $args "$target"
+      else
+        exec "$cmd" $args "$target"
+      fi
+      ;;
+    from)
+      # Source reorder: from SOURCE means prepend source to cmd args
+      # shellcheck disable=SC2086
+      set -- $link_args
+      if [ $# -lt 1 ]; then
+        printf '%s: from requires a source\n' "parse-imperative" >&2
+        exit 1
+      fi
+      source=$1
+      shift
+      exec "$cmd" "$source" $args "$@"
+      ;;
+  esac
+fi
+
+# No linking word - just execute the command
+if command -v "$cmd" >/dev/null 2>&1; then
+  exec "$cmd" "$@"
+else
+  # Command not found - provide helpful message
+  printf '%s: command not found\n' "$cmd" >&2
+  exit 127
+fi
