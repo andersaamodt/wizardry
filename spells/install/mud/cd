@@ -73,7 +73,7 @@ run_nix_rebuild() {
         if command -v home-manager >/dev/null 2>&1; then
                 printf '%s\n' "cd cantrip: running home-manager switch..."
                 if home-manager switch; then
-                        printf '%s\n' "cd cantrip: NixOS environment rebuilt successfully."
+                        printf '%s\n' "cd cantrip: user environment rebuilt successfully."
                         rebuild_success=1
                 fi
         fi
@@ -82,7 +82,7 @@ run_nix_rebuild() {
         if [ "$rebuild_success" -eq 0 ] && [ -n "$priv_cmd" ] && command -v nixos-rebuild >/dev/null 2>&1; then
                 printf '%s\n' "cd cantrip: running $priv_cmd nixos-rebuild switch..."
                 if "$priv_cmd" nixos-rebuild switch; then
-                        printf '%s\n' "cd cantrip: NixOS environment rebuilt successfully."
+                        printf '%s\n' "cd cantrip: NixOS system rebuilt successfully."
                         rebuild_success=1
                 fi
         fi
