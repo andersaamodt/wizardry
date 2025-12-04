@@ -39,6 +39,8 @@ fi
 SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
 DETECT_RC_FILE_DEFAULT="$SCRIPT_DIR/../divination/detect-rc-file"
 LEARN_DEFAULT="$SCRIPT_DIR/../spellcraft/learn"
+# Path to text imps for indentation detection
+IMPS_TEXT_DIR="$SCRIPT_DIR/../.imps/text"
 
 detect_override=0
 if [ -n "${DETECT_RC_FILE-}" ]; then
@@ -809,16 +811,28 @@ $p"
 write_wizardry_nix_path_block() {
         paths_input=$1
         
+        # Detect indentation style from the existing config file
+        indent_l1=""
+        indent_l2=""
+        if [ -x "$IMPS_TEXT_DIR/make-indent" ] && [ -f "$rc_file" ]; then
+                indent_l1=$("$IMPS_TEXT_DIR/make-indent" 1 "$rc_file")
+                indent_l2=$("$IMPS_TEXT_DIR/make-indent" 2 "$rc_file")
+        else
+                # Fallback to 2-space indentation
+                indent_l1="  "
+                indent_l2="    "
+        fi
+        
         # Build the multi-line array content directly (avoid subshell/temp file overhead)
         path_lines=""
         # Use a here-string approach with a while loop in the current shell
         while IFS= read -r p; do
                 [ -z "$p" ] && continue
                 if [ -z "$path_lines" ]; then
-                        path_lines="    \"$p\" # wizardry"
+                        path_lines="${indent_l2}\"$p\" # wizardry"
                 else
                         path_lines="$path_lines
-    \"$p\" # wizardry"
+${indent_l2}\"$p\" # wizardry"
                 fi
         done <<EOF
 $paths_input
@@ -830,9 +844,9 @@ EOF
         # Write the block to a temp file (avoids BSD awk newline-in-variable issues)
         block_file="${TMPDIR:-/tmp}/wizardry-block.$$"
         {
-                printf '  environment.sessionVariables.PATH = [\n'
+                printf '%senvironment.sessionVariables.PATH = [\n' "$indent_l1"
                 printf '%s\n' "$path_lines"
-                printf '  ];\n'
+                printf '%s];\n' "$indent_l1"
         } >"$block_file"
         
         # Insert before the closing brace

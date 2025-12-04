@@ -1,0 +1,34 @@
+#!/bin/sh
+# detect-indent-width FILE - detect the number of spaces per indentation level
+# Outputs: number of spaces (default: 2)
+# Example: width=$(detect-indent-width config.nix)
+
+set -eu
+
+file=${1-}
+
+if [ -z "$file" ] || [ ! -f "$file" ]; then
+	printf '2\n'
+	exit 0
+fi
+
+# Extract leading whitespace from indented lines, measure shortest indent
+# that isn't just a continuation or comment
+awk '
+/^[ ]+[^ ]/ {
+	match($0, /^[ ]+/)
+	len = RLENGTH
+	if (len > 0) {
+		if (min_indent == 0 || len < min_indent) {
+			min_indent = len
+		}
+	}
+}
+END {
+	if (min_indent > 0) {
+		print min_indent
+	} else {
+		print 2
+	}
+}
+' "$file"
