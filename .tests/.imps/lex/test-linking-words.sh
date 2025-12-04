@@ -1,5 +1,5 @@
 #!/bin/sh
-# Tests for grammar linking word imps (then, and, or, into, to, from)
+# Tests for lex linking word imps (then, and, and-then, or, into, to, from)
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/test-common.sh" ] && [ "$test_root" != "/" ]; do
