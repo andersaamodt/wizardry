@@ -224,8 +224,7 @@ These standards describe the technical requirements that all spells, menus, and 
 | Standard exit codes             | Common helpers define exit codes and error shaping.                                                       |
 | Directory-resolution idiom      | One canonical pattern for locating sibling resources.                                                     |
 | Validation helpers              | A reusable suite provides common input checks.                                                            |
-| Naming scheme                   | A consistent naming scheme governs internal functions and verbs.                                          |
-| `vet-spell` parity              | `vet-spell --strict` coverage expands gradually across the entire codebase.                               |
+| Naming scheme                   | A consistent naming scheme governs internal functions and verbs.                                         |
 
 ## Testing
 
