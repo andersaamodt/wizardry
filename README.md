@@ -91,21 +91,6 @@ Spell categories:
 * war
 * wards
 
-## Arcana
-
-An arcana is a grand working, a spell that knows the proper way to install and correctly configure a certain piece of software across all supported platforms.
-
-Wizardry includes a curated free software suite which can be easily and optionally installed from the `menu`.
-
-Criteria for inclusion:
-
-* Software that helps accomplish basic computer tasks (messaging, document editing, photos, sharing, etc.)
-* Free software is best; non-commercial open-source an acceptable alternative
-* Inclusions are opinionated; the free software suite is our recommendations of the best free software
-* No redundant apps; we will choose the best one to include for each purpose, or offer a clear choice if necessary
-
-Using the free software suite makes it easy to establish a standardized software environment across OSes, without having to use a heavier package manager or containerized solution. Wizardry helps you install the right software in the correct way, using built-in package managers on each OS when possible.
-
 ### Imps
 
 Imps are the smallest semantic building blocks in wizardry. They live in `spells/.imps/` and abstract common shell patterns into readable, well-documented microscripts.
@@ -121,6 +106,21 @@ An **imp** is a microscript that:
 * Makes spells read almost like English while remaining POSIX-compliant
 
 Push as much logic as possible into imps for maximum semanticization.
+
+## Arcana
+
+An arcana is a grand working, a spell that knows the proper way to install and correctly configure a certain piece of software across all supported platforms.
+
+Wizardry includes a curated free software suite which can be easily and optionally installed from the `menu`.
+
+Criteria for inclusion:
+
+* Software that helps accomplish basic computer tasks (messaging, document editing, photos, sharing, etc.)
+* Free software is best; non-commercial open-source an acceptable alternative
+* Inclusions are opinionated; the free software suite is our recommendations of the best free software
+* No redundant apps; we will choose the best one to include for each purpose, or offer a clear choice if necessary
+
+Using the free software suite makes it easy to establish a standardized software environment across OSes, without having to use a heavier package manager or containerized solution. Wizardry helps you install the right software in the correct way, using built-in package managers on each OS when possible.
 
 ## Magical Glossary
 
