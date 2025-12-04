@@ -33,7 +33,7 @@ test_missing_confirmation_helper() {
   run_cmd env PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:/bin:/usr/bin" WIZARDRY_UPDATE_ALL_DISTRO=debian "$(pwd)/spells/system/update-all"
   assert_failure
   assert_output_contains "Detected platform: debian"
-  assert_error_contains "ask_yn spell is missing"
+  assert_error_contains "ask-yn spell is missing"
 }
 
 test_user_declines_updates() {
