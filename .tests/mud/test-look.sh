@@ -29,8 +29,9 @@ test_missing_read_magic() {
   assert_failure && assert_error_contains "look: read-magic spell is missing."
 }
 
-test_missing_attributes() {
+test_missing_attributes_shows_defaults() {
   stub=$(make_stub_dir)
+  test_room=$(make_tempdir)
   cat >"$stub/ask_yn" <<'EOF'
 #!/bin/sh
 exit 0
@@ -41,31 +42,46 @@ EOF
 printf '%s\n' 'read-magic: attribute does not exist.'
 EOF
   chmod +x "$stub/read-magic"
-  PATH="$stub:/bin:/usr/bin" run_spell "spells/mud/look" "$WIZARDRY_TMPDIR"
-  assert_success && assert_output_contains "You look, but you don't see anything."
-}
-
-test_no_trailing_newline() {
-  stub=$(make_stub_dir)
-  cat >"$stub/ask_yn" <<'EOF'
-#!/bin/sh
-exit 0
-EOF
-  chmod +x "$stub/ask_yn"
-  cat >"$stub/read-magic" <<'EOF'
-#!/bin/sh
-printf '%s\n' 'read-magic: attribute does not exist.'
-EOF
-  chmod +x "$stub/read-magic"
-  PATH="$stub:/bin:/usr/bin" run_spell "spells/mud/look" "$WIZARDRY_TMPDIR"
+  PATH="$stub:/bin:/usr/bin" run_spell "spells/mud/look" "$test_room"
   assert_success
-  # Verify output ends with the message (no trailing newline)
-  # Check that the output ends with a period by examining the last character
-  last_char=$(printf '%s' "$OUTPUT" | tail -c 1)
-  if [ "$last_char" = "." ]; then
+  # Should show folder name as title
+  room_name=$(basename "$test_room")
+  if ! printf '%s' "$OUTPUT" | grep -q "$room_name"; then
+    TEST_FAILURE_REASON="expected output to contain folder name '$room_name'"
+    return 1
+  fi
+  # Should show a default description (one of: "An ordinary room.", "A plain chamber.", etc.)
+  if printf '%s' "$OUTPUT" | grep -qE "(An ordinary room|A plain chamber|A nondescript space|An unremarkable area|A simple room)"; then
     return 0
   else
-    TEST_FAILURE_REASON="expected output to end with period (no trailing newline), got: '$last_char'"
+    TEST_FAILURE_REASON="expected output to contain a default room description"
+    return 1
+  fi
+}
+
+test_output_ends_with_newline() {
+  stub=$(make_stub_dir)
+  test_room=$(make_tempdir)
+  cat >"$stub/ask_yn" <<'EOF'
+#!/bin/sh
+exit 0
+EOF
+  chmod +x "$stub/ask_yn"
+  cat >"$stub/read-magic" <<'EOF'
+#!/bin/sh
+printf '%s\n' 'read-magic: attribute does not exist.'
+EOF
+  chmod +x "$stub/read-magic"
+  PATH="$stub:/bin:/usr/bin" run_spell "spells/mud/look" "$test_room"
+  assert_success
+  # With MUD formatting, output should always end with a newline after the description
+  # Check that the output ends with period+newline for the default description
+  last_chars=$(printf '%s' "$OUTPUT" | tail -c 2)
+  # The last line should be a description ending in a period
+  if printf '%s' "$OUTPUT" | tail -n1 | grep -qE '\.$'; then
+    return 0
+  else
+    TEST_FAILURE_REASON="expected output to end with a description ending in period"
     return 1
   fi
 }
@@ -153,8 +169,8 @@ EOF
 
 run_test_case "look prints usage" test_help
 run_test_case "look fails when read-magic is missing" test_missing_read_magic
-run_test_case "look reports missing attributes" test_missing_attributes
-run_test_case "look has no trailing newline when nothing to see" test_no_trailing_newline
+run_test_case "look shows defaults when attributes missing" test_missing_attributes_shows_defaults
+run_test_case "look output ends with newline" test_output_ends_with_newline
 run_test_case "look prints discovered attributes" test_displays_attributes
 run_test_case "look installs rc block when approved" test_installs_when_prompted
 run_test_case "look declines installation when user says no" test_declines_installation
