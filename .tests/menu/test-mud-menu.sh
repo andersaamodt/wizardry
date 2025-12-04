@@ -1,7 +1,7 @@
 #!/bin/sh
 # Behavioral cases (derived from spell behavior):
 # - mud-menu offers tor setup and exits on interrupt
-# - mud-menu shows CD hook toggle with [X]/[ ] status
+# - mud-menu shows cd hook toggle with [X]/[ ] status
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/test-common.sh" ] && [ "$test_root" != "/" ]; do
@@ -147,7 +147,7 @@ SH
 
 run_test_case "mud-menu ESC/Exit behavior" test_esc_exit_behavior
 
-# Test CD hook toggle shows [ ] when not installed
+# Test cd hook toggle shows [ ] when not installed
 test_cd_hook_toggle_unchecked() {
   tmp=$(make_tempdir)
   make_stub_colors "$tmp"
@@ -181,12 +181,12 @@ SH
   
   args=$(cat "$tmp/log")
   case "$args" in
-    *"[ ] CD hook"*) : ;;
-    *) TEST_FAILURE_REASON="CD hook should show [ ] when not installed: $args"; return 1 ;;
+    *"[ ] cd hook"*) : ;;
+    *) TEST_FAILURE_REASON="cd hook should show [ ] when not installed: $args"; return 1 ;;
   esac
 }
 
-# Test CD hook toggle shows [X] when installed
+# Test cd hook toggle shows [X] when installed
 test_cd_hook_toggle_checked() {
   tmp=$(make_tempdir)
   make_stub_colors "$tmp"
@@ -225,8 +225,8 @@ RC
   
   args=$(cat "$tmp/log")
   case "$args" in
-    *"[X] CD hook"*) : ;;
-    *) TEST_FAILURE_REASON="CD hook should show [X] when installed: $args"; return 1 ;;
+    *"[X] cd hook"*) : ;;
+    *) TEST_FAILURE_REASON="cd hook should show [X] when installed: $args"; return 1 ;;
   esac
 }
 
@@ -238,8 +238,8 @@ test_mud_install_menu_help() {
   assert_output_contains "cd hook" || return 1
 }
 
-run_test_case "CD hook toggle shows [ ] when not installed" test_cd_hook_toggle_unchecked
-run_test_case "CD hook toggle shows [X] when installed" test_cd_hook_toggle_checked
+run_test_case "cd hook toggle shows [ ] when not installed" test_cd_hook_toggle_unchecked
+run_test_case "cd hook toggle shows [X] when installed" test_cd_hook_toggle_checked
 run_test_case "mud-menu --help shows usage" test_mud_install_menu_help
 
 # Test new MUD feature toggles
@@ -676,7 +676,7 @@ SH
   fi
 }
 
-run_test_case "mud-menu CD hook toggle keeps cursor position" test_toggle_keeps_cursor_position_cd_hook
+run_test_case "mud-menu cd hook toggle keeps cursor position" test_toggle_keeps_cursor_position_cd_hook
 run_test_case "mud-menu CNF toggle keeps cursor at position 2" test_toggle_keeps_cursor_position_cnf
 run_test_case "mud-menu non-toggle resets cursor" test_non_toggle_resets_cursor
 
