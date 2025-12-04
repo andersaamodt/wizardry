@@ -31,9 +31,9 @@ installed=0
 
 while IFS=: read -r _ command_name _ _; do
   total=$((total + 1))
-  # Handle the special clipboard helper marker
+  # Handle the special clipboard helper marker using the clipboard-available imp
   if [ "$command_name" = "$CLIPBOARD_MARKER" ]; then
-    if clipboard_helper_installed; then
+    if clipboard-available; then
       installed=$((installed + 1))
     fi
   elif command -v "$command_name" >/dev/null 2>&1; then

@@ -45,14 +45,6 @@ get_clipboard_label() {
   printf 'Clipboard (xsel)'
 }
 
-# Check if any clipboard helper is installed
-clipboard_helper_installed() {
-  command -v pbcopy >/dev/null 2>&1 || \
-  command -v xsel >/dev/null 2>&1 || \
-  command -v xclip >/dev/null 2>&1 || \
-  command -v wl-copy >/dev/null 2>&1
-}
-
 # A special command name marker for clipboard that's checked differently
 CLIPBOARD_MARKER="__clipboard_helper__"
 
