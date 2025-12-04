@@ -23,11 +23,11 @@ export WIZARDRY_SKIP_CONFIRM=1
 
 test_cd_installs_hook_when_user_agrees() {
   tmp=$(make_tempdir)
-  cat >"$tmp/ask_yn" <<'SH'
+  cat >"$tmp/ask-yn" <<'SH'
 #!/bin/sh
 exit 0
 SH
-  chmod +x "$tmp/ask_yn"
+  chmod +x "$tmp/ask-yn"
 
   run_cmd env PATH="$tmp:$PATH" WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd" "$tmp"
   assert_success && assert_path_exists "$tmp/rc" && assert_output_contains "installed wizardry hooks"
@@ -35,11 +35,11 @@ SH
 
 test_cd_casts_look_after_directory_change() {
   tmp=$(make_tempdir)
-  cat >"$tmp/ask_yn" <<'SH'
+  cat >"$tmp/ask-yn" <<'SH'
 #!/bin/sh
 exit 1
 SH
-  chmod +x "$tmp/ask_yn"
+  chmod +x "$tmp/ask-yn"
   cat >"$tmp/look" <<'SH'
 #!/bin/sh
 printf 'looked' > "$PWD/looked"
@@ -91,11 +91,11 @@ test_cd_install_is_idempotent() {
 
 test_cd_fails_gracefully_on_nonexistent_directory() {
   tmp=$(make_tempdir)
-  cat >"$tmp/ask_yn" <<'SH'
+  cat >"$tmp/ask-yn" <<'SH'
 #!/bin/sh
 exit 1
 SH
-  chmod +x "$tmp/ask_yn"
+  chmod +x "$tmp/ask-yn"
   cat >"$tmp/look" <<'SH'
 #!/bin/sh
 echo "looked"

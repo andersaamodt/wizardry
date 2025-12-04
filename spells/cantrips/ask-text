@@ -1,13 +1,13 @@
 #!/bin/sh
 
-# ask_text poses gentle questions, echoing whatever reply the wanderer offers.
+# ask-text poses gentle questions, echoing whatever reply the wanderer offers.
 # When a default is whispered, pressing Enter adopts it so scripts can fall
 # through gracefully even when silence answers back.
 
 
 show_usage() {
         cat <<'USAGE' >&2
-Usage: ask_text "Question" [default]
+Usage: ask-text "Question" [default]
 
 Prompts the user with the provided question and echoes their response.
 When a default is supplied it will be used if the user presses Enter.
@@ -85,7 +85,7 @@ if ! response=$(read_line); then
                 printf '%s\n' "$default_value"
                 exit 0
         fi
-        printf '%s\n' "ask_text: No interactive input available." >&2
+        printf '%s\n' "ask-text: No interactive input available." >&2
         exit 1
 fi
 

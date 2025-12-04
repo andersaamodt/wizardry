@@ -165,9 +165,9 @@ confirm_updates() {
   if assume_yes; then
     return 0
   fi
-  lacks ask_yn && fail 'ask_yn spell is missing; cannot confirm updates.'
+  lacks ask-yn && fail 'ask-yn spell is missing; cannot confirm updates.'
   printf '%s\n' 'Proceed with system updates?'
-  if printf '\n' | ASK_CANTRIP_INPUT=stdin ask_yn 'Proceed with system updates?' yes >/dev/null; then
+  if printf '\n' | ASK_CANTRIP_INPUT=stdin ask-yn 'Proceed with system updates?' yes >/dev/null; then
     return 0
   fi
   return 1

@@ -1,11 +1,11 @@
 #!/bin/sh
 
-# ask_yn coaxes a yes or no from the adventurer.  Defaults guide hesitant
+# ask-yn coaxes a yes or no from the adventurer.  Defaults guide hesitant
 # wanderers, and every response is echoed so other spells can heed the choice.
 
 show_usage() {
         cat <<'USAGE' >&2
-Usage: ask_yn "Question" [default]
+Usage: ask-yn "Question" [default]
 
 Prompt for a yes/no response. Defaults may be 'yes' or 'no'.
 Exit status 0 represents "yes", 1 represents "no".
@@ -40,7 +40,7 @@ if [ "$#" -eq 2 ]; then
                 default_hint="[y/N]"
                 ;;
         *)
-                printf '%s\n' "ask_yn: default must be 'yes' or 'no'." >&2
+                printf '%s\n' "ask-yn: default must be 'yes' or 'no'." >&2
                 exit 1
                 ;;
         esac
@@ -92,7 +92,7 @@ while :; do
                 if [ -n "$default_choice" ]; then
                         response=$default_choice
                 else
-                        printf '%s\n' "ask_yn: No interactive input available." >&2
+                        printf '%s\n' "ask-yn: No interactive input available." >&2
                         exit 1
                 fi
         elif [ -z "$response" ] && [ -n "$default_choice" ]; then

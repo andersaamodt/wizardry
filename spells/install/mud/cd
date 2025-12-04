@@ -347,19 +347,19 @@ uninstall() {
 }
 
 locate_ask_yn() {
-        if command -v ask_yn >/dev/null 2>&1; then
-                command -v ask_yn
+        if command -v ask-yn >/dev/null 2>&1; then
+                command -v ask-yn
                 return 0
         fi
-        if [ -x "$SCRIPT_DIR/ask_yn" ]; then
-                printf '%s\n' "$SCRIPT_DIR/ask_yn"
+        if [ -x "$SCRIPT_DIR/ask-yn" ]; then
+                printf '%s\n' "$SCRIPT_DIR/ask-yn"
                 return 0
         fi
-        if [ -x "$SCRIPT_DIR/cantrips/ask_yn" ]; then
-                printf '%s\n' "$SCRIPT_DIR/cantrips/ask_yn"
+        if [ -x "$SCRIPT_DIR/cantrips/ask-yn" ]; then
+                printf '%s\n' "$SCRIPT_DIR/cantrips/ask-yn"
                 return 0
         fi
-        warn "ask_yn spell is missing; skipping installation prompt."
+        warn "ask-yn spell is missing; skipping installation prompt."
         return 1
 }
 

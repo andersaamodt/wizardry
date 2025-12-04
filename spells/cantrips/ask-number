@@ -1,11 +1,11 @@
 #!/bin/sh
 
-# ask_number keeps watch over numeric ranges, nudging travelers toward a value
+# ask-number keeps watch over numeric ranges, nudging travelers toward a value
 # between the provided bounds.  It repeats until a valid integer arrives.
 
 show_usage() {
         cat <<'USAGE' >&2
-Usage: ask_number "Question" MIN MAX
+Usage: ask-number "Question" MIN MAX
 
 Prompts until the user supplies an integer within the inclusive range.
 USAGE
@@ -31,14 +31,14 @@ max=$3
 
 case $min in
 *[!0-9-]*|"")
-        printf '%s\n' "ask_number: MIN must be an integer." >&2
+        printf '%s\n' "ask-number: MIN must be an integer." >&2
         exit 1
         ;;
 *) : ;;
 esac
 case $max in
 *[!0-9-]*|"")
-        printf '%s\n' "ask_number: MAX must be an integer." >&2
+        printf '%s\n' "ask-number: MAX must be an integer." >&2
         exit 1
         ;;
 *) : ;;
@@ -48,11 +48,11 @@ min=$(printf '%s' "$min")
 max=$(printf '%s' "$max")
 
 if [ "$min" -gt "$max" ]; then
-        printf '%s\n' "ask_number: MIN must be less than or equal to MAX." >&2
+        printf '%s\n' "ask-number: MIN must be less than or equal to MAX." >&2
         exit 1
 fi
 
-# select_input matches ask_text/ask_yn so callers can steer input selection.
+# select_input matches ask-text/ask-yn so callers can steer input selection.
 select_input() {
         case ${ASK_CANTRIP_INPUT:-auto} in
         stdin)
@@ -98,7 +98,7 @@ read_value() {
 while :; do
         prompt
         if ! response=$(read_value); then
-                printf '%s\n' "ask_number: No interactive input available." >&2
+                printf '%s\n' "ask-number: No interactive input available." >&2
                 exit 1
         fi
 

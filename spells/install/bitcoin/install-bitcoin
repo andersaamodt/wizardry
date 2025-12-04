@@ -25,8 +25,8 @@ prompt_yes_no() {
   question=$1
   default=${2:-y}
 
-  if command -v ask_yn >/dev/null 2>&1; then
-    if ask_yn "$question" "$default"; then
+  if command -v ask-yn >/dev/null 2>&1; then
+    if ask-yn "$question" "$default"; then
       return 0
     else
       return 1

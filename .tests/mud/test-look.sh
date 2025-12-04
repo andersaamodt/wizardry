@@ -32,11 +32,11 @@ test_missing_read_magic() {
 test_missing_attributes_shows_defaults() {
   stub=$(make_stub_dir)
   test_room=$(make_tempdir)
-  cat >"$stub/ask_yn" <<'EOF'
+  cat >"$stub/ask-yn" <<'EOF'
 #!/bin/sh
 exit 0
 EOF
-  chmod +x "$stub/ask_yn"
+  chmod +x "$stub/ask-yn"
   cat >"$stub/read-magic" <<'EOF'
 #!/bin/sh
 printf '%s\n' 'read-magic: attribute does not exist.'
@@ -62,11 +62,11 @@ EOF
 test_output_ends_with_newline() {
   stub=$(make_stub_dir)
   test_room=$(make_tempdir)
-  cat >"$stub/ask_yn" <<'EOF'
+  cat >"$stub/ask-yn" <<'EOF'
 #!/bin/sh
 exit 0
 EOF
-  chmod +x "$stub/ask_yn"
+  chmod +x "$stub/ask-yn"
   cat >"$stub/read-magic" <<'EOF'
 #!/bin/sh
 printf '%s\n' 'read-magic: attribute does not exist.'
@@ -88,11 +88,11 @@ EOF
 
 test_displays_attributes() {
   stub=$(make_stub_dir)
-  cat >"$stub/ask_yn" <<'EOF'
+  cat >"$stub/ask-yn" <<'EOF'
 #!/bin/sh
 exit 0
 EOF
-  chmod +x "$stub/ask_yn"
+  chmod +x "$stub/ask-yn"
   cat >"$stub/read-magic" <<'EOF'
 #!/bin/sh
 case "$2" in
@@ -107,11 +107,11 @@ EOF
 
 test_installs_when_prompted() {
   stub=$(make_stub_dir)
-  cat >"$stub/ask_yn" <<'EOF'
+  cat >"$stub/ask-yn" <<'EOF'
 #!/bin/sh
 exit 0
 EOF
-  chmod +x "$stub/ask_yn"
+  chmod +x "$stub/ask-yn"
   cat >"$stub/read-magic" <<'EOF'
 #!/bin/sh
 printf '%s\n' 'read-magic: attribute does not exist.'
@@ -124,12 +124,12 @@ EOF
 
 test_declines_installation() {
   stub=$(make_stub_dir)
-  cat >"$stub/ask_yn" <<'EOF'
+  cat >"$stub/ask-yn" <<'EOF'
 #!/bin/sh
 echo "$1" >"$ASK_LOG"
 exit 1
 EOF
-  chmod +x "$stub/ask_yn"
+  chmod +x "$stub/ask-yn"
   cat >"$stub/read-magic" <<'EOF'
 #!/bin/sh
 printf '%s\n' 'read-magic: attribute does not exist.'
@@ -145,12 +145,12 @@ EOF
 
 test_skips_install_when_block_present() {
   stub=$(make_stub_dir)
-  cat >"$stub/ask_yn" <<'EOF'
+  cat >"$stub/ask-yn" <<'EOF'
 #!/bin/sh
 echo "ask_yn should not be called" >&2
 exit 9
 EOF
-  chmod +x "$stub/ask_yn"
+  chmod +x "$stub/ask-yn"
   cat >"$stub/read-magic" <<'EOF'
 #!/bin/sh
 printf '%s\n' 'read-magic: attribute does not exist.'

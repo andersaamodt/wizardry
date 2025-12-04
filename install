@@ -267,7 +267,7 @@ DETECT_RC_FILE="$ABS_DIR/spells/divination/detect-rc-file"
 # Use learn-spell for installing spells to shell (explicit spell installation)
 LEARN_SPELL_INSTALLER="$ABS_DIR/spells/spellcraft/learn-spell"
 CORE_INSTALLER=${WIZARDRY_CORE_INSTALLER:-$ABS_DIR/spells/install/core/install-core}
-ASK_YN="$ABS_DIR/spells/cantrips/ask_yn"
+ASK_YN="$ABS_DIR/spells/cantrips/ask-yn"
 LEARN_SPELLBOOK_FLAGS=${LEARN_SPELLBOOK_FLAGS:---recursive}
 
 # MUD-related helpers (these are used in the optional MUD installation section)
