@@ -111,8 +111,8 @@ BLOCK
 }
 
 locate_ask_yn() {
-        if has ask_yn; then
-                where ask_yn
+        if command -v ask_yn >/dev/null 2>&1; then
+                command -v ask_yn
                 return 0
         fi
         if [ -x "$SCRIPT_DIR/cantrips/ask_yn" ]; then
@@ -142,14 +142,14 @@ install_look() {
 }
 
 load_colors() {
-        if is set "${LOOK_COLORS_PATH-}" && is file "$LOOK_COLORS_PATH"; then
+        if [ -n "${LOOK_COLORS_PATH-}" ] && [ -f "$LOOK_COLORS_PATH" ]; then
                 # shellcheck disable=SC1090
                 . "$LOOK_COLORS_PATH"
                 return 0
         fi
-        if has colors; then
+        if command -v colors >/dev/null 2>&1; then
                 # shellcheck disable=SC1090
-                . "$(where colors)"
+                . "$(command -v colors)"
                 return 0
         fi
         if [ -x "$SCRIPT_DIR/cantrips/colors" ]; then
@@ -169,16 +169,14 @@ if ! load_colors; then
         MUD_DESCRIPTION=""
 fi
 
-if lacks read-magic; then
-        warn "look: read-magic spell is missing."
+if ! command -v read-magic >/dev/null 2>&1; then
+        printf '%s\n' "look: read-magic spell is missing." >&2
         exit 1
 fi
 
-if command -v require >/dev/null 2>&1; then
-        require identify-room "look: identify-room spell is missing." || exit 1
-elif ! command -v identify-room >/dev/null 2>&1; then
-        warn "look: identify-room spell is missing."
-        exit 1
+identify_available=0
+if command -v identify-room >/dev/null 2>&1; then
+        identify_available=1
 fi
 
 normalize_path() {
@@ -229,9 +227,13 @@ get_default_description() {
 IDENTIFY_TITLE=''
 IDENTIFY_DESCRIPTION=''
 
-if identify_room_output=$(identify-room "$path" 2>/dev/null); then
-        IDENTIFY_TITLE=$(printf '%s' "$identify_room_output" | sed -n '1p')
-        IDENTIFY_DESCRIPTION=$(printf '%s' "$identify_room_output" | sed -n '2p')
+if [ "$identify_available" -eq 1 ]; then
+        if identify_room_output=$(identify-room "$path" 2>/dev/null); then
+                IDENTIFY_TITLE=$(printf '%s' "$identify_room_output" | sed -n '1p')
+                IDENTIFY_DESCRIPTION=$(printf '%s' "$identify_room_output" | sed -n '2p')
+        fi
+else
+        look_warn "identify-room spell is unavailable; continuing without system lore."
 fi
 # Get title from attribute or fall back to folder name
 get_room_title() {
