@@ -45,6 +45,7 @@ case $SCRIPT_SOURCE in
         ;;
 esac
 SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
+_cd_repo_dir=$(cd "$SCRIPT_DIR/../../.." && pwd -P)
 
 warn() {
         printf '%s\n' "cd cantrip: $1" >&2
@@ -278,8 +279,8 @@ alias cd='. \"\$WIZARDRY_CD_CANTRIP\"'"
         if ! ensure_rc_dir "$rc_file"; then
                 return 1
         fi
-        tmp_file=$(temp-file wizardry-cd) || return 1
-        trap 'cleanup-file "$tmp_file"' EXIT HUP INT TERM
+        tmp_file=$("$_cd_repo_dir/spells/.imps/fs/temp-file" wizardry-cd) || return 1
+        trap '"$_cd_repo_dir/spells/.imps/fs/cleanup-file" "$tmp_file"' EXIT HUP INT TERM
         if [ -f "$rc_file" ]; then
                 sed '/^# >>> wizardry cd cantrip >>>$/,/^# <<< wizardry cd cantrip <<</d' "$rc_file" >"$tmp_file"
         else
@@ -339,8 +340,8 @@ uninstall() {
         fi
 
         # Shell format: use sed to remove the block
-        tmp_file=$(temp-file wizardry-cd) || return 1
-        trap 'cleanup-file "$tmp_file"' EXIT HUP INT TERM
+        tmp_file=$("$_cd_repo_dir/spells/.imps/fs/temp-file" wizardry-cd) || return 1
+        trap '"$_cd_repo_dir/spells/.imps/fs/cleanup-file" "$tmp_file"' EXIT HUP INT TERM
         sed '/^# >>> wizardry cd cantrip >>>$/,/^# <<< wizardry cd cantrip <<</d' "$rc_file" >"$tmp_file"
         if ! mv "$tmp_file" "$rc_file"; then
                 trap - EXIT HUP INT TERM

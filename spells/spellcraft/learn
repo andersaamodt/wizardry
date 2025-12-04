@@ -34,6 +34,7 @@ set -eu
 
 SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
 SPELLS_DIR=${SCRIPT_DIR%/*}
+_learn_repo_dir=$(cd "$SCRIPT_DIR/../.." && pwd -P)
 
 # Check for --spell mode first (RC file management)
 for arg in "$@"; do
@@ -294,8 +295,8 @@ EOF_DETECT
 
   add_spell() {
     ensure_rc_directory
-    tmp_file=$(temp-file learn) || exit 1
-    trap 'cleanup-file "$tmp_file"' EXIT HUP INT TERM
+    tmp_file=$("$_learn_repo_dir/spells/.imps/fs/temp-file" learn) || exit 1
+    trap '"$_learn_repo_dir/spells/.imps/fs/cleanup-file" "$tmp_file"' EXIT HUP INT TERM
     line_count=0
     while IFS= read -r line || nonempty "$line"; do
       printf '%s\n' "$line" >>"$tmp_file"
@@ -336,8 +337,8 @@ EOF_DETECT
       printf '%s\n' "learn: cannot remove from missing file '$rc_file'." >&2
       exit 1
     fi
-    tmp_file=$(temp-file learn) || exit 1
-    trap 'cleanup-file "$tmp_file"' EXIT HUP INT TERM
+    tmp_file=$("$_learn_repo_dir/spells/.imps/fs/temp-file" learn) || exit 1
+    trap '"$_learn_repo_dir/spells/.imps/fs/cleanup-file" "$tmp_file"' EXIT HUP INT TERM
     removing_block=0
     to_skip=0
     removed=0

@@ -34,6 +34,10 @@ esac
 
 set -eu
 
+# Determine script and repo directories for absolute paths to imps
+_memorize_script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
+_memorize_repo_dir=$(CDPATH= cd -- "$_memorize_script_dir/../.." && pwd -P)
+
 expand_tilde() {
         path=$1
         case $path in
@@ -129,8 +133,8 @@ add_spell() {
 	# Memorize just lists existing spells by name - no wrapper scripts needed
 	# The spell must already exist in PATH or spellbook
 	cmd=$name
-	tmp=$(temp-file memorize) || exit 1
-	trap 'cleanup-file "$tmp"' EXIT HUP INT TERM
+	tmp=$("$_memorize_repo_dir/spells/.imps/fs/temp-file" memorize) || exit 1
+	trap '"$_memorize_repo_dir/spells/.imps/fs/cleanup-file" "$tmp"' EXIT HUP INT TERM
 	if [ -f "$command_file" ]; then
 		while IFS= read -r line || nonempty "$line"; do
 			entry_name=$line

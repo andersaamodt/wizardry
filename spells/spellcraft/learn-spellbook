@@ -37,6 +37,7 @@ if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
         SCRIPT_DIR=.
 fi
 SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
+_learn_spellbook_repo_dir=$(cd "$SCRIPT_DIR/../.." && pwd -P)
 DETECT_RC_FILE_DEFAULT="$SCRIPT_DIR/../divination/detect-rc-file"
 LEARN_DEFAULT="$SCRIPT_DIR/../spellcraft/learn"
 # Path to text imps for indentation detection
@@ -654,8 +655,8 @@ shell_remove_all() {
         # Find all wizardry path spell identifiers and remove them
         # learn blocks are marked with spell names like "path-<path>-<checksum>"
         removed_count=0
-        tmp_spells=$(temp-file wizardry-spells) || exit 1
-        trap 'cleanup-file "$tmp_spells"' EXIT HUP INT TERM
+        tmp_spells=$("$_learn_spellbook_repo_dir/spells/.imps/fs/temp-file" wizardry-spells) || exit 1
+        trap '"$_learn_spellbook_repo_dir/spells/.imps/fs/cleanup-file" "$tmp_spells"' EXIT HUP INT TERM
         
         # Extract spell names from the rc file that look like learn-spellbook entries
         # Format: # >>> <spell_name> >>>

@@ -20,6 +20,10 @@ case "${1-}" in
 esac
 set -eu
 
+# Determine script and repo directories for absolute paths to imps
+_yaml_to_enchantment_script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
+_yaml_to_enchantment_repo_dir=$(CDPATH= cd -- "$_yaml_to_enchantment_script_dir/../.." && pwd -P)
+
 if [ "$#" -ne 1 ]; then
     warn "Error: incorrect number of arguments"
     show_usage >&2
@@ -96,7 +100,7 @@ printf '%s' "$yaml_header" |
         fi
     done || exit 1
 
-body_tmp=$(temp-file wizardry-body) || exit 1
+body_tmp=$("$_yaml_to_enchantment_repo_dir/spells/.imps/fs/temp-file" wizardry-body) || exit 1
 awk '
     /^---$/ {delim++; next}
     delim<2 {next}

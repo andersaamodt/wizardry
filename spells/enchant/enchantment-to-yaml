@@ -20,6 +20,10 @@ case "${1-}" in
 esac
 set -eu
 
+# Determine script and repo directories for absolute paths to imps
+_enchantment_to_yaml_script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
+_enchantment_to_yaml_repo_dir=$(CDPATH= cd -- "$_enchantment_to_yaml_script_dir/../.." && pwd -P)
+
 if [ "$#" -ne 1 ]; then
     warn "Error: incorrect number of arguments"
     show_usage >&2
@@ -109,7 +113,7 @@ read_value() {
 keys=$(list_keys "$file" || true)
 empty "$keys" && { warn "Error: file does not have extended attributes"; exit 1; }
 
-tmp=$(temp-file wizardry-yaml) || exit 1
+tmp=$("$_enchantment_to_yaml_repo_dir/spells/.imps/fs/temp-file" wizardry-yaml) || exit 1
 {
     printf '%s\n' '---'
     for key in $keys; do

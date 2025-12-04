@@ -26,6 +26,10 @@ esac
 
 set -eu
 
+# Determine script and repo directories for absolute paths to imps
+_forget_script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
+_forget_repo_dir=$(CDPATH= cd -- "$_forget_script_dir/../.." && pwd -P)
+
 expand_tilde() {
         path=$1
         case $path in
@@ -111,8 +115,8 @@ remove_spell() {
 		printf '%s\n' "$spell_name: spell '$name' is not memorized." >&2
 		exit 1
 	fi
-	tmp=$(temp-file forget) || exit 1
-	trap 'cleanup-file "$tmp"' EXIT HUP INT TERM
+	tmp=$("$_forget_repo_dir/spells/.imps/fs/temp-file" forget) || exit 1
+	trap '"$_forget_repo_dir/spells/.imps/fs/cleanup-file" "$tmp"' EXIT HUP INT TERM
 	removed=0
 	while IFS= read -r line || nonempty "$line"; do
 		entry_name=$line

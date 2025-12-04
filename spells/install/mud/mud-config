@@ -20,6 +20,10 @@ esac
 
 set -eu
 
+# Determine script and repo directories for absolute paths to imps
+_mud_config_script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
+_mud_config_repo_dir=$(CDPATH= cd -- "$_mud_config_script_dir/../../.." && pwd -P)
+
 # Resolve config directory
 resolve_config_dir() {
         if [ -n "${WIZARDRY_MUD_CONFIG_DIR-}" ]; then
@@ -78,8 +82,8 @@ set_feature() {
         # Create or update config file
         if [ -f "$config_file" ]; then
                 # Remove old entry and add new one
-                tmp_file=$(temp-file mud-config) || return 1
-                trap 'cleanup-file "$tmp_file"' EXIT HUP INT TERM
+                tmp_file=$("$_mud_config_repo_dir/spells/.imps/fs/temp-file" mud-config) || return 1
+                trap '"$_mud_config_repo_dir/spells/.imps/fs/cleanup-file" "$tmp_file"' EXIT HUP INT TERM
                 grep -v "^${feature}=" "$config_file" >"$tmp_file" 2>/dev/null || true
                 printf '%s=%s\n' "$feature" "$value" >>"$tmp_file"
                 if ! mv "$tmp_file" "$config_file"; then

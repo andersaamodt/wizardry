@@ -58,7 +58,7 @@ replace_placeholder() {
 	key=$1
 	value=$2
 	escaped=$(escape_sed_replacement "$value")
-	tmp_swap=$(temp-file wizardry-service) || exit 1
+	tmp_swap=$("$_install_service_template_repo_dir/spells/.imps/fs/temp-file" wizardry-service) || exit 1
 	pattern=$(printf '\\$%s' "$key")
 	sed "s|$pattern|$escaped|g" "$tmp_file" >"$tmp_swap"
 	mv "$tmp_swap" "$tmp_file"
@@ -80,7 +80,7 @@ collect_placeholders() {
 # prompt_placeholders walks through the unique placeholder list and politely
 # asks the user for each value before applying the substitutions.
 prompt_placeholders() {
-	placeholders_file=$(temp-file wizardry-placeholders) || exit 1
+	placeholders_file=$("$_install_service_template_repo_dir/spells/.imps/fs/temp-file" wizardry-placeholders) || exit 1
 	collect_placeholders >"$placeholders_file"
 	if [ ! -s "$placeholders_file" ]; then
 		rm -f "$placeholders_file"
@@ -111,6 +111,7 @@ if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
         SCRIPT_DIR=.
 fi
 SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
+_install_service_template_repo_dir=$(cd "$SCRIPT_DIR/../.." && pwd -P)
 
 ASK_YN=$(find_helper INSTALL_SERVICE_TEMPLATE_ASK_YN "$SCRIPT_DIR/ask-yn" ask-yn)
 ASK_TEXT=$(find_helper INSTALL_SERVICE_TEMPLATE_ASK_TEXT "$SCRIPT_DIR/ask-text" ask-text)
@@ -164,7 +165,7 @@ if [ -f "$service_path" ]; then
         fi
 fi
 
-tmp_file=$(temp-file wizardry-service)
+tmp_file=$("$_install_service_template_repo_dir/spells/.imps/fs/temp-file" wizardry-service)
 trap 'rm -f "$tmp_file"' EXIT HUP INT TERM
 
 cp "$template_path" "$tmp_file"

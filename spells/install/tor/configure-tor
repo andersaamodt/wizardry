@@ -20,6 +20,10 @@ esac
 
 set -eu
 
+# Determine script and repo directories for absolute paths to imps
+_configure_tor_script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
+_configure_tor_repo_dir=$(CDPATH= cd -- "$_configure_tor_script_dir/../../.." && pwd -P)
+
 ask() {
   prompt=${1-}
   default=${2-}
@@ -70,8 +74,8 @@ rewrite_torrc() {
   enable_control=$2
   control_port=$3
 
-  tmp=$(temp-file configure-tor) || exit 1
-  trap 'cleanup-file "$tmp"' EXIT HUP INT TERM
+  tmp=$("$_configure_tor_repo_dir/spells/.imps/fs/temp-file" configure-tor) || exit 1
+  trap '"$_configure_tor_repo_dir/spells/.imps/fs/cleanup-file" "$tmp"' EXIT HUP INT TERM
   awk -v socks="$socks_port" -v enable_control="$enable_control" -v control="$control_port" '
     BEGIN {added_socks=0; added_control=0; added_cookie=0}
     /^SocksPort / { if (!added_socks) { print "SocksPort " socks; added_socks=1 } ; next }
