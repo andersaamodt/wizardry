@@ -38,14 +38,11 @@ case $1 in
 	install)
 		printf 'Install'
 		;;
-	kryptos)
-		printf 'Kryptos'
+	crypto)
+		printf 'Crypto'
 		;;
 	mud)
 		printf 'MUD'
-		;;
-	mud-admin)
-		printf 'MUD Admin'
 		;;
 	priorities)
 		printf 'Priorities'
