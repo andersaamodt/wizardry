@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# This script is a magical tome of sorcery, commanding the elusive entity known as Tor.
+# Present the Tor management menu.
 
 case "${1-}" in
   -h|--help)
@@ -16,39 +16,64 @@ set -eu
 # Catch Ctrl-C and TERM signal to exit cleanly
 trap 'exit 0' INT TERM
 
+build_service_entries() {
+  service_status_option=""
+  tor_service_option=""
+
+  if is-service-installed tor > /dev/null; then
+    service_status_option="View Tor Service Status%sudo systemctl status tor"
+    if is-service-running tor > /dev/null; then
+      tor_service_option="Stop Tor Service%sudo systemctl stop tor"
+    else
+      tor_service_option="Start Tor Service%sudo systemctl start tor"
+    fi
+  else
+    script_dir=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
+    service_status_option="Install Tor Service%install-service-template $script_dir/tor.service \"TORPATH=\`which tor\`\" \"TORRCPATH=/etc/tor/torrc\""
+  fi
+}
+
 # Displays the menu
 display_menu() {
   title="${BOLD}${CYAN}TOR: $(tor-status)"
-  set_config="Configure Tor%configure-tor"
-  repair_permissions="Repair Permissions%sudo repair-tor-permissions"
   exit_label=$(exit-label)
   exit_option="${exit_label}%kill -TERM \$PPID"
-  
-  if is-installed tor > /dev/null; then
-    install_tor_option="Uninstall Tor%uninstall-tor"
-    if sudo tor-bridge-status; then
-    	bridge_option="Disable Bridge Mode%sudo configure-tor-bridge"
-    else
-        bridge_option="Enable Bridge Mode%sudo configure-tor-bridge"
-    fi
-    if is-service-installed tor > /dev/null; then
-    	install_service_option="Uninstall Tor Service%remove-service tor"
-    	service_status_option="View Tor Service Status%sudo systemctl status tor"
-	    if is-service-running tor > /dev/null; then
-	      tor_service_option="Stop Tor Service%sudo systemctl stop tor"
-	      menu "$title" "$set_config" "$repair_permissions" "$bridge_option" "$service_status_option" "$tor_service_option" "$install_service_option" "$install_tor_option" "$exit_option"
-	    else
-	      tor_service_option="Start Tor Service%sudo systemctl start tor"
-	      menu "$title" "$set_config" "$repair_permissions" "$bridge_option" "$service_status_option" "$tor_service_option" "$install_service_option" "$install_tor_option" "$exit_option"
-	    fi
-    else
-    	script_dir=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
-    	install_service_option="Install Tor Service%install-service-template $script_dir/tor.service \"TORPATH=\`which tor\`\" \"TORRCPATH=/etc/tor/torrc\""
-    	menu "$title" "$set_config" "$repair_permissions" "$bridge_option" "$install_service_option" "$install_tor_option" "$exit_option"
-	fi
+
+  cli_version="Tor Version%tor --version"
+  cli_verify="Verify torrc%tor --verify-config"
+  cli_fingerprint="Show Fingerprint%tor --list-fingerprint"
+  cli_dump="Print Effective Config%tor --dump-config short"
+
+  set_config="Configure Tor%configure-tor"
+  repair_permissions="Repair Permissions%sudo repair-tor-permissions"
+  tor_lightning="Tor Lightning (Install Wizard)%install-tor"
+
+  if sudo tor-bridge-status; then
+    bridge_option="Disable Bridge Mode%sudo configure-tor-bridge"
   else
-    install_tor_option="Install Tor%install-tor"
-    menu "$title" "$install_tor_option" "$exit_option"
+    bridge_option="Enable Bridge Mode%sudo configure-tor-bridge"
+  fi
+
+  build_service_entries
+
+  if is-installed tor > /dev/null; then
+    uninstall_option="Uninstall Tor%uninstall-tor"
+    menu "$title" \
+      "$set_config" \
+      "$tor_lightning" \
+      "$repair_permissions" \
+      "$bridge_option" \
+      "$service_status_option" \
+      "$tor_service_option" \
+      "$cli_version" \
+      "$cli_verify" \
+      "$cli_fingerprint" \
+      "$cli_dump" \
+      "$uninstall_option" \
+      "$exit_option" || true
+  else
+    install_tor_option="Install Tor (wizard)%install-tor"
+    menu "$title" "$install_tor_option" "$exit_option" || true
   fi
 }
 
@@ -63,4 +88,5 @@ while true; do
   fi
 
   display_menu || true
+
 done
