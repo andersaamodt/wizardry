@@ -210,7 +210,8 @@ $line"
   fi
   
   tmp_file=$(temp-file nix-shell-init) || exit 1
-  trap 'cleanup-file "$tmp_file"; cleanup-file "${input_file-}"' EXIT HUP INT TERM
+  input_file=''
+  trap 'cleanup-file "$tmp_file"; [ -n "$input_file" ] && cleanup-file "$input_file"' EXIT HUP INT TERM
   
   # Check if an existing block for this nix_option exists
   if run_maybe_sudo cat "$nix_file" | grep -q "$nix_option[[:space:]]*="; then
@@ -237,6 +238,8 @@ $line"
       fi
       printf '%s\n' "$line"
     done < "$input_file" > "$tmp_file"
+    rm -f "$input_file"
+    input_file=''
   else
     # No existing block - create a new one
     nix_block="  $nix_option = ''
@@ -274,7 +277,7 @@ $marked_code
     mv "$tmp_file" "$nix_file"
   fi
   trap - EXIT HUP INT TERM
-  rm -f "$tmp_file" "${input_file-}"
+  cleanup-file "$tmp_file"
 }
 
 # Remove shell init code
@@ -306,7 +309,7 @@ do_remove() {
     mv "$tmp_file" "$nix_file"
   fi
   trap - EXIT HUP INT TERM
-  rm -f "$tmp_file"
+  cleanup-file "$tmp_file"
 }
 
 case $action in
