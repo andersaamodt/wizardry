@@ -23,7 +23,7 @@ set -eu
 # Source colors for colored output
 . colors
 
-sshd_config="/etc/ssh/sshd_config"
+sshd_config="${SSHD_CONFIG:-/etc/ssh/sshd_config}"
 
 # Confirm before proceeding
 if ! ask-yn "Do you wish to cast the SSH Standard Barrier spell?" no; then
