@@ -96,7 +96,7 @@ printf '%s' "$yaml_header" |
         fi
     done || exit 1
 
-body_tmp=$(mktemp "${TMPDIR:-/tmp}/wizardry-body.XXXXXX") || exit 1
+body_tmp=$(temp-file wizardry-body) || exit 1
 awk '
     /^---$/ {delim++; next}
     delim<2 {next}

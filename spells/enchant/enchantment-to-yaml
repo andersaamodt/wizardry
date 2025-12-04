@@ -109,7 +109,7 @@ read_value() {
 keys=$(list_keys "$file" || true)
 empty "$keys" && { warn "Error: file does not have extended attributes"; exit 1; }
 
-tmp=$(mktemp "${TMPDIR:-/tmp}/wizardry-yaml.XXXXXX") || exit 1
+tmp=$(temp-file wizardry-yaml) || exit 1
 {
     printf '%s\n' '---'
     for key in $keys; do

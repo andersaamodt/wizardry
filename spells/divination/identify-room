@@ -1,0 +1,307 @@
+#!/bin/sh
+
+# This spell names common system rooms and describes their usual roles.
+# Use it to learn what important directories are for or to list recognized rooms.
+
+show_usage() {
+cat <<'USAGE'
+Usage: identify-room [--list] [path]
+
+Identify whether a path is a special system room. Prints a title and description
+when recognized, or notes when a room has no special meaning. Use --list to show
+recognized locations for this platform.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
+set -eu
+
+list_only=0
+case "${1-}" in
+--list)
+        list_only=1
+        shift
+        ;;
+esac
+while getopts hl opt
+do
+        case $opt in
+        l)
+                list_only=1
+                ;;
+        h)
+                show_usage
+                exit 0
+                ;;
+        *)
+                show_usage >&2
+                exit 1
+                ;;
+        esac
+done
+shift $((OPTIND - 1))
+
+if [ "$list_only" -eq 1 ] && [ "$#" -gt 0 ]; then
+        show_usage >&2
+        exit 1
+fi
+
+normalize_path() {
+        location=$1
+        if [ -d "$location" ]; then
+                CDPATH= cd -- "$location" 2>/dev/null && pwd -P
+                return
+        fi
+        dirname=$(dirname -- "$location")
+        basename=$(basename -- "$location")
+        if CDPATH= cd -- "$dirname" 2>/dev/null; then
+                printf '%s/%s\n' "$(pwd -P)" "$basename"
+                return
+        fi
+        printf '%s\n' "$location"
+}
+
+normalize_location() {
+        normalized=$(printf '%s' "$1" | sed 's:/*$::')
+        if [ -z "$normalized" ]; then
+                printf '/\n'
+                return
+        fi
+        printf '%s\n' "$normalized"
+}
+
+possessive_name() {
+        name=$1
+        if command -v possessive >/dev/null 2>&1; then
+                possessive "$name"
+                return
+        fi
+        case $name in
+        *[sS]) printf "%s'" "$name" ;;
+        *) printf "%s's" "$name" ;;
+        esac
+}
+
+home_path()
+{
+        if [ -n "${IDENTIFY_ROOM_HOME-}" ]; then
+                printf '%s\n' "${IDENTIFY_ROOM_HOME}"
+                return 0
+        fi
+        if [ -n "${LOOK_HOME_PATH-}" ]; then
+                printf '%s\n' "$LOOK_HOME_PATH"
+                return 0
+        fi
+        if [ -n "${HOME-}" ]; then
+                printf '%s\n' "$HOME"
+                return 0
+        fi
+        return 1
+}
+
+output_room() {
+        printf '%s\n' "$1"
+        printf '%s\n' "$2"
+}
+
+detect_platform() {
+        if command -v detect-distro >/dev/null 2>&1; then
+                detect-distro 2>/dev/null || true
+                return
+        fi
+        kernel=$(uname -s 2>/dev/null || printf '')
+        case $kernel in
+        Darwin) printf 'mac' ;;
+        Linux) printf 'linux' ;;
+        esac
+}
+
+root_path=/
+tmp_path=$(normalize_location "$(normalize_path "${TMPDIR:-/tmp}")")
+default_tmp_path=$(normalize_location "$(normalize_path /tmp)")
+var_tmp_path=''
+if [ -d /var/tmp ]; then
+        var_tmp_path=$(normalize_location "$(normalize_path /var/tmp)")
+fi
+have_home=0
+normalized_home=''
+home_parent=''
+home_name=''
+if resolved_home=$(home_path); then
+        have_home=1
+        normalized_home=$(normalize_location "$(normalize_path "$resolved_home")")
+        home_parent=$(dirname -- "$normalized_home")
+        home_name=$(basename -- "$normalized_home")
+fi
+
+distro=$(detect_platform || true)
+
+recognize_room() {
+        room=$1
+
+        if [ "$room" = "$root_path" ]; then
+                output_room "Root" "The root of the filesystem."
+                return 0
+        fi
+
+        if [ "$room" = "$tmp_path" ] || { [ "$room" = "$default_tmp_path" ] && [ "$default_tmp_path" != "$tmp_path" ]; } || { [ -n "$var_tmp_path" ] && [ "$room" = "$var_tmp_path" ]; }; then
+                output_room "Temporary Directory" "A temporary workspace where creations are fleeting."
+                return 0
+        fi
+
+        if [ "$have_home" -eq 1 ]; then
+                if [ "$room" = "$normalized_home" ]; then
+                        output_room "Home" "Your home folder."
+                        return 0
+                fi
+
+                if [ "$home_parent" != "$normalized_home" ] && [ "$home_parent" != '/' ]; then
+                        case "$room" in
+                        "$home_parent"/*)
+                                other_user=${room#"$home_parent"/}
+                                case "$other_user" in
+                                ""|*/*) ;;
+                                "$home_name") ;;
+                                *)
+                                        owner=$(possessive_name "$other_user")
+                                        output_room "$owner Home" "$owner home folder."
+                                        return 0
+                                        ;;
+                                esac
+                                ;;
+                        esac
+                fi
+        fi
+
+        case "$room" in
+        /etc)
+                output_room "Configuration Library" "System configuration archives line the shelves."
+                return 0
+                ;;
+        /var)
+                output_room "Variable Data" "Changing state, caches, and queues gather here."
+                return 0
+                ;;
+        /var/log)
+                output_room "Log Archive" "A hall of chronicles where logs accumulate."
+                return 0
+                ;;
+        /usr)
+                output_room "System Domain" "Shared system utilities and libraries reside here."
+                return 0
+                ;;
+        /usr/local)
+                output_room "Local Workshop" "Locally installed tools gather in this workshop."
+                return 0
+                ;;
+        /bin)
+                output_room "Essential Binaries" "Core user commands live here."
+                return 0
+                ;;
+        /sbin)
+                output_room "System Binaries" "Administration tools and daemons gather here."
+                return 0
+                ;;
+        /opt)
+                output_room "Optional Packages" "Third-party or optional software installs dwell here."
+                return 0
+                ;;
+        /srv)
+                output_room "Service Data" "Data served by system services is kept here."
+                return 0
+                ;;
+        /run)
+                output_room "Runtime State" "Volatile runtime data for processes."
+                return 0
+                ;;
+        /dev)
+                output_room "Device Files" "Entries that represent devices and pseudo-devices."
+                return 0
+                ;;
+        /proc)
+                output_room "Process Registry" "A virtual view into the kernel and running processes."
+                return 0
+                ;;
+        /boot)
+                output_room "Boot Artifacts" "Kernel images and bootloader data are stored here."
+                return 0
+                ;;
+        /home)
+                output_room "Home Dwellings" "User home directories gather in this district."
+                return 0
+                ;;
+        esac
+
+        if [ "$distro" = "mac" ]; then
+                case "$room" in
+                /Users)
+                        output_room "User Homes" "Personal home folders reside in this province."
+                        return 0
+                        ;;
+                /Applications)
+                        output_room "Applications" "Graphical applications installed for all users."
+                        return 0
+                        ;;
+                /System)
+                        output_room "System Domain" "Core system components curated by the OS."
+                        return 0
+                        ;;
+                /Library)
+                        output_room "System Library" "System-wide support files and frameworks."
+                        return 0
+                        ;;
+                esac
+        fi
+
+        return 1
+}
+
+list_rooms() {
+        candidate=$1
+        if room_output=$(recognize_room "$candidate" 2>/dev/null); then
+                room_title=$(printf '%s' "$room_output" | sed -n '1p')
+                printf '%s - %s\n' "$candidate" "$room_title"
+        fi
+}
+
+list_recognized() {
+        previous=''
+        for dir in \
+                "$root_path" \
+                "$tmp_path" \
+                "$default_tmp_path" \
+                "$var_tmp_path" \
+                "$normalized_home" \
+                "$home_parent" \
+                /etc /var /var/log /usr /usr/local /bin /sbin /opt /srv /run /dev /proc /boot /home /Users /Applications /System /Library
+        do
+                [ -n "$dir" ] || continue
+                if [ "$dir" = "$previous" ]; then
+                        continue
+                fi
+                previous=$dir
+                [ -d "$dir" ] || continue
+                list_rooms "$dir"
+        done
+}
+
+if [ "$list_only" -eq 1 ]; then
+        list_recognized
+        exit 0
+fi
+
+target_path=${1:-$PWD}
+normalized_target=$(normalize_location "$(normalize_path "$target_path")")
+
+if recognize_room "$normalized_target"; then
+        exit 0
+fi
+
+printf '%s\n' 'This room has no special meaning within the UNIX system.'
+exit 1
