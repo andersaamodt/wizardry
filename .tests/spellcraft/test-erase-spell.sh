@@ -85,10 +85,7 @@ test_force_deletes_spell_in_subfolder() {
 test_unknown_option() {
   run_spell "spells/spellcraft/erase-spell" --unknown
   assert_failure || return 1
-  case "$ERROR" in
-    *"unknown option"*) : ;;
-    *) TEST_FAILURE_REASON="should reject unknown option: $ERROR"; return 1 ;;
-  esac
+  assert_error_contains "unknown option" || return 1
 }
 
 run_test_case "erase-spell shows usage with --help" test_shows_usage_with_help
