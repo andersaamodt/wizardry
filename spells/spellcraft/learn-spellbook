@@ -37,7 +37,6 @@ if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
         SCRIPT_DIR=.
 fi
 SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
-_learn_spellbook_repo_dir=$(cd "$SCRIPT_DIR/../.." && pwd -P)
 DETECT_RC_FILE_DEFAULT="$SCRIPT_DIR/../divination/detect-rc-file"
 LEARN_DEFAULT="$SCRIPT_DIR/../spellcraft/learn"
 # Path to text imps for indentation detection
@@ -251,27 +250,23 @@ fi
 # discovered directory.  This leverages the existing single-directory
 # implementation so we keep behaviour consistent across formats.
 if [ "$recursive" -eq 1 ]; then
-        tmp_file=$(mktemp "${TMPDIR:-/tmp}/learn-spellbook.XXXXXX") || {
+        tmp_file=$(temp-file learn-spellbook) || {
                 printf '%s\n' "Error: Unable to enumerate directories under '$directory'." >&2
                 exit 1
         }
+        trap 'cleanup-file "$tmp_file"' EXIT HUP INT TERM
         if ! find "$directory" -type d -print | sort >"$tmp_file"; then
+                trap - EXIT HUP INT TERM
                 rm -f "$tmp_file"
                 printf '%s\n' "Error: Unable to enumerate directories under '$directory'." >&2
                 exit 1
         fi
 
-        cleanup_tmp() {
-                rm -f "$tmp_file"
-        }
-
-        trap 'cleanup_tmp' EXIT HUP INT TERM
-
         # In dry-run mode, just print paths that would be added
         if [ "$dry_run" -eq 1 ] && [ "$action" = "add" ]; then
                 cat "$tmp_file"
                 trap - EXIT HUP INT TERM
-                cleanup_tmp
+                cleanup-file "$tmp_file"
                 exit 0
         fi
 
@@ -307,12 +302,12 @@ $subdir"
                 
                 if run_nix_batch_add; then
                         trap - EXIT HUP INT TERM
-                        cleanup_tmp
+                        cleanup-file "$tmp_file"
                         exit 0
                 else
                         status=$?
                         trap - EXIT HUP INT TERM
-                        cleanup_tmp
+                        cleanup-file "$tmp_file"
                         exit $status
                 fi
         fi
@@ -340,7 +335,7 @@ $subdir"
         done <"$tmp_file"
 
         trap - EXIT HUP INT TERM
-        cleanup_tmp
+        cleanup-file "$tmp_file"
         exit $result
 fi
 
@@ -655,8 +650,7 @@ shell_remove_all() {
         # Find all wizardry path spell identifiers and remove them
         # learn blocks are marked with spell names like "path-<path>-<checksum>"
         removed_count=0
-        tmp_spells=$("$_learn_spellbook_repo_dir/spells/.imps/fs/temp-file" wizardry-spells) || exit 1
-        trap '"$_learn_spellbook_repo_dir/spells/.imps/fs/cleanup-file" "$tmp_spells"' EXIT HUP INT TERM
+        tmp_spells="${TMPDIR:-/tmp}/wizardry-spells.$$"
         
         # Extract spell names from the rc file that look like learn-spellbook entries
         # Format: # >>> <spell_name> >>>
@@ -669,7 +663,6 @@ shell_remove_all() {
                         removed_count=$((removed_count + 1))
                 fi
         done <"$tmp_spells"
-        trap - EXIT HUP INT TERM
         rm -f "$tmp_spells"
         
         if [ "$removed_count" -gt 0 ]; then

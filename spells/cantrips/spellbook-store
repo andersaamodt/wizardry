@@ -25,10 +25,6 @@ case "${1-}" in
 esac
 set -eu
 
-# Determine script and repo directories for absolute paths to imps
-_spellbook_store_script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
-_spellbook_store_repo_dir=$(CDPATH= cd -- "$_spellbook_store_script_dir/../.." && pwd -P)
-
 resolve_spellbook_file() {
 	if [ -n "${WIZARDRY_SPELLBOOK_FILE-}" ]; then
 		file=$WIZARDRY_SPELLBOOK_FILE
@@ -95,10 +91,6 @@ validate_command() {
         esac
 }
 
-nonempty() {
-	[ -n "$1" ]
-}
-
 add_entry() {
         name=$1
         shift
@@ -111,8 +103,8 @@ add_entry() {
         validate_alias "$name"
         validate_command "$cmd"
         ensure_parent_directory
-        tmp=$("$_spellbook_store_repo_dir/spells/.imps/fs/temp-file" spellbook-store) || exit 1
-        trap '"$_spellbook_store_repo_dir/spells/.imps/fs/cleanup-file" "$tmp"' EXIT HUP INT TERM
+        tmp=$(temp-file spellbook-store) || exit 1
+        trap 'cleanup-file "$tmp"' EXIT HUP INT TERM
         if [ -f "$spellbook_file" ]; then
                 while IFS= read -r line || nonempty "$line"; do
                         entry_name=$line
@@ -141,8 +133,8 @@ remove_entry() {
 		printf '%s\n' "spellbook-store: spell '$name' is not recorded." >&2
 		exit 1
 	fi
-	tmp=$("$_spellbook_store_repo_dir/spells/.imps/fs/temp-file" spellbook-store) || exit 1
-	trap '"$_spellbook_store_repo_dir/spells/.imps/fs/cleanup-file" "$tmp"' EXIT HUP INT TERM
+	tmp=$(temp-file spellbook-store) || exit 1
+	trap 'cleanup-file "$tmp"' EXIT HUP INT TERM
 	removed=0
         while IFS= read -r line || nonempty "$line"; do
                 entry_name=$line

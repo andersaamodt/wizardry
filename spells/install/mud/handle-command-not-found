@@ -31,7 +31,6 @@ case $SCRIPT_SOURCE in
 	;;
 esac
 SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
-_cnf_repo_dir=$(cd "$SCRIPT_DIR/../../.." && pwd -P)
 
 warn() {
 	printf '%s\n' "handle-command-not-found: $1" >&2
@@ -262,8 +261,8 @@ install() {
 	if ! ensure_rc_dir "$rc_file"; then
 		return 1
 	fi
-	tmp_file=$("$_cnf_repo_dir/spells/.imps/fs/temp-file" wizardry-cnf) || return 1
-	trap '"$_cnf_repo_dir/spells/.imps/fs/cleanup-file" "$tmp_file"' EXIT HUP INT TERM
+	tmp_file=$(temp-file wizardry-cnf) || return 1
+	trap 'cleanup-file "$tmp_file"' EXIT HUP INT TERM
 	if [ -f "$rc_file" ]; then
 		sed '/^# >>> wizardry command-not-found >>>$/,/^# <<< wizardry command-not-found <<</d' "$rc_file" >"$tmp_file"
 	else
@@ -326,8 +325,8 @@ uninstall() {
 	fi
 
 	# Shell format: use sed to remove the block
-	tmp_file=$("$_cnf_repo_dir/spells/.imps/fs/temp-file" wizardry-cnf) || return 1
-	trap '"$_cnf_repo_dir/spells/.imps/fs/cleanup-file" "$tmp_file"' EXIT HUP INT TERM
+	tmp_file=$(temp-file wizardry-cnf) || return 1
+	trap 'cleanup-file "$tmp_file"' EXIT HUP INT TERM
 	sed '/^# >>> wizardry command-not-found >>>$/,/^# <<< wizardry command-not-found <<</d' "$rc_file" >"$tmp_file"
 	if ! mv "$tmp_file" "$rc_file"; then
 		trap - EXIT HUP INT TERM

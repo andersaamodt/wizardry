@@ -19,10 +19,6 @@ esac
 
 set -eu
 
-# Determine script and repo directories for absolute paths to imps
-_install_bitcoin_script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
-_install_bitcoin_repo_dir=$(CDPATH= cd -- "$_install_bitcoin_script_dir/../../.." && pwd -P)
-
 BITCOIN_VERSION_DEFAULT="25.0"
 
 prompt_yes_no() {
@@ -97,8 +93,8 @@ install_with_binary() {
   esac
 
   bitcoin_url="https://bitcoincore.org/bin/bitcoin-core-$BITCOIN_VERSION/$binary_name"
-  tmp_dir=$("$_install_bitcoin_repo_dir/spells/.imps/fs/temp-dir" bitcoin-install) || return 1
-  trap '"$_install_bitcoin_repo_dir/spells/.imps/fs/cleanup-dir" "$tmp_dir"' EXIT HUP INT TERM
+  tmp_dir=$(temp-dir bitcoin-install) || return 1
+  trap 'cleanup-dir "$tmp_dir"' EXIT HUP INT TERM
   if ! cd "$tmp_dir"; then
     echo "Failed to change to temp directory"
     return 1
