@@ -36,7 +36,7 @@ build_service_entries() {
     fi
   else
     script_dir=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
-    service_status_option="Install Tor Service%install-service-template $script_dir/tor.service \"TORPATH=\`which tor\`\" \"TORRCPATH=/etc/tor/torrc\""
+    service_status_option="Install Tor Service%install-service-template $script_dir/tor.service \"TORPATH=\$(command -v tor)\" \"TORRCPATH=/etc/tor/torrc\""
   fi
 }
 

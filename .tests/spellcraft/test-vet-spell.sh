@@ -7,7 +7,8 @@
 # - vet-spell fails spells missing strict mode
 # - vet-spell fails spells with trailing space assignment
 # - vet-spell skips usage/help checks for imps
-# - vet-spell enables usage/help checks with --strict
+# - vet-spell requires usage function for non-imp spells
+# - vet-spell requires help handler for non-imp spells
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/test-common.sh" ] && [ "$test_root" != "/" ]; do
@@ -59,7 +60,7 @@ set -eu
 echo "Hello from good spell"
 EOF
   chmod +x "$spell_dir/good-spell"
-  run_spell "spells/spellcraft/vet-spell" --strict "$spell_dir/good-spell"
+  run_spell "spells/spellcraft/vet-spell" "$spell_dir/good-spell"
   assert_success && assert_output_contains "passed"
 }
 
@@ -147,7 +148,7 @@ EOF
   assert_success && assert_output_contains "passed"
 }
 
-test_strict_requires_usage_function() {
+test_requires_usage_function() {
   spell_dir=$(make_spell_dir)
   cat >"$spell_dir/no-usage-spell" <<'EOF'
 #!/bin/sh
@@ -160,16 +161,12 @@ echo "hello"
 EOF
   chmod +x "$spell_dir/no-usage-spell"
   
-  # Without --strict, should pass
+  # Should fail without a usage function
   run_spell "spells/spellcraft/vet-spell" "$spell_dir/no-usage-spell"
-  assert_success || return 1
-  
-  # With --strict, should fail
-  run_spell "spells/spellcraft/vet-spell" --strict "$spell_dir/no-usage-spell"
   assert_failure && assert_output_contains "usage function"
 }
 
-test_strict_requires_help_handler() {
+test_requires_help_handler() {
   spell_dir=$(make_spell_dir)
   cat >"$spell_dir/no-help-spell" <<'EOF'
 #!/bin/sh
@@ -186,12 +183,8 @@ echo "hello"
 EOF
   chmod +x "$spell_dir/no-help-spell"
   
-  # Without --strict, should pass
+  # Should fail without a help handler
   run_spell "spells/spellcraft/vet-spell" "$spell_dir/no-help-spell"
-  assert_success || return 1
-  
-  # With --strict, should fail
-  run_spell "spells/spellcraft/vet-spell" --strict "$spell_dir/no-help-spell"
   assert_failure && assert_output_contains "help"
 }
 
@@ -209,8 +202,8 @@ run_test_case "vet-spell fails missing description" test_fails_missing_descripti
 run_test_case "vet-spell fails missing strict mode" test_fails_missing_strict_mode
 run_test_case "vet-spell fails trailing space assignment" test_fails_trailing_space_assignment
 run_test_case "vet-spell passes imp without usage" test_passes_imp_without_usage
-run_test_case "vet-spell --strict requires usage function" test_strict_requires_usage_function
-run_test_case "vet-spell --strict requires help handler" test_strict_requires_help_handler
+run_test_case "vet-spell requires usage function" test_requires_usage_function
+run_test_case "vet-spell requires help handler" test_requires_help_handler
 run_test_case "vet-spell --list shows matching files" test_list_option
 
 finish_tests

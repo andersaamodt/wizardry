@@ -33,7 +33,7 @@ STUB
 
   PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:$tmpdir:/bin:/usr/bin" run_spell "spells/system/kill-process"
   assert_failure || return 1
-  assert_error_contains "ask_number spell is required" || return 1
+  assert_error_contains "ask-number spell is required" || return 1
 }
 
 kill_process_requires_ask_yn() {
@@ -46,15 +46,15 @@ COMMAND
 foo
 OUT
 STUB
-  cat <<'STUB' >"$tmpdir/ask_number"
+  cat <<'STUB' >"$tmpdir/ask-number"
 #!/bin/sh
 echo 1
 STUB
-  chmod +x "$tmpdir"/ps "$tmpdir"/ask_number
+  chmod +x "$tmpdir"/ps "$tmpdir"/ask-number
 
   PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:$tmpdir:/bin:/usr/bin" run_spell "spells/system/kill-process"
   assert_failure || return 1
-  assert_error_contains "ask_yn spell is required" || return 1
+  assert_error_contains "ask-yn spell is required" || return 1
 }
 
 kill_process_kills_selected_pid() {
@@ -68,11 +68,11 @@ cat <<'OUT'
 222 ?        S      0:00 /usr/bin/bar
 OUT
 STUB
-  cat <<'STUB' >"$tmpdir/ask_number"
+  cat <<'STUB' >"$tmpdir/ask-number"
 #!/bin/sh
 echo 2
 STUB
-  cat <<'STUB' >"$tmpdir/ask_yn"
+  cat <<'STUB' >"$tmpdir/ask-yn"
 #!/bin/sh
 exit 0
 STUB
@@ -80,7 +80,7 @@ STUB
 #!/bin/sh
 printf '%s' "$*" >"${KILL_LOG:?}"
 STUB
-  chmod +x "$tmpdir"/ps "$tmpdir"/ask_number "$tmpdir"/ask_yn "$tmpdir/kill"
+  chmod +x "$tmpdir"/ps "$tmpdir"/ask-number "$tmpdir"/ask-yn "$tmpdir/kill"
 
   kill_log="$tmpdir/kill.log"
   PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:$tmpdir:/bin:/usr/bin" KILL_LOG="$kill_log" KILL_CMD="$tmpdir/kill" run_spell "spells/system/kill-process"
@@ -96,15 +96,15 @@ kill_process_handles_empty_process_list() {
 #!/bin/sh
 echo "COMMAND"
 STUB
-  cat <<'STUB' >"$tmpdir/ask_number"
+  cat <<'STUB' >"$tmpdir/ask-number"
 #!/bin/sh
 exit 1
 STUB
-  cat <<'STUB' >"$tmpdir/ask_yn"
+  cat <<'STUB' >"$tmpdir/ask-yn"
 #!/bin/sh
 exit 1
 STUB
-  chmod +x "$tmpdir"/ps "$tmpdir"/ask_number "$tmpdir"/ask_yn
+  chmod +x "$tmpdir"/ps "$tmpdir"/ask-number "$tmpdir"/ask-yn
 
   PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:$tmpdir:/bin:/usr/bin" run_spell "spells/system/kill-process"
   assert_failure || return 1
@@ -122,11 +122,11 @@ cat <<'OUT'
 202 ?        S      0:00 second
 OUT
 STUB
-  cat <<'STUB' >"$tmpdir/ask_number"
+  cat <<'STUB' >"$tmpdir/ask-number"
 #!/bin/sh
 echo 1
 STUB
-  cat <<'STUB' >"$tmpdir/ask_yn"
+  cat <<'STUB' >"$tmpdir/ask-yn"
 #!/bin/sh
 exit 1
 STUB
@@ -134,7 +134,7 @@ STUB
 #!/bin/sh
 printf '%s' "$*" >"${KILL_LOG:?}"
 STUB
-  chmod +x "$tmpdir"/ps "$tmpdir"/ask_number "$tmpdir"/ask_yn "$tmpdir/kill"
+  chmod +x "$tmpdir"/ps "$tmpdir"/ask-number "$tmpdir"/ask-yn "$tmpdir/kill"
 
   kill_log="$tmpdir/kill.log"
   PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:$tmpdir:/bin:/usr/bin" KILL_LOG="$kill_log" KILL_CMD="$tmpdir/kill" run_spell "spells/system/kill-process"
@@ -155,15 +155,15 @@ cat <<'OUT'
 101 ?        S      0:00 first
 OUT
 STUB
-  cat <<'STUB' >"$tmpdir/ask_number"
+  cat <<'STUB' >"$tmpdir/ask-number"
 #!/bin/sh
 echo 1
 STUB
-  cat <<'STUB' >"$tmpdir/ask_yn"
+  cat <<'STUB' >"$tmpdir/ask-yn"
 #!/bin/sh
 exit 0
 STUB
-  chmod +x "$tmpdir"/ps "$tmpdir"/ask_number "$tmpdir"/ask_yn
+  chmod +x "$tmpdir"/ps "$tmpdir"/ask-number "$tmpdir"/ask-yn
 
   PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:$tmpdir:/bin:/usr/bin" KILL_CMD="$tmpdir/not-here" run_spell "spells/system/kill-process"
   assert_failure || return 1
@@ -181,11 +181,11 @@ cat <<'OUT'
 303 ?        S      0:00 third
 OUT
 STUB
-  cat <<'STUB' >"$tmpdir/ask_number"
+  cat <<'STUB' >"$tmpdir/ask-number"
 #!/bin/sh
 echo 1
 STUB
-  cat <<'STUB' >"$tmpdir/ask_yn"
+  cat <<'STUB' >"$tmpdir/ask-yn"
 #!/bin/sh
 exit 0
 STUB
@@ -194,7 +194,7 @@ STUB
 echo "operation not permitted" >&2
 exit 1
 STUB
-  chmod +x "$tmpdir"/ps "$tmpdir"/ask_number "$tmpdir"/ask_yn "$tmpdir/kill"
+  chmod +x "$tmpdir"/ps "$tmpdir"/ask-number "$tmpdir"/ask-yn "$tmpdir/kill"
 
   PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:$tmpdir:/bin:/usr/bin" KILL_CMD="$tmpdir/kill" run_spell "spells/system/kill-process"
   assert_failure || return 1

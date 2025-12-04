@@ -122,11 +122,11 @@ if [ "$1" = "-d" ]; then
 fi
 printf '%s\n' 'user.one' 'user.two'
 STUB
-  cat >"$stub_dir/ask_number" <<'STUB'
+  cat >"$stub_dir/ask-number" <<'STUB'
 #!/bin/sh
 printf '%s\n' 2
 STUB
-  chmod +x "$stub_dir/xattr" "$stub_dir/ask_number"
+  chmod +x "$stub_dir/xattr" "$stub_dir/ask-number"
 
   target="$WIZARDRY_TMPDIR/multi-choice"
   : >"$target"
@@ -150,11 +150,11 @@ case "$1" in
 esac
 exit 0
 STUB
-  cat >"$stub_dir/ask_number" <<'STUB'
+  cat >"$stub_dir/ask-number" <<'STUB'
 #!/bin/sh
 printf '%s\n' 3
 STUB
-  chmod +x "$stub_dir/attr" "$stub_dir/ask_number"
+  chmod +x "$stub_dir/attr" "$stub_dir/ask-number"
 
   target="$WIZARDRY_TMPDIR/multi-all"
   : >"$target"

@@ -5,9 +5,9 @@
 
 show_usage() {
   cat <<'USAGE'
-Usage: vet-spell [--strict] [--only PATTERN] [--list] [--verbose] [file...]
+Usage: vet-spell [--only PATTERN] [--list] [--verbose] [file...]
 
-Check spells for style-guide compliance. With no files provided it scans the whole spellbook; use --strict for extra checks, --only to filter by pattern, --list to show targets, and --verbose for detailed output.
+Check spells for style-guide compliance. With no files provided it scans the whole spellbook; use --only to filter by pattern, --list to show targets, and --verbose for detailed output.
 USAGE
 }
 
@@ -26,7 +26,6 @@ repo_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd -P)
 verbose=0
 list_only=0
 pattern=''
-strict_mode=0
 
 while [ "$#" -gt 0 ]; do
   case $1 in
@@ -36,10 +35,6 @@ while [ "$#" -gt 0 ]; do
       ;;
     --list)
       list_only=1
-      shift
-      ;;
-    --strict)
-      strict_mode=1
       shift
       ;;
     --only)
@@ -217,8 +212,12 @@ check_posix_compliance() {
 
 check_which_usage() {
   file=$1
-  # Check for 'which' command usage (excluding comments)
-  if grep -E '(^|[^a-zA-Z_])which[[:space:]]' "$file" 2>/dev/null | grep -v '^[[:space:]]*#' | grep -q .; then
+  # Check for 'which' command usage patterns:
+  # - which command (at start of line or after certain shell operators)
+  # - $(which ...) or `which ...` patterns
+  # Excludes English prose containing "which" in comments or heredocs
+  # Only match if followed by a simple command name (letters, digits, hyphens, underscores)
+  if grep -E '(^|[;|&])[[:space:]]*which[[:space:]]+[a-zA-Z0-9_-]+|`which[[:space:]]|\$\(which[[:space:]]' "$file" 2>/dev/null | grep -v '^[[:space:]]*#' | grep -q .; then
     printf 'uses "which" (prefer "command -v" for POSIX compliance)'
     return 1
   fi
@@ -319,16 +318,16 @@ while IFS= read -r target; do
     issue_count=$((issue_count + 1))
   fi
   
-  # Check usage function (only in strict mode, not required for imps)
-  if [ "$strict_mode" -eq 1 ] && [ "$is_imp_file" -eq 0 ]; then
+  # Check usage function (not required for imps)
+  if [ "$is_imp_file" -eq 0 ]; then
     if ! result=$(check_usage_function "$path"); then
       issues=${issues:+$issues; }$result
       issue_count=$((issue_count + 1))
     fi
   fi
   
-  # Check help handler (only in strict mode, not required for imps)
-  if [ "$strict_mode" -eq 1 ] && [ "$is_imp_file" -eq 0 ]; then
+  # Check help handler (not required for imps)
+  if [ "$is_imp_file" -eq 0 ]; then
     if ! result=$(check_help_handler "$path"); then
       issues=${issues:+$issues; }$result
       issue_count=$((issue_count + 1))
@@ -355,28 +354,22 @@ while IFS= read -r target; do
     issue_count=$((issue_count + 1))
   fi
   
-  # Check which usage (only in strict mode)
-  if [ "$strict_mode" -eq 1 ]; then
-    if ! result=$(check_which_usage "$path"); then
-      issues=${issues:+$issues; }$result
-      issue_count=$((issue_count + 1))
-    fi
+  # Check which usage (required for all)
+  if ! result=$(check_which_usage "$path"); then
+    issues=${issues:+$issues; }$result
+    issue_count=$((issue_count + 1))
   fi
   
-  # Check backtick usage (only in strict mode)
-  if [ "$strict_mode" -eq 1 ]; then
-    if ! result=$(check_backtick_usage "$path"); then
-      issues=${issues:+$issues; }$result
-      issue_count=$((issue_count + 1))
-    fi
+  # Check backtick usage (required for all)
+  if ! result=$(check_backtick_usage "$path"); then
+    issues=${issues:+$issues; }$result
+    issue_count=$((issue_count + 1))
   fi
   
-  # Check spell naming convention (only in strict mode)
-  if [ "$strict_mode" -eq 1 ]; then
-    if ! result=$(check_spell_naming "$path"); then
-      issues=${issues:+$issues; }$result
-      issue_count=$((issue_count + 1))
-    fi
+  # Check spell naming convention (required for all)
+  if ! result=$(check_spell_naming "$path"); then
+    issues=${issues:+$issues; }$result
+    issue_count=$((issue_count + 1))
   fi
   
   if [ "$issue_count" -eq 0 ]; then
