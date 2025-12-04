@@ -6,8 +6,7 @@ usage() {
         cat <<'USAGE' >&2
 Usage: install-bitcoin
 
-Installs Bitcoin Core by downloading the appropriate binary (or building from source), placing bitcoind and bitcoin-cli in /usr
-/local/bin, and announcing the installed version.
+Runs an interactive wizard to install Bitcoin Core (via packages, nix, or upstream binaries), updates bitcoin.conf, and optionally starts the node.
 USAGE
 }
 
@@ -18,101 +17,211 @@ case "${1-}" in
         ;;
 esac
 
-
-# Set Bitcoin version
-
 set -eu
-BITCOIN_VERSION="25.0"
 
-# Function to get Bitcoin binary based on architecture
-get_bitcoin_binary() {
-    local arch
-    arch=$(uname -m)
-    case "$arch" in
-        "x86_64")
-            echo "bitcoin-$BITCOIN_VERSION-x86_64-linux-gnu.tar.gz"
-            ;;
-        "aarch64")
-            echo "bitcoin-$BITCOIN_VERSION-aarch64-linux-gnu.tar.gz"
-            ;;
-        "armv7l")
-            echo "bitcoin-$BITCOIN_VERSION-arm-linux-gnueabihf.tar.gz"
-            ;;
-        *)
-            echo "Unsupported architecture: $arch"
-            exit 1
-    esac
-}
+BITCOIN_VERSION_DEFAULT="25.0"
 
-# Function to install Bitcoin from source
-install_bitcoin_from_source() {
-    tmp_dir="/tmp/bitcoin-install-$(date +%s)"
-    mkdir -p "$tmp_dir"
-    cd "$tmp_dir" || exit 1
-    wget https://bitcoincore.org/bin/bitcoin-core-$BITCOIN_VERSION/bitcoin-$BITCOIN_VERSION.tar.gz 
-    tar -xvf bitcoin-$BITCOIN_VERSION.tar.gz
-    cd bitcoin-$BITCOIN_VERSION || exit 1
-    ./autogen.sh
-    ./configure --disable-wallet
-    make 
-    if [ $? -ne 0 ]; then
-        return 1
+prompt_yes_no() {
+  question=$1
+  default=${2:-y}
+
+  if command -v ask_yn >/dev/null 2>&1; then
+    if ask_yn "$question" "$default"; then
+      return 0
+    else
+      return 1
     fi
-    sudo make install
-    cd ../.. || exit 1
-    rm -rf "$tmp_dir"
+  fi
+
+  suffix="[y/N]"
+  [ "$default" = "y" ] && suffix="[Y/n]"
+  printf "%s %s " "$question" "$suffix"
+  read -r reply
+  [ -z "$reply" ] && reply=$default
+  case "$reply" in
+    [Yy]*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+prompt_with_default() {
+  prompt=$1
+  default_value=$2
+  printf "%s [%s]: " "$prompt" "$default_value"
+  IFS= read -r response
+  if [ -z "$response" ]; then
+    printf "%s" "$default_value"
+  else
+    printf "%s" "$response"
+  fi
+}
+
+detect_distro() {
+  if command -v detect-distro >/dev/null 2>&1; then
+    detect-distro
+    return
+  fi
+
+  if [ -f /etc/os-release ]; then
+    # shellcheck source=/dev/null
+    . /etc/os-release
+    printf "%s" "${ID:-unknown}"
+    return
+  fi
+
+  uname -s
+}
+
+install_with_binary() {
+  BITCOIN_VERSION=$1
+  binary_name=""
+  arch=$(uname -m)
+  case "$arch" in
+    x86_64)
+      binary_name="bitcoin-$BITCOIN_VERSION-x86_64-linux-gnu.tar.gz"
+      ;;
+    aarch64)
+      binary_name="bitcoin-$BITCOIN_VERSION-aarch64-linux-gnu.tar.gz"
+      ;;
+    armv7l)
+      binary_name="bitcoin-$BITCOIN_VERSION-arm-linux-gnueabihf.tar.gz"
+      ;;
+    *)
+      echo "Unsupported architecture: $arch"
+      return 1
+      ;;
+  esac
+
+  bitcoin_url="https://bitcoincore.org/bin/bitcoin-core-$BITCOIN_VERSION/$binary_name"
+  tmp_dir="/tmp/bitcoin-install-$(date +%s)"
+  mkdir -p "$tmp_dir"
+  cd "$tmp_dir"
+  if ! wget "$bitcoin_url"; then
+    echo "Failed to download $bitcoin_url"
+    return 1
+  fi
+  tar -xzf "$binary_name"
+  sudo install -m 0755 -o root -g root -t /usr/local/bin "bitcoin-$BITCOIN_VERSION"/bin/*
+  cd - >/dev/null
+  rm -rf "$tmp_dir"
+  printf "Bitcoin Core version %s installed from upstream binaries.\n" "$BITCOIN_VERSION"
+}
+
+install_with_package_manager() {
+  if command -v apt >/dev/null 2>&1; then
+    sudo apt update && sudo apt install -y bitcoind bitcoin-qt && return 0
+  fi
+
+  if command -v dnf >/dev/null 2>&1; then
+    sudo dnf install -y bitcoin || sudo dnf install -y bitcoind || return 1
     return 0
+  fi
+
+  if command -v pacman >/dev/null 2>&1; then
+    sudo pacman -Sy --noconfirm bitcoind && return 0
+  fi
+
+  if command -v brew >/dev/null 2>&1; then
+    brew install bitcoin-core && return 0
+  fi
+
+  return 1
 }
 
-# Function to install Bitcoin binary
-install_bitcoin_binary() {
-    binary_name=$(get_bitcoin_binary)
-    bitcoin_url="https://bitcoincore.org/bin/bitcoin-core-$BITCOIN_VERSION/$binary_name"
-    tmp_dir="/tmp/bitcoin-install-$(date +%s)"
-    mkdir -p "$tmp_dir"
-    cd "$tmp_dir" || exit 1
-    wget "$bitcoin_url"
-    tar -xzf "$binary_name"
-    sudo install -m 0755 -o root -g root -t /usr/local/bin bitcoin-$BITCOIN_VERSION/bin/*
-    cd - || exit 1
-    rm -rf "$tmp_dir"
-    echo "Bitcoin Core version $BITCOIN_VERSION has been installed successfully."
+package_manager_available() {
+  if command -v apt >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if command -v dnf >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if command -v pacman >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if command -v brew >/dev/null 2>&1; then
+    return 0
+  fi
+
+  return 1
 }
 
-# Function to install Bitcoin for macOS
-install_bitcoin_macos() {
-    tmp_dir="/tmp/bitcoin-install-$(date +%s)"
-    mkdir -p "$tmp_dir"
-    cd "$tmp_dir" || exit 1
-    wget https://bitcoincore.org/bin/bitcoin-core-$BITCOIN_VERSION/bitcoin-$BITCOIN_VERSION-osx64.tar.gz
-    tar -xzf bitcoin-$BITCOIN_VERSION-osx64.tar.gz
-    sudo mv bitcoin-$BITCOIN_VERSION/bin/* /usr/local/bin/
-    cd - || exit 1
-    rm -rf "$tmp_dir"
-    echo "Bitcoin Core version $BITCOIN_VERSION has been installed successfully on macOS."
+install_with_nix() {
+  if command -v nix-env >/dev/null 2>&1; then
+    nix-env -iA nixpkgs.bitcoind
+    return 0
+  fi
+
+  if command -v nix >/dev/null 2>&1; then
+    nix profile install nixpkgs#bitcoind
+    return 0
+  fi
+
+  return 1
 }
 
-# Main function to install Bitcoin
-install_bitcoin() {
-    case "$(uname -s)" in
-        Darwin)
-            install_bitcoin_macos
-            ;;
-        Linux)
-            # If the operating system is Raspbian, we will skip compiling from source and go directly to binary installation.
-            if uname -a | grep -q 'raspberrypi'; then
-                install_bitcoin_binary
-            else
-                if ! install_bitcoin_from_source; then
-                    install_bitcoin_binary
-                fi
-            fi
-            ;;
-        *)
-            echo "Unsupported operating system"
-            exit 1
-    esac
+maybe_run_nixos_rebuild() {
+  if command -v nixos-rebuild >/dev/null 2>&1; then
+    if prompt_yes_no "Run 'sudo nixos-rebuild switch' to activate any configuration changes?" "y"; then
+      sudo nixos-rebuild switch
+    fi
+  fi
 }
 
-# Run the install Bitcoin function
-install_bitcoin
+maybe_start_bitcoind() {
+  if prompt_yes_no "Start bitcoind in the background now?" "y"; then
+    if command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files | grep -q '^bitcoin.service'; then
+      sudo systemctl start bitcoin
+    else
+      bitcoind -daemon || true
+    fi
+  fi
+}
+
+configure_bitcoin_conf() {
+  if prompt_yes_no "Configure bitcoin.conf with sensible defaults now?" "y"; then
+    configure-bitcoin
+  fi
+}
+
+run_installer() {
+  distro=$(detect_distro)
+  version=$(prompt_with_default "Which Bitcoin Core version should be installed?" "$BITCOIN_VERSION_DEFAULT")
+
+  if [ "$distro" = "nixos" ]; then
+    echo "Detected NixOS. Installing via nix profile for user environment."
+    if ! install_with_nix; then
+      echo "Nix tools were not available; falling back to upstream binaries."
+      install_with_binary "$version"
+    fi
+    configure_bitcoin_conf
+    maybe_run_nixos_rebuild
+    maybe_start_bitcoind
+    return
+  fi
+
+  echo "Detected platform: $distro"
+  install_method="binary"
+  if package_manager_available && prompt_yes_no "Use your package manager to install Bitcoin Core?" "y"; then
+    install_method="package"
+  fi
+
+  if [ "$install_method" = "package" ]; then
+    install_with_package_manager || install_with_binary "$version"
+  else
+    install_with_binary "$version"
+  fi
+
+  configure_bitcoin_conf
+  if command -v install-service-template >/dev/null 2>&1; then
+    if prompt_yes_no "Install a system service for bitcoind?" "n"; then
+      script_dir=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
+      install-service-template "$script_dir/bitcoin.service" "BITCOIND=$(command -v bitcoind)"
+    fi
+  fi
+  maybe_start_bitcoind
+}
+
+run_installer
