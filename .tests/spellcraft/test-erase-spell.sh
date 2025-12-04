@@ -1,6 +1,7 @@
 #!/bin/sh
 # erase-spell test coverage:
 # - shows usage with --help
+# - rejects unknown options
 # - requires spell name argument
 # - errors when spell not found
 # - --force skips confirmation and deletes spell
@@ -81,7 +82,17 @@ test_force_deletes_spell_in_subfolder() {
   fi
 }
 
+test_unknown_option() {
+  run_spell "spells/spellcraft/erase-spell" --unknown
+  assert_failure || return 1
+  case "$ERROR" in
+    *"unknown option"*) : ;;
+    *) TEST_FAILURE_REASON="should reject unknown option: $ERROR"; return 1 ;;
+  esac
+}
+
 run_test_case "erase-spell shows usage with --help" test_shows_usage_with_help
+run_test_case "erase-spell rejects unknown option" test_unknown_option
 run_test_case "erase-spell requires spell name" test_requires_spell_name
 run_test_case "erase-spell errors when spell not found" test_errors_when_spell_not_found
 run_test_case "erase-spell --force deletes without confirmation" test_force_deletes_spell_without_confirmation

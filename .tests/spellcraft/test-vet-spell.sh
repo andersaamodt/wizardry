@@ -1,6 +1,7 @@
 #!/bin/sh
 # Behavioral cases for vet-spell:
 # - vet-spell prints usage with --help
+# - vet-spell rejects unknown options
 # - vet-spell passes well-formed spells
 # - vet-spell fails spells missing shebang
 # - vet-spell fails spells missing description comment
@@ -193,8 +194,14 @@ test_list_option() {
   assert_success && assert_output_contains "spells/mud/look"
 }
 
+test_unknown_option() {
+  run_spell "spells/spellcraft/vet-spell" --unknown
+  assert_failure && assert_error_contains "unknown option"
+}
+
 run_test_case "vet-spell prints usage" test_help
 run_test_case "vet-spell accepts --usage" test_usage_alias
+run_test_case "vet-spell rejects unknown option" test_unknown_option
 run_test_case "vet-spell passes well-formed spell" test_passes_well_formed_spell
 run_test_case "vet-spell fails missing shebang" test_fails_missing_shebang
 run_test_case "vet-spell fails wrong shebang" test_fails_wrong_shebang
