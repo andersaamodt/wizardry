@@ -60,7 +60,7 @@ SH
   chmod +x "$tmp/exit-label"
   # Test as submenu (as it would be called from mud menu)
   # Use MENU_LOOP_LIMIT=1 to exit after one iteration
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MENU_LOOP_LIMIT=1 "$ROOT_DIR/spells/menu/mud-admin"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MENU_LOOP_LIMIT=1 "$ROOT_DIR/spells/menu/mud-admin-menu"
   assert_success
   args=$(cat "$tmp/log")
   case "$args" in
@@ -78,7 +78,7 @@ printf '%s\n' "The MUD Admin menu needs the 'menu' command to present options." 
 exit 1
 SH
   chmod +x "$tmp/require-command"
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud-admin"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud-admin-menu"
   assert_failure
   assert_error_contains "The MUD Admin menu needs the 'menu' command"
 }
@@ -98,7 +98,7 @@ SH
 printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MENU_LOOP_LIMIT=1 "$ROOT_DIR/spells/menu/mud-admin"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MENU_LOOP_LIMIT=1 "$ROOT_DIR/spells/menu/mud-admin-menu"
   assert_status 7
   assert_file_contains "$tmp/log" "MUD Admin:"
 }
@@ -134,7 +134,7 @@ SH
   chmod +x "$tmp/exit-label"
   
   
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud-admin"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud-admin-menu"
   assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
   
   args=$(cat "$tmp/log")
