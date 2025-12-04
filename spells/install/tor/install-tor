@@ -136,8 +136,8 @@ add_tor_to_nixos() {
     if ! grep -q 'tor' "$config"; then
       printf '%s\n' 'Adding tor to environment.systemPackages...'
       # Use detected indentation for the package entry (level 2)
-      sudo perl -0pi -e "s/(environment\\.systemPackages\\s*=\\s*with\\s+pkgs;\\s*\\[[^]]*)\$/\$1\\n${indent_l2}tor/" "$config" \
-        || sudo perl -0pi -e "s/(environment\\.systemPackages\\s*=\\s*\\[[^]]*)\$/\$1\\n${indent_l2}tor/" "$config"
+      sudo perl -0pi -e "s/(environment\\.systemPackages\\s*=\\s*with\\s+pkgs;\\s*\\[[^\\]]*)\\]/\$1\\n${indent_l2}tor\\n${indent_l1}]/" "$config" \
+        || sudo perl -0pi -e "s/(environment\\.systemPackages\\s*=\\s*\\[[^\\]]*)\\]/\$1\\n${indent_l2}tor\\n${indent_l1}]/" "$config"
       changes=1
     fi
   fi
@@ -145,7 +145,8 @@ add_tor_to_nixos() {
   if ! grep -q 'services.tor.enable' "$config"; then
     printf '%s\n' 'Enabling Tor service in configuration.nix...'
     # Use detected indentation for the service line (level 1)
-    sudo perl -0pi -e "s/(\\n\\})$/\\n${indent_l1}services.tor.enable = true;\\n}/" "$config"
+    # Match the closing brace and replace with indented service line + closing brace
+    sudo perl -0pi -e "s/(\\n)(\\})$/\$1${indent_l1}services.tor.enable = true;\$1\$2/" "$config"
     changes=1
   fi
 
