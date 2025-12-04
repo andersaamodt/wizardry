@@ -47,12 +47,12 @@ case $OS in
 esac
 
 # Check each path for the existence of the torrc file
-for PATH in $TORRC_PATHS; do
-  if [ -f $PATH ]; then
-    echo $PATH
+for torrc_path in $TORRC_PATHS; do
+  if [ -f "$torrc_path" ]; then
+    echo "$torrc_path"
     exit 0
   fi
 done
 
 # If no torrc file is found, output the first standard path for the current OS
-echo $(echo $TORRC_PATHS | cut -d' ' -f1)
+printf '%s\n' "$(printf '%s' "$TORRC_PATHS" | tr ' ' '\n' | sed -n '1p')"
