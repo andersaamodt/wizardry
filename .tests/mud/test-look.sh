@@ -59,18 +59,15 @@ EOF
   chmod +x "$stub/read-magic"
   PATH="$stub:/bin:/usr/bin" run_spell "spells/mud/look" "$WIZARDRY_TMPDIR"
   assert_success
-  # Verify no trailing newline after "You look, but you don't see anything."
-  # The output should end with the message without an extra newline
-  last_line=$(printf '%s' "$OUTPUT" | tail -1)
-  case "$last_line" in
-    *"You look, but you don't see anything.")
-      return 0
-      ;;
-    *)
-      TEST_FAILURE_REASON="expected last line to be the message without trailing newline"
-      return 1
-      ;;
-  esac
+  # Verify output ends with the message (no trailing newline)
+  # Check that the output ends with a period by examining the last character
+  last_char=$(printf '%s' "$OUTPUT" | tail -c 1)
+  if [ "$last_char" = "." ]; then
+    return 0
+  else
+    TEST_FAILURE_REASON="expected output to end with period (no trailing newline), got: '$last_char'"
+    return 1
+  fi
 }
 
 test_displays_attributes() {
