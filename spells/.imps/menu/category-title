@@ -44,9 +44,6 @@ case $1 in
 	mud)
 		printf 'MUD'
 		;;
-	mud-admin)
-		printf 'MUD Admin'
-		;;
 	priorities)
 		printf 'Priorities'
 		;;

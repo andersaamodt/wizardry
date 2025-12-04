@@ -13,20 +13,20 @@ done
 . "$test_root/test-common.sh"
 
 test_help() {
-  run_spell "spells/mud-admin/new-player" --help
+  run_spell "spells/menu/mud-admin/new-player" --help
   assert_success || return 1
   assert_output_contains "Usage: new-player" || return 1
 }
 
 test_help_h_flag() {
-  run_spell "spells/mud-admin/new-player" -h
+  run_spell "spells/menu/mud-admin/new-player" -h
   assert_success || return 1
   assert_output_contains "Usage: new-player" || return 1
 }
 
 test_has_strict_mode() {
   # Verify the spell uses strict mode
-  grep -q "set -eu" "$ROOT_DIR/spells/mud-admin/new-player" || {
+  grep -q "set -eu" "$ROOT_DIR/spells/menu/mud-admin/new-player" || {
     TEST_FAILURE_REASON="spell does not use strict mode"
     return 1
   }
