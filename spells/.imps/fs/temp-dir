@@ -1,6 +1,6 @@
 #!/bin/sh
 # temp-dir [PREFIX] - create temp directory with optional prefix (outputs path)
-# Example: tmpdir=$(temp-dir myapp) && trap 'rm -rf "$tmpdir"' EXIT
+# Example: tmpdir=$(temp-dir myapp) && trap 'cleanup-dir "$tmpdir"' EXIT
 
 set -eu
 

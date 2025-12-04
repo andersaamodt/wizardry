@@ -1,6 +1,6 @@
 #!/bin/sh
 # temp-file [PREFIX] - create temp file with optional prefix (outputs path)
-# Example: tmp=$(temp-file myapp) && trap 'rm -f "$tmp"' EXIT
+# Example: tmp=$(temp-file myapp) && trap 'cleanup-file "$tmp"' EXIT
 
 set -eu
 
