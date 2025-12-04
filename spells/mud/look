@@ -178,6 +178,9 @@ path=${1:-$PWD}
 
 install_look || true
 
+# Message returned by read-magic when attribute doesn't exist
+MISSING_ATTR_MSG='read-magic: attribute does not exist.'
+
 # Default descriptions for rooms without enchanted description attributes
 get_default_description() {
         # Use a hash of the path to pick a consistent random description
@@ -195,8 +198,7 @@ get_default_description() {
 get_room_title() {
         room_path=$1
         attr_title=$(read-magic "$room_path" title 2>/dev/null || true)
-        missing_msg='read-magic: attribute does not exist.'
-        if [ "$attr_title" != "$missing_msg" ] && [ -n "$attr_title" ]; then
+        if [ "$attr_title" != "$MISSING_ATTR_MSG" ] && [ -n "$attr_title" ]; then
                 printf '%s' "$attr_title"
         else
                 # Use the folder/file name as the title
@@ -208,8 +210,7 @@ get_room_title() {
 get_room_description() {
         room_path=$1
         attr_desc=$(read-magic "$room_path" description 2>/dev/null || true)
-        missing_msg='read-magic: attribute does not exist.'
-        if [ "$attr_desc" != "$missing_msg" ] && [ -n "$attr_desc" ]; then
+        if [ "$attr_desc" != "$MISSING_ATTR_MSG" ] && [ -n "$attr_desc" ]; then
                 printf '%s' "$attr_desc"
         else
                 get_default_description "$room_path"
