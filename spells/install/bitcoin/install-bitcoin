@@ -98,15 +98,18 @@ install_with_binary() {
     [ -n "${tmp_dir-}" ] && [ -d "$tmp_dir" ] && rm -rf "$tmp_dir"
   }
   trap cleanup_bitcoin_tmp EXIT HUP INT TERM
-  cd "$tmp_dir"
+  if ! cd "$tmp_dir"; then
+    echo "Failed to change to temp directory"
+    return 1
+  fi
   if ! wget "$bitcoin_url"; then
     echo "Failed to download $bitcoin_url"
-    cd - >/dev/null
+    cd - >/dev/null || true
     return 1
   fi
   tar -xzf "$binary_name"
   sudo install -m 0755 -o root -g root -t /usr/local/bin "bitcoin-$BITCOIN_VERSION"/bin/*
-  cd - >/dev/null
+  cd - >/dev/null || true
   trap - EXIT HUP INT TERM
   rm -rf "$tmp_dir"
   printf "Bitcoin Core version %s installed from upstream binaries.\n" "$BITCOIN_VERSION"
