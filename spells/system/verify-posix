@@ -56,8 +56,8 @@ failures=0
 total=0
 failed_targets=""
 
-targets_file=$(temp-file verify-posix-targets) || exit 1
-trap 'cleanup-file "$targets_file"' EXIT HUP INT TERM
+targets_file=$("$repo_dir/spells/.imps/fs/temp-file" verify-posix-targets) || exit 1
+trap '"$repo_dir/spells/.imps/fs/cleanup-file" "$targets_file"' EXIT HUP INT TERM
 collect_targets "$@" >"$targets_file"
 
 while IFS= read -r target; do

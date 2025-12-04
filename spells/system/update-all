@@ -49,6 +49,7 @@ if [ "$#" -ne 0 ]; then
 fi
 
 script_dir=$(cd "$(dirname "$0")" && pwd)
+repo_dir=$(cd "$script_dir/../.." && pwd)
 
 if has colors; then
   # shellcheck source=/dev/null
@@ -132,8 +133,8 @@ run_with_progress() {
     return $?
   fi
 
-  progress_tmp=$(temp-file update-all) || return 1
-  trap 'cleanup-file "$progress_tmp"' EXIT HUP INT TERM
+  progress_tmp=$("$repo_dir/spells/.imps/fs/temp-file" update-all) || return 1
+  trap '"$repo_dir/spells/.imps/fs/cleanup-file" "$progress_tmp"' EXIT HUP INT TERM
   (
     set +e
     "$@" 2>&1
