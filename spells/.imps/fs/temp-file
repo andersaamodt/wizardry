@@ -1,0 +1,8 @@
+#!/bin/sh
+# temp-file [PREFIX] - create temp file with optional prefix (outputs path)
+# Example: tmp=$(temp-file myapp) && trap 'rm -f "$tmp"' EXIT
+
+set -eu
+
+prefix=${1:-wizardry}
+mktemp "${TMPDIR:-/tmp}/${prefix}.XXXXXX"
