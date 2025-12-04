@@ -23,6 +23,16 @@ set -eu
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 repo_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd -P)
 
+# Add imps to PATH so we can use temp-file and cleanup-file directly
+if [ -d "$repo_dir/spells/.imps" ]; then
+  PATH="$repo_dir/spells/.imps:$PATH"
+  for impdir in "$repo_dir"/spells/.imps/*; do
+    [ -d "$impdir" ] || continue
+    PATH="$impdir:$PATH"
+  done
+  export PATH
+fi
+
 verbose=0
 list_only=0
 pattern=''

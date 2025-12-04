@@ -32,6 +32,16 @@ script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 root_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd -P)
 test_dir="$root_dir/.tests"
 
+# Add wizardry spells and imps to PATH so we can use them directly
+# This allows running test-magic directly without wizardry being installed
+if [ -d "$root_dir/spells/.imps" ]; then
+  PATH="$root_dir/spells/.imps:$PATH"
+  for impdir in "$root_dir"/spells/.imps/*; do
+    [ -d "$impdir" ] || continue
+    PATH="$impdir:$PATH"
+  done
+fi
+
 case "${1-}" in
 --help|--usage|-h)
   show_usage

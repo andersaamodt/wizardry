@@ -49,6 +49,17 @@ if [ "$#" -ne 0 ]; then
 fi
 
 script_dir=$(cd "$(dirname "$0")" && pwd)
+repo_dir=$(cd "$script_dir/../.." && pwd)
+
+# Add imps to PATH so we can use temp-file and cleanup-file directly
+if [ -d "$repo_dir/spells/.imps" ]; then
+  PATH="$repo_dir/spells/.imps:$PATH"
+  for impdir in "$repo_dir"/spells/.imps/*; do
+    [ -d "$impdir" ] || continue
+    PATH="$impdir:$PATH"
+  done
+  export PATH
+fi
 
 if has colors; then
   # shellcheck source=/dev/null

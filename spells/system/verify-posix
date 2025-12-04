@@ -22,6 +22,16 @@ set -eu
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 repo_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd -P)
 
+# Add imps to PATH so we can use temp-file and cleanup-file directly
+if [ -d "$repo_dir/spells/.imps" ]; then
+  PATH="$repo_dir/spells/.imps:$PATH"
+  for impdir in "$repo_dir"/spells/.imps/*; do
+    [ -d "$impdir" ] || continue
+    PATH="$impdir:$PATH"
+  done
+  export PATH
+fi
+
 checkbashisms_cmd=${CHECKBASHISMS-}
 if [ -z "$checkbashisms_cmd" ] && command -v checkbashisms >/dev/null 2>&1; then
   checkbashisms_cmd=$(command -v checkbashisms)
