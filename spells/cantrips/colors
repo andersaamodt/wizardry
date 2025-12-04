@@ -40,13 +40,14 @@ disable_palette() {
                 BOLD ITALICS UNDERLINED BLINK INVERT STRIKE \
                 BRIGHT_BLACK BRIGHT_RED BRIGHT_GREEN BRIGHT_YELLOW \
                 BRIGHT_BLUE BRIGHT_PURPLE BRIGHT_CYAN BRIGHT_WHITE \
+                LIGHT_BLUE \
                 BG_BLACK BG_RED BG_GREEN BG_YELLOW BG_BLUE BG_PURPLE \
                 BG_CYAN BG_WHITE BG_BRIGHT_BLACK BG_BRIGHT_RED \
                 BG_BRIGHT_GREEN BG_BRIGHT_YELLOW BG_BRIGHT_BLUE \
                 BG_BRIGHT_PURPLE BG_BRIGHT_CYAN BG_BRIGHT_WHITE \
                 THEME_HIGHLIGHT THEME_MUTED THEME_CUSTOM THEME_SUCCESS \
                 THEME_ERROR THEME_HEADING THEME_DIVIDER \
-                MUD_LOCATION MUD_DESCRIPTION MUD_ITEM MUD_HANDLE MUD_SPELL MUD_MONSTER
+                MUD_LOCATION MUD_TITLE MUD_DESCRIPTION MUD_ITEM MUD_HANDLE MUD_SPELL MUD_MONSTER
         do
                 eval "$name=''"
         done
@@ -90,6 +91,9 @@ BRIGHT_PURPLE="${ESC}[35;1m"
 BRIGHT_CYAN="${ESC}[36;1m"
 BRIGHT_WHITE="${ESC}[37;1m"
 
+# Light colours (extended 16-color palette).
+LIGHT_BLUE="${ESC}[94m"
+
 # Background colours.
 BG_BLACK="${ESC}[40m"
 BG_RED="${ESC}[41m"
@@ -122,6 +126,7 @@ THEME_DIVIDER="$GREY"            # Menu dividers
 
 # MUD-specific colours for fantasy game elements.
 MUD_LOCATION="${BLUE}${BOLD}"    # Location/room titles
+MUD_TITLE="${LIGHT_BLUE}"        # Room title attribute (light blue)
 MUD_DESCRIPTION="${WHITE}"       # Room/item descriptions
 MUD_ITEM="${YELLOW}"             # Items and objects
 MUD_HANDLE="${CYAN}"             # Player names/handles
