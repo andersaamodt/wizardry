@@ -58,9 +58,9 @@ run_nix_rebuild() {
         if [ "${WIZARDRY_SKIP_NIX_REBUILD-}" = "1" ]; then
                 return 0
         fi
-        
+
         rebuild_success=0
-        
+
         # Try to detect if we should use sudo or doas
         priv_cmd=""
         if command -v sudo >/dev/null 2>&1; then
@@ -68,7 +68,7 @@ run_nix_rebuild() {
         elif command -v doas >/dev/null 2>&1; then
                 priv_cmd="doas"
         fi
-        
+
         # Try home-manager first (doesn't need privileges)
         if command -v home-manager >/dev/null 2>&1; then
                 printf '%s\n' "cd cantrip: running home-manager switch..."
@@ -77,7 +77,7 @@ run_nix_rebuild() {
                         rebuild_success=1
                 fi
         fi
-        
+
         # If home-manager didn't work and we have privilege escalation, try nixos-rebuild
         if [ "$rebuild_success" -eq 0 ] && [ -n "$priv_cmd" ] && command -v nixos-rebuild >/dev/null 2>&1; then
                 printf '%s\n' "cd cantrip: running $priv_cmd nixos-rebuild switch..."
@@ -86,12 +86,12 @@ run_nix_rebuild() {
                         rebuild_success=1
                 fi
         fi
-        
+
         if [ "$rebuild_success" -eq 0 ]; then
                 warn "NixOS configuration could not be automatically rebuilt."
                 return 1
         fi
-        
+
         return 0
 }
 
@@ -132,7 +132,7 @@ resolve_rc_file() {
                 printf '%s\n' "$WIZARDRY_RC_FILE"
                 return 0
         fi
-        
+
         # Try to use detect-rc-file for cross-platform support
         if detected=$(_run_detect_rc_file); then
                 # Parse rc_file= line using shell parameter expansion
@@ -150,13 +150,13 @@ resolve_rc_file() {
 $detected
 EOF
         fi
-        
+
         # Fallback to shell-specific defaults
         if [ -z "${HOME-}" ]; then
                 warn "HOME is not set; cannot determine rc file."
                 return 1
         fi
-        
+
         shell_name=${SHELL-}
         case ${shell_name##*/} in
         zsh)
@@ -174,7 +174,7 @@ resolve_rc_format() {
                 printf '%s\n' "$WIZARDRY_RC_FORMAT"
                 return 0
         fi
-        
+
         # Try to get format from detect-rc-file output
         if detected=$(_run_detect_rc_file); then
                 while IFS= read -r line; do
@@ -191,14 +191,14 @@ resolve_rc_format() {
 $detected
 EOF
         fi
-        
+
         # Fallback: detect from file extension
         if rc_file=$(resolve_rc_file 2>/dev/null); then
                 case $rc_file in
                 *.nix) printf 'nix\n'; return 0 ;;
                 esac
         fi
-        
+
         printf 'shell\n'
 }
 
@@ -242,7 +242,7 @@ install() {
 
         cd_spell=$(absolute_spell_path "${WIZARDRY_CD_CANTRIP-}") || return 1
         rc_file=$(resolve_rc_file) || return 1
-        
+
         # For nix format, use nix-shell-init imp to add shell init code
         if [ "$rc_format" = "nix" ]; then
                 # Find nix-shell-init helper
@@ -252,16 +252,16 @@ install() {
                 elif command -v nix-shell-init >/dev/null 2>&1; then
                         nix_helper=$(command -v nix-shell-init)
                 fi
-                
+
                 if [ -z "$nix_helper" ]; then
                         printf '%s\n' "cd cantrip: nix-shell-init imp not found for NixOS installation."
                         return 1
                 fi
-                
+
                 # Create the shell hook code
                 hook_code="WIZARDRY_CD_CANTRIP='$cd_spell'
 alias cd='. \"\$WIZARDRY_CD_CANTRIP\"'"
-                
+
                 if printf '%s\n' "$hook_code" | "$nix_helper" add --shell bash --name cd-cantrip --file "$rc_file"; then
                         printf '%s\n' "cd cantrip: installed wizardry hooks in '$rc_file'."
                         # Run nixos-rebuild to apply the changes
@@ -308,7 +308,7 @@ uninstall() {
                 printf '%s\n' "cd cantrip: not installed in '$rc_file'."
                 return 0
         fi
-        
+
         # For nix format, use nix-shell-init to remove the block
         if [ "$rc_format" = "nix" ]; then
                 nix_helper=""
@@ -317,7 +317,7 @@ uninstall() {
                 elif command -v nix-shell-init >/dev/null 2>&1; then
                         nix_helper=$(command -v nix-shell-init)
                 fi
-                
+
                 if [ -n "$nix_helper" ]; then
                         if "$nix_helper" remove --shell bash --name cd-cantrip --file "$rc_file"; then
                                 printf '%s\n' "cd cantrip: uninstalled wizardry hooks from '$rc_file'."
@@ -333,7 +333,7 @@ uninstall() {
                 # This may not work correctly for nix format files
                 warn "nix-shell-init imp not found; attempting shell-style removal which may not work for nix files."
         fi
-        
+
         # Shell format: use sed to remove the block
         tmp_file=$(mktemp "${TMPDIR:-/tmp}/wizardry-cd.XXXXXX") || return 1
         sed '/^# >>> wizardry cd cantrip >>>$/,/^# <<< wizardry cd cantrip <<</d' "$rc_file" >"$tmp_file"
