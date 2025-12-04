@@ -34,8 +34,8 @@ wallet_menu() {
   balance_option="List Funds%lightning-cli listfunds"
   new_address_option="Generate New Address%lightning-cli newaddr"
   invoices_option="List Invoices%lightning-cli listinvoices"
-  create_invoice_option="Create Invoice%sh -c 'amt=$(printf "Amount (msat): "; read -r a; printf "%s" "$a"); label=$(printf "Label: "; read -r l; printf "%s" "$l"); desc=$(printf "Description: "; read -r d; printf "%s" "$d"); lightning-cli invoice "$amt" "$label" "$desc"'"
-  pay_invoice_option="Pay Invoice%sh -c 'printf "Invoice: "; read -r inv; lightning-cli pay "$inv"'"
+  create_invoice_option='Create Invoice%sh -c '"'"'amt=$(printf "Amount (msat): "; read -r a; printf "%s" "$a"); label=$(printf "Label: "; read -r l; printf "%s" "$l"); desc=$(printf "Description: "; read -r d; printf "%s" "$d"); lightning-cli invoice "$amt" "$label" "$desc"'"'"''
+  pay_invoice_option='Pay Invoice%sh -c '"'"'printf "Invoice: "; read -r inv; lightning-cli pay "$inv"'"'"''
   exit_label=$(exit-label)
   exit_option="${exit_label}%kill -TERM \$PPID"
 

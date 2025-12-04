@@ -1,11 +1,13 @@
 #!/bin/sh
-# Network configuration menu - work in progress
+
+# Network configuration menu for common troubleshooting and setup actions.
 
 show_usage() {
   cat <<'USAGE'
 Usage: network-menu
 
-Displays network configuration options.
+Displays network configuration options such as viewing interfaces,
+addresses, routes, and quick connectivity checks.
 USAGE
 }
 
@@ -18,14 +20,72 @@ esac
 
 set -eu
 
-require-command menu
+# Load color palette (colors handles terminal capability detection internally)
+# shellcheck source=/dev/null
+. "$(command -v colors)"
+
+if ! require menu "The network menu needs the 'menu' command to present options."; then
+  exit 1
+fi
 
 trap 'exit 0' INT TERM
-exit_label=$(exit-label)
-exit_item="${exit_label}%kill -TERM \$PPID"
 
-menu "Network Menu:" \
-  "Configure static IP%configure-static-ip" \
-  "Configure DHCP%configure-dhcp" \
-  "$exit_item" || true
+build_command_items() {
+  items=""
+
+  if command -v ip >/dev/null 2>&1; then
+    items="${items}Show interfaces%ip link show\n"
+    items="${items}Show IP addresses%ip -brief addr\n"
+    items="${items}Show routes%ip route show\n"
+  elif command -v ifconfig >/dev/null 2>&1; then
+    items="${items}Show interfaces%ifconfig -a\n"
+  fi
+
+  if command -v nmcli >/dev/null 2>&1; then
+    items="${items}List NetworkManager connections%nmcli connection show\n"
+    items="${items}NetworkManager device status%nmcli device status\n"
+  fi
+
+  if command -v ping >/dev/null 2>&1; then
+    items="${items}Ping gateway (1.1.1.1)%ping -c 4 1.1.1.1\n"
+  fi
+
+  if command -v systemctl >/dev/null 2>&1; then
+    items="${items}Restart NetworkManager%sudo systemctl restart NetworkManager\n"
+  fi
+
+  printf '%s' "$items"
+}
+
+display_menu() {
+  exit_label=$(exit-label)
+  exit_item="${exit_label}%kill -TERM \$PPID"
+
+  set --
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    set -- "$@" "$line"
+  done <<EOF_ITEMS
+$(build_command_items)
+EOF_ITEMS
+
+  set -- "$@" "$exit_item"
+  menu "Network Menu:" "$@"
+}
+
+first_run=1
+
+while true; do
+  if [ "$first_run" -eq 0 ]; then
+    printf '\n'
+  else
+    first_run=0
+  fi
+
+  display_menu || true
+
+  if [ "${NETWORK_MENU_ONCE-0}" -eq 1 ]; then
+    break
+  fi
+done
 
