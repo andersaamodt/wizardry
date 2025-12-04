@@ -192,6 +192,35 @@ These values make the wizardry project what it is, and distinguish it from simil
 | No globals, no wrappers, minimal functions | No global env variables unless absolutely necessary. No wrappers as they break front-facing. Linear flat scripts preferred to functions. |
 | Self-healing failures | When a spell encounters a missing prerequisite or failed assumption, it should fix the problem automatically or offer to fix it—never quit with an error that tells the user to fix it themselves. Error messages must not be written in the imperative (e.g., "Please install X" or "Run Y to fix"). |
 
+## Standardization checklist
+
+Wizardry takes explicit stances on how shell code is structured, named, and validated. These checkpoints summarize the programming standards already in force and the ones being codified next.
+
+### Already standardized
+
+* **Shell contract**: POSIX `sh` only, `#!/bin/sh` shebangs, `set -eu` (or tighter) near the top, strict quoting, no try/catch around imports, and `command -v` for capability discovery. Prefer `printf` over `echo`.
+* **Spell spec**: Spells live under `spells/` with unique names and no `.sh` extension. Each starts with a two-line description, implements `--help`/`--usage`/`-h`, avoids globals and wrappers, and keeps linear flows with minimal functions.
+* **Imp vs. spell split**: Imps in `spells/.imps/` are single-purpose, function-free, hyphen-named microscripts that take positional args instead of flags. Spells should call imps (and other spells) by name rather than by path.
+* **Menu ergonomics**: Menu items show transparent one-line commands and rely on spell names (not paths) now that wizardry is on `PATH`. Menus specialize complex workflows but do not hide work in private libraries.
+* **Testing layout**: Every spell owns a mirrored test under `.tests/` that serves as its operational spec; `test-magic` aggregates the suite and uses the shared `test_common.sh` patterns.
+* **Error and exit semantics**: Scripts self-heal missing prerequisites when possible, prefix errors without imperatives, and communicate via stdout. Exit codes reflect success vs. failure; avoid silent non-zero exits.
+* **Path and platform hygiene**: Normalize paths with `pwd -P`, avoid `realpath`, guard `PATH` edits in bootstrap code, and detect kernels with `uname` when branching for portability.
+* **Temporary artifacts**: Use `mktemp` for files and directories, and clean up temps explicitly before exiting.
+
+### Being standardized now
+
+* Unified logging/output patterns and interruption semantics.
+* Consistent flag/argument parsing patterns across spells.
+* Common path/input normalization helpers (especially for user-supplied paths).
+* Default formatting and linting settings for POSIX shell.
+* Shared error-handling helpers and standard exit code meanings.
+* A single script directory resolution pattern for locating sibling resources.
+* Formal input-validation “demon family” for reusable validation imps.
+* Platform detection and abstraction helpers to centralize OS branching.
+* Function naming conventions (including how verbs map to nouns across spells and imps).
+* Standardized temporary file lifecycle and cleanup discipline.
+* Clear imp vs. spell documentation and enforcement to keep the layering crisp.
+
 ## Testing
 
 Run the complete shell test suite with:
