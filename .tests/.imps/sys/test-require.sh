@@ -195,4 +195,12 @@ run_test_case "require fallback shows custom error message" test_require_fallbac
 run_test_case "require fallback shows default error message" test_require_fallback_failure_default_message
 run_test_case "require fallback shows install hint" test_require_fallback_shows_install_hint
 
+test_require_no_args_shows_usage() {
+  run_cmd "$ROOT_DIR/spells/.imps/sys/require"
+  assert_failure
+  assert_error_contains "Usage: require COMMAND"
+}
+
+run_test_case "require with no args shows usage and fails" test_require_no_args_shows_usage
+
 finish_tests
