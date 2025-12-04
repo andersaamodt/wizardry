@@ -43,7 +43,6 @@ display_menu() {
   cli_verify="Verify torrc%tor --verify-config"
   cli_fingerprint="Show Fingerprint%tor --list-fingerprint"
   cli_dump="Print Effective Config%tor --dump-config short"
-
   set_config="Configure Tor%configure-tor"
   repair_permissions="Repair Permissions%sudo repair-tor-permissions"
   tor_lightning="Tor Lightning (Install Wizard)%install-tor"
