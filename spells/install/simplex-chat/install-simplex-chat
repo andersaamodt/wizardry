@@ -1,0 +1,102 @@
+#!/bin/sh
+
+# Install simplex-chat using the available package manager, with optional NixOS rebuild support.
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: install-simplex-chat
+
+Runs a short wizard to install simplex-chat using the system package manager and prepares default data directories.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+manage_cmd=${MANAGE_SYSTEM_COMMAND:-manage-system-command}
+
+if ! command -v "$manage_cmd" >/dev/null 2>&1; then
+  if [ -x "$script_dir/../core/manage-system-command" ]; then
+    manage_cmd="$script_dir/../core/manage-system-command"
+  else
+    printf '%s\n' "install-simplex-chat: unable to find manage-system-command" >&2
+    exit 1
+  fi
+fi
+
+detect_nixos() {
+  if [ "${SIMPLEX_CHAT_ASSUME_NIXOS-0}" -eq 1 ]; then
+    return 0
+  fi
+  if [ -d /etc/nixos ] || [ -f /etc/NIXOS ] || grep -qi 'ID=nixos' /etc/os-release 2>/dev/null; then
+    return 0
+  fi
+  return 1
+}
+
+prompt() {
+  message=$1
+  default_value=$2
+  printf '%s [%s]: ' "$message" "$default_value" >&2
+  read -r response || response=""
+  if [ -z "$response" ]; then
+    response=$default_value
+  fi
+  printf '%s' "$response"
+}
+
+package_default=${SIMPLEX_CHAT_PACKAGE_DEFAULT:-simplex-chat}
+chat_package=$(prompt "Which simplex-chat package should be installed?" "$package_default")
+
+data_dir_default=${SIMPLEX_CHAT_DATA_DIR:-$HOME/.local/share/simplex-chat}
+config_dir_default=${SIMPLEX_CHAT_CONFIG_DIR:-$HOME/.config/simplex-chat}
+
+chat_data_dir=$(prompt "Where should simplex-chat store its data?" "$data_dir_default")
+chat_config_dir=$(prompt "Where should simplex-chat keep its configuration?" "$config_dir_default")
+
+# Allow users to override per-manager packages to handle distro differences.
+export NIX_PACKAGE=${NIX_PACKAGE:-$chat_package}
+export APT_PACKAGE=${APT_PACKAGE:-$chat_package}
+export DNF_PACKAGE=${DNF_PACKAGE:-$chat_package}
+export YUM_PACKAGE=${YUM_PACKAGE:-$chat_package}
+export ZYPPER_PACKAGE=${ZYPPER_PACKAGE:-$chat_package}
+export PACMAN_PACKAGE=${PACMAN_PACKAGE:-$chat_package}
+export APK_PACKAGE=${APK_PACKAGE:-$chat_package}
+export PKGIN_PACKAGE=${PKGIN_PACKAGE:-$chat_package}
+
+printf '\nInstalling simplex-chat using %s...\n' "$manage_cmd"
+"$manage_cmd" simplex-chat "$chat_package"
+
+printf '\nPreparing simplex-chat directories...\n'
+mkdir -p "$chat_data_dir" "$chat_config_dir"
+
+if detect_nixos && command -v nixos-rebuild >/dev/null 2>&1; then
+  rebuild_cmd=${NIXOS_REBUILD_COMMAND:-"nixos-rebuild switch"}
+  if command -v sudo >/dev/null 2>&1; then
+    rebuild_cmd="sudo $rebuild_cmd"
+  fi
+  printf '\nA NixOS system was detected. Run a system rebuild now to pick up configuration changes? [y/N]: '
+  read -r rebuild || rebuild=""
+  case "$rebuild" in
+    [Yy]*)
+      sh -c "$rebuild_cmd"
+      ;;
+    *)
+      printf '%s\n' "Skipping nixos-rebuild. Run '$rebuild_cmd' later if you added simplex-chat to configuration.nix."
+      ;;
+  esac
+fi
+
+if command -v simplex-chat >/dev/null 2>&1; then
+  printf '\nChecking simplex-chat version...\n'
+  simplex-chat --version || true
+fi
+
+printf '\nSimplex-chat installation complete.\n'

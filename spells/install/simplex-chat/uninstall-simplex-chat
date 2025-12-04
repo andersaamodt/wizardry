@@ -1,0 +1,84 @@
+#!/bin/sh
+
+# Uninstall simplex-chat via the system package manager with optional data cleanup.
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: uninstall-simplex-chat
+
+Removes simplex-chat using the detected package manager and optionally cleans up local data and triggers nixos-rebuild.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+manage_cmd=${MANAGE_SYSTEM_COMMAND:-manage-system-command}
+
+if ! command -v "$manage_cmd" >/dev/null 2>&1; then
+  if [ -x "$script_dir/../core/manage-system-command" ]; then
+    manage_cmd="$script_dir/../core/manage-system-command"
+  else
+    printf '%s\n' "uninstall-simplex-chat: unable to find manage-system-command" >&2
+    exit 1
+  fi
+fi
+
+detect_nixos() {
+  if [ "${SIMPLEX_CHAT_ASSUME_NIXOS-0}" -eq 1 ]; then
+    return 0
+  fi
+  if [ -d /etc/nixos ] || [ -f /etc/NIXOS ] || grep -qi 'ID=nixos' /etc/os-release 2>/dev/null; then
+    return 0
+  fi
+  return 1
+}
+
+chat_package_default=${SIMPLEX_CHAT_PACKAGE_DEFAULT:-simplex-chat}
+chat_package=${SIMPLEX_CHAT_PACKAGE:-$chat_package_default}
+
+printf '\nRemoving simplex-chat using %s...\n' "$manage_cmd"
+"$manage_cmd" --uninstall simplex-chat "$chat_package"
+
+data_dir=${SIMPLEX_CHAT_DATA_DIR:-$HOME/.local/share/simplex-chat}
+config_dir=${SIMPLEX_CHAT_CONFIG_DIR:-$HOME/.config/simplex-chat}
+
+if [ -d "$data_dir" ] || [ -d "$config_dir" ]; then
+  printf '\nRemove local simplex-chat data at %s and %s? [y/N]: ' "$data_dir" "$config_dir"
+  read -r purge || purge=""
+  case "$purge" in
+    [Yy]*)
+      rm -rf "$data_dir" "$config_dir"
+      printf '%s\n' "Removed local simplex-chat data."
+      ;;
+    *)
+      printf '%s\n' "Keeping existing simplex-chat data."
+      ;;
+  esac
+fi
+
+if detect_nixos && command -v nixos-rebuild >/dev/null 2>&1; then
+  rebuild_cmd=${NIXOS_REBUILD_COMMAND:-"nixos-rebuild switch"}
+  if command -v sudo >/dev/null 2>&1; then
+    rebuild_cmd="sudo $rebuild_cmd"
+  fi
+  printf '\nA NixOS system was detected. Run a system rebuild to propagate removal? [y/N]: '
+  read -r rebuild || rebuild=""
+  case "$rebuild" in
+    [Yy]*)
+      sh -c "$rebuild_cmd"
+      ;;
+    *)
+      printf '%s\n' "Skipping nixos-rebuild. Run '$rebuild_cmd' later if you removed simplex-chat from configuration.nix."
+      ;;
+  esac
+fi
+
+printf '\nSimplex-chat removal complete.\n'
