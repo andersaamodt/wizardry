@@ -1,0 +1,40 @@
+#!/bin/sh
+# make-indent LEVEL [FILE] - generate indentation string for a given level
+# Uses detected indent style from FILE, or defaults to 2 spaces
+# Example: indent=$(make-indent 2 config.nix)
+
+set -eu
+
+# Find sibling imps directory
+IMP_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+
+level=${1:-1}
+file=${2-}
+
+# Detect indent character and width
+if [ -n "$file" ] && [ -f "$file" ]; then
+	char=$("$IMP_DIR/detect-indent-char" "$file")
+	width=$("$IMP_DIR/detect-indent-width" "$file")
+else
+	char=space
+	width=2
+fi
+
+# Generate the indentation string
+case $char in
+tab)
+	i=0
+	while [ "$i" -lt "$level" ]; do
+		printf '\t'
+		i=$((i + 1))
+	done
+	;;
+*)
+	total=$((level * width))
+	i=0
+	while [ "$i" -lt "$total" ]; do
+		printf ' '
+		i=$((i + 1))
+	done
+	;;
+esac

@@ -330,6 +330,80 @@ EOF
   fi
 }
 
+test_nix_respects_4space_indentation() {
+  # Test that learn-spellbook respects 4-space indentation in configuration.nix
+  rc="$WIZARDRY_TMPDIR/4space.nix"
+  dir="$WIZARDRY_TMPDIR/4space_dir"
+  mkdir -p "$dir"
+  
+  # Create a nix file with 4-space indentation
+  cat >"$rc" <<'EOF'
+{ config, pkgs, ... }:
+
+{
+    programs.bash.enable = true;
+    
+    environment.systemPackages = with pkgs; [
+        vim
+    ];
+}
+EOF
+  
+  detect_stub="$WIZARDRY_TMPDIR/detect-rc-file-4space"
+  cat >"$detect_stub" <<EOF
+#!/bin/sh
+printf 'platform=nixos\nrc_file=$rc\nformat=nix\n'
+EOF
+  chmod +x "$detect_stub"
+  
+  DETECT_RC_FILE="$detect_stub" run_spell "spells/spellcraft/learn-spellbook" add "$dir"
+  assert_success || return 1
+  
+  # The file should use 4-space indentation for the PATH block
+  # Check that the environment.sessionVariables.PATH line starts with 4 spaces
+  if ! grep -q '^    environment.sessionVariables.PATH' "$rc"; then
+    TEST_FAILURE_REASON="expected 4-space indentation for environment.sessionVariables.PATH"
+    return 1
+  fi
+  # Check that the path entry has 8-space indentation (level 2)
+  if ! grep -q '^        "' "$rc"; then
+    TEST_FAILURE_REASON="expected 8-space indentation for path entries"
+    return 1
+  fi
+}
+
+test_nix_respects_tab_indentation() {
+  # Test that learn-spellbook respects tab indentation in configuration.nix
+  rc="$WIZARDRY_TMPDIR/tabs.nix"
+  dir="$WIZARDRY_TMPDIR/tab_dir"
+  mkdir -p "$dir"
+  
+  # Create a nix file with tab indentation using printf to ensure real tabs
+  printf '{ config, pkgs, ... }:\n\n{\n\tprograms.bash.enable = true;\n}\n' >"$rc"
+  
+  detect_stub="$WIZARDRY_TMPDIR/detect-rc-file-tabs"
+  cat >"$detect_stub" <<EOF
+#!/bin/sh
+printf 'platform=nixos\nrc_file=$rc\nformat=nix\n'
+EOF
+  chmod +x "$detect_stub"
+  
+  DETECT_RC_FILE="$detect_stub" run_spell "spells/spellcraft/learn-spellbook" add "$dir"
+  assert_success || return 1
+  
+  # The file should use tab indentation for the PATH block
+  # Check that the environment.sessionVariables.PATH line starts with a tab
+  if ! grep -q '	environment.sessionVariables.PATH' "$rc"; then
+    TEST_FAILURE_REASON="expected tab indentation for environment.sessionVariables.PATH"
+    return 1
+  fi
+  # Check that the path entry has 2-tab indentation (level 2)
+  if ! grep -q '		"' "$rc"; then
+    TEST_FAILURE_REASON="expected 2-tab indentation for path entries"
+    return 1
+  fi
+}
+
 run_test_case "learn-spellbook prints usage" test_help
 run_test_case "learn-spellbook fails when detect helper missing" test_missing_detect_helper
 run_test_case "learn-spellbook rejects unknown options" test_unknown_option
@@ -346,4 +420,6 @@ run_test_case "learn-spellbook --dry-run recursive shows all dirs" test_dry_run_
 run_test_case "learn-spellbook --dry-run does not modify rc file" test_dry_run_does_not_modify_rc
 run_test_case "learn-spellbook nix adds with inline marker" test_nix_adds_with_inline_marker
 run_test_case "learn-spellbook nix allows multiple paths" test_nix_allows_multiple_paths
+run_test_case "learn-spellbook nix respects 4-space indentation" test_nix_respects_4space_indentation
+run_test_case "learn-spellbook nix respects tab indentation" test_nix_respects_tab_indentation
 finish_tests

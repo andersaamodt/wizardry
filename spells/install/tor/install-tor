@@ -20,6 +20,24 @@ esac
 
 set -eu
 
+# Find script directory for sibling resources
+SCRIPT_SOURCE=$0
+case $SCRIPT_SOURCE in
+*/*)
+        SCRIPT_DIR=${SCRIPT_SOURCE%/*}
+        ;;
+*)
+        resolved=$(command -v "$SCRIPT_SOURCE" 2>/dev/null || printf '%s' "$SCRIPT_SOURCE")
+        SCRIPT_DIR=${resolved%/*}
+        SCRIPT_SOURCE=$resolved
+        ;;
+esac
+if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
+        SCRIPT_DIR=.
+fi
+SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
+IMPS_TEXT_DIR="$SCRIPT_DIR/../../.imps/text"
+
 ask() {
   prompt=${1-}
   default=${2-}
@@ -106,18 +124,28 @@ add_tor_to_nixos() {
     backup-nix-config "$config" >&2 || true
   fi
 
+  # Detect indentation style from config file
+  indent_l1="  "
+  indent_l2="    "
+  if [ -x "$IMPS_TEXT_DIR/make-indent" ]; then
+    indent_l1=$("$IMPS_TEXT_DIR/make-indent" 1 "$config")
+    indent_l2=$("$IMPS_TEXT_DIR/make-indent" 2 "$config")
+  fi
+
   if grep -q 'environment.systemPackages' "$config"; then
     if ! grep -q 'tor' "$config"; then
       printf '%s\n' 'Adding tor to environment.systemPackages...'
-      sudo perl -0pi -e 's/(environment\.systemPackages\s*=\s*with\s+pkgs;\s*\[[^]]*)\]/$1\n  tor\n]/' "$config" \
-        || sudo perl -0pi -e 's/(environment\.systemPackages\s*=\s*\[[^]]*)\]/$1\n  tor\n]/' "$config"
+      # Use detected indentation for the package entry (level 2)
+      sudo perl -0pi -e "s/(environment\\.systemPackages\\s*=\\s*with\\s+pkgs;\\s*\\[[^\\]]*)\\]/\$1\\n${indent_l2}tor\\n${indent_l1}]/" "$config" \
+        || sudo perl -0pi -e "s/(environment\\.systemPackages\\s*=\\s*\\[[^\\]]*)\\]/\$1\\n${indent_l2}tor\\n${indent_l1}]/" "$config"
       changes=1
     fi
   fi
 
   if ! grep -q 'services.tor.enable' "$config"; then
     printf '%s\n' 'Enabling Tor service in configuration.nix...'
-    sudo perl -0pi -e 's/(\n\})/\n  services.tor.enable = true;\n$1/' "$config"
+    # Use detected indentation for the service line (level 1)
+    sudo perl -0pi -e "s/(\\n\\})/\\n${indent_l1}services.tor.enable = true;\\n}/" "$config"
     changes=1
   fi
 
