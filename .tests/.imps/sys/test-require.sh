@@ -153,4 +153,46 @@ run_test_case "require works with command only, no message" test_require_command
 run_test_case "require falls back to default when REQUIRE_COMMAND empty" test_require_empty_require_command_uses_default
 run_test_case "require preserves special characters in messages" test_require_preserves_special_characters
 
+# Tests for fallback behavior when require-command is not available
+test_require_fallback_success() {
+  tmp=$(make_tempdir)
+  # Create a command that exists
+  cat >"$tmp/existing-cmd" <<'SH'
+#!/bin/sh
+exit 0
+SH
+  chmod +x "$tmp/existing-cmd"
+  # Run with PATH that has the command but NOT require-command
+  run_cmd env PATH="$tmp" "$ROOT_DIR/spells/.imps/sys/require" existing-cmd
+  assert_success
+}
+
+test_require_fallback_failure_with_message() {
+  tmp=$(make_tempdir)
+  # Run with empty PATH (no require-command, no target command)
+  run_cmd env PATH="$tmp" "$ROOT_DIR/spells/.imps/sys/require" nonexistent-cmd "Custom error message"
+  assert_failure
+  assert_error_contains "Custom error message"
+}
+
+test_require_fallback_failure_default_message() {
+  tmp=$(make_tempdir)
+  # Run with empty PATH (no require-command, no target command, no custom message)
+  run_cmd env PATH="$tmp" "$ROOT_DIR/spells/.imps/sys/require" nonexistent-cmd
+  assert_failure
+  assert_error_contains "require: missing required command 'nonexistent-cmd'"
+}
+
+test_require_fallback_shows_install_hint() {
+  tmp=$(make_tempdir)
+  run_cmd env PATH="$tmp" "$ROOT_DIR/spells/.imps/sys/require" missing-tool
+  assert_failure
+  assert_error_contains "install-menu"
+}
+
+run_test_case "require fallback succeeds when command exists" test_require_fallback_success
+run_test_case "require fallback shows custom error message" test_require_fallback_failure_with_message
+run_test_case "require fallback shows default error message" test_require_fallback_failure_default_message
+run_test_case "require fallback shows install hint" test_require_fallback_shows_install_hint
+
 finish_tests
