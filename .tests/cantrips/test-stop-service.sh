@@ -21,11 +21,11 @@ make_stub_dir() {
 write_stub_ask_text() {
   dir=$1
   response=$2
-  cat >"$dir/ask_text" <<EOF_INNER
+  cat >"$dir/ask-text" <<EOF_INNER
 #!/bin/sh
 echo "$response"
 EOF_INNER
-  chmod +x "$dir/ask_text"
+  chmod +x "$dir/ask-text"
 }
 
 write_stub_systemctl() {

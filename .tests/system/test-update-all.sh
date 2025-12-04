@@ -39,11 +39,11 @@ test_missing_confirmation_helper() {
 test_user_declines_updates() {
   stub_dir=$(mktemp -d "$WIZARDRY_TMPDIR/update-all.decline.XXXXXX")
 
-  cat >"$stub_dir/ask_yn" <<'EOF'
+  cat >"$stub_dir/ask-yn" <<'EOF'
 #!/bin/sh
 exit 1
 EOF
-  chmod +x "$stub_dir/ask_yn"
+  chmod +x "$stub_dir/ask-yn"
 
   run_cmd env PATH="$stub_dir:$PATH" WIZARDRY_UPDATE_ALL_DISTRO=debian "$(pwd)/spells/system/update-all"
   assert_failure

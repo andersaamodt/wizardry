@@ -39,7 +39,7 @@ if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
 fi
 SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
 
-find_ask-text() {
+find_ask_text() {
 if [ -n "${START_SERVICE_ASK_TEXT-}" ]; then
 printf '%s' "$START_SERVICE_ASK_TEXT"
 return 0
@@ -56,7 +56,7 @@ printf '%s\n' "$SCRIPT_NAME: ask-text spell not found." >&2
 exit 1
 }
 
-ASK_TEXT_HELPER=$(find_ask-text)
+ASK_TEXT_HELPER=$(find_ask_text)
 
 find_systemctl() {
         if [ -z "${SYSTEMCTL-}" ]; then

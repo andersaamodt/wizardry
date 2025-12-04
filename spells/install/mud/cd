@@ -346,7 +346,7 @@ uninstall() {
         printf '%s\n' "cd cantrip: uninstalled wizardry hooks from '$rc_file'."
 }
 
-locate_ask-yn() {
+locate_ask_yn() {
         if command -v ask-yn >/dev/null 2>&1; then
                 command -v ask-yn
                 return 0
@@ -368,13 +368,13 @@ prompt_install_if_needed() {
         if cd_block_present "$rc_file"; then
                 return
         fi
-        if ! ask-yn_cmd=$(locate_ask-yn); then
+        if ! ask_yn_cmd=$(locate_ask_yn); then
                 return
         fi
         spell_path=$(absolute_spell_path "${WIZARDRY_CD_CANTRIP-}")
         rc_display=$(basename "$rc_file")
         printf '%s\n' "The cd cantrip can sprinkle the 'look' spell on every hop."
-        if "$ask-yn_cmd" "Memorize the cd cantrip in $rc_display so each teleport reveals the room?" yes >/dev/null; then
+        if "$ask_yn_cmd" "Memorize the cd cantrip in $rc_display so each teleport reveals the room?" yes >/dev/null; then
                 WIZARDRY_CD_CANTRIP=$spell_path install || return
                 printf '%s\n' "The hook is etched into $rc_display."
         else

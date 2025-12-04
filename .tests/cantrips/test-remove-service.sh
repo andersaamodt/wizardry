@@ -13,11 +13,11 @@ make_stub_dir() {
 
 write_ask_text_stub() {
   dir=$1
-  cat >"$dir/ask_text" <<'STUB'
+  cat >"$dir/ask-text" <<'STUB'
 #!/bin/sh
 printf '%s\n' "${ASK_TEXT_RESPONSE:-}"
 STUB
-  chmod +x "$dir/ask_text"
+  chmod +x "$dir/ask-text"
 }
 
 write_systemctl_stub() {
@@ -60,7 +60,7 @@ test_requires_service_name() {
   write_sudo_stub "$stub_dir"
 
   ASK_TEXT_RESPONSE="" \
-  REMOVE_SERVICE_ASK_TEXT="$stub_dir/ask_text" \
+  REMOVE_SERVICE_ASK_TEXT="$stub_dir/ask-text" \
   SYSTEMCTL_STATE_DIR="$stub_dir/state" \
   PATH="$stub_dir:$PATH" run_spell "spells/cantrips/remove-service"
 
@@ -79,7 +79,7 @@ test_reports_missing_service() {
 
   service_dir=$(mktemp -d "$WIZARDRY_TMPDIR/services.XXXXXX") || return 1
   SERVICE_DIR="$service_dir" \
-  REMOVE_SERVICE_ASK_TEXT="$stub_dir/ask_text" \
+  REMOVE_SERVICE_ASK_TEXT="$stub_dir/ask-text" \
   SYSTEMCTL_STATE_DIR="$stub_dir/state" \
   PATH="$stub_dir:$PATH" run_spell "spells/cantrips/remove-service" missing
 
@@ -101,7 +101,7 @@ test_stops_and_removes_service() {
   printf 'active' >"$service_path"
 
   SERVICE_DIR="$service_dir" \
-  REMOVE_SERVICE_ASK_TEXT="$stub_dir/ask_text" \
+  REMOVE_SERVICE_ASK_TEXT="$stub_dir/ask-text" \
   SYSTEMCTL_STATE_DIR="$stub_dir/state" \
   SYSTEMCTL_IS_ACTIVE_STATUS=0 \
   PATH="$stub_dir:$PATH" run_spell "spells/cantrips/remove-service" demo

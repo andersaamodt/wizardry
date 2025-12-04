@@ -46,7 +46,7 @@ COMMAND
 foo
 OUT
 STUB
-  cat <<'STUB' >"$tmpdir/ask_number"
+  cat <<'STUB' >"$tmpdir/ask-number"
 #!/bin/sh
 echo 1
 STUB
@@ -68,11 +68,11 @@ cat <<'OUT'
 222 ?        S      0:00 /usr/bin/bar
 OUT
 STUB
-  cat <<'STUB' >"$tmpdir/ask_number"
+  cat <<'STUB' >"$tmpdir/ask-number"
 #!/bin/sh
 echo 2
 STUB
-  cat <<'STUB' >"$tmpdir/ask_yn"
+  cat <<'STUB' >"$tmpdir/ask-yn"
 #!/bin/sh
 exit 0
 STUB
@@ -96,11 +96,11 @@ kill_process_handles_empty_process_list() {
 #!/bin/sh
 echo "COMMAND"
 STUB
-  cat <<'STUB' >"$tmpdir/ask_number"
+  cat <<'STUB' >"$tmpdir/ask-number"
 #!/bin/sh
 exit 1
 STUB
-  cat <<'STUB' >"$tmpdir/ask_yn"
+  cat <<'STUB' >"$tmpdir/ask-yn"
 #!/bin/sh
 exit 1
 STUB
@@ -122,11 +122,11 @@ cat <<'OUT'
 202 ?        S      0:00 second
 OUT
 STUB
-  cat <<'STUB' >"$tmpdir/ask_number"
+  cat <<'STUB' >"$tmpdir/ask-number"
 #!/bin/sh
 echo 1
 STUB
-  cat <<'STUB' >"$tmpdir/ask_yn"
+  cat <<'STUB' >"$tmpdir/ask-yn"
 #!/bin/sh
 exit 1
 STUB
@@ -155,11 +155,11 @@ cat <<'OUT'
 101 ?        S      0:00 first
 OUT
 STUB
-  cat <<'STUB' >"$tmpdir/ask_number"
+  cat <<'STUB' >"$tmpdir/ask-number"
 #!/bin/sh
 echo 1
 STUB
-  cat <<'STUB' >"$tmpdir/ask_yn"
+  cat <<'STUB' >"$tmpdir/ask-yn"
 #!/bin/sh
 exit 0
 STUB
@@ -181,11 +181,11 @@ cat <<'OUT'
 303 ?        S      0:00 third
 OUT
 STUB
-  cat <<'STUB' >"$tmpdir/ask_number"
+  cat <<'STUB' >"$tmpdir/ask-number"
 #!/bin/sh
 echo 1
 STUB
-  cat <<'STUB' >"$tmpdir/ask_yn"
+  cat <<'STUB' >"$tmpdir/ask-yn"
 #!/bin/sh
 exit 0
 STUB
