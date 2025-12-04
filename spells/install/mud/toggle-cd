@@ -33,13 +33,13 @@ fi
 is_installed=0
 rc_file=""
 if [ -n "${WIZARDRY_RC_FILE-}" ]; then
-        rc_file=$WIZARDRY_RC_FILE
+        rc_file="$WIZARDRY_RC_FILE"
 elif command -v detect-rc-file >/dev/null 2>&1; then
         if detected=$(detect-rc-file 2>/dev/null); then
                 while IFS= read -r line; do
                         case $line in
                         rc_file=*)
-                                rc_file=${line#rc_file=}
+                                rc_file="${line#rc_file=}"
                                 break
                                 ;;
                         esac
@@ -51,7 +51,7 @@ fi
 
 # Fallback to shell-specific defaults
 if [ -z "$rc_file" ] && [ -n "${HOME-}" ]; then
-        shell_name=${SHELL-}
+        shell_name="${SHELL-}"
         case ${shell_name##*/} in
         zsh)
                 rc_file="$HOME/.zshrc"
@@ -63,12 +63,9 @@ if [ -z "$rc_file" ] && [ -n "${HOME-}" ]; then
 fi
 
 # Check if the hook is installed by looking for markers
+# Use grep -E with alternation to check all markers in a single call
 if [ -n "$rc_file" ] && [ -f "$rc_file" ]; then
-        if grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
-                is_installed=1
-        elif grep -Fq '#wizardry: cd-cantrip' "$rc_file" 2>/dev/null; then
-                is_installed=1
-        elif grep -Fq 'WIZARDRY_CD_CANTRIP' "$rc_file" 2>/dev/null; then
+        if grep -Eq '# >>> wizardry cd cantrip >>>|#wizardry: cd-cantrip|WIZARDRY_CD_CANTRIP' "$rc_file" 2>/dev/null; then
                 is_installed=1
         fi
 fi
