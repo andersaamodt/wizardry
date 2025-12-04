@@ -145,8 +145,7 @@ add_tor_to_nixos() {
   if ! grep -q 'services.tor.enable' "$config"; then
     printf '%s\n' 'Enabling Tor service in configuration.nix...'
     # Use detected indentation for the service line (level 1)
-    # Match the closing brace and replace with indented service line + closing brace
-    sudo perl -0pi -e "s/(\\n)(\\})$/\$1${indent_l1}services.tor.enable = true;\$1\$2/" "$config"
+    sudo perl -0pi -e "s/(\\n\\})/\\n${indent_l1}services.tor.enable = true;\\n}/" "$config"
     changes=1
   fi
 
