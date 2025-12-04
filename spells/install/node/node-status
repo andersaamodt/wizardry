@@ -1,0 +1,94 @@
+#!/bin/sh
+
+# Report installation and runtime status for Node.js.
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: node-status
+
+Reports whether Node.js is installed, whether npm is available, and whether a Node-related service is running.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
+set -eu
+. colors
+
+# Older scripts expect GRAY, so mirror GREY when missing.
+GRAY=${GRAY:-${GREY-}}
+
+color_for_status() {
+  case "$1" in
+    "installed, service running"|"installed")
+      printf "%s" "$GREEN"
+      ;;
+    "installed, service stopped"|"installed, npm missing")
+      printf "%s" "$YELLOW"
+      ;;
+    "not installed")
+      printf "%s" "$GRAY"
+      ;;
+    *)
+      printf "%s" "$RED"
+      ;;
+  esac
+}
+
+command_available() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+node_service_name() {
+  for candidate in ${NODE_SERVICE-} node nodejs node-app; do
+    [ -n "$candidate" ] || continue
+    if command_available is-service-installed && is-service-installed "$candidate" >/dev/null 2>&1; then
+      printf '%s' "$candidate"
+      return 0
+    fi
+    if command_available systemctl && systemctl list-unit-files --type=service --no-pager 2>/dev/null | grep -q "^${candidate}\\.service"; then
+      printf '%s' "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
+get_node_status() {
+  if ! command_available node; then
+    status="not installed"
+    printf "%s%s%s\n" "$(color_for_status "$status")" "$status" "$RESET"
+    return
+  fi
+
+  if ! node --version >/dev/null 2>&1; then
+    status="installed, error"
+    printf "%s%s%s\n" "$(color_for_status "$status")" "$status" "$RESET"
+    return
+  fi
+
+  if ! command_available npm; then
+    status="installed, npm missing"
+  else
+    status="installed"
+  fi
+
+  if service_name=$(node_service_name); then
+    if command_available is-service-running && is-service-running "$service_name" >/dev/null 2>&1; then
+      status="installed, service running"
+    elif command_available systemctl && systemctl is-active "$service_name" >/dev/null 2>&1; then
+      status="installed, service running"
+    else
+      status="installed, service stopped"
+    fi
+  fi
+
+  printf "%s%s%s\n" "$(color_for_status "$status")" "$status" "$RESET"
+}
+
+get_node_status

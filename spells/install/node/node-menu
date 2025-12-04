@@ -1,0 +1,110 @@
+#!/bin/sh
+
+# Present the Node.js management menu.
+
+case "${1-}" in
+  -h|--help)
+    printf 'Usage: node-menu\n'
+    printf 'Displays the Node.js management menu.\n'
+    exit 0
+    ;;
+esac
+
+set -eu
+. colors
+
+trap 'exit 0' INT TERM
+
+command_available() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+is_node_installed() {
+  command_available node
+}
+
+node_service_name() {
+  for candidate in ${NODE_SERVICE-} node nodejs node-app; do
+    [ -n "$candidate" ] || continue
+    if command_available is-service-installed && is-service-installed "$candidate" >/dev/null 2>&1; then
+      printf '%s' "$candidate"
+      return 0
+    fi
+    if command_available systemctl && systemctl list-unit-files --type=service --no-pager 2>/dev/null | grep -q "^${candidate}\\.service"; then
+      printf '%s' "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
+service_entries() {
+  if service_name=$(node_service_name); then
+    status="Service Status%sudo systemctl status $service_name"
+    if command_available is-service-running && is-service-running "$service_name" >/dev/null 2>&1; then
+      toggle="Restart Node service%sudo systemctl restart $service_name"
+      stop="Stop Node service%sudo systemctl stop $service_name"
+    elif command_available systemctl && systemctl is-active "$service_name" >/dev/null 2>&1; then
+      toggle="Restart Node service%sudo systemctl restart $service_name"
+      stop="Stop Node service%sudo systemctl stop $service_name"
+    else
+      toggle="Start Node service%sudo systemctl start $service_name"
+      stop=""
+    fi
+    printf '%s\n%s\n' "$status" "$toggle"
+    [ -n "$stop" ] && printf '%s\n' "$stop"
+  fi
+}
+
+version_entries() {
+  if command_available node; then
+    printf 'Show Node version%%node --version\n'
+    printf 'Show Node binary path%%command -v node\n'
+    printf 'Runtime platform%%node -e "console.log(`${process.platform}-${process.arch}`)"\n'
+    printf 'Quick health check%%node -e "console.log(`Node OK: ${process.version}`)"\n'
+  fi
+  if command_available npm; then
+    printf 'Show npm version%%npm --version\n'
+    printf 'List global npm packages%%npm list -g --depth=0\n'
+  fi
+}
+
+display_menu() {
+  title="${BOLD}${CYAN}Node.js: $(node-status)"
+  exit_label=$(exit-label)
+  exit_option="${exit_label}%kill -TERM \$PPID"
+  install_option="Install Node.js%install-node"
+  uninstall_option="Uninstall Node.js%uninstall-node"
+
+  service_opts=$(service_entries)
+  version_opts=$(version_entries)
+
+  set --
+  if is_node_installed; then
+    old_ifs=$IFS
+    IFS=$(printf '\n')
+    for line in $version_opts; do
+      [ -n "$line" ] && set -- "$@" "$line"
+    done
+    for line in $service_opts; do
+      [ -n "$line" ] && set -- "$@" "$line"
+    done
+    IFS=$old_ifs
+    set -- "$@" "$uninstall_option" "$exit_option"
+    menu "$title" "$@" || true
+  else
+    menu "$title" "$install_option" "$exit_option" || true
+  fi
+}
+
+first_run=1
+while :; do
+  if [ "$first_run" -eq 0 ]; then
+    printf '\n'
+  else
+    first_run=0
+  fi
+  display_menu || true
+  # Loop to refresh status
+  :
+done
