@@ -1,5 +1,6 @@
 #!/bin/sh
 # Behavioral cases (derived from spell behavior):
+# - mud-admin shows usage with --help
 # - mud-admin presents admin actions to menu
 # - mud-admin exits on interrupt triggered by menu stub
 
@@ -113,6 +114,13 @@ SH
   assert_file_contains "$tmp/log" "MUD Admin:"
 }
 
+test_shows_help() {
+  run_spell "spells/menu/mud-admin-menu" --help
+  assert_success || return 1
+  assert_error_contains "Usage:" || return 1
+}
+
+run_test_case "mud-admin shows usage" test_shows_help
 run_test_case "mud-admin presents admin actions" test_mud_admin_calls_menu_with_actions
 run_test_case "mud-admin fails fast when menu helper is missing" test_mud_admin_requires_menu_helper
 run_test_case "mud-admin surfaces menu failures" test_mud_admin_reports_menu_failure
