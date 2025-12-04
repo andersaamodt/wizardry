@@ -121,9 +121,9 @@ are_all_features_enabled() {
 display_menu() {
   # Build cd hook toggle label based on current state
   if is_cd_hook_installed; then
-    cd_hook="[X] CD hook (look on directory change)%toggle-cd"
+    cd_hook="[X] cd hook (look on directory change)%toggle-cd"
   else
-    cd_hook="[ ] CD hook (look on directory change)%toggle-cd"
+    cd_hook="[ ] cd hook (look on directory change)%toggle-cd"
   fi
   
   # Build command-not-found toggle
