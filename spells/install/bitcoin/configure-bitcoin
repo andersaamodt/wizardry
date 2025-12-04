@@ -53,7 +53,7 @@ bitcoin_conf="$HOME/.bitcoin/bitcoin.conf"
 if [ ! -s "$bitcoin_conf" ]; then
     echo "$defaults" > "$bitcoin_conf"
 else
-    ask_yn "Would you like to reset the bitcoin.conf file to defaults?" "n"
+    ask-yn "Would you like to reset the bitcoin.conf file to defaults?" "n"
     reset_conf=$?
     if [ "$reset_conf" = 0 ]; then
         echo "$defaults" > "$bitcoin_conf"
@@ -70,7 +70,7 @@ modify_bitcoin_conf() {
 }
 
 # Pruning question and storage amount
-ask_yn "Wouldst thou like to enable pruning? Pruning allows thee to reduce disk usage by discarding some transaction history." "y"
+ask-yn "Wouldst thou like to enable pruning? Pruning allows thee to reduce disk usage by discarding some transaction history." "y"
 prune=$?
 if [ "$prune" = 0 ]; then
     modify_bitcoin_conf "prune" "1"
@@ -98,7 +98,7 @@ else
 fi
 
 # Network selection
-ask_yn "Art thou operating on the main Bitcoin network?" "y"
+ask-yn "Art thou operating on the main Bitcoin network?" "y"
 mainnet=$?
 if [ "$mainnet" = 0 ]; then
     modify_bitcoin_conf "testnet" "0"
@@ -109,7 +109,7 @@ fi
 # Blockchain storage location
 default_data_dir="$HOME/.bitcoin/blocks"
 modify_bitcoin_conf "datadir" "$default_data_dir"
-ask_yn "Wouldst thou like to store the blockchain in the default location ($default_data_dir)?" "y"
+ask-yn "Wouldst thou like to store the blockchain in the default location ($default_data_dir)?" "y"
 alt_storage=$?
 if [ "$alt_storage" = 1 ]; then
 	while true; do

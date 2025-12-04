@@ -39,24 +39,24 @@ if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
 fi
 SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
 
-find_ask_text() {
+find_ask-text() {
 if [ -n "${IS_SERVICE_INSTALLED_ASK_TEXT-}" ]; then
 printf '%s' "$IS_SERVICE_INSTALLED_ASK_TEXT"
 return 0
 fi
-if command -v ask_text >/dev/null 2>&1; then
-command -v ask_text
+if command -v ask-text >/dev/null 2>&1; then
+command -v ask-text
 return 0
 fi
-if [ -x "$SCRIPT_DIR/ask_text" ]; then
-printf '%s' "$SCRIPT_DIR/ask_text"
+if [ -x "$SCRIPT_DIR/ask-text" ]; then
+printf '%s' "$SCRIPT_DIR/ask-text"
 return 0
 fi
-printf '%s\n' "$SCRIPT_NAME: ask_text spell is required for prompts." >&2
+printf '%s\n' "$SCRIPT_NAME: ask-text spell is required for prompts." >&2
 exit 1
 }
 
-ASK_TEXT_HELPER=$(find_ask_text)
+ASK_TEXT_HELPER=$(find_ask-text)
 
 service_name=${1-}
 if [ -z "$service_name" ]; then

@@ -32,13 +32,13 @@ set -eu
 SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
 SPELLS_DIR=${SCRIPT_DIR%/*}
 
-# Find ask_yn helper
+# Find ask-yn helper
 if [ -n "${MEMORIZE_ASK_YN-}" ]; then
   ASK_YN_HELPER=$MEMORIZE_ASK_YN
-elif [ -x "$SPELLS_DIR/cantrips/ask_yn" ]; then
-  ASK_YN_HELPER="$SPELLS_DIR/cantrips/ask_yn"
-elif command -v ask_yn >/dev/null 2>&1; then
-  ASK_YN_HELPER=$(command -v ask_yn)
+elif [ -x "$SPELLS_DIR/cantrips/ask-yn" ]; then
+  ASK_YN_HELPER="$SPELLS_DIR/cantrips/ask-yn"
+elif command -v ask-yn >/dev/null 2>&1; then
+  ASK_YN_HELPER=$(command -v ask-yn)
 else
   # Fallback to yes for non-interactive use
   ASK_YN_HELPER=""
