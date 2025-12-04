@@ -47,12 +47,11 @@ sed-inplace 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/g' "$sshd_conf
 user_name=$(id -un 2>/dev/null || true)
 default_user=${user_name:-root}
 
-# If a line already exists, normalize it; otherwise append a new AllowUsers entry
-if grep -q '^AllowUsers' "$sshd_config" 2>/dev/null; then
-  sed-inplace "s/^AllowUsers.*/AllowUsers ${default_user}/" "$sshd_config"
-else
-  printf '%s\n' "AllowUsers ${default_user}" >> "$sshd_config"
-fi
+# Normalize any existing AllowUsers lines, then ensure one is present
+tmp_allow=$(mktemp)
+grep -v '^AllowUsers' "$sshd_config" >"$tmp_allow" || true
+mv "$tmp_allow" "$sshd_config"
+printf '%s\n' "AllowUsers ${default_user}" >> "$sshd_config"
 
 # Change SSH default port
 sed-inplace 's/#Port 22/Port 2222/g' "$sshd_config"
