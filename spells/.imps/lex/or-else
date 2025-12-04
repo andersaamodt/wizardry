@@ -1,7 +1,7 @@
 #!/bin/sh
-# and CMD CMD_ARGS MORE... - execute prior command, then continue if it succeeded
+# or-else CMD CMD_ARGS MORE... - execute prior command, continue if it failed (||)
 # Receives: $1=command, $2=command_args (space-separated), $3+=remaining args
-# Example: parse echo hello and echo world → outputs "hello" then "world"
+# Example: parse false or-else echo fallback → outputs "fallback"
 
 set -eu
 
@@ -13,15 +13,14 @@ shift 2 2>/dev/null || shift $#
 if [ -n "$cmd" ]; then
   # shellcheck disable=SC2086
   if "$cmd" $cmd_args; then
-    : # success
-  else
-    exit $?
+    # Prior command succeeded - don't continue
+    exit 0
   fi
 fi
 
-# Continue parsing remaining args
+# Prior command failed (or no prior) - continue parsing
 if [ $# -eq 0 ]; then
-  exit 0
+  exit 1
 fi
 
 exec parse "$@"

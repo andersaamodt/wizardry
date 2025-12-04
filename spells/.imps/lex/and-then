@@ -1,12 +1,14 @@
 #!/bin/sh
-# and-then CMD... - execute prior command, then continue if it succeeded (&&)
+# and-then CMD CMD_ARGS MORE... - execute prior command, then continue if it succeeded (&&)
 # Canonical linking word for shell's && operator.
-# Example: true and-then echo success → outputs "success"
+# Receives: $1=command, $2=command_args (space-separated), $3+=remaining args
+# Example: parse true and-then echo success → outputs "success"
 
 set -eu
 
-cmd=${PARSE_CMD:-}
-cmd_args=${PARSE_CMD_ARGS:-}
+cmd=${1:-}
+cmd_args=${2:-}
+shift 2 2>/dev/null || shift $#
 
 # Run the prior command if present
 if [ -n "$cmd" ]; then
@@ -23,7 +25,4 @@ if [ $# -eq 0 ]; then
   exit 0
 fi
 
-# Clear context for next command
-unset PARSE_CMD PARSE_CMD_ARGS 2>/dev/null || true
-
-exec parse-imperative "$@"
+exec parse "$@"

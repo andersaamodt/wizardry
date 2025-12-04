@@ -241,10 +241,10 @@ install() {
 
 		# Create the shell hook code for bash
 		# command_not_found_handle is the standard bash function for handling unknown commands
-		# Uses parse-imperative for recursive grammar parsing when available
+		# Uses parse for recursive grammar parsing when available
 		hook_code='command_not_found_handle() {
-  if command -v parse-imperative >/dev/null 2>&1; then
-    parse-imperative "$@"
+  if command -v parse >/dev/null 2>&1; then
+    parse "$@"
     return $?
   fi
   printf '\''%s: command not found. Try '\''menu'\'' for available spells.\n'\'' "$1" >&2
@@ -274,12 +274,12 @@ install() {
 	fi
 	# Install the command_not_found_handle function which is the standard bash
 	# mechanism for intercepting unknown commands
-	# Uses parse-imperative for recursive grammar parsing when available
+	# Uses parse for recursive grammar parsing when available
 	cat <<'HOOK' >>"$tmp_file"
 # >>> wizardry command-not-found >>>
 command_not_found_handle() {
-  if command -v parse-imperative >/dev/null 2>&1; then
-    parse-imperative "$@"
+  if command -v parse >/dev/null 2>&1; then
+    parse "$@"
     return $?
   fi
   printf '%s: command not found. Try '\''menu'\'' for available spells.\n' "$1" >&2

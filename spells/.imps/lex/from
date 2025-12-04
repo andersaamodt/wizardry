@@ -1,8 +1,13 @@
 #!/bin/sh
-# from SOURCE [MORE...] - prepend SOURCE to prior command args
-# Example: cp to /tmp from /etc/hosts → cp /etc/hosts /tmp
+# from CMD CMD_ARGS SOURCE MORE... - prepend SOURCE to command args
+# Receives: $1=command, $2=command_args (space-separated), $3=source, $4+=remaining
+# Example: parse cp to /tmp from /etc/hosts → cp /etc/hosts /tmp
 
 set -eu
+
+cmd=${1:-}
+cmd_args=${2:-}
+shift 2 2>/dev/null || shift $#
 
 if [ $# -lt 1 ]; then
   printf '%s: from requires a source\n' "from" >&2
@@ -11,9 +16,6 @@ fi
 
 source=$1
 shift
-
-cmd=${PARSE_CMD:-}
-cmd_args=${PARSE_CMD_ARGS:-}
 
 if [ -z "$cmd" ]; then
   printf '%s: from requires a command before it\n' "from" >&2
@@ -27,15 +29,12 @@ else
   new_args=$source
 fi
 
-# Update context
-PARSE_CMD_ARGS=$new_args
-export PARSE_CMD_ARGS
-
 # If no more args, execute the command now
 if [ $# -eq 0 ]; then
   # shellcheck disable=SC2086
   exec "$cmd" $new_args
 fi
 
-# Continue parsing with updated context
-exec parse-imperative "$@"
+# More args - continue parsing with updated context
+# shellcheck disable=SC2086
+exec parse "$cmd" $new_args "$@"

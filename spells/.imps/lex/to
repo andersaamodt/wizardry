@@ -1,8 +1,13 @@
 #!/bin/sh
-# to TARGET [MORE...] - append TARGET to prior command args (alias for into)
-# Example: cp file.txt to /tmp/dest.txt → cp file.txt /tmp/dest.txt
+# to CMD CMD_ARGS TARGET MORE... - append TARGET to command args (alias for into)
+# Receives: $1=command, $2=command_args (space-separated), $3=target, $4+=remaining
+# Example: parse cp file.txt to /tmp/dest.txt → cp file.txt /tmp/dest.txt
 
 set -eu
+
+cmd=${1:-}
+cmd_args=${2:-}
+shift 2 2>/dev/null || shift $#
 
 if [ $# -lt 1 ]; then
   printf '%s: to requires a target\n' "to" >&2
@@ -11,9 +16,6 @@ fi
 
 target=$1
 shift
-
-cmd=${PARSE_CMD:-}
-cmd_args=${PARSE_CMD_ARGS:-}
 
 if [ -z "$cmd" ]; then
   printf '%s: to requires a command before it\n' "to" >&2
@@ -27,15 +29,12 @@ else
   new_args=$target
 fi
 
-# Update context
-PARSE_CMD_ARGS=$new_args
-export PARSE_CMD_ARGS
-
 # If no more args, execute the command now
 if [ $# -eq 0 ]; then
   # shellcheck disable=SC2086
   exec "$cmd" $new_args
 fi
 
-# Continue parsing with updated context
-exec parse-imperative "$@"
+# More args - continue parsing with updated context
+# shellcheck disable=SC2086
+exec parse "$cmd" $new_args "$@"

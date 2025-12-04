@@ -1,8 +1,9 @@
 #!/bin/sh
-# parse-imperative CMD... - recursively parse and execute written imperatives
+# parse CMD... - recursively parse and execute written imperatives
 # Scans for linking words (imps in lex/) and delegates to them.
 # Longer linking words take precedence (and-then before and or then).
-# Example: parse-imperative echo hello and-then echo world
+# Passes command and args to linking words: LINK_WORD CMD CMD_ARGS REMAINING...
+# Example: parse echo hello and-then echo world
 
 set -eu
 
@@ -16,7 +17,7 @@ lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 
 # Check if a word is a linking word (exists as executable in lex/)
 is_link_word() {
-  [ -x "$lex_dir/$1" ]
+  [ -x "$lex_dir/$1" ] && [ "$1" != "parse" ]
 }
 
 # Try to find a linking word at the start, preferring longer matches
@@ -25,7 +26,7 @@ if [ $# -ge 2 ]; then
   two_word="$1-$2"
   if is_link_word "$two_word"; then
     shift 2
-    exec "$two_word" "$@"
+    exec "$two_word" "" "" "$@"
   fi
 fi
 
@@ -33,7 +34,7 @@ fi
 first=$1
 if is_link_word "$first"; then
   shift
-  exec "$first" "$@"
+  exec "$first" "" "" "$@"
 fi
 
 # Not a linking word - treat as a command to execute
@@ -96,43 +97,24 @@ if [ "$link_pos" -eq 0 ]; then
   exec "$cmd" "$@"
 fi
 
-# Build command args (before linking word)
+# Build command args string (before linking word) - space-separated
 cmd_args_end=$((link_pos - 1))
-
-# Build remaining args (after linking word)
-remain_start=$((link_pos + link_len))
-
-# Rebuild command args
-set --
+cmd_args=''
 i=1
 while [ "$i" -le "$cmd_args_end" ]; do
-  eval "set -- \"\$@\" \"\$arg_$i\""
-  i=$((i + 1))
-done
-cmd_args="$*"
-
-# Rebuild remaining args
-remain_args=''
-i=$remain_start
-while [ "$i" -le "$total" ]; do
   eval "a=\"\$arg_$i\""
-  if [ -z "$remain_args" ]; then
-    remain_args=$a
+  if [ -z "$cmd_args" ]; then
+    cmd_args=$a
   else
-    remain_args="$remain_args $a"
+    cmd_args="$cmd_args $a"
   fi
   i=$((i + 1))
 done
 
-# Export context for linking word
-# The linking word receives: PARSE_CMD, PARSE_CMD_ARGS, and its own arguments
-PARSE_CMD=$cmd
-export PARSE_CMD
-PARSE_CMD_ARGS=$cmd_args
-export PARSE_CMD_ARGS
+# Build remaining args (after linking word)
+remain_start=$((link_pos + link_len))
 
-# Call linking word with remaining args
-# The linking word is responsible for running the command or continuing parsing
+# Call linking word with: CMD CMD_ARGS REMAINING_ARGS...
 set --
 i=$remain_start
 while [ "$i" -le "$total" ]; do
@@ -140,4 +122,4 @@ while [ "$i" -le "$total" ]; do
   i=$((i + 1))
 done
 
-exec "$link_word" "$@"
+exec "$link_word" "$cmd" "$cmd_args" "$@"
