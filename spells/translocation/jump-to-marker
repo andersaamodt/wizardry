@@ -290,6 +290,30 @@ fi
 return 1
 }
 
+# Run nixos-rebuild or home-manager switch to apply NixOS configuration changes.
+# Uses the shared nix-rebuild imp if available, otherwise logs a warning.
+run_nix_rebuild() {
+        # Allow tests to skip the rebuild
+        if [ "${WIZARDRY_SKIP_NIX_REBUILD-}" = "1" ]; then
+                return 0
+        fi
+
+        # Use the shared nix-rebuild imp if available
+        if command -v nix-rebuild >/dev/null 2>&1; then
+                nix-rebuild
+                return $?
+        fi
+
+        # Fallback: attempt home-manager if available (most common case)
+        if command -v home-manager >/dev/null 2>&1; then
+                printf '%s\n' "jump-to-marker: running home-manager switch..."
+                home-manager switch && return 0
+        fi
+
+        printf '%s\n' "jump-to-marker: NixOS configuration could not be automatically rebuilt." >&2
+        return 1
+}
+
 install() {
         if ! jump_detect_environment; then
                 return 1
@@ -300,13 +324,14 @@ install() {
         if ! script_path=$(jump_self_path); then
                 return 1
         fi
-        line=$(printf 'source "%s"' "$script_path")
+        # Source the spell and create 'jump' alias for convenience
+        spell_content=$(printf 'source "%s"\nalias jump=jump-to-marker' "$script_path")
         
         # learn auto-detects rc file and format
-        if printf '%s\n' "$line" | "$learn" --spell "$SPELL_NAME" add; then
+        if printf '%s\n' "$spell_content" | "$learn" --spell "$SPELL_NAME" add; then
                 printf '%s\n' "The 'jump' spell has been learned."
                 if [ "$JUMP_TO_MARKER_FORMAT" = "nix" ]; then
-                        printf '%s\n' "Rebuild your NixOS configuration to activate the change."
+                        run_nix_rebuild || true
                 else
                         printf '%s\n' "Open a new terminal (or source the file) to summon portals anywhere."
                 fi

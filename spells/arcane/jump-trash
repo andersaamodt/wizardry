@@ -242,6 +242,30 @@ jump_trash_spell_memorized() {
   return 1
 }
 
+# Run nixos-rebuild or home-manager switch to apply NixOS configuration changes.
+# Uses the shared nix-rebuild imp if available, otherwise logs a warning.
+run_nix_rebuild() {
+  # Allow tests to skip the rebuild
+  if [ "${WIZARDRY_SKIP_NIX_REBUILD-}" = "1" ]; then
+    return 0
+  fi
+
+  # Use the shared nix-rebuild imp if available
+  if command -v nix-rebuild >/dev/null 2>&1; then
+    nix-rebuild
+    return $?
+  fi
+
+  # Fallback: attempt home-manager if available (most common case)
+  if command -v home-manager >/dev/null 2>&1; then
+    printf '%s\n' "jump-trash: running home-manager switch..."
+    home-manager switch && return 0
+  fi
+
+  printf '%s\n' "jump-trash: NixOS configuration could not be automatically rebuilt." >&2
+  return 1
+}
+
 jump_trash_install() {
   if ! jump_trash_detect_environment; then
     return 1
@@ -258,7 +282,7 @@ jump_trash_install() {
   if printf '%s\n' "$line" | "$learn" --spell "$SPELL_NAME" add; then
     printf '%s\n' "The 'jump-trash' spell has been memorized."
     if [ "$JUMP_TRASH_FORMAT" = "nix" ]; then
-      printf '%s\n' "Rebuild your NixOS configuration to activate the change."
+      run_nix_rebuild || true
     else
       printf '%s\n' "Open a new terminal (or source the file) to teleport to trash anywhere."
     fi

@@ -137,9 +137,185 @@ test_jump_zero_cycles() {
   assert_success
 }
 
+test_nixos_install_runs_home_manager() {
+  # Test that on NixOS (nix format), install runs home-manager switch automatically
+  stub=$(make_tempdir)
+  fake_home="$stub/home"
+  mkdir -p "$fake_home"
+  
+  # Create a nix config file
+  nix_config="$fake_home/configuration.nix"
+  printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$nix_config"
+  
+  # Create detect-rc-file stub that returns nix format
+  cat >"$stub/detect-rc-file" <<STUB
+#!/bin/sh
+printf 'platform=nixos\n'
+printf 'rc_file=$nix_config\n'
+printf 'format=nix\n'
+STUB
+  chmod +x "$stub/detect-rc-file"
+  
+  # Create learn stub that records what it was called with
+  learn_log="$stub/learn.log"
+  cat >"$stub/learn" <<STUB
+#!/bin/sh
+printf '%s\n' "\$*" >>"$learn_log"
+exit 0
+STUB
+  chmod +x "$stub/learn"
+  
+  # Create home-manager stub that logs its invocation
+  home_manager_log="$stub/home-manager.log"
+  cat >"$stub/home-manager" <<STUB
+#!/bin/sh
+printf '%s\n' "\$*" >>"$home_manager_log"
+exit 0
+STUB
+  chmod +x "$stub/home-manager"
+  
+  link_tools "$stub" sh printf grep cat test sed basename command pwd
+  
+  # Run install - the spell should call home-manager switch
+  run_cmd sh -c "
+    PATH='$stub:/bin:/usr/bin'
+    HOME='$fake_home'
+    DETECT_RC_FILE='$stub/detect-rc-file'
+    LEARN_SPELL='$stub/learn'
+    JUMP_TO_MARKER_PATH='$ROOT_DIR/spells/translocation/jump-to-marker'
+    export PATH HOME DETECT_RC_FILE LEARN_SPELL JUMP_TO_MARKER_PATH
+    . '$ROOT_DIR/spells/translocation/jump-to-marker'
+    install
+  "
+  assert_success || return 1
+  
+  # Check that home-manager switch was called
+  if [ -f "$home_manager_log" ]; then
+    if grep -q "switch" "$home_manager_log"; then
+      return 0
+    fi
+    TEST_FAILURE_REASON="home-manager was not called with 'switch': $(cat "$home_manager_log")"
+    return 1
+  fi
+  TEST_FAILURE_REASON="home-manager was not called"
+  return 1
+}
+
+test_nixos_install_skips_rebuild_when_disabled() {
+  # Test that WIZARDRY_SKIP_NIX_REBUILD=1 skips the rebuild
+  stub=$(make_tempdir)
+  fake_home="$stub/home"
+  mkdir -p "$fake_home"
+  
+  nix_config="$fake_home/configuration.nix"
+  printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$nix_config"
+  
+  cat >"$stub/detect-rc-file" <<STUB
+#!/bin/sh
+printf 'platform=nixos\n'
+printf 'rc_file=$nix_config\n'
+printf 'format=nix\n'
+STUB
+  chmod +x "$stub/detect-rc-file"
+  
+  learn_log="$stub/learn.log"
+  cat >"$stub/learn" <<STUB
+#!/bin/sh
+printf '%s\n' "\$*" >>"$learn_log"
+exit 0
+STUB
+  chmod +x "$stub/learn"
+  
+  # Create home-manager stub that logs its invocation
+  home_manager_log="$stub/home-manager.log"
+  cat >"$stub/home-manager" <<STUB
+#!/bin/sh
+printf '%s\n' "\$*" >>"$home_manager_log"
+exit 0
+STUB
+  chmod +x "$stub/home-manager"
+  
+  link_tools "$stub" sh printf grep cat test sed basename command pwd
+  
+  # Run install with WIZARDRY_SKIP_NIX_REBUILD=1
+  run_cmd sh -c "
+    PATH='$stub:/bin:/usr/bin'
+    HOME='$fake_home'
+    DETECT_RC_FILE='$stub/detect-rc-file'
+    LEARN_SPELL='$stub/learn'
+    JUMP_TO_MARKER_PATH='$ROOT_DIR/spells/translocation/jump-to-marker'
+    WIZARDRY_SKIP_NIX_REBUILD=1
+    export PATH HOME DETECT_RC_FILE LEARN_SPELL JUMP_TO_MARKER_PATH WIZARDRY_SKIP_NIX_REBUILD
+    . '$ROOT_DIR/spells/translocation/jump-to-marker'
+    install
+  "
+  assert_success || return 1
+  
+  # Check that home-manager was NOT called
+  if [ -f "$home_manager_log" ]; then
+    TEST_FAILURE_REASON="home-manager should not have been called when WIZARDRY_SKIP_NIX_REBUILD=1"
+    return 1
+  fi
+  return 0
+}
+
+test_install_adds_jump_alias() {
+  # Test that install adds the 'jump' alias to the rc file
+  stub=$(make_tempdir)
+  fake_home="$stub/home"
+  mkdir -p "$fake_home"
+  rc_file="$fake_home/.bashrc"
+  touch "$rc_file"
+  
+  # Create detect-rc-file stub
+  cat >"$stub/detect-rc-file" <<STUB
+#!/bin/sh
+printf 'platform=linux\n'
+printf 'rc_file=$rc_file\n'
+printf 'format=shell\n'
+STUB
+  chmod +x "$stub/detect-rc-file"
+  
+  # Create learn stub that captures stdin content
+  learn_stdin="$stub/learn_stdin.txt"
+  cat >"$stub/learn" <<STUB
+#!/bin/sh
+cat >"$learn_stdin"
+exit 0
+STUB
+  chmod +x "$stub/learn"
+  
+  link_tools "$stub" sh printf grep cat test sed basename command pwd
+  
+  # Run install
+  run_cmd sh -c "
+    PATH='$stub:/bin:/usr/bin'
+    HOME='$fake_home'
+    DETECT_RC_FILE='$stub/detect-rc-file'
+    LEARN_SPELL='$stub/learn'
+    JUMP_TO_MARKER_PATH='$ROOT_DIR/spells/translocation/jump-to-marker'
+    export PATH HOME DETECT_RC_FILE LEARN_SPELL JUMP_TO_MARKER_PATH
+    . '$ROOT_DIR/spells/translocation/jump-to-marker'
+    install
+  "
+  assert_success || return 1
+  
+  # Verify the content passed to learn contains the alias
+  if [ ! -f "$learn_stdin" ]; then
+    TEST_FAILURE_REASON="learn was not called with stdin content"
+    return 1
+  fi
+  if ! grep -q "alias jump=jump-to-marker" "$learn_stdin"; then
+    TEST_FAILURE_REASON="install did not add 'alias jump=jump-to-marker': $(cat "$learn_stdin")"
+    return 1
+  fi
+  return 0
+}
+
 run_test_case "jump-to-marker prints usage" test_help
 run_test_case "jump-to-marker rejects unknown options" test_unknown_option_fails
 run_test_case "jump-to-marker install fails when helpers missing" test_install_requires_helpers
+run_test_case "jump-to-marker install adds jump alias" test_install_adds_jump_alias
 run_test_case "jump-to-marker fails when markers dir is missing" test_jump_requires_markers_dir
 run_test_case "jump-to-marker fails when specific marker is missing" test_jump_requires_specific_marker
 run_test_case "jump-to-marker fails when marker is blank" test_jump_rejects_blank_marker
@@ -149,4 +325,6 @@ run_test_case "jump-to-marker jumps to marked directory" test_jump_changes_direc
 run_test_case "jump-to-marker jumps to named marker" test_jump_to_named_marker
 run_test_case "jump-to-marker lists available markers on error" test_jump_lists_available_markers
 run_test_case "jump 0 cycles like jump with no args" test_jump_zero_cycles
+run_test_case "jump-to-marker nixos install runs home-manager" test_nixos_install_runs_home_manager
+run_test_case "jump-to-marker nixos install skips rebuild when disabled" test_nixos_install_skips_rebuild_when_disabled
 finish_tests

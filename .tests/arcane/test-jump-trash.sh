@@ -170,7 +170,8 @@ STUB
     DETECT_RC_FILE='$stub/detect-rc-file'
     LEARN_SPELL='$stub/learn'
     JUMP_TRASH_PATH='$ROOT_DIR/spells/arcane/jump-trash'
-    export PATH HOME DETECT_RC_FILE LEARN_SPELL JUMP_TRASH_PATH
+    WIZARDRY_SKIP_NIX_REBUILD=1
+    export PATH HOME DETECT_RC_FILE LEARN_SPELL JUMP_TRASH_PATH WIZARDRY_SKIP_NIX_REBUILD
     . '$ROOT_DIR/spells/arcane/jump-trash'
     jump_trash_install
   "
@@ -188,6 +189,126 @@ STUB
   return 1
 }
 
+test_nixos_install_runs_home_manager() {
+  # Test that on NixOS (nix format), install runs home-manager switch automatically
+  stub=$(make_tempdir)
+  fake_home="$stub/home"
+  mkdir -p "$fake_home"
+  
+  # Create a nix config file
+  nix_config="$fake_home/configuration.nix"
+  printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$nix_config"
+  
+  # Create detect-rc-file stub that returns nix format
+  cat >"$stub/detect-rc-file" <<STUB
+#!/bin/sh
+printf 'platform=nixos\n'
+printf 'rc_file=$nix_config\n'
+printf 'format=nix\n'
+STUB
+  chmod +x "$stub/detect-rc-file"
+  
+  # Create learn stub
+  cat >"$stub/learn" <<STUB
+#!/bin/sh
+exit 0
+STUB
+  chmod +x "$stub/learn"
+  
+  # Create home-manager stub that logs its invocation
+  home_manager_log="$stub/home-manager.log"
+  cat >"$stub/home-manager" <<STUB
+#!/bin/sh
+printf '%s\n' "\$*" >>"$home_manager_log"
+exit 0
+STUB
+  chmod +x "$stub/home-manager"
+  
+  link_tools "$stub" sh printf grep cat test sed basename command pwd
+  
+  # Run jump_trash_install - the spell should call home-manager switch
+  run_cmd sh -c "
+    PATH='$stub:/bin:/usr/bin'
+    HOME='$fake_home'
+    DETECT_RC_FILE='$stub/detect-rc-file'
+    LEARN_SPELL='$stub/learn'
+    JUMP_TRASH_PATH='$ROOT_DIR/spells/arcane/jump-trash'
+    export PATH HOME DETECT_RC_FILE LEARN_SPELL JUMP_TRASH_PATH
+    . '$ROOT_DIR/spells/arcane/jump-trash'
+    jump_trash_install
+  "
+  assert_success || return 1
+  
+  # Check that home-manager switch was called
+  if [ -f "$home_manager_log" ]; then
+    if grep -q "switch" "$home_manager_log"; then
+      return 0
+    fi
+    TEST_FAILURE_REASON="home-manager was not called with 'switch': $(cat "$home_manager_log")"
+    return 1
+  fi
+  TEST_FAILURE_REASON="home-manager was not called"
+  return 1
+}
+
+test_nixos_install_skips_rebuild_when_disabled() {
+  # Test that WIZARDRY_SKIP_NIX_REBUILD=1 skips the rebuild
+  stub=$(make_tempdir)
+  fake_home="$stub/home"
+  mkdir -p "$fake_home"
+  
+  nix_config="$fake_home/configuration.nix"
+  printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$nix_config"
+  
+  cat >"$stub/detect-rc-file" <<STUB
+#!/bin/sh
+printf 'platform=nixos\n'
+printf 'rc_file=$nix_config\n'
+printf 'format=nix\n'
+STUB
+  chmod +x "$stub/detect-rc-file"
+  
+  cat >"$stub/learn" <<STUB
+#!/bin/sh
+exit 0
+STUB
+  chmod +x "$stub/learn"
+  
+  # Create home-manager stub that logs its invocation
+  home_manager_log="$stub/home-manager.log"
+  cat >"$stub/home-manager" <<STUB
+#!/bin/sh
+printf '%s\n' "\$*" >>"$home_manager_log"
+exit 0
+STUB
+  chmod +x "$stub/home-manager"
+  
+  link_tools "$stub" sh printf grep cat test sed basename command pwd
+  
+  # Run install with WIZARDRY_SKIP_NIX_REBUILD=1
+  run_cmd sh -c "
+    PATH='$stub:/bin:/usr/bin'
+    HOME='$fake_home'
+    DETECT_RC_FILE='$stub/detect-rc-file'
+    LEARN_SPELL='$stub/learn'
+    JUMP_TRASH_PATH='$ROOT_DIR/spells/arcane/jump-trash'
+    WIZARDRY_SKIP_NIX_REBUILD=1
+    export PATH HOME DETECT_RC_FILE LEARN_SPELL JUMP_TRASH_PATH WIZARDRY_SKIP_NIX_REBUILD
+    . '$ROOT_DIR/spells/arcane/jump-trash'
+    jump_trash_install
+  "
+  assert_success || return 1
+  
+  # Check that home-manager was NOT called
+  if [ -f "$home_manager_log" ]; then
+    TEST_FAILURE_REASON="home-manager should not have been called when WIZARDRY_SKIP_NIX_REBUILD=1"
+    return 1
+  fi
+  return 0
+}
+
 run_test_case "jump-trash uses nix format on NixOS" test_nixos_uses_nix_format
+run_test_case "jump-trash nixos install runs home-manager" test_nixos_install_runs_home_manager
+run_test_case "jump-trash nixos install skips rebuild when disabled" test_nixos_install_skips_rebuild_when_disabled
 
 finish_tests
