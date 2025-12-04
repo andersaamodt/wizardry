@@ -7,24 +7,9 @@ set -eu
 # Catch Ctrl-C and TERM signal to exit cleanly
 trap 'exit 0' INT TERM
 
-# Load colors for display
-if command -v colors >/dev/null 2>&1; then
-        # shellcheck source=/dev/null
-        . "$(command -v colors)"
-else
-        RESET=''
-        CYAN=''
-fi
-
-if [ -n "${REQUIRE_COMMAND-}" ]; then
-        require_cmd=$REQUIRE_COMMAND
-else
-        require_cmd=require-command
-fi
-
-require_tool() {
-        "$require_cmd" "$@"
-}
+# Load color palette (colors handles terminal capability detection internally)
+# shellcheck source=/dev/null
+. "$(command -v colors)"
 
 cast_store=${CAST_STORE-memorize}
 if cast_store_path=$(command -v "$cast_store" 2>/dev/null); then
@@ -194,7 +179,7 @@ name=$1
 # The command is the spell name (which is executable either as scribed command or from PATH)
 command=$name
 
-if ! require_tool menu "The spell menu needs the 'menu' command."; then
+if ! require menu "The spell menu needs the 'menu' command."; then
         exit 1
 fi
 

@@ -80,6 +80,16 @@ printf '%s\n' "The MUD Settings menu needs the 'menu' command to present options
 exit 1
 SH
   chmod +x "$tmp/require-command"
+  # Create stub require that honors REQUIRE_COMMAND (like the real imp)
+  cat >"$tmp/require" <<'SH'
+#!/bin/sh
+if [ -n "${REQUIRE_COMMAND-}" ]; then
+  "$REQUIRE_COMMAND" "$@"
+else
+  require-command "$@"
+fi
+SH
+  chmod +x "$tmp/require"
   run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp" MENU_LOG="$tmp/log" MUD_PLAYER=hero "$ROOT_DIR/spells/menu/mud-settings"
   assert_failure
   assert_error_contains "The MUD Settings menu needs the 'menu' command"

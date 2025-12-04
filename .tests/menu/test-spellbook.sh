@@ -15,6 +15,18 @@ done
 
 make_stub_dir() {
   dir=$(mktemp -d "$WIZARDRY_TMPDIR/spellbook.XXXXXX") || exit 1
+  # Create colors stub so spells can start
+  cat >"$dir/colors" <<'SH'
+#!/bin/sh
+RESET=''
+CYAN=''
+GREY=''
+PURPLE=''
+YELLOW=''
+THEME_CUSTOM=''
+WIZARDRY_COLORS_AVAILABLE=0
+SH
+  chmod +x "$dir/colors"
   printf '%s\n' "$dir"
 }
 

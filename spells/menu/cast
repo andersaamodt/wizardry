@@ -14,16 +14,6 @@ else
         exit 1
 fi
 
-if [ -n "${REQUIRE_COMMAND-}" ]; then
-        require_cmd=$REQUIRE_COMMAND
-else
-        require_cmd=require-command
-fi
-
-require_tool() {
-        "$require_cmd" "$@"
-}
-
 cast_dir=$($cast_store dir)
 
 cast_list() {
@@ -107,7 +97,7 @@ case ${1-} in
                 ;;
 esac
 
-if ! require_tool menu "The casting menu needs the 'menu' command."; then
+if ! require menu "The casting menu needs the 'menu' command."; then
         exit 1
 fi
 

@@ -98,9 +98,9 @@ SH
 }
 
 test_main_menu_loads_colors_gracefully() {
-  # Verify the spell has a load_colors function
-  grep -q "load_colors" "$ROOT_DIR/spells/menu/main-menu" || {
-    TEST_FAILURE_REASON="spell does not have load_colors function"
+  # Verify the spell sources colors (wizardry's color palette)
+  grep -q "colors" "$ROOT_DIR/spells/menu/main-menu" || {
+    TEST_FAILURE_REASON="spell does not source colors"
     return 1
   }
 }

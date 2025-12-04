@@ -22,28 +22,9 @@ set -eu
 # Catch Ctrl-C and TERM signal to exit cleanly
 trap 'exit 0' INT TERM
 
-if [ -n "${REQUIRE_COMMAND-}" ]; then
-  require_cmd=$REQUIRE_COMMAND
-else
-  require_cmd=require-command
-fi
-
-require() {
-  "$require_cmd" "$@"
-}
-
-load_colors() {
-  if color_path=$(command -v colors 2>/dev/null); then
-    # shellcheck source=/dev/null
-    . "$color_path"
-  else
-    RESET=''
-    CYAN=''
-    GREY=''
-  fi
-}
-
-load_colors
+# Load color palette (colors handles terminal capability detection internally)
+# shellcheck source=/dev/null
+. "$(command -v colors)"
 
 if ! require menu "The MUD Settings menu needs the 'menu' command to present options."; then
   exit 1
