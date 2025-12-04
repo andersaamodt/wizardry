@@ -15,6 +15,16 @@ spell_is_executable() {
 
 run_test_case "install/node/node-status is executable" spell_is_executable
 
+renders_usage_information() {
+  run_cmd "$ROOT_DIR/spells/install/node/node-status" --help
+
+  assert_success || return 1
+  assert_error_contains "Usage: node-status" || return 1
+  assert_error_contains "Reports whether Node.js is installed" || return 1
+}
+
+run_test_case "node-status prints usage with --help" renders_usage_information
+
 reports_not_installed_without_node_binary() {
   tmp=$(make_tempdir)
   run_cmd env PATH="$tmp:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps:$ROOT_DIR/spells/.imps/menu" \

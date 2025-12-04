@@ -15,6 +15,16 @@ spell_is_executable() {
 
 run_test_case "install/node/install-node is executable" spell_is_executable
 
+renders_usage_information() {
+  run_cmd "$ROOT_DIR/spells/install/node/install-node" --help
+
+  assert_success || return 1
+  assert_error_contains "Usage: install-node" || return 1
+  assert_error_contains "install Node.js" || return 1
+}
+
+run_test_case "install-node prints usage with --help" renders_usage_information
+
 runs_install_with_default_package() {
   tmp=$(make_tempdir)
   log="$tmp/manage.log"
