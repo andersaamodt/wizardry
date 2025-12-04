@@ -21,17 +21,17 @@ make_stub_bin() {
 }
 
 test_help() {
-  run_spell "spells/kryptos/hashchant" --help
+  run_spell "spells/crypto/hashchant" --help
   assert_success && assert_output_contains "Usage: hashchant"
 }
 
 test_missing_arg() {
-  run_spell "spells/kryptos/hashchant"
+  run_spell "spells/crypto/hashchant"
   assert_failure && assert_output_contains "Error: No file specified."
 }
 
 test_missing_file() {
-  run_spell "spells/kryptos/hashchant" "$WIZARDRY_TMPDIR/absent.txt"
+  run_spell "spells/crypto/hashchant" "$WIZARDRY_TMPDIR/absent.txt"
   assert_failure && assert_output_contains "Error: File not found."
 }
 
@@ -40,7 +40,7 @@ test_missing_helpers() {
   tmpdir=$(make_tempdir)
   file="$tmpdir/target.txt"
   echo "lore" >"$file"
-  PATH="$stub:/bin:/usr/bin" run_spell "spells/kryptos/hashchant" "$file"
+  PATH="$stub:/bin:/usr/bin" run_spell "spells/crypto/hashchant" "$file"
   assert_failure && assert_output_contains "Error: xattr and attr commands not found"
 }
 
@@ -64,7 +64,7 @@ exit 1
 EOF
   chmod +x "$stub/xattr"
   export ATTR_LOG="$log"
-  PATH="$stub:/bin:/usr/bin" run_spell "spells/kryptos/hashchant" "$file"
+  PATH="$stub:/bin:/usr/bin" run_spell "spells/crypto/hashchant" "$file"
   assert_success || return 1
   assert_output_contains "$expected" || return 1
   assert_path_exists "$log" || return 1
@@ -98,7 +98,7 @@ exit 1
 EOF
   chmod +x "$stub/setfattr"
   export ATTR_LOG="$log"
-  PATH="$stub:/bin:/usr/bin" run_spell "spells/kryptos/hashchant" "$file"
+  PATH="$stub:/bin:/usr/bin" run_spell "spells/crypto/hashchant" "$file"
   assert_success || return 1
   assert_output_contains "$expected" || return 1
   assert_path_exists "$log" || return 1
@@ -126,7 +126,7 @@ printf '%s\n' "$*" >>"$ATTR_LOG"
 EOF
   chmod +x "$stub/setfattr"
   export ATTR_LOG="$log"
-  PATH="$stub:/bin:/usr/bin" run_spell "spells/kryptos/hashchant" "$file"
+  PATH="$stub:/bin:/usr/bin" run_spell "spells/crypto/hashchant" "$file"
   assert_success || return 1
   assert_output_contains "$expected" || return 1
   assert_path_exists "$log" || return 1

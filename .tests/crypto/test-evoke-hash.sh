@@ -9,18 +9,18 @@ done
 . "$test_root/test-common.sh"
 
 spell_is_executable() {
-  [ -x "$ROOT_DIR/spells/kryptos/evoke-hash" ]
+  [ -x "$ROOT_DIR/spells/crypto/evoke-hash" ]
 }
 
 spell_has_content() {
-  [ -s "$ROOT_DIR/spells/kryptos/evoke-hash" ]
+  [ -s "$ROOT_DIR/spells/crypto/evoke-hash" ]
 }
 
-run_test_case "kryptos/evoke-hash is executable" spell_is_executable
-run_test_case "kryptos/evoke-hash has content" spell_has_content
+run_test_case "crypto/evoke-hash is executable" spell_is_executable
+run_test_case "crypto/evoke-hash has content" spell_has_content
 
 shows_help() {
-  run_spell spells/kryptos/evoke-hash --help
+  run_spell spells/crypto/evoke-hash --help
   true
 }
 

@@ -15,20 +15,20 @@ done
 . "$test_root/test-common.sh"
 
 test_help() {
-  run_spell "spells/kryptos/hash" --help
+  run_spell "spells/crypto/hash" --help
   assert_success || return 1
   assert_output_contains "Usage: hash" || return 1
   assert_output_contains "Compute the CRC-32 hash" || return 1
 }
 
 hash_requires_single_argument() {
-  run_spell "spells/kryptos/hash"
+  run_spell "spells/crypto/hash"
   assert_failure || return 1
   assert_output_contains "Usage: hash" || return 1
 }
 
 hash_fails_on_missing_file() {
-  run_spell "spells/kryptos/hash" "missing.txt"
+  run_spell "spells/crypto/hash" "missing.txt"
   assert_failure || return 1
   assert_output_contains "Your spell fizzles. There is no file." || return 1
 }
@@ -37,7 +37,7 @@ hash_rejects_directory() {
   tmpdir=$(make_tempdir)
   mkdir -p "$tmpdir/dir"
 
-  run_spell "spells/kryptos/hash" "$tmpdir"
+  run_spell "spells/crypto/hash" "$tmpdir"
   assert_failure || return 1
   assert_output_contains "Your spell fizzles. There is no file." || return 1
 }
@@ -46,14 +46,14 @@ hash_rejects_extra_arguments() {
   file="$WIZARDRY_TMPDIR/hash_extra.txt"
   printf 'extra' >"$file"
 
-  run_spell "spells/kryptos/hash" "$file" another
+  run_spell "spells/crypto/hash" "$file" another
   assert_failure || return 1
   assert_output_contains "Usage: hash" || return 1
 }
 
 hash_reports_path_and_checksum() {
   tmpdir=$(make_tempdir)
-  cp "spells/kryptos/hash" "$tmpdir/hash"
+  cp "spells/crypto/hash" "$tmpdir/hash"
   sample_path="$tmpdir/sample.txt"
   printf 'hash me' >"$sample_path"
   checksum=$(cksum "$sample_path" | awk '{print $1}')
