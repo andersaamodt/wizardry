@@ -192,6 +192,20 @@ These values make the wizardry project what it is, and distinguish it from simil
 | No globals, no wrappers, minimal functions | No global env variables unless absolutely necessary. No wrappers as they break front-facing. Linear flat scripts preferred to functions. |
 | Self-healing failures | When a spell encounters a missing prerequisite or failed assumption, it should fix the problem automatically or offer to fix it—never quit with an error that tells the user to fix it themselves. Error messages must not be written in the imperative (e.g., "Please install X" or "Run Y to fix"). |
 
+## Standardization checklist
+
+Wizardry is converging on a comprehensive set of standards so every spell, imp, menu, and test feels familiar and reliable. These checkpoints summarize what is already standardized (and what we plan to keep enforcing) across the codebase:
+
+* **Language and headers**: POSIX `sh` only, `#!/bin/sh` shebangs, `set -eu` strict mode, and careful quoting everywhere; avoid Bash-isms, prefer `printf`, and use `command -v` for capability checks.
+* **Spell layout**: Spells live under `spells/` with unique names and no `.sh` extension; each begins with a two-line description, supports `--help`/`--usage`/`-h`, and keeps flows flat and readable with minimal functions.
+* **Menu expectations**: Menu items show transparent one-line commands and invoke spells by name (not by path) now that wizardry lives in `PATH`, keeping menus both didactic and portable.
+* **Imps and micro-helpers**: Imps in `spells/.imps/` do exactly one thing, avoid functions, use human-readable hyphenated names, and rely on simple positional arguments instead of flags.
+* **Testing conventions**: Every spell owns a mirrored test under `.tests/` that doubles as its operational spec; `test-magic` aggregates the suite and preserves the assumption-checking patterns from `test_common.sh`.
+* **Cross-platform habits**: Normalize paths with `pwd -P`, guard `PATH` setup in bootstrap scripts, detect kernels with `uname`, prefer `curl`/`wget` fallbacks, create temp files with `mktemp`, and avoid non-portable tools like `realpath`.
+* **Error handling and messaging**: Scripts self-heal missing prerequisites, prefix errors clearly without imperatives, and favor stdout communication so spells and humans consume the same outputs.
+* **Menu- and spell-first ergonomics**: All user-facing behavior is implemented as front-facing spells (no hidden libraries or wrappers), with menu specialization and transparency guiding how complex workflows are exposed.
+* **Planned tightening**: Continue expanding `vet-spell --strict` coverage, raising cross-platform parity for every spell, and extending menu coverage so every capability remains discoverable and consistent.
+
 ## Testing
 
 Run the complete shell test suite with:
