@@ -142,14 +142,14 @@ install_look() {
 }
 
 load_colors() {
-        if is set "${LOOK_COLORS_PATH-}" && is file "$LOOK_COLORS_PATH"; then
+        if [ -n "${LOOK_COLORS_PATH-}" ] && [ -f "$LOOK_COLORS_PATH" ]; then
                 # shellcheck disable=SC1090
                 . "$LOOK_COLORS_PATH"
                 return 0
         fi
-        if has colors; then
+        if command -v colors >/dev/null 2>&1; then
                 # shellcheck disable=SC1090
-                . "$(where colors)"
+                . "$(command -v colors)"
                 return 0
         fi
         if [ -x "$SCRIPT_DIR/cantrips/colors" ]; then
@@ -169,12 +169,42 @@ if ! load_colors; then
         MUD_DESCRIPTION=""
 fi
 
-if lacks read-magic; then
-        warn "look: read-magic spell is missing."
+if ! command -v read-magic >/dev/null 2>&1; then
+        printf '%s\n' "look: read-magic spell is missing." >&2
         exit 1
 fi
 
-path=${1:-$PWD}
+identify_available=0
+if command -v identify-room >/dev/null 2>&1; then
+        identify_available=1
+fi
+
+normalize_path() {
+        location=$1
+        if [ -d "$location" ]; then
+                CDPATH= cd -- "$location" 2>/dev/null && pwd -P
+                return
+        fi
+        dirname=$(dirname -- "$location")
+        basename=$(basename -- "$location")
+        if CDPATH= cd -- "$dirname" 2>/dev/null; then
+                printf '%s/%s\n' "$(pwd -P)" "$basename"
+                return
+        fi
+        printf '%s\n' "$location"
+}
+
+normalize_location() {
+        normalized=$(printf '%s' "$1" | sed 's:/*$::')
+        if [ -z "$normalized" ]; then
+                printf '/\n'
+                return
+        fi
+        printf '%s\n' "$normalized"
+}
+
+path_input=${1:-$PWD}
+path=$(normalize_location "$(normalize_path "$path_input")")
 
 install_look || true
 
@@ -194,12 +224,25 @@ get_default_description() {
         esac
 }
 
+IDENTIFY_TITLE=''
+IDENTIFY_DESCRIPTION=''
+
+if [ "$identify_available" -eq 1 ]; then
+        if identify_room_output=$(identify-room "$path" 2>/dev/null); then
+                IDENTIFY_TITLE=$(printf '%s' "$identify_room_output" | sed -n '1p')
+                IDENTIFY_DESCRIPTION=$(printf '%s' "$identify_room_output" | sed -n '2p')
+        fi
+else
+        look_warn "identify-room spell is unavailable; continuing without system lore."
+fi
 # Get title from attribute or fall back to folder name
 get_room_title() {
         room_path=$1
         attr_title=$(read-magic "$room_path" title 2>/dev/null || true)
         if [ "$attr_title" != "$MISSING_ATTR_MSG" ] && [ -n "$attr_title" ]; then
                 printf '%s' "$attr_title"
+        elif [ -n "$IDENTIFY_TITLE" ]; then
+                printf '%s' "$IDENTIFY_TITLE"
         else
                 # Use the folder/file name as the title
                 basename "$room_path"
@@ -212,9 +255,13 @@ get_room_description() {
         attr_desc=$(read-magic "$room_path" description 2>/dev/null || true)
         if [ "$attr_desc" != "$MISSING_ATTR_MSG" ] && [ -n "$attr_desc" ]; then
                 printf '%s' "$attr_desc"
-        else
-                get_default_description "$room_path"
+                return 0
         fi
+        if [ -n "$IDENTIFY_DESCRIPTION" ]; then
+                printf '%s' "$IDENTIFY_DESCRIPTION"
+                return 0
+        fi
+        get_default_description "$room_path"
 }
 
 # Display MUD-formatted room description
