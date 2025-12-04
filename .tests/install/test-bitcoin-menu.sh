@@ -71,7 +71,7 @@ test_bitcoin_menu_prompts_install_when_missing() {
   make_boolean_stub "$tmp/is-service-installed" 1
   make_boolean_stub "$tmp/is-bitcoin-running" 1
 
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/install/bitcoin/bitcoin-menu"
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/install/bitcoin-menu"
   assert_success
   assert_file_contains "$tmp/log" "Bitcoin: missing"
   assert_file_contains "$tmp/log" "Install Bitcoin%install-bitcoin"
@@ -87,7 +87,7 @@ test_bitcoin_menu_controls_running_service() {
   make_boolean_stub "$tmp/is-service-installed" 0
   make_boolean_stub "$tmp/is-bitcoin-running" 0
 
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/install/bitcoin/bitcoin-menu"
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/install/bitcoin-menu"
   assert_success
   assert_file_contains "$tmp/log" "Stop Bitcoin Service%sudo systemctl stop bitcoin"
   assert_file_contains "$tmp/log" "Uninstall Bitcoin Service%remove-service bitcoin"
@@ -109,7 +109,7 @@ echo /usr/bin/bitcoind
 SH
   chmod +x "$tmp/which"
 
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/install/bitcoin/bitcoin-menu"
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/install/bitcoin-menu"
   assert_success
   assert_file_contains "$tmp/log" "Install Bitcoin Service%install-service-template $ROOT_DIR/spells/install/bitcoin/bitcoin.service \"BITCOIND=/usr/bin/bitcoind\""
   assert_file_contains "$tmp/log" "Uninstall Bitcoin%uninstall-bitcoin"
@@ -120,7 +120,7 @@ run_test_case "bitcoin-menu manages running services" test_bitcoin_menu_controls
 run_test_case "bitcoin-menu installs service when absent" test_bitcoin_menu_offers_service_install_when_missing
 
 test_shows_help() {
-  run_cmd "$ROOT_DIR/spells/install/bitcoin/bitcoin-menu" --help
+  run_cmd "$ROOT_DIR/spells/install/bitcoin-menu" --help
   assert_success
   assert_output_contains "Usage: bitcoin-menu"
 }
