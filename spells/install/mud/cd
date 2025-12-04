@@ -50,6 +50,51 @@ warn() {
         printf '%s\n' "cd cantrip: $1" >&2
 }
 
+# Run nixos-rebuild or home-manager switch to apply NixOS configuration changes
+# This function follows project ethos: automatically fix things instead of telling users to do it.
+# Returns 0 if rebuild succeeded, 1 if it could not be run automatically.
+run_nix_rebuild() {
+        # Allow tests to skip the rebuild
+        if [ "${WIZARDRY_SKIP_NIX_REBUILD-}" = "1" ]; then
+                return 0
+        fi
+        
+        rebuild_success=0
+        
+        # Try to detect if we should use sudo or doas
+        priv_cmd=""
+        if command -v sudo >/dev/null 2>&1; then
+                priv_cmd="sudo"
+        elif command -v doas >/dev/null 2>&1; then
+                priv_cmd="doas"
+        fi
+        
+        # Try home-manager first (doesn't need privileges)
+        if command -v home-manager >/dev/null 2>&1; then
+                printf '%s\n' "cd cantrip: running home-manager switch..."
+                if home-manager switch; then
+                        printf '%s\n' "cd cantrip: NixOS environment rebuilt successfully."
+                        rebuild_success=1
+                fi
+        fi
+        
+        # If home-manager didn't work and we have privilege escalation, try nixos-rebuild
+        if [ "$rebuild_success" -eq 0 ] && [ -n "$priv_cmd" ] && command -v nixos-rebuild >/dev/null 2>&1; then
+                printf '%s\n' "cd cantrip: running $priv_cmd nixos-rebuild switch..."
+                if "$priv_cmd" nixos-rebuild switch; then
+                        printf '%s\n' "cd cantrip: NixOS environment rebuilt successfully."
+                        rebuild_success=1
+                fi
+        fi
+        
+        if [ "$rebuild_success" -eq 0 ]; then
+                warn "NixOS configuration could not be automatically rebuilt."
+                return 1
+        fi
+        
+        return 0
+}
+
 absolute_spell_path() {
         spell=${1:-$0}
         case $spell in
@@ -219,6 +264,8 @@ alias cd='. \"\$WIZARDRY_CD_CANTRIP\"'"
                 
                 if printf '%s\n' "$hook_code" | "$nix_helper" add --shell bash --name cd-cantrip --file "$rc_file"; then
                         printf '%s\n' "cd cantrip: installed wizardry hooks in '$rc_file'."
+                        # Run nixos-rebuild to apply the changes
+                        run_nix_rebuild || true
                 else
                         warn "unable to update '$rc_file'."
                         return 1
@@ -274,6 +321,8 @@ uninstall() {
                 if [ -n "$nix_helper" ]; then
                         if "$nix_helper" remove --shell bash --name cd-cantrip --file "$rc_file"; then
                                 printf '%s\n' "cd cantrip: uninstalled wizardry hooks from '$rc_file'."
+                                # Run nixos-rebuild to apply the changes
+                                run_nix_rebuild || true
                                 return 0
                         else
                                 warn "unable to update '$rc_file'."
