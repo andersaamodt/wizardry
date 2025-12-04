@@ -65,10 +65,10 @@ case "$1" in
   -g)
     case "$2" in
       user.alpha)
-        printf 'Attribute "user.alpha" has a value: alpha-value\n'
+        printf 'Attribute "user.alpha" had a 11 byte value for %s:\nalpha-value\n' "$3"
         ;;
       user.beta)
-        printf 'Attribute "user.beta" has a value: beta-value\n'
+        printf 'Attribute "user.beta" had a 10 byte value for %s:\nbeta-value\n' "$3"
         ;;
       *)
         exit 1
@@ -94,7 +94,7 @@ test_reads_specific_attribute_via_attr() {
   cat >"$stub_dir/attr" <<'STUB'
 #!/bin/sh
 if [ "$1" = "-g" ] && [ "$2" = "user.charm" ]; then
-  printf 'Attribute "user.charm" has a value: sparkle\n'
+  printf 'Attribute "user.charm" had a 7 byte value for %s:\nsparkle\n' "$3"
   exit 0
 fi
 exit 1

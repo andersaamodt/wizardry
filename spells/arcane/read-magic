@@ -34,8 +34,11 @@ file_exists() {
   fi
 }
 
+# Strip the header line from attr -g output.
+# The attr command outputs: Attribute "key" had a N byte value for path:
+# followed by the actual value on subsequent lines. We simply remove the first line.
 parse_attr_output() {
-  printf '%s' "$1" | sed 's/.*has a value:[[:space:]]*//'
+  printf '%s\n' "$1" | sed '1d'
 }
 
 helper_usable() {
