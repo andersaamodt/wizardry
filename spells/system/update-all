@@ -132,7 +132,11 @@ run_with_progress() {
     return $?
   fi
 
-  progress_tmp=$(mktemp)
+  progress_tmp=$(mktemp "${TMPDIR:-/tmp}/update-all.XXXXXX") || return 1
+  cleanup_progress_tmp() {
+    [ -n "${progress_tmp-}" ] && [ -f "$progress_tmp" ] && rm -f "$progress_tmp"
+  }
+  trap cleanup_progress_tmp EXIT HUP INT TERM
   (
     set +e
     "$@" 2>&1
@@ -143,6 +147,7 @@ run_with_progress() {
   ) | tr '\r' '\n' | progress_filter
 
   status=$(cat "$progress_tmp" 2>/dev/null || printf '1\n')
+  trap - EXIT HUP INT TERM
   rm -f "$progress_tmp"
 
   case ${status:-} in

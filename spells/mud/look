@@ -86,27 +86,37 @@ ensure_rc_dir() {
         return 0
 }
 
+_look_tmp_file=''
+cleanup_look_tmp() {
+        [ -n "$_look_tmp_file" ] && [ -f "$_look_tmp_file" ] && rm -f "$_look_tmp_file"
+}
+
 write_look_block() {
         rc_file=$1
         if ! ensure_rc_dir "$rc_file"; then
                 return 1
         fi
-        tmp_file=$(mktemp "${TMPDIR:-/tmp}/wizardry-look.XXXXXX") || return 1
+        _look_tmp_file=$(mktemp "${TMPDIR:-/tmp}/wizardry-look.XXXXXX") || return 1
+        trap cleanup_look_tmp EXIT HUP INT TERM
         if [ -f "$rc_file" ]; then
-                sed '/^# >>> wizardry look spell >>>$/,/^# <<< wizardry look spell <<</d' "$rc_file" >"$tmp_file"
+                sed '/^# >>> wizardry look spell >>>$/,/^# <<< wizardry look spell <<</d' "$rc_file" >"$_look_tmp_file"
         else
-                : >"$tmp_file"
+                : >"$_look_tmp_file"
         fi
-        cat <<BLOCK >>"$tmp_file"
+        cat <<BLOCK >>"$_look_tmp_file"
 # >>> wizardry look spell >>>
 alias look='$LOOK_SCRIPT_PATH'
 # <<< wizardry look spell <<<
 BLOCK
-        if ! mv "$tmp_file" "$rc_file"; then
-                rm -f "$tmp_file"
+        if ! mv "$_look_tmp_file" "$rc_file"; then
+                trap - EXIT HUP INT TERM
+                rm -f "$_look_tmp_file"
+                _look_tmp_file=''
                 look_warn "unable to update '$rc_file'."
                 return 1
         fi
+        trap - EXIT HUP INT TERM
+        _look_tmp_file=''
         return 0
 }
 

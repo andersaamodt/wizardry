@@ -227,10 +227,11 @@ test_total=$(printf '%s\n' "$test_files" | grep -c .)
 # Spells have a --help flag which needs testing, plus 2 additional subtests.
 MIN_SUBTESTS_IMP=2
 MIN_SUBTESTS_SPELL=3
-failure_output_file=$(mktemp)
+failure_output_file=$(mktemp "${TMPDIR:-/tmp}/test-magic.XXXXXX") || exit 1
 cleanup_failure_output() {
   rm -f "$failure_output_file"
 }
+trap cleanup_failure_output EXIT HUP INT TERM
 
 spell_name_for_test() {
   test_path=$1

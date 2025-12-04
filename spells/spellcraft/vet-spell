@@ -263,10 +263,15 @@ passed=0
 failed_targets=''
 
 targets_file=$(mktemp "${TMPDIR:-/tmp}/vet-spell-targets.XXXXXX") || exit 1
+cleanup_targets_file() {
+  [ -n "${targets_file-}" ] && [ -f "$targets_file" ] && rm -f "$targets_file"
+}
+trap cleanup_targets_file EXIT HUP INT TERM
 collect_targets "$@" >"$targets_file"
 
 if [ "$list_only" -eq 1 ]; then
   cat "$targets_file"
+  trap - EXIT HUP INT TERM
   rm -f "$targets_file"
   exit 0
 fi
@@ -384,6 +389,7 @@ while IFS= read -r target; do
   fi
 done <"$targets_file"
 
+trap - EXIT HUP INT TERM
 rm -f "$targets_file"
 
 if [ "$failures" -eq 0 ]; then

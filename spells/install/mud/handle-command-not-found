@@ -262,6 +262,10 @@ install() {
 		return 1
 	fi
 	tmp_file=$(mktemp "${TMPDIR:-/tmp}/wizardry-cnf.XXXXXX") || return 1
+	cleanup_cnf_tmp() {
+		[ -n "${tmp_file-}" ] && [ -f "$tmp_file" ] && rm -f "$tmp_file"
+	}
+	trap cleanup_cnf_tmp EXIT HUP INT TERM
 	if [ -f "$rc_file" ]; then
 		sed '/^# >>> wizardry command-not-found >>>$/,/^# <<< wizardry command-not-found <<</d' "$rc_file" >"$tmp_file"
 	else
@@ -278,10 +282,12 @@ command_not_found_handle() {
 # <<< wizardry command-not-found <<<
 HOOK
 	if ! mv "$tmp_file" "$rc_file"; then
+		trap - EXIT HUP INT TERM
 		rm -f "$tmp_file"
 		warn "unable to update '$rc_file'."
 		return 1
 	fi
+	trap - EXIT HUP INT TERM
 	printf '%s\n' "handle-command-not-found: installed hook in '$rc_file'."
 }
 
@@ -323,12 +329,18 @@ uninstall() {
 
 	# Shell format: use sed to remove the block
 	tmp_file=$(mktemp "${TMPDIR:-/tmp}/wizardry-cnf.XXXXXX") || return 1
+	cleanup_cnf_tmp() {
+		[ -n "${tmp_file-}" ] && [ -f "$tmp_file" ] && rm -f "$tmp_file"
+	}
+	trap cleanup_cnf_tmp EXIT HUP INT TERM
 	sed '/^# >>> wizardry command-not-found >>>$/,/^# <<< wizardry command-not-found <<</d' "$rc_file" >"$tmp_file"
 	if ! mv "$tmp_file" "$rc_file"; then
+		trap - EXIT HUP INT TERM
 		rm -f "$tmp_file"
 		warn "unable to update '$rc_file'."
 		return 1
 	fi
+	trap - EXIT HUP INT TERM
 	printf '%s\n' "handle-command-not-found: uninstalled hook from '$rc_file'."
 }
 
