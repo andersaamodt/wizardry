@@ -1,18 +1,41 @@
 #!/bin/sh
-# to TARGET CMD... - prepend TARGET to command arguments (destination linking word)
-# Alias for 'into' - transforms "to TARGET CMD A B" → "CMD A B TARGET"
-# Example: to /tmp cp file.txt → cp file.txt /tmp
+# to TARGET [MORE...] - append TARGET to prior command args (alias for into)
+# Example: cp file.txt to /tmp/dest.txt → cp file.txt /tmp/dest.txt
 
 set -eu
 
-if [ $# -lt 2 ]; then
+if [ $# -lt 1 ]; then
+  printf '%s: to requires a target\n' "to" >&2
   exit 1
 fi
 
 target=$1
 shift
-cmd=$1
-shift
 
-# Execute command with original args followed by target
-exec "$cmd" "$@" "$target"
+cmd=${PARSE_CMD:-}
+cmd_args=${PARSE_CMD_ARGS:-}
+
+if [ -z "$cmd" ]; then
+  printf '%s: to requires a command before it\n' "to" >&2
+  exit 1
+fi
+
+# Append target to command args
+if [ -n "$cmd_args" ]; then
+  new_args="$cmd_args $target"
+else
+  new_args=$target
+fi
+
+# Update context
+PARSE_CMD_ARGS=$new_args
+export PARSE_CMD_ARGS
+
+# If no more args, execute the command now
+if [ $# -eq 0 ]; then
+  # shellcheck disable=SC2086
+  exec "$cmd" $new_args
+fi
+
+# Continue parsing with updated context
+exec parse-imperative "$@"

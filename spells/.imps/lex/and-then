@@ -1,6 +1,7 @@
 #!/bin/sh
-# and CMD... - execute prior command, then continue if it succeeded (alias for then)
-# Example: echo hello and echo world → outputs "hello" then "world"
+# and-then CMD... - execute prior command, then continue if it succeeded (&&)
+# Canonical linking word for shell's && operator.
+# Example: true and-then echo success → outputs "success"
 
 set -eu
 

@@ -1,12 +1,27 @@
 #!/bin/sh
-# or CMD... - execute remaining arguments as a command (alternation linking word)
-# Used by parse-imperative for fallback: parse-imperative A or B → A || parse-imperative B
-# Example: or echo fallback → echo fallback
+# or CMD... - execute prior command, continue if it failed (||)
+# Example: false or echo fallback → outputs "fallback"
 
 set -eu
 
-if [ $# -eq 0 ]; then
-  exit 0
+cmd=${PARSE_CMD:-}
+cmd_args=${PARSE_CMD_ARGS:-}
+
+# Run the prior command if present
+if [ -n "$cmd" ]; then
+  # shellcheck disable=SC2086
+  if "$cmd" $cmd_args; then
+    # Prior command succeeded - don't continue
+    exit 0
+  fi
 fi
 
-exec "$@"
+# Prior command failed (or no prior) - continue parsing
+if [ $# -eq 0 ]; then
+  exit 1
+fi
+
+# Clear context for next command
+unset PARSE_CMD PARSE_CMD_ARGS 2>/dev/null || true
+
+exec parse-imperative "$@"

@@ -85,7 +85,16 @@ test_parse_imperative_into_target() {
 test_parse_imperative_unknown_command() {
   run_spell "spells/.imps/lex/parse-imperative" nonexistent_cmd_xyz
   assert_status 127 || return 1
-  assert_error_contains "command not found" || return 1
+  # Shell error messages vary, but should indicate the command wasn't found
+  case "$ERROR" in
+    *"not found"*|*"not exist"*|*"No such"*)
+      return 0
+      ;;
+    *)
+      TEST_FAILURE_REASON="stderr should indicate command not found"
+      return 1
+      ;;
+  esac
 }
 
 test_parse_imperative_then_stops_on_failure() {

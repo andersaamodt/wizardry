@@ -60,7 +60,8 @@ test_into_reorders_args() {
   mkdir -p "$tmp/target"
   echo "content" > "$tmp/source.txt"
   
-  run_spell "spells/.imps/lex/into" "$tmp/target" cp "$tmp/source.txt"
+  # into now works through parse-imperative context
+  run_spell "spells/.imps/lex/parse-imperative" cp "$tmp/source.txt" into "$tmp/target"
   assert_success || return 1
   
   if [ ! -f "$tmp/target/source.txt" ]; then
@@ -84,7 +85,8 @@ test_to_reorders_args() {
   tmp=$(make_tempdir)
   echo "content" > "$tmp/source.txt"
   
-  run_spell "spells/.imps/lex/to" "$tmp/dest.txt" cp "$tmp/source.txt"
+  # to now works through parse-imperative context
+  run_spell "spells/.imps/lex/parse-imperative" cp "$tmp/source.txt" to "$tmp/dest.txt"
   assert_success || return 1
   
   if [ ! -f "$tmp/dest.txt" ]; then
@@ -103,7 +105,9 @@ test_from_reorders_args() {
   tmp=$(make_tempdir)
   echo "source content" > "$tmp/source.txt"
   
-  run_spell "spells/.imps/lex/from" "$tmp/source.txt" cp "$tmp/dest.txt"
+  # from now works through parse-imperative context
+  # Example: cp to /dest from /source → cp /source /dest
+  run_spell "spells/.imps/lex/parse-imperative" cp to "$tmp/dest.txt" from "$tmp/source.txt"
   assert_success || return 1
   
   if [ ! -f "$tmp/dest.txt" ]; then
@@ -115,6 +119,30 @@ test_from_reorders_args() {
 test_from_requires_source_and_cmd() {
   run_spell "spells/.imps/lex/from" /tmp
   assert_failure || return 1
+}
+
+# --- and-then imp tests ---
+
+test_and_then_is_executable() {
+  [ -x "$ROOT_DIR/spells/.imps/lex/and-then" ]
+}
+
+test_and_then_chains_on_success() {
+  run_spell "spells/.imps/lex/parse-imperative" echo first and then echo second
+  assert_success || return 1
+  assert_output_contains "first" || return 1
+  assert_output_contains "second" || return 1
+}
+
+test_and_then_stops_on_failure() {
+  run_spell "spells/.imps/lex/parse-imperative" false and then echo shouldnt_run
+  assert_failure || return 1
+  case "$OUTPUT" in
+    *shouldnt_run*)
+      TEST_FAILURE_REASON="and-then continued after failure"
+      return 1
+      ;;
+  esac
 }
 
 # Run all tests
@@ -133,4 +161,7 @@ run_test_case "to reorders arguments" test_to_reorders_args
 run_test_case "from is executable" test_from_is_executable
 run_test_case "from reorders arguments" test_from_reorders_args
 run_test_case "from requires source and cmd" test_from_requires_source_and_cmd
+run_test_case "and-then is executable" test_and_then_is_executable
+run_test_case "and-then chains on success" test_and_then_chains_on_success
+run_test_case "and-then stops on failure" test_and_then_stops_on_failure
 finish_tests

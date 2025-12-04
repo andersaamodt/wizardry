@@ -1,12 +1,29 @@
 #!/bin/sh
-# then CMD... - execute remaining arguments as a command (identity linking word)
-# Used by parse-imperative to chain commands: parse-imperative A then B → A && parse-imperative B
-# Example: then echo hello → echo hello
+# then CMD... - execute prior command, then continue if it succeeded
+# Example: echo hello then echo world → outputs "hello" then "world"
 
 set -eu
 
+cmd=${PARSE_CMD:-}
+cmd_args=${PARSE_CMD_ARGS:-}
+
+# Run the prior command if present
+if [ -n "$cmd" ]; then
+  # Capture status without triggering set -e
+  # shellcheck disable=SC2086
+  if "$cmd" $cmd_args; then
+    : # success
+  else
+    exit $?
+  fi
+fi
+
+# Continue parsing remaining args
 if [ $# -eq 0 ]; then
   exit 0
 fi
 
-exec "$@"
+# Clear context for next command
+unset PARSE_CMD PARSE_CMD_ARGS 2>/dev/null || true
+
+exec parse-imperative "$@"

@@ -1,8 +1,8 @@
 #!/bin/sh
-# parse-imperative CMD [ARGS...] - recursively parse and execute written imperatives
-# Handles linking words (then, and, or, into, to, from) that chain or modify commands.
-# Unknown commands fall through to the shell with an appropriate error message.
-# Example: parse-imperative echo hello then echo world → echo hello && echo world
+# parse-imperative CMD... - recursively parse and execute written imperatives
+# Scans for linking words (imps in lex/) and delegates to them.
+# Longer linking words take precedence (and-then before and or then).
+# Example: parse-imperative echo hello and-then echo world
 
 set -eu
 
@@ -11,192 +11,133 @@ if [ $# -eq 0 ]; then
   exit 0
 fi
 
-# Check if first word is a linking word that needs special handling
+# Find the lex directory (where this script lives)
+lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+
+# Check if a word is a linking word (exists as executable in lex/)
+is_link_word() {
+  [ -x "$lex_dir/$1" ]
+}
+
+# Try to find a linking word at the start, preferring longer matches
+# Check two-word combinations first (like "and then" -> and-then)
+if [ $# -ge 2 ]; then
+  two_word="$1-$2"
+  if is_link_word "$two_word"; then
+    shift 2
+    exec "$two_word" "$@"
+  fi
+fi
+
+# Check single word
 first=$1
+if is_link_word "$first"; then
+  shift
+  exec "$first" "$@"
+fi
+
+# Not a linking word - treat as a command to execute
+cmd=$first
 shift
 
-case $first in
-  # Sequential/conjunction linking words - execute remainder
-  then|and)
-    if [ $# -eq 0 ]; then
-      exit 0
-    fi
-    exec "$0" "$@"
-    ;;
-  
-  # Alternation linking word - execute remainder (called after prior failure)
-  or)
-    if [ $# -eq 0 ]; then
-      exit 0
-    fi
-    exec "$0" "$@"
-    ;;
-  
-  # Target linking word - reorder arguments
-  into|to)
-    if [ $# -lt 2 ]; then
-      printf '%s: %s requires a target and command\n' "parse-imperative" "$first" >&2
-      exit 1
-    fi
-    target=$1
-    shift
-    cmd=$1
-    shift
-    # Execute: cmd [args...] target
-    exec "$cmd" "$@" "$target"
-    ;;
-  
-  # Source linking word - reorder arguments  
-  from)
-    if [ $# -lt 2 ]; then
-      printf '%s: from requires a source and command\n' "parse-imperative" >&2
-      exit 1
-    fi
-    source=$1
-    shift
-    cmd=$1
-    shift
-    # Execute: cmd source [args...]
-    exec "$cmd" "$source" "$@"
-    ;;
-esac
-
-# Not a linking word - first is the command
-cmd=$first
-
-# Simple case: no more arguments - just execute the command
+# No more args - just run the command
 if [ $# -eq 0 ]; then
-  if command -v "$cmd" >/dev/null 2>&1; then
-    exec "$cmd"
-  else
-    printf '%s: command not found\n' "$cmd" >&2
-    exit 127
-  fi
+  exec "$cmd"
 fi
 
-# Look for linking words in the arguments
-# We use a counter-based approach to track position
-link_pos=0
-pos=0
-for arg in "$@"; do
-  pos=$((pos + 1))
-  case $arg in
-    then|and|or|into|to|from)
-      link_pos=$pos
-      break
-      ;;
-  esac
-done
-
-# If no linking word found, execute the full command directly
-if [ "$link_pos" -eq 0 ]; then
-  if command -v "$cmd" >/dev/null 2>&1; then
-    exec "$cmd" "$@"
-  else
-    printf '%s: command not found\n' "$cmd" >&2
-    exit 127
-  fi
-fi
-
-# We have a linking word at position link_pos
-# Separate args before and at/after the linking word
-cmd_arg_count=$((link_pos - 1))
-total_args=$#
-
-# Save all arguments to indexed variables for later retrieval
+# Save args to indexed variables (POSIX shell lacks arrays)
+total=$#
 i=1
 for arg in "$@"; do
-  eval "saved_arg_$i=\"\$arg\""
+  eval "arg_$i=\"\$arg\""
   i=$((i + 1))
 done
 
-# Get the linking word
-eval "link_word=\"\$saved_arg_$link_pos\""
+# Scan for the first linking word
+link_pos=0
+link_len=0
+link_word=''
+i=1
+while [ "$i" -le "$total" ]; do
+  # Check two-word combination first
+  if [ "$i" -lt "$total" ]; then
+    j=$((i + 1))
+    eval "w1=\"\$arg_$i\""
+    eval "w2=\"\$arg_$j\""
+    two_word="$w1-$w2"
+    if is_link_word "$two_word"; then
+      link_pos=$i
+      link_len=2
+      link_word=$two_word
+      break
+    fi
+  fi
+  
+  # Check single word
+  eval "w=\"\$arg_$i\""
+  if is_link_word "$w"; then
+    link_pos=$i
+    link_len=1
+    link_word=$w
+    break
+  fi
+  
+  i=$((i + 1))
+done
 
-# Handle the linking word
-case $link_word in
-  then|and)
-    # Rebuild command arguments (before link word)
-    set --
-    i=1
-    while [ "$i" -le "$cmd_arg_count" ]; do
-      eval "set -- \"\$@\" \"\$saved_arg_$i\""
-      i=$((i + 1))
-    done
-    
-    # Execute command
-    if "$cmd" "$@"; then
-      # Rebuild remaining arguments (after link word)
-      set --
-      i=$((link_pos + 1))
-      while [ "$i" -le "$total_args" ]; do
-        eval "set -- \"\$@\" \"\$saved_arg_$i\""
-        i=$((i + 1))
-      done
-      exec "$0" "$@"
-    else
-      exit $?
-    fi
-    ;;
-    
-  or)
-    # Rebuild command arguments
-    set --
-    i=1
-    while [ "$i" -le "$cmd_arg_count" ]; do
-      eval "set -- \"\$@\" \"\$saved_arg_$i\""
-      i=$((i + 1))
-    done
-    
-    if "$cmd" "$@"; then
-      exit 0
-    else
-      # Rebuild remaining arguments
-      set --
-      i=$((link_pos + 1))
-      while [ "$i" -le "$total_args" ]; do
-        eval "set -- \"\$@\" \"\$saved_arg_$i\""
-        i=$((i + 1))
-      done
-      exec "$0" "$@"
-    fi
-    ;;
-    
-  into|to)
-    # Target should be the next argument after link word
-    target_pos=$((link_pos + 1))
-    if [ "$target_pos" -gt "$total_args" ]; then
-      printf '%s: %s requires a target\n' "parse-imperative" "$link_word" >&2
-      exit 1
-    fi
-    eval "target=\"\$saved_arg_$target_pos\""
-    
-    # Rebuild: cmd [args before link word] target
-    set --
-    i=1
-    while [ "$i" -le "$cmd_arg_count" ]; do
-      eval "set -- \"\$@\" \"\$saved_arg_$i\""
-      i=$((i + 1))
-    done
-    exec "$cmd" "$@" "$target"
-    ;;
-    
-  from)
-    # Source should be the next argument after link word
-    source_pos=$((link_pos + 1))
-    if [ "$source_pos" -gt "$total_args" ]; then
-      printf '%s: from requires a source\n' "parse-imperative" >&2
-      exit 1
-    fi
-    eval "source=\"\$saved_arg_$source_pos\""
-    
-    # Rebuild: cmd source [args before link word]
-    set --
-    i=1
-    while [ "$i" -le "$cmd_arg_count" ]; do
-      eval "set -- \"\$@\" \"\$saved_arg_$i\""
-      i=$((i + 1))
-    done
-    exec "$cmd" "$source" "$@"
-    ;;
-esac
+# No linking word found - execute command with all args
+if [ "$link_pos" -eq 0 ]; then
+  set --
+  i=1
+  while [ "$i" -le "$total" ]; do
+    eval "set -- \"\$@\" \"\$arg_$i\""
+    i=$((i + 1))
+  done
+  exec "$cmd" "$@"
+fi
+
+# Build command args (before linking word)
+cmd_args_end=$((link_pos - 1))
+
+# Build remaining args (after linking word)
+remain_start=$((link_pos + link_len))
+
+# Rebuild command args
+set --
+i=1
+while [ "$i" -le "$cmd_args_end" ]; do
+  eval "set -- \"\$@\" \"\$arg_$i\""
+  i=$((i + 1))
+done
+cmd_args="$*"
+
+# Rebuild remaining args
+remain_args=''
+i=$remain_start
+while [ "$i" -le "$total" ]; do
+  eval "a=\"\$arg_$i\""
+  if [ -z "$remain_args" ]; then
+    remain_args=$a
+  else
+    remain_args="$remain_args $a"
+  fi
+  i=$((i + 1))
+done
+
+# Export context for linking word
+# The linking word receives: PARSE_CMD, PARSE_CMD_ARGS, and its own arguments
+PARSE_CMD=$cmd
+export PARSE_CMD
+PARSE_CMD_ARGS=$cmd_args
+export PARSE_CMD_ARGS
+
+# Call linking word with remaining args
+# The linking word is responsible for running the command or continuing parsing
+set --
+i=$remain_start
+while [ "$i" -le "$total" ]; do
+  eval "set -- \"\$@\" \"\$arg_$i\""
+  i=$((i + 1))
+done
+
+exec "$link_word" "$@"

@@ -1,18 +1,41 @@
 #!/bin/sh
-# from SOURCE CMD... - prepend SOURCE to command arguments (source linking word)
-# Transforms "from SOURCE CMD TARGET" → "CMD SOURCE TARGET"
-# Example: from /etc/hosts cp /tmp/hosts → cp /etc/hosts /tmp/hosts
+# from SOURCE [MORE...] - prepend SOURCE to prior command args
+# Example: cp to /tmp from /etc/hosts → cp /etc/hosts /tmp
 
 set -eu
 
-if [ $# -lt 2 ]; then
+if [ $# -lt 1 ]; then
+  printf '%s: from requires a source\n' "from" >&2
   exit 1
 fi
 
 source=$1
 shift
-cmd=$1
-shift
 
-# Execute command with source followed by remaining args
-exec "$cmd" "$source" "$@"
+cmd=${PARSE_CMD:-}
+cmd_args=${PARSE_CMD_ARGS:-}
+
+if [ -z "$cmd" ]; then
+  printf '%s: from requires a command before it\n' "from" >&2
+  exit 1
+fi
+
+# Prepend source to command args
+if [ -n "$cmd_args" ]; then
+  new_args="$source $cmd_args"
+else
+  new_args=$source
+fi
+
+# Update context
+PARSE_CMD_ARGS=$new_args
+export PARSE_CMD_ARGS
+
+# If no more args, execute the command now
+if [ $# -eq 0 ]; then
+  # shellcheck disable=SC2086
+  exec "$cmd" $new_args
+fi
+
+# Continue parsing with updated context
+exec parse-imperative "$@"
