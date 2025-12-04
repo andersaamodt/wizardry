@@ -1,8 +1,8 @@
 #!/bin/sh
 # Behavioral cases (derived from spell behavior):
-# - bitcoin-menu prompts to install when bitcoin is absent
-# - bitcoin-menu offers service controls when running under systemd
-# - bitcoin-menu offers service installation when bitcoin is present without a service
+# - wallet-menu prompts to install when bitcoin is absent
+# - wallet-menu shows wallet controls when bitcoin is installed
+# - wallet-menu shows daemon controls based on running state
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/test-common.sh" ] && [ "$test_root" != "/" ]; do
@@ -16,8 +16,7 @@ make_stub_menu() {
   cat >"$tmp/menu" <<'SH'
 #!/bin/sh
 printf '%s\n' "$@" >>"$MENU_LOG"
-kill -s INT "$PPID"
-exit 0
+kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
 SH
   chmod +x "$tmp/menu"
 }
@@ -28,6 +27,7 @@ make_stub_colors() {
 #!/bin/sh
 BOLD=""
 CYAN=""
+RESET=""
 SH
   chmod +x "$tmp/colors"
 }
@@ -61,7 +61,7 @@ SH
   chmod +x "$path"
 }
 
-test_bitcoin_menu_prompts_install_when_missing() {
+test_wallet_menu_prompts_install_when_missing() {
   tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_colors "$tmp"
@@ -71,30 +71,13 @@ test_bitcoin_menu_prompts_install_when_missing() {
   make_boolean_stub "$tmp/is-service-installed" 1
   make_boolean_stub "$tmp/is-bitcoin-running" 1
 
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/install/bitcoin/bitcoin-menu"
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/install/bitcoin/wallet-menu"
   assert_success
   assert_file_contains "$tmp/log" "Bitcoin: missing"
-  assert_file_contains "$tmp/log" "Install Bitcoin%install-bitcoin"
+  assert_file_contains "$tmp/log" "Install or Upgrade Bitcoin%install-bitcoin"
 }
 
-test_bitcoin_menu_controls_running_service() {
-  tmp=$(make_tempdir)
-  make_stub_menu "$tmp"
-  make_stub_colors "$tmp"
-  make_stub_exit_label "$tmp"
-  make_status_stub "$tmp" "ready"
-  make_boolean_stub "$tmp/is-bitcoin-installed" 0
-  make_boolean_stub "$tmp/is-service-installed" 0
-  make_boolean_stub "$tmp/is-bitcoin-running" 0
-
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/install/bitcoin/bitcoin-menu"
-  assert_success
-  assert_file_contains "$tmp/log" "Stop Bitcoin Service%sudo systemctl stop bitcoin"
-  assert_file_contains "$tmp/log" "Uninstall Bitcoin Service%remove-service bitcoin"
-  assert_file_contains "$tmp/log" "Uninstall Bitcoin%uninstall-bitcoin"
-}
-
-test_bitcoin_menu_offers_service_install_when_missing() {
+test_wallet_menu_shows_wallet_controls_when_installed() {
   tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_colors "$tmp"
@@ -102,29 +85,41 @@ test_bitcoin_menu_offers_service_install_when_missing() {
   make_status_stub "$tmp" "ready"
   make_boolean_stub "$tmp/is-bitcoin-installed" 0
   make_boolean_stub "$tmp/is-service-installed" 1
-  make_boolean_stub "$tmp/is-bitcoin-running" 1
-  cat >"$tmp/which" <<'SH'
-#!/bin/sh
-echo /usr/bin/bitcoind
-SH
-  chmod +x "$tmp/which"
+  make_boolean_stub "$tmp/is-bitcoin-running" 0
 
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/install/bitcoin/bitcoin-menu"
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/install/bitcoin/wallet-menu"
   assert_success
-  assert_file_contains "$tmp/log" "Install Bitcoin Service%install-service-template $ROOT_DIR/spells/install/bitcoin/bitcoin.service \"BITCOIND=/usr/bin/bitcoind\""
+  assert_file_contains "$tmp/log" "Check Wallet Balance"
+  assert_file_contains "$tmp/log" "Get New Receive Address"
+  assert_file_contains "$tmp/log" "Send Bitcoin"
   assert_file_contains "$tmp/log" "Uninstall Bitcoin%uninstall-bitcoin"
 }
 
-run_test_case "bitcoin-menu prompts for install when missing" test_bitcoin_menu_prompts_install_when_missing
-run_test_case "bitcoin-menu manages running services" test_bitcoin_menu_controls_running_service
-run_test_case "bitcoin-menu installs service when absent" test_bitcoin_menu_offers_service_install_when_missing
+test_wallet_menu_shows_stop_when_running() {
+  tmp=$(make_tempdir)
+  make_stub_menu "$tmp"
+  make_stub_colors "$tmp"
+  make_stub_exit_label "$tmp"
+  make_status_stub "$tmp" "ready"
+  make_boolean_stub "$tmp/is-bitcoin-installed" 0
+  make_boolean_stub "$tmp/is-service-installed" 1
+  make_boolean_stub "$tmp/is-bitcoin-running" 0
 
-test_shows_help() {
-  run_cmd "$ROOT_DIR/spells/install/bitcoin/bitcoin-menu" --help
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/install/bitcoin/wallet-menu"
   assert_success
-  assert_output_contains "Usage: bitcoin-menu"
+  assert_file_contains "$tmp/log" "Stop bitcoind%bitcoin-cli stop"
 }
 
-run_test_case "bitcoin-menu --help shows usage" test_shows_help
+run_test_case "wallet-menu prompts for install when missing" test_wallet_menu_prompts_install_when_missing
+run_test_case "wallet-menu shows wallet controls when installed" test_wallet_menu_shows_wallet_controls_when_installed
+run_test_case "wallet-menu shows stop when daemon running" test_wallet_menu_shows_stop_when_running
+
+test_shows_help() {
+  run_cmd "$ROOT_DIR/spells/install/bitcoin/wallet-menu" --help
+  assert_success
+  assert_output_contains "Usage: wallet-menu"
+}
+
+run_test_case "wallet-menu --help shows usage" test_shows_help
 
 finish_tests

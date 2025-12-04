@@ -4,8 +4,8 @@
 
 case "${1-}" in
   -h|--help)
-    printf 'Usage: bitcoin-menu\n'
-    printf 'Displays the Bitcoin management menu.\n'
+    printf 'Usage: wallet-menu\n'
+    printf 'Displays the Bitcoin wallet menu.\n'
     exit 0
     ;;
 esac
