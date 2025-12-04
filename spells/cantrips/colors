@@ -126,7 +126,7 @@ THEME_DIVIDER="$GREY"            # Menu dividers
 
 # MUD-specific colours for fantasy game elements.
 MUD_LOCATION="${BLUE}${BOLD}"    # Location/room titles
-MUD_TITLE="${LIGHT_BLUE}"        # Room title attribute (light blue)
+MUD_TITLE="${BLUE}${BOLD}"       # Room title attribute (blue and bold)
 MUD_DESCRIPTION="${WHITE}"       # Room/item descriptions
 MUD_ITEM="${YELLOW}"             # Items and objects
 MUD_HANDLE="${CYAN}"             # Player names/handles
