@@ -7,7 +7,7 @@ show_usage() {
 cat <<'USAGE'
 Usage: look [path]
 
-Display a location's name and description attributes with read-magic, offering to memorize the spell into your shell rc for easy reuse. Defaults to the current directory when no path is supplied.
+Display a location's title and description attributes with read-magic, offering to memorize the spell into your shell rc for easy reuse. Defaults to the current directory when no path is supplied.
 USAGE
 }
 
@@ -165,6 +165,7 @@ if ! load_colors; then
         BOLD=""
         RESET=""
         MUD_LOCATION=""
+        MUD_TITLE=""
         MUD_DESCRIPTION=""
 fi
 
@@ -177,18 +178,18 @@ path=${1:-$PWD}
 
 install_look || true
 
-name=$(read-magic "$path" name || true)
+title=$(read-magic "$path" title || true)
 description=$(read-magic "$path" description || true)
 
 missing_msg='read-magic: attribute does not exist.'
 
-if [ "$name" != "$missing_msg" ] || [ "$description" != "$missing_msg" ]; then
-        if [ "$name" != "$missing_msg" ] && [ -n "$name" ]; then
-                printf '%s%s%s\n' "$MUD_LOCATION" "$name" "$RESET"
+if [ "$title" != "$missing_msg" ] || [ "$description" != "$missing_msg" ]; then
+        if [ "$title" != "$missing_msg" ] && [ -n "$title" ]; then
+                printf '%s%s%s\n' "$MUD_TITLE" "$title" "$RESET"
         fi
         if [ "$description" != "$missing_msg" ] && [ -n "$description" ]; then
                 printf '%s%s%s\n' "$MUD_DESCRIPTION" "$description" "$RESET"
         fi
 else
-        printf '%s\n' "You look, but you don't see anything."
+        printf '%s' "You look, but you don't see anything."
 fi

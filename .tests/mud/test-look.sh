@@ -45,6 +45,34 @@ EOF
   assert_success && assert_output_contains "You look, but you don't see anything."
 }
 
+test_no_trailing_newline() {
+  stub=$(make_stub_dir)
+  cat >"$stub/ask_yn" <<'EOF'
+#!/bin/sh
+exit 0
+EOF
+  chmod +x "$stub/ask_yn"
+  cat >"$stub/read-magic" <<'EOF'
+#!/bin/sh
+printf '%s\n' 'read-magic: attribute does not exist.'
+EOF
+  chmod +x "$stub/read-magic"
+  PATH="$stub:/bin:/usr/bin" run_spell "spells/mud/look" "$WIZARDRY_TMPDIR"
+  assert_success
+  # Verify no trailing newline after "You look, but you don't see anything."
+  # The output should end with the message without an extra newline
+  last_line=$(printf '%s' "$OUTPUT" | tail -1)
+  case "$last_line" in
+    *"You look, but you don't see anything.")
+      return 0
+      ;;
+    *)
+      TEST_FAILURE_REASON="expected last line to be the message without trailing newline"
+      return 1
+      ;;
+  esac
+}
+
 test_displays_attributes() {
   stub=$(make_stub_dir)
   cat >"$stub/ask_yn" <<'EOF'
@@ -55,7 +83,7 @@ EOF
   cat >"$stub/read-magic" <<'EOF'
 #!/bin/sh
 case "$2" in
-  name) printf '%s\n' 'Hidden Door' ;;
+  title) printf '%s\n' 'Hidden Door' ;;
   description) printf '%s\n' 'A narrow doorway concealed by ivy.' ;;
 esac
 EOF
@@ -129,6 +157,7 @@ EOF
 run_test_case "look prints usage" test_help
 run_test_case "look fails when read-magic is missing" test_missing_read_magic
 run_test_case "look reports missing attributes" test_missing_attributes
+run_test_case "look has no trailing newline when nothing to see" test_no_trailing_newline
 run_test_case "look prints discovered attributes" test_displays_attributes
 run_test_case "look installs rc block when approved" test_installs_when_prompted
 run_test_case "look declines installation when user says no" test_declines_installation
