@@ -111,12 +111,12 @@ BLOCK
 }
 
 locate_ask_yn() {
-        if has ask_yn; then
-                where ask_yn
+        if has ask-yn; then
+                where ask-yn
                 return 0
         fi
-        if [ -x "$SCRIPT_DIR/cantrips/ask_yn" ]; then
-                printf '%s\n' "$SCRIPT_DIR/cantrips/ask_yn"
+        if [ -x "$SCRIPT_DIR/cantrips/ask-yn" ]; then
+                printf '%s\n' "$SCRIPT_DIR/cantrips/ask-yn"
                 return 0
         fi
         return 1
@@ -128,7 +128,7 @@ install_look() {
                 return 0
         fi
         if ! ask_yn_cmd=$(locate_ask_yn); then
-                look_warn "ask_yn spell is missing; cannot prompt for installation."
+                look_warn "ask-yn spell is missing; cannot prompt for installation."
                 return 0
         fi
         printf '%s\n' "'Look' is a reserved keyword, so you must memorize this spell to change the meaning of the word 'look'."

@@ -155,11 +155,11 @@ STUB
   chmod +x "$stub/learn"
   
   # Create ask_yn stub that always says yes
-  cat >"$stub/ask_yn" <<'STUB'
+  cat >"$stub/ask-yn" <<'STUB'
 #!/bin/sh
 exit 0
 STUB
-  chmod +x "$stub/ask_yn"
+  chmod +x "$stub/ask-yn"
   
   link_tools "$stub" sh printf grep cat test sed basename command pwd
   

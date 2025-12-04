@@ -546,7 +546,7 @@ install_uses_explicit_helper_paths() {
   fi
   
   # Check that ask_yn is referenced with an explicit path
-  if ! grep -q 'ASK_YN=.*\$ABS_DIR/spells/cantrips/ask_yn' "$ROOT_DIR/install"; then
+  if ! grep -q 'ASK_YN=.*\$ABS_DIR/spells/cantrips/ask-yn' "$ROOT_DIR/install"; then
     TEST_FAILURE_REASON="install script should use explicit path to ask_yn"
     return 1
   fi

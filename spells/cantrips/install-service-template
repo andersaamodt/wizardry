@@ -112,8 +112,8 @@ if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
 fi
 SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
 
-ASK_YN=$(find_helper INSTALL_SERVICE_TEMPLATE_ASK_YN "$SCRIPT_DIR/ask_yn" ask_yn)
-ASK_TEXT=$(find_helper INSTALL_SERVICE_TEMPLATE_ASK_TEXT "$SCRIPT_DIR/ask_text" ask_text)
+ASK_YN=$(find_helper INSTALL_SERVICE_TEMPLATE_ASK_YN "$SCRIPT_DIR/ask-yn" ask-yn)
+ASK_TEXT=$(find_helper INSTALL_SERVICE_TEMPLATE_ASK_TEXT "$SCRIPT_DIR/ask-text" ask-text)
 
 if command -v systemctl >/dev/null 2>&1; then
         SYSTEMCTL=$(command -v systemctl)

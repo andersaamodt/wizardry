@@ -13,19 +13,19 @@ make_stub_dir() {
 
 write_ask_yn_stub() {
   dir=$1
-  cat >"$dir/ask_yn" <<'STUB'
+  cat >"$dir/ask-yn" <<'STUB'
 #!/bin/sh
 case "${ASK_YN_STUB_RESPONSE:-yes}" in
   [Yy]*) exit 0 ;;
   *) exit 1 ;;
 esac
 STUB
-  chmod +x "$dir/ask_yn"
+  chmod +x "$dir/ask-yn"
 }
 
 write_ask_text_stub() {
   dir=$1
-  cat >"$dir/ask_text" <<'STUB'
+  cat >"$dir/ask-text" <<'STUB'
 #!/bin/sh
 file=${ASK_TEXT_STUB_FILE:-}
 if [ -n "$file" ] && [ -s "$file" ]; then
@@ -36,7 +36,7 @@ if [ -n "$file" ] && [ -s "$file" ]; then
 fi
 printf '%s\n' "${ASK_TEXT_DEFAULT:-}"
 STUB
-  chmod +x "$dir/ask_text"
+  chmod +x "$dir/ask-text"
 }
 
 write_systemctl_stub() {
@@ -70,8 +70,8 @@ test_declines_overwrite() {
   ASK_YN_STUB_RESPONSE=no \
   SERVICE_DIR="$service_dir" \
   SYSTEMCTL_STATE_DIR="$service_dir/state" \
-  INSTALL_SERVICE_TEMPLATE_ASK_YN="$stub_dir/ask_yn" \
-  INSTALL_SERVICE_TEMPLATE_ASK_TEXT="$stub_dir/ask_text" \
+  INSTALL_SERVICE_TEMPLATE_ASK_YN="$stub_dir/ask-yn" \
+  INSTALL_SERVICE_TEMPLATE_ASK_TEXT="$stub_dir/ask-text" \
   PATH="$stub_dir:$PATH" run_spell "spells/cantrips/install-service-template" "$template"
 
   assert_failure && assert_output_contains "Installation cancelled"
@@ -100,8 +100,8 @@ SERVICE
 
   SERVICE_DIR="$service_dir" \
   SYSTEMCTL_STATE_DIR="$service_dir/state" \
-  INSTALL_SERVICE_TEMPLATE_ASK_YN="$stub_dir/ask_yn" \
-  INSTALL_SERVICE_TEMPLATE_ASK_TEXT="$stub_dir/ask_text" \
+  INSTALL_SERVICE_TEMPLATE_ASK_YN="$stub_dir/ask-yn" \
+  INSTALL_SERVICE_TEMPLATE_ASK_TEXT="$stub_dir/ask-text" \
   ASK_TEXT_STUB_FILE="$placeholders" \
   PATH="$stub_dir:$PATH" run_spell "spells/cantrips/install-service-template" "$template" EXECUTABLE=magic
 
@@ -134,8 +134,8 @@ test_skips_sudo_when_service_dir_writable() {
   printf 'Name=$NAME\n' >"$template"
 
   SERVICE_DIR="$service_dir" \
-  INSTALL_SERVICE_TEMPLATE_ASK_YN="$stub_dir/ask_yn" \
-  INSTALL_SERVICE_TEMPLATE_ASK_TEXT="$stub_dir/ask_text" \
+  INSTALL_SERVICE_TEMPLATE_ASK_YN="$stub_dir/ask-yn" \
+  INSTALL_SERVICE_TEMPLATE_ASK_TEXT="$stub_dir/ask-text" \
   PATH="$stub_dir:$PATH" run_spell "spells/cantrips/install-service-template" "$template" NAME=mere
 
   assert_success
@@ -165,8 +165,8 @@ SERVICE
 
   SERVICE_DIR="$service_dir" \
   SYSTEMCTL_STATE_DIR="$service_dir/state" \
-  INSTALL_SERVICE_TEMPLATE_ASK_YN="$stub_dir/ask_yn" \
-  INSTALL_SERVICE_TEMPLATE_ASK_TEXT="$stub_dir/ask_text" \
+  INSTALL_SERVICE_TEMPLATE_ASK_YN="$stub_dir/ask-yn" \
+  INSTALL_SERVICE_TEMPLATE_ASK_TEXT="$stub_dir/ask-text" \
   ASK_TEXT_STUB_FILE="$placeholders" \
   PATH="$stub_dir:$PATH" run_spell "spells/cantrips/install-service-template" "$template"
 
