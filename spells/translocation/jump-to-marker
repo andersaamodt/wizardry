@@ -539,9 +539,6 @@ jump() {
         if [ -n "$arrival" ]; then
                 printf '%s\n' "$arrival"
         fi
-        # Normalize path for macOS compatibility (TMPDIR ends with /)
-        landing_path=$(pwd -P | sed 's|//|/|g')
-        printf '%s\n' "You land at marker '$marker_name': $landing_path"
         
         # Touch marker to update mtime for cycling
         touch "$marker_file"
