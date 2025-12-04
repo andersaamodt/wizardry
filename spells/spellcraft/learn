@@ -292,31 +292,24 @@ EOF_DETECT
     fi
   }
 
-  _learn_tmp_file=''
-  cleanup_learn_tmp() {
-    [ -n "$_learn_tmp_file" ] && [ -f "$_learn_tmp_file" ] && rm -f "$_learn_tmp_file"
-  }
-
   add_spell() {
     ensure_rc_directory
-    _learn_tmp_file=$(mktemp "${TMPDIR:-/tmp}/learn.XXXXXX") || exit 1
-    trap cleanup_learn_tmp EXIT HUP INT TERM
+    tmp_file=$(temp-file learn) || exit 1
+    trap 'cleanup-file "$tmp_file"' EXIT HUP INT TERM
     line_count=0
     while IFS= read -r line || nonempty "$line"; do
-      printf '%s\n' "$line" >>"$_learn_tmp_file"
+      printf '%s\n' "$line" >>"$tmp_file"
       line_count=$((line_count + 1))
     done
     if [ "$line_count" -eq 0 ]; then
       trap - EXIT HUP INT TERM
-      rm -f "$_learn_tmp_file"
-      _learn_tmp_file=''
+      rm -f "$tmp_file"
       printf '%s\n' "learn: no spell content provided on stdin." >&2
       exit 1
     fi
     if spell_status; then
       trap - EXIT HUP INT TERM
-      rm -f "$_learn_tmp_file"
-      _learn_tmp_file=''
+      rm -f "$tmp_file"
       return 0
     fi
     if [ ! -f "$rc_file" ]; then
@@ -324,20 +317,18 @@ EOF_DETECT
     fi
     ensure_trailing_newline
     if [ "$line_count" -eq 1 ]; then
-      first_line=$(sed -n '1p' "$_learn_tmp_file")
+      first_line=$(sed -n '1p' "$tmp_file")
       printf '%s%s\n' "$first_line" "$inline_marker" >>"$rc_file"
       trap - EXIT HUP INT TERM
-      rm -f "$_learn_tmp_file"
-      _learn_tmp_file=''
+      rm -f "$tmp_file"
       return 0
     fi
     block_header="$block_start lines=$line_count"
     printf '%s\n' "$block_header" >>"$rc_file"
-    cat "$_learn_tmp_file" >>"$rc_file"
+    cat "$tmp_file" >>"$rc_file"
     printf '%s\n' "$block_end" >>"$rc_file"
     trap - EXIT HUP INT TERM
-    rm -f "$_learn_tmp_file"
-    _learn_tmp_file=''
+    rm -f "$tmp_file"
   }
 
   remove_spell() {
@@ -345,8 +336,8 @@ EOF_DETECT
       printf '%s\n' "learn: cannot remove from missing file '$rc_file'." >&2
       exit 1
     fi
-    _learn_tmp_file=$(mktemp "${TMPDIR:-/tmp}/learn.XXXXXX") || exit 1
-    trap cleanup_learn_tmp EXIT HUP INT TERM
+    tmp_file=$(temp-file learn) || exit 1
+    trap 'cleanup-file "$tmp_file"' EXIT HUP INT TERM
     removing_block=0
     to_skip=0
     removed=0
@@ -392,18 +383,16 @@ EOF_DETECT
         continue
         ;;
       esac
-      printf '%s\n' "$line" >>"$_learn_tmp_file"
+      printf '%s\n' "$line" >>"$tmp_file"
     done <"$rc_file"
     if [ "$removed" -eq 0 ]; then
       trap - EXIT HUP INT TERM
-      rm -f "$_learn_tmp_file"
-      _learn_tmp_file=''
+      rm -f "$tmp_file"
       printf '%s\n' "learn: spell '$spell' not found in '$rc_file'." >&2
       exit 1
     fi
     trap - EXIT HUP INT TERM
-    mv "$_learn_tmp_file" "$rc_file"
-    _learn_tmp_file=''
+    mv "$tmp_file" "$rc_file"
   }
 
   # Find nix-shell-init helper

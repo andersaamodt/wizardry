@@ -122,10 +122,6 @@ nonempty() {
 	[ -n "$1" ]
 }
 
-cleanup_tmp() {
-	[ -n "${tmp-}" ] && [ -f "$tmp" ] && rm -f "$tmp"
-}
-
 add_spell() {
 	name=$1
 	validate_name "$name"
@@ -133,8 +129,8 @@ add_spell() {
 	# Memorize just lists existing spells by name - no wrapper scripts needed
 	# The spell must already exist in PATH or spellbook
 	cmd=$name
-	tmp=$(mktemp "${TMPDIR:-/tmp}/memorize.XXXXXX") || exit 1
-	trap cleanup_tmp EXIT HUP INT TERM
+	tmp=$(temp-file memorize) || exit 1
+	trap 'cleanup-file "$tmp"' EXIT HUP INT TERM
 	if [ -f "$command_file" ]; then
 		while IFS= read -r line || nonempty "$line"; do
 			entry_name=$line

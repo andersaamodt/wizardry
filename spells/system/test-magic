@@ -227,11 +227,8 @@ test_total=$(printf '%s\n' "$test_files" | grep -c .)
 # Spells have a --help flag which needs testing, plus 2 additional subtests.
 MIN_SUBTESTS_IMP=2
 MIN_SUBTESTS_SPELL=3
-failure_output_file=$(mktemp "${TMPDIR:-/tmp}/test-magic.XXXXXX") || exit 1
-cleanup_failure_output() {
-  rm -f "$failure_output_file"
-}
-trap cleanup_failure_output EXIT HUP INT TERM
+failure_output_file=$(temp-file test-magic) || exit 1
+trap 'cleanup-file "$failure_output_file"' EXIT HUP INT TERM
 
 spell_name_for_test() {
   test_path=$1
@@ -601,12 +598,14 @@ fi
 
 if [ "$status" -ne 0 ] && [ "$fail" -le 10 ] && [ "${GITHUB_ACTIONS-}" != "" ] \
   && [ "${TEST_MAGIC_DEBUG_RERUN-}" != "1" ] && [ "$very_verbose" -eq 0 ]; then
-  cleanup_failure_output
+  trap - EXIT HUP INT TERM
+  cleanup-file "$failure_output_file"
   printf '\nGitHub Actions detected <=10 failing tests; rerunning with --very-verbose for focused debug...\n'
   set -- $rerun_args
   TEST_MAGIC_DEBUG_RERUN=1 exec "$0" --very-verbose "$@"
 fi
 
-cleanup_failure_output
+trap - EXIT HUP INT TERM
+cleanup-file "$failure_output_file"
 
 exit $status

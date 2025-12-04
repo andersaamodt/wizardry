@@ -278,11 +278,8 @@ alias cd='. \"\$WIZARDRY_CD_CANTRIP\"'"
         if ! ensure_rc_dir "$rc_file"; then
                 return 1
         fi
-        tmp_file=$(mktemp "${TMPDIR:-/tmp}/wizardry-cd.XXXXXX") || return 1
-        cleanup_cd_tmp() {
-                [ -n "${tmp_file-}" ] && [ -f "$tmp_file" ] && rm -f "$tmp_file"
-        }
-        trap cleanup_cd_tmp EXIT HUP INT TERM
+        tmp_file=$(temp-file wizardry-cd) || return 1
+        trap 'cleanup-file "$tmp_file"' EXIT HUP INT TERM
         if [ -f "$rc_file" ]; then
                 sed '/^# >>> wizardry cd cantrip >>>$/,/^# <<< wizardry cd cantrip <<</d' "$rc_file" >"$tmp_file"
         else
@@ -342,11 +339,8 @@ uninstall() {
         fi
 
         # Shell format: use sed to remove the block
-        tmp_file=$(mktemp "${TMPDIR:-/tmp}/wizardry-cd.XXXXXX") || return 1
-        cleanup_cd_tmp() {
-                [ -n "${tmp_file-}" ] && [ -f "$tmp_file" ] && rm -f "$tmp_file"
-        }
-        trap cleanup_cd_tmp EXIT HUP INT TERM
+        tmp_file=$(temp-file wizardry-cd) || return 1
+        trap 'cleanup-file "$tmp_file"' EXIT HUP INT TERM
         sed '/^# >>> wizardry cd cantrip >>>$/,/^# <<< wizardry cd cantrip <<</d' "$rc_file" >"$tmp_file"
         if ! mv "$tmp_file" "$rc_file"; then
                 trap - EXIT HUP INT TERM

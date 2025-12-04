@@ -261,11 +261,8 @@ install() {
 	if ! ensure_rc_dir "$rc_file"; then
 		return 1
 	fi
-	tmp_file=$(mktemp "${TMPDIR:-/tmp}/wizardry-cnf.XXXXXX") || return 1
-	cleanup_cnf_tmp() {
-		[ -n "${tmp_file-}" ] && [ -f "$tmp_file" ] && rm -f "$tmp_file"
-	}
-	trap cleanup_cnf_tmp EXIT HUP INT TERM
+	tmp_file=$(temp-file wizardry-cnf) || return 1
+	trap 'cleanup-file "$tmp_file"' EXIT HUP INT TERM
 	if [ -f "$rc_file" ]; then
 		sed '/^# >>> wizardry command-not-found >>>$/,/^# <<< wizardry command-not-found <<</d' "$rc_file" >"$tmp_file"
 	else
@@ -328,11 +325,8 @@ uninstall() {
 	fi
 
 	# Shell format: use sed to remove the block
-	tmp_file=$(mktemp "${TMPDIR:-/tmp}/wizardry-cnf.XXXXXX") || return 1
-	cleanup_cnf_tmp() {
-		[ -n "${tmp_file-}" ] && [ -f "$tmp_file" ] && rm -f "$tmp_file"
-	}
-	trap cleanup_cnf_tmp EXIT HUP INT TERM
+	tmp_file=$(temp-file wizardry-cnf) || return 1
+	trap 'cleanup-file "$tmp_file"' EXIT HUP INT TERM
 	sed '/^# >>> wizardry command-not-found >>>$/,/^# <<< wizardry command-not-found <<</d' "$rc_file" >"$tmp_file"
 	if ! mv "$tmp_file" "$rc_file"; then
 		trap - EXIT HUP INT TERM

@@ -91,10 +91,6 @@ validate_command() {
         esac
 }
 
-cleanup_tmp() {
-	[ -n "${tmp-}" ] && [ -f "$tmp" ] && rm -f "$tmp"
-}
-
 nonempty() {
 	[ -n "$1" ]
 }
@@ -111,8 +107,8 @@ add_entry() {
         validate_alias "$name"
         validate_command "$cmd"
         ensure_parent_directory
-        tmp=$(mktemp "${TMPDIR:-/tmp}/spellbook-store.XXXXXX") || exit 1
-        trap cleanup_tmp EXIT HUP INT TERM
+        tmp=$(temp-file spellbook-store) || exit 1
+        trap 'cleanup-file "$tmp"' EXIT HUP INT TERM
         if [ -f "$spellbook_file" ]; then
                 while IFS= read -r line || nonempty "$line"; do
                         entry_name=$line
@@ -141,8 +137,8 @@ remove_entry() {
 		printf '%s\n' "spellbook-store: spell '$name' is not recorded." >&2
 		exit 1
 	fi
-	tmp=$(mktemp "${TMPDIR:-/tmp}/spellbook-store.XXXXXX") || exit 1
-	trap cleanup_tmp EXIT HUP INT TERM
+	tmp=$(temp-file spellbook-store) || exit 1
+	trap 'cleanup-file "$tmp"' EXIT HUP INT TERM
 	removed=0
         while IFS= read -r line || nonempty "$line"; do
                 entry_name=$line

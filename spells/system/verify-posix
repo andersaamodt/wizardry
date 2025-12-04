@@ -56,11 +56,8 @@ failures=0
 total=0
 failed_targets=""
 
-targets_file=$(mktemp "${TMPDIR:-/tmp}/verify-posix-targets.XXXXXX") || exit 1
-cleanup_targets_file() {
-  [ -n "${targets_file-}" ] && [ -f "$targets_file" ] && rm -f "$targets_file"
-}
-trap cleanup_targets_file EXIT HUP INT TERM
+targets_file=$(temp-file verify-posix-targets) || exit 1
+trap 'cleanup-file "$targets_file"' EXIT HUP INT TERM
 collect_targets "$@" >"$targets_file"
 
 while IFS= read -r target; do

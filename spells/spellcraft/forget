@@ -104,10 +104,6 @@ validate_name() {
 	esac
 }
 
-cleanup_tmp() {
-	[ -n "${tmp-}" ] && [ -f "$tmp" ] && rm -f "$tmp"
-}
-
 remove_spell() {
 	name=$1
 	validate_name "$name"
@@ -115,8 +111,8 @@ remove_spell() {
 		printf '%s\n' "$spell_name: spell '$name' is not memorized." >&2
 		exit 1
 	fi
-	tmp=$(mktemp "${TMPDIR:-/tmp}/forget.XXXXXX") || exit 1
-	trap cleanup_tmp EXIT HUP INT TERM
+	tmp=$(temp-file forget) || exit 1
+	trap 'cleanup-file "$tmp"' EXIT HUP INT TERM
 	removed=0
 	while IFS= read -r line || nonempty "$line"; do
 		entry_name=$line

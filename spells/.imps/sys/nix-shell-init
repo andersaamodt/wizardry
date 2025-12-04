@@ -209,18 +209,14 @@ $line"
     printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$nix_file"
   fi
   
-  tmp_file=$(mktemp "${TMPDIR:-/tmp}/nix-shell-init.XXXXXX") || exit 1
-  cleanup_nix_tmp() {
-    [ -n "${tmp_file-}" ] && [ -f "$tmp_file" ] && rm -f "$tmp_file"
-    [ -n "${input_file-}" ] && [ -f "$input_file" ] && rm -f "$input_file"
-  }
-  trap cleanup_nix_tmp EXIT HUP INT TERM
+  tmp_file=$(temp-file nix-shell-init) || exit 1
+  trap 'cleanup-file "$tmp_file"; cleanup-file "${input_file-}"' EXIT HUP INT TERM
   
   # Check if an existing block for this nix_option exists
   if run_maybe_sudo cat "$nix_file" | grep -q "$nix_option[[:space:]]*="; then
     # Existing block found - insert our marked lines before the closing '';
     # Save the file content to a temp file for reading
-    input_file=$(mktemp "${TMPDIR:-/tmp}/nix-shell-init-input.XXXXXX") || exit 1
+    input_file=$(temp-file nix-shell-init-input) || exit 1
     run_maybe_sudo cat "$nix_file" > "$input_file"
     
     # Process line by line to find the right place to insert
@@ -300,11 +296,8 @@ do_remove() {
   # Remove all lines containing our marker
   # Since every wizardry-managed content line has #wizardry: NAME appended,
   # we can simply filter out all lines containing that marker
-  tmp_file=$(mktemp "${TMPDIR:-/tmp}/nix-shell-init.XXXXXX") || exit 1
-  cleanup_nix_remove_tmp() {
-    [ -n "${tmp_file-}" ] && [ -f "$tmp_file" ] && rm -f "$tmp_file"
-  }
-  trap cleanup_nix_remove_tmp EXIT HUP INT TERM
+  tmp_file=$(temp-file nix-shell-init) || exit 1
+  trap 'cleanup-file "$tmp_file"' EXIT HUP INT TERM
   run_maybe_sudo cat "$nix_file" | grep -v -F "$marker" > "$tmp_file"
   
   if [ "$needs_sudo" -eq 1 ]; then

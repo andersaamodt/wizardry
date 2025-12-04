@@ -54,11 +54,6 @@ ask_yes_no() {
 }
 
 torrc_path=$(torrc-path)
-_cleanup_tmp=''
-
-cleanup_tmp() {
-  [ -n "$_cleanup_tmp" ] && [ -f "$_cleanup_tmp" ] && rm -f "$_cleanup_tmp"
-}
 
 ensure_torrc_exists() {
   torrc_dir=$(dirname "$torrc_path")
@@ -75,8 +70,8 @@ rewrite_torrc() {
   enable_control=$2
   control_port=$3
 
-  _cleanup_tmp=$(mktemp "${TMPDIR:-/tmp}/configure-tor.XXXXXX") || exit 1
-  trap cleanup_tmp EXIT HUP INT TERM
+  tmp=$(temp-file configure-tor) || exit 1
+  trap 'cleanup-file "$tmp"' EXIT HUP INT TERM
   awk -v socks="$socks_port" -v enable_control="$enable_control" -v control="$control_port" '
     BEGIN {added_socks=0; added_control=0; added_cookie=0}
     /^SocksPort / { if (!added_socks) { print "SocksPort " socks; added_socks=1 } ; next }
@@ -90,15 +85,14 @@ rewrite_torrc() {
         print "CookieAuthentication 1"
       }
     }
-  ' "$torrc_path" > "$_cleanup_tmp"
+  ' "$torrc_path" > "$tmp"
 
-  if mv "$_cleanup_tmp" "$torrc_path" 2>/dev/null; then
+  if mv "$tmp" "$torrc_path" 2>/dev/null; then
     :
   else
-    sudo mv "$_cleanup_tmp" "$torrc_path"
+    sudo mv "$tmp" "$torrc_path"
   fi
   trap - EXIT HUP INT TERM
-  _cleanup_tmp=''
 }
 
 restart_service_if_possible() {

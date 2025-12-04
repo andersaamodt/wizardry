@@ -78,11 +78,8 @@ set_feature() {
         # Create or update config file
         if [ -f "$config_file" ]; then
                 # Remove old entry and add new one
-                tmp_file=$(mktemp "${TMPDIR:-/tmp}/mud-config.XXXXXX") || return 1
-                cleanup_mud_config_tmp() {
-                        [ -n "${tmp_file-}" ] && [ -f "$tmp_file" ] && rm -f "$tmp_file"
-                }
-                trap cleanup_mud_config_tmp EXIT HUP INT TERM
+                tmp_file=$(temp-file mud-config) || return 1
+                trap 'cleanup-file "$tmp_file"' EXIT HUP INT TERM
                 grep -v "^${feature}=" "$config_file" >"$tmp_file" 2>/dev/null || true
                 printf '%s=%s\n' "$feature" "$value" >>"$tmp_file"
                 if ! mv "$tmp_file" "$config_file"; then

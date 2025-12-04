@@ -93,11 +93,8 @@ install_with_binary() {
   esac
 
   bitcoin_url="https://bitcoincore.org/bin/bitcoin-core-$BITCOIN_VERSION/$binary_name"
-  tmp_dir=$(mktemp -d "${TMPDIR:-/tmp}/bitcoin-install.XXXXXX") || return 1
-  cleanup_bitcoin_tmp() {
-    [ -n "${tmp_dir-}" ] && [ -d "$tmp_dir" ] && rm -rf "$tmp_dir"
-  }
-  trap cleanup_bitcoin_tmp EXIT HUP INT TERM
+  tmp_dir=$(temp-dir bitcoin-install) || return 1
+  trap 'cleanup-dir "$tmp_dir"' EXIT HUP INT TERM
   if ! cd "$tmp_dir"; then
     echo "Failed to change to temp directory"
     return 1
