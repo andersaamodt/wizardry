@@ -15,6 +15,15 @@ spell_is_executable() {
 
 run_test_case "install/simplex-chat/simplex-chat-status is executable" spell_is_executable
 
+shows_usage_with_help_flag() {
+  run_cmd "$ROOT_DIR/spells/install/simplex-chat/simplex-chat-status" --help
+  assert_success || return 1
+  # Usage text is written to stderr to match other arcanum scripts.
+  assert_error_contains "Usage: simplex-chat-status" || return 1
+}
+
+run_test_case "simplex-chat-status shows usage with --help" shows_usage_with_help_flag
+
 make_stub_colors() {
   tmp=$1
   cat >"$tmp/colors" <<'SHI'
