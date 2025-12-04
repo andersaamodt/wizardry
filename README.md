@@ -196,14 +196,38 @@ These values make the wizardry project what it is, and distinguish it from simil
 
 Wizardry is converging on a comprehensive set of standards so every spell, imp, menu, and test feels familiar and reliable. These checkpoints summarize what is already standardized (and what we plan to keep enforcing) across the codebase:
 
-* **Language and headers**: POSIX `sh` only, `#!/bin/sh` shebangs, `set -eu` strict mode, and careful quoting everywhere; avoid Bash-isms, prefer `printf`, and use `command -v` for capability checks.
-* **Spell layout**: Spells live under `spells/` with unique names and no `.sh` extension; each begins with a two-line description, supports `--help`/`--usage`/`-h`, and keeps flows flat and readable with minimal functions.
-* **Menu expectations**: Menu items show transparent one-line commands and invoke spells by name (not by path) now that wizardry lives in `PATH`, keeping menus both didactic and portable.
-* **Imps and micro-helpers**: Imps in `spells/.imps/` do exactly one thing, avoid functions, use human-readable hyphenated names, and rely on simple positional arguments instead of flags.
-* **Testing conventions**: Every spell owns a mirrored test under `.tests/` that doubles as its operational spec; `test-magic` aggregates the suite and preserves the assumption-checking patterns from `test_common.sh`.
-* **Cross-platform habits**: Normalize paths with `pwd -P`, guard `PATH` setup in bootstrap scripts, detect kernels with `uname`, prefer `curl`/`wget` fallbacks, create temp files with `mktemp`, and avoid non-portable tools like `realpath`.
-* **Error handling and messaging**: Scripts self-heal missing prerequisites, prefix errors clearly without imperatives, and favor stdout communication so spells and humans consume the same outputs.
-* **Planned tightening**: Continue expanding `vet-spell --strict` coverage, raising cross-platform parity for every spell, and extending menu coverage so every capability remains discoverable and consistent.
+### Already standardized
+
+* **Single-shell stance**: Everything runs as POSIX `sh` with `#!/bin/sh` shebangs and `set -eu` strict mode so behavior stays identical across systems.
+* **Early descriptiveness**: Scripts open with a 1–2 line comment describing purpose so readers learn intent before code.
+* **Help-on-tap**: Each executable answers `--help`/`-h`/`--usage` with concrete usage, making interfaces self-evident.
+* **Strict-yet-lean flows**: Scripts enable `set -eu` while keeping control flow flat so failures are surfaced without obscuring readability.
+* **Hyphenated, extensionless names**: Spells use hyphens and omit `.sh` so commands read cleanly and stay shell-friendly.
+* **Tests as the spec**: Spell paths are mirrored under `.tests/`, turning expectations into runnable documentation.
+* **Gentle error contract**: Failures try to self-heal, explain plainly without imperatives, and only return non-zero when work truly failed.
+* **Portable pathing**: Platform and PATH choices are explicit; use `pwd -P` for path resolution and avoid non-portable tools like `realpath`.
+* **Deliberate temp handling**: Temporary files are created with `mktemp` and cleaned predictably to avoid leaks.
+* **POSIX-safe idioms**: Style checks reject non-portable crutches like backticks or `which`, favoring `$( )` and `command -v`.
+* **Careful quoting**: Variables are always quoted unless word splitting is intended; empty variables use `var=''` not `var= `.
+* **printf over echo**: Output uses `printf '%s\n'` for portability; `echo` behavior varies across platforms.
+* **Menu transparency**: Menu items show transparent one-line commands and invoke spells by name (not by path), keeping menus didactic and portable.
+* **Imps as building blocks**: Imps in `spells/.imps/` do exactly one thing, avoid functions, use hyphenated names, and rely on positional arguments instead of flags.
+* **Front-facing spells**: All user-facing behavior is implemented as standalone spells (no hidden libraries or wrappers).
+* **Spell-by-name invocation**: Spells invoke other wizardry spells by name rather than path, since wizardry is on PATH.
+* **Platform detection**: Detect kernels with `uname -s`; guard PATH setup in bootstrap scripts; prefer `curl`/`wget` fallbacks for downloads.
+* **Error prefixing**: Error messages print to stderr with spell name prefix for clear attribution.
+
+### Being standardized now
+
+* Unified logging/output tone plus consistent interruption semantics.
+* A single pattern for flag/argument parsing across scripts.
+* Shared helpers for normalizing user paths and other inputs.
+* Default formatting and linting settings for POSIX shell.
+* Common helpers for standard exit codes and error shaping.
+* One directory-resolution idiom for locating sibling resources.
+* A reusable validation helper suite for common input checks.
+* A consistent naming scheme for functions and verbs across the codebase.
+* Expanding `vet-spell --strict` coverage and raising cross-platform parity for every spell.
 
 ## Testing
 
