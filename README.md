@@ -203,8 +203,6 @@ Wizardry is converging on a comprehensive set of standards so every spell, imp, 
 * **Testing conventions**: Every spell owns a mirrored test under `.tests/` that doubles as its operational spec; `test-magic` aggregates the suite and preserves the assumption-checking patterns from `test_common.sh`.
 * **Cross-platform habits**: Normalize paths with `pwd -P`, guard `PATH` setup in bootstrap scripts, detect kernels with `uname`, prefer `curl`/`wget` fallbacks, create temp files with `mktemp`, and avoid non-portable tools like `realpath`.
 * **Error handling and messaging**: Scripts self-heal missing prerequisites, prefix errors clearly without imperatives, and favor stdout communication so spells and humans consume the same outputs.
-* **Portable pathing**: Platform and PATH choices are explicit so reviewers can see how portability is achieved.
-* **Deliberate temp handling**: Temporary files are created intentionally and cleaned predictably to avoid leaks.
 * **Planned tightening**: Continue expanding `vet-spell --strict` coverage, raising cross-platform parity for every spell, and extending menu coverage so every capability remains discoverable and consistent.
 
 ## Testing
