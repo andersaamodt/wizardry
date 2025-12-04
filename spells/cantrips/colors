@@ -117,13 +117,19 @@ MUD_MONSTER="${RED}"             # Monster/enemy names
 case ${NO_COLOR-} in
         '' ) : ;;
         # shellcheck source=/dev/null
-        * ) . "$(command -v disable-palette)" ;;
+        * ) 
+                if disable_palette_path=$(command -v disable-palette 2>/dev/null) && [ -n "$disable_palette_path" ]; then
+                        . "$disable_palette_path"
+                fi
+                ;;
 esac
 
 case ${TERM-} in
         ''|dumb|unknown)
                 # shellcheck source=/dev/null
-                . "$(command -v disable-palette)"
+                if disable_palette_path=$(command -v disable-palette 2>/dev/null) && [ -n "$disable_palette_path" ]; then
+                        . "$disable_palette_path"
+                fi
                 ;;
         *)
                 if command -v tput >/dev/null 2>&1; then
@@ -133,7 +139,9 @@ case ${TERM-} in
                                         # Disable palette for empty, zero, or negative values
                                         # (tput returns -1 when colors are not supported)
                                         # shellcheck source=/dev/null
-                                        . "$(command -v disable-palette)"
+                                        if disable_palette_path=$(command -v disable-palette 2>/dev/null) && [ -n "$disable_palette_path" ]; then
+                                                . "$disable_palette_path"
+                                        fi
                                         ;;
                         esac
                 fi
