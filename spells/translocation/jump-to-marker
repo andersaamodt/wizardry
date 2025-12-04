@@ -324,10 +324,11 @@ install() {
         if ! script_path=$(jump_self_path); then
                 return 1
         fi
-        line=$(printf 'source "%s"' "$script_path")
+        # Source the spell and create 'jump' alias for convenience
+        spell_content=$(printf 'source "%s"\nalias jump=jump-to-marker' "$script_path")
         
         # learn auto-detects rc file and format
-        if printf '%s\n' "$line" | "$learn" --spell "$SPELL_NAME" add; then
+        if printf '%s\n' "$spell_content" | "$learn" --spell "$SPELL_NAME" add; then
                 printf '%s\n' "The 'jump' spell has been learned."
                 if [ "$JUMP_TO_MARKER_FORMAT" = "nix" ]; then
                         run_nix_rebuild || true
