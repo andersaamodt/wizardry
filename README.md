@@ -148,99 +148,84 @@ Using the free software suite makes it easy to establish a standardized software
 | **tome** | A text file containing the contents of several other text files concatenated together, so a whole folder of spells can be sent or carried easily. |
 | **ward** | A protective spell for security or access control. |
 
-## **Ethos & Standards**
+# **Ethos and Standards**
 
-Wizardry’s conceptual architecture is organized into four layers that together define its purpose, behavior, and expectations.
+Wizardry has four layers of guidance that define its purpose, behavior, and conventions.
 
-### **1. Core Values**
+## **Values**
 
-These values describe the foundational intentions and philosophical commitments of the project.
+These values express why the project exists and what principles guide its development.
 
-| Value              | Description                                                                              |
-| ------------------ | ---------------------------------------------------------------------------------------- |
-| Useful             | Built around concrete, everyday computing tasks.                                         |
-| Menu-driven        | A user should control the whole system by typing `menu`.                                 |
-| Teaching community | Wizardry is a didactic commons; scripts codify shared knowledge.                         |
-| Cross-platform     | Portable across UNIX-like systems; no distro parochialism.                               |
-| POSIX sh-first     | POSIX `sh` is the lingua franca; other languages require strong justification.           |
-| File-first         | All state lives in ordinary files; no opaque databases.                                  |
-| Non-commercial     | Prefers free software and least-commercial options.                                      |
-| FOSS missing link  | Wizardry supplies integrative glue among standard UNIX tools.                            |
-| Semantic synthesis | Scripts evolve toward higher-order grammars and clean abstraction of platform detail.    |
-| Fun                | Magic, MUD vocabulary, and flavor text enliven the terminal without obscuring mechanics. |
+| Value              | Description                                                                                                      |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| Useful             | Wizardry is use-case-driven, created to support common everyday computer tasks.                                  |
+| Menu-driven        | A user should be able to manage their entire system by typing `menu`, without memorizing commands.               |
+| Teaching community | Scripts are written as didactic exemplars. Wizardry is a community of practice; code encodes shared knowledge.   |
+| Cross-platform     | Wizardry is for UNIX-like systems in general, not a single distro.                                               |
+| File-first         | All state is stored in files, ideally human-readable text. No databases that enclose data in opaque blobs.       |
+| POSIX sh-first     | POSIX `sh` is the lingua franca. Other languages are only used when there is a strong reason.                    |
+| FOSS missing link  | Wizardry supplies the “glue” that integrates standard UNIX tools into coherent workflows.                        |
+| Semantic synthesis | Scripts evolve toward higher-order grammars that encapsulate platform details behind concise, composable syntax. |
+| Fun                | Magic and MUD flavor text are first-class: they make the terminal more playful without hiding what is going on.  |
 
-### **2. Policies**
+## **Policies**
 
-These policies outline Wizardry’s broader ecosystem commitments and governance stance.
+These policies describe Wizardry’s stance toward software freedom, tooling, and the broader ecosystem.
 
-| Policy                         | Description                                                                              |
-| ------------------------------ | ---------------------------------------------------------------------------------------- |
-| Non-commercial stance          | Wizardry itself is non-commercial; selects the least commercial free tools.              |
-| FOSS-first selection           | The bundled software suite is an opinionated FOSS-forward curation with no redundancies. |
-| Built-in package managers      | Arcana prefer native OS package managers over heavy external systems.                    |
-| Hand-finished AI contributions | AI may draft POSIX shell, but all code is manually reviewed, annotated, and tested.      |
-| No AI integration              | Wizardry never invokes AI tools at runtime.                                              |
+| Policy                | Description                                                                                                                     |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Non-commercial        | Wizardry itself is non-commercial. We prefer free software over merely open-source and choose the least commercialized options. |
+| FOSS-first suite      | The bundled software suite is an opinionated selection of free / non-commercial tools for everyday tasks. No redundant apps.    |
+| Built-in tools first  | Where possible, arcana use each OS’s built-in package managers rather than heavy external packaging layers.                     |
+| Hand-finished AI code | AI may help draft POSIX shell, but final scripts are hand-reviewed, commented, and tested.                                      |
+| No AI integration     | Wizardry spells themselves do not call out to AI tools or services.                                                             |
 
-### **3. Design Tenets**
+## **Design Tenets**
 
-These tenets articulate how Wizardry should behave and present itself at the user level.
+These tenets define how Wizardry should feel to use and how spells present themselves.
 
-| Tenet               | Description                                                                             |
-| ------------------- | --------------------------------------------------------------------------------------- |
-| Minimalism          | Few moving parts; elegant reduction.                                                    |
-| Atomicity           | Spells and imps are small, composable units.                                            |
-| Document-in-place   | `--help` serves as each spell’s living spec.                                            |
-| Interface-neutral   | GUIs are transparent skins; shell remains the ground truth.                             |
-| Menu specialization | Complex workflows appear as dedicated menus invoking single spells.                     |
-| Menu transparency   | Menus show real one-line commands using standard tools, teaching natural shell.         |
-| Output-first        | Scripts communicate primarily via printed output readable by humans *and* other spells. |
-| Self-healing tone   | Scripts repair missing prerequisites or offer fixes without imperative commands.       |
+| Tenet               | Description                                                                                                                  |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Minimalism          | Do the most with the fewest moving parts.                                                                                    |
+| Atomicity           | Spells and imps are small, self-contained units that combine into larger workings.                                           |
+| Document-in-place   | Every spell’s `--help` fully specifies its behavior; documentation lives where it is used.                                   |
+| Interface-neutral   | GUIs are thin skins over shell scripts. Any interface simply passes commands through to spells.                              |
+| Menu specialization | Complex workflows are organized as dedicated menus that call one spell per menu item.                                        |
+| Menu transparency   | Menu items show clear, one-line commands using standard tools so users learn real shell syntax.                              |
+| Output-first UX     | Humans and spells consume the same text. Output is designed to be readable at the prompt and pipeable into other tools.      |
+| Self-healing tone   | When something goes wrong, spells offer to fix it instead of barking orders at the user. Errors are factual, not imperative. |
 
-### **4. Engineering Standards**
+## **Engineering Standards**
 
-These standards define the required behaviors and constraints for all spells, imps, and supporting code.
+These standards describe the technical requirements that all spells, menus, and supporting scripts must fulfill.
 
-| Standard                           | Description                                                                             |
-| ---------------------------------- | --------------------------------------------------------------------------------------- |
-| POSIX shell stance                 | All code is POSIX `sh` with `#!/bin/sh` and `set -eu`.                                  |
-| POSIX-safe idioms                  | Prefer `$( )`, avoid backticks, avoid `which`, use `command -v`.                        |
-| Portable pathing                   | Use `pwd -P`; avoid non-portable tools like `realpath`.                                 |
-| Platform detection                 | Detect kernel via `uname -s`; explicit PATH setup in bootstrap scripts.                 |
-| Hyphenated, extensionless commands | Spells and imps omit `.sh` and use hyphens for clarity and shell-friendliness.          |
-| Early descriptiveness              | Each executable opens with a concise purpose comment (1–2 lines).                       |
-| Help-on-tap                        | `--help`/`-h`/`--usage` provide concrete, exhaustive usage.                             |
-| Flat, strict flows                 | Use `set -eu`; minimal functions; behavior stays hackable and visible.                  |
-| Script-like scripts                | Favor linear, readable shells over function forests; no hidden library directories.     |
-| Front-facing executables           | Everything end-user relevant is a standalone executable; no private wrappers.           |
-| Spell-by-name invocation           | Spells call other spells by name, assuming wizardry is on PATH.                         |
-| Careful quoting                    | Always quote variables unless intentional splitting; empty values use `var=''`.         |
-| `printf` over `echo`               | Use `printf '%s\n'` for portable, predictable output.                                   |
-| Deliberate temp handling           | Create temps via `mktemp` and clean methodically.                                       |
-| Error prefixing                    | Errors go to stderr with clear spell-name prefix.                                       |
-| Gentle error contract              | Scripts attempt repair or offer repair paths; non-zero exit means genuine failure.      |
-| Unified logging tone               | Logging and interruption semantics are consistent across spells.                        |
-| Standardized flag parsing          | All spells converge on a single argument/flag parsing pattern.                          |
-| Input normalization                | Shared helpers normalize paths and other user inputs.                                   |
-| Linting & formatting baseline      | Shared POSIX shell formatting rules enforced project-wide.                              |
-| Standard exit codes                | Common helpers define exit codes and error shaping.                                     |
-| Directory-resolution idiom         | One canonical pattern for locating sibling resources.                                   |
-| Validation helpers                 | Shared suite for validating arguments, environment, and paths.                          |
-| Naming scheme                      | Unified conventions for verbs, internal functions, and spell intent.                    |
-| `vet-spell` parity                 | `vet-spell --strict` gradually applies to all spells, ensuring cross-platform fidelity. |
-
-### **5. Testing Standards**
-
-These engineering standards describe how Wizardry’s behavior is validated and enforced.
-
-| Testing Rule          | Description                                                                |
-| --------------------- | -------------------------------------------------------------------------- |
-| Tests are the spec    | Each spell’s behavior is fully specified by its `.tests/` counterpart.     |
-| Mirrored tree         | Every spell has a corresponding `test_*.sh` in the same relative location. |
-| Shared test harness   | Tests source `test_common.sh` for logging and helpers.                     |
-| Unique behavior focus | Tests concentrate on a spell’s own semantics, not redundant coverage.      |
-| Full mode coverage    | Subtests cover valid paths and failure modes.                              |
-| No implicit shims     | Any shim used in testing is declared within that test.                     |
-| Sandboxed execution   | `test-magic` runs all tests inside a bubblewrap environment.               |
+| Standard                        | Description                                                                                               |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Single-shell stance             | All code runs as POSIX `sh` with `#!/bin/sh` and `set -eu`.                                               |
+| POSIX-safe idioms               | Use `$( )` instead of backticks; avoid `which`; prefer `command -v`.                                      |
+| Portable pathing                | Use `pwd -P` for resolution; avoid non-portable tools like `realpath`.                                    |
+| Platform detection              | Detect kernels with `uname -s`; make PATH setup explicit and portable.                                    |
+| Early descriptiveness           | Each executable opens with a 1–2 line comment describing its purpose.                                     |
+| Help-on-tap                     | `--help` / `-h` / `--usage` print concrete usage, not hand-waving.                                        |
+| Strict-yet-flat flows           | `set -eu`, few functions, linear flow so behavior stays readable and hackable.                            |
+| Script-like scripts             | Favor flat, shell-friendly logic over elaborate function trees. No hidden libraries.                      |
+| Front-facing spells             | Every spell is a user-facing executable; no private wrapper binaries that hide behavior.                  |
+| Spell-by-name invocation        | Spells call other spells by name, assuming wizardry is already on `PATH`.                                 |
+| Hyphenated, extensionless names | Executables omit `.sh` and use hyphens for multi-word commands.                                           |
+| Careful quoting                 | Quote variables unless word splitting is intentional; use `var=''` for empty vars.                        |
+| `printf` over `echo`            | Use `printf '%s\n'` for portability; do not depend on `echo` quirks.                                      |
+| Deliberate temp handling        | Create temp files with `mktemp` and clean them up deterministically.                                      |
+| Gentle error contract           | Spells try to repair missing prerequisites or offer a fix; they only exit non-zero when real work failed. |
+| Error prefixing                 | Error messages go to stderr and are prefixed with the spell name for attribution.                         |
+| Unified logging tone            | Logging and prompts follow a consistent style and interruption semantics.                                 |
+| Standardized flag parsing       | All spells converge on a single pattern for parsing flags and arguments.                                  |
+| Input normalization             | Shared helpers normalize user paths and other inputs.                                                     |
+| Linting & formatting            | Default formatting and linting settings for POSIX shell are applied consistently.                         |
+| Standard exit codes             | Common helpers define exit codes and error shaping.                                                       |
+| Directory-resolution idiom      | One canonical pattern for locating sibling resources.                                                     |
+| Validation helpers              | A reusable suite provides common input checks.                                                            |
+| Naming scheme                   | A consistent naming scheme governs internal functions and verbs.                                          |
+| `vet-spell` parity              | `vet-spell --strict` coverage expands gradually across the entire codebase.                               |
 
 ## Testing
 
@@ -254,9 +239,14 @@ The spell discovers every `test_*.sh` file in `.tests/` and executes each in a s
 
 Principles of the testing suite:
 
-* Tests are simply POSIX-compliant shell scripts that exercise the expected behaviors of each spell.
-* Each spell's `--help` usage note *is* its primary spec; each unit test is considered the full operationalized spec for a spell.
-* Test files live in `.tests/` and mirror the structure of the `spells/` directory. One test script per spell.
-* Tests source `test_common.sh` to standardize testing procedures and logging.
-* Each test's subtests should cover all valid and failure modes. Since spells call each other, each spell's test should avoid redundancy with other spells' tests by focusing on unique behaviors.
-* Shims exist only within tests; whenever a test needs a shim, that test script must create and manage it explicitly.
+| Testing Rule          | Description |
+| --------------------- | ----------- |
+| Tests are the spec    | Each spell’s behavior is fully specified by its `test_*.sh` counterpart. |
+| Tests are POSIX shell | Tests are simply POSIX-compliant shell scripts that exercise expected behaviors. |
+| Help-as-spec          | Each spell's `--help` usage note is its primary spec; each unit test is the operationalized spec. |
+| Mirrored tree         | `.tests/` mirrors `spells/` structurally: one test script per spell. |
+| Shared test harness   | Tests source `test_common.sh` for consistent logging and helpers. |
+| Unique behavior focus | Each test covers that spell’s unique behaviors and failure modes, avoiding redundant coverage. |
+| Full mode coverage    | Subtests cover all valid paths and error conditions. |
+| Explicit shims        | Shims exist only within tests; each test that needs one creates and manages it explicitly. |
+| Sandboxed execution   | The `test-magic` spell discovers and runs all tests in an isolated bubblewrap environment. |
