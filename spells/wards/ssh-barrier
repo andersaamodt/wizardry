@@ -43,8 +43,9 @@ sed-inplace 's/#PasswordAuthentication yes/PasswordAuthentication no/g' "$sshd_c
 # Enable Public Key Authentication
 sed-inplace 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/g' "$sshd_config"
 
-# Specify allowed users
-printf '%s\n' "AllowUsers $(id -un)" >> "$sshd_config"
+# Specify allowed users (fall back to root if lookup fails)
+user_name=$(id -un 2>/dev/null || true)
+printf '%s\n' "AllowUsers ${user_name:-root}" >> "$sshd_config"
 
 # Change SSH default port
 sed-inplace 's/#Port 22/Port 2222/g' "$sshd_config"
