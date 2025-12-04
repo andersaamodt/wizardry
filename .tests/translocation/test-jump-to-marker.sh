@@ -259,7 +259,13 @@ STUB
   return 0
 }
 
+test_jump_alias_shows_help() {
+  run_spell "spells/translocation/jump" --help
+  assert_success && assert_output_contains "Usage: jump"
+}
+
 run_test_case "jump-to-marker prints usage" test_help
+run_test_case "jump alias prints usage" test_jump_alias_shows_help
 run_test_case "jump-to-marker rejects unknown options" test_unknown_option_fails
 run_test_case "jump-to-marker install fails when helpers missing" test_install_requires_helpers
 run_test_case "jump-to-marker fails when markers dir is missing" test_jump_requires_markers_dir
