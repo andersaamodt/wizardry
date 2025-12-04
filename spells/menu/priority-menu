@@ -23,9 +23,9 @@ set -eu
 # Catch Ctrl-C and TERM signal to exit cleanly
 trap 'exit 0' INT TERM
 
-# Load shared color palette (defines RESET, CYAN, GREY, etc. or empty fallbacks)
+# Load color palette (colors handles terminal capability detection internally)
 # shellcheck source=/dev/null
-. "$(command -v load-colors)"
+. "$(command -v colors)"
 
 if ! require menu "The Priority menu needs the 'menu' command to present options."; then
   exit 1

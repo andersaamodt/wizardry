@@ -8,9 +8,9 @@ trap 'exit 0' INT TERM
 
 ROOT_DIR=$(CDPATH= cd -- "$(dirname "$0")/../.." && pwd -P)
 
-# Load shared color palette (defines RESET, CYAN, GREY, etc. or empty fallbacks)
+# Load color palette (colors handles terminal capability detection internally)
 # shellcheck source=/dev/null
-. "$(command -v load-colors)"
+. "$(command -v colors)"
 
 cast_store=${CAST_STORE-memorize}
 if cast_store_path=$(command -v "$cast_store" 2>/dev/null); then

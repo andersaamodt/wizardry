@@ -7,9 +7,9 @@ set -eu
 # Catch Ctrl-C and TERM signal to exit cleanly
 trap 'exit 0' INT TERM
 
-# Load shared color palette (defines RESET, CYAN, GREY, etc. or empty fallbacks)
+# Load color palette (colors handles terminal capability detection internally)
 # shellcheck source=/dev/null
-. "$(command -v load-colors)"
+. "$(command -v colors)"
 
 cast_store=${CAST_STORE-memorize}
 if cast_store_path=$(command -v "$cast_store" 2>/dev/null); then

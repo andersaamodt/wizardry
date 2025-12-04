@@ -23,9 +23,9 @@ script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 spells_dir=$(CDPATH= cd -- "$script_dir/.." && pwd)
 install_dir=${INSTALL_MENU_ROOT:-$spells_dir/install}
 
-# Load shared color palette (defines RESET, CYAN, GREY, etc. or empty fallbacks)
+# Load color palette (colors handles terminal capability detection internally)
 # shellcheck source=/dev/null
-. "$(command -v load-colors)"
+. "$(command -v colors)"
 
 if ! require menu "The install-menu spell needs the 'menu' command to present choices."; then
     exit 1

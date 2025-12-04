@@ -14,9 +14,9 @@ esac
 set -eu
 set -u
 
-# Load shared color palette (defines RESET, CYAN, GREY, etc. or empty fallbacks)
+# Load color palette (colors handles terminal capability detection internally)
 # shellcheck source=/dev/null
-. "$(command -v load-colors)"
+. "$(command -v colors)"
 
 if ! require menu "The services menu needs the 'menu' command to present options."; then
   exit 1
