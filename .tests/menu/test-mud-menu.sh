@@ -30,6 +30,19 @@ CYAN=''
 GREY=''
 SH
   chmod +x "$tmp/colors"
+  # Also create load-colors stub that sources colors or sets fallbacks
+  cat >"$tmp/load-colors" <<'SH'
+#!/bin/sh
+if color_path=$(command -v colors 2>/dev/null); then
+  . "$color_path"
+else
+  RESET=''
+  CYAN=''
+  GREY=''
+  WIZARDRY_COLORS_AVAILABLE=0
+fi
+SH
+  chmod +x "$tmp/load-colors"
 }
 
 make_failing_menu() {
@@ -78,6 +91,16 @@ printf '%s\n' "The MUD Install menu needs the 'menu' command to present options.
 exit 1
 SH
   chmod +x "$tmp/require-command"
+  # Create stub require that honors REQUIRE_COMMAND (like the real imp)
+  cat >"$tmp/require" <<'SH'
+#!/bin/sh
+if [ -n "${REQUIRE_COMMAND-}" ]; then
+  "$REQUIRE_COMMAND" "$@"
+else
+  require-command "$@"
+fi
+SH
+  chmod +x "$tmp/require"
   run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud-menu"
   assert_failure
   assert_error_contains "The MUD Install menu needs the 'menu' command"

@@ -8,17 +8,9 @@ trap 'exit 0' INT TERM
 
 ROOT_DIR=$(CDPATH= cd -- "$(dirname "$0")/../.." && pwd -P)
 
-# Load colors for display
-if command -v colors >/dev/null 2>&1; then
-        # shellcheck source=/dev/null
-        . "$(command -v colors)"
-else
-        RESET=''
-        CYAN=''
-        PURPLE=''
-        YELLOW=''
-        THEME_CUSTOM=''
-fi
+# Load shared color palette (defines RESET, CYAN, GREY, etc. or empty fallbacks)
+# shellcheck source=/dev/null
+. "$(command -v load-colors)"
 
 cast_store=${CAST_STORE-memorize}
 if cast_store_path=$(command -v "$cast_store" 2>/dev/null); then
@@ -27,16 +19,6 @@ else
         printf '%s\n' "spellbook: memorize helper is missing." >&2
         exit 1
 fi
-
-if [ -n "${REQUIRE_COMMAND-}" ]; then
-        require_cmd=$REQUIRE_COMMAND
-else
-        require_cmd=require-command
-fi
-
-require_tool() {
-        "$require_cmd" "$@"
-}
 
 cast_dir=$($cast_store dir)
 
@@ -645,7 +627,7 @@ case ${1-} in
                 ;;
         esac
 
-if ! require_tool menu "The spellbook menu needs the 'menu' command."; then
+if ! require menu "The spellbook menu needs the 'menu' command."; then
         exit 1
 fi
 

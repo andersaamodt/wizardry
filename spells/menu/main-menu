@@ -19,30 +19,10 @@ esac
 
 
 set -eu
-if [ -n "${REQUIRE_COMMAND-}" ]; then
-  require_cmd=$REQUIRE_COMMAND
-else
-  require_cmd=require-command
-fi
 
-# Shared helper for dependency checks.
-require() {
-  "$require_cmd" "$@"
-}
-
-load_colors() {
-  if has colors; then
-    # shellcheck source=/dev/null
-    . "$(command -v colors)"
-  else
-    # Proceed without colour accents when the palette is missing.
-    RESET=''
-    CYAN=''
-    GREY=''
-  fi
-}
-
-load_colors
+# Load shared color palette (defines RESET, CYAN, GREY, etc. or empty fallbacks)
+# shellcheck source=/dev/null
+. "$(command -v load-colors)"
 
 if ! require menu "The main menu needs the 'menu' command to present options."; then
   exit 1

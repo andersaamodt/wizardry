@@ -1,0 +1,27 @@
+#!/bin/sh
+# require COMMAND [MESSAGE] - wrapper for require-command dependency checks
+# Delegates to require-command (if available), honoring REQUIRE_COMMAND override.
+# Example: require menu "The menu command is needed"
+
+usage() {
+	cat <<'USAGE' >&2
+Usage: require COMMAND [MESSAGE]
+
+Wrapper for require-command that checks if a dependency is available, optionally offering to install it, and exits non-zero with a message when missing.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+	usage
+	exit 0
+	;;
+esac
+
+if [ -n "${REQUIRE_COMMAND-}" ]; then
+	require_cmd=$REQUIRE_COMMAND
+else
+	require_cmd=require-command
+fi
+
+"$require_cmd" "$@"

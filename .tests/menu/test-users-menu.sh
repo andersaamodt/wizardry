@@ -52,9 +52,9 @@ test_help_usage_flag() {
 }
 
 test_sources_colors() {
-  # Verify the spell has a load_colors function
-  grep -q "load_colors" "$ROOT_DIR/spells/menu/users-menu" || {
-    TEST_FAILURE_REASON="spell does not load colors"
+  # Verify the spell sources load-colors imp (centralized color loading)
+  grep -q "load-colors" "$ROOT_DIR/spells/menu/users-menu" || {
+    TEST_FAILURE_REASON="spell does not source load-colors imp"
     return 1
   }
 }

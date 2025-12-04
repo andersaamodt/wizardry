@@ -1,0 +1,71 @@
+#!/bin/sh
+# load-colors - source colors palette if available, else set empty fallbacks
+# Use by sourcing: . "$(command -v load-colors)"
+# After sourcing, RESET, CYAN, GREY, etc. are defined (possibly empty)
+
+usage() {
+	cat <<'USAGE'
+Usage: load-colors (source)
+
+Source this script to load the colors palette if available. If colors is missing or terminal cannot render them, variables like RESET, CYAN, GREY are set to empty strings so printf statements continue to work.
+USAGE
+}
+
+# Only handle --help when run directly as a script, not when sourced
+case "$0" in
+*load-colors)
+	case "${1-}" in
+	--help|--usage|-h)
+		usage
+		exit 0
+		;;
+	esac
+	;;
+esac
+
+if color_path=$(command -v colors 2>/dev/null); then
+	# shellcheck source=/dev/null
+	. "$color_path"
+else
+	# Fallback: define empty color variables so callers can safely use them
+	RESET=''
+	BLACK=''
+	RED=''
+	GREEN=''
+	YELLOW=''
+	BLUE=''
+	PURPLE=''
+	CYAN=''
+	WHITE=''
+	GREY=''
+	BOLD=''
+	ITALICS=''
+	UNDERLINED=''
+	BLINK=''
+	INVERT=''
+	STRIKE=''
+	BRIGHT_BLACK=''
+	BRIGHT_RED=''
+	BRIGHT_GREEN=''
+	BRIGHT_YELLOW=''
+	BRIGHT_BLUE=''
+	BRIGHT_PURPLE=''
+	BRIGHT_CYAN=''
+	BRIGHT_WHITE=''
+	LIGHT_BLUE=''
+	THEME_HIGHLIGHT=''
+	THEME_MUTED=''
+	THEME_CUSTOM=''
+	THEME_SUCCESS=''
+	THEME_ERROR=''
+	THEME_HEADING=''
+	THEME_DIVIDER=''
+	MUD_LOCATION=''
+	MUD_TITLE=''
+	MUD_DESCRIPTION=''
+	MUD_ITEM=''
+	MUD_HANDLE=''
+	MUD_SPELL=''
+	MUD_MONSTER=''
+	WIZARDRY_COLORS_AVAILABLE=0
+fi
