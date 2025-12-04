@@ -3,7 +3,7 @@
 # stop-service asks systemd to stop a running unit. It mirrors start-service so
 # users can read either script to understand the full lifecycle.
 
-usage() {
+show_usage() {
         cat <<'USAGE' >&2
 Usage: stop-service UNIT
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        usage
+        show_usage
         exit 0
         ;;
 esac

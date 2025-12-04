@@ -4,9 +4,8 @@
 # relies on existing cantrips (await-keypress, move-cursor, etc.) to handle the
 # terminal work so it can remain portable across macOS, Debian, and NixOS.
 
-set -eu
 
-usage() {
+show_usage() {
         cat <<'USAGE' >&2
 Usage: menu [--spell-mode] [--start-selection N] "Title" "Label%command"...
 
@@ -19,10 +18,11 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        usage
+        show_usage
         exit 0
         ;;
 esac
+set -eu
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 

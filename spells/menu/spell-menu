@@ -2,7 +2,6 @@
 # spell-menu - Display action menu for a spell or custom command
 # Shows options: Cast now, Memorize/Forget, Help, Test spell, Delete (for custom)
 
-set -eu
 
 # Catch Ctrl-C and TERM signal to exit cleanly
 trap 'exit 0' INT TERM
@@ -133,7 +132,7 @@ has_help_option() {
         return 1
 }
 
-usage() {
+show_usage() {
         cat <<'USAGE'
 Usage: spell-menu <spell-name>
 
@@ -149,9 +148,8 @@ case ${1-} in
                 eval "$*"
                 exit 0
                 ;;
-        --help-spell)
-                shift
-                eval "$* --help" || true
+        --help|--usage|-h)
+                show_usage
                 exit 0
                 ;;
         --install)
@@ -164,14 +162,12 @@ case ${1-} in
                 eval "$cmd" --install || true
                 exit 0
                 ;;
-        -h|--help)
-                usage
-                exit 0
-                ;;
 esac
 
+set -eu
+
 if [ "$#" -lt 1 ]; then
-        usage >&2
+        show_usage >&2
         exit 1
 fi
 

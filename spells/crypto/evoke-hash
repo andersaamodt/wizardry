@@ -3,7 +3,6 @@
 # This spell returns files in a directory matching a given hash.
 # Searches current directory by default.
 
-set -eu
 
 show_usage() {
   cat <<'USAGE'
@@ -19,6 +18,7 @@ case "${1-}" in
   exit 0
   ;;
 esac
+set -eu
 
 if [ "$#" -lt 1 ]; then
   show_usage >&2

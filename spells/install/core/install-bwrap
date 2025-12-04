@@ -2,9 +2,8 @@
 
 # Install the bubblewrap sandboxing utility across common platforms.
 
-set -eu
 
-usage() {
+show_usage() {
   cat <<'EOF'
 Usage: install-bwrap [--force-install]
 
@@ -20,16 +19,18 @@ while [ "$#" -gt 0 ]; do
     --force-install)
       force_install=1
       ;;
-    --help|-h)
-      usage
+    --help|--usage|-h)
+      show_usage
       exit 0
       ;;
     *)
       printf '%s\n' "install-bwrap: unknown option: $1" >&2
-      usage >&2
+      show_usage >&2
       exit 1
       ;;
   esac
+set -eu
+
   shift
 done
 

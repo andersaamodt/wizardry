@@ -2,10 +2,17 @@
 
 # This script is a magical tome of sorcery, commanding the elusive entity known as Bitcoin.
 
+show_usage() {
+  cat <<'USAGE'
+Usage: bitcoin-menu
+
+Displays the Bitcoin management menu.
+USAGE
+}
+
 case "${1-}" in
-  -h|--help)
-    printf 'Usage: bitcoin-menu\n'
-    printf 'Displays the Bitcoin management menu.\n'
+  --help|--usage|-h)
+    show_usage
     exit 0
     ;;
 esac

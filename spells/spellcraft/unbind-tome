@@ -4,8 +4,7 @@
 # It derives filenames from page headers so the restored pages are easy to revisit.
 
 
-set -eu
-usage() {
+show_usage() {
     cat <<'USAGE'
 Usage: unbind-tome <tome-path>
 
@@ -15,14 +14,15 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-    usage
+    show_usage
     exit 0
     ;;
 esac
+set -eu
 
 if [ "$#" -lt 1 ]; then
     warn "unbind-tome: file path required."
-    usage >&2
+    show_usage >&2
     exit 1
 fi
 

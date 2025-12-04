@@ -2,7 +2,7 @@
 
 # Present a menu of spells that can install supporting software.
 
-usage() {
+show_usage() {
         cat <<'USAGE' >&2
 Usage: install-menu
 
@@ -12,7 +12,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        usage
+        show_usage
         exit 0
         ;;
 esac

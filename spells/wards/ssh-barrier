@@ -3,7 +3,6 @@
 # This spell hardens SSH configuration with security best practices.
 # It backs up the original config and applies secure settings.
 
-set -eu
 
 show_usage() {
 cat <<'USAGE'
@@ -19,6 +18,7 @@ case "${1-}" in
         exit 0
         ;;
 esac
+set -eu
 
 # Source colors for colored output
 . colors

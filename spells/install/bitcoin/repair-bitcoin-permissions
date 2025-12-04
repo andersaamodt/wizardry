@@ -2,7 +2,7 @@
 
 # This script sets the correct permissions on the Bitcoin configuration directory.
 
-usage() {
+show_usage() {
         cat <<'USAGE' >&2
 Usage: repair-bitcoin-permissions
 
@@ -12,7 +12,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        usage
+        show_usage
         exit 0
         ;;
 esac

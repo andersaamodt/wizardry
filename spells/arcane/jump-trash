@@ -349,7 +349,7 @@ jump_trash_cli() {
   --install)
     jump_trash_install
     ;;
-  --help|-h)
+  --help|--usage|-h)
     show_usage
     ;;
   "")

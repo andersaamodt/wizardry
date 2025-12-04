@@ -1,6 +1,23 @@
 #!/bin/sh
 # This spell provides a menu interface for managing the spellbook.
 
+
+show_usage() {
+        cat <<'USAGE'
+Usage: spellbook [PATH|--memorize NAME CMD|--forget NAME|--scribe NAME CMD|--list]
+
+Open the interactive spellbook to browse categories, scribe commands,
+and manage the cast menu. Optionally pass a PATH to jump to a category.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
 set -eu
 
 # Catch Ctrl-C and TERM signal to exit cleanly
@@ -554,22 +571,13 @@ USER_FOLDERS
         done
 }
 
-usage() {
-        cat <<'USAGE'
-Usage: spellbook [PATH|--memorize NAME CMD|--forget NAME|--scribe NAME CMD|--list]
-
-Open the interactive spellbook to browse categories, scribe commands,
-and manage the cast menu. Optionally pass a PATH to jump to a category.
-USAGE
-}
-
 spellbook_path=""
 
 case ${1-} in
         --memorize)
                 shift
                 if [ "$#" -lt 2 ]; then
-                        usage >&2
+                        show_usage >&2
                         exit 1
                 fi
                 name=$1
@@ -580,7 +588,7 @@ case ${1-} in
         --forget)
                 shift
                 if [ "$#" -ne 1 ]; then
-                        usage >&2
+                        show_usage >&2
                         exit 1
                 fi
                 forget_spell "$1"
@@ -593,7 +601,7 @@ case ${1-} in
         --scribe)
                 shift
                 if [ "$#" -lt 2 ]; then
-                        usage >&2
+                        show_usage >&2
                         exit 1
                 fi
                 name=$1
@@ -606,8 +614,8 @@ case ${1-} in
                 scribe_command_interactive
                 exit $?
                 ;;
-        --help|-h)
-                usage
+        --help|--usage|-h)
+                show_usage
                 exit 0
                 ;;
         --)
@@ -618,7 +626,7 @@ case ${1-} in
                 :
                 ;;
         -*)
-                usage >&2
+                show_usage >&2
                 exit 1
                 ;;
         *)

@@ -1,15 +1,22 @@
 #!/bin/sh
 # Network configuration menu - work in progress
 
-set -eu
+show_usage() {
+  cat <<'USAGE'
+Usage: network-menu
+
+Displays network configuration options.
+USAGE
+}
 
 case "${1-}" in
-  -h|--help)
-    printf 'Usage: network-menu\n'
-    printf 'Displays network configuration options.\n'
+  --help|--usage|-h)
+    show_usage
     exit 0
     ;;
 esac
+
+set -eu
 
 require-command menu
 

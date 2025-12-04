@@ -5,26 +5,43 @@
 #
 # Usage: forget SPELL_NAME
 
-set -eu
 
 spell_name="forget"
 tab_char=$(printf '\t')
 
+show_usage() {
+        cat <<USAGE
+Usage: $spell_name <spell-name>
+
+Remove a spell from the Cast menu.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
+set -eu
+
 expand_tilde() {
-	path=$1
-	case $path in
+        path=$1
+        case $path in
 	\~)
 		if [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
 			path=$HOME
 		fi
 		;;
-	\~/*)
-		if [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
-			path=$HOME/${path#\~/}
-		fi
-		;;
-	esac
-	printf '%s' "$path"
+        \~/*)
+                if [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
+                        path=$HOME/${path#\~/}
+                fi
+                ;;
+        esac
+
+        printf '%s' "$path"
 }
 
 resolve_cast_dir() {
@@ -64,14 +81,6 @@ resolve_command_file() {
 		file=$cast_dir/.memorized
 	fi
 	printf '%s' "$file"
-}
-
-usage() {
-	cat <<USAGE
-Usage: $spell_name <spell-name>
-
-Remove a spell from the Cast menu.
-USAGE
 }
 
 cast_dir=$(resolve_cast_dir)
@@ -129,18 +138,18 @@ remove_spell() {
 }
 
 case ${1-} in
--h|--help)
-	usage
+--help|--usage|-h)
+	show_usage
 	exit 0
 	;;
 "")
 	printf '%s\n' "$spell_name: spell name required." >&2
-	usage >&2
+	show_usage >&2
 	exit 1
 	;;
 -*)
 	printf '%s\n' "$spell_name: unknown option '$1'" >&2
-	usage >&2
+	show_usage >&2
 	exit 1
 	;;
 esac

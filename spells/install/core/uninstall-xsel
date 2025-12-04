@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 # This spell uninstalls the xsel clipboard utility.
 
-usage() {
+show_usage() {
         cat <<'USAGE' >&2
 Usage: uninstall-xsel
 
@@ -11,7 +11,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        usage
+        show_usage
         exit 0
         ;;
 esac

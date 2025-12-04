@@ -2,13 +2,12 @@
 
 # This spell manages the spellbook storage file for quick-access spell shortcuts.
 
-set -eu
 
 tab_char=$(printf '\t')
 newline_char=$(printf '\ny')
 newline_char=${newline_char%y}
 
-usage() {
+show_usage() {
         cat <<'USAGE' >&2
 Usage: spellbook-store {add NAME CMD|remove NAME|list|path}
 
@@ -20,10 +19,11 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        usage
+        show_usage
         exit 0
         ;;
 esac
+set -eu
 
 resolve_spellbook_file() {
 	if [ -n "${WIZARDRY_SPELLBOOK_FILE-}" ]; then
@@ -164,7 +164,7 @@ list_entries() {
 }
 
 if [ "$#" -eq 0 ]; then
-	usage
+	show_usage
 	exit 1
 fi
 
@@ -175,7 +175,7 @@ case $action in
 add)
 	if [ "$#" -lt 2 ]; then
 		printf '%s\n' "spellbook-store: add expects a NAME followed by COMMAND words." >&2
-		usage
+		show_usage
 		exit 1
 	fi
 	add_entry "$@"
@@ -183,30 +183,30 @@ add)
 remove)
 	if [ "$#" -ne 1 ]; then
 		printf '%s\n' "spellbook-store: remove expects a NAME." >&2
-		usage
+		show_usage
 		exit 1
 	fi
 	remove_entry "$1"
 	;;
 list)
 	if [ "$#" -ne 0 ]; then
-		usage
+		show_usage
 		exit 1
 	fi
 	list_entries
 	;;
 path)
 	if [ "$#" -ne 0 ]; then
-		usage
+		show_usage
 		exit 1
 	fi
 	printf '%s\n' "$spellbook_file"
 	;;
---help|-h)
-	usage
+--help|--usage|-h)
+	show_usage
 	;;
 *)
-	usage
+	show_usage
 	exit 1
 	;;
 esac

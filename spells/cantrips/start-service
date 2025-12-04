@@ -4,7 +4,7 @@
 # none is provided. The script intentionally narrates each step so new users
 # can see how wizardry interacts with systemctl.
 
-usage() {
+show_usage() {
         cat <<'USAGE' >&2
 Usage: start-service [unit]
 
@@ -14,7 +14,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        usage
+        show_usage
         exit 0
         ;;
 esac

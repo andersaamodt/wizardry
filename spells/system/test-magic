@@ -10,30 +10,38 @@
 # when we try to use basename, dirname, cd, pwd, find, sort, awk, etc.
 baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 case ":${PATH-}:" in
-  *":/usr/bin:"*|*":/bin:"*) 
+  *":/usr/bin:"*|*":/bin:"*)
     # Already has at least one standard directory
     ;;
-  *) 
+  *)
     # PATH is empty or missing standard directories, prepend baseline
     PATH="${baseline_path}${PATH:+:}${PATH-}"
     ;;
 esac
-export PATH
 
-set -eu
-
-cmd_name=$(basename "$0")
-script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-root_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd -P)
-test_dir="$root_dir/.tests"
-
-usage() {
+show_usage() {
   cat <<USAGE
 Usage: $cmd_name [--only PATTERN] [--list] [--verbose]
 
 Execute the behavior-driven shell tests located in .tests/.
 USAGE
 }
+
+cmd_name=$(basename "$0")
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+root_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd -P)
+test_dir="$root_dir/.tests"
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
+set -eu
+
+export PATH
 
 only_patterns=""
 list_only=0
@@ -46,7 +54,7 @@ while [ "$#" -gt 0 ]; do
     --only)
       if [ "$#" -lt 2 ]; then
         echo "$cmd_name: --only requires a pattern" >&2
-        usage
+        show_usage
         exit 1
       fi
       rerun_args="$rerun_args --only $2"
@@ -72,8 +80,8 @@ while [ "$#" -gt 0 ]; do
       rerun_args="$rerun_args --very-verbose"
       shift
       ;;
-    -h|--help)
-      usage
+    --help|--usage|-h)
+      show_usage
       exit 0
       ;;
     --)
@@ -82,7 +90,7 @@ while [ "$#" -gt 0 ]; do
       ;;
     *)
       echo "$cmd_name: unknown option '$1'" >&2
-      usage
+      show_usage
       exit 1
       ;;
   esac

@@ -4,8 +4,7 @@
 # (Device Status Report) query.
 
 
-set -eu
-usage() {
+show_usage() {
     cat <<'USAGE' >&2
 Usage: fathom-cursor [-v|--verbose] [-x] [-y]
 
@@ -48,7 +47,7 @@ while [ "$#" -gt 0 ]; do
             want_y=1
             ;;
         --help|--usage|-h)
-            usage
+            show_usage
             exit 0
             ;;
         --)
@@ -56,12 +55,14 @@ while [ "$#" -gt 0 ]; do
             break
             ;;
         -*)
-            usage
+            show_usage
             ;;
         *)
             break
             ;;
     esac
+set -eu
+
     shift
 done
 

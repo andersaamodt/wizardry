@@ -2,10 +2,17 @@
 
 # Present the Node.js management menu.
 
+show_usage() {
+  cat <<'USAGE'
+Usage: node-menu
+
+Displays the Node.js management menu.
+USAGE
+}
+
 case "${1-}" in
-  -h|--help)
-    printf 'Usage: node-menu\n'
-    printf 'Displays the Node.js management menu.\n'
+  --help|--usage|-h)
+    show_usage
     exit 0
     ;;
 esac

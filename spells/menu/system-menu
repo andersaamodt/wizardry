@@ -2,10 +2,17 @@
 
 # This spell displays system maintenance tasks.
 
+show_usage() {
+  cat <<'USAGE'
+Usage: system-menu
+
+Displays the system maintenance menu.
+USAGE
+}
+
 case "${1-}" in
-  -h|--help)
-    printf 'Usage: system-menu\n'
-    printf 'Displays the system maintenance menu.\n'
+  --help|--usage|-h)
+    show_usage
     exit 0
     ;;
 esac

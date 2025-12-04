@@ -4,8 +4,7 @@
 # Pass -d to recycle the loose pages after the binding completes.
 
 
-set -eu
-usage() {
+show_usage() {
 cat <<'USAGE'
 Usage: bind-tome [-d] <page-directory>
 
@@ -15,10 +14,11 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        usage
+        show_usage
         exit 0
         ;;
 esac
+set -eu
 
 # Parse options early so -h works even with missing args.
 delete_sources=0
@@ -28,11 +28,11 @@ while getopts ":dh" opt; do
             delete_sources=1
             ;;
         h)
-            usage
+            show_usage
             exit 0
             ;;
         *)
-            usage >&2
+            show_usage >&2
             exit 1
             ;;
     esac
@@ -42,7 +42,7 @@ shift $((OPTIND - 1))
 # Require a directory of pages to stitch together.
 if [ "$#" -lt 1 ]; then
     warn "bind-tome: folder path required."
-    usage >&2
+    show_usage >&2
     exit 1
 fi
 

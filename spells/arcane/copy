@@ -4,7 +4,6 @@
 # It takes one argument, the path to the text file.
 # When run without arguments, it prompts for the file path interactively.
 
-set -eu
 
 show_usage() {
 cat <<'USAGE'
@@ -20,6 +19,7 @@ case "${1-}" in
         exit 0
         ;;
 esac
+set -eu
 
 # Handle missing argument - prompt interactively
 if [ "$#" -eq 0 ]; then

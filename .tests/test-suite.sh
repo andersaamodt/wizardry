@@ -103,6 +103,42 @@ test_menu_spells_require_menu() {
   return 0
 }
 
+# --- Check: Spells expose standardized help handlers ---
+# Ensure each spell provides show_usage() and a --help|--usage|-h) case
+test_spells_have_help_usage_handlers() {
+  missing_usage=""
+  missing_handler=""
+
+  find "$ROOT_DIR/spells" -type f -not -path "*/.imps/*" -print | while IFS= read -r spell; do
+    base_name=$(basename "$spell")
+    should_skip_file "$base_name" && continue
+    is_posix_shell_script "$spell" || continue
+
+    rel_path=${spell#"$ROOT_DIR/spells/"}
+
+    if ! grep -qE '^[[:space:]]*show_usage\(\)' "$spell" 2>/dev/null; then
+      missing_usage="${missing_usage:+$missing_usage, }$rel_path"
+      continue
+    fi
+
+    if ! grep -qF -- '--help|--usage|-h)' "$spell" 2>/dev/null; then
+      missing_handler="${missing_handler:+$missing_handler, }$rel_path"
+    fi
+  done
+
+  if [ -n "$missing_usage" ]; then
+    TEST_FAILURE_REASON="missing show_usage(): $missing_usage"
+    return 1
+  fi
+
+  if [ -n "$missing_handler" ]; then
+    TEST_FAILURE_REASON="missing --help|--usage|-h handler: $missing_handler"
+    return 1
+  fi
+
+  return 0
+}
+
 # --- Warning Check: No full paths to spell names in non-bootstrap spells ---
 # Spells should invoke other spells by name, not full path (except bootstrap spells)
 # This is a behavioral check - enforces wizardry design principle
@@ -187,6 +223,7 @@ test_test_files_have_matching_spells() {
 
 run_test_case "no duplicate spell names" test_no_duplicate_spell_names
 run_test_case "menu spells require menu command" test_menu_spells_require_menu
+run_test_case "spells have standard help handlers" test_spells_have_help_usage_handlers
 run_test_case "warn about full paths to spells" test_warn_full_paths_to_spells
 run_test_case "test files have matching spells" test_test_files_have_matching_spells
 

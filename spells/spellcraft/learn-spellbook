@@ -3,7 +3,22 @@
 # This spell adds or removes a folder to your PATH permanently.
 # Use learn-spellbook to manage which directories are available in your shell.
 
-set -eu
+
+show_usage() {
+        cat <<'USAGE' >&2
+Usage: learn-spellbook {add|remove|remove-all|status} [DIRECTORY]
+
+Add or remove directories to/from your shell PATH via rc file.
+Use -r for recursive scanning, --dry-run to preview changes.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
 
 SCRIPT_SOURCE=$0
 case $SCRIPT_SOURCE in
@@ -16,6 +31,8 @@ case $SCRIPT_SOURCE in
         SCRIPT_SOURCE=$resolved
         ;;
 esac
+set -eu
+
 if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
         SCRIPT_DIR=.
 fi
@@ -70,15 +87,6 @@ if [ ! -x "$LEARN" ]; then
         fi
 fi
 
-usage() {
-        cat <<'USAGE' >&2
-Usage: learn-spellbook {add|remove|remove-all|status} [DIRECTORY]
-
-Add or remove directories to/from your shell PATH via rc file.
-Use -r for recursive scanning, --dry-run to preview changes.
-USAGE
-}
-
 # shellcheck disable=SC2039 # POSIX compliant but we rely on some utilities like awk.
 
 recursive=0
@@ -108,8 +116,8 @@ while [ "$#" -gt 0 ]; do
                 batch_add_file=$2
                 shift 2
                 ;;
-        --help|-h)
-                usage
+        --help|--usage|-h)
+                show_usage
                 exit 0
                 ;;
         --)
@@ -118,7 +126,7 @@ while [ "$#" -gt 0 ]; do
                 ;;
         -*)
                 printf '%s\n' "learn-spellbook: unknown option '$1'" >&2
-                usage
+                show_usage
                 exit 1
                 ;;
         *)
@@ -139,7 +147,7 @@ else
         # or checking the PATH entry. Showing usage keeps the interface self-documenting
         # for new Wizards-in-training.
         if [ "$#" -eq 0 ]; then
-                usage
+                show_usage
                 exit 1
         fi
         

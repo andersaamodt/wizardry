@@ -2,10 +2,17 @@
 
 # Install and manage the core prerequisites for wizardry.
 
+show_usage() {
+  cat <<'USAGE'
+Usage: core-menu
+
+Displays the core prerequisites management menu.
+USAGE
+}
+
 case "${1-}" in
-  -h|--help)
-    printf 'Usage: core-menu\n'
-    printf 'Displays the core prerequisites management menu.\n'
+  --help|--usage|-h)
+    show_usage
     exit 0
     ;;
 esac

@@ -2,7 +2,7 @@
 
 # Reveal the maximum length of the provided strings.
 
-usage() {
+show_usage() {
         cat <<'USAGE' >&2
 Usage: max-length <string1> [string2 ...] [-v]
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        usage
+        show_usage
         exit 0
         ;;
 esac

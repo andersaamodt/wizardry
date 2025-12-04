@@ -4,7 +4,6 @@
 # With 2 or fewer args, it autodetects order: one is a file, one is attribute=value.
 
 
-set -eu
 show_usage() {
 cat <<'USAGE'
 Usage: enchant [file] attribute=value
@@ -19,6 +18,7 @@ case "${1-}" in
         exit 0
         ;;
 esac
+set -eu
 
 # Check if argument looks like a valid attribute=value pair
 # Returns 0 if it's a valid attr=value (non-empty attr and value)

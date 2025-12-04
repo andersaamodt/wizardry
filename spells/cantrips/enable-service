@@ -3,7 +3,7 @@
 # enable-service flips systemd's enable flag so units start automatically on
 # boot. It prompts for a service name when invoked without arguments.
 
-usage() {
+show_usage() {
         cat <<'USAGE' >&2
 Usage: enable-service UNIT
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        usage
+        show_usage
         exit 0
         ;;
 esac

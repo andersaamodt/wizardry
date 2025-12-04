@@ -2,7 +2,7 @@
 
 # Uninstall Bitcoin Core binaries and optionally remove data/config files.
 
-usage() {
+show_usage() {
         cat <<'USAGE' >&2
 Usage: uninstall-bitcoin
 
@@ -12,7 +12,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        usage
+        show_usage
         exit 0
         ;;
 esac

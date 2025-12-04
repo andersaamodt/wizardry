@@ -4,7 +4,6 @@
 # After the transfer, it trims the prologue so the file holds only its content.
 
 
-set -eu
 show_usage() {
 cat <<'USAGE'
 Usage: yaml-to-enchantment <path-to-file>
@@ -19,6 +18,7 @@ case "${1-}" in
         exit 0
         ;;
 esac
+set -eu
 
 if [ "$#" -ne 1 ]; then
     warn "Error: incorrect number of arguments"
