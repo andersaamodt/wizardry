@@ -1,0 +1,83 @@
+#!/bin/sh
+
+# Report the installation and runtime status of Bitcoin Lightning.
+
+usage() {
+        cat <<'USAGE' >&2
+Usage: lightning-status
+
+Reports whether Bitcoin Lightning (lightningd/lightning-cli) is installed and running.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        usage
+        exit 0
+        ;;
+esac
+
+set -eu
+. colors
+
+color_for_status() {
+  case "$1" in
+    "installed, running")
+      printf "%s" "$GREEN"
+      ;;
+    "installed, not running")
+      printf "%s" "$YELLOW"
+      ;;
+    "installed, needs setup"|"installed, error")
+      printf "%s" "$RED"
+      ;;
+    *)
+      printf "%s" "$GRAY"
+      ;;
+  esac
+}
+
+command_available() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+lightning_service_name() {
+  if [ -n "${LIGHTNING_SERVICE-}" ]; then
+    printf '%s' "$LIGHTNING_SERVICE"
+    return
+  fi
+  # Default to lightningd; fallback to clightningd or similar names if present.
+  for candidate in lightningd clightningd c-lightning; do
+    if command_available "$candidate"; then
+      printf '%s' "$candidate"
+      return
+    fi
+    if is-service-installed "$candidate" >/dev/null 2>&1; then
+      printf '%s' "$candidate"
+      return
+    fi
+  done
+  printf '%s' lightningd
+}
+
+get_lightning_status() {
+  service_name=$(lightning_service_name)
+
+  if command_available lightning-cli || command_available "$service_name"; then
+    if is-service-running "$service_name" >/dev/null 2>&1; then
+      if lightning-cli getinfo >/dev/null 2>&1; then
+        status="installed, running"
+      else
+        status="installed, needs setup"
+      fi
+    else
+      status="installed, not running"
+    fi
+  else
+    status="not installed"
+  fi
+
+  printf "%s%s%s\n" "$(color_for_status "$status")" "$status" "$RESET"
+}
+
+get_lightning_status
