@@ -72,6 +72,7 @@ SCRIPT
   esac
   echo "$OUTPUT" | grep '^FAIL ' >/dev/null 2>&1 && { TEST_FAILURE_REASON="expected no FAIL lines"; return 1; }
   [ -z "${ERROR}" ] || { TEST_FAILURE_REASON="expected no stderr"; return 1; }
+  rm -f "$abs_tmp"
 }
 
 check_is_quiet_for_posix() {

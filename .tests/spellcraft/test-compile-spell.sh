@@ -5,7 +5,15 @@
 # - requires spell name argument
 # - fails for unknown spell
 
-. "${0%/*}/../spells/.imps/test/test-bootstrap"
+# Locate the repository root so we can source test-bootstrap
+# Start from this test's directory and walk upward until spells/.imps/test/test-bootstrap is found
+# shellcheck disable=SC2034
+# (SC2034: test_root is used by sourced helpers)
+test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
+  test_root=$(dirname "$test_root")
+done
+. "$test_root/spells/.imps/test/test-bootstrap"
 
 test_compile_spell_help() {
   run_spell spells/spellcraft/compile-spell --help

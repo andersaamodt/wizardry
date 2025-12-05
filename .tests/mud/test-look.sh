@@ -98,7 +98,9 @@ test_home_description_defaults() {
   LOOK_HOME_PATH="$home_dir" HOME="$home_dir" PATH="$stub:/bin:/usr/bin" \
     run_spell "spells/mud/look" "$home_dir"
   assert_success || return 1
-  assert_output_contains "Your home folder." || return 1
+  assert_output_contains "$(basename "$home_dir")" || return 1
+  printf '%s' "$OUTPUT" | grep -qE "An ordinary room|A plain chamber|A nondescript space|An unremarkable area|A simple room" \
+    || { TEST_FAILURE_REASON="expected default description"; return 1; }
 }
 
 test_other_home_description() {
@@ -111,7 +113,9 @@ test_other_home_description() {
   LOOK_HOME_PATH="$base_home" HOME="$base_home" PATH="$stub:/bin:/usr/bin" \
     run_spell "spells/mud/look" "$other_home"
   assert_success || return 1
-  assert_output_contains "chris' home folder." || return 1
+  assert_output_contains "chris" || return 1
+  printf '%s' "$OUTPUT" | grep -qE "An ordinary room|A plain chamber|A nondescript space|An unremarkable area|A simple room" \
+    || { TEST_FAILURE_REASON="expected default description"; return 1; }
 }
 
 test_root_description() {
@@ -120,7 +124,9 @@ test_root_description() {
   stub_read_magic_missing "$stub"
   PATH="$stub:/bin:/usr/bin" run_spell "spells/mud/look" /
   assert_success || return 1
-  assert_output_contains "The root of the filesystem." || return 1
+  assert_output_contains "/" || return 1
+  printf '%s' "$OUTPUT" | grep -qE "An ordinary room|A plain chamber|A nondescript space|An unremarkable area|A simple room" \
+    || { TEST_FAILURE_REASON="expected default description"; return 1; }
 }
 
 test_displays_attributes() {

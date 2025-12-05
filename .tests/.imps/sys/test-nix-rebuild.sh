@@ -1,7 +1,15 @@
 #!/bin/sh
 # Tests for the 'nix-rebuild' imp
 
-. "${0%/*}/../../spells/.imps/test/test-bootstrap"
+# Locate the repository root so we can source test-bootstrap
+# Start from this test's directory and walk upward until spells/.imps/test/test-bootstrap is found
+# shellcheck disable=SC2034
+# (SC2034: test_root is used by sourced helpers)
+test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
+  test_root=$(dirname "$test_root")
+done
+. "$test_root/spells/.imps/test/test-bootstrap"
 
 test_nix_rebuild_skips_when_disabled() {
   # Test that WIZARDRY_SKIP_NIX_REBUILD=1 causes immediate success
