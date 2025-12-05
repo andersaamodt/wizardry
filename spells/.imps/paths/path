@@ -2,25 +2,11 @@
 # path PATH - convert relative path to absolute, normalized
 # Example: path ./foo -> /current/dir/foo
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: path PATH
-
-Convert relative path to absolute, normalized. Example: path ./foo -> /current/dir/foo.
-USAGE
+_path() {
+  _p_path=$1
+  case "$_p_path" in
+    /*) : ;;
+    *) _p_path="$(pwd -P)/$_p_path" ;;
+  esac
+  printf '%s' "$_p_path" | sed 's|///*|/|g'
 }
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-path=$1
-case "$path" in
-/*) : ;;
-*) path="$(pwd -P)/$path" ;;
-esac
-printf '%s' "$path" | sed 's|///*|/|g'

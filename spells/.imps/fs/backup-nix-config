@@ -1,64 +1,46 @@
 #!/bin/sh
 # backup-nix-config FILE - back up nix config file before editing
-# Prints the backup path to stderr for user notification.
-# Callers are responsible for calling this only once per operation.
+# Prints backup path to stderr. Callers responsible for calling once per operation.
 # Example: backup-nix-config /etc/nixos/configuration.nix
 
+_backup_nix_config() {
+  _bnc_file=${1:-}
 
-usage() {
-        cat <<'USAGE' >&2
-Usage: backup-nix-config FILE
-
-Back up nix config file before editing Prints the backup path to stderr for user notification. Callers are responsible for calling this only once per operation.. Example: backup-nix-config /etc/nixos/configuration.nix.
-USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-set -eu
-
-file=${1:-}
-
-if [ -z "$file" ]; then
-  printf '%s\n' "backup-nix-config: file path required" >&2
-  exit 1
-fi
-
-if [ ! -f "$file" ]; then
-  exit 0
-fi
-
-timestamp=$(date +%Y%m%d%H%M%S 2>/dev/null || date +%s 2>/dev/null || printf 'pid%s' "$$")
-backup="${file}.wizardry.${timestamp}"
-
-# Determine if we need sudo for system-level files
-needs_sudo=0
-case $file in
-/etc/*)
-  if [ ! -w "$file" ] && [ ! -w "$(dirname "$file")" ] 2>/dev/null; then
-    needs_sudo=1
+  if [ -z "$_bnc_file" ]; then
+    printf '%s\n' "backup-nix-config: file path required" >&2
+    return 1
   fi
-  ;;
-esac
 
-if [ "$needs_sudo" -eq 1 ]; then
-  if command -v sudo >/dev/null 2>&1; then
-    sudo cp "$file" "$backup"
-  elif command -v doas >/dev/null 2>&1; then
-    doas cp "$file" "$backup"
+  if [ ! -f "$_bnc_file" ]; then
+    return 0
+  fi
+
+  _bnc_timestamp=$(date +%Y%m%d%H%M%S 2>/dev/null || date +%s 2>/dev/null || printf 'pid%s' "$$")
+  _bnc_backup="${_bnc_file}.wizardry.${_bnc_timestamp}"
+
+  _bnc_needs_sudo=0
+  case $_bnc_file in
+    /etc/*)
+      if [ ! -w "$_bnc_file" ] && [ ! -w "$(dirname "$_bnc_file")" ] 2>/dev/null; then
+        _bnc_needs_sudo=1
+      fi
+      ;;
+  esac
+
+  if [ "$_bnc_needs_sudo" -eq 1 ]; then
+    if command -v sudo >/dev/null 2>&1; then
+      sudo cp "$_bnc_file" "$_bnc_backup"
+    elif command -v doas >/dev/null 2>&1; then
+      doas cp "$_bnc_file" "$_bnc_backup"
+    else
+      cp "$_bnc_file" "$_bnc_backup"
+    fi
   else
-    cp "$file" "$backup"
-  fi
-else
-  cp "$file" "$backup"
-fi || {
-  printf '%s\n' "backup-nix-config: unable to back up '$file'" >&2
-  exit 1
-}
+    cp "$_bnc_file" "$_bnc_backup"
+  fi || {
+    printf '%s\n' "backup-nix-config: unable to back up '$_bnc_file'" >&2
+    return 1
+  }
 
-printf '%s\n' "Backed up '$file' to '$backup'" >&2
+  printf '%s\n' "Backed up '$_bnc_file' to '$_bnc_backup'" >&2
+}

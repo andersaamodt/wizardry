@@ -2,20 +2,6 @@
 # lines [FILE] - count lines in file or stdin
 # Example: n=$(ls | lines) | lines /etc/passwd
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: lines [FILE]
-
-Count lines in file or stdin. Example: n=$(ls | lines) | lines /etc/passwd.
-USAGE
+_lines() {
+  if [ "$#" -ge 1 ]; then wc -l < "$1" | tr -d ' '; else wc -l | tr -d ' '; fi
 }
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-if [ "$#" -ge 1 ]; then wc -l < "$1" | tr -d ' '; else wc -l | tr -d ' '; fi

@@ -2,20 +2,6 @@
 # quiet COMMAND [ARGS...] - run command with all output suppressed
 # Example: quiet rm -f /tmp/file
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: quiet COMMAND [ARGS...]
-
-Run command with all output suppressed. Example: quiet rm -f /tmp/file.
-USAGE
+_quiet() {
+  "$@" >/dev/null 2>&1
 }
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-"$@" >/dev/null 2>&1

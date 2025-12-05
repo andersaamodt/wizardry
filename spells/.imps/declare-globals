@@ -1,38 +1,18 @@
 #!/bin/sh
 # Centralized declaration of allowed global environment variables.
 # Each global requires two comment lines: description and justification.
-#
-# ENFORCEMENT: Tests in test-suite.sh verify:
-# 1. Exactly 3 globals are declared here (test_declare_globals_count)
-# 2. Scripts using these globals have 'set -u' enabled (test_scripts_using_globals_have_set_u)
-# 3. No undeclared globals are exported (test_no_undeclared_global_exports)
-# 4. No global declarations outside this file (test_no_global_declarations_outside_declare_globals)
-# This creates a closed enforcement loop that prevents undeclared globals.
+# ENFORCEMENT: Tests verify exactly 3 globals, 'set -u' usage, no undeclared exports.
 
-# Installation root directory path.
-# Required for spells to locate resources relative to install location.
+_declare_globals() {
+  # Installation root directory path.
+  # Required for spells to locate resources relative to install location.
+  : "${WIZARDRY_DIR:=}"
 
-usage() {
-        cat <<'USAGE' >&2
-Usage: declare-globals
+  # User's personal spellbook directory.
+  # Required for coordinating custom spell storage across multiple spells.
+  : "${SPELLBOOK_DIR:=}"
 
-Centralized declaration of allowed global environment variables. Each global requires two comment lines: description and justification. Installation root directory path. Required for spells to locate resources relative to install location.
-USAGE
+  # MUD configuration directory.
+  # Required for MUD features to share room descriptions and settings.
+  : "${MUD_DIR:=}"
 }
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-: "${WIZARDRY_DIR:=}"
-
-# User's personal spellbook directory.
-# Required for coordinating custom spell storage across multiple spells.
-: "${SPELLBOOK_DIR:=}"
-
-# MUD configuration directory.
-# Required for MUD features to share room descriptions and settings.
-: "${MUD_DIR:=}"

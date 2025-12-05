@@ -1,48 +1,42 @@
 #!/bin/sh
 # nix-rebuild - run nixos-rebuild or home-manager switch automatically
 # Attempts home-manager first, then nixos-rebuild with privilege escalation.
-# Returns 0 if rebuild succeeded or was skipped, 1 if it could not be run.
 # Set WIZARDRY_SKIP_NIX_REBUILD=1 to skip without error.
-# Example: nix-rebuild && echo "rebuilt" || echo "could not rebuild"
 
-set -eu
-
-# Allow tests to skip the rebuild
-if [ "${WIZARDRY_SKIP_NIX_REBUILD-}" = "1" ]; then
-  exit 0
-fi
-
-rebuild_success=0
-
-# Try to detect if we should use sudo or doas
-priv_cmd=""
-if command -v sudo >/dev/null 2>&1; then
-  priv_cmd="sudo"
-elif command -v doas >/dev/null 2>&1; then
-  priv_cmd="doas"
-fi
-
-# Try home-manager first (doesn't need privileges)
-if command -v home-manager >/dev/null 2>&1; then
-  printf '%s\n' "nix-rebuild: running home-manager switch..."
-  if home-manager switch; then
-    printf '%s\n' "nix-rebuild: user environment rebuilt successfully."
-    rebuild_success=1
+_nix_rebuild() {
+  if [ "${WIZARDRY_SKIP_NIX_REBUILD-}" = "1" ]; then
+    return 0
   fi
-fi
 
-# If home-manager didn't work and we have privilege escalation, try nixos-rebuild
-if [ "$rebuild_success" -eq 0 ] && [ -n "$priv_cmd" ] && command -v nixos-rebuild >/dev/null 2>&1; then
-  printf '%s\n' "nix-rebuild: running $priv_cmd nixos-rebuild switch..."
-  if "$priv_cmd" nixos-rebuild switch; then
-    printf '%s\n' "nix-rebuild: NixOS system rebuilt successfully."
-    rebuild_success=1
+  _nr_rebuild_success=0
+
+  _nr_priv_cmd=""
+  if command -v sudo >/dev/null 2>&1; then
+    _nr_priv_cmd="sudo"
+  elif command -v doas >/dev/null 2>&1; then
+    _nr_priv_cmd="doas"
   fi
-fi
 
-if [ "$rebuild_success" -eq 0 ]; then
-  printf '%s\n' "nix-rebuild: NixOS configuration could not be automatically rebuilt." >&2
-  exit 1
-fi
+  if command -v home-manager >/dev/null 2>&1; then
+    printf '%s\n' "nix-rebuild: running home-manager switch..."
+    if home-manager switch; then
+      printf '%s\n' "nix-rebuild: user environment rebuilt successfully."
+      _nr_rebuild_success=1
+    fi
+  fi
 
-exit 0
+  if [ "$_nr_rebuild_success" -eq 0 ] && [ -n "$_nr_priv_cmd" ] && command -v nixos-rebuild >/dev/null 2>&1; then
+    printf '%s\n' "nix-rebuild: running $_nr_priv_cmd nixos-rebuild switch..."
+    if "$_nr_priv_cmd" nixos-rebuild switch; then
+      printf '%s\n' "nix-rebuild: NixOS system rebuilt successfully."
+      _nr_rebuild_success=1
+    fi
+  fi
+
+  if [ "$_nr_rebuild_success" -eq 0 ]; then
+    printf '%s\n' "nix-rebuild: NixOS configuration could not be automatically rebuilt." >&2
+    return 1
+  fi
+
+  return 0
+}

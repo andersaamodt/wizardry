@@ -2,20 +2,6 @@
 # last [FILE] - output only the last line of input or file
 # Example: tail_entry=$(last log.txt)
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: last [FILE]
-
-Output only the last line of input or file. Example: tail_entry=$(last log.txt).
-USAGE
+_last() {
+  if [ "$#" -ge 1 ]; then tail -n 1 "$1"; else tail -n 1; fi
 }
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-if [ "$#" -ge 1 ]; then tail -n 1 "$1"; else tail -n 1; fi

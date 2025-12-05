@@ -1,28 +1,26 @@
 #!/bin/sh
-# and CMD CMD_ARGS MORE... - execute prior command, then continue if it succeeded
-# Receives: $1=command, $2=command_args (space-separated), $3+=remaining args
-# Example: parse echo hello and echo world → outputs "hello" then "world"
+# and CMD CMD_ARGS MORE... - execute prior command, continue if it succeeded
+# Receives: $1=command, $2=command_args, $3+=remaining args
+# Example: parse echo hello and echo world
 
-set -eu
+_and() {
+  _and_cmd=${1:-}
+  _and_cmd_args=${2:-}
+  shift 2 2>/dev/null || shift $#
 
-cmd=${1:-}
-cmd_args=${2:-}
-shift 2 2>/dev/null || shift $#
-
-# Run the prior command if present
-if [ -n "$cmd" ]; then
-  # shellcheck disable=SC2086
-  if "$cmd" $cmd_args; then
-    : # success
-  else
-    exit $?
+  if [ -n "$_and_cmd" ]; then
+    # shellcheck disable=SC2086
+    if "$_and_cmd" $_and_cmd_args; then
+      : # success
+    else
+      return $?
+    fi
   fi
-fi
 
-# Continue parsing remaining args
-if [ $# -eq 0 ]; then
-  exit 0
-fi
+  if [ $# -eq 0 ]; then
+    return 0
+  fi
 
-lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-exec "$lex_dir/parse" "$@"
+  _and_lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  "$_and_lex_dir/parse" "$@"
+}

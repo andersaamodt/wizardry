@@ -2,24 +2,10 @@
 # full TYPE PATH - test if file has content or dir has entries (file/dir)
 # Example: full file log.txt | full dir /home
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: full TYPE PATH
-
-Test if file has content or dir has entries (file/dir). Example: full file log.txt | full dir /home.
-USAGE
+_full() {
+  case "$1" in
+    file) [ -s "$2" ] ;;
+    dir)  [ -d "$2" ] && [ -n "$(ls -A "$2" 2>/dev/null)" ] ;;
+    *)    return 1 ;;
+  esac
 }
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-case "$1" in
-file) [ -s "$2" ] ;;
-dir)  [ -d "$2" ] && [ -n "$(ls -A "$2" 2>/dev/null)" ] ;;
-*)    exit 1 ;;
-esac

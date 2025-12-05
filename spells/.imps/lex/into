@@ -1,43 +1,39 @@
 #!/bin/sh
 # into CMD CMD_ARGS TARGET MORE... - append TARGET to command args
-# Receives: $1=command, $2=command_args (space-separated), $3=target, $4+=remaining
-# Example: parse cp file.txt into /tmp → cp file.txt /tmp
+# Receives: $1=command, $2=command_args, $3=target, $4+=remaining
+# Example: parse cp file.txt into /tmp
 
-set -eu
+_into() {
+  _into_cmd=${1:-}
+  _into_cmd_args=${2:-}
+  shift 2 2>/dev/null || shift $#
 
-cmd=${1:-}
-cmd_args=${2:-}
-shift 2 2>/dev/null || shift $#
+  if [ $# -lt 1 ]; then
+    printf '%s: into requires a target\n' "into" >&2
+    return 1
+  fi
 
-if [ $# -lt 1 ]; then
-  printf '%s: into requires a target\n' "into" >&2
-  exit 1
-fi
+  _into_target=$1
+  shift
 
-target=$1
-shift
+  if [ -z "$_into_cmd" ]; then
+    printf '%s: into requires a command before it\n' "into" >&2
+    return 1
+  fi
 
-if [ -z "$cmd" ]; then
-  printf '%s: into requires a command before it\n' "into" >&2
-  exit 1
-fi
+  if [ -n "$_into_cmd_args" ]; then
+    _into_new_args="$_into_cmd_args $_into_target"
+  else
+    _into_new_args=$_into_target
+  fi
 
-# Append target to command args
-if [ -n "$cmd_args" ]; then
-  new_args="$cmd_args $target"
-else
-  new_args=$target
-fi
+  if [ $# -eq 0 ]; then
+    # shellcheck disable=SC2086
+    "$_into_cmd" $_into_new_args
+    return $?
+  fi
 
-# If no more args, execute the command now
-if [ $# -eq 0 ]; then
+  _into_lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
   # shellcheck disable=SC2086
-  exec "$cmd" $new_args
-fi
-
-# More args - continue parsing with updated context
-# We need to pass cmd and new_args to the next linking word
-# But parse expects a fresh command line, so we reconstruct it
-lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-# shellcheck disable=SC2086
-exec "$lex_dir/parse" "$cmd" $new_args "$@"
+  "$_into_lex_dir/parse" "$_into_cmd" $_into_new_args "$@"
+}

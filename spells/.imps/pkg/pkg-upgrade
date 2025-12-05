@@ -2,30 +2,16 @@
 # pkg-upgrade - upgrade all installed packages
 # Example: pkg-update && pkg-upgrade
 
+_pkg_upgrade() {
+  _pug_pm=$(_pkg_manager) || { printf '%s\n' "pkg-upgrade: no supported package manager" >&2; return 1; }
 
-usage() {
-        cat <<'USAGE' >&2
-Usage: pkg-upgrade
-
-Upgrade all installed packages. Example: pkg-update && pkg-upgrade.
-USAGE
+  case $_pug_pm in
+    apt)    sudo apt-get -y upgrade ;;
+    dnf)    sudo dnf -y upgrade ;;
+    pacman) sudo pacman --noconfirm -Su ;;
+    brew)   brew upgrade ;;
+    nix)    nix-env -u ;;
+    pkgin)  sudo pkgin -y upgrade ;;
+    apk)    sudo apk upgrade ;;
+  esac
 }
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-pm=$(pkg-manager) || { printf '%s\n' "pkg-upgrade: no supported package manager" >&2; exit 1; }
-
-case $pm in
-apt)    sudo apt-get -y upgrade ;;
-dnf)    sudo dnf -y upgrade ;;
-pacman) sudo pacman --noconfirm -Su ;;
-brew)   brew upgrade ;;
-nix)    nix-env -u ;;
-pkgin)  sudo pkgin -y upgrade ;;
-apk)    sudo apk upgrade ;;
-esac

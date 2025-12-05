@@ -1,136 +1,87 @@
 #!/bin/sh
 # word-of-binding NAME [ARGS...] - resolve and invoke a wizardry command by name
-# Dispatcher script for autoloading missing commands. Resolves the hyphenated
-# public name to its true-name function, sources the module if needed, generates
-# the alias, and calls the true name with the given arguments.
-#
-# This script is called by handle-command-not-found when a command is not found.
-# After successful binding, subsequent calls bypass CNF because the alias exists.
-#
-# Example: word-of-binding contains "hello world" "world"
+# Dispatcher for autoloading missing commands via handle-command-not-found.
+# Sources the module and calls its true-name function.
 
-set -eu
+_word_of_binding() {
+  if [ $# -eq 0 ]; then
+    printf '%s\n' "word-of-binding: command name required" >&2
+    return 1
+  fi
 
-# Auto-detect WIZARDRY_DIR from this script's location if not set
-if [ -z "${WIZARDRY_DIR-}" ]; then
-  _wob_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-  # Navigate from .imps/sys up to wizardry root
-  WIZARDRY_DIR=$(CDPATH= cd -- "$_wob_script_dir/../../.." 2>/dev/null && pwd -P) || true
-fi
+  _wob_name=$1
+  shift
 
-# Convert hyphenated name to underscore true-name
-# e.g., "clip-copy" -> "_clip_copy"
-to_true_name() {
-  printf '_%s\n' "$1" | sed 's/-/_/g'
-}
+  if [ -z "${WIZARDRY_DIR-}" ]; then
+    _wob_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+    WIZARDRY_DIR=$(CDPATH= cd -- "$_wob_script_dir/../../.." 2>/dev/null && pwd -P) || true
+  fi
 
-# Find the module file for a given public name
-# Searches $WIZARDRY_DIR/spells/.imps and ~/.spellbook
-find_module() {
-  name=$1
-  
-  # Search in wizardry imps directory
+  # Convert hyphenated name to true-name: clip-copy -> _clip_copy
+  _wob_true_name=$(printf '_%s\n' "$_wob_name" | sed 's/-/_/g')
+
+  # Find module file
+  _wob_module=""
   if [ -n "${WIZARDRY_DIR-}" ]; then
-    imps_dir="$WIZARDRY_DIR/spells/.imps"
-    if [ -d "$imps_dir" ]; then
-      # Check root imps directory
-      if [ -f "$imps_dir/$name" ]; then
-        printf '%s\n' "$imps_dir/$name"
-        return 0
+    _wob_imps_dir="$WIZARDRY_DIR/spells/.imps"
+    if [ -d "$_wob_imps_dir" ]; then
+      if [ -f "$_wob_imps_dir/$_wob_name" ]; then
+        _wob_module="$_wob_imps_dir/$_wob_name"
+      else
+        for _wob_family_dir in "$_wob_imps_dir"/*; do
+          [ -d "$_wob_family_dir" ] || continue
+          if [ -f "$_wob_family_dir/$_wob_name" ]; then
+            _wob_module="$_wob_family_dir/$_wob_name"
+            break
+          fi
+        done
       fi
-      # Check subdirectories (demon families)
-      for family_dir in "$imps_dir"/*; do
-        [ -d "$family_dir" ] || continue
-        if [ -f "$family_dir/$name" ]; then
-          printf '%s\n' "$family_dir/$name"
-          return 0
+    fi
+    
+    if [ -z "$_wob_module" ]; then
+      for _wob_spell_dir in "$WIZARDRY_DIR"/spells/*; do
+        [ -d "$_wob_spell_dir" ] || continue
+        case "$_wob_spell_dir" in */.imps) continue ;; esac
+        if [ -f "$_wob_spell_dir/$_wob_name" ]; then
+          _wob_module="$_wob_spell_dir/$_wob_name"
+          break
         fi
       done
     fi
-    
-    # Search in spells directories
-    for spell_dir in "$WIZARDRY_DIR"/spells/*; do
-      [ -d "$spell_dir" ] || continue
-      case "$spell_dir" in
-        */.imps) continue ;;  # Already searched
-      esac
-      if [ -f "$spell_dir/$name" ]; then
-        printf '%s\n' "$spell_dir/$name"
-        return 0
+  fi
+  
+  if [ -z "$_wob_module" ]; then
+    if [ -n "${SPELLBOOK_DIR-}" ] && [ -d "$SPELLBOOK_DIR" ]; then
+      if [ -f "$SPELLBOOK_DIR/$_wob_name" ]; then
+        _wob_module="$SPELLBOOK_DIR/$_wob_name"
       fi
-    done
-  fi
-  
-  # Search in user spellbook
-  if [ -n "${SPELLBOOK_DIR-}" ] && [ -d "$SPELLBOOK_DIR" ]; then
-    if [ -f "$SPELLBOOK_DIR/$name" ]; then
-      printf '%s\n' "$SPELLBOOK_DIR/$name"
-      return 0
-    fi
-  elif [ -n "${HOME-}" ] && [ -d "$HOME/.spellbook" ]; then
-    if [ -f "$HOME/.spellbook/$name" ]; then
-      printf '%s\n' "$HOME/.spellbook/$name"
-      return 0
+    elif [ -n "${HOME-}" ] && [ -d "$HOME/.spellbook" ]; then
+      if [ -f "$HOME/.spellbook/$_wob_name" ]; then
+        _wob_module="$HOME/.spellbook/$_wob_name"
+      fi
     fi
   fi
-  
-  return 1
-}
 
-# Check if module defines the expected true-name function
-has_true_name_function() {
-  module=$1
-  true_name=$2
-  
-  # Check if the module contains a function definition matching the true name
-  grep -qE "^[[:space:]]*${true_name}[[:space:]]*\\(\\)" "$module" 2>/dev/null
-}
+  if [ -z "$_wob_module" ]; then
+    printf '%s\n' "word-of-binding: unknown command '$_wob_name'" >&2
+    return 127
+  fi
 
-# Source module and create alias
-bind_module() {
-  name=$1
-  module=$2
-  true_name=$(to_true_name "$name")
-  
-  # Source the module (this defines the true-name function)
-  # shellcheck disable=SC1090
-  . "$module"
-  
-  # Create alias from public name to true name
-  # Note: This only works in interactive shells or if aliases are expanded
-  alias "$name=$true_name" 2>/dev/null || true
-}
-
-# Main entry point
-if [ $# -eq 0 ]; then
-  printf '%s\n' "word-of-binding: command name required" >&2
-  exit 1
-fi
-
-name=$1
-shift
-
-# Find the module
-module=$(find_module "$name") || {
-  printf '%s\n' "word-of-binding: unknown command '$name'" >&2
-  exit 127
-}
-
-true_name=$(to_true_name "$name")
-
-# Check if module defines the expected true-name function
-# If so, source it and call the function (binding)
-# Otherwise, just execute the module directly (evocation)
-if has_true_name_function "$module" "$true_name"; then
-  bind_module "$name" "$module"
-  # Verify the function was actually defined after sourcing
-  if type "$true_name" >/dev/null 2>&1; then
-    "$true_name" "$@"
+  # Check if module has true-name function
+  if grep -qE "^[[:space:]]*${_wob_true_name}[[:space:]]*\\(\\)" "$_wob_module" 2>/dev/null; then
+    # shellcheck disable=SC1090
+    . "$_wob_module"
+    
+    alias "$_wob_name=$_wob_true_name" 2>/dev/null || true
+    
+    if type "$_wob_true_name" >/dev/null 2>&1; then
+      "$_wob_true_name" "$@"
+    else
+      printf '%s\n' "word-of-binding: failed to bind '$_wob_name' - function not defined" >&2
+      return 1
+    fi
   else
-    # Function wasn't defined despite being in source - fall back to evocation
-    exec "$module" "$@"
+    printf '%s\n' "word-of-binding: '$_wob_name' has no true-name function" >&2
+    return 1
   fi
-else
-  # Evoke in subshell (current imp architecture)
-  exec "$module" "$@"
-fi
+}

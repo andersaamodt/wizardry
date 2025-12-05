@@ -2,23 +2,9 @@
 # ends STRING SUFFIX - test if string ends with suffix
 # Example: ends "$file" ".sh" && echo "shell script"
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: ends STRING SUFFIX
-
-Test if string ends with suffix. Example: ends "$file" ".sh" && echo "shell script".
-USAGE
+_ends() {
+  case "$1" in
+    *"$2") return 0 ;;
+    *) return 1 ;;
+  esac
 }
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-case "$1" in
-*"$2") exit 0 ;;
-*) exit 1 ;;
-esac

@@ -2,29 +2,15 @@
 # os - print current OS identifier (mac/linux/debian/nixos/arch/fedora/unknown)
 # Example: case $(os) in debian) apt-get ;; mac) brew ;; esac
 
+_os() {
+  _os_kernel=$(uname -s 2>/dev/null || echo unknown)
 
-usage() {
-        cat <<'USAGE' >&2
-Usage: os
-
-Print current OS identifier (mac/linux/debian/nixos/arch/fedora/unknown). Example: case $(os) in debian) apt-get ;; mac) brew ;; esac.
-USAGE
+  if [ -f /etc/NIXOS ]; then echo nixos
+  elif [ -f /etc/debian_version ]; then echo debian
+  elif [ -f /etc/arch-release ]; then echo arch
+  elif [ -f /etc/fedora-release ]; then echo fedora
+  elif [ "$_os_kernel" = "Darwin" ]; then echo mac
+  elif [ "$_os_kernel" = "Linux" ]; then echo linux
+  else echo unknown
+  fi
 }
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-kernel=$(uname -s 2>/dev/null || echo unknown)
-
-if [ -f /etc/NIXOS ]; then echo nixos
-elif [ -f /etc/debian_version ]; then echo debian
-elif [ -f /etc/arch-release ]; then echo arch
-elif [ -f /etc/fedora-release ]; then echo fedora
-elif [ "$kernel" = "Darwin" ]; then echo mac
-elif [ "$kernel" = "Linux" ]; then echo linux
-else echo unknown
-fi

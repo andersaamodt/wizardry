@@ -1,40 +1,35 @@
 #!/bin/sh
 # make-indent LEVEL [FILE] - generate indentation string for a given level
-# Uses detected indent style from FILE, or defaults to 2 spaces
-# Example: indent=$(make-indent 2 config.nix)
+# Uses detected indent style from FILE, or defaults to 2 spaces. Example: indent=$(make-indent 2)
 
-set -eu
+_make_indent() {
+  _mi_level=${1:-1}
+  _mi_file=${2-}
+  _mi_imp_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 
-# Find sibling imps directory
-IMP_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  if [ -n "$_mi_file" ] && [ -f "$_mi_file" ]; then
+    _mi_char=$("$_mi_imp_dir/detect-indent-char" "$_mi_file")
+    _mi_width=$("$_mi_imp_dir/detect-indent-width" "$_mi_file")
+  else
+    _mi_char=space
+    _mi_width=2
+  fi
 
-level=${1:-1}
-file=${2-}
-
-# Detect indent character and width
-if [ -n "$file" ] && [ -f "$file" ]; then
-	char=$("$IMP_DIR/detect-indent-char" "$file")
-	width=$("$IMP_DIR/detect-indent-width" "$file")
-else
-	char=space
-	width=2
-fi
-
-# Generate the indentation string
-case $char in
-tab)
-	i=0
-	while [ "$i" -lt "$level" ]; do
-		printf '\t'
-		i=$((i + 1))
-	done
-	;;
-*)
-	total=$((level * width))
-	i=0
-	while [ "$i" -lt "$total" ]; do
-		printf ' '
-		i=$((i + 1))
-	done
-	;;
-esac
+  case $_mi_char in
+    tab)
+      _mi_i=0
+      while [ "$_mi_i" -lt "$_mi_level" ]; do
+        printf '\t'
+        _mi_i=$((_mi_i + 1))
+      done
+      ;;
+    *)
+      _mi_total=$((_mi_level * _mi_width))
+      _mi_i=0
+      while [ "$_mi_i" -lt "$_mi_total" ]; do
+        printf ' '
+        _mi_i=$((_mi_i + 1))
+      done
+      ;;
+  esac
+}

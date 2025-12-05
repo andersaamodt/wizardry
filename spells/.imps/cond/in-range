@@ -2,21 +2,7 @@
 # in-range VALUE MIN MAX - test if integer value is within inclusive range
 # Example: in-range 5 1 10 && echo "valid"
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: in-range VALUE MIN MAX
-
-Test if integer value is within inclusive range. Example: in-range 5 1 10 && echo "valid".
-USAGE
+_in_range() {
+  [ "$#" -eq 3 ] || return 1
+  [ "$1" -ge "$2" ] && [ "$1" -le "$3" ] 2>/dev/null
 }
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-[ "$#" -eq 3 ] || exit 1
-[ "$1" -ge "$2" ] && [ "$1" -le "$3" ] 2>/dev/null

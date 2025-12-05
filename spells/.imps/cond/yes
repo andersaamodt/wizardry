@@ -2,23 +2,9 @@
 # yes VALUE - test if value is affirmative (y/yes/true/1/Y/YES/TRUE)
 # Example: yes "$VERBOSE" && echo "verbose mode"
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: yes VALUE
-
-Test if value is affirmative (y/yes/true/1/Y/YES/TRUE). Example: yes "$VERBOSE" && echo "verbose mode".
-USAGE
+_yes() {
+  case "$1" in
+    y|Y|yes|YES|Yes|true|TRUE|True|1) return 0 ;;
+    *) return 1 ;;
+  esac
 }
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-case "$1" in
-y|Y|yes|YES|Yes|true|TRUE|True|1) exit 0 ;;
-*) exit 1 ;;
-esac

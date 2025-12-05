@@ -1,24 +1,10 @@
 #!/bin/sh
 # clipboard-available - check if any clipboard helper is installed
-# Returns 0 if pbcopy, xsel, xclip, or wl-copy is available; non-zero otherwise
+# Returns 0 if pbcopy, xsel, xclip, or wl-copy is available
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: clipboard-available
-
-Returns 0 if any clipboard helper command is available (pbcopy, xsel, xclip, or wl-copy), non-zero otherwise.
-USAGE
+_clipboard_available() {
+  command -v pbcopy >/dev/null 2>&1 || \
+  command -v xsel >/dev/null 2>&1 || \
+  command -v xclip >/dev/null 2>&1 || \
+  command -v wl-copy >/dev/null 2>&1
 }
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-command -v pbcopy >/dev/null 2>&1 || \
-command -v xsel >/dev/null 2>&1 || \
-command -v xclip >/dev/null 2>&1 || \
-command -v wl-copy >/dev/null 2>&1

@@ -2,40 +2,26 @@
 # on PLATFORM - test if running on platform (mac/linux/debian/nixos/arch/fedora/bsd)
 # Example: on mac && brew install git
 
+_on() {
+  _on_platform=$1
+  _on_kernel=$(uname -s 2>/dev/null || echo unknown)
 
-usage() {
-        cat <<'USAGE' >&2
-Usage: on PLATFORM
-
-Test if running on platform (mac/linux/debian/nixos/arch/fedora/bsd). Example: on mac && brew install git.
-USAGE
+  case "$_on_platform" in
+    mac|macos|darwin)
+      [ "$_on_kernel" = "Darwin" ] ;;
+    linux)
+      [ "$_on_kernel" = "Linux" ] ;;
+    bsd|freebsd)
+      case "$_on_kernel" in *BSD) true ;; *) false ;; esac ;;
+    debian|ubuntu)
+      [ -f /etc/debian_version ] ;;
+    nixos)
+      [ -f /etc/NIXOS ] ;;
+    arch)
+      [ -f /etc/arch-release ] ;;
+    fedora)
+      [ -f /etc/fedora-release ] ;;
+    *)
+      return 1 ;;
+  esac
 }
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-platform=$1
-kernel=$(uname -s 2>/dev/null || echo unknown)
-
-case "$platform" in
-mac|macos|darwin)
-  [ "$kernel" = "Darwin" ] ;;
-linux)
-  [ "$kernel" = "Linux" ] ;;
-bsd|freebsd)
-  case "$kernel" in *BSD) true ;; *) false ;; esac ;;
-debian|ubuntu)
-  [ -f /etc/debian_version ] ;;
-nixos)
-  [ -f /etc/NIXOS ] ;;
-arch)
-  [ -f /etc/arch-release ] ;;
-fedora)
-  [ -f /etc/fedora-release ] ;;
-*)
-  exit 1 ;;
-esac

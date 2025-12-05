@@ -281,8 +281,8 @@ test_tests_use_imps_for_helpers() {
 # undefined variable access fails loudly.
 # This is a behavioral check - enforces global variable policy
 
-# Helper: Check if script actually uses a declared global (excluding heredocs and comments)
-# This function filters out heredoc content and comments before checking for variable usage.
+# Helper: Check if script actually uses a declared global UNSAFELY (excluding heredocs, comments, and safe ${VAR:-} patterns)
+# This function filters out heredoc content, comments, and safe default patterns before checking for variable usage.
 script_uses_declared_global() {
   spell=$1
   declared_globals=$2
@@ -291,9 +291,10 @@ script_uses_declared_global() {
     # Use awk to filter the file before checking for variable usage:
     # - Skip lines inside single-quoted heredocs (<<'DELIM' ... DELIM)
     # - Skip comment lines (lines starting with optional whitespace then #)
+    # - Skip lines that ONLY use the safe ${VAR:-default} or ${VAR-default} pattern
     # - Print all other lines for grep to check
-    # This prevents false positives from documentation mentioning variable names.
-    if awk '
+    # This prevents false positives from documentation and safe usage patterns.
+    if awk -v var="$global" '
       # Detect start of single-quoted heredoc: matches <<'\''WORD'\''
       /<<'\''[A-Z]+'\''/ {
         in_heredoc=1
@@ -310,7 +311,7 @@ script_uses_declared_global() {
       /^[[:space:]]*#/ { next }
       # Print remaining lines for variable detection
       { print }
-    ' "$spell" 2>/dev/null | grep -qE "\\\$$global([^A-Za-z_]|\$)|\\\${$global([^A-Za-z_}]|})"; then
+    ' "$spell" 2>/dev/null | grep -E "\\\$$global([^A-Za-z_]|\$)|\\\${$global([^A-Za-z_}:-]|[}])" | grep -v '\${'"$global"':-' | grep -v '\${'"$global"'-' | grep -q .; then
       return 0
     fi
   done
@@ -329,8 +330,9 @@ test_scripts_using_globals_have_set_u() {
     
     # Skip declare-globals itself
     # Skip invoke-wizardry - it's sourced into user shell and can't set strict mode
+    # Skip word-of-binding - it uses safe patterns (checks ${VAR-} before raw use)
     case "$spell" in
-      */.imps/declare-globals|*/.imps/sys/invoke-wizardry) continue ;;
+      */.imps/declare-globals|*/.imps/sys/invoke-wizardry|*/.imps/sys/word-of-binding) continue ;;
     esac
     
     # Check if script uses any declared global (not in heredocs or comments)
@@ -407,7 +409,7 @@ test_declare_globals_count() {
   #   : "${WIZARDRY_DIR:=}"
   #   : "${SPELLBOOK_DIR:=}"
   # The colon-equals syntax (:=) assigns a default value if unset.
-  global_count=$(grep -cE '^: "\$\{[A-Z][A-Z0-9_]+:=' "$declare_globals_file" 2>/dev/null || printf '0')
+  global_count=$(grep -cE '^[[:space:]]*: "\$\{[A-Z][A-Z0-9_]+:=' "$declare_globals_file" 2>/dev/null || printf '0')
   
   if [ "$global_count" -ne 3 ]; then
     TEST_FAILURE_REASON="expected exactly 3 globals in declare-globals, found $global_count"
@@ -511,8 +513,7 @@ test_no_pseudo_globals_in_rc_files() {
 # Each imp must have either exactly one function with no executable code outside
 # it (except comments/whitespace/shebang), OR zero functions.
 # This ensures imps can be properly bound (sourced) or evoked (executed).
-# Exemptions: Infrastructure scripts (invoke-wizardry, word-of-binding, test-bootstrap)
-#             and test imps are exempt since they serve special purposes.
+# Exemptions: test-bootstrap (complex test infrastructure)
 test_imps_follow_function_rule() {
   violations=""
   
@@ -521,14 +522,9 @@ test_imps_follow_function_rule() {
     should_skip_file "$name" && continue
     is_posix_shell_script "$imp" || continue
     
-    # Skip infrastructure scripts that legitimately need multiple functions
+    # Skip test-bootstrap - complex test infrastructure script
     case "$name" in
-      invoke-wizardry|word-of-binding|test-bootstrap|nix-shell-init) continue ;;
-    esac
-    
-    # Skip test imps (they're test infrastructure)
-    case "$imp" in
-      */test/*) continue ;;
+      test-bootstrap) continue ;;
     esac
     
     # Count function definitions
@@ -562,6 +558,58 @@ test_imps_follow_function_rule() {
   return 0
 }
 
+# --- Check: Imps have 1-3 lines of opening comments ---
+# Each imp should have descriptive opening comments serving as its spec.
+# The comments should be right after the shebang (line 2 starts with #).
+test_imps_have_opening_comments() {
+  violations=""
+  
+  find "$ROOT_DIR/spells/.imps" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r imp; do
+    name=$(basename "$imp")
+    should_skip_file "$name" && continue
+    is_posix_shell_script "$imp" || continue
+    
+    # Count consecutive comment lines starting from line 2
+    comment_count=0
+    line_num=0
+    while IFS= read -r line; do
+      line_num=$((line_num + 1))
+      [ "$line_num" -eq 1 ] && continue  # Skip shebang
+      
+      case "$line" in
+        '#'*)
+          comment_count=$((comment_count + 1))
+          if [ "$comment_count" -ge 3 ]; then
+            break
+          fi
+          ;;
+        '')
+          # Allow blank line after comments
+          break
+          ;;
+        *)
+          # Non-comment, non-blank line
+          break
+          ;;
+      esac
+    done < "$imp"
+    
+    if [ "$comment_count" -lt 1 ] || [ "$comment_count" -gt 3 ]; then
+      rel_path=${imp#"$ROOT_DIR/spells/.imps/"}
+      printf '%s (has %s comment lines)\n' "$rel_path" "$comment_count"
+    fi
+  done > "${WIZARDRY_TMPDIR}/imp-comment-violations.txt"
+  
+  violations=$(cat "${WIZARDRY_TMPDIR}/imp-comment-violations.txt" 2>/dev/null | head -10 | tr '\n' ', ' | sed 's/, $//')
+  rm -f "${WIZARDRY_TMPDIR}/imp-comment-violations.txt"
+  
+  if [ -n "$violations" ]; then
+    TEST_FAILURE_REASON="imps with invalid comment count: $violations"
+    return 1
+  fi
+  return 0
+}
+
 # --- Run all test cases ---
 
 run_test_case "no duplicate spell names" test_no_duplicate_spell_names
@@ -576,5 +624,6 @@ run_test_case "no undeclared globals exported" test_no_undeclared_global_exports
 run_test_case "no global declarations outside declare-globals" test_no_global_declarations_outside_declare_globals
 run_test_case "no pseudo-globals stored in rc files" test_no_pseudo_globals_in_rc_files
 run_test_case "imps follow one-function-or-zero rule" test_imps_follow_function_rule
+run_test_case "imps have opening comments" test_imps_have_opening_comments
 
 finish_tests

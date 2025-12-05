@@ -1,24 +1,10 @@
 #!/bin/sh
-# need COMMAND [MESSAGE] - exit with error if command not available
+# need COMMAND [MESSAGE] - return failure with error if command not available
 # Example: need git | need curl "curl is required for downloads"
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: need COMMAND [MESSAGE]
-
-Exit with error if command not available. Example: need git | need curl "curl is required for downloads".
-USAGE
+_need() {
+  if command -v "$1" >/dev/null 2>&1; then return 0; fi
+  _need_msg=${2:-"required command not found: $1"}
+  printf '%s\n' "$_need_msg" >&2
+  return 1
 }
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-if command -v "$1" >/dev/null 2>&1; then exit 0; fi
-msg=${2:-"required command not found: $1"}
-printf '%s\n' "$msg" >&2
-exit 1

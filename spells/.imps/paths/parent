@@ -2,24 +2,10 @@
 # parent PATH - extract directory from path (like dirname but pure shell)
 # Example: dir=$(parent /path/to/file.txt)  # outputs: /path/to
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: parent PATH
-
-Extract directory from path (like dirname but pure shell). Example: dir=$(parent /path/to/file.txt)  # outputs: /path/to.
-USAGE
+_parent() {
+  _par_path=$1
+  case "$_par_path" in
+    */*) printf '%s\n' "${_par_path%/*}" ;;
+    *)   printf '%s\n' "." ;;
+  esac
 }
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-path=$1
-case "$path" in
-*/*) printf '%s\n' "${path%/*}" ;;
-*)   printf '%s\n' "." ;;
-esac

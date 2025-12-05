@@ -3,20 +3,6 @@
 # DEPRECATED: Use 'nonempty' instead for clarity
 # Example: nonempty "$NAME" && echo "Hello, $NAME"
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: given VALUE
-
-Test if string is non-empty (provided) DEPRECATED: Use 'nonempty' instead for clarity. Example: nonempty "$NAME" && echo "Hello, $NAME".
-USAGE
+_given() {
+  [ -n "$1" ]
 }
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-[ -n "$1" ]

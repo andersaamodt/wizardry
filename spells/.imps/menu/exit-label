@@ -2,20 +2,6 @@
 # exit-label - return the label for menu exit items
 # Example: exit_item="$(exit-label)%kill -TERM \$PPID"
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: exit-label
-
-Return the label for menu exit items. Example: exit_item="$(exit-label)%kill -TERM \$PPID".
-USAGE
+_exit_label() {
+  printf '%s' "Exit"
 }
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-printf '%s' "Exit"

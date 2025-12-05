@@ -3,44 +3,29 @@
 # Example: name=$(read-line "Enter name: ") | line=$(read-line)
 # Set SELECT_INPUT_MODE=stdin|tty|none to override source detection
 
+_read_line() {
+  _rl_prompt=${1:-}
+  [ -n "$_rl_prompt" ] && printf '%s' "$_rl_prompt" >&2
 
-usage() {
-        cat <<'USAGE' >&2
-Usage: read-line [PROMPT]
+  if command -v select-input >/dev/null 2>&1; then
+    _rl_src=$(select-input) || return 1
+  else
+    case ${SELECT_INPUT_MODE:-auto} in
+      stdin) _rl_src=stdin ;;
+      tty)   _rl_src=tty ;;
+      none)  return 1 ;;
+      *)
+        if [ -t 0 ] || [ -p /dev/stdin ] || [ -s /dev/stdin ]; then _rl_src=stdin
+        elif [ -r /dev/tty ]; then _rl_src=tty
+        else return 1; fi ;;
+    esac
+  fi
 
-Read a line from stdin or tty, optional prompt to stderr. Example: name=$(read-line "Enter name: ") | line=$(read-line) Set SELECT_INPUT_MODE=stdin|tty|none to override source detection.
-USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-prompt=${1:-}
-[ -n "$prompt" ] && printf '%s' "$prompt" >&2
-
-# Determine input source
-if command -v select-input >/dev/null 2>&1; then
-  src=$(select-input) || exit 1
-else
-  case ${SELECT_INPUT_MODE:-auto} in
-  stdin) src=stdin ;;
-  tty)   src=tty ;;
-  none)  exit 1 ;;
-  *)
-    if [ -t 0 ] || [ -p /dev/stdin ] || [ -s /dev/stdin ]; then src=stdin
-    elif [ -r /dev/tty ]; then src=tty
-    else exit 1; fi ;;
+  case $_rl_src in
+    stdin) IFS= read -r _rl_line || _rl_line= ;;
+    tty)   IFS= read -r _rl_line </dev/tty || _rl_line= ;;
+    *)     return 1 ;;
   esac
-fi
 
-case $src in
-stdin) IFS= read -r line || line= ;;
-tty)   IFS= read -r line </dev/tty || line= ;;
-*)     exit 1 ;;
-esac
-
-printf '%s' "$line"
+  printf '%s' "$_rl_line"
+}

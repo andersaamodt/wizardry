@@ -1,22 +1,8 @@
 #!/bin/sh
-# fail MESSAGE - print message to stderr and exit with failure
+# fail MESSAGE - print message to stderr and return failure (1)
 # Example: has git || fail "git required"
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: fail MESSAGE
-
-Print message to stderr and exit with failure. Example: has git || fail "git required".
-USAGE
+_fail() {
+  printf '%s\n' "$*" >&2
+  return 1
 }
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-printf '%s\n' "$*" >&2
-exit 1

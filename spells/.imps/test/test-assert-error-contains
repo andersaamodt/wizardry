@@ -3,29 +3,15 @@
 # Testing imp - fails if ERROR variable doesn't contain the substring
 # Example: assert-error-contains "warning"
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: assert-error-contains SUBSTRING
-
-Test that ERROR contains substring Testing imp - fails if ERROR variable doesn't contain the substring. Example: assert-error-contains "warning".
-USAGE
+_test_assert_error_contains() {
+  _taec_substring=$1
+  case "${ERROR-}" in
+    *"$_taec_substring"*)
+      return 0
+      ;;
+    *)
+      TEST_FAILURE_REASON="stderr missing substring: $_taec_substring"
+      return 1
+      ;;
+  esac
 }
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-substring=$1
-case "${ERROR-}" in
-  *"$substring"*)
-    exit 0
-    ;;
-  *)
-    TEST_FAILURE_REASON="stderr missing substring: $substring"
-    exit 1
-    ;;
-esac
