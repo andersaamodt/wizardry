@@ -42,8 +42,6 @@ cast_dir=$($cast_store dir)
 resolve_spell_home() {
         if [ -n "${SPELLBOOK_DIR-}" ]; then
                 printf '%s' "$SPELLBOOK_DIR"
-        elif [ -n "${XDG_DATA_HOME-}" ]; then
-                printf '%s' "$XDG_DATA_HOME/wizardry/spellbook"
         elif [ -n "${HOME-}" ]; then
                 printf '%s' "$HOME/.spellbook"
         else

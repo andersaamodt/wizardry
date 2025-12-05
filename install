@@ -732,9 +732,7 @@ done
 
 # Add ~/.spellbook to PATH for custom spells
 spell_home_dir=""
-if [ -n "${XDG_DATA_HOME-}" ]; then
-        spell_home_dir="$XDG_DATA_HOME/wizardry/spellbook"
-elif [ -n "${HOME-}" ]; then
+if [ -n "${HOME-}" ]; then
         spell_home_dir="$HOME/.spellbook"
 fi
 if [ -n "$spell_home_dir" ]; then

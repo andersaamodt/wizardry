@@ -319,20 +319,6 @@ spellbook_dir_test() {
 
 run_test_case "SPELLBOOK_DIR" spellbook_dir_test
 
-# Test XDG_DATA_HOME fallback
-xdg_data_home_fallback() {
-  tmpdir=$(make_tempdir)
-  xdg_home="$tmpdir/xdg-data"
-  expected="$xdg_home/wizardry/spellbook"
-
-  run_cmd env "XDG_DATA_HOME=$xdg_home" \
-    "$ROOT_DIR/spells/cantrips/memorize" dir
-  assert_success || return 1
-  [ "$OUTPUT" = "$expected" ] || { TEST_FAILURE_REASON="expected xdg dir: $expected, got: $OUTPUT"; return 1; }
-}
-
-run_test_case "XDG_DATA_HOME fallback" xdg_data_home_fallback
-
 # Test tilde expansion in WIZARDRY_CAST_DIR
 tilde_expansion_cast_dir() {
   tmpdir=$(make_tempdir)

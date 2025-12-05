@@ -77,8 +77,6 @@ resolve_command_file() {
 resolve_spell_home() {
 	if [ -n "${SPELLBOOK_DIR-}" ]; then
 		dir=$(expand_tilde "$SPELLBOOK_DIR")
-	elif [ -n "${XDG_DATA_HOME-}" ]; then
-		dir=$XDG_DATA_HOME/wizardry/spellbook
 	elif [ -n "${HOME-}" ]; then
 		dir=$HOME/.spellbook
 	else
