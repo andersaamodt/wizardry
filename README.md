@@ -98,7 +98,7 @@ Imps are the smallest semantic building blocks in wizardry. They live in `spells
 An **imp** is a microscript that:
 
 * Does exactly one thing
-* Does not contain functions
+* Does not contain functions (see Sourceable Imps below for the exception)
 * Has a self-documenting name that novices can understand without looking it up (use hyphens for multi-word names)
 * Uses space-separated arguments instead of `--flags`
 * Has no `--help` flag (just a comment header—imps are for coding, not running standalone)
@@ -106,6 +106,22 @@ An **imp** is a microscript that:
 * Makes spells read almost like English while remaining POSIX-compliant
 
 Push as much logic as possible into imps for maximum semanticization.
+
+#### Sourceable Imps
+
+Sourceable imps are a special type of imp intended to be sourced by other scripts rather than executed directly. They have the `src-` prefix (e.g., `src-test-harness`).
+
+A **sourceable imp**:
+
+* Has a `src-` prefix in its name
+* Contains helper functions that should be sourced into the caller's environment
+* Is the only type of imp allowed to contain functions
+* Should contain nothing but the functions (plus opening comments)
+
+Example usage:
+```sh
+. "$ROOT_DIR/spells/.imps/test/src-test-harness"
+```
 
 ## Arcana
 

@@ -1,5 +1,5 @@
 #!/bin/sh
-# test-assert-path-exists PATH - assert path exists
+# assert-path-exists PATH - assert path exists
 # Exits 0 if PATH exists, otherwise exits 1.
 # Example: test-assert-path-exists "/tmp/file" || return 1
 

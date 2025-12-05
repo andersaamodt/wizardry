@@ -1,5 +1,5 @@
 #!/bin/sh
-# test-assert-failure STATUS - assert command failed (non-zero status)
+# assert-failure STATUS - assert command failed (non-zero status)
 # Exits 0 if STATUS is non-zero, otherwise exits 1.
 # Example: test-assert-failure "$STATUS" || return 1
 

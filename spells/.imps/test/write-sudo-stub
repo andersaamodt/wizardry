@@ -1,5 +1,5 @@
 #!/bin/sh
-# test-write-sudo-stub DIR - create sudo stub that strips flags and executes
+# write-sudo-stub DIR - create sudo stub that strips flags and executes
 # Creates sudo stub in DIR/bin/ that strips -n/-- flags.
 # Example: test-write-sudo-stub "$fixture"
 

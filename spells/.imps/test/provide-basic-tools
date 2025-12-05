@@ -1,5 +1,5 @@
 #!/bin/sh
-# test-provide-basic-tools DIR - symlink essential tools to DIR/bin
+# provide-basic-tools DIR - symlink essential tools to DIR/bin
 # Links mktemp, mkdir, rm, cat, env, ln, sh, dirname, readlink.
 # Example: test-provide-basic-tools "$fixture"
 

@@ -1,5 +1,5 @@
 #!/bin/sh
-# test-make-fixture - create a test fixture directory with bin/log/home
+# make-fixture - create a test fixture directory with bin/log/home
 # Creates fixture with bin/, log/, and home/.local/bin/ subdirectories.
 # Example: fixture=$(test-make-fixture)
 

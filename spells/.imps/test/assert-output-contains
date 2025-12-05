@@ -1,5 +1,5 @@
 #!/bin/sh
-# test-assert-output-contains OUTPUT SUBSTRING - assert output contains text
+# assert-output-contains OUTPUT SUBSTRING - assert output contains text
 # Exits 0 if OUTPUT contains SUBSTRING, otherwise exits 1.
 # Example: test-assert-output-contains "$OUTPUT" "expected" || return 1
 

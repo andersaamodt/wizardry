@@ -1,5 +1,5 @@
 #!/bin/sh
-# test-write-apt-stub DIR - create apt-get stub that logs to APT_LOG
+# write-apt-stub DIR - create apt-get stub that logs to APT_LOG
 # Creates apt-get stub in DIR/bin/ that logs calls and exits with APT_EXIT.
 # Example: test-write-apt-stub "$fixture"
 

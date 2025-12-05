@@ -1,5 +1,5 @@
 #!/bin/sh
-# test-link-tools DIR TOOL... - symlink system tools into directory
+# link-tools DIR TOOL... - symlink system tools into directory
 # Creates symlinks to system tools for test fixtures.
 # Example: test-link-tools "$dir" sh cat printf
 

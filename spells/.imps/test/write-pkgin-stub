@@ -1,5 +1,5 @@
 #!/bin/sh
-# test-write-pkgin-stub DIR - create pkgin stub that logs to PKGIN_LOG
+# write-pkgin-stub DIR - create pkgin stub that logs to PKGIN_LOG
 # Creates pkgin stub at DIR/opt/pkg/bin/pkgin.
 # Example: test-write-pkgin-stub "$fixture"
 

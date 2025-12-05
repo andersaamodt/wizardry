@@ -1,5 +1,5 @@
 #!/bin/sh
-# test-assert-file-contains FILE SUBSTRING - assert file contains text
+# assert-file-contains FILE SUBSTRING - assert file contains text
 # Exits 0 if FILE exists and contains SUBSTRING, otherwise exits 1.
 # Example: test-assert-file-contains "output.txt" "expected" || return 1
 

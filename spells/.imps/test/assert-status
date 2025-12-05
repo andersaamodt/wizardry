@@ -1,5 +1,5 @@
 #!/bin/sh
-# test-assert-status STATUS EXPECTED [ERROR] - assert specific exit status
+# assert-status STATUS EXPECTED [ERROR] - assert specific exit status
 # Exits 0 if STATUS equals EXPECTED, otherwise exits 1.
 # Example: test-assert-status "$STATUS" 42 "$ERROR" || return 1
 

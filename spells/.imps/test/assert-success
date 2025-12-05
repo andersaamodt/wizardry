@@ -1,5 +1,5 @@
 #!/bin/sh
-# test-assert-success STATUS [ERROR] - assert command succeeded (status 0)
+# assert-success STATUS [ERROR] - assert command succeeded (status 0)
 # Exits 0 if STATUS is 0, otherwise exits 1 with failure message.
 # Example: test-assert-success "$STATUS" "$ERROR" || return 1
 
