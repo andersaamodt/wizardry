@@ -5,14 +5,8 @@
 
 _invoke_wizardry() {
   if [ -z "${WIZARDRY_DIR-}" ]; then
-    if [ -n "${BASH_SOURCE-}" ]; then
-      _iw_script_dir=$(CDPATH= cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
-    elif [ -n "${ZSH_VERSION-}" ]; then
-      _iw_script_dir=$(CDPATH= cd -- "$(dirname "${(%):-%x}")" && pwd -P)
-    else
-      _iw_script_dir="${HOME-}/.wizardry/spells/.imps/sys"
-    fi
-    
+    # Default to expected install location; user can set WIZARDRY_DIR manually if different
+    _iw_script_dir="${HOME-}/.wizardry/spells/.imps/sys"
     WIZARDRY_DIR=$(CDPATH= cd -- "$_iw_script_dir/../../.." 2>/dev/null && pwd -P) || true
   fi
   
