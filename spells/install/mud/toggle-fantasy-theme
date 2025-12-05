@@ -7,7 +7,7 @@ show_usage() {
 cat <<'USAGE'
 Usage: toggle-fantasy-theme
 
-Toggle the planned fantasy theme on or off. When enabled it will add flavor text and descriptions; for now the toggle simply updates ~/.spellbook/.mud/config.
+Toggle the planned fantasy theme on or off. When enabled it will add flavor text and descriptions; for now the toggle simply updates $MUD_DIR/config.
 USAGE
 }
 

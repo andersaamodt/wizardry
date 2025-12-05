@@ -7,7 +7,7 @@ show_usage() {
 cat <<'USAGE'
 Usage: toggle-combat
 
-Toggle the planned HP/MP combat feature on or off. When enabled it will track health and mana once the feature lands; for now it simply updates ~/.spellbook/.mud/config.
+Toggle the planned HP/MP combat feature on or off. When enabled it will track health and mana once the feature lands; for now it simply updates $MUD_DIR/config.
 USAGE
 }
 

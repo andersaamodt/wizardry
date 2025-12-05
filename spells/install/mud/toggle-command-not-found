@@ -7,7 +7,7 @@ show_usage() {
 cat <<'USAGE'
 Usage: toggle-command-not-found
 
-Toggle the planned command-not-found hook on or off. When enabled it will display helpful messages for unknown commands; for now the toggle only updates ~/.spellbook/.mud/config.
+Toggle the planned command-not-found hook on or off. When enabled it will display helpful messages for unknown commands; for now the toggle only updates $MUD_DIR/config.
 USAGE
 }
 

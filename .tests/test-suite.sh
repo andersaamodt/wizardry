@@ -281,7 +281,8 @@ test_scripts_using_globals_have_set_u() {
     
     # Script uses a declared global - verify it has set -u or set -eu
     # Pattern matches: set -u, set -eu, set -ue, set -euo, etc.
-    if ! grep -qE '^set +-[euo]*u[euo]*' "$spell" 2>/dev/null; then
+    # Allow leading whitespace for scripts that conditionally set strict mode
+    if ! grep -qE '^[[:space:]]*set +-[euo]*u[euo]*' "$spell" 2>/dev/null; then
       rel_path=${spell#"$ROOT_DIR/spells/"}
       printf '%s\n' "$rel_path"
     fi

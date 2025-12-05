@@ -55,15 +55,11 @@ resolve_cast_dir() {
 }
 
 resolve_spell_home() {
-	if [ -n "${WIZARDRY_SPELL_HOME-}" ]; then
-		dir=$(expand_tilde "$WIZARDRY_SPELL_HOME")
-	elif [ -n "${SPELLBOOK_HOME-}" ]; then
-		dir=$(expand_tilde "$SPELLBOOK_HOME")
-	elif [ -n "${SPELL_HOME-}" ]; then
-		dir=$(expand_tilde "$SPELL_HOME")
-	elif [ -n "${XDG_DATA_HOME-}" ] && [ -n "$XDG_DATA_HOME" ]; then
+	if [ -n "${SPELLBOOK_DIR-}" ]; then
+		dir=$(expand_tilde "$SPELLBOOK_DIR")
+	elif [ -n "${XDG_DATA_HOME-}" ]; then
 		dir=$XDG_DATA_HOME/wizardry/spellbook
-	elif [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
+	elif [ -n "${HOME-}" ]; then
 		dir=$HOME/.spellbook
 	else
 		dir=.spellbook

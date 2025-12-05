@@ -7,7 +7,7 @@ show_usage() {
 cat <<'USAGE'
 Usage: enchant-portkey <file> [destination]
 
-Enchant a file with a portkey that stores a destination path, defaulting to marker 1 (~/.spellbook/markers/1) when none is provided. Activate the portkey later with follow-portkey to teleport to the stored location.
+Enchant a file with a portkey that stores a destination path, defaulting to marker 1 ($SPELLBOOK_DIR/.markers/1) when none is provided. Activate the portkey later with follow-portkey to teleport to the stored location.
 USAGE
 }
 
@@ -20,6 +20,19 @@ esac
 
 set -eu
 
+# Resolve the spell home directory
+resolve_spell_home() {
+        if [ -n "${SPELLBOOK_DIR-}" ]; then
+                printf '%s' "$SPELLBOOK_DIR"
+        elif [ -n "${XDG_DATA_HOME-}" ]; then
+                printf '%s' "$XDG_DATA_HOME/wizardry/spellbook"
+        elif [ -n "${HOME-}" ]; then
+                printf '%s' "$HOME/.spellbook"
+        else
+                printf '%s' ".spellbook"
+        fi
+}
+
 # Ensure file argument is provided
 if [ -z "${1-}" ]; then
         printf '%s\n' "enchant-portkey: file path required." >&2
@@ -29,7 +42,8 @@ fi
 
 file=$1
 destination=${2-}
-markers_dir="$HOME/.spellbook/markers"
+spell_home=$(resolve_spell_home)
+markers_dir="$spell_home/.markers"
 marker_file="$markers_dir/1"
 
 # Verify file exists

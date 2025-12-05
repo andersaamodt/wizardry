@@ -1299,7 +1299,7 @@ install_mud_enables_config_features() {
   run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
       HOME="$fixture/home" \
       WIZARDRY_RC_FILE="$rc_file" \
-      SPELLBOOK_HOME="$spellbook_home" \
+      SPELLBOOK_DIR="$spellbook_home" \
       WIZARDRY_INSTALL_ASSUME_YES=1 \
       WIZARDRY_INSTALL_MUD=1 \
       "$ROOT_DIR/install"

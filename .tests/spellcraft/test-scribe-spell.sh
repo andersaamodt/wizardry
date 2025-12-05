@@ -29,7 +29,7 @@ test_shows_help_with_h_flag() {
 test_noninteractive_scribes_command() {
   case_dir=$(make_tempdir)
   
-  WIZARDRY_SPELL_HOME="$case_dir" \
+  SPELLBOOK_DIR="$case_dir" \
     run_spell "spells/spellcraft/scribe-spell" spark "echo ignite"
   
   assert_success || return 1
@@ -58,12 +58,12 @@ test_rejects_invalid_name() {
   case_dir=$(make_tempdir)
   
   # Name with spaces
-  WIZARDRY_SPELL_HOME="$case_dir" \
+  SPELLBOOK_DIR="$case_dir" \
     run_spell "spells/spellcraft/scribe-spell" "spark fire" "echo ignite"
   assert_failure || return 1
   
   # Name starting with dash
-  WIZARDRY_SPELL_HOME="$case_dir" \
+  SPELLBOOK_DIR="$case_dir" \
     run_spell "spells/spellcraft/scribe-spell" "-spark" "echo ignite"
   assert_failure || return 1
 }
@@ -71,7 +71,7 @@ test_rejects_invalid_name() {
 test_multiword_command() {
   case_dir=$(make_tempdir)
   
-  WIZARDRY_SPELL_HOME="$case_dir" \
+  SPELLBOOK_DIR="$case_dir" \
     run_spell "spells/spellcraft/scribe-spell" test-cmd "echo" "hello" "world"
   
   assert_success || return 1
@@ -88,7 +88,7 @@ test_multiword_command() {
 test_script_is_executable() {
   case_dir=$(make_tempdir)
   
-  WIZARDRY_SPELL_HOME="$case_dir" \
+  SPELLBOOK_DIR="$case_dir" \
     run_spell "spells/spellcraft/scribe-spell" myspell "echo hello"
   
   assert_success || return 1
@@ -106,7 +106,7 @@ test_rejects_existing_command_name() {
   case_dir=$(make_tempdir)
   
   # Try to create a spell with the same name as 'ls' (a common built-in command)
-  WIZARDRY_SPELL_HOME="$case_dir" \
+  SPELLBOOK_DIR="$case_dir" \
     run_spell "spells/spellcraft/scribe-spell" ls "echo listing"
   
   assert_failure || return 1
@@ -119,13 +119,13 @@ test_rejects_duplicate_spell_in_spellbook() {
   case_dir=$(make_tempdir)
   
   # First, create a spell
-  WIZARDRY_SPELL_HOME="$case_dir" \
+  SPELLBOOK_DIR="$case_dir" \
     run_spell "spells/spellcraft/scribe-spell" myuniquespell "echo first"
   
   assert_success || return 1
   
   # Try to create another spell with the same name
-  WIZARDRY_SPELL_HOME="$case_dir" \
+  SPELLBOOK_DIR="$case_dir" \
     run_spell "spells/spellcraft/scribe-spell" myuniquespell "echo second"
   
   assert_failure || return 1
@@ -141,7 +141,7 @@ test_rejects_duplicate_spell_in_subfolder() {
   chmod +x "$case_dir/mycat/subspell"
   
   # Try to create a spell with the same name in the root
-  WIZARDRY_SPELL_HOME="$case_dir" \
+  SPELLBOOK_DIR="$case_dir" \
     run_spell "spells/spellcraft/scribe-spell" subspell "echo new"
   
   assert_failure || return 1
