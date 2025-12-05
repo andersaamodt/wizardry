@@ -297,18 +297,25 @@ _jump_trash_get_path() {
   fi
   
   # Inline fallback if detect-trash is not available
-  kernel=$(uname -s 2>/dev/null || printf 'unknown')
-  case "$kernel" in
-  Darwin)
+  platform=''
+  if command -v detect-distro >/dev/null 2>&1; then
+    platform=$(detect-distro 2>/dev/null || printf 'unknown')
+  else
+    kernel=$(uname -s 2>/dev/null || printf 'unknown')
+    case "$kernel" in
+    Darwin) platform='mac' ;;
+    Linux) platform='linux' ;;
+    *) platform='unknown' ;;
+    esac
+  fi
+  
+  case "$platform" in
+  mac)
     printf '%s/.Trash\n' "$HOME"
     ;;
-  Linux)
+  debian|arch|fedora|nixos|linux|*)
     xdg_data="${XDG_DATA_HOME:-$HOME/.local/share}"
     printf '%s/Trash/files\n' "$xdg_data"
-    ;;
-  *)
-    printf '%s\n' "jump-trash: unsupported operating system: $kernel" >&2
-    return 1
     ;;
   esac
 }

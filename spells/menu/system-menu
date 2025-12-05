@@ -32,7 +32,7 @@ fi
 
 # Detect whether we are running on NixOS to offer system-specific actions.
 nixos_rebuild=""
-if [ -r /etc/os-release ] && grep -q '^ID=nixos' /etc/os-release; then
+if command -v detect-distro >/dev/null 2>&1 && [ "$(detect-distro 2>/dev/null)" = "nixos" ]; then
   nixos_rebuild="Rebuild NixOS%sudo nixos-rebuild switch"
 fi
 

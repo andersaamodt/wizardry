@@ -35,7 +35,7 @@ detect_nixos() {
   if [ "${SIMPLEX_CHAT_ASSUME_NIXOS-0}" -eq 1 ]; then
     return 0
   fi
-  if [ -d /etc/nixos ] || [ -f /etc/NIXOS ] || grep -qi 'ID=nixos' /etc/os-release 2>/dev/null; then
+  if command -v detect-distro >/dev/null 2>&1 && [ "$(detect-distro 2>/dev/null)" = "nixos" ]; then
     return 0
   fi
   return 1

@@ -13,6 +13,14 @@ USAGE
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 
 detect_platform() {
+  if command -v detect-distro >/dev/null 2>&1; then
+    platform=$(detect-distro 2>/dev/null || printf 'unknown')
+    case "$platform" in
+    mac) printf '%s' "Darwin" ;;
+    *) printf '%s' "Linux" ;;
+    esac
+    return
+  fi
   if command -v uname >/dev/null 2>&1; then
     uname -s 2>/dev/null || printf '%s' "unknown"
   else
@@ -38,7 +46,11 @@ get_clipboard_label() {
   fi
   
   # No helper installed, show preferred
-  if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+  platform=''
+  if command -v detect-distro >/dev/null 2>&1; then
+    platform=$(detect-distro 2>/dev/null || printf 'unknown')
+  fi
+  if [ "$platform" = "mac" ] || [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
     printf 'Clipboard (pbcopy)'
     return
   fi
