@@ -13,6 +13,144 @@ permissions:
   pull-requests: read
 
 jobs:
+  package-managers:
+    name: Package manager smoke tests (${{ matrix.label }})
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: sh
+    strategy:
+      matrix:
+        include:
+          - label: debian-apt
+            container: debian:stable-slim
+            install_cmd: ./spells/install/core/manage-system-command jq jq
+            uninstall_cmd: ./spells/install/core/manage-system-command --uninstall jq jq
+            user: wizard
+          - label: ubuntu-apt
+            container: ubuntu:latest
+            install_cmd: ./spells/install/core/manage-system-command jq jq
+            uninstall_cmd: ./spells/install/core/manage-system-command --uninstall jq jq
+            user: wizard
+          - label: arch-pacman
+            container: archlinux:latest
+            install_cmd: ./spells/install/core/manage-system-command jq jq
+            uninstall_cmd: ./spells/install/core/manage-system-command --uninstall jq jq
+            user: wizard
+    container: ${{ matrix.container }}
+    steps:
+      - name: Install git for checkout and runtime deps
+        run: |
+          set -euo pipefail
+          case "${{ matrix.label }}" in
+            debian-apt)
+              DEBIAN_FRONTEND=noninteractive apt-get update
+              DEBIAN_FRONTEND=noninteractive apt-get install -y git sudo
+              useradd -m -s /bin/sh "${{ matrix.user }}"
+              echo "${{ matrix.user }} ALL=(ALL) NOPASSWD:ALL" >/etc/sudoers.d/wizard
+              chmod 0440 /etc/sudoers.d/wizard
+              RUNTIME_DIR="/run/user/$(id -u "${{ matrix.user }}")"
+              mkdir -p "$RUNTIME_DIR" "/home/${{ matrix.user }}/tmp"
+              chown -R "${{ matrix.user }}":"${{ matrix.user }}" "$RUNTIME_DIR" "/home/${{ matrix.user }}/tmp"
+              chmod 700 "$RUNTIME_DIR" "/home/${{ matrix.user }}/tmp"
+              DEBIAN_FRONTEND=noninteractive apt-get remove -y jq || true
+              ;;
+            ubuntu-apt)
+              DEBIAN_FRONTEND=noninteractive apt-get update
+              DEBIAN_FRONTEND=noninteractive apt-get install -y git sudo
+              useradd -m -s /bin/sh "${{ matrix.user }}"
+              echo "${{ matrix.user }} ALL=(ALL) NOPASSWD:ALL" >/etc/sudoers.d/wizard
+              chmod 0440 /etc/sudoers.d/wizard
+              RUNTIME_DIR="/run/user/$(id -u "${{ matrix.user }}")"
+              mkdir -p "$RUNTIME_DIR" "/home/${{ matrix.user }}/tmp"
+              chown -R "${{ matrix.user }}":"${{ matrix.user }}" "$RUNTIME_DIR" "/home/${{ matrix.user }}/tmp"
+              chmod 700 "$RUNTIME_DIR" "/home/${{ matrix.user }}/tmp"
+              DEBIAN_FRONTEND=noninteractive apt-get remove -y jq || true
+              ;;
+            arch-pacman)
+              pacman -Sy --noconfirm archlinux-keyring
+              pacman -Syu --noconfirm git sudo shadow
+              useradd -m -s /bin/sh "${{ matrix.user }}"
+              echo "${{ matrix.user }} ALL=(ALL) NOPASSWD:ALL" >/etc/sudoers.d/wizard
+              chmod 0440 /etc/sudoers.d/wizard
+              RUNTIME_DIR="/run/user/$(id -u "${{ matrix.user }}")"
+              mkdir -p "$RUNTIME_DIR" "/home/${{ matrix.user }}/tmp"
+              chown -R "${{ matrix.user }}":"${{ matrix.user }}" "$RUNTIME_DIR" "/home/${{ matrix.user }}/tmp"
+              chmod 700 "$RUNTIME_DIR" "/home/${{ matrix.user }}/tmp"
+              pacman -Rns --noconfirm jq || true
+              ;;
+          esac
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Ensure repository is writable by test user
+        run: chown -R "${{ matrix.user }}" .
+      - name: Ensure installer spells are executable
+        run: chmod +x spells/install/mud/install-mud spells/install/tor/setup-tor spells/install/core/manage-system-command
+      - name: Verify sudo works for test user
+        run: sudo -u "${{ matrix.user }}" env -i DEBIAN_FRONTEND=noninteractive LANG=C LC_ALL=C SHELL=/bin/sh TERM=dumb HOME="/home/${{ matrix.user }}" USER="${{ matrix.user }}" LOGNAME="${{ matrix.user }}" PATH="/usr/local/bin:/usr/bin:/bin" XDG_RUNTIME_DIR="/run/user/$(id -u "${{ matrix.user }}")" TMPDIR="/home/${{ matrix.user }}/tmp" sh -lc 'set -euo pipefail; umask 022; sudo -n true'
+      - name: Verify command absent before install
+        run: sudo -u "${{ matrix.user }}" env -i DEBIAN_FRONTEND=noninteractive LANG=C LC_ALL=C SHELL=/bin/sh TERM=dumb HOME="/home/${{ matrix.user }}" USER="${{ matrix.user }}" LOGNAME="${{ matrix.user }}" PATH="/usr/local/bin:/usr/bin:/bin" XDG_RUNTIME_DIR="/run/user/$(id -u "${{ matrix.user }}")" TMPDIR="/home/${{ matrix.user }}/tmp" sh -lc 'set -euo pipefail; umask 022; command -v jq && exit 1 || true'
+      - name: Install via manage-system-command
+        run: sudo -u "${{ matrix.user }}" env -i DEBIAN_FRONTEND=noninteractive LANG=C LC_ALL=C SHELL=/bin/sh TERM=dumb HOME="/home/${{ matrix.user }}" USER="${{ matrix.user }}" LOGNAME="${{ matrix.user }}" PATH="/usr/local/bin:/usr/bin:/bin" XDG_RUNTIME_DIR="/run/user/$(id -u "${{ matrix.user }}")" TMPDIR="/home/${{ matrix.user }}/tmp" sh -lc 'set -euo pipefail; umask 022; ${{ matrix.install_cmd }}'
+      - name: Verify installed command works
+        run: sudo -u "${{ matrix.user }}" env -i DEBIAN_FRONTEND=noninteractive LANG=C LC_ALL=C SHELL=/bin/sh TERM=dumb HOME="/home/${{ matrix.user }}" USER="${{ matrix.user }}" LOGNAME="${{ matrix.user }}" PATH="/usr/local/bin:/usr/bin:/bin" XDG_RUNTIME_DIR="/run/user/$(id -u "${{ matrix.user }}")" TMPDIR="/home/${{ matrix.user }}/tmp" sh -lc 'set -euo pipefail; umask 022; jq --version'
+      - name: Verify installed command behavior
+        run: sudo -u "${{ matrix.user }}" env -i DEBIAN_FRONTEND=noninteractive LANG=C LC_ALL=C SHELL=/bin/sh TERM=dumb HOME="/home/${{ matrix.user }}" USER="${{ matrix.user }}" LOGNAME="${{ matrix.user }}" PATH="/usr/local/bin:/usr/bin:/bin" XDG_RUNTIME_DIR="/run/user/$(id -u "${{ matrix.user }}")" TMPDIR="/home/${{ matrix.user }}/tmp" sh -lc 'set -euo pipefail; umask 022; printf "{\"value\":42}\n" | jq -r .value | grep "^42$"'
+      - name: Uninstall via manage-system-command
+        run: sudo -u "${{ matrix.user }}" env -i DEBIAN_FRONTEND=noninteractive LANG=C LC_ALL=C SHELL=/bin/sh TERM=dumb HOME="/home/${{ matrix.user }}" USER="${{ matrix.user }}" LOGNAME="${{ matrix.user }}" PATH="/usr/local/bin:/usr/bin:/bin" XDG_RUNTIME_DIR="/run/user/$(id -u "${{ matrix.user }}")" TMPDIR="/home/${{ matrix.user }}/tmp" sh -lc 'set -euo pipefail; umask 022; ${{ matrix.uninstall_cmd }}'
+      - name: Verify command absent after uninstall
+        run: sudo -u "${{ matrix.user }}" env -i DEBIAN_FRONTEND=noninteractive LANG=C LC_ALL=C SHELL=/bin/sh TERM=dumb HOME="/home/${{ matrix.user }}" USER="${{ matrix.user }}" LOGNAME="${{ matrix.user }}" PATH="/usr/local/bin:/usr/bin:/bin" XDG_RUNTIME_DIR="/run/user/$(id -u "${{ matrix.user }}")" TMPDIR="/home/${{ matrix.user }}/tmp" sh -lc 'set -euo pipefail; umask 022; command -v jq && exit 1 || true'
+
+  package-managers-macos:
+    name: Package manager smoke tests (macos-brew)
+    runs-on: macos-latest
+    defaults:
+      run:
+        shell: sh
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Ensure installer spells are executable
+        run: chmod +x spells/install/mud/install-mud spells/install/tor/setup-tor spells/install/core/manage-system-command
+      - name: Prepare isolated Homebrew environment
+        run: |
+          set -euo pipefail
+          BREW_HOME="${RUNNER_TEMP:-/tmp}/wizard-brew-home"
+          mkdir -p "$BREW_HOME"
+          mkdir -p "$BREW_HOME/tmp" "$BREW_HOME/run"
+          chmod 700 "$BREW_HOME/tmp" "$BREW_HOME/run"
+          echo "HOMEBREW_CACHE=${BREW_HOME}/cache" >> "$GITHUB_ENV"
+          echo "BREW_HOME=$BREW_HOME" >> "$GITHUB_ENV"
+      - name: Verify Homebrew available
+        run: env -i LANG=C LC_ALL=C SHELL=/bin/sh TERM=dumb HOME="${BREW_HOME}" PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin" XDG_RUNTIME_DIR="${BREW_HOME}/run" TMPDIR="${BREW_HOME}/tmp" sh -lc 'set -euo pipefail; umask 022; brew --version >/dev/null 2>&1'
+      - name: Ensure jq is absent before smoke test
+        run: |
+          set -euo pipefail
+          if command -v brew >/dev/null 2>&1; then
+            HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_CLEANUP=1 HOMEBREW_NO_ENV_HINTS=1 brew uninstall -f jq || true
+          fi
+          env -i LANG=C LC_ALL=C SHELL=/bin/sh TERM=dumb HOME="${BREW_HOME}" PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin" XDG_RUNTIME_DIR="${BREW_HOME}/run" TMPDIR="${BREW_HOME}/tmp" sh -lc 'umask 022; command -v jq && exit 1 || true'
+      - name: Install via manage-system-command
+        run: |
+          set -euo pipefail
+          env -i LANG=C LC_ALL=C SHELL=/bin/sh TERM=dumb HOME="${BREW_HOME}" USER="$(whoami)" LOGNAME="$(whoami)" PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin" \
+            XDG_RUNTIME_DIR="${BREW_HOME}/run" TMPDIR="${BREW_HOME}/tmp" \
+            HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_CLEANUP=1 HOMEBREW_NO_ENV_HINTS=1 NONINTERACTIVE=1 \
+            sh -lc 'set -euo pipefail; umask 022; ./spells/install/core/manage-system-command jq jq'
+      - name: Verify installed command works
+        run: env -i LANG=C LC_ALL=C SHELL=/bin/sh TERM=dumb HOME="${BREW_HOME}" PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin" XDG_RUNTIME_DIR="${BREW_HOME}/run" TMPDIR="${BREW_HOME}/tmp" sh -lc 'set -euo pipefail; umask 022; jq --version'
+      - name: Verify installed command behavior
+        run: env -i LANG=C LC_ALL=C SHELL=/bin/sh TERM=dumb HOME="${BREW_HOME}" PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin" XDG_RUNTIME_DIR="${BREW_HOME}/run" TMPDIR="${BREW_HOME}/tmp" sh -lc 'set -euo pipefail; umask 022; printf "{\"value\":42}\n" | jq -r .value | grep "^42$"'
+      - name: Uninstall via manage-system-command
+        run: |
+          set -euo pipefail
+          env -i LANG=C LC_ALL=C SHELL=/bin/sh TERM=dumb HOME="${BREW_HOME}" USER="$(whoami)" LOGNAME="$(whoami)" PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin" \
+            XDG_RUNTIME_DIR="${BREW_HOME}/run" TMPDIR="${BREW_HOME}/tmp" \
+            HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_CLEANUP=1 HOMEBREW_NO_ENV_HINTS=1 NONINTERACTIVE=1 \
+            sh -lc 'set -euo pipefail; umask 022; ./spells/install/core/manage-system-command --uninstall jq jq'
+      - name: Verify command absent after uninstall
+        run: env -i LANG=C LC_ALL=C SHELL=/bin/sh TERM=dumb HOME="${BREW_HOME}" PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin" XDG_RUNTIME_DIR="${BREW_HOME}/run" TMPDIR="${BREW_HOME}/tmp" sh -lc 'set -euo pipefail; umask 022; command -v jq && exit 1 || true'
+
   nix:
     name: Nix unit tests
     runs-on: ubuntu-latest
@@ -30,6 +168,14 @@ jobs:
           nix-channel --add https://nixos.org/channels/nixos-unstable nixpkgs
           nix-channel --update
           echo "NIX_PATH=nixpkgs=$HOME/.nix-defexpr/channels/nixpkgs" >> "$GITHUB_ENV"
+      - name: Prepare isolated test HOME
+        run: |
+          set -euo pipefail
+          TEST_HOME="${RUNNER_TEMP:-/tmp}/wizard-nix-home"
+          mkdir -p "$TEST_HOME"
+          mkdir -p "$TEST_HOME/tmp" "$TEST_HOME/run"
+          chmod 700 "$TEST_HOME/tmp" "$TEST_HOME/run"
+          echo "TEST_HOME=$TEST_HOME" >> "$GITHUB_ENV"
       - name: Configure bubblewrap user namespaces
         run: |
           sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
@@ -39,8 +185,28 @@ jobs:
             echo 'kernel.apparmor_restrict_unprivileged_userns=0'
           } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
           sudo sysctl --system || true
+      - name: Verify bubblewrap setup
+        run: |
+          env -i LANG=C LC_ALL=C SHELL=/bin/sh TERM=dumb HOME="${TEST_HOME}" USER="$(whoami)" LOGNAME="$(whoami)" \
+            XDG_RUNTIME_DIR="${TEST_HOME}/run" TMPDIR="${TEST_HOME}/tmp" \
+            PATH="/nix/var/nix/profiles/default/bin:/usr/local/bin:/usr/bin:/bin" \
+            nix-shell -I nixpkgs=channel:nixos-unstable -p bubblewrap --run "
+              set -euo pipefail
+              umask 022
+              if bwrap --unshare-user-try --ro-bind / / /bin/true; then
+                echo 'bubblewrap usable with user namespaces'
+              elif bwrap --ro-bind / / /bin/true 2>/dev/null; then
+                echo 'bubblewrap usable via privileged execution'
+              else
+                echo 'bubblewrap unusable; proceeding without sandboxing' >&2
+              fi
+            "
       - name: Run unit tests in Nix shell
-        run: nix-shell -I nixpkgs=channel:nixos-unstable -p bubblewrap shadow --run "./spells/system/test-magic --verbose"
+        run: |
+          env -i LANG=C LC_ALL=C SHELL=/bin/sh TERM=dumb HOME="${TEST_HOME}" USER="$(whoami)" LOGNAME="$(whoami)" \
+            XDG_RUNTIME_DIR="${TEST_HOME}/run" TMPDIR="${TEST_HOME}/tmp" \
+            PATH="/nix/var/nix/profiles/default/bin:/usr/local/bin:/usr/bin:/bin" \
+            nix-shell -I nixpkgs=channel:nixos-unstable -p bubblewrap shadow --run "set -euo pipefail; umask 022; ./spells/system/test-magic --verbose"
 
   macos:
     name: macOS unit tests
@@ -52,8 +218,19 @@ jobs:
         uses: actions/checkout@v4
       - name: Ensure installer spells are executable
         run: chmod +x spells/install/mud/install-mud spells/install/tor/setup-tor
+      - name: Prepare isolated HOME
+        run: |
+          set -euo pipefail
+          TEST_HOME="${RUNNER_TEMP:-/tmp}/wizard-macos-home"
+          mkdir -p "$TEST_HOME"
+          mkdir -p "$TEST_HOME/tmp" "$TEST_HOME/run"
+          chmod 700 "$TEST_HOME/tmp" "$TEST_HOME/run"
+          echo "TEST_HOME=$TEST_HOME" >> "$GITHUB_ENV"
       - name: Run unit tests
-        run: ./spells/system/test-magic --verbose
+        run: |
+          env -i LANG=C LC_ALL=C SHELL=/bin/sh TERM=dumb HOME="${TEST_HOME}" USER="$(whoami)" LOGNAME="$(whoami)" PATH="/usr/local/bin:/usr/bin:/bin" \
+            XDG_RUNTIME_DIR="${TEST_HOME}/run" TMPDIR="${TEST_HOME}/tmp" \
+            sh -lc 'set -euo pipefail; umask 022; ./spells/system/test-magic --verbose'
 
   arch:
     name: Arch Linux unit tests
@@ -70,26 +247,40 @@ jobs:
         run: chmod +x spells/install/mud/install-mud spells/install/tor/setup-tor
       - name: Install test dependencies
         run: pacman -Syu --noconfirm bubblewrap sudo shadow
+      - name: Create unprivileged test user
+        run: |
+          useradd -m -s /bin/sh wizard
+          echo "wizard ALL=(ALL) NOPASSWD:ALL" >/etc/sudoers.d/wizard
+          chmod 0440 /etc/sudoers.d/wizard
+          chown -R wizard .
+          mkdir -p /home/wizard/tmp /run/user/$(id -u wizard)
+          chown -R wizard:wizard /home/wizard/tmp /run/user/$(id -u wizard)
+          chmod 700 /home/wizard/tmp /run/user/$(id -u wizard)
+      - name: Verify sudo works for test user
+        run: sudo -u wizard env -i LANG=C LC_ALL=C SHELL=/bin/sh TERM=dumb HOME=/home/wizard USER=wizard LOGNAME=wizard PATH=/usr/local/bin:/usr/bin:/bin XDG_RUNTIME_DIR=/run/user/$(id -u wizard) TMPDIR=/home/wizard/tmp sh -lc 'set -eu; umask 022; sudo -n true'
       - name: Configure bubblewrap user namespaces
         run: |
           usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
           usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          usermod --add-subuids 100000-165535 --add-subgids 100000-165535 wizard
           {
             echo 'kernel.unprivileged_userns_clone=1'
             echo 'kernel.apparmor_restrict_unprivileged_userns=0'
           } | tee /etc/sysctl.d/99-unprivileged-userns.conf
           sysctl --system || true
       - name: Verify bubblewrap setup
-        run: |
+        run: sudo -u wizard env -i LANG=C LC_ALL=C SHELL=/bin/sh TERM=dumb HOME=/home/wizard USER=wizard LOGNAME=wizard PATH=/usr/local/bin:/usr/bin:/bin XDG_RUNTIME_DIR=/run/user/$(id -u wizard) TMPDIR=/home/wizard/tmp sh -lc '
+          set -euo pipefail
+          umask 022
           if bwrap --unshare-user-try --ro-bind / / /bin/true; then
             echo "bubblewrap usable with user namespaces"
           elif bwrap --ro-bind / / /bin/true 2>/dev/null; then
             echo "bubblewrap usable via privileged execution"
           else
             echo "bubblewrap unusable; proceeding without sandboxing" >&2
-          fi
+          fi'
       - name: Run unit tests
-        run: ./spells/system/test-magic --verbose
+        run: sudo -u wizard env -i LANG=C LC_ALL=C SHELL=/bin/sh TERM=dumb HOME=/home/wizard USER=wizard LOGNAME=wizard PATH=/usr/local/bin:/usr/bin:/bin XDG_RUNTIME_DIR=/run/user/$(id -u wizard) TMPDIR=/home/wizard/tmp sh -lc 'set -euo pipefail; umask 022; ./spells/system/test-magic --verbose'
 
   debian:
     name: Debian unit tests
@@ -99,33 +290,47 @@ jobs:
       WIZARDRY_OS_LABEL: debian
     steps:
       - name: Install git for checkout
-        run: apt-get update && apt-get install -y git
+        run: DEBIAN_FRONTEND=noninteractive apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y git
       - name: Checkout
         uses: actions/checkout@v4
       - name: Ensure installer spells are executable
         run: chmod +x spells/install/mud/install-mud spells/install/tor/setup-tor
       - name: Install bubblewrap dependency
-        run: apt-get update && apt-get install -y bubblewrap uidmap sudo
+        run: DEBIAN_FRONTEND=noninteractive apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y bubblewrap uidmap sudo
+      - name: Create unprivileged test user
+        run: |
+          useradd -m -s /bin/sh wizard
+          echo "wizard ALL=(ALL) NOPASSWD:ALL" >/etc/sudoers.d/wizard
+          chmod 0440 /etc/sudoers.d/wizard
+          chown -R wizard .
+          mkdir -p /home/wizard/tmp /run/user/$(id -u wizard)
+          chown -R wizard:wizard /home/wizard/tmp /run/user/$(id -u wizard)
+          chmod 700 /home/wizard/tmp /run/user/$(id -u wizard)
+      - name: Verify sudo works for test user
+        run: sudo -u wizard env -i DEBIAN_FRONTEND=noninteractive LANG=C LC_ALL=C SHELL=/bin/sh TERM=dumb HOME=/home/wizard USER=wizard LOGNAME=wizard PATH=/usr/local/bin:/usr/bin:/bin XDG_RUNTIME_DIR=/run/user/$(id -u wizard) TMPDIR=/home/wizard/tmp sh -lc 'set -eu; umask 022; sudo -n true'
       - name: Configure bubblewrap user namespaces
         run: |
           usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
           usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          usermod --add-subuids 100000-165535 --add-subgids 100000-165535 wizard
           {
             echo 'kernel.unprivileged_userns_clone=1'
             echo 'kernel.apparmor_restrict_unprivileged_userns=0'
           } | tee /etc/sysctl.d/99-unprivileged-userns.conf
           sysctl --system || true
       - name: Verify bubblewrap setup
-        run: |
+        run: sudo -u wizard env -i LANG=C LC_ALL=C SHELL=/bin/sh TERM=dumb HOME=/home/wizard USER=wizard LOGNAME=wizard PATH=/usr/local/bin:/usr/bin:/bin XDG_RUNTIME_DIR=/run/user/$(id -u wizard) TMPDIR=/home/wizard/tmp sh -lc '
+          set -euo pipefail
+          umask 022
           if bwrap --unshare-user-try --ro-bind / / /bin/true; then
             echo "bubblewrap usable with user namespaces"
           elif bwrap --ro-bind / / /bin/true 2>/dev/null; then
             echo "bubblewrap usable via privileged execution"
           else
             echo "bubblewrap unusable; proceeding without sandboxing" >&2
-          fi
+          fi'
       - name: Run unit tests
-        run: ./spells/system/test-magic --verbose
+        run: sudo -u wizard env -i LANG=C LC_ALL=C SHELL=/bin/sh TERM=dumb HOME=/home/wizard USER=wizard LOGNAME=wizard PATH=/usr/local/bin:/usr/bin:/bin XDG_RUNTIME_DIR=/run/user/$(id -u wizard) TMPDIR=/home/wizard/tmp sh -lc 'set -euo pipefail; umask 022; ./spells/system/test-magic --verbose'
 
   ubuntu:
     name: Ubuntu unit tests
@@ -138,26 +343,38 @@ jobs:
       - name: Ensure installer spells are executable
         run: chmod +x spells/install/mud/install-mud spells/install/tor/setup-tor
       - name: Install bubblewrap dependency
-        run: sudo apt-get update && sudo apt-get install -y bubblewrap uidmap
+        run: sudo DEBIAN_FRONTEND=noninteractive apt-get update && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y bubblewrap uidmap sudo
+      - name: Create unprivileged test user
+        run: |
+          sudo useradd -m -s /bin/sh wizard
+          echo "wizard ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/wizard
+          sudo chmod 0440 /etc/sudoers.d/wizard
+          sudo chown -R wizard .
+          sudo mkdir -p /home/wizard/tmp /run/user/$(id -u wizard)
+          sudo chown -R wizard:wizard /home/wizard/tmp /run/user/$(id -u wizard)
+          sudo chmod 700 /home/wizard/tmp /run/user/$(id -u wizard)
+      - name: Verify sudo works for test user
+        run: sudo -u wizard env -i DEBIAN_FRONTEND=noninteractive LANG=C LC_ALL=C SHELL=/bin/sh TERM=dumb HOME=/home/wizard USER=wizard LOGNAME=wizard PATH=/usr/local/bin:/usr/bin:/bin XDG_RUNTIME_DIR=/run/user/$(id -u wizard) TMPDIR=/home/wizard/tmp sh -lc 'set -eu; umask 022; sudo -n true'
       - name: Configure bubblewrap user namespaces
         run: |
           sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
           sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 wizard
           {
             echo 'kernel.unprivileged_userns_clone=1'
             echo 'kernel.apparmor_restrict_unprivileged_userns=0'
           } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
           sudo sysctl --system
       - name: Verify bubblewrap setup
-        run: |
+        run: sudo -u wizard env -i LANG=C LC_ALL=C SHELL=/bin/sh TERM=dumb HOME=/home/wizard USER=wizard LOGNAME=wizard PATH=/usr/local/bin:/usr/bin:/bin XDG_RUNTIME_DIR=/run/user/$(id -u wizard) TMPDIR=/home/wizard/tmp sh -lc '
+          set -euo pipefail
+          umask 022
           if bwrap --unshare-user-try --ro-bind / / /bin/true; then
             echo "bubblewrap usable with user namespaces"
-          elif sudo -n bwrap --unshare-user-try --ro-bind / / /bin/true; then
-            echo "bubblewrap usable via sudo with user namespaces"
-          elif sudo -n bwrap --ro-bind / / /bin/true; then
-            echo "bubblewrap usable via sudo"
+          elif bwrap --ro-bind / / /bin/true 2>/dev/null; then
+            echo "bubblewrap usable via privileged execution"
           else
             echo "bubblewrap unusable; proceeding without sandboxing" >&2
-          fi
+          fi'
       - name: Run unit tests
-        run: ./spells/system/test-magic --verbose
+        run: sudo -u wizard env -i LANG=C LC_ALL=C SHELL=/bin/sh TERM=dumb HOME=/home/wizard USER=wizard LOGNAME=wizard PATH=/usr/local/bin:/usr/bin:/bin XDG_RUNTIME_DIR=/run/user/$(id -u wizard) TMPDIR=/home/wizard/tmp sh -lc 'set -euo pipefail; umask 022; ./spells/system/test-magic --verbose'
