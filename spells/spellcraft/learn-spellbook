@@ -479,8 +479,10 @@ refresh_legacy_shell_export() {
                 return 0
         fi
 
+        # Create temp file adjacent to rc_file for atomic mv (same filesystem)
         tmp_file="$rc_file.wizardry.$$"
         : >"$tmp_file"
+        trap 'rm -f "$tmp_file"' EXIT HUP INT TERM
         changed=0
 
         while IFS= read -r line; do
@@ -496,16 +498,19 @@ refresh_legacy_shell_export() {
         done <"$rc_file"
 
         if [ "$changed" -eq 0 ]; then
+                trap - EXIT HUP INT TERM
                 rm -f "$tmp_file"
                 return 0
         fi
 
         if ! mv "$tmp_file" "$rc_file"; then
+                trap - EXIT HUP INT TERM
                 rm -f "$tmp_file"
                 printf '%s\n' "Error: Unable to refresh '$rc_file'." >&2
                 exit 1
         fi
 
+        trap - EXIT HUP INT TERM
         legacy_export_refreshed=1
         return 0
 }
@@ -561,8 +566,10 @@ shell_remove() {
                 printf '%s\n' "Error: The directory is not in your PATH." >&2
                 exit 1
         fi
+        # Create temp file adjacent to rc_file for atomic mv (same filesystem)
         tmp_file="$rc_file.wizardry.$$"
         : >"$tmp_file"
+        trap 'rm -f "$tmp_file"' EXIT HUP INT TERM
         while IFS= read -r line; do
                 case $line in
                 "$managed_export_line"|"$legacy_export_line"|"$legacy_quoted_export_line")
@@ -573,10 +580,12 @@ shell_remove() {
                 esac
         done <"$rc_file"
         if ! mv "$tmp_file" "$rc_file"; then
+                trap - EXIT HUP INT TERM
                 rm -f "$tmp_file"
                 printf '%s\n' "Error: Unable to replace '$rc_file'." >&2
                 exit 1
         fi
+        trap - EXIT HUP INT TERM
         printf '%s\n' "Removed '$directory' from PATH entries recorded in '$rc_file'. The change takes effect in new shell sessions."
 }
 
