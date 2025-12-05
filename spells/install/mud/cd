@@ -32,6 +32,27 @@ case "${1-}" in
         exit 0
         ;;
 esac
+
+# Add imps to PATH so we can use temp-file, cleanup-file, etc.
+# This allows running the spell directly without wizardry being fully installed
+_cd_script_source=$0
+case $_cd_script_source in
+*/*)
+        _cd_script_dir=${_cd_script_source%/*}
+        ;;
+*)
+        _cd_script_dir=.
+        ;;
+esac
+_cd_repo_dir=$(CDPATH= cd -- "$_cd_script_dir/../../.." && pwd -P)
+if [ -d "$_cd_repo_dir/spells/.imps" ]; then
+        for _impdir in "$_cd_repo_dir"/spells/.imps/*; do
+                [ -d "$_impdir" ] || continue
+                PATH="$_impdir:$PATH"
+        done
+fi
+export PATH
+
 set -eu
 
 
