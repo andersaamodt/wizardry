@@ -313,7 +313,7 @@ _jump_trash_get_path() {
   mac)
     printf '%s/.Trash\n' "$HOME"
     ;;
-  debian|arch|fedora|nixos|linux|*)
+  *)
     xdg_data="${XDG_DATA_HOME:-$HOME/.local/share}"
     printf '%s/Trash/files\n' "$xdg_data"
     ;;

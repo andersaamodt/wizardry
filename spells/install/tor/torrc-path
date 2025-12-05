@@ -42,7 +42,7 @@ case $platform in
         TORRC_PATHS="/usr/local/etc/tor/torrc"
         ;;
       *)
-        printf '%s\n' "Unsupported operating system: $platform" >&2
+        printf '%s\n' "Unsupported platform: $platform" >&2
         exit 1
         ;;
     esac
