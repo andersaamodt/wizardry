@@ -2,8 +2,9 @@
 # Centralized declaration of allowed global environment variables.
 # Each global requires two comment lines: description and justification.
 #
-# NOTE: Tests require every script with globals to source declare-globals
-# and use 'set -u' within the first 15 lines of the file, or tests fail.
+# NOTE: Tests verify that exactly 3 globals are declared here, and that
+# scripts using these globals have 'set -u' enabled. This creates a closed
+# enforcement loop that prevents undeclared globals from being introduced.
 
 # Installation root directory path.
 # Required for spells to locate resources relative to install location.
