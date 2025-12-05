@@ -108,7 +108,7 @@ install_nixos_fails_without_config_path() {
 }
 
 install_nixos_adds_path_to_config() {
-  # On NixOS, the installer should add PATH entries to configuration.nix
+  # On NixOS, the installer should add shell configuration (invoke-wizardry) to configuration.nix
   fixture=$(_make_fixture)
   _provide_basic_tools "$fixture"
   _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
@@ -134,8 +134,8 @@ EOF
       "$ROOT_DIR/install"
 
   _assert_success || return 1
-  # Check that the output mentions PATH configuration
-  _assert_output_contains "PATH configuration" || return 1
+  # Check that the output mentions shell configuration
+  _assert_output_contains "Shell configuration" || return 1
 }
 
 install_nixos_writes_path_block() {
@@ -373,8 +373,8 @@ EOF
   _assert_output_contains "Configuration file to be modified" || return 1
 }
 
-install_nixos_shows_path_updated_message() {
-  # On NixOS, the installer should show "PATH configuration updated" message
+install_nixos_shows_shell_config_updated_message() {
+  # On NixOS, the installer should show "Shell configuration updated" message
   fixture=$(_make_fixture)
   _provide_basic_tools "$fixture"
   _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
@@ -409,8 +409,8 @@ EOF
 
   _assert_success || return 1
   
-  # Check that the output shows PATH configuration message
-  _assert_output_contains "PATH configuration updated" || return 1
+  # Check that the output shows shell configuration message
+  _assert_output_contains "Shell configuration updated" || return 1
 }
 
 # === Path Normalization Tests ===
@@ -537,9 +537,9 @@ install_uses_explicit_helper_paths() {
   # Verify that the install script references helpers using explicit paths,
   # not relying on PATH which could contain old broken versions.
   
-  # Check that learn-spellbook is referenced with an explicit path
-  if ! grep -q 'LEARN_SPELLBOOK=.*\$ABS_DIR/spells/spellcraft/learn-spellbook' "$ROOT_DIR/install"; then
-    TEST_FAILURE_REASON="install script should use explicit path to learn-spellbook"
+  # Check that invoke-wizardry is referenced with an explicit path
+  if ! grep -q 'INVOKE_WIZARDRY=.*\$ABS_DIR/spells/.imps/sys/invoke-wizardry' "$ROOT_DIR/install"; then
+    TEST_FAILURE_REASON="install script should use explicit path to invoke-wizardry"
     return 1
   fi
   
@@ -717,8 +717,8 @@ install_shows_menu_when_already_installed() {
 
 # === Output Message Tests ===
 
-install_nixos_shows_path_updated() {
-  # On NixOS, the installer should show "PATH configuration updated"
+install_nixos_shows_shell_config_updated() {
+  # On NixOS, the installer should show "Shell configuration updated"
   fixture=$(_make_fixture)
   _provide_basic_tools "$fixture"
   _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
@@ -745,8 +745,8 @@ EOF
 
   _assert_success || return 1
   
-  # Should show "PATH configuration updated" message for NixOS
-  _assert_output_contains "PATH configuration updated" || return 1
+  # Should show "Shell configuration updated" message for NixOS
+  _assert_output_contains "Shell configuration updated" || return 1
 }
 
 install_shows_spell_names_installed() {
@@ -954,9 +954,9 @@ install_non_nixos_shows_source_message() {
 
 # === Uninstall Script Tests ===
 
-uninstall_script_handles_imps_directory() {
-  # Test that the generated uninstall script uses remove-all to handle all PATH entries
-  # This includes .imps and other hidden directories that glob patterns might miss
+uninstall_script_removes_invoke_wizardry() {
+  # Test that the generated uninstall script removes the invoke-wizardry source line
+  # This is the new paradigm - we no longer add individual PATH entries
   fixture=$(_make_fixture)
   _provide_basic_tools "$fixture"
   _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
@@ -974,9 +974,9 @@ uninstall_script_handles_imps_directory() {
   uninstall_script="$install_dir/.uninstall"
   _assert_path_exists "$uninstall_script" || return 1
   
-  # Check that the uninstall script uses remove-all to handle all entries
-  # This is more reliable than iterating over directories (which could miss .imps)
-  _assert_file_contains "$uninstall_script" "remove-all" || return 1
+  # Check that the uninstall script removes the wizardry-init marker
+  # This is the new approach for removing invoke-wizardry source line
+  _assert_file_contains "$uninstall_script" "wizardry-init" || return 1
 }
 
 uninstall_script_nixos_includes_rebuild() {
@@ -1395,17 +1395,17 @@ _run_test_case "learn-spellbook accepts helper overrides" path_wizard_accepts_he
 _run_test_case "install uses only bootstrappable spells" install_uses_only_bootstrappable_spells
 _run_test_case "install shows menu when already installed" install_shows_menu_when_already_installed
 _run_test_case "install shows help" shows_help
-_run_test_case "install NixOS shows PATH updated" install_nixos_shows_path_updated
+_run_test_case "install NixOS shows shell config updated" install_nixos_shows_shell_config_updated
 _run_test_case "install shows spell names installed" install_shows_spell_names_installed
 _run_test_case "install creates .uninstall script" install_creates_uninstall_script_with_correct_name
 _run_test_case "install does not show uninstall on success" install_does_not_show_uninstall_on_success
 _run_test_case "install shows simple run message" install_shows_simple_run_message
 _run_test_case "install no adding missing path on fresh" install_does_not_show_adding_missing_path_on_fresh
 _run_test_case "install NixOS shows config file message" install_nixos_shows_config_file_message
-_run_test_case "install NixOS shows path updated message" install_nixos_shows_path_updated_message
+_run_test_case "install NixOS shows shell config updated message" install_nixos_shows_shell_config_updated_message
 _run_test_case "install NixOS shows appropriate message" install_nixos_shows_appropriate_message
 _run_test_case "install non-NixOS shows source message" install_non_nixos_shows_source_message
-_run_test_case "uninstall script handles .imps directory" uninstall_script_handles_imps_directory
+_run_test_case "uninstall script removes invoke-wizardry" uninstall_script_removes_invoke_wizardry
 _run_test_case "uninstall script NixOS includes rebuild" uninstall_script_nixos_includes_rebuild
 _run_test_case "uninstall script NixOS includes terminal message" uninstall_script_nixos_includes_terminal_message
 _run_test_case "install shows revised prompt text" install_shows_revised_prompt_text

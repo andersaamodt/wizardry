@@ -1,8 +1,8 @@
 #!/bin/sh
 
-# This spell is a smart wrapper that delegates to specialized spells:
-# - learn-spell for files (installs spells with install() functions)
-# - learn-spellbook for folders (adds directories to PATH)
+# This spell helps with learning spells:
+# - For files: installs spells with install() functions via learn-spell
+# - For directories: informs that they are automatically available via invoke-wizardry
 # It also handles --spell mode for RC file snippet management.
 
 
@@ -18,8 +18,9 @@ show_usage() {
 Usage: $SCRIPT_NAME [-r] PATH...
        $SCRIPT_NAME --spell NAME {add|remove|status}
 
-Smart wrapper that delegates to learn-spell (files) or learn-spellbook (folders).
-Use -r for recursive processing. Use --spell mode for RC file snippets.
+For files: installs spells with install() functions via learn-spell.
+For directories: informs that they are automatically available via invoke-wizardry.
+Use --spell mode for RC file snippet management.
 USAGE
 }
 
@@ -57,19 +58,6 @@ find_learn_spell() {
   fi
   if command -v learn-spell >/dev/null 2>&1; then
     command -v learn-spell
-    return 0
-  fi
-  return 1
-}
-
-find_learn_spellbook() {
-  helper="$SCRIPT_DIR/learn-spellbook"
-  if [ -x "$helper" ]; then
-    printf '%s' "$helper"
-    return 0
-  fi
-  if command -v learn-spellbook >/dev/null 2>&1; then
-    command -v learn-spellbook
     return 0
   fi
   return 1
@@ -466,7 +454,9 @@ if [ "${MODE-}" = "rc" ]; then
 fi
 
 # ---------------------
-# PATH MODE - Delegate to learn-spell or learn-spellbook
+# FILE/DIR MODE - Process paths
+# With the word-of-binding paradigm, directories are automatically available
+# via invoke-wizardry. For files with install() functions, use learn-spell.
 # ---------------------
 
 RECURSIVE=0
@@ -510,30 +500,24 @@ if [ -z "$paths" ]; then
   exit 1
 fi
 
-# Find helpers
+# Find learn-spell helper for files
 LEARN_SPELL=""
-LEARN_SPELLBOOK=""
 if ! LEARN_SPELL=$(find_learn_spell); then
   printf '%s\n' "learn: learn-spell helper not found." >&2
-  exit 1
-fi
-if ! LEARN_SPELLBOOK=$(find_learn_spellbook); then
-  printf '%s\n' "learn: learn-spellbook helper not found." >&2
   exit 1
 fi
 
 # Process each path
 for path in $paths; do
   if [ -f "$path" ]; then
-    # File -> learn-spell
+    # File -> learn-spell (for spells with install() functions)
     "$LEARN_SPELL" "$path"
   elif [ -d "$path" ]; then
-    # Directory -> learn-spellbook (with -r if recursive)
-    if [ "$RECURSIVE" -eq 1 ]; then
-      "$LEARN_SPELLBOOK" -r add "$path"
-    else
-      "$LEARN_SPELLBOOK" add "$path"
-    fi
+    # With the word-of-binding paradigm (PR #410), directories no longer need
+    # to be manually added to PATH. invoke-wizardry handles this automatically.
+    # Inform the user instead.
+    printf '%s\n' "learn: directories are now automatically available via invoke-wizardry."
+    printf '%s\n' "learn: spells in '$path' will be accessible after opening a new terminal."
   else
     printf '%s\n' "learn: '$path' is not a file or directory." >&2
   fi
