@@ -42,7 +42,7 @@ jobs:
       - name: Run unit tests in Nix shell
         run: nix-shell -I nixpkgs=channel:nixos-unstable -p bubblewrap shadow --run "./spells/system/test-magic --verbose"
 
-  macos:
+  aab-macos:
     name: macOS unit tests
     runs-on: macos-latest
     env:
