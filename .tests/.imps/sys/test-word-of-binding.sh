@@ -29,8 +29,26 @@ test_requires_command_name() {
   assert_error_contains "command name required" || return 1
 }
 
+# Test: word-of-binding evokes scripts without true-name functions
+test_evokes_scripts_without_functions() {
+  # Create a test script without a function
+  tmpdir=$(make_tempdir)
+  mkdir -p "$tmpdir/.spellbook"
+  cat > "$tmpdir/.spellbook/test-evoke-script" << 'EOF'
+#!/bin/sh
+printf '%s\n' "evoked: $1"
+EOF
+  chmod +x "$tmpdir/.spellbook/test-evoke-script"
+  
+  # Set SPELLBOOK_DIR to our temp location
+  SPELLBOOK_DIR="$tmpdir/.spellbook" run_spell "spells/.imps/sys/word-of-binding" test-evoke-script myarg
+  assert_success || return 1
+  assert_output_contains "evoked: myarg" || return 1
+}
+
 run_test_case "finds module in imps directory" test_finds_module_in_imps
 run_test_case "unknown command returns 127" test_unknown_command_returns_127
 run_test_case "requires command name argument" test_requires_command_name
+run_test_case "evokes scripts without functions" test_evokes_scripts_without_functions
 
 finish_tests

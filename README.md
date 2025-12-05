@@ -142,6 +142,7 @@ Using the free software suite makes it easy to establish a standardized software
 | `cast` | To execute a spell. Memorized spells appear in the `cast` menu for quick access. |
 | **crypto** | Cryptographic spells for hashing and security. |
 | **daemon** | A background process that runs continuously, typically started at system boot. |
+| **daemonic complex** | A subfolder within a demon family that groups related imps that work together to implement a larger concept. Each imp in the complex handles one piece of the functionality (e.g., `nix/nix-rebuild`, `nix/nix-shell-init`). |
 | **demon family** | A subfolder within `spells/.imps/` that groups related imps by function. Each folder represents a family of imps that share a common purpose (e.g., `str/` for string operations, `fs/` for filesystem operations). |
 | **divination** | Spells that detect or discover information. |
 | **enchant** / **enchantment** | Spells that add or manipulate extended attributes (metadata) on files. |
@@ -161,7 +162,7 @@ Using the free software suite makes it easy to establish a standardized software
 | **true name** | The internal underscore function-name defined by a bound imp (e.g., `_contains` for the `contains` imp). |
 | **unbound imp** | An *evoked* imp; executed in a subshell rather than sourced into the current shell. |
 | **ward** | A protective spell for security or access control. |
-| **word-of-binding** | The dispatcher script invoked when a hyphenated command is missing; resolves the public name, sources the module if needed, and calls the true name. |
+| **word-of-binding** | The dispatcher script invoked when a hyphenated command is missing; resolves the public name, sources the module if needed, and calls the true name. If the module has a true-name function, it is bound (sourced); otherwise, it is evoked (executed). |
 
 # **Ethos and Standards**
 

@@ -67,11 +67,13 @@ _word_of_binding() {
     return 127
   fi
 
-  # Check if module has true-name function
+  # Check if module has true-name function (for binding/sourcing)
   if grep -qE "^[[:space:]]*${_wob_true_name}[[:space:]]*\\(\\)" "$_wob_module" 2>/dev/null; then
+    # Bind (source) the module to load its function
     # shellcheck disable=SC1090
     . "$_wob_module"
     
+    # Create alias for future calls
     alias "$_wob_name=$_wob_true_name" 2>/dev/null || true
     
     if type "$_wob_true_name" >/dev/null 2>&1; then
@@ -81,8 +83,8 @@ _word_of_binding() {
       return 1
     fi
   else
-    printf '%s\n' "word-of-binding: '$_wob_name' has no true-name function" >&2
-    return 1
+    # Evoke (execute) the script directly in a subshell
+    "$_wob_module" "$@"
   fi
 }
 

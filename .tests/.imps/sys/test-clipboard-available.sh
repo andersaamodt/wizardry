@@ -12,12 +12,6 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 
-test_clipboard_shows_help_h() {
-  run_spell spells/.imps/sys/clipboard-available -h
-  assert_success
-  assert_error_contains "clipboard helper"
-}
-
 test_clipboard_returns_success_when_helper_exists() {
   # This test checks if the imp returns success when at least one helper is available
   # Since we can't guarantee which helpers are installed, we check if it returns

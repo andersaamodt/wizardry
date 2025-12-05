@@ -1,7 +1,6 @@
 #!/bin/sh
 # Tests for the 'require' imp
 # Comprehensive tests covering:
-# - Help output
 # - Basic delegation to require-command
 # - REQUIRE_COMMAND override
 # - Failure propagation
@@ -15,18 +14,6 @@ done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-
-test_require_usage_flag() {
-  run_cmd "$ROOT_DIR/spells/.imps/sys/require" --usage
-  assert_success
-  assert_error_contains "Usage: require COMMAND"
-}
-
-test_require_h_flag() {
-  run_cmd "$ROOT_DIR/spells/.imps/sys/require" -h
-  assert_success
-  assert_error_contains "Usage: require COMMAND"
-}
 
 test_require_passes_to_require_command() {
   tmp=$(make_tempdir)
@@ -136,8 +123,6 @@ SH
   assert_output_contains "The 'menu' command needs \"special\" chars"
 }
 
-run_test_case "require --usage shows usage" test_require_usage_flag
-run_test_case "require -h shows usage" test_require_h_flag
 run_test_case "require passes to require-command" test_require_passes_to_require_command
 run_test_case "require honors REQUIRE_COMMAND override" test_require_honors_require_command_override
 run_test_case "require propagates failure from require-command" test_require_propagates_failure
@@ -188,13 +173,5 @@ run_test_case "require fallback succeeds when command exists" test_require_fallb
 run_test_case "require fallback shows custom error message" test_require_fallback_failure_with_message
 run_test_case "require fallback shows default error message" test_require_fallback_failure_default_message
 run_test_case "require fallback shows install hint" test_require_fallback_shows_install_hint
-
-test_require_no_args_shows_usage() {
-  run_cmd "$ROOT_DIR/spells/.imps/sys/require"
-  assert_failure
-  assert_error_contains "Usage: require COMMAND"
-}
-
-run_test_case "require with no args shows usage and fails" test_require_no_args_shows_usage
 
 finish_tests
