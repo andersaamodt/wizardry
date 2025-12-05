@@ -32,6 +32,16 @@ script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 root_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd -P)
 test_dir="$root_dir/.tests"
 
+# Add wizardry spells and imps to PATH so we can use them directly
+# This allows running test-magic directly without wizardry being installed
+if [ -d "$root_dir/spells/.imps" ]; then
+  PATH="$root_dir/spells/.imps:$PATH"
+  for impdir in "$root_dir"/spells/.imps/*; do
+    [ -d "$impdir" ] || continue
+    PATH="$impdir:$PATH"
+  done
+fi
+
 case "${1-}" in
 --help|--usage|-h)
   show_usage
@@ -105,9 +115,6 @@ pattern_has_match() {
   found=1
   while IFS= read -r path; do
     [ -n "$path" ] || continue
-    case $path in
-      */lib/*) continue ;;
-    esac
     rel=${path#"$test_dir/"}
     case $rel in
       $pattern)
@@ -156,13 +163,7 @@ EOF_PATS
 fi
 
 while IFS= read -r path; do
-  case $path in
-    */lib/*) continue ;;
-  esac
   short=${path#"$test_dir/"}
-  case $short in
-    test-common.sh) continue ;;
-  esac
   if matches_patterns "$short"; then
     if [ -n "$test_files" ]; then
       test_files=$(printf '%s\n%s' "$test_files" "$short")
@@ -227,10 +228,8 @@ test_total=$(printf '%s\n' "$test_files" | grep -c .)
 # Spells have a --help flag which needs testing, plus 2 additional subtests.
 MIN_SUBTESTS_IMP=2
 MIN_SUBTESTS_SPELL=3
-failure_output_file=$(mktemp)
-cleanup_failure_output() {
-  rm -f "$failure_output_file"
-}
+failure_output_file=$(temp-file test-magic) || exit 1
+trap 'cleanup-file "$failure_output_file"' EXIT HUP INT TERM
 
 spell_name_for_test() {
   test_path=$1
@@ -470,9 +469,9 @@ scan_extraneous() {
   while IFS= read -r test_file; do
     [ -n "$test_file" ] || continue
     
-    # Skip test-common.sh, test-suite.sh and lib files
+    # Skip test-suite.sh
     case $test_file in
-      */test-common.sh|*/test-suite.sh|*/lib/*) continue ;;
+      */test-suite.sh) continue ;;
     esac
     
     # Extract spell path from test path
@@ -600,12 +599,14 @@ fi
 
 if [ "$status" -ne 0 ] && [ "$fail" -le 10 ] && [ "${GITHUB_ACTIONS-}" != "" ] \
   && [ "${TEST_MAGIC_DEBUG_RERUN-}" != "1" ] && [ "$very_verbose" -eq 0 ]; then
-  cleanup_failure_output
+  trap - EXIT HUP INT TERM
+  cleanup-file "$failure_output_file"
   printf '\nGitHub Actions detected <=10 failing tests; rerunning with --very-verbose for focused debug...\n'
   set -- $rerun_args
   TEST_MAGIC_DEBUG_RERUN=1 exec "$0" --very-verbose "$@"
 fi
 
-cleanup_failure_output
+trap - EXIT HUP INT TERM
+cleanup-file "$failure_output_file"
 
 exit $status

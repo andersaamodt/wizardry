@@ -91,7 +91,8 @@ write_look_block() {
         if ! ensure_rc_dir "$rc_file"; then
                 return 1
         fi
-        tmp_file=$(mktemp "${TMPDIR:-/tmp}/wizardry-look.XXXXXX") || return 1
+        tmp_file=$(temp-file wizardry-look) || return 1
+        trap 'cleanup-file "$tmp_file"' EXIT HUP INT TERM
         if [ -f "$rc_file" ]; then
                 sed '/^# >>> wizardry look spell >>>$/,/^# <<< wizardry look spell <<</d' "$rc_file" >"$tmp_file"
         else
@@ -103,10 +104,12 @@ alias look='$LOOK_SCRIPT_PATH'
 # <<< wizardry look spell <<<
 BLOCK
         if ! mv "$tmp_file" "$rc_file"; then
+                trap - EXIT HUP INT TERM
                 rm -f "$tmp_file"
                 look_warn "unable to update '$rc_file'."
                 return 1
         fi
+        trap - EXIT HUP INT TERM
         return 0
 }
 

@@ -123,7 +123,8 @@ add_spell() {
 	# Memorize just lists existing spells by name - no wrapper scripts needed
 	# The spell must already exist in PATH or spellbook
 	cmd=$name
-	tmp=$(mktemp "${TMPDIR:-/tmp}/memorize.XXXXXX") || exit 1
+	tmp=$(temp-file memorize) || exit 1
+	trap 'cleanup-file "$tmp"' EXIT HUP INT TERM
 	if [ -f "$command_file" ]; then
 		while IFS= read -r line || nonempty "$line"; do
 			entry_name=$line
@@ -141,8 +142,9 @@ add_spell() {
 	printf '%s%s%s\n' "$name" "$tab_char" "$cmd" >"$command_file"
 	if [ -f "$tmp" ]; then
 		cat "$tmp" >>"$command_file"
-		rm -f "$tmp"
 	fi
+	trap - EXIT HUP INT TERM
+	rm -f "$tmp"
 }
 
 list_entries() {

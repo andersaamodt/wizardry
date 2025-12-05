@@ -105,7 +105,8 @@ remove_spell() {
 		printf '%s\n' "$spell_name: spell '$name' is not memorized." >&2
 		exit 1
 	fi
-	tmp=$(mktemp "${TMPDIR:-/tmp}/forget.XXXXXX") || exit 1
+	tmp=$(temp-file forget) || exit 1
+	trap 'cleanup-file "$tmp"' EXIT HUP INT TERM
 	removed=0
 	while IFS= read -r line || nonempty "$line"; do
 		entry_name=$line
@@ -124,10 +125,12 @@ remove_spell() {
 		printf '%s\n' "$line" >>"$tmp"
 	done <"$command_file"
 	if [ "$removed" -eq 0 ]; then
+		trap - EXIT HUP INT TERM
 		rm -f "$tmp"
 		printf '%s\n' "$spell_name: spell '$name' is not memorized." >&2
 		exit 1
 	fi
+	trap - EXIT HUP INT TERM
 	mv "$tmp" "$command_file"
 }
 

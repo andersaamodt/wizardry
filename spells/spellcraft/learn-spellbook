@@ -250,27 +250,23 @@ fi
 # discovered directory.  This leverages the existing single-directory
 # implementation so we keep behaviour consistent across formats.
 if [ "$recursive" -eq 1 ]; then
-        tmp_file=$(mktemp "${TMPDIR:-/tmp}/learn-spellbook.XXXXXX") || {
+        tmp_file=$(temp-file learn-spellbook) || {
                 printf '%s\n' "Error: Unable to enumerate directories under '$directory'." >&2
                 exit 1
         }
+        trap 'cleanup-file "$tmp_file"' EXIT HUP INT TERM
         if ! find "$directory" -type d -print | sort >"$tmp_file"; then
+                trap - EXIT HUP INT TERM
                 rm -f "$tmp_file"
                 printf '%s\n' "Error: Unable to enumerate directories under '$directory'." >&2
                 exit 1
         fi
 
-        cleanup_tmp() {
-                rm -f "$tmp_file"
-        }
-
-        trap 'cleanup_tmp' EXIT HUP INT TERM
-
         # In dry-run mode, just print paths that would be added
         if [ "$dry_run" -eq 1 ] && [ "$action" = "add" ]; then
                 cat "$tmp_file"
                 trap - EXIT HUP INT TERM
-                cleanup_tmp
+                cleanup-file "$tmp_file"
                 exit 0
         fi
 
@@ -306,12 +302,12 @@ $subdir"
                 
                 if run_nix_batch_add; then
                         trap - EXIT HUP INT TERM
-                        cleanup_tmp
+                        cleanup-file "$tmp_file"
                         exit 0
                 else
                         status=$?
                         trap - EXIT HUP INT TERM
-                        cleanup_tmp
+                        cleanup-file "$tmp_file"
                         exit $status
                 fi
         fi
@@ -339,7 +335,7 @@ $subdir"
         done <"$tmp_file"
 
         trap - EXIT HUP INT TERM
-        cleanup_tmp
+        cleanup-file "$tmp_file"
         exit $result
 fi
 
@@ -483,8 +479,10 @@ refresh_legacy_shell_export() {
                 return 0
         fi
 
+        # Create temp file adjacent to rc_file for atomic mv (same filesystem)
         tmp_file="$rc_file.wizardry.$$"
         : >"$tmp_file"
+        trap 'rm -f "$tmp_file"' EXIT HUP INT TERM
         changed=0
 
         while IFS= read -r line; do
@@ -500,16 +498,19 @@ refresh_legacy_shell_export() {
         done <"$rc_file"
 
         if [ "$changed" -eq 0 ]; then
+                trap - EXIT HUP INT TERM
                 rm -f "$tmp_file"
                 return 0
         fi
 
         if ! mv "$tmp_file" "$rc_file"; then
+                trap - EXIT HUP INT TERM
                 rm -f "$tmp_file"
                 printf '%s\n' "Error: Unable to refresh '$rc_file'." >&2
                 exit 1
         fi
 
+        trap - EXIT HUP INT TERM
         legacy_export_refreshed=1
         return 0
 }
@@ -565,8 +566,10 @@ shell_remove() {
                 printf '%s\n' "Error: The directory is not in your PATH." >&2
                 exit 1
         fi
+        # Create temp file adjacent to rc_file for atomic mv (same filesystem)
         tmp_file="$rc_file.wizardry.$$"
         : >"$tmp_file"
+        trap 'rm -f "$tmp_file"' EXIT HUP INT TERM
         while IFS= read -r line; do
                 case $line in
                 "$managed_export_line"|"$legacy_export_line"|"$legacy_quoted_export_line")
@@ -577,10 +580,12 @@ shell_remove() {
                 esac
         done <"$rc_file"
         if ! mv "$tmp_file" "$rc_file"; then
+                trap - EXIT HUP INT TERM
                 rm -f "$tmp_file"
                 printf '%s\n' "Error: Unable to replace '$rc_file'." >&2
                 exit 1
         fi
+        trap - EXIT HUP INT TERM
         printf '%s\n' "Removed '$directory' from PATH entries recorded in '$rc_file'. The change takes effect in new shell sessions."
 }
 
@@ -654,7 +659,7 @@ shell_remove_all() {
         # Find all wizardry path spell identifiers and remove them
         # learn blocks are marked with spell names like "path-<path>-<checksum>"
         removed_count=0
-        tmp_spells="${TMPDIR:-/tmp}/wizardry-spells.$$"
+        tmp_spells=$(temp-file learn-spellbook-spells) || exit 1
         
         # Extract spell names from the rc file that look like learn-spellbook entries
         # Format: # >>> <spell_name> >>>
@@ -667,7 +672,7 @@ shell_remove_all() {
                         removed_count=$((removed_count + 1))
                 fi
         done <"$tmp_spells"
-        rm -f "$tmp_spells"
+        cleanup-file "$tmp_spells"
         
         if [ "$removed_count" -gt 0 ]; then
                 printf '%s\n' "Removed $removed_count wizardry PATH entries from '$rc_file'. The change takes effect in new shell sessions."
@@ -701,7 +706,7 @@ extract_nix_paths() {
 
 # Remove all wizardry PATH lines from configuration.nix
 remove_wizardry_nix_lines() {
-        tmp_file="${TMPDIR:-/tmp}/wizardry-nix.$$"
+        tmp_file=$(temp-file learn-spellbook-nix) || exit 1
         # Remove wizardry-marked path lines and clean up empty sessionVariables.PATH blocks
         run_maybe_sudo cat "$rc_file" | awk '
         BEGIN { in_block = 0; block_start = 0; pending = "" }
@@ -736,7 +741,7 @@ remove_wizardry_nix_lines() {
         ' >"$tmp_file"
         if [ "$needs_sudo" -eq 1 ]; then
                 run_maybe_sudo cp "$tmp_file" "$rc_file"
-                rm -f "$tmp_file"
+                cleanup-file "$tmp_file"
         else
                 mv "$tmp_file" "$rc_file"
         fi
@@ -747,11 +752,11 @@ remove_wizardry_nix_path() {
         path_to_remove=$1
         
         # Get current paths
-        tmp_paths="${TMPDIR:-/tmp}/wizardry-paths.$$"
+        tmp_paths=$(temp-file learn-spellbook-paths) || exit 1
         extract_nix_paths >"$tmp_paths"
         
         # Remove all wizardry lines and sessionVariables.PATH block
-        tmp_file="${TMPDIR:-/tmp}/wizardry-nix.$$"
+        tmp_file=$(temp-file learn-spellbook-nix) || exit 1
         run_maybe_sudo cat "$rc_file" | awk '
         BEGIN { in_block = 0; skip_block = 0 }
         /environment\.sessionVariables\.PATH[[:space:]]*=/ {
@@ -783,7 +788,7 @@ remove_wizardry_nix_path() {
         else
                 mv "$tmp_file" "$rc_file"
         fi
-        rm -f "$tmp_file"
+        cleanup-file "$tmp_file"
         
         # Build new path list excluding the removed path
         remaining_paths=""
@@ -797,7 +802,7 @@ remove_wizardry_nix_path() {
 $p"
                 fi
         done <"$tmp_paths"
-        rm -f "$tmp_paths"
+        cleanup-file "$tmp_paths"
         
         # If there are remaining paths, add them back
         if [ -n "$remaining_paths" ]; then
@@ -842,7 +847,7 @@ EOF
         [ -z "$path_lines" ] && return 0
         
         # Write the block to a temp file (avoids BSD awk newline-in-variable issues)
-        block_file="${TMPDIR:-/tmp}/wizardry-block.$$"
+        block_file=$(temp-file learn-spellbook-block) || exit 1
         {
                 printf '%senvironment.sessionVariables.PATH = [\n' "$indent_l1"
                 printf '%s\n' "$path_lines"
@@ -850,8 +855,8 @@ EOF
         } >"$block_file"
         
         # Insert before the closing brace
-        tmp_file="${TMPDIR:-/tmp}/wizardry-nix.$$"
-        final_file="${TMPDIR:-/tmp}/wizardry-final.$$"
+        tmp_file=$(temp-file learn-spellbook-nix) || exit 1
+        final_file=$(temp-file learn-spellbook-final) || exit 1
         run_maybe_sudo cat "$rc_file" >"$tmp_file"
         
         # Use awk with file reading instead of -v variable (BSD awk compatible)
@@ -893,14 +898,15 @@ EOF
         }
         ' "$tmp_file" >"$final_file"
         
-        rm -f "$block_file"
+        cleanup-file "$block_file"
         
         if [ "$needs_sudo" -eq 1 ]; then
                 run_maybe_sudo cp "$final_file" "$rc_file"
-                rm -f "$tmp_file" "$final_file"
+                cleanup-file "$tmp_file"
+                cleanup-file "$final_file"
         else
                 mv "$final_file" "$rc_file"
-                rm -f "$tmp_file"
+                cleanup-file "$tmp_file"
         fi
 }
 
@@ -916,7 +922,7 @@ add_wizardry_nix_path() {
         fi
         
         # Get existing paths and build new list (newline-separated)
-        tmp_paths="${TMPDIR:-/tmp}/wizardry-paths.$$"
+        tmp_paths=$(temp-file learn-spellbook-paths) || exit 1
         extract_nix_paths >"$tmp_paths"
         
         # Build path list: new path first, then existing paths
@@ -926,10 +932,10 @@ add_wizardry_nix_path() {
                 new_path_list="$new_path_list
 $p"
         done <"$tmp_paths"
-        rm -f "$tmp_paths"
+        cleanup-file "$tmp_paths"
         
         # Remove existing wizardry PATH block if present
-        tmp_file="${TMPDIR:-/tmp}/wizardry-nix.$$"
+        tmp_file=$(temp-file learn-spellbook-nix) || exit 1
         run_maybe_sudo cat "$rc_file" | awk '
         BEGIN { in_block = 0 }
         /environment\.sessionVariables\.PATH[[:space:]]*=/ {
@@ -953,7 +959,7 @@ $p"
         else
                 mv "$tmp_file" "$rc_file"
         fi
-        rm -f "$tmp_file"
+        cleanup-file "$tmp_file"
         
         # Write the new block with all paths
         write_wizardry_nix_path_block "$new_path_list"
@@ -966,7 +972,7 @@ nix_add() {
         
         # Create a minimal config file if none exists
         if [ ! -f "$rc_file" ] || [ ! -s "$rc_file" ]; then
-                new_content_tmp="${TMPDIR:-/tmp}/wizardry-new.$$"
+                new_content_tmp=$(temp-file learn-spellbook-new) || exit 1
                 {
                         printf '{ config, pkgs, ... }:\n'
                         printf '\n'
@@ -975,7 +981,7 @@ nix_add() {
                 } >"$new_content_tmp"
                 if [ "$needs_sudo" -eq 1 ]; then
                         run_maybe_sudo cp "$new_content_tmp" "$rc_file"
-                        rm -f "$new_content_tmp"
+                        cleanup-file "$new_content_tmp"
                 else
                         mv "$new_content_tmp" "$rc_file"
                 fi
@@ -1049,7 +1055,7 @@ if [ "$batch_mode" -eq 1 ]; then
         # Create a minimal config file if none exists
         if [ ! -f "$rc_file" ] || [ ! -s "$rc_file" ]; then
                 ensure_rc_directory
-                new_content_tmp="${TMPDIR:-/tmp}/wizardry-new.$$"
+                new_content_tmp=$(temp-file learn-spellbook-new) || exit 1
                 {
                         printf '{ config, pkgs, ... }:\n'
                         printf '\n'
@@ -1058,7 +1064,7 @@ if [ "$batch_mode" -eq 1 ]; then
                 } >"$new_content_tmp"
                 if [ "$needs_sudo" -eq 1 ]; then
                         run_maybe_sudo cp "$new_content_tmp" "$rc_file"
-                        rm -f "$new_content_tmp"
+                        cleanup-file "$new_content_tmp"
                 else
                         mv "$new_content_tmp" "$rc_file"
                 fi
@@ -1090,7 +1096,7 @@ $dir"
                 backup_nix_config_file
                 
                 # Get existing paths and append them
-                tmp_paths="${TMPDIR:-/tmp}/wizardry-paths.$$"
+                tmp_paths=$(temp-file learn-spellbook-paths) || exit 1
                 extract_nix_paths >"$tmp_paths"
                 
                 full_path_list="$all_dirs"
@@ -1099,10 +1105,10 @@ $dir"
                         full_path_list="$full_path_list
 $p"
                 done <"$tmp_paths"
-                rm -f "$tmp_paths"
+                cleanup-file "$tmp_paths"
                 
                 # Remove existing wizardry PATH block if present
-                tmp_file="${TMPDIR:-/tmp}/wizardry-nix.$$"
+                tmp_file=$(temp-file learn-spellbook-nix) || exit 1
                 run_maybe_sudo cat "$rc_file" | awk '
                 BEGIN { in_block = 0 }
                 /environment\.sessionVariables\.PATH[[:space:]]*=/ {
@@ -1126,7 +1132,7 @@ $p"
                 else
                         mv "$tmp_file" "$rc_file"
                 fi
-                rm -f "$tmp_file"
+                cleanup-file "$tmp_file"
                 
                 # Write the new block with all paths
                 write_wizardry_nix_path_block "$full_path_list"

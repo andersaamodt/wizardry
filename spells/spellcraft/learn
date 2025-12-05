@@ -294,18 +294,21 @@ EOF_DETECT
 
   add_spell() {
     ensure_rc_directory
-    tmp_file=$(mktemp "${TMPDIR:-/tmp}/learn.XXXXXX") || exit 1
+    tmp_file=$(temp-file learn) || exit 1
+    trap 'cleanup-file "$tmp_file"' EXIT HUP INT TERM
     line_count=0
     while IFS= read -r line || nonempty "$line"; do
       printf '%s\n' "$line" >>"$tmp_file"
       line_count=$((line_count + 1))
     done
     if [ "$line_count" -eq 0 ]; then
+      trap - EXIT HUP INT TERM
       rm -f "$tmp_file"
       printf '%s\n' "learn: no spell content provided on stdin." >&2
       exit 1
     fi
     if spell_status; then
+      trap - EXIT HUP INT TERM
       rm -f "$tmp_file"
       return 0
     fi
@@ -316,6 +319,7 @@ EOF_DETECT
     if [ "$line_count" -eq 1 ]; then
       first_line=$(sed -n '1p' "$tmp_file")
       printf '%s%s\n' "$first_line" "$inline_marker" >>"$rc_file"
+      trap - EXIT HUP INT TERM
       rm -f "$tmp_file"
       return 0
     fi
@@ -323,6 +327,7 @@ EOF_DETECT
     printf '%s\n' "$block_header" >>"$rc_file"
     cat "$tmp_file" >>"$rc_file"
     printf '%s\n' "$block_end" >>"$rc_file"
+    trap - EXIT HUP INT TERM
     rm -f "$tmp_file"
   }
 
@@ -331,7 +336,8 @@ EOF_DETECT
       printf '%s\n' "learn: cannot remove from missing file '$rc_file'." >&2
       exit 1
     fi
-    tmp_file=$(mktemp "${TMPDIR:-/tmp}/learn.XXXXXX") || exit 1
+    tmp_file=$(temp-file learn) || exit 1
+    trap 'cleanup-file "$tmp_file"' EXIT HUP INT TERM
     removing_block=0
     to_skip=0
     removed=0
@@ -380,10 +386,12 @@ EOF_DETECT
       printf '%s\n' "$line" >>"$tmp_file"
     done <"$rc_file"
     if [ "$removed" -eq 0 ]; then
+      trap - EXIT HUP INT TERM
       rm -f "$tmp_file"
       printf '%s\n' "learn: spell '$spell' not found in '$rc_file'." >&2
       exit 1
     fi
+    trap - EXIT HUP INT TERM
     mv "$tmp_file" "$rc_file"
   }
 
