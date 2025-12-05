@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'pick' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_pick_selects_line() {
   tmpfile=$(mktemp "$WIZARDRY_TMPDIR/pick_test.XXXXXX")

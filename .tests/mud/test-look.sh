@@ -5,17 +5,37 @@
 # - reports missing attributes when no metadata exists
 # - prints discovered attributes
 # - writes rc block when ask_yn agrees
+set -eu
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-while [ ! -f "$test_root/test-common.sh" ] && [ "$test_root" != "/" ]; do
+while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
   test_root=$(dirname "$test_root")
 done
 # shellcheck source=/dev/null
-. "$test_root/test-common.sh"
+. "$test_root/spells/.imps/test/test-bootstrap"
 
 make_stub_dir() {
   dir=$(make_tempdir)
   printf '%s\n' "$dir"
+}
+
+stub_read_magic_missing() {
+  dir=$1
+  cat >"$dir/read-magic" <<'EOF'
+#!/bin/sh
+printf '%s\n' 'read-magic: attribute does not exist.'
+EOF
+  chmod +x "$dir/read-magic"
+}
+
+stub_ask_yn() {
+  dir=$1
+  status=${2:-1}
+  cat >"$dir/ask-yn" <<EOF
+#!/bin/sh
+exit $status
+EOF
+  chmod +x "$dir/ask-yn"
 }
 
 test_help() {
@@ -32,16 +52,8 @@ test_missing_read_magic() {
 test_missing_attributes_shows_defaults() {
   stub=$(make_stub_dir)
   test_room=$(make_tempdir)
-  cat >"$stub/ask-yn" <<'EOF'
-#!/bin/sh
-exit 0
-EOF
-  chmod +x "$stub/ask-yn"
-  cat >"$stub/read-magic" <<'EOF'
-#!/bin/sh
-printf '%s\n' 'read-magic: attribute does not exist.'
-EOF
-  chmod +x "$stub/read-magic"
+  stub_ask_yn "$stub" 0
+  stub_read_magic_missing "$stub"
   PATH="$stub:/bin:/usr/bin" run_spell "spells/mud/look" "$test_room"
   assert_success
   # Should show folder name as title
@@ -62,16 +74,8 @@ EOF
 test_output_ends_with_newline() {
   stub=$(make_stub_dir)
   test_room=$(make_tempdir)
-  cat >"$stub/ask-yn" <<'EOF'
-#!/bin/sh
-exit 0
-EOF
-  chmod +x "$stub/ask-yn"
-  cat >"$stub/read-magic" <<'EOF'
-#!/bin/sh
-printf '%s\n' 'read-magic: attribute does not exist.'
-EOF
-  chmod +x "$stub/read-magic"
+  stub_ask_yn "$stub" 0
+  stub_read_magic_missing "$stub"
   PATH="$stub:/bin:/usr/bin" run_spell "spells/mud/look" "$test_room"
   assert_success
   # With MUD formatting, output should always end with a newline after the description
@@ -86,13 +90,42 @@ EOF
   fi
 }
 
+test_home_description_defaults() {
+  stub=$(make_stub_dir)
+  home_dir=$(make_tempdir)
+  stub_ask_yn "$stub" 1
+  stub_read_magic_missing "$stub"
+  LOOK_HOME_PATH="$home_dir" HOME="$home_dir" PATH="$stub:/bin:/usr/bin" \
+    run_spell "spells/mud/look" "$home_dir"
+  assert_success || return 1
+  assert_output_contains "Your home folder." || return 1
+}
+
+test_other_home_description() {
+  stub=$(make_stub_dir)
+  base_home=$(make_tempdir)
+  other_home=$(dirname "$base_home")/chris
+  mkdir -p "$other_home"
+  stub_ask_yn "$stub" 1
+  stub_read_magic_missing "$stub"
+  LOOK_HOME_PATH="$base_home" HOME="$base_home" PATH="$stub:/bin:/usr/bin" \
+    run_spell "spells/mud/look" "$other_home"
+  assert_success || return 1
+  assert_output_contains "chris' home folder." || return 1
+}
+
+test_root_description() {
+  stub=$(make_stub_dir)
+  stub_ask_yn "$stub" 1
+  stub_read_magic_missing "$stub"
+  PATH="$stub:/bin:/usr/bin" run_spell "spells/mud/look" /
+  assert_success || return 1
+  assert_output_contains "The root of the filesystem." || return 1
+}
+
 test_displays_attributes() {
   stub=$(make_stub_dir)
-  cat >"$stub/ask-yn" <<'EOF'
-#!/bin/sh
-exit 0
-EOF
-  chmod +x "$stub/ask-yn"
+  stub_ask_yn "$stub" 0
   cat >"$stub/read-magic" <<'EOF'
 #!/bin/sh
 case "$2" in
@@ -107,16 +140,8 @@ EOF
 
 test_installs_when_prompted() {
   stub=$(make_stub_dir)
-  cat >"$stub/ask-yn" <<'EOF'
-#!/bin/sh
-exit 0
-EOF
-  chmod +x "$stub/ask-yn"
-  cat >"$stub/read-magic" <<'EOF'
-#!/bin/sh
-printf '%s\n' 'read-magic: attribute does not exist.'
-EOF
-  chmod +x "$stub/read-magic"
+  stub_ask_yn "$stub" 0
+  stub_read_magic_missing "$stub"
   rc_file="$WIZARDRY_TMPDIR/lookrc-install"
   LOOK_RC_FILE="$rc_file" PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:$stub:/bin:/usr/bin" run_spell "spells/mud/look" "$WIZARDRY_TMPDIR"
   assert_success && assert_path_exists "$rc_file" && grep -q "wizardry look spell" "$rc_file"
@@ -145,17 +170,8 @@ EOF
 
 test_skips_install_when_block_present() {
   stub=$(make_stub_dir)
-  cat >"$stub/ask-yn" <<'EOF'
-#!/bin/sh
-echo "ask_yn should not be called" >&2
-exit 9
-EOF
-  chmod +x "$stub/ask-yn"
-  cat >"$stub/read-magic" <<'EOF'
-#!/bin/sh
-printf '%s\n' 'read-magic: attribute does not exist.'
-EOF
-  chmod +x "$stub/read-magic"
+  stub_ask_yn "$stub" 9
+  stub_read_magic_missing "$stub"
   rc_file="$WIZARDRY_TMPDIR/lookrc-preexisting"
   cat >"$rc_file" <<'EOF'
 # >>> wizardry look spell >>>
@@ -170,6 +186,9 @@ EOF
 run_test_case "look prints usage" test_help
 run_test_case "look fails when read-magic is missing" test_missing_read_magic
 run_test_case "look shows defaults when attributes missing" test_missing_attributes_shows_defaults
+run_test_case "look describes the current user's home" test_home_description_defaults
+run_test_case "look describes another user's home" test_other_home_description
+run_test_case "look describes the filesystem root" test_root_description
 run_test_case "look output ends with newline" test_output_ends_with_newline
 run_test_case "look prints discovered attributes" test_displays_attributes
 run_test_case "look installs rc block when approved" test_installs_when_prompted

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'ok' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_ok_succeeds_when_command_succeeds() {
   run_spell spells/.imps/out/ok true

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'os' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_os_outputs_name() {
   run_spell spells/.imps/sys/os

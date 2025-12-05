@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'is-integer' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_is_integer_positive() {
   run_spell spells/.imps/menu/is-integer "42"

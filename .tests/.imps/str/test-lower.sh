@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'lower' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_lower_converts() {
   run_cmd sh -c "printf 'HELLO' | '$ROOT_DIR/spells/.imps/str/lower'"

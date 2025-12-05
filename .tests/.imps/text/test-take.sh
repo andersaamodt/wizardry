@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'take' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_take_from_file() {
   tmpfile=$(mktemp "$WIZARDRY_TMPDIR/take_test.XXXXXX")

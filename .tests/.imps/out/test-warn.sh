@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'warn' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_warn_to_stderr() {
   run_spell spells/.imps/out/warn "warning message"

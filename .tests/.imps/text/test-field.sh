@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'field' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_field_with_delimiter() {
   run_cmd sh -c "printf 'a:b:c' | '$ROOT_DIR/spells/.imps/text/field' 2 ':'"

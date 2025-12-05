@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'now' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_now_outputs_timestamp() {
   run_spell spells/.imps/sys/now

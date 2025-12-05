@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'equals' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_equals_same_string() {
   run_spell spells/.imps/str/equals "hello" "hello"

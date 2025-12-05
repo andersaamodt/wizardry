@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'drop' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_drop_removes_last_lines() {
   tmpfile=$(mktemp "$WIZARDRY_TMPDIR/drop_test.XXXXXX")

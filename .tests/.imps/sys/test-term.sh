@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'term' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_term_detects() {
   # This is tricky to test since we may or may not be in a terminal

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'nix-shell-init' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 # Skip nix rebuild in tests since nixos-rebuild and home-manager aren't available
 export WIZARDRY_SKIP_NIX_REBUILD=1

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'given' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_given_succeeds_for_nonempty() {
   run_spell spells/.imps/cond/given "something"

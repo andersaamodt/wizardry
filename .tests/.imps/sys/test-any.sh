@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'any' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_any_finds_first() {
   run_spell spells/.imps/sys/any sh nonexistent_xyz

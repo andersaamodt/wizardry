@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'contains' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_contains_finds_substring() {
   run_spell spells/.imps/str/contains "hello world" "wor"

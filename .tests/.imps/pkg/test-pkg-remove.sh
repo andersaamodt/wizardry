@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'pkg-remove' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_pkg_remove_no_package_fails() {
   run_spell spells/.imps/pkg/pkg-remove

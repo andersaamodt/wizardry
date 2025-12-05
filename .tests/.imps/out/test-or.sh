@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'or' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_or_first() {
   run_spell spells/.imps/out/or "first" "second"

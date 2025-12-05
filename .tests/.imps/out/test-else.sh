@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'else' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_else_uses_default() {
   run_cmd sh -c "printf '' | '$ROOT_DIR/spells/.imps/out/else' 'fallback'"

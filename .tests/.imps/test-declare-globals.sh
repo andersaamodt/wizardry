@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'declare-globals' imp
 
-. "${0%/*}/../test-common.sh"
+. "${0%/*}/../spells/.imps/test/test-bootstrap"
 
 test_declare_globals_is_sourceable() {
   # declare-globals should be sourceable without error

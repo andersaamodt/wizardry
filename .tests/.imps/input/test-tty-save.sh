@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'tty-save' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 # Note: tty-save requires an actual terminal for full functionality
 # In CI, we test basic invocation (it will fail without a tty, but shouldn't crash)

@@ -10,8 +10,11 @@
 set -eu
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
+  test_root=$(dirname "$test_root")
+done
 # shellcheck source=/dev/null
-. "$test_root/test-common.sh"
+. "$test_root/spells/.imps/test/test-bootstrap"
 
 # Helper: Check if a file is a POSIX shell script
 is_posix_shell_script() {
@@ -182,7 +185,7 @@ test_test_files_have_matching_spells() {
   find "$ROOT_DIR/.tests" -type f -name 'test-*.sh' -print | while IFS= read -r test_file; do
     # Skip special files
     case $test_file in
-      */test-common.sh|*/test-install.sh|*/test-suite.sh|*/lib/*) continue ;;
+      */spells/.imps/test/test-bootstrap|*/test-install.sh|*/test-suite.sh) continue ;;
     esac
     
     # Extract expected spell path
@@ -219,6 +222,56 @@ test_test_files_have_matching_spells() {
   return 0
 }
 
+# --- Check: Tests rely on imps rather than shared helper libraries ---
+# There should be no reusable test helpers outside .imps/. Instead, every
+# shell script under .tests/ is expected to be a test (starting with test-).
+test_tests_use_imps_for_helpers() {
+  helper_dir_list=$(mktemp "${WIZARDRY_TMPDIR}/tests-helper-dirs.XXXXXX")
+  find "$ROOT_DIR/.tests" -type d \
+    \( -name "lib" -o -name "libs" -o -name "common" -o -name "helpers" \) \
+    -print > "$helper_dir_list"
+
+  forbidden_dirs=""
+  while IFS= read -r dir; do
+    [ -n "$dir" ] || continue
+    rel_dir=${dir#"$ROOT_DIR/"}
+    forbidden_dirs="${forbidden_dirs:+$forbidden_dirs, }$rel_dir"
+  done < "$helper_dir_list"
+  rm -f "$helper_dir_list"
+
+  if [ -n "$forbidden_dirs" ]; then
+    TEST_FAILURE_REASON="legacy test helper directories present: $forbidden_dirs"
+    return 1
+  fi
+
+  helper_files_list=$(mktemp "${WIZARDRY_TMPDIR}/tests-helper-files.XXXXXX")
+  find "$ROOT_DIR/.tests" -type f -not -path "*/.imps/*" -print > "$helper_files_list"
+
+  invalid_helpers=""
+  while IFS= read -r file; do
+    [ -n "$file" ] || continue
+    base=$(basename "$file")
+    should_skip_file "$base" && continue
+    is_any_shell_script "$file" || continue
+
+    case $base in
+      test-*) ;;
+      *)
+        rel_file=${file#"$ROOT_DIR/"}
+        invalid_helpers="${invalid_helpers:+$invalid_helpers, }$rel_file"
+        ;;
+    esac
+  done < "$helper_files_list"
+  rm -f "$helper_files_list"
+
+  if [ -n "$invalid_helpers" ]; then
+    TEST_FAILURE_REASON="non-imp shared test helpers detected: $invalid_helpers"
+    return 1
+  fi
+
+  return 0
+}
+
 # --- Run all test cases ---
 
 run_test_case "no duplicate spell names" test_no_duplicate_spell_names
@@ -226,5 +279,6 @@ run_test_case "menu spells require menu command" test_menu_spells_require_menu
 run_test_case "spells have standard help handlers" test_spells_have_help_usage_handlers
 run_test_case "warn about full paths to spells" test_warn_full_paths_to_spells
 run_test_case "test files have matching spells" test_test_files_have_matching_spells
+run_test_case "tests rely only on imps for helpers" test_tests_use_imps_for_helpers
 
 finish_tests

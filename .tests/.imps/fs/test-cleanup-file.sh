@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'cleanup-file' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_cleanup_file_removes_existing_file() {
   # Create a file and verify cleanup removes it

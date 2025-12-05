@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'nonempty' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_nonempty_succeeds_for_nonempty() {
   run_spell spells/.imps/cond/nonempty "something"

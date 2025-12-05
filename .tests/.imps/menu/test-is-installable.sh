@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'is-installable' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 # Create a temp spell with an install() function
 create_installable_spell() {

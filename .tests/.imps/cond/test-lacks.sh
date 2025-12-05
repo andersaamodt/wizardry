@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'lacks' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_lacks_missing_command() {
   run_spell spells/.imps/cond/lacks nonexistent_command_xyz123

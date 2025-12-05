@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'empty' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_empty_succeeds_for_empty() {
   run_spell spells/.imps/cond/empty ""

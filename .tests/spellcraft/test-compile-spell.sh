@@ -5,7 +5,7 @@
 # - requires spell name argument
 # - fails for unknown spell
 
-. "${0%/*}/../test-common.sh"
+. "${0%/*}/../spells/.imps/test/test-bootstrap"
 
 test_compile_spell_help() {
   run_spell spells/spellcraft/compile-spell --help

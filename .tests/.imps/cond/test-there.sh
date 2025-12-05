@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'there' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_there_exists() {
   tmpfile=$(mktemp "$WIZARDRY_TMPDIR/there_test.XXXXXX")

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'yes' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_yes_affirms_y() {
   run_spell spells/.imps/cond/yes "y"

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'read-file' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_read_file_outputs_content() {
   tmpfile=$(mktemp "$WIZARDRY_TMPDIR/readfile_test.XXXXXX")

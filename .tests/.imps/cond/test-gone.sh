@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'gone' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_gone_missing() {
   run_spell spells/.imps/cond/gone "$WIZARDRY_TMPDIR/nonexistent_xyz123"

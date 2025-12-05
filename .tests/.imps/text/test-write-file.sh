@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'write-file' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_write_file_creates_file() {
   tmpfile="$WIZARDRY_TMPDIR/writefile_test_$$"

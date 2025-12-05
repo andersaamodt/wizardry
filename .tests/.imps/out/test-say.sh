@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'say' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_say_outputs() {
   run_spell spells/.imps/out/say "test message"

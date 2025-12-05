@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'where' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_where_finds_command() {
   run_spell spells/.imps/sys/where sh

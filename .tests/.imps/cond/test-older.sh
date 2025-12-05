@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'older' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_older_file() {
   old=$(mktemp "$WIZARDRY_TMPDIR/older.XXXXXX")

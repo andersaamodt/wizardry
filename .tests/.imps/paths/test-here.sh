@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'here' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_here_outputs_directory() {
   run_spell spells/.imps/paths/here

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'pkg-install' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_pkg_install_no_package_fails() {
   run_spell spells/.imps/pkg/pkg-install

@@ -9,7 +9,7 @@
 # - require-wizardry --offer succeeds when wizardry is installed
 # - require-wizardry --offer prints guidance when wizardry is not installed (non-interactive)
 
-. "${0%/*}/../test-common.sh"
+. "${0%/*}/../spells/.imps/test/test-bootstrap"
 
 test_help() {
 	run_spell spells/cantrips/require-wizardry --help

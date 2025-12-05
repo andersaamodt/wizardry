@@ -4,11 +4,11 @@
 # is-submenu now always returns false (exit 1).
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-while [ ! -f "$test_root/test-common.sh" ] && [ "$test_root" != "/" ]; do
+while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
   test_root=$(dirname "$test_root")
 done
 # shellcheck source=/dev/null
-. "$test_root/test-common.sh"
+. "$test_root/spells/.imps/test/test-bootstrap"
 
 test_always_returns_false() {
   # is-submenu always returns false since submenu detection is not reliably

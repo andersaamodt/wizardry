@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the possessive imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_adds_s_when_needed() {
   run_spell spells/.imps/lang/possessive wizard

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'has' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_has_existing_command() {
   run_spell spells/.imps/cond/has sh

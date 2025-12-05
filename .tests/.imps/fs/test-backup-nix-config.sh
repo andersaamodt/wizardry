@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'backup-nix-config' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_backup_nix_config_creates_backup() {
   tmpdir=$(make_tempdir)

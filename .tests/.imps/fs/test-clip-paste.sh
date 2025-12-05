@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'clip-paste' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 # Note: clip-paste will fail in CI without a clipboard utility, but we test error handling
 

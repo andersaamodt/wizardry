@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'temp-dir' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_temp_dir_creates_directory() {
   # Run temp-dir and check that the resulting directory exists (within sandbox)

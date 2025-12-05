@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'count-chars' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_count_chars_simple() {
   run_spell spells/.imps/text/count-chars "hello"

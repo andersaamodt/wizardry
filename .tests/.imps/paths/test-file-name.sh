@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'file-name' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_file_name_extracts() {
   run_spell spells/.imps/paths/file-name "/path/to/file.txt"

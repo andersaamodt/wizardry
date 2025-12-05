@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'on' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_on_linux() {
   run_spell spells/.imps/sys/on linux

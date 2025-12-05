@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'tty-save' and 'tty-restore' imps
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 # Note: These tests are limited because they require an actual terminal
 # In CI environments without a TTY, we mainly test error handling

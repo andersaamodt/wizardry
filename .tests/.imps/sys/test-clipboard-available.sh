@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'clipboard-available' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_clipboard_shows_help() {
   run_spell spells/.imps/sys/clipboard-available --help

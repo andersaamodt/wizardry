@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'pkg-manager' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_pkg_manager_returns_name() {
   run_spell spells/.imps/pkg/pkg-manager

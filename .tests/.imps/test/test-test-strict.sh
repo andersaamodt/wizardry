@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'test-strict' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_test_strict_exists() {
   [ -x "$ROOT_DIR/spells/.imps/test/test-strict" ]

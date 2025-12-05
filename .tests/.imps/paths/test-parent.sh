@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'parent' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_parent_extracts() {
   run_spell spells/.imps/paths/parent "/path/to/file.txt"

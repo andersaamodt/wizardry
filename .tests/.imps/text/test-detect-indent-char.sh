@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'detect-indent-char' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_detect_space_indent() {
   tmpfile="$WIZARDRY_TMPDIR/space_indent.nix"

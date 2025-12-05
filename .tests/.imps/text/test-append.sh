@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'append' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_append_adds_to_file() {
   tmpfile=$(mktemp "$WIZARDRY_TMPDIR/append_test.XXXXXX")

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'test-assert-error-contains' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_test_assert_error_contains_exists() {
   [ -x "$ROOT_DIR/spells/.imps/test/test-assert-error-contains" ]

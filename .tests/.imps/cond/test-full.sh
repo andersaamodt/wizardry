@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'full' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_full_file_with_content() {
   tmpfile=$(mktemp "$WIZARDRY_TMPDIR/full_test.XXXXXX")

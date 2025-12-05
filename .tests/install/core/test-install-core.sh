@@ -1,8 +1,8 @@
 #!/bin/sh
 set -eu
 
-# shellcheck source=../../test-common.sh
-. "$(dirname "$0")/../../test-common.sh"
+# shellcheck source=../../spells/.imps/test/test-bootstrap
+. "$(dirname "$0")/../../spells/.imps/test/test-bootstrap"
 
 install_core_installs_all_missing() {
   fixture=$(make_fixture)

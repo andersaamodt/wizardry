@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'temp' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_temp_creates_file() {
   tmpfile=$("$ROOT_DIR/spells/.imps/paths/temp")

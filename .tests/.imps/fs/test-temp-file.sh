@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'temp-file' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_temp_file_creates_file() {
   # Run temp-file and check that the resulting file exists (within sandbox)

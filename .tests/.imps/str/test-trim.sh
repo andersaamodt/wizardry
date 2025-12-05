@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'trim' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_trim_removes_whitespace() {
   run_cmd sh -c "printf '  hello  ' | '$ROOT_DIR/spells/.imps/str/trim'"

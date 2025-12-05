@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'detect-trash' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_detect_trash_outputs_path() {
   run_spell spells/.imps/menu/detect-trash

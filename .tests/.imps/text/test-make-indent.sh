@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'make-indent' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_make_2space_level1() {
   tmpfile="$WIZARDRY_TMPDIR/2space.nix"

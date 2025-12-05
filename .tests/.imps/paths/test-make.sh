@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'make' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_make_dir() {
   tmpdir="$WIZARDRY_TMPDIR/make_test_$$"

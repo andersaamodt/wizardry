@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'select-input' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_select_input_stdin_mode() {
   run_cmd sh -c 'SELECT_INPUT_MODE=stdin select-input'

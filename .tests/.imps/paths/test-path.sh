@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'path' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_path_normalizes() {
   run_spell spells/.imps/paths/path "./test"

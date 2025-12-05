@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'pkg-upgrade' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_pkg_upgrade_runs() {
   # pkg-upgrade doesn't take args, so just verify it doesn't fail on invocation syntax

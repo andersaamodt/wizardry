@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'nix-rebuild' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_nix_rebuild_skips_when_disabled() {
   # Test that WIZARDRY_SKIP_NIX_REBUILD=1 causes immediate success

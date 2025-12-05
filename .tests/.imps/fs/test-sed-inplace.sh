@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'sed-inplace' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_sed_inplace_substitutes() {
   tmpfile=$(mktemp "$WIZARDRY_TMPDIR/testfile.XXXXXX")

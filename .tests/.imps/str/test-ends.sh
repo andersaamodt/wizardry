@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'ends' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_ends_with() {
   run_spell spells/.imps/str/ends "hello world" "world"

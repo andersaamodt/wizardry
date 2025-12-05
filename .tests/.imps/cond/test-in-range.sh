@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'in-range' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_in_range_middle() {
   run_spell spells/.imps/cond/in-range 5 1 10

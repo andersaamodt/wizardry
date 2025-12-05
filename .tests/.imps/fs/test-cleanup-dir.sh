@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'cleanup-dir' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_cleanup_dir_removes_existing_directory() {
   # Create a directory and verify cleanup removes it

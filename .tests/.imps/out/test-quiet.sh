@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'quiet' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_quiet_suppresses_output() {
   run_spell spells/.imps/out/quiet echo "should be silent"

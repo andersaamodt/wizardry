@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'fail' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_fail_exits_with_message() {
   run_spell spells/.imps/out/fail "error message"

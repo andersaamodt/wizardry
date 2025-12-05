@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'no' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_no_accepts_n() {
   run_spell spells/.imps/cond/no "n"

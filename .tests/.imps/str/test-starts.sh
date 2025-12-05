@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for the 'starts' imp
 
-. "${0%/*}/../../test-common.sh"
+. "${0%/*}/../../spells/.imps/test/test-bootstrap"
 
 test_starts_with() {
   run_spell spells/.imps/str/starts "hello world" "hello"
