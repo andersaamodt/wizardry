@@ -1,13 +1,14 @@
 #!/bin/sh
 
 # This spell sets the current player identity for MUD connections.
-# Source this script with ". set-player playername" for immediate effect.
+# The player name is stored in the MUD config directory.
 
 show_usage() {
 cat <<'USAGE'
 Usage: set-player <playername>
 
-Set the MUD_PLAYER environment variable to the given player name and persist it in ~/.bashrc. Source the script or open a new terminal for the change to take effect immediately.
+Set the current player identity for MUD connections. The player name is stored
+in the MUD config directory and used by MUD spells that need player identity.
 USAGE
 }
 
@@ -28,13 +29,11 @@ if [ -z "$player" ]; then
     exit 1
 fi
 
-printf '%s\n' "Setting MUD_PLAYER to $player"
-
-# Remove any existing line setting MUD_PLAYER in .bashrc
-sed -i '/^export MUD_PLAYER/d' ~/.bashrc
-
-# Append new line to .bashrc to set MUD_PLAYER and export it
-printf '%s\n' "export MUD_PLAYER=$player" >> ~/.bashrc
-
-# Set MUD_PLAYER in current shell session
-export MUD_PLAYER="$player"
+# Store player name using mud-config instead of polluting rc files
+if command -v mud-config >/dev/null 2>&1; then
+    mud-config set player "$player"
+    printf '%s\n' "Player identity set to '$player'."
+else
+    printf '%s\n' "set-player: mud-config not found. Install wizardry or ensure spells are in PATH." >&2
+    exit 1
+fi

@@ -133,7 +133,7 @@ test_scribe_records_command() {
   spellbook_dir="$stub_dir/spellbook"
   mkdir -p "$spellbook_dir"
   
-  PATH="$stub_dir:$PATH" WIZARDRY_SPELL_HOME="$spellbook_dir" run_spell "spells/menu/spellbook" --scribe spark "echo ignite"
+  PATH="$stub_dir:$PATH" SPELLBOOK_DIR="$spellbook_dir" run_spell "spells/menu/spellbook" --scribe spark "echo ignite"
   
   assert_success || return 1
   [ -x "$spellbook_dir/spark" ] || { TEST_FAILURE_REASON="scribed script was not created"; return 1; }
@@ -153,8 +153,8 @@ test_scribe_multiple_commands() {
   spellbook_dir="$stub_dir/spellbook"
   mkdir -p "$spellbook_dir"
   
-  PATH="$stub_dir:$PATH" WIZARDRY_SPELL_HOME="$spellbook_dir" run_spell "spells/menu/spellbook" --scribe spark1 "echo ignite1"
-  PATH="$stub_dir:$PATH" WIZARDRY_SPELL_HOME="$spellbook_dir" run_spell "spells/menu/spellbook" --scribe splash "echo splash"
+  PATH="$stub_dir:$PATH" SPELLBOOK_DIR="$spellbook_dir" run_spell "spells/menu/spellbook" --scribe spark1 "echo ignite1"
+  PATH="$stub_dir:$PATH" SPELLBOOK_DIR="$spellbook_dir" run_spell "spells/menu/spellbook" --scribe splash "echo splash"
   
   [ -x "$spellbook_dir/spark1" ] || { TEST_FAILURE_REASON="spark1 script not found"; return 1; }
   [ -x "$spellbook_dir/splash" ] || { TEST_FAILURE_REASON="splash script not found"; return 1; }

@@ -306,32 +306,18 @@ legacy_command_file() {
 
 run_test_case "custom cast file via MEMORIZE_COMMAND_FILE" legacy_command_file
 
-# Test WIZARDRY_SPELL_HOME fallback
-spell_home_fallback() {
+# Test SPELLBOOK_DIR
+spellbook_dir_test() {
   tmpdir=$(make_tempdir)
   spell_home="$tmpdir/spell-home"
 
-  run_cmd env "WIZARDRY_SPELL_HOME=$spell_home" \
+  run_cmd env "SPELLBOOK_DIR=$spell_home" \
     "$ROOT_DIR/spells/cantrips/memorize" dir
   assert_success || return 1
   [ "$OUTPUT" = "$spell_home" ] || { TEST_FAILURE_REASON="expected spell home dir: $spell_home, got: $OUTPUT"; return 1; }
 }
 
-run_test_case "WIZARDRY_SPELL_HOME fallback" spell_home_fallback
-
-# Test XDG_DATA_HOME fallback
-xdg_data_home_fallback() {
-  tmpdir=$(make_tempdir)
-  xdg_home="$tmpdir/xdg-data"
-  expected="$xdg_home/wizardry/spellbook"
-
-  run_cmd env "XDG_DATA_HOME=$xdg_home" \
-    "$ROOT_DIR/spells/cantrips/memorize" dir
-  assert_success || return 1
-  [ "$OUTPUT" = "$expected" ] || { TEST_FAILURE_REASON="expected xdg dir: $expected, got: $OUTPUT"; return 1; }
-}
-
-run_test_case "XDG_DATA_HOME fallback" xdg_data_home_fallback
+run_test_case "SPELLBOOK_DIR" spellbook_dir_test
 
 # Test tilde expansion in WIZARDRY_CAST_DIR
 tilde_expansion_cast_dir() {
