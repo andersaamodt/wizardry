@@ -1,6 +1,7 @@
 #!/bin/sh
 # disable-palette - reset all color variables to empty strings
-# Source this script to disable all ANSI escape sequences after sourcing colors
+# NOTE: This imp executes immediately when sourced, unlike other imps.
+# This is required for compatibility with the colors spell which sources it.
 
 _disable_palette() {
   for _dp_name in \
