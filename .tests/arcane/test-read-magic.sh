@@ -30,26 +30,26 @@ create_temp_file() {
 
 test_help() {
   reset_path
-  run_spell "spells/arcane/read-magic" --help
-  assert_success && assert_output_contains "Usage: read-magic"
+  _run_spell "spells/arcane/read-magic" --help
+  _assert_success && _assert_output_contains "Usage: read-magic"
 }
 
 test_requires_argument() {
   reset_path
-  run_spell "spells/arcane/read-magic"
-  assert_failure && assert_output_contains "one or two parameters expected"
+  _run_spell "spells/arcane/read-magic"
+  _assert_failure && _assert_output_contains "one or two parameters expected"
 }
 
 test_rejects_extra_argument() {
   reset_path
-  run_spell "spells/arcane/read-magic" one two three
-  assert_failure && assert_output_contains "one or two parameters expected"
+  _run_spell "spells/arcane/read-magic" one two three
+  _assert_failure && _assert_output_contains "one or two parameters expected"
 }
 
 test_missing_file() {
   reset_path
-  run_spell "spells/arcane/read-magic" "$WIZARDRY_TMPDIR/does-not-exist"
-  assert_failure && assert_output_contains "file does not exist"
+  _run_spell "spells/arcane/read-magic" "$WIZARDRY_TMPDIR/does-not-exist"
+  _assert_failure && _assert_output_contains "file does not exist"
 }
 
 test_lists_attributes_via_attr() {
@@ -81,10 +81,10 @@ case "$1" in
 esac
 STUB
   chmod +x "$stub_dir/attr"
-  PATH="$stub_dir:$PATH" run_spell "spells/arcane/read-magic" "$target"
-  assert_success
-  assert_output_contains "user.alpha: alpha-value"
-  assert_output_contains "user.beta: beta-value"
+  PATH="$stub_dir:$PATH" _run_spell "spells/arcane/read-magic" "$target"
+  _assert_success
+  _assert_output_contains "user.alpha: alpha-value"
+  _assert_output_contains "user.beta: beta-value"
 }
 
 test_reads_specific_attribute_via_attr() {
@@ -100,8 +100,8 @@ fi
 exit 1
 STUB
   chmod +x "$stub_dir/attr"
-  PATH="$stub_dir:$PATH" run_spell "spells/arcane/read-magic" "$target" user.charm
-  assert_success && assert_output_contains "sparkle"
+  PATH="$stub_dir:$PATH" _run_spell "spells/arcane/read-magic" "$target" user.charm
+  _assert_success && _assert_output_contains "sparkle"
 }
 
 test_lists_attributes_via_xattr_listing() {
@@ -128,10 +128,10 @@ esac
 STUB
   chmod +x "$stub_dir/xattr"
 
-  PATH="$stub_dir:$PATH" run_spell "spells/arcane/read-magic" "$target"
-  assert_success
-  assert_output_contains "user.sky: azure"
-  assert_output_contains "user.horizon:"
+  PATH="$stub_dir:$PATH" _run_spell "spells/arcane/read-magic" "$target"
+  _assert_success
+  _assert_output_contains "user.sky: azure"
+  _assert_output_contains "user.horizon:"
 }
 
 test_reads_attribute_via_xattr_when_attr_missing() {
@@ -147,8 +147,8 @@ fi
 exit 1
 STUB
   chmod +x "$stub_dir/xattr"
-  PATH="$stub_dir:$PATH" run_spell "spells/arcane/read-magic" "$target" user.charm
-  assert_success && assert_output_contains "xattr-magic"
+  PATH="$stub_dir:$PATH" _run_spell "spells/arcane/read-magic" "$target" user.charm
+  _assert_success && _assert_output_contains "xattr-magic"
 }
 
 test_lists_attributes_via_getfattr_when_others_missing() {
@@ -180,10 +180,10 @@ esac
 STUB
   chmod +x "$stub_dir/getfattr"
 
-  PATH="$stub_dir:$PATH" run_spell "spells/arcane/read-magic" "$target"
-  assert_success
-  assert_output_contains "user.first: one"
-  assert_output_contains "user.second: two"
+  PATH="$stub_dir:$PATH" _run_spell "spells/arcane/read-magic" "$target"
+  _assert_success
+  _assert_output_contains "user.first: one"
+  _assert_output_contains "user.second: two"
 }
 
 test_reads_attribute_via_getfattr_when_others_missing() {
@@ -210,8 +210,8 @@ fi
 exit 1
 STUB
   chmod +x "$stub_dir/getfattr"
-  PATH="$stub_dir:$PATH" run_spell "spells/arcane/read-magic" "$target" user.charisma
-  assert_success && assert_output_contains "shiny"
+  PATH="$stub_dir:$PATH" _run_spell "spells/arcane/read-magic" "$target" user.charisma
+  _assert_success && _assert_output_contains "shiny"
 }
 
 test_reports_missing_attribute() {
@@ -223,8 +223,8 @@ test_reports_missing_attribute() {
 exit 1
 STUB
   chmod +x "$stub_dir/attr"
-  PATH="$stub_dir:$PATH" run_spell "spells/arcane/read-magic" "$target" user.none
-  assert_failure && assert_output_contains "attribute does not exist"
+  PATH="$stub_dir:$PATH" _run_spell "spells/arcane/read-magic" "$target" user.none
+  _assert_failure && _assert_output_contains "attribute does not exist"
 }
 
 test_handles_missing_helpers() {
@@ -233,21 +233,21 @@ test_handles_missing_helpers() {
   stub_dir=$(create_stub_dir)
   PATH="$stub_dir:$PATH"
   export PATH
-  run_spell "spells/arcane/read-magic" "$target"
-  assert_success && assert_output_contains "No enchanted attributes found"
+  _run_spell "spells/arcane/read-magic" "$target"
+  _assert_success && _assert_output_contains "No enchanted attributes found"
 }
 
-run_test_case "read-magic prints usage" test_help
-run_test_case "read-magic requires an argument" test_requires_argument
-run_test_case "read-magic rejects extra arguments" test_rejects_extra_argument
-run_test_case "read-magic fails on missing file" test_missing_file
-run_test_case "read-magic lists attributes via attr" test_lists_attributes_via_attr
-run_test_case "read-magic reads specific attribute via attr" test_reads_specific_attribute_via_attr
-run_test_case "read-magic lists attributes via xattr when attr is missing" test_lists_attributes_via_xattr_listing
-run_test_case "read-magic uses xattr when attr is missing" test_reads_attribute_via_xattr_when_attr_missing
-run_test_case "read-magic lists attributes via getfattr when other helpers are missing" test_lists_attributes_via_getfattr_when_others_missing
-run_test_case "read-magic uses getfattr as a final fallback" test_reads_attribute_via_getfattr_when_others_missing
-run_test_case "read-magic reports missing attribute" test_reports_missing_attribute
-run_test_case "read-magic reports no attributes without helpers" test_handles_missing_helpers
+_run_test_case "read-magic prints usage" test_help
+_run_test_case "read-magic requires an argument" test_requires_argument
+_run_test_case "read-magic rejects extra arguments" test_rejects_extra_argument
+_run_test_case "read-magic fails on missing file" test_missing_file
+_run_test_case "read-magic lists attributes via attr" test_lists_attributes_via_attr
+_run_test_case "read-magic reads specific attribute via attr" test_reads_specific_attribute_via_attr
+_run_test_case "read-magic lists attributes via xattr when attr is missing" test_lists_attributes_via_xattr_listing
+_run_test_case "read-magic uses xattr when attr is missing" test_reads_attribute_via_xattr_when_attr_missing
+_run_test_case "read-magic lists attributes via getfattr when other helpers are missing" test_lists_attributes_via_getfattr_when_others_missing
+_run_test_case "read-magic uses getfattr as a final fallback" test_reads_attribute_via_getfattr_when_others_missing
+_run_test_case "read-magic reports missing attribute" test_reports_missing_attribute
+_run_test_case "read-magic reports no attributes without helpers" test_handles_missing_helpers
 
-finish_tests
+_finish_tests

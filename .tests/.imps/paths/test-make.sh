@@ -23,11 +23,11 @@ test_make_dir() {
 }
 
 test_make_unknown_type_fails() {
-  run_spell spells/.imps/paths/make unknown "$WIZARDRY_TMPDIR/test_$$"
-  assert_failure
+  _run_spell spells/.imps/paths/make unknown "$WIZARDRY_TMPDIR/test_$$"
+  _assert_failure
 }
 
-run_test_case "make dir creates directory" test_make_dir
-run_test_case "make unknown type fails" test_make_unknown_type_fails
+_run_test_case "make dir creates directory" test_make_dir
+_run_test_case "make unknown type fails" test_make_unknown_type_fails
 
-finish_tests
+_finish_tests

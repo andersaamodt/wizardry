@@ -15,21 +15,21 @@ test_older_file() {
   old=$(mktemp "$WIZARDRY_TMPDIR/older.XXXXXX")
   sleep 1
   new=$(mktemp "$WIZARDRY_TMPDIR/newer.XXXXXX")
-  run_spell spells/.imps/cond/older "$old" "$new"
+  _run_spell spells/.imps/cond/older "$old" "$new"
   rm -f "$old" "$new"
-  assert_success
+  _assert_success
 }
 
 test_older_fails_for_newer_file() {
   old=$(mktemp "$WIZARDRY_TMPDIR/older.XXXXXX")
   sleep 1
   new=$(mktemp "$WIZARDRY_TMPDIR/newer.XXXXXX")
-  run_spell spells/.imps/cond/older "$new" "$old"
+  _run_spell spells/.imps/cond/older "$new" "$old"
   rm -f "$old" "$new"
-  assert_failure
+  _assert_failure
 }
 
-run_test_case "older detects older file" test_older_file
-run_test_case "older fails for newer file" test_older_fails_for_newer_file
+_run_test_case "older detects older file" test_older_file
+_run_test_case "older fails for newer file" test_older_fails_for_newer_file
 
-finish_tests
+_finish_tests

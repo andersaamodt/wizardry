@@ -12,18 +12,18 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_on_linux() {
-  run_spell spells/.imps/sys/on linux
+  _run_spell spells/.imps/sys/on linux
   # This should succeed on Linux, fail on other platforms
   # Either way it should not crash
   [ "$STATUS" -eq 0 ] || [ "$STATUS" -eq 1 ]
 }
 
 test_on_unknown_fails() {
-  run_spell spells/.imps/sys/on unknownplatform
-  assert_failure
+  _run_spell spells/.imps/sys/on unknownplatform
+  _assert_failure
 }
 
-run_test_case "on linux checks platform" test_on_linux
-run_test_case "on unknown fails" test_on_unknown_fails
+_run_test_case "on linux checks platform" test_on_linux
+_run_test_case "on unknown fails" test_on_unknown_fails
 
-finish_tests
+_finish_tests

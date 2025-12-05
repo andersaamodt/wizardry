@@ -15,13 +15,13 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  run_spell "spells/translocation/open-portal" --help
-  assert_success || return 1
-  assert_output_contains "Usage: open-portal" || return 1
+  _run_spell "spells/translocation/open-portal" --help
+  _assert_success || return 1
+  _assert_output_contains "Usage: open-portal" || return 1
 }
 
 test_requires_sshfs() {
-  stubdir=$(make_tempdir)/bin
+  stubdir=$(_make_tempdir)/bin
   mkdir -p "$stubdir"
   # Provide basic utilities but not sshfs
   for util in sh env printf; do
@@ -29,13 +29,13 @@ test_requires_sshfs() {
       ln -sf "$(command -v "$util")" "$stubdir/$util" 2>/dev/null || true
     fi
   done
-  PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$stubdir" run_spell "spells/translocation/open-portal"
-  assert_failure || return 1
-  assert_error_contains "sshfs not found" || return 1
+  PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$stubdir" _run_spell "spells/translocation/open-portal"
+  _assert_failure || return 1
+  _assert_error_contains "sshfs not found" || return 1
 }
 
 test_requires_mud_player() {
-  stubdir=$(make_tempdir)/bin
+  stubdir=$(_make_tempdir)/bin
   mkdir -p "$stubdir"
   # Create stub sshfs and torify
   cat > "$stubdir/sshfs" <<'EOF'
@@ -53,13 +53,13 @@ EOF
     fi
   done
   # Run without MUD_PLAYER set
-  MUD_PLAYER="" PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$stubdir" run_spell "spells/translocation/open-portal"
-  assert_failure || return 1
-  assert_error_contains "MUD_PLAYER" || return 1
+  MUD_PLAYER="" PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$stubdir" _run_spell "spells/translocation/open-portal"
+  _assert_failure || return 1
+  _assert_error_contains "MUD_PLAYER" || return 1
 }
 
-run_test_case "open-portal shows usage text" test_help
-run_test_case "open-portal requires sshfs" test_requires_sshfs
-run_test_case "open-portal requires MUD_PLAYER" test_requires_mud_player
+_run_test_case "open-portal shows usage text" test_help
+_run_test_case "open-portal requires sshfs" test_requires_sshfs
+_run_test_case "open-portal requires MUD_PLAYER" test_requires_mud_player
 
-finish_tests
+_finish_tests

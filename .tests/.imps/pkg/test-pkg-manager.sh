@@ -12,21 +12,21 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_pkg_manager_returns_name() {
-  run_spell spells/.imps/pkg/pkg-manager
+  _run_spell spells/.imps/pkg/pkg-manager
   # Should succeed and output a package manager name (apt, dnf, etc.)
-  assert_success
+  _assert_success
 }
 
 test_pkg_manager_output_is_valid() {
-  run_spell spells/.imps/pkg/pkg-manager
-  assert_success
+  _run_spell spells/.imps/pkg/pkg-manager
+  _assert_success
   case "$OUTPUT" in
     apt|dnf|pacman|brew|nix|pkgin|apk) : ;;
     *) TEST_FAILURE_REASON="unexpected output: $OUTPUT"; return 1 ;;
   esac
 }
 
-run_test_case "pkg-manager returns name" test_pkg_manager_returns_name
-run_test_case "pkg-manager output is valid" test_pkg_manager_output_is_valid
+_run_test_case "pkg-manager returns name" test_pkg_manager_returns_name
+_run_test_case "pkg-manager output is valid" test_pkg_manager_output_is_valid
 
-finish_tests
+_finish_tests

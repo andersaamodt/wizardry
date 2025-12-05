@@ -1,0 +1,20 @@
+#!/bin/sh
+# finish-tests - print test summary and return appropriate exit status
+# Returns 0 if all tests passed, 1 otherwise. Prints failure indices if any.
+
+_finish_tests() {
+  total=$((_pass_count + _fail_count))
+  printf '%s/%s tests passed' "$_pass_count" "$total"
+  if [ "$_fail_count" -gt 0 ]; then
+    printf ' (%s failed)\n' "$_fail_count"
+    if [ -n "$_fail_detail_indices" ]; then
+      printf 'FAIL_DETAIL:%s\n' "$_fail_detail_indices"
+    fi
+    return 1
+  fi
+  printf '\n'
+  return 0
+}
+
+# Self-execution when run directly (not sourced)
+case "${0##*/}" in finish-tests) _finish_tests "$@" ;; esac

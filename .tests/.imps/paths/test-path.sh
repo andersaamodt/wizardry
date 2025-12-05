@@ -12,8 +12,8 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_path_normalizes() {
-  run_spell spells/.imps/paths/path "./test"
-  assert_success
+  _run_spell spells/.imps/paths/path "./test"
+  _assert_success
   # Should output an absolute path
   case "$OUTPUT" in
     /*) return 0 ;;
@@ -22,12 +22,12 @@ test_path_normalizes() {
 }
 
 test_path_handles_absolute_input() {
-  run_spell spells/.imps/paths/path "/tmp/test"
-  assert_success
-  assert_output_contains "/tmp/test"
+  _run_spell spells/.imps/paths/path "/tmp/test"
+  _assert_success
+  _assert_output_contains "/tmp/test"
 }
 
-run_test_case "path normalizes relative path" test_path_normalizes
-run_test_case "path handles absolute input" test_path_handles_absolute_input
+_run_test_case "path normalizes relative path" test_path_normalizes
+_run_test_case "path handles absolute input" test_path_handles_absolute_input
 
-finish_tests
+_finish_tests

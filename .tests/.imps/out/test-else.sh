@@ -12,18 +12,18 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_else_uses_default() {
-  run_cmd sh -c "printf '' | '$ROOT_DIR/spells/.imps/out/else' 'fallback'"
-  assert_success
-  assert_output_contains "fallback"
+  _run_cmd sh -c "printf '' | '$ROOT_DIR/spells/.imps/out/else' 'fallback'"
+  _assert_success
+  _assert_output_contains "fallback"
 }
 
 test_else_passes_through() {
-  run_cmd sh -c "printf 'original' | '$ROOT_DIR/spells/.imps/out/else' 'fallback'"
-  assert_success
-  assert_output_contains "original"
+  _run_cmd sh -c "printf 'original' | '$ROOT_DIR/spells/.imps/out/else' 'fallback'"
+  _assert_success
+  _assert_output_contains "original"
 }
 
-run_test_case "else uses default for empty" test_else_uses_default
-run_test_case "else passes through non-empty" test_else_passes_through
+_run_test_case "else uses default for empty" test_else_uses_default
+_run_test_case "else passes through non-empty" test_else_passes_through
 
-finish_tests
+_finish_tests

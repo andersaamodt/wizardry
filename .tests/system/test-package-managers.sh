@@ -14,9 +14,9 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  run_spell "spells/system/package-managers" --help
-  assert_success || return 1
-  assert_output_contains "Usage: package-managers" || return 1
+  _run_spell "spells/system/package-managers" --help
+  _assert_success || return 1
+  _assert_output_contains "Usage: package-managers" || return 1
 }
 
 test_spell_exists() {
@@ -27,8 +27,8 @@ test_is_executable() {
   [ -x "$ROOT_DIR/spells/system/package-managers" ] || { TEST_FAILURE_REASON="spell is not executable"; return 1; }
 }
 
-run_test_case "package-managers shows usage text" test_help
-run_test_case "package-managers spell exists" test_spell_exists
-run_test_case "package-managers spell is executable" test_is_executable
+_run_test_case "package-managers shows usage text" test_help
+_run_test_case "package-managers spell exists" test_spell_exists
+_run_test_case "package-managers spell is executable" test_is_executable
 
-finish_tests
+_finish_tests

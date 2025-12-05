@@ -15,37 +15,37 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 make_stub_bin() {
-  dir=$(make_tempdir)
+  dir=$(_make_tempdir)
   mkdir -p "$dir/bin"
   printf '%s\n' "$dir/bin"
 }
 
 test_help() {
-  run_spell "spells/crypto/hashchant" --help
-  assert_success && assert_output_contains "Usage: hashchant"
+  _run_spell "spells/crypto/hashchant" --help
+  _assert_success && _assert_output_contains "Usage: hashchant"
 }
 
 test_missing_arg() {
-  run_spell "spells/crypto/hashchant"
-  assert_failure && assert_output_contains "Error: No file specified."
+  _run_spell "spells/crypto/hashchant"
+  _assert_failure && _assert_output_contains "Error: No file specified."
 }
 
 test_missing_file() {
-  run_spell "spells/crypto/hashchant" "$WIZARDRY_TMPDIR/absent.txt"
-  assert_failure && assert_output_contains "Error: File not found."
+  _run_spell "spells/crypto/hashchant" "$WIZARDRY_TMPDIR/absent.txt"
+  _assert_failure && _assert_output_contains "Error: File not found."
 }
 
 test_missing_helpers() {
   stub=$(make_stub_bin)
-  tmpdir=$(make_tempdir)
+  tmpdir=$(_make_tempdir)
   file="$tmpdir/target.txt"
   echo "lore" >"$file"
-  PATH="$stub:/bin:/usr/bin" run_spell "spells/crypto/hashchant" "$file"
-  assert_failure && assert_output_contains "Error: xattr and attr commands not found"
+  PATH="$stub:/bin:/usr/bin" _run_spell "spells/crypto/hashchant" "$file"
+  _assert_failure && _assert_output_contains "Error: xattr and attr commands not found"
 }
 
 test_prefers_attr() {
-  workdir=$(make_tempdir)
+  workdir=$(_make_tempdir)
   file="$workdir/data.txt"
   echo "amulet" >"$file"
   expected=$( (echo "data.txt" && cat "$file") | cksum | awk '{printf "0x%X", $1}')
@@ -64,10 +64,10 @@ exit 1
 EOF
   chmod +x "$stub/xattr"
   export ATTR_LOG="$log"
-  PATH="$stub:/bin:/usr/bin" run_spell "spells/crypto/hashchant" "$file"
-  assert_success || return 1
-  assert_output_contains "$expected" || return 1
-  assert_path_exists "$log" || return 1
+  PATH="$stub:/bin:/usr/bin" _run_spell "spells/crypto/hashchant" "$file"
+  _assert_success || return 1
+  _assert_output_contains "$expected" || return 1
+  _assert_path_exists "$log" || return 1
   if ! grep -Fq -- "-s user.hash -V $expected $file" "$log"; then
     TEST_FAILURE_REASON="attr helper was not invoked with expected arguments"
     return 1
@@ -79,7 +79,7 @@ EOF
 }
 
 test_fallback_to_xattr() {
-  workdir=$(make_tempdir)
+  workdir=$(_make_tempdir)
   file="$workdir/book.txt"
   echo "scroll" >"$file"
   expected=$( (echo "book.txt" && cat "$file") | cksum | awk '{printf "0x%X", $1}')
@@ -98,10 +98,10 @@ exit 1
 EOF
   chmod +x "$stub/setfattr"
   export ATTR_LOG="$log"
-  PATH="$stub:/bin:/usr/bin" run_spell "spells/crypto/hashchant" "$file"
-  assert_success || return 1
-  assert_output_contains "$expected" || return 1
-  assert_path_exists "$log" || return 1
+  PATH="$stub:/bin:/usr/bin" _run_spell "spells/crypto/hashchant" "$file"
+  _assert_success || return 1
+  _assert_output_contains "$expected" || return 1
+  _assert_path_exists "$log" || return 1
   if ! grep -Fq -- "-w user.hash $expected $file" "$log"; then
     TEST_FAILURE_REASON="xattr helper was not invoked with expected arguments"
     return 1
@@ -113,7 +113,7 @@ EOF
 }
 
 test_fallback_to_setfattr() {
-  workdir=$(make_tempdir)
+  workdir=$(_make_tempdir)
   file="$workdir/charm.txt"
   echo "enigma" >"$file"
   expected=$( (echo "charm.txt" && cat "$file") | cksum | awk '{printf "0x%X", $1}')
@@ -126,21 +126,21 @@ printf '%s\n' "$*" >>"$ATTR_LOG"
 EOF
   chmod +x "$stub/setfattr"
   export ATTR_LOG="$log"
-  PATH="$stub:/bin:/usr/bin" run_spell "spells/crypto/hashchant" "$file"
-  assert_success || return 1
-  assert_output_contains "$expected" || return 1
-  assert_path_exists "$log" || return 1
+  PATH="$stub:/bin:/usr/bin" _run_spell "spells/crypto/hashchant" "$file"
+  _assert_success || return 1
+  _assert_output_contains "$expected" || return 1
+  _assert_path_exists "$log" || return 1
   if ! grep -Fq -- "-n user.hash -v $expected $file" "$log"; then
     TEST_FAILURE_REASON="setfattr helper was not invoked with expected arguments"
     return 1
   fi
 }
 
-run_test_case "hashchant prints usage" test_help
-run_test_case "hashchant errors without a file" test_missing_arg
-run_test_case "hashchant errors for missing target" test_missing_file
-run_test_case "hashchant errors when helpers are unavailable" test_missing_helpers
-run_test_case "hashchant prefers attr helper" test_prefers_attr
-run_test_case "hashchant falls back to xattr" test_fallback_to_xattr
-run_test_case "hashchant falls back to setfattr" test_fallback_to_setfattr
-finish_tests
+_run_test_case "hashchant prints usage" test_help
+_run_test_case "hashchant errors without a file" test_missing_arg
+_run_test_case "hashchant errors for missing target" test_missing_file
+_run_test_case "hashchant errors when helpers are unavailable" test_missing_helpers
+_run_test_case "hashchant prefers attr helper" test_prefers_attr
+_run_test_case "hashchant falls back to xattr" test_fallback_to_xattr
+_run_test_case "hashchant falls back to setfattr" test_fallback_to_setfattr
+_finish_tests

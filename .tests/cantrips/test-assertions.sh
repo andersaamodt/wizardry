@@ -11,7 +11,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_assertions_succeed_for_happy_path() {
-  tmp=$(make_tempdir)
+  tmp=$(_make_tempdir)
   script="$tmp/assert_ok.sh"
   cat >"$script" <<SCRIPT
 #!/bin/sh
@@ -19,16 +19,16 @@ ROOT_DIR="$ROOT_DIR"
 . "$ROOT_DIR/spells/cantrips/assertions"
 assert_equal "a" "a"
 assert_output "printf foo" "foo"
-assert_success "exit 0"
-assert_failure "exit 1"
+_assert_success "exit 0"
+_assert_failure "exit 1"
 SCRIPT
   chmod +x "$script"
-  run_cmd sh "$script"
-  assert_success
+  _run_cmd sh "$script"
+  _assert_success
 }
 
 test_assert_equal_failure_exits_with_message() {
-  tmp=$(make_tempdir)
+  tmp=$(_make_tempdir)
   script="$tmp/assert_fail.sh"
   cat >"$script" <<SCRIPT
 #!/bin/sh
@@ -37,15 +37,15 @@ ROOT_DIR="$ROOT_DIR"
 assert_equal "one" "two"
 SCRIPT
   chmod +x "$script"
-  run_cmd sh "$script"
-  assert_failure && assert_error_contains "Assertion failed: 'one' != 'two'"
+  _run_cmd sh "$script"
+  _assert_failure && _assert_error_contains "Assertion failed: 'one' != 'two'"
 }
 
-run_test_case "assertions helpers pass through on success" test_assertions_succeed_for_happy_path
-run_test_case "assert_equal reports mismatch and exits" test_assert_equal_failure_exits_with_message
+_run_test_case "assertions helpers pass through on success" test_assertions_succeed_for_happy_path
+_run_test_case "assert_equal reports mismatch and exits" test_assert_equal_failure_exits_with_message
 spell_is_executable() {
   [ -x "$ROOT_DIR/spells/cantrips/assertions" ]
 }
 
-run_test_case "cantrips/assertions is executable" spell_is_executable
-finish_tests
+_run_test_case "cantrips/assertions is executable" spell_is_executable
+_finish_tests

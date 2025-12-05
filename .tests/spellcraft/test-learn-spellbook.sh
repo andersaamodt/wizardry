@@ -10,8 +10,8 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  run_spell "spells/spellcraft/learn-spellbook" --help
-  assert_success && assert_error_contains "Usage: learn-spellbook"
+  _run_spell "spells/spellcraft/learn-spellbook" --help
+  _assert_success && _assert_error_contains "Usage: learn-spellbook"
 }
 
 test_missing_detect_helper() {
@@ -28,14 +28,14 @@ exec "$@"
 SCRIPT
   chmod +x "$stub_dir/test-script"
   
-  run_cmd "$stub_dir/test-script" "$WIZARDRY_TMPDIR/missing-detect" \
+  _run_cmd "$stub_dir/test-script" "$WIZARDRY_TMPDIR/missing-detect" \
     "$ROOT_DIR/spells/spellcraft/learn-spellbook" --rc-file "$WIZARDRY_TMPDIR/rc" --format shell add
-  assert_failure && assert_error_contains "required helper"
+  _assert_failure && _assert_error_contains "required helper"
 }
 
 test_unknown_option() {
-  run_spell "spells/spellcraft/learn-spellbook" --unknown
-  assert_failure && assert_error_contains "unknown option"
+  _run_spell "spells/spellcraft/learn-spellbook" --unknown
+  _assert_failure && _assert_error_contains "unknown option"
 }
 
 test_adds_shell_path_entry() {
@@ -48,15 +48,15 @@ EOF
   chmod +x "$detect_stub"
 
   # Set DETECT_RC_FILE so learn-spellbook and learn use the test stub
-  DETECT_RC_FILE="$detect_stub" run_spell "spells/spellcraft/learn-spellbook" add "$WIZARDRY_TMPDIR"
-  assert_success
-  assert_file_contains "$rc" "wizardry: path-"
-  assert_file_contains "$rc" "export PATH=\"$WIZARDRY_TMPDIR:\$PATH\""
+  DETECT_RC_FILE="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" add "$WIZARDRY_TMPDIR"
+  _assert_success
+  _assert_file_contains "$rc" "wizardry: path-"
+  _assert_file_contains "$rc" "export PATH=\"$WIZARDRY_TMPDIR:\$PATH\""
 }
 
 test_status_requires_directory() {
-  run_spell "spells/spellcraft/learn-spellbook" status
-  assert_failure && assert_error_contains "expects a directory argument"
+  _run_spell "spells/spellcraft/learn-spellbook" status
+  _assert_failure && _assert_error_contains "expects a directory argument"
 }
 
 test_shell_status_succeeds_when_present() {
@@ -71,11 +71,11 @@ printf 'platform=debian\nrc_file=$rc\nformat=shell\n'
 EOF
   chmod +x "$detect_stub"
 
-  DETECT_RC_FILE="$detect_stub" run_spell "spells/spellcraft/learn-spellbook" add "$dir"
-  assert_success && assert_file_contains "$rc" "export PATH=\"$dir:\$PATH\""
+  DETECT_RC_FILE="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" add "$dir"
+  _assert_success && _assert_file_contains "$rc" "export PATH=\"$dir:\$PATH\""
 
-  DETECT_RC_FILE="$detect_stub" run_spell "spells/spellcraft/learn-spellbook" status "$dir"
-  assert_success
+  DETECT_RC_FILE="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" status "$dir"
+  _assert_success
 }
 
 test_shell_remove_handles_missing_rc_file() {
@@ -90,8 +90,8 @@ printf 'platform=debian\nrc_file=$rc\nformat=shell\n'
 EOF
   chmod +x "$detect_stub"
 
-  DETECT_RC_FILE="$detect_stub" run_spell "spells/spellcraft/learn-spellbook" remove "$dir"
-  assert_failure && assert_error_contains "startup file '$rc' does not exist"
+  DETECT_RC_FILE="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" remove "$dir"
+  _assert_failure && _assert_error_contains "startup file '$rc' does not exist"
 }
 
 test_shell_remove_clears_managed_entries() {
@@ -106,11 +106,11 @@ printf 'platform=debian\nrc_file=$rc\nformat=shell\n'
 EOF
   chmod +x "$detect_stub"
 
-  DETECT_RC_FILE="$detect_stub" run_spell "spells/spellcraft/learn-spellbook" add "$dir"
-  assert_success && assert_file_contains "$rc" "export PATH=\"$dir:\$PATH\""
+  DETECT_RC_FILE="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" add "$dir"
+  _assert_success && _assert_file_contains "$rc" "export PATH=\"$dir:\$PATH\""
 
-  DETECT_RC_FILE="$detect_stub" run_spell "spells/spellcraft/learn-spellbook" remove "$dir"
-  assert_success
+  DETECT_RC_FILE="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" remove "$dir"
+  _assert_success
   if grep -F "$dir" "$rc" >/dev/null 2>&1; then
     TEST_FAILURE_REASON="expected removal of PATH entry for $dir"
     return 1
@@ -129,14 +129,14 @@ printf 'platform=nixos\nrc_file=$rc\nformat=nix\n'
 EOF
   chmod +x "$detect_stub"
 
-  DETECT_RC_FILE="$detect_stub" run_spell "spells/spellcraft/learn-spellbook" add "$dir"
-  assert_success && assert_file_contains "$rc" "$dir"
+  DETECT_RC_FILE="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" add "$dir"
+  _assert_success && _assert_file_contains "$rc" "$dir"
 
-  DETECT_RC_FILE="$detect_stub" run_spell "spells/spellcraft/learn-spellbook" status "$dir"
-  assert_success
+  DETECT_RC_FILE="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" status "$dir"
+  _assert_success
 
-  DETECT_RC_FILE="$detect_stub" run_spell "spells/spellcraft/learn-spellbook" remove "$dir"
-  assert_success
+  DETECT_RC_FILE="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" remove "$dir"
+  _assert_success
   if grep -F "$dir" "$rc" >/dev/null 2>&1; then
     TEST_FAILURE_REASON="expected Nix entry for $dir to be removed"
     return 1
@@ -161,8 +161,8 @@ EOF
   chmod +x "$detect_stub"
 
   # Add first directory - this creates a backup
-  DETECT_RC_FILE="$detect_stub" run_spell "spells/spellcraft/learn-spellbook" add "$dir1"
-  assert_success || return 1
+  DETECT_RC_FILE="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" add "$dir1"
+  _assert_success || return 1
 
   # Count backup files that have 'x' suffix pattern (the old broken behavior)
   x_backups=$(ls "$WIZARDRY_TMPDIR"/backup_test.nix.wizardry.*x* 2>/dev/null | wc -l || printf '0')
@@ -191,8 +191,8 @@ EOF
   chmod +x "$detect_stub"
 
   # Add with --recursive flag - should create only ONE backup
-  DETECT_RC_FILE="$detect_stub" run_spell "spells/spellcraft/learn-spellbook" --recursive add "$base_dir"
-  assert_success || return 1
+  DETECT_RC_FILE="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" --recursive add "$base_dir"
+  _assert_success || return 1
 
   # Count backup files - should be exactly 1
   backup_count=$(find "$WIZARDRY_TMPDIR" -maxdepth 1 -name 'recursive_backup.nix.wizardry.*' 2>/dev/null | wc -l)
@@ -206,8 +206,8 @@ test_dry_run_single_directory() {
   dir="$WIZARDRY_TMPDIR/dryrun_dir"
   mkdir -p "$dir"
   
-  run_spell "spells/spellcraft/learn-spellbook" --dry-run add "$dir"
-  assert_success
+  _run_spell "spells/spellcraft/learn-spellbook" --dry-run add "$dir"
+  _assert_success
   # Dry run should output the directory path
   case "$OUTPUT" in
     *"$dir"*) : ;;
@@ -219,8 +219,8 @@ test_dry_run_recursive() {
   base="$WIZARDRY_TMPDIR/dryrun_recursive"
   mkdir -p "$base/sub1" "$base/sub2"
   
-  run_spell "spells/spellcraft/learn-spellbook" --dry-run --recursive add "$base"
-  assert_success
+  _run_spell "spells/spellcraft/learn-spellbook" --dry-run --recursive add "$base"
+  _assert_success
   # Dry run should output all directories
   case "$OUTPUT" in
     *"$base"*) : ;;
@@ -251,8 +251,8 @@ printf 'platform=debian\nrc_file=$rc\nformat=shell\n'
 EOF
   chmod +x "$detect_stub"
   
-  DETECT_RC_FILE="$detect_stub" run_spell "spells/spellcraft/learn-spellbook" --dry-run add "$dir"
-  assert_success
+  DETECT_RC_FILE="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" --dry-run add "$dir"
+  _assert_success
   # RC file should remain empty (not modified)
   if [ -s "$rc" ]; then
     TEST_FAILURE_REASON="rc file should not be modified in dry-run mode"
@@ -283,16 +283,16 @@ printf 'platform=nixos\nrc_file=$rc\nformat=nix\n'
 EOF
   chmod +x "$detect_stub"
   
-  DETECT_RC_FILE="$detect_stub" run_spell "spells/spellcraft/learn-spellbook" add "$dir"
-  assert_success || return 1
+  DETECT_RC_FILE="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" add "$dir"
+  _assert_success || return 1
   
   # The file should contain inline wizardry marker
-  assert_file_contains "$rc" "# wizardry" || return 1
-  assert_file_contains "$rc" "$dir" || return 1
+  _assert_file_contains "$rc" "# wizardry" || return 1
+  _assert_file_contains "$rc" "$dir" || return 1
   # Should use environment.sessionVariables.PATH array format
-  assert_file_contains "$rc" "environment.sessionVariables.PATH = [" || return 1
+  _assert_file_contains "$rc" "environment.sessionVariables.PATH = [" || return 1
   # User's original content should be preserved
-  assert_file_contains "$rc" "programs.bash.enable = true" || return 1
+  _assert_file_contains "$rc" "programs.bash.enable = true" || return 1
 }
 
 test_nix_allows_multiple_paths() {
@@ -311,16 +311,16 @@ EOF
   chmod +x "$detect_stub"
   
   # First, add a directory
-  DETECT_RC_FILE="$detect_stub" run_spell "spells/spellcraft/learn-spellbook" add "$dir1"
-  assert_success || return 1
+  DETECT_RC_FILE="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" add "$dir1"
+  _assert_success || return 1
   
   # Now add another directory
-  DETECT_RC_FILE="$detect_stub" run_spell "spells/spellcraft/learn-spellbook" add "$dir2"
-  assert_success || return 1
+  DETECT_RC_FILE="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" add "$dir2"
+  _assert_success || return 1
   
   # Both directories should be in the file
-  assert_file_contains "$rc" "$dir1" || return 1
-  assert_file_contains "$rc" "$dir2" || return 1
+  _assert_file_contains "$rc" "$dir1" || return 1
+  _assert_file_contains "$rc" "$dir2" || return 1
   # Each path should have a # wizardry comment
   # Count the number of "# wizardry" markers - should be 2 (one for each path)
   wizardry_count=$(grep -c "# wizardry" "$rc" 2>/dev/null || printf '0')
@@ -356,8 +356,8 @@ printf 'platform=nixos\nrc_file=$rc\nformat=nix\n'
 EOF
   chmod +x "$detect_stub"
   
-  DETECT_RC_FILE="$detect_stub" run_spell "spells/spellcraft/learn-spellbook" add "$dir"
-  assert_success || return 1
+  DETECT_RC_FILE="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" add "$dir"
+  _assert_success || return 1
   
   # The file should use 4-space indentation for the PATH block
   # Check that the environment.sessionVariables.PATH line starts with 4 spaces
@@ -388,8 +388,8 @@ printf 'platform=nixos\nrc_file=$rc\nformat=nix\n'
 EOF
   chmod +x "$detect_stub"
   
-  DETECT_RC_FILE="$detect_stub" run_spell "spells/spellcraft/learn-spellbook" add "$dir"
-  assert_success || return 1
+  DETECT_RC_FILE="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" add "$dir"
+  _assert_success || return 1
   
   # The file should use tab indentation for the PATH block
   # Check that the environment.sessionVariables.PATH line starts with a tab
@@ -404,22 +404,22 @@ EOF
   fi
 }
 
-run_test_case "learn-spellbook prints usage" test_help
-run_test_case "learn-spellbook fails when detect helper missing" test_missing_detect_helper
-run_test_case "learn-spellbook rejects unknown options" test_unknown_option
-run_test_case "learn-spellbook adds shell PATH entries" test_adds_shell_path_entry
-run_test_case "learn-spellbook status without directory fails" test_status_requires_directory
-run_test_case "learn-spellbook reports existing shell entries" test_shell_status_succeeds_when_present
-run_test_case "learn-spellbook remove reports missing rc file" test_shell_remove_handles_missing_rc_file
-run_test_case "learn-spellbook remove drops managed shell entries" test_shell_remove_clears_managed_entries
-run_test_case "learn-spellbook manages Nix PATH entries" test_nix_add_status_and_remove_round_trip
-run_test_case "learn-spellbook uses numeric backup suffixes" test_nix_backup_uses_numeric_suffix
-run_test_case "learn-spellbook recursive creates single backup" test_nix_recursive_creates_single_backup
-run_test_case "learn-spellbook --dry-run shows single directory" test_dry_run_single_directory
-run_test_case "learn-spellbook --dry-run recursive shows all dirs" test_dry_run_recursive
-run_test_case "learn-spellbook --dry-run does not modify rc file" test_dry_run_does_not_modify_rc
-run_test_case "learn-spellbook nix adds with inline marker" test_nix_adds_with_inline_marker
-run_test_case "learn-spellbook nix allows multiple paths" test_nix_allows_multiple_paths
-run_test_case "learn-spellbook nix respects 4-space indentation" test_nix_respects_4space_indentation
-run_test_case "learn-spellbook nix respects tab indentation" test_nix_respects_tab_indentation
-finish_tests
+_run_test_case "learn-spellbook prints usage" test_help
+_run_test_case "learn-spellbook fails when detect helper missing" test_missing_detect_helper
+_run_test_case "learn-spellbook rejects unknown options" test_unknown_option
+_run_test_case "learn-spellbook adds shell PATH entries" test_adds_shell_path_entry
+_run_test_case "learn-spellbook status without directory fails" test_status_requires_directory
+_run_test_case "learn-spellbook reports existing shell entries" test_shell_status_succeeds_when_present
+_run_test_case "learn-spellbook remove reports missing rc file" test_shell_remove_handles_missing_rc_file
+_run_test_case "learn-spellbook remove drops managed shell entries" test_shell_remove_clears_managed_entries
+_run_test_case "learn-spellbook manages Nix PATH entries" test_nix_add_status_and_remove_round_trip
+_run_test_case "learn-spellbook uses numeric backup suffixes" test_nix_backup_uses_numeric_suffix
+_run_test_case "learn-spellbook recursive creates single backup" test_nix_recursive_creates_single_backup
+_run_test_case "learn-spellbook --dry-run shows single directory" test_dry_run_single_directory
+_run_test_case "learn-spellbook --dry-run recursive shows all dirs" test_dry_run_recursive
+_run_test_case "learn-spellbook --dry-run does not modify rc file" test_dry_run_does_not_modify_rc
+_run_test_case "learn-spellbook nix adds with inline marker" test_nix_adds_with_inline_marker
+_run_test_case "learn-spellbook nix allows multiple paths" test_nix_allows_multiple_paths
+_run_test_case "learn-spellbook nix respects 4-space indentation" test_nix_respects_4space_indentation
+_run_test_case "learn-spellbook nix respects tab indentation" test_nix_respects_tab_indentation
+_finish_tests

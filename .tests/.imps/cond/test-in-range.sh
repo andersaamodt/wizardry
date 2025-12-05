@@ -12,34 +12,34 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_in_range_middle() {
-  run_spell spells/.imps/cond/in-range 5 1 10
-  assert_success
+  _run_spell spells/.imps/cond/in-range 5 1 10
+  _assert_success
 }
 
 test_in_range_at_min() {
-  run_spell spells/.imps/cond/in-range 1 1 10
-  assert_success
+  _run_spell spells/.imps/cond/in-range 1 1 10
+  _assert_success
 }
 
 test_in_range_at_max() {
-  run_spell spells/.imps/cond/in-range 10 1 10
-  assert_success
+  _run_spell spells/.imps/cond/in-range 10 1 10
+  _assert_success
 }
 
 test_in_range_below_min() {
-  run_spell spells/.imps/cond/in-range 0 1 10
-  assert_failure
+  _run_spell spells/.imps/cond/in-range 0 1 10
+  _assert_failure
 }
 
 test_in_range_above_max() {
-  run_spell spells/.imps/cond/in-range 11 1 10
-  assert_failure
+  _run_spell spells/.imps/cond/in-range 11 1 10
+  _assert_failure
 }
 
-run_test_case "in-range accepts middle" test_in_range_middle
-run_test_case "in-range accepts at min" test_in_range_at_min
-run_test_case "in-range accepts at max" test_in_range_at_max
-run_test_case "in-range rejects below min" test_in_range_below_min
-run_test_case "in-range rejects above max" test_in_range_above_max
+_run_test_case "in-range accepts middle" test_in_range_middle
+_run_test_case "in-range accepts at min" test_in_range_at_min
+_run_test_case "in-range accepts at max" test_in_range_at_max
+_run_test_case "in-range rejects below min" test_in_range_below_min
+_run_test_case "in-range rejects above max" test_in_range_above_max
 
-finish_tests
+_finish_tests

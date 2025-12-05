@@ -13,7 +13,7 @@ spell_is_executable() {
   [ -x "$ROOT_DIR/spells/install/simplex-chat/simplex-chat-menu" ]
 }
 
-run_test_case "install/simplex-chat/simplex-chat-menu is executable" spell_is_executable
+_run_test_case "install/simplex-chat/simplex-chat-menu is executable" spell_is_executable
 
 make_stub_menu() {
   tmp=$1
@@ -35,7 +35,7 @@ SHI
 }
 
 menu_prompts_install_when_missing() {
-  tmp=$(make_tempdir)
+  tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_exit_label "$tmp"
   cat >"$tmp/simplex-chat-status" <<'SHI'
@@ -44,9 +44,9 @@ echo "not installed"
 SHI
   chmod +x "$tmp/simplex-chat-status"
   MENU_LOG="$tmp/menu.log"
-  run_cmd env PATH="$tmp:$ROOT_DIR/spells/cantrips" MENU_LOG="$MENU_LOG" \
+  _run_cmd env PATH="$tmp:$ROOT_DIR/spells/cantrips" MENU_LOG="$MENU_LOG" \
     "$ROOT_DIR/spells/install/simplex-chat/simplex-chat-menu"
-  assert_success || return 1
+  _assert_success || return 1
   entries=$(tail -n +2 "$MENU_LOG")
   case "$entries" in
     *"Install simplex-chat%install-simplex-chat"* ) : ;;
@@ -58,10 +58,10 @@ SHI
   esac
 }
 
-run_test_case "simplex-chat-menu offers install when simplex-chat is missing" menu_prompts_install_when_missing
+_run_test_case "simplex-chat-menu offers install when simplex-chat is missing" menu_prompts_install_when_missing
 
 menu_orders_uninstall_before_exit_when_installed() {
-  tmp=$(make_tempdir)
+  tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_exit_label "$tmp"
 
@@ -78,10 +78,10 @@ SHI
   chmod +x "$tmp/simplex-chat"
 
   MENU_LOG="$tmp/menu.log"
-  run_cmd env PATH="$tmp:$ROOT_DIR/spells/cantrips" MENU_LOG="$MENU_LOG" \
+  _run_cmd env PATH="$tmp:$ROOT_DIR/spells/cantrips" MENU_LOG="$MENU_LOG" \
     "$ROOT_DIR/spells/install/simplex-chat/simplex-chat-menu"
 
-  assert_success || return 1
+  _assert_success || return 1
   entries=$(tail -n +2 "$MENU_LOG")
   last_line=$(printf '%s\n' "$entries" | tail -n 1)
   second_last=$(printf '%s\n' "$entries" | tail -n 2 | head -n 1)
@@ -106,6 +106,6 @@ SHI
   esac
 }
 
-run_test_case "simplex-chat-menu surfaces CLI helpers and orders uninstall before exit" menu_orders_uninstall_before_exit_when_installed
+_run_test_case "simplex-chat-menu surfaces CLI helpers and orders uninstall before exit" menu_orders_uninstall_before_exit_when_installed
 
-finish_tests
+_finish_tests

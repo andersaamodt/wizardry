@@ -17,19 +17,19 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 make_stub_dir() {
-  dir=$(make_tempdir)
+  dir=$(_make_tempdir)
   printf '%s\n' "$dir"
 }
 
 test_help() {
-  run_spell "spells/mud/decorate" --help
-  assert_success && assert_output_contains "Usage: decorate"
+  _run_spell "spells/mud/decorate" --help
+  _assert_success && _assert_output_contains "Usage: decorate"
 }
 
 test_missing_enchant() {
   stub=$(make_stub_dir)
-  PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$stub:/bin:/usr/bin" run_spell "spells/mud/decorate"
-  assert_failure && assert_error_contains "decorate: enchant spell is missing."
+  PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$stub:/bin:/usr/bin" _run_spell "spells/mud/decorate"
+  _assert_failure && _assert_error_contains "decorate: enchant spell is missing."
 }
 
 test_no_valid_path() {
@@ -39,33 +39,33 @@ test_no_valid_path() {
 exit 0
 EOF
   chmod +x "$stub/enchant"
-  PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$stub:/bin:/usr/bin" run_spell "spells/mud/decorate" "/nonexistent/path" "description"
-  assert_failure && assert_error_contains "no valid path found"
+  PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$stub:/bin:/usr/bin" _run_spell "spells/mud/decorate" "/nonexistent/path" "description"
+  _assert_failure && _assert_error_contains "no valid path found"
 }
 
 test_empty_description() {
   stub=$(make_stub_dir)
-  target=$(make_tempdir)
+  target=$(_make_tempdir)
   cat >"$stub/enchant" <<'EOF'
 #!/bin/sh
 exit 0
 EOF
   chmod +x "$stub/enchant"
-  PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$stub:/bin:/usr/bin" run_spell "spells/mud/decorate" "$target" ""
-  assert_failure && assert_error_contains "description cannot be empty"
+  PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$stub:/bin:/usr/bin" _run_spell "spells/mud/decorate" "$target" ""
+  _assert_failure && _assert_error_contains "description cannot be empty"
 }
 
 test_decorates_with_description() {
   stub=$(make_stub_dir)
-  target=$(make_tempdir)
+  target=$(_make_tempdir)
   cat >"$stub/enchant" <<'EOF'
 #!/bin/sh
 printf '%s\n' "$*" >"${WIZARDRY_TMPDIR:?}/decorate.called"
 exit 0
 EOF
   chmod +x "$stub/enchant"
-  PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$stub:/bin:/usr/bin" run_spell "spells/mud/decorate" "$target" "A mystical chamber"
-  assert_success && assert_output_contains "decorated with the description"
+  PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$stub:/bin:/usr/bin" _run_spell "spells/mud/decorate" "$target" "A mystical chamber"
+  _assert_success && _assert_output_contains "decorated with the description"
   called=$(cat "$WIZARDRY_TMPDIR/decorate.called")
   # Check that enchant was called with correct arguments
   case "$called" in
@@ -81,7 +81,7 @@ EOF
 
 test_decorates_with_reversed_args() {
   stub=$(make_stub_dir)
-  target=$(make_tempdir)
+  target=$(_make_tempdir)
   cat >"$stub/enchant" <<'EOF'
 #!/bin/sh
 printf '%s\n' "$*" >"${WIZARDRY_TMPDIR:?}/decorate.called"
@@ -89,8 +89,8 @@ exit 0
 EOF
   chmod +x "$stub/enchant"
   # Pass description first, then path
-  PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$stub:/bin:/usr/bin" run_spell "spells/mud/decorate" "A secret alcove" "$target"
-  assert_success && assert_output_contains "decorated with the description"
+  PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$stub:/bin:/usr/bin" _run_spell "spells/mud/decorate" "A secret alcove" "$target"
+  _assert_success && _assert_output_contains "decorated with the description"
   called=$(cat "$WIZARDRY_TMPDIR/decorate.called")
   # Check that enchant was called with correct arguments
   case "$called" in
@@ -106,7 +106,7 @@ EOF
 
 test_decorates_current_directory_with_description_only() {
   stub=$(make_stub_dir)
-  target=$(make_tempdir)
+  target=$(_make_tempdir)
   cat >"$stub/enchant" <<'EOF'
 #!/bin/sh
 printf '%s\n' "$*" >"${WIZARDRY_TMPDIR:?}/decorate.called"
@@ -114,8 +114,8 @@ exit 0
 EOF
   chmod +x "$stub/enchant"
   # Pass only description - should use current directory
-  RUN_CMD_WORKDIR="$target" PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$stub:/bin:/usr/bin" run_spell "spells/mud/decorate" "The entrance hall"
-  assert_success
+  RUN_CMD_WORKDIR="$target" PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$stub:/bin:/usr/bin" _run_spell "spells/mud/decorate" "The entrance hall"
+  _assert_success
   called=$(cat "$WIZARDRY_TMPDIR/decorate.called")
   # Check that the description is in the call
   case "$called" in
@@ -131,22 +131,22 @@ EOF
 
 test_reports_enchant_failure() {
   stub=$(make_stub_dir)
-  target=$(make_tempdir)
+  target=$(_make_tempdir)
   cat >"$stub/enchant" <<'EOF'
 #!/bin/sh
 exit 1
 EOF
   chmod +x "$stub/enchant"
-  PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$stub:/bin:/usr/bin" run_spell "spells/mud/decorate" "$target" "description"
-  assert_failure && assert_error_contains "failed to apply description"
+  PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$stub:/bin:/usr/bin" _run_spell "spells/mud/decorate" "$target" "description"
+  _assert_failure && _assert_error_contains "failed to apply description"
 }
 
-run_test_case "decorate prints usage" test_help
-run_test_case "decorate fails when enchant is missing" test_missing_enchant
-run_test_case "decorate fails when no valid path found" test_no_valid_path
-run_test_case "decorate fails for empty description" test_empty_description
-run_test_case "decorate applies description successfully" test_decorates_with_description
-run_test_case "decorate works with reversed argument order" test_decorates_with_reversed_args
-run_test_case "decorate works with description only" test_decorates_current_directory_with_description_only
-run_test_case "decorate reports enchant failure" test_reports_enchant_failure
-finish_tests
+_run_test_case "decorate prints usage" test_help
+_run_test_case "decorate fails when enchant is missing" test_missing_enchant
+_run_test_case "decorate fails when no valid path found" test_no_valid_path
+_run_test_case "decorate fails for empty description" test_empty_description
+_run_test_case "decorate applies description successfully" test_decorates_with_description
+_run_test_case "decorate works with reversed argument order" test_decorates_with_reversed_args
+_run_test_case "decorate works with description only" test_decorates_current_directory_with_description_only
+_run_test_case "decorate reports enchant failure" test_reports_enchant_failure
+_finish_tests

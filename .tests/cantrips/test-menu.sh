@@ -11,31 +11,31 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 menu_requires_all_helpers() {
-  PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:/bin:/usr/bin" run_cmd env PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:/bin:/usr/bin" "$ROOT_DIR/spells/cantrips/menu" "Menu" "Item%echo hi"
-  assert_failure || return 1
-  assert_error_contains "The menu spell needs 'fathom-cursor' to place the menu." || return 1
+  PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:/bin:/usr/bin" _run_cmd env PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:/bin:/usr/bin" "$ROOT_DIR/spells/cantrips/menu" "Menu" "Item%echo hi"
+  _assert_failure || return 1
+  _assert_error_contains "The menu spell needs 'fathom-cursor' to place the menu." || return 1
 }
 
 menu_reports_missing_tty() {
-  stub_dir=$(make_tempdir)
+  stub_dir=$(_make_tempdir)
   for helper in fathom-cursor fathom-terminal move-cursor await-keypress cursor-blink stty; do
     printf '#!/bin/sh\nexit 0\n' >"$stub_dir/$helper"
     chmod +x "$stub_dir/$helper"
   done
 
-  PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:$stub_dir:/bin:/usr/bin" run_cmd env PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:$stub_dir:/bin:/usr/bin" AWAIT_KEYPRESS_DEVICE="$stub_dir/fake-tty" \
+  PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:$stub_dir:/bin:/usr/bin" _run_cmd env PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:$stub_dir:/bin:/usr/bin" AWAIT_KEYPRESS_DEVICE="$stub_dir/fake-tty" \
     "$ROOT_DIR/spells/cantrips/menu" "Menu" "Item%echo hi"
-  assert_failure || return 1
-  assert_error_contains "menu: unable to access controlling terminal" || return 1
+  _assert_failure || return 1
+  _assert_error_contains "menu: unable to access controlling terminal" || return 1
 }
 
-run_test_case "menu requires helper spells" menu_requires_all_helpers
-run_test_case "menu reports missing controlling terminal" menu_reports_missing_tty
+_run_test_case "menu requires helper spells" menu_requires_all_helpers
+_run_test_case "menu reports missing controlling terminal" menu_reports_missing_tty
 
 # Test --start-selection argument - Issue #198
 # When --start-selection 2 is passed, pressing enter should select the second item
 menu_respects_start_selection() {
-  stub_dir=$(make_tempdir)
+  stub_dir=$(_make_tempdir)
   
   # Create a fake TTY for testing
   touch "$stub_dir/fake-tty"
@@ -92,7 +92,7 @@ STUB
   
   # Run menu with --start-selection 2 and press enter immediately
   # Should execute the second item's command (printf second)
-  PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:$stub_dir:/bin:/usr/bin" run_cmd env \
+  PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:$stub_dir:/bin:/usr/bin" _run_cmd env \
     PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:$stub_dir:/bin:/usr/bin" \
     AWAIT_KEYPRESS_DEVICE="$stub_dir/fake-tty" \
     "$ROOT_DIR/spells/cantrips/menu" --start-selection 2 "Test:" \
@@ -100,7 +100,7 @@ STUB
     "Second%printf second" \
     "Third%printf third"
   
-  assert_success || return 1
+  _assert_success || return 1
   # The second item should have been selected since --start-selection 2
   case "$OUTPUT" in
     *second*)
@@ -113,12 +113,12 @@ STUB
   esac
 }
 
-run_test_case "menu respects --start-selection (Issue #198)" menu_respects_start_selection
+_run_test_case "menu respects --start-selection (Issue #198)" menu_respects_start_selection
 
 # Test that highlighted items strip ANSI codes from labels
 # This ensures the highlight color (CYAN) overrides embedded colors (like YELLOW)
 menu_highlight_strips_ansi_codes() {
-  stub_dir=$(make_tempdir)
+  stub_dir=$(_make_tempdir)
   
   # Create a fake TTY for testing
   touch "$stub_dir/fake-tty"
@@ -179,14 +179,14 @@ STUB
   yellow_code=$(printf '\033[33m')
   reset_code=$(printf '\033[0m')
   
-  PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:$stub_dir:/bin:/usr/bin" run_cmd env \
+  PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:$stub_dir:/bin:/usr/bin" _run_cmd env \
     PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:$stub_dir:/bin:/usr/bin" \
     AWAIT_KEYPRESS_DEVICE="$stub_dir/fake-tty" \
     TERM=xterm \
     "$ROOT_DIR/spells/cantrips/menu" "Test:" \
     "${yellow_code}ColoredItem${reset_code}%printf selected"
   
-  assert_success || return 1
+  _assert_success || return 1
   
   # Verify the command executed (item was selectable)
   case "$OUTPUT" in
@@ -211,6 +211,6 @@ STUB
   return 0
 }
 
-run_test_case "menu highlight strips ANSI codes from labels" menu_highlight_strips_ansi_codes
+_run_test_case "menu highlight strips ANSI codes from labels" menu_highlight_strips_ansi_codes
 
-finish_tests
+_finish_tests

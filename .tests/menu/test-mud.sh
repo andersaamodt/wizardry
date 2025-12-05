@@ -30,7 +30,7 @@ SH
 }
 
 mud_requires_menu_dependency() {
-  stub_dir=$(make_tempdir)
+  stub_dir=$(_make_tempdir)
   cat <<'STUB' >"$stub_dir/require-command"
 #!/bin/sh
 printf '%s\n' "require-command stub: $*" >&2
@@ -38,9 +38,9 @@ exit 1
 STUB
   chmod +x "$stub_dir/require-command"
 
-  run_cmd env REQUIRE_COMMAND="$stub_dir/require-command" PATH="$stub_dir:$PATH" "$ROOT_DIR/spells/menu/mud"
-  assert_failure || return 1
-  assert_error_contains "The MUD menu needs the 'menu' command" || return 1
+  _run_cmd env REQUIRE_COMMAND="$stub_dir/require-command" PATH="$stub_dir:$PATH" "$ROOT_DIR/spells/menu/mud"
+  _assert_failure || return 1
+  _assert_error_contains "The MUD menu needs the 'menu' command" || return 1
 }
 
 spell_is_executable() {
@@ -48,7 +48,7 @@ spell_is_executable() {
 }
 
 test_mud_presents_navigation_options() {
-  tmp=$(make_tempdir)
+  tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
   cat >"$tmp/exit-label" <<'SH'
@@ -56,8 +56,8 @@ test_mud_presents_navigation_options() {
 printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud"
-  assert_success
+  _run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud"
+  _assert_success
   
   # Verify navigation options
   grep -q "Look Around%look" "$tmp/log" || {
@@ -80,7 +80,7 @@ SH
 }
 
 test_mud_presents_admin_options() {
-  tmp=$(make_tempdir)
+  tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
   cat >"$tmp/exit-label" <<'SH'
@@ -88,8 +88,8 @@ test_mud_presents_admin_options() {
 printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud"
-  assert_success
+  _run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud"
+  _assert_success
   
   # Verify admin options (Install MUD was moved to Arcana/install-menu)
   grep -q "Admin MUD Hosting%" "$tmp/log" || {
@@ -103,7 +103,7 @@ SH
 }
 
 test_mud_shows_menu_title() {
-  tmp=$(make_tempdir)
+  tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
   cat >"$tmp/exit-label" <<'SH'
@@ -111,8 +111,8 @@ test_mud_shows_menu_title() {
 printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud"
-  assert_success
+  _run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud"
+  _assert_success
   
   # Verify menu title
   grep -q "MUD Menu:" "$tmp/log" || {
@@ -123,7 +123,7 @@ SH
 
 # Test ESC and Exit behavior - menu exits properly when escape status returned
 test_esc_exit_behavior() {
-  tmp=$(make_tempdir)
+  tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
   
@@ -133,8 +133,8 @@ printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
   
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud"
-  assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
+  _run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud"
+  _assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
   
   args=$(cat "$tmp/log")
   case "$args" in
@@ -143,19 +143,19 @@ SH
   esac
 }
 
-run_test_case "mud menu requires menu dependency" mud_requires_menu_dependency
-run_test_case "menu/mud is executable" spell_is_executable
+_run_test_case "mud menu requires menu dependency" mud_requires_menu_dependency
+_run_test_case "menu/mud is executable" spell_is_executable
 
 test_shows_help() {
-  run_cmd "$ROOT_DIR/spells/menu/mud" --help
-  assert_success
-  assert_output_contains "Usage: mud"
+  _run_cmd "$ROOT_DIR/spells/menu/mud" --help
+  _assert_success
+  _assert_output_contains "Usage: mud"
 }
 
-run_test_case "mud --help shows usage" test_shows_help
-run_test_case "mud presents navigation options" test_mud_presents_navigation_options
-run_test_case "mud presents admin options" test_mud_presents_admin_options
-run_test_case "mud shows menu title" test_mud_shows_menu_title
-run_test_case "mud ESC/Exit behavior" test_esc_exit_behavior
+_run_test_case "mud --help shows usage" test_shows_help
+_run_test_case "mud presents navigation options" test_mud_presents_navigation_options
+_run_test_case "mud presents admin options" test_mud_presents_admin_options
+_run_test_case "mud shows menu title" test_mud_shows_menu_title
+_run_test_case "mud ESC/Exit behavior" test_esc_exit_behavior
 
-finish_tests
+_finish_tests

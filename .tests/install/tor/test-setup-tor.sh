@@ -12,17 +12,17 @@ spell_is_executable() {
   [ -x "$ROOT_DIR/spells/install/tor/setup-tor" ]
 }
 
-run_test_case "install/tor/setup-tor is executable" spell_is_executable
+_run_test_case "install/tor/setup-tor is executable" spell_is_executable
 spell_has_content() {
   [ -s "$ROOT_DIR/spells/install/tor/setup-tor" ]
 }
 
-run_test_case "install/tor/setup-tor has content" spell_has_content
+_run_test_case "install/tor/setup-tor has content" spell_has_content
 
 shows_help() {
-  run_spell spells/install/tor/setup-tor --help
+  _run_spell spells/install/tor/setup-tor --help
   true
 }
 
-run_test_case "setup-tor shows help" shows_help
-finish_tests
+_run_test_case "setup-tor shows help" shows_help
+_finish_tests

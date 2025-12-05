@@ -43,31 +43,31 @@ SH
 }
 
 test_help() {
-  run_spell "spells/menu/priority-menu" --help
-  assert_success || return 1
-  assert_output_contains "Usage: priority-menu" || return 1
+  _run_spell "spells/menu/priority-menu" --help
+  _assert_success || return 1
+  _assert_output_contains "Usage: priority-menu" || return 1
 }
 
 test_requires_file_argument() {
-  run_spell "spells/menu/priority-menu"
-  assert_failure || return 1
-  assert_error_contains "file path required" || return 1
+  _run_spell "spells/menu/priority-menu"
+  _assert_failure || return 1
+  _assert_error_contains "file path required" || return 1
 }
 
 test_help_h_flag() {
-  run_spell "spells/menu/priority-menu" -h
-  assert_success || return 1
-  assert_output_contains "Usage: priority-menu" || return 1
+  _run_spell "spells/menu/priority-menu" -h
+  _assert_success || return 1
+  _assert_output_contains "Usage: priority-menu" || return 1
 }
 
 test_help_usage_flag() {
-  run_spell "spells/menu/priority-menu" --usage
-  assert_success || return 1
-  assert_output_contains "Usage: priority-menu" || return 1
+  _run_spell "spells/menu/priority-menu" --usage
+  _assert_success || return 1
+  _assert_output_contains "Usage: priority-menu" || return 1
 }
 
 test_priority_menu_presents_actions() {
-  tmp=$(make_tempdir)
+  tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
   make_read_magic_stub "$tmp"
@@ -81,8 +81,8 @@ SH
   # Create test file
   touch "$tmp/testfile"
   
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/priority-menu" "$tmp/testfile"
-  assert_success || return 1
+  _run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/priority-menu" "$tmp/testfile"
+  _assert_success || return 1
   
   # Verify key actions are present
   grep -q "Prioritize" "$tmp/log" || {
@@ -108,7 +108,7 @@ SH
 }
 
 test_priority_menu_shows_filename_in_title() {
-  tmp=$(make_tempdir)
+  tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
   make_read_magic_stub "$tmp"
@@ -122,8 +122,8 @@ SH
   # Create test file with recognizable name
   touch "$tmp/myspecialfile"
   
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/priority-menu" "$tmp/myspecialfile"
-  assert_success || return 1
+  _run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/priority-menu" "$tmp/myspecialfile"
+  _assert_success || return 1
   
   # Verify filename is shown in menu title
   grep -q "myspecialfile" "$tmp/log" || {
@@ -133,7 +133,7 @@ SH
 }
 
 test_priority_menu_shows_uncheck_when_checked() {
-  tmp=$(make_tempdir)
+  tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
   
@@ -156,8 +156,8 @@ SH
   
   touch "$tmp/testfile"
   
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/priority-menu" "$tmp/testfile"
-  assert_success || return 1
+  _run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/priority-menu" "$tmp/testfile"
+  _assert_success || return 1
   
   # When checked, should show "Uncheck" instead of "Check"
   grep -q "Uncheck%" "$tmp/log" || {
@@ -166,17 +166,17 @@ SH
   }
 }
 
-run_test_case "priority-menu shows usage text" test_help
-run_test_case "priority-menu requires file argument" test_requires_file_argument
-run_test_case "priority-menu shows usage with -h" test_help_h_flag
-run_test_case "priority-menu shows usage with --usage" test_help_usage_flag
-run_test_case "priority-menu presents expected actions" test_priority_menu_presents_actions
-run_test_case "priority-menu shows filename in title" test_priority_menu_shows_filename_in_title
-run_test_case "priority-menu shows uncheck when checked" test_priority_menu_shows_uncheck_when_checked
+_run_test_case "priority-menu shows usage text" test_help
+_run_test_case "priority-menu requires file argument" test_requires_file_argument
+_run_test_case "priority-menu shows usage with -h" test_help_h_flag
+_run_test_case "priority-menu shows usage with --usage" test_help_usage_flag
+_run_test_case "priority-menu presents expected actions" test_priority_menu_presents_actions
+_run_test_case "priority-menu shows filename in title" test_priority_menu_shows_filename_in_title
+_run_test_case "priority-menu shows uncheck when checked" test_priority_menu_shows_uncheck_when_checked
 
 # Test ESC and Exit behavior - menu exits properly when escape status returned
 test_esc_exit_behavior() {
-  tmp=$(make_tempdir)
+  tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
   make_read_magic_stub "$tmp"
@@ -190,8 +190,8 @@ SH
   # Create test file
   touch "$tmp/testfile"
   
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/priority-menu" "$tmp/testfile"
-  assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
+  _run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/priority-menu" "$tmp/testfile"
+  _assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
   
   args=$(cat "$tmp/log")
   case "$args" in
@@ -200,6 +200,6 @@ SH
   esac
 }
 
-run_test_case "priority-menu ESC/Exit behavior" test_esc_exit_behavior
+_run_test_case "priority-menu ESC/Exit behavior" test_esc_exit_behavior
 
-finish_tests
+_finish_tests

@@ -15,33 +15,33 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  run_spell "spells/menu/priorities" --help
-  assert_success || return 1
-  assert_output_contains "Usage: priorities" || return 1
+  _run_spell "spells/menu/priorities" --help
+  _assert_success || return 1
+  _assert_output_contains "Usage: priorities" || return 1
 }
 
 test_help_h_flag() {
-  run_spell "spells/menu/priorities" -h
-  assert_success || return 1
-  assert_output_contains "Usage: priorities" || return 1
+  _run_spell "spells/menu/priorities" -h
+  _assert_success || return 1
+  _assert_output_contains "Usage: priorities" || return 1
 }
 
 test_help_usage_flag() {
-  run_spell "spells/menu/priorities" --usage
-  assert_success || return 1
-  assert_output_contains "Usage: priorities" || return 1
+  _run_spell "spells/menu/priorities" --usage
+  _assert_success || return 1
+  _assert_output_contains "Usage: priorities" || return 1
 }
 
 test_verbose_flag_accepted() {
   # Test that -v flag with --help is recognized
-  run_spell "spells/menu/priorities" --help
-  assert_success || return 1
+  _run_spell "spells/menu/priorities" --help
+  _assert_success || return 1
   # Verify help mentions verbose mode
-  assert_output_contains "-v" || return 1
+  _assert_output_contains "-v" || return 1
 }
 
 test_no_priorities_exits_gracefully() {
-  tmp=$(make_tempdir)
+  tmp=$(_make_tempdir)
   # Create read-magic stub that says no priorities
   cat >"$tmp/read-magic" <<'SH'
 #!/bin/sh
@@ -56,14 +56,14 @@ SH
   chmod +x "$tmp/exit-label"
   
   # Run in the temp directory
-  run_cmd env PATH="$tmp:$PATH" PWD="$tmp" "$ROOT_DIR/spells/menu/priorities"
+  _run_cmd env PATH="$tmp:$PATH" PWD="$tmp" "$ROOT_DIR/spells/menu/priorities"
   # Should fail with message about no priorities
-  assert_failure || return 1
-  assert_output_contains "No priorities set" || return 1
+  _assert_failure || return 1
+  _assert_output_contains "No priorities set" || return 1
 }
 
 test_invalid_option_produces_error() {
-  run_spell "spells/menu/priorities" -z 2>&1
+  _run_spell "spells/menu/priorities" -z 2>&1
   # Invalid option should produce error message (getopts says "Illegal option")
   # The stderr may capture the error
   case "$OUTPUT$ERROR" in
@@ -72,11 +72,11 @@ test_invalid_option_produces_error() {
   esac
 }
 
-run_test_case "priorities shows usage text" test_help
-run_test_case "priorities shows usage with -h" test_help_h_flag
-run_test_case "priorities shows usage with --usage" test_help_usage_flag
-run_test_case "priorities accepts -v flag" test_verbose_flag_accepted
-run_test_case "priorities exits when no priorities set" test_no_priorities_exits_gracefully
-run_test_case "priorities produces error for invalid options" test_invalid_option_produces_error
+_run_test_case "priorities shows usage text" test_help
+_run_test_case "priorities shows usage with -h" test_help_h_flag
+_run_test_case "priorities shows usage with --usage" test_help_usage_flag
+_run_test_case "priorities accepts -v flag" test_verbose_flag_accepted
+_run_test_case "priorities exits when no priorities set" test_no_priorities_exits_gracefully
+_run_test_case "priorities produces error for invalid options" test_invalid_option_produces_error
 
-finish_tests
+_finish_tests

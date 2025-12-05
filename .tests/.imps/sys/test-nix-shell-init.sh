@@ -17,7 +17,7 @@ export WIZARDRY_SKIP_NIX_REBUILD=1
 export WIZARDRY_SKIP_CONFIRM=1
 
 test_nix_shell_init_add_creates_block() {
-  tmpdir=$(make_tempdir)
+  tmpdir=$(_make_tempdir)
   nix_file="$tmpdir/test.nix"
   
   # Create minimal nix file
@@ -45,7 +45,7 @@ test_nix_shell_init_add_creates_block() {
 }
 
 test_nix_shell_init_add_is_idempotent() {
-  tmpdir=$(make_tempdir)
+  tmpdir=$(_make_tempdir)
   nix_file="$tmpdir/test.nix"
   
   # Create minimal nix file
@@ -65,7 +65,7 @@ test_nix_shell_init_add_is_idempotent() {
 }
 
 test_nix_shell_init_status_returns_correct_result() {
-  tmpdir=$(make_tempdir)
+  tmpdir=$(_make_tempdir)
   nix_file="$tmpdir/test.nix"
   
   # Create minimal nix file
@@ -88,7 +88,7 @@ test_nix_shell_init_status_returns_correct_result() {
 }
 
 test_nix_shell_init_remove_clears_block() {
-  tmpdir=$(make_tempdir)
+  tmpdir=$(_make_tempdir)
   nix_file="$tmpdir/test.nix"
   
   # Create minimal nix file
@@ -114,7 +114,7 @@ test_nix_shell_init_remove_clears_block() {
 }
 
 test_nix_shell_init_zsh_uses_correct_option() {
-  tmpdir=$(make_tempdir)
+  tmpdir=$(_make_tempdir)
   nix_file="$tmpdir/test.nix"
   
   # Create minimal nix file
@@ -131,7 +131,7 @@ test_nix_shell_init_zsh_uses_correct_option() {
 }
 
 test_nix_shell_init_creates_file_if_missing() {
-  tmpdir=$(make_tempdir)
+  tmpdir=$(_make_tempdir)
   nix_file="$tmpdir/subdir/test.nix"
   
   # File doesn't exist yet
@@ -149,7 +149,7 @@ test_nix_shell_init_creates_file_if_missing() {
 }
 
 test_nix_shell_init_multiline_code() {
-  tmpdir=$(make_tempdir)
+  tmpdir=$(_make_tempdir)
   nix_file="$tmpdir/test.nix"
   
   # Create minimal nix file
@@ -189,19 +189,19 @@ test_nix_shell_init_requires_file() {
   return 0
 }
 
-run_test_case "nix-shell-init add creates block" test_nix_shell_init_add_creates_block
-run_test_case "nix-shell-init add is idempotent" test_nix_shell_init_add_is_idempotent
-run_test_case "nix-shell-init status returns correct result" test_nix_shell_init_status_returns_correct_result
-run_test_case "nix-shell-init remove clears block" test_nix_shell_init_remove_clears_block
-run_test_case "nix-shell-init zsh uses correct option" test_nix_shell_init_zsh_uses_correct_option
-run_test_case "nix-shell-init creates file if missing" test_nix_shell_init_creates_file_if_missing
-run_test_case "nix-shell-init handles multiline code" test_nix_shell_init_multiline_code
-run_test_case "nix-shell-init requires action" test_nix_shell_init_requires_action
-run_test_case "nix-shell-init requires name" test_nix_shell_init_requires_name
-run_test_case "nix-shell-init requires file" test_nix_shell_init_requires_file
+_run_test_case "nix-shell-init add creates block" test_nix_shell_init_add_creates_block
+_run_test_case "nix-shell-init add is idempotent" test_nix_shell_init_add_is_idempotent
+_run_test_case "nix-shell-init status returns correct result" test_nix_shell_init_status_returns_correct_result
+_run_test_case "nix-shell-init remove clears block" test_nix_shell_init_remove_clears_block
+_run_test_case "nix-shell-init zsh uses correct option" test_nix_shell_init_zsh_uses_correct_option
+_run_test_case "nix-shell-init creates file if missing" test_nix_shell_init_creates_file_if_missing
+_run_test_case "nix-shell-init handles multiline code" test_nix_shell_init_multiline_code
+_run_test_case "nix-shell-init requires action" test_nix_shell_init_requires_action
+_run_test_case "nix-shell-init requires name" test_nix_shell_init_requires_name
+_run_test_case "nix-shell-init requires file" test_nix_shell_init_requires_file
 
 test_nix_shell_init_escapes_special_chars() {
-  tmpdir=$(make_tempdir)
+  tmpdir=$(_make_tempdir)
   nix_file="$tmpdir/test.nix"
   
   # Create minimal nix file
@@ -224,11 +224,11 @@ test_nix_shell_init_escapes_special_chars() {
   fi
 }
 
-run_test_case "nix-shell-init escapes special chars" test_nix_shell_init_escapes_special_chars
+_run_test_case "nix-shell-init escapes special chars" test_nix_shell_init_escapes_special_chars
 
 # Test that only content lines are marked, not the opening/closing nix syntax
 test_nix_shell_init_only_marks_content_lines() {
-  tmpdir=$(make_tempdir)
+  tmpdir=$(_make_tempdir)
   nix_file="$tmpdir/test.nix"
   
   # Create minimal nix file
@@ -270,11 +270,11 @@ test_nix_shell_init_only_marks_content_lines() {
   fi
 }
 
-run_test_case "nix-shell-init only marks content lines" test_nix_shell_init_only_marks_content_lines
+_run_test_case "nix-shell-init only marks content lines" test_nix_shell_init_only_marks_content_lines
 
 # Test inserting content into an existing interactiveShellInit block
 test_nix_shell_init_inserts_into_existing_block() {
-  tmpdir=$(make_tempdir)
+  tmpdir=$(_make_tempdir)
   nix_file="$tmpdir/test.nix"
   
   # Create nix file with existing interactiveShellInit block
@@ -305,6 +305,6 @@ EOF
   fi
 }
 
-run_test_case "nix-shell-init inserts into existing block" test_nix_shell_init_inserts_into_existing_block
+_run_test_case "nix-shell-init inserts into existing block" test_nix_shell_init_inserts_into_existing_block
 
-finish_tests
+_finish_tests

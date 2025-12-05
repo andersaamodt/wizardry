@@ -20,23 +20,23 @@ SCRIPT
   PATH="$stub_dir:$PATH"
   export PATH
 
-  run_cmd "$ROOT_DIR/spells/install/core/install-checkbashisms"
-  assert_success || return 1
-  assert_output_contains "checkbashisms is already installed." || return 1
+  _run_cmd "$ROOT_DIR/spells/install/core/install-checkbashisms"
+  _assert_success || return 1
+  _assert_output_contains "checkbashisms is already installed." || return 1
 }
 
 spell_has_content() {
   [ -s "$ROOT_DIR/spells/install/core/install-checkbashisms" ]
 }
 
-run_test_case "install-checkbashisms exits when tool is present" creates_no_install_when_present
-run_test_case "install-checkbashisms has content" spell_has_content
+_run_test_case "install-checkbashisms exits when tool is present" creates_no_install_when_present
+_run_test_case "install-checkbashisms has content" spell_has_content
 
 
 shows_help() {
-  run_spell spells/install/core/install-checkbashisms --help
+  _run_spell spells/install/core/install-checkbashisms --help
   true
 }
 
-run_test_case "install-checkbashisms shows help" shows_help
-finish_tests
+_run_test_case "install-checkbashisms shows help" shows_help
+_finish_tests

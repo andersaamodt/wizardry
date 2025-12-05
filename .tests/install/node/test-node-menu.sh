@@ -13,7 +13,7 @@ spell_is_executable() {
   [ -x "$ROOT_DIR/spells/install/node/node-menu" ]
 }
 
-run_test_case "install/node/node-menu is executable" spell_is_executable
+_run_test_case "install/node/node-menu is executable" spell_is_executable
 
 make_stub_menu() {
   tmp=$1
@@ -26,7 +26,7 @@ SHI
 }
 
 menu_shows_install_when_node_missing() {
-  tmp=$(make_tempdir)
+  tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   cat >"$tmp/exit-label" <<'SHI'
 #!/bin/sh
@@ -42,11 +42,11 @@ SHI
 
   MENU_LOG="$tmp/menu.log"
 
-  run_cmd env PATH="$tmp:$ROOT_DIR/spells/cantrips" MENU_LOG="$MENU_LOG" \
+  _run_cmd env PATH="$tmp:$ROOT_DIR/spells/cantrips" MENU_LOG="$MENU_LOG" \
     "$ROOT_DIR/spells/install/node/node-menu"
 
-  assert_success || return 1
-  assert_path_exists "$MENU_LOG" || return 1
+  _assert_success || return 1
+  _assert_path_exists "$MENU_LOG" || return 1
   content=$(cat "$MENU_LOG")
   case "$content" in
     *"Install Node.js%install-node"* ) : ;;
@@ -58,10 +58,10 @@ SHI
   esac
 }
 
-run_test_case "node-menu shows install flow when Node.js is absent" menu_shows_install_when_node_missing
+_run_test_case "node-menu shows install flow when Node.js is absent" menu_shows_install_when_node_missing
 
 menu_places_uninstall_before_exit_when_installed() {
-  tmp=$(make_tempdir)
+  tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
 
   cat >"$tmp/exit-label" <<'SHI'
@@ -122,11 +122,11 @@ SHI
   chmod +x "$tmp/is-service-running"
 
   MENU_LOG="$tmp/menu.log"
-  run_cmd env PATH="$tmp:$ROOT_DIR/spells/cantrips" MENU_LOG="$MENU_LOG" \
+  _run_cmd env PATH="$tmp:$ROOT_DIR/spells/cantrips" MENU_LOG="$MENU_LOG" \
     "$ROOT_DIR/spells/install/node/node-menu"
 
-  assert_success || return 1
-  assert_path_exists "$MENU_LOG" || return 1
+  _assert_success || return 1
+  _assert_path_exists "$MENU_LOG" || return 1
 
   # Skip the title; inspect menu entries
   entries=$(tail -n +2 "$MENU_LOG")
@@ -154,6 +154,6 @@ SHI
   esac
 }
 
-run_test_case "node-menu orders uninstall before exit and surfaces node helpers" menu_places_uninstall_before_exit_when_installed
+_run_test_case "node-menu orders uninstall before exit and surfaces node helpers" menu_places_uninstall_before_exit_when_installed
 
-finish_tests
+_finish_tests

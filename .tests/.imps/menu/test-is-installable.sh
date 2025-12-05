@@ -43,31 +43,31 @@ SPELL
 
 test_detects_installable_spell() {
   spell=$(create_installable_spell)
-  run_spell spells/.imps/menu/is-installable "$spell"
+  _run_spell spells/.imps/menu/is-installable "$spell"
   rm -f "$spell"
-  assert_success
+  _assert_success
 }
 
 test_rejects_noninstallable_spell() {
   spell=$(create_noninstallable_spell)
-  run_spell spells/.imps/menu/is-installable "$spell"
+  _run_spell spells/.imps/menu/is-installable "$spell"
   rm -f "$spell"
-  assert_failure
+  _assert_failure
 }
 
 test_fails_for_missing_file() {
-  run_spell spells/.imps/menu/is-installable "/nonexistent/path/to/spell"
-  assert_failure
+  _run_spell spells/.imps/menu/is-installable "/nonexistent/path/to/spell"
+  _assert_failure
 }
 
 test_fails_for_empty_argument() {
-  run_spell spells/.imps/menu/is-installable ""
-  assert_failure
+  _run_spell spells/.imps/menu/is-installable ""
+  _assert_failure
 }
 
 test_fails_for_no_argument() {
-  run_spell spells/.imps/menu/is-installable
-  assert_failure
+  _run_spell spells/.imps/menu/is-installable
+  _assert_failure
 }
 
 test_detects_indented_install_function() {
@@ -81,16 +81,16 @@ test_detects_indented_install_function() {
   }
 SPELL
   chmod +x "$tmpfile"
-  run_spell spells/.imps/menu/is-installable "$tmpfile"
+  _run_spell spells/.imps/menu/is-installable "$tmpfile"
   rm -f "$tmpfile"
-  assert_success
+  _assert_success
 }
 
-run_test_case "is-installable detects spell with install()" test_detects_installable_spell
-run_test_case "is-installable rejects spell without install()" test_rejects_noninstallable_spell
-run_test_case "is-installable fails for missing file" test_fails_for_missing_file
-run_test_case "is-installable fails for empty argument" test_fails_for_empty_argument
-run_test_case "is-installable fails for no argument" test_fails_for_no_argument
-run_test_case "is-installable detects indented install function" test_detects_indented_install_function
+_run_test_case "is-installable detects spell with install()" test_detects_installable_spell
+_run_test_case "is-installable rejects spell without install()" test_rejects_noninstallable_spell
+_run_test_case "is-installable fails for missing file" test_fails_for_missing_file
+_run_test_case "is-installable fails for empty argument" test_fails_for_empty_argument
+_run_test_case "is-installable fails for no argument" test_fails_for_no_argument
+_run_test_case "is-installable detects indented install function" test_detects_indented_install_function
 
-finish_tests
+_finish_tests

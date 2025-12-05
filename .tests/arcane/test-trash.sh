@@ -21,23 +21,23 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 make_stub_dir() {
-  dir=$(make_tempdir)
+  dir=$(_make_tempdir)
   printf '%s\n' "$dir"
 }
 
 test_help() {
-  run_spell "spells/arcane/trash" --help
-  assert_success && assert_output_contains "Usage: trash"
+  _run_spell "spells/arcane/trash" --help
+  _assert_success && _assert_output_contains "Usage: trash"
 }
 
 test_no_arguments() {
-  run_spell "spells/arcane/trash"
-  assert_failure && assert_error_contains "missing file operand"
+  _run_spell "spells/arcane/trash"
+  _assert_failure && _assert_error_contains "missing file operand"
 }
 
 test_unknown_option() {
-  run_spell "spells/arcane/trash" --unknown
-  assert_failure && assert_error_contains "unknown option"
+  _run_spell "spells/arcane/trash" --unknown
+  _assert_failure && _assert_error_contains "unknown option"
 }
 
 test_nonexistent_file() {
@@ -49,8 +49,8 @@ printf 'gio called\n' >&2
 exit 0
 STUB
   chmod +x "$stub/gio"
-  PATH="$stub:/bin:/usr/bin" run_spell "spells/arcane/trash" "$WIZARDRY_TMPDIR/does_not_exist"
-  assert_failure && assert_error_contains "No such file or directory"
+  PATH="$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" "$WIZARDRY_TMPDIR/does_not_exist"
+  _assert_failure && _assert_error_contains "No such file or directory"
 }
 
 test_nonexistent_file_with_force() {
@@ -60,8 +60,8 @@ test_nonexistent_file_with_force() {
 exit 0
 STUB
   chmod +x "$stub/gio"
-  PATH="$stub:/bin:/usr/bin" run_spell "spells/arcane/trash" -f "$WIZARDRY_TMPDIR/does_not_exist"
-  assert_success
+  PATH="$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" -f "$WIZARDRY_TMPDIR/does_not_exist"
+  _assert_success
 }
 
 test_directory_without_recursive() {
@@ -73,8 +73,8 @@ test_directory_without_recursive() {
 exit 0
 STUB
   chmod +x "$stub/gio"
-  PATH="$stub:/bin:/usr/bin" run_spell "spells/arcane/trash" "$target_dir"
-  assert_failure && assert_error_contains "Is a directory"
+  PATH="$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" "$target_dir"
+  _assert_failure && _assert_error_contains "Is a directory"
 }
 
 test_directory_with_recursive() {
@@ -88,8 +88,8 @@ printf '%s\n' "\$*" >>"$log_file"
 exit 0
 STUB
   chmod +x "$stub/gio"
-  PATH="$stub:/bin:/usr/bin" run_spell "spells/arcane/trash" -r "$target_dir"
-  assert_success && assert_file_contains "$log_file" "trash"
+  PATH="$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" -r "$target_dir"
+  _assert_success && _assert_file_contains "$log_file" "trash"
 }
 
 test_calls_gio_on_linux() {
@@ -109,8 +109,8 @@ STUB
 printf 'Linux\n'
 STUB
   chmod +x "$stub/uname"
-  PATH="$stub:/bin:/usr/bin" run_spell "spells/arcane/trash" "$target_file"
-  assert_success && assert_file_contains "$log_file" "trash"
+  PATH="$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" "$target_file"
+  _assert_success && _assert_file_contains "$log_file" "trash"
 }
 
 test_calls_osascript_on_macos() {
@@ -131,8 +131,8 @@ printf 'Darwin\n'
 STUB
   chmod +x "$stub/uname"
   # Remove gio and trash-put from path to ensure osascript is chosen
-  PATH="$stub:/bin:/usr/bin" run_spell "spells/arcane/trash" "$target_file"
-  assert_success && assert_file_contains "$log_file" "Finder"
+  PATH="$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" "$target_file"
+  _assert_success && _assert_file_contains "$log_file" "Finder"
 }
 
 test_calls_trash_put_fallback() {
@@ -153,9 +153,9 @@ printf 'Linux\n'
 STUB
   chmod +x "$stub/uname"
   # Symlink essential utilities but NOT gio, so trash-put is used as fallback
-  link_tools "$stub" sh cat printf test env basename dirname pwd command
-  PATH="$stub" run_spell "spells/arcane/trash" "$target_file"
-  assert_success && assert_file_contains "$log_file" "$target_file"
+  _link_tools "$stub" sh cat printf test env basename dirname pwd command
+  PATH="$stub" _run_spell "spells/arcane/trash" "$target_file"
+  _assert_success && _assert_file_contains "$log_file" "$target_file"
 }
 
 test_multiple_files() {
@@ -171,8 +171,8 @@ printf '%s\n' "\$*" >>"$log_file"
 exit 0
 STUB
   chmod +x "$stub/gio"
-  PATH="$stub:/bin:/usr/bin" run_spell "spells/arcane/trash" "$file1" "$file2"
-  assert_success && assert_file_contains "$log_file" "file1.txt" && assert_file_contains "$log_file" "file2.txt"
+  PATH="$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" "$file1" "$file2"
+  _assert_success && _assert_file_contains "$log_file" "file1.txt" && _assert_file_contains "$log_file" "file2.txt"
 }
 
 test_combined_flags() {
@@ -186,8 +186,8 @@ printf '%s\n' "\$*" >>"$log_file"
 exit 0
 STUB
   chmod +x "$stub/gio"
-  PATH="$stub:/bin:/usr/bin" run_spell "spells/arcane/trash" -rf "$target_dir" "$WIZARDRY_TMPDIR/nonexistent"
-  assert_success && assert_file_contains "$log_file" "testdir"
+  PATH="$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" -rf "$target_dir" "$WIZARDRY_TMPDIR/nonexistent"
+  _assert_success && _assert_file_contains "$log_file" "testdir"
 }
 
 test_no_trash_utility() {
@@ -201,22 +201,22 @@ printf 'FreeBSD\n'
 STUB
   chmod +x "$stub/uname"
   # Provide only basic utilities, no trash commands
-  link_tools "$stub" sh cat printf test env basename dirname pwd
-  PATH="$stub" run_spell "spells/arcane/trash" "$target_file"
-  assert_failure && assert_error_contains "no supported trash utility"
+  _link_tools "$stub" sh cat printf test env basename dirname pwd
+  PATH="$stub" _run_spell "spells/arcane/trash" "$target_file"
+  _assert_failure && _assert_error_contains "no supported trash utility"
 }
 
-run_test_case "trash prints usage" test_help
-run_test_case "trash errors on no arguments" test_no_arguments
-run_test_case "trash errors on unknown option" test_unknown_option
-run_test_case "trash errors on nonexistent file" test_nonexistent_file
-run_test_case "trash ignores nonexistent with -f" test_nonexistent_file_with_force
-run_test_case "trash errors on directory without -r" test_directory_without_recursive
-run_test_case "trash succeeds on directory with -r" test_directory_with_recursive
-run_test_case "trash calls gio on Linux" test_calls_gio_on_linux
-run_test_case "trash calls osascript on macOS" test_calls_osascript_on_macos
-run_test_case "trash calls trash-put as fallback" test_calls_trash_put_fallback
-run_test_case "trash handles multiple files" test_multiple_files
-run_test_case "trash handles combined flags -rf" test_combined_flags
-run_test_case "trash errors when no trash utility available" test_no_trash_utility
-finish_tests
+_run_test_case "trash prints usage" test_help
+_run_test_case "trash errors on no arguments" test_no_arguments
+_run_test_case "trash errors on unknown option" test_unknown_option
+_run_test_case "trash errors on nonexistent file" test_nonexistent_file
+_run_test_case "trash ignores nonexistent with -f" test_nonexistent_file_with_force
+_run_test_case "trash errors on directory without -r" test_directory_without_recursive
+_run_test_case "trash succeeds on directory with -r" test_directory_with_recursive
+_run_test_case "trash calls gio on Linux" test_calls_gio_on_linux
+_run_test_case "trash calls osascript on macOS" test_calls_osascript_on_macos
+_run_test_case "trash calls trash-put as fallback" test_calls_trash_put_fallback
+_run_test_case "trash handles multiple files" test_multiple_files
+_run_test_case "trash handles combined flags -rf" test_combined_flags
+_run_test_case "trash errors when no trash utility available" test_no_trash_utility
+_finish_tests

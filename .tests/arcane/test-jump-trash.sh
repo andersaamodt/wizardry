@@ -15,12 +15,12 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  run_spell "spells/arcane/jump-trash" --help
-  assert_success && assert_output_contains "Usage: jump-trash"
+  _run_spell "spells/arcane/jump-trash" --help
+  _assert_success && _assert_output_contains "Usage: jump-trash"
 }
 
 test_cds_when_sourced() {
-  stub=$(make_tempdir)
+  stub=$(_make_tempdir)
   trash_dir="$stub/Trash"
   mkdir -p "$trash_dir"
 
@@ -32,20 +32,20 @@ STUB
   chmod +x "$stub/detect-trash"
 
   # Source the spell and call the jump_trash function
-  run_cmd sh -c "
+  _run_cmd sh -c "
     PATH='$stub:$PATH'
     export PATH
     . '$ROOT_DIR/spells/arcane/jump-trash'
     jump_trash
     pwd
   "
-  assert_success || return 1
-  assert_output_contains "teleport to the trash" || return 1
-  assert_output_contains "$trash_dir" || return 1
+  _assert_success || return 1
+  _assert_output_contains "teleport to the trash" || return 1
+  _assert_output_contains "$trash_dir" || return 1
 }
 
 test_uses_inline_fallback() {
-  stub=$(make_tempdir)
+  stub=$(_make_tempdir)
   # Create a fake trash dir based on the system's expected location
   # We'll use a custom HOME to control the path
   fake_home="$stub/home"
@@ -60,10 +60,10 @@ STUB
   chmod +x "$stub/uname"
   
   # Provide only basic utilities, no detect-trash
-  link_tools "$stub" sh printf test cd
+  _link_tools "$stub" sh printf test cd
 
   # Source the spell and call the jump_trash function with custom HOME
-  run_cmd sh -c "
+  _run_cmd sh -c "
     PATH='$stub:/bin:/usr/bin'
     HOME='$fake_home'
     export PATH HOME
@@ -71,12 +71,12 @@ STUB
     jump_trash
     pwd
   "
-  assert_success || return 1
-  assert_output_contains "teleport to the trash" || return 1
+  _assert_success || return 1
+  _assert_output_contains "teleport to the trash" || return 1
 }
 
 test_fails_if_trash_dir_missing() {
-  stub=$(make_tempdir)
+  stub=$(_make_tempdir)
   nonexistent_dir="$stub/nonexistent/Trash"
 
   # Create detect-trash stub that returns a nonexistent path
@@ -87,18 +87,18 @@ STUB
   chmod +x "$stub/detect-trash"
 
   # Source and call the jump_trash function
-  run_cmd sh -c "
+  _run_cmd sh -c "
     PATH='$stub:$PATH'
     export PATH
     . '$ROOT_DIR/spells/arcane/jump-trash'
     jump_trash
   "
-  assert_failure || return 1
-  assert_error_contains "trash directory does not exist" || return 1
+  _assert_failure || return 1
+  _assert_error_contains "trash directory does not exist" || return 1
 }
 
 test_jump_trash_function_help() {
-  stub=$(make_tempdir)
+  stub=$(_make_tempdir)
   trash_dir="$stub/Trash"
   mkdir -p "$trash_dir"
 
@@ -109,32 +109,32 @@ STUB
   chmod +x "$stub/detect-trash"
 
   # Test jump_trash function --help
-  run_cmd sh -c "
+  _run_cmd sh -c "
     PATH='$stub:$PATH'
     export PATH
     . '$ROOT_DIR/spells/arcane/jump-trash'
     jump_trash --help
   "
-  assert_success || return 1
-  assert_output_contains "Usage: jump-trash" || return 1
+  _assert_success || return 1
+  _assert_output_contains "Usage: jump-trash" || return 1
 }
 
 test_unknown_option() {
-  run_spell "spells/arcane/jump-trash" --unknown
-  assert_failure && assert_error_contains "unknown option"
+  _run_spell "spells/arcane/jump-trash" --unknown
+  _assert_failure && _assert_error_contains "unknown option"
 }
 
-run_test_case "jump-trash prints usage" test_help
-run_test_case "jump-trash rejects unknown option" test_unknown_option
-run_test_case "jump-trash cds when sourced" test_cds_when_sourced
-run_test_case "jump-trash uses inline fallback without detect-trash" test_uses_inline_fallback
-run_test_case "jump-trash fails if trash dir missing" test_fails_if_trash_dir_missing
-run_test_case "jump_trash function shows help" test_jump_trash_function_help
+_run_test_case "jump-trash prints usage" test_help
+_run_test_case "jump-trash rejects unknown option" test_unknown_option
+_run_test_case "jump-trash cds when sourced" test_cds_when_sourced
+_run_test_case "jump-trash uses inline fallback without detect-trash" test_uses_inline_fallback
+_run_test_case "jump-trash fails if trash dir missing" test_fails_if_trash_dir_missing
+_run_test_case "jump_trash function shows help" test_jump_trash_function_help
 
 test_nixos_uses_nix_format() {
   # Test that on NixOS (nix format), jump-trash calls learn without --rc-file
   # (learn auto-detects rc file and format)
-  stub=$(make_tempdir)
+  stub=$(_make_tempdir)
   fake_home="$stub/home"
   mkdir -p "$fake_home"
   
@@ -168,10 +168,10 @@ exit 0
 STUB
   chmod +x "$stub/ask-yn"
   
-  link_tools "$stub" sh printf grep cat test sed basename command pwd
+  _link_tools "$stub" sh printf grep cat test sed basename command pwd
   
   # Run jump_trash_install
-  run_cmd sh -c "
+  _run_cmd sh -c "
     PATH='$stub:/bin:/usr/bin'
     HOME='$fake_home'
     DETECT_RC_FILE='$stub/detect-rc-file'
@@ -182,7 +182,7 @@ STUB
     . '$ROOT_DIR/spells/arcane/jump-trash'
     jump_trash_install
   "
-  assert_success || return 1
+  _assert_success || return 1
   
   # Check that learn was called with --spell (not --rc-file since learn auto-detects)
   if [ -f "$learn_log" ]; then
@@ -198,7 +198,7 @@ STUB
 
 test_nixos_install_runs_home_manager() {
   # Test that on NixOS (nix format), install runs home-manager switch automatically
-  stub=$(make_tempdir)
+  stub=$(_make_tempdir)
   fake_home="$stub/home"
   mkdir -p "$fake_home"
   
@@ -231,10 +231,10 @@ exit 0
 STUB
   chmod +x "$stub/home-manager"
   
-  link_tools "$stub" sh printf grep cat test sed basename command pwd
+  _link_tools "$stub" sh printf grep cat test sed basename command pwd
   
   # Run jump_trash_install - the spell should call home-manager switch
-  run_cmd sh -c "
+  _run_cmd sh -c "
     PATH='$stub:/bin:/usr/bin'
     HOME='$fake_home'
     DETECT_RC_FILE='$stub/detect-rc-file'
@@ -244,7 +244,7 @@ STUB
     . '$ROOT_DIR/spells/arcane/jump-trash'
     jump_trash_install
   "
-  assert_success || return 1
+  _assert_success || return 1
   
   # Check that home-manager switch was called
   if [ -f "$home_manager_log" ]; then
@@ -260,7 +260,7 @@ STUB
 
 test_nixos_install_skips_rebuild_when_disabled() {
   # Test that WIZARDRY_SKIP_NIX_REBUILD=1 skips the rebuild
-  stub=$(make_tempdir)
+  stub=$(_make_tempdir)
   fake_home="$stub/home"
   mkdir -p "$fake_home"
   
@@ -290,10 +290,10 @@ exit 0
 STUB
   chmod +x "$stub/home-manager"
   
-  link_tools "$stub" sh printf grep cat test sed basename command pwd
+  _link_tools "$stub" sh printf grep cat test sed basename command pwd
   
   # Run install with WIZARDRY_SKIP_NIX_REBUILD=1
-  run_cmd sh -c "
+  _run_cmd sh -c "
     PATH='$stub:/bin:/usr/bin'
     HOME='$fake_home'
     DETECT_RC_FILE='$stub/detect-rc-file'
@@ -304,7 +304,7 @@ STUB
     . '$ROOT_DIR/spells/arcane/jump-trash'
     jump_trash_install
   "
-  assert_success || return 1
+  _assert_success || return 1
   
   # Check that home-manager was NOT called
   if [ -f "$home_manager_log" ]; then
@@ -314,8 +314,8 @@ STUB
   return 0
 }
 
-run_test_case "jump-trash uses nix format on NixOS" test_nixos_uses_nix_format
-run_test_case "jump-trash nixos install runs home-manager" test_nixos_install_runs_home_manager
-run_test_case "jump-trash nixos install skips rebuild when disabled" test_nixos_install_skips_rebuild_when_disabled
+_run_test_case "jump-trash uses nix format on NixOS" test_nixos_uses_nix_format
+_run_test_case "jump-trash nixos install runs home-manager" test_nixos_install_runs_home_manager
+_run_test_case "jump-trash nixos install skips rebuild when disabled" test_nixos_install_skips_rebuild_when_disabled
 
-finish_tests
+_finish_tests

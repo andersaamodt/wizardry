@@ -43,13 +43,13 @@ test_toggle_cd_has_install_and_uninstall() {
 }
 
 test_toggle_cd_installs_when_not_present() {
-  tmp=$(make_tempdir)
+  tmp=$(_make_tempdir)
   # Create an empty rc file without the hook
   : >"$tmp/rc"
   
-  run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/toggle-cd"
-  assert_success || return 1
-  assert_output_contains "cd hook enabled" || return 1
+  _run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/toggle-cd"
+  _assert_success || return 1
+  _assert_output_contains "cd hook enabled" || return 1
   
   # Verify hook was installed
   if ! grep -q ">>> wizardry cd cantrip >>>" "$tmp/rc"; then
@@ -59,16 +59,16 @@ test_toggle_cd_installs_when_not_present() {
 }
 
 test_toggle_cd_uninstalls_when_present() {
-  tmp=$(make_tempdir)
+  tmp=$(_make_tempdir)
   
   # First install the hook
-  run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd" install
-  assert_success || return 1
+  _run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd" install
+  _assert_success || return 1
   
   # Now toggle should uninstall it
-  run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/toggle-cd"
-  assert_success || return 1
-  assert_output_contains "cd hook disabled" || return 1
+  _run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/toggle-cd"
+  _assert_success || return 1
+  _assert_output_contains "cd hook disabled" || return 1
   
   # Verify hook was removed
   if grep -q ">>> wizardry cd cantrip >>>" "$tmp/rc"; then
@@ -78,43 +78,43 @@ test_toggle_cd_uninstalls_when_present() {
 }
 
 test_toggle_cd_help_shows_usage() {
-  run_spell spells/install/mud/toggle-cd --help
-  assert_success || return 1
-  assert_output_contains "Usage:" || return 1
-  assert_output_contains "toggle" || return 1
+  _run_spell spells/install/mud/toggle-cd --help
+  _assert_success || return 1
+  _assert_output_contains "Usage:" || return 1
+  _assert_output_contains "toggle" || return 1
 }
 
 test_toggle_cd_shows_installing_message() {
-  tmp=$(make_tempdir)
+  tmp=$(_make_tempdir)
   # Create an empty rc file without the hook
   : >"$tmp/rc"
   
-  run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/toggle-cd"
-  assert_success || return 1
+  _run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/toggle-cd"
+  _assert_success || return 1
   # Verify it shows the progress message before install
-  assert_output_contains "Installing cd hook" || return 1
+  _assert_output_contains "Installing cd hook" || return 1
 }
 
 test_toggle_cd_shows_uninstalling_message() {
-  tmp=$(make_tempdir)
+  tmp=$(_make_tempdir)
   
   # First install the hook
-  run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd" install
-  assert_success || return 1
+  _run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd" install
+  _assert_success || return 1
   
   # Now toggle should uninstall it and show a progress message
-  run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/toggle-cd"
-  assert_success || return 1
+  _run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/toggle-cd"
+  _assert_success || return 1
   # Verify it shows the progress message before uninstall
-  assert_output_contains "Uninstalling cd hook" || return 1
+  _assert_output_contains "Uninstalling cd hook" || return 1
 }
 
-run_test_case "toggle-cd is executable" test_toggle_cd_is_executable
-run_test_case "toggle-cd requires cd spell" test_toggle_cd_requires_cd_spell
-run_test_case "toggle-cd handles install and uninstall" test_toggle_cd_has_install_and_uninstall
-run_test_case "toggle-cd installs when not present" test_toggle_cd_installs_when_not_present
-run_test_case "toggle-cd uninstalls when present" test_toggle_cd_uninstalls_when_present
-run_test_case "toggle-cd --help shows usage" test_toggle_cd_help_shows_usage
-run_test_case "toggle-cd shows installing message" test_toggle_cd_shows_installing_message
-run_test_case "toggle-cd shows uninstalling message" test_toggle_cd_shows_uninstalling_message
-finish_tests
+_run_test_case "toggle-cd is executable" test_toggle_cd_is_executable
+_run_test_case "toggle-cd requires cd spell" test_toggle_cd_requires_cd_spell
+_run_test_case "toggle-cd handles install and uninstall" test_toggle_cd_has_install_and_uninstall
+_run_test_case "toggle-cd installs when not present" test_toggle_cd_installs_when_not_present
+_run_test_case "toggle-cd uninstalls when present" test_toggle_cd_uninstalls_when_present
+_run_test_case "toggle-cd --help shows usage" test_toggle_cd_help_shows_usage
+_run_test_case "toggle-cd shows installing message" test_toggle_cd_shows_installing_message
+_run_test_case "toggle-cd shows uninstalling message" test_toggle_cd_shows_uninstalling_message
+_finish_tests

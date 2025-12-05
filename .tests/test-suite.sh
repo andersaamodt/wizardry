@@ -522,11 +522,6 @@ test_imps_follow_function_rule() {
     should_skip_file "$name" && continue
     is_posix_shell_script "$imp" || continue
     
-    # Skip test-bootstrap - complex test infrastructure script
-    case "$name" in
-      test-bootstrap) continue ;;
-    esac
-    
     # Count function definitions
     # Pattern matches: name() { or name () {
     func_count=$(grep -cE '^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*[[:space:]]*\(\)[[:space:]]*\{' "$imp" 2>/dev/null) || func_count=0
@@ -612,18 +607,18 @@ test_imps_have_opening_comments() {
 
 # --- Run all test cases ---
 
-run_test_case "no duplicate spell names" test_no_duplicate_spell_names
-run_test_case "menu spells require menu command" test_menu_spells_require_menu
-run_test_case "spells have standard help handlers" test_spells_have_help_usage_handlers
-run_test_case "warn about full paths to spells" test_warn_full_paths_to_spells
-run_test_case "test files have matching spells" test_test_files_have_matching_spells
-run_test_case "tests rely only on imps for helpers" test_tests_use_imps_for_helpers
-run_test_case "scripts using declared globals have set -u" test_scripts_using_globals_have_set_u
-run_test_case "declare-globals has exactly 3 globals" test_declare_globals_count
-run_test_case "no undeclared globals exported" test_no_undeclared_global_exports
-run_test_case "no global declarations outside declare-globals" test_no_global_declarations_outside_declare_globals
-run_test_case "no pseudo-globals stored in rc files" test_no_pseudo_globals_in_rc_files
-run_test_case "imps follow one-function-or-zero rule" test_imps_follow_function_rule
-run_test_case "imps have opening comments" test_imps_have_opening_comments
+_run_test_case "no duplicate spell names" test_no_duplicate_spell_names
+_run_test_case "menu spells require menu command" test_menu_spells_require_menu
+_run_test_case "spells have standard help handlers" test_spells_have_help_usage_handlers
+_run_test_case "warn about full paths to spells" test_warn_full_paths_to_spells
+_run_test_case "test files have matching spells" test_test_files_have_matching_spells
+_run_test_case "tests rely only on imps for helpers" test_tests_use_imps_for_helpers
+_run_test_case "scripts using declared globals have set -u" test_scripts_using_globals_have_set_u
+_run_test_case "declare-globals has exactly 3 globals" test_declare_globals_count
+_run_test_case "no undeclared globals exported" test_no_undeclared_global_exports
+_run_test_case "no global declarations outside declare-globals" test_no_global_declarations_outside_declare_globals
+_run_test_case "no pseudo-globals stored in rc files" test_no_pseudo_globals_in_rc_files
+_run_test_case "imps follow one-function-or-zero rule" test_imps_follow_function_rule
+_run_test_case "imps have opening comments" test_imps_have_opening_comments
 
-finish_tests
+_finish_tests

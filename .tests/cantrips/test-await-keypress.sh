@@ -16,7 +16,7 @@ done
 await_with_buffer() {
   buffer=$1
   shift
-  run_cmd env \
+  _run_cmd env \
     AWAIT_KEYPRESS_BUFFER_FILE="$buffer" \
     AWAIT_KEYPRESS_SKIP_STTY=1 \
     AWAIT_KEYPRESS_DEVICE=/dev/null \
@@ -58,15 +58,15 @@ buffers_partial_escape_sequence() {
   [ ! -s "$partial_file" ] || { TEST_FAILURE_REASON="buffer should be cleared after completion"; return 1; }
 }
 
-run_test_case "prints enter for newline" prints_enter_for_newline
-run_test_case "prints literal text from bytes" prints_literal_text
-run_test_case "buffers partial escape sequence until complete" buffers_partial_escape_sequence
+_run_test_case "prints enter for newline" prints_enter_for_newline
+_run_test_case "prints literal text from bytes" prints_literal_text
+_run_test_case "buffers partial escape sequence until complete" buffers_partial_escape_sequence
 
 shows_help() {
-  run_spell spells/cantrips/await-keypress --help
+  _run_spell spells/cantrips/await-keypress --help
   # Note: spell may not have --help implemented yet
   true
 }
 
-run_test_case "await-keypress shows help" shows_help
-finish_tests
+_run_test_case "await-keypress shows help" shows_help
+_finish_tests

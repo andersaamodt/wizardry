@@ -32,7 +32,7 @@ SH
 }
 
 test_install_menu_prefers_install_root_commands() {
-  tmp=$(make_tempdir)
+  tmp=$(_make_tempdir)
   make_stub_menu_env "$tmp"
   make_stub_require "$tmp"
 
@@ -64,10 +64,10 @@ SH
   chmod +x "$install_root/beta-menu"
 
   MENU_LOG="$tmp/log"
-  run_cmd env PATH="$tmp:$PATH" INSTALL_MENU_ROOT="$install_root" INSTALL_MENU_DIRS="alpha beta gamma" MENU_LOG="$MENU_LOG" "$ROOT_DIR/spells/menu/install-menu"
+  _run_cmd env PATH="$tmp:$PATH" INSTALL_MENU_ROOT="$install_root" INSTALL_MENU_DIRS="alpha beta gamma" MENU_LOG="$MENU_LOG" "$ROOT_DIR/spells/menu/install-menu"
 
-  assert_success && assert_path_exists "$MENU_LOG" && \
-    assert_output_contains "Install Menu:"
+  _assert_success && _assert_path_exists "$MENU_LOG" && \
+    _assert_output_contains "Install Menu:"
 
   menu_args=$(cat "$MENU_LOG")
 
@@ -88,15 +88,15 @@ SH
 }
 
 test_install_menu_errors_when_empty() {
-  tmp=$(make_tempdir)
+  tmp=$(_make_tempdir)
   make_stub_menu_env "$tmp"
   make_stub_require "$tmp"
-  run_cmd env PATH="$tmp:$PATH" INSTALL_MENU_DIRS=" " MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/install-menu"
-  assert_failure && assert_error_contains "no installable spells"
+  _run_cmd env PATH="$tmp:$PATH" INSTALL_MENU_DIRS=" " MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/install-menu"
+  _assert_failure && _assert_error_contains "no installable spells"
 }
 
 test_install_menu_builds_entries_with_status() {
-  tmp=$(make_tempdir)
+  tmp=$(_make_tempdir)
   make_stub_menu_env "$tmp"
   make_stub_require "$tmp"
   cat >"$tmp/alpha-status" <<'SH'
@@ -110,9 +110,9 @@ exit 0
 SH
   chmod +x "$tmp/alpha-menu"
   MENU_LOG="$tmp/log"
-  run_cmd env PATH="$tmp:$PATH" INSTALL_MENU_DIRS="alpha beta" MENU_LOG="$MENU_LOG" "$ROOT_DIR/spells/menu/install-menu"
-  assert_success && assert_path_exists "$MENU_LOG" && \
-    assert_output_contains "Install Menu:"
+  _run_cmd env PATH="$tmp:$PATH" INSTALL_MENU_DIRS="alpha beta" MENU_LOG="$MENU_LOG" "$ROOT_DIR/spells/menu/install-menu"
+  _assert_success && _assert_path_exists "$MENU_LOG" && \
+    _assert_output_contains "Install Menu:"
   menu_args=$(cat "$MENU_LOG")
   case "$menu_args" in
     *"alpha - ready%alpha-menu"* ) : ;; 
@@ -120,13 +120,13 @@ SH
   esac
 }
 
-run_test_case "install-menu fails when empty" test_install_menu_errors_when_empty
-run_test_case "install-menu builds entries from directories" test_install_menu_builds_entries_with_status
-run_test_case "install-menu prefers spells in the install root" test_install_menu_prefers_install_root_commands
+_run_test_case "install-menu fails when empty" test_install_menu_errors_when_empty
+_run_test_case "install-menu builds entries from directories" test_install_menu_builds_entries_with_status
+_run_test_case "install-menu prefers spells in the install root" test_install_menu_prefers_install_root_commands
 
 # Test ESC and Exit behavior - menu exits properly when escape status returned
 test_esc_exit_behavior() {
-  tmp=$(make_tempdir)
+  tmp=$(_make_tempdir)
   make_stub_menu_env "$tmp"
   make_stub_require "$tmp"
   
@@ -147,8 +147,8 @@ SH
   chmod +x "$install_root/test/test-status"
   
   
-  run_cmd env PATH="$tmp:$PATH" INSTALL_MENU_ROOT="$install_root" INSTALL_MENU_DIRS="test" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/install-menu"
-  assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
+  _run_cmd env PATH="$tmp:$PATH" INSTALL_MENU_ROOT="$install_root" INSTALL_MENU_DIRS="test" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/install-menu"
+  _assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
   
   args=$(cat "$tmp/log")
   case "$args" in
@@ -158,10 +158,10 @@ SH
   
 }
 
-run_test_case "install-menu ESC/Exit behavior" test_esc_exit_behavior
+_run_test_case "install-menu ESC/Exit behavior" test_esc_exit_behavior
 
 shows_help() {
-  tmp=$(make_tempdir)
+  tmp=$(_make_tempdir)
   make_stub_menu_env "$tmp"
   make_stub_require "$tmp"
   cat >"$tmp/exit-label" <<'SH'
@@ -176,16 +176,16 @@ SH
 echo ready
 SH
   chmod +x "$install_root/test/test-status"
-  run_cmd env PATH="$tmp:$PATH" INSTALL_MENU_ROOT="$install_root" INSTALL_MENU_DIRS="test" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/install-menu" --help
+  _run_cmd env PATH="$tmp:$PATH" INSTALL_MENU_ROOT="$install_root" INSTALL_MENU_DIRS="test" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/install-menu" --help
   # Note: spell may not have --help implemented yet
   true
 }
 
-run_test_case "install-menu accepts --help" shows_help
+_run_test_case "install-menu accepts --help" shows_help
 
 # Test that no exit message is printed when ESC or Exit is used
 test_no_exit_message_on_esc() {
-  tmp=$(make_tempdir)
+  tmp=$(_make_tempdir)
   make_stub_menu_env "$tmp"
   make_stub_require "$tmp"
   
@@ -203,8 +203,8 @@ echo ready
 SH
   chmod +x "$install_root/test/test-status"
   
-  run_cmd env PATH="$tmp:$PATH" INSTALL_MENU_ROOT="$install_root" INSTALL_MENU_DIRS="test" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/install-menu"
-  assert_success || return 1
+  _run_cmd env PATH="$tmp:$PATH" INSTALL_MENU_ROOT="$install_root" INSTALL_MENU_DIRS="test" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/install-menu"
+  _assert_success || return 1
   
   # Verify no "Exiting" message appears in stderr
   case "$ERROR" in
@@ -216,11 +216,11 @@ SH
   return 0
 }
 
-run_test_case "install-menu no exit message on ESC" test_no_exit_message_on_esc
+_run_test_case "install-menu no exit message on ESC" test_no_exit_message_on_esc
 
 # Test that nested menu return shows proper blank line spacing
 test_nested_menu_spacing() {
-  tmp=$(make_tempdir)
+  tmp=$(_make_tempdir)
   
   # Create a menu that records when it's called, and on second call sends TERM
   cat >"$tmp/menu" <<'SH'
@@ -252,14 +252,14 @@ SH
   chmod +x "$install_root/test/test-status"
   
   INVOCATION_FILE="$tmp/invocations"
-  run_cmd env PATH="$tmp:$PATH" INSTALL_MENU_ROOT="$install_root" INSTALL_MENU_DIRS="test" MENU_LOG="$tmp/log" INVOCATION_FILE="$INVOCATION_FILE" "$ROOT_DIR/spells/menu/install-menu"
-  assert_success || return 1
+  _run_cmd env PATH="$tmp:$PATH" INSTALL_MENU_ROOT="$install_root" INSTALL_MENU_DIRS="test" MENU_LOG="$tmp/log" INVOCATION_FILE="$INVOCATION_FILE" "$ROOT_DIR/spells/menu/install-menu"
+  _assert_success || return 1
   
   # The menu loop should have run once (on first_run, no leading newline)
   # This ensures consistent spacing behavior
   return 0
 }
 
-run_test_case "install-menu nested spacing behavior" test_nested_menu_spacing
+_run_test_case "install-menu nested spacing behavior" test_nested_menu_spacing
 
-finish_tests
+_finish_tests

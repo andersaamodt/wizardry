@@ -13,31 +13,31 @@ spell_is_executable() {
   [ -x "$ROOT_DIR/spells/install/node/node-status" ]
 }
 
-run_test_case "install/node/node-status is executable" spell_is_executable
+_run_test_case "install/node/node-status is executable" spell_is_executable
 
 renders_usage_information() {
-  run_cmd "$ROOT_DIR/spells/install/node/node-status" --help
+  _run_cmd "$ROOT_DIR/spells/install/node/node-status" --help
 
-  assert_success || return 1
-  assert_error_contains "Usage: node-status" || return 1
-  assert_error_contains "Reports whether Node.js is installed" || return 1
+  _assert_success || return 1
+  _assert_error_contains "Usage: node-status" || return 1
+  _assert_error_contains "Reports whether Node.js is installed" || return 1
 }
 
-run_test_case "node-status prints usage with --help" renders_usage_information
+_run_test_case "node-status prints usage with --help" renders_usage_information
 
 reports_not_installed_without_node_binary() {
-  tmp=$(make_tempdir)
-  run_cmd env PATH="$tmp:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps:$ROOT_DIR/spells/.imps/menu" \
+  tmp=$(_make_tempdir)
+  _run_cmd env PATH="$tmp:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps:$ROOT_DIR/spells/.imps/menu" \
     "$ROOT_DIR/spells/install/node/node-status"
 
-  assert_success || return 1
-  assert_output_contains "not installed" || return 1
+  _assert_success || return 1
+  _assert_output_contains "not installed" || return 1
 }
 
-run_test_case "node-status reports not installed when node is absent" reports_not_installed_without_node_binary
+_run_test_case "node-status reports not installed when node is absent" reports_not_installed_without_node_binary
 
 reports_installed_when_node_exists() {
-  tmp=$(make_tempdir)
+  tmp=$(_make_tempdir)
   cat >"$tmp/node" <<'SHI'
 #!/bin/sh
 if [ "$1" = "--version" ]; then
@@ -48,17 +48,17 @@ exit 0
 SHI
   chmod +x "$tmp/node"
 
-  run_cmd env PATH="$tmp:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps:$ROOT_DIR/spells/.imps/menu" \
+  _run_cmd env PATH="$tmp:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps:$ROOT_DIR/spells/.imps/menu" \
     "$ROOT_DIR/spells/install/node/node-status"
 
-  assert_success || return 1
-  assert_output_contains "installed, npm missing" || return 1
+  _assert_success || return 1
+  _assert_output_contains "installed, npm missing" || return 1
 }
 
-run_test_case "node-status flags missing npm" reports_installed_when_node_exists
+_run_test_case "node-status flags missing npm" reports_installed_when_node_exists
 
 reports_running_service_state() {
-  tmp=$(make_tempdir)
+  tmp=$(_make_tempdir)
   cat >"$tmp/node" <<'SHI'
 #!/bin/sh
 if [ "$1" = "--version" ]; then
@@ -91,13 +91,13 @@ exit 0
 SHI
   chmod +x "$tmp/is-service-running"
 
-  run_cmd env PATH="$tmp:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps:$ROOT_DIR/spells/.imps/menu" \
+  _run_cmd env PATH="$tmp:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps:$ROOT_DIR/spells/.imps/menu" \
     "$ROOT_DIR/spells/install/node/node-status"
 
-  assert_success || return 1
-  assert_output_contains "service running" || return 1
+  _assert_success || return 1
+  _assert_output_contains "service running" || return 1
 }
 
-run_test_case "node-status reports running service when detectors succeed" reports_running_service_state
+_run_test_case "node-status reports running service when detectors succeed" reports_running_service_state
 
-finish_tests
+_finish_tests

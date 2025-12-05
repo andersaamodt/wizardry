@@ -11,7 +11,7 @@ done
 # Test: invoke-wizardry is sourceable without errors
 test_sourceable() {
   # Create a test script that sources invoke-wizardry
-  tmpdir=$(make_tempdir)
+  tmpdir=$(_make_tempdir)
   cat > "$tmpdir/test-source.sh" << EOF
 #!/bin/sh
 WIZARDRY_DIR="$ROOT_DIR"
@@ -22,14 +22,14 @@ printf 'sourced successfully\n'
 EOF
   chmod +x "$tmpdir/test-source.sh"
   
-  run_cmd sh "$tmpdir/test-source.sh"
-  assert_success || return 1
-  assert_output_contains "sourced successfully" || return 1
+  _run_cmd sh "$tmpdir/test-source.sh"
+  _assert_success || return 1
+  _assert_output_contains "sourced successfully" || return 1
 }
 
 # Test: invoke-wizardry sets WIZARDRY_DIR when not already set
 test_sets_wizardry_dir() {
-  tmpdir=$(make_tempdir)
+  tmpdir=$(_make_tempdir)
   cat > "$tmpdir/test-var.sh" << EOF
 #!/bin/sh
 unset WIZARDRY_DIR
@@ -38,13 +38,13 @@ printf '%s\n' "\${WIZARDRY_DIR:-unset}"
 EOF
   chmod +x "$tmpdir/test-var.sh"
   
-  run_cmd sh "$tmpdir/test-var.sh"
-  assert_success || return 1
+  _run_cmd sh "$tmpdir/test-var.sh"
+  _assert_success || return 1
   # Should either be set to the root dir or remain unset (if detection fails)
   # The key is it shouldn't error
 }
 
-run_test_case "invoke-wizardry is sourceable" test_sourceable
-run_test_case "invoke-wizardry sets WIZARDRY_DIR" test_sets_wizardry_dir
+_run_test_case "invoke-wizardry is sourceable" test_sourceable
+_run_test_case "invoke-wizardry sets WIZARDRY_DIR" test_sets_wizardry_dir
 
-finish_tests
+_finish_tests

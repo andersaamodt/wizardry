@@ -22,9 +22,9 @@ spell_has_content() {
 }
 
 shows_help() {
-  run_spell spells/wards/ssh-barrier --help
-  assert_success
-  assert_output_contains "Usage: ssh-barrier"
+  _run_spell spells/wards/ssh-barrier --help
+  _assert_success
+  _assert_output_contains "Usage: ssh-barrier"
 }
 
 applies_hardening_to_temp_file() {
@@ -58,17 +58,17 @@ sed -i "$1" "$2"
 SH
   chmod +x "$stub_dir/sed-inplace"
 
-  PATH="$stub_dir:$PATH" SSHD_CONFIG="$config" run_spell spells/wards/ssh-barrier
-  assert_success
-  assert_file_contains "$config" "PermitRootLogin no"
-  assert_file_contains "$config" "PasswordAuthentication no"
-  assert_file_contains "$config" "Port 2222"
-  assert_file_contains "$config" "AllowUsers"
+  PATH="$stub_dir:$PATH" SSHD_CONFIG="$config" _run_spell spells/wards/ssh-barrier
+  _assert_success
+  _assert_file_contains "$config" "PermitRootLogin no"
+  _assert_file_contains "$config" "PasswordAuthentication no"
+  _assert_file_contains "$config" "Port 2222"
+  _assert_file_contains "$config" "AllowUsers"
 }
 
-run_test_case "wards/ssh-barrier exists" spell_exists
-run_test_case "wards/ssh-barrier has content" spell_has_content
-run_test_case "ssh-barrier shows help" shows_help
-run_test_case "ssh-barrier hardens provided config" applies_hardening_to_temp_file
+_run_test_case "wards/ssh-barrier exists" spell_exists
+_run_test_case "wards/ssh-barrier has content" spell_has_content
+_run_test_case "ssh-barrier shows help" shows_help
+_run_test_case "ssh-barrier hardens provided config" applies_hardening_to_temp_file
 
-finish_tests
+_finish_tests

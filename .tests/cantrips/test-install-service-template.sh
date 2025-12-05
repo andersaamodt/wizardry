@@ -72,9 +72,9 @@ test_declines_overwrite() {
   SYSTEMCTL_STATE_DIR="$service_dir/state" \
   INSTALL_SERVICE_TEMPLATE_ASK_YN="$stub_dir/ask-yn" \
   INSTALL_SERVICE_TEMPLATE_ASK_TEXT="$stub_dir/ask-text" \
-  PATH="$stub_dir:$PATH" run_spell "spells/cantrips/install-service-template" "$template"
+  PATH="$stub_dir:$PATH" _run_spell "spells/cantrips/install-service-template" "$template"
 
-  assert_failure && assert_output_contains "Installation cancelled"
+  _assert_failure && _assert_output_contains "Installation cancelled"
   [ "$(cat "$service_path")" = "keep me" ] || { TEST_FAILURE_REASON="service file was overwritten"; return 1; }
 }
 
@@ -103,10 +103,10 @@ SERVICE
   INSTALL_SERVICE_TEMPLATE_ASK_YN="$stub_dir/ask-yn" \
   INSTALL_SERVICE_TEMPLATE_ASK_TEXT="$stub_dir/ask-text" \
   ASK_TEXT_STUB_FILE="$placeholders" \
-  PATH="$stub_dir:$PATH" run_spell "spells/cantrips/install-service-template" "$template" EXECUTABLE=magic
+  PATH="$stub_dir:$PATH" _run_spell "spells/cantrips/install-service-template" "$template" EXECUTABLE=magic
 
-  assert_success
-  assert_output_contains "Service installed"
+  _assert_success
+  _assert_output_contains "Service installed"
   contents=$(cat "$service_path")
   case "$contents" in
     *"Description=Mystic Service"*|*"Description=Mystic Service"*) : ;; *) TEST_FAILURE_REASON="Description not replaced"; return 1;;
@@ -136,10 +136,10 @@ test_skips_sudo_when_service_dir_writable() {
   SERVICE_DIR="$service_dir" \
   INSTALL_SERVICE_TEMPLATE_ASK_YN="$stub_dir/ask-yn" \
   INSTALL_SERVICE_TEMPLATE_ASK_TEXT="$stub_dir/ask-text" \
-  PATH="$stub_dir:$PATH" run_spell "spells/cantrips/install-service-template" "$template" NAME=mere
+  PATH="$stub_dir:$PATH" _run_spell "spells/cantrips/install-service-template" "$template" NAME=mere
 
-  assert_success
-  assert_output_contains "Service installed"
+  _assert_success
+  _assert_output_contains "Service installed"
   contents=$(cat "$service_dir/example.service")
   case "$contents" in
     *"Name=mere"*) : ;; *) TEST_FAILURE_REASON="NAME not replaced"; return 1;;
@@ -168,9 +168,9 @@ SERVICE
   INSTALL_SERVICE_TEMPLATE_ASK_YN="$stub_dir/ask-yn" \
   INSTALL_SERVICE_TEMPLATE_ASK_TEXT="$stub_dir/ask-text" \
   ASK_TEXT_STUB_FILE="$placeholders" \
-  PATH="$stub_dir:$PATH" run_spell "spells/cantrips/install-service-template" "$template"
+  PATH="$stub_dir:$PATH" _run_spell "spells/cantrips/install-service-template" "$template"
 
-  assert_success
+  _assert_success
   contents=$(cat "$service_path")
   case "$contents" in
     *"ExecStart=/usr/bin/a/path/with|pipes&slashes\""*) : ;; *) TEST_FAILURE_REASON="EXEC not replaced safely"; return 1;;
@@ -180,16 +180,16 @@ SERVICE
   esac
 }
 
-run_test_case "install-service-template cancels when overwrite declined" test_declines_overwrite
-run_test_case "install-service-template fills placeholders and reloads systemd" test_fills_placeholders_and_reloads
-run_test_case "install-service-template skips sudo when target writable" test_skips_sudo_when_service_dir_writable
-run_test_case "install-service-template handles special characters in placeholders" test_replaces_special_characters
+_run_test_case "install-service-template cancels when overwrite declined" test_declines_overwrite
+_run_test_case "install-service-template fills placeholders and reloads systemd" test_fills_placeholders_and_reloads
+_run_test_case "install-service-template skips sudo when target writable" test_skips_sudo_when_service_dir_writable
+_run_test_case "install-service-template handles special characters in placeholders" test_replaces_special_characters
 
 shows_help() {
-  run_spell spells/cantrips/install-service-template --help
+  _run_spell spells/cantrips/install-service-template --help
   # Note: spell may not have --help implemented yet
   true
 }
 
-run_test_case "install-service-template accepts --help" shows_help
-finish_tests
+_run_test_case "install-service-template accepts --help" shows_help
+_finish_tests

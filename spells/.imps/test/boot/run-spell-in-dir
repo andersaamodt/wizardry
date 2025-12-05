@@ -1,0 +1,12 @@
+#!/bin/sh
+# run-spell-in-dir DIR SCRIPT [ARGS...] - run a spell in a specific directory
+# Sets RUN_CMD_WORKDIR before calling run-spell.
+
+_run_spell_in_dir() {
+  dir=$1
+  shift
+  RUN_CMD_WORKDIR=$dir _run_spell "$@"
+}
+
+# Self-execution when run directly (not sourced)
+case "${0##*/}" in run-spell-in-dir) _run_spell_in_dir "$@" ;; esac
