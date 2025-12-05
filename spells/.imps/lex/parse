@@ -1,0 +1,125 @@
+#!/bin/sh
+# parse CMD... - recursively parse and execute written imperatives
+# Scans for linking words (imps in lex/) and delegates to them.
+# Longer linking words take precedence (and-then before and or then).
+# Passes command and args to linking words: LINK_WORD CMD CMD_ARGS REMAINING...
+# Example: parse echo hello and-then echo world
+
+set -eu
+
+# If no arguments, nothing to do
+if [ $# -eq 0 ]; then
+  exit 0
+fi
+
+# Find the lex directory (where this script lives)
+lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+
+# Check if a word is a linking word (exists as executable in lex/)
+is_link_word() {
+  [ -x "$lex_dir/$1" ] && [ "$1" != "parse" ]
+}
+
+# Try to find a linking word at the start, preferring longer matches
+# Check two-word combinations first (like "and then" -> and-then)
+if [ $# -ge 2 ]; then
+  two_word="$1-$2"
+  if is_link_word "$two_word"; then
+    shift 2
+    exec "$lex_dir/$two_word" "" "" "$@"
+  fi
+fi
+
+# Check single word
+first=$1
+if is_link_word "$first"; then
+  shift
+  exec "$lex_dir/$first" "" "" "$@"
+fi
+
+# Not a linking word - treat as a command to execute
+cmd=$first
+shift
+
+# No more args - just run the command
+if [ $# -eq 0 ]; then
+  exec "$cmd"
+fi
+
+# Save args to indexed variables (POSIX shell lacks arrays)
+total=$#
+i=1
+for arg in "$@"; do
+  eval "arg_$i=\"\$arg\""
+  i=$((i + 1))
+done
+
+# Scan for the first linking word
+link_pos=0
+link_len=0
+link_word=''
+i=1
+while [ "$i" -le "$total" ]; do
+  # Check two-word combination first
+  if [ "$i" -lt "$total" ]; then
+    j=$((i + 1))
+    eval "w1=\"\$arg_$i\""
+    eval "w2=\"\$arg_$j\""
+    two_word="$w1-$w2"
+    if is_link_word "$two_word"; then
+      link_pos=$i
+      link_len=2
+      link_word=$two_word
+      break
+    fi
+  fi
+  
+  # Check single word
+  eval "w=\"\$arg_$i\""
+  if is_link_word "$w"; then
+    link_pos=$i
+    link_len=1
+    link_word=$w
+    break
+  fi
+  
+  i=$((i + 1))
+done
+
+# No linking word found - execute command with all args
+if [ "$link_pos" -eq 0 ]; then
+  set --
+  i=1
+  while [ "$i" -le "$total" ]; do
+    eval "set -- \"\$@\" \"\$arg_$i\""
+    i=$((i + 1))
+  done
+  exec "$cmd" "$@"
+fi
+
+# Build command args string (before linking word) - space-separated
+cmd_args_end=$((link_pos - 1))
+cmd_args=''
+i=1
+while [ "$i" -le "$cmd_args_end" ]; do
+  eval "a=\"\$arg_$i\""
+  if [ -z "$cmd_args" ]; then
+    cmd_args=$a
+  else
+    cmd_args="$cmd_args $a"
+  fi
+  i=$((i + 1))
+done
+
+# Build remaining args (after linking word)
+remain_start=$((link_pos + link_len))
+
+# Call linking word with: CMD CMD_ARGS REMAINING_ARGS...
+set --
+i=$remain_start
+while [ "$i" -le "$total" ]; do
+  eval "set -- \"\$@\" \"\$arg_$i\""
+  i=$((i + 1))
+done
+
+exec "$lex_dir/$link_word" "$cmd" "$cmd_args" "$@"
