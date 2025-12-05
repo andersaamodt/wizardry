@@ -7,7 +7,7 @@ show_usage() {
 cat <<'USAGE'
 Usage: toggle-touch-hook
 
-Toggle the planned touch hook on or off. When enabled it will fire actions when you touch a portkey or other special file; for now the toggle only updates ~/.spellbook/.mud/config.
+Toggle the planned touch hook on or off. When enabled it will fire actions when you touch a portkey or other special file; for now the toggle only updates $MUD_DIR/config.
 USAGE
 }
 

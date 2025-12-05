@@ -283,5 +283,10 @@ run_test_case "spells have standard help handlers" test_spells_have_help_usage_h
 run_test_case "warn about full paths to spells" test_warn_full_paths_to_spells
 run_test_case "test files have matching spells" test_test_files_have_matching_spells
 run_test_case "tests rely only on imps for helpers" test_tests_use_imps_for_helpers
+run_test_case "scripts using declared globals have set -u" test_scripts_using_globals_have_set_u
+run_test_case "declare-globals has exactly 3 globals" test_declare_globals_count
+run_test_case "no undeclared globals exported" test_no_undeclared_global_exports
+run_test_case "no global declarations outside declare-globals" test_no_global_declarations_outside_declare_globals
+run_test_case "no pseudo-globals stored in rc files" test_no_pseudo_globals_in_rc_files
 
 finish_tests

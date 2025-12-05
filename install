@@ -732,9 +732,7 @@ done
 
 # Add ~/.spellbook to PATH for custom spells
 spell_home_dir=""
-if [ -n "${XDG_DATA_HOME-}" ]; then
-        spell_home_dir="$XDG_DATA_HOME/wizardry/spellbook"
-elif [ -n "${HOME-}" ]; then
+if [ -n "${HOME-}" ]; then
         spell_home_dir="$HOME/.spellbook"
 fi
 if [ -n "$spell_home_dir" ]; then
@@ -812,7 +810,7 @@ if [ "$install_mud" -eq 1 ]; then
         # Install the CD hook (runs 'look' on directory change)
         if [ -x "$MUD_CD_SPELL" ]; then
                 info_msg "Installing CD hook..."
-                if WIZARDRY_CD_CANTRIP="$MUD_CD_SPELL" "$MUD_CD_SPELL" install >/dev/null 2>&1; then
+                if "$MUD_CD_SPELL" install >/dev/null 2>&1; then
                         substep_msg "CD hook (runs 'look' on directory change)"
                 else
                         printf '%sNote:%s CD hook installation skipped.\n' "$YELLOW" "$RESET" >&2

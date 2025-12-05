@@ -1,13 +1,13 @@
 #!/bin/sh
 
-# Manage MUD feature configuration stored in ~/.spellbook/.mud/config
+# Manage MUD feature configuration stored in $MUD_DIR/config
 # This is a helper for reading and writing MUD feature toggle states.
 
 show_usage() {
 cat <<'USAGE'
 Usage: mud-config {get|set|toggle|list} [FEATURE] [VALUE]
 
-Manage MUD feature toggles stored in ~/.spellbook/.mud/config. Supports get, set, toggle, and list for features like command-not-found, touch-hook, fantasy-theme, inventory, and combat.
+Manage MUD feature toggles stored in $MUD_DIR/config. Supports get, set, toggle, and list for features like command-not-found, touch-hook, fantasy-theme, inventory, and combat.
 USAGE
 }
 
@@ -22,10 +22,10 @@ set -eu
 
 # Resolve config directory
 resolve_config_dir() {
-        if [ -n "${WIZARDRY_MUD_CONFIG_DIR-}" ]; then
-                printf '%s' "$WIZARDRY_MUD_CONFIG_DIR"
-        elif [ -n "${SPELLBOOK_HOME-}" ]; then
-                printf '%s' "$SPELLBOOK_HOME/.mud"
+        if [ -n "${MUD_DIR-}" ]; then
+                printf '%s' "$MUD_DIR"
+        elif [ -n "${SPELLBOOK_DIR-}" ]; then
+                printf '%s' "$SPELLBOOK_DIR/.mud"
         elif [ -n "${HOME-}" ]; then
                 printf '%s' "$HOME/.spellbook/.mud"
         else
