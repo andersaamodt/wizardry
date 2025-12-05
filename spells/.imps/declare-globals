@@ -2,9 +2,11 @@
 # Centralized declaration of allowed global environment variables.
 # Each global requires two comment lines: description and justification.
 #
-# NOTE: Tests verify that exactly 3 globals are declared here, and that
-# scripts using these globals have 'set -u' enabled. This creates a closed
-# enforcement loop that prevents undeclared globals from being introduced.
+# ENFORCEMENT: Tests in test-suite.sh verify:
+# 1. Exactly 3 globals are declared here (test_declare_globals_count)
+# 2. Scripts using these globals have 'set -u' enabled (test_scripts_using_globals_have_set_u)
+# 3. No undeclared globals are exported (test_no_undeclared_global_exports)
+# This creates a closed enforcement loop that prevents undeclared globals.
 
 # Installation root directory path.
 # Required for spells to locate resources relative to install location.

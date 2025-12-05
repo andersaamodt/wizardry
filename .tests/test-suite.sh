@@ -322,6 +322,68 @@ test_declare_globals_count() {
   return 0
 }
 
+# --- Check: No undeclared globals exported ---
+# Catches spells trying to create/export new globals that aren't in declare-globals.
+# Allowed globals: WIZARDRY_DIR, SPELLBOOK_DIR, MUD_DIR
+# Also allows common patterns that aren't really globals:
+#   - PATH modifications
+#   - Package manager variables (NIX_PACKAGE, APT_PACKAGE, etc.) used locally
+#   - Script-local UPPERCASE variables that follow naming conventions
+test_no_undeclared_global_exports() {
+  # These are the only globals allowed to be exported
+  declared_globals="WIZARDRY_DIR SPELLBOOK_DIR MUD_DIR"
+  
+  # These patterns are allowed because they're not persistent globals:
+  # - PATH: standard PATH manipulation
+  # - *_PACKAGE: package manager hints used locally in install scripts
+  # - MUD_PLAYER: special case for MUD system (exported to shell rc)
+  allowed_patterns="^PATH=|_PACKAGE=|^MUD_PLAYER="
+  
+  violations=""
+  
+  find "$ROOT_DIR/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r spell; do
+    name=$(basename "$spell")
+    should_skip_file "$name" && continue
+    is_posix_shell_script "$spell" || continue
+    
+    # Look for export statements with UPPERCASE variable names
+    # Pattern: export VAR= or export VAR (without equals for pre-set vars)
+    exports=$(grep -nE '^[[:space:]]*export[[:space:]]+[A-Z][A-Z0-9_]+=' "$spell" 2>/dev/null || true)
+    
+    if [ -n "$exports" ]; then
+      # Check each export line
+      printf '%s\n' "$exports" | while IFS= read -r line; do
+        # Extract variable name
+        var_name=$(printf '%s' "$line" | sed -E 's/.*export[[:space:]]+([A-Z][A-Z0-9_]+)=.*/\1/')
+        
+        # Skip allowed patterns
+        case "$var_name" in
+          PATH|NIX_PACKAGE|APT_PACKAGE|DNF_PACKAGE|YUM_PACKAGE|ZYPPER_PACKAGE|PACMAN_PACKAGE|APK_PACKAGE|PKGIN_PACKAGE)
+            continue ;;
+          MUD_PLAYER)
+            continue ;;  # Special case for MUD system
+          WIZARDRY_DIR|SPELLBOOK_DIR|MUD_DIR)
+            continue ;;  # Declared globals are allowed
+          WIZARDRY_PLATFORM|WIZARDRY_RC_FILE|WIZARDRY_RC_FORMAT)
+            continue ;;  # Used by learn-spell for rc file detection
+        esac
+        
+        rel_path=${spell#"$ROOT_DIR/spells/"}
+        printf '%s:%s\n' "$rel_path" "$var_name"
+      done
+    fi
+  done > "${WIZARDRY_TMPDIR}/export-violations.txt"
+  
+  violations=$(cat "${WIZARDRY_TMPDIR}/export-violations.txt" 2>/dev/null | head -10 | tr '\n' ', ' | sed 's/, $//')
+  rm -f "${WIZARDRY_TMPDIR}/export-violations.txt"
+  
+  if [ -n "$violations" ]; then
+    TEST_FAILURE_REASON="undeclared globals exported: $violations"
+    return 1
+  fi
+  return 0
+}
+
 # --- Run all test cases ---
 
 run_test_case "no duplicate spell names" test_no_duplicate_spell_names
@@ -331,5 +393,6 @@ run_test_case "warn about full paths to spells" test_warn_full_paths_to_spells
 run_test_case "test files have matching spells" test_test_files_have_matching_spells
 run_test_case "scripts using declared globals have set -u" test_scripts_using_globals_have_set_u
 run_test_case "declare-globals has exactly 3 globals" test_declare_globals_count
+run_test_case "no undeclared globals exported" test_no_undeclared_global_exports
 
 finish_tests
