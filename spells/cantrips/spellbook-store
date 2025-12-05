@@ -103,7 +103,8 @@ add_entry() {
         validate_alias "$name"
         validate_command "$cmd"
         ensure_parent_directory
-        tmp=$(mktemp "${TMPDIR:-/tmp}/spellbook-store.XXXXXX") || exit 1
+        tmp=$(temp-file spellbook-store) || exit 1
+        trap 'cleanup-file "$tmp"' EXIT HUP INT TERM
         if [ -f "$spellbook_file" ]; then
                 while IFS= read -r line || nonempty "$line"; do
                         entry_name=$line
@@ -121,6 +122,7 @@ add_entry() {
                 done <"$spellbook_file"
         fi
         printf '%s%s%s\n' "$name" "$tab_char" "$cmd" >>"$tmp"
+        trap - EXIT HUP INT TERM
         mv "$tmp" "$spellbook_file"
 }
 
@@ -131,7 +133,8 @@ remove_entry() {
 		printf '%s\n' "spellbook-store: spell '$name' is not recorded." >&2
 		exit 1
 	fi
-	tmp=$(mktemp "${TMPDIR:-/tmp}/spellbook-store.XXXXXX") || exit 1
+	tmp=$(temp-file spellbook-store) || exit 1
+	trap 'cleanup-file "$tmp"' EXIT HUP INT TERM
 	removed=0
         while IFS= read -r line || nonempty "$line"; do
                 entry_name=$line
@@ -150,10 +153,12 @@ remove_entry() {
                 printf '%s\n' "$line" >>"$tmp"
         done <"$spellbook_file"
 	if [ "$removed" -eq 0 ]; then
+		trap - EXIT HUP INT TERM
 		rm -f "$tmp"
 		printf '%s\n' "spellbook-store: spell '$name' is not recorded." >&2
 		exit 1
 	fi
+	trap - EXIT HUP INT TERM
 	mv "$tmp" "$spellbook_file"
 }
 

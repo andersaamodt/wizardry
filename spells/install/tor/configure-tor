@@ -70,7 +70,8 @@ rewrite_torrc() {
   enable_control=$2
   control_port=$3
 
-  tmp=$(mktemp)
+  tmp=$(temp-file configure-tor) || exit 1
+  trap 'cleanup-file "$tmp"' EXIT HUP INT TERM
   awk -v socks="$socks_port" -v enable_control="$enable_control" -v control="$control_port" '
     BEGIN {added_socks=0; added_control=0; added_cookie=0}
     /^SocksPort / { if (!added_socks) { print "SocksPort " socks; added_socks=1 } ; next }
@@ -91,6 +92,7 @@ rewrite_torrc() {
   else
     sudo mv "$tmp" "$torrc_path"
   fi
+  trap - EXIT HUP INT TERM
 }
 
 restart_service_if_possible() {

@@ -122,12 +122,9 @@ have_install_function() {
   grep -Eq '^[[:space:]]*install[[:space:]]*\(\)' "$file" 2>/dev/null
 }
 
-cleanup_wrapper() {
-  [ -n "${MEMORIZE_WRAPPER-}" ] && [ -f "$MEMORIZE_WRAPPER" ] && rm -f "$MEMORIZE_WRAPPER"
-}
-
 create_wrapper() {
-  MEMORIZE_WRAPPER=$(mktemp "${TMPDIR:-/tmp}/learn-spell.XXXXXX") || exit 1
+  MEMORIZE_WRAPPER=$(temp-file learn-spell) || exit 1
+  trap 'cleanup-file "$MEMORIZE_WRAPPER"' EXIT HUP INT TERM
   cat <<'WRAPPER' >"$MEMORIZE_WRAPPER"
 set -eu
 TARGET=$1
@@ -139,7 +136,6 @@ export WIZARDRY_MEMORIZE_TARGET
 command -v install >/dev/null 2>&1 || { printf '%s\n' "learn-spell: $TARGET does not define install()" >&2; exit 1; }
 install "$@"
 WRAPPER
-  trap cleanup_wrapper EXIT HUP INT TERM
 }
 
 get_interpreter() {

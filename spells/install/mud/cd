@@ -20,6 +20,27 @@ case "${1-}" in
         exit 0
         ;;
 esac
+
+# Add imps to PATH so we can use temp-file, cleanup-file, etc.
+# This allows running the spell directly without wizardry being fully installed
+_cd_script_source=$0
+case $_cd_script_source in
+*/*)
+        _cd_script_dir=${_cd_script_source%/*}
+        ;;
+*)
+        _cd_script_dir=.
+        ;;
+esac
+_cd_repo_dir=$(CDPATH= cd -- "$_cd_script_dir/../../.." && pwd -P)
+if [ -d "$_cd_repo_dir/spells/.imps" ]; then
+        for _impdir in "$_cd_repo_dir"/spells/.imps/*; do
+                [ -d "$_impdir" ] || continue
+                PATH="$_impdir:$PATH"
+        done
+fi
+export PATH
+
 set -eu
 
 
@@ -247,7 +268,8 @@ install() {
         if ! ensure_rc_dir "$rc_file"; then
                 return 1
         fi
-        tmp_file=$(mktemp "${TMPDIR:-/tmp}/wizardry-cd.XXXXXX") || return 1
+        tmp_file=$(temp-file wizardry-cd) || return 1
+        trap 'cleanup-file "$tmp_file"' EXIT HUP INT TERM
         if [ -f "$rc_file" ]; then
                 sed '/^# >>> wizardry cd cantrip >>>$/,/^# <<< wizardry cd cantrip <<</d' "$rc_file" >"$tmp_file"
         else
@@ -260,10 +282,12 @@ cd() { command cd "$@" && { look 2>/dev/null || true; }; }
 # <<< wizardry cd cantrip <<<
 HOOK
         if ! mv "$tmp_file" "$rc_file"; then
+                trap - EXIT HUP INT TERM
                 rm -f "$tmp_file"
                 warn "unable to update '$rc_file'."
                 return 1
         fi
+        trap - EXIT HUP INT TERM
         printf '%s\n' "cd cantrip: installed wizardry hooks in '$rc_file'."
 }
 
@@ -305,13 +329,16 @@ uninstall() {
         fi
 
         # Shell format: use sed to remove the block
-        tmp_file=$(mktemp "${TMPDIR:-/tmp}/wizardry-cd.XXXXXX") || return 1
+        tmp_file=$(temp-file wizardry-cd) || return 1
+        trap 'cleanup-file "$tmp_file"' EXIT HUP INT TERM
         sed '/^# >>> wizardry cd cantrip >>>$/,/^# <<< wizardry cd cantrip <<</d' "$rc_file" >"$tmp_file"
         if ! mv "$tmp_file" "$rc_file"; then
+                trap - EXIT HUP INT TERM
                 rm -f "$tmp_file"
                 warn "unable to update '$rc_file'."
                 return 1
         fi
+        trap - EXIT HUP INT TERM
         printf '%s\n' "cd cantrip: uninstalled wizardry hooks from '$rc_file'."
 }
 

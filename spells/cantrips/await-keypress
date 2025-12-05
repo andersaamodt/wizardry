@@ -57,7 +57,7 @@ if [ "${AWAIT_KEYPRESS_BUFFER_FILE+set}" = "set" ]; then
     buffer_file=$AWAIT_KEYPRESS_BUFFER_FILE
 else
     buffer_key=$(printf '%s' "$TTY_DEVICE" | tr -c '[:alnum:]' '_')
-    buffer_file=${TMPDIR:-/tmp}/wizardry-await-keypress-buffer.${buffer_key}
+    buffer_file=$(temp-file await-keypress-buffer-"$buffer_key") || exit 1
 fi
 
 if [ "$skip_stty" -eq 1 ]; then

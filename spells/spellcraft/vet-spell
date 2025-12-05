@@ -23,6 +23,16 @@ set -eu
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 repo_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd -P)
 
+# Add imps to PATH so we can use temp-file and cleanup-file directly
+if [ -d "$repo_dir/spells/.imps" ]; then
+  PATH="$repo_dir/spells/.imps:$PATH"
+  for impdir in "$repo_dir"/spells/.imps/*; do
+    [ -d "$impdir" ] || continue
+    PATH="$impdir:$PATH"
+  done
+  export PATH
+fi
+
 verbose=0
 list_only=0
 pattern=''
@@ -262,11 +272,13 @@ total=0
 passed=0
 failed_targets=''
 
-targets_file=$(mktemp "${TMPDIR:-/tmp}/vet-spell-targets.XXXXXX") || exit 1
+targets_file=$(temp-file vet-spell-targets) || exit 1
+trap 'cleanup-file "$targets_file"' EXIT HUP INT TERM
 collect_targets "$@" >"$targets_file"
 
 if [ "$list_only" -eq 1 ]; then
   cat "$targets_file"
+  trap - EXIT HUP INT TERM
   rm -f "$targets_file"
   exit 0
 fi
@@ -384,6 +396,7 @@ while IFS= read -r target; do
   fi
 done <"$targets_file"
 
+trap - EXIT HUP INT TERM
 rm -f "$targets_file"
 
 if [ "$failures" -eq 0 ]; then

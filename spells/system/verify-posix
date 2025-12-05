@@ -22,6 +22,16 @@ set -eu
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 repo_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd -P)
 
+# Add imps to PATH so we can use temp-file and cleanup-file directly
+if [ -d "$repo_dir/spells/.imps" ]; then
+  PATH="$repo_dir/spells/.imps:$PATH"
+  for impdir in "$repo_dir"/spells/.imps/*; do
+    [ -d "$impdir" ] || continue
+    PATH="$impdir:$PATH"
+  done
+  export PATH
+fi
+
 checkbashisms_cmd=${CHECKBASHISMS-}
 if [ -z "$checkbashisms_cmd" ] && command -v checkbashisms >/dev/null 2>&1; then
   checkbashisms_cmd=$(command -v checkbashisms)
@@ -56,7 +66,8 @@ failures=0
 total=0
 failed_targets=""
 
-targets_file=$(mktemp "${TMPDIR:-/tmp}/verify-posix-targets.XXXXXX") || exit 1
+targets_file=$(temp-file verify-posix-targets) || exit 1
+trap 'cleanup-file "$targets_file"' EXIT HUP INT TERM
 collect_targets "$@" >"$targets_file"
 
 while IFS= read -r target; do
@@ -133,7 +144,7 @@ while IFS= read -r target; do
       ;;
   esac
 
-  tmp_log=$(mktemp "${TMPDIR:-/tmp}/verify-posix.XXXXXX") || exit 1
+  tmp_log=$(temp-file verify-posix-log) || exit 1
   if "$checkbashisms_cmd" "$path" >"$tmp_log" 2>&1; then
     printf 'PASS %s\n' "$target"
   else
@@ -144,8 +155,9 @@ while IFS= read -r target; do
     failures=$((failures + 1))
     failed_targets=${failed_targets:+$failed_targets,}$target
   fi
-  rm -f "$tmp_log"
+  cleanup-file "$tmp_log"
 done <"$targets_file"
+trap - EXIT HUP INT TERM
 rm -f "$targets_file"
 
 if [ "$failures" -eq 0 ]; then
