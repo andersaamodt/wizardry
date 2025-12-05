@@ -97,15 +97,16 @@ jobs:
     container: debian:stable-slim
     env:
       WIZARDRY_OS_LABEL: debian
+      DEBIAN_FRONTEND: noninteractive
     steps:
       - name: Install git for checkout
-        run: DEBIAN_FRONTEND=noninteractive apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y git
+        run: apt-get update && apt-get install -y git
       - name: Checkout
         uses: actions/checkout@v4
       - name: Ensure installer spells are executable
         run: chmod +x spells/install/mud/install-mud spells/install/tor/setup-tor
       - name: Install bubblewrap dependency
-        run: DEBIAN_FRONTEND=noninteractive apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y bubblewrap uidmap sudo
+        run: apt-get update && apt-get install -y bubblewrap uidmap sudo
       - name: Configure bubblewrap user namespaces
         run: |
           usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
