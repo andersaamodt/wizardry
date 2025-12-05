@@ -77,19 +77,6 @@ find_module() {
   return 1
 }
 
-# Check if module has exactly one function (suitable for binding)
-# Returns 0 if bindable, 1 if should be evoked
-is_bindable() {
-  module=$1
-  
-  # Count function definitions
-  # Pattern matches: name() { or name () { or function name
-  func_count=$(grep -cE '^\s*[a-zA-Z_][a-zA-Z0-9_]*\s*\(\)\s*\{' "$module" 2>/dev/null || printf '0')
-  
-  # Bindable if exactly one function
-  [ "$func_count" -eq 1 ]
-}
-
 # Check if module defines the expected true-name function
 has_true_name_function() {
   module=$1
@@ -136,7 +123,13 @@ true_name=$(to_true_name "$name")
 # Otherwise, just execute the module directly (evocation)
 if has_true_name_function "$module" "$true_name"; then
   bind_module "$name" "$module"
-  "$true_name" "$@"
+  # Verify the function was actually defined after sourcing
+  if type "$true_name" >/dev/null 2>&1; then
+    "$true_name" "$@"
+  else
+    # Function wasn't defined despite being in source - fall back to evocation
+    exec "$module" "$@"
+  fi
 else
   # Evoke in subshell (current imp architecture)
   exec "$module" "$@"
