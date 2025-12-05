@@ -98,12 +98,21 @@ Imps are the smallest semantic building blocks in wizardry. They live in `spells
 An **imp** is a microscript that:
 
 * Does exactly one thing
-* Does not contain functions
+* Has exactly one function (the "true name") with no executable code outside it, OR has zero functions
 * Has a self-documenting name that novices can understand without looking it up (use hyphens for multi-word names)
 * Uses space-separated arguments instead of `--flags`
 * Has no `--help` flag (just a comment header—imps are for coding, not running standalone)
 * Is cross-platform, abstracting OS differences behind a clean interface
 * Makes spells read almost like English while remaining POSIX-compliant
+
+#### Bound vs Unbound Imps
+
+Imps follow an **invocation/evocation** model:
+
+* **Bound imps** are *invoked* (sourced) at startup. Their true-name function exists in the current shell and can be called without subprocess overhead. Most imps are bound.
+* **Unbound imps** are *evoked* (executed) in a subshell. These are used when the imp requires isolation (e.g., it sets shell options that shouldn't persist).
+
+At startup, a recursive sourcer invokes all bound imps and generates aliases mapping their public hyphenated names to their true names. The `word-of-binding` dispatcher handles autoloading for any missing commands.
 
 Push as much logic as possible into imps for maximum semanticization.
 
@@ -128,6 +137,7 @@ Using the free software suite makes it easy to establish a standardized software
 | ---- | ---------- |
 | **arcanum** (pl. **arcana**) | A grand working—a spell that installs and configures software across supported platforms, presented as a menu of functions. Also refers to the apps themselves. |
 | **bootstrap spell** | A spell that can run before wizardry is fully installed. These self-contained scripts (namely `install` and spells in `spells/install/core/`) don't rely on other wizardry spells. |
+| **bound imp** | An *invoked* imp; sourced so its true-name function exists in the current shell and can be called without subprocess overhead. |
 | **cantrip** | A small utility spell for common tasks. |
 | `cast` | To execute a spell. Memorized spells appear in the `cast` menu for quick access. |
 | **crypto** | Cryptographic spells for hashing and security. |
@@ -135,8 +145,10 @@ Using the free software suite makes it easy to establish a standardized software
 | **demon family** | A subfolder within `spells/.imps/` that groups related imps by function. Each folder represents a family of imps that share a common purpose (e.g., `str/` for string operations, `fs/` for filesystem operations). |
 | **divination** | Spells that detect or discover information. |
 | **enchant** / **enchantment** | Spells that add or manipulate extended attributes (metadata) on files. |
+| `evoke` | Execute a script in a subshell. The opposite of *invoke*. Evoked scripts run in isolation and cannot modify the caller's environment. |
 | `forget` | Remove a spell from your memorized (`cast`) list. |
 | **imp** | The smallest building block of magic—a microscript that does exactly one thing. Imps dwell in `spells/.imps/`. |
+| `invoke` | Source a script into the current shell. The opposite of *evoke*. Invoked scripts share the caller's environment. |
 | `learn` | Add a spell to your shell environment, making it permanently available. Some spells must be learned before use. |
 | `memorize` | Add a spell to your `cast` menu for quick access. |
 | **portal** | A persistent connection between two computers via SSH, created with `open-portal`, for MUD travel. |
@@ -146,7 +158,10 @@ Using the free software suite makes it easy to establish a standardized software
 | `spellbook` | Your personal grimoire for organizing and casting spells. Access it with `spellbook` or from the main `menu`. Also refers to custom spell folders. |
 | **spellcraft** | The writing of shell scripts. |
 | **tome** | A text file containing the contents of several other text files concatenated together, so a whole folder of spells can be sent or carried easily. |
+| **true name** | The internal underscore function-name defined by a bound imp (e.g., `_contains` for the `contains` imp). |
+| **unbound imp** | An *evoked* imp; executed in a subshell rather than sourced into the current shell. |
 | **ward** | A protective spell for security or access control. |
+| **word-of-binding** | The dispatcher script invoked when a hyphenated command is missing; resolves the public name, sources the module if needed, and calls the true name. |
 
 # **Ethos and Standards**
 

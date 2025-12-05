@@ -1,0 +1,125 @@
+#!/bin/sh
+# invoke-wizardry - set up wizardry environment and PATH
+# Called once from shell rc to make all spells and imps available at startup.
+#
+# This script should be sourced (not executed) so environment changes persist:
+#   . invoke-wizardry
+#
+# Directories added to PATH:
+#   $WIZARDRY_DIR/spells/ (and subdirectories)
+#   $WIZARDRY_DIR/spells/.imps/ (and subdirectories)
+#   ~/.spellbook/
+#
+# The word-of-binding dispatcher handles autoloading of commands via
+# command_not_found_handle when a command is not found.
+#
+# Example in .bashrc:
+#   . ~/.wizardry/spells/.imps/sys/invoke-wizardry
+
+# Main setup function
+_wizardry_invoke_all() {
+  # Determine wizardry directory
+  if [ -z "${WIZARDRY_DIR-}" ]; then
+    # Try to detect from this script's location
+    if [ -n "${BASH_SOURCE-}" ]; then
+      _wiz_script_dir=$(CDPATH= cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
+    elif [ -n "${ZSH_VERSION-}" ]; then
+      _wiz_script_dir=$(CDPATH= cd -- "$(dirname "${(%):-%x}")" && pwd -P)
+    else
+      # POSIX fallback - assume standard location
+      _wiz_script_dir="${HOME-}/.wizardry/spells/.imps/sys"
+    fi
+    
+    # Navigate up to wizardry root
+    WIZARDRY_DIR=$(CDPATH= cd -- "$_wiz_script_dir/../../.." 2>/dev/null && pwd -P) || true
+  fi
+  
+  if [ -z "${WIZARDRY_DIR-}" ] || [ ! -d "${WIZARDRY_DIR-}/spells" ]; then
+    return 1
+  fi
+  
+  export WIZARDRY_DIR
+  
+  # Set up spellbook directory
+  : "${SPELLBOOK_DIR:=${HOME-}/.spellbook}"
+  export SPELLBOOK_DIR
+  
+  # Build PATH additions - collect all directories to add
+  _wiz_paths_to_add=""
+  _wiz_imps_dir="$WIZARDRY_DIR/spells/.imps"
+  
+  # Add main spells directory
+  case ":${PATH-}:" in
+    *":$WIZARDRY_DIR/spells:"*) ;;
+    *) _wiz_paths_to_add="$WIZARDRY_DIR/spells" ;;
+  esac
+  
+  # Add spell subdirectories (categories like arcane, cantrips, etc.)
+  for _wiz_spell_dir in "$WIZARDRY_DIR"/spells/*; do
+    [ -d "$_wiz_spell_dir" ] || continue
+    case "$_wiz_spell_dir" in
+      */.imps) continue ;;  # Imps handled separately
+    esac
+    case ":${PATH-}:" in
+      *":$_wiz_spell_dir:"*) ;;
+      *) 
+        if [ -n "$_wiz_paths_to_add" ]; then
+          _wiz_paths_to_add="$_wiz_paths_to_add:$_wiz_spell_dir"
+        else
+          _wiz_paths_to_add="$_wiz_spell_dir"
+        fi
+        ;;
+    esac
+  done
+  
+  # Add imps directory and subdirectories (demon families)
+  if [ -d "$_wiz_imps_dir" ]; then
+    case ":${PATH-}:" in
+      *":$_wiz_imps_dir:"*) ;;
+      *)
+        if [ -n "$_wiz_paths_to_add" ]; then
+          _wiz_paths_to_add="$_wiz_paths_to_add:$_wiz_imps_dir"
+        else
+          _wiz_paths_to_add="$_wiz_imps_dir"
+        fi
+        ;;
+    esac
+    
+    for _wiz_family in "$_wiz_imps_dir"/*; do
+      [ -d "$_wiz_family" ] || continue
+      case ":${PATH-}:" in
+        *":$_wiz_family:"*) ;;
+        *)
+          if [ -n "$_wiz_paths_to_add" ]; then
+            _wiz_paths_to_add="$_wiz_paths_to_add:$_wiz_family"
+          else
+            _wiz_paths_to_add="$_wiz_family"
+          fi
+          ;;
+      esac
+    done
+  fi
+  
+  # Add user spellbook to PATH
+  if [ -d "$SPELLBOOK_DIR" ]; then
+    case ":${PATH-}:" in
+      *":$SPELLBOOK_DIR:"*) ;;
+      *)
+        if [ -n "$_wiz_paths_to_add" ]; then
+          _wiz_paths_to_add="$_wiz_paths_to_add:$SPELLBOOK_DIR"
+        else
+          _wiz_paths_to_add="$SPELLBOOK_DIR"
+        fi
+        ;;
+    esac
+  fi
+  
+  # Prepend all new paths to PATH
+  if [ -n "$_wiz_paths_to_add" ]; then
+    PATH="${_wiz_paths_to_add}${PATH:+:}${PATH-}"
+    export PATH
+  fi
+}
+
+# Run the setup
+_wizardry_invoke_all

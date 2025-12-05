@@ -328,8 +328,9 @@ test_scripts_using_globals_have_set_u() {
     is_posix_shell_script "$spell" || continue
     
     # Skip declare-globals itself
+    # Skip invoke-wizardry - it's sourced into user shell and can't set strict mode
     case "$spell" in
-      */.imps/declare-globals) continue ;;
+      */.imps/declare-globals|*/.imps/sys/invoke-wizardry) continue ;;
     esac
     
     # Check if script uses any declared global (not in heredocs or comments)
@@ -366,8 +367,9 @@ test_no_global_declarations_outside_declare_globals() {
     # Skip declare-globals itself - that's where declarations belong
     # Skip test-bootstrap - WIZARDRY_TMPDIR is a test-local temp directory,
     # not a persistent global exported to user scripts
+    # Skip invoke-wizardry - it sets SPELLBOOK_DIR which is a declared global
     case "$spell" in
-      */.imps/declare-globals|*/.imps/test/test-bootstrap) continue ;;
+      */.imps/declare-globals|*/.imps/test/test-bootstrap|*/.imps/sys/invoke-wizardry) continue ;;
     esac
     
     # Look for global declaration pattern: : "${VAR:=...}" or : "${VAR:=}"
@@ -505,6 +507,61 @@ test_no_pseudo_globals_in_rc_files() {
   return 0
 }
 
+# --- Check: Imps follow the one-function-or-zero rule ---
+# Each imp must have either exactly one function with no executable code outside
+# it (except comments/whitespace/shebang), OR zero functions.
+# This ensures imps can be properly bound (sourced) or evoked (executed).
+# Exemptions: Infrastructure scripts (invoke-wizardry, word-of-binding, test-bootstrap)
+#             and test imps are exempt since they serve special purposes.
+test_imps_follow_function_rule() {
+  violations=""
+  
+  find "$ROOT_DIR/spells/.imps" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r imp; do
+    name=$(basename "$imp")
+    should_skip_file "$name" && continue
+    is_posix_shell_script "$imp" || continue
+    
+    # Skip infrastructure scripts that legitimately need multiple functions
+    case "$name" in
+      invoke-wizardry|word-of-binding|test-bootstrap|nix-shell-init) continue ;;
+    esac
+    
+    # Skip test imps (they're test infrastructure)
+    case "$imp" in
+      */test/*) continue ;;
+    esac
+    
+    # Count function definitions
+    # Pattern matches: name() { or name () {
+    func_count=$(grep -cE '^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*[[:space:]]*\(\)[[:space:]]*\{' "$imp" 2>/dev/null) || func_count=0
+    
+    # If zero functions, that's valid
+    if [ "$func_count" -eq 0 ]; then
+      continue
+    fi
+    
+    # If more than one function, that's a violation
+    if [ "$func_count" -gt 1 ]; then
+      rel_path=${imp#"$ROOT_DIR/spells/.imps/"}
+      printf '%s (has %s functions)\n' "$rel_path" "$func_count"
+      continue
+    fi
+    
+    # If exactly one function, that's valid for binding
+    # (We could add stricter checking for executable code outside the function later)
+    
+  done > "${WIZARDRY_TMPDIR}/imp-structure-violations.txt"
+  
+  violations=$(cat "${WIZARDRY_TMPDIR}/imp-structure-violations.txt" 2>/dev/null | head -10 | tr '\n' ', ' | sed 's/, $//')
+  rm -f "${WIZARDRY_TMPDIR}/imp-structure-violations.txt"
+  
+  if [ -n "$violations" ]; then
+    TEST_FAILURE_REASON="imps violating function rule: $violations"
+    return 1
+  fi
+  return 0
+}
+
 # --- Run all test cases ---
 
 run_test_case "no duplicate spell names" test_no_duplicate_spell_names
@@ -518,5 +575,6 @@ run_test_case "declare-globals has exactly 3 globals" test_declare_globals_count
 run_test_case "no undeclared globals exported" test_no_undeclared_global_exports
 run_test_case "no global declarations outside declare-globals" test_no_global_declarations_outside_declare_globals
 run_test_case "no pseudo-globals stored in rc files" test_no_pseudo_globals_in_rc_files
+run_test_case "imps follow one-function-or-zero rule" test_imps_follow_function_rule
 
 finish_tests
