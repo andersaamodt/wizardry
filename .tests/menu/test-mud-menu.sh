@@ -221,12 +221,11 @@ printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
   
-  # Use a temp rc file with the cd hook marker installed
+  # Use a temp rc file with the cd hook marker installed (new format uses function)
   rc_file="$tmp/rc"
   cat >"$rc_file" <<'RC'
 # >>> wizardry cd cantrip >>>
-WIZARDRY_CD_CANTRIP='/path/to/cd'
-alias cd='. "$WIZARDRY_CD_CANTRIP"'
+cd() { command cd "$@" && { look 2>/dev/null || true; }; }
 # <<< wizardry cd cantrip <<<
 RC
   
@@ -496,7 +495,7 @@ if [ "$call_count" -eq 1 ]; then
   # First call: simulate CD hook toggle by directly modifying rc file
   rc_file=${WIZARDRY_RC_FILE:-$HOME/.bashrc}
   printf '%s\n' '# >>> wizardry cd cantrip >>>' >> "$rc_file"
-  printf '%s\n' 'WIZARDRY_CD_CANTRIP=/path/to/cd' >> "$rc_file"
+  printf '%s\n' 'cd() { command cd "$@" && { look 2>/dev/null || true; }; }' >> "$rc_file"
   printf '%s\n' '# <<< wizardry cd cantrip <<<' >> "$rc_file"
   exit 0
 fi

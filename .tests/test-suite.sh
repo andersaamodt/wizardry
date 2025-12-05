@@ -362,7 +362,6 @@ test_declare_globals_count() {
 # Also allows common patterns that aren't really globals:
 #   - PATH modifications
 #   - Package manager variables (NIX_PACKAGE, APT_PACKAGE, etc.) used locally
-#   - MUD_PLAYER (special case for MUD system, exported to shell rc)
 #   - WIZARDRY_PLATFORM, WIZARDRY_RC_FILE, WIZARDRY_RC_FORMAT (rc detection vars)
 test_no_undeclared_global_exports() {
   violations=""
@@ -386,8 +385,6 @@ test_no_undeclared_global_exports() {
         case "$var_name" in
           PATH|NIX_PACKAGE|APT_PACKAGE|DNF_PACKAGE|YUM_PACKAGE|ZYPPER_PACKAGE|PACMAN_PACKAGE|APK_PACKAGE|PKGIN_PACKAGE)
             continue ;;
-          MUD_PLAYER)
-            continue ;;  # Special case for MUD system
           WIZARDRY_DIR|SPELLBOOK_DIR|MUD_DIR)
             continue ;;  # Declared globals are allowed
           WIZARDRY_PLATFORM|WIZARDRY_RC_FILE|WIZARDRY_RC_FORMAT)
@@ -410,6 +407,53 @@ test_no_undeclared_global_exports() {
   return 0
 }
 
+# --- Check: No pseudo-globals stored in rc files ---
+# Bans the antipattern of persisting variables to shell rc files.
+# Legitimate PATH modifications are allowed (handled by learn-spellbook).
+# cd hook now uses a function instead of WIZARDRY_CD_CANTRIP variable.
+test_no_pseudo_globals_in_rc_files() {
+  find "$ROOT_DIR/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r spell; do
+    name=$(basename "$spell")
+    should_skip_file "$name" && continue
+    is_posix_shell_script "$spell" || continue
+    
+    # Look for patterns that write exports to rc files:
+    # 1. printf/echo with export and >> 
+    # 2. Variables being written to bashrc/zshrc/rc files
+    # Skip legitimate PATH manipulation (learn-spellbook)
+    case "$spell" in
+      */learn-spellbook) continue ;;
+    esac
+    
+    # Check for printf/echo lines that contain both "export" and write to rc-like files
+    if grep -qE "(printf|echo)[^;]*export[^;]*(>>|\"\$rc|\$HOME/\.)" "$spell" 2>/dev/null; then
+      rel_path=${spell#"$ROOT_DIR/spells/"}
+      printf '%s\n' "$rel_path"
+    fi
+    
+    # Check for patterns like: printf '%s' "export VAR=" >> ~/.bashrc
+    if grep -qE '(>>|>)[[:space:]]*[^;]*\.(bashrc|zshrc|profile)' "$spell" 2>/dev/null; then
+      if grep -qE 'export[[:space:]]+[A-Z][A-Z0-9_]+=' "$spell" 2>/dev/null; then
+        # This file writes exports to rc files - check if it's writing pseudo-globals
+        if ! grep -qE 'export PATH=' "$spell" 2>/dev/null; then
+          # Not a PATH export - flag it
+          rel_path=${spell#"$ROOT_DIR/spells/"}
+          printf '%s (writes export to rc)\n' "$rel_path"
+        fi
+      fi
+    fi
+  done > "${WIZARDRY_TMPDIR}/rc-pseudo-global-violations.txt"
+  
+  violations=$(cat "${WIZARDRY_TMPDIR}/rc-pseudo-global-violations.txt" 2>/dev/null | sort -u | head -10 | tr '\n' ', ' | sed 's/, $//')
+  rm -f "${WIZARDRY_TMPDIR}/rc-pseudo-global-violations.txt"
+  
+  if [ -n "$violations" ]; then
+    TEST_FAILURE_REASON="pseudo-globals stored in rc files: $violations"
+    return 1
+  fi
+  return 0
+}
+
 # --- Run all test cases ---
 
 run_test_case "no duplicate spell names" test_no_duplicate_spell_names
@@ -421,5 +465,6 @@ run_test_case "scripts using declared globals have set -u" test_scripts_using_gl
 run_test_case "declare-globals has exactly 3 globals" test_declare_globals_count
 run_test_case "no undeclared globals exported" test_no_undeclared_global_exports
 run_test_case "no global declarations outside declare-globals" test_no_global_declarations_outside_declare_globals
+run_test_case "no pseudo-globals stored in rc files" test_no_pseudo_globals_in_rc_files
 
 finish_tests
