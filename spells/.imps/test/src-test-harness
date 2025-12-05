@@ -3,8 +3,8 @@
 # Source this imp to get test setup, assertions, and fixture helpers.
 # Example: . "$(dirname "$0")/../../spells/.imps/test/src-test-harness"
 
-# This is a sourceable imp - it contains exactly one function block.
-# Sourcing this file sets up the test environment and defines test helpers.
+# This is a sourceable imp (src- prefix) - it contains multiple helper functions.
+# Sourceable imps are the exception to the no-functions rule for regular imps.
 
 # --- Begin harness setup (runs on source) ---
 
@@ -16,7 +16,7 @@ done
 ROOT_DIR=$_test_harness_dir
 
 # Setup PATH
-_sys_path=${PATH:-/usr/local/bin:/usr/bin:/bin}
+_sys_path=${PATH:-/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin}
 PATH="$ROOT_DIR/spells:$ROOT_DIR/spells/.imps"
 for _d in "$ROOT_DIR/spells/.imps"/*; do [ -d "$_d" ] && PATH="$PATH:$_d"; done
 for _d in "$ROOT_DIR/spells"/*; do [ -d "$_d" ] && PATH="$PATH:$_d"; done
