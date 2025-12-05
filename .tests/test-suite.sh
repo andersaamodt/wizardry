@@ -10,8 +10,11 @@
 set -eu
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
+  test_root=$(dirname "$test_root")
+done
 # shellcheck source=/dev/null
-. "$test_root/test-common.sh"
+. "$test_root/spells/.imps/test/test-bootstrap"
 
 # Helper: Check if a file is a POSIX shell script
 is_posix_shell_script() {
@@ -147,9 +150,12 @@ test_warn_full_paths_to_spells() {
   found_paths=""
   
   find "$ROOT_DIR/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r spell; do
-    # Skip bootstrap spells (install/core/) and test-magic
+    # Skip bootstrap spells (install/core/), test-magic, and the spellbook menu.
+    # Those scripts need repo-root paths to assemble PATH or locate user spells,
+    # while normal spells should rely on PATH lookups.
     case $spell in
       */install/core/*|*/system/test-magic) continue ;;
+      */.imps/test/test-bootstrap|*/menu/spellbook) continue ;;
     esac
     
     name=$(basename "$spell")
@@ -182,7 +188,7 @@ test_test_files_have_matching_spells() {
   find "$ROOT_DIR/.tests" -type f -name 'test-*.sh' -print | while IFS= read -r test_file; do
     # Skip special files
     case $test_file in
-      */test-common.sh|*/test-install.sh|*/test-suite.sh|*/lib/*) continue ;;
+      */spells/.imps/test/test-bootstrap|*/test-install.sh|*/test-suite.sh) continue ;;
     esac
     
     # Extract expected spell path
@@ -219,6 +225,175 @@ test_test_files_have_matching_spells() {
   return 0
 }
 
+# --- Check: Tests rely on imps rather than shared helper libraries ---
+# There should be no reusable test helpers outside .imps/. Instead, every
+# shell script under .tests/ is expected to be a test (starting with test-).
+test_tests_use_imps_for_helpers() {
+  helper_dir_list=$(mktemp "${WIZARDRY_TMPDIR}/tests-helper-dirs.XXXXXX")
+  find "$ROOT_DIR/.tests" -type d \
+    \( -name "lib" -o -name "libs" -o -name "common" -o -name "helpers" \) \
+    -print > "$helper_dir_list"
+
+  forbidden_dirs=""
+  while IFS= read -r dir; do
+    [ -n "$dir" ] || continue
+    rel_dir=${dir#"$ROOT_DIR/"}
+    forbidden_dirs="${forbidden_dirs:+$forbidden_dirs, }$rel_dir"
+  done < "$helper_dir_list"
+  rm -f "$helper_dir_list"
+
+  if [ -n "$forbidden_dirs" ]; then
+    TEST_FAILURE_REASON="legacy test helper directories present: $forbidden_dirs"
+    return 1
+  fi
+
+  helper_files_list=$(mktemp "${WIZARDRY_TMPDIR}/tests-helper-files.XXXXXX")
+  find "$ROOT_DIR/.tests" -type f -not -path "*/.imps/*" -print > "$helper_files_list"
+
+  invalid_helpers=""
+  while IFS= read -r file; do
+    [ -n "$file" ] || continue
+    base=$(basename "$file")
+    should_skip_file "$base" && continue
+    is_any_shell_script "$file" || continue
+
+    case $base in
+      test-*) ;;
+      *)
+        rel_file=${file#"$ROOT_DIR/"}
+        invalid_helpers="${invalid_helpers:+$invalid_helpers, }$rel_file"
+        ;;
+    esac
+  done < "$helper_files_list"
+  rm -f "$helper_files_list"
+
+  if [ -n "$invalid_helpers" ]; then
+    TEST_FAILURE_REASON="non-imp shared test helpers detected: $invalid_helpers"
+    return 1
+  fi
+
+  return 0
+}
+
+declared_globals() {
+  if [ ! -f "$ROOT_DIR/spells/.imps/declare-globals" ]; then
+    return 1
+  fi
+
+  # Extract variable names from lines like ': "${NAME:=}"'
+  sed -n 's/^: "\${\([A-Z0-9_]*\):=.*/\1/p' "$ROOT_DIR/spells/.imps/declare-globals"
+}
+
+# Scripts that intentionally rely on globals must opt into set -u to fail fast
+# when globals are missing. We detect scripts that source declare-globals and
+# ensure they enable unset-variable checking near the top of the file.
+test_scripts_using_globals_have_set_u() {
+  offenders=""
+
+  find "$ROOT_DIR/spells" -type f -not -path "*/.imps/*" -print | while IFS= read -r spell; do
+    is_posix_shell_script "$spell" || continue
+    grep -q "declare-globals" "$spell" 2>/dev/null || continue
+
+    if ! head -n 15 "$spell" | grep -q "set -u"; then
+      offenders="${offenders:+$offenders, }${spell#"$ROOT_DIR/"}"
+    fi
+  done
+
+  if [ -n "$offenders" ]; then
+    TEST_FAILURE_REASON="scripts using declare-globals without set -u: $offenders"
+    return 1
+  fi
+  return 0
+}
+
+# Guard the centralized list of globals so new additions stay intentional.
+test_declare_globals_count() {
+  globals=$(declared_globals | sort)
+  count=$(printf '%s\n' "$globals" | sed '/^$/d' | wc -l | tr -d ' ')
+  expected="MUD_DIR
+SPELLBOOK_DIR
+WIZARDRY_DIR"
+
+  if [ "$count" -ne 3 ] || [ "$globals" != "$expected" ]; then
+    TEST_FAILURE_REASON="declare-globals must define exactly MUD_DIR, SPELLBOOK_DIR, and WIZARDRY_DIR"
+    return 1
+  fi
+  return 0
+}
+
+# Ensure exports stay limited to declared globals to avoid leaking new
+# environment variables.
+test_no_undeclared_global_exports() {
+  allowed=$(printf '%s\n' $(declared_globals))
+  offenders=""
+
+  find "$ROOT_DIR/spells" -type f -not -path "*/.imps/*" -print | while IFS= read -r spell; do
+    is_posix_shell_script "$spell" || continue
+    while IFS= read -r line; do
+      case $line in
+        export\ *)
+          name=${line#export }
+          name=${name%%=*}
+          printf '%s' "$allowed" | grep -qx "$name" || offenders="${offenders:+$offenders, }${spell#"$ROOT_DIR/"}:$name"
+          ;;
+      esac
+    done < "$spell"
+  done
+
+  if [ -n "$offenders" ]; then
+    TEST_FAILURE_REASON="undeclared globals exported: $offenders"
+    return 1
+  fi
+  return 0
+}
+
+# Block ad-hoc global defaults outside declare-globals while allowing
+# legacy cd cantrip state that mirrors historical behavior.
+test_no_global_declarations_outside_declare_globals() {
+  allowed_extra="WIZARDRY_CD_CANTRIP"
+  declared=$(printf '%s\n' $(declared_globals))
+  offenders=""
+
+  find "$ROOT_DIR/spells" -type f -print | while IFS= read -r spell; do
+    is_posix_shell_script "$spell" || continue
+    case $spell in
+      */.imps/declare-globals) continue ;;
+    esac
+
+    while IFS= read -r line; do
+      case $line in
+        :\ "\${[A-Z0-9_]*:=*" )
+          name=$(printf '%s' "$line" | sed -n 's/^: "\${\([A-Z0-9_]*\):=.*/\1/p')
+          [ -z "$name" ] && continue
+          printf '%s\n' "$declared" "$allowed_extra" | grep -qx "$name" || offenders="${offenders:+$offenders, }${spell#"$ROOT_DIR/"}:$name"
+          ;;
+      esac
+    done < "$spell"
+  done
+
+  if [ -n "$offenders" ]; then
+    TEST_FAILURE_REASON="global defaults found outside declare-globals: $offenders"
+    return 1
+  fi
+  return 0
+}
+
+# Ensure rc-style files do not squirrel away global state.
+test_no_pseudo_globals_in_rc_files() {
+  offenders=""
+  find "$ROOT_DIR" -type f \( -name "*.rc" -o -name "*.rc.sh" \) -print | while IFS= read -r rcfile; do
+    if grep -qE 'WIZARDRY_[A-Z0-9_]*=|SPELLBOOK_[A-Z0-9_]*=' "$rcfile" 2>/dev/null; then
+      offenders="${offenders:+$offenders, }${rcfile#"$ROOT_DIR/"}"
+    fi
+  done
+
+  if [ -n "$offenders" ]; then
+    TEST_FAILURE_REASON="global-like settings stored in rc files: $offenders"
+    return 1
+  fi
+  return 0
+}
+
 # --- Run all test cases ---
 
 run_test_case "no duplicate spell names" test_no_duplicate_spell_names
@@ -226,5 +401,11 @@ run_test_case "menu spells require menu command" test_menu_spells_require_menu
 run_test_case "spells have standard help handlers" test_spells_have_help_usage_handlers
 run_test_case "warn about full paths to spells" test_warn_full_paths_to_spells
 run_test_case "test files have matching spells" test_test_files_have_matching_spells
+run_test_case "tests rely only on imps for helpers" test_tests_use_imps_for_helpers
+run_test_case "scripts using declared globals have set -u" test_scripts_using_globals_have_set_u
+run_test_case "declare-globals has exactly 3 globals" test_declare_globals_count
+run_test_case "no undeclared globals exported" test_no_undeclared_global_exports
+run_test_case "no global declarations outside declare-globals" test_no_global_declarations_outside_declare_globals
+run_test_case "no pseudo-globals stored in rc files" test_no_pseudo_globals_in_rc_files
 
 finish_tests

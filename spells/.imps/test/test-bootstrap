@@ -1,16 +1,17 @@
 #!/bin/sh
-# Common test helpers for simple POSIX shell tests.
-# Provides minimal assertion helpers and a lightweight test runner.
+# test-bootstrap - set up wizardry shell test environment using imps
+# Testing imp - sources shared helpers for behavior-driven shell tests
+# Example: . test-bootstrap
 
-# CRITICAL: Set a baseline PATH BEFORE set -eu and before any commands
+# CRITICAL: Seed a baseline PATH BEFORE set -eu and before any commands
 # On macOS GitHub Actions, PATH may be completely empty, causing immediate failure
 # when we try to use dirname, cd, pwd, etc. in find_repo_root
 baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 case ":${PATH-}:" in
-  *":/usr/bin:"*|*":/bin:"*) 
+  *":/usr/bin:"*|*":/bin:"*)
     # Already has at least one standard directory
     ;;
-  *) 
+  *)
     # PATH is empty or missing standard directories, prepend baseline
     PATH="${baseline_path}${PATH:+:}${PATH-}"
     ;;
@@ -20,7 +21,7 @@ export PATH
 set -eu
 
 find_repo_root() {
-  dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  dir=$(CDPATH= cd -- "$(dirname "${0:-$PWD}")" && pwd -P)
   while [ "$dir" != "/" ]; do
     if [ -d "$dir/spells" ] && [ -d "$dir/.tests" ]; then
       printf '%s\n' "$dir"
@@ -31,7 +32,7 @@ find_repo_root() {
   printf '%s\n' "$(pwd -P)"
 }
 
-ROOT_DIR=$(find_repo_root)
+ROOT_DIR=${ROOT_DIR-$(find_repo_root)}
 
 # The baseline PATH was already set at the top of this file.
 # Now add wizardry spells directories to PATH.
@@ -182,7 +183,7 @@ run_macos_sandbox() {
 (allow signal)
 (allow system*)
 '
-  
+
   "$SANDBOX_EXEC_BIN" -p "$sandbox_profile" "$@"
 }
 
@@ -255,7 +256,7 @@ run_cmd() {
   # works even when tests intentionally set a restricted PATH.
   _saved_path=$PATH
   PATH=${WIZARDRY_SYSTEM_PATH:-$PATH}
-  
+
   _stdout=$(mktemp "${WIZARDRY_TMPDIR}/stdout.XXXXXX") || return 1
   _stderr=$(mktemp "${WIZARDRY_TMPDIR}/stderr.XXXXXX") || return 1
 
@@ -266,7 +267,7 @@ run_cmd() {
   tmpdir="$sandbox/tmp"
   homedir="$sandbox/home"
   mkdir -p "$tmpdir" "$homedir"
-  
+
   # Restore the caller's PATH for use in the sandbox
   PATH=$_saved_path
 
@@ -289,7 +290,7 @@ run_cmd() {
       --setenv TMPDIR "$tmpdir" \
       --setenv WIZARDRY_TMPDIR "$WIZARDRY_TMPDIR" \
       -- "$@"
-    
+
     # Optionally pass through test-related variables if they're set
     # (add them BEFORE the -- separator in the command)
     for envvar in APT_LOG APT_EXIT PKGIN_LOG PKGIN_EXIT PKGIN_CANDIDATES DETECT_RC_FILE LOOK_RC_FILE ASK_LOG LOOK_COLORS_PATH SSHD_CONFIG; do
@@ -332,7 +333,7 @@ run_cmd() {
   ERROR=$(cat "$_stderr")
   rm -f "$_stdout" "$_stderr"
   rm -rf "$sandbox"
-  
+
   # Restore caller's PATH before returning
   PATH=$_saved_path
 }
@@ -525,4 +526,3 @@ link_tools() {
     fi
   done
 }
-

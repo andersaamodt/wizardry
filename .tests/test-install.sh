@@ -5,8 +5,12 @@ set -eu
 # This file is in .tests/ (not .tests/install/) because install is in the repo root,
 # not in spells/.
 
-# shellcheck source=test-common.sh
-. "$(dirname "$0")/test-common.sh"
+test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
+  test_root=$(dirname "$test_root")
+done
+# shellcheck source=/dev/null
+. "$test_root/spells/.imps/test/test-bootstrap"
 
 # === Basic Installation Tests ===
 
