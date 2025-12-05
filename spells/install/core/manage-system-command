@@ -23,6 +23,8 @@ esac
 
 set -eu
 
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+
 action=install
 if [ "${1-}" = "--uninstall" ]; then
   action=uninstall
@@ -39,8 +41,9 @@ package_default=$2
 force_install=${FORCE_INSTALL:-0}
 
 # Detect NixOS for automatic installation via nix-env
+# Use local detect-distro (bootstrap spell in same directory)
 is_nixos=0
-if command -v detect-distro >/dev/null 2>&1 && [ "$(detect-distro 2>/dev/null)" = "nixos" ]; then
+if [ -x "$script_dir/detect-distro" ] && [ "$("$script_dir/detect-distro" 2>/dev/null)" = "nixos" ]; then
         is_nixos=1
 fi
 

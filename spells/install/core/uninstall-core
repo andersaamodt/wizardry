@@ -20,8 +20,9 @@ esac
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 
 detect_platform() {
-  if command -v detect-distro >/dev/null 2>&1; then
-    platform=$(detect-distro 2>/dev/null || printf 'unknown')
+  # Use local detect-distro (bootstrap spell in same directory)
+  if [ -x "$script_dir/detect-distro" ]; then
+    platform=$("$script_dir/detect-distro" 2>/dev/null || printf 'unknown')
     case "$platform" in
     mac) printf '%s' "Darwin" ;;
     *) printf '%s' "Linux" ;;

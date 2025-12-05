@@ -25,7 +25,7 @@ run_with_root() {
   shift
   DETECT_DISTRO_ROOT="$root" \
   DETECT_DISTRO_OS_RELEASE="$root/etc/os-release" \
-  _run_spell "spells/divination/detect-distro" "$@"
+  _run_spell "spells/install/core/detect-distro" "$@"
 }
 
 write_os_release() {
@@ -37,13 +37,13 @@ EOF
 }
 
 shows_usage_on_help() {
-  _run_spell "spells/divination/detect-distro" "--help"
+  _run_spell "spells/install/core/detect-distro" "--help"
   _assert_success || return 1
   _assert_output_contains "Usage: detect-distro" || return 1
 }
 
 rejects_unexpected_arguments() {
-  _run_spell "spells/divination/detect-distro" "extra"
+  _run_spell "spells/install/core/detect-distro" "extra"
   _assert_failure || return 1
   _assert_error_contains "Usage: detect-distro" || return 1
 }

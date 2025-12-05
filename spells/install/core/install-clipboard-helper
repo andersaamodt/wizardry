@@ -43,9 +43,10 @@ detect_installed_helper() {
 # Detect the preferred helper for this environment
 detect_preferred_helper() {
   # macOS has pbcopy built-in
+  # Use local detect-distro (bootstrap spell in same directory)
   platform=''
-  if command -v detect-distro >/dev/null 2>&1; then
-    platform=$(detect-distro 2>/dev/null || printf 'unknown')
+  if [ -x "$SCRIPT_DIR/detect-distro" ]; then
+    platform=$("$SCRIPT_DIR/detect-distro" 2>/dev/null || printf 'unknown')
   fi
   if [ "$platform" = "mac" ] || [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
     printf 'pbcopy'
