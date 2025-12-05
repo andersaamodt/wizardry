@@ -62,7 +62,7 @@ test_toggle_cd_uninstalls_when_present() {
   tmp=$(make_tempdir)
   
   # First install the hook
-  run_cmd env WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd" install
+  run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd" install
   assert_success || return 1
   
   # Now toggle should uninstall it
@@ -99,7 +99,7 @@ test_toggle_cd_shows_uninstalling_message() {
   tmp=$(make_tempdir)
   
   # First install the hook
-  run_cmd env WIZARDRY_CD_CANTRIP="$ROOT_DIR/spells/install/mud/cd" WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd" install
+  run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/install/mud/cd" install
   assert_success || return 1
   
   # Now toggle should uninstall it and show a progress message

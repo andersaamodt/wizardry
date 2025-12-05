@@ -40,15 +40,9 @@ fi
 cast_dir=$($cast_store dir)
 
 resolve_spell_home() {
-        if [ -n "${WIZARDRY_SPELL_HOME-}" ]; then
-                printf '%s' "$WIZARDRY_SPELL_HOME"
-        elif [ -n "${SPELLBOOK_HOME-}" ]; then
-                printf '%s' "$SPELLBOOK_HOME"
-        elif [ -n "${SPELL_HOME-}" ]; then
-                printf '%s' "$SPELL_HOME"
-        elif [ -n "${XDG_DATA_HOME-}" ] && [ -n "$XDG_DATA_HOME" ]; then
-                printf '%s' "$XDG_DATA_HOME/wizardry/spellbook"
-        elif [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
+        if [ -n "${SPELLBOOK_DIR-}" ]; then
+                printf '%s' "$SPELLBOOK_DIR"
+        elif [ -n "${HOME-}" ]; then
                 printf '%s' "$HOME/.spellbook"
         else
                 printf '%s' ".spellbook"

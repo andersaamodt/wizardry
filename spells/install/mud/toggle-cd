@@ -65,7 +65,7 @@ fi
 # Check if the hook is installed by looking for markers
 # Use grep -E with alternation to check all markers in a single call
 if [ -n "$rc_file" ] && [ -f "$rc_file" ]; then
-        if grep -Eq '# >>> wizardry cd cantrip >>>|#wizardry: cd-cantrip|WIZARDRY_CD_CANTRIP' "$rc_file" 2>/dev/null; then
+        if grep -Eq '# >>> wizardry cd cantrip >>>|#wizardry: cd-cantrip' "$rc_file" 2>/dev/null; then
                 is_installed=1
         fi
 fi
@@ -73,7 +73,7 @@ fi
 if [ "$is_installed" -eq 0 ]; then
         # Not installed, so install it
         printf '%s\n' "Installing cd hook..."
-        if WIZARDRY_CD_CANTRIP="$CD_SPELL" "$CD_SPELL" install; then
+        if "$CD_SPELL" install; then
                 printf '%s\n' "✓ cd hook enabled. Each directory change will now display the room description."
                 printf '%s\n' "  (Restart your shell or source your rc file to activate)"
         else
@@ -83,7 +83,7 @@ if [ "$is_installed" -eq 0 ]; then
 else
         # Hook is installed, so uninstall it with live feedback
         printf '%s\n' "Uninstalling cd hook..."
-        if WIZARDRY_CD_CANTRIP="$CD_SPELL" "$CD_SPELL" uninstall; then
+        if "$CD_SPELL" uninstall; then
                 printf '%s\n' "✓ cd hook disabled."
                 printf '%s\n' "  (Restart your shell or source your rc file to deactivate)"
         else

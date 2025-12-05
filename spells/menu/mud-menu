@@ -72,9 +72,6 @@ EOF
   if grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
     return 0
   fi
-  if grep -Fq 'WIZARDRY_CD_CANTRIP' "$rc_file" 2>/dev/null; then
-    return 0
-  fi
   return 1
 }
 
