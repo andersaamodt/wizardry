@@ -1,5 +1,5 @@
 #!/bin/sh
-# Tests for the 'pkg-install' imp
+# Ensure test-bootstrap exposes expected testing primitives
 
 # Locate the repository root so we can source test-bootstrap
 # Start from this test's directory and walk upward until spells/.imps/test/test-bootstrap is found
@@ -11,19 +11,17 @@ while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" !
 done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-test_pkg_install_no_package_fails() {
-  run_spell spells/.imps/pkg/pkg-install
-  assert_failure
-  assert_error_contains "package name required"
+test_exports_find_repo_root() {
+  root=$(find_repo_root)
+  [ -n "$root" ] && [ -d "$root/.tests" ] && [ -d "$root/spells" ]
 }
 
-test_pkg_install_empty_package_fails() {
-  run_spell spells/.imps/pkg/pkg-install ""
-  assert_failure
-  assert_error_contains "package name required"
+test_exports_run_spell() {
+  run_spell spells/.imps/out/ok
+  assert_success
 }
 
-run_test_case "pkg-install without package fails" test_pkg_install_no_package_fails
-run_test_case "pkg-install with empty package fails" test_pkg_install_empty_package_fails
+run_test_case "test-bootstrap finds repository root" test_exports_find_repo_root
+run_test_case "test-bootstrap exports run_spell helper" test_exports_run_spell
 
 finish_tests

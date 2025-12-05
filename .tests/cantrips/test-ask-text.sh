@@ -12,11 +12,11 @@
 # - ask_text shows usage on too many arguments
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-while [ ! -f "$test_root/test-common.sh" ] && [ "$test_root" != "/" ]; do
+while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
   test_root=$(dirname "$test_root")
 done
 # shellcheck source=/dev/null
-. "$test_root/test-common.sh"
+. "$test_root/spells/.imps/test/test-bootstrap"
 
 test_ask_text_reads_stdin() {
   run_cmd env ASK_CANTRIP_INPUT=stdin sh -c "printf 'hello\\n' | \"$ROOT_DIR/spells/cantrips/ask-text\" 'Your name?'"
