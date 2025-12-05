@@ -150,9 +150,12 @@ test_warn_full_paths_to_spells() {
   found_paths=""
   
   find "$ROOT_DIR/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r spell; do
-    # Skip bootstrap spells (install/core/) and test-magic
+    # Skip bootstrap spells (install/core/), test-magic, and the spellbook menu.
+    # Those scripts need repo-root paths to assemble PATH or locate user spells,
+    # while normal spells should rely on PATH lookups.
     case $spell in
       */install/core/*|*/system/test-magic) continue ;;
+      */.imps/test/test-bootstrap|*/menu/spellbook) continue ;;
     esac
     
     name=$(basename "$spell")
