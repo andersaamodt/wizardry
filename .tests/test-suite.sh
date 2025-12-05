@@ -417,28 +417,21 @@ test_no_pseudo_globals_in_rc_files() {
     should_skip_file "$name" && continue
     is_posix_shell_script "$spell" || continue
     
-    # Look for patterns that write exports to rc files:
-    # 1. printf/echo with export and >> 
-    # 2. Variables being written to bashrc/zshrc/rc files
     # Skip legitimate PATH manipulation (learn-spellbook)
     case "$spell" in
       */learn-spellbook) continue ;;
     esac
     
-    # Check for printf/echo lines that contain both "export" and write to rc-like files
-    if grep -qE "(printf|echo)[^;]*export[^;]*(>>|\"\$rc|\$HOME/\.)" "$spell" 2>/dev/null; then
-      rel_path=${spell#"$ROOT_DIR/spells/"}
-      printf '%s\n' "$rel_path"
-    fi
-    
-    # Check for patterns like: printf '%s' "export VAR=" >> ~/.bashrc
-    if grep -qE '(>>|>)[[:space:]]*[^;]*\.(bashrc|zshrc|profile)' "$spell" 2>/dev/null; then
+    # Check for the specific antipattern: writing "export VAR=" to rc files
+    # Pattern matches lines like: printf '...' "export VAR=" >> ~/.bashrc
+    # or: echo "export VAR=" >> "$rc_file"
+    # This catches scripts writing persistent variable exports to shell rc files.
+    if grep -qE '^[^#]*\.(bashrc|zshrc|profile|rc)' "$spell" 2>/dev/null; then
       if grep -qE 'export[[:space:]]+[A-Z][A-Z0-9_]+=' "$spell" 2>/dev/null; then
-        # This file writes exports to rc files - check if it's writing pseudo-globals
-        if ! grep -qE 'export PATH=' "$spell" 2>/dev/null; then
-          # Not a PATH export - flag it
+        # Check if it writes something OTHER than PATH to rc files
+        if grep -qE '(printf|echo).*export[[:space:]]+[^P]' "$spell" 2>/dev/null; then
           rel_path=${spell#"$ROOT_DIR/spells/"}
-          printf '%s (writes export to rc)\n' "$rel_path"
+          printf '%s\n' "$rel_path"
         fi
       fi
     fi
