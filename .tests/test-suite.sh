@@ -328,17 +328,9 @@ test_declare_globals_count() {
 # Also allows common patterns that aren't really globals:
 #   - PATH modifications
 #   - Package manager variables (NIX_PACKAGE, APT_PACKAGE, etc.) used locally
-#   - Script-local UPPERCASE variables that follow naming conventions
+#   - MUD_PLAYER (special case for MUD system, exported to shell rc)
+#   - WIZARDRY_PLATFORM, WIZARDRY_RC_FILE, WIZARDRY_RC_FORMAT (rc detection vars)
 test_no_undeclared_global_exports() {
-  # These are the only globals allowed to be exported
-  declared_globals="WIZARDRY_DIR SPELLBOOK_DIR MUD_DIR"
-  
-  # These patterns are allowed because they're not persistent globals:
-  # - PATH: standard PATH manipulation
-  # - *_PACKAGE: package manager hints used locally in install scripts
-  # - MUD_PLAYER: special case for MUD system (exported to shell rc)
-  allowed_patterns="^PATH=|_PACKAGE=|^MUD_PLAYER="
-  
   violations=""
   
   find "$ROOT_DIR/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r spell; do
