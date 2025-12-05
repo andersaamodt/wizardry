@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# This spell installs a clipboard helper for the current environment.
+# Bootstrap spell: installs a clipboard helper for the current environment.
 # It detects if one is already installed and prefers the best option for the platform:
 # - macOS: pbcopy (built-in, no installation needed)
 # - Wayland: wl-copy (from wl-clipboard)
@@ -43,12 +43,7 @@ detect_installed_helper() {
 # Detect the preferred helper for this environment
 detect_preferred_helper() {
   # macOS has pbcopy built-in
-  # Use local detect-distro (bootstrap spell in same directory)
-  platform=''
-  if [ -x "$SCRIPT_DIR/detect-distro" ]; then
-    platform=$("$SCRIPT_DIR/detect-distro" 2>/dev/null || printf 'unknown')
-  fi
-  if [ "$platform" = "mac" ] || [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+  if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
     printf 'pbcopy'
     return
   fi

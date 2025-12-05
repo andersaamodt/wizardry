@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-# This spell installs the core wizardry dependencies required for spell execution.
+# Bootstrap spell: installs the core wizardry dependencies required for spell execution.
 
 show_usage() {
   cat <<'USAGE'
@@ -13,15 +13,6 @@ USAGE
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 
 detect_platform() {
-  # Use local detect-distro (bootstrap spell in same directory)
-  if [ -x "$script_dir/detect-distro" ]; then
-    platform=$("$script_dir/detect-distro" 2>/dev/null || printf 'unknown')
-    case "$platform" in
-    mac) printf '%s' "Darwin" ;;
-    *) printf '%s' "Linux" ;;
-    esac
-    return
-  fi
   if command -v uname >/dev/null 2>&1; then
     uname -s 2>/dev/null || printf '%s' "unknown"
   else
@@ -47,12 +38,7 @@ get_clipboard_label() {
   fi
   
   # No helper installed, show preferred
-  # Use local detect-distro (bootstrap spell in same directory)
-  platform=''
-  if [ -x "$script_dir/detect-distro" ]; then
-    platform=$("$script_dir/detect-distro" 2>/dev/null || printf 'unknown')
-  fi
-  if [ "$platform" = "mac" ] || [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+  if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
     printf 'Clipboard (pbcopy)'
     return
   fi

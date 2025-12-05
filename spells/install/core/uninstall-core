@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# This spell uninstalls the core wizardry dependencies.
+# Bootstrap spell: uninstalls the core wizardry dependencies.
 
 
 show_usage() {
@@ -20,15 +20,6 @@ esac
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 
 detect_platform() {
-  # Use local detect-distro (bootstrap spell in same directory)
-  if [ -x "$script_dir/detect-distro" ]; then
-    platform=$("$script_dir/detect-distro" 2>/dev/null || printf 'unknown')
-    case "$platform" in
-    mac) printf '%s' "Darwin" ;;
-    *) printf '%s' "Linux" ;;
-    esac
-    return
-  fi
   if command -v uname >/dev/null 2>&1; then
     uname -s 2>/dev/null || printf '%s' "unknown"
   else

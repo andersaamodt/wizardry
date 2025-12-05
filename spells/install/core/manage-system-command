@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-# Install or uninstall a system command using the available package manager.
+# Bootstrap spell: install or uninstall a system command using the available package manager.
 
 show_usage() {
         cat <<'USAGE' >&2
@@ -23,8 +23,6 @@ esac
 
 set -eu
 
-script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-
 action=install
 if [ "${1-}" = "--uninstall" ]; then
   action=uninstall
@@ -41,9 +39,8 @@ package_default=$2
 force_install=${FORCE_INSTALL:-0}
 
 # Detect NixOS for automatic installation via nix-env
-# Use local detect-distro (bootstrap spell in same directory)
 is_nixos=0
-if [ -x "$script_dir/detect-distro" ] && [ "$("$script_dir/detect-distro" 2>/dev/null)" = "nixos" ]; then
+if [ -d /etc/nixos ] || [ -f /etc/NIXOS ] || grep -qi 'ID=nixos' /etc/os-release 2>/dev/null; then
         is_nixos=1
 fi
 

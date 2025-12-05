@@ -605,6 +605,69 @@ test_imps_have_opening_comments() {
   return 0
 }
 
+# --- Check: Bootstrap spells have "Bootstrap spell" in opening comment ---
+# Canonical list of bootstrap spells (hardcoded):
+# - install (root installer)
+# - detect-distro (platform detection)
+# - All spells in spells/install/core/
+# These spells must have "Bootstrap spell" in their opening comment (first few lines after shebang).
+test_bootstrap_spells_identified() {
+  # Canonical list of bootstrap spell paths (relative to ROOT_DIR)
+  # This list is the authoritative source for what constitutes a bootstrap spell
+  bootstrap_paths="
+install
+spells/divination/detect-distro
+spells/install/core/
+"
+  
+  violations=""
+  
+  for path in $bootstrap_paths; do
+    # Handle directory (spells/install/core/) vs single file
+    case "$path" in
+      */)
+        # It's a directory - check all executable files in it
+        dir="$ROOT_DIR/$path"
+        if [ -d "$dir" ]; then
+          for file in "$dir"*; do
+            [ -f "$file" ] || continue
+            [ -x "$file" ] || continue
+            name=$(basename "$file")
+            should_skip_file "$name" && continue
+            is_posix_shell_script "$file" || continue
+            
+            # Check if "Bootstrap spell" appears in first 5 lines
+            if ! head -5 "$file" | grep -qi "bootstrap spell"; then
+              rel_path=${file#"$ROOT_DIR/"}
+              violations="$violations $rel_path"
+            fi
+          done
+        fi
+        ;;
+      *)
+        # It's a single file
+        file="$ROOT_DIR/$path"
+        if [ -f "$file" ] && [ -x "$file" ]; then
+          is_posix_shell_script "$file" || continue
+          
+          # Check if "Bootstrap spell" appears in first 5 lines
+          if ! head -5 "$file" | grep -qi "bootstrap spell"; then
+            violations="$violations $path"
+          fi
+        fi
+        ;;
+    esac
+  done
+  
+  violations=$(printf '%s' "$violations" | sed 's/^ //' | tr ' ' ', ')
+  
+  if [ -n "$violations" ]; then
+    TEST_FAILURE_REASON="bootstrap spells missing 'Bootstrap spell' comment: $violations"
+    return 1
+  fi
+  return 0
+}
+
 # --- Run all test cases ---
 
 _run_test_case "no duplicate spell names" test_no_duplicate_spell_names
@@ -620,5 +683,6 @@ _run_test_case "no global declarations outside declare-globals" test_no_global_d
 _run_test_case "no pseudo-globals stored in rc files" test_no_pseudo_globals_in_rc_files
 _run_test_case "imps follow one-function-or-zero rule" test_imps_follow_function_rule
 _run_test_case "imps have opening comments" test_imps_have_opening_comments
+_run_test_case "bootstrap spells have identifying comment" test_bootstrap_spells_identified
 
 _finish_tests

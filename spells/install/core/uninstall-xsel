@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# This spell uninstalls the xsel clipboard utility.
+# Bootstrap spell: uninstalls the xsel clipboard utility.
 
 show_usage() {
         cat <<'USAGE' >&2

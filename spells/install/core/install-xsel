@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# This spell installs the xsel clipboard utility using the system package manager.
+# Bootstrap spell: installs the xsel clipboard utility using the system package manager.
 
 show_usage() {
         cat <<'USAGE' >&2

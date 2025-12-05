@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# This spell uninstalls wl-clipboard (provides wl-copy/wl-paste).
+# Bootstrap spell: uninstalls wl-clipboard (provides wl-copy/wl-paste).
 
 show_usage() {
         cat <<'USAGE' >&2
