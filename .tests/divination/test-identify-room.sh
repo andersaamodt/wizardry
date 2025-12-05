@@ -106,9 +106,19 @@ test_usr_local_room() {
 
 test_home_district() {
   setup_layout
-  _run_spell "$(identify_spell)" /home
-  _assert_success || return 1
-  _assert_output_contains "Home Dwellings" || return 1
+  # On macOS, /home doesn't exist - use /Users instead
+  if [ -d /home ]; then
+    _run_spell "$(identify_spell)" /home
+    _assert_success || return 1
+    _assert_output_contains "Home Dwellings" || return 1
+  elif [ -d /Users ]; then
+    _run_spell "$(identify_spell)" /Users
+    _assert_success || return 1
+    _assert_output_contains "User Homes" || return 1
+  else
+    # Skip test if neither exists
+    return 0
+  fi
 }
 
 test_other_home_possessive_s() {

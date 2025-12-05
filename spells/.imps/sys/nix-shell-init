@@ -125,18 +125,23 @@ $_nsi_line"; fi
         done < "$_nsi_input_file" > "$_nsi_tmp_file"
         rm -f "$_nsi_input_file"
       else
-        _nsi_nix_block="  $_nsi_nix_option = ''
-$_nsi_marked_code
-  '';"
-        printf '%s\n' "$_nsi_content" | awk -v block="$_nsi_nix_block" '
+        # Write the block to a temp file and use it with awk (macOS awk compatible)
+        _nsi_block_file=$(mktemp "${TMPDIR:-/tmp}/nix-shell-init-block.XXXXXX") || return 1
+        printf '%s\n' "  $_nsi_nix_option = ''" > "$_nsi_block_file"
+        printf '%s\n' "$_nsi_marked_code" >> "$_nsi_block_file"
+        printf '%s\n' "  '';" >> "$_nsi_block_file"
+        
+        printf '%s\n' "$_nsi_content" | awk -v blockfile="$_nsi_block_file" '
+        BEGIN { while ((getline line < blockfile) > 0) block = block line "\n" }
         { lines[NR] = $0 }
         END {
           last = NR; while (last > 0 && lines[last] ~ /^[[:space:]]*$/) last--
           if (last > 0 && lines[last] ~ /^[[:space:]]*}/) {
-            for (i = 1; i < last; i++) print lines[i]; print ""; print block; print lines[last]
+            for (i = 1; i < last; i++) print lines[i]; print ""; printf "%s", block; print lines[last]
             for (i = last + 1; i <= NR; i++) print lines[i]
-          } else { for (i = 1; i <= NR; i++) print lines[i]; print ""; print block }
+          } else { for (i = 1; i <= NR; i++) print lines[i]; print ""; printf "%s", block }
         }' > "$_nsi_tmp_file"
+        rm -f "$_nsi_block_file"
       fi
       if [ "$_nsi_needs_sudo" -eq 1 ]; then
         if command -v sudo >/dev/null 2>&1; then sudo cp "$_nsi_tmp_file" "$_nsi_nix_file"

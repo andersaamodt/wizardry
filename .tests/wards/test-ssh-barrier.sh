@@ -54,7 +54,11 @@ SH
 
   cat >"$stub_dir/sed-inplace" <<'SH'
 #!/bin/sh
-sed -i "$1" "$2"
+# Portable sed-inplace stub
+pattern=$1
+file=$2
+tmpfile="${file}.sed.$$"
+sed "$pattern" "$file" > "$tmpfile" && mv "$tmpfile" "$file"
 SH
   chmod +x "$stub_dir/sed-inplace"
 

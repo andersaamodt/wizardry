@@ -88,6 +88,12 @@ printf '%s\n' "\$*" >>"$log_file"
 exit 0
 STUB
   chmod +x "$stub/gio"
+  # Create uname stub for Linux detection
+  cat >"$stub/uname" <<'STUB'
+#!/bin/sh
+printf 'Linux\n'
+STUB
+  chmod +x "$stub/uname"
   PATH="$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" -r "$target_dir"
   _assert_success && _assert_file_contains "$log_file" "trash"
 }
@@ -171,6 +177,12 @@ printf '%s\n' "\$*" >>"$log_file"
 exit 0
 STUB
   chmod +x "$stub/gio"
+  # Create uname stub for Linux detection
+  cat >"$stub/uname" <<'STUB'
+#!/bin/sh
+printf 'Linux\n'
+STUB
+  chmod +x "$stub/uname"
   PATH="$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" "$file1" "$file2"
   _assert_success && _assert_file_contains "$log_file" "file1.txt" && _assert_file_contains "$log_file" "file2.txt"
 }
@@ -186,6 +198,12 @@ printf '%s\n' "\$*" >>"$log_file"
 exit 0
 STUB
   chmod +x "$stub/gio"
+  # Create uname stub for Linux detection
+  cat >"$stub/uname" <<'STUB'
+#!/bin/sh
+printf 'Linux\n'
+STUB
+  chmod +x "$stub/uname"
   PATH="$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" -rf "$target_dir" "$WIZARDRY_TMPDIR/nonexistent"
   _assert_success && _assert_file_contains "$log_file" "testdir"
 }
