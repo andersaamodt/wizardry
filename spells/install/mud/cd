@@ -395,7 +395,10 @@ wizardry_cd_main() {
         command cd "$@" && wizardry_cd_cast_look
 }
 
-: "${WIZARDRY_CD_CANTRIP:=${WIZARDRY_MEMORIZE_TARGET:-$(absolute_spell_path)}}"
+# Set WIZARDRY_CD_CANTRIP if not already set (without using : "${VAR:=}" declaration syntax)
+if [ -z "${WIZARDRY_CD_CANTRIP-}" ]; then
+        WIZARDRY_CD_CANTRIP=${WIZARDRY_MEMORIZE_TARGET:-$(absolute_spell_path)}
+fi
 
 # Handle command-line invocation for install/uninstall commands
 case "${1-}" in

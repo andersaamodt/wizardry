@@ -6,6 +6,7 @@
 # 1. Exactly 3 globals are declared here (test_declare_globals_count)
 # 2. Scripts using these globals have 'set -u' enabled (test_scripts_using_globals_have_set_u)
 # 3. No undeclared globals are exported (test_no_undeclared_global_exports)
+# 4. No global declarations outside this file (test_no_global_declarations_outside_declare_globals)
 # This creates a closed enforcement loop that prevents undeclared globals.
 
 # Installation root directory path.

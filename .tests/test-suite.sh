@@ -298,6 +298,40 @@ test_scripts_using_globals_have_set_u() {
   return 0
 }
 
+# --- Check: No global declarations outside declare-globals ---
+# Global declarations (using : "${VAR:=...}" syntax) should ONLY be in declare-globals.
+# This prevents undeclared globals from sneaking in through alternate syntax.
+test_no_global_declarations_outside_declare_globals() {
+  find "$ROOT_DIR/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r spell; do
+    name=$(basename "$spell")
+    should_skip_file "$name" && continue
+    is_posix_shell_script "$spell" || continue
+    
+    # Skip declare-globals itself - that's where declarations belong
+    case "$spell" in
+      */.imps/declare-globals) continue ;;
+    esac
+    
+    # Look for global declaration pattern: : "${VAR:=...}" or : "${VAR:=}"
+    # This is the standard shell idiom for declaring globals with defaults
+    if grep -qE '^[[:space:]]*: "\$\{[A-Z][A-Z0-9_]+:=' "$spell" 2>/dev/null; then
+      rel_path=${spell#"$ROOT_DIR/spells/"}
+      # Extract the variable names being declared
+      vars=$(grep -oE '\$\{[A-Z][A-Z0-9_]+:=' "$spell" 2>/dev/null | sed 's/\${//;s/:=$//' | sort -u | tr '\n' ',' | sed 's/,$//')
+      printf '%s (%s)\n' "$rel_path" "$vars"
+    fi
+  done > "${WIZARDRY_TMPDIR}/declaration-violations.txt"
+  
+  violations=$(cat "${WIZARDRY_TMPDIR}/declaration-violations.txt" 2>/dev/null | head -10 | tr '\n' ', ' | sed 's/, $//')
+  rm -f "${WIZARDRY_TMPDIR}/declaration-violations.txt"
+  
+  if [ -n "$violations" ]; then
+    TEST_FAILURE_REASON="global declarations outside declare-globals: $violations"
+    return 1
+  fi
+  return 0
+}
+
 # --- Check: declare-globals has exactly 3 globals ---
 # Ensures no new globals are added without explicit tracking
 test_declare_globals_count() {
@@ -386,5 +420,6 @@ run_test_case "test files have matching spells" test_test_files_have_matching_sp
 run_test_case "scripts using declared globals have set -u" test_scripts_using_globals_have_set_u
 run_test_case "declare-globals has exactly 3 globals" test_declare_globals_count
 run_test_case "no undeclared globals exported" test_no_undeclared_global_exports
+run_test_case "no global declarations outside declare-globals" test_no_global_declarations_outside_declare_globals
 
 finish_tests
