@@ -267,8 +267,6 @@ fi
 INVOKE_WIZARDRY="$ABS_DIR/spells/.imps/sys/invoke-wizardry"
 DETECT_RC_FILE="$ABS_DIR/spells/divination/detect-rc-file"
 NIX_SHELL_INIT="$ABS_DIR/spells/.imps/sys/nix-shell-init"
-# Use learn-spell for installing spells to shell (explicit spell installation)
-LEARN_SPELL_INSTALLER="$ABS_DIR/spells/spellcraft/learn-spell"
 CORE_INSTALLER=${WIZARDRY_CORE_INSTALLER:-$ABS_DIR/spells/install/core/install-core}
 ASK_YN="$ABS_DIR/spells/cantrips/ask-yn"
 
@@ -276,9 +274,9 @@ ASK_YN="$ABS_DIR/spells/cantrips/ask-yn"
 MUD_CD_SPELL="$ABS_DIR/spells/install/mud/cd"
 MUD_CONFIG="$ABS_DIR/spells/install/mud/mud-config"
 
-# Learnable spells that are NOT part of the MUD (install these by default)
-# These are spells with install() functions that set up shell integration
-LEARNABLE_SPELLS="$ABS_DIR/spells/translocation/jump-to-marker"
+# NOTE: With the word-of-binding paradigm, spells no longer need to be pre-installed.
+# word-of-binding auto-sources spells on first use when called via handle-command-not-found.
+# Users can still use install() functions in spells for explicit customizations like aliases.
 
 # Export environment variables for all helper spells so that they use the new
 # versions being installed, not any old versions that may be in PATH.
@@ -788,37 +786,12 @@ if [ -n "${HOME-}" ]; then
         fi
 fi
 
-# Installing spells pre-compiles wizardry's menus so interactive commands are
-# ready before the user opens their first shell inside the new install.
-# This is done before nixos-rebuild so spells are ready when the rebuild completes.
-# Install each learnable spell explicitly (not recursively) for transparency.
-mem_status=0
-if [ -x "$LEARN_SPELL_INSTALLER" ]; then
-        section_msg "Installing Spells"
-        mem_log=$(mktemp "${TMPDIR:-/tmp}/wizardry-install.XXXXXX") || exit 1
-        spell_count=0
-        # Install each learnable spell explicitly by name
-        for spell in $LEARNABLE_SPELLS; do
-                if [ -x "$spell" ]; then
-                        spell_name=$(basename "$spell")
-                        if "$LEARN_SPELL_INSTALLER" "$spell" >>"$mem_log" 2>&1; then
-                                spell_count=$((spell_count + 1))
-                                substep_msg "$spell_name"
-                        else
-                                printf '%sNote:%s Installation of %s skipped.\n' "$YELLOW" "$RESET" "$spell_name" >&2
-                        fi
-                fi
-        done
-        if [ "$spell_count" -gt 0 ]; then
-                success_msg "Installed $spell_count spell(s)"
-        fi
-        rm -f "$mem_log"
-else
-        printf '%sWarning:%s learn-spell is missing; skipping automatic spell installation.\n' "$YELLOW" "$RESET" >&2
-fi
+# NOTE: With the word-of-binding paradigm (PR #410), spells are auto-sourced on
+# first use via handle-command-not-found. Pre-installing spells is no longer needed.
+# Users can still manually run spell install() functions for customizations.
 
 # MUD Installation (optional)
-# After installing core spells, ask if user wants to install the MUD features
+# After setting up shell integration, ask if user wants to install the MUD features
 install_mud=0
 if [ "${WIZARDRY_INSTALL_ASSUME_YES-}" = "1" ]; then
         # In non-interactive mode, skip MUD installation by default
@@ -1152,4 +1125,4 @@ printf '\n'
 printf 'Run %smenu%s or %smud%s to start using wizardry.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
 printf '\n'
 
-exit "$mem_status"
+exit 0
