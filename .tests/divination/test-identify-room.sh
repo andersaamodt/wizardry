@@ -1,11 +1,11 @@
 #!/bin/sh
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-while [ ! -f "$test_root/test-common.sh" ] && [ "$test_root" != "/" ]; do
+while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
   test_root=$(dirname "$test_root")
 done
 # shellcheck source=/dev/null
-. "$test_root/test-common.sh"
+. "$test_root/spells/.imps/test/test-bootstrap"
 
 setup_layout() {
   tmpdir=$(make_tempdir)

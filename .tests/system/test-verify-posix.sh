@@ -2,11 +2,11 @@
 set -eu
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-while [ ! -f "$test_root/test-common.sh" ] && [ "$test_root" != "/" ]; do
+while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
   test_root=$(dirname "$test_root")
 done
 # shellcheck source=/dev/null
-. "$test_root/test-common.sh"
+. "$test_root/spells/.imps/test/test-bootstrap"
 
 prepare_checkbashisms_stub() {
   stub_dir=$(mktemp -d "${WIZARDRY_TMPDIR}/checkbashisms.main.XXXXXX") || return 1
@@ -72,6 +72,7 @@ SCRIPT
   esac
   echo "$OUTPUT" | grep '^FAIL ' >/dev/null 2>&1 && { TEST_FAILURE_REASON="expected no FAIL lines"; return 1; }
   [ -z "${ERROR}" ] || { TEST_FAILURE_REASON="expected no stderr"; return 1; }
+  rm -f "$abs_tmp"
 }
 
 check_is_quiet_for_posix() {

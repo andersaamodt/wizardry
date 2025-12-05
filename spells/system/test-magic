@@ -115,9 +115,6 @@ pattern_has_match() {
   found=1
   while IFS= read -r path; do
     [ -n "$path" ] || continue
-    case $path in
-      */lib/*) continue ;;
-    esac
     rel=${path#"$test_dir/"}
     case $rel in
       $pattern)
@@ -166,13 +163,7 @@ EOF_PATS
 fi
 
 while IFS= read -r path; do
-  case $path in
-    */lib/*) continue ;;
-  esac
   short=${path#"$test_dir/"}
-  case $short in
-    test-common.sh) continue ;;
-  esac
   if matches_patterns "$short"; then
     if [ -n "$test_files" ]; then
       test_files=$(printf '%s\n%s' "$test_files" "$short")
@@ -478,9 +469,9 @@ scan_extraneous() {
   while IFS= read -r test_file; do
     [ -n "$test_file" ] || continue
     
-    # Skip test-common.sh, test-suite.sh and lib files
+    # Skip test-suite.sh
     case $test_file in
-      */test-common.sh|*/test-suite.sh|*/lib/*) continue ;;
+      */test-suite.sh) continue ;;
     esac
     
     # Extract spell path from test path
