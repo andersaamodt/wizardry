@@ -120,17 +120,9 @@ if [ "$MACOS_SANDBOX_AVAILABLE" -eq 0 ]; then
   if [ "$BWRAP_AVAILABLE" -eq 1 ]; then
     if "$BWRAP_BIN" --unshare-user-try --ro-bind / / /bin/true 2>/dev/null; then
       :
-    elif [ -n "$REAL_SUDO_BIN" ] && "$REAL_SUDO_BIN" -n true 2>/dev/null; then
-      # When running via sudo, don't use --unshare-user-try as it can cause
-      # permission issues with bind mounts in some environments
-      if "$REAL_SUDO_BIN" -n "$BWRAP_BIN" --ro-bind / / /bin/true 2>/dev/null; then
-        BWRAP_VIA_SUDO=1
-        BWRAP_USE_UNSHARE=0
-      else
-        BWRAP_AVAILABLE=0
-        BWRAP_REASON="bubblewrap unusable even via sudo"
-      fi
     else
+      # Running bwrap via sudo causes permission issues (files created as root)
+      # so we disable sandboxing if user namespaces are not available
       BWRAP_AVAILABLE=0
       BWRAP_REASON="bubblewrap unusable (user namespaces likely disabled)"
     fi

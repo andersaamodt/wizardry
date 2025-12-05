@@ -45,7 +45,7 @@ _run_cmd() {
 
     # Optionally pass through test-related variables if they're set
     # (add them BEFORE the -- separator in the command)
-    for envvar in APT_LOG APT_EXIT PKGIN_LOG PKGIN_EXIT PKGIN_CANDIDATES DETECT_RC_FILE LOOK_RC_FILE ASK_LOG LOOK_COLORS_PATH SSHD_CONFIG SPELLBOOK_DIR WIZARDRY_DIR MUD_DIR; do
+    for envvar in APT_LOG APT_EXIT PKGIN_LOG PKGIN_EXIT PKGIN_CANDIDATES DETECT_RC_FILE LOOK_RC_FILE ASK_LOG LOOK_COLORS_PATH SSHD_CONFIG SPELLBOOK_DIR WIZARDRY_DIR MUD_DIR WIZARDRY_SKIP_NIX_REBUILD WIZARDRY_SKIP_CONFIRM; do
       eval "val=\${$envvar-}"
       if [ -n "$val" ]; then
         # Insert --setenv before the -- separator
