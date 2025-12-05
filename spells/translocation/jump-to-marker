@@ -1,14 +1,13 @@
 #!/bin/sh
 
-# This spell installs the interactive `jump` incantation tied to mark-location.
-# Once memorized, it lets any shell teleport to named markers instantly.
+# This spell teleports to markers set with mark-location.
+# Source this file or use word-of-binding to invoke it.
 
 show_usage() {
 cat <<'USAGE'
-Usage: jump [marker]
-       jump-to-marker [--install] [marker]
+Usage: jump-to-marker [marker]
 
-Teleport to a marker set with mark-location. Defaults to marker "1", marker "0" cycles through all saved locations, and --install memorizes the spell for easier casting.
+Teleport to a marker set with mark-location. Defaults to marker "1", marker "0" cycles through all saved locations.
 USAGE
 }
 
@@ -28,8 +27,6 @@ case $0 in
 *) : ;;
 esac
 
-SPELL_NAME=jump-to-marker
-
 # Resolve the spell home directory (same logic as spellbook menu)
 _jump_resolve_spell_home() {
   if [ -n "${SPELLBOOK_DIR-}" ]; then
@@ -47,290 +44,6 @@ else
   _spell_home=$(_jump_resolve_spell_home)
   MARKERS_DIR="$_spell_home/.markers"
 fi
-JUMP_TO_MARKER_PATH=${JUMP_TO_MARKER_PATH-}
-JUMP_TO_MARKER_HELPERS_DIR=${JUMP_TO_MARKER_HELPERS_DIR-}
-JUMP_TO_MARKER_RC_FILE=${JUMP_TO_MARKER_RC_FILE-}
-JUMP_TO_MARKER_PLATFORM=${JUMP_TO_MARKER_PLATFORM-}
-JUMP_TO_MARKER_FORMAT=${JUMP_TO_MARKER_FORMAT-}
-JUMP_TO_MARKER_ASK=${JUMP_TO_MARKER_ASK-}
-
-# jump_self_path locates the currently running script so we can add a
-# `. "path"` line to the rc file when memorizing the spell.
-jump_self_path() {
-        if [ -n "$JUMP_TO_MARKER_PATH" ]; then
-                printf '%s' "$JUMP_TO_MARKER_PATH"
-                return 0
-        fi
-        hint=${JUMP_TO_MARKER_SOURCE_HINT-}
-        if [ -z "$hint" ] && [ -n "${WIZARDRY_MEMORIZE_TARGET-}" ]; then
-                hint=$WIZARDRY_MEMORIZE_TARGET
-        fi
-        if [ -z "$hint" ]; then
-                hint=$0
-        fi
-        if [ "$RUNNING_AS_SCRIPT" -ne 1 ] && [ "$hint" = "$0" ]; then
-                hint=$(command -v jump-to-marker 2>/dev/null || printf '%s' '')
-        fi
-        if [ -z "$hint" ]; then
-                printf '%s\n' "jump-to-marker: unable to determine script path." >&2
-                return 1
-        fi
-        case $hint in
-        */*)
-                candidate=$hint
-                ;;
-        *)
-                candidate=$(command -v "$hint" 2>/dev/null || printf '%s' "$hint")
-                ;;
-        esac
-        dir=${candidate%/*}
-        file=${candidate##*/}
-        if [ -z "$dir" ] || [ "$dir" = "$candidate" ]; then
-                dir=.
-        fi
-        if abs_dir=$(cd "$dir" 2>/dev/null && pwd -P); then
-                JUMP_TO_MARKER_PATH="$abs_dir/$file"
-        else
-                JUMP_TO_MARKER_PATH="$candidate"
-        fi
-        printf '%s' "$JUMP_TO_MARKER_PATH"
-}
-
-# jump_helpers_dir returns the directory that contains this spell plus nearby
-# helper spells such as detect-rc-file and learn.
-jump_helpers_dir() {
-        if [ -n "$JUMP_TO_MARKER_HELPERS_DIR" ]; then
-                printf '%s' "$JUMP_TO_MARKER_HELPERS_DIR"
-                return 0
-        fi
-        if ! self_path=$(jump_self_path); then
-                return 1
-        fi
-        dir=${self_path%/*}
-        JUMP_TO_MARKER_HELPERS_DIR=$dir
-        printf '%s' "$JUMP_TO_MARKER_HELPERS_DIR"
-}
-
-jump_detect_helper() {
-        # Check if environment variable override is set first
-        if [ -n "${DETECT_RC_FILE-}" ]; then
-                if [ -x "$DETECT_RC_FILE" ]; then
-                        printf '%s' "$DETECT_RC_FILE"
-                        return 0
-                else
-                        printf '%s\n' "jump-to-marker: DETECT_RC_FILE is set but not executable." >&2
-                        return 1
-                fi
-        fi
-        
-        if ! helpers=$(jump_helpers_dir); then
-                return 1
-        fi
-        # Look in divination directory where detect-rc-file lives
-        detect="$helpers/../divination/detect-rc-file"
-        
-        # Only fall back to PATH if no explicit override was provided
-        if [ ! -x "$detect" ] && command -v detect-rc-file >/dev/null 2>&1; then
-                detect=$(command -v detect-rc-file)
-        fi
-        if [ ! -x "$detect" ]; then
-                printf '%s\n' "jump-to-marker: required helper 'detect-rc-file' is missing." >&2
-                return 1
-        fi
-        printf '%s' "$detect"
-}
-
-jump_learn_helper() {
-        # Check if environment variable override is set first
-        if [ -n "${LEARN_SPELL-}" ]; then
-                if [ -x "$LEARN_SPELL" ]; then
-                        printf '%s' "$LEARN_SPELL"
-                        return 0
-                else
-                        printf '%s\n' "jump-to-marker: LEARN_SPELL is set but not executable." >&2
-                        return 1
-                fi
-        fi
-        # Legacy environment variable for backwards compatibility
-        if [ -n "${SCRIBE_SPELL-}" ]; then
-                if [ -x "$SCRIBE_SPELL" ]; then
-                        printf '%s' "$SCRIBE_SPELL"
-                        return 0
-                else
-                        printf '%s\n' "jump-to-marker: SCRIBE_SPELL is set but not executable." >&2
-                        return 1
-                fi
-        fi
-        
-        if ! helpers=$(jump_helpers_dir); then
-                return 1
-        fi
-        # Look in spellcraft directory where learn lives
-        learn="$helpers/../spellcraft/learn"
-        
-        # Only fall back to PATH if no explicit override was provided
-        if [ ! -x "$learn" ] && command -v learn >/dev/null 2>&1; then
-                learn=$(command -v learn)
-        fi
-        if [ ! -x "$learn" ]; then
-                printf '%s\n' "jump-to-marker: required helper 'learn' is missing." >&2
-                return 1
-        fi
-        printf '%s' "$learn"
-}
-
-jump_ask_helper() {
-        if [ -n "$JUMP_TO_MARKER_ASK" ] && [ -x "$JUMP_TO_MARKER_ASK" ]; then
-                printf '%s' "$JUMP_TO_MARKER_ASK"
-                return 0
-        fi
-        if ! helpers=$(jump_helpers_dir); then
-                return 1
-        fi
-        # Look in cantrips directory where ask-yn lives
-        ask="$helpers/../cantrips/ask-yn"
-        if [ -x "$ask" ]; then
-                JUMP_TO_MARKER_ASK=$ask
-                printf '%s' "$JUMP_TO_MARKER_ASK"
-                return 0
-        fi
-        if command -v ask-yn >/dev/null 2>&1; then
-                JUMP_TO_MARKER_ASK=$(command -v ask-yn)
-                printf '%s' "$JUMP_TO_MARKER_ASK"
-                return 0
-        fi
-        printf '%s\n' "jump-to-marker: ask-yn spell is unavailable." >&2
-        return 1
-}
-
-jump_confirm() {
-        question=$1
-        default=${2:-no}
-        if ask_helper=$(jump_ask_helper); then
-                if "$ask_helper" "$question" "$default" >/dev/null; then
-                        return 0
-                fi
-                return 1
-        fi
-        return 1
-}
-
-# jump_detect_environment prefers the shared WIZARDRY_* environment variables
-# (populated by the memorize spell) and only shells out to detect-rc-file when
-# those overrides are missing.
-jump_detect_environment() {
-if [ -n "${WIZARDRY_RC_FILE-}" ] && [ -z "$JUMP_TO_MARKER_RC_FILE" ]; then
-JUMP_TO_MARKER_RC_FILE=$WIZARDRY_RC_FILE
-fi
-if [ -n "${WIZARDRY_PLATFORM-}" ] && [ -z "$JUMP_TO_MARKER_PLATFORM" ]; then
-JUMP_TO_MARKER_PLATFORM=$WIZARDRY_PLATFORM
-fi
-if [ -n "${WIZARDRY_RC_FORMAT-}" ] && [ -z "$JUMP_TO_MARKER_FORMAT" ]; then
-JUMP_TO_MARKER_FORMAT=$WIZARDRY_RC_FORMAT
-fi
-        if [ -n "$JUMP_TO_MARKER_RC_FILE" ] && [ -n "$JUMP_TO_MARKER_PLATFORM" ] && [ -n "$JUMP_TO_MARKER_FORMAT" ]; then
-                return 0
-        fi
-        if ! detect=$(jump_detect_helper); then
-                return 1
-        fi
-        output=$("$detect")
-        rc_file=''
-        platform=''
-        format=''
-        while IFS='=' read -r key value; do
-                case $key in
-                rc_file)
-                        rc_file=$value
-                        ;;
-                platform)
-                        platform=$value
-                        ;;
-                format)
-                        format=$value
-                        ;;
-                esac
-        done <<EOF_ENV
-$output
-EOF_ENV
-        if [ -z "$rc_file" ]; then
-                printf '%s\n' "jump-to-marker: detect-rc-file did not provide an rc file." >&2
-                return 1
-        fi
-        if [ -z "$platform" ]; then
-                platform=unknown
-        fi
-        if [ -z "$format" ]; then
-                format=shell
-        fi
-        JUMP_TO_MARKER_RC_FILE=$rc_file
-        JUMP_TO_MARKER_PLATFORM=$platform
-        JUMP_TO_MARKER_FORMAT=$format
-}
-
-jump_spell_memorized() {
-        if ! jump_detect_environment; then
-                return 1
-        fi
-	if ! learn=$(jump_learn_helper); then
-		return 1
-	fi
-if "$learn" --spell "$SPELL_NAME" status >/dev/null 2>&1; then
-return 0
-fi
-if [ -f "$JUMP_TO_MARKER_RC_FILE" ] && grep -Fq "jump-to-marker" "$JUMP_TO_MARKER_RC_FILE" 2>/dev/null; then
-return 0
-fi
-return 1
-}
-
-# Run nixos-rebuild or home-manager switch to apply NixOS configuration changes.
-# Uses the shared nix-rebuild imp if available, otherwise logs a warning.
-run_nix_rebuild() {
-        # Allow tests to skip the rebuild
-        if [ "${WIZARDRY_SKIP_NIX_REBUILD-}" = "1" ]; then
-                return 0
-        fi
-
-        # Use the shared nix-rebuild imp if available
-        if command -v nix-rebuild >/dev/null 2>&1; then
-                nix-rebuild
-                return $?
-        fi
-
-        # Fallback: attempt home-manager if available (most common case)
-        if command -v home-manager >/dev/null 2>&1; then
-                printf '%s\n' "jump-to-marker: running home-manager switch..."
-                home-manager switch && return 0
-        fi
-
-        printf '%s\n' "jump-to-marker: NixOS configuration could not be automatically rebuilt." >&2
-        return 1
-}
-
-install() {
-        if ! jump_detect_environment; then
-                return 1
-        fi
-        if ! learn=$(jump_learn_helper); then
-                return 1
-        fi
-        if ! script_path=$(jump_self_path); then
-                return 1
-        fi
-        # Source the spell and create 'jump' alias for convenience
-        spell_content=$(printf 'source "%s"\nalias jump=jump-to-marker' "$script_path")
-        
-        # learn auto-detects rc file and format
-        if printf '%s\n' "$spell_content" | "$learn" --spell "$SPELL_NAME" add; then
-                printf '%s\n' "The 'jump' spell has been learned."
-                if [ "$JUMP_TO_MARKER_FORMAT" = "nix" ]; then
-                        run_nix_rebuild || true
-                else
-                        printf '%s\n' "Open a new terminal (or source the file) to summon portals anywhere."
-                fi
-        fi
-}
 
 # jump_portal_messages preserves every line of flavor text from the original
 # spell and sprinkles in a few new sensations for modern teleportation.
@@ -565,38 +278,14 @@ jump() {
 jump_describe_current_location
 }
 
-jump_prompt_memorize() {
-        if jump_spell_memorized; then
-                # Already learned - silently continue without breaking the fourth wall
-                return 0
-        fi
-        if ! jump_detect_environment; then
-                return 1
-        fi
-        if ! learn=$(jump_learn_helper); then
-                return 1
-        fi
-        rc_display=$(basename "$JUMP_TO_MARKER_RC_FILE")
-prompt_message="Learn the 'jump' spell now? It will be etched into $rc_display."
-if jump_confirm "$prompt_message" yes; then
-                install
-        else
-                printf '%s\n' "Very well—cast 'memorize jump-to-marker' when you crave instant travel."
-        fi
-}
-
 jump_cli() {
         case ${1-} in
-        --install)
-                install
-                ;;
         --help|--usage|-h)
                 show_usage
                 ;;
-"")
-jump_prompt_memorize || true
-jump || true
-;;
+        "")
+                jump || true
+                ;;
         *)
                 # Treat as marker name if not starting with -
                 case "$1" in
