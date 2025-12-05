@@ -37,3 +37,7 @@ _into() {
   # shellcheck disable=SC2086
   "$_into_lex_dir/parse" "$_into_cmd" $_into_new_args "$@"
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */into) _into "$@" ;; esac

@@ -14,3 +14,7 @@ _os() {
   else echo unknown
   fi
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */os) _os "$@" ;; esac

@@ -18,3 +18,7 @@ _pkg_install() {
     apk)    sudo apk add "$_pi_package" ;;
   esac
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */pkg-install) _pkg_install "$@" ;; esac

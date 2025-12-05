@@ -16,3 +16,7 @@ _clip_paste() {
     return 1
   fi
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */clip-paste) _clip_paste "$@" ;; esac

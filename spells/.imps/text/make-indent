@@ -33,3 +33,7 @@ _make_indent() {
       ;;
   esac
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */make-indent) _make_indent "$@" ;; esac

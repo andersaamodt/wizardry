@@ -16,3 +16,7 @@ _clip_copy() {
     return 1
   fi
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */clip-copy) _clip_copy "$@" ;; esac

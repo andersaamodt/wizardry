@@ -8,3 +8,7 @@ _need() {
   printf '%s\n' "$_need_msg" >&2
   return 1
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */need) _need "$@" ;; esac

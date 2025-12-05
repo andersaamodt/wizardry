@@ -8,3 +8,7 @@ _tty_save() {
     return 1
   fi
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */tty-save) _tty_save "$@" ;; esac

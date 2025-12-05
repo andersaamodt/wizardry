@@ -6,3 +6,7 @@
 _given() {
   [ -n "$1" ]
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */given) _given "$@" ;; esac

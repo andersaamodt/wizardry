@@ -17,3 +17,7 @@ _is_installable() {
 
   grep -Eq '^[[:space:]]*install[[:space:]]*\(\)' "$_ii_spell_path" 2>/dev/null
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */is-installable) _is_installable "$@" ;; esac

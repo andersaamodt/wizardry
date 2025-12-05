@@ -12,3 +12,7 @@ _pkg_manager() {
   elif command -v apk >/dev/null 2>&1; then echo apk
   else return 1; fi
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */pkg-manager) _pkg_manager "$@" ;; esac

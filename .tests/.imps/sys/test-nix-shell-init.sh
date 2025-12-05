@@ -16,12 +16,6 @@ export WIZARDRY_SKIP_NIX_REBUILD=1
 # Skip confirmation prompts in tests
 export WIZARDRY_SKIP_CONFIRM=1
 
-test_nix_shell_init_help() {
-  run_spell "spells/.imps/sys/nix-shell-init" --help
-  assert_success
-  assert_error_contains "Usage:"
-}
-
 test_nix_shell_init_add_creates_block() {
   tmpdir=$(make_tempdir)
   nix_file="$tmpdir/test.nix"
@@ -195,7 +189,6 @@ test_nix_shell_init_requires_file() {
   return 0
 }
 
-run_test_case "nix-shell-init shows help" test_nix_shell_init_help
 run_test_case "nix-shell-init add creates block" test_nix_shell_init_add_creates_block
 run_test_case "nix-shell-init add is idempotent" test_nix_shell_init_add_is_idempotent
 run_test_case "nix-shell-init status returns correct result" test_nix_shell_init_status_returns_correct_result

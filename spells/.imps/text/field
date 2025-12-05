@@ -16,3 +16,7 @@ _field() {
     awk "{print \$$_field_n}"
   fi
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */field) _field "$@" ;; esac

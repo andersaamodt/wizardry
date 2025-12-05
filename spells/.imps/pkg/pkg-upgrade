@@ -15,3 +15,7 @@ _pkg_upgrade() {
     apk)    sudo apk upgrade ;;
   esac
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */pkg-upgrade) _pkg_upgrade "$@" ;; esac

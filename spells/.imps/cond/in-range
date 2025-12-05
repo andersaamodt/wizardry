@@ -6,3 +6,7 @@ _in_range() {
   [ "$#" -eq 3 ] || return 1
   [ "$1" -ge "$2" ] && [ "$1" -le "$3" ] 2>/dev/null
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */in-range) _in_range "$@" ;; esac

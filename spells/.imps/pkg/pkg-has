@@ -18,3 +18,7 @@ _pkg_has() {
     apk)    apk info -e "$_ph_package" >/dev/null 2>&1 ;;
   esac
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */pkg-has) _pkg_has "$@" ;; esac

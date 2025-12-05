@@ -5,3 +5,7 @@
 _say() {
   printf '%s\n' "$*"
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */say) _say "$@" ;; esac

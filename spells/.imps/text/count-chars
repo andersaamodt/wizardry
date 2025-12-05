@@ -9,3 +9,7 @@ _count_chars() {
     wc -c | tr -d ' '
   fi
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */count-chars) _count_chars "$@" ;; esac

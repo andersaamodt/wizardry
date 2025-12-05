@@ -5,3 +5,7 @@
 _now() {
   date "+${1:-%s}" 2>/dev/null || printf '%s' "$$"
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */now) _now "$@" ;; esac

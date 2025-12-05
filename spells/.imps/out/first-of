@@ -8,3 +8,7 @@ _first_of() {
   else return 1
   fi
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */first-of) _first_of "$@" ;; esac

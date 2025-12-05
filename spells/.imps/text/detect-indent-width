@@ -29,3 +29,7 @@ _detect_indent_width() {
   }
   ' "$_diw_file"
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */detect-indent-width) _detect_indent_width "$@" ;; esac

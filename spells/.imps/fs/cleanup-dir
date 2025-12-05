@@ -6,3 +6,7 @@ _cleanup_dir() {
   [ -n "${1:-}" ] && [ -d "$1" ] && rm -rf "$1"
   return 0
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */cleanup-dir) _cleanup_dir "$@" ;; esac

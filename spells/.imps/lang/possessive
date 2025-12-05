@@ -13,3 +13,7 @@ _possessive() {
     *) printf "%s's" "$_pos_noun" ;;
   esac
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */possessive) _possessive "$@" ;; esac

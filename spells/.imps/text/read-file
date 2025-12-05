@@ -5,3 +5,7 @@
 _read_file() {
   cat "$1"
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */read-file) _read_file "$@" ;; esac

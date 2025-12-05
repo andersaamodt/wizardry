@@ -13,3 +13,7 @@ _test_assert_success() {
     return 1
   fi
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */test-assert-success) _test_assert_success "$@" ;; esac

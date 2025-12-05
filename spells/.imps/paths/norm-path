@@ -9,3 +9,7 @@ _norm_path() {
     sed 's|///*|/|g'
   fi
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */norm-path) _norm_path "$@" ;; esac

@@ -9,3 +9,7 @@ _test_assert_failure() {
     return 1
   fi
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */test-assert-failure) _test_assert_failure "$@" ;; esac

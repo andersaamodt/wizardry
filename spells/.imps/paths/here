@@ -5,3 +5,7 @@
 _here() {
   pwd -P | sed 's|///*|/|g'
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */here) _here "$@" ;; esac

@@ -5,3 +5,7 @@
 _older() {
   [ "$1" -ot "$2" ]
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */older) _older "$@" ;; esac

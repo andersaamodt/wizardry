@@ -21,3 +21,7 @@ _detect_indent_char() {
     printf 'space\n'
   fi
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */detect-indent-char) _detect_indent_char "$@" ;; esac

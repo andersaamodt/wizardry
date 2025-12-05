@@ -18,3 +18,7 @@ _pkg_remove() {
     apk)    sudo apk del "$_pr_package" ;;
   esac
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */pkg-remove) _pkg_remove "$@" ;; esac

@@ -16,3 +16,7 @@ _declare_globals() {
   # Required for MUD features to share room descriptions and settings.
   : "${MUD_DIR:=}"
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */declare-globals) _declare_globals "$@" ;; esac

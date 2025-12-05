@@ -10,3 +10,7 @@ _path() {
   esac
   printf '%s' "$_p_path" | sed 's|///*|/|g'
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */path) _path "$@" ;; esac

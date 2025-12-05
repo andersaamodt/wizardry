@@ -6,3 +6,7 @@ _temp_file() {
   _tf_prefix=${1:-wizardry}
   mktemp "${TMPDIR:-/tmp}/${_tf_prefix}.XXXXXX"
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */temp-file) _temp_file "$@" ;; esac

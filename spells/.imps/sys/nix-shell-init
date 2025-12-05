@@ -148,3 +148,7 @@ $_nsi_marked_code
       ;;
   esac
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */nix-shell-init) _nix_shell_init "$@" ;; esac

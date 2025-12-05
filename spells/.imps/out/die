@@ -10,3 +10,7 @@ _die() {
   printf '%s\n' "$*" >&2
   return "$_die_code"
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */die) _die "$@" ;; esac

@@ -6,3 +6,7 @@ _cleanup_file() {
   [ -n "${1:-}" ] && [ -f "$1" ] && rm -f "$1"
   return 0
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */cleanup-file) _cleanup_file "$@" ;; esac

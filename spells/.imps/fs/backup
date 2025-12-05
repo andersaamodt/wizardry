@@ -19,3 +19,7 @@ _backup() {
   cp "$_bk_file" "${_bk_file}${_bk_suffix}" || return 1
   printf '%s\n' "${_bk_file}${_bk_suffix}"
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */backup) _backup "$@" ;; esac

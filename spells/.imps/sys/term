@@ -6,3 +6,7 @@ _term() {
   _term_fd=${1:-0}
   [ -t "$_term_fd" ]
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */term) _term "$@" ;; esac

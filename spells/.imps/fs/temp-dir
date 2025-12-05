@@ -6,3 +6,7 @@ _temp_dir() {
   _td_prefix=${1:-wizardry}
   mktemp -d "${TMPDIR:-/tmp}/${_td_prefix}.XXXXXX"
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */temp-dir) _temp_dir "$@" ;; esac

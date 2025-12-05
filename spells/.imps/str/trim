@@ -5,3 +5,7 @@
 _trim() {
   sed 's/^[[:space:]]*//;s/[[:space:]]*$//'
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */trim) _trim "$@" ;; esac

@@ -24,3 +24,7 @@ _and() {
   _and_lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
   "$_and_lex_dir/parse" "$@"
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */and) _and "$@" ;; esac

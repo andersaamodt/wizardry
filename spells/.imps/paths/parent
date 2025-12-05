@@ -9,3 +9,7 @@ _parent() {
     *)   printf '%s\n' "." ;;
   esac
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */parent) _parent "$@" ;; esac

@@ -105,3 +105,7 @@ _parse() {
 
   "$_parse_lex_dir/$_parse_link_word" "$_parse_cmd" "$_parse_cmd_args" "$@"
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */parse) _parse "$@" ;; esac

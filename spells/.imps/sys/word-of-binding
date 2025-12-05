@@ -85,3 +85,7 @@ _word_of_binding() {
     return 1
   fi
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */word-of-binding) _word_of_binding "$@" ;; esac

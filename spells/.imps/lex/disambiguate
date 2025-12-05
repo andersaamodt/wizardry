@@ -91,3 +91,7 @@ _disambiguate() {
 
   "$_dis_chosen_path" "$@"
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */disambiguate) _disambiguate "$@" ;; esac

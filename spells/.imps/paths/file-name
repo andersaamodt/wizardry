@@ -5,3 +5,7 @@
 _file_name() {
   printf '%s\n' "${1##*/}"
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */file-name) _file_name "$@" ;; esac

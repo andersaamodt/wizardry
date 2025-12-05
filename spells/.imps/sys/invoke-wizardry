@@ -98,3 +98,7 @@ _invoke_wizardry() {
 
 # Run the setup when sourced
 _invoke_wizardry
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */invoke-wizardry) _invoke_wizardry "$@" ;; esac

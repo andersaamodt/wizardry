@@ -15,3 +15,7 @@ _test_assert_output_contains() {
       ;;
   esac
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */test-assert-output-contains) _test_assert_output_contains "$@" ;; esac

@@ -15,11 +15,6 @@ done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-test_require_help() {
-  run_cmd "$ROOT_DIR/spells/.imps/sys/require" --help
-  assert_success
-  assert_error_contains "Usage: require COMMAND"
-}
 
 test_require_usage_flag() {
   run_cmd "$ROOT_DIR/spells/.imps/sys/require" --usage
@@ -141,7 +136,6 @@ SH
   assert_output_contains "The 'menu' command needs \"special\" chars"
 }
 
-run_test_case "require --help shows usage" test_require_help
 run_test_case "require --usage shows usage" test_require_usage_flag
 run_test_case "require -h shows usage" test_require_h_flag
 run_test_case "require passes to require-command" test_require_passes_to_require_command

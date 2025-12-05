@@ -16,3 +16,7 @@ _is() {
     *)        return 1 ;;
   esac
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */is) _is "$@" ;; esac

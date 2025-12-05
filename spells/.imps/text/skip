@@ -5,3 +5,7 @@
 _skip() {
   if [ "$#" -ge 2 ]; then tail -n +"$(($1 + 1))" "$2"; else tail -n +"$(($1 + 1))"; fi
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */skip) _skip "$@" ;; esac

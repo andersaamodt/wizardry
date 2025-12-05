@@ -8,3 +8,7 @@ _make() {
     *) return 1 ;;
   esac
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */make) _make "$@" ;; esac

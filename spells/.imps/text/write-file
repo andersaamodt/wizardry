@@ -5,3 +5,7 @@
 _write_file() {
   cat > "$1"
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */write-file) _write_file "$@" ;; esac

@@ -8,3 +8,7 @@ _contains() {
     *) return 1 ;;
   esac
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */contains) _contains "$@" ;; esac

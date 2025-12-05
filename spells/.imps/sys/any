@@ -11,3 +11,7 @@ _any() {
   done
   return 1
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */any) _any "$@" ;; esac

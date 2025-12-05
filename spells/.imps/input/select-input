@@ -22,3 +22,7 @@ _select_input() {
 
   return 1
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */select-input) _select_input "$@" ;; esac

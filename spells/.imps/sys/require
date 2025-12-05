@@ -32,3 +32,7 @@ _require() {
   printf '%s\n' "Visit 'install-menu' to review installation options." >&2
   return 1
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */require) _require "$@" ;; esac

@@ -20,3 +20,7 @@ _detect_trash() {
       ;;
   esac
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */detect-trash) _detect_trash "$@" ;; esac

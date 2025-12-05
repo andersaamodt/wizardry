@@ -37,3 +37,7 @@ _from() {
   # shellcheck disable=SC2086
   "$_from_lex_dir/parse" "$_from_cmd" $_from_new_args "$@"
 }
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */from) _from "$@" ;; esac
