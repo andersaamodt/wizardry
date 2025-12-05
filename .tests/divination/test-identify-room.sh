@@ -106,15 +106,21 @@ test_usr_local_room() {
 
 test_home_district() {
   setup_layout
-  # On macOS, /home doesn't exist - use /Users instead
-  if [ -d /home ]; then
+  # On macOS, /home is a symlink that resolves to /System/Volumes/Data/home
+  # Use /Users on macOS and /home on Linux
+  kernel=$(uname -s 2>/dev/null || printf '')
+  if [ "$kernel" = "Darwin" ]; then
+    if [ -d /Users ]; then
+      _run_spell "$(identify_spell)" /Users
+      _assert_success || return 1
+      _assert_output_contains "User Homes" || return 1
+    else
+      return 0
+    fi
+  elif [ -d /home ]; then
     _run_spell "$(identify_spell)" /home
     _assert_success || return 1
     _assert_output_contains "Home Dwellings" || return 1
-  elif [ -d /Users ]; then
-    _run_spell "$(identify_spell)" /Users
-    _assert_success || return 1
-    _assert_output_contains "User Homes" || return 1
   else
     # Skip test if neither exists
     return 0
