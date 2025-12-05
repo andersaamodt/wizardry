@@ -1,0 +1,8 @@
+#!/bin/sh
+# test-write-command-stub DIR NAME - create simple command stub that exits 0
+# Creates a no-op executable stub at DIR/NAME.
+# Example: test-write-command-stub "$dir" "mycommand"
+
+set -eu
+printf '#!/bin/sh\nexit 0\n' >"$1/$2"
+chmod +x "$1/$2"

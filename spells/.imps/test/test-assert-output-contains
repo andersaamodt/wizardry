@@ -1,15 +1,13 @@
 #!/bin/sh
-# assert-output-contains SUBSTRING - test that OUTPUT contains substring
-# Testing imp - fails if OUTPUT variable doesn't contain the substring
-# Example: assert-output-contains "hello"
+# test-assert-output-contains OUTPUT SUBSTRING - assert output contains text
+# Exits 0 if OUTPUT contains SUBSTRING, otherwise exits 1.
+# Example: test-assert-output-contains "$OUTPUT" "expected" || return 1
 
-substring=$1
-case "${OUTPUT-}" in
-  *"$substring"*)
-    exit 0
-    ;;
-  *)
-    TEST_FAILURE_REASON="output missing substring: $substring"
-    exit 1
-    ;;
+set -eu
+_output=$1
+_substring=$2
+case "$_output" in
+  *"$_substring"*) exit 0 ;;
 esac
+printf 'output missing substring: %s\n' "$_substring" >&2
+exit 1

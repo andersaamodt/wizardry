@@ -1,0 +1,13 @@
+#!/bin/sh
+# test-link-tools DIR TOOL... - symlink system tools into directory
+# Creates symlinks to system tools for test fixtures.
+# Example: test-link-tools "$dir" sh cat printf
+
+set -eu
+_dir=$1
+shift
+for _tool in "$@"; do
+  [ -e "$_dir/$_tool" ] && continue
+  _p=$(command -v "$_tool" 2>/dev/null || true)
+  [ -n "$_p" ] && ln -s "$_p" "$_dir/$_tool"
+done

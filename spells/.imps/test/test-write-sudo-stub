@@ -1,0 +1,15 @@
+#!/bin/sh
+# test-write-sudo-stub DIR - create sudo stub that strips flags and executes
+# Creates sudo stub in DIR/bin/ that strips -n/-- flags.
+# Example: test-write-sudo-stub "$fixture"
+
+set -eu
+_dir=$1
+cat <<'STUB' >"$_dir/bin/sudo"
+#!/bin/sh
+while [ $# -gt 0 ]; do
+  case "$1" in -n|--non-interactive) shift ;; --) shift; break ;; *) break ;; esac
+done
+exec "$@"
+STUB
+chmod +x "$_dir/bin/sudo"

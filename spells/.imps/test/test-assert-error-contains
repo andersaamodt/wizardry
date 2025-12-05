@@ -1,15 +1,13 @@
 #!/bin/sh
-# assert-error-contains SUBSTRING - test that ERROR contains substring
-# Testing imp - fails if ERROR variable doesn't contain the substring
-# Example: assert-error-contains "warning"
+# test-assert-error-contains ERROR SUBSTRING - assert stderr contains text
+# Exits 0 if ERROR contains SUBSTRING, otherwise exits 1.
+# Example: test-assert-error-contains "$ERROR" "error msg" || return 1
 
-substring=$1
-case "${ERROR-}" in
-  *"$substring"*)
-    exit 0
-    ;;
-  *)
-    TEST_FAILURE_REASON="stderr missing substring: $substring"
-    exit 1
-    ;;
+set -eu
+_error=$1
+_substring=$2
+case "$_error" in
+  *"$_substring"*) exit 0 ;;
 esac
+printf 'stderr missing substring: %s\n' "$_substring" >&2
+exit 1

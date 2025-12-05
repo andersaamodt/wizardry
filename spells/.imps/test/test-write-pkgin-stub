@@ -1,0 +1,19 @@
+#!/bin/sh
+# test-write-pkgin-stub DIR - create pkgin stub that logs to PKGIN_LOG
+# Creates pkgin stub at DIR/opt/pkg/bin/pkgin.
+# Example: test-write-pkgin-stub "$fixture"
+
+set -eu
+_dir=$1
+mkdir -p "$_dir/opt/pkg/bin"
+cat <<'STUB' >"$_dir/opt/pkg/bin/pkgin"
+#!/bin/sh
+if [ "$1" = "-y" ] && [ "$2" = "install" ]; then
+  shift 2; printf 'pkgin install %s\n' "$*" >>"${PKGIN_LOG:?}"; exit ${PKGIN_EXIT:-0}
+fi
+if [ "$1" = "-y" ] && [ "$2" = "remove" ]; then
+  shift 2; printf 'pkgin remove %s\n' "$*" >>"${PKGIN_LOG:?}"; exit ${PKGIN_EXIT:-0}
+fi
+exit 1
+STUB
+chmod +x "$_dir/opt/pkg/bin/pkgin"

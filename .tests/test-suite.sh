@@ -9,12 +9,130 @@
 
 set -eu
 
-test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
-  test_root=$(dirname "$test_root")
-done
-# shellcheck source=/dev/null
-. "$test_root/spells/.imps/test/test-bootstrap"
+# Setup test environment
+_test_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+while [ "$_test_dir" != "/" ] && [ ! -d "$_test_dir/spells" ]; do _test_dir=$(dirname "$_test_dir"); done
+ROOT_DIR=$_test_dir
+_sys_path=${PATH:-/usr/local/bin:/usr/bin:/bin}
+PATH="$ROOT_DIR/spells:$ROOT_DIR/spells/.imps"
+for _d in "$ROOT_DIR/spells/.imps"/*; do [ -d "$_d" ] && PATH="$PATH:$_d"; done
+for _d in "$ROOT_DIR/spells"/*; do [ -d "$_d" ] && PATH="$PATH:$_d"; done
+PATH="$PATH:$_sys_path"
+WIZARDRY_TMPDIR=$(mktemp -d "${TMPDIR:-/tmp}/wizardry-test.XXXXXX")
+export ROOT_DIR PATH WIZARDRY_TMPDIR
+
+# Test state
+_pass=0 _fail=0
+
+# Run command and capture output
+run_cmd() {
+  _o=$(mktemp "$WIZARDRY_TMPDIR/o.XXXXXX"); _e=$(mktemp "$WIZARDRY_TMPDIR/e.XXXXXX")
+  STATUS=0; "$@" >"$_o" 2>"$_e" || STATUS=$?
+  OUTPUT=$(cat "$_o"); ERROR=$(cat "$_e"); rm -f "$_o" "$_e"
+}
+run_spell() { _s=$1; shift; run_cmd "$ROOT_DIR/$_s" "$@"; }
+
+# Assertions (call imps with captured state)
+assert_success() { test-assert-success "$STATUS" "$ERROR"; }
+assert_failure() { test-assert-failure "$STATUS"; }
+assert_status() { test-assert-status "$STATUS" "$1" "$ERROR"; }
+assert_output_contains() { test-assert-output-contains "$OUTPUT" "$1"; }
+assert_error_contains() { test-assert-error-contains "$ERROR" "$1"; }
+assert_file_contains() { test-assert-file-contains "$1" "$2"; }
+assert_path_exists() { test-assert-path-exists "$1"; }
+assert_path_missing() { test-assert-path-missing "$1"; }
+
+# Fixture helpers
+make_tempdir() { test-make-tempdir; }
+make_fixture() { test-make-fixture; }
+write_apt_stub() { test-write-apt-stub "$1"; }
+write_sudo_stub() { test-write-sudo-stub "$1"; }
+write_command_stub() { test-write-command-stub "$1" "$2"; }
+write_pkgin_stub() { test-write-pkgin-stub "$1"; }
+provide_basic_tools() { test-provide-basic-tools "$1"; }
+link_tools() { test-link-tools "$@"; }
+
+# Test runner
+run_test_case() {
+  _d=$1; _f=$2
+  if "$_f"; then _pass=$((_pass+1)); printf 'PASS %s\n' "$_d"
+  else _fail=$((_fail+1)); printf 'FAIL %s\n' "$_d"; fi
+}
+finish_tests() {
+  _t=$((_pass+_fail))
+  printf '%s/%s tests passed' "$_pass" "$_t"
+  [ "$_fail" -gt 0 ] && printf ' (%s failed)\n' "$_fail" && return 1
+  printf '\n'
+}
+
+
+#!/bin/sh
+# Global checks that apply across all spells and imps.
+# Run first as part of test-magic to catch systemic issues early.
+#
+# This test file implements behavioral and structural checks that verify
+# properties across the entire spellbook. Style/opinionated checks belong
+# in vet-spell instead.
+# Note: POSIX compliance (shebang, bashisms) is checked by verify-posix.
+
+set -eu
+
+# Setup test environment
+_test_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+while [ "$_test_dir" != "/" ] && [ ! -d "$_test_dir/spells" ]; do _test_dir=$(dirname "$_test_dir"); done
+ROOT_DIR=$_test_dir
+_sys_path=${PATH:-/usr/local/bin:/usr/bin:/bin}
+PATH="$ROOT_DIR/spells:$ROOT_DIR/spells/.imps"
+for _d in "$ROOT_DIR/spells/.imps"/*; do [ -d "$_d" ] && PATH="$PATH:$_d"; done
+for _d in "$ROOT_DIR/spells"/*; do [ -d "$_d" ] && PATH="$PATH:$_d"; done
+PATH="$PATH:$_sys_path"
+WIZARDRY_TMPDIR=$(mktemp -d "${TMPDIR:-/tmp}/wizardry-test.XXXXXX")
+export ROOT_DIR PATH WIZARDRY_TMPDIR
+
+# Test state
+_pass=0 _fail=0
+
+# Run command and capture output
+run_cmd() {
+  _o=$(mktemp "$WIZARDRY_TMPDIR/o.XXXXXX"); _e=$(mktemp "$WIZARDRY_TMPDIR/e.XXXXXX")
+  STATUS=0; "$@" >"$_o" 2>"$_e" || STATUS=$?
+  OUTPUT=$(cat "$_o"); ERROR=$(cat "$_e"); rm -f "$_o" "$_e"
+}
+run_spell() { _s=$1; shift; run_cmd "$ROOT_DIR/$_s" "$@"; }
+
+# Assertions (call imps with captured state)
+assert_success() { test-assert-success "$STATUS" "$ERROR"; }
+assert_failure() { test-assert-failure "$STATUS"; }
+assert_status() { test-assert-status "$STATUS" "$1" "$ERROR"; }
+assert_output_contains() { test-assert-output-contains "$OUTPUT" "$1"; }
+assert_error_contains() { test-assert-error-contains "$ERROR" "$1"; }
+assert_file_contains() { test-assert-file-contains "$1" "$2"; }
+assert_path_exists() { test-assert-path-exists "$1"; }
+assert_path_missing() { test-assert-path-missing "$1"; }
+
+# Fixture helpers
+make_tempdir() { test-make-tempdir; }
+make_fixture() { test-make-fixture; }
+write_apt_stub() { test-write-apt-stub "$1"; }
+write_sudo_stub() { test-write-sudo-stub "$1"; }
+write_command_stub() { test-write-command-stub "$1" "$2"; }
+write_pkgin_stub() { test-write-pkgin-stub "$1"; }
+provide_basic_tools() { test-provide-basic-tools "$1"; }
+link_tools() { test-link-tools "$@"; }
+
+# Test runner
+run_test_case() {
+  _d=$1; _f=$2
+  if "$_f"; then _pass=$((_pass+1)); printf 'PASS %s\n' "$_d"
+  else _fail=$((_fail+1)); printf 'FAIL %s\n' "$_d"; fi
+}
+finish_tests() {
+  _t=$((_pass+_fail))
+  printf '%s/%s tests passed' "$_pass" "$_t"
+  [ "$_fail" -gt 0 ] && printf ' (%s failed)\n' "$_fail" && return 1
+  printf '\n'
+}
+
 
 # Helper: Check if a file is a POSIX shell script
 is_posix_shell_script() {
@@ -155,7 +273,6 @@ test_warn_full_paths_to_spells() {
     # while normal spells should rely on PATH lookups.
     case $spell in
       */install/core/*|*/system/test-magic) continue ;;
-      */.imps/test/test-bootstrap|*/menu/spellbook) continue ;;
     esac
     
     name=$(basename "$spell")
@@ -188,7 +305,7 @@ test_test_files_have_matching_spells() {
   find "$ROOT_DIR/.tests" -type f -name 'test-*.sh' -print | while IFS= read -r test_file; do
     # Skip special files
     case $test_file in
-      */spells/.imps/test/test-bootstrap|*/test-install.sh|*/test-suite.sh) continue ;;
+      */test-suite.sh) continue ;;
     esac
     
     # Extract expected spell path
@@ -364,10 +481,9 @@ test_no_global_declarations_outside_declare_globals() {
     is_posix_shell_script "$spell" || continue
     
     # Skip declare-globals itself - that's where declarations belong
-    # Skip test-bootstrap - WIZARDRY_TMPDIR is a test-local temp directory,
     # not a persistent global exported to user scripts
     case "$spell" in
-      */.imps/declare-globals|*/.imps/test/test-bootstrap) continue ;;
+      */.imps/declare-globals) continue ;;
     esac
     
     # Look for global declaration pattern: : "${VAR:=...}" or : "${VAR:=}"
@@ -505,9 +621,7 @@ test_no_pseudo_globals_in_rc_files() {
   return 0
 }
 
-# --- Check: Imps contain no functions (except test-bootstrap which is a sourced file) ---
 # According to README.md, imps "do not contain functions" - they should be flat, linear.
-# test-bootstrap is an exception because it's designed to be sourced, which requires functions
 # for the test harness (run_test_case, finish_tests, etc.)
 # This is a structural check - enforces imp simplicity rule.
 
@@ -519,10 +633,8 @@ test_imps_have_no_functions() {
     should_skip_file "$name" && continue
     is_posix_shell_script "$imp" || continue
     
-    # Skip test-bootstrap - it's designed to be sourced, which requires functions
     # for the test harness (run_test_case, finish_tests, etc.)
     case "$name" in
-      test-bootstrap) continue ;;
     esac
     
     # Check for any function definitions: word() { or word () {

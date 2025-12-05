@@ -1,0 +1,7 @@
+#!/bin/sh
+# test-make-tempdir - create and output a temp directory path
+# Creates temp directory under WIZARDRY_TMPDIR.
+# Example: tmpdir=$(test-make-tempdir)
+
+set -eu
+mktemp -d "${WIZARDRY_TMPDIR:-/tmp}/case.XXXXXX" | sed 's|//|/|g'

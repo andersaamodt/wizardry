@@ -1,0 +1,9 @@
+#!/bin/sh
+# test-make-fixture - create a test fixture directory with bin/log/home
+# Creates fixture with bin/, log/, and home/.local/bin/ subdirectories.
+# Example: fixture=$(test-make-fixture)
+
+set -eu
+_f=$(mktemp -d "${WIZARDRY_TMPDIR:-/tmp}/case.XXXXXX" | sed 's|//|/|g')
+mkdir -p "$_f/bin" "$_f/log" "$_f/home/.local/bin"
+printf '%s\n' "$_f"

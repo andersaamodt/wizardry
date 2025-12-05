@@ -1,0 +1,11 @@
+#!/bin/sh
+# test-provide-basic-tools DIR - symlink essential tools to DIR/bin
+# Links mktemp, mkdir, rm, cat, env, ln, sh, dirname, readlink.
+# Example: test-provide-basic-tools "$fixture"
+
+set -eu
+_dir=$1
+for _cmd in mktemp mkdir rm cat env ln sh dirname readlink; do
+  _p=$(command -v "$_cmd" 2>/dev/null || true)
+  [ -n "$_p" ] && ln -sf "$_p" "$_dir/bin/$_cmd" 2>/dev/null || true
+done

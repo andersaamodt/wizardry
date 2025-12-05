@@ -1,0 +1,13 @@
+#!/bin/sh
+# test-write-apt-stub DIR - create apt-get stub that logs to APT_LOG
+# Creates apt-get stub in DIR/bin/ that logs calls and exits with APT_EXIT.
+# Example: test-write-apt-stub "$fixture"
+
+set -eu
+_dir=$1
+cat <<'STUB' >"$_dir/bin/apt-get"
+#!/bin/sh
+echo "$0 $*" >>"${APT_LOG:?}" || exit 1
+exit ${APT_EXIT:-0}
+STUB
+chmod +x "$_dir/bin/apt-get"

@@ -1,0 +1,17 @@
+#!/bin/sh
+# test-assert-status STATUS EXPECTED [ERROR] - assert specific exit status
+# Exits 0 if STATUS equals EXPECTED, otherwise exits 1.
+# Example: test-assert-status "$STATUS" 42 "$ERROR" || return 1
+
+set -eu
+_status=$1
+_expected=$2
+_error=${3:-}
+if [ "$_status" -ne "$_expected" ]; then
+  if [ -n "$_error" ]; then
+    printf 'expected status %s but got %s; stderr: %s\n' "$_expected" "$_status" "$_error" >&2
+  else
+    printf 'expected status %s but got %s\n' "$_expected" "$_status" >&2
+  fi
+  exit 1
+fi

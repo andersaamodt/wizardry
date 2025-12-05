@@ -1,0 +1,29 @@
+#!/bin/sh
+# test-setup - output shell code to set up test environment
+# Sets ROOT_DIR, PATH, WIZARDRY_TMPDIR for tests.
+# Example: eval "$(test-setup)"
+
+set -eu
+
+# Find repo root
+_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+while [ "$_dir" != "/" ]; do
+  [ -d "$_dir/spells" ] && [ -d "$_dir/.tests" ] && break
+  _dir=$(dirname "$_dir")
+done
+
+# Build PATH
+_base_path=${PATH:-/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin}
+_new_path="$_dir/spells:$_dir/spells/.imps"
+for _d in "$_dir"/spells/.imps/*; do [ -d "$_d" ] && _new_path="$_new_path:$_d"; done
+for _d in "$_dir"/spells/*; do [ -d "$_d" ] && _new_path="$_new_path:$_d"; done
+_new_path="$_new_path:$_base_path"
+
+# Create temp dir
+_tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/wizardry-test.XXXXXX")
+
+printf "ROOT_DIR='%s'\n" "$_dir"
+printf "PATH='%s'\n" "$_new_path"
+printf "WIZARDRY_TMPDIR='%s'\n" "$_tmpdir"
+printf "WIZARDRY_SYSTEM_PATH='%s'\n" "$_base_path"
+printf "export ROOT_DIR PATH WIZARDRY_TMPDIR WIZARDRY_SYSTEM_PATH\n"

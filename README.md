@@ -244,7 +244,8 @@ Principles of the testing suite:
 | Tests are POSIX shell | Tests are simply POSIX-compliant shell scripts that exercise expected behaviors. |
 | Help-as-spec          | Each spell's `--help` usage note is its primary spec; each unit test is the operationalized spec. |
 | Mirrored tree         | `.tests/` mirrors `spells/` structurally: one test script per spell. |
-| Shared test harness   | Tests source `test_common.sh` for consistent logging and helpers. |
+| Tests use imps        | Test helpers are imps in `spells/.imps/test/`; there is no shared `test_common` file. |
+| No exemptions         | There are no exceptions to any testing requirements under any circumstances. |
 | Unique behavior focus | Each test covers that spell’s unique behaviors and failure modes, avoiding redundant coverage. |
 | Full mode coverage    | Subtests cover all valid paths and error conditions. |
 | Explicit shims        | Shims exist only within tests; each test that needs one creates and manages it explicitly. |
