@@ -226,22 +226,35 @@ test_test_files_have_matching_spells() {
 # This is a behavioral check - enforces global variable policy
 
 # Helper: Check if script actually uses a declared global (excluding heredocs and comments)
+# This function filters out heredoc content and comments before checking for variable usage.
 script_uses_declared_global() {
   spell=$1
   declared_globals=$2
   
-  # Use awk to strip out heredocs and comments before checking for globals
-  # This avoids false positives from documentation mentioning variable names
   for global in $declared_globals; do
-    # Use awk to skip lines inside heredocs (between <<'DELIM' and DELIM)
-    # and skip comment lines, then grep for actual variable usage
+    # Use awk to filter the file before checking for variable usage:
+    # - Skip lines inside single-quoted heredocs (<<'DELIM' ... DELIM)
+    # - Skip comment lines (lines starting with optional whitespace then #)
+    # - Print all other lines for grep to check
+    # This prevents false positives from documentation mentioning variable names.
     if awk '
-      /<<'\''[A-Z]+'\''/ { in_heredoc=1; heredoc_end=$0; gsub(/.*<<'\''/, "", heredoc_end); gsub(/'\''.*/, "", heredoc_end); next }
+      # Detect start of single-quoted heredoc: matches <<'\''WORD'\''
+      /<<'\''[A-Z]+'\''/ {
+        in_heredoc=1
+        heredoc_end=$0
+        gsub(/.*<<'\''/, "", heredoc_end)
+        gsub(/'\''.*/, "", heredoc_end)
+        next
+      }
+      # Detect end of heredoc when line exactly matches the delimiter
       in_heredoc && $0 == heredoc_end { in_heredoc=0; next }
+      # Skip all lines inside heredoc
       in_heredoc { next }
+      # Skip comment lines
       /^[[:space:]]*#/ { next }
+      # Print remaining lines for variable detection
       { print }
-    ' "$spell" 2>/dev/null | grep -qE "\\\$$global[^A-Za-z_]|\\\$$global\$|\\\${$global[^A-Za-z_]|\\\${$global\$"; then
+    ' "$spell" 2>/dev/null | grep -qE "\\\$$global([^A-Za-z_]|\$)|\\\${$global([^A-Za-z_}]|})"; then
       return 0
     fi
   done
@@ -267,7 +280,8 @@ test_scripts_using_globals_have_set_u() {
     script_uses_declared_global "$spell" "$declared_globals" || continue
     
     # Script uses a declared global - verify it has set -u or set -eu
-    if ! grep -qE '^set -[eu]*u|^set -[eu]*e[eu]*u' "$spell" 2>/dev/null; then
+    # Pattern matches: set -u, set -eu, set -ue, set -euo, etc.
+    if ! grep -qE '^set +-[euo]*u[euo]*' "$spell" 2>/dev/null; then
       rel_path=${spell#"$ROOT_DIR/spells/"}
       printf '%s\n' "$rel_path"
     fi
@@ -293,8 +307,11 @@ test_declare_globals_count() {
     return 1
   fi
   
-  # Count global declarations (pattern: : "${VAR_NAME:=...}")
-  # These are the standard shell idiom for declaring globals with defaults
+  # Count global declarations using the standard shell idiom for declaring
+  # variables with defaults. The pattern matches lines like:
+  #   : "${WIZARDRY_DIR:=}"
+  #   : "${SPELLBOOK_DIR:=}"
+  # The colon-equals syntax (:=) assigns a default value if unset.
   global_count=$(grep -cE '^: "\$\{[A-Z][A-Z0-9_]+:=' "$declare_globals_file" 2>/dev/null || printf '0')
   
   if [ "$global_count" -ne 3 ]; then
