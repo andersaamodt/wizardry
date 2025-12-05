@@ -11,18 +11,6 @@ while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" !
 done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-test_clipboard_shows_help() {
-  run_spell spells/.imps/sys/clipboard-available --help
-  assert_success
-  assert_error_contains "clipboard helper"
-}
-
-test_clipboard_shows_help_h() {
-  run_spell spells/.imps/sys/clipboard-available -h
-  assert_success
-  assert_error_contains "clipboard helper"
-}
-
 test_clipboard_returns_success_when_helper_exists() {
   # This test checks if the imp returns success when at least one helper is available
   # Since we can't guarantee which helpers are installed, we check if it returns
@@ -100,8 +88,6 @@ test_clipboard_fails_when_none_available() {
   rm -rf "$fixture"
 }
 
-run_test_case "clipboard-available shows help" test_clipboard_shows_help
-run_test_case "clipboard-available shows help with -h" test_clipboard_shows_help_h
 run_test_case "clipboard-available returns valid exit code" test_clipboard_returns_success_when_helper_exists
 run_test_case "clipboard-available no output on success" test_clipboard_no_output_on_success
 run_test_case "clipboard-available detects pbcopy" test_clipboard_checks_pbcopy

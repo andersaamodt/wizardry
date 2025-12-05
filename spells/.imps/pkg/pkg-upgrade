@@ -2,22 +2,6 @@
 # pkg-upgrade - upgrade all installed packages
 # Example: pkg-update && pkg-upgrade
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: pkg-upgrade
-
-Upgrade all installed packages. Example: pkg-update && pkg-upgrade.
-USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
 pm=$(pkg-manager) || { printf '%s\n' "pkg-upgrade: no supported package manager" >&2; exit 1; }
 
 case $pm in

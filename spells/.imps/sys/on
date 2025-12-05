@@ -2,22 +2,6 @@
 # on PLATFORM - test if running on platform (mac/linux/debian/nixos/arch/fedora/bsd)
 # Example: on mac && brew install git
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: on PLATFORM
-
-Test if running on platform (mac/linux/debian/nixos/arch/fedora/bsd). Example: on mac && brew install git.
-USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
 platform=$1
 kernel=$(uname -s 2>/dev/null || echo unknown)
 

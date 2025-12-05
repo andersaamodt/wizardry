@@ -2,22 +2,6 @@
 # field N [DELIM] - extract Nth field (1-based), default delimiter is whitespace
 # Example: echo "a:b:c" | field 2 ":"  # outputs: b
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: field N [DELIM]
-
-Extract Nth field (1-based), default delimiter is whitespace. Example: echo "a:b:c" | field 2 ":"  # outputs: b.
-USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
 n=$1
 delim=${2-}
 

@@ -2,20 +2,4 @@
 # file-name PATH - extract filename from path (like basename but pure shell)
 # Example: name=$(file-name /path/to/file.txt)  # outputs: file.txt
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: file-name PATH
-
-Extract filename from path (like basename but pure shell). Example: name=$(file-name /path/to/file.txt)  # outputs: file.txt.
-USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
 printf '%s\n' "${1##*/}"

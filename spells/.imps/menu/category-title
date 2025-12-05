@@ -3,22 +3,6 @@
 # Maps known category folder names to their proper display titles.
 # Example: category-title enchant -> Enchantment
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: category-title
-
-Convert spell category folder name to display title Maps known category folder names to their proper display titles.. Example: category-title enchant -> Enchantment.
-USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
 case $1 in
 	arcane)
 		printf 'Arcane'

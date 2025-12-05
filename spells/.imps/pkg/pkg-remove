@@ -2,22 +2,6 @@
 # pkg-remove PACKAGE - remove a package using the system package manager
 # Example: pkg-remove vim
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: pkg-remove PACKAGE
-
-Remove a package using the system package manager. Example: pkg-remove vim.
-USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
 package=${1:-}
 [ -z "$package" ] && { printf '%s\n' "pkg-remove: package name required" >&2; exit 1; }
 

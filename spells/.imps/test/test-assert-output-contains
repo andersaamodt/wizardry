@@ -3,22 +3,6 @@
 # Testing imp - fails if OUTPUT variable doesn't contain the substring
 # Example: assert-output-contains "hello"
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: assert-output-contains SUBSTRING
-
-Test that OUTPUT contains substring Testing imp - fails if OUTPUT variable doesn't contain the substring. Example: assert-output-contains "hello".
-USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
 substring=$1
 case "${OUTPUT-}" in
   *"$substring"*)

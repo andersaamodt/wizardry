@@ -505,6 +505,44 @@ test_no_pseudo_globals_in_rc_files() {
   return 0
 }
 
+# --- Check: Imps contain no functions (except test-bootstrap which is a sourced file) ---
+# According to README.md, imps "do not contain functions" - they should be flat, linear.
+# test-bootstrap is an exception because it's designed to be sourced, which requires functions
+# for the test harness (run_test_case, finish_tests, etc.)
+# This is a structural check - enforces imp simplicity rule.
+
+test_imps_have_no_functions() {
+  violations=""
+  
+  find "$ROOT_DIR/spells/.imps" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r imp; do
+    name=$(basename "$imp")
+    should_skip_file "$name" && continue
+    is_posix_shell_script "$imp" || continue
+    
+    # Skip test-bootstrap - it's designed to be sourced, which requires functions
+    # for the test harness (run_test_case, finish_tests, etc.)
+    case "$name" in
+      test-bootstrap) continue ;;
+    esac
+    
+    # Check for any function definitions: word() { or word () {
+    # Match patterns like: funcname() { or funcname () {
+    if grep -qE '^[a-zA-Z_][a-zA-Z0-9_]*[[:space:]]*\(\)[[:space:]]*\{' "$imp" 2>/dev/null; then
+      rel_path=${imp#"$ROOT_DIR/spells/.imps/"}
+      printf '%s\n' "$rel_path"
+    fi
+  done > "${WIZARDRY_TMPDIR}/function-violations.txt"
+  
+  violations=$(cat "${WIZARDRY_TMPDIR}/function-violations.txt" 2>/dev/null | head -10 | tr '\n' ', ' | sed 's/, $//')
+  rm -f "${WIZARDRY_TMPDIR}/function-violations.txt"
+  
+  if [ -n "$violations" ]; then
+    TEST_FAILURE_REASON="imps contain functions (should be flat/linear): $violations"
+    return 1
+  fi
+  return 0
+}
+
 # --- Run all test cases ---
 
 run_test_case "no duplicate spell names" test_no_duplicate_spell_names
@@ -518,5 +556,6 @@ run_test_case "declare-globals has exactly 3 globals" test_declare_globals_count
 run_test_case "no undeclared globals exported" test_no_undeclared_global_exports
 run_test_case "no global declarations outside declare-globals" test_no_global_declarations_outside_declare_globals
 run_test_case "no pseudo-globals stored in rc files" test_no_pseudo_globals_in_rc_files
+run_test_case "imps contain no functions" test_imps_have_no_functions
 
 finish_tests

@@ -2,20 +2,4 @@
 # there PATH - test if path exists (any type: file, dir, link, etc.)
 # Example: there /etc/passwd && echo "found"
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: there PATH
-
-Test if path exists (any type: file, dir, link, etc.). Example: there /etc/passwd && echo "found".
-USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
 [ -e "$1" ]

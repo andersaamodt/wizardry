@@ -2,20 +2,4 @@
 # gone PATH - test if path does NOT exist
 # Example: gone /etc/config && echo "not found"
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: gone PATH
-
-Test if path does NOT exist. Example: gone /etc/config && echo "not found".
-USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
 [ ! -e "$1" ]

@@ -2,22 +2,6 @@
 # sed-inplace PATTERN FILE - perform in-place sed substitution portably (mac/linux)
 # Example: sed-inplace 's/foo/bar/g' config.txt
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: sed-inplace PATTERN FILE
-
-Perform in-place sed substitution portably (mac/linux). Example: sed-inplace 's/foo/bar/g' config.txt.
-USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
 pattern=${1:-}
 file=${2:-}
 

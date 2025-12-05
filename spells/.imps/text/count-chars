@@ -2,22 +2,6 @@
 # count-chars [STRING] - count bytes in string or stdin (note: counts bytes, not Unicode characters)
 # Example: n=$(count-chars "hello")   # outputs: 5
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: count-chars [STRING]
-
-Count bytes in string or stdin (note: counts bytes, not Unicode characters). Example: n=$(count-chars "hello")   # outputs: 5.
-USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
 if [ "$#" -ge 1 ]; then
   printf '%s' "$1" | wc -c | tr -d ' '
 else

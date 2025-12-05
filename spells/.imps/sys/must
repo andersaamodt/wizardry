@@ -3,22 +3,6 @@
 # Use with 'set -e' or '|| exit $?' to propagate failure to calling script
 # Examples: must there /etc/config "config missing" || exit $?
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: must TEST [ARGS...]
-
-Die with message if test fails Use with 'set -e' or '|| exit $?' to propagate failure to calling script Examples: must there /etc/config "config missing" || exit $?.
-USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
 test_type=$1
 shift
 

@@ -2,20 +2,4 @@
 # read-file FILE - read entire file contents to stdout
 # Example: content=$(read-file config.txt)
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: read-file FILE
-
-Read entire file contents to stdout. Example: content=$(read-file config.txt).
-USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
 cat "$1"

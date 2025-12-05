@@ -2,22 +2,6 @@
 # pkg-manager - detect which package manager is available
 # Example: pm=$(pkg-manager) && case $pm in apt) apt-get install ;; esac
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: pkg-manager
-
-Detect which package manager is available. Example: pm=$(pkg-manager) && case $pm in apt) apt-get install ;; esac.
-USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
 if command -v apt-get >/dev/null 2>&1; then echo apt
 elif command -v dnf >/dev/null 2>&1; then echo dnf
 elif command -v pacman >/dev/null 2>&1; then echo pacman

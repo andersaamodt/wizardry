@@ -3,22 +3,6 @@
 # Returns the correct trash directory path for the current OS.
 # Example: cd "$(detect-trash)"
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: detect-trash
-
-Print the path to the user's trash directory Returns the correct trash directory path for the current OS.. Example: cd "$(detect-trash)".
-USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
 set -eu
 
 kernel=$(uname -s 2>/dev/null || printf 'unknown')

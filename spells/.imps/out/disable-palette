@@ -2,16 +2,6 @@
 # disable-palette - reset all color variables to empty strings
 # Source this script after sourcing colors to disable all ANSI escape sequences
 
-usage() {
-	cat <<'USAGE' >&2
-Usage: disable-palette (source)
-
-Sets all wizardry color and theme variables to empty strings, effectively
-disabling ANSI escape sequences for scripts that have sourced the colors
-palette. Also sets WIZARDRY_COLORS_AVAILABLE=0.
-USAGE
-}
-
 # Only handle --help when run directly as a script, not when sourced
 case "$0" in
 *disable-palette)

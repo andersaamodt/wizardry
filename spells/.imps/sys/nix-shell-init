@@ -1,9 +1,7 @@
 #!/bin/sh
-# nix-shell-init - add shell init code to nix configuration files
-# Manages programs.bash.initExtra or programs.zsh.initExtra blocks
-# Usage: nix-shell-init add|remove|status [--shell bash|zsh] --name NAME --file FILE [CODE]
-# Exit code: 0 on success, 1 on failure
-# Example: echo 'source "/path/to/spell"' | nix-shell-init add --shell bash --name myspell --file config.nix
+# nix-shell-init ACTION --name NAME --file FILE - manage shell init code in nix config
+# Actions: add (reads stdin), remove, status. Options: --shell bash|zsh (default: bash)
+# Example: echo 'source "/spell"' | nix-shell-init add --shell bash --name myspell --file config.nix
 
 set -eu
 
@@ -18,25 +16,6 @@ if [ -d "$imps_dir" ]; then
   done
   export PATH
 fi
-
-show_usage() {
-  cat <<'USAGE' >&2
-Usage: nix-shell-init add|remove|status [OPTIONS]
-
-Actions:
-  add       Add shell init code (reads from stdin)
-  remove    Remove shell init code by name
-  status    Check if named shell init code exists
-
-Options:
-  --shell SHELL  Shell type: bash (default) or zsh
-  --name NAME    Unique identifier for the shell init block
-  --file FILE    Path to nix configuration file
-
-Example:
-  echo 'source "/path/to/spell"' | nix-shell-init add --shell bash --name jtrash --file ~/.config/home-manager/home.nix
-USAGE
-}
 
 action=""
 shell_type="bash"
@@ -76,13 +55,8 @@ while [ "$#" -gt 0 ]; do
     nix_file=${1#*=}
     shift
     ;;
-  --help|-h)
-    show_usage
-    exit 0
-    ;;
   *)
     printf '%s\n' "nix-shell-init: unknown argument '$1'" >&2
-    show_usage
     exit 1
     ;;
   esac
@@ -90,7 +64,6 @@ done
 
 if [ -z "$action" ] || [ -z "$block_name" ] || [ -z "$nix_file" ]; then
   printf '%s\n' "nix-shell-init: action, --name, and --file are required" >&2
-  show_usage
   exit 1
 fi
 
@@ -104,12 +77,9 @@ bash|zsh) : ;;
 esac
 
 # Determine the nix option based on shell type and config file type
-# For NixOS system config (/etc/nixos/configuration.nix): programs.bash.interactiveShellInit
-# For home-manager (~/.config/home-manager/home.nix): programs.bash.initExtra
 is_system_config=0
 case $nix_file in
 /etc/nixos/configuration.nix|/etc/nixos/*)
-  # Only files directly under /etc/nixos/ are system configuration
   is_system_config=1
   ;;
 esac
@@ -126,7 +96,7 @@ else
   esac
 fi
 
-# Marker format: # wizardry: NAME (with space after #)
+# Marker format: # wizardry: NAME
 marker="# wizardry: $block_name"
 
 # Check if file needs sudo
@@ -135,56 +105,61 @@ if [ -f "$nix_file" ] && [ ! -w "$nix_file" ]; then
   needs_sudo=1
 fi
 
-run_maybe_sudo() {
-  if [ "$needs_sudo" -eq 1 ]; then
-    if command -v sudo >/dev/null 2>&1; then
-      sudo "$@"
-    elif command -v doas >/dev/null 2>&1; then
-      doas "$@"
-    else
-      "$@"
-    fi
-  else
-    "$@"
-  fi
-}
+# Handle status action (check if block exists)
+if [ "$action" = "status" ]; then
+  [ -f "$nix_file" ] && grep -Fq "$marker" "$nix_file" 2>/dev/null
+  exit $?
+fi
 
-# Back up nix config file before modifying it
-backup_nix_config() {
+# Handle remove action
+if [ "$action" = "remove" ]; then
+  if [ ! -f "$nix_file" ]; then
+    printf '%s\n' "nix-shell-init: file not found: $nix_file" >&2
+    exit 1
+  fi
+  
+  # Check if block exists
+  if ! grep -Fq "$marker" "$nix_file" 2>/dev/null; then
+    exit 0  # Nothing to remove
+  fi
+  
+  # Back up the config file
   if ! backup-nix-config "$nix_file"; then
     printf '%s\n' "nix-shell-init: unable to back up '$nix_file'" >&2
     exit 1
   fi
-}
-
-# Check if block exists
-block_exists() {
-  [ -f "$nix_file" ] && grep -Fq "$marker" "$nix_file" 2>/dev/null
-}
-
-# Status check
-do_status() {
-  if block_exists; then
-    return 0
-  fi
-  return 1
-}
-
-# Escape shell code for nix multi-line string ('' syntax)
-# In nix '' strings: '' must be escaped as ''' and ${ must be escaped as ''${
-escape_for_nix_multiline() {
-  sed "s/''/'''/g; s/\\\${/''\${/g"
-}
-
-# Add shell init code
-do_add() {
-  if block_exists; then
-    return 0  # Already exists, nothing to do
+  
+  # Remove all lines containing our marker
+  tmp_file=$(temp-file nix-shell-init) || exit 1
+  trap 'cleanup-file "$tmp_file"' EXIT HUP INT TERM
+  
+  if [ "$needs_sudo" -eq 1 ]; then
+    if command -v sudo >/dev/null 2>&1; then
+      sudo cat "$nix_file" | grep -v -F "$marker" > "$tmp_file"
+      sudo cp "$tmp_file" "$nix_file"
+    elif command -v doas >/dev/null 2>&1; then
+      doas cat "$nix_file" | grep -v -F "$marker" > "$tmp_file"
+      doas cp "$tmp_file" "$nix_file"
+    else
+      cat "$nix_file" | grep -v -F "$marker" > "$tmp_file"
+      cp "$tmp_file" "$nix_file"
+    fi
+  else
+    grep -v -F "$marker" "$nix_file" > "$tmp_file"
+    mv "$tmp_file" "$nix_file"
   fi
   
-  # Note: Caller is responsible for confirming with user before calling this imp.
-  # The caller's prompt already mentions the file being edited, so we don't need
-  # to ask for confirmation here.
+  trap - EXIT HUP INT TERM
+  rm -f "$tmp_file"
+  exit 0
+fi
+
+# Handle add action
+if [ "$action" = "add" ]; then
+  # Check if block already exists
+  if [ -f "$nix_file" ] && grep -Fq "$marker" "$nix_file" 2>/dev/null; then
+    exit 0  # Already exists, nothing to do
+  fi
   
   # Read shell code from stdin
   shell_code=""
@@ -202,16 +177,18 @@ $line"
     exit 1
   fi
   
-  # Back up the config file before making any modifications
-  backup_nix_config
+  # Back up the config file
+  if [ -f "$nix_file" ]; then
+    if ! backup-nix-config "$nix_file"; then
+      printf '%s\n' "nix-shell-init: unable to back up '$nix_file'" >&2
+      exit 1
+    fi
+  fi
   
-  # Escape the shell code for nix '' multi-line string
-  escaped_code=$(printf '%s' "$shell_code" | escape_for_nix_multiline)
+  # Escape shell code for nix '' multi-line string: '' -> ''' and ${ -> ''${
+  escaped_code=$(printf '%s' "$shell_code" | sed "s/''/'''/g; s/\\\${/''\${/g")
   
-  # Mark every content line with # wizardry marker so we can identify and remove them later
-  # Each content line gets the marker appended to ensure clean removal
-  # The opening and closing nix syntax lines are NOT marked, so they are preserved
-  # if the user has other content in that block
+  # Mark every content line with the wizardry marker
   marked_code=$(printf '%s' "$escaped_code" | sed "s/$/ $marker/")
   
   # Create file if it doesn't exist with minimal nix structure
@@ -225,23 +202,35 @@ $line"
   input_file=''
   trap 'cleanup-file "$tmp_file"; [ -n "$input_file" ] && cleanup-file "$input_file"' EXIT HUP INT TERM
   
+  # Helper to run commands with sudo if needed
+  _run_sudo_cat() {
+    if [ "$needs_sudo" -eq 1 ]; then
+      if command -v sudo >/dev/null 2>&1; then
+        sudo cat "$1"
+      elif command -v doas >/dev/null 2>&1; then
+        doas cat "$1"
+      else
+        cat "$1"
+      fi
+    else
+      cat "$1"
+    fi
+  }
+  
   # Check if an existing block for this nix_option exists
-  if run_maybe_sudo cat "$nix_file" | grep -q "$nix_option[[:space:]]*="; then
+  if _run_sudo_cat "$nix_file" | grep -q "$nix_option[[:space:]]*="; then
     # Existing block found - insert our marked lines before the closing '';
-    # Save the file content to a temp file for reading
     input_file=$(temp-file nix-shell-init-input) || exit 1
-    run_maybe_sudo cat "$nix_file" > "$input_file"
+    _run_sudo_cat "$nix_file" > "$input_file"
     
     # Process line by line to find the right place to insert
     in_block=0
     while IFS= read -r line; do
-      # Check if this line contains our option and starts a block
       if printf '%s\n' "$line" | grep -q "$nix_option[[:space:]]*=" && printf '%s\n' "$line" | grep -q "''"; then
         in_block=1
         printf '%s\n' "$line"
         continue
       fi
-      # If we're in the block and see the closing '';, insert our code first
       if [ "$in_block" -eq 1 ] && printf '%s\n' "$line" | grep -q "^[[:space:]]*'';" ; then
         printf '%s\n' "$marked_code"
         printf '%s\n' "$line"
@@ -257,12 +246,11 @@ $marked_code
   '';"
     
     # Insert the block before the closing brace
-    run_maybe_sudo cat "$nix_file" | awk -v block="$nix_block" '
+    _run_sudo_cat "$nix_file" | awk -v block="$nix_block" '
     {
       lines[NR] = $0
     }
     END {
-      # Find last closing brace
       last = NR
       while (last > 0 && lines[last] ~ /^[[:space:]]*$/) last--
       
@@ -282,56 +270,19 @@ $marked_code
   fi
   
   if [ "$needs_sudo" -eq 1 ]; then
-    run_maybe_sudo cp "$tmp_file" "$nix_file"
+    if command -v sudo >/dev/null 2>&1; then
+      sudo cp "$tmp_file" "$nix_file"
+    elif command -v doas >/dev/null 2>&1; then
+      doas cp "$tmp_file" "$nix_file"
+    else
+      cp "$tmp_file" "$nix_file"
+    fi
   else
     mv "$tmp_file" "$nix_file"
   fi
+  
   trap - EXIT HUP INT TERM
   rm -f "$tmp_file"
   [ -n "$input_file" ] && rm -f "$input_file"
-  return 0
-}
-
-# Remove shell init code
-do_remove() {
-  if [ ! -f "$nix_file" ]; then
-    printf '%s\n' "nix-shell-init: file not found: $nix_file" >&2
-    exit 1
-  fi
-  
-  if ! block_exists; then
-    return 0  # Nothing to remove
-  fi
-  
-  # Note: Caller is responsible for confirming with user before calling this imp.
-  
-  # Back up the config file before making any modifications
-  backup_nix_config
-  
-  # Remove all lines containing our marker
-  # Since every wizardry-managed content line has #wizardry: NAME appended,
-  # we can simply filter out all lines containing that marker
-  tmp_file=$(temp-file nix-shell-init) || exit 1
-  trap 'cleanup-file "$tmp_file"' EXIT HUP INT TERM
-  run_maybe_sudo cat "$nix_file" | grep -v -F "$marker" > "$tmp_file"
-  
-  if [ "$needs_sudo" -eq 1 ]; then
-    run_maybe_sudo cp "$tmp_file" "$nix_file"
-  else
-    mv "$tmp_file" "$nix_file"
-  fi
-  trap - EXIT HUP INT TERM
-  rm -f "$tmp_file"
-}
-
-case $action in
-add)
-  do_add
-  ;;
-remove)
-  do_remove
-  ;;
-status)
-  do_status
-  ;;
-esac
+  exit 0
+fi

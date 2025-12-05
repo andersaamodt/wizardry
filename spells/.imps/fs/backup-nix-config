@@ -4,22 +4,6 @@
 # Callers are responsible for calling this only once per operation.
 # Example: backup-nix-config /etc/nixos/configuration.nix
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: backup-nix-config FILE
-
-Back up nix config file before editing Prints the backup path to stderr for user notification. Callers are responsible for calling this only once per operation.. Example: backup-nix-config /etc/nixos/configuration.nix.
-USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
 set -eu
 
 file=${1:-}

@@ -3,22 +3,6 @@
 # Example: src=$(select-input) && case $src in stdin) read line ;; tty) read line </dev/tty ;; esac
 # Set SELECT_INPUT_MODE=stdin|tty|none to override auto-detection
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: select-input
-
-Detect best input source (stdin/tty/none). Example: src=$(select-input) && case $src in stdin) read line ;; tty) read line </dev/tty ;; esac Set SELECT_INPUT_MODE=stdin|tty|none to override auto-detection.
-USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
 case ${SELECT_INPUT_MODE:-auto} in
 stdin) printf '%s\n' stdin; exit 0 ;;
 tty)   printf '%s\n' tty;   exit 0 ;;

@@ -2,20 +2,4 @@
 # now [FORMAT] - output current timestamp (default: epoch seconds)
 # Examples: now | now %Y-%m-%d | now %H:%M:%S
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: now [FORMAT]
-
-Output current timestamp (default: epoch seconds) Examples: now | now %Y-%m-%d | now %H:%M:%S.
-USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
 date "+${1:-%s}" 2>/dev/null || printf '%s' "$$"

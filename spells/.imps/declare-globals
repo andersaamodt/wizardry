@@ -12,21 +12,6 @@
 # Installation root directory path.
 # Required for spells to locate resources relative to install location.
 
-usage() {
-        cat <<'USAGE' >&2
-Usage: declare-globals
-
-Centralized declaration of allowed global environment variables. Each global requires two comment lines: description and justification. Installation root directory path. Required for spells to locate resources relative to install location.
-USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
 : "${WIZARDRY_DIR:=}"
 
 # User's personal spellbook directory.

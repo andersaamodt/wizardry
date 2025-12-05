@@ -2,22 +2,6 @@
 # make TYPE PATH - create resource if missing (currently only dir)
 # Example: make dir ~/.config/myapp
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: make TYPE PATH
-
-Create resource if missing (currently only dir). Example: make dir ~/.config/myapp.
-USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
 case "$1" in
 dir) mkdir -p "$2" ;;
 *) exit 1 ;;

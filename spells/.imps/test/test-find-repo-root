@@ -3,22 +3,6 @@
 # Testing imp - walks up from current directory to find spells/ and .tests/
 # Example: ROOT=$(find-repo-root)
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: find-repo-root
-
-Find the wizardry repository root directory Testing imp - walks up from current directory to find spells/ and .tests/. Example: ROOT=$(find-repo-root).
-USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
 dir=$(CDPATH= cd -- "$(dirname "${0:-$PWD}")" && pwd -P)
 while [ "$dir" != "/" ]; do
   if [ -d "$dir/spells" ] && [ -d "$dir/.tests" ]; then

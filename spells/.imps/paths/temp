@@ -2,21 +2,5 @@
 # temp [PREFIX] - create temp file with optional prefix (outputs path)
 # Example: f=$(temp myapp) && echo "content" > "$f"
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: temp [PREFIX]
-
-Create temp file with optional prefix (outputs path). Example: f=$(temp myapp) && echo "content" > "$f".
-USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
 prefix=${1:-wizardry}
 mktemp "${TMPDIR:-/tmp}/${prefix}.XXXXXX"

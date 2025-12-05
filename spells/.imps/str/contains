@@ -2,22 +2,6 @@
 # contains HAYSTACK NEEDLE - test if string contains substring
 # Example: contains "$PATH" "/usr/local/bin" && echo "found"
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: contains HAYSTACK NEEDLE
-
-Test if string contains substring. Example: contains "$PATH" "/usr/local/bin" && echo "found".
-USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
 case "$1" in
 *"$2"*) exit 0 ;;
 *) exit 1 ;;

@@ -2,22 +2,6 @@
 # clip-copy [TEXT] - copy stdin or argument to system clipboard
 # Examples: echo "text" | clip-copy | clip-copy "direct text"
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: clip-copy [TEXT]
-
-Copy stdin or argument to system clipboard Examples: echo "text" | clip-copy OR clip-copy "direct text".
-USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
 if command -v pbcopy >/dev/null 2>&1; then
   if [ $# -gt 0 ]; then printf '%s' "$*" | pbcopy; else pbcopy; fi
 elif command -v xsel >/dev/null 2>&1; then

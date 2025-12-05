@@ -15,16 +15,11 @@ fi
 # Find the lex directory (where this script lives)
 lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 
-# Check if a word is a linking word (exists as executable in lex/)
-is_link_word() {
-  [ -x "$lex_dir/$1" ] && [ "$1" != "parse" ]
-}
-
 # Try to find a linking word at the start, preferring longer matches
 # Check two-word combinations first (like "and then" -> and-then)
 if [ $# -ge 2 ]; then
   two_word="$1-$2"
-  if is_link_word "$two_word"; then
+  if [ -x "$lex_dir/$two_word" ] && [ "$two_word" != "parse" ]; then
     shift 2
     exec "$lex_dir/$two_word" "" "" "$@"
   fi
@@ -32,7 +27,7 @@ fi
 
 # Check single word
 first=$1
-if is_link_word "$first"; then
+if [ -x "$lex_dir/$first" ] && [ "$first" != "parse" ]; then
   shift
   exec "$lex_dir/$first" "" "" "$@"
 fi
@@ -66,7 +61,7 @@ while [ "$i" -le "$total" ]; do
     eval "w1=\"\$arg_$i\""
     eval "w2=\"\$arg_$j\""
     two_word="$w1-$w2"
-    if is_link_word "$two_word"; then
+    if [ -x "$lex_dir/$two_word" ] && [ "$two_word" != "parse" ]; then
       link_pos=$i
       link_len=2
       link_word=$two_word
@@ -76,7 +71,7 @@ while [ "$i" -le "$total" ]; do
   
   # Check single word
   eval "w=\"\$arg_$i\""
-  if is_link_word "$w"; then
+  if [ -x "$lex_dir/$w" ] && [ "$w" != "parse" ]; then
     link_pos=$i
     link_len=1
     link_word=$w

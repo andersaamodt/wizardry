@@ -8,24 +8,6 @@ done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-test_disable_palette_help() {
-  run_cmd "$ROOT_DIR/spells/.imps/out/disable-palette" --help
-  assert_success
-  assert_error_contains "Usage: disable-palette"
-}
-
-test_disable_palette_usage_flag() {
-  run_cmd "$ROOT_DIR/spells/.imps/out/disable-palette" --usage
-  assert_success
-  assert_error_contains "Usage: disable-palette"
-}
-
-test_disable_palette_h_flag() {
-  run_cmd "$ROOT_DIR/spells/.imps/out/disable-palette" -h
-  assert_success
-  assert_error_contains "Usage: disable-palette"
-}
-
 test_disable_palette_clears_colors() {
   # Source colors first, then disable-palette, then check that variables are empty
   run_cmd sh -c ". '$ROOT_DIR/spells/cantrips/colors'; . '$ROOT_DIR/spells/.imps/out/disable-palette'; printf '%s' \"\$RESET\""
@@ -59,9 +41,6 @@ test_disable_palette_multiple_colors_empty() {
   [ "$OUTPUT" = "|||" ] || { TEST_FAILURE_REASON="Color variables should all be empty but got: $OUTPUT"; return 1; }
 }
 
-run_test_case "disable-palette --help shows usage" test_disable_palette_help
-run_test_case "disable-palette --usage shows usage" test_disable_palette_usage_flag
-run_test_case "disable-palette -h shows usage" test_disable_palette_h_flag
 run_test_case "disable-palette clears RESET color" test_disable_palette_clears_colors
 run_test_case "disable-palette clears theme colors" test_disable_palette_clears_theme_colors
 run_test_case "disable-palette clears MUD colors" test_disable_palette_clears_mud_colors

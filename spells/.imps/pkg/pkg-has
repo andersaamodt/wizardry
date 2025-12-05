@@ -2,21 +2,6 @@
 # pkg-has PACKAGE - test if a package is installed
 # Example: pkg-has git && echo "git is installed"
 
-show_usage() {
-  cat <<'USAGE'
-Usage: pkg-has PACKAGE
-
-Checks whether PACKAGE is installed by the detected package manager, exiting 0 when found and non-zero otherwise.
-USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-  show_usage
-  exit 0
-  ;;
-esac
-
 package=${1:-}
 [ -z "$package" ] && { printf '%s\n' "pkg-has: package name required" >&2; exit 1; }
 
