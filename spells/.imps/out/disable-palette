@@ -22,6 +22,6 @@ _disable_palette() {
   WIZARDRY_COLORS_AVAILABLE=0
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */disable-palette) _disable_palette "$@" ;; esac
+# Execute immediately when sourced (for colors spell compatibility)
+# This imp is designed to be sourced by colors to disable the palette
+_disable_palette
