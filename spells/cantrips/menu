@@ -102,11 +102,8 @@ fi
 description=$1
 shift
 
-TMPDIR=${TMPDIR:-/tmp}
-items_file="$TMPDIR/wizardry-menu-items.$$"
-commands_file="$TMPDIR/wizardry-menu-commands.$$"
-: >"$items_file"
-: >"$commands_file"
+items_file=$(temp-file menu-items) || exit 1
+commands_file=$(temp-file menu-commands) || exit 1
 cleanup_called=0
 cleanup() {
         if [ "$cleanup_called" -eq 1 ]; then
@@ -115,7 +112,8 @@ cleanup() {
         cleanup_called=1
         restore_terminal
         cursor-blink on >/dev/null 2>&1 || :
-        rm -f "$items_file" "$commands_file"
+        cleanup-file "$items_file"
+        cleanup-file "$commands_file"
 }
 trap 'cleanup; exit 1' INT TERM
 trap 'cleanup' EXIT

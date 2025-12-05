@@ -144,7 +144,7 @@ while IFS= read -r target; do
       ;;
   esac
 
-  tmp_log=$(mktemp "${TMPDIR:-/tmp}/verify-posix.XXXXXX") || exit 1
+  tmp_log=$(temp-file verify-posix-log) || exit 1
   if "$checkbashisms_cmd" "$path" >"$tmp_log" 2>&1; then
     printf 'PASS %s\n' "$target"
   else
@@ -155,7 +155,7 @@ while IFS= read -r target; do
     failures=$((failures + 1))
     failed_targets=${failed_targets:+$failed_targets,}$target
   fi
-  rm -f "$tmp_log"
+  cleanup-file "$tmp_log"
 done <"$targets_file"
 trap - EXIT HUP INT TERM
 rm -f "$targets_file"
