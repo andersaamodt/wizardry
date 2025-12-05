@@ -12,7 +12,9 @@ fi
 # portable across login shells that set CDPATH to multiple directories.
 unset CDPATH
 
-REQUIRED_REL_DIRS="spells"
+# NOTE: With the new word-of-binding paradigm (PR #410), directories no longer
+# need to be added to PATH manually. Instead, invoke-wizardry is sourced from
+# the rc file and dynamically sets up PATH at shell startup.
 
 # Determine the default target directory shown in the install prompt. The
 # installer accepts three environment variables to steer non-interactive
@@ -261,22 +263,20 @@ else
 fi
 
 # Now that the wizardry tree is available, point at the helper spells we rely
-# on to update PATH entries and ask for confirmation.
-LEARN_SPELLBOOK="$ABS_DIR/spells/spellcraft/learn-spellbook"
+# on to set up shell integration and ask for confirmation.
+INVOKE_WIZARDRY="$ABS_DIR/spells/.imps/sys/invoke-wizardry"
 DETECT_RC_FILE="$ABS_DIR/spells/divination/detect-rc-file"
-# Use learn-spell for installing spells to shell (explicit spell installation)
-LEARN_SPELL_INSTALLER="$ABS_DIR/spells/spellcraft/learn-spell"
+NIX_SHELL_INIT="$ABS_DIR/spells/.imps/sys/nix-shell-init"
 CORE_INSTALLER=${WIZARDRY_CORE_INSTALLER:-$ABS_DIR/spells/install/core/install-core}
 ASK_YN="$ABS_DIR/spells/cantrips/ask-yn"
-LEARN_SPELLBOOK_FLAGS=${LEARN_SPELLBOOK_FLAGS:---recursive}
 
 # MUD-related helpers (these are used in the optional MUD installation section)
 MUD_CD_SPELL="$ABS_DIR/spells/install/mud/cd"
 MUD_CONFIG="$ABS_DIR/spells/install/mud/mud-config"
 
-# Learnable spells that are NOT part of the MUD (install these by default)
-# These are spells with install() functions that set up shell integration
-LEARNABLE_SPELLS="$ABS_DIR/spells/translocation/jump-to-marker"
+# NOTE: With the word-of-binding paradigm, spells no longer need to be pre-installed.
+# word-of-binding auto-sources spells on first use when called via handle-command-not-found.
+# Users can still use install() functions in spells for explicit customizations like aliases.
 
 # Export environment variables for all helper spells so that they use the new
 # versions being installed, not any old versions that may be in PATH.
@@ -284,7 +284,7 @@ LEARNABLE_SPELLS="$ABS_DIR/spells/translocation/jump-to-marker"
 LEARN_SPELL="$ABS_DIR/spells/spellcraft/learn"
 MEMORIZE_LEARN="$ABS_DIR/spells/spellcraft/learn"
 MEMORIZE_SPELL_HELPER="$ABS_DIR/spells/cantrips/memorize"
-export DETECT_RC_FILE LEARN_SPELL MEMORIZE_LEARN MEMORIZE_SPELL_HELPER
+export DETECT_RC_FILE LEARN_SPELL MEMORIZE_LEARN MEMORIZE_SPELL_HELPER NIX_SHELL_INIT
 
 # Bootstrap color definitions (inline - cannot rely on wizardry spells during install)
 # Create the escape character in a POSIX-compliant way.
@@ -335,8 +335,8 @@ substep_msg() {
         printf '%s  ->%s %s\n' "$CYAN" "$RESET" "$*"
 }
 
-if [ ! -x "$LEARN_SPELLBOOK" ]; then
-        printf '%s\n' "Error: Expected helper '$LEARN_SPELLBOOK' is missing or not executable." >&2
+if [ ! -x "$INVOKE_WIZARDRY" ]; then
+        printf '%s\n' "Error: Expected helper '$INVOKE_WIZARDRY' is missing or not executable." >&2
         exit 1
 fi
 
@@ -356,12 +356,18 @@ fi
 # Perform comprehensive installation detection across all RC files
 # This checks multiple RC files to see if wizardry is installed anywhere
 detect_installation_status() {
-        # Check common RC files for wizardry paths
+        # Check common RC files for wizardry invoke-wizardry source or wizardry markers
         rc_files="$HOME/.bashrc $HOME/.bash_profile $HOME/.profile $HOME/.zshrc $HOME/.zprofile $HOME/.config/home-manager/home.nix $HOME/.config/nixpkgs/home.nix /etc/nixos/configuration.nix"
 
         found_in_any_rc=0
         for rc_file in $rc_files; do
                 if [ -f "$rc_file" ]; then
+                        # Look for invoke-wizardry source line or wizardry markers
+                        if grep -qE "(invoke-wizardry|wizardry: invoke-wizardry|wizardry: wizardry-init)" "$rc_file" 2>/dev/null; then
+                                found_in_any_rc=1
+                                break
+                        fi
+                        # Also check for legacy PATH entries with wizardry dir
                         if grep -q "$ABS_DIR" "$rc_file" 2>/dev/null; then
                                 found_in_any_rc=1
                                 break
@@ -404,91 +410,34 @@ case $install_status in
                 ;;
 esac
 
-# Collect the directories whose PATH exports are absent from the chosen start-up
-# file so we can repair them in one pass.
-set --
-for rel in $REQUIRED_REL_DIRS
-do
-        dir="$ABS_DIR/$rel"
-
-        if [ ! -d "$dir" ]; then
-                printf '%s\n' "Warning: Expected directory '$dir' is missing; skipping." >&2
-                continue
+# Check if invoke-wizardry source line is already in the RC file.
+# This replaces the old PATH-based detection approach.
+invoke_wizardry_installed=0
+check_invoke_wizardry_status() {
+        if [ -z "${detect_rc_file_value-}" ]; then
+                return 1
         fi
-
-        if "$LEARN_SPELLBOOK" $LEARN_SPELLBOOK_FLAGS status "$dir"; then
-                continue
+        if [ ! -f "$detect_rc_file_value" ]; then
+                return 1
         fi
-        set -- "$@" "$dir"
-done
-
-if [ "$#" -eq 0 ]; then
-        # Wizardry is already installed - offer options via simple text menu
-        printf '\n'
-        info_msg "Wizardry is already installed at: $ABS_DIR"
-        printf '\n'
-        printf '%sWhat would you like to do?%s\n' "$BOLD" "$RESET"
-        printf '  1) %sRepair%s - Fix PATH configuration if needed\n' "$CYAN" "$RESET"
-        printf '  2) %sReinstall%s - Reinstall wizardry (keeps current location)\n' "$CYAN" "$RESET"
-        printf '  3) %sUninstall%s - Remove wizardry from your system\n' "$CYAN" "$RESET"
-        printf '  4) %sExit%s - Do nothing and exit\n' "$CYAN" "$RESET"
-        printf '\n'
-        
-        # Read user choice
-        # Check if we can read input (tty or pipe)
-        if [ -t 0 ] || [ -p /dev/stdin ]; then
-                printf '%sEnter your choice (1-4): %s' "$BOLD" "$RESET" >&2
-                IFS= read -r choice
-        else
-                # Non-interactive mode - default to exit
-                if [ "${WIZARDRY_INSTALL_ASSUME_YES-}" = "1" ]; then
-                        # In automated mode with ASSUME_YES, default to repair
-                        choice="1"
-                        printf '%s\n' "Non-interactive mode: defaulting to repair (option 1)"
-                else
-                        printf '%s\n' "Wizardry is already installed. Run 'menu' or 'mud' to use it."
-                        exit 0
+        # For nix format, check for wizardry shell init marker
+        case $detect_format_value in
+        nix)
+                if grep -qE "wizardry: (invoke-wizardry|wizardry-init)" "$detect_rc_file_value" 2>/dev/null; then
+                        return 0
                 fi
-        fi
-        
-        case $choice in
-                1)
-                        # Repair - continue with normal flow to check/fix PATH
-                        info_msg "Repairing wizardry installation..."
-                        # Force re-add all paths even if they appear present
-                        set -- "$ABS_DIR/spells"
-                        ;;
-                2)
-                        # Reinstall - continue with normal installation flow
-                        info_msg "Reinstalling wizardry..."
-                        set -- "$ABS_DIR/spells"
-                        ;;
-                3)
-                        # Uninstall - use the uninstall script from the existing installation
-                        uninstall_script="$ABS_DIR/.uninstall"
-                        if [ -x "$uninstall_script" ]; then
-                                exec "$uninstall_script"
-                        else
-                                printf '%s\n' "Error: uninstall script not found at '$uninstall_script'." >&2
-                                printf '%s\n' "The uninstall script is created during installation." >&2
-                                printf '%s\n' "You may need to manually remove '$ABS_DIR' and PATH entries from your shell configuration." >&2
-                                exit 1
-                        fi
-                        ;;
-                4|"")
-                        # Exit (empty input also exits)
-                        printf '%s\n' "No changes made. Run 'menu' or 'mud' to use wizardry."
-                        exit 0
-                        ;;
-                *)
-                        # Invalid choice - treat as exit
-                        printf '%s\n' "Invalid choice. No changes made."
-                        exit 0
-                        ;;
+                ;;
+        *)
+                # For shell format, check for invoke-wizardry source line or marker
+                if grep -qE "(invoke-wizardry|wizardry: invoke-wizardry|wizardry: wizardry-init)" "$detect_rc_file_value" 2>/dev/null; then
+                        return 0
+                fi
+                ;;
         esac
-fi
+        return 1
+}
 
-# Detect the rc file and format before prompting so we can give specific guidance
+# Detect the rc file and format early - needed for installation status check
 detect_rc_file_value=""
 detect_format_value=""
 detect_platform_value=""
@@ -555,7 +504,7 @@ if [ "$detect_platform_value" = "nixos" ] && [ "$detect_format_value" = "shell" 
                 if [ -f "$user_nix_config" ]; then
                         detect_rc_file_value=$user_nix_config
                         detect_format_value=nix
-                        # Export for learn-spellbook to use
+                        # Export for any helper that needs it
                         NIXOS_CONFIG=$user_nix_config
                         export NIXOS_CONFIG
                         success_msg "Using configuration file: $user_nix_config"
@@ -569,30 +518,98 @@ if [ "$detect_platform_value" = "nixos" ] && [ "$detect_format_value" = "shell" 
         fi
 fi
 
-section_msg "Installation Plan"
-
-# Count how many directories will be added (for recursion display)
-total_path_additions=0
-if [ "$LEARN_SPELLBOOK_FLAGS" = "--recursive" ]; then
-        for dir
-        do
-                if [ -d "$dir" ]; then
-                        subdir_count=$(find "$dir" -type d 2>/dev/null | wc -l)
-                        total_path_additions=$((total_path_additions + subdir_count))
-                fi
-        done
+# Now that we have detect_rc_file_value, we can check if invoke-wizardry is installed
+if check_invoke_wizardry_status; then
+        invoke_wizardry_installed=1
 else
-        total_path_additions=$#
+        invoke_wizardry_installed=0
 fi
 
-info_msg "Will add $total_path_additions directories to your PATH"
-for dir
-do
-        substep_msg "$dir"
-        if [ "$LEARN_SPELLBOOK_FLAGS" = "--recursive" ]; then
-                substep_msg "  (and all subdirectories)"
+# Determine if installation is needed
+needs_installation=0
+if [ "$install_status" -eq 0 ]; then
+        # Not installed at all - needs full installation
+        needs_installation=1
+elif [ "$install_status" -eq 1 ]; then
+        # Partially installed - needs repair
+        needs_installation=1
+elif [ "$invoke_wizardry_installed" -eq 0 ]; then
+        # Fully installed files but no invoke-wizardry in rc (legacy or needs upgrade)
+        needs_installation=1
+fi
+
+# If wizardry is fully installed (including invoke-wizardry), show the options menu
+if [ "$needs_installation" -eq 0 ]; then
+        # Wizardry is already installed - offer options via simple text menu
+        printf '\n'
+        info_msg "Wizardry is already installed at: $ABS_DIR"
+        printf '\n'
+        printf '%sWhat would you like to do?%s\n' "$BOLD" "$RESET"
+        printf '  1) %sRepair%s - Fix shell configuration if needed\n' "$CYAN" "$RESET"
+        printf '  2) %sReinstall%s - Reinstall wizardry (keeps current location)\n' "$CYAN" "$RESET"
+        printf '  3) %sUninstall%s - Remove wizardry from your system\n' "$CYAN" "$RESET"
+        printf '  4) %sExit%s - Do nothing and exit\n' "$CYAN" "$RESET"
+        printf '\n'
+        
+        # Read user choice
+        # Check if we can read input (tty or pipe)
+        if [ -t 0 ] || [ -p /dev/stdin ]; then
+                printf '%sEnter your choice (1-4): %s' "$BOLD" "$RESET" >&2
+                IFS= read -r choice
+        else
+                # Non-interactive mode - default to exit
+                if [ "${WIZARDRY_INSTALL_ASSUME_YES-}" = "1" ]; then
+                        # In automated mode with ASSUME_YES, default to repair
+                        choice="1"
+                        printf '%s\n' "Non-interactive mode: defaulting to repair (option 1)"
+                else
+                        printf '%s\n' "Wizardry is already installed. Run 'menu' or 'mud' to use it."
+                        exit 0
+                fi
         fi
-done
+        
+        case $choice in
+                1)
+                        # Repair - continue with normal flow
+                        info_msg "Repairing wizardry installation..."
+                        needs_installation=1
+                        ;;
+                2)
+                        # Reinstall - continue with normal installation flow
+                        info_msg "Reinstalling wizardry..."
+                        needs_installation=1
+                        ;;
+                3)
+                        # Uninstall - use the uninstall script from the existing installation
+                        uninstall_script="$ABS_DIR/.uninstall"
+                        if [ -x "$uninstall_script" ]; then
+                                exec "$uninstall_script"
+                        else
+                                printf '%s\n' "Error: uninstall script not found at '$uninstall_script'." >&2
+                                printf '%s\n' "The uninstall script is created during installation." >&2
+                                printf '%s\n' "You may need to manually remove '$ABS_DIR' and the invoke-wizardry source line from your shell rc file." >&2
+                                exit 1
+                        fi
+                        ;;
+                4|"")
+                        # Exit (empty input also exits)
+                        printf '%s\n' "No changes made. Run 'menu' or 'mud' to use wizardry."
+                        exit 0
+                        ;;
+                *)
+                        # Invalid choice - treat as exit
+                        printf '%s\n' "Invalid choice. No changes made."
+                        exit 0
+                        ;;
+        esac
+fi
+
+section_msg "Installation Plan"
+
+# Show what will be installed
+info_msg "Will add invoke-wizardry to your shell configuration"
+substep_msg "Location: $INVOKE_WIZARDRY"
+substep_msg "This script sets up wizardry environment and PATH at shell startup"
 
 # Provide format-specific information about what file will be modified
 printf '\n'
@@ -702,9 +719,9 @@ if [ -x "$CORE_INSTALLER" ]; then
         success_msg "Core prerequisites verified"
 fi
 
-section_msg "Updating PATH"
+section_msg "Setting up Shell Integration"
 
-path_updates_made=0
+shell_setup_made=0
 rebuild_success=0
 sourcing_succeeded=0
 
@@ -715,75 +732,66 @@ else
         rc_destination="your shell configuration file"
 fi
 
-# Add directories to PATH using traditional approach for all platforms
-for dir
-do
-        path_log=$(mktemp "${TMPDIR:-/tmp}/wizardry-path.XXXXXX") || exit 1
-        info_msg "Updating $rc_destination..."
-        if "$LEARN_SPELLBOOK" $LEARN_SPELLBOOK_FLAGS add "$dir" >"$path_log" 2>&1; then
-                path_updates_made=1
+# Add invoke-wizardry source line to the shell configuration file.
+# This replaces the old approach of adding directories to PATH manually.
+# invoke-wizardry dynamically sets up PATH at shell startup.
+info_msg "Updating $rc_destination..."
+
+# Generate the source line for invoke-wizardry
+invoke_wizardry_source_line=". \"$INVOKE_WIZARDRY\""
+
+case $detect_format_value in
+nix)
+        # For NixOS, use nix-shell-init to add shell initialization code
+        if [ -x "$NIX_SHELL_INIT" ]; then
+                if printf '%s\n' "$invoke_wizardry_source_line" | "$NIX_SHELL_INIT" add --shell bash --name wizardry-init --file "$detect_rc_file_value" 2>/dev/null; then
+                        shell_setup_made=1
+                else
+                        printf '%s\n' "Error: Failed to add wizardry initialization to '$detect_rc_file_value'." >&2
+                        exit 1
+                fi
         else
-                cat "$path_log" >&2
-                rm -f "$path_log"
+                printf '%s\n' "Error: nix-shell-init helper not found at '$NIX_SHELL_INIT'." >&2
                 exit 1
         fi
-        rm -f "$path_log"
-done
+        ;;
+*)
+        # For standard shell rc files, add the source line directly with a wizardry marker
+        # Check if the source line already exists
+        if grep -qE "(invoke-wizardry|wizardry: wizardry-init)" "$detect_rc_file_value" 2>/dev/null; then
+                shell_setup_made=0
+        else
+                # Create rc file if it doesn't exist
+                if [ ! -f "$detect_rc_file_value" ]; then
+                        touch "$detect_rc_file_value"
+                fi
+                # Add the source line with inline marker
+                printf '%s\n' "$invoke_wizardry_source_line # wizardry: wizardry-init" >> "$detect_rc_file_value"
+                shell_setup_made=1
+        fi
+        ;;
+esac
 
-# Add ~/.spellbook to PATH for custom spells
-spell_home_dir=""
+if [ "$shell_setup_made" -eq 1 ]; then
+        success_msg "Shell configuration updated in $rc_destination"
+fi
+
+# Create ~/.spellbook directory for custom spells
+# Note: invoke-wizardry automatically adds this to PATH, so no manual PATH addition needed
 if [ -n "${HOME-}" ]; then
         spell_home_dir="$HOME/.spellbook"
-fi
-if [ -n "$spell_home_dir" ]; then
-        # Create the directory if it doesn't exist
-        mkdir -p "$spell_home_dir"
-        # Check if already in PATH config
-        if ! "$LEARN_SPELLBOOK" status "$spell_home_dir" 2>/dev/null; then
-                path_log=$(mktemp "${TMPDIR:-/tmp}/wizardry-path.XXXXXX") || exit 1
-                info_msg "Adding custom spellbook to PATH..."
-                if "$LEARN_SPELLBOOK" add "$spell_home_dir" >"$path_log" 2>&1; then
-                        path_updates_made=1
-                fi
-                rm -f "$path_log"
+        if [ ! -d "$spell_home_dir" ]; then
+                mkdir -p "$spell_home_dir"
+                substep_msg "Created custom spellbook at $spell_home_dir"
         fi
 fi
 
-if [ "$path_updates_made" -eq 1 ]; then
-        success_msg "PATH configuration updated in $rc_destination"
-fi
-
-# Installing spells pre-compiles wizardry's menus so interactive commands are
-# ready before the user opens their first shell inside the new install.
-# This is done before nixos-rebuild so spells are ready when the rebuild completes.
-# Install each learnable spell explicitly (not recursively) for transparency.
-mem_status=0
-if [ -x "$LEARN_SPELL_INSTALLER" ]; then
-        section_msg "Installing Spells"
-        mem_log=$(mktemp "${TMPDIR:-/tmp}/wizardry-install.XXXXXX") || exit 1
-        spell_count=0
-        # Install each learnable spell explicitly by name
-        for spell in $LEARNABLE_SPELLS; do
-                if [ -x "$spell" ]; then
-                        spell_name=$(basename "$spell")
-                        if "$LEARN_SPELL_INSTALLER" "$spell" >>"$mem_log" 2>&1; then
-                                spell_count=$((spell_count + 1))
-                                substep_msg "$spell_name"
-                        else
-                                printf '%sNote:%s Installation of %s skipped.\n' "$YELLOW" "$RESET" "$spell_name" >&2
-                        fi
-                fi
-        done
-        if [ "$spell_count" -gt 0 ]; then
-                success_msg "Installed $spell_count spell(s)"
-        fi
-        rm -f "$mem_log"
-else
-        printf '%sWarning:%s learn-spell is missing; skipping automatic spell installation.\n' "$YELLOW" "$RESET" >&2
-fi
+# NOTE: With the word-of-binding paradigm (PR #410), spells are auto-sourced on
+# first use via handle-command-not-found. Pre-installing spells is no longer needed.
+# Users can still manually run spell install() functions for customizations.
 
 # MUD Installation (optional)
-# After installing core spells, ask if user wants to install the MUD features
+# After setting up shell integration, ask if user wants to install the MUD features
 install_mud=0
 if [ "${WIZARDRY_INSTALL_ASSUME_YES-}" = "1" ]; then
         # In non-interactive mode, skip MUD installation by default
@@ -835,7 +843,7 @@ if [ "$install_mud" -eq 1 ]; then
 fi
 
 # Handle platform-specific post-installation steps
-if [ "$path_updates_made" -eq 1 ]; then
+if [ "$shell_setup_made" -eq 1 ]; then
         if [ "$detect_format_value" = "nix" ]; then
                 # On NixOS, attempt to run nixos-rebuild or home-manager switch
                 section_msg "Rebuilding NixOS Configuration"
@@ -944,7 +952,7 @@ fi
 
 printf '\n%s===== Wizardry Uninstall =====%s\n\n' "$BOLD$CYAN" "$RESET"
 printf '%sThis will remove wizardry from your system:%s\n' "$YELLOW" "$RESET"
-printf '  - Remove PATH entries from %s\n' "$RC_FILE"
+printf '  - Remove invoke-wizardry source line from %s\n' "$RC_FILE"
 if [ -z "$INSTALL_WAS_LOCAL" ]; then
         printf '  - Delete wizardry directory: %s\n' "$INSTALL_DIR"
 else
@@ -965,20 +973,43 @@ case $answer in
                 ;;
 esac
 
-printf '\n%s==> Removing PATH entries...%s\n' "$CYAN" "$RESET"
+printf '\n%s==> Removing shell configuration...%s\n' "$CYAN" "$RESET"
 
-# Use learn-spellbook to remove PATH entries
-LEARN_SPELLBOOK="$INSTALL_DIR/spells/spellcraft/learn-spellbook"
-if [ -x "$LEARN_SPELLBOOK" ]; then
-        # Use remove-all to remove all wizardry-managed PATH entries at once
-        # This is more reliable than iterating over directories (which might not exist)
-        if "$LEARN_SPELLBOOK" remove-all 2>/dev/null; then
-                printf '  %s✓%s Removed all wizardry PATH entries\n' "$GREEN" "$RESET"
+# Remove the invoke-wizardry source line from the rc file
+if [ -f "$RC_FILE" ]; then
+        if [ "$RC_FORMAT" = "nix" ]; then
+                # For NixOS, use nix-shell-init to remove the wizardry-init block
+                NIX_SHELL_INIT="$INSTALL_DIR/spells/.imps/sys/nix-shell-init"
+                if [ -x "$NIX_SHELL_INIT" ]; then
+                        if "$NIX_SHELL_INIT" remove --shell bash --name wizardry-init --file "$RC_FILE" 2>/dev/null; then
+                                printf '  %s✓%s Removed wizardry initialization from %s\n' "$GREEN" "$RESET" "$RC_FILE"
+                        else
+                                printf '  %sNote:%s No wizardry initialization found in %s\n' "$YELLOW" "$RESET" "$RC_FILE"
+                        fi
+                else
+                        # Fallback: try to remove lines containing wizardry-init marker
+                        tmp_file="${RC_FILE}.wizardry.$$"
+                        if grep -v 'wizardry: wizardry-init' "$RC_FILE" > "$tmp_file" 2>/dev/null; then
+                                mv "$tmp_file" "$RC_FILE"
+                                printf '  %s✓%s Removed wizardry initialization from %s\n' "$GREEN" "$RESET" "$RC_FILE"
+                        else
+                                rm -f "$tmp_file"
+                                printf '  %sNote:%s Could not remove wizardry initialization\n' "$YELLOW" "$RESET"
+                        fi
+                fi
         else
-                printf '  %sNote:%s No wizardry PATH entries found to remove\n' "$YELLOW" "$RESET"
+                # For shell rc files, remove lines containing the wizardry-init marker
+                tmp_file="${RC_FILE}.wizardry.$$"
+                if grep -v 'wizardry: wizardry-init' "$RC_FILE" > "$tmp_file" 2>/dev/null; then
+                        mv "$tmp_file" "$RC_FILE"
+                        printf '  %s✓%s Removed wizardry initialization from %s\n' "$GREEN" "$RESET" "$RC_FILE"
+                else
+                        rm -f "$tmp_file"
+                        printf '  %sNote:%s No wizardry initialization found to remove\n' "$YELLOW" "$RESET"
+                fi
         fi
 else
-        printf '  %sWarning:%s Could not find learn-spellbook; manual PATH cleanup may be needed\n' "$YELLOW" "$RESET"
+        printf '  %sNote:%s RC file %s not found\n' "$YELLOW" "$RESET" "$RC_FILE"
 fi
 
 # On NixOS, run nixos-rebuild to apply the configuration changes
@@ -1038,9 +1069,9 @@ printf '\n%s✓ Wizardry uninstalled successfully%s\n' "$BOLD$GREEN" "$RESET"
 
 # Show platform-specific guidance for when changes take effect
 if [ "$RC_FORMAT" = "nix" ]; then
-        printf '\nWizardry has been removed. Open a new terminal window to complete the process.\n\n'
+        printf '\nWizardry shell integration has been removed. Open a new terminal window to complete the process.\n\n'
 else
-        printf '\nChanges are applied automatically. New terminal windows will have the updated PATH.\n\n'
+        printf '\nWizardry shell integration has been removed. New terminal windows will not have wizardry commands available.\n\n'
 fi
 
 # Self-destruct - safely remove the uninstall script itself
@@ -1094,4 +1125,4 @@ printf '\n'
 printf 'Run %smenu%s or %smud%s to start using wizardry.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
 printf '\n'
 
-exit "$mem_status"
+exit 0

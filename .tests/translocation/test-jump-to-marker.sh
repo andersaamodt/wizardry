@@ -314,8 +314,6 @@ STUB
 
 _run_test_case "jump-to-marker prints usage" test_help
 _run_test_case "jump-to-marker rejects unknown options" test_unknown_option_fails
-_run_test_case "jump-to-marker install fails when helpers missing" test_install_requires_helpers
-_run_test_case "jump-to-marker install adds jump alias" test_install_adds_jump_alias
 _run_test_case "jump-to-marker fails when markers dir is missing" test_jump_requires_markers_dir
 _run_test_case "jump-to-marker fails when specific marker is missing" test_jump_requires_specific_marker
 _run_test_case "jump-to-marker fails when marker is blank" test_jump_rejects_blank_marker
@@ -325,6 +323,4 @@ _run_test_case "jump-to-marker jumps to marked directory" test_jump_changes_dire
 _run_test_case "jump-to-marker jumps to named marker" test_jump_to_named_marker
 _run_test_case "jump-to-marker lists available markers on error" test_jump_lists_available_markers
 _run_test_case "jump 0 cycles like jump with no args" test_jump_zero_cycles
-_run_test_case "jump-to-marker nixos install runs home-manager" test_nixos_install_runs_home_manager
-_run_test_case "jump-to-marker nixos install skips rebuild when disabled" test_nixos_install_skips_rebuild_when_disabled
 _finish_tests

@@ -108,7 +108,7 @@ install_nixos_fails_without_config_path() {
 }
 
 install_nixos_adds_path_to_config() {
-  # On NixOS, the installer should add PATH entries to configuration.nix
+  # On NixOS, the installer should add shell configuration (invoke-wizardry) to configuration.nix
   fixture=$(_make_fixture)
   _provide_basic_tools "$fixture"
   _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
@@ -134,8 +134,8 @@ EOF
       "$ROOT_DIR/install"
 
   _assert_success || return 1
-  # Check that the output mentions PATH configuration
-  _assert_output_contains "PATH configuration" || return 1
+  # Check that the output mentions shell configuration
+  _assert_output_contains "Shell configuration" || return 1
 }
 
 install_nixos_writes_path_block() {
@@ -373,8 +373,8 @@ EOF
   _assert_output_contains "Configuration file to be modified" || return 1
 }
 
-install_nixos_shows_path_updated_message() {
-  # On NixOS, the installer should show "PATH configuration updated" message
+install_nixos_shows_shell_config_updated_message() {
+  # On NixOS, the installer should show "Shell configuration updated" message
   fixture=$(_make_fixture)
   _provide_basic_tools "$fixture"
   _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
@@ -409,8 +409,8 @@ EOF
 
   _assert_success || return 1
   
-  # Check that the output shows PATH configuration message
-  _assert_output_contains "PATH configuration updated" || return 1
+  # Check that the output shows shell configuration message
+  _assert_output_contains "Shell configuration updated" || return 1
 }
 
 # === Path Normalization Tests ===
@@ -537,9 +537,9 @@ install_uses_explicit_helper_paths() {
   # Verify that the install script references helpers using explicit paths,
   # not relying on PATH which could contain old broken versions.
   
-  # Check that learn-spellbook is referenced with an explicit path
-  if ! grep -q 'LEARN_SPELLBOOK=.*\$ABS_DIR/spells/spellcraft/learn-spellbook' "$ROOT_DIR/install"; then
-    TEST_FAILURE_REASON="install script should use explicit path to learn-spellbook"
+  # Check that invoke-wizardry is referenced with an explicit path
+  if ! grep -q 'INVOKE_WIZARDRY=.*\$ABS_DIR/spells/.imps/sys/invoke-wizardry' "$ROOT_DIR/install"; then
+    TEST_FAILURE_REASON="install script should use explicit path to invoke-wizardry"
     return 1
   fi
   
@@ -717,8 +717,8 @@ install_shows_menu_when_already_installed() {
 
 # === Output Message Tests ===
 
-install_nixos_shows_path_updated() {
-  # On NixOS, the installer should show "PATH configuration updated"
+install_nixos_shows_shell_config_updated() {
+  # On NixOS, the installer should show "Shell configuration updated"
   fixture=$(_make_fixture)
   _provide_basic_tools "$fixture"
   _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
@@ -745,12 +745,13 @@ EOF
 
   _assert_success || return 1
   
-  # Should show "PATH configuration updated" message for NixOS
-  _assert_output_contains "PATH configuration updated" || return 1
+  # Should show "Shell configuration updated" message for NixOS
+  _assert_output_contains "Shell configuration updated" || return 1
 }
 
-install_shows_spell_names_installed() {
-  # The installer should list the names of spells that were installed
+install_does_not_show_spell_installation() {
+  # With word-of-binding paradigm, the installer should NOT pre-install spells
+  # Spells are auto-sourced on first use via handle-command-not-found
   fixture=$(_make_fixture)
   _provide_basic_tools "$fixture"
   _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
@@ -764,14 +765,10 @@ install_shows_spell_names_installed() {
 
   _assert_success || return 1
   
-  # Should list spell names in output (e.g., "cd" spell)
-  # The output should contain the spell names that were installed
-  if printf '%s' "$OUTPUT" | grep -q "Memorizing"; then
-    # If spells were installed, check that names are listed
-    if printf '%s' "$OUTPUT" | grep -q "Installed"; then
-      # Check that individual spell names are shown with ->
-      _assert_output_contains "->" || return 1
-    fi
+  # Should NOT show "Installing Spells" section anymore
+  if printf '%s' "$OUTPUT" | grep -q "Installing Spells"; then
+    TEST_FAILURE_REASON="installer should not have Installing Spells section"
+    return 1
   fi
 }
 
@@ -954,9 +951,9 @@ install_non_nixos_shows_source_message() {
 
 # === Uninstall Script Tests ===
 
-uninstall_script_handles_imps_directory() {
-  # Test that the generated uninstall script uses remove-all to handle all PATH entries
-  # This includes .imps and other hidden directories that glob patterns might miss
+uninstall_script_removes_invoke_wizardry() {
+  # Test that the generated uninstall script removes the invoke-wizardry source line
+  # This is the new paradigm - we no longer add individual PATH entries
   fixture=$(_make_fixture)
   _provide_basic_tools "$fixture"
   _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
@@ -974,9 +971,9 @@ uninstall_script_handles_imps_directory() {
   uninstall_script="$install_dir/.uninstall"
   _assert_path_exists "$uninstall_script" || return 1
   
-  # Check that the uninstall script uses remove-all to handle all entries
-  # This is more reliable than iterating over directories (which could miss .imps)
-  _assert_file_contains "$uninstall_script" "remove-all" || return 1
+  # Check that the uninstall script removes the wizardry-init marker
+  # This is the new approach for removing invoke-wizardry source line
+  _assert_file_contains "$uninstall_script" "wizardry-init" || return 1
 }
 
 uninstall_script_nixos_includes_rebuild() {
@@ -1200,26 +1197,19 @@ EOF
 
 # === Install Spells Before Rebuild Tests ===
 
-install_spells_before_nixos_rebuild() {
-  # Test that the install script has the spell installation section before nixos-rebuild
-  # This ensures spells are ready when the rebuild completes
+install_no_spell_preinstallation() {
+  # With word-of-binding paradigm, spells are NOT pre-installed
+  # This test verifies the install script doesn't have the old spell installation logic
   
-  # Find line numbers of key sections
-  install_spells_line=$(grep -n "section_msg.*Installing Spells" "$ROOT_DIR/install" | head -1 | cut -d: -f1)
-  rebuild_line=$(grep -n "nixos-rebuild switch" "$ROOT_DIR/install" | head -1 | cut -d: -f1)
-  
-  if [ -z "$install_spells_line" ]; then
-    TEST_FAILURE_REASON="Installing Spells section not found in install script"
+  # Check that the install script does NOT have LEARNABLE_SPELLS variable
+  if grep -q 'LEARNABLE_SPELLS=' "$ROOT_DIR/install"; then
+    TEST_FAILURE_REASON="install script should not have LEARNABLE_SPELLS (word-of-binding handles this)"
     return 1
   fi
   
-  if [ -z "$rebuild_line" ]; then
-    # No nixos-rebuild in script (might be in different format), skip check
-    return 0
-  fi
-  
-  if [ "$install_spells_line" -gt "$rebuild_line" ]; then
-    TEST_FAILURE_REASON="Installing Spells section should come before nixos-rebuild (install spells at line $install_spells_line, rebuild at line $rebuild_line)"
+  # Check that there's no "Installing Spells" section
+  if grep -q 'section_msg.*Installing Spells' "$ROOT_DIR/install"; then
+    TEST_FAILURE_REASON="install script should not have Installing Spells section"
     return 1
   fi
   
@@ -1228,9 +1218,8 @@ install_spells_before_nixos_rebuild() {
 
 # === MUD Installation Tests ===
 
-install_installs_spells_explicitly() {
-  # Test that the install script installs learnable spells explicitly by name
-  # rather than using recursive learn-spell
+install_mud_setup() {
+  # Test that MUD installation works properly
   fixture=$(_make_fixture)
   _provide_basic_tools "$fixture"
   _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
@@ -1244,13 +1233,9 @@ install_installs_spells_explicitly() {
 
   _assert_success || return 1
   
-  # Should show individual spell names being installed
-  _assert_output_contains "jump-to-marker" || return 1
-  
-  # Should NOT use recursive flag in spell installation output
-  if printf '%s' "$OUTPUT" | grep -q "Memorized.*spell"; then
-    # Old recursive style output - this should not appear
-    TEST_FAILURE_REASON="should not use recursive spell installation"
+  # With word-of-binding paradigm, should NOT mention individual spell installation
+  if printf '%s' "$OUTPUT" | grep -q "jump-to-marker"; then
+    TEST_FAILURE_REASON="installer should not pre-install individual spells (word-of-binding handles this)"
     return 1
   fi
 }
@@ -1395,25 +1380,25 @@ _run_test_case "learn-spellbook accepts helper overrides" path_wizard_accepts_he
 _run_test_case "install uses only bootstrappable spells" install_uses_only_bootstrappable_spells
 _run_test_case "install shows menu when already installed" install_shows_menu_when_already_installed
 _run_test_case "install shows help" shows_help
-_run_test_case "install NixOS shows PATH updated" install_nixos_shows_path_updated
-_run_test_case "install shows spell names installed" install_shows_spell_names_installed
+_run_test_case "install NixOS shows shell config updated" install_nixos_shows_shell_config_updated
+_run_test_case "install does not show spell installation" install_does_not_show_spell_installation
 _run_test_case "install creates .uninstall script" install_creates_uninstall_script_with_correct_name
 _run_test_case "install does not show uninstall on success" install_does_not_show_uninstall_on_success
 _run_test_case "install shows simple run message" install_shows_simple_run_message
 _run_test_case "install no adding missing path on fresh" install_does_not_show_adding_missing_path_on_fresh
 _run_test_case "install NixOS shows config file message" install_nixos_shows_config_file_message
-_run_test_case "install NixOS shows path updated message" install_nixos_shows_path_updated_message
+_run_test_case "install NixOS shows shell config updated message" install_nixos_shows_shell_config_updated_message
 _run_test_case "install NixOS shows appropriate message" install_nixos_shows_appropriate_message
 _run_test_case "install non-NixOS shows source message" install_non_nixos_shows_source_message
-_run_test_case "uninstall script handles .imps directory" uninstall_script_handles_imps_directory
+_run_test_case "uninstall script removes invoke-wizardry" uninstall_script_removes_invoke_wizardry
 _run_test_case "uninstall script NixOS includes rebuild" uninstall_script_nixos_includes_rebuild
 _run_test_case "uninstall script NixOS includes terminal message" uninstall_script_nixos_includes_terminal_message
 _run_test_case "install shows revised prompt text" install_shows_revised_prompt_text
 _run_test_case "learn-spellbook remove-all removes all nix entries" path_wizard_remove_all_removes_all_nix_entries
 _run_test_case "learn-spellbook remove-all reports count" path_wizard_remove_all_reports_count
 _run_test_case "learn-spellbook remove-all handles empty file" path_wizard_remove_all_handles_empty_file
-_run_test_case "install installs spells before nixos-rebuild" install_spells_before_nixos_rebuild
-_run_test_case "install installs spells explicitly" install_installs_spells_explicitly
+_run_test_case "install no spell preinstallation" install_no_spell_preinstallation
+_run_test_case "install MUD setup" install_mud_setup
 _run_test_case "install MUD installs CD hook" install_mud_installs_cd_hook
 _run_test_case "install MUD enables config features" install_mud_enables_config_features
 _run_test_case "install without MUD skips MUD section" install_without_mud_skips_mud_section
