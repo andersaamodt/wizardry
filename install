@@ -589,7 +589,7 @@ if [ "$needs_installation" -eq 0 ]; then
                         else
                                 printf '%s\n' "Error: uninstall script not found at '$uninstall_script'." >&2
                                 printf '%s\n' "The uninstall script is created during installation." >&2
-                                printf '%s\n' "You may need to manually remove '$ABS_DIR' and shell configuration entries." >&2
+                                printf '%s\n' "You may need to manually remove '$ABS_DIR' and the invoke-wizardry source line from your shell rc file." >&2
                                 exit 1
                         fi
                         ;;
@@ -1096,9 +1096,9 @@ printf '\n%s✓ Wizardry uninstalled successfully%s\n' "$BOLD$GREEN" "$RESET"
 
 # Show platform-specific guidance for when changes take effect
 if [ "$RC_FORMAT" = "nix" ]; then
-        printf '\nWizardry has been removed. Open a new terminal window to complete the process.\n\n'
+        printf '\nWizardry shell integration has been removed. Open a new terminal window to complete the process.\n\n'
 else
-        printf '\nChanges are applied automatically. New terminal windows will not have wizardry.\n\n'
+        printf '\nWizardry shell integration has been removed. New terminal windows will not have wizardry commands available.\n\n'
 fi
 
 # Self-destruct - safely remove the uninstall script itself
