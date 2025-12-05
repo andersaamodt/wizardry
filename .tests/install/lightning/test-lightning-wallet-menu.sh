@@ -11,24 +11,24 @@ done
 spell_is_executable() {
   [ -x "$ROOT_DIR/spells/install/lightning/lightning-wallet-menu" ]
 }
-run_test_case "install/lightning/lightning-wallet-menu is executable" spell_is_executable
+_run_test_case "install/lightning/lightning-wallet-menu is executable" spell_is_executable
 
 spell_has_content() {
   [ -s "$ROOT_DIR/spells/install/lightning/lightning-wallet-menu" ]
 }
-run_test_case "install/lightning/lightning-wallet-menu has content" spell_has_content
+_run_test_case "install/lightning/lightning-wallet-menu has content" spell_has_content
 
 shows_usage_help() {
-  run_spell spells/install/lightning/lightning-wallet-menu --help
-  assert_success || return 1
-  assert_output_contains "Usage: lightning-wallet-menu"
+  _run_spell spells/install/lightning/lightning-wallet-menu --help
+  _assert_success || return 1
+  _assert_output_contains "Usage: lightning-wallet-menu"
 }
-run_test_case "lightning-wallet-menu shows usage help" shows_usage_help
+_run_test_case "lightning-wallet-menu shows usage help" shows_usage_help
 
 contains_wallet_actions() {
-  assert_file_contains "$ROOT_DIR/spells/install/lightning/lightning-wallet-menu" "lightning-cli listfunds"
-  assert_file_contains "$ROOT_DIR/spells/install/lightning/lightning-wallet-menu" "lightning-cli newaddr"
+  _assert_file_contains "$ROOT_DIR/spells/install/lightning/lightning-wallet-menu" "lightning-cli listfunds"
+  _assert_file_contains "$ROOT_DIR/spells/install/lightning/lightning-wallet-menu" "lightning-cli newaddr"
 }
-run_test_case "lightning-wallet-menu lists wallet actions" contains_wallet_actions
+_run_test_case "lightning-wallet-menu lists wallet actions" contains_wallet_actions
 
-finish_tests
+_finish_tests

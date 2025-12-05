@@ -241,8 +241,15 @@ install() {
 
 		# Create the shell hook code for bash
 		# command_not_found_handle is the standard bash function for handling unknown commands
-		# Uses parse for recursive grammar parsing when available
+		# Defers to word-of-binding for wizardry commands, falls back to parse for grammar parsing
 		hook_code='command_not_found_handle() {
+  # Try word-of-binding first for autoloading wizardry commands
+  if command -v word-of-binding >/dev/null 2>&1; then
+    if word-of-binding "$@" 2>/dev/null; then
+      return $?
+    fi
+  fi
+  # Fall back to parse for recursive grammar parsing
   if command -v parse >/dev/null 2>&1; then
     parse "$@"
     return $?
@@ -275,10 +282,17 @@ install() {
 	fi
 	# Install the command_not_found_handle function which is the standard bash
 	# mechanism for intercepting unknown commands
-	# Uses parse for recursive grammar parsing when available
+	# Defers to word-of-binding for autoloading, falls back to parse for grammar parsing
 	cat <<'HOOK' >>"$tmp_file"
 # >>> wizardry command-not-found >>>
 command_not_found_handle() {
+  # Try word-of-binding first for autoloading wizardry commands
+  if command -v word-of-binding >/dev/null 2>&1; then
+    if word-of-binding "$@" 2>/dev/null; then
+      return $?
+    fi
+  fi
+  # Fall back to parse for recursive grammar parsing
   if command -v parse >/dev/null 2>&1; then
     parse "$@"
     return $?

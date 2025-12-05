@@ -13,15 +13,15 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  run_spell "spells/mud/select-player" --help
-  assert_success || return 1
-  assert_output_contains "Usage: select-player" || return 1
+  _run_spell "spells/mud/select-player" --help
+  _assert_success || return 1
+  _assert_output_contains "Usage: select-player" || return 1
 }
 
 test_help_h_flag() {
-  run_spell "spells/mud/select-player" -h
-  assert_success || return 1
-  assert_output_contains "Usage: select-player" || return 1
+  _run_spell "spells/mud/select-player" -h
+  _assert_success || return 1
+  _assert_output_contains "Usage: select-player" || return 1
 }
 
 test_has_strict_mode() {
@@ -32,8 +32,8 @@ test_has_strict_mode() {
   }
 }
 
-run_test_case "select-player shows usage text" test_help
-run_test_case "select-player shows usage with -h" test_help_h_flag
-run_test_case "select-player uses strict mode" test_has_strict_mode
+_run_test_case "select-player shows usage text" test_help
+_run_test_case "select-player shows usage with -h" test_help_h_flag
+_run_test_case "select-player uses strict mode" test_has_strict_mode
 
-finish_tests
+_finish_tests

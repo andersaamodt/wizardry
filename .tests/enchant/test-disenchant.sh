@@ -14,27 +14,27 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 make_stub_dir() {
-  tmpdir=$(make_tempdir)
+  tmpdir=$(_make_tempdir)
   mkdir -p "$tmpdir/stubs"
   printf '%s\n' "$tmpdir/stubs"
 }
 
 test_help() {
-  run_spell "spells/enchant/disenchant" --help
-  assert_success && assert_output_contains "Usage: disenchant"
+  _run_spell "spells/enchant/disenchant" --help
+  _assert_success && _assert_output_contains "Usage: disenchant"
 }
 
 test_argument_validation() {
-  run_spell "spells/enchant/disenchant"
-  assert_failure && assert_error_contains "requires one or two arguments"
+  _run_spell "spells/enchant/disenchant"
+  _assert_failure && _assert_error_contains "requires one or two arguments"
 
-  run_spell "spells/enchant/disenchant" a b c
-  assert_failure && assert_error_contains "requires one or two arguments"
+  _run_spell "spells/enchant/disenchant" a b c
+  _assert_failure && _assert_error_contains "requires one or two arguments"
 }
 
 test_missing_file() {
-  run_spell "spells/enchant/disenchant" "$WIZARDRY_TMPDIR/missing"
-  assert_failure && assert_error_contains "does not exist"
+  _run_spell "spells/enchant/disenchant" "$WIZARDRY_TMPDIR/missing"
+  _assert_failure && _assert_error_contains "does not exist"
 }
 
 test_no_attributes() {
@@ -49,8 +49,8 @@ STUB
 
   tmpfile="$WIZARDRY_TMPDIR/blank"
   : >"$tmpfile"
-  PATH="$stub_dir:$PATH" run_spell "spells/enchant/disenchant" "$tmpfile"
-  assert_failure && assert_error_contains "No enchanted attributes"
+  PATH="$stub_dir:$PATH" _run_spell "spells/enchant/disenchant" "$tmpfile"
+  _assert_failure && _assert_error_contains "No enchanted attributes"
 }
 
 test_removes_specific_key_with_attr() {
@@ -67,8 +67,8 @@ STUB
   target="$WIZARDRY_TMPDIR/scroll"
   : >"$target"
 
-  PATH="$stub_dir:$PATH" run_spell "spells/enchant/disenchant" "$target" user.note
-  assert_success && assert_output_contains "Disenchanted user.note"
+  PATH="$stub_dir:$PATH" _run_spell "spells/enchant/disenchant" "$target" user.note
+  _assert_success && _assert_output_contains "Disenchanted user.note"
   called=$(cat "$WIZARDRY_TMPDIR/disenchant.call")
   [ "$called" = "-r user.note $target" ] || { TEST_FAILURE_REASON="unexpected attr call: $called"; return 1; }
 }
@@ -89,8 +89,8 @@ STUB
   target="$WIZARDRY_TMPDIR/scroll-alt"
   : >"$target"
 
-  PATH="$stub_dir:$PATH" run_spell "spells/enchant/disenchant" "$target"
-  assert_success
+  PATH="$stub_dir:$PATH" _run_spell "spells/enchant/disenchant" "$target"
+  _assert_success
   called=$(cat "$WIZARDRY_TMPDIR/disenchant.call")
   [ "$called" = "-x user.alt $target" ] || { TEST_FAILURE_REASON="unexpected setfattr call: $called"; return 1; }
 }
@@ -108,8 +108,8 @@ STUB
 
   target="$WIZARDRY_TMPDIR/multi"
   : >"$target"
-  PATH="$stub_dir:/usr/bin:/bin" run_spell "spells/enchant/disenchant" "$target"
-  assert_failure && assert_error_contains "multiple attributes"
+  PATH="$stub_dir:/usr/bin:/bin" _run_spell "spells/enchant/disenchant" "$target"
+  _assert_failure && _assert_error_contains "multiple attributes"
 }
 
 test_selects_specific_entry_with_ask_number() {
@@ -130,8 +130,8 @@ STUB
 
   target="$WIZARDRY_TMPDIR/multi-choice"
   : >"$target"
-  PATH="$stub_dir:$PATH" run_spell "spells/enchant/disenchant" "$target"
-  assert_success && assert_output_contains "user.two"
+  PATH="$stub_dir:$PATH" _run_spell "spells/enchant/disenchant" "$target"
+  _assert_success && _assert_output_contains "user.two"
   called=$(cat "$WIZARDRY_TMPDIR/disenchant.call")
   [ "$called" = "-d user.two $target" ] || { TEST_FAILURE_REASON="unexpected xattr call: $called"; return 1; }
 }
@@ -158,21 +158,21 @@ STUB
 
   target="$WIZARDRY_TMPDIR/multi-all"
   : >"$target"
-  PATH="$stub_dir:$PATH" run_spell "spells/enchant/disenchant" "$target"
-  assert_success && assert_output_contains "Disenchanted all"
+  PATH="$stub_dir:$PATH" _run_spell "spells/enchant/disenchant" "$target"
+  _assert_success && _assert_output_contains "Disenchanted all"
   calls=$(cat "$WIZARDRY_TMPDIR/disenchant.calls")
   expected="-r user.alpha $target
 -r user.beta $target"
   [ "$calls" = "$expected" ] || { TEST_FAILURE_REASON="unexpected attr calls: $calls"; return 1; }
 }
 
-run_test_case "disenchant prints usage" test_help
-run_test_case "disenchant validates arguments" test_argument_validation
-run_test_case "disenchant fails for missing files" test_missing_file
-run_test_case "disenchant reports missing attributes" test_no_attributes
-run_test_case "disenchant removes a named key with attr" test_removes_specific_key_with_attr
-run_test_case "disenchant falls back to setfattr when attr missing" test_falls_back_to_setfattr
-run_test_case "disenchant requires ask_number for multiple attributes" test_requires_ask_number_when_many
-run_test_case "disenchant selects a specific entry with ask_number" test_selects_specific_entry_with_ask_number
-run_test_case "disenchant can remove all attributes" test_selects_all_with_menu_choice
-finish_tests
+_run_test_case "disenchant prints usage" test_help
+_run_test_case "disenchant validates arguments" test_argument_validation
+_run_test_case "disenchant fails for missing files" test_missing_file
+_run_test_case "disenchant reports missing attributes" test_no_attributes
+_run_test_case "disenchant removes a named key with attr" test_removes_specific_key_with_attr
+_run_test_case "disenchant falls back to setfattr when attr missing" test_falls_back_to_setfattr
+_run_test_case "disenchant requires ask_number for multiple attributes" test_requires_ask_number_when_many
+_run_test_case "disenchant selects a specific entry with ask_number" test_selects_specific_entry_with_ask_number
+_run_test_case "disenchant can remove all attributes" test_selects_all_with_menu_choice
+_finish_tests

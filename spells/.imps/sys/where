@@ -2,20 +2,10 @@
 # where COMMAND - print path to command if it exists, fail otherwise
 # Example: git_path=$(where git)
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: where COMMAND
-
-Print path to command if it exists, fail otherwise. Example: git_path=$(where git).
-USAGE
+_where() {
+  command -v "$1" 2>/dev/null || return 1
 }
 
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-command -v "$1" 2>/dev/null || exit 1
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */where) _where "$@" ;; esac

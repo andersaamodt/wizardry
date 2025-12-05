@@ -180,15 +180,15 @@ recognize_room() {
         fi
 
         case "$room" in
-        /etc)
+        /etc|/private/etc)
                 output_room "Configuration Library" "System configuration archives line the shelves."
                 return 0
                 ;;
-        /var)
+        /var|/private/var)
                 output_room "Variable Data" "Changing state, caches, and queues gather here."
                 return 0
                 ;;
-        /var/log)
+        /var/log|/private/var/log)
                 output_room "Log Archive" "A hall of chronicles where logs accumulate."
                 return 0
                 ;;

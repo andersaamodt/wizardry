@@ -12,16 +12,16 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_starts_with() {
-  run_spell spells/.imps/str/starts "hello world" "hello"
-  assert_success
+  _run_spell spells/.imps/str/starts "hello world" "hello"
+  _assert_success
 }
 
 test_starts_not() {
-  run_spell spells/.imps/str/starts "hello world" "world"
-  assert_failure
+  _run_spell spells/.imps/str/starts "hello world" "world"
+  _assert_failure
 }
 
-run_test_case "starts matches prefix" test_starts_with
-run_test_case "starts rejects non-prefix" test_starts_not
+_run_test_case "starts matches prefix" test_starts_with
+_run_test_case "starts rejects non-prefix" test_starts_not
 
-finish_tests
+_finish_tests

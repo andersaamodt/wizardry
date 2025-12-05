@@ -12,34 +12,34 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_is_integer_positive() {
-  run_spell spells/.imps/menu/is-integer "42"
-  assert_success
+  _run_spell spells/.imps/menu/is-integer "42"
+  _assert_success
 }
 
 test_is_integer_negative() {
-  run_spell spells/.imps/menu/is-integer "-5"
-  assert_success
+  _run_spell spells/.imps/menu/is-integer "-5"
+  _assert_success
 }
 
 test_is_integer_zero() {
-  run_spell spells/.imps/menu/is-integer "0"
-  assert_success
+  _run_spell spells/.imps/menu/is-integer "0"
+  _assert_success
 }
 
 test_is_integer_rejects_float() {
-  run_spell spells/.imps/menu/is-integer "3.14"
-  assert_failure
+  _run_spell spells/.imps/menu/is-integer "3.14"
+  _assert_failure
 }
 
 test_is_integer_rejects_letters() {
-  run_spell spells/.imps/menu/is-integer "abc"
-  assert_failure
+  _run_spell spells/.imps/menu/is-integer "abc"
+  _assert_failure
 }
 
-run_test_case "is-integer accepts positive" test_is_integer_positive
-run_test_case "is-integer accepts negative" test_is_integer_negative
-run_test_case "is-integer accepts zero" test_is_integer_zero
-run_test_case "is-integer rejects float" test_is_integer_rejects_float
-run_test_case "is-integer rejects letters" test_is_integer_rejects_letters
+_run_test_case "is-integer accepts positive" test_is_integer_positive
+_run_test_case "is-integer accepts negative" test_is_integer_negative
+_run_test_case "is-integer accepts zero" test_is_integer_zero
+_run_test_case "is-integer rejects float" test_is_integer_rejects_float
+_run_test_case "is-integer rejects letters" test_is_integer_rejects_letters
 
-finish_tests
+_finish_tests

@@ -1,0 +1,98 @@
+#!/bin/sh
+# invoke-wizardry - set up wizardry environment and PATH from shell rc
+# Source this script to make all spells and imps available at startup.
+# Example in .bashrc: . ~/.wizardry/spells/.imps/sys/invoke-wizardry
+
+_invoke_wizardry() {
+  if [ -z "${WIZARDRY_DIR-}" ]; then
+    # Default to expected install location; user can set WIZARDRY_DIR manually if different
+    _iw_script_dir="${HOME-}/.wizardry/spells/.imps/sys"
+    WIZARDRY_DIR=$(CDPATH= cd -- "$_iw_script_dir/../../.." 2>/dev/null && pwd -P) || true
+  fi
+  
+  if [ -z "${WIZARDRY_DIR-}" ] || [ ! -d "${WIZARDRY_DIR-}/spells" ]; then
+    return 1
+  fi
+  
+  export WIZARDRY_DIR
+  
+  : "${SPELLBOOK_DIR:=${HOME-}/.spellbook}"
+  export SPELLBOOK_DIR
+  
+  _iw_paths_to_add=""
+  _iw_imps_dir="$WIZARDRY_DIR/spells/.imps"
+  
+  case ":${PATH-}:" in
+    *":$WIZARDRY_DIR/spells:"*) ;;
+    *) _iw_paths_to_add="$WIZARDRY_DIR/spells" ;;
+  esac
+  
+  for _iw_spell_dir in "$WIZARDRY_DIR"/spells/*; do
+    [ -d "$_iw_spell_dir" ] || continue
+    case "$_iw_spell_dir" in
+      */.imps) continue ;;
+    esac
+    case ":${PATH-}:" in
+      *":$_iw_spell_dir:"*) ;;
+      *) 
+        if [ -n "$_iw_paths_to_add" ]; then
+          _iw_paths_to_add="$_iw_paths_to_add:$_iw_spell_dir"
+        else
+          _iw_paths_to_add="$_iw_spell_dir"
+        fi
+        ;;
+    esac
+  done
+  
+  if [ -d "$_iw_imps_dir" ]; then
+    case ":${PATH-}:" in
+      *":$_iw_imps_dir:"*) ;;
+      *)
+        if [ -n "$_iw_paths_to_add" ]; then
+          _iw_paths_to_add="$_iw_paths_to_add:$_iw_imps_dir"
+        else
+          _iw_paths_to_add="$_iw_imps_dir"
+        fi
+        ;;
+    esac
+    
+    for _iw_family in "$_iw_imps_dir"/*; do
+      [ -d "$_iw_family" ] || continue
+      case ":${PATH-}:" in
+        *":$_iw_family:"*) ;;
+        *)
+          if [ -n "$_iw_paths_to_add" ]; then
+            _iw_paths_to_add="$_iw_paths_to_add:$_iw_family"
+          else
+            _iw_paths_to_add="$_iw_family"
+          fi
+          ;;
+      esac
+    done
+  fi
+  
+  if [ -d "$SPELLBOOK_DIR" ]; then
+    case ":${PATH-}:" in
+      *":$SPELLBOOK_DIR:"*) ;;
+      *)
+        if [ -n "$_iw_paths_to_add" ]; then
+          _iw_paths_to_add="$_iw_paths_to_add:$SPELLBOOK_DIR"
+        else
+          _iw_paths_to_add="$SPELLBOOK_DIR"
+        fi
+        ;;
+    esac
+  fi
+  
+  if [ -n "$_iw_paths_to_add" ]; then
+    PATH="${_iw_paths_to_add}${PATH:+:}${PATH-}"
+    export PATH
+  fi
+}
+
+# Run the setup when sourced
+_invoke_wizardry
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */invoke-wizardry) _invoke_wizardry "$@" ;; esac

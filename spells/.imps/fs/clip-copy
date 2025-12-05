@@ -2,31 +2,21 @@
 # clip-copy [TEXT] - copy stdin or argument to system clipboard
 # Examples: echo "text" | clip-copy | clip-copy "direct text"
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: clip-copy [TEXT]
-
-Copy stdin or argument to system clipboard Examples: echo "text" | clip-copy OR clip-copy "direct text".
-USAGE
+_clip_copy() {
+  if command -v pbcopy >/dev/null 2>&1; then
+    if [ $# -gt 0 ]; then printf '%s' "$*" | pbcopy; else pbcopy; fi
+  elif command -v xsel >/dev/null 2>&1; then
+    if [ $# -gt 0 ]; then printf '%s' "$*" | xsel --clipboard --input; else xsel --clipboard --input; fi
+  elif command -v xclip >/dev/null 2>&1; then
+    if [ $# -gt 0 ]; then printf '%s' "$*" | xclip -selection clipboard; else xclip -selection clipboard; fi
+  elif command -v wl-copy >/dev/null 2>&1; then
+    if [ $# -gt 0 ]; then printf '%s' "$*" | wl-copy; else wl-copy; fi
+  else
+    printf '%s\n' "clip-copy: no clipboard utility found (need pbcopy, xsel, xclip, or wl-copy)" >&2
+    return 1
+  fi
 }
 
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-if command -v pbcopy >/dev/null 2>&1; then
-  if [ $# -gt 0 ]; then printf '%s' "$*" | pbcopy; else pbcopy; fi
-elif command -v xsel >/dev/null 2>&1; then
-  if [ $# -gt 0 ]; then printf '%s' "$*" | xsel --clipboard --input; else xsel --clipboard --input; fi
-elif command -v xclip >/dev/null 2>&1; then
-  if [ $# -gt 0 ]; then printf '%s' "$*" | xclip -selection clipboard; else xclip -selection clipboard; fi
-elif command -v wl-copy >/dev/null 2>&1; then
-  if [ $# -gt 0 ]; then printf '%s' "$*" | wl-copy; else wl-copy; fi
-else
-  printf '%s\n' "clip-copy: no clipboard utility found (need pbcopy, xsel, xclip, or wl-copy)" >&2
-  exit 1
-fi
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */clip-copy) _clip_copy "$@" ;; esac

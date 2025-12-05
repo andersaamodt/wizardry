@@ -2,23 +2,13 @@
 # starts STRING PREFIX - test if string starts with prefix
 # Example: starts "$line" "#" && echo "comment"
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: starts STRING PREFIX
-
-Test if string starts with prefix. Example: starts "$line" "#" && echo "comment".
-USAGE
+_starts() {
+  case "$1" in
+    "$2"*) return 0 ;;
+    *) return 1 ;;
+  esac
 }
 
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-case "$1" in
-"$2"*) exit 0 ;;
-*) exit 1 ;;
-esac
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */starts) _starts "$@" ;; esac

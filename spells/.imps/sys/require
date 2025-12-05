@@ -1,56 +1,38 @@
 #!/bin/sh
-# require COMMAND [MESSAGE] - wrapper for require-command dependency checks
-# Delegates to require-command (if available), honoring REQUIRE_COMMAND override.
-# Falls back to a simple command check if require-command is not available.
+# require COMMAND [MESSAGE] - check if dependency is available, offer to install
+# Delegates to require-command if available; falls back to simple command check.
 # Example: require menu "The menu command is needed"
 
-usage() {
-	cat <<'USAGE' >&2
-Usage: require COMMAND [MESSAGE]
+_require() {
+  _req_tool=$1
+  shift
 
-Wrapper for require-command that checks if a dependency is available, optionally offering to install it, and exits non-zero with a message when missing.
-USAGE
+  if [ -n "${REQUIRE_COMMAND-}" ]; then
+    _req_cmd=$REQUIRE_COMMAND
+  elif command -v require-command >/dev/null 2>&1; then
+    _req_cmd=require-command
+  else
+    _req_cmd=""
+  fi
+
+  if [ -n "$_req_cmd" ]; then
+    "$_req_cmd" "$_req_tool" "$@"
+    return $?
+  fi
+
+  if command -v "$_req_tool" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if [ "$#" -gt 0 ]; then
+    printf '%s\n' "$*" >&2
+  else
+    printf '%s\n' "require: missing required command '$_req_tool'" >&2
+  fi
+  printf '%s\n' "Visit 'install-menu' to review installation options." >&2
+  return 1
 }
 
-case "${1-}" in
---help|--usage|-h)
-	usage
-	exit 0
-	;;
-"")
-	usage
-	exit 1
-	;;
-esac
-
-tool=$1
-shift
-
-# Determine which require-command to use
-if [ -n "${REQUIRE_COMMAND-}" ]; then
-	require_cmd=$REQUIRE_COMMAND
-elif command -v require-command >/dev/null 2>&1; then
-	require_cmd=require-command
-else
-	require_cmd=""
-fi
-
-# If we have a require-command, use it
-if [ -n "$require_cmd" ]; then
-	"$require_cmd" "$tool" "$@"
-	exit $?
-fi
-
-# Fallback: simple command check when require-command is not available
-if command -v "$tool" >/dev/null 2>&1; then
-	exit 0
-fi
-
-# Command not found - show error message
-if [ "$#" -gt 0 ]; then
-	printf '%s\n' "$*" >&2
-else
-	printf '%s\n' "require: missing required command '$tool'" >&2
-fi
-printf '%s\n' "Visit 'install-menu' to review installation options." >&2
-exit 1
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */require) _require "$@" ;; esac

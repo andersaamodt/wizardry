@@ -2,41 +2,29 @@
 # sed-inplace PATTERN FILE - perform in-place sed substitution portably (mac/linux)
 # Example: sed-inplace 's/foo/bar/g' config.txt
 
+_sed_inplace() {
+  _si_pattern=${1:-}
+  _si_file=${2:-}
 
-usage() {
-        cat <<'USAGE' >&2
-Usage: sed-inplace PATTERN FILE
+  if [ -z "$_si_pattern" ] || [ -z "$_si_file" ]; then
+    printf '%s\n' "sed-inplace: requires PATTERN and FILE arguments" >&2
+    return 1
+  fi
 
-Perform in-place sed substitution portably (mac/linux). Example: sed-inplace 's/foo/bar/g' config.txt.
-USAGE
+  if [ ! -f "$_si_file" ]; then
+    printf '%s\n' "sed-inplace: not a file: $_si_file" >&2
+    return 1
+  fi
+
+  _si_tmpfile="${_si_file}.sed.$$"
+  if sed "$_si_pattern" "$_si_file" > "$_si_tmpfile" 2>/dev/null; then
+    mv "$_si_tmpfile" "$_si_file"
+  else
+    rm -f "$_si_tmpfile"
+    return 1
+  fi
 }
 
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-pattern=${1:-}
-file=${2:-}
-
-if [ -z "$pattern" ] || [ -z "$file" ]; then
-  printf '%s\n' "sed-inplace: requires PATTERN and FILE arguments" >&2
-  exit 1
-fi
-
-if [ ! -f "$file" ]; then
-  printf '%s\n' "sed-inplace: not a file: $file" >&2
-  exit 1
-fi
-
-# macOS sed requires -i '' while GNU sed requires -i without argument
-# Use a temp file approach for maximum portability
-tmpfile="${file}.sed.$$"
-if sed "$pattern" "$file" > "$tmpfile" 2>/dev/null; then
-  mv "$tmpfile" "$file"
-else
-  rm -f "$tmpfile"
-  exit 1
-fi
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */sed-inplace) _sed_inplace "$@" ;; esac

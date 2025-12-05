@@ -2,33 +2,22 @@
 # is-integer VALUE - test if value is a valid integer (positive, negative, or zero)
 # Example: is-integer "42" && echo "valid"
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: is-integer VALUE
-
-Test if value is a valid integer (positive, negative, or zero). Example: is-integer "42" && echo "valid".
-USAGE
+_is_integer() {
+  case "$1" in
+    '') return 1 ;;
+    -) return 1 ;;
+    -[0-9]) : ;;
+    -[0-9]*) : ;;
+    [0-9]*) : ;;
+    *) return 1 ;;
+  esac
+  case "$1" in
+    -*) _ii_rest=${1#-}; case "$_ii_rest" in *[!0-9]*) return 1 ;; esac ;;
+    *[!0-9]*) return 1 ;;
+  esac
+  return 0
 }
 
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-case "$1" in
-'') exit 1 ;;           # empty string
--) exit 1 ;;            # just a minus sign
--[0-9]) : ;;            # negative single digit
--[0-9]*) : ;;           # negative multi-digit (validated below)
-[0-9]*) : ;;            # positive number or zero
-*) exit 1 ;;            # anything else
-esac
-# Check for non-digit characters (excluding leading minus)
-case "$1" in
--*) rest=${1#-}; case "$rest" in *[!0-9]*) exit 1 ;; esac ;;
-*[!0-9]*) exit 1 ;;
-esac
-exit 0
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */is-integer) _is_integer "$@" ;; esac

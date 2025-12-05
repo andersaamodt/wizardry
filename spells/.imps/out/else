@@ -2,21 +2,11 @@
 # else DEFAULT - output stdin if non-empty, else output default value
 # Example: echo "" | else "fallback"
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: else DEFAULT
-
-Output stdin if non-empty, else output default value. Example: echo "" | else "fallback".
-USAGE
+_else() {
+  _else_input=$(cat)
+  if [ -n "$_else_input" ]; then printf '%s\n' "$_else_input"; else printf '%s\n' "$1"; fi
 }
 
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-input=$(cat)
-if [ -n "$input" ]; then printf '%s\n' "$input"; else printf '%s\n' "$1"; fi
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */else) _else "$@" ;; esac

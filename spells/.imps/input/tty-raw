@@ -2,20 +2,10 @@
 # tty-raw - set terminal to raw mode for single-character reads
 # Example: tty-raw && dd bs=1 count=1 2>/dev/null
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: tty-raw
-
-Set terminal to raw mode for single-character reads. Example: tty-raw && dd bs=1 count=1 2>/dev/null.
-USAGE
+_tty_raw() {
+  stty -icanon -echo min 1 time 0 2>/dev/null
 }
 
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-stty -icanon -echo min 1 time 0 2>/dev/null || exit 1
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */tty-raw) _tty_raw "$@" ;; esac

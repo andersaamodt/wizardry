@@ -45,7 +45,7 @@ SH
 }
 
 test_mud_settings_menu_actions() {
-  tmp=$(make_tempdir)
+  tmp=$(_make_tempdir)
   player=hero
   make_stub_menu "$tmp"
   make_stub_colors "$tmp"
@@ -63,8 +63,8 @@ SH
   # Test as submenu (as it would be called from mud menu)
   # Use MENU_LOOP_LIMIT=1 to exit after one iteration
   # Note: Without a player key, menu shows "Create player key" instead of "Copy player key"
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MUD_PLAYER="$player" MENU_LOOP_LIMIT=1 "$ROOT_DIR/spells/menu/mud-settings"
-  assert_success
+  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MUD_PLAYER="$player" MENU_LOOP_LIMIT=1 "$ROOT_DIR/spells/menu/mud-settings"
+  _assert_success
   args=$(cat "$tmp/log")
   case "$args" in
     *"MUD Settings:"*"player key"*"Change Player%select-player"*"New Player%new-player"*'Exit%kill -TERM $PPID' ) : ;;
@@ -73,7 +73,7 @@ SH
 }
 
 test_mud_settings_requires_menu_helper() {
-  tmp=$(make_tempdir)
+  tmp=$(_make_tempdir)
   make_stub_colors "$tmp"
   cat >"$tmp/require-command" <<'SH'
 #!/bin/sh
@@ -91,13 +91,13 @@ else
 fi
 SH
   chmod +x "$tmp/require"
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp" MENU_LOG="$tmp/log" MUD_PLAYER=hero "$ROOT_DIR/spells/menu/mud-settings"
-  assert_failure
-  assert_error_contains "The MUD Settings menu needs the 'menu' command"
+  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp" MENU_LOG="$tmp/log" MUD_PLAYER=hero "$ROOT_DIR/spells/menu/mud-settings"
+  _assert_failure
+  _assert_error_contains "The MUD Settings menu needs the 'menu' command"
 }
 
 test_mud_settings_reports_menu_failure() {
-  tmp=$(make_tempdir)
+  tmp=$(_make_tempdir)
   make_stub_colors "$tmp"
   make_failing_menu "$tmp"
   cat >"$tmp/require-command" <<'SH'
@@ -111,25 +111,25 @@ SH
 printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MUD_PLAYER=hero MENU_LOOP_LIMIT=1 "$ROOT_DIR/spells/menu/mud-settings"
-  assert_status 9
-  assert_file_contains "$tmp/log" "MUD Settings:"
+  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MUD_PLAYER=hero MENU_LOOP_LIMIT=1 "$ROOT_DIR/spells/menu/mud-settings"
+  _assert_status 9
+  _assert_file_contains "$tmp/log" "MUD Settings:"
 }
 
 test_shows_help() {
-  run_spell "spells/menu/mud-settings" --help
-  assert_success || return 1
-  assert_error_contains "Usage:" || return 1
+  _run_spell "spells/menu/mud-settings" --help
+  _assert_success || return 1
+  _assert_error_contains "Usage:" || return 1
 }
 
-run_test_case "mud-settings shows usage" test_shows_help
-run_test_case "mud-settings presents player actions" test_mud_settings_menu_actions
-run_test_case "mud-settings fails fast when menu helper is missing" test_mud_settings_requires_menu_helper
-run_test_case "mud-settings surfaces menu failures" test_mud_settings_reports_menu_failure
+_run_test_case "mud-settings shows usage" test_shows_help
+_run_test_case "mud-settings presents player actions" test_mud_settings_menu_actions
+_run_test_case "mud-settings fails fast when menu helper is missing" test_mud_settings_requires_menu_helper
+_run_test_case "mud-settings surfaces menu failures" test_mud_settings_reports_menu_failure
 
 # Test ESC and Exit behavior - menu exits properly when escape status returned
 test_esc_exit_behavior() {
-  tmp=$(make_tempdir)
+  tmp=$(_make_tempdir)
   make_stub_colors "$tmp"
   
   # Create menu stub that returns escape status
@@ -154,8 +154,8 @@ SH
   chmod +x "$tmp/exit-label"
   
   
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MUD_PLAYER=hero "$ROOT_DIR/spells/menu/mud-settings"
-  assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
+  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MUD_PLAYER=hero "$ROOT_DIR/spells/menu/mud-settings"
+  _assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
   
   args=$(cat "$tmp/log")
   case "$args" in
@@ -165,6 +165,6 @@ SH
   
 }
 
-run_test_case "mud-settings ESC/Exit behavior" test_esc_exit_behavior
+_run_test_case "mud-settings ESC/Exit behavior" test_esc_exit_behavior
 
-finish_tests
+_finish_tests

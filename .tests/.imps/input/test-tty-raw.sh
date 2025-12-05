@@ -16,17 +16,17 @@ done
 
 test_tty_raw_runs() {
   # Running without a terminal may succeed or fail depending on environment
-  run_spell spells/.imps/input/tty-raw
+  _run_spell spells/.imps/input/tty-raw
   # We just ensure it doesn't crash unexpectedly
 }
 
 test_tty_raw_ignores_extra_args() {
   # Extra arguments should be ignored (POSIX-compliant imps are simpler)
-  run_spell spells/.imps/input/tty-raw ignored_arg
+  _run_spell spells/.imps/input/tty-raw ignored_arg
   # We just ensure it doesn't crash unexpectedly
 }
 
-run_test_case "tty-raw runs" test_tty_raw_runs
-run_test_case "tty-raw ignores extra args" test_tty_raw_ignores_extra_args
+_run_test_case "tty-raw runs" test_tty_raw_runs
+_run_test_case "tty-raw ignores extra args" test_tty_raw_ignores_extra_args
 
-finish_tests
+_finish_tests

@@ -2,25 +2,15 @@
 # die [CODE] MESSAGE - print to stderr and exit (default code 1)
 # Examples: die "fatal error" | die 2 "file not found"
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: die [CODE] MESSAGE
-
-Print to stderr and exit (default code 1) Examples: die "fatal error" | die 2 "file not found".
-USAGE
+_die() {
+  case "$1" in
+    [0-9]|[0-9][0-9]|[0-9][0-9][0-9]) _die_code=$1; shift ;;
+    *) _die_code=1 ;;
+  esac
+  printf '%s\n' "$*" >&2
+  return "$_die_code"
 }
 
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-case "$1" in
-[0-9]|[0-9][0-9]|[0-9][0-9][0-9]) code=$1; shift ;;
-*) code=1 ;;
-esac
-printf '%s\n' "$*" >&2
-exit "$code"
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */die) _die "$@" ;; esac

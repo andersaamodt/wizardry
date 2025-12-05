@@ -2,20 +2,10 @@
 # drop N [FILE] - output all lines except last N
 # Example: drop 5 log.txt   # all except last 5 lines
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: drop N [FILE]
-
-Output all lines except last N. Example: drop 5 log.txt   # all except last 5 lines.
-USAGE
+_drop() {
+  if [ "$#" -ge 2 ]; then head -n "-$1" "$2"; else head -n "-$1"; fi
 }
 
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-if [ "$#" -ge 2 ]; then head -n "-$1" "$2"; else head -n "-$1"; fi
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */drop) _drop "$@" ;; esac

@@ -2,34 +2,24 @@
 # backup FILE [SUFFIX] - create backup copy of file (default suffix: .bak)
 # Example: backup /etc/ssh/sshd_config | backup myfile .orig
 
+_backup() {
+  _bk_file=${1:-}
+  _bk_suffix=${2:-.bak}
 
-usage() {
-        cat <<'USAGE' >&2
-Usage: backup FILE [SUFFIX]
+  if [ -z "$_bk_file" ]; then
+    printf '%s\n' "backup: file path required" >&2
+    return 1
+  fi
 
-Create backup copy of file (default suffix: .bak). Example: backup /etc/ssh/sshd_config | backup myfile .orig.
-USAGE
+  if [ ! -f "$_bk_file" ]; then
+    printf '%s\n' "backup: not a file: $_bk_file" >&2
+    return 1
+  fi
+
+  cp "$_bk_file" "${_bk_file}${_bk_suffix}" || return 1
+  printf '%s\n' "${_bk_file}${_bk_suffix}"
 }
 
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-file=${1:-}
-suffix=${2:-.bak}
-
-if [ -z "$file" ]; then
-  printf '%s\n' "backup: file path required" >&2
-  exit 1
-fi
-
-if [ ! -f "$file" ]; then
-  printf '%s\n' "backup: not a file: $file" >&2
-  exit 1
-fi
-
-cp "$file" "${file}${suffix}" || exit 1
-printf '%s\n' "${file}${suffix}"
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */backup) _backup "$@" ;; esac

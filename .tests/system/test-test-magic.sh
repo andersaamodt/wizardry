@@ -13,17 +13,17 @@ spell_is_executable() {
 }
 
 shows_help() {
-  run_spell spells/system/test-magic --help
-  assert_success
-  assert_output_contains "Usage:"
+  _run_spell spells/system/test-magic --help
+  _assert_success
+  _assert_output_contains "Usage:"
 }
 
 spell_has_content() {
   [ -s "$ROOT_DIR/spells/system/test-magic" ]
 }
 
-run_test_case "system/test-magic is executable" spell_is_executable
-run_test_case "system/test-magic shows help" shows_help
-run_test_case "system/test-magic has content" spell_has_content
+_run_test_case "system/test-magic is executable" spell_is_executable
+_run_test_case "system/test-magic shows help" shows_help
+_run_test_case "system/test-magic has content" spell_has_content
 
-finish_tests
+_finish_tests

@@ -13,21 +13,21 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  run_spell "spells/translocation/jump-to-marker" --help
-  assert_success && assert_output_contains "Usage: jump"
+  _run_spell "spells/translocation/jump-to-marker" --help
+  _assert_success && _assert_output_contains "Usage: jump"
 }
 
 test_unknown_option_fails() {
-  run_spell "spells/translocation/jump-to-marker" --bad
-  assert_failure && assert_error_contains "unknown option"
+  _run_spell "spells/translocation/jump-to-marker" --bad
+  _assert_failure && _assert_error_contains "unknown option"
 }
 
 test_install_requires_helpers() {
   helpers_dir="$WIZARDRY_TMPDIR/helpers-missing"
   mkdir -p "$helpers_dir"
   PATH="/bin:/usr/bin" JUMP_TO_MARKER_HELPERS_DIR="$helpers_dir" JUMP_TO_MARKERS_DIR="$WIZARDRY_TMPDIR/markers" \
-    run_spell "spells/translocation/jump-to-marker" --install
-  assert_failure && assert_error_contains "required helper 'detect-rc-file' is missing"
+    _run_spell "spells/translocation/jump-to-marker" --install
+  _assert_failure && _assert_error_contains "required helper 'detect-rc-file' is missing"
 }
 
 run_jump() {
@@ -38,9 +38,9 @@ run_jump() {
   JUMP_TO_MARKERS_DIR="$markers_dir"
   export JUMP_TO_MARKERS_DIR PATH
   if [ -n "$marker_arg" ]; then
-    run_cmd sh -c ". \"$ROOT_DIR/spells/translocation/jump-to-marker\"; jump \"$marker_arg\""
+    _run_cmd sh -c ". \"$ROOT_DIR/spells/translocation/jump-to-marker\"; jump \"$marker_arg\""
   else
-    run_cmd sh -c ". \"$ROOT_DIR/spells/translocation/jump-to-marker\"; jump"
+    _run_cmd sh -c ". \"$ROOT_DIR/spells/translocation/jump-to-marker\"; jump"
   fi
 }
 
@@ -48,14 +48,14 @@ test_jump_requires_markers_dir() {
   missing_dir="$WIZARDRY_TMPDIR/no-markers"
   rm -rf "$missing_dir"
   run_jump "" "$missing_dir"
-  assert_failure && assert_output_contains "No markers have been set"
+  _assert_failure && _assert_output_contains "No markers have been set"
 }
 
 test_jump_requires_specific_marker() {
   markers_dir="$WIZARDRY_TMPDIR/markers-test"
   mkdir -p "$markers_dir"
   run_jump "nonexistent" "$markers_dir"
-  assert_failure && assert_output_contains "No marker 'nonexistent' found"
+  _assert_failure && _assert_output_contains "No marker 'nonexistent' found"
 }
 
 test_jump_rejects_blank_marker() {
@@ -63,7 +63,7 @@ test_jump_rejects_blank_marker() {
   mkdir -p "$markers_dir"
   : >"$markers_dir/1"
   run_jump "1" "$markers_dir"
-  assert_failure && assert_output_contains "is blank"
+  _assert_failure && _assert_output_contains "is blank"
 }
 
 test_jump_rejects_missing_destination() {
@@ -71,7 +71,7 @@ test_jump_rejects_missing_destination() {
   mkdir -p "$markers_dir"
   printf '%s\n' "$WIZARDRY_TMPDIR/nonexistent" >"$markers_dir/1"
   run_jump "1" "$markers_dir"
-  assert_failure && assert_output_contains "no longer exists"
+  _assert_failure && _assert_output_contains "no longer exists"
 }
 
 test_jump_detects_current_location() {
@@ -82,7 +82,7 @@ test_jump_detects_current_location() {
   destination_resolved=$(cd "$destination" && pwd -P | sed 's|//|/|g')
   printf '%s\n' "$destination_resolved" >"$markers_dir/1"
   run_jump "1" "$markers_dir" "$destination"
-  assert_success && assert_output_contains "already standing"
+  _assert_success && _assert_output_contains "already standing"
 }
 
 test_jump_changes_directory() {
@@ -94,7 +94,7 @@ test_jump_changes_directory() {
   destination_resolved=$(cd "$destination" && pwd -P | sed 's|//|/|g')
   printf '%s\n' "$destination_resolved" >"$markers_dir/1"
   run_jump "1" "$markers_dir" "$start_dir"
-  assert_success
+  _assert_success
 }
 
 test_jump_to_named_marker() {
@@ -105,7 +105,7 @@ test_jump_to_named_marker() {
   destination_resolved=$(cd "$destination" && pwd -P | sed 's|//|/|g')
   printf '%s\n' "$destination_resolved" >"$markers_dir/alpha"
   run_jump "alpha" "$markers_dir" "$start_dir"
-  assert_success
+  _assert_success
 }
 
 test_jump_lists_available_markers() {
@@ -116,10 +116,10 @@ test_jump_lists_available_markers() {
   printf '%s\n' "$dest_resolved" >"$markers_dir/1"
   printf '%s\n' "$dest_resolved" >"$markers_dir/alpha"
   run_jump "nonexistent" "$markers_dir"
-  assert_failure
-  assert_output_contains "Available markers:"
-  assert_output_contains "1"
-  assert_output_contains "alpha"
+  _assert_failure
+  _assert_output_contains "Available markers:"
+  _assert_output_contains "1"
+  _assert_output_contains "alpha"
 }
 
 test_jump_zero_cycles() {
@@ -134,12 +134,12 @@ test_jump_zero_cycles() {
   printf '%s\n' "$dest2_resolved" >"$markers_dir/2"
   # jump 0 should behave like jump with no args (start at 1)
   run_jump "0" "$markers_dir" "$start_dir"
-  assert_success
+  _assert_success
 }
 
 test_nixos_install_runs_home_manager() {
   # Test that on NixOS (nix format), install runs home-manager switch automatically
-  stub=$(make_tempdir)
+  stub=$(_make_tempdir)
   fake_home="$stub/home"
   mkdir -p "$fake_home"
   
@@ -174,10 +174,10 @@ exit 0
 STUB
   chmod +x "$stub/home-manager"
   
-  link_tools "$stub" sh printf grep cat test sed basename command pwd
+  _link_tools "$stub" sh printf grep cat test sed basename command pwd
   
   # Run install - the spell should call home-manager switch
-  run_cmd sh -c "
+  _run_cmd sh -c "
     PATH='$stub:/bin:/usr/bin'
     HOME='$fake_home'
     DETECT_RC_FILE='$stub/detect-rc-file'
@@ -187,7 +187,7 @@ STUB
     . '$ROOT_DIR/spells/translocation/jump-to-marker'
     install
   "
-  assert_success || return 1
+  _assert_success || return 1
   
   # Check that home-manager switch was called
   if [ -f "$home_manager_log" ]; then
@@ -203,7 +203,7 @@ STUB
 
 test_nixos_install_skips_rebuild_when_disabled() {
   # Test that WIZARDRY_SKIP_NIX_REBUILD=1 skips the rebuild
-  stub=$(make_tempdir)
+  stub=$(_make_tempdir)
   fake_home="$stub/home"
   mkdir -p "$fake_home"
   
@@ -235,10 +235,10 @@ exit 0
 STUB
   chmod +x "$stub/home-manager"
   
-  link_tools "$stub" sh printf grep cat test sed basename command pwd
+  _link_tools "$stub" sh printf grep cat test sed basename command pwd
   
   # Run install with WIZARDRY_SKIP_NIX_REBUILD=1
-  run_cmd sh -c "
+  _run_cmd sh -c "
     PATH='$stub:/bin:/usr/bin'
     HOME='$fake_home'
     DETECT_RC_FILE='$stub/detect-rc-file'
@@ -249,7 +249,7 @@ STUB
     . '$ROOT_DIR/spells/translocation/jump-to-marker'
     install
   "
-  assert_success || return 1
+  _assert_success || return 1
   
   # Check that home-manager was NOT called
   if [ -f "$home_manager_log" ]; then
@@ -261,7 +261,7 @@ STUB
 
 test_install_adds_jump_alias() {
   # Test that install adds the 'jump' alias to the rc file
-  stub=$(make_tempdir)
+  stub=$(_make_tempdir)
   fake_home="$stub/home"
   mkdir -p "$fake_home"
   rc_file="$fake_home/.bashrc"
@@ -285,10 +285,10 @@ exit 0
 STUB
   chmod +x "$stub/learn"
   
-  link_tools "$stub" sh printf grep cat test sed basename command pwd
+  _link_tools "$stub" sh printf grep cat test sed basename command pwd
   
   # Run install
-  run_cmd sh -c "
+  _run_cmd sh -c "
     PATH='$stub:/bin:/usr/bin'
     HOME='$fake_home'
     DETECT_RC_FILE='$stub/detect-rc-file'
@@ -298,7 +298,7 @@ STUB
     . '$ROOT_DIR/spells/translocation/jump-to-marker'
     install
   "
-  assert_success || return 1
+  _assert_success || return 1
   
   # Verify the content passed to learn contains the alias
   if [ ! -f "$learn_stdin" ]; then
@@ -312,19 +312,19 @@ STUB
   return 0
 }
 
-run_test_case "jump-to-marker prints usage" test_help
-run_test_case "jump-to-marker rejects unknown options" test_unknown_option_fails
-run_test_case "jump-to-marker install fails when helpers missing" test_install_requires_helpers
-run_test_case "jump-to-marker install adds jump alias" test_install_adds_jump_alias
-run_test_case "jump-to-marker fails when markers dir is missing" test_jump_requires_markers_dir
-run_test_case "jump-to-marker fails when specific marker is missing" test_jump_requires_specific_marker
-run_test_case "jump-to-marker fails when marker is blank" test_jump_rejects_blank_marker
-run_test_case "jump-to-marker fails when destination is missing" test_jump_rejects_missing_destination
-run_test_case "jump-to-marker reports when already at destination" test_jump_detects_current_location
-run_test_case "jump-to-marker jumps to marked directory" test_jump_changes_directory
-run_test_case "jump-to-marker jumps to named marker" test_jump_to_named_marker
-run_test_case "jump-to-marker lists available markers on error" test_jump_lists_available_markers
-run_test_case "jump 0 cycles like jump with no args" test_jump_zero_cycles
-run_test_case "jump-to-marker nixos install runs home-manager" test_nixos_install_runs_home_manager
-run_test_case "jump-to-marker nixos install skips rebuild when disabled" test_nixos_install_skips_rebuild_when_disabled
-finish_tests
+_run_test_case "jump-to-marker prints usage" test_help
+_run_test_case "jump-to-marker rejects unknown options" test_unknown_option_fails
+_run_test_case "jump-to-marker install fails when helpers missing" test_install_requires_helpers
+_run_test_case "jump-to-marker install adds jump alias" test_install_adds_jump_alias
+_run_test_case "jump-to-marker fails when markers dir is missing" test_jump_requires_markers_dir
+_run_test_case "jump-to-marker fails when specific marker is missing" test_jump_requires_specific_marker
+_run_test_case "jump-to-marker fails when marker is blank" test_jump_rejects_blank_marker
+_run_test_case "jump-to-marker fails when destination is missing" test_jump_rejects_missing_destination
+_run_test_case "jump-to-marker reports when already at destination" test_jump_detects_current_location
+_run_test_case "jump-to-marker jumps to marked directory" test_jump_changes_directory
+_run_test_case "jump-to-marker jumps to named marker" test_jump_to_named_marker
+_run_test_case "jump-to-marker lists available markers on error" test_jump_lists_available_markers
+_run_test_case "jump 0 cycles like jump with no args" test_jump_zero_cycles
+_run_test_case "jump-to-marker nixos install runs home-manager" test_nixos_install_runs_home_manager
+_run_test_case "jump-to-marker nixos install skips rebuild when disabled" test_nixos_install_skips_rebuild_when_disabled
+_finish_tests

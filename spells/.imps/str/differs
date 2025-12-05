@@ -2,20 +2,10 @@
 # differs A B - test if two strings are different (opposite of equals)
 # Example: differs "$old" "$new" && update
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: differs A B
-
-Test if two strings are different (opposite of equals). Example: differs "$old" "$new" && update.
-USAGE
+_differs() {
+  [ "$1" != "$2" ]
 }
 
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-[ "$1" != "$2" ]
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */differs) _differs "$@" ;; esac

@@ -1,40 +1,28 @@
 #!/bin/sh
 # select-input - detect best input source (stdin/tty/none)
-# Example: src=$(select-input) && case $src in stdin) read line ;; tty) read line </dev/tty ;; esac
+# Example: src=$(select-input) && case $src in stdin) read line ;; tty) read </dev/tty ;; esac
 # Set SELECT_INPUT_MODE=stdin|tty|none to override auto-detection
 
+_select_input() {
+  case ${SELECT_INPUT_MODE:-auto} in
+    stdin) printf '%s\n' stdin; return 0 ;;
+    tty)   printf '%s\n' tty;   return 0 ;;
+    none)  return 1 ;;
+  esac
 
-usage() {
-        cat <<'USAGE' >&2
-Usage: select-input
+  if [ -t 0 ] || [ -p /dev/stdin ] || [ -s /dev/stdin ]; then
+    printf '%s\n' stdin
+    return 0
+  fi
 
-Detect best input source (stdin/tty/none). Example: src=$(select-input) && case $src in stdin) read line ;; tty) read line </dev/tty ;; esac Set SELECT_INPUT_MODE=stdin|tty|none to override auto-detection.
-USAGE
+  if [ -r /dev/tty ]; then
+    printf '%s\n' tty
+    return 0
+  fi
+
+  return 1
 }
 
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-case ${SELECT_INPUT_MODE:-auto} in
-stdin) printf '%s\n' stdin; exit 0 ;;
-tty)   printf '%s\n' tty;   exit 0 ;;
-none)  exit 1 ;;
-esac
-
-# Use stdin when: it's a terminal, a pipe, or has content
-if [ -t 0 ] || [ -p /dev/stdin ] || [ -s /dev/stdin ]; then
-  printf '%s\n' stdin
-  exit 0
-fi
-
-# Fall back to /dev/tty for reading from controlling terminal
-if [ -r /dev/tty ]; then
-  printf '%s\n' tty
-  exit 0
-fi
-
-exit 1
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */select-input) _select_input "$@" ;; esac

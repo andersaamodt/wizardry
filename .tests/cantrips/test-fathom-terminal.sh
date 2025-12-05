@@ -30,7 +30,7 @@ SCRIPT
 run_fathom_terminal() {
   bin_dir=$1
   shift
-  run_cmd env PATH="$bin_dir:$PATH" "$ROOT_DIR/spells/cantrips/fathom-terminal" "$@"
+  _run_cmd env PATH="$bin_dir:$PATH" "$ROOT_DIR/spells/cantrips/fathom-terminal" "$@"
 }
 
 normalize_output() {
@@ -80,20 +80,20 @@ prints_verbose_labels() {
 # fails when terminfo queries fail
 fails_without_tput() {
   empty=$(mktemp -d "${WIZARDRY_TMPDIR}/empty-path.XXXXXX")
-  run_cmd env PATH="$empty" "$ROOT_DIR/spells/cantrips/fathom-terminal" --width
+  _run_cmd env PATH="$empty" "$ROOT_DIR/spells/cantrips/fathom-terminal" --width
   [ "$STATUS" -ne 0 ] || { TEST_FAILURE_REASON="expected failure"; return 1; }
 }
 
-run_test_case "reports width and height" reports_width_and_height
-run_test_case "selects a single dimension" selects_single_dimension
-run_test_case "adds verbose labels" prints_verbose_labels
-run_test_case "fails when tput is missing" fails_without_tput
+_run_test_case "reports width and height" reports_width_and_height
+_run_test_case "selects a single dimension" selects_single_dimension
+_run_test_case "adds verbose labels" prints_verbose_labels
+_run_test_case "fails when tput is missing" fails_without_tput
 
 shows_help() {
-  run_spell spells/cantrips/fathom-terminal --help
+  _run_spell spells/cantrips/fathom-terminal --help
   # Note: spell may not have --help implemented yet
   true
 }
 
-run_test_case "fathom-terminal shows help" shows_help
-finish_tests
+_run_test_case "fathom-terminal shows help" shows_help
+_finish_tests

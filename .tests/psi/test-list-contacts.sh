@@ -19,15 +19,15 @@ spell_is_executable() {
 }
 
 shows_help() {
-  run_spell spells/psi/list-contacts --help
-  assert_success
-  assert_output_contains "Usage:"
+  _run_spell spells/psi/list-contacts --help
+  _assert_success
+  _assert_output_contains "Usage:"
 }
 
 shows_help_h_flag() {
-  run_spell spells/psi/list-contacts -h
-  assert_success
-  assert_output_contains "Usage:"
+  _run_spell spells/psi/list-contacts -h
+  _assert_success
+  _assert_output_contains "Usage:"
 }
 
 spell_has_content() {
@@ -35,17 +35,17 @@ spell_has_content() {
 }
 
 test_handles_empty_directory() {
-  tmpdir=$(make_tempdir)
+  tmpdir=$(_make_tempdir)
   contacts_dir="$tmpdir/empty-contacts"
   mkdir -p "$contacts_dir"
-  run_spell spells/psi/list-contacts "$contacts_dir"
-  assert_success
+  _run_spell spells/psi/list-contacts "$contacts_dir"
+  _assert_success
 }
 
-run_test_case "psi/list-contacts is executable" spell_is_executable
-run_test_case "list-contacts shows help" shows_help
-run_test_case "list-contacts shows help with -h" shows_help_h_flag
-run_test_case "psi/list-contacts has content" spell_has_content
-run_test_case "list-contacts handles empty directory" test_handles_empty_directory
+_run_test_case "psi/list-contacts is executable" spell_is_executable
+_run_test_case "list-contacts shows help" shows_help
+_run_test_case "list-contacts shows help with -h" shows_help_h_flag
+_run_test_case "psi/list-contacts has content" spell_has_content
+_run_test_case "list-contacts handles empty directory" test_handles_empty_directory
 
-finish_tests
+_finish_tests

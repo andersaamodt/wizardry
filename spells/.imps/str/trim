@@ -2,20 +2,10 @@
 # trim - remove leading/trailing whitespace from stdin
 # Example: echo "  hello  " | trim
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: trim
-
-Remove leading/trailing whitespace from stdin. Example: echo "  hello  " | trim.
-USAGE
+_trim() {
+  sed 's/^[[:space:]]*//;s/[[:space:]]*$//'
 }
 
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-sed 's/^[[:space:]]*//;s/[[:space:]]*$//'
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */trim) _trim "$@" ;; esac

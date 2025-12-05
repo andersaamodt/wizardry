@@ -1,27 +1,28 @@
 #!/bin/sh
 # or CMD CMD_ARGS MORE... - execute prior command, continue if it failed (||)
-# Receives: $1=command, $2=command_args (space-separated), $3+=remaining args
-# Example: parse false or echo fallback → outputs "fallback"
+# Receives: $1=command, $2=command_args, $3+=remaining args
+# Example: parse false or echo fallback
 
-set -eu
+_or() {
+  _or_cmd=${1:-}
+  _or_cmd_args=${2:-}
+  shift 2 2>/dev/null || shift $#
 
-cmd=${1:-}
-cmd_args=${2:-}
-shift 2 2>/dev/null || shift $#
-
-# Run the prior command if present
-if [ -n "$cmd" ]; then
-  # shellcheck disable=SC2086
-  if "$cmd" $cmd_args; then
-    # Prior command succeeded - don't continue
-    exit 0
+  if [ -n "$_or_cmd" ]; then
+    # shellcheck disable=SC2086
+    if "$_or_cmd" $_or_cmd_args; then
+      return 0
+    fi
   fi
-fi
 
-# Prior command failed (or no prior) - continue parsing
-if [ $# -eq 0 ]; then
-  exit 1
-fi
+  if [ $# -eq 0 ]; then
+    return 1
+  fi
 
-lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-exec "$lex_dir/parse" "$@"
+  _or_lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  "$_or_lex_dir/parse" "$@"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */or) _or "$@" ;; esac

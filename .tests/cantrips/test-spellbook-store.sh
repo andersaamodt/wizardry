@@ -26,7 +26,7 @@ spellbook_env() {
 run_store() {
   env_var=$1
   shift
-  run_cmd env "$env_var" "$ROOT_DIR/spells/cantrips/spellbook-store" "$@"
+  _run_cmd env "$env_var" "$ROOT_DIR/spells/cantrips/spellbook-store" "$@"
 }
 
 normalize_output() {
@@ -95,17 +95,17 @@ rejects_invalid_args() {
   [ "$STATUS" -ne 0 ] || { TEST_FAILURE_REASON="expected usage failure"; return 1; }
 }
 
-run_test_case "adds and lists entries" adds_and_lists_entries
-run_test_case "updates existing entry" updates_existing_entry
-run_test_case "removes entries and errors when missing" removes_entries_and_errors_when_missing
-run_test_case "prints spellbook path" prints_spellbook_path
-run_test_case "rejects invalid arguments" rejects_invalid_args
+_run_test_case "adds and lists entries" adds_and_lists_entries
+_run_test_case "updates existing entry" updates_existing_entry
+_run_test_case "removes entries and errors when missing" removes_entries_and_errors_when_missing
+_run_test_case "prints spellbook path" prints_spellbook_path
+_run_test_case "rejects invalid arguments" rejects_invalid_args
 
 shows_help() {
-  run_spell spells/cantrips/spellbook-store --help
+  _run_spell spells/cantrips/spellbook-store --help
   true
 }
 
-run_test_case "spellbook-store shows help" shows_help
+_run_test_case "spellbook-store shows help" shows_help
 
-finish_tests
+_finish_tests

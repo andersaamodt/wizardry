@@ -1,0 +1,12 @@
+#!/bin/sh
+# run-spell SCRIPT [ARGS...] - run a spell script in a sandboxed environment
+# Wraps run-cmd with the ROOT_DIR prefix for the script path.
+
+_run_spell() {
+  script=$1
+  shift || true
+  _run_cmd "$ROOT_DIR/$script" "$@"
+}
+
+# Self-execution when run directly (not sourced)
+case "${0##*/}" in run-spell) _run_spell "$@" ;; esac

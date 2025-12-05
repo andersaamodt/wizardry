@@ -2,23 +2,13 @@
 # tty-save - save terminal settings (reads from stdin)
 # Example: state=$(tty-save) && ... && tty-restore "$state"
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: tty-save
-
-Save terminal settings (reads from stdin). Example: state=$(tty-save) && ... && tty-restore "$state".
-USAGE
+_tty_save() {
+  if ! stty -g 2>/dev/null; then
+    printf '%s\n' "tty-save: unable to read terminal settings" >&2
+    return 1
+  fi
 }
 
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-if ! stty -g 2>/dev/null; then
-  printf '%s\n' "tty-save: unable to read terminal settings" >&2
-  exit 1
-fi
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */tty-save) _tty_save "$@" ;; esac

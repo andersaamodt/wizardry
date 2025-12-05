@@ -1,0 +1,99 @@
+#!/bin/sh
+# run-cmd CMD [ARGS...] - execute command in a sandboxed environment
+# Captures stdout, stderr, and exit status into STATUS, OUTPUT, and ERROR.
+
+_run_cmd() {
+  # Save the caller's PATH and temporarily use the system PATH for run_cmd's
+  # internal operations (mktemp, mkdir, cat, rm, pwd). This ensures run_cmd
+  # works even when tests intentionally set a restricted PATH.
+  _saved_path=$PATH
+  PATH=${WIZARDRY_SYSTEM_PATH:-$PATH}
+
+  _stdout=$(mktemp "${WIZARDRY_TMPDIR}/stdout.XXXXXX") || return 1
+  _stderr=$(mktemp "${WIZARDRY_TMPDIR}/stderr.XXXXXX") || return 1
+
+  workdir=${RUN_CMD_WORKDIR:-$(pwd)}
+  mkdir -p "$workdir"
+
+  sandbox=$(mktemp -d "${WIZARDRY_TMPDIR}/sandbox.XXXXXX") || return 1
+  tmpdir="$sandbox/tmp"
+  homedir="$sandbox/home"
+  mkdir -p "$tmpdir" "$homedir"
+
+  # Restore the caller's PATH for use in the sandbox
+  PATH=$_saved_path
+
+  if [ "${BWRAP_AVAILABLE:-0}" -eq 1 ]; then
+    # Pass through test-related environment variables that tests commonly set
+    # These are needed for test stubs (apt-get, pkgin, etc.) to log their actions
+    # We bind both /tmp and WIZARDRY_TMPDIR explicitly to ensure test fixtures
+    # and temp files are writable across different bwrap versions and systems.
+    set -- \
+      --die-with-parent \
+      --ro-bind / / \
+      --dev-bind /dev /dev \
+      --bind /proc /proc \
+      --bind /tmp /tmp \
+      --bind "$WIZARDRY_TMPDIR" "$WIZARDRY_TMPDIR" \
+      --ro-bind "$ROOT_DIR" "$ROOT_DIR" \
+      --chdir "$workdir" \
+      --setenv PATH "$PATH" \
+      --setenv HOME "$homedir" \
+      --setenv TMPDIR "$tmpdir" \
+      --setenv WIZARDRY_TMPDIR "$WIZARDRY_TMPDIR" \
+      -- "$@"
+
+    # Optionally pass through test-related variables if they're set
+    # (add them BEFORE the -- separator in the command)
+    for envvar in \
+      APT_LOG APT_EXIT PKGIN_LOG PKGIN_EXIT PKGIN_CANDIDATES \
+      DETECT_RC_FILE LOOK_RC_FILE ASK_LOG LOOK_COLORS_PATH SSHD_CONFIG \
+      SPELLBOOK_DIR WIZARDRY_DIR MUD_DIR \
+      WIZARDRY_SKIP_NIX_REBUILD WIZARDRY_SKIP_CONFIRM
+    do
+      eval "val=\${$envvar-}"
+      if [ -n "$val" ]; then
+        # Insert --setenv before the -- separator
+        set -- "--setenv" "$envvar" "$val" "$@"
+      fi
+    done
+
+    if [ "${BWRAP_USE_UNSHARE:-1}" -eq 1 ]; then
+      set -- --unshare-user-try "$@"
+    fi
+
+    if _run_bwrap "$@" >"$_stdout" 2>"$_stderr"; then
+      STATUS=0
+    else
+      STATUS=$?
+    fi
+  elif [ "${MACOS_SANDBOX_AVAILABLE:-0}" -eq 1 ]; then
+    # Use macOS sandbox-exec for isolation
+    if (cd "$workdir" && env PATH="$PATH" HOME="$homedir" TMPDIR="$tmpdir" WIZARDRY_TMPDIR="$WIZARDRY_TMPDIR" DETECT_RC_FILE="${DETECT_RC_FILE-}" WIZARDRY_SKIP_NIX_REBUILD="${WIZARDRY_SKIP_NIX_REBUILD-}" WIZARDRY_SKIP_CONFIRM="${WIZARDRY_SKIP_CONFIRM-}" SSHD_CONFIG="${SSHD_CONFIG-}" SPELLBOOK_DIR="${SPELLBOOK_DIR-}" WIZARDRY_DIR="${WIZARDRY_DIR-}" MUD_DIR="${MUD_DIR-}" \
+      _run_macos_sandbox "$@" >"$_stdout" 2>"$_stderr"); then
+      STATUS=0
+    else
+      STATUS=$?
+    fi
+  else
+    if (cd "$workdir" && env PATH="$PATH" HOME="$homedir" TMPDIR="$tmpdir" WIZARDRY_TMPDIR="$WIZARDRY_TMPDIR" DETECT_RC_FILE="${DETECT_RC_FILE-}" WIZARDRY_SKIP_NIX_REBUILD="${WIZARDRY_SKIP_NIX_REBUILD-}" WIZARDRY_SKIP_CONFIRM="${WIZARDRY_SKIP_CONFIRM-}" SSHD_CONFIG="${SSHD_CONFIG-}" SPELLBOOK_DIR="${SPELLBOOK_DIR-}" WIZARDRY_DIR="${WIZARDRY_DIR-}" MUD_DIR="${MUD_DIR-}" "$@" \
+      >"$_stdout" 2>"$_stderr"); then
+      STATUS=0
+    else
+      STATUS=$?
+    fi
+  fi
+
+  # Use system PATH again for cleanup operations
+  PATH=${WIZARDRY_SYSTEM_PATH:-$PATH}
+  OUTPUT=$(cat "$_stdout")
+  ERROR=$(cat "$_stderr")
+  rm -f "$_stdout" "$_stderr"
+  rm -rf "$sandbox"
+
+  # Restore caller's PATH before returning
+  PATH=$_saved_path
+}
+
+# Self-execution when run directly (not sourced)
+case "${0##*/}" in run-cmd) _run_cmd "$@" ;; esac

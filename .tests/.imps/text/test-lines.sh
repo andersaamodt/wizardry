@@ -14,22 +14,22 @@ done
 test_lines_counts() {
   tmpfile=$(mktemp "$WIZARDRY_TMPDIR/testfile.XXXXXX")
   printf 'one\ntwo\nthree\n' > "$tmpfile"
-  run_spell spells/.imps/text/lines "$tmpfile"
+  _run_spell spells/.imps/text/lines "$tmpfile"
   rm -f "$tmpfile"
-  assert_success
-  assert_output_contains "3"
+  _assert_success
+  _assert_output_contains "3"
 }
 
 test_lines_handles_empty_file() {
   tmpfile=$(mktemp "$WIZARDRY_TMPDIR/testfile.XXXXXX")
   : > "$tmpfile"
-  run_spell spells/.imps/text/lines "$tmpfile"
+  _run_spell spells/.imps/text/lines "$tmpfile"
   rm -f "$tmpfile"
-  assert_success
-  assert_output_contains "0"
+  _assert_success
+  _assert_output_contains "0"
 }
 
-run_test_case "lines counts correctly" test_lines_counts
-run_test_case "lines handles empty file" test_lines_handles_empty_file
+_run_test_case "lines counts correctly" test_lines_counts
+_run_test_case "lines handles empty file" test_lines_handles_empty_file
 
-finish_tests
+_finish_tests

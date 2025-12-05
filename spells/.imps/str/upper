@@ -2,20 +2,10 @@
 # upper - convert stdin to uppercase
 # Example: echo "hello" | upper
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: upper
-
-Convert stdin to uppercase. Example: echo "hello" | upper.
-USAGE
+_upper() {
+  tr '[:lower:]' '[:upper:]'
 }
 
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-tr '[:lower:]' '[:upper:]'
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */upper) _upper "$@" ;; esac

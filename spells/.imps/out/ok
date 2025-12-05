@@ -2,20 +2,10 @@
 # ok COMMAND [ARGS...] - run command silently, succeed if it succeeds
 # Example: ok mkdir -p /tmp/test && echo "created"
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: ok COMMAND [ARGS...]
-
-Run command silently, succeed if it succeeds. Example: ok mkdir -p /tmp/test && echo "created".
-USAGE
+_ok() {
+  "$@" >/dev/null 2>&1
 }
 
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-"$@" >/dev/null 2>&1
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */ok) _ok "$@" ;; esac

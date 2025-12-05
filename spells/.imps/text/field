@@ -2,32 +2,21 @@
 # field N [DELIM] - extract Nth field (1-based), default delimiter is whitespace
 # Example: echo "a:b:c" | field 2 ":"  # outputs: b
 
+_field() {
+  _field_n=$1
+  _field_delim=${2-}
 
-usage() {
-        cat <<'USAGE' >&2
-Usage: field N [DELIM]
+  case "$_field_n" in
+    ''|*[!0-9]*) return 1 ;;
+  esac
 
-Extract Nth field (1-based), default delimiter is whitespace. Example: echo "a:b:c" | field 2 ":"  # outputs: b.
-USAGE
+  if [ -n "$_field_delim" ]; then
+    cut -d"$_field_delim" -f"$_field_n"
+  else
+    awk "{print \$$_field_n}"
+  fi
 }
 
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-n=$1
-delim=${2-}
-
-# Validate n is a positive integer
-case "$n" in
-  ''|*[!0-9]*) exit 1 ;;
-esac
-
-if [ -n "$delim" ]; then
-  cut -d"$delim" -f"$n"
-else
-  awk "{print \$$n}"
-fi
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */field) _field "$@" ;; esac

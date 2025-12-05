@@ -1,337 +1,159 @@
 #!/bin/sh
-# nix-shell-init - add shell init code to nix configuration files
-# Manages programs.bash.initExtra or programs.zsh.initExtra blocks
-# Usage: nix-shell-init add|remove|status [--shell bash|zsh] --name NAME --file FILE [CODE]
-# Exit code: 0 on success, 1 on failure
-# Example: echo 'source "/path/to/spell"' | nix-shell-init add --shell bash --name myspell --file config.nix
+# nix-shell-init ACTION --name NAME --file FILE [--shell SHELL] - manage shell init in nix configs
+# Actions: add (from stdin), remove, status. Manages programs.bash.initExtra blocks.
+# Example: echo 'source "/path/to/spell"' | nix-shell-init add --name myspell --file home.nix
 
-set -eu
+_nix_shell_init() {
+  _nsi_action=""
+  _nsi_shell_type="bash"
+  _nsi_block_name=""
+  _nsi_nix_file=""
 
-# Add imps to PATH so we can use temp-file and cleanup-file directly
-script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-imps_dir=$(CDPATH= cd -- "$script_dir/.." && pwd -P)
-if [ -d "$imps_dir" ]; then
-  PATH="$imps_dir:$PATH"
-  for impdir in "$imps_dir"/*; do
-    [ -d "$impdir" ] || continue
-    PATH="$impdir:$PATH"
+  while [ "$#" -gt 0 ]; do
+    case $1 in
+      add|remove|status) _nsi_action=$1; shift ;;
+      --shell) _nsi_shell_type=$2; shift 2 ;;
+      --shell=*) _nsi_shell_type=${1#*=}; shift ;;
+      --name) _nsi_block_name=$2; shift 2 ;;
+      --name=*) _nsi_block_name=${1#*=}; shift ;;
+      --file) _nsi_nix_file=$2; shift 2 ;;
+      --file=*) _nsi_nix_file=${1#*=}; shift ;;
+      *) printf '%s\n' "nix-shell-init: unknown argument '$1'" >&2; return 1 ;;
+    esac
   done
-  export PATH
-fi
 
-show_usage() {
-  cat <<'USAGE' >&2
-Usage: nix-shell-init add|remove|status [OPTIONS]
+  if [ -z "$_nsi_action" ] || [ -z "$_nsi_block_name" ] || [ -z "$_nsi_nix_file" ]; then
+    printf '%s\n' "nix-shell-init: action, --name, and --file are required" >&2
+    return 1
+  fi
 
-Actions:
-  add       Add shell init code (reads from stdin)
-  remove    Remove shell init code by name
-  status    Check if named shell init code exists
-
-Options:
-  --shell SHELL  Shell type: bash (default) or zsh
-  --name NAME    Unique identifier for the shell init block
-  --file FILE    Path to nix configuration file
-
-Example:
-  echo 'source "/path/to/spell"' | nix-shell-init add --shell bash --name jtrash --file ~/.config/home-manager/home.nix
-USAGE
-}
-
-action=""
-shell_type="bash"
-block_name=""
-nix_file=""
-
-while [ "$#" -gt 0 ]; do
-  case $1 in
-  add|remove|status)
-    action=$1
-    shift
-    ;;
-  --shell)
-    [ "$#" -lt 2 ] && { printf '%s\n' "nix-shell-init: --shell requires value" >&2; exit 1; }
-    shell_type=$2
-    shift 2
-    ;;
-  --shell=*)
-    shell_type=${1#*=}
-    shift
-    ;;
-  --name)
-    [ "$#" -lt 2 ] && { printf '%s\n' "nix-shell-init: --name requires value" >&2; exit 1; }
-    block_name=$2
-    shift 2
-    ;;
-  --name=*)
-    block_name=${1#*=}
-    shift
-    ;;
-  --file)
-    [ "$#" -lt 2 ] && { printf '%s\n' "nix-shell-init: --file requires value" >&2; exit 1; }
-    nix_file=$2
-    shift 2
-    ;;
-  --file=*)
-    nix_file=${1#*=}
-    shift
-    ;;
-  --help|-h)
-    show_usage
-    exit 0
-    ;;
-  *)
-    printf '%s\n' "nix-shell-init: unknown argument '$1'" >&2
-    show_usage
-    exit 1
-    ;;
+  case $_nsi_shell_type in
+    bash|zsh) : ;;
+    *) printf '%s\n' "nix-shell-init: shell must be 'bash' or 'zsh'" >&2; return 1 ;;
   esac
-done
 
-if [ -z "$action" ] || [ -z "$block_name" ] || [ -z "$nix_file" ]; then
-  printf '%s\n' "nix-shell-init: action, --name, and --file are required" >&2
-  show_usage
-  exit 1
-fi
+  _nsi_is_system_config=0
+  case $_nsi_nix_file in /etc/nixos/*) _nsi_is_system_config=1 ;; esac
 
-# Validate shell type
-case $shell_type in
-bash|zsh) : ;;
-*)
-  printf '%s\n' "nix-shell-init: shell must be 'bash' or 'zsh'" >&2
-  exit 1
-  ;;
-esac
-
-# Determine the nix option based on shell type and config file type
-# For NixOS system config (/etc/nixos/configuration.nix): programs.bash.interactiveShellInit
-# For home-manager (~/.config/home-manager/home.nix): programs.bash.initExtra
-is_system_config=0
-case $nix_file in
-/etc/nixos/configuration.nix|/etc/nixos/*)
-  # Only files directly under /etc/nixos/ are system configuration
-  is_system_config=1
-  ;;
-esac
-
-if [ "$is_system_config" -eq 1 ]; then
-  case $shell_type in
-  bash) nix_option="programs.bash.interactiveShellInit" ;;
-  zsh)  nix_option="programs.zsh.interactiveShellInit" ;;
-  esac
-else
-  case $shell_type in
-  bash) nix_option="programs.bash.initExtra" ;;
-  zsh)  nix_option="programs.zsh.initExtra" ;;
-  esac
-fi
-
-# Marker format: # wizardry: NAME (with space after #)
-marker="# wizardry: $block_name"
-
-# Check if file needs sudo
-needs_sudo=0
-if [ -f "$nix_file" ] && [ ! -w "$nix_file" ]; then
-  needs_sudo=1
-fi
-
-run_maybe_sudo() {
-  if [ "$needs_sudo" -eq 1 ]; then
-    if command -v sudo >/dev/null 2>&1; then
-      sudo "$@"
-    elif command -v doas >/dev/null 2>&1; then
-      doas "$@"
-    else
-      "$@"
-    fi
+  if [ "$_nsi_is_system_config" -eq 1 ]; then
+    case $_nsi_shell_type in
+      bash) _nsi_nix_option="programs.bash.interactiveShellInit" ;;
+      zsh)  _nsi_nix_option="programs.zsh.interactiveShellInit" ;;
+    esac
   else
-    "$@"
+    case $_nsi_shell_type in
+      bash) _nsi_nix_option="programs.bash.initExtra" ;;
+      zsh)  _nsi_nix_option="programs.zsh.initExtra" ;;
+    esac
   fi
-}
 
-# Back up nix config file before modifying it
-backup_nix_config() {
-  if ! backup-nix-config "$nix_file"; then
-    printf '%s\n' "nix-shell-init: unable to back up '$nix_file'" >&2
-    exit 1
-  fi
-}
+  _nsi_marker="# wizardry: $_nsi_block_name"
 
-# Check if block exists
-block_exists() {
-  [ -f "$nix_file" ] && grep -Fq "$marker" "$nix_file" 2>/dev/null
-}
+  _nsi_needs_sudo=0
+  if [ -f "$_nsi_nix_file" ] && [ ! -w "$_nsi_nix_file" ]; then
+    _nsi_needs_sudo=1
+  fi
 
-# Status check
-do_status() {
-  if block_exists; then
-    return 0
-  fi
-  return 1
-}
-
-# Escape shell code for nix multi-line string ('' syntax)
-# In nix '' strings: '' must be escaped as ''' and ${ must be escaped as ''${
-escape_for_nix_multiline() {
-  sed "s/''/'''/g; s/\\\${/''\${/g"
-}
-
-# Add shell init code
-do_add() {
-  if block_exists; then
-    return 0  # Already exists, nothing to do
-  fi
-  
-  # Note: Caller is responsible for confirming with user before calling this imp.
-  # The caller's prompt already mentions the file being edited, so we don't need
-  # to ask for confirmation here.
-  
-  # Read shell code from stdin
-  shell_code=""
-  while IFS= read -r line || [ -n "$line" ]; do
-    if [ -z "$shell_code" ]; then
-      shell_code=$line
-    else
-      shell_code="$shell_code
-$line"
-    fi
-  done
-  
-  if [ -z "$shell_code" ]; then
-    printf '%s\n' "nix-shell-init: no shell code provided on stdin" >&2
-    exit 1
-  fi
-  
-  # Back up the config file before making any modifications
-  backup_nix_config
-  
-  # Escape the shell code for nix '' multi-line string
-  escaped_code=$(printf '%s' "$shell_code" | escape_for_nix_multiline)
-  
-  # Mark every content line with # wizardry marker so we can identify and remove them later
-  # Each content line gets the marker appended to ensure clean removal
-  # The opening and closing nix syntax lines are NOT marked, so they are preserved
-  # if the user has other content in that block
-  marked_code=$(printf '%s' "$escaped_code" | sed "s/$/ $marker/")
-  
-  # Create file if it doesn't exist with minimal nix structure
-  if [ ! -f "$nix_file" ]; then
-    dir=${nix_file%/*}
-    [ "$dir" != "$nix_file" ] && [ ! -d "$dir" ] && mkdir -p "$dir"
-    printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$nix_file"
-  fi
-  
-  tmp_file=$(temp-file nix-shell-init) || exit 1
-  input_file=''
-  trap 'cleanup-file "$tmp_file"; [ -n "$input_file" ] && cleanup-file "$input_file"' EXIT HUP INT TERM
-  
-  # Check if an existing block for this nix_option exists
-  if run_maybe_sudo cat "$nix_file" | grep -q "$nix_option[[:space:]]*="; then
-    # Existing block found - insert our marked lines before the closing '';
-    # Save the file content to a temp file for reading
-    input_file=$(temp-file nix-shell-init-input) || exit 1
-    run_maybe_sudo cat "$nix_file" > "$input_file"
-    
-    # Process line by line to find the right place to insert
-    in_block=0
-    while IFS= read -r line; do
-      # Check if this line contains our option and starts a block
-      if printf '%s\n' "$line" | grep -q "$nix_option[[:space:]]*=" && printf '%s\n' "$line" | grep -q "''"; then
-        in_block=1
-        printf '%s\n' "$line"
-        continue
+  case $_nsi_action in
+    status)
+      [ -f "$_nsi_nix_file" ] && grep -Fq "$_nsi_marker" "$_nsi_nix_file" 2>/dev/null
+      return $?
+      ;;
+    remove)
+      if [ ! -f "$_nsi_nix_file" ]; then
+        printf '%s\n' "nix-shell-init: file not found: $_nsi_nix_file" >&2
+        return 1
       fi
-      # If we're in the block and see the closing '';, insert our code first
-      if [ "$in_block" -eq 1 ] && printf '%s\n' "$line" | grep -q "^[[:space:]]*'';" ; then
-        printf '%s\n' "$marked_code"
-        printf '%s\n' "$line"
-        in_block=0
-        continue
+      if ! grep -Fq "$_nsi_marker" "$_nsi_nix_file" 2>/dev/null; then return 0; fi
+      _nsi_tmp_file=$(mktemp "${TMPDIR:-/tmp}/nix-shell-init.XXXXXX") || return 1
+      if [ "$_nsi_needs_sudo" -eq 1 ]; then
+        if command -v sudo >/dev/null 2>&1; then sudo cat "$_nsi_nix_file"
+        elif command -v doas >/dev/null 2>&1; then doas cat "$_nsi_nix_file"
+        else cat "$_nsi_nix_file"; fi
+      else
+        cat "$_nsi_nix_file"
+      fi | grep -v -F "$_nsi_marker" > "$_nsi_tmp_file"
+      if [ "$_nsi_needs_sudo" -eq 1 ]; then
+        if command -v sudo >/dev/null 2>&1; then sudo cp "$_nsi_tmp_file" "$_nsi_nix_file"
+        elif command -v doas >/dev/null 2>&1; then doas cp "$_nsi_tmp_file" "$_nsi_nix_file"
+        else cp "$_nsi_tmp_file" "$_nsi_nix_file"; fi
+      else
+        mv "$_nsi_tmp_file" "$_nsi_nix_file"
       fi
-      printf '%s\n' "$line"
-    done < "$input_file" > "$tmp_file"
-  else
-    # No existing block - create a new one
-    nix_block="  $nix_option = ''
-$marked_code
-  '';"
-    
-    # Insert the block before the closing brace
-    run_maybe_sudo cat "$nix_file" | awk -v block="$nix_block" '
-    {
-      lines[NR] = $0
-    }
-    END {
-      # Find last closing brace
-      last = NR
-      while (last > 0 && lines[last] ~ /^[[:space:]]*$/) last--
+      rm -f "$_nsi_tmp_file"
+      return 0
+      ;;
+    add)
+      if [ -f "$_nsi_nix_file" ] && grep -Fq "$_nsi_marker" "$_nsi_nix_file" 2>/dev/null; then return 0; fi
+      _nsi_shell_code=""
+      while IFS= read -r _nsi_line || [ -n "$_nsi_line" ]; do
+        if [ -z "$_nsi_shell_code" ]; then _nsi_shell_code=$_nsi_line
+        else _nsi_shell_code="$_nsi_shell_code
+$_nsi_line"; fi
+      done
+      if [ -z "$_nsi_shell_code" ]; then
+        printf '%s\n' "nix-shell-init: no shell code provided on stdin" >&2
+        return 1
+      fi
+      _nsi_escaped_code=$(printf '%s' "$_nsi_shell_code" | sed "s/''/'''/g; s/\\\${/''\${/g")
+      _nsi_marked_code=$(printf '%s' "$_nsi_escaped_code" | sed "s/$/ $_nsi_marker/")
+      if [ ! -f "$_nsi_nix_file" ]; then
+        _nsi_dir=${_nsi_nix_file%/*}
+        [ "$_nsi_dir" != "$_nsi_nix_file" ] && [ ! -d "$_nsi_dir" ] && mkdir -p "$_nsi_dir"
+        printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$_nsi_nix_file"
+      fi
+      _nsi_tmp_file=$(mktemp "${TMPDIR:-/tmp}/nix-shell-init.XXXXXX") || return 1
+      # Read file content inline
+      if [ "$_nsi_needs_sudo" -eq 1 ]; then
+        if command -v sudo >/dev/null 2>&1; then _nsi_content=$(sudo cat "$_nsi_nix_file")
+        elif command -v doas >/dev/null 2>&1; then _nsi_content=$(doas cat "$_nsi_nix_file")
+        else _nsi_content=$(cat "$_nsi_nix_file"); fi
+      else _nsi_content=$(cat "$_nsi_nix_file"); fi
       
-      if (last > 0 && lines[last] ~ /^[[:space:]]*}/) {
-        for (i = 1; i < last; i++) print lines[i]
-        print ""
-        print block
-        print lines[last]
-        for (i = last + 1; i <= NR; i++) print lines[i]
-      } else {
-        for (i = 1; i <= NR; i++) print lines[i]
-        print ""
-        print block
-      }
-    }
-    ' > "$tmp_file"
-  fi
-  
-  if [ "$needs_sudo" -eq 1 ]; then
-    run_maybe_sudo cp "$tmp_file" "$nix_file"
-  else
-    mv "$tmp_file" "$nix_file"
-  fi
-  trap - EXIT HUP INT TERM
-  rm -f "$tmp_file"
-  [ -n "$input_file" ] && rm -f "$input_file"
-  return 0
+      if printf '%s\n' "$_nsi_content" | grep -q "$_nsi_nix_option[[:space:]]*="; then
+        _nsi_input_file=$(mktemp "${TMPDIR:-/tmp}/nix-shell-init-input.XXXXXX") || return 1
+        printf '%s\n' "$_nsi_content" > "$_nsi_input_file"
+        _nsi_in_block=0
+        while IFS= read -r _nsi_line; do
+          if printf '%s\n' "$_nsi_line" | grep -q "$_nsi_nix_option[[:space:]]*=" && printf '%s\n' "$_nsi_line" | grep -q "''"; then
+            _nsi_in_block=1; printf '%s\n' "$_nsi_line"; continue
+          fi
+          if [ "$_nsi_in_block" -eq 1 ] && printf '%s\n' "$_nsi_line" | grep -q "^[[:space:]]*'';"; then
+            printf '%s\n' "$_nsi_marked_code"; printf '%s\n' "$_nsi_line"; _nsi_in_block=0; continue
+          fi
+          printf '%s\n' "$_nsi_line"
+        done < "$_nsi_input_file" > "$_nsi_tmp_file"
+        rm -f "$_nsi_input_file"
+      else
+        # Write the block to a temp file and use it with awk (macOS awk compatible)
+        _nsi_block_file=$(mktemp "${TMPDIR:-/tmp}/nix-shell-init-block.XXXXXX") || return 1
+        printf '%s\n' "  $_nsi_nix_option = ''" > "$_nsi_block_file"
+        printf '%s\n' "$_nsi_marked_code" >> "$_nsi_block_file"
+        printf '%s\n' "  '';" >> "$_nsi_block_file"
+        
+        printf '%s\n' "$_nsi_content" | awk -v blockfile="$_nsi_block_file" '
+        BEGIN { while ((getline line < blockfile) > 0) block = block line "\n" }
+        { lines[NR] = $0 }
+        END {
+          last = NR; while (last > 0 && lines[last] ~ /^[[:space:]]*$/) last--
+          if (last > 0 && lines[last] ~ /^[[:space:]]*}/) {
+            for (i = 1; i < last; i++) print lines[i]; print ""; printf "%s", block; print lines[last]
+            for (i = last + 1; i <= NR; i++) print lines[i]
+          } else { for (i = 1; i <= NR; i++) print lines[i]; print ""; printf "%s", block }
+        }' > "$_nsi_tmp_file"
+        rm -f "$_nsi_block_file"
+      fi
+      if [ "$_nsi_needs_sudo" -eq 1 ]; then
+        if command -v sudo >/dev/null 2>&1; then sudo cp "$_nsi_tmp_file" "$_nsi_nix_file"
+        elif command -v doas >/dev/null 2>&1; then doas cp "$_nsi_tmp_file" "$_nsi_nix_file"
+        else cp "$_nsi_tmp_file" "$_nsi_nix_file"; fi
+      else mv "$_nsi_tmp_file" "$_nsi_nix_file"; fi
+      rm -f "$_nsi_tmp_file"
+      return 0
+      ;;
+  esac
 }
 
-# Remove shell init code
-do_remove() {
-  if [ ! -f "$nix_file" ]; then
-    printf '%s\n' "nix-shell-init: file not found: $nix_file" >&2
-    exit 1
-  fi
-  
-  if ! block_exists; then
-    return 0  # Nothing to remove
-  fi
-  
-  # Note: Caller is responsible for confirming with user before calling this imp.
-  
-  # Back up the config file before making any modifications
-  backup_nix_config
-  
-  # Remove all lines containing our marker
-  # Since every wizardry-managed content line has #wizardry: NAME appended,
-  # we can simply filter out all lines containing that marker
-  tmp_file=$(temp-file nix-shell-init) || exit 1
-  trap 'cleanup-file "$tmp_file"' EXIT HUP INT TERM
-  run_maybe_sudo cat "$nix_file" | grep -v -F "$marker" > "$tmp_file"
-  
-  if [ "$needs_sudo" -eq 1 ]; then
-    run_maybe_sudo cp "$tmp_file" "$nix_file"
-  else
-    mv "$tmp_file" "$nix_file"
-  fi
-  trap - EXIT HUP INT TERM
-  rm -f "$tmp_file"
-}
-
-case $action in
-add)
-  do_add
-  ;;
-remove)
-  do_remove
-  ;;
-status)
-  do_status
-  ;;
-esac
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */nix-shell-init) _nix_shell_init "$@" ;; esac

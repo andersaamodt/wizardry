@@ -15,9 +15,9 @@ done
 # === Basic Installation Tests ===
 
 install_invokes_core_installer() {
-  fixture=$(make_fixture)
-  provide_basic_tools "$fixture"
-  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+  fixture=$(_make_fixture)
+  _provide_basic_tools "$fixture"
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
 
   core_log="$fixture/log/core.log"
   cat <<'STUB' >"$fixture/install-core-stub"
@@ -28,13 +28,13 @@ STUB
 
   install_dir="$fixture/home/.wizardry"
   PATH="$fixture/bin:$initial_path" CORE_LOG="$core_log" WIZARDRY_CORE_INSTALLER="$fixture/install-core-stub" \
-    WIZARDRY_INSTALL_ASSUME_YES=1 WIZARDRY_INSTALL_DIR="$install_dir" run_cmd \
+    WIZARDRY_INSTALL_ASSUME_YES=1 WIZARDRY_INSTALL_DIR="$install_dir" _run_cmd \
     env PATH="$fixture/bin:$initial_path" CORE_LOG="$core_log" WIZARDRY_CORE_INSTALLER="$fixture/install-core-stub" \
     WIZARDRY_INSTALL_ASSUME_YES=1 WIZARDRY_INSTALL_DIR="$install_dir" \
     "$ROOT_DIR/install"
 
-  assert_success || return 1
-  assert_file_contains "$core_log" "core installer invoked"
+  _assert_success || return 1
+  _assert_file_contains "$core_log" "core installer invoked"
 }
 
 install_exits_on_interrupt() {
@@ -62,9 +62,9 @@ install_nixos_prompts_for_config_path() {
   # On NixOS without a config file at standard paths, the installer should
   # prompt for the config path. When the user provides a valid path via stdin,
   # the installer should use it.
-  fixture=$(make_fixture)
-  provide_basic_tools "$fixture"
-  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+  fixture=$(_make_fixture)
+  _provide_basic_tools "$fixture"
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
 
   # Create a fake configuration.nix in a non-standard location
   custom_config_dir="$fixture/custom-nix"
@@ -74,7 +74,7 @@ install_nixos_prompts_for_config_path() {
   install_dir="$fixture/home/.wizardry"
   
   # The test simulates user input: the path to the config file, then "y" to confirm
-  run_cmd sh -c "
+  _run_cmd sh -c "
     printf '%s\n%s\n' '$custom_config_dir/configuration.nix' 'y' | \
     env DETECT_RC_FILE_PLATFORM=nixos \
         WIZARDRY_INSTALL_DIR='$install_dir' \
@@ -83,35 +83,35 @@ install_nixos_prompts_for_config_path() {
   "
 
   # Check that the output mentions using the custom configuration
-  assert_output_contains "Using configuration file:" || return 1
-  assert_output_contains "$custom_config_dir/configuration.nix" || return 1
+  _assert_output_contains "Using configuration file:" || return 1
+  _assert_output_contains "$custom_config_dir/configuration.nix" || return 1
 }
 
 install_nixos_fails_without_config_path() {
   # On NixOS without a config file and non-interactive input,
   # the installer should fail with an error message
-  fixture=$(make_fixture)
-  provide_basic_tools "$fixture"
-  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+  fixture=$(_make_fixture)
+  _provide_basic_tools "$fixture"
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
 
   install_dir="$fixture/home/.wizardry"
   
   # Run without providing any config path input (non-interactive)
-  run_cmd env DETECT_RC_FILE_PLATFORM=nixos \
+  _run_cmd env DETECT_RC_FILE_PLATFORM=nixos \
       WIZARDRY_INSTALL_DIR="$install_dir" \
       HOME="$fixture/home" \
       ASK_CANTRIP_INPUT=none \
       "$ROOT_DIR/install" </dev/null
 
-  assert_failure || return 1
-  assert_error_contains "No NixOS configuration file found" || return 1
+  _assert_failure || return 1
+  _assert_error_contains "No NixOS configuration file found" || return 1
 }
 
 install_nixos_adds_path_to_config() {
   # On NixOS, the installer should add PATH entries to configuration.nix
-  fixture=$(make_fixture)
-  provide_basic_tools "$fixture"
-  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+  fixture=$(_make_fixture)
+  _provide_basic_tools "$fixture"
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
 
   # Create a fake configuration.nix
   mkdir -p "$fixture/home/.config/home-manager"
@@ -127,22 +127,22 @@ EOF
 
   install_dir="$fixture/home/.wizardry"
   
-  run_cmd env DETECT_RC_FILE_PLATFORM=nixos \
+  _run_cmd env DETECT_RC_FILE_PLATFORM=nixos \
       WIZARDRY_INSTALL_DIR="$install_dir" \
       HOME="$fixture/home" \
       WIZARDRY_INSTALL_ASSUME_YES=1 \
       "$ROOT_DIR/install"
 
-  assert_success || return 1
+  _assert_success || return 1
   # Check that the output mentions PATH configuration
-  assert_output_contains "PATH configuration" || return 1
+  _assert_output_contains "PATH configuration" || return 1
 }
 
 install_nixos_writes_path_block() {
   # On NixOS, the installer should write a PATH block to configuration.nix
-  fixture=$(make_fixture)
-  provide_basic_tools "$fixture"
-  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+  fixture=$(_make_fixture)
+  _provide_basic_tools "$fixture"
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
 
   # Create a fake configuration.nix
   mkdir -p "$fixture/home/.config/home-manager"
@@ -158,22 +158,22 @@ EOF
 
   install_dir="$fixture/home/.wizardry"
   
-  run_cmd env DETECT_RC_FILE_PLATFORM=nixos \
+  _run_cmd env DETECT_RC_FILE_PLATFORM=nixos \
       WIZARDRY_INSTALL_DIR="$install_dir" \
       HOME="$fixture/home" \
       WIZARDRY_INSTALL_ASSUME_YES=1 \
       "$ROOT_DIR/install"
 
-  assert_success || return 1
+  _assert_success || return 1
   # Check that PATH block was written to config file
-  assert_file_contains "$fixture/home/.config/home-manager/home.nix" "# wizardry" || return 1
+  _assert_file_contains "$fixture/home/.config/home-manager/home.nix" "# wizardry" || return 1
 }
 
 install_nixos_adds_path_to_system_config() {
   # On NixOS, the installer should add PATH entries to configuration.nix
-  fixture=$(make_fixture)
-  provide_basic_tools "$fixture"
-  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+  fixture=$(_make_fixture)
+  _provide_basic_tools "$fixture"
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
 
   # Create a configuration.nix
   mkdir -p "$fixture/etc/nixos"
@@ -195,7 +195,7 @@ EOF
   install_dir="$fixture/home/.wizardry"
   
   # Simulate user input: the path to the config file, then "y" to confirm
-  run_cmd sh -c "
+  _run_cmd sh -c "
     printf '%s\n%s\n' '$fixture/etc/nixos/configuration.nix' 'y' | \
     env DETECT_RC_FILE_PLATFORM=nixos \
         WIZARDRY_INSTALL_DIR='$install_dir' \
@@ -203,17 +203,17 @@ EOF
         '$ROOT_DIR/install'
   "
 
-  assert_success || return 1
+  _assert_success || return 1
   
   # Check that wizardry PATH block was added to configuration.nix
-  assert_file_contains "$fixture/etc/nixos/configuration.nix" "# wizardry" || return 1
+  _assert_file_contains "$fixture/etc/nixos/configuration.nix" "# wizardry" || return 1
 }
 
 install_nixos_preserves_existing_config() {
   # The installer should preserve existing content in configuration.nix
-  fixture=$(make_fixture)
-  provide_basic_tools "$fixture"
-  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+  fixture=$(_make_fixture)
+  _provide_basic_tools "$fixture"
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
 
   # Create a configuration.nix with existing content
   mkdir -p "$fixture/etc/nixos"
@@ -235,7 +235,7 @@ EOF
   install_dir="$fixture/home/.wizardry"
   
   # Simulate user input: the path to the config file, then "y" to confirm
-  run_cmd sh -c "
+  _run_cmd sh -c "
     printf '%s\n%s\n' '$fixture/etc/nixos/configuration.nix' 'y' | \
     env DETECT_RC_FILE_PLATFORM=nixos \
         WIZARDRY_INSTALL_DIR='$install_dir' \
@@ -243,7 +243,7 @@ EOF
         '$ROOT_DIR/install'
   "
 
-  assert_success || return 1
+  _assert_success || return 1
   
   # Count occurrences of experimental-features - should be exactly 1 (preserved, not duplicated)
   count=$(grep -c "experimental-features" "$fixture/etc/nixos/configuration.nix" 2>/dev/null || printf '0')
@@ -253,14 +253,14 @@ EOF
   fi
   
   # Check that PATH block was added
-  assert_file_contains "$fixture/etc/nixos/configuration.nix" "# wizardry" || return 1
+  _assert_file_contains "$fixture/etc/nixos/configuration.nix" "# wizardry" || return 1
 }
 
 install_nixos_writes_path_entries_to_config() {
   # On NixOS, PATH entries should be written to configuration.nix
-  fixture=$(make_fixture)
-  provide_basic_tools "$fixture"
-  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+  fixture=$(_make_fixture)
+  _provide_basic_tools "$fixture"
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
 
   # Create a configuration.nix
   mkdir -p "$fixture/etc/nixos"
@@ -280,7 +280,7 @@ EOF
   install_dir="$fixture/home/.wizardry"
   
   # Simulate user input: the path to the config file, then "y" to confirm
-  run_cmd sh -c "
+  _run_cmd sh -c "
     printf '%s\n%s\n' '$fixture/etc/nixos/configuration.nix' 'y' | \
     env DETECT_RC_FILE_PLATFORM=nixos \
         WIZARDRY_INSTALL_DIR='$install_dir' \
@@ -288,7 +288,7 @@ EOF
         '$ROOT_DIR/install'
   "
 
-  assert_success || return 1
+  _assert_success || return 1
   
   # Check that wizardry PATH block was added to configuration.nix
   if ! grep -q '# wizardry' "$fixture/etc/nixos/configuration.nix" 2>/dev/null; then
@@ -300,9 +300,9 @@ EOF
 install_nixos_simple_input() {
   # Test that NixOS installer only needs config path and confirmation
   # (no separate flakes consent prompt)
-  fixture=$(make_fixture)
-  provide_basic_tools "$fixture"
-  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+  fixture=$(_make_fixture)
+  _provide_basic_tools "$fixture"
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
 
   # Create a configuration.nix
   mkdir -p "$fixture/etc/nixos"
@@ -324,7 +324,7 @@ EOF
   install_dir="$fixture/home/.wizardry"
   
   # Simulate user input: config path, then 'y' to proceed (only 2 prompts now)
-  run_cmd sh -c "
+  _run_cmd sh -c "
     printf '%s\n%s\n' '$fixture/etc/nixos/configuration.nix' 'y' | \
     env DETECT_RC_FILE_PLATFORM=nixos \
         WIZARDRY_INSTALL_DIR='$install_dir' \
@@ -332,17 +332,17 @@ EOF
         '$ROOT_DIR/install'
   "
 
-  assert_success || return 1
+  _assert_success || return 1
   
   # Check that PATH block was added
-  assert_file_contains "$fixture/etc/nixos/configuration.nix" "# wizardry" || return 1
+  _assert_file_contains "$fixture/etc/nixos/configuration.nix" "# wizardry" || return 1
 }
 
 install_nixos_shows_config_file_message() {
   # On NixOS, the installer should show "Configuration file to be modified" 
-  fixture=$(make_fixture)
-  provide_basic_tools "$fixture"
-  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+  fixture=$(_make_fixture)
+  _provide_basic_tools "$fixture"
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
 
   # Create a configuration.nix
   mkdir -p "$fixture/etc/nixos"
@@ -359,7 +359,7 @@ EOF
   install_dir="$fixture/home/.wizardry"
   
   # Simulate user input: config path, then 'y' to proceed
-  run_cmd sh -c "
+  _run_cmd sh -c "
     printf '%s\n%s\n' '$fixture/etc/nixos/configuration.nix' 'y' | \
     env DETECT_RC_FILE_PLATFORM=nixos \
         WIZARDRY_INSTALL_DIR='$install_dir' \
@@ -367,17 +367,17 @@ EOF
         '$ROOT_DIR/install'
   "
 
-  assert_success || return 1
+  _assert_success || return 1
   
   # Check that the output shows "Configuration file to be modified"
-  assert_output_contains "Configuration file to be modified" || return 1
+  _assert_output_contains "Configuration file to be modified" || return 1
 }
 
 install_nixos_shows_path_updated_message() {
   # On NixOS, the installer should show "PATH configuration updated" message
-  fixture=$(make_fixture)
-  provide_basic_tools "$fixture"
-  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+  fixture=$(_make_fixture)
+  _provide_basic_tools "$fixture"
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
 
   # Create a configuration.nix
   mkdir -p "$fixture/etc/nixos"
@@ -399,7 +399,7 @@ EOF
   install_dir="$fixture/home/.wizardry"
   
   # Simulate user input: config path, then 'y' to proceed
-  run_cmd sh -c "
+  _run_cmd sh -c "
     printf '%s\n%s\n' '$fixture/etc/nixos/configuration.nix' 'y' | \
     env DETECT_RC_FILE_PLATFORM=nixos \
         WIZARDRY_INSTALL_DIR='$install_dir' \
@@ -407,10 +407,10 @@ EOF
         '$ROOT_DIR/install'
   "
 
-  assert_success || return 1
+  _assert_success || return 1
   
   # Check that the output shows PATH configuration message
-  assert_output_contains "PATH configuration updated" || return 1
+  _assert_output_contains "PATH configuration updated" || return 1
 }
 
 # === Path Normalization Tests ===
@@ -461,27 +461,27 @@ install_nixos_normalizes_config_path_without_leading_slash() {
 
 install_does_not_double_home_path() {
   # Test that paths starting with $HOME are not doubled due to tilde pattern matching.
-  fixture=$(make_fixture)
-  provide_basic_tools "$fixture"
-  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+  fixture=$(_make_fixture)
+  _provide_basic_tools "$fixture"
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
 
   # Set install dir to $fixture/home/.wizardry - an absolute path under HOME
   install_dir="$fixture/home/.wizardry"
   
-  run_cmd env DETECT_RC_FILE_PLATFORM=debian \
+  _run_cmd env DETECT_RC_FILE_PLATFORM=debian \
       WIZARDRY_INSTALL_DIR="$install_dir" \
       HOME="$fixture/home" \
       WIZARDRY_INSTALL_ASSUME_YES=1 \
       "$ROOT_DIR/install" 2>&1
 
-  assert_success || return 1
+  _assert_success || return 1
   # Check that the install path is NOT doubled (no $HOME/$HOME)
   if printf '%s' "$OUTPUT" | grep -q "$fixture/home/$fixture"; then
     TEST_FAILURE_REASON="path was incorrectly doubled: found $fixture/home/$fixture in output"
     return 1
   fi
   # Verify correct path is used
-  assert_output_contains "$install_dir/spells" || return 1
+  _assert_output_contains "$install_dir/spells" || return 1
 }
 
 # === NixOS Shell Code Tests ===
@@ -489,9 +489,9 @@ install_does_not_double_home_path() {
 install_nixos_writes_shell_init_properly_to_nix_file() {
   # When format is nix, the installer should write shell code to the .nix file
   # using proper nix syntax (programs.bash.initExtra) instead of raw shell markers.
-  fixture=$(make_fixture)
-  provide_basic_tools "$fixture"
-  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+  fixture=$(_make_fixture)
+  _provide_basic_tools "$fixture"
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
 
   # Create a fake home.nix
   mkdir -p "$fixture/home/.config/home-manager"
@@ -507,13 +507,13 @@ EOF
 
   install_dir="$fixture/home/.wizardry"
   
-  run_cmd env DETECT_RC_FILE_PLATFORM=nixos \
+  _run_cmd env DETECT_RC_FILE_PLATFORM=nixos \
       WIZARDRY_INSTALL_DIR="$install_dir" \
       HOME="$fixture/home" \
       WIZARDRY_INSTALL_ASSUME_YES=1 \
       "$ROOT_DIR/install" 2>&1
 
-  assert_success || return 1
+  _assert_success || return 1
   
   # The nix file should NOT contain raw shell code markers (old format)
   if grep -q '# >>> wizardry cd cantrip >>>' "$fixture/home/.config/home-manager/home.nix" 2>/dev/null; then
@@ -524,7 +524,7 @@ EOF
   # Shell code should be written using proper nix syntax (programs.bash.initExtra)
   # If installable spells were installed, they should use wizardry-shell markers
   # PATH entries should be in home.nix using # wizardry markers
-  assert_file_contains "$fixture/home/.config/home-manager/home.nix" "# wizardry" || return 1
+  _assert_file_contains "$fixture/home/.config/home-manager/home.nix" "# wizardry" || return 1
   
   return 0
 }
@@ -578,9 +578,9 @@ path_wizard_uses_explicit_helper_paths() {
 path_wizard_accepts_helper_overrides() {
   # Test that learn-spellbook respects DETECT_RC_FILE and LEARN_SPELL env vars,
   # allowing the install script to force use of new helpers.
-  fixture=$(make_fixture)
-  provide_basic_tools "$fixture"
-  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq mkdir rm date mktemp
+  fixture=$(_make_fixture)
+  _provide_basic_tools "$fixture"
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq mkdir rm date mktemp
 
   # Create a test directory to add to PATH
   test_dir="$fixture/test-path"
@@ -600,10 +600,10 @@ EOF
   # Run learn-spellbook with explicit helper env vars
   DETECT_RC_FILE="$detect_stub" \
     LEARN_SPELL="$ROOT_DIR/spells/spellcraft/learn" \
-    run_cmd "$ROOT_DIR/spells/spellcraft/learn-spellbook" add "$test_dir"
+    _run_cmd "$ROOT_DIR/spells/spellcraft/learn-spellbook" add "$test_dir"
 
   # Should succeed
-  assert_success || return 1
+  _assert_success || return 1
 
   return 0
 }
@@ -611,7 +611,7 @@ EOF
 # === Help Tests ===
 
 shows_help() {
-  run_spell spells/install/install --help
+  _run_spell spells/install/install --help
   true
 }
 
@@ -683,45 +683,45 @@ install_uses_only_bootstrappable_spells() {
 install_shows_menu_when_already_installed() {
   # When wizardry is already installed, the installer should show a numbered menu
   # with options: repair, reinstall, uninstall, exit
-  fixture=$(make_fixture)
-  provide_basic_tools "$fixture"
-  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+  fixture=$(_make_fixture)
+  _provide_basic_tools "$fixture"
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
 
   install_dir="$fixture/home/.wizardry"
   
   # First install wizardry
-  run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
+  _run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
       HOME="$fixture/home" \
       WIZARDRY_INSTALL_ASSUME_YES=1 \
       "$ROOT_DIR/install"
   
-  assert_success || return 1
+  _assert_success || return 1
   
   # Now run install again - should show menu. Choose exit (4)
-  run_cmd sh -c "
+  _run_cmd sh -c "
     printf '4\n' | \
     env WIZARDRY_INSTALL_DIR='$install_dir' \
         HOME='$fixture/home' \
         '$ROOT_DIR/install'
   "
   
-  assert_success || return 1
+  _assert_success || return 1
   
   # Check that menu options are shown
-  assert_output_contains "already installed" || return 1
-  assert_output_contains "Repair" || return 1
-  assert_output_contains "Reinstall" || return 1
-  assert_output_contains "Uninstall" || return 1
-  assert_output_contains "Exit" || return 1
+  _assert_output_contains "already installed" || return 1
+  _assert_output_contains "Repair" || return 1
+  _assert_output_contains "Reinstall" || return 1
+  _assert_output_contains "Uninstall" || return 1
+  _assert_output_contains "Exit" || return 1
 }
 
 # === Output Message Tests ===
 
 install_nixos_shows_path_updated() {
   # On NixOS, the installer should show "PATH configuration updated"
-  fixture=$(make_fixture)
-  provide_basic_tools "$fixture"
-  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+  fixture=$(_make_fixture)
+  _provide_basic_tools "$fixture"
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
 
   # Create a fake home.nix
   mkdir -p "$fixture/home/.config/home-manager"
@@ -737,32 +737,32 @@ EOF
 
   install_dir="$fixture/home/.wizardry"
   
-  run_cmd env DETECT_RC_FILE_PLATFORM=nixos \
+  _run_cmd env DETECT_RC_FILE_PLATFORM=nixos \
       WIZARDRY_INSTALL_DIR="$install_dir" \
       HOME="$fixture/home" \
       WIZARDRY_INSTALL_ASSUME_YES=1 \
       "$ROOT_DIR/install"
 
-  assert_success || return 1
+  _assert_success || return 1
   
   # Should show "PATH configuration updated" message for NixOS
-  assert_output_contains "PATH configuration updated" || return 1
+  _assert_output_contains "PATH configuration updated" || return 1
 }
 
 install_shows_spell_names_installed() {
   # The installer should list the names of spells that were installed
-  fixture=$(make_fixture)
-  provide_basic_tools "$fixture"
-  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+  fixture=$(_make_fixture)
+  _provide_basic_tools "$fixture"
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
 
   install_dir="$fixture/home/.wizardry"
   
-  run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
+  _run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
       HOME="$fixture/home" \
       WIZARDRY_INSTALL_ASSUME_YES=1 \
       "$ROOT_DIR/install"
 
-  assert_success || return 1
+  _assert_success || return 1
   
   # Should list spell names in output (e.g., "cd" spell)
   # The output should contain the spell names that were installed
@@ -770,48 +770,48 @@ install_shows_spell_names_installed() {
     # If spells were installed, check that names are listed
     if printf '%s' "$OUTPUT" | grep -q "Installed"; then
       # Check that individual spell names are shown with ->
-      assert_output_contains "->" || return 1
+      _assert_output_contains "->" || return 1
     fi
   fi
 }
 
 install_creates_uninstall_script_with_correct_name() {
   # The uninstall script should be named .uninstall not uninstall_wizardry
-  fixture=$(make_fixture)
-  provide_basic_tools "$fixture"
-  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+  fixture=$(_make_fixture)
+  _provide_basic_tools "$fixture"
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
 
   install_dir="$fixture/home/.wizardry"
   
-  run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
+  _run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
       HOME="$fixture/home" \
       WIZARDRY_INSTALL_ASSUME_YES=1 \
       "$ROOT_DIR/install"
 
-  assert_success || return 1
+  _assert_success || return 1
   
   # Check that .uninstall script exists
-  assert_path_exists "$install_dir/.uninstall" || return 1
+  _assert_path_exists "$install_dir/.uninstall" || return 1
   
   # Check that old uninstall_wizardry does NOT exist
-  assert_path_missing "$install_dir/uninstall_wizardry" || return 1
+  _assert_path_missing "$install_dir/uninstall_wizardry" || return 1
 }
 
 install_does_not_show_uninstall_on_success() {
   # The installer should NOT show "Uninstall script created at:" message
   # on successful installation (per problem statement - only notify on failure)
-  fixture=$(make_fixture)
-  provide_basic_tools "$fixture"
-  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+  fixture=$(_make_fixture)
+  _provide_basic_tools "$fixture"
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
 
   install_dir="$fixture/home/.wizardry"
   
-  run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
+  _run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
       HOME="$fixture/home" \
       WIZARDRY_INSTALL_ASSUME_YES=1 \
       "$ROOT_DIR/install"
 
-  assert_success || return 1
+  _assert_success || return 1
   
   # Should have Installation Complete message
   if ! printf '%s' "$OUTPUT" | grep -q "Installation Complete"; then
@@ -826,24 +826,24 @@ install_does_not_show_uninstall_on_success() {
   fi
   
   # The uninstall script should still be created though
-  assert_path_exists "$install_dir/.uninstall" || return 1
+  _assert_path_exists "$install_dir/.uninstall" || return 1
 }
 
 install_shows_simple_run_message() {
   # The installer should show simple message about running menu/mud
   # instead of "Next steps" section
-  fixture=$(make_fixture)
-  provide_basic_tools "$fixture"
-  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+  fixture=$(_make_fixture)
+  _provide_basic_tools "$fixture"
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
 
   install_dir="$fixture/home/.wizardry"
   
-  run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
+  _run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
       HOME="$fixture/home" \
       WIZARDRY_INSTALL_ASSUME_YES=1 \
       "$ROOT_DIR/install"
 
-  assert_success || return 1
+  _assert_success || return 1
   
   # Should show simple run message (with either "Run" or "run" prefix)
   if ! printf '%s' "$OUTPUT" | grep -iq "run.*menu.*or.*mud.*to start using wizardry"; then
@@ -866,18 +866,18 @@ install_shows_simple_run_message() {
 
 install_does_not_show_adding_missing_path_on_fresh() {
   # The installer should not show "Adding missing PATH configuration" on fresh install
-  fixture=$(make_fixture)
-  provide_basic_tools "$fixture"
-  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+  fixture=$(_make_fixture)
+  _provide_basic_tools "$fixture"
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
 
   install_dir="$fixture/home/.wizardry"
   
-  run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
+  _run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
       HOME="$fixture/home" \
       WIZARDRY_INSTALL_ASSUME_YES=1 \
       "$ROOT_DIR/install"
 
-  assert_success || return 1
+  _assert_success || return 1
   
   # Should NOT show "Adding missing PATH configuration" on fresh install
   if printf '%s' "$OUTPUT" | grep -q "Adding missing PATH configuration"; then
@@ -891,9 +891,9 @@ install_does_not_show_adding_missing_path_on_fresh() {
 install_nixos_shows_appropriate_message() {
   # On NixOS, the installer should show a message about when wizardry is available
   # This could be "ready to use" (if sourcing succeeded) or "new terminal" (if not)
-  fixture=$(make_fixture)
-  provide_basic_tools "$fixture"
-  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+  fixture=$(_make_fixture)
+  _provide_basic_tools "$fixture"
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
 
   # Create a fake home.nix
   mkdir -p "$fixture/home/.config/home-manager"
@@ -909,13 +909,13 @@ EOF
 
   install_dir="$fixture/home/.wizardry"
   
-  run_cmd env DETECT_RC_FILE_PLATFORM=nixos \
+  _run_cmd env DETECT_RC_FILE_PLATFORM=nixos \
       WIZARDRY_INSTALL_DIR="$install_dir" \
       HOME="$fixture/home" \
       WIZARDRY_INSTALL_ASSUME_YES=1 \
       "$ROOT_DIR/install"
 
-  assert_success || return 1
+  _assert_success || return 1
   
   # Should show availability message for NixOS (either "ready to use" or "new terminal")
   if ! printf '%s' "$OUTPUT" | grep -qE "(ready to use|new terminal|After rebuilding)"; then
@@ -926,18 +926,18 @@ EOF
 
 install_non_nixos_shows_source_message() {
   # On non-NixOS platforms, the installer should show appropriate message
-  fixture=$(make_fixture)
-  provide_basic_tools "$fixture"
-  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+  fixture=$(_make_fixture)
+  _provide_basic_tools "$fixture"
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
 
   install_dir="$fixture/home/.wizardry"
   
-  run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
+  _run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
       HOME="$fixture/home" \
       WIZARDRY_INSTALL_ASSUME_YES=1 \
       "$ROOT_DIR/install"
 
-  assert_success || return 1
+  _assert_success || return 1
   
   # Should indicate either "ready to use" (if sourcing succeeded) or "available when you open"
   # (if sourcing failed - which happens in test environments)
@@ -957,33 +957,33 @@ install_non_nixos_shows_source_message() {
 uninstall_script_handles_imps_directory() {
   # Test that the generated uninstall script uses remove-all to handle all PATH entries
   # This includes .imps and other hidden directories that glob patterns might miss
-  fixture=$(make_fixture)
-  provide_basic_tools "$fixture"
-  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+  fixture=$(_make_fixture)
+  _provide_basic_tools "$fixture"
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
 
   install_dir="$fixture/home/.wizardry"
   
-  run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
+  _run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
       HOME="$fixture/home" \
       WIZARDRY_INSTALL_ASSUME_YES=1 \
       "$ROOT_DIR/install"
 
-  assert_success || return 1
+  _assert_success || return 1
   
   # Check that the uninstall script exists
   uninstall_script="$install_dir/.uninstall"
-  assert_path_exists "$uninstall_script" || return 1
+  _assert_path_exists "$uninstall_script" || return 1
   
   # Check that the uninstall script uses remove-all to handle all entries
   # This is more reliable than iterating over directories (which could miss .imps)
-  assert_file_contains "$uninstall_script" "remove-all" || return 1
+  _assert_file_contains "$uninstall_script" "remove-all" || return 1
 }
 
 uninstall_script_nixos_includes_rebuild() {
   # Test that the NixOS uninstall script includes nixos-rebuild switch
-  fixture=$(make_fixture)
-  provide_basic_tools "$fixture"
-  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+  fixture=$(_make_fixture)
+  _provide_basic_tools "$fixture"
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
 
   # Create a fake home.nix
   mkdir -p "$fixture/home/.config/home-manager"
@@ -999,27 +999,27 @@ EOF
 
   install_dir="$fixture/home/.wizardry"
   
-  run_cmd env DETECT_RC_FILE_PLATFORM=nixos \
+  _run_cmd env DETECT_RC_FILE_PLATFORM=nixos \
       WIZARDRY_INSTALL_DIR="$install_dir" \
       HOME="$fixture/home" \
       WIZARDRY_INSTALL_ASSUME_YES=1 \
       "$ROOT_DIR/install"
 
-  assert_success || return 1
+  _assert_success || return 1
   
   # Check that the uninstall script exists
   uninstall_script="$install_dir/.uninstall"
-  assert_path_exists "$uninstall_script" || return 1
+  _assert_path_exists "$uninstall_script" || return 1
   
   # Check that the uninstall script contains nixos-rebuild logic for NixOS
-  assert_file_contains "$uninstall_script" "nixos-rebuild" || return 1
+  _assert_file_contains "$uninstall_script" "nixos-rebuild" || return 1
 }
 
 uninstall_script_nixos_includes_terminal_message() {
   # Test that the NixOS uninstall script tells users to open a new terminal
-  fixture=$(make_fixture)
-  provide_basic_tools "$fixture"
-  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+  fixture=$(_make_fixture)
+  _provide_basic_tools "$fixture"
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
 
   # Create a fake home.nix
   mkdir -p "$fixture/home/.config/home-manager"
@@ -1035,20 +1035,20 @@ EOF
 
   install_dir="$fixture/home/.wizardry"
   
-  run_cmd env DETECT_RC_FILE_PLATFORM=nixos \
+  _run_cmd env DETECT_RC_FILE_PLATFORM=nixos \
       WIZARDRY_INSTALL_DIR="$install_dir" \
       HOME="$fixture/home" \
       WIZARDRY_INSTALL_ASSUME_YES=1 \
       "$ROOT_DIR/install"
 
-  assert_success || return 1
+  _assert_success || return 1
   
   # Check that the uninstall script exists
   uninstall_script="$install_dir/.uninstall"
-  assert_path_exists "$uninstall_script" || return 1
+  _assert_path_exists "$uninstall_script" || return 1
   
   # Check that the uninstall script mentions opening a new terminal for NixOS
-  assert_file_contains "$uninstall_script" "new terminal" || return 1
+  _assert_file_contains "$uninstall_script" "new terminal" || return 1
 }
 
 # === Install Prompt Text Tests ===
@@ -1074,9 +1074,9 @@ install_shows_revised_prompt_text() {
 
 path_wizard_remove_all_removes_all_nix_entries() {
   # Test that learn-spellbook remove-all removes all wizardry entries from nix files
-  fixture=$(make_fixture)
-  provide_basic_tools "$fixture"
-  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq mkdir rm date mktemp wc
+  fixture=$(_make_fixture)
+  _provide_basic_tools "$fixture"
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq mkdir rm date mktemp wc
 
   mkdir -p "$fixture/home/.config/home-manager"
   mkdir -p "$fixture/test-dir1" "$fixture/test-dir2"
@@ -1107,9 +1107,9 @@ EOF
   chmod +x "$detect_stub"
 
   # Run remove-all
-  DETECT_RC_FILE="$detect_stub" run_cmd "$ROOT_DIR/spells/spellcraft/learn-spellbook" remove-all
+  DETECT_RC_FILE="$detect_stub" _run_cmd "$ROOT_DIR/spells/spellcraft/learn-spellbook" remove-all
 
-  assert_success || return 1
+  _assert_success || return 1
   
   # Check that all wizardry entries are removed
   if grep -q "# wizardry" "$rc_file" 2>/dev/null; then
@@ -1122,9 +1122,9 @@ EOF
 
 path_wizard_remove_all_reports_count() {
   # Test that remove-all reports the count of entries removed
-  fixture=$(make_fixture)
-  provide_basic_tools "$fixture"
-  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq mkdir rm date mktemp wc
+  fixture=$(_make_fixture)
+  _provide_basic_tools "$fixture"
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq mkdir rm date mktemp wc
 
   mkdir -p "$fixture/home/.config/home-manager"
   mkdir -p "$fixture/test-dir1"
@@ -1151,21 +1151,21 @@ printf 'platform=nixos\nrc_file=$rc_file\nformat=nix\n'
 EOF
   chmod +x "$detect_stub"
 
-  DETECT_RC_FILE="$detect_stub" run_cmd "$ROOT_DIR/spells/spellcraft/learn-spellbook" remove-all
+  DETECT_RC_FILE="$detect_stub" _run_cmd "$ROOT_DIR/spells/spellcraft/learn-spellbook" remove-all
 
-  assert_success || return 1
+  _assert_success || return 1
   
   # Check that the output mentions removing 2 entries
-  assert_output_contains "Removed 2" || return 1
+  _assert_output_contains "Removed 2" || return 1
   
   return 0
 }
 
 path_wizard_remove_all_handles_empty_file() {
   # Test that remove-all handles files with no wizardry entries gracefully
-  fixture=$(make_fixture)
-  provide_basic_tools "$fixture"
-  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq mkdir rm date mktemp wc
+  fixture=$(_make_fixture)
+  _provide_basic_tools "$fixture"
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq mkdir rm date mktemp wc
 
   mkdir -p "$fixture/home/.config/home-manager"
   
@@ -1188,12 +1188,12 @@ printf 'platform=nixos\nrc_file=$rc_file\nformat=nix\n'
 EOF
   chmod +x "$detect_stub"
 
-  DETECT_RC_FILE="$detect_stub" run_cmd "$ROOT_DIR/spells/spellcraft/learn-spellbook" remove-all
+  DETECT_RC_FILE="$detect_stub" _run_cmd "$ROOT_DIR/spells/spellcraft/learn-spellbook" remove-all
 
-  assert_success || return 1
+  _assert_success || return 1
   
   # Check that the output mentions no entries found
-  assert_output_contains "No wizardry PATH entries" || return 1
+  _assert_output_contains "No wizardry PATH entries" || return 1
   
   return 0
 }
@@ -1231,21 +1231,21 @@ install_spells_before_nixos_rebuild() {
 install_installs_spells_explicitly() {
   # Test that the install script installs learnable spells explicitly by name
   # rather than using recursive learn-spell
-  fixture=$(make_fixture)
-  provide_basic_tools "$fixture"
-  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+  fixture=$(_make_fixture)
+  _provide_basic_tools "$fixture"
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
 
   install_dir="$fixture/home/.wizardry"
   
-  run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
+  _run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
       HOME="$fixture/home" \
       WIZARDRY_INSTALL_ASSUME_YES=1 \
       "$ROOT_DIR/install"
 
-  assert_success || return 1
+  _assert_success || return 1
   
   # Should show individual spell names being installed
-  assert_output_contains "jump-to-marker" || return 1
+  _assert_output_contains "jump-to-marker" || return 1
   
   # Should NOT use recursive flag in spell installation output
   if printf '%s' "$OUTPUT" | grep -q "Memorized.*spell"; then
@@ -1257,9 +1257,9 @@ install_installs_spells_explicitly() {
 
 install_mud_installs_cd_hook() {
   # Test that MUD installation installs the CD hook
-  fixture=$(make_fixture)
-  provide_basic_tools "$fixture"
-  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+  fixture=$(_make_fixture)
+  _provide_basic_tools "$fixture"
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
 
   install_dir="$fixture/home/.wizardry"
   rc_file="$fixture/home/.bashrc"
@@ -1267,30 +1267,30 @@ install_mud_installs_cd_hook() {
   # Create the rc file before the sandbox runs (for proper permissions)
   touch "$rc_file"
   
-  run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
+  _run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
       HOME="$fixture/home" \
       WIZARDRY_RC_FILE="$rc_file" \
       WIZARDRY_INSTALL_ASSUME_YES=1 \
       WIZARDRY_INSTALL_MUD=1 \
       "$ROOT_DIR/install"
 
-  assert_success || return 1
+  _assert_success || return 1
   
   # Should show MUD installation section
-  assert_output_contains "Installing MUD" || return 1
+  _assert_output_contains "Installing MUD" || return 1
   
   # Should install CD hook (verify via output since bwrap permissions prevent file read)
-  assert_output_contains "CD hook" || return 1
+  _assert_output_contains "CD hook" || return 1
   
   # Verify the cd cantrip was installed (via output message)
-  assert_output_contains "runs 'look' on directory change" || return 1
+  _assert_output_contains "runs 'look' on directory change" || return 1
 }
 
 install_mud_enables_config_features() {
   # Test that MUD installation enables all MUD config features
-  fixture=$(make_fixture)
-  provide_basic_tools "$fixture"
-  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq mkdir
+  fixture=$(_make_fixture)
+  _provide_basic_tools "$fixture"
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq mkdir
 
   install_dir="$fixture/home/.wizardry"
   rc_file="$fixture/home/.bashrc"
@@ -1300,7 +1300,7 @@ install_mud_enables_config_features() {
   touch "$rc_file"
   mkdir -p "$spellbook_home/.mud"
   
-  run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
+  _run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
       HOME="$fixture/home" \
       WIZARDRY_RC_FILE="$rc_file" \
       SPELLBOOK_DIR="$spellbook_home" \
@@ -1308,22 +1308,22 @@ install_mud_enables_config_features() {
       WIZARDRY_INSTALL_MUD=1 \
       "$ROOT_DIR/install"
 
-  assert_success || return 1
+  _assert_success || return 1
   
   # Should show MUD installation section  
-  assert_output_contains "Installing MUD" || return 1
+  _assert_output_contains "Installing MUD" || return 1
   
   # Should enable MUD features (verify via output)
-  assert_output_contains "Enabling MUD features" || return 1
-  assert_output_contains "Command not found hook" || return 1
-  assert_output_contains "MUD features installed" || return 1
+  _assert_output_contains "Enabling MUD features" || return 1
+  _assert_output_contains "Command not found hook" || return 1
+  _assert_output_contains "MUD features installed" || return 1
 }
 
 install_without_mud_skips_mud_section() {
   # Test that install without MUD skips the MUD installation section
-  fixture=$(make_fixture)
-  provide_basic_tools "$fixture"
-  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+  fixture=$(_make_fixture)
+  _provide_basic_tools "$fixture"
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
 
   install_dir="$fixture/home/.wizardry"
   rc_file="$fixture/home/.bashrc"
@@ -1331,13 +1331,13 @@ install_without_mud_skips_mud_section() {
   # Create the rc file before the sandbox runs (for proper permissions)
   touch "$rc_file"
   
-  run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
+  _run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
       HOME="$fixture/home" \
       WIZARDRY_RC_FILE="$rc_file" \
       WIZARDRY_INSTALL_ASSUME_YES=1 \
       "$ROOT_DIR/install"
 
-  assert_success || return 1
+  _assert_success || return 1
   
   # Should NOT show MUD installation section
   if printf '%s' "$OUTPUT" | grep -q "Installing MUD"; then
@@ -1354,69 +1354,69 @@ install_without_mud_skips_mud_section() {
 
 install_mud_shows_planned_features() {
   # Test that MUD installation mentions the planned features
-  fixture=$(make_fixture)
-  provide_basic_tools "$fixture"
-  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq mkdir
+  fixture=$(_make_fixture)
+  _provide_basic_tools "$fixture"
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq mkdir
 
   install_dir="$fixture/home/.wizardry"
   
-  run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
+  _run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
       HOME="$fixture/home" \
       WIZARDRY_INSTALL_ASSUME_YES=1 \
       WIZARDRY_INSTALL_MUD=1 \
       "$ROOT_DIR/install"
 
-  assert_success || return 1
+  _assert_success || return 1
   
   # Should show planned features
-  assert_output_contains "Command not found hook" || return 1
-  assert_output_contains "planned feature" || return 1
+  _assert_output_contains "Command not found hook" || return 1
+  _assert_output_contains "planned feature" || return 1
 }
 
 # === Run Tests ===
 
-run_test_case "install runs core installer" install_invokes_core_installer
-run_test_case "install exits on interrupt signal" install_exits_on_interrupt
-run_test_case "install prompts for NixOS config path" install_nixos_prompts_for_config_path
-run_test_case "install fails on NixOS without config path" install_nixos_fails_without_config_path
-run_test_case "install NixOS adds PATH to config" install_nixos_adds_path_to_config
-run_test_case "install NixOS writes PATH block" install_nixos_writes_path_block
-run_test_case "install NixOS adds PATH to system config" install_nixos_adds_path_to_system_config
-run_test_case "install NixOS preserves existing config" install_nixos_preserves_existing_config
-run_test_case "install NixOS writes PATH entries to config" install_nixos_writes_path_entries_to_config
-run_test_case "install NixOS simple input" install_nixos_simple_input
-run_test_case "install normalizes path without leading slash" install_normalizes_path_without_leading_slash
-run_test_case "install normalizes NixOS config path" install_nixos_normalizes_config_path_without_leading_slash
-run_test_case "install does not double home path" install_does_not_double_home_path
-run_test_case "install writes shell init properly to nix file" install_nixos_writes_shell_init_properly_to_nix_file
-run_test_case "install uses explicit helper paths" install_uses_explicit_helper_paths
-run_test_case "learn-spellbook uses explicit helper paths" path_wizard_uses_explicit_helper_paths
-run_test_case "learn-spellbook accepts helper overrides" path_wizard_accepts_helper_overrides
-run_test_case "install uses only bootstrappable spells" install_uses_only_bootstrappable_spells
-run_test_case "install shows menu when already installed" install_shows_menu_when_already_installed
-run_test_case "install shows help" shows_help
-run_test_case "install NixOS shows PATH updated" install_nixos_shows_path_updated
-run_test_case "install shows spell names installed" install_shows_spell_names_installed
-run_test_case "install creates .uninstall script" install_creates_uninstall_script_with_correct_name
-run_test_case "install does not show uninstall on success" install_does_not_show_uninstall_on_success
-run_test_case "install shows simple run message" install_shows_simple_run_message
-run_test_case "install no adding missing path on fresh" install_does_not_show_adding_missing_path_on_fresh
-run_test_case "install NixOS shows config file message" install_nixos_shows_config_file_message
-run_test_case "install NixOS shows path updated message" install_nixos_shows_path_updated_message
-run_test_case "install NixOS shows appropriate message" install_nixos_shows_appropriate_message
-run_test_case "install non-NixOS shows source message" install_non_nixos_shows_source_message
-run_test_case "uninstall script handles .imps directory" uninstall_script_handles_imps_directory
-run_test_case "uninstall script NixOS includes rebuild" uninstall_script_nixos_includes_rebuild
-run_test_case "uninstall script NixOS includes terminal message" uninstall_script_nixos_includes_terminal_message
-run_test_case "install shows revised prompt text" install_shows_revised_prompt_text
-run_test_case "learn-spellbook remove-all removes all nix entries" path_wizard_remove_all_removes_all_nix_entries
-run_test_case "learn-spellbook remove-all reports count" path_wizard_remove_all_reports_count
-run_test_case "learn-spellbook remove-all handles empty file" path_wizard_remove_all_handles_empty_file
-run_test_case "install installs spells before nixos-rebuild" install_spells_before_nixos_rebuild
-run_test_case "install installs spells explicitly" install_installs_spells_explicitly
-run_test_case "install MUD installs CD hook" install_mud_installs_cd_hook
-run_test_case "install MUD enables config features" install_mud_enables_config_features
-run_test_case "install without MUD skips MUD section" install_without_mud_skips_mud_section
-run_test_case "install MUD shows planned features" install_mud_shows_planned_features
+_run_test_case "install runs core installer" install_invokes_core_installer
+_run_test_case "install exits on interrupt signal" install_exits_on_interrupt
+_run_test_case "install prompts for NixOS config path" install_nixos_prompts_for_config_path
+_run_test_case "install fails on NixOS without config path" install_nixos_fails_without_config_path
+_run_test_case "install NixOS adds PATH to config" install_nixos_adds_path_to_config
+_run_test_case "install NixOS writes PATH block" install_nixos_writes_path_block
+_run_test_case "install NixOS adds PATH to system config" install_nixos_adds_path_to_system_config
+_run_test_case "install NixOS preserves existing config" install_nixos_preserves_existing_config
+_run_test_case "install NixOS writes PATH entries to config" install_nixos_writes_path_entries_to_config
+_run_test_case "install NixOS simple input" install_nixos_simple_input
+_run_test_case "install normalizes path without leading slash" install_normalizes_path_without_leading_slash
+_run_test_case "install normalizes NixOS config path" install_nixos_normalizes_config_path_without_leading_slash
+_run_test_case "install does not double home path" install_does_not_double_home_path
+_run_test_case "install writes shell init properly to nix file" install_nixos_writes_shell_init_properly_to_nix_file
+_run_test_case "install uses explicit helper paths" install_uses_explicit_helper_paths
+_run_test_case "learn-spellbook uses explicit helper paths" path_wizard_uses_explicit_helper_paths
+_run_test_case "learn-spellbook accepts helper overrides" path_wizard_accepts_helper_overrides
+_run_test_case "install uses only bootstrappable spells" install_uses_only_bootstrappable_spells
+_run_test_case "install shows menu when already installed" install_shows_menu_when_already_installed
+_run_test_case "install shows help" shows_help
+_run_test_case "install NixOS shows PATH updated" install_nixos_shows_path_updated
+_run_test_case "install shows spell names installed" install_shows_spell_names_installed
+_run_test_case "install creates .uninstall script" install_creates_uninstall_script_with_correct_name
+_run_test_case "install does not show uninstall on success" install_does_not_show_uninstall_on_success
+_run_test_case "install shows simple run message" install_shows_simple_run_message
+_run_test_case "install no adding missing path on fresh" install_does_not_show_adding_missing_path_on_fresh
+_run_test_case "install NixOS shows config file message" install_nixos_shows_config_file_message
+_run_test_case "install NixOS shows path updated message" install_nixos_shows_path_updated_message
+_run_test_case "install NixOS shows appropriate message" install_nixos_shows_appropriate_message
+_run_test_case "install non-NixOS shows source message" install_non_nixos_shows_source_message
+_run_test_case "uninstall script handles .imps directory" uninstall_script_handles_imps_directory
+_run_test_case "uninstall script NixOS includes rebuild" uninstall_script_nixos_includes_rebuild
+_run_test_case "uninstall script NixOS includes terminal message" uninstall_script_nixos_includes_terminal_message
+_run_test_case "install shows revised prompt text" install_shows_revised_prompt_text
+_run_test_case "learn-spellbook remove-all removes all nix entries" path_wizard_remove_all_removes_all_nix_entries
+_run_test_case "learn-spellbook remove-all reports count" path_wizard_remove_all_reports_count
+_run_test_case "learn-spellbook remove-all handles empty file" path_wizard_remove_all_handles_empty_file
+_run_test_case "install installs spells before nixos-rebuild" install_spells_before_nixos_rebuild
+_run_test_case "install installs spells explicitly" install_installs_spells_explicitly
+_run_test_case "install MUD installs CD hook" install_mud_installs_cd_hook
+_run_test_case "install MUD enables config features" install_mud_enables_config_features
+_run_test_case "install without MUD skips MUD section" install_without_mud_skips_mud_section
+_run_test_case "install MUD shows planned features" install_mud_shows_planned_features
 
-finish_tests
+_finish_tests

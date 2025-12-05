@@ -1,23 +1,12 @@
 #!/bin/sh
 # is-submenu - check if current menu was called from another menu
-# Always returns 1 (false) since submenu detection is not reliably possible
-# without using environment variables, which is against project policy.
+# Always returns 1 (false) since submenu detection requires environment vars.
 # Example: if is-submenu; then exit_label="Back"; else exit_label="Exit"; fi
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: is-submenu
-
-Check if current menu was called from another menu Always returns 1 (false) since submenu detection is not reliably possible without using environment variables, which is against project policy.. Example: if is-submenu; then exit_label="Back"; else exit_label="Exit"; fi.
-USAGE
+_is_submenu() {
+  return 1
 }
 
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-exit 1
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */is-submenu) _is_submenu "$@" ;; esac

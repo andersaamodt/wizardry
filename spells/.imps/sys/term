@@ -2,21 +2,11 @@
 # term [FD] - test if file descriptor is a terminal (default stdin, 0)
 # Examples: term && echo "interactive" | term 1 && echo "stdout is tty"
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: term [FD]
-
-Test if file descriptor is a terminal (default stdin, 0) Examples: term && echo "interactive" | term 1 && echo "stdout is tty".
-USAGE
+_term() {
+  _term_fd=${1:-0}
+  [ -t "$_term_fd" ]
 }
 
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-fd=${1:-0}
-[ -t "$fd" ]
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */term) _term "$@" ;; esac

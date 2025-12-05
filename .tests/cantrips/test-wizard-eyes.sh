@@ -14,20 +14,20 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  run_spell "spells/cantrips/wizard-eyes" --help
-  assert_success || return 1
-  assert_output_contains "Usage: wizard-eyes" || return 1
+  _run_spell "spells/cantrips/wizard-eyes" --help
+  _assert_success || return 1
+  _assert_output_contains "Usage: wizard-eyes" || return 1
 }
 
 test_outputs_message() {
-  WIZARD=1 run_spell "spells/cantrips/wizard-eyes" "test message"
-  assert_success || return 1
-  assert_output_contains "test message" || return 1
+  WIZARD=1 _run_spell "spells/cantrips/wizard-eyes" "test message"
+  _assert_success || return 1
+  _assert_output_contains "test message" || return 1
 }
 
 test_suppresses_when_disabled() {
-  WIZARD=0 run_spell "spells/cantrips/wizard-eyes" "hidden message"
-  assert_success || return 1
+  WIZARD=0 _run_spell "spells/cantrips/wizard-eyes" "hidden message"
+  _assert_success || return 1
   # Output should be empty or not contain the message
   case "${OUTPUT-}" in
     *"hidden message"*)
@@ -37,8 +37,8 @@ test_suppresses_when_disabled() {
   esac
 }
 
-run_test_case "wizard-eyes shows usage text" test_help
-run_test_case "wizard-eyes outputs formatted message" test_outputs_message
-run_test_case "wizard-eyes suppresses output when disabled" test_suppresses_when_disabled
+_run_test_case "wizard-eyes shows usage text" test_help
+_run_test_case "wizard-eyes outputs formatted message" test_outputs_message
+_run_test_case "wizard-eyes suppresses output when disabled" test_suppresses_when_disabled
 
-finish_tests
+_finish_tests

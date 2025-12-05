@@ -1,0 +1,23 @@
+#!/bin/sh
+# report-result DESC STATUS [REASON] - record the result of a test case
+# Prints PASS or FAIL with description, incrementing global counters.
+
+_report_result() {
+  desc=$1
+  status=$2
+  reason=${3-}
+  if [ "$status" -eq 0 ]; then
+    _pass_count=$((_pass_count + 1))
+    printf 'PASS %s\n' "$desc"
+  else
+    _fail_count=$((_fail_count + 1))
+    if [ -n "$reason" ]; then
+      printf 'FAIL %s: %s\n' "$desc" "$reason"
+    else
+      printf 'FAIL %s\n' "$desc"
+    fi
+  fi
+}
+
+# Self-execution when run directly (not sourced)
+case "${0##*/}" in report-result) _report_result "$@" ;; esac

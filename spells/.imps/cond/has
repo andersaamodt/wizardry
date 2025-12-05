@@ -2,20 +2,10 @@
 # has COMMAND - test if command exists on PATH
 # Example: has git && git status
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: has COMMAND
-
-Test if command exists on PATH. Example: has git && git status.
-USAGE
+_has() {
+  command -v "$1" >/dev/null 2>&1
 }
 
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-command -v "$1" >/dev/null 2>&1
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */has) _has "$@" ;; esac

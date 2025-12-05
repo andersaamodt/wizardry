@@ -22,33 +22,33 @@ cast_env() {
 run_memorize() {
   env_var=$1
   shift
-  run_cmd env "$env_var" "$ROOT_DIR/spells/cantrips/memorize" "$@"
+  _run_cmd env "$env_var" "$ROOT_DIR/spells/cantrips/memorize" "$@"
 }
 
 run_forget() {
   env_var=$1
   shift
-  run_cmd env "$env_var" "$ROOT_DIR/spells/spellcraft/forget" "$@"
+  _run_cmd env "$env_var" "$ROOT_DIR/spells/spellcraft/forget" "$@"
 }
 
 test_help() {
-  run_spell "spells/spellcraft/forget" --help
-  assert_success && assert_output_contains "Usage:"
+  _run_spell "spells/spellcraft/forget" --help
+  _assert_success && _assert_output_contains "Usage:"
 }
 
 test_forget_removes_spell() {
   env_var=$(cast_env)
   # First memorize a spell
   run_memorize "$env_var" myspell
-  assert_success
+  _assert_success
   
   # Verify it's memorized
   run_memorize "$env_var" list
-  assert_output_contains "myspell"
+  _assert_output_contains "myspell"
   
   # Now forget it
   run_forget "$env_var" myspell
-  assert_success
+  _assert_success
   
   # Verify it's gone
   run_memorize "$env_var" list
@@ -59,25 +59,25 @@ test_forget_removes_spell() {
 }
 
 test_forget_requires_name() {
-  run_spell "spells/spellcraft/forget"
-  assert_failure && assert_error_contains "spell name required"
+  _run_spell "spells/spellcraft/forget"
+  _assert_failure && _assert_error_contains "spell name required"
 }
 
 test_forget_fails_when_not_memorized() {
   env_var=$(cast_env)
   run_forget "$env_var" nonexistent
-  assert_failure && assert_error_contains "not memorized"
+  _assert_failure && _assert_error_contains "not memorized"
 }
 
 test_unknown_option() {
-  run_spell "spells/spellcraft/forget" --unknown
-  assert_failure && assert_error_contains "unknown option"
+  _run_spell "spells/spellcraft/forget" --unknown
+  _assert_failure && _assert_error_contains "unknown option"
 }
 
-run_test_case "forget prints usage" test_help
-run_test_case "forget rejects unknown option" test_unknown_option
-run_test_case "forget removes spell from cast menu" test_forget_removes_spell
-run_test_case "forget requires spell name" test_forget_requires_name
-run_test_case "forget fails when spell not memorized" test_forget_fails_when_not_memorized
+_run_test_case "forget prints usage" test_help
+_run_test_case "forget rejects unknown option" test_unknown_option
+_run_test_case "forget removes spell from cast menu" test_forget_removes_spell
+_run_test_case "forget requires spell name" test_forget_requires_name
+_run_test_case "forget fails when spell not memorized" test_forget_fails_when_not_memorized
 
-finish_tests
+_finish_tests

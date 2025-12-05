@@ -1,0 +1,28 @@
+#!/bin/sh
+# write-pkgin-stub FIXTURE - create a pkgin stub script for testing
+# Stub logs install/remove invocations to PKGIN_LOG.
+
+_write_pkgin_stub() {
+  fixture=$1
+  mkdir -p "$fixture/opt/pkg/bin"
+  cat <<'STUB' >"$fixture/opt/pkg/bin/pkgin"
+#!/bin/sh
+if [ "$1" = "-y" ] && [ "$2" = "install" ]; then
+  shift 2
+  printf 'pkgin install %s\n' "$*" >>"${PKGIN_LOG:?}" || exit 1
+  exit ${PKGIN_EXIT:-0}
+fi
+
+if [ "$1" = "-y" ] && [ "$2" = "remove" ]; then
+  shift 2
+  printf 'pkgin remove %s\n' "$*" >>"${PKGIN_LOG:?}" || exit 1
+  exit ${PKGIN_EXIT:-0}
+fi
+
+exit 1
+STUB
+  chmod +x "$fixture/opt/pkg/bin/pkgin"
+}
+
+# Self-execution when run directly (not sourced)
+case "${0##*/}" in write-pkgin-stub) _write_pkgin_stub "$@" ;; esac

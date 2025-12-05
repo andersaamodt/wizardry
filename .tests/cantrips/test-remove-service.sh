@@ -44,7 +44,7 @@ STUB
   chmod +x "$dir/systemctl"
 }
 
-write_sudo_stub() {
+_write_sudo_stub() {
   dir=$1
   cat >"$dir/sudo" <<'STUB'
 #!/bin/sh
@@ -57,14 +57,14 @@ test_requires_service_name() {
   stub_dir=$(make_stub_dir)
   write_ask_text_stub "$stub_dir"
   write_systemctl_stub "$stub_dir"
-  write_sudo_stub "$stub_dir"
+  _write_sudo_stub "$stub_dir"
 
   ASK_TEXT_RESPONSE="" \
   REMOVE_SERVICE_ASK_TEXT="$stub_dir/ask-text" \
   SYSTEMCTL_STATE_DIR="$stub_dir/state" \
-  PATH="$stub_dir:$PATH" run_spell "spells/cantrips/remove-service"
+  PATH="$stub_dir:$PATH" _run_spell "spells/cantrips/remove-service"
 
-  assert_failure || return 1
+  _assert_failure || return 1
   case "$OUTPUT$ERROR" in
     *"no service specified"*) : ;; 
     *) TEST_FAILURE_REASON="missing service warning not shown"; return 1 ;;
@@ -75,15 +75,15 @@ test_reports_missing_service() {
   stub_dir=$(make_stub_dir)
   write_ask_text_stub "$stub_dir"
   write_systemctl_stub "$stub_dir"
-  write_sudo_stub "$stub_dir"
+  _write_sudo_stub "$stub_dir"
 
   service_dir=$(mktemp -d "$WIZARDRY_TMPDIR/services.XXXXXX") || return 1
   SERVICE_DIR="$service_dir" \
   REMOVE_SERVICE_ASK_TEXT="$stub_dir/ask-text" \
   SYSTEMCTL_STATE_DIR="$stub_dir/state" \
-  PATH="$stub_dir:$PATH" run_spell "spells/cantrips/remove-service" missing
+  PATH="$stub_dir:$PATH" _run_spell "spells/cantrips/remove-service" missing
 
-  assert_failure || return 1
+  _assert_failure || return 1
   case "$OUTPUT$ERROR" in
     *"Service missing.service does not exist"*) : ;; 
     *) TEST_FAILURE_REASON="missing service message not shown"; return 1 ;;
@@ -94,7 +94,7 @@ test_stops_and_removes_service() {
   stub_dir=$(make_stub_dir)
   write_ask_text_stub "$stub_dir"
   write_systemctl_stub "$stub_dir"
-  write_sudo_stub "$stub_dir"
+  _write_sudo_stub "$stub_dir"
 
   service_dir=$(mktemp -d "$WIZARDRY_TMPDIR/services.XXXXXX") || return 1
   service_path="$service_dir/demo.service"
@@ -104,24 +104,24 @@ test_stops_and_removes_service() {
   REMOVE_SERVICE_ASK_TEXT="$stub_dir/ask-text" \
   SYSTEMCTL_STATE_DIR="$stub_dir/state" \
   SYSTEMCTL_IS_ACTIVE_STATUS=0 \
-  PATH="$stub_dir:$PATH" run_spell "spells/cantrips/remove-service" demo
+  PATH="$stub_dir:$PATH" _run_spell "spells/cantrips/remove-service" demo
 
-  assert_success
-  assert_output_contains "Removing demo.service"
+  _assert_success
+  _assert_output_contains "Removing demo.service"
   [ ! -f "$service_path" ] || { TEST_FAILURE_REASON="service file not removed"; return 1; }
   grep -q "stopped demo.service" "$stub_dir/state/systemctl.log" || { TEST_FAILURE_REASON="service not stopped"; return 1; }
   [ -f "$stub_dir/state/daemon-reload" ] || { TEST_FAILURE_REASON="daemon-reload not invoked"; return 1; }
 }
 
-run_test_case "remove-service fails without a service name" test_requires_service_name
-run_test_case "remove-service reports missing services" test_reports_missing_service
-run_test_case "remove-service stops active services and cleans up" test_stops_and_removes_service
+_run_test_case "remove-service fails without a service name" test_requires_service_name
+_run_test_case "remove-service reports missing services" test_reports_missing_service
+_run_test_case "remove-service stops active services and cleans up" test_stops_and_removes_service
 
 shows_help() {
-  run_spell spells/cantrips/remove-service --help
+  _run_spell spells/cantrips/remove-service --help
   # Note: spell may not have --help implemented yet
   true
 }
 
-run_test_case "remove-service accepts --help" shows_help
-finish_tests
+_run_test_case "remove-service accepts --help" shows_help
+_finish_tests

@@ -15,41 +15,41 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  run_spell "spells/cantrips/validate-number" --help
-  assert_success || return 1
-  assert_output_contains "Usage: validate-number" || return 1
+  _run_spell "spells/cantrips/validate-number" --help
+  _assert_success || return 1
+  _assert_output_contains "Usage: validate-number" || return 1
 }
 
 test_accepts_valid_number() {
-  run_spell "spells/cantrips/validate-number" 123
-  assert_success || return 1
+  _run_spell "spells/cantrips/validate-number" 123
+  _assert_success || return 1
 }
 
 test_accepts_zero() {
-  run_spell "spells/cantrips/validate-number" 0
-  assert_success || return 1
+  _run_spell "spells/cantrips/validate-number" 0
+  _assert_success || return 1
 }
 
 test_rejects_letters() {
-  run_spell "spells/cantrips/validate-number" abc
-  assert_failure || return 1
+  _run_spell "spells/cantrips/validate-number" abc
+  _assert_failure || return 1
 }
 
 test_rejects_mixed() {
-  run_spell "spells/cantrips/validate-number" 12abc
-  assert_failure || return 1
+  _run_spell "spells/cantrips/validate-number" 12abc
+  _assert_failure || return 1
 }
 
 test_rejects_empty() {
-  run_spell "spells/cantrips/validate-number" ""
-  assert_failure || return 1
+  _run_spell "spells/cantrips/validate-number" ""
+  _assert_failure || return 1
 }
 
-run_test_case "validate-number shows usage text" test_help
-run_test_case "validate-number accepts valid numbers" test_accepts_valid_number
-run_test_case "validate-number accepts zero" test_accepts_zero
-run_test_case "validate-number rejects letters" test_rejects_letters
-run_test_case "validate-number rejects mixed input" test_rejects_mixed
-run_test_case "validate-number rejects empty input" test_rejects_empty
+_run_test_case "validate-number shows usage text" test_help
+_run_test_case "validate-number accepts valid numbers" test_accepts_valid_number
+_run_test_case "validate-number accepts zero" test_accepts_zero
+_run_test_case "validate-number rejects letters" test_rejects_letters
+_run_test_case "validate-number rejects mixed input" test_rejects_mixed
+_run_test_case "validate-number rejects empty input" test_rejects_empty
 
-finish_tests
+_finish_tests

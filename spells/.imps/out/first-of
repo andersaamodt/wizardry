@@ -2,23 +2,13 @@
 # first-of A B - output first non-empty value, fail if both empty
 # Example: name=$(first-of "$NICK" "$USER")
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: first-of A B
-
-Output first non-empty value, fail if both empty. Example: name=$(first-of "$NICK" "$USER").
-USAGE
+_first_of() {
+  if [ -n "$1" ]; then printf '%s' "$1"
+  elif [ -n "$2" ]; then printf '%s' "$2"
+  else return 1
+  fi
 }
 
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-if [ -n "$1" ]; then printf '%s' "$1"
-elif [ -n "$2" ]; then printf '%s' "$2"
-else exit 1
-fi
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */first-of) _first_of "$@" ;; esac

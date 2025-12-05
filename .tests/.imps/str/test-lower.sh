@@ -12,18 +12,18 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_lower_converts() {
-  run_cmd sh -c "printf 'HELLO' | '$ROOT_DIR/spells/.imps/str/lower'"
-  assert_success
-  assert_output_contains "hello"
+  _run_cmd sh -c "printf 'HELLO' | '$ROOT_DIR/spells/.imps/str/lower'"
+  _assert_success
+  _assert_output_contains "hello"
 }
 
 test_lower_handles_empty_input() {
-  run_cmd sh -c "printf '' | '$ROOT_DIR/spells/.imps/str/lower'"
-  assert_success
+  _run_cmd sh -c "printf '' | '$ROOT_DIR/spells/.imps/str/lower'"
+  _assert_success
   [ -z "$OUTPUT" ] || { TEST_FAILURE_REASON="output should be empty"; return 1; }
 }
 
-run_test_case "lower converts to lowercase" test_lower_converts
-run_test_case "lower handles empty input" test_lower_handles_empty_input
+_run_test_case "lower converts to lowercase" test_lower_converts
+_run_test_case "lower handles empty input" test_lower_handles_empty_input
 
-finish_tests
+_finish_tests

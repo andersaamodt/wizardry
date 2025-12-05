@@ -12,12 +12,12 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_backup_nix_config_creates_backup() {
-  tmpdir=$(make_tempdir)
+  tmpdir=$(_make_tempdir)
   nix_file="$tmpdir/test.nix"
   printf '{ }\n' > "$nix_file"
   
-  run_spell spells/.imps/fs/backup-nix-config "$nix_file"
-  assert_success
+  _run_spell spells/.imps/fs/backup-nix-config "$nix_file"
+  _assert_success
   
   # Stderr should contain the backup path with .wizardry. suffix
   case "$ERROR" in
@@ -32,37 +32,37 @@ test_backup_nix_config_creates_backup() {
 }
 
 test_backup_nix_config_notifies_user() {
-  tmpdir=$(make_tempdir)
+  tmpdir=$(_make_tempdir)
   nix_file="$tmpdir/test.nix"
   printf '{ }\n' > "$nix_file"
   
-  run_spell spells/.imps/fs/backup-nix-config "$nix_file"
-  assert_success
+  _run_spell spells/.imps/fs/backup-nix-config "$nix_file"
+  _assert_success
   
   # Stderr should contain user notification
-  assert_error_contains "Backed up"
-  assert_error_contains "$nix_file"
+  _assert_error_contains "Backed up"
+  _assert_error_contains "$nix_file"
 }
 
 test_backup_nix_config_missing_file_succeeds() {
   # When file doesn't exist, there's nothing to back up - this should succeed
-  run_spell spells/.imps/fs/backup-nix-config "/nonexistent/file.nix"
-  assert_success
+  _run_spell spells/.imps/fs/backup-nix-config "/nonexistent/file.nix"
+  _assert_success
 }
 
 test_backup_nix_config_no_args_fails() {
-  run_spell spells/.imps/fs/backup-nix-config
-  assert_failure
-  assert_error_contains "file path required"
+  _run_spell spells/.imps/fs/backup-nix-config
+  _assert_failure
+  _assert_error_contains "file path required"
 }
 
 test_backup_nix_config_timestamp_suffix() {
-  tmpdir=$(make_tempdir)
+  tmpdir=$(_make_tempdir)
   nix_file="$tmpdir/test.nix"
   printf '{ }\n' > "$nix_file"
   
-  run_spell spells/.imps/fs/backup-nix-config "$nix_file"
-  assert_success
+  _run_spell spells/.imps/fs/backup-nix-config "$nix_file"
+  _assert_success
   
   # Stderr should contain timestamp pattern (YYYYMMDDHHMMSS or epoch seconds)
   case "$ERROR" in
@@ -77,7 +77,7 @@ test_backup_nix_config_timestamp_suffix() {
 }
 
 test_backup_nix_config_preserves_content() {
-  tmpdir=$(make_tempdir)
+  tmpdir=$(_make_tempdir)
   nix_file="$tmpdir/test.nix"
   original_content='{ pkgs, ... }: { programs.bash.enable = true; }'
   printf '%s\n' "$original_content" > "$nix_file"
@@ -108,11 +108,11 @@ test_backup_nix_config_preserves_content() {
   rm -f "$backup_path"
 }
 
-run_test_case "backup-nix-config creates backup" test_backup_nix_config_creates_backup
-run_test_case "backup-nix-config notifies user" test_backup_nix_config_notifies_user
-run_test_case "backup-nix-config missing file succeeds" test_backup_nix_config_missing_file_succeeds
-run_test_case "backup-nix-config no args fails" test_backup_nix_config_no_args_fails
-run_test_case "backup-nix-config uses timestamp suffix" test_backup_nix_config_timestamp_suffix
-run_test_case "backup-nix-config preserves content" test_backup_nix_config_preserves_content
+_run_test_case "backup-nix-config creates backup" test_backup_nix_config_creates_backup
+_run_test_case "backup-nix-config notifies user" test_backup_nix_config_notifies_user
+_run_test_case "backup-nix-config missing file succeeds" test_backup_nix_config_missing_file_succeeds
+_run_test_case "backup-nix-config no args fails" test_backup_nix_config_no_args_fails
+_run_test_case "backup-nix-config uses timestamp suffix" test_backup_nix_config_timestamp_suffix
+_run_test_case "backup-nix-config preserves content" test_backup_nix_config_preserves_content
 
-finish_tests
+_finish_tests

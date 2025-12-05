@@ -12,22 +12,22 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_here_outputs_directory() {
-  run_spell spells/.imps/paths/here
-  assert_success
+  _run_spell spells/.imps/paths/here
+  _assert_success
   # Should output a path
   [ -d "$OUTPUT" ] || { TEST_FAILURE_REASON="should output directory"; return 1; }
 }
 
 test_here_outputs_normalized_path() {
-  run_spell spells/.imps/paths/here
-  assert_success
+  _run_spell spells/.imps/paths/here
+  _assert_success
   case "$OUTPUT" in
     *///*) TEST_FAILURE_REASON="path should be normalized"; return 1 ;;
     *) return 0 ;;
   esac
 }
 
-run_test_case "here outputs current directory" test_here_outputs_directory
-run_test_case "here outputs normalized path" test_here_outputs_normalized_path
+_run_test_case "here outputs current directory" test_here_outputs_directory
+_run_test_case "here outputs normalized path" test_here_outputs_normalized_path
 
-finish_tests
+_finish_tests

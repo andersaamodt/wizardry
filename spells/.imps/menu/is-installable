@@ -1,39 +1,23 @@
 #!/bin/sh
-# is-installable - check if a spell has an install() function
-# Usage: is-installable COMMAND
+# is-installable COMMAND - check if a spell has an install() function
 # Returns 0 if the spell has an install() function, 1 otherwise
+# Example: is-installable my-spell && echo "has install"
 
+_is_installable() {
+  if [ -z "${1-}" ]; then
+    return 1
+  fi
 
-usage() {
-        cat <<'USAGE' >&2
-Usage: is-installable
+  _ii_spell_cmd=$1
+  _ii_spell_path=$(command -v "$_ii_spell_cmd" 2>/dev/null) || _ii_spell_path=$_ii_spell_cmd
 
-Check if a spell has an install() function Usage: is-installable COMMAND Returns 0 if the spell has an install() function, 1 otherwise.
-USAGE
+  if [ ! -r "$_ii_spell_path" ]; then
+    return 1
+  fi
+
+  grep -Eq '^[[:space:]]*install[[:space:]]*\(\)' "$_ii_spell_path" 2>/dev/null
 }
 
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-if [ -z "${1-}" ]; then
-        exit 1
-fi
-
-spell_cmd=$1
-
-# Find the spell path
-spell_path=$(command -v "$spell_cmd" 2>/dev/null) || spell_path=$spell_cmd
-
-if [ ! -r "$spell_path" ]; then
-        exit 1
-fi
-
-if grep -Eq '^[[:space:]]*install[[:space:]]*\(\)' "$spell_path" 2>/dev/null; then
-        exit 0
-fi
-
-exit 1
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */is-installable) _is_installable "$@" ;; esac

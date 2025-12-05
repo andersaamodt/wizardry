@@ -2,20 +2,10 @@
 # pick N [FILE] - output Nth line of input or file
 # Example: pick 3 config.txt   # or: ls | pick 2
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: pick N [FILE]
-
-Output Nth line of input or file. Example: pick 3 config.txt   # or: ls | pick 2.
-USAGE
+_pick() {
+  if [ "$#" -ge 2 ]; then sed -n "${1}p" "$2"; else sed -n "${1}p"; fi
 }
 
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-if [ "$#" -ge 2 ]; then sed -n "${1}p" "$2"; else sed -n "${1}p"; fi
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */pick) _pick "$@" ;; esac

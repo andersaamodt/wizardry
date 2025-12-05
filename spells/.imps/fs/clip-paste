@@ -2,31 +2,21 @@
 # clip-paste - paste from system clipboard to stdout
 # Example: text=$(clip-paste)
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: clip-paste
-
-Paste from system clipboard to stdout. Example: text=$(clip-paste).
-USAGE
+_clip_paste() {
+  if command -v pbpaste >/dev/null 2>&1; then
+    pbpaste
+  elif command -v xsel >/dev/null 2>&1; then
+    xsel --clipboard --output
+  elif command -v xclip >/dev/null 2>&1; then
+    xclip -selection clipboard -o
+  elif command -v wl-paste >/dev/null 2>&1; then
+    wl-paste
+  else
+    printf '%s\n' "clip-paste: no clipboard utility found (need pbpaste, xsel, xclip, or wl-paste)" >&2
+    return 1
+  fi
 }
 
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-if command -v pbpaste >/dev/null 2>&1; then
-  pbpaste
-elif command -v xsel >/dev/null 2>&1; then
-  xsel --clipboard --output
-elif command -v xclip >/dev/null 2>&1; then
-  xclip -selection clipboard -o
-elif command -v wl-paste >/dev/null 2>&1; then
-  wl-paste
-else
-  printf '%s\n' "clip-paste: no clipboard utility found (need pbpaste, xsel, xclip, or wl-paste)" >&2
-  exit 1
-fi
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */clip-paste) _clip_paste "$@" ;; esac

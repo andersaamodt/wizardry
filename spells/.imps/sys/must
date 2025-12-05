@@ -1,103 +1,65 @@
 #!/bin/sh
-# must TEST [ARGS...] - die with message if test fails
-# Use with 'set -e' or '|| exit $?' to propagate failure to calling script
-# Examples: must there /etc/config "config missing" || exit $?
+# must TEST TARGET [MESSAGE] - return failure with message if test fails
+# Use with 'set -e' or '|| return $?' to propagate failure
+# Examples: must there /etc/config "config missing" || return $?
 
+_must() {
+  _must_type=$1
+  shift
 
-usage() {
-        cat <<'USAGE' >&2
-Usage: must TEST [ARGS...]
-
-Die with message if test fails Use with 'set -e' or '|| exit $?' to propagate failure to calling script Examples: must there /etc/config "config missing" || exit $?.
-USAGE
+  case "$_must_type" in
+    file)
+      if [ "$#" -ge 2 ]; then _must_target=$1; _must_msg=$2
+      else _must_target=$1; _must_msg="file not found: $_must_target"; fi
+      [ -f "$_must_target" ] || { printf '%s\n' "$_must_msg" >&2; return 1; }
+      ;;
+    dir)
+      if [ "$#" -ge 2 ]; then _must_target=$1; _must_msg=$2
+      else _must_target=$1; _must_msg="directory not found: $_must_target"; fi
+      [ -d "$_must_target" ] || { printf '%s\n' "$_must_msg" >&2; return 1; }
+      ;;
+    link)
+      if [ "$#" -ge 2 ]; then _must_target=$1; _must_msg=$2
+      else _must_target=$1; _must_msg="link not found: $_must_target"; fi
+      [ -L "$_must_target" ] || { printf '%s\n' "$_must_msg" >&2; return 1; }
+      ;;
+    exec)
+      if [ "$#" -ge 2 ]; then _must_target=$1; _must_msg=$2
+      else _must_target=$1; _must_msg="executable not found: $_must_target"; fi
+      [ -x "$_must_target" ] || { printf '%s\n' "$_must_msg" >&2; return 1; }
+      ;;
+    readable)
+      if [ "$#" -ge 2 ]; then _must_target=$1; _must_msg=$2
+      else _must_target=$1; _must_msg="not readable: $_must_target"; fi
+      [ -r "$_must_target" ] || { printf '%s\n' "$_must_msg" >&2; return 1; }
+      ;;
+    writable)
+      if [ "$#" -ge 2 ]; then _must_target=$1; _must_msg=$2
+      else _must_target=$1; _must_msg="not writable: $_must_target"; fi
+      [ -w "$_must_target" ] || { printf '%s\n' "$_must_msg" >&2; return 1; }
+      ;;
+    set)
+      if [ "$#" -ge 2 ]; then _must_target=$1; _must_msg=$2
+      else _must_target=$1; _must_msg="value not provided"; fi
+      [ -n "$_must_target" ] || { printf '%s\n' "$_must_msg" >&2; return 1; }
+      ;;
+    there)
+      if [ "$#" -ge 2 ]; then _must_target=$1; _must_msg=$2
+      else _must_target=$1; _must_msg="path not found: $_must_target"; fi
+      [ -e "$_must_target" ] || { printf '%s\n' "$_must_msg" >&2; return 1; }
+      ;;
+    has)
+      if [ "$#" -ge 2 ]; then _must_target=$1; _must_msg=$2
+      else _must_target=$1; _must_msg="command not found: $_must_target"; fi
+      command -v "$_must_target" >/dev/null 2>&1 || { printf '%s\n' "$_must_msg" >&2; return 1; }
+      ;;
+    *)
+      printf '%s\n' "must: unknown test type '$_must_type'" >&2
+      return 1
+      ;;
+  esac
 }
 
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-test_type=$1
-shift
-
-# The last argument is the error message if more than minimum args
-case "$test_type" in
-file)
-  if [ "$#" -ge 2 ]; then
-    target=$1; msg=$2
-  else
-    target=$1; msg="file not found: $target"
-  fi
-  [ -f "$target" ] || { printf '%s\n' "$msg" >&2; exit 1; }
-  ;;
-dir)
-  if [ "$#" -ge 2 ]; then
-    target=$1; msg=$2
-  else
-    target=$1; msg="directory not found: $target"
-  fi
-  [ -d "$target" ] || { printf '%s\n' "$msg" >&2; exit 1; }
-  ;;
-link)
-  if [ "$#" -ge 2 ]; then
-    target=$1; msg=$2
-  else
-    target=$1; msg="link not found: $target"
-  fi
-  [ -L "$target" ] || { printf '%s\n' "$msg" >&2; exit 1; }
-  ;;
-exec)
-  if [ "$#" -ge 2 ]; then
-    target=$1; msg=$2
-  else
-    target=$1; msg="executable not found: $target"
-  fi
-  [ -x "$target" ] || { printf '%s\n' "$msg" >&2; exit 1; }
-  ;;
-readable)
-  if [ "$#" -ge 2 ]; then
-    target=$1; msg=$2
-  else
-    target=$1; msg="not readable: $target"
-  fi
-  [ -r "$target" ] || { printf '%s\n' "$msg" >&2; exit 1; }
-  ;;
-writable)
-  if [ "$#" -ge 2 ]; then
-    target=$1; msg=$2
-  else
-    target=$1; msg="not writable: $target"
-  fi
-  [ -w "$target" ] || { printf '%s\n' "$msg" >&2; exit 1; }
-  ;;
-set)
-  if [ "$#" -ge 2 ]; then
-    target=$1; msg=$2
-  else
-    target=$1; msg="value not provided"
-  fi
-  [ -n "$target" ] || { printf '%s\n' "$msg" >&2; exit 1; }
-  ;;
-there)
-  if [ "$#" -ge 2 ]; then
-    target=$1; msg=$2
-  else
-    target=$1; msg="path not found: $target"
-  fi
-  [ -e "$target" ] || { printf '%s\n' "$msg" >&2; exit 1; }
-  ;;
-has)
-  if [ "$#" -ge 2 ]; then
-    target=$1; msg=$2
-  else
-    target=$1; msg="command not found: $target"
-  fi
-  command -v "$target" >/dev/null 2>&1 || { printf '%s\n' "$msg" >&2; exit 1; }
-  ;;
-*)
-  printf '%s\n' "must: unknown test type '$test_type'" >&2
-  exit 1
-  ;;
-esac
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */must) _must "$@" ;; esac

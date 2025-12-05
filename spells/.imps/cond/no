@@ -2,23 +2,13 @@
 # no VALUE - test if value is negative (n/no/false/0/N/NO/FALSE)
 # Example: no "$VERBOSE" && echo "quiet mode"
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: no VALUE
-
-Test if value is negative (n/no/false/0/N/NO/FALSE). Example: no "$VERBOSE" && echo "quiet mode".
-USAGE
+_no() {
+  case "$1" in
+    n|N|no|NO|No|false|FALSE|False|0) return 0 ;;
+    *) return 1 ;;
+  esac
 }
 
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-case "$1" in
-n|N|no|NO|No|false|FALSE|False|0) exit 0 ;;
-*) exit 1 ;;
-esac
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */no) _no "$@" ;; esac

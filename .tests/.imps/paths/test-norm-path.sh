@@ -12,8 +12,8 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_norm_path_normalizes() {
-  run_spell spells/.imps/paths/norm-path "/tmp//test"
-  assert_success
+  _run_spell spells/.imps/paths/norm-path "/tmp//test"
+  _assert_success
   # Should normalize double slashes
   case "$OUTPUT" in
     *//*) TEST_FAILURE_REASON="should normalize double slashes"; return 1 ;;
@@ -21,12 +21,12 @@ test_norm_path_normalizes() {
 }
 
 test_norm_path_handles_simple_path() {
-  run_spell spells/.imps/paths/norm-path "/tmp/test"
-  assert_success
-  assert_output_contains "/tmp/test"
+  _run_spell spells/.imps/paths/norm-path "/tmp/test"
+  _assert_success
+  _assert_output_contains "/tmp/test"
 }
 
-run_test_case "norm-path normalizes path" test_norm_path_normalizes
-run_test_case "norm-path handles simple path" test_norm_path_handles_simple_path
+_run_test_case "norm-path normalizes path" test_norm_path_normalizes
+_run_test_case "norm-path handles simple path" test_norm_path_handles_simple_path
 
-finish_tests
+_finish_tests

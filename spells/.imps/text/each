@@ -1,21 +1,11 @@
 #!/bin/sh
-# each COMMAND [ARGS...] - run command for each line of stdin (line appended as last arg)
-# Example: ls | each echo "File:"
+# each COMMAND [ARGS...] - run command for each line of stdin
+# Line appended as last arg. Example: ls | each echo "File:"
 
-
-usage() {
-        cat <<'USAGE' >&2
-Usage: each COMMAND [ARGS...]
-
-Run command for each line of stdin (line appended as last arg). Example: ls | each echo "File:".
-USAGE
+_each() {
+  while IFS= read -r _each_line; do "$@" "$_each_line"; done
 }
 
-case "${1-}" in
---help|--usage|-h)
-        usage
-        exit 0
-        ;;
-esac
-
-while IFS= read -r line; do "$@" "$line"; done
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */each) _each "$@" ;; esac

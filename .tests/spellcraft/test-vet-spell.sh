@@ -20,18 +20,18 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 make_spell_dir() {
-  dir=$(make_tempdir)
+  dir=$(_make_tempdir)
   printf '%s\n' "$dir"
 }
 
 test_help() {
-  run_spell "spells/spellcraft/vet-spell" --help
-  assert_success && assert_output_contains "Usage: vet-spell"
+  _run_spell "spells/spellcraft/vet-spell" --help
+  _assert_success && _assert_output_contains "Usage: vet-spell"
 }
 
 test_usage_alias() {
-  run_spell "spells/spellcraft/vet-spell" --usage
-  assert_success && assert_output_contains "Usage: vet-spell"
+  _run_spell "spells/spellcraft/vet-spell" --usage
+  _assert_success && _assert_output_contains "Usage: vet-spell"
 }
 
 test_passes_well_formed_spell() {
@@ -62,8 +62,8 @@ set -eu
 echo "Hello from good spell"
 EOF
   chmod +x "$spell_dir/good-spell"
-  run_spell "spells/spellcraft/vet-spell" "$spell_dir/good-spell"
-  assert_success && assert_output_contains "passed"
+  _run_spell "spells/spellcraft/vet-spell" "$spell_dir/good-spell"
+  _assert_success && _assert_output_contains "passed"
 }
 
 test_fails_missing_shebang() {
@@ -76,8 +76,8 @@ set -eu
 echo "bad"
 EOF
   chmod +x "$spell_dir/bad-spell"
-  run_spell "spells/spellcraft/vet-spell" "$spell_dir/bad-spell"
-  assert_failure && assert_output_contains "shebang"
+  _run_spell "spells/spellcraft/vet-spell" "$spell_dir/bad-spell"
+  _assert_failure && _assert_output_contains "shebang"
 }
 
 test_fails_wrong_shebang() {
@@ -92,8 +92,8 @@ set -eu
 echo "bad"
 EOF
   chmod +x "$spell_dir/bad-spell"
-  run_spell "spells/spellcraft/vet-spell" "$spell_dir/bad-spell"
-  assert_failure && assert_output_contains "shebang"
+  _run_spell "spells/spellcraft/vet-spell" "$spell_dir/bad-spell"
+  _assert_failure && _assert_output_contains "shebang"
 }
 
 test_fails_missing_description() {
@@ -106,8 +106,8 @@ set -eu
 echo "bad"
 EOF
   chmod +x "$spell_dir/bad-spell"
-  run_spell "spells/spellcraft/vet-spell" "$spell_dir/bad-spell"
-  assert_failure && assert_output_contains "description comment"
+  _run_spell "spells/spellcraft/vet-spell" "$spell_dir/bad-spell"
+  _assert_failure && _assert_output_contains "description comment"
 }
 
 test_fails_missing_strict_mode() {
@@ -120,8 +120,8 @@ test_fails_missing_strict_mode() {
 echo "bad"
 EOF
   chmod +x "$spell_dir/bad-spell"
-  run_spell "spells/spellcraft/vet-spell" "$spell_dir/bad-spell"
-  assert_failure && assert_output_contains "strict mode"
+  _run_spell "spells/spellcraft/vet-spell" "$spell_dir/bad-spell"
+  _assert_failure && _assert_output_contains "strict mode"
 }
 
 test_fails_trailing_space_assignment() {
@@ -129,8 +129,8 @@ test_fails_trailing_space_assignment() {
   # Create spell with trailing space in assignment
   printf '%s\n' '#!/bin/sh' '' '# Spell with bad assignment.' '' 'set -eu' '' 'var= ' '' 'echo "$var"' >"$spell_dir/bad-spell"
   chmod +x "$spell_dir/bad-spell"
-  run_spell "spells/spellcraft/vet-spell" "$spell_dir/bad-spell"
-  assert_failure && assert_output_contains "trailing space"
+  _run_spell "spells/spellcraft/vet-spell" "$spell_dir/bad-spell"
+  _assert_failure && _assert_output_contains "trailing space"
 }
 
 test_passes_imp_without_usage() {
@@ -146,8 +146,8 @@ set -eu
 date
 EOF
   chmod +x "$spell_dir/.imps/simple-imp"
-  run_spell "spells/spellcraft/vet-spell" "$spell_dir/.imps/simple-imp"
-  assert_success && assert_output_contains "passed"
+  _run_spell "spells/spellcraft/vet-spell" "$spell_dir/.imps/simple-imp"
+  _assert_success && _assert_output_contains "passed"
 }
 
 test_requires_usage_function() {
@@ -164,8 +164,8 @@ EOF
   chmod +x "$spell_dir/no-usage-spell"
   
   # Should fail without a usage function
-  run_spell "spells/spellcraft/vet-spell" "$spell_dir/no-usage-spell"
-  assert_failure && assert_output_contains "usage function"
+  _run_spell "spells/spellcraft/vet-spell" "$spell_dir/no-usage-spell"
+  _assert_failure && _assert_output_contains "usage function"
 }
 
 test_requires_help_handler() {
@@ -186,38 +186,38 @@ EOF
   chmod +x "$spell_dir/no-help-spell"
   
   # Should fail without a help handler
-  run_spell "spells/spellcraft/vet-spell" "$spell_dir/no-help-spell"
-  assert_failure && assert_output_contains "help"
+  _run_spell "spells/spellcraft/vet-spell" "$spell_dir/no-help-spell"
+  _assert_failure && _assert_output_contains "help"
 }
 
 test_list_option() {
-  run_spell "spells/spellcraft/vet-spell" --list --only "look"
-  assert_success && assert_output_contains "spells/mud/look"
+  _run_spell "spells/spellcraft/vet-spell" --list --only "look"
+  _assert_success && _assert_output_contains "spells/mud/look"
 }
 
 test_unknown_option() {
-  run_spell "spells/spellcraft/vet-spell" --unknown
-  assert_failure && assert_error_contains "unknown option"
+  _run_spell "spells/spellcraft/vet-spell" --unknown
+  _assert_failure && _assert_error_contains "unknown option"
 }
 
 test_fails_nonexistent_file() {
-  run_spell "spells/spellcraft/vet-spell" "/nonexistent/path/to/spell"
-  assert_failure && assert_output_contains "file not found"
+  _run_spell "spells/spellcraft/vet-spell" "/nonexistent/path/to/spell"
+  _assert_failure && _assert_output_contains "file not found"
 }
 
-run_test_case "vet-spell prints usage" test_help
-run_test_case "vet-spell accepts --usage" test_usage_alias
-run_test_case "vet-spell rejects unknown option" test_unknown_option
-run_test_case "vet-spell fails for nonexistent file" test_fails_nonexistent_file
-run_test_case "vet-spell passes well-formed spell" test_passes_well_formed_spell
-run_test_case "vet-spell fails missing shebang" test_fails_missing_shebang
-run_test_case "vet-spell fails wrong shebang" test_fails_wrong_shebang
-run_test_case "vet-spell fails missing description" test_fails_missing_description
-run_test_case "vet-spell fails missing strict mode" test_fails_missing_strict_mode
-run_test_case "vet-spell fails trailing space assignment" test_fails_trailing_space_assignment
-run_test_case "vet-spell passes imp without usage" test_passes_imp_without_usage
-run_test_case "vet-spell requires usage function" test_requires_usage_function
-run_test_case "vet-spell requires help handler" test_requires_help_handler
-run_test_case "vet-spell --list shows matching files" test_list_option
+_run_test_case "vet-spell prints usage" test_help
+_run_test_case "vet-spell accepts --usage" test_usage_alias
+_run_test_case "vet-spell rejects unknown option" test_unknown_option
+_run_test_case "vet-spell fails for nonexistent file" test_fails_nonexistent_file
+_run_test_case "vet-spell passes well-formed spell" test_passes_well_formed_spell
+_run_test_case "vet-spell fails missing shebang" test_fails_missing_shebang
+_run_test_case "vet-spell fails wrong shebang" test_fails_wrong_shebang
+_run_test_case "vet-spell fails missing description" test_fails_missing_description
+_run_test_case "vet-spell fails missing strict mode" test_fails_missing_strict_mode
+_run_test_case "vet-spell fails trailing space assignment" test_fails_trailing_space_assignment
+_run_test_case "vet-spell passes imp without usage" test_passes_imp_without_usage
+_run_test_case "vet-spell requires usage function" test_requires_usage_function
+_run_test_case "vet-spell requires help handler" test_requires_help_handler
+_run_test_case "vet-spell --list shows matching files" test_list_option
 
-finish_tests
+_finish_tests

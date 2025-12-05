@@ -1,41 +1,43 @@
 #!/bin/sh
 # from CMD CMD_ARGS SOURCE MORE... - prepend SOURCE to command args
-# Receives: $1=command, $2=command_args (space-separated), $3=source, $4+=remaining
-# Example: parse cp to /tmp from /etc/hosts → cp /etc/hosts /tmp
+# Receives: $1=command, $2=command_args, $3=source, $4+=remaining
+# Example: parse cp to /tmp from /etc/hosts
 
-set -eu
+_from() {
+  _from_cmd=${1:-}
+  _from_cmd_args=${2:-}
+  shift 2 2>/dev/null || shift $#
 
-cmd=${1:-}
-cmd_args=${2:-}
-shift 2 2>/dev/null || shift $#
+  if [ $# -lt 1 ]; then
+    printf '%s: from requires a source\n' "from" >&2
+    return 1
+  fi
 
-if [ $# -lt 1 ]; then
-  printf '%s: from requires a source\n' "from" >&2
-  exit 1
-fi
+  _from_source=$1
+  shift
 
-source=$1
-shift
+  if [ -z "$_from_cmd" ]; then
+    printf '%s: from requires a command before it\n' "from" >&2
+    return 1
+  fi
 
-if [ -z "$cmd" ]; then
-  printf '%s: from requires a command before it\n' "from" >&2
-  exit 1
-fi
+  if [ -n "$_from_cmd_args" ]; then
+    _from_new_args="$_from_source $_from_cmd_args"
+  else
+    _from_new_args=$_from_source
+  fi
 
-# Prepend source to command args
-if [ -n "$cmd_args" ]; then
-  new_args="$source $cmd_args"
-else
-  new_args=$source
-fi
+  if [ $# -eq 0 ]; then
+    # shellcheck disable=SC2086
+    "$_from_cmd" $_from_new_args
+    return $?
+  fi
 
-# If no more args, execute the command now
-if [ $# -eq 0 ]; then
+  _from_lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
   # shellcheck disable=SC2086
-  exec "$cmd" $new_args
-fi
+  "$_from_lex_dir/parse" "$_from_cmd" $_from_new_args "$@"
+}
 
-# More args - continue parsing with updated context
-lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-# shellcheck disable=SC2086
-exec "$lex_dir/parse" "$cmd" $new_args "$@"
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */from) _from "$@" ;; esac
