@@ -19,56 +19,58 @@ esac
 
 set -eu
 if [ "$(id -u)" != "0" ]; then
-   echo "repair-tor-permissions: root privileges required."
+   printf '%s\n' "repair-tor-permissions: root privileges required."
    exit 1
 fi
 
 user_owner="debian-tor"
 group_owner="debian-tor"
 
-case "$(uname -s)" in
-  Linux*)     
-    if [ -f /etc/debian_version ]; then
-        # It's a Debian-based system
-        user_owner="debian-tor"
-        group_owner="debian-tor"
-    elif [ -f /etc/arch-release ]; then
-        # It's an Arch Linux system
-        user_owner="tor"
-        group_owner="tor"
-    fi
+platform=$(detect-distro 2>/dev/null || printf 'unknown')
+case "$platform" in
+  debian)
+    user_owner="debian-tor"
+    group_owner="debian-tor"
     ;;
-  Darwin*)
-    # It's a macOS system
+  arch)
+    user_owner="tor"
+    group_owner="tor"
+    ;;
+  mac)
     user_owner="_tor"
     group_owner="_tor"
+    ;;
+  *)
+    # Default to debian-tor for unknown Linux distros
+    user_owner="debian-tor"
+    group_owner="debian-tor"
     ;;
 esac
 
 # Define a function to set permissions and ownership
 set_permissions() {
-    local path="$1"
-    local user="$2"
-    local group="$3"
-    local permissions="$4"
+    perm_path="$1"
+    perm_user="$2"
+    perm_group="$3"
+    perm_mode="$4"
 
-    if [ ! -d "$path" ]; then
-        echo "Directory $path does not exist. Skipping."
+    if [ ! -d "$perm_path" ]; then
+        printf '%s\n' "Directory $perm_path does not exist. Skipping."
         return
     fi
 
-    if [ "$(stat -c %U "$path")" != "$user" ] || [ "$(stat -c %G "$path")" != "$group" ]; then
-        chown -R "$user":"$group" "$path"
-        echo "Changed owner and group of $path to $user and $group."
+    if [ "$(stat -c %U "$perm_path")" != "$perm_user" ] || [ "$(stat -c %G "$perm_path")" != "$perm_group" ]; then
+        chown -R "$perm_user":"$perm_group" "$perm_path"
+        printf '%s\n' "Changed owner and group of $perm_path to $perm_user and $perm_group."
     else
-        echo "Owner and group of $path are correct."
+        printf '%s\n' "Owner and group of $perm_path are correct."
     fi
 
-    if [ "$(stat -c %a "$path")" != "$permissions" ]; then
-        chmod "$permissions" "$path"
-        echo "Changed permissions of $path to $permissions."
+    if [ "$(stat -c %a "$perm_path")" != "$perm_mode" ]; then
+        chmod "$perm_mode" "$perm_path"
+        printf '%s\n' "Changed permissions of $perm_path to $perm_mode."
     else
-        echo "Permissions of $path are correct."
+        printf '%s\n' "Permissions of $perm_path are correct."
     fi
 }
 

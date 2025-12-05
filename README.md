@@ -93,7 +93,7 @@ Spell categories:
 
 ### Imps
 
-Imps are the smallest semantic building blocks in wizardry. They live in `spells/.imps/` and abstract common shell patterns into readable, well-documented microscripts.
+Imps are a type of spell—the smallest semantic building blocks in wizardry. They live in `spells/.imps/` and abstract common shell patterns into readable, well-documented microscripts.
 
 An **imp** is a microscript that:
 
@@ -136,7 +136,7 @@ Using the free software suite makes it easy to establish a standardized software
 | Term | Definition |
 | ---- | ---------- |
 | **arcanum** (pl. **arcana**) | A grand working—a spell that installs and configures software across supported platforms, presented as a menu of functions. Also refers to the apps themselves. |
-| **bootstrap spell** | A spell that can run before wizardry is fully installed. These self-contained scripts (namely `install` and spells in `spells/install/core/`) don't rely on other wizardry spells. |
+| **bootstrap spell** | A spell that can run before wizardry is fully installed. These self-contained scripts (namely `install`, `detect-distro`, and spells in `spells/install/core/`) don't rely on other wizardry spells. |
 | **bound imp** | An *invoked* imp; sourced so its true-name function exists in the current shell and can be called without subprocess overhead. |
 | **cantrip** | A small utility spell for common tasks. |
 | `cast` | To execute a spell. Memorized spells appear in the `cast` menu for quick access. |

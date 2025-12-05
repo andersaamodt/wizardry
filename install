@@ -1,5 +1,6 @@
 #!/bin/sh
 
+# Bootstrap spell: main wizardry installer.
 # Abort if unexpected arguments are supplied so we do not accidentally discard
 # them when repurposing the positional parameters to track missing directories.
 if [ "$#" -ne 0 ]; then

@@ -62,18 +62,30 @@ fi
 
 # Detect the OS
 detect_os() {
-  kernel=$(uname -s 2>/dev/null || printf 'unknown')
-  case "$kernel" in
-  Darwin)
-    printf 'mac'
-    ;;
-  Linux)
-    printf 'linux'
-    ;;
-  *)
-    printf 'unknown'
-    ;;
-  esac
+  if command -v detect-distro >/dev/null 2>&1; then
+    platform=$(detect-distro 2>/dev/null || printf 'unknown')
+    case "$platform" in
+    mac)
+      printf 'mac'
+      ;;
+    *)
+      printf 'linux'
+      ;;
+    esac
+  else
+    kernel=$(uname -s 2>/dev/null || printf 'unknown')
+    case "$kernel" in
+    Darwin)
+      printf 'mac'
+      ;;
+    Linux)
+      printf 'linux'
+      ;;
+    *)
+      printf 'unknown'
+      ;;
+    esac
+  fi
 }
 
 # Detect the best trash command available

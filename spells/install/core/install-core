@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-# This spell installs the core wizardry dependencies required for spell execution.
+# Bootstrap spell: installs the core wizardry dependencies required for spell execution.
 
 show_usage() {
   cat <<'USAGE'

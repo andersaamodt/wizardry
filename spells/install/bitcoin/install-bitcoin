@@ -58,18 +58,10 @@ prompt_with_default() {
 
 detect_distro() {
   if command -v detect-distro >/dev/null 2>&1; then
-    detect-distro
+    detect-distro 2>/dev/null || printf 'unknown'
     return
   fi
-
-  if [ -f /etc/os-release ]; then
-    # shellcheck source=/dev/null
-    . /etc/os-release
-    printf "%s" "${ID:-unknown}"
-    return
-  fi
-
-  uname -s
+  printf 'unknown'
 }
 
 install_with_binary() {

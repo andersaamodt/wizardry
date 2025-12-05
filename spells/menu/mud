@@ -31,8 +31,9 @@ fi
 
 # Get platform-specific portal chamber location
 get_portal_location() {
-  case "$(uname -s 2>/dev/null)" in
-    Darwin)
+  platform=$(detect-distro 2>/dev/null || printf 'unknown')
+  case "$platform" in
+    mac)
       # macOS uses /Volumes for mounted drives
       printf '%s' "/Volumes"
       ;;

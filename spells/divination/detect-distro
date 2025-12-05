@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-# This spell prints a short identifier for the current OS.
+# Bootstrap spell: prints a short identifier for the current OS.
 # Use -v to narrate detection while exporting DISTRO for callers.
 
 show_usage() {

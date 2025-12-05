@@ -76,16 +76,8 @@ add_candidate() {
 
 # Decide platform once so the downstream selection stays predictable.
 if [ -z "$platform" ]; then
-        if [ -f /etc/NIXOS ] || grep -qi 'ID=nixos' /etc/os-release 2>/dev/null; then
-                platform=nixos
-        elif [ -f /etc/debian_version ]; then
-                platform=debian
-        elif [ -f /etc/arch-release ]; then
-                platform=arch
-        elif [ -f /etc/fedora-release ]; then
-                platform=fedora
-        elif uname 2>/dev/null | grep -q 'Darwin'; then
-                platform=mac
+        if command -v detect-distro >/dev/null 2>&1; then
+                platform=$(detect-distro 2>/dev/null || printf 'unknown')
         else
                 platform=unknown
         fi

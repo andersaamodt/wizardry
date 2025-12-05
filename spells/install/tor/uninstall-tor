@@ -20,10 +20,7 @@ esac
 set -eu
 
 is_nixos() {
-  if [ -f /etc/NIXOS ]; then
-    return 0
-  fi
-  if [ -r /etc/os-release ] && grep -qi '^ID=nixos' /etc/os-release; then
+  if command -v detect-distro >/dev/null 2>&1 && [ "$(detect-distro 2>/dev/null)" = "nixos" ]; then
     return 0
   fi
   return 1

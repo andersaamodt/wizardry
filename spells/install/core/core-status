@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-# Report readiness of core prerequisites for wizardry.
+# Bootstrap spell: report readiness of core prerequisites for wizardry.
 
 show_usage() {
         cat <<'USAGE' >&2
