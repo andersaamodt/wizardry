@@ -1,0 +1,15 @@
+#!/bin/sh
+# usage-error NAME MESSAGE - print usage error and return exit code 2
+# Example: usage-error "my-spell" "unknown option: -x"
+
+set -eu
+
+name=${1:-}
+message=${2:-}
+
+if [ -n "$name" ] && [ -n "$message" ]; then
+  printf '%s: %s\n' "$name" "$message" >&2
+elif [ -n "$message" ]; then
+  printf '%s\n' "$message" >&2
+fi
+exit 2
