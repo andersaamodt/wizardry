@@ -3,7 +3,7 @@
 # Example: strip-trailing-slashes "/tmp/foo/" -> /tmp/foo
 
 _strip_trailing_slashes() {
-  _sts_normalized=$(printf '%s' "$1" | sed 's:/*$::')
+  _sts_normalized=$(printf '%s' "$1" | sed 's|/*$||')
   if [ -z "$_sts_normalized" ]; then
     printf '/\n'
     return

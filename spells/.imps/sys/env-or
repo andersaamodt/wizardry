@@ -3,7 +3,15 @@
 # Example: dir=$(env-or SPELLBOOK_DIR "$HOME/.spellbook")
 
 _env_or() {
-  eval "_eo_val=\${$1-}"
+  _eo_var=$1
+  # Validate variable name contains only alphanumerics and underscores
+  case "$_eo_var" in
+    *[!A-Za-z0-9_]*|"")
+      printf '%s\n' "$2"
+      return
+      ;;
+  esac
+  eval "_eo_val=\${$_eo_var-}"
   if [ -n "$_eo_val" ]; then
     printf '%s\n' "$_eo_val"
   else

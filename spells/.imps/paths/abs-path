@@ -1,6 +1,7 @@
 #!/bin/sh
 # abs-path PATH - resolve path to absolute (directories cd'd, files via parent)
 # Example: abs=$(abs-path ./foo) -> /current/dir/foo
+# Note: Returns original path unchanged if directory cannot be resolved.
 
 _abs_path() {
   _ap_loc=$1

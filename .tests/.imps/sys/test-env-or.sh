@@ -45,9 +45,17 @@ test_env_or_home_path() {
   esac
 }
 
+test_env_or_invalid_varname() {
+  # Invalid var names should safely return fallback
+  _run_spell spells/.imps/sys/env-or "invalid;var" "safe_fallback"
+  _assert_success
+  _assert_output_contains "safe_fallback"
+}
+
 _run_test_case "env-or returns value when var is set" test_env_or_returns_set_var
 _run_test_case "env-or returns fallback when var is unset" test_env_or_returns_fallback_unset
 _run_test_case "env-or returns fallback when var is empty" test_env_or_returns_fallback_empty
 _run_test_case "env-or works with HOME variable" test_env_or_home_path
+_run_test_case "env-or handles invalid variable names safely" test_env_or_invalid_varname
 
 _finish_tests
