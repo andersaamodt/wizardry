@@ -230,34 +230,38 @@ jobs:
           
           echo "## Compilation Summary" >> /tmp/reports/compilation-report.md
           echo "" >> /tmp/reports/compilation-report.md
-          compiled_count=$(ls -1 /tmp/compiled-spells/ 2>/dev/null | wc -l)
+          compiled_count=$(find /tmp/compiled-spells/ -maxdepth 1 -type f 2>/dev/null | wc -l)
           echo "- Total spells compiled: $compiled_count" >> /tmp/reports/compilation-report.md
           echo "" >> /tmp/reports/compilation-report.md
+          
+          # Build lists in single pass
+          standalone_list=""
+          dependency_list=""
+          
+          for compiled in /tmp/compiled-spells/*; do
+            [ -f "$compiled" ] || continue
+            spell_name=$(basename "$compiled")
+            if env -i PATH="/usr/bin:/bin" "$compiled" --help >/dev/null 2>&1; then
+              standalone_list="$standalone_list- \`$spell_name\`
+"
+            else
+              dependency_list="$dependency_list- \`$spell_name\`
+"
+            fi
+          done
           
           echo "## Standalone Spells" >> /tmp/reports/compilation-report.md
           echo "" >> /tmp/reports/compilation-report.md
           echo "These spells can run without wizardry installed:" >> /tmp/reports/compilation-report.md
           echo "" >> /tmp/reports/compilation-report.md
-          for compiled in /tmp/compiled-spells/*; do
-            [ -f "$compiled" ] || continue
-            spell_name=$(basename "$compiled")
-            if env -i PATH="/usr/bin:/bin" "$compiled" --help >/dev/null 2>&1; then
-              echo "- \`$spell_name\`" >> /tmp/reports/compilation-report.md
-            fi
-          done
+          printf '%s' "$standalone_list" >> /tmp/reports/compilation-report.md
           echo "" >> /tmp/reports/compilation-report.md
           
           echo "## Spells Requiring Dependencies" >> /tmp/reports/compilation-report.md
           echo "" >> /tmp/reports/compilation-report.md
           echo "These spells require wizardry imps or other dependencies:" >> /tmp/reports/compilation-report.md
           echo "" >> /tmp/reports/compilation-report.md
-          for compiled in /tmp/compiled-spells/*; do
-            [ -f "$compiled" ] || continue
-            spell_name=$(basename "$compiled")
-            if ! env -i PATH="/usr/bin:/bin" "$compiled" --help >/dev/null 2>&1; then
-              echo "- \`$spell_name\`" >> /tmp/reports/compilation-report.md
-            fi
-          done
+          printf '%s' "$dependency_list" >> /tmp/reports/compilation-report.md
           
           cat /tmp/reports/compilation-report.md
       
