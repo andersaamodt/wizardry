@@ -72,6 +72,27 @@ printf '%s\n' "spell-name: sshfs not found." >&2
 printf '%s\n' "Please install sshfs." >&2
 ```
 
+### Error Handling Helpers
+
+Use the error handling imps from `out/` for consistent error output:
+
+```sh
+# Fatal error - print message and exit with code 1
+die "spell-name: critical failure"
+
+# Fatal error with custom exit code
+die 2 "spell-name: invalid argument"
+
+# Usage/argument error - exit code 2
+usage-error "$spell_name" "unknown option: $opt"
+
+# Conditional failure
+has git || fail "git required"
+
+# Warning (continues execution)
+warn "spell-name: deprecated feature used"
+```
+
 ### Functions
 Prefer linear, flat code flow over excessive function wrapping.
 
