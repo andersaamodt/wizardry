@@ -276,7 +276,7 @@ check_function_naming() {
   
   # Create temp file for awk script to filter out heredoc content
   # This prevents false positives from function definitions inside heredocs
-  awk_script=$(mktemp "${TMPDIR:-/tmp}/vet-spell-naming-awk.XXXXXX") || return 0
+  awk_script=$(mktemp "${TMPDIR:-/tmp}/vet-spell-naming-awk.XXXXXX") || return 1
   cat >"$awk_script" <<'AWKSCRIPT'
 BEGIN { in_heredoc = 0; heredoc_end = "" }
 # Detect heredoc start - handles <<'DELIM', <<"DELIM", and <<DELIM
@@ -311,8 +311,6 @@ in_heredoc { next }
 /^[ \t]*#/ { next }
 { print }
 AWKSCRIPT
-  
-  result=0
   
   # Find underscore-prefixed function definitions in spells (excluding heredoc content)
   if [ "$is_imp_file" -eq 0 ]; then
