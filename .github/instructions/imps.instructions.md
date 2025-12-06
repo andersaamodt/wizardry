@@ -81,9 +81,11 @@ Imps are organized in folders ("demon families") by function:
 - `out/` — Output formatting and error handling
 - `test/` — Test-only imps (prefixed `test-`)
 
-## Error Handling Imps
+## Error Handling and Output Imps
 
-The `out/` family provides standardized error handling helpers:
+The `out/` family provides standardized error handling and output helpers. See `logging.instructions.md` for complete documentation.
+
+### Core Error Handling
 
 | Imp | Purpose | Exit Code | Example |
 |-----|---------|-----------|---------|
@@ -91,6 +93,18 @@ The `out/` family provides standardized error handling helpers:
 | `usage-error` | Print usage error | 2 | `usage-error "spell-name" "missing argument"` |
 | `fail` | Print error, return failure | 1 | `has git \|\| fail "git required"` |
 | `warn` | Print warning (no exit) | — | `warn "something unexpected"` |
+
+### Semantic Output
+
+| Imp | Purpose | Log Level | Example |
+|-----|---------|-----------|---------|
+| `say` | Normal output | Always | `say "File copied"` |
+| `success` | Success message | Always | `success "Installation complete"` |
+| `info` | Informational message | >= 1 | `info "Processing files..."` |
+| `step` | Multi-step process | >= 1 | `step "Installing dependencies..."` |
+| `debug` | Debug information | >= 2 | `debug "Variable: $var"` |
+
+Set log level with `WIZARDRY_LOG_LEVEL` (default is 0).
 
 ### Usage Patterns
 
@@ -109,6 +123,39 @@ has git || fail "git required"
 
 # Warning (continues execution)
 warn "spell-name: deprecated feature used"
+```
+
+## Signal Handling and Cleanup
+
+The `sys/` family provides signal handling helpers for consistent cleanup:
+
+| Imp | Purpose | Example |
+|-----|---------|---------|
+| `on-exit` | Register cleanup on exit/interrupt | `on-exit cleanup-file "$tmpfile"` |
+| `clear-traps` | Clear all signal traps | `clear-traps` |
+
+### Usage Pattern
+
+```sh
+#!/bin/sh
+set -eu
+
+tmpfile=$(temp-file)
+on-exit cleanup-file "$tmpfile"
+
+# Work with tmpfile...
+# Cleanup happens automatically on EXIT, HUP, INT, or TERM
+```
+
+For complex cleanup:
+
+```sh
+cleanup() {
+  cleanup-file "$tmpfile"
+  cleanup-dir "$tmpdir"
+}
+
+on-exit cleanup
 ```
 
 ### Error Message Style
