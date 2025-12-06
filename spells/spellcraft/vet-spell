@@ -274,31 +274,70 @@ check_function_naming() {
   # For imps, underscore-prefixed functions (_function_name) are allowed for "true names"
   # For spells, all functions should use snake_case without underscore prefix
   
-  # Find underscore-prefixed function definitions in spells
-  # Pattern matches: _function_name() {
-  # The grep output format is "line_num:content", so we extract just the line number
+  # Create temp file for awk script to filter out heredoc content
+  # This prevents false positives from function definitions inside heredocs
+  awk_script=$(mktemp "${TMPDIR:-/tmp}/vet-spell-naming-awk.XXXXXX") || return 0
+  cat >"$awk_script" <<'AWKSCRIPT'
+BEGIN { in_heredoc = 0; heredoc_end = "" }
+# Detect heredoc start - handles <<'DELIM', <<"DELIM", and <<DELIM
+/<<-?[ \t]*'[A-Za-z_][A-Za-z0-9_]*'/ {
+  match($0, /<<-?[ \t]*'([A-Za-z_][A-Za-z0-9_]*)'/)
+  delim = $0
+  sub(/.*<<-?[ \t]*'/, "", delim)
+  sub(/'.*/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+/<<-?[ \t]*"[A-Za-z_][A-Za-z0-9_]*"/ {
+  match($0, /<<-?[ \t]*"([A-Za-z_][A-Za-z0-9_]*)"/)
+  delim = $0
+  sub(/.*<<-?[ \t]*"/, "", delim)
+  sub(/".*/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+/<<-?[ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {
+  delim = $0
+  sub(/.*<<-?[ \t]*/, "", delim)
+  sub(/[ \t]*$/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+in_heredoc && $0 == heredoc_end { in_heredoc = 0; next }
+in_heredoc { next }
+/^[ \t]*#/ { next }
+{ print }
+AWKSCRIPT
+  
+  result=0
+  
+  # Find underscore-prefixed function definitions in spells (excluding heredoc content)
   if [ "$is_imp_file" -eq 0 ]; then
-    func_violations=$(grep -nE '^[[:space:]]*_[a-zA-Z][a-zA-Z0-9_]*\(\)[[:space:]]*\{' "$file" 2>/dev/null || true)
+    func_violations=$(awk -f "$awk_script" "$file" 2>/dev/null | grep -nE '^[[:space:]]*_[a-zA-Z][a-zA-Z0-9_]*\(\)[[:space:]]*\{' || true)
     
     if [ -n "$func_violations" ]; then
       # Spell (non-imp) has underscore-prefixed functions
       line_num=$(printf '%s' "$func_violations" | head -1 | cut -d: -f1)
       printf 'spell has underscore-prefixed function at line %s (spells should use snake_case without prefix)' "$line_num"
+      rm -f "$awk_script"
       return 1
     fi
   fi
   
-  # Check for hyphenated function names (not allowed in any context)
-  # Pattern specifically looks for hyphens in function names: name-with-hyphen()
-  # We look for at least one hyphen between alphanumeric/underscore characters
-  hyphen_violations=$(grep -nE '^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*-[a-zA-Z0-9_-]*\(\)[[:space:]]*\{' "$file" 2>/dev/null || true)
+  # Check for hyphenated function names (not allowed in any context, excluding heredoc content)
+  hyphen_violations=$(awk -f "$awk_script" "$file" 2>/dev/null | grep -nE '^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*-[a-zA-Z0-9_-]*\(\)[[:space:]]*\{' || true)
   
   if [ -n "$hyphen_violations" ]; then
     line_num=$(printf '%s' "$hyphen_violations" | head -1 | cut -d: -f1)
     printf 'function name contains hyphen at line %s (use snake_case)' "$line_num"
+    rm -f "$awk_script"
     return 1
   fi
   
+  rm -f "$awk_script"
   return 0
 }
 
