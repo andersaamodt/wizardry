@@ -54,7 +54,7 @@ test_compile_spell_output_is_executable() {
   tmpfile="$tmpdir/hash-compiled"
   _run_spell spells/spellcraft/compile-spell hash > "$tmpfile"
   chmod +x "$tmpfile"
-  
+
   # Run the compiled spell's --help
   if "$tmpfile" --help >/dev/null 2>&1; then
     return 0
