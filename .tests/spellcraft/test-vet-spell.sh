@@ -14,6 +14,8 @@
 # - vet-spell fails imps with --help handlers (imps use comments as spec)
 # - vet-spell fails imps using --flags (imps use space-separated args)
 # - vet-spell passes imps that generate code with flags (heredoc content)
+# - vet-spell fails imps with more than 3 parameters (FAIL)
+# - vet-spell passes imps with variadic params (...) that don't count toward limit
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
@@ -297,6 +299,48 @@ EOF
   _assert_success && _assert_output_contains "passed"
 }
 
+test_imp_fails_with_too_many_params() {
+  # Imps must have 3 or fewer parameters
+  spell_dir=$(make_spell_dir)
+  mkdir -p "$spell_dir/.imps"
+  cat >"$spell_dir/.imps/many-params-imp" <<'EOF'
+#!/bin/sh
+
+# many-params-imp A B C D - this imp has too many parameters
+
+_many_params_imp() {
+  echo "$1 $2 $3 $4"
+}
+
+case "$0" in
+  */many-params-imp) _many_params_imp "$@" ;; esac
+EOF
+  chmod +x "$spell_dir/.imps/many-params-imp"
+  _run_spell "spells/spellcraft/vet-spell" "$spell_dir/.imps/many-params-imp"
+  _assert_failure && _assert_output_contains "4 parameters"
+}
+
+test_imp_passes_with_variadic_params() {
+  # Variadic parameters (ending with ...) don't count toward limit
+  spell_dir=$(make_spell_dir)
+  mkdir -p "$spell_dir/.imps"
+  cat >"$spell_dir/.imps/variadic-imp" <<'EOF'
+#!/bin/sh
+
+# variadic-imp A B C REST... - 3 regular params plus variadic
+
+_variadic_imp() {
+  echo "$@"
+}
+
+case "$0" in
+  */variadic-imp) _variadic_imp "$@" ;; esac
+EOF
+  chmod +x "$spell_dir/.imps/variadic-imp"
+  _run_spell "spells/spellcraft/vet-spell" "$spell_dir/.imps/variadic-imp"
+  _assert_success && _assert_output_contains "passed"
+}
+
 _run_test_case "vet-spell prints usage" test_help
 _run_test_case "vet-spell accepts --usage" test_usage_alias
 _run_test_case "vet-spell rejects unknown option" test_unknown_option
@@ -314,5 +358,7 @@ _run_test_case "vet-spell --list shows matching files" test_list_option
 _run_test_case "vet-spell fails imp with --help handler" test_imp_fails_with_help_handler
 _run_test_case "vet-spell fails imp using flags" test_imp_fails_with_flags
 _run_test_case "vet-spell passes imp with heredoc flags" test_imp_passes_with_heredoc_flags
+_run_test_case "vet-spell fails imp with too many params" test_imp_fails_with_too_many_params
+_run_test_case "vet-spell passes imp with variadic params" test_imp_passes_with_variadic_params
 
 _finish_tests

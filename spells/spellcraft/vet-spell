@@ -340,10 +340,95 @@ AWKSCRIPT
   return $result
 }
 
+# Count parameters from opening comment
+# Returns: parameter count, or -1 if no parameter info found
+# The opening comment format is: # command-name ARG1 ARG2 [OPTIONAL] - description
+count_parameters() {
+  file=$1
+  # Find the first comment line after shebang (skip blank lines)
+  # Look at lines 2-5 for the description comment
+  comment_line=""
+  for linenum in 2 3 4 5; do
+    line=$(sed -n "${linenum}p" "$file" 2>/dev/null)
+    case "$line" in
+      '#'*)
+        comment_line="$line"
+        break
+        ;;
+      '')
+        # Skip empty lines
+        continue
+        ;;
+      *)
+        # Non-comment, non-empty line - no description found
+        break
+        ;;
+    esac
+  done
+  
+  # Check if we found a comment line
+  if [ -z "$comment_line" ]; then
+    printf '%s' "-1"
+    return 0
+  fi
+  
+  # Remove the leading # and any leading spaces
+  comment_line=${comment_line#'#'}
+  comment_line=${comment_line#' '}
+  
+  # Check if it has the expected format: name PARAMS - description
+  # Extract everything before the first " - " (the description separator)
+  case "$comment_line" in
+    *' - '*)
+      param_part=${comment_line%% - *}
+      ;;
+    *)
+      # No description separator, can't determine params
+      printf '%s' "-1"
+      return 0
+      ;;
+  esac
+  
+  # Now count the words after the command name
+  # The first word is the command name, the rest are parameters
+  # Parameters ending with ... (e.g., MORE...) are variadic and don't count toward limit
+  param_count=0
+  first_word=1
+  for word in $param_part; do
+    if [ "$first_word" -eq 1 ]; then
+      first_word=0
+      continue
+    fi
+    # Skip variadic parameters (ending with ...)
+    case "$word" in
+      *'...'|*'...') continue ;;
+    esac
+    param_count=$((param_count + 1))
+  done
+  
+  printf '%s' "$param_count"
+}
+
+check_imp_param_count() {
+  file=$1
+  count=$(count_parameters "$file")
+  if [ "$count" = "-1" ]; then
+    # Can't determine param count, skip check
+    return 0
+  fi
+  if [ "$count" -gt 3 ]; then
+    printf 'imp has %d parameters (max 3 allowed)' "$count"
+    return 1
+  fi
+  return 0
+}
+
 failures=0
 total=0
 passed=0
 failed_targets=''
+spell_param_warnings=''
+spell_param_warning_count=0
 
 targets_file=$(temp-file vet-spell-targets) || exit 1
 trap 'cleanup-file "$targets_file"' EXIT HUP INT TERM
@@ -470,6 +555,20 @@ while IFS= read -r target; do
       issues=${issues:+$issues; }$result
       issue_count=$((issue_count + 1))
     fi
+    
+    # Imps must have 3 or fewer parameters (FAIL)
+    if ! result=$(check_imp_param_count "$path"); then
+      issues=${issues:+$issues; }$result
+      issue_count=$((issue_count + 1))
+    fi
+  else
+    # Non-imp spells: warn (don't fail) if >3 parameters
+    param_count=$(count_parameters "$path")
+    if [ "$param_count" != "-1" ] && [ "$param_count" -gt 3 ]; then
+      spell_param_warnings="${spell_param_warnings}${spell_param_warnings:+
+}  $target: $param_count parameters"
+      spell_param_warning_count=$((spell_param_warning_count + 1))
+    fi
   fi
   
   if [ "$issue_count" -eq 0 ]; then
@@ -486,6 +585,12 @@ done <"$targets_file"
 
 trap - EXIT HUP INT TERM
 rm -f "$targets_file"
+
+# Print parameter count warnings for non-imp spells (non-failing)
+if [ -n "$spell_param_warnings" ]; then
+  printf '\nWarning: %d spell(s) have more than 3 parameters:\n' "$spell_param_warning_count"
+  printf '%s\n' "$spell_param_warnings"
+fi
 
 if [ "$failures" -eq 0 ]; then
   printf 'All %d spells passed style checks.\n' "$total"
