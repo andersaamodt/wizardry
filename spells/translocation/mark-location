@@ -27,18 +27,7 @@ if [ "$#" -gt 2 ]; then
   exit 1
 fi
 
-# Resolve the spell home directory (same logic as spellbook menu)
-resolve_spell_home() {
-  if [ -n "${SPELLBOOK_DIR-}" ]; then
-    printf '%s' "$SPELLBOOK_DIR"
-  elif [ -n "${HOME-}" ]; then
-    printf '%s' "$HOME/.spellbook"
-  else
-    printf '%s' ".spellbook"
-  fi
-}
-
-spell_home=$(resolve_spell_home)
+spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
 markers_dir="$spell_home/.markers"
 
 # Store the markers in $SPELLBOOK_DIR/.markers/ (persists across wizardry resets).

@@ -3,6 +3,8 @@
 # This spell reads a location's extended attributes and presents its description.
 # It can prompt to memorize itself so the `look` incantation stays available.
 
+require-wizardry || exit 1
+
 show_usage() {
 cat <<'USAGE'
 Usage: look [path]
@@ -182,32 +184,8 @@ if command -v identify-room >/dev/null 2>&1; then
         identify_available=1
 fi
 
-normalize_path() {
-        location=$1
-        if [ -d "$location" ]; then
-                CDPATH= cd -- "$location" 2>/dev/null && pwd -P
-                return
-        fi
-        dirname=$(dirname -- "$location")
-        basename=$(basename -- "$location")
-        if CDPATH= cd -- "$dirname" 2>/dev/null; then
-                printf '%s/%s\n' "$(pwd -P)" "$basename"
-                return
-        fi
-        printf '%s\n' "$location"
-}
-
-normalize_location() {
-        normalized=$(printf '%s' "$1" | sed 's:/*$::')
-        if [ -z "$normalized" ]; then
-                printf '/\n'
-                return
-        fi
-        printf '%s\n' "$normalized"
-}
-
 path_input=${1:-$PWD}
-path=$(normalize_location "$(normalize_path "$path_input")")
+path=$(strip-trailing-slashes "$(abs-path "$path_input")")
 
 install_look || true
 

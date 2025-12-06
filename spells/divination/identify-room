@@ -3,6 +3,8 @@
 # This spell names common system rooms and describes their usual roles.
 # Use it to learn what important directories are for or to list recognized rooms.
 
+require-wizardry || exit 1
+
 show_usage() {
 cat <<'USAGE'
 Usage: identify-room [--list] [path]
@@ -52,30 +54,6 @@ if [ "$list_only" -eq 1 ] && [ "$#" -gt 0 ]; then
         exit 1
 fi
 
-normalize_path() {
-        location=$1
-        if [ -d "$location" ]; then
-                CDPATH= cd -- "$location" 2>/dev/null && pwd -P
-                return
-        fi
-        dirname=$(dirname -- "$location")
-        basename=$(basename -- "$location")
-        if CDPATH= cd -- "$dirname" 2>/dev/null; then
-                printf '%s/%s\n' "$(pwd -P)" "$basename"
-                return
-        fi
-        printf '%s\n' "$location"
-}
-
-normalize_location() {
-        normalized=$(printf '%s' "$1" | sed 's:/*$::')
-        if [ -z "$normalized" ]; then
-                printf '/\n'
-                return
-        fi
-        printf '%s\n' "$normalized"
-}
-
 possessive_name() {
         name=$1
         if command -v possessive >/dev/null 2>&1; then
@@ -123,11 +101,11 @@ detect_platform() {
 }
 
 root_path=/
-tmp_path=$(normalize_location "$(normalize_path "${TMPDIR:-/tmp}")")
-default_tmp_path=$(normalize_location "$(normalize_path /tmp)")
+tmp_path=$(strip-trailing-slashes "$(abs-path "${TMPDIR:-/tmp}")")
+default_tmp_path=$(strip-trailing-slashes "$(abs-path /tmp)")
 var_tmp_path=''
 if [ -d /var/tmp ]; then
-        var_tmp_path=$(normalize_location "$(normalize_path /var/tmp)")
+        var_tmp_path=$(strip-trailing-slashes "$(abs-path /var/tmp)")
 fi
 have_home=0
 normalized_home=''
@@ -135,7 +113,7 @@ home_parent=''
 home_name=''
 if resolved_home=$(home_path); then
         have_home=1
-        normalized_home=$(normalize_location "$(normalize_path "$resolved_home")")
+        normalized_home=$(strip-trailing-slashes "$(abs-path "$resolved_home")")
         home_parent=$(dirname -- "$normalized_home")
         home_name=$(basename -- "$normalized_home")
 fi
@@ -297,7 +275,7 @@ if [ "$list_only" -eq 1 ]; then
 fi
 
 target_path=${1:-$PWD}
-normalized_target=$(normalize_location "$(normalize_path "$target_path")")
+normalized_target=$(strip-trailing-slashes "$(abs-path "$target_path")")
 
 if recognize_room "$normalized_target"; then
         exit 0

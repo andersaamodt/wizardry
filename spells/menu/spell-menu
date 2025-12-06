@@ -2,6 +2,7 @@
 # spell-menu - Display action menu for a spell or custom command
 # Shows options: Cast now, Memorize/Forget, Help, Test spell, Delete (for custom)
 
+require-wizardry || exit 1
 
 # Catch Ctrl-C and TERM signal to exit cleanly
 trap 'exit 0' INT TERM
@@ -18,17 +19,7 @@ else
         exit 1
 fi
 
-resolve_spell_home() {
-        if [ -n "${SPELLBOOK_DIR-}" ]; then
-                printf '%s' "$SPELLBOOK_DIR"
-        elif [ -n "${HOME-}" ]; then
-                printf '%s' "$HOME/.spellbook"
-        else
-                printf '%s' ".spellbook"
-        fi
-}
-
-spell_home=$(resolve_spell_home)
+spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
 
 cast_list() {
         "$cast_store" list

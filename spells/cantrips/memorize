@@ -9,6 +9,7 @@
 #        memorize path         - print the command list file path
 #        memorize dir          - print the cast directory
 
+require-wizardry || exit 1
 
 spell_name="memorize"
 tab_char=$(printf '\t')
@@ -59,7 +60,7 @@ resolve_cast_dir() {
                 return 0
         fi
 
-        resolve_spell_home
+        env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook"
 }
 
 resolve_command_file() {
@@ -72,17 +73,6 @@ resolve_command_file() {
 		file=$cast_dir/.memorized
 	fi
 	printf '%s' "$file"
-}
-
-resolve_spell_home() {
-	if [ -n "${SPELLBOOK_DIR-}" ]; then
-		dir=$(expand_tilde "$SPELLBOOK_DIR")
-	elif [ -n "${HOME-}" ]; then
-		dir=$HOME/.spellbook
-	else
-		dir=.spellbook
-	fi
-	printf '%s' "$dir"
 }
 
 cast_dir=$(resolve_cast_dir)
