@@ -1,0 +1,16 @@
+#!/bin/sh
+# env-or VAR DEFAULT - output env var value if set and non-empty, else default
+# Example: dir=$(env-or SPELLBOOK_DIR "$HOME/.spellbook")
+
+_env_or() {
+  eval "_eo_val=\${$1-}"
+  if [ -n "$_eo_val" ]; then
+    printf '%s\n' "$_eo_val"
+  else
+    printf '%s\n' "$2"
+  fi
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */env-or) _env_or "$@" ;; esac

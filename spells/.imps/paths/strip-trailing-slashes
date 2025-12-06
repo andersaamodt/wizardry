@@ -1,0 +1,16 @@
+#!/bin/sh
+# strip-trailing-slashes PATH - remove trailing slashes, output "/" for empty
+# Example: strip-trailing-slashes "/tmp/foo/" -> /tmp/foo
+
+_strip_trailing_slashes() {
+  _sts_normalized=$(printf '%s' "$1" | sed 's:/*$::')
+  if [ -z "$_sts_normalized" ]; then
+    printf '/\n'
+    return
+  fi
+  printf '%s\n' "$_sts_normalized"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */strip-trailing-slashes) _strip_trailing_slashes "$@" ;; esac
