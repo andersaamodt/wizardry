@@ -26,6 +26,6 @@ if [ "$#" -lt 1 ]; then
 fi
 
 for file in ./*; do
-        echo "${file#./}"
+        printf '%s\n' "${file#./}"
     "$@" "$file" | awk '{print "   " $0}'
 done

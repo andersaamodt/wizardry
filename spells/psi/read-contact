@@ -1,9 +1,6 @@
 #!/bin/sh
 
 # This spell reads a vCard and prints its fields with friendly labels.
-
-
-# This spell reads a vCard and prints its fields with friendly labels.
 # Provide an optional field name to extract a single detail.
 
 show_usage() {
@@ -13,6 +10,15 @@ Usage: read-contact <vcard-file> [field]
 Print all fields from a vCard file or a specific field when you name one. Escapes are normalized for readability and friendly labels make the details easy to scan.
 USAGE
 }
+
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
+set -eu
 
 handle_escapes() {
     escape_value=$1
@@ -34,7 +40,7 @@ validate_card() {
     card_path=$1
 
     if [ ! -f "$card_path" ]; then
-        echo "vCard file not found: $card_path" >&2
+        printf '%s\n' "read-contact: vCard file not found: $card_path" >&2
         exit 1
     fi
 
@@ -42,49 +48,47 @@ validate_card() {
     ends=$(tr -d '\r' <"$card_path" | grep -Ec '^END:VCARD$' || true)
 
     if [ "$begins" -eq 0 ] && [ "$ends" -eq 0 ]; then
-        echo "No vCard entries found in $card_path" >&2
+        printf '%s\n' "read-contact: No vCard entries found in $card_path" >&2
         exit 1
     fi
 
     if [ "$begins" -ne "$ends" ]; then
-        echo "Unbalanced vCard entries in $card_path" >&2
+        printf '%s\n' "read-contact: Unbalanced vCard entries in $card_path" >&2
         exit 1
     fi
 
     if [ "$begins" -gt 1 ]; then
-        echo "Multiple vCard entries are not supported" >&2
+        printf '%s\n' "read-contact: Multiple vCard entries are not supported" >&2
         exit 1
     fi
 }
 
 nicer_name() {
     # Convert the field name to lower case and remove any type annotations
-    normalized_field=$(echo "$1" | awk '{print tolower($0)}' | awk -F';' '{print $1}' | awk -F'.' '{print $NF}')
+    normalized_field=$(printf '%s' "$1" | awk '{print tolower($0)}' | awk -F';' '{print $1}' | awk -F'.' '{print $NF}')
 
     case "$normalized_field" in
-        fn|fullname) echo "Full Name: " ;;
-        n|name|lastname|firstname) echo "Name: " ;;
-        org|organization) echo "Organization: " ;;
-        title|jobtitle) echo "Title: " ;;
-        email) echo "Email: " ;;
-        tel|phone|telephone) echo "Telephone: " ;;
-        adr|address) echo "Address: " ;;
-        bday|birthday) echo "Birthday: " ;;
-        rev|revision) echo "Revision: " ;;
-        nickname) echo "Nickname: " ;;
-        photo) echo "Photo: " ;;
-        url|website) echo "URL: " ;;
-        label) echo "Label: " ;;
-        role) echo "Role: " ;;
+        fn|fullname) printf '%s' "Full Name: " ;;
+        n|name|lastname|firstname) printf '%s' "Name: " ;;
+        org|organization) printf '%s' "Organization: " ;;
+        title|jobtitle) printf '%s' "Title: " ;;
+        email) printf '%s' "Email: " ;;
+        tel|phone|telephone) printf '%s' "Telephone: " ;;
+        adr|address) printf '%s' "Address: " ;;
+        bday|birthday) printf '%s' "Birthday: " ;;
+        rev|revision) printf '%s' "Revision: " ;;
+        nickname) printf '%s' "Nickname: " ;;
+        photo) printf '%s' "Photo: " ;;
+        url|website) printf '%s' "URL: " ;;
+        label) printf '%s' "Label: " ;;
+        role) printf '%s' "Role: " ;;
         *)
             # Remove the X- prefix from custom fields
-            normalized_field=$(echo "$normalized_field" | awk '{gsub(/^x-/,"");print}')
+            normalized_field=$(printf '%s' "$normalized_field" | awk '{gsub(/^x-/,"");print}')
             # Convert the field name to title case
-            echo "$(echo "$normalized_field" | awk '{for(i=1;i<=NF;i++)sub(/./,toupper(substr($i,1,1)),$i)}1'): "
+            printf '%s' "$(printf '%s' "$normalized_field" | awk '{for(i=1;i<=NF;i++)sub(/./,toupper(substr($i,1,1)),$i)}1'): "
             ;;
     esac
-set -eu
-
 }
 
 print_field() {
@@ -93,23 +97,16 @@ print_field() {
 
     card_line=$(card_lines "$card_path" | awk -F':' -v field="$requested_field" '$1 ~ field { print; exit }')
     if [ -z "${card_line:-}" ]; then
-        echo "$requested_field not found" >&2
+        printf '%s\n' "read-contact: $requested_field not found" >&2
         exit 1
     fi
 
-    field_name=$(echo "$card_line" | awk -F':' '{print $1}')
-    field_value=$(echo "$card_line" | awk -F':' '{print substr($0, length($1) + 2)}')
+    field_name=$(printf '%s' "$card_line" | awk -F':' '{print $1}')
+    field_value=$(printf '%s' "$card_line" | awk -F':' '{print substr($0, length($1) + 2)}')
     field_value=$(handle_escapes "$field_value")
     field_label=$(nicer_name "$field_name")
-    echo "$field_label$field_value"
+    printf '%s\n' "$field_label$field_value"
 }
-
-case "${1-}" in
---help|--usage|-h)
-        show_usage
-        exit 0
-        ;;
-esac
 
 if [ $# -lt 1 ]; then
     show_usage >&2
@@ -126,7 +123,7 @@ else
         field_label=$(nicer_name "$field")
         value=$(handle_escapes "$value")
         if [ -n "$field_label" ]; then
-            echo "$field_label$value"
+            printf '%s\n' "$field_label$value"
         fi
     done
 fi
