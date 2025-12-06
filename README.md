@@ -123,6 +123,21 @@ At startup, a recursive sourcer invokes all bound imps and generates aliases map
 
 Push as much logic as possible into imps for maximum semanticization.
 
+#### Logging and Output
+
+Wizardry provides a standardized logging framework through the `out/` family of imps:
+
+* **Core output**: `say`, `warn`, `die`, `fail`, `success`
+* **Semantic output**: `info`, `step`, `debug` (respect `WIZARDRY_LOG_LEVEL`)
+* **Signal handling**: `on-exit`, `clear-traps`
+
+Control verbosity with the `WIZARDRY_LOG_LEVEL` environment variable:
+* `0` (default): Critical messages only
+* `1`: Include info and step messages
+* `2` or higher: Include debug messages
+
+For complete documentation, see `.github/instructions/logging.instructions.md`.
+
 ## Arcana
 
 An arcana is a grand working, a spell that knows the proper way to install and correctly configure a certain piece of software across all supported platforms.

@@ -1,0 +1,13 @@
+#!/bin/sh
+# success MESSAGE - print success message
+# Example: success "Installation complete"
+
+set -eu
+
+_success() {
+  printf '%s\n' "$*"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */success) _success "$@" ;; esac

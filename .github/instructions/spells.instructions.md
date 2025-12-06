@@ -62,35 +62,61 @@ printf '%s\n' "$message"
 path="$HOME/wizardry"
 ```
 
+### Output and Logging
+
+Use the output imps from `out/` for consistent messaging. See `logging.instructions.md` for complete documentation.
+
+```sh
+# Always shown - basic output
+say "File copied successfully"
+success "Installation complete"
+
+# Respects WIZARDRY_LOG_LEVEL (shown when >= 1)
+info "Processing files..."
+step "Installing dependencies..."
+
+# Respects WIZARDRY_LOG_LEVEL (shown when >= 2)
+debug "Variable value: $var"
+
+# Errors and warnings (always shown)
+warn "spell-name: configuration missing"
+die "spell-name: installation failed"
+die 2 "spell-name: invalid argument"
+usage-error "$spell_name" "unknown option: $opt"
+has git || fail "git required"
+```
+
+### Signal Handling and Cleanup
+
+Use `on-exit` and `clear-traps` for consistent cleanup:
+
+```sh
+tmpfile=$(temp-file)
+on-exit cleanup-file "$tmpfile"
+
+# Work with tmpfile...
+# Cleanup happens automatically on exit/interrupt
+```
+
 ### Error Messages
 Print to stderr with spell name prefix—descriptive, not imperative:
 ```sh
 # CORRECT
-printf '%s\n' "spell-name: sshfs not found." >&2
+die "spell-name: sshfs not found"
+warn "spell-name: configuration missing"
 
 # WRONG
-printf '%s\n' "Please install sshfs." >&2
+die "Please install sshfs"
+warn "You must create a configuration file"
 ```
 
-### Error Handling Helpers
+### Error Handling Helpers (Legacy)
 
-Use the error handling imps from `out/` for consistent error output:
+For reference, direct stderr output (prefer using imps instead):
 
 ```sh
-# Fatal error - print message and exit with code 1
-die "spell-name: critical failure"
-
-# Fatal error with custom exit code
-die 2 "spell-name: invalid argument"
-
-# Usage/argument error - exit code 2
-usage-error "$spell_name" "unknown option: $opt"
-
-# Conditional failure
-has git || fail "git required"
-
-# Warning (continues execution)
-warn "spell-name: deprecated feature used"
+# Direct output (use die/warn/fail instead)
+printf '%s\n' "spell-name: sshfs not found." >&2
 ```
 
 ### Functions
