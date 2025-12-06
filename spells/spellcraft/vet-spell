@@ -401,7 +401,7 @@ count_parameters() {
     fi
     # Skip variadic parameters (ending with ...)
     case "$word" in
-      *'...'|*'...') continue ;;
+      *'...') continue ;;
     esac
     param_count=$((param_count + 1))
   done
