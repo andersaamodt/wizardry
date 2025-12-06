@@ -26,15 +26,19 @@ _script_dir() {
     
     if [ -n "$_sd_target" ]; then
       case "$_sd_target" in
+        # Absolute path: extract directory
         /*) _sd_dir=${_sd_target%/*} ;;
-        *)  _sd_dir="$_sd_dir/${_sd_target%/*}" ;;
+        # Relative path with directory component: combine with current dir
+        */*) _sd_dir="$_sd_dir/${_sd_target%/*}" ;;
+        # Just a filename (no directory): keep current _sd_dir
+        *) : ;;
       esac
     fi
   fi
   
-  # Convert to absolute path and normalize
+  # Convert to absolute path and normalize; return failure if cd fails
   # shellcheck disable=SC1007
-  (CDPATH= cd -- "$_sd_dir" 2>/dev/null && pwd -P) | sed 's|///*|/|g'
+  (CDPATH= cd -- "$_sd_dir" && pwd -P) | sed 's|///*|/|g'
 }
 
 # Self-execute when run directly (not sourced)

@@ -136,6 +136,28 @@ test_script_dir_handles_relative_symlink() {
   esac
 }
 
+test_script_dir_handles_same_dir_symlink() {
+  # Edge case: symlink points to a file in the same directory
+  tmpdir=$(_make_tempdir)
+  
+  # Create the actual script
+  cp "$ROOT_DIR/spells/.imps/paths/script-dir" "$tmpdir/real-script-dir"
+  chmod +x "$tmpdir/real-script-dir"
+  
+  # Create a symlink in the same directory (target has no path separator)
+  ln -s real-script-dir "$tmpdir/script-dir"
+  
+  # Run through the symlink
+  output=$(sh "$tmpdir/script-dir" "$tmpdir/script-dir" 2>&1) || true
+  
+  # Should return the same directory
+  norm_tmpdir=$(printf '%s' "$tmpdir" | sed 's|//|/|g')
+  case "$output" in
+    "$norm_tmpdir"|"$tmpdir") return 0 ;;
+    *) TEST_FAILURE_REASON="expected $norm_tmpdir, got: $output"; return 1 ;;
+  esac
+}
+
 _run_test_case "script-dir returns absolute path" test_script_dir_returns_absolute_path
 _run_test_case "script-dir returns correct directory" test_script_dir_returns_correct_directory
 _run_test_case "script-dir returns normalized path" test_script_dir_normalized_path
@@ -144,5 +166,6 @@ _run_test_case "script-dir handles symlinks" test_script_dir_handles_symlink
 _run_test_case "script-dir handles relative paths" test_script_dir_handles_relative_path
 _run_test_case "script-dir handles ./script syntax" test_script_dir_handles_dot_slash
 _run_test_case "script-dir handles relative symlinks" test_script_dir_handles_relative_symlink
+_run_test_case "script-dir handles same-dir symlinks" test_script_dir_handles_same_dir_symlink
 
 _finish_tests
