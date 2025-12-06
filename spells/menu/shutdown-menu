@@ -3,6 +3,8 @@
 # This spell displays shutdown, restart, logout, and power management options.
 # Commands are invoked directly via the menu without external spell dependencies.
 
+require-wizardry || exit 1
+
 show_usage() {
   cat <<'USAGE'
 Usage: shutdown-menu

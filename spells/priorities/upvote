@@ -3,6 +3,8 @@
 # This spell increments the upvote count on a file using extended attributes.
 # Use it to track popularity or priority through file metadata.
 
+require-wizardry || exit 1
+
 show_usage() {
 cat <<'USAGE'
 Usage: upvote <file>

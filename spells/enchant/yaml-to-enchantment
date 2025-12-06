@@ -3,6 +3,7 @@
 # This spell reads a YAML front matter block and restores its keys as attributes.
 # After the transfer, it trims the prologue so the file holds only its content.
 
+require-wizardry || exit 1
 
 show_usage() {
 cat <<'USAGE'

@@ -3,6 +3,8 @@
 # This spell determines the next appropriate priority for a file in a directory.
 # Use it to find what priority value to assign when adding a file to a priority list.
 
+require-wizardry || exit 1
+
 show_usage() {
 cat <<'USAGE'
 Usage: get-new-priority <file>

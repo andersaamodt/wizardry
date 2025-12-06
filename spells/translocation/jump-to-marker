@@ -3,8 +3,6 @@
 # This spell teleports to markers set with mark-location.
 # Source this file or use word-of-binding to invoke it.
 
-require-wizardry || exit 1
-
 show_usage() {
 cat <<'USAGE'
 Usage: jump-to-marker [marker]
@@ -29,11 +27,15 @@ case $0 in
 *) : ;;
 esac
 
+# Resolve markers directory (inline to support sourcing without wizardry in PATH)
 if [ -n "${JUMP_TO_MARKERS_DIR-}" ]; then
   MARKERS_DIR=$JUMP_TO_MARKERS_DIR
+elif [ -n "${SPELLBOOK_DIR-}" ]; then
+  MARKERS_DIR="$SPELLBOOK_DIR/.markers"
+elif [ -n "${HOME-}" ]; then
+  MARKERS_DIR="$HOME/.spellbook/.markers"
 else
-  _spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
-  MARKERS_DIR="$_spell_home/.markers"
+  MARKERS_DIR=".spellbook/.markers"
 fi
 
 # jump_portal_messages preserves every line of flavor text from the original

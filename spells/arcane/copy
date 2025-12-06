@@ -4,6 +4,7 @@
 # It takes one argument, the path to the text file.
 # When run without arguments, it prompts for the file path interactively.
 
+require-wizardry || exit 1
 
 show_usage() {
 cat <<'USAGE'

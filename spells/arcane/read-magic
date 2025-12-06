@@ -3,6 +3,7 @@
 # This spell lists extended attributes from a file, optionally narrowing to one key.
 # It walks through existence checks and available helpers in a linear, didactic order.
 
+require-wizardry || exit 1
 
 show_usage() {
 cat <<'USAGE'

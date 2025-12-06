@@ -3,6 +3,8 @@
 # This spell sets or updates the priority of a file within a directory.
 # Use it to organize files by importance using extended attributes.
 
+require-wizardry || exit 1
+
 show_usage() {
 cat <<'USAGE'
 Usage: prioritize <file> [directory]

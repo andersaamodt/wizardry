@@ -3,6 +3,7 @@
 # This spell splits a bound tome back into individual page files.
 # It derives filenames from page headers so the restored pages are easy to revisit.
 
+require-wizardry || exit 1
 
 show_usage() {
     cat <<'USAGE'

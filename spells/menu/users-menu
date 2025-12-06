@@ -3,6 +3,8 @@
 # This spell presents a menu of options for managing users on the system.
 # Use it to manage passwords, groups, and user accounts.
 
+require-wizardry || exit 1
+
 show_usage() {
 cat <<'USAGE'
 Usage: users-menu

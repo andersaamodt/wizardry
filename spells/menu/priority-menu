@@ -3,6 +3,8 @@
 # This spell displays a menu of commands for a prioritized file or folder.
 # Use 'priorities' to easily select a priority with this menu.
 
+require-wizardry || exit 1
+
 show_usage() {
 cat <<'USAGE'
 Usage: priority-menu <file>
