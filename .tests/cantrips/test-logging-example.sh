@@ -47,11 +47,9 @@ test_simulate_level_2() {
   _assert_success
   _assert_output_contains "Starting multi-step process"
   _assert_output_contains "Step 1:"
-  # Debug output goes to stderr, check ERROR
-  if ! printf '%s' "$ERROR" | grep -q "Current working directory"; then
-    TEST_FAILURE_REASON="debug message should appear at level 2"
-    return 1
-  fi
+  # Debug output goes to stderr with DEBUG: prefix
+  _assert_error_contains "DEBUG:"
+  _assert_error_contains "Current working directory"
 }
 
 _run_test_case "logging-example prints usage" test_help

@@ -7,7 +7,7 @@ set -eu
 _debug() {
   _debug_level=${WIZARDRY_LOG_LEVEL:-0}
   if [ "$_debug_level" -ge 2 ]; then
-    printf '%s\n' "$*" >&2
+    printf 'DEBUG: %s\n' "$*" >&2
   fi
 }
 

@@ -14,6 +14,7 @@ done
 test_debug_outputs_when_level_2() {
   WIZARDRY_LOG_LEVEL=2 _run_spell spells/.imps/out/debug "debug message"
   _assert_success
+  _assert_error_contains "DEBUG:"
   _assert_error_contains "debug message"
 }
 

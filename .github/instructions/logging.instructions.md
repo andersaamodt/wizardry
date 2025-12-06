@@ -37,7 +37,7 @@ export WIZARDRY_LOG_LEVEL=2  # Show all messages including debug
 | `success` | Success message | stdout | No | No (always shown) |
 | `info` | Informational message | stdout | No | Yes (level >= 1) |
 | `step` | Step in multi-step process | stdout | No | Yes (level >= 1) |
-| `debug` | Debug information | stderr | No | Yes (level >= 2) |
+| `debug` | Debug information (prefixed with "DEBUG:") | stderr | No | Yes (level >= 2) |
 
 ### Utility Output Imps
 
@@ -64,7 +64,9 @@ info "Processing 10 files..."
 step "Installing dependencies..."
 
 # Shown only if WIZARDRY_LOG_LEVEL >= 2
+# Debug output includes "DEBUG:" prefix for easy identification
 debug "Variable value: $my_var"
+# Output: DEBUG: Variable value: test
 ```
 
 ### Error Handling
