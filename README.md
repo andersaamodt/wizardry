@@ -142,7 +142,7 @@ Using the free software suite makes it easy to establish a standardized software
 | `cast` | To execute a spell. Memorized spells appear in the `cast` menu for quick access. |
 | **crypto** | Cryptographic spells for hashing and security. |
 | **daemon** | A background process that runs continuously, typically started at system boot. |
-| **daemonic complex** | A subfolder within a demon family that groups related imps that work together to implement a larger concept. Each imp in the complex handles one piece of the functionality (e.g., `nix/nix-rebuild`, `nix/nix-shell-init`). |
+| **daemonic complex** | A subfolder within a demon family that groups related imps that work together to implement a larger concept. Each imp in the complex handles one piece of the functionality (e.g., `nix/nix-rebuild`, `nix/nix-shell-add`). |
 | **demon family** | A subfolder within `spells/.imps/` that groups related imps by function. Each folder represents a family of imps that share a common purpose (e.g., `str/` for string operations, `fs/` for filesystem operations). |
 | **divination** | Spells that detect or discover information. |
 | **enchant** / **enchantment** | Spells that add or manipulate extended attributes (metadata) on files. |

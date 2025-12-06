@@ -207,8 +207,8 @@ cd_block_present() {
         if grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file"; then
                 return 0
         fi
-        # Check for nix format marker (used by nix-shell-init)
-        # Note: nix-shell-init adds " # wizardry: cd-cantrip" (with space before #)
+        # Check for nix format marker (used by nix-shell-add)
+        # Note: nix-shell-add adds " # wizardry: cd-cantrip" (with space before #)
         if grep -Eq '#[ ]?wizardry: cd-cantrip' "$rc_file"; then
                 return 0
         fi
@@ -234,26 +234,26 @@ install() {
         rc_format=$(resolve_rc_format)
         rc_file=$(resolve_rc_file) || return 1
 
-        # For nix format, use nix-shell-init imp to add shell init code
+        # For nix format, use nix-shell-add imp to add shell init code
         if [ "$rc_format" = "nix" ]; then
-                # Find nix-shell-init helper
+                # Find nix-shell-add helper
                 nix_helper=""
-                if [ -x "$SCRIPT_DIR/../../.imps/sys/nix-shell-init" ]; then
-                        nix_helper="$SCRIPT_DIR/../../.imps/sys/nix-shell-init"
-                elif command -v nix-shell-init >/dev/null 2>&1; then
-                        nix_helper=$(command -v nix-shell-init)
+                if [ -x "$SCRIPT_DIR/../../.imps/sys/nix-shell-add" ]; then
+                        nix_helper="$SCRIPT_DIR/../../.imps/sys/nix-shell-add"
+                elif command -v nix-shell-add >/dev/null 2>&1; then
+                        nix_helper=$(command -v nix-shell-add)
                 fi
 
                 
                 if [ -z "$nix_helper" ]; then
-                        printf '%s\n' "cd cantrip: nix-shell-init imp not found for NixOS installation."
+                        printf '%s\n' "cd cantrip: nix-shell-add imp not found for NixOS installation."
                         return 1
                 fi
 
                 # Create the shell hook code - uses a function instead of storing path in a variable
                 hook_code='cd() { command cd "$@" && { look 2>/dev/null || true; }; }'
 
-                if printf '%s\n' "$hook_code" | "$nix_helper" add --shell bash --name cd-cantrip --file "$rc_file"; then
+                if printf '%s\n' "$hook_code" | "$nix_helper" cd-cantrip "$rc_file" bash; then
                         printf '%s\n' "cd cantrip: installed wizardry hooks in '$rc_file'."
                         # Run nixos-rebuild to apply the changes
                         run_nix_rebuild || true
@@ -303,17 +303,17 @@ uninstall() {
                 return 0
         fi
 
-        # For nix format, use nix-shell-init to remove the block
+        # For nix format, use nix-shell-remove to remove the block
         if [ "$rc_format" = "nix" ]; then
                 nix_helper=""
-                if [ -x "$SCRIPT_DIR/../../.imps/sys/nix-shell-init" ]; then
-                        nix_helper="$SCRIPT_DIR/../../.imps/sys/nix-shell-init"
-                elif command -v nix-shell-init >/dev/null 2>&1; then
-                        nix_helper=$(command -v nix-shell-init)
+                if [ -x "$SCRIPT_DIR/../../.imps/sys/nix-shell-remove" ]; then
+                        nix_helper="$SCRIPT_DIR/../../.imps/sys/nix-shell-remove"
+                elif command -v nix-shell-remove >/dev/null 2>&1; then
+                        nix_helper=$(command -v nix-shell-remove)
                 fi
 
                 if [ -n "$nix_helper" ]; then
-                        if "$nix_helper" remove --shell bash --name cd-cantrip --file "$rc_file"; then
+                        if "$nix_helper" cd-cantrip "$rc_file"; then
                                 printf '%s\n' "cd cantrip: uninstalled wizardry hooks from '$rc_file'."
                                 # Run nixos-rebuild to apply the changes
                                 run_nix_rebuild || true
@@ -323,9 +323,9 @@ uninstall() {
                                 return 1
                         fi
                 fi
-                # nix-shell-init helper not found - warn and attempt shell method fallback
+                # nix-shell-remove helper not found - warn and attempt shell method fallback
                 # This may not work correctly for nix format files
-                warn "nix-shell-init imp not found; attempting shell-style removal which may not work for nix files."
+                warn "nix-shell-remove imp not found; attempting shell-style removal which may not work for nix files."
         fi
 
         # Shell format: use sed to remove the block

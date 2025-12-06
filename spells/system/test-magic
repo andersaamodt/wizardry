@@ -233,6 +233,15 @@ trap 'cleanup-file "$failure_output_file"' EXIT HUP INT TERM
 
 spell_name_for_test() {
   test_path=$1
+  
+  # Special case: test-suite.sh should display as "common tests"
+  case "$test_path" in
+    */test-suite.sh|test-suite.sh)
+      printf '%s\n' "common tests"
+      return
+      ;;
+  esac
+  
   spell_path=$(spell_path_for_test "$test_path" 2>/dev/null || true)
 
   if [ -n "$spell_path" ]; then

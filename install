@@ -267,7 +267,8 @@ fi
 # on to set up shell integration and ask for confirmation.
 INVOKE_WIZARDRY="$ABS_DIR/spells/.imps/sys/invoke-wizardry"
 DETECT_RC_FILE="$ABS_DIR/spells/divination/detect-rc-file"
-NIX_SHELL_INIT="$ABS_DIR/spells/.imps/sys/nix-shell-init"
+NIX_SHELL_ADD="$ABS_DIR/spells/.imps/sys/nix-shell-add"
+NIX_SHELL_REMOVE="$ABS_DIR/spells/.imps/sys/nix-shell-remove"
 CORE_INSTALLER=${WIZARDRY_CORE_INSTALLER:-$ABS_DIR/spells/install/core/install-core}
 ASK_YN="$ABS_DIR/spells/cantrips/ask-yn"
 
@@ -743,16 +744,16 @@ invoke_wizardry_source_line=". \"$INVOKE_WIZARDRY\""
 
 case $detect_format_value in
 nix)
-        # For NixOS, use nix-shell-init to add shell initialization code
-        if [ -x "$NIX_SHELL_INIT" ]; then
-                if printf '%s\n' "$invoke_wizardry_source_line" | "$NIX_SHELL_INIT" add --shell bash --name wizardry-init --file "$detect_rc_file_value" 2>/dev/null; then
+        # For NixOS, use nix-shell-add to add shell initialization code
+        if [ -x "$NIX_SHELL_ADD" ]; then
+                if printf '%s\n' "$invoke_wizardry_source_line" | "$NIX_SHELL_ADD" wizardry-init "$detect_rc_file_value" bash 2>/dev/null; then
                         shell_setup_made=1
                 else
                         printf '%s\n' "Error: Failed to add wizardry initialization to '$detect_rc_file_value'." >&2
                         exit 1
                 fi
         else
-                printf '%s\n' "Error: nix-shell-init helper not found at '$NIX_SHELL_INIT'." >&2
+                printf '%s\n' "Error: nix-shell-add helper not found at '$NIX_SHELL_ADD'." >&2
                 exit 1
         fi
         ;;
@@ -979,10 +980,10 @@ printf '\n%s==> Removing shell configuration...%s\n' "$CYAN" "$RESET"
 # Remove the invoke-wizardry source line from the rc file
 if [ -f "$RC_FILE" ]; then
         if [ "$RC_FORMAT" = "nix" ]; then
-                # For NixOS, use nix-shell-init to remove the wizardry-init block
-                NIX_SHELL_INIT="$INSTALL_DIR/spells/.imps/sys/nix-shell-init"
-                if [ -x "$NIX_SHELL_INIT" ]; then
-                        if "$NIX_SHELL_INIT" remove --shell bash --name wizardry-init --file "$RC_FILE" 2>/dev/null; then
+                # For NixOS, use nix-shell-remove to remove the wizardry-init block
+                NIX_SHELL_REMOVE="$INSTALL_DIR/spells/.imps/sys/nix-shell-remove"
+                if [ -x "$NIX_SHELL_REMOVE" ]; then
+                        if "$NIX_SHELL_REMOVE" wizardry-init "$RC_FILE" 2>/dev/null; then
                                 printf '  %s✓%s Removed wizardry initialization from %s\n' "$GREEN" "$RESET" "$RC_FILE"
                         else
                                 printf '  %sNote:%s No wizardry initialization found in %s\n' "$YELLOW" "$RESET" "$RC_FILE"
