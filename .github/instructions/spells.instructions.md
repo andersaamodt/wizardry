@@ -78,7 +78,10 @@ Prefer linear, flat code flow over excessive function wrapping.
 ### Exit Codes
 - `0`: Success
 - `1`: General error
-- `2`: Usage error
+- `2`: Usage/argument error
+- `126`: Command cannot execute
+- `127`: Command not found
+- `130`: Interrupted (Ctrl-C)
 
 ## Complexity Guidelines
 

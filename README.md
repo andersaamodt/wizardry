@@ -69,6 +69,13 @@ A spell is a specially-curated shell script:
 * Has a test script at a corresponding path under `.tests/`, which serves as a fully-specified operationalized spec
 * Is polished and fails elegantly
 * Works well when used in a menu (interactively)
+* Uses standard exit codes:
+  * `0`: Success
+  * `1`: General error
+  * `2`: Usage/argument error
+  * `126`: Command cannot execute
+  * `127`: Command not found
+  * `130`: Interrupted (Ctrl-C)
 
 This spec helps scripts evolve into living, polished exemplars of communal knowledge about best practices in using and optimizing the shell.
 
