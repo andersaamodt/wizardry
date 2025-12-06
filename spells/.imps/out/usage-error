@@ -7,8 +7,9 @@ set -eu
 name=${1:-}
 message=${2:-}
 
-if [ -n "$name" ] && [ -n "$message" ]; then
-  printf '%s: %s\n' "$name" "$message" >&2
+# Format message with name prefix if both provided, otherwise just print message
+if [ -n "$name" ]; then
+  printf '%s: %s\n' "$name" "${message:-usage error}" >&2
 elif [ -n "$message" ]; then
   printf '%s\n' "$message" >&2
 fi
