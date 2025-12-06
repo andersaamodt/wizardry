@@ -9,14 +9,14 @@ Wizardry is a collection of POSIX shell scripts themed as magical spells for the
 ## Tech Stack
 
 - **Language**: POSIX sh only (`#!/bin/sh`)
-- **Style checker**: `vet-spell` and `checkbashisms`
+- **Style checker**: `lint-magic` and `checkbashisms`
 - **Testing**: `.tests/` directory with `test_common.sh` framework
 
 ## Essential Commands
 
 ```sh
 # Check spell style compliance
-vet-spell --strict spells/category/spell-name
+lint-magic --strict spells/category/spell-name
 
 # Run tests
 .tests/test-suite.sh

@@ -1,13 +1,13 @@
 #!/bin/sh
 
-# This spell vets other spells for style guide violations.
-# Run it against spell files to check formatting and code style compliance.
+# This spell lints spells for formatting and style guide violations.
+# Run it against spell files to check formatting, linting, and code style compliance.
 
 show_usage() {
   cat <<'USAGE'
-Usage: vet-spell [--only PATTERN] [--list] [--verbose] [file...]
+Usage: lint-magic [--only PATTERN] [--list] [--verbose] [file...]
 
-Check spells for style-guide compliance. With no files provided it scans the whole spellbook; use --only to filter by pattern, --list to show targets, and --verbose for detailed output.
+Lint and format-check spells for style-guide compliance. With no files provided it scans the whole spellbook; use --only to filter by pattern, --list to show targets, and --verbose for detailed output.
 USAGE
 }
 
@@ -49,7 +49,7 @@ while [ "$#" -gt 0 ]; do
       ;;
     --only)
       if [ "$#" -lt 2 ]; then
-        printf '%s\n' "vet-spell: --only requires a pattern argument." >&2
+        printf '%s\n' "lint-magic: --only requires a pattern argument." >&2
         exit 2
       fi
       pattern=$2
@@ -60,7 +60,7 @@ while [ "$#" -gt 0 ]; do
       break
       ;;
     -*)
-      printf '%s\n' "vet-spell: unknown option: $1" >&2
+      printf '%s\n' "lint-magic: unknown option: $1" >&2
       show_usage >&2
       exit 2
       ;;
@@ -276,7 +276,7 @@ check_function_naming() {
   
   # Create temp file for awk script to filter out heredoc content
   # This prevents false positives from function definitions inside heredocs
-  awk_script=$(mktemp "${TMPDIR:-/tmp}/vet-spell-naming-awk.XXXXXX") || return 1
+  awk_script=$(mktemp "${TMPDIR:-/tmp}/lint-magic-naming-awk.XXXXXX") || return 1
   cat >"$awk_script" <<'AWKSCRIPT'
 BEGIN { in_heredoc = 0; heredoc_end = "" }
 # Detect heredoc start - handles <<'DELIM', <<"DELIM", and <<DELIM
@@ -359,7 +359,7 @@ check_imp_no_flags() {
   # Create temp file for awk script to avoid quoting issues
   # The awk script filters out heredoc content and comments, leaving only code
   # that could contain flag parsing case statements
-  awk_script=$(mktemp "${TMPDIR:-/tmp}/vet-spell-awk.XXXXXX") || return 0
+  awk_script=$(mktemp "${TMPDIR:-/tmp}/lint-magic-awk.XXXXXX") || return 0
   cat >"$awk_script" <<'AWKSCRIPT'
 BEGIN { in_heredoc = 0; heredoc_end = "" }
 # Detect heredoc start - handles <<'DELIM', <<"DELIM", and <<DELIM
@@ -495,14 +495,138 @@ check_imp_param_count() {
   return 0
 }
 
+# Formatting checks (warnings, not failures)
+
+check_inconsistent_indentation() {
+  file=$1
+  # Check for mixed tabs and spaces in indentation
+  # This is a heuristic check: if both tabs and spaces are used for indentation, warn
+  has_tab_indent=$(grep -E '^[[:space:]]*\t' "$file" 2>/dev/null | head -1) || true
+  has_space_indent=$(grep -E '^  ' "$file" 2>/dev/null | head -1) || true
+  
+  if [ -n "$has_tab_indent" ] && [ -n "$has_space_indent" ]; then
+    printf 'mixed tabs and spaces for indentation (prefer 2 spaces)'
+    return 1
+  fi
+  return 0
+}
+
+check_long_lines() {
+  file=$1
+  # Warn about lines longer than 100 characters (excluding comments and heredocs)
+  # This is a soft guideline, not enforced strictly
+  
+  # Create temp file for awk script with robust heredoc detection
+  awk_script=$(mktemp "${TMPDIR:-/tmp}/lint-magic-lines-awk.XXXXXX") || return 0
+  cat >"$awk_script" <<'AWKSCRIPT'
+BEGIN { in_heredoc = 0; heredoc_end = ""; max_len = 100 }
+# Detect heredoc start - handles <<'DELIM', <<"DELIM", and <<DELIM
+/<<-?[ \t]*'[A-Za-z_][A-Za-z0-9_]*'/ {
+  delim = $0
+  sub(/.*<<-?[ \t]*'/, "", delim)
+  sub(/'.*/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+/<<-?[ \t]*"[A-Za-z_][A-Za-z0-9_]*"/ {
+  delim = $0
+  sub(/.*<<-?[ \t]*"/, "", delim)
+  sub(/".*/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+/<<-?[ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {
+  delim = $0
+  sub(/.*<<-?[ \t]*/, "", delim)
+  sub(/[ \t]*$/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+in_heredoc && $0 == heredoc_end { in_heredoc = 0; next }
+in_heredoc { next }
+/^[[:space:]]*#/ { next }
+length($0) > max_len {
+  print NR ": " substr($0, 1, 50) "..."
+}
+AWKSCRIPT
+  
+  long_lines=$(awk -f "$awk_script" "$file" 2>/dev/null | head -3) || true
+  rm -f "$awk_script"
+  
+  if [ -n "$long_lines" ]; then
+    first_line=$(printf '%s' "$long_lines" | head -1 | cut -d: -f1)
+    printf 'lines exceed 100 characters (line %s and possibly others)' "$first_line"
+    return 1
+  fi
+  return 0
+}
+
+check_echo_usage() {
+  file=$1
+  # Prefer printf over echo for better portability
+  # Skip lines that are comments or inside heredocs
+  
+  # Create temp file for awk script with robust heredoc detection
+  awk_script=$(mktemp "${TMPDIR:-/tmp}/lint-magic-echo-awk.XXXXXX") || return 0
+  cat >"$awk_script" <<'AWKSCRIPT'
+BEGIN { in_heredoc = 0; heredoc_end = "" }
+# Detect heredoc start
+/<<-?[ \t]*'[A-Za-z_][A-Za-z0-9_]*'/ {
+  delim = $0
+  sub(/.*<<-?[ \t]*'/, "", delim)
+  sub(/'.*/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+/<<-?[ \t]*"[A-Za-z_][A-Za-z0-9_]*"/ {
+  delim = $0
+  sub(/.*<<-?[ \t]*"/, "", delim)
+  sub(/".*/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+/<<-?[ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {
+  delim = $0
+  sub(/.*<<-?[ \t]*/, "", delim)
+  sub(/[ \t]*$/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+in_heredoc && $0 == heredoc_end { in_heredoc = 0; next }
+in_heredoc { next }
+/^[[:space:]]*#/ { next }
+/\becho[[:space:]]/ {
+  print NR
+  exit
+}
+AWKSCRIPT
+  
+  line_num=$(awk -f "$awk_script" "$file" 2>/dev/null) || true
+  rm -f "$awk_script"
+  
+  if [ -n "$line_num" ]; then
+    printf 'uses echo (prefer printf for portability) at line %s' "$line_num"
+    return 1
+  fi
+  return 0
+}
+
 failures=0
 total=0
 passed=0
 failed_targets=''
 spell_param_warnings=''
 spell_param_warning_count=0
+format_warnings=''
+format_warning_count=0
 
-targets_file=$(temp-file vet-spell-targets) || exit 1
+targets_file=$(temp-file lint-magic-targets) || exit 1
 trap 'cleanup-file "$targets_file"' EXIT HUP INT TERM
 collect_targets "$@" >"$targets_file"
 
@@ -649,6 +773,34 @@ while IFS= read -r target; do
     fi
   fi
   
+  # Formatting checks (warnings only, don't fail)
+  # Check for inconsistent indentation
+  if result=$(check_inconsistent_indentation "$path" 2>/dev/null); then
+    : # passed
+  else
+    format_warnings="${format_warnings}${format_warnings:+
+}  $target: $result"
+    format_warning_count=$((format_warning_count + 1))
+  fi
+  
+  # Check for long lines
+  if result=$(check_long_lines "$path" 2>/dev/null); then
+    : # passed
+  else
+    format_warnings="${format_warnings}${format_warnings:+
+}  $target: $result"
+    format_warning_count=$((format_warning_count + 1))
+  fi
+  
+  # Check for echo usage (prefer printf)
+  if result=$(check_echo_usage "$path" 2>/dev/null); then
+    : # passed
+  else
+    format_warnings="${format_warnings}${format_warnings:+
+}  $target: $result"
+    format_warning_count=$((format_warning_count + 1))
+  fi
+  
   if [ "$issue_count" -eq 0 ]; then
     if [ "$verbose" -eq 1 ]; then
       printf 'PASS %s\n' "$target"
@@ -668,6 +820,12 @@ rm -f "$targets_file"
 if [ -n "$spell_param_warnings" ]; then
   printf '\nWarning: %d spell(s) have more than 3 parameters:\n' "$spell_param_warning_count"
   printf '%s\n' "$spell_param_warnings"
+fi
+
+# Print formatting warnings (non-failing)
+if [ -n "$format_warnings" ]; then
+  printf '\nFormatting warnings (%d file(s)):\n' "$format_warning_count"
+  printf '%s\n' "$format_warnings"
 fi
 
 if [ "$failures" -eq 0 ]; then

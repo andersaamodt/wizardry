@@ -1,4 +1,4 @@
-name: Style checks
+name: Linting and style checks
 
 on:
   push:
@@ -13,8 +13,8 @@ permissions:
   pull-requests: read
 
 jobs:
-  vet:
-    name: Spell style vetting
+  lint:
+    name: Spell linting and formatting
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -23,7 +23,7 @@ jobs:
       - name: Install checkbashisms dependency
         run: ./spells/install/core/install-checkbashisms
 
-      - name: Run vet-spell on all spells
+      - name: Run lint-magic on all spells
         run: |
-          echo "Running spell style checks..."
-          ./spells/spellcraft/vet-spell --verbose
+          echo "Running spell style and format checks..."
+          ./spells/spellcraft/lint-magic --verbose

@@ -258,7 +258,7 @@ These standards describe the technical requirements that all spells, menus, and 
 | Unified logging tone            | Logging and prompts follow a consistent style and interruption semantics.                                 |
 | Standardized flag parsing       | All spells converge on a single pattern for parsing flags and arguments.                                  |
 | Input normalization             | Shared helpers normalize user paths and other inputs.                                                     |
-| Linting & formatting            | Default formatting and linting settings for POSIX shell are applied consistently.                         |
+| Linting & formatting            | Run `lint-magic` to check style compliance. Enforces POSIX compliance, proper naming, and formatting conventions. |
 | Standard exit codes             | Common helpers define exit codes and error shaping.                                                       |
 | Directory-resolution idiom      | One canonical pattern for locating sibling resources.                                                     |
 | Validation helpers              | A reusable suite provides common input checks.                                                            |
@@ -288,3 +288,4 @@ Principles of the testing suite:
 | Explicit shims        | Shims exist only within tests; each test that needs one creates and manages it explicitly. |
 | Sandboxed execution   | The `test-magic` spell discovers and runs all tests in an isolated bubblewrap environment. |
 | Tests required | All tests are required to pass before new code may be merged. |
+
