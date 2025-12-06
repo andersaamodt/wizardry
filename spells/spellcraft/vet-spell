@@ -285,10 +285,13 @@ check_imp_no_flags() {
   # Only match case statement flag handlers, not flag arguments being passed to other commands
   
   # Create temp file for awk script to avoid quoting issues
+  # The awk script filters out heredoc content and comments, leaving only code
+  # that could contain flag parsing case statements
   awk_script=$(mktemp "${TMPDIR:-/tmp}/vet-spell-awk.XXXXXX") || return 0
   cat >"$awk_script" <<'AWKSCRIPT'
 BEGIN { in_heredoc = 0; heredoc_end = "" }
 # Detect heredoc start - handles <<'DELIM', <<"DELIM", and <<DELIM
+# Extract delimiter by removing prefix and suffix
 /<<-?[ \t]*'[A-Za-z_][A-Za-z0-9_]*'/ {
   match($0, /<<-?[ \t]*'([A-Za-z_][A-Za-z0-9_]*)'/)
   delim = $0
@@ -322,9 +325,13 @@ in_heredoc { next }
 AWKSCRIPT
   
   result=0
-  # Look specifically for case statement patterns ending with )
-  # This matches: --flag) or -f) or --flag|--other) or -f|-g) etc.
-  # But not: --flag as a standalone argument or in set -- calls
+  # Regex explanation for case statement flag detection:
+  # ^[[:space:]]*                  - line starts with optional whitespace
+  # (--[a-zA-Z][-a-zA-Z0-9_=]*)    - long flag like --verbose or --name=value
+  # (\|--[a-zA-Z][-a-zA-Z0-9_=]*)* - additional long flags with | separator
+  # (\|-[a-zA-Z])*                 - short flags like |-v
+  # |-[a-zA-Z](...)                - OR short flag as first option
+  # [[:space:]]*\)                 - ends with ) for case pattern
   if awk -f "$awk_script" "$file" 2>/dev/null | grep -E '^[[:space:]]*(--[a-zA-Z][-a-zA-Z0-9_=]*(\|--[a-zA-Z][-a-zA-Z0-9_=]*)*(\|-[a-zA-Z])*|-[a-zA-Z](\|--[a-zA-Z][-a-zA-Z0-9_=]*|\|-[a-zA-Z])*)[[:space:]]*\)' >/dev/null 2>&1; then
     printf 'imp uses --flags (imps should use space-separated arguments only)'
     result=1
