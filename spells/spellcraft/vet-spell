@@ -267,6 +267,37 @@ check_spell_naming() {
   return 0
 }
 
+check_function_naming() {
+  file=$1
+  is_imp_file=$2
+  
+  # For imps, underscore-prefixed functions (_function_name) are allowed for "true names"
+  # For spells, all functions should use snake_case without underscore prefix
+  
+  # Find function definitions: pattern is function_name() {
+  # Exclude show_usage, usage, and main which are standard
+  func_violations=$(grep -nE '^[[:space:]]*_[a-zA-Z][a-zA-Z0-9_-]*\(\)[[:space:]]*\{' "$file" 2>/dev/null | \
+    grep -v 'show_usage\|^[[:space:]]*usage\|^[[:space:]]*main' || true)
+  
+  if [ "$is_imp_file" -eq 0 ] && [ -n "$func_violations" ]; then
+    # Spell (non-imp) has underscore-prefixed functions
+    line_num=$(printf '%s' "$func_violations" | head -1 | cut -d: -f1)
+    printf 'spell has underscore-prefixed function at line %s (spells should use snake_case without prefix)' "$line_num"
+    return 1
+  fi
+  
+  # Check for hyphenated function names (not allowed in any context)
+  hyphen_violations=$(grep -nE '^[[:space:]]*[a-zA-Z][a-zA-Z0-9_-]*-[a-zA-Z0-9_-]*\(\)[[:space:]]*\{' "$file" 2>/dev/null || true)
+  
+  if [ -n "$hyphen_violations" ]; then
+    line_num=$(printf '%s' "$hyphen_violations" | head -1 | cut -d: -f1)
+    printf 'function name contains hyphen at line %s (use snake_case)' "$line_num"
+    return 1
+  fi
+  
+  return 0
+}
+
 check_imp_no_help_handler() {
   file=$1
   # Imps should NOT have --help handlers - the opening comment is their spec
@@ -538,6 +569,12 @@ while IFS= read -r target; do
   
   # Check spell naming convention (required for all)
   if ! result=$(check_spell_naming "$path"); then
+    issues=${issues:+$issues; }$result
+    issue_count=$((issue_count + 1))
+  fi
+  
+  # Check function naming convention (required for all)
+  if ! result=$(check_function_naming "$path" "$is_imp_file"); then
     issues=${issues:+$issues; }$result
     issue_count=$((issue_count + 1))
   fi
