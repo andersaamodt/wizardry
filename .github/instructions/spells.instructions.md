@@ -43,6 +43,35 @@ set -eu
 
 ## Code Style
 
+### Function Naming
+
+All functions in spells must use **snake_case** naming:
+
+```sh
+# CORRECT
+show_usage() { ... }
+detect_os() { ... }
+helper_usable() { ... }
+read_value() { ... }
+validate_name() { ... }
+
+# WRONG - do not use underscore prefix in spells
+_jump() { ... }
+_helper_function() { ... }
+
+# WRONG - do not use hyphens in function names
+my-function() { ... }
+```
+
+**Convention**:
+- **Spells**: Use `snake_case` for all internal functions
+- **Imps**: Use underscore-prefixed `_snake_case` for "true name" functions (e.g., `_nix_shell_add`)
+
+**Rationale**:
+- `snake_case` is the dominant convention in POSIX shell
+- Underscore prefix is reserved for imp "true names" to distinguish from public hyphenated aliases
+- Consistent naming makes code easier to read and maintain
+
 ### Variables
 ```sh
 # CORRECT

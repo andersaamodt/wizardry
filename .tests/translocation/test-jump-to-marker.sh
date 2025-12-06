@@ -35,9 +35,9 @@ run_jump() {
   JUMP_TO_MARKERS_DIR="$markers_dir"
   export JUMP_TO_MARKERS_DIR PATH
   if [ -n "$marker_arg" ]; then
-    _run_cmd sh -c ". \"$ROOT_DIR/spells/translocation/jump-to-marker\"; _jump \"$marker_arg\""
+    _run_cmd sh -c ". \"$ROOT_DIR/spells/translocation/jump-to-marker\"; jump_to_marker_impl \"$marker_arg\""
   else
-    _run_cmd sh -c ". \"$ROOT_DIR/spells/translocation/jump-to-marker\"; _jump"
+    _run_cmd sh -c ". \"$ROOT_DIR/spells/translocation/jump-to-marker\"; jump_to_marker_impl"
   fi
 }
 
