@@ -274,20 +274,24 @@ check_function_naming() {
   # For imps, underscore-prefixed functions (_function_name) are allowed for "true names"
   # For spells, all functions should use snake_case without underscore prefix
   
-  # Find function definitions: pattern is function_name() {
-  # Exclude show_usage, usage, and main which are standard
-  func_violations=$(grep -nE '^[[:space:]]*_[a-zA-Z][a-zA-Z0-9_-]*\(\)[[:space:]]*\{' "$file" 2>/dev/null | \
-    grep -v 'show_usage\|^[[:space:]]*usage\|^[[:space:]]*main' || true)
-  
-  if [ "$is_imp_file" -eq 0 ] && [ -n "$func_violations" ]; then
-    # Spell (non-imp) has underscore-prefixed functions
-    line_num=$(printf '%s' "$func_violations" | head -1 | cut -d: -f1)
-    printf 'spell has underscore-prefixed function at line %s (spells should use snake_case without prefix)' "$line_num"
-    return 1
+  # Find underscore-prefixed function definitions in spells
+  # Pattern matches: _function_name() {
+  # The grep output format is "line_num:content", so we extract just the line number
+  if [ "$is_imp_file" -eq 0 ]; then
+    func_violations=$(grep -nE '^[[:space:]]*_[a-zA-Z][a-zA-Z0-9_]*\(\)[[:space:]]*\{' "$file" 2>/dev/null || true)
+    
+    if [ -n "$func_violations" ]; then
+      # Spell (non-imp) has underscore-prefixed functions
+      line_num=$(printf '%s' "$func_violations" | head -1 | cut -d: -f1)
+      printf 'spell has underscore-prefixed function at line %s (spells should use snake_case without prefix)' "$line_num"
+      return 1
+    fi
   fi
   
   # Check for hyphenated function names (not allowed in any context)
-  hyphen_violations=$(grep -nE '^[[:space:]]*[a-zA-Z][a-zA-Z0-9_-]*-[a-zA-Z0-9_-]*\(\)[[:space:]]*\{' "$file" 2>/dev/null || true)
+  # Pattern specifically looks for hyphens in function names: name-with-hyphen()
+  # We look for at least one hyphen between alphanumeric/underscore characters
+  hyphen_violations=$(grep -nE '^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*-[a-zA-Z0-9_-]*\(\)[[:space:]]*\{' "$file" 2>/dev/null || true)
   
   if [ -n "$hyphen_violations" ]; then
     line_num=$(printf '%s' "$hyphen_violations" | head -1 | cut -d: -f1)
