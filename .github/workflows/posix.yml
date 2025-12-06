@@ -19,6 +19,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install checkbashisms dependency
-        run: ./spells/install/core/install-checkbashisms
+        run: ./spells/.arcana/core/install-checkbashisms
       - name: Verify POSIX compliance
         run: ./spells/system/verify-posix
