@@ -2,6 +2,7 @@
 # This spell scribes (creates) a custom spell in your spellbook.
 # It prompts for name, command text, and optionally a category.
 
+require-wizardry || exit 1
 
 SCRIPT_NAME=$(basename "$0")
 
@@ -25,18 +26,7 @@ esac
 
 set -eu
 
-# Resolve the spell home directory
-resolve_spell_home() {
-        if [ -n "${SPELLBOOK_DIR-}" ]; then
-                printf '%s' "$SPELLBOOK_DIR"
-        elif [ -n "${HOME-}" ]; then
-                printf '%s' "$HOME/.spellbook"
-        else
-                printf '%s' ".spellbook"
-        fi
-}
-
-spell_home=$(resolve_spell_home)
+spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
 
 # Category can be passed via --category argument
 current_category=""

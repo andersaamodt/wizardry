@@ -3,6 +3,8 @@
 # This spell decorates a location with a description, making it visible to 'look'.
 # It's a convenient wrapper around 'enchant' for setting room descriptions.
 
+require-wizardry || exit 1
+
 show_usage() {
 cat <<'USAGE'
 Usage: decorate [path] [description]

@@ -2,6 +2,8 @@
 
 # This spell displays the menu for adminning hosting a MUD server.
 
+require-wizardry || exit 1
+
 show_usage() {
         cat <<'USAGE' >&2
 Usage: mud-admin

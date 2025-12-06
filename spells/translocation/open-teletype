@@ -3,6 +3,8 @@
 # This spell opens an SSH connection through Tor for anonymous remote access.
 # Use it to connect to remote servers while preserving anonymity.
 
+require-wizardry || exit 1
+
 show_usage() {
 cat <<'USAGE'
 Usage: open-teletype [remote_address] [user]

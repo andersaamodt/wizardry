@@ -2,6 +2,8 @@
 
 # Present a menu of spells that can install supporting software.
 
+require-wizardry || exit 1
+
 show_usage() {
         cat <<'USAGE' >&2
 Usage: install-menu

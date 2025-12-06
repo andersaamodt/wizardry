@@ -3,6 +3,8 @@
 # This spell teleports to markers set with mark-location.
 # Source this file or use word-of-binding to invoke it.
 
+require-wizardry || exit 1
+
 show_usage() {
 cat <<'USAGE'
 Usage: jump-to-marker [marker]
@@ -16,34 +18,17 @@ case "${1-}" in
         show_usage
         exit 0
         ;;
-esac
-
-RUNNING_AS_SCRIPT=0
-case $0 in
-*/jump-to-marker|jump-to-marker|*/jump|jump)
-        RUNNING_AS_SCRIPT=1
-        set -eu
+-*)
+        warn "jump-to-marker: unknown option '$1'."
+        exit 1
         ;;
-*) : ;;
 esac
 
-# Resolve the spell home directory (same logic as spellbook menu)
-_jump_resolve_spell_home() {
-  if [ -n "${SPELLBOOK_DIR-}" ]; then
-    printf '%s' "$SPELLBOOK_DIR"
-  elif [ -n "${HOME-}" ]; then
-    printf '%s' "$HOME/.spellbook"
-  else
-    printf '%s' ".spellbook"
-  fi
-}
+set -eu
 
-if [ -n "${JUMP_TO_MARKERS_DIR-}" ]; then
-  MARKERS_DIR=$JUMP_TO_MARKERS_DIR
-else
-  _spell_home=$(_jump_resolve_spell_home)
-  MARKERS_DIR="$_spell_home/.markers"
-fi
+# Resolve markers directory
+_jm_spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+MARKERS_DIR=$(env-or JUMP_TO_MARKERS_DIR "$_jm_spell_home/.markers")
 
 # jump_portal_messages preserves every line of flavor text from the original
 # spell and sprinkles in a few new sensations for modern teleportation.
@@ -97,7 +82,7 @@ jump_portal_messages | awk 'BEGIN{srand();}{lines[NR]=$0}END{if (NR==0) exit 0; 
 }
 
 jump_describe_current_location() {
-if command -v look >/dev/null 2>&1; then
+if has look; then
         look 2>/dev/null || true
 fi
 }
@@ -113,7 +98,7 @@ jump_list_markers() {
         alpha_markers=""
         for marker in "$markers_dir"/*; do
                 [ -f "$marker" ] || continue
-                name=$(basename "$marker")
+                name=$(file-name "$marker")
                 # Skip hidden files
                 case "$name" in
                         .*) continue ;;
@@ -166,7 +151,7 @@ jump_most_recent_marker() {
         if [ "$recent_mtime" != "$oldest_mtime" ]; then
                 # Check if the most recent marker is older than 4 hours
                 # If so, reset cycling (return empty to start at "1")
-                current_time=$(date +%s)
+                current_time=$(now)
                 four_hours=$((4 * 60 * 60))
                 age=$((current_time - recent_mtime))
                 if [ "$age" -gt "$four_hours" ]; then
@@ -181,7 +166,6 @@ jump_most_recent_marker() {
 # Get next marker in sequence for cycling
 jump_next_marker() {
         current=$1
-        markers_dir=$MARKERS_DIR
         all_markers=$(jump_list_markers)
         if [ -z "$all_markers" ]; then
                 printf '%s\n' "1"
@@ -205,7 +189,7 @@ jump_next_marker() {
         printf '%s\n' "$first"
 }
 
-jump() {
+_jump() {
         markers_dir=$MARKERS_DIR
         marker_name="${1:-}"
         
@@ -216,7 +200,7 @@ jump() {
                 # This enables cycling: jump touches the marker, making it "most recent",
                 # then next jump cycles to the following marker
                 # If no recent marker found (all same mtime = fresh state), start at "1"
-                last_marker=$(jump_most_recent_marker)
+                last_marker=$(jump_most_recent_marker || true)
                 if [ -n "$last_marker" ]; then
                         marker_name=$(jump_next_marker "$last_marker")
                 else
@@ -228,15 +212,15 @@ jump() {
         
         # Check for markers directory
         if [ ! -d "$markers_dir" ]; then
-                printf '%s\n' "No markers have been set. Use 'mark-location' to mark a location first."
+                say "No markers have been set. Use 'mark-location' to mark a location first."
                 return 1
         fi
         
         # Check for specific marker file
         if [ ! -f "$marker_file" ]; then
-                printf '%s\n' "No marker '$marker_name' found. Use 'mark-location $marker_name' to set it."
+                say "No marker '$marker_name' found. Use 'mark-location $marker_name' to set it."
                 # List available markers
-                available=$(jump_list_markers)
+                available=$(jump_list_markers || true)
                 if [ -n "$available" ]; then
                         printf '%s' "Available markers: "
                         printf '%s\n' "$available" | tr '\n' ' '
@@ -247,29 +231,29 @@ jump() {
         
         destination=$(cat "$marker_file")
         if [ -z "$destination" ]; then
-                printf '%s\n' "The rune '$marker_name' is blank; the marked location has faded away."
+                say "The rune '$marker_name' is blank; the marked location has faded away."
                 return 1
         fi
         if [ ! -d "$destination" ]; then
-                printf '%s\n' "The ley-line remembers '$destination' for marker '$marker_name', but it no longer exists."
+                say "The ley-line remembers '$destination' for marker '$marker_name', but it no longer exists."
                 return 1
         fi
         # Normalize paths to handle macOS double slashes
-        current=$(pwd -P | sed 's|//|/|g')
-        normalized_destination=$(printf '%s' "$destination" | sed 's|//|/|g')
+        current=$(here | norm-path)
+        normalized_destination=$(norm-path "$destination")
         if [ "$current" = "$normalized_destination" ]; then
-                printf '%s\n' "You are already standing at marker '$marker_name'."
+                say "You are already standing at marker '$marker_name'."
                 # Touch marker to update mtime for cycling
                 touch "$marker_file"
                 return 0
         fi
         if ! cd "$destination"; then
-                printf '%s\n' "The portal refuses to stabilize; try marking again." >&2
+                warn "The portal refuses to stabilize; try marking again."
                 return 1
         fi
         arrival=$(jump_random_message)
         if [ -n "$arrival" ]; then
-                printf '%s\n' "$arrival"
+                say "$arrival"
         fi
         
         # Touch marker to update mtime for cycling
@@ -278,29 +262,6 @@ jump() {
 jump_describe_current_location
 }
 
-jump_cli() {
-        case ${1-} in
-        --help|--usage|-h)
-                show_usage
-                ;;
-        "")
-                jump || true
-                ;;
-        *)
-                # Treat as marker name if not starting with -
-                case "$1" in
-                        -*)
-                                printf '%s\n' "jump-to-marker: unknown option '$1'." >&2
-                                return 1
-                                ;;
-                        *)
-                                jump "$1"
-                                ;;
-                esac
-                ;;
-        esac
-}
-
-if [ "$RUNNING_AS_SCRIPT" -eq 1 ]; then
-        jump_cli "$@"
-fi
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */jump-to-marker|*/jump) _jump "$@" ;; esac

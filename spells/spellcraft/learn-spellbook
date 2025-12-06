@@ -3,6 +3,7 @@
 # This spell adds or removes a folder to your PATH permanently.
 # Use learn-spellbook to manage which directories are available in your shell.
 
+require-wizardry || exit 1
 
 show_usage() {
         cat <<'USAGE' >&2

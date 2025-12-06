@@ -3,6 +3,8 @@
 # Manage MUD feature configuration stored in $MUD_DIR/config
 # This is a helper for reading and writing MUD feature toggle states.
 
+require-wizardry || exit 1
+
 show_usage() {
 cat <<'USAGE'
 Usage: mud-config {get|set|toggle|list} [FEATURE] [VALUE]
@@ -21,20 +23,8 @@ esac
 set -eu
 
 # Resolve config directory
-resolve_config_dir() {
-        if [ -n "${MUD_DIR-}" ]; then
-                printf '%s' "$MUD_DIR"
-        elif [ -n "${SPELLBOOK_DIR-}" ]; then
-                printf '%s' "$SPELLBOOK_DIR/.mud"
-        elif [ -n "${HOME-}" ]; then
-                printf '%s' "$HOME/.spellbook/.mud"
-        else
-                printf '%s\n' "mud-config: cannot determine config directory" >&2
-                return 1
-        fi
-}
-
-config_dir=$(resolve_config_dir) || exit 1
+spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+config_dir=$(env-or MUD_DIR "$spell_home/.mud")
 config_file="$config_dir/config"
 
 # Ensure config directory exists
