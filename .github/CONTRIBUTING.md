@@ -4,7 +4,7 @@ Welcome, fellow spellcaster! We're delighted that you wish to contribute to the 
 
 ## The Wizard's Oath
 
-By contributing to wizardry, you agree to abide by the [Wizard's Oath](../OATH). The Oath represents our commitment to using our skills for the service of Life, guarding growth and easing pain. Please take a moment to read and understand it.
+By contributing to wizardry, you agree to abide by the [Wizard's Oath](/OATH). The Oath represents our commitment to using our skills for the service of Life, guarding growth and easing pain. Please take a moment to read and understand it.
 
 ## Ways to Contribute
 
@@ -193,7 +193,7 @@ Contributors are recognized in commits and pull request credits. Your spells wil
 
 ## License
 
-By contributing to wizardry, you agree that your contributions will be licensed under the same [ISC License](../LICENSE) as the project.
+By contributing to wizardry, you agree that your contributions will be licensed under the same [ISC License](/LICENSE) as the project.
 
 ---
 

@@ -96,7 +96,7 @@ Project maintainers will follow these Community Impact Guidelines in determining
 
 ## The Wizard's Oath in Practice
 
-The [Wizard's Oath](../OATH) guides our interactions:
+The [Wizard's Oath](/OATH) guides our interactions:
 
 > "I will use the Art for nothing but the service of that Life. I will guard growth and ease pain."
 
