@@ -124,6 +124,16 @@ while :; do
         set -- "$@" "${label}%$cmd"
     done
 
+    # Add divider before Import arcanum
+    set -- "$@" "%--divider--"
+    
+    # Add Import arcanum menu item
+    import_arcanum_cmd="$install_dir/import-arcanum"
+    if [ ! -x "$import_arcanum_cmd" ]; then
+        import_arcanum_cmd="import-arcanum"
+    fi
+    set -- "$@" "Import arcanum%$import_arcanum_cmd"
+
     exit_label=$(exit-label)
     set -- "$@" "${exit_label}%kill -TERM \$PPID"
 
