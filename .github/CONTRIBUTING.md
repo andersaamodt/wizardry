@@ -141,7 +141,7 @@ Every spell must have:
 5. **Tests**: Corresponding test file in `.tests/`
 6. **Documentation**: Clear comments for novice developers
 
-See the [spell style guide](.AGENTS.md) for complete requirements.
+See the [spell style guide](/.AGENTS.md) for complete requirements.
 
 ## Imp Requirements
 

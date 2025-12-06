@@ -134,7 +134,7 @@ esac
 ### Avoiding Command Injection
 
 ```sh
-# NEVER do this:
+# BAD: Never do this
 eval "$user_input"
 
 # GOOD: Use variables directly
