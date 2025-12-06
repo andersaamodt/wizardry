@@ -2,15 +2,17 @@
 # usage-error NAME MESSAGE - print usage error and return exit code 2
 # Example: usage-error "my-spell" "unknown option: -x"
 
-set -eu
+_usage_error() {
+  _ue_name=${1:-}
+  _ue_message=${2:-}
+  if [ -n "$_ue_name" ]; then
+    printf '%s: %s\n' "$_ue_name" "${_ue_message:-usage error}" >&2
+  elif [ -n "$_ue_message" ]; then
+    printf '%s\n' "$_ue_message" >&2
+  fi
+  return 2
+}
 
-name=${1:-}
-message=${2:-}
-
-# Format message with name prefix if both provided, otherwise just print message
-if [ -n "$name" ]; then
-  printf '%s: %s\n' "$name" "${message:-usage error}" >&2
-elif [ -n "$message" ]; then
-  printf '%s\n' "$message" >&2
-fi
-exit 2
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */usage-error) _usage_error "$@" ;; esac
