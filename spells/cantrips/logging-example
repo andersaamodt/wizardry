@@ -1,0 +1,82 @@
+#!/bin/sh
+
+# Example spell demonstrating the standardized logging framework.
+# Shows usage of info, step, debug, success, and error handling.
+
+show_usage() {
+  cat <<'USAGE'
+Usage: logging-example [options]
+
+Demonstrates the wizardry logging framework with different verbosity levels.
+
+Options:
+  --help, -h     Show this help message
+  --simulate     Simulate a multi-step process
+
+Environment:
+  WIZARDRY_LOG_LEVEL
+    0 (default)  Show only critical messages
+    1            Show info and step messages
+    2+           Show debug messages
+
+Examples:
+  logging-example --simulate
+  WIZARDRY_LOG_LEVEL=1 logging-example --simulate
+  WIZARDRY_LOG_LEVEL=2 logging-example --simulate
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
+set -eu
+
+# Source the logging imps (in real usage, these would be bound at startup)
+# For this example, we'll source them directly
+. spells/.imps/out/say
+. spells/.imps/out/info
+. spells/.imps/out/step
+. spells/.imps/out/debug
+. spells/.imps/out/success
+. spells/.imps/out/warn
+. spells/.imps/out/die
+. spells/.imps/sys/on-exit
+. spells/.imps/fs/temp-file
+. spells/.imps/fs/cleanup-file
+
+case "${1-}" in
+--simulate)
+  _info "Starting multi-step process"
+  _debug "Current working directory: $(pwd)"
+  
+  _step "Step 1: Creating temporary file"
+  tmpfile=$(_temp_file)
+  _on_exit _cleanup_file "$tmpfile"
+  _debug "Created temp file: $tmpfile"
+  
+  _step "Step 2: Writing data"
+  printf '%s\n' "test data" > "$tmpfile"
+  _debug "Wrote test data to temp file"
+  
+  _step "Step 3: Processing data"
+  # Simulate some processing
+  sleep 1
+  _debug "Processing complete"
+  
+  _success "Multi-step process completed successfully"
+  ;;
+*)
+  _say "Welcome to the logging example!"
+  _say ""
+  _say "Set WIZARDRY_LOG_LEVEL to control verbosity:"
+  _say "  0 (default) - Critical messages only"
+  _say "  1           - Include info and step messages"
+  _say "  2+          - Include debug messages"
+  _say ""
+  _say "Try: WIZARDRY_LOG_LEVEL=1 logging-example --simulate"
+  ;;
+esac
