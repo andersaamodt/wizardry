@@ -406,7 +406,7 @@ EOF_DETECT
       printf '%s\n' "learn: nix-shell-init imp not found." >&2
       exit 1
     fi
-    "$nix_helper" status --shell "$shell_type" --name "$spell" --file "$rc_file"
+    "$nix_helper" status "$spell" "$rc_file" "$shell_type"
   }
 
   nix_add_spell() {
@@ -414,7 +414,7 @@ EOF_DETECT
       printf '%s\n' "learn: nix-shell-init imp not found." >&2
       exit 1
     fi
-    "$nix_helper" add --shell "$shell_type" --name "$spell" --file "$rc_file"
+    "$nix_helper" add "$spell" "$rc_file" "$shell_type"
   }
 
   nix_remove_spell() {
@@ -422,7 +422,7 @@ EOF_DETECT
       printf '%s\n' "learn: nix-shell-init imp not found." >&2
       exit 1
     fi
-    "$nix_helper" remove --shell "$shell_type" --name "$spell" --file "$rc_file"
+    "$nix_helper" remove "$spell" "$rc_file" "$shell_type"
   }
 
   if [ "$rc_format" = "nix" ]; then

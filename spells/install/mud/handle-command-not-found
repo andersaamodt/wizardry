@@ -258,7 +258,7 @@ install() {
   return 127
 }'
 
-		if printf '%s\n' "$hook_code" | "$nix_helper" add --shell bash --name command-not-found --file "$rc_file"; then
+		if printf '%s\n' "$hook_code" | "$nix_helper" add command-not-found "$rc_file" bash; then
 			printf '%s\n' "handle-command-not-found: installed hook in '$rc_file'."
 			# Run nixos-rebuild to apply the changes
 			run_nix_rebuild || true
@@ -334,7 +334,7 @@ uninstall() {
 		fi
 
 		if [ -n "$nix_helper" ]; then
-			if "$nix_helper" remove --shell bash --name command-not-found --file "$rc_file"; then
+			if "$nix_helper" remove command-not-found "$rc_file" bash; then
 				printf '%s\n' "handle-command-not-found: uninstalled hook from '$rc_file'."
 				# Run nixos-rebuild to apply the changes
 				run_nix_rebuild || true

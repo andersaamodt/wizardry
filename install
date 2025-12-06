@@ -745,7 +745,7 @@ case $detect_format_value in
 nix)
         # For NixOS, use nix-shell-init to add shell initialization code
         if [ -x "$NIX_SHELL_INIT" ]; then
-                if printf '%s\n' "$invoke_wizardry_source_line" | "$NIX_SHELL_INIT" add --shell bash --name wizardry-init --file "$detect_rc_file_value" 2>/dev/null; then
+                if printf '%s\n' "$invoke_wizardry_source_line" | "$NIX_SHELL_INIT" add wizardry-init "$detect_rc_file_value" bash 2>/dev/null; then
                         shell_setup_made=1
                 else
                         printf '%s\n' "Error: Failed to add wizardry initialization to '$detect_rc_file_value'." >&2
@@ -982,7 +982,7 @@ if [ -f "$RC_FILE" ]; then
                 # For NixOS, use nix-shell-init to remove the wizardry-init block
                 NIX_SHELL_INIT="$INSTALL_DIR/spells/.imps/sys/nix-shell-init"
                 if [ -x "$NIX_SHELL_INIT" ]; then
-                        if "$NIX_SHELL_INIT" remove --shell bash --name wizardry-init --file "$RC_FILE" 2>/dev/null; then
+                        if "$NIX_SHELL_INIT" remove wizardry-init "$RC_FILE" bash 2>/dev/null; then
                                 printf '  %s✓%s Removed wizardry initialization from %s\n' "$GREEN" "$RESET" "$RC_FILE"
                         else
                                 printf '  %sNote:%s No wizardry initialization found in %s\n' "$YELLOW" "$RESET" "$RC_FILE"
