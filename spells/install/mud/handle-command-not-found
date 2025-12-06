@@ -194,7 +194,7 @@ hook_block_present() {
 	if grep -Fq '# >>> wizardry command-not-found >>>' "$rc_file"; then
 		return 0
 	fi
-	# Check for nix format marker (used by nix-shell-init)
+	# Check for nix format marker (used by nix-shell-add)
 	if grep -Fq '#wizardry: command-not-found' "$rc_file"; then
 		return 0
 	fi
@@ -224,18 +224,18 @@ install() {
 	rc_format=$(resolve_rc_format)
 	rc_file=$(resolve_rc_file) || return 1
 
-	# For nix format, use nix-shell-init imp to add shell init code
+	# For nix format, use nix-shell-add imp to add shell init code
 	if [ "$rc_format" = "nix" ]; then
-		# Find nix-shell-init helper
+		# Find nix-shell-add helper
 		nix_helper=""
-		if [ -x "$SCRIPT_DIR/../../.imps/sys/nix-shell-init" ]; then
-			nix_helper="$SCRIPT_DIR/../../.imps/sys/nix-shell-init"
-		elif command -v nix-shell-init >/dev/null 2>&1; then
-			nix_helper=$(command -v nix-shell-init)
+		if [ -x "$SCRIPT_DIR/../../.imps/sys/nix-shell-add" ]; then
+			nix_helper="$SCRIPT_DIR/../../.imps/sys/nix-shell-add"
+		elif command -v nix-shell-add >/dev/null 2>&1; then
+			nix_helper=$(command -v nix-shell-add)
 		fi
 
 		if [ -z "$nix_helper" ]; then
-			printf '%s\n' "handle-command-not-found: nix-shell-init imp not found for NixOS installation."
+			printf '%s\n' "handle-command-not-found: nix-shell-add imp not found for NixOS installation."
 			return 1
 		fi
 
@@ -258,7 +258,7 @@ install() {
   return 127
 }'
 
-		if printf '%s\n' "$hook_code" | "$nix_helper" add command-not-found "$rc_file" bash; then
+		if printf '%s\n' "$hook_code" | "$nix_helper" command-not-found "$rc_file" bash; then
 			printf '%s\n' "handle-command-not-found: installed hook in '$rc_file'."
 			# Run nixos-rebuild to apply the changes
 			run_nix_rebuild || true
@@ -324,17 +324,17 @@ uninstall() {
 		return 0
 	fi
 
-	# For nix format, use nix-shell-init to remove the block
+	# For nix format, use nix-shell-remove to remove the block
 	if [ "$rc_format" = "nix" ]; then
 		nix_helper=""
-		if [ -x "$SCRIPT_DIR/../../.imps/sys/nix-shell-init" ]; then
-			nix_helper="$SCRIPT_DIR/../../.imps/sys/nix-shell-init"
-		elif command -v nix-shell-init >/dev/null 2>&1; then
-			nix_helper=$(command -v nix-shell-init)
+		if [ -x "$SCRIPT_DIR/../../.imps/sys/nix-shell-remove" ]; then
+			nix_helper="$SCRIPT_DIR/../../.imps/sys/nix-shell-remove"
+		elif command -v nix-shell-remove >/dev/null 2>&1; then
+			nix_helper=$(command -v nix-shell-remove)
 		fi
 
 		if [ -n "$nix_helper" ]; then
-			if "$nix_helper" remove command-not-found "$rc_file" bash; then
+			if "$nix_helper" command-not-found "$rc_file"; then
 				printf '%s\n' "handle-command-not-found: uninstalled hook from '$rc_file'."
 				# Run nixos-rebuild to apply the changes
 				run_nix_rebuild || true
@@ -344,8 +344,8 @@ uninstall() {
 				return 1
 			fi
 		fi
-		# nix-shell-init helper not found - warn and attempt shell method fallback
-		warn "nix-shell-init imp not found; attempting shell-style removal (may not work for nix files)."
+		# nix-shell-remove helper not found - warn and attempt shell method fallback
+		warn "nix-shell-remove imp not found; attempting shell-style removal (may not work for nix files)."
 	fi
 
 	# Shell format: use sed to remove the block

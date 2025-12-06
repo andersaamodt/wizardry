@@ -383,46 +383,42 @@ EOF_DETECT
     mv "$tmp_file" "$rc_file"
   }
 
-  # Find nix-shell-init helper
-  find_nix_shell_init() {
-    if [ -n "${NIX_SHELL_INIT-}" ] && [ -x "$NIX_SHELL_INIT" ]; then
-      printf '%s' "$NIX_SHELL_INIT"
+  # Find nix-shell-* helpers
+  find_nix_shell_imp() {
+    _imp_name=$1
+    if [ -x "$SCRIPT_DIR/../.imps/sys/$_imp_name" ]; then
+      printf '%s' "$SCRIPT_DIR/../.imps/sys/$_imp_name"
       return 0
     fi
-    helper="$SCRIPT_DIR/../.imps/sys/nix-shell-init"
-    if [ -x "$helper" ]; then
-      printf '%s' "$helper"
-      return 0
-    fi
-    if command -v nix-shell-init >/dev/null 2>&1; then
-      command -v nix-shell-init
+    if command -v "$_imp_name" >/dev/null 2>&1; then
+      command -v "$_imp_name"
       return 0
     fi
     return 1
   }
 
   nix_spell_status() {
-    if ! nix_helper=$(find_nix_shell_init); then
-      printf '%s\n' "learn: nix-shell-init imp not found." >&2
+    if ! nix_helper=$(find_nix_shell_imp nix-shell-status); then
+      printf '%s\n' "learn: nix-shell-status imp not found." >&2
       exit 1
     fi
-    "$nix_helper" status "$spell" "$rc_file" "$shell_type"
+    "$nix_helper" "$spell" "$rc_file"
   }
 
   nix_add_spell() {
-    if ! nix_helper=$(find_nix_shell_init); then
-      printf '%s\n' "learn: nix-shell-init imp not found." >&2
+    if ! nix_helper=$(find_nix_shell_imp nix-shell-add); then
+      printf '%s\n' "learn: nix-shell-add imp not found." >&2
       exit 1
     fi
-    "$nix_helper" add "$spell" "$rc_file" "$shell_type"
+    "$nix_helper" "$spell" "$rc_file" "$shell_type"
   }
 
   nix_remove_spell() {
-    if ! nix_helper=$(find_nix_shell_init); then
-      printf '%s\n' "learn: nix-shell-init imp not found." >&2
+    if ! nix_helper=$(find_nix_shell_imp nix-shell-remove); then
+      printf '%s\n' "learn: nix-shell-remove imp not found." >&2
       exit 1
     fi
-    "$nix_helper" remove "$spell" "$rc_file" "$shell_type"
+    "$nix_helper" "$spell" "$rc_file"
   }
 
   if [ "$rc_format" = "nix" ]; then
