@@ -88,7 +88,7 @@ else
 fi
 SH
   chmod +x "$tmp/require"
-  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud-menu"
+  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$ROOT_DIR/spells/cantrips:$tmp:/bin:/usr/bin" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud-menu"
   _assert_failure
   _assert_error_contains "The MUD Install menu needs the 'menu' command"
 }

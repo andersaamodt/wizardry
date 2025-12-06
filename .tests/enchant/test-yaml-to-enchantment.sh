@@ -84,7 +84,7 @@ user.alpha: sky
 spell
 FILE
   # remove helper availability while keeping core utilities
-  PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:/usr/bin:/bin" _run_spell "spells/enchant/yaml-to-enchantment" "$tmpfile"
+  PATH="$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:/usr/bin:/bin" _run_spell "spells/enchant/yaml-to-enchantment" "$tmpfile"
   _assert_failure && _assert_error_contains "requires attr, setfattr, or xattr"
 }
 
