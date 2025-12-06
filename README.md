@@ -258,7 +258,7 @@ These standards describe the technical requirements that all spells, menus, and 
 | Unified logging tone            | Logging and prompts follow a consistent style and interruption semantics.                                 |
 | Standardized flag parsing       | All spells converge on a single pattern for parsing flags and arguments.                                  |
 | Input normalization             | Shared helpers normalize user paths and other inputs.                                                     |
-| Linting & formatting            | Use `lint-magic` to check all spells. Enforces: `#!/bin/sh` shebang, opening comment, strict mode, POSIX compliance (via `checkbashisms`), no `which` or backticks, proper naming, proper function naming. Warns about: mixed indentation (prefer 2 spaces), long lines (>100 chars), `echo` usage (prefer `printf`). |
+| Linting & formatting            | Run `lint-magic` to check style compliance. Enforces POSIX compliance, proper naming, and formatting conventions. |
 | Standard exit codes             | Common helpers define exit codes and error shaping.                                                       |
 | Directory-resolution idiom      | One canonical pattern for locating sibling resources.                                                     |
 | Validation helpers              | A reusable suite provides common input checks.                                                            |
@@ -289,36 +289,3 @@ Principles of the testing suite:
 | Sandboxed execution   | The `test-magic` spell discovers and runs all tests in an isolated bubblewrap environment. |
 | Tests required | All tests are required to pass before new code may be merged. |
 
-## Linting
-
-Run the spell linter to check style and formatting compliance:
-
-```
-lint-magic                    # Check all spells
-lint-magic --verbose          # Show passing files too
-lint-magic --only pattern     # Check files matching pattern
-lint-magic spells/path/spell  # Check specific file
-```
-
-The `lint-magic` spell enforces wizardry's code standards:
-
-**Required checks (failures):**
-- `#!/bin/sh` shebang (also accepts `#!/usr/bin/env sh`)
-- Opening description comment after shebang
-- `set -eu` strict mode (for non-imp spells)
-- `show_usage()` function (for non-imp spells)
-- `--help|--usage|-h` handler (for non-imp spells)
-- No trailing spaces in variable assignments
-- POSIX compliance via `checkbashisms`
-- No use of `which` command (use `command -v`)
-- No backticks (use `$()` syntax)
-- Hyphenated names (no underscores or `.sh` extensions)
-- Function naming: `snake_case` for spells, `_snake_case` for imps
-- Imps: no `--help` handlers, no `--flags`, max 3 parameters
-
-**Format warnings (non-failing):**
-- Mixed tabs/spaces in indentation (prefer 2 spaces)
-- Lines exceeding 100 characters
-- Use of `echo` (prefer `printf` for portability)
-
-Note: `vet-spell` is a backward-compatible alias for `lint-magic`.

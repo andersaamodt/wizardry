@@ -9,7 +9,7 @@ Wizardry is a collection of POSIX shell scripts themed as magical spells for the
 ## Tech Stack
 
 - **Language**: POSIX sh only (`#!/bin/sh`) — no bash-isms
-- **Style checker**: `lint-magic` (also `vet-spell` for backward compatibility) and `checkbashisms`
+- **Style checker**: `lint-magic` and `checkbashisms`
 - **Testing**: `.tests/` directory with `test_common.sh` framework
 - **CI**: GitHub Actions (see `.github/workflows/`)
 
