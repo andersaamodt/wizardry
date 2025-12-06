@@ -1,5 +1,5 @@
 #!/bin/sh
-# Tests for the 'nix-shell-add', 'nix-shell-remove', and 'nix-shell-status' imps
+# Tests for the 'nix-shell-add' imp
 
 # Locate the repository root so we can source test-bootstrap
 # Start from this test's directory and walk upward until spells/.imps/test/test-bootstrap is found
@@ -63,55 +63,6 @@ test_nix_shell_add_is_idempotent() {
   fi
 }
 
-test_nix_shell_status_returns_correct_result() {
-  tmpdir=$(_make_tempdir)
-  nix_file="$tmpdir/test.nix"
-  
-  # Create minimal nix file
-  printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$nix_file"
-  
-  # Status should fail when not present
-  if "$ROOT_DIR/spells/.imps/sys/nix-shell-status" testspell "$nix_file" 2>/dev/null; then
-    TEST_FAILURE_REASON="status should fail when not present"
-    return 1
-  fi
-  
-  # Add the block
-  printf 'source "/path/to/spell"' | "$ROOT_DIR/spells/.imps/sys/nix-shell-add" testspell "$nix_file" bash
-  
-  # Status should succeed when present
-  if ! "$ROOT_DIR/spells/.imps/sys/nix-shell-status" testspell "$nix_file" 2>/dev/null; then
-    TEST_FAILURE_REASON="status should succeed when present"
-    return 1
-  fi
-}
-
-test_nix_shell_remove_clears_block() {
-  tmpdir=$(_make_tempdir)
-  nix_file="$tmpdir/test.nix"
-  
-  # Create minimal nix file
-  printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$nix_file"
-  
-  # Add shell init code
-  printf 'source "/path/to/spell"' | "$ROOT_DIR/spells/.imps/sys/nix-shell-add" testspell "$nix_file" bash
-  
-  # Verify it was added
-  if ! grep -q "wizardry: testspell" "$nix_file"; then
-    TEST_FAILURE_REASON="block was not added"
-    return 1
-  fi
-  
-  # Remove it
-  "$ROOT_DIR/spells/.imps/sys/nix-shell-remove" testspell "$nix_file"
-  
-  # Verify it was removed
-  if grep -q "wizardry: testspell" "$nix_file"; then
-    TEST_FAILURE_REASON="block was not removed"
-    return 1
-  fi
-}
-
 test_nix_shell_add_zsh_uses_correct_option() {
   tmpdir=$(_make_tempdir)
   nix_file="$tmpdir/test.nix"
@@ -165,8 +116,6 @@ test_nix_shell_add_requires_file() {
 
 _run_test_case "nix-shell-add creates block" test_nix_shell_add_creates_block
 _run_test_case "nix-shell-add is idempotent" test_nix_shell_add_is_idempotent
-_run_test_case "nix-shell-status returns correct result" test_nix_shell_status_returns_correct_result
-_run_test_case "nix-shell-remove clears block" test_nix_shell_remove_clears_block
 _run_test_case "nix-shell-add zsh uses correct option" test_nix_shell_add_zsh_uses_correct_option
 _run_test_case "nix-shell-add creates file if missing" test_nix_shell_add_creates_file_if_missing
 _run_test_case "nix-shell-add requires name" test_nix_shell_add_requires_name
