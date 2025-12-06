@@ -1,0 +1,11 @@
+#!/bin/sh
+# is-path VALUE - test if VALUE is a syntactically valid path (non-empty)
+# Example: is-path "$input" && echo "valid path string"
+
+_is_path() {
+  [ -n "$1" ]
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */is-path) _is_path "$@" ;; esac
