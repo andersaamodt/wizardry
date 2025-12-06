@@ -242,11 +242,9 @@ jobs:
             [ -f "$compiled" ] || continue
             spell_name=$(basename "$compiled")
             if env -i PATH="/usr/bin:/bin" "$compiled" --help >/dev/null 2>&1; then
-              standalone_list="$standalone_list- \`$spell_name\`
-"
+              standalone_list="$standalone_list- \`$spell_name\`"$'\n'
             else
-              dependency_list="$dependency_list- \`$spell_name\`
-"
+              dependency_list="$dependency_list- \`$spell_name\`"$'\n'
             fi
           done
           
