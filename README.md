@@ -262,7 +262,7 @@ These standards describe the technical requirements that all spells, menus, and 
 | Standard exit codes             | Common helpers define exit codes and error shaping.                                                       |
 | Directory-resolution idiom      | One canonical pattern for locating sibling resources.                                                     |
 | Validation helpers              | A reusable suite provides common input checks.                                                            |
-| Naming scheme                   | A consistent naming scheme governs internal functions and verbs.                                         |
+| Naming scheme                   | A consistent naming scheme governs internal functions and verbs. Spells use `snake_case` for functions; imps use underscore-prefixed `_snake_case` for "true names". |
 
 ## Testing
 

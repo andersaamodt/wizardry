@@ -189,7 +189,7 @@ jump_next_marker() {
         printf '%s\n' "$first"
 }
 
-_jump() {
+jump_to_marker_impl() {
         markers_dir=$MARKERS_DIR
         marker_name="${1:-}"
         
@@ -264,4 +264,4 @@ jump_describe_current_location
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */jump-to-marker|*/jump) _jump "$@" ;; esac
+  */jump-to-marker|*/jump) jump_to_marker_impl "$@" ;; esac

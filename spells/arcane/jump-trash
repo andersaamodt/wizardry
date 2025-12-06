@@ -28,7 +28,7 @@ case $0 in
 esac
 
 # Get the trash path using detect-trash or inline detection
-_jump_trash_get_path() {
+get_trash_path() {
   if command -v detect-trash >/dev/null 2>&1; then
     detect-trash
     return
@@ -71,7 +71,7 @@ USAGE
     ;;
   esac
 
-  trash_path=$(_jump_trash_get_path)
+  trash_path=$(get_trash_path)
   if [ -z "$trash_path" ]; then
     return 1
   fi

@@ -96,7 +96,7 @@ absolute_spell_path() {
 # Cache for detect-rc-file output to avoid multiple calls
 _detect_rc_cache=""
 
-_run_detect_rc_file() {
+run_detect_rc_file() {
 	if [ -n "$_detect_rc_cache" ]; then
 		printf '%s\n' "$_detect_rc_cache"
 		return 0
@@ -117,7 +117,7 @@ resolve_rc_file() {
 	fi
 
 	# Try to use detect-rc-file for cross-platform support
-	if detected=$(_run_detect_rc_file); then
+	if detected=$(run_detect_rc_file); then
 		# Parse rc_file= line using shell parameter expansion
 		while IFS= read -r line; do
 			case $line in
@@ -159,7 +159,7 @@ resolve_rc_format() {
 	fi
 
 	# Try to get format from detect-rc-file output
-	if detected=$(_run_detect_rc_file); then
+	if detected=$(run_detect_rc_file); then
 		while IFS= read -r line; do
 			case $line in
 			format=*)
