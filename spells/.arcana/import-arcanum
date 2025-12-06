@@ -11,8 +11,8 @@ If no path is provided, the spell will prompt for one interactively.
 
 An arcanum must:
 - Be a directory
+- Have a valid name (letters, digits, underscores, hyphens only)
 - Not already exist in the arcana directory
-- Optionally contain a .arcanum metadata file (name must match folder name)
 USAGE
 }
 
@@ -72,6 +72,14 @@ case "$source_path" in
     ;;
 esac
 
+# Validate that resolved path doesn't contain '..' components (path traversal protection)
+case "$source_path" in
+  */../*|*/..)
+    printf '%s\n' "import-arcanum: path traversal detected: $source_path" >&2
+    exit 1
+    ;;
+esac
+
 # Validate that source path exists and is a directory
 if [ ! -d "$source_path" ]; then
   printf '%s\n' "import-arcanum: not a directory: $source_path" >&2
@@ -81,11 +89,11 @@ fi
 # Extract arcanum name from path
 arcanum_name=$(basename "$source_path")
 
-# Validate arcanum name (alphanumeric, hyphens, underscores)
+# Validate arcanum name (alphanumeric, hyphens, underscores only - no dots to prevent path traversal)
 case "$arcanum_name" in
-  ''|*[!A-Za-z0-9._-]*)
+  ''|*[!A-Za-z0-9_-]*)
     printf '%s\n' "import-arcanum: invalid arcanum name: $arcanum_name" >&2
-    printf '%s\n' "import-arcanum: names may contain only letters, digits, dots, underscores, and hyphens." >&2
+    printf '%s\n' "import-arcanum: names may contain only letters, digits, underscores, and hyphens." >&2
     exit 1
     ;;
   -*)
@@ -96,6 +104,11 @@ case "$arcanum_name" in
   .*)
     printf '%s\n' "import-arcanum: invalid arcanum name: $arcanum_name" >&2
     printf '%s\n' "import-arcanum: names may not begin with a dot." >&2
+    exit 1
+    ;;
+  *..*)
+    printf '%s\n' "import-arcanum: invalid arcanum name: $arcanum_name" >&2
+    printf '%s\n' "import-arcanum: names may not contain consecutive dots." >&2
     exit 1
     ;;
 esac
@@ -113,14 +126,6 @@ target_path="$arcana_dir/$arcanum_name"
 if [ -e "$target_path" ]; then
   printf '%s\n' "import-arcanum: arcanum already exists: $arcanum_name" >&2
   exit 1
-fi
-
-# If .arcanum metadata file exists, validate it
-arcanum_metadata="$source_path/$arcanum_name.arcanum"
-if [ -f "$arcanum_metadata" ]; then
-  # File exists - we could validate its contents here if needed
-  # For now, we just check that it exists and has the correct name
-  :
 fi
 
 # Copy the arcanum to the arcana directory

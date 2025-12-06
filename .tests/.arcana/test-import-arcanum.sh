@@ -65,6 +65,34 @@ test_import_arcanum_copies_directory() {
     _assert_path_exists "$arcana_dir/test-arcanum/test-file"
 }
 
+test_import_arcanum_rejects_dots_in_name() {
+  tmp=$(_make_tempdir)
+  arcana_dir="$tmp/arcana"
+  mkdir -p "$arcana_dir"
+  
+  # Create source with dots in name
+  source_dir="$tmp/my.test.arcanum"
+  mkdir -p "$source_dir"
+  
+  _run_cmd env INSTALL_MENU_ROOT="$arcana_dir" "$ROOT_DIR/spells/.arcana/import-arcanum" "$source_dir"
+  _assert_failure && _assert_error_contains "invalid arcanum name"
+}
+
+test_import_arcanum_prevents_path_traversal() {
+  tmp=$(_make_tempdir)
+  arcana_dir="$tmp/arcana"
+  mkdir -p "$arcana_dir"
+  
+  # Try to use path with .. component
+  source_dir="$tmp/subdir/../traversal"
+  mkdir -p "$tmp/subdir"
+  mkdir -p "$tmp/traversal"
+  
+  _run_cmd env INSTALL_MENU_ROOT="$arcana_dir" "$ROOT_DIR/spells/.arcana/import-arcanum" "$source_dir"
+  # Should fail due to path traversal detection
+  _assert_failure && _assert_error_contains "path traversal"
+}
+
 test_import_arcanum_validates_metadata_name_match() {
   tmp=$(_make_tempdir)
   arcana_dir="$tmp/arcana"
@@ -155,6 +183,8 @@ _run_test_case "import-arcanum validates directory exists" test_import_arcanum_v
 _run_test_case "import-arcanum validates arcanum name" test_import_arcanum_validates_arcanum_name
 _run_test_case "import-arcanum prevents duplicate" test_import_arcanum_prevents_duplicate
 _run_test_case "import-arcanum copies directory" test_import_arcanum_copies_directory
+_run_test_case "import-arcanum rejects dots in name" test_import_arcanum_rejects_dots_in_name
+_run_test_case "import-arcanum prevents path traversal" test_import_arcanum_prevents_path_traversal
 _run_test_case "import-arcanum validates metadata file name match" test_import_arcanum_validates_metadata_name_match
 _run_test_case "import-arcanum rejects dot prefix" test_import_arcanum_rejects_dot_prefix
 _run_test_case "import-arcanum prevents importing from arcana directory" test_import_arcanum_prevents_importing_from_arcana_dir
