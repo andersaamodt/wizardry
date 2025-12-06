@@ -50,10 +50,11 @@ test_script_dir_handles_simple_name() {
   # Run from the temp directory with just the filename
   output=$(cd "$tmpdir" && sh ./script-dir script-dir 2>&1) || true
   
-  # Should return the tmpdir
-  norm_tmpdir=$(printf '%s' "$tmpdir" | sed 's|//|/|g')
+  # Should return the tmpdir (resolve through pwd -P for macOS /var -> /private/var)
+  # shellcheck disable=SC1007
+  norm_tmpdir=$( (CDPATH= cd -- "$tmpdir" && pwd -P) | sed 's|//|/|g')
   case "$output" in
-    "$norm_tmpdir"|"$tmpdir") return 0 ;;
+    "$norm_tmpdir") return 0 ;;
     *) TEST_FAILURE_REASON="expected $norm_tmpdir, got: $output"; return 1 ;;
   esac
 }
@@ -74,9 +75,11 @@ test_script_dir_handles_symlink() {
   output=$(sh "$tmpdir/link_dir/script-dir" "$tmpdir/link_dir/script-dir" 2>&1) || true
   
   # Should resolve to the actual directory, not the symlink directory
-  norm_actual=$(printf '%s' "$tmpdir/actual" | sed 's|//|/|g')
+  # Resolve through pwd -P for macOS /var -> /private/var
+  # shellcheck disable=SC1007
+  norm_actual=$( (CDPATH= cd -- "$tmpdir/actual" && pwd -P) | sed 's|//|/|g')
   case "$output" in
-    "$norm_actual"|"$tmpdir/actual") return 0 ;;
+    "$norm_actual") return 0 ;;
     *) TEST_FAILURE_REASON="expected $norm_actual (actual dir), got: $output"; return 1 ;;
   esac
 }
@@ -91,9 +94,11 @@ test_script_dir_handles_relative_path() {
   # Run from tmpdir with relative path
   output=$(cd "$tmpdir" && sh sub/dir/script-dir sub/dir/script-dir 2>&1) || true
   
-  norm_expected=$(printf '%s' "$tmpdir/sub/dir" | sed 's|//|/|g')
+  # Resolve through pwd -P for macOS /var -> /private/var
+  # shellcheck disable=SC1007
+  norm_expected=$( (CDPATH= cd -- "$tmpdir/sub/dir" && pwd -P) | sed 's|//|/|g')
   case "$output" in
-    "$norm_expected"|"$tmpdir/sub/dir") return 0 ;;
+    "$norm_expected") return 0 ;;
     *) TEST_FAILURE_REASON="expected $norm_expected, got: $output"; return 1 ;;
   esac
 }
@@ -106,9 +111,11 @@ test_script_dir_handles_dot_slash() {
   # Run with ./script-dir syntax
   output=$(cd "$tmpdir" && sh ./script-dir ./script-dir 2>&1) || true
   
-  norm_tmpdir=$(printf '%s' "$tmpdir" | sed 's|//|/|g')
+  # Resolve through pwd -P for macOS /var -> /private/var
+  # shellcheck disable=SC1007
+  norm_tmpdir=$( (CDPATH= cd -- "$tmpdir" && pwd -P) | sed 's|//|/|g')
   case "$output" in
-    "$norm_tmpdir"|"$tmpdir") return 0 ;;
+    "$norm_tmpdir") return 0 ;;
     *) TEST_FAILURE_REASON="expected $norm_tmpdir, got: $output"; return 1 ;;
   esac
 }
@@ -129,9 +136,11 @@ test_script_dir_handles_relative_symlink() {
   output=$(sh "$tmpdir/links/script-dir" "$tmpdir/links/script-dir" 2>&1) || true
   
   # Should resolve to the actual directory
-  norm_actual=$(printf '%s' "$tmpdir/actual" | sed 's|//|/|g')
+  # Resolve through pwd -P for macOS /var -> /private/var
+  # shellcheck disable=SC1007
+  norm_actual=$( (CDPATH= cd -- "$tmpdir/actual" && pwd -P) | sed 's|//|/|g')
   case "$output" in
-    "$norm_actual"|"$tmpdir/actual") return 0 ;;
+    "$norm_actual") return 0 ;;
     *) TEST_FAILURE_REASON="expected $norm_actual (actual dir), got: $output"; return 1 ;;
   esac
 }
@@ -151,9 +160,11 @@ test_script_dir_handles_same_dir_symlink() {
   output=$(sh "$tmpdir/script-dir" "$tmpdir/script-dir" 2>&1) || true
   
   # Should return the same directory
-  norm_tmpdir=$(printf '%s' "$tmpdir" | sed 's|//|/|g')
+  # Resolve through pwd -P for macOS /var -> /private/var
+  # shellcheck disable=SC1007
+  norm_tmpdir=$( (CDPATH= cd -- "$tmpdir" && pwd -P) | sed 's|//|/|g')
   case "$output" in
-    "$norm_tmpdir"|"$tmpdir") return 0 ;;
+    "$norm_tmpdir") return 0 ;;
     *) TEST_FAILURE_REASON="expected $norm_tmpdir, got: $output"; return 1 ;;
   esac
 }
