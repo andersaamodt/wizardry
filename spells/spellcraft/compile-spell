@@ -148,11 +148,14 @@ fi
 transformed_content="$content"
 
 # For each inlined imp, replace hyphenated calls with underscore function calls
+# This is a simple word-boundary replacement that will catch most cases
+# More sophisticated AST parsing would be needed for 100% accuracy
 for imp in $processed_imps; do
   func_name="_$(printf '%s' "$imp" | tr '-' '_')"
-  # This is a simple replacement - more sophisticated parsing would be better
-  # but this handles the most common cases
-  transformed_content=$(printf '%s\n' "$transformed_content" | sed "s/\b$imp\b/$func_name/g")
+  # Replace imp name when it appears as a standalone command or function call
+  # Using word boundaries to avoid replacing parts of other words
+  # Note: This may still replace in strings/comments but handles most common cases
+  transformed_content=$(printf '%s\n' "$transformed_content" | sed "s/\<$imp\>/$func_name/g")
 done
 
 # Remove require-wizardry line since we're making it standalone

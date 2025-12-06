@@ -118,7 +118,7 @@ These spells use only simple imps (no spell dependencies) and can be compiled st
 | Calls Other Full Spells | 4 | ❌ No - too complex |
 | Already Standalone | 7 | ✅ Yes - works now |
 | Compilable with Imp Inlining | 52 | ✅ Yes - with enhancement |
-| **Total** | **103** | **59 (57%)** |
+| **Total** | **103** | **59 potential (57%)** |
 
 ## Path to 100% Compilation
 
@@ -143,17 +143,17 @@ To reach maximum compilation rate:
 ## Expected Final State
 
 With enhanced compilation:
-- **66 spells (64%) work standalone** (7 current + 59 compilable)
-- **37 spells (36%) remain wizardry-dependent** (40 by-design + 4 spell-callers - 7 standalone)
+- **59 spells (57%) work standalone** (7 current + 52 compilable)
+- **44 spells (43%) remain wizardry-dependent** (40 by-design + 4 spell-callers)
 
-This is the practical limit. The remaining 36% are either:
+This is the practical limit. The remaining 43% are either:
 - By design (wizardry management, menus, MUD, priorities)
 - Too complex (calling full spell dependency trees)
 - More useful within wizardry than standalone
 
-Going beyond 64% would require either:
+Going beyond 57% would require either:
 - Reimplementing wizardry infrastructure in each compiled spell (defeats purpose)
 - Creating a compiled wizardry runtime library (different project scope)
 - Breaking spell modularity (poor engineering)
 
-The 64% standalone rate represents the logical limit for compile-spell.
+The 57% standalone rate represents the logical limit for compile-spell.
