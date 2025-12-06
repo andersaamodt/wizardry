@@ -1,6 +1,6 @@
 #!/bin/sh
-# is-path VALUE - test if VALUE is a syntactically valid path (non-empty)
-# Example: is-path "$input" && echo "valid path string"
+# is-path VALUE - test if VALUE is provided (non-empty path argument)
+# Example: is-path "$input" && echo "path argument provided"
 
 _is_path() {
   [ -n "$1" ]
