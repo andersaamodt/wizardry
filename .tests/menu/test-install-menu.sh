@@ -262,4 +262,45 @@ SH
 
 _run_test_case "install-menu nested spacing behavior" test_nested_menu_spacing
 
+# Test that import-arcanum appears in menu with divider
+test_import_arcanum_in_menu() {
+  tmp=$(_make_tempdir)
+  make_stub_menu_env "$tmp"
+  make_stub_require "$tmp"
+  
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$tmp/exit-label"
+  
+  install_root="$tmp/install"
+  mkdir -p "$install_root/test"
+  cat >"$install_root/test/test-status" <<'SH'
+#!/bin/sh
+echo ready
+SH
+  chmod +x "$install_root/test/test-status"
+  
+  cat >"$install_root/import-arcanum" <<'SH'
+#!/bin/sh
+echo "import-arcanum called"
+SH
+  chmod +x "$install_root/import-arcanum"
+  
+  _run_cmd env PATH="$tmp:$PATH" INSTALL_MENU_ROOT="$install_root" INSTALL_MENU_DIRS="test" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/install-menu"
+  _assert_success || return 1
+  
+  # Check that menu includes import-arcanum with divider before it
+  menu_args=$(cat "$tmp/log")
+  case "$menu_args" in
+    *"%--divider--"*"Import arcanum%"*) : ;;
+    *) TEST_FAILURE_REASON="import-arcanum with divider not found in menu"; return 1 ;;
+  esac
+  
+  return 0
+}
+
+_run_test_case "install-menu includes import-arcanum" test_import_arcanum_in_menu
+
 _finish_tests

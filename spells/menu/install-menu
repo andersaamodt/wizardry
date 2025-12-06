@@ -23,7 +23,7 @@ esac
 set -eu
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 spells_dir=$(CDPATH= cd -- "$script_dir/.." && pwd)
-install_dir=${INSTALL_MENU_ROOT:-$spells_dir/install}
+install_dir=${INSTALL_MENU_ROOT:-$spells_dir/.arcana}
 
 # Load color palette (colors handles terminal capability detection internally)
 # shellcheck source=/dev/null
@@ -123,6 +123,21 @@ while :; do
         # the menu cantrip.
         set -- "$@" "${label}%$cmd"
     done
+
+    # Add divider before Import arcanum
+    set -- "$@" "%--divider--"
+    
+    # Add Import arcanum menu item (only if the command exists)
+    import_arcanum_cmd=""
+    if [ -x "$install_dir/import-arcanum" ]; then
+        import_arcanum_cmd="$install_dir/import-arcanum"
+    elif command -v import-arcanum >/dev/null 2>&1; then
+        import_arcanum_cmd="import-arcanum"
+    fi
+    
+    if [ -n "$import_arcanum_cmd" ]; then
+        set -- "$@" "Import arcanum%$import_arcanum_cmd"
+    fi
 
     exit_label=$(exit-label)
     set -- "$@" "${exit_label}%kill -TERM \$PPID"
