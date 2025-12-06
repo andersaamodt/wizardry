@@ -1,0 +1,210 @@
+name: Compiled spell tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  compile-and-test:
+    name: Test compiled spells for standalone execution
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Ensure installer spells are executable
+        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor
+      
+      - name: Set up wizardry environment
+        run: |
+          export WIZARDRY_DIR="${GITHUB_WORKSPACE}"
+          . ./spells/.imps/sys/invoke-wizardry
+          echo "PATH=$PATH" >> "$GITHUB_ENV"
+          echo "WIZARDRY_DIR=$WIZARDRY_DIR" >> "$GITHUB_ENV"
+      
+      - name: Create compiled spells directory
+        run: mkdir -p /tmp/compiled-spells
+      
+      - name: Compile all spells
+        run: |
+          . ./spells/.imps/sys/invoke-wizardry
+          compiled_count=0
+          failed_count=0
+          
+          echo "=== Compiling spells ==="
+          for spell_dir in spells/*; do
+            [ -d "$spell_dir" ] || continue
+            # Skip special directories
+            case "$spell_dir" in
+              spells/.imps|spells/.arcana) continue ;;
+            esac
+            
+            for spell in "$spell_dir"/*; do
+              [ -f "$spell" ] || continue
+              [ -x "$spell" ] || continue
+              
+              spell_name=$(basename "$spell")
+              category=$(basename "$spell_dir")
+              
+              echo "Compiling: $category/$spell_name"
+              if compile-spell "$spell_name" > "/tmp/compiled-spells/${spell_name}" 2>/dev/null; then
+                chmod +x "/tmp/compiled-spells/${spell_name}"
+                compiled_count=$((compiled_count + 1))
+              else
+                echo "  Failed to compile $category/$spell_name"
+                failed_count=$((failed_count + 1))
+              fi
+            done
+          done
+          
+          echo ""
+          echo "=== Compilation Summary ==="
+          echo "Successfully compiled: $compiled_count spells"
+          echo "Failed to compile: $failed_count spells"
+          echo ""
+          ls -1 /tmp/compiled-spells/ | wc -l
+          echo "compiled spells in /tmp/compiled-spells/"
+      
+      - name: Test compiled spells for standalone execution
+        run: |
+          success_count=0
+          fail_count=0
+          
+          echo "=== Testing compiled spells in isolation ==="
+          echo ""
+          
+          # Test each compiled spell by running its --help
+          # This tests if it can execute without wizardry being in PATH
+          for compiled in /tmp/compiled-spells/*; do
+            [ -f "$compiled" ] || continue
+            
+            spell_name=$(basename "$compiled")
+            
+            # Test in isolated environment with minimal PATH
+            if env -i PATH="/usr/bin:/bin" "$compiled" --help >/dev/null 2>&1; then
+              echo "✓ $spell_name works standalone"
+              success_count=$((success_count + 1))
+            else
+              echo "✗ $spell_name requires wizardry dependencies"
+              fail_count=$((fail_count + 1))
+            fi
+          done
+          
+          echo ""
+          echo "=== Standalone Test Summary ==="
+          echo "Working standalone: $success_count spells"
+          echo "Requires dependencies: $fail_count spells"
+          echo ""
+          
+          # For now, we don't fail the workflow even if spells require dependencies
+          # This is exploratory testing to understand the current state
+          echo "Note: This workflow does not fail on dependency requirements."
+          echo "It serves to document which spells can run standalone."
+      
+      - name: Test compiled spells with test suite
+        run: |
+          . ./spells/.imps/sys/invoke-wizardry
+          
+          echo "=== Testing compiled spells against their test suites ==="
+          echo ""
+          
+          # Create backup directory
+          mkdir -p /tmp/spell-backups
+          
+          test_passed=0
+          test_failed=0
+          test_skipped=0
+          
+          # List of spells known to work standalone (no require-wizardry or imp dependencies)
+          # We'll test these by replacing them with compiled versions and running their tests
+          standalone_spells="hash hashchant evoke-hash file-list"
+          
+          for spell_name in $standalone_spells; do
+            # Find the spell in the spells directory structure
+            spell_path=""
+            for dir in spells/*; do
+              [ -d "$dir" ] || continue
+              if [ -f "$dir/$spell_name" ]; then
+                spell_path="$dir/$spell_name"
+                break
+              fi
+            done
+            
+            if [ -z "$spell_path" ]; then
+              echo "⊘ $spell_name - spell file not found"
+              test_skipped=$((test_skipped + 1))
+              continue
+            fi
+            
+            if [ ! -f "/tmp/compiled-spells/$spell_name" ]; then
+              echo "⊘ $spell_name - compiled version not found"
+              test_skipped=$((test_skipped + 1))
+              continue
+            fi
+            
+            # Find corresponding test
+            category=$(basename "$(dirname "$spell_path")")
+            test_path=".tests/${category}/test-${spell_name}.sh"
+            
+            if [ ! -f "$test_path" ]; then
+              echo "⊘ $spell_name - no test file at $test_path"
+              test_skipped=$((test_skipped + 1))
+              continue
+            fi
+            
+            echo "Testing compiled $spell_name..."
+            
+            # Backup original
+            cp "$spell_path" "/tmp/spell-backups/$(basename "$spell_path")"
+            
+            # Replace with compiled version
+            cp "/tmp/compiled-spells/$spell_name" "$spell_path"
+            chmod +x "$spell_path"
+            
+            # Run the test
+            if timeout 60 ./spells/system/test-magic --only "${category}/test-${spell_name}.sh" >/dev/null 2>&1; then
+              echo "✓ $spell_name passes all tests with compiled version"
+              test_passed=$((test_passed + 1))
+            else
+              echo "✗ $spell_name failed tests with compiled version"
+              test_failed=$((test_failed + 1))
+            fi
+            
+            # Restore original
+            cp "/tmp/spell-backups/$(basename "$spell_path")" "$spell_path"
+          done
+          
+          echo ""
+          echo "=== Compiled Spell Test Results ==="
+          echo "Passed: $test_passed"
+          echo "Failed: $test_failed"
+          echo "Skipped: $test_skipped"
+          echo ""
+          
+          if [ "$test_failed" -gt 0 ]; then
+            echo "⚠ Some compiled spells failed their tests."
+            echo "This indicates compile-spell may need improvements for these spells."
+            # Don't fail the workflow yet - this is exploratory
+          fi
+          
+          if [ "$test_passed" -gt 0 ]; then
+            echo "✓ Success! $test_passed compiled spell(s) achieve full test parity."
+            echo "This proves the compile-spell concept works for standalone spells."
+          fi
+          
+          echo ""
+          echo "=== Next Steps ==="
+          echo "1. Enhance compile-spell to inline imp dependencies"
+          echo "2. Test more complex spells that use imps"
+          echo "3. Identify spells that cannot be compiled standalone"
+          echo "4. Document bootstrap spell equivalence"
