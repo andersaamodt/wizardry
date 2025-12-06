@@ -515,22 +515,46 @@ check_long_lines() {
   file=$1
   # Warn about lines longer than 100 characters (excluding comments and heredocs)
   # This is a soft guideline, not enforced strictly
-  long_lines=$(awk '
-    BEGIN { in_heredoc = 0; max_len = 100 }
-    /<<-?[ \t]*["\047]?[A-Za-z_][A-Za-z0-9_]*["\047]?/ {
-      # Entering heredoc
-      in_heredoc = 1
-      next
-    }
-    in_heredoc && /^[A-Z_][A-Z0-9_]*$/ {
-      # Exiting heredoc (simple heuristic)
-      in_heredoc = 0
-      next
-    }
-    !in_heredoc && !/^[[:space:]]*#/ && length($0) > max_len {
-      print NR ": " substr($0, 1, 50) "..."
-    }
-  ' "$file" 2>/dev/null | head -3) || true
+  
+  # Create temp file for awk script with robust heredoc detection
+  awk_script=$(mktemp "${TMPDIR:-/tmp}/lint-magic-lines-awk.XXXXXX") || return 0
+  cat >"$awk_script" <<'AWKSCRIPT'
+BEGIN { in_heredoc = 0; heredoc_end = ""; max_len = 100 }
+# Detect heredoc start - handles <<'DELIM', <<"DELIM", and <<DELIM
+/<<-?[ \t]*'[A-Za-z_][A-Za-z0-9_]*'/ {
+  delim = $0
+  sub(/.*<<-?[ \t]*'/, "", delim)
+  sub(/'.*/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+/<<-?[ \t]*"[A-Za-z_][A-Za-z0-9_]*"/ {
+  delim = $0
+  sub(/.*<<-?[ \t]*"/, "", delim)
+  sub(/".*/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+/<<-?[ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {
+  delim = $0
+  sub(/.*<<-?[ \t]*/, "", delim)
+  sub(/[ \t]*$/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+in_heredoc && $0 == heredoc_end { in_heredoc = 0; next }
+in_heredoc { next }
+/^[[:space:]]*#/ { next }
+length($0) > max_len {
+  print NR ": " substr($0, 1, 50) "..."
+}
+AWKSCRIPT
+  
+  long_lines=$(awk -f "$awk_script" "$file" 2>/dev/null | head -3) || true
+  rm -f "$awk_script"
   
   if [ -n "$long_lines" ]; then
     first_line=$(printf '%s' "$long_lines" | head -1 | cut -d: -f1)
@@ -543,11 +567,50 @@ check_long_lines() {
 check_echo_usage() {
   file=$1
   # Prefer printf over echo for better portability
-  # Skip if file only uses echo in comments or is clearly intentional
-  echo_usage=$(grep -n '[^#]*\becho[[:space:]]' "$file" 2>/dev/null | grep -v '^[[:space:]]*#' | head -1) || true
+  # Skip lines that are comments or inside heredocs
   
-  if [ -n "$echo_usage" ]; then
-    line_num=$(printf '%s' "$echo_usage" | cut -d: -f1)
+  # Create temp file for awk script with robust heredoc detection
+  awk_script=$(mktemp "${TMPDIR:-/tmp}/lint-magic-echo-awk.XXXXXX") || return 0
+  cat >"$awk_script" <<'AWKSCRIPT'
+BEGIN { in_heredoc = 0; heredoc_end = "" }
+# Detect heredoc start
+/<<-?[ \t]*'[A-Za-z_][A-Za-z0-9_]*'/ {
+  delim = $0
+  sub(/.*<<-?[ \t]*'/, "", delim)
+  sub(/'.*/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+/<<-?[ \t]*"[A-Za-z_][A-Za-z0-9_]*"/ {
+  delim = $0
+  sub(/.*<<-?[ \t]*"/, "", delim)
+  sub(/".*/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+/<<-?[ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {
+  delim = $0
+  sub(/.*<<-?[ \t]*/, "", delim)
+  sub(/[ \t]*$/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+in_heredoc && $0 == heredoc_end { in_heredoc = 0; next }
+in_heredoc { next }
+/^[[:space:]]*#/ { next }
+/\becho[[:space:]]/ {
+  print NR
+  exit
+}
+AWKSCRIPT
+  
+  line_num=$(awk -f "$awk_script" "$file" 2>/dev/null) || true
+  rm -f "$awk_script"
+  
+  if [ -n "$line_num" ]; then
     printf 'uses echo (prefer printf for portability) at line %s' "$line_num"
     return 1
   fi
