@@ -208,3 +208,63 @@ jobs:
           echo "2. Test more complex spells that use imps"
           echo "3. Identify spells that cannot be compiled standalone"
           echo "4. Document bootstrap spell equivalence"
+      
+      - name: Upload compiled spells as artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: compiled-spells
+          path: /tmp/compiled-spells/
+          retention-days: 90
+          compression-level: 9
+      
+      - name: Generate compilation report
+        if: always()
+        run: |
+          mkdir -p /tmp/reports
+          
+          echo "# Compiled Spell Report" > /tmp/reports/compilation-report.md
+          echo "" >> /tmp/reports/compilation-report.md
+          echo "Generated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> /tmp/reports/compilation-report.md
+          echo "" >> /tmp/reports/compilation-report.md
+          
+          echo "## Compilation Summary" >> /tmp/reports/compilation-report.md
+          echo "" >> /tmp/reports/compilation-report.md
+          compiled_count=$(ls -1 /tmp/compiled-spells/ 2>/dev/null | wc -l)
+          echo "- Total spells compiled: $compiled_count" >> /tmp/reports/compilation-report.md
+          echo "" >> /tmp/reports/compilation-report.md
+          
+          echo "## Standalone Spells" >> /tmp/reports/compilation-report.md
+          echo "" >> /tmp/reports/compilation-report.md
+          echo "These spells can run without wizardry installed:" >> /tmp/reports/compilation-report.md
+          echo "" >> /tmp/reports/compilation-report.md
+          for compiled in /tmp/compiled-spells/*; do
+            [ -f "$compiled" ] || continue
+            spell_name=$(basename "$compiled")
+            if env -i PATH="/usr/bin:/bin" "$compiled" --help >/dev/null 2>&1; then
+              echo "- \`$spell_name\`" >> /tmp/reports/compilation-report.md
+            fi
+          done
+          echo "" >> /tmp/reports/compilation-report.md
+          
+          echo "## Spells Requiring Dependencies" >> /tmp/reports/compilation-report.md
+          echo "" >> /tmp/reports/compilation-report.md
+          echo "These spells require wizardry imps or other dependencies:" >> /tmp/reports/compilation-report.md
+          echo "" >> /tmp/reports/compilation-report.md
+          for compiled in /tmp/compiled-spells/*; do
+            [ -f "$compiled" ] || continue
+            spell_name=$(basename "$compiled")
+            if ! env -i PATH="/usr/bin:/bin" "$compiled" --help >/dev/null 2>&1; then
+              echo "- \`$spell_name\`" >> /tmp/reports/compilation-report.md
+            fi
+          done
+          
+          cat /tmp/reports/compilation-report.md
+      
+      - name: Upload compilation report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: compilation-report
+          path: /tmp/reports/
+          retention-days: 90
