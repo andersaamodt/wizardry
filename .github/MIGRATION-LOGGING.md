@@ -181,7 +181,7 @@ success "Process complete"
 1. **Run the spell** at different log levels
 2. **Test error conditions** to ensure errors are descriptive
 3. **Test cleanup** by interrupting with Ctrl-C
-4. **Run vet-spell** to check style compliance
+4. **Run lint-magic** to check style compliance
 5. **Update tests** to use new patterns
 
 ## Common Patterns
