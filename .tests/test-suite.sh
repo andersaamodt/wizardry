@@ -609,7 +609,7 @@ test_imps_have_opening_comments() {
 # Canonical list of bootstrap spells (hardcoded):
 # - install (root installer)
 # - detect-distro (platform detection)
-# - All spells in spells/install/core/
+# - All spells in spells/.arcana/core/
 # These spells must have "Bootstrap spell" in their opening comment (first few lines after shebang).
 test_bootstrap_spells_identified() {
   # Canonical list of bootstrap spell paths (relative to ROOT_DIR)
@@ -617,13 +617,13 @@ test_bootstrap_spells_identified() {
   bootstrap_paths="
 install
 spells/divination/detect-distro
-spells/install/core/
+spells/.arcana/core/
 "
   
   violations=""
   
   for path in $bootstrap_paths; do
-    # Handle directory (spells/install/core/) vs single file
+    # Handle directory (spells/.arcana/core/) vs single file
     case "$path" in
       */)
         # It's a directory - check all executable files in it

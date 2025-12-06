@@ -269,12 +269,12 @@ INVOKE_WIZARDRY="$ABS_DIR/spells/.imps/sys/invoke-wizardry"
 DETECT_RC_FILE="$ABS_DIR/spells/divination/detect-rc-file"
 NIX_SHELL_ADD="$ABS_DIR/spells/.imps/sys/nix-shell-add"
 NIX_SHELL_REMOVE="$ABS_DIR/spells/.imps/sys/nix-shell-remove"
-CORE_INSTALLER=${WIZARDRY_CORE_INSTALLER:-$ABS_DIR/spells/install/core/install-core}
+CORE_INSTALLER=${WIZARDRY_CORE_INSTALLER:-$ABS_DIR/spells/.arcana/core/install-core}
 ASK_YN="$ABS_DIR/spells/cantrips/ask-yn"
 
 # MUD-related helpers (these are used in the optional MUD installation section)
-MUD_CD_SPELL="$ABS_DIR/spells/install/mud/cd"
-MUD_CONFIG="$ABS_DIR/spells/install/mud/mud-config"
+MUD_CD_SPELL="$ABS_DIR/spells/.arcana/mud/cd"
+MUD_CONFIG="$ABS_DIR/spells/.arcana/mud/mud-config"
 
 # NOTE: With the word-of-binding paradigm, spells no longer need to be pre-installed.
 # word-of-binding auto-sources spells on first use when called via handle-command-not-found.
