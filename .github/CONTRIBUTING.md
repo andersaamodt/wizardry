@@ -193,7 +193,7 @@ Contributors are recognized in commits and pull request credits. Your spells wil
 
 ## License
 
-By contributing to wizardry, you agree that your contributions will be licensed under the same [ISC License](/LICENSE) as the project.
+By contributing to wizardry, you agree that your contributions will be licensed under the same [Open Wizardry License 1.1](/LICENSE) as the project.
 
 ---
 
