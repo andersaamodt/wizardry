@@ -162,6 +162,22 @@ $func_name() {
 }
 "
     processed_imps="$processed_imps $imp_name"
+    
+    # Recursively process dependencies in the function definition
+    hyphenated_deps=$(printf '%s\n' "$func_def" | grep -v "^#" | grep -v "^[[:space:]]*#" | grep -oE '\b[a-z][a-z0-9]*(-[a-z0-9]+)+\b' | sort -u)
+    single_word_deps=$(printf '%s\n' "$func_def" | grep -v "^#" | grep -v "^[[:space:]]*#" | grep -oE '\b(say|warn|die|fail|info|step|debug|success|is|has|there|gone|empty|nonempty|given|full|yes|no|lacks)\b' | sort -u)
+    func_deps=$(printf '%s\n%s\n' "$hyphenated_deps" "$single_word_deps" | grep -v '^$' | sort -u)
+    
+    if [ -n "$func_deps" ]; then
+      while IFS= read -r dep; do
+        [ "$dep" != "$imp_name" ] || continue
+        [ -n "$dep" ] || continue
+        inline_imp "$dep" 1 || true
+      done <<FUNCDEPS
+$func_deps
+FUNCDEPS
+    fi
+    
     return 0
   fi
   
@@ -206,11 +222,17 @@ $func_name() {
     
     # Recursively process any dependencies in the spell
     # Look for actual command calls, not just words in comments
-    spell_deps=$(printf '%s\n' "$imp_content" | grep -v "^#" | grep -v "^[[:space:]]*#" | grep -oE '\b[a-z][a-z0-9]*(-[a-z0-9]+)+\b' | sort -u)
+    # Find both hyphenated commands and known single-word imps
+    hyphenated_deps=$(printf '%s\n' "$imp_content" | grep -v "^#" | grep -v "^[[:space:]]*#" | grep -oE '\b[a-z][a-z0-9]*(-[a-z0-9]+)+\b' | sort -u)
+    single_word_deps=$(printf '%s\n' "$imp_content" | grep -v "^#" | grep -v "^[[:space:]]*#" | grep -oE '\b(say|warn|die|fail|info|step|debug|success|is|has|there|gone|empty|nonempty|given|full|yes|no|lacks)\b' | sort -u)
+    spell_deps=$(printf '%s\n%s\n' "$hyphenated_deps" "$single_word_deps" | grep -v '^$' | sort -u)
+    
     if [ -n "$spell_deps" ]; then
       while IFS= read -r dep; do
         # Skip if it's the spell itself
         [ "$dep" != "$imp_name" ] || continue
+        # Skip empty lines
+        [ -n "$dep" ] || continue
         inline_imp "$dep" 1 || true
       done <<DEPS
 $spell_deps
