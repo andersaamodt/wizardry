@@ -10,8 +10,18 @@ cast_store=${CAST_STORE-memorize}
 if has "$cast_store"; then
         cast_store=$(where "$cast_store")
 else
-        warn "cast: memorize helper is missing."
-        exit 1
+        # Try to self-heal by offering to install memorize
+        if ! require "$cast_store" "cast: memorize helper is needed for storing spells."; then
+                exit 1
+        fi
+        # Check again after potential installation
+        if has "$cast_store"; then
+                cast_store=$(where "$cast_store")
+        else
+                # Still missing - exit gracefully
+                warn "cast: memorize helper is still missing after attempted installation."
+                exit 1
+        fi
 fi
 
 cast_dir=$($cast_store dir)

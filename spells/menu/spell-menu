@@ -7,16 +7,44 @@ require-wizardry || exit 1
 # Catch Ctrl-C and TERM signal to exit cleanly
 trap 'exit 0' INT TERM
 
-# Load color palette (colors handles terminal capability detection internally)
-# shellcheck source=/dev/null
-. "$(command -v colors)"
+# Load color palette if available (colors handles terminal capability detection internally)
+# Gracefully fallback if colors is not available
+if command -v colors >/dev/null 2>&1; then
+        # shellcheck source=/dev/null
+        . "$(command -v colors)"
+else
+        # Fallback: define empty color variables so the script still works
+        WIZARDRY_COLORS_AVAILABLE=0
+        ESC=""
+        RESET=""
+        BLACK=""
+        RED=""
+        GREEN=""
+        YELLOW=""
+        BLUE=""
+        MAGENTA=""
+        CYAN=""
+        WHITE=""
+fi
 
 cast_store=${CAST_STORE-memorize}
 if cast_store_path=$(command -v "$cast_store" 2>/dev/null); then
         cast_store=$cast_store_path
 else
-        printf '%s\n' "spell-menu: memorize helper is missing." >&2
-        exit 1
+        # Try to self-heal by offering to install memorize
+        if require "$cast_store" "spell-menu: memorize helper is needed for managing spells."; then
+                # Check again after potential installation
+                if cast_store_path=$(command -v "$cast_store" 2>/dev/null); then
+                        cast_store=$cast_store_path
+                else
+                        # Still missing - exit gracefully
+                        printf '%s\n' "spell-menu: memorize helper is still missing after attempted installation." >&2
+                        exit 1
+                fi
+        else
+                printf '%s\n' "spell-menu: memorize helper is missing." >&2
+                exit 1
+        fi
 fi
 
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
