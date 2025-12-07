@@ -329,6 +329,15 @@ while IFS= read -r test_path; do
   [ -n "$test_path" ] || continue
   abs="$test_dir/$test_path"
   test_number=$((test_number + 1))
+  
+  # Skip tests marked COMPILED_UNSUPPORTED when testing compiled spells
+  if [ "${WIZARDRY_TEST_COMPILED-0}" = "1" ]; then
+    if head -n 5 "$abs" 2>/dev/null | grep -q "^# COMPILED_UNSUPPORTED"; then
+      printf '[%d/%d] %s (skipped: unsupported in compiled mode)\n' "$test_number" "$test_total" "$test_path"
+      continue
+    fi
+  fi
+  
   printf '[%d/%d] %s\n' "$test_number" "$test_total" "$test_path"
 
   if output=$(sh "$abs" 2>&1); then
