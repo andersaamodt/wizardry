@@ -6,18 +6,16 @@ require-wizardry || exit 1
 # Catch Ctrl-C and TERM signal to exit cleanly
 trap 'exit 0' INT TERM
 
-cast_store=${CAST_STORE-memorize}
-if has "$cast_store"; then
-        cast_store=$(where "$cast_store")
-else
+# Direct call to memorize spell (no variable indirection)
+if ! has memorize; then
         warn "cast: memorize helper is missing."
         exit 1
 fi
 
-cast_dir=$($cast_store dir)
+cast_dir=$(memorize dir)
 
 cast_list() {
-        "$cast_store" list
+        memorize list
 }
 
 print_empty_message() {

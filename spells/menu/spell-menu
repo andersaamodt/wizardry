@@ -8,13 +8,25 @@ require-wizardry || exit 1
 trap 'exit 0' INT TERM
 
 # Load color palette (colors handles terminal capability detection internally)
-# shellcheck source=/dev/null
-. "$(command -v colors)"
-
-cast_store=${CAST_STORE-memorize}
-if cast_store_path=$(command -v "$cast_store" 2>/dev/null); then
-        cast_store=$cast_store_path
+# Provide fallback if colors not available
+if command -v colors >/dev/null 2>&1; then
+        # shellcheck source=/dev/null
+        . "$(command -v colors)"
 else
+        # Minimal fallback - define color functions as no-ops
+        reset() { :; }
+        bold() { :; }
+        dim() { :; }
+        red() { :; }
+        green() { :; }
+        yellow() { :; }
+        blue() { :; }
+        magenta() { :; }
+        cyan() { :; }
+fi
+
+# Direct call to memorize spell (no variable indirection)
+if ! command -v memorize >/dev/null 2>&1; then
         printf '%s\n' "spell-menu: memorize helper is missing." >&2
         exit 1
 fi
@@ -22,7 +34,7 @@ fi
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
 
 cast_list() {
-        "$cast_store" list
+        memorize list
 }
 
 is_memorized() {
@@ -40,12 +52,12 @@ ENTRIES
 do_memorize() {
         mem_name=$1
         shift
-        "$cast_store" add "$mem_name" "$@"
+        memorize add "$mem_name" "$@"
 }
 
 do_forget() {
         mem_name=$1
-        "$cast_store" remove "$mem_name"
+        memorize remove "$mem_name"
 }
 
 # Check if a script is a custom spell (user-created, not a built-in spell)
