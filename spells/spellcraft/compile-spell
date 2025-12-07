@@ -71,7 +71,7 @@ for dep in $dependencies; do
   # If not found in imps, check spells
   if [ -z "$dep_file" ]; then
     dep_file=$(find "$repo_dir/spells" -type f -name "$dep" \
-      ! -path "$spell_path" 2>/dev/null | head -1)
+      ! -path "*/\.*" ! -path "$spell_path" 2>/dev/null | head -1)
   fi
   
   # Skip if not found
