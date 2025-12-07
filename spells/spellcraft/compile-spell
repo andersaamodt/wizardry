@@ -3,7 +3,10 @@
 # This spell compiles a spell into a standalone script by inlining all imp and spell calls.
 # Optionally compiles for a specific OS, removing cross-platform conditionals.
 
-require-wizardry || exit 1
+# Inline warn function for standalone operation
+warn() {
+  printf '%s\n' "$*" >&2
+}
 
 show_usage() {
   cat <<'USAGE'
