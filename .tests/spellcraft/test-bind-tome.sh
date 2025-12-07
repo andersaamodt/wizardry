@@ -44,8 +44,9 @@ binds_pages_into_tome() {
 
   [ -f "$workdir/pages.txt" ] || { TEST_FAILURE_REASON="tome not created"; return 1; }
   content=$(cat "$workdir/pages.txt")
+  # New format: single-line centered separators like "# -------- first --------"
   case "$content" in
-    *"# ----------------------------------------------------------------------------"*"# first"*"# ----------------------------------------------------------------------------"*"alpha rune"*"# ----------------------------------------------------------------------------"*"# second"*"# ----------------------------------------------------------------------------"*"beta glyph"*) ;;
+    *"# "*" first "*"alpha rune"*"# "*" second "*"beta glyph"*) ;;
     *) TEST_FAILURE_REASON="tome content missing expected sections"; return 1 ;;
   esac
 }
@@ -90,10 +91,39 @@ bind_deletes_pages_with_flag() {
   _assert_path_missing "$workdir/pages/two" || return 1
 }
 
+bind_handles_long_filenames() {
+  workdir=$(_make_tempdir)
+  mkdir -p "$workdir/pages"
+  # Create a file with a very long name (80+ characters)
+  long_name="this_is_a_very_long_filename_that_exceeds_normal_limits_and_should_be_truncated_properly"
+  printf 'long content\n' >"$workdir/pages/$long_name"
+  
+  oldpwd=$(pwd)
+  cd "$workdir"
+  _run_spell "spells/spellcraft/bind-tome" "pages"
+  cd "$oldpwd"
+  _assert_success || return 1
+  _assert_output_contains "Text file created: pages.txt" || return 1
+
+  [ -f "$workdir/pages.txt" ] || { TEST_FAILURE_REASON="tome not created"; return 1; }
+  content=$(cat "$workdir/pages.txt")
+  # Should contain a truncated version of the filename and the content
+  case "$content" in
+    *"long content"*) ;;
+    *) TEST_FAILURE_REASON="tome missing content from long-named file"; return 1 ;;
+  esac
+  # The separator should still be properly formed (starts with # and contains dashes)
+  case "$content" in
+    *"# "*"-"*) ;;
+    *) TEST_FAILURE_REASON="tome separator malformed"; return 1 ;;
+  esac
+}
+
 _run_test_case "bind-tome requires a directory argument" require_arg_for_bind
 _run_test_case "bind-tome combines files into a tome" binds_pages_into_tome
 _run_test_case "bind-tome refuses missing directories" bind_requires_existing_directory
 _run_test_case "bind-tome deletes pages when -d is provided" bind_deletes_pages_with_flag
+_run_test_case "bind-tome handles long filenames" bind_handles_long_filenames
 _run_test_case "bind-tome shows usage text" bind_shows_usage
 _run_test_case "bind-tome rejects unknown options" bind_rejects_unknown_option
 

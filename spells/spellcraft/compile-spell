@@ -214,9 +214,39 @@ transformed_content=$(printf '%s\n' "$transformed_content" | grep -v "^require-w
 
 # Output the compiled spell
 printf '#!/bin/sh\n'
-printf '# ----------------------------------------------------------------------------\n'
-printf '# %s\n' "$spell_name"
-printf '# ----------------------------------------------------------------------------\n'
+
+# Create centered separator with spell name
+# Total width is 76 chars (matching LICENSE separator width)
+name_len=${#spell_name}
+# Available space for dashes: 76 - 2 (for "# ") - name_len - 2 (spaces around name)
+dash_space=$((76 - 2 - name_len - 2))
+if [ "$dash_space" -lt 4 ]; then
+    # Spell name too long, truncate it
+    max_name_len=$((76 - 2 - 4 - 2))  # Leave room for at least 4 dashes total
+    display_name=$(printf '%s' "$spell_name" | cut -c1-"$max_name_len")
+    name_len=${#display_name}
+    dash_space=$((76 - 2 - name_len - 2))
+else
+    display_name=$spell_name
+fi
+left_dashes=$((dash_space / 2))
+right_dashes=$((dash_space - left_dashes))
+
+# Build the separator line
+separator="# "
+i=0
+while [ "$i" -lt "$left_dashes" ]; do
+    separator="${separator}-"
+    i=$((i + 1))
+done
+separator="${separator} ${display_name} "
+i=0
+while [ "$i" -lt "$right_dashes" ]; do
+    separator="${separator}-"
+    i=$((i + 1))
+done
+
+printf '%s\n' "$separator"
 printf '#\n'
 printf '# COMPILED WIZARDRY SPELL\n'
 printf '#\n'
