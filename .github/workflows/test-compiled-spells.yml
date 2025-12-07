@@ -44,8 +44,8 @@ jobs:
           : > "$tmpfile"
           
           # Use list-files cantrip to recursively find all executable files
-          # Include imps and exclude only .arcana
-          list-files spells -x | grep -v "spells/.arcana" | while IFS= read -r spell_file; do
+          # Include imps and .arcana directories
+          list-files spells -x | while IFS= read -r spell_file; do
             
             spell_name=$(basename "$spell_file")
             
@@ -93,7 +93,7 @@ jobs:
           : > "$skipfile"
           
           # Known excluded spells (wizardry infrastructure)
-          excluded="cast spell-menu invoke-wizardry require-wizardry declare-globals colors learn-spellbook learn mud decorate select-player"
+          excluded="invoke-wizardry require-wizardry declare-globals learn-spellbook learn mud decorate select-player"
           
           # Test each compiled spell with minimal PATH and timeout
           for compiled in /tmp/compiled/*; do
@@ -149,20 +149,14 @@ jobs:
             percent=$((passed * 100 / total_tested))
             echo "Success rate: $percent% ($passed/$total_tested)"
             
-            # Adjust threshold - allow failures for imps that don't have --help
-            # We have ~256 scripts, allow up to ~12% failure rate (30 scripts)
-            # This accounts for lex/ imps and other edge cases
-            threshold=$((total_tested * 12 / 100))
-            [ "$threshold" -lt 20 ] && threshold=20  # Minimum threshold
-            
-            if [ "$failed" -gt "$threshold" ]; then
-              echo ""
-              echo "❌ Too many failures - threshold $threshold exceeded"
-              exit 1
-            else
-              echo ""
-              echo "✓ Within acceptable range (threshold: $threshold)"
-            fi
+            # Goal is 100% of supported spells - fail if any non-excluded spell doesn't work
+            echo ""
+            echo "❌ FAILURE: Some supported spells don't work standalone"
+            echo "Goal: 100% success rate for all supported spells"
+            exit 1
+          else
+            echo ""
+            echo "✓ SUCCESS: 100% of supported spells work standalone!"
           fi
       
       - name: Summary report
