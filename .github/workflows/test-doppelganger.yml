@@ -112,13 +112,12 @@ jobs:
       
       - name: Run doppelganger behavioral tests
         run: |
-          # Run behavioral tests against compiled spells
+          # Run behavioral tests against compiled spells using test-magic
           if [ ! -d "/tmp/wizardry-doppelganger/.tests" ]; then
             echo "No tests found in doppelganger"
             exit 0
           fi
           
-          echo "=== Testing Behavioral Tests ==="
           cd /tmp/wizardry-doppelganger
           
           # Set up environment for compiled spells
@@ -132,112 +131,11 @@ jobs:
             [ -d "$dir" ] && export PATH="$PATH:$dir"
           done
           
-          # Marker for unsupported tests (default is to run all tests)
-          UNSUPPORTED_MARKER="^# COMPILED_UNSUPPORTED"
-          
-          # Use temp files to track across subshell boundary
-          pass_file=/tmp/test-pass-count.txt
-          fail_file=/tmp/test-fail-count.txt
-          skip_file=/tmp/test-skip-count.txt
-          subtest_total_file=/tmp/test-subtest-total.txt
-          subtest_pass_file=/tmp/test-subtest-pass.txt
-          failed_list_file=/tmp/test-failed-list.txt
-          
-          echo "0" > "$pass_file"
-          echo "0" > "$fail_file"
-          echo "0" > "$skip_file"
-          echo "0" > "$subtest_total_file"
-          echo "0" > "$subtest_pass_file"
-          echo "" > "$failed_list_file"
-          
-          # Use file to track test number across loop iterations
-          test_num_file=/tmp/test-num.txt
-          echo "0" > "$test_num_file"
-          
-          # Run all tests EXCEPT those marked as unsupported
-          find .tests -name "test_*.sh" -o -name "test-*.sh" | sort | while IFS= read -r test_file; do
-            # Increment test number
-            test_number=$(cat "$test_num_file")
-            test_number=$((test_number + 1))
-            echo "$test_number" > "$test_num_file"
-            
-            test_name=$(basename "$test_file" .sh | sed 's/^test[-_]//')
-            
-            # Skip if test is marked as unsupported
-            if grep -q "$UNSUPPORTED_MARKER" "$test_file" 2>/dev/null; then
-              skip_count=$(cat "$skip_file")
-              echo "$((skip_count + 1))" > "$skip_file"
-              continue
-            fi
-            
-            echo "Running: $test_file"
-            
-            # Capture output with test results
-            if output=$(timeout 60 sh "$test_file" 2>&1); then
-              # Count passed/failed subtests from output
-              subtest_passed=$(echo "$output" | grep -c "^PASS" || true)
-              subtest_failed=$(echo "$output" | grep -c "^FAIL" || true)
-              : ${subtest_passed:=0}
-              : ${subtest_failed:=0}
-              subtest_total=$((subtest_passed + subtest_failed))
-              
-              # Update counters
-              prev_total=$(cat "$subtest_total_file")
-              prev_pass=$(cat "$subtest_pass_file")
-              echo "$((prev_total + subtest_total))" > "$subtest_total_file"
-              echo "$((prev_pass + subtest_passed))" > "$subtest_pass_file"
-              
-              if [ "$subtest_failed" -eq 0 ]; then
-                printf "%d. ✓ %s (%d/%d subtests)\n" "$test_number" "$test_name" "$subtest_passed" "$subtest_total"
-                pass_count=$(cat "$pass_file")
-                echo "$((pass_count + 1))" > "$pass_file"
-              else
-                printf "%d. ✗ %s (%d/%d subtests)\n" "$test_number" "$test_name" "$subtest_passed" "$subtest_total"
-                fail_count=$(cat "$fail_file")
-                echo "$((fail_count + 1))" > "$fail_file"
-                echo "$test_file" >> "$failed_list_file"
-              fi
-            else
-              printf "%d. ✗ %s (script error)\n" "$test_number" "$test_name"
-              fail_count=$(cat "$fail_file")
-              echo "$((fail_count + 1))" > "$fail_file"
-              echo "$test_file" >> "$failed_list_file"
-            fi
-          done
-          
-          # Read final counts
-          pass_count=$(cat "$pass_file")
-          fail_count=$(cat "$fail_file")
-          skip_count=$(cat "$skip_file")
-          total_subtests=$(cat "$subtest_total_file")
-          passed_subtests=$(cat "$subtest_pass_file")
-          
-          echo ""
-          echo "Summary: $pass_count passed, $fail_count failed, 0 uncovered, 0 incomplete, subtests $passed_subtests/$total_subtests."
-          
-          # Show failures if any
-          if [ "$fail_count" -gt 0 ]; then
-            echo ""
-            echo "Failed tests:"
-            cat "$failed_list_file"
-            
-            # If ≤10 failures, rerun ONLY those tests with --very-verbose for debugging
-            if [ "$fail_count" -le 10 ]; then
-              echo ""
-              echo "Detected ≤10 failing tests; rerunning them with --very-verbose for focused debug..."
-              echo ""
-              
-              test_rerun_num=0
-              while IFS= read -r failed_test; do
-                [ -z "$failed_test" ] && continue
-                test_rerun_num=$((test_rerun_num + 1))
-                test_name=$(basename "$failed_test" .sh | sed 's/^test[-_]//')
-                echo "[$test_rerun_num/$fail_count] $failed_test"
-                sh "$failed_test" --very-verbose 2>&1 || true
-                echo ""
-              done < "$failed_list_file"
-            fi
-            
+          # Use test-magic from the doppelganger (it's compiled)
+          if [ -x "/tmp/wizardry-doppelganger/spells/system/test-magic" ]; then
+            ./spells/system/test-magic
+          else
+            echo "test-magic not found in doppelganger"
             exit 1
           fi
       

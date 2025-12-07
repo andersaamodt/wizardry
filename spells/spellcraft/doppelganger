@@ -101,10 +101,11 @@ compiled_count=$(cat "$temp_count_file")
 failed_count=$(cat "$temp_failed_file")
 rm -f "$temp_count_file" "$temp_failed_file"
 
-# Copy test files
+# Copy test files (including hidden directories like .arcana and .imps)
 say "Copying test files..."
 if [ -d "$repo_dir/.tests" ]; then
-  cp -r "$repo_dir/.tests"/* "$output_dir/.tests/" 2>/dev/null || true
+  # Copy all files including hidden ones
+  (cd "$repo_dir/.tests" && find . -mindepth 1 -maxdepth 1 -exec cp -r {} "$output_dir/.tests/" \; 2>/dev/null) || true
 fi
 
 # Copy essential files (README, LICENSE, etc.) but skip .git and .github
