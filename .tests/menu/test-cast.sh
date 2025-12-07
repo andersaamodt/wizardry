@@ -1,5 +1,4 @@
 #!/bin/sh
-# COMPILED_UNSUPPORTED: requires memorize command and wizardry environment
 # Behavioral cases (derived from spell behavior):
 # - cast lists stored spells without opening a menu when --list is used
 # - cast exits gracefully when no spells are stored
