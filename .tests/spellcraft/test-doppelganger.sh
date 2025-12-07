@@ -35,17 +35,16 @@ test_creates_compiled_wizardry() {
   workdir=$(_make_tempdir)
   target="$workdir/wizardry-clone"
   
+  # Verify compile-spell exists before trying to use it
+  if [ ! -x "${ROOT_DIR}/spells/spellcraft/compile-spell" ]; then
+    TEST_FAILURE_REASON="compile-spell not found at ${ROOT_DIR}/spells/spellcraft/compile-spell"
+    return 1
+  fi
+  
   # Ensure compile-spell is in PATH and available
   # Add spellcraft directory to PATH before running
   saved_path="$PATH"
   export PATH="${ROOT_DIR}/spells/spellcraft:${ROOT_DIR}/spells:${PATH}"
-  
-  # Verify compile-spell exists
-  if [ ! -x "${ROOT_DIR}/spells/spellcraft/compile-spell" ]; then
-    TEST_FAILURE_REASON="compile-spell not found at ${ROOT_DIR}/spells/spellcraft/compile-spell"
-    export PATH="$saved_path"
-    return 1
-  fi
   
   _run_spell "spells/spellcraft/doppelganger" "$target"
   _assert_success || { export PATH="$saved_path"; return 1; }
