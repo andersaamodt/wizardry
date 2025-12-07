@@ -40,32 +40,37 @@ jobs:
           echo "=== Compiling all spells ==="
           
           # Find all spells recursively (excluding .imps and .arcana)
+          # Use a temp file to collect failures since subshell won't persist variables
+          tmpfile="/tmp/failed_spells.txt"
+          : > "$tmpfile"
+          
           find spells -type f -executable \
             ! -path "spells/.imps/*" \
-            ! -path "spells/.arcana/*" \
-            -print0 | while IFS= read -r -d '' spell_file; do
+            ! -path "spells/.arcana/*" | while IFS= read -r spell_file; do
             
             spell_name=$(basename "$spell_file")
             
             # Compile the spell
             if compile-spell "$spell_name" > "/tmp/compiled/${spell_name}" 2>/dev/null; then
               chmod +x "/tmp/compiled/${spell_name}"
-              compiled=$((compiled + 1))
               echo "  ✓ $spell_name"
             else
-              failed=$((failed + 1))
-              failed_list="${failed_list}${spell_name},"
+              echo "$spell_name" >> "$tmpfile"
               echo "  ✗ $spell_name"
             fi
           done
+          
+          # Count results
+          compiled=$(find /tmp/compiled -type f 2>/dev/null | wc -l)
+          failed=$(wc -l < "$tmpfile" 2>/dev/null || echo 0)
           
           echo ""
           echo "Compiled: $compiled"
           echo "Failed: $failed"
           
           if [ "$failed" -gt 0 ]; then
-            # Remove trailing comma
-            failed_list="${failed_list%,}"
+            # Build comma-delimited list
+            failed_list=$(tr '\n' ',' < "$tmpfile" | sed 's/,$//')
             echo "FAILED_COMPILE=$failed_list" >> "$GITHUB_OUTPUT"
             echo ""
             echo "Failed to compile: $failed_list"
@@ -78,9 +83,12 @@ jobs:
         run: |
           passed=0
           failed=0
-          failed_list=""
           
           echo "=== Testing compiled spells in isolation ==="
+          
+          # Use temp file for failures
+          tmpfile="/tmp/failed_tests.txt"
+          : > "$tmpfile"
           
           # Test each compiled spell with minimal PATH
           for compiled in /tmp/compiled/*; do
@@ -89,22 +97,25 @@ jobs:
             
             # Test --help in isolated environment
             if env -i PATH="/usr/bin:/bin" "$compiled" --help >/dev/null 2>&1; then
-              passed=$((passed + 1))
               echo "  ✓ $spell_name"
             else
-              failed=$((failed + 1))
-              failed_list="${failed_list}${spell_name},"
+              echo "$spell_name" >> "$tmpfile"
               echo "  ✗ $spell_name (requires dependencies)"
             fi
           done
+          
+          # Count results
+          passed=$(find /tmp/compiled -type f 2>/dev/null | wc -l)
+          failed=$(wc -l < "$tmpfile" 2>/dev/null || echo 0)
+          passed=$((passed - failed))
           
           echo ""
           echo "Passed: $passed"
           echo "Failed: $failed"
           
           if [ "$failed" -gt 0 ]; then
-            # Remove trailing comma
-            failed_list="${failed_list%,}"
+            # Build comma-delimited list
+            failed_list=$(tr '\n' ',' < "$tmpfile" | sed 's/,$//')
             echo "FAILED_TESTS=$failed_list" >> "$GITHUB_OUTPUT"
             echo ""
             echo "Failed tests (comma-delimited): $failed_list"
