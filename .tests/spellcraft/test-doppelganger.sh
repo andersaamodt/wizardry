@@ -35,11 +35,20 @@ test_creates_compiled_wizardry() {
   workdir=$(_make_tempdir)
   target="$workdir/wizardry-clone"
   
-  # Ensure compile-spell is in PATH
-  export PATH="${ROOT_DIR}/spells/spellcraft:${PATH}"
+  # Ensure compile-spell is in PATH and available
+  # Add spellcraft directory to PATH before running
+  saved_path="$PATH"
+  export PATH="${ROOT_DIR}/spells/spellcraft:${ROOT_DIR}/spells:${PATH}"
+  
+  # Verify compile-spell exists
+  if [ ! -x "${ROOT_DIR}/spells/spellcraft/compile-spell" ]; then
+    TEST_FAILURE_REASON="compile-spell not found at ${ROOT_DIR}/spells/spellcraft/compile-spell"
+    export PATH="$saved_path"
+    return 1
+  fi
   
   _run_spell "spells/spellcraft/doppelganger" "$target"
-  _assert_success || return 1
+  _assert_success || { export PATH="$saved_path"; return 1; }
   
   # Check directory structure exists
   [ -d "$target" ] || { TEST_FAILURE_REASON="target directory not created"; return 1; }
@@ -53,8 +62,11 @@ test_creates_compiled_wizardry() {
   [ "$((spell_count))" -gt 0 ] || { TEST_FAILURE_REASON="no compiled spells found"; return 1; }
   
   # Check that .git and .github are excluded
-  [ ! -d "$target/.git" ] || { TEST_FAILURE_REASON=".git should be excluded"; return 1; }
-  [ ! -d "$target/.github" ] || { TEST_FAILURE_REASON=".github should be excluded"; return 1; }
+  [ ! -d "$target/.git" ] || { TEST_FAILURE_REASON=".git should be excluded"; export PATH="$saved_path"; return 1; }
+  [ ! -d "$target/.github" ] || { TEST_FAILURE_REASON=".github should be excluded"; export PATH="$saved_path"; return 1; }
+  
+  # Restore PATH
+  export PATH="$saved_path"
 }
 
 _run_test_case "doppelganger prints usage" test_help
