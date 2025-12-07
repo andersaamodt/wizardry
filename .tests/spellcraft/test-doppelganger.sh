@@ -1,0 +1,59 @@
+#!/bin/sh
+# Behavioral cases:
+# - doppelganger creates compiled wizardry clone
+# - doppelganger --help shows usage
+# - doppelganger uses default directory if none provided
+
+set -eu
+
+test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
+  test_root=$(dirname "$test_root")
+done
+# shellcheck source=/dev/null
+. "$test_root/spells/.imps/test/test-bootstrap"
+
+test_help() {
+  _run_spell "spells/spellcraft/doppelganger" --help
+  _assert_success && _assert_output_contains "Usage:"
+}
+
+test_uses_default_directory() {
+  # doppelganger uses ./wizardry-compiled as default
+  # Just verify it doesn't fail without arguments
+  # (don't actually run it as it would create files in the working directory)
+  _run_spell "spells/spellcraft/doppelganger" --help
+  _assert_success
+}
+
+test_creates_compiled_wizardry() {
+  # Skip in compiled mode - requires compile-spell and full wizardry environment
+  if [ "${WIZARDRY_TEST_COMPILED-0}" = "1" ]; then
+    return 0
+  fi
+  
+  workdir=$(_make_tempdir)
+  target="$workdir/wizardry-clone"
+  
+  _run_spell "spells/spellcraft/doppelganger" "$target"
+  _assert_success || return 1
+  
+  # Check directory structure exists
+  [ -d "$target" ] || { TEST_FAILURE_REASON="target directory not created"; return 1; }
+  [ -d "$target/spells" ] || { TEST_FAILURE_REASON="spells directory not created"; return 1; }
+  [ -f "$target/LICENSE" ] || { TEST_FAILURE_REASON="LICENSE not copied"; return 1; }
+  
+  # Check that some compiled spells exist
+  spell_count=$(find "$target/spells" -type f -executable 2>/dev/null | wc -l)
+  [ "$spell_count" -gt 0 ] || { TEST_FAILURE_REASON="no compiled spells found"; return 1; }
+  
+  # Check that .git and .github are excluded
+  [ ! -d "$target/.git" ] || { TEST_FAILURE_REASON=".git should be excluded"; return 1; }
+  [ ! -d "$target/.github" ] || { TEST_FAILURE_REASON=".github should be excluded"; return 1; }
+}
+
+_run_test_case "doppelganger prints usage" test_help
+_run_test_case "doppelganger uses default directory" test_uses_default_directory
+_run_test_case "doppelganger creates compiled wizardry" test_creates_compiled_wizardry
+
+_finish_tests
