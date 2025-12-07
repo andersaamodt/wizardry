@@ -1,4 +1,5 @@
 #!/bin/sh
+# COMPILED_UNSUPPORTED: tests memorize which is wizardry infrastructure
 # Behavior from --help: memorize spells to the Cast menu.
 
 set -eu

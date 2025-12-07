@@ -1,4 +1,5 @@
 #!/bin/sh
+# COMPILED_UNSUPPORTED: tests invoke-wizardry which is wizardry bootstrap
 # Test invoke-wizardry sourcer
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)

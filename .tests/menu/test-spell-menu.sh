@@ -1,4 +1,5 @@
 #!/bin/sh
+# COMPILED_UNSUPPORTED: requires memorize and spell menu infrastructure
 # spell-menu test coverage:
 # - fails when memorize is missing
 # - shows usage with --help

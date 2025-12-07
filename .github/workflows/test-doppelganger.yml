@@ -133,33 +133,57 @@ jobs:
             [ -d "$dir" ] && export PATH="$PATH:$dir"
           done
           
-          # Run tests that are marked for compiled testing
-          test_count=0
-          pass_count=0
-          fail_count=0
+          # Marker for unsupported tests (default is to run all tests)
+          UNSUPPORTED_MARKER="^# COMPILED_UNSUPPORTED"
           
+          # Track test results
+          test_results_file=/tmp/test-results.txt
+          rm -f "$test_results_file"
+          touch "$test_results_file"
+          
+          # Run all tests EXCEPT those marked as unsupported
           find .tests -name "test_*.sh" -o -name "test-*.sh" | sort | while IFS= read -r test_file; do
-            # Check if test supports compiled mode
-            # Look for COMPILED_SUPPORTED marker in test file
-            if grep -q "^# COMPILED_SUPPORTED" "$test_file" 2>/dev/null; then
-              test_count=$((test_count + 1))
-              echo ""
-              echo "Running: $test_file"
-              if sh "$test_file" 2>&1; then
-                echo "  ✓ PASSED"
-                pass_count=$((pass_count + 1))
-              else
-                echo "  ✗ FAILED"
-                fail_count=$((fail_count + 1))
-              fi
+            # Skip if test is marked as unsupported
+            if grep -q "$UNSUPPORTED_MARKER" "$test_file" 2>/dev/null; then
+              echo "SKIP:$test_file (COMPILED_UNSUPPORTED)" >> "$test_results_file"
+              continue
+            fi
+            
+            echo ""
+            echo "Running: $test_file"
+            if sh "$test_file" 2>&1; then
+              echo "  ✓ PASSED"
+              echo "PASS:$test_file" >> "$test_results_file"
+            else
+              echo "  ✗ FAILED"
+              echo "FAIL:$test_file" >> "$test_results_file"
             fi
           done
           
+          # Count results
+          test_count=$(grep -cE "^(PASS|FAIL):" "$test_results_file" 2>/dev/null || echo 0)
+          pass_count=$(grep -c "^PASS:" "$test_results_file" 2>/dev/null || echo 0)
+          fail_count=$(grep -c "^FAIL:" "$test_results_file" 2>/dev/null || echo 0)
+          skip_count=$(grep -c "^SKIP:" "$test_results_file" 2>/dev/null || echo 0)
+          
           echo ""
           echo "=== Behavioral Test Summary ==="
-          echo "Tests with COMPILED_SUPPORTED marker will be run"
-          echo "Add '# COMPILED_SUPPORTED' as first line to mark tests"
-          echo "Run './tests/test-suite.sh' for more details"
+          echo "Tests run: $test_count"
+          echo "Passed: $pass_count"
+          echo "Failed: $fail_count"
+          echo "Skipped: $skip_count (marked COMPILED_UNSUPPORTED)"
+          echo ""
+          echo "By default, ALL tests run against compiled spells"
+          echo "Mark unsupported tests with '# COMPILED_UNSUPPORTED: reason' as second line"
+          echo "See .github/COMPILED-TESTING.md for details"
+          
+          # Exit with error if any tests failed
+          if [ "$fail_count" -gt 0 ]; then
+            echo ""
+            echo "Failed tests:"
+            grep "^FAIL:" "$test_results_file" | sed 's/^FAIL:/  - /'
+            exit 1
+          fi
       
       - name: Create doppelganger zip
         if: success()
