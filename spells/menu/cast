@@ -6,41 +6,12 @@ require-wizardry || exit 1
 # Catch Ctrl-C and TERM signal to exit cleanly
 trap 'exit 0' INT TERM
 
-# Default memorize store implementation for standalone use
-# This provides a fallback if the memorize command isn't available
-default_cast_dir=${CAST_DIR:-${HOME:-.}/.wizardry/cast}
-default_cast_file="$default_cast_dir/spells.list"
-
-# Inline fallback for memorize functionality
-_memorize_fallback() {
-        case "$1" in
-        dir)
-                printf '%s\n' "$default_cast_dir"
-                ;;
-        list)
-                if [ -f "$default_cast_file" ]; then
-                        cat "$default_cast_file"
-                fi
-                ;;
-        *)
-                warn "cast: basic fallback doesn't support this operation"
-                return 1
-                ;;
-        esac
-}
-
 cast_store=${CAST_STORE-memorize}
 if has "$cast_store"; then
-        # Use full memorize command if available
-        if command -v where >/dev/null 2>&1; then
-                cast_store=$(where "$cast_store")
-        else
-                # Fallback to command -v if where isn't available
-                cast_store=$(command -v "$cast_store")
-        fi
+        cast_store=$(where "$cast_store")
 else
-        # Self-healing: use inline fallback if memorize is missing
-        cast_store=_memorize_fallback
+        warn "cast: memorize helper is missing."
+        exit 1
 fi
 
 cast_dir=$($cast_store dir)

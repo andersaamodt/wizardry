@@ -71,7 +71,7 @@ for dep in $dependencies; do
   # If not found in imps, check spells
   if [ -z "$dep_file" ]; then
     dep_file=$(find "$repo_dir/spells" -type f -name "$dep" \
-      ! -path "*/.*" ! -path "$spell_path" 2>/dev/null | head -1)
+      ! -path "$spell_path" 2>/dev/null | head -1)
   fi
   
   # Skip if not found
@@ -88,11 +88,36 @@ for dep in $dependencies; do
     in_func && /^}$/ { exit }
   ')
   
-  # If we got a function, inline it
+  # If we got a function (it's an imp), inline it
   if [ -n "$func_def" ]; then
     inlined_deps="$inlined_deps
-# Inlined: $dep
+# Inlined imp: $dep
 $func_def
+"
+    inlined_names="$inlined_names $dep"
+  else
+    # It's a spell without _funcname() pattern - inline entire spell as function
+    # Remove shebang, show_usage, --help handler, require-wizardry, and set -eu
+    spell_body=$(printf '%s\n' "$dep_content" | awk '
+      BEGIN { skip=0; in_usage=0 }
+      /^#!/ { next }
+      /^show_usage\(\)/ { in_usage=1; next }
+      in_usage && /^}$/ { in_usage=0; next }
+      in_usage { next }
+      /^case.*--help.*--usage/ { skip=1; next }
+      skip && /^esac/ { skip=0; next }
+      skip { next }
+      /^set -eu$/ { next }
+      /^require-wizardry/ { next }
+      { print }
+    ')
+    
+    # Wrap as function
+    inlined_deps="$inlined_deps
+# Inlined spell: $dep
+$func_name() {
+$spell_body
+}
 "
     inlined_names="$inlined_names $dep"
   fi
