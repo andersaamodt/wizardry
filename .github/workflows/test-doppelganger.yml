@@ -151,10 +151,17 @@ jobs:
           echo "0" > "$subtest_pass_file"
           echo "" > "$failed_list_file"
           
+          # Use file to track test number across loop iterations
+          test_num_file=/tmp/test-num.txt
+          echo "0" > "$test_num_file"
+          
           # Run all tests EXCEPT those marked as unsupported
-          test_number=0
           find .tests -name "test_*.sh" -o -name "test-*.sh" | sort | while IFS= read -r test_file; do
+            # Increment test number
+            test_number=$(cat "$test_num_file")
             test_number=$((test_number + 1))
+            echo "$test_number" > "$test_num_file"
+            
             test_name=$(basename "$test_file" .sh | sed 's/^test[-_]//')
             
             # Skip if test is marked as unsupported
@@ -187,13 +194,13 @@ jobs:
                 printf "%d. ✗ %s (%d/%d subtests)\n" "$test_number" "$test_name" "$subtest_passed" "$subtest_total"
                 fail_count=$(cat "$fail_file")
                 echo "$((fail_count + 1))" > "$fail_file"
-                echo "$test_name ($test_number), " >> "$failed_list_file"
+                echo "$test_file" >> "$failed_list_file"
               fi
             else
               printf "%d. ✗ %s (script error)\n" "$test_number" "$test_name"
               fail_count=$(cat "$fail_file")
               echo "$((fail_count + 1))" > "$fail_file"
-              echo "$test_name ($test_number), " >> "$failed_list_file"
+              echo "$test_file" >> "$failed_list_file"
             fi
           done
           
@@ -203,7 +210,6 @@ jobs:
           skip_count=$(cat "$skip_file")
           total_subtests=$(cat "$subtest_total_file")
           passed_subtests=$(cat "$subtest_pass_file")
-          failed_tests_list=$(cat "$failed_list_file" | tr -d '\n')
           
           echo ""
           echo "Summary: $pass_count passed, $fail_count failed, 0 uncovered, 0 incomplete, subtests $passed_subtests/$total_subtests."
@@ -211,7 +217,26 @@ jobs:
           # Show failures if any
           if [ "$fail_count" -gt 0 ]; then
             echo ""
-            echo "Failed tests: ${failed_tests_list%, }."
+            echo "Failed tests:"
+            cat "$failed_list_file"
+            
+            # If ≤10 failures, rerun ONLY those tests with --very-verbose for debugging
+            if [ "$fail_count" -le 10 ]; then
+              echo ""
+              echo "Detected ≤10 failing tests; rerunning them with --very-verbose for focused debug..."
+              echo ""
+              
+              test_rerun_num=0
+              while IFS= read -r failed_test; do
+                [ -z "$failed_test" ] && continue
+                test_rerun_num=$((test_rerun_num + 1))
+                test_name=$(basename "$failed_test" .sh | sed 's/^test[-_]//')
+                echo "[$test_rerun_num/$fail_count] $failed_test"
+                sh "$failed_test" --very-verbose 2>&1 || true
+                echo ""
+              done < "$failed_list_file"
+            fi
+            
             exit 1
           fi
       

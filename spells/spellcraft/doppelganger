@@ -66,6 +66,9 @@ temp_failed_file=$(mktemp)
 echo "0" > "$temp_count_file"
 echo "0" > "$temp_failed_file"
 
+# Ensure compile-spell can find the wizardry repo
+export WIZARDRY_DIR="$repo_dir"
+
 find "$repo_dir/spells" -type f -executable | while IFS= read -r spell_path; do
   # Skip hidden files and directories
   case "$spell_path" in
@@ -82,8 +85,8 @@ find "$repo_dir/spells" -type f -executable | while IFS= read -r spell_path; do
   target_dir="$output_dir/spells/$(dirname "$rel_path")"
   mkdir -p "$target_dir"
   
-  # Compile spell
-  if compile-spell "$spell_name" > "$target_dir/$spell_name" 2>/dev/null; then
+  # Compile spell (compile-spell uses its own parent dirs to find repo, so we need to call it from repo)
+  if (cd "$repo_dir" && "$repo_dir/spells/spellcraft/compile-spell" "$spell_name") > "$target_dir/$spell_name" 2>/dev/null; then
     chmod +x "$target_dir/$spell_name"
     count=$(cat "$temp_count_file")
     echo "$((count + 1))" > "$temp_count_file"
