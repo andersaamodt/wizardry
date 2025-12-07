@@ -173,10 +173,12 @@ jobs:
             echo "Running: $test_file"
             
             # Capture output with test results
-            if output=$(sh "$test_file" 2>&1); then
+            if output=$(timeout 60 sh "$test_file" 2>&1); then
               # Count passed/failed subtests from output
-              subtest_passed=$(echo "$output" | grep -c "^PASS" || echo 0)
-              subtest_failed=$(echo "$output" | grep -c "^FAIL" || echo 0)
+              subtest_passed=$(echo "$output" | grep -c "^PASS" || true)
+              subtest_failed=$(echo "$output" | grep -c "^FAIL" || true)
+              : ${subtest_passed:=0}
+              : ${subtest_failed:=0}
               subtest_total=$((subtest_passed + subtest_failed))
               
               # Update counters
