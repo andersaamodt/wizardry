@@ -45,7 +45,7 @@ jobs:
           
           # Use list-files cantrip to recursively find all executable files
           # Include imps and exclude only .arcana
-          list-files spells -x | grep -v "spells/.arcana/" | while IFS= read -r spell_file; do
+          list-files spells -x | grep -v "spells/.arcana" | while IFS= read -r spell_file; do
             
             spell_name=$(basename "$spell_file")
             
@@ -149,15 +149,19 @@ jobs:
             percent=$((passed * 100 / total_tested))
             echo "Success rate: $percent% ($passed/$total_tested)"
             
-            # Adjust threshold - allow more failures for imps that don't have --help
-            # We have ~256 scripts, expect some lex/ imps to not support --help
-            if [ "$failed" -gt 30 ]; then
+            # Adjust threshold - allow failures for imps that don't have --help
+            # We have ~256 scripts, allow up to ~12% failure rate (30 scripts)
+            # This accounts for lex/ imps and other edge cases
+            threshold=$((total_tested * 12 / 100))
+            [ "$threshold" -lt 20 ] && threshold=20  # Minimum threshold
+            
+            if [ "$failed" -gt "$threshold" ]; then
               echo ""
-              echo "❌ Too many failures - threshold exceeded"
+              echo "❌ Too many failures - threshold $threshold exceeded"
               exit 1
             else
               echo ""
-              echo "✓ Within acceptable range"
+              echo "✓ Within acceptable range (threshold: $threshold)"
             fi
           fi
       

@@ -127,6 +127,7 @@ printf '#\n'
 # Create centered separator with spell name (76 chars total width)
 name_len=${#spell_name}
 dash_space=$((76 - 2 - name_len - 2))  # 76 - "# " - name - spaces around
+# Minimum dash space of 8 ensures readable formatting even with long names
 if [ "$dash_space" -lt 8 ]; then
   # Name too long, truncate
   max_name_len=$((76 - 2 - 8 - 2))

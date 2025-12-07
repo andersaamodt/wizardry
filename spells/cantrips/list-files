@@ -48,6 +48,10 @@ while [ "$#" -gt 0 ]; do
       shift
       ;;
     -t|--type)
+      if [ "$#" -lt 2 ]; then
+        printf '%s\n' "list-files: -t requires an argument" >&2
+        exit 1
+      fi
       file_type=$2
       shift 2
       ;;
