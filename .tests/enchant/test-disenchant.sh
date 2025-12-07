@@ -74,11 +74,6 @@ STUB
 }
 
 test_falls_back_to_setfattr() {
-  # Skip in compiled mode - helper_usable creates complex dependency chains
-  if [ "${WIZARDRY_TEST_COMPILED-0}" = "1" ]; then
-    return 0
-  fi
-  
   stub_dir=$(make_stub_dir)
   cat >"$stub_dir/getfattr" <<'STUB'
 #!/bin/sh

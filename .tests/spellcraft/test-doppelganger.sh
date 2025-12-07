@@ -35,6 +35,9 @@ test_creates_compiled_wizardry() {
   workdir=$(_make_tempdir)
   target="$workdir/wizardry-clone"
   
+  # Ensure compile-spell is in PATH
+  export PATH="${ROOT_DIR}/spells/spellcraft:${PATH}"
+  
   _run_spell "spells/spellcraft/doppelganger" "$target"
   _assert_success || return 1
   

@@ -119,7 +119,7 @@ jobs:
             exit 0
           fi
           
-          echo "=== Running doppelganger behavioral tests ==="
+          echo "=== Testing Behavioral Tests ==="
           cd /tmp/wizardry-doppelganger
           
           # Set up environment for compiled spells
@@ -138,50 +138,62 @@ jobs:
           
           # Track test results
           test_results_file=/tmp/test-results.txt
-          rm -f "$test_results_file"
-          touch "$test_results_file"
+          pass_count=0
+          fail_count=0
+          skip_count=0
+          total_subtests=0
+          passed_subtests=0
+          failed_tests_list=""
           
           # Run all tests EXCEPT those marked as unsupported
+          test_number=0
           find .tests -name "test_*.sh" -o -name "test-*.sh" | sort | while IFS= read -r test_file; do
+            test_number=$((test_number + 1))
+            test_name=$(basename "$test_file" .sh | sed 's/^test[-_]//')
+            
             # Skip if test is marked as unsupported
             if grep -q "$UNSUPPORTED_MARKER" "$test_file" 2>/dev/null; then
-              echo "SKIP:$test_file (COMPILED_UNSUPPORTED)" >> "$test_results_file"
+              skip_count=$((skip_count + 1))
               continue
             fi
             
-            echo ""
             echo "Running: $test_file"
-            if sh "$test_file" 2>&1; then
-              echo "  ✓ PASSED"
-              echo "PASS:$test_file" >> "$test_results_file"
+            
+            # Capture output with test results
+            if output=$(sh "$test_file" 2>&1); then
+              # Count passed/failed subtests from output
+              subtest_passed=$(echo "$output" | grep -c "^PASS" || echo 0)
+              subtest_failed=$(echo "$output" | grep -c "^FAIL" || echo 0)
+              subtest_total=$((subtest_passed + subtest_failed))
+              
+              total_subtests=$((total_subtests + subtest_total))
+              passed_subtests=$((passed_subtests + subtest_passed))
+              
+              if [ "$subtest_failed" -eq 0 ]; then
+                printf "%d. ✓ %s (%d/%d subtests)\n" "$test_number" "$test_name" "$subtest_passed" "$subtest_total"
+                pass_count=$((pass_count + 1))
+              else
+                printf "%d. ✗ %s (%d/%d subtests)\n" "$test_number" "$test_name" "$subtest_passed" "$subtest_total"
+                fail_count=$((fail_count + 1))
+                failed_tests_list="$failed_tests_list$test_name ($test_number), "
+              fi
             else
-              echo "  ✗ FAILED"
-              echo "FAIL:$test_file" >> "$test_results_file"
+              printf "%d. ✗ %s (script error)\n" "$test_number" "$test_name"
+              fail_count=$((fail_count + 1))
+              failed_tests_list="$failed_tests_list$test_name ($test_number), "
             fi
           done
           
-          # Count results
-          test_count=$(grep -cE "^(PASS|FAIL):" "$test_results_file" 2>/dev/null || echo 0)
-          pass_count=$(grep -c "^PASS:" "$test_results_file" 2>/dev/null || echo 0)
-          fail_count=$(grep -c "^FAIL:" "$test_results_file" 2>/dev/null || echo 0)
-          skip_count=$(grep -c "^SKIP:" "$test_results_file" 2>/dev/null || echo 0)
+          # Calculate overall totals
+          test_total=$((pass_count + fail_count))
           
           echo ""
-          echo "=== Behavioral Test Summary ==="
-          echo "Tests run: $test_count"
-          echo "Passed: $pass_count"
-          echo "Failed: $fail_count"
-          echo "Skipped: $skip_count (marked COMPILED_UNSUPPORTED)"
-          echo ""
-          echo "By default, ALL tests run against compiled spells"
-          echo "Mark unsupported tests with '# COMPILED_UNSUPPORTED: reason' as second line"
-          echo "See .github/COMPILED-TESTING.md for details"
+          echo "Summary: $pass_count passed, $fail_count failed, 0 uncovered, 0 incomplete, subtests $passed_subtests/$total_subtests."
           
-          # Exit with error if any tests failed
+          # Show failures if any
           if [ "$fail_count" -gt 0 ]; then
             echo ""
-            echo "Failed tests:"
-            grep "^FAIL:" "$test_results_file" | sed 's/^FAIL:/  - /'
+            echo "Failed tests: ${failed_tests_list%, }."
             exit 1
           fi
       
