@@ -1,4 +1,5 @@
 #!/bin/sh
+# COMPILED_SUPPORTED
 # Behavioral cases (derived from --help and script behavior):
 # - trash prints usage with --help
 # - trash errors when given no arguments

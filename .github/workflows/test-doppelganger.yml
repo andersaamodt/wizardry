@@ -44,14 +44,15 @@ jobs:
       
       - name: Test doppelganger spells
         run: |
-          passed=0
-          failed=0
-          total=0
-          
           echo "=== Testing doppelganger spells ==="
           
           # Exclusions (wizardry infrastructure)
           excluded="invoke-wizardry require-wizardry declare-globals learn-spellbook learn mud decorate select-player"
+          
+          # Track failures
+          fail_file=/tmp/doppelganger-failures.txt
+          rm -f "$fail_file"
+          touch "$fail_file"
           
           # Test all compiled spells
           find /tmp/wizardry-doppelganger/spells -type f -executable | while IFS= read -r compiled; do
@@ -79,58 +80,86 @@ jobs:
               # Imps: test with empty stdin
               if echo "" | timeout 1 env -i PATH="/usr/bin:/bin" "$compiled" >/dev/null 2>&1; then
                 echo "  ✓ $spell_name"
-                passed=$((passed + 1))
               else
                 ec=$?
                 if [ "$ec" != "124" ]; then
                   echo "  ✓ $spell_name (exit $ec OK)"
-                  passed=$((passed + 1))
                 else
                   echo "  ✗ $spell_name (timeout)"
-                  failed=$((failed + 1))
+                  echo "$spell_name" >> "$fail_file"
                 fi
               fi
             else
               # Spells: test --help
               if timeout 2 env -i PATH="/usr/bin:/bin" "$compiled" --help >/dev/null 2>&1; then
                 echo "  ✓ $spell_name"
-                passed=$((passed + 1))
               else
                 echo "  ✗ $spell_name"
-                failed=$((failed + 1))
+                echo "$spell_name" >> "$fail_file"
               fi
             fi
-            
-            total=$((total + 1))
           done
           
-          # Note: we can't pass variables out of the while loop subshell easily
-          # So we re-count for final summary
-          echo ""
-          echo "=== Test Summary ==="
-          total_files=$(find /tmp/wizardry-doppelganger/spells -type f -executable | wc -l)
-          echo "Total compiled files: $total_files"
-          echo "(Individual results shown above)"
-      
-      - name: Run doppelganger tests
-        if: success()
-        run: |
-          # If test files exist, run them against doppelganger
-          if [ -d "/tmp/wizardry-doppelganger/.tests" ]; then
-            echo "=== Running doppelganger test suite ==="
-            cd /tmp/wizardry-doppelganger
-            
-            # Add doppelganger spells to PATH
-            export PATH="/tmp/wizardry-doppelganger/spells:$PATH"
-            export PATH="/tmp/wizardry-doppelganger/spells/cantrips:$PATH"
-            
-            # Run a sample of tests (not all, since many require full wizardry)
-            find .tests -name "test_*.sh" -type f | head -5 | while read -r test; do
-              echo "Running: $test"
-              sh "$test" 2>&1 | head -20 || true
-              echo ""
-            done
+          # Check for failures
+          if [ -s "$fail_file" ]; then
+            echo ""
+            echo "=== FAILURES ==="
+            cat "$fail_file"
+            exit 1
           fi
+          
+          echo ""
+          echo "=== All doppelganger spells passed ==="
+      
+      - name: Run doppelganger behavioral tests
+        run: |
+          # Run behavioral tests against compiled spells
+          if [ ! -d "/tmp/wizardry-doppelganger/.tests" ]; then
+            echo "No tests found in doppelganger"
+            exit 0
+          fi
+          
+          echo "=== Running doppelganger behavioral tests ==="
+          cd /tmp/wizardry-doppelganger
+          
+          # Set up environment for compiled spells
+          export ROOT_DIR="/tmp/wizardry-doppelganger"
+          export WIZARDRY_DIR="/tmp/wizardry-doppelganger"
+          export WIZARDRY_TEST_COMPILED=1  # Flag to indicate testing compiled spells
+          
+          # Add doppelganger to PATH
+          export PATH="/tmp/wizardry-doppelganger/spells:$PATH"
+          for dir in /tmp/wizardry-doppelganger/spells/*; do
+            [ -d "$dir" ] && export PATH="$PATH:$dir"
+          done
+          
+          # Run tests that are marked for compiled testing
+          test_count=0
+          pass_count=0
+          fail_count=0
+          
+          find .tests -name "test_*.sh" -o -name "test-*.sh" | sort | while IFS= read -r test_file; do
+            # Check if test supports compiled mode
+            # Look for COMPILED_SUPPORTED marker in test file
+            if grep -q "^# COMPILED_SUPPORTED" "$test_file" 2>/dev/null; then
+              test_count=$((test_count + 1))
+              echo ""
+              echo "Running: $test_file"
+              if sh "$test_file" 2>&1; then
+                echo "  ✓ PASSED"
+                pass_count=$((pass_count + 1))
+              else
+                echo "  ✗ FAILED"
+                fail_count=$((fail_count + 1))
+              fi
+            fi
+          done
+          
+          echo ""
+          echo "=== Behavioral Test Summary ==="
+          echo "Tests with COMPILED_SUPPORTED marker will be run"
+          echo "Add '# COMPILED_SUPPORTED' as first line to mark tests"
+          echo "Run './tests/test-suite.sh' for more details"
       
       - name: Create doppelganger zip
         if: success()

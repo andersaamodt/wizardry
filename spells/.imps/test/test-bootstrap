@@ -19,6 +19,14 @@ export PATH
 
 set -eu
 
+# Check if testing compiled spells
+if [ "${WIZARDRY_TEST_COMPILED-0}" = "1" ]; then
+  # When testing compiled spells, disable sandboxing and some features
+  # that require full wizardry infrastructure
+  WIZARDRY_DISABLE_SANDBOX=1
+  export WIZARDRY_DISABLE_SANDBOX
+fi
+
 # Find the repository root
 _find_repo_root_inline() {
   dir=$(CDPATH= cd -- "$(dirname "${0:-$PWD}")" && pwd -P)

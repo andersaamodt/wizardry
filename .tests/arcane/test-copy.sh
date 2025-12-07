@@ -1,4 +1,5 @@
 #!/bin/sh
+# COMPILED_SUPPORTED
 # Behavioral cases (derived from --help):
 # - copy shows usage text
 # - copy requires an existing file

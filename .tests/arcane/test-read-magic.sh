@@ -1,4 +1,5 @@
 #!/bin/sh
+# COMPILED_SUPPORTED
 # Behavioral cases (derived from --help):
 # - read-magic prints usage
 
