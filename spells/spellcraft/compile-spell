@@ -3,16 +3,8 @@
 # This spell compiles a spell into a standalone script by inlining all imp and spell calls.
 # Optionally compiles for a specific OS, removing cross-platform conditionals.
 
-_warn() {
-  printf '%s\n' "$*" >&2
-}
-
 warn() {
-  if command -v warn >/dev/null 2>&1; then
-    command warn "$@"
-  else
-    _warn "$@"
-  fi
+  printf '%s\n' "$*" >&2
 }
 
 show_usage() {
@@ -47,12 +39,36 @@ imps_dir="$repo_dir/spells/.imps"
 
 # Look for the spell in various locations
 spell_path=""
+# First check spells directories
 for dir in "$repo_dir/spells" "$repo_dir/spells"/*; do
+  # Skip .imps directory in this loop
+  case "$dir" in
+    "$repo_dir/spells/.imps"|"$repo_dir/spells/.arcana") continue ;;
+  esac
   if [ -f "$dir/$spell_name" ]; then
     spell_path="$dir/$spell_name"
     break
   fi
 done
+
+# If not found as a spell, check if it's an imp
+if [ -z "$spell_path" ]; then
+  for family_dir in "$imps_dir"/*; do
+    [ -d "$family_dir" ] || continue
+    if [ -f "$family_dir/$spell_name" ]; then
+      spell_path="$family_dir/$spell_name"
+      break
+    fi
+    # Check subdirectories
+    for subdir in "$family_dir"/*; do
+      [ -d "$subdir" ] || continue
+      if [ -f "$subdir/$spell_name" ]; then
+        spell_path="$subdir/$spell_name"
+        break 2
+      fi
+    done
+  done
+fi
 
 if [ -z "$spell_path" ] || [ ! -f "$spell_path" ]; then
   warn "compile-spell: spell '$spell_name' not found"
