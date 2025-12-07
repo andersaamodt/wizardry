@@ -37,20 +37,19 @@ jobs:
           failed=0
           failed_list=""
           
-          echo "=== Compiling all spells ==="
+          echo "=== Compiling all spells and imps ==="
           
-          # Find all spells recursively (excluding .imps and .arcana)
           # Use a temp file to collect failures since subshell won't persist variables
           tmpfile="/tmp/failed_spells.txt"
           : > "$tmpfile"
           
-          find spells -type f -executable \
-            ! -path "spells/.imps/*" \
-            ! -path "spells/.arcana/*" | while IFS= read -r spell_file; do
+          # Use list-files cantrip to recursively find all executable files
+          # Include imps and exclude only .arcana
+          list-files spells -x | grep -v "spells/.arcana/" | while IFS= read -r spell_file; do
             
             spell_name=$(basename "$spell_file")
             
-            # Compile the spell
+            # Compile the spell/imp
             if compile-spell "$spell_name" > "/tmp/compiled/${spell_name}" 2>/dev/null; then
               chmod +x "/tmp/compiled/${spell_name}"
               echo "  ✓ $spell_name"
