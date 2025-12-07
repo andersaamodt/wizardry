@@ -214,6 +214,9 @@ transformed_content=$(printf '%s\n' "$transformed_content" | grep -v "^require-w
 
 # Output the compiled spell
 printf '#!/bin/sh\n'
+printf '# ----------------------------------------------------------------------------\n'
+printf '# %s\n' "$spell_name"
+printf '# ----------------------------------------------------------------------------\n'
 printf '#\n'
 printf '# COMPILED WIZARDRY SPELL\n'
 printf '#\n'
