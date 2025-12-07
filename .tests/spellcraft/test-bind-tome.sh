@@ -45,7 +45,7 @@ binds_pages_into_tome() {
   [ -f "$workdir/pages.txt" ] || { TEST_FAILURE_REASON="tome not created"; return 1; }
   content=$(cat "$workdir/pages.txt")
   case "$content" in
-    *"----- first -----"*"alpha rune"*"End of first"*"----- second -----"*"beta glyph"*"End of second"*) ;;
+    *"# ----------------------------------------------------------------------------"*"# first"*"# ----------------------------------------------------------------------------"*"alpha rune"*"# ----------------------------------------------------------------------------"*"# second"*"# ----------------------------------------------------------------------------"*"beta glyph"*) ;;
     *) TEST_FAILURE_REASON="tome content missing expected sections"; return 1 ;;
   esac
 }

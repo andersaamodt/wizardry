@@ -59,9 +59,10 @@ text_file="${folder_name}.txt"
 for page in "$pages_dir"/*; do
     there "$page" || continue
     page_name=$(basename -- "$page")
-    say "----- $page_name -----" >>"$text_file"
+    say "# ----------------------------------------------------------------------------" >>"$text_file"
+    say "# $page_name" >>"$text_file"
+    say "# ----------------------------------------------------------------------------" >>"$text_file"
     cat "$page" >>"$text_file"
-    say "----- End of $page_name -----" >>"$text_file"
 done
 
 say "Text file created: $text_file"

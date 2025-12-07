@@ -41,10 +41,56 @@ while there "$pages_dir"; do
 done
 make dir "$pages_dir"
 
-page_number=1
-while IFS= read -r line || nonempty "$line"; do
-    clean_name=$(printf '%s' "$line" | tr -dc '[:alnum:] .,;_-' | tr ' ' '_')
-    empty "$clean_name" && clean_name="page_${page_number}"
-    say "$line" >"$pages_dir/$clean_name"
-    page_number=$((page_number + 1))
+# Detect format by checking if the first non-empty line is a separator
+first_line=""
+while IFS= read -r line && empty "$first_line"; do
+    nonempty "$line" && first_line="$line"
 done <"$tome"
+
+# Check if this is the new format (starts with separator)
+if [ "$first_line" = "# ----------------------------------------------------------------------------" ]; then
+    # New format with commented separators
+    current_file=""
+    in_header=0
+    page_number=1
+    while IFS= read -r line || nonempty "$line"; do
+        # Check if this is a separator line
+        case "$line" in
+            "# ----------------------------------------------------------------------------")
+                # Toggle header state - first separator starts header, second ends it
+                if [ "$in_header" -eq 0 ]; then
+                    in_header=1
+                else
+                    in_header=0
+                fi
+                continue
+                ;;
+        esac
+        
+        # If in header and line starts with "# ", extract the page name
+        if [ "$in_header" -eq 1 ]; then
+            case "$line" in
+                "# "*)
+                    page_name=${line#"# "}
+                    clean_name=$(printf '%s' "$page_name" | tr -dc '[:alnum:] .,;_-' | tr ' ' '_')
+                    empty "$clean_name" && clean_name="page_${page_number}"
+                    current_file="$pages_dir/$clean_name"
+                    : >"$current_file"
+                    page_number=$((page_number + 1))
+                    ;;
+            esac
+        # If not in header and we have a current file, append content
+        elif nonempty "$current_file"; then
+            say "$line" >>"$current_file"
+        fi
+    done <"$tome"
+else
+    # Old format - each line is a page
+    page_number=1
+    while IFS= read -r line || nonempty "$line"; do
+        clean_name=$(printf '%s' "$line" | tr -dc '[:alnum:] .,;_-' | tr ' ' '_')
+        empty "$clean_name" && clean_name="page_${page_number}"
+        say "$line" >"$pages_dir/$clean_name"
+        page_number=$((page_number + 1))
+    done <"$tome"
+fi
