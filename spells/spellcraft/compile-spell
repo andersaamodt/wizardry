@@ -37,37 +37,16 @@ script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 repo_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd -P)
 imps_dir="$repo_dir/spells/.imps"
 
-# Look for the spell in various locations
+# Look for the spell recursively
 spell_path=""
-# First check spells directories
-for dir in "$repo_dir/spells" "$repo_dir/spells"/*; do
-  # Skip .imps directory in this loop
-  case "$dir" in
-    "$repo_dir/spells/.imps"|"$repo_dir/spells/.arcana") continue ;;
-  esac
-  if [ -f "$dir/$spell_name" ]; then
-    spell_path="$dir/$spell_name"
-    break
-  fi
-done
 
-# If not found as a spell, check if it's an imp
+# Use find to recursively search for the spell in all subdirectories
+# First check spells directories (excluding .imps and .arcana)
+spell_path=$(find "$repo_dir/spells" -type f -name "$spell_name" ! -path "*/.*" | grep -v "^$repo_dir/spells/.imps" | grep -v "^$repo_dir/spells/.arcana" | head -1)
+
+# If not found as a spell, check if it's an imp (recursively search .imps directory)
 if [ -z "$spell_path" ]; then
-  for family_dir in "$imps_dir"/*; do
-    [ -d "$family_dir" ] || continue
-    if [ -f "$family_dir/$spell_name" ]; then
-      spell_path="$family_dir/$spell_name"
-      break
-    fi
-    # Check subdirectories
-    for subdir in "$family_dir"/*; do
-      [ -d "$subdir" ] || continue
-      if [ -f "$subdir/$spell_name" ]; then
-        spell_path="$subdir/$spell_name"
-        break 2
-      fi
-    done
-  done
+  spell_path=$(find "$imps_dir" -type f -name "$spell_name" 2>/dev/null | head -1)
 fi
 
 if [ -z "$spell_path" ] || [ ! -f "$spell_path" ]; then
@@ -127,18 +106,9 @@ inline_imp() {
   done
   
   # If not found in imps, check if it's a spell (like ask-text, ask-number)
+  # Use find to recursively search
   if [ -z "$imp_file" ]; then
-    for spell_dir in "$repo_dir/spells"/*; do
-      [ -d "$spell_dir" ] || continue
-      # Skip special directories
-      case "$spell_dir" in
-        "$repo_dir/spells/.imps"|"$repo_dir/spells/.arcana") continue ;;
-      esac
-      if [ -f "$spell_dir/$imp_name" ]; then
-        imp_file="$spell_dir/$imp_name"
-        break
-      fi
-    done
+    imp_file=$(find "$repo_dir/spells" -type f -name "$imp_name" ! -path "*/.*" 2>/dev/null | grep -v "^$repo_dir/spells/.imps" | grep -v "^$repo_dir/spells/.arcana" | head -1)
   fi
   
   # If still not found, return

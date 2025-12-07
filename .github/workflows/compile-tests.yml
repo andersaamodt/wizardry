@@ -42,49 +42,35 @@ jobs:
           failed_count=0
           
           echo "=== Compiling spells ==="
-          for spell_dir in spells/*; do
-            [ -d "$spell_dir" ] || continue
-            # Skip special directories
-            case "$spell_dir" in
-              spells/.imps|spells/.arcana) continue ;;
-            esac
+          # Use find to recursively locate all executable spell files
+          # Exclude .imps and .arcana directories
+          find spells -type f -executable ! -path "*/.*" | while IFS= read -r spell; do
+            spell_name=$(basename "$spell")
+            spell_path=$(echo "$spell" | sed 's|^spells/||')
             
-            for spell in "$spell_dir"/*; do
-              [ -f "$spell" ] || continue
-              [ -x "$spell" ] || continue
-              
-              spell_name=$(basename "$spell")
-              category=$(basename "$spell_dir")
-              
-              echo "Compiling: $category/$spell_name"
-              if compile-spell "$spell_name" > "/tmp/compiled-spells/${spell_name}" 2>/dev/null; then
-                chmod +x "/tmp/compiled-spells/${spell_name}"
-                compiled_count=$((compiled_count + 1))
-              else
-                echo "  Failed to compile $category/$spell_name"
-                failed_count=$((failed_count + 1))
-              fi
-            done
+            echo "Compiling: $spell_path"
+            if compile-spell "$spell_name" > "/tmp/compiled-spells/${spell_name}" 2>/dev/null; then
+              chmod +x "/tmp/compiled-spells/${spell_name}"
+              compiled_count=$((compiled_count + 1))
+            else
+              echo "  Failed to compile $spell_path"
+              failed_count=$((failed_count + 1))
+            fi
           done
           
           echo ""
           echo "=== Compiling imps (for verification) ==="
-          for family_dir in spells/.imps/*; do
-            [ -d "$family_dir" ] || continue
-            for imp in "$family_dir"/*; do
-              [ -f "$imp" ] || continue
-              [ -x "$imp" ] || continue
-              
-              imp_name=$(basename "$imp")
-              echo "Compiling imp: $imp_name"
-              if compile-spell "$imp_name" > "/tmp/compiled-spells/${imp_name}" 2>/dev/null; then
-                chmod +x "/tmp/compiled-spells/${imp_name}"
-                compiled_count=$((compiled_count + 1))
-              else
-                # Many imps don't compile independently - that's expected
-                true
-              fi
-            done
+          # Use find to recursively locate all imps
+          find spells/.imps -type f -executable 2>/dev/null | while IFS= read -r imp; do
+            imp_name=$(basename "$imp")
+            echo "Compiling imp: $imp_name"
+            if compile-spell "$imp_name" > "/tmp/compiled-spells/${imp_name}" 2>/dev/null; then
+              chmod +x "/tmp/compiled-spells/${imp_name}"
+              compiled_count=$((compiled_count + 1))
+            else
+              # Many imps don't compile independently - that's expected
+              true
+            fi
           done
           
           echo ""
