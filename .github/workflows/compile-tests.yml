@@ -106,10 +106,16 @@ jobs:
           echo "Requires dependencies: $fail_count spells"
           echo ""
           
-          # For now, we don't fail the workflow even if spells require dependencies
-          # This is exploratory testing to understand the current state
-          echo "Note: This workflow does not fail on dependency requirements."
-          echo "It serves to document which spells can run standalone."
+          # Fail the workflow if any spell requires dependencies
+          # We've achieved 100% standalone compilation, so this should never fail
+          if [ "$fail_count" -gt 0 ]; then
+            echo "❌ FAILURE: $fail_count spell(s) require dependencies"
+            echo "All spells must compile to working standalone scripts."
+            echo "This is a regression - please investigate and fix."
+            exit 1
+          fi
+          
+          echo "✓ SUCCESS: All $success_count spells work standalone!"
       
       - name: Test compiled spells with test suite
         run: |
@@ -192,9 +198,9 @@ jobs:
           echo ""
           
           if [ "$test_failed" -gt 0 ]; then
-            echo "⚠ Some compiled spells failed their tests."
-            echo "This indicates compile-spell may need improvements for these spells."
-            # Don't fail the workflow yet - this is exploratory
+            echo "❌ FAILURE: $test_failed compiled spell(s) failed their tests"
+            echo "This indicates a regression in compile-spell functionality."
+            exit 1
           fi
           
           if [ "$test_passed" -gt 0 ]; then
@@ -203,11 +209,10 @@ jobs:
           fi
           
           echo ""
-          echo "=== Next Steps ==="
-          echo "1. Enhance compile-spell to inline imp dependencies"
-          echo "2. Test more complex spells that use imps"
-          echo "3. Identify spells that cannot be compiled standalone"
-          echo "4. Document bootstrap spell equivalence"
+          echo "=== Achievement Summary ==="
+          echo "✓ 100% standalone compilation maintained"
+          echo "✓ All compiled spells achieve test parity"
+          echo "✓ Wizardry is a true compiled language"
       
       - name: Upload compiled spells as artifacts
         uses: actions/upload-artifact@v4

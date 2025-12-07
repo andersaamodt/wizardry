@@ -181,3 +181,26 @@ Avoid bash-isms:
 - No `local` keyword
 - No arrays
 - Use `$()` not backticks
+
+## Compilation and Bootstrap Equivalence
+
+**All spells must compile to working standalone scripts** via `compile-spell`.
+
+The compiler achieves 100% standalone compilation through:
+- Imp inlining (say, warn, is, has, etc.)
+- Spell inlining (recursive dependency resolution)
+- Self-healing (inline fallbacks for external dependencies)
+- Smart skipping (removes require-wizardry checks)
+
+**Self-healing pattern** for external dependencies:
+```sh
+if command -v dependency >/dev/null 2>&1; then
+    use_full_implementation
+else
+    use_inline_fallback
+fi
+```
+
+This enables graceful degradation: full features when wizardry is available, core functionality when standalone.
+
+**Testing enforcement**: The `compile-tests.yml` workflow fails on any regression. No exemptions.
