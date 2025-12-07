@@ -80,12 +80,6 @@ inline_imp() {
   # Skip require-wizardry - it checks for wizardry installation which doesn't make sense in standalone scripts
   [ "$imp_name" = "require-wizardry" ] && return 0
   
-  # Skip interactive input spells - these must remain as external calls so test stubs can intercept them
-  # When inlined, they become internal functions that can't be stubbed via PATH replacement
-  case "$imp_name" in
-    ask|ask-text|ask-number|ask-yn|ask-password|input-*) return 0 ;;
-  esac
-  
   # Skip if already processed
   case " $processed_imps " in
     *" $imp_name "*) return 0 ;;
@@ -304,9 +298,34 @@ printf '#\n'
 printf '# ----------------------------------------------------------------------------\n'
 printf '\n'
 
-# Output inlined imp definitions first
+# Output inlined imp definitions first (with double underscore prefix for actual implementation)
 if [ -n "$inlined_imps" ]; then
-  printf '%s\n' "$inlined_imps"
+  # Rename inlined functions to use double underscore prefix
+  renamed_imps=$(printf '%s\n' "$inlined_imps" | sed 's/^_\([a-z_]*\)()/__\1()/g')
+  printf '%s\n' "$renamed_imps"
+  
+  printf '\n# Wrapper functions - check for external commands first, fall back to inlined\n'
+  
+  # Create wrapper functions for each processed imp
+  for imp in $processed_imps; do
+    # Skip single-word common imps that weren't replaced
+    case "$imp" in
+      is|yes|no|has|ok) continue ;;
+    esac
+    
+    # Create wrapper function that calls external command if it exists, otherwise uses inlined version
+    func_name="_$(printf '%s' "$imp" | tr '-' '_')"
+    internal_func="__$(printf '%s' "$imp" | tr '-' '_')"
+    hyphen_name=$(printf '%s' "$imp" | tr '_' '-')
+    
+    printf '%s() {\n' "$func_name"
+    printf '  if command -v %s >/dev/null 2>&1; then\n' "$hyphen_name"
+    printf '    %s "$@"\n' "$hyphen_name"
+    printf '  else\n'
+    printf '    %s "$@"\n' "$internal_func"
+    printf '  fi\n'
+    printf '}\n\n'
+  done
 fi
 
 # Output the transformed spell (skip original shebang)
