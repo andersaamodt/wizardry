@@ -33,9 +33,8 @@ script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 repo_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd -P)
 imps_dir="$repo_dir/spells/.imps"
 
-# Find spell recursively (include imps, exclude only .arcana)
-spell_path=$(find "$repo_dir/spells" -type f -name "$spell_name" \
-  ! -path "*/\.arcana/*" 2>/dev/null | head -1)
+# Find spell recursively (include imps and .arcana)
+spell_path=$(find "$repo_dir/spells" -type f -name "$spell_name" 2>/dev/null | head -1)
 
 if [ -z "$spell_path" ] || [ ! -f "$spell_path" ]; then
   printf '%s\n' "compile-spell: spell '$spell_name' not found" >&2
