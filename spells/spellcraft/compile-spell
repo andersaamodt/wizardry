@@ -199,14 +199,18 @@ fi
 transformed_content="$content"
 
 # For each inlined imp, replace hyphenated calls with underscore function calls
-# This is a simple word-boundary replacement that will catch most cases
-# More sophisticated AST parsing would be needed for 100% accuracy
+# Only replace actual command calls, not strings/literals/case-patterns
+# Skip single-word imps like "is", "yes", "no" which often appear as literals
 for imp in $processed_imps; do
+  # Skip replacement for single-word common imps that are often used as literals
+  case "$imp" in
+    is|yes|no|has|ok) continue ;;
+  esac
+  
   func_name="_$(printf '%s' "$imp" | tr '-' '_')"
-  # Replace imp name when it appears as a standalone command or function call
-  # Using word boundaries to avoid replacing parts of other words
-  # Note: This may still replace in strings/comments but handles most common cases
-  transformed_content=$(printf '%s\n' "$transformed_content" | sed "s/\<$imp\>/$func_name/g")
+  # Replace imp name when it appears as a command (at line start after whitespace or after pipe/semicolon/&&/||)
+  # This is more conservative to avoid replacing in case patterns or strings
+  transformed_content=$(printf '%s\n' "$transformed_content" | sed "s/\(^\|[[:space:]]\|[|;&]\)$imp\([[:space:]]\|$\)/\1$func_name\2/g")
 done
 
 # Remove require-wizardry line since we're making it standalone
