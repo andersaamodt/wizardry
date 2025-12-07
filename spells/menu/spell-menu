@@ -7,16 +7,63 @@ require-wizardry || exit 1
 # Catch Ctrl-C and TERM signal to exit cleanly
 trap 'exit 0' INT TERM
 
-# Load color palette (colors handles terminal capability detection internally)
-# shellcheck source=/dev/null
-. "$(command -v colors)"
+# Load color palette if available (colors handles terminal capability detection internally)
+# Self-healing: provide fallback if colors command isn't available
+if command -v colors >/dev/null 2>&1; then
+        # shellcheck source=/dev/null
+        . "$(command -v colors)"
+else
+        # Fallback: define minimal color functions inline
+        reset() { :; }
+        bold() { :; }
+        dim() { :; }
+        # Add other color functions as no-ops if needed
+fi
+
+# Default memorize store implementation for standalone use
+default_cast_dir=${CAST_DIR:-${HOME:-.}/.wizardry/cast}
+default_cast_file="$default_cast_dir/spells.list"
+
+# Inline fallback for memorize functionality
+_memorize_fallback() {
+        case "$1" in
+        list)
+                if [ -f "$default_cast_file" ]; then
+                        cat "$default_cast_file"
+                fi
+                ;;
+        add)
+                shift
+                # Create directory if needed
+                mkdir -p "$default_cast_dir" 2>/dev/null || true
+                name=$1
+                shift
+                command="$*"
+                # Add to list (simple tab-separated format)
+                printf '%s\t%s\n' "$name" "$command" >> "$default_cast_file"
+                ;;
+        remove)
+                shift
+                name=$1
+                if [ -f "$default_cast_file" ]; then
+                        # Remove entry with this name
+                        grep -v "^$name$(printf '\t')" "$default_cast_file" > "$default_cast_file.tmp" 2>/dev/null || true
+                        mv "$default_cast_file.tmp" "$default_cast_file" 2>/dev/null || true
+                fi
+                ;;
+        *)
+                printf '%s\n' "spell-menu: basic fallback doesn't support this operation" >&2
+                return 1
+                ;;
+        esac
+}
 
 cast_store=${CAST_STORE-memorize}
 if cast_store_path=$(command -v "$cast_store" 2>/dev/null); then
         cast_store=$cast_store_path
 else
-        printf '%s\n' "spell-menu: memorize helper is missing." >&2
-        exit 1
+        # Self-healing: use inline fallback if memorize is missing
+        cast_store=_memorize_fallback
 fi
 
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
