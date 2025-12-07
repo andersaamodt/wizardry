@@ -150,16 +150,16 @@ jobs:
           echo "0" > "$subtest_pass_file"
           echo "" > "$failed_list_file"
           
-          # Collect all test files first
-          test_files=$(find .tests -name "test_*.sh" -o -name "test-*.sh" | sort)
+          # Use file to track test number across loop iterations
+          test_num_file=/tmp/test-num.txt
+          echo "0" > "$test_num_file"
           
           # Run all tests EXCEPT those marked as unsupported
-          test_number=0
-          while IFS= read -r test_file; do
-            [ -n "$test_file" ] || continue
-            
+          find .tests -name "test_*.sh" -o -name "test-*.sh" | sort | while IFS= read -r test_file; do
             # Increment test number
+            test_number=$(cat "$test_num_file")
             test_number=$((test_number + 1))
+            echo "$test_number" > "$test_num_file"
             
             test_name=$(basename "$test_file" .sh | sed 's/^test[-_]//')
             
@@ -201,9 +201,7 @@ jobs:
               echo "$((fail_count + 1))" > "$fail_file"
               echo "$test_file" >> "$failed_list_file"
             fi
-          done <<EOF_TESTS
-$test_files
-EOF_TESTS
+          done
           
           # Read final counts
           pass_count=$(cat "$pass_file")
