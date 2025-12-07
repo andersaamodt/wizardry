@@ -47,8 +47,10 @@ test_creates_compiled_wizardry() {
   [ -f "$target/LICENSE" ] || { TEST_FAILURE_REASON="LICENSE not copied"; return 1; }
   
   # Check that some compiled spells exist
+  # Note: wc -l outputs leading whitespace on Mac, trim it for reliable comparison
   spell_count=$(find "$target/spells" -type f -executable 2>/dev/null | wc -l)
-  [ "$spell_count" -gt 0 ] || { TEST_FAILURE_REASON="no compiled spells found"; return 1; }
+  spell_count=$(printf '%s' "$spell_count" | tr -d ' ')
+  [ "$((spell_count))" -gt 0 ] || { TEST_FAILURE_REASON="no compiled spells found"; return 1; }
   
   # Check that .git and .github are excluded
   [ ! -d "$target/.git" ] || { TEST_FAILURE_REASON=".git should be excluded"; return 1; }

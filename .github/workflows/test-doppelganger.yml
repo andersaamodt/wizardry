@@ -132,8 +132,9 @@ jobs:
           done
           
           # Use test-magic from the doppelganger (it's compiled)
+          # Add 1-hour timeout to prevent infinite hangs (e.g., test-cd)
           if [ -x "/tmp/wizardry-doppelganger/spells/system/test-magic" ]; then
-            ./spells/system/test-magic
+            timeout 3600 ./spells/system/test-magic
           else
             echo "test-magic not found in doppelganger"
             exit 1
