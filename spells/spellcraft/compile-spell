@@ -80,6 +80,12 @@ inline_imp() {
   # Skip require-wizardry - it checks for wizardry installation which doesn't make sense in standalone scripts
   [ "$imp_name" = "require-wizardry" ] && return 0
   
+  # Skip interactive input spells - these must remain as external calls so test stubs can intercept them
+  # When inlined, they become internal functions that can't be stubbed via PATH replacement
+  case "$imp_name" in
+    ask|ask-text|ask-number|ask-yn|ask-password|input-*) return 0 ;;
+  esac
+  
   # Skip if already processed
   case " $processed_imps " in
     *" $imp_name "*) return 0 ;;
