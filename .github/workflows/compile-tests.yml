@@ -117,6 +117,35 @@ jobs:
           
           echo "✓ SUCCESS: All $success_count spells work standalone!"
       
+      - name: Run test suite against compiled spells
+        run: |
+          . ./spells/.imps/sys/invoke-wizardry
+          
+          # Enable compiled spell testing mode
+          export WIZARDRY_TEST_COMPILED=1
+          export WIZARDRY_COMPILED_DIR="/tmp/compiled-spells"
+          
+          echo "=== Running full test suite against compiled spells ==="
+          echo ""
+          echo "Test mode: Compiled spell substitution enabled"
+          echo "Compiled directory: $WIZARDRY_COMPILED_DIR"
+          echo ""
+          
+          # Run the test suite - it will automatically use compiled versions when available
+          ./test-magic
+          
+          test_result=$?
+          
+          if [ $test_result -eq 0 ]; then
+            echo ""
+            echo "✓ SUCCESS: All tests pass with compiled spells!"
+          else
+            echo ""
+            echo "❌ FAILURE: Test suite failed with compiled spells"
+            echo "This indicates compiled spells don't have full behavioral parity"
+            exit 1
+          fi
+      
       - name: Verify compiled spell completeness
         run: |
           echo "=== Verifying compiled spell completeness ==="

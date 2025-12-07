@@ -1,10 +1,27 @@
 #!/bin/sh
 # run-spell SCRIPT [ARGS...] - run a spell script in a sandboxed environment
 # Wraps run-cmd with the ROOT_DIR prefix for the script path.
+#
+# When WIZARDRY_TEST_COMPILED=1, uses compiled versions from WIZARDRY_COMPILED_DIR if available.
 
 _run_spell() {
   script=$1
   shift || true
+  
+  # If testing compiled spells, check for compiled version first
+  if [ "${WIZARDRY_TEST_COMPILED-0}" = "1" ] && [ -n "${WIZARDRY_COMPILED_DIR-}" ]; then
+    # Extract spell name from path (e.g., spells/arcane/copy -> copy)
+    spell_name=$(basename "$script")
+    compiled_spell="$WIZARDRY_COMPILED_DIR/$spell_name"
+    
+    # If compiled version exists and is executable, use it instead
+    if [ -f "$compiled_spell" ] && [ -x "$compiled_spell" ]; then
+      _run_cmd "$compiled_spell" "$@"
+      return $?
+    fi
+  fi
+  
+  # Default: use original spell from repository
   _run_cmd "$ROOT_DIR/$script" "$@"
 }
 
