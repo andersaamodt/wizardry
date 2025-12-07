@@ -1,0 +1,130 @@
+name: Test compiled spells
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test-compiled:
+    name: Test compiled spell execution
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Set up wizardry
+        run: |
+          export WIZARDRY_DIR="${GITHUB_WORKSPACE}"
+          . ./spells/.imps/sys/invoke-wizardry
+          echo "PATH=$PATH" >> "$GITHUB_ENV"
+          echo "WIZARDRY_DIR=$WIZARDRY_DIR" >> "$GITHUB_ENV"
+      
+      - name: Create output directory
+        run: mkdir -p /tmp/compiled
+      
+      - name: Compile all spells
+        id: compile
+        run: |
+          . ./spells/.imps/sys/invoke-wizardry
+          
+          compiled=0
+          failed=0
+          failed_list=""
+          
+          echo "=== Compiling all spells ==="
+          
+          # Find all spells recursively (excluding .imps and .arcana)
+          find spells -type f -executable \
+            ! -path "spells/.imps/*" \
+            ! -path "spells/.arcana/*" \
+            -print0 | while IFS= read -r -d '' spell_file; do
+            
+            spell_name=$(basename "$spell_file")
+            
+            # Compile the spell
+            if compile-spell "$spell_name" > "/tmp/compiled/${spell_name}" 2>/dev/null; then
+              chmod +x "/tmp/compiled/${spell_name}"
+              compiled=$((compiled + 1))
+              echo "  ✓ $spell_name"
+            else
+              failed=$((failed + 1))
+              failed_list="${failed_list}${spell_name},"
+              echo "  ✗ $spell_name"
+            fi
+          done
+          
+          echo ""
+          echo "Compiled: $compiled"
+          echo "Failed: $failed"
+          
+          if [ "$failed" -gt 0 ]; then
+            # Remove trailing comma
+            failed_list="${failed_list%,}"
+            echo "FAILED_COMPILE=$failed_list" >> "$GITHUB_OUTPUT"
+            echo ""
+            echo "Failed to compile: $failed_list"
+            exit 1
+          fi
+      
+      - name: Test compiled spells standalone
+        if: success()
+        id: test
+        run: |
+          passed=0
+          failed=0
+          failed_list=""
+          
+          echo "=== Testing compiled spells in isolation ==="
+          
+          # Test each compiled spell with minimal PATH
+          for compiled in /tmp/compiled/*; do
+            [ -f "$compiled" ] || continue
+            spell_name=$(basename "$compiled")
+            
+            # Test --help in isolated environment
+            if env -i PATH="/usr/bin:/bin" "$compiled" --help >/dev/null 2>&1; then
+              passed=$((passed + 1))
+              echo "  ✓ $spell_name"
+            else
+              failed=$((failed + 1))
+              failed_list="${failed_list}${spell_name},"
+              echo "  ✗ $spell_name (requires dependencies)"
+            fi
+          done
+          
+          echo ""
+          echo "Passed: $passed"
+          echo "Failed: $failed"
+          
+          if [ "$failed" -gt 0 ]; then
+            # Remove trailing comma
+            failed_list="${failed_list%,}"
+            echo "FAILED_TESTS=$failed_list" >> "$GITHUB_OUTPUT"
+            echo ""
+            echo "Failed tests (comma-delimited): $failed_list"
+            exit 1
+          fi
+      
+      - name: Report failures
+        if: failure()
+        run: |
+          echo "=== COMPILATION AND TEST FAILURES ==="
+          echo ""
+          if [ -n "${{ steps.compile.outputs.FAILED_COMPILE }}" ]; then
+            echo "Failed to compile:"
+            echo "${{ steps.compile.outputs.FAILED_COMPILE }}"
+            echo ""
+          fi
+          if [ -n "${{ steps.test.outputs.FAILED_TESTS }}" ]; then
+            echo "Failed standalone tests:"
+            echo "${{ steps.test.outputs.FAILED_TESTS }}"
+            echo ""
+          fi
+          echo "Copy-paste ready list:"
+          echo "${{ steps.compile.outputs.FAILED_COMPILE }}${{ steps.test.outputs.FAILED_TESTS }}"
