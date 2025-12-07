@@ -132,12 +132,11 @@ jobs:
           echo ""
           
           # Run the test suite
-          # All spells are inlined but use wrapper functions that check for external commands first
-          # This allows test stubs to work via PATH replacement while maintaining standalone capability
-          test_result=0
-          test-magic || test_result=$?
+          # Compiled spells use (command spell-name || _spell_name) pattern
+          # This allows test stubs in PATH to work while providing standalone fallback
+          test-magic
           
-          if [ "$test_result" -eq 0 ]; then
+          if [ "$?" -eq 0 ]; then
             echo ""
             echo "✓ SUCCESS: All tests pass with compiled spells!"
           else
