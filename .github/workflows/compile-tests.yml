@@ -132,27 +132,11 @@ jobs:
           test_skipped=0
           failed_spells=""
           
-          # Skip inherently interactive spells that can't be tested non-interactively
-          # These spells require user input and would hang in CI
-          skip_interactive="kill-process"
-          
           # Test ALL compiled spells by finding their corresponding tests
           for compiled in /tmp/compiled-spells/*; do
             [ -f "$compiled" ] || continue
             
             spell_name=$(basename "$compiled")
-            
-            # Check if this spell should be skipped
-            skip_this=0
-            for skip_spell in $skip_interactive; do
-              if [ "$spell_name" = "$skip_spell" ]; then
-                echo "⊘ $spell_name - skipped (inherently interactive, can't test non-interactively)"
-                test_skipped=$((test_skipped + 1))
-                skip_this=1
-                break
-              fi
-            done
-            [ "$skip_this" = "1" ] && continue
             
             # Find the spell in the spells directory structure
             spell_path=""

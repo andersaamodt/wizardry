@@ -102,6 +102,15 @@ inline_imp() {
   
   # If not found in imps, check if it's a spell (like ask-text, ask-number)
   if [ -z "$imp_file" ]; then
+    # Don't inline interactive input spells - they need to be stubbable in tests
+    # These spells are designed to be replaced with test stubs
+    case "$imp_name" in
+      ask|ask-text|ask-number|ask-yn|ask-password)
+        # Leave as external call - don't inline
+        return 1
+        ;;
+    esac
+    
     for spell_dir in "$repo_dir/spells"/*; do
       [ -d "$spell_dir" ] || continue
       # Skip special directories
