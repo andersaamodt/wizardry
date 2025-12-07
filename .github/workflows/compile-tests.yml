@@ -131,12 +131,23 @@ jobs:
           echo "Compiled directory: $WIZARDRY_COMPILED_DIR"
           echo ""
           
-          # Run the test suite - it will automatically use compiled versions when available
-          test-magic
+          # Run the test suite with timeout to prevent hanging on interactive tests
+          # Some tests (like kill-process) stub interactive spells, but when those
+          # spells are inlined in compiled versions, the stubs don't work as expected
+          # We use a 5-minute timeout as a reasonable limit for the full test suite
+          timeout 300 test-magic || test_result=$?
           
-          test_result=$?
+          # timeout returns 124 on timeout, preserve other exit codes
+          if [ "${test_result:-0}" -eq 124 ]; then
+            echo ""
+            echo "❌ Test suite timed out after 5 minutes"
+            echo "This usually means a test is hanging due to waiting for user input."
+            echo "Some compiled spells with inlined interactive functions may not work"
+            echo "with test stubs that expect external commands."
+            exit 1
+          fi
           
-          if [ $test_result -eq 0 ]; then
+          if [ "${test_result:-0}" -eq 0 ]; then
             echo ""
             echo "✓ SUCCESS: All tests pass with compiled spells!"
           else
