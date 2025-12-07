@@ -130,16 +130,21 @@ jobs:
           test_passed=0
           test_failed=0
           test_skipped=0
+          failed_spells=""
           
-          # List of spells known to work standalone (no require-wizardry or imp dependencies)
-          # We'll test these by replacing them with compiled versions and running their tests
-          standalone_spells="hash hashchant evoke-hash file-list"
-          
-          for spell_name in $standalone_spells; do
+          # Test ALL compiled spells by finding their corresponding tests
+          for compiled in /tmp/compiled-spells/*; do
+            [ -f "$compiled" ] || continue
+            
+            spell_name=$(basename "$compiled")
+            
             # Find the spell in the spells directory structure
             spell_path=""
             for dir in spells/*; do
               [ -d "$dir" ] || continue
+              case "$dir" in
+                spells/.imps|spells/.arcana) continue ;;
+              esac
               if [ -f "$dir/$spell_name" ]; then
                 spell_path="$dir/$spell_name"
                 break
@@ -147,13 +152,7 @@ jobs:
             done
             
             if [ -z "$spell_path" ]; then
-              echo "⊘ $spell_name - spell file not found"
-              test_skipped=$((test_skipped + 1))
-              continue
-            fi
-            
-            if [ ! -f "/tmp/compiled-spells/$spell_name" ]; then
-              echo "⊘ $spell_name - compiled version not found"
+              echo "⊘ $spell_name - spell file not found in repository"
               test_skipped=$((test_skipped + 1))
               continue
             fi
@@ -177,13 +176,14 @@ jobs:
             cp "/tmp/compiled-spells/$spell_name" "$spell_path"
             chmod +x "$spell_path"
             
-            # Run the test
+            # Run the test - NEVER exit early, always collect results
             if timeout 60 ./spells/system/test-magic --only "${category}/test-${spell_name}.sh" >/dev/null 2>&1; then
               echo "✓ $spell_name passes all tests with compiled version"
               test_passed=$((test_passed + 1))
             else
               echo "✗ $spell_name failed tests with compiled version"
               test_failed=$((test_failed + 1))
+              failed_spells="$failed_spells  - $spell_name (category: $category)"$'\n'
             fi
             
             # Restore original
@@ -199,7 +199,12 @@ jobs:
           
           if [ "$test_failed" -gt 0 ]; then
             echo "❌ FAILURE: $test_failed compiled spell(s) failed their tests"
+            echo ""
+            echo "Failed spells:"
+            printf '%s' "$failed_spells"
+            echo ""
             echo "This indicates a regression in compile-spell functionality."
+            echo "All spells were tested independently - see full results above."
             exit 1
           fi
           
@@ -211,7 +216,7 @@ jobs:
           echo ""
           echo "=== Achievement Summary ==="
           echo "✓ 100% standalone compilation maintained"
-          echo "✓ All compiled spells achieve test parity"
+          echo "✓ All tested compiled spells achieve test parity"
           echo "✓ Wizardry is a true compiled language"
       
       - name: Upload compiled spells as artifacts
