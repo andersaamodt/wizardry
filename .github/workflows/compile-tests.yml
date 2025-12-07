@@ -68,12 +68,32 @@ jobs:
           done
           
           echo ""
+          echo "=== Compiling imps (for verification) ==="
+          for family_dir in spells/.imps/*; do
+            [ -d "$family_dir" ] || continue
+            for imp in "$family_dir"/*; do
+              [ -f "$imp" ] || continue
+              [ -x "$imp" ] || continue
+              
+              imp_name=$(basename "$imp")
+              echo "Compiling imp: $imp_name"
+              if compile-spell "$imp_name" > "/tmp/compiled-spells/${imp_name}" 2>/dev/null; then
+                chmod +x "/tmp/compiled-spells/${imp_name}"
+                compiled_count=$((compiled_count + 1))
+              else
+                # Many imps don't compile independently - that's expected
+                true
+              fi
+            done
+          done
+          
+          echo ""
           echo "=== Compilation Summary ==="
-          echo "Successfully compiled: $compiled_count spells"
+          echo "Successfully compiled: $compiled_count spells/imps"
           echo "Failed to compile: $failed_count spells"
           echo ""
           ls -1 /tmp/compiled-spells/ | wc -l
-          echo "compiled spells in /tmp/compiled-spells/"
+          echo "compiled items in /tmp/compiled-spells/"
       
       - name: Test compiled spells for standalone execution
         run: |

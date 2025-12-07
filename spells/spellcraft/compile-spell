@@ -3,7 +3,17 @@
 # This spell compiles a spell into a standalone script by inlining all imp and spell calls.
 # Optionally compiles for a specific OS, removing cross-platform conditionals.
 
-require-wizardry || exit 1
+_warn() {
+  printf '%s\n' "$*" >&2
+}
+
+warn() {
+  if command -v warn >/dev/null 2>&1; then
+    command warn "$@"
+  else
+    _warn "$@"
+  fi
+}
 
 show_usage() {
   cat <<'USAGE'
@@ -133,10 +143,23 @@ inline_imp() {
   ')
   
   if [ -n "$func_def" ]; then
-    # It's an imp with a function - inline the function
+    # It's an imp with a function - inline the function with double underscore
+    internal_func_name="__$(printf '%s' "$imp_name" | tr '-' '_')"
+    func_def_internal=$(printf '%s\n' "$func_def" | sed "s/^$func_name()/$internal_func_name()/")
+    
+    # Create wrapper that checks for external command first
     inlined_imps="$inlined_imps
 # Inlined imp: $imp_name
-$func_def
+$func_def_internal
+
+# Wrapper function - checks for external command first
+$func_name() {
+  if command -v $imp_name >/dev/null 2>&1; then
+    $imp_name \"\$@\"
+  else
+    $internal_func_name \"\$@\"
+  fi
+}
 "
     processed_imps="$processed_imps $imp_name"
     return 0
@@ -160,11 +183,23 @@ $func_def
       { print }
     ')
     
-    # Wrap the spell as a function
+    # Create internal function with double underscore
+    internal_func_name="__$(printf '%s' "$imp_name" | tr '-' '_')"
+    
+    # Wrap the spell as internal function and create wrapper
     inlined_imps="$inlined_imps
 # Inlined spell: $imp_name
-$func_name() {
+$internal_func_name() {
 $spell_body
+}
+
+# Wrapper function - checks for external command first
+$func_name() {
+  if command -v $imp_name >/dev/null 2>&1; then
+    $imp_name \"\$@\"
+  else
+    $internal_func_name \"\$@\"
+  fi
 }
 "
     processed_imps="$processed_imps $imp_name"
