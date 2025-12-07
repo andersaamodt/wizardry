@@ -126,7 +126,9 @@ jobs:
             percent=$((passed * 100 / total))
             echo "Success rate: $percent% ($passed/$total)"
             
-            # Only fail if more than 3 spells don't work (allowing for edge cases like menus)
+            # Only fail if more than 3 spells don't work
+            # Threshold of 3 allows for edge cases like menu infrastructure spells
+            # (cast, spell-menu) that genuinely require wizardry to function
             if [ "$failed" -gt 3 ]; then
               echo ""
               echo "❌ Too many failures - threshold exceeded"

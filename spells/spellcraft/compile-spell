@@ -105,14 +105,16 @@ done
 transformed=$(printf '%s\n' "$spell_content" | tail -n +2 | grep -v "^require-wizardry")
 
 # For each inlined imp, replace calls in the spell
-# Use word boundaries to avoid partial matches
+# Note: func_name comes from sanitized internal processing (tr '-' '_')
+# so special regex characters are not a concern here
 for dep in $inlined_names; do
   func_name="_$(printf '%s' "$dep" | tr '-' '_')"
   
   # Use awk for more controlled replacement - skip USAGE blocks
+  # Note: This handles common USAGE heredoc patterns including quoted delimiters
   transformed=$(printf '%s\n' "$transformed" | awk -v old="$dep" -v new="$func_name" '
-    /^cat <<.USAGE./ { usage_start=1 }
-    usage_start && /^USAGE/ { print; usage_start=0; next }
+    /^cat <<['\''"]?USAGE['\''"]?/ { usage_start=1 }
+    usage_start && /^USAGE$/ { print; usage_start=0; next }
     usage_start { print; next }
     { gsub("\\<" old "\\>", new); print }
   ')
