@@ -177,7 +177,8 @@ jobs:
             chmod +x "$spell_path"
             
             # Run the test - NEVER exit early, always collect results
-            if timeout 60 ./spells/system/test-magic --only "${category}/test-${spell_name}.sh" >/dev/null 2>&1; then
+            # Use 10 second timeout to quickly fail hanging tests (e.g., interactive spells)
+            if timeout 10 ./spells/system/test-magic --only "${category}/test-${spell_name}.sh" >/dev/null 2>&1; then
               echo "✓ $spell_name passes all tests with compiled version"
               test_passed=$((test_passed + 1))
             else
