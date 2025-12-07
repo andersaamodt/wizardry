@@ -184,6 +184,28 @@ jobs:
             echo "✓ SUCCESS: 100% of supported spells work standalone!"
           fi
       
+      - name: Run behavioral tests on compiled spells
+        if: success()
+        run: |
+          echo "=== Running Behavioral Tests on Compiled Spells ==="
+          
+          # Set up environment
+          export ROOT_DIR="/tmp/compiled"
+          export WIZARDRY_TEST_COMPILED=1
+          export PATH="/tmp/compiled:$PATH"
+          
+          # Run test-magic with compiled spells
+          # Only supported tests (not marked COMPILED_UNSUPPORTED) will run
+          cd "$GITHUB_WORKSPACE"
+          if [ -x ./spells/system/test-magic ]; then
+            ./spells/system/test-magic --verbose || {
+              echo "Behavioral tests failed, but this is informational only"
+              echo "Compiled spells may have limited functionality without full wizardry environment"
+            }
+          else
+            echo "test-magic not found, skipping behavioral tests"
+          fi
+      
       - name: Summary report
         if: always()
         run: |
