@@ -132,7 +132,7 @@ jobs:
           echo ""
           
           # Run the test suite - it will automatically use compiled versions when available
-          ./test-magic
+          test-magic
           
           test_result=$?
           
