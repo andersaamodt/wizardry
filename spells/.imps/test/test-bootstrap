@@ -161,8 +161,26 @@ for boot_imp in "$ROOT_DIR"/spells/.imps/test/boot/*; do
   . "$boot_imp"
 done
 
+# Define skip helpers for compilation mode testing
+skip_if_compiled() {
+  if [ "${WIZARDRY_TEST_COMPILED-0}" = "1" ]; then
+    TEST_SKIP_REASON="(uncompiled only)"
+    return 222  # Special exit code for skip
+  fi
+  return 0
+}
+
+skip_if_uncompiled() {
+  if [ "${WIZARDRY_TEST_COMPILED-0}" != "1" ]; then
+    TEST_SKIP_REASON="(compiled only)"
+    return 222  # Special exit code for skip
+  fi
+  return 0
+}
+
 # Initialize test counters
 _pass_count=0
 _fail_count=0
+_skip_count=0
 _test_index=0
 _fail_detail_indices=""
