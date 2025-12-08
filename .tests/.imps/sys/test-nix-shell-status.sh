@@ -17,6 +17,7 @@ export WIZARDRY_SKIP_NIX_REBUILD=1
 export WIZARDRY_SKIP_CONFIRM=1
 
 test_nix_shell_status_returns_false_when_not_present() {
+  skip-if-compiled || return $?
   tmpdir=$(_make_tempdir)
   nix_file="$tmpdir/test.nix"
   

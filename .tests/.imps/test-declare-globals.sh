@@ -12,12 +12,14 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_declare_globals_is_sourceable() {
+  skip-if-compiled || return $?
   # declare-globals should be sourceable without error
   _run_cmd sh -c ". '$ROOT_DIR/spells/.imps/declare-globals'"
   _assert_success
 }
 
 test_declare_globals_allows_set_u() {
+  skip-if-compiled || return $?
   # After sourcing and calling the function, scripts with set -u should not fail on declared globals
   _run_cmd sh -c "set -u; . '$ROOT_DIR/spells/.imps/declare-globals'; _declare_globals; : \"\$WIZARDRY_DIR\""
   _assert_success
@@ -31,6 +33,7 @@ test_declare_globals_sets_empty_defaults() {
 }
 
 test_declare_globals_preserves_existing_values() {
+  skip-if-compiled || return $?
   # If a global is already set, declare-globals should preserve it
   _run_cmd sh -c "WIZARDRY_DIR=/test/path; . '$ROOT_DIR/spells/.imps/declare-globals'; _declare_globals; printf '%s' \"\$WIZARDRY_DIR\""
   _assert_success
