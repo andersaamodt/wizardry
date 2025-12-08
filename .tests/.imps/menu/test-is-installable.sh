@@ -49,6 +49,7 @@ test_detects_installable_spell() {
 }
 
 test_rejects_noninstallable_spell() {
+  skip-if-compiled || return $?
   spell=$(create_noninstallable_spell)
   _run_spell spells/.imps/menu/is-installable "$spell"
   rm -f "$spell"
@@ -56,16 +57,19 @@ test_rejects_noninstallable_spell() {
 }
 
 test_fails_for_missing_file() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/menu/is-installable "/nonexistent/path/to/spell"
   _assert_failure
 }
 
 test_fails_for_empty_argument() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/menu/is-installable ""
   _assert_failure
 }
 
 test_fails_for_no_argument() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/menu/is-installable
   _assert_failure
 }

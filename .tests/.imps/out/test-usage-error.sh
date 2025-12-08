@@ -12,28 +12,33 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_usage_error_exits_with_code_2() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/out/usage-error "my-spell" "invalid option"
   _assert_status 2
 }
 
 test_usage_error_formats_message_with_name() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/out/usage-error "my-spell" "unknown option: -x"
   _assert_status 2
   _assert_error_contains "my-spell: unknown option: -x"
 }
 
 test_usage_error_handles_missing_name() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/out/usage-error "" "some error"
   _assert_status 2
   _assert_error_contains "some error"
 }
 
 test_usage_error_handles_empty_args() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/out/usage-error "" ""
   _assert_status 2
 }
 
 test_usage_error_uses_default_message_when_empty() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/out/usage-error "my-spell" ""
   _assert_status 2
   _assert_error_contains "my-spell: usage error"

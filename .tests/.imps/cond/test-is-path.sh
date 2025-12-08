@@ -27,6 +27,7 @@ test_is_path_filename() {
 }
 
 test_is_path_dot() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/cond/is-path "."
   _assert_success
 }

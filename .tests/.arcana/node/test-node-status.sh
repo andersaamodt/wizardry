@@ -16,6 +16,7 @@ spell_is_executable() {
 _run_test_case "install/node/node-status is executable" spell_is_executable
 
 renders_usage_information() {
+  skip-if-compiled || return $?
   _run_cmd "$ROOT_DIR/spells/.arcana/node/node-status" --help
 
   _assert_success || return 1

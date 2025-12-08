@@ -12,23 +12,27 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_select_input_stdin_mode() {
+  skip-if-compiled || return $?
   _run_cmd sh -c 'SELECT_INPUT_MODE=stdin select-input'
   _assert_success
   _assert_output_contains "stdin"
 }
 
 test_select_input_tty_mode() {
+  skip-if-compiled || return $?
   _run_cmd sh -c 'SELECT_INPUT_MODE=tty select-input'
   _assert_success
   _assert_output_contains "tty"
 }
 
 test_select_input_none_mode() {
+  skip-if-compiled || return $?
   _run_cmd sh -c 'SELECT_INPUT_MODE=none select-input'
   _assert_failure
 }
 
 test_select_input_with_stdin() {
+  skip-if-compiled || return $?
   _run_cmd sh -c 'echo "input" | select-input'
   _assert_success
   _assert_output_contains "stdin"

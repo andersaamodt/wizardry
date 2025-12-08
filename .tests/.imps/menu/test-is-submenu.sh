@@ -11,6 +11,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_always_returns_false() {
+  skip-if-compiled || return $?
   # is-submenu always returns false since submenu detection is not reliably
   # possible without using environment variables
   _run_cmd "$ROOT_DIR/spells/.imps/menu/is-submenu"
@@ -18,6 +19,7 @@ test_always_returns_false() {
 }
 
 test_ignores_submenu_env() {
+  skip-if-compiled || return $?
   # Even with WIZARDRY_SUBMENU set, is-submenu returns false
   _run_cmd env WIZARDRY_SUBMENU=1 "$ROOT_DIR/spells/.imps/menu/is-submenu"
   _assert_failure

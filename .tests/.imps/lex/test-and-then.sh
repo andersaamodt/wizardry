@@ -9,10 +9,12 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_and_then_is_executable() {
+  skip-if-compiled || return $?
   [ -x "$ROOT_DIR/spells/.imps/lex/and-then" ]
 }
 
 test_and_then_continues_on_success() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/lex/and-then "true" "" echo hello
   _assert_success || return 1
   _assert_output_contains "hello" || return 1

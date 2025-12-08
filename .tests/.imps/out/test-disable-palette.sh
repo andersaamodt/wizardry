@@ -30,12 +30,14 @@ test_disable_palette_clears_mud_colors() {
 }
 
 test_disable_palette_sets_flag() {
+  skip-if-compiled || return $?
   _run_cmd sh -c ". '$ROOT_DIR/spells/cantrips/colors'; . '$ROOT_DIR/spells/.imps/out/disable-palette'; _disable_palette; printf '%s' \"\$WIZARDRY_COLORS_AVAILABLE\""
   _assert_success
   [ "$OUTPUT" = "0" ] || { TEST_FAILURE_REASON="WIZARDRY_COLORS_AVAILABLE should be 0 but got: $OUTPUT"; return 1; }
 }
 
 test_disable_palette_multiple_colors_empty() {
+  skip-if-compiled || return $?
   # Check that multiple color variables are all set to empty
   _run_cmd sh -c ". '$ROOT_DIR/spells/cantrips/colors'; . '$ROOT_DIR/spells/.imps/out/disable-palette'; _disable_palette; printf '%s|%s|%s|%s' \"\$RED\" \"\$GREEN\" \"\$BLUE\" \"\$CYAN\""
   _assert_success

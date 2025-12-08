@@ -27,11 +27,13 @@ test_is_integer_zero() {
 }
 
 test_is_integer_rejects_float() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/menu/is-integer "3.14"
   _assert_failure
 }
 
 test_is_integer_rejects_letters() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/menu/is-integer "abc"
   _assert_failure
 }

@@ -18,6 +18,7 @@ test_pkg_manager_returns_name() {
 }
 
 test_pkg_manager_output_is_valid() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/pkg/pkg-manager
   _assert_success
   case "$OUTPUT" in

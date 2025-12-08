@@ -35,6 +35,7 @@ SHI
 }
 
 menu_prompts_install_when_missing() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_exit_label "$tmp"

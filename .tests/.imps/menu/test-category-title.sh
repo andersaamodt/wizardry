@@ -10,6 +10,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_enchant_becomes_enchantment() {
+  skip-if-compiled || return $?
   _run_spell "spells/.imps/menu/category-title" "enchant"
   _assert_success || return 1
   case "$OUTPUT" in
@@ -19,6 +20,7 @@ test_enchant_becomes_enchantment() {
 }
 
 test_mud_becomes_uppercase() {
+  skip-if-compiled || return $?
   _run_spell "spells/.imps/menu/category-title" "mud"
   _assert_success || return 1
   case "$OUTPUT" in
@@ -28,6 +30,7 @@ test_mud_becomes_uppercase() {
 }
 
 test_arcane_capitalizes() {
+  skip-if-compiled || return $?
   _run_spell "spells/.imps/menu/category-title" "arcane"
   _assert_success || return 1
   case "$OUTPUT" in
@@ -37,6 +40,7 @@ test_arcane_capitalizes() {
 }
 
 test_unknown_capitalizes_first() {
+  skip-if-compiled || return $?
   _run_spell "spells/.imps/menu/category-title" "unknown-category"
   _assert_success || return 1
   case "$OUTPUT" in

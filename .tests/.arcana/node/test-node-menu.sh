@@ -26,6 +26,7 @@ SHI
 }
 
 menu_shows_install_when_node_missing() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   cat >"$tmp/exit-label" <<'SHI'

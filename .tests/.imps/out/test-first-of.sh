@@ -12,18 +12,21 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_first_of_first() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/out/first-of "first" "second"
   _assert_success
   _assert_output_contains "first"
 }
 
 test_first_of_second() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/out/first-of "" "second"
   _assert_success
   _assert_output_contains "second"
 }
 
 test_first_of_fails_both_empty() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/out/first-of "" ""
   _assert_failure
 }

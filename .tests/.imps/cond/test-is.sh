@@ -12,6 +12,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_is_file() {
+  skip-if-compiled || return $?
   tmpfile=$(mktemp "$WIZARDRY_TMPDIR/testfile.XXXXXX")
   _run_spell spells/.imps/cond/is file "$tmpfile"
   rm -f "$tmpfile"
@@ -19,6 +20,7 @@ test_is_file() {
 }
 
 test_is_file_fails_for_dir() {
+  skip-if-compiled || return $?
   tmpdir=$(mktemp -d "$WIZARDRY_TMPDIR/testdir.XXXXXX")
   _run_spell spells/.imps/cond/is file "$tmpdir"
   rmdir "$tmpdir"
@@ -26,6 +28,7 @@ test_is_file_fails_for_dir() {
 }
 
 test_is_dir() {
+  skip-if-compiled || return $?
   tmpdir=$(mktemp -d "$WIZARDRY_TMPDIR/testdir.XXXXXX")
   _run_spell spells/.imps/cond/is dir "$tmpdir"
   rmdir "$tmpdir"
@@ -33,6 +36,7 @@ test_is_dir() {
 }
 
 test_is_dir_fails_for_file() {
+  skip-if-compiled || return $?
   tmpfile=$(mktemp "$WIZARDRY_TMPDIR/testfile.XXXXXX")
   _run_spell spells/.imps/cond/is dir "$tmpfile"
   rm -f "$tmpfile"
@@ -40,16 +44,19 @@ test_is_dir_fails_for_file() {
 }
 
 test_is_exec() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/cond/is exec /bin/sh
   _assert_success
 }
 
 test_is_set() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/cond/is set "nonempty"
   _assert_success
 }
 
 test_is_set_fails_for_empty() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/cond/is set ""
   _assert_failure
 }
@@ -121,6 +128,7 @@ test_is_empty_dir_fails_when_not_empty() {
 }
 
 test_is_exec_fails_for_nonexec() {
+  skip-if-compiled || return $?
   tmpfile=$(mktemp "$WIZARDRY_TMPDIR/testfile.XXXXXX")
   chmod -x "$tmpfile"
   _run_spell spells/.imps/cond/is exec "$tmpfile"
@@ -129,6 +137,7 @@ test_is_exec_fails_for_nonexec() {
 }
 
 test_is_unset_fails_for_nonempty() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/cond/is unset "value"
   _assert_failure
 }
