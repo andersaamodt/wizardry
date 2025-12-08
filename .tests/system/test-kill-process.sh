@@ -1,4 +1,5 @@
 #!/bin/sh
+# COMPILED_UNSUPPORTED: requires interactive ask-number and ask-yn
 # Behavioral cases (derived from --help):
 # - kill-process prints usage
 # - kill-process requires ask_number
