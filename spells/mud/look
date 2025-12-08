@@ -174,9 +174,19 @@ if ! load_colors; then
         MUD_DESCRIPTION=""
 fi
 
-if ! command -v read-magic >/dev/null 2>&1; then
-        printf '%s\n' "look: read-magic spell is missing." >&2
-        exit 1
+# Let tests or callers override the helper path; otherwise look beside this
+# script first, then in PATH so the spell still works when installed globally.
+# This keeps installation optional while preserving predictability.
+READ_MAGIC=${LOOK_READ_MAGIC-}
+if [ -z "$READ_MAGIC" ]; then
+        if [ -x "$SCRIPT_DIR/read-magic" ]; then
+                READ_MAGIC="$SCRIPT_DIR/read-magic"
+        elif command -v read-magic >/dev/null 2>&1; then
+                READ_MAGIC=$(command -v read-magic)
+        else
+                printf '%s\n' "look: read-magic spell is missing." >&2
+                exit 1
+        fi
 fi
 
 identify_available=0
@@ -219,7 +229,7 @@ fi
 # Get title from attribute or fall back to folder name
 get_room_title() {
         room_path=$1
-        attr_title=$(read-magic "$room_path" title 2>/dev/null || true)
+        attr_title=$("$READ_MAGIC" "$room_path" title 2>/dev/null || true)
         if [ "$attr_title" != "$MISSING_ATTR_MSG" ] && [ -n "$attr_title" ]; then
                 printf '%s' "$attr_title"
         elif [ -n "$IDENTIFY_TITLE" ]; then
@@ -233,7 +243,7 @@ get_room_title() {
 # Get description from attribute or fall back to default
 get_room_description() {
         room_path=$1
-        attr_desc=$(read-magic "$room_path" description 2>/dev/null || true)
+        attr_desc=$("$READ_MAGIC" "$room_path" description 2>/dev/null || true)
         if [ "$attr_desc" != "$MISSING_ATTR_MSG" ] && [ -n "$attr_desc" ]; then
                 printf '%s' "$attr_desc"
                 return 0
