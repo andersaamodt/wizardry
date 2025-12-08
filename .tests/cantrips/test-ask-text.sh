@@ -1,4 +1,5 @@
 #!/bin/sh
+# COMPILED_UNSUPPORTED: requires interactive input
 # Behavioral cases (derived from --help):
 # - ask_text reads piped input
 # - ask_text uses default when input missing

@@ -56,9 +56,14 @@ test_creates_compiled_wizardry() {
   
   # Check that some compiled spells exist
   # Note: wc -l outputs leading whitespace on Mac, trim it for reliable comparison
-  spell_count=$(find "$target/spells" -type f -executable 2>/dev/null | wc -l)
-  spell_count=$(printf '%s' "$spell_count" | tr -d ' ')
-  [ "$((spell_count))" -gt 0 ] || { TEST_FAILURE_REASON="no compiled spells found"; return 1; }
+  # Use -perm for better cross-platform compatibility
+  spell_count=$(find "$target/spells" -type f \( -perm -111 -o -perm -100 \) 2>/dev/null | wc -l)
+  spell_count=$(printf '%s' "$spell_count" | tr -d ' \t')
+  if [ "$((spell_count))" -le 0 ]; then
+    # Debug: show what files exist
+    TEST_FAILURE_REASON="no compiled spells found (found $(find "$target/spells" -type f 2>/dev/null | wc -l | tr -d ' ') files total)"
+    return 1
+  fi
   
   # Check that .git and .github are excluded
   [ ! -d "$target/.git" ] || { TEST_FAILURE_REASON=".git should be excluded"; export PATH="$saved_path"; return 1; }

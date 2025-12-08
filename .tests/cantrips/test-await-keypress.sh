@@ -1,4 +1,5 @@
 #!/bin/sh
+# COMPILED_UNSUPPORTED: requires interactive input
 # Behavior cases from --help: read one key and name it; handles escape sequences and buffered bytes.
 # - Emits descriptive names for control keys like Enter.
 # - Decodes literal text from provided byte codes.

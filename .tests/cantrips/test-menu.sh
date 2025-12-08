@@ -1,4 +1,5 @@
 #!/bin/sh
+# COMPILED_UNSUPPORTED: requires interactive input
 # Behavioral cases (derived from --help):
 # - menu checks that required helpers exist before trying to draw
 # - menu fails fast when no controlling terminal is available

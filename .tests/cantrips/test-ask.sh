@@ -1,4 +1,5 @@
 #!/bin/sh
+# COMPILED_UNSUPPORTED: requires interactive input
 # Behavioral cases (derived from --help):
 # - ask relays prompts to ask_text
 # - ask passes arguments to ask_text
