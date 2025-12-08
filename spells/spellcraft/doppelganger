@@ -69,11 +69,11 @@ compile_spell_by_path() {
   spell_path=$1
   target_file=$2
   
-  # Use compile-spell with the spell name, but we know exactly where it is
-  spell_name=$(basename "$spell_path")
+  # Get the relative path from repo root (e.g., spells/cantrips/hash)
+  spell_rel_path=${spell_path#$repo_dir/}
   
-  # Call compile-spell from repo directory and redirect output to target
-  if (cd "$repo_dir" && "$repo_dir/spells/spellcraft/compile-spell" "$spell_name") > "$target_file" 2>&1; then
+  # Call compile-spell from repo directory with full relative path and redirect output to target
+  if (cd "$repo_dir" && "$repo_dir/spells/spellcraft/compile-spell" "$spell_rel_path") > "$target_file" 2>&1; then
     chmod +x "$target_file"
     return 0
   else
