@@ -28,19 +28,18 @@ if [ "${WIZARDRY_TEST_COMPILED-0}" = "1" ]; then
 fi
 
 # Find the repository root
-_find_repo_root_inline() {
-  dir=$(CDPATH= cd -- "$(dirname "${0:-$PWD}")" && pwd -P)
-  while [ "$dir" != "/" ]; do
-    if [ -d "$dir/spells" ] && [ -d "$dir/.tests" ]; then
-      printf '%s\n' "$dir"
-      return 0
-    fi
-    dir=$(dirname "$dir")
-  done
-  printf '%s\n' "$(pwd -P)"
-}
-
-ROOT_DIR=${ROOT_DIR-$(_find_repo_root_inline)}
+# We need ROOT_DIR before we can set up PATH to include boot imps
+# So we inline this minimal logic here (no function, just inline code)
+__bootstrap_dir=$(CDPATH= cd -- "$(dirname "${0:-$PWD}")" && pwd -P)
+while [ "$__bootstrap_dir" != "/" ]; do
+  if [ -d "$__bootstrap_dir/spells" ] && [ -d "$__bootstrap_dir/.tests" ]; then
+    ROOT_DIR=$__bootstrap_dir
+    break
+  fi
+  __bootstrap_dir=$(dirname "$__bootstrap_dir")
+done
+: "${ROOT_DIR:=$(pwd -P)}"
+unset __bootstrap_dir
 
 # The baseline PATH was already set at the top of this file.
 # Now add wizardry spells directories to PATH.
@@ -160,27 +159,3 @@ for boot_imp in "$ROOT_DIR"/spells/.imps/test/boot/*; do
   # shellcheck source=/dev/null
   . "$boot_imp"
 done
-
-# Define skip helpers for compilation mode testing
-skip_if_compiled() {
-  if [ "${WIZARDRY_TEST_COMPILED-0}" = "1" ]; then
-    TEST_SKIP_REASON="(uncompiled only)"
-    return 222  # Special exit code for skip
-  fi
-  return 0
-}
-
-skip_if_uncompiled() {
-  if [ "${WIZARDRY_TEST_COMPILED-0}" != "1" ]; then
-    TEST_SKIP_REASON="(compiled only)"
-    return 222  # Special exit code for skip
-  fi
-  return 0
-}
-
-# Initialize test counters
-_pass_count=0
-_fail_count=0
-_skip_count=0
-_test_index=0
-_fail_detail_indices=""
