@@ -190,7 +190,10 @@ if [ -z "$READ_MAGIC" ]; then
 fi
 
 identify_available=0
-if command -v identify-room >/dev/null 2>&1; then
+# Allow tests to disable identify-room to avoid compilation issues
+if [ "${LOOK_IDENTIFY_ROOM-}" = "0" ]; then
+        identify_available=0
+elif command -v identify-room >/dev/null 2>&1; then
         identify_available=1
 fi
 

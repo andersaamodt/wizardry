@@ -101,7 +101,7 @@ test_home_description_defaults() {
   home_dir=$(_make_tempdir)
   stub_ask_yn "$stub" 1
   stub_read_magic_missing "$stub"
-  LOOK_READ_MAGIC="$stub/read-magic" LOOK_HOME_PATH="$home_dir" HOME="$home_dir" PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" \
+  LOOK_IDENTIFY_ROOM=0 LOOK_READ_MAGIC="$stub/read-magic" LOOK_HOME_PATH="$home_dir" HOME="$home_dir" PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" \
     _run_spell "spells/mud/look" "$home_dir"
   _assert_success || return 1
   _assert_output_contains "$(basename "$home_dir")" || return 1
@@ -116,7 +116,7 @@ test_other_home_description() {
   mkdir -p "$other_home"
   stub_ask_yn "$stub" 1
   stub_read_magic_missing "$stub"
-  LOOK_READ_MAGIC="$stub/read-magic" LOOK_HOME_PATH="$base_home" HOME="$base_home" PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" \
+  LOOK_IDENTIFY_ROOM=0 LOOK_READ_MAGIC="$stub/read-magic" LOOK_HOME_PATH="$base_home" HOME="$base_home" PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" \
     _run_spell "spells/mud/look" "$other_home"
   _assert_success || return 1
   _assert_output_contains "chris" || return 1
@@ -128,7 +128,7 @@ test_root_description() {
   stub=$(make_stub_dir)
   stub_ask_yn "$stub" 1
   stub_read_magic_missing "$stub"
-  LOOK_READ_MAGIC="$stub/read-magic" PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" _run_spell "spells/mud/look" /
+  LOOK_IDENTIFY_ROOM=0 LOOK_READ_MAGIC="$stub/read-magic" PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" _run_spell "spells/mud/look" /
   _assert_success || return 1
   _assert_output_contains "/" || return 1
   printf '%s' "$OUTPUT" | grep -qE "An ordinary room|A plain chamber|A nondescript space|An unremarkable area|A simple room" \
