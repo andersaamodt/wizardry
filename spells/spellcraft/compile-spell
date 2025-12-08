@@ -43,6 +43,7 @@ imps_dir="$repo_dir/spells/.imps"
 
 # Determine if input is a path or just a name
 spell_path=""
+spell_basename=""
 case "$spell_name" in
   */*) 
     # Contains slash - treat as path (relative or absolute)
@@ -53,9 +54,11 @@ case "$spell_name" in
       # Relative to repo root
       spell_path="$repo_dir/$spell_name"
     fi
+    spell_basename=$(basename "$spell_name")
     ;;
   *)
     # No slash - treat as spell name, search for it
+    spell_basename="$spell_name"
     # First try current directory
     if [ -f "$spell_name" ]; then
       spell_path="$spell_name"
@@ -87,6 +90,9 @@ inlined_deps=""
 inlined_names=""
 
 for dep in $dependencies; do
+  # Skip self-reference - spell cannot be its own dependency
+  [ "$dep" = "$spell_basename" ] && continue
+  
   # Skip require-wizardry - doesn't make sense in standalone
   [ "$dep" = "require-wizardry" ] && continue
   
@@ -185,6 +191,13 @@ for dep in $inlined_names; do
     { gsub("\\<" old "\\>", new); print }
   ')
 done
+
+# For standalone imp compilation, fix the self-execute case statement
+# Replace pattern like '*/imp-name)' with '*)' so it always executes
+if [ -z "$inlined_names" ]; then
+  # No dependencies inlined, likely compiling an imp directly
+  transformed=$(printf '%s\n' "$transformed" | sed "s|\*/$spell_basename)|*)|g")
+fi
 
 # Output compiled spell
 printf '#!/bin/sh\n'

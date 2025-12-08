@@ -28,14 +28,12 @@ hash_requires_single_argument() {
 }
 
 hash_fails_on_missing_file() {
-  skip-if-compiled || return $?
   _run_spell "spells/crypto/hash" "missing.txt"
   _assert_failure || return 1
   _assert_output_contains "Your spell fizzles. There is no file." || return 1
 }
 
 hash_rejects_directory() {
-  skip-if-compiled || return $?
   tmpdir=$(_make_tempdir)
   mkdir -p "$tmpdir/dir"
 

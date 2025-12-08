@@ -17,7 +17,6 @@ test_empty_succeeds_for_empty() {
 }
 
 test_empty_fails_for_nonempty() {
-  skip-if-compiled || return $?
   _run_spell spells/.imps/cond/empty "something"
   _assert_failure
 }
