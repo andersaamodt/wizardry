@@ -15,7 +15,6 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  skip-if-compiled || return $?
   _run_spell "spells/arcane/jump-trash" --help
   _assert_success && _assert_output_contains "Usage: jump-trash"
 }

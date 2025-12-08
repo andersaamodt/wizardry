@@ -173,7 +173,7 @@ for dep in $inlined_names; do
   # Use awk for more controlled replacement - skip USAGE blocks
   # Note: This handles common USAGE heredoc patterns including quoted delimiters
   transformed=$(printf '%s\n' "$transformed" | awk -v old="$dep" -v new="$func_name" '
-    /^cat <<['\''"]?USAGE['\''"]?/ { usage_start=1 }
+    /cat <<.*USAGE/ { usage_start=1; print; next }
     usage_start && /^USAGE$/ { print; usage_start=0; next }
     usage_start { print; next }
     { gsub("\\<" old "\\>", new); print }

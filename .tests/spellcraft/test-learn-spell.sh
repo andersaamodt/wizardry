@@ -14,7 +14,6 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  skip-if-compiled || return $?
   _run_spell "spells/spellcraft/learn-spell" --help
   _assert_success && _assert_error_contains "Usage: learn-spell"
 }

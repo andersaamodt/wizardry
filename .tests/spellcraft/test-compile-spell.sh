@@ -16,14 +16,12 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_compile_spell_help() {
-  skip-if-compiled || return $?
   _run_spell spells/spellcraft/compile-spell --help
   _assert_success
   _assert_output_contains "Usage: compile-spell"
 }
 
 test_compile_spell_help_h_flag() {
-  skip-if-compiled || return $?
   _run_spell spells/spellcraft/compile-spell -h
   _assert_success
   _assert_output_contains "Usage: compile-spell"
