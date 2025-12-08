@@ -178,6 +178,17 @@ done
 printf '#!/bin/sh\n'
 printf '#\n'
 
+# Add environment variable fallbacks
+cat <<'ENV_FALLBACKS'
+# Environment variable fallbacks for standalone operation
+: "${WIZARDRY_DIR:=$HOME/.wizardry}"
+: "${WIZARDRY_LOG_LEVEL:=0}"
+: "${WIZARDRY_COLORS_AVAILABLE:=1}"
+: "${WIZARDRY_SKIP_NIX_REBUILD:=0}"
+
+ENV_FALLBACKS
+
+
 # Create centered separator with spell name (76 chars total width)
 name_len=${#spell_name}
 dash_space=$((76 - 2 - name_len - 2))  # 76 - "# " - name - spaces around
