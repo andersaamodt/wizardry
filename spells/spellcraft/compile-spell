@@ -98,6 +98,8 @@ for dep in $dependencies; do
   
   # Skip common English words that are rarely used as commands
   # These cause issues when replaced in strings
+  # Note: Only add words here that are causing real problems, as this may
+  # prevent legitimate imp calls from being inlined if needed in the future
   case "$dep" in
     is) continue ;;  # Too common as English word "is"
   esac
@@ -185,7 +187,7 @@ for dep in $inlined_names; do
   # Use awk for more controlled replacement - skip USAGE blocks
   # Note: This handles common USAGE heredoc patterns including quoted delimiters
   transformed=$(printf '%s\n' "$transformed" | awk -v old="$dep" -v new="$func_name" '
-    /cat <<.*USAGE/ { usage_start=1; print; next }
+    /^[[:space:]]*cat <<.*USAGE/ { usage_start=1; print; next }
     usage_start && /^USAGE$/ { print; usage_start=0; next }
     usage_start { print; next }
     { gsub("\\<" old "\\>", new); print }
@@ -196,7 +198,9 @@ done
 # Replace pattern like '*/imp-name)' with '*)' so it always executes
 if [ -z "$inlined_names" ]; then
   # No dependencies inlined, likely compiling an imp directly
-  transformed=$(printf '%s\n' "$transformed" | sed "s|\*/$spell_basename)|*)|g")
+  # Escape special regex characters in spell_basename for safe sed usage
+  escaped_basename=$(printf '%s\n' "$spell_basename" | sed 's/[.[\*^$]/\\&/g')
+  transformed=$(printf '%s\n' "$transformed" | sed "s|\*/$escaped_basename)|*)|g")
 fi
 
 # Output compiled spell
