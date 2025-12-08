@@ -32,6 +32,7 @@ SH
 }
 
 test_shutdown_menu_checks_requirements() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
@@ -40,6 +41,7 @@ test_shutdown_menu_checks_requirements() {
 }
 
 test_shutdown_menu_includes_core_actions() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
@@ -64,6 +66,7 @@ _run_test_case "shutdown-menu passes shutdown actions to menu" test_shutdown_men
 
 # Test ESC and Exit behavior - menu exits properly when escape status returned
 test_esc_exit_behavior() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
@@ -88,6 +91,7 @@ _run_test_case "shutdown-menu ESC/Exit behavior" test_esc_exit_behavior
 
 # Test kernel-level fallback detection for sleep when can-suspend unavailable
 test_sleep_kernel_fallback() {
+  skip-if-compiled || return $?
   # Skip test if /sys/power/state doesn't exist (non-Linux or no power management)
   if [ ! -r /sys/power/state ]; then
     return 0
@@ -137,6 +141,7 @@ _run_test_case "shutdown-menu uses kernel fallback for sleep detection" test_sle
 
 # Test kernel-level fallback detection for hibernate when can-hibernate unavailable
 test_hibernate_kernel_fallback() {
+  skip-if-compiled || return $?
   # Skip test if /sys/power/state doesn't exist (non-Linux or no power management)
   if [ ! -r /sys/power/state ]; then
     return 0

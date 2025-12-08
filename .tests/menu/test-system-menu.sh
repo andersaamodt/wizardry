@@ -31,6 +31,7 @@ SH
 }
 
 test_system_menu_checks_requirements() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
@@ -39,6 +40,7 @@ test_system_menu_checks_requirements() {
 }
 
 test_system_menu_includes_test_utilities() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
@@ -61,6 +63,7 @@ _run_test_case "system-menu passes system actions to menu" test_system_menu_incl
 
 # Test ESC and Exit behavior - menu exits properly when escape status returned
 test_esc_exit_behavior() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
@@ -93,6 +96,7 @@ _run_test_case "system-menu --help shows usage" test_shows_help
 
 # Test that no exit message is printed when ESC or Exit is used
 test_no_exit_message_on_esc() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"

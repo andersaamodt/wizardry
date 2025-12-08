@@ -33,6 +33,7 @@ test_shows_help() {
 _run_test_case "network-menu --help shows usage" test_shows_help
 
 test_fails_without_menu_dependency() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   cat >"$tmp/require-command" <<'SH'
 #!/bin/sh
