@@ -61,18 +61,41 @@ mkdir -p "$output_dir/.tests"
 
 # Compile all spells
 say "Compiling all spells..."
-temp_count_file=$(mktemp)
-temp_failed_file=$(mktemp)
-echo "0" > "$temp_count_file"
-echo "0" > "$temp_failed_file"
+compiled_count=0
+failed_count=0
 
-# Ensure compile-spell can find the wizardry repo
-export WIZARDRY_DIR="$repo_dir"
+# Function to compile a single spell by path
+compile_spell_by_path() {
+  spell_path=$1
+  target_file=$2
+  
+  # Use compile-spell with the spell name, but we know exactly where it is
+  spell_name=$(basename "$spell_path")
+  
+  # Call compile-spell from repo directory and redirect output to target
+  if (cd "$repo_dir" && "$repo_dir/spells/spellcraft/compile-spell" "$spell_name") > "$target_file" 2>&1; then
+    chmod +x "$target_file"
+    return 0
+  else
+    return 1
+  fi
+}
 
-find "$repo_dir/spells" -type f -executable | while IFS= read -r spell_path; do
-  # Skip hidden files and directories
+# Process spells from known locations
+for spell_path in "$repo_dir/spells"/*/* "$repo_dir/spells"/*/*/* "$repo_dir/spells"/*/*/*/* "$repo_dir/spells"/.imps/*/* "$repo_dir/spells"/.arcana/*/*; do
+  # Skip if not a file or not executable
+  [ -f "$spell_path" ] || continue
+  [ -x "$spell_path" ] || continue
+  
+  # Skip hidden files (except .imps and .arcana which are already in path)
   case "$spell_path" in
-    */.git/*|*/.github/*) continue ;;
+    */.git/*|*/.github/*|*/.*) 
+      # Allow .imps and .arcana
+      case "$spell_path" in
+        */.imps/*|*/.arcana/*) ;;
+        *) continue ;;
+      esac
+      ;;
   esac
   
   # Get relative path from spells/
@@ -85,21 +108,17 @@ find "$repo_dir/spells" -type f -executable | while IFS= read -r spell_path; do
   target_dir="$output_dir/spells/$(dirname "$rel_path")"
   mkdir -p "$target_dir"
   
-  # Compile spell (compile-spell needs to be run from repo directory to find dependencies)
-  if (cd "$repo_dir" && "$repo_dir/spells/spellcraft/compile-spell" "$spell_name" > "$target_dir/$spell_name" 2>&1); then
-    chmod +x "$target_dir/$spell_name"
-    count=$(cat "$temp_count_file")
-    echo "$((count + 1))" > "$temp_count_file"
+  # Compile spell
+  if compile_spell_by_path "$spell_path" "$target_dir/$spell_name"; then
+    compiled_count=$((compiled_count + 1))
   else
     warn "doppelganger: failed to compile $spell_name"
-    failed=$(cat "$temp_failed_file")
-    echo "$((failed + 1))" > "$temp_failed_file"
+    failed_count=$((failed_count + 1))
   fi
 done
 
-compiled_count=$(cat "$temp_count_file")
-failed_count=$(cat "$temp_failed_file")
-rm -f "$temp_count_file" "$temp_failed_file"
+compiled_count=$((compiled_count))
+failed_count=$((failed_count))
 
 # Copy test files (including hidden directories like .arcana and .imps)
 say "Copying test files..."
