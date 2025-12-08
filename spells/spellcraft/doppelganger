@@ -83,7 +83,7 @@ compile_spell_by_path() {
 }
 
 # Process spells from known locations
-for spell_path in "$repo_dir/spells"/*/* "$repo_dir/spells"/*/*/* "$repo_dir/spells"/*/*/*/* "$repo_dir/spells"/.imps/*/* "$repo_dir/spells"/.arcana/*/*; do
+for spell_path in "$repo_dir/spells"/*/* "$repo_dir/spells"/*/*/* "$repo_dir/spells"/*/*/*/* "$repo_dir/spells"/.imps/*/* "$repo_dir/spells"/.imps/*/*/* "$repo_dir/spells"/.arcana/*/*; do
   # Skip if not a file or not executable
   [ -f "$spell_path" ] || continue
   [ -x "$spell_path" ] || continue
@@ -108,6 +108,18 @@ for spell_path in "$repo_dir/spells"/*/* "$repo_dir/spells"/*/*/* "$repo_dir/spe
   # Create directory structure
   target_dir="$output_dir/spells/$(dirname "$rel_path")"
   mkdir -p "$target_dir"
+  
+  # Skip test infrastructure files - copy them as-is instead of compiling
+  # test-bootstrap and boot imps need to remain uncompiled to work correctly
+  case "$spell_path" in
+    */test/test-bootstrap|*/test/boot/*)
+      # Copy test infrastructure files directly
+      cp "$spell_path" "$target_dir/$spell_name"
+      chmod +x "$target_dir/$spell_name"
+      compiled_count=$((compiled_count + 1))
+      continue
+      ;;
+  esac
   
   # Compile spell
   if compile_spell_by_path "$spell_path" "$target_dir/$spell_name"; then
