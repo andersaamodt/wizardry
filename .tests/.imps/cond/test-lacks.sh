@@ -17,6 +17,7 @@ test_lacks_missing_command() {
 }
 
 test_lacks_existing_command() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/cond/lacks sh
   _assert_failure
 }

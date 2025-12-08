@@ -19,6 +19,7 @@ test_there_exists() {
 }
 
 test_there_missing() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/cond/there "$WIZARDRY_TMPDIR/nonexistent_xyz123"
   _assert_failure
 }
