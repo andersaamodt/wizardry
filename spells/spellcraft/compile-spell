@@ -184,12 +184,17 @@ transformed=$(printf '%s\n' "$spell_content" | tail -n +2 | grep -v "^require-wi
 for dep in $inlined_names; do
   func_name="_$(printf '%s' "$dep" | tr '-' '_')"
   
-  # Use awk for more controlled replacement - skip USAGE blocks
+  # Use awk for more controlled replacement - skip USAGE blocks, sourcing, case labels, and print statements
   # Note: This handles common USAGE heredoc patterns including quoted delimiters
   transformed=$(printf '%s\n' "$transformed" | awk -v old="$dep" -v new="$func_name" '
     /^[[:space:]]*cat <<.*USAGE/ { usage_start=1; print; next }
     usage_start && /^USAGE$/ { print; usage_start=0; next }
     usage_start { print; next }
+    /^[[:space:]]*\. / { print; next }
+    /^[[:space:]]*\. "/ { print; next }
+    /\).*;;/ { print; next }
+    /printf/ { print; next }
+    /echo/ { print; next }
     { gsub("\\<" old "\\>", new); print }
   ')
 done
