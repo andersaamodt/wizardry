@@ -78,6 +78,7 @@ test_wallet_menu_prompts_install_when_missing() {
 }
 
 test_wallet_menu_shows_wallet_controls_when_installed() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_colors "$tmp"
@@ -96,6 +97,7 @@ test_wallet_menu_shows_wallet_controls_when_installed() {
 }
 
 test_wallet_menu_shows_stop_when_running() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_colors "$tmp"

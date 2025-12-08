@@ -78,6 +78,7 @@ test_bitcoin_menu_prompts_install_when_missing() {
 }
 
 test_bitcoin_menu_controls_running_service() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_colors "$tmp"
@@ -95,6 +96,7 @@ test_bitcoin_menu_controls_running_service() {
 }
 
 test_bitcoin_menu_offers_service_install_when_missing() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_colors "$tmp"

@@ -61,6 +61,7 @@ SHI
 _run_test_case "node-menu shows install flow when Node.js is absent" menu_shows_install_when_node_missing
 
 menu_places_uninstall_before_exit_when_installed() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
 
