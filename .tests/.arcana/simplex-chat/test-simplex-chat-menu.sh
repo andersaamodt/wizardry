@@ -61,6 +61,7 @@ SHI
 _run_test_case "simplex-chat-menu offers install when simplex-chat is missing" menu_prompts_install_when_missing
 
 menu_orders_uninstall_before_exit_when_installed() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_exit_label "$tmp"
