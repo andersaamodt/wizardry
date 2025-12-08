@@ -49,14 +49,12 @@ test_help() {
 }
 
 test_missing_read_magic() {
-  skip-if-compiled || return $?
   stub=$(make_stub_dir)
   PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" _run_spell "spells/mud/look" "$WIZARDRY_TMPDIR"
   _assert_failure && _assert_error_contains "look: read-magic spell is missing."
 }
 
 test_missing_attributes_shows_defaults() {
-  skip-if-compiled || return $?
   stub=$(make_stub_dir)
   test_room=$(_make_tempdir)
   stub_ask_yn "$stub" 0
@@ -79,7 +77,6 @@ test_missing_attributes_shows_defaults() {
 }
 
 test_output_ends_with_newline() {
-  skip-if-compiled || return $?
   stub=$(make_stub_dir)
   test_room=$(_make_tempdir)
   stub_ask_yn "$stub" 0
@@ -99,7 +96,6 @@ test_output_ends_with_newline() {
 }
 
 test_home_description_defaults() {
-  skip-if-compiled || return $?
   stub=$(make_stub_dir)
   home_dir=$(_make_tempdir)
   stub_ask_yn "$stub" 1
@@ -113,7 +109,6 @@ test_home_description_defaults() {
 }
 
 test_other_home_description() {
-  skip-if-compiled || return $?
   stub=$(make_stub_dir)
   base_home=$(_make_tempdir)
   other_home=$(dirname "$base_home")/chris
@@ -129,7 +124,6 @@ test_other_home_description() {
 }
 
 test_root_description() {
-  skip-if-compiled || return $?
   stub=$(make_stub_dir)
   stub_ask_yn "$stub" 1
   stub_read_magic_missing "$stub"
@@ -141,7 +135,6 @@ test_root_description() {
 }
 
 test_displays_attributes() {
-  skip-if-compiled || return $?
   stub=$(make_stub_dir)
   stub_ask_yn "$stub" 0
   cat >"$stub/read-magic" <<'EOF'
@@ -157,7 +150,6 @@ EOF
 }
 
 test_installs_when_prompted() {
-  skip-if-compiled || return $?
   stub=$(make_stub_dir)
   stub_ask_yn "$stub" 0
   stub_read_magic_missing "$stub"
@@ -167,7 +159,6 @@ test_installs_when_prompted() {
 }
 
 test_declines_installation() {
-  skip-if-compiled || return $?
   stub=$(make_stub_dir)
   cat >"$stub/ask-yn" <<'EOF'
 #!/bin/sh
@@ -189,7 +180,6 @@ EOF
 }
 
 test_skips_install_when_block_present() {
-  skip-if-compiled || return $?
   stub=$(make_stub_dir)
   stub_ask_yn "$stub" 9
   stub_read_magic_missing "$stub"

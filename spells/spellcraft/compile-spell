@@ -90,6 +90,12 @@ for dep in $dependencies; do
   # Skip require-wizardry - doesn't make sense in standalone
   [ "$dep" = "require-wizardry" ] && continue
   
+  # Skip common English words that are rarely used as commands
+  # These cause issues when replaced in strings
+  case "$dep" in
+    is) continue ;;  # Too common as English word "is"
+  esac
+  
   # Skip interactive spells - they must remain external for test stubbing
   # These contain terminal I/O code that can't be stubbed when inlined
   case "$dep" in
