@@ -102,6 +102,7 @@ for dep in $dependencies; do
   # prevent legitimate imp calls from being inlined if needed in the future
   case "$dep" in
     is) continue ;;  # Too common as English word "is"
+    fail) continue ;;  # Commonly used as variable name (e.g., fail=0 for counting)
   esac
   
   # Skip interactive spells - they must remain external for test stubbing
