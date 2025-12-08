@@ -67,7 +67,6 @@ STUB
 }
 
 detect_magic_handles_faint_auras() {
-  skip-if-compiled || return $?
   tmpdir=$(_make_tempdir)
   stub="$tmpdir/read-magic"
   cat <<'STUB' >"$stub"
@@ -83,13 +82,12 @@ STUB
   chmod +x "$stub"
   : >"$tmpdir/glimmer.txt"
 
-  DETECT_MAGIC_READ_MAGIC="$stub" _run_spell_in_dir "$tmpdir" "spells/divination/detect-magic"
+  NO_COLOR=1 DETECT_MAGIC_READ_MAGIC="$stub" _run_spell_in_dir "$tmpdir" "spells/divination/detect-magic"
   _assert_success || return 1
   _assert_output_contains "faint glimmer" || return 1
 }
 
 detect_magic_handles_dense_rooms() {
-  skip-if-compiled || return $?
   tmpdir=$(_make_tempdir)
   stub="$tmpdir/read-magic"
   cat <<'STUB' >"$stub"
@@ -108,7 +106,7 @@ STUB
   chmod +x "$stub"
   : >"$tmpdir/torrent.txt"
 
-  DETECT_MAGIC_READ_MAGIC="$stub" _run_spell_in_dir "$tmpdir" "spells/divination/detect-magic"
+  NO_COLOR=1 DETECT_MAGIC_READ_MAGIC="$stub" _run_spell_in_dir "$tmpdir" "spells/divination/detect-magic"
   _assert_success || return 1
   _assert_output_contains "off the charts" || return 1
 }
@@ -147,7 +145,6 @@ detect_magic_reports_missing_helper() {
 }
 
 detect_magic_skips_unreadable_enchantments() {
-  skip-if-compiled || return $?
   tmpdir=$(_make_tempdir)
   stub="$tmpdir/read-magic"
   cat <<'STUB' >"$stub"
@@ -161,7 +158,7 @@ STUB
   : >"$tmpdir/shy.txt"
   : >"$tmpdir/eager.txt"
 
-  DETECT_MAGIC_READ_MAGIC="$stub" _run_spell_in_dir "$tmpdir" "spells/divination/detect-magic"
+  NO_COLOR=1 DETECT_MAGIC_READ_MAGIC="$stub" _run_spell_in_dir "$tmpdir" "spells/divination/detect-magic"
   _assert_success || return 1
   case "$OUTPUT" in
     *shy.txt*) TEST_FAILURE_REASON="unreadable file was listed"; return 1 ;;
