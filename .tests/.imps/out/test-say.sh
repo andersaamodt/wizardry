@@ -12,7 +12,6 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_say_outputs() {
-  skip-if-compiled || return $?
   _run_spell spells/.imps/out/say "test message"
   _assert_success
   _assert_output_contains "test message"

@@ -92,7 +92,6 @@ SH
 _run_test_case "services-menu ESC/Exit behavior" test_esc_exit_behavior
 
 test_shows_help() {
-  skip-if-compiled || return $?
   _run_cmd "$ROOT_DIR/spells/menu/services-menu" --help
   _assert_success
   _assert_output_contains "Usage: services-menu"

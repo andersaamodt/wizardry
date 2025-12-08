@@ -190,7 +190,6 @@ SH
 _run_test_case "shutdown-menu uses kernel fallback for hibernate detection" test_hibernate_kernel_fallback
 
 test_shows_help() {
-  skip-if-compiled || return $?
   _run_cmd "$ROOT_DIR/spells/menu/shutdown-menu" --help
   _assert_success
   _assert_output_contains "Usage: shutdown-menu"

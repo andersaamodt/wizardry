@@ -43,6 +43,7 @@ imps_dir="$repo_dir/spells/.imps"
 
 # Determine if input is a path or just a name
 spell_path=""
+spell_basename=""
 case "$spell_name" in
   */*) 
     # Contains slash - treat as path (relative or absolute)
@@ -53,9 +54,11 @@ case "$spell_name" in
       # Relative to repo root
       spell_path="$repo_dir/$spell_name"
     fi
+    spell_basename=$(basename "$spell_name")
     ;;
   *)
     # No slash - treat as spell name, search for it
+    spell_basename="$spell_name"
     # First try current directory
     if [ -f "$spell_name" ]; then
       spell_path="$spell_name"
@@ -87,8 +90,20 @@ inlined_deps=""
 inlined_names=""
 
 for dep in $dependencies; do
+  # Skip self-reference - spell cannot be its own dependency
+  [ "$dep" = "$spell_basename" ] && continue
+  
   # Skip require-wizardry - doesn't make sense in standalone
   [ "$dep" = "require-wizardry" ] && continue
+  
+  # Skip common English words that are rarely used as commands
+  # These cause issues when replaced in strings
+  # Note: Only add words here that are causing real problems, as this may
+  # prevent legitimate imp calls from being inlined if needed in the future
+  case "$dep" in
+    is) continue ;;  # Too common as English word "is"
+    fail) continue ;;  # Commonly used as variable name (e.g., fail=0 for counting)
+  esac
   
   # Skip interactive spells - they must remain external for test stubbing
   # These contain terminal I/O code that can't be stubbed when inlined
@@ -170,15 +185,32 @@ transformed=$(printf '%s\n' "$spell_content" | tail -n +2 | grep -v "^require-wi
 for dep in $inlined_names; do
   func_name="_$(printf '%s' "$dep" | tr '-' '_')"
   
-  # Use awk for more controlled replacement - skip USAGE blocks
+  # Use awk for more controlled replacement - skip USAGE blocks, sourcing, case labels, string literals, and arithmetic
   # Note: This handles common USAGE heredoc patterns including quoted delimiters
   transformed=$(printf '%s\n' "$transformed" | awk -v old="$dep" -v new="$func_name" '
-    /^cat <<['\''"]?USAGE['\''"]?/ { usage_start=1 }
+    /^[[:space:]]*cat <<.*USAGE/ { usage_start=1; print; next }
     usage_start && /^USAGE$/ { print; usage_start=0; next }
     usage_start { print; next }
+    /^[[:space:]]*\. / { print; next }
+    /^[[:space:]]*\. "/ { print; next }
+    /\).*;;/ { print; next }
+    # Skip arithmetic expansion where variables can be used without $
+    /\$\(\(.*\<'"$dep"'\>.*\)\)/ { print; next }
+    # Only skip lines where the dependency appears in quotes (likely string literals)
+    /"[^"]*\<'"$dep"'\>/ { print; next }
+    /'\''[^'\'']*\<'"$dep"'\>/ { print; next }
     { gsub("\\<" old "\\>", new); print }
   ')
 done
+
+# For standalone imp compilation, fix the self-execute case statement
+# Replace pattern like '*/imp-name)' with '*)' so it always executes
+if [ -z "$inlined_names" ]; then
+  # No dependencies inlined, likely compiling an imp directly
+  # Escape special regex characters in spell_basename for safe sed usage
+  escaped_basename=$(printf '%s\n' "$spell_basename" | sed 's/[.[\*^$]/\\&/g')
+  transformed=$(printf '%s\n' "$transformed" | sed "s|\*/$escaped_basename)|*)|g")
+fi
 
 # Output compiled spell
 printf '#!/bin/sh\n'

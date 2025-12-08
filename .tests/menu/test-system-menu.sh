@@ -87,7 +87,6 @@ SH
 _run_test_case "system-menu ESC/Exit behavior" test_esc_exit_behavior
 
 test_shows_help() {
-  skip-if-compiled || return $?
   _run_cmd "$ROOT_DIR/spells/menu/system-menu" --help
   _assert_success
   _assert_output_contains "Usage: system-menu"

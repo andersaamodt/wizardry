@@ -17,8 +17,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  skip-if-compiled || return $?
-_run_spell "spells/system/update-all" --help
+  _run_spell "spells/system/update-all" --help
   _assert_success && _assert_output_contains "Usage: update-all"
 }
 

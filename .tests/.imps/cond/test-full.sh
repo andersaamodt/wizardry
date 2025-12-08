@@ -20,7 +20,6 @@ test_full_file_with_content() {
 }
 
 test_full_empty_file_fails() {
-  skip-if-compiled || return $?
   tmpfile=$(mktemp "$WIZARDRY_TMPDIR/full_test.XXXXXX")
   : > "$tmpfile"
   _run_spell spells/.imps/cond/full file "$tmpfile"
