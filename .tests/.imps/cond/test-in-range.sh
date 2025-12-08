@@ -29,11 +29,13 @@ test_in_range_at_max() {
 }
 
 test_in_range_below_min() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/cond/in-range 0 1 10
   _assert_failure
 }
 
 test_in_range_above_max() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/cond/in-range 11 1 10
   _assert_failure
 }

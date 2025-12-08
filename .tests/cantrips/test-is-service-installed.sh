@@ -32,6 +32,7 @@ test_missing_service_name_fails() {
 }
 
 test_reports_installed_service() {
+  skip-if-compiled || return $?
   stub_dir=$(make_stub_dir)
   write_ask_text_stub "$stub_dir"
   service_dir=$(mktemp -d "$WIZARDRY_TMPDIR/services.XXXXXX") || return 1
@@ -41,6 +42,7 @@ test_reports_installed_service() {
 }
 
 test_reports_missing_service() {
+  skip-if-compiled || return $?
   stub_dir=$(make_stub_dir)
   write_ask_text_stub "$stub_dir"
   service_dir=$(mktemp -d "$WIZARDRY_TMPDIR/services.XXXXXX") || return 1

@@ -10,6 +10,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
+  skip-if-compiled || return $?
   _run_spell "spells/spellcraft/learn-spellbook" --help
   _assert_success && _assert_error_contains "Usage: learn-spellbook"
 }
@@ -331,6 +332,7 @@ EOF
 }
 
 test_nix_respects_4space_indentation() {
+  skip-if-compiled || return $?
   # Test that learn-spellbook respects 4-space indentation in configuration.nix
   rc="$WIZARDRY_TMPDIR/4space.nix"
   dir="$WIZARDRY_TMPDIR/4space_dir"
@@ -373,6 +375,7 @@ EOF
 }
 
 test_nix_respects_tab_indentation() {
+  skip-if-compiled || return $?
   # Test that learn-spellbook respects tab indentation in configuration.nix
   rc="$WIZARDRY_TMPDIR/tabs.nix"
   dir="$WIZARDRY_TMPDIR/tab_dir"

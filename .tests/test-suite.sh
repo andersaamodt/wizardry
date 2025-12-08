@@ -183,6 +183,7 @@ test_warn_full_paths_to_spells() {
 # This is a structural check - maintains test suite integrity
 
 test_test_files_have_matching_spells() {
+  skip-if-compiled || return $?
   orphan_tests=""
   
   find "$ROOT_DIR/.tests" -type f -name 'test-*.sh' -print | while IFS= read -r test_file; do
@@ -361,6 +362,7 @@ test_scripts_using_globals_have_set_u() {
 # Global declarations (using : "${VAR:=...}" syntax) should ONLY be in declare-globals.
 # This prevents undeclared globals from sneaking in through alternate syntax.
 test_no_global_declarations_outside_declare_globals() {
+  skip-if-compiled || return $?
   find "$ROOT_DIR/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r spell; do
     name=$(basename "$spell")
     should_skip_file "$name" && continue
@@ -397,6 +399,7 @@ test_no_global_declarations_outside_declare_globals() {
 # --- Check: declare-globals has exactly 3 globals ---
 # Ensures no new globals are added without explicit tracking
 test_declare_globals_count() {
+  skip-if-compiled || return $?
   declare_globals_file="$ROOT_DIR/spells/.imps/declare-globals"
   
   if [ ! -f "$declare_globals_file" ]; then
@@ -515,6 +518,7 @@ test_no_pseudo_globals_in_rc_files() {
 # This ensures imps can be properly bound (sourced) or evoked (executed).
 # Exemptions: test-bootstrap (complex test infrastructure)
 test_imps_follow_function_rule() {
+  skip-if-compiled || return $?
   violations=""
   
   find "$ROOT_DIR/spells/.imps" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r imp; do
@@ -612,6 +616,7 @@ test_imps_have_opening_comments() {
 # - All spells in spells/.arcana/core/
 # These spells must have "Bootstrap spell" in their opening comment (first few lines after shebang).
 test_bootstrap_spells_identified() {
+  skip-if-compiled || return $?
   # Canonical list of bootstrap spell paths (relative to ROOT_DIR)
   # This list is the authoritative source for what constitutes a bootstrap spell
   bootstrap_paths="

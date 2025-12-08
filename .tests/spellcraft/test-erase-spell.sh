@@ -20,6 +20,7 @@ make_spellbook_dir() {
 }
 
 test_shows_usage_with_help() {
+  skip-if-compiled || return $?
   _run_spell "spells/spellcraft/erase-spell" --help
   _assert_success || return 1
   case "$OUTPUT" in

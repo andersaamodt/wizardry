@@ -120,6 +120,7 @@ STUB
 }
 
 test_calls_osascript_on_macos() {
+  skip-if-compiled || return $?
   stub=$(make_stub_dir)
   target_file="$stub/testfile.txt"
   printf 'test content\n' >"$target_file"

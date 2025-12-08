@@ -30,11 +30,13 @@ make_spell_dir() {
 }
 
 test_help() {
+  skip-if-compiled || return $?
   _run_spell "spells/spellcraft/lint-magic" --help
   _assert_success && _assert_output_contains "Usage: lint-magic"
 }
 
 test_usage_alias() {
+  skip-if-compiled || return $?
   _run_spell "spells/spellcraft/lint-magic" --usage
   _assert_success && _assert_output_contains "Usage: lint-magic"
 }

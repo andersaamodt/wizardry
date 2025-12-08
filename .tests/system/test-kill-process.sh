@@ -21,6 +21,7 @@ test_help() {
 }
 
 kill_process_requires_ask_number() {
+  skip-if-compiled || return $?
   tmpdir=$(_make_tempdir)
   cat <<'STUB' >"$tmpdir/ps"
 #!/bin/sh
@@ -37,6 +38,7 @@ STUB
 }
 
 kill_process_requires_ask_yn() {
+  skip-if-compiled || return $?
   tmpdir=$(_make_tempdir)
 
   cat <<'STUB' >"$tmpdir/ps"

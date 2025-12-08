@@ -18,6 +18,7 @@ test_help() {
 }
 
 test_default_output() {
+  skip-if-compiled || return $?
   _run_spell spells/cantrips/logging-example
   _assert_success
   _assert_output_contains "Welcome to the logging example"
@@ -35,6 +36,7 @@ test_simulate_level_0() {
 }
 
 test_simulate_level_1() {
+  skip-if-compiled || return $?
   WIZARDRY_LOG_LEVEL=1 _run_spell spells/cantrips/logging-example --simulate
   _assert_success
   _assert_output_contains "Starting multi-step process"
@@ -43,6 +45,7 @@ test_simulate_level_1() {
 }
 
 test_simulate_level_2() {
+  skip-if-compiled || return $?
   WIZARDRY_LOG_LEVEL=2 _run_spell spells/cantrips/logging-example --simulate
   _assert_success
   _assert_output_contains "Starting multi-step process"

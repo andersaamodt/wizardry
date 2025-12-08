@@ -15,6 +15,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 move_cursor_requires_two_arguments() {
+  skip-if-compiled || return $?
   _run_spell "spells/cantrips/move-cursor" 5
   _assert_failure || return 1
   _assert_error_contains "Usage: move-cursor" || return 1

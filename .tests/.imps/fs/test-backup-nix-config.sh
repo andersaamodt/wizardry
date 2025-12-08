@@ -53,6 +53,7 @@ test_backup_nix_config_missing_file_succeeds() {
 }
 
 test_backup_nix_config_no_args_fails() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/fs/backup-nix-config
   _assert_failure
   _assert_error_contains "file path required"

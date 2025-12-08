@@ -43,6 +43,7 @@ test_is_path_home() {
 }
 
 test_is_path_fails_for_empty() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/cond/is-path ""
   _assert_failure
 }

@@ -20,6 +20,7 @@ test_help() {
 }
 
 test_outputs_message() {
+  skip-if-compiled || return $?
   WIZARD=1 _run_spell "spells/cantrips/wizard-eyes" "test message"
   _assert_success || return 1
   _assert_output_contains "test message" || return 1

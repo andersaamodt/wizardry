@@ -12,6 +12,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_script_dir_returns_absolute_path() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/paths/script-dir spells/.imps/paths/script-dir
   _assert_success || return 1
   # Should output an absolute path
@@ -22,6 +23,7 @@ test_script_dir_returns_absolute_path() {
 }
 
 test_script_dir_returns_correct_directory() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/paths/script-dir spells/.imps/paths/script-dir
   _assert_success || return 1
   # Output should end with /spells/.imps/paths
@@ -42,6 +44,7 @@ test_script_dir_normalized_path() {
 }
 
 test_script_dir_handles_simple_name() {
+  skip-if-compiled || return $?
   # When given just a filename without path separators
   tmpdir=$(_make_tempdir)
   cp "$ROOT_DIR/spells/.imps/paths/script-dir" "$tmpdir/script-dir"
@@ -60,6 +63,7 @@ test_script_dir_handles_simple_name() {
 }
 
 test_script_dir_handles_symlink() {
+  skip-if-compiled || return $?
   tmpdir=$(_make_tempdir)
   mkdir -p "$tmpdir/actual"
   mkdir -p "$tmpdir/link_dir"
@@ -85,6 +89,7 @@ test_script_dir_handles_symlink() {
 }
 
 test_script_dir_handles_relative_path() {
+  skip-if-compiled || return $?
   # Create a temp script and run with a relative path
   tmpdir=$(_make_tempdir)
   mkdir -p "$tmpdir/sub/dir"
@@ -104,6 +109,7 @@ test_script_dir_handles_relative_path() {
 }
 
 test_script_dir_handles_dot_slash() {
+  skip-if-compiled || return $?
   tmpdir=$(_make_tempdir)
   cp "$ROOT_DIR/spells/.imps/paths/script-dir" "$tmpdir/script-dir"
   chmod +x "$tmpdir/script-dir"
@@ -121,6 +127,7 @@ test_script_dir_handles_dot_slash() {
 }
 
 test_script_dir_handles_relative_symlink() {
+  skip-if-compiled || return $?
   tmpdir=$(_make_tempdir)
   mkdir -p "$tmpdir/actual"
   mkdir -p "$tmpdir/links"
@@ -146,6 +153,7 @@ test_script_dir_handles_relative_symlink() {
 }
 
 test_script_dir_handles_same_dir_symlink() {
+  skip-if-compiled || return $?
   # Edge case: symlink points to a file in the same directory
   tmpdir=$(_make_tempdir)
   

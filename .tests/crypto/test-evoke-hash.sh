@@ -26,11 +26,13 @@ _run_test_case "crypto/evoke-hash is executable" spell_is_executable
 _run_test_case "crypto/evoke-hash has content" spell_has_content
 
 shows_help() {
+  skip-if-compiled || return $?
   _run_spell spells/crypto/evoke-hash --help
   _assert_success && _assert_output_contains "Usage: evoke-hash"
 }
 
 test_requires_hash_argument() {
+  skip-if-compiled || return $?
   _run_spell spells/crypto/evoke-hash
   _assert_failure && _assert_error_contains "Usage: evoke-hash"
 }

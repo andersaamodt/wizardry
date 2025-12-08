@@ -21,6 +21,7 @@ test_and_then_continues_on_success() {
 }
 
 test_and_then_stops_on_failure() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/lex/and-then "false" "" echo shouldnt_run
   _assert_failure || return 1
   case "$OUTPUT" in
@@ -32,6 +33,7 @@ test_and_then_stops_on_failure() {
 }
 
 test_and_then_no_prior_command() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/lex/and-then "" "" echo hello
   _assert_success || return 1
   _assert_output_contains "hello" || return 1

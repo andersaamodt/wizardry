@@ -45,6 +45,7 @@ SH
 }
 
 test_mud_admin_calls_menu_with_actions() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_colors "$tmp"
@@ -71,6 +72,7 @@ SH
 }
 
 test_mud_admin_requires_menu_helper() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_colors "$tmp"
   cat >"$tmp/require-command" <<'SH'

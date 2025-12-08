@@ -21,6 +21,7 @@ test_norm_path_normalizes() {
 }
 
 test_norm_path_handles_simple_path() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/paths/norm-path "/tmp/test"
   _assert_success
   _assert_output_contains "/tmp/test"

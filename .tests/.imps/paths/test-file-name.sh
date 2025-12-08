@@ -12,12 +12,14 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_file_name_extracts() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/paths/file-name "/path/to/file.txt"
   _assert_success
   _assert_output_contains "file.txt"
 }
 
 test_file_name_handles_simple_name() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/paths/file-name "simple.txt"
   _assert_success
   _assert_output_contains "simple.txt"

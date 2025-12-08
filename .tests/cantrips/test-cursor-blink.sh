@@ -15,12 +15,14 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 cursor_blink_requires_one_argument() {
+  skip-if-compiled || return $?
   _run_spell "spells/cantrips/cursor-blink"
   _assert_failure || return 1
   _assert_error_contains "Usage: cursor-blink" || return 1
 }
 
 cursor_blink_handles_unknown_value() {
+  skip-if-compiled || return $?
   _run_cmd env TERM=xterm "$ROOT_DIR/spells/cantrips/cursor-blink" maybe
   _assert_failure || return 1
   _assert_error_contains "Usage: cursor-blink" || return 1

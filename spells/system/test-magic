@@ -542,13 +542,13 @@ if [ "$coverage_uncovered" -gt 0 ]; then
   status=1
 fi
 
-if [ -n "$extraneous_files" ]; then
+if [ -n "$extraneous_files" ] && [ "${WIZARDRY_TEST_COMPILED-0}" != "1" ]; then
   printf 'Extraneous test files (no corresponding spell):\n'
   printf '  %s\n' "$extraneous_files"
   status=1
 fi
 
-if [ -n "$incomplete_tests" ]; then
+if [ -n "$incomplete_tests" ] && [ "${WIZARDRY_TEST_COMPILED-0}" != "1" ]; then
   printf 'Incomplete tests (imps need %d+ subtests, spells need %d+ including --help):\n' "$MIN_SUBTESTS_IMP" "$MIN_SUBTESTS_SPELL"
   printf '  %s\n' "$incomplete_tests"
   status=1

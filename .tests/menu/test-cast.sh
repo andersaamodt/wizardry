@@ -85,6 +85,7 @@ test_cast_fails_without_menu_dependency() {
 }
 
 test_cast_lists_stored_spells() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_cast_list "$tmp" fire "cast fire"
   PATH="$tmp:$PATH" _run_cmd env CAST_STORE="$tmp/memorize" "$ROOT_DIR/spells/menu/cast" --list
@@ -100,6 +101,7 @@ test_cast_prints_empty_message() {
 }
 
 test_cast_sends_entries_to_menu() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_cast_list "$tmp" fizz "cast fizz"
   make_stub_menu "$tmp"
@@ -119,6 +121,7 @@ test_cast_sends_entries_to_menu() {
 }
 
 test_cast_dir_prints_directory() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_cast_list "$tmp" fire "cast fire"
   PATH="$tmp:$PATH" _run_cmd env CAST_STORE="$tmp/memorize" "$ROOT_DIR/spells/menu/cast" --dir
@@ -167,6 +170,7 @@ test_cast_list_empty_returns_nothing() {
 }
 
 test_cast_shows_alias_without_command_in_label() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_cast_list "$tmp" spark "echo spark"
   make_stub_menu "$tmp"
@@ -199,6 +203,7 @@ _run_test_case "cast fails without menu dependency" test_cast_fails_without_menu
 
 # Test that spell name equals command doesn't show duplicate
 test_cast_no_duplicate_when_alias_equals_command() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   # Create a memorize stub where alias = command (e.g., "myspell" and "myspell")
   make_stub_cast_list "$tmp" myspell "myspell"
@@ -230,6 +235,7 @@ _run_test_case "cast no duplicate when alias equals command" test_cast_no_duplic
 
 # Test ESC and Exit behavior - menu exits properly when escape status returned
 test_esc_exit_behavior() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_cast_list "$tmp" fizz "cast fizz"
   make_stub_menu "$tmp"

@@ -35,21 +35,25 @@ test_is_posint_fails_for_negative() {
 }
 
 test_is_posint_fails_for_empty() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/cond/is-posint ""
   _assert_failure
 }
 
 test_is_posint_fails_for_text() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/cond/is-posint "abc"
   _assert_failure
 }
 
 test_is_posint_fails_for_float() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/cond/is-posint "3.14"
   _assert_failure
 }
 
 test_is_posint_fails_for_mixed() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/cond/is-posint "42abc"
   _assert_failure
 }

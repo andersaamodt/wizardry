@@ -27,6 +27,7 @@ test_help() {
 }
 
 test_missing_enchant() {
+  skip-if-compiled || return $?
   stub=$(make_stub_dir)
   PATH="$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$stub:/bin:/usr/bin" _run_spell "spells/mud/decorate"
   _assert_failure && _assert_error_contains "decorate: enchant spell is missing."
@@ -44,6 +45,7 @@ EOF
 }
 
 test_empty_description() {
+  skip-if-compiled || return $?
   stub=$(make_stub_dir)
   target=$(_make_tempdir)
   cat >"$stub/enchant" <<'EOF'

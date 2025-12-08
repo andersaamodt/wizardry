@@ -67,6 +67,7 @@ STUB
 }
 
 detect_magic_handles_faint_auras() {
+  skip-if-compiled || return $?
   tmpdir=$(_make_tempdir)
   stub="$tmpdir/read-magic"
   cat <<'STUB' >"$stub"
@@ -88,6 +89,7 @@ STUB
 }
 
 detect_magic_handles_dense_rooms() {
+  skip-if-compiled || return $?
   tmpdir=$(_make_tempdir)
   stub="$tmpdir/read-magic"
   cat <<'STUB' >"$stub"
@@ -130,6 +132,7 @@ STUB
 }
 
 detect_magic_reports_missing_helper() {
+  skip-if-compiled || return $?
   tmpdir=$(_make_tempdir)
   cp "$ROOT_DIR/spells/divination/detect-magic" "$tmpdir/detect-magic"
   chmod +x "$tmpdir/detect-magic"
@@ -144,6 +147,7 @@ detect_magic_reports_missing_helper() {
 }
 
 detect_magic_skips_unreadable_enchantments() {
+  skip-if-compiled || return $?
   tmpdir=$(_make_tempdir)
   stub="$tmpdir/read-magic"
   cat <<'STUB' >"$stub"

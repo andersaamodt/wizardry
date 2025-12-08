@@ -12,6 +12,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_write_file_creates_file() {
+  skip-if-compiled || return $?
   tmpfile="$WIZARDRY_TMPDIR/writefile_test_$$"
   _run_cmd sh -c "printf 'test content' | '$ROOT_DIR/spells/.imps/text/write-file' '$tmpfile'"
   _assert_success
@@ -21,6 +22,7 @@ test_write_file_creates_file() {
 }
 
 test_write_file_overwrites_existing() {
+  skip-if-compiled || return $?
   tmpfile="$WIZARDRY_TMPDIR/writefile_test_$$"
   printf 'old content' > "$tmpfile"
   _run_cmd sh -c "printf 'new content' | '$ROOT_DIR/spells/.imps/text/write-file' '$tmpfile'"

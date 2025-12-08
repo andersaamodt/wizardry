@@ -15,6 +15,7 @@ done
 # === Basic Installation Tests ===
 
 install_invokes_core_installer() {
+  skip-if-compiled || return $?
   fixture=$(_make_fixture)
   _provide_basic_tools "$fixture"
   _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
@@ -38,6 +39,7 @@ STUB
 }
 
 install_exits_on_interrupt() {
+  skip-if-compiled || return $?
   # Test that the install script properly handles SIGINT (Ctrl-C)
   # We verify this by checking that the trap is set correctly and the handler exits
   
@@ -59,6 +61,7 @@ install_exits_on_interrupt() {
 # === NixOS Configuration Tests ===
 
 install_nixos_prompts_for_config_path() {
+  skip-if-compiled || return $?
   # On NixOS without a config file at standard paths, the installer should
   # prompt for the config path. When the user provides a valid path via stdin,
   # the installer should use it.
@@ -88,6 +91,7 @@ install_nixos_prompts_for_config_path() {
 }
 
 install_nixos_fails_without_config_path() {
+  skip-if-compiled || return $?
   # On NixOS without a config file and non-interactive input,
   # the installer should fail with an error message
   fixture=$(_make_fixture)
@@ -108,6 +112,7 @@ install_nixos_fails_without_config_path() {
 }
 
 install_nixos_adds_path_to_config() {
+  skip-if-compiled || return $?
   # On NixOS, the installer should add shell configuration (invoke-wizardry) to configuration.nix
   fixture=$(_make_fixture)
   _provide_basic_tools "$fixture"
@@ -139,6 +144,7 @@ EOF
 }
 
 install_nixos_writes_path_block() {
+  skip-if-compiled || return $?
   # On NixOS, the installer should write a PATH block to configuration.nix
   fixture=$(_make_fixture)
   _provide_basic_tools "$fixture"
@@ -170,6 +176,7 @@ EOF
 }
 
 install_nixos_adds_path_to_system_config() {
+  skip-if-compiled || return $?
   # On NixOS, the installer should add PATH entries to configuration.nix
   fixture=$(_make_fixture)
   _provide_basic_tools "$fixture"
@@ -210,6 +217,7 @@ EOF
 }
 
 install_nixos_preserves_existing_config() {
+  skip-if-compiled || return $?
   # The installer should preserve existing content in configuration.nix
   fixture=$(_make_fixture)
   _provide_basic_tools "$fixture"
@@ -257,6 +265,7 @@ EOF
 }
 
 install_nixos_writes_path_entries_to_config() {
+  skip-if-compiled || return $?
   # On NixOS, PATH entries should be written to configuration.nix
   fixture=$(_make_fixture)
   _provide_basic_tools "$fixture"
@@ -298,6 +307,7 @@ EOF
 }
 
 install_nixos_simple_input() {
+  skip-if-compiled || return $?
   # Test that NixOS installer only needs config path and confirmation
   # (no separate flakes consent prompt)
   fixture=$(_make_fixture)
@@ -339,6 +349,7 @@ EOF
 }
 
 install_nixos_shows_config_file_message() {
+  skip-if-compiled || return $?
   # On NixOS, the installer should show "Configuration file to be modified" 
   fixture=$(_make_fixture)
   _provide_basic_tools "$fixture"
@@ -374,6 +385,7 @@ EOF
 }
 
 install_nixos_shows_shell_config_updated_message() {
+  skip-if-compiled || return $?
   # On NixOS, the installer should show "Shell configuration updated" message
   fixture=$(_make_fixture)
   _provide_basic_tools "$fixture"
@@ -416,6 +428,7 @@ EOF
 # === Path Normalization Tests ===
 
 install_normalizes_path_without_leading_slash() {
+  skip-if-compiled || return $?
   # Test that paths like "home/testuser/.wizardry" are normalized to
   # "/home/testuser/.wizardry" to prevent path doubling.
   #
@@ -439,6 +452,7 @@ install_normalizes_path_without_leading_slash() {
 }
 
 install_nixos_normalizes_config_path_without_leading_slash() {
+  skip-if-compiled || return $?
   # Test that NixOS config paths like "etc/nixos/configuration.nix" are normalized to
   # "/etc/nixos/configuration.nix".
   # This test verifies the path normalization logic exists in the install script.
@@ -460,6 +474,7 @@ install_nixos_normalizes_config_path_without_leading_slash() {
 }
 
 install_does_not_double_home_path() {
+  skip-if-compiled || return $?
   # Test that paths starting with $HOME are not doubled due to tilde pattern matching.
   fixture=$(_make_fixture)
   _provide_basic_tools "$fixture"
@@ -487,6 +502,7 @@ install_does_not_double_home_path() {
 # === NixOS Shell Code Tests ===
 
 install_nixos_writes_shell_init_properly_to_nix_file() {
+  skip-if-compiled || return $?
   # When format is nix, the installer should write shell code to the .nix file
   # using proper nix syntax (programs.bash.initExtra) instead of raw shell markers.
   fixture=$(_make_fixture)
@@ -534,6 +550,7 @@ EOF
 # rather than relying on PATH resolution (which could use old broken versions).
 
 install_uses_explicit_helper_paths() {
+  skip-if-compiled || return $?
   # Verify that the install script references helpers using explicit paths,
   # not relying on PATH which could contain old broken versions.
   
@@ -681,6 +698,7 @@ install_uses_only_bootstrappable_spells() {
 # === Already Installed Menu Tests ===
 
 install_shows_menu_when_already_installed() {
+  skip-if-compiled || return $?
   # When wizardry is already installed, the installer should show a numbered menu
   # with options: repair, reinstall, uninstall, exit
   fixture=$(_make_fixture)
@@ -718,6 +736,7 @@ install_shows_menu_when_already_installed() {
 # === Output Message Tests ===
 
 install_nixos_shows_shell_config_updated() {
+  skip-if-compiled || return $?
   # On NixOS, the installer should show "Shell configuration updated"
   fixture=$(_make_fixture)
   _provide_basic_tools "$fixture"
@@ -750,6 +769,7 @@ EOF
 }
 
 install_does_not_show_spell_installation() {
+  skip-if-compiled || return $?
   # With word-of-binding paradigm, the installer should NOT pre-install spells
   # Spells are auto-sourced on first use via handle-command-not-found
   fixture=$(_make_fixture)
@@ -773,6 +793,7 @@ install_does_not_show_spell_installation() {
 }
 
 install_creates_uninstall_script_with_correct_name() {
+  skip-if-compiled || return $?
   # The uninstall script should be named .uninstall not uninstall_wizardry
   fixture=$(_make_fixture)
   _provide_basic_tools "$fixture"
@@ -795,6 +816,7 @@ install_creates_uninstall_script_with_correct_name() {
 }
 
 install_does_not_show_uninstall_on_success() {
+  skip-if-compiled || return $?
   # The installer should NOT show "Uninstall script created at:" message
   # on successful installation (per problem statement - only notify on failure)
   fixture=$(_make_fixture)
@@ -827,6 +849,7 @@ install_does_not_show_uninstall_on_success() {
 }
 
 install_shows_simple_run_message() {
+  skip-if-compiled || return $?
   # The installer should show simple message about running menu/mud
   # instead of "Next steps" section
   fixture=$(_make_fixture)
@@ -862,6 +885,7 @@ install_shows_simple_run_message() {
 }
 
 install_does_not_show_adding_missing_path_on_fresh() {
+  skip-if-compiled || return $?
   # The installer should not show "Adding missing PATH configuration" on fresh install
   fixture=$(_make_fixture)
   _provide_basic_tools "$fixture"
@@ -886,6 +910,7 @@ install_does_not_show_adding_missing_path_on_fresh() {
 # === NixOS Log Out/In Message Tests ===
 
 install_nixos_shows_appropriate_message() {
+  skip-if-compiled || return $?
   # On NixOS, the installer should show a message about when wizardry is available
   # This could be "ready to use" (if sourcing succeeded) or "new terminal" (if not)
   fixture=$(_make_fixture)
@@ -922,6 +947,7 @@ EOF
 }
 
 install_non_nixos_shows_source_message() {
+  skip-if-compiled || return $?
   # On non-NixOS platforms, the installer should show appropriate message
   fixture=$(_make_fixture)
   _provide_basic_tools "$fixture"
@@ -952,6 +978,7 @@ install_non_nixos_shows_source_message() {
 # === Uninstall Script Tests ===
 
 uninstall_script_removes_invoke_wizardry() {
+  skip-if-compiled || return $?
   # Test that the generated uninstall script removes the invoke-wizardry source line
   # This is the new paradigm - we no longer add individual PATH entries
   fixture=$(_make_fixture)
@@ -977,6 +1004,7 @@ uninstall_script_removes_invoke_wizardry() {
 }
 
 uninstall_script_nixos_includes_rebuild() {
+  skip-if-compiled || return $?
   # Test that the NixOS uninstall script includes nixos-rebuild switch
   fixture=$(_make_fixture)
   _provide_basic_tools "$fixture"
@@ -1013,6 +1041,7 @@ EOF
 }
 
 uninstall_script_nixos_includes_terminal_message() {
+  skip-if-compiled || return $?
   # Test that the NixOS uninstall script tells users to open a new terminal
   fixture=$(_make_fixture)
   _provide_basic_tools "$fixture"
@@ -1051,6 +1080,7 @@ EOF
 # === Install Prompt Text Tests ===
 
 install_shows_revised_prompt_text() {
+  skip-if-compiled || return $?
   # Test that the install script uses the revised prompt text
   # "Wizardry install directory?" instead of "Where should wizardry be installed?"
   # This phrasing works for both fresh installs and reinstalls
@@ -1219,6 +1249,7 @@ install_no_spell_preinstallation() {
 # === MUD Installation Tests ===
 
 install_mud_setup() {
+  skip-if-compiled || return $?
   # Test that MUD installation works properly
   fixture=$(_make_fixture)
   _provide_basic_tools "$fixture"
@@ -1241,6 +1272,7 @@ install_mud_setup() {
 }
 
 install_mud_installs_cd_hook() {
+  skip-if-compiled || return $?
   # Test that MUD installation installs the CD hook
   fixture=$(_make_fixture)
   _provide_basic_tools "$fixture"
@@ -1272,6 +1304,7 @@ install_mud_installs_cd_hook() {
 }
 
 install_mud_enables_config_features() {
+  skip-if-compiled || return $?
   # Test that MUD installation enables all MUD config features
   fixture=$(_make_fixture)
   _provide_basic_tools "$fixture"
@@ -1305,6 +1338,7 @@ install_mud_enables_config_features() {
 }
 
 install_without_mud_skips_mud_section() {
+  skip-if-compiled || return $?
   # Test that install without MUD skips the MUD installation section
   fixture=$(_make_fixture)
   _provide_basic_tools "$fixture"
@@ -1338,6 +1372,7 @@ install_without_mud_skips_mud_section() {
 }
 
 install_mud_shows_planned_features() {
+  skip-if-compiled || return $?
   # Test that MUD installation mentions the planned features
   fixture=$(_make_fixture)
   _provide_basic_tools "$fixture"

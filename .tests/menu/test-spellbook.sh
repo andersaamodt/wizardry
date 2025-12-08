@@ -94,6 +94,7 @@ STUB
 }
 
 test_errors_when_helper_missing() {
+  skip-if-compiled || return $?
   stub_dir=$(make_stub_dir)
   PATH="$ROOT_DIR/spells/cantrips:$stub_dir:/bin:/usr/bin" CAST_STORE="$stub_dir/does-not-exist" _run_spell "spells/menu/spellbook" --list
   _assert_failure || return 1
@@ -104,6 +105,7 @@ test_errors_when_helper_missing() {
 }
 
 test_lists_entries() {
+  skip-if-compiled || return $?
   stub_dir=$(make_stub_dir)
   write_memorize_command_stub "$stub_dir"
   write_require_command_stub "$stub_dir"
@@ -118,6 +120,7 @@ test_lists_entries() {
 }
 
 test_memorize_and_forget() {
+  skip-if-compiled || return $?
   stub_dir=$(make_stub_dir)
   write_memorize_command_stub "$stub_dir"
   write_require_command_stub "$stub_dir"

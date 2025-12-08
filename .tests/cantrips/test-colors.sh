@@ -19,6 +19,7 @@ test_colors_enable_palette_by_default() {
 }
 
 test_colors_disable_when_requested() {
+  skip-if-compiled || return $?
   _run_cmd env TERM=xterm NO_COLOR=1 sh -c ". \"$ROOT_DIR/spells/cantrips/colors\"; printf 'avail:%s red:%s\\n' \"\$WIZARDRY_COLORS_AVAILABLE\" \"\$RED\""
   if ! _assert_success; then return 1; fi
   case "$OUTPUT" in
@@ -44,6 +45,7 @@ test_colors_printf_s_works() {
 }
 
 test_colors_disable_for_dumb_terminal() {
+  skip-if-compiled || return $?
   # Colors should be disabled for TERM=dumb which returns -1 from tput colors
   _run_cmd env TERM=dumb sh -c ". \"$ROOT_DIR/spells/cantrips/colors\"; printf 'avail:%s green:%s\\n' \"\$WIZARDRY_COLORS_AVAILABLE\" \"\$GREEN\""
   if ! _assert_success; then return 1; fi
@@ -79,6 +81,7 @@ test_theme_colors_defined_when_enabled() {
 }
 
 test_theme_colors_cleared_when_disabled() {
+  skip-if-compiled || return $?
   # Theme colors should be empty when the palette is disabled
   _run_cmd env TERM=xterm NO_COLOR=1 sh -c ". \"$ROOT_DIR/spells/cantrips/colors\"; printf 'highlight:[%s] muted:[%s] custom:[%s]\\n' \"\$THEME_HIGHLIGHT\" \"\$THEME_MUTED\" \"\$THEME_CUSTOM\""
   if ! _assert_success; then return 1; fi
@@ -119,6 +122,7 @@ test_mud_colors_defined_when_enabled() {
 }
 
 test_mud_colors_cleared_when_disabled() {
+  skip-if-compiled || return $?
   # MUD colors should be empty when the palette is disabled
   _run_cmd env TERM=xterm NO_COLOR=1 sh -c ". \"$ROOT_DIR/spells/cantrips/colors\"; printf 'location:[%s] item:[%s] handle:[%s] spell:[%s] monster:[%s]\\n' \"\$MUD_LOCATION\" \"\$MUD_ITEM\" \"\$MUD_HANDLE\" \"\$MUD_SPELL\" \"\$MUD_MONSTER\""
   if ! _assert_success; then return 1; fi

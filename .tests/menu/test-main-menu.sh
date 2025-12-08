@@ -45,6 +45,7 @@ SH
 }
 
 test_main_menu_checks_dependency() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
@@ -53,6 +54,7 @@ test_main_menu_checks_dependency() {
 }
 
 test_main_menu_passes_expected_entries() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
@@ -73,6 +75,7 @@ SH
 }
 
 test_main_menu_fails_without_menu_dependency() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_failing_require "$tmp"
   _run_cmd env PATH="$tmp:$PATH" "$ROOT_DIR/spells/menu/main-menu"
@@ -81,6 +84,7 @@ test_main_menu_fails_without_menu_dependency() {
 }
 
 test_main_menu_shows_title() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
@@ -113,6 +117,7 @@ _run_test_case "main-menu loads colors gracefully" test_main_menu_loads_colors_g
 
 # Test ESC and Exit behavior - menu exits properly when TERM signal is sent
 test_esc_exit_behavior() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_require "$tmp"
   
@@ -147,6 +152,7 @@ _run_test_case "main-menu ESC/Exit handles nested and unnested" test_esc_exit_be
 
 # Test that MUD appears when enabled via mud-config
 test_main_menu_shows_mud_when_enabled() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
@@ -197,6 +203,7 @@ _run_test_case "main-menu accepts --help" shows_help
 
 # Test that no exit message is printed when ESC or Exit is used
 test_no_exit_message_on_esc() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
@@ -224,6 +231,7 @@ _run_test_case "main-menu no exit message on ESC" test_no_exit_message_on_esc
 
 # Test that nested menu return shows proper blank line spacing
 test_nested_menu_spacing() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   
   # Create a menu that records when it's called, and on second call sends TERM
