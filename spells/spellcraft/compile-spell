@@ -5,10 +5,18 @@
 
 show_usage() {
   cat <<'USAGE'
-Usage: compile-spell <spell-name>
+Usage: compile-spell <spell-name-or-path>
 
 Compile a spell into a standalone script by inlining all dependencies.
 The compiled spell can run without wizardry being installed.
+
+Arguments:
+  spell-name-or-path   Name of spell (e.g., "hash") or path (e.g., "spells/cantrips/hash")
+
+Examples:
+  compile-spell hash                      # Find by name
+  compile-spell spells/cantrips/hash      # Use path
+  compile-spell ./my-custom-spell         # Current directory
 USAGE
 }
 
@@ -33,8 +41,30 @@ script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 repo_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd -P)
 imps_dir="$repo_dir/spells/.imps"
 
-# Find spell recursively (include imps and .arcana)
-spell_path=$(find "$repo_dir/spells" -type f -name "$spell_name" 2>/dev/null | head -1)
+# Determine if input is a path or just a name
+spell_path=""
+case "$spell_name" in
+  */*) 
+    # Contains slash - treat as path (relative or absolute)
+    if [ -f "$spell_name" ]; then
+      # Absolute or relative path that exists
+      spell_path="$spell_name"
+    elif [ -f "$repo_dir/$spell_name" ]; then
+      # Relative to repo root
+      spell_path="$repo_dir/$spell_name"
+    fi
+    ;;
+  *)
+    # No slash - treat as spell name, search for it
+    # First try current directory
+    if [ -f "$spell_name" ]; then
+      spell_path="$spell_name"
+    else
+      # Find spell recursively (include imps and .arcana)
+      spell_path=$(find "$repo_dir/spells" -type f -name "$spell_name" 2>/dev/null | head -1)
+    fi
+    ;;
+esac
 
 if [ -z "$spell_path" ] || [ ! -f "$spell_path" ]; then
   printf '%s\n' "compile-spell: spell '$spell_name' not found" >&2
