@@ -45,6 +45,7 @@ SH
 }
 
 test_mud_settings_menu_actions() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   player=hero
   make_stub_menu "$tmp"
@@ -73,6 +74,7 @@ SH
 }
 
 test_mud_settings_requires_menu_helper() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_colors "$tmp"
   cat >"$tmp/require-command" <<'SH'

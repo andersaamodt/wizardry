@@ -31,6 +31,7 @@ SH
 }
 
 test_services_menu_checks_dependencies() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
@@ -39,6 +40,7 @@ test_services_menu_checks_dependencies() {
 }
 
 test_services_menu_presents_actions() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
@@ -63,6 +65,7 @@ _run_test_case "services-menu sends service actions to menu" test_services_menu_
 
 # Test ESC and Exit behavior - menu exits properly when escape status returned
 test_esc_exit_behavior() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
@@ -89,6 +92,7 @@ SH
 _run_test_case "services-menu ESC/Exit behavior" test_esc_exit_behavior
 
 test_shows_help() {
+  skip-if-compiled || return $?
   _run_cmd "$ROOT_DIR/spells/menu/services-menu" --help
   _assert_success
   _assert_output_contains "Usage: services-menu"

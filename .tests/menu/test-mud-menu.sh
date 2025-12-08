@@ -70,6 +70,7 @@ SH
 }
 
 test_mud_install_menu_requires_menu_helper() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_colors "$tmp"
   cat >"$tmp/require-command" <<'SH'

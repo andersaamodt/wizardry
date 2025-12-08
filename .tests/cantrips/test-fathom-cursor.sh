@@ -31,6 +31,7 @@ normalize_output() {
 
 # emits both axes when none requested
 reports_both_axes() {
+  skip-if-compiled || return $?
   resp=$(make_response 12 34)
   run_fathom "$resp"
   [ "$STATUS" -eq 0 ] || return 1
@@ -42,6 +43,7 @@ reports_both_axes() {
 
 # supports single axis selection
 selects_single_axis() {
+  skip-if-compiled || return $?
   resp=$(make_response 5 9)
   run_fathom "$resp" -x
   [ "$STATUS" -eq 0 ] || return 1
@@ -60,6 +62,7 @@ selects_single_axis() {
 
 # adds labels when verbose
 prints_verbose_labels() {
+  skip-if-compiled || return $?
   resp=$(make_response 7 11)
   run_fathom "$resp" --verbose
   [ "$STATUS" -eq 0 ] || return 1
@@ -71,6 +74,7 @@ prints_verbose_labels() {
 
 # fails on malformed responses
 fails_on_invalid_response() {
+  skip-if-compiled || return $?
   bad=$(mktemp "${WIZARDRY_TMPDIR}/fathom-cursor.XXXXXX")
   printf 'junk' >"$bad"
   run_fathom "$bad"

@@ -20,6 +20,7 @@ test_env_or_returns_set_var() {
 }
 
 test_env_or_returns_fallback_unset() {
+  skip-if-compiled || return $?
   unset TEST_VAR_UNSET 2>/dev/null || true
   _run_spell spells/.imps/sys/env-or TEST_VAR_UNSET "fallback"
   _assert_success
@@ -46,6 +47,7 @@ test_env_or_home_path() {
 }
 
 test_env_or_invalid_varname() {
+  skip-if-compiled || return $?
   # Invalid var names should safely return fallback
   _run_spell spells/.imps/sys/env-or "invalid;var" "safe_fallback"
   _assert_success

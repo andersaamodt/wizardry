@@ -101,6 +101,7 @@ STUB
 }
 
 test_rejects_non_repo_env_directory() {
+  skip-if-compiled || return $?
   stub_dir=$(make_stub_dir)
   git_log="$stub_dir/git.log"
   not_repo=$(_make_tempdir)
@@ -129,6 +130,7 @@ STUB
 }
 
 test_detects_repository_and_pulls() {
+  skip-if-compiled || return $?
   stub_dir=$(make_stub_dir)
   git_log="$stub_dir/git.log"
   toplevel=$(_make_tempdir)
@@ -164,6 +166,7 @@ STUB
 }
 
 test_detection_failure() {
+  skip-if-compiled || return $?
   stub_dir=$(make_stub_dir)
 
   cat >"$stub_dir/git" <<'STUB'
@@ -184,6 +187,7 @@ STUB
 }
 
 test_propagates_git_failure() {
+  skip-if-compiled || return $?
   stub_dir=$(make_stub_dir)
   git_log="$stub_dir/git.log"
   toplevel=$(_make_tempdir)

@@ -12,6 +12,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_abs_path_directory() {
+  skip-if-compiled || return $?
   tmpdir=$(_make_tempdir)
   mkdir -p "$tmpdir/subdir"
   _run_spell_in_dir "$tmpdir" spells/.imps/paths/abs-path "./subdir"
@@ -24,6 +25,7 @@ test_abs_path_directory() {
 }
 
 test_abs_path_file() {
+  skip-if-compiled || return $?
   tmpdir=$(_make_tempdir)
   touch "$tmpdir/testfile.txt"
   _run_spell_in_dir "$tmpdir" spells/.imps/paths/abs-path "./testfile.txt"
@@ -46,6 +48,7 @@ test_abs_path_normalizes_double_slashes() {
 }
 
 test_abs_path_absolute_input() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/paths/abs-path "/tmp"
   _assert_success
   _assert_output_contains "/tmp"

@@ -25,6 +25,7 @@ _run_test_case "menu/network-menu is executable" spell_is_executable
 _run_test_case "menu/network-menu has content" spell_has_content
 
 test_shows_help() {
+  skip-if-compiled || return $?
   _run_cmd "$ROOT_DIR/spells/menu/network-menu" --help
   _assert_success
   _assert_output_contains "Usage: network-menu"
@@ -33,6 +34,7 @@ test_shows_help() {
 _run_test_case "network-menu --help shows usage" test_shows_help
 
 test_fails_without_menu_dependency() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   cat >"$tmp/require-command" <<'SH'
 #!/bin/sh

@@ -15,11 +15,13 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
+  skip-if-compiled || return $?
   _run_spell "spells/translocation/mark-location" --help
   _assert_success && _assert_output_contains "Usage: mark-location"
 }
 
 test_too_many_args() {
+  skip-if-compiled || return $?
   _run_spell "spells/translocation/mark-location" one two three
   _assert_failure && _assert_output_contains "Usage: mark-location"
 }

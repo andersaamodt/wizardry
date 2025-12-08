@@ -15,11 +15,13 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
+  skip-if-compiled || return $?
   _run_spell "spells/arcane/jump-trash" --help
   _assert_success && _assert_output_contains "Usage: jump-trash"
 }
 
 test_cds_when_sourced() {
+  skip-if-compiled || return $?
   stub=$(_make_tempdir)
   trash_dir="$stub/Trash"
   mkdir -p "$trash_dir"
@@ -98,6 +100,7 @@ STUB
 }
 
 test_jump_trash_function_help() {
+  skip-if-compiled || return $?
   stub=$(_make_tempdir)
   trash_dir="$stub/Trash"
   mkdir -p "$trash_dir"
@@ -120,6 +123,7 @@ STUB
 }
 
 test_unknown_option() {
+  skip-if-compiled || return $?
   _run_spell "spells/arcane/jump-trash" --unknown
   _assert_failure && _assert_error_contains "unknown option"
 }

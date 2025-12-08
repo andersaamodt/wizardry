@@ -111,6 +111,7 @@ test_errors_when_helper_missing() {
 }
 
 test_shows_usage_with_help() {
+  skip-if-compiled || return $?
   stub_dir=$(make_stub_dir)
   write_memorize_command_stub "$stub_dir"
   PATH="$stub_dir:$PATH" _run_spell "spells/menu/spell-menu" --help
@@ -122,6 +123,7 @@ test_shows_usage_with_help() {
 }
 
 test_requires_minimum_arguments() {
+  skip-if-compiled || return $?
   stub_dir=$(make_stub_dir)
   write_memorize_command_stub "$stub_dir"
   write_require_command_stub "$stub_dir"
@@ -135,6 +137,7 @@ test_requires_minimum_arguments() {
 }
 
 test_cast_action_executes_command() {
+  skip-if-compiled || return $?
   stub_dir=$(make_stub_dir)
   write_memorize_command_stub "$stub_dir"
   PATH="$stub_dir:$PATH" _run_spell "spells/menu/spell-menu" --cast "echo hello"
@@ -151,6 +154,7 @@ _run_test_case "spell-menu --cast executes command" test_cast_action_executes_co
 
 # Test ESC and Exit behavior - menu exits properly when escape status returned
 test_esc_exit_behavior() {
+  skip-if-compiled || return $?
   stub_dir=$(make_stub_dir)
   write_memorize_command_stub "$stub_dir"
   write_require_command_stub "$stub_dir"
@@ -186,6 +190,7 @@ _run_test_case "spell-menu ESC/Exit behavior" test_esc_exit_behavior
 
 # Test that toggle selection keeps cursor position, other actions reset to first item
 test_toggle_keeps_cursor_position() {
+  skip-if-compiled || return $?
   stub_dir=$(make_stub_dir)
   write_memorize_command_stub "$stub_dir"
   write_require_command_stub "$stub_dir"
@@ -263,6 +268,7 @@ _run_test_case "spell-menu toggle keeps cursor position" test_toggle_keeps_curso
 
 # Test that non-toggle actions reset cursor to first item
 test_non_toggle_resets_cursor() {
+  skip-if-compiled || return $?
   stub_dir=$(make_stub_dir)
   write_memorize_command_stub "$stub_dir"
   write_require_command_stub "$stub_dir"

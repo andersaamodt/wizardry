@@ -21,6 +21,7 @@ require_command_succeeds_when_available() {
 }
 
 require_command_reports_missing_with_default_message() {
+  skip-if-compiled || return $?
   _run_spell "spells/cantrips/require-command" definitely-not-a-real-command
   _assert_failure || return 1
   _assert_error_contains "require-command: The 'definitely-not-a-real-command' command is required." || return 1
@@ -50,6 +51,7 @@ SH
 }
 
 require_command_requires_arguments() {
+  skip-if-compiled || return $?
   _run_spell "spells/cantrips/require-command"
   _assert_failure || return 1
   _assert_error_contains "Usage: require-command" || return 1

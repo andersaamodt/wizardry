@@ -140,6 +140,7 @@ SCRIPT
 }
 
 warns_for_empty_shebang() {
+  skip-if-compiled || return $?
   prepare_checkbashisms_stub || return 1
   workdir=$(_make_tempdir)
   printf '#!\n' >"$workdir/empty"

@@ -30,6 +30,7 @@ SH
 }
 
 mud_requires_menu_dependency() {
+  skip-if-compiled || return $?
   stub_dir=$(_make_tempdir)
   cat <<'STUB' >"$stub_dir/require-command"
 #!/bin/sh
@@ -48,6 +49,7 @@ spell_is_executable() {
 }
 
 test_mud_presents_navigation_options() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
@@ -80,6 +82,7 @@ SH
 }
 
 test_mud_presents_admin_options() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
@@ -103,6 +106,7 @@ SH
 }
 
 test_mud_shows_menu_title() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
@@ -123,6 +127,7 @@ SH
 
 # Test ESC and Exit behavior - menu exits properly when escape status returned
 test_esc_exit_behavior() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"

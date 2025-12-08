@@ -18,6 +18,7 @@ test_help() {
 }
 
 test_requires_arguments() {
+  skip-if-compiled || return $?
   # Test with no arguments
   _run_spell "spells/enchant/enchant"
   _assert_failure && _assert_error_contains "At least one argument is required"

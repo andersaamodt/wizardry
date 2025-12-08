@@ -17,6 +17,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
+  skip-if-compiled || return $?
 _run_spell "spells/system/update-all" --help
   _assert_success && _assert_output_contains "Usage: update-all"
 }
@@ -30,6 +31,7 @@ test_argument_validation() {
 }
 
 test_missing_confirmation_helper() {
+  skip-if-compiled || return $?
   _run_cmd env PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:/bin:/usr/bin" WIZARDRY_UPDATE_ALL_DISTRO=debian "$(pwd)/spells/system/update-all"
   _assert_failure
   _assert_output_contains "Detected platform: debian"
@@ -37,6 +39,7 @@ test_missing_confirmation_helper() {
 }
 
 test_user_declines_updates() {
+  skip-if-compiled || return $?
   stub_dir=$(mktemp -d "$WIZARDRY_TMPDIR/update-all.decline.XXXXXX")
 
   cat >"$stub_dir/ask-yn" <<'EOF'
@@ -52,6 +55,7 @@ EOF
 }
 
 test_unsupported_platform() {
+  skip-if-compiled || return $?
   temp_dir=$(_make_tempdir)
   cp "$(pwd)/spells/system/update-all" "$temp_dir/update-all"
   cat >"$temp_dir/detect-distro" <<'EOF'
@@ -69,6 +73,7 @@ EOF
 }
 
 test_debian_update_flow() {
+  skip-if-compiled || return $?
   stub_dir=$(mktemp -d "$WIZARDRY_TMPDIR/update-all.XXXXXX")
   log="$stub_dir/log"
 
@@ -98,6 +103,7 @@ EOF
 }
 
 test_debian_update_failure_propagates() {
+  skip-if-compiled || return $?
   stub_dir=$(mktemp -d "$WIZARDRY_TMPDIR/update-all.fail.XXXXXX")
   log="$stub_dir/log"
 
@@ -126,6 +132,7 @@ EOF
 }
 
 test_arch_update_flow() {
+  skip-if-compiled || return $?
   stub_dir=$(mktemp -d "$WIZARDRY_TMPDIR/update-all.arch.XXXXXX")
   log="$stub_dir/log"
 
@@ -161,6 +168,7 @@ EOF
 }
 
 test_nixos_update_flow() {
+  skip-if-compiled || return $?
   stub_dir=$(mktemp -d "$WIZARDRY_TMPDIR/update-all.nixos.XXXXXX")
   log="$stub_dir/log"
 

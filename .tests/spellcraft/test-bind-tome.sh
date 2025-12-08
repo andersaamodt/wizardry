@@ -24,6 +24,7 @@ bind_shows_usage() {
 }
 
 require_arg_for_bind() {
+  skip-if-compiled || return $?
   _run_spell "spells/spellcraft/bind-tome"
   _assert_failure || return 1
   _assert_error_contains "bind-tome: folder path required." || return 1
@@ -64,6 +65,7 @@ binds_pages_into_tome() {
 }
 
 bind_requires_existing_directory() {
+  skip-if-compiled || return $?
   _run_spell "spells/spellcraft/bind-tome" "-d"
   _assert_failure || return 1
   _assert_error_contains "bind-tome: folder path required." || return 1

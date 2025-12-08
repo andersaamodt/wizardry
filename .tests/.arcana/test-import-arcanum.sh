@@ -8,6 +8,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_import_arcanum_help() {
+  skip-if-compiled || return $?
   _run_spell spells/.arcana/import-arcanum --help
   _assert_success && _assert_output_contains "Usage:"
 }

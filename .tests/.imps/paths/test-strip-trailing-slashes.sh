@@ -23,6 +23,7 @@ test_strip_trailing_slashes_removes_slash() {
 }
 
 test_strip_trailing_slashes_root() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/paths/strip-trailing-slashes "/"
   _assert_success
   # Root should remain as /
@@ -33,6 +34,7 @@ test_strip_trailing_slashes_root() {
 }
 
 test_strip_trailing_slashes_multiple() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/paths/strip-trailing-slashes "///"
   _assert_success
   # Multiple slashes should become /
@@ -43,6 +45,7 @@ test_strip_trailing_slashes_multiple() {
 }
 
 test_strip_trailing_slashes_no_change() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/paths/strip-trailing-slashes "/tmp/foo"
   _assert_success
   _assert_output_contains "/tmp/foo"

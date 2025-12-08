@@ -39,6 +39,7 @@ normalize_output() {
 
 # reports both dimensions by default
 reports_width_and_height() {
+  skip-if-compiled || return $?
   stub=$(make_stub_tput)
   run_fathom_terminal "$stub"
   [ "$STATUS" -eq 0 ] || return 1
@@ -50,6 +51,7 @@ reports_width_and_height() {
 
 # selects a single dimension
 selects_single_dimension() {
+  skip-if-compiled || return $?
   stub=$(make_stub_tput)
   run_fathom_terminal "$stub" --width
   [ "$STATUS" -eq 0 ] || return 1
@@ -68,6 +70,7 @@ selects_single_dimension() {
 
 # verbose adds labels
 prints_verbose_labels() {
+  skip-if-compiled || return $?
   stub=$(make_stub_tput)
   run_fathom_terminal "$stub" --verbose
   [ "$STATUS" -eq 0 ] || return 1

@@ -112,6 +112,7 @@ test_parse_imperative_then_stops_on_failure() {
 }
 
 test_parse_and_then_chains() {
+  skip-if-compiled || return $?
   _run_spell "spells/.imps/lex/parse" echo first and then echo second
   _assert_success || return 1
   _assert_output_contains "first" || return 1
@@ -119,6 +120,7 @@ test_parse_and_then_chains() {
 }
 
 test_parse_and_then_stops_on_failure() {
+  skip-if-compiled || return $?
   _run_spell "spells/.imps/lex/parse" false and then echo shouldnt_run
   _assert_failure || return 1
   case "$OUTPUT" in

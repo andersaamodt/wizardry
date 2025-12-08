@@ -32,6 +32,7 @@ SH
 }
 
 test_install_menu_prefers_install_root_commands() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_menu_env "$tmp"
   make_stub_require "$tmp"
@@ -88,6 +89,7 @@ SH
 }
 
 test_install_menu_errors_when_empty() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_menu_env "$tmp"
   make_stub_require "$tmp"
@@ -96,6 +98,7 @@ test_install_menu_errors_when_empty() {
 }
 
 test_install_menu_builds_entries_with_status() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_menu_env "$tmp"
   make_stub_require "$tmp"
@@ -126,6 +129,7 @@ _run_test_case "install-menu prefers spells in the install root" test_install_me
 
 # Test ESC and Exit behavior - menu exits properly when escape status returned
 test_esc_exit_behavior() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_menu_env "$tmp"
   make_stub_require "$tmp"
@@ -185,6 +189,7 @@ _run_test_case "install-menu accepts --help" shows_help
 
 # Test that no exit message is printed when ESC or Exit is used
 test_no_exit_message_on_esc() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_menu_env "$tmp"
   make_stub_require "$tmp"
@@ -220,6 +225,7 @@ _run_test_case "install-menu no exit message on ESC" test_no_exit_message_on_esc
 
 # Test that nested menu return shows proper blank line spacing
 test_nested_menu_spacing() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   
   # Create a menu that records when it's called, and on second call sends TERM
@@ -264,6 +270,7 @@ _run_test_case "install-menu nested spacing behavior" test_nested_menu_spacing
 
 # Test that import-arcanum appears in menu with divider
 test_import_arcanum_in_menu() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_menu_env "$tmp"
   make_stub_require "$tmp"

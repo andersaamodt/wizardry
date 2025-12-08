@@ -49,6 +49,7 @@ test_help() {
 }
 
 test_requires_file_argument() {
+  skip-if-compiled || return $?
   _run_spell "spells/menu/priority-menu"
   _assert_failure || return 1
   _assert_error_contains "file path required" || return 1
@@ -67,6 +68,7 @@ test_help_usage_flag() {
 }
 
 test_priority_menu_presents_actions() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
@@ -108,6 +110,7 @@ SH
 }
 
 test_priority_menu_shows_filename_in_title() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
@@ -133,6 +136,7 @@ SH
 }
 
 test_priority_menu_shows_uncheck_when_checked() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
@@ -176,6 +180,7 @@ _run_test_case "priority-menu shows uncheck when checked" test_priority_menu_sho
 
 # Test ESC and Exit behavior - menu exits properly when escape status returned
 test_esc_exit_behavior() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"

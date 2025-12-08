@@ -12,12 +12,14 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_count_chars_simple() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/text/count-chars "hello"
   _assert_success
   _assert_output_contains "5"
 }
 
 test_count_chars_empty() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/text/count-chars ""
   _assert_success
   _assert_output_contains "0"

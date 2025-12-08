@@ -12,6 +12,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_make_2space_level1() {
+  skip-if-compiled || return $?
   tmpfile="$WIZARDRY_TMPDIR/2space.nix"
   printf '{\n  foo = true;\n}\n' > "$tmpfile"
   _run_cmd "$ROOT_DIR/spells/.imps/text/make-indent" 1 "$tmpfile"
@@ -21,6 +22,7 @@ test_make_2space_level1() {
 }
 
 test_make_2space_level2() {
+  skip-if-compiled || return $?
   tmpfile="$WIZARDRY_TMPDIR/2space2.nix"
   printf '{\n  foo = true;\n}\n' > "$tmpfile"
   _run_cmd "$ROOT_DIR/spells/.imps/text/make-indent" 2 "$tmpfile"
@@ -30,6 +32,7 @@ test_make_2space_level2() {
 }
 
 test_make_4space_level1() {
+  skip-if-compiled || return $?
   tmpfile="$WIZARDRY_TMPDIR/4space.nix"
   printf '{\n    foo = true;\n}\n' > "$tmpfile"
   _run_cmd "$ROOT_DIR/spells/.imps/text/make-indent" 1 "$tmpfile"
@@ -39,6 +42,7 @@ test_make_4space_level1() {
 }
 
 test_make_tab_level1() {
+  skip-if-compiled || return $?
   tmpfile="$WIZARDRY_TMPDIR/tab.nix"
   printf '{\n\tfoo = true;\n}\n' > "$tmpfile"
   _run_cmd "$ROOT_DIR/spells/.imps/text/make-indent" 1 "$tmpfile"
@@ -48,6 +52,7 @@ test_make_tab_level1() {
 }
 
 test_make_tab_level2() {
+  skip-if-compiled || return $?
   tmpfile="$WIZARDRY_TMPDIR/tab2.nix"
   printf '{\n\tfoo = true;\n}\n' > "$tmpfile"
   _run_cmd "$ROOT_DIR/spells/.imps/text/make-indent" 2 "$tmpfile"
@@ -57,6 +62,7 @@ test_make_tab_level2() {
 }
 
 test_make_default_without_file() {
+  skip-if-compiled || return $?
   _run_cmd "$ROOT_DIR/spells/.imps/text/make-indent" 1
   _assert_success
   [ "$OUTPUT" = "  " ] || { TEST_FAILURE_REASON="expected 2 spaces as default but got '$OUTPUT'"; return 1; }

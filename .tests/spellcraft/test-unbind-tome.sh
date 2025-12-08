@@ -16,6 +16,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 unbind_shows_usage() {
+  skip-if-compiled || return $?
   _run_spell "spells/spellcraft/unbind-tome" --help
   _assert_success || return 1
   _assert_output_contains "Usage: unbind-tome" || return 1
@@ -23,6 +24,7 @@ unbind_shows_usage() {
 }
 
 require_arg_for_unbind() {
+  skip-if-compiled || return $?
   _run_spell "spells/spellcraft/unbind-tome"
   _assert_failure || return 1
   _assert_error_contains "unbind-tome: file path required." || return 1

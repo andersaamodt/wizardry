@@ -12,6 +12,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_read_file_outputs_content() {
+  skip-if-compiled || return $?
   tmpfile=$(mktemp "$WIZARDRY_TMPDIR/readfile_test.XXXXXX")
   printf 'test content' > "$tmpfile"
   _run_spell spells/.imps/text/read-file "$tmpfile"

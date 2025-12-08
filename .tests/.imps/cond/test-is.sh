@@ -74,6 +74,7 @@ test_is_empty_file() {
 }
 
 test_is_empty_fails_for_nonempty_file() {
+  skip-if-compiled || return $?
   tmpfile=$(mktemp "$WIZARDRY_TMPDIR/testfile.XXXXXX")
   printf 'content' > "$tmpfile"
   _run_spell spells/.imps/cond/is empty "$tmpfile"
@@ -92,6 +93,7 @@ test_is_link() {
 }
 
 test_is_link_fails_for_file() {
+  skip-if-compiled || return $?
   tmpfile=$(mktemp "$WIZARDRY_TMPDIR/testfile.XXXXXX")
   _run_spell spells/.imps/cond/is link "$tmpfile"
   rm -f "$tmpfile"
@@ -120,6 +122,7 @@ test_is_empty_dir() {
 }
 
 test_is_empty_dir_fails_when_not_empty() {
+  skip-if-compiled || return $?
   tmpdir=$(mktemp -d "$WIZARDRY_TMPDIR/testdir.XXXXXX")
   touch "$tmpdir/file"
   _run_spell spells/.imps/cond/is empty "$tmpdir"
@@ -143,6 +146,7 @@ test_is_unset_fails_for_nonempty() {
 }
 
 test_is_unknown_type_fails() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/cond/is unknowntype "/tmp"
   _assert_failure
 }
