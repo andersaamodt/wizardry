@@ -90,6 +90,12 @@ for dep in $dependencies; do
   # Skip require-wizardry - doesn't make sense in standalone
   [ "$dep" = "require-wizardry" ] && continue
   
+  # Skip interactive spells - they must remain external for test stubbing
+  # These contain terminal I/O code that can't be stubbed when inlined
+  case "$dep" in
+    ask-number|ask-yn|ask-text|await-keypress|select-input|read-line|tty-*) continue ;;
+  esac
+  
   # Skip if already inlined
   case " $inlined_names " in
     *" $dep "*) continue ;;
