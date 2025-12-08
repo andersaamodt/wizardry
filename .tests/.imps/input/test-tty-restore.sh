@@ -15,12 +15,14 @@ done
 # In CI environments without a TTY, we mainly test error handling
 
 test_tty_restore_no_args_fails() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/input/tty-restore
   _assert_failure
   _assert_error_contains "state required"
 }
 
 test_tty_restore_empty_state_fails() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/input/tty-restore ""
   _assert_failure
   _assert_error_contains "state required"

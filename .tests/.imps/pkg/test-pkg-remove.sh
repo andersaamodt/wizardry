@@ -12,12 +12,14 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_pkg_remove_no_package_fails() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/pkg/pkg-remove
   _assert_failure
   _assert_error_contains "package name required"
 }
 
 test_pkg_remove_empty_package_fails() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/pkg/pkg-remove ""
   _assert_failure
   _assert_error_contains "package name required"

@@ -12,6 +12,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_sed_inplace_substitutes() {
+  skip-if-compiled || return $?
   tmpfile=$(mktemp "$WIZARDRY_TMPDIR/testfile.XXXXXX")
   printf 'hello world' > "$tmpfile"
   _run_spell spells/.imps/fs/sed-inplace 's/world/universe/' "$tmpfile"
@@ -22,6 +23,7 @@ test_sed_inplace_substitutes() {
 }
 
 test_sed_inplace_global() {
+  skip-if-compiled || return $?
   tmpfile=$(mktemp "$WIZARDRY_TMPDIR/testfile.XXXXXX")
   printf 'foo foo foo' > "$tmpfile"
   _run_spell spells/.imps/fs/sed-inplace 's/foo/bar/g' "$tmpfile"
@@ -32,21 +34,25 @@ test_sed_inplace_global() {
 }
 
 test_sed_inplace_missing_file_fails() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/fs/sed-inplace 's/a/b/' "/nonexistent/file"
   _assert_failure
 }
 
 test_sed_inplace_no_pattern_fails() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/fs/sed-inplace
   _assert_failure
 }
 
 test_sed_inplace_no_file_fails() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/fs/sed-inplace 's/a/b/'
   _assert_failure
 }
 
 test_sed_inplace_directory_fails() {
+  skip-if-compiled || return $?
   tmpdir=$(mktemp -d "$WIZARDRY_TMPDIR/testdir.XXXXXX")
   _run_spell spells/.imps/fs/sed-inplace 's/a/b/' "$tmpdir"
   rmdir "$tmpdir"

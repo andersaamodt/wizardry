@@ -44,9 +44,22 @@ binds_pages_into_tome() {
 
   [ -f "$workdir/pages.txt" ] || { TEST_FAILURE_REASON="tome not created"; return 1; }
   content=$(cat "$workdir/pages.txt")
+  # New centered format: # -------- filename --------
   case "$content" in
-    *"----- first -----"*"alpha rune"*"End of first"*"----- second -----"*"beta glyph"*"End of second"*) ;;
-    *) TEST_FAILURE_REASON="tome content missing expected sections"; return 1 ;;
+    *"# "*" first "*|*"# -"*"- first -"*) ;;
+    *) TEST_FAILURE_REASON="tome content missing first separator"; return 1 ;;
+  esac
+  case "$content" in
+    *"alpha rune"*) ;;
+    *) TEST_FAILURE_REASON="tome content missing first content"; return 1 ;;
+  esac
+  case "$content" in
+    *"# "*" second "*|*"# -"*"- second -"*) ;;
+    *) TEST_FAILURE_REASON="tome content missing second separator"; return 1 ;;
+  esac
+  case "$content" in
+    *"beta glyph"*) ;;
+    *) TEST_FAILURE_REASON="tome content missing second content"; return 1 ;;
   esac
 }
 

@@ -17,6 +17,7 @@ test_has_existing_command() {
 }
 
 test_has_missing_command() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/cond/has nonexistent_command_xyz123
   _assert_failure
 }

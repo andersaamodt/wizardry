@@ -12,6 +12,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_temp_file_creates_file() {
+  skip-if-compiled || return $?
   # Run temp-file and check that the resulting file exists (within sandbox)
   _run_cmd sh -c 'f=$("'"$ROOT_DIR"'/spells/.imps/fs/temp-file") && [ -f "$f" ] && rm -f "$f" && printf "ok"'
   _assert_success || return 1
@@ -19,6 +20,7 @@ test_temp_file_creates_file() {
 }
 
 test_temp_file_creates_unique_files() {
+  skip-if-compiled || return $?
   # Run temp-file twice and verify files are unique
   _run_cmd sh -c 'f1=$("'"$ROOT_DIR"'/spells/.imps/fs/temp-file") && f2=$("'"$ROOT_DIR"'/spells/.imps/fs/temp-file") && [ "$f1" != "$f2" ] && rm -f "$f1" "$f2" && printf "ok"'
   _assert_success || return 1
@@ -26,6 +28,7 @@ test_temp_file_creates_unique_files() {
 }
 
 test_temp_file_with_prefix() {
+  skip-if-compiled || return $?
   # Check that custom prefix is used in the path
   _run_cmd sh -c 'f=$("'"$ROOT_DIR"'/spells/.imps/fs/temp-file" myprefix) && case "$f" in */myprefix.*) rm -f "$f"; printf "ok";; *) printf "bad: %s" "$f"; exit 1;; esac'
   _assert_success || return 1
@@ -33,6 +36,7 @@ test_temp_file_with_prefix() {
 }
 
 test_temp_file_default_prefix() {
+  skip-if-compiled || return $?
   # Check that default prefix 'wizardry' is used
   _run_cmd sh -c 'f=$("'"$ROOT_DIR"'/spells/.imps/fs/temp-file") && case "$f" in */wizardry.*) rm -f "$f"; printf "ok";; *) printf "bad: %s" "$f"; exit 1;; esac'
   _assert_success || return 1

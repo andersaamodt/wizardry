@@ -1,4 +1,5 @@
 #!/bin/sh
+# COMPILED_UNSUPPORTED: requires wizardry infrastructure (look, ask-yn, detect-rc-file)
 # Behavioral cases (derived from spell behavior):
 # - cd installs rc hook when user agrees
 # - cd skips installation and still casts look after successful directory change

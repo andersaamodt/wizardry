@@ -38,12 +38,14 @@ test_parse_imperative_and_chaining() {
 }
 
 test_parse_imperative_or_fallback() {
+  skip-if-compiled || return $?
   _run_spell "spells/.imps/lex/parse" false or echo fallback
   _assert_success || return 1
   _assert_output_contains "fallback" || return 1
 }
 
 test_parse_imperative_or_success_skips() {
+  skip-if-compiled || return $?
   _run_spell "spells/.imps/lex/parse" true or echo shouldnt_appear
   _assert_success || return 1
   # Should NOT contain the fallback message

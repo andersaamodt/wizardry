@@ -12,6 +12,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_backup_nix_config_creates_backup() {
+  skip-if-compiled || return $?
   tmpdir=$(_make_tempdir)
   nix_file="$tmpdir/test.nix"
   printf '{ }\n' > "$nix_file"
@@ -32,6 +33,7 @@ test_backup_nix_config_creates_backup() {
 }
 
 test_backup_nix_config_notifies_user() {
+  skip-if-compiled || return $?
   tmpdir=$(_make_tempdir)
   nix_file="$tmpdir/test.nix"
   printf '{ }\n' > "$nix_file"
@@ -57,6 +59,7 @@ test_backup_nix_config_no_args_fails() {
 }
 
 test_backup_nix_config_timestamp_suffix() {
+  skip-if-compiled || return $?
   tmpdir=$(_make_tempdir)
   nix_file="$tmpdir/test.nix"
   printf '{ }\n' > "$nix_file"
@@ -77,6 +80,7 @@ test_backup_nix_config_timestamp_suffix() {
 }
 
 test_backup_nix_config_preserves_content() {
+  skip-if-compiled || return $?
   tmpdir=$(_make_tempdir)
   nix_file="$tmpdir/test.nix"
   original_content='{ pkgs, ... }: { programs.bash.enable = true; }'

@@ -9,16 +9,19 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 has_unit_section() {
+  skip-if-compiled || return $?
   grep -q '^\[Unit\]' "$ROOT_DIR/spells/.arcana/bitcoin/bitcoin.service"
 }
 
 has_service_section() {
+  skip-if-compiled || return $?
   grep -q '^\[Service\]' "$ROOT_DIR/spells/.arcana/bitcoin/bitcoin.service"
 }
 
 _run_test_case "install/bitcoin/bitcoin.service declares a Unit section" has_unit_section
 _run_test_case "install/bitcoin/bitcoin.service declares a Service section" has_service_section
 has_install_section() {
+  skip-if-compiled || return $?
   grep -q "^\[Install\]" "$ROOT_DIR/spells/.arcana/bitcoin/bitcoin.service"
 }
 

@@ -2,27 +2,60 @@
 # spell-menu - Display action menu for a spell or custom command
 # Shows options: Cast now, Memorize/Forget, Help, Test spell, Delete (for custom)
 
-require-wizardry || exit 1
+# Self-healing: Create spellbook directory if missing
+create_spellbook_if_missing() {
+        spellbook_dir="${XDG_DATA_HOME:-$HOME/.local/share}/wizardry/spellbook"
+        if ! [ -d "$spellbook_dir" ]; then
+                mkdir -p "$spellbook_dir" 2>/dev/null || {
+                        spellbook_dir="${TMPDIR:-/tmp}/wizardry-spellbook-$$"
+                        mkdir -p "$spellbook_dir"
+                }
+        fi
+        printf '%s' "$spellbook_dir"
+}
 
 # Catch Ctrl-C and TERM signal to exit cleanly
 trap 'exit 0' INT TERM
 
 # Load color palette (colors handles terminal capability detection internally)
-# shellcheck source=/dev/null
-. "$(command -v colors)"
-
-cast_store=${CAST_STORE-memorize}
-if cast_store_path=$(command -v "$cast_store" 2>/dev/null); then
-        cast_store=$cast_store_path
+# Provide fallback if colors not available
+if command -v colors >/dev/null 2>&1; then
+        # shellcheck source=/dev/null
+        . "$(command -v colors)"
 else
-        printf '%s\n' "spell-menu: memorize helper is missing." >&2
-        exit 1
+        # Minimal fallback - define color functions as no-ops
+        reset() { :; }
+        bold() { :; }
+        dim() { :; }
+        red() { :; }
+        green() { :; }
+        yellow() { :; }
+        blue() { :; }
+        magenta() { :; }
+        cyan() { :; }
 fi
 
-spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+# Get spell home directory with fallback
+if command -v env-or >/dev/null 2>&1; then
+        spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+else
+        spell_home="${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}"
+fi
+[ -d "$spell_home" ] || mkdir -p "$spell_home" 2>/dev/null || spell_home=$(create_spellbook_if_missing)
 
 cast_list() {
-        "$cast_store" list
+        if command -v memorize >/dev/null 2>&1; then
+                memorize list
+        else
+                # Fallback: list files directly from spellbook
+                cast_dir=$(create_spellbook_if_missing)
+                for f in "$cast_dir"/*; do
+                        [ -f "$f" ] || continue
+                        name=$(basename "$f")
+                        cmd=$(cat "$f" 2>/dev/null || printf '')
+                        [ -n "$cmd" ] && printf '%s\t%s\n' "$name" "$cmd"
+                done
+        fi
 }
 
 is_memorized() {
@@ -40,12 +73,12 @@ ENTRIES
 do_memorize() {
         mem_name=$1
         shift
-        "$cast_store" add "$mem_name" "$@"
+        memorize add "$mem_name" "$@"
 }
 
 do_forget() {
         mem_name=$1
-        "$cast_store" remove "$mem_name"
+        memorize remove "$mem_name"
 }
 
 # Check if a script is a custom spell (user-created, not a built-in spell)

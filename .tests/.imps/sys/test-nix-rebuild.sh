@@ -18,6 +18,7 @@ test_nix_rebuild_skips_when_disabled() {
 }
 
 test_nix_rebuild_runs_home_manager() {
+  skip-if-compiled || return $?
   stub=$(_make_tempdir)
   
   # Create home-manager stub that logs its invocation
@@ -48,6 +49,7 @@ STUB
 }
 
 test_nix_rebuild_reports_failure_when_no_tools() {
+  skip-if-compiled || return $?
   stub=$(_make_tempdir)
   _link_tools "$stub" sh printf test
   

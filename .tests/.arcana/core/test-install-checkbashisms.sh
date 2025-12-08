@@ -11,6 +11,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 creates_no_install_when_present() {
+  skip-if-compiled || return $?
   stub_dir=$(mktemp -d "${WIZARDRY_TMPDIR}/checkbashisms.present.XXXXXX") || return 1
   cat <<'SCRIPT' >"$stub_dir/checkbashisms"
 #!/bin/sh

@@ -1,0 +1,162 @@
+#!/bin/sh
+
+# Create a fully compiled clone of wizardry that works standalone.
+# The doppelganger contains individual compiled spells in the same directory
+# structure, minus GitHub-specific files, ready for distribution.
+
+show_usage() {
+  cat <<'USAGE'
+Usage: doppelganger [OUTPUT_DIR]
+
+Create a fully compiled clone of wizardry with standalone versions of all spells.
+
+Arguments:
+  OUTPUT_DIR    Directory to create doppelganger in (default: ./wizardry-compiled)
+
+The doppelganger includes:
+  - All spells compiled to standalone versions
+  - Same directory structure as wizardry
+  - Test files for validation
+  - No .github or .git directories
+
+Example:
+  doppelganger /tmp/wizardry-standalone
+  cd /tmp/wizardry-standalone
+  ./spells/cantrips/hash --help
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
+set -eu
+
+# Fallbacks for standalone execution
+if ! command -v say >/dev/null 2>&1; then
+  say() { printf '%s\n' "$*"; }
+fi
+if ! command -v warn >/dev/null 2>&1; then
+  warn() { printf '%s\n' "$*" >&2; }
+fi
+if ! command -v success >/dev/null 2>&1; then
+  success() { printf '%s\n' "$*"; }
+fi
+
+# Get output directory
+output_dir=${1:-./wizardry-compiled}
+
+# Find wizardry root
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+repo_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd -P)
+
+say "Creating wizardry doppelganger in: $output_dir"
+
+# Create output directory structure
+mkdir -p "$output_dir/spells"
+mkdir -p "$output_dir/.tests"
+
+# Compile all spells
+say "Compiling all spells..."
+compiled_count=0
+failed_count=0
+
+# Function to compile a single spell by path
+compile_spell_by_path() {
+  spell_path=$1
+  target_file=$2
+  
+  # Get the relative path from repo root (e.g., spells/cantrips/hash)
+  spell_rel_path=${spell_path#$repo_dir/}
+  
+  # Call compile-spell from repo directory with full relative path and redirect output to target
+  # Redirect stdout to file, stderr to /dev/null (don't let error messages corrupt the compiled spell)
+  if (cd "$repo_dir" && "$repo_dir/spells/spellcraft/compile-spell" "$spell_rel_path" 2>/dev/null) > "$target_file"; then
+    chmod +x "$target_file"
+    return 0
+  else
+    return 1
+  fi
+}
+
+# Process spells from known locations
+for spell_path in "$repo_dir/spells"/*/* "$repo_dir/spells"/*/*/* "$repo_dir/spells"/*/*/*/* "$repo_dir/spells"/.imps/*/* "$repo_dir/spells"/.imps/*/*/* "$repo_dir/spells"/.arcana/*/*; do
+  # Skip if not a file or not executable
+  [ -f "$spell_path" ] || continue
+  [ -x "$spell_path" ] || continue
+  
+  # Skip hidden files (except .imps and .arcana which are already in path)
+  case "$spell_path" in
+    */.git/*|*/.github/*|*/.*) 
+      # Allow .imps and .arcana
+      case "$spell_path" in
+        */.imps/*|*/.arcana/*) ;;
+        *) continue ;;
+      esac
+      ;;
+  esac
+  
+  # Get relative path from spells/
+  rel_path=${spell_path#"$repo_dir/spells/"}
+  
+  # Get spell name
+  spell_name=$(basename "$spell_path")
+  
+  # Create directory structure
+  target_dir="$output_dir/spells/$(dirname "$rel_path")"
+  mkdir -p "$target_dir"
+  
+  # Skip test infrastructure files - copy them as-is instead of compiling
+  # test-bootstrap and boot imps need to remain uncompiled to work correctly
+  case "$spell_path" in
+    */test/test-bootstrap|*/test/boot/*)
+      # Copy test infrastructure files directly
+      cp "$spell_path" "$target_dir/$spell_name"
+      chmod +x "$target_dir/$spell_name"
+      compiled_count=$((compiled_count + 1))
+      continue
+      ;;
+  esac
+  
+  # Compile spell
+  if compile_spell_by_path "$spell_path" "$target_dir/$spell_name"; then
+    compiled_count=$((compiled_count + 1))
+  else
+    warn "doppelganger: failed to compile $spell_name"
+    failed_count=$((failed_count + 1))
+  fi
+done
+
+compiled_count=$((compiled_count))
+failed_count=$((failed_count))
+
+# Copy test files (including hidden directories like .arcana and .imps)
+say "Copying test files..."
+if [ -d "$repo_dir/.tests" ]; then
+  # Copy all files including hidden ones
+  (cd "$repo_dir/.tests" && find . -mindepth 1 -maxdepth 1 -exec cp -r {} "$output_dir/.tests/" \; 2>/dev/null) || true
+fi
+
+# Copy essential files (README, LICENSE, etc.) but skip .git and .github
+say "Copying essential files..."
+for file in "$repo_dir"/*; do
+  basename_file=$(basename "$file")
+  case "$basename_file" in
+    .git|.github) continue ;;
+    README*|LICENSE*|*.md)
+      if [ -f "$file" ]; then
+        cp "$file" "$output_dir/" 2>/dev/null || true
+      fi
+      ;;
+  esac
+done
+
+success "Doppelganger created successfully!"
+say "Location: $output_dir"
+say "Compiled: $compiled_count spells"
+if [ "$failed_count" -gt 0 ]; then
+  warn "doppelganger: $failed_count spells failed to compile"
+fi

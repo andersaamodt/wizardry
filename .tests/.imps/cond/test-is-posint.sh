@@ -17,16 +17,19 @@ test_is_posint_positive() {
 }
 
 test_is_posint_one() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/cond/is-posint 1
   _assert_success
 }
 
 test_is_posint_fails_for_zero() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/cond/is-posint 0
   _assert_failure
 }
 
 test_is_posint_fails_for_negative() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/cond/is-posint -42
   _assert_failure
 }

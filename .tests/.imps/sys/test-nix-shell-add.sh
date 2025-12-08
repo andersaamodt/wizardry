@@ -17,6 +17,7 @@ export WIZARDRY_SKIP_NIX_REBUILD=1
 export WIZARDRY_SKIP_CONFIRM=1
 
 test_nix_shell_add_creates_block() {
+  skip-if-compiled || return $?
   tmpdir=$(_make_tempdir)
   nix_file="$tmpdir/test.nix"
   
@@ -64,6 +65,7 @@ test_nix_shell_add_is_idempotent() {
 }
 
 test_nix_shell_add_zsh_uses_correct_option() {
+  skip-if-compiled || return $?
   tmpdir=$(_make_tempdir)
   nix_file="$tmpdir/test.nix"
   
@@ -81,6 +83,7 @@ test_nix_shell_add_zsh_uses_correct_option() {
 }
 
 test_nix_shell_add_creates_file_if_missing() {
+  skip-if-compiled || return $?
   tmpdir=$(_make_tempdir)
   nix_file="$tmpdir/subdir/test.nix"
   
@@ -99,6 +102,7 @@ test_nix_shell_add_creates_file_if_missing() {
 }
 
 test_nix_shell_add_requires_name() {
+  skip-if-compiled || return $?
   if printf 'test' | "$ROOT_DIR/spells/.imps/sys/nix-shell-add" "" /tmp/test.nix 2>/dev/null; then
     TEST_FAILURE_REASON="should fail without name"
     return 1
@@ -107,6 +111,7 @@ test_nix_shell_add_requires_name() {
 }
 
 test_nix_shell_add_requires_file() {
+  skip-if-compiled || return $?
   if printf 'test' | "$ROOT_DIR/spells/.imps/sys/nix-shell-add" test "" 2>/dev/null; then
     TEST_FAILURE_REASON="should fail without file"
     return 1

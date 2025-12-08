@@ -1,4 +1,5 @@
 #!/bin/sh
+# COMPILED_UNSUPPORTED: requires interactive input
 # Test coverage for priorities spell:
 # - Shows usage with --help
 # - Requires read-magic command

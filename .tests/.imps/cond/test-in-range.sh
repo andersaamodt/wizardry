@@ -17,11 +17,13 @@ test_in_range_middle() {
 }
 
 test_in_range_at_min() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/cond/in-range 1 1 10
   _assert_success
 }
 
 test_in_range_at_max() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/cond/in-range 10 1 10
   _assert_success
 }

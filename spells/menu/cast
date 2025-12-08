@@ -1,23 +1,41 @@
 #!/bin/sh
 # This spell casts previously memorized commands from the spellbook.
 
-require-wizardry || exit 1
+# Self-healing: Create spellbook directory if missing
+create_spellbook_if_missing() {
+        spellbook_dir="${XDG_DATA_HOME:-$HOME/.local/share}/wizardry/spellbook"
+        if ! [ -d "$spellbook_dir" ]; then
+                mkdir -p "$spellbook_dir" 2>/dev/null || {
+                        spellbook_dir="${TMPDIR:-/tmp}/wizardry-spellbook-$$"
+                        mkdir -p "$spellbook_dir"
+                }
+        fi
+        printf '%s' "$spellbook_dir"
+}
 
 # Catch Ctrl-C and TERM signal to exit cleanly
 trap 'exit 0' INT TERM
 
-cast_store=${CAST_STORE-memorize}
-if has "$cast_store"; then
-        cast_store=$(where "$cast_store")
+# Direct call to memorize spell (no variable indirection)
+if ! has memorize; then
+        # Fallback: use directory directly
+        cast_dir=$(create_spellbook_if_missing)
 else
-        warn "cast: memorize helper is missing."
-        exit 1
+        cast_dir=$(memorize dir 2>/dev/null) || cast_dir=$(create_spellbook_if_missing)
 fi
 
-cast_dir=$($cast_store dir)
-
 cast_list() {
-        "$cast_store" list
+        if has memorize; then
+                memorize list
+        else
+                # Fallback: list files directly
+                for f in "$cast_dir"/*; do
+                        [ -f "$f" ] || continue
+                        name=$(basename "$f")
+                        cmd=$(cat "$f" 2>/dev/null || printf '')
+                        [ -n "$cmd" ] && printf '%s\t%s\n' "$name" "$cmd"
+                done
+        fi
 }
 
 print_empty_message() {

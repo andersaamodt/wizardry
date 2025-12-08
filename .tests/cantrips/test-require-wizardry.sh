@@ -1,4 +1,5 @@
 #!/bin/sh
+# COMPILED_UNSUPPORTED: tests require-wizardry which is wizardry bootstrap
 # Tests for the 'require-wizardry' cantrip
 #
 # Behavioral cases (derived from --help):

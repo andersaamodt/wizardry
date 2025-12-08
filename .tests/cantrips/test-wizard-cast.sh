@@ -1,4 +1,5 @@
 #!/bin/sh
+# COMPILED_UNSUPPORTED: requires full wizardry environment
 # Test coverage for wizard-cast spell:
 # - Shows usage with --help
 # - Requires command argument

@@ -56,12 +56,42 @@ text_file="${folder_name}.txt"
 : >"$text_file"
 
 # Append each page with headers so the merged tome is navigable.
+# Use single-line separator with centered filename
 for page in "$pages_dir"/*; do
     there "$page" || continue
     page_name=$(basename -- "$page")
-    say "----- $page_name -----" >>"$text_file"
+    # Create centered separator: # -------- pagename --------
+    # Total width is 76 chars (matching LICENSE separator width)
+    name_len=${#page_name}
+    # Available space for dashes: 76 - 2 (for "# ") - name_len - 2 (spaces around name)
+    # Minimum dash space of 8 ensures readable formatting even with long names
+    dash_space=$((76 - 2 - name_len - 2))
+    if [ "$dash_space" -lt 8 ]; then
+        # Filename too long, truncate it
+        max_name_len=$((76 - 2 - 8 - 2))  # Leave room for at least 8 dashes total
+        page_name=$(printf '%s' "$page_name" | cut -c1-"$max_name_len")
+        name_len=${#page_name}
+        dash_space=$((76 - 2 - name_len - 2))
+    fi
+    left_dashes=$((dash_space / 2))
+    right_dashes=$((dash_space - left_dashes))
+    
+    # Build the separator line
+    separator="# "
+    i=0
+    while [ "$i" -lt "$left_dashes" ]; do
+        separator="${separator}-"
+        i=$((i + 1))
+    done
+    separator="${separator} ${page_name} "
+    i=0
+    while [ "$i" -lt "$right_dashes" ]; do
+        separator="${separator}-"
+        i=$((i + 1))
+    done
+    
+    say "$separator" >>"$text_file"
     cat "$page" >>"$text_file"
-    say "----- End of $page_name -----" >>"$text_file"
 done
 
 say "Text file created: $text_file"

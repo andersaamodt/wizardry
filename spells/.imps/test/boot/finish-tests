@@ -6,13 +6,21 @@ _finish_tests() {
   total=$((_pass_count + _fail_count))
   printf '%s/%s tests passed' "$_pass_count" "$total"
   if [ "$_fail_count" -gt 0 ]; then
-    printf ' (%s failed)\n' "$_fail_count"
+    printf ' (%s failed' "$_fail_count"
+    if [ "${_skip_count-0}" -gt 0 ]; then
+      printf ', %s skipped' "$_skip_count"
+    fi
+    printf ')\n'
     if [ -n "$_fail_detail_indices" ]; then
       printf 'FAIL_DETAIL:%s\n' "$_fail_detail_indices"
     fi
     return 1
   fi
-  printf '\n'
+  if [ "${_skip_count-0}" -gt 0 ]; then
+    printf ' (%s skipped)\n' "$_skip_count"
+  else
+    printf '\n'
+  fi
   return 0
 }
 

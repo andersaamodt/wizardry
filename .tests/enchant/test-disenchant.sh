@@ -1,4 +1,5 @@
 #!/bin/sh
+# COMPILED_UNSUPPORTED: requires interactive ask-number for menu selection
 # Behavioral cases (derived from --help):
 # - disenchant prints usage
 # - validates argument count and file existence

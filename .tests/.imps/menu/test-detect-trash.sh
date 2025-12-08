@@ -12,6 +12,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_detect_trash_outputs_path() {
+  skip-if-compiled || return $?
   _run_spell spells/.imps/menu/detect-trash
   _assert_success || return 1
   # Should output a non-empty path
@@ -19,6 +20,7 @@ test_detect_trash_outputs_path() {
 }
 
 test_detect_trash_macos_path() {
+  skip-if-compiled || return $?
   stub=$(_make_tempdir)
   # Create uname stub for macOS detection
   cat >"$stub/uname" <<'STUB'
@@ -40,6 +42,7 @@ STUB
 }
 
 test_detect_trash_linux_path() {
+  skip-if-compiled || return $?
   stub=$(_make_tempdir)
   # Create uname stub for Linux detection
   cat >"$stub/uname" <<'STUB'
@@ -61,6 +64,7 @@ STUB
 }
 
 test_detect_trash_xdg_override() {
+  skip-if-compiled || return $?
   stub=$(_make_tempdir)
   # Create uname stub for Linux detection
   cat >"$stub/uname" <<'STUB'
@@ -83,6 +87,7 @@ STUB
 }
 
 test_detect_trash_unsupported_os() {
+  skip-if-compiled || return $?
   stub=$(_make_tempdir)
   # Create uname stub for unknown OS
   cat >"$stub/uname" <<'STUB'

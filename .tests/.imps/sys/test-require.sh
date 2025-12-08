@@ -1,4 +1,5 @@
 #!/bin/sh
+# COMPILED_UNSUPPORTED: tests require imp which is wizardry infrastructure
 # Tests for the 'require' imp
 # Comprehensive tests covering:
 # - Basic delegation to require-command

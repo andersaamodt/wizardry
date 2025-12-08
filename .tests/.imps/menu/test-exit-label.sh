@@ -11,12 +11,14 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_returns_exit_always() {
+  skip-if-compiled || return $?
   _run_cmd "$ROOT_DIR/spells/.imps/menu/exit-label"
   _assert_success
   _assert_output_contains "Exit"
 }
 
 test_ignores_submenu_env() {
+  skip-if-compiled || return $?
   # Even with WIZARDRY_SUBMENU set, exit-label returns "Exit"
   _run_cmd env WIZARDRY_SUBMENU=1 "$ROOT_DIR/spells/.imps/menu/exit-label"
   _assert_success

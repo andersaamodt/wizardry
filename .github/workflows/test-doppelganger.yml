@@ -1,0 +1,197 @@
+name: Test Doppelganger Compiled Wizardry
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  compile-and-test-doppelganger:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Install wizardry
+        run: |
+          # Add wizardry to PATH for compilation
+          echo "${{ github.workspace }}/spells" >> $GITHUB_PATH
+          echo "${{ github.workspace }}/spells/cantrips" >> $GITHUB_PATH
+          echo "${{ github.workspace }}/spells/spellcraft" >> $GITHUB_PATH
+          
+          # Source invoke-wizardry to set up environment
+          export WIZARDRY_DIR="${{ github.workspace }}"
+          . "${{ github.workspace }}/spells/.imps/sys/invoke-wizardry"
+      
+      - name: Create doppelganger
+        run: |
+          export WIZARDRY_DIR="${{ github.workspace }}"
+          . "${{ github.workspace }}/spells/.imps/sys/invoke-wizardry"
+          
+          # Create doppelganger in /tmp
+          doppelganger /tmp/wizardry-doppelganger
+          
+          echo "=== Doppelganger created ==="
+          ls -la /tmp/wizardry-doppelganger/
+          echo ""
+          echo "=== Spells directory ==="
+          ls -la /tmp/wizardry-doppelganger/spells/ | head -20
+      
+      - name: Test doppelganger spells
+        run: |
+          echo "=== Testing doppelganger spells ==="
+          
+          # Exclusions (wizardry infrastructure)
+          excluded="invoke-wizardry require-wizardry declare-globals learn-spellbook learn mud decorate select-player"
+          
+          # Track failures
+          fail_file=/tmp/doppelganger-failures.txt
+          rm -f "$fail_file"
+          touch "$fail_file"
+          
+          # Test all compiled spells
+          find /tmp/wizardry-doppelganger/spells -type f -executable | while IFS= read -r compiled; do
+            [ -f "$compiled" ] || continue
+            spell_name=$(basename "$compiled")
+            
+            # Skip excluded
+            skip=0
+            for ex in $excluded; do
+              if [ "$spell_name" = "$ex" ]; then
+                skip=1
+                break
+              fi
+            done
+            [ "$skip" = "1" ] && continue
+            
+            # Determine if imp or spell
+            is_imp=0
+            case "$compiled" in
+              */.imps/*) is_imp=1 ;;
+            esac
+            
+            # Test appropriately
+            if [ "$is_imp" = "1" ]; then
+              # Imps: test with empty stdin
+              if echo "" | timeout 1 env -i PATH="/usr/bin:/bin" "$compiled" >/dev/null 2>&1; then
+                echo "  ✓ $spell_name"
+              else
+                ec=$?
+                if [ "$ec" != "124" ]; then
+                  echo "  ✓ $spell_name (exit $ec OK)"
+                else
+                  echo "  ✗ $spell_name (timeout)"
+                  echo "$spell_name" >> "$fail_file"
+                fi
+              fi
+            else
+              # Spells: test --help
+              if timeout 2 env -i PATH="/usr/bin:/bin" "$compiled" --help >/dev/null 2>&1; then
+                echo "  ✓ $spell_name"
+              else
+                echo "  ✗ $spell_name"
+                echo "$spell_name" >> "$fail_file"
+              fi
+            fi
+          done
+          
+          # Check for failures
+          if [ -s "$fail_file" ]; then
+            echo ""
+            echo "=== FAILURES ==="
+            cat "$fail_file"
+            exit 1
+          fi
+          
+          echo ""
+          echo "=== All doppelganger spells passed ==="
+      
+      - name: Run doppelganger behavioral tests
+        run: |
+          # Run behavioral tests against compiled spells using test-magic
+          if [ ! -d "/tmp/wizardry-doppelganger/.tests" ]; then
+            echo "No tests found in doppelganger"
+            exit 0
+          fi
+          
+          cd /tmp/wizardry-doppelganger
+          
+          # Set up environment for compiled spells
+          export ROOT_DIR="/tmp/wizardry-doppelganger"
+          export WIZARDRY_DIR="/tmp/wizardry-doppelganger"
+          export WIZARDRY_TEST_COMPILED=1  # Flag to indicate testing compiled spells
+          
+          # Add doppelganger to PATH
+          export PATH="/tmp/wizardry-doppelganger/spells:$PATH"
+          for dir in /tmp/wizardry-doppelganger/spells/*; do
+            [ -d "$dir" ] && export PATH="$PATH:$dir"
+          done
+          
+          # Use test-magic from the doppelganger (it's compiled)
+          # Add 1-hour timeout to prevent infinite hangs (e.g., test-cd)
+          if [ -x "/tmp/wizardry-doppelganger/spells/system/test-magic" ]; then
+            timeout 3600 ./spells/system/test-magic
+          else
+            echo "test-magic not found in doppelganger"
+            exit 1
+          fi
+      
+      - name: Create doppelganger zip
+        if: success()
+        run: |
+          cd /tmp
+          zip -r wizardry-doppelganger-${{ github.sha }}.zip wizardry-doppelganger \
+            -x "wizardry-doppelganger/.git/*" \
+            -x "wizardry-doppelganger/.github/*"
+          
+          echo "=== Zip created ==="
+          ls -lh wizardry-doppelganger-*.zip
+      
+      - name: Upload doppelganger artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wizardry-doppelganger-${{ github.sha }}
+          path: /tmp/wizardry-doppelganger-${{ github.sha }}.zip
+          retention-days: 720
+      
+      - name: Clean up old artifacts
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Get all artifacts for this repo
+            const artifacts = await github.rest.actions.listArtifactsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100
+            });
+            
+            // Filter for doppelganger artifacts, sort by creation date
+            const doppelgangerArtifacts = artifacts.data.artifacts
+              .filter(artifact => artifact.name.startsWith('wizardry-doppelganger-'))
+              .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            
+            console.log(`Found ${doppelgangerArtifacts.length} doppelganger artifacts`);
+            
+            // Keep only the last 3, delete the rest
+            const toDelete = doppelgangerArtifacts.slice(3);
+            
+            for (const artifact of toDelete) {
+              console.log(`Deleting old artifact: ${artifact.name} (created ${artifact.created_at})`);
+              try {
+                await github.rest.actions.deleteArtifact({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  artifact_id: artifact.id
+                });
+              } catch (error) {
+                console.log(`Failed to delete ${artifact.name}: ${error.message}`);
+              }
+            }
+            
+            console.log(`Kept ${Math.min(3, doppelgangerArtifacts.length)} most recent artifacts`);

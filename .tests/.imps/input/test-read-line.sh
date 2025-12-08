@@ -12,12 +12,14 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_read_line_from_stdin() {
+  skip-if-compiled || return $?
   _run_cmd sh -c 'echo "hello world" | SELECT_INPUT_MODE=stdin read-line'
   _assert_success
   _assert_output_contains "hello world"
 }
 
 test_read_line_with_prompt() {
+  skip-if-compiled || return $?
   # Prompt goes to stderr, input from stdin
   _run_cmd sh -c 'echo "response" | SELECT_INPUT_MODE=stdin read-line "Enter: "'
   _assert_success
@@ -31,6 +33,7 @@ test_read_line_empty_input() {
 }
 
 test_read_line_no_input_fails() {
+  skip-if-compiled || return $?
   _run_cmd sh -c 'SELECT_INPUT_MODE=none read-line'
   _assert_failure
 }

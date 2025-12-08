@@ -329,6 +329,15 @@ while IFS= read -r test_path; do
   [ -n "$test_path" ] || continue
   abs="$test_dir/$test_path"
   test_number=$((test_number + 1))
+  
+  # Skip tests marked COMPILED_UNSUPPORTED when testing compiled spells
+  if [ "${WIZARDRY_TEST_COMPILED-0}" = "1" ]; then
+    if head -n 5 "$abs" 2>/dev/null | grep -q "^# COMPILED_UNSUPPORTED"; then
+      printf '[%d/%d] %s (skipped: unsupported in compiled mode)\n' "$test_number" "$test_total" "$test_path"
+      continue
+    fi
+  fi
+  
   printf '[%d/%d] %s\n' "$test_number" "$test_total" "$test_path"
 
   if output=$(sh "$abs" 2>&1); then
@@ -610,8 +619,34 @@ if [ "$status" -ne 0 ] && [ "$fail" -le 10 ] && [ "${GITHUB_ACTIONS-}" != "" ] \
   && [ "${TEST_MAGIC_DEBUG_RERUN-}" != "1" ] && [ "$very_verbose" -eq 0 ]; then
   trap - EXIT HUP INT TERM
   cleanup-file "$failure_output_file"
-  printf '\nGitHub Actions detected <=10 failing tests; rerunning with --very-verbose for focused debug...\n'
+  printf '\nGitHub Actions detected <=10 failing tests; rerunning ONLY those tests with --very-verbose for focused debug...\n'
+  
+  # Build --only patterns for each failed test
+  failed_patterns=""
+  while IFS= read -r test_path; do
+    [ -n "$test_path" ] || continue
+    # Extract test paths from failed_scripts (format: "name (numbers)")
+    # We need to reconstruct the test path from the name
+  done <<EOF_FAILED
+$(printf '%s\n' "$failed_scripts" | sed 's/, /\n/g')
+EOF_FAILED
+  
+  # Instead, parse from failure_output_file which has the actual paths
+  failed_test_paths=""
+  if [ -s "$failure_output_file" ]; then
+    failed_test_paths=$(grep "^=== .* ===$" "$failure_output_file" | sed 's/^=== //; s/ ===$//') 
+  fi
+  
   set -- $rerun_args
+  if [ -n "$failed_test_paths" ]; then
+    while IFS= read -r test_path; do
+      [ -n "$test_path" ] || continue
+      set -- "$@" --only "$test_path"
+    done <<EOF_PATHS
+$failed_test_paths
+EOF_PATHS
+  fi
+  
   TEST_MAGIC_DEBUG_RERUN=1 exec "$0" --very-verbose "$@"
 fi
 

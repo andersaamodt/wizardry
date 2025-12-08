@@ -16,6 +16,7 @@ spell_is_executable() {
 _run_test_case "install/node/node-status is executable" spell_is_executable
 
 renders_usage_information() {
+  skip-if-compiled || return $?
   _run_cmd "$ROOT_DIR/spells/.arcana/node/node-status" --help
 
   _assert_success || return 1
@@ -26,6 +27,7 @@ renders_usage_information() {
 _run_test_case "node-status prints usage with --help" renders_usage_information
 
 reports_not_installed_without_node_binary() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   _run_cmd env PATH="$tmp:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps:$ROOT_DIR/spells/.imps/menu" \
     "$ROOT_DIR/spells/.arcana/node/node-status"
@@ -37,6 +39,7 @@ reports_not_installed_without_node_binary() {
 _run_test_case "node-status reports not installed when node is absent" reports_not_installed_without_node_binary
 
 reports_installed_when_node_exists() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   cat >"$tmp/node" <<'SHI'
 #!/bin/sh
@@ -58,6 +61,7 @@ SHI
 _run_test_case "node-status flags missing npm" reports_installed_when_node_exists
 
 reports_running_service_state() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   cat >"$tmp/node" <<'SHI'
 #!/bin/sh

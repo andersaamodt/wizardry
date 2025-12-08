@@ -13,6 +13,7 @@ test_import_arcanum_help() {
 }
 
 test_import_arcanum_validates_directory_exists() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   arcana_dir="$tmp/arcana"
   mkdir -p "$arcana_dir"
@@ -23,6 +24,7 @@ test_import_arcanum_validates_directory_exists() {
 }
 
 test_import_arcanum_validates_arcanum_name() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   arcana_dir="$tmp/arcana"
   mkdir -p "$arcana_dir"
@@ -36,6 +38,7 @@ test_import_arcanum_validates_arcanum_name() {
 }
 
 test_import_arcanum_prevents_duplicate() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   arcana_dir="$tmp/arcana"
   mkdir -p "$arcana_dir/existing-arcanum"
@@ -49,6 +52,7 @@ test_import_arcanum_prevents_duplicate() {
 }
 
 test_import_arcanum_copies_directory() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   arcana_dir="$tmp/arcana"
   mkdir -p "$arcana_dir"
@@ -66,6 +70,7 @@ test_import_arcanum_copies_directory() {
 }
 
 test_import_arcanum_rejects_dots_in_name() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   arcana_dir="$tmp/arcana"
   mkdir -p "$arcana_dir"
@@ -79,6 +84,7 @@ test_import_arcanum_rejects_dots_in_name() {
 }
 
 test_import_arcanum_prevents_path_traversal() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   arcana_dir="$tmp/arcana"
   mkdir -p "$arcana_dir"
@@ -94,6 +100,7 @@ test_import_arcanum_prevents_path_traversal() {
 }
 
 test_import_arcanum_validates_metadata_name_match() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   arcana_dir="$tmp/arcana"
   mkdir -p "$arcana_dir"
@@ -110,6 +117,7 @@ test_import_arcanum_validates_metadata_name_match() {
 }
 
 test_import_arcanum_rejects_dot_prefix() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   arcana_dir="$tmp/arcana"
   mkdir -p "$arcana_dir"
@@ -123,6 +131,7 @@ test_import_arcanum_rejects_dot_prefix() {
 }
 
 test_import_arcanum_prevents_importing_from_arcana_dir() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   arcana_dir="$tmp/arcana"
   mkdir -p "$arcana_dir/existing"
@@ -133,6 +142,7 @@ test_import_arcanum_prevents_importing_from_arcana_dir() {
 }
 
 test_import_arcanum_handles_relative_path() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   arcana_dir="$tmp/arcana"
   mkdir -p "$arcana_dir"
@@ -150,6 +160,7 @@ test_import_arcanum_handles_relative_path() {
 }
 
 test_import_arcanum_handles_tilde_path() {
+  skip-if-compiled || return $?
   tmp=$(_make_tempdir)
   arcana_dir="$tmp/arcana"
   mkdir -p "$arcana_dir"
