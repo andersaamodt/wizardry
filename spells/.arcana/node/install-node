@@ -54,16 +54,16 @@ package_default=${NODE_PACKAGE_DEFAULT:-nodejs}
 node_package=$(prompt "Which Node.js package should be installed?" "$package_default")
 
 # Allow users to override per-manager packages to handle distro differences.
-export NIX_PACKAGE=${NIX_PACKAGE:-$node_package}
-export apt_package=${apt_package:-$node_package}
-export dnf_package=${dnf_package:-$node_package}
-export yum_package=${yum_package:-$node_package}
-export zypper_package=${zypper_package:-$node_package}
-export pacman_package=${pacman_package:-$node_package}
-export apk_package=${apk_package:-$node_package}
-export PKGIN_PACKAGE=${PKGIN_PACKAGE:-$node_package}
-
+# Pass as env vars only for this command invocation
 printf '\nInstalling Node.js using %s...\n' "$manage_cmd"
+NIX_PACKAGE=${NIX_PACKAGE:-$node_package} \
+apt_package=${apt_package:-$node_package} \
+dnf_package=${dnf_package:-$node_package} \
+yum_package=${yum_package:-$node_package} \
+zypper_package=${zypper_package:-$node_package} \
+pacman_package=${pacman_package:-$node_package} \
+apk_package=${apk_package:-$node_package} \
+PKGIN_PACKAGE=${PKGIN_PACKAGE:-$node_package} \
 "$manage_cmd" node "$node_package"
 
 if detect_nixos && command -v nixos-rebuild >/dev/null 2>&1; then

@@ -703,8 +703,10 @@ test_no_undeclared_allcaps_vars() {
     # Find all-caps variable assignments (pattern: VARNAME=...)
     # Look for lines like: VARNAME=value or VARNAME=$(...)
     # But exclude lines where it's just a one-time IFS setting like "IFS= read"
+    # Also exclude inline env vars for single commands (followed by backslash or command on same line)
     violations=$(grep -n '^[[:space:]]*[A-Z_][A-Z_0-9]*=' "$file" 2>/dev/null | \
       grep -v '^[^:]*:[[:space:]]*IFS=[[:space:]]' | \
+      grep -v '\\$' | \
       grep -Ev "$allowed" | \
       cut -d: -f1 | head -10 || true)
     
@@ -719,6 +721,58 @@ test_no_undeclared_allcaps_vars() {
   
   if [ -n "$violations" ]; then
     TEST_FAILURE_REASON="scripts with undeclared all-caps variables: $violations"
+    return 1
+  fi
+  return 0
+}
+
+# --- Check: No environment variable exports expecting downstream consumption ---
+# Spells should not export variables intending them to be consumed outside the script.
+# The only exceptions are:
+# - Declared globals (WIZARDRY_DIR, SPELLBOOK_DIR, MUD_DIR) in invoke-wizardry
+# - PATH modifications (export PATH)
+# - Variables exported within subshells that don't leak (export within $(...) or (...))
+test_no_downstream_env_exports() {
+  skip-if-compiled || return $?
+  
+  violations_file=$(mktemp "${WIZARDRY_TMPDIR}/export-violations.XXXXXX")
+  
+  # Find all shell scripts in spells/ (including .imps)
+  find "$ROOT_DIR/spells" -type f -print | while IFS= read -r file; do
+    [ -f "$file" ] || continue
+    base_name=$(basename "$file")
+    should_skip_file "$base_name" && continue
+    is_posix_shell_script "$file" || continue
+    
+    # Skip test infrastructure files
+    case "$file" in
+      */test-bootstrap|*/test-*|*/.imps/test/*) continue ;;
+    esac
+    
+    rel_path=${file#"$ROOT_DIR/"}
+    
+    # Find export statements (excluding PATH, and declared globals in invoke-wizardry)
+    # Look for: export VARNAME or export VARNAME=value
+    violations=$(grep -n '^[[:space:]]*export [A-Z_][A-Z_0-9]*' "$file" 2>/dev/null | \
+      grep -v 'export PATH' | \
+      grep -v 'invoke-wizardry:.*export WIZARDRY_DIR' || true)
+    
+    # Special case: invoke-wizardry is allowed to export WIZARDRY_DIR
+    if [ "$rel_path" = "spells/.imps/sys/invoke-wizardry" ]; then
+      continue
+    fi
+    
+    if [ -n "$violations" ]; then
+      printf '%s\n' "$rel_path"
+    fi
+  done > "$violations_file"
+  
+  # Get comma-delimited list of violating scripts
+  violations=$(cat "$violations_file" 2>/dev/null | head -20 | tr '\n' ', ' | sed 's/, $//')
+  rm -f "$violations_file"
+  
+  if [ -n "$violations" ]; then
+    TEST_FAILURE_REASON="scripts exporting variables for downstream consumption: $violations"
     return 1
   fi
   return 0
@@ -741,5 +795,6 @@ _run_test_case "imps follow one-function-or-zero rule" test_imps_follow_function
 _run_test_case "imps have opening comments" test_imps_have_opening_comments
 _run_test_case "bootstrap spells have identifying comment" test_bootstrap_spells_identified
 _run_test_case "no undeclared all-caps variables" test_no_undeclared_allcaps_vars
+_run_test_case "no downstream env exports" test_no_downstream_env_exports
 
 _finish_tests

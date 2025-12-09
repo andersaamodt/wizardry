@@ -5,21 +5,30 @@
 
 show_usage() {
         cat <<'USAGE' >&2
-Usage: await-keypress
+Usage: await-keypress [--keep-raw]
 
-Listens for one key press on the controlling terminal, translating escape sequences into readable names and restoring the term
-inal to its prior state afterward.
+Listens for one key press on the controlling terminal, translating escape sequences into readable names and restoring the terminal to its prior state afterward.
+
+Options:
+  --keep-raw    Leave terminal in raw mode after reading (for repeated calls)
 USAGE
 }
+
+keep_raw=0
 
 case "${1-}" in
 --help|--usage|-h)
         show_usage
         exit 0
         ;;
+--keep-raw)
+        keep_raw=1
+        shift
+        ;;
 esac
 
 
+set -eu
 set -eu
 spell_dir() {
     case $0 in
@@ -51,7 +60,6 @@ fi
 
 TTY_DEVICE=${AWAIT_KEYPRESS_DEVICE:-/dev/tty}
 skip_stty=${AWAIT_KEYPRESS_SKIP_STTY:-0}
-keep_raw=${AWAIT_KEYPRESS_KEEP_RAW:-0}
 
 if [ "${AWAIT_KEYPRESS_BUFFER_FILE+set}" = "set" ]; then
     buffer_file=$AWAIT_KEYPRESS_BUFFER_FILE
