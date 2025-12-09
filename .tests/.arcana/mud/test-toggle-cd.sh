@@ -50,7 +50,7 @@ test_toggle_cd_installs_when_not_present() {
   # Create detect-rc-file stub
   cat >"$tmp/detect-rc-file" <<EOF
 #!/bin/sh
-printf '%s\\n' '$tmp/rc'
+printf '%s\n' '$tmp/rc'
 EOF
   chmod +x "$tmp/detect-rc-file"
   
@@ -72,7 +72,7 @@ test_toggle_cd_uninstalls_when_present() {
   # Create detect-rc-file stub
   cat >"$tmp/detect-rc-file" <<EOF
 #!/bin/sh
-printf '%s\\n' '$tmp/rc'
+printf '%s\n' '$tmp/rc'
 EOF
   chmod +x "$tmp/detect-rc-file"
   
@@ -83,7 +83,7 @@ EOF
   # Create detect-rc-file stub
   cat >"$tmp/detect-rc-file" <<EOF
 #!/bin/sh
-printf '%s\\n' '$tmp/rc'
+printf '%s\n' '$tmp/rc'
 EOF
   chmod +x "$tmp/detect-rc-file"
   
@@ -113,7 +113,7 @@ test_toggle_cd_shows_installing_message() {
   # Create detect-rc-file stub
   cat >"$tmp/detect-rc-file" <<EOF
 #!/bin/sh
-printf '%s\\n' '$tmp/rc'
+printf '%s\n' '$tmp/rc'
 EOF
   chmod +x "$tmp/detect-rc-file"
   
@@ -130,7 +130,7 @@ test_toggle_cd_shows_uninstalling_message() {
   # Create detect-rc-file stub
   cat >"$tmp/detect-rc-file" <<EOF
 #!/bin/sh
-printf '%s\\n' '$tmp/rc'
+printf '%s\n' '$tmp/rc'
 EOF
   chmod +x "$tmp/detect-rc-file"
   
@@ -141,7 +141,7 @@ EOF
   # Create detect-rc-file stub
   cat >"$tmp/detect-rc-file" <<EOF
 #!/bin/sh
-printf '%s\\n' '$tmp/rc'
+printf '%s\n' '$tmp/rc'
 EOF
   chmod +x "$tmp/detect-rc-file"
   

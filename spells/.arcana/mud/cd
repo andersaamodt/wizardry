@@ -365,10 +365,10 @@ uninstall)
         ;;
 esac
 
-# If run directly (not sourced via alias and not during memorization),
+# If run directly with a directory argument (not sourced),
 # prompt to install and then run the cd
-# Check if we're in memorization context by testing for install function
-if ! command -v install >/dev/null 2>&1; then
+# If no arguments, we're being sourced (e.g., by learn-spell) - just define functions and exit
+if [ $# -gt 0 ]; then
         prompt_install_if_needed || true
         wizardry_cd_main "$@"
 fi

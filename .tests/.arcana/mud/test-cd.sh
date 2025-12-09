@@ -33,7 +33,7 @@ SH
   # Create detect-rc-file stub that returns our test RC file
   cat >"$tmp/detect-rc-file" <<EOF
 #!/bin/sh
-printf '%s\\\\n' '$tmp/rc'
+printf '%s\\n' '$tmp/rc'
 EOF
   chmod +x "$tmp/detect-rc-file"
 
@@ -57,7 +57,7 @@ SH
   # Create detect-rc-file stub
   cat >"$tmp/detect-rc-file" <<EOF
 #!/bin/sh
-printf '%s\\\\n' '$tmp/rc'
+printf '%s\\n' '$tmp/rc'
 EOF
   chmod +x "$tmp/detect-rc-file"
 

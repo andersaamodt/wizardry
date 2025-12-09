@@ -37,7 +37,7 @@ test_handle_cnf_installs_hook() {
   # Create detect-rc-file stub
   cat >"$tmp/detect-rc-file" <<EOF
 #!/bin/sh
-printf '%s\\n' '$tmp/rc'
+printf '%s\n' '$tmp/rc'
 EOF
   chmod +x "$tmp/detect-rc-file"
   
@@ -63,7 +63,7 @@ test_handle_cnf_uninstalls_hook() {
   # Create detect-rc-file stub
   cat >"$tmp/detect-rc-file" <<EOF
 #!/bin/sh
-printf '%s\\n' '$tmp/rc'
+printf '%s\n' '$tmp/rc'
 EOF
   chmod +x "$tmp/detect-rc-file"
   
@@ -80,7 +80,7 @@ EOF
   # Create detect-rc-file stub
   cat >"$tmp/detect-rc-file" <<EOF
 #!/bin/sh
-printf '%s\\n' '$tmp/rc'
+printf '%s\n' '$tmp/rc'
 EOF
   chmod +x "$tmp/detect-rc-file"
   
@@ -102,7 +102,7 @@ test_handle_cnf_uninstall_when_not_installed() {
   # Create detect-rc-file stub
   cat >"$tmp/detect-rc-file" <<EOF
 #!/bin/sh
-printf '%s\\n' '$tmp/rc'
+printf '%s\n' '$tmp/rc'
 EOF
   chmod +x "$tmp/detect-rc-file"
   
@@ -119,7 +119,7 @@ test_handle_cnf_install_idempotent() {
   # Create detect-rc-file stub
   cat >"$tmp/detect-rc-file" <<EOF
 #!/bin/sh
-printf '%s\\n' '$tmp/rc'
+printf '%s\n' '$tmp/rc'
 EOF
   chmod +x "$tmp/detect-rc-file"
   
@@ -128,7 +128,7 @@ EOF
   # Create detect-rc-file stub
   cat >"$tmp/detect-rc-file" <<EOF
 #!/bin/sh
-printf '%s\\n' '$tmp/rc'
+printf '%s\n' '$tmp/rc'
 EOF
   chmod +x "$tmp/detect-rc-file"
   
@@ -150,7 +150,7 @@ test_handle_cnf_hook_has_proper_function() {
   # Create detect-rc-file stub
   cat >"$tmp/detect-rc-file" <<EOF
 #!/bin/sh
-printf '%s\\n' '$tmp/rc'
+printf '%s\n' '$tmp/rc'
 EOF
   chmod +x "$tmp/detect-rc-file"
   
