@@ -114,11 +114,12 @@ MUD_SPELL="${PURPLE}"            # Spell names
 MUD_MONSTER="${RED}"             # Monster/enemy names
 
 # Helper function to disable color palette (works in both compiled and uncompiled modes)
-_try_disable_palette() {
+try_disable_palette() {
         # Check if _disable_palette function exists (inlined by compiler)
         if command -v _disable_palette >/dev/null 2>&1; then
                 _disable_palette
-        elif disable_palette_path=$(command -v disable-palette 2>/dev/null) && [ -n "$disable_palette_path" ]; then
+        elif disable_palette_path=$(command -v disable-palette 2>/dev/null) \
+                && [ -n "$disable_palette_path" ]; then
                 # shellcheck source=/dev/null
                 . "$disable_palette_path"
         fi
@@ -127,12 +128,12 @@ _try_disable_palette() {
 # Allow the user or terminal capabilities to disable colour output entirely.
 case ${NO_COLOR-} in
         '' ) : ;;
-        * ) _try_disable_palette ;;
+        * ) try_disable_palette ;;
 esac
 
 case ${TERM-} in
         ''|dumb|unknown)
-                _try_disable_palette
+                try_disable_palette
                 ;;
         *)
                 if command -v tput >/dev/null 2>&1; then
@@ -141,7 +142,7 @@ case ${TERM-} in
                                 ''|0|-*)
                                         # Disable palette for empty, zero, or negative values
                                         # (tput returns -1 when colors are not supported)
-                                        _try_disable_palette
+                                        try_disable_palette
                                         ;;
                         esac
                 fi
