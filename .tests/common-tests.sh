@@ -682,8 +682,8 @@ test_no_undeclared_allcaps_vars() {
   violations_file=$(mktemp "${WIZARDRY_TMPDIR}/allcaps-violations.XXXXXX")
   
   # Allowed all-caps variables (POSIX standard, WIZARDRY infrastructure, and color/UI variables)
-  # Build as single string to avoid escaping issues
-  allowed='PATH=|IFS=|CDPATH=|HOME=|PWD=|OLDPWD=|TERM=|SHELL=|USER=|LOGNAME=|TMPDIR=|LANG=|LC_|TZ=|DISPLAY=|EDITOR=|PAGER=|VISUAL=|MAIL=|PS[1-4]=|COLUMNS=|LINES=|WIZARDRY_|BWRAP_|SANDBOX_|MACOS_SANDBOX_|ESC=|RESET=|BLACK=|RED=|GREEN=|YELLOW=|BLUE=|MAGENTA=|CYAN=|WHITE=|GREY=|GRAY=|BG_BLACK=|BG_RED=|BG_GREEN=|BG_YELLOW=|BG_BLUE=|BG_MAGENTA=|BG_CYAN=|BG_WHITE=|BOLD=|DIM=|ITALIC=|UNDERLINE=|BLINK=|REVERSE=|HIDDEN=|STRIKETHROUGH=|THEME_|ASSUME_YES=|AWAIT_KEYPRESS_'
+  # Explicit list - see .github/ENVIRONMENT-VARIABLES.md for justifications
+  allowed='PATH=|IFS=|CDPATH=|HOME=|PWD=|OLDPWD=|TERM=|SHELL=|USER=|LOGNAME=|TMPDIR=|LANG=|LC_|TZ=|DISPLAY=|EDITOR=|PAGER=|VISUAL=|MAIL=|PS[1-4]=|COLUMNS=|LINES=|WIZARDRY_DIR=|SPELLBOOK_DIR=|MUD_DIR=|WIZARDRY_PLATFORM=|WIZARDRY_RC_FILE=|WIZARDRY_RC_FORMAT=|WIZARDRY_MEMORIZE_TARGET=|WIZARDRY_LOG_LEVEL=|WIZARDRY_COLORS_AVAILABLE=|BWRAP_|SANDBOX_|MACOS_SANDBOX_|ESC=|RESET=|BLACK=|RED=|GREEN=|YELLOW=|BLUE=|MAGENTA=|CYAN=|WHITE=|GREY=|GRAY=|BG_BLACK=|BG_RED=|BG_GREEN=|BG_YELLOW=|BG_BLUE=|BG_MAGENTA=|BG_CYAN=|BG_WHITE=|BOLD=|DIM=|ITALIC=|UNDERLINE=|BLINK=|REVERSE=|HIDDEN=|STRIKETHROUGH=|THEME_|ASSUME_YES=|AWAIT_KEYPRESS_'
   
   # Find all shell scripts in spells/ (including .imps)
   find "$ROOT_DIR/spells" -type f -print | while IFS= read -r file; do
@@ -695,7 +695,7 @@ test_no_undeclared_allcaps_vars() {
     # Skip test infrastructure files, special interface files, and bootstrap spells
     case "$file" in
       */test-bootstrap|*/test-*|*/.imps/test/*|*/cantrips/colors) continue ;;
-      */detect-distro|*/detect-rc-file) continue ;;  # Bootstrap spells with special export patterns
+      */detect-distro) continue ;;  # Bootstrap spell: exports DISTRO for install script compatibility
     esac
     
     rel_path=${file#"$ROOT_DIR/"}
