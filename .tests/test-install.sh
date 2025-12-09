@@ -135,7 +135,8 @@ install_nixos_fails_without_config_path() {
   install_dir="$fixture/home/.wizardry"
   
   # Run without providing any config path input (non-interactive)
-  _run_cmd env DETECT_RC_FILE_PLATFORM=nixos \
+  _stub_detect_distro "nixos" "$fixture/bin"
+  _run_cmd PATH="$fixture/bin:$PATH" \
       WIZARDRY_INSTALL_DIR="$install_dir" \
       HOME="$fixture/home" \
       ASK_CANTRIP_INPUT=none \
@@ -166,7 +167,8 @@ EOF
 
   install_dir="$fixture/home/.wizardry"
   
-  _run_cmd env DETECT_RC_FILE_PLATFORM=nixos \
+  _stub_detect_distro "nixos" "$fixture/bin"
+  _run_cmd PATH="$fixture/bin:$PATH" \
       WIZARDRY_INSTALL_DIR="$install_dir" \
       HOME="$fixture/home" \
       WIZARDRY_INSTALL_ASSUME_YES=1 \
@@ -198,7 +200,8 @@ EOF
 
   install_dir="$fixture/home/.wizardry"
   
-  _run_cmd env DETECT_RC_FILE_PLATFORM=nixos \
+  _stub_detect_distro "nixos" "$fixture/bin"
+  _run_cmd PATH="$fixture/bin:$PATH" \
       WIZARDRY_INSTALL_DIR="$install_dir" \
       HOME="$fixture/home" \
       WIZARDRY_INSTALL_ASSUME_YES=1 \
@@ -238,7 +241,8 @@ EOF
   # Simulate user input: the path to the config file, then "y" to confirm
   _run_cmd sh -c "
     printf '%s\n%s\n' '$fixture/etc/nixos/configuration.nix' 'y' | \
-    env DETECT_RC_FILE_PLATFORM=nixos \
+    _stub_detect_distro "nixos" "$fixture/bin"
+    PATH="$fixture/bin:$PATH" \
         WIZARDRY_INSTALL_DIR='$install_dir' \
         HOME='$fixture/home' \
         '$ROOT_DIR/install'
@@ -279,7 +283,8 @@ EOF
   # Simulate user input: the path to the config file, then "y" to confirm
   _run_cmd sh -c "
     printf '%s\n%s\n' '$fixture/etc/nixos/configuration.nix' 'y' | \
-    env DETECT_RC_FILE_PLATFORM=nixos \
+    _stub_detect_distro "nixos" "$fixture/bin"
+    PATH="$fixture/bin:$PATH" \
         WIZARDRY_INSTALL_DIR='$install_dir' \
         HOME='$fixture/home' \
         '$ROOT_DIR/install'
@@ -325,7 +330,8 @@ EOF
   # Simulate user input: the path to the config file, then "y" to confirm
   _run_cmd sh -c "
     printf '%s\n%s\n' '$fixture/etc/nixos/configuration.nix' 'y' | \
-    env DETECT_RC_FILE_PLATFORM=nixos \
+    _stub_detect_distro "nixos" "$fixture/bin"
+    PATH="$fixture/bin:$PATH" \
         WIZARDRY_INSTALL_DIR='$install_dir' \
         HOME='$fixture/home' \
         '$ROOT_DIR/install'
@@ -370,7 +376,8 @@ EOF
   # Simulate user input: config path, then 'y' to proceed (only 2 prompts now)
   _run_cmd sh -c "
     printf '%s\n%s\n' '$fixture/etc/nixos/configuration.nix' 'y' | \
-    env DETECT_RC_FILE_PLATFORM=nixos \
+    _stub_detect_distro "nixos" "$fixture/bin"
+    PATH="$fixture/bin:$PATH" \
         WIZARDRY_INSTALL_DIR='$install_dir' \
         HOME='$fixture/home' \
         '$ROOT_DIR/install'
@@ -406,7 +413,8 @@ EOF
   # Simulate user input: config path, then 'y' to proceed
   _run_cmd sh -c "
     printf '%s\n%s\n' '$fixture/etc/nixos/configuration.nix' 'y' | \
-    env DETECT_RC_FILE_PLATFORM=nixos \
+    _stub_detect_distro "nixos" "$fixture/bin"
+    PATH="$fixture/bin:$PATH" \
         WIZARDRY_INSTALL_DIR='$install_dir' \
         HOME='$fixture/home' \
         '$ROOT_DIR/install'
@@ -447,7 +455,8 @@ EOF
   # Simulate user input: config path, then 'y' to proceed
   _run_cmd sh -c "
     printf '%s\n%s\n' '$fixture/etc/nixos/configuration.nix' 'y' | \
-    env DETECT_RC_FILE_PLATFORM=nixos \
+    _stub_detect_distro "nixos" "$fixture/bin"
+    PATH="$fixture/bin:$PATH" \
         WIZARDRY_INSTALL_DIR='$install_dir' \
         HOME='$fixture/home' \
         '$ROOT_DIR/install'
@@ -517,7 +526,8 @@ install_does_not_double_home_path() {
   # Set install dir to $fixture/home/.wizardry - an absolute path under HOME
   install_dir="$fixture/home/.wizardry"
   
-  _run_cmd env DETECT_RC_FILE_PLATFORM=debian \
+  _stub_detect_distro "debian" "$fixture/bin"
+  _run_cmd PATH="$fixture/bin:$PATH" \
       WIZARDRY_INSTALL_DIR="$install_dir" \
       HOME="$fixture/home" \
       WIZARDRY_INSTALL_ASSUME_YES=1 \
@@ -557,7 +567,8 @@ EOF
 
   install_dir="$fixture/home/.wizardry"
   
-  _run_cmd env DETECT_RC_FILE_PLATFORM=nixos \
+  _stub_detect_distro "nixos" "$fixture/bin"
+  _run_cmd PATH="$fixture/bin:$PATH" \
       WIZARDRY_INSTALL_DIR="$install_dir" \
       HOME="$fixture/home" \
       WIZARDRY_INSTALL_ASSUME_YES=1 \
@@ -790,7 +801,8 @@ EOF
 
   install_dir="$fixture/home/.wizardry"
   
-  _run_cmd env DETECT_RC_FILE_PLATFORM=nixos \
+  _stub_detect_distro "nixos" "$fixture/bin"
+  _run_cmd PATH="$fixture/bin:$PATH" \
       WIZARDRY_INSTALL_DIR="$install_dir" \
       HOME="$fixture/home" \
       WIZARDRY_INSTALL_ASSUME_YES=1 \
@@ -965,7 +977,8 @@ EOF
 
   install_dir="$fixture/home/.wizardry"
   
-  _run_cmd env DETECT_RC_FILE_PLATFORM=nixos \
+  _stub_detect_distro "nixos" "$fixture/bin"
+  _run_cmd PATH="$fixture/bin:$PATH" \
       WIZARDRY_INSTALL_DIR="$install_dir" \
       HOME="$fixture/home" \
       WIZARDRY_INSTALL_ASSUME_YES=1 \
@@ -1058,7 +1071,8 @@ EOF
 
   install_dir="$fixture/home/.wizardry"
   
-  _run_cmd env DETECT_RC_FILE_PLATFORM=nixos \
+  _stub_detect_distro "nixos" "$fixture/bin"
+  _run_cmd PATH="$fixture/bin:$PATH" \
       WIZARDRY_INSTALL_DIR="$install_dir" \
       HOME="$fixture/home" \
       WIZARDRY_INSTALL_ASSUME_YES=1 \
@@ -1095,7 +1109,8 @@ EOF
 
   install_dir="$fixture/home/.wizardry"
   
-  _run_cmd env DETECT_RC_FILE_PLATFORM=nixos \
+  _stub_detect_distro "nixos" "$fixture/bin"
+  _run_cmd PATH="$fixture/bin:$PATH" \
       WIZARDRY_INSTALL_DIR="$install_dir" \
       HOME="$fixture/home" \
       WIZARDRY_INSTALL_ASSUME_YES=1 \
