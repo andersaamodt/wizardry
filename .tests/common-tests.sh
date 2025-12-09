@@ -672,6 +672,55 @@ spells/.arcana/core/
   return 0
 }
 
+# --- Check: No undeclared all-caps variables in spells or imps ---
+# Spells never expect environment variable overrides for configuration.
+# All-caps variables are reserved for POSIX standards (PATH, HOME, IFS) and
+# wizardry infrastructure (WIZARDRY_*). User-facing data flows through arguments.
+test_no_undeclared_allcaps_vars() {
+  skip-if-compiled || return $?
+  
+  violations_file=$(mktemp "${WIZARDRY_TMPDIR}/allcaps-violations.XXXXXX")
+  
+  # Allowed all-caps variables (POSIX standard and WIZARDRY infrastructure)
+  allowed_pattern='PATH=|IFS=|CDPATH=|HOME=|PWD=|OLDPWD=|TERM=|SHELL=|USER=|LOGNAME=|TMPDIR=|LANG=|LC_|TZ=|DISPLAY=|EDITOR=|PAGER=|VISUAL=|MAIL=|PS[1-4]=|COLUMNS=|LINES='
+  allowed_pattern="${allowed_pattern}WIZARDRY_[A-Z_]*=|BWRAP_|SANDBOX_|MACOS_SANDBOX_"
+  
+  # Find all shell scripts in spells/ (including .imps)
+  find "$ROOT_DIR/spells" -type f -print | while IFS= read -r file; do
+    [ -f "$file" ] || continue
+    base_name=$(basename "$file")
+    should_skip_file "$base_name" && continue
+    is_posix_shell_script "$file" || continue
+    
+    # Skip test infrastructure files
+    case "$file" in
+      */test-bootstrap|*/test-*|*/.imps/test/*) continue ;;
+    esac
+    
+    rel_path=${file#"$ROOT_DIR/"}
+    
+    # Find all-caps variable assignments (pattern: VARNAME=...)
+    # Look for lines like: VARNAME=value or VARNAME=$(...)
+    violations=$(grep -n '^[[:space:]]*[A-Z_][A-Z_0-9]*=' "$file" 2>/dev/null | \
+      grep -Ev "$allowed_pattern" | \
+      cut -d: -f1 | head -10 || true)
+    
+    if [ -n "$violations" ]; then
+      printf '%s\n' "$rel_path"
+    fi
+  done > "$violations_file"
+  
+  # Get comma-delimited list of violating scripts
+  violations=$(cat "$violations_file" 2>/dev/null | head -20 | tr '\n' ', ' | sed 's/, $//')
+  rm -f "$violations_file"
+  
+  if [ -n "$violations" ]; then
+    TEST_FAILURE_REASON="scripts with undeclared all-caps variables: $violations"
+    return 1
+  fi
+  return 0
+}
+
 # --- Run all test cases ---
 
 _run_test_case "no duplicate spell names" test_no_duplicate_spell_names
@@ -688,5 +737,6 @@ _run_test_case "no pseudo-globals stored in rc files" test_no_pseudo_globals_in_
 _run_test_case "imps follow one-function-or-zero rule" test_imps_follow_function_rule
 _run_test_case "imps have opening comments" test_imps_have_opening_comments
 _run_test_case "bootstrap spells have identifying comment" test_bootstrap_spells_identified
+_run_test_case "no undeclared all-caps variables" test_no_undeclared_allcaps_vars
 
 _finish_tests
