@@ -30,6 +30,16 @@ EOF
   chmod +x "$stub_dir/detect-distro"
 }
 
+_stub_require_wizardry() {
+  stub_dir=$1
+  cat >"$stub_dir/require-wizardry" <<'EOF'
+#!/bin/sh
+# Stub that always succeeds (wizardry is "installed")
+exit 0
+EOF
+  chmod +x "$stub_dir/require-wizardry"
+}
+
 test_help() {
   _run_spell "spells/spellcraft/learn-spellbook" --help
   _assert_success && _assert_error_contains "Usage: learn-spellbook"
@@ -91,11 +101,14 @@ test_shell_status_succeeds_when_present() {
   # Create stubs using helper functions
   _stub_detect_rc_file "$rc" "$stub_bin"
   _stub_detect_distro "debian" "$stub_bin"
+  _stub_require_wizardry "$stub_bin"
 
-  _run_cmd PATH="$stub_bin:$PATH" "$ROOT_DIR/spells/spellcraft/learn-spellbook" add "$dir"
-  _assert_success && _assert_file_contains "$rc" "export PATH=\"$dir:\$PATH\""
+  # Use detect_rc_file env var to force the RC file location outside sandbox
+  PATH="$stub_bin:$PATH" detect_rc_file="$stub_bin/detect-rc-file" _run_spell "spells/spellcraft/learn-spellbook" add "$dir"
+  _assert_success || return 1
+  _assert_file_contains "$rc" "export PATH=\"$dir:\$PATH\"" || return 1
 
-  _run_cmd PATH="$stub_bin:$PATH" "$ROOT_DIR/spells/spellcraft/learn-spellbook" status "$dir"
+  PATH="$stub_bin:$PATH" detect_rc_file="$stub_bin/detect-rc-file" _run_spell "spells/spellcraft/learn-spellbook" status "$dir"
   _assert_success
 }
 
@@ -210,9 +223,11 @@ test_nix_recursive_creates_single_backup() {
   # Create stubs using helper functions
   _stub_detect_rc_file "$rc" "$stub_bin"
   _stub_detect_distro "nixos" "$stub_bin"
+  _stub_require_wizardry "$stub_bin"
 
   # Add with --recursive flag - should create only ONE backup
-  _run_cmd PATH="$stub_bin:$PATH" "$ROOT_DIR/spells/spellcraft/learn-spellbook" --recursive add "$base_dir"
+  # Use detect_rc_file env var to ensure RC file is outside sandbox
+  PATH="$stub_bin:$PATH" detect_rc_file="$stub_bin/detect-rc-file" _run_spell "spells/spellcraft/learn-spellbook" --recursive add "$base_dir"
   _assert_success || return 1
 
   # Count backup files - should be exactly 1
