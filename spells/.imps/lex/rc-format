@@ -1,0 +1,22 @@
+#!/bin/sh
+# rc-format RC_FILE - detect format of RC file (nix or shell)
+# Example: rc-format "$HOME/.config/home-manager/home.nix" => "nix"
+
+set -eu
+
+_rc_format() {
+  rc_file=$1
+  case $rc_file in
+  *.nix)
+    printf 'nix\n'
+    ;;
+  *)
+    printf 'shell\n'
+    ;;
+  esac
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */rc-format) _rc_format "$@" ;;
+esac

@@ -2,7 +2,7 @@
 # Behavioral cases (derived from --help):
 # - detect-rc-file prints usage
 # - detect-rc-file validates arguments
-# - detect-rc-file reports platform, rc_file, and format choices
+# - detect-rc-file reports the best rc file path
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
@@ -34,23 +34,17 @@ test_picks_known_platform_files() {
     exec spells/divination/detect-rc-file --platform mac
   '
   _assert_success || return 1
-  _assert_output_contains "platform=mac" || return 1
-  _assert_output_contains "rc_file=" || return 1
   _assert_output_contains ".bash_profile" || return 1
-  _assert_output_contains "format=shell" || return 1
 }
 
-test_emits_nix_format_hint() {
+test_emits_nix_file() {
   _run_cmd sh -c '
     mkdir -p "$HOME/.config/nixpkgs"
     touch "$HOME/.config/nixpkgs/home.nix"
     exec spells/divination/detect-rc-file --platform nixos
   '
   _assert_success || return 1
-  _assert_output_contains "platform=nixos" || return 1
-  _assert_output_contains "rc_file=" || return 1
-  _assert_output_contains ".config/nixpkgs/home.nix" || return 1
-  _assert_output_contains "format=nix" || return 1
+  _assert_output_contains "home.nix" || return 1
 }
 
 test_prefers_existing_platform_file() {
@@ -61,9 +55,7 @@ test_prefers_existing_platform_file() {
   '
 
   _assert_success || return 1
-  _assert_output_contains "platform=arch" || return 1
-  _assert_output_contains "rc_file=$home_dir/.profile" || return 1
-  _assert_output_contains "format=shell" || return 1
+  _assert_output_contains "$home_dir/.profile" || return 1
 }
 
 test_prefers_shell_file_when_platform_unknown() {
@@ -74,9 +66,7 @@ test_prefers_shell_file_when_platform_unknown() {
   '
 
   _assert_success || return 1
-  _assert_output_contains "platform=unknown" || return 1
-  _assert_output_contains "rc_file=$home_dir/.zshrc" || return 1
-  _assert_output_contains "format=shell" || return 1
+  _assert_output_contains "$home_dir/.zshrc" || return 1
 }
 
 test_handles_missing_home() {
@@ -85,9 +75,7 @@ test_handles_missing_home() {
   '
 
   _assert_success || return 1
-  _assert_output_contains "platform=unknown" || return 1
-  _assert_output_contains "rc_file=/.profile" || return 1
-  _assert_output_contains "format=shell" || return 1
+  _assert_output_contains "/.profile" || return 1
 }
 
 test_nixos_falls_back_to_shell_rc() {
@@ -101,9 +89,7 @@ test_nixos_falls_back_to_shell_rc() {
   '
 
   _assert_success || return 1
-  _assert_output_contains "platform=nixos" || return 1
-  _assert_output_contains "rc_file=$home_dir/.bashrc" || return 1
-  _assert_output_contains "format=shell" || return 1
+  _assert_output_contains "$home_dir/.bashrc" || return 1
 }
 
 test_nixos_detects_new_home_manager_path() {
@@ -116,9 +102,7 @@ test_nixos_detects_new_home_manager_path() {
   '
 
   _assert_success || return 1
-  _assert_output_contains "platform=nixos" || return 1
-  _assert_output_contains "rc_file=$home_dir/.config/home-manager/home.nix" || return 1
-  _assert_output_contains "format=nix" || return 1
+  _assert_output_contains "$home_dir/.config/home-manager/home.nix" || return 1
 }
 
 test_nixos_respects_nixos_config_env() {
@@ -131,9 +115,7 @@ test_nixos_respects_nixos_config_env() {
   '
 
   _assert_success || return 1
-  _assert_output_contains "platform=nixos" || return 1
-  _assert_output_contains "rc_file=$config_dir/my-config.nix" || return 1
-  _assert_output_contains "format=nix" || return 1
+  _assert_output_contains "$config_dir/my-config.nix" || return 1
 }
 
 test_nixos_prefers_home_manager_over_system_config() {
@@ -156,9 +138,7 @@ STUB
   '
 
   _assert_success || return 1
-  _assert_output_contains "platform=nixos" || return 1
-  _assert_output_contains "rc_file=$home_dir/.config/home-manager/home.nix" || return 1
-  _assert_output_contains "format=nix" || return 1
+  _assert_output_contains "$home_dir/.config/home-manager/home.nix" || return 1
 }
 
 test_nixos_uses_system_config_without_home_manager() {
@@ -177,15 +157,13 @@ test_nixos_uses_system_config_without_home_manager() {
   '
 
   _assert_success || return 1
-  _assert_output_contains "platform=nixos" || return 1
-  _assert_output_contains "rc_file=$config_dir/configuration.nix" || return 1
-  _assert_output_contains "format=nix" || return 1
+  _assert_output_contains "$config_dir/configuration.nix" || return 1
 }
 
 _run_test_case "detect-rc-file prints usage" test_help
 _run_test_case "detect-rc-file validates arguments" test_rejects_bad_arguments
 _run_test_case "detect-rc-file picks preferred files for platform" test_picks_known_platform_files
-_run_test_case "detect-rc-file emits nix formatting hints" test_emits_nix_format_hint
+_run_test_case "detect-rc-file emits nix file" test_emits_nix_file
 _run_test_case "detect-rc-file favors existing platform candidates" test_prefers_existing_platform_file
 _run_test_case "detect-rc-file respects shell defaults on unknown platforms" test_prefers_shell_file_when_platform_unknown
 _run_test_case "detect-rc-file tolerates missing HOME" test_handles_missing_home

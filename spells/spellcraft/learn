@@ -114,26 +114,24 @@ auto_detect_rc() {
     printf '%s\n' "learn: detect-rc-file helper not found." >&2
     return 1
   fi
-  output=$("$detect_helper")
-  rc_file_detected=''
-  platform_detected=''
-  format_detected=''
-  while IFS='=' read -r key value; do
-    case $key in
-    rc_file) rc_file_detected=$value ;;
-    platform) platform_detected=$value ;;
-    format) format_detected=$value ;;
-    esac
-  done <<EOF_ENV
-$output
-EOF_ENV
+  rc_file_detected=$("$detect_helper")
   if [ -z "$rc_file_detected" ]; then
     printf '%s\n' "learn: detect-rc-file did not provide an rc file." >&2
     return 1
   fi
+  # Detect platform (distro)
+  platform_detected='unknown'
+  if command -v detect-distro >/dev/null 2>&1; then
+    platform_detected=$(detect-distro 2>/dev/null || printf 'unknown')
+  fi
+  # Detect format from rc file extension
+  format_detected='shell'
+  case $rc_file_detected in
+  *.nix) format_detected='nix' ;;
+  esac
   printf '%s\n' "rc_file=$rc_file_detected"
-  printf '%s\n' "platform=${platform_detected:-unknown}"
-  printf '%s\n' "format=${format_detected:-shell}"
+  printf '%s\n' "platform=$platform_detected"
+  printf '%s\n' "format=$format_detected"
 }
 
 rc_run() {
