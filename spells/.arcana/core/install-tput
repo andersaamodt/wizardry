@@ -19,5 +19,11 @@ esac
 set -eu
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-apt_package=ncurses-bin dnf_package=ncurses yum_package=ncurses zypper_package=ncurses pacman_package=ncurses apk_package=ncurses brew_package=ncurses \
-  ASSUME_YES=1 "$script_dir/manage-system-command" tput ncurses
+"$script_dir/manage-system-command" \
+  --apt-package ncurses-bin \
+  --dnf-package ncurses \
+  --yum-package ncurses \
+  --zypper-package ncurses \
+  --pacman-package ncurses \
+  --apk-package ncurses \
+  tput ncurses

@@ -19,7 +19,7 @@ test_toggle_cd_is_executable() {
 test_toggle_cd_requires_cd_spell() {
   content=$(cat "$ROOT_DIR/spells/.arcana/mud/toggle-cd")
   case "$content" in
-    *CD_SPELL*cd*)
+    *cd_spell*cd*)
       return 0
       ;;
     *)

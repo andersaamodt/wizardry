@@ -37,7 +37,7 @@ test_reports_installed_service() {
   write_ask_text_stub "$stub_dir"
   service_dir=$(mktemp -d "$WIZARDRY_TMPDIR/services.XXXXXX") || return 1
   printf 'unit' >"$service_dir/demo.service"
-  SERVICE_DIR="$service_dir" IS_SERVICE_INSTALLED_ASK_TEXT="$stub_dir/ask-text" PATH="$stub_dir:$PATH" _run_spell "spells/cantrips/is-service-installed" demo
+  service_dir="$service_dir" IS_SERVICE_INSTALLED_ASK_TEXT="$stub_dir/ask-text" PATH="$stub_dir:$PATH" _run_spell "spells/cantrips/is-service-installed" demo
   _assert_success && _assert_output_contains "demo.service is installed"
 }
 
@@ -46,7 +46,7 @@ test_reports_missing_service() {
   stub_dir=$(make_stub_dir)
   write_ask_text_stub "$stub_dir"
   service_dir=$(mktemp -d "$WIZARDRY_TMPDIR/services.XXXXXX") || return 1
-  SERVICE_DIR="$service_dir" IS_SERVICE_INSTALLED_ASK_TEXT="$stub_dir/ask-text" PATH="$stub_dir:$PATH" _run_spell "spells/cantrips/is-service-installed" demo.service
+  service_dir="$service_dir" IS_SERVICE_INSTALLED_ASK_TEXT="$stub_dir/ask-text" PATH="$stub_dir:$PATH" _run_spell "spells/cantrips/is-service-installed" demo.service
   _assert_failure && _assert_output_contains "demo.service is not installed"
 }
 
