@@ -1,3 +1,4 @@
 # Generated during installation
 .uninstall
 wizardry-compiled/
+rc_file=*
