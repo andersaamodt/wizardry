@@ -1222,9 +1222,12 @@ EOF
   # Link require-wizardry and menu to fixture bin (menu needed by require-wizardry check)
   ln -sf "$ROOT_DIR/spells/cantrips/require-wizardry" "$fixture/bin/require-wizardry"
   ln -sf "$ROOT_DIR/spells/cantrips/menu" "$fixture/bin/menu"
+  # Link imps needed by learn-spellbook for nix files
+  ln -sf "$ROOT_DIR/spells/.imps/fs/backup-nix-config" "$fixture/bin/backup-nix-config"
+  ln -sf "$ROOT_DIR/spells/.imps/fs/temp-file" "$fixture/bin/temp-file"
 
-  # Run remove-all with stub in PATH
-  _run_cmd env PATH="$fixture/bin:\$PATH" "$ROOT_DIR/spells/spellcraft/learn-spellbook" remove-all
+  # Run remove-all with detect_rc_file env var pointing to stub (learn-spellbook checks this)
+  _run_cmd env PATH="$fixture/bin:\$PATH" detect_rc_file="$fixture/bin/detect-rc-file" "$ROOT_DIR/spells/spellcraft/learn-spellbook" remove-all
 
   _assert_success || return 1
   
@@ -1267,8 +1270,11 @@ EOF
   # Link require-wizardry and menu to fixture bin (menu needed by require-wizardry check)
   ln -sf "$ROOT_DIR/spells/cantrips/require-wizardry" "$fixture/bin/require-wizardry"
   ln -sf "$ROOT_DIR/spells/cantrips/menu" "$fixture/bin/menu"
+  # Link imps needed by learn-spellbook for nix files
+  ln -sf "$ROOT_DIR/spells/.imps/fs/backup-nix-config" "$fixture/bin/backup-nix-config"
+  ln -sf "$ROOT_DIR/spells/.imps/fs/temp-file" "$fixture/bin/temp-file"
 
-  _run_cmd env PATH="$fixture/bin:\$PATH" "$ROOT_DIR/spells/spellcraft/learn-spellbook" remove-all
+  _run_cmd env PATH="$fixture/bin:\$PATH" detect_rc_file="$fixture/bin/detect-rc-file" "$ROOT_DIR/spells/spellcraft/learn-spellbook" remove-all
 
   _assert_success || return 1
   
@@ -1304,8 +1310,11 @@ EOF
   # Link require-wizardry and menu to fixture bin (menu needed by require-wizardry check)
   ln -sf "$ROOT_DIR/spells/cantrips/require-wizardry" "$fixture/bin/require-wizardry"
   ln -sf "$ROOT_DIR/spells/cantrips/menu" "$fixture/bin/menu"
+  # Link imps needed by learn-spellbook for nix files
+  ln -sf "$ROOT_DIR/spells/.imps/fs/backup-nix-config" "$fixture/bin/backup-nix-config"
+  ln -sf "$ROOT_DIR/spells/.imps/fs/temp-file" "$fixture/bin/temp-file"
 
-  _run_cmd env PATH="$fixture/bin:\$PATH" "$ROOT_DIR/spells/spellcraft/learn-spellbook" remove-all
+  _run_cmd env PATH="$fixture/bin:\$PATH" detect_rc_file="$fixture/bin/detect-rc-file" "$ROOT_DIR/spells/spellcraft/learn-spellbook" remove-all
 
   _assert_success || return 1
   
