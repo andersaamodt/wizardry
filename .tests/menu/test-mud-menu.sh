@@ -194,7 +194,7 @@ printf '%s\n' '$tmp/rc'
 EOF
   chmod +x "$tmp/detect-rc-file"
   
-  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" PATH="$tmp:$PATH" "$ROOT_DIR/spells/menu/mud-menu"
+  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud-menu"
   _assert_success || return 1
   
   args=$(cat "$tmp/log")
@@ -244,7 +244,7 @@ printf '%s\n' '$tmp/rc'
 EOF
   chmod +x "$tmp/detect-rc-file"
   
-  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" PATH="$tmp:$PATH" "$ROOT_DIR/spells/menu/mud-menu"
+  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud-menu"
   _assert_success || return 1
   
   args=$(cat "$tmp/log")
@@ -304,7 +304,7 @@ printf '%s\n' '$tmp/rc'
 EOF
   chmod +x "$tmp/detect-rc-file"
   
-  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" PATH="$tmp:$PATH" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
+  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
   _assert_success || return 1
   
   args=$(cat "$tmp/log")
@@ -368,7 +368,7 @@ printf '%s\n' '$tmp/rc'
 EOF
   chmod +x "$tmp/detect-rc-file"
   
-  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" PATH="$tmp:$PATH" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
+  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
   _assert_success || return 1
   
   args=$(cat "$tmp/log")
@@ -413,7 +413,7 @@ printf '%s\n' '$tmp/rc'
 EOF
   chmod +x "$tmp/detect-rc-file"
   
-  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" PATH="$tmp:$PATH" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
+  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
   _assert_success || return 1
   
   args=$(cat "$tmp/log")
@@ -459,7 +459,7 @@ printf '%s\n' '$tmp/rc'
 EOF
   chmod +x "$tmp/detect-rc-file"
   
-  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" PATH="$tmp:$PATH" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
+  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
   _assert_success || return 1
   
   args=$(cat "$tmp/log")
@@ -559,7 +559,7 @@ printf '%s\n' '$tmp/rc'
 EOF
   chmod +x "$tmp/detect-rc-file"
   
-  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH:/usr/bin:/bin" MENU_LOG="$tmp/log" CALL_COUNT_FILE="$call_count_file" PATH="$tmp:$PATH" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
+  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH:/usr/bin:/bin" MENU_LOG="$tmp/log" CALL_COUNT_FILE="$call_count_file" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
   _assert_success || { TEST_FAILURE_REASON="menu should exit successfully"; return 1; }
   
   log_content=$(cat "$tmp/log")
@@ -658,7 +658,7 @@ printf '%s\n' '$tmp/rc'
 EOF
   chmod +x "$tmp/detect-rc-file"
   
-  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH:/usr/bin:/bin" MENU_LOG="$tmp/log" CALL_COUNT_FILE="$call_count_file" PATH="$tmp:$PATH" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
+  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH:/usr/bin:/bin" MENU_LOG="$tmp/log" CALL_COUNT_FILE="$call_count_file" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
   _assert_success || { TEST_FAILURE_REASON="menu should exit successfully"; return 1; }
   
   log_content=$(cat "$tmp/log")
@@ -736,7 +736,7 @@ printf '%s\n' '$tmp/rc'
 EOF
   chmod +x "$tmp/detect-rc-file"
   
-  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH:/usr/bin:/bin" MENU_LOG="$tmp/log" CALL_COUNT_FILE="$call_count_file" PATH="$tmp:$PATH" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
+  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH:/usr/bin:/bin" MENU_LOG="$tmp/log" CALL_COUNT_FILE="$call_count_file" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
   _assert_success || { TEST_FAILURE_REASON="menu should exit successfully"; return 1; }
   
   log_content=$(cat "$tmp/log")
