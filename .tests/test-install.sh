@@ -293,11 +293,14 @@ EOF
 
   install_dir="$fixture/home/.wizardry"
   
+  # Create stubs outside the sh -c
+  _stub_detect_distro "nixos" "$fixture/bin"
+  _stub_detect_rc_file_empty "$fixture/bin"
+  
   # Simulate user input: the path to the config file, then "y" to confirm
   _run_cmd sh -c "
     printf '%s\n%s\n' '$fixture/etc/nixos/configuration.nix' 'y' | \
-    _stub_detect_distro "nixos" "$fixture/bin"
-    PATH="$fixture/bin:$PATH" \
+    PATH='$fixture/bin:\$PATH' \
         WIZARDRY_INSTALL_DIR='$install_dir' \
         HOME='$fixture/home' \
         '$ROOT_DIR/install'
@@ -340,11 +343,14 @@ EOF
 
   install_dir="$fixture/home/.wizardry"
   
+  # Create stubs outside the sh -c
+  _stub_detect_distro "nixos" "$fixture/bin"
+  _stub_detect_rc_file_empty "$fixture/bin"
+  
   # Simulate user input: the path to the config file, then "y" to confirm
   _run_cmd sh -c "
     printf '%s\n%s\n' '$fixture/etc/nixos/configuration.nix' 'y' | \
-    _stub_detect_distro "nixos" "$fixture/bin"
-    PATH="$fixture/bin:$PATH" \
+    PATH='$fixture/bin:\$PATH' \
         WIZARDRY_INSTALL_DIR='$install_dir' \
         HOME='$fixture/home' \
         '$ROOT_DIR/install'
@@ -386,11 +392,14 @@ EOF
 
   install_dir="$fixture/home/.wizardry"
   
+  # Create stubs outside the sh -c
+  _stub_detect_distro "nixos" "$fixture/bin"
+  _stub_detect_rc_file_empty "$fixture/bin"
+  
   # Simulate user input: config path, then 'y' to proceed (only 2 prompts now)
   _run_cmd sh -c "
     printf '%s\n%s\n' '$fixture/etc/nixos/configuration.nix' 'y' | \
-    _stub_detect_distro "nixos" "$fixture/bin"
-    PATH="$fixture/bin:$PATH" \
+    PATH='$fixture/bin:\$PATH' \
         WIZARDRY_INSTALL_DIR='$install_dir' \
         HOME='$fixture/home' \
         '$ROOT_DIR/install'
@@ -423,11 +432,14 @@ EOF
 
   install_dir="$fixture/home/.wizardry"
   
+  # Create stubs outside the sh -c
+  _stub_detect_distro "nixos" "$fixture/bin"
+  _stub_detect_rc_file_empty "$fixture/bin"
+  
   # Simulate user input: config path, then 'y' to proceed
   _run_cmd sh -c "
     printf '%s\n%s\n' '$fixture/etc/nixos/configuration.nix' 'y' | \
-    _stub_detect_distro "nixos" "$fixture/bin"
-    PATH="$fixture/bin:$PATH" \
+    PATH='$fixture/bin:\$PATH' \
         WIZARDRY_INSTALL_DIR='$install_dir' \
         HOME='$fixture/home' \
         '$ROOT_DIR/install'
@@ -465,11 +477,14 @@ EOF
 
   install_dir="$fixture/home/.wizardry"
   
+  # Create stubs outside the sh -c
+  _stub_detect_distro "nixos" "$fixture/bin"
+  _stub_detect_rc_file_empty "$fixture/bin"
+  
   # Simulate user input: config path, then 'y' to proceed
   _run_cmd sh -c "
     printf '%s\n%s\n' '$fixture/etc/nixos/configuration.nix' 'y' | \
-    _stub_detect_distro "nixos" "$fixture/bin"
-    PATH="$fixture/bin:$PATH" \
+    PATH='$fixture/bin:\$PATH' \
         WIZARDRY_INSTALL_DIR='$install_dir' \
         HOME='$fixture/home' \
         '$ROOT_DIR/install'
@@ -539,7 +554,10 @@ install_does_not_double_home_path() {
   # Set install dir to $fixture/home/.wizardry - an absolute path under HOME
   install_dir="$fixture/home/.wizardry"
   
+  rc_file="$fixture/home/.bashrc"
+  touch "$rc_file"
   _stub_detect_distro "debian" "$fixture/bin"
+  _stub_detect_rc_file "$rc_file" "$fixture/bin"
   _run_cmd PATH="$fixture/bin:$PATH" \
       WIZARDRY_INSTALL_DIR="$install_dir" \
       HOME="$fixture/home" \
@@ -580,7 +598,9 @@ EOF
 
   install_dir="$fixture/home/.wizardry"
   
+  nix_config="$fixture/home/.config/home-manager/home.nix"
   _stub_detect_distro "nixos" "$fixture/bin"
+  _stub_detect_rc_file "$nix_config" "$fixture/bin"
   _run_cmd PATH="$fixture/bin:$PATH" \
       WIZARDRY_INSTALL_DIR="$install_dir" \
       HOME="$fixture/home" \
@@ -814,7 +834,9 @@ EOF
 
   install_dir="$fixture/home/.wizardry"
   
+  nix_config="$fixture/home/.config/home-manager/home.nix"
   _stub_detect_distro "nixos" "$fixture/bin"
+  _stub_detect_rc_file "$nix_config" "$fixture/bin"
   _run_cmd PATH="$fixture/bin:$PATH" \
       WIZARDRY_INSTALL_DIR="$install_dir" \
       HOME="$fixture/home" \
