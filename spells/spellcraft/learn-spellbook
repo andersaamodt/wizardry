@@ -343,24 +343,12 @@ fi
 # Use detect-rc-file to derive sane defaults. This keeps the CLI consistent 
 # with the installer and any other spell that edits shell start-up files.
 detect_output=$("$detect_rc_file")
-platform=""
 rc_file=""
 format=""
-while IFS='=' read -r key value; do
-        case $key in
-        platform)
-                platform=$value
-                ;;
-        rc_file)
-                rc_file=$value
-                ;;
-        format)
-                format=$value
-                ;;
-        esac
-done <<EOF
-$detect_output
-EOF
+# detect-rc-file now outputs only the RC file path (single line)
+if [ -n "$detect_output" ]; then
+        rc_file="$detect_output"
+fi
 
 if [ -z "$rc_file" ]; then
         printf '%s\n' "learn-spellbook: unable to determine a startup file." >&2
@@ -376,10 +364,6 @@ if [ -z "$format" ]; then
                 format=shell
                 ;;
         esac
-fi
-
-if [ -z "$platform" ]; then
-        platform=unknown
 fi
 
 case $format in

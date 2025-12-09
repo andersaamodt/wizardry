@@ -443,22 +443,21 @@ check_invoke_wizardry_status() {
 detect_rc_file_value=""
 detect_format_value=""
 detect_platform_value=""
+# Get RC file path from detect-rc-file (now outputs only path)
 if detect_output="$($DETECT_RC_FILE 2>/dev/null)"; then
-        while IFS='=' read -r key value; do
-                case $key in
-                rc_file)
-                        detect_rc_file_value=$value
-                        ;;
-                format)
-                        detect_format_value=$value
-                        ;;
-                platform)
-                        detect_platform_value=$value
-                        ;;
+        if [ -n "$detect_output" ]; then
+                detect_rc_file_value="$detect_output"
+                # Determine format from file extension
+                case "$detect_rc_file_value" in
+                        *.nix) detect_format_value="nix" ;;
+                        *) detect_format_value="shell" ;;
                 esac
-        done <<EOF
-$detect_output
-EOF
+        fi
+fi
+# Get platform separately from detect-distro
+if detect_platform_output="$($DETECT_DISTRO 2>/dev/null)"; then
+        # detect-distro outputs just the platform name on first line
+        detect_platform_value=$(printf '%s' "$detect_platform_output" | head -n 1)
 fi
 
 # On NixOS, if no nix config was found (format is shell), prompt for the config path
