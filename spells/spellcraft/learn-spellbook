@@ -346,9 +346,7 @@ detect_output=$("$detect_rc_file")
 rc_file=""
 format=""
 # detect-rc-file now outputs only the RC file path (single line)
-if [ -n "$detect_output" ]; then
-        rc_file="$detect_output"
-fi
+rc_file="$detect_output"
 
 if [ -z "$rc_file" ]; then
         printf '%s\n' "learn-spellbook: unable to determine a startup file." >&2

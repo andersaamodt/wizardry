@@ -267,6 +267,7 @@ fi
 # on to set up shell integration and ask for confirmation.
 INVOKE_WIZARDRY="$ABS_DIR/spells/.imps/sys/invoke-wizardry"
 DETECT_RC_FILE="$ABS_DIR/spells/divination/detect-rc-file"
+DETECT_DISTRO="$ABS_DIR/spells/divination/detect-distro"
 NIX_SHELL_ADD="$ABS_DIR/spells/.imps/sys/nix-shell-add"
 NIX_SHELL_REMOVE="$ABS_DIR/spells/.imps/sys/nix-shell-remove"
 CORE_INSTALLER=${WIZARDRY_CORE_INSTALLER:-$ABS_DIR/spells/.arcana/core/install-core}
