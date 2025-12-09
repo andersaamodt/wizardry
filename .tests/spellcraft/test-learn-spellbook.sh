@@ -226,8 +226,8 @@ test_nix_recursive_creates_single_backup() {
   _stub_require_wizardry "$stub_bin"
 
   # Add with --recursive flag - should create only ONE backup
-  # Use detect_rc_file env var to ensure RC file is outside sandbox
-  PATH="$stub_bin:$PATH" detect_rc_file="$stub_bin/detect-rc-file" _run_spell "spells/spellcraft/learn-spellbook" --recursive add "$base_dir"
+  # Use _run_cmd to ensure all imps are available in PATH
+  PATH="$stub_bin:$PATH" _run_cmd "spells/spellcraft/learn-spellbook" --recursive add "$base_dir"
   _assert_success || return 1
 
   # Count backup files - should be exactly 1
