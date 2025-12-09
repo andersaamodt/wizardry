@@ -22,22 +22,22 @@ esac
 
 set -eu
 
-SCRIPT_SOURCE=$0
-case $SCRIPT_SOURCE in
+script_source=$0
+case $script_source in
 */*)
-        SCRIPT_DIR=${SCRIPT_SOURCE%/*}
+        script_dir=${script_source%/*}
         ;;
 *)
-        resolved=$(command -v "$SCRIPT_SOURCE" 2>/dev/null || printf '%s' "$SCRIPT_SOURCE")
-        SCRIPT_DIR=${resolved%/*}
-        SCRIPT_SOURCE=$resolved
+        resolved=$(command -v "$script_source" 2>/dev/null || printf '%s' "$script_source")
+        script_dir=${resolved%/*}
+        script_source=$resolved
         ;;
 esac
-if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
-        SCRIPT_DIR=.
+if [ -z "$script_dir" ] || [ "$script_dir" = "$script_source" ]; then
+        script_dir=.
 fi
-SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
-LOOK_SCRIPT_PATH="$SCRIPT_DIR/$(basename "$SCRIPT_SOURCE")"
+script_dir=$(cd "$script_dir" && pwd -P)
+LOOK_SCRIPT_PATH="$script_dir/$(basename "$script_source")"
 
 look_warn() {
         printf '%s\n' "look: $1" >&2
@@ -120,8 +120,8 @@ locate_ask_yn() {
                 where ask-yn
                 return 0
         fi
-        if [ -x "$SCRIPT_DIR/cantrips/ask-yn" ]; then
-                printf '%s\n' "$SCRIPT_DIR/cantrips/ask-yn"
+        if [ -x "$script_dir/cantrips/ask-yn" ]; then
+                printf '%s\n' "$script_dir/cantrips/ask-yn"
                 return 0
         fi
         return 1
@@ -157,9 +157,9 @@ load_colors() {
                 . "$(command -v colors)"
                 return 0
         fi
-        if [ -x "$SCRIPT_DIR/cantrips/colors" ]; then
+        if [ -x "$script_dir/cantrips/colors" ]; then
                 # shellcheck disable=SC1090
-                . "$SCRIPT_DIR/cantrips/colors"
+                . "$script_dir/cantrips/colors"
                 return 0
         fi
         return 1
@@ -169,20 +169,20 @@ if ! load_colors; then
         BLUE=""
         BOLD=""
         RESET=""
-        MUD_LOCATION=""
-        MUD_TITLE=""
-        MUD_DESCRIPTION=""
+        mud_location=""
+        mud_title=""
+        mud_description=""
 fi
 
 # Let tests or callers override the helper path; otherwise look beside this
 # script first, then in PATH so the spell still works when installed globally.
 # This keeps installation optional while preserving predictability.
-READ_MAGIC=${LOOK_READ_MAGIC-}
-if [ -z "$READ_MAGIC" ]; then
-        if [ -x "$SCRIPT_DIR/read-magic" ]; then
-                READ_MAGIC="$SCRIPT_DIR/read-magic"
+read_magic=${look_read_magic-}
+if [ -z "$read_magic" ]; then
+        if [ -x "$script_dir/read-magic" ]; then
+                read_magic="$script_dir/read-magic"
         elif command -v read-magic >/dev/null 2>&1; then
-                READ_MAGIC=$(command -v read-magic)
+                read_magic=$(command -v read-magic)
         else
                 printf '%s\n' "look: read-magic spell is missing." >&2
                 exit 1
@@ -200,7 +200,7 @@ path=$(strip-trailing-slashes "$(abs-path "$path_input")")
 install_look || true
 
 # Message returned by read-magic when attribute doesn't exist
-MISSING_ATTR_MSG='read-magic: attribute does not exist.'
+missing_attr_msg='read-magic: attribute does not exist.'
 
 # Default descriptions for rooms without enchanted description attributes
 get_default_description() {
@@ -215,13 +215,13 @@ get_default_description() {
         esac
 }
 
-IDENTIFY_TITLE=''
-IDENTIFY_DESCRIPTION=''
+identify_title=''
+identify_description=''
 
 if [ "$identify_available" -eq 1 ]; then
         if identify_room_output=$(identify-room "$path" 2>/dev/null); then
-                IDENTIFY_TITLE=$(printf '%s' "$identify_room_output" | sed -n '1p')
-                IDENTIFY_DESCRIPTION=$(printf '%s' "$identify_room_output" | sed -n '2p')
+                identify_title=$(printf '%s' "$identify_room_output" | sed -n '1p')
+                identify_description=$(printf '%s' "$identify_room_output" | sed -n '2p')
         fi
 else
         look_warn "identify-room spell is unavailable; continuing without system lore."
@@ -229,11 +229,11 @@ fi
 # Get title from attribute or fall back to folder name
 get_room_title() {
         room_path=$1
-        attr_title=$("$READ_MAGIC" "$room_path" title 2>/dev/null || true)
-        if [ "$attr_title" != "$MISSING_ATTR_MSG" ] && [ -n "$attr_title" ]; then
+        attr_title=$("$read_magic" "$room_path" title 2>/dev/null || true)
+        if [ "$attr_title" != "$missing_attr_msg" ] && [ -n "$attr_title" ]; then
                 printf '%s' "$attr_title"
-        elif [ -n "$IDENTIFY_TITLE" ]; then
-                printf '%s' "$IDENTIFY_TITLE"
+        elif [ -n "$identify_title" ]; then
+                printf '%s' "$identify_title"
         else
                 # Use the folder/file name as the title
                 basename "$room_path"
@@ -243,13 +243,13 @@ get_room_title() {
 # Get description from attribute or fall back to default
 get_room_description() {
         room_path=$1
-        attr_desc=$("$READ_MAGIC" "$room_path" description 2>/dev/null || true)
-        if [ "$attr_desc" != "$MISSING_ATTR_MSG" ] && [ -n "$attr_desc" ]; then
+        attr_desc=$("$read_magic" "$room_path" description 2>/dev/null || true)
+        if [ "$attr_desc" != "$missing_attr_msg" ] && [ -n "$attr_desc" ]; then
                 printf '%s' "$attr_desc"
                 return 0
         fi
-        if [ -n "$IDENTIFY_DESCRIPTION" ]; then
-                printf '%s' "$IDENTIFY_DESCRIPTION"
+        if [ -n "$identify_description" ]; then
+                printf '%s' "$identify_description"
                 return 0
         fi
         get_default_description "$room_path"
@@ -259,5 +259,5 @@ get_room_description() {
 room_title=$(get_room_title "$path")
 room_description=$(get_room_description "$path")
 
-printf '%s%s%s\n' "$MUD_TITLE" "$room_title" "$RESET"
-printf '%s%s%s\n' "$MUD_DESCRIPTION" "$room_description" "$RESET"
+printf '%s%s%s\n' "$mud_title" "$room_title" "$RESET"
+printf '%s%s%s\n' "$mud_description" "$room_description" "$RESET"

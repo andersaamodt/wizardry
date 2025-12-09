@@ -28,7 +28,7 @@ set -eu
 
 # Resolve markers directory
 _jm_spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
-MARKERS_DIR=$(env-or JUMP_TO_MARKERS_DIR "$_jm_spell_home/.markers")
+markers_dir=$(env-or JUMP_TO_MARKERS_DIR "$_jm_spell_home/.markers")
 
 # jump_portal_messages preserves every line of flavor text from the original
 # spell and sprinkles in a few new sensations for modern teleportation.
@@ -89,7 +89,7 @@ fi
 
 # Get all available marker names, sorted with numbers first then alphabetical
 jump_list_markers() {
-        markers_dir=$MARKERS_DIR
+        markers_dir=$markers_dir
         if [ ! -d "$markers_dir" ]; then
                 return 1
         fi
@@ -126,7 +126,7 @@ jump_list_markers() {
 # Returns empty if all markers have the same mtime (fresh state)
 # or if the most recent marker is older than 4 hours (reset timeout)
 jump_most_recent_marker() {
-        markers_dir=$MARKERS_DIR
+        markers_dir=$markers_dir
         if [ ! -d "$markers_dir" ]; then
                 return 1
         fi
@@ -190,7 +190,7 @@ jump_next_marker() {
 }
 
 jump_to_marker_impl() {
-        markers_dir=$MARKERS_DIR
+        markers_dir=$markers_dir
         marker_name="${1:-}"
         
         # If no marker specified OR marker is "0", cycle through markers

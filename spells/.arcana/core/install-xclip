@@ -18,5 +18,5 @@ esac
 
 set -eu
 
-SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-ASSUME_YES=1 "$SCRIPT_DIR/manage-system-command" xclip xclip
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+ASSUME_YES=1 "$script_dir/manage-system-command" xclip xclip

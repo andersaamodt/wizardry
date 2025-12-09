@@ -20,16 +20,16 @@ esac
 
 set -eu
 
-SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-MUD_CONFIG="$SCRIPT_DIR/mud-config"
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+mud_config="$script_dir/mud-config"
 
-if [ ! -x "$MUD_CONFIG" ]; then
-        printf '%s\n' "Error: mud-config not found at '$MUD_CONFIG'." >&2
+if [ ! -x "$mud_config" ]; then
+        printf '%s\n' "Error: mud-config not found at '$mud_config'." >&2
         exit 1
 fi
 
 # Toggle the feature and report state
-new_state=$("$MUD_CONFIG" toggle fantasy-theme)
+new_state=$("$mud_config" toggle fantasy-theme)
 
 if [ "$new_state" = "1" ]; then
         printf '%s\n' "✓ Fantasy theme enabled (planned feature)."

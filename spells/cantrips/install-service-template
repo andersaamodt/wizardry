@@ -4,12 +4,12 @@
 # substituting placeholders. It prefers interactive prompts so the services menu
 # can call it without arguments.
 
-SCRIPT_NAME=$(basename "$0")
-SERVICE_DIR=${SERVICE_DIR:-/etc/systemd/system}
+script_name=$(basename "$0")
+service_dir=${service_dir:-/etc/systemd/system}
 
 show_usage() {
         cat <<USAGE >&2
-Usage: $SCRIPT_NAME /path/to/template [KEY=value ...]
+Usage: $script_name /path/to/template [KEY=value ...]
 
 Copies a systemd service template into the system directory, substituting KEY=value pairs into the file. Prompts for missing values to keep menu-driven installs friendly.
 USAGE
@@ -41,7 +41,7 @@ if [ -x "$relative" ]; then
 printf '%s' "$relative"
 return 0
 fi
-printf '%s\n' "$SCRIPT_NAME: unable to locate helper '$fallback'." >&2
+printf '%s\n' "$script_name: unable to locate helper '$fallback'." >&2
 exit 1
 }
 
@@ -96,29 +96,29 @@ prompt_placeholders() {
 	rm -f "$placeholders_file"
 }
 
-SCRIPT_SOURCE=$0
-case $SCRIPT_SOURCE in
+script_source=$0
+case $script_source in
 */*)
-        SCRIPT_DIR=${SCRIPT_SOURCE%/*}
+        script_dir=${script_source%/*}
         ;;
 *)
-        resolved=$(command -v "$SCRIPT_SOURCE" 2>/dev/null || printf '%s' "$SCRIPT_SOURCE")
-        SCRIPT_DIR=${resolved%/*}
-        SCRIPT_SOURCE=$resolved
+        resolved=$(command -v "$script_source" 2>/dev/null || printf '%s' "$script_source")
+        script_dir=${resolved%/*}
+        script_source=$resolved
         ;;
 esac
-if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
-        SCRIPT_DIR=.
+if [ -z "$script_dir" ] || [ "$script_dir" = "$script_source" ]; then
+        script_dir=.
 fi
-SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
+script_dir=$(cd "$script_dir" && pwd -P)
 
-ASK_YN=$(find_helper INSTALL_SERVICE_TEMPLATE_ASK_YN "$SCRIPT_DIR/ask-yn" ask-yn)
-ASK_TEXT=$(find_helper INSTALL_SERVICE_TEMPLATE_ASK_TEXT "$SCRIPT_DIR/ask-text" ask-text)
+ASK_YN=$(find_helper INSTALL_SERVICE_TEMPLATE_ASK_YN "$script_dir/ask-yn" ask-yn)
+ASK_TEXT=$(find_helper INSTALL_SERVICE_TEMPLATE_ASK_TEXT "$script_dir/ask-text" ask-text)
 
 if command -v systemctl >/dev/null 2>&1; then
-        SYSTEMCTL=$(command -v systemctl)
+        systemctl_cmd=$(command -v systemctl)
 else
-        printf '%s\n' "$SCRIPT_NAME: systemctl is required for this spell." >&2
+        printf '%s\n' "$script_name: systemctl is required for this spell." >&2
         exit 1
 fi
 
@@ -127,7 +127,7 @@ if [ "$(id -u)" -eq 0 ]; then
 "$@"
 return 0
 fi
-if [ -w "$SERVICE_DIR" ]; then
+if [ -w "$service_dir" ]; then
 "$@"
 return 0
 fi
@@ -135,7 +135,7 @@ if command -v sudo >/dev/null 2>&1; then
 sudo "$@"
 return 0
 fi
-printf '%s\n' "$SCRIPT_NAME: run as root or install sudo to write $SERVICE_DIR." >&2
+printf '%s\n' "$script_name: run as root or install sudo to write $service_dir." >&2
 exit 1
 }
 
@@ -150,12 +150,12 @@ if [ -z "$template_path" ]; then
         exit 1
 fi
 if [ ! -f "$template_path" ]; then
-        printf '%s\n' "$SCRIPT_NAME: template '$template_path' not found." >&2
+        printf '%s\n' "$script_name: template '$template_path' not found." >&2
         exit 1
 fi
 
 service_file=$(basename "$template_path")
-service_path="$SERVICE_DIR/$service_file"
+service_path="$service_dir/$service_file"
 
 if [ -f "$service_path" ]; then
         if ! "$ASK_YN" "Service $service_file exists. Overwrite?" no >/dev/null; then
@@ -177,7 +177,7 @@ for arg in "$@"; do
                 replace_placeholder "$key" "$value"
                 ;;
         *)
-                printf '%s\n' "$SCRIPT_NAME: ignoring malformed substitution '$arg'." >&2
+                printf '%s\n' "$script_name: ignoring malformed substitution '$arg'." >&2
                 ;;
         esac
 done
@@ -186,6 +186,6 @@ prompt_placeholders
 
 require_privilege cp "$tmp_file" "$service_path"
 require_privilege chmod 644 "$service_path"
-require_privilege "$SYSTEMCTL" daemon-reload
+require_privilege "$systemctl_cmd" daemon-reload
 
 printf '%s\n' "Service installed at $service_path"

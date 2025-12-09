@@ -63,12 +63,12 @@ chat_config_dir=$(prompt "Where should simplex-chat keep its configuration?" "$c
 
 # Allow users to override per-manager packages to handle distro differences.
 export NIX_PACKAGE=${NIX_PACKAGE:-$chat_package}
-export APT_PACKAGE=${APT_PACKAGE:-$chat_package}
-export DNF_PACKAGE=${DNF_PACKAGE:-$chat_package}
-export YUM_PACKAGE=${YUM_PACKAGE:-$chat_package}
-export ZYPPER_PACKAGE=${ZYPPER_PACKAGE:-$chat_package}
-export PACMAN_PACKAGE=${PACMAN_PACKAGE:-$chat_package}
-export APK_PACKAGE=${APK_PACKAGE:-$chat_package}
+export apt_package=${apt_package:-$chat_package}
+export dnf_package=${dnf_package:-$chat_package}
+export yum_package=${yum_package:-$chat_package}
+export zypper_package=${zypper_package:-$chat_package}
+export pacman_package=${pacman_package:-$chat_package}
+export apk_package=${apk_package:-$chat_package}
 export PKGIN_PACKAGE=${PKGIN_PACKAGE:-$chat_package}
 
 printf '\nInstalling simplex-chat using %s...\n' "$manage_cmd"

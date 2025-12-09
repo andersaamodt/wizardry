@@ -214,10 +214,10 @@ parse_arguments() {
         fi
 
         # Export for use in main
-        ENCHANT_FILE=$file
-        ENCHANT_KEY=$key
-        ENCHANT_VALUE=$value
-        ENCHANT_PREFERRED=$preferred
+        enchant_file=$file
+        enchant_key=$key
+        enchant_value=$value
+        enchant_preferred=$preferred
 }
 
 main() {
@@ -225,10 +225,10 @@ main() {
                 exit 1
         fi
 
-        file=$ENCHANT_FILE
-        key=$ENCHANT_KEY
-        value=$ENCHANT_VALUE
-        preferred=$ENCHANT_PREFERRED
+        file=$enchant_file
+        key=$enchant_key
+        value=$enchant_value
+        preferred=$enchant_preferred
 
         gone "$file" && fail "Error: The file does not exist."
 

@@ -48,12 +48,12 @@ fi
 nix_package=${NIX_PACKAGE:-$package_default}
 
 # Allow per-manager package overrides when names diverge across distros.
-apt_package=${APT_PACKAGE:-$package_default}
-dnf_package=${DNF_PACKAGE:-$package_default}
-yum_package=${YUM_PACKAGE:-$package_default}
-zypper_package=${ZYPPER_PACKAGE:-$package_default}
-pacman_package=${PACMAN_PACKAGE:-$package_default}
-apk_package=${APK_PACKAGE:-$package_default}
+apt_package=${apt_package:-$package_default}
+dnf_package=${dnf_package:-$package_default}
+yum_package=${yum_package:-$package_default}
+zypper_package=${zypper_package:-$package_default}
+pacman_package=${pacman_package:-$package_default}
+apk_package=${apk_package:-$package_default}
 pkgin_package=${PKGIN_PACKAGE:-$package_default}
 pkgin_candidates=${PKGIN_CANDIDATES:-/usr/pkg/bin/pkgin /opt/pkg/bin/pkgin /usr/local/pkg/bin/pkgin}
 

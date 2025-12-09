@@ -19,8 +19,8 @@ esac
 
 set -eu
 
-SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-CD_SPELL="$SCRIPT_DIR/cd"
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+CD_SPELL="$script_dir/cd"
 
 if [ ! -x "$CD_SPELL" ]; then
         printf '%s\n' "Error: cd spell not found at '$CD_SPELL'." >&2

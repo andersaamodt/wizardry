@@ -77,7 +77,7 @@ if ! require dd "The fathom-cursor spell needs 'dd' to read the terminal respons
     exit 1
 fi
 
-TTY_DEVICE=${FATHOM_CURSOR_DEVICE:-/dev/tty}
+tty_device=${fathom_cursor_device:-/dev/tty}
 skip_stty=${FATHOM_CURSOR_SKIP_STTY:-0}
 
 # Only reach for stty when we are manipulating a real tty.
@@ -89,24 +89,24 @@ fi
 
 if [ "$skip_stty" -eq 1 ]; then
     # Test harnesses can feed canned responses via a read-only file.
-    if [ ! -r "$TTY_DEVICE" ]; then
-        printf '%s\n' "fathom-cursor: unable to read from '$TTY_DEVICE'" >&2
+    if [ ! -r "$tty_device" ]; then
+        printf '%s\n' "fathom-cursor: unable to read from '$tty_device'" >&2
         exit 1
     fi
 
-    exec 3<"$TTY_DEVICE" || exit 1
+    exec 3<"$tty_device" || exit 1
     restore() {
         exec 3>&- 2>/dev/null || :
     }
 else
     # When running interactively, open the tty for both reading and writing so
     # we can send the DSR request and read the reply.
-    if [ ! -r "$TTY_DEVICE" ] || [ ! -w "$TTY_DEVICE" ]; then
-        printf '%s\n' "fathom-cursor: unable to open controlling terminal '$TTY_DEVICE'" >&2
+    if [ ! -r "$tty_device" ] || [ ! -w "$tty_device" ]; then
+        printf '%s\n' "fathom-cursor: unable to open controlling terminal '$tty_device'" >&2
         exit 1
     fi
 
-    exec 3<>"$TTY_DEVICE" || exit 1
+    exec 3<>"$tty_device" || exit 1
 
     # Preserve the terminal state and restore it on exit to avoid leaving the
     # user with a broken session.

@@ -21,22 +21,22 @@ esac
 
 set -eu
 
-SCRIPT=$0
-case $SCRIPT in
+script=$0
+case $script in
 */*)
-        SCRIPT_DIR=${SCRIPT%/*}
+        script_dir=${script%/*}
         ;;
 *)
-        SCRIPT_DIR=.
+        script_dir=.
         ;;
 esac
-SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
-HELPER="$SCRIPT_DIR/ask-text"
+script_dir=$(cd "$script_dir" && pwd -P)
+helper="$script_dir/ask-text"
 
-if [ ! -x "$HELPER" ]; then
-        printf '%s\n' "ask: missing required helper '$HELPER'." >&2
+if [ ! -x "$helper" ]; then
+        printf '%s\n' "ask: missing required helper '$helper'." >&2
         exit 1
 fi
 
 # Pass every incantation straight through so ask behaves exactly like ask-text.
-exec "$HELPER" "$@"
+exec "$helper" "$@"

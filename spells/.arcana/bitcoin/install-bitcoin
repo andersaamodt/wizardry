@@ -19,7 +19,7 @@ esac
 
 set -eu
 
-BITCOIN_VERSION_DEFAULT="25.0"
+bitcoin_version_default="25.0"
 
 prompt_yes_no() {
   question=$1
@@ -65,18 +65,18 @@ detect_distro() {
 }
 
 install_with_binary() {
-  BITCOIN_VERSION=$1
+  bitcoin_version=$1
   binary_name=""
   arch=$(uname -m)
   case "$arch" in
     x86_64)
-      binary_name="bitcoin-$BITCOIN_VERSION-x86_64-linux-gnu.tar.gz"
+      binary_name="bitcoin-$bitcoin_version-x86_64-linux-gnu.tar.gz"
       ;;
     aarch64)
-      binary_name="bitcoin-$BITCOIN_VERSION-aarch64-linux-gnu.tar.gz"
+      binary_name="bitcoin-$bitcoin_version-aarch64-linux-gnu.tar.gz"
       ;;
     armv7l)
-      binary_name="bitcoin-$BITCOIN_VERSION-arm-linux-gnueabihf.tar.gz"
+      binary_name="bitcoin-$bitcoin_version-arm-linux-gnueabihf.tar.gz"
       ;;
     *)
       echo "Unsupported architecture: $arch"
@@ -84,7 +84,7 @@ install_with_binary() {
       ;;
   esac
 
-  bitcoin_url="https://bitcoincore.org/bin/bitcoin-core-$BITCOIN_VERSION/$binary_name"
+  bitcoin_url="https://bitcoincore.org/bin/bitcoin-core-$bitcoin_version/$binary_name"
   tmp_dir=$(temp-dir bitcoin-install) || return 1
   trap 'cleanup-dir "$tmp_dir"' EXIT HUP INT TERM
   if ! cd "$tmp_dir"; then
@@ -97,11 +97,11 @@ install_with_binary() {
     return 1
   fi
   tar -xzf "$binary_name"
-  sudo install -m 0755 -o root -g root -t /usr/local/bin "bitcoin-$BITCOIN_VERSION"/bin/*
+  sudo install -m 0755 -o root -g root -t /usr/local/bin "bitcoin-$bitcoin_version"/bin/*
   cd - >/dev/null || true
   trap - EXIT HUP INT TERM
   rm -rf "$tmp_dir"
-  printf "Bitcoin Core version %s installed from upstream binaries.\n" "$BITCOIN_VERSION"
+  printf "Bitcoin Core version %s installed from upstream binaries.\n" "$bitcoin_version"
 }
 
 install_with_package_manager() {
@@ -185,7 +185,7 @@ configure_bitcoin_conf() {
 
 run_installer() {
   distro=$(detect_distro)
-  version=$(prompt_with_default "Which Bitcoin Core version should be installed?" "$BITCOIN_VERSION_DEFAULT")
+  version=$(prompt_with_default "Which Bitcoin Core version should be installed?" "$bitcoin_version_default")
 
   if [ "$distro" = "nixos" ]; then
     echo "Detected NixOS. Installing via nix profile for user environment."

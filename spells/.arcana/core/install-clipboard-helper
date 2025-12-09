@@ -23,7 +23,7 @@ esac
 
 set -eu
 
-SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 
 # Detect which clipboard helper is already installed
 detect_installed_helper() {
@@ -90,17 +90,17 @@ install_clipboard_helper() {
   # Install the preferred helper
   case "$preferred" in
     wl-copy)
-      ASSUME_YES=1 "$SCRIPT_DIR/install-wl-clipboard"
+      ASSUME_YES=1 "$script_dir/install-wl-clipboard"
       ;;
     xsel)
-      if ! ASSUME_YES=1 "$SCRIPT_DIR/install-xsel" 2>/dev/null; then
+      if ! ASSUME_YES=1 "$script_dir/install-xsel" 2>/dev/null; then
         # Fall back to xclip if xsel fails
         printf '%s\n' "xsel installation failed, trying xclip..."
-        ASSUME_YES=1 "$SCRIPT_DIR/install-xclip"
+        ASSUME_YES=1 "$script_dir/install-xclip"
       fi
       ;;
     xclip)
-      ASSUME_YES=1 "$SCRIPT_DIR/install-xclip"
+      ASSUME_YES=1 "$script_dir/install-xclip"
       ;;
     *)
       printf '%s\n' "Unknown clipboard helper: $preferred" >&2

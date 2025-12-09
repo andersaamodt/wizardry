@@ -6,17 +6,17 @@
 # It also handles --spell mode for RC file snippet management.
 
 
-SCRIPT_NAME=$(basename "$0")
-SCRIPT_SOURCE=$0
-case $SCRIPT_SOURCE in
-*/*) SCRIPT_DIR=${SCRIPT_SOURCE%/*} ;;
-*) SCRIPT_DIR=. ;;
+script_name=$(basename "$0")
+script_source=$0
+case $script_source in
+*/*) script_dir=${script_source%/*} ;;
+*) script_dir=. ;;
 esac
 
 show_usage() {
   cat <<USAGE >&2
-Usage: $SCRIPT_NAME [-r] PATH...
-       $SCRIPT_NAME --spell NAME {add|remove|status}
+Usage: $script_name [-r] PATH...
+       $script_name --spell NAME {add|remove|status}
 
 For files: installs spells with install() functions via learn-spell.
 For directories: informs that they are automatically available via invoke-wizardry.
@@ -33,8 +33,8 @@ esac
 
 set -eu
 
-SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
-SPELLS_DIR=${SCRIPT_DIR%/*}
+script_dir=$(cd "$script_dir" && pwd -P)
+spells_dir=${script_dir%/*}
 
 # Check for --spell mode first (RC file management)
 for arg in "$@"; do
@@ -44,14 +44,14 @@ for arg in "$@"; do
     exit 0
     ;;
   --spell|--spell=*)
-    MODE=rc
+    mode=rc
     ;;
   esac
 done
 
 # Find helpers
 find_learn_spell() {
-  helper="$SCRIPT_DIR/learn-spell"
+  helper="$script_dir/learn-spell"
   if [ -x "$helper" ]; then
     printf '%s' "$helper"
     return 0
@@ -69,7 +69,7 @@ nonempty() {
 }
 
 # ---------------------
-# RC MODE IMPLEMENTATION
+# RC mode IMPLEMENTATION
 # ---------------------
 
 rc_usage() {
@@ -99,7 +99,7 @@ find_detect_rc_file() {
     printf '%s' "$DETECT_RC_FILE"
     return 0
   fi
-  helper="$SPELLS_DIR/divination/detect-rc-file"
+  helper="$spells_dir/divination/detect-rc-file"
   if [ -x "$helper" ]; then
     printf '%s' "$helper"
     return 0
@@ -386,8 +386,8 @@ EOF_DETECT
   # Find nix-shell-* helpers
   find_nix_shell_imp() {
     _imp_name=$1
-    if [ -x "$SCRIPT_DIR/../.imps/sys/$_imp_name" ]; then
-      printf '%s' "$SCRIPT_DIR/../.imps/sys/$_imp_name"
+    if [ -x "$script_dir/../.imps/sys/$_imp_name" ]; then
+      printf '%s' "$script_dir/../.imps/sys/$_imp_name"
       return 0
     fi
     if command -v "$_imp_name" >/dev/null 2>&1; then
@@ -444,25 +444,25 @@ EOF_DETECT
   fi
 }
 
-if [ "${MODE-}" = "rc" ]; then
+if [ "${mode-}" = "rc" ]; then
   rc_run "$@"
   exit $?
 fi
 
 # ---------------------
-# FILE/DIR MODE - Process paths
+# FILE/DIR mode - Process paths
 # With the word-of-binding paradigm, directories are automatically available
 # via invoke-wizardry. For files with install() functions, use learn-spell.
 # ---------------------
 
-RECURSIVE=0
+recursive=0
 paths=""
 
 # Parse arguments
 while [ $# -gt 0 ]; do
   case $1 in
   -r|--recursive)
-    RECURSIVE=1
+    recursive=1
     shift
     ;;
   --help|--usage|-h)
@@ -497,8 +497,8 @@ if [ -z "$paths" ]; then
 fi
 
 # Find learn-spell helper for files
-LEARN_SPELL=""
-if ! LEARN_SPELL=$(find_learn_spell); then
+learn_spell=""
+if ! learn_spell=$(find_learn_spell); then
   printf '%s\n' "learn: learn-spell helper not found." >&2
   exit 1
 fi
@@ -507,7 +507,7 @@ fi
 for path in $paths; do
   if [ -f "$path" ]; then
     # File -> learn-spell (for spells with install() functions)
-    "$LEARN_SPELL" "$path"
+    "$learn_spell" "$path"
   elif [ -d "$path" ]; then
     # With the word-of-binding paradigm (PR #410), directories no longer need
     # to be manually added to PATH. invoke-wizardry handles this automatically.

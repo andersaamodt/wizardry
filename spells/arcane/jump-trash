@@ -18,10 +18,10 @@ case "${1-}" in
   ;;
 esac
 
-RUNNING_AS_SCRIPT=0
+running_as_script=0
 case $0 in
 */jump-trash|jump-trash)
-  RUNNING_AS_SCRIPT=1
+  running_as_script=1
   set -eu
   ;;
 *) : ;;
@@ -103,6 +103,6 @@ jump_trash_cli() {
   esac
 }
 
-if [ "$RUNNING_AS_SCRIPT" -eq 1 ]; then
+if [ "$running_as_script" -eq 1 ]; then
   jump_trash_cli "$@"
 fi

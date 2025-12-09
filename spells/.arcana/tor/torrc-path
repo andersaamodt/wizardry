@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # This script outputs the location of the torrc file if it exists,
-# or the standard location for the current OS if it does not
+# or the standard location for the current os if it does not
 
 show_usage() {
         cat <<'USAGE' >&2
@@ -21,25 +21,25 @@ esac
 
 set -eu
 platform=$(detect-distro 2>/dev/null || printf 'unknown')
-TORRC_PATHS=""
+torrc_paths=""
 
 # Define the standard locations for each platform
 case $platform in
   arch)
-    TORRC_PATHS="/etc/tor/torrc"
+    torrc_paths="/etc/tor/torrc"
     ;;
   debian|fedora|nixos|linux)
-    TORRC_PATHS="/etc/tor/torrc /usr/local/etc/tor/torrc"
+    torrc_paths="/etc/tor/torrc /usr/local/etc/tor/torrc"
     ;;
   mac)
-    TORRC_PATHS="/usr/local/etc/tor/torrc"
+    torrc_paths="/usr/local/etc/tor/torrc"
     ;;
   *)
     # Fallback to uname for BSD systems
-    OS=$(uname -s 2>/dev/null || printf 'unknown')
-    case $OS in
+    os=$(uname -s 2>/dev/null || printf 'unknown')
+    case $os in
       "FreeBSD"|"NetBSD"|"OpenBSD")
-        TORRC_PATHS="/usr/local/etc/tor/torrc"
+        torrc_paths="/usr/local/etc/tor/torrc"
         ;;
       *)
         printf '%s\n' "Unsupported platform: $platform" >&2
@@ -50,7 +50,7 @@ case $platform in
 esac
 
 # Check each path for the existence of the torrc file
-for torrc_path in $TORRC_PATHS; do
+for torrc_path in $torrc_paths; do
   if [ -f "$torrc_path" ]; then
     printf '%s\n' "$torrc_path"
     exit 0
@@ -58,4 +58,4 @@ for torrc_path in $TORRC_PATHS; do
 done
 
 # If no torrc file is found, output the first standard path for the current platform
-printf '%s\n' "$(printf '%s' "$TORRC_PATHS" | cut -d' ' -f1)"
+printf '%s\n' "$(printf '%s' "$torrc_paths" | cut -d' ' -f1)"

@@ -44,16 +44,16 @@ export PATH
 set -eu
 
 
-SCRIPT_SOURCE=$0
-case $SCRIPT_SOURCE in
+script_source=$0
+case $script_source in
 */*)
-        SCRIPT_DIR=${SCRIPT_SOURCE%/*}
+        script_dir=${script_source%/*}
         ;;
 *)
-        SCRIPT_DIR=.
+        script_dir=.
         ;;
 esac
-SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
+script_dir=$(cd "$script_dir" && pwd -P)
 
 warn() {
         printf '%s\n' "cd cantrip: $1" >&2
@@ -238,8 +238,8 @@ install() {
         if [ "$rc_format" = "nix" ]; then
                 # Find nix-shell-add helper
                 nix_helper=""
-                if [ -x "$SCRIPT_DIR/../../.imps/sys/nix-shell-add" ]; then
-                        nix_helper="$SCRIPT_DIR/../../.imps/sys/nix-shell-add"
+                if [ -x "$script_dir/../../.imps/sys/nix-shell-add" ]; then
+                        nix_helper="$script_dir/../../.imps/sys/nix-shell-add"
                 elif command -v nix-shell-add >/dev/null 2>&1; then
                         nix_helper=$(command -v nix-shell-add)
                 fi
@@ -306,8 +306,8 @@ uninstall() {
         # For nix format, use nix-shell-remove to remove the block
         if [ "$rc_format" = "nix" ]; then
                 nix_helper=""
-                if [ -x "$SCRIPT_DIR/../../.imps/sys/nix-shell-remove" ]; then
-                        nix_helper="$SCRIPT_DIR/../../.imps/sys/nix-shell-remove"
+                if [ -x "$script_dir/../../.imps/sys/nix-shell-remove" ]; then
+                        nix_helper="$script_dir/../../.imps/sys/nix-shell-remove"
                 elif command -v nix-shell-remove >/dev/null 2>&1; then
                         nix_helper=$(command -v nix-shell-remove)
                 fi
@@ -347,12 +347,12 @@ locate_ask_yn() {
                 command -v ask-yn
                 return 0
         fi
-        if [ -x "$SCRIPT_DIR/ask-yn" ]; then
-                printf '%s\n' "$SCRIPT_DIR/ask-yn"
+        if [ -x "$script_dir/ask-yn" ]; then
+                printf '%s\n' "$script_dir/ask-yn"
                 return 0
         fi
-        if [ -x "$SCRIPT_DIR/cantrips/ask-yn" ]; then
-                printf '%s\n' "$SCRIPT_DIR/cantrips/ask-yn"
+        if [ -x "$script_dir/cantrips/ask-yn" ]; then
+                printf '%s\n' "$script_dir/cantrips/ask-yn"
                 return 0
         fi
         warn "ask-yn spell is missing; skipping installation prompt."

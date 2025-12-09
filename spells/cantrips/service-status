@@ -20,23 +20,23 @@ esac
 
 set -eu
 
-SCRIPT_NAME=$(basename "$0")
+script_name=$(basename "$0")
 
-SCRIPT_SOURCE=$0
-case $SCRIPT_SOURCE in
+script_source=$0
+case $script_source in
 */*)
-        SCRIPT_DIR=${SCRIPT_SOURCE%/*}
+        script_dir=${script_source%/*}
         ;;
 *)
-        resolved=$(command -v "$SCRIPT_SOURCE" 2>/dev/null || printf '%s' "$SCRIPT_SOURCE")
-        SCRIPT_DIR=${resolved%/*}
-        SCRIPT_SOURCE=$resolved
+        resolved=$(command -v "$script_source" 2>/dev/null || printf '%s' "$script_source")
+        script_dir=${resolved%/*}
+        script_source=$resolved
         ;;
 esac
-if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
-        SCRIPT_DIR=.
+if [ -z "$script_dir" ] || [ "$script_dir" = "$script_source" ]; then
+        script_dir=.
 fi
-SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
+script_dir=$(cd "$script_dir" && pwd -P)
 
 find_ask_text() {
 if [ -n "${STATUS_SERVICE_ASK_TEXT-}" ]; then
@@ -47,26 +47,26 @@ if command -v ask-text >/dev/null 2>&1; then
 command -v ask-text
 return 0
 fi
-if [ -x "$SCRIPT_DIR/ask-text" ]; then
-printf '%s' "$SCRIPT_DIR/ask-text"
+if [ -x "$script_dir/ask-text" ]; then
+printf '%s' "$script_dir/ask-text"
 return 0
 fi
-printf '%s\n' "$SCRIPT_NAME: ask-text spell not found." >&2
+printf '%s\n' "$script_name: ask-text spell not found." >&2
 exit 1
 }
 
-ASK_TEXT_HELPER=$(find_ask_text)
+ask_text_helper=$(find_ask_text)
 
 find_systemctl() {
-        if [ -z "${SYSTEMCTL-}" ]; then
+        if [ -z "${systemctl_cmd-}" ]; then
                 if command -v systemctl >/dev/null 2>&1; then
-                        SYSTEMCTL=$(command -v systemctl)
+                        systemctl_cmd=$(command -v systemctl)
                 else
-                        printf '%s\n' "$SCRIPT_NAME: systemctl is not available on this system." >&2
+                        printf '%s\n' "$script_name: systemctl is not available on this system." >&2
                         exit 1
                 fi
         fi
-        printf '%s' "$SYSTEMCTL"
+        printf '%s' "$systemctl_cmd"
 }
 
 normalize_unit() {
@@ -82,24 +82,24 @@ normalize_unit() {
 }
 
 show_status() {
-        SYSTEMCTL=$(find_systemctl)
-        if "$SYSTEMCTL" status --no-pager "$@"; then
+        systemctl_cmd=$(find_systemctl)
+        if "$systemctl_cmd" status --no-pager "$@"; then
                 return 0
         fi
         if [ "$(id -u)" -ne 0 ] && command -v sudo >/dev/null 2>&1; then
-                sudo "$SYSTEMCTL" status --no-pager "$@"
+                sudo "$systemctl_cmd" status --no-pager "$@"
                 return 0
         fi
-        printf '%s\n' "$SCRIPT_NAME: Unable to read service status; try running as root." >&2
+        printf '%s\n' "$script_name: Unable to read service status; try running as root." >&2
         return 1
 }
 
 service_name=${1-}
 if [ -z "$service_name" ]; then
-        service_name=$("$ASK_TEXT_HELPER" "Which service status should I check?")
+        service_name=$("$ask_text_helper" "Which service status should I check?")
 fi
 if [ -z "$service_name" ]; then
-        printf '%s\n' "$SCRIPT_NAME: No service name supplied." >&2
+        printf '%s\n' "$script_name: No service name supplied." >&2
         exit 1
 fi
 unit=$(normalize_unit "$service_name")

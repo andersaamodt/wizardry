@@ -4,12 +4,12 @@
 
 require-wizardry || exit 1
 
-SCRIPT_NAME=$(basename "$0")
+script_name=$(basename "$0")
 
 show_usage() {
         cat <<USAGE
-Usage: $SCRIPT_NAME [--category CAT] [NAME COMMAND...]
-       $SCRIPT_NAME --new-category [NAME]
+Usage: $script_name [--category CAT] [NAME COMMAND...]
+       $script_name --new-category [NAME]
 
 Scribe (create) a custom spell in your spellbook. Without arguments,
 prompts interactively. Names must be unique and not conflict with PATH.
@@ -145,17 +145,17 @@ add_category_to_path() {
                 learn_spellbook=$(command -v learn-spellbook)
         else
                 # Try relative path from this script
-                SCRIPT_SOURCE=$0
-                case $SCRIPT_SOURCE in
+                script_source=$0
+                case $script_source in
                 */*)
-                        SCRIPT_DIR=${SCRIPT_SOURCE%/*}
+                        script_dir=${script_source%/*}
                         ;;
                 *)
-                        SCRIPT_DIR=.
+                        script_dir=.
                         ;;
                 esac
-                SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
-                learn_spellbook="$SCRIPT_DIR/learn-spellbook"
+                script_dir=$(cd "$script_dir" && pwd -P)
+                learn_spellbook="$script_dir/learn-spellbook"
                 if [ ! -x "$learn_spellbook" ]; then
                         printf '%s\n' "learn-spellbook not found; category folder created but not added to PATH." >&2
                         return 0

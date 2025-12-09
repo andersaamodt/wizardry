@@ -21,71 +21,71 @@ case "${1-}" in
         ;;
 esac
 
-SCRIPT_SOURCE=$0
-case $SCRIPT_SOURCE in
+script_source=$0
+case $script_source in
 */*)
-        SCRIPT_DIR=${SCRIPT_SOURCE%/*}
+        script_dir=${script_source%/*}
         ;;
 *)
-        resolved=$(command -v "$SCRIPT_SOURCE" 2>/dev/null || printf '%s' "$SCRIPT_SOURCE")
-        SCRIPT_DIR=${resolved%/*}
-        SCRIPT_SOURCE=$resolved
+        resolved=$(command -v "$script_source" 2>/dev/null || printf '%s' "$script_source")
+        script_dir=${resolved%/*}
+        script_source=$resolved
         ;;
 esac
 set -eu
 
-if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
-        SCRIPT_DIR=.
+if [ -z "$script_dir" ] || [ "$script_dir" = "$script_source" ]; then
+        script_dir=.
 fi
-SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
-DETECT_RC_FILE_DEFAULT="$SCRIPT_DIR/../divination/detect-rc-file"
-LEARN_DEFAULT="$SCRIPT_DIR/../spellcraft/learn"
+script_dir=$(cd "$script_dir" && pwd -P)
+detect_rc_file_default="$script_dir/../divination/detect-rc-file"
+learn_default="$script_dir/../spellcraft/learn"
 # Path to text imps for indentation detection
-IMPS_TEXT_DIR="$SCRIPT_DIR/../.imps/text"
+imps_text_dir="$script_dir/../.imps/text"
 
 detect_override=0
-if [ -n "${DETECT_RC_FILE-}" ]; then
+if [ -n "${detect_rc_file-}" ]; then
         detect_override=1
 else
-        DETECT_RC_FILE=$DETECT_RC_FILE_DEFAULT
+        detect_rc_file=$detect_rc_file_default
 fi
 
 learn_override=0
-if [ -n "${LEARN_SPELL-}" ]; then
+if [ -n "${learn_spell-}" ]; then
         learn_override=1
-        LEARN=$LEARN_SPELL
-elif [ -n "${SCRIBE_SPELL-}" ]; then
+        learn=$learn_spell
+elif [ -n "${scribe_spell-}" ]; then
         # Legacy environment variable for backwards compatibility
         learn_override=1
-        LEARN=$SCRIBE_SPELL
+        learn=$scribe_spell
 else
-        LEARN=$LEARN_DEFAULT
+        learn=$learn_default
 fi
 
-if [ ! -x "$DETECT_RC_FILE" ]; then
+if [ ! -x "$detect_rc_file" ]; then
         if [ "$detect_override" -eq 1 ]; then
-                printf '%s\n' "learn-spellbook: required helper '$DETECT_RC_FILE' is missing or not executable." >&2
+                printf '%s\n' "learn-spellbook: required helper '$detect_rc_file' is missing or not executable." >&2
                 exit 1
         fi
 
         if command -v detect-rc-file >/dev/null 2>&1; then
-                DETECT_RC_FILE=$(command -v detect-rc-file)
+                detect_rc_file=$(command -v detect-rc-file)
         else
-                printf '%s\n' "learn-spellbook: required helper '$DETECT_RC_FILE' is missing or not executable." >&2
+                printf '%s\n' "learn-spellbook: required helper '$detect_rc_file' is missing or not executable." >&2
                 exit 1
         fi
 fi
 
-if [ ! -x "$LEARN" ]; then
+if [ ! -x "$learn" ]; then
         if [ "$learn_override" -eq 1 ]; then
-                printf '%s\n' "learn-spellbook: required helper '$LEARN' is missing or not executable." >&2
+                printf '%s\n' "learn-spellbook: required helper '$learn' is missing or not executable." >&2
                 exit 1
         fi
 
         if command -v learn >/dev/null 2>&1; then
-                LEARN=$(command -v learn)
+                learn=$(command -v learn)
         else
-                printf '%s\n' "learn-spellbook: required helper '$LEARN' is missing or not executable." >&2
+                printf '%s\n' "learn-spellbook: required helper '$learn' is missing or not executable." >&2
                 exit 1
         fi
 fi
@@ -272,7 +272,7 @@ if [ "$recursive" -eq 1 ]; then
         fi
 
         # Detect format early for optimized recursive handling
-        recursive_detect=$("$DETECT_RC_FILE" 2>/dev/null) || true
+        recursive_detect=$("$detect_rc_file" 2>/dev/null) || true
         recursive_format=$(printf '%s\n' "$recursive_detect" | while IFS='=' read -r k v; do
                 [ "$k" = "format" ] && printf '%s' "$v"
         done)
@@ -342,7 +342,7 @@ fi
 
 # Use detect-rc-file to derive sane defaults. This keeps the CLI consistent 
 # with the installer and any other spell that edits shell start-up files.
-detect_output=$("$DETECT_RC_FILE")
+detect_output=$("$detect_rc_file")
 platform=""
 rc_file=""
 format=""
@@ -533,7 +533,7 @@ shell_add() {
                 return 0
         fi
         spell_name=$(spell_identifier_for_directory "$directory")
-        if ! printf '%s\n' "$managed_export_line" | "$LEARN" --spell "$spell_name" add; then
+        if ! printf '%s\n' "$managed_export_line" | "$learn" --spell "$spell_name" add; then
                 printf '%s\n' "learn-spellbook: unable to record the PATH entry." >&2
                 exit 1
         fi
@@ -547,8 +547,8 @@ shell_remove() {
                 exit 1
         fi
         spell_name=$(spell_identifier_for_directory "$directory")
-        if "$LEARN" --spell "$spell_name" status >/dev/null 2>&1; then
-                "$LEARN" --spell "$spell_name" remove
+        if "$learn" --spell "$spell_name" status >/dev/null 2>&1; then
+                "$learn" --spell "$spell_name" remove
                 printf '%s\n' "Removed '$directory' from PATH entries recorded in '$rc_file'. The change takes effect in new shell sessions."
                 return 0
         fi
@@ -668,8 +668,8 @@ shell_remove_all() {
         
         while IFS= read -r spell_name; do
                 [ -z "$spell_name" ] && continue
-                if "$LEARN" --spell "$spell_name" status >/dev/null 2>&1; then
-                        "$LEARN" --spell "$spell_name" remove 2>/dev/null || true
+                if "$learn" --spell "$spell_name" status >/dev/null 2>&1; then
+                        "$learn" --spell "$spell_name" remove 2>/dev/null || true
                         removed_count=$((removed_count + 1))
                 fi
         done <"$tmp_spells"
@@ -820,9 +820,9 @@ write_wizardry_nix_path_block() {
         # Detect indentation style from the existing config file
         indent_l1=""
         indent_l2=""
-        if [ -x "$IMPS_TEXT_DIR/make-indent" ] && [ -f "$rc_file" ]; then
-                indent_l1=$("$IMPS_TEXT_DIR/make-indent" 1 "$rc_file")
-                indent_l2=$("$IMPS_TEXT_DIR/make-indent" 2 "$rc_file")
+        if [ -x "$imps_text_dir/make-indent" ] && [ -f "$rc_file" ]; then
+                indent_l1=$("$imps_text_dir/make-indent" 1 "$rc_file")
+                indent_l2=$("$imps_text_dir/make-indent" 2 "$rc_file")
         else
                 # Fallback to 2-space indentation
                 indent_l1="  "

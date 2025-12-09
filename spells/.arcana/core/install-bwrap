@@ -34,5 +34,5 @@ set -eu
   shift
 done
 
-SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-ASSUME_YES=1 FORCE_INSTALL=$force_install "$SCRIPT_DIR/manage-system-command" bwrap bubblewrap
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+ASSUME_YES=1 FORCE_INSTALL=$force_install "$script_dir/manage-system-command" bwrap bubblewrap

@@ -55,12 +55,12 @@ node_package=$(prompt "Which Node.js package should be installed?" "$package_def
 
 # Allow users to override per-manager packages to handle distro differences.
 export NIX_PACKAGE=${NIX_PACKAGE:-$node_package}
-export APT_PACKAGE=${APT_PACKAGE:-$node_package}
-export DNF_PACKAGE=${DNF_PACKAGE:-$node_package}
-export YUM_PACKAGE=${YUM_PACKAGE:-$node_package}
-export ZYPPER_PACKAGE=${ZYPPER_PACKAGE:-$node_package}
-export PACMAN_PACKAGE=${PACMAN_PACKAGE:-$node_package}
-export APK_PACKAGE=${APK_PACKAGE:-$node_package}
+export apt_package=${apt_package:-$node_package}
+export dnf_package=${dnf_package:-$node_package}
+export yum_package=${yum_package:-$node_package}
+export zypper_package=${zypper_package:-$node_package}
+export pacman_package=${pacman_package:-$node_package}
+export apk_package=${apk_package:-$node_package}
 export PKGIN_PACKAGE=${PKGIN_PACKAGE:-$node_package}
 
 printf '\nInstalling Node.js using %s...\n' "$manage_cmd"

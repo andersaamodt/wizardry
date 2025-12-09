@@ -19,7 +19,7 @@ esac
 
 set -eu
 
-SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 
 # Detect which clipboard helper is installed (other than pbcopy which is built-in)
 detect_installed_helper() {
@@ -44,13 +44,13 @@ uninstall_clipboard_helper() {
   
   case "$installed" in
     xsel)
-      "$SCRIPT_DIR/uninstall-xsel"
+      "$script_dir/uninstall-xsel"
       ;;
     xclip)
-      "$SCRIPT_DIR/uninstall-xclip"
+      "$script_dir/uninstall-xclip"
       ;;
     wl-copy)
-      "$SCRIPT_DIR/uninstall-wl-clipboard"
+      "$script_dir/uninstall-wl-clipboard"
       ;;
     *)
       printf '%s\n' "Unknown clipboard helper: $installed" >&2
