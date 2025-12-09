@@ -1,3 +1,0 @@
-# >>> wizardry cd cantrip >>>
-cd() { command cd "$@" && { look 2>/dev/null || true; }; }
-# <<< wizardry cd cantrip <<<

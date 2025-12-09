@@ -138,9 +138,7 @@ test_cd_respects_detect_rc_file() {
   # Create a custom detect-rc-file that returns a custom rc file path
   cat >"$tmp/detect-rc-file" <<EOF
 #!/bin/sh
-printf 'platform=test\\n'
-printf 'rc_file=$custom_rc\\n'
-printf 'format=shell\\n'
+printf '%s\\n' '$custom_rc'
 EOF
   chmod +x "$tmp/detect-rc-file"
   
@@ -226,9 +224,7 @@ test_cd_nixos_uses_nix_format() {
   # Create detect-rc-file that returns nix format
   cat >"$tmp/detect-rc-file" <<STUB
 #!/bin/sh
-printf 'platform=nixos\n'
-printf 'rc_file=$nix_config\n'
-printf 'format=nix\n'
+printf '%s\n' '$nix_config'
 STUB
   chmod +x "$tmp/detect-rc-file"
   
@@ -259,9 +255,7 @@ test_cd_auto_detects_nix_format() {
   # Create detect-rc-file that returns nix format (note: no WIZARDRY_RC_FORMAT)
   cat >"$tmp/detect-rc-file" <<EOF
 #!/bin/sh
-printf 'platform=nixos\n'
-printf 'rc_file=$nix_config\n'
-printf 'format=nix\n'
+printf '%s\n' '$nix_config'
 EOF
   chmod +x "$tmp/detect-rc-file"
   
@@ -291,9 +285,7 @@ test_cd_uninstall_nix_format() {
   # Create detect-rc-file that returns nix format
   cat >"$tmp/detect-rc-file" <<EOF
 #!/bin/sh
-printf 'platform=nixos\n'
-printf 'rc_file=$nix_config\n'
-printf 'format=nix\n'
+printf '%s\n' '$nix_config'
 EOF
   chmod +x "$tmp/detect-rc-file"
   

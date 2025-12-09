@@ -2,3 +2,4 @@
 .uninstall
 wizardry-compiled/
 rc_file=*
+platform=*
