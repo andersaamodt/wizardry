@@ -101,7 +101,8 @@ test_home_description_defaults() {
   home_dir=$(_make_tempdir)
   stub_ask_yn "$stub" 1
   stub_read_magic_missing "$stub"
-  LOOK_READ_MAGIC="$stub/read-magic" LOOK_HOME_PATH="$home_dir" HOME="$home_dir" PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" \
+  # Don't set HOME to match the directory we're looking at, so identify-room won't think it's home
+  LOOK_READ_MAGIC="$stub/read-magic" PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" \
     _run_spell "spells/mud/look" "$home_dir"
   _assert_success || return 1
   _assert_output_contains "$(basename "$home_dir")" || return 1
@@ -116,7 +117,8 @@ test_other_home_description() {
   mkdir -p "$other_home"
   stub_ask_yn "$stub" 1
   stub_read_magic_missing "$stub"
-  LOOK_READ_MAGIC="$stub/read-magic" LOOK_HOME_PATH="$base_home" HOME="$base_home" PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" \
+  # Set HOME to base_home but look at other_home directory
+  LOOK_READ_MAGIC="$stub/read-magic" HOME="$base_home" PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" \
     _run_spell "spells/mud/look" "$other_home"
   _assert_success || return 1
   _assert_output_contains "chris" || return 1
