@@ -1,13 +1,13 @@
 #!/usr/bin/env sh
 
 # Bootstrap spell: prints a short identifier for the current OS.
-# Use -v to narrate detection while exporting DISTRO for callers.
+# Use -v to narrate detection.
 
 show_usage() {
 cat <<'USAGE'
 Usage: detect-distro [-v]
 
-Detect the host operating system and print a concise identifier such as "debian", "mac", or "nixos". Use -v for narrated detection while exporting DISTRO for callers.
+Detect the host operating system and print a concise identifier such as "debian", "mac", or "nixos". Use -v for narrated detection.
 USAGE
 }
 
@@ -100,17 +100,16 @@ else
         fi
 fi
 
-# Export the detection so callers can key off the result.
+# Print the detection result
 if [ -n "${distro-}" ]; then
-        DISTRO=$distro
-        export DISTRO
+        printf '%s\n' "$distro"
 else
         printf '%s\n' 'unknown'
         exit 1
 fi
 
 if [ "$verbose" -eq 1 ]; then
-        case $DISTRO in
+        case $distro in
         debian)
                 printf '%s\n' 'Debian, Ubuntu, or Raspbian OS detected.'
                 ;;
@@ -127,6 +126,4 @@ if [ "$verbose" -eq 1 ]; then
                 printf '%s\n' 'NixOS detected.'
                 ;;
         esac
-else
-        printf '%s\n' "$DISTRO"
 fi

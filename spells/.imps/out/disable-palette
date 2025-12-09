@@ -20,7 +20,6 @@ _disable_palette() {
   do
     eval "$_dp_name=''"
   done
-  WIZARDRY_COLORS_AVAILABLE=0
 }
 
 # Execute immediately when sourced (for colors spell compatibility)

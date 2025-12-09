@@ -34,11 +34,9 @@ fi
 
 # Check if cd hook is currently installed by looking for the marker in rc file
 is_cd_hook_installed() {
-  # Try to resolve rc file using same logic as cd spell
+  # Try to resolve rc file
   rc_file=''
-  if [ -n "${WIZARDRY_RC_FILE-}" ]; then
-    rc_file=$WIZARDRY_RC_FILE
-  elif command -v detect-rc-file >/dev/null 2>&1; then
+  if command -v detect-rc-file >/dev/null 2>&1; then
     if detected=$(detect-rc-file 2>/dev/null); then
       while IFS= read -r line; do
         case $line in

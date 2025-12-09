@@ -111,11 +111,6 @@ run_detect_rc_file() {
 }
 
 resolve_rc_file() {
-	if [ -n "${WIZARDRY_RC_FILE-}" ]; then
-		printf '%s\n' "$WIZARDRY_RC_FILE"
-		return 0
-	fi
-
 	# Try to use detect-rc-file for cross-platform support
 	if detected=$(run_detect_rc_file); then
 		# Parse rc_file= line using shell parameter expansion
@@ -152,12 +147,6 @@ EOF
 }
 
 resolve_rc_format() {
-	# Check env var override first
-	if [ -n "${WIZARDRY_RC_FORMAT-}" ]; then
-		printf '%s\n' "$WIZARDRY_RC_FORMAT"
-		return 0
-	fi
-
 	# Try to get format from detect-rc-file output
 	if detected=$(run_detect_rc_file); then
 		while IFS= read -r line; do

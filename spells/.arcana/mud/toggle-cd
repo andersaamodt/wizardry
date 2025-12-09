@@ -32,9 +32,7 @@ fi
 # without any feedback until it completes.
 is_installed=0
 rc_file=""
-if [ -n "${WIZARDRY_RC_FILE-}" ]; then
-        rc_file="$WIZARDRY_RC_FILE"
-elif command -v detect-rc-file >/dev/null 2>&1; then
+if command -v detect-rc-file >/dev/null 2>&1; then
         if detected=$(detect-rc-file 2>/dev/null); then
                 while IFS= read -r line; do
                         case $line in

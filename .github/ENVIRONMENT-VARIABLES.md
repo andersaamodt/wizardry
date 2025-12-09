@@ -18,23 +18,13 @@ These are the only approved global environment variables in wizardry:
    - **Justification**: Required for MUD features to share room descriptions and settings
    - **Used by**: MUD feature spells
 
-## Undeclared WIZARDRY_* Variables (Need Review)
+## Infrastructure Variables
 
-These variables are exported and used but NOT declared in `declare-globals`:
-
-### `WIZARDRY_PLATFORM`, `WIZARDRY_RC_FILE`, `WIZARDRY_RC_FORMAT`
-- **Location**: `spells/spellcraft/learn-spell` (exports)
-- **Used by**: `spells/menu/mud-menu`, `spells/.arcana/mud/cd`, `spells/.arcana/mud/toggle-cd`, `spells/.arcana/mud/handle-command-not-found`
-- **Purpose**: Pass shell configuration detection results to child processes
-- **Justification**: Memorization framework needs to coordinate detected shell settings across recursive invocations
-- **Status**: ⚠️ Should be added to declare-globals or refactored to use arguments/files
-
-### `WIZARDRY_MEMORIZE_TARGET`
-- **Location**: `spells/spellcraft/learn-spell` (exports)
-- **Used by**: `spells/.arcana/mud/cd`
-- **Purpose**: Communicate the spell being memorized to prevent infinite recursion
-- **Justification**: Prevents cd spell from trying to memorize itself during installation
-- **Status**: ⚠️ Should be added to declare-globals or refactored to use arguments/files
+### `WIZARDRY_LOG_LEVEL`
+- **Location**: Used by logging imps (`info`, `debug`, `step`)
+- **Purpose**: Controls verbosity of output (0=critical only, 1=info, 2=debug)
+- **Justification**: Standard infrastructure variable for consistent logging across all spells
+- **Status**: ✅ Approved - Infrastructure variable
 
 ## POSIX Standard Variables
 
@@ -42,21 +32,6 @@ The following POSIX standard variables are allowed for override:
 - `PATH`, `HOME`, `IFS`, `CDPATH`, `PWD`, `OLDPWD`, `TERM`, `SHELL`, `USER`, `LOGNAME`, `TMPDIR`
 - `LANG`, `LC_*`, `TZ`, `DISPLAY`, `EDITOR`, `PAGER`, `VISUAL`, `MAIL`, `PS1-4`, `COLUMNS`, `LINES`
 - `XDG_DATA_HOME`, `XDG_CONFIG_HOME`, `SSHD_CONFIG` (platform-specific standards)
-
-## Special Cases with Overrides
-
-### Bootstrap Spell: `detect-distro`
-- **Variable**: `DISTRO`
-- **Location**: `spells/divination/detect-distro`
-- **Purpose**: Exports platform detection for install script
-- **Justification**: Bootstrap spell used during installation before wizardry is fully operational. Must export for compatibility with install script which sources it.
-- **Status**: ✅ Approved - Required for bootstrap functionality
-
-### Color Interface: `spells/cantrips/colors`
-- **Variables**: All color/theme variables (ESC, RESET, BLACK, RED, etc.)
-- **Purpose**: Standard interface for terminal color codes
-- **Justification**: These define a public interface that other spells consume by sourcing the colors script
-- **Status**: ✅ Approved - Part of standard color interface
 
 ## Test Infrastructure Variables
 

@@ -1,0 +1,25 @@
+#!/bin/sh
+# colors-available - test if terminal colors are available
+# Returns 0 if colors are available, 1 otherwise
+# Example: if colors-available; then use-colors; fi
+
+_colors_available() {
+  # Check if colors script has been sourced and set availability flag
+  if [ "${WIZARDRY_COLORS_AVAILABLE-}" = "1" ]; then
+    return 0
+  fi
+  
+  # Check if terminal supports colors
+  if [ -t 1 ] && command -v tput >/dev/null 2>&1; then
+    colors=$(tput colors 2>/dev/null || echo 0)
+    if [ "$colors" -ge 8 ]; then
+      return 0
+    fi
+  fi
+  
+  return 1
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */colors-available) _colors_available "$@" ;; esac
