@@ -34,14 +34,7 @@ test_handle_cnf_installs_hook() {
   tmp=$(_make_tempdir)
   : >"$tmp/rc"
   
-  # Create detect-rc-file stub
-  cat >"$tmp/detect-rc-file" <<EOF
-#!/bin/sh
-printf '%s\\n' '$tmp/rc'
-EOF
-  chmod +x "$tmp/detect-rc-file"
-  
-  _run_cmd env PATH="$tmp:$PATH" "$ROOT_DIR/spells/.arcana/mud/handle-command-not-found" install
+  _run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/.arcana/mud/handle-command-not-found" install
   _assert_success || return 1
   _assert_output_contains "installed" || return 1
   
@@ -60,14 +53,7 @@ test_handle_cnf_uninstalls_hook() {
   tmp=$(_make_tempdir)
   
   # First install the hook
-  # Create detect-rc-file stub
-  cat >"$tmp/detect-rc-file" <<EOF
-#!/bin/sh
-printf '%s\\n' '$tmp/rc'
-EOF
-  chmod +x "$tmp/detect-rc-file"
-  
-  _run_cmd env PATH="$tmp:$PATH" "$ROOT_DIR/spells/.arcana/mud/handle-command-not-found" install
+  _run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/.arcana/mud/handle-command-not-found" install
   _assert_success || return 1
   
   # Verify it was installed
@@ -77,14 +63,7 @@ EOF
   fi
   
   # Now uninstall it
-  # Create detect-rc-file stub
-  cat >"$tmp/detect-rc-file" <<EOF
-#!/bin/sh
-printf '%s\\n' '$tmp/rc'
-EOF
-  chmod +x "$tmp/detect-rc-file"
-  
-  _run_cmd env PATH="$tmp:$PATH" "$ROOT_DIR/spells/.arcana/mud/handle-command-not-found" uninstall
+  _run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/.arcana/mud/handle-command-not-found" uninstall
   _assert_success || return 1
   _assert_output_contains "uninstalled" || return 1
   
@@ -99,14 +78,7 @@ test_handle_cnf_uninstall_when_not_installed() {
   tmp=$(_make_tempdir)
   : >"$tmp/rc"
   
-  # Create detect-rc-file stub
-  cat >"$tmp/detect-rc-file" <<EOF
-#!/bin/sh
-printf '%s\\n' '$tmp/rc'
-EOF
-  chmod +x "$tmp/detect-rc-file"
-  
-  _run_cmd env PATH="$tmp:$PATH" "$ROOT_DIR/spells/.arcana/mud/handle-command-not-found" uninstall
+  _run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/.arcana/mud/handle-command-not-found" uninstall
   _assert_success || return 1
   _assert_output_contains "not installed" || return 1
 }
@@ -116,23 +88,9 @@ test_handle_cnf_install_idempotent() {
   : >"$tmp/rc"
   
   # Install twice
-  # Create detect-rc-file stub
-  cat >"$tmp/detect-rc-file" <<EOF
-#!/bin/sh
-printf '%s\\n' '$tmp/rc'
-EOF
-  chmod +x "$tmp/detect-rc-file"
-  
-  _run_cmd env PATH="$tmp:$PATH" "$ROOT_DIR/spells/.arcana/mud/handle-command-not-found" install
+  _run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/.arcana/mud/handle-command-not-found" install
   _assert_success || return 1
-  # Create detect-rc-file stub
-  cat >"$tmp/detect-rc-file" <<EOF
-#!/bin/sh
-printf '%s\\n' '$tmp/rc'
-EOF
-  chmod +x "$tmp/detect-rc-file"
-  
-  _run_cmd env PATH="$tmp:$PATH" "$ROOT_DIR/spells/.arcana/mud/handle-command-not-found" install
+  _run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/.arcana/mud/handle-command-not-found" install
   _assert_success || return 1
   
   # Count how many times the marker appears - should be exactly 1
@@ -147,14 +105,7 @@ test_handle_cnf_hook_has_proper_function() {
   tmp=$(_make_tempdir)
   : >"$tmp/rc"
   
-  # Create detect-rc-file stub
-  cat >"$tmp/detect-rc-file" <<EOF
-#!/bin/sh
-printf '%s\\n' '$tmp/rc'
-EOF
-  chmod +x "$tmp/detect-rc-file"
-  
-  _run_cmd env PATH="$tmp:$PATH" "$ROOT_DIR/spells/.arcana/mud/handle-command-not-found" install
+  _run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/.arcana/mud/handle-command-not-found" install
   _assert_success || return 1
   
   # Verify the function has proper content

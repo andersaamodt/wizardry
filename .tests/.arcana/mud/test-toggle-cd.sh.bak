@@ -47,14 +47,7 @@ test_toggle_cd_installs_when_not_present() {
   # Create an empty rc file without the hook
   : >"$tmp/rc"
   
-  # Create detect-rc-file stub
-  cat >"$tmp/detect-rc-file" <<EOF
-#!/bin/sh
-printf '%s\\n' '$tmp/rc'
-EOF
-  chmod +x "$tmp/detect-rc-file"
-  
-  _run_cmd env PATH="$tmp:$PATH" "$ROOT_DIR/spells/.arcana/mud/toggle-cd"
+  _run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/.arcana/mud/toggle-cd"
   _assert_success || return 1
   _assert_output_contains "cd hook enabled" || return 1
   
@@ -69,25 +62,11 @@ test_toggle_cd_uninstalls_when_present() {
   tmp=$(_make_tempdir)
   
   # First install the hook
-  # Create detect-rc-file stub
-  cat >"$tmp/detect-rc-file" <<EOF
-#!/bin/sh
-printf '%s\\n' '$tmp/rc'
-EOF
-  chmod +x "$tmp/detect-rc-file"
-  
-  _run_cmd env PATH="$tmp:$PATH" "$ROOT_DIR/spells/.arcana/mud/cd" install
+  _run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/.arcana/mud/cd" install
   _assert_success || return 1
   
   # Now toggle should uninstall it
-  # Create detect-rc-file stub
-  cat >"$tmp/detect-rc-file" <<EOF
-#!/bin/sh
-printf '%s\\n' '$tmp/rc'
-EOF
-  chmod +x "$tmp/detect-rc-file"
-  
-  _run_cmd env PATH="$tmp:$PATH" "$ROOT_DIR/spells/.arcana/mud/toggle-cd"
+  _run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/.arcana/mud/toggle-cd"
   _assert_success || return 1
   _assert_output_contains "cd hook disabled" || return 1
   
@@ -110,14 +89,7 @@ test_toggle_cd_shows_installing_message() {
   # Create an empty rc file without the hook
   : >"$tmp/rc"
   
-  # Create detect-rc-file stub
-  cat >"$tmp/detect-rc-file" <<EOF
-#!/bin/sh
-printf '%s\\n' '$tmp/rc'
-EOF
-  chmod +x "$tmp/detect-rc-file"
-  
-  _run_cmd env PATH="$tmp:$PATH" "$ROOT_DIR/spells/.arcana/mud/toggle-cd"
+  _run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/.arcana/mud/toggle-cd"
   _assert_success || return 1
   # Verify it shows the progress message before install
   _assert_output_contains "Installing cd hook" || return 1
@@ -127,25 +99,11 @@ test_toggle_cd_shows_uninstalling_message() {
   tmp=$(_make_tempdir)
   
   # First install the hook
-  # Create detect-rc-file stub
-  cat >"$tmp/detect-rc-file" <<EOF
-#!/bin/sh
-printf '%s\\n' '$tmp/rc'
-EOF
-  chmod +x "$tmp/detect-rc-file"
-  
-  _run_cmd env PATH="$tmp:$PATH" "$ROOT_DIR/spells/.arcana/mud/cd" install
+  _run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/.arcana/mud/cd" install
   _assert_success || return 1
   
   # Now toggle should uninstall it and show a progress message
-  # Create detect-rc-file stub
-  cat >"$tmp/detect-rc-file" <<EOF
-#!/bin/sh
-printf '%s\\n' '$tmp/rc'
-EOF
-  chmod +x "$tmp/detect-rc-file"
-  
-  _run_cmd env PATH="$tmp:$PATH" "$ROOT_DIR/spells/.arcana/mud/toggle-cd"
+  _run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/.arcana/mud/toggle-cd"
   _assert_success || return 1
   # Verify it shows the progress message before uninstall
   _assert_output_contains "Uninstalling cd hook" || return 1

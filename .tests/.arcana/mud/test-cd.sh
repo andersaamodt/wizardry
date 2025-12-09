@@ -33,11 +33,11 @@ SH
   # Create detect-rc-file stub that returns our test RC file
   cat >"$tmp/detect-rc-file" <<EOF
 #!/bin/sh
-printf '%s\\n' '$tmp/rc'
+printf '%s\\\\n' '$tmp/rc'
 EOF
   chmod +x "$tmp/detect-rc-file"
 
-  _run_cmd env PATH="$tmp:$PATH" "$ROOT_DIR/spells/.arcana/mud/cd" "$tmp"
+  _run_cmd env PATH="$tmp:$PATH" HOME="$tmp" "$ROOT_DIR/spells/.arcana/mud/cd" "$tmp"
   _assert_success && _assert_path_exists "$tmp/rc" && _assert_output_contains "installed wizardry hooks"
 }
 
@@ -57,14 +57,14 @@ SH
   # Create detect-rc-file stub
   cat >"$tmp/detect-rc-file" <<EOF
 #!/bin/sh
-printf '%s\\n' '$tmp/rc'
+printf '%s\\\\n' '$tmp/rc'
 EOF
   chmod +x "$tmp/detect-rc-file"
 
   target="$WIZARDRY_TMPDIR/room"
   mkdir -p "$target"
 
-  _run_cmd env PATH="$tmp:$PATH" "$ROOT_DIR/spells/.arcana/mud/cd" "$target"
+  _run_cmd env PATH="$tmp:$PATH" HOME="$tmp" "$ROOT_DIR/spells/.arcana/mud/cd" "$target"
   _assert_success && _assert_path_exists "$target/looked"
 }
 

@@ -187,14 +187,7 @@ SH
   rc_file="$tmp/rc"
   : >"$rc_file"
   
-  # Create detect-rc-file stub
-  cat >"$tmp/detect-rc-file" <<EOF
-#!/bin/sh
-printf '%s\n' '$tmp/rc'
-EOF
-  chmod +x "$tmp/detect-rc-file"
-  
-  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" PATH="$tmp:$PATH" "$ROOT_DIR/spells/menu/mud-menu"
+  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" "$ROOT_DIR/spells/menu/mud-menu"
   _assert_success || return 1
   
   args=$(cat "$tmp/log")
@@ -237,14 +230,7 @@ cd() { command cd "$@" && { look 2>/dev/null || true; }; }
 # <<< wizardry cd cantrip <<<
 RC
   
-  # Create detect-rc-file stub
-  cat >"$tmp/detect-rc-file" <<EOF
-#!/bin/sh
-printf '%s\n' '$tmp/rc'
-EOF
-  chmod +x "$tmp/detect-rc-file"
-  
-  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" PATH="$tmp:$PATH" "$ROOT_DIR/spells/menu/mud-menu"
+  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" "$ROOT_DIR/spells/menu/mud-menu"
   _assert_success || return 1
   
   args=$(cat "$tmp/log")
@@ -297,14 +283,7 @@ SH
   config_dir="$tmp/mud"
   mkdir -p "$config_dir"
   
-  # Create detect-rc-file stub
-  cat >"$tmp/detect-rc-file" <<EOF
-#!/bin/sh
-printf '%s\n' '$tmp/rc'
-EOF
-  chmod +x "$tmp/detect-rc-file"
-  
-  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" PATH="$tmp:$PATH" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
+  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
   _assert_success || return 1
   
   args=$(cat "$tmp/log")
@@ -361,14 +340,7 @@ esac
 SH
   chmod +x "$tmp/mud-config"
   
-  # Create detect-rc-file stub
-  cat >"$tmp/detect-rc-file" <<EOF
-#!/bin/sh
-printf '%s\n' '$tmp/rc'
-EOF
-  chmod +x "$tmp/detect-rc-file"
-  
-  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" PATH="$tmp:$PATH" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
+  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
   _assert_success || return 1
   
   args=$(cat "$tmp/log")
@@ -406,14 +378,7 @@ SH
   config_dir="$tmp/mud"
   mkdir -p "$config_dir"
   
-  # Create detect-rc-file stub
-  cat >"$tmp/detect-rc-file" <<EOF
-#!/bin/sh
-printf '%s\n' '$tmp/rc'
-EOF
-  chmod +x "$tmp/detect-rc-file"
-  
-  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" PATH="$tmp:$PATH" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
+  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
   _assert_success || return 1
   
   args=$(cat "$tmp/log")
@@ -452,14 +417,7 @@ SH
   config_dir="$tmp/mud"
   mkdir -p "$config_dir"
   
-  # Create detect-rc-file stub
-  cat >"$tmp/detect-rc-file" <<EOF
-#!/bin/sh
-printf '%s\n' '$tmp/rc'
-EOF
-  chmod +x "$tmp/detect-rc-file"
-  
-  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" PATH="$tmp:$PATH" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
+  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
   _assert_success || return 1
   
   args=$(cat "$tmp/log")
@@ -536,12 +494,7 @@ call_count=$((call_count + 1))
 printf '%s\n' "$call_count" >"$CALL_COUNT_FILE"
 if [ "$call_count" -eq 1 ]; then
   # First call: simulate CD hook toggle by directly modifying rc file
-  # Call detect-rc-file to get the RC file path
-  if command -v detect-rc-file >/dev/null 2>&1; then
-    rc_file=$(detect-rc-file 2>/dev/null) || rc_file="$HOME/.bashrc"
-  else
-    rc_file="$HOME/.bashrc"
-  fi
+  rc_file=${WIZARDRY_RC_FILE:-$HOME/.bashrc}
   printf '%s\n' '# >>> wizardry cd cantrip >>>' >> "$rc_file"
   printf '%s\n' 'cd() { command cd "$@" && { look 2>/dev/null || true; }; }' >> "$rc_file"
   printf '%s\n' '# <<< wizardry cd cantrip <<<' >> "$rc_file"
@@ -552,14 +505,7 @@ kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
 SH
   chmod +x "$tmp/menu"
   
-  # Create detect-rc-file stub
-  cat >"$tmp/detect-rc-file" <<EOF
-#!/bin/sh
-printf '%s\n' '$tmp/rc'
-EOF
-  chmod +x "$tmp/detect-rc-file"
-  
-  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH:/usr/bin:/bin" MENU_LOG="$tmp/log" CALL_COUNT_FILE="$call_count_file" PATH="$tmp:$PATH" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
+  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH:/usr/bin:/bin" MENU_LOG="$tmp/log" CALL_COUNT_FILE="$call_count_file" WIZARDRY_RC_FILE="$rc_file" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
   _assert_success || { TEST_FAILURE_REASON="menu should exit successfully"; return 1; }
   
   log_content=$(cat "$tmp/log")
@@ -651,14 +597,7 @@ kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
 SH
   chmod +x "$tmp/menu"
   
-  # Create detect-rc-file stub
-  cat >"$tmp/detect-rc-file" <<EOF
-#!/bin/sh
-printf '%s\n' '$tmp/rc'
-EOF
-  chmod +x "$tmp/detect-rc-file"
-  
-  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH:/usr/bin:/bin" MENU_LOG="$tmp/log" CALL_COUNT_FILE="$call_count_file" PATH="$tmp:$PATH" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
+  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH:/usr/bin:/bin" MENU_LOG="$tmp/log" CALL_COUNT_FILE="$call_count_file" WIZARDRY_RC_FILE="$rc_file" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
   _assert_success || { TEST_FAILURE_REASON="menu should exit successfully"; return 1; }
   
   log_content=$(cat "$tmp/log")
@@ -729,14 +668,7 @@ kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
 SH
   chmod +x "$tmp/menu"
   
-  # Create detect-rc-file stub
-  cat >"$tmp/detect-rc-file" <<EOF
-#!/bin/sh
-printf '%s\n' '$tmp/rc'
-EOF
-  chmod +x "$tmp/detect-rc-file"
-  
-  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH:/usr/bin:/bin" MENU_LOG="$tmp/log" CALL_COUNT_FILE="$call_count_file" PATH="$tmp:$PATH" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
+  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH:/usr/bin:/bin" MENU_LOG="$tmp/log" CALL_COUNT_FILE="$call_count_file" WIZARDRY_RC_FILE="$rc_file" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
   _assert_success || { TEST_FAILURE_REASON="menu should exit successfully"; return 1; }
   
   log_content=$(cat "$tmp/log")
