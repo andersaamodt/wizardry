@@ -21,9 +21,7 @@ make_detect_stub() {
   stub="$stub_dir/detect-rc-file"
   cat >"$stub" <<EOF
 #!/bin/sh
-printf 'rc_file=%s\\n' '$target_rc'
-printf 'platform=debian\\n'
-printf 'format=shell\\n'
+printf '%s\\n' '$target_rc'
 EOF
   chmod +x "$stub"
   printf '%s' "$stub_dir"
@@ -129,9 +127,7 @@ make_nix_detect_stub() {
   stub="$stub_dir/detect-rc-file"
   cat >"$stub" <<EOF
 #!/bin/sh
-printf 'rc_file=%s\\n' '$target_rc'
-printf 'platform=nixos\\n'
-printf 'format=nix\\n'
+printf '%s\\n' '$target_rc'
 EOF
   chmod +x "$stub"
   printf '%s' "$stub_dir"

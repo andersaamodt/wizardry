@@ -172,9 +172,9 @@ if ! load_colors; then
         BLUE=""
         BOLD=""
         RESET=""
-        mud_location=""
-        mud_title=""
-        mud_description=""
+        MUD_LOCATION=""
+        MUD_TITLE=""
+        MUD_DESCRIPTION=""
 fi
 
 # Let tests or callers override the helper path; otherwise look beside this
@@ -262,5 +262,5 @@ get_room_description() {
 room_title=$(get_room_title "$path")
 room_description=$(get_room_description "$path")
 
-printf '%s%s%s\n' "$mud_title" "$room_title" "$RESET"
-printf '%s%s%s\n' "$mud_description" "$room_description" "$RESET"
+printf '%s%s%s\n' "$MUD_TITLE" "$room_title" "$RESET"
+printf '%s%s%s\n' "$MUD_DESCRIPTION" "$room_description" "$RESET"
