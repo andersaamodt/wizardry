@@ -12,6 +12,30 @@ done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
+# === Test Helper Functions ===
+
+# Create detect-distro stub that outputs a specific platform
+_stub_detect_distro() {
+  platform=$1
+  stub_dir=$2
+  cat >"$stub_dir/detect-distro" <<EOF
+#!/bin/sh
+printf '%s\\n' '$platform'
+EOF
+  chmod +x "$stub_dir/detect-distro"
+}
+
+# Create detect-rc-file stub that outputs a specific RC file path
+_stub_detect_rc_file() {
+  rc_file_path=$1
+  stub_dir=$2
+  cat >"$stub_dir/detect-rc-file" <<EOF
+#!/bin/sh
+printf '%s\\n' '$rc_file_path'
+EOF
+  chmod +x "$stub_dir/detect-rc-file"
+}
+
 # === Basic Installation Tests ===
 
 install_invokes_core_installer() {

@@ -66,11 +66,8 @@ case $PROMPT_DEFAULT in
                 ;;
 esac
 
-if [ -n "${WIZARDRY_INSTALL_PLATFORM-}" ]; then
-        LEARN_SPELLBOOK_PLATFORM=$WIZARDRY_INSTALL_PLATFORM
-        DETECT_RC_FILE_PLATFORM=$WIZARDRY_INSTALL_PLATFORM
-        export LEARN_SPELLBOOK_PLATFORM DETECT_RC_FILE_PLATFORM
-fi
+# Platform detection now handled by detect-distro spell directly
+# No environment variable coordination needed
 
 # Track whether we are running out of an existing checkout so local installs
 # can simply copy the files instead of downloading a fresh archive.  Piped
@@ -281,13 +278,11 @@ MUD_CONFIG="$ABS_DIR/spells/.arcana/mud/mud-config"
 # word-of-binding auto-sources spells on first use when called via handle-command-not-found.
 # Users can still use install() functions in spells for explicit customizations like aliases.
 
-# Export environment variables for all helper spells so that they use the new
-# versions being installed, not any old versions that may be in PATH.
-# This prevents issues where a user has an old wizardry installation in PATH.
+# No environment variable exports - scripts resolve helpers through PATH or relative paths
+# This prevents antipattern of expecting env vars to be consumed downstream
 LEARN_SPELL="$ABS_DIR/spells/spellcraft/learn"
 MEMORIZE_LEARN="$ABS_DIR/spells/spellcraft/learn"
 MEMORIZE_SPELL_HELPER="$ABS_DIR/spells/cantrips/memorize"
-export DETECT_RC_FILE LEARN_SPELL MEMORIZE_LEARN MEMORIZE_SPELL_HELPER NIX_SHELL_INIT
 
 # Bootstrap color definitions (inline - cannot rely on wizardry spells during install)
 # Create the escape character in a POSIX-compliant way.
