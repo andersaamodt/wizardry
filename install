@@ -468,7 +468,8 @@ fi
 # Get platform separately from detect-distro
 if detect_platform_output="$($DETECT_DISTRO 2>/dev/null)"; then
         # detect-distro outputs just the platform name on first line
-        detect_platform_value=$(printf '%s' "$detect_platform_output" | head -n 1)
+        # Extract first line using IFS and read (POSIX-compliant)
+        detect_platform_value=$(printf '%s' "$detect_platform_output" | { IFS= read -r line; printf '%s' "$line"; })
 fi
 
 # On NixOS, if no nix config was found (format is shell), prompt for the config path

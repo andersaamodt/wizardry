@@ -1215,16 +1215,17 @@ path_wizard_remove_all_removes_all_nix_entries() {
 }
 EOF
   
-  # Create detect stub
-  detect_stub="$fixture/detect-rc-file"
+  # Create detect stub in bin directory and add to PATH
+  mkdir -p "$fixture/bin"
+  detect_stub="$fixture/bin/detect-rc-file"
   cat >"$detect_stub" <<EOF
 #!/bin/sh
-printf 'platform=nixos\nrc_file=$rc_file\nformat=nix\n'
+printf '%s\\n' '$rc_file'
 EOF
   chmod +x "$detect_stub"
 
-  # Run remove-all
-  DETECT_RC_FILE="$detect_stub" _run_cmd "$ROOT_DIR/spells/spellcraft/learn-spellbook" remove-all
+  # Run remove-all with stub in PATH
+  _run_cmd env PATH="$fixture/bin:\$PATH" "$ROOT_DIR/spells/spellcraft/learn-spellbook" remove-all
 
   _assert_success || return 1
   
@@ -1260,15 +1261,16 @@ path_wizard_remove_all_reports_count() {
 }
 EOF
   
-  # Create detect stub
-  detect_stub="$fixture/detect-rc-file"
+  # Create detect stub in bin directory and add to PATH
+  mkdir -p "$fixture/bin"
+  detect_stub="$fixture/bin/detect-rc-file"
   cat >"$detect_stub" <<EOF
 #!/bin/sh
-printf 'platform=nixos\nrc_file=$rc_file\nformat=nix\n'
+printf '%s\\n' '$rc_file'
 EOF
   chmod +x "$detect_stub"
 
-  DETECT_RC_FILE="$detect_stub" _run_cmd "$ROOT_DIR/spells/spellcraft/learn-spellbook" remove-all
+  _run_cmd env PATH="$fixture/bin:\$PATH" "$ROOT_DIR/spells/spellcraft/learn-spellbook" remove-all
 
   _assert_success || return 1
   
@@ -1297,15 +1299,16 @@ path_wizard_remove_all_handles_empty_file() {
 }
 EOF
   
-  # Create detect stub
-  detect_stub="$fixture/detect-rc-file"
+  # Create detect stub in bin directory and add to PATH
+  mkdir -p "$fixture/bin"
+  detect_stub="$fixture/bin/detect-rc-file"
   cat >"$detect_stub" <<EOF
 #!/bin/sh
-printf 'platform=nixos\nrc_file=$rc_file\nformat=nix\n'
+printf '%s\\n' '$rc_file'
 EOF
   chmod +x "$detect_stub"
 
-  DETECT_RC_FILE="$detect_stub" _run_cmd "$ROOT_DIR/spells/spellcraft/learn-spellbook" remove-all
+  _run_cmd env PATH="$fixture/bin:\$PATH" "$ROOT_DIR/spells/spellcraft/learn-spellbook" remove-all
 
   _assert_success || return 1
   
