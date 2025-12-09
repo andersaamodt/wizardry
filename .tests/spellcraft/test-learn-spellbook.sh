@@ -9,6 +9,27 @@ done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
+# Helper functions for creating test stubs
+_stub_detect_rc_file() {
+  rc_file_path=$1
+  stub_dir=$2
+  cat >"$stub_dir/detect-rc-file" <<EOF
+#!/bin/sh
+printf '%s\\n' '$rc_file_path'
+EOF
+  chmod +x "$stub_dir/detect-rc-file"
+}
+
+_stub_detect_distro() {
+  platform=$1
+  stub_dir=$2
+  cat >"$stub_dir/detect-distro" <<EOF
+#!/bin/sh
+printf '%s\\n' '$platform'
+EOF
+  chmod +x "$stub_dir/detect-distro"
+}
+
 test_help() {
   _run_spell "spells/spellcraft/learn-spellbook" --help
   _assert_success && _assert_error_contains "Usage: learn-spellbook"
@@ -40,15 +61,15 @@ test_unknown_option() {
 
 test_adds_shell_path_entry() {
   rc="$WIZARDRY_TMPDIR/path_rc"
-  detect_stub="$WIZARDRY_TMPDIR/detect-rc-file"
-  cat >"$detect_stub" <<EOF
-#!/bin/sh
-printf '%s\n' '$rc'
-EOF
-  chmod +x "$detect_stub"
+  stub_bin="$WIZARDRY_TMPDIR/bin"
+  mkdir -p "$stub_bin"
+  
+  # Create stubs using helper functions
+  _stub_detect_rc_file "$rc" "$stub_bin"
+  _stub_detect_distro "debian" "$stub_bin"
 
-  # Set detect_rc_file so learn-spellbook and learn use the test stub
-  detect_rc_file="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" add "$WIZARDRY_TMPDIR"
+  # Use _run_cmd with PATH set to include stubs
+  _run_cmd PATH="$stub_bin:$PATH" "$ROOT_DIR/spells/spellcraft/learn-spellbook" add "$WIZARDRY_TMPDIR"
   _assert_success
   _assert_file_contains "$rc" "wizardry: path-"
   _assert_file_contains "$rc" "export PATH=\"$WIZARDRY_TMPDIR:\$PATH\""
@@ -64,17 +85,17 @@ test_shell_status_succeeds_when_present() {
   dir="$WIZARDRY_TMPDIR/shell_dir"
   mkdir -p "$dir"
   
-  detect_stub="$WIZARDRY_TMPDIR/detect-rc-file-status"
-  cat >"$detect_stub" <<EOF
-#!/bin/sh
-printf '%s\n' '$rc'
-EOF
-  chmod +x "$detect_stub"
+  stub_bin="$WIZARDRY_TMPDIR/bin_status"
+  mkdir -p "$stub_bin"
+  
+  # Create stubs using helper functions
+  _stub_detect_rc_file "$rc" "$stub_bin"
+  _stub_detect_distro "debian" "$stub_bin"
 
-  detect_rc_file="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" add "$dir"
+  _run_cmd PATH="$stub_bin:$PATH" "$ROOT_DIR/spells/spellcraft/learn-spellbook" add "$dir"
   _assert_success && _assert_file_contains "$rc" "export PATH=\"$dir:\$PATH\""
 
-  detect_rc_file="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" status "$dir"
+  _run_cmd PATH="$stub_bin:$PATH" "$ROOT_DIR/spells/spellcraft/learn-spellbook" status "$dir"
   _assert_success
 }
 
@@ -183,15 +204,15 @@ test_nix_recursive_creates_single_backup() {
   # Create initial config
   printf '{ }\n' > "$rc"
   
-  detect_stub="$WIZARDRY_TMPDIR/detect-rc-file-recursive"
-  cat >"$detect_stub" <<EOF
-#!/bin/sh
-printf '%s\n' '$rc'
-EOF
-  chmod +x "$detect_stub"
+  stub_bin="$WIZARDRY_TMPDIR/bin_recursive"
+  mkdir -p "$stub_bin"
+  
+  # Create stubs using helper functions
+  _stub_detect_rc_file "$rc" "$stub_bin"
+  _stub_detect_distro "nixos" "$stub_bin"
 
   # Add with --recursive flag - should create only ONE backup
-  detect_rc_file="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" --recursive add "$base_dir"
+  _run_cmd PATH="$stub_bin:$PATH" "$ROOT_DIR/spells/spellcraft/learn-spellbook" --recursive add "$base_dir"
   _assert_success || return 1
 
   # Count backup files - should be exactly 1
