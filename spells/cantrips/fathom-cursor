@@ -18,8 +18,8 @@ script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 
 # Resolve the require-command helper to avoid copy/pasting path logic
 # everywhere.
-if [ -n "${REQUIRE_COMMAND-}" ]; then
-    require_cmd=$REQUIRE_COMMAND
+if [ -n "${require_command-}" ]; then
+    require_cmd=$require_command
 elif [ -x "$script_dir/require-command" ]; then
     require_cmd="$script_dir/require-command"
 else
@@ -61,10 +61,10 @@ while [ "$#" -gt 0 ]; do
             break
             ;;
     esac
-set -eu
-
     shift
 done
+
+set -eu
 
 # Default to reporting both coordinates when no axis is specified.
 if [ "$want_x" -eq 0 ] && [ "$want_y" -eq 0 ]; then
@@ -77,7 +77,7 @@ if ! require dd "The fathom-cursor spell needs 'dd' to read the terminal respons
     exit 1
 fi
 
-tty_device=${fathom_cursor_device:-/dev/tty}
+tty_device=${FATHOM_CURSOR_DEVICE:-/dev/tty}
 skip_stty=${FATHOM_CURSOR_SKIP_STTY:-0}
 
 # Only reach for stty when we are manipulating a real tty.

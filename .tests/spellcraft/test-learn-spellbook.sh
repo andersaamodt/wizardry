@@ -43,7 +43,7 @@ test_adds_shell_path_entry() {
   detect_stub="$WIZARDRY_TMPDIR/detect-rc-file"
   cat >"$detect_stub" <<EOF
 #!/bin/sh
-printf 'platform=debian\nrc_file=$rc\nformat=shell\n'
+printf '%s\n' '$rc'
 EOF
   chmod +x "$detect_stub"
 
@@ -67,7 +67,7 @@ test_shell_status_succeeds_when_present() {
   detect_stub="$WIZARDRY_TMPDIR/detect-rc-file-status"
   cat >"$detect_stub" <<EOF
 #!/bin/sh
-printf 'platform=debian\nrc_file=$rc\nformat=shell\n'
+printf '%s\n' '$rc'
 EOF
   chmod +x "$detect_stub"
 
@@ -86,7 +86,7 @@ test_shell_remove_handles_missing_rc_file() {
   detect_stub="$WIZARDRY_TMPDIR/detect-rc-file-missing"
   cat >"$detect_stub" <<EOF
 #!/bin/sh
-printf 'platform=debian\nrc_file=$rc\nformat=shell\n'
+printf '%s\n' '$rc'
 EOF
   chmod +x "$detect_stub"
 
@@ -102,7 +102,7 @@ test_shell_remove_clears_managed_entries() {
   detect_stub="$WIZARDRY_TMPDIR/detect-rc-file-managed"
   cat >"$detect_stub" <<EOF
 #!/bin/sh
-printf 'platform=debian\nrc_file=$rc\nformat=shell\n'
+printf '%s\n' '$rc'
 EOF
   chmod +x "$detect_stub"
 
@@ -125,7 +125,7 @@ test_nix_add_status_and_remove_round_trip() {
   detect_stub="$WIZARDRY_TMPDIR/detect-rc-file-nix"
   cat >"$detect_stub" <<EOF
 #!/bin/sh
-printf 'platform=nixos\nrc_file=$rc\nformat=nix\n'
+printf '%s\n' '$rc'
 EOF
   chmod +x "$detect_stub"
 
@@ -156,7 +156,7 @@ test_nix_backup_uses_numeric_suffix() {
   detect_stub="$WIZARDRY_TMPDIR/detect-rc-file-backup"
   cat >"$detect_stub" <<EOF
 #!/bin/sh
-printf 'platform=nixos\nrc_file=$rc\nformat=nix\n'
+printf '%s\n' '$rc'
 EOF
   chmod +x "$detect_stub"
 
@@ -186,7 +186,7 @@ test_nix_recursive_creates_single_backup() {
   detect_stub="$WIZARDRY_TMPDIR/detect-rc-file-recursive"
   cat >"$detect_stub" <<EOF
 #!/bin/sh
-printf 'platform=nixos\nrc_file=$rc\nformat=nix\n'
+printf '%s\n' '$rc'
 EOF
   chmod +x "$detect_stub"
 
@@ -247,7 +247,7 @@ test_dry_run_does_not_modify_rc() {
   detect_stub="$WIZARDRY_TMPDIR/detect-rc-file-dryrun"
   cat >"$detect_stub" <<EOF
 #!/bin/sh
-printf 'platform=debian\nrc_file=$rc\nformat=shell\n'
+printf '%s\n' '$rc'
 EOF
   chmod +x "$detect_stub"
   
@@ -279,7 +279,7 @@ EOF
   detect_stub="$WIZARDRY_TMPDIR/detect-rc-file-nixmarker"
   cat >"$detect_stub" <<EOF
 #!/bin/sh
-printf 'platform=nixos\nrc_file=$rc\nformat=nix\n'
+printf '%s\n' '$rc'
 EOF
   chmod +x "$detect_stub"
   
@@ -306,7 +306,7 @@ test_nix_allows_multiple_paths() {
   detect_stub="$WIZARDRY_TMPDIR/detect-rc-file-multipaths"
   cat >"$detect_stub" <<EOF
 #!/bin/sh
-printf 'platform=nixos\nrc_file=$rc\nformat=nix\n'
+printf '%s\n' '$rc'
 EOF
   chmod +x "$detect_stub"
   
@@ -353,7 +353,7 @@ EOF
   detect_stub="$WIZARDRY_TMPDIR/detect-rc-file-4space"
   cat >"$detect_stub" <<EOF
 #!/bin/sh
-printf 'platform=nixos\nrc_file=$rc\nformat=nix\n'
+printf '%s\n' '$rc'
 EOF
   chmod +x "$detect_stub"
   
@@ -386,7 +386,7 @@ test_nix_respects_tab_indentation() {
   detect_stub="$WIZARDRY_TMPDIR/detect-rc-file-tabs"
   cat >"$detect_stub" <<EOF
 #!/bin/sh
-printf 'platform=nixos\nrc_file=$rc\nformat=nix\n'
+printf '%s\n' '$rc'
 EOF
   chmod +x "$detect_stub"
   
