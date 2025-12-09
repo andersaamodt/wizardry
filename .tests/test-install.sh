@@ -1215,14 +1215,9 @@ path_wizard_remove_all_removes_all_nix_entries() {
 }
 EOF
   
-  # Create detect stub in bin directory and add to PATH
-  mkdir -p "$fixture/bin"
-  detect_stub="$fixture/bin/detect-rc-file"
-  cat >"$detect_stub" <<EOF
-#!/bin/sh
-printf '%s\\n' '$rc_file'
-EOF
-  chmod +x "$detect_stub"
+  # Create detect stubs using helper functions
+  _stub_detect_distro "nixos" "$fixture/bin"
+  _stub_detect_rc_file "$rc_file" "$fixture/bin"
   
   # Link require-wizardry and menu to fixture bin (menu needed by require-wizardry check)
   ln -sf "$ROOT_DIR/spells/cantrips/require-wizardry" "$fixture/bin/require-wizardry"
@@ -1265,14 +1260,9 @@ path_wizard_remove_all_reports_count() {
 }
 EOF
   
-  # Create detect stub in bin directory and add to PATH
-  mkdir -p "$fixture/bin"
-  detect_stub="$fixture/bin/detect-rc-file"
-  cat >"$detect_stub" <<EOF
-#!/bin/sh
-printf '%s\\n' '$rc_file'
-EOF
-  chmod +x "$detect_stub"
+  # Create detect stubs using helper functions
+  _stub_detect_distro "nixos" "$fixture/bin"
+  _stub_detect_rc_file "$rc_file" "$fixture/bin"
   
   # Link require-wizardry and menu to fixture bin (menu needed by require-wizardry check)
   ln -sf "$ROOT_DIR/spells/cantrips/require-wizardry" "$fixture/bin/require-wizardry"
@@ -1307,14 +1297,9 @@ path_wizard_remove_all_handles_empty_file() {
 }
 EOF
   
-  # Create detect stub in bin directory and add to PATH
-  mkdir -p "$fixture/bin"
-  detect_stub="$fixture/bin/detect-rc-file"
-  cat >"$detect_stub" <<EOF
-#!/bin/sh
-printf '%s\\n' '$rc_file'
-EOF
-  chmod +x "$detect_stub"
+  # Create detect stubs using helper functions
+  _stub_detect_distro "nixos" "$fixture/bin"
+  _stub_detect_rc_file "$rc_file" "$fixture/bin"
   
   # Link require-wizardry and menu to fixture bin (menu needed by require-wizardry check)
   ln -sf "$ROOT_DIR/spells/cantrips/require-wizardry" "$fixture/bin/require-wizardry"
