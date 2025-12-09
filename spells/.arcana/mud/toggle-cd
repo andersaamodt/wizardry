@@ -34,16 +34,10 @@ is_installed=0
 rc_file=""
 if command -v detect-rc-file >/dev/null 2>&1; then
         if detected=$(detect-rc-file 2>/dev/null); then
-                while IFS= read -r line; do
-                        case $line in
-                        rc_file=*)
-                                rc_file="${line#rc_file=}"
-                                break
-                                ;;
-                        esac
-                done <<EOF
-$detected
-EOF
+                # detect-rc-file now outputs just the path
+                if [ -n "$detected" ]; then
+                        rc_file="$detected"
+                fi
         fi
 fi
 

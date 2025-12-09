@@ -113,20 +113,11 @@ run_detect_rc_file() {
 resolve_rc_file() {
 	# Try to use detect-rc-file for cross-platform support
 	if detected=$(run_detect_rc_file); then
-		# Parse rc_file= line using shell parameter expansion
-		while IFS= read -r line; do
-			case $line in
-			rc_file=*)
-				rc_file=${line#rc_file=}
-				if [ -n "$rc_file" ]; then
-					printf '%s\n' "$rc_file"
-					return 0
-				fi
-				;;
-			esac
-		done <<EOF
-$detected
-EOF
+		# detect-rc-file now outputs just the path
+		if [ -n "$detected" ]; then
+			printf '%s\n' "$detected"
+			return 0
+		fi
 	fi
 
 	# Fallback to shell-specific defaults
