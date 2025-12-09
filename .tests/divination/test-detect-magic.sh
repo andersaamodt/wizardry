@@ -22,7 +22,7 @@ STUB
   printf 'content' >"$tmpdir/a.txt"
   printf 'other' >"$tmpdir/b.txt"
 
-  NO_COLOR=1 DETECT_MAGIC_READ_MAGIC="$stub" _run_spell_in_dir "$tmpdir" "spells/divination/detect-magic"
+  NO_COLOR=1 detect_magic_read_magic="$stub" _run_spell_in_dir "$tmpdir" "spells/divination/detect-magic"
   _assert_success || return 1
   _assert_output_contains "File" || return 1
   _assert_output_contains "a.txt" || return 1
@@ -58,7 +58,7 @@ STUB
   chmod +x "$stub"
 
   printf 'note' >"$tmpdir/aura.txt"
-  NO_COLOR=1 DETECT_MAGIC_READ_MAGIC="$stub" RUN_CMD_WORKDIR="$tmpdir" _run_cmd sh "$ROOT_DIR/spells/divination/detect-magic"
+  NO_COLOR=1 detect_magic_read_magic="$stub" RUN_CMD_WORKDIR="$tmpdir" _run_cmd sh "$ROOT_DIR/spells/divination/detect-magic"
   _assert_success || return 1
   case "$OUTPUT" in
     *keep_out*) TEST_FAILURE_REASON="directory appeared in output"; return 1 ;;
@@ -82,7 +82,7 @@ STUB
   chmod +x "$stub"
   : >"$tmpdir/glimmer.txt"
 
-  NO_COLOR=1 DETECT_MAGIC_READ_MAGIC="$stub" _run_spell_in_dir "$tmpdir" "spells/divination/detect-magic"
+  NO_COLOR=1 detect_magic_read_magic="$stub" _run_spell_in_dir "$tmpdir" "spells/divination/detect-magic"
   _assert_success || return 1
   _assert_output_contains "faint glimmer" || return 1
 }
@@ -106,7 +106,7 @@ STUB
   chmod +x "$stub"
   : >"$tmpdir/torrent.txt"
 
-  NO_COLOR=1 DETECT_MAGIC_READ_MAGIC="$stub" _run_spell_in_dir "$tmpdir" "spells/divination/detect-magic"
+  NO_COLOR=1 detect_magic_read_magic="$stub" _run_spell_in_dir "$tmpdir" "spells/divination/detect-magic"
   _assert_success || return 1
   _assert_output_contains "off the charts" || return 1
 }
@@ -121,7 +121,7 @@ STUB
   chmod +x "$stub"
   : >"$tmpdir/soft.txt"
 
-  NO_COLOR=1 DETECT_MAGIC_READ_MAGIC="$stub" _run_spell_in_dir "$tmpdir" "spells/divination/detect-magic"
+  NO_COLOR=1 detect_magic_read_magic="$stub" _run_spell_in_dir "$tmpdir" "spells/divination/detect-magic"
   _assert_success || return 1
   case "$OUTPUT" in
     *"\033"*) TEST_FAILURE_REASON="colour codes present despite NO_COLOR"; return 1 ;;
@@ -158,7 +158,7 @@ STUB
   : >"$tmpdir/shy.txt"
   : >"$tmpdir/eager.txt"
 
-  NO_COLOR=1 DETECT_MAGIC_READ_MAGIC="$stub" _run_spell_in_dir "$tmpdir" "spells/divination/detect-magic"
+  NO_COLOR=1 detect_magic_read_magic="$stub" _run_spell_in_dir "$tmpdir" "spells/divination/detect-magic"
   _assert_success || return 1
   case "$OUTPUT" in
     *shy.txt*) TEST_FAILURE_REASON="unreadable file was listed"; return 1 ;;
@@ -186,7 +186,7 @@ STUB
   : >"$tmpdir/troubled.txt"
   : >"$tmpdir/steady.txt"
 
-  NO_COLOR=1 DETECT_MAGIC_READ_MAGIC="$stub" _run_spell_in_dir "$tmpdir" "spells/divination/detect-magic"
+  NO_COLOR=1 detect_magic_read_magic="$stub" _run_spell_in_dir "$tmpdir" "spells/divination/detect-magic"
   _assert_success || return 1
   _assert_output_contains "steady.txt" || return 1
   case "$OUTPUT" in
@@ -210,7 +210,7 @@ STUB
   : >"$tmpdir/warped.txt"
   : >"$tmpdir/good.txt"
 
-  NO_COLOR=1 DETECT_MAGIC_READ_MAGIC="$stub" _run_spell_in_dir "$tmpdir" "spells/divination/detect-magic"
+  NO_COLOR=1 detect_magic_read_magic="$stub" _run_spell_in_dir "$tmpdir" "spells/divination/detect-magic"
   _assert_success || return 1
   _assert_output_contains "good.txt" || return 1
   case "$OUTPUT" in

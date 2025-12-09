@@ -78,7 +78,7 @@ test_reports_missing_service() {
   _write_sudo_stub "$stub_dir"
 
   service_dir=$(mktemp -d "$WIZARDRY_TMPDIR/services.XXXXXX") || return 1
-  SERVICE_DIR="$service_dir" \
+  service_dir="$service_dir" \
   REMOVE_SERVICE_ASK_TEXT="$stub_dir/ask-text" \
   SYSTEMCTL_STATE_DIR="$stub_dir/state" \
   PATH="$stub_dir:$PATH" _run_spell "spells/cantrips/remove-service" missing
@@ -100,7 +100,7 @@ test_stops_and_removes_service() {
   service_path="$service_dir/demo.service"
   printf 'active' >"$service_path"
 
-  SERVICE_DIR="$service_dir" \
+  service_dir="$service_dir" \
   REMOVE_SERVICE_ASK_TEXT="$stub_dir/ask-text" \
   SYSTEMCTL_STATE_DIR="$stub_dir/state" \
   SYSTEMCTL_IS_ACTIVE_STATUS=0 \

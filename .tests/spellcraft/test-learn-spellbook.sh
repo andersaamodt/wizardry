@@ -15,14 +15,14 @@ test_help() {
 }
 
 test_missing_detect_helper() {
-  # When DETECT_RC_FILE is explicitly set to a missing file, learn-spellbook should fail
+  # When detect_rc_file is explicitly set to a missing file, learn-spellbook should fail
   # Note: We create a stub detect-rc-file that doesn't exist to test this path
   stub_dir="$WIZARDRY_TMPDIR/detect-stub-dir"
   mkdir -p "$stub_dir"
-  # Create a wrapper script that sets DETECT_RC_FILE and runs learn-spellbook
+  # Create a wrapper script that sets detect_rc_file and runs learn-spellbook
   cat >"$stub_dir/test-script" <<'SCRIPT'
 #!/bin/sh
-export DETECT_RC_FILE="$1"
+export detect_rc_file="$1"
 shift
 exec "$@"
 SCRIPT
@@ -47,8 +47,8 @@ printf 'platform=debian\nrc_file=$rc\nformat=shell\n'
 EOF
   chmod +x "$detect_stub"
 
-  # Set DETECT_RC_FILE so learn-spellbook and learn use the test stub
-  DETECT_RC_FILE="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" add "$WIZARDRY_TMPDIR"
+  # Set detect_rc_file so learn-spellbook and learn use the test stub
+  detect_rc_file="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" add "$WIZARDRY_TMPDIR"
   _assert_success
   _assert_file_contains "$rc" "wizardry: path-"
   _assert_file_contains "$rc" "export PATH=\"$WIZARDRY_TMPDIR:\$PATH\""
@@ -71,10 +71,10 @@ printf 'platform=debian\nrc_file=$rc\nformat=shell\n'
 EOF
   chmod +x "$detect_stub"
 
-  DETECT_RC_FILE="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" add "$dir"
+  detect_rc_file="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" add "$dir"
   _assert_success && _assert_file_contains "$rc" "export PATH=\"$dir:\$PATH\""
 
-  DETECT_RC_FILE="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" status "$dir"
+  detect_rc_file="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" status "$dir"
   _assert_success
 }
 
@@ -90,7 +90,7 @@ printf 'platform=debian\nrc_file=$rc\nformat=shell\n'
 EOF
   chmod +x "$detect_stub"
 
-  DETECT_RC_FILE="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" remove "$dir"
+  detect_rc_file="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" remove "$dir"
   _assert_failure && _assert_error_contains "startup file '$rc' does not exist"
 }
 
@@ -106,10 +106,10 @@ printf 'platform=debian\nrc_file=$rc\nformat=shell\n'
 EOF
   chmod +x "$detect_stub"
 
-  DETECT_RC_FILE="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" add "$dir"
+  detect_rc_file="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" add "$dir"
   _assert_success && _assert_file_contains "$rc" "export PATH=\"$dir:\$PATH\""
 
-  DETECT_RC_FILE="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" remove "$dir"
+  detect_rc_file="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" remove "$dir"
   _assert_success
   if grep -F "$dir" "$rc" >/dev/null 2>&1; then
     TEST_FAILURE_REASON="expected removal of PATH entry for $dir"
@@ -129,13 +129,13 @@ printf 'platform=nixos\nrc_file=$rc\nformat=nix\n'
 EOF
   chmod +x "$detect_stub"
 
-  DETECT_RC_FILE="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" add "$dir"
+  detect_rc_file="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" add "$dir"
   _assert_success && _assert_file_contains "$rc" "$dir"
 
-  DETECT_RC_FILE="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" status "$dir"
+  detect_rc_file="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" status "$dir"
   _assert_success
 
-  DETECT_RC_FILE="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" remove "$dir"
+  detect_rc_file="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" remove "$dir"
   _assert_success
   if grep -F "$dir" "$rc" >/dev/null 2>&1; then
     TEST_FAILURE_REASON="expected Nix entry for $dir to be removed"
@@ -161,7 +161,7 @@ EOF
   chmod +x "$detect_stub"
 
   # Add first directory - this creates a backup
-  DETECT_RC_FILE="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" add "$dir1"
+  detect_rc_file="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" add "$dir1"
   _assert_success || return 1
 
   # Count backup files that have 'x' suffix pattern (the old broken behavior)
@@ -191,7 +191,7 @@ EOF
   chmod +x "$detect_stub"
 
   # Add with --recursive flag - should create only ONE backup
-  DETECT_RC_FILE="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" --recursive add "$base_dir"
+  detect_rc_file="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" --recursive add "$base_dir"
   _assert_success || return 1
 
   # Count backup files - should be exactly 1
@@ -251,7 +251,7 @@ printf 'platform=debian\nrc_file=$rc\nformat=shell\n'
 EOF
   chmod +x "$detect_stub"
   
-  DETECT_RC_FILE="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" --dry-run add "$dir"
+  detect_rc_file="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" --dry-run add "$dir"
   _assert_success
   # RC file should remain empty (not modified)
   if [ -s "$rc" ]; then
@@ -283,7 +283,7 @@ printf 'platform=nixos\nrc_file=$rc\nformat=nix\n'
 EOF
   chmod +x "$detect_stub"
   
-  DETECT_RC_FILE="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" add "$dir"
+  detect_rc_file="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" add "$dir"
   _assert_success || return 1
   
   # The file should contain inline wizardry marker
@@ -311,11 +311,11 @@ EOF
   chmod +x "$detect_stub"
   
   # First, add a directory
-  DETECT_RC_FILE="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" add "$dir1"
+  detect_rc_file="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" add "$dir1"
   _assert_success || return 1
   
   # Now add another directory
-  DETECT_RC_FILE="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" add "$dir2"
+  detect_rc_file="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" add "$dir2"
   _assert_success || return 1
   
   # Both directories should be in the file
@@ -357,7 +357,7 @@ printf 'platform=nixos\nrc_file=$rc\nformat=nix\n'
 EOF
   chmod +x "$detect_stub"
   
-  DETECT_RC_FILE="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" add "$dir"
+  detect_rc_file="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" add "$dir"
   _assert_success || return 1
   
   # The file should use 4-space indentation for the PATH block
@@ -390,7 +390,7 @@ printf 'platform=nixos\nrc_file=$rc\nformat=nix\n'
 EOF
   chmod +x "$detect_stub"
   
-  DETECT_RC_FILE="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" add "$dir"
+  detect_rc_file="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" add "$dir"
   _assert_success || return 1
   
   # The file should use tab indentation for the PATH block

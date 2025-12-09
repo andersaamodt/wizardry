@@ -68,10 +68,10 @@ test_declines_overwrite() {
   printf 'keep me' >"$service_path"
 
   ASK_YN_STUB_RESPONSE=no \
-  SERVICE_DIR="$service_dir" \
+  service_dir="$service_dir" \
   SYSTEMCTL_STATE_DIR="$service_dir/state" \
-  INSTALL_SERVICE_TEMPLATE_ASK_YN="$stub_dir/ask-yn" \
-  INSTALL_SERVICE_TEMPLATE_ASK_TEXT="$stub_dir/ask-text" \
+  install_service_template_ask_yn="$stub_dir/ask-yn" \
+  install_service_template_ask_text="$stub_dir/ask-text" \
   PATH="$stub_dir:$PATH" _run_spell "spells/cantrips/install-service-template" "$template"
 
   _assert_failure && _assert_output_contains "Installation cancelled"
@@ -98,10 +98,10 @@ SERVICE
   printf 'Mystic Service\n7777\n' >"$placeholders"
   service_path="$service_dir/example.service"
 
-  SERVICE_DIR="$service_dir" \
+  service_dir="$service_dir" \
   SYSTEMCTL_STATE_DIR="$service_dir/state" \
-  INSTALL_SERVICE_TEMPLATE_ASK_YN="$stub_dir/ask-yn" \
-  INSTALL_SERVICE_TEMPLATE_ASK_TEXT="$stub_dir/ask-text" \
+  install_service_template_ask_yn="$stub_dir/ask-yn" \
+  install_service_template_ask_text="$stub_dir/ask-text" \
   ASK_TEXT_STUB_FILE="$placeholders" \
   PATH="$stub_dir:$PATH" _run_spell "spells/cantrips/install-service-template" "$template" EXECUTABLE=magic
 
@@ -133,9 +133,9 @@ test_skips_sudo_when_service_dir_writable() {
   template="$service_dir/example.service"
   printf 'Name=$NAME\n' >"$template"
 
-  SERVICE_DIR="$service_dir" \
-  INSTALL_SERVICE_TEMPLATE_ASK_YN="$stub_dir/ask-yn" \
-  INSTALL_SERVICE_TEMPLATE_ASK_TEXT="$stub_dir/ask-text" \
+  service_dir="$service_dir" \
+  install_service_template_ask_yn="$stub_dir/ask-yn" \
+  install_service_template_ask_text="$stub_dir/ask-text" \
   PATH="$stub_dir:$PATH" _run_spell "spells/cantrips/install-service-template" "$template" NAME=mere
 
   _assert_success
@@ -163,10 +163,10 @@ SERVICE
   printf 'a/path/with|pipes&slashes"\nquoted&value' >"$placeholders"
   service_path="$service_dir/example.service"
 
-  SERVICE_DIR="$service_dir" \
+  service_dir="$service_dir" \
   SYSTEMCTL_STATE_DIR="$service_dir/state" \
-  INSTALL_SERVICE_TEMPLATE_ASK_YN="$stub_dir/ask-yn" \
-  INSTALL_SERVICE_TEMPLATE_ASK_TEXT="$stub_dir/ask-text" \
+  install_service_template_ask_yn="$stub_dir/ask-yn" \
+  install_service_template_ask_text="$stub_dir/ask-text" \
   ASK_TEXT_STUB_FILE="$placeholders" \
   PATH="$stub_dir:$PATH" _run_spell "spells/cantrips/install-service-template" "$template"
 
