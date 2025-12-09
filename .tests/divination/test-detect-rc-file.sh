@@ -55,9 +55,9 @@ test_emits_nix_format_hint() {
 
 test_prefers_existing_platform_file() {
   home_dir=$(_make_tempdir)
-  _run_cmd env DETECT_RC_FILE_PLATFORM=arch HOME="$home_dir" SHELL=/bin/bash sh -c '
+  _run_cmd env HOME="$home_dir" SHELL=/bin/bash sh -c '
     touch "$HOME/.profile"
-    exec spells/divination/detect-rc-file
+    exec spells/divination/detect-rc-file --platform arch
   '
 
   _assert_success || return 1
@@ -68,9 +68,9 @@ test_prefers_existing_platform_file() {
 
 test_prefers_shell_file_when_platform_unknown() {
   home_dir=$(_make_tempdir)
-  _run_cmd env DETECT_RC_FILE_PLATFORM=unknown HOME="$home_dir" SHELL=/bin/zsh sh -c '
+  _run_cmd env HOME="$home_dir" SHELL=/bin/zsh sh -c '
     touch "$HOME/.zshrc"
-    exec spells/divination/detect-rc-file
+    exec spells/divination/detect-rc-file --platform unknown
   '
 
   _assert_success || return 1
@@ -80,8 +80,8 @@ test_prefers_shell_file_when_platform_unknown() {
 }
 
 test_handles_missing_home() {
-  _run_cmd env DETECT_RC_FILE_PLATFORM=unknown HOME= SHELL=sh sh -c '
-    exec spells/divination/detect-rc-file
+  _run_cmd env HOME= SHELL=sh sh -c '
+    exec spells/divination/detect-rc-file --platform unknown
   '
 
   _assert_success || return 1
@@ -94,10 +94,10 @@ test_nixos_falls_back_to_shell_rc() {
   # On NixOS without home-manager and without existing nix config,
   # detect-rc-file should fall back to shell RC files
   home_dir=$(_make_tempdir)
-  _run_cmd env DETECT_RC_FILE_PLATFORM=nixos HOME="$home_dir" SHELL=/bin/bash sh -c '
+  _run_cmd env HOME="$home_dir" SHELL=/bin/bash sh -c '
     # No nix config files exist (e.g. /etc/nixos/configuration.nix or ~/.config/nixpkgs/home.nix)
     # No home-manager in PATH
-    exec spells/divination/detect-rc-file
+    exec spells/divination/detect-rc-file --platform nixos
   '
 
   _assert_success || return 1
@@ -109,10 +109,10 @@ test_nixos_falls_back_to_shell_rc() {
 test_nixos_detects_new_home_manager_path() {
   # On NixOS with the newer home-manager path ~/.config/home-manager/home.nix
   home_dir=$(_make_tempdir)
-  _run_cmd env DETECT_RC_FILE_PLATFORM=nixos HOME="$home_dir" SHELL=/bin/bash sh -c '
+  _run_cmd env HOME="$home_dir" SHELL=/bin/bash sh -c '
     mkdir -p "$HOME/.config/home-manager"
     touch "$HOME/.config/home-manager/home.nix"
-    exec spells/divination/detect-rc-file
+    exec spells/divination/detect-rc-file --platform nixos
   '
 
   _assert_success || return 1
@@ -126,8 +126,8 @@ test_nixos_respects_nixos_config_env() {
   config_dir=$(_make_tempdir)
   mkdir -p "$config_dir"
   touch "$config_dir/my-config.nix"
-  _run_cmd env DETECT_RC_FILE_PLATFORM=nixos NIXOS_CONFIG="$config_dir/my-config.nix" SHELL=/bin/bash sh -c '
-    exec spells/divination/detect-rc-file
+  _run_cmd env NIXOS_CONFIG="$config_dir/my-config.nix" SHELL=/bin/bash sh -c '
+    exec spells/divination/detect-rc-file --platform nixos
   '
 
   _assert_success || return 1
@@ -148,11 +148,11 @@ exit 0
 STUB
   chmod +x "$hm_stub_dir/home-manager"
 
-  _run_cmd env DETECT_RC_FILE_PLATFORM=nixos HOME="$home_dir" PATH="$hm_stub_dir:$PATH" SHELL=/bin/bash sh -c '
+  _run_cmd env HOME="$home_dir" PATH="$hm_stub_dir:$PATH" SHELL=/bin/bash sh -c '
     # Create the home-manager config
     mkdir -p "$HOME/.config/home-manager"
     touch "$HOME/.config/home-manager/home.nix"
-    exec spells/divination/detect-rc-file
+    exec spells/divination/detect-rc-file --platform nixos
   '
 
   _assert_success || return 1
@@ -169,11 +169,11 @@ test_nixos_uses_system_config_without_home_manager() {
   config_dir=$(_make_tempdir)
   touch "$config_dir/configuration.nix"
 
-  _run_cmd env DETECT_RC_FILE_PLATFORM=nixos HOME="$home_dir" NIXOS_CONFIG="$config_dir/configuration.nix" SHELL=/bin/bash sh -c '
+  _run_cmd env HOME="$home_dir" NIXOS_CONFIG="$config_dir/configuration.nix" SHELL=/bin/bash sh -c '
     # Ensure home-manager is not in PATH (use restricted PATH)
     PATH=/usr/bin:/bin
     export PATH
-    exec spells/divination/detect-rc-file
+    exec spells/divination/detect-rc-file --platform nixos
   '
 
   _assert_success || return 1

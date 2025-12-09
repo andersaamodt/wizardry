@@ -5,26 +5,43 @@
 
 show_usage() {
 cat <<'USAGE'
-Usage: install-checkbashisms
+Usage: install-checkbashisms [--force]
 
 Install the checkbashisms command with your system package manager if it's missing, supporting common Linux distributions and macOS.
+
+Options:
+  --force    Force reinstallation even if checkbashisms is already available
 USAGE
 }
 
-case "${1-}" in
---help|--usage|-h)
-        show_usage
-        exit 0
-        ;;
--*)
-        printf '%s\n' "install-checkbashisms: unknown option '$1'" >&2
-        show_usage
-        exit 1
-        ;;
-esac
+force_install=0
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+  --help|--usage|-h)
+    show_usage
+    exit 0
+    ;;
+  --force)
+    force_install=1
+    shift
+    ;;
+  -*)
+    printf '%s\n' "install-checkbashisms: unknown option '$1'" >&2
+    show_usage
+    exit 2
+    ;;
+  *)
+    printf '%s\n' "install-checkbashisms: unexpected argument '$1'" >&2
+    show_usage
+    exit 2
+    ;;
+  esac
+done
+
 set -eu
 
-if [ "${INSTALL_CHECKBASHISMS_FORCE_INSTALL-}" != "1" ] && command -v checkbashisms >/dev/null 2>&1; then
+if [ "$force_install" -eq 0 ] && command -v checkbashisms >/dev/null 2>&1; then
         printf '%s\n' "checkbashisms is already installed."
         exit 0
 fi
