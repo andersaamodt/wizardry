@@ -90,7 +90,7 @@ prompt_placeholders() {
 		if [ -z "$var" ]; then
 			continue
 		fi
-		value=$("$ASK_TEXT" "Enter a value for $var:")
+		value=$("$ask_text" "Enter a value for $var:")
 		replace_placeholder "$var" "$value"
 	done <"$placeholders_file"
 	rm -f "$placeholders_file"
@@ -112,8 +112,8 @@ if [ -z "$script_dir" ] || [ "$script_dir" = "$script_source" ]; then
 fi
 script_dir=$(cd "$script_dir" && pwd -P)
 
-ASK_YN=$(find_helper INSTALL_SERVICE_TEMPLATE_ASK_YN "$script_dir/ask-yn" ask-yn)
-ASK_TEXT=$(find_helper INSTALL_SERVICE_TEMPLATE_ASK_TEXT "$script_dir/ask-text" ask-text)
+ask_yn=$(find_helper install_service_template_ask_yn "$script_dir/ask-yn" ask-yn)
+ask_text=$(find_helper install_service_template_ask_text "$script_dir/ask-text" ask-text)
 
 if command -v systemctl >/dev/null 2>&1; then
         systemctl_cmd=$(command -v systemctl)
@@ -143,7 +143,7 @@ template_path=${1-}
 if [ -n "$template_path" ]; then
         shift
 else
-        template_path=$("$ASK_TEXT" "Path to the service template:")
+        template_path=$("$ask_text" "Path to the service template:")
 fi
 if [ -z "$template_path" ]; then
         show_usage
@@ -158,7 +158,7 @@ service_file=$(basename "$template_path")
 service_path="$service_dir/$service_file"
 
 if [ -f "$service_path" ]; then
-        if ! "$ASK_YN" "Service $service_file exists. Overwrite?" no >/dev/null; then
+        if ! "$ask_yn" "Service $service_file exists. Overwrite?" no >/dev/null; then
                 printf '%s\n' "Installation cancelled."
                 exit 1
         fi

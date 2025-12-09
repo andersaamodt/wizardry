@@ -37,7 +37,7 @@ if [ -z "$script_dir" ] || [ "$script_dir" = "$script_source" ]; then
         script_dir=.
 fi
 script_dir=$(cd "$script_dir" && pwd -P)
-LOOK_SCRIPT_PATH="$script_dir/$(basename "$script_source")"
+look_script_path="$script_dir/$(basename "$script_source")"
 
 look_warn() {
         printf '%s\n' "look: $1" >&2
@@ -66,7 +66,7 @@ look_block_present() {
         if grep -Fq 'WIZARDRY_LOOK_SPELL' "$rc_file"; then
                 return 0
         fi
-        if grep -Fq "alias look='$LOOK_SCRIPT_PATH'" "$rc_file"; then
+        if grep -Fq "alias look='$look_script_path'" "$rc_file"; then
                 return 0
         fi
         return 1
@@ -102,7 +102,7 @@ write_look_block() {
         fi
         cat <<BLOCK >>"$tmp_file"
 # >>> wizardry look spell >>>
-alias look='$LOOK_SCRIPT_PATH'
+alias look='$look_script_path'
 # <<< wizardry look spell <<<
 BLOCK
         if ! mv "$tmp_file" "$rc_file"; then

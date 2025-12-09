@@ -1,14 +1,14 @@
 #!/bin/sh
 
 # This spell lists running processes and interactively chooses one to terminate.
-# It prompts with ask cantrips and sends a kill signal, customizable via KILL_CMD.
+# It prompts with ask cantrips and sends a kill signal.
 
 
 show_usage() {
 cat <<'USAGE'
 Usage: kill-process
 
-List running processes, prompt you to pick one by number, and then send a kill signal to that PID. Uses ask-number and ask-yn for a gentle, confirmed termination, and you can override the signal command with KILL_CMD.
+List running processes, prompt you to pick one by number, and then send a kill signal to that PID. Uses ask-number and ask-yn for a gentle, confirmed termination.
 USAGE
 }
 
@@ -24,12 +24,12 @@ set -eu
 say "List of running processes:"
 ps -ax | awk '{print $5}' | tail -n +2 | nl -w 2 -s ') '
 
-PS_NAMES=$(ps -ax | awk '{print $5}' | tail -n +2)
+ps_names=$(ps -ax | awk '{print $5}' | tail -n +2)
 
 lacks ask-number && { warn "ask-number spell is required to choose a process."; exit 1; }
 lacks ask-yn && { warn "ask-yn spell is required to confirm termination."; exit 1; }
 
-total_processes=$(printf '%s\n' "$PS_NAMES" | sed '/^$/d' | wc -l | tr -d ' ')
+total_processes=$(printf '%s\n' "$ps_names" | sed '/^$/d' | wc -l | tr -d ' ')
 
 if [ "$total_processes" -eq 0 ]; then
     warn "No processes available to kill."
@@ -37,12 +37,12 @@ if [ "$total_processes" -eq 0 ]; then
 fi
 
 choice=$(ask-number "Enter the number of the process you want to kill:" 1 "$total_processes")
-selected_name=$(printf '%s\n' "$PS_NAMES" | sed -n "${choice}p")
+selected_name=$(printf '%s\n' "$ps_names" | sed -n "${choice}p")
 
 pid=$(ps -ax | awk '{print $1 " " $5}' | grep "$selected_name" | awk '{print $1}')
 if is set "$pid"; then
     if ask-yn "Are you sure you want to kill process $selected_name with pid $pid"; then
-        kill_cmd=${KILL_CMD:-kill}
+        kill_cmd='kill'
 
         lacks "$kill_cmd" && { warn "kill command '$kill_cmd' is required to terminate processes."; exit 1; }
 

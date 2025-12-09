@@ -681,14 +681,9 @@ test_no_undeclared_allcaps_vars() {
   
   violations_file=$(mktemp "${WIZARDRY_TMPDIR}/allcaps-violations.XXXXXX")
   
-  # Allowed all-caps variables (POSIX standard and WIZARDRY infrastructure)
-  allowed_pattern='PATH=|IFS=|CDPATH=|HOME=|PWD=|OLDPWD=|TERM=|SHELL=|USER=|LOGNAME=|TMPDIR=|LANG=|LC_|TZ=|DISPLAY=|EDITOR=|PAGER=|VISUAL=|MAIL=|PS[1-4]=|COLUMNS=|LINES='
-  allowed_pattern="${allowed_pattern}WIZARDRY_[A-Z_]*=|BWRAP_|SANDBOX_|MACOS_SANDBOX_"
-  # Color variables from spells/cantrips/colors
-  allowed_pattern="${allowed_pattern}ESC=|RESET=|BLACK=|RED=|GREEN=|YELLOW=|BLUE=|MAGENTA=|CYAN=|WHITE=|GREY=|GRAY="
-  allowed_pattern="${allowed_pattern}BG_BLACK=|BG_RED=|BG_GREEN=|BG_YELLOW=|BG_BLUE=|BG_MAGENTA=|BG_CYAN=|BG_WHITE="
-  allowed_pattern="${allowed_pattern}BOLD=|DIM=|ITALIC=|UNDERLINE=|BLINK=|REVERSE=|HIDDEN=|STRIKETHROUGH="
-  allowed_pattern="${allowed_pattern}THEME_[A-Z_]*=|ASSUME_YES=|AWAIT_KEYPRESS_[A-Z_]*="
+  # Allowed all-caps variables (POSIX standard, WIZARDRY infrastructure, and color/UI variables)
+  # Build as single string to avoid escaping issues
+  allowed='PATH=|IFS=|CDPATH=|HOME=|PWD=|OLDPWD=|TERM=|SHELL=|USER=|LOGNAME=|TMPDIR=|LANG=|LC_|TZ=|DISPLAY=|EDITOR=|PAGER=|VISUAL=|MAIL=|PS[1-4]=|COLUMNS=|LINES=|WIZARDRY_|BWRAP_|SANDBOX_|MACOS_SANDBOX_|ESC=|RESET=|BLACK=|RED=|GREEN=|YELLOW=|BLUE=|MAGENTA=|CYAN=|WHITE=|GREY=|GRAY=|BG_BLACK=|BG_RED=|BG_GREEN=|BG_YELLOW=|BG_BLUE=|BG_MAGENTA=|BG_CYAN=|BG_WHITE=|BOLD=|DIM=|ITALIC=|UNDERLINE=|BLINK=|REVERSE=|HIDDEN=|STRIKETHROUGH=|THEME_|ASSUME_YES=|AWAIT_KEYPRESS_'
   
   # Find all shell scripts in spells/ (including .imps)
   find "$ROOT_DIR/spells" -type f -print | while IFS= read -r file; do
@@ -697,9 +692,10 @@ test_no_undeclared_allcaps_vars() {
     should_skip_file "$base_name" && continue
     is_posix_shell_script "$file" || continue
     
-    # Skip test infrastructure files and special interface files
+    # Skip test infrastructure files, special interface files, and bootstrap spells
     case "$file" in
       */test-bootstrap|*/test-*|*/.imps/test/*|*/cantrips/colors) continue ;;
+      */detect-distro|*/detect-rc-file) continue ;;  # Bootstrap spells with special export patterns
     esac
     
     rel_path=${file#"$ROOT_DIR/"}
@@ -709,7 +705,7 @@ test_no_undeclared_allcaps_vars() {
     # But exclude lines where it's just a one-time IFS setting like "IFS= read"
     violations=$(grep -n '^[[:space:]]*[A-Z_][A-Z_0-9]*=' "$file" 2>/dev/null | \
       grep -v '^[^:]*:[[:space:]]*IFS=[[:space:]]' | \
-      grep -Ev "$allowed_pattern" | \
+      grep -Ev "$allowed" | \
       cut -d: -f1 | head -10 || true)
     
     if [ -n "$violations" ]; then

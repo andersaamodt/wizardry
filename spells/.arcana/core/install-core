@@ -54,7 +54,7 @@ get_clipboard_label() {
 }
 
 # A special command name marker for clipboard that's checked differently
-CLIPBOARD_MARKER="__clipboard_helper__"
+clipboard_marker="__clipboard_helper__"
 
 core_dependencies() {
   # Format: label:command_name:install_spell:uninstall_spell:essential
@@ -77,7 +77,7 @@ EOF
       # Linux needs a clipboard utility - unified under install-clipboard-helper
       cat <<EOF
 Git:git:install-git:uninstall-git:0
-${clipboard_label}:${CLIPBOARD_MARKER}:install-clipboard-helper:uninstall-clipboard-helper:0
+${clipboard_label}:${clipboard_marker}:install-clipboard-helper:uninstall-clipboard-helper:0
 Bubblewrap:bwrap:install-bwrap:uninstall-bwrap:0
 dd:dd:install-dd:uninstall-dd:1
 stty:stty:install-stty:uninstall-stty:1

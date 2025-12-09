@@ -20,10 +20,10 @@ esac
 set -eu
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-CD_SPELL="$script_dir/cd"
+cd_spell="$script_dir/cd"
 
-if [ ! -x "$CD_SPELL" ]; then
-        printf '%s\n' "Error: cd spell not found at '$CD_SPELL'." >&2
+if [ ! -x "$cd_spell" ]; then
+        printf '%s\n' "Error: cd spell not found at '$cd_spell'." >&2
         exit 1
 fi
 
@@ -73,7 +73,7 @@ fi
 if [ "$is_installed" -eq 0 ]; then
         # Not installed, so install it
         printf '%s\n' "Installing cd hook..."
-        if "$CD_SPELL" install; then
+        if "$cd_spell" install; then
                 printf '%s\n' "✓ cd hook enabled. Each directory change will now display the room description."
                 printf '%s\n' "  (Restart your shell or source your rc file to activate)"
         else
@@ -83,7 +83,7 @@ if [ "$is_installed" -eq 0 ]; then
 else
         # Hook is installed, so uninstall it with live feedback
         printf '%s\n' "Uninstalling cd hook..."
-        if "$CD_SPELL" uninstall; then
+        if "$cd_spell" uninstall; then
                 printf '%s\n' "✓ cd hook disabled."
                 printf '%s\n' "  (Restart your shell or source your rc file to deactivate)"
         else
