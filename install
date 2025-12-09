@@ -262,9 +262,18 @@ fi
 
 # Now that the wizardry tree is available, point at the helper spells we rely
 # on to set up shell integration and ask for confirmation.
+# Check PATH first (allows test overrides), fall back to absolute paths
+if command -v detect-rc-file >/dev/null 2>&1; then
+	DETECT_RC_FILE="detect-rc-file"
+else
+	DETECT_RC_FILE="$ABS_DIR/spells/divination/detect-rc-file"
+fi
+if command -v detect-distro >/dev/null 2>&1; then
+	DETECT_DISTRO="detect-distro"
+else
+	DETECT_DISTRO="$ABS_DIR/spells/divination/detect-distro"
+fi
 INVOKE_WIZARDRY="$ABS_DIR/spells/.imps/sys/invoke-wizardry"
-DETECT_RC_FILE="$ABS_DIR/spells/divination/detect-rc-file"
-DETECT_DISTRO="$ABS_DIR/spells/divination/detect-distro"
 NIX_SHELL_ADD="$ABS_DIR/spells/.imps/sys/nix-shell-add"
 NIX_SHELL_REMOVE="$ABS_DIR/spells/.imps/sys/nix-shell-remove"
 CORE_INSTALLER=${WIZARDRY_CORE_INSTALLER:-$ABS_DIR/spells/.arcana/core/install-core}
