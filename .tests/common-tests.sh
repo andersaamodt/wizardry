@@ -1,10 +1,9 @@
 #!/bin/sh
-# Global checks that apply across all spells and imps.
+# Common structural and behavioral checks that apply across all spells and imps.
 # Run first as part of test-magic to catch systemic issues early.
 #
-# This test file implements behavioral and structural checks that verify
-# properties across the entire spellbook. Style/opinionated checks belong
-# in vet-spell instead.
+# This file contains cross-cutting tests that verify properties across the
+# entire spellbook. Style/opinionated checks belong in vet-spell instead.
 # Note: POSIX compliance (shebang, bashisms) is checked by verify-posix.
 
 set -eu
