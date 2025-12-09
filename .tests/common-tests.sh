@@ -703,10 +703,8 @@ test_no_undeclared_allcaps_vars() {
     # Find all-caps variable assignments (pattern: VARNAME=...)
     # Look for lines like: VARNAME=value or VARNAME=$(...)
     # But exclude lines where it's just a one-time IFS setting like "IFS= read"
-    # Also exclude inline env vars for single commands (followed by backslash or command on same line)
     violations=$(grep -n '^[[:space:]]*[A-Z_][A-Z_0-9]*=' "$file" 2>/dev/null | \
       grep -v '^[^:]*:[[:space:]]*IFS=[[:space:]]' | \
-      grep -v '\\$' | \
       grep -Ev "$allowed" | \
       cut -d: -f1 | head -10 || true)
     

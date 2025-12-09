@@ -61,18 +61,18 @@ config_dir_default=${SIMPLEX_CHAT_CONFIG_DIR:-$HOME/.config/simplex-chat}
 chat_data_dir=$(prompt "Where should simplex-chat store its data?" "$data_dir_default")
 chat_config_dir=$(prompt "Where should simplex-chat keep its configuration?" "$config_dir_default")
 
-# Allow users to override per-manager packages to handle distro differences.
-# Pass as env vars only for this command invocation
+# Install simplex-chat
 printf '\nInstalling simplex-chat using %s...\n' "$manage_cmd"
-NIX_PACKAGE=${NIX_PACKAGE:-$chat_package} \
-apt_package=${apt_package:-$chat_package} \
-dnf_package=${dnf_package:-$chat_package} \
-yum_package=${yum_package:-$chat_package} \
-zypper_package=${zypper_package:-$chat_package} \
-pacman_package=${pacman_package:-$chat_package} \
-apk_package=${apk_package:-$chat_package} \
-PKGIN_PACKAGE=${PKGIN_PACKAGE:-$chat_package} \
-"$manage_cmd" simplex-chat "$chat_package"
+"$manage_cmd" \
+  --nix-package "${NIX_PACKAGE:-$chat_package}" \
+  --apt-package "${apt_package:-$chat_package}" \
+  --dnf-package "${dnf_package:-$chat_package}" \
+  --yum-package "${yum_package:-$chat_package}" \
+  --zypper-package "${zypper_package:-$chat_package}" \
+  --pacman-package "${pacman_package:-$chat_package}" \
+  --apk-package "${apk_package:-$chat_package}" \
+  --pkgin-package "${PKGIN_PACKAGE:-$chat_package}" \
+  simplex-chat "$chat_package"
 
 printf '\nPreparing simplex-chat directories...\n'
 mkdir -p "$chat_data_dir" "$chat_config_dir"

@@ -4,9 +4,21 @@
 
 show_usage() {
         cat <<'USAGE' >&2
-Usage: manage-system-command [--uninstall] <command> <default-package>
+Usage: manage-system-command [OPTIONS] <command> <default-package>
 
-Installs or removes a system command via the available package manager, falling back to the provided default package name when no override is set. Respects FORCE_INSTALL to reinstall an already present command.
+Installs or removes a system command via the available package manager, falling back to the provided default package name when no override is set.
+
+Options:
+  --uninstall                Uninstall instead of install
+  --nix-package PACKAGE      Override package name for nix
+  --apt-package PACKAGE      Override package name for apt
+  --dnf-package PACKAGE      Override package name for dnf
+  --yum-package PACKAGE      Override package name for yum
+  --zypper-package PACKAGE   Override package name for zypper
+  --pacman-package PACKAGE   Override package name for pacman
+  --apk-package PACKAGE      Override package name for apk
+  --pkgin-package PACKAGE    Override package name for pkgin
+  --force                    Force reinstall even if command exists
 USAGE
 }
 
@@ -19,24 +31,116 @@ esac
 
 
 # Install or uninstall a system command using the available package manager.
-# Usage: manage-system-command [--uninstall] <command> <default-package>
 
 set -eu
 
 action=install
-if [ "${1-}" = "--uninstall" ]; then
-  action=uninstall
-  shift
-fi
+force_install=0
+nix_package=''
+apt_package=''
+dnf_package=''
+yum_package=''
+zypper_package=''
+pacman_package=''
+apk_package=''
+pkgin_package=''
+
+# Parse options
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+  --uninstall)
+    action=uninstall
+    shift
+    ;;
+  --force)
+    force_install=1
+    shift
+    ;;
+  --nix-package)
+    if [ "$#" -lt 2 ]; then
+      printf '%s\n' "manage-system-command: --nix-package requires an argument" >&2
+      exit 1
+    fi
+    nix_package=$2
+    shift 2
+    ;;
+  --apt-package)
+    if [ "$#" -lt 2 ]; then
+      printf '%s\n' "manage-system-command: --apt-package requires an argument" >&2
+      exit 1
+    fi
+    apt_package=$2
+    shift 2
+    ;;
+  --dnf-package)
+    if [ "$#" -lt 2 ]; then
+      printf '%s\n' "manage-system-command: --dnf-package requires an argument" >&2
+      exit 1
+    fi
+    dnf_package=$2
+    shift 2
+    ;;
+  --yum-package)
+    if [ "$#" -lt 2 ]; then
+      printf '%s\n' "manage-system-command: --yum-package requires an argument" >&2
+      exit 1
+    fi
+    yum_package=$2
+    shift 2
+    ;;
+  --zypper-package)
+    if [ "$#" -lt 2 ]; then
+      printf '%s\n' "manage-system-command: --zypper-package requires an argument" >&2
+      exit 1
+    fi
+    zypper_package=$2
+    shift 2
+    ;;
+  --pacman-package)
+    if [ "$#" -lt 2 ]; then
+      printf '%s\n' "manage-system-command: --pacman-package requires an argument" >&2
+      exit 1
+    fi
+    pacman_package=$2
+    shift 2
+    ;;
+  --apk-package)
+    if [ "$#" -lt 2 ]; then
+      printf '%s\n' "manage-system-command: --apk-package requires an argument" >&2
+      exit 1
+    fi
+    apk_package=$2
+    shift 2
+    ;;
+  --pkgin-package)
+    if [ "$#" -lt 2 ]; then
+      printf '%s\n' "manage-system-command: --pkgin-package requires an argument" >&2
+      exit 1
+    fi
+    pkgin_package=$2
+    shift 2
+    ;;
+  --)
+    shift
+    break
+    ;;
+  -*)
+    printf '%s\n' "manage-system-command: unknown option: $1" >&2
+    exit 1
+    ;;
+  *)
+    break
+    ;;
+  esac
+done
 
 if [ "$#" -lt 2 ]; then
-  printf '%s\n' "Usage: manage-system-command [--uninstall] <command> <default-package>" >&2
+  printf '%s\n' "Usage: manage-system-command [OPTIONS] <command> <default-package>" >&2
   exit 1
 fi
 
 command_name=$1
 package_default=$2
-force_install=${FORCE_INSTALL:-0}
 
 # Detect NixOS for automatic installation via nix-env
 is_nixos=0
@@ -44,17 +148,15 @@ if [ -d /etc/nixos ] || [ -f /etc/NIXOS ] || grep -qi 'ID=nixos' /etc/os-release
         is_nixos=1
 fi
 
-# Allow per-manager nix package override
-nix_package=${NIX_PACKAGE:-$package_default}
-
-# Allow per-manager package overrides when names diverge across distros.
+# Use provided package names or fall back to default
+nix_package=${nix_package:-$package_default}
 apt_package=${apt_package:-$package_default}
 dnf_package=${dnf_package:-$package_default}
 yum_package=${yum_package:-$package_default}
 zypper_package=${zypper_package:-$package_default}
 pacman_package=${pacman_package:-$package_default}
 apk_package=${apk_package:-$package_default}
-pkgin_package=${PKGIN_PACKAGE:-$package_default}
+pkgin_package=${pkgin_package:-$package_default}
 pkgin_candidates=${PKGIN_CANDIDATES:-/usr/pkg/bin/pkgin /opt/pkg/bin/pkgin /usr/local/pkg/bin/pkgin}
 
 if ! command -v pkgin >/dev/null 2>&1; then

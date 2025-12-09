@@ -258,6 +258,7 @@ These standards describe the technical requirements that all spells, menus, and 
 | Unified logging tone            | Logging and prompts follow a consistent style and interruption semantics.                                 |
 | Standardized flag parsing       | All spells converge on a single pattern for parsing flags and arguments.                                  |
 | Input normalization             | Shared helpers normalize user paths and other inputs.                                                     |
+| No undeclared interfaces        | All communication happens through documented interfaces: command-line arguments, return values, and stdout. No implicit context via environment variables (except the 3 DIR globals and LOG_LEVEL), no exports for downstream consumption, no setting variables expecting child scripts to read them. Every interface must be explicit and documented. |
 | Linting & formatting            | Run `lint-magic` to check style compliance. Enforces POSIX compliance, proper naming, and formatting conventions. |
 | Standard exit codes             | Common helpers define exit codes and error shaping.                                                       |
 | Directory-resolution idiom      | One canonical pattern for locating sibling resources.                                                     |
