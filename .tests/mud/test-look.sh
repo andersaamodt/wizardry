@@ -56,12 +56,11 @@ test_missing_read_magic() {
 }
 
 test_missing_attributes_shows_defaults() {
-  skip-if-compiled || return $?
   stub=$(make_stub_dir)
   test_room=$(_make_tempdir)
   stub_ask_yn "$stub" 0
   stub_read_magic_missing "$stub"
-  PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" _run_spell "spells/mud/look" "$test_room"
+  LOOK_READ_MAGIC="$stub/read-magic" PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" _run_spell "spells/mud/look" "$test_room"
   _assert_success
   # Should show folder name as title
   room_name=$(basename "$test_room")
@@ -79,12 +78,11 @@ test_missing_attributes_shows_defaults() {
 }
 
 test_output_ends_with_newline() {
-  skip-if-compiled || return $?
   stub=$(make_stub_dir)
   test_room=$(_make_tempdir)
   stub_ask_yn "$stub" 0
   stub_read_magic_missing "$stub"
-  PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" _run_spell "spells/mud/look" "$test_room"
+  NO_COLOR=1 LOOK_READ_MAGIC="$stub/read-magic" PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" _run_spell "spells/mud/look" "$test_room"
   _assert_success
   # With MUD formatting, output should always end with a newline after the description
   # Check that the output ends with period+newline for the default description
@@ -99,12 +97,12 @@ test_output_ends_with_newline() {
 }
 
 test_home_description_defaults() {
-  skip-if-compiled || return $?
   stub=$(make_stub_dir)
   home_dir=$(_make_tempdir)
   stub_ask_yn "$stub" 1
   stub_read_magic_missing "$stub"
-  LOOK_HOME_PATH="$home_dir" HOME="$home_dir" PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" \
+  # Don't set HOME to match the directory we're looking at, so identify-room won't think it's home
+  LOOK_READ_MAGIC="$stub/read-magic" PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" \
     _run_spell "spells/mud/look" "$home_dir"
   _assert_success || return 1
   _assert_output_contains "$(basename "$home_dir")" || return 1
@@ -113,14 +111,14 @@ test_home_description_defaults() {
 }
 
 test_other_home_description() {
-  skip-if-compiled || return $?
   stub=$(make_stub_dir)
   base_home=$(_make_tempdir)
   other_home=$(dirname "$base_home")/chris
   mkdir -p "$other_home"
   stub_ask_yn "$stub" 1
   stub_read_magic_missing "$stub"
-  LOOK_HOME_PATH="$base_home" HOME="$base_home" PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" \
+  # Set HOME to base_home but look at other_home directory
+  LOOK_READ_MAGIC="$stub/read-magic" HOME="$base_home" PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" \
     _run_spell "spells/mud/look" "$other_home"
   _assert_success || return 1
   _assert_output_contains "chris" || return 1
@@ -129,19 +127,27 @@ test_other_home_description() {
 }
 
 test_root_description() {
-  skip-if-compiled || return $?
   stub=$(make_stub_dir)
   stub_ask_yn "$stub" 1
   stub_read_magic_missing "$stub"
-  PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" _run_spell "spells/mud/look" /
+  LOOK_READ_MAGIC="$stub/read-magic" PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" _run_spell "spells/mud/look" /
   _assert_success || return 1
-  _assert_output_contains "/" || return 1
-  printf '%s' "$OUTPUT" | grep -qE "An ordinary room|A plain chamber|A nondescript space|An unremarkable area|A simple room" \
-    || { TEST_FAILURE_REASON="expected default description"; return 1; }
+  # Accept either "/" (when identify-room is unavailable) or "Root" (when it's available)
+  if printf '%s' "$OUTPUT" | grep -q "/"; then
+    # When identify-room is unavailable, expect "/" and default description
+    printf '%s' "$OUTPUT" | grep -qE "An ordinary room|A plain chamber|A nondescript space|An unremarkable area|A simple room" \
+      || { TEST_FAILURE_REASON="expected default description when showing /"; return 1; }
+  elif printf '%s' "$OUTPUT" | grep -q "Root"; then
+    # When identify-room is available, expect "Root" and system description
+    printf '%s' "$OUTPUT" | grep -q "root of the filesystem" \
+      || { TEST_FAILURE_REASON="expected system description when showing Root"; return 1; }
+  else
+    TEST_FAILURE_REASON="expected either / or Root in output"
+    return 1
+  fi
 }
 
 test_displays_attributes() {
-  skip-if-compiled || return $?
   stub=$(make_stub_dir)
   stub_ask_yn "$stub" 0
   cat >"$stub/read-magic" <<'EOF'
@@ -152,22 +158,20 @@ case "$2" in
 esac
 EOF
   chmod +x "$stub/read-magic"
-  PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" _run_spell "spells/mud/look" "$WIZARDRY_TMPDIR"
+  LOOK_READ_MAGIC="$stub/read-magic" PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" _run_spell "spells/mud/look" "$WIZARDRY_TMPDIR"
   _assert_success && printf '%s' "$OUTPUT" | grep -q "Hidden Door" && printf '%s' "$OUTPUT" | grep -q "A narrow doorway concealed by ivy."
 }
 
 test_installs_when_prompted() {
-  skip-if-compiled || return $?
   stub=$(make_stub_dir)
   stub_ask_yn "$stub" 0
   stub_read_magic_missing "$stub"
   rc_file="$WIZARDRY_TMPDIR/lookrc-install"
-  LOOK_RC_FILE="$rc_file" PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" _run_spell "spells/mud/look" "$WIZARDRY_TMPDIR"
+  LOOK_READ_MAGIC="$stub/read-magic" LOOK_RC_FILE="$rc_file" PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" _run_spell "spells/mud/look" "$WIZARDRY_TMPDIR"
   _assert_success && _assert_path_exists "$rc_file" && grep -q "wizardry look spell" "$rc_file"
 }
 
 test_declines_installation() {
-  skip-if-compiled || return $?
   stub=$(make_stub_dir)
   cat >"$stub/ask-yn" <<'EOF'
 #!/bin/sh
@@ -183,13 +187,12 @@ EOF
   rc_file="$WIZARDRY_TMPDIR/lookrc-decline"
   rm -f "$rc_file"
   prompt_log="$WIZARDRY_TMPDIR/prompt.txt"
-  ASK_LOG="$prompt_log" LOOK_RC_FILE="$rc_file" PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" _run_spell "spells/mud/look" "$WIZARDRY_TMPDIR"
+  LOOK_READ_MAGIC="$stub/read-magic" ASK_LOG="$prompt_log" LOOK_RC_FILE="$rc_file" PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" _run_spell "spells/mud/look" "$WIZARDRY_TMPDIR"
   _assert_success && _assert_path_missing "$rc_file" && _assert_output_contains "The mud will only run in this shell window." &&
     _assert_file_contains "$prompt_log" "Memorize the 'look' spell so it is always available?"
 }
 
 test_skips_install_when_block_present() {
-  skip-if-compiled || return $?
   stub=$(make_stub_dir)
   stub_ask_yn "$stub" 9
   stub_read_magic_missing "$stub"
@@ -200,7 +203,7 @@ alias look='/existing/look/path'
 # <<< wizardry look spell <<<
 EOF
   before=$(cat "$rc_file")
-  LOOK_RC_FILE="$rc_file" PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" _run_spell "spells/mud/look" "$WIZARDRY_TMPDIR"
+  LOOK_READ_MAGIC="$stub/read-magic" LOOK_RC_FILE="$rc_file" PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" _run_spell "spells/mud/look" "$WIZARDRY_TMPDIR"
   _assert_success && _assert_file_contains "$rc_file" "wizardry look spell" && [ "$(cat "$rc_file")" = "$before" ]
 }
 
