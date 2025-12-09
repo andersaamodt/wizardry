@@ -132,9 +132,19 @@ test_root_description() {
   stub_read_magic_missing "$stub"
   LOOK_READ_MAGIC="$stub/read-magic" PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" _run_spell "spells/mud/look" /
   _assert_success || return 1
-  _assert_output_contains "/" || return 1
-  printf '%s' "$OUTPUT" | grep -qE "An ordinary room|A plain chamber|A nondescript space|An unremarkable area|A simple room" \
-    || { TEST_FAILURE_REASON="expected default description"; return 1; }
+  # Accept either "/" (when identify-room is unavailable) or "Root" (when it's available)
+  if printf '%s' "$OUTPUT" | grep -q "/"; then
+    # When identify-room is unavailable, expect "/" and default description
+    printf '%s' "$OUTPUT" | grep -qE "An ordinary room|A plain chamber|A nondescript space|An unremarkable area|A simple room" \
+      || { TEST_FAILURE_REASON="expected default description when showing /"; return 1; }
+  elif printf '%s' "$OUTPUT" | grep -q "Root"; then
+    # When identify-room is available, expect "Root" and system description
+    printf '%s' "$OUTPUT" | grep -q "root of the filesystem" \
+      || { TEST_FAILURE_REASON="expected system description when showing Root"; return 1; }
+  else
+    TEST_FAILURE_REASON="expected either / or Root in output"
+    return 1
+  fi
 }
 
 test_displays_attributes() {
