@@ -1223,6 +1223,9 @@ EOF
 printf '%s\\n' '$rc_file'
 EOF
   chmod +x "$detect_stub"
+  
+  # Link require-wizardry to fixture bin
+  ln -sf "$ROOT_DIR/spells/cantrips/require-wizardry" "$fixture/bin/require-wizardry"
 
   # Run remove-all with stub in PATH
   _run_cmd env PATH="$fixture/bin:\$PATH" "$ROOT_DIR/spells/spellcraft/learn-spellbook" remove-all
@@ -1269,6 +1272,9 @@ EOF
 printf '%s\\n' '$rc_file'
 EOF
   chmod +x "$detect_stub"
+  
+  # Link require-wizardry to fixture bin
+  ln -sf "$ROOT_DIR/spells/cantrips/require-wizardry" "$fixture/bin/require-wizardry"
 
   _run_cmd env PATH="$fixture/bin:\$PATH" "$ROOT_DIR/spells/spellcraft/learn-spellbook" remove-all
 
@@ -1307,6 +1313,9 @@ EOF
 printf '%s\\n' '$rc_file'
 EOF
   chmod +x "$detect_stub"
+  
+  # Link require-wizardry to fixture bin
+  ln -sf "$ROOT_DIR/spells/cantrips/require-wizardry" "$fixture/bin/require-wizardry"
 
   _run_cmd env PATH="$fixture/bin:\$PATH" "$ROOT_DIR/spells/spellcraft/learn-spellbook" remove-all
 
