@@ -472,9 +472,9 @@ if detect_platform_output="$($DETECT_DISTRO 2>/dev/null)"; then
         detect_platform_value=$(printf '%s' "$detect_platform_output" | { IFS= read -r line; printf '%s' "$line"; })
 fi
 
-# On NixOS, if no nix config was found (format is shell), prompt for the config path
+# On NixOS, if no nix config was found (RC file empty or not .nix), prompt for the config path
 # since NixOS systems always have a configuration.nix somewhere
-if [ "$detect_platform_value" = "nixos" ] && [ "$detect_format_value" = "shell" ]; then
+if [ "$detect_platform_value" = "nixos" ] && [ "$detect_format_value" != "nix" ]; then
         info_msg "NixOS detected but no configuration file found at standard paths"
         substep_msg "Checked: /etc/nixos/configuration.nix"
         substep_msg "Checked: ~/.config/home-manager/home.nix"
