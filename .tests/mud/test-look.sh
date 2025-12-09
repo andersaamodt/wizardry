@@ -43,6 +43,16 @@ EOF
   chmod +x "$dir/ask-yn"
 }
 
+stub_detect_rc_file() {
+  dir=$1
+  rc_file=$2
+  cat >"$dir/detect-rc-file" <<EOF
+#!/bin/sh
+printf '%s\\n' '$rc_file'
+EOF
+  chmod +x "$dir/detect-rc-file"
+}
+
 test_help() {
   _run_spell "spells/mud/look" --help
   _assert_success && _assert_output_contains "Usage: look"
@@ -167,12 +177,7 @@ test_installs_when_prompted() {
   stub_ask_yn "$stub" 0
   stub_read_magic_missing "$stub"
   rc_file="$WIZARDRY_TMPDIR/lookrc-install"
-  # Create detect-rc-file stub
-  cat >"$stub/detect-rc-file" <<EOF
-#!/bin/sh
-printf '%s\\n' '$rc_file'
-EOF
-  chmod +x "$stub/detect-rc-file"
+  stub_detect_rc_file "$stub" "$rc_file"
   LOOK_READ_MAGIC="$stub/read-magic" PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" _run_spell "spells/mud/look" "$WIZARDRY_TMPDIR"
   _assert_success && _assert_path_exists "$rc_file" && grep -q "wizardry look spell" "$rc_file"
 }
@@ -193,12 +198,7 @@ EOF
   rc_file="$WIZARDRY_TMPDIR/lookrc-decline"
   rm -f "$rc_file"
   prompt_log="$WIZARDRY_TMPDIR/prompt.txt"
-  # Create detect-rc-file stub
-  cat >"$stub/detect-rc-file" <<EOF
-#!/bin/sh
-printf '%s\\n' '$rc_file'
-EOF
-  chmod +x "$stub/detect-rc-file"
+  stub_detect_rc_file "$stub" "$rc_file"
   LOOK_READ_MAGIC="$stub/read-magic" ASK_LOG="$prompt_log" PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" _run_spell "spells/mud/look" "$WIZARDRY_TMPDIR"
   _assert_success && _assert_path_missing "$rc_file" && _assert_output_contains "The mud will only run in this shell window." &&
     _assert_file_contains "$prompt_log" "Memorize the 'look' spell so it is always available?"
@@ -215,12 +215,7 @@ alias look='/existing/look/path'
 # <<< wizardry look spell <<<
 EOF
   before=$(cat "$rc_file")
-  # Create detect-rc-file stub
-  cat >"$stub/detect-rc-file" <<EOF
-#!/bin/sh
-printf '%s\\n' '$rc_file'
-EOF
-  chmod +x "$stub/detect-rc-file"
+  stub_detect_rc_file "$stub" "$rc_file"
   LOOK_READ_MAGIC="$stub/read-magic" PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" _run_spell "spells/mud/look" "$WIZARDRY_TMPDIR"
   _assert_success && _assert_file_contains "$rc_file" "wizardry look spell" && [ "$(cat "$rc_file")" = "$before" ]
 }
