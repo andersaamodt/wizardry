@@ -227,7 +227,7 @@ install_nixos_adds_path_to_system_config() {
   # On NixOS, the installer should add PATH entries to configuration.nix
   fixture=$(_make_fixture)
   _provide_basic_tools "$fixture"
-  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq touch mkdir basename dirname test printf
 
   # Create a configuration.nix
   mkdir -p "$fixture/etc/nixos"
@@ -272,7 +272,7 @@ install_nixos_preserves_existing_config() {
   # The installer should preserve existing content in configuration.nix
   fixture=$(_make_fixture)
   _provide_basic_tools "$fixture"
-  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq touch mkdir basename dirname test printf
 
   # Create a configuration.nix with existing content
   mkdir -p "$fixture/etc/nixos"
@@ -324,7 +324,7 @@ install_nixos_writes_path_entries_to_config() {
   # On NixOS, PATH entries should be written to configuration.nix
   fixture=$(_make_fixture)
   _provide_basic_tools "$fixture"
-  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq touch mkdir basename dirname test printf
 
   # Create a configuration.nix
   mkdir -p "$fixture/etc/nixos"
@@ -371,7 +371,7 @@ install_nixos_simple_input() {
   # (no separate flakes consent prompt)
   fixture=$(_make_fixture)
   _provide_basic_tools "$fixture"
-  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq touch mkdir basename dirname test printf
 
   # Create a configuration.nix
   mkdir -p "$fixture/etc/nixos"
@@ -416,7 +416,7 @@ install_nixos_shows_config_file_message() {
   # On NixOS, the installer should show "Configuration file to be modified" 
   fixture=$(_make_fixture)
   _provide_basic_tools "$fixture"
-  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq touch mkdir basename dirname test printf
 
   # Create a configuration.nix
   mkdir -p "$fixture/etc/nixos"
@@ -456,7 +456,7 @@ install_nixos_shows_shell_config_updated_message() {
   # On NixOS, the installer should show "Shell configuration updated" message
   fixture=$(_make_fixture)
   _provide_basic_tools "$fixture"
-  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq touch mkdir basename dirname test printf
 
   # Create a configuration.nix
   mkdir -p "$fixture/etc/nixos"
