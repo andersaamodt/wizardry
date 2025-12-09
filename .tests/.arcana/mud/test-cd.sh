@@ -29,8 +29,15 @@ test_cd_installs_hook_when_user_agrees() {
 exit 0
 SH
   chmod +x "$tmp/ask-yn"
+  
+  # Create detect-rc-file stub that returns our test RC file
+  cat >"$tmp/detect-rc-file" <<EOF
+#!/bin/sh
+printf '%s\\n' '$tmp/rc'
+EOF
+  chmod +x "$tmp/detect-rc-file"
 
-  _run_cmd env PATH="$tmp:$PATH" WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/.arcana/mud/cd" "$tmp"
+  _run_cmd env PATH="$tmp:$PATH" "$ROOT_DIR/spells/.arcana/mud/cd" "$tmp"
   _assert_success && _assert_path_exists "$tmp/rc" && _assert_output_contains "installed wizardry hooks"
 }
 
@@ -46,18 +53,32 @@ SH
 printf 'looked' > "$PWD/looked"
 SH
   chmod +x "$tmp/look"
+  
+  # Create detect-rc-file stub
+  cat >"$tmp/detect-rc-file" <<EOF
+#!/bin/sh
+printf '%s\\n' '$tmp/rc'
+EOF
+  chmod +x "$tmp/detect-rc-file"
 
   target="$WIZARDRY_TMPDIR/room"
   mkdir -p "$target"
 
-  _run_cmd env PATH="$tmp:$PATH" WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/.arcana/mud/cd" "$target"
+  _run_cmd env PATH="$tmp:$PATH" "$ROOT_DIR/spells/.arcana/mud/cd" "$target"
   _assert_success && _assert_path_exists "$target/looked"
 }
 
 test_cd_install_command_installs_without_prompting() {
   tmp=$(_make_tempdir)
   
-  _run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/.arcana/mud/cd" install
+  # Create detect-rc-file stub
+  cat >"$tmp/detect-rc-file" <<EOF
+#!/bin/sh
+printf '%s\\n' '$tmp/rc'
+EOF
+  chmod +x "$tmp/detect-rc-file"
+  
+  _run_cmd env PATH="$tmp:$PATH" "$ROOT_DIR/spells/.arcana/mud/cd" install
   _assert_success && _assert_path_exists "$tmp/rc" && _assert_output_contains "installed wizardry hooks"
   
   # Verify hook content - now uses a function instead of variable
@@ -74,12 +95,19 @@ test_cd_install_command_installs_without_prompting() {
 test_cd_install_is_idempotent() {
   tmp=$(_make_tempdir)
   
+  # Create detect-rc-file stub
+  cat >"$tmp/detect-rc-file" <<EOF
+#!/bin/sh
+printf '%s\\n' '$tmp/rc'
+EOF
+  chmod +x "$tmp/detect-rc-file"
+  
   # First install
-  _run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/.arcana/mud/cd" install
+  _run_cmd env PATH="$tmp:$PATH" "$ROOT_DIR/spells/.arcana/mud/cd" install
   _assert_success || return 1
   
   # Second install should not duplicate
-  _run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/.arcana/mud/cd" install
+  _run_cmd env PATH="$tmp:$PATH" "$ROOT_DIR/spells/.arcana/mud/cd" install
   _assert_success || return 1
   
   # Count occurrences of the marker - should be exactly one
@@ -158,8 +186,15 @@ EOF
 test_cd_uninstall_removes_hook() {
   tmp=$(_make_tempdir)
   
+  # Create detect-rc-file stub
+  cat >"$tmp/detect-rc-file" <<EOF
+#!/bin/sh
+printf '%s\\n' '$tmp/rc'
+EOF
+  chmod +x "$tmp/detect-rc-file"
+  
   # First install the hook
-  _run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/.arcana/mud/cd" install
+  _run_cmd env PATH="$tmp:$PATH" "$ROOT_DIR/spells/.arcana/mud/cd" install
   _assert_success || return 1
   _assert_path_exists "$tmp/rc" || return 1
   
@@ -170,7 +205,7 @@ test_cd_uninstall_removes_hook() {
   fi
   
   # Uninstall the hook
-  _run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/.arcana/mud/cd" uninstall
+  _run_cmd env PATH="$tmp:$PATH" "$ROOT_DIR/spells/.arcana/mud/cd" uninstall
   _assert_success || return 1
   _assert_output_contains "uninstalled wizardry hooks" || return 1
   
@@ -186,7 +221,14 @@ test_cd_uninstall_reports_not_installed() {
   # Create an empty rc file without the hook
   : >"$tmp/rc"
   
-  _run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/.arcana/mud/cd" uninstall
+  # Create detect-rc-file stub
+  cat >"$tmp/detect-rc-file" <<EOF
+#!/bin/sh
+printf '%s\\n' '$tmp/rc'
+EOF
+  chmod +x "$tmp/detect-rc-file"
+  
+  _run_cmd env PATH="$tmp:$PATH" "$ROOT_DIR/spells/.arcana/mud/cd" uninstall
   _assert_success || return 1
   _assert_output_contains "not installed" || return 1
 }
