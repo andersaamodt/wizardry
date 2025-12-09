@@ -107,7 +107,12 @@ while [ "$#" -gt 0 ]; do
 done
 
 find_tests() {
-  find "$test_dir" -type f -name 'test-*.sh' | sort
+  # Return tests in prefix order: root-level tests first, then subdirectories
+  # This ensures common-tests.sh runs before all other tests
+  {
+    find "$test_dir" -maxdepth 1 -type f \( -name 'test-*.sh' -o -name 'common-*.sh' \) | sort
+    find "$test_dir" -mindepth 2 -type f -name 'test-*.sh' | sort
+  }
 }
 
 pattern_has_match() {
@@ -234,9 +239,9 @@ trap 'cleanup-file "$failure_output_file"' EXIT HUP INT TERM
 spell_name_for_test() {
   test_path=$1
   
-  # Special case: test-suite.sh should display as "common tests"
+  # Special case: common-tests.sh should display as "common tests"
   case "$test_path" in
-    */test-suite.sh|test-suite.sh)
+    */common-tests.sh|common-tests.sh)
       printf '%s\n' "common tests"
       return
       ;;

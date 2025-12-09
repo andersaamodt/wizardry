@@ -186,10 +186,10 @@ test_test_files_have_matching_spells() {
   skip-if-compiled || return $?
   orphan_tests=""
   
-  find "$ROOT_DIR/.tests" -type f -name 'test-*.sh' -print | while IFS= read -r test_file; do
+  find "$ROOT_DIR/.tests" -type f -name 'test-*.sh' -o -name 'common-*.sh' -print | while IFS= read -r test_file; do
     # Skip special files
     case $test_file in
-      */spells/.imps/test/test-bootstrap|*/test-install.sh|*/test-suite.sh) continue ;;
+      */spells/.imps/test/test-bootstrap|*/test-install.sh|*/common-tests.sh) continue ;;
     esac
     
     # Extract expected spell path
@@ -259,7 +259,7 @@ test_tests_use_imps_for_helpers() {
     is_any_shell_script "$file" || continue
 
     case $base in
-      test-*) ;;
+      test-*|common-*) ;;
       *)
         rel_file=${file#"$ROOT_DIR/"}
         invalid_helpers="${invalid_helpers:+$invalid_helpers, }$rel_file"
