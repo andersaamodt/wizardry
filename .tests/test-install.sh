@@ -1012,7 +1012,9 @@ EOF
 
   install_dir="$fixture/home/.wizardry"
   
+  nix_config="$fixture/home/.config/home-manager/home.nix"
   _stub_detect_distro "nixos" "$fixture/bin"
+  _stub_detect_rc_file "$nix_config" "$fixture/bin"
   _run_cmd PATH="$fixture/bin:$PATH" \
       WIZARDRY_INSTALL_DIR="$install_dir" \
       HOME="$fixture/home" \
@@ -1106,7 +1108,9 @@ EOF
 
   install_dir="$fixture/home/.wizardry"
   
+  nix_config="$fixture/home/.config/home-manager/home.nix"
   _stub_detect_distro "nixos" "$fixture/bin"
+  _stub_detect_rc_file "$nix_config" "$fixture/bin"
   _run_cmd PATH="$fixture/bin:$PATH" \
       WIZARDRY_INSTALL_DIR="$install_dir" \
       HOME="$fixture/home" \
@@ -1144,7 +1148,9 @@ EOF
 
   install_dir="$fixture/home/.wizardry"
   
+  nix_config="$fixture/home/.config/home-manager/home.nix"
   _stub_detect_distro "nixos" "$fixture/bin"
+  _stub_detect_rc_file "$nix_config" "$fixture/bin"
   _run_cmd PATH="$fixture/bin:$PATH" \
       WIZARDRY_INSTALL_DIR="$install_dir" \
       HOME="$fixture/home" \

@@ -347,8 +347,14 @@ if [ ! -x "$INVOKE_WIZARDRY" ]; then
         exit 1
 fi
 
-if [ ! -x "$DETECT_RC_FILE" ]; then
+# For detect-rc-file and detect-distro, check if they're callable (may be in PATH)
+if ! command -v "$DETECT_RC_FILE" >/dev/null 2>&1; then
         printf '%s\n' "Error: Required helper '$DETECT_RC_FILE' is missing." >&2
+        exit 1
+fi
+
+if ! command -v "$DETECT_DISTRO" >/dev/null 2>&1; then
+        printf '%s\n' "Error: Required helper '$DETECT_DISTRO' is missing." >&2
         exit 1
 fi
 
