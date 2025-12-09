@@ -248,13 +248,13 @@ EOF
 
   install_dir="$fixture/home/.wizardry"
   
-  # Create stubs outside the sh -c
+  # Create stubs - use actual path, not empty
   _stub_detect_distro "nixos" "$fixture/bin"
-  _stub_detect_rc_file_empty "$fixture/bin"
+  _stub_detect_rc_file "$fixture/etc/nixos/configuration.nix" "$fixture/bin"
   
-  # Simulate user input: the path to the config file, then "y" to confirm
+  # Simulate user input: just "y" to confirm
   _run_cmd sh -c "
-    printf '%s\n%s\n' '$fixture/etc/nixos/configuration.nix' 'y' | \
+    printf '%s\n' 'y' | \
     PATH='$fixture/bin:\$PATH' \
         WIZARDRY_INSTALL_DIR='$install_dir' \
         HOME='$fixture/home' \
@@ -293,13 +293,13 @@ EOF
 
   install_dir="$fixture/home/.wizardry"
   
-  # Create stubs outside the sh -c
+  # Create stubs - use actual path, not empty
   _stub_detect_distro "nixos" "$fixture/bin"
-  _stub_detect_rc_file_empty "$fixture/bin"
+  _stub_detect_rc_file "$fixture/etc/nixos/configuration.nix" "$fixture/bin"
   
-  # Simulate user input: the path to the config file, then "y" to confirm
+  # Simulate user input: just "y" to confirm
   _run_cmd sh -c "
-    printf '%s\n%s\n' '$fixture/etc/nixos/configuration.nix' 'y' | \
+    printf '%s\n' 'y' | \
     PATH='$fixture/bin:\$PATH' \
         WIZARDRY_INSTALL_DIR='$install_dir' \
         HOME='$fixture/home' \
@@ -343,13 +343,13 @@ EOF
 
   install_dir="$fixture/home/.wizardry"
   
-  # Create stubs outside the sh -c
+  # Create stubs - use actual path, not empty
   _stub_detect_distro "nixos" "$fixture/bin"
-  _stub_detect_rc_file_empty "$fixture/bin"
+  _stub_detect_rc_file "$fixture/etc/nixos/configuration.nix" "$fixture/bin"
   
-  # Simulate user input: the path to the config file, then "y" to confirm
+  # Simulate user input: just "y" to confirm
   _run_cmd sh -c "
-    printf '%s\n%s\n' '$fixture/etc/nixos/configuration.nix' 'y' | \
+    printf '%s\n' 'y' | \
     PATH='$fixture/bin:\$PATH' \
         WIZARDRY_INSTALL_DIR='$install_dir' \
         HOME='$fixture/home' \
@@ -392,13 +392,13 @@ EOF
 
   install_dir="$fixture/home/.wizardry"
   
-  # Create stubs outside the sh -c
+  # Create stubs - use actual path, not empty
   _stub_detect_distro "nixos" "$fixture/bin"
-  _stub_detect_rc_file_empty "$fixture/bin"
+  _stub_detect_rc_file "$fixture/etc/nixos/configuration.nix" "$fixture/bin"
   
-  # Simulate user input: config path, then 'y' to proceed (only 2 prompts now)
+  # Simulate user input: just 'y' to proceed (only 1 prompt now)
   _run_cmd sh -c "
-    printf '%s\n%s\n' '$fixture/etc/nixos/configuration.nix' 'y' | \
+    printf '%s\n' 'y' | \
     PATH='$fixture/bin:\$PATH' \
         WIZARDRY_INSTALL_DIR='$install_dir' \
         HOME='$fixture/home' \
@@ -432,13 +432,13 @@ EOF
 
   install_dir="$fixture/home/.wizardry"
   
-  # Create stubs outside the sh -c
+  # Create stubs outside the sh -c - use actual path, not empty
   _stub_detect_distro "nixos" "$fixture/bin"
-  _stub_detect_rc_file_empty "$fixture/bin"
+  _stub_detect_rc_file "$fixture/etc/nixos/configuration.nix" "$fixture/bin"
   
-  # Simulate user input: config path, then 'y' to proceed
+  # Simulate user input: just 'y' to proceed (detect-rc-file now returns path)
   _run_cmd sh -c "
-    printf '%s\n%s\n' '$fixture/etc/nixos/configuration.nix' 'y' | \
+    printf '%s\n' 'y' | \
     PATH='$fixture/bin:\$PATH' \
         WIZARDRY_INSTALL_DIR='$install_dir' \
         HOME='$fixture/home' \
@@ -477,13 +477,13 @@ EOF
 
   install_dir="$fixture/home/.wizardry"
   
-  # Create stubs outside the sh -c
+  # Create stubs - use actual path, not empty
   _stub_detect_distro "nixos" "$fixture/bin"
-  _stub_detect_rc_file_empty "$fixture/bin"
+  _stub_detect_rc_file "$fixture/etc/nixos/configuration.nix" "$fixture/bin"
   
-  # Simulate user input: config path, then 'y' to proceed
+  # Simulate user input: just 'y' to proceed
   _run_cmd sh -c "
-    printf '%s\n%s\n' '$fixture/etc/nixos/configuration.nix' 'y' | \
+    printf '%s\n' 'y' | \
     PATH='$fixture/bin:\$PATH' \
         WIZARDRY_INSTALL_DIR='$install_dir' \
         HOME='$fixture/home' \
