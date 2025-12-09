@@ -100,10 +100,20 @@ install_nixos_prompts_for_config_path() {
 
   install_dir="$fixture/home/.wizardry"
   
+  # Create stubs for platform detection (NixOS) and RC file detection (shell format initially, prompts for nix)
+  _stub_detect_distro "nixos" "$fixture/bin"
+  # detect-rc-file should output empty/shell initially to trigger prompt for Nix config
+  cat >"$fixture/bin/detect-rc-file" <<'EOF'
+#!/bin/sh
+# Return empty to trigger Nix config prompt
+printf ''
+EOF
+  chmod +x "$fixture/bin/detect-rc-file"
+  
   # The test simulates user input: the path to the config file, then "y" to confirm
   _run_cmd sh -c "
     printf '%s\n%s\n' '$custom_config_dir/configuration.nix' 'y' | \
-    env DETECT_RC_FILE_PLATFORM=nixos \
+    env PATH='$fixture/bin:\$PATH' \
         WIZARDRY_INSTALL_DIR='$install_dir' \
         HOME='$fixture/home' \
         '$ROOT_DIR/install'
