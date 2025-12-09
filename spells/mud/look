@@ -44,15 +44,18 @@ look_warn() {
 }
 
 resolve_rc_file() {
-        if [ -n "${LOOK_RC_FILE-}" ]; then
-                printf '%s\n' "$LOOK_RC_FILE"
-                return 0
-        fi
         if [ -z "${HOME-}" ]; then
                 look_warn "HOME is not set; cannot memorize the spell."
                 return 1
         fi
-        printf '%s/.bashrc\n' "$HOME"
+        
+        # Try to use detect-rc-file to find the appropriate RC file
+        if command -v detect-rc-file >/dev/null 2>&1; then
+                detect-rc-file 2>/dev/null || printf '%s/.bashrc\n' "$HOME"
+        else
+                # Fallback to .bashrc if detect-rc-file not available
+                printf '%s/.bashrc\n' "$HOME"
+        fi
 }
 
 look_block_present() {

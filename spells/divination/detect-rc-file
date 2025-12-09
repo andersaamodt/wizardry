@@ -13,7 +13,17 @@ Prints key=value pairs for the detected platform, rc_file, and format.
 USAGE
 }
 
-platform="${DETECT_RC_FILE_PLATFORM-}"
+# Allow --help before set -eu
+case "${1-}" in
+--help|--usage|-h)
+        show_usage
+        exit 0
+        ;;
+esac
+
+set -eu
+
+platform=''
 
 while [ "$#" -gt 0 ]; do
         case $1 in
@@ -47,14 +57,22 @@ while [ "$#" -gt 0 ]; do
                 break
                 ;;
         esac
-set -eu
-
 done
 
 if [ "$#" -gt 0 ]; then
         printf '%s\n' "detect-rc-file: unexpected argument '$1'." >&2
         show_usage
         exit 1
+fi
+
+# Auto-detect platform if not provided via --platform flag
+if [ -z "$platform" ]; then
+        kernel=$(uname -s 2>/dev/null || printf 'unknown')
+        case $kernel in
+                Darwin) platform=mac ;;
+                Linux)  platform=linux ;;
+                *)      platform=unknown ;;
+        esac
 fi
 
 add_candidate() {

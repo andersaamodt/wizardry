@@ -203,17 +203,13 @@ check_trailing_space_assignment() {
 
 check_posix_compliance() {
   file=$1
-  checkbashisms_cmd=${CHECKBASHISMS-}
-  if [ -z "$checkbashisms_cmd" ] && command -v checkbashisms >/dev/null 2>&1; then
-    checkbashisms_cmd=$(command -v checkbashisms)
-  fi
-  
-  if [ -z "$checkbashisms_cmd" ]; then
+  # Check if checkbashisms is available
+  if ! command -v checkbashisms >/dev/null 2>&1; then
     # Skip POSIX check if checkbashisms not available
     return 0
   fi
   
-  if "$checkbashisms_cmd" "$file" >/dev/null 2>&1; then
+  if checkbashisms "$file" >/dev/null 2>&1; then
     return 0
   fi
   printf 'POSIX compliance violation (run checkbashisms for details)'

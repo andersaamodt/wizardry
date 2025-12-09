@@ -95,15 +95,13 @@ RCUSAGE
 
 # Find detect-rc-file helper
 find_detect_rc_file() {
-  if [ -n "${DETECT_RC_FILE-}" ] && [ -x "$DETECT_RC_FILE" ]; then
-    printf '%s' "$DETECT_RC_FILE"
-    return 0
-  fi
+  # Try relative path from spells dir
   helper="$spells_dir/divination/detect-rc-file"
   if [ -x "$helper" ]; then
     printf '%s' "$helper"
     return 0
   fi
+  # Try from PATH (standard wizardry spell resolution)
   if command -v detect-rc-file >/dev/null 2>&1; then
     command -v detect-rc-file
     return 0

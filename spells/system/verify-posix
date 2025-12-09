@@ -32,12 +32,8 @@ if [ -d "$repo_dir/spells/.imps" ]; then
   export PATH
 fi
 
-checkbashisms_cmd=${CHECKBASHISMS-}
-if [ -z "$checkbashisms_cmd" ] && command -v checkbashisms >/dev/null 2>&1; then
-  checkbashisms_cmd=$(command -v checkbashisms)
-fi
-
-if [ -z "$checkbashisms_cmd" ]; then
+# Check if checkbashisms is available
+if ! command -v checkbashisms >/dev/null 2>&1; then
   printf '%s\n' "verify-posix: checkbashisms is required but not found in PATH." >&2
   exit 1
 fi
@@ -145,7 +141,7 @@ while IFS= read -r target; do
   esac
 
   tmp_log=$(temp-file verify-posix-log) || exit 1
-  if "$checkbashisms_cmd" "$path" >"$tmp_log" 2>&1; then
+  if checkbashisms "$path" >"$tmp_log" 2>&1; then
     printf 'PASS %s\n' "$target"
   else
     printf 'FAIL %s\n' "$target"
