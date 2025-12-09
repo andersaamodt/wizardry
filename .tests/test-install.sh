@@ -149,7 +149,7 @@ install_nixos_fails_without_config_path() {
       "$ROOT_DIR/install" </dev/null
 
   _assert_failure || return 1
-  _assert_error_contains "No NixOS configuration file found" || return 1
+  _assert_error_contains "No NixOS configuration file found and no interactive input available" || return 1
 }
 
 install_nixos_adds_path_to_config() {
@@ -656,14 +656,14 @@ install_uses_explicit_helper_paths() {
 path_wizard_uses_explicit_helper_paths() {
   # Verify that learn-spellbook references helpers using explicit paths when available.
   
-  # Check that learn-spellbook has default paths for DETECT_RC_FILE and LEARN
-  if ! grep -q 'DETECT_RC_FILE_DEFAULT=.*\$SCRIPT_DIR' "$ROOT_DIR/spells/spellcraft/learn-spellbook"; then
-    TEST_FAILURE_REASON="learn-spellbook should have explicit default path for DETECT_RC_FILE"
+  # Check that learn-spellbook has default paths for detect_rc_file and learn
+  if ! grep -q 'detect_rc_file_default=.*\$script_dir' "$ROOT_DIR/spells/spellcraft/learn-spellbook"; then
+    TEST_FAILURE_REASON="learn-spellbook should have explicit default path for detect_rc_file"
     return 1
   fi
   
-  if ! grep -q 'LEARN_DEFAULT=.*\$SCRIPT_DIR' "$ROOT_DIR/spells/spellcraft/learn-spellbook"; then
-    TEST_FAILURE_REASON="learn-spellbook should have explicit default path for LEARN"
+  if ! grep -q 'learn_default=.*\$script_dir' "$ROOT_DIR/spells/spellcraft/learn-spellbook"; then
+    TEST_FAILURE_REASON="learn-spellbook should have explicit default path for learn"
     return 1
   fi
   
