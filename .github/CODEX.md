@@ -19,7 +19,7 @@ Wizardry is a collection of POSIX shell scripts themed as magical spells for the
 lint-magic --strict spells/category/spell-name
 
 # Run tests
-.tests/test-suite.sh
+.tests/common-tests.sh  # or use spells/system/test-magic
 
 # Check POSIX compliance
 checkbashisms spells/category/spell-name
