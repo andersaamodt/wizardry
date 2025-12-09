@@ -22,12 +22,15 @@ esac
 
 set -eu
 
+# TODO: MUD_PLAYER should be refactored to use flags or config file
 # check if the $MUD_PLAYER environment variable is set
-if [ -z "${MUD_PLAYER-}" ]; then
-    printf '%s\n' "MUD_PLAYER is not set."
-else
-    printf '%s\n' "MUD_PLAYER is currently set to $MUD_PLAYER"
-fi
+# if [ -z "${MUD_PLAYER-}" ]; then
+#     printf '%s\n' "MUD_PLAYER is not set."
+# else
+#     printf '%s\n' "MUD_PLAYER is currently set to $MUD_PLAYER"
+# fi
+
+printf '%s\n' "MUD_PLAYER functionality temporarily disabled for refactoring"
 
 # Build menu options from player keys using set --
 set --

@@ -32,10 +32,13 @@ if ! has torify; then
 fi
 
 # Get player key from environment
-if is unset "${MUD_PLAYER-}"; then
-        die "open-portal: MUD_PLAYER environment variable not set."
-fi
-player_key="$HOME/.ssh/$MUD_PLAYER"
+# TODO: MUD_PLAYER should be refactored to use flags or config file
+# if is unset "${MUD_PLAYER-}"; then
+#         die "open-portal: MUD_PLAYER environment variable not set."
+# fi
+# player_key="$HOME/.ssh/$MUD_PLAYER"
+# For now, require explicit --identity flag
+die "open-portal: --identity flag required (MUD_PLAYER env var no longer supported)"
 
 if ! is file "$player_key"; then
         die "open-portal: SSH key not found: $player_key"

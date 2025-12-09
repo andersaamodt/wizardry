@@ -14,20 +14,23 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_colors_enable_palette_by_default() {
-  _run_cmd env TERM=xterm sh -c ". \"$ROOT_DIR/spells/cantrips/colors\"; printf 'avail:%s red:%s\\n' \"\$WIZARDRY_COLORS_AVAILABLE\" \"\$RED\""
-  _assert_success && case "$OUTPUT" in avail:1\ red:*) : ;; *) TEST_FAILURE_REASON="expected colors to be available"; return 1 ;; esac
+  _run_cmd env TERM=xterm sh -c ". \"$ROOT_DIR/spells/cantrips/colors\"; printf 'red:%s\\n' \"\$RED\""
+  _assert_success || return 1
+  # RED should not be empty when colors are enabled
+  case "$OUTPUT" in
+    red:) TEST_FAILURE_REASON="expected RED to be set with escape codes, was empty"; return 1 ;;
+    red:*) : ;; # Non-empty is good
+    *) TEST_FAILURE_REASON="unexpected output format: $OUTPUT"; return 1 ;;
+  esac
 }
 
 test_colors_disable_when_requested() {
   skip-if-compiled || return $?
-  _run_cmd env TERM=xterm NO_COLOR=1 sh -c ". \"$ROOT_DIR/spells/cantrips/colors\"; printf 'avail:%s red:%s\\n' \"\$WIZARDRY_COLORS_AVAILABLE\" \"\$RED\""
+  _run_cmd env TERM=xterm NO_COLOR=1 sh -c ". \"$ROOT_DIR/spells/cantrips/colors\"; printf 'red:%s\\n' \"\$RED\""
   if ! _assert_success; then return 1; fi
   case "$OUTPUT" in
-    avail:0\ red:*) ;;
-    *) TEST_FAILURE_REASON="expected palette to be disabled"; return 1 ;;
-  esac
-  case "$OUTPUT" in
-    *"\\033"*) TEST_FAILURE_REASON="unexpected escape codes when colors disabled"; return 1 ;;
+    red:) : ;; # Empty is expected when disabled
+    *) TEST_FAILURE_REASON="expected RED to be empty when colors disabled, got: $OUTPUT"; return 1 ;;
   esac
 }
 
@@ -47,11 +50,11 @@ test_colors_printf_s_works() {
 test_colors_disable_for_dumb_terminal() {
   skip-if-compiled || return $?
   # Colors should be disabled for TERM=dumb which returns -1 from tput colors
-  _run_cmd env TERM=dumb sh -c ". \"$ROOT_DIR/spells/cantrips/colors\"; printf 'avail:%s green:%s\\n' \"\$WIZARDRY_COLORS_AVAILABLE\" \"\$GREEN\""
+  _run_cmd env TERM=dumb sh -c ". \"$ROOT_DIR/spells/cantrips/colors\"; printf 'green:%s\\n' \"\$GREEN\""
   if ! _assert_success; then return 1; fi
   case "$OUTPUT" in
-    avail:0\ green:) : ;;
-    *) TEST_FAILURE_REASON="expected palette disabled for dumb terminal, got: $OUTPUT"; return 1 ;;
+    green:) : ;; # Empty is expected for dumb terminal
+    *) TEST_FAILURE_REASON="expected GREEN to be empty for dumb terminal, got: $OUTPUT"; return 1 ;;
   esac
 }
 

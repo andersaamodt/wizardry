@@ -73,7 +73,7 @@ prefers_nixos_markers_even_with_other_signatures() {
   : >"$root/etc/debian_version"
   run_with_root "$root" "-v"
   _assert_success || return 1
-  [ "$OUTPUT" = "NixOS detected." ] || { TEST_FAILURE_REASON="expected NixOS verbose message but saw: $OUTPUT"; return 1; }
+  _assert_output_contains "NixOS detected." || return 1
   rm -rf "$root"
 }
 

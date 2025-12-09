@@ -28,10 +28,14 @@ if ! has torify; then
 fi
 
 # Get player key from environment
-if is unset "${MUD_PLAYER-}"; then
-        die "open-teletype: MUD_PLAYER environment variable not set."
-fi
-player_key="$HOME/.ssh/$MUD_PLAYER"
+# TODO: MUD_PLAYER should be refactored to use flags or config file
+# if is unset "${MUD_PLAYER-}"; then
+#         die "open-teletype: MUD_PLAYER environment variable not set."
+# fi
+# player_key="$HOME/.ssh/$MUD_PLAYER"
+# For now, require explicit configuration
+die "open-teletype: explicit identity configuration required (MUD_PLAYER env var no longer supported)"
+# player_key="$HOME/.ssh/default_id"
 
 if ! is file "$player_key"; then
         die "open-teletype: SSH key not found: $player_key"
