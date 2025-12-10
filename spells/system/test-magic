@@ -579,7 +579,7 @@ if [ "$status" -ne 0 ] && [ -n "$failed_scripts" ]; then
       case $line in
         "=== "*)
           # Extract test path from "=== test_path ===" format
-          test_path=$(printf '%s' "$line" | sed 's/^=== //; s/ ===$//') 
+          test_path=$(printf '%s' "$line" | sed 's/^=== //; s/ ===$//')
           spell_name=$(spell_name_for_test "$test_path")
           printf '=== %s ===\n' "$spell_name"
           ;;
