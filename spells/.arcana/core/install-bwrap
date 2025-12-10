@@ -29,10 +29,10 @@ while [ "$#" -gt 0 ]; do
       exit 1
       ;;
   esac
-set -eu
-
   shift
 done
+
+set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 ASSUME_YES=1 FORCE_INSTALL=$force_install "$SCRIPT_DIR/manage-system-command" bwrap bubblewrap
