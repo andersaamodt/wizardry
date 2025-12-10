@@ -7,7 +7,9 @@ show_usage() {
   cat <<'USAGE'
 Usage: lint-magic [--only PATTERN] [--list] [--verbose] [file...]
 
-Lint and format-check spells for style-guide compliance. With no files provided it scans the whole spellbook; use --only to filter by pattern, --list to show targets, and --verbose for detailed output.
+Lint and format-check spells for style-guide compliance. With no files provided it
+scans the whole spellbook; use --only to filter by pattern, --list to show targets,
+and --verbose for detailed output.
 USAGE
 }
 
@@ -227,7 +229,9 @@ check_which_usage() {
   # - $(which ...) or `which ...` patterns
   # Excludes English prose containing "which" in comments or heredocs
   # Only match if followed by a simple command name (letters, digits, hyphens, underscores)
-  if grep -E '(^|[;|&])[[:space:]]*which[[:space:]]+[a-zA-Z0-9_-]+|`which[[:space:]]|\$\(which[[:space:]]' "$file" 2>/dev/null | grep -v '^[[:space:]]*#' | grep -q .; then
+  pattern='(^|[;|&])[[:space:]]*which[[:space:]]+[a-zA-Z0-9_-]+'
+  pattern="$pattern"'|`which[[:space:]]|\$\(which[[:space:]]'
+  if grep -E "$pattern" "$file" 2>/dev/null | grep -v '^[[:space:]]*#' | grep -q .; then
     printf 'uses "which" (prefer "command -v" for POSIX compliance)'
     return 1
   fi
@@ -314,19 +318,22 @@ AWKSCRIPT
   
   # Find underscore-prefixed function definitions in spells (excluding heredoc content)
   if [ "$is_imp_file" -eq 0 ]; then
-    func_violations=$(awk -f "$awk_script" "$file" 2>/dev/null | grep -nE '^[[:space:]]*_[a-zA-Z][a-zA-Z0-9_]*\(\)[[:space:]]*\{' || true)
+    func_violations=$(awk -f "$awk_script" "$file" 2>/dev/null | \
+      grep -nE '^[[:space:]]*_[a-zA-Z][a-zA-Z0-9_]*\(\)[[:space:]]*\{' || true)
     
     if [ -n "$func_violations" ]; then
       # Spell (non-imp) has underscore-prefixed functions
       line_num=$(printf '%s' "$func_violations" | head -1 | cut -d: -f1)
-      printf 'spell has underscore-prefixed function at line %s (spells should use snake_case without prefix)' "$line_num"
+      printf 'spell has underscore-prefixed function at line %s \
+(spells should use snake_case without prefix)' "$line_num"
       rm -f "$awk_script"
       return 1
     fi
   fi
   
   # Check for hyphenated function names (not allowed in any context, excluding heredoc content)
-  hyphen_violations=$(awk -f "$awk_script" "$file" 2>/dev/null | grep -nE '^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*-[a-zA-Z0-9_-]*\(\)[[:space:]]*\{' || true)
+  hyphen_violations=$(awk -f "$awk_script" "$file" 2>/dev/null | \
+    grep -nE '^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*-[a-zA-Z0-9_-]*\(\)[[:space:]]*\{' || true)
   
   if [ -n "$hyphen_violations" ]; then
     line_num=$(printf '%s' "$hyphen_violations" | head -1 | cut -d: -f1)
@@ -404,7 +411,8 @@ AWKSCRIPT
   # (\|-[a-zA-Z])*                 - short flags like |-v
   # |-[a-zA-Z](...)                - OR short flag as first option
   # [[:space:]]*\)                 - ends with ) for case pattern
-  if awk -f "$awk_script" "$file" 2>/dev/null | grep -E '^[[:space:]]*(--[a-zA-Z][-a-zA-Z0-9_=]*(\|--[a-zA-Z][-a-zA-Z0-9_=]*)*(\|-[a-zA-Z])*|-[a-zA-Z](\|--[a-zA-Z][-a-zA-Z0-9_=]*|\|-[a-zA-Z])*)[[:space:]]*\)' >/dev/null 2>&1; then
+  if awk -f "$awk_script" "$file" 2>/dev/null | \
+    grep -E '^[[:space:]]*(--[a-zA-Z][-a-zA-Z0-9_=]*(\|--[a-zA-Z][-a-zA-Z0-9_=]*)*(\|-[a-zA-Z])*|-[a-zA-Z](\|--[a-zA-Z][-a-zA-Z0-9_=]*|\|-[a-zA-Z])*)[[:space:]]*\)' >/dev/null 2>&1; then
     printf 'imp uses --flags (imps should use space-separated arguments only)'
     result=1
   fi

@@ -25,7 +25,8 @@ _nix_rebuild() {
     fi
   fi
 
-  if [ "$_nr_rebuild_success" -eq 0 ] && [ -n "$_nr_priv_cmd" ] && command -v nixos-rebuild >/dev/null 2>&1; then
+  if [ "$_nr_rebuild_success" -eq 0 ] && [ -n "$_nr_priv_cmd" ] && command -v nixos-rebuild \
+  >/dev/null 2>&1; then
     printf '%s\n' "nix-rebuild: running $_nr_priv_cmd nixos-rebuild switch..."
     if "$_nr_priv_cmd" nixos-rebuild switch; then
       printf '%s\n' "nix-rebuild: NixOS system rebuilt successfully."

@@ -3,7 +3,8 @@
 # Example: pkg-update && pkg-upgrade
 
 _pkg_upgrade() {
-  _pug_pm=$(_pkg_manager) || { printf '%s\n' "pkg-upgrade: no supported package manager" >&2; return 1; }
+  _pug_pm=$(_pkg_manager) || { printf '%s\n' "pkg-upgrade: no supported package manager" >&2; \
+  return 1; }
 
   case $_pug_pm in
     apt)    sudo apt-get -y upgrade ;;

@@ -6,9 +6,11 @@ _clip_copy() {
   if command -v pbcopy >/dev/null 2>&1; then
     if [ $# -gt 0 ]; then printf '%s' "$*" | pbcopy; else pbcopy; fi
   elif command -v xsel >/dev/null 2>&1; then
-    if [ $# -gt 0 ]; then printf '%s' "$*" | xsel --clipboard --input; else xsel --clipboard --input; fi
+    if [ $# -gt 0 ]; then printf '%s' "$*" | xsel --clipboard --input; else xsel --clipboard \
+    --input; fi
   elif command -v xclip >/dev/null 2>&1; then
-    if [ $# -gt 0 ]; then printf '%s' "$*" | xclip -selection clipboard; else xclip -selection clipboard; fi
+    if [ $# -gt 0 ]; then printf '%s' "$*" | xclip -selection clipboard; else xclip -selection \
+    clipboard; fi
   elif command -v wl-copy >/dev/null 2>&1; then
     if [ $# -gt 0 ]; then printf '%s' "$*" | wl-copy; else wl-copy; fi
   else
