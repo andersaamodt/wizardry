@@ -161,7 +161,8 @@ install_with_nix() {
 
 maybe_run_nixos_rebuild() {
   if command -v nixos-rebuild >/dev/null 2>&1; then
-    if prompt_yes_no "Run 'sudo nixos-rebuild switch' to activate any configuration changes?" "y"; then
+    prompt="Run 'sudo nixos-rebuild switch' to activate any configuration changes?"
+    if prompt_yes_no "$prompt" "y"; then
       sudo nixos-rebuild switch
     fi
   fi
@@ -188,7 +189,8 @@ configure_bitcoin_conf() {
 
 run_installer() {
   distro=$(detect_distro)
-  version=$(prompt_with_default "Which Bitcoin Core version should be installed?" "$BITCOIN_VERSION_DEFAULT")
+  prompt="Which Bitcoin Core version should be installed?"
+  version=$(prompt_with_default "$prompt" "$BITCOIN_VERSION_DEFAULT")
 
   if [ "$distro" = "nixos" ]; then
     echo "Detected NixOS. Installing via nix profile for user environment."
