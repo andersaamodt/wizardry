@@ -522,7 +522,7 @@ check_long_lines() {
   # Create temp file for awk script with robust heredoc detection and string detection
   awk_script=$(mktemp "${TMPDIR:-/tmp}/lint-magic-lines-awk.XXXXXX") || return 0
   cat >"$awk_script" <<'AWKSCRIPT'
-BEGIN { in_heredoc = 0; heredoc_end = ""; max_len = 100 }
+BEGIN { in_heredoc = 0; heredoc_end = ""; max_len = 100; sq = sprintf("%c", 39) }
 # Detect heredoc start - handles <<'DELIM', <<"DELIM", and <<DELIM
 /<<-?[ \t]*'[A-Za-z_][A-Za-z0-9_]*'/ {
   delim = $0
@@ -581,7 +581,7 @@ length($0) > max_len {
       continue
     }
     
-    if (!in_quote && (c == "\"" || c == "'\''")) {
+    if (!in_quote && (c == "\"" || c == sq)) {
       in_quote = 1
       quote_char = c
       quoted_len++
