@@ -1,4 +1,4 @@
-name: POSIX Compliance Checks
+name: POSIX compliance checks
 
 on:
   push:
@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   posix:
-    name: POSIX Compliance
+    name: POSIX compliance
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

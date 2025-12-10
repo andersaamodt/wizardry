@@ -1,4 +1,4 @@
-name: Test Standalone Compiled Spells
+name: Test standalone compiled spells
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   test-compiled:
-    name: Test Compiled Spell Execution
+    name: Test compiled spell execution
     runs-on: ubuntu-latest
     
     steps:

@@ -1,4 +1,4 @@
-name: Linting and Style Checks
+name: Linting and style checks
 
 on:
   push:
@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   lint:
-    name: Spell Linting and Formatting
+    name: Spell linting and formatting
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
