@@ -39,8 +39,7 @@ case $distro in
     ;;
   "debian")
     if apt-get -v >/dev/null 2>&1; then
-        printf '%b✔ apt%b (default package manager on Debian and Ubuntu)\n' "$THEME_SUCCESS" \
-          "$RESET"
+        printf '%b✔ apt%b (default package manager on Debian and Ubuntu)\n' "$THEME_SUCCESS" "$RESET"
     else
         printf '%b✘ apt%b (default package manager on Debian and Ubuntu)\n' "$THEME_ERROR" "$RESET"
     fi

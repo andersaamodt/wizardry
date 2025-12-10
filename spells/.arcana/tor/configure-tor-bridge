@@ -44,9 +44,7 @@ if [ "$bridge_enabled" = "1" ]; then
     ask-yn "Bridge mode is currently enabled. Do you want to disable it?" "N"
     if [ $? -eq 0 ]; then
         # Use awk to comment out the BridgeRelay line
-        awk '{if ($1 == "BridgeRelay" && \
-          $2 == "1") {$0 = "# " $0} print}' "$torrc_location" > "$torrc_location.tmp" && \
-          mv "$torrc_location.tmp" "$torrc_location"
+        awk '{if ($1 == "BridgeRelay" && $2 == "1") {$0 = "# " $0} print}' "$torrc_location" > "$torrc_location.tmp" && mv "$torrc_location.tmp" "$torrc_location"
         echo "Bridge mode disabled."
         sudo systemctl restart tor
     else
@@ -57,10 +55,7 @@ else
     ask-yn "Bridge mode is currently disabled. Do you want to enable it?" "N"
     if [ $? -eq 0 ]; then
         # Append necessary lines to torrc if they don't already exist
-        awk '!/^BridgeRelay 1$/ && \
-          !/^ORPort 9001$/ && \
-          !/^PublishServerDescriptor 0$/ {print} END {if (!/^BridgeRelay 1$/) {print "BridgeRelay 1"} if (!/^ORPort 9001$/) {print "ORPort 9001"} if (!/^PublishServerDescriptor 0$/) {print "PublishServerDescriptor 0"}}' "$torrc_location" > "$torrc_location.tmp" && \
-          mv "$torrc_location.tmp" "$torrc_location"
+        awk '!/^BridgeRelay 1$/ && !/^ORPort 9001$/ && !/^PublishServerDescriptor 0$/ {print} END {if (!/^BridgeRelay 1$/) {print "BridgeRelay 1"} if (!/^ORPort 9001$/) {print "ORPort 9001"} if (!/^PublishServerDescriptor 0$/) {print "PublishServerDescriptor 0"}}' "$torrc_location" > "$torrc_location.tmp" && mv "$torrc_location.tmp" "$torrc_location"
         echo "Bridge mode enabled. You are now acting as a Tor bridge relay."
         sudo systemctl restart tor
     else

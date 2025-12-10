@@ -9,8 +9,7 @@ show_usage() {
 cat <<'USAGE'
 Usage: jump-to-marker [marker]
 
-Teleport to a marker set with mark-location. Defaults to marker "1", marker "0" cycles \
-  through all saved locations.
+Teleport to a marker set with mark-location. Defaults to marker "1", marker "0" cycles through all saved locations.
 USAGE
 }
 
@@ -35,35 +34,25 @@ MARKERS_DIR=$(env-or JUMP_TO_MARKERS_DIR "$_jm_spell_home/.markers")
 # spell and sprinkles in a few new sensations for modern teleportation.
 jump_portal_messages() {
   cat <<'PORTAL'
-You feel a sudden warmth as you are enveloped in a glowing aura. When it fades, you find \
-  yourself at your destination.
-A strange sensation comes over you as you close your eyes. When you open them again, you \
-  are standing at your destination.
-You focus your mind on the marked location and feel yourself being pulled through the \
-  fabric of space. You open your eyes to find yourself at your destination.
-You feel a jolt as you are momentarily suspended in midair. When you land, you find \
-  yourself at your destination.
-You close your eyes and take a deep breath. When you open them, you are standing at your \
-  destination.
+You feel a sudden warmth as you are enveloped in a glowing aura. When it fades, you find yourself at your destination.
+A strange sensation comes over you as you close your eyes. When you open them again, you are standing at your destination.
+You focus your mind on the marked location and feel yourself being pulled through the fabric of space. You open your eyes to find yourself at your destination.
+You feel a jolt as you are momentarily suspended in midair. When you land, you find yourself at your destination.
+You close your eyes and take a deep breath. When you open them, you are standing at your destination.
 A swirling vortex appears before you. You take a step forward and find yourself at your destination.
-You feel a tug on your stomach as you are suddenly pulled through a tunnel of light. When \
-  you emerge, you are at your destination.
-You hold out your hand and a bright portal appears. You step through and find yourself at \
-  your destination.
+You feel a tug on your stomach as you are suddenly pulled through a tunnel of light. When you emerge, you are at your destination.
+You hold out your hand and a bright portal appears. You step through and find yourself at your destination.
 You feel a rush of wind as you are teleported to your destination.
 You hear a faint ringing in your ears as you are transported to your destination.
 You close your eyes and visualize your destination. When you open them, you are standing there.
 You step into a glowing portal and are immediately transported to your destination.
-You feel a tug on your ankle as you are pulled through a wormhole. When you emerge, you \
-  are at your destination.
-You hear a faint hum as you are enveloped in a field of energy. When it dissipates, you \
-  are at your destination.
+You feel a tug on your ankle as you are pulled through a wormhole. When you emerge, you are at your destination.
+You hear a faint hum as you are enveloped in a field of energy. When it dissipates, you are at your destination.
 You feel a sudden pressure on your chest as you are teleported to your destination.
 You feel a surge of magical energy as you are transported through the veil of reality.
 A glowing portal opens before you, and you step through it to your destination.
 A shimmering aura envelops you, and when it fades, you find yourself at the marked location.
-You close your eyes and focus, and when you open them again, you are standing at the \
-  marked location.
+You close your eyes and focus, and when you open them again, you are standing at the marked location.
 A burst of light and sound surrounds you, and when it subsides, you are at the marked location.
 You feel a tug on your soul, and when it releases, you are standing at the marked location.
 You focus your magical energy and teleport to the marked location.
@@ -89,8 +78,7 @@ PORTAL
 }
 
 jump_random_message() {
-jump_portal_messages | awk 'BEGIN{srand();}{lines[NR]=$0}END{if (NR==0) exit 0; \
-  idx=int(rand()*NR)+1; print lines[idx];}'
+jump_portal_messages | awk 'BEGIN{srand();}{lines[NR]=$0}END{if (NR==0) exit 0; idx=int(rand()*NR)+1; print lines[idx];}'
 }
 
 jump_describe_current_location() {
@@ -247,8 +235,7 @@ jump_to_marker_impl() {
                 return 1
         fi
         if [ ! -d "$destination" ]; then
-                say "The ley-line remembers '$destination' for marker '$marker_name', " \
-                  "but it no longer exists."
+                say "The ley-line remembers '$destination' for marker '$marker_name', but it no longer exists."
                 return 1
         fi
         # Normalize paths to handle macOS double slashes

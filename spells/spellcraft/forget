@@ -78,8 +78,7 @@ validate_name() {
   name=$1
   case $name in
   ''|*[!A-Za-z0-9._-]*)
-    printf '%s\n' "$spell_name: names may contain only letters, digits, dots, \
-      underscores, and dashes." >&2
+    printf '%s\n' "$spell_name: names may contain only letters, digits, dots, underscores, and dashes." >&2
     exit 1
     ;;
   -*)

@@ -10,8 +10,7 @@ _is() {
     exec)     [ -x "$2" ] ;;
     readable) [ -r "$2" ] ;;
     writable) [ -w "$2" ] ;;
-    empty) if [ -f "$2" ]; then [ ! -s "$2" ]; elif [ -d "$2" ]; then [ -z "$(ls -A "$2" \
-    2>/dev/null)" ]; else return 1; fi ;;
+    empty)    if [ -f "$2" ]; then [ ! -s "$2" ]; elif [ -d "$2" ]; then [ -z "$(ls -A "$2" 2>/dev/null)" ]; else return 1; fi ;;
     set)      [ -n "$2" ] ;;
     unset)    [ -z "$2" ] ;;
     *)        return 1 ;;

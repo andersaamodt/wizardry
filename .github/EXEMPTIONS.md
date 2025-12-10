@@ -15,75 +15,65 @@ This document catalogs ALL exemptions and exceptions in the wizardry project. An
 
 ### Long Lines (> 100 characters)
 
-**Status**: 7 permanent exceptions (out of 329 files = 98% compliance)
+**Status**: Lines exceeding 100 characters are ALLOWED when splitting would harm readability
 
-**Philosophy**: We prefer **logical command splitting** over arbitrary line continuations. Lines should only remain long when splitting would harm readability or break command semantics.
+**Philosophy**: We strongly prefer **logical command splitting** and clear code structure over arbitrary line continuations. However, we do NOT artificially break lines just to meet a character limit. Long lines are acceptable when:
+- They represent a single semantic unit (menu options, config edits, regex patterns)
+- Breaking would require awkward continuations or reduce clarity
+- They are string literals, error messages, or help text
+- Splitting would break command flow or semantics
 
-#### Permanent Exceptions
+**Enforcement in lint-magic**: The long lines check is currently implemented as a **warning** that fails the build, but specific exemptions are documented below for cases where long lines are preferred.
+
+#### When to Split Lines
+
+✅ **Good candidates for splitting**:
+- Long pipelines → break at pipe boundaries: `cmd1 | cmd2 | cmd3`
+- Complex conditionals → separate into multiple if/else blocks
+- Long variable assignments → extract intermediate steps
+- Command chains with `&&` or `||` → break at logical operators
+
+❌ **Bad candidates for splitting**:
+- String literals and error messages
+- Menu options with embedded commands
+- Single-line regex patterns
+- Atomic perl/awk/sed one-liners
+- Help text in heredocs
+
+#### Examples of Acceptable Long Lines
 
 ##### 1. Menu Options with Embedded Shell Scripts
-
-**Affected Files**:
-- `spells/.arcana/lightning/lightning-wallet-menu` (line 37)
-- `spells/.arcana/tor/tor-menu` (line 39)
-
-**Reason**: Menu options use format `"Label%command"` where command may be a complex shell one-liner with pipes, subshells, and variable assignments. Cannot split without:
-- Creating separate helper scripts (adds complexity)
-- Breaking the inline `sh -c` pattern
-- Making menu definition less clear
-
-**Example**:
 ```sh
-create_invoice_option="Create Invoice%sh -c 'amt=$(printf \"Amount: \"; read -r a; printf \"%s\" \"$a\"); lightning-cli invoice \"$amt\"'"
+# 200+ characters - acceptable because it's a single menu item definition
+option="Lightning Invoice%sh -c 'amt=$(printf \"Amount: \"; read -r a; echo \"$a\"); lightning-cli invoice \"$amt\" | tee invoice.txt'"
 ```
 
-This is a single semantic unit: a menu option with its associated command.
-
-**Justification**: The menu system requires this format for dynamic command execution. Splitting would require extracting to separate script files, significantly increasing maintenance burden for what is essentially configuration data.
-
-##### 2. Single-Command perl/awk Scripts for Config Editing
-
-**Affected Files**:
-- `spells/.arcana/tor/install-tor` (lines 136-137)
-- `spells/.arcana/tor/configure-tor-bridge` (line 62)
-
-**Reason**: Complex perl/awk one-liners that atomically modify configuration files. Splitting would:
-- Require multi-line scripts (changes semantics)
-- Need extraction to separate files (maintenance burden)
-- Break single-command atomic operation pattern
-
-**Example**:
+##### 2. Configuration File Editing One-Liners
 ```sh
+# 150+ characters - atomic operation that shouldn't be split
 sudo perl -0pi -e "s/(environment\\.systemPackages\\s*=\\s*with\\s+pkgs;\\s*\\[)/$1 tor /" /etc/nixos/configuration.nix
 ```
 
-**Justification**: These are atomic operations that must succeed or fail as a single unit. Converting to multi-line scripts would obscure their atomicity and make error handling more complex.
-
-##### 3. grep Patterns with Multiple Alternatives
-
-**Affected Files**:
-- `spells/.arcana/mud/toggle-cd` (line 68)
-
-**Reason**: grep patterns with multiple alternatives using `|` operator cannot be meaningfully split without breaking the regex.
-
-**Example**:
+##### 3. Error Messages and User-Facing Strings
 ```sh
-if grep -Eq '# >>> wizardry cd cantrip >>>|#wizardry: cd-cantrip' "$rc_file"; then
+# 120 characters - clear message, no need to split
+printf '%s\n' "Error: Configuration file not found. Please run 'wizardry init' to create a default configuration." >&2
 ```
 
-**Justification**: Regex patterns are inherently linear and splitting them would require using extended regex constructs or multiple grep calls, both of which reduce clarity.
+##### 4. Regular Expression Patterns
+```sh
+# 110 characters - regex pattern with alternatives
+if grep -Eq '# >>> wizardry cd cantrip >>>|#wizardry: cd-cantrip|# BEGIN_WIZARDRY_CD' "$rc_file"; then
+```
 
-##### 4. Heredoc Description Text
+##### 5. Heredoc Content (Documentation)
+```sh
+cat <<'USAGE'
+This spell configures the system for Bitcoin operations including installation of bitcoin core daemon and configuration of data directories.
+USAGE
+```
 
-**Affected Files**:
-- `spells/.arcana/mud/cd` (line 13)
-- `spells/.arcana/mud/handle-command-not-found` (line 11)
-- `spells/.arcana/mud/toggle-cd` (line 9)
-- `spells/.arcana/tor/configure-tor-bridge` (lines 9, 34)
-
-**Reason**: These are description lines within heredoc `USAGE` blocks, not actual code.
-
-**Justification**: Heredoc content is documentation and can wrap naturally. The 100-character limit applies to code lines, not documentation text.
+Heredoc content is documentation and naturally wraps - not subject to line length limits.
 
 ### Historical: Mixed Tabs and Spaces (RESOLVED)
 

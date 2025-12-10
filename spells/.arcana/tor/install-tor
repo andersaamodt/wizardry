@@ -156,9 +156,7 @@ add_tor_to_nixos() {
 
 start_service_if_available() {
   service_name="tor"
-  if command -v systemctl >/dev/null 2>&1 && \
-    systemctl list-unit-files | \
-    grep -q "^${service_name}\.service"; then
+  if command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files | grep -q "^${service_name}\.service"; then
     if ask_yes_no "Enable and start tor.service now?" "y"; then
       sudo systemctl enable --now "$service_name" || sudo systemctl start "$service_name" || true
     fi

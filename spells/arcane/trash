@@ -7,8 +7,7 @@ show_usage() {
   cat <<'USAGE'
 Usage: trash [-r] [-f] <file|folder>...
 
-Move files or folders to the system trash so they remain recoverable. Use -r for
-directories and -f to ignore missing files.
+Move files or folders to the system trash so they remain recoverable. Use -r for directories and -f to ignore missing files.
 USAGE
 }
 
@@ -186,8 +185,7 @@ if [ "$trash_cmd" = "none" ]; then
     printf '%s\n' "On macOS, osascript should be available by default." >&2
     ;;
   linux)
-    printf '%s\n' "Install one of: gio, trash-cli (for trash-put), " \
-      "or kde-cli-tools (for kioclient5)." >&2
+    printf '%s\n' "Install one of: gio, trash-cli (for trash-put), or kde-cli-tools (for kioclient5)." >&2
     ;;
   *)
     printf '%s\n' "Your operating system is not supported." >&2

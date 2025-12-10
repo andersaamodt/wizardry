@@ -82,8 +82,7 @@ spell_content=$(cat "$spell_path")
 dependencies=$(printf '%s\n' "$spell_content" | \
   grep -v "^#" | \
   grep -v "^[[:space:]]*#" | \
-  grep -oE '\b(say|warn|die|fail|is|has|there|empty|full|given|lacks|'\
-'memorize|env-or|[a-z][a-z0-9]*(-[a-z0-9]+)+)\b' | \
+  grep -oE '\b(say|warn|die|fail|is|has|there|empty|full|given|lacks|memorize|env-or|[a-z][a-z0-9]*(-[a-z0-9]+)+)\b' | \
   sort -u || true)
 
 # Collect inline implementations and track what was inlined
@@ -168,8 +167,7 @@ $func_def
     # This ensures nested dependencies work correctly
     for already_inlined in $inlined_names; do
       already_func_name="_$(printf '%s' "$already_inlined" | tr '-' '_')"
-      spell_body=$(printf '%s\n' "$spell_body" | awk -v old="$already_inlined" -v \
-        new="$already_func_name" '
+      spell_body=$(printf '%s\n' "$spell_body" | awk -v old="$already_inlined" -v new="$already_func_name" '
         /^[[:space:]]*cat <<.*USAGE/ { usage_start=1; print; next }
         usage_start && /^USAGE$/ { print; usage_start=0; next }
         usage_start { print; next }

@@ -88,9 +88,7 @@ run_nix_rebuild() {
         fi
 
         # If home-manager didn't work and we have privilege escalation, try nixos-rebuild
-        if [ "$rebuild_success" -eq 0 ] && \
-          [ -n "$priv_cmd" ] && \
-          command -v nixos-rebuild >/dev/null 2>&1; then
+        if [ "$rebuild_success" -eq 0 ] && [ -n "$priv_cmd" ] && command -v nixos-rebuild >/dev/null 2>&1; then
                 printf '%s\n' "cd cantrip: running $priv_cmd nixos-rebuild switch..."
                 if "$priv_cmd" nixos-rebuild switch; then
                         printf '%s\n' "cd cantrip: NixOS system rebuilt successfully."
@@ -248,8 +246,7 @@ install() {
 
                 
                 if [ -z "$nix_helper" ]; then
-                        printf '%s\n' "cd cantrip: nix-shell-add imp not found"\
-" for NixOS installation."
+                        printf '%s\n' "cd cantrip: nix-shell-add imp not found for NixOS installation."
                         return 1
                 fi
 
@@ -317,8 +314,7 @@ uninstall() {
 
                 if [ -n "$nix_helper" ]; then
                         if "$nix_helper" cd-cantrip "$rc_file"; then
-                                printf '%s\n' "cd cantrip: uninstalled wizardry hooks"\
-" from '$rc_file'."
+                                printf '%s\n' "cd cantrip: uninstalled wizardry hooks from '$rc_file'."
                                 # Run nixos-rebuild to apply the changes
                                 run_nix_rebuild || true
                                 return 0
@@ -329,8 +325,7 @@ uninstall() {
                 fi
                 # nix-shell-remove helper not found - warn and attempt shell method fallback
                 # This may not work correctly for nix format files
-                warn "nix-shell-remove imp not found; attempting shell-style removal"\
-" which may not work for nix files."
+                warn "nix-shell-remove imp not found; attempting shell-style removal which may not work for nix files."
         fi
 
         # Shell format: use sed to remove the block
@@ -374,13 +369,11 @@ prompt_install_if_needed() {
         fi
         rc_display=$(basename "$rc_file")
         printf '%s\n' "The cd cantrip can sprinkle the 'look' spell on every hop."
-        if "$ask_yn_cmd" "Memorize the cd cantrip in $rc_display"\
-" so each teleport reveals the room?" yes >/dev/null; then
+        if "$ask_yn_cmd" "Memorize the cd cantrip in $rc_display so each teleport reveals the room?" yes >/dev/null; then
                 install || return
                 printf '%s\n' "The hook is etched into $rc_display."
         else
-                printf '%s\n' "Very well—cast 'memorize spells/cantrips/cd'"\
-" when you crave automatic scouting."
+                printf '%s\n' "Very well—cast 'memorize spells/cantrips/cd' when you crave automatic scouting."
         fi
 }
 

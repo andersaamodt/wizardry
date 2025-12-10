@@ -53,8 +53,7 @@ get_tor_status() {
         else
           status="installed, running, bootstrapped"
         fi
-      elif echo "$log_entry" | \
-        grep -q 'Our directory information is no longer up-to-date enough to build circuits'; then
+      elif echo "$log_entry" | grep -q 'Our directory information is no longer up-to-date enough to build circuits'; then
         status="installed, running, bootstrapping"
       elif echo "$log_entry" | grep -Eq 'Our circuit died|Tried for .* without success'; then
         status="installed, running, disconnected"

@@ -9,9 +9,7 @@ show_usage() {
 cat <<'USAGE'
 Usage: look [path]
 
-Display a location's title and description attributes with read-magic, offering
-to memorize the spell into your shell rc for easy reuse. Defaults to the current
-directory when no path is supplied.
+Display a location's title and description attributes with read-magic, offering to memorize the spell into your shell rc for easy reuse. Defaults to the current directory when no path is supplied.
 USAGE
 }
 
@@ -98,8 +96,7 @@ write_look_block() {
         tmp_file=$(temp-file wizardry-look) || return 1
         trap 'cleanup-file "$tmp_file"' EXIT HUP INT TERM
         if [ -f "$rc_file" ]; then
-                sed '/^# >>> wizardry look spell >>>$/,/^# <<< wizardry look spell <<</d' \
-                  "$rc_file" >"$tmp_file"
+                sed '/^# >>> wizardry look spell >>>$/,/^# <<< wizardry look spell <<</d' "$rc_file" >"$tmp_file"
         else
                 : >"$tmp_file"
         fi
@@ -139,12 +136,10 @@ install_look() {
                 look_warn "ask-yn spell is missing; cannot prompt for installation."
                 return 0
         fi
-        printf '%s\n' "'Look' is a reserved keyword, so you must memorize this " \
-          "spell to change the meaning of the word 'look'."
+        printf '%s\n' "'Look' is a reserved keyword, so you must memorize this spell to change the meaning of the word 'look'."
         if "$ask_yn_cmd" "Memorize the 'look' spell so it is always available?" yes >/dev/null; then
                 if write_look_block "$rc_file"; then
-                        printf '%s\n' "Spell memorized in $(basename "$rc_file"), " \
-                          "so you will always be able to use it."
+                        printf '%s\n' "Spell memorized in $(basename "$rc_file"), so you will always be able to use it."
                 fi
         else
                 printf '%s\n' "The mud will only run in this shell window."

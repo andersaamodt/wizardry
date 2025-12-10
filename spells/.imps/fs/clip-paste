@@ -12,8 +12,7 @@ _clip_paste() {
   elif command -v wl-paste >/dev/null 2>&1; then
     wl-paste
   else
-    printf '%s\n' "clip-paste: no clipboard utility found (need pbpaste, xsel, xclip, or \
-    wl-paste)" >&2
+    printf '%s\n' "clip-paste: no clipboard utility found (need pbpaste, xsel, xclip, or wl-paste)" >&2
     return 1
   fi
 }

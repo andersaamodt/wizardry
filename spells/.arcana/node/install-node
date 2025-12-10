@@ -67,8 +67,7 @@ printf '\nInstalling Node.js using %s...\n' "$manage_cmd"
 "$manage_cmd" node "$node_package"
 
 if detect_nixos && command -v nixos-rebuild >/dev/null 2>&1; then
-  printf '\nA NixOS system was detected. Run a system rebuild now'\
-' to pick up configuration changes? [y/N]: '
+  printf '\nA NixOS system was detected. Run a system rebuild now to pick up configuration changes? [y/N]: '
   read -r rebuild || rebuild=""
   case "$rebuild" in
     [Yy]*)
@@ -79,8 +78,7 @@ if detect_nixos && command -v nixos-rebuild >/dev/null 2>&1; then
       fi
       ;;
     *)
-      printf '%s\n' "Skipping nixos-rebuild. Run 'sudo nixos-rebuild switch'"\
-" later if you added Node.js to configuration.nix."
+      printf '%s\n' "Skipping nixos-rebuild. Run 'sudo nixos-rebuild switch' later if you added Node.js to configuration.nix."
       ;;
   esac
 fi

@@ -88,8 +88,7 @@ while :; do
             status_cmd="${name}-status"
         elif [ -x "$install_dir/$name-status" ] && [ ! -d "$install_dir/$name-status" ]; then
             status_cmd="$install_dir/$name-status"
-        elif [ -x "$install_dir/$name/$name-status" ] && \
-          [ ! -d "$install_dir/$name/$name-status" ]; then
+        elif [ -x "$install_dir/$name/$name-status" ] && [ ! -d "$install_dir/$name/$name-status" ]; then
             status_cmd="$install_dir/$name/$name-status"
         fi
 
@@ -103,15 +102,13 @@ while :; do
             cmd="${name}-menu"
         elif [ -x "$install_dir/$name-menu" ] && [ ! -d "$install_dir/$name-menu" ]; then
             cmd="$install_dir/$name-menu"
-        elif [ -x "$install_dir/$name/$name-menu" ] && \
-          [ ! -d "$install_dir/$name/$name-menu" ]; then
+        elif [ -x "$install_dir/$name/$name-menu" ] && [ ! -d "$install_dir/$name/$name-menu" ]; then
             cmd="$install_dir/$name/$name-menu"
         elif [ -x "$install_dir/$name" ] && [ -f "$install_dir/$name" ]; then
             cmd="$install_dir/$name"
         elif [ -x "$install_dir/$name/$name" ] && [ -f "$install_dir/$name/$name" ]; then
             cmd="$install_dir/$name/$name"
-        elif [ -x "$install_dir/$name/install-$name" ] && \
-          [ -f "$install_dir/$name/install-$name" ]; then
+        elif [ -x "$install_dir/$name/install-$name" ] && [ -f "$install_dir/$name/install-$name" ]; then
             cmd="$install_dir/$name/install-$name"
         else
             cmd='printf "This entry is not ready yet.\n"'

@@ -44,8 +44,7 @@ if is set "$pid"; then
     if ask-yn "Are you sure you want to kill process $selected_name with pid $pid"; then
         kill_cmd=${KILL_CMD:-kill}
 
-        lacks "$kill_cmd" && \
-          { warn "kill command '$kill_cmd' is required to terminate processes."; exit 1; }
+        lacks "$kill_cmd" && { warn "kill command '$kill_cmd' is required to terminate processes."; exit 1; }
 
         if "$kill_cmd" "$pid"; then
             say "Process $pid ($selected_name) has been killed."

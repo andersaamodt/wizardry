@@ -59,8 +59,7 @@ set_permissions() {
         return
     fi
 
-    if [ "$(stat -c %U "$perm_path")" != "$perm_user" ] || \
-      [ "$(stat -c %G "$perm_path")" != "$perm_group" ]; then
+    if [ "$(stat -c %U "$perm_path")" != "$perm_user" ] || [ "$(stat -c %G "$perm_path")" != "$perm_group" ]; then
         chown -R "$perm_user":"$perm_group" "$perm_path"
         printf '%s\n' "Changed owner and group of $perm_path to $perm_user and $perm_group."
     else

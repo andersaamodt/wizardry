@@ -47,14 +47,11 @@ command_available() {
 node_service_name() {
   for candidate in ${NODE_SERVICE-} node nodejs node-app; do
     [ -n "$candidate" ] || continue
-    if command_available is-service-installed && \
-      is-service-installed "$candidate" >/dev/null 2>&1; then
+    if command_available is-service-installed && is-service-installed "$candidate" >/dev/null 2>&1; then
       printf '%s' "$candidate"
       return 0
     fi
-    if command_available systemctl && \
-      systemctl list-unit-files --type=service --no-pager 2>/dev/null | \
-      grep -q "^${candidate}\\.service"; then
+    if command_available systemctl && systemctl list-unit-files --type=service --no-pager 2>/dev/null | grep -q "^${candidate}\\.service"; then
       printf '%s' "$candidate"
       return 0
     fi
@@ -82,8 +79,7 @@ get_node_status() {
   fi
 
   if service_name=$(node_service_name); then
-    if command_available is-service-running && \
-      is-service-running "$service_name" >/dev/null 2>&1; then
+    if command_available is-service-running && is-service-running "$service_name" >/dev/null 2>&1; then
       status="installed, service running"
     elif command_available systemctl && systemctl is-active "$service_name" >/dev/null 2>&1; then
       status="installed, service running"

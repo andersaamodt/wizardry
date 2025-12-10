@@ -340,8 +340,7 @@ while IFS= read -r test_path; do
   if [ "${WIZARDRY_TEST_COMPILED-0}" = "1" ]; then
     if head -n 5 "$abs" 2>/dev/null | grep -q "^# COMPILED_UNSUPPORTED"; then
       spell_name=$(spell_name_for_test "$test_path")
-      printf '[%d/%d] %s (skipped: unsupported in compiled mode)\n' "$test_number" "$test_total" \
-        "$spell_name"
+      printf '[%d/%d] %s (skipped: unsupported in compiled mode)\n' "$test_number" "$test_total" "$spell_name"
       continue
     fi
   fi
@@ -424,8 +423,7 @@ while IFS= read -r test_path; do
       if [ -n "$test_subtest_count" ] && [ "$test_subtest_count" -lt "$MIN_SUBTESTS_SPELL" ]; then
         record_incomplete_test "$test_path" "$test_subtest_count subtests, need $MIN_SUBTESTS_SPELL"
         if [ -n "$test_incomplete_reasons" ]; then
-          test_incomplete_reasons="$test_incomplete_reasons; $test_subtest_count subtests, need \
-            $MIN_SUBTESTS_SPELL"
+          test_incomplete_reasons="$test_incomplete_reasons; $test_subtest_count subtests, need $MIN_SUBTESTS_SPELL"
         else
           test_incomplete_reasons="$test_subtest_count subtests, need $MIN_SUBTESTS_SPELL"
         fi
@@ -559,8 +557,7 @@ if [ -n "$extraneous_files" ] && [ "${WIZARDRY_TEST_COMPILED-0}" != "1" ]; then
 fi
 
 if [ -n "$incomplete_tests" ] && [ "${WIZARDRY_TEST_COMPILED-0}" != "1" ]; then
-  printf 'Incomplete tests (imps need %d+ subtests, spells need %d+ including \
-    --help):\n' "$MIN_SUBTESTS_IMP" "$MIN_SUBTESTS_SPELL"
+  printf 'Incomplete tests (imps need %d+ subtests, spells need %d+ including --help):\n' "$MIN_SUBTESTS_IMP" "$MIN_SUBTESTS_SPELL"
   printf '  %s\n' "$incomplete_tests"
   status=1
 fi
@@ -642,8 +639,7 @@ if [ "$status" -ne 0 ] && [ "$fail" -le 10 ] && [ "${GITHUB_ACTIONS-}" != "" ] \
   fi
   
   cleanup-file "$failure_output_file"
-  printf '\nGitHub Actions detected <=10 failing tests; rerunning ONLY those \
-    tests with --very-verbose for focused debug...\n'
+  printf '\nGitHub Actions detected <=10 failing tests; rerunning ONLY those tests with --very-verbose for focused debug...\n'
   
   set -- $rerun_args
   if [ -n "$failed_test_paths" ]; then

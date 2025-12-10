@@ -8,10 +8,7 @@ show_usage() {
 cat <<'USAGE'
 Usage: enchant [file] attribute=value
 
-Apply an extended attribute with the given name and value to a file using attr,
-xattr, or setfattr. With two arguments the spell figures out which is the path
-and which is attribute=value, defaulting to the current directory, and the legacy
-<file> <attribute> <value> [helper] form still works.
+Apply an extended attribute with the given name and value to a file using attr, xattr, or setfattr. With two arguments the spell figures out which is the path and which is attribute=value, defaulting to the current directory, and the legacy <file> <attribute> <value> [helper] form still works.
 USAGE
 }
 
@@ -105,8 +102,7 @@ helpers_for_preference() {
                 done
                 ;;
         *)
-                printf '%s\n' "Error: Unknown helper '$preferred'. Choose attr, xattr, or \
-                  setfattr." >&2
+                printf '%s\n' "Error: Unknown helper '$preferred'. Choose attr, xattr, or setfattr." >&2
                 return 1
                 ;;
         esac
@@ -146,11 +142,9 @@ set_attribute() {
         done
 
         if [ -n "$attempted_helper" ]; then
-                printf "%s\n" "Error: Failed to set attribute using '$attempted_helper' (exit \
-                  $attempt_status)." >&2
+                printf "%s\n" "Error: Failed to set attribute using '$attempted_helper' (exit $attempt_status)." >&2
         else
-                printf "%s\n" "Error: This spell requires the 'attr', 'xattr', or"\
-" 'setfattr' command to be installed." >&2
+                printf "%s\n" "Error: This spell requires the 'attr', 'xattr', or 'setfattr' command to be installed." >&2
         fi
 
         return 1
@@ -197,10 +191,8 @@ parse_arguments() {
                 else
                         # Neither has valid attr=value format
                         # Provide consistent error message regardless of whether args exist as files
-                        printf '%s\n' "Error: Two-argument format requires one argument " \
-                          "to be in 'attribute=value' format." >&2
-                        printf '%s\n' "       Use 'enchant <file> attr=value' or " \
-                          "'enchant attr=value <file>'" >&2
+                        printf '%s\n' "Error: Two-argument format requires one argument to be in 'attribute=value' format." >&2
+                        printf '%s\n' "       Use 'enchant <file> attr=value' or 'enchant attr=value <file>'" >&2
                         return 1
                 fi
         elif [ $# -eq 3 ] || [ $# -eq 4 ]; then
@@ -244,8 +236,7 @@ main() {
                 exit 1
         fi
 
-        printf "The file has been enchanted with the attribute '%s' and value \
-          '%s'.\n" "$key" "$value"
+        printf "The file has been enchanted with the attribute '%s' and value '%s'.\n" "$key" "$value"
 }
 
 main "$@"

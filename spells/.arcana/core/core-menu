@@ -132,9 +132,7 @@ while true; do
         # When selected, show message that this is essential
         # The label comes from the controlled core_dependencies function
         # and contains only alphanumeric characters, making it safe to use
-        set -- "$@" "${display_label}%printf '\\n%s is essential for the shell to \
-function and should not be uninstalled.\\n' '$label'; \
-printf 'Press Enter to continue...'; read dummy"
+        set -- "$@" "${display_label}%printf '\\n%s is essential for the shell to function and should not be uninstalled.\\n' '$label'; printf 'Press Enter to continue...'; read dummy"
       else
         spell=$(resolve_spell "$install_spell") || exit 1
         set -- "$@" "${display_label}%$spell"

@@ -41,9 +41,7 @@ if command -v env-or >/dev/null 2>&1; then
 else
         spell_home="${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}"
 fi
-[ -d "$spell_home" ] || \
-  mkdir -p "$spell_home" 2>/dev/null || \
-  spell_home=$(create_spellbook_if_missing)
+[ -d "$spell_home" ] || mkdir -p "$spell_home" 2>/dev/null || spell_home=$(create_spellbook_if_missing)
 
 cast_list() {
         if command -v memorize >/dev/null 2>&1; then
@@ -248,22 +246,16 @@ while :; do
                 # Custom spells (in ~/.spellbook or subfolders) show Erase spell option
                 # Use erase-spell which asks for confirmation then exits the menu
                 if [ -n "$help_item" ]; then
-                        set -- "Cast now%$escaped_command" "$cast_toggle" "$help_item" \
-                          "Erase spell%erase-spell '$name' && kill -TERM \$PPID" \
-                          "$exit_item"
+                        set -- "Cast now%$escaped_command" "$cast_toggle" "$help_item" "Erase spell%erase-spell '$name' && kill -TERM \$PPID" "$exit_item"
                 else
-                        set -- "Cast now%$escaped_command" "$cast_toggle" \
-                          "Erase spell%erase-spell '$name' && kill -TERM \$PPID" \
-                          "$exit_item"
+                        set -- "Cast now%$escaped_command" "$cast_toggle" "Erase spell%erase-spell '$name' && kill -TERM \$PPID" "$exit_item"
                 fi
         elif is_installable "$command"; then
                 # Show Learn option for spells with install() function
                 if [ -n "$help_item" ]; then
-                          "Learn%spell-menu --install '$escaped_command'" "$help_item" \
-                          "$exit_item"
+                        set -- "Cast now%$escaped_command" "$cast_toggle" "Learn%spell-menu --install '$escaped_command'" "$help_item" "$exit_item"
                 else
-                        set --  "Cast now%$escaped_command" "$cast_toggle" \
-                          "Learn%spell-menu --install '$escaped_command'" "$exit_item"
+                        set -- "Cast now%$escaped_command" "$cast_toggle" "Learn%spell-menu --install '$escaped_command'" "$exit_item"
                 fi
         else
                 # Built-in spells: no Erase option

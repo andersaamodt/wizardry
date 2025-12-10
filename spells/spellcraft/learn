@@ -234,8 +234,7 @@ EOF_DETECT
 
   case $spell in
   *[!A-Za-z0-9._:-]*)
-    printf '%s\n' "learn: spell names may contain only letters, digits, dots, \
-      underscores, dashes, and colons." >&2
+    printf '%s\n' "learn: spell names may contain only letters, digits, dots, underscores, dashes, and colons." >&2
     exit 1
     ;;
   esac

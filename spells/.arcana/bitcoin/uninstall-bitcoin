@@ -6,8 +6,7 @@ show_usage() {
         cat <<'USAGE' >&2
 Usage: uninstall-bitcoin
 
-Stops bitcoind, removes Bitcoin Core binaries, and cleans up related configuration
-and data files when you confirm.
+Stops bitcoind, removes Bitcoin Core binaries, and cleans up related configuration and data files when you confirm.
 USAGE
 }
 
@@ -88,8 +87,7 @@ uninstall_bitcoin_package() {
 # Uninstall Bitcoin
 uninstall_bitcoin() {
   while true; do
-    printf '%s' "This will uninstall Bitcoin Core and might delete your wallet data. " \
-      "Are you sure? (Y/n) "
+    printf '%s' "This will uninstall Bitcoin Core and might delete your wallet data. Are you sure? (Y/n) "
     IFS= read -r yn
     case $yn in
       ''|[Yy]*)

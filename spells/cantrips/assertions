@@ -8,8 +8,8 @@ show_usage() {
         cat <<'USAGE' >&2
 Usage: assertions (source)
 
-Sources assertion helpers for shell-based tests, providing assert_equal,
-assert_output, assert_success, and assert_failure that exit on mismatches.
+Sources assertion helpers for shell-based tests, providing assert_equal, assert_output, assert_success, and assert_failure tha
+t exit on mismatches.
 USAGE
 }
 
@@ -54,8 +54,7 @@ assert_output() {
     fi
 
     if [ "$output" != "$expected" ]; then
-        printf "Assertion failed: '%s' produced '%s' (expected '%s')\n" \
-          "$command" "$output" "$expected" >&2
+        printf "Assertion failed: '%s' produced '%s' (expected '%s')\n" "$command" "$output" "$expected" >&2
         exit 1
     fi
 }

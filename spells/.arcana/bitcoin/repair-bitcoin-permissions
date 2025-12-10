@@ -6,8 +6,7 @@ show_usage() {
         cat <<'USAGE' >&2
 Usage: repair-bitcoin-permissions
 
-Fixes ownership and permissions on bitcoin directories and files so the node can
-start cleanly after migrations or backups.
+Fixes ownership and permissions on bitcoin directories and files so the node can start cleanly after migrations or backups.
 USAGE
 }
 
@@ -41,8 +40,7 @@ if [ -d "$bitcoin_dir" ]; then
   default_mode=710
 
   # Get the configuration directory mode from bitcoin.conf
-  config_mode=$(grep -E '^ConfigurationDirectoryMode=' "$bitcoin_dir/bitcoin.conf" | \
-    cut -d '=' -f 2)
+  config_mode=$(grep -E '^ConfigurationDirectoryMode=' "$bitcoin_dir/bitcoin.conf" | cut -d '=' -f 2)
 
   # If ConfigurationDirectoryMode is not specified, use the default mode
   if [ -z "$config_mode" ]; then
