@@ -10,21 +10,19 @@ _select_input() {
     none)  return 1 ;;
   esac
 
-  # Determine the best input source for reading user input.
-  # On macOS, /dev/stdin is a symlink and tests like -p and -s are unreliable.
-  # Use -t 0 to check if stdin is a terminal (works reliably cross-platform).
+  # Determine best input source. On macOS, /dev/stdin is a symlink and -p/-s tests
+  # are unreliable. Always try stdin first - if it's closed, read will fail gracefully.
+  # Only use explicit SELECT_INPUT_MODE to override this behavior.
   if [ -t 0 ]; then
+    # stdin is a terminal - use it
     printf '%s\n' stdin
     return 0
   fi
 
-  # stdin is not a terminal - try /dev/tty as fallback
-  if [ -r /dev/tty ]; then
-    printf '%s\n' tty
-    return 0
-  fi
-
-  return 1
+  # stdin is not a terminal - could be piped, redirected, or closed.
+  # Return stdin optimistically; if closed, the read will fail immediately.
+  printf '%s\n' stdin
+  return 0
 }
 
 # Self-execute when run directly (not sourced)

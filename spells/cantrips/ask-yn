@@ -56,31 +56,30 @@ select_input() {
                 return 1
                 ;;
         esac
-        # Determine the best input source for reading user responses.
-        # Priority: stdin (if available) > /dev/tty (fallback) > fail
-        # 
-        # On macOS, /dev/stdin is a symlink and tests like -p and -s are unreliable.
-        # Instead, we use -t 0 to check if stdin is a terminal:
-        # - If true: stdin is interactive, use it
-        # - If false: stdin might be piped/redirected or closed
-        #   In the piped case, we still want to use stdin (e.g., echo "yes" | ask-yn)
-        #   In the closed case, we should fall back to /dev/tty
+        # Determine the best input source. We prefer stdin in all cases where it might be
+        # available - whether as an interactive terminal or as piped/redirected input.
         #
-        # The safest approach: always prefer stdin when we're interactive,
-        # and for non-interactive use /dev/tty if available.
+        # The -t 0 test tells us if stdin is connected to a terminal. When true, stdin is
+        # definitely available for reading. When false, stdin might be piped, redirected
+        # to a file, or closed. We can't reliably distinguish these cases in POSIX sh,
+        # especially on macOS where /dev/stdin is a symlink and -p/-s tests fail.
+        #
+        # Strategy: Always prefer stdin unless explicitly told it's not available (via
+        # ASK_CANTRIP_INPUT=none). If reading from stdin fails (closed/EOF), the read
+        # command will fail gracefully and the caller can handle it.
         if [ -t 0 ]; then
-                # stdin is a terminal - use it for interactive input
+                # stdin is a terminal - definitely use it
                 printf '%s\n' stdin
                 return 0
         fi
-        # stdin is not a terminal - check if /dev/tty is available for interactive fallback
-        if [ -r /dev/tty ] && [ -w /dev/tty ]; then
-                printf '%s\n' tty
-                return 0
-        fi
-        # No interactive input available - stdin might be piped but closed,
-        # or we're in a truly non-interactive environment
-        return 1
+        # stdin is not a terminal - it could be piped, redirected, or closed.
+        # We'll optimistically return "stdin" and let the read command handle
+        # cases where it's actually closed. This works because:
+        # - If stdin is piped: read works
+        # - If stdin is redirected from a file: read works
+        # - If stdin is closed: read fails immediately with empty input
+        printf '%s\n' stdin
+        return 0
 }
 
 prompt_and_read() {
