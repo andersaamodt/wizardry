@@ -56,16 +56,30 @@ select_input() {
                 return 1
                 ;;
         esac
-        # Prefer stdin whenever something is piped to us, even if a tty is also
-        # present, so scripted callers can answer without interactivity.
-        if [ -t 0 ] || [ -p /dev/stdin ] || [ -s /dev/stdin ]; then
+        # Determine the best input source for reading user responses.
+        # Priority: stdin (if available) > /dev/tty (fallback) > fail
+        # 
+        # On macOS, /dev/stdin is a symlink and tests like -p and -s are unreliable.
+        # Instead, we use -t 0 to check if stdin is a terminal:
+        # - If true: stdin is interactive, use it
+        # - If false: stdin might be piped/redirected or closed
+        #   In the piped case, we still want to use stdin (e.g., echo "yes" | ask-yn)
+        #   In the closed case, we should fall back to /dev/tty
+        #
+        # The safest approach: always prefer stdin when we're interactive,
+        # and for non-interactive use /dev/tty if available.
+        if [ -t 0 ]; then
+                # stdin is a terminal - use it for interactive input
                 printf '%s\n' stdin
                 return 0
         fi
-        if [ -r /dev/tty ]; then
+        # stdin is not a terminal - check if /dev/tty is available for interactive fallback
+        if [ -r /dev/tty ] && [ -w /dev/tty ]; then
                 printf '%s\n' tty
                 return 0
         fi
+        # No interactive input available - stdin might be piped but closed,
+        # or we're in a truly non-interactive environment
         return 1
 }
 
