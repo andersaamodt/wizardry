@@ -167,7 +167,10 @@ start_service_if_available() {
   
   if [ "$has_systemctl" = "yes" ]; then
     unit_files=$(systemctl list-unit-files)
-    has_service=$(echo "$unit_files" | grep -q "^${service_name}\.service" && echo "yes" || echo "no")
+    has_service="no"
+    if echo "$unit_files" | grep -q "^${service_name}\.service"; then
+      has_service="yes"
+    fi
     
     if [ "$has_service" = "yes" ]; then
       if ask_yes_no "Enable and start tor.service now?" "y"; then
