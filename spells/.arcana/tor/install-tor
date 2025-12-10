@@ -133,8 +133,15 @@ add_tor_to_nixos() {
     if ! grep -q 'tor' "$config"; then
       printf '%s\n' 'Adding tor to environment.systemPackages...'
       # Use detected indentation for the package entry (level 2)
-      sudo perl -0pi -e "s/(environment\\.systemPackages\\s*=\\s*with\\s+pkgs;\\s*\\[[^\\]]*)\\]/\$1\\n${indent_l2}tor\\n${indent_l1}]/" "$config" \
-        || sudo perl -0pi -e "s/(environment\\.systemPackages\\s*=\\s*\\[[^\\]]*)\\]/\$1\\n${indent_l2}tor\\n${indent_l1}]/" "$config"
+      # Try with pkgs variant first
+      pattern1="(environment\\.systemPackages\\s*=\\s*with\\s+pkgs;\\s*\\[[^\\]]*)\\]"
+      replace1="\$1\\n${indent_l2}tor\\n${indent_l1}]"
+      sudo perl -0pi -e "s/$pattern1/$replace1/" "$config" || {
+        # Fallback to without pkgs variant
+        pattern2="(environment\\.systemPackages\\s*=\\s*\\[[^\\]]*)\\]"
+        replace2="\$1\\n${indent_l2}tor\\n${indent_l1}]"
+        sudo perl -0pi -e "s/$pattern2/$replace2/" "$config"
+      }
       changes=1
     fi
   fi

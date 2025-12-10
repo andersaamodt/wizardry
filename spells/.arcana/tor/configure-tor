@@ -96,9 +96,16 @@ rewrite_torrc() {
 }
 
 restart_service_if_possible() {
-  if command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files | grep -q '^tor\.service'; then
-    if ask_yes_no "Restart tor.service to apply changes?" "y"; then
-      sudo systemctl restart tor || true
+  has_systemctl=$(command -v systemctl >/dev/null 2>&1 && echo "yes" || echo "no")
+  
+  if [ "$has_systemctl" = "yes" ]; then
+    unit_files=$(systemctl list-unit-files)
+    has_tor_service=$(echo "$unit_files" | grep -q '^tor\.service' && echo "yes" || echo "no")
+    
+    if [ "$has_tor_service" = "yes" ]; then
+      if ask_yes_no "Restart tor.service to apply changes?" "y"; then
+        sudo systemctl restart tor || true
+      fi
     fi
   fi
 }
