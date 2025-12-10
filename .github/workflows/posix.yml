@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   posix:
-    name: POSIX compliance
+    name: POSIX Compliance
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

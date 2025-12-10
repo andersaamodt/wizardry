@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   compile-and-test-doppelganger:
+    name: Compile and Test Doppelganger
     runs-on: ubuntu-latest
     
     steps:

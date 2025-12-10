@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   test-compiled:
-    name: Test compiled spell execution
+    name: Test Compiled Spell Execution
     runs-on: ubuntu-latest
     
     steps:

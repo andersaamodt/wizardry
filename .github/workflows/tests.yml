@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   aaa-nix:
-    name: Nix unit tests
+    name: Nix Unit Tests
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: nixos
@@ -43,7 +43,7 @@ jobs:
         run: nix-shell -I nixpkgs=channel:nixos-unstable -p bubblewrap shadow --run "./spells/system/test-magic --verbose"
 
   aab-macos:
-    name: macOS unit tests
+    name: macOS Unit Tests
     runs-on: macos-latest
     env:
       WIZARDRY_OS_LABEL: mac
@@ -56,7 +56,7 @@ jobs:
         run: ./spells/system/test-magic --verbose
 
   arch:
-    name: Arch Linux unit tests
+    name: Arch Linux Unit Tests
     runs-on: ubuntu-latest
     container: archlinux:latest
     env:
@@ -92,7 +92,7 @@ jobs:
         run: ./spells/system/test-magic --verbose
 
   debian:
-    name: Debian unit tests
+    name: Debian Unit Tests
     runs-on: ubuntu-latest
     container: debian:stable-slim
     env:
@@ -129,7 +129,7 @@ jobs:
         run: ./spells/system/test-magic --verbose
 
   ubuntu:
-    name: Ubuntu unit tests
+    name: Ubuntu Unit Tests
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: ubuntu
