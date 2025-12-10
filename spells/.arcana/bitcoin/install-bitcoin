@@ -6,7 +6,8 @@ show_usage() {
         cat <<'USAGE' >&2
 Usage: install-bitcoin
 
-Runs an interactive wizard to install Bitcoin Core (via packages, nix, or upstream binaries), updates bitcoin.conf, and optionally starts the node.
+Runs an interactive wizard to install Bitcoin Core (via packages, nix, or upstream
+binaries), updates bitcoin.conf, and optionally starts the node.
 USAGE
 }
 
@@ -161,7 +162,8 @@ install_with_nix() {
 
 maybe_run_nixos_rebuild() {
   if command -v nixos-rebuild >/dev/null 2>&1; then
-    if prompt_yes_no "Run 'sudo nixos-rebuild switch' to activate any configuration changes?" "y"; then
+    if prompt_yes_no \
+      "Run 'sudo nixos-rebuild switch' to activate any configuration changes?" "y"; then
       sudo nixos-rebuild switch
     fi
   fi
@@ -169,7 +171,8 @@ maybe_run_nixos_rebuild() {
 
 maybe_start_bitcoind() {
   if prompt_yes_no "Start bitcoind in the background now?" "y"; then
-    if command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files | grep -q '^bitcoin.service'; then
+    if command -v systemctl >/dev/null 2>&1 && \
+      systemctl list-unit-files | grep -q '^bitcoin.service'; then
       sudo systemctl start bitcoin
     else
       bitcoind -daemon || true
@@ -185,7 +188,8 @@ configure_bitcoin_conf() {
 
 run_installer() {
   distro=$(detect_distro)
-  version=$(prompt_with_default "Which Bitcoin Core version should be installed?" "$BITCOIN_VERSION_DEFAULT")
+  version=$(prompt_with_default "Which Bitcoin Core version should be installed?" \
+    "$BITCOIN_VERSION_DEFAULT")
 
   if [ "$distro" = "nixos" ]; then
     echo "Detected NixOS. Installing via nix profile for user environment."
@@ -201,7 +205,8 @@ run_installer() {
 
   echo "Detected platform: $distro"
   install_method="binary"
-  if package_manager_available && prompt_yes_no "Use your package manager to install Bitcoin Core?" "y"; then
+  if package_manager_available && \
+    prompt_yes_no "Use your package manager to install Bitcoin Core?" "y"; then
     install_method="package"
   fi
 

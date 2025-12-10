@@ -6,7 +6,8 @@ show_usage() {
         cat <<'USAGE' >&2
 Usage: configure-bitcoin
 
-Creates or updates bitcoin.conf with sensible defaults for paths, RPC, and pruning so a fresh Bitcoin Core install can start.
+Creates or updates bitcoin.conf with sensible defaults for paths, RPC, and pruning
+so a fresh Bitcoin Core install can start.
 USAGE
 }
 
@@ -27,7 +28,8 @@ retry_with_sudo() {
     echo "Permission denied. Invoking the power of the super user..."
     sudo "$@"
     if [ $? -ne 0 ]; then
-        echo "Failed to execute with elevated privileges. Make certain thou hast the necessary permissions and try again."
+        printf '%s\n' "Failed to execute with elevated privileges." \
+          "Make certain thou hast the necessary permissions and try again."
         exit 1
     fi
 }
@@ -65,18 +67,28 @@ modify_bitcoin_conf() {
     local key=$1
     local value=$2
     printf "%s\n" >> "$bitcoin_conf" # Ensure a newline exists at the end of the file
-    awk -v key="$key" -v value="$value" 'BEGIN {OFS=FS="="; found=0} {gsub(/^[ \t]+|[ \t]+$/, "", $1)} !/^#/ && $1==key {found=1; print key"="value; next} {if(NF>1) print $1"="$2; else if(NF==1) print $1} END {if (!found) print key"="value}' "$bitcoin_conf" > "$bitcoin_conf.tmp" && mv "$bitcoin_conf.tmp" "$bitcoin_conf" || retry_with_sudo mv "$bitcoin_conf.tmp" "$bitcoin_conf"
-    awk '/./' "$bitcoin_conf" > "$bitcoin_conf.tmp" && mv "$bitcoin_conf.tmp" "$bitcoin_conf" || retry_with_sudo mv "$bitcoin_conf.tmp" "$bitcoin_conf" # Remove trailing newlines
+    awk -v key="$key" -v value="$value" \
+      'BEGIN {OFS=FS="="; found=0} {gsub(/^[ \t]+|[ \t]+$/, "", $1)} \
+       !/^#/ && $1==key {found=1; print key"="value; next} \
+       {if(NF>1) print $1"="$2; else if(NF==1) print $1} \
+       END {if (!found) print key"="value}' "$bitcoin_conf" > "$bitcoin_conf.tmp" && \
+      mv "$bitcoin_conf.tmp" "$bitcoin_conf" || \
+      retry_with_sudo mv "$bitcoin_conf.tmp" "$bitcoin_conf"
+    awk '/./' "$bitcoin_conf" > "$bitcoin_conf.tmp" && \
+      mv "$bitcoin_conf.tmp" "$bitcoin_conf" || \
+      retry_with_sudo mv "$bitcoin_conf.tmp" "$bitcoin_conf" # Remove trailing newlines
 }
 
 # Pruning question and storage amount
-ask-yn "Wouldst thou like to enable pruning? Pruning allows thee to reduce disk usage by discarding some transaction history." "y"
+ask-yn "Wouldst thou like to enable pruning? Pruning allows thee to reduce disk \
+usage by discarding some transaction history." "y"
 prune=$?
 if [ "$prune" = 0 ]; then
     modify_bitcoin_conf "prune" "1"
     valid_number=false
     while [ "$valid_number" = false ]; do
-        printf "What is the maximum disk space thou art willing to dedicate to Bitcoin in GB? (Type a number) [default: 500]: "
+        printf '%s' "What is the maximum disk space thou art willing to dedicate " \
+          "to Bitcoin in GB? (Type a number) [default: 500]: "
         read -r max_disk
 
         if [ -z "$max_disk" ]; then
