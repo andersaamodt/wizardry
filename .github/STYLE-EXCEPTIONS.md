@@ -1,134 +1,140 @@
 # Style Check Exceptions
 
-This document tracks temporary exceptions to wizardry's style checks and provides justification for each.
-
-## Status
-
-As of the latest commit, all style checks in `lint-magic` are now **required** (previously some were warnings only):
-- Mixed tabs and spaces indentation: **REQUIRED** (0 failures)
-- Lines exceeding 100 characters: **REQUIRED** (87 failures remaining)
-- Echo usage (prefer printf): **REQUIRED**
-
-## Current Exceptions
-
-### Long Lines (> 100 characters)
-
-**Status**: 87 files currently fail this check
-**Justification**: These files have lines exceeding 100 characters that require manual review and refactoring to break into shorter, more readable lines.
-
-**Common Patterns**:
-1. Menu commands with many arguments (e.g., `menu "$opt1" "$opt2" ... "$opt15"`)
-2. Long printf/error messages
-3. Long command pipelines
-4. Long URL strings or file paths
-
-**Action Plan**:
-- Fix systematically by breaking lines with backslash continuation
-- For menu commands: split arguments across multiple lines
-- For long strings: consider if they can be broken without harming readability
-- For URLs and paths: evaluate if shortening is practical
-
-**Target**: Reduce to 0 exceptions
-
-### Files Requiring Long Line Fixes
-
-The following files currently have lines exceeding 100 characters. Each needs manual review:
-
-```
-spells/.arcana/bitcoin/bitcoin-status
-spells/.arcana/bitcoin/change-bitcoin-directory
-spells/.arcana/bitcoin/configure-bitcoin
-spells/.arcana/bitcoin/install-bitcoin
-spells/.arcana/bitcoin/repair-bitcoin-permissions
-spells/.arcana/bitcoin/uninstall-bitcoin
-spells/.arcana/core/core-menu
-spells/.arcana/core/install-checkbashisms
-spells/.arcana/core/install-dd
-```
-
-(87 files total - see `lint-magic` output for complete list)
-
-## Historical Exceptions
-
-### Mixed Tabs and Spaces (RESOLVED)
-
-**Previous Status**: 8 files had mixed tabs and spaces
-**Resolution**: Fixed in commit [hash] by converting all tabs to 2 spaces
-**Files Fixed**:
-- spells/.arcana/bitcoin/bitcoin-menu
-- spells/.arcana/bitcoin/configure-bitcoin
-- spells/.arcana/mud/handle-command-not-found
-- spells/cantrips/install-service-template
-- spells/cantrips/memorize
-- spells/cantrips/spellbook-store
-- spells/spellcraft/forget
-- spells/translocation/jump-to-marker
-
-### Lint-Magic Tab Detection Bug (RESOLVED)
-
-**Issue**: The `check_inconsistent_indentation` function used `'\t'` in single quotes, which doesn't expand to a tab character, causing the check to never find tabs.
-**Resolution**: Fixed in commit [hash] by using `tab=$(printf '\t')` and double quotes in the grep pattern.
+This document lists permanent or temporary style check exceptions and their justifications.
 
 ## Philosophy
 
-Wizardry aims for 100% compliance with all style checks. Exceptions should be:
-1. **Temporary**: Have a plan to resolve
-2. **Justified**: Clear reason why the exception is needed
-3. **Documented**: Listed here with rationale
+Wizardry prefers **logical command splitting** over arbitrary line continuations. When a line exceeds 100 characters:
 
-## How to Fix Long Lines
+1. **Best**: Split into multiple logical commands or extract to variables
+2. **Good**: Use string concatenation for messages
+3. **Acceptable**: Document as exception if splitting harms readability
 
-### Menu Commands
+## Current Status
+
+All style checks in `lint-magic` are now **REQUIRED**:
+- Mixed tabs/spaces indentation: ✅ 0 failures
+- Lines exceeding 100 characters: ⚠️ 11 failures (documented below)
+- Echo usage (prefer printf): ✅ Enforced
+
+## Permanent Exceptions
+
+### 1. Menu Options with Embedded Shell Scripts
+
+**Affected Files**:
+- `spells/.arcana/lightning/lightning-wallet-menu` (line 37)
+- `spells/.arcana/tor/tor-menu` (line 39)
+
+**Reason**: Menu options use format `"Label%command"` where command may be complex shell one-liner. Cannot split without:
+- Creating separate helper scripts (adds complexity)
+- Breaking inline sh -c pattern
+- Making menu definition less clear
+
+**Example**:
 ```sh
-# Before (150+ characters)
-menu "$opt1" "$opt2" "$opt3" "$opt4" "$opt5" "$opt6" "$opt7" "$opt8" "$opt9" "$opt10" "$opt11" "$opt12"
-
-# After (broken across lines)
-menu "$opt1" "$opt2" "$opt3" "$opt4" "$opt5" "$opt6" \
-  "$opt7" "$opt8" "$opt9" "$opt10" "$opt11" "$opt12"
+create_invoice_option="Create Invoice%sh -c 'amt=$(printf \"Amount: \"; read -r a; printf \"%s\" \"$a\"); lightning-cli invoice \"$amt\"'"
 ```
 
-### Long Strings
+**Decision**: Accept as necessary complexity. Alternative would require separate script files which hurts maintainability.
+
+### 2. Single-Command perl/awk Scripts for Config Editing
+
+**Affected Files**:
+- `spells/.arcana/tor/install-tor` (lines 136-137)
+- `spells/.arcana/tor/configure-tor-bridge` (line 62)
+
+**Reason**: Complex perl/awk one-liners that atomically modify configuration files. Splitting would:
+- Require multi-line scripts (changes semantics)
+- Need extraction to separate files (maintenance burden)
+- Break single-command atomic operation pattern
+
+**Example**:
 ```sh
-# Before
-printf '%s\n' "This is a very long error message that exceeds 100 characters and should be broken up"
-
-# After (option 1: line continuation)
-printf '%s\n' "This is a very long error message that exceeds 100 characters \
-and should be broken up"
-
-# After (option 2: heredoc for very long text)
-cat <<'MSG'
-This is a very long error message that exceeds 100 characters
-and should be broken up
-MSG
+sudo perl -0pi -e "s/(environment\\.systemPackages\\s*=\\s*with\\s+pkgs;\\s*\\[)/$1 tor /" /etc/nixos/configuration.nix
 ```
 
-### Command Pipelines
-```sh
-# Before
-some-command arg1 arg2 | another-command arg3 arg4 | third-command arg5 arg6 | fourth-command arg7
+**Decision**: Accept as necessary for atomic config modifications.
 
-# After  
-some-command arg1 arg2 | \
-  another-command arg3 arg4 | \
-  third-command arg5 arg6 | \
-  fourth-command arg7
+### 3. grep Patterns with Multiple Alternatives
+
+**Affected Files**:
+- `spells/.arcana/mud/toggle-cd` (line 68)
+
+**Reason**: grep patterns with multiple alternatives using `|` cannot be meaningfully split.
+
+**Example**:
+```sh
+if grep -Eq '# >>> wizardry cd cantrip >>>|#wizardry: cd-cantrip' "$rc_file"; then
 ```
 
-## Checking Compliance
+**Decision**: Accept as inherent to pattern matching.
 
-Run the linter on all spells:
-```sh
-./spells/spellcraft/lint-magic
-```
+## Temporary Exceptions (To Be Fixed)
 
-Check a specific file:
-```sh
-./spells/spellcraft/lint-magic path/to/spell
-```
+### Long Informational Messages
 
-View files with long lines:
-```sh
-./spells/spellcraft/lint-magic 2>&1 | grep "lines exceed"
-```
+**Affected Files**:
+- `spells/.arcana/node/install-node` (line 70)
+- `spells/.arcana/simplex-chat/install-simplex-chat` (line 85)  
+- `spells/.arcana/lightning/install-lightning` (line 66)
+
+**Status**: Can be fixed with proper string concatenation
+**Action**: Split messages using shell string concatenation without spaces
+
+### Long Error/Warning Messages  
+
+**Affected Files**:
+- `spells/.arcana/mud/cd` (lines 251, 319)
+- `spells/.arcana/mud/handle-command-not-found` (line 350)
+
+**Status**: Can be fixed with string concatenation
+**Action**: Use proper `"string1"\n" string2"` concatenation pattern
+
+### Complex Log Checking
+
+**Affected Files**:
+- `spells/.arcana/tor/tor-status` (line 56)
+
+**Status**: Under review
+**Action**: Consider extracting to variable or function
+
+## Guidelines for New Code
+
+When writing code that might have long lines:
+
+1. **Extract intermediate results**:
+   ```sh
+   # Good
+   filtered=$(echo "$data" | grep pattern)
+   result=$(echo "$filtered" | sed 's/old/new/')
+   ```
+
+2. **Use variables for complex strings**:
+   ```sh
+   # Good
+   msg="Long error message explaining the problem in detail"
+   printf '%s\n' "$msg" >&2
+   ```
+
+3. **String concatenation for messages**:
+   ```sh
+   # Good - no space between parts
+   printf '%s\n' "First part"\
+" second part"
+   ```
+
+4. **Only use backslash continuation as last resort**:
+   ```sh
+   # Acceptable only if above options don't apply
+   very-long-command arg1 arg2 arg3 arg4 | \
+     another-command arg5 arg6
+   ```
+
+## Review Process
+
+This document should be reviewed:
+- When adding new complex commands
+- During code review if lines exceed 100 chars
+- Quarterly to reassess temporary exceptions
+
+Last updated: 2025-12-10

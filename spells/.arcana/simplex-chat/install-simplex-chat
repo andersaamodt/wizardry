@@ -82,7 +82,8 @@ if detect_nixos && command -v nixos-rebuild >/dev/null 2>&1; then
   if command -v sudo >/dev/null 2>&1; then
     rebuild_cmd="sudo $rebuild_cmd"
   fi
-  printf '\nA NixOS system was detected. Run a system rebuild now to pick up configuration changes? [y/N]: '
+  printf '\nA NixOS system was detected. Run a system rebuild now'\
+' to pick up configuration changes? [y/N]: '
   read -r rebuild || rebuild=""
   case "$rebuild" in
     [Yy]*)

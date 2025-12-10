@@ -347,7 +347,8 @@ uninstall() {
       fi
     fi
     # nix-shell-remove helper not found - warn and attempt shell method fallback
-    warn "nix-shell-remove imp not found; attempting shell-style removal (may not work for nix files)."
+    warn "nix-shell-remove imp not found; attempting shell-style removal"\
+" (may not work for nix files)."
   fi
 
   # Shell format: use sed to remove the block
