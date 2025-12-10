@@ -6,7 +6,8 @@ show_usage() {
         cat <<'USAGE' >&2
 Usage: bitcoin-status
 
-Shows whether Bitcoin Core is installed, running, and synced by inspecting systemd state and recent node logs with coloured status labels.
+Shows whether Bitcoin Core is installed, running, and synced by inspecting systemd
+state and recent node logs with coloured status labels.
 USAGE
 }
 
@@ -56,7 +57,8 @@ color_for_status() {
 }
 
 get_sync_status() {
-  sync_status=$(bitcoin-cli getblockchaininfo 2>&1 | grep 'initialblockdownload' | awk '{print $2}' | tr -d ',')
+  sync_status=$(bitcoin-cli getblockchaininfo 2>&1 | \
+    grep 'initialblockdownload' | awk '{print $2}' | tr -d ',')
   if [ "$?" -ne "0" ]; then
     echo "error"
   elif [ "$sync_status" = "true" ]; then
@@ -77,7 +79,8 @@ get_status() {
       if [ "$sync_status" = "synced" ]; then
         install_status="installed, $running_status, synced"
       elif [ "$sync_status" = "syncing" ]; then
-        progress=$(bitcoin-cli getblockchaininfo | grep 'progress' | awk -F":" '{gsub(/,/, "", $2); printf "%.2f", $2*100}')
+        progress=$(bitcoin-cli getblockchaininfo | grep 'progress' | \
+          awk -F":" '{gsub(/,/, "", $2); printf "%.2f", $2*100}')
         install_status="installed, $running_status, syncing $progress%%"
       elif [ "$sync_status" = "unknown" ]; then
         install_status="installed, $running_status, not synced"
