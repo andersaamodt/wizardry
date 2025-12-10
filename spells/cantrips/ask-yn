@@ -58,7 +58,10 @@ select_input() {
         esac
         # Prefer stdin whenever something is piped to us, even if a tty is also
         # present, so scripted callers can answer without interactivity.
-        if [ -t 0 ] || [ -p /dev/stdin ] || [ -s /dev/stdin ]; then
+        # Use /dev/fd/0 instead of /dev/stdin for better cross-platform compatibility.
+        # On macOS, /dev/stdin is a symlink and -p/-s tests may fail on the symlink.
+        # Testing /dev/fd/0 directly works reliably on both Linux and macOS.
+        if [ -t 0 ] || [ -p /dev/fd/0 ] || [ -s /dev/fd/0 ]; then
                 printf '%s\n' stdin
                 return 0
         fi
