@@ -112,15 +112,15 @@ modify_bitcoin_conf "datadir" "$default_data_dir"
 ask-yn "Wouldst thou like to store the blockchain in the default location ($default_data_dir)?" "y"
 alt_storage=$?
 if [ "$alt_storage" = 1 ]; then
-	while true; do
-    	printf "Type the alternate path thou wouldst like to use for blockchain storage: "
-	    read -r alt_path
-	    if validate-path "$alt_path"; then
-	    	break
-		else
-			printf "That's not a valid UNIX path string. "
-		fi
-	done
+  while true; do
+      printf "Type the alternate path thou wouldst like to use for blockchain storage: "
+      read -r alt_path
+      if validate-path "$alt_path"; then
+        break
+    else
+      printf "That's not a valid UNIX path string. "
+    fi
+  done
     modify_bitcoin_conf "datadir" "$alt_path"
 fi
 

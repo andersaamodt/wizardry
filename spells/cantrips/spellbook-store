@@ -26,51 +26,51 @@ esac
 set -eu
 
 resolve_spellbook_file() {
-	if [ -n "${WIZARDRY_SPELLBOOK_FILE-}" ]; then
-		file=$WIZARDRY_SPELLBOOK_FILE
-	else
-		if [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
-			file=$HOME/.tower/spellbook
-		else
-			file=.wizardry_spellbook
-		fi
-	fi
-	case $file in
-	\~)
-		if [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
-			file=$HOME
-		fi
-		;;
-	\~/*)
-		if [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
-			file=$HOME/${file#\~/}
-		fi
-		;;
-	esac
-	printf '%s' "$file"
+  if [ -n "${WIZARDRY_SPELLBOOK_FILE-}" ]; then
+    file=$WIZARDRY_SPELLBOOK_FILE
+  else
+    if [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
+      file=$HOME/.tower/spellbook
+    else
+      file=.wizardry_spellbook
+    fi
+  fi
+  case $file in
+  \~)
+    if [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
+      file=$HOME
+    fi
+    ;;
+  \~/*)
+    if [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
+      file=$HOME/${file#\~/}
+    fi
+    ;;
+  esac
+  printf '%s' "$file"
 }
 
 spellbook_file=$(resolve_spellbook_file)
 
 ensure_parent_directory() {
-	dir=${spellbook_file%/*}
-	if [ "$dir" != "$spellbook_file" ] && [ ! -d "$dir" ]; then
-		mkdir -p "$dir"
-	fi
+  dir=${spellbook_file%/*}
+  if [ "$dir" != "$spellbook_file" ] && [ ! -d "$dir" ]; then
+    mkdir -p "$dir"
+  fi
 }
 
 validate_alias() {
-	name=$1
-	case $name in
-	''|*[!A-Za-z0-9._-]*)
-		printf '%s\n' "spellbook-store: alias names may contain only letters, digits, dots, underscores, and dashes." >&2
-		exit 1
-		;;
-	-*)
-		printf '%s\n' "spellbook-store: alias names may not begin with a dash." >&2
-		exit 1
-		;;
-	esac
+  name=$1
+  case $name in
+  ''|*[!A-Za-z0-9._-]*)
+    printf '%s\n' "spellbook-store: alias names may contain only letters, digits, dots, underscores, and dashes." >&2
+    exit 1
+    ;;
+  -*)
+    printf '%s\n' "spellbook-store: alias names may not begin with a dash." >&2
+    exit 1
+    ;;
+  esac
 }
 
 validate_command() {
@@ -127,15 +127,15 @@ add_entry() {
 }
 
 remove_entry() {
-	name=$1
-	validate_alias "$name"
-	if [ ! -f "$spellbook_file" ]; then
-		printf '%s\n' "spellbook-store: spell '$name' is not recorded." >&2
-		exit 1
-	fi
-	tmp=$(temp-file spellbook-store) || exit 1
-	trap 'cleanup-file "$tmp"' EXIT HUP INT TERM
-	removed=0
+  name=$1
+  validate_alias "$name"
+  if [ ! -f "$spellbook_file" ]; then
+    printf '%s\n' "spellbook-store: spell '$name' is not recorded." >&2
+    exit 1
+  fi
+  tmp=$(temp-file spellbook-store) || exit 1
+  trap 'cleanup-file "$tmp"' EXIT HUP INT TERM
+  removed=0
         while IFS= read -r line || nonempty "$line"; do
                 entry_name=$line
                 case $line in
@@ -152,25 +152,25 @@ remove_entry() {
                 fi
                 printf '%s\n' "$line" >>"$tmp"
         done <"$spellbook_file"
-	if [ "$removed" -eq 0 ]; then
-		trap - EXIT HUP INT TERM
-		rm -f "$tmp"
-		printf '%s\n' "spellbook-store: spell '$name' is not recorded." >&2
-		exit 1
-	fi
-	trap - EXIT HUP INT TERM
-	mv "$tmp" "$spellbook_file"
+  if [ "$removed" -eq 0 ]; then
+    trap - EXIT HUP INT TERM
+    rm -f "$tmp"
+    printf '%s\n' "spellbook-store: spell '$name' is not recorded." >&2
+    exit 1
+  fi
+  trap - EXIT HUP INT TERM
+  mv "$tmp" "$spellbook_file"
 }
 
 list_entries() {
-	if [ -f "$spellbook_file" ]; then
-		cat "$spellbook_file"
-	fi
+  if [ -f "$spellbook_file" ]; then
+    cat "$spellbook_file"
+  fi
 }
 
 if [ "$#" -eq 0 ]; then
-	show_usage
-	exit 1
+  show_usage
+  exit 1
 fi
 
 action=$1
@@ -178,40 +178,40 @@ shift
 
 case $action in
 add)
-	if [ "$#" -lt 2 ]; then
-		printf '%s\n' "spellbook-store: add expects a NAME followed by COMMAND words." >&2
-		show_usage
-		exit 1
-	fi
-	add_entry "$@"
-	;;
+  if [ "$#" -lt 2 ]; then
+    printf '%s\n' "spellbook-store: add expects a NAME followed by COMMAND words." >&2
+    show_usage
+    exit 1
+  fi
+  add_entry "$@"
+  ;;
 remove)
-	if [ "$#" -ne 1 ]; then
-		printf '%s\n' "spellbook-store: remove expects a NAME." >&2
-		show_usage
-		exit 1
-	fi
-	remove_entry "$1"
-	;;
+  if [ "$#" -ne 1 ]; then
+    printf '%s\n' "spellbook-store: remove expects a NAME." >&2
+    show_usage
+    exit 1
+  fi
+  remove_entry "$1"
+  ;;
 list)
-	if [ "$#" -ne 0 ]; then
-		show_usage
-		exit 1
-	fi
-	list_entries
-	;;
+  if [ "$#" -ne 0 ]; then
+    show_usage
+    exit 1
+  fi
+  list_entries
+  ;;
 path)
-	if [ "$#" -ne 0 ]; then
-		show_usage
-		exit 1
-	fi
-	printf '%s\n' "$spellbook_file"
-	;;
+  if [ "$#" -ne 0 ]; then
+    show_usage
+    exit 1
+  fi
+  printf '%s\n' "$spellbook_file"
+  ;;
 --help|--usage|-h)
-	show_usage
-	;;
+  show_usage
+  ;;
 *)
-	show_usage
-	exit 1
-	;;
+  show_usage
+  exit 1
+  ;;
 esac

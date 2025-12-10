@@ -30,11 +30,11 @@ set -eu
 expand_tilde() {
         path=$1
         case $path in
-	\~)
-		if [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
-			path=$HOME
-		fi
-		;;
+  \~)
+    if [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
+      path=$HOME
+    fi
+    ;;
         \~/*)
                 if [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
                         path=$HOME/${path#\~/}
@@ -46,99 +46,99 @@ expand_tilde() {
 }
 
 resolve_cast_dir() {
-	if [ -n "${WIZARDRY_CAST_DIR-}" ]; then
-		dir=$(expand_tilde "$WIZARDRY_CAST_DIR")
-		printf '%s' "$dir"
-		return 0
-	fi
+  if [ -n "${WIZARDRY_CAST_DIR-}" ]; then
+    dir=$(expand_tilde "$WIZARDRY_CAST_DIR")
+    printf '%s' "$dir"
+    return 0
+  fi
 
-	env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook"
+  env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook"
 }
 
 resolve_command_file() {
-	cast_dir=$1
-	if [ -n "${WIZARDRY_CAST_FILE-}" ]; then
-		file=$(expand_tilde "$WIZARDRY_CAST_FILE")
-	elif [ -n "${MEMORIZE_COMMAND_FILE-}" ]; then
-		file=$(expand_tilde "$MEMORIZE_COMMAND_FILE")
-	else
-		file=$cast_dir/.memorized
-	fi
-	printf '%s' "$file"
+  cast_dir=$1
+  if [ -n "${WIZARDRY_CAST_FILE-}" ]; then
+    file=$(expand_tilde "$WIZARDRY_CAST_FILE")
+  elif [ -n "${MEMORIZE_COMMAND_FILE-}" ]; then
+    file=$(expand_tilde "$MEMORIZE_COMMAND_FILE")
+  else
+    file=$cast_dir/.memorized
+  fi
+  printf '%s' "$file"
 }
 
 cast_dir=$(resolve_cast_dir)
 command_file=$(resolve_command_file "$cast_dir")
 
 nonempty() {
-	[ -n "$1" ]
+  [ -n "$1" ]
 }
 
 validate_name() {
-	name=$1
-	case $name in
-	''|*[!A-Za-z0-9._-]*)
-		printf '%s\n' "$spell_name: names may contain only letters, digits, dots, underscores, and dashes." >&2
-		exit 1
-		;;
-	-*)
-		printf '%s\n' "$spell_name: names may not begin with a dash." >&2
-		exit 1
-		;;
-	esac
+  name=$1
+  case $name in
+  ''|*[!A-Za-z0-9._-]*)
+    printf '%s\n' "$spell_name: names may contain only letters, digits, dots, underscores, and dashes." >&2
+    exit 1
+    ;;
+  -*)
+    printf '%s\n' "$spell_name: names may not begin with a dash." >&2
+    exit 1
+    ;;
+  esac
 }
 
 remove_spell() {
-	name=$1
-	validate_name "$name"
-	if [ ! -f "$command_file" ]; then
-		printf '%s\n' "$spell_name: spell '$name' is not memorized." >&2
-		exit 1
-	fi
-	tmp=$(temp-file forget) || exit 1
-	trap 'cleanup-file "$tmp"' EXIT HUP INT TERM
-	removed=0
-	while IFS= read -r line || nonempty "$line"; do
-		entry_name=$line
-		case $line in
-		*"$tab_char"*)
-			entry_name=${line%%"$tab_char"*}
-			;;
-		esac
-		if [ "$entry_name" = "$name" ] || [ -z "$entry_name" ]; then
-			if [ "$entry_name" = "$name" ]; then
-				removed=1
-				continue
-			fi
-			continue
-		fi
-		printf '%s\n' "$line" >>"$tmp"
-	done <"$command_file"
-	if [ "$removed" -eq 0 ]; then
-		trap - EXIT HUP INT TERM
-		rm -f "$tmp"
-		printf '%s\n' "$spell_name: spell '$name' is not memorized." >&2
-		exit 1
-	fi
-	trap - EXIT HUP INT TERM
-	mv "$tmp" "$command_file"
+  name=$1
+  validate_name "$name"
+  if [ ! -f "$command_file" ]; then
+    printf '%s\n' "$spell_name: spell '$name' is not memorized." >&2
+    exit 1
+  fi
+  tmp=$(temp-file forget) || exit 1
+  trap 'cleanup-file "$tmp"' EXIT HUP INT TERM
+  removed=0
+  while IFS= read -r line || nonempty "$line"; do
+    entry_name=$line
+    case $line in
+    *"$tab_char"*)
+      entry_name=${line%%"$tab_char"*}
+      ;;
+    esac
+    if [ "$entry_name" = "$name" ] || [ -z "$entry_name" ]; then
+      if [ "$entry_name" = "$name" ]; then
+        removed=1
+        continue
+      fi
+      continue
+    fi
+    printf '%s\n' "$line" >>"$tmp"
+  done <"$command_file"
+  if [ "$removed" -eq 0 ]; then
+    trap - EXIT HUP INT TERM
+    rm -f "$tmp"
+    printf '%s\n' "$spell_name: spell '$name' is not memorized." >&2
+    exit 1
+  fi
+  trap - EXIT HUP INT TERM
+  mv "$tmp" "$command_file"
 }
 
 case ${1-} in
 --help|--usage|-h)
-	show_usage
-	exit 0
-	;;
+  show_usage
+  exit 0
+  ;;
 "")
-	printf '%s\n' "$spell_name: spell name required." >&2
-	show_usage >&2
-	exit 1
-	;;
+  printf '%s\n' "$spell_name: spell name required." >&2
+  show_usage >&2
+  exit 1
+  ;;
 -*)
-	printf '%s\n' "$spell_name: unknown option '$1'" >&2
-	show_usage >&2
-	exit 1
-	;;
+  printf '%s\n' "$spell_name: unknown option '$1'" >&2
+  show_usage >&2
+  exit 1
+  ;;
 esac
 
 remove_spell "$1"

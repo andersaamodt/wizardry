@@ -501,7 +501,9 @@ check_inconsistent_indentation() {
   file=$1
   # Check for mixed tabs and spaces in indentation
   # This is a heuristic check: if both tabs and spaces are used for indentation, warn
-  has_tab_indent=$(grep -E '^[[:space:]]*\t' "$file" 2>/dev/null | head -1) || true
+  # Use printf to create a literal tab character for the pattern
+  tab=$(printf '\t')
+  has_tab_indent=$(grep -E "^[[:space:]]*${tab}" "$file" 2>/dev/null | head -1) || true
   has_space_indent=$(grep -E '^  ' "$file" 2>/dev/null | head -1) || true
   
   if [ -n "$has_tab_indent" ] && [ -n "$has_space_indent" ]; then
