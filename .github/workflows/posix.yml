@@ -1,4 +1,4 @@
-name: POSIX compliance checks
+name: POSIX Compliance Checks
 
 on:
   push:
