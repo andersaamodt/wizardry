@@ -664,7 +664,9 @@ shell_remove_all() {
         
         # Extract spell names from the rc file that look like learn-spellbook entries
         # Format: # >>> <spell_name> >>>
-        grep -o '# >>> path-[^>]*>>>' "$rc_file" 2>/dev/null | sed 's/# >>> //;s/ >>>//' | sort -u >"$tmp_spells" || true
+        extracted=$(grep -o '# >>> path-[^>]*>>>' "$rc_file" 2>/dev/null || true)
+        cleaned=$(printf '%s\n' "$extracted" | sed 's/# >>> //;s/ >>>//')
+        printf '%s\n' "$cleaned" | sort -u >"$tmp_spells"
         
         while IFS= read -r spell_name; do
                 [ -z "$spell_name" ] && continue
@@ -702,7 +704,8 @@ extract_nix_paths() {
         # Extract paths from wizardry-marked lines within environment.sessionVariables.PATH
         # Format: "path" # wizardry
         # Use || true to avoid exit on grep finding no matches
-        grep -F "# wizardry" "$rc_file" 2>/dev/null | sed -n 's/.*"\([^"]*\)".*# wizardry.*/\1/p' || true
+        wizardry_lines=$(grep -F "# wizardry" "$rc_file" 2>/dev/null || true)
+        printf '%s\n' "$wizardry_lines" | sed -n 's/.*"\([^"]*\)".*# wizardry.*/\1/p'
 }
 
 # Remove all wizardry PATH lines from configuration.nix
@@ -721,7 +724,9 @@ remove_wizardry_nix_lines() {
                 in_block = 0
                 # Check if block only had wizardry entries (now removed)
                 # If so, skip the entire block
-                if (pending ~ /environment\.sessionVariables\.PATH[[:space:]]*=[[:space:]]*\[/ && $0 ~ /^[[:space:]]*\];/) {
+                is_path_block = (pending ~ /environment\.sessionVariables\.PATH/)
+                is_closing = ($0 ~ /^[[:space:]]*\];/)
+                if (is_path_block && is_closing) {
                         pending = ""
                         next
                 }

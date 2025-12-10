@@ -167,7 +167,8 @@ $func_def
     # This ensures nested dependencies work correctly
     for already_inlined in $inlined_names; do
       already_func_name="_$(printf '%s' "$already_inlined" | tr '-' '_')"
-      spell_body=$(printf '%s\n' "$spell_body" | awk -v old="$already_inlined" -v new="$already_func_name" '
+      spell_body=$(printf '%s\n' "$spell_body" | \
+        awk -v old="$already_inlined" -v new="$already_func_name" '
         /^[[:space:]]*cat <<.*USAGE/ { usage_start=1; print; next }
         usage_start && /^USAGE$/ { print; usage_start=0; next }
         usage_start { print; next }

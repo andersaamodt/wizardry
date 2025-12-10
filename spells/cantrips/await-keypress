@@ -248,7 +248,8 @@ case "$first" in
                                         output='delete'
                                         buffer_leftover_codes="$*"
                                     else
-                                        output="escaped key: $(codes_to_string "$escape_rest_codes")"
+                                        key_str=$(codes_to_string "$escape_rest_codes")
+                                        output="escaped key: $key_str"
                                         buffer_leftover_codes=''
                                     fi
                                 fi

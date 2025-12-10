@@ -112,7 +112,9 @@ extract_command_from_script() {
         fi
         # First try to extract from scribed format
         # Scripts are in format: exec sh -c 'COMMAND' "$0" "$@"
-        result=$(sed -n "s/^exec sh -c '\\(.*\\)' \"\\\$0\" \"\\\$@\"$/\\1/p" "$script_path" | sed "s/'\\\\''/'/g")
+        scribed_pattern="s/^exec sh -c '\\(.*\\)' \"\\\$0\" \"\\\$@\"$/\\1/p"
+        extracted=$(sed -n "$scribed_pattern" "$script_path")
+        result=$(printf '%s\n' "$extracted" | sed "s/'\\\\''/'/g")
         if [ -n "$result" ]; then
                 printf '%s' "$result"
                 return 0
@@ -120,10 +122,14 @@ extract_command_from_script() {
         
         # For non-scribed scripts, check if there's exactly one line of code
         # Count meaningful lines (excluding shebang, comments, and whitespace)
-        code_lines=$(grep -v '^[[:space:]]*$' "$script_path" | grep -v '^[[:space:]]*#' | wc -l | tr -d ' ')
+        no_blank=$(grep -v '^[[:space:]]*$' "$script_path")
+        no_comments=$(printf '%s\n' "$no_blank" | grep -v '^[[:space:]]*#')
+        code_lines=$(printf '%s\n' "$no_comments" | wc -l | tr -d ' ')
         if [ "$code_lines" -eq 1 ]; then
                 # Return the single code line
-                result=$(grep -v '^[[:space:]]*$' "$script_path" | grep -v '^[[:space:]]*#' | head -n 1)
+                no_blank_lines=$(grep -v '^[[:space:]]*$' "$script_path")
+                no_comment_lines=$(printf '%s\n' "$no_blank_lines" | grep -v '^[[:space:]]*#')
+                result=$(printf '%s\n' "$no_comment_lines" | head -n 1)
                 if [ -n "$result" ]; then
                         printf '%s' "$result"
                         return 0
@@ -162,7 +168,8 @@ category_display_name() {
                                 ;;
                         *)
                                 # Capitalize first letter
-                                first=$(printf '%s' "$folder" | cut -c1 | tr '[:lower:]' '[:upper:]')
+                                first_char=$(printf '%s' "$folder" | cut -c1)
+                                first=$(printf '%s' "$first_char" | tr '[:lower:]' '[:upper:]')
                                 rest=$(printf '%s' "$folder" | cut -c2-)
                                 printf '%s%s' "$first" "$rest"
                                 ;;
@@ -174,7 +181,8 @@ category_display_name() {
 filename_to_display() {
         name=$1
         # Convert hyphens to spaces and titlecase each word
-        printf '%s' "$name" | awk '{gsub(/-/," "); for(i=1;i<=NF;i++){$i=toupper(substr($i,1,1))tolower(substr($i,2))}}1'
+        awk_script='{gsub(/-/," "); for(i=1;i<=NF;i++){$i=toupper(substr($i,1,1))tolower(substr($i,2))}}1'
+        printf '%s' "$name" | awk "$awk_script"
 }
 
 safe_command_label() {
@@ -228,7 +236,10 @@ resolve_category_path() {
 list_category_spells() {
         cat_name=$1
         # Use resolve_category_path to find the actual directory
-        resolved_path=$(resolve_category_path "$cat_name") || resolved_path="$ROOT_DIR/spells/$cat_name"
+        resolved_path=$(resolve_category_path "$cat_name")
+        if [ -z "$resolved_path" ]; then
+                resolved_path="$ROOT_DIR/spells/$cat_name"
+        fi
         find "$resolved_path" -maxdepth 2 -type f -perm -111 2>/dev/null | sort
 }
 
@@ -270,7 +281,8 @@ list_scribed_commands() {
         done
 }
 
-# List user folders in ~/.spellbook (excluding hidden folders and folders matching built-in categories)
+# List user folders in ~/.spellbook
+# (excluding hidden folders and folders matching built-in categories)
 list_user_folders() {
         if [ ! -d "$spell_home" ]; then
                 return 0
@@ -463,7 +475,8 @@ spellbook_menu() {
 $(list_scribed_commands)
 SCRIBED_COMMANDS
                         
-                        # SECTION 2: User folders in ~/.spellbook (if any exist, excluding those matching built-in)
+                        # SECTION 2: User folders in ~/.spellbook
+                        # (if any exist, excluding those matching built-in)
                         user_folders=$(list_user_folders)
                         if [ -n "$user_folders" ]; then
                                 # Add divider between commands and user folders
@@ -492,7 +505,9 @@ USER_FOLDERS
                         
                         # List built-in spells
                         if [ -d "$builtin_dir" ]; then
-                                for spell in $(find "$builtin_dir" -maxdepth 1 -type f -perm -111 2>/dev/null | sort); do
+                                builtin_spells=$(find "$builtin_dir" -maxdepth 1 \
+                                  -type f -perm -111 2>/dev/null | sort)
+                                for spell in $builtin_spells; do
                                         spell_name=$(basename "$spell")
                                         set -- "$@" "${spell_name}%spell-menu $spell_name"
                                 done
@@ -500,7 +515,9 @@ USER_FOLDERS
                         
                         # List custom spells from ~/.spellbook/<category> with custom theme color
                         if [ -d "$custom_dir" ]; then
-                                for spell in $(find "$custom_dir" -maxdepth 1 -type f -perm -111 2>/dev/null | sort); do
+                                custom_spells=$(find "$custom_dir" -maxdepth 1 \
+                                  -type f -perm -111 2>/dev/null | sort)
+                                for spell in $custom_spells; do
                                         spell_name=$(basename "$spell")
                                         # Use THEME_CUSTOM for custom spell names (distinct from highlight)
                                         set -- "$@" "${THEME_CUSTOM}${spell_name}${RESET}%spell-menu $spell_name"
@@ -518,7 +535,14 @@ USER_FOLDERS
                 fi
                 
                 # Add "Delete category" option for empty custom category folders
-                if [ -n "$current_path" ] && [ -n "$resolved_path" ] && is_custom_category_empty "$resolved_path"; then
+                is_current=$([ -n "$current_path" ] && echo "yes" || echo "no")
+                is_resolved=$([ -n "$resolved_path" ] && echo "yes" || echo "no")
+                is_empty="no"
+                if [ "$is_current" = "yes" ] && [ "$is_resolved" = "yes" ]; then
+                        is_custom_category_empty "$resolved_path" && is_empty="yes"
+                fi
+                
+                if [ "$is_empty" = "yes" ]; then
                         # Use escaped path in the command
                         escaped_path=$(printf '%s' "$resolved_path" | sed "s/'/'\\\\''/g")
                         set -- "$@" "Delete category%rm -rf '$escaped_path' && kill -TERM \$PPID"

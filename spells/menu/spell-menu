@@ -41,7 +41,9 @@ if command -v env-or >/dev/null 2>&1; then
 else
         spell_home="${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}"
 fi
-[ -d "$spell_home" ] || mkdir -p "$spell_home" 2>/dev/null || spell_home=$(create_spellbook_if_missing)
+if [ ! -d "$spell_home" ]; then
+        mkdir -p "$spell_home" 2>/dev/null || spell_home=$(create_spellbook_if_missing)
+fi
 
 cast_list() {
         if command -v memorize >/dev/null 2>&1; then

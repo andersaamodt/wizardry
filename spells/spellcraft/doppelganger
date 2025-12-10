@@ -83,7 +83,14 @@ compile_spell_by_path() {
 }
 
 # Process spells from known locations
-for spell_path in "$repo_dir/spells"/*/* "$repo_dir/spells"/*/*/* "$repo_dir/spells"/*/*/*/* "$repo_dir/spells"/.imps/*/* "$repo_dir/spells"/.imps/*/*/* "$repo_dir/spells"/.arcana/*/*; do
+for spell_path in \
+  "$repo_dir/spells"/*/* \
+  "$repo_dir/spells"/*/*/* \
+  "$repo_dir/spells"/*/*/*/* \
+  "$repo_dir/spells"/.imps/*/* \
+  "$repo_dir/spells"/.imps/*/*/* \
+  "$repo_dir/spells"/.arcana/*/*
+do
   # Skip if not a file or not executable
   [ -f "$spell_path" ] || continue
   [ -x "$spell_path" ] || continue
@@ -137,7 +144,9 @@ failed_count=$((failed_count))
 say "Copying test files..."
 if [ -d "$repo_dir/.tests" ]; then
   # Copy all files including hidden ones
-  (cd "$repo_dir/.tests" && find . -mindepth 1 -maxdepth 1 -exec cp -r {} "$output_dir/.tests/" \; 2>/dev/null) || true
+  (cd "$repo_dir/.tests" && \
+    find . -mindepth 1 -maxdepth 1 -exec cp -r {} "$output_dir/.tests/" \; \
+    2>/dev/null) || true
 fi
 
 # Copy essential files (README, LICENSE, etc.) but skip .git and .github
