@@ -195,7 +195,7 @@ spell_path_for_test() {
   rel=${test_path#"$test_dir/"}
   dir=$(dirname "$rel")
   base=$(basename "$rel")
-  base=${base#test_}
+  base=${base#test-}
   base=${base%.*}
   printf '%s/%s/%s\n' "$root_dir" "spells/$dir" "$base"
 }
@@ -255,7 +255,7 @@ spell_name_for_test() {
   fi
 
   base=${test_path##*/}
-  base=${base#test_}
+  base=${base#test-}
   base=${base%.sh}
   printf '%s\n' "$base"
 }
@@ -264,7 +264,8 @@ print_failure_debug() {
   test_path=$1
   output=$2
 
-  printf 'Debug (failures only) for %s:\n' "$test_path"
+  spell_name=$(spell_name_for_test "$test_path")
+  printf 'Debug (failures only) for %s:\n' "$spell_name"
   printf '%s\n' "$output" | awk '
     /^PASS / { next }
     /^[0-9]+\/[0-9]+ tests passed/ { next }
@@ -338,12 +339,14 @@ while IFS= read -r test_path; do
   # Skip tests marked COMPILED_UNSUPPORTED when testing compiled spells
   if [ "${WIZARDRY_TEST_COMPILED-0}" = "1" ]; then
     if head -n 5 "$abs" 2>/dev/null | grep -q "^# COMPILED_UNSUPPORTED"; then
-      printf '[%d/%d] %s (skipped: unsupported in compiled mode)\n' "$test_number" "$test_total" "$test_path"
+      spell_name=$(spell_name_for_test "$test_path")
+      printf '[%d/%d] %s (skipped: unsupported in compiled mode)\n' "$test_number" "$test_total" "$spell_name"
       continue
     fi
   fi
   
-  printf '[%d/%d] %s\n' "$test_number" "$test_total" "$test_path"
+  spell_name=$(spell_name_for_test "$test_path")
+  printf '[%d/%d] %s\n' "$test_number" "$test_total" "$spell_name"
 
   if output=$(sh "$abs" 2>&1); then
     pass=$((pass + 1))
@@ -574,7 +577,12 @@ if [ "$status" -ne 0 ] && [ -n "$failed_scripts" ]; then
     printf 'Failure details (showing %d):\n' "$fail"
     while IFS= read -r line; do
       case $line in
-        "=== "*) printf '%s\n' "$line" ;;
+        "=== "*)
+          # Extract test path from "=== test_path ===" format
+          test_path=$(printf '%s' "$line" | sed 's/^=== //; s/ ===$//')
+          spell_name=$(spell_name_for_test "$test_path")
+          printf '=== %s ===\n' "$spell_name"
+          ;;
         *) printf '  %s\n' "$line" ;;
       esac
     done <"$failure_output_file"
