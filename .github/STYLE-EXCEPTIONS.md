@@ -14,7 +14,7 @@ Wizardry prefers **logical command splitting** over arbitrary line continuations
 
 All style checks in `lint-magic` are now **REQUIRED**:
 - Mixed tabs/spaces indentation: ✅ 0 failures
-- Lines exceeding 100 characters: ⚠️ 11 failures (documented below)
+- Lines exceeding 100 characters: ⚠️ 7 permanent exceptions (documented below)
 - Echo usage (prefer printf): ✅ Enforced
 
 ## Permanent Exceptions

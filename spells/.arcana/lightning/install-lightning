@@ -101,7 +101,8 @@ add_lightning_to_nixos() {
         's/(environment\.systemPackages\s*=\s*with\s+pkgs;\s*\[[^]]*)\]/$1\n  clightning\n]/' \
         "$config" \
         || sudo perl -0pi -e \
-          's/(environment\.systemPackages\s*=\s*\[[^]]*)\]/$1\n  clightning\n]/' "$config"
+        's/(environment\.systemPackages\s*=\s*\[[^]]*)\]/$1\n  clightning\n]/' \
+        "$config"
     else
       sudo tee -a "$config" <<'NIX' >/dev/null
 
