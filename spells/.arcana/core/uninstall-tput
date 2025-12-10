@@ -19,5 +19,17 @@ esac
 set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-APT_PACKAGE=ncurses-bin DNF_PACKAGE=ncurses YUM_PACKAGE=ncurses ZYPPER_PACKAGE=ncurses PACMAN_PACKAGE=ncurses APK_PACKAGE=ncurses BREW_PACKAGE=ncurses \
-  ASSUME_YES=1 "$SCRIPT_DIR/manage-system-command" --uninstall tput ncurses
+
+APT_PACKAGE=ncurses-bin
+DNF_PACKAGE=ncurses
+YUM_PACKAGE=ncurses
+ZYPPER_PACKAGE=ncurses
+PACMAN_PACKAGE=ncurses
+APK_PACKAGE=ncurses
+BREW_PACKAGE=ncurses
+ASSUME_YES=1
+
+export APT_PACKAGE DNF_PACKAGE YUM_PACKAGE ZYPPER_PACKAGE
+export PACMAN_PACKAGE APK_PACKAGE BREW_PACKAGE ASSUME_YES
+
+"$SCRIPT_DIR/manage-system-command" --uninstall tput ncurses
