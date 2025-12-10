@@ -24,7 +24,10 @@ case "${1-}" in
 esac
 set -eu
 
-if [ "${INSTALL_CHECKBASHISMS_FORCE_INSTALL-}" != "1" ] && command -v checkbashisms >/dev/null 2>&1; then
+force_install="${INSTALL_CHECKBASHISMS_FORCE_INSTALL-}"
+has_checkbashisms=$(command -v checkbashisms >/dev/null 2>&1 && echo "yes" || echo "no")
+
+if [ "$force_install" != "1" ] && [ "$has_checkbashisms" = "yes" ]; then
         printf '%s\n' "checkbashisms is already installed."
         exit 0
 fi

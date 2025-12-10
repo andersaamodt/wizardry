@@ -25,7 +25,16 @@ _nix_rebuild() {
     fi
   fi
 
-  if [ "$_nr_rebuild_success" -eq 0 ] && [ -n "$_nr_priv_cmd" ] && command -v nixos-rebuild >/dev/null 2>&1; then
+  has_priv_cmd=$([ -n "$_nr_priv_cmd" ] && echo "yes" || echo "no")
+  has_nixos_rebuild=$(command -v nixos-rebuild >/dev/null 2>&1 && echo "yes" || echo "no")
+  
+  should_rebuild=$(
+    [ "$_nr_rebuild_success" -eq 0 ] && \
+    [ "$has_priv_cmd" = "yes" ] && \
+    [ "$has_nixos_rebuild" = "yes" ] && echo "yes" || echo "no"
+  )
+  
+  if [ "$should_rebuild" = "yes" ]; then
     printf '%s\n' "nix-rebuild: running $_nr_priv_cmd nixos-rebuild switch..."
     if "$_nr_priv_cmd" nixos-rebuild switch; then
       printf '%s\n' "nix-rebuild: NixOS system rebuilt successfully."

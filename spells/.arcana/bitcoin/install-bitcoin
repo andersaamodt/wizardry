@@ -169,7 +169,10 @@ maybe_run_nixos_rebuild() {
 
 maybe_start_bitcoind() {
   if prompt_yes_no "Start bitcoind in the background now?" "y"; then
-    if command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files | grep -q '^bitcoin.service'; then
+    has_systemctl=$(command -v systemctl >/dev/null 2>&1 && echo "yes" || echo "no")
+    has_service=$(systemctl list-unit-files | grep -q '^bitcoin.service' && echo "yes" || echo "no")
+    
+    if [ "$has_systemctl" = "yes" ] && [ "$has_service" = "yes" ]; then
       sudo systemctl start bitcoin
     else
       bitcoind -daemon || true

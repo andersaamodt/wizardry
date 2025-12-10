@@ -56,7 +56,9 @@ color_for_status() {
 }
 
 get_sync_status() {
-  sync_status=$(bitcoin-cli getblockchaininfo 2>&1 | grep 'initialblockdownload' | awk '{print $2}' | tr -d ',')
+  blockchain_info=$(bitcoin-cli getblockchaininfo 2>&1)
+  sync_status=$(echo "$blockchain_info" | grep 'initialblockdownload' | awk '{print $2}' | tr -d ',')
+  
   if [ "$?" -ne "0" ]; then
     echo "error"
   elif [ "$sync_status" = "true" ]; then
@@ -77,7 +79,8 @@ get_status() {
       if [ "$sync_status" = "synced" ]; then
         install_status="installed, $running_status, synced"
       elif [ "$sync_status" = "syncing" ]; then
-        progress=$(bitcoin-cli getblockchaininfo | grep 'progress' | awk -F":" '{gsub(/,/, "", $2); printf "%.2f", $2*100}')
+        blockchain_info=$(bitcoin-cli getblockchaininfo)
+        progress=$(echo "$blockchain_info" | grep 'progress' | awk -F":" '{gsub(/,/, "", $2); printf "%.2f", $2*100}')
         install_status="installed, $running_status, syncing $progress%%"
       elif [ "$sync_status" = "unknown" ]; then
         install_status="installed, $running_status, not synced"

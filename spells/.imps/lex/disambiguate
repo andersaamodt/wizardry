@@ -28,7 +28,10 @@ _disambiguate() {
 
   _dis_wizardry_dir="${WIZARDRY_DIR:-$HOME/.wizardry}"
   if [ -d "$_dis_wizardry_dir/spells" ]; then
-    _dis_spell_path=$(find "$_dis_wizardry_dir/spells" -name "$_dis_cmd" -type f -executable 2>/dev/null | head -1)
+    _dis_spell_path=$(
+      find "$_dis_wizardry_dir/spells" -name "$_dis_cmd" \
+        -type f -executable 2>/dev/null | head -1
+    )
     if [ -n "$_dis_spell_path" ]; then
       _dis_count=$((_dis_count + 1))
       _dis_candidates="${_dis_candidates}${_dis_count}:$_dis_spell_path:wizardry spell
@@ -36,7 +39,10 @@ _disambiguate() {
     fi
   fi
 
-  _dis_sys_cmd=$(PATH=$(printf '%s\n' "$PATH" | tr ':' '\n' | grep -v wizardry | tr '\n' ':' | sed 's/:$//') command -v "$_dis_cmd" 2>/dev/null || true)
+  # Get system command, excluding wizardry from PATH
+  _dis_clean_path=$(printf '%s\n' "$PATH" | tr ':' '\n' | grep -v wizardry | tr '\n' ':' | sed 's/:$//')
+  _dis_sys_cmd=$(PATH="$_dis_clean_path" command -v "$_dis_cmd" 2>/dev/null || true)
+  
   if [ -n "$_dis_sys_cmd" ]; then
     _dis_count=$((_dis_count + 1))
     _dis_candidates="${_dis_candidates}${_dis_count}:$_dis_sys_cmd:system command
