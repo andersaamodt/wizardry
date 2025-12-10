@@ -375,13 +375,14 @@ render_row() {
                                   "$THEME_MUTED" "$max_command_length" \
                                   "$truncated_command" "$RESET"
                         else
-                                printf '%b> %-*s%b\n' "$THEME_HIGHLIGHT" "$max_name_length" "$clean_label" \
-                                  "$RESET"
+                                printf '%b> %-*s%b\n' "$THEME_HIGHLIGHT" \
+                                  "$max_name_length" "$clean_label" "$RESET"
                         fi
                 else
                         if [ "$max_command_length" -gt 0 ]; then
-                                printf '  %-*s %b%-*s%b\n' "$adjusted_width" "$label" "$THEME_MUTED" \
-                                  "$max_command_length" "$truncated_command" "$RESET"
+                                printf '  %-*s %b%-*s%b\n' "$adjusted_width" "$label" \
+                                  "$THEME_MUTED" "$max_command_length" \
+                                  "$truncated_command" "$RESET"
                         else
                                 printf '  %-*s\n' "$adjusted_width" "$label"
                         fi

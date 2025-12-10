@@ -98,7 +98,8 @@ write_look_block() {
         tmp_file=$(temp-file wizardry-look) || return 1
         trap 'cleanup-file "$tmp_file"' EXIT HUP INT TERM
         if [ -f "$rc_file" ]; then
-                sed '/^# >>> wizardry look spell >>>$/,/^# <<< wizardry look spell <<</d' "$rc_file" >"$tmp_file"
+                sed '/^# >>> wizardry look spell >>>$/,/^# <<< wizardry look spell <<</d' \
+                  "$rc_file" >"$tmp_file"
         else
                 : >"$tmp_file"
         fi

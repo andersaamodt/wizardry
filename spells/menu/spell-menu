@@ -248,13 +248,13 @@ while :; do
                 # Custom spells (in ~/.spellbook or subfolders) show Erase spell option
                 # Use erase-spell which asks for confirmation then exits the menu
                 if [ -n "$help_item" ]; then
-                        set -- "Cast now%$escaped_command" "$cast_toggle" "$help_item" "Erase spell%erase-spell \
-                          '$name' && \
-                          kill -TERM \$PPID" "$exit_item"
+                        set -- "Cast now%$escaped_command" "$cast_toggle" "$help_item" \
+                          "Erase spell%erase-spell '$name' && kill -TERM \$PPID" \
+                          "$exit_item"
                 else
-                        set -- "Cast now%$escaped_command" "$cast_toggle" "Erase spell%erase-spell '$name' && \
-                          \
-                          kill -TERM \$PPID" "$exit_item"
+                        set -- "Cast now%$escaped_command" "$cast_toggle" \
+                          "Erase spell%erase-spell '$name' && kill -TERM \$PPID" \
+                          "$exit_item"
                 fi
         elif is_installable "$command"; then
                 # Show Learn option for spells with install() function

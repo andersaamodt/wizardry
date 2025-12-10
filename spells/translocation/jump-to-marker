@@ -247,9 +247,8 @@ jump_to_marker_impl() {
                 return 1
         fi
         if [ ! -d "$destination" ]; then
-                say "The ley-line remembers '$destination' for marker '$marker_name', but it no longer \
-                  \
-                  exists."
+                say "The ley-line remembers '$destination' for marker '$marker_name', " \
+                  "but it no longer exists."
                 return 1
         fi
         # Normalize paths to handle macOS double slashes

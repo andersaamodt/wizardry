@@ -64,36 +64,32 @@ fi
 
 if [ ! -x "$DETECT_RC_FILE" ]; then
         if [ "$detect_override" -eq 1 ]; then
-                printf '%s\n' "learn-spellbook: required helper '$DETECT_RC_FILE' is missing or not \
-                  executable." \
-                  >&2
+                printf '%s\n' "learn-spellbook: required helper '$DETECT_RC_FILE' " \
+                  "is missing or not executable." >&2
                 exit 1
         fi
 
         if command -v detect-rc-file >/dev/null 2>&1; then
                 DETECT_RC_FILE=$(command -v detect-rc-file)
         else
-                printf '%s\n' "learn-spellbook: required helper '$DETECT_RC_FILE' is missing or not \
-                  executable." \
-                  >&2
+                printf '%s\n' "learn-spellbook: required helper '$DETECT_RC_FILE' " \
+                  "is missing or not executable." >&2
                 exit 1
         fi
 fi
 
 if [ ! -x "$LEARN" ]; then
         if [ "$learn_override" -eq 1 ]; then
-                printf '%s\n' "learn-spellbook: required helper '$LEARN' is missing or not executable." \
-                  \
-                  >&2
+                printf '%s\n' "learn-spellbook: required helper '$LEARN' is " \
+                  "missing or not executable." >&2
                 exit 1
         fi
 
         if command -v learn >/dev/null 2>&1; then
                 LEARN=$(command -v learn)
         else
-                printf '%s\n' "learn-spellbook: required helper '$LEARN' is missing or not executable." \
-                  \
-                  >&2
+                printf '%s\n' "learn-spellbook: required helper '$LEARN' is " \
+                  "missing or not executable." >&2
                 exit 1
         fi
 fi
@@ -422,9 +418,8 @@ run_maybe_sudo() {
                 elif command -v doas >/dev/null 2>&1; then
                         doas "$@"
                 else
-                        printf '%s\n' "learn-spellbook: sudo or doas required to modify '$rc_file'." \
-                          \
-                          >&2
+                        printf '%s\n' "learn-spellbook: sudo or doas required to " \
+                          "modify '$rc_file'." >&2
                         exit 1
                 fi
         else
@@ -539,9 +534,9 @@ shell_add() {
         fi
         refresh_legacy_shell_export
         if [ "$legacy_export_refreshed" -eq 1 ]; then
-                printf '%s\n' "Refreshed the existing wizardry PATH entry in '$rc_file' so '$directory' \
-                  stays \
-                  reachable. The change takes effect in new shell sessions."
+                printf '%s\n' "Refreshed the existing wizardry PATH entry in '$rc_file' " \
+                  "so '$directory' stays reachable. The change takes effect in new " \
+                  "shell sessions."
                 return 0
         fi
         if shell_status; then
@@ -567,9 +562,8 @@ shell_remove() {
         spell_name=$(spell_identifier_for_directory "$directory")
         if "$LEARN" --spell "$spell_name" status >/dev/null 2>&1; then
                 "$LEARN" --spell "$spell_name" remove
-                printf '%s\n' "Removed '$directory' from PATH entries recorded in '$rc_file'. The change \
-                  takes \
-                  effect in new shell sessions."
+                printf '%s\n' "Removed '$directory' from PATH entries recorded in " \
+                  "'$rc_file'. The change takes effect in new shell sessions."
                 return 0
         fi
         has_managed=0
@@ -700,9 +694,8 @@ shell_remove_all() {
         cleanup-file "$tmp_spells"
         
         if [ "$removed_count" -gt 0 ]; then
-                printf '%s\n' "Removed $removed_count wizardry PATH entries from '$rc_file'. The change \
-                  takes \
-                  effect in new shell sessions."
+                printf '%s\n' "Removed $removed_count wizardry PATH entries from " \
+                  "'$rc_file'. The change takes effect in new shell sessions."
         else
                 printf '%s\n' "No wizardry PATH entries found in '$rc_file'."
         fi
