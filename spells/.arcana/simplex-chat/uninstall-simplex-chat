@@ -76,7 +76,8 @@ if detect_nixos && command -v nixos-rebuild >/dev/null 2>&1; then
       sh -c "$rebuild_cmd"
       ;;
     *)
-      printf '%s\n' "Skipping nixos-rebuild. Run '$rebuild_cmd' later if you removed simplex-chat from configuration.nix."
+      printf '%s\n' "Skipping nixos-rebuild. Run '$rebuild_cmd' later if you removed \
+        simplex-chat from configuration.nix.""
       ;;
   esac
 fi
