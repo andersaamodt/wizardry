@@ -74,8 +74,8 @@ if [ "$is_installed" -eq 0 ]; then
         # Not installed, so install it
         printf '%s\n' "Installing cd hook..."
         if "$CD_SPELL" install; then
-                printf '%s\n' "✓ cd hook enabled. Each directory change will now display the room \
-                  description.""
+                printf '%s\n' "✓ cd hook enabled. Each directory change will now display"\
+" the room description."
                 printf '%s\n' "  (Restart your shell or source your rc file to activate)"
         else
                 printf '%s\n' "✗ Failed to install cd hook." >&2

@@ -5,8 +5,9 @@ show_usage() {
         cat <<'USAGE' >&2
 Usage: uninstall-stty
 
-Removes the stty command via the platform package manager using manage-system-command\n
-with flags to uninstall.
+Removes the stty command via the platform package manager using manage-system-command
+with assume-yes defaults.
+USAGE
 }
 
 case "${1-}" in

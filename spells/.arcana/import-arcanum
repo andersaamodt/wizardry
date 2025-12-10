@@ -95,8 +95,8 @@ arcanum_name=$(basename "$source_path")
 case "$arcanum_name" in
   ''|*[!A-Za-z0-9_-]*)
     printf '%s\n' "import-arcanum: invalid arcanum name: $arcanum_name" >&2
-    printf '%s\n' "import-arcanum: names may contain only letters, digits, underscores, \
-      and hyphens."" >&2
+    printf '%s\n' "import-arcanum: names may contain only letters, digits,"\
+" underscores, and hyphens." >&2
     exit 1
     ;;
   -*)
