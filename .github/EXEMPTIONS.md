@@ -15,65 +15,79 @@ This document catalogs ALL exemptions and exceptions in the wizardry project. An
 
 ### Long Lines (> 100 characters)
 
-**Status**: Lines exceeding 100 characters are ALLOWED when splitting would harm readability
+**Status**: Lines exceeding 100 characters **FAIL the build** unless they are primarily string literals
 
-**Philosophy**: We strongly prefer **logical command splitting** and clear code structure over arbitrary line continuations. However, we do NOT artificially break lines just to meet a character limit. Long lines are acceptable when:
-- They represent a single semantic unit (menu options, config edits, regex patterns)
-- Breaking would require awkward continuations or reduce clarity
-- They are string literals, error messages, or help text
-- Splitting would break command flow or semantics
+**Philosophy**: We require **logical command splitting** for maintainability and readability. Long commands, pipelines, and complex expressions must be broken into shorter, more readable parts. However, we recognize that long string literals (error messages, help text, user prompts) should NOT be artificially broken, as this harms readability.
 
-**Enforcement in lint-magic**: The long lines check is currently implemented as a **warning** that fails the build, but specific exemptions are documented below for cases where long lines are preferred.
+**Enforcement in lint-magic**: The long lines check analyzes each line exceeding 100 characters:
+- If the line is **>60% quoted text** (string literals), it is ALLOWED
+- If the line is **<60% quoted text** (commands, pipelines, code), it FAILS
+
+#### Automatic Exemptions (Built into lint-magic)
+
+Lines with primarily string content are automatically exempt:
+- Error messages: `die "my-spell: this is a long descriptive error message that explains what went wrong"`
+- User prompts: `printf '%s' "Please enter your configuration (this long prompt helps users understand what to do)"`  
+- Help text: Long descriptive strings in scripts
+- Test assertions with long strings
+
+No manual documentation needed for these - lint-magic detects them automatically.
 
 #### When to Split Lines
 
-✅ **Good candidates for splitting**:
-- Long pipelines → break at pipe boundaries: `cmd1 | cmd2 | cmd3`
-- Complex conditionals → separate into multiple if/else blocks
-- Long variable assignments → extract intermediate steps
+✅ **Required splits** (will fail lint-magic):
+- Long pipelines → break at pipe boundaries or use intermediate variables
+- Complex conditionals → separate into multiple checks
+- Long variable assignments → extract intermediate steps  
 - Command chains with `&&` or `||` → break at logical operators
+- Menu invocations with many arguments → one argument per line
 
-❌ **Bad candidates for splitting**:
-- String literals and error messages
-- Menu options with embedded commands
-- Single-line regex patterns
-- Atomic perl/awk/sed one-liners
-- Help text in heredocs
+❌ **Allowed long lines** (won't fail lint-magic):
+- String literals in printf/echo/say/warn/die calls
+- Long quoted error messages
+- User-facing prompts and messages
+- Help text and descriptions
 
-#### Examples of Acceptable Long Lines
+#### Examples
 
-##### 1. Menu Options with Embedded Shell Scripts
+##### Good - Long String (Automatically Allowed)
 ```sh
-# 200+ characters - acceptable because it's a single menu item definition
-option="Lightning Invoice%sh -c 'amt=$(printf \"Amount: \"; read -r a; echo \"$a\"); lightning-cli invoice \"$amt\" | tee invoice.txt'"
+# 120 characters, >80% quoted - automatically passes lint-magic
+die "my-spell: configuration file not found. Please run 'wizardry init' to create default config"
 ```
 
-##### 2. Configuration File Editing One-Liners
+##### Bad - Long Command (Will Fail)
 ```sh
-# 150+ characters - atomic operation that shouldn't be split
-sudo perl -0pi -e "s/(environment\\.systemPackages\\s*=\\s*with\\s+pkgs;\\s*\\[)/$1 tor /" /etc/nixos/configuration.nix
+# 150 characters, <20% quoted - FAILS lint-magic, must be split
+result=$(echo "$data" | grep pattern | sed 's/old/new/g' | awk '{print $1}' | sort | uniq | head -10)
+
+# Fix: Use intermediate variables or split pipeline
+filtered=$(echo "$data" | grep pattern)
+cleaned=$(echo "$filtered" | sed 's/old/new/g' | awk '{print $1}')
+result=$(echo "$cleaned" | sort | uniq | head -10)
 ```
 
-##### 3. Error Messages and User-Facing Strings
-```sh
-# 120 characters - clear message, no need to split
-printf '%s\n' "Error: Configuration file not found. Please run 'wizardry init' to create a default configuration." >&2
-```
+##### Manual Exemptions Required
 
-##### 4. Regular Expression Patterns
-```sh
-# 110 characters - regex pattern with alternatives
-if grep -Eq '# >>> wizardry cd cantrip >>>|#wizardry: cd-cantrip|# BEGIN_WIZARDRY_CD' "$rc_file"; then
-```
+Some lines cannot be easily split and are NOT primarily strings. These require manual exemption documentation:
 
-##### 5. Heredoc Content (Documentation)
-```sh
-cat <<'USAGE'
-This spell configures the system for Bitcoin operations including installation of bitcoin core daemon and configuration of data directories.
-USAGE
-```
+**1. Menu options with embedded shell scripts**
+- File: `spells/.arcana/lightning/lightning-wallet-menu`
+- Reason: Menu definition includes inline shell code; splitting breaks menu semantics
+- Example: `option="Label%sh -c 'cmd1; cmd2; cmd3'"`
+- Cannot split without restructuring menu system
 
-Heredoc content is documentation and naturally wraps - not subject to line length limits.
+**2. Atomic config editing one-liners**
+- Files: `spells/.arcana/tor/install-tor`, `spells/.arcana/tor/configure-tor-bridge`
+- Reason: Perl/awk one-liners for editing system files; must be atomic
+- Example: `perl -0pi -e "s/pattern/replacement/" /etc/config`
+- Splitting would break atomicity and increase error risk
+
+**3. Complex regex patterns with many alternatives**
+- File: `spells/.arcana/mud/toggle-cd`
+- Reason: Grep pattern with multiple alternatives inherently long
+- Example: `grep -Eq 'pattern1|pattern2|pattern3|pattern4|pattern5' "$file"`
+- Splitting pattern across lines not supported by grep
 
 ### Historical: Mixed Tabs and Spaces (RESOLVED)
 
