@@ -554,8 +554,9 @@ if [ "$needs_installation" -eq 0 ]; then
         printf '\n'
         
         # Read user choice
-        # Check if stdin is a terminal (interactive)
-        if [ -t 0 ]; then
+        # Check if we can read input (tty or pipe)
+        # Use /dev/fd/0 instead of /dev/stdin for cross-platform compatibility
+        if [ -t 0 ] || [ -p /dev/fd/0 ]; then
                 printf '%sEnter your choice (1-4): %s' "$BOLD" "$RESET" >&2
                 IFS= read -r choice
         else

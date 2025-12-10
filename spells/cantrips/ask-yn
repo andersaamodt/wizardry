@@ -56,30 +56,20 @@ select_input() {
                 return 1
                 ;;
         esac
-        # Determine the best input source. We prefer stdin in all cases where it might be
-        # available - whether as an interactive terminal or as piped/redirected input.
-        #
-        # The -t 0 test tells us if stdin is connected to a terminal. When true, stdin is
-        # definitely available for reading. When false, stdin might be piped, redirected
-        # to a file, or closed. We can't reliably distinguish these cases in POSIX sh,
-        # especially on macOS where /dev/stdin is a symlink and -p/-s tests fail.
-        #
-        # Strategy: Always prefer stdin unless explicitly told it's not available (via
-        # ASK_CANTRIP_INPUT=none). If reading from stdin fails (closed/EOF), the read
-        # command will fail gracefully and the caller can handle it.
-        if [ -t 0 ]; then
-                # stdin is a terminal - definitely use it
+        # Prefer stdin whenever something is piped to us, even if a tty is also
+        # present, so scripted callers can answer without interactivity.
+        # Use /dev/fd/0 instead of /dev/stdin for better cross-platform compatibility.
+        # On macOS, /dev/stdin is a symlink and -p/-s tests may fail on the symlink.
+        # Testing /dev/fd/0 directly works reliably on both Linux and macOS.
+        if [ -t 0 ] || [ -p /dev/fd/0 ] || [ -s /dev/fd/0 ]; then
                 printf '%s\n' stdin
                 return 0
         fi
-        # stdin is not a terminal - it could be piped, redirected, or closed.
-        # We'll optimistically return "stdin" and let the read command handle
-        # cases where it's actually closed. This works because:
-        # - If stdin is piped: read works
-        # - If stdin is redirected from a file: read works
-        # - If stdin is closed: read fails immediately with empty input
-        printf '%s\n' stdin
-        return 0
+        if [ -r /dev/tty ]; then
+                printf '%s\n' tty
+                return 0
+        fi
+        return 1
 }
 
 prompt_and_read() {

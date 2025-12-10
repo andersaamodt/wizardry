@@ -63,16 +63,17 @@ select_input() {
                 return 1
                 ;;
         esac
-        # Determine best input source. On macOS, /dev/stdin is a symlink and -p/-s tests
-        # are unreliable. Always try stdin first - if it's closed, read will fail gracefully.
-        if [ -t 0 ]; then
-                # stdin is a terminal
+        # Use /dev/fd/0 instead of /dev/stdin for cross-platform compatibility.
+        # On macOS, /dev/stdin is a symlink and tests may fail on the symlink itself.
+        if [ -t 0 ] || [ -p /dev/fd/0 ] || [ -s /dev/fd/0 ]; then
                 printf '%s\n' stdin
                 return 0
         fi
-        # stdin is not a terminal - optimistically return stdin
-        printf '%s\n' stdin
-        return 0
+        if [ -r /dev/tty ]; then
+                printf '%s\n' tty
+                return 0
+        fi
+        return 1
 }
 
 prompt() {

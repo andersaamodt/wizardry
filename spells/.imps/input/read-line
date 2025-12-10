@@ -15,9 +15,10 @@ _read_line() {
       tty)   _rl_src=tty ;;
       none)  return 1 ;;
       *)
-        # On macOS, /dev/stdin tests are unreliable. Always try stdin first.
-        if [ -t 0 ]; then _rl_src=stdin
-        else _rl_src=stdin; fi ;;
+        # Use /dev/fd/0 instead of /dev/stdin for cross-platform compatibility
+        if [ -t 0 ] || [ -p /dev/fd/0 ] || [ -s /dev/fd/0 ]; then _rl_src=stdin
+        elif [ -r /dev/tty ]; then _rl_src=tty
+        else return 1; fi ;;
     esac
   fi
 
