@@ -40,7 +40,8 @@ _disambiguate() {
   fi
 
   # Get system command, excluding wizardry from PATH
-  _dis_clean_path=$(printf '%s\n' "$PATH" | tr ':' '\n' | grep -v wizardry | tr '\n' ':' | sed 's/:$//')
+  _dis_path_lines=$(printf '%s\n' "$PATH" | tr ':' '\n' | grep -v wizardry)
+  _dis_clean_path=$(echo "$_dis_path_lines" | tr '\n' ':' | sed 's/:$//')
   _dis_sys_cmd=$(PATH="$_dis_clean_path" command -v "$_dis_cmd" 2>/dev/null || true)
   
   if [ -n "$_dis_sys_cmd" ]; then
