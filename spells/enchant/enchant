@@ -149,8 +149,8 @@ set_attribute() {
                 printf "%s\n" "Error: Failed to set attribute using '$attempted_helper' (exit \
                   $attempt_status)." >&2
         else
-                printf "%s\n" "Error: This spell requires the 'attr', 'xattr', or " \
-                  "'setfattr' command to be installed." >&2
+                printf "%s\n" "Error: This spell requires the 'attr', 'xattr', or"\
+" 'setfattr' command to be installed." >&2
         fi
 
         return 1

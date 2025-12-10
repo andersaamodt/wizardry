@@ -72,8 +72,8 @@ check_duplicate_name() {
                 for subdir in "$spell_home"/*; do
                         [ -d "$subdir" ] || continue
                         if [ -e "$subdir/$name" ]; then
-                                printf '%s\n' "$SCRIPT_NAME: '$name' already exists " \
-                                  "in your spellbook." >&2
+                                printf '%s\n' "$SCRIPT_NAME: '$name' already exists"\
+" in your spellbook." >&2
                                 return 1
                         fi
                 done
