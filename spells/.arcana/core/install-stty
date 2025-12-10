@@ -19,5 +19,7 @@ esac
 set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-APT_PACKAGE=coreutils DNF_PACKAGE=coreutils YUM_PACKAGE=coreutils ZYPPER_PACKAGE=coreutils PACMAN_PACKAGE=coreutils APK_PACKAGE=coreutils BREW_PACKAGE=coreutils \
+APT_PACKAGE=coreutils DNF_PACKAGE=coreutils YUM_PACKAGE=coreutils ZYPPER_PACKAGE=coreutils  \
+  PACMAN_PACKAGE=coreutils APK_PACKAGE=coreutils BREW_PACKAGE=coreutils \
+  \
   ASSUME_YES=1 "$SCRIPT_DIR/manage-system-command" stty coreutils
