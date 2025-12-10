@@ -59,6 +59,7 @@ validate_name() {
         case $name in
         ''|*[!A-Za-z0-9._-]*)
                 printf '%s\n' "spellbook: names may contain only letters, digits, dots, underscores, \
+                  \
                   and dashes (no spaces)." >&2
                 exit 1
                 ;;
@@ -122,11 +123,13 @@ extract_command_from_script() {
         
         # For non-scribed scripts, check if there's exactly one line of code
         # Count meaningful lines (excluding shebang, comments, and whitespace)
-        code_lines=$(grep -v '^[[:space:]]*$' "$script_path" | grep -v '^[[:space:]]*#' | wc -l | tr -d ' \
+        code_lines=$(grep -v '^[[:space:]]*$' "$script_path" | grep -v '^[[:space:]]*#' | wc -l | \
+          tr -d ' \
           ')
         if [ "$code_lines" -eq 1 ]; then
                 # Return the single code line
                 result=$(grep -v '^[[:space:]]*$' "$script_path" | grep -v '^[[:space:]]*#' | head -n \
+                  \
                   1)
                 if [ -n "$result" ]; then
                         printf '%s' "$result"
@@ -179,7 +182,8 @@ category_display_name() {
 filename_to_display() {
         name=$1
         # Convert hyphens to spaces and titlecase each word
-        printf '%s' "$name" | awk '{gsub(/-/," "); for(i=1;i<=NF;i++){$i=toupper(substr($i,1,1))tolower(substr($i,2))}}1'
+        printf '%s' "$name" | awk '{gsub(/-/," "); for(i=1;i<=NF;i++){$i=toupper(substr($i,1 \
+          1))tolower(substr($i,2))}}1'
 }
 
 safe_command_label() {
@@ -477,7 +481,6 @@ SCRIBED_COMMANDS
                                 while IFS= read -r folder_name; do
                                         [ -z "$folder_name" ] && continue
                                         # Don't capitalize - just use the folder name
-                                        set -- "$@" "${folder_name}%spellbook $spell_home/$folder_name"
                                 done <<USER_FOLDERS
 $user_folders
 USER_FOLDERS
@@ -499,6 +502,7 @@ USER_FOLDERS
                         # List built-in spells
                         if [ -d "$builtin_dir" ]; then
                                 for spell in $(find "$builtin_dir" -maxdepth 1 -type f -perm -111 2>/dev/null | sort); \
+                                  \
                                   do
                                         spell_name=$(basename "$spell")
                                         set -- "$@" "${spell_name}%spell-menu $spell_name"
@@ -508,10 +512,12 @@ USER_FOLDERS
                         # List custom spells from ~/.spellbook/<category> with custom theme color
                         if [ -d "$custom_dir" ]; then
                                 for spell in $(find "$custom_dir" -maxdepth 1 -type f -perm -111 2>/dev/null | sort); \
+                                  \
                                   do
                                         spell_name=$(basename "$spell")
                                         # Use THEME_CUSTOM for custom spell names (distinct from highlight)
                                         set -- "$@" "${THEME_CUSTOM}${spell_name}${RESET}%spell-menu \
+                                          \
                                           $spell_name"
                                 done
                         fi

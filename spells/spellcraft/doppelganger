@@ -75,7 +75,8 @@ compile_spell_by_path() {
   # Call compile-spell from repo directory with full relative path and redirect output to target
   # Redirect stdout to file, stderr to /dev/null (don't let error messages corrupt the compiled spell)
   if (cd "$repo_dir" && \
-    "$repo_dir/spells/spellcraft/compile-spell" "$spell_rel_path" 2>/dev/null) > "$target_file"; then
+    "$repo_dir/spells/spellcraft/compile-spell" "$spell_rel_path" 2>/dev/null) > \
+      "$target_file"; then
     chmod +x "$target_file"
     return 0
   else

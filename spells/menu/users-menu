@@ -9,7 +9,8 @@ show_usage() {
 cat <<'USAGE'
 Usage: users-menu
 
-Display an interactive menu for user and group management, covering password changes, group memberships, and user account administration.
+Display an interactive menu for user and group management, covering password changes, \
+  group memberships, and user account administration.
 USAGE
 }
 
@@ -39,7 +40,8 @@ display_menu() {
   change_other_password="Change other user's password%read -p \"Enter username: \" username; sudo \
     passwd \$username"
   view_my_groups="View my group memberships%groups"
-  view_other_groups="View other user's group membership%read -p \"Enter username: \" username; groups \
+  view_other_groups="View other user's group membership%read -p \"Enter username: \" \
+    username; groups \
     \$username"
   list_groups="List all groups%cut -d: -f1 /etc/group"
   create_group="Create new group%read -p \"Enter new group name: \" groupname; sudo groupadd \
@@ -52,9 +54,11 @@ display_menu() {
     \$group"
   list_users_in_group="List users in group%read -p \"Enter group name to list members: \" group; \
     getent group \$group"
-  add_user_to_group="Add other user to group%read -p \"Enter username: \" username; read -p \"Enter \
+  add_user_to_group="Add other user to group%read -p \"Enter username: \" username; read -p \
+    \"Enter \
     group name to add them to: \" group; sudo usermod -a -G \$group \$username"
-  remove_user_from_group="Remove other user from group%read -p \"Enter username: \" username; read -p \
+  remove_user_from_group="Remove other user from group%read -p \"Enter username: \" \
+    username; read -p \
     \"Enter group to remove them from: \" group; sudo gpasswd -d \$username \$group"
   create_user="Create new user%read -p \"Enter new username: \" username; sudo useradd \$username; \
     printf \"The new user needs a password (use 'Change other user's password').\""
@@ -64,7 +68,8 @@ display_menu() {
   exit_item="${exit_label}%kill -TERM \$PPID"
 
   set -- "$change_my_password" "$list_users" "$change_other_password" "$view_my_groups" \
-    "$view_other_groups" "$list_groups" "$create_group" "$delete_group" "$join_group" "$leave_group" "$list_users_in_group" "$add_user_to_group" "$remove_user_from_group" "$create_user" "$delete_user" "$exit_item"
+    "$view_other_groups" "$list_groups" "$create_group" "$delete_group" "$join_group" \
+      "$leave_group" "$list_users_in_group" "$add_user_to_group" "$remove_user_from_group" "$create_user" "$delete_user" "$exit_item"
   menu "Users Menu:" "$@"
 }
 

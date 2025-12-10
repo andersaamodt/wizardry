@@ -8,7 +8,8 @@ show_usage() {
 cat <<'USAGE'
 Usage: enchant [file] attribute=value
 
-Apply an extended attribute with the given name and value to a file using attr, xattr, or setfattr. With two arguments the spell figures out which is the path and which is attribute=value, defaulting to the current directory, and the legacy <file> <attribute> <value> [helper] form still works.
+Apply an extended attribute with the given name and value to a file using attr, xattr, or \
+  setfattr. With two arguments the spell figures out which is the path and which is attribute=value, defaulting to the current directory, and the legacy <file> <attribute> <value> [helper] form still works.
 USAGE
 }
 
@@ -143,9 +144,11 @@ set_attribute() {
         done
 
         if [ -n "$attempted_helper" ]; then
-                printf "%s\n" "Error: Failed to set attribute using '$attempted_helper' (exit $attempt_status)." >&2
+                printf "%s\n" "Error: Failed to set attribute using '$attempted_helper' (exit \
+                  $attempt_status)." >&2
         else
-                printf "%s\n" "Error: This spell requires the 'attr', 'xattr', or 'setfattr' command to be installed." >&2
+                printf "%s\n" "Error: This spell requires the 'attr', 'xattr', or 'setfattr' command to \
+                  be installed." >&2
         fi
 
         return 1
@@ -193,8 +196,10 @@ parse_arguments() {
                         # Neither has valid attr=value format
                         # Provide consistent error message regardless of whether args exist as files
                         printf '%s\n' "Error: Two-argument format requires one argument to be in 'attribute=v \
+                          \
                           alue' format." >&2
                         printf '%s\n' "       Use 'enchant <file> attr=value' or 'enchant attr=value \
+                          \
                           <file>'" >&2
                         return 1
                 fi

@@ -73,6 +73,7 @@ check_duplicate_name() {
                         [ -d "$subdir" ] || continue
                         if [ -e "$subdir/$name" ]; then
                                 printf '%s\n' "$SCRIPT_NAME: '$name' already exists in your spellbook." \
+                                  \
                                   >&2
                                 return 1
                         fi
@@ -102,6 +103,7 @@ validate_category() {
         case $cat_name in
         ''|*[!A-Za-z0-9._-]*)
                 printf '%s\n' "$SCRIPT_NAME: category names may contain only letters, digits, dots, \
+                  \
                   underscores, and dashes." >&2
                 return 1
                 ;;
@@ -161,6 +163,7 @@ add_category_to_path() {
                 learn_spellbook="$SCRIPT_DIR/learn-spellbook"
                 if [ ! -x "$learn_spellbook" ]; then
                         printf '%s\n' "learn-spellbook not found; category folder created but not added to \
+                          \
                           PATH." >&2
                         return 0
                 fi

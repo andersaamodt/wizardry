@@ -7,7 +7,8 @@ show_usage() {
 cat <<'USAGE'
 Usage: read-contact <vcard-file> [field]
 
-Print all fields from a vCard file or a specific field when you name one. Escapes are normalized for readability and friendly labels make the details easy to scan.
+Print all fields from a vCard file or a specific field when you name one. Escapes are \
+  normalized for readability and friendly labels make the details easy to scan.
 USAGE
 }
 
@@ -97,7 +98,8 @@ print_field() {
     card_path=$1
     requested_field=$2
 
-    card_line=$(card_lines "$card_path" | awk -F':' -v field="$requested_field" '$1 ~ field { print; \
+    card_line=$(card_lines "$card_path" | awk -F':' -v field="$requested_field" '$1 ~ field { \
+      print; \
       exit }')
     if [ -z "${card_line:-}" ]; then
         printf '%s\n' "read-contact: $requested_field not found" >&2

@@ -133,7 +133,8 @@ recognize_room() {
           [ "$default_tmp_path" != "$tmp_path" ]; }|| \
           { [ -n "$var_tmp_path" ]&& \
           [ "$room" = "$var_tmp_path" ]; }; then
-                output_room "Temporary Directory" "A temporary workspace where creations are fleeting."
+                output_room "Temporary Directory" "A temporary workspace where creations are \
+                  fleeting."
                 return 0
         fi
 
@@ -163,7 +164,8 @@ recognize_room() {
 
         case "$room" in
         /etc|/private/etc)
-                output_room "Configuration Library" "System configuration archives line the shelves."
+                output_room "Configuration Library" "System configuration archives line the \
+                  shelves."
                 return 0
                 ;;
         /var|/private/var)
@@ -191,7 +193,8 @@ recognize_room() {
                 return 0
                 ;;
         /opt)
-                output_room "Optional Packages" "Third-party or optional software installs dwell here."
+                output_room "Optional Packages" "Third-party or optional software installs dwell \
+                  here."
                 return 0
                 ;;
         /srv)
@@ -207,7 +210,8 @@ recognize_room() {
                 return 0
                 ;;
         /proc)
-                output_room "Process Registry" "A virtual view into the kernel and running processes."
+                output_room "Process Registry" "A virtual view into the kernel and running \
+                  processes."
                 return 0
                 ;;
         /boot)
@@ -261,7 +265,8 @@ list_recognized() {
                 "$var_tmp_path" \
                 "$normalized_home" \
                 "$home_parent" \
-                /etc /var /var/log /usr /usr/local /bin /sbin /opt /srv /run /dev /proc /boot /home /Users /Applications /System /Library
+                /etc /var /var/log /usr /usr/local /bin /sbin /opt /srv /run /dev /proc /boot /home \
+                  /Users /Applications /System /Library
         do
                 [ -n "$dir" ] || continue
                 if [ "$dir" = "$previous" ]; then
