@@ -21,7 +21,8 @@ esac
 set -eu
 
 if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
-  printf '%s\n' "Error: This spell requires one or two arguments: a file path and an optional attribute name." >&2
+  printf '%s\n' "Error: This spell requires one or two arguments: a file path and an op \
+    tional attribute name." >&2
   show_usage >&2
   exit 1
 fi
@@ -121,7 +122,8 @@ disenchant_attr() {
     fi
   done
 
-  printf '%s\n' "Error: requires the 'attr', 'xattr', or 'setfattr' helper to remove attributes." >&2
+  printf '%s\n' "Error: requires the 'attr', 'xattr', or 'setfattr' helper to remove \
+    attributes." >&2
   return 1
 }
 

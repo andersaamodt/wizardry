@@ -11,7 +11,9 @@ show_usage() {
         cat <<USAGE >&2
 Usage: $SCRIPT_NAME /path/to/template [KEY=value ...]
 
-Copies a systemd service template into the system directory, substituting KEY=value pairs into the file. Prompts for missing values to keep menu-driven installs friendly.
+Copies a systemd service template into the system directory, substituting KEY=value
+pairs into the file. Prompts for missing values to keep menu-driven installs
+friendly.
 USAGE
 }
 

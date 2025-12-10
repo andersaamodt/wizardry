@@ -154,7 +154,8 @@ if [ "$found_any" -eq 1 ]; then
         fi
 
         if [ -n "${message-}" ]; then
-                message=$(printf '%s\n' "$message" | sed "s/__MAGIC__/$magic_word/g; s/__ENCHANTED__/$enchanted_word/g")
+                message=$(printf '%s\n' "$message" | sed "s/__MAGIC__/$magic_word/g; \
+                  s/__ENCHANTED__/$enchanted_word/g")
                 printf '%s\n' "$message"
         fi
         printf 'I can feel the %smagic%s in the air.\n' "$purple" "$reset"

@@ -34,6 +34,7 @@ if command -v mud-config >/dev/null 2>&1; then
     mud-config set player "$player"
     printf '%s\n' "Player identity set to '$player'."
 else
-    printf '%s\n' "set-player: mud-config not found. Install wizardry or ensure spells are in PATH." >&2
+    printf '%s\n' "set-player: mud-config not found. Install wizardry or ensure spells \
+      are in PATH." >&2
     exit 1
 fi

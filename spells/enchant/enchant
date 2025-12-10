@@ -102,7 +102,8 @@ helpers_for_preference() {
                 done
                 ;;
         *)
-                printf '%s\n' "Error: Unknown helper '$preferred'. Choose attr, xattr, or setfattr." >&2
+                printf '%s\n' "Error: Unknown helper '$preferred'. Choose attr, xattr, or \
+                  setfattr." >&2
                 return 1
                 ;;
         esac
@@ -191,8 +192,10 @@ parse_arguments() {
                 else
                         # Neither has valid attr=value format
                         # Provide consistent error message regardless of whether args exist as files
-                        printf '%s\n' "Error: Two-argument format requires one argument to be in 'attribute=value' format." >&2
-                        printf '%s\n' "       Use 'enchant <file> attr=value' or 'enchant attr=value <file>'" >&2
+                        printf '%s\n' "Error: Two-argument format requires one argument to be in 'attribute=v \
+                          alue' format." >&2
+                        printf '%s\n' "       Use 'enchant <file> attr=value' or 'enchant attr=value \
+                          <file>'" >&2
                         return 1
                 fi
         elif [ $# -eq 3 ] || [ $# -eq 4 ]; then
@@ -236,7 +239,8 @@ main() {
                 exit 1
         fi
 
-        printf "The file has been enchanted with the attribute '%s' and value '%s'.\n" "$key" "$value"
+        printf "The file has been enchanted with the attribute '%s' and value \
+          '%s'.\n" "$key" "$value"
 }
 
 main "$@"

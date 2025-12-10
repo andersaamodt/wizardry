@@ -245,7 +245,8 @@ update_dimensions() {
         fi
 
         dimensions_changed=0
-        if [ "$window_width" -ne "$last_window_width" ] || [ "$max_command_length" -ne "$last_max_command_length" ]; then
+        if [ "$window_width" -ne "$last_window_width" ] || \
+          [ "$max_command_length" -ne "$last_max_command_length" ]; then
                 dimensions_changed=1
         fi
 
@@ -347,7 +348,10 @@ render_row() {
                 if [ "$highlight" -eq 1 ]; then
                         # Use clean_label (ANSI stripped) so highlight color takes precedence
                         if [ "$max_command_length" -gt 0 ]; then
-                                printf '%b> %-*s%b %b%-*s%b' "$THEME_HIGHLIGHT" "$max_name_length" "$clean_label" "$RESET" "$THEME_MUTED" "$max_command_length" "$truncated_command" "$RESET"
+                                printf '%b> %-*s%b %b%-*s%b' "$THEME_HIGHLIGHT" \
+                                  "$max_name_length" "$clean_label" "$RESET" \
+                                  "$THEME_MUTED" "$max_command_length" \
+                                  "$truncated_command" "$RESET"
                         else
                                 printf '%b> %-*s%b' "$THEME_HIGHLIGHT" "$max_name_length" "$clean_label" "$RESET"
                         fi

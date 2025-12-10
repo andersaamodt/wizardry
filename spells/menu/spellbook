@@ -58,7 +58,8 @@ validate_name() {
         name=$1
         case $name in
         ''|*[!A-Za-z0-9._-]*)
-                printf '%s\n' "spellbook: names may contain only letters, digits, dots, underscores, and dashes (no spaces)." >&2
+                printf '%s\n' "spellbook: names may contain only letters, digits, dots, underscores, \
+                  and dashes (no spaces)." >&2
                 exit 1
                 ;;
         -*)
@@ -112,7 +113,8 @@ extract_command_from_script() {
         fi
         # First try to extract from scribed format
         # Scripts are in format: exec sh -c 'COMMAND' "$0" "$@"
-        result=$(sed -n "s/^exec sh -c '\\(.*\\)' \"\\\$0\" \"\\\$@\"$/\\1/p" "$script_path" | sed "s/'\\\\''/'/g")
+        result=$(sed -n "s/^exec sh -c '\\(.*\\)' \"\\\$0\" \"\\\$@\"$/\\1/p" "$script_path" | sed \
+          "s/'\\\\''/'/g")
         if [ -n "$result" ]; then
                 printf '%s' "$result"
                 return 0
@@ -120,10 +122,12 @@ extract_command_from_script() {
         
         # For non-scribed scripts, check if there's exactly one line of code
         # Count meaningful lines (excluding shebang, comments, and whitespace)
-        code_lines=$(grep -v '^[[:space:]]*$' "$script_path" | grep -v '^[[:space:]]*#' | wc -l | tr -d ' ')
+        code_lines=$(grep -v '^[[:space:]]*$' "$script_path" | grep -v '^[[:space:]]*#' | wc -l | tr -d ' \
+          ')
         if [ "$code_lines" -eq 1 ]; then
                 # Return the single code line
-                result=$(grep -v '^[[:space:]]*$' "$script_path" | grep -v '^[[:space:]]*#' | head -n 1)
+                result=$(grep -v '^[[:space:]]*$' "$script_path" | grep -v '^[[:space:]]*#' | head -n \
+                  1)
                 if [ -n "$result" ]; then
                         printf '%s' "$result"
                         return 0
@@ -162,7 +166,8 @@ category_display_name() {
                                 ;;
                         *)
                                 # Capitalize first letter
-                                first=$(printf '%s' "$folder" | cut -c1 | tr '[:lower:]' '[:upper:]')
+                                first=$(printf '%s' "$folder" | cut -c1 | tr '[:lower:]' \
+                                  '[:upper:]')
                                 rest=$(printf '%s' "$folder" | cut -c2-)
                                 printf '%s%s' "$first" "$rest"
                                 ;;
@@ -228,7 +233,8 @@ resolve_category_path() {
 list_category_spells() {
         cat_name=$1
         # Use resolve_category_path to find the actual directory
-        resolved_path=$(resolve_category_path "$cat_name") || resolved_path="$ROOT_DIR/spells/$cat_name"
+        resolved_path=$(resolve_category_path "$cat_name") || \
+          resolved_path="$ROOT_DIR/spells/$cat_name"
         find "$resolved_path" -maxdepth 2 -type f -perm -111 2>/dev/null | sort
 }
 
@@ -492,7 +498,8 @@ USER_FOLDERS
                         
                         # List built-in spells
                         if [ -d "$builtin_dir" ]; then
-                                for spell in $(find "$builtin_dir" -maxdepth 1 -type f -perm -111 2>/dev/null | sort); do
+                                for spell in $(find "$builtin_dir" -maxdepth 1 -type f -perm -111 2>/dev/null | sort); \
+                                  do
                                         spell_name=$(basename "$spell")
                                         set -- "$@" "${spell_name}%spell-menu $spell_name"
                                 done
@@ -500,10 +507,12 @@ USER_FOLDERS
                         
                         # List custom spells from ~/.spellbook/<category> with custom theme color
                         if [ -d "$custom_dir" ]; then
-                                for spell in $(find "$custom_dir" -maxdepth 1 -type f -perm -111 2>/dev/null | sort); do
+                                for spell in $(find "$custom_dir" -maxdepth 1 -type f -perm -111 2>/dev/null | sort); \
+                                  do
                                         spell_name=$(basename "$spell")
                                         # Use THEME_CUSTOM for custom spell names (distinct from highlight)
-                                        set -- "$@" "${THEME_CUSTOM}${spell_name}${RESET}%spell-menu $spell_name"
+                                        set -- "$@" "${THEME_CUSTOM}${spell_name}${RESET}%spell-menu \
+                                          $spell_name"
                                 done
                         fi
                         
@@ -518,7 +527,9 @@ USER_FOLDERS
                 fi
                 
                 # Add "Delete category" option for empty custom category folders
-                if [ -n "$current_path" ] && [ -n "$resolved_path" ] && is_custom_category_empty "$resolved_path"; then
+                if [ -n "$current_path" ] && \
+                  [ -n "$resolved_path" ] && \
+                  is_custom_category_empty "$resolved_path"; then
                         # Use escaped path in the command
                         escaped_path=$(printf '%s' "$resolved_path" | sed "s/'/'\\\\''/g")
                         set -- "$@" "Delete category%rm -rf '$escaped_path' && kill -TERM \$PPID"

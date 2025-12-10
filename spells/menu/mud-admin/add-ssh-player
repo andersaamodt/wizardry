@@ -20,9 +20,12 @@ esac
 
 set -eu
 
-printf '%s\n' "This spell authorizes a new player to connect to this computer via their player key (SSH key). Run this on the MUD host computer."
-printf '%s\n' "A new user account will be created on your system with limited permissions for the new player."
-printf '%s\n' 'MUD users are in the group "mud", and this group only has access to your shared rooms (folders) in the MUD.'
+printf '%s\n' "This spell authorizes a new player to connect to this computer via \
+  their player key (SSH key). Run this on the MUD host computer."
+printf '%s\n' "A new user account will be created on your system with limited \
+  permissions for the new player."
+printf '%s\n' 'MUD users are in the group "mud", and this group only has access to your shared \
+  rooms (folders) in the MUD.'
 
 printf '%s' "Enter player name: "
 read -r playername

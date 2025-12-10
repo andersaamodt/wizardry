@@ -9,7 +9,8 @@ show_usage() {
 cat <<'USAGE'
 Usage: read-magic <file> [attribute]
 
-List all extended attributes on a file or print the value of one attribute when named, using attr, xattr, or getfattr as available.
+List all extended attributes on a file or print the value of one attribute when
+named, using attr, xattr, or getfattr as available.
 USAGE
 }
 
@@ -23,7 +24,8 @@ set -eu
 
 require_args() {
   if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
-    printf '%s\n' "read-magic: one or two parameters expected (file path and optional attribute name)."
+    printf '%s\n' "read-magic: one or two parameters expected " \
+      "(file path and optional attribute name)."
     return 1
   fi
 }

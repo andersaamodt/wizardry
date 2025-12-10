@@ -64,28 +64,32 @@ fi
 
 if [ ! -x "$DETECT_RC_FILE" ]; then
         if [ "$detect_override" -eq 1 ]; then
-                printf '%s\n' "learn-spellbook: required helper '$DETECT_RC_FILE' is missing or not executable." >&2
+                printf '%s\n' "learn-spellbook: required helper '$DETECT_RC_FILE' is missing or not executable." \
+                  >&2
                 exit 1
         fi
 
         if command -v detect-rc-file >/dev/null 2>&1; then
                 DETECT_RC_FILE=$(command -v detect-rc-file)
         else
-                printf '%s\n' "learn-spellbook: required helper '$DETECT_RC_FILE' is missing or not executable." >&2
+                printf '%s\n' "learn-spellbook: required helper '$DETECT_RC_FILE' is missing or not executable." \
+                  >&2
                 exit 1
         fi
 fi
 
 if [ ! -x "$LEARN" ]; then
         if [ "$learn_override" -eq 1 ]; then
-                printf '%s\n' "learn-spellbook: required helper '$LEARN' is missing or not executable." >&2
+                printf '%s\n' "learn-spellbook: required helper '$LEARN' is missing or not executable." \
+                  >&2
                 exit 1
         fi
 
         if command -v learn >/dev/null 2>&1; then
                 LEARN=$(command -v learn)
         else
-                printf '%s\n' "learn-spellbook: required helper '$LEARN' is missing or not executable." >&2
+                printf '%s\n' "learn-spellbook: required helper '$LEARN' is missing or not executable." \
+                  >&2
                 exit 1
         fi
 fi
@@ -113,7 +117,8 @@ while [ "$#" -gt 0 ]; do
         --batch-add-from-file)
                 # Internal flag: add all directories listed in file in single operation
                 if [ "$#" -lt 2 ]; then
-                        printf '%s\n' "learn-spellbook: --batch-add-from-file expects a file path" >&2
+                        printf '%s\n' "learn-spellbook: --batch-add-from-file expects a file path" \
+                          >&2
                         exit 1
                 fi
                 batch_add_file=$2
@@ -160,7 +165,8 @@ else
         case $action in
         add|remove|remove-all|status) : ;;
         *)
-                printf '%s\n' "Error: The first argument must be 'add', 'remove', 'remove-all', or 'status'." >&2
+                printf '%s\n' "Error: The first argument must be 'add', 'remove', 'remove-all', or 'status'." \
+                  >&2
                 exit 1
                 ;;
         esac
@@ -220,7 +226,8 @@ if [ "$batch_mode" -eq 0 ] && [ "$action" != "remove-all" ]; then
                 fi
         elif [ "$action" = "remove" ] || [ "$action" = "status" ]; then
                 if [ "$#" -eq 0 ]; then
-                        printf '%s\n' "Error: The '$action' action expects a directory argument." >&2
+                        printf '%s\n' "Error: The '$action' action expects a directory argument." \
+                          >&2
                         exit 1
                 fi
                 directory=$(normalize_directory "$1")
@@ -410,7 +417,8 @@ run_maybe_sudo() {
                 elif command -v doas >/dev/null 2>&1; then
                         doas "$@"
                 else
-                        printf '%s\n' "learn-spellbook: sudo or doas required to modify '$rc_file'." >&2
+                        printf '%s\n' "learn-spellbook: sudo or doas required to modify '$rc_file'." \
+                          >&2
                         exit 1
                 fi
         else
@@ -525,7 +533,8 @@ shell_add() {
         fi
         refresh_legacy_shell_export
         if [ "$legacy_export_refreshed" -eq 1 ]; then
-                printf '%s\n' "Refreshed the existing wizardry PATH entry in '$rc_file' so '$directory' stays reachable. The change takes effect in new shell sessions."
+                printf '%s\n' "Refreshed the existing wizardry PATH entry in '$rc_file' so '$directory' stays \
+                  reachable. The change takes effect in new shell sessions."
                 return 0
         fi
         if shell_status; then
@@ -537,7 +546,8 @@ shell_add() {
                 printf '%s\n' "learn-spellbook: unable to record the PATH entry." >&2
                 exit 1
         fi
-        printf '%s\n' "Added '$directory' to PATH via '$rc_file'. The change takes effect in new shell sessions."
+        printf '%s\n' "Added '$directory' to PATH via '$rc_file'. The change takes effect in new shell \
+          sessions."
 }
 
 # Remove a previously added export line from shell rc files.
@@ -549,7 +559,8 @@ shell_remove() {
         spell_name=$(spell_identifier_for_directory "$directory")
         if "$LEARN" --spell "$spell_name" status >/dev/null 2>&1; then
                 "$LEARN" --spell "$spell_name" remove
-                printf '%s\n' "Removed '$directory' from PATH entries recorded in '$rc_file'. The change takes effect in new shell sessions."
+                printf '%s\n' "Removed '$directory' from PATH entries recorded in '$rc_file'. The change takes \
+                  effect in new shell sessions."
                 return 0
         fi
         has_managed=0
@@ -587,7 +598,8 @@ shell_remove() {
                 exit 1
         fi
         trap - EXIT HUP INT TERM
-        printf '%s\n' "Removed '$directory' from PATH entries recorded in '$rc_file'. The change takes effect in new shell sessions."
+        printf '%s\n' "Removed '$directory' from PATH entries recorded in '$rc_file'. The change takes \
+          effect in new shell sessions."
 }
 
 # Identify whether the requested directory already appears in an export line
@@ -664,7 +676,8 @@ shell_remove_all() {
         
         # Extract spell names from the rc file that look like learn-spellbook entries
         # Format: # >>> <spell_name> >>>
-        grep -o '# >>> path-[^>]*>>>' "$rc_file" 2>/dev/null | sed 's/# >>> //;s/ >>>//' | sort -u >"$tmp_spells" || true
+        grep -o '# >>> path-[^>]*>>>' "$rc_file" 2>/dev/null | sed 's/# >>> //;s/ >>>//' | sort -u >"$tmp_spells" || \
+          true
         
         while IFS= read -r spell_name; do
                 [ -z "$spell_name" ] && continue
@@ -676,7 +689,8 @@ shell_remove_all() {
         cleanup-file "$tmp_spells"
         
         if [ "$removed_count" -gt 0 ]; then
-                printf '%s\n' "Removed $removed_count wizardry PATH entries from '$rc_file'. The change takes effect in new shell sessions."
+                printf '%s\n' "Removed $removed_count wizardry PATH entries from '$rc_file'. The change takes \
+                  effect in new shell sessions."
         else
                 printf '%s\n' "No wizardry PATH entries found in '$rc_file'."
         fi
@@ -702,7 +716,8 @@ extract_nix_paths() {
         # Extract paths from wizardry-marked lines within environment.sessionVariables.PATH
         # Format: "path" # wizardry
         # Use || true to avoid exit on grep finding no matches
-        grep -F "# wizardry" "$rc_file" 2>/dev/null | sed -n 's/.*"\([^"]*\)".*# wizardry.*/\1/p' || true
+        grep -F "# wizardry" "$rc_file" 2>/dev/null | sed -n 's/.*"\([^"]*\)".*# wizardry.*/\1/p' || \
+          true
 }
 
 # Remove all wizardry PATH lines from configuration.nix
@@ -721,7 +736,8 @@ remove_wizardry_nix_lines() {
                 in_block = 0
                 # Check if block only had wizardry entries (now removed)
                 # If so, skip the entire block
-                if (pending ~ /environment\.sessionVariables\.PATH[[:space:]]*=[[:space:]]*\[/ && $0 ~ /^[[:space:]]*\];/) {
+                if (pending ~ /environment\.sessionVariables\.PATH[[:space:]]*=[[:space:]]*\[/ && \
+                  $0 ~ /^[[:space:]]*\];/) {
                         pending = ""
                         next
                 }
@@ -996,7 +1012,8 @@ nix_add() {
         
         backup_nix_config_file
         add_wizardry_nix_path "$directory"
-        printf '%s\n' "Recorded '$directory' in '$rc_file'. Rebuild your Nix environment to activate the change."
+        printf '%s\n' "Recorded '$directory' in '$rc_file'. Rebuild your Nix environment to activate the \
+          change."
 }
 
 # Remove a directory from configuration.nix. Only removes wizardry-marked lines.
@@ -1014,7 +1031,8 @@ nix_remove() {
         
         backup_nix_config_file
         remove_wizardry_nix_path "$directory"
-        printf '%s\n' "Removed '$directory' from '$rc_file'. Rebuild your Nix environment to activate the change."
+        printf '%s\n' "Removed '$directory' from '$rc_file'. Rebuild your Nix environment to activate the \
+          change."
 }
 
 # status for configuration.nix - returns success only when the directory
@@ -1043,7 +1061,8 @@ nix_remove_all() {
         
         backup_nix_config_file
         remove_wizardry_nix_lines
-        printf '%s\n' "Removed $path_count wizardry PATH entries from '$rc_file'. Rebuild your Nix environment to activate the change."
+        printf '%s\n' "Removed $path_count wizardry PATH entries from '$rc_file'. Rebuild your Nix \
+          environment to activate the change."
 }
 
 # Handle batch add mode - process all directories from file at once
@@ -1141,7 +1160,8 @@ $p"
                 added_count=0
         fi
         
-        printf '%s\n' "Recorded $added_count directories in '$rc_file'. Rebuild your Nix environment to activate the change."
+        printf '%s\n' "Recorded $added_count directories in '$rc_file'. Rebuild your Nix environment to \
+          activate the change."
         exit 0
 fi
 

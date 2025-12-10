@@ -7,8 +7,9 @@ show_usage() {
         cat <<'USAGE' >&2
 Usage: await-keypress
 
-Listens for one key press on the controlling terminal, translating escape sequences into readable names and restoring the term
-inal to its prior state afterward.
+Listens for one key press on the controlling terminal, translating escape
+sequences into readable names and restoring the terminal to its prior state
+afterward.
 USAGE
 }
 
@@ -248,7 +249,8 @@ case "$first" in
                                         output='delete'
                                         buffer_leftover_codes="$*"
                                     else
-                                        output="escaped key: $(codes_to_string "$escape_rest_codes")"
+                                        output="escaped key: $(codes_to_string \
+                                          "$escape_rest_codes")"
                                         buffer_leftover_codes=''
                                     fi
                                 fi

@@ -63,7 +63,8 @@ validate_alias() {
   name=$1
   case $name in
   ''|*[!A-Za-z0-9._-]*)
-    printf '%s\n' "spellbook-store: alias names may contain only letters, digits, dots, underscores, and dashes." >&2
+    printf '%s\n' "spellbook-store: alias names may contain only letters, digits, dots, u \
+      nderscores, and dashes." >&2
     exit 1
     ;;
   -*)

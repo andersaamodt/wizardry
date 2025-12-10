@@ -128,7 +128,11 @@ recognize_room() {
                 return 0
         fi
 
-        if [ "$room" = "$tmp_path" ] || { [ "$room" = "$default_tmp_path" ] && [ "$default_tmp_path" != "$tmp_path" ]; } || { [ -n "$var_tmp_path" ] && [ "$room" = "$var_tmp_path" ]; }; then
+        if [ "$room" = "$tmp_path" ]|| \
+          { [ "$room" = "$default_tmp_path" ]&& \
+          [ "$default_tmp_path" != "$tmp_path" ]; }|| \
+          { [ -n "$var_tmp_path" ]&& \
+          [ "$room" = "$var_tmp_path" ]; }; then
                 output_room "Temporary Directory" "A temporary workspace where creations are fleeting."
                 return 0
         fi

@@ -8,7 +8,9 @@ show_usage() {
 cat <<'USAGE'
 Usage: copy <file>
 
-Copy the contents of a text file to the system clipboard using pbcopy, xsel, or xclip. Prompts for a path when none is given and prints a confirmation when successful.
+Copy the contents of a text file to the system clipboard using pbcopy, xsel, or
+xclip. Prompts for a path when none is given and prints a confirmation when
+successful.
 USAGE
 }
 
@@ -45,11 +47,13 @@ if ! clip-copy < "$1" 2>/dev/null; then
         if install-clipboard-helper >/dev/null 2>&1 && clip-copy < "$1" 2>/dev/null; then
             : # Installation succeeded and copy worked
         else
-            warn 'Your spell fizzles. No clipboard utility available (xsel, xclip, wl-copy, or pbcopy).'
+            warn 'Your spell fizzles. No clipboard utility available ' \
+              '(xsel, xclip, wl-copy, or pbcopy).'
             exit 1
         fi
     else
-        warn 'Your spell fizzles. No clipboard utility available (xsel, xclip, wl-copy, or pbcopy).'
+        warn 'Your spell fizzles. No clipboard utility available ' \
+          '(xsel, xclip, wl-copy, or pbcopy).'
         exit 1
     fi
 fi

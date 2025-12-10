@@ -33,4 +33,5 @@ fi
 # Generate ssh key
 ssh-keygen -t rsa -b 4096 -C "${player_name}@MUD" -f "$HOME/.ssh/${player_name}" -q -N ""
 
-printf '%s\n' "New player ${player_name} created with ssh key files at ~/.ssh/${player_name} and ~/.ssh/${player_name}.pub"
+printf '%s\n' "New player ${player_name} created with ssh key files at \
+  ~/.ssh/${player_name} and ~/.ssh/${player_name}.pub"

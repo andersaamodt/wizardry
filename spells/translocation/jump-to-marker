@@ -78,7 +78,8 @@ PORTAL
 }
 
 jump_random_message() {
-jump_portal_messages | awk 'BEGIN{srand();}{lines[NR]=$0}END{if (NR==0) exit 0; idx=int(rand()*NR)+1; print lines[idx];}'
+jump_portal_messages | awk 'BEGIN{srand();}{lines[NR]=$0}END{if (NR==0) exit 0; \
+  idx=int(rand()*NR)+1; print lines[idx];}'
 }
 
 jump_describe_current_location() {
@@ -235,7 +236,8 @@ jump_to_marker_impl() {
                 return 1
         fi
         if [ ! -d "$destination" ]; then
-                say "The ley-line remembers '$destination' for marker '$marker_name', but it no longer exists."
+                say "The ley-line remembers '$destination' for marker '$marker_name', but it no longer \
+                  exists."
                 return 1
         fi
         # Normalize paths to handle macOS double slashes

@@ -44,7 +44,8 @@ display_priorities() {
   dir_priorities=$(read-magic "${DIR}" priorities)
 
   # If there are no priorities, print an error message and exit
-  if [ -z "${dir_priorities}" ] || [ "$dir_priorities" = "read-magic: attribute does not exist." ]; then
+  if [ -z "${dir_priorities}" ] || \
+    [ "$dir_priorities" = "read-magic: attribute does not exist." ]; then
     echo "No priorities set in the current folder. Try 'prioritize <filename>'."
     exit 1
   fi
@@ -67,14 +68,17 @@ display_priorities() {
       file_priority=$(read-magic "${priority_file}" priority 2>/dev/null)
       
       # If the file does not have a priority, set it to 0
-      if [ -z "${file_priority}" ] || [ "$file_priority" = "read-magic: attribute does not exist." ]; then
+      if [ -z "${file_priority}" ] || \
+        [ "$file_priority" = "read-magic: attribute does not exist." ]; then
         file_priority=0
       fi
 
       # If the priority of the file is a number
       if [ "${file_priority}" -eq "${file_priority}" ] 2>/dev/null; then
         # If the file's priority is not the highest priority, add a line
-        if [ -n "${highest_priority}" ] && [ "${file_priority}" -ne "${highest_priority}" ] && [ "${line_added}" = false ]; then
+        if [ -n "${highest_priority}" ] && \
+          [ "${file_priority}" -ne "${highest_priority}" ] && \
+          [ "${line_added}" = false ]; then
           menu_command="${menu_command} \"─── %\""
           line_added=true
         fi

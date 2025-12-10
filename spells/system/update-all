@@ -180,7 +180,8 @@ confirm_updates() {
   fi
   lacks ask-yn && fail 'ask-yn spell is missing; cannot confirm updates.'
   printf '%s\n' 'Proceed with system updates?'
-  if printf '\n' | ASK_CANTRIP_INPUT=stdin ask-yn 'Proceed with system updates?' yes >/dev/null; then
+  if printf '\n' | ASK_CANTRIP_INPUT=stdin ask-yn 'Proceed with system updates?' yes >/dev/null; \
+    then
     return 0
   fi
   return 1
