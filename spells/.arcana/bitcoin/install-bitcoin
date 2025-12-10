@@ -206,7 +206,16 @@ run_installer() {
 
   echo "Detected platform: $distro"
   install_method="binary"
-  if package_manager_available && prompt_yes_no "Use your package manager to install Bitcoin Core?" "y"; then
+  has_pkg_mgr=$(package_manager_available && echo "yes" || echo "no")
+  use_pkg_mgr="no"
+  if [ "$has_pkg_mgr" = "yes" ]; then
+    prompt="Use your package manager to install Bitcoin Core?"
+    if prompt_yes_no "$prompt" "y"; then
+      use_pkg_mgr="yes"
+    fi
+  fi
+  
+  if [ "$use_pkg_mgr" = "yes" ]; then
     install_method="package"
   fi
 

@@ -74,17 +74,22 @@ if try_install yum -y install devscripts; then
 fi
 
 # openSUSE and derivatives.
-if try_install zypper --non-interactive install devscripts-checkbashisms || try_install zypper --non-interactive install checkbashisms || try_install zypper --non-interactive install devscripts; then
-        if command -v checkbashisms >/dev/null 2>&1; then
-                exit 0
-        fi
+if try_install zypper --non-interactive install devscripts-checkbashisms; then
+        if command -v checkbashisms >/dev/null 2>&1; then exit 0; fi
+fi
+if try_install zypper --non-interactive install checkbashisms; then
+        if command -v checkbashisms >/dev/null 2>&1; then exit 0; fi
+fi
+if try_install zypper --non-interactive install devscripts; then
+        if command -v checkbashisms >/dev/null 2>&1; then exit 0; fi
 fi
 
 # Arch/Manjaro.
-if try_install pacman --noconfirm -Sy devscripts-checkbashisms || try_install pacman --noconfirm -Sy devscripts; then
-        if command -v checkbashisms >/dev/null 2>&1; then
-                exit 0
-        fi
+if try_install pacman --noconfirm -Sy devscripts-checkbashisms; then
+        if command -v checkbashisms >/dev/null 2>&1; then exit 0; fi
+fi
+if try_install pacman --noconfirm -Sy devscripts; then
+        if command -v checkbashisms >/dev/null 2>&1; then exit 0; fi
 fi
 
 # Alpine.
