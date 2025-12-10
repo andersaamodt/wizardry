@@ -1,4 +1,4 @@
-name: Test Standalone Compiled Spells
+name: Test standalone compiled spells
 
 on:
   push:

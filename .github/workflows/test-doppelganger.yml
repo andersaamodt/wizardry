@@ -1,4 +1,4 @@
-name: Test Doppelganger Compiled Wizardry
+name: Test doppelganger compiled wizardry
 
 on:
   push:
@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   compile-and-test-doppelganger:
+    name: Compile and test doppelganger
     runs-on: ubuntu-latest
     
     steps:
