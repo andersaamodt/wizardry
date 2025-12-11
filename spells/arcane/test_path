@@ -1,0 +1,9 @@
+#!/bin/sh
+# Test that the PATH setup works
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+echo "script_dir: $script_dir"
+imps_dir="$script_dir/../.imps"
+echo "imps_dir: $imps_dir"
+export PATH="$imps_dir/fs:$PATH"
+echo "PATH: $PATH"
+which xattr-list-keys

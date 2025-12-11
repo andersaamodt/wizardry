@@ -36,6 +36,36 @@ card_lines() {
     ' "$1"
 }
 
+nicer_name() {
+    # Convert the field name to lower case and remove any type annotations
+    lower=$(printf '%s' "$1" | awk '{print tolower($0)}')
+    no_type=$(printf '%s' "$lower" | awk -F';' '{print $1}')
+    normalized_field=$(printf '%s' "$no_type" | awk -F'.' '{print $NF}')
+
+    case "$normalized_field" in
+        fn|fullname) printf '%s' "Full Name: " ;;
+        n|name|lastname|firstname) printf '%s' "Name: " ;;
+        org|organization) printf '%s' "Organization: " ;;
+        title|jobtitle) printf '%s' "Title: " ;;
+        email) printf '%s' "Email: " ;;
+        tel|phone|telephone) printf '%s' "Telephone: " ;;
+        adr|address) printf '%s' "Address: " ;;
+        bday|birthday) printf '%s' "Birthday: " ;;
+        rev|revision) printf '%s' "Revision: " ;;
+        nickname) printf '%s' "Nickname: " ;;
+        photo) printf '%s' "Photo: " ;;
+        url|website) printf '%s' "URL: " ;;
+        label) printf '%s' "Label: " ;;
+        role) printf '%s' "Role: " ;;
+        note) printf '%s' "Note: " ;;
+        uid) printf '%s' "UID: " ;;
+        tz|timezone) printf '%s' "Timezone: " ;;
+        geo|geoposition) printf '%s' "Geo Position: " ;;
+        categories) printf '%s' "Categories: " ;;
+        *) printf '%s' "$1: " ;;
+    esac
+}
+
 if [ $# -lt 1 ]; then
     show_usage >&2
     exit 1
