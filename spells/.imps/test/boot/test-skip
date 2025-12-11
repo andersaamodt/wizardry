@@ -7,7 +7,11 @@ set -eu
 _test_skip() {
   desc=$1
   reason=${2-}
-  printf '  SKIP %s %s\n' "$desc" "$reason"
+  if [ -n "$reason" ]; then
+    printf '  SKIP %s %s\n' "$desc" "$reason"
+  else
+    printf '  SKIP %s\n' "$desc"
+  fi
 }
 
 # Self-execution when run directly (not sourced)
