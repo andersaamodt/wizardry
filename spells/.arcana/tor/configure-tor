@@ -20,118 +20,86 @@ esac
 
 set -eu
 
-ask() {
-  prompt=${1-}
-  default=${2-}
-  if [ -n "$default" ]; then
-    printf "%s [%s]: " "$prompt" "$default"
-  else
-    printf "%s: " "$prompt"
-  fi
-  read -r reply
-  if [ -z "$reply" ] && [ -n "$default" ]; then
-    reply=$default
-  fi
-  printf '%s' "$reply"
-}
-
-ask_yes_no() {
-  prompt=${1-}
-  default=${2:-y}
-  default_lower=$(printf '%s' "$default" | tr 'A-Z' 'a-z')
-  case "$default_lower" in
-    y|yes) hint='Y/n' ;;
-    n|no) hint='y/N' ;;
-    *) hint='y/n' ;;
-  esac
-  printf "%s [%s]: " "$prompt" "$hint"
-  read -r reply
-  reply=${reply:-$default_lower}
-  case "$reply" in
-    y|Y|yes|Yes) return 0 ;;
-    *) return 1 ;;
-  esac
-}
-
 torrc_path=$(torrc-path)
 
-ensure_torrc_exists() {
-  torrc_dir=$(dirname "$torrc_path")
-  if [ ! -d "$torrc_dir" ]; then
-    mkdir -p "$torrc_dir" || sudo mkdir -p "$torrc_dir"
-  fi
-  if [ ! -f "$torrc_path" ]; then
-    : > "$torrc_path" 2>/dev/null || sudo sh -c ": > '$torrc_path'"
-  fi
-}
+# Ensure torrc file and directory exist
+torrc_dir=$(dirname "$torrc_path")
+if [ ! -d "$torrc_dir" ]; then
+  mkdir -p "$torrc_dir" || sudo mkdir -p "$torrc_dir"
+fi
+if [ ! -f "$torrc_path" ]; then
+  : > "$torrc_path" 2>/dev/null || sudo sh -c ": > '$torrc_path'"
+fi
 
-rewrite_torrc() {
-  socks_port=$1
-  enable_control=$2
-  control_port=$3
+# Prompt for SocksPort
+current_socks=$(awk '/^SocksPort / {print $2; exit}' "$torrc_path" 2>/dev/null || true)
+printf "SocksPort [%s]: " "${current_socks:-9050}"
+read -r socks_reply
+socks_port=${socks_reply:-${current_socks:-9050}}
 
-  tmp=$(temp-file configure-tor) || exit 1
-  trap 'cleanup-file "$tmp"' EXIT HUP INT TERM
-  awk -v socks="$socks_port" -v enable_control="$enable_control" -v control="$control_port" '
-    BEGIN {added_socks=0; added_control=0; added_cookie=0}
-    /^SocksPort / { if (!added_socks) { print "SocksPort " socks; added_socks=1 } ; next }
-    /^ControlPort / { next }
-    /^CookieAuthentication / { next }
-    { print }
-    END {
-      if (!added_socks) { print "SocksPort " socks }
-      if (enable_control == 1) {
-        print "ControlPort " control
-        print "CookieAuthentication 1"
-      }
-    }
-  ' "$torrc_path" > "$tmp"
+# Prompt for ControlPort
+control_enabled=$(awk '/^ControlPort / {print $2; exit}' "$torrc_path" 2>/dev/null || true)
+control_default=${control_enabled:+y}
+control_default=${control_default:-n}
+hint_control='y/N'
+if [ "$control_default" = "y" ]; then
+  hint_control='Y/n'
+fi
+printf "Enable ControlPort? [%s]: " "$hint_control"
+read -r control_reply
+control_reply=${control_reply:-$control_default}
 
-  if mv "$tmp" "$torrc_path" 2>/dev/null; then
-    :
-  else
-    sudo mv "$tmp" "$torrc_path"
-  fi
-  trap - EXIT HUP INT TERM
-}
-
-restart_service_if_possible() {
-  has_systemctl=$(command -v systemctl >/dev/null 2>&1 && echo "yes" || echo "no")
-  
-  if [ "$has_systemctl" = "yes" ]; then
-    unit_files=$(systemctl list-unit-files)
-    has_tor_service=$(echo "$unit_files" | grep -q '^tor\.service' && echo "yes" || echo "no")
-    
-    if [ "$has_tor_service" = "yes" ]; then
-      if ask_yes_no "Restart tor.service to apply changes?" "y"; then
-        sudo systemctl restart tor || true
-      fi
-    fi
-  fi
-}
-
-main() {
-  ensure_torrc_exists
-
-  current_socks=$(awk '/^SocksPort / {print $2; exit}' "$torrc_path" 2>/dev/null || true)
-  socks_port=$(ask "SocksPort" "${current_socks:-9050}")
-
-  control_enabled=$(awk '/^ControlPort / {print $2; exit}' "$torrc_path" 2>/dev/null || true)
-  control_default=${control_enabled:+y}
-  control_default=${control_default:-n}
-
-  if ask_yes_no "Enable ControlPort?" "$control_default"; then
-    control_port=$(ask "ControlPort" "${control_enabled:-9051}")
+enable_control=0
+control_port=""
+case "$control_reply" in
+  y|Y|yes|Yes)
     enable_control=1
-  else
-    control_port=""
-    enable_control=0
+    printf "ControlPort [%s]: " "${control_enabled:-9051}"
+    read -r control_port_reply
+    control_port=${control_port_reply:-${control_enabled:-9051}}
+    ;;
+esac
+
+# Rewrite torrc
+tmp=$(temp-file configure-tor) || exit 1
+trap 'cleanup-file "$tmp"' EXIT HUP INT TERM
+awk -v socks="$socks_port" -v enable_control="$enable_control" -v control="$control_port" '
+  BEGIN {added_socks=0; added_control=0; added_cookie=0}
+  /^SocksPort / { if (!added_socks) { print "SocksPort " socks; added_socks=1 } ; next }
+  /^ControlPort / { next }
+  /^CookieAuthentication / { next }
+  { print }
+  END {
+    if (!added_socks) { print "SocksPort " socks }
+    if (enable_control == 1) {
+      print "ControlPort " control
+      print "CookieAuthentication 1"
+    }
+  }
+' "$torrc_path" > "$tmp"
+
+if mv "$tmp" "$torrc_path" 2>/dev/null; then
+  :
+else
+  sudo mv "$tmp" "$torrc_path"
+fi
+trap - EXIT HUP INT TERM
+
+printf '%s\n' "Updated torrc at $torrc_path."
+
+# Restart service if available
+has_systemctl=$(command -v systemctl >/dev/null 2>&1 && echo "yes" || echo "no")
+
+if [ "$has_systemctl" = "yes" ]; then
+  unit_files=$(systemctl list-unit-files)
+  has_tor_service=$(echo "$unit_files" | grep -q '^tor\.service' && echo "yes" || echo "no")
+  
+  if [ "$has_tor_service" = "yes" ]; then
+    printf "Restart tor.service to apply changes? [Y/n]: "
+    read -r restart_reply
+    restart_reply=${restart_reply:-y}
+    case "$restart_reply" in
+      y|Y|yes|Yes) sudo systemctl restart tor || true ;;
+    esac
   fi
-
-  rewrite_torrc "$socks_port" "$enable_control" "$control_port"
-  printf '%s\n' "Updated torrc at $torrc_path."
-
-  restart_service_if_possible
-}
-
-main
+fi
