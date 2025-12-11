@@ -16,7 +16,9 @@ show_usage() {
   cat <<'USAGE' >&2
 Usage: learn-spell [-r] PATH...
 
-Install spells that define an install() function by scanning the given paths and running each install hook. Use -r to recurse through directories and --dry-run to see what would be installed without changing anything.
+Install spells that define an install() function by scanning the given paths
+and running each install hook. Use -r to recurse through directories and
+--dry-run to see what would be installed without changing anything.
 USAGE
 }
 
@@ -91,11 +93,17 @@ if [ "$DRY_RUN" -eq 0 ]; then
 set -eu
 TARGET=$1
 shift
-[ -f "$TARGET" ] || { printf '%s\n' "learn-spell: missing target '$TARGET'" >&2; exit 1; }
+[ -f "$TARGET" ] || {
+  printf '%s\n' "learn-spell: missing target '$TARGET'" >&2
+  exit 1
+}
 WIZARDRY_MEMORIZE_TARGET="$TARGET"
 export WIZARDRY_MEMORIZE_TARGET
 . "$TARGET"
-command -v install >/dev/null 2>&1 || { printf '%s\n' "learn-spell: $TARGET does not define install()" >&2; exit 1; }
+command -v install >/dev/null 2>&1 || {
+  printf '%s\n' "learn-spell: $TARGET does not define install()" >&2
+  exit 1
+}
 install "$@"
 WRAPPER
 fi
@@ -172,7 +180,8 @@ process_path() {
     done
   elif [ -f "$path" ]; then
     # Check if file has install() function
-    if [ ! -x "$path" ] || ! grep -Eq '^[[:space:]]*install[[:space:]]*\(\)' "$path" 2>/dev/null; then
+    if [ ! -x "$path" ] \
+        || ! grep -Eq '^[[:space:]]*install[[:space:]]*\(\)' "$path" 2>/dev/null; then
       SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
       return
     fi

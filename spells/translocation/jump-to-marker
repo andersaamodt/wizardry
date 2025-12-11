@@ -44,12 +44,13 @@ jump_to_marker_impl() {
                         oldest=$(printf '%s\n' "$sorted" | tail -1)
                         
                         # Need at least two different files to have meaningful "most recent"
-                        if [ -n "$recent" ] && [ -f "$markers_dir/$recent" ] && [ "$recent" != "$oldest" ]; then
+                        if [ -n "$recent" ] && [ -f "$markers_dir/$recent" ] \
+                            && [ "$recent" != "$oldest" ]; then
                                 # Check if mtimes are actually different
-                                recent_mtime=$(stat -c %Y "$markers_dir/$recent" 2>/dev/null) || \
-                                              recent_mtime=$(stat -f %m "$markers_dir/$recent" 2>/dev/null)
-                                oldest_mtime=$(stat -c %Y "$markers_dir/$oldest" 2>/dev/null) || \
-                                              oldest_mtime=$(stat -f %m "$markers_dir/$oldest" 2>/dev/null)
+                                recent_mtime=$(stat -c %Y "$markers_dir/$recent" 2>/dev/null) \
+                                    || recent_mtime=$(stat -f %m "$markers_dir/$recent" 2>/dev/null)
+                                oldest_mtime=$(stat -c %Y "$markers_dir/$oldest" 2>/dev/null) \
+                                    || oldest_mtime=$(stat -f %m "$markers_dir/$oldest" 2>/dev/null)
                                 
                                 if [ "$recent_mtime" != "$oldest_mtime" ]; then
                                         # Check if the most recent marker is older than 4 hours

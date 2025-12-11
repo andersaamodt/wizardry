@@ -318,11 +318,14 @@ if [ -z "$current_category" ] && [ -z "$override_dir" ]; then
                                                 SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
                                                 learn_spellbook="$SCRIPT_DIR/learn-spellbook"
                                                 if [ ! -x "$learn_spellbook" ]; then
-                                                        printf '%s\n' "learn-spellbook not found; category folder created but not added to PATH." >&2
+                                                        printf '%s\n' \
+                                                            "learn-spellbook not found; category folder created but not added to PATH." >&2
                                                 fi
                                         fi
-                                        if [ -n "${learn_spellbook-}" ] && [ -x "$learn_spellbook" ]; then
-                                                "$learn_spellbook" add "$cat_path" 2>/dev/null || true
+                                        if [ -n "${learn_spellbook-}" ] \
+                                            && [ -x "$learn_spellbook" ]; then
+                                                "$learn_spellbook" add "$cat_path" 2>/dev/null \
+                                                    || true
                                         fi
                                 fi
                         fi
