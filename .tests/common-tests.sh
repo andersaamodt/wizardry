@@ -684,13 +684,19 @@ test_spells_follow_function_discipline() {
   tmpfile_3=$(mktemp "${WIZARDRY_TMPDIR}/func-warn-3.XXXXXX")
   tmpfile_4plus=$(mktemp "${WIZARDRY_TMPDIR}/func-viol-4plus.XXXXXX")
   
-  find "$ROOT_DIR/spells" -type f -not -path "*/.imps/*" \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r spell; do
+  find "$ROOT_DIR/spells" -type f -not -path "*/.imps/*" -executable -print | while IFS= read -r spell; do
     name=$(basename "$spell")
     should_skip_file "$name" && continue
     is_posix_shell_script "$spell" || continue
     
     # Count all function definitions
-    func_count=$(grep -cE '^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*[[:space:]]*\(\)[[:space:]]*\{' "$spell" 2>/dev/null || printf '0')
+    # Pattern 1: func() { on same line
+    func_count_inline=$(grep -cE '^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*[[:space:]]*\(\)[[:space:]]*\{' "$spell" 2>/dev/null || true)
+    func_count_inline=${func_count_inline:-0}
+    # Pattern 2: func() on one line, { on next line
+    func_count_multiline=$(grep -cE '^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*[[:space:]]*\(\)[[:space:]]*$' "$spell" 2>/dev/null || true)
+    func_count_multiline=${func_count_multiline:-0}
+    func_count=$((func_count_inline + func_count_multiline))
     
     # Subtract 1 for show_usage (which every spell should have)
     additional_funcs=$((func_count - 1))
@@ -711,9 +717,9 @@ test_spells_follow_function_discipline() {
   done
   
   # Read and format results
-  warnings_2=$(cat "$tmpfile_2" 2>/dev/null | head -20 | tr '\n' ', ' | sed 's/, $//')
-  warnings_3=$(cat "$tmpfile_3" 2>/dev/null | head -20 | tr '\n' ', ' | sed 's/, $//')
-  violations_4plus=$(cat "$tmpfile_4plus" 2>/dev/null | head -20 | tr '\n' ', ' | sed 's/, $//')
+  warnings_2=$(head -20 "$tmpfile_2" 2>/dev/null | tr '\n' ', ' | sed 's/, $//')
+  warnings_3=$(head -20 "$tmpfile_3" 2>/dev/null | tr '\n' ', ' | sed 's/, $//')
+  violations_4plus=$(head -20 "$tmpfile_4plus" 2>/dev/null | tr '\n' ', ' | sed 's/, $//')
   
   rm -f "$tmpfile_2" "$tmpfile_3" "$tmpfile_4plus"
   
