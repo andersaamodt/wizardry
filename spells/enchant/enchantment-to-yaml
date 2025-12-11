@@ -21,6 +21,7 @@ case "${1-}" in
 esac
 set -eu
 
+# Validate arguments
 if [ "$#" -ne 1 ]; then
     warn "Error: incorrect number of arguments"
     show_usage >&2
@@ -30,92 +31,17 @@ fi
 file=$1
 is file "$file" || { warn "Error: file does not exist"; exit 1; }
 
-helper_usable() {
-    helper=$1
-    has "$helper" || return 1
-
-    resolved=$(where "$helper")
-
-  if [ "${WIZARDRY_TEST_HELPERS_ONLY-0}" -eq 1 ]; then
-    case $resolved in
-      /usr/*|/bin/*|/sbin/*|/usr/local/*)
-                return 1
-                ;;
-        esac
-    fi
-
-    return 0
-}
-
-parse_attr_output() {
-    printf '%s' "$1" | sed 's/.*has a value:[[:space:]]*//'
-}
-
-list_keys() {
-    target=$1
-    if helper_usable xattr; then
-        if keys=$(xattr "$target" 2>/dev/null); then
-            if [ -n "$keys" ]; then
-                printf '%s\n' "$keys"
-                return 0
-            fi
-        fi
-    fi
-    if helper_usable attr; then
-        if keys=$(attr -l "$target" 2>/dev/null); then
-            parsed=$(printf '%s\n' "$keys" | awk -F '"' '/Attribute/ {print $2}')
-            if [ -n "$parsed" ]; then
-                printf '%s\n' "$parsed"
-                return 0
-            fi
-        fi
-    fi
-    if helper_usable getfattr; then
-        if keys=$(getfattr -d "$target" 2>/dev/null); then
-            parsed=$(printf '%s' "$keys" | awk -F '=' '/^# / {next} {print $1}')
-            if [ -n "$parsed" ]; then
-                printf '%s' "$parsed"
-                return 0
-            fi
-        fi
-    fi
-    return 1
-}
-
-read_value() {
-    key=$1
-    target=$2
-
-    if helper_usable xattr; then
-        if output=$(xattr -p "$key" "$target" 2>/dev/null); then
-            printf '%s' "$output"
-            return 0
-        fi
-    fi
-    if helper_usable attr; then
-        if output=$(attr -g "$key" "$target" 2>/dev/null); then
-            parse_attr_output "$output"
-            return 0
-        fi
-    fi
-    if helper_usable getfattr; then
-        if output=$(getfattr -n "$key" --only-values "$target" 2>/dev/null); then
-            printf '%s' "$output"
-            return 0
-        fi
-    fi
-    return 1
-}
-
-keys=$(list_keys "$file" || true)
+# Get all extended attribute keys
+keys=$(xattr-list-keys "$file" || true)
 empty "$keys" && { warn "Error: file does not have extended attributes"; exit 1; }
 
+# Create YAML front matter with attributes
 tmp=$(temp-file wizardry-yaml) || exit 1
 {
     printf '%s\n' '---'
     for key in $keys; do
         [ -z "$key" ] && continue
-        value=$(read_value "$key" "$file" || printf '')
+        value=$(xattr-read-value "$key" "$file" || printf '')
         printf '%s: %s\n' "$key" "$value"
     done
     printf '%s\n' '---'
@@ -124,24 +50,26 @@ tmp=$(temp-file wizardry-yaml) || exit 1
 cat "$file" >>"$tmp" || exit 1
 mv "$tmp" "$file"
 
-if ! (helper_usable xattr || helper_usable attr || helper_usable setfattr); then
+# Clear attributes from file - check if we have tools available
+if ! (xattr-helper-usable xattr || xattr-helper-usable attr || xattr-helper-usable setfattr); then
     warn "Error: requires one of attr, xattr, or setfattr to clear attributes"
     exit 1
 fi
 
-if helper_usable xattr; then
+# Clear all attributes using available tools
+if xattr-helper-usable xattr; then
     xattr -c "$file" 2>/dev/null || true
 fi
 
 for key in $keys; do
     [ -z "$key" ] && continue
-    if helper_usable attr; then
+    if xattr-helper-usable attr; then
         attr -r "$key" "$file" 2>/dev/null || true
     fi
-    if helper_usable setfattr; then
+    if xattr-helper-usable setfattr; then
         setfattr -x "$key" "$file" 2>/dev/null || true
     fi
-    if helper_usable xattr; then
+    if xattr-helper-usable xattr; then
         xattr -d "$key" "$file" 2>/dev/null || true
     fi
 done
