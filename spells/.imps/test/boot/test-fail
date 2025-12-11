@@ -1,0 +1,18 @@
+#!/bin/sh
+# test-fail DESC [REASON] - output a test fail message
+# Example: test-fail "spell handles error" "expected exit code 1"
+
+set -eu
+
+_test_fail() {
+  desc=$1
+  reason=${2-}
+  if [ -n "$reason" ]; then
+    printf 'FAIL %s: %s\n' "$desc" "$reason"
+  else
+    printf 'FAIL %s\n' "$desc"
+  fi
+}
+
+# Self-execution when run directly (not sourced)
+case "${0##*/}" in test-fail) _test_fail "$@" ;; esac

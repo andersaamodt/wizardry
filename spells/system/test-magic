@@ -53,6 +53,13 @@ set -eu
 
 export PATH
 
+# Source test boot imps for standardized output functions
+for boot_imp in "$root_dir"/spells/.imps/test/boot/*; do
+  [ -f "$boot_imp" ] || continue
+  # shellcheck source=/dev/null
+  . "$boot_imp"
+done
+
 only_patterns=""
 list_only=0
 verbose=0
@@ -340,13 +347,13 @@ while IFS= read -r test_path; do
   if [ "${WIZARDRY_TEST_COMPILED-0}" = "1" ]; then
     if head -n 5 "$abs" 2>/dev/null | grep -q "^# COMPILED_UNSUPPORTED"; then
       spell_name=$(spell_name_for_test "$test_path")
-      printf '[%d/%d] %s (skipped: unsupported in compiled mode)\n' "$test_number" "$test_total" "$spell_name"
+      _test_heading "$test_number" "$test_total" "$spell_name (skipped: unsupported in compiled mode)"
       continue
     fi
   fi
   
   spell_name=$(spell_name_for_test "$test_path")
-  printf '[%d/%d] %s\n' "$test_number" "$test_total" "$spell_name"
+  _test_heading "$test_number" "$test_total" "$spell_name"
 
   if output=$(sh "$abs" 2>&1); then
     pass=$((pass + 1))
@@ -434,7 +441,7 @@ while IFS= read -r test_path; do
   # Print inline incomplete warning using LACK (not PASS/FAIL)
   if [ -n "$test_incomplete_reasons" ]; then
     incomplete_count=$((incomplete_count + 1))
-    printf 'LACK %s (%s)\n' "$(spell_name_for_test "$test_path")" "$test_incomplete_reasons"
+    _test_lack "$(spell_name_for_test "$test_path")" "$test_incomplete_reasons"
   fi
 
   printf '\n'

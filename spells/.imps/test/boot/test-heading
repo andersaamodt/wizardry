@@ -1,0 +1,17 @@
+#!/bin/sh
+# test-heading NUMBER TOTAL NAME - output a test heading
+# Example: test-heading 5 10 "my-spell"
+# Example: test-heading 5 10 "my-spell (skipped: reason)"
+
+set -eu
+
+_test_heading() {
+  number=$1
+  total=$2
+  name=$3
+  
+  printf '[%d/%d] %s\n' "$number" "$total" "$name"
+}
+
+# Self-execution when run directly (not sourced)
+case "${0##*/}" in test-heading) _test_heading "$@" ;; esac
