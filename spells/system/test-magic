@@ -174,26 +174,27 @@ $(printf '%b' "$only_patterns")
 EOF_PATS
 fi
 
+# Write test paths directly to a file to avoid shell variable size limitations
+test_list_file=$(temp-file test-magic-list) || exit 1
+
 while IFS= read -r path; do
   short=${path#"$test_dir/"}
   if matches_patterns "$short"; then
-    if [ -n "$test_files" ]; then
-      test_files=$(printf '%s\n%s' "$test_files" "$short")
-    else
-      test_files="$short"
-    fi
+    printf '%s\n' "$short" >> "$test_list_file"
   fi
 done <<EOF_TESTS
 $(find_tests)
 EOF_TESTS
 
-if [ -z "$test_files" ]; then
+if [ ! -s "$test_list_file" ]; then
   echo "$cmd_name: no tests discovered." >&2
+  cleanup-file "$test_list_file"
   exit 1
 fi
 
 if [ "$list_only" -eq 1 ]; then
-  printf '%s\n' "$test_files"
+  cat "$test_list_file"
+  cleanup-file "$test_list_file"
   exit 0
 fi
 
@@ -235,20 +236,16 @@ failed_scripts=""
 incomplete_tests=""
 incomplete_count=0
 test_number=0
-# Count actual tests to run (excluding empty lines in test_files)
-test_total=0
-while IFS= read -r test_path; do
-  [ -n "$test_path" ] || continue
-  test_total=$((test_total + 1))
-done <<EOF_COUNT
-$(printf '%s\n' "$test_files")
-EOF_COUNT
+
+# test_list_file was already created and populated above
+test_total=$(grep -c . "$test_list_file")
+
 # Imps have no --help flag, so they need 2 subtests minimum.
 # Spells have a --help flag which needs testing, plus 2 additional subtests.
 MIN_SUBTESTS_IMP=2
 MIN_SUBTESTS_SPELL=3
 failure_output_file=$(temp-file test-magic) || exit 1
-trap 'cleanup-file "$failure_output_file"' EXIT HUP INT TERM
+trap 'cleanup-file "$failure_output_file"; cleanup-file "$test_list_file"' EXIT HUP INT TERM
 
 spell_name_for_test() {
   test_path=$1
@@ -354,17 +351,13 @@ while IFS= read -r test_path; do
   if [ "${WIZARDRY_TEST_COMPILED-0}" = "1" ]; then
     if head -n 5 "$abs" 2>/dev/null | grep -q "^# COMPILED_UNSUPPORTED"; then
       spell_name=$(spell_name_for_test "$test_path")
-      actual_total=$((pass + fail + 1))
-      _test_heading "$test_number" "$actual_total" "$spell_name (skipped: unsupported in compiled mode)"
+      _test_heading "$test_number" "$test_total" "$spell_name (skipped: unsupported in compiled mode)"
       continue
     fi
   fi
   
   spell_name=$(spell_name_for_test "$test_path")
-  
-  # Use actual count (pass+fail) as total for accurate display
-  actual_total=$((pass + fail + 1))
-  _test_heading "$test_number" "$actual_total" "$spell_name"
+  _test_heading "$test_number" "$test_total" "$spell_name"
 
   if output=$(sh "$abs" 2>&1); then
     pass=$((pass + 1))
@@ -456,9 +449,7 @@ while IFS= read -r test_path; do
   fi
 
   printf '\n'
-done <<EOF_TESTS
-$(printf '%s\n' "$test_files")
-EOF_TESTS
+done < "$test_list_file"
 
 find_matching_test_for_spell() {
   spell=$1
