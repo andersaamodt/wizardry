@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/bin/sh
 
 # This magical knowledge serves as a colorful palette of hues and shades,
 # granting control over the appearance of the terminal.

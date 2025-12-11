@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # This spell will teach you the basics of using the history command in Bash
 
 echo "The history command allows you to view and manipulate your command history."

@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/bin/sh
 # Bootstrap spell: installs the dd command using the system package manager.
 
 show_usage() {

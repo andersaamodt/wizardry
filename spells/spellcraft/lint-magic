@@ -85,7 +85,7 @@ gather_default_targets() {
     -print | sort | while IFS= read -r file; do
       first_line=$(head -1 "$file")
       case $first_line in
-        '#!/bin/sh'|'#! /bin/sh'|'#!/usr/bin/env sh'|'#! /usr/bin/env sh')
+        '#!/bin/sh'|'#! /bin/sh')
           rel_path=${file#"$repo_dir/"}
           if [ -n "$pattern" ]; then
             case $rel_path in
@@ -122,7 +122,7 @@ check_shebang() {
   file=$1
   first_line=$(head -1 "$file")
   case $first_line in
-    '#!/bin/sh'|'#! /bin/sh'|'#!/usr/bin/env sh'|'#! /usr/bin/env sh')
+    '#!/bin/sh'|'#! /bin/sh')
       return 0
       ;;
     *)

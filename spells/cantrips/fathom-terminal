@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/bin/sh
 
 # Report terminal dimensions using terminfo via tput.
 

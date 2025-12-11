@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/bin/sh
 
 # Set up a Tor hidden service for the MUD gateway.
 # Appends a HiddenService configuration to torrc and restarts Tor.

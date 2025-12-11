@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/bin/sh
 
 # Minimal assertion helpers for shell-based tests. Each helper exits the
 # process with a failure code so calling test suites stop immediately when an

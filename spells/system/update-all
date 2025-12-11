@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/bin/sh
 
 # This spell refreshes the wizardry repository alongside other managed sources.
 # Pass --verbose to narrate each update step.

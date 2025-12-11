@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/bin/sh
 
 # This spell moves the cursor to the provided column (x) and row (y).
 

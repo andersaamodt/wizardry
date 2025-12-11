@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Spell cast: Git Magic
 # This spell will teach you the basics of using git for common tasks.

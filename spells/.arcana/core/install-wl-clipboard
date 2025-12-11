@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/bin/sh
 # Bootstrap spell: installs wl-clipboard (provides wl-copy/wl-paste) for Wayland.
 
 show_usage() {

@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/bin/sh
 
 # Report the cursor position returned by the terminal in response to a DSR
 # (Device Status Report) query.
