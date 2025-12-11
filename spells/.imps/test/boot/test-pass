@@ -1,0 +1,13 @@
+#!/bin/sh
+# test-pass DESC - output a test pass message
+# Example: test-pass "spell shows help"
+
+set -eu
+
+_test_pass() {
+  desc=$1
+  printf 'PASS %s\n' "$desc"
+}
+
+# Self-execution when run directly (not sourced)
+case "${0##*/}" in test-pass) _test_pass "$@" ;; esac

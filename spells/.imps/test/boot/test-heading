@@ -1,0 +1,22 @@
+#!/bin/sh
+# test-heading NUMBER TOTAL NAME [SUFFIX] - output a test heading
+# Example: test-heading 5 10 "my-spell"
+# Example: test-heading 5 10 "my-spell" "(skipped: reason)"
+
+set -eu
+
+_test_heading() {
+  number=$1
+  total=$2
+  name=$3
+  suffix=${4-}
+  
+  if [ -n "$suffix" ]; then
+    printf '[%d/%d] %s %s\n' "$number" "$total" "$name" "$suffix"
+  else
+    printf '[%d/%d] %s\n' "$number" "$total" "$name"
+  fi
+}
+
+# Self-execution when run directly (not sourced)
+case "${0##*/}" in test-heading) _test_heading "$@" ;; esac

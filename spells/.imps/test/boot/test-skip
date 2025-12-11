@@ -1,0 +1,14 @@
+#!/bin/sh
+# test-skip DESC REASON - output a test skip message
+# Example: test-skip "spell handles error" "mode mismatch"
+
+set -eu
+
+_test_skip() {
+  desc=$1
+  reason=${2-}
+  printf '  SKIP %s %s\n' "$desc" "$reason"
+}
+
+# Self-execution when run directly (not sourced)
+case "${0##*/}" in test-skip) _test_skip "$@" ;; esac

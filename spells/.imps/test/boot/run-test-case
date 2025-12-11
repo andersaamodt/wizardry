@@ -20,7 +20,7 @@ _run_test_case() {
     if [ "$ec" = "222" ]; then
       _skip_count=$((_skip_count + 1))
       skip_reason=${TEST_SKIP_REASON-(mode mismatch)}
-      printf '  SKIP %s %s\n' "$desc" "$skip_reason"
+      _test_skip "$desc" "$skip_reason"
       unset TEST_SKIP_REASON 2>/dev/null || true
     else
       # Test failed
