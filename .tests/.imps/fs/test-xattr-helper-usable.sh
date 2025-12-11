@@ -8,7 +8,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_xattr_helper_usable_exists() {
-  _run_cmd command -v xattr-helper-usable
+  _run_cmd sh -c 'command -v xattr-helper-usable'
   _assert_success || return 1
 }
 

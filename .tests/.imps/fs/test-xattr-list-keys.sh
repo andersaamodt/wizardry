@@ -8,7 +8,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_xattr_list_keys_exists() {
-  _run_cmd command -v xattr-list-keys
+  _run_cmd sh -c 'command -v xattr-list-keys'
   _assert_success || return 1
 }
 

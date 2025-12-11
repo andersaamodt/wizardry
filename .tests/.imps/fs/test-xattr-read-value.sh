@@ -8,7 +8,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_xattr_read_value_exists() {
-  _run_cmd command -v xattr-read-value
+  _run_cmd sh -c 'command -v xattr-read-value'
   _assert_success || return 1
 }
 
