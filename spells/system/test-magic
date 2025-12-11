@@ -548,8 +548,12 @@ scan_extraneous
 coverage_uncovered=$((coverage_total - coverage_covered))
 
 total_scripts=$((pass + fail))
-printf 'Summary: %d passed, %d failed, %d uncovered, %d incomplete, subtests %d/%d.\n' \
-  "$pass" "$fail" "$coverage_uncovered" "$incomplete_count" "$subtests_passed" "$subtests_total"
+
+# Skip summary in debug rerun - only show detailed failure output
+if [ "${TEST_MAGIC_DEBUG_RERUN-}" != "1" ]; then
+  printf 'Summary: %d passed, %d failed, %d uncovered, %d incomplete, subtests %d/%d.\n' \
+    "$pass" "$fail" "$coverage_uncovered" "$incomplete_count" "$subtests_passed" "$subtests_total"
+fi
 
 if [ "$coverage_uncovered" -gt 0 ]; then
   printf 'Uncovered spells:\n'
