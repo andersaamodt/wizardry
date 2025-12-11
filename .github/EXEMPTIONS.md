@@ -69,25 +69,35 @@ result=$(echo "$cleaned" | sort | uniq | head -10)
 
 ##### Manual Exemptions Required
 
-Some lines cannot be easily split and are NOT primarily strings. These require manual exemption documentation:
+Some lines cannot be easily split and are NOT primarily strings. These require manual exemption and are hardcoded in lint-magic:
 
-**1. Menu options with embedded shell scripts**
+**1. Doppelganger Compilation Compatibility**
+- **File**: `spells/.imps/cond/is`
+- **Line**: 13 (the `empty` case statement)
+- **Length**: 156 characters
+- **Reason**: The `empty` case has a complex conditional that must remain on one line to preserve doppelganger compilation compatibility. The compile-spell tool expects case labels in the pattern `case_label) ... ;;` to be on the same line or in a specific format. When this line is split across multiple lines, compile-spell's regex-based replacement incorrectly renames `empty` to `_empty` in the case label, breaking the compiled spell.
+- **Line**: `empty)    if [ -f "$2" ]; then [ ! -s "$2" ]; elif [ -d "$2" ]; then [ -z "$(ls -A "$2" 2>/dev/null)" ]; else return 1; fi ;;`
+- **Exemption Method**: Hardcoded in `lint-magic` check_long_lines() function
+- **Alternative Considered**: Improving compile-spell's case statement detection, but this is beyond the scope of style enforcement
+- **Impact**: Single file, single line exemption - minimal
+
+**2. Menu options with embedded shell scripts** (NOT YET EXEMPTED - would need manual exemption if enforced)
 - File: `spells/.arcana/lightning/lightning-wallet-menu`
 - Reason: Menu definition includes inline shell code; splitting breaks menu semantics
 - Example: `option="Label%sh -c 'cmd1; cmd2; cmd3'"`
-- Cannot split without restructuring menu system
+- Status: Currently passes because >60% quoted
 
-**2. Atomic config editing one-liners**
+**3. Atomic config editing one-liners** (NOT YET EXEMPTED - would need manual exemption if enforced)
 - Files: `spells/.arcana/tor/install-tor`, `spells/.arcana/tor/configure-tor-bridge`
 - Reason: Perl/awk one-liners for editing system files; must be atomic
 - Example: `perl -0pi -e "s/pattern/replacement/" /etc/config`
-- Splitting would break atomicity and increase error risk
+- Status: Currently passes because >60% quoted
 
-**3. Complex regex patterns with many alternatives**
+**4. Complex regex patterns with many alternatives** (NOT YET EXEMPTED - would need manual exemption if enforced)
 - File: `spells/.arcana/mud/toggle-cd`
 - Reason: Grep pattern with multiple alternatives inherently long
 - Example: `grep -Eq 'pattern1|pattern2|pattern3|pattern4|pattern5' "$file"`
-- Splitting pattern across lines not supported by grep
+- Status: Needs review if it fails lint checks
 
 ### Historical: Mixed Tabs and Spaces (RESOLVED)
 

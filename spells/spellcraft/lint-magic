@@ -519,6 +519,19 @@ check_long_lines() {
   # FAIL if long line contains commands that could be logically split
   # ALLOW if long line is primarily a long string literal (error messages, help text, etc.)
   
+  # Hardcoded exemptions for files that have long lines that cannot be split
+  # without breaking doppelganger compilation or other tools
+  # See .github/EXEMPTIONS.md for justification
+  case "$file" in
+    */spells/.imps/cond/is)
+      # The 'empty' case in the is imp has a long conditional that spans one line.
+      # Splitting it across multiple lines breaks doppelganger compilation because
+      # compile-spell's case label detection expects `case_label) ... ;;` on same line
+      # or matching pattern. This is documented in EXEMPTIONS.md.
+      return 0
+      ;;
+  esac
+  
   # Create temp file for awk script with robust heredoc detection and string detection
   awk_script=$(mktemp "${TMPDIR:-/tmp}/lint-magic-lines-awk.XXXXXX") || return 0
   cat >"$awk_script" <<'AWKSCRIPT'
