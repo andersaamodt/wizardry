@@ -61,122 +61,55 @@ if [ "$#" -eq 0 ]; then
 fi
 
 # Detect the OS
-detect_os() {
-  if command -v detect-distro >/dev/null 2>&1; then
-    platform=$(detect-distro 2>/dev/null || printf 'unknown')
-    case "$platform" in
-    mac)
-      printf 'mac'
-      ;;
-    *)
-      printf 'linux'
-      ;;
-    esac
-  else
-    kernel=$(uname -s 2>/dev/null || printf 'unknown')
-    case "$kernel" in
-    Darwin)
-      printf 'mac'
-      ;;
-    Linux)
-      printf 'linux'
-      ;;
-    *)
-      printf 'unknown'
-      ;;
-    esac
-  fi
-}
+if command -v detect-distro >/dev/null 2>&1; then
+  platform=$(detect-distro 2>/dev/null || printf 'unknown')
+  case "$platform" in
+  mac)
+    os=mac
+    ;;
+  *)
+    os=linux
+    ;;
+  esac
+else
+  kernel=$(uname -s 2>/dev/null || printf 'unknown')
+  case "$kernel" in
+  Darwin)
+    os=mac
+    ;;
+  Linux)
+    os=linux
+    ;;
+  *)
+    os=unknown
+    ;;
+  esac
+fi
 
 # Detect the best trash command available
-detect_trash_cmd() {
-  os=$1
-  case "$os" in
-  mac)
-    if command -v osascript >/dev/null 2>&1; then
-      printf 'osascript'
-    else
-      printf 'none'
-    fi
-    ;;
-  linux)
-    if command -v gio >/dev/null 2>&1; then
-      printf 'gio'
-    elif command -v trash-put >/dev/null 2>&1; then
-      printf 'trash-put'
-    elif command -v kioclient5 >/dev/null 2>&1; then
-      printf 'kioclient5'
-    else
-      printf 'none'
-    fi
-    ;;
-  *)
-    printf 'none'
-    ;;
-  esac
-}
-
-# Move a file to trash on macOS using osascript
-trash_macos() {
-  file=$1
-  # Convert to absolute path
-  case "$file" in
-  /*)
-    abs_path=$file
-    ;;
-  *)
-    abs_path="$(pwd)/$file"
-    ;;
-  esac
-
-  # Escape double quotes and backslashes in the path for AppleScript
-  escaped_path=$(printf '%s' "$abs_path" | sed 's/\\/\\\\/g; s/"/\\"/g')
-
-  # Use Finder to move to Trash
-  osascript -e "tell application \"Finder\" to delete POSIX file \"$escaped_path\"" >/dev/null 2>&1
-}
-
-# Move a file to trash using gio
-trash_gio() {
-  file=$1
-  if [ "$force" -eq 1 ]; then
-    gio trash -f -- "$file" 2>/dev/null || true
+case "$os" in
+mac)
+  if command -v osascript >/dev/null 2>&1; then
+    trash_cmd=osascript
   else
-    gio trash -- "$file"
+    trash_cmd=none
   fi
-}
-
-# Move a file to trash using trash-put
-trash_put() {
-  file=$1
-  if [ "$force" -eq 1 ]; then
-    trash-put -- "$file" 2>/dev/null || true
+  ;;
+linux)
+  if command -v gio >/dev/null 2>&1; then
+    trash_cmd=gio
+  elif command -v trash-put >/dev/null 2>&1; then
+    trash_cmd=trash-put
+  elif command -v kioclient5 >/dev/null 2>&1; then
+    trash_cmd=kioclient5
   else
-    trash-put -- "$file"
+    trash_cmd=none
   fi
-}
-
-# Move a file to trash using kioclient5
-trash_kioclient() {
-  file=$1
-  # kioclient5 requires absolute paths
-  case "$file" in
-  /*)
-    abs_path=$file
-    ;;
-  *)
-    abs_path="$(pwd)/$file"
-    ;;
-  esac
-  if [ "$force" -eq 1 ]; then
-    kioclient5 move "$abs_path" trash:/ 2>/dev/null || true
-  else
-    kioclient5 move "$abs_path" trash:/
-  fi
-}
-
-os=$(detect_os)
-trash_cmd=$(detect_trash_cmd "$os")
+  ;;
+*)
+  trash_cmd=none
+  ;;
+esac
 
 if [ "$trash_cmd" = "none" ]; then
   printf '%s\n' "trash: no supported trash utility found for your system." >&2
@@ -217,27 +150,69 @@ for file in "$@"; do
   # Perform the trash operation based on available command
   case "$trash_cmd" in
   osascript)
-    if ! trash_macos "$file"; then
+    # Convert to absolute path for macOS
+    case "$file" in
+    /*)
+      abs_path=$file
+      ;;
+    *)
+      abs_path="$(pwd)/$file"
+      ;;
+    esac
+    
+    # Escape double quotes and backslashes in the path for AppleScript
+    escaped_path=$(printf '%s' "$abs_path" | sed 's/\\/\\\\/g; s/"/\\"/g')
+    
+    # Use Finder to move to Trash
+    if ! osascript -e "tell application \"Finder\" to delete POSIX file \"$escaped_path\"" >/dev/null 2>&1; then
       printf '%s\n' "trash: failed to trash '$file'" >&2
       exit_status=1
     fi
     ;;
   gio)
-    if ! trash_gio "$file"; then
-      printf '%s\n' "trash: failed to trash '$file'" >&2
-      exit_status=1
+    if [ "$force" -eq 1 ]; then
+      if ! gio trash -f -- "$file" 2>/dev/null; then
+        true  # Ignore errors when force is enabled
+      fi
+    else
+      if ! gio trash -- "$file"; then
+        printf '%s\n' "trash: failed to trash '$file'" >&2
+        exit_status=1
+      fi
     fi
     ;;
   trash-put)
-    if ! trash_put "$file"; then
-      printf '%s\n' "trash: failed to trash '$file'" >&2
-      exit_status=1
+    if [ "$force" -eq 1 ]; then
+      if ! trash-put -- "$file" 2>/dev/null; then
+        true  # Ignore errors when force is enabled
+      fi
+    else
+      if ! trash-put -- "$file"; then
+        printf '%s\n' "trash: failed to trash '$file'" >&2
+        exit_status=1
+      fi
     fi
     ;;
   kioclient5)
-    if ! trash_kioclient "$file"; then
-      printf '%s\n' "trash: failed to trash '$file'" >&2
-      exit_status=1
+    # kioclient5 requires absolute paths
+    case "$file" in
+    /*)
+      abs_path=$file
+      ;;
+    *)
+      abs_path="$(pwd)/$file"
+      ;;
+    esac
+    
+    if [ "$force" -eq 1 ]; then
+      if ! kioclient5 move "$abs_path" trash:/ 2>/dev/null; then
+        true  # Ignore errors when force is enabled
+      fi
+    else
+      if ! kioclient5 move "$abs_path" trash:/; then
+        printf '%s\n' "trash: failed to trash '$file'" >&2
+        exit_status=1
+      fi
     fi
     ;;
   esac
