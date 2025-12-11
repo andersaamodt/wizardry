@@ -1,15 +1,16 @@
 #!/bin/sh
-# test-summary PASSED TOTAL [FAILED] [SKIPPED] - output test summary line
+# test-summary PASSED TOTAL [SKIPPED] - output test summary line
+# FAILED is calculated from PASSED and TOTAL
 # Example: test-summary 5 10
-# Example: test-summary 5 10 2 3
+# Example: test-summary 5 10 3
 
 set -eu
 
 _test_summary() {
   passed=$1
   total=$2
-  failed=${3-0}
-  skipped=${4-0}
+  skipped=${3-0}
+  failed=$((total - passed))
   
   printf '%s/%s tests passed' "$passed" "$total"
   
