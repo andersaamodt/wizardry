@@ -1,80 +1,6 @@
 #!/bin/sh
 # This spell casts previously memorized commands from the spellbook.
 
-# Self-healing: Create spellbook directory if missing
-create_spellbook_if_missing() {
-        spellbook_dir="${XDG_DATA_HOME:-$HOME/.local/share}/wizardry/spellbook"
-        if ! [ -d "$spellbook_dir" ]; then
-                mkdir -p "$spellbook_dir" 2>/dev/null || {
-                        spellbook_dir="${TMPDIR:-/tmp}/wizardry-spellbook-$$"
-                        mkdir -p "$spellbook_dir"
-                }
-        fi
-        printf '%s' "$spellbook_dir"
-}
-
-# Catch Ctrl-C and TERM signal to exit cleanly
-trap 'exit 0' INT TERM
-
-# Direct call to memorize spell (no variable indirection)
-if ! has memorize; then
-        # Fallback: use directory directly
-        cast_dir=$(create_spellbook_if_missing)
-else
-        cast_dir=$(memorize dir 2>/dev/null) || cast_dir=$(create_spellbook_if_missing)
-fi
-
-cast_list() {
-        if has memorize; then
-                memorize list
-        else
-                # Fallback: list files directly
-                for f in "$cast_dir"/*; do
-                        [ -f "$f" ] || continue
-                        name=$(basename "$f")
-                        cmd=$(cat "$f" 2>/dev/null || printf '')
-                        [ -n "$cmd" ] && printf '%s\t%s\n' "$name" "$cmd"
-                done
-        fi
-}
-
-print_empty_message() {
-        printf '%s\n' "No spells are available to cast."
-        printf '%s\n' "Add spells from the Spellbook menu."
-}
-
-spell_menu_loop() {
-        first_run=1
-        while :
-        do
-                if [ "$first_run" -eq 0 ]; then
-                        printf '\n'
-                else
-                        first_run=0
-                fi
-
-                entries=$(cast_list)
-                if [ -z "$entries" ]; then
-                        print_empty_message
-                        break
-                fi
-                set --
-                while IFS=$(printf '\t') read -r alias command
-                do
-                        [ -z "$alias" ] && continue
-                        # Memorized spells are called directly by name
-                        entry_cmd=$command
-                        # Label is just the alias; menu shows and executes entry_cmd on the right
-                        set -- "$@" "$(printf '%s%%%s' "$alias" "$entry_cmd")"
-                done <<SPELLS
-$entries
-SPELLS
-                exit_label=$(exit-label)
-                set -- "$@" "${exit_label}%kill -TERM \$PPID"
-                menu "Cast a Spell:" "$@" || true
-        done
-}
-
 show_usage() {
         cat <<'USAGE'
 Usage: cast [--list|--dir]
@@ -88,19 +14,54 @@ USAGE
 }
 
 case ${1-} in
+        --help|--usage|-h)
+                show_usage
+                exit 0
+                ;;
+esac
+
+# Catch Ctrl-C and TERM signal to exit cleanly
+trap 'exit 0' INT TERM
+
+# Create spellbook directory if missing (self-healing)
+spellbook_dir="${XDG_DATA_HOME:-$HOME/.local/share}/wizardry/spellbook"
+if ! [ -d "$spellbook_dir" ]; then
+        mkdir -p "$spellbook_dir" 2>/dev/null || {
+                spellbook_dir="${TMPDIR:-/tmp}/wizardry-spellbook-$$"
+                mkdir -p "$spellbook_dir"
+        }
+fi
+
+# Direct call to memorize spell (no variable indirection)
+if ! has memorize; then
+        cast_dir=$spellbook_dir
+else
+        cast_dir=$(memorize dir 2>/dev/null) || cast_dir=$spellbook_dir
+fi
+
+case ${1-} in
         --list)
-                entries=$(cast_list)
+                # List memorized spells
+                if has memorize; then
+                        entries=$(memorize list)
+                else
+                        # Fallback: list files directly
+                        entries=""
+                        for f in "$cast_dir"/*; do
+                                [ -f "$f" ] || continue
+                                name=$(basename "$f")
+                                cmd=$(cat "$f" 2>/dev/null || printf '')
+                                [ -n "$cmd" ] && entries="${entries}${name}	${cmd}
+"
+                        done
+                fi
                 if [ -n "$entries" ]; then
-                        printf '%s\n' "$entries"
+                        printf '%s' "$entries"
                 fi
                 exit 0
                 ;;
         --dir)
                 printf '%s\n' "$cast_dir"
-                exit 0
-                ;;
-        --help|--usage|-h)
-                show_usage
                 exit 0
                 ;;
         --)
@@ -120,4 +81,49 @@ if ! require menu "The casting menu needs the 'menu' command."; then
         exit 1
 fi
 
-spell_menu_loop
+# Interactive casting menu loop
+first_run=1
+while :
+do
+        if [ "$first_run" -eq 0 ]; then
+                printf '\n'
+        else
+                first_run=0
+        fi
+
+        # Get list of memorized spells
+        if has memorize; then
+                entries=$(memorize list)
+        else
+                # Fallback: list files directly
+                entries=""
+                for f in "$cast_dir"/*; do
+                        [ -f "$f" ] || continue
+                        name=$(basename "$f")
+                        cmd=$(cat "$f" 2>/dev/null || printf '')
+                        [ -n "$cmd" ] && entries="${entries}${name}	${cmd}
+"
+                done
+        fi
+        
+        if [ -z "$entries" ]; then
+                printf '%s\n' "No spells are available to cast."
+                printf '%s\n' "Add spells from the Spellbook menu."
+                break
+        fi
+        
+        set --
+        while IFS=$(printf '\t') read -r alias command
+        do
+                [ -z "$alias" ] && continue
+                # Memorized spells are called directly by name
+                entry_cmd=$command
+                # Label is just the alias; menu shows and executes entry_cmd on the right
+                set -- "$@" "$(printf '%s%%%s' "$alias" "$entry_cmd")"
+        done <<SPELLS
+$entries
+SPELLS
+        exit_label=$(exit-label)
+        set -- "$@" "${exit_label}%kill -TERM \$PPID"
+        menu "Cast a Spell:" "$@" || true
+done

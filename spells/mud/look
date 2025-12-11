@@ -43,129 +43,17 @@ look_warn() {
         printf '%s\n' "look: $1" >&2
 }
 
-resolve_rc_file() {
-        if [ -n "${LOOK_RC_FILE-}" ]; then
-                printf '%s\n' "$LOOK_RC_FILE"
-                return 0
-        fi
-        if [ -z "${HOME-}" ]; then
-                look_warn "HOME is not set; cannot memorize the spell."
-                return 1
-        fi
-        printf '%s/.bashrc\n' "$HOME"
-}
-
-look_block_present() {
-        rc_file=$1
-        if [ ! -f "$rc_file" ]; then
-                return 1
-        fi
-        if grep -Fq '# >>> wizardry look spell >>>' "$rc_file"; then
-                return 0
-        fi
-        if grep -Fq 'WIZARDRY_LOOK_SPELL' "$rc_file"; then
-                return 0
-        fi
-        if grep -Fq "alias look='$LOOK_SCRIPT_PATH'" "$rc_file"; then
-                return 0
-        fi
-        return 1
-}
-
-ensure_rc_dir() {
-        target=$1
-        dir=${target%/*}
-        if [ "$dir" = "$target" ]; then
-                return 0
-        fi
-        if [ -d "$dir" ]; then
-                return 0
-        fi
-        if ! mkdir -p "$dir"; then
-                look_warn "unable to create directory '$dir'."
-                return 1
-        fi
-        return 0
-}
-
-write_look_block() {
-        rc_file=$1
-        if ! ensure_rc_dir "$rc_file"; then
-                return 1
-        fi
-        tmp_file=$(temp-file wizardry-look) || return 1
-        trap 'cleanup-file "$tmp_file"' EXIT HUP INT TERM
-        if [ -f "$rc_file" ]; then
-                sed '/^# >>> wizardry look spell >>>$/,/^# <<< wizardry look spell <<</d' "$rc_file" >"$tmp_file"
-        else
-                : >"$tmp_file"
-        fi
-        cat <<BLOCK >>"$tmp_file"
-# >>> wizardry look spell >>>
-alias look='$LOOK_SCRIPT_PATH'
-# <<< wizardry look spell <<<
-BLOCK
-        if ! mv "$tmp_file" "$rc_file"; then
-                trap - EXIT HUP INT TERM
-                rm -f "$tmp_file"
-                look_warn "unable to update '$rc_file'."
-                return 1
-        fi
-        trap - EXIT HUP INT TERM
-        return 0
-}
-
-locate_ask_yn() {
-        if has ask-yn; then
-                where ask-yn
-                return 0
-        fi
-        if [ -x "$SCRIPT_DIR/cantrips/ask-yn" ]; then
-                printf '%s\n' "$SCRIPT_DIR/cantrips/ask-yn"
-                return 0
-        fi
-        return 1
-}
-
-install_look() {
-        rc_file=$(resolve_rc_file) || return 0
-        if look_block_present "$rc_file"; then
-                return 0
-        fi
-        if ! ask_yn_cmd=$(locate_ask_yn); then
-                look_warn "ask-yn spell is missing; cannot prompt for installation."
-                return 0
-        fi
-        printf '%s\n' "'Look' is a reserved keyword, so you must memorize this spell to change the meaning of the word 'look'."
-        if "$ask_yn_cmd" "Memorize the 'look' spell so it is always available?" yes >/dev/null; then
-                if write_look_block "$rc_file"; then
-                        printf '%s\n' "Spell memorized in $(basename "$rc_file"), so you will always be able to use it."
-                fi
-        else
-                printf '%s\n' "The mud will only run in this shell window."
-        fi
-}
-
-load_colors() {
-        if [ -n "${LOOK_COLORS_PATH-}" ] && [ -f "$LOOK_COLORS_PATH" ]; then
-                # shellcheck disable=SC1090
-                . "$LOOK_COLORS_PATH"
-                return 0
-        fi
-        if command -v colors >/dev/null 2>&1; then
-                # shellcheck disable=SC1090
-                . "$(command -v colors)"
-                return 0
-        fi
-        if [ -x "$SCRIPT_DIR/cantrips/colors" ]; then
-                # shellcheck disable=SC1090
-                . "$SCRIPT_DIR/cantrips/colors"
-                return 0
-        fi
-        return 1
-}
-
-if ! load_colors; then
+# Load colors if available
+if [ -n "${LOOK_COLORS_PATH-}" ] && [ -f "$LOOK_COLORS_PATH" ]; then
+        # shellcheck disable=SC1090
+        . "$LOOK_COLORS_PATH"
+elif command -v colors >/dev/null 2>&1; then
+        # shellcheck disable=SC1090
+        . "$(command -v colors)"
+elif [ -x "$SCRIPT_DIR/cantrips/colors" ]; then
+        # shellcheck disable=SC1090
+        . "$SCRIPT_DIR/cantrips/colors"
+else
         BLUE=""
         BOLD=""
         RESET=""
@@ -189,36 +77,86 @@ if [ -z "$READ_MAGIC" ]; then
         fi
 fi
 
-identify_available=0
-if command -v identify-room >/dev/null 2>&1; then
-        identify_available=1
-fi
-
 path_input=${1:-$PWD}
 path=$(strip-trailing-slashes "$(abs-path "$path_input")")
 
-install_look || true
+# Install/memorize the look spell if needed
+rc_file=""
+if [ -n "${LOOK_RC_FILE-}" ]; then
+        rc_file="$LOOK_RC_FILE"
+elif [ -n "${HOME-}" ]; then
+        rc_file="$HOME/.bashrc"
+fi
+
+if [ -n "$rc_file" ]; then
+        look_block_present=0
+        if [ -f "$rc_file" ]; then
+                if grep -Fq '# >>> wizardry look spell >>>' "$rc_file" || \
+                   grep -Fq 'WIZARDRY_LOOK_SPELL' "$rc_file" || \
+                   grep -Fq "alias look='$LOOK_SCRIPT_PATH'" "$rc_file"; then
+                        look_block_present=1
+                fi
+        fi
+        
+        if [ "$look_block_present" -eq 0 ]; then
+                ask_yn_cmd=""
+                if has ask-yn; then
+                        ask_yn_cmd=$(where ask-yn)
+                elif [ -x "$SCRIPT_DIR/cantrips/ask-yn" ]; then
+                        ask_yn_cmd="$SCRIPT_DIR/cantrips/ask-yn"
+                fi
+                
+                if [ -n "$ask_yn_cmd" ]; then
+                        printf '%s\n' "'Look' is a reserved keyword, so you must memorize this spell to change the meaning of the word 'look'."
+                        if "$ask_yn_cmd" "Memorize the 'look' spell so it is always available?" yes >/dev/null; then
+                                # Ensure parent dir exists
+                                rc_dir=${rc_file%/*}
+                                if [ "$rc_dir" != "$rc_file" ] && [ ! -d "$rc_dir" ]; then
+                                        if ! mkdir -p "$rc_dir"; then
+                                                look_warn "unable to create directory '$rc_dir'."
+                                        fi
+                                fi
+                                
+                                # Write look block
+                                if [ -d "$rc_dir" ] || [ "$rc_dir" = "$rc_file" ]; then
+                                        tmp_file=$(temp-file wizardry-look) || tmp_file=""
+                                        if [ -n "$tmp_file" ]; then
+                                                trap 'cleanup-file "$tmp_file"' EXIT HUP INT TERM
+                                                if [ -f "$rc_file" ]; then
+                                                        sed '/^# >>> wizardry look spell >>>$/,/^# <<< wizardry look spell <<</d' "$rc_file" >"$tmp_file"
+                                                else
+                                                        : >"$tmp_file"
+                                                fi
+                                                cat <<BLOCK >>"$tmp_file"
+# >>> wizardry look spell >>>
+alias look='$LOOK_SCRIPT_PATH'
+# <<< wizardry look spell <<<
+BLOCK
+                                                if mv "$tmp_file" "$rc_file" 2>/dev/null; then
+                                                        printf '%s\n' "Spell memorized in $(basename "$rc_file"), so you will always be able to use it."
+                                                else
+                                                        rm -f "$tmp_file" 2>/dev/null || true
+                                                        look_warn "unable to update '$rc_file'."
+                                                fi
+                                                trap - EXIT HUP INT TERM
+                                        fi
+                                fi
+                        else
+                                printf '%s\n' "The mud will only run in this shell window."
+                        fi
+                else
+                        look_warn "ask-yn spell is missing; cannot prompt for installation."
+                fi
+        fi
+fi
 
 # Message returned by read-magic when attribute doesn't exist
 MISSING_ATTR_MSG='read-magic: attribute does not exist.'
 
-# Default descriptions for rooms without enchanted description attributes
-get_default_description() {
-        # Use a checksum of the path to pick a consistent random description
-        path_hash=$(printf '%s' "$1" | cksum | cut -d' ' -f1)
-        case $((path_hash % 5)) in
-                0) printf '%s' "An ordinary room." ;;
-                1) printf '%s' "A plain chamber." ;;
-                2) printf '%s' "A nondescript space." ;;
-                3) printf '%s' "An unremarkable area." ;;
-                4) printf '%s' "A simple room." ;;
-        esac
-}
-
+# Get identify-room data if available
 IDENTIFY_TITLE=''
 IDENTIFY_DESCRIPTION=''
-
-if [ "$identify_available" -eq 1 ]; then
+if command -v identify-room >/dev/null 2>&1; then
         if identify_room_output=$(identify-room "$path" 2>/dev/null); then
                 IDENTIFY_TITLE=$(printf '%s' "$identify_room_output" | sed -n '1p')
                 IDENTIFY_DESCRIPTION=$(printf '%s' "$identify_room_output" | sed -n '2p')
@@ -226,38 +164,35 @@ if [ "$identify_available" -eq 1 ]; then
 else
         look_warn "identify-room spell is unavailable; continuing without system lore."
 fi
-# Get title from attribute or fall back to folder name
-get_room_title() {
-        room_path=$1
-        attr_title=$("$READ_MAGIC" "$room_path" title 2>/dev/null || true)
-        if [ "$attr_title" != "$MISSING_ATTR_MSG" ] && [ -n "$attr_title" ]; then
-                printf '%s' "$attr_title"
-        elif [ -n "$IDENTIFY_TITLE" ]; then
-                printf '%s' "$IDENTIFY_TITLE"
-        else
-                # Use the folder/file name as the title
-                basename "$room_path"
-        fi
-}
 
-# Get description from attribute or fall back to default
-get_room_description() {
-        room_path=$1
-        attr_desc=$("$READ_MAGIC" "$room_path" description 2>/dev/null || true)
-        if [ "$attr_desc" != "$MISSING_ATTR_MSG" ] && [ -n "$attr_desc" ]; then
-                printf '%s' "$attr_desc"
-                return 0
-        fi
-        if [ -n "$IDENTIFY_DESCRIPTION" ]; then
-                printf '%s' "$IDENTIFY_DESCRIPTION"
-                return 0
-        fi
-        get_default_description "$room_path"
-}
+# Get title from attribute or fall back to folder name or identify data
+attr_title=$("$READ_MAGIC" "$path" title 2>/dev/null || true)
+if [ "$attr_title" != "$MISSING_ATTR_MSG" ] && [ -n "$attr_title" ]; then
+        room_title=$attr_title
+elif [ -n "$IDENTIFY_TITLE" ]; then
+        room_title=$IDENTIFY_TITLE
+else
+        room_title=$(basename "$path")
+fi
+
+# Get description from attribute or fall back to identify data or default
+attr_desc=$("$READ_MAGIC" "$path" description 2>/dev/null || true)
+if [ "$attr_desc" != "$MISSING_ATTR_MSG" ] && [ -n "$attr_desc" ]; then
+        room_description=$attr_desc
+elif [ -n "$IDENTIFY_DESCRIPTION" ]; then
+        room_description=$IDENTIFY_DESCRIPTION
+else
+        # Use a checksum of the path to pick a consistent random description
+        path_hash=$(printf '%s' "$path" | cksum | cut -d' ' -f1)
+        case $((path_hash % 5)) in
+                0) room_description="An ordinary room." ;;
+                1) room_description="A plain chamber." ;;
+                2) room_description="A nondescript space." ;;
+                3) room_description="An unremarkable area." ;;
+                4) room_description="A simple room." ;;
+        esac
+fi
 
 # Display MUD-formatted room description
-room_title=$(get_room_title "$path")
-room_description=$(get_room_description "$path")
-
 printf '%s%s%s\n' "$MUD_TITLE" "$room_title" "$RESET"
 printf '%s%s%s\n' "$MUD_DESCRIPTION" "$room_description" "$RESET"

@@ -1,0 +1,26 @@
+#!/bin/sh
+# xattr-helper-usable HELPER - check if an xattr helper command is available and usable
+# Returns 0 if helper is available, 1 otherwise
+# Respects WIZARDRY_TEST_HELPERS_ONLY to skip system helpers during tests
+
+_xattr_helper_usable() {
+  helper=$1
+  if ! command -v "$helper" >/dev/null 2>&1; then
+    return 1
+  fi
+
+  if [ "${WIZARDRY_TEST_HELPERS_ONLY-0}" -eq 1 ]; then
+    helper_path=$(command -v "$helper")
+    case "$helper_path" in
+      /bin/*|/sbin/*|/usr/bin/*|/usr/sbin/*|/usr/local/bin/*|/usr/local/sbin/*|/nix/store/*)
+        return 1 ;;
+    esac
+  fi
+
+  return 0
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */xattr-helper-usable) _xattr_helper_usable "$@" ;; 
+esac

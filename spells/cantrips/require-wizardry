@@ -13,115 +13,102 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-	show_usage
-	exit 0
-	;;
+show_usage
+exit 0
+;;
 esac
 
 set -eu
 
-# Check if wizardry is installed by looking for a known spell on PATH.
-# We check for 'menu' as it's a core user-facing spell that's always installed.
-wizardry_installed() {
-	command -v menu >/dev/null 2>&1
-}
+mode=${1:---offer}
 
-# Print the snippet for embedding in scripts
-print_snippet() {
-	cat <<'SNIPPET'
+case $mode in
+--check)
+# Check if wizardry is installed by looking for a core spell
+if command -v menu >/dev/null 2>&1; then
+exit 0
+else
+exit 1
+fi
+;;
+--offer)
+# Check if wizardry is installed
+if command -v menu >/dev/null 2>&1; then
+exit 0
+fi
+
+# Offer to install
+printf '%s\n' "Wizardry is not installed or not in PATH." >&2
+printf '%s\n' "" >&2
+
+# Check if we're in interactive mode
+if [ -t 0 ]; then
+printf '%s' "Would you like to install wizardry? [y/N] " >&2
+IFS= read -r reply || reply=""
+case $reply in
+y|Y|yes|YES)
+printf '%s\n' "" >&2
+printf '%s\n' "Installing wizardry..." >&2
+# Download and run the install script
+if command -v curl >/dev/null 2>&1; then
+curl -fsSL https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh
+exit $?
+elif command -v wget >/dev/null 2>&1; then
+wget -qO- https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh
+exit $?
+else
+printf '%s\n' "Error: neither curl nor wget is available to download wizardry." >&2
+exit 1
+fi
+;;
+*)
+printf '%s\n' "" >&2
+printf '%s\n' "To install wizardry, run:" >&2
+printf '%s\n' "  curl -fsSL https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh" >&2
+exit 1
+;;
+esac
+else
+printf '%s\n' "This script requires wizardry. To install:" >&2
+printf '%s\n' "  curl -fsSL https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh" >&2
+printf '%s\n' "" >&2
+printf '%s\n' "Or clone and install with git:" >&2
+printf '%s\n' "  git clone https://github.com/andersaamodt/wizardry ~/.wizardry" >&2
+printf '%s\n' "  cd ~/.wizardry && ./install" >&2
+exit 1
+fi
+;;
+--snippet)
+# Print embeddable snippet
+cat <<'SNIPPET'
 # --- require-wizardry snippet ---
 # Copy this block into scripts that depend on wizardry but cannot assume it's installed.
 # This check runs before any imps are called, providing a clear error if wizardry is missing.
 
 _require_wizardry() {
-	# Check for a core wizardry spell to verify installation
-	if command -v menu >/dev/null 2>&1; then
-		return 0
-	fi
+# Check for a core wizardry spell to verify installation
+if command -v menu >/dev/null 2>&1; then
+return 0
+fi
 
-	printf '%s\n' "Error: wizardry is not installed or not in PATH." >&2
-	printf '%s\n' "" >&2
-	printf '%s\n' "This script requires wizardry. To install:" >&2
-	printf '%s\n' "  curl -fsSL https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh" >&2
-	printf '%s\n' "" >&2
-	printf '%s\n' "Or clone and install with git:" >&2
-	printf '%s\n' "  git clone https://github.com/andersaamodt/wizardry ~/.wizardry" >&2
-	printf '%s\n' "  cd ~/.wizardry && ./install" >&2
-	exit 1
+printf '%s\n' "Error: wizardry is not installed or not in PATH." >&2
+printf '%s\n' "" >&2
+printf '%s\n' "This script requires wizardry. To install:" >&2
+printf '%s\n' "  curl -fsSL https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh" >&2
+printf '%s\n' "" >&2
+printf '%s\n' "Or clone and install with git:" >&2
+printf '%s\n' "  git clone https://github.com/andersaamodt/wizardry ~/.wizardry" >&2
+printf '%s\n' "  cd ~/.wizardry && ./install" >&2
+exit 1
 }
 
 _require_wizardry
 # --- end require-wizardry snippet ---
 SNIPPET
-}
-
-# Offer to install wizardry
-offer_install() {
-	printf '%s\n' "Wizardry is not installed or not in PATH." >&2
-	printf '%s\n' "" >&2
-
-	# Check if we're in interactive mode
-	if [ -t 0 ]; then
-		printf '%s' "Would you like to install wizardry? [y/N] " >&2
-		IFS= read -r reply || reply=""
-		case $reply in
-			y|Y|yes|YES)
-				printf '%s\n' "" >&2
-				printf '%s\n' "Installing wizardry..." >&2
-				# Download and run the install script
-				if command -v curl >/dev/null 2>&1; then
-					curl -fsSL https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh
-					return $?
-				elif command -v wget >/dev/null 2>&1; then
-					wget -qO- https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh
-					return $?
-				else
-					printf '%s\n' "Error: neither curl nor wget is available to download wizardry." >&2
-					return 1
-				fi
-				;;
-			*)
-				printf '%s\n' "" >&2
-				printf '%s\n' "To install wizardry, run:" >&2
-				printf '%s\n' "  curl -fsSL https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh" >&2
-				return 1
-				;;
-		esac
-	else
-		printf '%s\n' "This script requires wizardry. To install:" >&2
-		printf '%s\n' "  curl -fsSL https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh" >&2
-		printf '%s\n' "" >&2
-		printf '%s\n' "Or clone and install with git:" >&2
-		printf '%s\n' "  git clone https://github.com/andersaamodt/wizardry ~/.wizardry" >&2
-		printf '%s\n' "  cd ~/.wizardry && ./install" >&2
-		return 1
-	fi
-}
-
-mode=${1:---offer}
-
-case $mode in
-	--check)
-		if wizardry_installed; then
-			exit 0
-		else
-			exit 1
-		fi
-		;;
-	--offer)
-		if wizardry_installed; then
-			exit 0
-		else
-			offer_install
-			exit $?
-		fi
-		;;
-	--snippet)
-		print_snippet
-		exit 0
-		;;
-	*)
-		show_usage >&2
-		exit 1
-		;;
+exit 0
+;;
+*)
+show_usage >&2
+exit 1
+;;
 esac

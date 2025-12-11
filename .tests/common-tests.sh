@@ -672,6 +672,113 @@ spells/.arcana/core/
   return 0
 }
 
+# --- Check: Spells follow function discipline ---
+# Each spell may have show_usage() plus at most a few additional functions.
+# The rule enforces linear, readable scrolls over proto-libraries.
+# - 0-1 additional functions: freely allowed (the "spell-heart helper")
+# - 2 additional functions: warning (invoked from multiple paths, not suitable as imp)
+# - 3 additional functions: warning (marginal case)
+# - 4+ additional functions: error (proto-library, needs decomposition)
+test_spells_follow_function_discipline() {
+  skip-if-compiled || return $?
+  tmpfile_2=$(mktemp "${WIZARDRY_TMPDIR}/func-warn-2.XXXXXX")
+  tmpfile_3=$(mktemp "${WIZARDRY_TMPDIR}/func-warn-3.XXXXXX")
+  tmpfile_4plus=$(mktemp "${WIZARDRY_TMPDIR}/func-viol-4plus.XXXXXX")
+  
+  # Hardcoded exceptions for complex interactive systems requiring architectural decisions
+  # These spells are large (500-1200 lines) with genuinely multi-use helper functions
+  # and complex state management that justifies preserving helper functions.
+  # Documented in EXEMPTIONS.md as requiring careful decomposition analysis.
+  exempted_spells="
+spellcraft/lint-magic
+spellcraft/learn-spellbook
+spellcraft/learn
+menu/spellbook
+cantrips/assertions
+cantrips/menu
+.arcana/mud/cd
+.arcana/core/install-clipboard-helper
+.arcana/core/install-core
+.arcana/core/uninstall-core
+.arcana/lightning/install-lightning
+.arcana/lightning/lightning-menu
+.arcana/lightning/lightning-status
+.arcana/node/node-menu
+.arcana/node/node-status
+divination/identify-room
+system/update-all
+system/test-magic
+"
+  
+  find "$ROOT_DIR/spells" -type f -not -path "*/.imps/*" -executable -print | while IFS= read -r spell; do
+    name=$(basename "$spell")
+    should_skip_file "$name" && continue
+    is_posix_shell_script "$spell" || continue
+    
+    rel_path=${spell#"$ROOT_DIR/spells/"}
+    
+    # Skip exempted spells
+    is_exempted=0
+    for exempted in $exempted_spells; do
+      if [ "$rel_path" = "$exempted" ]; then
+        is_exempted=1
+        break
+      fi
+    done
+    [ "$is_exempted" -eq 1 ] && continue
+    
+    # Count all function definitions
+    # Note: This simple pattern-based approach may count functions in comments
+    # or heredocs, but this is acceptable for a stylistic check that identifies
+    # proto-libraries. False positives would be rare in practice.
+    # Pattern 1: func() { on same line
+    func_count_inline=$(grep -cE '^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*[[:space:]]*\(\)[[:space:]]*\{' "$spell" 2>/dev/null || true)
+    func_count_inline=${func_count_inline:-0}
+    # Pattern 2: func() on one line, { on next line
+    func_count_multiline=$(grep -cE '^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*[[:space:]]*\(\)[[:space:]]*$' "$spell" 2>/dev/null || true)
+    func_count_multiline=${func_count_multiline:-0}
+    func_count=$((func_count_inline + func_count_multiline))
+    
+    # Subtract 1 for show_usage (which every spell should have)
+    additional_funcs=$((func_count - 1))
+    
+    # Allow negative (no show_usage is caught by another test)
+    [ "$additional_funcs" -lt 0 ] && additional_funcs=0
+    
+    # Write to appropriate temp file based on additional function count
+    if [ "$additional_funcs" -ge 4 ]; then
+      printf '%s(%s)\n' "$rel_path" "$additional_funcs" >> "$tmpfile_4plus"
+    elif [ "$additional_funcs" -eq 3 ]; then
+      printf '%s(%s)\n' "$rel_path" "$additional_funcs" >> "$tmpfile_3"
+    elif [ "$additional_funcs" -eq 2 ]; then
+      printf '%s(%s)\n' "$rel_path" "$additional_funcs" >> "$tmpfile_2"
+    fi
+  done
+  
+  # Read and format results
+  warnings_2=$(head -20 "$tmpfile_2" 2>/dev/null | tr '\n' ', ' | sed 's/, $//')
+  warnings_3=$(head -20 "$tmpfile_3" 2>/dev/null | tr '\n' ', ' | sed 's/, $//')
+  violations_4plus=$(head -20 "$tmpfile_4plus" 2>/dev/null | tr '\n' ', ' | sed 's/, $//')
+  
+  rm -f "$tmpfile_2" "$tmpfile_3" "$tmpfile_4plus"
+  
+  # Print warnings (non-fatal)
+  if [ -n "$warnings_2" ]; then
+    printf 'WARNING: spells with 2 additional functions (consider refactoring): %s\n' "$warnings_2" >&2
+  fi
+  if [ -n "$warnings_3" ]; then
+    printf 'WARNING: spells with 3 additional functions (strongly consider refactoring): %s\n' "$warnings_3" >&2
+  fi
+  
+  # Fail on 4+ additional functions
+  if [ -n "$violations_4plus" ]; then
+    TEST_FAILURE_REASON="spells with 4+ additional functions (proto-libraries, must decompose): $violations_4plus"
+    return 1
+  fi
+  
+  return 0
+}
+
 # --- Run all test cases ---
 
 _run_test_case "no duplicate spell names" test_no_duplicate_spell_names
@@ -688,5 +795,6 @@ _run_test_case "no pseudo-globals stored in rc files" test_no_pseudo_globals_in_
 _run_test_case "imps follow one-function-or-zero rule" test_imps_follow_function_rule
 _run_test_case "imps have opening comments" test_imps_have_opening_comments
 _run_test_case "bootstrap spells have identifying comment" test_bootstrap_spells_identified
+_run_test_case "spells follow function discipline" test_spells_follow_function_discipline
 
 _finish_tests

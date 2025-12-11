@@ -177,6 +177,7 @@ Using the free software suite makes it easy to establish a standardized software
 | **portal** | A persistent connection between two computers via SSH, created with `open-portal`, for MUD travel. |
 | **portkey** | A bookmark to a remote location. Use `enchant-portkey` to create one and `follow-portkey` to teleport there. (Future: If you have the `touch` hook installed, touching a portkey will also activate it.) |
 | **scribe** | Create a new custom spell. |
+| **scroll** | A linear script with zero or one internal functions (besides the spell's own `show_usage` function). All spells should ideally be scrolls—readable from top to bottom without conceptual "folds" that break narrative flow. |
 | **spell** | A specially-curated shell script that lives in `spells/`, has a unique name, and follows wizardry conventions. |
 | `spellbook` | Your personal grimoire for organizing and casting spells. Access it with `spellbook` or from the main `menu`. Also refers to custom spell folders. |
 | **spellcraft** | The writing of shell scripts. |
@@ -226,6 +227,7 @@ These tenets define how Wizardry should feel to use and how spells present thems
 | ------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | Minimalism          | Do the most with the fewest moving parts.                                                                                    |
 | Atomicity           | Spells and imps are small, self-contained units that combine into larger workings.                                           |
+| One magical action  | A spell narrates one coherent magical action, expressed linearly as a scroll. Multiple conceptual actions indicate the need to refactor into multiple spells or extract reusable logic into imps. |
 | Document-in-place   | Every spell’s `--help` fully specifies its behavior; documentation lives where it is used.                                   |
 | Interface-neutral   | GUIs are thin skins over shell scripts. Any interface simply passes commands through to spells.                              |
 | Menu specialization | Complex workflows are organized as dedicated menus that call one spell per menu item.                                        |
@@ -247,6 +249,7 @@ These standards describe the technical requirements that all spells, menus, and 
 | Help-on-tap                     | `--help` / `-h` / `--usage` print concrete usage, not hand-waving.                                        |
 | Strict-yet-flat flows           | `set -eu`, few functions, linear flow so behavior stays readable and hackable.                            |
 | Script-like scripts             | Favor flat, shell-friendly logic over elaborate function trees. No hidden libraries.                      |
+| Function discipline             | Spells have `show_usage()` plus at most 1 additional helper freely; 2-3 helpers allowed only when invoked from multiple paths and unsuitable as imps; 4+ helpers indicate a proto-library needing decomposition. |
 | Front-facing spells             | Every spell is a user-facing executable; no private wrapper binaries that hide behavior.                  |
 | Spell-by-name invocation        | Spells call other spells by name, assuming wizardry is already on `PATH`.                                 |
 | Hyphenated, extensionless names | Executables omit `.sh` and use hyphens for multi-word commands.                                           |

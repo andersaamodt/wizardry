@@ -17,86 +17,68 @@ case "${1-}" in
         ;;
 esac
 
-# Get Bitcoin sync status: 'syncing', 'synced', 'unknown', or 'error'
-
 set -eu
 
-load_colors() {
-  if command -v colors >/dev/null 2>&1; then
-    # shellcheck source=/dev/null
-    . colors
-    GRAY=${GREY-}
-  else
-    RESET=""
-    GREEN=""
-    GRAY=""
-    YELLOW=""
-    RED=""
-  fi
-}
+# Load colors if available
+if command -v colors >/dev/null 2>&1; then
+  # shellcheck source=/dev/null
+  . colors
+  GRAY=${GREY-}
+else
+  RESET=""
+  GREEN=""
+  GRAY=""
+  YELLOW=""
+  RED=""
+fi
 
-load_colors
-
-# Returns colored text based on status
-color_for_status() {
-  case "$1" in
-    "installed, running, synced")
-      printf "${GREEN}"
-      ;;
-    "not installed")
-      printf "${GRAY}"
-      ;;
-    "installed, not running"|"installed, running, syncing"*|"installed, running, not synced")
-      printf "${YELLOW}"
-      ;;
-    "installed, running, error"|"*")
-      printf "${RED}"
-      ;;
-  esac
-}
-
-get_sync_status() {
-  blockchain_info=$(bitcoin-cli getblockchaininfo 2>&1)
-  filtered=$(echo "$blockchain_info" | grep 'initialblockdownload')
-  sync_status=$(echo "$filtered" | awk '{print $2}' | tr -d ',')
-  
-  if [ "$?" -ne "0" ]; then
-    echo "error"
-  elif [ "$sync_status" = "true" ]; then
-    echo "syncing"
-  elif [ "$sync_status" = "false" ]; then
-    echo "synced"
-  else
-    echo "unknown"
-  fi
-}
-
-# Returns colored status message
-get_status() {
-  if is-bitcoin-installed; then
-    if is-bitcoin-running > /dev/null; then
-      running_status="running"
-      sync_status=$(get_sync_status)
-      if [ "$sync_status" = "synced" ]; then
-        install_status="installed, $running_status, synced"
-      elif [ "$sync_status" = "syncing" ]; then
-        blockchain_info=$(bitcoin-cli getblockchaininfo)
-        progress_line=$(echo "$blockchain_info" | grep 'progress')
-        progress=$(echo "$progress_line" | awk -F":" '{gsub(/,/, "", $2); printf "%.2f", $2*100}')
-        install_status="installed, $running_status, syncing $progress%%"
-      elif [ "$sync_status" = "unknown" ]; then
-        install_status="installed, $running_status, not synced"
-      elif [ "$sync_status" = "error" ]; then
-        install_status="installed, $running_status, error"
-      fi
+# Determine installation and running status
+if is-bitcoin-installed; then
+  if is-bitcoin-running > /dev/null; then
+    running_status="running"
+    
+    # Get sync status from blockchain info
+    blockchain_info=$(bitcoin-cli getblockchaininfo 2>&1)
+    filtered=$(echo "$blockchain_info" | grep 'initialblockdownload' || echo "")
+    sync_status=$(echo "$filtered" | awk '{print $2}' | tr -d ',')
+    
+    if [ -z "$sync_status" ]; then
+      sync_status="error"
+    elif [ "$sync_status" = "true" ]; then
+      sync_status="syncing"
+    elif [ "$sync_status" = "false" ]; then
+      sync_status="synced"
     else
-      install_status="installed, not running"
+      sync_status="unknown"
+    fi
+    
+    # Build status message with sync info
+    if [ "$sync_status" = "synced" ]; then
+      install_status="installed, $running_status, synced"
+      status_color="$GREEN"
+    elif [ "$sync_status" = "syncing" ]; then
+      progress_line=$(echo "$blockchain_info" | grep 'progress')
+      progress=$(echo "$progress_line" | awk -F":" '{gsub(/,/, "", $2); printf "%.2f", $2*100}')
+      install_status="installed, $running_status, syncing $progress%%"
+      status_color="$YELLOW"
+    elif [ "$sync_status" = "unknown" ]; then
+      install_status="installed, $running_status, not synced"
+      status_color="$YELLOW"
+    elif [ "$sync_status" = "error" ]; then
+      install_status="installed, $running_status, error"
+      status_color="$RED"
+    else
+      install_status="installed, $running_status, not synced"
+      status_color="$YELLOW"
     fi
   else
-    install_status="not installed"
+    install_status="installed, not running"
+    status_color="$YELLOW"
   fi
+else
+  install_status="not installed"
+  status_color="$GRAY"
+fi
 
-  printf "$(color_for_status "$install_status")$install_status${RESET}\n"
-}
-
-get_status
+# Print colored status
+printf "${status_color}${install_status}${RESET}\n"

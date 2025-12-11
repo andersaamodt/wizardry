@@ -7,8 +7,7 @@ show_usage() {
         cat <<'USAGE' >&2
 Usage: await-keypress
 
-Listens for one key press on the controlling terminal, translating escape sequences into readable names and restoring the term
-inal to its prior state afterward.
+Listens for one key press on the controlling terminal, translating escape sequences into readable names and restoring the terminal to its prior state afterward.
 USAGE
 }
 
@@ -21,31 +20,25 @@ esac
 
 
 set -eu
-spell_dir() {
+
+# Resolve require-command location
+if [ -n "${REQUIRE_COMMAND-}" ]; then
+    require_cmd=$REQUIRE_COMMAND
+else
+    spell_dir_val=""
     case $0 in
-        */*) CDPATH= cd -- "${0%/*}" && pwd -P ;;
-        *) CDPATH= cd -- . && pwd -P ;;
+        */*) spell_dir_val=$(CDPATH= cd -- "${0%/*}" && pwd -P) ;;
+        *) spell_dir_val=$(CDPATH= cd -- . && pwd -P) ;;
     esac
-}
-
-resolve_require_command() {
-    if [ -n "${REQUIRE_COMMAND-}" ]; then
-        printf '%s\n' "$REQUIRE_COMMAND"
-        return 0
+    if [ -x "$spell_dir_val/require-command" ]; then
+        require_cmd=$spell_dir_val/require-command
+    else
+        require_cmd=require-command
     fi
-    if [ -x "$(spell_dir)/require-command" ]; then
-        printf '%s\n' "$(spell_dir)/require-command"
-        return 0
-    fi
-    printf '%s\n' require-command
-}
-
-require() {
-    "$(resolve_require_command)" "$@"
-}
+fi
 
 # Capture raw bytes with dd; bail out immediately when it is missing.
-if ! require dd "The await-keypress spell needs 'dd' to capture raw key presses."; then
+if ! "$require_cmd" dd "The await-keypress spell needs 'dd' to capture raw key presses."; then
     exit 1
 fi
 
@@ -60,6 +53,14 @@ else
     buffer_file=$(temp-file await-keypress-buffer-"$buffer_key") || exit 1
 fi
 
+# Helper to restore terminal and close file descriptor
+restore_terminal() {
+    if [ "$skip_stty" -eq 0 ] && [ -n "${saved_state-}" ]; then
+        stty "$saved_state" <&3 >/dev/null 2>&1 || :
+    fi
+    exec 3>&- 2>/dev/null || :
+}
+
 if [ "$skip_stty" -eq 1 ]; then
     # Allow tests to provide a preconfigured file descriptor instead of
     # toggling terminal attributes.
@@ -69,13 +70,10 @@ if [ "$skip_stty" -eq 1 ]; then
     fi
 
     exec 3<"$TTY_DEVICE" || exit 1
-    restore() {
-        exec 3>&- 2>/dev/null || :
-    }
 else
     # When interacting with the real terminal, require stty for raw-mode
     # management and open the device read/write.
-    if ! require stty "The await-keypress spell needs 'stty' to manage terminal modes."; then
+    if ! "$require_cmd" stty "The await-keypress spell needs 'stty' to manage terminal modes."; then
         exit 1
     fi
 
@@ -93,13 +91,8 @@ else
         exit 1
     fi
 
-    restore() {
-        stty "$saved_state" <&3 >/dev/null 2>&1 || :
-        exec 3>&- 2>/dev/null || :
-    }
-
-    trap 'restore; exit 130' INT HUP TERM
-    trap 'restore' EXIT
+    trap 'restore_terminal; exit 130' INT HUP TERM
+    trap 'restore_terminal' EXIT
 
     # Configure canonical mode to wait for exactly one byte of input.
     if ! stty -icanon -echo min 1 time 0 <&3 2>/dev/null; then
@@ -108,23 +101,7 @@ else
     fi
 fi
 
-# Helper to slurp a specified number of bytes from the terminal.
-read_codes() {
-    codes=$(dd bs=1 count="$1" 2>/dev/null <&3 | od -An -t u1 -v | tr -s '[:space:]' ' ')
-    codes=${codes# }
-    codes=${codes% }
-    printf '%s' "$codes"
-}
-
-# Convert numeric byte values back to characters.
-codes_to_string() {
-    result=''
-    for code in $1; do
-        result=${result}$(printf '\\%03o' "$code")
-    done
-    printf '%b' "$result"
-}
-
+# Read buffer if exists
 buffer_codes=''
 if [ -n "$buffer_file" ] && [ -f "$buffer_file" ] && [ -s "$buffer_file" ]; then
     buffer_codes=$(cat "$buffer_file")
@@ -137,11 +114,13 @@ if [ -n "$buffer_codes" ]; then
     had_buffer=1
     codes=$buffer_codes
 else
-    first_codes=$(read_codes 1)
+    # Read first byte
+    first_codes=$(dd bs=1 count=1 2>/dev/null <&3 | od -An -t u1 -v | tr -s '[:space:]' ' ')
+    first_codes=${first_codes# }
+    first_codes=${first_codes% }
     if [ -z "$first_codes" ]; then
         exit 1
     fi
-
     codes=$first_codes
 fi
 
@@ -153,9 +132,12 @@ if [ "$skip_stty" -eq 0 ] && [ "$had_buffer" -eq 0 ]; then
     fi
 fi
 
+# Read any additional bytes from escape sequences
 if [ "$had_buffer" -eq 0 ]; then
     while :; do
-        extra=$(read_codes 1)
+        extra=$(dd bs=1 count=1 2>/dev/null <&3 | od -An -t u1 -v | tr -s '[:space:]' ' ')
+        extra=${extra# }
+        extra=${extra% }
         [ -z "$extra" ] && break
         if [ -n "$codes" ]; then
             codes="$codes $extra"
@@ -169,7 +151,7 @@ trap - EXIT
 if [ "$skip_stty" -eq 0 ] && [ "$keep_raw" -eq 1 ]; then
     exec 3>&- 2>/dev/null || :
 else
-    restore
+    restore_terminal
 fi
 
 codes=${codes# }
@@ -190,6 +172,15 @@ shift
 leftover="$*"
 output=''
 buffer_leftover_codes=''
+
+# Convert numeric byte values back to characters.
+codes_to_string() {
+    result=''
+    for code in $1; do
+        result=${result}$(printf '\\%03o' "$code")
+    done
+    printf '%b' "$result"
+}
 
 case "$first" in
     9)
