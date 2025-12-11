@@ -40,7 +40,14 @@ _nix_shell_add() {
     _nsa_needs_sudo=1
   fi
 
-  if [ -f "$_nsa_nix_file" ] && grep -Fq "$_nsa_marker" "$_nsa_nix_file" 2>/dev/null; then return 0; fi
+  has_marker="no"
+  if [ -f "$_nsa_nix_file" ] && grep -Fq "$_nsa_marker" "$_nsa_nix_file" 2>/dev/null; then
+    has_marker="yes"
+  fi
+  
+  if [ "$has_marker" = "yes" ]; then
+    return 0
+  fi
   _nsa_shell_code=""
   while IFS= read -r _nsa_line || [ -n "$_nsa_line" ]; do
     if [ -z "$_nsa_shell_code" ]; then _nsa_shell_code=$_nsa_line
@@ -71,8 +78,20 @@ $_nsa_line"; fi
     printf '%s\n' "$_nsa_content" > "$_nsa_input_file"
     _nsa_in_block=0
     while IFS= read -r _nsa_line; do
-      if printf '%s\n' "$_nsa_line" | grep -q "$_nsa_nix_option[[:space:]]*=" && printf '%s\n' "$_nsa_line" | grep -q "''"; then
-        _nsa_in_block=1; printf '%s\n' "$_nsa_line"; continue
+      has_option="no"
+      if printf '%s\n' "$_nsa_line" | grep -q "$_nsa_nix_option[[:space:]]*="; then
+        has_option="yes"
+      fi
+      
+      has_quote="no"
+      if printf '%s\n' "$_nsa_line" | grep -q "''"; then
+        has_quote="yes"
+      fi
+      
+      if [ "$has_option" = "yes" ] && [ "$has_quote" = "yes" ]; then
+        _nsa_in_block=1
+        printf '%s\n' "$_nsa_line"
+        continue
       fi
       if [ "$_nsa_in_block" -eq 1 ] && printf '%s\n' "$_nsa_line" | grep -q "^[[:space:]]*'';"; then
         printf '%s\n' "$_nsa_marked_code"; printf '%s\n' "$_nsa_line"; _nsa_in_block=0; continue

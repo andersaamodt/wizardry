@@ -11,7 +11,9 @@ show_usage() {
         cat <<USAGE >&2
 Usage: $SCRIPT_NAME /path/to/template [KEY=value ...]
 
-Copies a systemd service template into the system directory, substituting KEY=value pairs into the file. Prompts for missing values to keep menu-driven installs friendly.
+Copies a systemd service template into the system directory, substituting
+KEY=value pairs into the file. Prompts for missing values to keep
+menu-driven installs friendly.
 USAGE
 }
 
@@ -49,51 +51,51 @@ exit 1
 # sed replacement strings without leaking metacharacters that could rewrite
 # unexpected portions of the template.
 escape_sed_replacement() {
-	printf '%s' "$1" | sed 's/[\\&|$"]/\\&/g'
+  printf '%s' "$1" | sed 's/[\\&|$"]/\\&/g'
 }
 
 # replace_placeholder rewrites the working copy in-place (via a temporary
 # buffer) so each placeholder substitution stays POSIX-friendly without sed -i.
 replace_placeholder() {
-	key=$1
-	value=$2
-	escaped=$(escape_sed_replacement "$value")
-	tmp_swap=$(temp-file wizardry-service) || exit 1
-	pattern=$(printf '\\$%s' "$key")
-	sed "s|$pattern|$escaped|g" "$tmp_file" >"$tmp_swap"
-	mv "$tmp_swap" "$tmp_file"
+  key=$1
+  value=$2
+  escaped=$(escape_sed_replacement "$value")
+  tmp_swap=$(temp-file wizardry-service) || exit 1
+  pattern=$(printf '\\$%s' "$key")
+  sed "s|$pattern|$escaped|g" "$tmp_file" >"$tmp_swap"
+  mv "$tmp_swap" "$tmp_file"
 }
 
 # collect_placeholders lists the remaining $VARNAME tokens so we can prompt once
 # per variable instead of mutating the rc file while reading it.
 collect_placeholders() {
-	awk '{
-		line=$0
-		while (match(line, /\$[A-Z_][A-Z0-9_]*/)) {
-			var=substr(line, RSTART+1, RLENGTH-1)
-			print var
-			line=substr(line, RSTART+RLENGTH)
-		}
-	}' "$tmp_file" | sort -u
+  awk '{
+    line=$0
+    while (match(line, /\$[A-Z_][A-Z0-9_]*/)) {
+      var=substr(line, RSTART+1, RLENGTH-1)
+      print var
+      line=substr(line, RSTART+RLENGTH)
+    }
+  }' "$tmp_file" | sort -u
 }
 
 # prompt_placeholders walks through the unique placeholder list and politely
 # asks the user for each value before applying the substitutions.
 prompt_placeholders() {
-	placeholders_file=$(temp-file wizardry-placeholders) || exit 1
-	collect_placeholders >"$placeholders_file"
-	if [ ! -s "$placeholders_file" ]; then
-		rm -f "$placeholders_file"
-		return
-	fi
-	while IFS= read -r var; do
-		if [ -z "$var" ]; then
-			continue
-		fi
-		value=$("$ASK_TEXT" "Enter a value for $var:")
-		replace_placeholder "$var" "$value"
-	done <"$placeholders_file"
-	rm -f "$placeholders_file"
+  placeholders_file=$(temp-file wizardry-placeholders) || exit 1
+  collect_placeholders >"$placeholders_file"
+  if [ ! -s "$placeholders_file" ]; then
+    rm -f "$placeholders_file"
+    return
+  fi
+  while IFS= read -r var; do
+    if [ -z "$var" ]; then
+      continue
+    fi
+    value=$("$ASK_TEXT" "Enter a value for $var:")
+    replace_placeholder "$var" "$value"
+  done <"$placeholders_file"
+  rm -f "$placeholders_file"
 }
 
 SCRIPT_SOURCE=$0

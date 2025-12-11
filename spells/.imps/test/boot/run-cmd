@@ -69,15 +69,21 @@ _run_cmd() {
     fi
   elif [ "${MACOS_SANDBOX_AVAILABLE:-0}" -eq 1 ]; then
     # Use macOS sandbox-exec for isolation
-    if (cd "$workdir" && env PATH="$PATH" HOME="$homedir" TMPDIR="$tmpdir" WIZARDRY_TMPDIR="$WIZARDRY_TMPDIR" DETECT_RC_FILE="${DETECT_RC_FILE-}" WIZARDRY_SKIP_NIX_REBUILD="${WIZARDRY_SKIP_NIX_REBUILD-}" WIZARDRY_SKIP_CONFIRM="${WIZARDRY_SKIP_CONFIRM-}" SSHD_CONFIG="${SSHD_CONFIG-}" SPELLBOOK_DIR="${SPELLBOOK_DIR-}" WIZARDRY_DIR="${WIZARDRY_DIR-}" MUD_DIR="${MUD_DIR-}" \
-      _run_macos_sandbox "$@" >"$_stdout" 2>"$_stderr"); then
+    PATH=$PATH
+    HOME=$HOME
+    TMPDIR="$tmpdir"
+    
+    if (cd "$workdir" && _run_macos_sandbox "$@" >"$_stdout" 2>"$_stderr"); then
       STATUS=0
     else
       STATUS=$?
     fi
   else
-    if (cd "$workdir" && env PATH="$PATH" HOME="$homedir" TMPDIR="$tmpdir" WIZARDRY_TMPDIR="$WIZARDRY_TMPDIR" DETECT_RC_FILE="${DETECT_RC_FILE-}" WIZARDRY_SKIP_NIX_REBUILD="${WIZARDRY_SKIP_NIX_REBUILD-}" WIZARDRY_SKIP_CONFIRM="${WIZARDRY_SKIP_CONFIRM-}" SSHD_CONFIG="${SSHD_CONFIG-}" SPELLBOOK_DIR="${SPELLBOOK_DIR-}" WIZARDRY_DIR="${WIZARDRY_DIR-}" MUD_DIR="${MUD_DIR-}" "$@" \
-      >"$_stdout" 2>"$_stderr"); then
+    PATH=$PATH
+    HOME=$HOME
+    TMPDIR="$tmpdir"
+    
+    if (cd "$workdir" && "$@" >"$_stdout" 2>"$_stderr"); then
       STATUS=0
     else
       STATUS=$?

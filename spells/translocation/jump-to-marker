@@ -33,7 +33,7 @@ MARKERS_DIR=$(env-or JUMP_TO_MARKERS_DIR "$_jm_spell_home/.markers")
 # jump_portal_messages preserves every line of flavor text from the original
 # spell and sprinkles in a few new sensations for modern teleportation.
 jump_portal_messages() {
-	cat <<'PORTAL'
+  cat <<'PORTAL'
 You feel a sudden warmth as you are enveloped in a glowing aura. When it fades, you find yourself at your destination.
 A strange sensation comes over you as you close your eyes. When you open them again, you are standing at your destination.
 You focus your mind on the marked location and feel yourself being pulled through the fabric of space. You open your eyes to find yourself at your destination.

@@ -3,7 +3,10 @@
 # Example: pkg-update && pkg-install git
 
 _pkg_update() {
-  _pu_pm=$(_pkg_manager) || { printf '%s\n' "pkg-update: no supported package manager" >&2; return 1; }
+  _pu_pm=$(_pkg_manager) || {
+    printf '%s\n' "pkg-update: no supported package manager" >&2
+    return 1
+  }
 
   case $_pu_pm in
     apt)    sudo apt-get update ;;

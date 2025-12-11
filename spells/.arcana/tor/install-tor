@@ -133,8 +133,15 @@ add_tor_to_nixos() {
     if ! grep -q 'tor' "$config"; then
       printf '%s\n' 'Adding tor to environment.systemPackages...'
       # Use detected indentation for the package entry (level 2)
-      sudo perl -0pi -e "s/(environment\\.systemPackages\\s*=\\s*with\\s+pkgs;\\s*\\[[^\\]]*)\\]/\$1\\n${indent_l2}tor\\n${indent_l1}]/" "$config" \
-        || sudo perl -0pi -e "s/(environment\\.systemPackages\\s*=\\s*\\[[^\\]]*)\\]/\$1\\n${indent_l2}tor\\n${indent_l1}]/" "$config"
+      # Try with pkgs variant first
+      pattern1="(environment\\.systemPackages\\s*=\\s*with\\s+pkgs;\\s*\\[[^\\]]*)\\]"
+      replace1="\$1\\n${indent_l2}tor\\n${indent_l1}]"
+      sudo perl -0pi -e "s/$pattern1/$replace1/" "$config" || {
+        # Fallback to without pkgs variant
+        pattern2="(environment\\.systemPackages\\s*=\\s*\\[[^\\]]*)\\]"
+        replace2="\$1\\n${indent_l2}tor\\n${indent_l1}]"
+        sudo perl -0pi -e "s/$pattern2/$replace2/" "$config"
+      }
       changes=1
     fi
   fi
@@ -156,9 +163,19 @@ add_tor_to_nixos() {
 
 start_service_if_available() {
   service_name="tor"
-  if command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files | grep -q "^${service_name}\.service"; then
-    if ask_yes_no "Enable and start tor.service now?" "y"; then
-      sudo systemctl enable --now "$service_name" || sudo systemctl start "$service_name" || true
+  has_systemctl=$(command -v systemctl >/dev/null 2>&1 && echo "yes" || echo "no")
+  
+  if [ "$has_systemctl" = "yes" ]; then
+    unit_files=$(systemctl list-unit-files)
+    has_service="no"
+    if echo "$unit_files" | grep -q "^${service_name}\.service"; then
+      has_service="yes"
+    fi
+    
+    if [ "$has_service" = "yes" ]; then
+      if ask_yes_no "Enable and start tor.service now?" "y"; then
+        sudo systemctl enable --now "$service_name" || sudo systemctl start "$service_name" || true
+      fi
     fi
   fi
 }

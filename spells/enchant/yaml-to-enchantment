@@ -80,7 +80,11 @@ resolve_helper() {
     say "$helper_path"
 }
 
-if ! (resolve_helper attr >/dev/null 2>&1 || resolve_helper setfattr >/dev/null 2>&1 || resolve_helper xattr >/dev/null 2>&1); then
+has_attr=$(resolve_helper attr >/dev/null 2>&1 && echo "yes" || echo "no")
+has_setfattr=$(resolve_helper setfattr >/dev/null 2>&1 && echo "yes" || echo "no")
+has_xattr=$(resolve_helper xattr >/dev/null 2>&1 && echo "yes" || echo "no")
+
+if [ "$has_attr" = "no" ] && [ "$has_setfattr" = "no" ] && [ "$has_xattr" = "no" ]; then
     warn "Error: requires attr, setfattr, or xattr to restore enchantments"
     exit 1
 fi

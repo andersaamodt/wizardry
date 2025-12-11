@@ -24,7 +24,10 @@ case "${1-}" in
 esac
 set -eu
 
-if [ "${INSTALL_CHECKBASHISMS_FORCE_INSTALL-}" != "1" ] && command -v checkbashisms >/dev/null 2>&1; then
+force_install="${INSTALL_CHECKBASHISMS_FORCE_INSTALL-}"
+has_checkbashisms=$(command -v checkbashisms >/dev/null 2>&1 && echo "yes" || echo "no")
+
+if [ "$force_install" != "1" ] && [ "$has_checkbashisms" = "yes" ]; then
         printf '%s\n' "checkbashisms is already installed."
         exit 0
 fi
@@ -56,30 +59,37 @@ if try_install apt-get -y update && try_install apt-get -y install devscripts; t
 fi
 
 # Fedora/RHEL based: devscripts-checkbashisms or devscripts depending on repo.
-if try_install dnf -y install devscripts-checkbashisms || try_install dnf -y install devscripts; then
-        if command -v checkbashisms >/dev/null 2>&1; then
-                exit 0
-        fi
+if try_install dnf -y install devscripts-checkbashisms; then
+        if command -v checkbashisms >/dev/null 2>&1; then exit 0; fi
+fi
+if try_install dnf -y install devscripts; then
+        if command -v checkbashisms >/dev/null 2>&1; then exit 0; fi
 fi
 
-if try_install yum -y install devscripts-checkbashisms || try_install yum -y install devscripts; then
-        if command -v checkbashisms >/dev/null 2>&1; then
-                exit 0
-        fi
+if try_install yum -y install devscripts-checkbashisms; then
+        if command -v checkbashisms >/dev/null 2>&1; then exit 0; fi
+fi
+if try_install yum -y install devscripts; then
+        if command -v checkbashisms >/dev/null 2>&1; then exit 0; fi
 fi
 
 # openSUSE and derivatives.
-if try_install zypper --non-interactive install devscripts-checkbashisms || try_install zypper --non-interactive install checkbashisms || try_install zypper --non-interactive install devscripts; then
-        if command -v checkbashisms >/dev/null 2>&1; then
-                exit 0
-        fi
+if try_install zypper --non-interactive install devscripts-checkbashisms; then
+        if command -v checkbashisms >/dev/null 2>&1; then exit 0; fi
+fi
+if try_install zypper --non-interactive install checkbashisms; then
+        if command -v checkbashisms >/dev/null 2>&1; then exit 0; fi
+fi
+if try_install zypper --non-interactive install devscripts; then
+        if command -v checkbashisms >/dev/null 2>&1; then exit 0; fi
 fi
 
 # Arch/Manjaro.
-if try_install pacman --noconfirm -Sy devscripts-checkbashisms || try_install pacman --noconfirm -Sy devscripts; then
-        if command -v checkbashisms >/dev/null 2>&1; then
-                exit 0
-        fi
+if try_install pacman --noconfirm -Sy devscripts-checkbashisms; then
+        if command -v checkbashisms >/dev/null 2>&1; then exit 0; fi
+fi
+if try_install pacman --noconfirm -Sy devscripts; then
+        if command -v checkbashisms >/dev/null 2>&1; then exit 0; fi
 fi
 
 # Alpine.

@@ -65,10 +65,12 @@ case "$source_path" in
     ;;
   *)
     # Make relative path absolute
-    source_path=$(cd "$(dirname "$source_path")" 2>/dev/null && pwd -P)/$(basename "$source_path") || {
+    dir=$(dirname "$source_path")
+    abs_dir=$(cd "$dir" 2>/dev/null && pwd -P) || {
       printf '%s\n' "import-arcanum: cannot access path: $source_path" >&2
       exit 1
     }
+    source_path="$abs_dir/$(basename "$source_path")"
     ;;
 esac
 

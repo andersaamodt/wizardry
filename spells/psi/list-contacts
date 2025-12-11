@@ -35,9 +35,15 @@ find "$CONTACTS_DIR" -name '*.vcf' | while IFS= read -r file; do
   name=$(perl -pe 's/\r\n[[:space:]]/ /g' "$file" |
     awk -v RS='END:VCARD' '
       BEGIN {FPAT = "([^:]+:)?([^\\\\]*\\\\.)*[^\\\\]*"}
-      /^FN:/  {name = substr($0,5); gsub(/\\\\n/,"\n",name); gsub(/\\\\,/,",",name); gsub(/\\\\;/,";",name); gsub(/\\\\\\\\/,"\\",name); exit}
-      /^ORG:/ {org  = substr($0,5); gsub(/\\\\n/,"\n",org); gsub(/\\\\,/,",",org); gsub(/\\\\;/,";",org); gsub(/\\\\\\\\/,"\\",org);}
-      /^TEL:/ {tel  = substr($0,5); gsub(/\\\\n/,"\n",tel); gsub(/\\\\,/,",",tel); gsub(/\\\\;/,";",tel); gsub(/\\\\\\\\/,"\\",tel);}
+      /^FN:/  {name = substr($0,5); gsub(/\\\\n/,"\n",name); \
+               gsub(/\\\\,/,",",name); gsub(/\\\\;/,";",name); \
+               gsub(/\\\\\\\\/,"\\",name); exit}
+      /^ORG:/ {org  = substr($0,5); gsub(/\\\\n/,"\n",org); \
+               gsub(/\\\\,/,",",org); gsub(/\\\\;/,";",org); \
+               gsub(/\\\\\\\\/,"\\",org);}
+      /^TEL:/ {tel  = substr($0,5); gsub(/\\\\n/,"\n",tel); \
+               gsub(/\\\\,/,",",tel); gsub(/\\\\;/,";",tel); \
+               gsub(/\\\\\\\\/,"\\",tel);}
       END     {print name != "" ? name : (org != "" ? org : tel)}
     ')
 

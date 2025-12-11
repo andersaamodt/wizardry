@@ -65,7 +65,9 @@ validate_card() {
 
 nicer_name() {
     # Convert the field name to lower case and remove any type annotations
-    normalized_field=$(printf '%s' "$1" | awk '{print tolower($0)}' | awk -F';' '{print $1}' | awk -F'.' '{print $NF}')
+    lower=$(printf '%s' "$1" | awk '{print tolower($0)}')
+    no_type=$(printf '%s' "$lower" | awk -F';' '{print $1}')
+    normalized_field=$(printf '%s' "$no_type" | awk -F'.' '{print $NF}')
 
     case "$normalized_field" in
         fn|fullname) printf '%s' "Full Name: " ;;
@@ -95,7 +97,9 @@ print_field() {
     card_path=$1
     requested_field=$2
 
-    card_line=$(card_lines "$card_path" | awk -F':' -v field="$requested_field" '$1 ~ field { print; exit }')
+    card_lines_output=$(card_lines "$card_path")
+    card_line=$(printf '%s\n' "$card_lines_output" | \
+      awk -F':' -v field="$requested_field" '$1 ~ field { print; exit }')
     if [ -z "${card_line:-}" ]; then
         printf '%s\n' "read-contact: $requested_field not found" >&2
         exit 1
