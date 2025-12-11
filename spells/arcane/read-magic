@@ -21,160 +21,43 @@ case "${1-}" in
 esac
 set -eu
 
-require_args() {
-  if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
-    printf '%s\n' "read-magic: one or two parameters expected (file path and optional attribute name)."
-    return 1
-  fi
-}
+# Validate arguments
+if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
+  printf '%s\n' "read-magic: one or two parameters expected (file path and optional attribute name)."
+  exit 1
+fi
 
-file_exists() {
-  if [ ! -e "$1" ]; then
-    printf '%s\n' "read-magic: file does not exist."
-    return 1
-  fi
-}
+file=$1
+attribute=${2-}
 
-# Strip the header line from attr -g output.
-# The attr command outputs: Attribute "key" had a N byte value for path:
-# followed by the actual value on subsequent lines. We simply remove the first line.
-parse_attr_output() {
-  printf '%s\n' "$1" | sed '1d'
-}
+# Check file exists
+if [ ! -e "$file" ]; then
+  printf '%s\n' "read-magic: file does not exist."
+  exit 1
+fi
 
-helper_usable() {
-  helper=$1
-  if ! command -v "$helper" >/dev/null 2>&1; then
-    return 1
-  fi
-
-  if [ "${WIZARDRY_TEST_HELPERS_ONLY-0}" -eq 1 ]; then
-    helper_path=$(command -v "$helper")
-    case "$helper_path" in
-      /usr/*|/bin/*|/sbin/*|/usr/local/*)
-        return 1 ;;
-    esac
-  fi
-
-  return 0
-}
-
-read_value() {
-  key=$1
-  file=$2
-
-  if helper_usable attr; then
-    if output=$(attr -g "$key" "$file" 2>/dev/null); then
-      parse_attr_output "$output"
-      return 0
-    fi
-  fi
-
-  if helper_usable xattr; then
-    if output=$(xattr -p "$key" "$file" 2>/dev/null); then
-      printf '%s' "$output"
-      return 0
-    fi
-  fi
-
-  if helper_usable getfattr; then
-    if output=$(getfattr -n "$key" --only-values "$file" 2>/dev/null); then
-      printf '%s' "$output"
-      return 0
-    fi
-  fi
-
-  return 1
-}
-
-list_keys() {
-  file=$1
-
-  if helper_usable attr; then
-    if keys=$(attr -l "$file" 2>/dev/null); then
-      # Parse attr -l output which may be in format:
-      # Attribute "key" has a value...
-      # or just: key
-      parsed=$(printf '%s\n' "$keys" | awk '
-        /^Attribute "/ {
-          # Extract key from quoted format: Attribute "key" ...
-          if (match($0, /"([^"]+)"/)) {
-            key = substr($0, RSTART+1, RLENGTH-2)
-            print key
-          }
-          next
-        }
-        NF { print }
-      ')
-      if [ -n "$parsed" ]; then
-        printf '%s\n' "$parsed"
-        return 0
-      fi
-    fi
-  fi
-
-  if helper_usable xattr; then
-    if keys=$(xattr "$file" 2>/dev/null); then
-      if [ -n "$keys" ]; then
-        printf '%s\n' "$keys"
-        return 0
-      fi
-    fi
-  fi
-
-  if helper_usable getfattr; then
-    if keys=$(getfattr -d "$file" 2>/dev/null); then
-      parsed=$(printf '%s' "$keys" | awk -F '=' '/^# / {next} {print $1}')
-      if [ -n "$parsed" ]; then
-        printf '%s' "$parsed"
-        return 0
-      fi
-    fi
-  fi
-
-  return 1
-}
-
-print_all_attributes() {
-  file=$1
-
-  keys=$(list_keys "$file" || printf '')
-
-  if [ -z "$keys" ]; then
-    printf '%s\n' "No enchanted attributes found."
-    return
-  fi
-
-  printf '%s\n' "$keys" | while IFS= read -r key || [ -n "$key" ]; do
-    [ -z "$key" ] && continue
-    value=$(read_value "$key" "$file" || printf '')
-    printf '%s: %s\n' "$key" "$value"
-  done
-}
-
-main() {
-  if ! require_args "$@"; then
-    exit 1
-  fi
-
-  file=$1
-  attribute=${2-}
-
-  if ! file_exists "$file"; then
-    exit 1
-  fi
-
-  if [ -z "$attribute" ]; then
-    print_all_attributes "$file"
-    exit 0
-  fi
-
-  if value=$(read_value "$attribute" "$file"); then
+# If specific attribute requested, read and print it
+if [ -n "$attribute" ]; then
+  if value=$(xattr-read-value "$attribute" "$file"); then
     printf '%s\n' "$value"
   else
     printf '%s\n' "read-magic: attribute does not exist."
     exit 1
   fi
-}
+  exit 0
+fi
 
-main "$@"
+# Otherwise, list all attributes
+keys=$(xattr-list-keys "$file" || printf '')
+
+if [ -z "$keys" ]; then
+  printf '%s\n' "No enchanted attributes found."
+  exit 0
+fi
+
+# Print each attribute with its value
+printf '%s\n' "$keys" | while IFS= read -r key || [ -n "$key" ]; do
+  [ -z "$key" ] && continue
+  value=$(xattr-read-value "$key" "$file" || printf '')
+  printf '%s: %s\n' "$key" "$value"
+done
