@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/bin/sh
 
 # Present an interactive menu using only POSIX shell features. This variant
 # relies on existing cantrips (await-keypress, move-cursor, etc.) to handle the

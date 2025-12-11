@@ -7,6 +7,7 @@ Documents all deviations from project standards with justification.
 - **Style**: 330/330 files compliant (2 hardcoded exemptions for doppelganger)
 - **Code Structure**: Conditional imps exempt from `set -eu`; imps exempt from `--help`
 - **Testing**: Bootstrap scripts can't use wizardry infrastructure
+- **Non-Shell Files**: Systemd service files exempt from all shell checks (2 files)
 - **CI**: No exemptions - all checks required
 
 ---
@@ -83,7 +84,21 @@ case "$0" in */has) _has "$@" ;; esac
 
 ---
 
-## 4. CI Exemptions
+## 4. Non-Shell File Exemptions
+
+### Systemd Service Files
+
+**Affected** (2 files):
+- `spells/.arcana/bitcoin/bitcoin.service`
+- `spells/.arcana/tor/tor.service`
+
+**Reason**: Systemd unit files, not shell scripts; exempt from all shell-specific checks (shebang, `set -eu`, `show_usage`, `--help`)
+
+**Validation**: `lint-magic` and test infrastructure skip files matching `*.service` pattern
+
+---
+
+## 5. CI Exemptions
 
 **Status**: ✅ None - all checks required (no `continue-on-error` or `allow-failure`)
 
@@ -96,4 +111,34 @@ case "$0" in */has) _has "$@" ;; esac
 3. Get PR approval
 4. Update this file
 
-**Review**: Quarterly (next: 2026-03-10) | **Last Updated**: 2025-12-10
+---
+
+## Resolved Exemptions
+
+These exemptions have been resolved and are documented here to prevent backsliding.
+
+### ✅ Alternative Shebangs: `#!/usr/bin/env sh` (Resolved 2025-12-11)
+
+**Previously Affected** (38 files):
+- **Cantrips** (10 files): `assertions`, `colors`, `cursor-blink`, `fathom-cursor`, `fathom-terminal`, `max-length`, `menu`, `move-cursor`, `require-command`, `require-wizardry`
+- **System/Menu** (3 files): `divination/detect-distro`, `system/update-all`, `menu/install-menu`
+- **Arcana** (25 files): All `.arcana/core/*` install/uninstall scripts (24 files), plus `tor/setup-tor`
+
+**Resolution**: All files converted to standard `#!/bin/sh` shebang. Test infrastructure updated to only accept `#!/bin/sh` (with optional space after `#!`).
+
+**Reason for Resolution**: Standardize on single shebang format across entire project. The standard `#!/bin/sh` is widely supported and the claimed portability benefits of `#!/usr/bin/env sh` were not compelling enough to maintain two shebang styles.
+
+### ✅ Bash Tutorials: `#!/bin/bash` (Resolved 2025-12-11)
+
+**Previously Affected** (5 files):
+- `tutorials/26_history.sh`
+- `tutorials/28_distribution.sh`
+- `tutorials/29_ssh.sh`
+- `tutorials/30_git.sh`
+- `tutorials/31_usability.sh`
+
+**Resolution**: All tutorial files converted to standard `#!/bin/sh` shebang.
+
+**Reason for Resolution**: Educational materials should exemplify project standards. All 26 tutorials now use POSIX-compliant `#!/bin/sh`. Tutorials can still teach bash-specific concepts by noting them as non-portable extensions.
+
+**Review**: Quarterly (next: 2026-03-10) | **Last Updated**: 2025-12-11

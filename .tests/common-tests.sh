@@ -20,7 +20,7 @@ is_posix_shell_script() {
   file=$1
   first_line=$(head -1 "$file" 2>/dev/null || true)
   case $first_line in
-    '#!/bin/sh'|'#! /bin/sh'|'#!/usr/bin/env sh'|'#! /usr/bin/env sh') return 0 ;;
+    '#!/bin/sh'|'#! /bin/sh') return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -30,8 +30,8 @@ is_any_shell_script() {
   file=$1
   first_line=$(head -1 "$file" 2>/dev/null || true)
   case $first_line in
-    '#!/bin/sh'|'#! /bin/sh'|'#!/usr/bin/env sh'|'#! /usr/bin/env sh') return 0 ;;
-    '#!/bin/bash'|'#! /bin/bash'|'#!/usr/bin/env bash'|'#! /usr/bin/env bash') return 0 ;;
+    '#!/bin/sh'|'#! /bin/sh') return 0 ;;
+    '#!/bin/bash'|'#! /bin/bash') return 0 ;;
     *) return 1 ;;
   esac
 }

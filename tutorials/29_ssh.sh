@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Spell cast: Secure Shell (ssh) and Secure Copy (scp)
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/bin/sh
 # Bootstrap spell: uninstalls the git command using the system package manager.
 
 show_usage() {

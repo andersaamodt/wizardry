@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/bin/sh
 
 # This spell awakens or stills the cyclic illumination of the cursor.
 
