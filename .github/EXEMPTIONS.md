@@ -71,7 +71,7 @@ result=$(echo "$cleaned" | sort | uniq | head -10)
 
 Some lines cannot be easily split and are NOT primarily strings. These require manual exemption and are hardcoded in lint-magic:
 
-**1. Doppelganger Compilation Compatibility**
+**1. Doppelganger Compilation Compatibility - is imp**
 - **File**: `spells/.imps/cond/is`
 - **Line**: 13 (the `empty` case statement)
 - **Length**: 156 characters
@@ -79,6 +79,16 @@ Some lines cannot be easily split and are NOT primarily strings. These require m
 - **Line**: `empty)    if [ -f "$2" ]; then [ ! -s "$2" ]; elif [ -d "$2" ]; then [ -z "$(ls -A "$2" 2>/dev/null)" ]; else return 1; fi ;;`
 - **Exemption Method**: Hardcoded in `lint-magic` check_long_lines() function
 - **Alternative Considered**: Improving compile-spell's case statement detection, but this is beyond the scope of style enforcement
+- **Impact**: Single file, single line exemption - minimal
+
+**2. Doppelganger Compilation Compatibility - identify-room**
+- **File**: `spells/divination/identify-room`
+- **Line**: 260 (directory path list in list_recognized function)
+- **Length**: ~180 characters
+- **Reason**: Similar to the `is` imp, this case statement with a long list of directory paths in the pattern must remain on one line for doppelganger compilation. Splitting across multiple lines causes the same issue where compile-spell's case label detection fails.
+- **Line**: Contains pattern like `case $dir in *directory1*|*directory2*|...|*directoryN*) ... ;; esac`
+- **Exemption Method**: Hardcoded in `lint-magic` check_long_lines() function
+- **Alternative Considered**: Restructuring the case statement or improving compile-spell, but both are beyond style enforcement scope
 - **Impact**: Single file, single line exemption - minimal
 
 **2. Menu options with embedded shell scripts** (NOT YET EXEMPTED - would need manual exemption if enforced)

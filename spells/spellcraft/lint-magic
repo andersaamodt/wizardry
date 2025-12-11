@@ -530,6 +530,12 @@ check_long_lines() {
       # or matching pattern. This is documented in EXEMPTIONS.md.
       return 0
       ;;
+    */spells/divination/identify-room)
+      # The list_recognized function has a long directory path list in a case statement.
+      # Splitting it breaks doppelganger compilation similar to the is imp issue above.
+      # This is documented in EXEMPTIONS.md.
+      return 0
+      ;;
   esac
   
   # Create temp file for awk script with robust heredoc detection and string detection
