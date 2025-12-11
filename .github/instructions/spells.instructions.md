@@ -151,6 +151,15 @@ printf '%s\n' "spell-name: sshfs not found." >&2
 ### Functions
 Prefer linear, flat code flow over excessive function wrapping.
 
+**Function Discipline**:
+- `show_usage()` is required (except for imps)
+- 0-1 additional helper functions: freely allowed (the "spell-heart helper")
+- 2 additional functions: acceptable with warning (must be invoked from multiple paths, not suitable as imps)
+- 3 additional functions: marginal case with strong warning
+- 4+ additional functions: indicates proto-library, must decompose into multiple spells and/or imps
+
+**Rationale**: A spell is a scroll, not a miniature program. It narrates one coherent magical action expressed linearly. Multiple internal subroutines indicate the action is conceptually fractured and should be refactored.
+
 ### Exit Codes
 - `0`: Success
 - `1`: General error
@@ -166,6 +175,7 @@ Signs a spell needs refactoring:
 - Multiple modes or usage lines
 - More than 5-10 lines of help text
 - Complex nested conditionals
+- **4+ additional functions beyond `show_usage()` (proto-library)**
 
 Solutions:
 - Split into multiple smaller spells
