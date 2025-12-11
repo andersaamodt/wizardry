@@ -15,7 +15,7 @@ test_xattr_helper_usable_exists() {
 test_xattr_helper_usable_accepts_command() {
   skip-if-compiled || return $?
   # Should return 0 for a command that exists in PATH (but not in system paths during test mode)
-  tmpdir=$(make-tempdir xattr-test)
+  tmpdir=$(_make_tempdir)
   mkdir -p "$tmpdir/bin"
   printf '#!/bin/sh\nprintf "stub"\n' > "$tmpdir/bin/mycmd"
   chmod +x "$tmpdir/bin/mycmd"
@@ -43,7 +43,7 @@ test_xattr_helper_usable_respects_test_mode() {
 test_xattr_helper_usable_allows_non_system_in_test_mode() {
   skip-if-compiled || return $?
   # Create a stub helper in temp location
-  tmpdir=$(make-tempdir xattr-test)
+  tmpdir=$(_make_tempdir)
   mkdir -p "$tmpdir/bin"
   printf '#!/bin/sh\nprintf "stub"\n' > "$tmpdir/bin/mystub"
   chmod +x "$tmpdir/bin/mystub"

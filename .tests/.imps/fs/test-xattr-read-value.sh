@@ -15,7 +15,7 @@ test_xattr_read_value_exists() {
 test_xattr_read_value_with_mock_xattr() {
   skip-if-compiled || return $?
   # Create test environment with mock xattr
-  tmpdir=$(make-tempdir xattr-test)
+  tmpdir=$(_make_tempdir)
   testfile="$tmpdir/testfile.txt"
   printf "test content\n" > "$testfile"
   
@@ -49,7 +49,7 @@ STUB
 test_xattr_read_value_fallback_to_attr() {
   skip-if-compiled || return $?
   # Test fallback to attr command
-  tmpdir=$(make-tempdir xattr-test)
+  tmpdir=$(_make_tempdir)
   testfile="$tmpdir/testfile.txt"
   printf "test content\n" > "$testfile"
   
@@ -84,7 +84,7 @@ STUB
 test_xattr_read_value_returns_error_for_missing_key() {
   skip-if-compiled || return $?
   # Should return 1 when key doesn't exist
-  tmpdir=$(make-tempdir xattr-test)
+  tmpdir=$(_make_tempdir)
   testfile="$tmpdir/testfile.txt"
   printf "test content\n" > "$testfile"
   

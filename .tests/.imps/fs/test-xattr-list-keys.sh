@@ -15,7 +15,7 @@ test_xattr_list_keys_exists() {
 test_xattr_list_keys_with_mock_xattr() {
   skip-if-compiled || return $?
   # Create a test file and mock xattr command
-  tmpdir=$(make-tempdir xattr-test)
+  tmpdir=$(_make_tempdir)
   testfile="$tmpdir/testfile.txt"
   printf "test content\n" > "$testfile"
   
@@ -46,7 +46,7 @@ STUB
 test_xattr_list_keys_fallback_to_attr() {
   skip-if-compiled || return $?
   # Test fallback to attr command when xattr not available
-  tmpdir=$(make-tempdir xattr-test)
+  tmpdir=$(_make_tempdir)
   testfile="$tmpdir/testfile.txt"
   printf "test content\n" > "$testfile"
   
@@ -77,7 +77,7 @@ STUB
 test_xattr_list_keys_returns_error_when_no_attrs() {
   skip-if-compiled || return $?
   # Should return 1 when no attributes found
-  tmpdir=$(make-tempdir xattr-test)
+  tmpdir=$(_make_tempdir)
   testfile="$tmpdir/testfile.txt"
   printf "test content\n" > "$testfile"
   
