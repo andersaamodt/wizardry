@@ -3,236 +3,245 @@
 # Install Bitcoin Core binaries on the system.
 
 show_usage() {
-        cat <<'USAGE' >&2
+cat <<'USAGE' >&2
 Usage: install-bitcoin
 
-Runs an interactive wizard to install Bitcoin Core (via packages, nix, or upstream binaries), updates bitcoin.conf, and optionally starts the node.
+Runs an interactive wizard to install Bitcoin Core (via packages, nix, or
+upstream binaries), updates bitcoin.conf, and optionally starts the node.
 USAGE
 }
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
-        exit 0
-        ;;
+show_usage
+exit 0
+;;
 esac
 
 set -eu
 
 BITCOIN_VERSION_DEFAULT="25.0"
 
-prompt_yes_no() {
-  question=$1
-  default=${2:-y}
+# Prompt for version
+prompt="Which Bitcoin Core version should be installed?"
+printf "%s [%s]: " "$prompt" "$BITCOIN_VERSION_DEFAULT"
+IFS= read -r version
+[ -z "$version" ] && version=$BITCOIN_VERSION_DEFAULT
 
+# Detect distribution
+if command -v detect-distro >/dev/null 2>&1; then
+  distro=$(detect-distro 2>/dev/null || printf 'unknown')
+else
+  distro='unknown'
+fi
+
+# NixOS installation path
+if [ "$distro" = "nixos" ]; then
+  echo "Detected NixOS. Installing via nix profile for user environment."
+  
+  # Try nix installation
+  nix_success=0
+  if command -v nix-env >/dev/null 2>&1; then
+    nix-env -iA nixpkgs.bitcoind && nix_success=1
+  elif command -v nix >/dev/null 2>&1; then
+    nix profile install nixpkgs#bitcoind && nix_success=1
+  fi
+  
+  # Fallback to binary if nix failed
+  if [ "$nix_success" -eq 0 ]; then
+    echo "Nix tools were not available; falling back to upstream binaries."
+    
+    # Binary installation inline
+    binary_name=""
+    arch=$(uname -m)
+    case "$arch" in
+      x86_64) binary_name="bitcoin-$version-x86_64-linux-gnu.tar.gz" ;;
+      aarch64) binary_name="bitcoin-$version-aarch64-linux-gnu.tar.gz" ;;
+      armv7l) binary_name="bitcoin-$version-arm-linux-gnueabihf.tar.gz" ;;
+      *)
+        echo "Unsupported architecture: $arch"
+        exit 1
+        ;;
+    esac
+    
+    bitcoin_url="https://bitcoincore.org/bin/bitcoin-core-$version/$binary_name"
+    tmp_dir=$(temp-dir bitcoin-install) || exit 1
+    trap 'cleanup-dir "$tmp_dir"' EXIT HUP INT TERM
+    cd "$tmp_dir" || exit 1
+    wget "$bitcoin_url" || exit 1
+    tar -xzf "$binary_name"
+    sudo install -m 0755 -o root -g root -t /usr/local/bin "bitcoin-$version"/bin/*
+    cd - >/dev/null || true
+    trap - EXIT HUP INT TERM
+    rm -rf "$tmp_dir"
+    printf "Bitcoin Core version %s installed from upstream binaries.\n" "$version"
+  fi
+  
+  # Configure bitcoin.conf
   if command -v ask-yn >/dev/null 2>&1; then
-    if ask-yn "$question" "$default"; then
-      return 0
+    if ask-yn "Configure bitcoin.conf with sensible defaults now?" "y"; then
+      configure-bitcoin
+    fi
+  else
+    printf "Configure bitcoin.conf with sensible defaults now? [Y/n] "
+    read -r reply
+    [ -z "$reply" ] && reply=y
+    case "$reply" in [Yy]*) configure-bitcoin ;; esac
+  fi
+  
+  # Maybe rebuild NixOS
+  if command -v nixos-rebuild >/dev/null 2>&1; then
+    if command -v ask-yn >/dev/null 2>&1; then
+      if ask-yn "Run 'sudo nixos-rebuild switch' to activate any configuration changes?" "y"; then
+        sudo nixos-rebuild switch
+      fi
     else
-      return 1
+      printf "Run 'sudo nixos-rebuild switch' to activate any configuration changes? [Y/n] "
+      read -r reply
+      [ -z "$reply" ] && reply=y
+      case "$reply" in [Yy]*) sudo nixos-rebuild switch ;; esac
     fi
   fi
-
-  suffix="[y/N]"
-  [ "$default" = "y" ] && suffix="[Y/n]"
-  printf "%s %s " "$question" "$suffix"
-  read -r reply
-  [ -z "$reply" ] && reply=$default
-  case "$reply" in
-    [Yy]*) return 0 ;;
-    *) return 1 ;;
-  esac
-}
-
-prompt_with_default() {
-  prompt=$1
-  default_value=$2
-  printf "%s [%s]: " "$prompt" "$default_value"
-  IFS= read -r response
-  if [ -z "$response" ]; then
-    printf "%s" "$default_value"
+  
+  # Maybe start bitcoind
+  if command -v ask-yn >/dev/null 2>&1; then
+    if ask-yn "Start bitcoind in the background now?" "y"; then
+      if command -v systemctl >/dev/null 2>&1 \
+          && systemctl list-unit-files | grep -q '^bitcoin.service'; then
+        sudo systemctl start bitcoin
+      else
+        bitcoind -daemon || true
+      fi
+    fi
   else
-    printf "%s" "$response"
+    printf "Start bitcoind in the background now? [Y/n] "
+    read -r reply
+    [ -z "$reply" ] && reply=y
+    if [ "$reply" = "y" ] || [ "$reply" = "Y" ]; then
+      if command -v systemctl >/dev/null 2>&1 \
+          && systemctl list-unit-files | grep -q '^bitcoin.service'; then
+        sudo systemctl start bitcoin
+      else
+        bitcoind -daemon || true
+      fi
+    fi
   fi
-}
+  exit 0
+fi
 
-detect_distro() {
-  if command -v detect-distro >/dev/null 2>&1; then
-    detect-distro 2>/dev/null || printf 'unknown'
-    return
+# Standard Linux installation
+echo "Detected platform: $distro"
+
+# Check if package manager available and ask
+pkg_install_success=0
+pkg_mgr_available=0
+command -v apt >/dev/null 2>&1 && pkg_mgr_available=1
+command -v dnf >/dev/null 2>&1 && pkg_mgr_available=1
+command -v pacman >/dev/null 2>&1 && pkg_mgr_available=1
+command -v brew >/dev/null 2>&1 && pkg_mgr_available=1
+
+use_pkg_mgr=0
+if [ "$pkg_mgr_available" -eq 1 ]; then
+  if command -v ask-yn >/dev/null 2>&1; then
+    ask-yn "Use your package manager to install Bitcoin Core?" "y" && use_pkg_mgr=1
+  else
+    printf "Use your package manager to install Bitcoin Core? [Y/n] "
+    read -r reply
+    [ -z "$reply" ] && reply=y
+    case "$reply" in [Yy]*) use_pkg_mgr=1 ;; esac
   fi
-  printf 'unknown'
-}
+fi
 
-install_with_binary() {
-  BITCOIN_VERSION=$1
+# Install via package manager if requested
+if [ "$use_pkg_mgr" -eq 1 ]; then
+  if command -v apt >/dev/null 2>&1; then
+    sudo apt update && sudo apt install -y bitcoind bitcoin-qt && pkg_install_success=1
+  elif command -v dnf >/dev/null 2>&1; then
+    (sudo dnf install -y bitcoin || sudo dnf install -y bitcoind) && pkg_install_success=1
+  elif command -v pacman >/dev/null 2>&1; then
+    sudo pacman -Sy --noconfirm bitcoind && pkg_install_success=1
+  elif command -v brew >/dev/null 2>&1; then
+    brew install bitcoin-core && pkg_install_success=1
+  fi
+fi
+
+# Fallback to binary if package install failed
+if [ "$pkg_install_success" -eq 0 ]; then
   binary_name=""
   arch=$(uname -m)
   case "$arch" in
-    x86_64)
-      binary_name="bitcoin-$BITCOIN_VERSION-x86_64-linux-gnu.tar.gz"
-      ;;
-    aarch64)
-      binary_name="bitcoin-$BITCOIN_VERSION-aarch64-linux-gnu.tar.gz"
-      ;;
-    armv7l)
-      binary_name="bitcoin-$BITCOIN_VERSION-arm-linux-gnueabihf.tar.gz"
-      ;;
+    x86_64) binary_name="bitcoin-$version-x86_64-linux-gnu.tar.gz" ;;
+    aarch64) binary_name="bitcoin-$version-aarch64-linux-gnu.tar.gz" ;;
+    armv7l) binary_name="bitcoin-$version-arm-linux-gnueabihf.tar.gz" ;;
     *)
       echo "Unsupported architecture: $arch"
-      return 1
+      exit 1
       ;;
   esac
-
-  bitcoin_url="https://bitcoincore.org/bin/bitcoin-core-$BITCOIN_VERSION/$binary_name"
-  tmp_dir=$(temp-dir bitcoin-install) || return 1
+  
+  bitcoin_url="https://bitcoincore.org/bin/bitcoin-core-$version/$binary_name"
+  tmp_dir=$(temp-dir bitcoin-install) || exit 1
   trap 'cleanup-dir "$tmp_dir"' EXIT HUP INT TERM
-  if ! cd "$tmp_dir"; then
-    echo "Failed to change to temp directory"
-    return 1
-  fi
-  if ! wget "$bitcoin_url"; then
-    echo "Failed to download $bitcoin_url"
-    cd - >/dev/null || true
-    return 1
-  fi
+  cd "$tmp_dir" || exit 1
+  wget "$bitcoin_url" || exit 1
   tar -xzf "$binary_name"
-  sudo install -m 0755 -o root -g root -t /usr/local/bin "bitcoin-$BITCOIN_VERSION"/bin/*
+  sudo install -m 0755 -o root -g root -t /usr/local/bin "bitcoin-$version"/bin/*
   cd - >/dev/null || true
   trap - EXIT HUP INT TERM
   rm -rf "$tmp_dir"
-  printf "Bitcoin Core version %s installed from upstream binaries.\n" "$BITCOIN_VERSION"
-}
+  printf "Bitcoin Core version %s installed from upstream binaries.\n" "$version"
+fi
 
-install_with_package_manager() {
-  if command -v apt >/dev/null 2>&1; then
-    sudo apt update && sudo apt install -y bitcoind bitcoin-qt && return 0
+# Configure bitcoin.conf
+if command -v ask-yn >/dev/null 2>&1; then
+  if ask-yn "Configure bitcoin.conf with sensible defaults now?" "y"; then
+    configure-bitcoin
   fi
+else
+  printf "Configure bitcoin.conf with sensible defaults now? [Y/n] "
+  read -r reply
+  [ -z "$reply" ] && reply=y
+  case "$reply" in [Yy]*) configure-bitcoin ;; esac
+fi
 
-  if command -v dnf >/dev/null 2>&1; then
-    sudo dnf install -y bitcoin || sudo dnf install -y bitcoind || return 1
-    return 0
-  fi
-
-  if command -v pacman >/dev/null 2>&1; then
-    sudo pacman -Sy --noconfirm bitcoind && return 0
-  fi
-
-  if command -v brew >/dev/null 2>&1; then
-    brew install bitcoin-core && return 0
-  fi
-
-  return 1
-}
-
-package_manager_available() {
-  if command -v apt >/dev/null 2>&1; then
-    return 0
-  fi
-
-  if command -v dnf >/dev/null 2>&1; then
-    return 0
-  fi
-
-  if command -v pacman >/dev/null 2>&1; then
-    return 0
-  fi
-
-  if command -v brew >/dev/null 2>&1; then
-    return 0
-  fi
-
-  return 1
-}
-
-install_with_nix() {
-  if command -v nix-env >/dev/null 2>&1; then
-    nix-env -iA nixpkgs.bitcoind
-    return 0
-  fi
-
-  if command -v nix >/dev/null 2>&1; then
-    nix profile install nixpkgs#bitcoind
-    return 0
-  fi
-
-  return 1
-}
-
-maybe_run_nixos_rebuild() {
-  if command -v nixos-rebuild >/dev/null 2>&1; then
-    prompt="Run 'sudo nixos-rebuild switch' to activate any configuration changes?"
-    if prompt_yes_no "$prompt" "y"; then
-      sudo nixos-rebuild switch
+# Maybe install service
+if command -v install-service-template >/dev/null 2>&1; then
+  if command -v ask-yn >/dev/null 2>&1; then
+    if ask-yn "Install a system service for bitcoind?" "n"; then
+      script_dir=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
+      install-service-template "$script_dir/bitcoin.service" "BITCOIND=$(command -v bitcoind)"
+    fi
+  else
+    printf "Install a system service for bitcoind? [y/N] "
+    read -r reply
+    [ -z "$reply" ] && reply=n
+    if [ "$reply" = "y" ] || [ "$reply" = "Y" ]; then
+      script_dir=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
+      install-service-template "$script_dir/bitcoin.service" "BITCOIND=$(command -v bitcoind)"
     fi
   fi
-}
+fi
 
-maybe_start_bitcoind() {
-  if prompt_yes_no "Start bitcoind in the background now?" "y"; then
-    has_systemctl=$(command -v systemctl >/dev/null 2>&1 && echo "yes" || echo "no")
-    has_service=$(systemctl list-unit-files | grep -q '^bitcoin.service' && echo "yes" || echo "no")
-    
-    if [ "$has_systemctl" = "yes" ] && [ "$has_service" = "yes" ]; then
+# Maybe start bitcoind
+if command -v ask-yn >/dev/null 2>&1; then
+  if ask-yn "Start bitcoind in the background now?" "y"; then
+    if command -v systemctl >/dev/null 2>&1 \
+        && systemctl list-unit-files | grep -q '^bitcoin.service'; then
       sudo systemctl start bitcoin
     else
       bitcoind -daemon || true
     fi
   fi
-}
-
-configure_bitcoin_conf() {
-  if prompt_yes_no "Configure bitcoin.conf with sensible defaults now?" "y"; then
-    configure-bitcoin
-  fi
-}
-
-run_installer() {
-  distro=$(detect_distro)
-  prompt="Which Bitcoin Core version should be installed?"
-  version=$(prompt_with_default "$prompt" "$BITCOIN_VERSION_DEFAULT")
-
-  if [ "$distro" = "nixos" ]; then
-    echo "Detected NixOS. Installing via nix profile for user environment."
-    if ! install_with_nix; then
-      echo "Nix tools were not available; falling back to upstream binaries."
-      install_with_binary "$version"
-    fi
-    configure_bitcoin_conf
-    maybe_run_nixos_rebuild
-    maybe_start_bitcoind
-    return
-  fi
-
-  echo "Detected platform: $distro"
-  install_method="binary"
-  has_pkg_mgr=$(package_manager_available && echo "yes" || echo "no")
-  use_pkg_mgr="no"
-  if [ "$has_pkg_mgr" = "yes" ]; then
-    prompt="Use your package manager to install Bitcoin Core?"
-    if prompt_yes_no "$prompt" "y"; then
-      use_pkg_mgr="yes"
+else
+  printf "Start bitcoind in the background now? [Y/n] "
+  read -r reply
+  [ -z "$reply" ] && reply=y
+  if [ "$reply" = "y" ] || [ "$reply" = "Y" ]; then
+    if command -v systemctl >/dev/null 2>&1 \
+        && systemctl list-unit-files | grep -q '^bitcoin.service'; then
+      sudo systemctl start bitcoin
+    else
+      bitcoind -daemon || true
     fi
   fi
-  
-  if [ "$use_pkg_mgr" = "yes" ]; then
-    install_method="package"
-  fi
-
-  if [ "$install_method" = "package" ]; then
-    install_with_package_manager || install_with_binary "$version"
-  else
-    install_with_binary "$version"
-  fi
-
-  configure_bitcoin_conf
-  if command -v install-service-template >/dev/null 2>&1; then
-    if prompt_yes_no "Install a system service for bitcoind?" "n"; then
-      script_dir=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
-      install-service-template "$script_dir/bitcoin.service" "BITCOIND=$(command -v bitcoind)"
-    fi
-  fi
-  maybe_start_bitcoind
-}
-
-run_installer
+fi

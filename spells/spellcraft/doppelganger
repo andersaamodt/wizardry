@@ -64,24 +64,6 @@ say "Compiling all spells..."
 compiled_count=0
 failed_count=0
 
-# Function to compile a single spell by path
-compile_spell_by_path() {
-  spell_path=$1
-  target_file=$2
-  
-  # Get the relative path from repo root (e.g., spells/cantrips/hash)
-  spell_rel_path=${spell_path#$repo_dir/}
-  
-  # Call compile-spell from repo directory with full relative path and redirect output to target
-  # Redirect stdout to file, stderr to /dev/null (don't let error messages corrupt the compiled spell)
-  if (cd "$repo_dir" && "$repo_dir/spells/spellcraft/compile-spell" "$spell_rel_path" 2>/dev/null) > "$target_file"; then
-    chmod +x "$target_file"
-    return 0
-  else
-    return 1
-  fi
-}
-
 # Process spells from known locations
 for spell_path in \
   "$repo_dir/spells"/*/* \
@@ -97,7 +79,7 @@ do
   
   # Skip hidden files (except .imps and .arcana which are already in path)
   case "$spell_path" in
-    */.git/*|*/.github/*|*/.*) 
+    */.git/*|*/.github/*|*/.*)
       # Allow .imps and .arcana
       case "$spell_path" in
         */.imps/*|*/.arcana/*) ;;
@@ -128,8 +110,14 @@ do
       ;;
   esac
   
-  # Compile spell
-  if compile_spell_by_path "$spell_path" "$target_dir/$spell_name"; then
+  # Compile spell: get relative path from repo root and compile
+  spell_rel_path=${spell_path#$repo_dir/}
+  target_file="$target_dir/$spell_name"
+  
+  # Call compile-spell from repo directory with full relative path and redirect output to target
+  # Redirect stdout to file, stderr to /dev/null (don't let error messages corrupt the compiled spell)
+  if (cd "$repo_dir" && "$repo_dir/spells/spellcraft/compile-spell" "$spell_rel_path" 2>/dev/null) > "$target_file"; then
+    chmod +x "$target_file"
     compiled_count=$((compiled_count + 1))
   else
     warn "doppelganger: failed to compile $spell_name"

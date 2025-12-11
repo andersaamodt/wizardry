@@ -83,28 +83,6 @@ set_feature() {
         fi
 }
 
-# Toggle feature between 1/0
-toggle_feature() {
-        feature=$1
-        current=$(get_feature "$feature")
-        if [ "$current" = "1" ]; then
-                set_feature "$feature" "0"
-                printf '%s\n' "0"
-        else
-                set_feature "$feature" "1"
-                printf '%s\n' "1"
-        fi
-}
-
-# List all features
-list_features() {
-        features="command-not-found touch-hook fantasy-theme inventory combat"
-        for feature in $features; do
-                value=$(get_feature "$feature")
-                printf '%s=%s\n' "$feature" "$value"
-        done
-}
-
 # Main command dispatch
 if [ "$#" -lt 1 ]; then
         show_usage >&2
@@ -130,14 +108,28 @@ case "$cmd" in
                 set_feature "$1" "$2"
                 ;;
         toggle)
+                # Toggle feature between 1/0
                 if [ "$#" -lt 1 ]; then
                         printf '%s\n' "mud-config: toggle requires a feature name" >&2
                         exit 1
                 fi
-                toggle_feature "$1"
+                feature=$1
+                current=$(get_feature "$feature")
+                if [ "$current" = "1" ]; then
+                        set_feature "$feature" "0"
+                        printf '%s\n' "0"
+                else
+                        set_feature "$feature" "1"
+                        printf '%s\n' "1"
+                fi
                 ;;
         list)
-                list_features
+                # List all features
+                features="command-not-found touch-hook fantasy-theme inventory combat"
+                for feature in $features; do
+                        value=$(get_feature "$feature")
+                        printf '%s=%s\n' "$feature" "$value"
+                done
                 ;;
         *)
                 printf '%s\n' "mud-config: unknown command '$cmd'" >&2

@@ -22,87 +22,75 @@ set -eu
 
 SCRIPT_NAME=$(basename "$0")
 
-SCRIPT_SOURCE=$0
-case $SCRIPT_SOURCE in
-*/*)
-        SCRIPT_DIR=${SCRIPT_SOURCE%/*}
-        ;;
-*)
-        resolved=$(command -v "$SCRIPT_SOURCE" 2>/dev/null || printf '%s' "$SCRIPT_SOURCE")
-        SCRIPT_DIR=${resolved%/*}
-        SCRIPT_SOURCE=$resolved
-        ;;
-esac
-if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
-        SCRIPT_DIR=.
-fi
-SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
-
-find_ask_text() {
-if [ -n "${STOP_SERVICE_ASK_TEXT-}" ]; then
-printf '%s' "$STOP_SERVICE_ASK_TEXT"
-return 0
-fi
-if command -v ask-text >/dev/null 2>&1; then
-command -v ask-text
-return 0
-fi
-if [ -x "$SCRIPT_DIR/ask-text" ]; then
-printf '%s' "$SCRIPT_DIR/ask-text"
-return 0
-fi
-printf '%s\n' "$SCRIPT_NAME: ask-text spell not found." >&2
-exit 1
-}
-
-ASK_TEXT_HELPER=$(find_ask_text)
-
-find_systemctl() {
-        if [ -z "${SYSTEMCTL-}" ]; then
-                if command -v systemctl >/dev/null 2>&1; then
-                        SYSTEMCTL=$(command -v systemctl)
+# Get service name from argument or prompt user
+service_name=${1-}
+if [ -z "$service_name" ]; then
+        # Find ask-text helper
+        if [ -n "${STOP_SERVICE_ASK_TEXT-}" ]; then
+                ASK_TEXT_HELPER=$STOP_SERVICE_ASK_TEXT
+        elif command -v ask-text >/dev/null 2>&1; then
+                ASK_TEXT_HELPER=$(command -v ask-text)
+        else
+                # Try to find in same directory as script
+                SCRIPT_SOURCE=$0
+                case $SCRIPT_SOURCE in
+                */*)
+                        SCRIPT_DIR=${SCRIPT_SOURCE%/*}
+                        ;;
+                *)
+                        resolved=$(command -v "$SCRIPT_SOURCE" 2>/dev/null \
+                                || printf '%s' "$SCRIPT_SOURCE")
+                        SCRIPT_DIR=${resolved%/*}
+                        ;;
+                esac
+                if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
+                        SCRIPT_DIR=.
+                fi
+                SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
+                
+                if [ -x "$SCRIPT_DIR/ask-text" ]; then
+                        ASK_TEXT_HELPER=$SCRIPT_DIR/ask-text
                 else
-                        printf '%s\n' "$SCRIPT_NAME: systemctl is not available on this system." >&2
+                        printf '%s\n' "$SCRIPT_NAME: ask-text spell not found." >&2
                         exit 1
                 fi
         fi
-        printf '%s' "$SYSTEMCTL"
-}
-
-run_systemctl() {
-        SYSTEMCTL=$(find_systemctl)
-        if [ "$(id -u)" -eq 0 ]; then
-                "$SYSTEMCTL" "$@"
-                return
-        fi
-        if command -v sudo >/dev/null 2>&1; then
-                sudo "$SYSTEMCTL" "$@"
-                return
-        fi
-        printf '%s\n' "$SCRIPT_NAME: systemctl requires root. Re-run as root or install sudo." >&2
-        exit 1
-}
-
-normalize_unit() {
-        unit=$1
-        case $unit in
-        *.service)
-                printf '%s' "$unit"
-                ;;
-        *)
-                printf '%s.service' "$unit"
-                ;;
-        esac
-}
-
-service_name=${1-}
-if [ -z "$service_name" ]; then
+        
         service_name=$("$ASK_TEXT_HELPER" "Which service should I stop?")
 fi
+
 if [ -z "$service_name" ]; then
         printf '%s\n' "$SCRIPT_NAME: No service name supplied." >&2
         exit 1
 fi
-unit=$(normalize_unit "$service_name")
+
+# Normalize unit name (add .service suffix if not present)
+case $service_name in
+*.service)
+        unit=$service_name
+        ;;
+*)
+        unit=${service_name}.service
+        ;;
+esac
+
+# Find systemctl command
+if [ -z "${SYSTEMCTL-}" ]; then
+        if command -v systemctl >/dev/null 2>&1; then
+                SYSTEMCTL=$(command -v systemctl)
+        else
+                printf '%s\n' "$SCRIPT_NAME: systemctl is not available on this system." >&2
+                exit 1
+        fi
+fi
+
+# Stop the service (with sudo if needed)
 printf 'Stopping %s via systemctl...\n' "$unit"
-run_systemctl stop "$unit"
+if [ "$(id -u)" -eq 0 ]; then
+        "$SYSTEMCTL" stop "$unit"
+elif command -v sudo >/dev/null 2>&1; then
+        sudo "$SYSTEMCTL" stop "$unit"
+else
+        printf '%s\n' "$SCRIPT_NAME: systemctl requires root. Re-run as root or install sudo." >&2
+        exit 1
+fi
