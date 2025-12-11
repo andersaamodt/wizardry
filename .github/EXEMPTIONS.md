@@ -48,9 +48,9 @@ Documents all deviations from project standards with justification.
 **Accepted Alternative**: `#!/usr/bin/env sh` is explicitly allowed by `lint-magic` and test infrastructure
 
 **Affected** (38 files):
-- **Cantrips** (11 files): `assertions`, `colors`, `cursor-blink`, `fathom-cursor`, `fathom-terminal`, `max-length`, `menu`, `move-cursor`, `require-command`, `require-wizardry`
+- **Cantrips** (10 files): `assertions`, `colors`, `cursor-blink`, `fathom-cursor`, `fathom-terminal`, `max-length`, `menu`, `move-cursor`, `require-command`, `require-wizardry`
 - **System/Menu** (3 files): `divination/detect-distro`, `system/update-all`, `menu/install-menu`
-- **Arcana** (24 files): All `.arcana/core/*` install/uninstall scripts, plus arcana menus and helpers
+- **Arcana** (25 files): All `.arcana/core/*` install/uninstall scripts (24 files), plus `tor/setup-tor`
 
 **Reason**: `#!/usr/bin/env sh` provides better portability on systems where `/bin/sh` may not exist or points to a restricted shell (e.g., NixOS, some BSD variants). The `env` approach searches `PATH` for `sh`, making scripts work across diverse UNIX-like systems.
 
