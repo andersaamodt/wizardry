@@ -6,6 +6,7 @@ Documents all deviations from project standards with justification.
 
 - **Style**: 330/330 files compliant (2 hardcoded exemptions for doppelganger)
 - **Code Structure**: Conditional imps exempt from `set -eu`; imps exempt from `--help`
+- **Function Discipline**: 20 spells with 4+ functions (proto-libraries) - test FAILS to maintain visibility for refactoring
 - **Testing**: Bootstrap scripts can't use wizardry infrastructure
 - **Non-Shell Files**: Systemd service files exempt from all shell checks (2 files)
 - **CI**: No exemptions - all checks required
@@ -98,7 +99,52 @@ case "$0" in */has) _has "$@" ;; esac
 
 ---
 
-## 5. CI Exemptions
+## 5. Function Discipline Exemptions
+
+### Spells with 4+ Additional Functions (Proto-Libraries)
+
+**Rule**: Spells should have `show_usage()` plus at most 1-3 additional helper functions. 4+ additional functions indicate a proto-library that needs decomposition into multiple spells and/or imps.
+
+**Temporary Exemptions** (20 spells - TO BE REFACTORED):
+
+**Spellcraft** (7 spells):
+- `spellcraft/learn-spellbook` (24 additional) - Complex installation logic, needs decomposition
+- `spellcraft/lint-magic` (21 additional) - Comprehensive linting tool, candidate for multiple spells
+- `spellcraft/spell-menu` (17 additional) - Menu infrastructure, consider splitting
+- `spellcraft/learn` (15 additional) - Learning system, needs refactoring
+- `spellcraft/scribe-spell` (10 additional) - Spell creation wizard, consider multiple steps
+- `spellcraft/learn-spell` (8 additional) - Learning logic, extract to imps
+- `spellcraft/forget` (6 additional) - Forgetting logic, simplify or extract
+- `spellcraft/doppelganger` (4 additional) - Compilation logic, marginal case
+
+**Menu** (3 spells):
+- `menu/spellbook` (30 additional) - Complex menu system, needs major decomposition
+- `menu/mud-menu` (4 additional) - Menu logic, marginal case
+- `menu/cast` (4 additional) - Menu logic, marginal case
+
+**Enchant** (3 spells):
+- `enchant/enchant` (10 additional) - Extended attribute manipulation, extract to imps
+- `enchant/disenchant` (6 additional) - Attribute removal, simplify
+- `enchant/enchantment-to-yaml` (4 additional) - Format conversion, marginal case
+
+**Other** (7 spells):
+- `mud/look` (11 additional) - MUD description system, consider multiple spells
+- `translocation/jump-to-marker` (7 additional) - Teleportation logic, extract flavor text
+- `arcane/read-magic` (8 additional) - Attribute reading, extract helper detection
+- `arcane/trash` (6 additional) - Cross-platform trash, extract OS-specific helpers
+- `psi/read-contact` (5 additional) - vCard parsing, extract format handlers
+- `cantrips/start-service` (4 additional) - Service management, marginal case
+
+**Action Required**: These spells should be refactored to:
+1. Extract reusable logic into imps in `spells/.imps/`
+2. Split into multiple smaller spells if handling multiple actions
+3. Simplify linear flow by inlining single-use helpers
+
+**Timeline**: Best-effort refactoring; test currently configured to FAIL to maintain visibility
+
+---
+
+## 6. CI Exemptions
 
 **Status**: ✅ None - all checks required (no `continue-on-error` or `allow-failure`)
 
