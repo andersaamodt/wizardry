@@ -6,7 +6,8 @@ show_usage() {
 cat <<'USAGE' >&2
 Usage: install-bitcoin
 
-Runs an interactive wizard to install Bitcoin Core (via packages, nix, or upstream binaries), updates bitcoin.conf, and optionally starts the node.
+Runs an interactive wizard to install Bitcoin Core (via packages, nix, or
+upstream binaries), updates bitcoin.conf, and optionally starts the node.
 USAGE
 }
 
@@ -105,7 +106,8 @@ if [ "$distro" = "nixos" ]; then
   # Maybe start bitcoind
   if command -v ask-yn >/dev/null 2>&1; then
     if ask-yn "Start bitcoind in the background now?" "y"; then
-      if command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files | grep -q '^bitcoin.service'; then
+      if command -v systemctl >/dev/null 2>&1 \
+          && systemctl list-unit-files | grep -q '^bitcoin.service'; then
         sudo systemctl start bitcoin
       else
         bitcoind -daemon || true
@@ -116,7 +118,8 @@ if [ "$distro" = "nixos" ]; then
     read -r reply
     [ -z "$reply" ] && reply=y
     if [ "$reply" = "y" ] || [ "$reply" = "Y" ]; then
-      if command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files | grep -q '^bitcoin.service'; then
+      if command -v systemctl >/dev/null 2>&1 \
+          && systemctl list-unit-files | grep -q '^bitcoin.service'; then
         sudo systemctl start bitcoin
       else
         bitcoind -daemon || true
@@ -222,7 +225,8 @@ fi
 # Maybe start bitcoind
 if command -v ask-yn >/dev/null 2>&1; then
   if ask-yn "Start bitcoind in the background now?" "y"; then
-    if command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files | grep -q '^bitcoin.service'; then
+    if command -v systemctl >/dev/null 2>&1 \
+        && systemctl list-unit-files | grep -q '^bitcoin.service'; then
       sudo systemctl start bitcoin
     else
       bitcoind -daemon || true
@@ -233,7 +237,8 @@ else
   read -r reply
   [ -z "$reply" ] && reply=y
   if [ "$reply" = "y" ] || [ "$reply" = "Y" ]; then
-    if command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files | grep -q '^bitcoin.service'; then
+    if command -v systemctl >/dev/null 2>&1 \
+        && systemctl list-unit-files | grep -q '^bitcoin.service'; then
       sudo systemctl start bitcoin
     else
       bitcoind -daemon || true

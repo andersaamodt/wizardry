@@ -39,7 +39,8 @@ if [ -z "$service_name" ]; then
                         SCRIPT_DIR=${SCRIPT_SOURCE%/*}
                         ;;
                 *)
-                        resolved=$(command -v "$SCRIPT_SOURCE" 2>/dev/null || printf '%s' "$SCRIPT_SOURCE")
+                        resolved=$(command -v "$SCRIPT_SOURCE" 2>/dev/null \
+                                || printf '%s' "$SCRIPT_SOURCE")
                         SCRIPT_DIR=${resolved%/*}
                         ;;
                 esac
