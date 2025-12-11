@@ -30,10 +30,171 @@ set -eu
 _jm_spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
 MARKERS_DIR=$(env-or JUMP_TO_MARKERS_DIR "$_jm_spell_home/.markers")
 
-# jump_portal_messages preserves every line of flavor text from the original
-# spell and sprinkles in a few new sensations for modern teleportation.
-jump_portal_messages() {
-  cat <<'PORTAL'
+jump_to_marker_impl() {
+        markers_dir=$MARKERS_DIR
+        marker_name="${1:-}"
+        
+        # If no marker specified OR marker is "0", cycle through markers
+        if [ -z "$marker_name" ] || [ "$marker_name" = "0" ]; then
+                # Find the most recently used marker (by mtime) and get the next one
+                last_marker=""
+                if [ -d "$markers_dir" ]; then
+                        sorted=$(ls -t "$markers_dir" 2>/dev/null || true)
+                        recent=$(printf '%s\n' "$sorted" | head -1)
+                        oldest=$(printf '%s\n' "$sorted" | tail -1)
+                        
+                        # Need at least two different files to have meaningful "most recent"
+                        if [ -n "$recent" ] && [ -f "$markers_dir/$recent" ] && [ "$recent" != "$oldest" ]; then
+                                # Check if mtimes are actually different
+                                recent_mtime=$(stat -c %Y "$markers_dir/$recent" 2>/dev/null) || \
+                                              recent_mtime=$(stat -f %m "$markers_dir/$recent" 2>/dev/null)
+                                oldest_mtime=$(stat -c %Y "$markers_dir/$oldest" 2>/dev/null) || \
+                                              oldest_mtime=$(stat -f %m "$markers_dir/$oldest" 2>/dev/null)
+                                
+                                if [ "$recent_mtime" != "$oldest_mtime" ]; then
+                                        # Check if the most recent marker is older than 4 hours
+                                        current_time=$(now)
+                                        four_hours=$((4 * 60 * 60))
+                                        age=$((current_time - recent_mtime))
+                                        if [ "$age" -le "$four_hours" ]; then
+                                                last_marker=$recent
+                                        fi
+                                fi
+                        fi
+                fi
+                
+                # Get next marker in sequence for cycling
+                if [ -n "$last_marker" ]; then
+                        # Get all available marker names, sorted
+                        all_markers=""
+                        if [ -d "$markers_dir" ]; then
+                                numeric_markers=""
+                                alpha_markers=""
+                                for marker in "$markers_dir"/*; do
+                                        [ -f "$marker" ] || continue
+                                        name=$(file-name "$marker")
+                                        # Skip hidden files
+                                        case "$name" in
+                                                .*) continue ;;
+                                        esac
+                                        # Separate numeric and non-numeric markers
+                                        case "$name" in
+                                                *[!0-9]*)
+                                                        alpha_markers="$alpha_markers $name"
+                                                        ;;
+                                                *)
+                                                        numeric_markers="$numeric_markers $name"
+                                                        ;;
+                                        esac
+                                done
+                                # Sort and output: numbers first (numerically), then names (alphabetically)
+                                for n in $(printf '%s\n' $numeric_markers | sort -n); do
+                                        all_markers="$all_markers $n"
+                                done
+                                for n in $(printf '%s\n' $alpha_markers | sort); do
+                                        all_markers="$all_markers $n"
+                                done
+                        fi
+                        
+                        found=0
+                        first=""
+                        for m in $all_markers; do
+                                if [ -z "$first" ]; then
+                                        first=$m
+                                fi
+                                if [ "$found" -eq 1 ]; then
+                                        marker_name=$m
+                                        break
+                                fi
+                                if [ "$m" = "$last_marker" ]; then
+                                        found=1
+                                fi
+                        done
+                        # Wrap around to first marker if at end
+                        if [ "$found" -eq 1 ] && [ -z "$marker_name" ]; then
+                                marker_name=$first
+                        fi
+                else
+                        marker_name="1"
+                fi
+        fi
+        
+        marker_file="$markers_dir/$marker_name"
+        
+        # Check for markers directory
+        if [ ! -d "$markers_dir" ]; then
+                say "No markers have been set. Use 'mark-location' to mark a location first."
+                return 1
+        fi
+        
+        # Check for specific marker file
+        if [ ! -f "$marker_file" ]; then
+                say "No marker '$marker_name' found. Use 'mark-location $marker_name' to set it."
+                # List available markers
+                if [ -d "$markers_dir" ]; then
+                        numeric_markers=""
+                        alpha_markers=""
+                        for marker in "$markers_dir"/*; do
+                                [ -f "$marker" ] || continue
+                                name=$(file-name "$marker")
+                                # Skip hidden files
+                                case "$name" in
+                                        .*) continue ;;
+                                esac
+                                # Separate numeric and non-numeric markers
+                                case "$name" in
+                                        *[!0-9]*)
+                                                alpha_markers="$alpha_markers $name"
+                                                ;;
+                                        *)
+                                                numeric_markers="$numeric_markers $name"
+                                                ;;
+                                esac
+                        done
+                        # Sort and output: numbers first (numerically), then names (alphabetically)
+                        available=""
+                        for n in $(printf '%s\n' $numeric_markers | sort -n); do
+                                available="$available $n"
+                        done
+                        for n in $(printf '%s\n' $alpha_markers | sort); do
+                                available="$available $n"
+                        done
+                        if [ -n "$available" ]; then
+                                printf '%s' "Available markers:"
+                                for m in $available; do
+                                        printf ' %s' "$m"
+                                done
+                                printf '\n'
+                        fi
+                fi
+                return 1
+        fi
+        
+        destination=$(cat "$marker_file")
+        if [ -z "$destination" ]; then
+                say "The rune '$marker_name' is blank; the marked location has faded away."
+                return 1
+        fi
+        if [ ! -d "$destination" ]; then
+                say "The ley-line remembers '$destination' for marker '$marker_name', but it no longer exists."
+                return 1
+        fi
+        # Normalize paths to handle macOS double slashes
+        current=$(here | norm-path)
+        normalized_destination=$(norm-path "$destination")
+        if [ "$current" = "$normalized_destination" ]; then
+                say "You are already standing at marker '$marker_name'."
+                # Touch marker to update mtime for cycling
+                touch "$marker_file"
+                return 0
+        fi
+        if ! cd "$destination"; then
+                warn "The portal refuses to stabilize; try marking again."
+                return 1
+        fi
+        
+        # Pick a random arrival message
+        arrival=$(cat <<'PORTAL'
 You feel a sudden warmth as you are enveloped in a glowing aura. When it fades, you find yourself at your destination.
 A strange sensation comes over you as you close your eyes. When you open them again, you are standing at your destination.
 You focus your mind on the marked location and feel yourself being pulled through the fabric of space. You open your eyes to find yourself at your destination.
@@ -75,183 +236,9 @@ You ride a comet of sparks toward the marked destination.
 A murmured incantation bends distance like molten glass.
 Reality hiccups; when it steadies, you are already in motion.
 PORTAL
-}
-
-jump_random_message() {
-jump_portal_messages | awk 'BEGIN{srand();}{lines[NR]=$0}END{if (NR==0) exit 0; idx=int(rand()*NR)+1; print lines[idx];}'
-}
-
-jump_describe_current_location() {
-if has look; then
-        look 2>/dev/null || true
-fi
-}
-
-# Get all available marker names, sorted with numbers first then alphabetical
-jump_list_markers() {
-        markers_dir=$MARKERS_DIR
-        if [ ! -d "$markers_dir" ]; then
-                return 1
-        fi
-        # List numeric markers sorted numerically, then non-numeric sorted alphabetically
-        numeric_markers=""
-        alpha_markers=""
-        for marker in "$markers_dir"/*; do
-                [ -f "$marker" ] || continue
-                name=$(file-name "$marker")
-                # Skip hidden files
-                case "$name" in
-                        .*) continue ;;
-                esac
-                # Separate numeric and non-numeric markers
-                case "$name" in
-                        *[!0-9]*)
-                                alpha_markers="$alpha_markers $name"
-                                ;;
-                        *)
-                                numeric_markers="$numeric_markers $name"
-                                ;;
-                esac
-        done
-        # Sort and output: numbers first (numerically), then names (alphabetically)
-        for n in $(printf '%s\n' $numeric_markers | sort -n); do
-                printf '%s\n' "$n"
-        done
-        for n in $(printf '%s\n' $alpha_markers | sort); do
-                printf '%s\n' "$n"
-        done
-}
-
-# Get the most recently used marker (by mtime)
-# Returns empty if all markers have the same mtime (fresh state)
-# or if the most recent marker is older than 4 hours (reset timeout)
-jump_most_recent_marker() {
-        markers_dir=$MARKERS_DIR
-        if [ ! -d "$markers_dir" ]; then
-                return 1
-        fi
-        # Find the most recently modified marker file (excluding hidden files)
-        # Using ls -t to sort by mtime, newest first
-        sorted=$(ls -t "$markers_dir" 2>/dev/null)
-        recent=$(printf '%s\n' "$sorted" | head -1)
-        oldest=$(printf '%s\n' "$sorted" | tail -1)
+)
+        arrival=$(printf '%s\n' "$arrival" | awk 'BEGIN{srand();}{lines[NR]=$0}END{if (NR==0) exit 0; idx=int(rand()*NR)+1; print lines[idx];}')
         
-        # Need at least two different files to have meaningful "most recent"
-        if [ -z "$recent" ] || [ ! -f "$markers_dir/$recent" ] || [ "$recent" = "$oldest" ]; then
-                return 1
-        fi
-        
-        # Check if mtimes are actually different (ls -t may sort alphabetically when equal)
-        # Use stat to get mtime: -c %Y for GNU/Linux, -f %m for BSD/macOS
-        recent_mtime=$(stat -c %Y "$markers_dir/$recent" 2>/dev/null) || \
-                      recent_mtime=$(stat -f %m "$markers_dir/$recent" 2>/dev/null)
-        oldest_mtime=$(stat -c %Y "$markers_dir/$oldest" 2>/dev/null) || \
-                      oldest_mtime=$(stat -f %m "$markers_dir/$oldest" 2>/dev/null)
-        
-        if [ "$recent_mtime" != "$oldest_mtime" ]; then
-                # Check if the most recent marker is older than 4 hours
-                # If so, reset cycling (return empty to start at "1")
-                current_time=$(now)
-                four_hours=$((4 * 60 * 60))
-                age=$((current_time - recent_mtime))
-                if [ "$age" -gt "$four_hours" ]; then
-                        return 1
-                fi
-                printf '%s\n' "$recent"
-                return 0
-        fi
-        return 1
-}
-
-# Get next marker in sequence for cycling
-jump_next_marker() {
-        current=$1
-        all_markers=$(jump_list_markers)
-        if [ -z "$all_markers" ]; then
-                printf '%s\n' "1"
-                return
-        fi
-        found=0
-        first=""
-        for m in $all_markers; do
-                if [ -z "$first" ]; then
-                        first=$m
-                fi
-                if [ "$found" -eq 1 ]; then
-                        printf '%s\n' "$m"
-                        return
-                fi
-                if [ "$m" = "$current" ]; then
-                        found=1
-                fi
-        done
-        # Wrap around to first marker
-        printf '%s\n' "$first"
-}
-
-jump_to_marker_impl() {
-        markers_dir=$MARKERS_DIR
-        marker_name="${1:-}"
-        
-        # If no marker specified OR marker is "0", cycle through markers
-        # (jump 0 is equivalent to jump with no args)
-        if [ -z "$marker_name" ] || [ "$marker_name" = "0" ]; then
-                # Find the most recently used marker (by mtime) and get the next one
-                # This enables cycling: jump touches the marker, making it "most recent",
-                # then next jump cycles to the following marker
-                # If no recent marker found (all same mtime = fresh state), start at "1"
-                last_marker=$(jump_most_recent_marker || true)
-                if [ -n "$last_marker" ]; then
-                        marker_name=$(jump_next_marker "$last_marker")
-                else
-                        marker_name="1"
-                fi
-        fi
-        
-        marker_file="$markers_dir/$marker_name"
-        
-        # Check for markers directory
-        if [ ! -d "$markers_dir" ]; then
-                say "No markers have been set. Use 'mark-location' to mark a location first."
-                return 1
-        fi
-        
-        # Check for specific marker file
-        if [ ! -f "$marker_file" ]; then
-                say "No marker '$marker_name' found. Use 'mark-location $marker_name' to set it."
-                # List available markers
-                available=$(jump_list_markers || true)
-                if [ -n "$available" ]; then
-                        printf '%s' "Available markers: "
-                        printf '%s\n' "$available" | tr '\n' ' '
-                        printf '\n'
-                fi
-                return 1
-        fi
-        
-        destination=$(cat "$marker_file")
-        if [ -z "$destination" ]; then
-                say "The rune '$marker_name' is blank; the marked location has faded away."
-                return 1
-        fi
-        if [ ! -d "$destination" ]; then
-                say "The ley-line remembers '$destination' for marker '$marker_name', but it no longer exists."
-                return 1
-        fi
-        # Normalize paths to handle macOS double slashes
-        current=$(here | norm-path)
-        normalized_destination=$(norm-path "$destination")
-        if [ "$current" = "$normalized_destination" ]; then
-                say "You are already standing at marker '$marker_name'."
-                # Touch marker to update mtime for cycling
-                touch "$marker_file"
-                return 0
-        fi
-        if ! cd "$destination"; then
-                warn "The portal refuses to stabilize; try marking again."
-                return 1
-        fi
-        arrival=$(jump_random_message)
         if [ -n "$arrival" ]; then
                 say "$arrival"
         fi
@@ -259,7 +246,10 @@ jump_to_marker_impl() {
         # Touch marker to update mtime for cycling
         touch "$marker_file"
         
-jump_describe_current_location
+        # Describe current location if look command exists
+        if has look; then
+                look 2>/dev/null || true
+        fi
 }
 
 # Self-execute when run directly (not sourced)
