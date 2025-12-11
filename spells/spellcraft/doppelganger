@@ -53,6 +53,12 @@ output_dir=${1:-./wizardry-compiled}
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 repo_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd -P)
 
+# Convert output_dir to absolute path (needed for subshell operations)
+case "$output_dir" in
+  /*) ;;
+  *) output_dir="$repo_dir/$output_dir" ;;
+esac
+
 say "Creating wizardry doppelganger in: $output_dir"
 
 # Create output directory structure
