@@ -235,7 +235,14 @@ failed_scripts=""
 incomplete_tests=""
 incomplete_count=0
 test_number=0
-test_total=$(printf '%s\n' "$test_files" | grep -c .)
+# Count actual tests to run (excluding empty lines in test_files)
+test_total=0
+while IFS= read -r test_path; do
+  [ -n "$test_path" ] || continue
+  test_total=$((test_total + 1))
+done <<EOF_COUNT
+$(printf '%s\n' "$test_files")
+EOF_COUNT
 # Imps have no --help flag, so they need 2 subtests minimum.
 # Spells have a --help flag which needs testing, plus 2 additional subtests.
 MIN_SUBTESTS_IMP=2
@@ -650,7 +657,7 @@ if [ "$status" -ne 0 ] && [ "$fail" -le 10 ] && [ "${GITHUB_ACTIONS-}" != "" ] \
   fi
   
   cleanup-file "$failure_output_file"
-  printf '\nGitHub Actions detected <=10 failing tests; rerunning ONLY those tests with --very-verbose for focused debug...\n'
+  printf '\n<=10 failing tests; rerunning only those tests with --very-verbose:\n'
   
   set -- $rerun_args
   if [ -n "$failed_test_paths" ]; then
