@@ -680,6 +680,7 @@ spells/.arcana/core/
 # - 3 additional functions: warning (marginal case)
 # - 4+ additional functions: error (proto-library, needs decomposition)
 test_spells_follow_function_discipline() {
+  skip-if-compiled || return $?
   tmpfile_2=$(mktemp "${WIZARDRY_TMPDIR}/func-warn-2.XXXXXX")
   tmpfile_3=$(mktemp "${WIZARDRY_TMPDIR}/func-warn-3.XXXXXX")
   tmpfile_4plus=$(mktemp "${WIZARDRY_TMPDIR}/func-viol-4plus.XXXXXX")
