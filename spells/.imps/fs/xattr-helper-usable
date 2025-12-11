@@ -12,7 +12,7 @@ _xattr_helper_usable() {
   if [ "${WIZARDRY_TEST_HELPERS_ONLY-0}" -eq 1 ]; then
     helper_path=$(command -v "$helper")
     case "$helper_path" in
-      /usr/*|/bin/*|/sbin/*|/usr/local/*)
+      /bin/*|/sbin/*|/usr/bin/*|/usr/sbin/*|/usr/local/bin/*|/usr/local/sbin/*)
         return 1 ;;
     esac
   fi
