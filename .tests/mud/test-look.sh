@@ -122,8 +122,16 @@ test_other_home_description() {
     _run_spell "spells/mud/look" "$other_home"
   _assert_success || return 1
   _assert_output_contains "chris" || return 1
-  printf '%s' "$OUTPUT" | grep -qE "An ordinary room|A plain chamber|A nondescript space|An unremarkable area|A simple room" \
-    || { TEST_FAILURE_REASON="expected default description"; return 1; }
+  # When identify-room is unavailable, expect default description
+  # When identify-room is available (doppelganger), expect "home folder" description
+  if printf '%s' "$OUTPUT" | grep -qE "An ordinary room|A plain chamber|A nondescript space|An unremarkable area|A simple room"; then
+    return 0
+  elif printf '%s' "$OUTPUT" | grep -q "home folder"; then
+    return 0
+  else
+    TEST_FAILURE_REASON="expected default description or identify-room description"
+    return 1
+  fi
 }
 
 test_root_description() {
