@@ -476,10 +476,6 @@ scan_coverage() {
       spells/system/test-magic|spells/system/verify-posix)
         continue
         ;;
-      spells/.imps/test/*)
-        # Skip test-only imps (they're for testing infrastructure, not user-facing)
-        continue
-        ;;
       *.service|*.gitkeep|*.gitignore)
         # Skip non-script files
         continue
