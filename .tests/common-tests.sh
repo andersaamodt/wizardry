@@ -690,6 +690,9 @@ test_spells_follow_function_discipline() {
     is_posix_shell_script "$spell" || continue
     
     # Count all function definitions
+    # Note: This simple pattern-based approach may count functions in comments
+    # or heredocs, but this is acceptable for a stylistic check that identifies
+    # proto-libraries. False positives would be rare in practice.
     # Pattern 1: func() { on same line
     func_count_inline=$(grep -cE '^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*[[:space:]]*\(\)[[:space:]]*\{' "$spell" 2>/dev/null || true)
     func_count_inline=${func_count_inline:-0}
