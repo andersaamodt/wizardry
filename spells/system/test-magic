@@ -155,7 +155,7 @@ matches_patterns() {
         ;;
     esac
   done <<EOF_PATS
-$only_patterns
+$(printf '%b' "$only_patterns")
 EOF_PATS
   return $match
 }
@@ -170,7 +170,7 @@ if [ -n "$only_patterns" ]; then
       exit 1
     fi
   done <<EOF_PATS
-$only_patterns
+$(printf '%b' "$only_patterns")
 EOF_PATS
 fi
 
