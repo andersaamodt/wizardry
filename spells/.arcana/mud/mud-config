@@ -27,16 +27,6 @@ spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
 config_dir=$(env-or MUD_DIR "$spell_home/.mud")
 config_file="$config_dir/config"
 
-# Ensure config directory exists
-ensure_config_dir() {
-        if [ ! -d "$config_dir" ]; then
-                mkdir -p "$config_dir" || {
-                        printf '%s\n' "mud-config: cannot create config directory '$config_dir'" >&2
-                        return 1
-                }
-        fi
-}
-
 # Get feature value (returns '1' for enabled, '0' for disabled)
 get_feature() {
         feature=$1
@@ -63,7 +53,14 @@ set_feature() {
                         return 1
                         ;;
         esac
-        ensure_config_dir || return 1
+        
+        # Ensure config directory exists (inlined from ensure_config_dir)
+        if [ ! -d "$config_dir" ]; then
+                mkdir -p "$config_dir" || {
+                        printf '%s\n' "mud-config: cannot create config directory '$config_dir'" >&2
+                        return 1
+                }
+        fi
         
         # Create or update config file
         if [ -f "$config_file" ]; then
