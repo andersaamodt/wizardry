@@ -13,7 +13,11 @@ done
 
 test_tilde_path_converts_home() {
   skip-if-compiled || return $?
-  HOME=/home/testuser _run_spell spells/.imps/paths/tilde-path "/home/testuser/Documents"
+  _run_cmd sh -c "
+    HOME='/home/testuser'
+    export HOME
+    '$ROOT_DIR/spells/.imps/paths/tilde-path' '/home/testuser/Documents'
+  "
   _assert_success
   _assert_output_contains "~/Documents"
   [ "$OUTPUT" = "~/Documents" ] || { TEST_FAILURE_REASON="expected '~/Documents', got '$OUTPUT'"; return 1; }
@@ -21,7 +25,11 @@ test_tilde_path_converts_home() {
 
 test_tilde_path_converts_exact_home() {
   skip-if-compiled || return $?
-  HOME=/home/testuser _run_spell spells/.imps/paths/tilde-path "/home/testuser"
+  _run_cmd sh -c "
+    HOME='/home/testuser'
+    export HOME
+    '$ROOT_DIR/spells/.imps/paths/tilde-path' '/home/testuser'
+  "
   _assert_success
   _assert_output_contains "~"
   [ "$OUTPUT" = "~" ] || { TEST_FAILURE_REASON="expected '~', got '$OUTPUT'"; return 1; }
@@ -29,7 +37,11 @@ test_tilde_path_converts_exact_home() {
 
 test_tilde_path_preserves_non_home() {
   skip-if-compiled || return $?
-  HOME=/home/testuser _run_spell spells/.imps/paths/tilde-path "/opt/something"
+  _run_cmd sh -c "
+    HOME='/home/testuser'
+    export HOME
+    '$ROOT_DIR/spells/.imps/paths/tilde-path' '/opt/something'
+  "
   _assert_success
   _assert_output_contains "/opt/something"
   [ "$OUTPUT" = "/opt/something" ] || { TEST_FAILURE_REASON="expected '/opt/something', got '$OUTPUT'"; return 1; }
@@ -37,7 +49,11 @@ test_tilde_path_preserves_non_home() {
 
 test_tilde_path_handles_no_home() {
   skip-if-compiled || return $?
-  HOME= _run_spell spells/.imps/paths/tilde-path "/home/testuser/Documents"
+  _run_cmd sh -c "
+    HOME=''
+    export HOME
+    '$ROOT_DIR/spells/.imps/paths/tilde-path' '/home/testuser/Documents'
+  "
   _assert_success
   _assert_output_contains "/home/testuser/Documents"
   [ "$OUTPUT" = "/home/testuser/Documents" ] || { TEST_FAILURE_REASON="expected '/home/testuser/Documents', got '$OUTPUT'"; return 1; }
@@ -45,7 +61,11 @@ test_tilde_path_handles_no_home() {
 
 test_tilde_path_handles_nested_path() {
   skip-if-compiled || return $?
-  HOME=/home/testuser _run_spell spells/.imps/paths/tilde-path "/home/testuser/.spellbook/custom"
+  _run_cmd sh -c "
+    HOME='/home/testuser'
+    export HOME
+    '$ROOT_DIR/spells/.imps/paths/tilde-path' '/home/testuser/.spellbook/custom'
+  "
   _assert_success
   _assert_output_contains "~/.spellbook/custom"
   [ "$OUTPUT" = "~/.spellbook/custom" ] || { TEST_FAILURE_REASON="expected '~/.spellbook/custom', got '$OUTPUT'"; return 1; }
