@@ -9,9 +9,22 @@ _test_pass() {
   desc=${2-}
   
   # Handle old single-arg format for backwards compatibility
+  # Old format: _test_pass "desc"
+  # New format: _test_pass num "desc"
   if [ -z "$desc" ]; then
+    # Only one argument provided, it's the description
     desc=$num
     num=""
+  elif [ -n "$num" ]; then
+    # Two arguments: check if first is a number
+    case "$num" in
+      ''|*[!0-9]*) 
+        # First arg is not a number, treat as old single-arg format
+        desc=$num
+        num=""
+        ;;
+      # else: first arg is a number, use new format
+    esac
   fi
   
   # Use colors if supported

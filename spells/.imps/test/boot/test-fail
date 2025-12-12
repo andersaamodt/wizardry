@@ -9,18 +9,26 @@ _test_fail() {
   desc=${2-}
   reason=${3-}
   
-  # Handle old two-arg format for backwards compatibility
-  if [ -z "$reason" ] && [ -n "$desc" ]; then
-    # Check if first arg looks like a number
+  # Handle old format for backwards compatibility
+  # Old format: _test_fail "desc" ["reason"]
+  # New format: _test_fail num "desc" ["reason"]
+  if [ -z "$desc" ]; then
+    # Only one argument provided, it's the description
+    desc=$num
+    num=""
+  elif [ -z "$reason" ]; then
+    # Two arguments provided: check if first is a number
     case "$num" in
       ''|*[!0-9]*) 
-        # Not a number, use old format
+        # First arg is not a number, use old format: desc, reason
         reason=$desc
         desc=$num
         num=""
         ;;
+      # else: first arg is a number, use new format: num, desc
     esac
   fi
+  # If three args provided, we already have num, desc, reason correctly assigned
   
   # Use colors if supported
   if [ -t 1 ] && command -v tput >/dev/null 2>&1 && tput setaf 1 >/dev/null 2>&1; then
