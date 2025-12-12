@@ -19,80 +19,69 @@ esac
 
 set -eu
 
-is_nixos() {
-  if command -v detect-distro >/dev/null 2>&1 && [ "$(detect-distro 2>/dev/null)" = "nixos" ]; then
-    return 0
-  fi
-  return 1
-}
+# Detect distro
+distro="$(detect-distro 2>/dev/null || os)"
 
-remove_nixos_entries() {
-  config=${1:-/etc/nixos/configuration.nix}
-  if [ ! -f "$config" ]; then
-    return 0
-  fi
-
-  if command -v backup-nix-config >/dev/null 2>&1; then
-    backup-nix-config "$config" >&2 || true
-  fi
-
-  removed=0
-  if grep -q 'environment.systemPackages' "$config" && grep -q 'tor' "$config"; then
-    sudo sed -i '/tor/d' "$config"
-    removed=1
-  fi
-
-  if grep -q 'services.tor.enable' "$config"; then
-    sudo sed -i '/services\.tor\.enable/d' "$config"
-    removed=1
-  fi
-
-  if [ "$removed" -eq 1 ]; then
-    printf '%s\n' "Rebuilding NixOS after Tor removal..."
-    sudo nixos-rebuild all
-  fi
-}
-
-uninstall_tor() {
-  distro="$(detect-distro 2>/dev/null || os)"
-  case $distro in
-    debian|ubuntu|linux)
-      if command -v sudo >/dev/null 2>&1; then
-        sudo apt-get remove -y tor || true
-      else
-        apt-get remove -y tor || true
+# Uninstall based on platform
+case $distro in
+  debian|ubuntu|linux)
+    if command -v sudo >/dev/null 2>&1; then
+      sudo apt-get remove -y tor || true
+    else
+      apt-get remove -y tor || true
+    fi
+    ;;
+  arch)
+    if command -v sudo >/dev/null 2>&1; then
+      sudo pacman -R --noconfirm tor || true
+    else
+      pacman -R --noconfirm tor || true
+    fi
+    ;;
+  mac|macos)
+    if command -v brew >/dev/null 2>&1; then
+      brew uninstall tor 2>/dev/null || true
+    fi
+    ;;
+  nixos)
+    # Remove NixOS configuration entries
+    config="/etc/nixos/configuration.nix"
+    if [ -f "$config" ]; then
+      if command -v backup-nix-config >/dev/null 2>&1; then
+        backup-nix-config "$config" >&2 || true
       fi
-      ;;
-    arch)
-      if command -v sudo >/dev/null 2>&1; then
-        sudo pacman -R --noconfirm tor || true
-      else
-        pacman -R --noconfirm tor || true
+
+      removed=0
+      if grep -q 'environment.systemPackages' "$config" && grep -q 'tor' "$config"; then
+        sudo sed -i '/tor/d' "$config"
+        removed=1
       fi
-      ;;
-    mac|macos)
-      if command -v brew >/dev/null 2>&1; then
-        brew uninstall tor 2>/dev/null || true
+
+      if grep -q 'services.tor.enable' "$config"; then
+        sudo sed -i '/services\.tor\.enable/d' "$config"
+        removed=1
       fi
-      ;;
-    nixos)
-      remove_nixos_entries "/etc/nixos/configuration.nix"
-      ;;
-    *)
-      printf '%s\n' 'Unsupported distribution for automatic removal.'
-      ;;
-  esac
 
-  if command -v systemctl >/dev/null 2>&1; then
-    sudo systemctl stop tor 2>/dev/null || true
-    sudo systemctl disable tor 2>/dev/null || true
-  fi
+      if [ "$removed" -eq 1 ]; then
+        printf '%s\n' "Rebuilding NixOS after Tor removal..."
+        sudo nixos-rebuild all
+      fi
+    fi
+    ;;
+  *)
+    printf '%s\n' 'Unsupported distribution for automatic removal.'
+    ;;
+esac
 
-  if command -v tor >/dev/null 2>&1; then
-    printf '%s\n' 'Tor may still be present; some files might require manual cleanup.'
-  else
-    printf '%s\n' 'Tor has been removed.'
-  fi
-}
+# Stop and disable the service
+if command -v systemctl >/dev/null 2>&1; then
+  sudo systemctl stop tor 2>/dev/null || true
+  sudo systemctl disable tor 2>/dev/null || true
+fi
 
-uninstall_tor
+# Report status
+if command -v tor >/dev/null 2>&1; then
+  printf '%s\n' 'Tor may still be present; some files might require manual cleanup.'
+else
+  printf '%s\n' 'Tor has been removed.'
+fi
