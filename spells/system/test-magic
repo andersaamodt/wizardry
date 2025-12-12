@@ -174,26 +174,29 @@ $(printf '%b' "$only_patterns")
 EOF_PATS
 fi
 
-while IFS= read -r path; do
-  short=${path#"$test_dir/"}
-  if matches_patterns "$short"; then
-    if [ -n "$test_files" ]; then
-      test_files=$(printf '%s\n%s' "$test_files" "$short")
-    else
-      test_files="$short"
+# Write test paths directly to a file to avoid shell variable size limitations  
+test_list_file=$(temp-file test-magic-list) || exit 1
+
+{
+  while IFS= read -r path; do
+    short=${path#"$test_dir/"}
+    if matches_patterns "$short"; then
+      printf '%s\n' "$short"
     fi
-  fi
-done <<EOF_TESTS
+  done <<EOF_TESTS
 $(find_tests)
 EOF_TESTS
+} > "$test_list_file"
 
-if [ -z "$test_files" ]; then
+if [ ! -s "$test_list_file" ]; then
   echo "$cmd_name: no tests discovered." >&2
+  cleanup-file "$test_list_file"
   exit 1
 fi
 
 if [ "$list_only" -eq 1 ]; then
-  printf '%s\n' "$test_files"
+  cat "$test_list_file"
+  cleanup-file "$test_list_file"
   exit 0
 fi
 
@@ -235,13 +238,16 @@ failed_scripts=""
 incomplete_tests=""
 incomplete_count=0
 test_number=0
-test_total=$(printf '%s\n' "$test_files" | grep -c .)
+
+# test_list_file was already created and populated above
+test_total=$(grep -c . "$test_list_file")
+
 # Imps have no --help flag, so they need 2 subtests minimum.
 # Spells have a --help flag which needs testing, plus 2 additional subtests.
 MIN_SUBTESTS_IMP=2
 MIN_SUBTESTS_SPELL=3
 failure_output_file=$(temp-file test-magic) || exit 1
-trap 'cleanup-file "$failure_output_file"' EXIT HUP INT TERM
+trap 'cleanup-file "$failure_output_file"; cleanup-file "$test_list_file"' EXIT HUP INT TERM
 
 spell_name_for_test() {
   test_path=$1
@@ -338,7 +344,10 @@ record_incomplete_test() {
   fi
 }
 
-while IFS= read -r test_path; do
+# Open file descriptor 3 for reading the test list
+exec 3< "$test_list_file"
+
+while IFS= read -r test_path <&3; do
   [ -n "$test_path" ] || continue
   abs="$test_dir/$test_path"
   test_number=$((test_number + 1))
@@ -445,9 +454,10 @@ while IFS= read -r test_path; do
   fi
 
   printf '\n'
-done <<EOF_TESTS
-$(printf '%s\n' "$test_files")
-EOF_TESTS
+done
+
+# Close file descriptor 3
+exec 3<&-
 
 find_matching_test_for_spell() {
   spell=$1
@@ -650,7 +660,7 @@ if [ "$status" -ne 0 ] && [ "$fail" -le 10 ] && [ "${GITHUB_ACTIONS-}" != "" ] \
   fi
   
   cleanup-file "$failure_output_file"
-  printf '\nGitHub Actions detected <=10 failing tests; rerunning ONLY those tests with --very-verbose for focused debug...\n'
+  printf '\n<=10 failing tests; rerunning only those tests with --very-verbose:\n'
   
   set -- $rerun_args
   if [ -n "$failed_test_paths" ]; then

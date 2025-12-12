@@ -34,9 +34,9 @@ copy_rejects_directories_and_missing_target() {
 
   _run_spell "spells/arcane/copy" "$tmpdir/dir"
   _assert_failure || return 1
-  _assert_output_contains "That file does not exist." || return 1
+  _assert_output_contains "That path is not a file." || return 1
 
-  _run_spell "spells/arcane/copy"
+  _run_spell "spells/arcane/copy" "$tmpdir/nonexistent-file"
   _assert_failure || return 1
   _assert_output_contains "That file does not exist." || return 1
 }
