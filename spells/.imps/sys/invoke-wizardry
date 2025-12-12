@@ -52,40 +52,19 @@ _invoke_wizardry() {
     done
   fi
   
-  # Source all spells that have functions to make them available
-  for _iw_spell_dir in "$WIZARDRY_DIR"/spells/*; do
-    [ -d "$_iw_spell_dir" ] || continue
-    case "$_iw_spell_dir" in
-      */.imps|*/.arcana) continue ;;
-    esac
-    for _iw_spell in "$_iw_spell_dir"/*; do
-      [ -f "$_iw_spell" ] && [ -r "$_iw_spell" ] || continue
-      # Check if spell has a function defined (true-name pattern)
-      _iw_spell_name=$(basename "$_iw_spell")
-      _iw_spell_true=$(printf '_%s' "$_iw_spell_name" | sed 's/-/_/g')
-      if grep -qE "^[[:space:]]*${_iw_spell_true}[[:space:]]*\\(\\)" "$_iw_spell" 2>/dev/null; then
-        # Source the spell to load its function
-        # shellcheck disable=SC1090
-        . "$_iw_spell" 2>/dev/null || true
-        # Create alias if function exists
-        if command -v "$_iw_spell_true" >/dev/null 2>&1; then
-          alias "$_iw_spell_name=$_iw_spell_true" 2>/dev/null || true
-        fi
-      fi
-    done
-  done
-}
-
-# Set up command_not_found_handle for unsourced commands, parser, and .spellbook support
-# This enables:
-# - Unsourced spells (a few spells that can't be sourced)
-# - Recursive parser functionality
-# - User spells in .spellbook to work on-the-fly
-_setup_command_not_found() {
+  # Note: Regular spells are NOT sourced at startup - they are loaded on-demand via
+  # command_not_found_handle. This avoids circular dependencies and keeps startup fast.
+  # Only imps (which follow the one-function rule) are sourced upfront.
+  
+  # Set up command_not_found_handle for spell autoloading, parser, and .spellbook support
+  # This enables:
+  # - All regular spells to be autoloaded on first use
+  # - Recursive parser functionality
+  # - User spells in .spellbook to work on-the-fly
   if [ -n "${BASH_VERSION-}" ]; then
     # Bash-specific command_not_found_handle
-    command_not_found_handle() {
-      # Try word-of-binding for autoloading (handles .spellbook and unsourced spells)
+    eval 'command_not_found_handle() {
+      # Try word-of-binding for autoloading (handles spells and .spellbook)
       if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" ]; then
         if "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" "$@" 2>/dev/null; then
           return $?
@@ -96,13 +75,13 @@ _setup_command_not_found() {
         "$WIZARDRY_DIR/spells/.imps/lex/parse" "$@"
         return $?
       fi
-      printf '%s: command not found\n' "$1" >&2
+      printf '\''%s: command not found\n'\'' "$1" >&2
       return 127
-    }
+    }'
   elif [ -n "${ZSH_VERSION-}" ]; then
     # Zsh-specific command_not_found_handler
-    command_not_found_handler() {
-      # Try word-of-binding for autoloading (handles .spellbook and unsourced spells)
+    eval 'command_not_found_handler() {
+      # Try word-of-binding for autoloading (handles spells and .spellbook)
       if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" ]; then
         if "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" "$@" 2>/dev/null; then
           return $?
@@ -113,15 +92,14 @@ _setup_command_not_found() {
         "$WIZARDRY_DIR/spells/.imps/lex/parse" "$@"
         return $?
       fi
-      printf '%s: command not found\n' "$1" >&2
+      printf '\''%s: command not found\n'\'' "$1" >&2
       return 127
-    }
+    }'
   fi
 }
 
 # Run the setup when sourced
 _invoke_wizardry
-_setup_command_not_found
 
 # Self-execute when run directly (not sourced)
 case "$0" in
