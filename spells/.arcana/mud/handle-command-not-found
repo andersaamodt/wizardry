@@ -74,7 +74,7 @@ EOF
     # Fallback to shell-specific defaults if still empty
     if [ -z "$rc_file" ]; then
       if [ -z "${HOME-}" ]; then
-        printf '%s\n' "handle-command-not-found: HOME is not set; cannot determine rc file." >&2
+        warn "handle-command-not-found: HOME is not set; cannot determine rc file."
         exit 1
       fi
       
@@ -156,11 +156,11 @@ EOF
         fi
         
         if [ "$rebuild_success" -eq 0 ]; then
-          printf '%s\n' "handle-command-not-found: NixOS configuration could not be automatically rebuilt." >&2
+          warn "handle-command-not-found: NixOS configuration could not be automatically rebuilt."
         fi
       fi
     else
-      printf '%s\n' "handle-command-not-found: unable to update '$rc_file'." >&2
+      warn "handle-command-not-found: unable to update '$rc_file'."
       exit 1
     fi
     exit 0
@@ -171,7 +171,7 @@ EOF
   [ "$rc_dir" = "$rc_file" ] && rc_dir=.
   if [ ! -d "$rc_dir" ]; then
     if ! mkdir -p "$rc_dir"; then
-      printf '%s\n' "handle-command-not-found: unable to create directory '$rc_dir'." >&2
+      warn "handle-command-not-found: unable to create directory '$rc_dir'."
       exit 1
     fi
   fi
@@ -207,7 +207,7 @@ HOOK
   if ! mv "$tmp_file" "$rc_file"; then
     trap - EXIT HUP INT TERM
     rm -f "$tmp_file"
-    printf '%s\n' "handle-command-not-found: unable to update '$rc_file'." >&2
+    warn "handle-command-not-found: unable to update '$rc_file'."
     exit 1
   fi
   trap - EXIT HUP INT TERM
@@ -249,7 +249,7 @@ EOF
     # Fallback
     if [ -z "$rc_file" ]; then
       if [ -z "${HOME-}" ]; then
-        printf '%s\n' "handle-command-not-found: HOME is not set; cannot determine rc file." >&2
+        warn "handle-command-not-found: HOME is not set; cannot determine rc file."
         exit 1
       fi
       
@@ -325,17 +325,17 @@ EOF
           fi
           
           if [ "$rebuild_success" -eq 0 ]; then
-            printf '%s\n' "handle-command-not-found: NixOS configuration could not be automatically rebuilt." >&2
+            warn "handle-command-not-found: NixOS configuration could not be automatically rebuilt."
           fi
         fi
         exit 0
       else
-        printf '%s\n' "handle-command-not-found: unable to update '$rc_file'." >&2
+        warn "handle-command-not-found: unable to update '$rc_file'."
         exit 1
       fi
     fi
     # nix-shell-remove helper not found - warn and attempt shell method fallback
-    printf '%s\n' "handle-command-not-found: nix-shell-remove imp not found; attempting shell-style removal (may not work for nix files)." >&2
+    warn "handle-command-not-found: nix-shell-remove imp not found; attempting shell-style removal (may not work for nix files)."
   fi
 
   # Shell format: use sed to remove the block
@@ -345,7 +345,7 @@ EOF
   if ! mv "$tmp_file" "$rc_file"; then
     trap - EXIT HUP INT TERM
     rm -f "$tmp_file"
-    printf '%s\n' "handle-command-not-found: unable to update '$rc_file'." >&2
+    warn "handle-command-not-found: unable to update '$rc_file'."
     exit 1
   fi
   trap - EXIT HUP INT TERM

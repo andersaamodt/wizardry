@@ -66,7 +66,7 @@ while [ $# -gt 0 ]; do
     break
     ;;
   -*)
-    printf '%s: %s\n' "$SCRIPT_NAME" "Unknown option: $1" >&2
+    warn "learn-spell: Unknown option: $1"
     show_usage
     exit 1
     ;;
@@ -90,14 +90,14 @@ set -eu
 TARGET=$1
 shift
 [ -f "$TARGET" ] || {
-  printf '%s\n' "learn-spell: missing target '$TARGET'" >&2
+  warn "learn-spell: missing target '$TARGET'"
   exit 1
 }
 WIZARDRY_MEMORIZE_TARGET="$TARGET"
 export WIZARDRY_MEMORIZE_TARGET
 . "$TARGET"
 command -v install >/dev/null 2>&1 || {
-  printf '%s\n' "learn-spell: $TARGET does not define install()" >&2
+  warn "learn-spell: $TARGET does not define install()"
   exit 1
 }
 install "$@"
@@ -210,11 +210,11 @@ EOF_DETECT
     ); then
       MEMORIZED_COUNT=$((MEMORIZED_COUNT + 1))
     else
-      printf '%s: %s\n' "$SCRIPT_NAME" "Installation failed for '$path'." >&2
+      warn "learn-spell: Installation failed for '$path'."
       SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
     fi
   else
-    printf '%s: %s\n' "$SCRIPT_NAME" "'$path' is not a file or directory." >&2
+    warn "learn-spell: '$path' is not a file or directory."
     SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
   fi
 }
