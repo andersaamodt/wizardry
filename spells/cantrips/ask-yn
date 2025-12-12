@@ -46,60 +46,58 @@ if [ "$#" -eq 2 ]; then
         esac
 fi
 
-select_input() {
+while :; do
+        # Prompt and read response (inlined from prompt_and_read and select_input)
+        printf '%s %s ' "$question" "$default_hint" >&2
+        
+        # Determine input source (inlined from select_input)
+        input=""
         case ${ASK_CANTRIP_INPUT:-auto} in
         stdin)
-                printf '%s\n' stdin
-                return 0
+                input=stdin
                 ;;
         none)
-                return 1
-                ;;
-        esac
-        # Prefer stdin whenever something is piped to us, even if a tty is also
-        # present, so scripted callers can answer without interactivity.
-        # Use /dev/fd/0 instead of /dev/stdin for better cross-platform compatibility.
-        # On macOS, /dev/stdin is a symlink and -p/-s tests may fail on the symlink.
-        # Testing /dev/fd/0 directly works reliably on both Linux and macOS.
-        if [ -t 0 ] || [ -p /dev/fd/0 ] || [ -s /dev/fd/0 ]; then
-                printf '%s\n' stdin
-                return 0
-        fi
-        if [ -r /dev/tty ]; then
-                printf '%s\n' tty
-                return 0
-        fi
-        return 1
-}
-
-prompt_and_read() {
-        printf '%s %s ' "$question" "$default_hint" >&2
-        input=$(select_input) || return 1
-        case $input in
-        stdin)
-                IFS= read -r reply || reply=
-                ;;
-        tty)
-                IFS= read -r reply </dev/tty || reply=
+                input=none
                 ;;
         *)
-                return 1
+                # Prefer stdin whenever something is piped to us, even if a tty is also
+                # present, so scripted callers can answer without interactivity.
+                # Use /dev/fd/0 instead of /dev/stdin for better cross-platform compatibility.
+                # On macOS, /dev/stdin is a symlink and -p/-s tests may fail on the symlink.
+                # Testing /dev/fd/0 directly works reliably on both Linux and macOS.
+                if [ -t 0 ] || [ -p /dev/fd/0 ] || [ -s /dev/fd/0 ]; then
+                        input=stdin
+                elif [ -r /dev/tty ]; then
+                        input=tty
+                else
+                        input=none
+                fi
                 ;;
         esac
-        printf '%s' "$reply"
-        return 0
-}
-
-while :; do
-        if ! response=$(prompt_and_read); then
+        
+        # Read response based on input source
+        response=""
+        if [ "$input" = "none" ]; then
                 if [ -n "$default_choice" ]; then
                         response=$default_choice
                 else
                         printf '%s\n' "ask-yn: No interactive input available." >&2
                         exit 1
                 fi
-        elif [ -z "$response" ] && [ -n "$default_choice" ]; then
-                response=$default_choice
+        else
+                case $input in
+                stdin)
+                        IFS= read -r reply || reply=
+                        ;;
+                tty)
+                        IFS= read -r reply </dev/tty || reply=
+                        ;;
+                esac
+                response=$reply
+                
+                if [ -z "$response" ] && [ -n "$default_choice" ]; then
+                        response=$default_choice
+                fi
         fi
 
         case $response in

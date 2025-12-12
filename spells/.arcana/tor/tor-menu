@@ -23,25 +23,16 @@ set -eu
 # Catch Ctrl-C and TERM signal to exit cleanly
 trap 'exit 0' INT TERM
 
-build_service_entries() {
-  service_status_option=""
-  tor_service_option=""
-
-  if is-service-installed tor > /dev/null; then
-    service_status_option="View Tor Service Status%sudo systemctl status tor"
-    if is-service-running tor > /dev/null; then
-      tor_service_option="Stop Tor Service%sudo systemctl stop tor"
-    else
-      tor_service_option="Start Tor Service%sudo systemctl start tor"
-    fi
+# Main execution loop
+first_run=1
+while true; do
+  if [ "$first_run" -eq 0 ]; then
+    printf '\n'
   else
-    script_dir=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
-    service_status_option="Install Tor Service%install-service-template $script_dir/tor.service \"TORPATH=\$(command -v tor)\" \"TORRCPATH=/etc/tor/torrc\""
+    first_run=0
   fi
-}
 
-# Displays the menu
-display_menu() {
+  # Display menu (inlined from display_menu and build_service_entries)
   title="${BOLD}${CYAN}TOR: $(tor-status)"
   exit_label=$(exit-label)
   exit_option="${exit_label}%kill -TERM \$PPID"
@@ -60,7 +51,21 @@ display_menu() {
     bridge_option="Enable Bridge Mode%sudo configure-tor-bridge"
   fi
 
-  build_service_entries
+  # Build service entries (inlined from build_service_entries)
+  service_status_option=""
+  tor_service_option=""
+
+  if is-service-installed tor > /dev/null; then
+    service_status_option="View Tor Service Status%sudo systemctl status tor"
+    if is-service-running tor > /dev/null; then
+      tor_service_option="Stop Tor Service%sudo systemctl stop tor"
+    else
+      tor_service_option="Start Tor Service%sudo systemctl start tor"
+    fi
+  else
+    script_dir=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
+    service_status_option="Install Tor Service%install-service-template $script_dir/tor.service \"TORPATH=\$(command -v tor)\" \"TORRCPATH=/etc/tor/torrc\""
+  fi
 
   if is-installed tor > /dev/null; then
     uninstall_option="Uninstall Tor%uninstall-tor"
@@ -81,18 +86,4 @@ display_menu() {
     install_tor_option="Install Tor (wizard)%install-tor"
     menu "$title" "$install_tor_option" "$exit_option" || true
   fi
-}
-
-first_run=1
-
-# Main execution loop
-while true; do
-  if [ "$first_run" -eq 0 ]; then
-    printf '\n'
-  else
-    first_run=0
-  fi
-
-  display_menu || true
-
 done
