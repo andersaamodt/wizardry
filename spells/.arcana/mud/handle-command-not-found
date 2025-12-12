@@ -32,49 +32,6 @@ case $SCRIPT_SOURCE in
 esac
 SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
 
-warn() {
-  printf '%s\n' "handle-command-not-found: $1" >&2
-}
-
-# Run nixos-rebuild or home-manager switch to apply NixOS configuration changes
-run_nix_rebuild() {
-  # Allow tests to skip the rebuild
-  [ "${WIZARDRY_SKIP_NIX_REBUILD-}" = "1" ] && return 0
-
-  rebuild_success=0
-
-  # Try to detect if we should use sudo or doas
-  priv_cmd=""
-  command -v sudo >/dev/null 2>&1 && priv_cmd="sudo"
-  command -v doas >/dev/null 2>&1 && [ -z "$priv_cmd" ] && priv_cmd="doas"
-
-  # Try home-manager first (doesn't need privileges)
-  if command -v home-manager >/dev/null 2>&1; then
-    printf '%s\n' "handle-command-not-found: running home-manager switch..."
-    if home-manager switch; then
-      printf '%s\n' "handle-command-not-found: user environment rebuilt successfully."
-      rebuild_success=1
-    fi
-  fi
-
-  # If home-manager didn't work and we have privilege escalation, try nixos-rebuild
-  if [ "$rebuild_success" -eq 0 ] && [ -n "$priv_cmd" ] \
-      && command -v nixos-rebuild >/dev/null 2>&1; then
-    printf '%s\n' "handle-command-not-found: running $priv_cmd nixos-rebuild switch..."
-    if "$priv_cmd" nixos-rebuild switch; then
-      printf '%s\n' "handle-command-not-found: NixOS system rebuilt successfully."
-      rebuild_success=1
-    fi
-  fi
-
-  if [ "$rebuild_success" -eq 0 ]; then
-    warn "NixOS configuration could not be automatically rebuilt."
-    return 1
-  fi
-
-  return 0
-}
-
 # Cache for detect-rc-file output to avoid multiple calls
 _detect_rc_cache=""
 
@@ -117,7 +74,7 @@ EOF
     # Fallback to shell-specific defaults if still empty
     if [ -z "$rc_file" ]; then
       if [ -z "${HOME-}" ]; then
-        warn "HOME is not set; cannot determine rc file."
+        printf '%s\n' "handle-command-not-found: HOME is not set; cannot determine rc file." >&2
         exit 1
       fi
       
@@ -174,10 +131,36 @@ EOF
 
     if printf '%s\n' "$hook_code" | "$nix_helper" command-not-found "$rc_file" bash; then
       printf '%s\n' "handle-command-not-found: installed hook in '$rc_file'."
-      # Run nixos-rebuild to apply the changes
-      run_nix_rebuild || true
+      # Run nixos-rebuild to apply the changes (inlined from run_nix_rebuild)
+      if [ "${WIZARDRY_SKIP_NIX_REBUILD-}" != "1" ]; then
+        rebuild_success=0
+        priv_cmd=""
+        command -v sudo >/dev/null 2>&1 && priv_cmd="sudo"
+        command -v doas >/dev/null 2>&1 && [ -z "$priv_cmd" ] && priv_cmd="doas"
+        
+        if command -v home-manager >/dev/null 2>&1; then
+          printf '%s\n' "handle-command-not-found: running home-manager switch..."
+          if home-manager switch; then
+            printf '%s\n' "handle-command-not-found: user environment rebuilt successfully."
+            rebuild_success=1
+          fi
+        fi
+        
+        if [ "$rebuild_success" -eq 0 ] && [ -n "$priv_cmd" ] \
+            && command -v nixos-rebuild >/dev/null 2>&1; then
+          printf '%s\n' "handle-command-not-found: running $priv_cmd nixos-rebuild switch..."
+          if "$priv_cmd" nixos-rebuild switch; then
+            printf '%s\n' "handle-command-not-found: NixOS system rebuilt successfully."
+            rebuild_success=1
+          fi
+        fi
+        
+        if [ "$rebuild_success" -eq 0 ]; then
+          printf '%s\n' "handle-command-not-found: NixOS configuration could not be automatically rebuilt." >&2
+        fi
+      fi
     else
-      warn "unable to update '$rc_file'."
+      printf '%s\n' "handle-command-not-found: unable to update '$rc_file'." >&2
       exit 1
     fi
     exit 0
@@ -188,7 +171,7 @@ EOF
   [ "$rc_dir" = "$rc_file" ] && rc_dir=.
   if [ ! -d "$rc_dir" ]; then
     if ! mkdir -p "$rc_dir"; then
-      warn "unable to create directory '$rc_dir'."
+      printf '%s\n' "handle-command-not-found: unable to create directory '$rc_dir'." >&2
       exit 1
     fi
   fi
@@ -224,7 +207,7 @@ HOOK
   if ! mv "$tmp_file" "$rc_file"; then
     trap - EXIT HUP INT TERM
     rm -f "$tmp_file"
-    warn "unable to update '$rc_file'."
+    printf '%s\n' "handle-command-not-found: unable to update '$rc_file'." >&2
     exit 1
   fi
   trap - EXIT HUP INT TERM
@@ -266,7 +249,7 @@ EOF
     # Fallback
     if [ -z "$rc_file" ]; then
       if [ -z "${HOME-}" ]; then
-        warn "HOME is not set; cannot determine rc file."
+        printf '%s\n' "handle-command-not-found: HOME is not set; cannot determine rc file." >&2
         exit 1
       fi
       
@@ -317,16 +300,42 @@ EOF
     if [ -n "$nix_helper" ]; then
       if "$nix_helper" command-not-found "$rc_file"; then
         printf '%s\n' "handle-command-not-found: uninstalled hook from '$rc_file'."
-        # Run nixos-rebuild to apply the changes
-        run_nix_rebuild || true
+        # Run nixos-rebuild to apply the changes (inlined from run_nix_rebuild)
+        if [ "${WIZARDRY_SKIP_NIX_REBUILD-}" != "1" ]; then
+          rebuild_success=0
+          priv_cmd=""
+          command -v sudo >/dev/null 2>&1 && priv_cmd="sudo"
+          command -v doas >/dev/null 2>&1 && [ -z "$priv_cmd" ] && priv_cmd="doas"
+          
+          if command -v home-manager >/dev/null 2>&1; then
+            printf '%s\n' "handle-command-not-found: running home-manager switch..."
+            if home-manager switch; then
+              printf '%s\n' "handle-command-not-found: user environment rebuilt successfully."
+              rebuild_success=1
+            fi
+          fi
+          
+          if [ "$rebuild_success" -eq 0 ] && [ -n "$priv_cmd" ] \
+              && command -v nixos-rebuild >/dev/null 2>&1; then
+            printf '%s\n' "handle-command-not-found: running $priv_cmd nixos-rebuild switch..."
+            if "$priv_cmd" nixos-rebuild switch; then
+              printf '%s\n' "handle-command-not-found: NixOS system rebuilt successfully."
+              rebuild_success=1
+            fi
+          fi
+          
+          if [ "$rebuild_success" -eq 0 ]; then
+            printf '%s\n' "handle-command-not-found: NixOS configuration could not be automatically rebuilt." >&2
+          fi
+        fi
         exit 0
       else
-        warn "unable to update '$rc_file'."
+        printf '%s\n' "handle-command-not-found: unable to update '$rc_file'." >&2
         exit 1
       fi
     fi
     # nix-shell-remove helper not found - warn and attempt shell method fallback
-    warn "nix-shell-remove imp not found; attempting shell-style removal (may not work for nix files)."
+    printf '%s\n' "handle-command-not-found: nix-shell-remove imp not found; attempting shell-style removal (may not work for nix files)." >&2
   fi
 
   # Shell format: use sed to remove the block
@@ -336,7 +345,7 @@ EOF
   if ! mv "$tmp_file" "$rc_file"; then
     trap - EXIT HUP INT TERM
     rm -f "$tmp_file"
-    warn "unable to update '$rc_file'."
+    printf '%s\n' "handle-command-not-found: unable to update '$rc_file'." >&2
     exit 1
   fi
   trap - EXIT HUP INT TERM
