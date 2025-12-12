@@ -23,50 +23,42 @@ set -eu
 # Older scripts expect GRAY, so mirror GREY when missing.
 GRAY=${GRAY:-${GREY-}}
 
-color_for_status() {
-  case "$1" in
-    "installed")
-      printf "%s" "$GREEN"
-      ;;
-    "installed, needs setup")
-      printf "%s" "$YELLOW"
-      ;;
-    "not installed")
-      printf "%s" "$GRAY"
-      ;;
-    *)
-      printf "%s" "$RED"
-      ;;
-  esac
-}
-
-command_available() {
-  command -v "$1" >/dev/null 2>&1
-}
-
 simplex_bin=${SIMPLEX_CHAT_BIN:-simplex-chat}
 config_dir=${SIMPLEX_CHAT_CONFIG_DIR:-$HOME/.config/simplex-chat}
 data_dir=${SIMPLEX_CHAT_DATA_DIR:-$HOME/.local/share/simplex-chat}
 
-get_simplex_status() {
-  if ! command_available "$simplex_bin"; then
-    status="not installed"
-    printf "%s%s%s\n" "$(color_for_status "$status")" "$status" "$RESET"
-    return
-  fi
+# Check simplex-chat installation and setup status
+if ! command -v "$simplex_bin" >/dev/null 2>&1; then
+  status="not installed"
+  printf "%s%s%s\n" "$GRAY" "$status" "$RESET"
+  exit 0
+fi
 
-  if ! "$simplex_bin" --version >/dev/null 2>&1; then
-    status="installed, error"
-    printf "%s%s%s\n" "$(color_for_status "$status")" "$status" "$RESET"
-    return
-  fi
+if ! "$simplex_bin" --version >/dev/null 2>&1; then
+  status="installed, error"
+  printf "%s%s%s\n" "$RED" "$status" "$RESET"
+  exit 0
+fi
 
-  status="installed"
-  if [ ! -d "$config_dir" ] || [ ! -d "$data_dir" ]; then
-    status="installed, needs setup"
-  fi
+status="installed"
+if [ ! -d "$config_dir" ] || [ ! -d "$data_dir" ]; then
+  status="installed, needs setup"
+fi
 
-  printf "%s%s%s\n" "$(color_for_status "$status")" "$status" "$RESET"
-}
+# Color output based on status
+case "$status" in
+  "installed")
+    color=$GREEN
+    ;;
+  "installed, needs setup")
+    color=$YELLOW
+    ;;
+  "not installed")
+    color=$GRAY
+    ;;
+  *)
+    color=$RED
+    ;;
+esac
 
-get_simplex_status
+printf "%s%s%s\n" "$color" "$status" "$RESET"

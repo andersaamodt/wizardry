@@ -22,16 +22,7 @@ set -eu
 
 trap 'exit 0' INT TERM
 
-command_available() {
-  command -v "$1" >/dev/null 2>&1
-}
-
 simplex_bin=${SIMPLEX_CHAT_BIN:-simplex-chat}
-
-is_simplex_installed() {
-  command_available "$simplex_bin"
-}
-
 default_launch_cmd=${SIMPLEX_CHAT_LAUNCH_CMD:-"$simplex_bin"}
 status_cmd=${SIMPLEX_CHAT_STATUS_CMD:-"$simplex_bin status"}
 version_cmd=${SIMPLEX_CHAT_VERSION_CMD:-"$simplex_bin --version"}
@@ -39,7 +30,15 @@ help_cmd=${SIMPLEX_CHAT_HELP_CMD:-"$simplex_bin --help"}
 keygen_cmd=${SIMPLEX_CHAT_KEYGEN_CMD:-"$simplex_bin keygen"}
 restore_cmd=${SIMPLEX_CHAT_RESTORE_CMD:-"$simplex_bin restore-key"}
 
-build_menu_entries() {
+first_run=1
+while :; do
+  if [ "$first_run" -eq 0 ]; then
+    printf '\n'
+  else
+    first_run=0
+  fi
+
+  # Build menu entries
   title="${BOLD}${CYAN}simplex-chat: $(simplex-chat-status)"
   exit_label=$(exit-label)
   exit_option="${exit_label}%kill -TERM \$PPID"
@@ -53,7 +52,8 @@ build_menu_entries() {
   keygen_option="Create or rotate user key%$keygen_cmd"
   restore_option="Restore user key from backup%$restore_cmd"
 
-  if is_simplex_installed; then
+  # Show menu based on installation status
+  if command -v "$simplex_bin" >/dev/null 2>&1; then
     menu "$title" \
       "$launch_option" \
       "$status_option" \
@@ -66,16 +66,5 @@ build_menu_entries() {
   else
     menu "$title" "$install_option" "$exit_option" || true
   fi
-}
-
-first_run=1
-while :; do
-  if [ "$first_run" -eq 0 ]; then
-    printf '\n'
-  else
-    first_run=0
-  fi
-
-  build_menu_entries || true
 
 done
