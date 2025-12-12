@@ -35,7 +35,14 @@ if [ "$#" -eq 0 ]; then
     fi
 fi
 
-is file "$1" || { say 'That file does not exist.'; exit 1; }
+is file "$1" || {
+  if there "$1"; then
+    say 'That path is not a file.'
+  else
+    say 'That file does not exist.'
+  fi
+  exit 1
+}
 
 # Copy file contents to clipboard using the clip-copy imp
 # Suppress clip-copy's error to avoid duplicate messages
