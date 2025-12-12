@@ -47,13 +47,6 @@ if ! menu_saved_tty_state=$(stty -g <"$menu_tty" 2>/dev/null); then
 fi
 
 terminal_restored=0
-restore_terminal() {
-        if [ "$terminal_restored" -eq 1 ]; then
-                return
-        fi
-        terminal_restored=1
-        stty "$menu_saved_tty_state" <"$menu_tty" >/dev/null 2>&1 || :
-}
 
 AWAIT_KEYPRESS_KEEP_RAW=1
 export AWAIT_KEYPRESS_KEEP_RAW
@@ -110,7 +103,10 @@ cleanup() {
                 return
         fi
         cleanup_called=1
-        restore_terminal
+        if [ "$terminal_restored" -eq 0 ]; then
+                terminal_restored=1
+                stty "$menu_saved_tty_state" <"$menu_tty" >/dev/null 2>&1 || :
+        fi
         cursor-blink on >/dev/null 2>&1 || :
         cleanup-file "$items_file"
         cleanup-file "$commands_file"
@@ -120,11 +116,7 @@ trap 'cleanup' EXIT
 
 max_name_length=0
 menu_length=0
-
-# Function to strip ANSI escape codes for length calculation
-strip_ansi() {
-        printf '%s' "$1" | sed 's/\x1b\[[0-9;]*m//g'
-}
+strip_ansi_pattern='s/\x1b\[[0-9;]*m//g'
 
 for option in "$@"
 do
@@ -140,7 +132,7 @@ do
         printf '%s\n' "$label" >>"$items_file"
         printf '%s\n' "$command" >>"$commands_file"
         # Strip ANSI codes before calculating visible length
-        clean_label=$(strip_ansi "$label")
+        clean_label=$(printf '%s' "$label" | sed "$strip_ansi_pattern")
         length=$(printf '%s' "$clean_label" | wc -c | tr -d ' ')
         if [ "$length" -gt "$max_name_length" ]; then
                 max_name_length=$length
@@ -168,140 +160,12 @@ case $start_selection in
 esac
 menu_column=1
 menu_row=1
-menu_drawn=0
 previous_selected=0
+window_width=0
+max_command_length=0
 last_window_width=0
 last_max_command_length=0
-dimensions_changed=1
-
-find_next_selectable() {
-        # Find the next selectable (non-divider) item after current position
-        # Wraps around to beginning if needed
-        start=$selected
-        pos=$selected
-        pos=$((pos + 1))
-        if [ "$pos" -gt "$menu_length" ]; then
-                pos=1
-        fi
-        while [ "$pos" -ne "$start" ]; do
-                if ! is_divider "$pos"; then
-                        selected=$pos
-                        return 0
-                fi
-                pos=$((pos + 1))
-                if [ "$pos" -gt "$menu_length" ]; then
-                        pos=1
-                fi
-        done
-        # No selectable items found (shouldn't happen in practice)
-        return 1
-}
-
-find_prev_selectable() {
-        # Find the previous selectable (non-divider) item before current position
-        # Wraps around to end if needed
-        start=$selected
-        pos=$selected
-        pos=$((pos - 1))
-        if [ "$pos" -le 0 ]; then
-                pos=$menu_length
-        fi
-        while [ "$pos" -ne "$start" ]; do
-                if ! is_divider "$pos"; then
-                        selected=$pos
-                        return 0
-                fi
-                pos=$((pos - 1))
-                if [ "$pos" -le 0 ]; then
-                        pos=$menu_length
-                fi
-        done
-        # No selectable items found (shouldn't happen in practice)
-        return 1
-}
-
-find_first_selectable() {
-        # Find the first selectable item (skip initial dividers)
-        pos=1
-        while [ "$pos" -le "$menu_length" ]; do
-                if ! is_divider "$pos"; then
-                        selected=$pos
-                        return 0
-                fi
-                pos=$((pos + 1))
-        done
-        # No selectable items found
-        return 1
-}
-
-update_dimensions() {
-        # Measure the terminal so we know how much horizontal space each menu
-        # row can safely use. We leave room for the two-character prefix ("> ")
-        # and at least one separating space before any command preview.
-        window_width=$(fathom-terminal -w)
-        max_command_length=$((window_width - max_name_length - 3))
-        if [ "$max_command_length" -lt 0 ]; then
-                max_command_length=0
-        fi
-
-        dimensions_changed=0
-        if [ "$window_width" -ne "$last_window_width" ] || [ "$max_command_length" -ne "$last_max_command_length" ]; then
-                dimensions_changed=1
-        fi
-
-        last_window_width=$window_width
-        last_max_command_length=$max_command_length
-}
-
-is_divider() {
-        # Check if a row is an unselectable divider
-        row_idx=$1
-        cmd=$(sed -n "${row_idx}p" "$commands_file")
-        case $cmd in
-                --divider--) return 0 ;;
-                *) return 1 ;;
-        esac
-}
-
-render_divider() {
-        # Render a horizontal divider line (~16 chars, centered within menu width)
-        # Menu width is based on max item (label) width, limited by window width
-        # The menu width should be the max_name_length + 2 (for "> " prefix)
-        menu_width=$((max_name_length + 2))
-        
-        # Limit menu_width to window_width (whichever is less)
-        if [ "$window_width" -gt 0 ] && [ "$menu_width" -gt "$window_width" ]; then
-                menu_width=$window_width
-        fi
-        
-        # Fixed divider width of 16 chars (or menu_width if smaller)
-        divider_width=16
-        if [ "$divider_width" -gt "$menu_width" ]; then
-                divider_width=$menu_width
-        fi
-        # Calculate left padding to center the divider within menu_width
-        padding=$(( (menu_width - divider_width) / 2 ))
-        # Build padding string
-        pad=""
-        p=0
-        while [ "$p" -lt "$padding" ]; do
-                pad="$pad "
-                p=$((p + 1))
-        done
-        # Build divider line
-        line=""
-        i=0
-        while [ "$i" -lt "$divider_width" ]; do
-                line="${line}─"
-                i=$((i + 1))
-        done
-        printf '%b  %s%s%b' "$THEME_DIVIDER" "$pad" "$line" "$RESET"
-}
-
 render_row() {
-        # Render a single menu row either in its normal state or highlighted
-        # for the currently selected item. Each pass clears the existing row so
-        # repeated renders replace text in place instead of scrolling.
         row_index=$1
         highlight=$2
 
@@ -312,16 +176,36 @@ render_row() {
         label=$(sed -n "${row_index}p" "$items_file")
         command=$(sed -n "${row_index}p" "$commands_file")
 
-        # Handle divider rows
         if [ "$command" = "--divider--" ]; then
+                menu_width=$((max_name_length + 2))
+                if [ "$window_width" -gt 0 ] && [ "$menu_width" -gt "$window_width" ]; then
+                        menu_width=$window_width
+                fi
+                divider_width=16
+                if [ "$divider_width" -gt "$menu_width" ]; then
+                        divider_width=$menu_width
+                fi
+                padding=$(( (menu_width - divider_width) / 2 ))
+                pad=''
+                p=0
+                while [ "$p" -lt "$padding" ]; do
+                        pad="$pad "
+                        p=$((p + 1))
+                done
+                line=''
+                i=0
+                while [ "$i" -lt "$divider_width" ]; do
+                        line="${line}─"
+                        i=$((i + 1))
+                done
+
                 target_row=$((menu_row + row_index - 1))
                 if move-cursor "$menu_column" "$target_row"; then
                         printf '\033[K'
-                        render_divider
+                        printf '%b  %s%s%b' "$THEME_DIVIDER" "$pad" "$line" "$RESET"
                         printf '\r'
                 else
-                        render_divider
-                        printf '\n'
+                        printf '%b  %s%s%b\n' "$THEME_DIVIDER" "$pad" "$line" "$RESET"
                 fi
                 return
         fi
@@ -332,20 +216,16 @@ render_row() {
                 truncated_command=''
         fi
 
-        # Calculate visible length (without ANSI codes) for proper padding
-        clean_label=$(strip_ansi "$label")
+        clean_label=$(printf '%s' "$label" | sed "$strip_ansi_pattern")
         visible_length=$(printf '%s' "$clean_label" | wc -c | tr -d ' ')
-        # Calculate extra padding needed to compensate for invisible ANSI codes
         raw_length=$(printf '%s' "$label" | wc -c | tr -d ' ')
         ansi_extra=$((raw_length - visible_length))
-        # Adjust the padding width to account for ANSI codes in label
         adjusted_width=$((max_name_length + ansi_extra))
 
         target_row=$((menu_row + row_index - 1))
         if move-cursor "$menu_column" "$target_row"; then
                 printf '\033[K'
                 if [ "$highlight" -eq 1 ]; then
-                        # Use clean_label (ANSI stripped) so highlight color takes precedence
                         if [ "$max_command_length" -gt 0 ]; then
                                 printf '%b> %-*s%b %b%-*s%b' "$THEME_HIGHLIGHT" "$max_name_length" "$clean_label" "$RESET" "$THEME_MUTED" "$max_command_length" "$truncated_command" "$RESET"
                         else
@@ -361,7 +241,6 @@ render_row() {
                 printf '\r'
         else
                 if [ "$highlight" -eq 1 ]; then
-                        # Use clean_label (ANSI stripped) so highlight color takes precedence
                         if [ "$max_command_length" -gt 0 ]; then
                                 printf '%b> %-*s%b %b%-*s%b\n' "$THEME_HIGHLIGHT" "$max_name_length" "$clean_label" "$RESET" "$THEME_MUTED" "$max_command_length" "$truncated_command" "$RESET"
                         else
@@ -378,9 +257,6 @@ render_row() {
 }
 
 position_cursor_below_menu() {
-        # Park the cursor just beneath the menu so that any subsequent output
-        # (selected command logs, prompts, etc.) begins below the reserved
-        # region. This keeps the menu intact while commands run.
         below_row=$((menu_row + menu_length))
         if [ "$terminal_height" -gt 0 ] && [ "$below_row" -gt "$terminal_height" ]; then
                 below_row=$terminal_height
@@ -388,71 +264,6 @@ position_cursor_below_menu() {
 
         if ! move-cursor "$menu_column" "$below_row"; then
                 printf '\n'
-        fi
-}
-
-draw_menu() {
-        # Redraw the entire menu from scratch. This runs the first time we
-        # display the menu or whenever the terminal size changes.
-        if move-cursor "$menu_column" "$menu_row"; then
-                printf '\033[J'
-        fi
-
-        row=1
-        while [ "$row" -le "$menu_length" ]
-        do
-                if [ "$row" -eq "$selected" ]; then
-                        highlight=1
-                else
-                        highlight=0
-                fi
-                render_row "$row" "$highlight"
-                row=$((row + 1))
-        done
-
-        position_cursor_below_menu
-
-        menu_drawn=1
-        previous_selected=$selected
-}
-
-refresh_selection() {
-        # Update only the rows that changed. If the dimensions changed or we
-        # have not drawn the menu yet, fall back to a full redraw.
-        if [ "$menu_drawn" -eq 0 ] || [ "$dimensions_changed" -eq 1 ]; then
-                draw_menu
-                return
-        fi
-
-        if [ "$selected" -ne "$previous_selected" ]; then
-                if [ "$previous_selected" -gt 0 ]; then
-                        render_row "$previous_selected" 0
-                fi
-                render_row "$selected" 1
-                position_cursor_below_menu
-                previous_selected=$selected
-        fi
-}
-
-execute_selection() {
-        # Run the command paired with the currently highlighted menu item. If
-        # there is no command we simply exit after cleaning up.
-        # In spell mode, run the label (spell name) instead of the command (description).
-        if [ "$spell_mode" -eq 1 ]; then
-                to_run=$(sed -n "${selected}p" "$items_file")
-        else
-                to_run=$(sed -n "${selected}p" "$commands_file")
-        fi
-        if [ -n "$to_run" ]; then
-                cleanup
-                trap - EXIT INT TERM
-                # Print newline before running command for visual separation
-                printf '\n'
-                # shellcheck disable=SC2039,SC3045 # POSIX sh allows eval
-                eval "$to_run"
-        else
-                cleanup
-                trap - EXIT INT TERM
         fi
 }
 
@@ -510,28 +321,118 @@ if [ "$menu_row" -lt 1 ]; then
         menu_row=1
 fi
 
-update_dimensions
-# Ensure we start on a selectable item - if selected position (from MENU_START_SELECTION)
-# is valid and not a divider, use it; otherwise find the first selectable item
-if [ "$selected" -ge 1 ] && [ "$selected" -le "$menu_length" ] && ! is_divider "$selected"; then
-        : # selected position is valid and not a divider, use it
-else
-        find_first_selectable || :
-fi
-draw_menu
+pending_step=0
+
+needs_redraw=1
+selection_pending=0
 
 while :
 do
+        if [ "$pending_step" -eq 0 ]; then
+                command=$(sed -n "${selected}p" "$commands_file")
+                case $command in
+                        --divider--) pending_step=1 ;;
+                esac
+        fi
+        # If the current position is a divider, queue a forward step to reach the next selectable row.
+        # Apply queued navigation steps, wrapping around and skipping dividers.
+        if [ "$pending_step" -ne 0 ]; then
+                start=$selected
+                pos=$selected
+                while :
+                do
+                        pos=$((pos + pending_step))
+                        if [ "$pos" -gt "$menu_length" ]; then
+                                pos=1
+                        elif [ "$pos" -le 0 ]; then
+                                pos=$menu_length
+                        fi
+                        command=$(sed -n "${pos}p" "$commands_file")
+                        if [ "$command" != "--divider--" ]; then
+                                selected=$pos
+                                break
+                        fi
+                        if [ "$pos" -eq "$start" ]; then
+                                break
+                        fi
+                done
+                selection_pending=1
+                pending_step=0
+        fi
+
+        current_window_width=$(fathom-terminal -w)
+        current_max_command_length=$((current_window_width - max_name_length - 3))
+        if [ "$current_max_command_length" -lt 0 ]; then
+                current_max_command_length=0
+        fi
+        if [ "$current_window_width" -ne "$last_window_width" ] || [ "$current_max_command_length" -ne "$last_max_command_length" ]; then
+                needs_redraw=1
+                selection_pending=0
+        fi
+        window_width=$current_window_width
+        max_command_length=$current_max_command_length
+
+        if [ "$needs_redraw" -eq 1 ]; then
+                last_window_width=$current_window_width
+                last_max_command_length=$current_max_command_length
+
+                if move-cursor "$menu_column" "$menu_row"; then
+                        printf '\033[J'
+                fi
+
+                row=1
+                while [ "$row" -le "$menu_length" ]
+                do
+                        highlight=0
+                        if [ "$row" -eq "$selected" ]; then
+                                highlight=1
+                        fi
+                        render_row "$row" "$highlight"
+                        row=$((row + 1))
+                done
+
+                position_cursor_below_menu
+
+                previous_selected=$selected
+                selection_pending=0
+                needs_redraw=0
+        elif [ "$selection_pending" -eq 1 ]; then
+                if [ "$previous_selected" -gt 0 ]; then
+                        render_row "$previous_selected" 0
+                fi
+                render_row "$selected" 1
+
+                position_cursor_below_menu
+
+                previous_selected=$selected
+                selection_pending=0
+        fi
+
+        step=0
         key=$(await-keypress)
         case $key in
         up)
-                find_prev_selectable || :
+                step=-1
                 ;;
         down)
-                find_next_selectable || :
+                step=1
                 ;;
         enter)
-                execute_selection
+                if [ "$spell_mode" -eq 1 ]; then
+                        to_run=$(sed -n "${selected}p" "$items_file")
+                else
+                        to_run=$(sed -n "${selected}p" "$commands_file")
+                fi
+                if [ -n "$to_run" ]; then
+                        cleanup
+                        trap - EXIT INT TERM
+                        printf '\n'
+                        # shellcheck disable=SC2039,SC3045 # POSIX sh allows eval
+                        eval "$to_run"
+                else
+                        cleanup
+                        trap - EXIT INT TERM
+                fi
                 exit 0
                 ;;
         escape|ESC|esc)
@@ -542,8 +443,13 @@ do
                 exit 0
                 ;;
         esac
-        update_dimensions
-        refresh_selection
+
+        if [ "$step" -ne 0 ]; then
+                pending_step=$step
+        fi
+
         # Avoid a tight loop if await-keypress returned empty.
-        [ -n "$key" ] || sleep 0.05
+        if [ -z "$key" ]; then
+                sleep 0.05
+        fi
 done
