@@ -20,54 +20,48 @@ esac
 set -eu
 . colors
 
-# Returns colored text based on status
-color_for_status() {
-  case "$1" in
-    "installed, running, bootstrapped")
-      printf "${GREEN}"
-      ;;
-    "not installed")
-      printf "${GRAY}"
-      ;;
-    "installed, not running"|"installed, running, bootstrapping")
-      printf "${YELLOW}"
-      ;;
-    "installed, running, disconnected"|"installed, running, error"|"*")
-      printf "${RED}"
-      ;;
-  esac
-}
+# Check if Tor is installed
+if is-installed tor > /dev/null; then
+  # Check if Tor is running
+  if is-service-running tor > /dev/null; then
+    # Parse the latest Tor logs
+    log_entry=$(journalctl --quiet -u tor.service --no-pager -n 50)
 
-get_tor_status() {
-  # Check if Tor is installed
-  if is-installed tor > /dev/null; then
-    # Check if Tor is running
-    if is-service-running tor > /dev/null; then
-      # Parse the latest Tor logs
-      log_entry=$(journalctl --quiet -u tor.service --no-pager -n 50)
-
-      # Interpret the log messages
-      if echo "$log_entry" | grep -q 'Bootstrapped 100%'; then
-        if echo "$log_entry" | grep -q 'Tried for .* without success'; then
-          status="installed, running, disconnected"
-        else
-          status="installed, running, bootstrapped"
-        fi
-      elif echo "$log_entry" | grep -q 'Our directory information is no longer up-to-date enough to build circuits'; then
-        status="installed, running, bootstrapping"
-      elif echo "$log_entry" | grep -Eq 'Our circuit died|Tried for .* without success'; then
+    # Interpret the log messages
+    if echo "$log_entry" | grep -q 'Bootstrapped 100%'; then
+      if echo "$log_entry" | grep -q 'Tried for .* without success'; then
         status="installed, running, disconnected"
       else
-        status="installed, running, error"
+        status="installed, running, bootstrapped"
       fi
+    elif echo "$log_entry" | grep -q 'Our directory information is no longer up-to-date enough to build circuits'; then
+      status="installed, running, bootstrapping"
+    elif echo "$log_entry" | grep -Eq 'Our circuit died|Tried for .* without success'; then
+      status="installed, running, disconnected"
     else
-      status="installed, not running"
+      status="installed, running, error"
     fi
   else
-    status="not installed"
+    status="installed, not running"
   fi
+else
+  status="not installed"
+fi
 
-  printf "$(color_for_status "$status")$status${RESET}\n"
-}
+# Color output based on status (inlined from color_for_status)
+case "$status" in
+  "installed, running, bootstrapped")
+    color="${GREEN}"
+    ;;
+  "not installed")
+    color="${GRAY}"
+    ;;
+  "installed, not running"|"installed, running, bootstrapping")
+    color="${YELLOW}"
+    ;;
+  "installed, running, disconnected"|"installed, running, error"|"*")
+    color="${RED}"
+    ;;
+esac
 
-get_tor_status
+printf "${color}${status}${RESET}\n"

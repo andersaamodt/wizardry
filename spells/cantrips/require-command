@@ -29,49 +29,35 @@ shift
 
 auto_install=${REQUIRE_COMMAND_ASSUME_YES:-0}
 
-find_install_spell() {
-    name=$1
-    script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-
-    if has "install-$name"; then
-        where "install-$name"
-        return 0
-    fi
-
-    if [ -x "$script_dir/../install/core/install-$name" ]; then
-        say "$script_dir/../install/core/install-$name"
-        return 0
-    fi
-
-    return 1
-}
-
-attempt_install() {
-    install_spell=$(find_install_spell "$command_name") || return 1
-
-    if [ "$auto_install" = "1" ] || ! [ -t 0 ]; then
-        ASSUME_YES=1 "$install_spell" && has "$command_name"
-        return $?
-    fi
-
-    printf "%s" "Install '$command_name'? [y/N] " >&2
-    IFS= read -r reply || reply=""
-    case $reply in
-        y|Y|yes|YES)
-            ASSUME_YES=1 "$install_spell" && has "$command_name"
-            return $?
-            ;;
-        *)
-            return 1
-            ;;
-    esac
-}
-
 # Succeed immediately when the command is already available on PATH.
 has "$command_name" && exit 0
 
-if attempt_install; then
-    exit 0
+# Try to find and run installer (inlined from find_install_spell and attempt_install)
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+install_spell=""
+
+if has "install-$command_name"; then
+    install_spell=$(where "install-$command_name")
+elif [ -x "$script_dir/../install/core/install-$command_name" ]; then
+    install_spell="$script_dir/../install/core/install-$command_name"
+fi
+
+if [ -n "$install_spell" ]; then
+    if [ "$auto_install" = "1" ] || ! [ -t 0 ]; then
+        if ASSUME_YES=1 "$install_spell" && has "$command_name"; then
+            exit 0
+        fi
+    else
+        printf "%s" "Install '$command_name'? [y/N] " >&2
+        IFS= read -r reply || reply=""
+        case $reply in
+            y|Y|yes|YES)
+                if ASSUME_YES=1 "$install_spell" && has "$command_name"; then
+                    exit 0
+                fi
+                ;;
+        esac
+    fi
 fi
 
 if [ "$#" -gt 0 ]; then
