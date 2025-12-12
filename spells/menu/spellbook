@@ -46,22 +46,6 @@ if [ -d "$spell_home" ]; then
         PATH="$spell_home:$PATH"
 fi
 
-validate_command() {
-        cmd=$1
-        if [ -z "$cmd" ]; then
-                printf '%s\n' "spellbook: command must not be empty." >&2
-                exit 1
-        fi
-        if [ "$(printf '%s' "$cmd" | tr -d '\t')" != "$cmd" ]; then
-                printf '%s\n' "spellbook: command may not contain tabs." >&2
-                exit 1
-        fi
-        if [ "$(printf '%s' "$cmd" | tr -d '\n')" != "$cmd" ]; then
-                printf '%s\n' "spellbook: command must be a single line." >&2
-                exit 1
-        fi
-}
-
 write_scribed_script() {
         script_name=$1
         cmd_text=$2
@@ -123,39 +107,6 @@ list_spell_directories() {
         printf '%s\n' "$@"
 }
 
-# Convert folder name to display name using the category-title imp
-category_display_name() {
-        folder=$1
-        if command -v category-title >/dev/null 2>&1; then
-                category-title "$folder"
-        else
-                # Fallback if imp not available
-                case $folder in
-                        enchant)
-                                printf '%s' "Enchantment"
-                                ;;
-                        mud)
-                                printf '%s' "MUD"
-                                ;;
-                        *)
-                                # Capitalize first letter
-                                first_char=$(printf '%s' "$folder" | cut -c1)
-                                first=$(printf '%s' "$first_char" | tr '[:lower:]' '[:upper:]')
-                                rest=$(printf '%s' "$folder" | cut -c2-)
-                                printf '%s%s' "$first" "$rest"
-                                ;;
-                esac
-        fi
-}
-
-# Convert filename to display name: hyphens to spaces, titlecase
-filename_to_display() {
-        name=$1
-        # Convert hyphens to spaces and titlecase each word
-        awk_script='{gsub(/-/," "); for(i=1;i<=NF;i++){$i=toupper(substr($i,1,1))tolower(substr($i,2))}}1'
-        printf '%s' "$name" | awk "$awk_script"
-}
-
 # Resolve a category path by searching in multiple locations.
 # If the path starts with ./ or /, use it directly.
 # Otherwise, search in: spells/, ~/.spellbook, current directory
@@ -187,16 +138,6 @@ resolve_category_path() {
                 return 0
         fi
         return 1
-}
-
-list_category_spells() {
-        cat_name=$1
-        # Use resolve_category_path to find the actual directory
-        resolved_path=$(resolve_category_path "$cat_name")
-        if [ -z "$resolved_path" ]; then
-                resolved_path="$ROOT_DIR/spells/$cat_name"
-        fi
-        find "$resolved_path" -maxdepth 2 -type f -perm -111 2>/dev/null | sort
 }
 
 # List all scribed commands (custom commands in spell_home, excluding built-in spells)
@@ -264,17 +205,6 @@ list_user_folders() {
         done
 }
 
-# Check if a category name is a built-in category
-is_builtin_category() {
-        check_name=$1
-        for cat in $(list_spell_directories | sort); do
-                if [ "$check_name" = "$cat" ]; then
-                        return 0
-                fi
-        done
-        return 1
-}
-
 # Check if a custom category folder is empty (no executable files)
 is_custom_category_empty() {
         check_path=$1
@@ -318,19 +248,9 @@ record_scribed_command() {
                 shift
         done
         validate-name "$cmd_name" "spellbook" || exit 1
-        validate_command "$cmd"
+        validate-command "$cmd" "spellbook: command" || exit 1
         mkdir -p "$spell_home"
         write_scribed_script "$cmd_name" "$cmd"
-}
-
-remove_scribed_command() {
-        cmd_name=$1
-        script_path="$spell_home/$cmd_name"
-        if [ -f "$script_path" ]; then
-                rm -f "$script_path"
-                return 0
-        fi
-        return 1
 }
 
 is_memorized() {
