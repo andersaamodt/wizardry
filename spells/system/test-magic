@@ -402,16 +402,9 @@ while IFS= read -r test_path <&3; do
     if [ "$very_verbose" -eq 1 ]; then
       print_failure_debug "$test_path" "$cleaned_output"
     fi
-    # Write only failures to failure_output_file, not PASS lines
-    filtered_output=$(printf '%s\n' "$cleaned_output" | awk '
-      /^PASS / { next }
-      /^[0-9]+\/[0-9]+ tests passed/ { next }
-      /^$/ { next }
-      { print }
-    ')
     {
       printf '=== %s ===\n' "$test_path"
-      printf '%s\n\n' "$filtered_output"
+      printf '%s\n\n' "$cleaned_output"
     } >>"$failure_output_file"
   fi
 
