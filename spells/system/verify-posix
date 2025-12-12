@@ -65,6 +65,21 @@ collect_targets() {
 failures=0
 total=0
 failed_targets=""
+failed_details=""
+
+record_failure() {
+  target=$1
+  reason=${2-}
+  failures=$((failures + 1))
+  failed_targets=${failed_targets:+$failed_targets,}$target
+  if [ -n "$reason" ]; then
+    if [ -n "$failed_details" ]; then
+      failed_details="$failed_details, $target ($reason)"
+    else
+      failed_details="$target ($reason)"
+    fi
+  fi
+}
 
 targets_file=$(temp-file verify-posix-targets) || exit 1
 trap 'cleanup-file "$targets_file"' EXIT HUP INT TERM
@@ -84,16 +99,14 @@ while IFS= read -r target; do
   esac
 
   if [ ! -e "$path" ]; then
-    printf 'FAIL %s: missing file\n' "$target"
-    failures=$((failures + 1))
-    failed_targets=${failed_targets:+$failed_targets,}$target
+    print-fail "$target" "missing file"
+    record_failure "$target" "missing file"
     continue
   fi
 
   if [ ! -f "$path" ]; then
-    printf 'FAIL %s: not a regular file\n' "$target"
-    failures=$((failures + 1))
-    failed_targets=${failed_targets:+$failed_targets,}$target
+    print-fail "$target" "not a regular file"
+    record_failure "$target" "not a regular file"
     continue
   fi
 
@@ -101,15 +114,13 @@ while IFS= read -r target; do
 
   case $shebang in
     '')
-      printf 'FAIL %s: lacks a shebang; expected #!/bin/sh\n' "$target"
-      failures=$((failures + 1))
-      failed_targets=${failed_targets:+$failed_targets,}$target
+      print-fail "$target" "lacks a shebang; expected #!/bin/sh"
+      record_failure "$target" "no shebang"
       continue
       ;;
     '#!')
-      printf 'FAIL %s: has an empty shebang; expected #!/bin/sh\n' "$target"
-      failures=$((failures + 1))
-      failed_targets=${failed_targets:+$failed_targets,}$target
+      print-fail "$target" "has an empty shebang; expected #!/bin/sh"
+      record_failure "$target" "empty shebang"
       continue
       ;;
     '#!'*)
@@ -119,9 +130,8 @@ while IFS= read -r target; do
       done
       ;;
     *)
-      printf 'FAIL %s: lacks a shebang; expected #!/bin/sh\n' "$target"
-      failures=$((failures + 1))
-      failed_targets=${failed_targets:+$failed_targets,}$target
+      print-fail "$target" "lacks a shebang; expected #!/bin/sh"
+      record_failure "$target" "no shebang"
       continue
       ;;
   esac
@@ -131,39 +141,55 @@ while IFS= read -r target; do
       :
       ;;
     '/usr/bin/env bash'*|'/bin/bash'*)
-      printf 'FAIL %s: uses %s (should use /bin/sh)\n' "$target" "$shebang"
-      failures=$((failures + 1))
-      failed_targets=${failed_targets:+$failed_targets,}$target
+      print-fail "$target" "uses $shebang (should use /bin/sh)"
+      record_failure "$target" "bash shebang"
       continue
       ;;
     *)
-      printf 'FAIL %s: uses %s (should use /bin/sh)\n' "$target" "$shebang"
-      failures=$((failures + 1))
-      failed_targets=${failed_targets:+$failed_targets,}$target
+      print-fail "$target" "uses $shebang (should use /bin/sh)"
+      record_failure "$target" "wrong shebang"
       continue
       ;;
   esac
 
   tmp_log=$(temp-file verify-posix-log) || exit 1
   if "$checkbashisms_cmd" "$path" >"$tmp_log" 2>&1; then
-    printf 'PASS %s\n' "$target"
+    print-pass "$target"
   else
-    printf 'FAIL %s\n' "$target"
+    print-fail "$target"
     while IFS= read -r line; do
       printf '  %s\n' "$line"
     done <"$tmp_log"
-    failures=$((failures + 1))
-    failed_targets=${failed_targets:+$failed_targets,}$target
+    record_failure "$target" "bashisms detected"
   fi
   cleanup-file "$tmp_log"
 done <"$targets_file"
 trap - EXIT HUP INT TERM
 rm -f "$targets_file"
 
+printf '\n'
 if [ "$failures" -eq 0 ]; then
-  printf 'All %d scripts are POSIX-compliant.\n' "$total"
+  if [ -t 1 ] && command -v tput >/dev/null 2>&1 && tput setaf 1 >/dev/null 2>&1; then
+    green=$(tput setaf 2 2>/dev/null || true)
+    bold=$(tput bold 2>/dev/null || true)
+    reset=$(tput sgr0 2>/dev/null || true)
+    printf '%s%sAll %d scripts are POSIX-compliant.%s\n' "$bold" "$green" "$total" "$reset"
+  else
+    printf 'All %d scripts are POSIX-compliant.\n' "$total"
+  fi
 else
-  printf '%d of %d scripts failed POSIX compliance.\n' "$failures" "$total"
-  printf 'Failing spells: %s\n' "$failed_targets"
+  heading-section "POSIX Compliance Summary"
+  passed=$((total - failures))
+  printf 'Passed: %d/%d\n' "$passed" "$total"
+  printf 'Failed: %d\n' "$failures"
+  if [ "$failures" -le 12 ] && [ -n "$failed_details" ]; then
+    printf '\nFailed scripts:\n'
+    # Split by comma and print each failure
+    printf '%s' "$failed_details" | tr ',' '\n' | while IFS= read -r failure; do
+      [ -n "$failure" ] && printf '  %s\n' "$failure"
+    done
+  else
+    printf '\nFailing spells: %s\n' "$failed_targets"
+  fi
   exit 1
 fi

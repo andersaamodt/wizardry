@@ -87,25 +87,21 @@ all_tests_are_processed() {
   return 0
 }
 
-# Verify the rerun message format (issue requirement #4)
-rerun_message_format_correct() {
-  # The message should be: "<=10 failing tests; rerunning only those tests with --very-verbose:"
-  # NOT: "GitHub Actions detected <=10 failing tests; rerunning ONLY those tests..."
-  
-  # Check the source code directly since triggering the message requires failures
-  grep -q "rerunning only those tests with --very-verbose:" "$ROOT_DIR/spells/system/test-magic" || {
-    printf "FAIL: Rerun message not updated correctly\n" >&2
+# Verify that test reruns have been eliminated (refactoring requirement)
+no_test_reruns() {
+  # The rerun logic should be completely removed
+  grep -q "rerunning" "$ROOT_DIR/spells/system/test-magic" && {
+    TEST_FAILURE_REASON="rerun logic still present in test-magic"
     return 1
   }
   
-  # Verify old message is gone
-  grep -q "GitHub Actions detected" "$ROOT_DIR/spells/system/test-magic" && {
-    printf "FAIL: Old 'GitHub Actions detected' message still present\n" >&2
+  grep -q "TEST_MAGIC_DEBUG_RERUN" "$ROOT_DIR/spells/system/test-magic" && {
+    TEST_FAILURE_REASON="DEBUG_RERUN variable still present"
     return 1
   }
   
-  grep -q "rerunning ONLY those" "$ROOT_DIR/spells/system/test-magic" && {
-    printf "FAIL: Old 'ONLY' (uppercase) still present\n" >&2
+  grep -q "very-verbose" "$ROOT_DIR/spells/system/test-magic" && {
+    TEST_FAILURE_REASON="--very-verbose flag still present"
     return 1
   }
   
@@ -116,6 +112,6 @@ _run_test_case "system/test-magic is executable" spell_is_executable
 _run_test_case "system/test-magic shows help" shows_help
 _run_test_case "system/test-magic has content" spell_has_content
 _run_test_case "system/test-magic processes all tests without skipping" all_tests_are_processed
-_run_test_case "system/test-magic rerun message format is correct" rerun_message_format_correct
+_run_test_case "system/test-magic has no test rerun logic" no_test_reruns
 
 _finish_tests

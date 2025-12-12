@@ -11,6 +11,12 @@ _run_test_case() {
   func=$2
   _test_index=$((_test_index + 1))
   
+  # Increment global subtest number if it exists
+  if [ -n "${WIZARDRY_GLOBAL_SUBTEST_NUM-}" ]; then
+    WIZARDRY_GLOBAL_SUBTEST_NUM=$((WIZARDRY_GLOBAL_SUBTEST_NUM + 1))
+    export WIZARDRY_GLOBAL_SUBTEST_NUM
+  fi
+  
   # Run the test
   if "$func"; then
     _report_result "$desc" 0

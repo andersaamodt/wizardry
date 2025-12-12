@@ -1,0 +1,32 @@
+#!/bin/sh
+# heading-simple TEXT [PREFIX] - output a simple heading with optional prefix
+# Example: heading-simple "Installation" "==>"
+# Output: ==> Installation
+# Default PREFIX is empty
+
+set -eu
+
+_heading_simple() {
+  text=${1-}
+  prefix=${2:-}
+  
+  # Use colors if supported
+  if [ -t 1 ] && command -v tput >/dev/null 2>&1 && tput setaf 1 >/dev/null 2>&1; then
+    bold=$(tput bold 2>/dev/null || true)
+    reset=$(tput sgr0 2>/dev/null || true)
+    if [ -n "$prefix" ]; then
+      printf '%s%s %s%s\n' "$bold" "$prefix" "$text" "$reset"
+    else
+      printf '%s%s%s\n' "$bold" "$text" "$reset"
+    fi
+  else
+    if [ -n "$prefix" ]; then
+      printf '%s %s\n' "$prefix" "$text"
+    else
+      printf '%s\n' "$text"
+    fi
+  fi
+}
+
+# Self-execution when run directly (not sourced)
+case "${0##*/}" in heading-simple) _heading_simple "$@" ;; esac

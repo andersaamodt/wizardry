@@ -1,12 +1,48 @@
 #!/bin/sh
-# test-pass DESC - output a test pass message
-# Example: test-pass "spell shows help"
+# test-pass NUM DESC - output a test pass message with subtest number
+# Example: test-pass 5 "spell shows help"
 
 set -eu
 
 _test_pass() {
-  desc=$1
-  printf 'PASS %s\n' "$desc"
+  num=${1-}
+  desc=${2-}
+  
+  # Handle old single-arg format for backwards compatibility
+  # Old format: _test_pass "desc"
+  # New format: _test_pass num "desc"
+  if [ -z "$desc" ]; then
+    # Only one argument provided, it's the description
+    desc=$num
+    num=""
+  elif [ -n "$num" ]; then
+    # Two arguments: check if first is a number
+    case "$num" in
+      ''|*[!0-9]*) 
+        # First arg is not a number, treat as old single-arg format
+        desc=$num
+        num=""
+        ;;
+      # else: first arg is a number, use new format
+    esac
+  fi
+  
+  # Use colors if supported
+  if [ -t 1 ] && command -v tput >/dev/null 2>&1 && tput setaf 1 >/dev/null 2>&1; then
+    green=$(tput setaf 2 2>/dev/null || true)
+    reset=$(tput sgr0 2>/dev/null || true)
+    if [ -n "$num" ]; then
+      printf '%sPASS%s #%s %s\n' "$green" "$reset" "$num" "$desc"
+    else
+      printf '%sPASS%s %s\n' "$green" "$reset" "$desc"
+    fi
+  else
+    if [ -n "$num" ]; then
+      printf 'PASS #%s %s\n' "$num" "$desc"
+    else
+      printf 'PASS %s\n' "$desc"
+    fi
+  fi
 }
 
 # Self-execution when run directly (not sourced)
