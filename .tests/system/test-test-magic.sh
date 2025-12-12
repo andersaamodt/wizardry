@@ -28,8 +28,16 @@ spell_has_content() {
 # This verifies all tests are processed correctly.
 all_tests_are_processed() {
   # Run test-magic directly and capture output
-  tmpfile=$(mktemp)
-  "$ROOT_DIR/spells/system/test-magic" --only "common-tests.sh" >"$tmpfile" 2>&1 || true
+  # Use --list to find a test file, then run just that one test
+  tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/test-magic-test.XXXXXX")
+  tmpfile="$tmpdir/output.txt"
+  
+  # Find first test file
+  cd "$ROOT_DIR" || return 1
+  first_test=$(sh spells/system/test-magic --list 2>&1 | head -1 | awk '{print $1}')
+  
+  # Run test-magic on that one test
+  sh spells/system/test-magic --only "$first_test" >"$tmpfile" 2>&1 || true
   
   # Extract the test heading (e.g., [1/1])
   last_heading=$(grep -E '^\[[0-9]+/[0-9]+\]' "$tmpfile" | tail -1)
@@ -47,7 +55,7 @@ all_tests_are_processed() {
   passed=$(printf '%s\n' "$summary" | awk '{for(i=1;i<=NF;i++) if($(i+1)=="passed,") print $i}')
   failed=$(printf '%s\n' "$summary" | awk '{for(i=1;i<=NF;i++) if($(i+1)=="failed,") print $i}')
   
-  rm -f "$tmpfile"
+  rm -rf "$tmpdir"
   
   # Verify we got values
   [ -n "$test_count" ] && [ -n "$test_total" ] && [ -n "$passed" ] && [ -n "$failed" ] || {
