@@ -20,127 +20,90 @@ esac
 
 set -eu
 
-ask() {
-  prompt=${1-}
-  default=${2-}
-  if [ -n "$default" ]; then
-    printf "%s [%s]: " "$prompt" "$default"
-  else
-    printf "%s: " "$prompt"
-  fi
-  read -r reply
-  if [ -z "$reply" ] && [ -n "$default" ]; then
-    reply=$default
-  fi
-  printf '%s' "$reply"
-}
+# Main installation wizard - inlined all helper functions for linear flow
+printf '%s\n' 'Welcome to the Lightning installation wizard.'
+distro="$(detect-distro 2>/dev/null || os)"
+printf 'Detected platform: %s\n' "$distro"
 
-is_nixos() {
-  if command -v detect-distro >/dev/null 2>&1 && [ "$(detect-distro 2>/dev/null)" = "nixos" ]; then
-    return 0
-  fi
-  return 1
-}
-
-install_on_debian() {
-  printf '%s\n' 'Installing lightningd via apt...'
-  if command -v sudo >/dev/null 2>&1; then
-    sudo apt-get update
-    sudo apt-get install -y lightningd
-  else
-    apt-get update
-    apt-get install -y lightningd
-  fi
-}
-
-install_on_arch() {
-  printf '%s\n' 'Installing lightningd via pacman...'
-  if command -v sudo >/dev/null 2>&1; then
-    sudo pacman -Sy --noconfirm lightningd
-  else
-    pacman -Sy --noconfirm lightningd
-  fi
-}
-
-install_on_mac() {
-  printf '%s\n' 'Installing lightning using Homebrew (package name: lightningd or core-lightning)...'
-  if ! command -v brew >/dev/null 2>&1; then
-    printf '%s\n' 'Homebrew is required to install Lightning on macOS.'
-    return 1
-  fi
-  if brew info lightningd >/dev/null 2>&1; then
-    brew install lightningd
-    return 0
-  fi
-  if brew info core-lightning >/dev/null 2>&1; then
-    brew install core-lightning
-    return 0
-  fi
-  printf '%s\n' 'Lightning package not found in Homebrew.'
-  return 1
-}
-
-add_lightning_to_nixos() {
-  config=${1:-/etc/nixos/configuration.nix}
-  if [ ! -f "$config" ]; then
-    printf '%s\n' "NixOS configuration file $config was not found."
-    return 1
-  fi
-
-  if command -v backup-nix-config >/dev/null 2>&1; then
-    backup-nix-config "$config" >&2 || true
-  fi
-
-  if grep -q 'clightning' "$config"; then
-    printf '%s\n' 'clightning already present in configuration.nix.'
-  else
-    printf '%s\n' 'Adding clightning to environment.systemPackages (with pkgs; [ clightning ])...'
-    if grep -q 'environment.systemPackages' "$config"; then
-      sudo perl -0pi -e 's/(environment\.systemPackages\s*=\s*with\s+pkgs;\s*\[[^]]*)\]/$1\n  clightning\n]/' "$config" \
-        || sudo perl -0pi -e 's/(environment\.systemPackages\s*=\s*\[[^]]*)\]/$1\n  clightning\n]/' "$config"
+case $distro in
+  debian|ubuntu|linux)
+    printf '%s\n' 'Installing lightningd via apt...'
+    if command -v sudo >/dev/null 2>&1; then
+      sudo apt-get update
+      sudo apt-get install -y lightningd
     else
-      sudo tee -a "$config" <<'NIX' >/dev/null
+      apt-get update
+      apt-get install -y lightningd
+    fi
+    ;;
+  arch)
+    printf '%s\n' 'Installing lightningd via pacman...'
+    if command -v sudo >/dev/null 2>&1; then
+      sudo pacman -Sy --noconfirm lightningd
+    else
+      pacman -Sy --noconfirm lightningd
+    fi
+    ;;
+  mac|macos)
+    printf '%s\n' 'Installing lightning using Homebrew (package name: lightningd or core-lightning)...'
+    if ! command -v brew >/dev/null 2>&1; then
+      printf '%s\n' 'Homebrew is required to install Lightning on macOS.'
+      exit 1
+    fi
+    if brew info lightningd >/dev/null 2>&1; then
+      brew install lightningd
+    elif brew info core-lightning >/dev/null 2>&1; then
+      brew install core-lightning
+    else
+      printf '%s\n' 'Lightning package not found in Homebrew.'
+      exit 1
+    fi
+    ;;
+  nixos)
+    # Inline ask logic for NixOS config path
+    printf "Path to NixOS configuration [/etc/nixos/configuration.nix]: "
+    read -r config_path
+    if [ -z "$config_path" ]; then
+      config_path="/etc/nixos/configuration.nix"
+    fi
+    
+    # Inline add_lightning_to_nixos logic
+    if [ ! -f "$config_path" ]; then
+      printf '%s\n' "NixOS configuration file $config_path was not found."
+      exit 1
+    fi
+
+    if command -v backup-nix-config >/dev/null 2>&1; then
+      backup-nix-config "$config_path" >&2 || true
+    fi
+
+    if grep -q 'clightning' "$config_path"; then
+      printf '%s\n' 'clightning already present in configuration.nix.'
+    else
+      printf '%s\n' 'Adding clightning to environment.systemPackages (with pkgs; [ clightning ])...'
+      if grep -q 'environment.systemPackages' "$config_path"; then
+        sudo perl -0pi -e 's/(environment\.systemPackages\s*=\s*with\s+pkgs;\s*\[[^]]*)\]/$1\n  clightning\n]/' "$config_path" \
+          || sudo perl -0pi -e 's/(environment\.systemPackages\s*=\s*\[[^]]*)\]/$1\n  clightning\n]/' "$config_path"
+      else
+        sudo tee -a "$config_path" <<'NIX' >/dev/null
 
 # Added by wizardry install-lightning
 { environment.systemPackages = with pkgs; [ clightning ]; }
 NIX
+      fi
     fi
-  fi
 
-  printf '%s\n' 'Rebuilding NixOS to apply Lightning installation...'
-  sudo nixos-rebuild all
-}
+    printf '%s\n' 'Rebuilding NixOS to apply Lightning installation...'
+    sudo nixos-rebuild all
+    ;;
+  *)
+    printf '%s\n' "Unsupported distribution for automatic install."
+    exit 1
+    ;;
+esac
 
-install_lightning() {
-  printf '%s\n' 'Welcome to the Lightning installation wizard.'
-  distro="$(detect-distro 2>/dev/null || os)"
-  printf 'Detected platform: %s\n' "$distro"
-
-  case $distro in
-    debian|ubuntu|linux)
-      install_on_debian
-      ;;
-    arch)
-      install_on_arch
-      ;;
-    mac|macos)
-      install_on_mac
-      ;;
-    nixos)
-      config_path=$(ask "Path to NixOS configuration" "/etc/nixos/configuration.nix")
-      add_lightning_to_nixos "$config_path"
-      ;;
-    *)
-      printf '%s\n' "Unsupported distribution for automatic install."
-      return 1
-      ;;
-  esac
-
-  if command -v lightning-cli >/dev/null 2>&1; then
-    printf '%s\n' 'Lightning installation complete.'
-  else
-    printf '%s\n' 'Lightning installation attempted, but lightning-cli is not yet available. Check logs.'
-  fi
-}
-
-install_lightning
+if command -v lightning-cli >/dev/null 2>&1; then
+  printf '%s\n' 'Lightning installation complete.'
+else
+  printf '%s\n' 'Lightning installation attempted, but lightning-cli is not yet available. Check logs.'
+fi
