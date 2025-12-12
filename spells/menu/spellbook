@@ -253,29 +253,6 @@ record_scribed_command() {
         write_scribed_script "$cmd_name" "$cmd"
 }
 
-is_memorized() {
-        name=$1
-        while IFS=$(printf '\t') read -r alias _; do
-                if [ "$alias" = "$name" ]; then
-                        return 0
-                fi
-        done <<ENTRIES
-$("$cast_store" list)
-ENTRIES
-        return 1
-}
-
-scribe_command_interactive() {
-        cmd_name=$(read-line "Name: ")
-        cmd_text=$(read-line "Command: ")
-        if [ -z "$cmd_name" ] || [ -z "$cmd_text" ]; then
-                printf '%s\n' "A name and command are required." >&2
-                return 1
-        fi
-        record_scribed_command "$cmd_name" "$cmd_text"
-        printf "Scribed '%s' to %s.\n" "$cmd_name" "$spell_home"
-}
-
 spellbook_menu() {
         current_path=${1-}
         first_run=1
@@ -461,8 +438,15 @@ case ${1-} in
                 exit 0
                 ;;
         --interactive-scribe)
-                scribe_command_interactive
-                exit $?
+                cmd_name=$(read-line "Name: ")
+                cmd_text=$(read-line "Command: ")
+                if [ -z "$cmd_name" ] || [ -z "$cmd_text" ]; then
+                        printf '%s\n' "A name and command are required." >&2
+                        exit 1
+                fi
+                record_scribed_command "$cmd_name" "$cmd_text"
+                printf "Scribed '%s' to %s.\n" "$cmd_name" "$spell_home"
+                exit 0
                 ;;
         --help|--usage|-h)
                 show_usage
