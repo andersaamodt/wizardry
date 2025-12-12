@@ -56,8 +56,8 @@ STUB
   cat >"$stub_dir/fathom-terminal" <<'STUB'
 #!/bin/sh
 case $1 in
-  -w) printf '80\n' ;;
-  -h) printf '24\n' ;;
+  --width) printf '80\n' ;;
+  --height) printf '24\n' ;;
   *) printf '80 24\n' ;;
 esac
 STUB
@@ -139,8 +139,8 @@ STUB
   cat >"$stub_dir/fathom-terminal" <<'STUB'
 #!/bin/sh
 case $1 in
-  -w) printf '80\n' ;;
-  -h) printf '24\n' ;;
+  --width) printf '80\n' ;;
+  --height) printf '24\n' ;;
   *) printf '80 24\n' ;;
 esac
 STUB
