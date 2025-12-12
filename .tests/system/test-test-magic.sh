@@ -35,15 +35,17 @@ all_tests_are_processed() {
   last_heading=$(grep -E '^\[[0-9]+/[0-9]+\]' "$tmpfile" | tail -1)
   
   # Parse test count and total from heading like "[1/1]"
-  test_count=$(printf '%s\n' "$last_heading" | sed -n 's/^\[\([0-9]*\)\/[0-9]*\].*/\1/p')
-  test_total=$(printf '%s\n' "$last_heading" | sed -n 's/^\[[0-9]*\/\([0-9]*\)\].*/\1/p')
+  # Use awk for reliable cross-platform parsing
+  test_count=$(printf '%s\n' "$last_heading" | awk -F'[][]' '{print $2}' | awk -F'/' '{print $1}')
+  test_total=$(printf '%s\n' "$last_heading" | awk -F'[][]' '{print $2}' | awk -F'/' '{print $2}')
   
   # Extract summary line
   summary=$(grep "^Summary:" "$tmpfile")
   
   # Parse counts from "Summary: X passed, Y failed, ..."
-  passed=$(printf '%s\n' "$summary" | sed -n 's/^Summary: \([0-9]*\) passed.*/\1/p')
-  failed=$(printf '%s\n' "$summary" | sed -n 's/.* \([0-9]*\) failed.*/\1/p')
+  # Use awk for reliable cross-platform parsing
+  passed=$(printf '%s\n' "$summary" | awk '{for(i=1;i<=NF;i++) if($(i+1)=="passed,") print $i}')
+  failed=$(printf '%s\n' "$summary" | awk '{for(i=1;i<=NF;i++) if($(i+1)=="failed,") print $i}')
   
   rm -f "$tmpfile"
   
