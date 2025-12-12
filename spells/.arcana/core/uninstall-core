@@ -19,60 +19,48 @@ esac
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 
-detect_platform() {
+# Main uninstall function
+uninstall_core() {
+  # Detect platform
   if command -v uname >/dev/null 2>&1; then
-    uname -s 2>/dev/null || printf '%s' "unknown"
+    platform=$(uname -s 2>/dev/null || printf '%s' "unknown")
   else
-    printf '%s' "unknown"
+    platform="unknown"
   fi
-}
-
-core_dependencies() {
-  platform=$(detect_platform)
+  
+  # Get dependencies list based on platform
   case $platform in
     Darwin)
-      cat <<'EOF'
-Git:git:install-git:uninstall-git
+      deps='Git:git:install-git:uninstall-git
 dd:dd:install-dd:uninstall-dd
 stty:stty:install-stty:uninstall-stty
-tput:tput:install-tput:uninstall-tput
-EOF
+tput:tput:install-tput:uninstall-tput'
       ;;
     *)
-      cat <<'EOF'
-Git:git:install-git:uninstall-git
+      deps='Git:git:install-git:uninstall-git
 Bubblewrap:bwrap:install-bwrap:uninstall-bwrap
 dd:dd:install-dd:uninstall-dd
 stty:stty:install-stty:uninstall-stty
-tput:tput:install-tput:uninstall-tput
-EOF
+tput:tput:install-tput:uninstall-tput'
       ;;
   esac
-}
 
-resolve_spell() {
-  spell_name=$1
-  if command -v "$spell_name" >/dev/null 2>&1; then
-    printf '%s\n' "$spell_name"
-    return 0
-  fi
-
-  if [ -x "$script_dir/$spell_name" ]; then
-    printf '%s\n' "$script_dir/$spell_name"
-    return 0
-  fi
-
-  printf '%s\n' "uninstall-core: missing helper '$spell_name'" >&2
-  return 1
-}
-
-uninstall_core() {
-  core_dependencies | while IFS=: read -r label command_name _ uninstall_spell; do
+  # Process each dependency
+  printf '%s\n' "$deps" | while IFS=: read -r label command_name _ uninstall_spell; do
     if ! command -v "$command_name" >/dev/null 2>&1; then
       continue
     fi
 
-    spell=$(resolve_spell "$uninstall_spell") || return 1
+    # Resolve spell location
+    if command -v "$uninstall_spell" >/dev/null 2>&1; then
+      spell=$uninstall_spell
+    elif [ -x "$script_dir/$uninstall_spell" ]; then
+      spell="$script_dir/$uninstall_spell"
+    else
+      printf '%s\n' "uninstall-core: missing helper '$uninstall_spell'" >&2
+      return 1
+    fi
+
     if ! ASSUME_YES=1 "$spell"; then
       printf '%s\n' "uninstall-core: failed to uninstall $label" >&2
       return 1

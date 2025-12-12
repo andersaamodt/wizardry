@@ -20,27 +20,7 @@ esac
 set -eu
 . colors
 
-color_for_status() {
-  case "$1" in
-    "installed, running")
-      printf "%s" "$GREEN"
-      ;;
-    "installed, not running")
-      printf "%s" "$YELLOW"
-      ;;
-    "installed, needs setup"|"installed, error")
-      printf "%s" "$RED"
-      ;;
-    *)
-      printf "%s" "$GRAY"
-      ;;
-  esac
-}
-
-command_available() {
-  command -v "$1" >/dev/null 2>&1
-}
-
+# Detect Lightning service name
 lightning_service_name() {
   if [ -n "${LIGHTNING_SERVICE-}" ]; then
     printf '%s' "$LIGHTNING_SERVICE"
@@ -48,7 +28,7 @@ lightning_service_name() {
   fi
   # Default to lightningd; fallback to clightningd or similar names if present.
   for candidate in lightningd clightningd c-lightning; do
-    if command_available "$candidate"; then
+    if command -v "$candidate" >/dev/null 2>&1; then
       printf '%s' "$candidate"
       return
     fi
@@ -60,24 +40,37 @@ lightning_service_name() {
   printf '%s' lightningd
 }
 
-get_lightning_status() {
-  service_name=$(lightning_service_name)
+# Detect Lightning installation and service status
+service_name=$(lightning_service_name)
 
-  if command_available lightning-cli || command_available "$service_name"; then
-    if is-service-running "$service_name" >/dev/null 2>&1; then
-      if lightning-cli getinfo >/dev/null 2>&1; then
-        status="installed, running"
-      else
-        status="installed, needs setup"
-      fi
+if command -v lightning-cli >/dev/null 2>&1 || command -v "$service_name" >/dev/null 2>&1; then
+  if is-service-running "$service_name" >/dev/null 2>&1; then
+    if lightning-cli getinfo >/dev/null 2>&1; then
+      status="installed, running"
     else
-      status="installed, not running"
+      status="installed, needs setup"
     fi
   else
-    status="not installed"
+    status="installed, not running"
   fi
+else
+  status="not installed"
+fi
 
-  printf "%s%s%s\n" "$(color_for_status "$status")" "$status" "$RESET"
-}
+# Color output based on status
+case "$status" in
+  "installed, running")
+    color=$GREEN
+    ;;
+  "installed, not running")
+    color=$YELLOW
+    ;;
+  "installed, needs setup"|"installed, error")
+    color=$RED
+    ;;
+  *)
+    color=$GRAY
+    ;;
+esac
 
-get_lightning_status
+printf "%s%s%s\n" "$color" "$status" "$RESET"
