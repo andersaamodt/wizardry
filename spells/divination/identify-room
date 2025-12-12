@@ -54,50 +54,9 @@ if [ "$list_only" -eq 1 ] && [ "$#" -gt 0 ]; then
         exit 1
 fi
 
-possessive_name() {
-        name=$1
-        if command -v possessive >/dev/null 2>&1; then
-                possessive "$name"
-                return
-        fi
-        case $name in
-        *[sS]) printf "%s'" "$name" ;;
-        *) printf "%s's" "$name" ;;
-        esac
-}
-
-home_path()
-{
-        if [ -n "${IDENTIFY_ROOM_HOME-}" ]; then
-                printf '%s\n' "${IDENTIFY_ROOM_HOME}"
-                return 0
-        fi
-        if [ -n "${LOOK_HOME_PATH-}" ]; then
-                printf '%s\n' "$LOOK_HOME_PATH"
-                return 0
-        fi
-        if [ -n "${HOME-}" ]; then
-                printf '%s\n' "$HOME"
-                return 0
-        fi
-        return 1
-}
-
 output_room() {
         printf '%s\n' "$1"
         printf '%s\n' "$2"
-}
-
-detect_platform() {
-        if command -v detect-distro >/dev/null 2>&1; then
-                detect-distro 2>/dev/null || true
-                return
-        fi
-        kernel=$(uname -s 2>/dev/null || printf '')
-        case $kernel in
-        Darwin) printf 'mac' ;;
-        Linux) printf 'linux' ;;
-        esac
 }
 
 root_path=/
@@ -111,14 +70,34 @@ have_home=0
 normalized_home=''
 home_parent=''
 home_name=''
-if resolved_home=$(home_path); then
+# Inline home_path logic
+if [ -n "${IDENTIFY_ROOM_HOME-}" ]; then
+        resolved_home="${IDENTIFY_ROOM_HOME}"
         have_home=1
+elif [ -n "${LOOK_HOME_PATH-}" ]; then
+        resolved_home="$LOOK_HOME_PATH"
+        have_home=1
+elif [ -n "${HOME-}" ]; then
+        resolved_home="$HOME"
+        have_home=1
+fi
+if [ "$have_home" -eq 1 ]; then
         normalized_home=$(strip-trailing-slashes "$(abs-path "$resolved_home")")
         home_parent=$(dirname -- "$normalized_home")
         home_name=$(basename -- "$normalized_home")
 fi
 
-distro=$(detect_platform || true)
+# Inline detect_platform logic
+distro=''
+if command -v detect-distro >/dev/null 2>&1; then
+        distro=$(detect-distro 2>/dev/null || true)
+else
+        kernel=$(uname -s 2>/dev/null || printf '')
+        case $kernel in
+        Darwin) distro='mac' ;;
+        Linux) distro='linux' ;;
+        esac
+fi
 
 recognize_room() {
         room=$1
@@ -147,7 +126,15 @@ recognize_room() {
                                 ""|*/*) ;;
                                 "$home_name") ;;
                                 *)
-                                        owner=$(possessive_name "$other_user")
+                                        # Inline possessive_name
+                                        if command -v possessive >/dev/null 2>&1; then
+                                                owner=$(possessive "$other_user")
+                                        else
+                                                case $other_user in
+                                                *[sS]) owner="$other_user'" ;;
+                                                *) owner="$other_user's" ;;
+                                                esac
+                                        fi
                                         output_room "$owner Home" "$owner home folder."
                                         return 0
                                         ;;
@@ -240,15 +227,8 @@ recognize_room() {
         return 1
 }
 
-list_rooms() {
-        candidate=$1
-        if room_output=$(recognize_room "$candidate" 2>/dev/null); then
-                room_title=$(printf '%s' "$room_output" | sed -n '1p')
-                printf '%s - %s\n' "$candidate" "$room_title"
-        fi
-}
-
-list_recognized() {
+if [ "$list_only" -eq 1 ]; then
+        # Inline list_recognized and list_rooms
         previous=''
         for dir in \
                 "$root_path" \
@@ -265,12 +245,12 @@ list_recognized() {
                 fi
                 previous=$dir
                 [ -d "$dir" ] || continue
-                list_rooms "$dir"
+                # Inline list_rooms
+                if room_output=$(recognize_room "$dir" 2>/dev/null); then
+                        room_title=$(printf '%s' "$room_output" | sed -n '1p')
+                        printf '%s - %s\n' "$dir" "$room_title"
+                fi
         done
-}
-
-if [ "$list_only" -eq 1 ]; then
-        list_recognized
         exit 0
 fi
 
