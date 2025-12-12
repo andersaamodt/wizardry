@@ -1,6 +1,6 @@
 #!/bin/sh
-# invoke-wizardry - set up wizardry environment and PATH from shell rc
-# Source this script to make all spells and imps available at startup.
+# invoke-wizardry - set up wizardry environment at shell startup
+# Source this script to make all spells and imps available.
 # Example in .bashrc: . ~/.wizardry/spells/.imps/sys/invoke-wizardry
 
 _invoke_wizardry() {
@@ -18,79 +18,9 @@ _invoke_wizardry() {
   
   : "${SPELLBOOK_DIR:=${HOME-}/.spellbook}"
   export SPELLBOOK_DIR
-  
-  _iw_paths_to_add=""
-  _iw_imps_dir="$WIZARDRY_DIR/spells/.imps"
-  
-  case ":${PATH-}:" in
-    *":$WIZARDRY_DIR/spells:"*) ;;
-    *) _iw_paths_to_add="$WIZARDRY_DIR/spells" ;;
-  esac
-  
-  for _iw_spell_dir in "$WIZARDRY_DIR"/spells/*; do
-    [ -d "$_iw_spell_dir" ] || continue
-    case "$_iw_spell_dir" in
-      */.imps) continue ;;
-    esac
-    case ":${PATH-}:" in
-      *":$_iw_spell_dir:"*) ;;
-      *) 
-        if [ -n "$_iw_paths_to_add" ]; then
-          _iw_paths_to_add="$_iw_paths_to_add:$_iw_spell_dir"
-        else
-          _iw_paths_to_add="$_iw_spell_dir"
-        fi
-        ;;
-    esac
-  done
-  
-  if [ -d "$_iw_imps_dir" ]; then
-    case ":${PATH-}:" in
-      *":$_iw_imps_dir:"*) ;;
-      *)
-        if [ -n "$_iw_paths_to_add" ]; then
-          _iw_paths_to_add="$_iw_paths_to_add:$_iw_imps_dir"
-        else
-          _iw_paths_to_add="$_iw_imps_dir"
-        fi
-        ;;
-    esac
-    
-    for _iw_family in "$_iw_imps_dir"/*; do
-      [ -d "$_iw_family" ] || continue
-      case ":${PATH-}:" in
-        *":$_iw_family:"*) ;;
-        *)
-          if [ -n "$_iw_paths_to_add" ]; then
-            _iw_paths_to_add="$_iw_paths_to_add:$_iw_family"
-          else
-            _iw_paths_to_add="$_iw_family"
-          fi
-          ;;
-      esac
-    done
-  fi
-  
-  if [ -d "$SPELLBOOK_DIR" ]; then
-    case ":${PATH-}:" in
-      *":$SPELLBOOK_DIR:"*) ;;
-      *)
-        if [ -n "$_iw_paths_to_add" ]; then
-          _iw_paths_to_add="$_iw_paths_to_add:$SPELLBOOK_DIR"
-        else
-          _iw_paths_to_add="$SPELLBOOK_DIR"
-        fi
-        ;;
-    esac
-  fi
-  
-  if [ -n "$_iw_paths_to_add" ]; then
-    PATH="${_iw_paths_to_add}${PATH:+:}${PATH-}"
-    export PATH
-  fi
 }
 
-# Set up command_not_found_handle for autoloading and recursive parsing
+# Set up command_not_found_handle for autoloading spells and recursive parsing
 # This enables word-of-binding to load spells on demand and the parse spell
 # to work with recursive grammar. Must be defined outside the function so it
 # persists in the shell environment.
@@ -98,15 +28,15 @@ _setup_command_not_found() {
   if [ -n "${BASH_VERSION-}" ]; then
     # Bash-specific command_not_found_handle
     command_not_found_handle() {
-      # Try word-of-binding first for autoloading wizardry commands
-      if command -v word-of-binding >/dev/null 2>&1; then
-        if word-of-binding "$@" 2>/dev/null; then
+      # Use word-of-binding from WIZARDRY_DIR for autoloading wizardry commands
+      if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" ]; then
+        if "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" "$@" 2>/dev/null; then
           return $?
         fi
       fi
       # Fall back to parse for recursive grammar parsing
-      if command -v parse >/dev/null 2>&1; then
-        parse "$@"
+      if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/lex/parse" ]; then
+        "$WIZARDRY_DIR/spells/.imps/lex/parse" "$@"
         return $?
       fi
       printf '%s: command not found\n' "$1" >&2
@@ -115,15 +45,15 @@ _setup_command_not_found() {
   elif [ -n "${ZSH_VERSION-}" ]; then
     # Zsh-specific command_not_found_handler
     command_not_found_handler() {
-      # Try word-of-binding first for autoloading wizardry commands
-      if command -v word-of-binding >/dev/null 2>&1; then
-        if word-of-binding "$@" 2>/dev/null; then
+      # Use word-of-binding from WIZARDRY_DIR for autoloading wizardry commands
+      if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" ]; then
+        if "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" "$@" 2>/dev/null; then
           return $?
         fi
       fi
       # Fall back to parse for recursive grammar parsing
-      if command -v parse >/dev/null 2>&1; then
-        parse "$@"
+      if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/lex/parse" ]; then
+        "$WIZARDRY_DIR/spells/.imps/lex/parse" "$@"
         return $?
       fi
       printf '%s: command not found\n' "$1" >&2
