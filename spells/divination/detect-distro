@@ -53,39 +53,28 @@ case $root_prefix in
         *) root_prefix=/$root_prefix ;;
 esac
 
-os_release_id() {
-        if [ ! -f "$os_release_path" ]; then
-                return 1
-        fi
+# Get OS ID from /etc/os-release if available
+os_id=''
+if [ -f "$os_release_path" ]; then
+        os_id=$(awk -F= 'tolower($1) == "id" { gsub(/"/, "", $2); print tolower($2) }' "$os_release_path")
+fi
 
-        awk -F= 'tolower($1) == "id" { gsub(/"/, "", $2); print tolower($2) }' "$os_release_path"
-}
-
-detect_uname() {
-        if [ -n "${DETECT_DISTRO_UNAME-}" ]; then
-                printf '%s' "$DETECT_DISTRO_UNAME"
-                return 0
-        fi
-
-        if uname >/dev/null 2>&1; then
-                uname
-        fi
-}
-
-file_exists() {
-        [ -f "${root_prefix}$1" ]
-}
+# Detect uname
+kernel_name=''
+if [ -n "${DETECT_DISTRO_UNAME-}" ]; then
+        kernel_name=$DETECT_DISTRO_UNAME
+elif uname >/dev/null 2>&1; then
+        kernel_name=$(uname)
+fi
 
 # Detect from specific markers toward the generic uname fallback.
-os_id=$(os_release_id || true)
-
-if file_exists "/etc/NIXOS" || [ "${os_id-}" = "nixos" ]; then
+if [ -f "${root_prefix}/etc/NIXOS" ] || [ "${os_id-}" = "nixos" ]; then
         distro='nixos'
-elif file_exists "/etc/debian_version"; then
+elif [ -f "${root_prefix}/etc/debian_version" ]; then
         distro='debian'
-elif file_exists "/etc/arch-release"; then
+elif [ -f "${root_prefix}/etc/arch-release" ]; then
         distro='arch'
-elif file_exists "/etc/fedora-release"; then
+elif [ -f "${root_prefix}/etc/fedora-release" ]; then
         distro='fedora'
 elif [ "${os_id-}" = "debian" ] || [ "${os_id-}" = "ubuntu" ] || [ "${os_id-}" = "raspbian" ]; then
         distro='debian'
@@ -94,7 +83,6 @@ elif [ "${os_id-}" = "arch" ]; then
 elif [ "${os_id-}" = "fedora" ]; then
         distro='fedora'
 else
-        kernel_name=$(detect_uname || true)
         if [ "${kernel_name-}" = "Darwin" ]; then
                 distro='mac'
         fi

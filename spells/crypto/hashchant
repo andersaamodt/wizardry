@@ -32,71 +32,61 @@ if [ ! -e "$file" ]; then
   exit 1
 fi
 
-helper_usable() {
-  helper=$1
-  if ! command -v "$helper" >/dev/null 2>&1; then
-    return 1
-  fi
-
-  resolved=$(command -v "$helper")
-
-  if [ "${WIZARDRY_TEST_HELPERS_ONLY-0}" -eq 1 ]; then
-    case $resolved in
-      /usr/*|/bin/*|/sbin/*|/usr/local/*)
-        return 1
-        ;;
-    esac
-  fi
-
-  return 0
-}
-
 filename=$(basename "$file")
 hash=$( (echo "$filename" && cat "$file") | cksum | awk '{ print $1 }')
 hash=$(printf '0x%X' "$hash")
 
-apply_hash() {
-  helper=$1
-  case "$helper" in
-    attr)
-      attr -s "user.hash" -V "$hash" "$file" 2>/dev/null
-      ;;
-    xattr)
-      xattr -w "user.hash" "$hash" "$file" 2>/dev/null
-      ;;
-    setfattr)
-      setfattr -n "user.hash" -v "$hash" "$file" 2>/dev/null
-      ;;
-  esac
-}
+# Try each xattr helper in order until one succeeds
+last_helper=""
+last_status=0
 
-apply_first_available() {
-  last_helper=""
-  last_status=0
-
-  for helper in attr xattr setfattr; do
-    if ! helper_usable "$helper"; then
-      continue
-    fi
-
-    if apply_hash "$helper"; then
-      echo "File enchanted with hash: $hash"
-      return 0
-    fi
-
-    last_helper=$helper
-    last_status=$?
-  done
-
-  if [ -n "$last_helper" ]; then
-    echo "Error: Failed to write hash using $last_helper (exit $last_status)." >&2
-  else
-    echo "Error: xattr and attr commands not found. Cannot enchant file."
+for helper in attr xattr setfattr; do
+  # Skip if helper not available
+  if ! command -v "$helper" >/dev/null 2>&1; then
+    continue
   fi
 
-  return 1
-}
+  # Skip system binaries in test mode
+  if [ "${WIZARDRY_TEST_HELPERS_ONLY-0}" -eq 1 ]; then
+    resolved=$(command -v "$helper")
+    case $resolved in
+      /usr/*|/bin/*|/sbin/*|/usr/local/*)
+        continue
+        ;;
+    esac
+  fi
 
-if ! apply_first_available; then
-  exit 1
+  # Try to apply hash with this helper
+  case "$helper" in
+    attr)
+      if attr -s "user.hash" -V "$hash" "$file" 2>/dev/null; then
+        echo "File enchanted with hash: $hash"
+        exit 0
+      fi
+      ;;
+    xattr)
+      if xattr -w "user.hash" "$hash" "$file" 2>/dev/null; then
+        echo "File enchanted with hash: $hash"
+        exit 0
+      fi
+      ;;
+    setfattr)
+      if setfattr -n "user.hash" -v "$hash" "$file" 2>/dev/null; then
+        echo "File enchanted with hash: $hash"
+        exit 0
+      fi
+      ;;
+  esac
+
+  last_helper=$helper
+  last_status=$?
+done
+
+# If we get here, none of the helpers worked
+if [ -n "$last_helper" ]; then
+  echo "Error: Failed to write hash using $last_helper (exit $last_status)." >&2
+else
+  echo "Error: xattr and attr commands not found. Cannot enchant file."
 fi
+
+exit 1
