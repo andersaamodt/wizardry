@@ -52,57 +52,35 @@ if [ "$min" -gt "$max" ]; then
         exit 1
 fi
 
-# select_input matches ask-text/ask-yn so callers can steer input selection.
-select_input() {
-        case ${ASK_CANTRIP_INPUT:-auto} in
-        stdin)
-                printf '%s\n' stdin
-                return 0
-                ;;
-        none)
-                return 1
-                ;;
-        esac
-        # Use /dev/fd/0 instead of /dev/stdin for cross-platform compatibility.
-        # On macOS, /dev/stdin is a symlink and tests may fail on the symlink itself.
-        if [ -t 0 ] || [ -p /dev/fd/0 ] || [ -s /dev/fd/0 ]; then
-                printf '%s\n' stdin
-                return 0
-        fi
-        if [ -r /dev/tty ]; then
-                printf '%s\n' tty
-                return 0
-        fi
-        return 1
-}
-
-prompt() {
-        printf '%s [%s-%s] ' "$question" "$min" "$max" >&2
-}
-
-read_value() {
-        input=$(select_input) || return 1
-        case $input in
-        stdin)
-                IFS= read -r value || value=
-                ;;
-        tty)
-                IFS= read -r value </dev/tty || value=
-                ;;
-        *)
-                return 1
-                ;;
-        esac
-        printf '%s' "$value"
-        return 0
-}
+# Support both ASK_CANTRIP_INPUT (legacy) and SELECT_INPUT_MODE (imp convention)
+if [ -n "${ASK_CANTRIP_INPUT-}" ] && [ -z "${SELECT_INPUT_MODE-}" ]; then
+        SELECT_INPUT_MODE=$ASK_CANTRIP_INPUT
+        export SELECT_INPUT_MODE
+fi
 
 while :; do
-        prompt
-        if ! response=$(read_value); then
+        # Prompt user
+        printf '%s [%s-%s] ' "$question" "$min" "$max" >&2
+        
+        # Read input using select-input imp
+        if ! input=$(select-input); then
                 printf '%s\n' "ask-number: No interactive input available." >&2
                 exit 1
         fi
+        
+        # Read value based on input source
+        case $input in
+        stdin)
+                IFS= read -r response || response=
+                ;;
+        tty)
+                IFS= read -r response </dev/tty || response=
+                ;;
+        *)
+                printf '%s\n' "ask-number: No interactive input available." >&2
+                exit 1
+                ;;
+        esac
 
         case $response in
         *[!0-9-]*|"")
