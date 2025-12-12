@@ -67,6 +67,35 @@ case "$0" in */has) _has "$@" ;; esac
 
 **Reason**: Micro-helpers; opening comment serves as spec; `--help` would bloat them
 
+### Doppelganger Compilation: Skip Lists
+
+**File**: `spells/spellcraft/compile-spell`
+
+**Reason**: When compiling standalone scripts, certain imp names must be excluded from inlining to prevent incorrect replacements
+
+#### Common English Words Skip List
+
+**Affected imps** (lines 104-107):
+- `is` - Too common as English word (e.g., "this is")
+- `fail` - Commonly used as variable name (e.g., `fail=0`)
+- `empty` - Too common in error messages (e.g., "must not be empty")
+
+**Reason**: These words appear frequently in strings and variable names. Inlining them would cause incorrect replacements like "must not be empty" → "must not be _empty".
+
+**Policy**: Only add words causing real compilation issues. Each addition prevents legitimate imp inlining if that imp exists.
+
+#### Interactive Imps Skip List
+
+**Affected imps** (line 112):
+- `ask-number`, `ask-yn`, `ask-text`
+- `await-keypress`
+- `select-input`, `read-line`
+- `tty-*` (all tty-prefixed imps)
+
+**Reason**: Interactive I/O code must remain external for test stubbing. Inlining prevents tests from intercepting user input.
+
+**Policy**: All interactive terminal I/O imps must remain external.
+
 ---
 
 ## 3. Testing Exemptions
@@ -105,17 +134,15 @@ case "$0" in */has) _has "$@" ;; esac
 
 **Rule**: Spells should have `show_usage()` plus at most 1-3 additional helper functions. 4+ additional functions indicate a proto-library that needs decomposition into multiple spells and/or imps.
 
-**Temporary Exemptions** (13 spells - TO BE REFACTORED):
+**Temporary Exemptions** (11 spells - TO BE REFACTORED):
 
-**Spellcraft** (5 spells):
+**Spellcraft** (4 spells):
 - `spellcraft/learn-spellbook` (24 additional) - Complex installation logic, needs decomposition
 - `spellcraft/lint-magic` (21 additional) - Comprehensive linting tool, candidate for multiple spells
 - `spellcraft/learn` (15 additional) - Learning system, needs refactoring
 - `spellcraft/scribe-spell` (10 additional) - Spell creation wizard, consider multiple steps
-- `spellcraft/learn-spell` (8 additional) - Learning logic, extract to imps
 
-**Menu** (2 spells):
-- `menu/spellbook` (30 additional) - Complex menu system, needs major decomposition
+**Menu** (1 spell):
 - `menu/spell-menu` (17 additional) - Menu infrastructure, consider splitting
 
 **Arcana** (3 spells):
@@ -128,7 +155,9 @@ case "$0" in */has) _has "$@" ;; esac
 - `mud/look` (11 additional) - MUD description system, consider multiple spells
 - `cantrips/assertions` (4 additional) - Sourceable test library, special case
 
-**Refactored** (25 spells - COMPLETED ✅):
+**Refactored** (27 spells - COMPLETED ✅):
+- `menu/spellbook` (30→10) - Major refactor, created 3 reusable imps
+- `spellcraft/learn-spell` (8→1) - Inlined warn and detect_env_once
 - `cantrips/start-service` (4→1)
 - `cantrips/stop-service` (4→1)
 - `cantrips/restart-service` (4→1)
@@ -155,12 +184,12 @@ case "$0" in */has) _has "$@" ;; esac
 - `.arcana/tor/configure-tor` (6→1)
 - `.arcana/mud/mud-config` (5→4)
 
-**Action Required**: Remaining 13 spells should be refactored to:
+**Action Required**: Remaining 11 spells should be refactored to:
 1. Extract reusable logic into imps in `spells/.imps/`
 2. Split into multiple smaller spells if handling multiple actions
 3. Simplify linear flow by inlining single-use helpers
 
-**Progress**: 25/38 spells refactored (66%) - Test currently configured to FAIL to maintain visibility
+**Progress**: 27/38 spells refactored (71%) - Test currently configured to FAIL to maintain visibility
 
 ---
 

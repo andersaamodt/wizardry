@@ -103,6 +103,7 @@ for dep in $dependencies; do
   case "$dep" in
     is) continue ;;  # Too common as English word "is"
     fail) continue ;;  # Commonly used as variable name (e.g., fail=0 for counting)
+    empty) continue ;;  # Too common as English word in error messages (e.g., "must not be empty")
   esac
   
   # Skip interactive spells - they must remain external for test stubbing
