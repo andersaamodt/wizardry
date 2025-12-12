@@ -3,6 +3,13 @@
 # Source this script to make all spells and imps available.
 # Example in .bashrc: . ~/.wizardry/spells/.imps/sys/invoke-wizardry
 
+# Prevent recursive sourcing
+if [ "${_WIZARDRY_INVOKED-}" = "1" ]; then
+  return 0
+fi
+_WIZARDRY_INVOKED=1
+export _WIZARDRY_INVOKED
+
 _invoke_wizardry() {
   if [ -z "${WIZARDRY_DIR-}" ]; then
     # Default to expected install location; user can set WIZARDRY_DIR manually if different
@@ -18,17 +25,67 @@ _invoke_wizardry() {
   
   : "${SPELLBOOK_DIR:=${HOME-}/.spellbook}"
   export SPELLBOOK_DIR
+  
+  # Source all imps to load their functions into the shell
+  # This makes them available as shell functions for standardization and reliability
+  _iw_imps_dir="$WIZARDRY_DIR/spells/.imps"
+  if [ -d "$_iw_imps_dir" ]; then
+    for _iw_family in "$_iw_imps_dir"/*; do
+      [ -d "$_iw_family" ] || continue
+      for _iw_imp in "$_iw_family"/*; do
+        [ -f "$_iw_imp" ] && [ -r "$_iw_imp" ] || continue
+        # Skip invoke-wizardry itself to prevent recursion
+        case "$_iw_imp" in
+          */invoke-wizardry) continue ;;
+        esac
+        # Source the imp to load its function
+        # shellcheck disable=SC1090
+        . "$_iw_imp" 2>/dev/null || true
+        # Create alias from hyphenated name to underscore function name
+        _iw_imp_name=$(basename "$_iw_imp")
+        _iw_true_name=$(printf '_%s' "$_iw_imp_name" | sed 's/-/_/g')
+        # Only create alias if the function exists
+        if command -v "$_iw_true_name" >/dev/null 2>&1; then
+          alias "$_iw_imp_name=$_iw_true_name" 2>/dev/null || true
+        fi
+      done
+    done
+  fi
+  
+  # Source all spells that have functions to make them available
+  for _iw_spell_dir in "$WIZARDRY_DIR"/spells/*; do
+    [ -d "$_iw_spell_dir" ] || continue
+    case "$_iw_spell_dir" in
+      */.imps|*/.arcana) continue ;;
+    esac
+    for _iw_spell in "$_iw_spell_dir"/*; do
+      [ -f "$_iw_spell" ] && [ -r "$_iw_spell" ] || continue
+      # Check if spell has a function defined (true-name pattern)
+      _iw_spell_name=$(basename "$_iw_spell")
+      _iw_spell_true=$(printf '_%s' "$_iw_spell_name" | sed 's/-/_/g')
+      if grep -qE "^[[:space:]]*${_iw_spell_true}[[:space:]]*\\(\\)" "$_iw_spell" 2>/dev/null; then
+        # Source the spell to load its function
+        # shellcheck disable=SC1090
+        . "$_iw_spell" 2>/dev/null || true
+        # Create alias if function exists
+        if command -v "$_iw_spell_true" >/dev/null 2>&1; then
+          alias "$_iw_spell_name=$_iw_spell_true" 2>/dev/null || true
+        fi
+      fi
+    done
+  done
 }
 
-# Set up command_not_found_handle for autoloading spells and recursive parsing
-# This enables word-of-binding to load spells on demand and the parse spell
-# to work with recursive grammar. Must be defined outside the function so it
-# persists in the shell environment.
+# Set up command_not_found_handle for unsourced commands, parser, and .spellbook support
+# This enables:
+# - Unsourced spells (a few spells that can't be sourced)
+# - Recursive parser functionality
+# - User spells in .spellbook to work on-the-fly
 _setup_command_not_found() {
   if [ -n "${BASH_VERSION-}" ]; then
     # Bash-specific command_not_found_handle
     command_not_found_handle() {
-      # Use word-of-binding from WIZARDRY_DIR for autoloading wizardry commands
+      # Try word-of-binding for autoloading (handles .spellbook and unsourced spells)
       if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" ]; then
         if "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" "$@" 2>/dev/null; then
           return $?
@@ -45,7 +102,7 @@ _setup_command_not_found() {
   elif [ -n "${ZSH_VERSION-}" ]; then
     # Zsh-specific command_not_found_handler
     command_not_found_handler() {
-      # Use word-of-binding from WIZARDRY_DIR for autoloading wizardry commands
+      # Try word-of-binding for autoloading (handles .spellbook and unsourced spells)
       if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" ]; then
         if "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" "$@" 2>/dev/null; then
           return $?
