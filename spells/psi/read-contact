@@ -20,22 +20,6 @@ esac
 
 set -eu
 
-handle_escapes() {
-    escape_value=$1
-    printf '%s\n' "$escape_value" | awk '
-        { gsub(/\\n/,"\n"); gsub(/\\\\/,"\\"); gsub(/\\,/,", "); gsub(/\\;/,"\n"); print }
-    '
-}
-
-card_lines() {
-    awk -F':' '
-        { sub(/\r$/, "") }
-        /^BEGIN:VCARD$/ { in_card=1; next }
-        /^END:VCARD$/ { if (in_card) exit }
-        in_card && index($0, ":") { if ($1 != "VERSION") print }
-    ' "$1"
-}
-
 nicer_name() {
     # Convert the field name to lower case and remove any type annotations
     lower=$(printf '%s' "$1" | awk '{print tolower($0)}')
@@ -101,7 +85,12 @@ fi
 if [ $# -eq 2 ]; then
     # Print specific field
     requested_field=$2
-    card_lines_output=$(card_lines "$vcard_path")
+    card_lines_output=$(awk -F':' '
+        { sub(/\r$/, "") }
+        /^BEGIN:VCARD$/ { in_card=1; next }
+        /^END:VCARD$/ { if (in_card) exit }
+        in_card && index($0, ":") { if ($1 != "VERSION") print }
+    ' "$vcard_path")
     card_line=$(printf '%s\n' "$card_lines_output" | \
       awk -F':' -v field="$requested_field" '$1 ~ field { print; exit }')
     if [ -z "${card_line:-}" ]; then
@@ -111,14 +100,25 @@ if [ $# -eq 2 ]; then
 
     field_name=$(printf '%s' "$card_line" | awk -F':' '{print $1}')
     field_value=$(printf '%s' "$card_line" | awk -F':' '{print substr($0, length($1) + 2)}')
-    field_value=$(handle_escapes "$field_value")
+    # Handle escapes inline
+    field_value=$(printf '%s\n' "$field_value" | awk '
+        { gsub(/\\n/,"\n"); gsub(/\\\\/,"\\"); gsub(/\\,/,", "); gsub(/\\;/,"\n"); print }
+    ')
     field_label=$(nicer_name "$field_name")
     printf '%s\n' "$field_label$field_value"
 else
     # Print all fields
-    card_lines "$vcard_path" | while IFS=':' read -r field value; do
+    awk -F':' '
+        { sub(/\r$/, "") }
+        /^BEGIN:VCARD$/ { in_card=1; next }
+        /^END:VCARD$/ { if (in_card) exit }
+        in_card && index($0, ":") { if ($1 != "VERSION") print }
+    ' "$vcard_path" | while IFS=':' read -r field value; do
         field_label=$(nicer_name "$field")
-        value=$(handle_escapes "$value")
+        # Handle escapes inline
+        value=$(printf '%s\n' "$value" | awk '
+            { gsub(/\\n/,"\n"); gsub(/\\\\/,"\\"); gsub(/\\,/,", "); gsub(/\\;/,"\n"); print }
+        ')
         if [ -n "$field_label" ]; then
             printf '%s\n' "$field_label$value"
         fi
