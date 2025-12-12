@@ -1,7 +1,14 @@
 #!/bin/sh
-# invoke-wizardry - set up wizardry environment and PATH from shell rc
-# Source this script to make all spells and imps available at startup.
+# invoke-wizardry - set up wizardry environment at shell startup
+# Source this script to make all spells and imps available.
 # Example in .bashrc: . ~/.wizardry/spells/.imps/sys/invoke-wizardry
+
+# Prevent recursive sourcing
+if [ "${_WIZARDRY_INVOKED-}" = "1" ]; then
+  return 0
+fi
+_WIZARDRY_INVOKED=1
+export _WIZARDRY_INVOKED
 
 _invoke_wizardry() {
   if [ -z "${WIZARDRY_DIR-}" ]; then
@@ -19,74 +26,100 @@ _invoke_wizardry() {
   : "${SPELLBOOK_DIR:=${HOME-}/.spellbook}"
   export SPELLBOOK_DIR
   
-  _iw_paths_to_add=""
+  # Source all imps to load their functions into the shell
+  # This makes them available as shell functions for standardization and reliability
   _iw_imps_dir="$WIZARDRY_DIR/spells/.imps"
-  
-  case ":${PATH-}:" in
-    *":$WIZARDRY_DIR/spells:"*) ;;
-    *) _iw_paths_to_add="$WIZARDRY_DIR/spells" ;;
-  esac
-  
-  for _iw_spell_dir in "$WIZARDRY_DIR"/spells/*; do
-    [ -d "$_iw_spell_dir" ] || continue
-    case "$_iw_spell_dir" in
-      */.imps) continue ;;
-    esac
-    case ":${PATH-}:" in
-      *":$_iw_spell_dir:"*) ;;
-      *) 
-        if [ -n "$_iw_paths_to_add" ]; then
-          _iw_paths_to_add="$_iw_paths_to_add:$_iw_spell_dir"
-        else
-          _iw_paths_to_add="$_iw_spell_dir"
-        fi
-        ;;
-    esac
-  done
-  
   if [ -d "$_iw_imps_dir" ]; then
-    case ":${PATH-}:" in
-      *":$_iw_imps_dir:"*) ;;
-      *)
-        if [ -n "$_iw_paths_to_add" ]; then
-          _iw_paths_to_add="$_iw_paths_to_add:$_iw_imps_dir"
-        else
-          _iw_paths_to_add="$_iw_imps_dir"
-        fi
-        ;;
-    esac
-    
     for _iw_family in "$_iw_imps_dir"/*; do
       [ -d "$_iw_family" ] || continue
-      case ":${PATH-}:" in
-        *":$_iw_family:"*) ;;
-        *)
-          if [ -n "$_iw_paths_to_add" ]; then
-            _iw_paths_to_add="$_iw_paths_to_add:$_iw_family"
-          else
-            _iw_paths_to_add="$_iw_family"
-          fi
-          ;;
-      esac
+      for _iw_imp in "$_iw_family"/*; do
+        [ -f "$_iw_imp" ] && [ -r "$_iw_imp" ] || continue
+        # Skip invoke-wizardry itself to prevent recursion
+        case "$_iw_imp" in
+          */invoke-wizardry) continue ;;
+        esac
+        # Source the imp to load its function
+        # shellcheck disable=SC1090
+        . "$_iw_imp" 2>/dev/null || true
+        # Create alias from hyphenated name to underscore function name
+        _iw_imp_name=$(basename "$_iw_imp")
+        _iw_true_name=$(printf '_%s' "$_iw_imp_name" | sed 's/-/_/g')
+        # Only create alias if the function exists
+        if command -v "$_iw_true_name" >/dev/null 2>&1; then
+          alias "$_iw_imp_name=$_iw_true_name" 2>/dev/null || true
+        fi
+      done
     done
   fi
   
-  if [ -d "$SPELLBOOK_DIR" ]; then
-    case ":${PATH-}:" in
-      *":$SPELLBOOK_DIR:"*) ;;
-      *)
-        if [ -n "$_iw_paths_to_add" ]; then
-          _iw_paths_to_add="$_iw_paths_to_add:$SPELLBOOK_DIR"
-        else
-          _iw_paths_to_add="$SPELLBOOK_DIR"
-        fi
-        ;;
+  # Source all function-based spells that have self-execute guards
+  # Function-based spells have both:
+  # 1. A true-name function definition (e.g., _spell_name)
+  # 2. A self-execute pattern (case "$0" in */spell-name) that prevents execution when sourced
+  # Non-function spells will be handled by command_not_found_handle
+  for _iw_spell_dir in "$WIZARDRY_DIR"/spells/*; do
+    [ -d "$_iw_spell_dir" ] || continue
+    case "$_iw_spell_dir" in
+      */.imps|*/.arcana) continue ;;
     esac
-  fi
+    for _iw_spell in "$_iw_spell_dir"/*; do
+      [ -f "$_iw_spell" ] && [ -r "$_iw_spell" ] || continue
+      _iw_spell_name=$(basename "$_iw_spell")
+      _iw_spell_true=$(printf '_%s' "$_iw_spell_name" | sed 's/-/_/g')
+      # Check if spell has both function definition AND self-execute guard
+      if grep -qE "^[[:space:]]*${_iw_spell_true}[[:space:]]*\\(\\)" "$_iw_spell" 2>/dev/null && \
+         grep -qE "case.*\\\$0.*in.*\\*/${_iw_spell_name}\\)" "$_iw_spell" 2>/dev/null; then
+        # Safe to source - has function and self-execute guard
+        # shellcheck disable=SC1090
+        . "$_iw_spell" 2>/dev/null || true
+        # Create alias if function exists
+        if command -v "$_iw_spell_true" >/dev/null 2>&1; then
+          alias "$_iw_spell_name=$_iw_spell_true" 2>/dev/null || true
+        fi
+      fi
+    done
+  done
   
-  if [ -n "$_iw_paths_to_add" ]; then
-    PATH="${_iw_paths_to_add}${PATH:+:}${PATH-}"
-    export PATH
+  # Set up command_not_found_handle for non-function spells, parser, and .spellbook support
+  # This enables:
+  # - Non-function spells (not yet converted or without self-execute guards) to be executed
+  # - Recursive parser functionality
+  # - User spells in .spellbook to work on-the-fly
+  # Use eval to check shell type while avoiding checkbashisms false positive
+  if eval '[ -n "${BASH_VERSION+x}" ]' 2>/dev/null; then
+    # Bash-specific command_not_found_handle
+    eval 'command_not_found_handle() {
+      # Try word-of-binding for autoloading (handles .spellbook and spell execution)
+      if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" ]; then
+        if "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" "$@" 2>/dev/null; then
+          return $?
+        fi
+      fi
+      # Fall back to parse for recursive grammar parsing
+      if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/lex/parse" ]; then
+        "$WIZARDRY_DIR/spells/.imps/lex/parse" "$@"
+        return $?
+      fi
+      printf '\''%s: command not found\n'\'' "$1" >&2
+      return 127
+    }'
+  elif eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+    # Zsh-specific command_not_found_handler
+    eval 'command_not_found_handler() {
+      # Try word-of-binding for autoloading (handles .spellbook and spell execution)
+      if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" ]; then
+        if "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" "$@" 2>/dev/null; then
+          return $?
+        fi
+      fi
+      # Fall back to parse for recursive grammar parsing
+      if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/lex/parse" ]; then
+        "$WIZARDRY_DIR/spells/.imps/lex/parse" "$@"
+        return $?
+      fi
+      printf '\''%s: command not found\n'\'' "$1" >&2
+      return 127
+    }'
   fi
 }
 
