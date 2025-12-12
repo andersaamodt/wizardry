@@ -42,7 +42,18 @@ if [ -z "$checkbashisms_cmd" ]; then
   exit 1
 fi
 
-gather_default_targets() {
+failures=0
+total=0
+failed_targets=""
+
+targets_file=$(temp-file verify-posix-targets) || exit 1
+trap 'cleanup-file "$targets_file"' EXIT HUP INT TERM
+
+# Inline collect_targets and gather_default_targets logic
+if [ "$#" -gt 0 ]; then
+  printf '%s\n' "$@" >"$targets_file"
+else
+  # Inline gather_default_targets
   find "$repo_dir/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) \
     -print | sort | while IFS= read -r file; do
       first_line=$(sed -n '1p' "$file")
@@ -51,24 +62,8 @@ gather_default_targets() {
           printf '%s\n' "${file#"$repo_dir/"}"
           ;;
       esac
-    done
-}
-
-collect_targets() {
-  if [ "$#" -gt 0 ]; then
-    printf '%s\n' "$@"
-  else
-    gather_default_targets
-  fi
-}
-
-failures=0
-total=0
-failed_targets=""
-
-targets_file=$(temp-file verify-posix-targets) || exit 1
-trap 'cleanup-file "$targets_file"' EXIT HUP INT TERM
-collect_targets "$@" >"$targets_file"
+    done >"$targets_file"
+fi
 
 while IFS= read -r target; do
   [ -n "$target" ] || continue
