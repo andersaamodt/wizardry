@@ -63,7 +63,8 @@ List global npm packages%npm list -g --depth=0
       
       # Check if service is installed via is-service-installed
       is_installed="no"
-      if command -v is-service-installed >/dev/null 2>&1 && is-service-installed "$candidate" >/dev/null 2>&1; then
+      is_svc_cmd=$(command -v is-service-installed 2>/dev/null || true)
+      if [ -n "$is_svc_cmd" ] && is-service-installed "$candidate" >/dev/null 2>&1; then
         is_installed="yes"
       fi
       

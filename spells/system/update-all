@@ -122,7 +122,8 @@ case $distro in
       (
         set +e
         sudo apt-get -o Dpkg::Progress-Fancy=1 -o Dpkg::Use-Pty=0 -y full-upgrade 2>&1
-        printf '%s\n' "$?" >"$progress_tmp"
+        ec=$?
+        printf '%s\n' "$ec" >"$progress_tmp"
         exit 0
       ) | tr '\r' '\n' | {
         last_progress=''
@@ -159,7 +160,8 @@ case $distro in
       (
         set +e
         sudo apt-get -o Dpkg::Progress-Fancy=1 -o Dpkg::Use-Pty=0 -y autoremove 2>&1
-        printf '%s\n' "$?" >"$progress_tmp"
+        ec=$?
+        printf '%s\n' "$ec" >"$progress_tmp"
         exit 0
       ) | tr '\r' '\n' | {
         last_progress=''
