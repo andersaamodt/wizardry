@@ -6,12 +6,24 @@ _report_result() {
   desc=$1
   status=$2
   reason=${3-}
+  
+  # Get global subtest number if available
+  num=${WIZARDRY_GLOBAL_SUBTEST_NUM-}
+  
   if [ "$status" -eq 0 ]; then
     _pass_count=$((_pass_count + 1))
-    _test_pass "$desc"
+    if [ -n "$num" ]; then
+      _test_pass "$num" "$desc"
+    else
+      _test_pass "$desc"
+    fi
   else
     _fail_count=$((_fail_count + 1))
-    _test_fail "$desc" "$reason"
+    if [ -n "$num" ]; then
+      _test_fail "$num" "$desc" "$reason"
+    else
+      _test_fail "$desc" "$reason"
+    fi
   fi
 }
 

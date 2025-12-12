@@ -63,8 +63,6 @@ done
 only_patterns=""
 list_only=0
 verbose=0
-very_verbose=0
-rerun_args=""
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -74,7 +72,6 @@ while [ "$#" -gt 0 ]; do
         show_usage
         exit 1
       fi
-      rerun_args="$rerun_args --only $2"
       if [ -n "$only_patterns" ]; then
         only_patterns="$only_patterns\n$2"
       else
@@ -84,17 +81,10 @@ while [ "$#" -gt 0 ]; do
       ;;
     --list)
       list_only=1
-      rerun_args="$rerun_args --list"
       shift
       ;;
     --verbose)
       verbose=1
-      rerun_args="$rerun_args --verbose"
-      shift
-      ;;
-    --very-verbose)
-      very_verbose=1
-      rerun_args="$rerun_args --very-verbose"
       shift
       ;;
     --help|--usage|-h)
@@ -234,10 +224,15 @@ pass=0
 fail=0
 subtests_passed=0
 subtests_total=0
+global_subtest_num=0
 failed_scripts=""
 incomplete_tests=""
 incomplete_count=0
 test_number=0
+
+# Initialize global subtest counter for all tests
+WIZARDRY_GLOBAL_SUBTEST_NUM=0
+export WIZARDRY_GLOBAL_SUBTEST_NUM
 
 # test_list_file was already created and populated above
 test_total=$(grep -c . "$test_list_file")
@@ -278,13 +273,14 @@ print_failure_debug() {
   output=$2
 
   spell_name=$(spell_name_for_test "$test_path")
-  printf 'Debug (failures only) for %s:\n' "$spell_name"
+  printf '=== %s ===\n' "$spell_name"
+  # Only show FAIL lines and their debug output (skip PASS lines)
   printf '%s\n' "$output" | awk '
     /^PASS / { next }
     /^[0-9]+\/[0-9]+ tests passed/ { next }
     /^FAIL_DETAIL:/ { next }
     /^$/ { next }
-    { printf "  %s\n", $0 }
+    { print }
   '
 }
 
@@ -364,11 +360,15 @@ while IFS= read -r test_path <&3; do
   spell_name=$(spell_name_for_test "$test_path")
   _test_heading "$test_number" "$test_total" "$spell_name"
 
+  # Always run test and collect full output
   if output=$(sh "$abs" 2>&1); then
     pass=$((pass + 1))
     cleaned_output=$(printf '%s\n' "$output" | sed '/^FAIL_DETAIL:/d')
     record_subtests "$cleaned_output"
-    [ "$verbose" -eq 1 ] && printf '%s\n' "$cleaned_output" | sed 's/^/  /'
+    # In verbose mode, show all PASS lines
+    if [ "$verbose" -eq 1 ]; then
+      printf '%s\n' "$cleaned_output" | sed 's/^/  /'
+    fi
   else
     status=1
     fail=$((fail + 1))
@@ -399,13 +399,20 @@ while IFS= read -r test_path <&3; do
     cleaned_output=$(printf '%s\n' "$output" | sed '/^FAIL_DETAIL:/d')
     record_subtests "$cleaned_output"
     record_failed_script "$test_path" "$numbers"
-    if [ "$very_verbose" -eq 1 ]; then
-      print_failure_debug "$test_path" "$cleaned_output"
-    fi
+    
+    # Store full output for later detailed display
     {
       printf '=== %s ===\n' "$test_path"
       printf '%s\n\n' "$cleaned_output"
     } >>"$failure_output_file"
+    
+    # In verbose mode, show only FAIL lines inline
+    if [ "$verbose" -eq 1 ]; then
+      printf '%s\n' "$cleaned_output" | awk '
+        /^FAIL / { print "  " $0 }
+        /^LACK / { print "  " $0 }
+      '
+    fi
   fi
 
   # Check minimum subtest requirements based on test type.
@@ -559,11 +566,16 @@ coverage_uncovered=$((coverage_total - coverage_covered))
 
 total_scripts=$((pass + fail))
 
-# Skip summary in debug rerun - only show detailed failure output
-if [ "${TEST_MAGIC_DEBUG_RERUN-}" != "1" ]; then
-  printf 'Summary: %d passed, %d failed, %d uncovered, %d incomplete, subtests %d/%d.\n' \
-    "$pass" "$fail" "$coverage_uncovered" "$incomplete_count" "$subtests_passed" "$subtests_total"
+printf '\n--- Summary ---\n'
+printf 'Tests: %d passed, %d failed, %d total\n' "$pass" "$fail" "$total_scripts"
+printf 'Subtests: %d passed, %d total\n' "$subtests_passed" "$subtests_total"
+if [ "$coverage_uncovered" -gt 0 ]; then
+  printf 'Coverage: %d uncovered\n' "$coverage_uncovered"
 fi
+if [ "$incomplete_count" -gt 0 ]; then
+  printf 'Incomplete: %d tests\n' "$incomplete_count"
+fi
+printf '\n'
 
 if [ "$coverage_uncovered" -gt 0 ]; then
   printf 'Uncovered spells:\n'
@@ -583,30 +595,40 @@ if [ -n "$incomplete_tests" ] && [ "${WIZARDRY_TEST_COMPILED-0}" != "1" ]; then
   status=1
 fi
 
-if [ "$very_verbose" -eq 1 ] && [ "$fail" -gt 10 ]; then
-  printf 'Too many failures (%d) for --very-verbose; skipping detailed output.\n' "$fail"
-  very_verbose=0
-fi
-
+# Show detailed failure output for ≤12 failures
 if [ "$status" -ne 0 ] && [ -n "$failed_scripts" ]; then
   show_failure_output=0
-  if [ "$very_verbose" -eq 1 ] && [ "$fail" -le 10 ]; then
+  if [ "$fail" -le 12 ] && [ -s "$failure_output_file" ]; then
     show_failure_output=1
   fi
 
-  if [ "$show_failure_output" -eq 1 ] && [ -s "$failure_output_file" ]; then
-    printf 'Failure details (showing %d):\n' "$fail"
+  if [ "$show_failure_output" -eq 1 ]; then
+    printf '\n--- Failure Details (showing %d) ---\n' "$fail"
     while IFS= read -r line; do
       case $line in
         "=== "*)
           # Extract test path from "=== test_path ===" format
           test_path=$(printf '%s' "$line" | sed 's/^=== //; s/ ===$//')
           spell_name=$(spell_name_for_test "$test_path")
-          printf '=== %s ===\n' "$spell_name"
+          printf '\n=== %s ===\n' "$spell_name"
           ;;
-        *) printf '  %s\n' "$line" ;;
+        "PASS "*)
+          # Skip PASS lines in detailed failure output
+          ;;
+        *[0-9]*/[0-9]*" tests passed"*)
+          # Skip summary lines
+          ;;
+        "")
+          # Skip empty lines
+          ;;
+        *)
+          # Show FAIL lines and debug output
+          printf '%s\n' "$line"
+          ;;
       esac
     done <"$failure_output_file"
+  elif [ "$fail" -gt 12 ]; then
+    printf '\nToo many failures (%d > 12); detailed output suppressed.\n' "$fail"
   fi
 
   detect_os_label() {
@@ -646,33 +668,7 @@ if [ "$status" -ne 0 ] && [ -n "$failed_scripts" ]; then
   }
 
   os_label=$(detect_os_label)
-  printf 'Failed tests (%s): %s\n' "$os_label" "$failed_scripts"
-fi
-
-if [ "$status" -ne 0 ] && [ "$fail" -le 10 ] && [ "${GITHUB_ACTIONS-}" != "" ] \
-  && [ "${TEST_MAGIC_DEBUG_RERUN-}" != "1" ] && [ "$very_verbose" -eq 0 ]; then
-  trap - EXIT HUP INT TERM
-  
-  # Extract failed test paths from failure_output_file BEFORE cleanup
-  failed_test_paths=""
-  if [ -s "$failure_output_file" ]; then
-    failed_test_paths=$(grep "^=== .* ===$" "$failure_output_file" | sed 's/^=== //; s/ ===$//') 
-  fi
-  
-  cleanup-file "$failure_output_file"
-  printf '\n<=10 failing tests; rerunning only those tests with --very-verbose:\n'
-  
-  set -- $rerun_args
-  if [ -n "$failed_test_paths" ]; then
-    while IFS= read -r test_path; do
-      [ -n "$test_path" ] || continue
-      set -- "$@" --only "$test_path"
-    done <<EOF_PATHS
-$failed_test_paths
-EOF_PATHS
-  fi
-  
-  TEST_MAGIC_DEBUG_RERUN=1 exec "$0" --very-verbose "$@"
+  printf '\nFailed tests (%s): %s\n' "$os_label" "$failed_scripts"
 fi
 
 trap - EXIT HUP INT TERM
