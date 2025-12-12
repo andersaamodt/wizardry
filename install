@@ -269,7 +269,6 @@ INVOKE_WIZARDRY="$ABS_DIR/spells/.imps/sys/invoke-wizardry"
 DETECT_RC_FILE="$ABS_DIR/spells/divination/detect-rc-file"
 NIX_SHELL_ADD="$ABS_DIR/spells/.imps/sys/nix-shell-add"
 NIX_SHELL_REMOVE="$ABS_DIR/spells/.imps/sys/nix-shell-remove"
-HANDLE_COMMAND_NOT_FOUND="$ABS_DIR/spells/.arcana/mud/handle-command-not-found"
 CORE_INSTALLER=${WIZARDRY_CORE_INSTALLER:-$ABS_DIR/spells/.arcana/core/install-core}
 ASK_YN="$ABS_DIR/spells/cantrips/ask-yn"
 
@@ -794,30 +793,6 @@ fi
 # first use via handle-command-not-found. Pre-installing spells is no longer needed.
 # Users can still manually run spell install() functions for customizations.
 
-# Install handle-command-not-found hook for autoloading spells
-# This hook enables word-of-binding to automatically load spells on first use
-if [ -x "$HANDLE_COMMAND_NOT_FOUND" ]; then
-        info_msg "Installing command-not-found hook..."
-        
-        # Set environment variables for handle-command-not-found to use
-        WIZARDRY_RC_FILE="$detect_rc_file_value"
-        WIZARDRY_RC_FORMAT="$detect_format_value"
-        export WIZARDRY_RC_FILE WIZARDRY_RC_FORMAT
-        
-        # Skip nixos-rebuild during install - we'll do it once at the end
-        WIZARDRY_SKIP_NIX_REBUILD=1
-        export WIZARDRY_SKIP_NIX_REBUILD
-        
-        if "$HANDLE_COMMAND_NOT_FOUND" install 2>/dev/null; then
-                substep_msg "Command-not-found hook enables autoloading of spells"
-        else
-                printf '%sNote:%s Command-not-found hook installation failed.\n' "$YELLOW" "$RESET" >&2
-                substep_msg "Spells will still work via PATH (invoke-wizardry)"
-        fi
-        
-        unset WIZARDRY_SKIP_NIX_REBUILD
-fi
-
 # MUD Installation (optional)
 # After setting up shell integration, ask if user wants to install the MUD features
 install_mud=0
@@ -980,7 +955,6 @@ fi
 
 printf '\n%s===== Wizardry Uninstall =====%s\n\n' "$BOLD$CYAN" "$RESET"
 printf '%sThis will remove wizardry from your system:%s\n' "$YELLOW" "$RESET"
-printf '  - Remove command-not-found hook from %s\n' "$RC_FILE"
 printf '  - Remove invoke-wizardry source line from %s\n' "$RC_FILE"
 if [ -z "$INSTALL_WAS_LOCAL" ]; then
         printf '  - Delete wizardry directory: %s\n' "$INSTALL_DIR"
@@ -1003,23 +977,6 @@ case $answer in
 esac
 
 printf '\n%s==> Removing shell configuration...%s\n' "$CYAN" "$RESET"
-
-# Remove the handle-command-not-found hook first
-HANDLE_COMMAND_NOT_FOUND="$INSTALL_DIR/spells/.arcana/mud/handle-command-not-found"
-if [ -x "$HANDLE_COMMAND_NOT_FOUND" ]; then
-        WIZARDRY_RC_FILE="$RC_FILE"
-        WIZARDRY_RC_FORMAT="$RC_FORMAT"
-        WIZARDRY_SKIP_NIX_REBUILD=1
-        export WIZARDRY_RC_FILE WIZARDRY_RC_FORMAT WIZARDRY_SKIP_NIX_REBUILD
-        
-        if "$HANDLE_COMMAND_NOT_FOUND" uninstall 2>/dev/null; then
-                printf '  %s✓%s Removed command-not-found hook from %s\n' "$GREEN" "$RESET" "$RC_FILE"
-        else
-                printf '  %sNote:%s No command-not-found hook found to remove\n' "$YELLOW" "$RESET"
-        fi
-        
-        unset WIZARDRY_SKIP_NIX_REBUILD
-fi
 
 # Remove the invoke-wizardry source line from the rc file
 if [ -f "$RC_FILE" ]; then
