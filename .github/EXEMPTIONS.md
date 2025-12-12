@@ -67,6 +67,35 @@ case "$0" in */has) _has "$@" ;; esac
 
 **Reason**: Micro-helpers; opening comment serves as spec; `--help` would bloat them
 
+### Doppelganger Compilation: Skip Lists
+
+**File**: `spells/spellcraft/compile-spell`
+
+**Reason**: When compiling standalone scripts, certain imp names must be excluded from inlining to prevent incorrect replacements
+
+#### Common English Words Skip List
+
+**Affected imps** (lines 104-107):
+- `is` - Too common as English word (e.g., "this is")
+- `fail` - Commonly used as variable name (e.g., `fail=0`)
+- `empty` - Too common in error messages (e.g., "must not be empty")
+
+**Reason**: These words appear frequently in strings and variable names. Inlining them would cause incorrect replacements like "must not be empty" → "must not be _empty".
+
+**Policy**: Only add words causing real compilation issues. Each addition prevents legitimate imp inlining if that imp exists.
+
+#### Interactive Imps Skip List
+
+**Affected imps** (line 112):
+- `ask-number`, `ask-yn`, `ask-text`
+- `await-keypress`
+- `select-input`, `read-line`
+- `tty-*` (all tty-prefixed imps)
+
+**Reason**: Interactive I/O code must remain external for test stubbing. Inlining prevents tests from intercepting user input.
+
+**Policy**: All interactive terminal I/O imps must remain external.
+
 ---
 
 ## 3. Testing Exemptions

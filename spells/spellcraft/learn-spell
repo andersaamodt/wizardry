@@ -66,7 +66,7 @@ while [ $# -gt 0 ]; do
     break
     ;;
   -*)
-    printf '%s: %s\n' "$SCRIPT_NAME" "Unknown option: $1" >&2
+    warn "$SCRIPT_NAME: Unknown option: $1"
     show_usage
     exit 1
     ;;
@@ -150,8 +150,7 @@ process_path() {
         if [ "$detect_rc_override" -eq 0 ] && command -v detect-rc-file >/dev/null 2>&1; then
           DETECT_RC_FILE=$(command -v detect-rc-file)
         else
-          printf '%s\n' "$SCRIPT_NAME: detect-rc-file spell is missing." >&2
-          exit 1
+          die "$SCRIPT_NAME: detect-rc-file spell is missing."
         fi
       fi
       
@@ -173,8 +172,7 @@ EOF_DETECT
       fi
       
       if [ -z "$rc_file" ]; then
-        printf '%s\n' "$SCRIPT_NAME: detect-rc-file did not yield an rc file." >&2
-        exit 1
+        die "$SCRIPT_NAME: detect-rc-file did not yield an rc file."
       fi
       
       : "${platform:=unknown}"
@@ -210,11 +208,11 @@ EOF_DETECT
     ); then
       MEMORIZED_COUNT=$((MEMORIZED_COUNT + 1))
     else
-      printf '%s: %s\n' "$SCRIPT_NAME" "Installation failed for '$path'." >&2
+      warn "$SCRIPT_NAME: Installation failed for '$path'."
       SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
     fi
   else
-    printf '%s: %s\n' "$SCRIPT_NAME" "'$path' is not a file or directory." >&2
+    warn "$SCRIPT_NAME: '$path' is not a file or directory."
     SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
   fi
 }
