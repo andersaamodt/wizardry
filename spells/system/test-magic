@@ -174,17 +174,19 @@ $(printf '%b' "$only_patterns")
 EOF_PATS
 fi
 
-# Write test paths directly to a file to avoid shell variable size limitations
+# Write test paths directly to a file to avoid shell variable size limitations  
 test_list_file=$(temp-file test-magic-list) || exit 1
 
-while IFS= read -r path; do
-  short=${path#"$test_dir/"}
-  if matches_patterns "$short"; then
-    printf '%s\n' "$short" >> "$test_list_file"
-  fi
-done <<EOF_TESTS
+{
+  while IFS= read -r path; do
+    short=${path#"$test_dir/"}
+    if matches_patterns "$short"; then
+      printf '%s\n' "$short"
+    fi
+  done <<EOF_TESTS
 $(find_tests)
 EOF_TESTS
+} > "$test_list_file"
 
 if [ ! -s "$test_list_file" ]; then
   echo "$cmd_name: no tests discovered." >&2
@@ -342,7 +344,10 @@ record_incomplete_test() {
   fi
 }
 
-while IFS= read -r test_path; do
+# Open file descriptor 3 for reading the test list
+exec 3< "$test_list_file"
+
+while IFS= read -r test_path <&3; do
   [ -n "$test_path" ] || continue
   abs="$test_dir/$test_path"
   test_number=$((test_number + 1))
@@ -449,7 +454,10 @@ while IFS= read -r test_path; do
   fi
 
   printf '\n'
-done < "$test_list_file"
+done
+
+# Close file descriptor 3
+exec 3<&-
 
 find_matching_test_for_spell() {
   spell=$1
