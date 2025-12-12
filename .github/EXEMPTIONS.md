@@ -6,7 +6,7 @@ Documents all deviations from project standards with justification.
 
 - **Style**: 330/330 files compliant (2 hardcoded exemptions for doppelganger)
 - **Code Structure**: Conditional imps exempt from `set -eu`; imps exempt from `--help`
-- **Function Discipline**: 20 spells with 4+ functions (proto-libraries) - test FAILS to maintain visibility for refactoring
+- **Function Discipline**: 10 spells with 4+ functions (proto-libraries) - test FAILS to maintain visibility for refactoring
 - **Testing**: Bootstrap scripts can't use wizardry infrastructure
 - **Non-Shell Files**: Systemd service files exempt from all shell checks (2 files)
 - **CI**: No exemptions - all checks required
@@ -134,7 +134,7 @@ case "$0" in */has) _has "$@" ;; esac
 
 **Rule**: Spells should have `show_usage()` plus at most 1-3 additional helper functions. 4+ additional functions indicate a proto-library that needs decomposition into multiple spells and/or imps.
 
-**Temporary Exemptions** (11 spells - TO BE REFACTORED):
+**Temporary Exemptions** (10 spells - TO BE REFACTORED):
 
 **Spellcraft** (4 spells):
 - `spellcraft/learn-spellbook` (24 additional) - Complex installation logic, needs decomposition
@@ -150,12 +150,11 @@ case "$0" in */has) _has "$@" ;; esac
 - `.arcana/bitcoin/install-bitcoin` (11 additional) - Complex installation wizard
 - `.arcana/tor/install-tor` (9 additional) - Multi-platform installation logic
 
-**Other** (3 spells):
-- `cantrips/menu` (14 additional) - Menu infrastructure, extract to imps
+**Other** (2 spells):
 - `mud/look` (11 additional) - MUD description system, consider multiple spells
 - `cantrips/assertions` (4 additional) - Sourceable test library, special case
 
-**Refactored** (27 spells - COMPLETED ✅):
+**Refactored** (28 spells - COMPLETED ✅):
 - `menu/spellbook` (30→10) - Major refactor, created 3 reusable imps
 - `spellcraft/learn-spell` (8→1) - Inlined warn and detect_env_once
 - `cantrips/start-service` (4→1)
@@ -168,6 +167,7 @@ case "$0" in */has) _has "$@" ;; esac
 - `cantrips/memorize` (8→2)
 - `cantrips/spellbook-store` (7→2)
 - `cantrips/await-keypress` (7→2)
+- `cantrips/menu` (14→2) - Flattened navigation and rendering flow
 - `menu/cast` (4→1)
 - `menu/mud-menu` (4→3)
 - `spellcraft/doppelganger` (4→4) - fallback functions
@@ -184,12 +184,12 @@ case "$0" in */has) _has "$@" ;; esac
 - `.arcana/tor/configure-tor` (6→1)
 - `.arcana/mud/mud-config` (5→4)
 
-**Action Required**: Remaining 11 spells should be refactored to:
+**Action Required**: Remaining 10 spells should be refactored to:
 1. Extract reusable logic into imps in `spells/.imps/`
 2. Split into multiple smaller spells if handling multiple actions
 3. Simplify linear flow by inlining single-use helpers
 
-**Progress**: 27/38 spells refactored (71%) - Test currently configured to FAIL to maintain visibility
+**Progress**: 28/38 spells refactored (74%) - Test currently configured to FAIL to maintain visibility
 
 ---
 
