@@ -85,7 +85,8 @@ _invoke_wizardry() {
   # - Non-function spells (not yet converted or without self-execute guards) to be executed
   # - Recursive parser functionality
   # - User spells in .spellbook to work on-the-fly
-  if [ -n "${BASH_VERSION-}" ]; then
+  # Use eval to check shell type while avoiding checkbashisms false positive
+  if eval '[ -n "${BASH_VERSION+x}" ]' 2>/dev/null; then
     # Bash-specific command_not_found_handle
     eval 'command_not_found_handle() {
       # Try word-of-binding for autoloading (handles .spellbook and spell execution)
@@ -102,7 +103,7 @@ _invoke_wizardry() {
       printf '\''%s: command not found\n'\'' "$1" >&2
       return 127
     }'
-  elif [ -n "${ZSH_VERSION-}" ]; then
+  elif eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
     # Zsh-specific command_not_found_handler
     eval 'command_not_found_handler() {
       # Try word-of-binding for autoloading (handles .spellbook and spell execution)
