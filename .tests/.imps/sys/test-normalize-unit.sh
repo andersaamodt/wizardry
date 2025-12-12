@@ -1,6 +1,8 @@
 #!/bin/sh
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+# Normalize double slashes (macOS TMPDIR issue)
+test_root=$(printf '%s' "$test_root" | sed 's|//|/|g')
 while [ ! -f "$test_root/test_common.sh" ] && [ "$test_root" != "/" ]; do
   test_root=$(dirname "$test_root")
 done
