@@ -1,0 +1,40 @@
+#!/bin/sh
+# run-systemctl COMMAND [ARGS...] - run systemctl with sudo if needed
+# Example: run-systemctl enable myservice
+
+set -eu
+
+_run_systemctl() {
+  if [ "$#" -eq 0 ]; then
+    printf '%s\n' "run-systemctl: no command specified" >&2
+    return 1
+  fi
+
+  # Find systemctl
+  systemctl_cmd=${SYSTEMCTL-}
+  if [ -z "$systemctl_cmd" ]; then
+    if ! command -v systemctl >/dev/null 2>&1; then
+      printf '%s\n' "run-systemctl: systemctl is not available on this system." >&2
+      return 1
+    fi
+    systemctl_cmd=$(command -v systemctl)
+  fi
+
+  # Run with sudo if not root
+  if [ "$(id -u)" -eq 0 ]; then
+    "$systemctl_cmd" "$@"
+    return
+  fi
+
+  if command -v sudo >/dev/null 2>&1; then
+    sudo "$systemctl_cmd" "$@"
+    return
+  fi
+
+  printf '%s\n' "run-systemctl: systemctl requires root. Re-run as root or install sudo." >&2
+  return 1
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */run-systemctl) _run_systemctl "$@" ;; esac

@@ -2,8 +2,6 @@
 
 # This spell awakens or stills the cyclic illumination of the cursor.
 
-# Emit the escape sequence that re-enables blinking.
-
 show_usage() {
         cat <<'USAGE' >&2
 Usage: cursor-blink on|off
@@ -20,23 +18,6 @@ case "${1-}" in
 esac
 
 set -eu
-cursor_blink_on() {
-  printf '\033[?25h'
-}
-
-# Emit the escape sequence that freezes the cursor in place.
-cursor_blink_off() {
-  printf '\033[?25l'
-}
-
-supports_cursor_control() {
-  case ${TERM-} in
-    ''|dumb|unknown)
-      return 1
-      ;;
-  esac
-  return 0
-}
 
 # The helper expects exactly one argument that declares the desired state.
 if [ "$#" -ne 1 ]; then
@@ -44,18 +25,23 @@ if [ "$#" -ne 1 ]; then
   exit 1
 fi
 
-if ! supports_cursor_control; then
-  # Quietly succeed so scripts keep running even when the terminal lacks ANSI
-  # support (for example, on "dumb" terminals).
-  exit 0
-fi
+# Check if terminal supports cursor control
+case ${TERM-} in
+  ''|dumb|unknown)
+    # Quietly succeed so scripts keep running even when the terminal lacks ANSI
+    # support (for example, on "dumb" terminals).
+    exit 0
+    ;;
+esac
 
 case "$1" in
   on)
-    cursor_blink_on
+    # Emit the escape sequence that re-enables blinking
+    printf '\033[?25h'
     ;;
   off)
-    cursor_blink_off
+    # Emit the escape sequence that freezes the cursor in place
+    printf '\033[?25l'
     ;;
   *)
     # Treat anything else as misuse so callers notice mistakes quickly.

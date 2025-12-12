@@ -1,0 +1,26 @@
+#!/bin/sh
+# normalize-unit UNIT - add .service extension if not present
+# Example: normalize-unit myservice  # outputs: myservice.service
+
+set -eu
+
+_normalize_unit() {
+  if [ "$#" -ne 1 ]; then
+    printf '%s\n' "normalize-unit: expected 1 argument" >&2
+    return 1
+  fi
+
+  unit=$1
+  case $unit in
+  *.service)
+    printf '%s' "$unit"
+    ;;
+  *)
+    printf '%s.service' "$unit"
+    ;;
+  esac
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */normalize-unit) _normalize_unit "$@" ;; esac
