@@ -29,8 +29,7 @@ spell_has_content() {
 all_tests_are_processed() {
   # Run test-magic directly and capture output
   # Use --list to find a test file, then run just that one test
-  tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/test-magic-test.XXXXXX")
-  tmpfile="$tmpdir/output.txt"
+  tmpfile="$(_make_tempdir)/output.txt"
   
   # Find first test file
   cd "$ROOT_DIR" || return 1
@@ -54,8 +53,6 @@ all_tests_are_processed() {
   # Use awk for reliable cross-platform parsing
   passed=$(printf '%s\n' "$summary" | awk '{for(i=1;i<=NF;i++) if($(i+1)=="passed,") print $i}')
   failed=$(printf '%s\n' "$summary" | awk '{for(i=1;i<=NF;i++) if($(i+1)=="failed,") print $i}')
-  
-  rm -rf "$tmpdir"
   
   # Verify we got values
   [ -n "$test_count" ] && [ -n "$test_total" ] && [ -n "$passed" ] && [ -n "$failed" ] || {
