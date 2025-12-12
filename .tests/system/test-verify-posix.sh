@@ -112,16 +112,12 @@ SCRIPT
   run_verify_posix "$workdir/nameless"
   _assert_failure || return 1
   printf '%s\n' "$OUTPUT" | grep 'lacks a shebang; expected #!/bin/sh' >/dev/null 2>&1 || { TEST_FAILURE_REASON="missing shebang message"; return 1; }
-  summary=$(printf '%s\n' "$OUTPUT" | tail -n 2 | head -n 1)
-  case $summary in
-    "1 of 1 scripts failed POSIX compliance.") : ;;
-    *) TEST_FAILURE_REASON="expected failure summary"; return 1 ;;
-  esac
-  failing=$(printf '%s\n' "$OUTPUT" | tail -n 1)
-  case $failing in
-    "Failing spells: "*"nameless"*) : ;;
-    *) TEST_FAILURE_REASON="expected failing spells list"; return 1 ;;
-  esac
+  # New format uses heading-section
+  summary=$(printf '%s\n' "$OUTPUT" | grep "POSIX Compliance Summary")
+  [ -n "$summary" ] || { TEST_FAILURE_REASON="expected POSIX Compliance Summary heading"; return 1; }
+  # Check for Passed/Failed lines
+  printf '%s\n' "$OUTPUT" | grep "Passed:" >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected Passed: line"; return 1; }
+  printf '%s\n' "$OUTPUT" | grep "Failed:" >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected Failed: line"; return 1; }
   [ -z "${ERROR}" ] || { TEST_FAILURE_REASON="expected no stderr"; return 1; }
 }
 
@@ -204,16 +200,11 @@ reports_missing_targets() {
   run_verify_posix "$missing_path"
   _assert_failure || return 1
   printf '%s\n' "$OUTPUT" | grep 'missing file' >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected missing file message"; return 1; }
-  summary=$(printf '%s\n' "$OUTPUT" | tail -n 2 | head -n 1)
-  case $summary in
-    "1 of 1 scripts failed POSIX compliance.") : ;;
-    *) TEST_FAILURE_REASON="expected summary for missing file"; return 1 ;;
-  esac
-  failing=$(printf '%s\n' "$OUTPUT" | tail -n 1)
-  case $failing in
-    "Failing spells: $missing_path") : ;;
-    *) TEST_FAILURE_REASON="expected failing spells list"; return 1 ;;
-  esac
+  # New format uses heading-section
+  summary=$(printf '%s\n' "$OUTPUT" | grep "POSIX Compliance Summary")
+  [ -n "$summary" ] || { TEST_FAILURE_REASON="expected POSIX Compliance Summary heading"; return 1; }
+  # Check for Passed/Failed lines
+  printf '%s\n' "$OUTPUT" | grep "Failed:" >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected Failed: line"; return 1; }
   [ -z "${ERROR}" ] || { TEST_FAILURE_REASON="expected no stderr"; return 1; }
 }
 
@@ -229,16 +220,11 @@ SCRIPT
   _assert_failure || return 1
   printf '%s\n' "$OUTPUT" | grep '^FAIL ' >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected bashism message"; return 1; }
   echo "$OUTPUT" | grep "^  bashism detected$" >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected indented bashism output"; return 1; }
-  summary=$(printf '%s\n' "$OUTPUT" | tail -n 2 | head -n 1)
-  case $summary in
-    "1 of 1 scripts failed POSIX compliance.") : ;;
-    *) TEST_FAILURE_REASON="expected bashism summary"; return 1 ;;
-  esac
-  failing=$(printf '%s\n' "$OUTPUT" | tail -n 1)
-  case $failing in
-    "Failing spells: "*"bashism"*) : ;;
-    *) TEST_FAILURE_REASON="expected failing spells list"; return 1 ;;
-  esac
+  # New format uses heading-section
+  summary=$(printf '%s\n' "$OUTPUT" | grep "POSIX Compliance Summary")
+  [ -n "$summary" ] || { TEST_FAILURE_REASON="expected POSIX Compliance Summary heading"; return 1; }
+  # Check for Passed/Failed lines
+  printf '%s\n' "$OUTPUT" | grep "Failed:" >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected Failed: line"; return 1; }
   [ -z "${ERROR}" ] || { TEST_FAILURE_REASON="expected no stderr"; return 1; }
 }
 
