@@ -38,9 +38,9 @@ while [ "$#" -gt 0 ]; do
       break
       ;;
   esac
-set -eu
-
 done
+
+set -eu
 
 if [ "$#" -ne 0 ]; then
   printf 'Unexpected argument: %s\n' "$1" >&2
@@ -69,194 +69,197 @@ else
   RESET=''
 fi
 
-require_command() {
-  cmd=$1
-  has "$cmd" || fail "Required command not found: $cmd"
-}
-
-print_step() {
-  printf '%s\n' "$1"
-}
-
-format_command() {
-  if [ "$#" -eq 0 ]; then
-    return 0
-  fi
-
-  printf '%s' "$1"
-  shift
-  for arg do
-    printf ' %s' "$arg"
-  done
-}
-
-print_command() {
-  printf '%b  $ %s%b\n' "${GREY:-}" "$(format_command "$@")" "${RESET:-}"
-}
-
-run_quiet() {
-  if [ "$#" -eq 0 ]; then
-    return 0
-  fi
-  print_command "$@"
-  if [ "$VERBOSE" -eq 1 ]; then
-    "$@"
-  else
-    "$@" >/dev/null 2>&1
-  fi
-}
-
-progress_filter() {
-  last_progress=''
-  while IFS= read -r line || nonempty "$line"; do
-    case $line in
-      Progress:*)
-        last_progress=$line
-        printf '\r%s' "$line"
-        ;;
-      *)
-        if [ -n "$last_progress" ]; then
-          printf '\r%s\n' "$last_progress"
-          last_progress=''
-        fi
-        if [ -n "$line" ]; then
-          printf '%s\n' "$line"
-        fi
-        ;;
-    esac
-  done
-
-  if [ -n "$last_progress" ]; then
-    printf '\r%s\n' "$last_progress"
-  fi
-}
-
-run_with_progress() {
-  if [ "$#" -eq 0 ]; then
-    return 0
-  fi
-
-  print_command "$@"
-
-  if [ "$VERBOSE" -eq 1 ]; then
-    "$@"
-    return $?
-  fi
-
-  progress_tmp=$(temp-file update-all) || return 1
-  trap 'cleanup-file "$progress_tmp"' EXIT HUP INT TERM
-  (
-    set +e
-    "$@" 2>&1
-    cmd_status=$?
-    set -e
-    printf '%s\n' "$cmd_status" >"$progress_tmp"
-    exit 0
-  ) | tr '\r' '\n' | progress_filter
-
-  status=$(cat "$progress_tmp" 2>/dev/null || printf '1\n')
-  trap - EXIT HUP INT TERM
-  rm -f "$progress_tmp"
-
-  case ${status:-} in
-    '' ) status=1 ;;
-  esac
-
-  return "$status"
-}
-
-assume_yes() {
-  case ${WIZARDRY_UPDATE_ALL_ASSUME_YES:-} in
-    1|[Yy]|[Yy][Ee][Ss]|[Tt][Rr][Uu][Ee])
-      return 0
-      ;;
-  esac
-  return 1
-}
-
-confirm_updates() {
-  if assume_yes; then
-    return 0
-  fi
-  lacks ask-yn && fail 'ask-yn spell is missing; cannot confirm updates.'
-  printf '%s\n' 'Proceed with system updates?'
-  ASK_CANTRIP_INPUT=stdin
-  export ASK_CANTRIP_INPUT
-  if printf '\n' | ask-yn 'Proceed with system updates?' yes >/dev/null; then
-    return 0
-  fi
-  return 1
-}
-
-resolve_distro() {
-  if is set "${WIZARDRY_UPDATE_ALL_DISTRO:-}"; then
-    printf '%s\n' "$WIZARDRY_UPDATE_ALL_DISTRO"
-    return 0
-  fi
-
-  if has detect-distro; then
-    if distro=$(detect-distro 2>/dev/null); then
-      printf '%s\n' "$distro"
-      return 0
-    fi
-  fi
-
-  return 1
-}
-
-distro=$(resolve_distro)
-if [ -z "$distro" ]; then
+# Detect distro first
+if is set "${WIZARDRY_UPDATE_ALL_DISTRO:-}"; then
+  distro=$WIZARDRY_UPDATE_ALL_DISTRO
+elif has detect-distro && distro=$(detect-distro 2>/dev/null); then
+  :
+else
   printf '%s\n' 'Unable to detect operating system.' >&2
   exit 1
 fi
 
 printf 'Detected platform: %s\n' "$distro"
 
-if ! confirm_updates; then
-  printf '%s\n' 'cancelled by user' >&2
-  exit 1
-fi
+# Confirm updates with user
+case ${WIZARDRY_UPDATE_ALL_ASSUME_YES:-} in
+  1|[Yy]|[Yy][Ee][Ss]|[Tt][Rr][Uu][Ee])
+    # Assume yes, proceed
+    ;;
+  *)
+    lacks ask-yn && fail 'ask-yn spell is missing; cannot confirm updates.'
+    printf '%s\n' 'Proceed with system updates?'
+    ASK_CANTRIP_INPUT=stdin
+    export ASK_CANTRIP_INPUT
+    if ! printf '\n' | ask-yn 'Proceed with system updates?' yes >/dev/null; then
+      printf '%s\n' 'cancelled by user' >&2
+      exit 1
+    fi
+    ;;
+esac
 
+# Inline run_quiet and run_with_progress functionality
 case $distro in
   debian)
-    require_command sudo
-    require_command apt-get
-    print_step '• Refreshing apt package lists'
-    run_quiet sudo apt-get update
-    print_step '• Installing upgrades'
-    run_with_progress sudo apt-get -o Dpkg::Progress-Fancy=1 -o Dpkg::Use-Pty=0 -y full-upgrade
-    print_step '• Removing unused packages'
-    run_with_progress sudo apt-get -o Dpkg::Progress-Fancy=1 -o Dpkg::Use-Pty=0 -y autoremove
+    has sudo || fail "Required command not found: sudo"
+    has apt-get || fail "Required command not found: apt-get"
+    
+    printf '%s\n' '• Refreshing apt package lists'
+    printf '%b  $ %s%b\n' "${GREY:-}" "sudo apt-get update" "${RESET:-}"
+    if [ "$VERBOSE" -eq 1 ]; then
+      sudo apt-get update
+    else
+      sudo apt-get update >/dev/null 2>&1
+    fi
+    
+    printf '%s\n' '• Installing upgrades'
+    printf '%b  $ %s%b\n' "${GREY:-}" "sudo apt-get -o Dpkg::Progress-Fancy=1 -o Dpkg::Use-Pty=0 -y full-upgrade" "${RESET:-}"
+    if [ "$VERBOSE" -eq 1 ]; then
+      sudo apt-get -o Dpkg::Progress-Fancy=1 -o Dpkg::Use-Pty=0 -y full-upgrade
+    else
+      progress_tmp=$(temp-file update-all) || exit 1
+      trap 'cleanup-file "$progress_tmp"' EXIT HUP INT TERM
+      (
+        set +e
+        sudo apt-get -o Dpkg::Progress-Fancy=1 -o Dpkg::Use-Pty=0 -y full-upgrade 2>&1
+        printf '%s\n' "$?" >"$progress_tmp"
+        exit 0
+      ) | tr '\r' '\n' | {
+        last_progress=''
+        while IFS= read -r line || nonempty "$line"; do
+          case $line in
+            Progress:*)
+              last_progress=$line
+              printf '\r%s' "$line"
+              ;;
+            *)
+              if [ -n "$last_progress" ]; then
+                printf '\r%s\n' "$last_progress"
+                last_progress=''
+              fi
+              [ -n "$line" ] && printf '%s\n' "$line"
+              ;;
+          esac
+        done
+        [ -n "$last_progress" ] && printf '\r%s\n' "$last_progress"
+      }
+      status=$(cat "$progress_tmp" 2>/dev/null || printf '1')
+      trap - EXIT HUP INT TERM
+      rm -f "$progress_tmp"
+      [ "${status:-1}" -eq 0 ] || exit "${status:-1}"
+    fi
+    
+    printf '%s\n' '• Removing unused packages'
+    printf '%b  $ %s%b\n' "${GREY:-}" "sudo apt-get -o Dpkg::Progress-Fancy=1 -o Dpkg::Use-Pty=0 -y autoremove" "${RESET:-}"
+    if [ "$VERBOSE" -eq 1 ]; then
+      sudo apt-get -o Dpkg::Progress-Fancy=1 -o Dpkg::Use-Pty=0 -y autoremove
+    else
+      progress_tmp=$(temp-file update-all) || exit 1
+      trap 'cleanup-file "$progress_tmp"' EXIT HUP INT TERM
+      (
+        set +e
+        sudo apt-get -o Dpkg::Progress-Fancy=1 -o Dpkg::Use-Pty=0 -y autoremove 2>&1
+        printf '%s\n' "$?" >"$progress_tmp"
+        exit 0
+      ) | tr '\r' '\n' | {
+        last_progress=''
+        while IFS= read -r line || nonempty "$line"; do
+          case $line in
+            Progress:*)
+              last_progress=$line
+              printf '\r%s' "$line"
+              ;;
+            *)
+              if [ -n "$last_progress" ]; then
+                printf '\r%s\n' "$last_progress"
+                last_progress=''
+              fi
+              [ -n "$line" ] && printf '%s\n' "$line"
+              ;;
+          esac
+        done
+        [ -n "$last_progress" ] && printf '\r%s\n' "$last_progress"
+      }
+      status=$(cat "$progress_tmp" 2>/dev/null || printf '1')
+      trap - EXIT HUP INT TERM
+      rm -f "$progress_tmp"
+      [ "${status:-1}" -eq 0 ] || exit "${status:-1}"
+    fi
     ;;
+    
   arch)
-    require_command sudo
-    require_command pacman
-    require_command pamac
-    print_step '• Synchronising pacman packages'
-    run_quiet sudo pacman -Syu --noconfirm
-    print_step '• Refreshing Pamac-managed packages'
-    run_quiet pamac update --no-confirm
-    print_step '• Rebuilding Pamac AUR packages'
-    run_quiet pamac build --no-confirm
+    has sudo || fail "Required command not found: sudo"
+    has pacman || fail "Required command not found: pacman"
+    has pamac || fail "Required command not found: pamac"
+    
+    printf '%s\n' '• Synchronising pacman packages'
+    printf '%b  $ %s%b\n' "${GREY:-}" "sudo pacman -Syu --noconfirm" "${RESET:-}"
+    if [ "$VERBOSE" -eq 1 ]; then
+      sudo pacman -Syu --noconfirm
+    else
+      sudo pacman -Syu --noconfirm >/dev/null 2>&1
+    fi
+    
+    printf '%s\n' '• Refreshing Pamac-managed packages'
+    printf '%b  $ %s%b\n' "${GREY:-}" "pamac update --no-confirm" "${RESET:-}"
+    if [ "$VERBOSE" -eq 1 ]; then
+      pamac update --no-confirm
+    else
+      pamac update --no-confirm >/dev/null 2>&1
+    fi
+    
+    printf '%s\n' '• Rebuilding Pamac AUR packages'
+    printf '%b  $ %s%b\n' "${GREY:-}" "pamac build --no-confirm" "${RESET:-}"
+    if [ "$VERBOSE" -eq 1 ]; then
+      pamac build --no-confirm
+    else
+      pamac build --no-confirm >/dev/null 2>&1
+    fi
     ;;
+    
   nixos)
-    require_command sudo
-    require_command nix-channel
-    require_command nixos-rebuild
-    require_command nix-env
-    print_step '• Refreshing system channels'
-    run_quiet sudo nix-channel --update
-    print_step '• Rebuilding system configuration'
-    run_quiet sudo nixos-rebuild switch --upgrade
-    print_step '• Refreshing user channels'
-    run_quiet nix-channel --update
-    print_step '• Upgrading user packages'
-    run_quiet nix-env -u --always
+    has sudo || fail "Required command not found: sudo"
+    has nix-channel || fail "Required command not found: nix-channel"
+    has nixos-rebuild || fail "Required command not found: nixos-rebuild"
+    has nix-env || fail "Required command not found: nix-env"
+    
+    printf '%s\n' '• Refreshing system channels'
+    printf '%b  $ %s%b\n' "${GREY:-}" "sudo nix-channel --update" "${RESET:-}"
+    if [ "$VERBOSE" -eq 1 ]; then
+      sudo nix-channel --update
+    else
+      sudo nix-channel --update >/dev/null 2>&1
+    fi
+    
+    printf '%s\n' '• Rebuilding system configuration'
+    printf '%b  $ %s%b\n' "${GREY:-}" "sudo nixos-rebuild switch --upgrade" "${RESET:-}"
+    if [ "$VERBOSE" -eq 1 ]; then
+      sudo nixos-rebuild switch --upgrade
+    else
+      sudo nixos-rebuild switch --upgrade >/dev/null 2>&1
+    fi
+    
+    printf '%s\n' '• Refreshing user channels'
+    printf '%b  $ %s%b\n' "${GREY:-}" "nix-channel --update" "${RESET:-}"
+    if [ "$VERBOSE" -eq 1 ]; then
+      nix-channel --update
+    else
+      nix-channel --update >/dev/null 2>&1
+    fi
+    
+    printf '%s\n' '• Upgrading user packages'
+    printf '%b  $ %s%b\n' "${GREY:-}" "nix-env -u --always" "${RESET:-}"
+    if [ "$VERBOSE" -eq 1 ]; then
+      nix-env -u --always
+    else
+      nix-env -u --always >/dev/null 2>&1
+    fi
     ;;
+    
   *)
     printf 'Unsupported platform: %s\n' "$distro" >&2
     exit 2
     ;;
 esac
 
-print_step 'All updates complete.'
+printf '%s\n' 'All updates complete.'

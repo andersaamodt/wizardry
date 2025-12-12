@@ -53,13 +53,7 @@ else
     buffer_file=$(temp-file await-keypress-buffer-"$buffer_key") || exit 1
 fi
 
-# Helper to restore terminal and close file descriptor
-restore_terminal() {
-    if [ "$skip_stty" -eq 0 ] && [ -n "${saved_state-}" ]; then
-        stty "$saved_state" <&3 >/dev/null 2>&1 || :
-    fi
-    exec 3>&- 2>/dev/null || :
-}
+
 
 if [ "$skip_stty" -eq 1 ]; then
     # Allow tests to provide a preconfigured file descriptor instead of
@@ -91,8 +85,8 @@ else
         exit 1
     fi
 
-    trap 'restore_terminal; exit 130' INT HUP TERM
-    trap 'restore_terminal' EXIT
+    trap 'if [ "$skip_stty" -eq 0 ] && [ -n "${saved_state-}" ]; then stty "$saved_state" <&3 >/dev/null 2>&1 || :; fi; exec 3>&- 2>/dev/null || :; exit 130' INT HUP TERM
+    trap 'if [ "$skip_stty" -eq 0 ] && [ -n "${saved_state-}" ]; then stty "$saved_state" <&3 >/dev/null 2>&1 || :; fi; exec 3>&- 2>/dev/null || :' EXIT
 
     # Configure canonical mode to wait for exactly one byte of input.
     if ! stty -icanon -echo min 1 time 0 <&3 2>/dev/null; then
@@ -151,7 +145,10 @@ trap - EXIT
 if [ "$skip_stty" -eq 0 ] && [ "$keep_raw" -eq 1 ]; then
     exec 3>&- 2>/dev/null || :
 else
-    restore_terminal
+    if [ "$skip_stty" -eq 0 ] && [ -n "${saved_state-}" ]; then
+        stty "$saved_state" <&3 >/dev/null 2>&1 || :
+    fi
+    exec 3>&- 2>/dev/null || :
 fi
 
 codes=${codes# }
@@ -172,15 +169,6 @@ shift
 leftover="$*"
 output=''
 buffer_leftover_codes=''
-
-# Convert numeric byte values back to characters.
-codes_to_string() {
-    result=''
-    for code in $1; do
-        result=${result}$(printf '\\%03o' "$code")
-    done
-    printf '%b' "$result"
-}
 
 case "$first" in
     9)
@@ -239,21 +227,32 @@ case "$first" in
                                         output='delete'
                                         buffer_leftover_codes="$*"
                                     else
-                                        key_str=$(codes_to_string "$escape_rest_codes")
-                                        output="escaped key: $key_str"
+                                        key_result=''
+                                        for key_code in $escape_rest_codes; do
+                                            key_result=${key_result}$(printf '\\%03o' "$key_code")
+                                        done
+                                        output="escaped key: $(printf '%b' "$key_result")"
                                         buffer_leftover_codes=''
                                     fi
                                 fi
                                 ;;
                             *)
-                                output="escaped key: $(codes_to_string "$escape_rest_codes")"
+                                key_result=''
+                                for key_code in $escape_rest_codes; do
+                                    key_result=${key_result}$(printf '\\%03o' "$key_code")
+                                done
+                                output="escaped key: $(printf '%b' "$key_result")"
                                 buffer_leftover_codes=''
                                 ;;
                         esac
                     fi
                     ;;
                 *)
-                    output="escaped key: $(codes_to_string "$escape_rest_codes")"
+                    key_result=''
+                    for key_code in $escape_rest_codes; do
+                        key_result=${key_result}$(printf '\\%03o' "$key_code")
+                    done
+                    output="escaped key: $(printf '%b' "$key_result")"
                     buffer_leftover_codes=''
                     ;;
             esac
@@ -269,7 +268,11 @@ case "$first" in
         if [ -n "$leftover" ]; then
             remainder="$remainder $leftover"
         fi
-        output=$(codes_to_string "$remainder")
+        rem_result=''
+        for rem_code in $remainder; do
+            rem_result=${rem_result}$(printf '\\%03o' "$rem_code")
+        done
+        output=$(printf '%b' "$rem_result")
         buffer_leftover_codes=''
         ;;
 esac
