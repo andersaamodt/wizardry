@@ -5,6 +5,12 @@
 set -eu
 
 _tilde_path() {
+  # Require exactly one argument
+  if [ "$#" -ne 1 ]; then
+    printf 'tilde-path: exactly one argument required\n' >&2
+    return 1
+  fi
+  
   _tp_path=$1
   
   # If HOME is not set, return the path unchanged

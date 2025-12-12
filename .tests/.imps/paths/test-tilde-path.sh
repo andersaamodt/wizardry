@@ -51,10 +51,18 @@ test_tilde_path_handles_nested_path() {
   [ "$OUTPUT" = "~/.spellbook/custom" ] || { TEST_FAILURE_REASON="expected '~/.spellbook/custom', got '$OUTPUT'"; return 1; }
 }
 
+test_tilde_path_requires_argument() {
+  skip-if-compiled || return $?
+  _run_spell spells/.imps/paths/tilde-path
+  _assert_failure || return 1
+  _assert_error_contains "exactly one argument required" || return 1
+}
+
 _run_test_case "tilde-path converts HOME path" test_tilde_path_converts_home
 _run_test_case "tilde-path converts exact HOME" test_tilde_path_converts_exact_home
 _run_test_case "tilde-path preserves non-HOME paths" test_tilde_path_preserves_non_home
 _run_test_case "tilde-path handles no HOME" test_tilde_path_handles_no_home
 _run_test_case "tilde-path handles nested paths" test_tilde_path_handles_nested_path
+_run_test_case "tilde-path requires argument" test_tilde_path_requires_argument
 
 _finish_tests
