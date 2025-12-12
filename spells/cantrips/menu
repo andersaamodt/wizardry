@@ -289,7 +289,7 @@ esac
 # becomes the anchor for the first menu option so the items render directly
 # beneath the title.
 
-terminal_height=$(fathom-terminal -h)
+terminal_height=$(fathom-terminal --height)
 case "$terminal_height" in
         ''|*[!0-9]*)
                 terminal_height=0
@@ -360,7 +360,7 @@ do
                 pending_step=0
         fi
 
-        current_window_width=$(fathom-terminal -w)
+        current_window_width=$(fathom-terminal --width)
         current_max_command_length=$((current_window_width - max_name_length - 3))
         if [ "$current_max_command_length" -lt 0 ]; then
                 current_max_command_length=0
