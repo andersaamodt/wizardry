@@ -90,8 +90,51 @@ _invoke_wizardry() {
   fi
 }
 
+# Set up command_not_found_handle for autoloading and recursive parsing
+# This enables word-of-binding to load spells on demand and the parse spell
+# to work with recursive grammar. Must be defined outside the function so it
+# persists in the shell environment.
+_setup_command_not_found() {
+  if [ -n "${BASH_VERSION-}" ]; then
+    # Bash-specific command_not_found_handle
+    command_not_found_handle() {
+      # Try word-of-binding first for autoloading wizardry commands
+      if command -v word-of-binding >/dev/null 2>&1; then
+        if word-of-binding "$@" 2>/dev/null; then
+          return $?
+        fi
+      fi
+      # Fall back to parse for recursive grammar parsing
+      if command -v parse >/dev/null 2>&1; then
+        parse "$@"
+        return $?
+      fi
+      printf '%s: command not found\n' "$1" >&2
+      return 127
+    }
+  elif [ -n "${ZSH_VERSION-}" ]; then
+    # Zsh-specific command_not_found_handler
+    command_not_found_handler() {
+      # Try word-of-binding first for autoloading wizardry commands
+      if command -v word-of-binding >/dev/null 2>&1; then
+        if word-of-binding "$@" 2>/dev/null; then
+          return $?
+        fi
+      fi
+      # Fall back to parse for recursive grammar parsing
+      if command -v parse >/dev/null 2>&1; then
+        parse "$@"
+        return $?
+      fi
+      printf '%s: command not found\n' "$1" >&2
+      return 127
+    }
+  fi
+}
+
 # Run the setup when sourced
 _invoke_wizardry
+_setup_command_not_found
 
 # Self-execute when run directly (not sourced)
 case "$0" in
