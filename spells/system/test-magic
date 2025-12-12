@@ -348,6 +348,10 @@ while IFS= read -r test_path <&3; do
   abs="$test_dir/$test_path"
   test_number=$((test_number + 1))
   
+  # Reset subtest counter for each new test
+  WIZARDRY_GLOBAL_SUBTEST_NUM=0
+  export WIZARDRY_GLOBAL_SUBTEST_NUM
+  
   # Skip tests marked COMPILED_UNSUPPORTED when testing compiled spells
   if [ "${WIZARDRY_TEST_COMPILED-0}" = "1" ]; then
     if head -n 5 "$abs" 2>/dev/null | grep -q "^# COMPILED_UNSUPPORTED"; then
@@ -566,7 +570,8 @@ coverage_uncovered=$((coverage_total - coverage_covered))
 
 total_scripts=$((pass + fail))
 
-printf '\n--- Summary ---\n'
+printf '\n'
+heading-section "Summary"
 printf 'Tests: %d passed, %d failed, %d total\n' "$pass" "$fail" "$total_scripts"
 printf 'Subtests: %d passed, %d total\n' "$subtests_passed" "$subtests_total"
 if [ "$coverage_uncovered" -gt 0 ]; then
@@ -603,7 +608,8 @@ if [ "$status" -ne 0 ] && [ -n "$failed_scripts" ]; then
   fi
 
   if [ "$show_failure_output" -eq 1 ]; then
-    printf '\n--- Failure Details (showing %d) ---\n' "$fail"
+    printf '\n'
+    heading-section "Failure Details (showing $fail)"
     while IFS= read -r line; do
       case $line in
         "=== "*)
