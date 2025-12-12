@@ -114,7 +114,7 @@ case $distro in
     
     printf '%s\n' '• Installing upgrades'
     printf '%b  $ %s%b\n' "${GREY:-}" "sudo apt-get -o Dpkg::Progress-Fancy=1 -o Dpkg::Use-Pty=0 -y full-upgrade" "${RESET:-}"
-    if [ "$VERBOSE" -eq 1 ]; then
+    if [ "$VERBOSE" -eq 1 ] || lacks temp-file || lacks nonempty; then
       sudo apt-get -o Dpkg::Progress-Fancy=1 -o Dpkg::Use-Pty=0 -y full-upgrade
     else
       progress_tmp=$(temp-file update-all) || exit 1
@@ -143,6 +143,7 @@ case $distro in
           esac
         done
         [ -n "$last_progress" ] && printf '\r%s\n' "$last_progress"
+        exit 0
       }
       status=$(cat "$progress_tmp" 2>/dev/null || printf '1')
       trap - EXIT HUP INT TERM
@@ -152,7 +153,7 @@ case $distro in
     
     printf '%s\n' '• Removing unused packages'
     printf '%b  $ %s%b\n' "${GREY:-}" "sudo apt-get -o Dpkg::Progress-Fancy=1 -o Dpkg::Use-Pty=0 -y autoremove" "${RESET:-}"
-    if [ "$VERBOSE" -eq 1 ]; then
+    if [ "$VERBOSE" -eq 1 ] || lacks temp-file || lacks nonempty; then
       sudo apt-get -o Dpkg::Progress-Fancy=1 -o Dpkg::Use-Pty=0 -y autoremove
     else
       progress_tmp=$(temp-file update-all) || exit 1
@@ -181,6 +182,7 @@ case $distro in
           esac
         done
         [ -n "$last_progress" ] && printf '\r%s\n' "$last_progress"
+        exit 0
       }
       status=$(cat "$progress_tmp" 2>/dev/null || printf '1')
       trap - EXIT HUP INT TERM
