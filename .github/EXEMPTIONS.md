@@ -134,29 +134,36 @@ case "$0" in */has) _has "$@" ;; esac
 
 **Rule**: Spells should have `show_usage()` plus at most 1-3 additional helper functions. 4+ additional functions indicate a proto-library that needs decomposition into multiple spells and/or imps.
 
-**Temporary Exemptions** (10 spells - TO BE REFACTORED):
+**Temporary Exemptions** (6 spells - TO BE REFACTORED):
 
-**Spellcraft** (4 spells):
+**Spellcraft** (2 spells):
 - `spellcraft/learn-spellbook` (24 additional) - Complex installation logic, needs decomposition
 - `spellcraft/lint-magic` (21 additional) - Comprehensive linting tool, candidate for multiple spells
-- `spellcraft/learn` (15 additional) - Learning system, needs refactoring
-- `spellcraft/scribe-spell` (10 additional) - Spell creation wizard, consider multiple steps
 
-**Menu** (1 spell):
-- `menu/spell-menu` (17 additional) - Menu infrastructure, consider splitting
-
-**Arcana** (3 spells):
+**Arcana** (1 spell):
 - `.arcana/mud/cd` (14 additional) - MUD navigation system, needs refactoring
-- `.arcana/bitcoin/install-bitcoin` (11 additional) - Complex installation wizard
-- `.arcana/tor/install-tor` (9 additional) - Multi-platform installation logic
 
-**Other** (2 spells):
-- `mud/look` (11 additional) - MUD description system, consider multiple spells
-- `cantrips/assertions` (4 additional) - Sourceable test library, special case
+**Other** (3 spells):
+- `spellcraft/learn` (15 additional) - Learning system, needs refactoring (FILE/DIR mode may be obsolete)
+- `menu/spellbook` (10 additional) - Menu infrastructure
+- `system/update-all` (10 additional) - Update system
+- `system/test-magic` (15 additional) - Test runner
 
-**Refactored** (28 spells - COMPLETED ✅):
+**Special Cases** (Acceptable as-is):
+- `cantrips/assertions` (4 additional) - Sourceable test library, defines assert_equal, assert_output, assert_success, assert_failure
+
+**Refactored** (32 spells - COMPLETED ✅):
 - `menu/spellbook` (30→10) - Major refactor, created 3 reusable imps
 - `spellcraft/learn-spell` (8→1) - Inlined warn and detect_env_once
+- `spellcraft/scribe-spell` (10→1) - Inlined helpers
+- `menu/spell-menu` (17→1) - Major refactor
+- `.arcana/bitcoin/install-bitcoin` (11→0) - Refactored
+- `.arcana/tor/install-tor` (9→0) - Refactored
+- `mud/look` (11→1) - Refactored
+- `.arcana/core/install-clipboard-helper` (4→2) - Inlined single-use functions
+- `.arcana/core/uninstall-core` (4→2) - Inlined detect_platform and core_dependencies
+- `.arcana/lightning/lightning-status` (4→0) - Fully inlined
+- `.arcana/node/node-status` (4→0) - Fully inlined
 - `cantrips/start-service` (4→1)
 - `cantrips/stop-service` (4→1)
 - `cantrips/restart-service` (4→1)
@@ -184,12 +191,12 @@ case "$0" in */has) _has "$@" ;; esac
 - `.arcana/tor/configure-tor` (6→1)
 - `.arcana/mud/mud-config` (5→4)
 
-**Action Required**: Remaining 10 spells should be refactored to:
+**Action Required**: Remaining 6 spells (plus several in arcana/) should be refactored to:
 1. Extract reusable logic into imps in `spells/.imps/`
 2. Split into multiple smaller spells if handling multiple actions
 3. Simplify linear flow by inlining single-use helpers
 
-**Progress**: 28/38 spells refactored (74%) - Test currently configured to FAIL to maintain visibility
+**Progress**: 32/38 spells refactored (84%) - Test currently configured to FAIL to maintain visibility
 
 ---
 
