@@ -697,14 +697,10 @@ menu/spellbook
 cantrips/assertions
 cantrips/menu
 .arcana/mud/cd
-.arcana/core/install-clipboard-helper
 .arcana/core/install-core
-.arcana/core/uninstall-core
 .arcana/lightning/install-lightning
 .arcana/lightning/lightning-menu
-.arcana/lightning/lightning-status
 .arcana/node/node-menu
-.arcana/node/node-status
 divination/identify-room
 system/update-all
 system/test-magic
