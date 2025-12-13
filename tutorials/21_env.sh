@@ -17,12 +17,12 @@ else
   echo "MY_ENV_VAR is set to $MY_ENV_VAR"
 fi
 
-# Exporting a variable in .bashrc
-echo "export MY_ENV_VAR_IN_BASHRC=This variable is set in .bashrc" >> ~/.bashrc
+# Exporting a variable in shell config
+echo "export MY_ENV_VAR_IN_CONFIG=This variable is set in config" >> ~/.profile
 
-# Loading .bashrc
-source ~/.bashrc
-echo "MY_ENV_VAR_IN_BASHRC is set to $MY_ENV_VAR_IN_BASHRC"
+# Loading shell config (use . not source for POSIX)
+. ~/.profile 2>/dev/null || true
+echo "MY_ENV_VAR_IN_CONFIG is set to ${MY_ENV_VAR_IN_CONFIG:-not set}"
 
 echo "Spell cast successfully"
 

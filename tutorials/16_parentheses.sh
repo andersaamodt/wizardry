@@ -21,10 +21,13 @@ echo "Using string list with \"\""
 ingredients="Dragon's blood Unicorn hair Phoenix feather"
 echo "Ingredients: $ingredients"
 
-# Using array
-echo "Using array with ()"
-ingredients=("Dragon's blood" "Unicorn hair" "Phoenix feather")
-echo "Ingredients: ${ingredients[@]}"
+# Using positional parameters to simulate arrays
+echo "Using positional parameters (POSIX array alternative)"
+set -- "Dragon's blood" "Unicorn hair" "Phoenix feather"
+echo "Ingredient 1: $1"
+echo "Ingredient 2: $2"
+echo "Ingredient 3: $3"
+echo "All ingredients: $*"
 
 # Using [] test command
 echo "Using test command with []"
