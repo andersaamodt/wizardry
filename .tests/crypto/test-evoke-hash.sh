@@ -37,14 +37,14 @@ test_requires_hash_argument() {
 
 test_fails_for_nonexistent_directory() {
   _run_spell spells/crypto/evoke-hash "somehash" "/nonexistent/path"
-  _assert_failure && _assert_error_contains "is not a directory"
+  _assert_failure && _assert_error_contains "evoke-hash: directory not found"
 }
 
 test_fails_for_non_directory() {
   tmpfile=$(_make_tempdir)/testfile
   touch "$tmpfile"
   _run_spell spells/crypto/evoke-hash "somehash" "$tmpfile"
-  _assert_failure && _assert_error_contains "is not a directory"
+  _assert_failure && _assert_error_contains "evoke-hash: directory not found"
 }
 
 _run_test_case "evoke-hash shows help" shows_help

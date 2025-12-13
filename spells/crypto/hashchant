@@ -21,14 +21,14 @@ esac
 set -eu
 
 if [ -z "${1-}" ]; then
-  echo "Error: No file specified."
-  exit 1
+  printf '%s\n' "hashchant: file path required" >&2
+  exit 2
 fi
 
 file=$1
 
 if [ ! -e "$file" ]; then
-  echo "Error: File not found."
+  printf '%s\n' "hashchant: file not found" >&2
   exit 1
 fi
 
@@ -89,9 +89,9 @@ apply_first_available() {
   done
 
   if [ -n "$last_helper" ]; then
-    echo "Error: Failed to write hash using $last_helper (exit $last_status)." >&2
+    printf '%s\n' "hashchant: failed to write hash using $last_helper (exit $last_status)" >&2
   else
-    echo "Error: xattr and attr commands not found. Cannot enchant file."
+    printf '%s\n' "hashchant: xattr and attr commands not found, cannot enchant file" >&2
   fi
 
   return 1
