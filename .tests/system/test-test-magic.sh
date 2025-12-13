@@ -108,10 +108,56 @@ no_test_reruns() {
   return 0
 }
 
+# Test that pre-flight checks exist
+has_preflight_checks() {
+  # Verify the script checks for required commands
+  grep -q "Pre-flight checks" "$ROOT_DIR/spells/system/test-magic" || {
+    TEST_FAILURE_REASON="Pre-flight checks comment not found"
+    return 1
+  }
+  
+  grep -q "missing_commands" "$ROOT_DIR/spells/system/test-magic" || {
+    TEST_FAILURE_REASON="missing_commands variable not found"
+    return 1
+  }
+  
+  grep -q "required commands not found" "$ROOT_DIR/spells/system/test-magic" || {
+    TEST_FAILURE_REASON="Error message for missing commands not found"
+    return 1
+  }
+  
+  return 0
+}
+
+# Test that timeout protection exists
+has_timeout_protection() {
+  # Verify timeout command check
+  grep -q "timeout_cmd" "$ROOT_DIR/spells/system/test-magic" || {
+    TEST_FAILURE_REASON="timeout_cmd variable not found"
+    return 1
+  }
+  
+  # Verify timeout is used for test execution
+  grep -q "WIZARDRY_TEST_TIMEOUT" "$ROOT_DIR/spells/system/test-magic" || {
+    TEST_FAILURE_REASON="WIZARDRY_TEST_TIMEOUT variable not found"
+    return 1
+  }
+  
+  # Verify timeout exit code handling (124 is timeout's exit code)
+  grep -q "124" "$ROOT_DIR/spells/system/test-magic" || {
+    TEST_FAILURE_REASON="Timeout exit code (124) handling not found"
+    return 1
+  }
+  
+  return 0
+}
+
 _run_test_case "system/test-magic is executable" spell_is_executable
 _run_test_case "system/test-magic shows help" shows_help
 _run_test_case "system/test-magic has content" spell_has_content
 _run_test_case "system/test-magic processes all tests without skipping" all_tests_are_processed
 _run_test_case "system/test-magic has no test rerun logic" no_test_reruns
+_run_test_case "system/test-magic has pre-flight checks" has_preflight_checks
+_run_test_case "system/test-magic has timeout protection" has_timeout_protection
 
 _finish_tests

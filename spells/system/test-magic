@@ -53,6 +53,31 @@ set -eu
 
 export PATH
 
+# Pre-flight checks: Verify required commands are available
+# This prevents test-magic from hanging if critical commands are missing.
+missing_commands=""
+for required_cmd in sh find grep awk sed sort cat printf; do
+  if ! command -v "$required_cmd" >/dev/null 2>&1; then
+    if [ -z "$missing_commands" ]; then
+      missing_commands="$required_cmd"
+    else
+      missing_commands="$missing_commands, $required_cmd"
+    fi
+  fi
+done
+
+if [ -n "$missing_commands" ]; then
+  printf '%s: error: required commands not found: %s\n' "$cmd_name" "$missing_commands" >&2
+  printf '%s: cannot run tests without these commands.\n' "$cmd_name" >&2
+  exit 127
+fi
+
+# Check if timeout command is available for test execution protection
+timeout_cmd=""
+if command -v timeout >/dev/null 2>&1; then
+  timeout_cmd="timeout"
+fi
+
 # Source test boot imps for standardized output functions
 for boot_imp in "$root_dir"/spells/.imps/test/boot/*; do
   [ -f "$boot_imp" ] || continue
@@ -106,9 +131,16 @@ done
 find_tests() {
   # Return tests in prefix order: root-level tests first, then subdirectories
   # This ensures common-tests.sh runs before all other tests
+  # Use timeout to prevent hangs from filesystem issues
+  find_timeout="${WIZARDRY_FIND_TIMEOUT:-60}"
   {
-    find "$test_dir" -maxdepth 1 -type f \( -name 'test-*.sh' -o -name 'common-*.sh' \) | sort
-    find "$test_dir" -mindepth 2 -type f -name 'test-*.sh' | sort
+    if [ -n "$timeout_cmd" ]; then
+      $timeout_cmd "$find_timeout" find "$test_dir" -maxdepth 1 -type f \( -name 'test-*.sh' -o -name 'common-*.sh' \) 2>/dev/null | sort
+      $timeout_cmd "$find_timeout" find "$test_dir" -mindepth 2 -type f -name 'test-*.sh' 2>/dev/null | sort
+    else
+      find "$test_dir" -maxdepth 1 -type f \( -name 'test-*.sh' -o -name 'common-*.sh' \) 2>/dev/null | sort
+      find "$test_dir" -mindepth 2 -type f -name 'test-*.sh' 2>/dev/null | sort
+    fi
   }
 }
 
@@ -365,7 +397,33 @@ while IFS= read -r test_path <&3; do
   _test_heading "$test_number" "$test_total" "$spell_name"
 
   # Always run test and collect full output
-  if output=$(sh "$abs" 2>&1); then
+  # Use timeout if available to prevent indefinite hangs (default: 300s per test)
+  test_timeout="${WIZARDRY_TEST_TIMEOUT:-300}"
+  test_exit_code=0
+  if [ -n "$timeout_cmd" ]; then
+    output=$($timeout_cmd "$test_timeout" sh "$abs" 2>&1) || test_exit_code=$?
+  else
+    output=$(sh "$abs" 2>&1) || test_exit_code=$?
+  fi
+  
+  # Check if test timed out (exit code 124 from timeout command)
+  if [ "$test_exit_code" -eq 124 ]; then
+    status=1
+    fail=$((fail + 1))
+    output="FAIL: Test timed out after ${test_timeout}s"
+    cleaned_output="$output"
+    record_failed_script "$test_path" ""
+    
+    # Store timeout message for later detailed display
+    {
+      printf '=== %s ===\n' "$test_path"
+      printf '%s\n\n' "$cleaned_output"
+    } >>"$failure_output_file"
+    
+    if [ "$verbose" -eq 1 ]; then
+      printf '  %s\n' "$cleaned_output"
+    fi
+  elif [ "$test_exit_code" -eq 0 ]; then
     pass=$((pass + 1))
     cleaned_output=$(printf '%s\n' "$output" | sed '/^FAIL_DETAIL:/d')
     record_subtests "$cleaned_output"
@@ -490,9 +548,18 @@ scan_coverage() {
   coverage_covered=0
   uncovered_spells=""
 
+  # Use timeout for find operations to prevent filesystem hangs
+  find_timeout="${WIZARDRY_FIND_TIMEOUT:-60}"
+  spell_list=""
+  if [ -n "$timeout_cmd" ]; then
+    spell_list=$(cd "$root_dir" && $timeout_cmd "$find_timeout" find spells -type f 2>/dev/null | sort)
+  else
+    spell_list=$(cd "$root_dir" && find spells -type f 2>/dev/null | sort)
+  fi
+
   while IFS= read -r spell; do
     [ -n "$spell" ] || continue
-    rel=${spell#"$root_dir/"}
+    rel="$spell"
     case $rel in
       spells/system/test-magic|spells/system/verify-posix)
         continue
@@ -503,7 +570,7 @@ scan_coverage() {
         ;;
     esac
     coverage_total=$((coverage_total + 1))
-    if find_matching_test_for_spell "$spell" >/dev/null 2>&1; then
+    if find_matching_test_for_spell "$root_dir/$spell" >/dev/null 2>&1; then
       coverage_covered=$((coverage_covered + 1))
     else
       if [ -n "$uncovered_spells" ]; then
@@ -513,12 +580,21 @@ scan_coverage() {
       fi
     fi
   done <<EOF_SPELLS
-$(cd "$root_dir" && find spells -type f | sort)
+$spell_list
 EOF_SPELLS
 }
 
 scan_extraneous() {
   extraneous_files=""
+  
+  # Use timeout for find operations to prevent filesystem hangs
+  find_timeout="${WIZARDRY_FIND_TIMEOUT:-60}"
+  test_file_list=""
+  if [ -n "$timeout_cmd" ]; then
+    test_file_list=$($timeout_cmd "$find_timeout" find "$test_dir" -type f -name 'test-*.sh' 2>/dev/null | sort)
+  else
+    test_file_list=$(find "$test_dir" -type f -name 'test-*.sh' 2>/dev/null | sort)
+  fi
   
   while IFS= read -r test_file; do
     [ -n "$test_file" ] || continue
@@ -560,7 +636,7 @@ scan_extraneous() {
       fi
     fi
   done <<EOF_TESTS
-$(find "$test_dir" -type f -name 'test-*.sh' | sort)
+$test_file_list
 EOF_TESTS
 }
 
