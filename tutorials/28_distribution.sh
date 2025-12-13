@@ -37,11 +37,11 @@ dpkg-deb --build script_name
 # With these skills, you will be able to share your scripts with others and make them easily usable.
 # Spell cast successfully!
 
-#!/bin/bash
-# This spell will teach you about Bash Script Packaging and Distribution
+#!/bin/sh
+# This spell will teach you about POSIX Shell Script Packaging and Distribution
 
 echo "Welcome to the Script Packaging and Distribution tutorial"
-echo "To study the code of the examples, please use the command: cat 27_script_packaging.sh"
+echo "To study the code of the examples, please use the command: cat 28_distribution.sh"
 
 # Creating an executable file
 # In order for your script to be executed, it needs to have the execute permission. 
@@ -75,12 +75,12 @@ echo "Script packaging and distribution spell cast successfully"
 
 #!/bin/sh
 # To make this script executable, use the command: chmod +x script_name.sh
-# This spell will teach you how to package and distribute your Bash scripts
+# This spell will teach you how to package and distribute your POSIX shell scripts
 
 # Creating a self-contained script
 echo "Creating a self-contained script"
 cat > self_contained.sh <<'EOF'
-#!/bin/bash
+#!/bin/sh
 # Your script code here
 EOF
 chmod +x self_contained.sh
@@ -103,10 +103,10 @@ dpkg-deb --build script_name
 
 echo "Spell cast successfully"
 
-#!/bin/bash
-# To cast this spell, use the command: ./27_script_packaging.sh
-echo "This spell will teach you how to package and distribute your Bash scripts"
-echo "To study the code of the examples, please use the command: cat 27_script_packaging.sh"
+#!/bin/sh
+# To cast this spell, use the command: ./28_distribution.sh
+echo "This spell will teach you how to package and distribute your POSIX shell scripts"
+echo "To study the code of the examples, please use the command: cat 28_distribution.sh"
 
 # Creating an executable file
 echo "Creating an executable file for the script 'my_script.sh'"
@@ -118,10 +118,10 @@ tar -czf my_script.tar.gz my_script.sh
 
 # Specifying interpreter in script
 echo "Specifying interpreter in script for portability"
-echo '#!/usr/bin/env bash' | cat - my_script.sh > temp && mv temp my_script.sh
+echo '#!/usr/bin/env sh' | cat - my_script.sh > temp && mv temp my_script.sh
 
 # Adding a shebang line
 echo "Adding a shebang line to the script"
-echo '#!/bin/bash' | cat - my_script.sh > temp && mv temp my_script.sh
+echo '#!/bin/sh' | cat - my_script.sh > temp && mv temp my_script.sh
 
 echo "Spell cast successfully"

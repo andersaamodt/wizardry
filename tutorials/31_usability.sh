@@ -34,13 +34,13 @@ shift $((OPTIND -1))
 # Another aspect of usability is providing clear and informative error messages. 
 # This can help users quickly understand what went wrong and how to fix it.
 
-if [[ -z $1 ]]; then
+if [ -z "$1" ]; then
     echo "Error: missing required argument arg1"
     usage
     exit 1
 fi
 
-if [[ ! -f $file ]]; then
+if [ ! -f "$file" ]; then
     echo "Error: $file is not a valid file"
     exit 1
 fi
@@ -58,7 +58,7 @@ echo "file: $file"
 
 # Spell cast successfully!
 
-#!/bin/bash
+#!/bin/sh
 # The Very Usable, the most usable script
 # By studying this spell, your scripts shall be top-notch and fleet
 # With usage and help options, your users shall never be lost
@@ -68,7 +68,7 @@ echo "file: $file"
 while getopts ":h" opt; do
   case $opt in
     h)
-      echo "Usage: $(basename $0) [-h] [arguments]"
+      echo "Usage: $(basename "$0") [-h] [arguments]"
       echo "This is a highly usable script that demonstrates best practices for making unix scripts and command line utilities usable."
       exit 0
       ;;
@@ -92,7 +92,7 @@ exit_status=0
 
 # And let's add some error handling
 error_message="Error: unknown error"
-trap 'echo $error_message; exit $exit_status' ERR
+trap 'echo "$error_message"; exit $exit_status' ERR
 
 # Now, let's add some actions that may fail
 false # this command always exits with status 1
