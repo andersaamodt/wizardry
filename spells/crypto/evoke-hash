@@ -40,7 +40,7 @@ for file in "$directory"/*; do
   file_hash=$(read-magic "$file" hash 2>/dev/null) || continue
   
   if [ "$file_hash" = "$hash" ]; then
-    realpath "$file"
+    printf '%s\n' "$(cd -- "$(dirname "$file")" && pwd -P)/$(basename "$file")"
     found=1
     exit 0
   fi
