@@ -122,4 +122,57 @@ SH
 
 _run_test_case "system-menu no exit message on ESC" test_no_exit_message_on_esc
 
+# Test that exactly one blank line appears when selecting menu items
+test_single_blank_line_on_selection() {
+  skip-if-compiled || return $?
+  tmp=$(_make_tempdir)
+  
+  # Create a stub service menu
+  cat >"$tmp/services-menu" <<'SH'
+#!/bin/sh
+printf 'Services menu displayed\n'
+exit 0
+SH
+  chmod +x "$tmp/services-menu"
+  
+  # Create a menu that simulates real behavior
+  cat >"$tmp/menu" <<'SH'
+#!/bin/sh
+printf '%s\n' "$1" >>"$MENU_OUTPUT"
+shift
+printf '%s\n' "$1" >>"$MENU_OUTPUT"
+# Single blank line before executing command
+printf '\n' >>"$MENU_OUTPUT"
+# Execute the services-menu command
+services-menu >>"$MENU_OUTPUT" 2>&1
+kill -TERM "$PPID" 2>/dev/null || exit 0
+exit 0
+SH
+  chmod +x "$tmp/menu"
+  
+  make_stub_require "$tmp"
+  
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$tmp/exit-label"
+  
+  MENU_OUTPUT="$tmp/output"
+  _run_cmd env PATH="$tmp:$PATH" MENU_OUTPUT="$MENU_OUTPUT" "$ROOT_DIR/spells/menu/system-menu"
+  _assert_success || return 1
+  
+  if [ -f "$MENU_OUTPUT" ]; then
+    blank_count=$(grep -c '^$' "$MENU_OUTPUT" || true)
+    if [ "$blank_count" -ne 1 ]; then
+      TEST_FAILURE_REASON="Expected exactly 1 blank line, got $blank_count"
+      return 1
+    fi
+  fi
+  
+  return 0
+}
+
+_run_test_case "system-menu shows exactly one blank line on selection" test_single_blank_line_on_selection
+
 _finish_tests

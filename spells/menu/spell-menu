@@ -103,7 +103,6 @@ was_memorized=0
 
 while :; do
         if [ "$first_run" -eq 0 ]; then
-                printf '\n'
                 # Check if memorization state changed
                 if is_memorized "$name"; then
                         now_memorized=1

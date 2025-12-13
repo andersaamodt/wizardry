@@ -266,4 +266,68 @@ SH
 
 _run_test_case "main-menu nested spacing behavior" test_nested_menu_spacing
 
+# Test that exactly one blank line appears when going down/up menu levels
+test_single_blank_line_on_menu_selection() {
+  skip-if-compiled || return $?
+  tmp=$(_make_tempdir)
+  
+  # Create a submenu that outputs and exits
+  cat >"$tmp/system-menu" <<'SH'
+#!/bin/sh
+printf 'System menu displayed\n'
+exit 0
+SH
+  chmod +x "$tmp/system-menu"
+  
+  # Create a menu that simulates real behavior:
+  # - On ENTER: prints \n before executing command
+  # - No extra blank lines elsewhere
+  cat >"$tmp/menu" <<'SH'
+#!/bin/sh
+# Simulate menu display
+printf '%s\n' "Main Menu:" >>"$MENU_OUTPUT"
+printf '%s\n' "System%system-menu" >>"$MENU_OUTPUT"
+
+# Simulate ENTER being pressed - single blank line before command
+printf '\n' >>"$MENU_OUTPUT"
+
+# Execute the command (in this case, system-menu)
+cmd="system-menu"
+$cmd >>"$MENU_OUTPUT" 2>&1
+
+# After command completes, send TERM to exit the loop
+kill -TERM "$PPID" 2>/dev/null || exit 0
+exit 0
+SH
+  chmod +x "$tmp/menu"
+  
+  make_stub_require "$tmp"
+  
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$tmp/exit-label"
+  
+  MENU_OUTPUT="$tmp/output"
+  _run_cmd env PATH="$tmp:$PATH" MENU_OUTPUT="$MENU_OUTPUT" "$ROOT_DIR/spells/menu/main-menu"
+  _assert_success || return 1
+  
+  # Count blank lines in output - should be exactly 1
+  if [ -f "$MENU_OUTPUT" ]; then
+    blank_count=$(grep -c '^$' "$MENU_OUTPUT" || true)
+    if [ "$blank_count" -ne 1 ]; then
+      TEST_FAILURE_REASON="Expected exactly 1 blank line, got $blank_count"
+      return 1
+    fi
+  else
+    TEST_FAILURE_REASON="No output captured"
+    return 1
+  fi
+  
+  return 0
+}
+
+_run_test_case "main-menu shows exactly one blank line on selection" test_single_blank_line_on_menu_selection
+
 _finish_tests
