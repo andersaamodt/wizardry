@@ -141,10 +141,13 @@ find_tests() {
   find_timeout="${WIZARDRY_FIND_TIMEOUT:-60}"
   {
     if [ -n "$timeout_cmd" ]; then
-      "$timeout_cmd" "$find_timeout" find "$test_dir" -maxdepth 1 -type f \( -name 'test-*.sh' -o -name 'common-*.sh' \) 2>/dev/null | sort
-      "$timeout_cmd" "$find_timeout" find "$test_dir" -mindepth 2 -type f -name 'test-*.sh' 2>/dev/null | sort
+      "$timeout_cmd" "$find_timeout" find "$test_dir" -maxdepth 1 -type f \
+        \( -name 'test-*.sh' -o -name 'common-*.sh' \) 2>/dev/null | sort
+      "$timeout_cmd" "$find_timeout" find "$test_dir" -mindepth 2 -type f \
+        -name 'test-*.sh' 2>/dev/null | sort
     else
-      find "$test_dir" -maxdepth 1 -type f \( -name 'test-*.sh' -o -name 'common-*.sh' \) 2>/dev/null | sort
+      find "$test_dir" -maxdepth 1 -type f \
+        \( -name 'test-*.sh' -o -name 'common-*.sh' \) 2>/dev/null | sort
       find "$test_dir" -mindepth 2 -type f -name 'test-*.sh' 2>/dev/null | sort
     fi
   }
@@ -394,7 +397,8 @@ while IFS= read -r test_path <&3; do
   if [ "${WIZARDRY_TEST_COMPILED-0}" = "1" ]; then
     if head -n 5 "$abs" 2>/dev/null | grep -q "^# COMPILED_UNSUPPORTED"; then
       spell_name=$(spell_name_for_test "$test_path")
-      _test_heading "$test_number" "$test_total" "$spell_name (skipped: unsupported in compiled mode)"
+      skip_msg="$spell_name (skipped: unsupported in compiled mode)"
+      _test_heading "$test_number" "$test_total" "$skip_msg"
       continue
     fi
   fi
@@ -414,7 +418,12 @@ while IFS= read -r test_path <&3; do
   
   # Check if test timed out (exit code 124 from GNU timeout, or 143 from TERM signal)
   # We check for timeout when timeout_cmd is available and exit code indicates timeout
-  if [ -n "$timeout_cmd" ] && { [ "$test_exit_code" -eq 124 ] || [ "$test_exit_code" -eq 143 ]; }; then
+  is_timeout_124=0
+  is_timeout_143=0
+  [ "$test_exit_code" -eq 124 ] && is_timeout_124=1
+  [ "$test_exit_code" -eq 143 ] && is_timeout_143=1
+  
+  if [ -n "$timeout_cmd" ] && { [ "$is_timeout_124" -eq 1 ] || [ "$is_timeout_143" -eq 1 ]; }; then
     status=1
     fail=$((fail + 1))
     output="FAIL: Test timed out after ${test_timeout}s"
@@ -513,9 +522,11 @@ while IFS= read -r test_path <&3; do
         test_incomplete_reasons="missing --help test"
       fi
       if [ -n "$test_subtest_count" ] && [ "$test_subtest_count" -lt "$MIN_SUBTESTS_SPELL" ]; then
-        record_incomplete_test "$test_path" "$test_subtest_count subtests, need $MIN_SUBTESTS_SPELL"
+        record_incomplete_test "$test_path" \
+          "$test_subtest_count subtests, need $MIN_SUBTESTS_SPELL"
         if [ -n "$test_incomplete_reasons" ]; then
-          test_incomplete_reasons="$test_incomplete_reasons; $test_subtest_count subtests, need $MIN_SUBTESTS_SPELL"
+          subtest_reason="$test_subtest_count subtests, need $MIN_SUBTESTS_SPELL"
+          test_incomplete_reasons="$test_incomplete_reasons; $subtest_reason"
         else
           test_incomplete_reasons="$test_subtest_count subtests, need $MIN_SUBTESTS_SPELL"
         fi
@@ -559,7 +570,8 @@ scan_coverage() {
   find_timeout="${WIZARDRY_FIND_TIMEOUT:-60}"
   spell_list=""
   if [ -n "$timeout_cmd" ]; then
-    spell_list=$(cd "$root_dir" && "$timeout_cmd" "$find_timeout" find spells -type f 2>/dev/null | sort)
+    spell_list=$(cd "$root_dir" && "$timeout_cmd" "$find_timeout" \
+      find spells -type f 2>/dev/null | sort)
   else
     spell_list=$(cd "$root_dir" && find spells -type f 2>/dev/null | sort)
   fi
@@ -598,7 +610,8 @@ scan_extraneous() {
   find_timeout="${WIZARDRY_FIND_TIMEOUT:-60}"
   test_file_list=""
   if [ -n "$timeout_cmd" ]; then
-    test_file_list=$("$timeout_cmd" "$find_timeout" find "$test_dir" -type f -name 'test-*.sh' 2>/dev/null | sort)
+    test_file_list=$("$timeout_cmd" "$find_timeout" find "$test_dir" \
+      -type f -name 'test-*.sh' 2>/dev/null | sort)
   else
     test_file_list=$(find "$test_dir" -type f -name 'test-*.sh' 2>/dev/null | sort)
   fi
@@ -678,7 +691,8 @@ if [ -n "$extraneous_files" ] && [ "${WIZARDRY_TEST_COMPILED-0}" != "1" ]; then
 fi
 
 if [ -n "$incomplete_tests" ] && [ "${WIZARDRY_TEST_COMPILED-0}" != "1" ]; then
-  printf 'Incomplete tests (imps need %d+ subtests, spells need %d+ including --help):\n' "$MIN_SUBTESTS_IMP" "$MIN_SUBTESTS_SPELL"
+  printf 'Incomplete tests (imps need %d+ subtests, spells need %d+ including --help):\n' \
+    "$MIN_SUBTESTS_IMP" "$MIN_SUBTESTS_SPELL"
   printf '  %s\n' "$incomplete_tests"
   status=1
 fi
