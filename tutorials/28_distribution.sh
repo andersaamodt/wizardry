@@ -5,6 +5,9 @@
 # Packaging and distributing your scripts is an important step in making them usable by others.
 # This spell will teach you the basics of creating an executable file and packaging it for distribution.
 
+echo "Welcome to the Script Packaging and Distribution tutorial"
+echo "To study the code of the examples, please use the command: cat 28_distribution.sh"
+
 # Creating an executable file
 # In order to run a script, it needs to have the correct permissions set.
 # To make a script executable, you can use the chmod command.
@@ -32,50 +35,12 @@ dpkg-deb --build script_name
 
 # You can then distribute the .deb package to others who can install it using the dpkg command.
 
-# Conclusion:
-# These are just a few basic techniques for packaging and distributing your scripts.
-# With these skills, you will be able to share your scripts with others and make them easily usable.
-# Spell cast successfully!
-
-#!/bin/sh
-# This spell will teach you about POSIX Shell Script Packaging and Distribution
-
-echo "Welcome to the Script Packaging and Distribution tutorial"
-echo "To study the code of the examples, please use the command: cat 28_distribution.sh"
-
-# Creating an executable file
-# In order for your script to be executed, it needs to have the execute permission. 
-# This can be done by using the chmod command, such as chmod +x script.sh. 
-# This will give the owner of the file execute permission, allowing them to run the script.
-chmod +x script.sh
-
-# Creating a .deb package
-# A .deb package is a format used for software distribution in Debian based systems. 
-# This can be useful for distribution of your script to other users on the same system. 
-# One way to create a .deb package is to use the checkinstall command, 
-# which will create a .deb package of the script and install it on the system.
-checkinstall -D --install=no --pkgname=my_script --pkgversion="1.0" --pkgrelease="1" --pakdir=../ --maintainer=myemail@example.com --exclude=/.git/ -y 
-
 # Creating a .rpm package
 # A .rpm package is a format used for software distribution in Red Hat based systems. 
 # This can be useful for distribution of your script to other users on the same system. 
 # One way to create a .rpm package is to use the rpm command, 
 # which will create a .rpm package of the script and install it on the system.
 rpmbuild -bb --define "_topdir $PWD" --define "debug_package %{nil}" my_script.spec
-
-# Creating a standalone executable
-# A standalone executable is a single file that contains all the necessary dependencies 
-# for the script to run, making it easy to distribute to other users. 
-# One way to create a standalone executable is to use the pyinstaller command for python scripts, 
-# or the cxfreeze command for python scripts.
-pyinstaller --onefile script.py
-cxfreeze script.py --target-dir dist
-
-echo "Script packaging and distribution spell cast successfully"
-
-#!/bin/sh
-# To make this script executable, use the command: chmod +x script_name.sh
-# This spell will teach you how to package and distribute your POSIX shell scripts
 
 # Creating a self-contained script
 echo "Creating a self-contained script"
@@ -85,38 +50,11 @@ cat > self_contained.sh <<'EOF'
 EOF
 chmod +x self_contained.sh
 
-# Using a package manager
-echo "Using a package manager"
-apt-get install bash-completion
-
-# Creating an executable file
-echo "Creating an executable file with the command chmod +x script_name.sh"
-chmod +x script_name.sh
-
 # Creating a tarball
 echo "Creating a tarball with the command tar -cvzf script_name.tar.gz script_name.sh"
 tar -cvzf script_name.tar.gz script_name.sh
 
-# Creating a deb package
-echo "Creating a deb package with the command dpkg-deb --build script_name"
-dpkg-deb --build script_name
-
-echo "Spell cast successfully"
-
-#!/bin/sh
-# To cast this spell, use the command: ./28_distribution.sh
-echo "This spell will teach you how to package and distribute your POSIX shell scripts"
-echo "To study the code of the examples, please use the command: cat 28_distribution.sh"
-
-# Creating an executable file
-echo "Creating an executable file for the script 'my_script.sh'"
-chmod +x my_script.sh
-
-# Compressing the script
-echo "Compressing the script for distribution"
-tar -czf my_script.tar.gz my_script.sh
-
-# Specifying interpreter in script
+# Specifying interpreter in script for portability
 echo "Specifying interpreter in script for portability"
 echo '#!/usr/bin/env sh' | cat - my_script.sh > temp && mv temp my_script.sh
 
@@ -124,4 +62,7 @@ echo '#!/usr/bin/env sh' | cat - my_script.sh > temp && mv temp my_script.sh
 echo "Adding a shebang line to the script"
 echo '#!/bin/sh' | cat - my_script.sh > temp && mv temp my_script.sh
 
+# Conclusion:
+# These are just a few basic techniques for packaging and distributing your scripts.
+# With these skills, you will be able to share your scripts with others and make them easily usable.
 echo "Spell cast successfully"

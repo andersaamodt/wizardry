@@ -1,7 +1,7 @@
 #!/bin/sh
 # To make this script executable, use the command: chmod +x 06_pipe.sh
 # To run the script, use the command: ./06_pipe.sh
-echo "This spell will teach you the basics of I/O redirection and pipelines in POSIX-compliant Bash"
+echo "This spell will teach you the basics of I/O redirection and pipelines in POSIX sh"
 echo "To study the code of the examples, please use the command: cat 06_pipe.sh"
 
 # Redirecting standard output to a file

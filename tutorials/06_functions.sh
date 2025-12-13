@@ -1,7 +1,7 @@
 #!/bin/sh
 # To make this script executable, use the command: chmod +x 05_functions.sh
 # To run the script, use the command: ./05_functions.sh
-echo "This spell will teach you the basics of functions in POSIX-compliant Bash"
+echo "This spell will teach you the basics of functions in POSIX sh"
 echo "To study the code of the examples, please use the command: cat 05_functions.sh"
 
 # Defining a function

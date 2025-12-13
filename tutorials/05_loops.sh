@@ -2,7 +2,7 @@
 # To make this script executable, use the command: chmod +x 04_loops.sh
 # To run the script, use the command: ./04_loops.sh
 echo "To study the code of the examples, please use the command: cat 04_loops.sh"
-echo "This spell will teach you the basics of loops in POSIX-compliant Bash"
+echo "This spell will teach you the basics of loops in POSIX sh"
 
 # Todo: give an example of using a for loop with both a number and an array (which is more like for-each)
 
@@ -16,7 +16,7 @@ done
 # A while loop continues as long as its test condition evaluates to true
 echo "Iterating through numbers"
 count=1
-while test $count -le 5; do
+while test "$count" -le 5; do
   echo "  Adding number $count to the potion"
   count=$((count + 1))
 done

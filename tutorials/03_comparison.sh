@@ -1,10 +1,10 @@
 #!/bin/sh
-To make this script executable, use the command: chmod +x 14_boolean_comparison.sh
-To run the script, use the command: ./14_boolean_comparison.sh
+# To make this script executable, use the command: chmod +x 03_comparison.sh
+# To run the script, use the command: ./03_comparison.sh
 
-echo "This spell will teach you the basics of boolean values and basic string comparison in POSIX-compliant Bash"
-echo "To study the code of the examples, please use the command: cat 14_boolean_comparison.sh"
-Basic string comparison
+echo "This spell will teach you the basics of boolean values and basic string comparison in POSIX sh"
+echo "To study the code of the examples, please use the command: cat 03_comparison.sh"
+# Basic string comparison
 
 string1="magic"
 string2="wizardry"

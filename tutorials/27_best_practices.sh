@@ -1,5 +1,5 @@
 #!/bin/sh
-# This spell will teach you the basics of Bash scripting best practices and optimization techniques
+# This spell will teach you the basics of shell scripting best practices and optimization techniques
 
 echo "The magic of scripting can be improved with the following best practices and optimization techniques:"
 

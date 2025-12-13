@@ -1,7 +1,7 @@
 #!/bin/sh
 # To make this script executable, use the command: chmod +x 09_debugging.sh
 # To run the script, use the command: ./09_debugging.sh
-echo "This spell will teach you the basics of script debugging and error handling in POSIX-compliant Bash"
+echo "This spell will teach you the basics of script debugging and error handling in POSIX sh"
 echo "To study the code of the examples, please use the command: cat 09_debugging.sh"
 
 # echo and set -x (debugging)

@@ -19,7 +19,7 @@ echo "Positional parameter 2: $2"
 echo "Positional parameter 3: $3"
 
 echo "The set command allows for greater control over shell options and positional parameters."
-echo "This spell will teach you about the 'set' command and different shell options in POSIX-compliant Bash"
+echo "This spell will teach you about the 'set' command and different shell options in POSIX sh"
 echo "To study the code of the examples, please use the command: cat 07_variables.sh"
 
 # Setting shell options
@@ -47,7 +47,7 @@ echo "This line will be executed because the script does not exit on the previou
 
 echo "The spell has been cast successfully"
 #!/bin/sh
-# This script is a spell that will teach you about various shell options in POSIX-compliant Bash
+# This script is a spell that will teach you about various shell options in POSIX sh
 # To study the code of the examples, please use the command: cat 12_shell_options.sh
 
 # Setting the -u option
@@ -73,11 +73,11 @@ echo "List of files: *"
 
 echo "Casting the spell is finished, check the code of the spell by using 'cat 12_shell_options.sh' command"
 
-# This script is a spell that will teach you about the n, v, and o options in POSIX-compliant Bash.
+# This script is a spell that will teach you about the n, v, and o options in POSIX sh.
 
 # To study the code of the examples, please use the command: cat 12_shell_options_2.sh
 
-echo "This spell will teach you about the n, v, and o options in POSIX-compliant Bash"
+echo "This spell will teach you about the n, v, and o options in POSIX sh"
 
 echo "Using the -n option to prevent execution of the commands"
 set -n
@@ -97,7 +97,7 @@ set +o nounset
 echo "Casting the spell is finished, check the code of the spell by using 'cat 12_shell_options_2.sh' command"
 
 
-# This script is a spell that will teach you about some additional shell options in POSIX-compliant Bash.
+# This script is a spell that will teach you about some additional shell options in POSIX sh.
 # To study the code of the examples, please use the command: cat script_name.sh
 
 # -u option: Treat unset variables as an error and exit
@@ -120,7 +120,7 @@ ls does_not_exist.txt # This will cause the script to exit with an error
 
 echo "Casting the spell is finished, check the code of the spell by using 'cat script_name.sh' command"
 
-# This script is a spell that will teach you about some advanced shell options in POSIX-compliant Bash
+# This script is a spell that will teach you about some advanced shell options in POSIX sh
 
 # -m: monitor mode
 # This option will automatically exit the shell when all jobs have completed

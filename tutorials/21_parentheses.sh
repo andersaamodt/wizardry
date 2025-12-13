@@ -1,7 +1,7 @@
 #!/bin/sh
 # To make this script executable, use the command: chmod +x 21_parentheses.sh
 # To run the script, use the command: ./11_parentheses.sh
-echo "This spell will teach you the basics of differentiating between similar parenthetical syntax in POSIX-compliant Bash"
+echo "This spell will teach you the basics of differentiating between similar parenthetical syntax in POSIX sh"
 echo "To study the code of the examples, please use the command: cat 21_parentheses.sh"
 
 # Using $() command substitution
@@ -30,15 +30,6 @@ echo "Ingredients: ${ingredients[@]}"
 echo "Using test command with []"
 string="Dragon's blood"
 if [ "$string" = "Dragon's blood" ]; then
-  echo "The string is Dragon's blood"
-else
-  echo "The string is not Dragon's blood"
-fi
-
-# Using [[]] test command
-echo "Using test command with [[]]"
-string="Dragon's blood"
-if [[ "$string" = "Dragon's blood" ]]; then
   echo "The string is Dragon's blood"
 else
   echo "The string is not Dragon's blood"
