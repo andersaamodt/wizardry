@@ -76,7 +76,8 @@ fi
 
 # Find the spell
 script_path=$(find_custom_spell "$name") || {
-        printf 'erase-spell: spell "%s" not found in %s\n' "$name" "$spell_home" >&2
+        display_path=$(tilde-path "$spell_home")
+        printf 'erase-spell: spell "%s" not found in %s\n' "$name" "$display_path" >&2
         exit 1
 }
 

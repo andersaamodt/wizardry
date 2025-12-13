@@ -434,7 +434,8 @@ case ${1-} in
                 name=$1
                 shift
                 record_scribed_command "$name" "$@"
-                printf "Scribed '%s' to %s.\n" "$name" "$spell_home"
+                display_path=$(tilde-path "$spell_home")
+                printf "Scribed '%s' to %s.\n" "$name" "$display_path"
                 exit 0
                 ;;
         --interactive-scribe)
@@ -445,7 +446,8 @@ case ${1-} in
                         exit 1
                 fi
                 record_scribed_command "$cmd_name" "$cmd_text"
-                printf "Scribed '%s' to %s.\n" "$cmd_name" "$spell_home"
+                display_path=$(tilde-path "$spell_home")
+                printf "Scribed '%s' to %s.\n" "$cmd_name" "$display_path"
                 exit 0
                 ;;
         --help|--usage|-h)

@@ -166,12 +166,14 @@ if [ "$new_category_mode" -eq 1 ]; then
                 learn_spellbook="$SCRIPT_DIR/learn-spellbook"
                 if [ ! -x "$learn_spellbook" ]; then
                         printf '%s\n' "learn-spellbook not found; category folder created but not added to PATH." >&2
-                        printf "Created category '%s' in %s.\n" "$category_name" "$spell_home"
+                        display_path=$(tilde-path "$spell_home")
+                        printf "Created category '%s' in %s.\n" "$category_name" "$display_path"
                         exit 0
                 fi
         fi
         "$learn_spellbook" add "$cat_path" 2>/dev/null || true
-        printf "Created category '%s' in %s.\n" "$category_name" "$spell_home"
+        display_path=$(tilde-path "$spell_home")
+        printf "Created category '%s' in %s.\n" "$category_name" "$display_path"
         exit 0
 fi
 
@@ -257,9 +259,11 @@ EOF_SCRIPT
         chmod +x "$target_path"
         
         if [ -n "$current_category" ]; then
-                printf "Scribed '%s' to %s/%s.\n" "$name" "$spell_home" "$current_category"
+                display_path=$(tilde-path "$spell_home")
+                printf "Scribed '%s' to %s/%s.\n" "$name" "$display_path" "$current_category"
         else
-                printf "Scribed '%s' to %s.\n" "$name" "$spell_home"
+                display_path=$(tilde-path "$spell_home")
+                printf "Scribed '%s' to %s.\n" "$name" "$display_path"
         fi
         exit 0
 fi
@@ -403,7 +407,9 @@ EOF_SCRIPT
 chmod +x "$target_path"
 
 if [ -n "$current_category" ]; then
-        printf "Scribed '%s' to %s/%s.\n" "$cmd_name" "$spell_home" "$current_category"
+        display_path=$(tilde-path "$spell_home")
+        printf "Scribed '%s' to %s/%s.\n" "$cmd_name" "$display_path" "$current_category"
 else
-        printf "Scribed '%s' to %s.\n" "$cmd_name" "$spell_home"
+        display_path=$(tilde-path "$spell_home")
+        printf "Scribed '%s' to %s.\n" "$cmd_name" "$display_path"
 fi
