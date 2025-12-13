@@ -2,7 +2,7 @@
 
 # This spell will teach you how to work with environment variables in POSIX sh
 # This spell will teach you about environment variables, which are variables that are accessible to all processes running in the operating system. They store information such as system paths, user preferences, and other settings.
-# Limitations on naming conventions vary by operating system, but in general, they can only contain alphanumeric characters and underscores, and have a maximum length of around 1024 characters. They cannot be aliased, but they can be exported and referenced in the .bashrc file.
+# Limitations on naming conventions vary by operating system, but in general, they can only contain alphanumeric characters and underscores, and have a maximum length of around 1024 characters. They cannot be aliased, but they can be exported and referenced in your shell configuration file.
 
 echo "To cast the spell, please use the command: ./22_env.sh"
 
@@ -38,8 +38,8 @@ echo "MY_ENV_VAR is set to: $MY_ENV_VAR"
 # Accessing an environment variable
 echo "The value of MY_ENV_VAR is: $MY_ENV_VAR"
 
-# Exporting an environment variable in .bashrc
-echo "export MY_ENV_VAR=\"This is my environment variable\"" >> ~/.bashrc
+# Exporting an environment variable in shell config
+echo "export MY_ENV_VAR=\"This is my environment variable\"" >> ~/.profile
 
 # Accessing an exported environment variable in a new terminal session
 echo "The value of MY_ENV_VAR is: $MY_ENV_VAR"

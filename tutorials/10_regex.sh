@@ -24,7 +24,7 @@ grep 'sh' /etc/passwd || true
 # sed (replace in text)
 echo "The sed command is a stream editor that can perform basic text transformations on an input stream (a file or input from a pipeline)."
 echo "sed 's/root/admin/' /etc/passwd - replaces the first occurence of 'root' with 'admin' in the file /etc/passwd"
-echo "Example: sed 's/bash/zsh/' /etc/passwd - example of replacing text patterns"
+echo "Example: sed 's/oldtext/newtext/' file.txt - example of replacing text patterns"
 echo "backup" | sed 's/backup/backup_file/'
 
 # awk (advanced text processing)
