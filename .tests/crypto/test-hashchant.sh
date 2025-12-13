@@ -27,12 +27,12 @@ test_help() {
 
 test_missing_arg() {
   _run_spell "spells/crypto/hashchant"
-  _assert_failure && _assert_output_contains "Error: No file specified."
+  _assert_failure && _assert_error_contains "hashchant: file path required"
 }
 
 test_missing_file() {
   _run_spell "spells/crypto/hashchant" "$WIZARDRY_TMPDIR/absent.txt"
-  _assert_failure && _assert_output_contains "Error: File not found."
+  _assert_failure && _assert_error_contains "hashchant: file not found"
 }
 
 test_missing_helpers() {
@@ -41,7 +41,7 @@ test_missing_helpers() {
   file="$tmpdir/target.txt"
   echo "lore" >"$file"
   PATH="$stub:/bin:/usr/bin" _run_spell "spells/crypto/hashchant" "$file"
-  _assert_failure && _assert_output_contains "Error: xattr and attr commands not found"
+  _assert_failure && _assert_error_contains "hashchant: xattr and attr commands not found"
 }
 
 test_prefers_attr() {

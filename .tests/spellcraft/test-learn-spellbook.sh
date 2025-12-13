@@ -56,7 +56,7 @@ EOF
 
 test_status_requires_directory() {
   _run_spell "spells/spellcraft/learn-spellbook" status
-  _assert_failure && _assert_error_contains "expects a directory argument"
+  _assert_failure && _assert_error_contains "requires directory argument"
 }
 
 test_shell_status_succeeds_when_present() {
@@ -91,7 +91,7 @@ EOF
   chmod +x "$detect_stub"
 
   DETECT_RC_FILE="$detect_stub" _run_spell "spells/spellcraft/learn-spellbook" remove "$dir"
-  _assert_failure && _assert_error_contains "startup file '$rc' does not exist"
+  _assert_failure && _assert_error_contains "startup file not found"
 }
 
 test_shell_remove_clears_managed_entries() {
