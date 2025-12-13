@@ -52,7 +52,7 @@ elif command -v colors >/dev/null 2>&1; then
         # shellcheck disable=SC1091
         . colors
         blue="$CYAN"
-        purple="$PURPLE"
+        purple="$MUD_SPELL"
         reset="$RESET"
 else
         # Fallback to hardcoded escape sequences if colors script is not available

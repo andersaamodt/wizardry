@@ -23,14 +23,14 @@ set -eu
 if command -v colors >/dev/null 2>&1; then
   # shellcheck source=/dev/null
   . colors
-  GRAY=${GREY-}
 else
   RESET=""
-  GREEN=""
-  GRAY=""
-  YELLOW=""
-  RED=""
+  THEME_SUCCESS=""
+  THEME_WARNING=""
+  THEME_ERROR=""
+  GREY=""
 fi
+GRAY=${GREY-}
 
 # Determine installation and running status
 if is-bitcoin-installed; then
@@ -55,25 +55,25 @@ if is-bitcoin-installed; then
     # Build status message with sync info
     if [ "$sync_status" = "synced" ]; then
       install_status="installed, $running_status, synced"
-      status_color="$GREEN"
+      status_color="$THEME_SUCCESS"
     elif [ "$sync_status" = "syncing" ]; then
       progress_line=$(echo "$blockchain_info" | grep 'progress')
       progress=$(echo "$progress_line" | awk -F":" '{gsub(/,/, "", $2); printf "%.2f", $2*100}')
       install_status="installed, $running_status, syncing $progress%%"
-      status_color="$YELLOW"
+      status_color="$THEME_WARNING"
     elif [ "$sync_status" = "unknown" ]; then
       install_status="installed, $running_status, not synced"
-      status_color="$YELLOW"
+      status_color="$THEME_WARNING"
     elif [ "$sync_status" = "error" ]; then
       install_status="installed, $running_status, error"
-      status_color="$RED"
+      status_color="$THEME_ERROR"
     else
       install_status="installed, $running_status, not synced"
-      status_color="$YELLOW"
+      status_color="$THEME_WARNING"
     fi
   else
     install_status="installed, not running"
-    status_color="$YELLOW"
+    status_color="$THEME_WARNING"
   fi
 else
   install_status="not installed"

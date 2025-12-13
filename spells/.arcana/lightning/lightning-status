@@ -18,18 +18,29 @@ case "${1-}" in
 esac
 
 set -eu
-. colors
+
+if command -v colors >/dev/null 2>&1; then
+  # shellcheck source=/dev/null
+  . colors
+else
+  RESET=""
+  THEME_SUCCESS=""
+  THEME_WARNING=""
+  THEME_ERROR=""
+  GREY=""
+fi
+GRAY=${GREY-}
 
 color_for_status() {
   case "$1" in
     "installed, running")
-      printf "%s" "$GREEN"
+      printf "%s" "$THEME_SUCCESS"
       ;;
     "installed, not running")
-      printf "%s" "$YELLOW"
+      printf "%s" "$THEME_WARNING"
       ;;
     "installed, needs setup"|"installed, error")
-      printf "%s" "$RED"
+      printf "%s" "$THEME_ERROR"
       ;;
     *)
       printf "%s" "$GRAY"
