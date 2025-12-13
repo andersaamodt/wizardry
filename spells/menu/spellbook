@@ -297,8 +297,10 @@ SCRIBED_COMMANDS
                         # (if any exist, excluding those matching built-in)
                         user_folders=$(list_user_folders)
                         if [ -n "$user_folders" ]; then
-                                # Add divider between commands and user folders
-                                set -- "$@" "%--divider--"
+                                # Add divider between commands and user folders (only if there are items before)
+                                if [ "$#" -gt 0 ]; then
+                                        set -- "$@" "%--divider--"
+                                fi
                                 while IFS= read -r folder_name; do
                                         [ -z "$folder_name" ] && continue
                                         # Don't capitalize - just use the folder name
@@ -309,8 +311,10 @@ USER_FOLDERS
                         fi
                         
                         # SECTION 3: Built-in spell categories
-                        # Add divider between user folders and built-in categories
-                        set -- "$@" "%--divider--"
+                        # Add divider between user folders and built-in categories (only if there are items before)
+                        if [ "$#" -gt 0 ]; then
+                                set -- "$@" "%--divider--"
+                        fi
                         for category in $(list_spell_directories | sort); do
                                 # Don't capitalize - just use the folder name
                                 set -- "$@" "${category}%spellbook $category"
