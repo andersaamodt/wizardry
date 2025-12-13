@@ -4,6 +4,8 @@
 # Responsibilities:
 # - Provide the full test runner logic in a single spell.
 # - Discover tests, filter them, and report coverage in the expected format.
+# - Verify required commands are available (pre-flight checks).
+# - Protect against hanging tests with configurable timeouts.
 
 # CRITICAL: Seed a baseline PATH BEFORE set -eu and before any commands
 # On macOS GitHub Actions, PATH may be completely empty, causing immediate failure
@@ -24,6 +26,10 @@ show_usage() {
 Usage: $cmd_name [--only PATTERN] [--list] [--verbose]
 
 Execute the behavior-driven shell tests located in .tests/.
+
+Environment variables:
+  WIZARDRY_TEST_TIMEOUT    Timeout in seconds for each test (default: 300)
+  WIZARDRY_FIND_TIMEOUT    Timeout in seconds for find operations (default: 60)
 USAGE
 }
 
