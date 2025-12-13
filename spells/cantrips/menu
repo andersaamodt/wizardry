@@ -107,7 +107,7 @@ cleanup() {
                 terminal_restored=1
                 stty "$menu_saved_tty_state" <"$menu_tty" >/dev/null 2>&1 || :
         fi
-        cursor-blink on >/dev/null 2>&1 || :
+        cursor-blink on 2>/dev/null || :
         cleanup-file "$items_file"
         cleanup-file "$commands_file"
 }
