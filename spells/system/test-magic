@@ -141,8 +141,8 @@ find_tests() {
   find_timeout="${WIZARDRY_FIND_TIMEOUT:-60}"
   {
     if [ -n "$timeout_cmd" ]; then
-      $timeout_cmd "$find_timeout" find "$test_dir" -maxdepth 1 -type f \( -name 'test-*.sh' -o -name 'common-*.sh' \) 2>/dev/null | sort
-      $timeout_cmd "$find_timeout" find "$test_dir" -mindepth 2 -type f -name 'test-*.sh' 2>/dev/null | sort
+      "$timeout_cmd" "$find_timeout" find "$test_dir" -maxdepth 1 -type f \( -name 'test-*.sh' -o -name 'common-*.sh' \) 2>/dev/null | sort
+      "$timeout_cmd" "$find_timeout" find "$test_dir" -mindepth 2 -type f -name 'test-*.sh' 2>/dev/null | sort
     else
       find "$test_dir" -maxdepth 1 -type f \( -name 'test-*.sh' -o -name 'common-*.sh' \) 2>/dev/null | sort
       find "$test_dir" -mindepth 2 -type f -name 'test-*.sh' 2>/dev/null | sort
@@ -407,13 +407,14 @@ while IFS= read -r test_path <&3; do
   test_timeout="${WIZARDRY_TEST_TIMEOUT:-300}"
   test_exit_code=0
   if [ -n "$timeout_cmd" ]; then
-    output=$($timeout_cmd "$test_timeout" sh "$abs" 2>&1) || test_exit_code=$?
+    output=$("$timeout_cmd" "$test_timeout" sh "$abs" 2>&1) || test_exit_code=$?
   else
     output=$(sh "$abs" 2>&1) || test_exit_code=$?
   fi
   
-  # Check if test timed out (exit code 124 from timeout command)
-  if [ "$test_exit_code" -eq 124 ]; then
+  # Check if test timed out (exit code 124 from GNU timeout, or 143 from TERM signal)
+  # We check for timeout when timeout_cmd is available and exit code indicates timeout
+  if [ -n "$timeout_cmd" ] && { [ "$test_exit_code" -eq 124 ] || [ "$test_exit_code" -eq 143 ]; }; then
     status=1
     fail=$((fail + 1))
     output="FAIL: Test timed out after ${test_timeout}s"
@@ -558,7 +559,7 @@ scan_coverage() {
   find_timeout="${WIZARDRY_FIND_TIMEOUT:-60}"
   spell_list=""
   if [ -n "$timeout_cmd" ]; then
-    spell_list=$(cd "$root_dir" && $timeout_cmd "$find_timeout" find spells -type f 2>/dev/null | sort)
+    spell_list=$(cd "$root_dir" && "$timeout_cmd" "$find_timeout" find spells -type f 2>/dev/null | sort)
   else
     spell_list=$(cd "$root_dir" && find spells -type f 2>/dev/null | sort)
   fi
@@ -597,7 +598,7 @@ scan_extraneous() {
   find_timeout="${WIZARDRY_FIND_TIMEOUT:-60}"
   test_file_list=""
   if [ -n "$timeout_cmd" ]; then
-    test_file_list=$($timeout_cmd "$find_timeout" find "$test_dir" -type f -name 'test-*.sh' 2>/dev/null | sort)
+    test_file_list=$("$timeout_cmd" "$find_timeout" find "$test_dir" -type f -name 'test-*.sh' 2>/dev/null | sort)
   else
     test_file_list=$(find "$test_dir" -type f -name 'test-*.sh' 2>/dev/null | sort)
   fi
