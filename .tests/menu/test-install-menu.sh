@@ -301,7 +301,7 @@ SH
   # Check that menu includes import-arcanum with divider before it
   menu_args=$(cat "$tmp/log")
   case "$menu_args" in
-    *"%--divider--"*"Import arcanum%"*) : ;;
+    *"---"*"Import arcanum%"*) : ;;
     *) TEST_FAILURE_REASON="import-arcanum with divider not found in menu"; return 1 ;;
   esac
   
