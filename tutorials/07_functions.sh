@@ -21,8 +21,8 @@ calculate_price() {
 price=$(calculate_price)
 echo "Price of the potion is $price golds"
 
-echo "Functions can also be loaded in your .bashrc file to make them available in all terminals."
-echo "For example, you can add the following line in your .bashrc file to load the 'hello' function: 'hello() { echo \"Hello, \$1\" }'"
+echo "Functions can also be loaded in your shell configuration file to make them available in all terminals."
+echo "For example, you can add the following line in your shell rc file to load the 'hello' function: 'hello() { echo \"Hello, \$1\" }'"
 
 echo "Creating a function that changes the working directory"
 go_to_spell_folder() {

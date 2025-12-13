@@ -1,6 +1,6 @@
 #!/bin/sh
-# To make this script executable, use the command: chmod +x 29_antipatterns.sh
-# To run the script, use the command: ./29_antipatterns.sh
+# To make this script executable, use the command: chmod +x 30_antipatterns.sh
+# To run the script, use the command: ./30_antipatterns.sh
 
 echo "This spell will teach you common shell scripting anti-patterns"
 echo "Learn what NOT to do, and why these patterns cause trouble"

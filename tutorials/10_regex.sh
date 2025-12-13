@@ -18,20 +18,20 @@ echo "\\ - escape special characters"
 # grep (search in text)
 echo "The grep command searches for a pattern in a file or input."
 echo "grep '^root:' /etc/passwd - searches for the pattern '^root:' in the file /etc/passwd"
-echo "Example: grep 'bash' /etc/passwd - searches for the pattern 'bash' in the file /etc/passwd"
-grep 'bash' /etc/passwd
+echo "Example: grep 'shell' /etc/passwd - searches for the pattern 'shell' in the file /etc/passwd"
+grep 'sh' /etc/passwd || true
 
 # sed (replace in text)
 echo "The sed command is a stream editor that can perform basic text transformations on an input stream (a file or input from a pipeline)."
 echo "sed 's/root/admin/' /etc/passwd - replaces the first occurence of 'root' with 'admin' in the file /etc/passwd"
-echo "Example: sed 's/bash/zsh/' /etc/passwd - replaces the first occurence of 'bash' with 'zsh' in the file /etc/passwd"
+echo "Example: sed 's/bash/zsh/' /etc/passwd - example of replacing text patterns"
 echo "backup" | sed 's/backup/backup_file/'
 
 # awk (advanced text processing)
 echo "The awk command is a text processing tool that can perform more complex text transformations."
 echo "awk -F: '{ print $1 }' /etc/passwd - prints the first field of each line of the file /etc/passwd, where the field separator is ':'"
 awk '{ print $1 }' /etc/passwd
-echo "root:x:0:0:root:/root:/bin/bash" | awk -F: '{print $1}'
+echo "root:x:0:0:root:/root:/bin/sh" | awk -F: '{print $1}'
 
 # find and xargs (run command for all found files)
 echo "The find command is used to search for files in a directory hierarchy. xargs is used to build and execute command lines from standard input."

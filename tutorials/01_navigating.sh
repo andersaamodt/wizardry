@@ -3,8 +3,8 @@
 # To make this script executable, use the command: chmod +x 01_navigating.sh
 # To run the script, use the command: ./01_navigating.sh
 
-echo "This spell that will teach you the basics of navigating the filesystem using Bash."
-echo "To study the bash code of this tutorial, please use the command: cat 01_navigating.sh"
+echo "This spell that will teach you the basics of navigating the filesystem using POSIX sh."
+echo "To study the code of this tutorial, please use the command: cat 01_navigating.sh"
 
 echo "Casting 'pwd' command..."
 echo "The 'pwd' command stands for 'print working directory' and it prints the current working directory."

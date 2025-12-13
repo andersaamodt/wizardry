@@ -3,7 +3,7 @@
 # To make this script executable, use the command: chmod +x 00_terminal.sh
 # To run the script, use the command: ./00_terminal.sh
 
-echo "Welcome, neophyte, to the wizardry bash tutorial series!"
+echo "Welcome, neophyte, to the wizardry shell tutorial series!"
 echo "This spell will teach you some basic terminal tricks and keyboard shortcuts"
 echo "To study the code of the examples, please use the command: cat 00_terminal.sh"
 

@@ -15,7 +15,7 @@ echo "Example: trap 'echo Signal received, exiting...; exit 0' INT; sleep 10; ec
 trap 'echo Signal received, exiting...; exit 0' INT; sleep 10; echo 'This line will not be executed'
 
 # exit status and return values (error handling)
-echo "Every command in Bash returns an exit status, which is the value that the command returns to the parent process. The value can be checked using the $? variable. A value of 0 indicates success, and any other value indicates failure."
+echo "Every command in POSIX sh returns an exit status, which is the value that the command returns to the parent process. The value can be checked using the $? variable. A value of 0 indicates success, and any other value indicates failure."
 echo "Example: echo $? (this should be 0)"
 echo $?
 

@@ -1,6 +1,6 @@
 #!/bin/sh
-# To make this script executable, use the command: chmod +x 28_posix_vs_bash.sh
-# To run the script, use the command: ./28_posix_vs_bash.sh
+# To make this script executable, use the command: chmod +x 29_posix_vs_bash.sh
+# To run the script, use the command: ./29_posix_vs_bash.sh
 
 echo "This spell will teach you about POSIX sh vs Bash"
 echo "Understanding the difference helps you write portable, universal scripts"
