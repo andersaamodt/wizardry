@@ -120,19 +120,20 @@ strip_ansi_pattern='s/\x1b\[[0-9;]*m//g'
 
 for option in "$@"
 do
-        label=${option%%\%*}
-        case $option in
-        *%*)
-                command=${option#*%}
-                ;;
-        *)
-                command=''
-                ;;
-        esac
-        # Support "---" as shorthand for divider
+        # Special case: "---" is a divider
         if [ "$option" = "---" ]; then
-                label=""
-                command="--divider--"
+                label="---"
+                command="---"
+        else
+                label=${option%%\%*}
+                case $option in
+                *%*)
+                        command=${option#*%}
+                        ;;
+                *)
+                        command=''
+                        ;;
+                esac
         fi
         printf '%s\n' "$label" >>"$items_file"
         printf '%s\n' "$command" >>"$commands_file"
@@ -181,7 +182,7 @@ render_row() {
         label=$(sed -n "${row_index}p" "$items_file")
         command=$(sed -n "${row_index}p" "$commands_file")
 
-        if [ "$command" = "--divider--" ]; then
+        if [ "$command" = "---" ]; then
                 menu_width=$((max_name_length + 2))
                 if [ "$window_width" -gt 0 ] && [ "$menu_width" -gt "$window_width" ]; then
                         menu_width=$window_width
@@ -336,7 +337,7 @@ do
         if [ "$pending_step" -eq 0 ]; then
                 command=$(sed -n "${selected}p" "$commands_file")
                 case $command in
-                        --divider--) pending_step=1 ;;
+                        ---) pending_step=1 ;;
                 esac
         fi
         # If the current position is a divider, queue a forward step to reach the next selectable row.
@@ -353,7 +354,7 @@ do
                                 pos=$menu_length
                         fi
                         command=$(sed -n "${pos}p" "$commands_file")
-                        if [ "$command" != "--divider--" ]; then
+                        if [ "$command" != "---" ]; then
                                 selected=$pos
                                 break
                         fi
