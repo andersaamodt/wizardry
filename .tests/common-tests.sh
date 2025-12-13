@@ -691,8 +691,6 @@ test_spells_follow_function_discipline() {
   # Documented in EXEMPTIONS.md as requiring careful decomposition analysis.
   exempted_spells="
 spellcraft/lint-magic
-spellcraft/learn-spellbook
-spellcraft/learn
 menu/spellbook
 cantrips/menu
 .arcana/mud/cd

@@ -134,12 +134,10 @@ case "$0" in */has) _has "$@" ;; esac
 
 **Rule**: Spells should have `show_usage()` plus at most 1-3 additional helper functions. 4+ additional functions indicate a proto-library that needs decomposition into multiple spells and/or imps.
 
-**Temporary Exemptions** (6 spells - TO BE REFACTORED):
+**Temporary Exemptions** (4 spells - TO BE REFACTORED):
 
-**Spellcraft** (3 spells):
-- `spellcraft/learn-spellbook` (24 additional) - Complex installation logic, needs decomposition
+**Spellcraft** (1 spell):
 - `spellcraft/lint-magic` (21 additional) - Comprehensive linting tool, candidate for multiple spells
-- `spellcraft/learn` (14 additional) - RC snippet manager, needs refactoring
 
 **Arcana** (1 spell):
 - `.arcana/mud/cd` (14 additional) - MUD navigation system, needs refactoring
@@ -151,14 +149,16 @@ case "$0" in */has) _has "$@" ;; esac
 
 **Removed/Obsolete**:
 - `spellcraft/learn-spell` - Removed (obsolete with word-of-binding paradigm)
+- `spellcraft/learn-spellbook` - Removed (replaced by simplified learn spell)
 - `cantrips/assertions` - Removed (boot/ test imps already provide assertion functionality)
 
 
-**Refactored** (34 spells - COMPLETED ✅):
+**Refactored** (36 spells - COMPLETED ✅):
 - `menu/spellbook` (30→10) - Major refactor, created 3 reusable imps
 - `spellcraft/learn-spell` (8→1) - Inlined warn and detect_env_once - **NOW REMOVED (obsolete)**
-- `spellcraft/scribe-spell` (10→1) - Inlined helpers
-- `spellcraft/learn` (15→4) - Removed obsolete FILE/DIR mode, kept RC mode only
+- `spellcraft/scribe-spell` (10→1) - Inlined helpers, removed learn-spellbook dependency
+- `spellcraft/learn` (15→0) - Dramatically simplified to copy/link spells to spellbook
+- `spellcraft/learn-spellbook` (24→REMOVED) - Obsolete with word-of-binding, replaced by learn
 - `cantrips/assertions` (4→REMOVED) - Test library removed, boot/ test imps already exist
 - `menu/spell-menu` (17→1) - Major refactor
 - `.arcana/bitcoin/install-bitcoin` (11→0) - Refactored
@@ -195,12 +195,12 @@ case "$0" in */has) _has "$@" ;; esac
 - `.arcana/tor/configure-tor` (6→1)
 - `.arcana/mud/mud-config` (5→4)
 
-**Action Required**: Remaining 6 spells (plus several in arcana/) should be refactored to:
+**Action Required**: Remaining 4 spells (plus several in arcana/) should be refactored to:
 1. Extract reusable logic into imps in `spells/.imps/`
 2. Split into multiple smaller spells if handling multiple actions
 3. Simplify linear flow by inlining single-use helpers
 
-**Progress**: 32/38 spells refactored (84%) - 2 spells removed as obsolete
+**Progress**: 36/38 spells refactored (95%) - 3 spells removed as obsolete
 
 ---
 
