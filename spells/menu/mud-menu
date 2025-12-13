@@ -103,7 +103,6 @@ was_all=0
 
 while true; do
   if [ "$first_run" -eq 0 ]; then
-    printf '\n'
     # Check which toggle changed and keep cursor there
     if is_cd_hook_installed; then now_cd=1; else now_cd=0; fi
     if is_feature_enabled "command-not-found"; then now_cnf=1; else now_cnf=0; fi
