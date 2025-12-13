@@ -100,6 +100,7 @@ THEME_HIGHLIGHT="$CYAN"          # Menu highlight / selected item
 THEME_MUTED="$GREY"              # Secondary text / commands on right side of menu
 THEME_CUSTOM="$YELLOW"           # User-created spell names
 THEME_SUCCESS="$GREEN"           # Success indicators
+THEME_WARNING="$YELLOW"          # Warning indicators
 THEME_ERROR="$RED"               # Error indicators
 THEME_HEADING="${GREEN}${BOLD}"  # Priority/heading highlight
 THEME_DIVIDER="$GREY"            # Menu dividers

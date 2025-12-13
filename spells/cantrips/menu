@@ -63,9 +63,11 @@ else
         CYAN=''
         GREY=''
         WHITE=''
+        BOLD=''
         THEME_HIGHLIGHT=''
         THEME_MUTED=''
         THEME_DIVIDER=''
+        THEME_HEADING=''
 fi
 
 # Check for --spell-mode flag (label is command, right side is description)
@@ -277,7 +279,7 @@ cursor-blink off
 
 if [ -n "$description" ]; then
         # Show the caller-provided heading so the menu has context for the user.
-        printf '%s\n' "$description"
+        printf '%b%s%b\n' "$THEME_HEADING" "$description" "$RESET"
 fi
 
 menu_row=$(fathom-cursor -y)
