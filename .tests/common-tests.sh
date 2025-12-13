@@ -694,7 +694,6 @@ spellcraft/lint-magic
 spellcraft/learn-spellbook
 spellcraft/learn
 menu/spellbook
-cantrips/assertions
 cantrips/menu
 .arcana/mud/cd
 .arcana/core/install-core

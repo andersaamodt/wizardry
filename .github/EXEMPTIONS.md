@@ -136,26 +136,30 @@ case "$0" in */has) _has "$@" ;; esac
 
 **Temporary Exemptions** (6 spells - TO BE REFACTORED):
 
-**Spellcraft** (2 spells):
+**Spellcraft** (3 spells):
 - `spellcraft/learn-spellbook` (24 additional) - Complex installation logic, needs decomposition
 - `spellcraft/lint-magic` (21 additional) - Comprehensive linting tool, candidate for multiple spells
+- `spellcraft/learn` (14 additional) - RC snippet manager, needs refactoring
 
 **Arcana** (1 spell):
 - `.arcana/mud/cd` (14 additional) - MUD navigation system, needs refactoring
 
-**Other** (3 spells):
-- `spellcraft/learn` (15 additional) - Learning system, needs refactoring (FILE/DIR mode may be obsolete)
+**Other** (2 spells):
 - `menu/spellbook` (10 additional) - Menu infrastructure
 - `system/update-all` (10 additional) - Update system
 - `system/test-magic` (15 additional) - Test runner
 
-**Special Cases** (Acceptable as-is):
-- `cantrips/assertions` (4 additional) - Sourceable test library, defines assert_equal, assert_output, assert_success, assert_failure
+**Removed/Obsolete**:
+- `spellcraft/learn-spell` - Removed (obsolete with word-of-binding paradigm)
+- `cantrips/assertions` - Removed (boot/ test imps already provide assertion functionality)
 
-**Refactored** (32 spells - COMPLETED ✅):
+
+**Refactored** (34 spells - COMPLETED ✅):
 - `menu/spellbook` (30→10) - Major refactor, created 3 reusable imps
-- `spellcraft/learn-spell` (8→1) - Inlined warn and detect_env_once
+- `spellcraft/learn-spell` (8→1) - Inlined warn and detect_env_once - **NOW REMOVED (obsolete)**
 - `spellcraft/scribe-spell` (10→1) - Inlined helpers
+- `spellcraft/learn` (15→4) - Removed obsolete FILE/DIR mode, kept RC mode only
+- `cantrips/assertions` (4→REMOVED) - Test library removed, boot/ test imps already exist
 - `menu/spell-menu` (17→1) - Major refactor
 - `.arcana/bitcoin/install-bitcoin` (11→0) - Refactored
 - `.arcana/tor/install-tor` (9→0) - Refactored
@@ -196,7 +200,7 @@ case "$0" in */has) _has "$@" ;; esac
 2. Split into multiple smaller spells if handling multiple actions
 3. Simplify linear flow by inlining single-use helpers
 
-**Progress**: 32/38 spells refactored (84%) - Test currently configured to FAIL to maintain visibility
+**Progress**: 32/38 spells refactored (84%) - 2 spells removed as obsolete
 
 ---
 

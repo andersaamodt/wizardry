@@ -1,9 +1,7 @@
 #!/bin/sh
 
-# This spell helps with learning spells:
-# - For files: installs spells with install() functions via learn-spell
-# - For directories: informs that they are automatically available via invoke-wizardry
-# It also handles --spell mode for RC file snippet management.
+# Manages shell RC file snippets with wizardry comment markers.
+# Used by learn-spellbook to add/remove PATH entries in RC files.
 
 
 SCRIPT_NAME=$(basename "$0")
@@ -15,12 +13,21 @@ esac
 
 show_usage() {
   cat <<USAGE >&2
-Usage: $SCRIPT_NAME [-r] PATH...
-       $SCRIPT_NAME --spell NAME {add|remove|status}
+Usage: $SCRIPT_NAME --spell NAME {add|remove|status}
 
-For files: installs spells with install() functions via learn-spell.
-For directories: informs that they are automatically available via invoke-wizardry.
-Use --spell mode for RC file snippet management.
+Manages shell RC file snippets. Reads spell content from stdin for 'add' action
+and wraps it with wizardry comment markers for deterministic removal.
+
+Single-line spells receive an inline \`# wizardry: NAME\` suffix.
+Multi-line spells are wrapped with begin/end sentinels.
+
+The rc file and format are auto-detected via detect-rc-file. For nix files,
+uses programs.bash.initExtra or programs.zsh.initExtra.
+
+Options:
+  --shell SHELL    Shell type for nix format: bash (default) or zsh
+
+Spell names must contain only letters, digits, dashes, underscores, periods, and colons.
 USAGE
 }
 
@@ -36,61 +43,8 @@ set -eu
 SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
 SPELLS_DIR=${SCRIPT_DIR%/*}
 
-# Check for --spell mode first (RC file management)
-for arg in "$@"; do
-  case $arg in
-  --help|--usage|-h)
-    show_usage
-    exit 0
-    ;;
-  --spell|--spell=*)
-    MODE=rc
-    ;;
-  esac
-done
-
-# Find helpers
-find_learn_spell() {
-  helper="$SCRIPT_DIR/learn-spell"
-  if [ -x "$helper" ]; then
-    printf '%s' "$helper"
-    return 0
-  fi
-  if command -v learn-spell >/dev/null 2>&1; then
-    command -v learn-spell
-    return 0
-  fi
-  return 1
-}
-
-# Helper function for non-empty check
-nonempty() {
-  [ -n "$1" ]
-}
-
-# ---------------------
-# RC MODE IMPLEMENTATION
-# ---------------------
-
 rc_usage() {
-  cat <<'RCUSAGE' >&2
-Usage: learn --spell NAME {add|remove|status}
-
-Reads spell content from standard input for the 'add' action and wraps it with
-wizardry comment sentinels so future removals remain deterministic.
-Single-line spells receive an inline `# wizardry: NAME` suffix, while
-multi-line spells are wrapped with `begin`/`end` sentinels (including a lines
-count) to keep rc files readable.
-
-The rc file and format are auto-detected via detect-rc-file. For nix files
-(auto-detected from .nix extension or platform), uses programs.bash.initExtra
-or programs.zsh.initExtra to properly add shell code to nix configuration files.
-
-Options:
-  --shell SHELL    Shell type for nix format: bash (default) or zsh
-
-Spell names must contain only letters, digits, dashes, underscores, periods, and colons.
-RCUSAGE
+  show_usage
 }
 
 # Find detect-rc-file helper
@@ -136,6 +90,11 @@ EOF_ENV
   printf '%s\n' "rc_file=$rc_file_detected"
   printf '%s\n' "platform=${platform_detected:-unknown}"
   printf '%s\n' "format=${format_detected:-shell}"
+}
+
+# Helper for checking non-empty strings (used in read loops)
+nonempty() {
+  [ -n "$1" ]
 }
 
 rc_run() {
@@ -444,79 +403,6 @@ EOF_DETECT
   fi
 }
 
-if [ "${MODE-}" = "rc" ]; then
-  rc_run "$@"
-  exit $?
-fi
+# Run RC mode
+rc_run "$@"
 
-# ---------------------
-# FILE/DIR MODE - Process paths
-# With the word-of-binding paradigm, directories are automatically available
-# via invoke-wizardry. For files with install() functions, use learn-spell.
-# ---------------------
-
-RECURSIVE=0
-paths=""
-
-# Parse arguments
-while [ $# -gt 0 ]; do
-  case $1 in
-  -r|--recursive)
-    RECURSIVE=1
-    shift
-    ;;
-  --help|--usage|-h)
-    show_usage
-    exit 0
-    ;;
-  --)
-    shift
-    break
-    ;;
-  -*)
-    printf '%s\n' "learn: unknown option '$1'." >&2
-    show_usage
-    exit 1
-    ;;
-  *)
-    paths="$paths $1"
-    shift
-    ;;
-  esac
-done
-
-# Add remaining args
-for arg in "$@"; do
-  paths="$paths $arg"
-done
-
-# Require at least one path
-if [ -z "$paths" ]; then
-  show_usage
-  exit 1
-fi
-
-# Find learn-spell helper for files
-LEARN_SPELL=""
-if ! LEARN_SPELL=$(find_learn_spell); then
-  printf '%s\n' "learn: learn-spell helper not found." >&2
-  exit 1
-fi
-
-# Process each path
-for path in $paths; do
-  if [ -f "$path" ]; then
-    # File -> learn-spell (for spells with install() functions)
-    "$LEARN_SPELL" "$path"
-  elif [ -d "$path" ]; then
-    # With the word-of-binding paradigm (PR #410), directories no longer need
-    # to be manually added to PATH. invoke-wizardry handles this automatically.
-    # Inform the user instead.
-    printf '%s\n' "learn: directories are now automatically available via invoke-wizardry."
-    printf '%s\n' "learn: spells in '$path' will be accessible after opening a new terminal."
-  else
-    printf '%s\n' "learn: '$path' is not a file or directory." >&2
-  fi
-done
-
-exit 0
