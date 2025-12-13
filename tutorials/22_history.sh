@@ -1,5 +1,5 @@
 #!/bin/sh
-# This spell will teach you the basics of using the history command in Bash
+# This spell will teach you the basics of using the history command in POSIX sh
 
 echo "The history command allows you to view and manipulate your command history."
 echo "To view your command history, use the command: history"

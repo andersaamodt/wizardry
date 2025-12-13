@@ -1,10 +1,10 @@
 #!/bin/sh
 
-# This spell will teach you how to work with environment variables in POSIX-compliant Bash
+# This spell will teach you how to work with environment variables in POSIX sh
 # This spell will teach you about environment variables, which are variables that are accessible to all processes running in the operating system. They store information such as system paths, user preferences, and other settings.
-# Limitations on naming conventions vary by operating system, but in general, they can only contain alphanumeric characters and underscores, and have a maximum length of around 1024 characters. They cannot be aliased, but they can be exported and referenced in the .bashrc file.
+# Limitations on naming conventions vary by operating system, but in general, they can only contain alphanumeric characters and underscores, and have a maximum length of around 1024 characters. They cannot be aliased, but they can be exported and referenced in your shell configuration file.
 
-echo "To cast the spell, please use the command: ./25_env.sh"
+echo "To cast the spell, please use the command: ./22_env.sh"
 
 # Setting an environment variable
 export MY_ENV_VAR="This is my environment variable"
@@ -17,17 +17,17 @@ else
   echo "MY_ENV_VAR is set to $MY_ENV_VAR"
 fi
 
-# Exporting a variable in .bashrc
-echo "export MY_ENV_VAR_IN_BASHRC=This variable is set in .bashrc" >> ~/.bashrc
+# Exporting a variable in shell config
+echo "export MY_ENV_VAR_IN_CONFIG=This variable is set in config" >> ~/.profile
 
-# Loading .bashrc
-source ~/.bashrc
-echo "MY_ENV_VAR_IN_BASHRC is set to $MY_ENV_VAR_IN_BASHRC"
+# Loading shell config (use . not source for POSIX)
+. ~/.profile 2>/dev/null || true
+echo "MY_ENV_VAR_IN_CONFIG is set to ${MY_ENV_VAR_IN_CONFIG:-not set}"
 
 echo "Spell cast successfully"
 
 #!/bin/sh
-# This spell will teach you about environment variables and exporting in POSIX-compliant Bash
+# This spell will teach you about environment variables and exporting in POSIX sh
 # Environment variables are variables that contain information about the environment in which a process runs. They can be used to set various options and make certain information available to processes.
 # The limitations on names of environment variables are that they can only contain letters, numbers, and underscores, and the maximum length is determined by the system's limit on the length of environment variable strings. Environment variables cannot be aliased.
 
@@ -38,8 +38,8 @@ echo "MY_ENV_VAR is set to: $MY_ENV_VAR"
 # Accessing an environment variable
 echo "The value of MY_ENV_VAR is: $MY_ENV_VAR"
 
-# Exporting an environment variable in .bashrc
-echo "export MY_ENV_VAR=\"This is my environment variable\"" >> ~/.bashrc
+# Exporting an environment variable in shell config
+echo "export MY_ENV_VAR=\"This is my environment variable\"" >> ~/.profile
 
 # Accessing an exported environment variable in a new terminal session
 echo "The value of MY_ENV_VAR is: $MY_ENV_VAR"
@@ -47,8 +47,8 @@ echo "The value of MY_ENV_VAR is: $MY_ENV_VAR"
 echo "Spell cast successfully"
 
 #!/bin/sh
-# This spell will teach you the basics of environment variables in POSIX-compliant Bash
-# To study the code of the examples, please use the command: cat 25_env.sh
+# This spell will teach you the basics of environment variables in POSIX sh
+# To study the code of the examples, please use the command: cat 22_env.sh
 
 echo "Welcome to the land of magic, where we will be learning about environment variables"
 
@@ -73,12 +73,12 @@ fi
 
 # Using an environment variable in a command
 export FILE_LOCATION="/usr/local/spells"
-ls $FILE_LOCATION
+ls "$FILE_LOCATION"
 
 echo "Spell cast successfully"
 
 #!/bin/sh
-# This spell will teach you the basics of working with environment variables in POSIX-compliant Bash
+# This spell will teach you the basics of working with environment variables in POSIX sh
 
 # Listing all environment variables
 echo "The current environment variables are:"

@@ -1,8 +1,8 @@
 #!/bin/sh
-# To make this script executable, use the command: chmod +x 10_aliases_functions.sh
-# To run the script, use the command: ./10_aliases_functions.sh
-echo "This spell will teach you the basics of Aliases and Functions in POSIX-compliant Bash"
-echo "To study the code of the examples, please use the command: cat 10_aliases_functions.sh"
+# To make this script executable, use the command: chmod +x 12_aliases.sh
+# To run the script, use the command: ./12_aliases.sh
+echo "This spell will teach you the basics of Aliases and Functions in POSIX sh"
+echo "To study the code of the examples, please use the command: cat 12_aliases.sh"
 
 # Aliases
 echo "Creating an alias for a command"

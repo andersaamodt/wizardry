@@ -1,8 +1,8 @@
 #!/bin/sh
-# To make this script executable, use the command: chmod +x 09_debugging.sh
-# To run the script, use the command: ./09_debugging.sh
-echo "This spell will teach you the basics of script debugging and error handling in POSIX-compliant Bash"
-echo "To study the code of the examples, please use the command: cat 09_debugging.sh"
+# To make this script executable, use the command: chmod +x 11_debugging.sh
+# To run the script, use the command: ./11_debugging.sh
+echo "This spell will teach you the basics of script debugging and error handling in POSIX sh"
+echo "To study the code of the examples, please use the command: cat 11_debugging.sh"
 
 # echo and set -x (debugging)
 echo "The echo command is used to print messages to the terminal. The set -x command enables the display of commands and their arguments as they are executed."
@@ -15,7 +15,7 @@ echo "Example: trap 'echo Signal received, exiting...; exit 0' INT; sleep 10; ec
 trap 'echo Signal received, exiting...; exit 0' INT; sleep 10; echo 'This line will not be executed'
 
 # exit status and return values (error handling)
-echo "Every command in Bash returns an exit status, which is the value that the command returns to the parent process. The value can be checked using the $? variable. A value of 0 indicates success, and any other value indicates failure."
+echo "Every command in POSIX sh returns an exit status, which is the value that the command returns to the parent process. The value can be checked using the $? variable. A value of 0 indicates success, and any other value indicates failure."
 echo "Example: echo $? (this should be 0)"
 echo $?
 
