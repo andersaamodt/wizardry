@@ -576,52 +576,12 @@ install_uses_explicit_helper_paths() {
 }
 
 path_wizard_uses_explicit_helper_paths() {
-  # Verify that learn-spellbook references helpers using explicit paths when available.
-  
-  # Check that learn-spellbook has default paths for DETECT_RC_FILE and LEARN
-  if ! grep -q 'DETECT_RC_FILE_DEFAULT=.*\$SCRIPT_DIR' "$ROOT_DIR/spells/spellcraft/learn-spellbook"; then
-    TEST_FAILURE_REASON="learn-spellbook should have explicit default path for DETECT_RC_FILE"
-    return 1
-  fi
-  
-  if ! grep -q 'LEARN_DEFAULT=.*\$SCRIPT_DIR' "$ROOT_DIR/spells/spellcraft/learn-spellbook"; then
-    TEST_FAILURE_REASON="learn-spellbook should have explicit default path for LEARN"
-    return 1
-  fi
-  
+  # OBSOLETE: learn-spellbook was removed - tests disabled
   return 0
 }
 
 path_wizard_accepts_helper_overrides() {
-  # Test that learn-spellbook respects DETECT_RC_FILE and LEARN_SPELL env vars,
-  # allowing the install script to force use of new helpers.
-  fixture=$(_make_fixture)
-  _provide_basic_tools "$fixture"
-  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq mkdir rm date mktemp
-
-  # Create a test directory to add to PATH
-  test_dir="$fixture/test-path"
-  mkdir -p "$test_dir"
-
-  # Set up environment with explicit helper paths
-  rc_file="$fixture/.testrc"
-  
-  # Create detect stub that returns our test rc file
-  detect_stub="$fixture/detect-stub"
-  cat >"$detect_stub" <<EOF
-#!/bin/sh
-printf 'platform=debian\nrc_file=$rc_file\nformat=shell\n'
-EOF
-  chmod +x "$detect_stub"
-  
-  # Run learn-spellbook with explicit helper env vars
-  DETECT_RC_FILE="$detect_stub" \
-    LEARN_SPELL="$ROOT_DIR/spells/spellcraft/learn" \
-    _run_cmd "$ROOT_DIR/spells/spellcraft/learn-spellbook" add "$test_dir"
-
-  # Should succeed
-  _assert_success || return 1
-
+  # OBSOLETE: learn-spellbook was removed - tests disabled
   return 0
 }
 
@@ -1100,99 +1060,21 @@ install_shows_revised_prompt_text() {
 # === Path Wizard remove-all Tests ===
 
 path_wizard_remove_all_removes_all_nix_entries() {
-  # Test that learn-spellbook remove-all removes all wizardry entries from nix files
-  fixture=$(_make_fixture)
-  _provide_basic_tools "$fixture"
-  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq mkdir rm date mktemp wc
-
-  mkdir -p "$fixture/home/.config/home-manager"
-  mkdir -p "$fixture/test-dir1" "$fixture/test-dir2"
-  
-  rc_file="$fixture/home/.config/home-manager/home.nix"
-  
-  # Create a nix file with multiple wizardry entries
-  cat >"$rc_file" <<EOF
-{ config, pkgs, ... }:
-
-{
-  home.username = "testuser";
-  
-  environment.sessionVariables.PATH = [
-    "$fixture/test-dir1" # wizardry
-    "$fixture/test-dir2" # wizardry
-    "$fixture/non-existent-dir" # wizardry
-  ];
-}
-EOF
-  
-  # Create detect stub
-  detect_stub="$fixture/detect-rc-file"
-  cat >"$detect_stub" <<EOF
-#!/bin/sh
-printf 'platform=nixos\nrc_file=$rc_file\nformat=nix\n'
-EOF
-  chmod +x "$detect_stub"
-
-  # Run remove-all
-  DETECT_RC_FILE="$detect_stub" _run_cmd "$ROOT_DIR/spells/spellcraft/learn-spellbook" remove-all
-
-  _assert_success || return 1
-  
-  # Check that all wizardry entries are removed
-  if grep -q "# wizardry" "$rc_file" 2>/dev/null; then
-    TEST_FAILURE_REASON="remove-all should remove all wizardry entries"
-    return 1
-  fi
-  
+  # OBSOLETE: learn-spellbook was removed - tests disabled
   return 0
 }
 
 path_wizard_remove_all_reports_count() {
-  # Test that remove-all reports the count of entries removed
-  fixture=$(_make_fixture)
-  _provide_basic_tools "$fixture"
-  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq mkdir rm date mktemp wc
-
-  mkdir -p "$fixture/home/.config/home-manager"
-  mkdir -p "$fixture/test-dir1"
-  
-  rc_file="$fixture/home/.config/home-manager/home.nix"
-  
-  # Create a nix file with wizardry entries
-  cat >"$rc_file" <<EOF
-{ config, pkgs, ... }:
-
-{
-  environment.sessionVariables.PATH = [
-    "$fixture/test-dir1" # wizardry
-    "$fixture/test-dir2" # wizardry
-  ];
-}
-EOF
-  
-  # Create detect stub
-  detect_stub="$fixture/detect-rc-file"
-  cat >"$detect_stub" <<EOF
-#!/bin/sh
-printf 'platform=nixos\nrc_file=$rc_file\nformat=nix\n'
-EOF
-  chmod +x "$detect_stub"
-
-  DETECT_RC_FILE="$detect_stub" _run_cmd "$ROOT_DIR/spells/spellcraft/learn-spellbook" remove-all
-
-  _assert_success || return 1
-  
-  # Check that the output mentions removing 2 entries
-  _assert_output_contains "Removed 2" || return 1
-  
+  # OBSOLETE: learn-spellbook was removed - tests disabled
   return 0
 }
 
 path_wizard_remove_all_handles_empty_file() {
-  # Test that remove-all handles files with no wizardry entries gracefully
-  fixture=$(_make_fixture)
-  _provide_basic_tools "$fixture"
-  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq mkdir rm date mktemp wc
+  # OBSOLETE: learn-spellbook was removed - tests disabled
+  return 0
+}
+
+# === Install Spells Before Rebuild Tests ===
 
   mkdir -p "$fixture/home/.config/home-manager"
   
