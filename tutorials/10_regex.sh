@@ -1,8 +1,8 @@
 #!/bin/sh
-# To make this script executable, use the command: chmod +x 08_regex.sh
-# To run the script, use the command: ./08_regex.sh
+# To make this script executable, use the command: chmod +x 10_regex.sh
+# To run the script, use the command: ./10_regex.sh
 echo "This spell will teach you the basics of regular expressions and pattern matching in POSIX sh"
-echo "To study the code of the examples, please use the command: cat 08_regex.sh"
+echo "To study the code of the examples, please use the command: cat 10_regex.sh"
 
 # Basic regular expressions (special characters)
 echo "Regular expressions are a way to search for patterns in text. Common special characters include:"

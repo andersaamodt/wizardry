@@ -1,6 +1,6 @@
 #!/bin/sh
-# To make this script executable, use the command: chmod +x 23_shell_options_basic.sh
-# To run the script, use the command: ./23_shell_options_basic.sh
+# To make this script executable, use the command: chmod +x 18_shell_options_basic.sh
+# To run the script, use the command: ./18_shell_options_basic.sh
 
 echo "This spell will teach you about basic shell options in POSIX sh"
 echo "Shell options control how your script behaves"

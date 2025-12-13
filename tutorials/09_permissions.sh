@@ -1,8 +1,8 @@
 #!/bin/sh
-# To make this script executable, use the command: chmod +x 07_permissions.sh
-# To run the script, use the command: ./07_permissions.sh
+# To make this script executable, use the command: chmod +x 09_permissions.sh
+# To run the script, use the command: ./09_permissions.sh
 echo "This spell will teach you the basics of permissions in POSIX sh"
-echo "To study the code of the examples, please use the command: cat 07_permissions.sh"
+echo "To study the code of the examples, please use the command: cat 09_permissions.sh"
 
 # Execution flags
 echo "The chmod command changes the permissions of a file. The permissions can be represented in two ways: octal or symbolic. "

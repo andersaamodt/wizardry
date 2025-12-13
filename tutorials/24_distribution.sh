@@ -6,7 +6,7 @@
 # This spell will teach you the basics of creating an executable file and packaging it for distribution.
 
 echo "Welcome to the Script Packaging and Distribution tutorial"
-echo "To study the code of the examples, please use the command: cat 28_distribution.sh"
+echo "To study the code of the examples, please use the command: cat 24_distribution.sh"
 
 # Creating an executable file
 # In order to run a script, it needs to have the correct permissions set.

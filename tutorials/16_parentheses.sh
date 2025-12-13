@@ -1,8 +1,8 @@
 #!/bin/sh
-# To make this script executable, use the command: chmod +x 21_parentheses.sh
+# To make this script executable, use the command: chmod +x 16_parentheses.sh
 # To run the script, use the command: ./11_parentheses.sh
 echo "This spell will teach you the basics of differentiating between similar parenthetical syntax in POSIX sh"
-echo "To study the code of the examples, please use the command: cat 21_parentheses.sh"
+echo "To study the code of the examples, please use the command: cat 16_parentheses.sh"
 
 # Using $() command substitution
 echo "Using command substitution with $()"

@@ -1,6 +1,6 @@
 #!/bin/sh
-# To make this script executable, use the command: chmod +x 23a_shell_options_advanced.sh
-# To run the script, use the command: ./23a_shell_options_advanced.sh
+# To make this script executable, use the command: chmod +x 19_shell_options_advanced.sh
+# To run the script, use the command: ./19_shell_options_advanced.sh
 
 echo "This spell will teach you about advanced shell options in POSIX sh"
 echo "These are less commonly used but can be useful in specific situations"

@@ -4,7 +4,7 @@
 # This spell will teach you about environment variables, which are variables that are accessible to all processes running in the operating system. They store information such as system paths, user preferences, and other settings.
 # Limitations on naming conventions vary by operating system, but in general, they can only contain alphanumeric characters and underscores, and have a maximum length of around 1024 characters. They cannot be aliased, but they can be exported and referenced in the .bashrc file.
 
-echo "To cast the spell, please use the command: ./25_env.sh"
+echo "To cast the spell, please use the command: ./21_env.sh"
 
 # Setting an environment variable
 export MY_ENV_VAR="This is my environment variable"
@@ -48,7 +48,7 @@ echo "Spell cast successfully"
 
 #!/bin/sh
 # This spell will teach you the basics of environment variables in POSIX sh
-# To study the code of the examples, please use the command: cat 25_env.sh
+# To study the code of the examples, please use the command: cat 21_env.sh
 
 echo "Welcome to the land of magic, where we will be learning about environment variables"
 

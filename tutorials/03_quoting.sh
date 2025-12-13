@@ -1,6 +1,6 @@
 #!/bin/sh
-# To make this script executable, use the command: chmod +x 02a_quoting.sh
-# To run the script, use the command: ./02a_quoting.sh
+# To make this script executable, use the command: chmod +x 03_quoting.sh
+# To run the script, use the command: ./03_quoting.sh
 
 echo "This spell will teach you the mystical art of quoting in POSIX sh"
 echo "Quoting is essential for protecting your incantations from unintended effects"

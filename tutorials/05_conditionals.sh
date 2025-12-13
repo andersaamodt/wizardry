@@ -1,9 +1,9 @@
 #!/bin/sh
-# To make this script executable, use the command: chmod +x 03_conditionals.sh
-# To run the script, use the command: ./03_conditionals.sh
+# To make this script executable, use the command: chmod +x 05_conditionals.sh
+# To run the script, use the command: ./05_conditionals.sh
 
 echo "This spell will teach you the basics of conditional statements in POSIX sh."
-echo "To study the code of the examples, please use the command: cat 03_conditionals.sh"
+echo "To study the code of the examples, please use the command: cat 05_conditionals.sh"
 
 # Using if statement
 echo "Checking if the ingredient is Dragon's blood"

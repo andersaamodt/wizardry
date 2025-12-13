@@ -1,7 +1,7 @@
 #!/bin/sh
-# To make this script executable, use the command: chmod +x 04_loops.sh
-# To run the script, use the command: ./04_loops.sh
-echo "To study the code of the examples, please use the command: cat 04_loops.sh"
+# To make this script executable, use the command: chmod +x 06_loops.sh
+# To run the script, use the command: ./06_loops.sh
+echo "To study the code of the examples, please use the command: cat 06_loops.sh"
 echo "This spell will teach you the basics of loops in POSIX sh"
 
 # Todo: give an example of using a for loop with both a number and an array (which is more like for-each)
