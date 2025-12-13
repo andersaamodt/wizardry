@@ -29,6 +29,7 @@ else
   THEME_ERROR=""
   GREY=""
 fi
+# Older scripts expect GRAY, so mirror GREY when missing.
 GRAY=${GREY-}
 
 color_for_status() {
