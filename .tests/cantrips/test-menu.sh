@@ -214,4 +214,102 @@ STUB
 
 _run_test_case "menu highlight strips ANSI codes from labels" menu_highlight_strips_ansi_codes
 
+# Test that cursor is restored when exiting menu
+# This verifies the fix for the cursor disappearance issue
+menu_restores_cursor_on_exit() {
+  stub_dir=$(_make_tempdir)
+  
+  # Create a fake TTY for testing
+  touch "$stub_dir/fake-tty"
+  chmod 600 "$stub_dir/fake-tty"
+  
+  # Create stubs for all required helper commands
+  cat >"$stub_dir/fathom-cursor" <<'STUB'
+#!/bin/sh
+case $1 in
+  -y) printf '1\n' ;;
+  -x) printf '1\n' ;;
+  *) printf '1 1\n' ;;
+esac
+STUB
+  chmod +x "$stub_dir/fathom-cursor"
+  
+  cat >"$stub_dir/fathom-terminal" <<'STUB'
+#!/bin/sh
+case $1 in
+  --width) printf '80\n' ;;
+  --height) printf '24\n' ;;
+  *) printf '80 24\n' ;;
+esac
+STUB
+  chmod +x "$stub_dir/fathom-terminal"
+  
+  cat >"$stub_dir/move-cursor" <<'STUB'
+#!/bin/sh
+exit 0
+STUB
+  chmod +x "$stub_dir/move-cursor"
+  
+  # await-keypress returns "enter" immediately
+  cat >"$stub_dir/await-keypress" <<'STUB'
+#!/bin/sh
+printf 'enter\n'
+STUB
+  chmod +x "$stub_dir/await-keypress"
+  
+  # cursor-blink outputs what it receives for verification
+  cat >"$stub_dir/cursor-blink" <<'STUB'
+#!/bin/sh
+case "$1" in
+  on) printf '\033[?25h' ;;
+  off) printf '\033[?25l' ;;
+esac
+STUB
+  chmod +x "$stub_dir/cursor-blink"
+  
+  cat >"$stub_dir/stty" <<'STUB'
+#!/bin/sh
+case $1 in
+  -g) printf 'saved-state\n' ;;
+  *) exit 0 ;;
+esac
+STUB
+  chmod +x "$stub_dir/stty"
+  
+  # Run menu and verify cursor is restored (turned back on)
+  PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:$stub_dir:/bin:/usr/bin" _run_cmd env \
+    PATH="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:$stub_dir:/bin:/usr/bin" \
+    AWAIT_KEYPRESS_DEVICE="$stub_dir/fake-tty" \
+    TERM=xterm \
+    "$ROOT_DIR/spells/cantrips/menu" "Test:" "Item%printf selected"
+  
+  _assert_success || return 1
+  
+  # Verify the menu output contains the cursor-off escape code (menu hides cursor)
+  cursor_off=$(printf '\033[?25l')
+  case "$OUTPUT" in
+    *"$cursor_off"*)
+      : # good - cursor was hidden
+      ;;
+    *)
+      TEST_FAILURE_REASON="expected cursor-off escape code in output"
+      return 1
+      ;;
+  esac
+  
+  # Verify the menu output contains the cursor-on escape code (menu restores cursor)
+  cursor_on=$(printf '\033[?25h')
+  case "$OUTPUT" in
+    *"$cursor_on"*)
+      return 0 # cursor was restored
+      ;;
+    *)
+      TEST_FAILURE_REASON="expected cursor-on escape code in output (cursor not restored)"
+      return 1
+      ;;
+  esac
+}
+
+_run_test_case "menu restores cursor on exit" menu_restores_cursor_on_exit
+
 _finish_tests
