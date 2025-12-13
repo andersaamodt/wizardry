@@ -148,30 +148,6 @@ if [ "$new_category_mode" -eq 1 ]; then
                 exit 1
         fi
         mkdir -p "$spell_home/$category_name"
-        # Add category to PATH
-        cat_path="$spell_home/$category_name"
-        if command -v learn-spellbook >/dev/null 2>&1; then
-                learn_spellbook=$(command -v learn-spellbook)
-        else
-                SCRIPT_SOURCE=$0
-                case $SCRIPT_SOURCE in
-                */*)
-                        SCRIPT_DIR=${SCRIPT_SOURCE%/*}
-                        ;;
-                *)
-                        SCRIPT_DIR=.
-                        ;;
-                esac
-                SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
-                learn_spellbook="$SCRIPT_DIR/learn-spellbook"
-                if [ ! -x "$learn_spellbook" ]; then
-                        printf '%s\n' "learn-spellbook not found; category folder created but not added to PATH." >&2
-                        display_path=$(tilde-path "$spell_home")
-                        printf "Created category '%s' in %s.\n" "$category_name" "$display_path"
-                        exit 0
-                fi
-        fi
-        "$learn_spellbook" add "$cat_path" 2>/dev/null || true
         display_path=$(tilde-path "$spell_home")
         printf "Created category '%s' in %s.\n" "$category_name" "$display_path"
         exit 0
@@ -303,34 +279,9 @@ if [ -z "$current_category" ] && [ -z "$override_dir" ]; then
                                         ;;
                                 esac
                                 current_category=$category_name
-                                # Create the category folder and add to PATH if it's new
+                                # Create the category folder
                                 if [ ! -d "$spell_home/$current_category" ]; then
                                         mkdir -p "$spell_home/$current_category"
-                                        cat_path="$spell_home/$current_category"
-                                        if command -v learn-spellbook >/dev/null 2>&1; then
-                                                learn_spellbook=$(command -v learn-spellbook)
-                                        else
-                                                SCRIPT_SOURCE=$0
-                                                case $SCRIPT_SOURCE in
-                                                */*)
-                                                        SCRIPT_DIR=${SCRIPT_SOURCE%/*}
-                                                        ;;
-                                                *)
-                                                        SCRIPT_DIR=.
-                                                        ;;
-                                                esac
-                                                SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
-                                                learn_spellbook="$SCRIPT_DIR/learn-spellbook"
-                                                if [ ! -x "$learn_spellbook" ]; then
-                                                        printf '%s\n' \
-                                                            "learn-spellbook not found; category folder created but not added to PATH." >&2
-                                                fi
-                                        fi
-                                        if [ -n "${learn_spellbook-}" ] \
-                                            && [ -x "$learn_spellbook" ]; then
-                                                "$learn_spellbook" add "$cat_path" 2>/dev/null \
-                                                    || true
-                                        fi
                                 fi
                         fi
                         ;;

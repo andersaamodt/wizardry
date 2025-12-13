@@ -19,37 +19,6 @@ esac
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 
-detect_platform() {
-  if command -v uname >/dev/null 2>&1; then
-    uname -s 2>/dev/null || printf '%s' "unknown"
-  else
-    printf '%s' "unknown"
-  fi
-}
-
-core_dependencies() {
-  platform=$(detect_platform)
-  case $platform in
-    Darwin)
-      cat <<'EOF'
-Git:git:install-git:uninstall-git
-dd:dd:install-dd:uninstall-dd
-stty:stty:install-stty:uninstall-stty
-tput:tput:install-tput:uninstall-tput
-EOF
-      ;;
-    *)
-      cat <<'EOF'
-Git:git:install-git:uninstall-git
-Bubblewrap:bwrap:install-bwrap:uninstall-bwrap
-dd:dd:install-dd:uninstall-dd
-stty:stty:install-stty:uninstall-stty
-tput:tput:install-tput:uninstall-tput
-EOF
-      ;;
-  esac
-}
-
 resolve_spell() {
   spell_name=$1
   if command -v "$spell_name" >/dev/null 2>&1; then
@@ -67,7 +36,30 @@ resolve_spell() {
 }
 
 uninstall_core() {
-  core_dependencies | while IFS=: read -r label command_name _ uninstall_spell; do
+  # detect_platform - inlined
+  platform="unknown"
+  if command -v uname >/dev/null 2>&1; then
+    platform=$(uname -s 2>/dev/null || printf '%s' "unknown")
+  fi
+  
+  # core_dependencies - inlined
+  case $platform in
+    Darwin)
+      deps='Git:git:install-git:uninstall-git
+dd:dd:install-dd:uninstall-dd
+stty:stty:install-stty:uninstall-stty
+tput:tput:install-tput:uninstall-tput'
+      ;;
+    *)
+      deps='Git:git:install-git:uninstall-git
+Bubblewrap:bwrap:install-bwrap:uninstall-bwrap
+dd:dd:install-dd:uninstall-dd
+stty:stty:install-stty:uninstall-stty
+tput:tput:install-tput:uninstall-tput'
+      ;;
+  esac
+  
+  printf '%s\n' "$deps" | while IFS=: read -r label command_name _ uninstall_spell; do
     if ! command -v "$command_name" >/dev/null 2>&1; then
       continue
     fi

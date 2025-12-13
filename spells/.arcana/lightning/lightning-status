@@ -32,64 +32,55 @@ fi
 # Older scripts expect GRAY, so mirror GREY when missing.
 GRAY=${GREY-}
 
-color_for_status() {
-  case "$1" in
-    "installed, running")
-      printf "%s" "$THEME_SUCCESS"
-      ;;
-    "installed, not running")
-      printf "%s" "$THEME_WARNING"
-      ;;
-    "installed, needs setup"|"installed, error")
-      printf "%s" "$THEME_ERROR"
-      ;;
-    *)
-      printf "%s" "$GRAY"
-      ;;
-  esac
-}
-
-command_available() {
-  command -v "$1" >/dev/null 2>&1
-}
-
-lightning_service_name() {
-  if [ -n "${LIGHTNING_SERVICE-}" ]; then
-    printf '%s' "$LIGHTNING_SERVICE"
-    return
-  fi
+# Main execution - get_lightning_status inlined
+# Determine service name - lightning_service_name inlined
+service_name="lightningd"
+if [ -n "${LIGHTNING_SERVICE-}" ]; then
+  service_name=$LIGHTNING_SERVICE
+else
   # Default to lightningd; fallback to clightningd or similar names if present.
   for candidate in lightningd clightningd c-lightning; do
-    if command_available "$candidate"; then
-      printf '%s' "$candidate"
-      return
+    if has "$candidate" 2>/dev/null; then
+      service_name=$candidate
+      break
     fi
     if is-service-installed "$candidate" >/dev/null 2>&1; then
-      printf '%s' "$candidate"
-      return
+      service_name=$candidate
+      break
     fi
   done
-  printf '%s' lightningd
-}
+fi
 
-get_lightning_status() {
-  service_name=$(lightning_service_name)
-
-  if command_available lightning-cli || command_available "$service_name"; then
-    if is-service-running "$service_name" >/dev/null 2>&1; then
-      if lightning-cli getinfo >/dev/null 2>&1; then
-        status="installed, running"
-      else
-        status="installed, needs setup"
-      fi
+# Determine status
+if has lightning-cli 2>/dev/null || has "$service_name" 2>/dev/null; then
+  if is-service-running "$service_name" >/dev/null 2>&1; then
+    if lightning-cli getinfo >/dev/null 2>&1; then
+      status="installed, running"
     else
-      status="installed, not running"
+      status="installed, needs setup"
     fi
   else
-    status="not installed"
+    status="installed, not running"
   fi
+else
+  status="not installed"
+fi
 
-  printf "%s%s%s\n" "$(color_for_status "$status")" "$status" "$RESET"
-}
+# color_for_status - inlined
+color=""
+case "$status" in
+  "installed, running")
+    color="$THEME_SUCCESS"
+    ;;
+  "installed, not running")
+    color="$THEME_WARNING"
+    ;;
+  "installed, needs setup"|"installed, error")
+    color="$THEME_ERROR"
+    ;;
+  *)
+    color="$GRAY"
+    ;;
+esac
 
-get_lightning_status
+printf "%s%s%s\n" "$color" "$status" "$RESET"
