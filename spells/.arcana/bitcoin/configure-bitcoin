@@ -23,7 +23,7 @@ esac
 # Function to check if a command needs to be run with sudo
 
 set -eu
-retry_with_sudo() {
+configure_bitcoin_retry_with_sudo() {
     echo "Permission denied. Invoking the power of the super user..."
     sudo "$@"
     if [ $? -ne 0 ]; then
@@ -61,19 +61,29 @@ else
 fi
 
 # Function to modify bitcoin.conf using awk
-modify_bitcoin_conf() {
+configure_bitcoin_modify_conf() {
     local key=$1
     local value=$2
     printf "%s\n" >> "$bitcoin_conf" # Ensure a newline exists at the end of the file
-    awk -v key="$key" -v value="$value" 'BEGIN {OFS=FS="="; found=0} {gsub(/^[ \t]+|[ \t]+$/, "", $1)} !/^#/ && $1==key {found=1; print key"="value; next} {if(NF>1) print $1"="$2; else if(NF==1) print $1} END {if (!found) print key"="value}' "$bitcoin_conf" > "$bitcoin_conf.tmp" && mv "$bitcoin_conf.tmp" "$bitcoin_conf" || retry_with_sudo mv "$bitcoin_conf.tmp" "$bitcoin_conf"
-    awk '/./' "$bitcoin_conf" > "$bitcoin_conf.tmp" && mv "$bitcoin_conf.tmp" "$bitcoin_conf" || retry_with_sudo mv "$bitcoin_conf.tmp" "$bitcoin_conf" # Remove trailing newlines
+    awk -v key="$key" -v value="$value" \
+      'BEGIN {OFS=FS="="; found=0} \
+       {gsub(/^[ \t]+|[ \t]+$/, "", $1)} \
+       !/^#/ && $1==key {found=1; print key"="value; next} \
+       {if(NF>1) print $1"="$2; else if(NF==1) print $1} \
+       END {if (!found) print key"="value}' \
+      "$bitcoin_conf" > "$bitcoin_conf.tmp" && \
+      mv "$bitcoin_conf.tmp" "$bitcoin_conf" || \
+      configure_bitcoin_retry_with_sudo mv "$bitcoin_conf.tmp" "$bitcoin_conf"
+    awk '/./' "$bitcoin_conf" > "$bitcoin_conf.tmp" && \
+      mv "$bitcoin_conf.tmp" "$bitcoin_conf" || \
+      configure_bitcoin_retry_with_sudo mv "$bitcoin_conf.tmp" "$bitcoin_conf"
 }
 
 # Pruning question and storage amount
 ask-yn "Wouldst thou like to enable pruning? Pruning allows thee to reduce disk usage by discarding some transaction history." "y"
 prune=$?
 if [ "$prune" = 0 ]; then
-    modify_bitcoin_conf "prune" "1"
+    configure_bitcoin_modify_conf "prune" "1"
     valid_number=false
     while [ "$valid_number" = false ]; do
         printf "What is the maximum disk space thou art willing to dedicate to Bitcoin in GB? (Type a number) [default: 500]: "
@@ -92,23 +102,23 @@ if [ "$prune" = 0 ]; then
     # Convert GB to MB
     max_mem=$((max_disk * 1024))
 
-    modify_bitcoin_conf "dbcache" "$max_mem"
+    configure_bitcoin_modify_conf "dbcache" "$max_mem"
 else
-    modify_bitcoin_conf "prune" "0"
+    configure_bitcoin_modify_conf "prune" "0"
 fi
 
 # Network selection
 ask-yn "Art thou operating on the main Bitcoin network?" "y"
 mainnet=$?
 if [ "$mainnet" = 0 ]; then
-    modify_bitcoin_conf "testnet" "0"
+    configure_bitcoin_modify_conf "testnet" "0"
 else
-    modify_bitcoin_conf "testnet" "1"
+    configure_bitcoin_modify_conf "testnet" "1"
 fi
 
 # Blockchain storage location
 default_data_dir="$HOME/.bitcoin/blocks"
-modify_bitcoin_conf "datadir" "$default_data_dir"
+configure_bitcoin_modify_conf "datadir" "$default_data_dir"
 ask-yn "Wouldst thou like to store the blockchain in the default location ($default_data_dir)?" "y"
 alt_storage=$?
 if [ "$alt_storage" = 1 ]; then
@@ -121,7 +131,7 @@ if [ "$alt_storage" = 1 ]; then
       printf "That's not a valid UNIX path string. "
     fi
   done
-    modify_bitcoin_conf "datadir" "$alt_path"
+    configure_bitcoin_modify_conf "datadir" "$alt_path"
 fi
 
 printf "Bitcoin configuration has been updated.\n"

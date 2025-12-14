@@ -22,14 +22,14 @@ set -eu
 
 trap 'exit 0' INT TERM
 
-command_available() {
+simplex_chat_menu_command_available() {
   command -v "$1" >/dev/null 2>&1
 }
 
 simplex_bin=${SIMPLEX_CHAT_BIN:-simplex-chat}
 
-is_simplex_installed() {
-  command_available "$simplex_bin"
+simplex_chat_menu_is_installed() {
+  simplex_chat_menu_command_available "$simplex_bin"
 }
 
 default_launch_cmd=${SIMPLEX_CHAT_LAUNCH_CMD:-"$simplex_bin"}
@@ -53,7 +53,7 @@ build_menu_entries() {
   keygen_option="Create or rotate user key%$keygen_cmd"
   restore_option="Restore user key from backup%$restore_cmd"
 
-  if is_simplex_installed; then
+  if simplex_chat_menu_is_installed; then
     menu "$title" \
       "$launch_option" \
       "$status_option" \

@@ -31,7 +31,7 @@ if ! command -v "$manage_cmd" >/dev/null 2>&1; then
   fi
 fi
 
-detect_nixos() {
+install_simplex_chat_detect_nixos() {
   if [ "${SIMPLEX_CHAT_ASSUME_NIXOS-0}" -eq 1 ]; then
     return 0
   fi
@@ -41,7 +41,7 @@ detect_nixos() {
   return 1
 }
 
-prompt() {
+install_simplex_chat_prompt() {
   message=$1
   default_value=$2
   printf '%s [%s]: ' "$message" "$default_value" >&2
@@ -53,13 +53,16 @@ prompt() {
 }
 
 package_default=${SIMPLEX_CHAT_PACKAGE_DEFAULT:-simplex-chat}
-chat_package=$(prompt "Which simplex-chat package should be installed?" "$package_default")
+chat_package=$(install_simplex_chat_prompt \
+  "Which simplex-chat package should be installed?" "$package_default")
 
 data_dir_default=${SIMPLEX_CHAT_DATA_DIR:-$HOME/.local/share/simplex-chat}
 config_dir_default=${SIMPLEX_CHAT_CONFIG_DIR:-$HOME/.config/simplex-chat}
 
-chat_data_dir=$(prompt "Where should simplex-chat store its data?" "$data_dir_default")
-chat_config_dir=$(prompt "Where should simplex-chat keep its configuration?" "$config_dir_default")
+chat_data_dir=$(install_simplex_chat_prompt \
+  "Where should simplex-chat store its data?" "$data_dir_default")
+chat_config_dir=$(install_simplex_chat_prompt \
+  "Where should simplex-chat keep its configuration?" "$config_dir_default")
 
 # Allow users to override per-manager packages to handle distro differences.
 export NIX_PACKAGE=${NIX_PACKAGE:-$chat_package}
@@ -77,7 +80,7 @@ printf '\nInstalling simplex-chat using %s...\n' "$manage_cmd"
 printf '\nPreparing simplex-chat directories...\n'
 mkdir -p "$chat_data_dir" "$chat_config_dir"
 
-if detect_nixos && command -v nixos-rebuild >/dev/null 2>&1; then
+if install_simplex_chat_detect_nixos && command -v nixos-rebuild >/dev/null 2>&1; then
   rebuild_cmd=${NIXOS_REBUILD_COMMAND:-"nixos-rebuild switch"}
   if command -v sudo >/dev/null 2>&1; then
     rebuild_cmd="sudo $rebuild_cmd"

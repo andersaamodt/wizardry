@@ -24,7 +24,7 @@ set -eu
 trap 'exit 0' INT TERM
 
 # Displays the menu
-display_menu() {
+bitcoin_menu_display() {
   title="${BOLD}${CYAN}Bitcoin: $(bitcoin-status)"
   blockchain_info="Display Blockchain Info%bitcoin-cli getblockchaininfo"
   set_config="Configure Bitcoin%configure-bitcoin"
@@ -75,5 +75,5 @@ while true; do
     first_run=0
   fi
 
-  display_menu || true
+  bitcoin_menu_display || true
 done
