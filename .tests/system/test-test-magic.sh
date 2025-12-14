@@ -27,19 +27,25 @@ spell_has_content() {
 # tests that read from stdin can consume lines from the test list.
 # This verifies all tests are processed correctly.
 all_tests_are_processed() {
-  # Run test-magic on a small subset of tests and verify counts match
+  # Run test-magic on a small, fast test and verify counts match
+  # Use a simple boot test to avoid recursive heavy test execution
   tmpdir="$(_make_tempdir)"
   tmpfile="$tmpdir/output.txt"
   
-  # Find first few test files
   cd "$ROOT_DIR" || return 1
-  first_test=$(sh spells/system/test-magic --list 2>&1 | head -1 | sed 's/^[[:space:]]*//' | awk '{print $1}')
   
-  # If we can't find a test, skip this validation
-  [ -n "$first_test" ] || return 0
+  # Use a fast, simple test instead of whatever is first in the list
+  # This prevents expensive recursive test runs during test-magic testing
+  test_to_run=".imps/test/boot/test-assert-success.sh"
   
-  # Run test-magic on that one test
-  sh spells/system/test-magic --only "$first_test" >"$tmpfile" 2>&1 || true
+  # Verify the test exists before running
+  if [ ! -f "$ROOT_DIR/.tests/$test_to_run" ]; then
+    # If the specific test doesn't exist, skip validation
+    return 0
+  fi
+  
+  # Run test-magic on that one simple test
+  sh spells/system/test-magic --only "$test_to_run" >"$tmpfile" 2>&1 || true
   
   # Extract the test heading (e.g., [1/1])
   last_heading=$(grep -E '^\[[0-9]+/[0-9]+\]' "$tmpfile" | tail -1 || true)
