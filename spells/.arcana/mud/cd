@@ -23,8 +23,9 @@ case "${1-}" in
     ;;
 esac
 
-# Note: No 'set -eu' because this file is meant to be sourced into user's shell
-# and we don't want to change their shell options
+# Explicitly use permissive mode - this file is meant to be sourced into user's shell
+# and we don't want to change their shell options with strict mode
+set +eu
 
 # The cd override - checks setting in .mud/config file before running look
 cd() {

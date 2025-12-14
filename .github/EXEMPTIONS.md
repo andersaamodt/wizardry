@@ -67,22 +67,28 @@ case "$0" in */has) _has "$@" ;; esac
 
 **Reason**: Micro-helpers; opening comment serves as spec; `--help` would bloat them
 
-### Sourceable Spells: No `set -eu`
+### Explicit Mode Requirement (set -e or set +e)
 
-**Affected**: `spells/.arcana/mud/cd`
+**Required**: All spells must explicitly declare their error handling mode
 
-**Reason**: Meant to be sourced into user's shell to define functions; `set -eu` would alter user's shell options
+**Options**:
+- `set -eu` (strict mode) - Recommended for most spells; exit on errors and undefined variables
+- `set +eu` (permissive mode) - For sourceable files that would affect user's shell options
 
-**Pattern**:
+**Pattern for sourceable spells**:
 ```sh
 #!/bin/sh
 # Handle --help when run directly
 case "${1-}" in
 --help|--usage|-h) show_usage; exit 0 ;; esac
 
-# Note: No 'set -eu' - this file is sourced into user's shell
+# Explicitly use permissive mode - this file is sourced into user's shell
+set +eu
+
 function_to_override() { ... }
 ```
+
+**No Exemptions**: All scripts must be explicit; lint-magic checks for `set -e` or `set +e` pattern
 
 ### Doppelganger Compilation: Skip Lists
 
