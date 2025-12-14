@@ -19,7 +19,7 @@ This directory contains GitHub Actions workflows for testing and building wizard
 - Excludes `.tests/`, `SKIP-IF-COMPILED-*.md` files for a clean distribution
 - Includes precompiled `spells/` directory (this is the source code for an open-source project)
 - Uploads artifact directly (GitHub Actions automatically zips it)
-- Uploads artifact with 730-day retention
+- Uploads artifact with 90-day retention
 - Automatically cleans up old artifacts, keeping only the 3 most recent
 
 **Artifact Cleanup**:

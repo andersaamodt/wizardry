@@ -96,7 +96,7 @@ jobs:
             wizardry-compiled/LICENSE
             wizardry-compiled/README.md
             wizardry-compiled/spells/
-          retention-days: 730
+          retention-days: 90
           if-no-files-found: error
 
       - name: Clean up old artifacts
