@@ -19,7 +19,7 @@ esac
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 
-resolve_spell() {
+uninstall_core_resolve_spell() {
   spell_name=$1
   if command -v "$spell_name" >/dev/null 2>&1; then
     printf '%s\n' "$spell_name"
@@ -64,7 +64,7 @@ tput:tput:install-tput:uninstall-tput'
       continue
     fi
 
-    spell=$(resolve_spell "$uninstall_spell") || return 1
+    spell=$(uninstall_core_resolve_spell "$uninstall_spell") || return 1
     if ! ASSUME_YES=1 "$spell"; then
       printf '%s\n' "uninstall-core: failed to uninstall $label" >&2
       return 1

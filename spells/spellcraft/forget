@@ -28,9 +28,6 @@ esac
 set -eu
 
 # Helper for reading non-empty lines
-nonempty() {
-  [ -n "$1" ]
-}
 
 # Resolve cast directory with tilde expansion
 if [ -n "${WIZARDRY_CAST_DIR-}" ]; then

@@ -38,7 +38,7 @@ if command -v detect-distro >/dev/null 2>&1 && [ "$(detect-distro 2>/dev/null)" 
   nixos_rebuild="Rebuild NixOS%sudo nixos-rebuild switch"
 fi
 
-display_menu() {
+system_menu_display_menu() {
   restart_menu="Restart...%shutdown-menu"
   services="Manage services%services-menu"
   verify_posix="Verify POSIX spells%verify-posix"
@@ -70,5 +70,5 @@ while true; do
     first_run=0
   fi
 
-  display_menu || true
+  system_menu_display_menu || true
 done

@@ -24,7 +24,7 @@ esac
 # Check if a command needs to be re-invoked with sudo
 
 set -eu
-retry_with_sudo() {
+change_bitcoin_directory_retry_with_sudo() {
     echo "Permission denied. Invoking the power of the super user..."
     sudo "$@"
     if [ $? -ne 0 ]; then
@@ -64,7 +64,7 @@ read new_directory
 
 # Create the new directory if it does not exist
 if [ ! -d "$new_directory" ]; then
-    mkdir "$new_directory" || retry_with_sudo mkdir "$new_directory"
+    mkdir "$new_directory" || change_bitcoin_directory_retry_with_sudo mkdir "$new_directory"
 fi
 
 # Ask user what to move
@@ -78,11 +78,11 @@ read move_choice
 case "$move_choice" in
     1)
         echo "Moving the entire Bitcoin data chamber..."
-        mv "$current_directory"/* "$new_directory" || retry_with_sudo mv "$current_directory"/* "$new_directory"
+        mv "$current_directory"/* "$new_directory" || change_bitcoin_directory_retry_with_sudo mv "$current_directory"/* "$new_directory"
         ;;
     2)
         echo "Moving only the blockchain data..."
-        mv "$current_directory/blocks" "$current_directory/chainstate" "$new_directory" || retry_with_sudo mv "$current_directory/blocks" "$current_directory/chainstate" "$new_directory"
+        mv "$current_directory/blocks" "$current_directory/chainstate" "$new_directory" || change_bitcoin_directory_retry_with_sudo mv "$current_directory/blocks" "$current_directory/chainstate" "$new_directory"
         ;;
     3)
         echo "Moving naught..."
@@ -94,6 +94,6 @@ case "$move_choice" in
 esac
 
 # Update the bitcoin.conf file to point to the new directory
-awk -v path="$new_directory" '!/datadir/ {print} /datadir/ {$3 = path; print}' "$bitcoin_conf" | tee "$bitcoin_conf" >/dev/null || { retry_with_sudo awk -v path="$new_directory" '!/datadir/ {print} /datadir/ {$3 = path; print}' "$bitcoin_conf" | sudo tee "$bitcoin_conf" >/dev/null; }
+awk -v path="$new_directory" '!/datadir/ {print} /datadir/ {$3 = path; print}' "$bitcoin_conf" | tee "$bitcoin_conf" >/dev/null || { change_bitcoin_directory_retry_with_sudo awk -v path="$new_directory" '!/datadir/ {print} /datadir/ {$3 = path; print}' "$bitcoin_conf" | sudo tee "$bitcoin_conf" >/dev/null; }
 
 echo "The Bitcoin data chamber now resides in: $new_directory"

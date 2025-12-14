@@ -42,7 +42,7 @@ if [ -z "$checkbashisms_cmd" ]; then
   exit 1
 fi
 
-gather_default_targets() {
+verify_posix_gather_default_targets() {
   find "$repo_dir/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) \
     -print | sort | while IFS= read -r file; do
       first_line=$(sed -n '1p' "$file")
@@ -54,11 +54,11 @@ gather_default_targets() {
     done
 }
 
-collect_targets() {
+verify_posix_collect_targets() {
   if [ "$#" -gt 0 ]; then
     printf '%s\n' "$@"
   else
-    gather_default_targets
+    verify_posix_gather_default_targets
   fi
 }
 
@@ -83,7 +83,7 @@ record_failure() {
 
 targets_file=$(temp-file verify-posix-targets) || exit 1
 trap 'cleanup-file "$targets_file"' EXIT HUP INT TERM
-collect_targets "$@" >"$targets_file"
+verify_posix_collect_targets "$@" >"$targets_file"
 
 while IFS= read -r target; do
   [ -n "$target" ] || continue

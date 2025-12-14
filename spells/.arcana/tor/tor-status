@@ -21,7 +21,7 @@ set -eu
 . colors
 
 # Returns colored text based on status
-color_for_status() {
+tor_status_color_for_status() {
   case "$1" in
     "installed, running, bootstrapped")
       printf "${GREEN}"
@@ -67,7 +67,7 @@ get_tor_status() {
     status="not installed"
   fi
 
-  printf "$(color_for_status "$status")$status${RESET}\n"
+  printf "$(tor_status_color_for_status "$status")$status${RESET}\n"
 }
 
 get_tor_status

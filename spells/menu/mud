@@ -46,7 +46,7 @@ get_portal_location() {
   esac
 }
 
-display_menu() {
+mud_display_menu() {
   portal_location=$(get_portal_location)
   
   look="Look Around%look"
@@ -78,5 +78,5 @@ while true; do
     first_run=0
   fi
 
-  display_menu || true
+  mud_display_menu || true
 done

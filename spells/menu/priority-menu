@@ -40,7 +40,7 @@ if [ -z "$FILE" ]; then
         exit 1
 fi
 
-display_menu() {
+priority_menu_display_menu() {
         checked_state=$(read-magic "${FILE}" checked)
         if [ "${checked_state}" = "read-magic: attribute does not exist." ]; then
           check_item="Check%echo 'Placeholder: Check command'"
@@ -70,5 +70,5 @@ while true; do
     first_run=0
   fi
 
-  display_menu || true
+  priority_menu_display_menu || true
 done

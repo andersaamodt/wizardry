@@ -31,7 +31,7 @@ if ! command -v "$manage_cmd" >/dev/null 2>&1; then
   fi
 fi
 
-detect_nixos() {
+uninstall_simplex_chat_detect_nixos() {
   if [ "${SIMPLEX_CHAT_ASSUME_NIXOS-0}" -eq 1 ]; then
     return 0
   fi
@@ -64,7 +64,7 @@ if [ -d "$data_dir" ] || [ -d "$config_dir" ]; then
   esac
 fi
 
-if detect_nixos && command -v nixos-rebuild >/dev/null 2>&1; then
+if uninstall_simplex_chat_detect_nixos && command -v nixos-rebuild >/dev/null 2>&1; then
   rebuild_cmd=${NIXOS_REBUILD_COMMAND:-"nixos-rebuild switch"}
   if command -v sudo >/dev/null 2>&1; then
     rebuild_cmd="sudo $rebuild_cmd"

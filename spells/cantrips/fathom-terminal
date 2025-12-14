@@ -33,7 +33,7 @@ else
     require_cmd=require-command
 fi
 
-require() {
+fathom_terminal_require() {
     "$require_cmd" "$@"
 }
 

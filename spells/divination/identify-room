@@ -88,7 +88,7 @@ output_room() {
         printf '%s\n' "$2"
 }
 
-detect_platform() {
+identify_room_detect_platform() {
         if command -v detect-distro >/dev/null 2>&1; then
                 detect-distro 2>/dev/null || true
                 return
@@ -118,7 +118,7 @@ if resolved_home=$(home_path); then
         home_name=$(basename -- "$normalized_home")
 fi
 
-distro=$(detect_platform || true)
+distro=$(identify_room_detect_platform || true)
 
 recognize_room() {
         room=$1

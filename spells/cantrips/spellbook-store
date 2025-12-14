@@ -26,9 +26,6 @@ esac
 set -eu
 
 # Helper for reading non-empty lines
-nonempty() {
-  [ -n "$1" ]
-}
 
 # Resolve spellbook file with tilde expansion
 if [ -n "${WIZARDRY_SPELLBOOK_FILE-}" ]; then
