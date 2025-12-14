@@ -153,24 +153,6 @@ find_tests() {
   }
 }
 
-pattern_has_match() {
-  pattern=$1
-  found=1
-  while IFS= read -r path; do
-    [ -n "$path" ] || continue
-    rel=${path#"$test_dir/"}
-    case $rel in
-      $pattern)
-        found=0
-        break
-        ;;
-    esac
-  done <<EOF_TESTS
-$(find_tests)
-EOF_TESTS
-  return $found
-}
-
 matches_patterns() {
   rel=$1
   if [ -z "$only_patterns" ]; then
@@ -196,7 +178,21 @@ test_files=""
 if [ -n "$only_patterns" ]; then
   while IFS= read -r pat; do
     [ -n "$pat" ] || continue
-    if ! pattern_has_match "$pat"; then
+    # Check if pattern matches any tests
+    found=1
+    while IFS= read -r path; do
+      [ -n "$path" ] || continue
+      rel=${path#"$test_dir/"}
+      case $rel in
+        $pat)
+          found=0
+          break
+          ;;
+      esac
+    done <<EOF_TESTS
+$(find_tests)
+EOF_TESTS
+    if [ "$found" -ne 0 ]; then
       echo "$cmd_name: pattern '$pat' matched no tests" >&2
       exit 1
     fi
@@ -230,16 +226,6 @@ if [ "$list_only" -eq 1 ]; then
   cleanup-file "$test_list_file"
   exit 0
 fi
-
-spell_path_for_test() {
-  test_path=$1
-  rel=${test_path#"$test_dir/"}
-  dir=$(dirname "$rel")
-  base=$(basename "$rel")
-  base=${base#test-}
-  base=${base%.*}
-  printf '%s/%s/%s\n' "$root_dir" "spells/$dir" "$base"
-}
 
 record_subtests() {
   counts=$(printf '%s\n' "$1" | awk '
@@ -296,7 +282,13 @@ spell_name_for_test() {
       ;;
   esac
   
-  spell_path=$(spell_path_for_test "$test_path" 2>/dev/null || true)
+  # Inline spell_path_for_test logic
+  rel=${test_path#"$test_dir/"}
+  dir=$(dirname "$rel")
+  base=$(basename "$rel")
+  base=${base#test-}
+  base=${base%.*}
+  spell_path="$root_dir/spells/$dir/$base"
 
   if [ -n "$spell_path" ]; then
     printf '%s\n' "$(basename "$spell_path")"
@@ -309,21 +301,7 @@ spell_name_for_test() {
   printf '%s\n' "$base"
 }
 
-print_failure_debug() {
-  test_path=$1
-  output=$2
 
-  spell_name=$(spell_name_for_test "$test_path")
-  printf '=== %s ===\n' "$spell_name"
-  # Only show FAIL lines and their debug output (skip PASS lines)
-  printf '%s\n' "$output" | awk '
-    /^PASS / { next }
-    /^[0-9]+\/[0-9]+ tests passed/ { next }
-    /^FAIL_DETAIL:/ { next }
-    /^$/ { next }
-    { print }
-  '
-}
 
 record_failed_script() {
   script=$1
@@ -344,27 +322,7 @@ record_failed_script() {
   fi
 }
 
-# Extract the total subtest count from test output.
-# $1 - test output containing "X/Y tests passed" summary line
-# Returns the total (Y) from the summary, or 0 if no summary found.
-get_subtest_total() {
-  printf '%s\n' "$1" | awk '
-    /^[0-9]+\/[0-9]+ tests passed/ {
-      split($1, parts, "/")
-      print parts[2]
-      exit
-    }
-    END { if (!NR) print 0 }
-  '
-}
 
-# Check if test output contains a --help test case.
-# Looks for test case lines (PASS/FAIL) that mention help or usage.
-# $1 - test output
-# Returns 0 if help test found, 1 otherwise.
-has_help_test() {
-  printf '%s\n' "$1" | grep -qiE "(PASS|FAIL).*(--help|-h|help|usage)"
-}
 
 # Record a test that has fewer than required subtests or is missing help test.
 # $1 - test path
@@ -497,7 +455,14 @@ while IFS= read -r test_path <&3; do
   # Imps (in .imps/): Need MIN_SUBTESTS_IMP subtests (no --help).
   # Spells: Need a --help test PLUS MIN_SUBTESTS_IMP additional behavioral subtests.
   # Global tests (test-install.sh, test-suite.sh): Exempt from --help requirement.
-  test_subtest_count=$(get_subtest_total "$cleaned_output")
+  test_subtest_count=$(printf '%s\n' "$cleaned_output" | awk '
+    /^[0-9]+\/[0-9]+ tests passed/ {
+      split($1, parts, "/")
+      print parts[2]
+      exit
+    }
+    END { if (!NR) print 0 }
+  ')
   test_incomplete_reasons=""
   case "$test_path" in
     .imps/*|*/.imps/*)
@@ -517,7 +482,7 @@ while IFS= read -r test_path <&3; do
     *)
       # Spells need a --help test plus additional behavioral subtests.
       # Total must be at least MIN_SUBTESTS_SPELL (1 help + 2 behavioral = 3).
-      if ! has_help_test "$cleaned_output"; then
+      if ! printf '%s\n' "$cleaned_output" | grep -qiE "(PASS|FAIL).*(--help|-h|help|usage)"; then
         record_incomplete_test "$test_path" "missing --help test"
         test_incomplete_reasons="missing --help test"
       fi
@@ -742,43 +707,18 @@ if [ "$status" -ne 0 ] && [ -n "$failed_scripts" ]; then
     printf '\nToo many failures (%d > 12); detailed output suppressed.\n' "$fail"
   fi
 
-  detect_os_label() {
-    if [ -n "${WIZARDRY_OS_LABEL-}" ]; then
-      printf '%s\n' "$WIZARDRY_OS_LABEL"
-      return 0
-    fi
+  # Detect OS label for failure report
+  os_label="unknown"
+  if [ -n "${WIZARDRY_OS_LABEL-}" ]; then
+    os_label="$WIZARDRY_OS_LABEL"
+  elif [ -x "$root_dir/spells/divination/detect-distro" ]; then
+    os_label=$("$root_dir/spells/divination/detect-distro" 2>/dev/null || printf 'unknown')
+  elif command -v detect-distro >/dev/null 2>&1; then
+    os_label=$(detect-distro 2>/dev/null || printf 'unknown')
+  elif command -v uname >/dev/null 2>&1; then
+    os_label=$(uname -s 2>/dev/null | tr ' A-Z' '_a-z' || printf 'unknown')
+  fi
 
-    if [ -x "$root_dir/spells/divination/detect-distro" ]; then
-      if label=$("$root_dir/spells/divination/detect-distro" 2>/dev/null || true); then
-        if [ -n "$label" ]; then
-          printf '%s\n' "$label"
-          return 0
-        fi
-      fi
-    fi
-
-    if command -v detect-distro >/dev/null 2>&1; then
-      if label=$(detect-distro 2>/dev/null || true); then
-        if [ -n "$label" ]; then
-          printf '%s\n' "$label"
-          return 0
-        fi
-      fi
-    fi
-
-    if command -v uname >/dev/null 2>&1; then
-      label=$(uname -s 2>/dev/null || true)
-      label=$(printf '%s' "$label" | tr ' A-Z' '_a-z')
-      if [ -n "$label" ]; then
-        printf '%s\n' "$label"
-        return 0
-      fi
-    fi
-
-    printf 'unknown\n'
-  }
-
-  os_label=$(detect_os_label)
   printf '\nFailed tests (%s): %s\n' "$os_label" "$failed_scripts"
 fi
 

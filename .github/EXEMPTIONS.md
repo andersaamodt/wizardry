@@ -169,7 +169,7 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 **Other** (3 spells):
 - `menu/spellbook` (10 additional) - Menu infrastructure (reduced from 30→10)
 - `system/update-all` (10 additional) - Update system
-- `system/test-magic` (15 additional) - Test runner
+- `system/test-magic` (9 additional) - Test runner (reduced from 15→9)
 
 **Removed/Obsolete**:
 - `spellcraft/learn-spell` - Removed (obsolete with word-of-binding paradigm)
@@ -177,7 +177,7 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 - `cantrips/assertions` - Removed (boot/ test imps already provide assertion functionality)
 
 
-**Refactored** (37 spells - COMPLETED ✅):
+**Refactored** (38 spells - COMPLETED ✅):
 - `spellcraft/lint-magic` (22→2) - Added word-of-binding wrapper function, maintains 0 extra functions beyond usage
 - `menu/spellbook` (30→10) - Major refactor, created 3 reusable imps
 - `spellcraft/learn-spell` (8→1) - Inlined warn and detect_env_once - **NOW REMOVED (obsolete)**
@@ -219,13 +219,14 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 - `.arcana/bitcoin/uninstall-bitcoin` (7→1)
 - `.arcana/tor/configure-tor` (6→1)
 - `.arcana/mud/mud-config` (5→4)
+- `system/test-magic` (15→9) - Deleted unused function, inlined 5 single-use functions
 
-**Action Required**: Remaining 4 spells should be refactored to:
+**Action Required**: Remaining 3 spells should be refactored to:
 1. Extract reusable logic into imps in `spells/.imps/` (only if used by 2+ spells)
 2. Split into multiple smaller spells if handling multiple actions
 3. Simplify linear flow by inlining single-use helpers
 
-**Progress**: 37/41 spells refactored (90%) - 3 spells removed as obsolete
+**Progress**: 38/41 spells refactored (93%) - 3 spells removed as obsolete
 
 ---
 
