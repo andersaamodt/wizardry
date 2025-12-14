@@ -79,11 +79,20 @@ jobs:
           echo "=== Moving to workspace for upload ==="
           mv /tmp/wizardry-compiled ${{ github.workspace }}/wizardry-compiled
 
+          echo ""
+          echo "=== Verifying move ==="
+          ls -la ${{ github.workspace }}/wizardry-compiled/
+          echo ""
+          echo "=== Spell count after move ==="
+          target_dir="${{ github.workspace }}/wizardry-compiled/spells"
+          spell_count=$(find "$target_dir" -type f 2>/dev/null | wc -l)
+          echo "$spell_count"
+
       - name: Upload compiled wizardry artifact
         uses: actions/upload-artifact@v4
         with:
           name: wizardry-compiled-${{ github.sha }}
-          path: wizardry-compiled/**
+          path: ${{ github.workspace }}/wizardry-compiled
           retention-days: 730
           if-no-files-found: error
 
