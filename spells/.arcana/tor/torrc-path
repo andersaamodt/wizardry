@@ -3,7 +3,7 @@
 # This script outputs the location of the torrc file if it exists,
 # or the standard location for the current OS if it does not
 
-show_usage() {
+torrc_path_usage() {
         cat <<'USAGE' >&2
 Usage: torrc-path
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        torrc_path_usage
         exit 0
         ;;
 esac

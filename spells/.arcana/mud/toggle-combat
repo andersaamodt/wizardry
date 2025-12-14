@@ -3,7 +3,7 @@
 # Toggle HP/MP and combat feature on/off in MUD config.
 # This is a planned feature that will enable combat mechanics.
 
-show_usage() {
+toggle_combat_usage() {
 cat <<'USAGE'
 Usage: toggle-combat
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        toggle_combat_usage
         exit 0
         ;;
 esac

@@ -3,7 +3,7 @@
 # Bootstrap spell: install the bubblewrap sandboxing utility across common platforms.
 
 
-show_usage() {
+install_bwrap_usage() {
   cat <<'EOF'
 Usage: install-bwrap [--force-install]
 
@@ -20,12 +20,12 @@ while [ "$#" -gt 0 ]; do
       force_install=1
       ;;
     --help|--usage|-h)
-      show_usage
+      install_bwrap_usage
       exit 0
       ;;
     *)
       printf '%s\n' "install-bwrap: unknown option: $1" >&2
-      show_usage >&2
+      install_bwrap_usage >&2
       exit 1
       ;;
   esac

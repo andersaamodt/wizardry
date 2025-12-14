@@ -3,7 +3,7 @@
 # This spell prints text in a subtle format only visible to wizards.
 # Use it to show commands before they are executed for teaching purposes.
 
-show_usage() {
+wizard_eyes_usage() {
 cat <<'USAGE'
 Usage: wizard-eyes <message>
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        wizard_eyes_usage
         exit 0
         ;;
 esac

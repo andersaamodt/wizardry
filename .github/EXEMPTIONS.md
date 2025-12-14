@@ -112,6 +112,33 @@ case "$0" in */has) _has "$@" ;; esac
 
 **Reason**: Distinguish test infrastructure from production code
 
+### Doppelganger: Function Name Collision Check Exemption
+
+**Affected**: Compiled spells in doppelganger (when `WIZARDRY_TEST_COMPILED=1` is set)
+
+**Test**: `test_no_function_name_collisions` in `.tests/common-tests.sh`
+
+**Reason**: Compiled spells are standalone executables that inline all dependencies. When multiple spells use the same imp (e.g., `_has`, `_there`, `_detect_indent_width`), that imp's function gets inlined into each compiled spell, creating duplicate function definitions across different files. This is expected and acceptable because:
+
+1. **Standalone design**: Each compiled spell is an independent executable with all dependencies inlined
+2. **No sourcing**: Compiled spells never source each other, so function name collisions cannot occur at runtime
+3. **Intentional duplication**: The same imp function must appear in multiple compiled files to make each one self-contained
+
+**Behavior**:
+- **Source repository**: Collision check is **enforced** (detects genuine collisions where spells might source each other)
+- **Doppelganger**: Collision check is **skipped** when `WIZARDRY_TEST_COMPILED=1` is set (duplicates are expected)
+
+**Implementation**: The collision test checks for `WIZARDRY_TEST_COMPILED=1` and returns early without checking for duplicates, allowing the test suite to pass when running against compiled spells.
+
+**Example Duplicates** (expected in doppelganger):
+```
+Function _has collision: hash (inlined from has imp) and ask-yn (inlined from has imp)
+Function _there collision: multiple spells (inlined from there imp)
+Function _detect_indent_width collision: make-indent (inlined) and detect-indent-width (inlined)
+```
+
+These are not errors - they demonstrate that compile-spell correctly inlines dependencies to create standalone executables.
+
 ---
 
 ## 4. Non-Shell File Exemptions

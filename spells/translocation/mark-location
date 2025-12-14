@@ -5,7 +5,7 @@
 
 require-wizardry || exit 1
 
-show_usage() {
+mark_location_usage() {
   cat <<'USAGE'
 Usage: mark-location [marker] [path]
 
@@ -16,14 +16,14 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-  show_usage
+  mark_location_usage
   exit 0
   ;;
 esac
 set -eu
 
 if [ "$#" -gt 2 ]; then
-  show_usage
+  mark_location_usage
   exit 1
 fi
 

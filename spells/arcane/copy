@@ -4,7 +4,7 @@
 # It takes one argument, the path to the text file.
 # When run without arguments, it prompts for the file path interactively.
 
-show_usage() {
+copy_usage() {
 cat <<'USAGE'
 Usage: copy <file>
 
@@ -14,7 +14,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        copy_usage
         exit 0
         ;;
 esac
@@ -30,7 +30,7 @@ if [ "$#" -eq 0 ]; then
         fi
         set -- "$file_path"
     else
-        show_usage >&2
+        copy_usage >&2
         exit 1
     fi
 fi

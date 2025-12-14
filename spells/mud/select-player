@@ -5,7 +5,7 @@
 
 require-wizardry || exit 1
 
-show_usage() {
+select_player_usage() {
 cat <<'USAGE'
 Usage: select-player
 
@@ -15,7 +15,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        select_player_usage
         exit 0
         ;;
 esac

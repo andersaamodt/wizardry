@@ -2,7 +2,7 @@
 
 # Present the simplex-chat management menu.
 
-show_usage() {
+simplex_chat_menu_usage() {
   cat <<'USAGE'
 Usage: simplex-chat-menu
 
@@ -12,7 +12,7 @@ USAGE
 
 case "${1-}" in
   --help|--usage|-h)
-    show_usage
+    simplex_chat_menu_usage
     exit 0
     ;;
 esac
@@ -22,14 +22,14 @@ set -eu
 
 trap 'exit 0' INT TERM
 
-command_available() {
+simplex_chat_menu_command_available() {
   command -v "$1" >/dev/null 2>&1
 }
 
 simplex_bin=${SIMPLEX_CHAT_BIN:-simplex-chat}
 
 is_simplex_installed() {
-  command_available "$simplex_bin"
+  simplex_chat_menu_command_available "$simplex_bin"
 }
 
 default_launch_cmd=${SIMPLEX_CHAT_LAUNCH_CMD:-"$simplex_bin"}

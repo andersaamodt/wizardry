@@ -2,7 +2,7 @@
 
 # Uninstall Tor and attempt to undo configuration changes.
 
-show_usage() {
+uninstall_tor_usage() {
         cat <<'USAGE' >&2
 Usage: uninstall-tor
 
@@ -12,14 +12,14 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        uninstall_tor_usage
         exit 0
         ;;
 esac
 
 set -eu
 
-is_nixos() {
+uninstall_tor_is_nixos() {
   if command -v detect-distro >/dev/null 2>&1 && [ "$(detect-distro 2>/dev/null)" = "nixos" ]; then
     return 0
   fi

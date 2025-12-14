@@ -3,7 +3,7 @@
 # This spell teleports you to your system trash directory.
 # Source this file or use word-of-binding to invoke it.
 
-show_usage() {
+jump_trash_usage() {
   cat <<'USAGE'
 Usage: jump-trash
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-  show_usage
+  jump_trash_usage
   exit 0
   ;;
 esac
@@ -91,7 +91,7 @@ alias jump-trash=jump_trash 2>/dev/null || true
 jump_trash_cli() {
   case ${1-} in
   --help|--usage|-h)
-    show_usage
+    jump_trash_usage
     ;;
   "")
     jump_trash || true

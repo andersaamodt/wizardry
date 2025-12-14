@@ -3,7 +3,7 @@
 # restart-service bounces a unit through systemctl restart, which is safer than
 # manually stopping/starting because systemd tracks dependencies for us.
 
-show_usage() {
+restart_service_usage() {
         cat <<'USAGE' >&2
 Usage: restart-service UNIT
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        restart_service_usage
         exit 0
         ;;
 esac

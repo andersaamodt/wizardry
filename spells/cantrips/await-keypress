@@ -3,7 +3,7 @@
 # Read a single key press from the controlling terminal and report it in a
 # descriptive form ("enter", "up", literal text, etc.).
 
-show_usage() {
+await_keypress_usage() {
         cat <<'USAGE' >&2
 Usage: await-keypress
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        await_keypress_usage
         exit 0
         ;;
 esac

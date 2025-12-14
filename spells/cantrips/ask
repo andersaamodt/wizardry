@@ -4,7 +4,7 @@
 # callers can depend on a single entrypoint.  Keeping this shim separate lets
 # other spells import ask-text directly while users enjoy the concise ask name.
 
-show_usage() {
+ask_usage() {
         cat <<'USAGE'
 Usage: ask "Question" [default]
 
@@ -14,7 +14,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        ask_usage
         exit 0
         ;;
 esac

@@ -2,7 +2,7 @@
 
 # Install Node.js using the available package manager, with NixOS rebuild support.
 
-show_usage() {
+install_node_usage() {
         cat <<'USAGE' >&2
 Usage: install-node
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        install_node_usage
         exit 0
         ;;
 esac
@@ -32,14 +32,14 @@ if ! command -v "$manage_cmd" >/dev/null 2>&1; then
   fi
 fi
 
-detect_nixos() {
+install_node_detect_nixos() {
   if command -v detect-distro >/dev/null 2>&1 && [ "$(detect-distro 2>/dev/null)" = "nixos" ]; then
     return 0
   fi
   return 1
 }
 
-prompt() {
+install_node_prompt() {
   message=$1
   default_value=$2
   printf '%s [%s]: ' "$message" "$default_value" >&2
@@ -51,7 +51,7 @@ prompt() {
 }
 
 package_default=${NODE_PACKAGE_DEFAULT:-nodejs}
-node_package=$(prompt "Which Node.js package should be installed?" "$package_default")
+node_package=$(install_node_prompt "Which Node.js package should be installed?" "$package_default")
 
 # Allow users to override per-manager packages to handle distro differences.
 export NIX_PACKAGE=${NIX_PACKAGE:-$node_package}
@@ -66,7 +66,7 @@ export PKGIN_PACKAGE=${PKGIN_PACKAGE:-$node_package}
 printf '\nInstalling Node.js using %s...\n' "$manage_cmd"
 "$manage_cmd" node "$node_package"
 
-if detect_nixos && command -v nixos-rebuild >/dev/null 2>&1; then
+if install_node_detect_nixos && command -v nixos-rebuild >/dev/null 2>&1; then
   printf '\nA NixOS system was detected. Run a system rebuild now to pick up configuration changes? [y/N]: '
   read -r rebuild || rebuild=""
   case "$rebuild" in

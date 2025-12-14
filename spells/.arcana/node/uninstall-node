@@ -2,7 +2,7 @@
 
 # Uninstall Node.js using the available package manager, with optional NixOS rebuild.
 
-show_usage() {
+uninstall_node_usage() {
         cat <<'USAGE' >&2
 Usage: uninstall-node
 
@@ -12,7 +12,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        uninstall_node_usage
         exit 0
         ;;
 esac
@@ -31,7 +31,7 @@ if ! command -v "$manage_cmd" >/dev/null 2>&1; then
   fi
 fi
 
-detect_nixos() {
+uninstall_node_detect_nixos() {
   if command -v detect-distro >/dev/null 2>&1 && [ "$(detect-distro 2>/dev/null)" = "nixos" ]; then
     return 0
   fi
@@ -44,7 +44,7 @@ node_package=${NODE_PACKAGE:-$node_package_default}
 printf '\nRemoving Node.js using %s...\n' "$manage_cmd"
 "$manage_cmd" --uninstall node "$node_package"
 
-if detect_nixos && command -v nixos-rebuild >/dev/null 2>&1; then
+if uninstall_node_detect_nixos && command -v nixos-rebuild >/dev/null 2>&1; then
   printf '\nA NixOS system was detected. Run a system rebuild to propagate removal? [y/N]: '
   read -r rebuild || rebuild=""
   case "$rebuild" in

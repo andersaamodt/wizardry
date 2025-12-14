@@ -3,7 +3,7 @@
 # This spell moves the cursor to the provided column (x) and row (y).
 
 
-show_usage() {
+move_cursor_usage() {
         cat <<'USAGE' >&2
 Usage: move-cursor <x> <y>
 
@@ -13,14 +13,14 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        move_cursor_usage
         exit 0
         ;;
 esac
 set -eu
 
 if [ "$#" -ne 2 ]; then
-    show_usage
+    move_cursor_usage
 fi
 
 x=$1

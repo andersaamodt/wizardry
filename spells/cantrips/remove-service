@@ -4,7 +4,7 @@
 # no service name is supplied the script politely prompts via ask-text so menu
 # entries can call it without additional flags.
 
-show_usage() {
+remove_service_usage() {
         cat <<'USAGE' >&2
 Usage: remove-service UNIT
 
@@ -14,7 +14,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        remove_service_usage
         exit 0
         ;;
 esac
@@ -40,7 +40,7 @@ if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
 fi
 SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
 
-find_ask_text() {
+remove_service_find_ask_text() {
 if [ -n "${REMOVE_SERVICE_ASK_TEXT-}" ]; then
 printf '%s' "$REMOVE_SERVICE_ASK_TEXT"
 return 0
@@ -57,7 +57,7 @@ printf '%s\n' "$SCRIPT_NAME: ask-text spell is required for prompts." >&2
 exit 1
 }
 
-ASK_TEXT_HELPER=$(find_ask_text)
+ASK_TEXT_HELPER=$(remove_service_find_ask_text)
 
 if command -v systemctl >/dev/null 2>&1; then
         SYSTEMCTL=$(command -v systemctl)
@@ -66,7 +66,7 @@ else
         exit 1
 fi
 
-require_privilege() {
+remove_service_require_privilege() {
         if [ "$(id -u)" -eq 0 ]; then
                 "$@"
                 return 0
@@ -101,10 +101,10 @@ fi
 
 if "$SYSTEMCTL" is-active --quiet "$service_name"; then
         printf '%s\n' "Stopping $service_name before removal..."
-        require_privilege "$SYSTEMCTL" stop "$service_name"
+        remove_service_require_privilege "$SYSTEMCTL" stop "$service_name"
 fi
 
 printf '%s\n' "Removing $service_name from $SERVICE_DIR..."
-require_privilege rm -f "$service_path"
-require_privilege "$SYSTEMCTL" daemon-reload
+remove_service_require_privilege rm -f "$service_path"
+remove_service_require_privilege "$SYSTEMCTL" daemon-reload
 printf 'Service %s removed.\n' "$service_name"

@@ -4,7 +4,7 @@
 
 require-wizardry || exit 1
 
-show_usage() {
+mud_admin_menu_usage() {
         cat <<'USAGE' >&2
 Usage: mud-admin
 
@@ -14,7 +14,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        mud_admin_menu_usage
         exit 0
         ;;
 esac
@@ -32,7 +32,7 @@ if ! require menu "The MUD Admin menu needs the 'menu' command to present option
   exit 1
 fi
 
-display_menu() {
+mud_admin_menu_display_menu() {
   add="Add authorized player%add-player"
   list_players="List authorized players%new-player"
   list_rooms="List shared rooms%list-rooms"
@@ -53,7 +53,7 @@ while true; do
     first_run=0
   fi
 
-  display_menu || true
+  mud_admin_menu_display_menu || true
 
   # Support MENU_LOOP_LIMIT for testing
   if [ -n "$loop_limit" ]; then

@@ -5,7 +5,7 @@
 
 require-wizardry || exit 1
 
-show_usage() {
+yaml_to_enchantment_usage() {
 cat <<'USAGE'
 Usage: yaml-to-enchantment <path-to-file>
 
@@ -15,7 +15,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        yaml_to_enchantment_usage
         exit 0
         ;;
 esac
@@ -23,7 +23,7 @@ set -eu
 
 if [ "$#" -ne 1 ]; then
     warn "Error: incorrect number of arguments"
-    show_usage >&2
+    yaml_to_enchantment_usage >&2
     exit 1
 fi
 

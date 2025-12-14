@@ -2,7 +2,7 @@
 
 # This spell checks and displays the running status of Tor.
 
-show_usage() {
+tor_status_usage() {
         cat <<'USAGE' >&2
 Usage: tor-status
 
@@ -12,7 +12,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        tor_status_usage
         exit 0
         ;;
 esac
@@ -21,7 +21,7 @@ set -eu
 . colors
 
 # Returns colored text based on status
-color_for_status() {
+tor_status_color_for_status() {
   case "$1" in
     "installed, running, bootstrapped")
       printf "${GREEN}"
@@ -67,7 +67,7 @@ get_tor_status() {
     status="not installed"
   fi
 
-  printf "$(color_for_status "$status")$status${RESET}\n"
+  printf "$(tor_status_color_for_status "$status")$status${RESET}\n"
 }
 
 get_tor_status

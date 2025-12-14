@@ -4,7 +4,7 @@
 # It prints platform, rc_file, and format hints so callers can update startup files safely.
 
 
-show_usage() {
+detect_rc_file_usage() {
         cat <<'USAGE' >&2
 Usage: detect-rc-file [--platform PLATFORM]
 
@@ -20,7 +20,7 @@ while [ "$#" -gt 0 ]; do
         --platform)
                 if [ "$#" -lt 2 ]; then
                         printf '%s\n' "detect-rc-file: --platform expects a value." >&2
-                        show_usage
+                        detect_rc_file_usage
                         exit 1
                 fi
                 platform=$2
@@ -31,7 +31,7 @@ while [ "$#" -gt 0 ]; do
                         shift
                         ;;
         --help|--usage|-h)
-                show_usage
+                detect_rc_file_usage
                 exit 0
                 ;;
         --)
@@ -40,7 +40,7 @@ while [ "$#" -gt 0 ]; do
                 ;;
         -*)
                 printf '%s\n' "detect-rc-file: unknown option '$1'." >&2
-                show_usage
+                detect_rc_file_usage
                 exit 1
                 ;;
         *)
@@ -53,7 +53,7 @@ done
 
 if [ "$#" -gt 0 ]; then
         printf '%s\n' "detect-rc-file: unexpected argument '$1'." >&2
-        show_usage
+        detect_rc_file_usage
         exit 1
 fi
 

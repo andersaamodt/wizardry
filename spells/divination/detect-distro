@@ -3,7 +3,7 @@
 # Bootstrap spell: prints a short identifier for the current OS.
 # Use -v to narrate detection while exporting DISTRO for callers.
 
-show_usage() {
+detect_distro_usage() {
 cat <<'USAGE'
 Usage: detect-distro [-v]
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        detect_distro_usage
         exit 0
         ;;
 esac
@@ -29,11 +29,11 @@ do
                 verbose=1
                 ;;
         h)
-                show_usage
+                detect_distro_usage
                 exit 0
                 ;;
         *)
-                show_usage >&2
+                detect_distro_usage >&2
                 exit 1
                 ;;
         esac
@@ -41,7 +41,7 @@ done
 shift $((OPTIND - 1))
 
 if [ "$#" -ne 0 ]; then
-        show_usage >&2
+        detect_distro_usage >&2
         exit 1
 fi
 

@@ -7,7 +7,7 @@
 # This script contains all color codes in the POSIX standard.
 # You must source this script with '. ./colors' (or an absolute path) to use it.
 
-show_usage() {
+colors_usage() {
         cat <<'USAGE'
 Usage: colors (source)
 
@@ -21,7 +21,7 @@ case "$0" in
 *colors)
         case "${1-}" in
         --help|--usage|-h)
-                show_usage
+                colors_usage
                 exit 0
                 ;;
         esac

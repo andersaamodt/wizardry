@@ -2,7 +2,7 @@
 
 # Install simplex-chat using the available package manager, with optional NixOS rebuild support.
 
-show_usage() {
+install_simplex_chat_usage() {
         cat <<'USAGE' >&2
 Usage: install-simplex-chat
 
@@ -12,11 +12,12 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        install_simplex_chat_usage
         exit 0
         ;;
 esac
 
+install_simplex_chat() {
 set -eu
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
@@ -100,3 +101,9 @@ if command -v simplex-chat >/dev/null 2>&1; then
 fi
 
 printf '\nSimplex-chat installation complete.\n'
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */install-simplex-chat|install-simplex-chat) install_simplex_chat "$@" ;;
+esac

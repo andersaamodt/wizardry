@@ -4,7 +4,7 @@
 # Use it as a batch helper to apply one incantation across many files.
 
 
-show_usage() {
+forall_usage() {
 cat <<'USAGE'
 Usage: forall <spell> [args...]
 
@@ -14,14 +14,14 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        forall_usage
         exit 0
         ;;
 esac
 set -eu
 
 if [ "$#" -lt 1 ]; then
-        show_usage >&2
+        forall_usage >&2
         exit 1
 fi
 

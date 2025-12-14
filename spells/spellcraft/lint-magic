@@ -3,7 +3,7 @@
 # This spell lints spells for formatting and style guide violations.
 # Run it against spell files to check formatting, linting, and code style compliance.
 
-show_usage() {
+lint_magic_usage() {
   cat <<'USAGE'
 Usage: lint-magic [--only PATTERN] [--list] [--verbose] [file...]
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-  show_usage
+  lint_magic_usage
   exit 0
   ;;
 esac
@@ -61,7 +61,7 @@ while [ "$#" -gt 0 ]; do
       ;;
     -*)
       printf '%s\n' "lint-magic: unknown option: $1" >&2
-      show_usage >&2
+      lint_magic_usage >&2
       exit 2
       ;;
     *)
@@ -80,7 +80,7 @@ is_imp() {
   return 1
 }
 
-gather_default_targets() {
+lint_magic_gather_default_targets() {
   find "$repo_dir/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) \
     -print | sort | while IFS= read -r file; do
       first_line=$(head -1 "$file")
@@ -101,7 +101,7 @@ gather_default_targets() {
     done
 }
 
-collect_targets() {
+lint_magic_collect_targets() {
   if [ "$#" -gt 0 ]; then
     for arg in "$@"; do
       case $arg in
@@ -114,7 +114,7 @@ collect_targets() {
       esac
     done
   else
-    gather_default_targets
+    lint_magic_gather_default_targets
   fi
 }
 
@@ -163,10 +163,10 @@ check_description_comment() {
 
 check_usage_function() {
   file=$1
-  if grep -qE '^[[:space:]]*show_usage\(\)' "$file" 2>/dev/null; then
+  if grep -qE '^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*_usage\(\)' "$file" 2>/dev/null; then
     return 0
   fi
-  printf 'missing usage function (show_usage)'
+  printf 'missing usage function (*_usage)'
   return 1
 }
 
@@ -707,7 +707,7 @@ spell_param_warning_count=0
 
 targets_file=$(temp-file lint-magic-targets) || exit 1
 trap 'cleanup-file "$targets_file"' EXIT HUP INT TERM
-collect_targets "$@" >"$targets_file"
+lint_magic_collect_targets "$@" >"$targets_file"
 
 if [ "$list_only" -eq 1 ]; then
   cat "$targets_file"

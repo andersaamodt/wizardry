@@ -3,7 +3,7 @@
 
 require-wizardry || exit 1
 
-show_usage() {
+mud_usage() {
   cat <<'USAGE'
 Usage: mud
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
   --help|--usage|-h)
-    show_usage
+    mud_usage
     exit 0
     ;;
 esac
@@ -46,7 +46,7 @@ get_portal_location() {
   esac
 }
 
-display_menu() {
+mud_display_menu() {
   portal_location=$(get_portal_location)
   
   look="Look Around%look"
@@ -78,5 +78,5 @@ while true; do
     first_run=0
   fi
 
-  display_menu || true
+  mud_display_menu || true
 done

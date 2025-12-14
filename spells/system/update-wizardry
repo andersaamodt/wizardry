@@ -3,7 +3,7 @@
 # This spell fast-forwards the wizardry repository in place.
 # It locates the checkout directory or accepts WIZARDRY_DIR to target another path.
 
-show_usage() {
+update_wizardry_usage() {
 cat <<'USAGE'
 Usage: update-wizardry
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        update_wizardry_usage
         exit 0
         ;;
 esac
@@ -24,11 +24,11 @@ script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 
 require_cmd=${REQUIRE_COMMAND-require-command}
 
-require() {
+update_wizardry_require() {
   "$require_cmd" "$@"
 }
 
-if ! require git "Update wizardry needs 'git' to pull the latest changes."; then
+if ! update_wizardry_require git "Update wizardry needs 'git' to pull the latest changes."; then
   exit 1
 fi
 

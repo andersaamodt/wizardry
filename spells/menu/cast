@@ -1,7 +1,7 @@
 #!/bin/sh
 # This spell casts previously memorized commands from the spellbook.
 
-show_usage() {
+cast_usage() {
         cat <<'USAGE'
 Usage: cast [--list|--dir]
 
@@ -15,7 +15,7 @@ USAGE
 
 case ${1-} in
         --help|--usage|-h)
-                show_usage
+                cast_usage
                 exit 0
                 ;;
 esac
@@ -71,7 +71,7 @@ case ${1-} in
                 :
                 ;;
         *)
-                show_usage >&2
+                cast_usage >&2
                 exit 1
                 ;;
 esac

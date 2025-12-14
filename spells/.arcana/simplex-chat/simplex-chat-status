@@ -2,7 +2,7 @@
 
 # Report installation and setup status for simplex-chat.
 
-show_usage() {
+simplex_chat_status_usage() {
         cat <<'USAGE' >&2
 Usage: simplex-chat-status
 
@@ -12,7 +12,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        simplex_chat_status_usage
         exit 0
         ;;
 esac
@@ -32,7 +32,7 @@ fi
 # Older scripts expect GRAY, so mirror GREY when missing.
 GRAY=${GREY-}
 
-color_for_status() {
+simplex_chat_status_color_for_status() {
   case "$1" in
     "installed")
       printf "%s" "$THEME_SUCCESS"
@@ -49,7 +49,7 @@ color_for_status() {
   esac
 }
 
-command_available() {
+simplex_chat_status_command_available() {
   command -v "$1" >/dev/null 2>&1
 }
 
@@ -58,15 +58,15 @@ config_dir=${SIMPLEX_CHAT_CONFIG_DIR:-$HOME/.config/simplex-chat}
 data_dir=${SIMPLEX_CHAT_DATA_DIR:-$HOME/.local/share/simplex-chat}
 
 get_simplex_status() {
-  if ! command_available "$simplex_bin"; then
+  if ! simplex_chat_status_command_available "$simplex_bin"; then
     status="not installed"
-    printf "%s%s%s\n" "$(color_for_status "$status")" "$status" "$RESET"
+    printf "%s%s%s\n" "$(simplex_chat_status_color_for_status "$status")" "$status" "$RESET"
     return
   fi
 
   if ! "$simplex_bin" --version >/dev/null 2>&1; then
     status="installed, error"
-    printf "%s%s%s\n" "$(color_for_status "$status")" "$status" "$RESET"
+    printf "%s%s%s\n" "$(simplex_chat_status_color_for_status "$status")" "$status" "$RESET"
     return
   fi
 
@@ -75,7 +75,7 @@ get_simplex_status() {
     status="installed, needs setup"
   fi
 
-  printf "%s%s%s\n" "$(color_for_status "$status")" "$status" "$RESET"
+  printf "%s%s%s\n" "$(simplex_chat_status_color_for_status "$status")" "$status" "$RESET"
 }
 
 get_simplex_status

@@ -2,7 +2,7 @@
 
 # Check if Bitcoin daemon is currently running.
 
-show_usage() {
+is_bitcoin_running_usage() {
         cat <<'USAGE' >&2
 Usage: is-bitcoin-running
 
@@ -12,7 +12,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        is_bitcoin_running_usage
         exit 0
         ;;
 esac

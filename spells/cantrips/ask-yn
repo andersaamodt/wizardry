@@ -3,7 +3,7 @@
 # ask-yn coaxes a yes or no from the adventurer.  Defaults guide hesitant
 # wanderers, and every response is echoed so other spells can heed the choice.
 
-show_usage() {
+ask_yn_usage() {
         cat <<'USAGE' >&2
 Usage: ask-yn "Question" [default]
 
@@ -14,7 +14,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        ask_yn_usage
         exit 0
         ;;
 esac
@@ -22,7 +22,7 @@ esac
 set -eu
 
 if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
-        show_usage
+        ask_yn_usage
         exit 1
 fi
 
@@ -46,7 +46,7 @@ if [ "$#" -eq 2 ]; then
         esac
 fi
 
-select_input() {
+ask_yn_select_input() {
         case ${ASK_CANTRIP_INPUT:-auto} in
         stdin)
                 printf '%s\n' stdin
@@ -74,7 +74,7 @@ select_input() {
 
 prompt_and_read() {
         printf '%s %s ' "$question" "$default_hint" >&2
-        input=$(select_input) || return 1
+        input=$(ask_yn_select_input) || return 1
         case $input in
         stdin)
                 IFS= read -r reply || reply=

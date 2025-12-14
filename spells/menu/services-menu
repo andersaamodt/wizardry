@@ -5,7 +5,7 @@
 
 require-wizardry || exit 1
 
-show_usage() {
+services_menu_usage() {
   cat <<'USAGE'
 Usage: services-menu
 
@@ -15,7 +15,7 @@ USAGE
 
 case "${1-}" in
   --help|--usage|-h)
-    show_usage
+    services_menu_usage
     exit 0
     ;;
 esac
@@ -41,7 +41,7 @@ done
 # Catch Ctrl-C and TERM signal to exit cleanly
 trap 'exit 0' INT TERM
 
-display_menu() {
+services_menu_display_menu() {
   start_item="Start a service%start-service"
   stop_item="Stop a service%stop-service"
   restart_item="Restart a service%restart-service"
@@ -70,5 +70,5 @@ while true; do
     first_run=0
   fi
 
-  display_menu || true
+  services_menu_display_menu || true
 done

@@ -2,7 +2,7 @@
 
 # Present the Node.js management menu.
 
-show_usage() {
+node_menu_usage() {
   cat <<'USAGE'
 Usage: node-menu
 
@@ -12,11 +12,12 @@ USAGE
 
 case "${1-}" in
   --help|--usage|-h)
-    show_usage
+    node_menu_usage
     exit 0
     ;;
 esac
 
+node_menu() {
 set -eu
 . colors
 
@@ -95,7 +96,7 @@ version_entries() {
   fi
 }
 
-display_menu() {
+node_menu_display_menu() {
   title="${BOLD}${CYAN}Node.js: $(node-status)"
   exit_label=$(exit-label)
   exit_option="${exit_label}%kill -TERM \$PPID"
@@ -130,7 +131,13 @@ while :; do
   else
     first_run=0
   fi
-  display_menu || true
+  node_menu_display_menu || true
   # Loop to refresh status
   :
 done
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */node-menu|node-menu) node_menu "$@" ;;
+esac

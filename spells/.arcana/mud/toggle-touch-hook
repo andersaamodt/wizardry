@@ -3,7 +3,7 @@
 # Toggle touch hook on/off in MUD config.
 # This is a planned feature that will activate special behavior on touch.
 
-show_usage() {
+toggle_touch_hook_usage() {
 cat <<'USAGE'
 Usage: toggle-touch-hook
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        toggle_touch_hook_usage
         exit 0
         ;;
 esac

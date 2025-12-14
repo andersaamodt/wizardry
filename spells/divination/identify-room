@@ -5,7 +5,7 @@
 
 require-wizardry || exit 1
 
-show_usage() {
+identify_room_usage() {
 cat <<'USAGE'
 Usage: identify-room [--list] [path]
 
@@ -17,7 +17,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        identify_room_usage
         exit 0
         ;;
 esac
@@ -38,11 +38,11 @@ do
                 list_only=1
                 ;;
         h)
-                show_usage
+                identify_room_usage
                 exit 0
                 ;;
         *)
-                show_usage >&2
+                identify_room_usage >&2
                 exit 1
                 ;;
         esac
@@ -50,7 +50,7 @@ done
 shift $((OPTIND - 1))
 
 if [ "$list_only" -eq 1 ] && [ "$#" -gt 0 ]; then
-        show_usage >&2
+        identify_room_usage >&2
         exit 1
 fi
 
@@ -88,7 +88,7 @@ output_room() {
         printf '%s\n' "$2"
 }
 
-detect_platform() {
+identify_room_detect_platform() {
         if command -v detect-distro >/dev/null 2>&1; then
                 detect-distro 2>/dev/null || true
                 return
@@ -118,7 +118,7 @@ if resolved_home=$(home_path); then
         home_name=$(basename -- "$normalized_home")
 fi
 
-distro=$(detect_platform || true)
+distro=$(identify_room_detect_platform || true)
 
 recognize_room() {
         room=$1

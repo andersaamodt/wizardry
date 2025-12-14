@@ -7,7 +7,7 @@
 SCRIPT_NAME=$(basename "$0")
 SERVICE_DIR=${SERVICE_DIR:-/etc/systemd/system}
 
-show_usage() {
+install_service_template_usage() {
         cat <<USAGE >&2
 Usage: $SCRIPT_NAME /path/to/template [KEY=value ...]
 
@@ -19,7 +19,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        install_service_template_usage
         exit 0
         ;;
 esac
@@ -27,7 +27,7 @@ esac
 set -eu
 
 # Helper to run commands with privilege escalation if needed
-require_privilege() {
+install_service_template_require_privilege() {
   if [ "$(id -u)" -eq 0 ]; then
     "$@"
     return 0
@@ -101,7 +101,7 @@ else
         template_path=$("$ASK_TEXT" "Path to the service template:")
 fi
 if [ -z "$template_path" ]; then
-        show_usage
+        install_service_template_usage
         exit 1
 fi
 if [ ! -f "$template_path" ]; then
@@ -173,8 +173,8 @@ fi
 rm -f "$placeholders_file"
 
 # Install the service file
-require_privilege cp "$tmp_file" "$service_path"
-require_privilege chmod 644 "$service_path"
-require_privilege "$SYSTEMCTL" daemon-reload
+install_service_template_require_privilege cp "$tmp_file" "$service_path"
+install_service_template_require_privilege chmod 644 "$service_path"
+install_service_template_require_privilege "$SYSTEMCTL" daemon-reload
 
 printf '%s\n' "Service installed at $service_path"

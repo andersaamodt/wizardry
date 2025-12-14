@@ -3,7 +3,7 @@
 # This spell reloads the SSH service configuration without restarting.
 # Use it after modifying sshd_config to apply changes.
 
-show_usage() {
+reload_ssh_usage() {
 cat <<'USAGE'
 Usage: reload-ssh
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        reload_ssh_usage
         exit 0
         ;;
 esac

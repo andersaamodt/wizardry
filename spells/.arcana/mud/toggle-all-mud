@@ -3,7 +3,7 @@
 # Toggle all MUD features on or off.
 # This enables or disables all MUD features at once.
 
-show_usage() {
+toggle_all_mud_usage() {
 cat <<'USAGE'
 Usage: toggle-all-mud [--enable|--disable]
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        toggle_all_mud_usage
         exit 0
         ;;
 esac
@@ -58,7 +58,7 @@ case "${1-}" in
                 ;;
         *)
                 printf '%s\n' "toggle-all-mud: unknown option '$1'" >&2
-                show_usage >&2
+                toggle_all_mud_usage >&2
                 exit 1
                 ;;
 esac

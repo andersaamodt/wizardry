@@ -3,7 +3,7 @@
 # This spell displays a menu of system logs for easy viewing.
 # Use it to browse and view common log files on the system.
 
-show_usage() {
+logs_usage() {
 cat <<'USAGE'
 Usage: logs
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        logs_usage
         exit 0
         ;;
 esac

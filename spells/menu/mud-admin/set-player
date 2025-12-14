@@ -3,7 +3,7 @@
 # This spell sets the current player identity for MUD connections.
 # The player name is stored in the MUD config directory.
 
-show_usage() {
+set_player_usage() {
 cat <<'USAGE'
 Usage: set-player <playername>
 
@@ -14,7 +14,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        set_player_usage
         exit 0
         ;;
 esac
@@ -25,7 +25,7 @@ player="${1-}"
 
 if [ -z "$player" ]; then
     printf '%s\n' "set-player: player name required." >&2
-    show_usage >&2
+    set_player_usage >&2
     exit 1
 fi
 

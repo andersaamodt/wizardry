@@ -106,7 +106,7 @@ test_menu_spells_require_menu() {
 }
 
 # --- Check: Spells expose standardized help handlers ---
-# Ensure each spell provides show_usage() and a --help|--usage|-h) case
+# Ensure each spell provides *_usage() and a --help|--usage|-h) case
 test_spells_have_help_usage_handlers() {
   missing_usage=""
   missing_handler=""
@@ -118,7 +118,7 @@ test_spells_have_help_usage_handlers() {
 
     rel_path=${spell#"$ROOT_DIR/spells/"}
 
-    if ! grep -qE '^[[:space:]]*show_usage\(\)' "$spell" 2>/dev/null; then
+    if ! grep -qE '^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*_usage\(\)' "$spell" 2>/dev/null; then
       missing_usage="${missing_usage:+$missing_usage, }$rel_path"
       continue
     fi
@@ -129,7 +129,7 @@ test_spells_have_help_usage_handlers() {
   done
 
   if [ -n "$missing_usage" ]; then
-    TEST_FAILURE_REASON="missing show_usage(): $missing_usage"
+    TEST_FAILURE_REASON="missing *_usage() function: $missing_usage"
     return 1
   fi
 
@@ -673,7 +673,7 @@ spells/.arcana/core/
 }
 
 # --- Check: Spells follow function discipline ---
-# Each spell may have show_usage() plus at most a few additional functions.
+# Each spell may have *_usage() plus at most a few additional functions.
 # The rule enforces linear, readable scrolls over proto-libraries.
 # - 0-1 additional functions: freely allowed (the "spell-heart helper")
 # - 2 additional functions: warning (invoked from multiple paths, not suitable as imp)
@@ -732,10 +732,10 @@ system/test-magic
     func_count_multiline=${func_count_multiline:-0}
     func_count=$((func_count_inline + func_count_multiline))
     
-    # Subtract 1 for show_usage (which every spell should have)
+    # Subtract 1 for the *_usage function (which every spell should have)
     additional_funcs=$((func_count - 1))
     
-    # Allow negative (no show_usage is caught by another test)
+    # Allow negative (no *_usage is caught by another test)
     [ "$additional_funcs" -lt 0 ] && additional_funcs=0
     
     # Write to appropriate temp file based on additional function count
@@ -772,6 +772,103 @@ system/test-magic
   return 0
 }
 
+# --- Check: No function name collisions ---
+# When spells are sourced via invoke-wizardry, function names must be unique
+# This prevents one spell from overwriting another's functions
+# This is a structural check - ensures spell isolation when sourced
+#
+# EXCEPTION: Compiled spells (doppelganger) are standalone executables that inline
+# their dependencies. Multiple compiled spells will naturally have duplicate function
+# definitions from shared imps (e.g., _has, _there). This is expected and acceptable
+# since compiled spells never source each other - they are independent executables.
+
+test_no_function_name_collisions() {
+  # Skip collision check for compiled/doppelganger spells - duplicates are expected
+  # when imps are inlined into multiple standalone executables
+  if [ "${WIZARDRY_TEST_COMPILED:-0}" = "1" ]; then
+    return 0
+  fi
+  
+  # Track all function definitions
+  collisions_file=$(mktemp "${WIZARDRY_TMPDIR}/func-collisions.XXXXXX")
+  functions_file=$(mktemp "${WIZARDRY_TMPDIR}/func-list.XXXXXX")
+  imp_functions_file=$(mktemp "${WIZARDRY_TMPDIR}/imp-funcs.XXXXXX")
+  
+  # Check all executable spells (excluding .imps and .arcana)
+  for spell_dir in "$ROOT_DIR"/spells/*; do
+    [ -d "$spell_dir" ] || continue
+    case "$spell_dir" in
+      */.imps|*/.arcana) continue ;;
+    esac
+    
+    for spell in "$spell_dir"/*; do
+      [ -f "$spell" ] && [ -x "$spell" ] || continue
+      
+      # Extract function names (looking for function_name() {)
+      while IFS= read -r line; do
+        if printf '%s' "$line" | grep -qE '^[a-zA-Z_][a-zA-Z0-9_]*\(\)[[:space:]]*\{'; then
+          func_name=$(printf '%s' "$line" | sed 's/()[[:space:]]*{.*//')
+          printf '%s:%s\n' "$func_name" "$spell" >> "$functions_file"
+        fi
+      done < "$spell"
+    done
+  done
+  
+  # Check imps for underscore-prefixed functions (track separately)
+  for imp_family in "$ROOT_DIR"/spells/.imps/*; do
+    [ -d "$imp_family" ] || continue
+    for imp in "$imp_family"/*; do
+      [ -f "$imp" ] && [ -x "$imp" ] || continue
+      
+      while IFS= read -r line; do
+        if printf '%s' "$line" | grep -qE '^_[a-zA-Z_][a-zA-Z0-9_]*\(\)[[:space:]]*\{'; then
+          func_name=$(printf '%s' "$line" | sed 's/()[[:space:]]*{.*//')
+          printf '%s:%s\n' "$func_name" "$imp" >> "$imp_functions_file"
+        fi
+      done < "$imp"
+    done
+  done
+  
+  # Find collisions in spells (non-.imps files)
+  if [ -f "$functions_file" ]; then
+    sort "$functions_file" | awk -F: '
+    {
+      if (seen[$1]) {
+        if (!reported[$1]) {
+          print "Function " $1 " collision: " seen[$1] " and " $2
+          reported[$1] = 1
+        }
+      } else {
+        seen[$1] = $2
+      }
+    }' > "$collisions_file"
+  fi
+  
+  # Find collisions within imps themselves (underscore functions colliding with other imps)
+  if [ -f "$imp_functions_file" ]; then
+    sort "$imp_functions_file" | awk -F: '
+    {
+      if (seen[$1]) {
+        if (!reported[$1]) {
+          print "Function " $1 " collision: " seen[$1] " and " $2
+          reported[$1] = 1
+        }
+      } else {
+        seen[$1] = $2
+      }
+    }' >> "$collisions_file"
+  fi
+  
+  collisions=$(cat "$collisions_file" 2>/dev/null || true)
+  rm -f "$collisions_file" "$functions_file" "$imp_functions_file"
+  
+  if [ -n "$collisions" ]; then
+    TEST_FAILURE_REASON="function name collisions detected: $(printf '%s' "$collisions" | tr '\n' '; ')"
+    return 1
+  fi
+  return 0
+}
+
 # --- Run all test cases ---
 
 _run_test_case "no duplicate spell names" test_no_duplicate_spell_names
@@ -789,5 +886,6 @@ _run_test_case "imps follow one-function-or-zero rule" test_imps_follow_function
 _run_test_case "imps have opening comments" test_imps_have_opening_comments
 _run_test_case "bootstrap spells have identifying comment" test_bootstrap_spells_identified
 _run_test_case "spells follow function discipline" test_spells_follow_function_discipline
+_run_test_case "no function name collisions" test_no_function_name_collisions
 
 _finish_tests

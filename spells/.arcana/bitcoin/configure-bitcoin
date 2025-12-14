@@ -2,7 +2,7 @@
 
 # This spell facilitates the setting of the configurations for thy Bitcoin system.
 
-show_usage() {
+configure_bitcoin_usage() {
         cat <<'USAGE' >&2
 Usage: configure-bitcoin
 
@@ -12,7 +12,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        configure_bitcoin_usage
         exit 0
         ;;
 esac
@@ -22,6 +22,7 @@ esac
 
 # Function to check if a command needs to be run with sudo
 
+configure_bitcoin() {
 set -eu
 retry_with_sudo() {
     echo "Permission denied. Invoking the power of the super user..."
@@ -125,3 +126,9 @@ if [ "$alt_storage" = 1 ]; then
 fi
 
 printf "Bitcoin configuration has been updated.\n"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */configure-bitcoin|configure-bitcoin) configure_bitcoin "$@" ;;
+esac

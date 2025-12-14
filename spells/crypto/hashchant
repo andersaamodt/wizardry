@@ -4,7 +4,7 @@
 # Stores a CRC-32 derived from the filename and contents under user.hash.
 
 
-show_usage() {
+hashchant_usage() {
 cat <<'USAGE'
 Usage: hashchant <file>
 
@@ -14,7 +14,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        hashchant_usage
         exit 0
         ;;
 esac

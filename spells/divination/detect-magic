@@ -6,7 +6,7 @@
 # The flow stays linear: discover the helper, choose colour, scan the room, then
 # summarize the ambience so new spellwrights can follow along.
 
-show_usage() {
+detect_magic_usage() {
 cat <<'USAGE'
 Usage: detect-magic
 
@@ -16,7 +16,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        detect_magic_usage
         exit 0
         ;;
 esac

@@ -2,7 +2,7 @@
 
 # Uninstall Bitcoin Lightning.
 
-show_usage() {
+uninstall_lightning_usage() {
         cat <<'USAGE' >&2
 Usage: uninstall-lightning
 
@@ -12,7 +12,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        uninstall_lightning_usage
         exit 0
         ;;
 esac
