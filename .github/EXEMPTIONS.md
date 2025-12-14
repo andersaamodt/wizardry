@@ -163,14 +163,11 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 
 **Temporary Exemptions** (4 spells - TO BE REFACTORED):
 
-**Spellcraft** (1 spell):
-- `spellcraft/lint-magic` (21 additional) - Comprehensive linting tool, candidate for multiple spells
-
 **Arcana** (1 spell):
 - `.arcana/mud/cd` (14 additional) - MUD navigation system, needs refactoring
 
-**Other** (2 spells):
-- `menu/spellbook` (10 additional) - Menu infrastructure
+**Other** (3 spells):
+- `menu/spellbook` (10 additional) - Menu infrastructure (reduced from 30→10)
 - `system/update-all` (10 additional) - Update system
 - `system/test-magic` (15 additional) - Test runner
 
@@ -180,7 +177,8 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 - `cantrips/assertions` - Removed (boot/ test imps already provide assertion functionality)
 
 
-**Refactored** (36 spells - COMPLETED ✅):
+**Refactored** (37 spells - COMPLETED ✅):
+- `spellcraft/lint-magic` (22→2) - Added word-of-binding wrapper function, maintains 0 extra functions beyond usage
 - `menu/spellbook` (30→10) - Major refactor, created 3 reusable imps
 - `spellcraft/learn-spell` (8→1) - Inlined warn and detect_env_once - **NOW REMOVED (obsolete)**
 - `spellcraft/scribe-spell` (10→1) - Inlined helpers, removed learn-spellbook dependency
@@ -222,12 +220,12 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 - `.arcana/tor/configure-tor` (6→1)
 - `.arcana/mud/mud-config` (5→4)
 
-**Action Required**: Remaining 4 spells (plus several in arcana/) should be refactored to:
-1. Extract reusable logic into imps in `spells/.imps/`
+**Action Required**: Remaining 4 spells should be refactored to:
+1. Extract reusable logic into imps in `spells/.imps/` (only if used by 2+ spells)
 2. Split into multiple smaller spells if handling multiple actions
 3. Simplify linear flow by inlining single-use helpers
 
-**Progress**: 36/38 spells refactored (95%) - 3 spells removed as obsolete
+**Progress**: 37/41 spells refactored (90%) - 3 spells removed as obsolete
 
 ---
 
