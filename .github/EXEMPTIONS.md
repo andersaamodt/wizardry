@@ -6,7 +6,7 @@ Documents all deviations from project standards with justification.
 
 - **Style**: 330/330 files compliant (2 hardcoded exemptions for doppelganger)
 - **Code Structure**: Conditional imps exempt from `set -eu`; imps exempt from `--help`
-- **Function Discipline**: 3 spells with 4+ functions (proto-libraries) - test FAILS to maintain visibility for refactoring
+- **Function Discipline**: 2 spells with 4+ functions (proto-libraries) - test FAILS to maintain visibility for refactoring
 - **Testing**: Bootstrap scripts can't use wizardry infrastructure
 - **Non-Shell Files**: Systemd service files exempt from all shell checks (2 files)
 - **CI**: No exemptions - all checks required
@@ -161,10 +161,7 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 
 **Rule**: Spells should have `show_usage()` plus at most 1-3 additional helper functions. 4+ additional functions indicate a proto-library that needs decomposition into multiple spells and/or imps.
 
-**Temporary Exemptions** (3 spells - TO BE REFACTORED):
-
-**Arcana** (1 spell):
-- `.arcana/mud/cd` (14 additional) - MUD navigation system, needs refactoring
+**Temporary Exemptions** (2 spells - TO BE REFACTORED):
 
 **Other** (2 spells):
 - `menu/spellbook` (10 additional) - Menu infrastructure (reduced from 30→10)
@@ -219,13 +216,14 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 - `.arcana/tor/configure-tor` (6→1)
 - `.arcana/mud/mud-config` (5→4)
 - `system/test-magic` (15→2) - **Word-of-binding compliant** - Wrapped main logic in function, maintains 2 functions total (usage + main)
+- `.arcana/mud/cd` (15→12) - **Word-of-binding compliant** - Inlined 4 helper functions, wrapped in word-of-binding pattern
 
-**Action Required**: Remaining 3 spells should be refactored to:
+**Action Required**: Remaining 2 spells should be refactored to:
 1. Extract reusable logic into imps in `spells/.imps/` (only if used by 2+ spells)
 2. Split into multiple smaller spells if handling multiple actions
 3. Simplify linear flow by inlining single-use helpers
 
-**Progress**: 39/41 spells refactored (95%) - 3 spells removed as obsolete
+**Progress**: 40/41 spells refactored (98%) - 3 spells removed as obsolete
 
 ---
 

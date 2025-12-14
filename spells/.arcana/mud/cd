@@ -14,10 +14,11 @@ Replace builtin cd so it runs 'look' after each directory change, keeping the MU
 USAGE
 }
 
+cd_spell() {
 case "${1-}" in
 --help|--usage|-h)
         cd_usage
-        exit 0
+        return 0
         ;;
 esac
 
@@ -223,20 +224,6 @@ cd_block_present() {
         return 1
 }
 
-ensure_rc_dir() {
-        target=$1
-        rc_dir=${target%/*}
-        [ "$rc_dir" = "$target" ] && rc_dir=.
-        if [ -d "$rc_dir" ]; then
-                return 0
-        fi
-        if mkdir -p "$rc_dir"; then
-                return 0
-        fi
-        cd_warn "unable to create directory '$rc_dir'."
-        return 1
-}
-
 install() {
         # Detect nix format from detect-rc-file output
         rc_format=$(resolve_rc_format)
@@ -273,8 +260,14 @@ install() {
         fi
 
         # Standard shell format installation
-        if ! ensure_rc_dir "$rc_file"; then
-                return 1
+        # Inline ensure_rc_dir logic
+        rc_dir=${rc_file%/*}
+        [ "$rc_dir" = "$rc_file" ] && rc_dir=.
+        if [ ! -d "$rc_dir" ]; then
+                if ! mkdir -p "$rc_dir"; then
+                        cd_warn "unable to create directory '$rc_dir'."
+                        return 1
+                fi
         fi
         tmp_file=$(temp-file wizardry-cd) || return 1
         trap 'cleanup-file "$tmp_file"' EXIT HUP INT TERM
@@ -350,29 +343,20 @@ uninstall() {
         printf '%s\n' "cd cantrip: uninstalled wizardry hooks from '$rc_file'."
 }
 
-locate_ask_yn() {
-        if command -v ask-yn >/dev/null 2>&1; then
-                command -v ask-yn
-                return 0
-        fi
-        if [ -x "$SCRIPT_DIR/ask-yn" ]; then
-                printf '%s\n' "$SCRIPT_DIR/ask-yn"
-                return 0
-        fi
-        if [ -x "$SCRIPT_DIR/cantrips/ask-yn" ]; then
-                printf '%s\n' "$SCRIPT_DIR/cantrips/ask-yn"
-                return 0
-        fi
-        cd_warn "ask-yn spell is missing; skipping installation prompt."
-        return 1
-}
-
 prompt_install_if_needed() {
         rc_file=$(resolve_rc_file) || return
         if cd_block_present "$rc_file"; then
                 return
         fi
-        if ! ask_yn_cmd=$(locate_ask_yn); then
+        # Inline locate_ask_yn logic
+        ask_yn_cmd=""
+        if command -v ask-yn >/dev/null 2>&1; then
+                ask_yn_cmd=$(command -v ask-yn)
+        elif [ -x "$SCRIPT_DIR/cantrips/ask-yn" ]; then
+                ask_yn_cmd="$SCRIPT_DIR/cantrips/ask-yn"
+        fi
+        if [ -z "$ask_yn_cmd" ]; then
+                cd_warn "ask-yn spell is missing; skipping installation prompt."
                 return
         fi
         rc_display=$(basename "$rc_file")
@@ -385,28 +369,15 @@ prompt_install_if_needed() {
         fi
 }
 
-wizardry_cd_cast_look() {
-        if command -v look >/dev/null 2>&1; then
-                look "$@"
-                return
-        fi
-        cd_warn "look spell is not available."
-}
-
-wizardry_cd_main() {
-        # Use 'command cd' to call the builtin cd and avoid alias recursion
-        command cd "$@" && wizardry_cd_cast_look
-}
-
 # Handle command-line invocation for install/uninstall commands
 case "${1-}" in
 install)
         install
-        exit $?
+        return $?
         ;;
 uninstall)
         uninstall
-        exit $?
+        return $?
         ;;
 esac
 
@@ -414,5 +385,17 @@ esac
 # prompt to install and then run the cd
 if [ -z "${WIZARDRY_MEMORIZE_TARGET-}" ]; then
         prompt_install_if_needed || true
-        wizardry_cd_main "$@"
+        # Inline wizardry_cd_main and wizardry_cd_cast_look logic
+        # Use 'command cd' to call the builtin cd and avoid alias recursion
+        command cd "$@" || return $?
+        if command -v look >/dev/null 2>&1; then
+                look
+        else
+                cd_warn "look spell is not available."
+        fi
 fi
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */cd) cd_spell "$@" ;; esac
