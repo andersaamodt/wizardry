@@ -33,7 +33,7 @@ else
     require_cmd=require-command
 fi
 
-require() {
+fathom_terminal_require() {
     "$require_cmd" "$@"
 }
 
@@ -80,7 +80,7 @@ if [ "$want_width" -eq 0 ] && [ "$want_height" -eq 0 ]; then
 fi
 
 # tput is our interface to terminfo; fail loudly when it is absent.
-if ! require tput "The fathom-terminal spell needs 'tput' to query terminfo."; then
+if ! fathom_terminal_require tput "The fathom-terminal spell needs 'tput' to query terminfo."; then
     exit 1
 fi
 

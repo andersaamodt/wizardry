@@ -27,7 +27,7 @@ esac
 set -eu
 
 # Helper to run commands with privilege escalation if needed
-require_privilege() {
+install_service_template_require_privilege() {
   if [ "$(id -u)" -eq 0 ]; then
     "$@"
     return 0
@@ -173,8 +173,8 @@ fi
 rm -f "$placeholders_file"
 
 # Install the service file
-require_privilege cp "$tmp_file" "$service_path"
-require_privilege chmod 644 "$service_path"
-require_privilege "$SYSTEMCTL" daemon-reload
+install_service_template_require_privilege cp "$tmp_file" "$service_path"
+install_service_template_require_privilege chmod 644 "$service_path"
+install_service_template_require_privilege "$SYSTEMCTL" daemon-reload
 
 printf '%s\n' "Service installed at $service_path"

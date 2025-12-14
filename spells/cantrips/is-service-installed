@@ -39,7 +39,7 @@ if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
 fi
 SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
 
-find_ask_text() {
+is_service_installed_find_ask_text() {
 if [ -n "${IS_SERVICE_INSTALLED_ASK_TEXT-}" ]; then
 printf '%s' "$IS_SERVICE_INSTALLED_ASK_TEXT"
 return 0

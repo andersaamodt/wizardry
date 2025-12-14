@@ -28,7 +28,7 @@ esac
 set -eu
 
 # Helper for reading non-empty lines
-nonempty() {
+forget_nonempty() {
   [ -n "$1" ]
 }
 
@@ -102,7 +102,7 @@ fi
 tmp=$(temp-file forget) || exit 1
 trap 'cleanup-file "$tmp"' EXIT HUP INT TERM
 removed=0
-while IFS= read -r line || nonempty "$line"; do
+while IFS= read -r line || forget_nonempty "$line"; do
   entry_name=$line
   case $line in
   *"$tab_char"*)

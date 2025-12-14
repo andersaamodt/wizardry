@@ -47,7 +47,7 @@ has_player_key() {
   return 1
 }
 
-display_menu() {
+mud_settings_display_menu() {
   # Show appropriate player key option based on whether key exists
   if has_player_key; then
     player_key_item="Copy player key to clipboard%copy ~/.ssh/\$MUD_PLAYER.pub"
@@ -74,7 +74,7 @@ while true; do
     first_run=0
   fi
 
-  display_menu || true
+  mud_settings_display_menu || true
 
   # Support MENU_LOOP_LIMIT for testing
   if [ -n "$loop_limit" ]; then

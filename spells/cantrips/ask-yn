@@ -46,7 +46,7 @@ if [ "$#" -eq 2 ]; then
         esac
 fi
 
-select_input() {
+ask_yn_select_input() {
         case ${ASK_CANTRIP_INPUT:-auto} in
         stdin)
                 printf '%s\n' stdin

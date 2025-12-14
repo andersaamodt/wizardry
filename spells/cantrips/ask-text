@@ -34,10 +34,10 @@ if [ "$#" -eq 2 ]; then
         default_hint=" [$default_value]"
 fi
 
-# select_input picks stdin when available so piped answers win, otherwise it
+# ask_text_select_input picks stdin when available so piped answers win, otherwise it
 # opens /dev/tty for interactivity.  ASK_CANTRIP_INPUT overrides the choice for
 # tests and scripted callers.
-select_input() {
+ask_text_select_input() {
         case ${ASK_CANTRIP_INPUT:-auto} in
         stdin)
                 printf '%s\n' stdin
@@ -60,7 +60,7 @@ select_input() {
         return 1
 }
 
-prompt() {
+ask_text_prompt() {
         printf '%s%s ' "$question" "$default_hint" >&2
 }
 
@@ -81,7 +81,7 @@ read_line() {
         return 0
 }
 
-prompt
+ask_text_prompt
 if ! response=$(read_line); then
         if [ -n "$default_value" ]; then
                 printf '%s\n' "$default_value"

@@ -52,8 +52,8 @@ if [ "$min" -gt "$max" ]; then
         exit 1
 fi
 
-# select_input matches ask-text/ask-yn so callers can steer input selection.
-select_input() {
+# ask_number_select_input matches ask-text/ask-yn so callers can steer input selection.
+ask_number_select_input() {
         case ${ASK_CANTRIP_INPUT:-auto} in
         stdin)
                 printf '%s\n' stdin
@@ -76,7 +76,7 @@ select_input() {
         return 1
 }
 
-prompt() {
+ask_number_prompt() {
         printf '%s [%s-%s] ' "$question" "$min" "$max" >&2
 }
 
@@ -98,7 +98,7 @@ read_value() {
 }
 
 while :; do
-        prompt
+        ask_number_prompt
         if ! response=$(read_value); then
                 printf '%s\n' "ask-number: No interactive input available." >&2
                 exit 1

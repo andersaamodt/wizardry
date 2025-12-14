@@ -38,7 +38,7 @@ if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
 fi
 SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
 
-find_ask_text() {
+enable_service_find_ask_text() {
 if [ -n "${ENABLE_SERVICE_ASK_TEXT-}" ]; then
 printf '%s' "$ENABLE_SERVICE_ASK_TEXT"
 return 0
@@ -57,7 +57,7 @@ exit 1
 
 ASK_TEXT_HELPER=$(find_ask_text)
 
-run_systemctl() {
+enable_service_run_systemctl() {
         if [ -z "${SYSTEMCTL-}" ]; then
                 if command -v systemctl >/dev/null 2>&1; then
                         SYSTEMCTL=$(command -v systemctl)
@@ -78,7 +78,7 @@ run_systemctl() {
         exit 1
 }
 
-normalize_unit() {
+enable_service_normalize_unit() {
         unit=$1
         case $unit in
         *.service)
@@ -100,5 +100,5 @@ if [ -z "$service_name" ]; then
 fi
 unit=$(normalize_unit "$service_name")
 printf 'Enabling %s so it starts at boot...\n' "$unit"
-run_systemctl enable "$unit"
+enable_service_run_systemctl enable "$unit"
 printf '%s\n' "systemd enablement request submitted."

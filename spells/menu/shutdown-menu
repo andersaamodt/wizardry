@@ -81,7 +81,7 @@ fi
 # Catch Ctrl-C and TERM signal to exit cleanly
 trap 'exit 0' INT TERM
 
-display_menu() {
+shutdown_menu_display_menu() {
   # Graceful restart/shutdown give processes time to clean up
   restart_item="Restart%sudo shutdown -r +0"
   shutdown_item="Shutdown%sudo shutdown -h +0"
@@ -114,5 +114,5 @@ while true; do
     first_run=0
   fi
 
-  display_menu || true
+  shutdown_menu_display_menu || true
 done

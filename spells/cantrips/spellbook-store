@@ -26,7 +26,7 @@ esac
 set -eu
 
 # Helper for reading non-empty lines
-nonempty() {
+spellbook_store_nonempty() {
   [ -n "$1" ]
 }
 
@@ -116,7 +116,7 @@ add)
   tmp=$(temp-file spellbook-store) || exit 1
   trap 'cleanup-file "$tmp"' EXIT HUP INT TERM
   if [ -f "$spellbook_file" ]; then
-    while IFS= read -r line || nonempty "$line"; do
+    while IFS= read -r line || spellbook_store_nonempty "$line"; do
       entry_name=$line
       entry_command=''
       case $line in
@@ -165,7 +165,7 @@ remove)
   tmp=$(temp-file spellbook-store) || exit 1
   trap 'cleanup-file "$tmp"' EXIT HUP INT TERM
   removed=0
-  while IFS= read -r line || nonempty "$line"; do
+  while IFS= read -r line || spellbook_store_nonempty "$line"; do
     entry_name=$line
     case $line in
     *"$tab_char"*)

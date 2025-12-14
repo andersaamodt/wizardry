@@ -41,7 +41,7 @@ is_mud_enabled() {
   fi
 }
 
-display_menu() {
+main_menu_display_menu() {
   cast="Cast%cast"
   spellbook="Spellbook%spellbook"
   install="Arcana%install-menu"
@@ -71,5 +71,5 @@ while true; do
     first_run=0
   fi
 
-  display_menu || true
+  main_menu_display_menu || true
 done
