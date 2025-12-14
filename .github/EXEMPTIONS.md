@@ -134,10 +134,7 @@ case "$0" in */has) _has "$@" ;; esac
 
 **Rule**: Spells should have `show_usage()` plus at most 1-3 additional helper functions. 4+ additional functions indicate a proto-library that needs decomposition into multiple spells and/or imps.
 
-**Temporary Exemptions** (4 spells - TO BE REFACTORED):
-
-**Spellcraft** (1 spell):
-- `spellcraft/lint-magic` (4 additional) - Comprehensive linting tool, refactored from 21→4 functions
+**Temporary Exemptions** (3 spells - TO BE REFACTORED):
 
 **Arcana** (1 spell):
 - `.arcana/mud/cd` (14 additional) - MUD navigation system, needs refactoring
@@ -153,8 +150,8 @@ case "$0" in */has) _has "$@" ;; esac
 - `cantrips/assertions` - Removed (boot/ test imps already provide assertion functionality)
 
 
-**Refactored** (37 spells - COMPLETED ✅):
-- `spellcraft/lint-magic` (21→4) - Inlined 17 functions (81% reduction)
+**Refactored** (38 spells - COMPLETED ✅):
+- `spellcraft/lint-magic` (21→2) - Inlined 19 functions (90% reduction)
 - `menu/spellbook` (30→10) - Major refactor, created 3 reusable imps
 - `spellcraft/learn-spell` (8→1) - Inlined warn and detect_env_once - **NOW REMOVED (obsolete)**
 - `spellcraft/scribe-spell` (10→1) - Inlined helpers, removed learn-spellbook dependency
