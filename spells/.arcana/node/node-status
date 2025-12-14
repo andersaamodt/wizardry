@@ -6,7 +6,8 @@ show_usage() {
         cat <<'USAGE' >&2
 Usage: node-status
 
-Reports whether Node.js is installed, whether npm is available, and whether a Node-related service is running.
+Reports whether Node.js is installed, whether npm is available,
+and whether a Node-related service is running.
 USAGE
 }
 
@@ -58,9 +59,11 @@ service_name=""
 for candidate in ${NODE_SERVICE-} node nodejs node-app; do
   [ -n "$candidate" ] || continue
   
-  if command -v is-service-installed >/dev/null 2>&1 && is-service-installed "$candidate" >/dev/null 2>&1; then
-    service_name=$candidate
-    break
+  if command -v is-service-installed >/dev/null 2>&1; then
+    if is-service-installed "$candidate" >/dev/null 2>&1; then
+      service_name=$candidate
+      break
+    fi
   fi
   
   if command -v systemctl >/dev/null 2>&1; then
@@ -74,10 +77,14 @@ done
 
 if [ -n "$service_name" ]; then
   is_running="no"
-  if command -v is-service-running >/dev/null 2>&1 && is-service-running "$service_name" >/dev/null 2>&1; then
-    is_running="yes"
-  elif command -v systemctl >/dev/null 2>&1 && systemctl is-active "$service_name" >/dev/null 2>&1; then
-    is_running="yes"
+  if command -v is-service-running >/dev/null 2>&1; then
+    if is-service-running "$service_name" >/dev/null 2>&1; then
+      is_running="yes"
+    fi
+  elif command -v systemctl >/dev/null 2>&1; then
+    if systemctl is-active "$service_name" >/dev/null 2>&1; then
+      is_running="yes"
+    fi
   fi
   
   if [ "$is_running" = "yes" ]; then
