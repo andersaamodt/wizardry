@@ -81,10 +81,17 @@ jobs:
 
           echo "Moved to workspace. Ready for artifact upload."
 
+      - name: Generate artifact name with date
+        id: artifact-name
+        run: |
+          DATE=$(date +'%Y-%-m-%-d')
+          echo "name=wizardry-compiled-${DATE}" >> "$GITHUB_OUTPUT"
+          echo "Artifact name: wizardry-compiled-${DATE}"
+
       - name: Upload compiled wizardry artifact
         uses: actions/upload-artifact@v4
         with:
-          name: wizardry-compiled-${{ github.sha }}
+          name: ${{ steps.artifact-name.outputs.name }}
           path: |
             wizardry-compiled/LICENSE
             wizardry-compiled/README.md
