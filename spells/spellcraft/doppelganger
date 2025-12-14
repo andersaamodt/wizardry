@@ -70,13 +70,11 @@ say "Compiling all spells..."
 compiled_count=0
 failed_count=0
 
-# Process spells from known locations
+# Process spells from known locations (excluding .imps since they're inlined into spells)
 for spell_path in \
   "$repo_dir/spells"/*/* \
   "$repo_dir/spells"/*/*/* \
   "$repo_dir/spells"/*/*/*/* \
-  "$repo_dir/spells"/.imps/*/* \
-  "$repo_dir/spells"/.imps/*/*/* \
   "$repo_dir/spells"/.arcana/*/*
 do
   # Skip if not a file or not executable
