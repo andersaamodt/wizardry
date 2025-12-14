@@ -22,18 +22,19 @@ esac
 
 # Function to check if a command needs to be run with sudo
 
+configure_bitcoin() {
 set -eu
 configure_bitcoin_retry_with_sudo() {
     echo "Permission denied. Invoking the power of the super user..."
     sudo "$@"
     if [ $? -ne 0 ]; then
         echo "Failed to execute with elevated privileges. Make certain thou hast the necessary permissions and try again."
-        exit 1
+        return 1
     fi
 }
 
 # Handle Ctrl-C
-#trap "printf '\n'; exit 2" 2
+#trap "printf '\n'; return 2" 2
 
 # Create bitcoin directory and configuration file if they do not exist
 mkdir -p "$HOME/.bitcoin"
@@ -125,3 +126,9 @@ if [ "$alt_storage" = 1 ]; then
 fi
 
 printf "Bitcoin configuration has been updated.\n"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */configure-bitcoin|configure-bitcoin) configure_bitcoin "$@" ;;
+esac

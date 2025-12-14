@@ -17,10 +17,11 @@ case "${1-}" in
     ;;
 esac
 
+lightning_menu() {
 set -eu
 . colors
 
-trap 'exit 0' INT TERM
+trap 'return 0' INT TERM
 
 lightning_menu_command_available() {
   command -v "$1" >/dev/null 2>&1
@@ -98,8 +99,14 @@ while :; do
   fi
   lightning_menu_display_menu || true
   if ! is_lightning_installed; then
-    # When lightning is not installed, allow user to exit after running installer once.
+    # When lightning is not installed, allow user to return after running installer once.
     :
   fi
   # Loop continues so status updates are shown.
 done
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */lightning-menu|lightning-menu) lightning_menu "$@" ;;
+esac

@@ -17,6 +17,7 @@ case "${1-}" in
         ;;
 esac
 
+install_simplex_chat() {
 set -eu
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
@@ -27,7 +28,7 @@ if ! command -v "$manage_cmd" >/dev/null 2>&1; then
     manage_cmd="$script_dir/../core/manage-system-command"
   else
     printf '%s\n' "install-simplex-chat: unable to find manage-system-command" >&2
-    exit 1
+    return 1
   fi
 fi
 
@@ -100,3 +101,9 @@ if command -v simplex-chat >/dev/null 2>&1; then
 fi
 
 printf '\nSimplex-chat installation complete.\n'
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */install-simplex-chat|install-simplex-chat) install_simplex_chat "$@" ;;
+esac

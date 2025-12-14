@@ -17,10 +17,11 @@ case "${1-}" in
     ;;
 esac
 
+node_menu() {
 set -eu
 . colors
 
-trap 'exit 0' INT TERM
+trap 'return 0' INT TERM
 
 node_menu_command_available() {
   command -v "$1" >/dev/null 2>&1
@@ -134,3 +135,9 @@ while :; do
   # Loop to refresh status
   :
 done
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */node-menu|node-menu) node_menu "$@" ;;
+esac
