@@ -216,7 +216,7 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 - `.arcana/tor/configure-tor` (6→1)
 - `.arcana/mud/mud-config` (5→4)
 - `system/test-magic` (15→2) - **Word-of-binding compliant** - Wrapped main logic in function, maintains 2 functions total (usage + main)
-- `.arcana/mud/cd` (15→12) - **Word-of-binding compliant** - Inlined 4 helper functions, wrapped in word-of-binding pattern
+- `.arcana/mud/cd` (15→2) - **MASSIVELY SIMPLIFIED** - Uses settings file + word-of-binding pattern, 2 functions total (usage + hook), 34 lines (was 401!)
 
 **Action Required**: Remaining 2 spells should be refactored to:
 1. Extract reusable logic into imps in `spells/.imps/` (only if used by 2+ spells)
