@@ -23,13 +23,14 @@ esac
 
 # Check if a command needs to be re-invoked with sudo
 
+change_bitcoin_directory() {
 set -eu
-change_bitcoin_directory_retry_with_sudo() {
+retry_with_sudo() {
     echo "Permission denied. Invoking the power of the super user..."
     sudo "$@"
     if [ $? -ne 0 ]; then
         echo "Failed to execute with elevated privileges. Make certain thou hast the necessary permissions and try again."
-        exit 1
+        return 1
     fi
 }
 
