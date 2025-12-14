@@ -70,16 +70,6 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
-is_imp() {
-  file=$1
-  case $file in
-    */.imps/*|*/.imps)
-      return 0
-      ;;
-  esac
-  return 1
-}
-
 gather_default_targets() {
   find "$repo_dir/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) \
     -print | sort | while IFS= read -r file; do
@@ -118,20 +108,6 @@ collect_targets() {
   fi
 }
 
-check_shebang() {
-  file=$1
-  first_line=$(head -1 "$file")
-  case $first_line in
-    '#!/bin/sh'|'#! /bin/sh')
-      return 0
-      ;;
-    *)
-      printf 'missing or incorrect shebang (expected #!/bin/sh)'
-      return 1
-      ;;
-  esac
-}
-
 check_description_comment() {
   file=$1
   # Read lines 2, 3, and 4 to allow up to 3-line opening comments
@@ -161,46 +137,6 @@ check_description_comment() {
   esac
 }
 
-check_usage_function() {
-  file=$1
-  if grep -qE '^[[:space:]]*show_usage\(\)' "$file" 2>/dev/null; then
-    return 0
-  fi
-  printf 'missing usage function (show_usage)'
-  return 1
-}
-
-check_help_handler() {
-  file=$1
-  if grep -qF -- '--help|--usage|-h)' "$file" 2>/dev/null; then
-    return 0
-  fi
-  printf 'missing --help|--usage|-h handler'
-  return 1
-}
-
-check_strict_mode() {
-  file=$1
-  # Accept set -eu, set -e, or set -e -u as valid strict mode
-  if grep -qE 'set -e' "$file" 2>/dev/null; then
-    return 0
-  fi
-  printf 'missing strict mode (set -e or set -eu)'
-  return 1
-}
-
-check_trailing_space_assignment() {
-  file=$1
-  # Look for pattern: variable= followed by newline (trailing space assignment)
-  match=$(grep -En '^[a-zA-Z_][a-zA-Z0-9_]*= $' "$file" 2>/dev/null | head -1) || true
-  if [ -n "$match" ]; then
-    line_num=$(printf '%s' "$match" | cut -d: -f1)
-    printf 'trailing space in variable assignment at line %s' "$line_num"
-    return 1
-  fi
-  return 0
-}
-
 check_posix_compliance() {
   file=$1
   checkbashisms_cmd=${CHECKBASHISMS-}
@@ -218,53 +154,6 @@ check_posix_compliance() {
   fi
   printf 'POSIX compliance violation (run checkbashisms for details)'
   return 1
-}
-
-check_which_usage() {
-  file=$1
-  # Check for 'which' command usage patterns:
-  # - which command (at start of line or after certain shell operators)
-  # - $(which ...) or `which ...` patterns
-  # Excludes English prose containing "which" in comments or heredocs
-  # Only match if followed by a simple command name (letters, digits, hyphens, underscores)
-  if grep -E '(^|[;|&])[[:space:]]*which[[:space:]]+[a-zA-Z0-9_-]+|`which[[:space:]]|\$\(which[[:space:]]' "$file" 2>/dev/null | grep -v '^[[:space:]]*#' | grep -q .; then
-    printf 'uses "which" (prefer "command -v" for POSIX compliance)'
-    return 1
-  fi
-  return 0
-}
-
-check_backtick_usage() {
-  file=$1
-  # Check for backtick usage (excluding comments)
-  if grep -E '\`[^\`]+\`' "$file" 2>/dev/null | grep -v '^[[:space:]]*#' | grep -q .; then
-    printf 'uses backticks (prefer $() for command substitution)'
-    return 1
-  fi
-  return 0
-}
-
-check_spell_naming() {
-  file=$1
-  name=$(basename "$file")
-  
-  # Check for underscore in name (should use hyphens)
-  case $name in
-    *_*)
-      printf 'spell name uses underscore (prefer hyphens)'
-      return 1
-      ;;
-  esac
-  
-  # Check for .sh extension (spells shouldn't have extensions)
-  case $name in
-    *.sh)
-      printf 'spell has .sh extension (spells should have no extension)'
-      return 1
-      ;;
-  esac
-  
-  return 0
 }
 
 check_function_naming() {
@@ -336,16 +225,6 @@ AWKSCRIPT
   fi
   
   rm -f "$awk_script"
-  return 0
-}
-
-check_imp_no_help_handler() {
-  file=$1
-  # Imps should NOT have --help handlers - the opening comment is their spec
-  if grep -qF -- '--help|--usage|-h)' "$file" 2>/dev/null; then
-    printf 'imp has --help handler (imps use opening comment as spec, not --help)'
-    return 1
-  fi
   return 0
 }
 
@@ -490,24 +369,6 @@ check_imp_param_count() {
   fi
   if [ "$count" -gt 3 ]; then
     printf 'imp has %d parameters (max 3 allowed)' "$count"
-    return 1
-  fi
-  return 0
-}
-
-# Formatting checks (warnings, not failures)
-
-check_inconsistent_indentation() {
-  file=$1
-  # Check for mixed tabs and spaces in indentation
-  # This is a heuristic check: if both tabs and spaces are used for indentation, warn
-  # Use printf to create a literal tab character for the pattern
-  tab=$(printf '\t')
-  has_tab_indent=$(grep -E "^[[:space:]]*${tab}" "$file" 2>/dev/null | head -1) || true
-  has_space_indent=$(grep -E '^  ' "$file" 2>/dev/null | head -1) || true
-  
-  if [ -n "$has_tab_indent" ] && [ -n "$has_space_indent" ]; then
-    printf 'mixed tabs and spaces for indentation (prefer 2 spaces)'
     return 1
   fi
   return 0
@@ -744,18 +605,25 @@ while IFS= read -r target; do
   fi
   
   is_imp_file=0
-  if is_imp "$target" || is_imp "$path"; then
-    is_imp_file=1
-  fi
+  case "$target" in
+    */.imps/*|*/.imps) is_imp_file=1 ;;
+  esac
+  case "$path" in
+    */.imps/*|*/.imps) is_imp_file=1 ;;
+  esac
   
   issues=''
   issue_count=0
   
   # Check shebang (required for all)
-  if ! result=$(check_shebang "$path"); then
-    issues=${issues:+$issues; }$result
-    issue_count=$((issue_count + 1))
-  fi
+  first_line=$(head -1 "$path")
+  case $first_line in
+    '#!/bin/sh'|'#! /bin/sh') ;;
+    *)
+      issues=${issues:+$issues; }'missing or incorrect shebang (expected #!/bin/sh)'
+      issue_count=$((issue_count + 1))
+      ;;
+  esac
   
   # Check description comment (required for all)
   if ! result=$(check_description_comment "$path"); then
@@ -765,31 +633,33 @@ while IFS= read -r target; do
   
   # Check usage function (not required for imps)
   if [ "$is_imp_file" -eq 0 ]; then
-    if ! result=$(check_usage_function "$path"); then
-      issues=${issues:+$issues; }$result
+    if ! grep -qE '^[[:space:]]*show_usage\(\)' "$path" 2>/dev/null; then
+      issues=${issues:+$issues; }'missing usage function (show_usage)'
       issue_count=$((issue_count + 1))
     fi
   fi
   
   # Check help handler (not required for imps)
   if [ "$is_imp_file" -eq 0 ]; then
-    if ! result=$(check_help_handler "$path"); then
-      issues=${issues:+$issues; }$result
+    if ! grep -qF -- '--help|--usage|-h)' "$path" 2>/dev/null; then
+      issues=${issues:+$issues; }'missing --help|--usage|-h handler'
       issue_count=$((issue_count + 1))
     fi
   fi
   
   # Check strict mode (not required for imps - they often use exit codes for flow control)
   if [ "$is_imp_file" -eq 0 ]; then
-    if ! result=$(check_strict_mode "$path"); then
-      issues=${issues:+$issues; }$result
+    if ! grep -qE 'set -e' "$path" 2>/dev/null; then
+      issues=${issues:+$issues; }'missing strict mode (set -e or set -eu)'
       issue_count=$((issue_count + 1))
     fi
   fi
   
   # Check trailing space assignment (required for all)
-  if ! result=$(check_trailing_space_assignment "$path"); then
-    issues=${issues:+$issues; }$result
+  match=$(grep -En '^[a-zA-Z_][a-zA-Z0-9_]*= $' "$path" 2>/dev/null | head -1) || true
+  if [ -n "$match" ]; then
+    line_num=$(printf '%s' "$match" | cut -d: -f1)
+    issues=${issues:+$issues; }"trailing space in variable assignment at line $line_num"
     issue_count=$((issue_count + 1))
   fi
   
@@ -800,22 +670,33 @@ while IFS= read -r target; do
   fi
   
   # Check which usage (required for all)
-  if ! result=$(check_which_usage "$path"); then
-    issues=${issues:+$issues; }$result
+  # Check for 'which' command usage patterns: which command, $(which ...), or `which ...`
+  # Excludes English prose containing "which" in comments or heredocs
+  if grep -E '(^|[;|&])[[:space:]]*which[[:space:]]+[a-zA-Z0-9_-]+|`which[[:space:]]|\$\(which[[:space:]]' "$path" 2>/dev/null | grep -v '^[[:space:]]*#' | grep -q .; then
+    issues=${issues:+$issues; }'uses "which" (prefer "command -v" for POSIX compliance)'
     issue_count=$((issue_count + 1))
   fi
   
   # Check backtick usage (required for all)
-  if ! result=$(check_backtick_usage "$path"); then
-    issues=${issues:+$issues; }$result
+  if grep -E '\`[^\`]+\`' "$path" 2>/dev/null | grep -v '^[[:space:]]*#' | grep -q .; then
+    issues=${issues:+$issues; }'uses backticks (prefer $() for command substitution)'
     issue_count=$((issue_count + 1))
   fi
   
   # Check spell naming convention (required for all)
-  if ! result=$(check_spell_naming "$path"); then
-    issues=${issues:+$issues; }$result
-    issue_count=$((issue_count + 1))
-  fi
+  spell_name=$(basename "$path")
+  case $spell_name in
+    *_*)
+      issues=${issues:+$issues; }'spell name uses underscore (prefer hyphens)'
+      issue_count=$((issue_count + 1))
+      ;;
+  esac
+  case $spell_name in
+    *.sh)
+      issues=${issues:+$issues; }'spell has .sh extension (spells should have no extension)'
+      issue_count=$((issue_count + 1))
+      ;;
+  esac
   
   # Check function naming convention (required for all)
   if ! result=$(check_function_naming "$path" "$is_imp_file"); then
@@ -826,8 +707,8 @@ while IFS= read -r target; do
   # Imp-specific checks (only for imps)
   if [ "$is_imp_file" -eq 1 ]; then
     # Imps should not have --help handlers
-    if ! result=$(check_imp_no_help_handler "$path"); then
-      issues=${issues:+$issues; }$result
+    if grep -qF -- '--help|--usage|-h)' "$path" 2>/dev/null; then
+      issues=${issues:+$issues; }'imp has --help handler (imps use opening comment as spec, not --help)'
       issue_count=$((issue_count + 1))
     fi
     
@@ -852,10 +733,12 @@ while IFS= read -r target; do
     fi
   fi
   
-  # Formatting checks (now required, will fail)
   # Check for inconsistent indentation
-  if ! result=$(check_inconsistent_indentation "$path"); then
-    issues=${issues:+$issues; }$result
+  tab=$(printf '\t')
+  has_tab_indent=$(grep -E "^[[:space:]]*${tab}" "$path" 2>/dev/null | head -1) || true
+  has_space_indent=$(grep -E '^  ' "$path" 2>/dev/null | head -1) || true
+  if [ -n "$has_tab_indent" ] && [ -n "$has_space_indent" ]; then
+    issues=${issues:+$issues; }'mixed tabs and spaces for indentation (prefer 2 spaces)'
     issue_count=$((issue_count + 1))
   fi
   
