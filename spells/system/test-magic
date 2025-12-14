@@ -282,7 +282,7 @@ spell_name_for_test() {
       ;;
   esac
   
-  # Inline spell_path_for_test logic
+  # Convert test path to corresponding spell path
   rel=${test_path#"$test_dir/"}
   dir=$(dirname "$rel")
   base=$(basename "$rel")
@@ -455,6 +455,7 @@ while IFS= read -r test_path <&3; do
   # Imps (in .imps/): Need MIN_SUBTESTS_IMP subtests (no --help).
   # Spells: Need a --help test PLUS MIN_SUBTESTS_IMP additional behavioral subtests.
   # Global tests (test-install.sh, test-suite.sh): Exempt from --help requirement.
+  # Extract total subtest count from test output (X/Y tests passed → Y)
   test_subtest_count=$(printf '%s\n' "$cleaned_output" | awk '
     /^[0-9]+\/[0-9]+ tests passed/ {
       split($1, parts, "/")
