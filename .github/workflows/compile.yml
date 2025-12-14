@@ -82,9 +82,10 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const keepCount = 3;  // Number of most recent artifacts to keep
+            const keepCount = 3;  // Number of recent artifacts to keep
 
-            console.log(`Cleaning up artifacts, keeping ${keepCount} most recent...`);
+            const msg = `Cleaning up artifacts, keeping ${keepCount}...`;
+            console.log(msg);
 
             // Fetch all artifacts with pagination
             let allArtifacts = [];
@@ -115,12 +116,14 @@ jobs:
 
             console.log(`Total artifacts found: ${allArtifacts.length}`);
 
-            // Filter for compiled wizardry artifacts and sort by creation date
+            // Filter for compiled wizardry artifacts
+            const prefix = 'wizardry-compiled-';
             const compiledArtifacts = allArtifacts
-              .filter(artifact => artifact.name.startsWith('wizardry-compiled-'))
+              .filter(artifact => artifact.name.startsWith(prefix))
               .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-            console.log(`Found ${compiledArtifacts.length} wizardry-compiled artifacts`);
+            const foundMsg = `Found ${compiledArtifacts.length} artifacts`;
+            console.log(foundMsg);
 
             // Keep only the most recent N, delete the rest
             const toDelete = compiledArtifacts.slice(keepCount);
@@ -133,7 +136,8 @@ jobs:
             console.log(`Deleting ${toDelete.length} old artifacts...`);
 
             for (const artifact of toDelete) {
-              console.log(`Deleting: ${artifact.name} (created ${artifact.created_at})`);
+              const delMsg = `Deleting: ${artifact.name}`;
+              console.log(delMsg);
               try {
                 await github.rest.actions.deleteArtifact({
                   owner: context.repo.owner,
@@ -142,8 +146,11 @@ jobs:
                 });
                 console.log(`  ✓ Deleted ${artifact.name}`);
               } catch (error) {
-                console.log(`  ✗ Failed to delete ${artifact.name}: ${error.message}`);
+                const errMsg = `  ✗ Failed: ${error.message}`;
+                console.log(errMsg);
               }
             }
 
-            console.log(`Cleanup complete. Kept ${Math.min(keepCount, compiledArtifacts.length)} most recent artifacts`);
+            const kept = Math.min(keepCount, compiledArtifacts.length);
+            const doneMsg = `Cleanup complete. Kept ${kept} artifacts`;
+            console.log(doneMsg);
