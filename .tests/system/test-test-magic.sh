@@ -8,6 +8,10 @@ done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
+# Fast test used for file descriptor bug regression validation
+# Use a simple boot test to avoid recursive heavy test execution
+FAST_TEST_FOR_VALIDATION=".imps/test/boot/test-assert-success.sh"
+
 spell_is_executable() {
   [ -x "$ROOT_DIR/spells/system/test-magic" ]
 }
@@ -27,19 +31,20 @@ spell_has_content() {
 # tests that read from stdin can consume lines from the test list.
 # This verifies all tests are processed correctly.
 all_tests_are_processed() {
-  # Run test-magic on a small subset of tests and verify counts match
+  # Run test-magic on a small, fast test and verify counts match
   tmpdir="$(_make_tempdir)"
   tmpfile="$tmpdir/output.txt"
   
-  # Find first few test files
   cd "$ROOT_DIR" || return 1
-  first_test=$(sh spells/system/test-magic --list 2>&1 | head -1 | sed 's/^[[:space:]]*//' | awk '{print $1}')
   
-  # If we can't find a test, skip this validation
-  [ -n "$first_test" ] || return 0
+  # Verify the test exists before running
+  if [ ! -f "$ROOT_DIR/.tests/$FAST_TEST_FOR_VALIDATION" ]; then
+    # If the specific test doesn't exist, skip validation
+    return 0
+  fi
   
-  # Run test-magic on that one test
-  sh spells/system/test-magic --only "$first_test" >"$tmpfile" 2>&1 || true
+  # Run test-magic on that one simple test
+  sh spells/system/test-magic --only "$FAST_TEST_FOR_VALIDATION" >"$tmpfile" 2>&1 || true
   
   # Extract the test heading (e.g., [1/1])
   last_heading=$(grep -E '^\[[0-9]+/[0-9]+\]' "$tmpfile" | tail -1 || true)
