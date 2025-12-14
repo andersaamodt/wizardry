@@ -67,7 +67,7 @@ if ! command -v pkgin >/dev/null 2>&1; then
   done
 fi
 
-run_installer() {
+manage_system_command_run_installer() {
   cmd=$1
   shift
   if command -v sudo >/dev/null 2>&1; then
@@ -83,7 +83,7 @@ try_action() {
   if ! command -v "$installer" >/dev/null 2>&1; then
     return 1
   fi
-  run_installer "$installer" "$@"
+  manage_system_command_run_installer "$installer" "$@"
 }
 
 if [ "$action" = "install" ]; then

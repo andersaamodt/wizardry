@@ -32,7 +32,7 @@ if [ "$force_install" != "1" ] && [ "$has_checkbashisms" = "yes" ]; then
         exit 0
 fi
 
-run_installer() {
+install_checkbashisms_run_installer() {
         cmd=$1
         shift
         if command -v sudo >/dev/null 2>&1; then
@@ -48,7 +48,7 @@ try_install() {
         if ! command -v "$installer" >/dev/null 2>&1; then
             return 1
         fi
-        run_installer "$installer" "$@"
+        install_checkbashisms_run_installer "$installer" "$@"
 }
 
 # Debian/Ubuntu: checkbashisms is packaged within devscripts.

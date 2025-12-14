@@ -79,7 +79,7 @@ fi
 # Signal parent process to exit menu loop
 exit_entry="${exit_label}%kill -TERM \$PPID"
 
-resolve_spell() {
+core_menu_resolve_spell() {
   spell_name=$1
 
   if command -v "$spell_name" >/dev/null 2>&1; then
@@ -134,17 +134,17 @@ while true; do
         # and contains only alphanumeric characters, making it safe to use
         set -- "$@" "${display_label}%printf '\\n%s is essential for the shell to function and should not be uninstalled.\\n' '$label'; printf 'Press Enter to continue...'; read dummy"
       else
-        spell=$(resolve_spell "$install_spell") || exit 1
+        spell=$(core_menu_resolve_spell "$install_spell") || exit 1
         set -- "$@" "${display_label}%$spell"
       fi
     else
       # Non-essential command handling (original logic)
       if [ "$installed" -eq 1 ]; then
         entry_label="Uninstall $label"
-        spell=$(resolve_spell "$uninstall_spell") || exit 1
+        spell=$(core_menu_resolve_spell "$uninstall_spell") || exit 1
       else
         entry_label="Install $label"
-        spell=$(resolve_spell "$install_spell") || exit 1
+        spell=$(core_menu_resolve_spell "$install_spell") || exit 1
       fi
 
       display_label=$entry_label
