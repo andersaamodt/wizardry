@@ -64,14 +64,22 @@ jobs:
           ls -la /tmp/wizardry-compiled/
 
           echo ""
-          echo "=== Files in compiled directory ==="
+          echo "=== Root files ==="
           find /tmp/wizardry-compiled -maxdepth 1 -type f
+
+          echo ""
+          echo "=== Directories ==="
+          find /tmp/wizardry-compiled -maxdepth 1 -type d
+
+          echo ""
+          echo "=== Spell count ==="
+          find /tmp/wizardry-compiled/spells -type f | wc -l
 
       - name: Upload compiled wizardry artifact
         uses: actions/upload-artifact@v4
         with:
           name: wizardry-compiled-${{ github.sha }}
-          path: /tmp/wizardry-compiled/
+          path: /tmp/wizardry-compiled
           retention-days: 730
           if-no-files-found: error
 
