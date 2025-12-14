@@ -483,25 +483,32 @@ AWKSCRIPT
   # FAIL if long line contains commands that could be logically split
   # ALLOW if long line is primarily a long string literal (error messages, help text, etc.)
   
+  # Check for long lines - inline AWK script filters heredocs and analyzes string content
   # Hardcoded exemptions for files that have long lines that cannot be split
   # without breaking doppelganger compilation or other tools
   # See .github/EXEMPTIONS.md for justification
+  skip_long_lines=0
   case "$path" in
     */spells/.imps/cond/is)
       # The 'empty' case in the is imp has a long conditional that spans one line.
       # Splitting it across multiple lines breaks doppelganger compilation because
       # compile-spell's case label detection expects `case_label) ... ;;` on same line
       # or matching pattern. This is documented in EXEMPTIONS.md.
+      skip_long_lines=1
       ;;
     */spells/divination/identify-room)
       # The list_recognized function has a long directory path list in a case statement.
       # Splitting it breaks doppelganger compilation similar to the is imp issue above.
       # This is documented in EXEMPTIONS.md.
+      skip_long_lines=1
       ;;
   esac
   
-  # Create temp file for awk script with robust heredoc detection and string detection
-  cat >"$awk_script" <<'AWKSCRIPT'
+  if [ "$skip_long_lines" -eq 0 ]; then
+    # Create temp file for awk script with robust heredoc detection and string detection
+    awk_script=$(mktemp "${TMPDIR:-/tmp}/lint-magic-lines-awk.XXXXXX") || awk_script=""
+    if [ -n "$awk_script" ]; then
+      cat >"$awk_script" <<'AWKSCRIPT'
 BEGIN { in_heredoc = 0; heredoc_end = ""; max_len = 100; sq = sprintf("%c", 39) }
 # Detect heredoc start - handles <<'DELIM', <<"DELIM", and <<DELIM
 /<<-?[ \t]*'[A-Za-z_][A-Za-z0-9_]*'/ {
@@ -595,22 +602,25 @@ length($0) > max_len {
 }
 AWKSCRIPT
   
-  long_lines=$(awk -f "$awk_script" "$path" 2>/dev/null | head -3) || true
-  rm -f "$awk_script"
-  
-  if [ -n "$long_lines" ]; then
-    first_line=$(printf '%s' "$long_lines" | head -1 | cut -d: -f1)
-    issues=${issues:+$issues; }"lines exceed 100 characters (line $first_line and possibly others); split logically or use intermediate variables"
-    issue_count=$((issue_count + 1))
+      long_lines=$(awk -f "$awk_script" "$path" 2>/dev/null | head -3) || true
+      rm -f "$awk_script"
+      
+      if [ -n "$long_lines" ]; then
+        first_line=$(printf '%s' "$long_lines" | head -1 | cut -d: -f1)
+        issues=${issues:+$issues; }"lines exceed 100 characters (line $first_line and possibly others); split logically or use intermediate variables"
+        issue_count=$((issue_count + 1))
+      fi
+    fi
   fi
   
-  # Check for echo usage (prefer printf)
   # Check for echo usage - inline AWK script filters heredocs
   # Prefer printf over echo for better portability
   # Skip lines that are comments or inside heredocs
   
   # Create temp file for awk script with robust heredoc detection
-  cat >"$awk_script" <<'AWKSCRIPT'
+  awk_script=$(mktemp "${TMPDIR:-/tmp}/lint-magic-echo-awk.XXXXXX") || awk_script=""
+  if [ -n "$awk_script" ]; then
+    cat >"$awk_script" <<'AWKSCRIPT'
 BEGIN { in_heredoc = 0; heredoc_end = "" }
 # Detect heredoc start
 /<<-?[ \t]*'[A-Za-z_][A-Za-z0-9_]*'/ {
@@ -645,13 +655,14 @@ in_heredoc { next }
   exit
 }
 AWKSCRIPT
-  
-  line_num=$(awk -f "$awk_script" "$path" 2>/dev/null) || true
-  rm -f "$awk_script"
-  
-  if [ -n "$line_num" ]; then
-    issues=${issues:+$issues; }"uses echo (prefer printf for portability) at line $line_num"
-    issue_count=$((issue_count + 1))
+    
+    line_num=$(awk -f "$awk_script" "$path" 2>/dev/null) || true
+    rm -f "$awk_script"
+    
+    if [ -n "$line_num" ]; then
+      issues=${issues:+$issues; }"uses echo (prefer printf for portability) at line $line_num"
+      issue_count=$((issue_count + 1))
+    fi
   fi
   
   if [ "$issue_count" -eq 0 ]; then
