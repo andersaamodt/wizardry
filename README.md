@@ -44,6 +44,14 @@ cd ~/.wizardry
 
 This downloads wizardry to the default install location, `~/.wizardry`. After installing, you must reopen your terminal window before wizardry spells will work.
 
+### Compiled standalone version
+
+Download a pre-compiled standalone version that works without installation:
+
+**[Download latest compiled ZIP](https://github.com/andersaamodt/wizardry/actions/workflows/compile.yml)** → Click the most recent successful run → Download artifact
+
+The compiled version includes all spells as standalone executables that work without the full wizardry environment.
+
 ## Usage
 
 To use wizardry, simply type:
