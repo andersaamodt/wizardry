@@ -552,9 +552,7 @@ while IFS= read -r spell; do
   coverage_total=$((coverage_total + 1))
   
   # Inline find_matching_test_for_spell logic
-  spell_check=$1
-  rel_check=${spell#"$root_dir/"}
-  rel_check=${rel_check#spells/}
+  rel_check=${spell#spells/}
   dir_check=$(dirname "$rel_check")
   base_check=$(basename "$rel_check")
   candidate_sh="$test_dir/$dir_check/test-${base_check}.sh"
