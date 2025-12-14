@@ -733,7 +733,9 @@ while IFS= read -r target; do
     fi
   fi
   
-  # Check for inconsistent indentation
+  # Formatting checks (required for all)
+  
+  # Check for inconsistent indentation (mixed tabs and spaces)
   tab=$(printf '\t')
   has_tab_indent=$(grep -E "^[[:space:]]*${tab}" "$path" 2>/dev/null | head -1) || true
   has_space_indent=$(grep -E '^  ' "$path" 2>/dev/null | head -1) || true
