@@ -151,7 +151,7 @@ case "$0" in */has) _has "$@" ;; esac
 
 
 **Refactored** (38 spells - COMPLETED ✅):
-- `spellcraft/lint-magic` (21→2) - Inlined 19 functions (90% reduction)
+- `spellcraft/lint-magic` (21→0) - Inlined all 21 functions (100% reduction, show_usage only)
 - `menu/spellbook` (30→10) - Major refactor, created 3 reusable imps
 - `spellcraft/learn-spell` (8→1) - Inlined warn and detect_env_once - **NOW REMOVED (obsolete)**
 - `spellcraft/scribe-spell` (10→1) - Inlined helpers, removed learn-spellbook dependency
