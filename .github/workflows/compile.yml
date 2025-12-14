@@ -79,7 +79,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wizardry-compiled-${{ github.sha }}
-          path: /tmp/wizardry-compiled
+          path: |
+            /tmp/wizardry-compiled/*
+            /tmp/wizardry-compiled/**/*
           retention-days: 730
           if-no-files-found: error
 
