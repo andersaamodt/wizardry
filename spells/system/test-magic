@@ -636,10 +636,18 @@ scan_extraneous() {
     # The install script is in the repo root (not spells/) so its test can be:
     # 1. .tests/test-install.sh (dir="." base="install") 
     # 2. .tests/install/test-install.sh (dir="install" base="install")
+    # Similarly, tutorials are in the repo root, so test-tutorials.sh is valid.
     case "$base" in
       install|install-with-old-version)
         if [ "$dir" = "install" ] || [ "$dir" = "." ]; then
           if [ -f "$root_dir/install" ]; then
+            continue
+          fi
+        fi
+        ;;
+      tutorials)
+        if [ "$dir" = "." ]; then
+          if [ -d "$root_dir/tutorials" ]; then
             continue
           fi
         fi

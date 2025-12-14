@@ -206,7 +206,7 @@ test_tutorials_sequential_numbering() {
 }
 
 # Run all tests
-_run_test_case "tutorials test suite" test_help
+_run_test_case "tutorials --help test" test_help
 _run_test_case "all tutorials have POSIX shebang" test_all_tutorials_have_posix_shebang
 _run_test_case "no bashisms in tutorials" test_no_bashisms_in_tutorials
 _run_test_case "no bash terminology in tutorials" test_no_bash_terminology
