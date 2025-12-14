@@ -6,7 +6,7 @@ This directory contains GitHub Actions workflows for testing and building wizard
 
 ### compile.yml
 
-**Purpose**: Creates a compiled, standalone version of wizardry as a ZIP artifact.
+**Purpose**: Creates a compiled, standalone version of wizardry as an artifact.
 
 **Triggers**:
 - Push to main branch
@@ -15,9 +15,10 @@ This directory contains GitHub Actions workflows for testing and building wizard
 
 **Features**:
 - Creates a doppelganger (compiled version) with all spells compiled to standalone executables
-- Packages the compiled version into a ZIP artifact
-- Excludes `.tests/`, `.git*`, and `.github*` from the ZIP for a clean distribution
+- Removes test files, SKIP-IF-COMPILED documentation, and development-only files
+- Excludes `.tests/`, `SKIP-IF-COMPILED-*.md` files for a clean distribution
 - Includes precompiled `spells/` directory (this is the source code for an open-source project)
+- Uploads artifact directly (GitHub Actions automatically zips it)
 - Uploads artifact with 730-day retention
 - Automatically cleans up old artifacts, keeping only the 3 most recent
 

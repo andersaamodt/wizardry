@@ -49,31 +49,29 @@ jobs:
           echo "=== Spells directory structure ==="
           find /tmp/wizardry-compiled/spells -type d | head -20
 
-      - name: Create ZIP artifact with root files only
+      - name: Remove excluded files from compiled directory
         run: |
           cd /tmp/wizardry-compiled
 
-          # Create ZIP with root files, excluding .tests and any .git* files
-          # The doppelganger already excludes .git and .github directories,
-          # but we exclude them again as a safeguard
-          # We need to explicitly exclude .tests/ for the clean compiled version
+          # Remove SKIP-IF-COMPILED files
+          rm -f SKIP-IF-COMPILED-ANALYSIS.md
+          rm -f SKIP-IF-COMPILED-SUMMARY.md
 
-          zip -r /tmp/wizardry-compiled-${{ github.sha }}.zip . \
-            -x ".tests/*" \
-            -x "*.git*"
+          # Remove .tests directory
+          rm -rf .tests
 
-          echo "=== ZIP created ==="
-          ls -lh /tmp/wizardry-compiled-*.zip
+          echo "=== Cleaned compiled directory ==="
+          ls -la /tmp/wizardry-compiled/
 
           echo ""
-          echo "=== ZIP contents (first 50 entries) ==="
-          unzip -l /tmp/wizardry-compiled-*.zip | head -50
+          echo "=== Files in compiled directory ==="
+          find /tmp/wizardry-compiled -maxdepth 1 -type f
 
       - name: Upload compiled wizardry artifact
         uses: actions/upload-artifact@v4
         with:
           name: wizardry-compiled-${{ github.sha }}
-          path: /tmp/wizardry-compiled-${{ github.sha }}.zip
+          path: /tmp/wizardry-compiled/
           retention-days: 730
           if-no-files-found: error
 
