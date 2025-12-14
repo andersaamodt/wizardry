@@ -218,7 +218,7 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 - `.arcana/bitcoin/uninstall-bitcoin` (7→1)
 - `.arcana/tor/configure-tor` (6→1)
 - `.arcana/mud/mud-config` (5→4)
-- `system/test-magic` (15→0) - **FULLY INLINED** - Deleted unused function, inlined all 9 remaining functions
+- `system/test-magic` (15→2) - **Word-of-binding compliant** - Wrapped main logic in function, maintains 2 functions total (usage + main)
 
 **Action Required**: Remaining 3 spells should be refactored to:
 1. Extract reusable logic into imps in `spells/.imps/` (only if used by 2+ spells)

@@ -23,7 +23,7 @@ esac
 
 test_magic_usage() {
   cat <<USAGE
-Usage: $cmd_name [--only PATTERN] [--list] [--verbose]
+Usage: test-magic [--only PATTERN] [--list] [--verbose]
 
 Execute the behavior-driven shell tests located in .tests/.
 
@@ -33,6 +33,7 @@ Environment variables:
 USAGE
 }
 
+test_magic() {
 cmd_name=$(basename "$0")
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 root_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd -P)
@@ -51,7 +52,7 @@ fi
 case "${1-}" in
 --help|--usage|-h)
   test_magic_usage
-  exit 0
+  return 0
   ;;
 esac
 
@@ -75,7 +76,7 @@ done
 if [ -n "$missing_commands" ]; then
   printf '%s: error: required commands not found: %s\n' "$cmd_name" "$missing_commands" >&2
   printf '%s: cannot run tests without these commands.\n' "$cmd_name" >&2
-  exit 127
+  return 127
 fi
 
 # Check if timeout command is available for test execution protection
@@ -101,7 +102,7 @@ while [ "$#" -gt 0 ]; do
       if [ "$#" -lt 2 ]; then
         echo "$cmd_name: --only requires a pattern" >&2
         test_magic_usage
-        exit 1
+        return 1
       fi
       if [ -n "$only_patterns" ]; then
         only_patterns="$only_patterns\n$2"
@@ -120,7 +121,7 @@ while [ "$#" -gt 0 ]; do
       ;;
     --help|--usage|-h)
       test_magic_usage
-      exit 0
+      return 0
       ;;
     --)
       shift
@@ -129,7 +130,7 @@ while [ "$#" -gt 0 ]; do
     *)
       echo "$cmd_name: unknown option '$1'" >&2
       test_magic_usage
-      exit 1
+      return 1
       ;;
   esac
 done
@@ -168,7 +169,7 @@ $(
 EOF_TESTS
     if [ "$found" -ne 0 ]; then
       echo "$cmd_name: pattern '$pat' matched no tests" >&2
-      exit 1
+      return 1
     fi
   done <<EOF_PATS
 $(printf '%b' "$only_patterns")
@@ -176,7 +177,7 @@ EOF_PATS
 fi
 
 # Write test paths directly to a file to avoid shell variable size limitations  
-test_list_file=$(temp-file test-magic-list) || exit 1
+test_list_file=$(temp-file test-magic-list) || return 1
 
 {
   while IFS= read -r path; do
@@ -220,13 +221,13 @@ EOF_TESTS
 if [ ! -s "$test_list_file" ]; then
   echo "$cmd_name: no tests discovered." >&2
   cleanup-file "$test_list_file"
-  exit 1
+  return 1
 fi
 
 if [ "$list_only" -eq 1 ]; then
   cat "$test_list_file"
   cleanup-file "$test_list_file"
-  exit 0
+  return 0
 fi
 
 status=0
@@ -251,7 +252,7 @@ test_total=$(grep -c . "$test_list_file")
 # Spells have a --help flag which needs testing, plus 2 additional subtests.
 MIN_SUBTESTS_IMP=2
 MIN_SUBTESTS_SPELL=3
-failure_output_file=$(temp-file test-magic) || exit 1
+failure_output_file=$(temp-file test-magic) || return 1
 trap 'cleanup-file "$failure_output_file"; cleanup-file "$test_list_file"' EXIT HUP INT TERM
 
 # Open file descriptor 3 for reading the test list
@@ -723,4 +724,9 @@ fi
 trap - EXIT HUP INT TERM
 cleanup-file "$failure_output_file"
 
-exit $status
+return $status
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */test-magic) test_magic "$@" ;; esac
