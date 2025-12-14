@@ -6,7 +6,8 @@ show_usage() {
         cat <<'USAGE' >&2
 Usage: node-status
 
-Reports whether Node.js is installed, whether npm is available, and whether a Node-related service is running.
+Reports whether Node.js is installed, whether npm is available,
+and whether a Node-related service is running.
 USAGE
 }
 
@@ -32,90 +33,81 @@ fi
 # Older scripts expect GRAY, so mirror GREY when missing.
 GRAY=${GREY-}
 
-color_for_status() {
-  case "$1" in
-    "installed, service running"|"installed")
-      printf "%s" "$THEME_SUCCESS"
-      ;;
-    "installed, service stopped"|"installed, npm missing")
-      printf "%s" "$THEME_WARNING"
-      ;;
-    "not installed")
-      printf "%s" "$GRAY"
-      ;;
-    *)
-      printf "%s" "$THEME_ERROR"
-      ;;
-  esac
-}
+# Main execution - get_node_status inlined
+if ! command -v node >/dev/null 2>&1; then
+  status="not installed"
+  color="$GRAY"
+  printf "%s%s%s\n" "$color" "$status" "$RESET"
+  exit 0
+fi
 
-command_available() {
-  command -v "$1" >/dev/null 2>&1
-}
+if ! node --version >/dev/null 2>&1; then
+  status="installed, error"
+  color="$THEME_ERROR"
+  printf "%s%s%s\n" "$color" "$status" "$RESET"
+  exit 0
+fi
 
-node_service_name() {
-  for candidate in ${NODE_SERVICE-} node nodejs node-app; do
-    [ -n "$candidate" ] || continue
-    
-    has_service_cmd=$(command_available is-service-installed && echo "yes" || echo "no")
-    is_installed="no"
-    if [ "$has_service_cmd" = "yes" ] && is-service-installed "$candidate" >/dev/null 2>&1; then
-      is_installed="yes"
+if ! command -v npm >/dev/null 2>&1; then
+  status="installed, npm missing"
+else
+  status="installed"
+fi
+
+# node_service_name - inlined
+service_name=""
+for candidate in ${NODE_SERVICE-} node nodejs node-app; do
+  [ -n "$candidate" ] || continue
+  
+  if command -v is-service-installed >/dev/null 2>&1; then
+    if is-service-installed "$candidate" >/dev/null 2>&1; then
+      service_name=$candidate
+      break
     fi
-    
-    if [ "$is_installed" = "yes" ]; then
-      printf '%s' "$candidate"
-      return 0
+  fi
+  
+  if command -v systemctl >/dev/null 2>&1; then
+    unit_files=$(systemctl list-unit-files --type=service --no-pager 2>/dev/null)
+    if echo "$unit_files" | grep -q "^${candidate}\\.service"; then
+      service_name=$candidate
+      break
     fi
-    
-    has_systemctl=$(command_available systemctl && echo "yes" || echo "no")
-    if [ "$has_systemctl" = "yes" ]; then
-      unit_files=$(systemctl list-unit-files --type=service --no-pager 2>/dev/null)
-      if echo "$unit_files" | grep -q "^${candidate}\\.service"; then
-        printf '%s' "$candidate"
-        return 0
-      fi
-    fi
-  done
-  return 1
-}
-
-get_node_status() {
-  if ! command_available node; then
-    status="not installed"
-    printf "%s%s%s\n" "$(color_for_status "$status")" "$status" "$RESET"
-    return
   fi
+done
 
-  if ! node --version >/dev/null 2>&1; then
-    status="installed, error"
-    printf "%s%s%s\n" "$(color_for_status "$status")" "$status" "$RESET"
-    return
-  fi
-
-  if ! command_available npm; then
-    status="installed, npm missing"
-  else
-    status="installed"
-  fi
-
-  if service_name=$(node_service_name); then
-    has_running_cmd=$(command_available is-service-running && echo "yes" || echo "no")
-    is_running="no"
-    if [ "$has_running_cmd" = "yes" ] && is-service-running "$service_name" >/dev/null 2>&1; then
+if [ -n "$service_name" ]; then
+  is_running="no"
+  if command -v is-service-running >/dev/null 2>&1; then
+    if is-service-running "$service_name" >/dev/null 2>&1; then
       is_running="yes"
     fi
-    
-    if [ "$is_running" = "yes" ]; then
-      status="installed, service running"
-    elif command_available systemctl && systemctl is-active "$service_name" >/dev/null 2>&1; then
-      status="installed, service running"
-    else
-      status="installed, service stopped"
+  elif command -v systemctl >/dev/null 2>&1; then
+    if systemctl is-active "$service_name" >/dev/null 2>&1; then
+      is_running="yes"
     fi
   fi
+  
+  if [ "$is_running" = "yes" ]; then
+    status="installed, service running"
+  else
+    status="installed, service stopped"
+  fi
+fi
 
-  printf "%s%s%s\n" "$(color_for_status "$status")" "$status" "$RESET"
-}
+# color_for_status - inlined
+case "$status" in
+  "installed, service running"|"installed")
+    color="$THEME_SUCCESS"
+    ;;
+  "installed, service stopped"|"installed, npm missing")
+    color="$THEME_WARNING"
+    ;;
+  "not installed")
+    color="$GRAY"
+    ;;
+  *)
+    color="$THEME_ERROR"
+    ;;
+esac
 
-get_node_status
+printf "%s%s%s\n" "$color" "$status" "$RESET"

@@ -1,6 +1,5 @@
 #!/bin/sh
-# Behavioral cases (derived from --help):
-# - learn prints usage
+# Tests for the learn spell - copying/linking spells into spellbook
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
@@ -9,241 +8,127 @@ done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-# Skip nix rebuild in tests since nixos-rebuild and home-manager aren't available
-export WIZARDRY_SKIP_NIX_REBUILD=1
-# Skip confirmation prompts in tests
-export WIZARDRY_SKIP_CONFIRM=1
-
-# Helper to create a stub detect-rc-file for a specific rc file
-make_detect_stub() {
-  target_rc=$1
-  stub_dir=$(_make_tempdir)
-  stub="$stub_dir/detect-rc-file"
-  cat >"$stub" <<EOF
-#!/bin/sh
-printf 'rc_file=$target_rc\n'
-printf 'platform=debian\n'
-printf 'format=shell\n'
-EOF
-  chmod +x "$stub"
-  printf '%s' "$stub"
-}
-
 test_help() {
   _run_spell "spells/spellcraft/learn" --help
-  _assert_success && _assert_error_contains "Usage: learn"
+  _assert_success && _assert_output_contains "Usage: learn"
 }
 
 test_missing_args() {
   _run_spell "spells/spellcraft/learn"
-  _assert_failure && _assert_error_contains "Usage: learn"
+  _assert_failure && _assert_error_contains "spell or directory path required"
 }
 
-test_rejects_invalid_name() {
-  rc="$WIZARDRY_TMPDIR/rc"
-  stub=$(make_detect_stub "$rc")
-  DETECT_RC_FILE="$stub" _run_spell "spells/spellcraft/learn" --spell "bad name" add <<'EOF'
-echo hi
-EOF
-  _assert_failure && _assert_error_contains "spell names may contain only"
+test_nonexistent_path() {
+  _run_spell "spells/spellcraft/learn" /nonexistent/path
+  _assert_failure && _assert_error_contains "path not found"
 }
 
-test_adds_inline_spell() {
-  rc="$WIZARDRY_TMPDIR/inline_rc"
-  stub=$(make_detect_stub "$rc")
-  DETECT_RC_FILE="$stub" _run_spell "spells/spellcraft/learn" --spell summon add <<'EOF'
-export HELLO=WORLD
+test_copy_spell() {
+  tmpdir=$(_make_tempdir)
+  spellbook="$tmpdir/spellbook"
+  
+  # Create a test spell
+  test_spell="$tmpdir/my-test-spell"
+  cat >"$test_spell" <<'EOF'
+#!/bin/sh
+echo "test spell"
 EOF
-  _assert_success
-  _assert_file_contains "$rc" "export HELLO=WORLD # wizardry: summon"
+  chmod +x "$test_spell"
+  
+  # Copy it to spellbook
+  SPELLBOOK_DIR="$spellbook" _run_spell "spells/spellcraft/learn" "$test_spell"
+  _assert_success || return 1
+  
+  # Verify it was copied
+  [ -f "$spellbook/my-test-spell" ] || {
+    printf 'Expected spell to be copied to spellbook\n' >&2
+    return 1
+  }
+  [ -x "$spellbook/my-test-spell" ] || {
+    printf 'Expected spell to be executable\n' >&2
+    return 1
+  }
 }
 
-test_adds_and_readds_block_spell_idempotently() {
-  rc="$WIZARDRY_TMPDIR/block_rc"
-  stub=$(make_detect_stub "$rc")
-  DETECT_RC_FILE="$stub" _run_spell "spells/spellcraft/learn" --spell portal add <<'EOF'
-echo first
-echo second
+test_copy_directory() {
+  tmpdir=$(_make_tempdir)
+  spellbook="$tmpdir/spellbook"
+  
+  # Create a test spellbook directory
+  test_dir="$tmpdir/my-spells"
+  mkdir -p "$test_dir"
+  cat >"$test_dir/spell1" <<'EOF'
+#!/bin/sh
+echo "spell 1"
 EOF
-  _assert_success
-  first="$(cat "$rc")"
-
-  DETECT_RC_FILE="$stub" _run_spell "spells/spellcraft/learn" --spell portal add <<'EOF'
-echo first
-echo second
-EOF
-  _assert_success
-  second="$(cat "$rc")"
-  [ "$first" = "$second" ] || { TEST_FAILURE_REASON="expected idempotent block add"; return 1; }
-  _assert_file_contains "$rc" "# wizardry: portal begin lines=2"
-  _assert_file_contains "$rc" "# wizardry: portal end"
+  chmod +x "$test_dir/spell1"
+  
+  # Copy it to spellbook
+  SPELLBOOK_DIR="$spellbook" _run_spell "spells/spellcraft/learn" "$test_dir"
+  _assert_success || return 1
+  
+  # Verify directory was copied
+  [ -d "$spellbook/my-spells" ] || {
+    printf 'Expected directory to be copied to spellbook\n' >&2
+    return 1
+  }
+  [ -f "$spellbook/my-spells/spell1" ] || {
+    printf 'Expected spell1 to exist in copied directory\n' >&2
+    return 1
+  }
 }
 
-test_remove_reports_missing_file() {
-  missing="$WIZARDRY_TMPDIR/absent_rc"
-  stub=$(make_detect_stub "$missing")
-  DETECT_RC_FILE="$stub" _run_spell "spells/spellcraft/learn" --spell phantom remove
-  _assert_failure && _assert_error_contains "cannot remove from missing file"
+test_link_spell() {
+  tmpdir=$(_make_tempdir)
+  spellbook="$tmpdir/spellbook"
+  
+  # Create a test spell
+  test_spell="$tmpdir/my-linked-spell"
+  cat >"$test_spell" <<'EOF'
+#!/bin/sh
+echo "linked spell"
+EOF
+  chmod +x "$test_spell"
+  
+  # Link it to spellbook
+  SPELLBOOK_DIR="$spellbook" _run_spell "spells/spellcraft/learn" --link "$test_spell"
+  _assert_success || return 1
+  
+  # Verify it's a link
+  [ -L "$spellbook/my-linked-spell" ] || {
+    printf 'Expected spell to be a symbolic link\n' >&2
+    return 1
+  }
 }
 
-test_remove_cleans_block() {
-  rc="$WIZARDRY_TMPDIR/cleanup_rc"
-  stub=$(make_detect_stub "$rc")
-  DETECT_RC_FILE="$stub" _run_spell "spells/spellcraft/learn" --spell vanish add <<'EOF'
-echo vanish
-echo more
+test_prevents_duplicates() {
+  tmpdir=$(_make_tempdir)
+  spellbook="$tmpdir/spellbook"
+  
+  # Create a test spell
+  test_spell="$tmpdir/duplicate-spell"
+  cat >"$test_spell" <<'EOF'
+#!/bin/sh
+echo "duplicate"
 EOF
-  _assert_success
-  DETECT_RC_FILE="$stub" _run_spell "spells/spellcraft/learn" --spell vanish remove
-  _assert_success
-  [ ! -s "$rc" ] || { TEST_FAILURE_REASON="expected file empty after remove"; return 1; }
-}
-
-test_status_reflects_presence() {
-  rc="$WIZARDRY_TMPDIR/status_rc"
-  stub=$(make_detect_stub "$rc")
-  DETECT_RC_FILE="$stub" _run_spell "spells/spellcraft/learn" --spell statuser status
-  _assert_failure
-
-  DETECT_RC_FILE="$stub" _run_spell "spells/spellcraft/learn" --spell statuser add <<'EOF'
-echo status
-EOF
-  _assert_success
-  DETECT_RC_FILE="$stub" _run_spell "spells/spellcraft/learn" --spell statuser status
-  _assert_success
+  chmod +x "$test_spell"
+  
+  # Copy it once
+  SPELLBOOK_DIR="$spellbook" _run_spell "spells/spellcraft/learn" "$test_spell"
+  _assert_success || return 1
+  
+  # Try to copy again - should fail
+  SPELLBOOK_DIR="$spellbook" _run_spell "spells/spellcraft/learn" "$test_spell"
+  _assert_failure || return 1
+  _assert_error_contains "already exists" || return 1
 }
 
 _run_test_case "learn prints usage" test_help
-_run_test_case "learn errors without required arguments" test_missing_args
-_run_test_case "learn rejects invalid spell names" test_rejects_invalid_name
-_run_test_case "learn adds inline spell content" test_adds_inline_spell
-_run_test_case "learn adds blocks idempotently" test_adds_and_readds_block_spell_idempotently
-_run_test_case "learn fails to remove missing files" test_remove_reports_missing_file
-_run_test_case "learn removes previously added blocks" test_remove_cleans_block
-_run_test_case "learn status tracks presence" test_status_reflects_presence
-
-# Helper to create a stub detect-rc-file for nix format
-make_nix_detect_stub() {
-  target_rc=$1
-  stub_dir=$(_make_tempdir)
-  stub="$stub_dir/detect-rc-file"
-  cat >"$stub" <<EOF
-#!/bin/sh
-printf 'rc_file=$target_rc\n'
-printf 'platform=nixos\n'
-printf 'format=nix\n'
-EOF
-  chmod +x "$stub"
-  printf '%s' "$stub"
-}
-
-# Nix format tests
-test_nix_format_adds_shell_init() {
-  rc="$WIZARDRY_TMPDIR/test_nix.nix"
-  printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$rc"
-  stub=$(make_nix_detect_stub "$rc")
-  
-  # Auto-detects nix format from .nix extension
-  DETECT_RC_FILE="$stub" _run_spell "spells/spellcraft/learn" --spell myspell add <<'EOF'
-source "/path/to/spell"
-EOF
-  _assert_success || return 1
-  _assert_file_contains "$rc" "programs.bash.initExtra" || return 1
-  _assert_file_contains "$rc" "wizardry: myspell" || return 1
-  _assert_file_contains "$rc" 'source "/path/to/spell"' || return 1
-}
-
-test_nix_format_auto_detects_from_extension() {
-  rc="$WIZARDRY_TMPDIR/auto_detect.nix"
-  printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$rc"
-  stub=$(make_nix_detect_stub "$rc")
-  
-  # Don't specify --format, let it auto-detect from .nix extension
-  DETECT_RC_FILE="$stub" _run_spell "spells/spellcraft/learn" --spell autospell add <<'EOF'
-source "/path/to/spell"
-EOF
-  _assert_success || return 1
-  _assert_file_contains "$rc" "programs.bash.initExtra" || return 1
-}
-
-test_nix_format_status_works() {
-  rc="$WIZARDRY_TMPDIR/status_nix.nix"
-  printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$rc"
-  stub=$(make_nix_detect_stub "$rc")
-  
-  # Status should fail when not present
-  DETECT_RC_FILE="$stub" _run_spell "spells/spellcraft/learn" --spell nixstatus status
-  _assert_failure || return 1
-  
-  # Add the spell
-  DETECT_RC_FILE="$stub" _run_spell "spells/spellcraft/learn" --spell nixstatus add <<'EOF'
-source "/path/to/spell"
-EOF
-  _assert_success || return 1
-  
-  # Status should succeed when present
-  DETECT_RC_FILE="$stub" _run_spell "spells/spellcraft/learn" --spell nixstatus status
-  _assert_success || return 1
-}
-
-test_nix_format_remove_works() {
-  rc="$WIZARDRY_TMPDIR/remove_nix.nix"
-  printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$rc"
-  stub=$(make_nix_detect_stub "$rc")
-  
-  # Add the spell
-  DETECT_RC_FILE="$stub" _run_spell "spells/spellcraft/learn" --spell nixremove add <<'EOF'
-source "/path/to/spell"
-EOF
-  _assert_success || return 1
-  
-  # Verify it was added
-  if ! grep -q "wizardry: nixremove" "$rc"; then
-    TEST_FAILURE_REASON="spell was not added"
-    return 1
-  fi
-  
-  # Remove it
-  DETECT_RC_FILE="$stub" _run_spell "spells/spellcraft/learn" --spell nixremove remove
-  _assert_success || return 1
-  
-  # Verify it was removed
-  if grep -q "wizardry: nixremove" "$rc"; then
-    TEST_FAILURE_REASON="spell was not removed"
-    return 1
-  fi
-}
-
-test_nix_format_zsh_shell_option() {
-  rc="$WIZARDRY_TMPDIR/zsh_nix.nix"
-  printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$rc"
-  stub=$(make_nix_detect_stub "$rc")
-  
-  DETECT_RC_FILE="$stub" _run_spell "spells/spellcraft/learn" --spell zshspell --shell zsh add <<'EOF'
-source "/path/to/spell"
-EOF
-  _assert_success || return 1
-  _assert_file_contains "$rc" "programs.zsh.initExtra" || return 1
-}
-
-test_learn_auto_detects_rc_file() {
-  # Test that learn always auto-detects rc file
-  tmpdir=$(_make_tempdir)
-  rc="$tmpdir/.bashrc"
-  stub=$(make_detect_stub "$rc")
-  
-  DETECT_RC_FILE="$stub" _run_spell "spells/spellcraft/learn" --spell autospell add <<'EOF'
-source "/path/to/spell"
-EOF
-  _assert_success || return 1
-  _assert_file_contains "$rc" "source \"/path/to/spell\"" || return 1
-}
-
-_run_test_case "learn nix format adds shell init" test_nix_format_adds_shell_init
-_run_test_case "learn nix format auto-detects from extension" test_nix_format_auto_detects_from_extension
-_run_test_case "learn nix format status works" test_nix_format_status_works
-_run_test_case "learn nix format remove works" test_nix_format_remove_works
-_run_test_case "learn nix format zsh shell option" test_nix_format_zsh_shell_option
-_run_test_case "learn auto-detects rc file" test_learn_auto_detects_rc_file
+_run_test_case "learn requires path argument" test_missing_args
+_run_test_case "learn rejects nonexistent path" test_nonexistent_path
+_run_test_case "learn copies spell to spellbook" test_copy_spell
+_run_test_case "learn copies directory to spellbook" test_copy_directory
+_run_test_case "learn links spell to spellbook" test_link_spell
+_run_test_case "learn prevents duplicate names" test_prevents_duplicates
 
 _finish_tests

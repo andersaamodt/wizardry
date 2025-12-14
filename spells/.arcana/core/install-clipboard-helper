@@ -58,57 +58,6 @@ detect_preferred_helper() {
   printf 'xsel'
 }
 
-# Get the label for the clipboard helper (for menu display)
-get_clipboard_label() {
-  installed=$(detect_installed_helper)
-  preferred=$(detect_preferred_helper)
-  
-  if [ -n "$installed" ]; then
-    printf '%s' "$installed (installed)"
-  else
-    printf '%s' "$preferred"
-  fi
-}
-
-# Install the appropriate clipboard helper
-install_clipboard_helper() {
-  installed=$(detect_installed_helper)
-  preferred=$(detect_preferred_helper)
-  
-  # If already have a clipboard helper, we're done
-  if [ -n "$installed" ]; then
-    printf '%s\n' "Clipboard helper already installed: $installed"
-    return 0
-  fi
-  
-  # pbcopy is built-in on macOS, no installation needed
-  if [ "$preferred" = "pbcopy" ]; then
-    printf '%s\n' "pbcopy is built-in on macOS"
-    return 0
-  fi
-  
-  # Install the preferred helper
-  case "$preferred" in
-    wl-copy)
-      ASSUME_YES=1 "$SCRIPT_DIR/install-wl-clipboard"
-      ;;
-    xsel)
-      if ! ASSUME_YES=1 "$SCRIPT_DIR/install-xsel" 2>/dev/null; then
-        # Fall back to xclip if xsel fails
-        printf '%s\n' "xsel installation failed, trying xclip..."
-        ASSUME_YES=1 "$SCRIPT_DIR/install-xclip"
-      fi
-      ;;
-    xclip)
-      ASSUME_YES=1 "$SCRIPT_DIR/install-xclip"
-      ;;
-    *)
-      printf '%s\n' "Unknown clipboard helper: $preferred" >&2
-      return 1
-      ;;
-  esac
-}
-
 # Main execution
 case "${1:-}" in
   --detect-installed)
@@ -118,9 +67,52 @@ case "${1:-}" in
     detect_preferred_helper
     ;;
   --label)
-    get_clipboard_label
+    # get_clipboard_label - inlined
+    installed=$(detect_installed_helper)
+    preferred=$(detect_preferred_helper)
+    
+    if [ -n "$installed" ]; then
+      printf '%s' "$installed (installed)"
+    else
+      printf '%s' "$preferred"
+    fi
     ;;
   *)
-    install_clipboard_helper
+    # install_clipboard_helper - inlined
+    installed=$(detect_installed_helper)
+    preferred=$(detect_preferred_helper)
+    
+    # If already have a clipboard helper, we're done
+    if [ -n "$installed" ]; then
+      printf '%s\n' "Clipboard helper already installed: $installed"
+      exit 0
+    fi
+    
+    # pbcopy is built-in on macOS, no installation needed
+    if [ "$preferred" = "pbcopy" ]; then
+      printf '%s\n' "pbcopy is built-in on macOS"
+      exit 0
+    fi
+    
+    # Install the preferred helper
+    case "$preferred" in
+      wl-copy)
+        ASSUME_YES=1 "$SCRIPT_DIR/install-wl-clipboard"
+        ;;
+      xsel)
+        if ! ASSUME_YES=1 "$SCRIPT_DIR/install-xsel" 2>/dev/null; then
+          # Fall back to xclip if xsel fails
+          printf '%s\n' "xsel installation failed, trying xclip..."
+          ASSUME_YES=1 "$SCRIPT_DIR/install-xclip"
+        fi
+        ;;
+      xclip)
+        ASSUME_YES=1 "$SCRIPT_DIR/install-xclip"
+        ;;
+      *)
+        printf '%s\n' "Unknown clipboard helper: $preferred" >&2
+        exit 1
+        ;;
+    esac
     ;;
 esac
