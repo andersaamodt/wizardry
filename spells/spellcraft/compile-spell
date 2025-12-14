@@ -149,11 +149,11 @@ $func_def
     inlined_names="$inlined_names $dep"
   else
     # It's a spell without _funcname() pattern - inline entire spell as function
-    # Remove shebang, compile_spell_usage, --help handler, require-wizardry, and set -eu
+    # Remove shebang, *_usage, --help handler, require-wizardry, and set -eu
     spell_body=$(printf '%s\n' "$dep_content" | awk '
       BEGIN { skip=0; in_usage=0 }
       /^#!/ { next }
-      /^compile_spell_usage\(\)/ { in_usage=1; next }
+      /^[a-zA-Z_][a-zA-Z0-9_]*_usage\(\)/ { in_usage=1; next }
       in_usage && /^}$/ { in_usage=0; next }
       in_usage { next }
       /^case.*--help.*--usage/ { skip=1; next }
