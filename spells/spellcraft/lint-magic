@@ -70,17 +70,17 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
-is_imp() {
-  file=$1
-  case $file in
-    */.imps/*|*/.imps)
-      return 0
-      ;;
-  esac
-  return 1
-}
 
-lint_magic_gather_default_targets() {
+targets_file=$(temp-file lint-magic-targets) || exit 1
+trap 'cleanup-file "$targets_file"' EXIT HUP INT TERM
+
+# Collect targets (inline lint_magic_collect_targets and lint_magic_gather_default_targets)
+if [ "$#" -gt 0 ]; then
+  for arg in "$@"; do
+    printf '%s\n' "$arg"
+  done
+else
+  # Gather default targets (inline lint_magic_gather_default_targets)
   find "$repo_dir/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) \
     -print | sort | while IFS= read -r file; do
       first_line=$(head -1 "$file")
@@ -99,90 +99,7 @@ lint_magic_gather_default_targets() {
           ;;
       esac
     done
-}
-
-lint_magic_collect_targets() {
-  if [ "$#" -gt 0 ]; then
-    for arg in "$@"; do
-      case $arg in
-        /*)
-          printf '%s\n' "$arg"
-          ;;
-        *)
-          printf '%s\n' "$arg"
-          ;;
-      esac
-    done
-  else
-    lint_magic_gather_default_targets
-  fi
-}
-
-count_parameters() {
-  file=$1
-  # Find the first comment line after shebang (skip blank lines)
-  # Look at lines 2-5 for the description comment
-  comment_line=""
-  for linenum in 2 3 4 5; do
-    line=$(sed -n "${linenum}p" "$file" 2>/dev/null)
-    case "$line" in
-      '#'*)
-        comment_line="$line"
-        break
-        ;;
-      '')
-        # Skip empty lines
-        continue
-        ;;
-      *)
-        # Non-comment, non-empty line - no description found
-        break
-        ;;
-    esac
-  done
-  
-  # Check if we found a comment line
-  if [ -z "$comment_line" ]; then
-    printf '%s' "-1"
-    return 0
-  fi
-  
-  # Remove the leading # and any leading spaces
-  comment_line=${comment_line#'#'}
-  comment_line=${comment_line#' '}
-  
-  # Check if it has the expected format: name PARAMS - description
-  # Extract everything before the first " - " (the description separator)
-  case "$comment_line" in
-    *' - '*)
-      param_part=${comment_line%% - *}
-      ;;
-    *)
-      # No description separator, can't determine params
-      printf '%s' "-1"
-      return 0
-      ;;
-  esac
-  
-  # Now count the words after the command name
-  # The first word is the command name, the rest are parameters
-  # Parameters ending with ... (e.g., MORE...) are variadic and don't count toward limit
-  param_count=0
-  first_word=1
-  for word in $param_part; do
-    if [ "$first_word" -eq 1 ]; then
-      first_word=0
-      continue
-    fi
-    # Skip variadic parameters (ending with ...)
-    case "$word" in
-      *'...') continue ;;
-    esac
-    param_count=$((param_count + 1))
-  done
-  
-  printf '%s' "$param_count"
-}
+fi >"$targets_file"
 
 failures=0
 total=0
@@ -190,10 +107,6 @@ passed=0
 failed_targets=''
 spell_param_warnings=''
 spell_param_warning_count=0
-
-targets_file=$(temp-file lint-magic-targets) || exit 1
-trap 'cleanup-file "$targets_file"' EXIT HUP INT TERM
-lint_magic_collect_targets "$@" >"$targets_file"
 
 if [ "$list_only" -eq 1 ]; then
   cat "$targets_file"
@@ -230,9 +143,12 @@ while IFS= read -r target; do
   fi
   
   is_imp_file=0
-  if is_imp "$target" || is_imp "$path"; then
-    is_imp_file=1
-  fi
+  case $target in
+    */.imps/*|*/.imps) is_imp_file=1 ;;
+  esac
+  case $path in
+    */.imps/*|*/.imps) is_imp_file=1 ;;
+  esac
   
   issues=''
   issue_count=0
@@ -462,15 +378,93 @@ AWKSCRIPT
       rm -f "$awk_script"
     fi
     
-    # Inline check_imp_param_count
-    param_count=$(count_parameters "$path")
+    # Inline check_imp_param_count (inline count_parameters logic)
+    comment_line=""
+    for linenum in 2 3 4 5; do
+      line=$(sed -n "${linenum}p" "$path" 2>/dev/null)
+      case "$line" in
+        '#'*)
+          comment_line="$line"
+          break
+          ;;
+        '')
+          continue
+          ;;
+        *)
+          break
+          ;;
+      esac
+    done
+    
+    param_count="-1"
+    if [ -n "$comment_line" ]; then
+      comment_line=${comment_line#'#'}
+      comment_line=${comment_line#' '}
+      case "$comment_line" in
+        *' - '*)
+          param_part=${comment_line%% - *}
+          param_count=0
+          first_word=1
+          for word in $param_part; do
+            if [ "$first_word" -eq 1 ]; then
+              first_word=0
+              continue
+            fi
+            case "$word" in
+              *'...') continue ;;
+            esac
+            param_count=$((param_count + 1))
+          done
+          ;;
+      esac
+    fi
+    
     if [ "$param_count" != "-1" ] && [ "$param_count" -gt 3 ]; then
       issues=${issues:+$issues; }"imp has $param_count parameters (max 3 allowed)"
       issue_count=$((issue_count + 1))
     fi
   else
-    # Non-imp spells: warn if >3 parameters
-    param_count=$(count_parameters "$path")
+    # Non-imp spells: warn if >3 parameters (inline count_parameters logic)
+    comment_line=""
+    for linenum in 2 3 4 5; do
+      line=$(sed -n "${linenum}p" "$path" 2>/dev/null)
+      case "$line" in
+        '#'*)
+          comment_line="$line"
+          break
+          ;;
+        '')
+          continue
+          ;;
+        *)
+          break
+          ;;
+      esac
+    done
+    
+    param_count="-1"
+    if [ -n "$comment_line" ]; then
+      comment_line=${comment_line#'#'}
+      comment_line=${comment_line#' '}
+      case "$comment_line" in
+        *' - '*)
+          param_part=${comment_line%% - *}
+          param_count=0
+          first_word=1
+          for word in $param_part; do
+            if [ "$first_word" -eq 1 ]; then
+              first_word=0
+              continue
+            fi
+            case "$word" in
+              *'...') continue ;;
+            esac
+            param_count=$((param_count + 1))
+          done
+          ;;
+      esac
+    fi
+    
     if [ "$param_count" != "-1" ] && [ "$param_count" -gt 3 ]; then
       warning_entry="  $target: $param_count parameters"
       if [ -n "$spell_param_warnings" ]; then

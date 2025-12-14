@@ -178,7 +178,7 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 
 
 **Refactored** (37 spells - COMPLETED ✅):
-- `spellcraft/lint-magic` (22→5) - Inlined all check functions into validation loop
+- `spellcraft/lint-magic` (22→1) - Inlined all helper functions into linear flow
 - `menu/spellbook` (30→10) - Major refactor, created 3 reusable imps
 - `spellcraft/learn-spell` (8→1) - Inlined warn and detect_env_once - **NOW REMOVED (obsolete)**
 - `spellcraft/scribe-spell` (10→1) - Inlined helpers, removed learn-spellbook dependency
