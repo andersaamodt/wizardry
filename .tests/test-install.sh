@@ -1076,39 +1076,6 @@ path_wizard_remove_all_handles_empty_file() {
 
 # === Install Spells Before Rebuild Tests ===
 
-  mkdir -p "$fixture/home/.config/home-manager"
-  
-  rc_file="$fixture/home/.config/home-manager/home.nix"
-  
-  # Create a nix file with NO wizardry entries
-  cat >"$rc_file" <<EOF
-{ config, pkgs, ... }:
-
-{
-  home.username = "testuser";
-}
-EOF
-  
-  # Create detect stub
-  detect_stub="$fixture/detect-rc-file"
-  cat >"$detect_stub" <<EOF
-#!/bin/sh
-printf 'platform=nixos\nrc_file=$rc_file\nformat=nix\n'
-EOF
-  chmod +x "$detect_stub"
-
-  DETECT_RC_FILE="$detect_stub" _run_cmd "$ROOT_DIR/spells/spellcraft/learn-spellbook" remove-all
-
-  _assert_success || return 1
-  
-  # Check that the output mentions no entries found
-  _assert_output_contains "No wizardry PATH entries" || return 1
-  
-  return 0
-}
-
-# === Install Spells Before Rebuild Tests ===
-
 install_no_spell_preinstallation() {
   # With word-of-binding paradigm, spells are NOT pre-installed
   # This test verifies the install script doesn't have the old spell installation logic
