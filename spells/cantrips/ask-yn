@@ -74,7 +74,7 @@ ask_yn_select_input() {
 
 prompt_and_read() {
         printf '%s %s ' "$question" "$default_hint" >&2
-        input=$(select_input) || return 1
+        input=$(ask_yn_select_input) || return 1
         case $input in
         stdin)
                 IFS= read -r reply || reply=

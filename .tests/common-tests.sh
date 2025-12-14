@@ -106,7 +106,7 @@ test_menu_spells_require_menu() {
 }
 
 # --- Check: Spells expose standardized help handlers ---
-# Ensure each spell provides show_usage() and a --help|--usage|-h) case
+# Ensure each spell provides *_usage() and a --help|--usage|-h) case
 test_spells_have_help_usage_handlers() {
   missing_usage=""
   missing_handler=""
@@ -118,7 +118,7 @@ test_spells_have_help_usage_handlers() {
 
     rel_path=${spell#"$ROOT_DIR/spells/"}
 
-    if ! grep -qE '^[[:space:]]*show_usage\(\)' "$spell" 2>/dev/null; then
+    if ! grep -qE '^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*_usage\(\)' "$spell" 2>/dev/null; then
       missing_usage="${missing_usage:+$missing_usage, }$rel_path"
       continue
     fi
@@ -129,7 +129,7 @@ test_spells_have_help_usage_handlers() {
   done
 
   if [ -n "$missing_usage" ]; then
-    TEST_FAILURE_REASON="missing show_usage(): $missing_usage"
+    TEST_FAILURE_REASON="missing *_usage() function: $missing_usage"
     return 1
   fi
 
@@ -673,7 +673,7 @@ spells/.arcana/core/
 }
 
 # --- Check: Spells follow function discipline ---
-# Each spell may have show_usage() plus at most a few additional functions.
+# Each spell may have *_usage() plus at most a few additional functions.
 # The rule enforces linear, readable scrolls over proto-libraries.
 # - 0-1 additional functions: freely allowed (the "spell-heart helper")
 # - 2 additional functions: warning (invoked from multiple paths, not suitable as imp)
@@ -732,10 +732,10 @@ system/test-magic
     func_count_multiline=${func_count_multiline:-0}
     func_count=$((func_count_inline + func_count_multiline))
     
-    # Subtract 1 for show_usage (which every spell should have)
+    # Subtract 1 for the *_usage function (which every spell should have)
     additional_funcs=$((func_count - 1))
     
-    # Allow negative (no show_usage is caught by another test)
+    # Allow negative (no *_usage is caught by another test)
     [ "$additional_funcs" -lt 0 ] && additional_funcs=0
     
     # Write to appropriate temp file based on additional function count

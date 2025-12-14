@@ -57,7 +57,7 @@ printf '%s\n' "$SCRIPT_NAME: ask-text spell is required for prompts." >&2
 exit 1
 }
 
-ASK_TEXT_HELPER=$(find_ask_text)
+ASK_TEXT_HELPER=$(remove_service_find_ask_text)
 
 if command -v systemctl >/dev/null 2>&1; then
         SYSTEMCTL=$(command -v systemctl)

@@ -65,7 +65,7 @@ ask_text_prompt() {
 }
 
 read_line() {
-        input=$(select_input) || return 1
+        input=$(ask_text_select_input) || return 1
         case $input in
         stdin)
                 IFS= read -r line || line=

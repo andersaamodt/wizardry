@@ -81,7 +81,7 @@ ask_number_prompt() {
 }
 
 read_value() {
-        input=$(select_input) || return 1
+        input=$(ask_number_select_input) || return 1
         case $input in
         stdin)
                 IFS= read -r value || value=

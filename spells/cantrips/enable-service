@@ -55,7 +55,7 @@ printf '%s\n' "$SCRIPT_NAME: ask-text spell not found." >&2
 exit 1
 }
 
-ASK_TEXT_HELPER=$(find_ask_text)
+ASK_TEXT_HELPER=$(enable_service_find_ask_text)
 
 enable_service_run_systemctl() {
         if [ -z "${SYSTEMCTL-}" ]; then
@@ -98,7 +98,7 @@ if [ -z "$service_name" ]; then
         printf '%s\n' "$SCRIPT_NAME: No service name supplied." >&2
         exit 1
 fi
-unit=$(normalize_unit "$service_name")
+unit=$(enable_service_normalize_unit "$service_name")
 printf 'Enabling %s so it starts at boot...\n' "$unit"
 enable_service_run_systemctl enable "$unit"
 printf '%s\n' "systemd enablement request submitted."
