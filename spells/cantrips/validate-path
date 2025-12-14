@@ -3,7 +3,7 @@
 # This spell validates whether a string is a valid UNIX path.
 # Use it to check path input before file operations.
 
-show_usage() {
+validate_path_usage() {
 cat <<'USAGE'
 Usage: validate-path <path>
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        validate_path_usage
         exit 0
         ;;
 esac

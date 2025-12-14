@@ -2,7 +2,7 @@
 
 # Present the Tor management menu.
 
-show_usage() {
+tor_menu_usage() {
   cat <<'USAGE'
 Usage: tor-menu
 
@@ -12,7 +12,7 @@ USAGE
 
 case "${1-}" in
   --help|--usage|-h)
-    show_usage
+    tor_menu_usage
     exit 0
     ;;
 esac

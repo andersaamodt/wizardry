@@ -4,7 +4,7 @@
 # It backs up the original config and applies secure settings.
 
 
-show_usage() {
+ssh_barrier_usage() {
 cat <<'USAGE'
 Usage: ssh-barrier
 
@@ -14,7 +14,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        ssh_barrier_usage
         exit 0
         ;;
 esac

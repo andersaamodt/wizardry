@@ -3,7 +3,7 @@
 # This spell merges YAML and text files with matching names in a directory.
 # Use it to combine .yaml metadata with .txt content into single files.
 
-show_usage() {
+merge_yaml_text_usage() {
 cat <<'USAGE'
 Usage: merge-yaml-text [directory] [-v|--verbose] [--dry-run]
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        merge_yaml_text_usage
         exit 0
         ;;
 esac

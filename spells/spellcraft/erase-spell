@@ -6,7 +6,7 @@ require-wizardry || exit 1
 
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
 
-show_usage() {
+erase_spell_usage() {
         cat <<'USAGE'
 Usage: erase-spell NAME [--force]
 
@@ -44,7 +44,7 @@ name=""
 while [ "$#" -gt 0 ]; do
         case $1 in
                 --help|--usage|-h)
-                        show_usage
+                        erase_spell_usage
                         exit 0
                         ;;
                 --force|-f)
@@ -70,7 +70,7 @@ set -eu
 done
 
 if [ -z "$name" ]; then
-        show_usage >&2
+        erase_spell_usage >&2
         exit 1
 fi
 

@@ -4,7 +4,7 @@
 # and displays helpful messages. When installed, unrecognized commands will print
 # a notice instead of the default shell error.
 
-show_usage() {
+handle_command_not_found_usage() {
 cat <<'USAGE'
 Usage: handle-command-not-found {install|uninstall}
 
@@ -14,7 +14,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-  show_usage
+  handle_command_not_found_usage
   exit 0
   ;;
 esac
@@ -344,7 +344,7 @@ EOF
   exit 0
   ;;
 *)
-  show_usage >&2
+  handle_command_not_found_usage >&2
   exit 1
   ;;
 esac

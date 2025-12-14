@@ -5,7 +5,7 @@
 # small so wizards can tweak it at a glance while still whispering just
 # enough lore to keep the spell recognizable.
 
-show_usage() {
+cd_usage() {
 cat <<'USAGE'
 Usage: cd [DIRECTORY]
        cd {install|uninstall}
@@ -16,7 +16,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        cd_usage
         exit 0
         ;;
 esac

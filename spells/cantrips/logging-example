@@ -3,7 +3,7 @@
 # Example spell demonstrating the standardized logging framework.
 # Shows usage of info, step, debug, success, and error handling.
 
-show_usage() {
+logging_example_usage() {
   cat <<'USAGE'
 Usage: logging-example [options]
 
@@ -28,7 +28,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-  show_usage
+  logging_example_usage
   exit 0
   ;;
 esac

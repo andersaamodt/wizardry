@@ -2,7 +2,7 @@
 
 # Bootstrap spell: install and manage the core prerequisites for wizardry.
 
-show_usage() {
+core_menu_usage() {
   cat <<'USAGE'
 Usage: core-menu
 
@@ -12,7 +12,7 @@ USAGE
 
 case "${1-}" in
   --help|--usage|-h)
-    show_usage
+    core_menu_usage
     exit 0
     ;;
 esac

@@ -3,7 +3,7 @@
 # This spell displays and manages prioritized items in the current directory.
 # Use it to view and reorder files by priority.
 
-show_usage() {
+priorities_usage() {
 cat <<'USAGE'
 Usage: priorities [-v]
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        priorities_usage
         exit 0
         ;;
 esac

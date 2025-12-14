@@ -7,7 +7,7 @@ tab_char=$(printf '\t')
 newline_char=$(printf '\ny')
 newline_char=${newline_char%y}
 
-show_usage() {
+spellbook_store_usage() {
         cat <<'USAGE' >&2
 Usage: spellbook-store {add NAME CMD|remove NAME|list|path}
 
@@ -19,7 +19,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        spellbook_store_usage
         exit 0
         ;;
 esac
@@ -54,7 +54,7 @@ case $spellbook_file in
 esac
 
 if [ "$#" -eq 0 ]; then
-  show_usage
+  spellbook_store_usage
   exit 1
 fi
 
@@ -66,7 +66,7 @@ add)
   # Add entry to spellbook
   if [ "$#" -lt 2 ]; then
     printf '%s\n' "spellbook-store: add expects a NAME followed by COMMAND words." >&2
-    show_usage
+    spellbook_store_usage
     exit 1
   fi
   name=$1
@@ -139,7 +139,7 @@ remove)
   # Remove entry from spellbook
   if [ "$#" -ne 1 ]; then
     printf '%s\n' "spellbook-store: remove expects a NAME." >&2
-    show_usage
+    spellbook_store_usage
     exit 1
   fi
   name=$1
@@ -194,7 +194,7 @@ remove)
 list)
   # List all entries
   if [ "$#" -ne 0 ]; then
-    show_usage
+    spellbook_store_usage
     exit 1
   fi
   if [ -f "$spellbook_file" ]; then
@@ -204,16 +204,16 @@ list)
 path)
   # Print spellbook path
   if [ "$#" -ne 0 ]; then
-    show_usage
+    spellbook_store_usage
     exit 1
   fi
   printf '%s\n' "$spellbook_file"
   ;;
 --help|--usage|-h)
-  show_usage
+  spellbook_store_usage
   ;;
 *)
-  show_usage
+  spellbook_store_usage
   exit 1
   ;;
 esac

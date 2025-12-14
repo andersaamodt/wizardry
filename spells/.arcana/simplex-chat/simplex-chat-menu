@@ -2,7 +2,7 @@
 
 # Present the simplex-chat management menu.
 
-show_usage() {
+simplex_chat_menu_usage() {
   cat <<'USAGE'
 Usage: simplex-chat-menu
 
@@ -12,7 +12,7 @@ USAGE
 
 case "${1-}" in
   --help|--usage|-h)
-    show_usage
+    simplex_chat_menu_usage
     exit 0
     ;;
 esac

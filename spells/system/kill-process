@@ -4,7 +4,7 @@
 # It prompts with ask cantrips and sends a kill signal, customizable via KILL_CMD.
 
 
-show_usage() {
+kill_process_usage() {
 cat <<'USAGE'
 Usage: kill-process
 
@@ -14,7 +14,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        kill_process_usage
         exit 0
         ;;
 esac

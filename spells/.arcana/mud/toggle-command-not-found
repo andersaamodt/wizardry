@@ -3,7 +3,7 @@
 # Toggle command-not-found hook on/off in MUD config.
 # This is a planned feature that will catch command not found errors.
 
-show_usage() {
+toggle_command_not_found_usage() {
 cat <<'USAGE'
 Usage: toggle-command-not-found
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        toggle_command_not_found_usage
         exit 0
         ;;
 esac

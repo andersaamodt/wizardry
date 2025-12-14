@@ -2,7 +2,7 @@
 
 # Install simplex-chat using the available package manager, with optional NixOS rebuild support.
 
-show_usage() {
+install_simplex_chat_usage() {
         cat <<'USAGE' >&2
 Usage: install-simplex-chat
 
@@ -12,7 +12,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        install_simplex_chat_usage
         exit 0
         ;;
 esac

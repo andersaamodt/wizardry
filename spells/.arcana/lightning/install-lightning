@@ -2,7 +2,7 @@
 
 # Install and configure Bitcoin Lightning (Core Lightning) across supported platforms.
 
-show_usage() {
+install_lightning_usage() {
         cat <<'USAGE' >&2
 Usage: install-lightning
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        install_lightning_usage
         exit 0
         ;;
 esac

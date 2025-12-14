@@ -3,7 +3,7 @@
 # This spell lints spells for formatting and style guide violations.
 # Run it against spell files to check formatting, linting, and code style compliance.
 
-show_usage() {
+lint_magic_usage() {
   cat <<'USAGE'
 Usage: lint-magic [--only PATTERN] [--list] [--verbose] [file...]
 
@@ -11,19 +11,10 @@ Lint and format-check spells for style-guide compliance. With no files provided 
 USAGE
 }
 
-
-RUNNING_AS_SCRIPT=0
-case $0 in
-*/lint-magic|lint-magic)
-  RUNNING_AS_SCRIPT=1
-  ;;
-*) : ;;
-esac
-
 lint_magic() {
   case "${1-}" in
   --help|--usage|-h)
-    show_usage
+    lint_magic_usage
     return 0
     ;;
   esac
@@ -704,7 +695,7 @@ AWKSCRIPT
   fi
 }
 
-# Execute if running as script
-if [ "$RUNNING_AS_SCRIPT" -eq 1 ]; then
-  lint_magic "$@"
-fi
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */lint-magic|lint-magic) lint_magic "$@" ;;
+esac

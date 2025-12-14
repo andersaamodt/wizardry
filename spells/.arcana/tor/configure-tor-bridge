@@ -2,7 +2,7 @@
 
 # Ensure user is root
 
-show_usage() {
+configure_tor_bridge_usage() {
         cat <<'USAGE' >&2
 Usage: configure-tor-bridge
 
@@ -12,7 +12,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        configure_tor_bridge_usage
         exit 0
         ;;
 esac

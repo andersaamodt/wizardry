@@ -3,7 +3,7 @@
 # This spell applies an extended attribute to a file.
 # With 2 or fewer args, it autodetects order: one is a file, one is attribute=value.
 
-show_usage() {
+enchant_usage() {
 cat <<'USAGE'
 Usage: enchant [file] attribute=value
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        enchant_usage
         exit 0
         ;;
 esac

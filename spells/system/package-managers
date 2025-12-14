@@ -3,7 +3,7 @@
 # This spell displays the status of package managers on the system.
 # Use it to see which package managers are available.
 
-show_usage() {
+package_managers_usage() {
 cat <<'USAGE'
 Usage: package-managers
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        package_managers_usage
         exit 0
         ;;
 esac

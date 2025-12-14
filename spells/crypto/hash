@@ -4,7 +4,7 @@
 # Prints the checksum in hexadecimal alongside the resolved path.
 
 
-show_usage() {
+hash_usage() {
 cat <<'USAGE'
 Usage: hash <file>
 
@@ -14,7 +14,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        hash_usage
         exit 0
         ;;
 esac

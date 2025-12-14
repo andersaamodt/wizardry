@@ -3,7 +3,7 @@
 # Guard a script against wizardry not being installed by exiting with a
 # descriptive error or offering to install wizardry.
 
-show_usage() {
+require_wizardry_usage() {
 cat <<'USAGE'
 Usage: require-wizardry [--check|--offer|--snippet]
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-show_usage
+require_wizardry_usage
 exit 0
 ;;
 esac
@@ -108,7 +108,7 @@ SNIPPET
 exit 0
 ;;
 *)
-show_usage >&2
+require_wizardry_usage >&2
 exit 1
 ;;
 esac

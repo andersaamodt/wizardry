@@ -3,7 +3,7 @@
 # This spell moves files or folders to the system trash (recycle bin) safely.
 # Use this instead of `rm` when you want items to be recoverable.
 
-show_usage() {
+trash_usage() {
   cat <<'USAGE'
 Usage: trash [-r] [-f] <file|folder>...
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-  show_usage
+  trash_usage
   exit 0
   ;;
 esac

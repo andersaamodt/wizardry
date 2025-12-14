@@ -3,7 +3,7 @@
 # This spell displays a command before executing it for teaching purposes.
 # Use it to show commands to those learning the path of wizardry.
 
-show_usage() {
+wizard_cast_usage() {
 cat <<'USAGE'
 Usage: wizard-cast <command> [arguments...]
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        wizard_cast_usage
         exit 0
         ;;
 esac

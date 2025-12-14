@@ -3,7 +3,7 @@
 # Toggle inventory feature on/off in MUD config.
 # This is a planned feature that will enable inventory management.
 
-show_usage() {
+toggle_inventory_usage() {
 cat <<'USAGE'
 Usage: toggle-inventory
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        toggle_inventory_usage
         exit 0
         ;;
 esac

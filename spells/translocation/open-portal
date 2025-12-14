@@ -5,7 +5,7 @@
 
 require-wizardry || exit 1
 
-show_usage() {
+open_portal_usage() {
 cat <<'USAGE'
 Usage: open-portal <remote_address> <remote_directory> [local_mount_point]
 
@@ -15,7 +15,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        open_portal_usage
         exit 0
         ;;
 esac

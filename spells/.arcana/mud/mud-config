@@ -5,7 +5,7 @@
 
 require-wizardry || exit 1
 
-show_usage() {
+mud_config_usage() {
 cat <<'USAGE'
 Usage: mud-config {get|set|toggle|list} [FEATURE] [VALUE]
 
@@ -15,7 +15,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        mud_config_usage
         exit 0
         ;;
 esac
@@ -85,7 +85,7 @@ set_feature() {
 
 # Main command dispatch
 if [ "$#" -lt 1 ]; then
-        show_usage >&2
+        mud_config_usage >&2
         exit 1
 fi
 
@@ -133,7 +133,7 @@ case "$cmd" in
                 ;;
         *)
                 printf '%s\n' "mud-config: unknown command '$cmd'" >&2
-                show_usage >&2
+                mud_config_usage >&2
                 exit 1
                 ;;
 esac

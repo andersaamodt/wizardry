@@ -5,7 +5,7 @@
 # through gracefully even when silence answers back.
 
 
-show_usage() {
+ask_text_usage() {
         cat <<'USAGE' >&2
 Usage: ask-text "Question" [default]
 
@@ -16,14 +16,14 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        ask_text_usage
         exit 0
         ;;
 esac
 set -eu
 
 if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
-        show_usage
+        ask_text_usage
         exit 1
 fi
 

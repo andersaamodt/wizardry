@@ -3,7 +3,7 @@
 # is-service-installed checks whether a unit file exists under the systemd
 # directory. It exits 0 when present so other spells can branch on the result.
 
-show_usage() {
+is_service_installed_usage() {
         cat <<'USAGE' >&2
 Usage: is-service-installed UNIT
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        is_service_installed_usage
         exit 0
         ;;
 esac

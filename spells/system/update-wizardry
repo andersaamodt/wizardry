@@ -3,7 +3,7 @@
 # This spell fast-forwards the wizardry repository in place.
 # It locates the checkout directory or accepts WIZARDRY_DIR to target another path.
 
-show_usage() {
+update_wizardry_usage() {
 cat <<'USAGE'
 Usage: update-wizardry
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        update_wizardry_usage
         exit 0
         ;;
 esac

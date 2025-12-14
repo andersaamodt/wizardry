@@ -3,7 +3,7 @@
 # This spell moves files or directories from one location to another.
 # Use it as a more intuitive wrapper around the mv command.
 
-show_usage() {
+move_usage() {
 cat <<'USAGE'
 Usage: move <source> <destination>
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        move_usage
         exit 0
         ;;
 esac
@@ -54,13 +54,13 @@ done
 # Validate arguments
 if is unset "$from"; then
         printf '%s\n' "move: source path required." >&2
-        show_usage >&2
+        move_usage >&2
         exit 1
 fi
 
 if is unset "$to"; then
         printf '%s\n' "move: destination path required." >&2
-        show_usage >&2
+        move_usage >&2
         exit 1
 fi
 

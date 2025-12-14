@@ -2,7 +2,7 @@
 
 # This script is a magical tome of sorcery, commanding the elusive entity known as Bitcoin.
 
-show_usage() {
+wallet_menu_usage() {
   cat <<'USAGE'
 Usage: wallet-menu
 
@@ -12,7 +12,7 @@ USAGE
 
 case "${1-}" in
   --help|--usage|-h)
-    show_usage
+    wallet_menu_usage
     exit 0
     ;;
 esac

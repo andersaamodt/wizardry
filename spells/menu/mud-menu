@@ -4,7 +4,7 @@
 
 require-wizardry || exit 1
 
-show_usage() {
+mud_menu_usage() {
   cat <<'USAGE'
 Usage: mud-install-menu
 
@@ -14,7 +14,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-  show_usage
+  mud_menu_usage
   exit 0
   ;;
 esac

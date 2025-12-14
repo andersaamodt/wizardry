@@ -4,7 +4,7 @@
 # no service name is supplied the script politely prompts via ask-text so menu
 # entries can call it without additional flags.
 
-show_usage() {
+remove_service_usage() {
         cat <<'USAGE' >&2
 Usage: remove-service UNIT
 
@@ -14,7 +14,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        remove_service_usage
         exit 0
         ;;
 esac

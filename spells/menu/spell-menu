@@ -39,7 +39,7 @@ ENTRIES
         return 1
 }
 
-show_usage() {
+spell_menu_usage() {
         cat <<'USAGE'
 Usage: spell-menu <spell-name>
 
@@ -56,7 +56,7 @@ case ${1-} in
                 exit 0
                 ;;
         --help|--usage|-h)
-                show_usage
+                spell_menu_usage
                 exit 0
                 ;;
         --install)
@@ -70,7 +70,7 @@ esac
 set -eu
 
 if [ "$#" -lt 1 ]; then
-        show_usage >&2
+        spell_menu_usage >&2
         exit 1
 fi
 

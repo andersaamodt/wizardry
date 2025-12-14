@@ -5,7 +5,7 @@
 
 require-wizardry || exit 1
 
-show_usage() {
+decorate_usage() {
 cat <<'USAGE'
 Usage: decorate [path] [description]
 
@@ -15,7 +15,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        decorate_usage
         exit 0
         ;;
 esac

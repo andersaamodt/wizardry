@@ -7,7 +7,7 @@
 SCRIPT_NAME=$(basename "$0")
 SERVICE_DIR=${SERVICE_DIR:-/etc/systemd/system}
 
-show_usage() {
+install_service_template_usage() {
         cat <<USAGE >&2
 Usage: $SCRIPT_NAME /path/to/template [KEY=value ...]
 
@@ -19,7 +19,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        install_service_template_usage
         exit 0
         ;;
 esac
@@ -101,7 +101,7 @@ else
         template_path=$("$ASK_TEXT" "Path to the service template:")
 fi
 if [ -z "$template_path" ]; then
-        show_usage
+        install_service_template_usage
         exit 1
 fi
 if [ ! -f "$template_path" ]; then

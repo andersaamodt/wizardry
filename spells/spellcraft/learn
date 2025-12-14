@@ -3,7 +3,7 @@
 # Learn a spell or spellbook by copying or linking it into your spellbook.
 # With word-of-binding, spells in ~/.spellbook are automatically available.
 
-show_usage() {
+learn_usage() {
   cat <<'USAGE'
 Usage: learn [--copy|--link] SPELL_OR_DIRECTORY
 
@@ -22,7 +22,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-  show_usage
+  learn_usage
   exit 0
   ;;
 esac
@@ -48,7 +48,7 @@ esac
 # Validate arguments
 if [ $# -eq 0 ]; then
   printf '%s\n' "learn: spell or directory path required" >&2
-  show_usage >&2
+  learn_usage >&2
   exit 1
 fi
 
