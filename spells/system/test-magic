@@ -684,7 +684,21 @@ if [ "$status" -ne 0 ] && [ -n "$failed_scripts" ]; then
         "=== "*)
           # Extract test path from "=== test_path ===" format
           test_path=$(printf '%s' "$line" | sed 's/^=== //; s/ ===$//')
-          spell_name=$(spell_name_for_test "$test_path")
+          # Inline spell_name_for_test logic
+          case "$test_path" in
+            */common-tests.sh|common-tests.sh)
+              spell_name="common tests"
+              ;;
+            *)
+              rel=${test_path#"$test_dir/"}
+              dir=$(dirname "$rel")
+              base=$(basename "$rel")
+              base=${base#test-}
+              base=${base%.*}
+              spell_path="$root_dir/spells/$dir/$base"
+              spell_name=$(basename "$spell_path")
+              ;;
+          esac
           printf '\n=== %s ===\n' "$spell_name"
           ;;
         "PASS "*)

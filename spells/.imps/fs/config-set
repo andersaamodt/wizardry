@@ -1,0 +1,80 @@
+#!/bin/sh
+# config-set FILE KEY VALUE - set key=value in config file (atomic, safe)
+# Creates file if it doesn't exist, updates existing key, or adds new key
+# Example: config-set ~/.app/config db-host localhost
+
+set -eu
+
+_config_set() {
+  _cs_file=${1:?config-set: file path required}
+  _cs_key=${2:?config-set: key required}
+  _cs_value=${3-}  # Value can be empty
+  
+  # Validate key is not empty
+  if [ -z "$_cs_key" ]; then
+    printf 'config-set: key cannot be empty\n' >&2
+    return 1
+  fi
+  
+  # Validate key doesn't contain equals (check first for clearer error)
+  case "$_cs_key" in
+    *=*)
+      printf 'config-set: key cannot contain =\n' >&2
+      return 1
+      ;;
+  esac
+  
+  # Validate key format (alphanumeric, dash, underscore only)
+  case "$_cs_key" in
+    *[!a-zA-Z0-9_-]*)
+      printf 'config-set: invalid key format (use alphanumeric, dash, underscore only)\n' >&2
+      return 1
+      ;;
+  esac
+  
+  # Validate value doesn't contain newlines (would corrupt file)
+  case "$_cs_value" in
+    *"
+"*)
+      printf 'config-set: value cannot contain newlines\n' >&2
+      return 1
+      ;;
+  esac
+  
+  # Ensure parent directory exists
+  _cs_dir=$(dirname "$_cs_file")
+  if [ ! -d "$_cs_dir" ]; then
+    if ! mkdir -p "$_cs_dir"; then
+      printf 'config-set: cannot create directory %s\n' "$_cs_dir" >&2
+      return 1
+    fi
+  fi
+  
+  # Create temp file for atomic operation
+  _cs_tmp=$(mktemp "${TMPDIR:-/tmp}/config-set.XXXXXX") || return 1
+  trap 'rm -f "$_cs_tmp"' EXIT HUP INT TERM
+  
+  # If file exists, copy all lines except the key we're updating
+  if [ -f "$_cs_file" ]; then
+    # Use awk for safe parsing (no shell expansion)
+    awk -F= -v key="$_cs_key" '$1 != key' "$_cs_file" > "$_cs_tmp"
+  fi
+  
+  # Append the new key=value
+  printf '%s=%s\n' "$_cs_key" "$_cs_value" >> "$_cs_tmp"
+  
+  # Atomic move (overwrites old file)
+  if ! mv "$_cs_tmp" "$_cs_file"; then
+    rm -f "$_cs_tmp"
+    trap - EXIT HUP INT TERM
+    printf 'config-set: failed to update %s\n' "$_cs_file" >&2
+    return 1
+  fi
+  
+  trap - EXIT HUP INT TERM
+  return 0
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */config-set) _config_set "$@" ;; esac

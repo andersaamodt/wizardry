@@ -67,6 +67,23 @@ case "$0" in */has) _has "$@" ;; esac
 
 **Reason**: Micro-helpers; opening comment serves as spec; `--help` would bloat them
 
+### Sourceable Spells: No `set -eu`
+
+**Affected**: `spells/.arcana/mud/cd`
+
+**Reason**: Meant to be sourced into user's shell to define functions; `set -eu` would alter user's shell options
+
+**Pattern**:
+```sh
+#!/bin/sh
+# Handle --help when run directly
+case "${1-}" in
+--help|--usage|-h) show_usage; exit 0 ;; esac
+
+# Note: No 'set -eu' - this file is sourced into user's shell
+function_to_override() { ... }
+```
+
 ### Doppelganger Compilation: Skip Lists
 
 **File**: `spells/spellcraft/compile-spell`

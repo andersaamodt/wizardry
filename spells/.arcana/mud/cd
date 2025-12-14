@@ -15,6 +15,17 @@ The hook runs 'look' after every successful directory change.
 USAGE
 }
 
+# Handle --help when run directly (before defining cd function)
+case "${1-}" in
+--help|--usage|-h)
+    cd_usage
+    exit 0
+    ;;
+esac
+
+# Note: No 'set -eu' because this file is meant to be sourced into user's shell
+# and we don't want to change their shell options
+
 # The cd override - checks setting in .mud/config file before running look
 cd() {
     command cd "$@" || return $?
@@ -25,10 +36,3 @@ cd() {
         command -v look >/dev/null 2>&1 && look 2>/dev/null || true
     fi
 }
-
-# When run directly (not sourced), just show usage
-case "${1-}" in
---help|--usage|-h|*)
-    cd_usage
-    ;;
-esac
