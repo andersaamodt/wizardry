@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Toggle cd hook on/off using settings file
+# Toggle cd hook on/off using mud-config
 
 toggle_cd_usage() {
 cat <<'USAGE'
@@ -19,25 +19,23 @@ esac
 
 set -eu
 
-# Settings file location
-mud_dir="${SPELLBOOK_DIR:-${HOME:-~}/.spellbook}/.mud"
-setting_file="$mud_dir/cd-look-enabled"
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+MUD_CONFIG="$SCRIPT_DIR/mud-config"
 
-if [ -f "$setting_file" ]; then
-        # Enabled, so disable it
-        rm -f "$setting_file"
-        printf '%s\n' "✓ cd hook disabled. Directory changes will no longer display room descriptions."
-else
-        # Disabled, so enable it
-        # Create settings directory
-        if ! mkdir -p "$mud_dir"; then
-                printf '%s\n' "✗ Failed to create $mud_dir" >&2
-                exit 1
-        fi
-        touch "$setting_file"
+if [ ! -x "$MUD_CONFIG" ]; then
+        printf '%s\n' "Error: mud-config not found at '$MUD_CONFIG'." >&2
+        exit 1
+fi
+
+# Toggle the feature and report state
+new_state=$("$MUD_CONFIG" toggle cd-look)
+
+if [ "$new_state" = "1" ]; then
         printf '%s\n' "✓ cd hook enabled. Each directory change will now display the room description."
         printf '%s\n' ""
         printf '%s\n' "Note: Make sure the cd function is sourced in your shell:"
         printf '%s\n' "  Add this line to ~/.bashrc or ~/.zshrc:"
         printf '%s\n' "    . \$HOME/.wizardry/spells/.arcana/mud/cd"
+else
+        printf '%s\n' "✓ cd hook disabled. Directory changes will no longer display room descriptions."
 fi

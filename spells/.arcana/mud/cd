@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # The cd cantrip: source this file to enable the cd hook that runs 'look'.
-# Toggle with: toggle-cd (manages ~/.spellbook/.mud/cd-look-enabled)
+# Toggle with: toggle-cd (manages ~/.spellbook/.mud/config file)
 
 cd_usage() {
 cat <<'USAGE'
@@ -15,13 +15,13 @@ The hook runs 'look' after every successful directory change.
 USAGE
 }
 
-# The cd override - checks setting before running look
+# The cd override - checks setting in .mud/config file before running look
 cd() {
     command cd "$@" || return $?
     
-    # Check if cd-look is enabled via settings file
-    if [ -f "${SPELLBOOK_DIR:-$HOME/.spellbook}/.mud/cd-look-enabled" ] ||
-       [ -f "${HOME:-}/.wizardry/.mud/cd-look-enabled" ]; then
+    # Check if cd-look is enabled via config file (cd-look=1)
+    config_file="${SPELLBOOK_DIR:-$HOME/.spellbook}/.mud/config"
+    if [ -f "$config_file" ] && grep -q "^cd-look=1$" "$config_file" 2>/dev/null; then
         command -v look >/dev/null 2>&1 && look 2>/dev/null || true
     fi
 }
