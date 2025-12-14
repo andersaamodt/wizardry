@@ -392,8 +392,8 @@ AWKSCRIPT
     fi
     
     hyphen_pattern='^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*-[a-zA-Z0-9_-]*\(\)[[:space:]]*\{'
-    hyphen_violations=$(awk -f "$awk_script" "$path" 2>/dev/null) || true
-    hyphen_violations=$(printf '%s' "$hyphen_violations" | grep -nE "$hyphen_pattern") || true
+    hyphen_check=$(awk -f "$awk_script" "$path" 2>/dev/null) || true
+    hyphen_violations=$(printf '%s' "$hyphen_check" | grep -nE "$hyphen_pattern") || true
     if [ -n "$hyphen_violations" ]; then
       line_num=$(printf '%s' "$hyphen_violations" | head -1 | cut -d: -f1)
       hyphen_msg="function name contains hyphen at line $line_num (use snake_case)"
@@ -472,8 +472,13 @@ AWKSCRIPT
     # Non-imp spells: warn if >3 parameters
     param_count=$(count_parameters "$path")
     if [ "$param_count" != "-1" ] && [ "$param_count" -gt 3 ]; then
-      spell_param_warnings="${spell_param_warnings}${spell_param_warnings:+
-}  $target: $param_count parameters"
+      warning_entry="  $target: $param_count parameters"
+      if [ -n "$spell_param_warnings" ]; then
+        spell_param_warnings="$spell_param_warnings
+$warning_entry"
+      else
+        spell_param_warnings="$warning_entry"
+      fi
       spell_param_warning_count=$((spell_param_warning_count + 1))
     fi
   fi
