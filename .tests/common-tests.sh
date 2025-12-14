@@ -781,8 +781,9 @@ test_no_function_name_collisions() {
   # Track all function definitions
   collisions_file=$(mktemp "${WIZARDRY_TMPDIR}/func-collisions.XXXXXX")
   functions_file=$(mktemp "${WIZARDRY_TMPDIR}/func-list.XXXXXX")
+  imp_functions_file=$(mktemp "${WIZARDRY_TMPDIR}/imp-funcs.XXXXXX")
   
-  # Check all executable spells
+  # Check all executable spells (excluding .imps and .arcana)
   for spell_dir in "$ROOT_DIR"/spells/*; do
     [ -d "$spell_dir" ] || continue
     case "$spell_dir" in
@@ -802,7 +803,7 @@ test_no_function_name_collisions() {
     done
   done
   
-  # Check imps for underscore-prefixed functions
+  # Check imps for underscore-prefixed functions (track separately)
   for imp_family in "$ROOT_DIR"/spells/.imps/*; do
     [ -d "$imp_family" ] || continue
     for imp in "$imp_family"/*; do
@@ -811,13 +812,13 @@ test_no_function_name_collisions() {
       while IFS= read -r line; do
         if printf '%s' "$line" | grep -qE '^_[a-zA-Z_][a-zA-Z0-9_]*\(\)[[:space:]]*\{'; then
           func_name=$(printf '%s' "$line" | sed 's/()[[:space:]]*{.*//')
-          printf '%s:%s\n' "$func_name" "$imp" >> "$functions_file"
+          printf '%s:%s\n' "$func_name" "$imp" >> "$imp_functions_file"
         fi
       done < "$imp"
     done
   done
   
-  # Find collisions: same function name appearing more than once
+  # Find collisions in spells (non-.imps files)
   if [ -f "$functions_file" ]; then
     sort "$functions_file" | awk -F: '
     {
@@ -832,8 +833,23 @@ test_no_function_name_collisions() {
     }' > "$collisions_file"
   fi
   
+  # Find collisions within imps themselves (underscore functions colliding with other imps)
+  if [ -f "$imp_functions_file" ]; then
+    sort "$imp_functions_file" | awk -F: '
+    {
+      if (seen[$1]) {
+        if (!reported[$1]) {
+          print "Function " $1 " collision: " seen[$1] " and " $2
+          reported[$1] = 1
+        }
+      } else {
+        seen[$1] = $2
+      }
+    }' >> "$collisions_file"
+  fi
+  
   collisions=$(cat "$collisions_file" 2>/dev/null || true)
-  rm -f "$collisions_file" "$functions_file"
+  rm -f "$collisions_file" "$functions_file" "$imp_functions_file"
   
   if [ -n "$collisions" ]; then
     TEST_FAILURE_REASON="function name collisions detected: $(printf '%s' "$collisions" | tr '\n' '; ')"
