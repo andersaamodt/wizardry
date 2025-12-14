@@ -158,7 +158,7 @@ jobs:
         with:
           name: wizardry-doppelganger-${{ github.sha }}
           path: /tmp/wizardry-doppelganger-${{ github.sha }}.zip
-          retention-days: 720
+          retention-days: 90
       
       - name: Clean up old artifacts
         if: success()
