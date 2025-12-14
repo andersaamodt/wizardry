@@ -1,8 +1,8 @@
 #!/bin/sh
 # To make this script executable, use the command: chmod +x 02_variables.sh
 # To run the script, use the command: ./02_variables.sh
-echo "This script is a spell that will teach you the basics of variables and parameter expansion in Bash."
-echo "To study the code of the examples, please use the command: cat 02_variables_parameter_expansion.sh"
+echo "This script is a spell that will teach you the basics of variables and parameter expansion in POSIX sh."
+echo "To study the code of the examples, please use the command: cat 02_variables.sh"
 
 # Declaring a variable
 ingredient="Dragon's blood"
