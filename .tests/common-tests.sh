@@ -869,6 +869,56 @@ test_no_function_name_collisions() {
   return 0
 }
 
+# --- Check: Spells and imps have true name functions ---
+# All spells and imps should have a true name function that matches the filename
+# For imps: _underscore_name (e.g., clip-copy -> _clip_copy)
+# For spells: snake_case name (e.g., lint-magic -> lint_magic)
+# This enables word-of-binding to source and call them efficiently
+# This is a NON-FAILING check - warnings only for visibility
+
+test_spells_have_true_name_functions() {
+  warnings=""
+  
+  # Check all executable shell files
+  find "$ROOT_DIR/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r spell; do
+    name=$(basename "$spell")
+    should_skip_file "$name" && continue
+    is_posix_shell_script "$spell" || continue
+    
+    # Determine if this is an imp
+    is_imp=0
+    case $spell in
+      */.imps/*) is_imp=1 ;;
+    esac
+    
+    # Convert filename to expected true name
+    # For hyphenated names: clip-copy -> clip_copy
+    true_name=$(printf '%s' "$name" | sed 's/-/_/g')
+    
+    # For imps, add underscore prefix
+    if [ "$is_imp" -eq 1 ]; then
+      true_name="_$true_name"
+    fi
+    
+    # Check if the true name function exists
+    if ! grep -qE "^[[:space:]]*${true_name}[[:space:]]*\(\)" "$spell" 2>/dev/null; then
+      rel_path=${spell#"$ROOT_DIR/spells/"}
+      printf '%s (missing %s)\n' "$rel_path" "$true_name"
+    fi
+  done > "${WIZARDRY_TMPDIR}/missing-true-names.txt"
+  
+  warnings=$(cat "${WIZARDRY_TMPDIR}/missing-true-names.txt" 2>/dev/null | head -20 | tr '\n' ', ' | sed 's/, $//')
+  rm -f "${WIZARDRY_TMPDIR}/missing-true-names.txt"
+  
+  # This is a non-failing check - just print warnings
+  if [ -n "$warnings" ]; then
+    printf 'INFO: spells/imps without true name functions (consider adding for word-of-binding): %s\n' "$warnings" >&2
+  fi
+  
+  # Always return success (non-failing check)
+  return 0
+}
+
 # --- Run all test cases ---
 
 _run_test_case "no duplicate spell names" test_no_duplicate_spell_names
@@ -887,5 +937,6 @@ _run_test_case "imps have opening comments" test_imps_have_opening_comments
 _run_test_case "bootstrap spells have identifying comment" test_bootstrap_spells_identified
 _run_test_case "spells follow function discipline" test_spells_follow_function_discipline
 _run_test_case "no function name collisions" test_no_function_name_collisions
+_run_test_case "spells have true name functions" test_spells_have_true_name_functions
 
 _finish_tests

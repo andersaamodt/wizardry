@@ -11,10 +11,11 @@ Lint and format-check spells for style-guide compliance. With no files provided 
 USAGE
 }
 
+lint_magic() {
 case "${1-}" in
 --help|--usage|-h)
   lint_magic_usage
-  exit 0
+  return 0
   ;;
 esac
 
@@ -50,7 +51,7 @@ while [ "$#" -gt 0 ]; do
     --only)
       if [ "$#" -lt 2 ]; then
         printf '%s\n' "lint-magic: --only requires a pattern argument." >&2
-        exit 2
+        return 2
       fi
       pattern=$2
       shift 2
@@ -62,7 +63,7 @@ while [ "$#" -gt 0 ]; do
     -*)
       printf '%s\n' "lint-magic: unknown option: $1" >&2
       lint_magic_usage >&2
-      exit 2
+      return 2
       ;;
     *)
       break
@@ -71,7 +72,7 @@ while [ "$#" -gt 0 ]; do
 done
 
 
-targets_file=$(temp-file lint-magic-targets) || exit 1
+targets_file=$(temp-file lint-magic-targets) || return 1
 trap 'cleanup-file "$targets_file"' EXIT HUP INT TERM
 
 # Collect targets (inline lint_magic_collect_targets and lint_magic_gather_default_targets)
@@ -112,7 +113,7 @@ if [ "$list_only" -eq 1 ]; then
   cat "$targets_file"
   trap - EXIT HUP INT TERM
   rm -f "$targets_file"
-  exit 0
+  return 0
 fi
 
 while IFS= read -r target; do
@@ -650,11 +651,16 @@ fi
 
 if [ "$failures" -eq 0 ]; then
   printf 'All %d spells passed style checks.\n' "$total"
-  exit 0
+  return 0
 else
   printf '%d of %d spells failed style checks.\n' "$failures" "$total"
   if [ -n "$failed_targets" ]; then
     printf 'Failing spells: %s\n' "$failed_targets"
   fi
-  exit 1
+  return 1
 fi
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */lint-magic) lint_magic "$@" ;; esac
