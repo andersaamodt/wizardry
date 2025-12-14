@@ -12,7 +12,7 @@ USAGE
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 
-detect_platform() {
+install_core_detect_platform() {
   if command -v uname >/dev/null 2>&1; then
     uname -s 2>/dev/null || printf '%s' "unknown"
   else
@@ -61,7 +61,7 @@ core_dependencies() {
   # essential=1 means the command is critical for shell/wizardry operation
   # and should not be uninstalled
   # Note: __clipboard_helper__ is a special marker handled by core-menu
-  platform=$(detect_platform)
+  platform=$(install_core_detect_platform)
   clipboard_label=$(get_clipboard_label)
   case $platform in
     Darwin)
@@ -87,7 +87,7 @@ EOF
   esac
 }
 
-resolve_spell() {
+install_core_resolve_spell() {
   spell_name=$1
   if command -v "$spell_name" >/dev/null 2>&1; then
     printf '%s\n' "$spell_name"
@@ -112,7 +112,7 @@ install_core() {
       continue
     fi
 
-    spell=$(resolve_spell "$install_spell" 2>/dev/null) || continue
+    spell=$(install_core_resolve_spell "$install_spell" 2>/dev/null) || continue
     # Run installation silently - failures are expected on some platforms
     ASSUME_YES=1 "$spell" >/dev/null 2>&1 || true
   done

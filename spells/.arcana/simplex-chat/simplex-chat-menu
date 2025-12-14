@@ -22,14 +22,14 @@ set -eu
 
 trap 'exit 0' INT TERM
 
-command_available() {
+simplex_chat_menu_command_available() {
   command -v "$1" >/dev/null 2>&1
 }
 
 simplex_bin=${SIMPLEX_CHAT_BIN:-simplex-chat}
 
 is_simplex_installed() {
-  command_available "$simplex_bin"
+  simplex_chat_menu_command_available "$simplex_bin"
 }
 
 default_launch_cmd=${SIMPLEX_CHAT_LAUNCH_CMD:-"$simplex_bin"}

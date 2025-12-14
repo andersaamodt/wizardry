@@ -32,12 +32,12 @@ case $SCRIPT_SOURCE in
 esac
 SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
 
-warn() {
+handle_command_not_found_warn() {
   printf '%s\n' "handle-command-not-found: $1" >&2
 }
 
 # Run nixos-rebuild or home-manager switch to apply NixOS configuration changes
-run_nix_rebuild() {
+handle_command_not_found_run_nix_rebuild() {
   # Allow tests to skip the rebuild
   [ "${WIZARDRY_SKIP_NIX_REBUILD-}" = "1" ] && return 0
 
@@ -68,7 +68,7 @@ run_nix_rebuild() {
   fi
 
   if [ "$rebuild_success" -eq 0 ]; then
-    warn "NixOS configuration could not be automatically rebuilt."
+    handle_command_not_found_warn "NixOS configuration could not be automatically rebuilt."
     return 1
   fi
 
@@ -117,7 +117,7 @@ EOF
     # Fallback to shell-specific defaults if still empty
     if [ -z "$rc_file" ]; then
       if [ -z "${HOME-}" ]; then
-        warn "HOME is not set; cannot determine rc file."
+        handle_command_not_found_warn "HOME is not set; cannot determine rc file."
         exit 1
       fi
       
@@ -175,9 +175,9 @@ EOF
     if printf '%s\n' "$hook_code" | "$nix_helper" command-not-found "$rc_file" bash; then
       printf '%s\n' "handle-command-not-found: installed hook in '$rc_file'."
       # Run nixos-rebuild to apply the changes
-      run_nix_rebuild || true
+      handle_command_not_found_run_nix_rebuild || true
     else
-      warn "unable to update '$rc_file'."
+      handle_command_not_found_warn "unable to update '$rc_file'."
       exit 1
     fi
     exit 0
@@ -188,7 +188,7 @@ EOF
   [ "$rc_dir" = "$rc_file" ] && rc_dir=.
   if [ ! -d "$rc_dir" ]; then
     if ! mkdir -p "$rc_dir"; then
-      warn "unable to create directory '$rc_dir'."
+      handle_command_not_found_warn "unable to create directory '$rc_dir'."
       exit 1
     fi
   fi
@@ -224,7 +224,7 @@ HOOK
   if ! mv "$tmp_file" "$rc_file"; then
     trap - EXIT HUP INT TERM
     rm -f "$tmp_file"
-    warn "unable to update '$rc_file'."
+    handle_command_not_found_warn "unable to update '$rc_file'."
     exit 1
   fi
   trap - EXIT HUP INT TERM
@@ -266,7 +266,7 @@ EOF
     # Fallback
     if [ -z "$rc_file" ]; then
       if [ -z "${HOME-}" ]; then
-        warn "HOME is not set; cannot determine rc file."
+        handle_command_not_found_warn "HOME is not set; cannot determine rc file."
         exit 1
       fi
       
@@ -318,15 +318,15 @@ EOF
       if "$nix_helper" command-not-found "$rc_file"; then
         printf '%s\n' "handle-command-not-found: uninstalled hook from '$rc_file'."
         # Run nixos-rebuild to apply the changes
-        run_nix_rebuild || true
+        handle_command_not_found_run_nix_rebuild || true
         exit 0
       else
-        warn "unable to update '$rc_file'."
+        handle_command_not_found_warn "unable to update '$rc_file'."
         exit 1
       fi
     fi
-    # nix-shell-remove helper not found - warn and attempt shell method fallback
-    warn "nix-shell-remove imp not found; attempting shell-style removal (may not work for nix files)."
+    # nix-shell-remove helper not found - handle_command_not_found_warn and attempt shell method fallback
+    handle_command_not_found_warn "nix-shell-remove imp not found; attempting shell-style removal (may not work for nix files)."
   fi
 
   # Shell format: use sed to remove the block
@@ -336,7 +336,7 @@ EOF
   if ! mv "$tmp_file" "$rc_file"; then
     trap - EXIT HUP INT TERM
     rm -f "$tmp_file"
-    warn "unable to update '$rc_file'."
+    handle_command_not_found_warn "unable to update '$rc_file'."
     exit 1
   fi
   trap - EXIT HUP INT TERM

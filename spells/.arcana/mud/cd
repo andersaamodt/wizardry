@@ -55,14 +55,14 @@ case $SCRIPT_SOURCE in
 esac
 SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
 
-warn() {
+cd_warn() {
         printf '%s\n' "cd cantrip: $1" >&2
 }
 
 # Run nixos-rebuild or home-manager switch to apply NixOS configuration changes
 # This function follows project ethos: automatically fix things instead of telling users to do it.
 # Returns 0 if rebuild succeeded, 1 if it could not be run automatically.
-run_nix_rebuild() {
+cd_run_nix_rebuild() {
         # Allow tests to skip the rebuild
         if [ "${WIZARDRY_SKIP_NIX_REBUILD-}" = "1" ]; then
                 return 0
@@ -105,7 +105,7 @@ run_nix_rebuild() {
         fi
 
         if [ "$rebuild_success" -eq 0 ]; then
-                warn "NixOS configuration could not be automatically rebuilt."
+                cd_warn "NixOS configuration could not be automatically rebuilt."
                 return 1
         fi
 
@@ -157,7 +157,7 @@ EOF
 
         # Fallback to shell-specific defaults
         if [ -z "${HOME-}" ]; then
-                warn "HOME is not set; cannot determine rc file."
+                cd_warn "HOME is not set; cannot determine rc file."
                 return 1
         fi
 
@@ -233,7 +233,7 @@ ensure_rc_dir() {
         if mkdir -p "$rc_dir"; then
                 return 0
         fi
-        warn "unable to create directory '$rc_dir'."
+        cd_warn "unable to create directory '$rc_dir'."
         return 1
 }
 
@@ -264,9 +264,9 @@ install() {
                 if printf '%s\n' "$hook_code" | "$nix_helper" cd-cantrip "$rc_file" bash; then
                         printf '%s\n' "cd cantrip: installed wizardry hooks in '$rc_file'."
                         # Run nixos-rebuild to apply the changes
-                        run_nix_rebuild || true
+                        cd_run_nix_rebuild || true
                 else
-                        warn "unable to update '$rc_file'."
+                        cd_warn "unable to update '$rc_file'."
                         return 1
                 fi
                 return 0
@@ -292,7 +292,7 @@ HOOK
         if ! mv "$tmp_file" "$rc_file"; then
                 trap - EXIT HUP INT TERM
                 rm -f "$tmp_file"
-                warn "unable to update '$rc_file'."
+                cd_warn "unable to update '$rc_file'."
                 return 1
         fi
         trap - EXIT HUP INT TERM
@@ -324,16 +324,16 @@ uninstall() {
                         if "$nix_helper" cd-cantrip "$rc_file"; then
                                 printf '%s\n' "cd cantrip: uninstalled wizardry hooks from '$rc_file'."
                                 # Run nixos-rebuild to apply the changes
-                                run_nix_rebuild || true
+                                cd_run_nix_rebuild || true
                                 return 0
                         else
-                                warn "unable to update '$rc_file'."
+                                cd_warn "unable to update '$rc_file'."
                                 return 1
                         fi
                 fi
-                # nix-shell-remove helper not found - warn and attempt shell method fallback
+                # nix-shell-remove helper not found - cd_warn and attempt shell method fallback
                 # This may not work correctly for nix format files
-                warn "nix-shell-remove imp not found; attempting shell-style removal which may not work for nix files."
+                cd_warn "nix-shell-remove imp not found; attempting shell-style removal which may not work for nix files."
         fi
 
         # Shell format: use sed to remove the block
@@ -343,7 +343,7 @@ uninstall() {
         if ! mv "$tmp_file" "$rc_file"; then
                 trap - EXIT HUP INT TERM
                 rm -f "$tmp_file"
-                warn "unable to update '$rc_file'."
+                cd_warn "unable to update '$rc_file'."
                 return 1
         fi
         trap - EXIT HUP INT TERM
@@ -363,7 +363,7 @@ locate_ask_yn() {
                 printf '%s\n' "$SCRIPT_DIR/cantrips/ask-yn"
                 return 0
         fi
-        warn "ask-yn spell is missing; skipping installation prompt."
+        cd_warn "ask-yn spell is missing; skipping installation prompt."
         return 1
 }
 
@@ -390,7 +390,7 @@ wizardry_cd_cast_look() {
                 look "$@"
                 return
         fi
-        warn "look spell is not available."
+        cd_warn "look spell is not available."
 }
 
 wizardry_cd_main() {

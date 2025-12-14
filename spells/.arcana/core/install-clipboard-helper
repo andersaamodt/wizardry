@@ -26,7 +26,7 @@ set -eu
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 
 # Detect which clipboard helper is already installed
-detect_installed_helper() {
+install_clipboard_helper_detect_installed_helper() {
   if command -v pbcopy >/dev/null 2>&1; then
     printf 'pbcopy'
   elif command -v xsel >/dev/null 2>&1; then
@@ -61,14 +61,14 @@ detect_preferred_helper() {
 # Main execution
 case "${1:-}" in
   --detect-installed)
-    detect_installed_helper
+    install_clipboard_helper_detect_installed_helper
     ;;
   --detect-preferred)
     detect_preferred_helper
     ;;
   --label)
     # get_clipboard_label - inlined
-    installed=$(detect_installed_helper)
+    installed=$(install_clipboard_helper_detect_installed_helper)
     preferred=$(detect_preferred_helper)
     
     if [ -n "$installed" ]; then
@@ -79,7 +79,7 @@ case "${1:-}" in
     ;;
   *)
     # install_clipboard_helper - inlined
-    installed=$(detect_installed_helper)
+    installed=$(install_clipboard_helper_detect_installed_helper)
     preferred=$(detect_preferred_helper)
     
     # If already have a clipboard helper, we're done

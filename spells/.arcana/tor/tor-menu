@@ -41,7 +41,7 @@ build_service_entries() {
 }
 
 # Displays the menu
-display_menu() {
+tor_menu_display_menu() {
   title="${BOLD}${CYAN}TOR: $(tor-status)"
   exit_label=$(exit-label)
   exit_option="${exit_label}%kill -TERM \$PPID"
@@ -93,6 +93,6 @@ while true; do
     first_run=0
   fi
 
-  display_menu || true
+  tor_menu_display_menu || true
 
 done
