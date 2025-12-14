@@ -46,13 +46,9 @@ This downloads wizardry to the default install location, `~/.wizardry`. After in
 
 ### Portable Nightly Builds
 
-**Note:** Wizardry is not yet stable. These are automated nightly builds for testing.
-
-Download a pre-compiled portable version that works without installation:
+The portable build includes all spells as standalone scripts that work without the full wizardry environment. These are currently **untested an not recommended.**
 
 **[Download latest nightly build](https://github.com/andersaamodt/wizardry/actions/workflows/compile.yml)** → Click the most recent successful run → Download artifact
-
-The portable build includes all spells as standalone executables that work without the full wizardry environment. Official releases will be published separately.
 
 ## Usage
 
