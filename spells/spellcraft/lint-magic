@@ -478,12 +478,8 @@ AWKSCRIPT
   # Check for long lines (now enforced - fails build)
   # Allows long lines that are primarily string literals (>60% quoted)
   # Fails on long lines that should be logically split (pipelines, commands, etc.)
-  # Check for long lines - inline AWK script filters heredocs and analyzes string content
-  # Check for lines longer than 100 characters (excluding comments and heredocs)
-  # FAIL if long line contains commands that could be logically split
-  # ALLOW if long line is primarily a long string literal (error messages, help text, etc.)
+  # Uses inline AWK script to filter heredocs and analyze string content
   
-  # Check for long lines - inline AWK script filters heredocs and analyzes string content
   # Hardcoded exemptions for files that have long lines that cannot be split
   # without breaking doppelganger compilation or other tools
   # See .github/EXEMPTIONS.md for justification
