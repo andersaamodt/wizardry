@@ -137,7 +137,7 @@ case "$0" in */has) _has "$@" ;; esac
 **Temporary Exemptions** (4 spells - TO BE REFACTORED):
 
 **Spellcraft** (1 spell):
-- `spellcraft/lint-magic` (10 additional) - Comprehensive linting tool, refactored from 21→10 functions
+- `spellcraft/lint-magic` (4 additional) - Comprehensive linting tool, refactored from 21→4 functions
 
 **Arcana** (1 spell):
 - `.arcana/mud/cd` (14 additional) - MUD navigation system, needs refactoring
@@ -154,7 +154,7 @@ case "$0" in */has) _has "$@" ;; esac
 
 
 **Refactored** (37 spells - COMPLETED ✅):
-- `spellcraft/lint-magic` (21→10) - Inlined 11 simple check functions
+- `spellcraft/lint-magic` (21→4) - Inlined 17 functions (81% reduction)
 - `menu/spellbook` (30→10) - Major refactor, created 3 reusable imps
 - `spellcraft/learn-spell` (8→1) - Inlined warn and detect_env_once - **NOW REMOVED (obsolete)**
 - `spellcraft/scribe-spell` (10→1) - Inlined helpers, removed learn-spellbook dependency
