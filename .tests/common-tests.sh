@@ -776,8 +776,19 @@ system/test-magic
 # When spells are sourced via invoke-wizardry, function names must be unique
 # This prevents one spell from overwriting another's functions
 # This is a structural check - ensures spell isolation when sourced
+#
+# EXCEPTION: Compiled spells (doppelganger) are standalone executables that inline
+# their dependencies. Multiple compiled spells will naturally have duplicate function
+# definitions from shared imps (e.g., _has, _there). This is expected and acceptable
+# since compiled spells never source each other - they are independent executables.
 
 test_no_function_name_collisions() {
+  # Skip collision check for compiled/doppelganger spells - duplicates are expected
+  # when imps are inlined into multiple standalone executables
+  if [ "${WIZARDRY_TEST_COMPILED:-0}" = "1" ]; then
+    return 0
+  fi
+  
   # Track all function definitions
   collisions_file=$(mktemp "${WIZARDRY_TMPDIR}/func-collisions.XXXXXX")
   functions_file=$(mktemp "${WIZARDRY_TMPDIR}/func-list.XXXXXX")

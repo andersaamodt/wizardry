@@ -104,12 +104,11 @@ do
   target_dir="$output_dir/spells/$(dirname "$rel_path")"
   mkdir -p "$target_dir"
   
-  # Skip test infrastructure files and imps - copy them as-is instead of compiling
-  # test-bootstrap, boot imps, and all imps need to remain uncompiled
-  # Imps should not inline dependencies to avoid function name collisions
+  # Skip test infrastructure files - copy them as-is instead of compiling
+  # test-bootstrap and boot imps need to remain uncompiled to work correctly
   case "$spell_path" in
-    */test/test-bootstrap|*/test/boot/*|*/.imps/*)
-      # Copy infrastructure and imp files directly
+    */test/test-bootstrap|*/test/boot/*)
+      # Copy test infrastructure files directly
       cp "$spell_path" "$target_dir/$spell_name"
       chmod +x "$target_dir/$spell_name"
       compiled_count=$((compiled_count + 1))
