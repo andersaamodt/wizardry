@@ -3,7 +3,7 @@
 # This spell validates whether a string is a valid SSH public key format.
 # Use it to check SSH key input before adding to authorized_keys.
 
-show_usage() {
+validate_ssh_key_usage() {
 cat <<'USAGE'
 Usage: validate-ssh-key <key>
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        validate_ssh_key_usage
         exit 0
         ;;
 esac

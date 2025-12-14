@@ -2,7 +2,7 @@
 
 # Import an arcanum from a path into the wizardry arcana collection.
 
-show_usage() {
+import_arcanum_usage() {
   cat <<'USAGE'
 Usage: import-arcanum [PATH]
 
@@ -18,7 +18,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-  show_usage
+  import_arcanum_usage
   exit 0
   ;;
 esac

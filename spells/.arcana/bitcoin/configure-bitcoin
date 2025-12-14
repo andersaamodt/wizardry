@@ -2,7 +2,7 @@
 
 # This spell facilitates the setting of the configurations for thy Bitcoin system.
 
-show_usage() {
+configure_bitcoin_usage() {
         cat <<'USAGE' >&2
 Usage: configure-bitcoin
 
@@ -12,7 +12,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        configure_bitcoin_usage
         exit 0
         ;;
 esac

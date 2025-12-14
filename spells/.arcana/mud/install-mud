@@ -2,7 +2,7 @@
 
 # This spell installs and starts the MUD. It is the MUD's main loop and installer script.
 
-show_usage() {
+install_mud_usage() {
         cat <<'USAGE' >&2
 Usage: install-mud
 
@@ -12,7 +12,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        install_mud_usage
         exit 0
         ;;
 esac

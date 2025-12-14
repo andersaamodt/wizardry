@@ -10,7 +10,7 @@ script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 imps_dir="$script_dir/../.imps"
 export PATH="$imps_dir/fs:$PATH"
 
-show_usage() {
+read_magic_usage() {
 cat <<'USAGE'
 Usage: read-magic <file> [attribute]
 
@@ -20,7 +20,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        read_magic_usage
         exit 0
         ;;
 esac

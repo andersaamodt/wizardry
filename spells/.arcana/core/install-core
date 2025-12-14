@@ -2,7 +2,7 @@
 
 # Bootstrap spell: installs the core wizardry dependencies required for spell execution.
 
-show_usage() {
+install_core_usage() {
   cat <<'USAGE'
 Usage: install-core
 
@@ -123,7 +123,7 @@ install_core() {
 if [ "${0##*/}" = "install-core" ]; then
   case "${1-}" in
     --help|--usage|-h)
-      show_usage
+      install_core_usage
       exit 0
       ;;
   esac

@@ -3,7 +3,7 @@
 
 require-wizardry || exit 1
 
-show_usage() {
+spellbook_usage() {
         cat <<'USAGE'
 Usage: spellbook [PATH|--memorize NAME CMD|--forget NAME|--scribe NAME CMD|--list]
 
@@ -14,7 +14,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        spellbook_usage
         exit 0
         ;;
 esac
@@ -408,7 +408,7 @@ case ${1-} in
         --memorize)
                 shift
                 if [ "$#" -lt 2 ]; then
-                        show_usage >&2
+                        spellbook_usage >&2
                         exit 1
                 fi
                 name=$1
@@ -419,7 +419,7 @@ case ${1-} in
         --forget)
                 shift
                 if [ "$#" -ne 1 ]; then
-                        show_usage >&2
+                        spellbook_usage >&2
                         exit 1
                 fi
                 "$cast_store" remove "$1"
@@ -432,7 +432,7 @@ case ${1-} in
         --scribe)
                 shift
                 if [ "$#" -lt 2 ]; then
-                        show_usage >&2
+                        spellbook_usage >&2
                         exit 1
                 fi
                 name=$1
@@ -455,7 +455,7 @@ case ${1-} in
                 exit 0
                 ;;
         --help|--usage|-h)
-                show_usage
+                spellbook_usage
                 exit 0
                 ;;
         --)
@@ -466,7 +466,7 @@ case ${1-} in
                 :
                 ;;
         -*)
-                show_usage >&2
+                spellbook_usage >&2
                 exit 1
                 ;;
         *)

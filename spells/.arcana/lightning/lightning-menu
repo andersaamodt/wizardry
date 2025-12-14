@@ -2,7 +2,7 @@
 
 # Present the Lightning management menu.
 
-show_usage() {
+lightning_menu_usage() {
   cat <<'USAGE'
 Usage: lightning-menu
 
@@ -12,7 +12,7 @@ USAGE
 
 case "${1-}" in
   --help|--usage|-h)
-    show_usage
+    lightning_menu_usage
     exit 0
     ;;
 esac

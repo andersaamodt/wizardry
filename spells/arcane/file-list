@@ -3,7 +3,7 @@
 # This spell creates a text file listing all filenames in a folder.
 # Use it to generate an index of files in a directory.
 
-show_usage() {
+file_list_usage() {
 cat <<'USAGE'
 Usage: file-list <folder>
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        file_list_usage
         exit 0
         ;;
 esac
@@ -23,7 +23,7 @@ set -eu
 # Check that a folder path was provided as an argument
 if [ "$#" -ne 1 ]; then
   printf '%s\n' "file-list: folder path required."
-  show_usage >&2
+  file_list_usage >&2
   exit 1
 fi
 

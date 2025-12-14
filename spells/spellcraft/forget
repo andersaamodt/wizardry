@@ -10,7 +10,7 @@ require-wizardry || exit 1
 spell_name="forget"
 tab_char=$(printf '\t')
 
-show_usage() {
+forget_usage() {
         cat <<USAGE
 Usage: $spell_name <spell-name>
 
@@ -20,7 +20,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        forget_usage
         exit 0
         ;;
 esac
@@ -63,17 +63,17 @@ fi
 # Validate arguments
 case ${1-} in
 --help|--usage|-h)
-  show_usage
+  forget_usage
   exit 0
   ;;
 "")
   printf '%s\n' "$spell_name: spell name required." >&2
-  show_usage >&2
+  forget_usage >&2
   exit 1
   ;;
 -*)
   printf '%s\n' "$spell_name: unknown option '$1'" >&2
-  show_usage >&2
+  forget_usage >&2
   exit 1
   ;;
 esac

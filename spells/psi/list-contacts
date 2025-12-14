@@ -3,7 +3,7 @@
 # This spell lists all contacts in the contacts directory.
 # Each vCard file is parsed to extract the name, organization, or telephone.
 
-show_usage() {
+list_contacts_usage() {
   cat <<'USAGE'
 Usage: list-contacts [directory]
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-  show_usage
+  list_contacts_usage
   exit 0
   ;;
 esac

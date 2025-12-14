@@ -21,7 +21,7 @@ case ":${PATH-}:" in
     ;;
 esac
 
-show_usage() {
+test_magic_usage() {
   cat <<USAGE
 Usage: $cmd_name [--only PATTERN] [--list] [--verbose]
 
@@ -50,7 +50,7 @@ fi
 
 case "${1-}" in
 --help|--usage|-h)
-  show_usage
+  test_magic_usage
   exit 0
   ;;
 esac
@@ -100,7 +100,7 @@ while [ "$#" -gt 0 ]; do
     --only)
       if [ "$#" -lt 2 ]; then
         echo "$cmd_name: --only requires a pattern" >&2
-        show_usage
+        test_magic_usage
         exit 1
       fi
       if [ -n "$only_patterns" ]; then
@@ -119,7 +119,7 @@ while [ "$#" -gt 0 ]; do
       shift
       ;;
     --help|--usage|-h)
-      show_usage
+      test_magic_usage
       exit 0
       ;;
     --)
@@ -128,7 +128,7 @@ while [ "$#" -gt 0 ]; do
       ;;
     *)
       echo "$cmd_name: unknown option '$1'" >&2
-      show_usage
+      test_magic_usage
       exit 1
       ;;
   esac

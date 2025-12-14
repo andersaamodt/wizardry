@@ -4,7 +4,7 @@
 # The doppelganger contains individual compiled spells in the same directory
 # structure, minus GitHub-specific files, ready for distribution.
 
-show_usage() {
+doppelganger_usage() {
   cat <<'USAGE'
 Usage: doppelganger [OUTPUT_DIR]
 
@@ -28,7 +28,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-  show_usage
+  doppelganger_usage
   exit 0
   ;;
 esac

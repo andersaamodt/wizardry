@@ -3,7 +3,7 @@
 # This spell lints spells for formatting and style guide violations.
 # Run it against spell files to check formatting, linting, and code style compliance.
 
-show_usage() {
+lint_magic_usage() {
   cat <<'USAGE'
 Usage: lint-magic [--only PATTERN] [--list] [--verbose] [file...]
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-  show_usage
+  lint_magic_usage
   exit 0
   ;;
 esac
@@ -61,7 +61,7 @@ while [ "$#" -gt 0 ]; do
       ;;
     -*)
       printf '%s\n' "lint-magic: unknown option: $1" >&2
-      show_usage >&2
+      lint_magic_usage >&2
       exit 2
       ;;
     *)
@@ -163,10 +163,10 @@ check_description_comment() {
 
 check_usage_function() {
   file=$1
-  if grep -qE '^[[:space:]]*show_usage\(\)' "$file" 2>/dev/null; then
+  if grep -qE '^[[:space:]]*lint_magic_usage\(\)' "$file" 2>/dev/null; then
     return 0
   fi
-  printf 'missing usage function (show_usage)'
+  printf 'missing usage function (lint_magic_usage)'
   return 1
 }
 

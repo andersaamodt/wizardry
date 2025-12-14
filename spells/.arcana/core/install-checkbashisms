@@ -3,7 +3,7 @@
 # Bootstrap spell: install the checkbashisms utility so verify-posix can detect non-POSIX shells.
 
 
-show_usage() {
+install_checkbashisms_usage() {
 cat <<'USAGE'
 Usage: install-checkbashisms
 
@@ -13,12 +13,12 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        install_checkbashisms_usage
         exit 0
         ;;
 -*)
         printf '%s\n' "install-checkbashisms: unknown option '$1'" >&2
-        show_usage
+        install_checkbashisms_usage
         exit 1
         ;;
 esac

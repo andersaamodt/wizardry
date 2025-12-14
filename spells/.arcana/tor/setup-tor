@@ -3,7 +3,7 @@
 # Set up a Tor hidden service for the MUD gateway.
 # Appends a HiddenService configuration to torrc and restarts Tor.
 
-show_usage() {
+setup_tor_usage() {
         cat <<'USAGE'
 Usage: setup-tor
 
@@ -14,7 +14,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        setup_tor_usage
         exit 0
         ;;
 esac

@@ -2,7 +2,7 @@
 
 # Uninstall Tor and attempt to undo configuration changes.
 
-show_usage() {
+uninstall_tor_usage() {
         cat <<'USAGE' >&2
 Usage: uninstall-tor
 
@@ -12,7 +12,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        uninstall_tor_usage
         exit 0
         ;;
 esac

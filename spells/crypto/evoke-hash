@@ -4,7 +4,7 @@
 # Searches current directory by default.
 
 
-show_usage() {
+evoke_hash_usage() {
   cat <<'USAGE'
 Usage: evoke-hash <hash> [directory]
 
@@ -14,14 +14,14 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-  show_usage
+  evoke_hash_usage
   exit 0
   ;;
 esac
 set -eu
 
 if [ "$#" -lt 1 ]; then
-  show_usage >&2
+  evoke_hash_usage >&2
   exit 1
 fi
 

@@ -2,7 +2,7 @@
 
 # Bootstrap spell: install or uninstall a system command using the available package manager.
 
-show_usage() {
+manage_system_command_usage() {
         cat <<'USAGE' >&2
 Usage: manage-system-command [--uninstall] <command> <default-package>
 
@@ -12,7 +12,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        manage_system_command_usage
         exit 0
         ;;
 esac

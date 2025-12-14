@@ -2,7 +2,7 @@
 
 # disable-service removes a unit from systemd's boot sequence.
 
-show_usage() {
+disable_service_usage() {
         cat <<'USAGE' >&2
 Usage: disable-service UNIT
 
@@ -12,7 +12,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        disable_service_usage
         exit 0
         ;;
 esac

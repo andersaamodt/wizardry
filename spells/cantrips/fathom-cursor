@@ -4,7 +4,7 @@
 # (Device Status Report) query.
 
 
-show_usage() {
+fathom_cursor_usage() {
     cat <<'USAGE' >&2
 Usage: fathom-cursor [-v|--verbose] [-x] [-y]
 
@@ -42,7 +42,7 @@ while [ "$#" -gt 0 ]; do
             want_y=1
             ;;
         --help|--usage|-h)
-            show_usage
+            fathom_cursor_usage
             exit 0
             ;;
         --)
@@ -50,7 +50,7 @@ while [ "$#" -gt 0 ]; do
             break
             ;;
         -*)
-            show_usage
+            fathom_cursor_usage
             ;;
         *)
             break

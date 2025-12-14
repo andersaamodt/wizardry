@@ -5,7 +5,7 @@
 # terminal work so it can remain portable across macOS, Debian, and NixOS.
 
 
-show_usage() {
+menu_usage() {
         cat <<'USAGE' >&2
 Usage: menu [--spell-mode] [--start-selection N] "Title" "Label%command"...
 
@@ -18,7 +18,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        menu_usage
         exit 0
         ;;
 esac

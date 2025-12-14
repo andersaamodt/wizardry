@@ -6,7 +6,7 @@ require-wizardry || exit 1
 
 SCRIPT_NAME=$(basename "$0")
 
-show_usage() {
+scribe_spell_usage() {
         cat <<USAGE
 Usage: $SCRIPT_NAME [--category CAT] [NAME COMMAND...]
        $SCRIPT_NAME --new-category [NAME]
@@ -19,7 +19,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        scribe_spell_usage
         exit 0
         ;;
 esac
@@ -47,7 +47,7 @@ new_category_mode=0
 while [ "$#" -gt 0 ]; do
         case ${1-} in
                 --help|--usage|-h)
-                        show_usage
+                        scribe_spell_usage
                         exit 0
                         ;;
                 --new-category)
@@ -246,7 +246,7 @@ fi
 
 # Check for partial arguments
 if [ "$#" -eq 1 ]; then
-        show_usage >&2
+        scribe_spell_usage >&2
         exit 1
 fi
 

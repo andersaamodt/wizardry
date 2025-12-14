@@ -3,7 +3,7 @@
 # Toggle MUD visibility in the main menu.
 # When enabled, MUD appears in the main menu. When disabled, it is hidden.
 
-show_usage() {
+toggle_mud_menu_usage() {
 cat <<'USAGE'
 Usage: toggle-mud-menu
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-	show_usage
+	toggle_mud_menu_usage
 	exit 0
 	;;
 esac

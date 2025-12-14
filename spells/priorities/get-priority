@@ -5,7 +5,7 @@
 
 require-wizardry || exit 1
 
-show_usage() {
+get_priority_usage() {
 cat <<'USAGE'
 Usage: get-priority <file>
 
@@ -15,7 +15,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        get_priority_usage
         exit 0
         ;;
 esac
@@ -25,7 +25,7 @@ set -eu
 # Ensure file argument is provided
 if [ -z "${1-}" ]; then
         printf '%s\n' "get-priority: file path required." >&2
-        show_usage >&2
+        get_priority_usage >&2
         exit 1
 fi
 

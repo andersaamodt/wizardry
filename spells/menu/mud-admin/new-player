@@ -3,7 +3,7 @@
 # This spell creates a new player identity with SSH keys for the MUD.
 # Use it to generate a new player key pair for connecting to MUD hosts.
 
-show_usage() {
+new_player_usage() {
 cat <<'USAGE'
 Usage: new-player
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        new_player_usage
         exit 0
         ;;
 esac

@@ -3,7 +3,7 @@
 # This spell validates whether a string is a valid non-negative integer.
 # Use it to check numeric input before processing.
 
-show_usage() {
+validate_number_usage() {
 cat <<'USAGE'
 Usage: validate-number <string>
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        show_usage
+        validate_number_usage
         exit 0
         ;;
 esac
