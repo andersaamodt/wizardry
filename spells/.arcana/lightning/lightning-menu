@@ -17,17 +17,18 @@ case "${1-}" in
     ;;
 esac
 
+lightning_menu() {
 set -eu
 . colors
 
 trap 'exit 0' INT TERM
 
-lightning_menu_command_available() {
+command_available() {
   command -v "$1" >/dev/null 2>&1
 }
 
 is_lightning_installed() {
-  if lightning_menu_command_available lightning-cli || lightning_menu_command_available lightningd; then
+  if command_available lightning-cli || command_available lightningd; then
     return 0
   fi
   return 1
@@ -35,7 +36,7 @@ is_lightning_installed() {
 
 lightning_service_name() {
   for candidate in "${LIGHTNING_SERVICE-}" lightningd clightningd c-lightning; do
-    if [ -n "$candidate" ] && lightning_menu_command_available "$candidate"; then
+    if [ -n "$candidate" ] && command_available "$candidate"; then
       printf '%s' "$candidate"
       return
     fi
@@ -103,3 +104,9 @@ while :; do
   fi
   # Loop continues so status updates are shown.
 done
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */lightning-menu|lightning-menu) lightning_menu "$@" ;;
+esac

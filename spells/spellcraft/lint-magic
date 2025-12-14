@@ -163,10 +163,10 @@ check_description_comment() {
 
 check_usage_function() {
   file=$1
-  if grep -qE '^[[:space:]]*lint_magic_usage\(\)' "$file" 2>/dev/null; then
+  if grep -qE '^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*_usage\(\)' "$file" 2>/dev/null; then
     return 0
   fi
-  printf 'missing usage function (lint_magic_usage)'
+  printf 'missing usage function (*_usage)'
   return 1
 }
 
