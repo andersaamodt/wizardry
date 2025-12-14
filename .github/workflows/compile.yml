@@ -53,16 +53,14 @@ jobs:
         run: |
           cd /tmp/wizardry-compiled
 
-          # Create ZIP with root files, excluding .tests, .git*, .github*
-          # The doppelganger already excludes .git and .github directories
+          # Create ZIP with root files, excluding .tests and any .git* files
+          # The doppelganger already excludes .git and .github directories,
+          # but we exclude them again as a safeguard
           # We need to explicitly exclude .tests/ for the clean compiled version
 
           zip -r /tmp/wizardry-compiled-${{ github.sha }}.zip . \
             -x ".tests/*" \
-            -x ".git/*" \
-            -x ".github/*" \
-            -x ".gitignore" \
-            -x ".gitattributes"
+            -x "*.git*"
 
           echo "=== ZIP created ==="
           ls -lh /tmp/wizardry-compiled-*.zip
