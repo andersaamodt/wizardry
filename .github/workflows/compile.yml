@@ -79,14 +79,7 @@ jobs:
           echo "=== Moving to workspace for upload ==="
           mv /tmp/wizardry-compiled ${{ github.workspace }}/wizardry-compiled
 
-          echo ""
-          echo "=== Verifying move ==="
-          ls -la ${{ github.workspace }}/wizardry-compiled/
-          echo ""
-          echo "=== Spell count after move ==="
-          target_dir="${{ github.workspace }}/wizardry-compiled/spells"
-          spell_count=$(find "$target_dir" -type f 2>/dev/null | wc -l)
-          echo "$spell_count"
+          echo "Moved to workspace. Ready for artifact upload."
 
       - name: Upload compiled wizardry artifact
         uses: actions/upload-artifact@v4
