@@ -82,7 +82,7 @@ else
 fi
 
 # Catch Ctrl-C and TERM signal to return 1 cleanly
-trap 'return 0' INT TERM
+trap 'exit 0' INT TERM
 
 shutdown_menu_display_menu() {
   # Graceful restart/shutdown give processes time to clean up

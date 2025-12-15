@@ -126,7 +126,7 @@ else
         exec 3>&- 2>/dev/null || :
     }
 
-    trap 'restore_tty; return 130' INT HUP TERM
+    trap 'restore_tty; exit 130' INT HUP TERM
     trap 'restore_tty' EXIT
 
     # Configure raw mode with a short timeout

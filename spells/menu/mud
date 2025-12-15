@@ -24,7 +24,7 @@ esac
 set -eu
 
 # Catch Ctrl-C and TERM signal to return 1 cleanly
-trap 'return 0' INT TERM
+trap 'exit 0' INT TERM
 
 # Load color palette (colors handles terminal capability detection internally)
 # shellcheck source=/dev/null

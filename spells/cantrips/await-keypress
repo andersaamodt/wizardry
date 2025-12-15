@@ -94,7 +94,7 @@ else
         return 1
     fi
 
-    trap 'restore_terminal; return 130' INT HUP TERM
+    trap 'restore_terminal; exit 130' INT HUP TERM
     trap 'restore_terminal' EXIT
 
     # Configure canonical mode to wait for exactly one byte of input.

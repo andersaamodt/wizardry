@@ -116,7 +116,7 @@ cleanup() {
         cleanup-file "$items_file"
         cleanup-file "$commands_file"
 }
-trap 'cleanup; return 1' INT TERM
+trap 'cleanup; exit 1' INT TERM
 trap 'cleanup' EXIT
 
 max_name_length=0

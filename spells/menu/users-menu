@@ -34,7 +34,7 @@ if ! require menu "The Users menu needs the 'menu' command to present options.";
 fi
 
 # Catch Ctrl-C and TERM signal to return 1 cleanly
-trap 'return 0' INT TERM
+trap 'exit 0' INT TERM
 
 users_menu_display_menu() {
   change_my_password="Change my password%passwd"
