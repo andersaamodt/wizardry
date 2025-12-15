@@ -166,7 +166,8 @@ spellbook_menu() {
                                 for dir in "$ROOT_DIR"/spells/*; do
                                         [ -d "$dir" ] || continue
                                         [ "$(basename "$dir")" = "menu" ] && continue
-                                        builtin_cats="$builtin_cats$(basename "$dir")
+                                        cat_name=$(basename "$dir")
+                                        builtin_cats="${builtin_cats}${cat_name}
 "
                                 done
                                 builtin_cats=$(printf '%s' "$builtin_cats" | sort)
