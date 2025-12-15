@@ -5,7 +5,7 @@
 
 
 require_command_usage() {
-	cat <<'USAGE' >&2
+  cat <<'USAGE' >&2
 Usage: require-command <command> [message...]
 
 Checks for a required binary, optionally offers to install it through wizardry installers, and exits non-zero with a helpful message when the dependency is missing.
@@ -14,9 +14,9 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-	require_command_usage
-	exit 0
-	;;
+  require_command_usage
+  exit 0
+  ;;
 esac
 set -eu
 

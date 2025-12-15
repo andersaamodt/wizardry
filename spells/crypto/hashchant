@@ -14,9 +14,9 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-	hashchant_usage
-	exit 0
-	;;
+  hashchant_usage
+  exit 0
+  ;;
 esac
 set -eu
 

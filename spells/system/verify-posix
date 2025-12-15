@@ -3,7 +3,7 @@
 # Verify that wizardry spells use POSIX-compliant shell practices.
 
 verify_posix_usage() {
-	cat <<'USAGE' >&2
+  cat <<'USAGE' >&2
 Usage: verify-posix [script ...]
 
 Checks the provided spells—or every executable spell by default—for POSIX sh shebangs and common bashism pitfalls using checkbashisms.
@@ -12,9 +12,9 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-	verify_posix_usage
-	exit 0
-	;;
+  verify_posix_usage
+  exit 0
+  ;;
 esac
 
 set -eu

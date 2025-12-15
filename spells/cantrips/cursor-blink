@@ -5,7 +5,7 @@
 # Emit the escape sequence that re-enables blinking.
 
 cursor_blink_usage() {
-	cat <<'USAGE' >&2
+  cat <<'USAGE' >&2
 Usage: cursor-blink on|off
 
 Toggles cursor blinking with ANSI escape codes, quietly succeeding on terminals that cannot honour the request.
@@ -14,9 +14,9 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-	cursor_blink_usage
-	exit 0
-	;;
+  cursor_blink_usage
+  exit 0
+  ;;
 esac
 
 set -eu
