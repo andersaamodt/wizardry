@@ -44,9 +44,9 @@ cd ~/.wizardry
 
 This downloads wizardry to the default install location, `~/.wizardry`. After installing, you must reopen your terminal window before wizardry spells will work.
 
-### Portable Nightly Builds
+### Portable build
 
-The portable build includes all spells that work as standalone scripts. These are currently **untested and not recommended.**
+The portable build is automatically generated, and includes all spells that work as standalone scripts. These are currently **untested and not recommended.**
 
 **[Download latest nightly build](https://github.com/andersaamodt/wizardry/actions/workflows/compile.yml)** → Click the most recent successful run → Download artifact
 
