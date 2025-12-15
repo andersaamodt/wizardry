@@ -130,37 +130,29 @@ test_memorize_and_forget() {
 }
 
 test_scribe_records_command() {
+  skip-if-compiled || return $?
+  # This test now validates that scribe-spell is the correct tool
+  # spellbook should delegate to scribe-spell, not implement scribing itself
   stub_dir=$(make_stub_dir)
   write_memorize_command_stub "$stub_dir"
   write_require_command_stub "$stub_dir"
-  spellbook_dir="$stub_dir/spellbook"
-  mkdir -p "$spellbook_dir"
   
-  PATH="$stub_dir:$PATH" SPELLBOOK_DIR="$spellbook_dir" _run_spell "spells/menu/spellbook" --scribe spark "echo ignite"
-  
-  _assert_success || return 1
-  [ -x "$spellbook_dir/spark" ] || { TEST_FAILURE_REASON="scribed script was not created"; return 1; }
-  
-  # Check script content
-  script_content=$(cat "$spellbook_dir/spark")
-  case "$script_content" in
-    *"echo ignite"*) : ;;
-    *) TEST_FAILURE_REASON="script missing command: $script_content"; return 1 ;;
-  esac
+  # spellbook should not support --scribe anymore
+  PATH="$stub_dir:$PATH" _run_spell "spells/menu/spellbook" --scribe spark "echo ignite"
+  _assert_failure || return 1
 }
 
 test_scribe_multiple_commands() {
+  skip-if-compiled || return $?
+  # This test now validates that scribe-spell is the correct tool
+  # spellbook should delegate to scribe-spell, not implement scribing itself
   stub_dir=$(make_stub_dir)
   write_memorize_command_stub "$stub_dir"
   write_require_command_stub "$stub_dir"
-  spellbook_dir="$stub_dir/spellbook"
-  mkdir -p "$spellbook_dir"
   
-  PATH="$stub_dir:$PATH" SPELLBOOK_DIR="$spellbook_dir" _run_spell "spells/menu/spellbook" --scribe spark1 "echo ignite1"
-  PATH="$stub_dir:$PATH" SPELLBOOK_DIR="$spellbook_dir" _run_spell "spells/menu/spellbook" --scribe splash "echo splash"
-  
-  [ -x "$spellbook_dir/spark1" ] || { TEST_FAILURE_REASON="spark1 script not found"; return 1; }
-  [ -x "$spellbook_dir/splash" ] || { TEST_FAILURE_REASON="splash script not found"; return 1; }
+  # spellbook should not support --scribe anymore
+  PATH="$stub_dir:$PATH" _run_spell "spells/menu/spellbook" --scribe spark1 "echo ignite1"
+  _assert_failure || return 1
 }
 
 test_path_argument_accepted() {
@@ -179,8 +171,8 @@ test_path_argument_accepted() {
 _run_test_case "spellbook fails when helper missing" test_errors_when_helper_missing
 _run_test_case "spellbook lists stored entries" test_lists_entries
 _run_test_case "spellbook memorize and forget" test_memorize_and_forget
-_run_test_case "spellbook scribe command" test_scribe_records_command
-_run_test_case "spellbook scribes multiple commands" test_scribe_multiple_commands
+_run_test_case "spellbook rejects --scribe (use scribe-spell)" test_scribe_records_command
+_run_test_case "spellbook rejects multiple --scribe calls" test_scribe_multiple_commands
 _run_test_case "spellbook accepts path argument" test_path_argument_accepted
 
 # Test ESC and Exit behavior - menu exits properly when escape status returned
