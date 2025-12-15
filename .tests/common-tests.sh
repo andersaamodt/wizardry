@@ -936,17 +936,20 @@ test_spells_have_limited_flags() {
     
     rel_path=${spell#"$ROOT_DIR/spells/"}
     
-    # Count distinct flag options by looking at case patterns in argument parsing
-    # Exclude standard --help|--usage|-h, catch-all -*, and -- (end of options)
+    # Count distinct flag options by looking at both case and if patterns
+    # Exclude standard --help|--usage|-h, catch-all -*, -- (end of options), and --- (dividers)
     flag_count=$(awk '
-      # Track if we are in argument parsing section
-      /while.*\$.*-gt 0|case.*\$1/ { in_args = 1 }
+      BEGIN { seen_flags = "" }
+      
+      # Track if we are in argument parsing section (case or while loop)
+      /while.*\$.*-gt 0/ { in_args = 1 }
+      /case.*\$\{?1/ { in_args = 1 }
       in_args && /^[[:space:]]*esac[[:space:]]*$/ && parsing_done == 0 { 
         parsing_done = 1
         in_args = 0
       }
       
-      # When in argument parsing, capture flag patterns
+      # When in argument parsing, capture flag patterns from case statements
       in_args && /^[[:space:]]+(-[a-zA-Z]|--[a-zA-Z-]+)(\||[[:space:]]*\))/ {
         line = $0
         # Skip help flags
@@ -955,8 +958,31 @@ test_spells_have_limited_flags() {
         if (line ~ /^[[:space:]]+-\*\)/) next
         # Skip -- (end of options marker)
         if (line ~ /^[[:space:]]+--\)/) next
+        # Skip --- (divider marker)
+        if (line ~ /^[[:space:]]+---\)/) next
         
-        print
+        # Extract flag name
+        match(line, /(--[a-zA-Z-]+|-[a-zA-Z])/, flag)
+        if (flag[0] && index(seen_flags, flag[0]) == 0) {
+          seen_flags = seen_flags " " flag[0]
+          print flag[0]
+        }
+      }
+      
+      # Also check for if-based flag handling: if [ "$1" = "--flag" ]
+      /if[[:space:]]*\[[[:space:]]*["\$]*\{?1/ && /(=|==)[[:space:]]*["'\''](--[a-zA-Z-]+|-[a-zA-Z])["'\'']/ {
+        line = $0
+        # Skip help flags
+        if (line ~ /--help|--usage|-h/) next
+        # Skip --- dividers
+        if (line ~ /---/) next
+        
+        # Extract flag name
+        match(line, /(--[a-zA-Z-]+|-[a-zA-Z])/, flag)
+        if (flag[0] && index(seen_flags, flag[0]) == 0) {
+          seen_flags = seen_flags " " flag[0]
+          print flag[0]
+        }
       }
     ' "$spell" 2>/dev/null | wc -l)
     
