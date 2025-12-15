@@ -40,24 +40,17 @@ if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
 fi
 SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
 
-remove_service_find_ask_text() {
+# Inline remove_service_find_ask_text - only used once
 if [ -n "${REMOVE_SERVICE_ASK_TEXT-}" ]; then
-printf '%s' "$REMOVE_SERVICE_ASK_TEXT"
-return 0
+  ASK_TEXT_HELPER=$REMOVE_SERVICE_ASK_TEXT
+elif command -v ask-text >/dev/null 2>&1; then
+  ASK_TEXT_HELPER=$(command -v ask-text)
+elif [ -x "$SCRIPT_DIR/ask-text" ]; then
+  ASK_TEXT_HELPER="$SCRIPT_DIR/ask-text"
+else
+  printf '%s\n' "$SCRIPT_NAME: ask-text spell is required for prompts." >&2
+  exit 1
 fi
-if command -v ask-text >/dev/null 2>&1; then
-command -v ask-text
-return 0
-fi
-if [ -x "$SCRIPT_DIR/ask-text" ]; then
-printf '%s' "$SCRIPT_DIR/ask-text"
-return 0
-fi
-printf '%s\n' "$SCRIPT_NAME: ask-text spell is required for prompts." >&2
-exit 1
-}
-
-ASK_TEXT_HELPER=$(remove_service_find_ask_text)
 
 if command -v systemctl >/dev/null 2>&1; then
         SYSTEMCTL=$(command -v systemctl)

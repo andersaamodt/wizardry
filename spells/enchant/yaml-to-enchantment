@@ -43,28 +43,6 @@ yaml_header=$(awk '
 
 empty "$yaml_header" && { warn "Error: file does not have a YAML header"; exit 1; }
 
-set_attr() {
-    key=$1
-    value=$2
-
-    if helper_path=$(resolve_helper attr); then
-        if "$helper_path" -s "$key" -V "$value" "$scroll" 2>/dev/null; then
-            return 0
-        fi
-    fi
-    if helper_path=$(resolve_helper setfattr); then
-        if "$helper_path" -n "$key" -v "$value" "$scroll" 2>/dev/null; then
-            return 0
-        fi
-    fi
-    if helper_path=$(resolve_helper xattr); then
-        if "$helper_path" -w "$key" "$value" "$scroll" 2>/dev/null; then
-            return 0
-        fi
-    fi
-    return 1
-}
-
 resolve_helper() {
     helper=$1
     has "$helper" || return 1
@@ -95,7 +73,26 @@ printf '%s' "$yaml_header" |
         value=${line#*:}
         value=${value# }
         empty "$key" && continue
-        if ! set_attr "$key" "$value"; then
+        
+        # Inline set_attr logic - only used once
+        success=0
+        if helper_path=$(resolve_helper attr); then
+            if "$helper_path" -s "$key" -V "$value" "$scroll" 2>/dev/null; then
+                success=1
+            fi
+        fi
+        if [ "$success" -eq 0 ] && helper_path=$(resolve_helper setfattr); then
+            if "$helper_path" -n "$key" -v "$value" "$scroll" 2>/dev/null; then
+                success=1
+            fi
+        fi
+        if [ "$success" -eq 0 ] && helper_path=$(resolve_helper xattr); then
+            if "$helper_path" -w "$key" "$value" "$scroll" 2>/dev/null; then
+                success=1
+            fi
+        fi
+        
+        if [ "$success" -eq 0 ]; then
             warn "Error: failed to set attribute $key"
             exit 1
         fi
