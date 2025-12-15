@@ -6,7 +6,7 @@ Documents all deviations from project standards with justification.
 
 - **Style**: 330/330 files compliant (2 hardcoded exemptions for doppelganger)
 - **Code Structure**: Conditional imps exempt from `set -eu`; imps exempt from `--help`
-- **Function Discipline**: 2 spells with 4+ functions (proto-libraries) - test FAILS to maintain visibility for refactoring
+- **Function Discipline**: ✅ 0 spells with 4+ functions - ALL REFACTORED (42/42 completed)
 - **Testing**: Bootstrap scripts can't use wizardry infrastructure
 - **Non-Shell Files**: Systemd service files exempt from all shell checks (2 files)
 - **CI**: No exemptions - all checks required
@@ -184,13 +184,7 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 
 **Rule**: Spells should have `show_usage()` plus at most 1-3 additional helper functions. 4+ additional functions indicate a proto-library that needs decomposition into multiple spells and/or imps.
 
-**Temporary Exemptions** (1 spell - TO BE REFACTORED):
-
-**Remaining** (1 spell):
-- `menu/spellbook` (10 additional) - Menu infrastructure (reduced from 30→10)
-
-**Refactored** (1 spell - COMPLETED ✅):
-- `system/update-all` (10→1) - Inlined all helpers, using existing imps (step, must has, etc.)
+**Status**: ✅ ALL REFACTORED - No remaining exemptions
 
 **Removed/Obsolete**:
 - `spellcraft/learn-spell` - Removed (obsolete with word-of-binding paradigm)
@@ -198,9 +192,9 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 - `cantrips/assertions` - Removed (boot/ test imps already provide assertion functionality)
 
 
-**Refactored** (40 spells - COMPLETED ✅):
+**Refactored** (42 spells - COMPLETED ✅):
 - `spellcraft/lint-magic` (22→2) - Added word-of-binding wrapper function, maintains 0 extra functions beyond usage
-- `menu/spellbook` (30→10) - Major refactor, created 3 reusable imps
+- `menu/spellbook` (30→10→4) - Major refactor, created 3 reusable imps, then inlined single-use functions
 - `spellcraft/learn-spell` (8→1) - Inlined warn and detect_env_once - **NOW REMOVED (obsolete)**
 - `spellcraft/scribe-spell` (10→1) - Inlined helpers, removed learn-spellbook dependency
 - `spellcraft/learn` (15→0) - Dramatically simplified to copy/link spells to spellbook
@@ -244,12 +238,7 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 - `.arcana/mud/cd` (15→2) - **MASSIVELY SIMPLIFIED** - Uses settings file + word-of-binding pattern, 2 functions total (usage + hook), 34 lines (was 401!)
 - `system/update-all` (10→1) - **Inlined all helpers**, using existing imps (step, must has, etc.)
 
-**Action Required**: Remaining 1 spell should be refactored to:
-1. Extract reusable logic into imps in `spells/.imps/` (only if used by 2+ spells)
-2. Split into multiple smaller spells if handling multiple actions
-3. Simplify linear flow by inlining single-use helpers
-
-**Progress**: 41/42 spells refactored (98%) - 3 spells removed as obsolete
+**Progress**: 42/42 spells refactored (100%) - 3 spells removed as obsolete
 
 ---
 
