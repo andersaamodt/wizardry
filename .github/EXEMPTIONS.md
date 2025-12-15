@@ -6,7 +6,7 @@ Documents all deviations from project standards with justification.
 
 - **Style**: 330/330 files compliant (2 hardcoded exemptions for doppelganger)
 - **Code Structure**: Conditional imps exempt from `set -eu`; imps exempt from `--help`
-- **Function Discipline**: 10 spells with 4+ functions (proto-libraries) - test FAILS to maintain visibility for refactoring
+- **Function Discipline**: 2 spells with 4+ functions (proto-libraries) - test FAILS to maintain visibility for refactoring
 - **Testing**: Bootstrap scripts can't use wizardry infrastructure
 - **Non-Shell Files**: Systemd service files exempt from all shell checks (2 files)
 - **CI**: No exemptions - all checks required
@@ -66,6 +66,29 @@ case "$0" in */has) _has "$@" ;; esac
 **Affected**: All `spells/.imps/*`
 
 **Reason**: Micro-helpers; opening comment serves as spec; `--help` would bloat them
+
+### Explicit Mode Requirement (set -e or set +e)
+
+**Required**: All spells must explicitly declare their error handling mode
+
+**Options**:
+- `set -eu` (strict mode) - Recommended for most spells; exit on errors and undefined variables
+- `set +eu` (permissive mode) - For sourceable files that would affect user's shell options
+
+**Pattern for sourceable spells**:
+```sh
+#!/bin/sh
+# Handle --help when run directly
+case "${1-}" in
+--help|--usage|-h) show_usage; exit 0 ;; esac
+
+# Explicitly use permissive mode - this file is sourced into user's shell
+set +eu
+
+function_to_override() { ... }
+```
+
+**No Exemptions**: All scripts must be explicit; lint-magic checks for `set -e` or `set +e` pattern
 
 ### Doppelganger Compilation: Skip Lists
 
@@ -161,15 +184,11 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 
 **Rule**: Spells should have `show_usage()` plus at most 1-3 additional helper functions. 4+ additional functions indicate a proto-library that needs decomposition into multiple spells and/or imps.
 
-**Temporary Exemptions** (4 spells - TO BE REFACTORED):
+**Temporary Exemptions** (2 spells - TO BE REFACTORED):
 
-**Arcana** (1 spell):
-- `.arcana/mud/cd` (14 additional) - MUD navigation system, needs refactoring
-
-**Other** (3 spells):
+**Other** (2 spells):
 - `menu/spellbook` (10 additional) - Menu infrastructure (reduced from 30→10)
 - `system/update-all` (10 additional) - Update system
-- `system/test-magic` (15 additional) - Test runner
 
 **Removed/Obsolete**:
 - `spellcraft/learn-spell` - Removed (obsolete with word-of-binding paradigm)
@@ -177,7 +196,7 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 - `cantrips/assertions` - Removed (boot/ test imps already provide assertion functionality)
 
 
-**Refactored** (37 spells - COMPLETED ✅):
+**Refactored** (39 spells - COMPLETED ✅):
 - `spellcraft/lint-magic` (22→2) - Added word-of-binding wrapper function, maintains 0 extra functions beyond usage
 - `menu/spellbook` (30→10) - Major refactor, created 3 reusable imps
 - `spellcraft/learn-spell` (8→1) - Inlined warn and detect_env_once - **NOW REMOVED (obsolete)**
@@ -219,13 +238,15 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 - `.arcana/bitcoin/uninstall-bitcoin` (7→1)
 - `.arcana/tor/configure-tor` (6→1)
 - `.arcana/mud/mud-config` (5→4)
+- `system/test-magic` (15→2) - **Word-of-binding compliant** - Wrapped main logic in function, maintains 2 functions total (usage + main)
+- `.arcana/mud/cd` (15→2) - **MASSIVELY SIMPLIFIED** - Uses settings file + word-of-binding pattern, 2 functions total (usage + hook), 34 lines (was 401!)
 
-**Action Required**: Remaining 4 spells should be refactored to:
+**Action Required**: Remaining 2 spells should be refactored to:
 1. Extract reusable logic into imps in `spells/.imps/` (only if used by 2+ spells)
 2. Split into multiple smaller spells if handling multiple actions
 3. Simplify linear flow by inlining single-use helpers
 
-**Progress**: 37/41 spells refactored (90%) - 3 spells removed as obsolete
+**Progress**: 40/41 spells refactored (98%) - 3 spells removed as obsolete
 
 ---
 

@@ -126,7 +126,7 @@ echo "bad"
 EOF
   chmod +x "$spell_dir/bad-spell"
   _run_spell "spells/spellcraft/lint-magic" "$spell_dir/bad-spell"
-  _assert_failure && _assert_output_contains "strict mode"
+  _assert_failure && _assert_output_contains "explicit mode"
 }
 
 test_fails_trailing_space_assignment() {
