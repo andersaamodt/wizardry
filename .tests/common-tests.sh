@@ -920,13 +920,14 @@ test_spells_have_true_name_functions() {
 }
 
 # --- Check: Spells have no more than 3 --flag arguments ---
-# Spells should use minimal flags (0-1 freely, 2 with warning, 3+ with warning)
+# Spells should use minimal flags (0-1 freely, 2 with warning, 3 with warning, 4+ fails)
 # This enforces simplicity and discourages complex option parsing
-# This is a NON-FAILING behavioral check - warnings only for visibility
+# This is a behavioral check - warnings at 2-3 flags, fails at 4+ flags
 
 test_spells_have_limited_flags() {
   tmpfile_2=$(mktemp "${WIZARDRY_TMPDIR}/flag-warn-2.XXXXXX")
-  tmpfile_3plus=$(mktemp "${WIZARDRY_TMPDIR}/flag-warn-3plus.XXXXXX")
+  tmpfile_3=$(mktemp "${WIZARDRY_TMPDIR}/flag-warn-3.XXXXXX")
+  tmpfile_4plus=$(mktemp "${WIZARDRY_TMPDIR}/flag-viol-4plus.XXXXXX")
   
   find "$ROOT_DIR/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r spell; do
     name=$(basename "$spell")
@@ -962,8 +963,10 @@ test_spells_have_limited_flags() {
     flag_count=${flag_count:-0}
     
     # Write to appropriate temp file based on flag count
-    if [ "$flag_count" -ge 3 ]; then
-      printf '%s(%s)\n' "$rel_path" "$flag_count" >> "$tmpfile_3plus"
+    if [ "$flag_count" -ge 4 ]; then
+      printf '%s(%s)\n' "$rel_path" "$flag_count" >> "$tmpfile_4plus"
+    elif [ "$flag_count" -eq 3 ]; then
+      printf '%s(%s)\n' "$rel_path" "$flag_count" >> "$tmpfile_3"
     elif [ "$flag_count" -eq 2 ]; then
       printf '%s(%s)\n' "$rel_path" "$flag_count" >> "$tmpfile_2"
     fi
@@ -971,31 +974,38 @@ test_spells_have_limited_flags() {
   
   # Read and format results
   warnings_2=$(head -20 "$tmpfile_2" 2>/dev/null | tr '\n' ', ' | sed 's/, $//')
-  warnings_3plus=$(head -20 "$tmpfile_3plus" 2>/dev/null | tr '\n' ', ' | sed 's/, $//')
+  warnings_3=$(head -20 "$tmpfile_3" 2>/dev/null | tr '\n' ', ' | sed 's/, $//')
+  violations_4plus=$(head -20 "$tmpfile_4plus" 2>/dev/null | tr '\n' ', ' | sed 's/, $//')
   
-  rm -f "$tmpfile_2" "$tmpfile_3plus"
+  rm -f "$tmpfile_2" "$tmpfile_3" "$tmpfile_4plus"
   
   # Print warnings (non-fatal)
   if [ -n "$warnings_2" ]; then
     printf 'WARNING: spells with 2 flags (consider simplifying): %s\n' "$warnings_2" >&2
   fi
   
-  if [ -n "$warnings_3plus" ]; then
-    printf 'WARNING: spells with 3+ flags (strongly consider simplifying): %s\n' "$warnings_3plus" >&2
+  if [ -n "$warnings_3" ]; then
+    printf 'WARNING: spells with 3 flags (strongly consider simplifying): %s\n' "$warnings_3" >&2
   fi
   
-  # Always return success (non-failing check)
+  # Fail on 4+ flags
+  if [ -n "$violations_4plus" ]; then
+    TEST_FAILURE_REASON="spells with 4+ flags (exceeds limit, must simplify): $violations_4plus"
+    return 1
+  fi
+  
   return 0
 }
 
 # --- Check: Spells have no more than 3 positional arguments ---
-# Spells should use minimal positional arguments (0-1 freely, 2 with warning, 3+ with warning)
+# Spells should use minimal positional arguments (0-1 freely, 2 with warning, 3 with warning, 4+ fails)
 # This enforces simplicity and discourages complex interfaces
-# This is a NON-FAILING behavioral check - warnings only for visibility
+# This is a behavioral check - warnings at 2-3 args, fails at 4+ args
 
 test_spells_have_limited_positional_args() {
   tmpfile_2=$(mktemp "${WIZARDRY_TMPDIR}/posarg-warn-2.XXXXXX")
-  tmpfile_3plus=$(mktemp "${WIZARDRY_TMPDIR}/posarg-warn-3plus.XXXXXX")
+  tmpfile_3=$(mktemp "${WIZARDRY_TMPDIR}/posarg-warn-3.XXXXXX")
+  tmpfile_4plus=$(mktemp "${WIZARDRY_TMPDIR}/posarg-viol-4plus.XXXXXX")
   
   find "$ROOT_DIR/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r spell; do
     name=$(basename "$spell")
@@ -1040,8 +1050,10 @@ test_spells_have_limited_positional_args() {
     arg_count=${arg_count:-0}
     
     # Write to appropriate temp file based on argument count
-    if [ "$arg_count" -ge 3 ]; then
-      printf '%s(%s)\n' "$rel_path" "$arg_count" >> "$tmpfile_3plus"
+    if [ "$arg_count" -ge 4 ]; then
+      printf '%s(%s)\n' "$rel_path" "$arg_count" >> "$tmpfile_4plus"
+    elif [ "$arg_count" -eq 3 ]; then
+      printf '%s(%s)\n' "$rel_path" "$arg_count" >> "$tmpfile_3"
     elif [ "$arg_count" -eq 2 ]; then
       printf '%s(%s)\n' "$rel_path" "$arg_count" >> "$tmpfile_2"
     fi
@@ -1049,20 +1061,26 @@ test_spells_have_limited_positional_args() {
   
   # Read and format results
   warnings_2=$(head -20 "$tmpfile_2" 2>/dev/null | tr '\n' ', ' | sed 's/, $//')
-  warnings_3plus=$(head -20 "$tmpfile_3plus" 2>/dev/null | tr '\n' ', ' | sed 's/, $//')
+  warnings_3=$(head -20 "$tmpfile_3" 2>/dev/null | tr '\n' ', ' | sed 's/, $//')
+  violations_4plus=$(head -20 "$tmpfile_4plus" 2>/dev/null | tr '\n' ', ' | sed 's/, $//')
   
-  rm -f "$tmpfile_2" "$tmpfile_3plus"
+  rm -f "$tmpfile_2" "$tmpfile_3" "$tmpfile_4plus"
   
   # Print warnings (non-fatal)
   if [ -n "$warnings_2" ]; then
     printf 'WARNING: spells with 2 positional arguments (consider simplifying): %s\n' "$warnings_2" >&2
   fi
   
-  if [ -n "$warnings_3plus" ]; then
-    printf 'WARNING: spells with 3+ positional arguments (strongly consider simplifying): %s\n' "$warnings_3plus" >&2
+  if [ -n "$warnings_3" ]; then
+    printf 'WARNING: spells with 3 positional arguments (strongly consider simplifying): %s\n' "$warnings_3" >&2
   fi
   
-  # Always return success (non-failing check)
+  # Fail on 4+ positional arguments
+  if [ -n "$violations_4plus" ]; then
+    TEST_FAILURE_REASON="spells with 4+ positional arguments (exceeds limit, must simplify): $violations_4plus"
+    return 1
+  fi
+  
   return 0
 }
 
