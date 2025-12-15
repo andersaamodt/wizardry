@@ -47,213 +47,6 @@ if [ -d "$spell_home" ]; then
         PATH="$spell_home:$PATH"
 fi
 
-write_scribed_script() {
-        script_name=$1
-        cmd_text=$2
-        script_path="$spell_home/$script_name"
-        ensure-parent-dir "$script_path"
-        mkdir -p "$spell_home"
-        escaped_cmd=$(printf '%s' "$cmd_text" | sed "s/'/'\\''/g")
-        cat >"$script_path" <<EOF_SCRIPT
-#!/bin/sh
-exec sh -c '$escaped_cmd' "\$0" "\$@"
-EOF_SCRIPT
-        chmod +x "$script_path"
-}
-
-# Extract the command from a scribed script file
-# Returns empty string if not a valid scribed script format
-# For non-scribed scripts, returns the command if there's exactly one line of sh code
-# (excluding shebang, comments, and whitespace)
-extract_command_from_script() {
-        script_path=$1
-        if [ ! -f "$script_path" ]; then
-                return 1
-        fi
-        # First try to extract from scribed format
-        # Scripts are in format: exec sh -c 'COMMAND' "$0" "$@"
-        scribed_pattern="s/^exec sh -c '\\(.*\\)' \"\\\$0\" \"\\\$@\"$/\\1/p"
-        extracted=$(sed -n "$scribed_pattern" "$script_path")
-        result=$(printf '%s\n' "$extracted" | sed "s/'\\\\''/'/g")
-        if [ -n "$result" ]; then
-                printf '%s' "$result"
-                return 0
-        fi
-        
-        # For non-scribed scripts, check if there's exactly one line of code
-        # Count meaningful lines (excluding shebang, comments, and whitespace)
-        no_blank=$(grep -v '^[[:space:]]*$' "$script_path")
-        no_comments=$(printf '%s\n' "$no_blank" | grep -v '^[[:space:]]*#')
-        code_lines=$(printf '%s\n' "$no_comments" | wc -l | tr -d ' ')
-        if [ "$code_lines" -eq 1 ]; then
-                # Return the single code line
-                no_blank_lines=$(grep -v '^[[:space:]]*$' "$script_path")
-                no_comment_lines=$(printf '%s\n' "$no_blank_lines" | grep -v '^[[:space:]]*#')
-                result=$(printf '%s\n' "$no_comment_lines" | head -n 1)
-                if [ -n "$result" ]; then
-                        printf '%s' "$result"
-                        return 0
-                fi
-        fi
-        return 1
-}
-
-list_spell_directories() {
-        set --
-        for dir in "$ROOT_DIR"/spells/*; do
-                [ -d "$dir" ] || continue
-                [ "$(basename "$dir")" = "menu" ] && continue
-                set -- "$@" "$(basename "$dir")"
-        done
-        printf '%s\n' "$@"
-}
-
-# Resolve a category path by searching in multiple locations.
-# If the path starts with ./ or /, use it directly.
-# Otherwise, search in: spells/, ~/.spellbook, current directory
-resolve_category_path() {
-        category=$1
-        case $category in
-                /*|./*)
-                        # Absolute or explicit relative path - use directly
-                        if [ -d "$category" ]; then
-                                printf '%s' "$category"
-                                return 0
-                        fi
-                        return 1
-                        ;;
-        esac
-        # Search in spells/ directory first
-        if [ -d "$ROOT_DIR/spells/$category" ]; then
-                printf '%s' "$ROOT_DIR/spells/$category"
-                return 0
-        fi
-        # Search in ~/.spellbook (user spell home)
-        if [ -d "$spell_home/$category" ]; then
-                printf '%s' "$spell_home/$category"
-                return 0
-        fi
-        # Search in current directory
-        if [ -d "$category" ]; then
-                printf '%s' "$category"
-                return 0
-        fi
-        return 1
-}
-
-# List all scribed commands (custom commands in spell_home, excluding built-in spells)
-# Only shows truly custom user-created commands, not built-in spells that might have
-# been memorized (those should only appear in the Cast menu)
-list_scribed_commands() {
-        if [ ! -d "$spell_home" ]; then
-                return 0
-        fi
-        # Handle empty directory by checking if glob matches anything
-        set +f  # Enable globbing
-        for script in "$spell_home"/*; do
-                # Skip if glob didn't match (no files exist)
-                [ -e "$script" ] || continue
-                [ -f "$script" ] || continue
-                [ -x "$script" ] || continue
-                script_name=$(basename "$script")
-                # Skip hidden files and the .memorized file
-                case $script_name in
-                        .*) continue ;;
-                esac
-                # Skip if this command exists elsewhere in PATH (it's a built-in spell, not custom)
-                if cmd_path=$(command -v "$script_name" 2>/dev/null); then
-                        case "$cmd_path" in
-                                "$spell_home"/*) 
-                                        # Only found in spell_home - this is a custom command
-                                        ;;
-                                *)
-                                        # Found in system PATH - skip this built-in spell
-                                        continue
-                                        ;;
-                        esac
-                fi
-                cmd_text=$(extract_command_from_script "$script")
-                if [ -n "$cmd_text" ]; then
-                        printf '%s\t%s\n' "$script_name" "$cmd_text"
-                fi
-        done
-}
-
-# List user folders in ~/.spellbook
-# (excluding hidden folders and folders matching built-in categories)
-list_user_folders() {
-        if [ ! -d "$spell_home" ]; then
-                return 0
-        fi
-        builtin_cats=$(list_spell_directories | sort)
-        for folder in "$spell_home"/*; do
-                [ -d "$folder" ] || continue
-                folder_name=$(basename "$folder")
-                # Skip hidden folders
-                case $folder_name in
-                        .*) continue ;;
-                esac
-                # Skip folders that match a built-in category
-                is_builtin=0
-                for cat in $builtin_cats; do
-                        if [ "$folder_name" = "$cat" ]; then
-                                is_builtin=1
-                                break
-                        fi
-                done
-                [ "$is_builtin" -eq 1 ] && continue
-                printf '%s\n' "$folder_name"
-        done
-}
-
-# Check if a custom category folder is empty (no executable files)
-is_custom_category_empty() {
-        check_path=$1
-        # Must be in spell_home to be a custom category
-        case "$check_path" in
-                "$spell_home"*) ;;
-                *) return 1 ;;
-        esac
-        # Check if directory has any executable files
-        if find "$check_path" -maxdepth 1 -type f -perm -111 2>/dev/null | grep -q .; then
-                return 1
-        fi
-        return 0
-}
-
-# Delete an empty custom category folder
-delete_custom_category() {
-        cat_path=$1
-        case "$cat_path" in
-                "$spell_home"*) ;;
-                *) return 1 ;;
-        esac
-        if [ -d "$cat_path" ]; then
-                # Only delete if empty of executable files
-                if is_custom_category_empty "$cat_path"; then
-                        rm -rf "$cat_path"
-                        printf '%s\n' "Deleted category: $(basename "$cat_path")"
-                        return 0
-                fi
-        fi
-        return 1
-}
-
-record_scribed_command() {
-        cmd_name=$1
-        shift
-        cmd=$1
-        shift || :
-        while [ "$#" -gt 0 ]; do
-                cmd="$cmd $1"
-                shift
-        done
-        validate-name "$cmd_name" "spellbook" || exit 1
-        validate-command "$cmd" "spellbook: command" || exit 1
-        mkdir -p "$spell_home"
-        write_scribed_script "$cmd_name" "$cmd"
-}
-
 spellbook_menu() {
         current_path=${1-}
         first_run=1
@@ -266,13 +59,35 @@ spellbook_menu() {
 
                 set --
                 # Determine the resolved path for non-root views
+                # Inline resolve_category_path
                 resolved_path=""
                 in_custom_folder=0
                 category_name=""
                 if [ -n "$current_path" ]; then
                         # Get the category name (last component of path)
                         category_name=$(basename "$current_path")
-                        if resolved_path=$(resolve_category_path "$current_path"); then
+                        # Resolve category path by searching in multiple locations
+                        case $current_path in
+                                /*|./*)
+                                        # Absolute or explicit relative path - use directly
+                                        if [ -d "$current_path" ]; then
+                                                resolved_path=$current_path
+                                        fi
+                                        ;;
+                                *)
+                                        # Search in spells/ directory first
+                                        if [ -d "$ROOT_DIR/spells/$current_path" ]; then
+                                                resolved_path="$ROOT_DIR/spells/$current_path"
+                                        # Search in ~/.spellbook (user spell home)
+                                        elif [ -d "$spell_home/$current_path" ]; then
+                                                resolved_path="$spell_home/$current_path"
+                                        # Search in current directory
+                                        elif [ -d "$current_path" ]; then
+                                                resolved_path=$current_path
+                                        fi
+                                        ;;
+                        esac
+                        if [ -n "$resolved_path" ]; then
                                 case "$resolved_path" in
                                         "$spell_home"*) in_custom_folder=1 ;;
                                 esac
@@ -285,30 +100,106 @@ spellbook_menu() {
                 # Only show three sections at root level (no path argument)
                 if [ -z "$current_path" ]; then
                         # SECTION 1: Individual scribed commands (showing command content)
-                        while IFS=$(printf '\t') read -r cmd_name cmd_text; do
-                                [ -z "$cmd_name" ] && continue
-                                # Show the command text as the label
-                                label=$(printf '%s' "$cmd_text")
-                                set -- "$@" "$label%spell-menu $cmd_name"
-                        done <<SCRIBED_COMMANDS
-$(list_scribed_commands)
-SCRIBED_COMMANDS
+                        # Inline list_scribed_commands
+                        if [ -d "$spell_home" ]; then
+                                # Handle empty directory by checking if glob matches anything
+                                set +f  # Enable globbing
+                                for script in "$spell_home"/*; do
+                                        # Skip if glob didn't match (no files exist)
+                                        [ -e "$script" ] || continue
+                                        [ -f "$script" ] || continue
+                                        [ -x "$script" ] || continue
+                                        script_name=$(basename "$script")
+                                        # Skip hidden files and the .memorized file
+                                        case $script_name in
+                                                .*) continue ;;
+                                        esac
+                                        # Skip if this command exists elsewhere in PATH (it's a built-in spell, not custom)
+                                        if cmd_path=$(command -v "$script_name" 2>/dev/null); then
+                                                case "$cmd_path" in
+                                                        "$spell_home"/*) 
+                                                                # Only found in spell_home - this is a custom command
+                                                                ;;
+                                                        *)
+                                                                # Found in system PATH - skip this built-in spell
+                                                                continue
+                                                                ;;
+                                                esac
+                                        fi
+                                        # Extract command from scribed script
+                                        cmd_text=""
+                                        # First try to extract from scribed format
+                                        # Scripts are in format: exec sh -c 'COMMAND' "$0" "$@"
+                                        scribed_pattern="s/^exec sh -c '\\(.*\\)' \"\\\$0\" \"\\\$@\"$/\\1/p"
+                                        extracted=$(sed -n "$scribed_pattern" "$script")
+                                        cmd_text=$(printf '%s\n' "$extracted" | sed "s/'\\\\''/'/g")
+                                        if [ -z "$cmd_text" ]; then
+                                                # For non-scribed scripts, check if there's exactly one line of code
+                                                # Count meaningful lines (excluding shebang, comments, and whitespace)
+                                                blank_pattern='^[[:space:]]*$'
+                                                comment_pattern='^[[:space:]]*#'
+                                                no_blank=$(grep -v "$blank_pattern" "$script")
+                                                no_comments_text=$(printf '%s\n' "$no_blank" | \
+                                                        grep -v "$comment_pattern")
+                                                code_lines=$(printf '%s\n' "$no_comments_text" | \
+                                                        wc -l | tr -d ' ')
+                                                if [ "$code_lines" -eq 1 ]; then
+                                                        # Return the single code line
+                                                        cmd_text=$(printf '%s\n' \
+                                                                "$no_comments_text" | head -n 1)
+                                                fi
+                                        fi
+                                        if [ -n "$cmd_text" ]; then
+                                                # Show the command text as the label
+                                                label=$(printf '%s' "$cmd_text")
+                                                set -- "$@" "$label%spell-menu $script_name"
+                                        fi
+                                done
+                        fi
                         
                         # SECTION 2: User folders in ~/.spellbook
                         # (if any exist, excluding those matching built-in)
-                        user_folders=$(list_user_folders)
-                        if [ -n "$user_folders" ]; then
-                                # Add divider between commands and user folders (only if there are items before)
-                                if [ "$#" -gt 0 ]; then
-                                        set -- "$@" "---"
-                                fi
-                                while IFS= read -r folder_name; do
-                                        [ -z "$folder_name" ] && continue
-                                        # Don't capitalize - just use the folder name
-                                        set -- "$@" "${folder_name}%spellbook $spell_home/$folder_name"
-                                done <<USER_FOLDERS
-$user_folders
-USER_FOLDERS
+                        # Inline list_user_folders
+                        user_folder_count=0
+                        if [ -d "$spell_home" ]; then
+                                # Inline list_spell_directories to get builtin categories
+                                builtin_cats=""
+                                for dir in "$ROOT_DIR"/spells/*; do
+                                        [ -d "$dir" ] || continue
+                                        [ "$(basename "$dir")" = "menu" ] && continue
+                                        cat_name=$(basename "$dir")
+                                        builtin_cats="${builtin_cats}${cat_name}
+"
+                                done
+                                builtin_cats=$(printf '%s' "$builtin_cats" | sort)
+                                for folder in "$spell_home"/*; do
+                                        [ -d "$folder" ] || continue
+                                        folder_name=$(basename "$folder")
+                                        # Skip hidden folders
+                                        case $folder_name in
+                                                .*) continue ;;
+                                        esac
+                                        # Skip folders that match a built-in category
+                                        is_builtin=0
+                                        for cat in $builtin_cats; do
+                                                if [ "$folder_name" = "$cat" ]; then
+                                                        is_builtin=1
+                                                        break
+                                                fi
+                                        done
+                                        if [ "$is_builtin" -eq 0 ]; then
+                                                # Add divider before first user folder
+                                                # (only if there are items before)
+                                                if [ "$user_folder_count" -eq 0 ] && \
+                                                        [ "$#" -gt 0 ]; then
+                                                        set -- "$@" "---"
+                                                fi
+                                                user_folder_count=$((user_folder_count + 1))
+                                                # Don't capitalize - just use the folder name
+                                                folder_path="$spell_home/$folder_name"
+                                                set -- "$@" "${folder_name}%spellbook $folder_path"
+                                        fi
+                                done
                         fi
                         
                         # SECTION 3: Built-in spell categories
@@ -316,7 +207,11 @@ USER_FOLDERS
                         if [ "$#" -gt 0 ]; then
                                 set -- "$@" "---"
                         fi
-                        for category in $(list_spell_directories | sort); do
+                        # Inline list_spell_directories
+                        for dir in "$ROOT_DIR"/spells/*; do
+                                [ -d "$dir" ] || continue
+                                [ "$(basename "$dir")" = "menu" ] && continue
+                                category=$(basename "$dir")
                                 # Don't capitalize - just use the folder name
                                 set -- "$@" "${category}%spellbook $category"
                         done
@@ -358,11 +253,18 @@ USER_FOLDERS
                 fi
                 
                 # Add "Delete category" option for empty custom category folders
-                is_current=$([ -n "$current_path" ] && echo "yes" || echo "no")
-                is_resolved=$([ -n "$resolved_path" ] && echo "yes" || echo "no")
                 is_empty="no"
-                if [ "$is_current" = "yes" ] && [ "$is_resolved" = "yes" ]; then
-                        is_custom_category_empty "$resolved_path" && is_empty="yes"
+                if [ -n "$current_path" ] && [ -n "$resolved_path" ]; then
+                        # Check if custom category is empty (inline is_custom_category_empty)
+                        case "$resolved_path" in
+                                "$spell_home"*)
+                                        # Check if directory has any executable files
+                                        if ! find "$resolved_path" -maxdepth 1 -type f -perm -111 \
+                                                2>/dev/null | grep -q .; then
+                                                is_empty="yes"
+                                        fi
+                                        ;;
+                        esac
                 fi
                 
                 if [ "$is_empty" = "yes" ]; then
