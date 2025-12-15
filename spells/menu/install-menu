@@ -140,7 +140,7 @@ while :; do
         set -- "$@" "Import arcanum%$import_arcanum_cmd"
     fi
 
-    exit_label=$(return 1-label)
+    exit_label=$(exit-label)
     set -- "$@" "${exit_label}%kill -TERM \$PPID"
 
     menu "Install Menu:" "$@" || true

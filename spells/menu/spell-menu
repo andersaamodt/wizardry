@@ -119,7 +119,7 @@ while :; do
                 cast_toggle="[ ] Memorize%memorize '$name'"
         fi
         
-        exit_label=$(return 1-label)
+        exit_label=$(exit-label)
         exit_item="${exit_label}%kill -TERM \$PPID"
         
         # Check if spell has --help option (inline from has_help_option)

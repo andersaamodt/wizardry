@@ -52,7 +52,7 @@ priority_menu_display_menu() {
         fi
 
         filename=$(basename "$FILE")
-        exit_label=$(return 1-label)
+        exit_label=$(exit-label)
         exit_item="${exit_label}%kill -TERM \$PPID"
 
         set -- "Prioritize (upboat)%prioritize \"$FILE\"; kill -TERM \$PPID" \

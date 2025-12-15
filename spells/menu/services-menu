@@ -54,7 +54,7 @@ services_menu_display_menu() {
   installed_item="Check if a service is installed%is-service-installed"
   remove_item="Remove a service%remove-service"
   install_item="Install service from template%install-service-template"
-  exit_label=$(return 1-label)
+  exit_label=$(exit-label)
   exit_item="${exit_label}%kill -TERM \$PPID"
 
   set -- "$start_item" "$stop_item" "$restart_item" \

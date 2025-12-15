@@ -39,7 +39,7 @@ mud_admin_menu_display_menu() {
   add="Add authorized player%add-player"
   list_players="List authorized players%new-player"
   list_rooms="List shared rooms%list-rooms"
-  exit_label=$(return 1-label)
+  exit_label=$(exit-label)
   exit_item="${exit_label}%kill -TERM \$PPID"
 
   set -- "$add" "$list_players" "$list_rooms" "$exit_item"

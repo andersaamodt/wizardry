@@ -292,7 +292,7 @@ spellbook_menu() {
                 
                 # Use "Back" when in a submenu, "Exit" at root
                 if [ -z "$current_path" ]; then
-                        exit_label=$(return 1-label)
+                        exit_label=$(exit-label)
                 else
                         exit_label="Back"
                 fi

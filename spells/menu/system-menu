@@ -49,7 +49,7 @@ system_menu_display_menu() {
   test_suite="Test all wizardry spells%test-magic"
   update_all="Update all software%update-all -v"
   uninstall_wizardry="Uninstall wizardry%$repo_dir/.uninstall"
-  exit_label=$(return 1-label)
+  exit_label=$(exit-label)
   exit_item="${exit_label}%kill -TERM \$PPID"
 
   set -- "$restart_menu" "$update_all" "$update_wizardry" "$services"

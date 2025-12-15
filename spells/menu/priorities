@@ -97,7 +97,7 @@ display_priorities() {
   done
 
   # Add return 1 command
-  exit_label=$(return 1-label)
+  exit_label=$(exit-label)
   menu_command="${menu_command} \"${exit_label}%kill -TERM \$PPID\""
 
   # Execute the constructed menu command
