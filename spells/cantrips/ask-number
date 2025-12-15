@@ -4,7 +4,7 @@
 # between the provided bounds.  It repeats until a valid integer arrives.
 
 ask_number_usage() {
-        cat <<'USAGE' >&2
+	cat <<'USAGE' >&2
 Usage: ask-number "Question" MIN MAX
 
 Prompts until the user supplies an integer within the inclusive range.
@@ -13,16 +13,16 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        ask_number_usage
-        exit 0
-        ;;
+	ask_number_usage
+	exit 0
+	;;
 esac
 
 set -eu
 
 if [ "$#" -ne 3 ]; then
-        ask_number_usage
-        exit 1
+	ask_number_usage
+	exit 1
 fi
 
 question=$1
@@ -31,16 +31,16 @@ max=$3
 
 case $min in
 *[!0-9-]*|"")
-        printf '%s\n' "ask-number: MIN must be an integer." >&2
-        exit 1
-        ;;
+	printf '%s\n' "ask-number: MIN must be an integer." >&2
+	exit 1
+	;;
 *) : ;;
 esac
 case $max in
 *[!0-9-]*|"")
-        printf '%s\n' "ask-number: MAX must be an integer." >&2
-        exit 1
-        ;;
+	printf '%s\n' "ask-number: MAX must be an integer." >&2
+	exit 1
+	;;
 *) : ;;
 esac
 
@@ -48,75 +48,61 @@ min=$(printf '%s' "$min")
 max=$(printf '%s' "$max")
 
 if [ "$min" -gt "$max" ]; then
-        printf '%s\n' "ask-number: MIN must be less than or equal to MAX." >&2
-        exit 1
+	printf '%s\n' "ask-number: MIN must be less than or equal to MAX." >&2
+	exit 1
 fi
 
-# ask_number_select_input matches ask-text/ask-yn so callers can steer input selection.
-ask_number_select_input() {
-        case ${ASK_CANTRIP_INPUT:-auto} in
-        stdin)
-                printf '%s\n' stdin
-                return 0
-                ;;
-        none)
-                return 1
-                ;;
-        esac
-        # Use /dev/fd/0 instead of /dev/stdin for cross-platform compatibility.
-        # On macOS, /dev/stdin is a symlink and tests may fail on the symlink itself.
-        if [ -t 0 ] || [ -p /dev/fd/0 ] || [ -s /dev/fd/0 ]; then
-                printf '%s\n' stdin
-                return 0
-        fi
-        if [ -r /dev/tty ]; then
-                printf '%s\n' tty
-                return 0
-        fi
-        return 1
-}
-
-ask_number_prompt() {
-        printf '%s [%s-%s] ' "$question" "$min" "$max" >&2
-}
-
-read_value() {
-        input=$(ask_number_select_input) || return 1
-        case $input in
-        stdin)
-                IFS= read -r value || value=
-                ;;
-        tty)
-                IFS= read -r value </dev/tty || value=
-                ;;
-        *)
-                return 1
-                ;;
-        esac
-        printf '%s' "$value"
-        return 0
-}
-
 while :; do
-        ask_number_prompt
-        if ! response=$(read_value); then
-                printf '%s\n' "ask-number: No interactive input available." >&2
-                exit 1
-        fi
+	# Inline ask_number_prompt
+	printf '%s [%s-%s] ' "$question" "$min" "$max" >&2
+	
+	# Inline read_value with inlined ask_number_select_input
+	case ${ASK_CANTRIP_INPUT:-auto} in
+	stdin)
+		input_source=stdin
+		;;
+	none)
+		input_source=none
+		;;
+	*)
+		# Use /dev/fd/0 instead of /dev/stdin for cross-platform compatibility.
+		# On macOS, /dev/stdin is a symlink and tests may fail on the symlink itself.
+		if [ -t 0 ] || [ -p /dev/fd/0 ] || [ -s /dev/fd/0 ]; then
+			input_source=stdin
+		elif [ -r /dev/tty ]; then
+			input_source=tty
+		else
+			input_source=none
+		fi
+		;;
+	esac
 
-        case $response in
-        *[!0-9-]*|"")
-                printf '%s\n' "Whole number expected." >&2
-                continue
-                ;;
-        esac
+	case $input_source in
+	stdin)
+		IFS= read -r response || response=
+		;;
+	tty)
+		IFS= read -r response </dev/tty || response=
+		;;
+	*)
+		printf '%s\n' "ask-number: No interactive input available." >&2
+		exit 1
+		;;
+	esac
 
-        if [ "$response" -lt "$min" ] || [ "$response" -gt "$max" ]; then
-                printf '%s\n' "Number must be between $min and $max." >&2
-                continue
-        fi
+	case $response in
+	*[!0-9-]*|"")
+		printf '%s\n' "Whole number expected." >&2
+		continue
+		;;
+	esac
 
-        printf '%s\n' "$response"
-        exit 0
+	if [ "$response" -lt "$min" ] || [ "$response" -gt "$max" ]; then
+		printf '%s\n' "Number must be between $min and $max." >&2
+		continue
+	fi
+
+	printf '%s\n' "$response"
+	exit 0
 
 done

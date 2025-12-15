@@ -6,7 +6,7 @@
 
 
 ask_text_usage() {
-        cat <<'USAGE' >&2
+	cat <<'USAGE' >&2
 Usage: ask-text "Question" [default]
 
 Prompts the user with the provided question and echoes their response.
@@ -16,83 +16,67 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        ask_text_usage
-        exit 0
-        ;;
+	ask_text_usage
+	exit 0
+	;;
 esac
 set -eu
 
 if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
-        ask_text_usage
-        exit 1
+	ask_text_usage
+	exit 1
 fi
 
 question=$1
 default_value=${2-}
 default_hint=""
 if [ "$#" -eq 2 ]; then
-        default_hint=" [$default_value]"
+	default_hint=" [$default_value]"
 fi
 
-# ask_text_select_input picks stdin when available so piped answers win, otherwise it
-# opens /dev/tty for interactivity.  ASK_CANTRIP_INPUT overrides the choice for
-# tests and scripted callers.
-ask_text_select_input() {
-        case ${ASK_CANTRIP_INPUT:-auto} in
-        stdin)
-                printf '%s\n' stdin
-                return 0
-                ;;
-        none)
-                return 1
-                ;;
-        esac
-        # Use /dev/fd/0 instead of /dev/stdin for cross-platform compatibility.
-        # On macOS, /dev/stdin is a symlink and tests may fail on the symlink itself.
-        if [ -t 0 ] || [ -p /dev/fd/0 ] || [ -s /dev/fd/0 ]; then
-                printf '%s\n' stdin
-                return 0
-        fi
-        if [ -r /dev/tty ]; then
-                printf '%s\n' tty
-                return 0
-        fi
-        return 1
-}
+# Inline ask_text_prompt - only used once
+printf '%s%s ' "$question" "$default_hint" >&2
 
-ask_text_prompt() {
-        printf '%s%s ' "$question" "$default_hint" >&2
-}
+# Inline read_line with inlined ask_text_select_input
+case ${ASK_CANTRIP_INPUT:-auto} in
+stdin)
+	input_source=stdin
+	;;
+none)
+	input_source=none
+	;;
+*)
+	# Use /dev/fd/0 instead of /dev/stdin for cross-platform compatibility.
+	# On macOS, /dev/stdin is a symlink and tests may fail on the symlink itself.
+	if [ -t 0 ] || [ -p /dev/fd/0 ] || [ -s /dev/fd/0 ]; then
+		input_source=stdin
+	elif [ -r /dev/tty ]; then
+		input_source=tty
+	else
+		input_source=none
+	fi
+	;;
+esac
 
-read_line() {
-        input=$(ask_text_select_input) || return 1
-        case $input in
-        stdin)
-                IFS= read -r line || line=
-                ;;
-        tty)
-                IFS= read -r line </dev/tty || line=
-                ;;
-        *)
-                return 1
-                ;;
-        esac
-        printf '%s' "$line"
-        return 0
-}
-
-ask_text_prompt
-if ! response=$(read_line); then
-        if [ -n "$default_value" ]; then
-                printf '%s\n' "$default_value"
-                exit 0
-        fi
-        printf '%s\n' "ask-text: No interactive input available." >&2
-        exit 1
-fi
+case $input_source in
+stdin)
+	IFS= read -r response || response=
+	;;
+tty)
+	IFS= read -r response </dev/tty || response=
+	;;
+*)
+	if [ -n "$default_value" ]; then
+		printf '%s\n' "$default_value"
+		exit 0
+	fi
+	printf '%s\n' "ask-text: No interactive input available." >&2
+	exit 1
+	;;
+esac
 
 if [ -z "$response" ] && [ -n "$default_value" ]; then
-        response=$default_value
+	response=$default_value
 fi
 
 printf '%s\n' "$response"

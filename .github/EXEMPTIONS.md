@@ -6,7 +6,8 @@ Documents all deviations from project standards with justification.
 
 - **Style**: 330/330 files compliant (2 hardcoded exemptions for doppelganger)
 - **Code Structure**: Conditional imps exempt from `set -eu`; imps exempt from `--help`
-- **Function Discipline**: ✅ 0 spells with 4+ functions - ALL REFACTORED (42/42 completed)
+- **Function Discipline**: ✅ 0 spells with 4+ extra functions (57/57 spells refactored)
+  - 7 spells with 2-3 extra functions remain (documented below) - functions used 2-20x each, acceptable per guidelines
 - **Testing**: Bootstrap scripts can't use wizardry infrastructure
 - **Non-Shell Files**: Systemd service files exempt from all shell checks (2 files)
 - **CI**: No exemptions - all checks required
@@ -229,7 +230,7 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 - `cantrips/assertions` - Removed (boot/ test imps already provide assertion functionality)
 
 
-**Refactored** (42 spells - COMPLETED ✅):
+**Refactored** (52 spells - COMPLETED ✅):
 - `spellcraft/lint-magic` (22→2) - Added word-of-binding wrapper function, maintains 0 extra functions beyond usage
 - `menu/spellbook` (30→10→4→1) - Major refactor: created 3 reusable imps, inlined single-use functions, removed duplicate scribing functionality (now delegates to scribe-spell), reduced to 2 total functions
 - `spellcraft/learn-spell` (8→1) - Inlined warn and detect_env_once - **NOW REMOVED (obsolete)**
@@ -260,7 +261,7 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 - `menu/mud-menu` (4→3)
 - `spellcraft/doppelganger` (4→4) - fallback functions
 - `spellcraft/forget` (6→2)
-- `psi/read-contact` (5→3)
+- `psi/read-contact` (5→4) - Kept 3 helpers (used 3x each)
 - `arcane/trash` (6→1)
 - `arcane/read-magic` (8→1)
 - `enchant/enchantment-to-yaml` (4→1)
@@ -274,8 +275,34 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 - `system/test-magic` (15→2) - **Word-of-binding compliant** - Wrapped main logic in function, maintains 2 functions total (usage + main)
 - `.arcana/mud/cd` (15→2) - **MASSIVELY SIMPLIFIED** - Uses settings file + word-of-binding pattern, 2 functions total (usage + hook), 34 lines (was 401!)
 - `system/update-all` (10→1) - **Inlined all helpers**, using existing imps (step, must has, etc.)
+- `divination/identify-room` (7→2) - **Inlined all single-use helpers**, uses detect-distro spell instead of inline platform detection
+- `cantrips/cursor-blink` (4→1) - **Inlined trivial helpers** (cursor_blink_on, cursor_blink_off, supports_cursor_control)
+- `crypto/hashchant` (4→1) - **Inlined all helpers** (helper_usable, apply_hash, apply_first_available)
+- `cantrips/enable-service` (4→1) - **Inlined service helpers** (find_ask_text, run_systemctl, normalize_unit)
+- `cantrips/disable-service` (4→1) - **Inlined service helpers** (find_ask_text, run_systemctl, normalize_unit)
+- `cantrips/ask-text` (4→1) - **Inlined input logic** (select_input, prompt, read_line)
+- `cantrips/ask-number` (4→1) - **Inlined input logic** (select_input, prompt, read_value)
+- `arcane/jump-trash` (4→2) - **Inlined helpers** (get_trash_path, cli wrapper); kept jump_trash for sourcing
+- `divination/detect-distro` (4→1) - **Inlined all helpers** (os_release_id, detect_uname, file_exists)
+- `system/verify-posix` (4→2) - **Inlined collection functions**; kept record_failure (used 8x)
+- `cantrips/ask-yn` (3→1) - **Inlined input logic** (select_input, prompt_and_read)
+- `cantrips/require-command` (3→1) - **Inlined helpers** (find_install_spell, attempt_install)
+- `cantrips/fathom-terminal` (3→2) - **Inlined single-use wrapper**; kept print_dimension (used 5x)
+- `cantrips/remove-service` (3→2) - **Inlined find_ask_text**; kept require_privilege (used 4x)
+- `enchant/yaml-to-enchantment` (3→2) - **Inlined set_attr**; kept resolve_helper (used 7x)
 
-**Progress**: 42/42 spells refactored (100%) - 3 spells removed as obsolete
+**Progress**: 57/57 spells refactored (100%) - 3 spells removed as obsolete
+
+**Remaining acceptable cases** (7 spells with 2-3 extra functions):
+
+**Spells with 3 extra functions (4 total):**
+- `psi/read-contact` (4 functions): handle_escapes (3x), card_lines (3x), nicer_name (3x) - vCard parsing logic, substantive helpers
+- `cantrips/menu` (4 functions): cleanup (8x), render_row (4x), position_cursor_below_menu (3x) - core menu rendering
+
+**Spells with 2 extra functions (3 total):**
+- `cantrips/await-keypress` (3 functions): restore_terminal (4x), codes_to_string (5x) - complex terminal handling
+- `menu/mud`, `menu/mud-settings`, `menu/main-menu` (3 functions each): menu display pattern with 2 helpers used 2-20x
+- `menu/mud-menu` (3 functions): is_cd_hook_installed (4x), is_feature_enabled (20x) - MUD feature checks
 
 ---
 

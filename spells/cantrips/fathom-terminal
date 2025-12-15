@@ -25,6 +25,7 @@ set -eu
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 
 # Share the same require-command lookup logic with the other cantrips.
+# Inline fathom_terminal_require - only used once
 if [ -n "${REQUIRE_COMMAND-}" ]; then
     require_cmd=$REQUIRE_COMMAND
 elif [ -x "$script_dir/require-command" ]; then
@@ -32,10 +33,6 @@ elif [ -x "$script_dir/require-command" ]; then
 else
     require_cmd=require-command
 fi
-
-fathom_terminal_require() {
-    "$require_cmd" "$@"
-}
 
 verbose=0
 want_width=0
@@ -80,7 +77,7 @@ if [ "$want_width" -eq 0 ] && [ "$want_height" -eq 0 ]; then
 fi
 
 # tput is our interface to terminfo; fail loudly when it is absent.
-if ! require tput "The fathom-terminal spell needs 'tput' to query terminfo."; then
+if ! "$require_cmd" tput "The fathom-terminal spell needs 'tput' to query terminfo."; then
     exit 1
 fi
 
