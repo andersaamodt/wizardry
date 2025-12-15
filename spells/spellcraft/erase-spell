@@ -20,6 +20,19 @@ USAGE
 
 erase_spell() {
 
+# Handle help before set -eu
+case "${1-}" in
+--help|--usage|-h)
+  erase_spell_usage
+  return 0
+  ;;
+esac
+
+set -eu
+
+# Initialize spell_home
+spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+
 find_custom_spell() {
         name=$1
         # Check in spell_home root
@@ -47,7 +60,7 @@ while [ "$#" -gt 0 ]; do
         case $1 in
                 --help|--usage|-h)
                         erase_spell_usage
-                        exit 0
+                        return 0
                         ;;
                 --force|-f)
                         force=1
@@ -55,32 +68,30 @@ while [ "$#" -gt 0 ]; do
                         ;;
                 -*)
                         printf 'erase-spell: unknown option: %s\n' "$1" >&2
-                        exit 1
+                        return 1
                         ;;
                 *)
                         if [ -z "$name" ]; then
                                 name=$1
                         else
                                 printf 'erase-spell: unexpected argument: %s\n' "$1" >&2
-                                exit 1
+                                return 1
                         fi
                         shift
                         ;;
         esac
-set -eu
-
 done
 
 if [ -z "$name" ]; then
         erase_spell_usage >&2
-        exit 1
+        return 1
 fi
 
 # Find the spell
 script_path=$(find_custom_spell "$name") || {
         display_path=$(tilde-path "$spell_home")
         printf 'erase-spell: spell "%s" not found in %s\n' "$name" "$display_path" >&2
-        exit 1
+        return 1
 }
 
 # Check if it's actually in spell_home (not a built-in spell)
@@ -90,7 +101,7 @@ case "$script_path" in
                 ;;
         *)
                 printf 'erase-spell: "%s" is not a custom spell and cannot be erased\n' "$name" >&2
-                exit 1
+        return 1
                 ;;
 esac
 
@@ -104,7 +115,7 @@ if [ "$force" -eq 0 ]; then
                         ;;
                 *)
                         printf 'Aborted.\n'
-                        exit 0
+        return 0
                         ;;
         esac
 fi

@@ -109,12 +109,14 @@ first_run=1
 
 while true; do
   if [ "$first_run" -eq 0 ]; then
-    :
+    display_priorities || true
   else
     first_run=0
+    # On first run, exit if display_priorities fails (no priorities set)
+    if ! display_priorities; then
+      return 1
+    fi
   fi
-
-  display_priorities || true
 done
 }
 
