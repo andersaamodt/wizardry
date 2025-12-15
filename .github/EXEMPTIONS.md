@@ -135,6 +135,23 @@ function_to_override() { ... }
 
 **Reason**: Distinguish test infrastructure from production code
 
+### Test-Doppelganger: Skipped in Regular test-magic Runs
+
+**Affected**: `.tests/spellcraft/test-doppelganger.sh`
+
+**Test Runner**: `spells/system/test-magic`
+
+**Reason**: The doppelganger test has its own dedicated GitHub action workflow and nearly doubles the test run time when included in the regular test suite. It compiles the entire wizardry repository and tests the compiled version, which is a comprehensive but time-consuming process.
+
+**Behavior**:
+- **Regular runs**: test-doppelganger is **skipped** automatically by test-magic
+- **Explicit runs**: test-doppelganger can still be run via `test-magic --only spellcraft/test-doppelganger.sh`
+- **CI**: Separate GitHub action runs test-doppelganger independently
+
+**Implementation**: test-magic checks for the test path and skips it unless explicitly requested via the `--only` flag.
+
+**Future**: This test will be re-enabled for regular runs once platform-specific testing infrastructure is in place to ensure users can run doppelganger on all supported platforms.
+
 ### Doppelganger: Function Name Collision Check Exemption
 
 **Affected**: Compiled spells in doppelganger (when `WIZARDRY_TEST_COMPILED=1` is set)
