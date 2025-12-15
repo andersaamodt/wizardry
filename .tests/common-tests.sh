@@ -919,6 +919,153 @@ test_spells_have_true_name_functions() {
   return 0
 }
 
+# --- Check: Spells have no more than 3 --flag arguments ---
+# Spells should use minimal flags (0-1 freely, 2 with warning, 3+ with warning)
+# This enforces simplicity and discourages complex option parsing
+# This is a NON-FAILING behavioral check - warnings only for visibility
+
+test_spells_have_limited_flags() {
+  tmpfile_2=$(mktemp "${WIZARDRY_TMPDIR}/flag-warn-2.XXXXXX")
+  tmpfile_3plus=$(mktemp "${WIZARDRY_TMPDIR}/flag-warn-3plus.XXXXXX")
+  
+  find "$ROOT_DIR/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r spell; do
+    name=$(basename "$spell")
+    should_skip_file "$name" && continue
+    is_posix_shell_script "$spell" || continue
+    
+    rel_path=${spell#"$ROOT_DIR/spells/"}
+    
+    # Count distinct flag options by looking at case patterns in argument parsing
+    # Exclude standard --help|--usage|-h, catch-all -*, and -- (end of options)
+    flag_count=$(awk '
+      # Track if we are in argument parsing section
+      /while.*\$.*-gt 0|case.*\$1/ { in_args = 1 }
+      in_args && /^[[:space:]]*esac[[:space:]]*$/ && parsing_done == 0 { 
+        parsing_done = 1
+        in_args = 0
+      }
+      
+      # When in argument parsing, capture flag patterns
+      in_args && /^[[:space:]]+(-[a-zA-Z]|--[a-zA-Z-]+)(\||[[:space:]]*\))/ {
+        line = $0
+        # Skip help flags
+        if (line ~ /--help|--usage|-h\)/) next
+        # Skip catch-all pattern
+        if (line ~ /^[[:space:]]+-\*\)/) next
+        # Skip -- (end of options marker)
+        if (line ~ /^[[:space:]]+--\)/) next
+        
+        print
+      }
+    ' "$spell" 2>/dev/null | wc -l)
+    
+    flag_count=${flag_count:-0}
+    
+    # Write to appropriate temp file based on flag count
+    if [ "$flag_count" -ge 3 ]; then
+      printf '%s(%s)\n' "$rel_path" "$flag_count" >> "$tmpfile_3plus"
+    elif [ "$flag_count" -eq 2 ]; then
+      printf '%s(%s)\n' "$rel_path" "$flag_count" >> "$tmpfile_2"
+    fi
+  done
+  
+  # Read and format results
+  warnings_2=$(head -20 "$tmpfile_2" 2>/dev/null | tr '\n' ', ' | sed 's/, $//')
+  warnings_3plus=$(head -20 "$tmpfile_3plus" 2>/dev/null | tr '\n' ', ' | sed 's/, $//')
+  
+  rm -f "$tmpfile_2" "$tmpfile_3plus"
+  
+  # Print warnings (non-fatal)
+  if [ -n "$warnings_2" ]; then
+    printf 'WARNING: spells with 2 flags (consider simplifying): %s\n' "$warnings_2" >&2
+  fi
+  
+  if [ -n "$warnings_3plus" ]; then
+    printf 'WARNING: spells with 3+ flags (strongly consider simplifying): %s\n' "$warnings_3plus" >&2
+  fi
+  
+  # Always return success (non-failing check)
+  return 0
+}
+
+# --- Check: Spells have no more than 3 positional arguments ---
+# Spells should use minimal positional arguments (0-1 freely, 2 with warning, 3+ with warning)
+# This enforces simplicity and discourages complex interfaces
+# This is a NON-FAILING behavioral check - warnings only for visibility
+
+test_spells_have_limited_positional_args() {
+  tmpfile_2=$(mktemp "${WIZARDRY_TMPDIR}/posarg-warn-2.XXXXXX")
+  tmpfile_3plus=$(mktemp "${WIZARDRY_TMPDIR}/posarg-warn-3plus.XXXXXX")
+  
+  find "$ROOT_DIR/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r spell; do
+    name=$(basename "$spell")
+    should_skip_file "$name" && continue
+    is_posix_shell_script "$spell" || continue
+    
+    rel_path=${spell#"$ROOT_DIR/spells/"}
+    
+    # Extract Usage line from the spell (from usage function or direct)
+    usage=$(awk '
+      # Look for usage function
+      /^[a-zA-Z_][a-zA-Z0-9_]*_usage\(\)/ { in_usage = 1; next }
+      # Or direct Usage: line
+      /^Usage:/ { in_usage = 1; capture = 1 }
+      # Capture Usage lines
+      in_usage && /^Usage:/ { capture = 1 }
+      in_usage && capture { 
+        print
+        # Stop at blank line or end of heredoc
+        if (/^[[:space:]]*$/ || /^USAGE/ || /^[A-Z][A-Z_]+$/) exit
+      }
+      in_usage && /^}/ { exit }
+    ' "$spell" 2>/dev/null | head -3)
+    
+    if [ -z "$usage" ]; then
+      continue
+    fi
+    
+    # Count positional arguments from Usage line
+    # Look for <arg> patterns or UPPERCASE_ARGS (but not in [...] optional sections)
+    # Exclude variadic arguments like "..." or FILE... or [FILES...]
+    arg_count=$(printf '%s\n' "$usage" | \
+      # Remove optional flag sections in [...]
+      sed 's/\[[^]]*\]//g' | \
+      # Extract positional argument patterns
+      grep -oE '<[A-Za-z_-]+>|[A-Z][A-Z0-9_-]+' | \
+      # Exclude variadic patterns
+      grep -v '\.\.\.' | \
+      # Count unique arguments
+      sort -u | wc -l)
+    
+    arg_count=${arg_count:-0}
+    
+    # Write to appropriate temp file based on argument count
+    if [ "$arg_count" -ge 3 ]; then
+      printf '%s(%s)\n' "$rel_path" "$arg_count" >> "$tmpfile_3plus"
+    elif [ "$arg_count" -eq 2 ]; then
+      printf '%s(%s)\n' "$rel_path" "$arg_count" >> "$tmpfile_2"
+    fi
+  done
+  
+  # Read and format results
+  warnings_2=$(head -20 "$tmpfile_2" 2>/dev/null | tr '\n' ', ' | sed 's/, $//')
+  warnings_3plus=$(head -20 "$tmpfile_3plus" 2>/dev/null | tr '\n' ', ' | sed 's/, $//')
+  
+  rm -f "$tmpfile_2" "$tmpfile_3plus"
+  
+  # Print warnings (non-fatal)
+  if [ -n "$warnings_2" ]; then
+    printf 'WARNING: spells with 2 positional arguments (consider simplifying): %s\n' "$warnings_2" >&2
+  fi
+  
+  if [ -n "$warnings_3plus" ]; then
+    printf 'WARNING: spells with 3+ positional arguments (strongly consider simplifying): %s\n' "$warnings_3plus" >&2
+  fi
+  
+  # Always return success (non-failing check)
+  return 0
+}
+
 # --- Run all test cases ---
 
 _run_test_case "no duplicate spell names" test_no_duplicate_spell_names
@@ -938,5 +1085,7 @@ _run_test_case "bootstrap spells have identifying comment" test_bootstrap_spells
 _run_test_case "spells follow function discipline" test_spells_follow_function_discipline
 _run_test_case "no function name collisions" test_no_function_name_collisions
 _run_test_case "spells have true name functions" test_spells_have_true_name_functions
+_run_test_case "spells have limited flags" test_spells_have_limited_flags
+_run_test_case "spells have limited positional arguments" test_spells_have_limited_positional_args
 
 _finish_tests
