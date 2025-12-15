@@ -140,34 +140,36 @@ Using the free software suite makes it easy to establish a standardized software
 | Term | Definition |
 | ---- | ---------- |
 | **arcanum** (pl. **arcana**) | A grand working—a spell that installs and configures software across supported platforms, presented as a menu of functions. Also refers to the apps themselves. |
+| **aura** | The proto-meaning a spell name bears when evoked (future feature). |
 | **bootstrap spell** | A spell that can run before wizardry is fully installed. These self-contained scripts (namely `install`, `detect-distro`, and spells in `spells/install/core/`) don't rely on other wizardry spells. |
 | **bound imp** | An *invoked* imp; sourced so its true-name function exists in the current shell and can be called without subprocess overhead. |
 | **cantrip** | A small utility spell for common tasks. |
 | `cast` | To execute a spell. Memorized spells appear in the `cast` menu for quick access. |
 | **crypto** | Cryptographic spells for hashing and security. |
 | **daemon** | A background process that runs continuously, typically started at system boot. |
-| **daemonic complex** | A subfolder within a demon family that groups related imps that work together to implement a larger concept. Each imp in the complex handles one piece of the functionality (e.g., `nix/nix-rebuild`, `nix/nix-shell-add`). |
+| **daemonic complex** | A subfolder within a demon family that groups related imps that must work together. |
 | **demon family** | A subfolder within `spells/.imps/` that groups related imps by function. Each folder represents a family of imps that share a common purpose (e.g., `str/` for string operations, `fs/` for filesystem operations). |
 | **divination** | Spells that detect or discover information. |
 | **enchant** / **enchantment** | Spells that add or manipulate extended attributes (metadata) on files. |
-| **evoke** | To *mention* a spell name, presencing its meaning without execution. |
+| **evoke** | To *mention* a spell name, presencing its aura without execution. |
 | `forget` | Remove a spell from your memorized (`cast`) list. |
 | **imp** | The smallest building block of magic—a microscript that does exactly one thing. Imps dwell in `spells/.imps/`. |
+| **incantation** | The name of a spell, particularly its internal function name, for invocable spells (identical to its filename). Same as true name but for spells (and no underscore). |
 | `invoke` | Source a script into the current shell. |
-| `learn` | Add a spell to your shell environment, making it permanently available. Some spells must be learned before use. |
+| `learn` | Copy or link a spell into your spellbook, making it permanently available. Learned spells are immediately available to cast. |
 | `memorize` | Add a spell to your `cast` menu for quick access. |
 | **portal** | A persistent connection between two computers via SSH, created with `open-portal`, for MUD travel. |
 | **portkey** | A bookmark to a remote location. Use `enchant-portkey` to create one and `follow-portkey` to teleport there. (Future: If you have the `touch` hook installed, touching a portkey will also activate it.) |
 | **scribe** | Create a new custom spell. |
-| **scroll** | A linear script with zero or one internal functions (besides the spell's own `show_usage` function). All spells should ideally be scrolls—readable from top to bottom without conceptual "folds" that break narrative flow. |
-| **spell** | A specially-curated shell script that lives in `spells/`, has a unique name, and follows wizardry conventions. |
+| **scroll** | A linear script with zero or one internal functions (plus `show_usage`). All spells should ideally be scrolls—readable from top to bottom without "folds" that break narrative flow. |
+| **spell** | A specially-curated shell script that lives in `spells/` or your `.spellbook/` folder, has a unique name, and follows wizardry conventions. |
 | `spellbook` | Your personal grimoire for organizing and casting spells. Access it with `spellbook` or from the main `menu`. Also refers to custom spell folders. |
 | **spellcraft** | The writing of shell scripts. |
 | **tome** | A text file containing the contents of several other text files concatenated together, so a whole folder of spells can be sent or carried easily. |
-| **true name** | The internal underscore function-name defined by a bound imp (e.g., `_contains` for the `contains` imp). |
-| **unbound imp** | A *cast* imp; executed in a subshell rather than sourced into the current shell. |
+| **true name** | The internal underscore function-name defined by a bound imp (e.g., `_contains` for the `contains` imp). Same as incantation but for imps. |
+| **unbound imp** | A *cast* imp; executed in a subshell rather than sourced into the current shell. Must contain zero functions. |
 | **ward** | A protective spell for security or access control. |
-| **word-of-binding** | When a command is missing; resolves the public name, sources the module if needed, and calls the true name. If the module has a true-name function, it is bound (sourced); otherwise, it is evoked (executed). |
+| **word-of-binding** | Invoke sall spells at startup so they will be available to cast; also hotloads spells found in the wild, making them immediately available to cast. |
 
 # **Ethos and Standards**
 
