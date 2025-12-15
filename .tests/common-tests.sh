@@ -732,10 +732,12 @@ system/test-magic
     func_count_multiline=${func_count_multiline:-0}
     func_count=$((func_count_inline + func_count_multiline))
     
-    # Subtract 1 for the *_usage function (which every spell should have)
-    additional_funcs=$((func_count - 1))
+    # Subtract 2 for standard functions: *_usage and the wrapper function (incantation)
+    # Every spell now has both a *_usage function and a wrapper function matching its name
+    # Additional functions beyond these two are considered helper functions
+    additional_funcs=$((func_count - 2))
     
-    # Allow negative (no *_usage is caught by another test)
+    # Allow negative (missing functions are caught by other tests)
     [ "$additional_funcs" -lt 0 ] && additional_funcs=0
     
     # Write to appropriate temp file based on additional function count

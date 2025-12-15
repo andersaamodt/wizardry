@@ -221,7 +221,7 @@ for file in "$@"; do
   esac
 done
 
-return 1 $exit_status
+return $exit_status
 }
 
 # Self-execute when run directly (not sourced)
