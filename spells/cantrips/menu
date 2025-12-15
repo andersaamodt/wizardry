@@ -16,34 +16,37 @@ highlighted item. Use "---" to add a horizontal divider line.
 USAGE
 }
 
+
+menu() {
 case "${1-}" in
 --help|--usage|-h)
-        menu_usage
-        exit 0
-        ;;
+  menu_usage
+  return 0
+  ;;
 esac
+
 set -eu
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 
 # Verify that all helper spells are ready before drawing the menu.
 # Uses the shared 'require' imp for dependency checking.
-require fathom-cursor "The menu spell needs 'fathom-cursor' to place the menu." || exit 1
-require fathom-terminal "The menu spell needs 'fathom-terminal' to measure the screen." || exit 1
-require move-cursor "The menu spell needs 'move-cursor' to reposition the cursor." || exit 1
-require await-keypress "The menu spell needs 'await-keypress' to read input." || exit 1
-require cursor-blink "The menu spell needs 'cursor-blink' to restore the cursor." || exit 1
-require stty "The menu spell needs 'stty' to manage terminal modes." || exit 1
+require fathom-cursor "The menu spell needs 'fathom-cursor' to place the menu." || return 1
+require fathom-terminal "The menu spell needs 'fathom-terminal' to measure the screen." || return 1
+require move-cursor "The menu spell needs 'move-cursor' to reposition the cursor." || return 1
+require await-keypress "The menu spell needs 'await-keypress' to read input." || return 1
+require cursor-blink "The menu spell needs 'cursor-blink' to restore the cursor." || return 1
+require stty "The menu spell needs 'stty' to manage terminal modes." || return 1
 
 menu_tty=${AWAIT_KEYPRESS_DEVICE:-/dev/tty}
 if [ ! -r "$menu_tty" ] || [ ! -w "$menu_tty" ]; then
         printf '%s\n' "menu: unable to access controlling terminal '$menu_tty'" >&2
-        exit 1
+        return 1
 fi
 
 if ! menu_saved_tty_state=$(stty -g <"$menu_tty" 2>/dev/null); then
         printf '%s\n' 'menu: unable to read terminal settings' >&2
-        exit 1
+        return 1
 fi
 
 terminal_restored=0
@@ -88,17 +91,17 @@ fi
 if [ "$#" -lt 2 ]; then
         if command -v main-menu >/dev/null 2>&1; then
                 main-menu
-                exit 0
+                return 0
         fi
         printf '%s\n' "menu: no menu entries provided" >&2
-        exit 1
+        return 1
 fi
 
 description=$1
 shift
 
-items_file=$(temp-file menu-items) || exit 1
-commands_file=$(temp-file menu-commands) || exit 1
+items_file=$(temp-file menu-items) || return 1
+commands_file=$(temp-file menu-commands) || return 1
 cleanup_called=0
 cleanup() {
         if [ "$cleanup_called" -eq 1 ]; then
@@ -113,7 +116,7 @@ cleanup() {
         cleanup-file "$items_file"
         cleanup-file "$commands_file"
 }
-trap 'cleanup; exit 1' INT TERM
+trap 'cleanup; return 1' INT TERM
 trap 'cleanup' EXIT
 
 max_name_length=0
@@ -151,7 +154,7 @@ done
 
 if [ "$menu_length" -eq 0 ]; then
         printf '%s\n' "menu: no menu entries provided" >&2
-        exit 1
+        return 1
 fi
 
 # Use start_selection if valid, otherwise default to 1
@@ -441,14 +444,14 @@ do
                         cleanup
                         trap - EXIT INT TERM
                 fi
-                exit 0
+                return 0
                 ;;
         escape|ESC|esc)
                 cleanup
                 trap - EXIT INT TERM
-                # Signal the parent process to exit its menu loop
-                kill -TERM "$PPID" 2>/dev/null || exit 0
-                exit 0
+                # Signal the parent process to return 1 its menu loop
+                kill -TERM "$PPID" 2>/dev/null || return 0
+                return 0
                 ;;
         esac
 
@@ -461,3 +464,8 @@ do
                 sleep 0.05
         fi
 done
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */menu) menu "$@" ;; esac

@@ -13,11 +13,14 @@ Set or update the priority of a file, storing it in the file's extended attribut
 USAGE
 }
 
+
+
+prioritize() {
 case "${1-}" in
 --help|--usage|-h)
-        prioritize_usage
-        exit 0
-        ;;
+  prioritize_usage
+  return 0
+  ;;
 esac
 
 set -eu
@@ -26,7 +29,7 @@ set -eu
 if [ -z "${1-}" ]; then
         printf '%s\n' "prioritize: file path required." >&2
         prioritize_usage >&2
-        exit 1
+        return 1
 fi
 
 file=$1
@@ -68,17 +71,17 @@ case "$priorities" in
                 enchant "$directory" priorities "$target_hash" >/dev/null
                 enchant "$file" priority 1 >/dev/null
                 say "Prioritized '$(file-name "$file")' as the first priority."
-                exit 0
+                return 0
                 ;;
 esac
 
 # Get the priority of the first item in the current list of priorities
 first_hash=$(printf '%s' "$priorities" | cut -d',' -f1)
 
-# If the target file is already the first priority, exit
+# If the target file is already the first priority, return 1
 if equals "$target_hash" "$first_hash"; then
         say "'$(file-name "$file")' is already the highest priority."
-        exit 0
+        return 0
 fi
 
 # Filter the target hash from the current priorities list to avoid duplicates
@@ -100,4 +103,8 @@ new_priority=$((target_priority + 1))
 enchant "$file" priority "$new_priority" >/dev/null
 enchant "$directory" priorities "$new_priorities" >/dev/null
 
-say "Prioritized '$(file-name "$file")'."
+say "Prioritized '$(file-name "$file")'."}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */prioritize) prioritize "$@" ;; esac

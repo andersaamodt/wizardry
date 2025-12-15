@@ -919,6 +919,46 @@ test_spells_have_true_name_functions() {
   return 0
 }
 
+# --- Check: All spells MUST have wrapper functions (FAILING TEST) ---
+# All spells must have a wrapper function matching their filename for word-of-binding.
+# For spells: snake_case name (e.g., lint-magic -> lint_magic)
+# This enables sourcing spells into the shell for efficient invocation.
+# Unlike test_spells_have_true_name_functions, this is a FAILING test.
+#
+# Exemptions must be documented in .github/EXEMPTIONS.md with justification.
+
+test_spells_require_wrapper_functions() {
+  skip-if-compiled || return $?
+  violations=""
+  
+  # Check all executable spell files (not imps)
+  find "$ROOT_DIR/spells" -type f -not -path "*/.imps/*" -not -path "*/.arcana/*" \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r spell; do
+    name=$(basename "$spell")
+    should_skip_file "$name" && continue
+    is_posix_shell_script "$spell" || continue
+    
+    rel_path=${spell#"$ROOT_DIR/spells/"}
+    
+    # Convert filename to expected wrapper function name
+    # For hyphenated names: lint-magic -> lint_magic
+    wrapper_name=$(printf '%s' "$name" | sed 's/-/_/g')
+    
+    # Check if the wrapper function exists
+    if ! grep -qE "^[[:space:]]*${wrapper_name}[[:space:]]*\(\)" "$spell" 2>/dev/null; then
+      printf '%s (missing %s)\n' "$rel_path" "$wrapper_name"
+    fi
+  done > "${WIZARDRY_TMPDIR}/missing-wrappers.txt"
+  
+  violations=$(cat "${WIZARDRY_TMPDIR}/missing-wrappers.txt" 2>/dev/null | head -30 | tr '\n' ', ' | sed 's/, $//')
+  rm -f "${WIZARDRY_TMPDIR}/missing-wrappers.txt"
+  
+  if [ -n "$violations" ]; then
+    TEST_FAILURE_REASON="spells missing wrapper functions (required for word-of-binding): $violations"
+    return 1
+  fi
+  return 0
+}
+
 # --- Check: Spells have no more than 3 --flag arguments ---
 # Spells should use minimal flags (0-1 freely, 2 with warning, 3 with warning, 4+ fails)
 # This enforces simplicity and discourages complex option parsing
@@ -1139,6 +1179,7 @@ _run_test_case "bootstrap spells have identifying comment" test_bootstrap_spells
 _run_test_case "spells follow function discipline" test_spells_follow_function_discipline
 _run_test_case "no function name collisions" test_no_function_name_collisions
 _run_test_case "spells have true name functions" test_spells_have_true_name_functions
+_run_test_case "spells require wrapper functions" test_spells_require_wrapper_functions
 _run_test_case "spells have limited flags" test_spells_have_limited_flags
 _run_test_case "spells have limited positional arguments" test_spells_have_limited_positional_args
 

@@ -13,12 +13,6 @@ Run without arguments to open the interactive casting menu.
 USAGE
 }
 
-case ${1-} in
-        --help|--usage|-h)
-                cast_usage
-                exit 0
-                ;;
-esac
 
 # Catch Ctrl-C and TERM signal to exit cleanly
 trap 'exit 0' INT TERM
@@ -75,10 +69,19 @@ case ${1-} in
                 exit 1
                 ;;
 esac
+
+cast() {
+case "${1-}" in
+--help|--usage|-h)
+  cast_usage
+  return 0
+  ;;
+esac
+
 set -eu
 
 if ! require menu "The casting menu needs the 'menu' command."; then
-        exit 1
+        return 1
 fi
 
 # Interactive casting menu loop
@@ -123,7 +126,12 @@ do
         done <<SPELLS
 $entries
 SPELLS
-        exit_label=$(exit-label)
+        exit_label=$(return 1-label)
         set -- "$@" "${exit_label}%kill -TERM \$PPID"
         menu "Cast a Spell:" "$@" || true
 done
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */cast) cast "$@" ;; esac

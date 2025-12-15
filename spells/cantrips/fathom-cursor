@@ -56,6 +56,15 @@ while [ "$#" -gt 0 ]; do
             break
             ;;
     esac
+
+fathom_cursor() {
+case "${1-}" in
+--help|--usage|-h)
+  fathom_cursor_usage
+  return 0
+  ;;
+esac
+
 set -eu
 
     shift
@@ -69,7 +78,7 @@ fi
 
 # Check for required commands
 if ! "$require_cmd" dd "The fathom-cursor spell needs 'dd' to read the terminal response."; then
-    exit 1
+    return 1
 fi
 
 TTY_DEVICE=${FATHOM_CURSOR_DEVICE:-/dev/tty}
@@ -78,7 +87,7 @@ skip_stty=${FATHOM_CURSOR_SKIP_STTY:-0}
 # Only reach for stty when we are manipulating a real tty
 if [ "$skip_stty" -eq 0 ]; then
     if ! "$require_cmd" stty "The fathom-cursor spell needs 'stty' to manage terminal modes."; then
-        exit 1
+        return 1
     fi
 fi
 
@@ -86,10 +95,10 @@ if [ "$skip_stty" -eq 1 ]; then
     # Test harnesses can feed canned responses via a read-only file
     if [ ! -r "$TTY_DEVICE" ]; then
         printf '%s\n' "fathom-cursor: unable to read from '$TTY_DEVICE'" >&2
-        exit 1
+        return 1
     fi
 
-    exec 3<"$TTY_DEVICE" || exit 1
+    exec 3<"$TTY_DEVICE" || return 1
     restore_test() {
         exec 3>&- 2>/dev/null || :
     }
@@ -98,16 +107,16 @@ else
     # When running interactively, open the tty for both reading and writing
     if [ ! -r "$TTY_DEVICE" ] || [ ! -w "$TTY_DEVICE" ]; then
         printf '%s\n' "fathom-cursor: unable to open controlling terminal '$TTY_DEVICE'" >&2
-        exit 1
+        return 1
     fi
 
-    exec 3<>"$TTY_DEVICE" || exit 1
+    exec 3<>"$TTY_DEVICE" || return 1
 
-    # Preserve the terminal state and restore it on exit
+    # Preserve the terminal state and restore it on return 1
     saved_state=$(stty -g <&3 2>/dev/null)
     if [ -z "$saved_state" ]; then
         printf '%s\n' 'fathom-cursor: unable to read terminal settings' >&2
-        exit 1
+        return 1
     fi
 
     restore_tty() {
@@ -115,13 +124,13 @@ else
         exec 3>&- 2>/dev/null || :
     }
 
-    trap 'restore_tty; exit 130' INT HUP TERM
+    trap 'restore_tty; return 130' INT HUP TERM
     trap 'restore_tty' EXIT
 
     # Configure raw mode with a short timeout
     if ! stty -icanon -echo min 0 time 5 <&3 2>/dev/null; then
         printf '%s\n' 'fathom-cursor: unable to configure terminal' >&2
-        exit 1
+        return 1
     fi
 fi
 
@@ -153,14 +162,14 @@ esc=$(printf '\033')
 case "$response" in
     '')
         printf '%s\n' 'fathom-cursor: terminal did not respond' >&2
-        exit 1
+        return 1
         ;;
     "$esc"'['*'R')
         :
         ;;
     *)
         printf '%s\n' "fathom-cursor: unexpected response '$response'" >&2
-        exit 1
+        return 1
         ;;
 esac
 
@@ -174,7 +183,7 @@ column=${coords#*;}
 case "$row" in
     *[!0-9]*)
         printf '%s\n' "fathom-cursor: invalid row '$row'" >&2
-        exit 1
+        return 1
         ;;
     *) : ;;
 esac
@@ -182,7 +191,7 @@ esac
 case "$column" in
     *[!0-9]*)
         printf '%s\n' "fathom-cursor: invalid column '$column'" >&2
-        exit 1
+        return 1
         ;;
     *) : ;;
 esac
@@ -209,3 +218,8 @@ else
         printf '%s\n' "$row"
     fi
 fi
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */fathom-cursor) fathom_cursor "$@" ;; esac

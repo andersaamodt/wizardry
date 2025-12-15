@@ -11,11 +11,14 @@ Show which package managers are available on this system and whether they are in
 USAGE
 }
 
+
+
+package_managers() {
 case "${1-}" in
 --help|--usage|-h)
-        package_managers_usage
-        exit 0
-        ;;
+  package_managers_usage
+  return 0
+  ;;
 esac
 
 set -eu
@@ -64,3 +67,8 @@ case $distro in
     fi
     ;;
 esac
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */package-managers) package_managers "$@" ;; esac

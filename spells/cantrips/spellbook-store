@@ -17,12 +17,15 @@ print the backing file location.
 USAGE
 }
 
+
+spellbook_store() {
 case "${1-}" in
 --help|--usage|-h)
-        spellbook_store_usage
-        exit 0
-        ;;
+  spellbook_store_usage
+  return 0
+  ;;
 esac
+
 set -eu
 
 # Helper for reading non-empty lines
@@ -52,7 +55,7 @@ esac
 
 if [ "$#" -eq 0 ]; then
   spellbook_store_usage
-  exit 1
+  return 1
 fi
 
 action=$1
@@ -64,7 +67,7 @@ add)
   if [ "$#" -lt 2 ]; then
     printf '%s\n' "spellbook-store: add expects a NAME followed by COMMAND words." >&2
     spellbook_store_usage
-    exit 1
+    return 1
   fi
   name=$1
   shift
@@ -79,27 +82,27 @@ add)
   case $name in
   ''|*[!A-Za-z0-9._-]*)
     printf '%s\n' "spellbook-store: alias names may contain only letters, digits, dots, underscores, and dashes." >&2
-    exit 1
+    return 1
     ;;
   -*)
     printf '%s\n' "spellbook-store: alias names may not begin with a dash." >&2
-    exit 1
+    return 1
     ;;
   esac
   
   # Validate command
   if [ -z "$cmd" ]; then
     printf '%s\n' "spellbook-store: command must not be empty." >&2
-    exit 1
+    return 1
   fi
   case $cmd in
   *"$tab_char"*)
     printf '%s\n' "spellbook-store: command may not contain tabs." >&2
-    exit 1
+    return 1
     ;;
   *"$newline_char"*)
     printf '%s\n' "spellbook-store: command must be a single line." >&2
-    exit 1
+    return 1
     ;;
   esac
   
@@ -110,7 +113,7 @@ add)
   fi
   
   # Add entry (replacing if exists)
-  tmp=$(temp-file spellbook-store) || exit 1
+  tmp=$(temp-file spellbook-store) || return 1
   trap 'cleanup-file "$tmp"' EXIT HUP INT TERM
   if [ -f "$spellbook_file" ]; then
     while IFS= read -r line || nonempty "$line"; do
@@ -137,7 +140,7 @@ remove)
   if [ "$#" -ne 1 ]; then
     printf '%s\n' "spellbook-store: remove expects a NAME." >&2
     spellbook_store_usage
-    exit 1
+    return 1
   fi
   name=$1
   
@@ -145,21 +148,21 @@ remove)
   case $name in
   ''|*[!A-Za-z0-9._-]*)
     printf '%s\n' "spellbook-store: alias names may contain only letters, digits, dots, underscores, and dashes." >&2
-    exit 1
+    return 1
     ;;
   -*)
     printf '%s\n' "spellbook-store: alias names may not begin with a dash." >&2
-    exit 1
+    return 1
     ;;
   esac
   
   if [ ! -f "$spellbook_file" ]; then
     printf '%s\n' "spellbook-store: spell '$name' is not recorded." >&2
-    exit 1
+    return 1
   fi
   
   # Remove entry
-  tmp=$(temp-file spellbook-store) || exit 1
+  tmp=$(temp-file spellbook-store) || return 1
   trap 'cleanup-file "$tmp"' EXIT HUP INT TERM
   removed=0
   while IFS= read -r line || nonempty "$line"; do
@@ -183,7 +186,7 @@ remove)
     trap - EXIT HUP INT TERM
     rm -f "$tmp"
     printf '%s\n' "spellbook-store: spell '$name' is not recorded." >&2
-    exit 1
+    return 1
   fi
   trap - EXIT HUP INT TERM
   mv "$tmp" "$spellbook_file"
@@ -192,7 +195,7 @@ list)
   # List all entries
   if [ "$#" -ne 0 ]; then
     spellbook_store_usage
-    exit 1
+    return 1
   fi
   if [ -f "$spellbook_file" ]; then
     cat "$spellbook_file"
@@ -202,7 +205,7 @@ path)
   # Print spellbook path
   if [ "$#" -ne 0 ]; then
     spellbook_store_usage
-    exit 1
+    return 1
   fi
   printf '%s\n' "$spellbook_file"
   ;;
@@ -211,6 +214,11 @@ path)
   ;;
 *)
   spellbook_store_usage
-  exit 1
+  return 1
   ;;
 esac
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */spellbook-store) spellbook_store "$@" ;; esac

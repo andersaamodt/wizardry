@@ -26,10 +26,13 @@ Examples:
 USAGE
 }
 
+
+
+logging_example() {
 case "${1-}" in
 --help|--usage|-h)
   logging_example_usage
-  exit 0
+  return 0
   ;;
 esac
 
@@ -37,7 +40,7 @@ set -eu
 
 # Source the logging imps (in real usage, these would be bound at startup)
 # For this example, we'll source them directly
-# These imps are used: say, info, step, debug, success, warn, die, on-exit, temp-file, cleanup-file
+# These imps are used: say, info, step, debug, success, warn, die, on-return 1, temp-file, cleanup-file
 . spells/.imps/out/say
 . spells/.imps/out/info
 . spells/.imps/out/step
@@ -45,7 +48,7 @@ set -eu
 . spells/.imps/out/success
 . spells/.imps/out/warn
 . spells/.imps/out/die
-. spells/.imps/sys/on-exit
+. spells/.imps/sys/on-return 1
 . spells/.imps/fs/temp-file
 . spells/.imps/fs/cleanup-file
 
@@ -81,3 +84,8 @@ case "${1-}" in
   _say "Try: WIZARDRY_LOG_LEVEL=1 logging-example --simulate"
   ;;
 esac
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */logging-example) logging_example "$@" ;; esac

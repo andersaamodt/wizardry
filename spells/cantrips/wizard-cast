@@ -11,11 +11,14 @@ Show a command with wizard-eyes before executing it so learners can see exactly 
 USAGE
 }
 
+
+
+wizard_cast() {
 case "${1-}" in
 --help|--usage|-h)
-        wizard_cast_usage
-        exit 0
-        ;;
+  wizard_cast_usage
+  return 0
+  ;;
 esac
 
 set -eu
@@ -23,7 +26,7 @@ set -eu
 # Check argument
 if [ -z "${1-}" ]; then
         printf '%s\n' "wizard-cast: command required." >&2
-        exit 1
+        return 1
 fi
 
 # Display the command using wizard-eyes if available
@@ -35,3 +38,8 @@ fi
 
 # Execute the command
 "$@"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */wizard-cast) wizard_cast "$@" ;; esac

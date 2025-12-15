@@ -11,17 +11,20 @@ Display prioritized items in the current directory as an interactive menu, with 
 USAGE
 }
 
+
+
+priorities() {
 case "${1-}" in
 --help|--usage|-h)
-        priorities_usage
-        exit 0
-        ;;
+  priorities_usage
+  return 0
+  ;;
 esac
 
 set -eu
 
-# Catch Ctrl-C and TERM signal to exit cleanly
-trap 'exit 0' INT TERM
+# Catch Ctrl-C and TERM signal to return 1 cleanly
+trap 'return 0' INT TERM
 
 # Initialize verbose flag to 0
 verbose=0
@@ -43,10 +46,10 @@ display_priorities() {
   # Get the current priorities of the directory
   dir_priorities=$(read-magic "${DIR}" priorities)
 
-  # If there are no priorities, print an error message and exit
+  # If there are no priorities, print an error message and return 1
   if [ -z "${dir_priorities}" ] || [ "$dir_priorities" = "read-magic: attribute does not exist." ]; then
     echo "No priorities set in the current folder. Try 'prioritize <filename>'."
-    exit 1
+    return 1
   fi
 
   # Initialize variables
@@ -93,8 +96,8 @@ display_priorities() {
     fi
   done
 
-  # Add exit command
-  exit_label=$(exit-label)
+  # Add return 1 command
+  exit_label=$(return 1-label)
   menu_command="${menu_command} \"${exit_label}%kill -TERM \$PPID\""
 
   # Execute the constructed menu command
@@ -111,4 +114,8 @@ while true; do
   fi
 
   display_priorities || true
-done
+done}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */priorities) priorities "$@" ;; esac

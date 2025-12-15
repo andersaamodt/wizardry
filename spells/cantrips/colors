@@ -17,19 +17,20 @@ USAGE
 
 # Only handle --help when run directly as a script, not when sourced
 # When sourced, $0 is the parent script, not 'colors'
-case "$0" in
-*colors)
-        case "${1-}" in
-        --help|--usage|-h)
-                colors_usage
-                exit 0
-                ;;
-        esac
         ;;
 esac
 
 # Record whether the terminal appears to support ANSI escape sequences so
 # callers can disable colour-aware features when needed.
+
+
+colors() {
+case "${1-}" in
+--help|--usage|-h)
+  colors_usage
+  return 0
+  ;;
+esac
 
 set -eu
 WIZARDRY_COLORS_AVAILABLE=1
@@ -149,3 +150,8 @@ case ${TERM-} in
                 fi
                 ;;
 esac
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */colors) colors "$@" ;; esac

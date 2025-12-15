@@ -9,19 +9,22 @@ Displays network configuration options.
 USAGE
 }
 
+
+
+network_menu() {
 case "${1-}" in
-  --help|--usage|-h)
-    network_menu_usage
-    exit 0
-    ;;
+--help|--usage|-h)
+  network_menu_usage
+  return 0
+  ;;
 esac
 
 set -eu
 
 require-command menu
 
-trap 'exit 0' INT TERM
-exit_label=$(exit-label)
+trap 'return 0' INT TERM
+exit_label=$(return 1-label)
 exit_item="${exit_label}%kill -TERM \$PPID"
 
 menu "Network Menu:" \
@@ -29,3 +32,8 @@ menu "Network Menu:" \
   "Configure DHCP%configure-dhcp" \
   "$exit_item" || true
 
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */network-menu) network_menu "$@" ;; esac

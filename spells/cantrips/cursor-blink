@@ -12,10 +12,13 @@ Toggles cursor blinking with ANSI escape codes, quietly succeeding on terminals 
 USAGE
 }
 
+
+
+cursor_blink() {
 case "${1-}" in
 --help|--usage|-h)
   cursor_blink_usage
-  exit 0
+  return 0
   ;;
 esac
 
@@ -24,7 +27,7 @@ set -eu
 # The helper expects exactly one argument that declares the desired state.
 if [ "$#" -ne 1 ]; then
   printf '%s\n' 'Usage: cursor-blink on|off' >&2
-  exit 1
+  return 1
 fi
 
 # Inline supports_cursor_control - only used once
@@ -32,7 +35,7 @@ case ${TERM-} in
   ''|dumb|unknown)
     # Quietly succeed so scripts keep running even when the terminal lacks ANSI
     # support (for example, on "dumb" terminals).
-    exit 0
+    return 0
     ;;
 esac
 
@@ -48,6 +51,11 @@ case "$1" in
   *)
     # Treat anything else as misuse so callers notice mistakes quickly.
     printf '%s\n' 'Usage: cursor-blink on|off' >&2
-    exit 1
+    return 1
     ;;
 esac
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */cursor-blink) cursor_blink "$@" ;; esac

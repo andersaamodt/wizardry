@@ -12,12 +12,15 @@ List running processes, prompt you to pick one by number, and then send a kill s
 USAGE
 }
 
+
+kill_process() {
 case "${1-}" in
 --help|--usage|-h)
-        kill_process_usage
-        exit 0
-        ;;
+  kill_process_usage
+  return 0
+  ;;
 esac
+
 set -eu
 
 # Present the process list so the user can choose what to terminate.
@@ -26,14 +29,14 @@ ps -ax | awk '{print $5}' | tail -n +2 | nl -w 2 -s ') '
 
 PS_NAMES=$(ps -ax | awk '{print $5}' | tail -n +2)
 
-lacks ask-number && { warn "ask-number spell is required to choose a process."; exit 1; }
-lacks ask-yn && { warn "ask-yn spell is required to confirm termination."; exit 1; }
+lacks ask-number && { warn "ask-number spell is required to choose a process."; return 1; }
+lacks ask-yn && { warn "ask-yn spell is required to confirm termination."; return 1; }
 
 total_processes=$(printf '%s\n' "$PS_NAMES" | sed '/^$/d' | wc -l | tr -d ' ')
 
 if [ "$total_processes" -eq 0 ]; then
     warn "No processes available to kill."
-    exit 1
+    return 1
 fi
 
 choice=$(ask-number "Enter the number of the process you want to kill:" 1 "$total_processes")
@@ -44,14 +47,19 @@ if is set "$pid"; then
     if ask-yn "Are you sure you want to kill process $selected_name with pid $pid"; then
         kill_cmd=${KILL_CMD:-kill}
 
-        lacks "$kill_cmd" && { warn "kill command '$kill_cmd' is required to terminate processes."; exit 1; }
+        lacks "$kill_cmd" && { warn "kill command '$kill_cmd' is required to terminate processes."; return 1; }
 
         if "$kill_cmd" "$pid"; then
             say "Process $pid ($selected_name) has been killed."
         else
             status=$?
             warn "Failed to kill process $pid ($selected_name)."
-            exit "$status"
+            return 1 "$status"
         fi
     fi
 fi
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */kill-process) kill_process "$@" ;; esac

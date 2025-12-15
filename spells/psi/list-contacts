@@ -11,10 +11,13 @@ List contacts from vCard files in a directory, defaulting to ~/.contacts when no
 USAGE
 }
 
+
+
+list_contacts() {
 case "${1-}" in
 --help|--usage|-h)
   list_contacts_usage
-  exit 0
+  return 0
   ;;
 esac
 
@@ -37,7 +40,7 @@ find "$CONTACTS_DIR" -name '*.vcf' | while IFS= read -r file; do
       BEGIN {FPAT = "([^:]+:)?([^\\\\]*\\\\.)*[^\\\\]*"}
       /^FN:/  {name = substr($0,5); gsub(/\\\\n/,"\n",name); \
                gsub(/\\\\,/,",",name); gsub(/\\\\;/,";",name); \
-               gsub(/\\\\\\\\/,"\\",name); exit}
+               gsub(/\\\\\\\\/,"\\",name); return 1}
       /^ORG:/ {org  = substr($0,5); gsub(/\\\\n/,"\n",org); \
                gsub(/\\\\,/,",",org); gsub(/\\\\;/,";",org); \
                gsub(/\\\\\\\\/,"\\",org);}
@@ -54,3 +57,8 @@ find "$CONTACTS_DIR" -name '*.vcf' | while IFS= read -r file; do
 
   say "$name"
 done | sort
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */list-contacts) list_contacts "$@" ;; esac

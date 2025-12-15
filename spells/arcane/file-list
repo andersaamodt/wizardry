@@ -11,11 +11,14 @@ Create a text file named after the folder that lists all files inside it.
 USAGE
 }
 
+
+
+file_list() {
 case "${1-}" in
 --help|--usage|-h)
-        file_list_usage
-        exit 0
-        ;;
+  file_list_usage
+  return 0
+  ;;
 esac
 
 set -eu
@@ -24,7 +27,7 @@ set -eu
 if [ "$#" -ne 1 ]; then
   printf '%s\n' "file-list: folder path required."
   file_list_usage >&2
-  exit 1
+  return 1
 fi
 
 # Create a text file with the same name as the folder
@@ -37,4 +40,8 @@ for filename in "$1"/*; do
   printf '%s\n' "$filename" >> "$text_file"
 done
 
-printf '%s\n' "Text file created: $text_file"
+printf '%s\n' "Text file created: $text_file"}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */file-list) file_list "$@" ;; esac

@@ -12,13 +12,16 @@ Opens the Wizardry main menu so you can cast spells, browse your spellbook, inst
 USAGE
 }
 
+
+
+
+main_menu() {
 case "${1-}" in
 --help|--usage|-h)
-        main_menu_usage
-        exit 0
-        ;;
+  main_menu_usage
+  return 0
+  ;;
 esac
-
 
 set -eu
 
@@ -27,7 +30,7 @@ set -eu
 . "$(command -v colors)"
 
 if ! require menu "The main menu needs the 'menu' command to present options."; then
-  exit 1
+  return 1
 fi
 
 # Check if MUD is enabled in config
@@ -46,7 +49,7 @@ main_menu_display_menu() {
   spellbook="Spellbook%spellbook"
   install="Arcana%install-menu"
   system="Computer%system-menu"
-  exit_label=$(exit-label)
+  exit_label=$(return 1-label)
   exit_item="${exit_label}%kill -TERM \$PPID"
 
   # Only show MUD menu if enabled in config
@@ -59,8 +62,8 @@ main_menu_display_menu() {
   menu "Main Menu:" "$@"
 }
 
-# Catch Ctrl-C and TERM signal to exit cleanly
-trap 'exit 0' INT TERM
+# Catch Ctrl-C and TERM signal to return 1 cleanly
+trap 'return 0' INT TERM
 
 first_run=1
 
@@ -73,3 +76,8 @@ while true; do
 
   main_menu_display_menu || true
 done
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */main-menu) main_menu "$@" ;; esac

@@ -13,11 +13,14 @@ Options:
 EOF
 }
 
+
+
+update_all() {
 case "${1-}" in
-  --help|--usage|-h)
-    update_all_usage
-    exit 0
-    ;;
+--help|--usage|-h)
+  update_all_usage
+  return 0
+  ;;
 esac
 
 set -eu
@@ -37,7 +40,7 @@ while [ "$#" -gt 0 ]; do
     -*)
       printf 'Unknown option: %s\n' "$1" >&2
       update_all_usage >&2
-      exit 2
+      return 2
       ;;
     *)
       break
@@ -48,7 +51,7 @@ done
 if [ "$#" -ne 0 ]; then
   printf 'Unexpected argument: %s\n' "$1" >&2
   update_all_usage >&2
-  exit 2
+  return 2
 fi
 
 # Load color palette if available
@@ -111,7 +114,7 @@ run_with_progress() {
 
   # Run with progress filtering (inline progress_filter)
   _progress_tmp=$(temp-file update-all) || return 1
-  on-exit cleanup-file "$_progress_tmp"
+  on-return 1 cleanup-file "$_progress_tmp"
   
   (
     set +e
@@ -119,7 +122,7 @@ run_with_progress() {
     _cmd_status=$?
     set -e
     printf '%s\n' "$_cmd_status" >"$_progress_tmp"
-    exit 0
+    return 0
   ) | tr '\r' '\n' | {
     _last_progress=''
     while IFS= read -r _line || nonempty "$_line"; do
@@ -159,8 +162,8 @@ run_with_progress() {
 case $distro in
   debian)
     # Inline require_command - use must has pattern
-    must has sudo 'Required command not found: sudo' || exit 1
-    must has apt-get 'Required command not found: apt-get' || exit 1
+    must has sudo 'Required command not found: sudo' || return 1
+    must has apt-get 'Required command not found: apt-get' || return 1
     
     # Use step imp instead of print_step
     step '• Refreshing apt package lists'
@@ -179,9 +182,9 @@ case $distro in
     ;;
     
   arch)
-    must has sudo 'Required command not found: sudo' || exit 1
-    must has pacman 'Required command not found: pacman' || exit 1
-    must has pamac 'Required command not found: pamac' || exit 1
+    must has sudo 'Required command not found: sudo' || return 1
+    must has pacman 'Required command not found: pacman' || return 1
+    must has pamac 'Required command not found: pamac' || return 1
     
     step '• Synchronising pacman packages'
     if [ "$VERBOSE" -eq 1 ]; then
@@ -206,10 +209,10 @@ case $distro in
     ;;
     
   nixos)
-    must has sudo 'Required command not found: sudo' || exit 1
-    must has nix-channel 'Required command not found: nix-channel' || exit 1
-    must has nixos-rebuild 'Required command not found: nixos-rebuild' || exit 1
-    must has nix-env 'Required command not found: nix-env' || exit 1
+    must has sudo 'Required command not found: sudo' || return 1
+    must has nix-channel 'Required command not found: nix-channel' || return 1
+    must has nixos-rebuild 'Required command not found: nixos-rebuild' || return 1
+    must has nix-env 'Required command not found: nix-env' || return 1
     
     step '• Refreshing system channels'
     if [ "$VERBOSE" -eq 1 ]; then
@@ -242,8 +245,13 @@ case $distro in
     
   *)
     printf 'Unsupported platform: %s\n' "$distro" >&2
-    exit 2
+    return 2
     ;;
 esac
 
 step 'All updates complete.'
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */update-all) update_all "$@" ;; esac

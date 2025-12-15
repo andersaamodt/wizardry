@@ -12,19 +12,22 @@ Remove an extended attribute from a file. Provide a key to delete that one direc
 USAGE
 }
 
+
+disenchant() {
 case "${1-}" in
 --help|--usage|-h)
   disenchant_usage
-  exit 0
+  return 0
   ;;
 esac
+
 set -eu
 
 # Validate arguments
 if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
   printf '%s\n' "Error: This spell requires one or two arguments: a file path and an optional attribute name." >&2
   disenchant_usage >&2
-  exit 1
+  return 1
 fi
 
 file=$1
@@ -70,14 +73,14 @@ disenchant_attr() {
 # If specific key requested, remove it directly
 if nonempty "$requested_key"; then
   disenchant_attr "$requested_key" "$file"
-  exit $?
+  return 1 $?
 fi
 
 # Otherwise, list keys and let user choose
 keys=$(xattr-list-keys "$file" || printf '')
 if empty "$keys"; then
   printf '%s\n' "Error: No enchanted attributes found on $file." >&2
-  exit 1
+  return 1
 fi
 
 # Count keys
@@ -85,7 +88,7 @@ key_count=$(printf '%s\n' "$keys" | awk 'NF{c++} END{print c+0}')
 
 # If only one key, use it directly
 if [ "$key_count" -eq 1 ]; then
-  chosen_key=$(printf '%s\n' "$keys" | awk 'NF{print; exit}')
+  chosen_key=$(printf '%s\n' "$keys" | awk 'NF{print; return 1}')
 else
   # Multiple keys - let user select
   set -- $keys disenchant-all
@@ -93,7 +96,7 @@ else
 
   if ! has ask-number; then
     printf '%s\n' "Error: multiple attributes found; install ask-number or specify a key." >&2
-    exit 1
+    return 1
   fi
 
   printf '%s\n' "Available attributes:" >&2
@@ -103,7 +106,7 @@ else
     idx=$((idx + 1))
   done
 
-  choice=$(ask-number "Choose which attribute to disenchant" 1 "$count") || exit 1
+  choice=$(ask-number "Choose which attribute to disenchant" 1 "$count") || return 1
   eval "chosen_key=\"\${$choice}\""
 fi
 
@@ -115,9 +118,14 @@ if [ "$chosen_key" = "disenchant-all" ]; then
       failure=1
     fi
   done
-  [ "$failure" -eq 0 ] || exit 1
+  [ "$failure" -eq 0 ] || return 1
   printf '%s\n' "Disenchanted all attributes from $file."
-  exit 0
+  return 0
 fi
 
 disenchant_attr "$chosen_key" "$file"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */disenchant) disenchant "$@" ;; esac

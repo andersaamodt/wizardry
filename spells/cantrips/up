@@ -11,11 +11,14 @@ Print a cd command that climbs the given number of directory levels. Defaults to
 USAGE
 }
 
+
+
+up() {
 case "${1-}" in
 --help|--usage|-h)
-        up_usage
-        exit 0
-        ;;
+  up_usage
+  return 0
+  ;;
 esac
 
 set -eu
@@ -38,3 +41,8 @@ while [ "$i" -lt "$levels" ]; do
 done
 
 printf 'cd "%s"\n' "$path"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */up) up "$@" ;; esac

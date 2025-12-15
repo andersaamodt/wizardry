@@ -20,18 +20,21 @@ Examples:
 USAGE
 }
 
+
+compile_spell() {
 case "${1-}" in
 --help|--usage|-h)
   compile_spell_usage
-  exit 0
+  return 0
   ;;
 esac
+
 set -eu
 
 if [ "$#" -lt 1 ]; then
   printf '%s\n' "compile-spell: spell name required" >&2
   compile_spell_usage >&2
-  exit 1
+  return 1
 fi
 
 spell_name=$1
@@ -71,7 +74,7 @@ esac
 
 if [ -z "$spell_path" ] || [ ! -f "$spell_path" ]; then
   printf '%s\n' "compile-spell: spell '$spell_name' not found" >&2
-  exit 1
+  return 1
 fi
 
 # Read spell content
@@ -137,7 +140,7 @@ for dep in $dependencies; do
   func_def=$(printf '%s\n' "$dep_content" | awk -v fname="$func_name" '
     /^'$func_name'\(\)/ { in_func=1 }
     in_func { print }
-    in_func && /^}$/ { exit }
+    in_func && /^}$/ { return 1 }
   ')
   
   # If we got a function (it's an imp), inline it
@@ -316,3 +319,8 @@ fi
 
 # Output transformed spell content
 printf '%s\n' "$transformed"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */compile-spell) compile_spell "$@" ;; esac

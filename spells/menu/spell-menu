@@ -49,36 +49,28 @@ USAGE
 }
 
 # Handle action flags (called by menu via subprocess)
-case ${1-} in
-        --cast)
-                shift
-                eval "$*"
-                exit 0
-                ;;
-        --help|--usage|-h)
-                spell_menu_usage
-                exit 0
-                ;;
-        --install)
-                shift
-                cmd=$1
-                eval "$cmd" --install || true
-                exit 0
-                ;;
+
+
+spell_menu() {
+case "${1-}" in
+--help|--usage|-h)
+  spell_menu_usage
+  return 0
+  ;;
 esac
 
 set -eu
 
 if [ "$#" -lt 1 ]; then
         spell_menu_usage >&2
-        exit 1
+        return 1
 fi
 
 name=$1
 command=$name
 
 if ! require menu "The spell menu needs the 'menu' command."; then
-        exit 1
+        return 1
 fi
 
 # Get spell home directory
@@ -127,7 +119,7 @@ while :; do
                 cast_toggle="[ ] Memorize%memorize '$name'"
         fi
         
-        exit_label=$(exit-label)
+        exit_label=$(return 1-label)
         exit_item="${exit_label}%kill -TERM \$PPID"
         
         # Check if spell has --help option (inline from has_help_option)
@@ -204,3 +196,8 @@ while :; do
         
         menu --start-selection "$start_selection" "Spell: $name" "$@" || true
 done
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */spell-menu) spell_menu "$@" ;; esac

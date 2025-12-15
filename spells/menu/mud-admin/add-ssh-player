@@ -11,11 +11,14 @@ Interactively create a new player account on the MUD host by prompting for a pla
 USAGE
 }
 
+
+
+add_ssh_player() {
 case "${1-}" in
 --help|--usage|-h)
-        add_ssh_player_usage
-        exit 0
-        ;;
+  add_ssh_player_usage
+  return 0
+  ;;
 esac
 
 set -eu
@@ -30,7 +33,7 @@ read -r playername
 # Check if user already exists. Check now so they don't have to enter the SSH key over and over.
 if id "$playername" >/dev/null 2>&1; then
     printf '%s\n' "add-ssh-player: user $playername already exists."
-    exit 1
+    return 1
 fi
 
 printf '%s' "Enter SSH key: "
@@ -39,7 +42,7 @@ read -r sshkey
 # Check if key already exists in authorized_keys file
 if grep -q "$sshkey" ~/.ssh/authorized_keys 2>/dev/null; then
     printf '%s\n' "add-ssh-player: key already exists in authorized_keys file."
-    exit 1
+    return 1
 fi
 
 # Create new system user
@@ -50,3 +53,8 @@ mkdir -p "/home/$playername/.ssh"
 
 # Add key to authorized_keys file in their home directory, so they can log in as themselves
 printf '%s %s@mud\n' "$sshkey" "$playername" >> "/home/$playername/.ssh/authorized_keys"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */add-ssh-player) add_ssh_player "$@" ;; esac

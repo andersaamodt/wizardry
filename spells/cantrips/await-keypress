@@ -11,13 +11,16 @@ Listens for one key press on the controlling terminal, translating escape sequen
 USAGE
 }
 
+
+
+
+await_keypress() {
 case "${1-}" in
 --help|--usage|-h)
-        await_keypress_usage
-        exit 0
-        ;;
+  await_keypress_usage
+  return 0
+  ;;
 esac
-
 
 set -eu
 
@@ -39,7 +42,7 @@ fi
 
 # Capture raw bytes with dd; bail out immediately when it is missing.
 if ! "$require_cmd" dd "The await-keypress spell needs 'dd' to capture raw key presses."; then
-    exit 1
+    return 1
 fi
 
 TTY_DEVICE=${AWAIT_KEYPRESS_DEVICE:-/dev/tty}
@@ -50,7 +53,7 @@ if [ "${AWAIT_KEYPRESS_BUFFER_FILE+set}" = "set" ]; then
     buffer_file=$AWAIT_KEYPRESS_BUFFER_FILE
 else
     buffer_key=$(printf '%s' "$TTY_DEVICE" | tr -c '[:alnum:]' '_')
-    buffer_file=$(temp-file await-keypress-buffer-"$buffer_key") || exit 1
+    buffer_file=$(temp-file await-keypress-buffer-"$buffer_key") || return 1
 fi
 
 # Helper to restore terminal and close file descriptor
@@ -66,38 +69,38 @@ if [ "$skip_stty" -eq 1 ]; then
     # toggling terminal attributes.
     if [ ! -r "$TTY_DEVICE" ]; then
         printf '%s\n' "await-keypress: unable to read from '$TTY_DEVICE'" >&2
-        exit 1
+        return 1
     fi
 
-    exec 3<"$TTY_DEVICE" || exit 1
+    exec 3<"$TTY_DEVICE" || return 1
 else
     # When interacting with the real terminal, require stty for raw-mode
     # management and open the device read/write.
     if ! "$require_cmd" stty "The await-keypress spell needs 'stty' to manage terminal modes."; then
-        exit 1
+        return 1
     fi
 
     if [ ! -r "$TTY_DEVICE" ] || [ ! -w "$TTY_DEVICE" ]; then
         printf '%s\n' "await-keypress: unable to open controlling terminal '$TTY_DEVICE'" >&2
-        exit 1
+        return 1
     fi
 
-    exec 3<>"$TTY_DEVICE" || exit 1
+    exec 3<>"$TTY_DEVICE" || return 1
 
     # Persist the existing terminal configuration so we can restore it later.
     saved_state=$(stty -g <&3 2>/dev/null)
     if [ -z "$saved_state" ]; then
         printf '%s\n' 'await-keypress: unable to read terminal settings' >&2
-        exit 1
+        return 1
     fi
 
-    trap 'restore_terminal; exit 130' INT HUP TERM
+    trap 'restore_terminal; return 130' INT HUP TERM
     trap 'restore_terminal' EXIT
 
     # Configure canonical mode to wait for exactly one byte of input.
     if ! stty -icanon -echo min 1 time 0 <&3 2>/dev/null; then
         printf '%s\n' 'await-keypress: unable to configure terminal' >&2
-        exit 1
+        return 1
     fi
 fi
 
@@ -119,7 +122,7 @@ else
     first_codes=${first_codes# }
     first_codes=${first_codes% }
     if [ -z "$first_codes" ]; then
-        exit 1
+        return 1
     fi
     codes=$first_codes
 fi
@@ -128,7 +131,7 @@ fi
 if [ "$skip_stty" -eq 0 ] && [ "$had_buffer" -eq 0 ]; then
     if ! stty -icanon -echo min 0 time 1 <&3 2>/dev/null; then
         printf '%s\n' 'await-keypress: unable to update terminal timing' >&2
-        exit 1
+        return 1
     fi
 fi
 
@@ -158,13 +161,13 @@ codes=${codes# }
 codes=${codes% }
 if [ -z "$codes" ]; then
     printf '\n'
-    exit 0
+    return 0
 fi
 
 set -- $codes
 if [ "$#" -eq 0 ]; then
     printf '\n'
-    exit 0
+    return 0
 fi
 
 first=$1
@@ -286,3 +289,8 @@ if [ -n "$buffer_file" ]; then
 fi
 
 printf '%s\n' "$output"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */await-keypress) await_keypress "$@" ;; esac

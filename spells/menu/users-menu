@@ -13,11 +13,14 @@ Display an interactive menu for user and group management, covering password cha
 USAGE
 }
 
+
+
+users_menu() {
 case "${1-}" in
 --help|--usage|-h)
-        users_menu_usage
-        exit 0
-        ;;
+  users_menu_usage
+  return 0
+  ;;
 esac
 
 set -eu
@@ -27,11 +30,11 @@ set -eu
 . "$(command -v colors)"
 
 if ! require menu "The Users menu needs the 'menu' command to present options."; then
-  exit 1
+  return 1
 fi
 
-# Catch Ctrl-C and TERM signal to exit cleanly
-trap 'exit 0' INT TERM
+# Catch Ctrl-C and TERM signal to return 1 cleanly
+trap 'return 0' INT TERM
 
 users_menu_display_menu() {
   change_my_password="Change my password%passwd"
@@ -49,7 +52,7 @@ users_menu_display_menu() {
   remove_user_from_group="Remove other user from group%read -p \"Enter username: \" username; read -p \"Enter group to remove them from: \" group; sudo gpasswd -d \$username \$group"
   create_user="Create new user%read -p \"Enter new username: \" username; sudo useradd \$username; printf \"The new user needs a password (use 'Change other user's password').\""
   delete_user="Delete user%read -p \"Enter username of user to delete: \" username; sudo userdel \$username"
-  exit_label=$(exit-label)
+  exit_label=$(return 1-label)
   exit_item="${exit_label}%kill -TERM \$PPID"
 
   set -- "$change_my_password" "$list_users" "$change_other_password" "$view_my_groups" "$view_other_groups" "$list_groups" "$create_group" "$delete_group" "$join_group" "$leave_group" "$list_users_in_group" "$add_user_to_group" "$remove_user_from_group" "$create_user" "$delete_user" "$exit_item"
@@ -67,3 +70,8 @@ while true; do
 
   users_menu_display_menu || true
 done
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */users-menu) users_menu "$@" ;; esac

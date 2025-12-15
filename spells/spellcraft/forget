@@ -18,11 +18,14 @@ Remove a spell from the Cast menu.
 USAGE
 }
 
+
+
+forget() {
 case "${1-}" in
 --help|--usage|-h)
-        forget_usage
-        exit 0
-        ;;
+  forget_usage
+  return 0
+  ;;
 esac
 
 set -eu
@@ -61,17 +64,17 @@ fi
 case ${1-} in
 --help|--usage|-h)
   forget_usage
-  exit 0
+  return 0
   ;;
 "")
   printf '%s\n' "$spell_name: spell name required." >&2
   forget_usage >&2
-  exit 1
+  return 1
   ;;
 -*)
   printf '%s\n' "$spell_name: unknown option '$1'" >&2
   forget_usage >&2
-  exit 1
+  return 1
   ;;
 esac
 
@@ -81,22 +84,22 @@ name=$1
 case $name in
 ''|*[!A-Za-z0-9._-]*)
   printf '%s\n' "$spell_name: names may contain only letters, digits, dots, underscores, and dashes." >&2
-  exit 1
+  return 1
   ;;
 -*)
   printf '%s\n' "$spell_name: names may not begin with a dash." >&2
-  exit 1
+  return 1
   ;;
 esac
 
 # Check if command file exists
 if [ ! -f "$command_file" ]; then
   printf '%s\n' "$spell_name: spell '$name' is not memorized." >&2
-  exit 1
+  return 1
 fi
 
 # Remove spell from command file
-tmp=$(temp-file forget) || exit 1
+tmp=$(temp-file forget) || return 1
 trap 'cleanup-file "$tmp"' EXIT HUP INT TERM
 removed=0
 while IFS= read -r line || nonempty "$line"; do
@@ -120,8 +123,13 @@ if [ "$removed" -eq 0 ]; then
   trap - EXIT HUP INT TERM
   rm -f "$tmp"
   printf '%s\n' "$spell_name: spell '$name' is not memorized." >&2
-  exit 1
+  return 1
 fi
 
 trap - EXIT HUP INT TERM
 mv "$tmp" "$command_file"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */forget) forget "$@" ;; esac

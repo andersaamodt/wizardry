@@ -13,11 +13,14 @@ Display a location's title and description attributes with read-magic, offering 
 USAGE
 }
 
+
+
+look() {
 case "${1-}" in
 --help|--usage|-h)
-        look_usage
-        exit 0
-        ;;
+  look_usage
+  return 0
+  ;;
 esac
 
 set -eu
@@ -73,7 +76,7 @@ if [ -z "$READ_MAGIC" ]; then
                 READ_MAGIC=$(command -v read-magic)
         else
                 printf '%s\n' "look: read-magic spell is missing." >&2
-                exit 1
+                return 1
         fi
 fi
 
@@ -196,3 +199,8 @@ fi
 # Display MUD-formatted room description
 printf '%s%s%s\n' "$MUD_TITLE" "$room_title" "$RESET"
 printf '%s%s%s\n' "$MUD_DESCRIPTION" "$room_description" "$RESET"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */look) look "$@" ;; esac

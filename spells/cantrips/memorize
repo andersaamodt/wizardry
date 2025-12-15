@@ -24,11 +24,14 @@ Spells must exist in PATH or \$SPELLBOOK_DIR.
 USAGE
 }
 
+
+
+memorize() {
 case "${1-}" in
 --help|--usage|-h)
-        memorize_usage
-        exit 0
-        ;;
+  memorize_usage
+  return 0
+  ;;
 esac
 
 set -eu
@@ -69,7 +72,7 @@ fi
 
 if [ "$#" -eq 0 ]; then
   memorize_usage
-  exit 1
+  return 1
 fi
 
 action=$1
@@ -78,7 +81,7 @@ case $action in
 list)
   if [ "$#" -ne 1 ]; then
     memorize_usage
-    exit 1
+    return 1
   fi
   if [ -f "$command_file" ]; then
     cat "$command_file"
@@ -87,14 +90,14 @@ list)
 path)
   if [ "$#" -ne 1 ]; then
     memorize_usage
-    exit 1
+    return 1
   fi
   printf '%s\n' "$command_file"
   ;;
 dir)
   if [ "$#" -ne 1 ]; then
     memorize_usage
-    exit 1
+    return 1
   fi
   printf '%s\n' "$cast_dir"
   ;;
@@ -104,14 +107,14 @@ dir)
 -*)
   printf '%s\n' "$spell_name: unknown option '$action'" >&2
   memorize_usage
-  exit 1
+  return 1
   ;;
 *)
   # Default action: memorize the spell
   if [ "$#" -ne 1 ]; then
     printf '%s\n' "$spell_name: expects exactly one spell name." >&2
     memorize_usage
-    exit 1
+    return 1
   fi
   
   name=$action
@@ -120,11 +123,11 @@ dir)
   case $name in
   ''|*[!A-Za-z0-9._-]*)
     printf '%s\n' "$spell_name: names may contain only letters, digits, dots, underscores, and dashes." >&2
-    exit 1
+    return 1
     ;;
   -*)
     printf '%s\n' "$spell_name: names may not begin with a dash." >&2
-    exit 1
+    return 1
     ;;
   esac
   
@@ -139,7 +142,7 @@ dir)
   
   # Add spell to memorized list (removing any existing entry first)
   cmd=$name
-  tmp=$(temp-file memorize) || exit 1
+  tmp=$(temp-file memorize) || return 1
   trap 'cleanup-file "$tmp"' EXIT HUP INT TERM
   
   if [ -f "$command_file" ]; then
@@ -166,3 +169,8 @@ dir)
   rm -f "$tmp"
   ;;
 esac
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */memorize) memorize "$@" ;; esac

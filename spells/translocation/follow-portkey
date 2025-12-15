@@ -13,11 +13,14 @@ Read the destination from a portkey-enchanted file and print the cd command need
 USAGE
 }
 
+
+
+follow_portkey() {
 case "${1-}" in
 --help|--usage|-h)
-        follow_portkey_usage
-        exit 0
-        ;;
+  follow_portkey_usage
+  return 0
+  ;;
 esac
 
 set -eu
@@ -26,7 +29,7 @@ set -eu
 if [ -z "${1-}" ]; then
         printf '%s\n' "follow-portkey: file path required." >&2
         follow_portkey_usage >&2
-        exit 1
+        return 1
 fi
 
 file=$1
@@ -54,3 +57,8 @@ fi
 # Output the cd command for eval
 printf 'cd "%s"\n' "$context"
 say "Following portkey to $context."
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */follow-portkey) follow_portkey "$@" ;; esac

@@ -11,11 +11,14 @@ Print all fields from a vCard file or a specific field when you name one. Escape
 USAGE
 }
 
+
+
+read_contact() {
 case "${1-}" in
 --help|--usage|-h)
-        read_contact_usage
-        exit 0
-        ;;
+  read_contact_usage
+  return 0
+  ;;
 esac
 
 set -eu
@@ -31,7 +34,7 @@ card_lines() {
     awk -F':' '
         { sub(/\r$/, "") }
         /^BEGIN:VCARD$/ { in_card=1; next }
-        /^END:VCARD$/ { if (in_card) exit }
+        /^END:VCARD$/ { if (in_card) return 1 }
         in_card && index($0, ":") { if ($1 != "VERSION") print }
     ' "$1"
 }
@@ -68,7 +71,7 @@ nicer_name() {
 
 if [ $# -lt 1 ]; then
     read_contact_usage >&2
-    exit 1
+    return 1
 fi
 
 vcard_path="$1"
@@ -76,7 +79,7 @@ vcard_path="$1"
 # Validate vCard file
 if [ ! -f "$vcard_path" ]; then
     printf '%s\n' "read-contact: vCard file not found: $vcard_path" >&2
-    exit 1
+    return 1
 fi
 
 begins=$(tr -d '\r' <"$vcard_path" | grep -Ec '^BEGIN:VCARD$' || true)
@@ -84,17 +87,17 @@ ends=$(tr -d '\r' <"$vcard_path" | grep -Ec '^END:VCARD$' || true)
 
 if [ "$begins" -eq 0 ] && [ "$ends" -eq 0 ]; then
     printf '%s\n' "read-contact: No vCard entries found in $vcard_path" >&2
-    exit 1
+    return 1
 fi
 
 if [ "$begins" -ne "$ends" ]; then
     printf '%s\n' "read-contact: Unbalanced vCard entries in $vcard_path" >&2
-    exit 1
+    return 1
 fi
 
 if [ "$begins" -gt 1 ]; then
     printf '%s\n' "read-contact: Multiple vCard entries are not supported" >&2
-    exit 1
+    return 1
 fi
 
 # Process vCard - either print specific field or all fields
@@ -103,10 +106,10 @@ if [ $# -eq 2 ]; then
     requested_field=$2
     card_lines_output=$(card_lines "$vcard_path")
     card_line=$(printf '%s\n' "$card_lines_output" | \
-      awk -F':' -v field="$requested_field" '$1 ~ field { print; exit }')
+      awk -F':' -v field="$requested_field" '$1 ~ field { print; return 1 }')
     if [ -z "${card_line:-}" ]; then
         printf '%s\n' "read-contact: $requested_field not found" >&2
-        exit 1
+        return 1
     fi
 
     field_name=$(printf '%s' "$card_line" | awk -F':' '{print $1}')
@@ -124,3 +127,8 @@ else
         fi
     done
 fi
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */read-contact) read_contact "$@" ;; esac

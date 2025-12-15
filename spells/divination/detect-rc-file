@@ -47,6 +47,15 @@ while [ "$#" -gt 0 ]; do
                 break
                 ;;
         esac
+
+detect_rc_file() {
+case "${1-}" in
+--help|--usage|-h)
+  detect_rc_file_usage
+  return 0
+  ;;
+esac
+
 set -eu
 
 done
@@ -54,7 +63,7 @@ done
 if [ "$#" -gt 0 ]; then
         printf '%s\n' "detect-rc-file: unexpected argument '$1'." >&2
         detect_rc_file_usage
-        exit 1
+        return 1
 fi
 
 add_candidate() {
@@ -183,7 +192,7 @@ fi
 
 if [ -z "$rc_file" ]; then
         printf '%s\n' "detect-rc-file: unable to determine a startup file." >&2
-        exit 1
+        return 1
 fi
 
 case $rc_file in
@@ -198,3 +207,8 @@ case $rc_file in
 printf 'platform=%s\n' "$platform"
 printf 'rc_file=%s\n' "$rc_file"
 printf 'format=%s\n' "$format"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */detect-rc-file) detect_rc_file "$@" ;; esac

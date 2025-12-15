@@ -12,12 +12,15 @@ Harden the SSH server configuration with security best practices. Backs up the o
 USAGE
 }
 
+
+ssh_barrier() {
 case "${1-}" in
 --help|--usage|-h)
-        ssh_barrier_usage
-        exit 0
-        ;;
+  ssh_barrier_usage
+  return 0
+  ;;
 esac
+
 set -eu
 
 # Source colors for colored output
@@ -28,7 +31,7 @@ sshd_config="${SSHD_CONFIG:-/etc/ssh/sshd_config}"
 # Confirm before proceeding
 if ! ask-yn "Do you wish to cast the SSH Standard Barrier spell?" no; then
   say "Spell cancelled."
-  exit 0
+  return 0
 fi
 
 # Make a backup of the original SSH configuration file
@@ -60,3 +63,8 @@ printf '%s\n' "ClientAliveInterval 300" >> "$sshd_config"
 printf '%s\n' "ClientAliveCountMax 0" >> "$sshd_config"
 
 say "SSH barrier spell cast successfully. Restart sshd to apply changes."
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */ssh-barrier) ssh_barrier "$@" ;; esac

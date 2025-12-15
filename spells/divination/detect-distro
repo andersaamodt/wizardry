@@ -11,11 +11,14 @@ Detect the host operating system and print a concise identifier such as "debian"
 USAGE
 }
 
+
+
+detect_distro() {
 case "${1-}" in
 --help|--usage|-h)
-	detect_distro_usage
-	exit 0
-	;;
+  detect_distro_usage
+  return 0
+  ;;
 esac
 
 set -eu
@@ -30,11 +33,11 @@ do
 		;;
 	h)
 		detect_distro_usage
-		exit 0
+		return 0
 		;;
 	*)
 		detect_distro_usage >&2
-		exit 1
+		return 1
 		;;
 	esac
 done
@@ -42,7 +45,7 @@ shift $((OPTIND - 1))
 
 if [ "$#" -ne 0 ]; then
 	detect_distro_usage >&2
-	exit 1
+	return 1
 fi
 
 root_prefix=${DETECT_DISTRO_ROOT:-}
@@ -97,7 +100,7 @@ if [ -n "${distro-}" ]; then
 	export DISTRO
 else
 	printf '%s\n' 'unknown'
-	exit 1
+	return 1
 fi
 
 if [ "$verbose" -eq 1 ]; then
@@ -121,3 +124,8 @@ if [ "$verbose" -eq 1 ]; then
 else
 	printf '%s\n' "$DISTRO"
 fi
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */detect-distro) detect_distro "$@" ;; esac

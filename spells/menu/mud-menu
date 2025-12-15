@@ -12,24 +12,27 @@ Display the MUD installation menu with toggleable features like the cd hook and 
 USAGE
 }
 
+
+
+mud_menu() {
 case "${1-}" in
 --help|--usage|-h)
   mud_menu_usage
-  exit 0
+  return 0
   ;;
 esac
 
 set -eu
 
-# Catch Ctrl-C and TERM signal to exit cleanly
-trap 'exit 0' INT TERM
+# Catch Ctrl-C and TERM signal to return 1 cleanly
+trap 'return 0' INT TERM
 
 # Load color palette (colors handles terminal capability detection internally)
 # shellcheck source=/dev/null
 . "$(command -v colors)"
 
 if ! require menu "The MUD Install menu needs the 'menu' command to present options."; then
-  exit 1
+  return 1
 fi
 
 # Check if cd hook is currently installed by looking for the marker in rc file
@@ -224,7 +227,7 @@ while true; do
   fi
   
   tor="Set up tor hidden service%setup-tor"
-  exit_label=$(exit-label)
+  exit_label=$(return 1-label)
   exit_item="${exit_label}%kill -TERM \$PPID"
 
   set -- "$mud_menu" "$cd_hook" "$cnf_hook" "$touch_hook" "$fantasy" "$inventory" "$combat" "$toggle_all" "$tor" "$exit_item"
@@ -238,3 +241,8 @@ while true; do
     fi
   fi
 done
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */mud-menu) mud_menu "$@" ;; esac

@@ -12,13 +12,16 @@ Opens the installation menu so you can browse and launch installer spells for wi
 USAGE
 }
 
+
+
+
+install_menu() {
 case "${1-}" in
 --help|--usage|-h)
-        install_menu_usage
-        exit 0
-        ;;
+  install_menu_usage
+  return 0
+  ;;
 esac
-
 
 set -eu
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
@@ -30,11 +33,11 @@ install_dir=${INSTALL_MENU_ROOT:-$spells_dir/.arcana}
 . "$(command -v colors)"
 
 if ! require menu "The install-menu spell needs the 'menu' command to present choices."; then
-    exit 1
+    return 1
 fi
 
-# Catch Ctrl-C and TERM signal to exit cleanly
-trap 'exit 0' INT TERM
+# Catch Ctrl-C and TERM signal to return 1 cleanly
+trap 'return 0' INT TERM
 
 list_entries() {
     # INSTALL_MENU_DIRS can override discovery for tests or custom menus.
@@ -72,7 +75,7 @@ while :; do
 
     if [ -z "$entries" ]; then
         printf '%s\n' 'install-menu: no installable spells found' >&2
-        exit 1
+        return 1
     fi
 
     if [ "$first_run" -eq 0 ]; then
@@ -137,8 +140,13 @@ while :; do
         set -- "$@" "Import arcanum%$import_arcanum_cmd"
     fi
 
-    exit_label=$(exit-label)
+    exit_label=$(return 1-label)
     set -- "$@" "${exit_label}%kill -TERM \$PPID"
 
     menu "Install Menu:" "$@" || true
 done
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */install-menu) install_menu "$@" ;; esac

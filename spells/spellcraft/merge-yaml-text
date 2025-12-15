@@ -11,11 +11,14 @@ Merge .yaml metadata and .txt content that share a basename into a single combin
 USAGE
 }
 
+
+
+merge_yaml_text() {
 case "${1-}" in
 --help|--usage|-h)
-        merge_yaml_text_usage
-        exit 0
-        ;;
+  merge_yaml_text_usage
+  return 0
+  ;;
 esac
 
 set -eu
@@ -112,3 +115,8 @@ for yaml in "${dir}"*.yaml; do
     fi
   fi
 done
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */merge-yaml-text) merge_yaml_text "$@" ;; esac

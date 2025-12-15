@@ -13,11 +13,14 @@ Mount a remote directory using sshfs over Tor for anonymous access. The local mo
 USAGE
 }
 
+
+
+open_portal() {
 case "${1-}" in
 --help|--usage|-h)
-        open_portal_usage
-        exit 0
-        ;;
+  open_portal_usage
+  return 0
+  ;;
 esac
 
 set -eu
@@ -73,3 +76,8 @@ make dir "$local_mount" || die "open-portal: cannot create mount point: $local_m
 torify sshfs -o "IdentityFile=$player_key" "$tor_address:$remote_dir" "$local_mount"
 
 say "Portal opened: $tor_address:$remote_dir mounted at $local_mount"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */open-portal) open_portal "$@" ;; esac

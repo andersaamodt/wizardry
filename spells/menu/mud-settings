@@ -12,24 +12,27 @@ Opens the MUD Settings menu so you can create or select a player and manage the 
 USAGE
 }
 
+
+
+mud_settings() {
 case "${1-}" in
 --help|--usage|-h)
-        mud_settings_usage
-        exit 0
-        ;;
+  mud_settings_usage
+  return 0
+  ;;
 esac
 
 set -eu
 
-# Catch Ctrl-C and TERM signal to exit cleanly
-trap 'exit 0' INT TERM
+# Catch Ctrl-C and TERM signal to return 1 cleanly
+trap 'return 0' INT TERM
 
 # Load color palette (colors handles terminal capability detection internally)
 # shellcheck source=/dev/null
 . "$(command -v colors)"
 
 if ! require menu "The MUD Settings menu needs the 'menu' command to present options."; then
-  exit 1
+  return 1
 fi
 
 # Check if player key exists
@@ -57,7 +60,7 @@ mud_settings_display_menu() {
   
   change="Change Player%select-player"
   new="New Player%new-player"
-  exit_label=$(exit-label)
+  exit_label=$(return 1-label)
   exit_item="${exit_label}%kill -TERM \$PPID"
 
   set -- "$player_key_item" "$change" "$new" "$exit_item"
@@ -84,3 +87,8 @@ while true; do
     fi
   fi
 done
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */mud-settings) mud_settings "$@" ;; esac

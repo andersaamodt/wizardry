@@ -14,11 +14,14 @@ Scan the current directory for files with extended attributes using the read-mag
 USAGE
 }
 
+
+
+detect_magic() {
 case "${1-}" in
 --help|--usage|-h)
-        detect_magic_usage
-        exit 0
-        ;;
+  detect_magic_usage
+  return 0
+  ;;
 esac
 
 set -eu
@@ -36,7 +39,7 @@ if [ -z "$READ_MAGIC" ]; then
                 READ_MAGIC=$(command -v read-magic)
         else
                 printf '%s\n' "detect-magic: read-magic spell is missing." >&2
-                exit 1
+                return 1
         fi
 fi
 
@@ -91,7 +94,7 @@ for entry in *; do
                 $0 == "No enchanted attributes found." {next}
                 index($0, ":") == 0 {bad=1; next}
                 {print}
-                END { if (bad) exit 97 }
+                END { if (bad) return 97 }
         ')
         filter_status=$?
         set -e
@@ -163,3 +166,8 @@ else
 fi
 
 printf '%s' "$reset"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */detect-magic) detect_magic "$@" ;; esac

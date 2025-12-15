@@ -13,27 +13,30 @@ Parse a YAML front matter header, write each key/value into the file's extended 
 USAGE
 }
 
+
+yaml_to_enchantment() {
 case "${1-}" in
 --help|--usage|-h)
-        yaml_to_enchantment_usage
-        exit 0
-        ;;
+  yaml_to_enchantment_usage
+  return 0
+  ;;
 esac
+
 set -eu
 
 if [ "$#" -ne 1 ]; then
     warn "Error: incorrect number of arguments"
     yaml_to_enchantment_usage >&2
-    exit 1
+    return 1
 fi
 
 scroll=$1
-is file "$scroll" || { warn "Error: file does not exist"; exit 1; }
+is file "$scroll" || { warn "Error: file does not exist"; return 1; }
 
 header_count=$(awk '/^---$/{c++} END{print c}' "$scroll")
 if [ "$header_count" -lt 2 ]; then
     warn "Error: file does not have a YAML header"
-    exit 1
+    return 1
 fi
 
 yaml_header=$(awk '
@@ -41,7 +44,7 @@ yaml_header=$(awk '
     delim==1 {print}
 ' "$scroll")
 
-empty "$yaml_header" && { warn "Error: file does not have a YAML header"; exit 1; }
+empty "$yaml_header" && { warn "Error: file does not have a YAML header"; return 1; }
 
 resolve_helper() {
     helper=$1
@@ -64,7 +67,7 @@ has_xattr=$(resolve_helper xattr >/dev/null 2>&1 && echo "yes" || echo "no")
 
 if [ "$has_attr" = "no" ] && [ "$has_setfattr" = "no" ] && [ "$has_xattr" = "no" ]; then
     warn "Error: requires attr, setfattr, or xattr to restore enchantments"
-    exit 1
+    return 1
 fi
 
 printf '%s' "$yaml_header" |
@@ -94,14 +97,19 @@ printf '%s' "$yaml_header" |
         
         if [ "$success" -eq 0 ]; then
             warn "Error: failed to set attribute $key"
-            exit 1
+            return 1
         fi
-    done || exit 1
+    done || return 1
 
-body_tmp=$(temp-file wizardry-body) || exit 1
+body_tmp=$(temp-file wizardry-body) || return 1
 awk '
     /^---$/ {delim++; next}
     delim<2 {next}
     {print}
 ' "$scroll" >"$body_tmp"
 mv "$body_tmp" "$scroll"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */yaml-to-enchantment) yaml_to_enchantment "$@" ;; esac

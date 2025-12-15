@@ -13,30 +13,33 @@ Extract all extended attributes from a file, write them into a YAML front matter
 USAGE
 }
 
+
+enchantment_to_yaml() {
 case "${1-}" in
 --help|--usage|-h)
-        enchantment_to_yaml_usage
-        exit 0
-        ;;
+  enchantment_to_yaml_usage
+  return 0
+  ;;
 esac
+
 set -eu
 
 # Validate arguments
 if [ "$#" -ne 1 ]; then
     warn "Error: incorrect number of arguments"
     enchantment_to_yaml_usage >&2
-    exit 1
+    return 1
 fi
 
 file=$1
-is file "$file" || { warn "Error: file does not exist"; exit 1; }
+is file "$file" || { warn "Error: file does not exist"; return 1; }
 
 # Get all extended attribute keys
 keys=$(xattr-list-keys "$file" || true)
-empty "$keys" && { warn "Error: file does not have extended attributes"; exit 1; }
+empty "$keys" && { warn "Error: file does not have extended attributes"; return 1; }
 
 # Create YAML front matter with attributes
-tmp=$(temp-file wizardry-yaml) || exit 1
+tmp=$(temp-file wizardry-yaml) || return 1
 {
     printf '%s\n' '---'
     for key in $keys; do
@@ -47,13 +50,13 @@ tmp=$(temp-file wizardry-yaml) || exit 1
     printf '%s\n' '---'
     printf '\n'
 } >"$tmp"
-cat "$file" >>"$tmp" || exit 1
+cat "$file" >>"$tmp" || return 1
 mv "$tmp" "$file"
 
 # Clear attributes from file - check if we have tools available
 if ! (xattr-helper-usable xattr || xattr-helper-usable attr || xattr-helper-usable setfattr); then
     warn "Error: requires one of attr, xattr, or setfattr to clear attributes"
-    exit 1
+    return 1
 fi
 
 # Clear all attributes using available tools
@@ -73,3 +76,8 @@ for key in $keys; do
         xattr -d "$key" "$file" 2>/dev/null || true
     fi
 done
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */enchantment-to-yaml) enchantment_to_yaml "$@" ;; esac
