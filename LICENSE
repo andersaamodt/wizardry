@@ -1,4 +1,4 @@
- ,___,   OPEN WIZARDRY LICENSE 1.1
+ ,___,   OPEN WIZARDRY LICENSE 1.2
  (O,O)
  /)  )   Permission: You may use, copy,
 ="=="=   modify, and share this project for
@@ -17,15 +17,19 @@ by commercial entities is allowed.
 Reciprocity: If you make modified versions
 publicly available—either by distributing copies
 or by operating a public-facing service that
-meaningfully depends on those modified files—you
+uses or includes those modified files—you
 must publish those modified files under this
 license. No other files must be published.
 
 No Enclosure: Modified files you share must
 remain exclusively under this license, without
 additional restrictions. This license must
-accompany any public distribution of modified
-files.
+accompany any public distribution of this
+project or its files.
+
+Violation: Any violation of this license
+voids the permissions granted herein until
+compliance is restored.
 
 Warranty: Provided without warranty or guarantee
 of any kind.
