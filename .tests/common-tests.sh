@@ -925,6 +925,11 @@ test_spells_have_true_name_functions() {
 # This is a behavioral check - warnings at 2-3 flags, fails at 4+ flags
 
 test_spells_have_limited_flags() {
+  # Skip for compiled/doppelganger spells - inlined imps may add flags
+  if [ "${WIZARDRY_TEST_COMPILED:-0}" = "1" ]; then
+    return 0
+  fi
+  
   tmpfile_2=$(mktemp "${WIZARDRY_TMPDIR}/flag-warn-2.XXXXXX")
   tmpfile_3=$(mktemp "${WIZARDRY_TMPDIR}/flag-warn-3.XXXXXX")
   tmpfile_4plus=$(mktemp "${WIZARDRY_TMPDIR}/flag-viol-4plus.XXXXXX")
@@ -1029,6 +1034,11 @@ test_spells_have_limited_flags() {
 # This is a behavioral check - warnings at 2-3 args, fails at 4+ args
 
 test_spells_have_limited_positional_args() {
+  # Skip for compiled/doppelganger spells - inlined imps may change usage patterns
+  if [ "${WIZARDRY_TEST_COMPILED:-0}" = "1" ]; then
+    return 0
+  fi
+  
   tmpfile_2=$(mktemp "${WIZARDRY_TMPDIR}/posarg-warn-2.XXXXXX")
   tmpfile_3=$(mktemp "${WIZARDRY_TMPDIR}/posarg-warn-3.XXXXXX")
   tmpfile_4plus=$(mktemp "${WIZARDRY_TMPDIR}/posarg-viol-4plus.XXXXXX")
