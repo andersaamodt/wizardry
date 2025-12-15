@@ -118,31 +118,7 @@ An **imp** is a microscript that:
 * Is cross-platform, abstracting OS differences behind a clean interface
 * Makes spells read almost like English while remaining POSIX-compliant
 
-#### Bound vs Unbound Imps
-
-Imps follow an **invocation/evocation** model:
-
-* **Bound imps** are *invoked* (sourced) at startup. Their true-name function exists in the current shell and can be called without subprocess overhead. Most imps are bound.
-* **Unbound imps** are *evoked* (executed) in a subshell. These are used when the imp requires isolation (e.g., it sets shell options that shouldn't persist).
-
-At startup, a recursive sourcer invokes all bound imps and generates aliases mapping their public hyphenated names to their true names. The `word-of-binding` dispatcher handles autoloading for any missing commands.
-
 Push as much logic as possible into imps for maximum semanticization.
-
-#### Logging and Output
-
-Wizardry provides a standardized logging framework through the `out/` family of imps:
-
-* **Core output**: `say`, `warn`, `die`, `fail`, `success`
-* **Semantic output**: `info`, `step`, `debug` (respect `WIZARDRY_LOG_LEVEL`)
-* **Signal handling**: `on-exit`, `clear-traps`
-
-Control verbosity with the `WIZARDRY_LOG_LEVEL` environment variable:
-* `0` (default): Critical messages only
-* `1`: Include info and step messages
-* `2` or higher: Include debug messages
-
-For complete documentation, see `.github/instructions/logging.instructions.md`.
 
 ## Arcana
 
@@ -174,10 +150,10 @@ Using the free software suite makes it easy to establish a standardized software
 | **demon family** | A subfolder within `spells/.imps/` that groups related imps by function. Each folder represents a family of imps that share a common purpose (e.g., `str/` for string operations, `fs/` for filesystem operations). |
 | **divination** | Spells that detect or discover information. |
 | **enchant** / **enchantment** | Spells that add or manipulate extended attributes (metadata) on files. |
-| `evoke` | Execute a script in a subshell. The opposite of *invoke*. Evoked scripts run in isolation and cannot modify the caller's environment. |
+| **evoke** | To *mention* a spell name, presencing its meaning without execution. |
 | `forget` | Remove a spell from your memorized (`cast`) list. |
 | **imp** | The smallest building block of magic—a microscript that does exactly one thing. Imps dwell in `spells/.imps/`. |
-| `invoke` | Source a script into the current shell. The opposite of *evoke*. Invoked scripts share the caller's environment. |
+| `invoke` | Source a script into the current shell. |
 | `learn` | Add a spell to your shell environment, making it permanently available. Some spells must be learned before use. |
 | `memorize` | Add a spell to your `cast` menu for quick access. |
 | **portal** | A persistent connection between two computers via SSH, created with `open-portal`, for MUD travel. |
@@ -189,9 +165,9 @@ Using the free software suite makes it easy to establish a standardized software
 | **spellcraft** | The writing of shell scripts. |
 | **tome** | A text file containing the contents of several other text files concatenated together, so a whole folder of spells can be sent or carried easily. |
 | **true name** | The internal underscore function-name defined by a bound imp (e.g., `_contains` for the `contains` imp). |
-| **unbound imp** | An *evoked* imp; executed in a subshell rather than sourced into the current shell. |
+| **unbound imp** | A *cast* imp; executed in a subshell rather than sourced into the current shell. |
 | **ward** | A protective spell for security or access control. |
-| **word-of-binding** | The dispatcher script invoked when a hyphenated command is missing; resolves the public name, sources the module if needed, and calls the true name. If the module has a true-name function, it is bound (sourced); otherwise, it is evoked (executed). |
+| **word-of-binding** | When a command is missing; resolves the public name, sources the module if needed, and calls the true name. If the module has a true-name function, it is bound (sourced); otherwise, it is evoked (executed). |
 
 # **Ethos and Standards**
 
