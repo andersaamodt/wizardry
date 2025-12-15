@@ -6,8 +6,8 @@ Documents all deviations from project standards with justification.
 
 - **Style**: 330/330 files compliant (2 hardcoded exemptions for doppelganger)
 - **Code Structure**: Conditional imps exempt from `set -eu`; imps exempt from `--help`
-- **Function Discipline**: ✅ 0 spells with 4+ extra functions (52/52 spells refactored)
-  - 2 spells with 3 extra functions remain (read-contact, menu) - functions used 3-8x each, acceptable per guidelines
+- **Function Discipline**: ✅ 0 spells with 4+ extra functions (57/57 spells refactored)
+  - 7 spells with 2-3 extra functions remain (documented below) - functions used 2-20x each, acceptable per guidelines
 - **Testing**: Bootstrap scripts can't use wizardry infrastructure
 - **Non-Shell Files**: Systemd service files exempt from all shell checks (2 files)
 - **CI**: No exemptions - all checks required
@@ -285,12 +285,24 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 - `arcane/jump-trash` (4→2) - **Inlined helpers** (get_trash_path, cli wrapper); kept jump_trash for sourcing
 - `divination/detect-distro` (4→1) - **Inlined all helpers** (os_release_id, detect_uname, file_exists)
 - `system/verify-posix` (4→2) - **Inlined collection functions**; kept record_failure (used 8x)
+- `cantrips/ask-yn` (3→1) - **Inlined input logic** (select_input, prompt_and_read)
+- `cantrips/require-command` (3→1) - **Inlined helpers** (find_install_spell, attempt_install)
+- `cantrips/fathom-terminal` (3→2) - **Inlined single-use wrapper**; kept print_dimension (used 5x)
+- `cantrips/remove-service` (3→2) - **Inlined find_ask_text**; kept require_privilege (used 4x)
+- `enchant/yaml-to-enchantment` (3→2) - **Inlined set_attr**; kept resolve_helper (used 7x)
 
-**Progress**: 52/52 spells refactored (100%) - 3 spells removed as obsolete
+**Progress**: 57/57 spells refactored (100%) - 3 spells removed as obsolete
 
-**Remaining acceptable cases** (2 spells with 3 extra functions):
-- `psi/read-contact` (4 functions): handle_escapes, card_lines, nicer_name all used 3x
-- `cantrips/menu` (4 functions): cleanup (8x), render_row (4x), position_cursor_below_menu (3x)
+**Remaining acceptable cases** (7 spells with 2-3 extra functions):
+
+**Spells with 3 extra functions (4 total):**
+- `psi/read-contact` (4 functions): handle_escapes (3x), card_lines (3x), nicer_name (3x) - vCard parsing logic, substantive helpers
+- `cantrips/menu` (4 functions): cleanup (8x), render_row (4x), position_cursor_below_menu (3x) - core menu rendering
+
+**Spells with 2 extra functions (3 total):**
+- `cantrips/await-keypress` (3 functions): restore_terminal (4x), codes_to_string (5x) - complex terminal handling
+- `menu/mud`, `menu/mud-settings`, `menu/main-menu` (3 functions each): menu display pattern with 2 helpers used 2-20x
+- `menu/mud-menu` (3 functions): is_cd_hook_installed (4x), is_feature_enabled (20x) - MUD feature checks
 
 ---
 
