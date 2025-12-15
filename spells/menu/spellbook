@@ -189,24 +189,17 @@ spellbook_menu() {
                                         if [ -z "$cmd_text" ]; then
                                                 # For non-scribed scripts, check if there's exactly one line of code
                                                 # Count meaningful lines (excluding shebang, comments, and whitespace)
-                                                no_blank=$(grep -v '^[[:space:]]*$' "$script")
-                                                grep_pattern='^[[:space:]]*#'
+                                                blank_pattern='^[[:space:]]*$'
+                                                comment_pattern='^[[:space:]]*#'
+                                                no_blank=$(grep -v "$blank_pattern" "$script")
                                                 no_comments_text=$(printf '%s\n' "$no_blank" | \
-                                                        grep -v "$grep_pattern")
+                                                        grep -v "$comment_pattern")
                                                 code_lines=$(printf '%s\n' "$no_comments_text" | \
                                                         wc -l | tr -d ' ')
                                                 if [ "$code_lines" -eq 1 ]; then
                                                         # Return the single code line
-                                                        blank_pattern='^[[:space:]]*$'
-                                                        no_blank_text=$(grep -v "$blank_pattern" \
-                                                                "$script")
-                                                        comment_pattern='^[[:space:]]*#'
-                                                        no_comment_text=$(printf '%s\n' \
-                                                                "$no_blank_text" | \
-                                                                grep -v "$comment_pattern")
                                                         cmd_text=$(printf '%s\n' \
-                                                                "$no_comment_text" | \
-                                                                head -n 1)
+                                                                "$no_comments_text" | head -n 1)
                                                 fi
                                         fi
                                         if [ -n "$cmd_text" ]; then
