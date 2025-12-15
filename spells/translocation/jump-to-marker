@@ -21,6 +21,10 @@ case "${1-}" in
   jump_to_marker_usage
   return 0
   ;;
+-*)
+  warn "jump-to-marker: unknown option '$1'."
+  return 1
+  ;;
 esac
 
 set -eu
@@ -28,6 +32,10 @@ set -eu
 # Resolve markers directory
 _jm_spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
 MARKERS_DIR=$(env-or JUMP_TO_MARKERS_DIR "$_jm_spell_home/.markers")
+
+# Call the implementation
+jump_to_marker_impl "$@"
+}
 
 jump_to_marker_impl() {
         markers_dir=$MARKERS_DIR
@@ -254,9 +262,4 @@ PORTAL
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */jump-to-marker|*/jump) jump_to_marker_impl "$@" ;; esac
-}
-
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */jump-to-marker) jump_to_marker "$@" ;; esac
+  */jump-to-marker|*/jump) jump_to_marker "$@" ;; esac

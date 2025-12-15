@@ -73,7 +73,7 @@ disenchant_attr() {
 # If specific key requested, remove it directly
 if nonempty "$requested_key"; then
   disenchant_attr "$requested_key" "$file"
-  return 1 $?
+  return $?
 fi
 
 # Otherwise, list keys and let user choose
@@ -88,7 +88,7 @@ key_count=$(printf '%s\n' "$keys" | awk 'NF{c++} END{print c+0}')
 
 # If only one key, use it directly
 if [ "$key_count" -eq 1 ]; then
-  chosen_key=$(printf '%s\n' "$keys" | awk 'NF{print; return 1}')
+  chosen_key=$(printf '%s\n' "$keys" | awk 'NF{print; exit}')
 else
   # Multiple keys - let user select
   set -- $keys disenchant-all

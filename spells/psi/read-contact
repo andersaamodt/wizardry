@@ -34,7 +34,7 @@ card_lines() {
     awk -F':' '
         { sub(/\r$/, "") }
         /^BEGIN:VCARD$/ { in_card=1; next }
-        /^END:VCARD$/ { if (in_card) exit 1 }
+        /^END:VCARD$/ { if (in_card) exit }
         in_card && index($0, ":") { if ($1 != "VERSION") print }
     ' "$1"
 }
@@ -106,7 +106,7 @@ if [ $# -eq 2 ]; then
     requested_field=$2
     card_lines_output=$(card_lines "$vcard_path")
     card_line=$(printf '%s\n' "$card_lines_output" | \
-      awk -F':' -v field="$requested_field" '$1 ~ field { print; return 1 }')
+      awk -F':' -v field="$requested_field" '$1 ~ field { print; exit }')
     if [ -z "${card_line:-}" ]; then
         printf '%s\n' "read-contact: $requested_field not found" >&2
         return 1
