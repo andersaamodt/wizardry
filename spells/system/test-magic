@@ -28,7 +28,7 @@ Usage: test-magic [--only PATTERN] [--list] [--verbose]
 Execute the behavior-driven shell tests located in .tests/.
 
 Environment variables:
-  WIZARDRY_TEST_TIMEOUT    Timeout in seconds for each test (default: 300)
+  WIZARDRY_TEST_TIMEOUT    Timeout in seconds for each test (default: 60)
   WIZARDRY_FIND_TIMEOUT    Timeout in seconds for find operations (default: 60)
 USAGE
 }
@@ -315,8 +315,8 @@ while IFS= read -r test_path <&3; do
   _test_heading "$test_number" "$test_total" "$spell_name"
 
   # Always run test and collect full output
-  # Use timeout if available to prevent indefinite hangs (default: 300s per test)
-  test_timeout="${WIZARDRY_TEST_TIMEOUT:-300}"
+  # Use timeout if available to prevent indefinite hangs (default: 60s per test)
+  test_timeout="${WIZARDRY_TEST_TIMEOUT:-60}"
   test_exit_code=0
   if [ -n "$timeout_cmd" ]; then
     output=$("$timeout_cmd" "$test_timeout" sh "$abs" 2>&1) || test_exit_code=$?
