@@ -135,6 +135,43 @@ function_to_override() { ... }
 
 **Reason**: Distinguish test infrastructure from production code
 
+### Test-Doppelganger: Skipped in Regular test-magic Runs
+
+**Affected**: `.tests/spellcraft/test-doppelganger.sh`
+
+**Test Runner**: `spells/system/test-magic`
+
+**Reason**: The doppelganger test has its own dedicated GitHub action workflow and nearly doubles the test run time when included in the regular test suite. It compiles the entire wizardry repository and tests the compiled version, which is a comprehensive but time-consuming process.
+
+**Behavior**:
+- **Regular runs**: test-doppelganger is **skipped** automatically by test-magic
+- **Explicit runs**: test-doppelganger can still be run via `test-magic --only spellcraft/test-doppelganger.sh`
+- **CI**: Separate GitHub action runs test-doppelganger independently
+
+**Implementation**: test-magic checks for the test path and skips it unless explicitly requested via the `--only` flag.
+
+**Future**: This test will be re-enabled for regular runs once platform-specific testing infrastructure is in place to ensure users can run doppelganger on all supported platforms.
+
+### Doppelganger: Flag and Positional Argument Limit Exemption
+
+**Affected**: Compiled spells in doppelganger (when `WIZARDRY_TEST_COMPILED=1` is set)
+
+**Tests**: `test_spells_have_limited_flags` and `test_spells_have_limited_positional_args` in `.tests/common-tests.sh`
+
+**Reason**: Compiled spells inline all dependencies (imps) into a single file. When imps that have their own flags or arguments are inlined, those flags appear in the compiled spell's code, causing the compiled spell to incorrectly report having more flags than the original spell actually defines.
+
+For example:
+- A spell with 1 flag that uses an imp with 2 flags will appear to have 3 flags when compiled
+- The inlined imp code contains case statements and if checks for its flags, which the test detects
+
+**Behavior**:
+- **Source repository**: Flag and argument limits are **enforced** (validates actual spell interfaces)
+- **Doppelganger**: These checks are **skipped** when `WIZARDRY_TEST_COMPILED=1` is set (inlined code doesn't reflect spell interface)
+
+**Implementation**: Both tests check for `WIZARDRY_TEST_COMPILED=1` and return early without checking, allowing the test suite to pass when running against compiled spells.
+
+**Rationale**: The flag/argument complexity limits exist to enforce simple spell interfaces in the source code. Compiled spells are deployment artifacts, not source code, and the inlined implementation details don't reflect the actual interface complexity that users interact with.
+
 ### Doppelganger: Function Name Collision Check Exemption
 
 **Affected**: Compiled spells in doppelganger (when `WIZARDRY_TEST_COMPILED=1` is set)

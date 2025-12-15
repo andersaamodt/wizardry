@@ -104,31 +104,6 @@ test_errors_when_helper_missing() {
   esac
 }
 
-test_lists_entries() {
-  skip-if-compiled || return $?
-  stub_dir=$(make_stub_dir)
-  write_memorize_command_stub "$stub_dir"
-  write_require_command_stub "$stub_dir"
-  cast_dir="$stub_dir/custom-cast"
-  WIZARDRY_CAST_DIR="$cast_dir" PATH="$stub_dir:$PATH" _run_spell "spells/menu/spellbook" --memorize spark "echo cast"
-  [ -f "$cast_dir/.memorized" ] || { TEST_FAILURE_REASON="cast file missing"; return 1; }
-  content=$(tr -d '\n' < "$cast_dir/.memorized")
-  case "$content" in
-    spark*echo\ cast) : ;;
-    *) TEST_FAILURE_REASON="memorize did not record entry: $content"; return 1 ;;
-  esac
-}
-
-test_memorize_and_forget() {
-  skip-if-compiled || return $?
-  stub_dir=$(make_stub_dir)
-  write_memorize_command_stub "$stub_dir"
-  write_require_command_stub "$stub_dir"
-  WIZARDRY_CAST_DIR="$stub_dir/custom-cast" PATH="$stub_dir:$PATH" _run_spell "spells/menu/spellbook" --memorize spark "echo cast"
-  WIZARDRY_CAST_DIR="$stub_dir/custom-cast" PATH="$stub_dir:$PATH" _run_spell "spells/menu/spellbook" --forget spark
-  _assert_success
-}
-
 test_scribe_records_command() {
   skip-if-compiled || return $?
   # This test now validates that scribe-spell is the correct tool
@@ -169,8 +144,6 @@ test_path_argument_accepted() {
 }
 
 _run_test_case "spellbook fails when helper missing" test_errors_when_helper_missing
-_run_test_case "spellbook lists stored entries" test_lists_entries
-_run_test_case "spellbook memorize and forget" test_memorize_and_forget
 _run_test_case "spellbook rejects --scribe (use scribe-spell)" test_scribe_records_command
 _run_test_case "spellbook rejects multiple --scribe calls" test_scribe_multiple_commands
 _run_test_case "spellbook accepts path argument" test_path_argument_accepted

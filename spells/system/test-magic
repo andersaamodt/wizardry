@@ -300,6 +300,18 @@ while IFS= read -r test_path <&3; do
     fi
   fi
   
+  # Skip test-doppelganger unless explicitly requested via --only
+  # Reason: Has its own GitHub action and nearly doubles test run time
+  if [ -z "$only_patterns" ]; then
+    case "$test_path" in
+      spellcraft/test-doppelganger.sh|*/spellcraft/test-doppelganger.sh)
+        skip_msg="$spell_name (skipped: run via dedicated GitHub action)"
+        _test_heading "$test_number" "$test_total" "$skip_msg"
+        continue
+        ;;
+    esac
+  fi
+  
   _test_heading "$test_number" "$test_total" "$spell_name"
 
   # Always run test and collect full output

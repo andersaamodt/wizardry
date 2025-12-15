@@ -5,10 +5,11 @@ require-wizardry || exit 1
 
 spellbook_usage() {
         cat <<'USAGE'
-Usage: spellbook [PATH|--memorize NAME CMD|--forget NAME|--list]
+Usage: spellbook [PATH|--list]
 
-Open the interactive spellbook to browse categories and manage the cast menu.
-Optionally pass a PATH to jump to a category. Use scribe-spell to create new spells.
+Open the interactive spellbook to browse categories, scribe commands,
+and manage the cast menu. Optionally pass a PATH to jump to a category.
+Use --list to display all memorized commands.
 USAGE
 }
 
@@ -307,26 +308,6 @@ spellbook_menu() {
 spellbook_path=""
 
 case ${1-} in
-        --memorize)
-                shift
-                if [ "$#" -lt 2 ]; then
-                        spellbook_usage >&2
-                        exit 1
-                fi
-                name=$1
-                shift
-                "$cast_store" add "$name" "$@"
-                exit 0
-                ;;
-        --forget)
-                shift
-                if [ "$#" -ne 1 ]; then
-                        spellbook_usage >&2
-                        exit 1
-                fi
-                "$cast_store" remove "$1"
-                exit 0
-                ;;
         --list)
                 "$cast_store" list
                 exit 0
