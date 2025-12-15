@@ -14,9 +14,9 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        hashchant_usage
-        exit 0
-        ;;
+	hashchant_usage
+	exit 0
+	;;
 esac
 set -eu
 
@@ -32,10 +32,18 @@ if [ ! -e "$file" ]; then
   exit 1
 fi
 
-helper_usable() {
-  helper=$1
+filename=$(basename "$file")
+hash=$( (echo "$filename" && cat "$file") | cksum | awk '{ print $1 }')
+hash=$(printf '0x%X' "$hash")
+
+# Inline apply_first_available logic - try each helper in order
+last_helper=""
+last_status=0
+
+for helper in attr xattr setfattr; do
+  # Inline helper_usable logic
   if ! command -v "$helper" >/dev/null 2>&1; then
-    return 1
+    continue
   fi
 
   resolved=$(command -v "$helper")
@@ -43,60 +51,44 @@ helper_usable() {
   if [ "${WIZARDRY_TEST_HELPERS_ONLY-0}" -eq 1 ]; then
     case $resolved in
       /usr/*|/bin/*|/sbin/*|/usr/local/*)
-        return 1
+        continue
         ;;
     esac
   fi
 
-  return 0
-}
-
-filename=$(basename "$file")
-hash=$( (echo "$filename" && cat "$file") | cksum | awk '{ print $1 }')
-hash=$(printf '0x%X' "$hash")
-
-apply_hash() {
-  helper=$1
+  # Inline apply_hash logic - try to apply with this helper
+  applied=0
   case "$helper" in
     attr)
-      attr -s "user.hash" -V "$hash" "$file" 2>/dev/null
+      if attr -s "user.hash" -V "$hash" "$file" 2>/dev/null; then
+        applied=1
+      fi
       ;;
     xattr)
-      xattr -w "user.hash" "$hash" "$file" 2>/dev/null
+      if xattr -w "user.hash" "$hash" "$file" 2>/dev/null; then
+        applied=1
+      fi
       ;;
     setfattr)
-      setfattr -n "user.hash" -v "$hash" "$file" 2>/dev/null
+      if setfattr -n "user.hash" -v "$hash" "$file" 2>/dev/null; then
+        applied=1
+      fi
       ;;
   esac
-}
 
-apply_first_available() {
-  last_helper=""
-  last_status=0
-
-  for helper in attr xattr setfattr; do
-    if ! helper_usable "$helper"; then
-      continue
-    fi
-
-    if apply_hash "$helper"; then
-      echo "File enchanted with hash: $hash"
-      return 0
-    fi
-
-    last_helper=$helper
-    last_status=$?
-  done
-
-  if [ -n "$last_helper" ]; then
-    printf '%s\n' "hashchant: failed to write hash using $last_helper (exit $last_status)" >&2
-  else
-    printf '%s\n' "hashchant: xattr and attr commands not found, cannot enchant file" >&2
+  if [ "$applied" -eq 1 ]; then
+    echo "File enchanted with hash: $hash"
+    exit 0
   fi
 
-  return 1
-}
+  last_helper=$helper
+  last_status=$?
+done
 
-if ! apply_first_available; then
-  exit 1
+if [ -n "$last_helper" ]; then
+  printf '%s\n' "hashchant: failed to write hash using $last_helper (exit $last_status)" >&2
+else
+  printf '%s\n' "hashchant: xattr and attr commands not found, cannot enchant file" >&2
 fi
+
+exit 1

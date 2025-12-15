@@ -4,7 +4,7 @@
 # boot. It prompts for a service name when invoked without arguments.
 
 enable_service_usage() {
-        cat <<'USAGE' >&2
+	cat <<'USAGE' >&2
 Usage: enable-service UNIT
 
 Enables the given systemd service so it starts on boot, prompting for a unit when none is provided.
@@ -13,9 +13,9 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-        enable_service_usage
-        exit 0
-        ;;
+	enable_service_usage
+	exit 0
+	;;
 esac
 
 set -eu
@@ -25,80 +25,68 @@ SCRIPT_NAME=$(basename "$0")
 SCRIPT_SOURCE=$0
 case $SCRIPT_SOURCE in
 */*)
-        SCRIPT_DIR=${SCRIPT_SOURCE%/*}
-        ;;
+	SCRIPT_DIR=${SCRIPT_SOURCE%/*}
+	;;
 *)
-        resolved=$(command -v "$SCRIPT_SOURCE" 2>/dev/null || printf '%s' "$SCRIPT_SOURCE")
-        SCRIPT_DIR=${resolved%/*}
-        SCRIPT_SOURCE=$resolved
-        ;;
+	resolved=$(command -v "$SCRIPT_SOURCE" 2>/dev/null || printf '%s' "$SCRIPT_SOURCE")
+	SCRIPT_DIR=${resolved%/*}
+	SCRIPT_SOURCE=$resolved
+	;;
 esac
 if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
-        SCRIPT_DIR=.
+	SCRIPT_DIR=.
 fi
 SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
 
-enable_service_find_ask_text() {
+# Inline enable_service_find_ask_text - only used once
 if [ -n "${ENABLE_SERVICE_ASK_TEXT-}" ]; then
-printf '%s' "$ENABLE_SERVICE_ASK_TEXT"
-return 0
+  ASK_TEXT_HELPER=$ENABLE_SERVICE_ASK_TEXT
+elif command -v ask-text >/dev/null 2>&1; then
+  ASK_TEXT_HELPER=$(command -v ask-text)
+elif [ -x "$SCRIPT_DIR/ask-text" ]; then
+  ASK_TEXT_HELPER="$SCRIPT_DIR/ask-text"
+else
+  printf '%s\n' "$SCRIPT_NAME: ask-text spell not found." >&2
+  exit 1
 fi
-if command -v ask-text >/dev/null 2>&1; then
-command -v ask-text
-return 0
-fi
-if [ -x "$SCRIPT_DIR/ask-text" ]; then
-printf '%s' "$SCRIPT_DIR/ask-text"
-return 0
-fi
-printf '%s\n' "$SCRIPT_NAME: ask-text spell not found." >&2
-exit 1
-}
-
-ASK_TEXT_HELPER=$(enable_service_find_ask_text)
-
-enable_service_run_systemctl() {
-        if [ -z "${SYSTEMCTL-}" ]; then
-                if command -v systemctl >/dev/null 2>&1; then
-                        SYSTEMCTL=$(command -v systemctl)
-                else
-                        printf '%s\n' "$SCRIPT_NAME: systemctl is not available on this system." >&2
-                        exit 1
-                fi
-        fi
-        if [ "$(id -u)" -eq 0 ]; then
-                "$SYSTEMCTL" "$@"
-                return
-        fi
-        if command -v sudo >/dev/null 2>&1; then
-                sudo "$SYSTEMCTL" "$@"
-                return
-        fi
-        printf '%s\n' "$SCRIPT_NAME: systemctl requires root. Re-run as root or install sudo." >&2
-        exit 1
-}
-
-enable_service_normalize_unit() {
-        unit=$1
-        case $unit in
-        *.service)
-                printf '%s' "$unit"
-                ;;
-        *)
-                printf '%s.service' "$unit"
-                ;;
-        esac
-}
 
 service_name=${1-}
 if [ -z "$service_name" ]; then
-        service_name=$("$ASK_TEXT_HELPER" "Which service should I enable?")
+	service_name=$("$ASK_TEXT_HELPER" "Which service should I enable?")
 fi
 if [ -z "$service_name" ]; then
-        printf '%s\n' "$SCRIPT_NAME: No service name supplied." >&2
-        exit 1
+	printf '%s\n' "$SCRIPT_NAME: No service name supplied." >&2
+	exit 1
 fi
-unit=$(enable_service_normalize_unit "$service_name")
+
+# Inline enable_service_normalize_unit - only used once
+case $service_name in
+*.service)
+	unit=$service_name
+	;;
+*)
+	unit="${service_name}.service"
+	;;
+esac
+
 printf 'Enabling %s so it starts at boot...\n' "$unit"
-enable_service_run_systemctl enable "$unit"
+
+# Inline enable_service_run_systemctl - only used once
+if [ -z "${SYSTEMCTL-}" ]; then
+	if command -v systemctl >/dev/null 2>&1; then
+		SYSTEMCTL=$(command -v systemctl)
+	else
+		printf '%s\n' "$SCRIPT_NAME: systemctl is not available on this system." >&2
+		exit 1
+	fi
+fi
+if [ "$(id -u)" -eq 0 ]; then
+	"$SYSTEMCTL" enable "$unit"
+elif command -v sudo >/dev/null 2>&1; then
+	sudo "$SYSTEMCTL" enable "$unit"
+else
+	printf '%s\n' "$SCRIPT_NAME: systemctl requires root. Re-run as root or install sudo." >&2
+	exit 1
+fi
+
 printf '%s\n' "systemd enablement request submitted."
