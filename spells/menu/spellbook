@@ -5,10 +5,10 @@ require-wizardry || exit 1
 
 spellbook_usage() {
         cat <<'USAGE'
-Usage: spellbook [PATH|--memorize NAME CMD|--forget NAME|--scribe NAME CMD|--list]
+Usage: spellbook [PATH|--memorize NAME CMD|--forget NAME|--list]
 
-Open the interactive spellbook to browse categories, scribe commands,
-and manage the cast menu. Optionally pass a PATH to jump to a category.
+Open the interactive spellbook to browse categories and manage the cast menu.
+Optionally pass a PATH to jump to a category. Use scribe-spell to create new spells.
 USAGE
 }
 
@@ -45,60 +45,6 @@ spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
 if [ -d "$spell_home" ]; then
         PATH="$spell_home:$PATH"
 fi
-
-list_spell_directories() {
-        set --
-        for dir in "$ROOT_DIR"/spells/*; do
-                [ -d "$dir" ] || continue
-                [ "$(basename "$dir")" = "menu" ] && continue
-                set -- "$@" "$(basename "$dir")"
-        done
-        printf '%s\n' "$@"
-}
-
-# Resolve a category path by searching in multiple locations.
-# If the path starts with ./ or /, use it directly.
-# Otherwise, search in: spells/, ~/.spellbook, current directory
-# List all scribed commands (custom commands in spell_home, excluding built-in spells)
-# Only shows truly custom user-created commands, not built-in spells that might have
-# been memorized (those should only appear in the Cast menu)
-# Check if a custom category folder is empty (no executable files)
-is_custom_category_empty() {
-        check_path=$1
-        # Must be in spell_home to be a custom category
-        case "$check_path" in
-                "$spell_home"*) ;;
-                *) return 1 ;;
-        esac
-        # Check if directory has any executable files
-        if find "$check_path" -maxdepth 1 -type f -perm -111 2>/dev/null | grep -q .; then
-                return 1
-        fi
-        return 0
-}
-
-record_scribed_command() {
-        cmd_name=$1
-        shift
-        cmd=$1
-        shift || :
-        while [ "$#" -gt 0 ]; do
-                cmd="$cmd $1"
-                shift
-        done
-        validate-name "$cmd_name" "spellbook" || exit 1
-        validate-command "$cmd" "spellbook: command" || exit 1
-        mkdir -p "$spell_home"
-        # Inline write_scribed_script
-        script_path="$spell_home/$cmd_name"
-        ensure-parent-dir "$script_path"
-        escaped_cmd=$(printf '%s' "$cmd" | sed "s/'/'\\''/g")
-        cat >"$script_path" <<EOF_SCRIPT
-#!/bin/sh
-exec sh -c '$escaped_cmd' "\$0" "\$@"
-EOF_SCRIPT
-        chmod +x "$script_path"
-}
 
 spellbook_menu() {
         current_path=${1-}
@@ -215,7 +161,15 @@ spellbook_menu() {
                         # Inline list_user_folders
                         user_folder_count=0
                         if [ -d "$spell_home" ]; then
-                                builtin_cats=$(list_spell_directories | sort)
+                                # Inline list_spell_directories to get builtin categories
+                                builtin_cats=""
+                                for dir in "$ROOT_DIR"/spells/*; do
+                                        [ -d "$dir" ] || continue
+                                        [ "$(basename "$dir")" = "menu" ] && continue
+                                        builtin_cats="$builtin_cats$(basename "$dir")
+"
+                                done
+                                builtin_cats=$(printf '%s' "$builtin_cats" | sort)
                                 for folder in "$spell_home"/*; do
                                         [ -d "$folder" ] || continue
                                         folder_name=$(basename "$folder")
@@ -251,7 +205,11 @@ spellbook_menu() {
                         if [ "$#" -gt 0 ]; then
                                 set -- "$@" "---"
                         fi
-                        for category in $(list_spell_directories | sort); do
+                        # Inline list_spell_directories
+                        for dir in "$ROOT_DIR"/spells/*; do
+                                [ -d "$dir" ] || continue
+                                [ "$(basename "$dir")" = "menu" ] && continue
+                                category=$(basename "$dir")
                                 # Don't capitalize - just use the folder name
                                 set -- "$@" "${category}%spellbook $category"
                         done
@@ -293,11 +251,18 @@ spellbook_menu() {
                 fi
                 
                 # Add "Delete category" option for empty custom category folders
-                is_current=$([ -n "$current_path" ] && echo "yes" || echo "no")
-                is_resolved=$([ -n "$resolved_path" ] && echo "yes" || echo "no")
                 is_empty="no"
-                if [ "$is_current" = "yes" ] && [ "$is_resolved" = "yes" ]; then
-                        is_custom_category_empty "$resolved_path" && is_empty="yes"
+                if [ -n "$current_path" ] && [ -n "$resolved_path" ]; then
+                        # Check if custom category is empty (inline is_custom_category_empty)
+                        case "$resolved_path" in
+                                "$spell_home"*)
+                                        # Check if directory has any executable files
+                                        if ! find "$resolved_path" -maxdepth 1 -type f -perm -111 \
+                                                2>/dev/null | grep -q .; then
+                                                is_empty="yes"
+                                        fi
+                                        ;;
+                        esac
                 fi
                 
                 if [ "$is_empty" = "yes" ]; then
@@ -363,31 +328,6 @@ case ${1-} in
                 ;;
         --list)
                 "$cast_store" list
-                exit 0
-                ;;
-        --scribe)
-                shift
-                if [ "$#" -lt 2 ]; then
-                        spellbook_usage >&2
-                        exit 1
-                fi
-                name=$1
-                shift
-                record_scribed_command "$name" "$@"
-                display_path=$(tilde-path "$spell_home")
-                printf "Scribed '%s' to %s.\n" "$name" "$display_path"
-                exit 0
-                ;;
-        --interactive-scribe)
-                cmd_name=$(read-line "Name: ")
-                cmd_text=$(read-line "Command: ")
-                if [ -z "$cmd_name" ] || [ -z "$cmd_text" ]; then
-                        printf '%s\n' "A name and command are required." >&2
-                        exit 1
-                fi
-                record_scribed_command "$cmd_name" "$cmd_text"
-                display_path=$(tilde-path "$spell_home")
-                printf "Scribed '%s' to %s.\n" "$cmd_name" "$display_path"
                 exit 0
                 ;;
         --help|--usage|-h)

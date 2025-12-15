@@ -194,7 +194,7 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 
 **Refactored** (42 spells - COMPLETED ✅):
 - `spellcraft/lint-magic` (22→2) - Added word-of-binding wrapper function, maintains 0 extra functions beyond usage
-- `menu/spellbook` (30→10→4) - Major refactor, created 3 reusable imps, then inlined single-use functions
+- `menu/spellbook` (30→10→4→1) - Major refactor: created 3 reusable imps, inlined single-use functions, removed duplicate scribing functionality (now delegates to scribe-spell), reduced to 2 total functions
 - `spellcraft/learn-spell` (8→1) - Inlined warn and detect_env_once - **NOW REMOVED (obsolete)**
 - `spellcraft/scribe-spell` (10→1) - Inlined helpers, removed learn-spellbook dependency
 - `spellcraft/learn` (15→0) - Dramatically simplified to copy/link spells to spellbook
