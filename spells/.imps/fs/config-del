@@ -24,7 +24,13 @@ _config_del() {
   [ -f "$_cd_file" ] || return 0
   
   # Create temp file for atomic operation
-  _cd_tmp=$(mktemp "${TMPDIR:-/tmp}/config-del.XXXXXX") || return 1
+  # Ensure temp dir exists
+  _cd_tmpdir="${TMPDIR:-/tmp}"
+  if [ ! -d "$_cd_tmpdir" ]; then
+    _cd_dir=$(dirname "$_cd_file")
+    mkdir -p "$_cd_tmpdir" 2>/dev/null || _cd_tmpdir="${_cd_dir}"
+  fi
+  _cd_tmp=$(mktemp "$_cd_tmpdir/config-del.XXXXXX") || return 1
   trap 'rm -f "$_cd_tmp"' EXIT HUP INT TERM
   
   # Copy all lines except the key we're deleting
