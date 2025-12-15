@@ -1,9 +1,6 @@
 #!/bin/sh
-# Tests for toggle-cd spell
-# Behavioral cases:
-# - toggle-cd installs the hook when not present
-# - toggle-cd uninstalls the hook when present
-# - toggle-cd --help shows usage
+# Tests for toggle-cd spell (settings-based)
+# toggle-cd manages the cd-look=1 setting in ~/.spellbook/.mud/config
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
@@ -16,67 +13,6 @@ test_toggle_cd_is_executable() {
   [ -x "$ROOT_DIR/spells/.arcana/mud/toggle-cd" ]
 }
 
-test_toggle_cd_requires_cd_spell() {
-  content=$(cat "$ROOT_DIR/spells/.arcana/mud/toggle-cd")
-  case "$content" in
-    *CD_SPELL*cd*)
-      return 0
-      ;;
-    *)
-      TEST_FAILURE_REASON="toggle-cd should reference the cd spell"
-      return 1
-      ;;
-  esac
-}
-
-test_toggle_cd_has_install_and_uninstall() {
-  content=$(cat "$ROOT_DIR/spells/.arcana/mud/toggle-cd")
-  case "$content" in
-    *install*uninstall*)
-      return 0
-      ;;
-    *)
-      TEST_FAILURE_REASON="toggle-cd should handle both install and uninstall"
-      return 1
-      ;;
-  esac
-}
-
-test_toggle_cd_installs_when_not_present() {
-  tmp=$(_make_tempdir)
-  # Create an empty rc file without the hook
-  : >"$tmp/rc"
-  
-  _run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/.arcana/mud/toggle-cd"
-  _assert_success || return 1
-  _assert_output_contains "cd hook enabled" || return 1
-  
-  # Verify hook was installed
-  if ! grep -q ">>> wizardry cd cantrip >>>" "$tmp/rc"; then
-    TEST_FAILURE_REASON="Hook not installed after toggle"
-    return 1
-  fi
-}
-
-test_toggle_cd_uninstalls_when_present() {
-  tmp=$(_make_tempdir)
-  
-  # First install the hook
-  _run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/.arcana/mud/cd" install
-  _assert_success || return 1
-  
-  # Now toggle should uninstall it
-  _run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/.arcana/mud/toggle-cd"
-  _assert_success || return 1
-  _assert_output_contains "cd hook disabled" || return 1
-  
-  # Verify hook was removed
-  if grep -q ">>> wizardry cd cantrip >>>" "$tmp/rc"; then
-    TEST_FAILURE_REASON="Hook still present after toggle off"
-    return 1
-  fi
-}
-
 test_toggle_cd_help_shows_usage() {
   _run_spell spells/.arcana/mud/toggle-cd --help
   _assert_success || return 1
@@ -84,37 +20,70 @@ test_toggle_cd_help_shows_usage() {
   _assert_output_contains "toggle" || return 1
 }
 
-test_toggle_cd_shows_installing_message() {
-  tmp=$(_make_tempdir)
-  # Create an empty rc file without the hook
-  : >"$tmp/rc"
+test_toggle_cd_enables_when_disabled() {
+  skip-if-compiled || return $?
+  tmpdir=$(_make_tempdir)
+  mkdir -p "$tmpdir/.spellbook/.mud"
   
-  _run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/.arcana/mud/toggle-cd"
-  _assert_success || return 1
-  # Verify it shows the progress message before install
-  _assert_output_contains "Installing cd hook" || return 1
+  # Start with disabled (no cd-look=1 line)
+  printf "other-setting=1\n" > "$tmpdir/.spellbook/.mud/config"
+  
+  # Run toggle-cd directly (not through _run_cmd sandbox)
+  output=$(env SPELLBOOK_DIR="$tmpdir/.spellbook" sh "$ROOT_DIR/spells/.arcana/mud/toggle-cd" 2>&1)
+  
+  # Check output
+  case "$output" in
+    *enabled*)
+      ;;
+    *)
+      TEST_FAILURE_REASON="Output missing 'enabled': $output"
+      return 1
+      ;;
+  esac
+  
+  # Verify setting was added
+  if ! grep -q "^cd-look=1$" "$tmpdir/.spellbook/.mud/config"; then
+    TEST_FAILURE_REASON="cd-look=1 not found in config after enable"
+    return 1
+  fi
 }
 
-test_toggle_cd_shows_uninstalling_message() {
-  tmp=$(_make_tempdir)
+test_toggle_cd_disables_when_enabled() {
+  skip-if-compiled || return $?
+  tmpdir=$(_make_tempdir)
+  mkdir -p "$tmpdir/.spellbook/.mud"
   
-  # First install the hook
-  _run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/.arcana/mud/cd" install
-  _assert_success || return 1
+  # Start with enabled
+  printf "cd-look=1\nother-setting=1\n" > "$tmpdir/.spellbook/.mud/config"
   
-  # Now toggle should uninstall it and show a progress message
-  _run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/.arcana/mud/toggle-cd"
-  _assert_success || return 1
-  # Verify it shows the progress message before uninstall
-  _assert_output_contains "Uninstalling cd hook" || return 1
+  # Run toggle-cd directly (not through _run_cmd sandbox)
+  output=$(env SPELLBOOK_DIR="$tmpdir/.spellbook" sh "$ROOT_DIR/spells/.arcana/mud/toggle-cd" 2>&1)
+  
+  # Check output
+  case "$output" in
+    *disabled*)
+      ;;
+    *)
+      TEST_FAILURE_REASON="Output missing 'disabled': $output"
+      return 1
+      ;;
+  esac
+  
+  # Verify setting was removed
+  if grep -q "^cd-look=1$" "$tmpdir/.spellbook/.mud/config"; then
+    TEST_FAILURE_REASON="cd-look=1 still in config after disable"
+    return 1
+  fi
+  
+  # Verify other settings preserved
+  if ! grep -q "^other-setting=1$" "$tmpdir/.spellbook/.mud/config"; then
+    TEST_FAILURE_REASON="other settings were not preserved"
+    return 1
+  fi
 }
 
 _run_test_case "toggle-cd is executable" test_toggle_cd_is_executable
-_run_test_case "toggle-cd requires cd spell" test_toggle_cd_requires_cd_spell
-_run_test_case "toggle-cd handles install and uninstall" test_toggle_cd_has_install_and_uninstall
-_run_test_case "toggle-cd installs when not present" test_toggle_cd_installs_when_not_present
-_run_test_case "toggle-cd uninstalls when present" test_toggle_cd_uninstalls_when_present
 _run_test_case "toggle-cd --help shows usage" test_toggle_cd_help_shows_usage
-_run_test_case "toggle-cd shows installing message" test_toggle_cd_shows_installing_message
-_run_test_case "toggle-cd shows uninstalling message" test_toggle_cd_shows_uninstalling_message
+_run_test_case "toggle-cd enables when disabled" test_toggle_cd_enables_when_disabled
+_run_test_case "toggle-cd disables when enabled" test_toggle_cd_disables_when_enabled
 _finish_tests

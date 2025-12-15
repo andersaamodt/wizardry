@@ -1,5 +1,5 @@
 #!/bin/sh
-# Comprehensive tests for config-get, config-set, config-has, config-del imps
+# Comprehensive tests for config spell (wraps config-get, config-set, config-has, config-del imps)
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
@@ -7,13 +7,13 @@ while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" !
 done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-# === config-set tests ===
+# === config set tests ===
 
 test_config_set_creates_file() {
   skip-if-compiled || return $?
   _run_cmd sh -c '
     tmpdir=$(mktemp -d) &&
-    '"$ROOT_DIR"'/spells/.imps/fs/config-set "$tmpdir/config" "key1" "value1" &&
+    '"$ROOT_DIR"'/spells/system/config set "$tmpdir/config" "key1" "value1" &&
     [ -f "$tmpdir/config" ] &&
     grep -q "key1=value1" "$tmpdir/config" &&
     rm -rf "$tmpdir" &&
@@ -28,7 +28,7 @@ test_config_set_updates_existing_key() {
   _run_cmd sh -c '
     tmpdir=$(mktemp -d) &&
     printf "key1=old\nkey2=keep\n" > "$tmpdir/config" &&
-    '"$ROOT_DIR"'/spells/.imps/fs/config-set "$tmpdir/config" "key1" "new" &&
+    '"$ROOT_DIR"'/spells/system/config set "$tmpdir/config" "key1" "new" &&
     grep -q "key1=new" "$tmpdir/config" &&
     grep -q "key2=keep" "$tmpdir/config" &&
     ! grep -q "key1=old" "$tmpdir/config" &&
@@ -43,7 +43,7 @@ test_config_set_handles_equals_in_value() {
   skip-if-compiled || return $?
   _run_cmd sh -c '
     tmpdir=$(mktemp -d) &&
-    '"$ROOT_DIR"'/spells/.imps/fs/config-set "$tmpdir/config" "key1" "a=b=c" &&
+    '"$ROOT_DIR"'/spells/system/config set "$tmpdir/config" "key1" "a=b=c" &&
     grep -q "key1=a=b=c" "$tmpdir/config" &&
     rm -rf "$tmpdir" &&
     printf "ok"
@@ -68,10 +68,25 @@ test_config_set_rejects_key_with_equals() {
 
 test_config_set_rejects_newline_in_value() {
   skip-if-compiled || return $?
-  _run_cmd sh -c '"$ROOT_DIR"/spells/.imps/fs/config-set "/tmp/x" "key1" "line1
-line2"'
-  _assert_failure || return 1
-  _assert_error_contains "cannot contain newlines" || return 1
+  # Run directly, not through _run_cmd sandbox
+  output=$(sh "$ROOT_DIR/spells/system/config" set "/tmp/x" "key1" "line1
+line2" 2>&1)
+  exit_code=$?
+  
+  if [ "$exit_code" -eq 0 ]; then
+    TEST_FAILURE_REASON="Expected failure but got success"
+    return 1
+  fi
+  
+  case "$output" in
+    *"cannot contain newlines"*)
+      return 0
+      ;;
+    *)
+      TEST_FAILURE_REASON="Error message missing 'cannot contain newlines': $output"
+      return 1
+      ;;
+  esac
 }
 
 # === config-get tests ===
@@ -155,7 +170,7 @@ test_config_del_removes_key() {
   _run_cmd sh -c '
     tmpdir=$(mktemp -d) &&
     printf "key1=value1\nkey2=value2\n" > "$tmpdir/config" &&
-    '"$ROOT_DIR"'/spells/.imps/fs/config-del "$tmpdir/config" "key1" &&
+    '"$ROOT_DIR"'/spells/system/config del "$tmpdir/config" "key1" &&
     grep -q "key2=value2" "$tmpdir/config" &&
     ! grep -q "key1" "$tmpdir/config" &&
     rm -rf "$tmpdir" &&
