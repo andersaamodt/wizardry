@@ -7,11 +7,11 @@
 
 menu_usage() {
         cat <<'USAGE' >&2
-Usage: menu [--spell-mode] [--start-selection N] "Title" "Label%command"...
+Usage: menu [--show-command] [--start-selection N] "Title" "Label%command"...
 
 Draw a keyboard-driven terminal menu using wizardry's cursor and input helpers.
-Provide a title followed by one or more "Label%command" entries; --spell-mode
-shows the command text as the label, and --start-selection picks the initial
+Provide a title followed by one or more "Label%command" entries; --show-command
+displays the command text as the label, and --start-selection picks the initial
 highlighted item. Use "---" to add a horizontal divider line.
 USAGE
 }
@@ -70,10 +70,10 @@ else
         THEME_HEADING=''
 fi
 
-# Check for --spell-mode flag (label is command, right side is description)
-spell_mode=0
-if [ "${1-}" = "--spell-mode" ]; then
-        spell_mode=1
+# Check for --show-command flag (displays command as label instead of description)
+show_command=0
+if [ "${1-}" = "--show-command" ]; then
+        show_command=1
         shift
 fi
 
@@ -426,7 +426,7 @@ do
                 step=1
                 ;;
         enter)
-                if [ "$spell_mode" -eq 1 ]; then
+                if [ "$show_command" -eq 1 ]; then
                         to_run=$(sed -n "${selected}p" "$items_file")
                 else
                         to_run=$(sed -n "${selected}p" "$commands_file")
