@@ -27,37 +27,6 @@ case $0 in
 *) : ;;
 esac
 
-# Get the trash path using detect-trash or inline detection
-get_trash_path() {
-  if command -v detect-trash >/dev/null 2>&1; then
-    detect-trash
-    return
-  fi
-  
-  # Inline fallback if detect-trash is not available
-  platform=''
-  if command -v detect-distro >/dev/null 2>&1; then
-    platform=$(detect-distro 2>/dev/null || printf 'unknown')
-  else
-    kernel=$(uname -s 2>/dev/null || printf 'unknown')
-    case "$kernel" in
-    Darwin) platform='mac' ;;
-    Linux) platform='linux' ;;
-    *) platform='unknown' ;;
-    esac
-  fi
-  
-  case "$platform" in
-  mac)
-    printf '%s/.Trash\n' "$HOME"
-    ;;
-  *)
-    xdg_data="${XDG_DATA_HOME:-$HOME/.local/share}"
-    printf '%s/Trash/files\n' "$xdg_data"
-    ;;
-  esac
-}
-
 # The actual jump function that changes directory
 jump_trash() {
   case "${1-}" in
@@ -71,7 +40,34 @@ USAGE
     ;;
   esac
 
-  trash_path=$(get_trash_path)
+  # Inline get_trash_path - only used once
+  if command -v detect-trash >/dev/null 2>&1; then
+    trash_path=$(detect-trash)
+  else
+    # Inline fallback if detect-trash is not available
+    platform=''
+    if command -v detect-distro >/dev/null 2>&1; then
+      platform=$(detect-distro 2>/dev/null || printf 'unknown')
+    else
+      kernel=$(uname -s 2>/dev/null || printf 'unknown')
+      case "$kernel" in
+      Darwin) platform='mac' ;;
+      Linux) platform='linux' ;;
+      *) platform='unknown' ;;
+      esac
+    fi
+    
+    case "$platform" in
+    mac)
+      trash_path="$HOME/.Trash"
+      ;;
+    *)
+      xdg_data="${XDG_DATA_HOME:-$HOME/.local/share}"
+      trash_path="$xdg_data/Trash/files"
+      ;;
+    esac
+  fi
+  
   if [ -z "$trash_path" ]; then
     return 1
   fi
@@ -88,7 +84,8 @@ USAGE
 
 alias jump-trash=jump_trash 2>/dev/null || true
 
-jump_trash_cli() {
+if [ "$RUNNING_AS_SCRIPT" -eq 1 ]; then
+  # Inline jump_trash_cli logic - only used once
   case ${1-} in
   --help|--usage|-h)
     jump_trash_usage
@@ -98,11 +95,7 @@ jump_trash_cli() {
     ;;
   *)
     printf '%s\n' "jump-trash: unknown option '$1'." >&2
-    return 1
+    exit 1
     ;;
   esac
-}
-
-if [ "$RUNNING_AS_SCRIPT" -eq 1 ]; then
-  jump_trash_cli "$@"
 fi
