@@ -19,7 +19,7 @@ priority_menu() {
 case "${1-}" in
 --help|--usage|-h)
         priority_menu_usage
-        exit 0
+        return 0
         ;;
 esac
 
@@ -33,14 +33,14 @@ trap 'exit 0' INT TERM
 . "$(command -v colors)"
 
 if ! require menu "The Priority menu needs the 'menu' command to present options."; then
-  exit 1
+  return 1
 fi
 
 FILE="${1-}"
 
 if [ -z "$FILE" ]; then
         printf '%s\n' "priority-menu: file path required." >&2
-        exit 1
+        return 1
 fi
 
 priority_menu_display_menu() {

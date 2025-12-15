@@ -19,7 +19,7 @@ upvote() {
 case "${1-}" in
 --help|--usage|-h)
         upvote_usage
-        exit 0
+        return 0
         ;;
 esac
 
@@ -29,7 +29,7 @@ set -eu
 if [ -z "${1-}" ]; then
         printf '%s\n' "upvote: file path required." >&2
         upvote_usage >&2
-        exit 1
+        return 1
 fi
 
 file=$1

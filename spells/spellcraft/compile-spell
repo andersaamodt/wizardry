@@ -140,7 +140,7 @@ for dep in $dependencies; do
   func_def=$(printf '%s\n' "$dep_content" | awk -v fname="$func_name" '
     /^'$func_name'\(\)/ { in_func=1 }
     in_func { print }
-    in_func && /^}$/ { exit 1 }
+    in_func && /^}$/ { exit }
   ')
   
   # If we got a function (it's an imp), inline it
