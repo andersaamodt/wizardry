@@ -54,7 +54,7 @@ if is set "$pid"; then
         else
             status=$?
             warn "Failed to kill process $pid ($selected_name)."
-            return 1 "$status"
+            return "$status"
         fi
     fi
 fi

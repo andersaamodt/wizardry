@@ -350,3 +350,22 @@ These exemptions have been resolved and are documented here to prevent backslidi
 **Reason for Resolution**: Educational materials should exemplify project standards. All 26 tutorials now use POSIX-compliant `#!/bin/sh`. Tutorials can still teach bash-specific concepts by noting them as non-portable extensions.
 
 **Review**: Quarterly (next: 2026-03-10) | **Last Updated**: 2025-12-11
+
+## 7. Word-of-Binding / Wrapper Function Exemptions
+
+### Spells Without Wrapper Functions
+
+**Rule**: All spells must have a wrapper function matching their filename (the "incantation") for word-of-binding compatibility. This enables sourcing spells into the shell for efficient invocation.
+
+**Exempted Categories**:
+
+1. **Arcana spells** (`spells/.arcana/*`)
+   - **Reason**: Arcana are installation and configuration scripts that are meant to be executed, not sourced. They manage system-level software installation and are not typically called from other spells.
+   - **Status**: Wrapper functions not required for arcana
+
+**Test**: `test_spells_require_wrapper_functions` in `.tests/common-tests.sh`
+
+**Implementation**: The test excludes paths matching `*/.arcana/*` from the wrapper function requirement.
+
+**Future**: If specific arcana need to be sourceable (e.g., for testing or composition), they can be updated individually.
+

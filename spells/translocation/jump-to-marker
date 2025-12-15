@@ -237,7 +237,7 @@ A murmured incantation bends distance like molten glass.
 Reality hiccups; when it steadies, you are already in motion.
 PORTAL
 )
-        arrival=$(printf '%s\n' "$arrival" | awk 'BEGIN{srand();}{lines[NR]=$0}END{if (NR==0) return 0; idx=int(rand()*NR)+1; print lines[idx];}')
+        arrival=$(printf '%s\n' "$arrival" | awk 'BEGIN{srand();}{lines[NR]=$0}END{if (NR==0) exit 0; idx=int(rand()*NR)+1; print lines[idx];}')
         
         if [ -n "$arrival" ]; then
                 say "$arrival"

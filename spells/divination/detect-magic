@@ -94,7 +94,7 @@ for entry in *; do
                 $0 == "No enchanted attributes found." {next}
                 index($0, ":") == 0 {bad=1; next}
                 {print}
-                END { if (bad) return 97 }
+                END { if (bad) exit 97 }
         ')
         filter_status=$?
         set -e

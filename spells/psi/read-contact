@@ -34,7 +34,7 @@ card_lines() {
     awk -F':' '
         { sub(/\r$/, "") }
         /^BEGIN:VCARD$/ { in_card=1; next }
-        /^END:VCARD$/ { if (in_card) return 1 }
+        /^END:VCARD$/ { if (in_card) exit 1 }
         in_card && index($0, ":") { if ($1 != "VERSION") print }
     ' "$1"
 }
