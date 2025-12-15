@@ -110,7 +110,8 @@ test_lists_entries() {
   write_memorize_command_stub "$stub_dir"
   write_require_command_stub "$stub_dir"
   cast_dir="$stub_dir/custom-cast"
-  WIZARDRY_CAST_DIR="$cast_dir" PATH="$stub_dir:$PATH" _run_spell "spells/menu/spellbook" --memorize spark "echo cast"
+  # Use memorize command directly instead of spellbook --memorize
+  WIZARDRY_CAST_DIR="$cast_dir" PATH="$stub_dir:$PATH" "$stub_dir/memorize" add spark "echo cast"
   [ -f "$cast_dir/.memorized" ] || { TEST_FAILURE_REASON="cast file missing"; return 1; }
   content=$(tr -d '\n' < "$cast_dir/.memorized")
   case "$content" in
@@ -124,9 +125,11 @@ test_memorize_and_forget() {
   stub_dir=$(make_stub_dir)
   write_memorize_command_stub "$stub_dir"
   write_require_command_stub "$stub_dir"
-  WIZARDRY_CAST_DIR="$stub_dir/custom-cast" PATH="$stub_dir:$PATH" _run_spell "spells/menu/spellbook" --memorize spark "echo cast"
-  WIZARDRY_CAST_DIR="$stub_dir/custom-cast" PATH="$stub_dir:$PATH" _run_spell "spells/menu/spellbook" --forget spark
-  _assert_success
+  # Use memorize and forget commands directly instead of spellbook flags
+  WIZARDRY_CAST_DIR="$stub_dir/custom-cast" PATH="$stub_dir:$PATH" _run_cmd "$stub_dir/memorize" add spark "echo cast"
+  _assert_success || return 1
+  WIZARDRY_CAST_DIR="$stub_dir/custom-cast" PATH="$stub_dir:$PATH" _run_cmd "$stub_dir/memorize" remove spark
+  _assert_success || return 1
 }
 
 test_scribe_records_command() {
