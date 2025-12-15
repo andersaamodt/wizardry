@@ -184,11 +184,16 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 
 **Rule**: Spells should have `show_usage()` plus at most 1-3 additional helper functions. 4+ additional functions indicate a proto-library that needs decomposition into multiple spells and/or imps.
 
-**Temporary Exemptions** (2 spells - TO BE REFACTORED):
+**Temporary Exemptions** (1 spell - TO BE REFACTORED):
 
-**Other** (2 spells):
+**Remaining** (1 spell):
 - `menu/spellbook` (10 additional) - Menu infrastructure (reduced from 30→10)
-- `system/update-all` (10 additional) - Update system
+
+**Refactored** (1 spell - COMPLETED ✅):
+- `system/update-all` (10→1) - Inlined all helpers, using existing imps (step, must has, etc.)
+
+**Other** (previously listed, now removed):
+- `system/update-all` - **NOW REFACTORED** (10→1)
 
 **Removed/Obsolete**:
 - `spellcraft/learn-spell` - Removed (obsolete with word-of-binding paradigm)
@@ -241,12 +246,12 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 - `system/test-magic` (15→2) - **Word-of-binding compliant** - Wrapped main logic in function, maintains 2 functions total (usage + main)
 - `.arcana/mud/cd` (15→2) - **MASSIVELY SIMPLIFIED** - Uses settings file + word-of-binding pattern, 2 functions total (usage + hook), 34 lines (was 401!)
 
-**Action Required**: Remaining 2 spells should be refactored to:
+**Action Required**: Remaining 1 spell should be refactored to:
 1. Extract reusable logic into imps in `spells/.imps/` (only if used by 2+ spells)
 2. Split into multiple smaller spells if handling multiple actions
 3. Simplify linear flow by inlining single-use helpers
 
-**Progress**: 40/41 spells refactored (98%) - 3 spells removed as obsolete
+**Progress**: 41/42 spells refactored (98%) - 3 spells removed as obsolete
 
 ---
 
