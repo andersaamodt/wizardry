@@ -229,7 +229,7 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 - `cantrips/assertions` - Removed (boot/ test imps already provide assertion functionality)
 
 
-**Refactored** (42 spells - COMPLETED ✅):
+**Refactored** (43 spells - COMPLETED ✅):
 - `spellcraft/lint-magic` (22→2) - Added word-of-binding wrapper function, maintains 0 extra functions beyond usage
 - `menu/spellbook` (30→10→4→1) - Major refactor: created 3 reusable imps, inlined single-use functions, removed duplicate scribing functionality (now delegates to scribe-spell), reduced to 2 total functions
 - `spellcraft/learn-spell` (8→1) - Inlined warn and detect_env_once - **NOW REMOVED (obsolete)**
@@ -274,8 +274,9 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 - `system/test-magic` (15→2) - **Word-of-binding compliant** - Wrapped main logic in function, maintains 2 functions total (usage + main)
 - `.arcana/mud/cd` (15→2) - **MASSIVELY SIMPLIFIED** - Uses settings file + word-of-binding pattern, 2 functions total (usage + hook), 34 lines (was 401!)
 - `system/update-all` (10→1) - **Inlined all helpers**, using existing imps (step, must has, etc.)
+- `divination/identify-room` (7→2) - **Inlined all single-use helpers**, uses detect-distro spell instead of inline platform detection
 
-**Progress**: 42/42 spells refactored (100%) - 3 spells removed as obsolete
+**Progress**: 43/43 spells refactored (100%) - 3 spells removed as obsolete
 
 ---
 
