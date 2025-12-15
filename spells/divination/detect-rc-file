@@ -13,6 +13,10 @@ Prints key=value pairs for the detected platform, rc_file, and format.
 USAGE
 }
 
+
+
+detect_rc_file() {
+
 platform="${DETECT_RC_FILE_PLATFORM-}"
 
 while [ "$#" -gt 0 ]; do
@@ -47,15 +51,6 @@ while [ "$#" -gt 0 ]; do
                 break
                 ;;
         esac
-
-detect_rc_file() {
-case "${1-}" in
---help|--usage|-h)
-  detect_rc_file_usage
-  return 0
-  ;;
-esac
-
 set -eu
 
 done
@@ -63,7 +58,7 @@ done
 if [ "$#" -gt 0 ]; then
         printf '%s\n' "detect-rc-file: unexpected argument '$1'." >&2
         detect_rc_file_usage
-        return 1
+        exit 1
 fi
 
 add_candidate() {
@@ -192,7 +187,7 @@ fi
 
 if [ -z "$rc_file" ]; then
         printf '%s\n' "detect-rc-file: unable to determine a startup file." >&2
-        return 1
+        exit 1
 fi
 
 case $rc_file in

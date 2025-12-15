@@ -14,6 +14,18 @@ scripts can present the measurements clearly.
 USAGE
 }
 
+
+
+fathom_cursor() {
+case "${1-}" in
+--help|--usage|-h)
+  fathom_cursor_usage
+  return 0
+  ;;
+esac
+
+set -eu
+
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 
 # Resolve the require-command helper
@@ -43,7 +55,7 @@ while [ "$#" -gt 0 ]; do
             ;;
         --help|--usage|-h)
             fathom_cursor_usage
-            exit 0
+            return 0
             ;;
         --)
             shift
@@ -56,16 +68,6 @@ while [ "$#" -gt 0 ]; do
             break
             ;;
     esac
-
-fathom_cursor() {
-case "${1-}" in
---help|--usage|-h)
-  fathom_cursor_usage
-  return 0
-  ;;
-esac
-
-set -eu
 
     shift
 done
@@ -112,7 +114,7 @@ else
 
     exec 3<>"$TTY_DEVICE" || return 1
 
-    # Preserve the terminal state and restore it on return 1
+    # Preserve the terminal state and restore it on exit
     saved_state=$(stty -g <&3 2>/dev/null)
     if [ -z "$saved_state" ]; then
         printf '%s\n' 'fathom-cursor: unable to read terminal settings' >&2

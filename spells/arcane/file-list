@@ -40,7 +40,8 @@ for filename in "$1"/*; do
   printf '%s\n' "$filename" >> "$text_file"
 done
 
-printf '%s\n' "Text file created: $text_file"}
+printf '%s\n' "Text file created: $text_file"
+}
 
 # Self-execute when run directly (not sourced)
 case "$0" in

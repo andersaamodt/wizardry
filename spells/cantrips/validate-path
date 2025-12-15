@@ -25,46 +25,47 @@ set -eu
 
 # Check argument provided
 if [ -z "${1+x}" ]; then
-        return 1
+  return 1
 fi
 
 path=$1
 
 # Empty path is invalid
 if [ -z "$path" ]; then
-        return 1
+  return 1
 fi
 
 # Check path length (4096 is typical max for full path)
 length=$(printf '%s' "$path" | wc -c | tr -d ' ')
 if [ "$length" -gt 4096 ]; then
-        return 1
+  return 1
 fi
 
 # Check each component length (255 is typical max for filename)
 # Split on / and check each part
 remaining=$path
 while [ -n "$remaining" ]; do
-        case "$remaining" in
-                */*)
-                        component=${remaining%%/*}
-                        remaining=${remaining#*/}
-                        ;;
-                *)
-                        component=$remaining
-                        remaining=''
-                        ;;
-        esac
-        
-        if [ -n "$component" ]; then
-                comp_length=$(printf '%s' "$component" | wc -c | tr -d ' ')
-                if [ "$comp_length" -gt 255 ]; then
-                        return 1
-                fi
-        fi
+  case "$remaining" in
+    */*)
+      component=${remaining%%/*}
+      remaining=${remaining#*/}
+      ;;
+    *)
+      component=$remaining
+      remaining=''
+      ;;
+  esac
+  
+  if [ -n "$component" ]; then
+    comp_length=$(printf '%s' "$component" | wc -c | tr -d ' ')
+    if [ "$comp_length" -gt 255 ]; then
+      return 1
+    fi
+  fi
 done
 
-return 0}
+return 0
+}
 
 # Self-execute when run directly (not sourced)
 case "$0" in

@@ -363,9 +363,14 @@ These exemptions have been resolved and are documented here to prevent backslidi
    - **Reason**: Arcana are installation and configuration scripts that are meant to be executed, not sourced. They manage system-level software installation and are not typically called from other spells.
    - **Status**: Wrapper functions not required for arcana
 
+2. **Source-only spells** (`cantrips/colors`)
+   - **Reason**: These spells are designed to be sourced (not executed) to set environment variables in the current shell. Wrapping them in a function would make the variables local to that function and inaccessible to the calling shell.
+   - **Status**: Wrapper functions incompatible with sourcing behavior
+   - **Example**: `colors` sets `RED`, `GREEN`, `RESET`, etc. as shell variables
+
 **Test**: `test_spells_require_wrapper_functions` in `.tests/common-tests.sh`
 
-**Implementation**: The test excludes paths matching `*/.arcana/*` from the wrapper function requirement.
+**Implementation**: The test excludes paths matching `*/.arcana/*` and `cantrips/colors` from the wrapper function requirement.
 
 **Future**: If specific arcana need to be sourceable (e.g., for testing or composition), they can be updated individually.
 

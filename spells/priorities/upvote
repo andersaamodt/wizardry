@@ -3,7 +3,6 @@
 # This spell increments the upvote count on a file using extended attributes.
 # Use it to track popularity or priority through file metadata.
 
-require-wizardry || exit 1
 
 upvote_usage() {
 cat <<'USAGE'
@@ -16,11 +15,12 @@ USAGE
 
 
 upvote() {
+
 case "${1-}" in
 --help|--usage|-h)
-  upvote_usage
-  return 0
-  ;;
+        upvote_usage
+        exit 0
+        ;;
 esac
 
 set -eu
@@ -29,7 +29,7 @@ set -eu
 if [ -z "${1-}" ]; then
         printf '%s\n' "upvote: file path required." >&2
         upvote_usage >&2
-        return 1
+        exit 1
 fi
 
 file=$1
@@ -54,7 +54,8 @@ new_count=$((current + 1))
 # Store the new value
 enchant "$file" upvotes "$new_count" >/dev/null
 
-say "Upvotes: $new_count"}
+say "Upvotes: $new_count"
+}
 
 # Self-execute when run directly (not sourced)
 case "$0" in

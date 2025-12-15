@@ -941,6 +941,12 @@ test_spells_require_wrapper_functions() {
     
     rel_path=${spell#"$ROOT_DIR/spells/"}
     
+    # Skip spells that are meant to be sourced (not executed)
+    # These spells set environment variables and must run in the current shell
+    case "$rel_path" in
+      cantrips/colors) continue ;;
+    esac
+    
     # Convert filename to expected wrapper function name
     # For hyphenated names: lint-magic -> lint_magic
     wrapper_name=$(printf '%s' "$name" | sed 's/-/_/g')

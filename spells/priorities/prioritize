@@ -3,7 +3,6 @@
 # This spell sets or updates the priority of a file within a directory.
 # Use it to organize files by importance using extended attributes.
 
-require-wizardry || exit 1
 
 prioritize_usage() {
 cat <<'USAGE'
@@ -16,11 +15,12 @@ USAGE
 
 
 prioritize() {
+
 case "${1-}" in
 --help|--usage|-h)
-  prioritize_usage
-  return 0
-  ;;
+        prioritize_usage
+        exit 0
+        ;;
 esac
 
 set -eu
@@ -29,7 +29,7 @@ set -eu
 if [ -z "${1-}" ]; then
         printf '%s\n' "prioritize: file path required." >&2
         prioritize_usage >&2
-        return 1
+        exit 1
 fi
 
 file=$1
@@ -71,17 +71,17 @@ case "$priorities" in
                 enchant "$directory" priorities "$target_hash" >/dev/null
                 enchant "$file" priority 1 >/dev/null
                 say "Prioritized '$(file-name "$file")' as the first priority."
-                return 0
+                exit 0
                 ;;
 esac
 
 # Get the priority of the first item in the current list of priorities
 first_hash=$(printf '%s' "$priorities" | cut -d',' -f1)
 
-# If the target file is already the first priority, return 1
+# If the target file is already the first priority, exit
 if equals "$target_hash" "$first_hash"; then
         say "'$(file-name "$file")' is already the highest priority."
-        return 0
+        exit 0
 fi
 
 # Filter the target hash from the current priorities list to avoid duplicates
@@ -103,7 +103,8 @@ new_priority=$((target_priority + 1))
 enchant "$file" priority "$new_priority" >/dev/null
 enchant "$directory" priorities "$new_priorities" >/dev/null
 
-say "Prioritized '$(file-name "$file")'."}
+say "Prioritized '$(file-name "$file")'."
+}
 
 # Self-execute when run directly (not sourced)
 case "$0" in
