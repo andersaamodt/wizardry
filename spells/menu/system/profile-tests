@@ -33,6 +33,7 @@ esac
 
 set -eu
 
+profile_tests() {
 # Find the script directory and root
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 root_dir=$(CDPATH= cd -- "$script_dir/../../.." && pwd -P)
@@ -206,3 +207,8 @@ fi
 # Cleanup
 trap - EXIT HUP INT TERM
 rm -f "$tmpfile"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */profile-tests) profile_tests "$@" ;; esac
