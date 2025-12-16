@@ -502,9 +502,9 @@ test_no_allcaps_variable_assignments() {
     # - Inline with read (IFS= read pattern)
     # - Export statements (handled by other test)
     # - Variable expansions within strings
-    assignments=$(grep -nE '^[[:space:]]*[A-Z][A-Z0-9_]+=([^=]|$)' "$spell" 2>/dev/null | \
-      grep -v '^\([0-9]*:\)[[:space:]]*#' | \
-      grep -v 'IFS=[[:space:]]*read' | \
+    assignments=$(grep -nE '^[[:space:]]*[A-Z][A-Z0-9_]+=' "$spell" 2>/dev/null | \
+      grep -v '^[0-9]*:[[:space:]]*#' | \
+      grep -v 'IFS=.*read' | \
       grep -v 'export[[:space:]]' || true)
     
     if [ -n "$assignments" ]; then
@@ -543,7 +543,11 @@ test_no_allcaps_variable_assignments() {
           # Color and theme variables (used when not sourcing cantrips/colors)
           RED|GREEN|BLUE|YELLOW|CYAN|WHITE|BLACK|PURPLE|GREY|GRAY|LIGHT_BLUE) continue ;;
           RESET|BOLD|ITALICS|UNDERLINED|BLINK|INVERT|STRIKE) continue ;;
-          BRIGHT_*|BG_*) continue ;;
+          # Bright color variables (BRIGHT_RED, BRIGHT_GREEN, etc.)
+          BRIGHT_BLACK|BRIGHT_RED|BRIGHT_GREEN|BRIGHT_YELLOW|BRIGHT_BLUE|BRIGHT_PURPLE|BRIGHT_CYAN|BRIGHT_WHITE) continue ;;
+          # Background color variables (BG_BLACK, BG_RED, etc.)
+          BG_BLACK|BG_RED|BG_GREEN|BG_YELLOW|BG_BLUE|BG_PURPLE|BG_CYAN|BG_WHITE) continue ;;
+          BG_BRIGHT_BLACK|BG_BRIGHT_RED|BG_BRIGHT_GREEN|BG_BRIGHT_YELLOW|BG_BRIGHT_BLUE|BG_BRIGHT_PURPLE|BG_BRIGHT_CYAN|BG_BRIGHT_WHITE) continue ;;
           THEME_WARNING|THEME_SUCCESS|THEME_ERROR|THEME_MUTED|THEME_HIGHLIGHT|THEME_HEADING|THEME_DIVIDER|THEME_CUSTOM) continue ;;
           
           # Cantrip configuration variables
@@ -554,11 +558,17 @@ test_no_allcaps_variable_assignments() {
           SCRIPT_DIR|SCRIPT_NAME|SCRIPT_SOURCE|SERVICE_DIR|TTY_DEVICE) continue ;;
           ASK_TEXT_HELPER|ASK_TEXT|ASK_YN|ASK_CANTRIP_INPUT) continue ;;
           READ_MAGIC|SYSTEMCTL) continue ;;
-          MARKERS_DIR|CONTACTS_DIR|MUD_CONFIG|MUD_*) continue ;;
-          LOOK_SCRIPT_PATH|MISSING_ATTR_MSG|IDENTIFY_*) continue ;;
+          MARKERS_DIR|CONTACTS_DIR|MUD_CONFIG) continue ;;
+          # MUD-related variables (MUD_LOCATION, MUD_TITLE, etc.)
+          MUD_LOCATION|MUD_TITLE|MUD_DESCRIPTION|MUD_SPELL|MUD_MONSTER|MUD_ITEM|MUD_HANDLE) continue ;;
+          # IDENTIFY-related variables
+          IDENTIFY_TITLE|IDENTIFY_DESCRIPTION) continue ;;
+          # MIN_SUBTESTS variables
+          MIN_SUBTESTS_IMP|MIN_SUBTESTS_SPELL) continue ;;
+          LOOK_SCRIPT_PATH|MISSING_ATTR_MSG) continue ;;
           STATUS|VERBOSE|RUNNING_AS_SCRIPT|ERROR|OUTPUT|KEY|HELPER|FILE|DIR) continue ;;
           DISTRO|OS|RC_CANDIDATES|TORRC_PATHS|BITCOIN_VERSION_DEFAULT) continue ;;
-          IMPS_DIR|IMPS_TEXT_DIR|CONFIG_FILE|FEATURES|MIN_SUBTESTS_*|CLIPBOARD_MARKER) continue ;;
+          IMPS_DIR|IMPS_TEXT_DIR|CONFIG_FILE|FEATURES|CLIPBOARD_MARKER) continue ;;
           RUN_CMD_WORKDIR|PS_NAMES|SCRIPT) continue ;;
           ESC) continue ;;  # Used in colors and other places for ANSI escapes
         esac
