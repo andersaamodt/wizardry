@@ -186,15 +186,24 @@ SH
   # Create stub for check-cd-hook that checks WIZARDRY_RC_FILE
   cat >"$tmp/check-cd-hook" <<'SH'
 #!/bin/sh
-# Stub for check-cd-hook - only checks WIZARDRY_RC_FILE, not user's actual RC
+# Stub for check-cd-hook - MUST check only WIZARDRY_RC_FILE
+# This stub is designed to be found first in PATH via $tmp
+set -eu
 rc_file=${WIZARDRY_RC_FILE-}
 if [ -z "$rc_file" ]; then
-  # If WIZARDRY_RC_FILE not set, return failure (not installed)
+  # If WIZARDRY_RC_FILE not set, hook is NOT installed
   exit 1
 fi
-if [ -f "$rc_file" ] && grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
+# Only check the specified file, never fall back to user's RC files
+if [ ! -f "$rc_file" ]; then
+  # File doesn't exist, hook is NOT installed
+  exit 1
+fi
+# Check for the marker in the specified file
+if grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
   exit 0
 fi
+# Marker not found, hook is NOT installed
 exit 1
 SH
   chmod +x "$tmp/check-cd-hook"
@@ -241,15 +250,24 @@ SH
   # Create stub for check-cd-hook that checks WIZARDRY_RC_FILE
   cat >"$tmp/check-cd-hook" <<'SH'
 #!/bin/sh
-# Stub for check-cd-hook - only checks WIZARDRY_RC_FILE, not user's actual RC
+# Stub for check-cd-hook - MUST check only WIZARDRY_RC_FILE
+# This stub is designed to be found first in PATH via $tmp
+set -eu
 rc_file=${WIZARDRY_RC_FILE-}
 if [ -z "$rc_file" ]; then
-  # If WIZARDRY_RC_FILE not set, return failure (not installed)
+  # If WIZARDRY_RC_FILE not set, hook is NOT installed
   exit 1
 fi
-if [ -f "$rc_file" ] && grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
+# Only check the specified file, never fall back to user's RC files
+if [ ! -f "$rc_file" ]; then
+  # File doesn't exist, hook is NOT installed
+  exit 1
+fi
+# Check for the marker in the specified file
+if grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
   exit 0
 fi
+# Marker not found, hook is NOT installed
 exit 1
 SH
   chmod +x "$tmp/check-cd-hook"
@@ -312,15 +330,24 @@ SH
   # Create stub for check-cd-hook that checks WIZARDRY_RC_FILE
   cat >"$tmp/check-cd-hook" <<'SH'
 #!/bin/sh
-# Stub for check-cd-hook - only checks WIZARDRY_RC_FILE, not user's actual RC
+# Stub for check-cd-hook - MUST check only WIZARDRY_RC_FILE
+# This stub is designed to be found first in PATH via $tmp
+set -eu
 rc_file=${WIZARDRY_RC_FILE-}
 if [ -z "$rc_file" ]; then
-  # If WIZARDRY_RC_FILE not set, return failure (not installed)
+  # If WIZARDRY_RC_FILE not set, hook is NOT installed
   exit 1
 fi
-if [ -f "$rc_file" ] && grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
+# Only check the specified file, never fall back to user's RC files
+if [ ! -f "$rc_file" ]; then
+  # File doesn't exist, hook is NOT installed
+  exit 1
+fi
+# Check for the marker in the specified file
+if grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
   exit 0
 fi
+# Marker not found, hook is NOT installed
 exit 1
 SH
   chmod +x "$tmp/check-cd-hook"
@@ -367,15 +394,24 @@ SH
   # Create stub for check-cd-hook that checks WIZARDRY_RC_FILE
   cat >"$tmp/check-cd-hook" <<'SH'
 #!/bin/sh
-# Stub for check-cd-hook - only checks WIZARDRY_RC_FILE, not user's actual RC
+# Stub for check-cd-hook - MUST check only WIZARDRY_RC_FILE
+# This stub is designed to be found first in PATH via $tmp
+set -eu
 rc_file=${WIZARDRY_RC_FILE-}
 if [ -z "$rc_file" ]; then
-  # If WIZARDRY_RC_FILE not set, return failure (not installed)
+  # If WIZARDRY_RC_FILE not set, hook is NOT installed
   exit 1
 fi
-if [ -f "$rc_file" ] && grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
+# Only check the specified file, never fall back to user's RC files
+if [ ! -f "$rc_file" ]; then
+  # File doesn't exist, hook is NOT installed
+  exit 1
+fi
+# Check for the marker in the specified file
+if grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
   exit 0
 fi
+# Marker not found, hook is NOT installed
 exit 1
 SH
   chmod +x "$tmp/check-cd-hook"
@@ -440,15 +476,24 @@ SH
   # Create stub for check-cd-hook that checks WIZARDRY_RC_FILE
   cat >"$tmp/check-cd-hook" <<'SH'
 #!/bin/sh
-# Stub for check-cd-hook - only checks WIZARDRY_RC_FILE, not user's actual RC
+# Stub for check-cd-hook - MUST check only WIZARDRY_RC_FILE
+# This stub is designed to be found first in PATH via $tmp
+set -eu
 rc_file=${WIZARDRY_RC_FILE-}
 if [ -z "$rc_file" ]; then
-  # If WIZARDRY_RC_FILE not set, return failure (not installed)
+  # If WIZARDRY_RC_FILE not set, hook is NOT installed
   exit 1
 fi
-if [ -f "$rc_file" ] && grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
+# Only check the specified file, never fall back to user's RC files
+if [ ! -f "$rc_file" ]; then
+  # File doesn't exist, hook is NOT installed
+  exit 1
+fi
+# Check for the marker in the specified file
+if grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
   exit 0
 fi
+# Marker not found, hook is NOT installed
 exit 1
 SH
   chmod +x "$tmp/check-cd-hook"
@@ -495,15 +540,24 @@ SH
   # Create stub for check-cd-hook that checks WIZARDRY_RC_FILE
   cat >"$tmp/check-cd-hook" <<'SH'
 #!/bin/sh
-# Stub for check-cd-hook - only checks WIZARDRY_RC_FILE, not user's actual RC
+# Stub for check-cd-hook - MUST check only WIZARDRY_RC_FILE
+# This stub is designed to be found first in PATH via $tmp
+set -eu
 rc_file=${WIZARDRY_RC_FILE-}
 if [ -z "$rc_file" ]; then
-  # If WIZARDRY_RC_FILE not set, return failure (not installed)
+  # If WIZARDRY_RC_FILE not set, hook is NOT installed
   exit 1
 fi
-if [ -f "$rc_file" ] && grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
+# Only check the specified file, never fall back to user's RC files
+if [ ! -f "$rc_file" ]; then
+  # File doesn't exist, hook is NOT installed
+  exit 1
+fi
+# Check for the marker in the specified file
+if grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
   exit 0
 fi
+# Marker not found, hook is NOT installed
 exit 1
 SH
   chmod +x "$tmp/check-cd-hook"
@@ -561,15 +615,24 @@ SH
   # Create stub for check-cd-hook that checks WIZARDRY_RC_FILE
   cat >"$tmp/check-cd-hook" <<'SH'
 #!/bin/sh
-# Stub for check-cd-hook - only checks WIZARDRY_RC_FILE, not user's actual RC
+# Stub for check-cd-hook - MUST check only WIZARDRY_RC_FILE
+# This stub is designed to be found first in PATH via $tmp
+set -eu
 rc_file=${WIZARDRY_RC_FILE-}
 if [ -z "$rc_file" ]; then
-  # If WIZARDRY_RC_FILE not set, return failure (not installed)
+  # If WIZARDRY_RC_FILE not set, hook is NOT installed
   exit 1
 fi
-if [ -f "$rc_file" ] && grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
+# Only check the specified file, never fall back to user's RC files
+if [ ! -f "$rc_file" ]; then
+  # File doesn't exist, hook is NOT installed
+  exit 1
+fi
+# Check for the marker in the specified file
+if grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
   exit 0
 fi
+# Marker not found, hook is NOT installed
 exit 1
 SH
   chmod +x "$tmp/check-cd-hook"
@@ -657,15 +720,24 @@ SH
   # Create stub for check-cd-hook that checks WIZARDRY_RC_FILE
   cat >"$tmp/check-cd-hook" <<'SH'
 #!/bin/sh
-# Stub for check-cd-hook - only checks WIZARDRY_RC_FILE, not user's actual RC
+# Stub for check-cd-hook - MUST check only WIZARDRY_RC_FILE
+# This stub is designed to be found first in PATH via $tmp
+set -eu
 rc_file=${WIZARDRY_RC_FILE-}
 if [ -z "$rc_file" ]; then
-  # If WIZARDRY_RC_FILE not set, return failure (not installed)
+  # If WIZARDRY_RC_FILE not set, hook is NOT installed
   exit 1
 fi
-if [ -f "$rc_file" ] && grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
+# Only check the specified file, never fall back to user's RC files
+if [ ! -f "$rc_file" ]; then
+  # File doesn't exist, hook is NOT installed
+  exit 1
+fi
+# Check for the marker in the specified file
+if grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
   exit 0
 fi
+# Marker not found, hook is NOT installed
 exit 1
 SH
   chmod +x "$tmp/check-cd-hook"
@@ -763,15 +835,24 @@ SH
   # Create stub for check-cd-hook that checks WIZARDRY_RC_FILE
   cat >"$tmp/check-cd-hook" <<'SH'
 #!/bin/sh
-# Stub for check-cd-hook - only checks WIZARDRY_RC_FILE, not user's actual RC
+# Stub for check-cd-hook - MUST check only WIZARDRY_RC_FILE
+# This stub is designed to be found first in PATH via $tmp
+set -eu
 rc_file=${WIZARDRY_RC_FILE-}
 if [ -z "$rc_file" ]; then
-  # If WIZARDRY_RC_FILE not set, return failure (not installed)
+  # If WIZARDRY_RC_FILE not set, hook is NOT installed
   exit 1
 fi
-if [ -f "$rc_file" ] && grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
+# Only check the specified file, never fall back to user's RC files
+if [ ! -f "$rc_file" ]; then
+  # File doesn't exist, hook is NOT installed
+  exit 1
+fi
+# Check for the marker in the specified file
+if grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
   exit 0
 fi
+# Marker not found, hook is NOT installed
 exit 1
 SH
   chmod +x "$tmp/check-cd-hook"
