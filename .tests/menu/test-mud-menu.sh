@@ -183,6 +183,17 @@ printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
   
+  # Create stub for check-cd-hook that checks WIZARDRY_RC_FILE
+  cat >"$tmp/check-cd-hook" <<'SH'
+#!/bin/sh
+rc_file=${WIZARDRY_RC_FILE:-$HOME/.bashrc}
+if [ -f "$rc_file" ] && grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
+  exit 0
+fi
+exit 1
+SH
+  chmod +x "$tmp/check-cd-hook"
+  
   # Use a temp rc file that doesn't have the cd hook installed
   rc_file="$tmp/rc"
   : >"$rc_file"
@@ -221,6 +232,17 @@ SH
 printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
+  
+  # Create stub for check-cd-hook that checks WIZARDRY_RC_FILE
+  cat >"$tmp/check-cd-hook" <<'SH'
+#!/bin/sh
+rc_file=${WIZARDRY_RC_FILE:-$HOME/.bashrc}
+if [ -f "$rc_file" ] && grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
+  exit 0
+fi
+exit 1
+SH
+  chmod +x "$tmp/check-cd-hook"
   
   # Use a temp rc file with the cd hook marker installed (new format uses function)
   rc_file="$tmp/rc"
@@ -462,6 +484,17 @@ printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
   
+  # Create stub for check-cd-hook that checks WIZARDRY_RC_FILE
+  cat >"$tmp/check-cd-hook" <<'SH'
+#!/bin/sh
+rc_file=${WIZARDRY_RC_FILE:-$HOME/.bashrc}
+if [ -f "$rc_file" ] && grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
+  exit 0
+fi
+exit 1
+SH
+  chmod +x "$tmp/check-cd-hook"
+  
   # Create a menu stub that logs --start-selection argument and simulates toggle action
   call_count_file="$tmp/call_count"
   printf '0\n' >"$call_count_file"
@@ -541,6 +574,17 @@ SH
 printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
+  
+  # Create stub for check-cd-hook that checks WIZARDRY_RC_FILE
+  cat >"$tmp/check-cd-hook" <<'SH'
+#!/bin/sh
+rc_file=${WIZARDRY_RC_FILE:-$HOME/.bashrc}
+if [ -f "$rc_file" ] && grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
+  exit 0
+fi
+exit 1
+SH
+  chmod +x "$tmp/check-cd-hook"
   
   # Create mud-config stub that reads from MUD_DIR
   cat >"$tmp/mud-config" <<'SH'
@@ -631,6 +675,17 @@ SH
 printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
+  
+  # Create stub for check-cd-hook that checks WIZARDRY_RC_FILE
+  cat >"$tmp/check-cd-hook" <<'SH'
+#!/bin/sh
+rc_file=${WIZARDRY_RC_FILE:-$HOME/.bashrc}
+if [ -f "$rc_file" ] && grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
+  exit 0
+fi
+exit 1
+SH
+  chmod +x "$tmp/check-cd-hook"
   
   call_count_file="$tmp/call_count"
   printf '0\n' >"$call_count_file"
