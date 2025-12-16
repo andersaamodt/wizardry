@@ -198,7 +198,7 @@ SH
   rc_file="$tmp/rc"
   : >"$rc_file"
   
-  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" "$ROOT_DIR/spells/menu/mud-menu"
+  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:/bin:/usr/bin" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" "$ROOT_DIR/spells/menu/mud-menu"
   _assert_success || return 1
   
   args=$(cat "$tmp/log")
@@ -252,7 +252,7 @@ cd() { command cd "$@" && { look 2>/dev/null || true; }; }
 # <<< wizardry cd cantrip <<<
 RC
   
-  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" "$ROOT_DIR/spells/menu/mud-menu"
+  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:/bin:/usr/bin" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" "$ROOT_DIR/spells/menu/mud-menu"
   _assert_success || return 1
   
   args=$(cat "$tmp/log")
@@ -299,13 +299,24 @@ printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
   
+  # Create stub for check-cd-hook that checks WIZARDRY_RC_FILE
+  cat >"$tmp/check-cd-hook" <<'SH'
+#!/bin/sh
+rc_file=${WIZARDRY_RC_FILE:-$HOME/.bashrc}
+if [ -f "$rc_file" ] && grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
+  exit 0
+fi
+exit 1
+SH
+  chmod +x "$tmp/check-cd-hook"
+  
   # Use a temp rc file and config dir with no features enabled
   rc_file="$tmp/rc"
   : >"$rc_file"
   config_dir="$tmp/mud"
   mkdir -p "$config_dir"
   
-  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
+  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:/bin:/usr/bin" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
   _assert_success || return 1
   
   args=$(cat "$tmp/log")
@@ -338,6 +349,17 @@ printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
   
+  # Create stub for check-cd-hook that checks WIZARDRY_RC_FILE
+  cat >"$tmp/check-cd-hook" <<'SH'
+#!/bin/sh
+rc_file=${WIZARDRY_RC_FILE:-$HOME/.bashrc}
+if [ -f "$rc_file" ] && grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
+  exit 0
+fi
+exit 1
+SH
+  chmod +x "$tmp/check-cd-hook"
+  
   # Use a temp rc file and config dir with feature enabled
   rc_file="$tmp/rc"
   : >"$rc_file"
@@ -362,7 +384,7 @@ esac
 SH
   chmod +x "$tmp/mud-config"
   
-  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
+  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:/bin:/usr/bin" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
   _assert_success || return 1
   
   args=$(cat "$tmp/log")
@@ -395,12 +417,23 @@ printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
   
+  # Create stub for check-cd-hook that checks WIZARDRY_RC_FILE
+  cat >"$tmp/check-cd-hook" <<'SH'
+#!/bin/sh
+rc_file=${WIZARDRY_RC_FILE:-$HOME/.bashrc}
+if [ -f "$rc_file" ] && grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
+  exit 0
+fi
+exit 1
+SH
+  chmod +x "$tmp/check-cd-hook"
+  
   rc_file="$tmp/rc"
   : >"$rc_file"
   config_dir="$tmp/mud"
   mkdir -p "$config_dir"
   
-  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
+  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:/bin:/usr/bin" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
   _assert_success || return 1
   
   args=$(cat "$tmp/log")
@@ -434,12 +467,23 @@ printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
   
+  # Create stub for check-cd-hook that checks WIZARDRY_RC_FILE
+  cat >"$tmp/check-cd-hook" <<'SH'
+#!/bin/sh
+rc_file=${WIZARDRY_RC_FILE:-$HOME/.bashrc}
+if [ -f "$rc_file" ] && grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
+  exit 0
+fi
+exit 1
+SH
+  chmod +x "$tmp/check-cd-hook"
+  
   rc_file="$tmp/rc"
   : >"$rc_file"
   config_dir="$tmp/mud"
   mkdir -p "$config_dir"
   
-  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
+  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:/bin:/usr/bin" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
   _assert_success || return 1
   
   args=$(cat "$tmp/log")
@@ -538,7 +582,7 @@ kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
 SH
   chmod +x "$tmp/menu"
   
-  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH:/usr/bin:/bin" MENU_LOG="$tmp/log" CALL_COUNT_FILE="$call_count_file" WIZARDRY_RC_FILE="$rc_file" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
+  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:/bin:/usr/bin" MENU_LOG="$tmp/log" CALL_COUNT_FILE="$call_count_file" WIZARDRY_RC_FILE="$rc_file" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
   _assert_success || { TEST_FAILURE_REASON="menu should exit successfully"; return 1; }
   
   log_content=$(cat "$tmp/log")
@@ -641,7 +685,7 @@ kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
 SH
   chmod +x "$tmp/menu"
   
-  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH:/usr/bin:/bin" MENU_LOG="$tmp/log" CALL_COUNT_FILE="$call_count_file" WIZARDRY_RC_FILE="$rc_file" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
+  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:/bin:/usr/bin" MENU_LOG="$tmp/log" CALL_COUNT_FILE="$call_count_file" WIZARDRY_RC_FILE="$rc_file" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
   _assert_success || { TEST_FAILURE_REASON="menu should exit successfully"; return 1; }
   
   log_content=$(cat "$tmp/log")
@@ -723,7 +767,7 @@ kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
 SH
   chmod +x "$tmp/menu"
   
-  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH:/usr/bin:/bin" MENU_LOG="$tmp/log" CALL_COUNT_FILE="$call_count_file" WIZARDRY_RC_FILE="$rc_file" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
+  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:/bin:/usr/bin" MENU_LOG="$tmp/log" CALL_COUNT_FILE="$call_count_file" WIZARDRY_RC_FILE="$rc_file" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
   _assert_success || { TEST_FAILURE_REASON="menu should exit successfully"; return 1; }
   
   log_content=$(cat "$tmp/log")
