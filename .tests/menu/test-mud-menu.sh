@@ -186,7 +186,12 @@ SH
   # Create stub for check-cd-hook that checks WIZARDRY_RC_FILE
   cat >"$tmp/check-cd-hook" <<'SH'
 #!/bin/sh
-rc_file=${WIZARDRY_RC_FILE:-$HOME/.bashrc}
+# Stub for check-cd-hook - only checks WIZARDRY_RC_FILE, not user's actual RC
+rc_file=${WIZARDRY_RC_FILE-}
+if [ -z "$rc_file" ]; then
+  # If WIZARDRY_RC_FILE not set, return failure (not installed)
+  exit 1
+fi
 if [ -f "$rc_file" ] && grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
   exit 0
 fi
@@ -236,7 +241,12 @@ SH
   # Create stub for check-cd-hook that checks WIZARDRY_RC_FILE
   cat >"$tmp/check-cd-hook" <<'SH'
 #!/bin/sh
-rc_file=${WIZARDRY_RC_FILE:-$HOME/.bashrc}
+# Stub for check-cd-hook - only checks WIZARDRY_RC_FILE, not user's actual RC
+rc_file=${WIZARDRY_RC_FILE-}
+if [ -z "$rc_file" ]; then
+  # If WIZARDRY_RC_FILE not set, return failure (not installed)
+  exit 1
+fi
 if [ -f "$rc_file" ] && grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
   exit 0
 fi
@@ -302,7 +312,12 @@ SH
   # Create stub for check-cd-hook that checks WIZARDRY_RC_FILE
   cat >"$tmp/check-cd-hook" <<'SH'
 #!/bin/sh
-rc_file=${WIZARDRY_RC_FILE:-$HOME/.bashrc}
+# Stub for check-cd-hook - only checks WIZARDRY_RC_FILE, not user's actual RC
+rc_file=${WIZARDRY_RC_FILE-}
+if [ -z "$rc_file" ]; then
+  # If WIZARDRY_RC_FILE not set, return failure (not installed)
+  exit 1
+fi
 if [ -f "$rc_file" ] && grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
   exit 0
 fi
@@ -352,7 +367,12 @@ SH
   # Create stub for check-cd-hook that checks WIZARDRY_RC_FILE
   cat >"$tmp/check-cd-hook" <<'SH'
 #!/bin/sh
-rc_file=${WIZARDRY_RC_FILE:-$HOME/.bashrc}
+# Stub for check-cd-hook - only checks WIZARDRY_RC_FILE, not user's actual RC
+rc_file=${WIZARDRY_RC_FILE-}
+if [ -z "$rc_file" ]; then
+  # If WIZARDRY_RC_FILE not set, return failure (not installed)
+  exit 1
+fi
 if [ -f "$rc_file" ] && grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
   exit 0
 fi
@@ -420,7 +440,12 @@ SH
   # Create stub for check-cd-hook that checks WIZARDRY_RC_FILE
   cat >"$tmp/check-cd-hook" <<'SH'
 #!/bin/sh
-rc_file=${WIZARDRY_RC_FILE:-$HOME/.bashrc}
+# Stub for check-cd-hook - only checks WIZARDRY_RC_FILE, not user's actual RC
+rc_file=${WIZARDRY_RC_FILE-}
+if [ -z "$rc_file" ]; then
+  # If WIZARDRY_RC_FILE not set, return failure (not installed)
+  exit 1
+fi
 if [ -f "$rc_file" ] && grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
   exit 0
 fi
@@ -470,7 +495,12 @@ SH
   # Create stub for check-cd-hook that checks WIZARDRY_RC_FILE
   cat >"$tmp/check-cd-hook" <<'SH'
 #!/bin/sh
-rc_file=${WIZARDRY_RC_FILE:-$HOME/.bashrc}
+# Stub for check-cd-hook - only checks WIZARDRY_RC_FILE, not user's actual RC
+rc_file=${WIZARDRY_RC_FILE-}
+if [ -z "$rc_file" ]; then
+  # If WIZARDRY_RC_FILE not set, return failure (not installed)
+  exit 1
+fi
 if [ -f "$rc_file" ] && grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
   exit 0
 fi
@@ -531,7 +561,12 @@ SH
   # Create stub for check-cd-hook that checks WIZARDRY_RC_FILE
   cat >"$tmp/check-cd-hook" <<'SH'
 #!/bin/sh
-rc_file=${WIZARDRY_RC_FILE:-$HOME/.bashrc}
+# Stub for check-cd-hook - only checks WIZARDRY_RC_FILE, not user's actual RC
+rc_file=${WIZARDRY_RC_FILE-}
+if [ -z "$rc_file" ]; then
+  # If WIZARDRY_RC_FILE not set, return failure (not installed)
+  exit 1
+fi
 if [ -f "$rc_file" ] && grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
   exit 0
 fi
@@ -622,7 +657,12 @@ SH
   # Create stub for check-cd-hook that checks WIZARDRY_RC_FILE
   cat >"$tmp/check-cd-hook" <<'SH'
 #!/bin/sh
-rc_file=${WIZARDRY_RC_FILE:-$HOME/.bashrc}
+# Stub for check-cd-hook - only checks WIZARDRY_RC_FILE, not user's actual RC
+rc_file=${WIZARDRY_RC_FILE-}
+if [ -z "$rc_file" ]; then
+  # If WIZARDRY_RC_FILE not set, return failure (not installed)
+  exit 1
+fi
 if [ -f "$rc_file" ] && grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
   exit 0
 fi
@@ -723,7 +763,12 @@ SH
   # Create stub for check-cd-hook that checks WIZARDRY_RC_FILE
   cat >"$tmp/check-cd-hook" <<'SH'
 #!/bin/sh
-rc_file=${WIZARDRY_RC_FILE:-$HOME/.bashrc}
+# Stub for check-cd-hook - only checks WIZARDRY_RC_FILE, not user's actual RC
+rc_file=${WIZARDRY_RC_FILE-}
+if [ -z "$rc_file" ]; then
+  # If WIZARDRY_RC_FILE not set, return failure (not installed)
+  exit 1
+fi
 if [ -f "$rc_file" ] && grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
   exit 0
 fi
