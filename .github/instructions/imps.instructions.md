@@ -243,3 +243,45 @@ Imps used only in tests must be prefixed with `test-`:
 - Location: `spells/.imps/test/`
 - Purpose: Test stubs, fixtures, helpers
 - Not for production use
+
+## Variable Naming in Imps
+
+**CRITICAL**: Follow the same variable naming conventions as spells.
+
+### Use lowercase for all local variables
+
+```sh
+#!/bin/sh
+# process-file FILE - process a file
+
+set -eu
+
+_process_file() {
+  input_file="$1"
+  temp_file=$(mktemp)
+  output_dir="/tmp/processed"
+  
+  # Process file...
+}
+
+case "$0" in
+  */process-file) _process_file "$@" ;; esac
+```
+
+### NEVER use ALL_CAPS for local variables
+
+```sh
+# WRONG - ALL_CAPS suggests environment variable
+INPUT_FILE="$1"
+TEMP_FILE=$(mktemp)
+OUTPUT_DIR="/tmp/processed"
+```
+
+### Use ALL_CAPS only for:
+1. Declared globals (`WIZARDRY_DIR`, `SPELLBOOK_DIR`, `MUD_DIR`)
+2. System environment variables (`PATH`, `HOME`, etc.)
+3. Feature flags (`WIZARDRY_LOG_LEVEL`, etc.)
+
+See `spells.instructions.md` for complete variable naming guidelines.
+
+**Enforcement**: `test_no_allcaps_variable_assignments` prevents ALL_CAPS local variables.
