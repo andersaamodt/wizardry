@@ -11,13 +11,16 @@ ith spaces is split into words for measurement.
 USAGE
 }
 
+
+
+
+max_length() {
 case "${1-}" in
 --help|--usage|-h)
-        max_length_usage
-        exit 0
-        ;;
+  max_length_usage
+  return 0
+  ;;
 esac
-
 
 set -eu
 verbose=0
@@ -28,7 +31,7 @@ fi
 
 if [ "$#" -eq 0 ]; then
   printf '%s\n' "No arguments passed to max_length"
-  exit 1
+  return 1
 fi
 
 # Preserve the intent of the previous implementation: when the caller passes a
@@ -51,3 +54,8 @@ if [ "$verbose" -eq 1 ]; then
 fi
 
 printf '%s\n' "$longest"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */max-length) max_length "$@" ;; esac

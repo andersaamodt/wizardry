@@ -13,15 +13,18 @@ Teleport to a marker set with mark-location. Defaults to marker "1", marker "0" 
 USAGE
 }
 
+
+
+jump_to_marker() {
 case "${1-}" in
 --help|--usage|-h)
-        jump_to_marker_usage
-        exit 0
-        ;;
+  jump_to_marker_usage
+  return 0
+  ;;
 -*)
-        warn "jump-to-marker: unknown option '$1'."
-        exit 1
-        ;;
+  warn "jump-to-marker: unknown option '$1'."
+  return 1
+  ;;
 esac
 
 set -eu
@@ -30,7 +33,17 @@ set -eu
 _jm_spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
 MARKERS_DIR=$(env-or JUMP_TO_MARKERS_DIR "$_jm_spell_home/.markers")
 
+# Call the implementation
+jump_to_marker_impl "$@"
+}
+
 jump_to_marker_impl() {
+        # Initialize MARKERS_DIR if not already set (for when called directly after sourcing)
+        if [ -z "${MARKERS_DIR:-}" ]; then
+                _jm_spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+                MARKERS_DIR=$(env-or JUMP_TO_MARKERS_DIR "$_jm_spell_home/.markers")
+        fi
+        
         markers_dir=$MARKERS_DIR
         marker_name="${1:-}"
         
@@ -255,4 +268,4 @@ PORTAL
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */jump-to-marker|*/jump) jump_to_marker_impl "$@" ;; esac
+  */jump-to-marker|*/jump) jump_to_marker "$@" ;; esac

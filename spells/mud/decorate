@@ -13,18 +13,21 @@ Decorate a location (folder or file) with a description shown when using the loo
 USAGE
 }
 
+
+
+decorate() {
 case "${1-}" in
 --help|--usage|-h)
-        decorate_usage
-        exit 0
-        ;;
+  decorate_usage
+  return 0
+  ;;
 esac
 
 set -eu
 
 if lacks enchant; then
         warn "decorate: enchant spell is missing."
-        exit 1
+        return 1
 fi
 
 # Parse arguments - detect which is path and which is description
@@ -58,19 +61,19 @@ elif [ $# -eq 2 ]; then
         elif [ -e "$1" ] && [ -e "$2" ]; then
                 # Both exist as paths - this is ambiguous
                 warn "decorate: both arguments appear to be valid paths."
-                exit 1
+                return 1
         elif [ -z "$1" ] || [ -z "$2" ]; then
                 # One of the arguments is empty
                 warn "decorate: description cannot be empty."
-                exit 1
+                return 1
         else
                 # Neither exists as a path
                 warn "decorate: no valid path found among arguments."
-                exit 1
+                return 1
         fi
 else
         warn "decorate: too many arguments provided."
-        exit 1
+        return 1
 fi
 
 # Resolve path to absolute
@@ -92,7 +95,7 @@ fi
 
 if [ -z "$description" ]; then
         warn "decorate: description cannot be empty."
-        exit 1
+        return 1
 fi
 
 # Apply the description using enchant
@@ -100,5 +103,10 @@ if enchant "$path" description "$description"; then
         printf '%s\n' "The location has been decorated with the description."
 else
         warn "decorate: failed to apply description."
-        exit 1
+        return 1
 fi
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */decorate) decorate "$@" ;; esac

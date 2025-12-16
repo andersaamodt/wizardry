@@ -12,20 +12,28 @@ Run a spell or command against every file in the current directory, printing eac
 USAGE
 }
 
+
+forall() {
 case "${1-}" in
 --help|--usage|-h)
-        forall_usage
-        exit 0
-        ;;
+  forall_usage
+  return 0
+  ;;
 esac
+
 set -eu
 
 if [ "$#" -lt 1 ]; then
         forall_usage >&2
-        exit 1
+        return 1
 fi
 
 for file in ./*; do
         printf '%s\n' "${file#./}"
     "$@" "$file" | awk '{print "   " $0}'
 done
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */forall) forall "$@" ;; esac

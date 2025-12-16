@@ -12,11 +12,14 @@ in the MUD config directory and used by MUD spells that need player identity.
 USAGE
 }
 
+
+
+set_player() {
 case "${1-}" in
 --help|--usage|-h)
-        set_player_usage
-        exit 0
-        ;;
+  set_player_usage
+  return 0
+  ;;
 esac
 
 set -eu
@@ -26,7 +29,7 @@ player="${1-}"
 if [ -z "$player" ]; then
     printf '%s\n' "set-player: player name required." >&2
     set_player_usage >&2
-    exit 1
+    return 1
 fi
 
 # Store player name using mud-config instead of polluting rc files
@@ -35,5 +38,10 @@ if command -v mud-config >/dev/null 2>&1; then
     printf '%s\n' "Player identity set to '$player'."
 else
     printf '%s\n' "set-player: mud-config not found. Install wizardry or ensure spells are in PATH." >&2
-    exit 1
+    return 1
 fi
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */set-player) set_player "$@" ;; esac

@@ -13,16 +13,19 @@ Use --list to display all memorized commands.
 USAGE
 }
 
+
+
+spellbook() {
 case "${1-}" in
 --help|--usage|-h)
-        spellbook_usage
-        exit 0
-        ;;
+  spellbook_usage
+  return 0
+  ;;
 esac
 
 set -eu
 
-# Catch Ctrl-C and TERM signal to exit cleanly
+# Catch Ctrl-C and TERM signal to return 1 cleanly
 trap 'exit 0' INT TERM
 
 ROOT_DIR=$(CDPATH= cd -- "$(dirname "$0")/../.." && pwd -P)
@@ -36,7 +39,7 @@ if cast_store_path=$(command -v "$cast_store" 2>/dev/null); then
         cast_store=$cast_store_path
 else
         printf '%s\n' "spellbook: memorize helper is missing." >&2
-        exit 1
+        return 1
 fi
 
 cast_dir=$($cast_store dir)
@@ -310,11 +313,11 @@ spellbook_path=""
 case ${1-} in
         --list)
                 "$cast_store" list
-                exit 0
+                return 0
                 ;;
         --help|--usage|-h)
                 spellbook_usage
-                exit 0
+                return 0
                 ;;
         --)
                 shift
@@ -325,7 +328,7 @@ case ${1-} in
                 ;;
         -*)
                 spellbook_usage >&2
-                exit 1
+                return 1
                 ;;
         *)
                 # Treat as a path to a category
@@ -334,7 +337,12 @@ case ${1-} in
         esac
 
 if ! require menu "The spellbook menu needs the 'menu' command."; then
-        exit 1
+        return 1
 fi
 
 spellbook_menu "$spellbook_path"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */spellbook) spellbook "$@" ;; esac

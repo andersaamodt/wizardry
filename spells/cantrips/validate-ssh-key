@@ -11,11 +11,14 @@ Check whether a string matches the SSH public key format: ssh-<type> <base64-dat
 USAGE
 }
 
+
+
+validate_ssh_key() {
 case "${1-}" in
 --help|--usage|-h)
-        validate_ssh_key_usage
-        exit 0
-        ;;
+  validate_ssh_key_usage
+  return 0
+  ;;
 esac
 
 set -eu
@@ -23,7 +26,7 @@ set -eu
 # Check argument
 if [ -z "${1+x}" ]; then
         printf '%s\n' "validate-ssh-key: key required." >&2
-        exit 1
+        return 1
 fi
 
 ssh_key=$1
@@ -35,7 +38,7 @@ case "$ssh_key" in
                 # Valid key type prefix
                 ;;
         *)
-                exit 1
+                return 1
                 ;;
 esac
 
@@ -45,11 +48,16 @@ key_data=$(printf '%s' "$ssh_key" | cut -d' ' -f2)
 # Check that key_data looks like base64 (alphanumeric, +, /, and = for padding)
 case "$key_data" in
         *[!A-Za-z0-9+/=]*)
-                exit 1
+                return 1
                 ;;
         '')
-                exit 1
+                return 1
                 ;;
 esac
 
-exit 0
+return 0
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */validate-ssh-key) validate_ssh_key "$@" ;; esac

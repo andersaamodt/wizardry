@@ -26,10 +26,13 @@ Example:
 USAGE
 }
 
+
+
+doppelganger() {
 case "${1-}" in
 --help|--usage|-h)
   doppelganger_usage
-  exit 0
+  return 0
   ;;
 esac
 
@@ -163,3 +166,8 @@ say "Compiled: $compiled_count spells"
 if [ "$failed_count" -gt 0 ]; then
   warn "doppelganger: $failed_count spells failed to compile"
 fi
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */doppelganger) doppelganger "$@" ;; esac

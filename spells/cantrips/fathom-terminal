@@ -13,11 +13,14 @@ numbers with friendly labels for menu output.
 USAGE
 }
 
+
+
+fathom_terminal() {
 case "${1-}" in
 --help|--usage|-h)
-    fathom_terminal_usage
-    exit 0
-    ;;
+  fathom_terminal_usage
+  return 0
+  ;;
 esac
 
 set -eu
@@ -49,7 +52,7 @@ while [ "$#" -gt 0 ]; do
         ;;
         --help|--usage|-h)
             fathom_terminal_usage
-            exit 0
+            return 0
             ;;
         --height)
             want_height=1
@@ -60,7 +63,7 @@ while [ "$#" -gt 0 ]; do
             ;;
         -*)
             fathom_terminal_usage >&2
-            exit 1
+            return 1
             ;;
         *)
             break
@@ -78,7 +81,7 @@ fi
 
 # tput is our interface to terminfo; fail loudly when it is absent.
 if ! "$require_cmd" tput "The fathom-terminal spell needs 'tput' to query terminfo."; then
-    exit 1
+    return 1
 fi
 
 cols=$(tput cols 2>/dev/null)
@@ -89,14 +92,14 @@ lines_status=$?
 if [ "$want_width" -eq 1 ]; then
     if [ $cols_status -ne 0 ] || [ -z "$cols" ]; then
         printf '%s\n' 'fathom-terminal: unable to determine terminal width' >&2
-        exit 1
+        return 1
     fi
 fi
 
 if [ "$want_height" -eq 1 ]; then
     if [ $lines_status -ne 0 ] || [ -z "$lines" ]; then
         printf '%s\n' 'fathom-terminal: unable to determine terminal height' >&2
-        exit 1
+        return 1
     fi
 fi
 
@@ -119,3 +122,8 @@ elif [ "$want_width" -eq 1 ]; then
 else
     print_dimension 'Height' "$lines"
 fi
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */fathom-terminal) fathom_terminal "$@" ;; esac

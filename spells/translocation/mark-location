@@ -14,24 +14,27 @@ Markers are stored in $SPELLBOOK_DIR/.markers/.
 USAGE
 }
 
+
+mark_location() {
 case "${1-}" in
 --help|--usage|-h)
   mark_location_usage
-  exit 0
+  return 0
   ;;
 esac
+
 set -eu
 
 if [ "$#" -gt 2 ]; then
   mark_location_usage
-  exit 1
+  return 1
 fi
 
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
 markers_dir="$spell_home/.markers"
 
 # Store the markers in $SPELLBOOK_DIR/.markers/ (persists across wizardry resets).
-make dir "$markers_dir" || exit 1
+make dir "$markers_dir" || return 1
 
 # Determine marker name: if first arg looks like a path, it's the path, not name
 marker_name=""
@@ -77,7 +80,7 @@ fi
 case "$marker_name" in
   *[!A-Za-z0-9_-]*)
     warn "mark-location: marker name may only contain letters, numbers, dashes, and underscores."
-    exit 1
+    return 1
     ;;
 esac
 
@@ -112,7 +115,7 @@ else
       destination="$(here)/$target_path"
       ;;
   esac
-  gone "$destination" && { warn "mark-location: $target_path does not exist."; exit 1; }
+  gone "$destination" && { warn "mark-location: $target_path does not exist."; return 1; }
 fi
 
 # Normalize any double slashes in the path (can occur on macOS where TMPDIR ends with /)
@@ -121,3 +124,8 @@ destination=$(norm-path "$destination")
 marker_file="$markers_dir/$marker_name"
 say "$destination" >"$marker_file"
 say "Marked location $marker_name at $destination."
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */mark-location) mark_location "$@" ;; esac

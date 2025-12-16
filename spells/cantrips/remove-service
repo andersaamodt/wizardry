@@ -12,11 +12,14 @@ Deletes the specified systemd unit file after confirming it exists, prompting fo
 USAGE
 }
 
+
+
+remove_service() {
 case "${1-}" in
 --help|--usage|-h)
-        remove_service_usage
-        exit 0
-        ;;
+  remove_service_usage
+  return 0
+  ;;
 esac
 
 set -eu
@@ -49,14 +52,14 @@ elif [ -x "$SCRIPT_DIR/ask-text" ]; then
   ASK_TEXT_HELPER="$SCRIPT_DIR/ask-text"
 else
   printf '%s\n' "$SCRIPT_NAME: ask-text spell is required for prompts." >&2
-  exit 1
+  return 1
 fi
 
 if command -v systemctl >/dev/null 2>&1; then
         SYSTEMCTL=$(command -v systemctl)
 else
         printf '%s\n' "$SCRIPT_NAME: systemctl is not installed." >&2
-        exit 1
+        return 1
 fi
 
 remove_service_require_privilege() {
@@ -69,7 +72,7 @@ remove_service_require_privilege() {
                 return 0
         fi
         printf '%s\n' "$SCRIPT_NAME: run as root or install sudo to modify $SERVICE_DIR." >&2
-        exit 1
+        return 1
 }
 
 service_name=${1-}
@@ -78,7 +81,7 @@ if [ -z "$service_name" ]; then
 fi
 if [ -z "$service_name" ]; then
         printf '%s\n' "$SCRIPT_NAME: no service specified." >&2
-        exit 1
+        return 1
 fi
 case $service_name in
 *.service) : ;;
@@ -89,7 +92,7 @@ service_path="$SERVICE_DIR/$service_name"
 
 if [ ! -f "$service_path" ]; then
 printf 'Service %s does not exist.\n' "$service_name"
-exit 1
+return 1
 fi
 
 if "$SYSTEMCTL" is-active --quiet "$service_name"; then
@@ -101,3 +104,8 @@ printf '%s\n' "Removing $service_name from $SERVICE_DIR..."
 remove_service_require_privilege rm -f "$service_path"
 remove_service_require_privilege "$SYSTEMCTL" daemon-reload
 printf 'Service %s removed.\n' "$service_name"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */remove-service) remove_service "$@" ;; esac

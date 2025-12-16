@@ -13,11 +13,14 @@ Enchant a file with a portkey that stores a destination path, defaulting to mark
 USAGE
 }
 
+
+
+enchant_portkey() {
 case "${1-}" in
 --help|--usage|-h)
-        enchant_portkey_usage
-        exit 0
-        ;;
+  enchant_portkey_usage
+  return 0
+  ;;
 esac
 
 set -eu
@@ -26,7 +29,7 @@ set -eu
 if [ -z "${1-}" ]; then
         printf '%s\n' "enchant-portkey: file path required." >&2
         enchant_portkey_usage >&2
-        exit 1
+        return 1
 fi
 
 file=$1
@@ -58,3 +61,8 @@ fi
 enchant "$file" context "$destination" >/dev/null
 
 say "Portkey enchanted on '$(file-name "$file")'. Use follow-portkey to activate."
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */enchant-portkey) enchant_portkey "$@" ;; esac

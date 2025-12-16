@@ -17,11 +17,14 @@ Use --new-category to create an empty category folder.
 USAGE
 }
 
+
+
+scribe_spell() {
 case "${1-}" in
 --help|--usage|-h)
-        scribe_spell_usage
-        exit 0
-        ;;
+  scribe_spell_usage
+  return 0
+  ;;
 esac
 
 set -eu
@@ -48,7 +51,7 @@ while [ "$#" -gt 0 ]; do
         case ${1-} in
                 --help|--usage|-h)
                         scribe_spell_usage
-                        exit 0
+                        return 0
                         ;;
                 --new-category)
                         new_category_mode=1
@@ -57,18 +60,18 @@ while [ "$#" -gt 0 ]; do
                 --category)
                         if [ "$#" -lt 2 ]; then
                                 printf '%s\n' "$SCRIPT_NAME: --category requires a value." >&2
-                                exit 1
+                                return 1
                         fi
                         current_category=$2
                         # Validate category
                         case $current_category in
                         ''|*[!A-Za-z0-9._-]*)
                                 printf '%s\n' "$SCRIPT_NAME: category names may contain only letters, digits, dots, underscores, and dashes." >&2
-                                exit 1
+                                return 1
                                 ;;
                         -*)
                                 printf '%s\n' "$SCRIPT_NAME: category names may not begin with a dash." >&2
-                                exit 1
+                                return 1
                                 ;;
                         esac
                         shift 2
@@ -79,11 +82,11 @@ while [ "$#" -gt 0 ]; do
                         case $current_category in
                         ''|*[!A-Za-z0-9._-]*)
                                 printf '%s\n' "$SCRIPT_NAME: category names may contain only letters, digits, dots, underscores, and dashes." >&2
-                                exit 1
+                                return 1
                                 ;;
                         -*)
                                 printf '%s\n' "$SCRIPT_NAME: category names may not begin with a dash." >&2
-                                exit 1
+                                return 1
                                 ;;
                         esac
                         shift
@@ -91,7 +94,7 @@ while [ "$#" -gt 0 ]; do
                 --dir)
                         if [ "$#" -lt 2 ]; then
                                 printf '%s\n' "$SCRIPT_NAME: --dir requires a value." >&2
-                                exit 1
+                                return 1
                         fi
                         override_dir=$2
                         shift 2
@@ -106,7 +109,7 @@ while [ "$#" -gt 0 ]; do
                         ;;
                 -*)
                         printf '%s\n' "$SCRIPT_NAME: unknown option '$1'" >&2
-                        exit 1
+                        return 1
                         ;;
                 *)
                         break
@@ -130,27 +133,27 @@ if [ "$new_category_mode" -eq 1 ]; then
         fi
         if [ -z "$category_name" ]; then
                 printf '%s\n' "A category name is required." >&2
-                exit 1
+                return 1
         fi
         # Validate category name
         case $category_name in
         ''|*[!A-Za-z0-9._-]*)
                 printf '%s\n' "$SCRIPT_NAME: category names may contain only letters, digits, dots, underscores, and dashes." >&2
-                exit 1
+                return 1
                 ;;
         -*)
                 printf '%s\n' "$SCRIPT_NAME: category names may not begin with a dash." >&2
-                exit 1
+                return 1
                 ;;
         esac
         if [ -d "$spell_home/$category_name" ]; then
                 printf '%s\n' "Category '$category_name' already exists." >&2
-                exit 1
+                return 1
         fi
         mkdir -p "$spell_home/$category_name"
         display_path=$(tilde-path "$spell_home")
         printf "Created category '%s' in %s.\n" "$category_name" "$display_path"
-        exit 0
+        return 0
 fi
 
 # Non-interactive mode with arguments
@@ -169,29 +172,29 @@ if [ "$#" -ge 2 ]; then
         case $name in
         ''|*[!A-Za-z0-9._-]*)
                 printf '%s\n' "$SCRIPT_NAME: names may contain only letters, digits, dots, underscores, and dashes (no spaces)." >&2
-                exit 1
+                return 1
                 ;;
         -*)
                 printf '%s\n' "$SCRIPT_NAME: names may not begin with a dash." >&2
-                exit 1
+                return 1
                 ;;
         esac
         
         # Check for duplicate name
         if command -v "$name" >/dev/null 2>&1; then
                 printf '%s\n' "$SCRIPT_NAME: '$name' conflicts with an existing command." >&2
-                exit 1
+                return 1
         fi
         if [ -e "$spell_home/$name" ]; then
                 printf '%s\n' "$SCRIPT_NAME: '$name' already exists in your spellbook." >&2
-                exit 1
+                return 1
         fi
         if [ -d "$spell_home" ]; then
                 for subdir in "$spell_home"/*; do
                         [ -d "$subdir" ] || continue
                         if [ -e "$subdir/$name" ]; then
                                 printf '%s\n' "$SCRIPT_NAME: '$name' already exists in your spellbook." >&2
-                                exit 1
+                                return 1
                         fi
                 done
         fi
@@ -199,15 +202,15 @@ if [ "$#" -ge 2 ]; then
         # Validate command
         if [ -z "$cmd" ]; then
                 printf '%s\n' "$SCRIPT_NAME: command must not be empty." >&2
-                exit 1
+                return 1
         fi
         if [ "$(printf '%s' "$cmd" | tr -d '\t')" != "$cmd" ]; then
                 printf '%s\n' "$SCRIPT_NAME: command may not contain tabs." >&2
-                exit 1
+                return 1
         fi
         if [ "$(printf '%s' "$cmd" | tr -d '\n')" != "$cmd" ]; then
                 printf '%s\n' "$SCRIPT_NAME: command must be a single line." >&2
-                exit 1
+                return 1
         fi
         
         # Create spell directory
@@ -241,13 +244,13 @@ EOF_SCRIPT
                 display_path=$(tilde-path "$spell_home")
                 printf "Scribed '%s' to %s.\n" "$name" "$display_path"
         fi
-        exit 0
+        return 0
 fi
 
 # Check for partial arguments
 if [ "$#" -eq 1 ]; then
         scribe_spell_usage >&2
-        exit 1
+        return 1
 fi
 
 # Interactive mode - ask for command FIRST, then name
@@ -256,7 +259,7 @@ cmd_name=$(prompt_for_input "Name: ")
 
 if [ -z "$cmd_name" ] || [ -z "$cmd_text" ]; then
         printf '%s\n' "A name and command are required." >&2
-        exit 1
+        return 1
 fi
 
 # If no category was provided via --category or --dir, ask if user wants to categorize
@@ -271,11 +274,11 @@ if [ -z "$current_category" ] && [ -z "$override_dir" ]; then
                                 case $category_name in
                                 ''|*[!A-Za-z0-9._-]*)
                                         printf '%s\n' "$SCRIPT_NAME: category names may contain only letters, digits, dots, underscores, and dashes." >&2
-                                        exit 1
+                                        return 1
                                         ;;
                                 -*)
                                         printf '%s\n' "$SCRIPT_NAME: category names may not begin with a dash." >&2
-                                        exit 1
+                                        return 1
                                         ;;
                                 esac
                                 current_category=$category_name
@@ -292,29 +295,29 @@ fi
 case $cmd_name in
 ''|*[!A-Za-z0-9._-]*)
         printf '%s\n' "$SCRIPT_NAME: names may contain only letters, digits, dots, underscores, and dashes (no spaces)." >&2
-        exit 1
+        return 1
         ;;
 -*)
         printf '%s\n' "$SCRIPT_NAME: names may not begin with a dash." >&2
-        exit 1
+        return 1
         ;;
 esac
 
 # Check for duplicate name
 if command -v "$cmd_name" >/dev/null 2>&1; then
         printf '%s\n' "$SCRIPT_NAME: '$cmd_name' conflicts with an existing command." >&2
-        exit 1
+        return 1
 fi
 if [ -e "$spell_home/$cmd_name" ]; then
         printf '%s\n' "$SCRIPT_NAME: '$cmd_name' already exists in your spellbook." >&2
-        exit 1
+        return 1
 fi
 if [ -d "$spell_home" ]; then
         for subdir in "$spell_home"/*; do
                 [ -d "$subdir" ] || continue
                 if [ -e "$subdir/$cmd_name" ]; then
                         printf '%s\n' "$SCRIPT_NAME: '$cmd_name' already exists in your spellbook." >&2
-                        exit 1
+                        return 1
                 fi
         done
 fi
@@ -322,15 +325,15 @@ fi
 # Validate command
 if [ -z "$cmd_text" ]; then
         printf '%s\n' "$SCRIPT_NAME: command must not be empty." >&2
-        exit 1
+        return 1
 fi
 if [ "$(printf '%s' "$cmd_text" | tr -d '\t')" != "$cmd_text" ]; then
         printf '%s\n' "$SCRIPT_NAME: command may not contain tabs." >&2
-        exit 1
+        return 1
 fi
 if [ "$(printf '%s' "$cmd_text" | tr -d '\n')" != "$cmd_text" ]; then
         printf '%s\n' "$SCRIPT_NAME: command must be a single line." >&2
-        exit 1
+        return 1
 fi
 
 # Create spell directory
@@ -364,3 +367,8 @@ else
         display_path=$(tilde-path "$spell_home")
         printf "Scribed '%s' to %s.\n" "$cmd_name" "$display_path"
 fi
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */scribe-spell) scribe_spell "$@" ;; esac

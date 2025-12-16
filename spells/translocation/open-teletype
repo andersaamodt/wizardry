@@ -13,11 +13,14 @@ Open an SSH connection over Tor for anonymous access to a remote server. Prompts
 USAGE
 }
 
+
+
+open_teletype() {
 case "${1-}" in
 --help|--usage|-h)
-        open_teletype_usage
-        exit 0
-        ;;
+  open_teletype_usage
+  return 0
+  ;;
 esac
 
 set -eu
@@ -54,3 +57,8 @@ fi
 # Connect via ssh through torify
 say "Opening teletype to $remote_user@$tor_address..."
 torify ssh -i "$player_key" "$remote_user@$tor_address"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */open-teletype) open_teletype "$@" ;; esac

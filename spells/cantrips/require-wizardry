@@ -11,11 +11,14 @@ Verify wizardry is available before running scripts that depend on it. Run with 
 USAGE
 }
 
+
+
+require_wizardry() {
 case "${1-}" in
 --help|--usage|-h)
-require_wizardry_usage
-exit 0
-;;
+  require_wizardry_usage
+  return 0
+  ;;
 esac
 
 set -eu
@@ -26,15 +29,15 @@ case $mode in
 --check)
 # Check if wizardry is installed by looking for a core spell
 if command -v menu >/dev/null 2>&1; then
-exit 0
+return 0
 else
-exit 1
+return 1
 fi
 ;;
 --offer)
 # Check if wizardry is installed
 if command -v menu >/dev/null 2>&1; then
-exit 0
+return 0
 fi
 
 # Offer to install
@@ -52,20 +55,20 @@ printf '%s\n' "Installing wizardry..." >&2
 # Download and run the install script
 if command -v curl >/dev/null 2>&1; then
 curl -fsSL https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh
-exit $?
+return 1 $?
 elif command -v wget >/dev/null 2>&1; then
 wget -qO- https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh
-exit $?
+return 1 $?
 else
 printf '%s\n' "Error: neither curl nor wget is available to download wizardry." >&2
-exit 1
+return 1
 fi
 ;;
 *)
 printf '%s\n' "" >&2
 printf '%s\n' "To install wizardry, run:" >&2
 printf '%s\n' "  curl -fsSL https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh" >&2
-exit 1
+return 1
 ;;
 esac
 else
@@ -75,7 +78,7 @@ printf '%s\n' "" >&2
 printf '%s\n' "Or clone and install with git:" >&2
 printf '%s\n' "  git clone https://github.com/andersaamodt/wizardry ~/.wizardry" >&2
 printf '%s\n' "  cd ~/.wizardry && ./install" >&2
-exit 1
+return 1
 fi
 ;;
 --snippet)
@@ -99,16 +102,21 @@ printf '%s\n' "" >&2
 printf '%s\n' "Or clone and install with git:" >&2
 printf '%s\n' "  git clone https://github.com/andersaamodt/wizardry ~/.wizardry" >&2
 printf '%s\n' "  cd ~/.wizardry && ./install" >&2
-exit 1
+return 1
 }
 
 _require_wizardry
 # --- end require-wizardry snippet ---
 SNIPPET
-exit 0
+return 0
 ;;
 *)
 require_wizardry_usage >&2
-exit 1
+return 1
 ;;
 esac
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */require-wizardry) require_wizardry "$@" ;; esac

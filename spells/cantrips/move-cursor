@@ -11,12 +11,15 @@ Moves the terminal cursor to the requested column and row using ANSI escapes, cl
 USAGE
 }
 
+
+move_cursor() {
 case "${1-}" in
 --help|--usage|-h)
-        move_cursor_usage
-        exit 0
-        ;;
+  move_cursor_usage
+  return 0
+  ;;
 esac
+
 set -eu
 
 if [ "$#" -ne 2 ]; then
@@ -39,7 +42,7 @@ supports_cursor_positioning() {
 case "$x" in
     *[!0-9]*)
         printf '%s\n' "move-cursor: invalid column '$x'" >&2
-        exit 1
+        return 1
         ;;
     *) : ;;
 esac
@@ -47,7 +50,7 @@ esac
 case "$y" in
     *[!0-9]*)
         printf '%s\n' "move-cursor: invalid row '$y'" >&2
-        exit 1
+        return 1
         ;;
     *) : ;;
 esac
@@ -67,8 +70,13 @@ fi
 if ! supports_cursor_positioning; then
     # Skip emitting escape sequences when the terminal refuses them so menu
     # helpers degrade gracefully.
-    exit 0
+    return 0
 fi
 
 # Emit the escape sequence that repositions the cursor.
 printf '\033[%s;%sH' "$y" "$x"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */move-cursor) move_cursor "$@" ;; esac

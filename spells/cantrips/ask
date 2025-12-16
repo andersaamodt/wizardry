@@ -12,11 +12,14 @@ Prompts with the given question and echoes the response, forwarding all argument
 USAGE
 }
 
+
+
+ask() {
 case "${1-}" in
 --help|--usage|-h)
-        ask_usage
-        exit 0
-        ;;
+  ask_usage
+  return 0
+  ;;
 esac
 
 set -eu
@@ -35,8 +38,13 @@ HELPER="$SCRIPT_DIR/ask-text"
 
 if [ ! -x "$HELPER" ]; then
         printf '%s\n' "ask: missing required helper '$HELPER'." >&2
-        exit 1
+        return 1
 fi
 
 # Pass every incantation straight through so ask behaves exactly like ask-text.
 exec "$HELPER" "$@"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */ask) ask "$@" ;; esac

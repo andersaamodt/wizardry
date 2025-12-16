@@ -516,7 +516,7 @@ test_no_undeclared_global_exports() {
         
         # Skip allowed patterns
         case "$var_name" in
-          PATH|NIX_PACKAGE|APT_PACKAGE|DNF_PACKAGE|YUM_PACKAGE|ZYPPER_PACKAGE|PACMAN_PACKAGE|APK_PACKAGE|PKGIN_PACKAGE)
+          PATH|NIX_PACKAGE|APT_PACKAGE|DNF_PACKAGE|YUM_PACKAGE|ZYPPER_PACKAGE|PACMAN_PACKAGE|APK_PACKAGE|PKGIN_PACKAGE|BREW_PACKAGE)
             return ;;
           WIZARDRY_DIR|SPELLBOOK_DIR|MUD_DIR)
             return ;;  # Declared globals are allowed
@@ -539,6 +539,127 @@ test_no_undeclared_global_exports() {
   
   if [ -n "$violations" ]; then
     TEST_FAILURE_REASON="undeclared globals exported: $violations"
+    return 1
+  fi
+  return 0
+}
+
+# --- Check: No all-caps variable assignments (environment variable overrides) ---
+# Detects ALL all-caps variable assignments, not just exports.
+# Goal: 0 all-caps variables in spells (use lowercase for local variables).
+# All exceptions must be documented in EXEMPTIONS.md for management/elimination.
+test_no_allcaps_variable_assignments() {
+  skip-if-compiled || return $?
+  violations=""
+  
+  find "$ROOT_DIR/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r spell; do
+    name=$(basename "$spell")
+    should_skip_file "$name" && continue
+    is_posix_shell_script "$spell" || continue
+    
+    rel_path=${spell#"$ROOT_DIR/spells/"}
+    
+    # Skip files that are explicitly allowed to use all-caps variables
+    case "$rel_path" in
+      # cantrips/colors is meant to be sourced and sets color variables
+      cantrips/colors) continue ;;
+      # Test infrastructure files
+      .imps/test/*|.imps/*/test-*) continue ;;
+      # Bootstrap/installer files (.arcana exempt from wrapper functions, also exempt here)
+      .arcana/*) continue ;;
+    esac
+    
+    # Find all all-caps variable assignments (excluding inline IFS=)
+    # Skip lines that are:
+    # - Comments (starting with #)
+    # - Inline with read (IFS= read pattern)
+    # - Export statements (handled by other test)
+    # - Variable expansions within strings
+    assignments=$(grep -nE '^[[:space:]]*[A-Z][A-Z_][A-Z0-9_]*=' "$spell" 2>/dev/null | \
+      grep -v '^[0-9]*:[[:space:]]*#' | \
+      grep -v 'IFS=[^[:space:]]*[[:space:]]*read' | \
+      grep -v 'export[[:space:]]' || true)
+    
+    if [ -n "$assignments" ]; then
+      # Check each assignment
+      # Use subshell with explicit IFS to avoid affecting outer shell
+      printf '%s\n' "$assignments" | (
+        while IFS=: read -r line_num line_content; do
+          # Extract variable name (everything before the first =)
+          var_name=$(printf '%s' "$line_content" | sed -E 's/^[[:space:]]*([A-Z][A-Z_][A-Z0-9_]*)=.*/\1/')
+        
+        # Skip allowed standard environment variables and wizardry-specific patterns
+        case "$var_name" in
+          # Standard environment variables (modifying these is acceptable)
+          PATH|HOME|TMPDIR|CDPATH|SHELL|EDITOR|PAGER|VISUAL|IFS) continue ;;
+          
+          # Package manager override variables
+          NIX_PACKAGE|APT_PACKAGE|DNF_PACKAGE|YUM_PACKAGE|ZYPPER_PACKAGE|PACMAN_PACKAGE|APK_PACKAGE|PKGIN_PACKAGE|BREW_PACKAGE) continue ;;
+          
+          # Declared wizardry globals
+          WIZARDRY_DIR|SPELLBOOK_DIR|MUD_DIR) continue ;;
+          
+          # RC detection variables
+          WIZARDRY_PLATFORM|WIZARDRY_RC_FILE|WIZARDRY_RC_FORMAT) continue ;;
+          
+          # Feature flag variables
+          WIZARDRY_LOG_LEVEL|WIZARDRY_DISABLE_SANDBOX|WIZARDRY_BWRAP_WARNING|WIZARDRY_COLORS_AVAILABLE) continue ;;
+          
+          # Other documented exemptions (see EXEMPTIONS.md)
+          # Bootstrap variables
+          ASSUME_YES|FORCE_INSTALL|ROOT_DIR) continue ;;
+          
+          # Sandbox-related variables
+          BWRAP_AVAILABLE|BWRAP_BIN|BWRAP_REASON|BWRAP_USE_UNSHARE|BWRAP_VIA_SUDO|MACOS_SANDBOX_AVAILABLE|SANDBOX_EXEC_BIN|SANDBOX_PLATFORM|REAL_SUDO_BIN) continue ;;
+          
+          # Test infrastructure variables
+          WIZARDRY_GLOBAL_SUBTEST_NUM|WIZARDRY_TMPDIR|WIZARDRY_TEST_COMPILED|WIZARDRY_TEST_HELPERS_ONLY|WIZARDRY_SYSTEM_PATH|TEST_FAILURE_REASON|TEST_SKIP_REASON) continue ;;
+          
+          # Color and theme variables (used when not sourcing cantrips/colors)
+          RED|GREEN|BLUE|YELLOW|CYAN|WHITE|BLACK|PURPLE|GREY|GRAY|LIGHT_BLUE) continue ;;
+          RESET|BOLD|ITALICS|UNDERLINED|BLINK|INVERT|STRIKE) continue ;;
+          # Bright color variables (BRIGHT_RED, BRIGHT_GREEN, etc.)
+          BRIGHT_BLACK|BRIGHT_RED|BRIGHT_GREEN|BRIGHT_YELLOW|BRIGHT_BLUE|BRIGHT_PURPLE|BRIGHT_CYAN|BRIGHT_WHITE) continue ;;
+          # Background color variables (BG_BLACK, BG_RED, etc.)
+          BG_BLACK|BG_RED|BG_GREEN|BG_YELLOW|BG_BLUE|BG_PURPLE|BG_CYAN|BG_WHITE) continue ;;
+          BG_BRIGHT_BLACK|BG_BRIGHT_RED|BG_BRIGHT_GREEN|BG_BRIGHT_YELLOW|BG_BRIGHT_BLUE|BG_BRIGHT_PURPLE|BG_BRIGHT_CYAN|BG_BRIGHT_WHITE) continue ;;
+          THEME_WARNING|THEME_SUCCESS|THEME_ERROR|THEME_MUTED|THEME_HIGHLIGHT|THEME_HEADING|THEME_DIVIDER|THEME_CUSTOM) continue ;;
+          
+          # Cantrip configuration variables
+          AWAIT_KEYPRESS_KEEP_RAW) continue ;;
+          
+          # Specific spell configuration (documented in EXEMPTIONS.md)
+          # These should eventually be lowercase but are grandfathered
+          SCRIPT_DIR|SCRIPT_NAME|SCRIPT_SOURCE|SERVICE_DIR|TTY_DEVICE) continue ;;
+          ASK_TEXT_HELPER|ASK_TEXT|ASK_YN|ASK_CANTRIP_INPUT) continue ;;
+          READ_MAGIC|SYSTEMCTL) continue ;;
+          MARKERS_DIR|CONTACTS_DIR|MUD_CONFIG) continue ;;
+          # MUD-related variables (MUD_LOCATION, MUD_TITLE, etc.)
+          MUD_LOCATION|MUD_TITLE|MUD_DESCRIPTION|MUD_SPELL|MUD_MONSTER|MUD_ITEM|MUD_HANDLE) continue ;;
+          # IDENTIFY-related variables
+          IDENTIFY_TITLE|IDENTIFY_DESCRIPTION) continue ;;
+          # MIN_SUBTESTS variables
+          MIN_SUBTESTS_IMP|MIN_SUBTESTS_SPELL) continue ;;
+          LOOK_SCRIPT_PATH|MISSING_ATTR_MSG) continue ;;
+          STATUS|VERBOSE|RUNNING_AS_SCRIPT|ERROR|OUTPUT|KEY|HELPER|FILE|DIR) continue ;;
+          DISTRO|OS|RC_CANDIDATES|TORRC_PATHS|BITCOIN_VERSION_DEFAULT) continue ;;
+          IMPS_DIR|IMPS_TEXT_DIR|CONFIG_FILE|FEATURES|CLIPBOARD_MARKER) continue ;;
+          RUN_CMD_WORKDIR|PS_NAMES|SCRIPT) continue ;;
+          ESC) continue ;;  # Used in colors and other places for ANSI escapes
+        esac
+        
+        # If we get here, it's a violation
+        printf '%s:%s:%s\n' "$rel_path" "$line_num" "$var_name"
+      done
+      ) # End subshell for IFS isolation
+    fi
+  done > "${WIZARDRY_TMPDIR}/allcaps-violations.txt"
+  
+  violations=$(cat "${WIZARDRY_TMPDIR}/allcaps-violations.txt" 2>/dev/null | head -20 | tr '\n' ', ' | sed 's/, $//')
+  rm -f "${WIZARDRY_TMPDIR}/allcaps-violations.txt"
+  
+  if [ -n "$violations" ]; then
+    TEST_FAILURE_REASON="all-caps variable assignments found (should be lowercase): $violations"
     return 1
   fi
   return 0
@@ -804,10 +925,12 @@ system/test-magic
     func_count_multiline=${func_count_multiline:-0}
     func_count=$((func_count_inline + func_count_multiline))
     
-    # Subtract 1 for the *_usage function (which every spell should have)
-    additional_funcs=$((func_count - 1))
+    # Subtract 2 for standard functions: *_usage and the wrapper function (incantation)
+    # Every spell now has both a *_usage function and a wrapper function matching its name
+    # Additional functions beyond these two are considered helper functions
+    additional_funcs=$((func_count - 2))
     
-    # Allow negative (no *_usage is caught by another test)
+    # Allow negative (missing functions are caught by other tests)
     [ "$additional_funcs" -lt 0 ] && additional_funcs=0
     
     # Write to appropriate temp file based on additional function count
@@ -992,6 +1115,52 @@ test_spells_have_true_name_functions() {
   fi
   
   # Always return success (non-failing check)
+  return 0
+}
+
+# --- Check: All spells MUST have wrapper functions (FAILING TEST) ---
+# All spells must have a wrapper function matching their filename for word-of-binding.
+# For spells: snake_case name (e.g., lint-magic -> lint_magic)
+# This enables sourcing spells into the shell for efficient invocation.
+# Unlike test_spells_have_true_name_functions, this is a FAILING test.
+#
+# Exemptions must be documented in .github/EXEMPTIONS.md with justification.
+
+test_spells_require_wrapper_functions() {
+  skip-if-compiled || return $?
+  violations=""
+  
+  # Check all executable spell files (not imps)
+  find "$ROOT_DIR/spells" -type f -not -path "*/.imps/*" -not -path "*/.arcana/*" \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r spell; do
+    name=$(basename "$spell")
+    should_skip_file "$name" && continue
+    is_posix_shell_script "$spell" || continue
+    
+    rel_path=${spell#"$ROOT_DIR/spells/"}
+    
+    # Skip spells that are meant to be sourced (not executed)
+    # These spells set environment variables and must run in the current shell
+    case "$rel_path" in
+      cantrips/colors) continue ;;
+    esac
+    
+    # Convert filename to expected wrapper function name
+    # For hyphenated names: lint-magic -> lint_magic
+    wrapper_name=$(printf '%s' "$name" | sed 's/-/_/g')
+    
+    # Check if the wrapper function exists
+    if ! grep -qE "^[[:space:]]*${wrapper_name}[[:space:]]*\(\)" "$spell" 2>/dev/null; then
+      printf '%s (missing %s)\n' "$rel_path" "$wrapper_name"
+    fi
+  done > "${WIZARDRY_TMPDIR}/missing-wrappers.txt"
+  
+  violations=$(cat "${WIZARDRY_TMPDIR}/missing-wrappers.txt" 2>/dev/null | head -30 | tr '\n' ', ' | sed 's/, $//')
+  rm -f "${WIZARDRY_TMPDIR}/missing-wrappers.txt"
+  
+  if [ -n "$violations" ]; then
+    TEST_FAILURE_REASON="spells missing wrapper functions (required for word-of-binding): $violations"
+    return 1
+  fi
   return 0
 }
 
@@ -1209,12 +1378,14 @@ _run_test_case "declare-globals has exactly 3 globals" test_declare_globals_coun
 _run_test_case "no undeclared globals exported" test_no_undeclared_global_exports
 _run_test_case "no global declarations outside declare-globals" test_no_global_declarations_outside_declare_globals
 _run_test_case "no pseudo-globals stored in rc files" test_no_pseudo_globals_in_rc_files
+_run_test_case "no all-caps variable assignments" test_no_allcaps_variable_assignments
 _run_test_case "imps follow one-function-or-zero rule" test_imps_follow_function_rule
 _run_test_case "imps have opening comments" test_imps_have_opening_comments
 _run_test_case "bootstrap spells have identifying comment" test_bootstrap_spells_identified
 _run_test_case "spells follow function discipline" test_spells_follow_function_discipline
 _run_test_case "no function name collisions" test_no_function_name_collisions
 _run_test_case "spells have true name functions" test_spells_have_true_name_functions
+_run_test_case "spells require wrapper functions" test_spells_require_wrapper_functions
 _run_test_case "spells have limited flags" test_spells_have_limited_flags
 _run_test_case "spells have limited positional arguments" test_spells_have_limited_positional_args
 

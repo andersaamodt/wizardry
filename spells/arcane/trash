@@ -11,10 +11,13 @@ Move files or folders to the system trash so they remain recoverable. Use -r for
 USAGE
 }
 
+
+
+trash() {
 case "${1-}" in
 --help|--usage|-h)
   trash_usage
-  exit 0
+  return 0
   ;;
 esac
 
@@ -46,7 +49,7 @@ while [ "$#" -gt 0 ]; do
   -*)
     printf '%s\n' "trash: unknown option: $1" >&2
     printf '%s\n' "Run 'trash --help' for usage." >&2
-    exit 2
+    return 2
     ;;
   *)
     break
@@ -57,7 +60,7 @@ done
 if [ "$#" -eq 0 ]; then
   printf '%s\n' "trash: missing file operand" >&2
   printf '%s\n' "Run 'trash --help' for usage." >&2
-  exit 2
+  return 2
 fi
 
 # Detect the OS
@@ -124,7 +127,7 @@ if [ "$trash_cmd" = "none" ]; then
     printf '%s\n' "Your operating system is not supported." >&2
     ;;
   esac
-  exit 1
+  return 1
 fi
 
 exit_status=0
@@ -218,4 +221,9 @@ for file in "$@"; do
   esac
 done
 
-exit $exit_status
+return $exit_status
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */trash) trash "$@" ;; esac

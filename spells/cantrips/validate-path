@@ -11,54 +11,62 @@ Check whether a string looks like a safe UNIX path, including reasonable lengths
 USAGE
 }
 
+
+
+validate_path() {
 case "${1-}" in
 --help|--usage|-h)
-        validate_path_usage
-        exit 0
-        ;;
+  validate_path_usage
+  return 0
+  ;;
 esac
 
 set -eu
 
 # Check argument provided
 if [ -z "${1+x}" ]; then
-        exit 1
+  return 1
 fi
 
 path=$1
 
 # Empty path is invalid
 if [ -z "$path" ]; then
-        exit 1
+  return 1
 fi
 
 # Check path length (4096 is typical max for full path)
 length=$(printf '%s' "$path" | wc -c | tr -d ' ')
 if [ "$length" -gt 4096 ]; then
-        exit 1
+  return 1
 fi
 
 # Check each component length (255 is typical max for filename)
 # Split on / and check each part
 remaining=$path
 while [ -n "$remaining" ]; do
-        case "$remaining" in
-                */*)
-                        component=${remaining%%/*}
-                        remaining=${remaining#*/}
-                        ;;
-                *)
-                        component=$remaining
-                        remaining=''
-                        ;;
-        esac
-        
-        if [ -n "$component" ]; then
-                comp_length=$(printf '%s' "$component" | wc -c | tr -d ' ')
-                if [ "$comp_length" -gt 255 ]; then
-                        exit 1
-                fi
-        fi
+  case "$remaining" in
+    */*)
+      component=${remaining%%/*}
+      remaining=${remaining#*/}
+      ;;
+    *)
+      component=$remaining
+      remaining=''
+      ;;
+  esac
+  
+  if [ -n "$component" ]; then
+    comp_length=$(printf '%s' "$component" | wc -c | tr -d ' ')
+    if [ "$comp_length" -gt 255 ]; then
+      return 1
+    fi
+  fi
 done
 
-exit 0
+return 0
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */validate-path) validate_path "$@" ;; esac

@@ -11,11 +11,14 @@ Interactively create a new player identity by generating an SSH key pair at ~/.s
 USAGE
 }
 
+
+
+new_player() {
 case "${1-}" in
 --help|--usage|-h)
-        new_player_usage
-        exit 0
-        ;;
+  new_player_usage
+  return 0
+  ;;
 esac
 
 set -eu
@@ -34,3 +37,8 @@ fi
 ssh-keygen -t rsa -b 4096 -C "${player_name}@MUD" -f "$HOME/.ssh/${player_name}" -q -N ""
 
 printf '%s\n' "New player ${player_name} created with ssh key files at ~/.ssh/${player_name} and ~/.ssh/${player_name}.pub"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */new-player) new_player "$@" ;; esac
