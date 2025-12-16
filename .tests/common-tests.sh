@@ -1244,6 +1244,67 @@ test_spells_have_limited_positional_args() {
   return 0
 }
 
+# --- Check: No all-caps variable assignments (env var antipattern) ---
+# All local variables should use lowercase. ALL_CAPS conventionally indicates
+# environment variables and using it for local vars creates confusion.
+# Only documented exceptions in EXEMPTIONS.md are allowed.
+
+test_no_allcaps_variable_assignments() {
+  violations=""
+  
+  check_allcaps() {
+    spell=$1
+    name=$(basename "$spell")
+    rel_path=${spell#"$ROOT_DIR/spells/"}
+    
+    # Skip exempt files
+    case "$rel_path" in
+      # cantrips/colors defines color variables (documented exception)
+      cantrips/colors) return ;;
+      # Test infrastructure exempt
+      .imps/test/*) return ;;
+      # Output/logging imps exempt (they set WIZARDRY_* flags)
+      .imps/out/*) return ;;
+      # Bootstrap/arcana scripts have different rules  
+      .arcana/*) return ;;
+    esac
+    
+    # Look for ALL_CAPS variable assignments
+    # Match: VAR= or VAR=$... or VAR=$(...) but not export statements (those are checked elsewhere)
+    allcaps_vars=$(grep -nE '^[[:space:]]*[A-Z][A-Z_0-9]*=' "$spell" 2>/dev/null | \
+      grep -v -E '(export|PATH=|HOME=|IFS=|CDPATH=|TMPDIR=|USER=|SHELL=|TERM=|LANG=)' | \
+      grep -v -E '(NIX_PACKAGE|APT_PACKAGE|DNF_PACKAGE|YUM_PACKAGE|ZYPPER_PACKAGE|PACMAN_PACKAGE|APK_PACKAGE|PKGIN_PACKAGE|BREW_PACKAGE)' | \
+      grep -v -E '(WIZARDRY_|SPELLBOOK_DIR|MUD_DIR|TEST_|ASSUME_YES|FORCE_INSTALL|ROOT_DIR)' | \
+      grep -v -E '(AWAIT_KEYPRESS_KEEP_RAW|BWRAP_|SANDBOX_|MACOS_)' | \
+      grep -v -E '(RESET|BOLD|ITALICS|UNDERLINED|BLINK|INVERT|STRIKE|ESC)' | \
+      grep -v -E '(RED|GREEN|BLUE|YELLOW|CYAN|WHITE|BLACK|PURPLE|GRE[YA]|LIGHT_)' | \
+      grep -v -E '(BRIGHT_|BG_|THEME_)' | \
+      grep -v -E '(KEY=value)' | \
+      grep -v -E 'logging-example|spell-name' | \
+      head -5)
+    
+    if [ -n "$allcaps_vars" ]; then
+      # Format: filename:linenum:content
+      formatted=$(printf '%s\n' "$allcaps_vars" | sed "s|^|$rel_path:|" | tr '\n' '; ' | sed 's/; $//')
+      printf '%s\n' "$formatted"
+    fi
+  }
+  
+  tmpfile="${WIZARDRY_TMPDIR}/allcaps-violations.txt"
+  : > "$tmpfile"
+  for_each_posix_spell check_allcaps > "$tmpfile"
+  
+  violations=$(cat "$tmpfile" 2>/dev/null | head -20)
+  rm -f "$tmpfile"
+  
+  if [ -n "$violations" ]; then
+    TEST_FAILURE_REASON="ALL_CAPS variable assignments found (use lowercase for local vars): $violations"
+    return 1
+  fi
+  
+  return 0
+}
+
 # --- Run all test cases ---
 
 _run_test_case "no duplicate spell names" test_no_duplicate_spell_names
@@ -1266,5 +1327,6 @@ _run_test_case "spells have true name functions" test_spells_have_true_name_func
 _run_test_case "spells require wrapper functions" test_spells_require_wrapper_functions
 _run_test_case "spells have limited flags" test_spells_have_limited_flags
 _run_test_case "spells have limited positional arguments" test_spells_have_limited_positional_args
+_run_test_case "no all-caps variable assignments" test_no_allcaps_variable_assignments
 
 _finish_tests
