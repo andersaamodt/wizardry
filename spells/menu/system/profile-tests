@@ -76,8 +76,12 @@ if [ -n "$only_pattern" ]; then
     while IFS= read -r test_path; do
       rel=${test_path#"$test_dir/"}
       case "$rel" in
-        $only_pattern) printf '%s\n' "$test_path" ;;
-        *) : ;;
+        $only_pattern)
+          printf '%s\n' "$test_path"
+          ;;
+        *)
+          :
+          ;;
       esac
     done | sort)
 else
