@@ -116,3 +116,7 @@ export OLDPWD="$_saved_oldpwd"
 [ -n "$_saved_disable_sandbox" ] && export WIZARDRY_DISABLE_SANDBOX="$_saved_disable_sandbox"
 [ -n "$_saved_bwrap_warning" ] && export WIZARDRY_BWRAP_WARNING="$_saved_bwrap_warning"
 [ -n "$_saved_colors_available" ] && export WIZARDRY_COLORS_AVAILABLE="$_saved_colors_available"
+
+# Ensure env-clear always exits successfully when sourced
+# (last conditional may return 1 if variable is empty)
+true
