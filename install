@@ -155,7 +155,7 @@ else
                 # stdin is a terminal - read directly from stdin
                 printf '%s' "$message" >&2
                 IFS= read -r INSTALL_INPUT
-        elif [ -c /dev/tty ] && exec 3</dev/tty 2>/dev/null; then
+        elif [ -c /dev/tty ] && exec 3< /dev/tty 2>/dev/null; then
                 # stdin is not a terminal, but /dev/tty is available
                 # This handles curl | sh case where stdin has script content
                 printf '%s' "$message" >&2
@@ -571,7 +571,7 @@ if [ "$needs_installation" -eq 0 ]; then
                 # stdin is a terminal - read directly from stdin
                 printf '%sEnter your choice (1-4): %s' "$BOLD" "$RESET" >&2
                 IFS= read -r choice
-        elif [ -c /dev/tty ] && exec 3</dev/tty 2>/dev/null; then
+        elif [ -c /dev/tty ] && exec 3< /dev/tty 2>/dev/null; then
                 # stdin is not a terminal, but /dev/tty is available
                 # This handles curl | sh case where stdin has script content
                 printf '%sEnter your choice (1-4): %s' "$BOLD" "$RESET" >&2
