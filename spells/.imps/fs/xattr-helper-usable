@@ -3,6 +3,8 @@
 # Returns 0 if helper is available, 1 otherwise
 # Respects WIZARDRY_TEST_HELPERS_ONLY to skip system helpers during tests
 
+set -eu
+
 _xattr_helper_usable() {
   helper=$1
   if ! command -v "$helper" >/dev/null 2>&1; then

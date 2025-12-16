@@ -2,6 +2,8 @@
 # make-indent LEVEL [FILE] - generate indentation string for a given level
 # Uses detected indent style from FILE, or defaults to 2 spaces. Example: indent=$(make-indent 2)
 
+set -eu
+
 _make_indent() {
   _mi_level=${1:-1}
   _mi_file=${2-}

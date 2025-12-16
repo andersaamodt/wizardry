@@ -2,6 +2,8 @@
 # say MESSAGE - print message to stdout with newline
 # Example: say "Hello world"
 
+set -eu
+
 _say() {
   printf '%s\n' "$*"
 }

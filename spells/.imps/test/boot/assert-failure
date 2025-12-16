@@ -2,6 +2,9 @@
 # assert-failure - verify STATUS is non-zero
 # Sets TEST_FAILURE_REASON if status was 0.
 
+set -eu
+. env-clear
+
 _assert_failure() {
   if [ "$STATUS" -eq 0 ]; then
     TEST_FAILURE_REASON="expected failure status but got success"

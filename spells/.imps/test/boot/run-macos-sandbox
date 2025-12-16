@@ -2,6 +2,9 @@
 # run-macos-sandbox - execute command in macOS sandbox-exec with permissive profile
 # Provides minimal isolation for test consistency on macOS.
 
+set -eu
+. env-clear
+
 _run_macos_sandbox() {
   # Create a permissive sandbox profile that provides minimal isolation
   # NOTE: macOS sandboxing is DISABLED BY DEFAULT due to compatibility issues

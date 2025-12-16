@@ -3,6 +3,8 @@
 # Example: echo 'source "/path/to/spell"' | nix-shell-add myspell home.nix
 # SHELL defaults to 'bash'; valid values: bash, zsh
 
+set -eu
+
 _nix_shell_add() {
   _nsa_block_name=${1:-}
   _nsa_nix_file=${2:-}

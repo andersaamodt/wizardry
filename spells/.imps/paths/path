@@ -2,6 +2,8 @@
 # path PATH - convert relative path to absolute, normalized
 # Example: path ./foo -> /current/dir/foo
 
+set -eu
+
 _path() {
   _p_path=$1
   case "$_p_path" in

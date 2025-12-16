@@ -2,6 +2,8 @@
 # tty-raw - set terminal to raw mode for single-character reads
 # Example: tty-raw && dd bs=1 count=1 2>/dev/null
 
+set -eu
+
 _tty_raw() {
   stty -icanon -echo min 1 time 0 2>/dev/null
 }

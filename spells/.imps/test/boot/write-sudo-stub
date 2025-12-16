@@ -2,6 +2,9 @@
 # write-sudo-stub FIXTURE - create a sudo stub script in fixture/bin
 # Stub strips common flags and executes the actual command.
 
+set -eu
+. env-clear
+
 _write_sudo_stub() {
   fixture=$1
   cat <<'STUB' >"$fixture/bin/sudo"

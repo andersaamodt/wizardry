@@ -2,6 +2,8 @@
 # file-name PATH - extract filename from path (like basename but pure shell)
 # Example: name=$(file-name /path/to/file.txt)  # outputs: file.txt
 
+set -eu
+
 _file_name() {
   printf '%s\n' "${1##*/}"
 }

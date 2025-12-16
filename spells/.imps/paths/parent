@@ -2,6 +2,8 @@
 # parent PATH - extract directory from path (like dirname but pure shell)
 # Example: dir=$(parent /path/to/file.txt)  # outputs: /path/to
 
+set -eu
+
 _parent() {
   _par_path=$1
   case "$_par_path" in

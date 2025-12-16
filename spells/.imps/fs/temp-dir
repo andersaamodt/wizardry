@@ -2,6 +2,8 @@
 # temp-dir [PREFIX] - create temp directory with optional prefix (outputs path)
 # Example: tmpdir=$(temp-dir myapp) && trap 'cleanup-dir "$tmpdir"' EXIT
 
+set -eu
+
 _temp_dir() {
   _td_prefix=${1:-wizardry}
   mktemp -d "${TMPDIR:-/tmp}/${_td_prefix}.XXXXXX"

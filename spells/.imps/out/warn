@@ -2,6 +2,8 @@
 # warn MESSAGE - print message to stderr (does not exit)
 # Example: warn "Something unexpected happened"
 
+set -eu
+
 _warn() {
   printf '%s\n' "$*" >&2
 }

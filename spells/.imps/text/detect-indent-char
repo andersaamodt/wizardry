@@ -2,6 +2,8 @@
 # detect-indent-char FILE - detect whether file uses spaces or tabs for indentation
 # Outputs: "space", "tab", or "space" (default). Example: indent=$(detect-indent-char config.nix)
 
+set -eu
+
 _detect_indent_char() {
   _dic_file=${1-}
 

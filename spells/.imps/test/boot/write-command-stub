@@ -2,6 +2,9 @@
 # write-command-stub DIR NAME - create a simple stub command that exits 0
 # Creates an executable script at DIR/NAME that always succeeds.
 
+set -eu
+. env-clear
+
 _write_command_stub() {
   dir=$1
   name=$2

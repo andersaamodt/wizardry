@@ -2,6 +2,9 @@
 # assert-path-exists PATH - verify path exists
 # Sets TEST_FAILURE_REASON if path does not exist.
 
+set -eu
+. env-clear
+
 _assert_path_exists() {
   if [ ! -e "$1" ]; then
     TEST_FAILURE_REASON="expected path to exist: $1"

@@ -2,6 +2,8 @@
 # make TYPE PATH - create resource if missing (currently only dir)
 # Example: make dir ~/.config/myapp
 
+set -eu
+
 _make() {
   case "$1" in
     dir) mkdir -p "$2" ;;

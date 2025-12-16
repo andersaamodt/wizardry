@@ -2,6 +2,8 @@
 # here - output current directory path (normalized pwd -P)
 # Example: dir=$(here)
 
+set -eu
+
 _here() {
   pwd -P | sed 's|///*|/|g'
 }

@@ -2,6 +2,8 @@
 # matches PATTERN FILE - test if file contains regex pattern
 # Example: matches "^ID=nixos" /etc/os-release && echo "NixOS detected"
 
+set -eu
+
 _matches() {
   grep -q -- "$1" "$2" 2>/dev/null
 }

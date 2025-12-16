@@ -3,6 +3,8 @@
 # Example: abs=$(abs-path ./foo) -> /current/dir/foo
 # Note: Returns original path unchanged if directory cannot be resolved.
 
+set -eu
+
 _abs_path() {
   _ap_loc=$1
   if [ -d "$_ap_loc" ]; then

@@ -2,6 +2,8 @@
 # pkg-remove PACKAGE - remove a package using the system package manager
 # Example: pkg-remove vim
 
+set -eu
+
 _pkg_remove() {
   _pr_package=${1:-}
   [ -z "$_pr_package" ] && { printf '%s\n' "pkg-remove: package name required" >&2; return 1; }

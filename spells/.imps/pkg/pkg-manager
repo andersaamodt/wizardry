@@ -2,6 +2,8 @@
 # pkg-manager - detect which package manager is available
 # Example: pm=$(pkg-manager) && case $pm in apt) apt-get install ;; esac
 
+set -eu
+
 _pkg_manager() {
   if command -v apt-get >/dev/null 2>&1; then echo apt
   elif command -v dnf >/dev/null 2>&1; then echo dnf

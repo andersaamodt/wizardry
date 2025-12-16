@@ -2,6 +2,8 @@
 # quiet COMMAND [ARGS...] - run command with all output suppressed
 # Example: quiet rm -f /tmp/file
 
+set -eu
+
 _quiet() {
   "$@" >/dev/null 2>&1
 }

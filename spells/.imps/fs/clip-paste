@@ -2,6 +2,8 @@
 # clip-paste - paste from system clipboard to stdout
 # Example: text=$(clip-paste)
 
+set -eu
+
 _clip_paste() {
   if command -v pbpaste >/dev/null 2>&1; then
     pbpaste

@@ -2,6 +2,9 @@
 # run-cmd CMD [ARGS...] - execute command in a sandboxed environment
 # Captures stdout, stderr, and exit status into STATUS, OUTPUT, and ERROR.
 
+set -eu
+. env-clear
+
 _run_cmd() {
   # Save the caller's PATH and temporarily use the system PATH for run_cmd's
   # internal operations (mktemp, mkdir, cat, rm, pwd). This ensures run_cmd

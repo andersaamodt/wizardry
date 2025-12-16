@@ -2,6 +2,8 @@
 # else DEFAULT - output stdin if non-empty, else output default value
 # Example: echo "" | else "fallback"
 
+set -eu
+
 _else() {
   _else_input=$(cat)
   if [ -n "$_else_input" ]; then printf '%s\n' "$_else_input"; else printf '%s\n' "$1"; fi

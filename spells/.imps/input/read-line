@@ -3,6 +3,8 @@
 # Example: name=$(read-line "Enter name: ") | line=$(read-line)
 # Set SELECT_INPUT_MODE=stdin|tty|none to override source detection
 
+set -eu
+
 _read_line() {
   _rl_prompt=${1:-}
   [ -n "$_rl_prompt" ] && printf '%s' "$_rl_prompt" >&2

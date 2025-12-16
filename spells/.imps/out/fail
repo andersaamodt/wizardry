@@ -2,6 +2,8 @@
 # fail MESSAGE - print message to stderr and return failure (1)
 # Example: has git || fail "git required"
 
+set -eu
+
 _fail() {
   printf '%s\n' "$*" >&2
   return 1

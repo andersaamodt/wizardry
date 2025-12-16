@@ -2,6 +2,8 @@
 # last [FILE] - output only the last line of input or file
 # Example: tail_entry=$(last log.txt)
 
+set -eu
+
 _last() {
   if [ "$#" -ge 1 ]; then tail -n 1 "$1"; else tail -n 1; fi
 }

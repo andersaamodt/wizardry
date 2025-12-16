@@ -2,6 +2,8 @@
 # first [FILE] - output first line of input or file
 # Examples: ls | first   # or: first /etc/passwd
 
+set -eu
+
 _first() {
   if [ "$#" -ge 1 ]; then head -n 1 "$1"; else head -n 1; fi
 }

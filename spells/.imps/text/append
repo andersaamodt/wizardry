@@ -2,6 +2,8 @@
 # append FILE - append stdin to file
 # Example: echo "new line" | append log.txt
 
+set -eu
+
 _append() {
   cat >> "$1"
 }

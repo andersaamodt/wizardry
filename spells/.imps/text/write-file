@@ -2,6 +2,8 @@
 # write-file FILE - write stdin to file (overwrites)
 # Example: echo "hello" | write-file output.txt
 
+set -eu
+
 _write_file() {
   cat > "$1"
 }

@@ -3,6 +3,8 @@
 # Tries xattr, attr, and getfattr in order
 # Returns 0 and outputs value if found, 1 if not found or all helpers failed
 
+set -eu
+
 _xattr_read_value() {
   key=$1
   file=$2
