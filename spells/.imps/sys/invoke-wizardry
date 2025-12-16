@@ -54,7 +54,7 @@ _invoke_wizardry() {
   
   # Source all function-based spells that have self-execute guards
   # Function-based spells have both:
-  # 1. A snake_case function definition matching the spell name (e.g., spell_name() for spell-name)
+  # 1. A true-name function definition (e.g., _spell_name)
   # 2. A self-execute pattern (case "$0" in */spell-name) that prevents execution when sourced
   # Non-function spells will be handled by command_not_found_handle
   for _iw_spell_dir in "$WIZARDRY_DIR"/spells/*; do
@@ -65,16 +65,16 @@ _invoke_wizardry() {
     for _iw_spell in "$_iw_spell_dir"/*; do
       [ -f "$_iw_spell" ] && [ -r "$_iw_spell" ] || continue
       _iw_spell_name=$(basename "$_iw_spell")
-      _iw_spell_func=$(printf '%s' "$_iw_spell_name" | sed 's/-/_/g')
+      _iw_spell_true=$(printf '_%s' "$_iw_spell_name" | sed 's/-/_/g')
       # Check if spell has both function definition AND self-execute guard
-      if grep -qE "^[[:space:]]*${_iw_spell_func}[[:space:]]*\\(\\)" "$_iw_spell" 2>/dev/null && \
+      if grep -qE "^[[:space:]]*${_iw_spell_true}[[:space:]]*\\(\\)" "$_iw_spell" 2>/dev/null && \
          grep -qE "case.*\\\$0.*in.*\\*/${_iw_spell_name}\\)" "$_iw_spell" 2>/dev/null; then
         # Safe to source - has function and self-execute guard
         # shellcheck disable=SC1090
         . "$_iw_spell" 2>/dev/null || true
         # Create alias if function exists
-        if command -v "$_iw_spell_func" >/dev/null 2>&1; then
-          alias "$_iw_spell_name=$_iw_spell_func" 2>/dev/null || true
+        if command -v "$_iw_spell_true" >/dev/null 2>&1; then
+          alias "$_iw_spell_name=$_iw_spell_true" 2>/dev/null || true
         fi
       fi
     done

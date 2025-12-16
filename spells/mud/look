@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # This spell reads a location's extended attributes and presents its description.
-# Use it to view MUD-style room descriptions for directories.
+# It can prompt to memorize itself so the `look` incantation stays available.
 
 require-wizardry || exit 1
 
@@ -9,7 +9,7 @@ look_usage() {
 cat <<'USAGE'
 Usage: look [path]
 
-Display a location's title and description attributes with read-magic. Defaults to the current directory when no path is supplied.
+Display a location's title and description attributes with read-magic, offering to memorize the spell into your shell rc for easy reuse. Defaults to the current directory when no path is supplied.
 USAGE
 }
 
@@ -83,11 +83,75 @@ fi
 path_input=${1:-$PWD}
 path=$(strip-trailing-slashes "$(abs-path "$path_input")")
 
-# NOTE: Legacy RC file editing code was removed in favor of word-of-binding paradigm.
-# The old code prompted users to add 'alias look=...' to their shell RC files to override
-# the system /usr/bin/look command. For NixOS, it used nix-shell-add to add the alias to
-# configuration.nix, which was working correctly. Future versions will handle this via
-# the synonyms system to centralize and standardize command aliases.
+# Install/memorize the look spell if needed
+rc_file=""
+if [ -n "${LOOK_RC_FILE-}" ]; then
+        rc_file="$LOOK_RC_FILE"
+elif [ -n "${HOME-}" ]; then
+        rc_file="$HOME/.bashrc"
+fi
+
+if [ -n "$rc_file" ]; then
+        look_block_present=0
+        if [ -f "$rc_file" ]; then
+                if grep -Fq '# >>> wizardry look spell >>>' "$rc_file" || \
+                   grep -Fq 'WIZARDRY_LOOK_SPELL' "$rc_file" || \
+                   grep -Fq "alias look='$LOOK_SCRIPT_PATH'" "$rc_file"; then
+                        look_block_present=1
+                fi
+        fi
+        
+        if [ "$look_block_present" -eq 0 ]; then
+                ask_yn_cmd=""
+                if has ask-yn; then
+                        ask_yn_cmd=$(where ask-yn)
+                elif [ -x "$SCRIPT_DIR/cantrips/ask-yn" ]; then
+                        ask_yn_cmd="$SCRIPT_DIR/cantrips/ask-yn"
+                fi
+                
+                if [ -n "$ask_yn_cmd" ]; then
+                        printf '%s\n' "'Look' is a reserved keyword, so you must memorize this spell to change the meaning of the word 'look'."
+                        if "$ask_yn_cmd" "Memorize the 'look' spell so it is always available?" yes >/dev/null; then
+                                # Ensure parent dir exists
+                                rc_dir=${rc_file%/*}
+                                if [ "$rc_dir" != "$rc_file" ] && [ ! -d "$rc_dir" ]; then
+                                        if ! mkdir -p "$rc_dir"; then
+                                                look_warn "unable to create directory '$rc_dir'."
+                                        fi
+                                fi
+                                
+                                # Write look block
+                                if [ -d "$rc_dir" ] || [ "$rc_dir" = "$rc_file" ]; then
+                                        tmp_file=$(temp-file wizardry-look) || tmp_file=""
+                                        if [ -n "$tmp_file" ]; then
+                                                trap 'cleanup-file "$tmp_file"' EXIT HUP INT TERM
+                                                if [ -f "$rc_file" ]; then
+                                                        sed '/^# >>> wizardry look spell >>>$/,/^# <<< wizardry look spell <<</d' "$rc_file" >"$tmp_file"
+                                                else
+                                                        : >"$tmp_file"
+                                                fi
+                                                cat <<BLOCK >>"$tmp_file"
+# >>> wizardry look spell >>>
+alias look='$LOOK_SCRIPT_PATH'
+# <<< wizardry look spell <<<
+BLOCK
+                                                if mv "$tmp_file" "$rc_file" 2>/dev/null; then
+                                                        printf '%s\n' "Spell memorized in $(basename "$rc_file"), so you will always be able to use it."
+                                                else
+                                                        rm -f "$tmp_file" 2>/dev/null || true
+                                                        look_warn "unable to update '$rc_file'."
+                                                fi
+                                                trap - EXIT HUP INT TERM
+                                        fi
+                                fi
+                        else
+                                printf '%s\n' "The mud will only run in this shell window."
+                        fi
+                else
+                        look_warn "ask-yn spell is missing; cannot prompt for installation."
+                fi
+        fi
+fi
 
 # Message returned by read-magic when attribute doesn't exist
 MISSING_ATTR_MSG='read-magic: attribute does not exist.'
