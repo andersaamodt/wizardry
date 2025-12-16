@@ -211,7 +211,11 @@ case $INSTALL_INPUT in
                 ;;
 esac
 
+# Track whether wizardry directory existed before we started.
+# This prevents showing "already installed" menu when we just downloaded it.
+WIZARDRY_EXISTED_BEFORE=0
 if [ -d "$INSTALL_DIR/spells" ]; then
+        WIZARDRY_EXISTED_BEFORE=1
         ABS_DIR=$(cd "$INSTALL_DIR" && pwd -P)
 else
         if [ -e "$INSTALL_DIR" ]; then
@@ -549,7 +553,8 @@ elif [ "$invoke_wizardry_installed" -eq 0 ]; then
 fi
 
 # If wizardry is fully installed (including invoke-wizardry), show the options menu
-if [ "$needs_installation" -eq 0 ]; then
+# BUT only if the files existed before we started (not just downloaded)
+if [ "$needs_installation" -eq 0 ] && [ "$WIZARDRY_EXISTED_BEFORE" -eq 1 ]; then
         # Wizardry is already installed - offer options via simple text menu
         printf '\n'
         info_msg "Wizardry is already installed at: $ABS_DIR"
