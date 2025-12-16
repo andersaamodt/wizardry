@@ -31,7 +31,6 @@ case "${1-}" in
 esac
 
 set -eu
-. env-clear
 
 # Determine spellbook location
 spellbook=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
