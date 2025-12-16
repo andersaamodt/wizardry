@@ -148,16 +148,21 @@ elif [ -n "${WIZARDRY_ROOT-}" ]; then
         INSTALL_INPUT=$WIZARDRY_ROOT
 else
         message="Wizardry install directory? [$PROMPT_DEFAULT] "
-        # Check for interactive input using the same robust logic as ask-yn.
-        # Use /dev/fd/0 instead of /dev/stdin for cross-platform compatibility.
-        # On macOS, /dev/stdin is a symlink and -p/-s tests may fail on the symlink.
-        # Testing /dev/fd/0 directly works reliably on both Linux and macOS.
-        if [ -t 0 ] || [ -p /dev/fd/0 ] || [ -s /dev/fd/0 ]; then
-                # Print the prompt to stderr so the question is visible even if stdout is
-                # captured inside a subshell.
+        # Check for interactive input. When running via curl | sh, stdin is a pipe
+        # containing the script content, not user input. We must check if we can
+        # read from /dev/tty instead.
+        if [ -t 0 ]; then
+                # stdin is a terminal - read directly from stdin
                 printf '%s' "$message" >&2
                 IFS= read -r INSTALL_INPUT
+        elif [ -c /dev/tty ] && exec 3</dev/tty 2>/dev/null; then
+                # stdin is not a terminal, but /dev/tty is available
+                # This handles curl | sh case where stdin has script content
+                printf '%s' "$message" >&2
+                IFS= read -r INSTALL_INPUT <&3
+                exec 3<&-
         else
+                # No interactive input available
                 printf '%s\n' "Info: No interactive input detected; using '$PROMPT_DEFAULT'." >&2
         fi
 fi
@@ -558,15 +563,24 @@ if [ "$needs_installation" -eq 0 ]; then
         printf '\n'
         
         # Read user choice
-        # Check if we can read input (tty or pipe)
-        # Use /dev/fd/0 instead of /dev/stdin for cross-platform compatibility.
-        # On macOS, /dev/stdin is a symlink and -p/-s tests may fail on the symlink.
-        # Testing /dev/fd/0 directly works reliably on both Linux and macOS.
-        if [ -t 0 ] || [ -p /dev/fd/0 ] || [ -s /dev/fd/0 ]; then
+        # Check if we can read input. When running via curl | sh, stdin is a pipe
+        # containing the script content, not user input. We must check if we can
+        # read from /dev/tty instead.
+        choice=""
+        if [ -t 0 ]; then
+                # stdin is a terminal - read directly from stdin
                 printf '%sEnter your choice (1-4): %s' "$BOLD" "$RESET" >&2
                 IFS= read -r choice
-        else
-                # Non-interactive mode - default to exit
+        elif [ -c /dev/tty ] && exec 3</dev/tty 2>/dev/null; then
+                # stdin is not a terminal, but /dev/tty is available
+                # This handles curl | sh case where stdin has script content
+                printf '%sEnter your choice (1-4): %s' "$BOLD" "$RESET" >&2
+                IFS= read -r choice <&3
+                exec 3<&-
+        fi
+        
+        # Handle non-interactive defaults
+        if [ -z "$choice" ]; then
                 if [ "${WIZARDRY_INSTALL_ASSUME_YES-}" = "1" ]; then
                         # In automated mode with ASSUME_YES, default to repair
                         choice="1"

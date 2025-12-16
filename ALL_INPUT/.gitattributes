@@ -1,7 +1,0 @@
-# Ensure shell scripts always use LF line endings
-* text=auto
-*.sh text eol=lf
-spells/* text eol=lf
-spells/**/* text eol=lf
-tests/* text eol=lf
-tests/**/* text eol=lf
