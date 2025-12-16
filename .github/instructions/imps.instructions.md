@@ -14,6 +14,12 @@ Imps are micro-helper scripts—the smallest semantic building blocks in wizardr
 
 Test files are NOT optional. Every imp requires tests covering its behavior.
 
+**After creating tests, you MUST run them and report actual results:**
+```sh
+.tests/.imps/family/test_imp-name.sh
+```
+Never claim tests pass without actually executing them. Report the actual pass/fail counts.
+
 See `.github/instructions/tests.instructions.md` for test patterns.
 
 ## Imp Requirements

@@ -16,6 +16,23 @@ You MUST also create:
 
 Failure to create tests will cause CI to fail with "uncovered spells/imps" errors.
 
+## CRITICAL: Test Result Accuracy
+
+**NEVER report test success without actually running the tests.**
+
+- ❌ **WRONG**: "All tests pass" (without running them)
+- ❌ **WRONG**: "Tests should pass" (guessing/assuming)
+- ❌ **WRONG**: "I expect tests to succeed" (speculation)
+- ✅ **CORRECT**: Run the test file, then report actual output: "5/5 tests passed"
+- ✅ **CORRECT**: If tests not run: "Tests created but not yet verified"
+
+**Always run tests after creating or modifying them:**
+```sh
+cd /home/runner/work/wizardry/wizardry && .tests/category/test-spell-name.sh
+```
+
+Only report test results you have personally verified by executing the test file. Include the actual pass/fail counts in your reports.
+
 ## Test File Location
 
 Test files mirror the `spells/` directory structure:

@@ -21,6 +21,7 @@ Wizardry is a collection of POSIX shell scripts themed as magical spells for the
 4. **No wrappers**: All files are standalone, portable, and front-facing
 5. **Self-healing failures**: Fix missing prerequisites automatically or offer to fix them—never quit with imperative error messages
 6. **Always add tests**: When creating new spells or imps, ALWAYS create corresponding test files in `.tests/` following the mirrored directory structure
+7. **Only report actual test results**: NEVER guess, assume, or claim tests pass without actually running them. Only report test results you have verified by executing the tests. If you haven't run tests, explicitly state "tests not yet run" rather than claiming success.
 
 ## Essential Code Quality Rules
 
