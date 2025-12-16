@@ -1,13 +1,20 @@
 #!/bin/sh
 
 # This spell displays the ao-mud main menu.
+
 require-wizardry || exit 1
+
 main_menu_usage() {
         cat <<'USAGE' >&2
 Usage: main-menu
+
 Opens the Wizardry main menu so you can cast spells, browse your spellbook, install arcana, or jump into system tools.
 USAGE
 }
+
+
+
+
 main_menu() {
 case "${1-}" in
 --help|--usage|-h)
@@ -15,14 +22,18 @@ case "${1-}" in
   return 0
   ;;
 esac
+
 set -eu
-# env-clear: compliant
+. "$(dirname "$0")/../.imps/sys/env-clear"
+
 # Load color palette (colors handles terminal capability detection internally)
 # shellcheck source=/dev/null
 . "$(command -v colors)"
+
 if ! require menu "The main menu needs the 'menu' command to present options."; then
   return 1
 fi
+
 # Check if MUD is enabled in config
 is_mud_enabled() {
   # Check if mud-config exists and mud-enabled is set to 1
@@ -32,6 +43,8 @@ is_mud_enabled() {
   else
     return 1
   fi
+}
+
 main_menu_display_menu() {
   cast="Cast%cast"
   spellbook="Spellbook%spellbook"
@@ -39,21 +52,33 @@ main_menu_display_menu() {
   system="Computer%system-menu"
   exit_label=$(exit-label)
   exit_item="${exit_label}%kill -TERM \$PPID"
+
   # Only show MUD menu if enabled in config
   if is_mud_enabled; then
     mud="MUD%mud"
     set -- "$cast" "$mud" "$spellbook" "$install" "$system" "$exit_item"
+  else
     set -- "$cast" "$spellbook" "$install" "$system" "$exit_item"
+  fi
   menu "Main Menu:" "$@"
+}
+
 # Catch Ctrl-C and TERM signal to return 1 cleanly
 trap 'exit 0' INT TERM
+
 first_run=1
+
 while true; do
   if [ "$first_run" -eq 0 ]; then
     :
+  else
     first_run=0
+  fi
+
   main_menu_display_menu || true
 done
+}
+
 # Self-execute when run directly (not sourced)
 case "$0" in
   */main-menu) main_menu "$@" ;; esac

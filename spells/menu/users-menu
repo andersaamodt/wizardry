@@ -2,13 +2,19 @@
 
 # This spell presents a menu of options for managing users on the system.
 # Use it to manage passwords, groups, and user accounts.
+
 require-wizardry || exit 1
+
 users_menu_usage() {
 cat <<'USAGE'
 Usage: users-menu
+
 Display an interactive menu for user and group management, covering password changes, group memberships, and user account administration.
 USAGE
 }
+
+
+
 users_menu() {
 case "${1-}" in
 --help|--usage|-h)
@@ -16,16 +22,21 @@ case "${1-}" in
   return 0
   ;;
 esac
+
 set -eu
-# env-clear: compliant
+. "$(dirname "$0")/../.imps/sys/env-clear"
+
 # Load color palette (colors handles terminal capability detection internally)
 # shellcheck source=/dev/null
 . "$(command -v colors)"
+
 if ! require menu "The Users menu needs the 'menu' command to present options."; then
   return 1
 fi
+
 # Catch Ctrl-C and TERM signal to return 1 cleanly
 trap 'exit 0' INT TERM
+
 users_menu_display_menu() {
   change_my_password="Change my password%passwd"
   list_users="List all users%cut -d: -f1 /etc/passwd"
@@ -44,17 +55,24 @@ users_menu_display_menu() {
   delete_user="Delete user%read -p \"Enter username of user to delete: \" username; sudo userdel \$username"
   exit_label=$(exit-label)
   exit_item="${exit_label}%kill -TERM \$PPID"
+
   set -- "$change_my_password" "$list_users" "$change_other_password" "$view_my_groups" "$view_other_groups" "$list_groups" "$create_group" "$delete_group" "$join_group" "$leave_group" "$list_users_in_group" "$add_user_to_group" "$remove_user_from_group" "$create_user" "$delete_user" "$exit_item"
   menu "Users Menu:" "$@"
+}
+
 first_run=1
+
 while true; do
   if [ "$first_run" -eq 0 ]; then
     :
   else
     first_run=0
   fi
+
   users_menu_display_menu || true
 done
+}
+
 # Self-execute when run directly (not sourced)
 case "$0" in
   */users-menu) users_menu "$@" ;; esac

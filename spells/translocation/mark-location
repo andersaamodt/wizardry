@@ -2,14 +2,19 @@
 
 # This spell records the current directory (or a provided path) for jump-to-marker.
 # It resolves the destination to an absolute path and stores it in a named marker file.
+
 require-wizardry || exit 1
+
 mark_location_usage() {
   cat <<'USAGE'
 Usage: mark-location [marker] [path]
+
 Record the current directory (or path) for jump-to-marker to return to later.
 Markers are stored in $SPELLBOOK_DIR/.markers/.
 USAGE
 }
+
+
 mark_location() {
 case "${1-}" in
 --help|--usage|-h)
@@ -17,18 +22,25 @@ case "${1-}" in
   return 0
   ;;
 esac
+
 set -eu
-# env-clear: compliant
+. "$(dirname "$0")/../.imps/sys/env-clear"
+
 if [ "$#" -gt 2 ]; then
+  mark_location_usage
   return 1
 fi
+
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
 markers_dir="$spell_home/.markers"
+
 # Store the markers in $SPELLBOOK_DIR/.markers/ (persists across wizardry resets).
 make dir "$markers_dir" || return 1
+
 # Determine marker name: if first arg looks like a path, it's the path, not name
 marker_name=""
 target_path=""
+
 if [ "$#" -eq 0 ]; then
   # No args: auto-increment marker, mark current directory
   target_path=""
@@ -47,11 +59,14 @@ elif [ "$#" -eq 1 ]; then
       else
         marker_name="$1"
       fi
+      ;;
   esac
 else
   # Two args: first is marker, second is path
   marker_name="$1"
   target_path="$2"
+fi
+
 # Get next marker number if no name given using O_EXCL loop
 # This finds the first available number without needing a .next file
 if [ -z "$marker_name" ]; then
@@ -60,34 +75,58 @@ if [ -z "$marker_name" ]; then
     n=$((n + 1))
   done
   marker_name=$n
+fi
+
 # Validate marker name (alphanumeric, dashes, underscores only)
 case "$marker_name" in
   *[!A-Za-z0-9_-]*)
     warn "mark-location: marker name may only contain letters, numbers, dashes, and underscores."
     return 1
     ;;
+esac
+
 # Determine destination path
 if [ -z "$target_path" ]; then
   destination=$(here)
+else
   # Expand the provided path to an absolute destination for consistent recall.
   case "$target_path" in
     /*)
       if [ -d "$target_path" ]; then
         destination=$(cd "$target_path" && here)
+      else
         destination="$(cd "$(dirname "$target_path")" && here)/$(basename "$target_path")"
+      fi
+      ;;
     "~/"*)
       if is set "${HOME-}"; then
         destination="$HOME/${target_path#"~/"}"
+      else
         destination="$target_path"
+      fi
+      ;;
     "~")
+      if is set "${HOME-}"; then
         destination="$HOME"
+      else
+        destination="$target_path"
+      fi
+      ;;
+    *)
       destination="$(here)/$target_path"
+      ;;
+  esac
   gone "$destination" && { warn "mark-location: $target_path does not exist."; return 1; }
+fi
+
 # Normalize any double slashes in the path (can occur on macOS where TMPDIR ends with /)
 destination=$(norm-path "$destination")
+
 marker_file="$markers_dir/$marker_name"
 say "$destination" >"$marker_file"
 say "Marked location $marker_name at $destination."
+}
+
 # Self-execute when run directly (not sourced)
 case "$0" in
   */mark-location) mark_location "$@" ;; esac

@@ -2,12 +2,17 @@
 
 # This spell reads a vCard and prints its fields with friendly labels.
 # Provide an optional field name to extract a single detail.
+
 read_contact_usage() {
 cat <<'USAGE'
 Usage: read-contact <vcard-file> [field]
+
 Print all fields from a vCard file or a specific field when you name one. Escapes are normalized for readability and friendly labels make the details easy to scan.
 USAGE
 }
+
+
+
 read_contact() {
 case "${1-}" in
 --help|--usage|-h)
@@ -15,13 +20,17 @@ case "${1-}" in
   return 0
   ;;
 esac
+
 set -eu
-# env-clear: compliant
+. "$(dirname "$0")/../.imps/sys/env-clear"
+
 handle_escapes() {
     escape_value=$1
     printf '%s\n' "$escape_value" | awk '
         { gsub(/\\n/,"\n"); gsub(/\\\\/,"\\"); gsub(/\\,/,", "); gsub(/\\;/,"\n"); print }
     '
+}
+
 card_lines() {
     awk -F':' '
         { sub(/\r$/, "") }
@@ -29,11 +38,14 @@ card_lines() {
         /^END:VCARD$/ { if (in_card) exit }
         in_card && index($0, ":") { if ($1 != "VERSION") print }
     ' "$1"
+}
+
 nicer_name() {
     # Convert the field name to lower case and remove any type annotations
     lower=$(printf '%s' "$1" | awk '{print tolower($0)}')
     no_type=$(printf '%s' "$lower" | awk -F';' '{print $1}')
     normalized_field=$(printf '%s' "$no_type" | awk -F'.' '{print $NF}')
+
     case "$normalized_field" in
         fn|fullname) printf '%s' "Full Name: " ;;
         n|name|lastname|firstname) printf '%s' "Name: " ;;
@@ -56,22 +68,39 @@ nicer_name() {
         categories) printf '%s' "Categories: " ;;
         *) printf '%s' "$1: " ;;
     esac
+}
+
 if [ $# -lt 1 ]; then
     read_contact_usage >&2
     return 1
 fi
+
 vcard_path="$1"
+
 # Validate vCard file
 if [ ! -f "$vcard_path" ]; then
     printf '%s\n' "read-contact: vCard file not found: $vcard_path" >&2
+    return 1
+fi
+
 begins=$(tr -d '\r' <"$vcard_path" | grep -Ec '^BEGIN:VCARD$' || true)
 ends=$(tr -d '\r' <"$vcard_path" | grep -Ec '^END:VCARD$' || true)
+
 if [ "$begins" -eq 0 ] && [ "$ends" -eq 0 ]; then
     printf '%s\n' "read-contact: No vCard entries found in $vcard_path" >&2
+    return 1
+fi
+
 if [ "$begins" -ne "$ends" ]; then
     printf '%s\n' "read-contact: Unbalanced vCard entries in $vcard_path" >&2
+    return 1
+fi
+
 if [ "$begins" -gt 1 ]; then
     printf '%s\n' "read-contact: Multiple vCard entries are not supported" >&2
+    return 1
+fi
+
 # Process vCard - either print specific field or all fields
 if [ $# -eq 2 ]; then
     # Print specific field
@@ -83,6 +112,7 @@ if [ $# -eq 2 ]; then
         printf '%s\n' "read-contact: $requested_field not found" >&2
         return 1
     fi
+
     field_name=$(printf '%s' "$card_line" | awk -F':' '{print $1}')
     field_value=$(printf '%s' "$card_line" | awk -F':' '{print substr($0, length($1) + 2)}')
     field_value=$(handle_escapes "$field_value")
@@ -97,6 +127,9 @@ else
             printf '%s\n' "$field_label$value"
         fi
     done
+fi
+}
+
 # Self-execute when run directly (not sourced)
 case "$0" in
   */read-contact) read_contact "$@" ;; esac

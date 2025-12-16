@@ -2,33 +2,47 @@
 
 # This spell retrieves the priority value of a file from its extended attributes.
 # Use it to check the relative importance of files within a directory.
+
+
 get_priority_usage() {
 cat <<'USAGE'
 Usage: get-priority <file>
+
 Read and print the priority extended attribute from a file, outputting the number if set.
 USAGE
 }
+
+
+
 get_priority() {
+
 case "${1-}" in
 --help|--usage|-h)
         get_priority_usage
         return 0
         ;;
 esac
+
 set -eu
-# env-clear: compliant
+. "$(dirname "$0")/../.imps/sys/env-clear"
+
 # Ensure file argument is provided
 if [ -z "${1-}" ]; then
         printf '%s\n' "get-priority: file path required." >&2
         get_priority_usage >&2
         return 1
 fi
+
 file=$1
+
 # Verify file exists
 if ! is file "$file"; then
         die "get-priority: file not found: $file"
+fi
+
 # Read and print the priority
 priority=$(read-magic "$file" priority 2>/dev/null || true)
+
 # Handle error messages or empty values
 case "$priority" in
         *Error*|'')
@@ -36,6 +50,10 @@ case "$priority" in
                 ;;
         *)
                 say "$priority"
+                ;;
+esac
+}
+
 # Self-execute when run directly (not sourced)
 case "$0" in
   */get-priority) get_priority "$@" ;; esac

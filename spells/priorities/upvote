@@ -2,42 +2,62 @@
 
 # This spell increments the upvote count on a file using extended attributes.
 # Use it to track popularity or priority through file metadata.
+
+
 upvote_usage() {
 cat <<'USAGE'
 Usage: upvote <file>
+
 Increment the upvote count stored in a file's 'upvotes' attribute, creating it with a value of 1 if it doesn't exist yet.
 USAGE
 }
+
+
+
 upvote() {
+
 case "${1-}" in
 --help|--usage|-h)
         upvote_usage
         return 0
         ;;
 esac
+
 set -eu
-# env-clear: compliant
+. "$(dirname "$0")/../.imps/sys/env-clear"
+
 # Ensure file argument is provided
 if [ -z "${1-}" ]; then
         printf '%s\n' "upvote: file path required." >&2
         upvote_usage >&2
         return 1
 fi
+
 file=$1
+
 # Verify file exists
 if ! is file "$file"; then
         die "upvote: file not found: $file"
+fi
+
 # Get current upvotes count, default to 0 if not set
 current=$(read-magic "$file" upvotes 2>/dev/null || printf '0')
+
 # Handle case where read-magic returns an error message
 case "$current" in
         *Error*|'') current=0 ;;
         *[!0-9]*) current=0 ;;
+esac
+
 # Increment the count
 new_count=$((current + 1))
+
 # Store the new value
 enchant "$file" upvotes "$new_count" >/dev/null
+
 say "Upvotes: $new_count"
+}
+
 # Self-execute when run directly (not sourced)
 case "$0" in
   */upvote) upvote "$@" ;; esac

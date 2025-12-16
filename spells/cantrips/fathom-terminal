@@ -1,14 +1,20 @@
 #!/bin/sh
 
 # Report terminal dimensions using terminfo via tput.
+
+
 fathom_terminal_usage() {
     cat <<'USAGE' >&2
 Usage: fathom-terminal [-v|--verbose] [--width|--height]
+
 Read terminal dimensions from terminfo and print the width, height, or both.
 Pass --width or --height to request a single measurement; -v annotates the
 numbers with friendly labels for menu output.
 USAGE
 }
+
+
+
 fathom_terminal() {
 case "${1-}" in
 --help|--usage|-h)
@@ -16,9 +22,12 @@ case "${1-}" in
   return 0
   ;;
 esac
+
 set -eu
-# env-clear: compliant
+. "$(dirname "$0")/../.imps/sys/env-clear"
+
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
 # Share the same require-command lookup logic with the other cantrips.
 # Inline fathom_terminal_require - only used once
 if [ -n "${REQUIRE_COMMAND-}" ]; then
@@ -28,9 +37,11 @@ elif [ -x "$script_dir/require-command" ]; then
 else
     require_cmd=require-command
 fi
+
 verbose=0
 want_width=0
 want_height=0
+
 # Parse the small option set understood by the menu helper.
 while [ "$#" -gt 0 ]; do
     case "$1" in
@@ -43,37 +54,56 @@ while [ "$#" -gt 0 ]; do
         --help|--usage|-h)
             fathom_terminal_usage
             return 0
+            ;;
         --height)
             want_height=1
+            ;;
         --)
             shift
             break
+            ;;
         -*)
             fathom_terminal_usage >&2
             return 1
+            ;;
         *)
+            break
+            ;;
         esac
+
         shift
 done
+
 # Unless told otherwise, report both width and height.
 if [ "$want_width" -eq 0 ] && [ "$want_height" -eq 0 ]; then
     want_width=1
     want_height=1
+fi
+
 # tput is our interface to terminfo; fail loudly when it is absent.
 if ! "$require_cmd" tput "The fathom-terminal spell needs 'tput' to query terminfo."; then
     return 1
+fi
+
 cols=$(tput cols 2>/dev/null)
 cols_status=$?
 lines=$(tput lines 2>/dev/null)
 lines_status=$?
+
 if [ "$want_width" -eq 1 ]; then
     if [ $cols_status -ne 0 ] || [ -z "$cols" ]; then
         printf '%s\n' 'fathom-terminal: unable to determine terminal width' >&2
         return 1
     fi
+fi
+
 if [ "$want_height" -eq 1 ]; then
     if [ $lines_status -ne 0 ] || [ -z "$lines" ]; then
         printf '%s\n' 'fathom-terminal: unable to determine terminal height' >&2
+        return 1
+    fi
+fi
+
 print_dimension() {
     label=$1
     value=$2
@@ -81,11 +111,20 @@ print_dimension() {
         printf '%s: %s\n' "$label" "$value"
     else
         printf '%s\n' "$value"
+    fi
+}
+
 # Honour the caller's selection of width, height, or both.
 if [ "$want_width" -eq 1 ] && [ "$want_height" -eq 1 ]; then
     print_dimension 'Width' "$cols"
     print_dimension 'Height' "$lines"
 elif [ "$want_width" -eq 1 ]; then
+    print_dimension 'Width' "$cols"
+else
+    print_dimension 'Height' "$lines"
+fi
+}
+
 # Self-execute when run directly (not sourced)
 case "$0" in
   */fathom-terminal) fathom_terminal "$@" ;; esac

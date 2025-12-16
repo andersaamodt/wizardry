@@ -2,12 +2,17 @@
 
 # This spell lists all contacts in the contacts directory.
 # Each vCard file is parsed to extract the name, organization, or telephone.
+
 list_contacts_usage() {
   cat <<'USAGE'
 Usage: list-contacts [directory]
+
 List contacts from vCard files in a directory, defaulting to ~/.contacts when none is provided.
 USAGE
 }
+
+
+
 list_contacts() {
 case "${1-}" in
 --help|--usage|-h)
@@ -15,12 +20,16 @@ case "${1-}" in
   return 0
   ;;
 esac
+
 set -eu
-# env-clear: compliant
+. "$(dirname "$0")/../.imps/sys/env-clear"
+
 # Default contacts directory
 contacts_dir="${1:-$HOME/.contacts}"
+
 # Ensure the contacts directory exists
 make dir "$contacts_dir"
+
 # Find all vCard files in the contacts directory (POSIX-compliant)
 find "$contacts_dir" -name '*.vcf' | while IFS= read -r file; do
   # Skip if file doesn't exist (empty directory case)
@@ -41,12 +50,16 @@ find "$contacts_dir" -name '*.vcf' | while IFS= read -r file; do
                gsub(/\\\\\\\\/,"\\",tel);}
       END     {print name != "" ? name : (org != "" ? org : tel)}
     ')
+
   if is unset "$name"; then
     # No name, organization, or telephone found, print the filename
     name="<$(basename "$file")>"
   fi
+
   say "$name"
 done | sort
+}
+
 # Self-execute when run directly (not sourced)
 case "$0" in
   */list-contacts) list_contacts "$@" ;; esac

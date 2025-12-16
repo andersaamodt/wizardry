@@ -2,14 +2,20 @@
 
 # Report the cursor position returned by the terminal in response to a DSR
 # (Device Status Report) query.
+
+
 fathom_cursor_usage() {
     cat <<'USAGE' >&2
 Usage: fathom-cursor [-v|--verbose] [-x] [-y]
+
 Query the terminal with a Device Status Report and print the cursor's current
 column and row. Use -x or -y to request a single axis; -v adds labels so menu
 scripts can present the measurements clearly.
 USAGE
 }
+
+
+
 fathom_cursor() {
 case "${1-}" in
 --help|--usage|-h)
@@ -17,9 +23,12 @@ case "${1-}" in
   return 0
   ;;
 esac
+
 set -eu
-# env-clear: compliant
+. "$(dirname "$0")/../.imps/sys/env-clear"
+
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
 # Resolve the require-command helper
 if [ -n "${REQUIRE_COMMAND-}" ]; then
     require_cmd=$REQUIRE_COMMAND
@@ -28,9 +37,11 @@ elif [ -x "$script_dir/require-command" ]; then
 else
     require_cmd=require-command
 fi
+
 verbose=0
 want_x=0
 want_y=0
+
 # Parse the minimal flag set needed for the menu scripts
 while [ "$#" -gt 0 ]; do
     case "$1" in
@@ -39,59 +50,98 @@ while [ "$#" -gt 0 ]; do
             ;;
         -x)
             want_x=1
+            ;;
         -y)
             want_y=1
+            ;;
         --help|--usage|-h)
             fathom_cursor_usage
             return 0
+            ;;
         --)
             shift
             break
+            ;;
         -*)
+            fathom_cursor_usage
+            ;;
         *)
+            break
+            ;;
     esac
+
     shift
 done
+
 # Default to reporting both coordinates when no axis is specified
 if [ "$want_x" -eq 0 ] && [ "$want_y" -eq 0 ]; then
     want_x=1
     want_y=1
+fi
+
 # Check for required commands
 if ! "$require_cmd" dd "The fathom-cursor spell needs 'dd' to read the terminal response."; then
     return 1
+fi
+
 tty_device=${FATHOM_CURSOR_DEVICE:-/dev/tty}
 skip_stty=${FATHOM_CURSOR_SKIP_STTY:-0}
+
 # Only reach for stty when we are manipulating a real tty
 if [ "$skip_stty" -eq 0 ]; then
     if ! "$require_cmd" stty "The fathom-cursor spell needs 'stty' to manage terminal modes."; then
         return 1
     fi
+fi
+
 if [ "$skip_stty" -eq 1 ]; then
     # Test harnesses can feed canned responses via a read-only file
     if [ ! -r "$tty_device" ]; then
         printf '%s\n' "fathom-cursor: unable to read from '$tty_device'" >&2
+        return 1
+    fi
+
     exec 3<"$tty_device" || return 1
     restore_test() {
         exec 3>&- 2>/dev/null || :
     }
     trap 'restore_test' EXIT
+else
     # When running interactively, open the tty for both reading and writing
     if [ ! -r "$tty_device" ] || [ ! -w "$tty_device" ]; then
         printf '%s\n' "fathom-cursor: unable to open controlling terminal '$tty_device'" >&2
+        return 1
+    fi
+
     exec 3<>"$tty_device" || return 1
+
     # Preserve the terminal state and restore it on exit
     saved_state=$(stty -g <&3 2>/dev/null)
     if [ -z "$saved_state" ]; then
         printf '%s\n' 'fathom-cursor: unable to read terminal settings' >&2
+        return 1
+    fi
+
     restore_tty() {
         stty "$saved_state" <&3 >/dev/null 2>&1 || :
+        exec 3>&- 2>/dev/null || :
+    }
+
     trap 'restore_tty; exit 130' INT HUP TERM
     trap 'restore_tty' EXIT
+
     # Configure raw mode with a short timeout
     if ! stty -icanon -echo min 0 time 5 <&3 2>/dev/null; then
         printf '%s\n' 'fathom-cursor: unable to configure terminal' >&2
+        return 1
+    fi
+fi
+
 # Ask for the cursor position by emitting the DSR request
+if [ "$skip_stty" -eq 0 ]; then
     printf '\033[6n' >&3
+fi
+
 # Read response from terminal
 response=''
 while :; do
@@ -99,32 +149,56 @@ while :; do
     [ -z "$byte" ] && break
     response=${response}${byte}
     [ "$byte" = "R" ] && break
+done
+
 # Cleanup
 trap - EXIT
+if [ "$skip_stty" -eq 1 ]; then
     restore_test
+else
     restore_tty
+fi
+
 # Validate response
 esc=$(printf '\033')
+
 case "$response" in
     '')
         printf '%s\n' 'fathom-cursor: terminal did not respond' >&2
+        return 1
         ;;
     "$esc"'['*'R')
         :
+        ;;
     *)
         printf '%s\n' "fathom-cursor: unexpected response '$response'" >&2
+        return 1
+        ;;
+esac
+
 # Strip the escape sequence wrapper to isolate "row;column"
 coords=${response#??}
 coords=${coords%R}
 row=${coords%%;*}
 column=${coords#*;}
+
 # Validate numeric values
 case "$row" in
     *[!0-9]*)
         printf '%s\n' "fathom-cursor: invalid row '$row'" >&2
+        return 1
+        ;;
     *) : ;;
+esac
+
 case "$column" in
+    *[!0-9]*)
         printf '%s\n' "fathom-cursor: invalid column '$column'" >&2
+        return 1
+        ;;
+    *) : ;;
+esac
+
 # Print results based on axis selection
 if [ "$want_x" -eq 1 ] && [ "$want_y" -eq 1 ]; then
     if [ "$verbose" -eq 1 ]; then
@@ -133,7 +207,22 @@ if [ "$want_x" -eq 1 ] && [ "$want_y" -eq 1 ]; then
     else
         printf '%s\n' "$column"
         printf '%s\n' "$row"
+    fi
 elif [ "$want_x" -eq 1 ]; then
+    if [ "$verbose" -eq 1 ]; then
+        printf 'X: %s\n' "$column"
+    else
+        printf '%s\n' "$column"
+    fi
+else
+    if [ "$verbose" -eq 1 ]; then
+        printf 'Y: %s\n' "$row"
+    else
+        printf '%s\n' "$row"
+    fi
+fi
+}
+
 # Self-execute when run directly (not sourced)
 case "$0" in
   */fathom-cursor) fathom_cursor "$@" ;; esac

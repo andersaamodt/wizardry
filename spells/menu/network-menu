@@ -4,9 +4,13 @@
 network_menu_usage() {
   cat <<'USAGE'
 Usage: network-menu
+
 Displays network configuration options.
 USAGE
 }
+
+
+
 network_menu() {
 case "${1-}" in
 --help|--usage|-h)
@@ -14,16 +18,23 @@ case "${1-}" in
   return 0
   ;;
 esac
+
 set -eu
-# env-clear: compliant
+. "$(dirname "$0")/../.imps/sys/env-clear"
+
 require-command menu
+
 trap 'exit 0' INT TERM
 exit_label=$(exit-label)
 exit_item="${exit_label}%kill -TERM \$PPID"
+
 menu "Network Menu:" \
   "Configure static IP%configure-static-ip" \
   "Configure DHCP%configure-dhcp" \
   "$exit_item" || true
+
+}
+
 # Self-execute when run directly (not sourced)
 case "$0" in
   */network-menu) network_menu "$@" ;; esac

@@ -2,13 +2,19 @@
 
 # This spell teleports to markers set with mark-location.
 # Source this file or use word-of-binding to invoke it.
+
 require-wizardry || exit 1
+
 jump_to_marker_usage() {
 cat <<'USAGE'
 Usage: jump-to-marker [marker]
+
 Teleport to a marker set with mark-location. Defaults to marker "1", marker "0" cycles through all saved locations.
 USAGE
 }
+
+
+
 jump_to_marker() {
 case "${1-}" in
 --help|--usage|-h)
@@ -18,22 +24,30 @@ case "${1-}" in
 -*)
   warn "jump-to-marker: unknown option '$1'."
   return 1
+  ;;
 esac
+
 set -eu
-# env-clear: compliant
+. "$(dirname "$0")/../.imps/sys/env-clear"
+
 # Resolve markers directory
 _jm_spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
 markers_dir=$(env-or JUMP_TO_MARKERS_DIR "$_jm_spell_home/.markers")
+
 # Call the implementation
 jump_to_marker_impl "$@"
+}
+
 jump_to_marker_impl() {
-        # Initialize markers_dir if not already set (for when called directly after sourcing)
-        if [ -z "${markers_dir:-}" ]; then
+        # Initialize MARKERS_DIR if not already set (for when called directly after sourcing)
+        if [ -z "${MARKERS_DIR:-}" ]; then
                 _jm_spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
                 markers_dir=$(env-or JUMP_TO_MARKERS_DIR "$_jm_spell_home/.markers")
         fi
         
+        markers_dir=$markers_dir
         marker_name="${1:-}"
+        
         # If no marker specified OR marker is "0", cycle through markers
         if [ -z "$marker_name" ] || [ "$marker_name" = "0" ]; then
                 # Find the most recently used marker (by mtime) and get the next one
@@ -79,41 +93,60 @@ jump_to_marker_impl() {
                                                 .*) continue ;;
                                         esac
                                         # Separate numeric and non-numeric markers
+                                        case "$name" in
                                                 *[!0-9]*)
                                                         alpha_markers="$alpha_markers $name"
                                                         ;;
                                                 *)
                                                         numeric_markers="$numeric_markers $name"
+                                                        ;;
+                                        esac
                                 done
                                 # Sort and output: numbers first (numerically), then names (alphabetically)
                                 for n in $(printf '%s\n' $numeric_markers | sort -n); do
                                         all_markers="$all_markers $n"
+                                done
                                 for n in $(printf '%s\n' $alpha_markers | sort); do
+                                        all_markers="$all_markers $n"
+                                done
+                        fi
+                        
                         found=0
                         first=""
                         for m in $all_markers; do
                                 if [ -z "$first" ]; then
                                         first=$m
+                                fi
                                 if [ "$found" -eq 1 ]; then
                                         marker_name=$m
                                         break
+                                fi
                                 if [ "$m" = "$last_marker" ]; then
                                         found=1
+                                fi
                         done
                         # Wrap around to first marker if at end
                         if [ "$found" -eq 1 ] && [ -z "$marker_name" ]; then
                                 marker_name=$first
+                        fi
                 else
                         marker_name="1"
+                fi
+        fi
+        
         marker_file="$markers_dir/$marker_name"
+        
         # Check for markers directory
         if [ ! -d "$markers_dir" ]; then
                 say "No markers have been set. Use 'mark-location' to mark a location first."
                 return 1
+        fi
+        
         # Check for specific marker file
         if [ ! -f "$marker_file" ]; then
                 say "No marker '$marker_name' found. Use 'mark-location $marker_name' to set it."
                 # List available markers
+                if [ -d "$markers_dir" ]; then
                         numeric_markers=""
                         alpha_markers=""
                         for marker in "$markers_dir"/*; do
@@ -124,26 +157,43 @@ jump_to_marker_impl() {
                                         .*) continue ;;
                                 esac
                                 # Separate numeric and non-numeric markers
+                                case "$name" in
                                         *[!0-9]*)
                                                 alpha_markers="$alpha_markers $name"
                                                 ;;
                                         *)
                                                 numeric_markers="$numeric_markers $name"
+                                                ;;
+                                esac
+                        done
                         # Sort and output: numbers first (numerically), then names (alphabetically)
                         available=""
                         for n in $(printf '%s\n' $numeric_markers | sort -n); do
                                 available="$available $n"
+                        done
                         for n in $(printf '%s\n' $alpha_markers | sort); do
+                                available="$available $n"
+                        done
                         if [ -n "$available" ]; then
                                 printf '%s' "Available markers:"
                                 for m in $available; do
                                         printf ' %s' "$m"
+                                done
                                 printf '\n'
+                        fi
+                fi
+                return 1
+        fi
+        
         destination=$(cat "$marker_file")
         if [ -z "$destination" ]; then
                 say "The rune '$marker_name' is blank; the marked location has faded away."
+                return 1
+        fi
         if [ ! -d "$destination" ]; then
                 say "The ley-line remembers '$destination' for marker '$marker_name', but it no longer exists."
+                return 1
+        fi
         # Normalize paths to handle macOS double slashes
         current=$(here | norm-path)
         normalized_destination=$(norm-path "$destination")
@@ -152,8 +202,12 @@ jump_to_marker_impl() {
                 # Touch marker to update mtime for cycling
                 touch "$marker_file"
                 return 0
+        fi
         if ! cd "$destination"; then
                 warn "The portal refuses to stabilize; try marking again."
+                return 1
+        fi
+        
         # Pick a random arrival message
         arrival=$(cat <<'PORTAL'
 You feel a sudden warmth as you are enveloped in a glowing aura. When it fades, you find yourself at your destination.
@@ -199,13 +253,20 @@ Reality hiccups; when it steadies, you are already in motion.
 PORTAL
 )
         arrival=$(printf '%s\n' "$arrival" | awk 'BEGIN{srand();}{lines[NR]=$0}END{if (NR==0) exit 0; idx=int(rand()*NR)+1; print lines[idx];}')
+        
         if [ -n "$arrival" ]; then
                 say "$arrival"
+        fi
+        
         # Touch marker to update mtime for cycling
         touch "$marker_file"
+        
         # Describe current location if look command exists
         if has look; then
                 look 2>/dev/null || true
+        fi
+}
+
 # Self-execute when run directly (not sourced)
 case "$0" in
   */jump-to-marker|*/jump) jump_to_marker "$@" ;; esac

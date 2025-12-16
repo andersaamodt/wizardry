@@ -2,12 +2,17 @@
 
 # This spell prints text in a subtle format only visible to wizards.
 # Use it to show commands before they are executed for teaching purposes.
+
 wizard_eyes_usage() {
 cat <<'USAGE'
 Usage: wizard-eyes <message>
+
 Print a message in muted, indented text to mark it as a command or technical aside. Helpful for teaching moments when you want learners to see the command without shouting it.
 USAGE
 }
+
+
+
 wizard_eyes() {
 case "${1-}" in
 --help|--usage|-h)
@@ -15,10 +20,13 @@ case "${1-}" in
   return 0
   ;;
 esac
+
 set -eu
-# env-clear: compliant
+. "$(dirname "$0")/../.imps/sys/env-clear"
+
 # Check if wizard mode is enabled (default to showing for teaching)
 wizard_mode=${WIZARD:-1}
+
 if [ "$wizard_mode" = "1" ]; then
         # Load colors if available
         if has colors; then
@@ -32,6 +40,8 @@ if [ "$wizard_mode" = "1" ]; then
         
         printf '    %s%s%s\n' "${THEME_MUTED:-$GREY}" "$*" "$RESET"
 fi
+}
+
 # Self-execute when run directly (not sourced)
 case "$0" in
   */wizard-eyes) wizard_eyes "$@" ;; esac

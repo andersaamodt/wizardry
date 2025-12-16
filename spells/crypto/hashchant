@@ -2,12 +2,17 @@
 
 # Hashchant spell: weave a checksum into a file's extended attributes.
 # Stores a CRC-32 derived from the filename and contents under user.hash.
+
+
 hashchant_usage() {
 cat <<'USAGE'
 Usage: hashchant <file>
+
 Compute a CRC-32 hash from the filename and contents, write it to the file's user.hash extended attribute when supported, and print the applied value.
 USAGE
 }
+
+
 hashchant() {
 case "${1-}" in
 --help|--usage|-h)
@@ -15,34 +20,46 @@ case "${1-}" in
   return 0
   ;;
 esac
+
 set -eu
-# env-clear: compliant
+. "$(dirname "$0")/../.imps/sys/env-clear"
+
 if [ -z "${1-}" ]; then
   printf '%s\n' "hashchant: file path required" >&2
   return 2
 fi
+
 file=$1
+
 if [ ! -e "$file" ]; then
   printf '%s\n' "hashchant: file not found" >&2
   return 1
+fi
+
 filename=$(basename "$file")
 hash=$( (echo "$filename" && cat "$file") | cksum | awk '{ print $1 }')
 hash=$(printf '0x%X' "$hash")
+
 # Inline apply_first_available logic - try each helper in order
 last_helper=""
 last_status=0
+
 for helper in attr xattr setfattr; do
   # Inline helper_usable logic
   if ! command -v "$helper" >/dev/null 2>&1; then
     continue
   fi
+
   resolved=$(command -v "$helper")
+
   if [ "${WIZARDRY_TEST_HELPERS_ONLY-0}" -eq 1 ]; then
     case $resolved in
       /usr/*|/bin/*|/sbin/*|/usr/local/*)
         continue
         ;;
     esac
+  fi
+
   # Inline apply_hash logic - try to apply with this helper
   applied=0
   case "$helper" in
@@ -53,20 +70,34 @@ for helper in attr xattr setfattr; do
       ;;
     xattr)
       if xattr -w "user.hash" "$hash" "$file" 2>/dev/null; then
+        applied=1
+      fi
+      ;;
     setfattr)
       if setfattr -n "user.hash" -v "$hash" "$file" 2>/dev/null; then
+        applied=1
+      fi
+      ;;
   esac
+
   if [ "$applied" -eq 1 ]; then
     echo "File enchanted with hash: $hash"
     return 0
+  fi
+
   last_helper=$helper
   last_status=$?
 done
+
 if [ -n "$last_helper" ]; then
   printf '%s\n' "hashchant: failed to write hash using $last_helper (return 1 $last_status)" >&2
 else
   printf '%s\n' "hashchant: xattr and attr commands not found, cannot enchant file" >&2
+fi
+
 return 1
+}
+
 # Self-execute when run directly (not sourced)
 case "$0" in
   */hashchant) hashchant "$@" ;; esac

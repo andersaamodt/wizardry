@@ -2,13 +2,18 @@
 
 # This spell reads a YAML front matter block and restores its keys as attributes.
 # After the transfer, it trims the prologue so the file holds only its content.
+
 require-wizardry || exit 1
+
 yaml_to_enchantment_usage() {
 cat <<'USAGE'
 Usage: yaml-to-enchantment <path-to-file>
+
 Parse a YAML front matter header, write each key/value into the file's extended attributes, and rewrite the file without the header.
 USAGE
 }
+
+
 yaml_to_enchantment() {
 case "${1-}" in
 --help|--usage|-h)
@@ -16,26 +21,36 @@ case "${1-}" in
   return 0
   ;;
 esac
+
 set -eu
-# env-clear: compliant
+. "$(dirname "$0")/../.imps/sys/env-clear"
+
 if [ "$#" -ne 1 ]; then
     warn "Error: incorrect number of arguments"
     yaml_to_enchantment_usage >&2
     return 1
 fi
+
 scroll=$1
 is file "$scroll" || { warn "Error: file does not exist"; return 1; }
+
 header_count=$(awk '/^---$/{c++} END{print c}' "$scroll")
 if [ "$header_count" -lt 2 ]; then
     warn "Error: file does not have a YAML header"
+    return 1
+fi
+
 yaml_header=$(awk '
     /^---$/ {delim++; next}
     delim==1 {print}
 ' "$scroll")
+
 empty "$yaml_header" && { warn "Error: file does not have a YAML header"; return 1; }
+
 resolve_helper() {
     helper=$1
     has "$helper" || return 1
+
     helper_path=$(where "$helper")
     if [ "${WIZARDRY_TEST_HELPERS_ONLY-0}" -eq 1 ]; then
         case "$helper_path" in
@@ -43,12 +58,19 @@ resolve_helper() {
                 return 1 ;;
         esac
     fi
+
     say "$helper_path"
+}
+
 has_attr=$(resolve_helper attr >/dev/null 2>&1 && echo "yes" || echo "no")
 has_setfattr=$(resolve_helper setfattr >/dev/null 2>&1 && echo "yes" || echo "no")
 has_xattr=$(resolve_helper xattr >/dev/null 2>&1 && echo "yes" || echo "no")
+
 if [ "$has_attr" = "no" ] && [ "$has_setfattr" = "no" ] && [ "$has_xattr" = "no" ]; then
     warn "Error: requires attr, setfattr, or xattr to restore enchantments"
+    return 1
+fi
+
 printf '%s' "$yaml_header" |
     while IFS= read -r line || nonempty "$line"; do
         key=${line%%:*}
@@ -65,18 +87,30 @@ printf '%s' "$yaml_header" |
         fi
         if [ "$success" -eq 0 ] && helper_path=$(resolve_helper setfattr); then
             if "$helper_path" -n "$key" -v "$value" "$scroll" 2>/dev/null; then
+                success=1
+            fi
+        fi
         if [ "$success" -eq 0 ] && helper_path=$(resolve_helper xattr); then
             if "$helper_path" -w "$key" "$value" "$scroll" 2>/dev/null; then
+                success=1
+            fi
+        fi
+        
         if [ "$success" -eq 0 ]; then
             warn "Error: failed to set attribute $key"
             return 1
+        fi
     done || return 1
+
 body_tmp=$(temp-file wizardry-body) || return 1
 awk '
+    /^---$/ {delim++; next}
     delim<2 {next}
     {print}
 ' "$scroll" >"$body_tmp"
 mv "$body_tmp" "$scroll"
+}
+
 # Self-execute when run directly (not sourced)
 case "$0" in
   */yaml-to-enchantment) yaml_to_enchantment "$@" ;; esac

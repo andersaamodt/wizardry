@@ -2,19 +2,25 @@
 
 # Recursively list all files in a directory and its subdirectories.
 # Useful for discovering all scripts, spells, or files in a tree.
+
 list_files_usage() {
   cat <<'USAGE'
 Usage: list-files <directory> [options]
+
 Recursively list all files in a directory and subdirectories.
+
 Options:
   -x, --executable  Only list executable files
   -t, --type TYPE   Only list files of type (f=file, d=directory)
+
 Examples:
   list-files spells              # All files in spells/
   list-files spells -x           # Only executable files
   list-files spells -t f         # Only regular files
 USAGE
 }
+
+
 list_files() {
 case "${1-}" in
 --help|--usage|-h)
@@ -22,18 +28,23 @@ case "${1-}" in
   return 0
   ;;
 esac
+
 set -eu
-# env-clear: compliant
+. "$(dirname "$0")/../.imps/sys/env-clear"
+
 if [ "$#" -lt 1 ]; then
   printf '%s\n' "list-files: directory required" >&2
   list_files_usage >&2
   return 1
 fi
+
 directory=$1
 shift
+
 # Parse options
 only_executable=0
 file_type=""
+
 while [ "$#" -gt 0 ]; do
   case "$1" in
     -x|--executable)
@@ -47,13 +58,19 @@ while [ "$#" -gt 0 ]; do
       fi
       file_type=$2
       shift 2
+      ;;
     *)
       printf '%s\n' "list-files: unknown option: $1" >&2
       return 1
+      ;;
   esac
 done
+
 if [ ! -d "$directory" ]; then
   printf '%s\n' "list-files: not a directory: $directory" >&2
+  return 1
+fi
+
 # Build find command
 if [ "$only_executable" = "1" ]; then
   if [ -n "$file_type" ]; then
@@ -65,6 +82,9 @@ elif [ -n "$file_type" ]; then
   find "$directory" -type "$file_type" 2>/dev/null
 else
   find "$directory" 2>/dev/null
+fi
+}
+
 # Self-execute when run directly (not sourced)
 case "$0" in
   */list-files) list_files "$@" ;; esac

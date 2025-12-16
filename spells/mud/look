@@ -2,13 +2,19 @@
 
 # This spell reads a location's extended attributes and presents its description.
 # Use it to view MUD-style room descriptions for directories.
+
 require-wizardry || exit 1
+
 look_usage() {
 cat <<'USAGE'
 Usage: look [path]
+
 Display a location's title and description attributes with read-magic. Defaults to the current directory when no path is supplied.
 USAGE
 }
+
+
+
 look() {
 case "${1-}" in
 --help|--usage|-h)
@@ -16,8 +22,10 @@ case "${1-}" in
   return 0
   ;;
 esac
+
 set -eu
-# env-clear: compliant
+. "$(dirname "$0")/../.imps/sys/env-clear"
+
 script_source=$0
 case $script_source in
 */*)
@@ -27,20 +35,27 @@ case $script_source in
         resolved=$(command -v "$script_source" 2>/dev/null || printf '%s' "$script_source")
   script_dir=${resolved%/*}
   script_source=$resolved
+        ;;
+esac
 if [ -z "$script_dir" ] || [ "$script_dir" = "$script_source" ]; then
   script_dir=.
 fi
 script_dir=$(cd "$script_dir" && pwd -P)
 look_script_path="$script_dir/$(basename "$script_source")"
+
 look_warn() {
         printf '%s\n' "look: $1" >&2
+}
+
 # Load colors if available
 if [ -n "${LOOK_COLORS_PATH-}" ] && [ -f "$LOOK_COLORS_PATH" ]; then
         # shellcheck disable=SC1090
         . "$LOOK_COLORS_PATH"
 elif command -v colors >/dev/null 2>&1; then
+        # shellcheck disable=SC1090
         . "$(command -v colors)"
 elif [ -x "$script_dir/cantrips/colors" ]; then
+        # shellcheck disable=SC1090
         . "$script_dir/cantrips/colors"
 else
         BLUE=""
@@ -49,6 +64,8 @@ else
         mud_location=""
         mud_title=""
         mud_description=""
+fi
+
 # Let tests or callers override the helper path; otherwise look beside this
 # script first, then in PATH so the spell still works when installed globally.
 # This keeps installation optional while preserving predictability.
@@ -62,15 +79,20 @@ if [ -z "$read_magic" ]; then
                 printf '%s\n' "look: read-magic spell is missing." >&2
                 return 1
         fi
+fi
+
 path_input=${1:-$PWD}
 path=$(strip-trailing-slashes "$(abs-path "$path_input")")
+
 # NOTE: Legacy RC file editing code was removed in favor of word-of-binding paradigm.
 # The old code prompted users to add 'alias look=...' to their shell RC files to override
 # the system /usr/bin/look command. For NixOS, it used nix-shell-add to add the alias to
 # configuration.nix, which was working correctly. Future versions will handle this via
 # the synonyms system to centralize and standardize command aliases.
+
 # Message returned by read-magic when attribute doesn't exist
 missing_attr_msg='read-magic: attribute does not exist.'
+
 # Get identify-room data if available
 identify_title=''
 identify_description=''
@@ -78,20 +100,28 @@ if command -v identify-room >/dev/null 2>&1; then
         if identify_room_output=$(identify-room "$path" 2>/dev/null); then
                 identify_title=$(printf '%s' "$identify_room_output" | sed -n '1p')
                 identify_description=$(printf '%s' "$identify_room_output" | sed -n '2p')
+        fi
+else
         look_warn "identify-room spell is unavailable; continuing without system lore."
+fi
+
 # Get title from attribute or fall back to folder name or identify data
 attr_title=$("$read_magic" "$path" title 2>/dev/null || true)
 if [ "$attr_title" != "$missing_attr_msg" ] && [ -n "$attr_title" ]; then
         room_title=$attr_title
 elif [ -n "$identify_title" ]; then
         room_title=$identify_title
+else
         room_title=$(basename "$path")
+fi
+
 # Get description from attribute or fall back to identify data or default
 attr_desc=$("$read_magic" "$path" description 2>/dev/null || true)
 if [ "$attr_desc" != "$missing_attr_msg" ] && [ -n "$attr_desc" ]; then
         room_description=$attr_desc
 elif [ -n "$identify_description" ]; then
         room_description=$identify_description
+else
         # Use a checksum of the path to pick a consistent random description
         path_hash=$(printf '%s' "$path" | cksum | cut -d' ' -f1)
         case $((path_hash % 5)) in
@@ -101,9 +131,13 @@ elif [ -n "$identify_description" ]; then
                 3) room_description="An unremarkable area." ;;
                 4) room_description="A simple room." ;;
         esac
+fi
+
 # Display MUD-formatted room description
 printf '%s%s%s\n' "$mud_title" "$room_title" "$RESET"
 printf '%s%s%s\n' "$mud_description" "$room_description" "$RESET"
+}
+
 # Self-execute when run directly (not sourced)
 case "$0" in
   */look) look "$@" ;; esac

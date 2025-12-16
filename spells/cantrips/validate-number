@@ -2,12 +2,17 @@
 
 # This spell validates whether a string is a valid non-negative integer.
 # Use it to check numeric input before processing.
+
 validate_number_usage() {
 cat <<'USAGE'
 Usage: validate-number <string>
+
 Check whether a string is a non-negative integer. Exits 0 when the value is digits only and 1 when it is not.
 USAGE
 }
+
+
+
 validate_number() {
 case "${1-}" in
 --help|--usage|-h)
@@ -15,18 +20,25 @@ case "${1-}" in
   return 0
   ;;
 esac
+
 set -eu
-# env-clear: compliant
+. "$(dirname "$0")/../.imps/sys/env-clear"
+
 # Check argument
 if [ -z "${1+x}" ]; then
         return 1
 fi
+
 case $1 in
         ''|*[!0-9]*)
                 return 1
                 ;;
         *)
                 return 0
+                ;;
+esac
+}
+
 # Self-execute when run directly (not sourced)
 case "$0" in
   */validate-number) validate_number "$@" ;; esac

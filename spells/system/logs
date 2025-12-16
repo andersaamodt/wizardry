@@ -2,12 +2,17 @@
 
 # This spell displays a menu of system logs for easy viewing.
 # Use it to browse and view common log files on the system.
+
 logs_usage() {
 cat <<'USAGE'
 Usage: logs
+
 Open an interactive menu of system log files to view. The list adapts to your operating system so you can jump straight into the right logs.
 USAGE
 }
+
+
+
 logs() {
 case "${1-}" in
 --help|--usage|-h)
@@ -15,21 +20,30 @@ case "${1-}" in
   return 0
   ;;
 esac
+
 set -eu
-# env-clear: compliant
+. "$(dirname "$0")/../.imps/sys/env-clear"
+
 . colors
+
 distro=$(detect-distro)
 logs="/var/log/messages,/var/log/secure,/var/log/auth.log,"
+
 case "$distro" in
     "arch"|"fedora")
         logs="$logs/var/log/pacman.log,/var/log/httpd/access_log,/var/log/httpd/error_log,/var/log/lighttpd/access.log,/var/log/lighttpd/error.log,/var/log/xorg.0.log"
         ;;
     "debian"|"ubuntu")
         logs="$logs/var/log/apt/history.log,/var/log/dpkg.log,/var/log/lighttpd/access.log,/var/log/lighttpd/error.log,/var/log/xorg.0.log"
+        ;;
     "macos")
         logs="$logs/var/log/install.log,/var/log/system.log"
     ;;
+esac
+
 menu "Log Viewer" "$logs" "$logs"
+}
+
 # Self-execute when run directly (not sourced)
 case "$0" in
   */logs) logs "$@" ;; esac

@@ -1,12 +1,17 @@
 #!/bin/sh
 
 # Verify that wizardry spells use POSIX-compliant shell practices.
+
 verify_posix_usage() {
   cat <<'USAGE' >&2
 Usage: verify-posix [script ...]
+
 Checks the provided spells—or every executable spell by default—for POSIX sh shebangs and common bashism pitfalls using checkbashisms.
 USAGE
 }
+
+
+
 verify_posix() {
 case "${1-}" in
 --help|--usage|-h)
@@ -14,10 +19,13 @@ case "${1-}" in
   return 0
   ;;
 esac
+
 set -eu
-# env-clear: compliant
+. "$(dirname "$0")/../.imps/sys/env-clear"
+
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 repo_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd -P)
+
 # Add imps to PATH so we can use temp-file and cleanup-file directly
 if [ -d "$repo_dir/spells/.imps" ]; then
   PATH="$repo_dir/spells/.imps:$PATH"
@@ -27,16 +35,22 @@ if [ -d "$repo_dir/spells/.imps" ]; then
   done
   export PATH
 fi
+
 checkbashisms_cmd=${CHECKBASHISMS-}
 if [ -z "$checkbashisms_cmd" ] && command -v checkbashisms >/dev/null 2>&1; then
   checkbashisms_cmd=$(command -v checkbashisms)
+fi
+
 if [ -z "$checkbashisms_cmd" ]; then
   printf '%s\n' "verify-posix: checkbashisms is required but not found in PATH." >&2
   return 1
+fi
+
 failures=0
 total=0
 failed_targets=""
 failed_details=""
+
 record_failure() {
   target=$1
   reason=${2-}
@@ -49,8 +63,11 @@ record_failure() {
       failed_details="$target ($reason)"
     fi
   fi
+}
+
 targets_file=$(temp-file verify-posix-targets) || return 1
 trap 'cleanup-file "$targets_file"' EXIT HUP INT TERM
+
 # Inline verify_posix_collect_targets and verify_posix_gather_default_targets
 if [ "$#" -gt 0 ]; then
   # Use provided targets
@@ -66,44 +83,75 @@ else
           ;;
       esac
     done >"$targets_file"
+fi
+
 while IFS= read -r target; do
   [ -n "$target" ] || continue
   total=$((total + 1))
+
   case $target in
     /*)
       path="$target"
       ;;
     *)
       path="$repo_dir/$target"
+      ;;
   esac
+
   if [ ! -e "$path" ]; then
     print-fail "$target" "missing file"
     record_failure "$target" "missing file"
     continue
+  fi
+
   if [ ! -f "$path" ]; then
     print-fail "$target" "not a regular file"
     record_failure "$target" "not a regular file"
+    continue
+  fi
+
   shebang=$(sed -n '1p' "$path")
+
   case $shebang in
     '')
       print-fail "$target" "lacks a shebang; expected #!/bin/sh"
       record_failure "$target" "no shebang"
       continue
+      ;;
     '#!')
       print-fail "$target" "has an empty shebang; expected #!/bin/sh"
       record_failure "$target" "empty shebang"
+      continue
+      ;;
     '#!'*)
       interpreter=${shebang#\#!}
       while [ "${interpreter# }" != "$interpreter" ]; do
         interpreter=${interpreter# }
       done
+      ;;
+    *)
+      print-fail "$target" "lacks a shebang; expected #!/bin/sh"
+      record_failure "$target" "no shebang"
+      continue
+      ;;
+  esac
+
   case $interpreter in
     '/bin/sh'|'/usr/bin/env sh')
       :
+      ;;
     '/usr/bin/env bash'*|'/bin/bash'*)
       print-fail "$target" "uses $shebang (should use /bin/sh)"
       record_failure "$target" "bash shebang"
+      continue
+      ;;
+    *)
+      print-fail "$target" "uses $shebang (should use /bin/sh)"
       record_failure "$target" "wrong shebang"
+      continue
+      ;;
+  esac
+
   tmp_log=$(temp-file verify-posix-log) || return 1
   if "$checkbashisms_cmd" "$path" >"$tmp_log" 2>&1; then
     print-pass "$target"
@@ -113,10 +161,12 @@ while IFS= read -r target; do
       printf '  %s\n' "$line"
     done <"$tmp_log"
     record_failure "$target" "bashisms detected"
+  fi
   cleanup-file "$tmp_log"
 done <"$targets_file"
 trap - EXIT HUP INT TERM
 rm -f "$targets_file"
+
 printf '\n'
 if [ "$failures" -eq 0 ]; then
   if [ -t 1 ] && command -v tput >/dev/null 2>&1 && tput setaf 1 >/dev/null 2>&1; then
@@ -124,7 +174,10 @@ if [ "$failures" -eq 0 ]; then
     bold=$(tput bold 2>/dev/null || true)
     reset=$(tput sgr0 2>/dev/null || true)
     printf '%s%sAll %d scripts are POSIX-compliant.%s\n' "$bold" "$green" "$total" "$reset"
+  else
     printf 'All %d scripts are POSIX-compliant.\n' "$total"
+  fi
+else
   heading-section "POSIX Compliance Summary"
   passed=$((total - failures))
   printf 'Passed: %d/%d\n' "$passed" "$total"
@@ -135,7 +188,13 @@ if [ "$failures" -eq 0 ]; then
     printf '%s' "$failed_details" | tr ',' '\n' | while IFS= read -r failure; do
       [ -n "$failure" ] && printf '  %s\n' "$failure"
     done
+  else
     printf '\nFailing spells: %s\n' "$failed_targets"
+  fi
+  return 1
+fi
+}
+
 # Self-execute when run directly (not sourced)
 case "$0" in
   */verify-posix) verify_posix "$@" ;; esac

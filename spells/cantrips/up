@@ -2,12 +2,17 @@
 
 # This spell outputs a cd command to navigate up directory levels.
 # Source it or use with eval: eval "$(up)" or eval "$(up 2)"
+
 up_usage() {
 cat <<'USAGE'
 Usage: up [levels]
+
 Print a cd command that climbs the given number of directory levels. Defaults to one level and is meant to be wrapped with eval or sourced so your shell follows the path.
 USAGE
 }
+
+
+
 up() {
 case "${1-}" in
 --help|--usage|-h)
@@ -15,14 +20,19 @@ case "${1-}" in
   return 0
   ;;
 esac
+
 set -eu
-# env-clear: compliant
+. "$(dirname "$0")/../.imps/sys/env-clear"
+
 levels=${1:-1}
+
 # Validate levels is a positive integer
 case "$levels" in
         ''|*[!0-9]*|0)
                 die "up: levels must be a positive integer."
                 ;;
+esac
+
 # Build the relative path
 path=".."
 i=1
@@ -30,7 +40,10 @@ while [ "$i" -lt "$levels" ]; do
         path="$path/.."
         i=$((i + 1))
 done
+
 printf 'cd "%s"\n' "$path"
+}
+
 # Self-execute when run directly (not sourced)
 case "$0" in
   */up) up "$@" ;; esac

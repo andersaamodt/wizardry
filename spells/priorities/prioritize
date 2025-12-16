@@ -2,49 +2,70 @@
 
 # This spell sets or updates the priority of a file within a directory.
 # Use it to organize files by importance using extended attributes.
+
+
 prioritize_usage() {
 cat <<'USAGE'
 Usage: prioritize <file> [directory]
+
 Set or update the priority of a file, storing it in the file's extended attributes and the directory's priorities list. If no directory is specified, the file's parent directory is used.
 USAGE
 }
+
+
+
 prioritize() {
+
 case "${1-}" in
 --help|--usage|-h)
         prioritize_usage
         return 0
         ;;
 esac
+
 set -eu
-# env-clear: compliant
+. "$(dirname "$0")/../.imps/sys/env-clear"
+
 # Ensure file argument is provided
 if [ -z "${1-}" ]; then
         printf '%s\n' "prioritize: file path required." >&2
         prioritize_usage >&2
         return 1
 fi
+
 file=$1
 directory=${2-}
+
 # Check if the target file exists
 if ! is file "$file"; then
         die "prioritize: file not found: $file"
+fi
+
 # Hash the target file for identification
 hashchant "$file" >/dev/null
 target_hash=$(read-magic "$file" hash 2>/dev/null || true)
+
 if is unset "$target_hash" || starts "$target_hash" "Error"; then
         die "prioritize: failed to hash file: $file"
+fi
+
 # Get the directory the file is in, if a target directory was not provided
 if is unset "$directory"; then
         directory=$(parent "$file")
         if [ "$directory" = "." ]; then
                 directory=$(here)
         fi
+fi
+
 # Get the file's priority, or default to 0
 target_priority=$(read-magic "$file" priority 2>/dev/null || printf '0')
 case "$target_priority" in
         *Error*|''|*[!0-9]*) target_priority=0 ;;
+esac
+
 # Retrieve the priority list from the directory's extended attributes
 priorities=$(read-magic "$directory" priorities 2>/dev/null || true)
+
 # If there are no priorities, add the target file as the only priority
 case "$priorities" in
         ''|*Error*)
@@ -53,26 +74,39 @@ case "$priorities" in
                 say "Prioritized '$(file-name "$file")' as the first priority."
                 return 0
                 ;;
+esac
+
 # Get the priority of the first item in the current list of priorities
 first_hash=$(printf '%s' "$priorities" | cut -d',' -f1)
+
 # If the target file is already the first priority, exit
 if equals "$target_hash" "$first_hash"; then
         say "'$(file-name "$file")' is already the highest priority."
+        return 0
+fi
+
 # Filter the target hash from the current priorities list to avoid duplicates
 # Using sed to remove the target hash from the comma-separated list
 filtered=$(printf '%s' "$priorities" | sed "s/^${target_hash},//;s/,${target_hash},/,/;s/,${target_hash}\$//;s/^${target_hash}\$//")
 # Remove trailing comma if any
 filtered=${filtered%,}
+
 # Prepend the target hash to make it highest priority
 new_priorities="$target_hash"
 if nonempty "$filtered"; then
         new_priorities="$target_hash,$filtered"
+fi
+
 # Calculate the new priority value (one higher than current highest)
 new_priority=$((target_priority + 1))
+
 # Update the file's priority and the directory's priority list
 enchant "$file" priority "$new_priority" >/dev/null
 enchant "$directory" priorities "$new_priorities" >/dev/null
+
 say "Prioritized '$(file-name "$file")'."
+}
+
 # Self-execute when run directly (not sourced)
 case "$0" in
   */prioritize) prioritize "$@" ;; esac

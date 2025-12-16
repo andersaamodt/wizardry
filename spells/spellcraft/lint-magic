@@ -2,12 +2,15 @@
 
 # This spell lints spells for formatting and style guide violations.
 # Run it against spell files to check formatting, linting, and code style compliance.
+
 lint_magic_usage() {
   cat <<'USAGE'
 Usage: lint-magic [--only PATTERN] [--list] [--verbose] [file...]
+
 Lint and format-check spells for style-guide compliance. With no files provided it scans the whole spellbook; use --only to filter by pattern, --list to show targets, and --verbose for detailed output.
 USAGE
 }
+
 lint_magic() {
 case "${1-}" in
 --help|--usage|-h)
@@ -15,10 +18,13 @@ case "${1-}" in
   return 0
   ;;
 esac
+
 set -eu
-# env-clear: compliant
+. "$(dirname "$0")/../.imps/sys/env-clear"
+
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 repo_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd -P)
+
 # Add imps to PATH so we can use temp-file and cleanup-file directly
 if [ -d "$repo_dir/spells/.imps" ]; then
   PATH="$repo_dir/spells/.imps:$PATH"
@@ -28,9 +34,11 @@ if [ -d "$repo_dir/spells/.imps" ]; then
   done
   export PATH
 fi
+
 verbose=0
 list_only=0
 pattern=''
+
 while [ "$#" -gt 0 ]; do
   case $1 in
     --verbose)
@@ -39,6 +47,8 @@ while [ "$#" -gt 0 ]; do
       ;;
     --list)
       list_only=1
+      shift
+      ;;
     --only)
       if [ "$#" -lt 2 ]; then
         printf '%s\n' "lint-magic: --only requires a pattern argument." >&2
@@ -46,21 +56,31 @@ while [ "$#" -gt 0 ]; do
       fi
       pattern=$2
       shift 2
+      ;;
     --)
+      shift
       break
+      ;;
     -*)
       printf '%s\n' "lint-magic: unknown option: $1" >&2
       lint_magic_usage >&2
       return 2
+      ;;
     *)
+      break
+      ;;
   esac
 done
+
+
 targets_file=$(temp-file lint-magic-targets) || return 1
 trap 'cleanup-file "$targets_file"' EXIT HUP INT TERM
+
 # Collect targets (inline lint_magic_collect_targets and lint_magic_gather_default_targets)
 if [ "$#" -gt 0 ]; then
   for arg in "$@"; do
     printf '%s\n' "$arg"
+  done
 else
   # Gather default targets (inline lint_magic_gather_default_targets)
   find "$repo_dir/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) \
@@ -82,6 +102,7 @@ else
       esac
     done
 fi >"$targets_file"
+
 failures=0
 total=0
 passed=0
@@ -89,10 +110,14 @@ failed_targets=''
 failed_messages=''
 spell_param_warnings=''
 spell_param_warning_count=0
+
 if [ "$list_only" -eq 1 ]; then
   cat "$targets_file"
   trap - EXIT HUP INT TERM
   rm -f "$targets_file"
+  return 0
+fi
+
 while IFS= read -r target; do
   [ -n "$target" ] || continue
   total=$((total + 1))
@@ -100,7 +125,12 @@ while IFS= read -r target; do
   case $target in
     /*)
       path="$target"
+      ;;
+    *)
       path="$repo_dir/$target"
+      ;;
+  esac
+  
   if [ ! -e "$path" ]; then
     fail_msg="FAIL $target: file not found"
     printf '%s\n' "$fail_msg"
@@ -110,20 +140,40 @@ while IFS= read -r target; do
 "
     continue
   fi
+  
   if [ ! -f "$path" ]; then
     fail_msg="FAIL $target: not a regular file"
+    printf '%s\n' "$fail_msg"
+    failures=$((failures + 1))
+    failed_targets=${failed_targets:+$failed_targets,}$target
+    failed_messages="${failed_messages}${fail_msg}
+"
+    continue
+  fi
+  
   is_imp_file=0
+  case $target in
     */.imps/*|*/.imps) is_imp_file=1 ;;
+  esac
   case $path in
+    */.imps/*|*/.imps) is_imp_file=1 ;;
+  esac
+  
   issues=''
   issue_count=0
+  
   # Inline check_shebang
   first_line=$(head -1 "$path")
   case $first_line in
     '#!/bin/sh'|'#! /bin/sh')
       : # valid
+      ;;
+    *)
       issues=${issues:+$issues; }'missing or incorrect shebang (expected #!/bin/sh)'
       issue_count=$((issue_count + 1))
+      ;;
+  esac
+  
   # Inline check_description_comment
   lines_2_3_4=$(sed -n '2p;3p;4p' "$path")
   second_line=$(printf '%s\n' "$lines_2_3_4" | sed -n '1p')
@@ -133,50 +183,92 @@ while IFS= read -r target; do
     case $third_line in
       '#'*) desc_ok=1 ;;
     esac
+  fi
   if [ "$desc_ok" -eq 0 ]; then
     case $second_line in
+      '#'*) desc_ok=1 ;;
+    esac
+  fi
+  if [ "$desc_ok" -eq 0 ]; then
     issues=${issues:+$issues; }'missing opening description comment after shebang'
     issue_count=$((issue_count + 1))
+  fi
+  
   # Inline check_usage_function (not required for imps)
   if [ "$is_imp_file" -eq 0 ]; then
     if ! grep -qE '^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*_usage\(\)' "$path" 2>/dev/null; then
       issues=${issues:+$issues; }'missing usage function (*_usage)'
+      issue_count=$((issue_count + 1))
     fi
+  fi
+  
   # Inline check_help_handler (not required for imps)
+  if [ "$is_imp_file" -eq 0 ]; then
     if ! grep -qF -- '--help|--usage|-h)' "$path" 2>/dev/null; then
       issues=${issues:+$issues; }'missing --help|--usage|-h handler'
+      issue_count=$((issue_count + 1))
+    fi
+  fi
+  
   # Inline check_strict_mode (not required for imps)
   # Scripts must be explicit: either set -e/set -eu (strict) or set +e/set +eu (permissive)
+  if [ "$is_imp_file" -eq 0 ]; then
     # Check for set -e or set +e (but not in comments)
     if ! grep -E '^[[:space:]]*set [+-]e' "$path" 2>/dev/null | grep -qv '^[[:space:]]*#'; then
       issues=${issues:+$issues; }'missing explicit mode (use set -e/set -eu for strict, or set +e/set +eu for permissive)'
+      issue_count=$((issue_count + 1))
+    fi
+  fi
+  
   # Inline check_trailing_space_assignment
   match=$(grep -En '^[a-zA-Z_][a-zA-Z0-9_]*= $' "$path" 2>/dev/null | head -1) || true
   if [ -n "$match" ]; then
     line_num=$(printf '%s' "$match" | cut -d: -f1)
     issues=${issues:+$issues; }"trailing space in variable assignment at line $line_num"
+    issue_count=$((issue_count + 1))
+  fi
+  
   # Inline check_posix_compliance
   checkbashisms_cmd=${CHECKBASHISMS-}
   if [ -z "$checkbashisms_cmd" ] && command -v checkbashisms >/dev/null 2>&1; then
     checkbashisms_cmd=$(command -v checkbashisms)
+  fi
   if [ -n "$checkbashisms_cmd" ]; then
     if ! "$checkbashisms_cmd" "$path" >/dev/null 2>&1; then
       issues=${issues:+$issues; }'POSIX compliance violation (run checkbashisms for details)'
+      issue_count=$((issue_count + 1))
+    fi
+  fi
+  
   # Inline check_which_usage
   which_pattern='(^|[;|&])[[:space:]]*which[[:space:]]+[a-zA-Z0-9_-]+|`which[[:space:]]|\$\(which[[:space:]]'
   which_usage=$(grep -E "$which_pattern" "$path" 2>/dev/null | grep -v '^[[:space:]]*#') || true
   if printf '%s' "$which_usage" | grep -q .; then
     issues=${issues:+$issues; }'uses "which" (prefer "command -v" for POSIX compliance)'
+    issue_count=$((issue_count + 1))
+  fi
+  
   # Inline check_backtick_usage
   if grep -E '\`[^\`]+\`' "$path" 2>/dev/null | grep -v '^[[:space:]]*#' | grep -q .; then
     issues=${issues:+$issues; }'uses backticks (prefer $() for command substitution)'
+    issue_count=$((issue_count + 1))
+  fi
+  
   # Inline check_spell_naming
   name=$(basename "$path")
   case $name in
     *_*)
       issues=${issues:+$issues; }'spell name uses underscore (prefer hyphens)'
+      issue_count=$((issue_count + 1))
+      ;;
+  esac
+  case $name in
     *.sh)
       issues=${issues:+$issues; }'spell has .sh extension (spells should have no extension)'
+      issue_count=$((issue_count + 1))
+      ;;
+  esac
+  
   # Inline check_function_naming  
   awk_script=$(mktemp "${TMPDIR:-/tmp}/lint-magic-naming-awk.XXXXXX") || true
   if [ -n "$awk_script" ]; then
@@ -190,13 +282,24 @@ BEGIN { in_heredoc = 0; heredoc_end = "" }
   in_heredoc = 1
   heredoc_end = delim
   next
+}
 /<<-?[ \t]*"[A-Za-z_][A-Za-z0-9_]*"/ {
   match($0, /<<-?[ \t]*"([A-Za-z_][A-Za-z0-9_]*)"/)
+  delim = $0
   sub(/.*<<-?[ \t]*"/, "", delim)
   sub(/".*/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
 /<<-?[ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {
+  delim = $0
   sub(/.*<<-?[ \t]*/, "", delim)
   sub(/[ \t]*$/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
 in_heredoc && $0 == heredoc_end { in_heredoc = 0; next }
 in_heredoc { next }
 /^[ \t]*#/ { next }
@@ -212,6 +315,9 @@ AWKSCRIPT
         func_msg="$func_msg (spells should use snake_case without prefix)"
         issues=${issues:+$issues; }"$func_msg"
         issue_count=$((issue_count + 1))
+      fi
+    fi
+    
     hyphen_pattern='^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*-[a-zA-Z0-9_-]*\(\)[[:space:]]*\{'
     hyphen_check=$(awk -f "$awk_script" "$path" 2>/dev/null) || true
     hyphen_violations=$(printf '%s' "$hyphen_check" | grep -nE "$hyphen_pattern") || true
@@ -219,7 +325,12 @@ AWKSCRIPT
       line_num=$(printf '%s' "$hyphen_violations" | head -1 | cut -d: -f1)
       hyphen_msg="function name contains hyphen at line $line_num (use snake_case)"
       issues=${issues:+$issues; }"$hyphen_msg"
+      issue_count=$((issue_count + 1))
+    fi
+    
     rm -f "$awk_script"
+  fi
+  
   # Imp-specific checks
   if [ "$is_imp_file" -eq 1 ]; then
     # Inline check_imp_no_help_handler
@@ -227,10 +338,45 @@ AWKSCRIPT
       imp_help_msg='imp has --help handler'
       imp_help_msg="$imp_help_msg (imps use opening comment as spec, not --help)"
       issues=${issues:+$issues; }"$imp_help_msg"
+      issue_count=$((issue_count + 1))
+    fi
+    
     # Inline check_imp_no_flags
     awk_script=$(mktemp "${TMPDIR:-/tmp}/lint-magic-awk.XXXXXX") || true
     if [ -n "$awk_script" ]; then
       cat >"$awk_script" <<'AWKSCRIPT'
+BEGIN { in_heredoc = 0; heredoc_end = "" }
+/<<-?[ \t]*'[A-Za-z_][A-Za-z0-9_]*'/ {
+  match($0, /<<-?[ \t]*'([A-Za-z_][A-Za-z0-9_]*)'/)
+  delim = $0
+  sub(/.*<<-?[ \t]*'/, "", delim)
+  sub(/'.*/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+/<<-?[ \t]*"[A-Za-z_][A-Za-z0-9_]*"/ {
+  match($0, /<<-?[ \t]*"([A-Za-z_][A-Za-z0-9_]*)"/)
+  delim = $0
+  sub(/.*<<-?[ \t]*"/, "", delim)
+  sub(/".*/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+/<<-?[ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {
+  delim = $0
+  sub(/.*<<-?[ \t]*/, "", delim)
+  sub(/[ \t]*$/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+in_heredoc && $0 == heredoc_end { in_heredoc = 0; next }
+in_heredoc { next }
+/^[ \t]*#/ { next }
+{ print }
+AWKSCRIPT
       
       flag_pattern='^[[:space:]]*(--[a-zA-Z][-a-zA-Z0-9_=]*(\|--[a-zA-Z][-a-zA-Z0-9_=]*)*(\|-[a-zA-Z])*'
       flag_pattern="$flag_pattern|-[a-zA-Z](\|--[a-zA-Z][-a-zA-Z0-9_=]*|\|-[a-zA-Z])*)[[:space:]]*\)"
@@ -238,7 +384,11 @@ AWKSCRIPT
       if [ -n "$has_flags" ]; then
         flag_msg='imp uses --flags (imps should use space-separated arguments only)'
         issues=${issues:+$issues; }"$flag_msg"
+        issue_count=$((issue_count + 1))
+      fi
       rm -f "$awk_script"
+    fi
+    
     # Inline check_imp_param_count (inline count_parameters logic)
     comment_line=""
     for linenum in 2 3 4 5; do
@@ -247,9 +397,16 @@ AWKSCRIPT
         '#'*)
           comment_line="$line"
           break
+          ;;
         '')
           continue
+          ;;
         *)
+          break
+          ;;
+      esac
+    done
+    
     param_count="-1"
     if [ -n "$comment_line" ]; then
       comment_line=${comment_line#'#'}
@@ -266,33 +423,116 @@ AWKSCRIPT
             fi
             case "$word" in
               *'...') continue ;;
+            esac
             param_count=$((param_count + 1))
           done
+          ;;
+      esac
+    fi
+    
     if [ "$param_count" != "-1" ] && [ "$param_count" -gt 3 ]; then
       issues=${issues:+$issues; }"imp has $param_count parameters (max 3 allowed)"
+      issue_count=$((issue_count + 1))
+    fi
   else
     # Non-imp spells: warn if >3 parameters (inline count_parameters logic)
+    comment_line=""
+    for linenum in 2 3 4 5; do
+      line=$(sed -n "${linenum}p" "$path" 2>/dev/null)
+      case "$line" in
+        '#'*)
+          comment_line="$line"
+          break
+          ;;
+        '')
+          continue
+          ;;
+        *)
+          break
+          ;;
+      esac
+    done
+    
+    param_count="-1"
+    if [ -n "$comment_line" ]; then
+      comment_line=${comment_line#'#'}
+      comment_line=${comment_line#' '}
+      case "$comment_line" in
+        *' - '*)
+          param_part=${comment_line%% - *}
+          param_count=0
+          first_word=1
+          for word in $param_part; do
+            if [ "$first_word" -eq 1 ]; then
+              first_word=0
+              continue
+            fi
+            case "$word" in
+              *'...') continue ;;
+            esac
+            param_count=$((param_count + 1))
+          done
+          ;;
+      esac
+    fi
+    
+    if [ "$param_count" != "-1" ] && [ "$param_count" -gt 3 ]; then
       warning_entry="  $target: $param_count parameters"
       if [ -n "$spell_param_warnings" ]; then
         spell_param_warnings="$spell_param_warnings
 $warning_entry"
       else
         spell_param_warnings="$warning_entry"
+      fi
       spell_param_warning_count=$((spell_param_warning_count + 1))
+    fi
+  fi
+  
   # Inline check_inconsistent_indentation
   tab=$(printf '\t')
   has_tab_indent=$(grep -E "^[[:space:]]*${tab}" "$path" 2>/dev/null | head -1) || true
   has_space_indent=$(grep -E '^  ' "$path" 2>/dev/null | head -1) || true
   if [ -n "$has_tab_indent" ] && [ -n "$has_space_indent" ]; then
     issues=${issues:+$issues; }'mixed tabs and spaces for indentation (prefer 2 spaces)'
+    issue_count=$((issue_count + 1))
+  fi
+  
   # Inline check_long_lines
   case "$path" in
     */spells/.imps/cond/is|*/spells/divination/identify-room)
       : # exempted
+      ;;
+    *)
       awk_script=$(mktemp "${TMPDIR:-/tmp}/lint-magic-lines-awk.XXXXXX") || true
       if [ -n "$awk_script" ]; then
         cat >"$awk_script" <<'AWKSCRIPT'
 BEGIN { in_heredoc = 0; heredoc_end = ""; max_len = 100; sq = sprintf("%c", 39) }
+/<<-?[ \t]*'[A-Za-z_][A-Za-z0-9_]*'/ {
+  delim = $0
+  sub(/.*<<-?[ \t]*'/, "", delim)
+  sub(/'.*/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+/<<-?[ \t]*"[A-Za-z_][A-Za-z0-9_]*"/ {
+  delim = $0
+  sub(/.*<<-?[ \t]*"/, "", delim)
+  sub(/".*/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+/<<-?[ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {
+  delim = $0
+  sub(/.*<<-?[ \t]*/, "", delim)
+  sub(/[ \t]*$/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+in_heredoc && $0 == heredoc_end { in_heredoc = 0; next }
+in_heredoc { next }
 /^[[:space:]]*#/ { next }
 length($0) > max_len {
   line = $0
@@ -310,21 +550,35 @@ length($0) > max_len {
     }
     if (c == "\\") {
       escaped = 1
+      if (in_quote) quoted_len++
+      continue
+    }
     if (!in_quote && (c == "\"" || c == sq)) {
       in_quote = 1
       quote_char = c
       quoted_len++
+      continue
+    }
     if (in_quote && c == quote_char) {
       in_quote = 0
       quote_char = ""
+      quoted_len++
+      continue
+    }
     if (in_quote) {
+      quoted_len++
+    }
   }
   line_len = length(line)
   if (line_len > 0 && quoted_len > 0) {
     quote_pct = (quoted_len * 100) / line_len
     if (quote_pct >= 60) {
       next
+    }
+  }
   print NR ": " substr($0, 1, 50) "..."
+}
+AWKSCRIPT
         
         long_lines=$(awk -f "$awk_script" "$path" 2>/dev/null | head -3) || true
         rm -f "$awk_script"
@@ -335,34 +589,95 @@ length($0) > max_len {
           issues=${issues:+$issues; }"$long_msg"
           issue_count=$((issue_count + 1))
         fi
+      fi
+      ;;
+  esac
+  
   # Inline check_echo_usage
   awk_script=$(mktemp "${TMPDIR:-/tmp}/lint-magic-echo-awk.XXXXXX") || true
+  if [ -n "$awk_script" ]; then
+    cat >"$awk_script" <<'AWKSCRIPT'
+BEGIN { in_heredoc = 0; heredoc_end = "" }
+/<<-?[ \t]*'[A-Za-z_][A-Za-z0-9_]*'/ {
+  delim = $0
+  sub(/.*<<-?[ \t]*'/, "", delim)
+  sub(/'.*/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+/<<-?[ \t]*"[A-Za-z_][A-Za-z0-9_]*"/ {
+  delim = $0
+  sub(/.*<<-?[ \t]*"/, "", delim)
+  sub(/".*/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+/<<-?[ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {
+  delim = $0
+  sub(/.*<<-?[ \t]*/, "", delim)
+  sub(/[ \t]*$/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+in_heredoc && $0 == heredoc_end { in_heredoc = 0; next }
+in_heredoc { next }
+/^[[:space:]]*#/ { next }
 /\becho[[:space:]]/ {
   print NR
   exit
+}
+AWKSCRIPT
+    
     line_num=$(awk -f "$awk_script" "$path" 2>/dev/null) || true
+    rm -f "$awk_script"
     if [ -n "$line_num" ]; then
       issues=${issues:+$issues; }"uses echo (prefer printf for portability) at line $line_num"
+      issue_count=$((issue_count + 1))
+    fi
+  fi
+  
   if [ "$issue_count" -eq 0 ]; then
     if [ "$verbose" -eq 1 ]; then
       printf 'PASS %s\n' "$target"
+    fi
     passed=$((passed + 1))
+  else
     fail_msg="FAIL $target: $issues"
+    printf '%s\n' "$fail_msg"
+    failures=$((failures + 1))
+    failed_targets=${failed_targets:+$failed_targets,}$target
+    failed_messages="${failed_messages}${fail_msg}
+"
+  fi
 done <"$targets_file"
+
 trap - EXIT HUP INT TERM
 rm -f "$targets_file"
+
 if [ -n "$spell_param_warnings" ]; then
   printf '\nWarning: %d spell(s) have more than 3 parameters:\n' "$spell_param_warning_count"
   printf '%s\n' "$spell_param_warnings"
+fi
+
 if [ "$failures" -eq 0 ]; then
   printf 'All %d spells passed style checks.\n' "$total"
+  return 0
+else
   printf '%d of %d spells failed style checks.\n' "$failures" "$total"
   if [ -n "$failed_targets" ]; then
     printf 'Failing spells: %s\n' "$failed_targets"
+  fi
   if [ -n "$failed_messages" ]; then
     printf '\nFailed style checks:\n'
     printf '%s' "$failed_messages"
+  fi
   return 1
+fi
+}
+
 # Self-execute when run directly (not sourced)
 case "$0" in
   */lint-magic) lint_magic "$@" ;; esac

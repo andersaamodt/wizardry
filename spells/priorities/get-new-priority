@@ -2,54 +2,76 @@
 
 # This spell determines the next appropriate priority for a file in a directory.
 # Use it to find what priority value to assign when adding a file to a priority list.
+
+
 get_new_priority_usage() {
 cat <<'USAGE'
 Usage: get-new-priority <file>
+
 Compute the next priority value for a file within its directory's list. It looks at existing priorities and returns the highest value plus one, or 1 if none exist.
 USAGE
 }
+
+
+
 get_new_priority() {
+
 case "${1-}" in
 --help|--usage|-h)
         get_new_priority_usage
         return 0
         ;;
 esac
+
 set -eu
-# env-clear: compliant
+. "$(dirname "$0")/../.imps/sys/env-clear"
+
 # Ensure file argument is provided
 if [ -z "${1-}" ]; then
         printf '%s\n' "get-new-priority: file path required." >&2
         get_new_priority_usage >&2
         return 1
 fi
+
 file=$1
+
 # Verify file exists
 if ! is file "$file"; then
         die "get-new-priority: file not found: $file"
+fi
+
 # Get the directory containing the file
 dir=$(parent "$file")
 if [ "$dir" = "." ]; then
         dir=$(here)
+fi
+
 # Start with a highest priority of 0
 highest_priority=0
+
 # Loop through all files in the directory to find the highest priority
 for f in "$dir"/*; do
         # Skip if not a file
         is file "$f" || continue
+
         # Get the file's priority
         file_priority=$(read-magic "$f" priority 2>/dev/null || true)
+
         # Skip if no priority or error
         case "$file_priority" in
                 ''|*Error*|*[!0-9]*) continue ;;
         esac
+
         # Update highest if this priority is higher
         if [ "$file_priority" -gt "$highest_priority" ]; then
                 highest_priority=$file_priority
         fi
 done
+
 # The new priority is one higher than the highest
 say "$((highest_priority + 1))"
+}
+
 # Self-execute when run directly (not sourced)
 case "$0" in
   */get-new-priority) get_new_priority "$@" ;; esac

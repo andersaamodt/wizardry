@@ -2,12 +2,16 @@
 
 # Hash spell: compute a CRC-32 checksum for a given file path.
 # Prints the checksum in hexadecimal alongside the resolved path.
+
+
 hash_usage() {
 cat <<'USAGE'
 Usage: hash <file>
+
 Compute the CRC-32 hash of a file and print it in hexadecimal, resolving the path relative to this spell when needed.
 USAGE
 }
+
 hash() {
 case "${1-}" in
 --help|--usage|-h)
@@ -15,27 +19,39 @@ case "${1-}" in
   return 0
   ;;
 esac
+
 set -eu
-# env-clear: compliant
+. "$(dirname "$0")/../.imps/sys/env-clear"
+
 if [ "$#" != 1 ]; then
     printf 'Usage: hash file\n'
     return 1
 fi
+
 # Get the directory where the script is being called from
 script_dir="$(cd "$(dirname "$0")" >/dev/null 2>&1 && pwd)"
+
 # Get the file name specified as an argument
 file_name="$1"
+
 # Concatenate the script directory and the file name to get the full file path
 file="$script_dir/$file_name"
+
 if [ ! -f "$file" ]; then
     printf 'Your spell fizzles. There is no file.\n'
+    return 1
+fi
+
 # Normalize double slashes for macOS compatibility
 normalized_file=$(printf '%s' "$file" | sed 's|//|/|g')
 printf '%s\n' "$normalized_file"
 # Compute the CRC-32 hash
 crc=$(cksum "$file" | awk '{print $1}')
+
 # Convert the hash to hexadecimal and display it
 printf "0x%x\n" "$crc"
+}
+
 # Self-execute when run directly (not sourced)
 case "$0" in
   */hash) hash "$@" ;; esac

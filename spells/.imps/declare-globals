@@ -1,7 +1,7 @@
 #!/bin/sh
 # Centralized declaration of allowed global environment variables.
 # Each global requires two comment lines: description and justification.
-# ENFORCEMENT: Tests verify exactly 4 globals, 'set -u' usage, no undeclared exports.
+# ENFORCEMENT: Tests verify exactly 3 globals, 'set -u' usage, no undeclared exports.
 
 _declare_globals() {
   # Installation root directory path.
@@ -15,10 +15,6 @@ _declare_globals() {
   # MUD configuration directory.
   # Required for MUD features to share room descriptions and settings.
   : "${MUD_DIR:=}"
-
-  # Logging verbosity level (0=quiet, 1=info, 2=debug).
-  # Required for consistent logging behavior across all spells.
-  : "${WIZARDRY_LOG_LEVEL:=0}"
 }
 
 # Self-execute when run directly (not sourced)

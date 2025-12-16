@@ -2,12 +2,17 @@
 # This spell displays the main MUD (Multi-User Dungeon) menu interface.
 
 require-wizardry || exit 1
+
 mud_usage() {
   cat <<'USAGE'
 Usage: mud
+
 Displays the MUD (Multi-User Dungeon) menu.
 USAGE
 }
+
+
+
 mud() {
 case "${1-}" in
 --help|--usage|-h)
@@ -15,16 +20,21 @@ case "${1-}" in
   return 0
   ;;
 esac
+
 set -eu
-# env-clear: compliant
+. "$(dirname "$0")/../.imps/sys/env-clear"
+
 # Catch Ctrl-C and TERM signal to return 1 cleanly
 trap 'exit 0' INT TERM
+
 # Load color palette (colors handles terminal capability detection internally)
 # shellcheck source=/dev/null
 . "$(command -v colors)"
+
 if ! require menu "The MUD menu needs the 'menu' command to present options."; then
   return 1
 fi
+
 # Get platform-specific portal chamber location
 get_portal_location() {
   platform=$(detect-distro 2>/dev/null || printf 'unknown')
@@ -36,7 +46,10 @@ get_portal_location() {
     *)
       # Linux and others use /mnt
       printf '%s' "/mnt"
+      ;;
   esac
+}
+
 mud_display_menu() {
   portal_location=$(get_portal_location)
   
@@ -48,6 +61,7 @@ mud_display_menu() {
   settings="MUD Settings%mud-settings"
   exit_label=$(exit-label)
   exit_item="${exit_label}%kill -TERM \$PPID"
+
   set -- \
     "$look" \
     "$home" \
@@ -57,15 +71,21 @@ mud_display_menu() {
     "$settings" \
     "$exit_item"
   menu "MUD Menu:" "$@"
+}
+
 first_run=1
+
 while true; do
   if [ "$first_run" -eq 0 ]; then
     :
   else
     first_run=0
   fi
+
   mud_display_menu || true
 done
+}
+
 # Self-execute when run directly (not sourced)
 case "$0" in
   */mud) mud "$@" ;; esac

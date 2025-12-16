@@ -2,12 +2,17 @@
 
 # This spell merges YAML and text files with matching names in a directory.
 # Use it to combine .yaml metadata with .txt content into single files.
+
 merge_yaml_text_usage() {
 cat <<'USAGE'
 Usage: merge-yaml-text [directory] [-v|--verbose] [--dry-run]
+
 Merge .yaml metadata and .txt content that share a basename into a single combined file. Works in the current directory by default, with verbose output or dry-run mode available for careful runs.
 USAGE
 }
+
+
+
 merge_yaml_text() {
 case "${1-}" in
 --help|--usage|-h)
@@ -15,12 +20,15 @@ case "${1-}" in
   return 0
   ;;
 esac
+
 set -eu
-# env-clear: compliant
+. "$(dirname "$0")/../.imps/sys/env-clear"
+
 # default directory is current directory unless given as a parameter
 dir="${1:-.}"
 verbose=0
 dryrun=0
+
 # check for verbose and dry-run flags
 for arg in "$@"
 do
@@ -32,18 +40,24 @@ do
     --dry-run)
       dryrun=1
       shift # Remove --dry-run from processing
+      ;;
   esac
 done
+
 # if directory is not passed as a parameter after flags, set as current directory
 if [ $# -eq 0 ]; then
   dir='.'
 fi
+
 # ensure directory ends with /
 case "$dir" in
   */) ;;
   *) dir="$dir/" ;;
+esac
+
 # count total .yaml files in the directory
 total_files=$(find "${dir}" -maxdepth 1 -name "*.yaml" 2>/dev/null | wc -l | tr -d ' ')
+
 # loop through .yaml files
 count=0
 for yaml in "${dir}"*.yaml; do
@@ -52,27 +66,36 @@ for yaml in "${dir}"*.yaml; do
   
   # Remove directory and extension from filename
   yaml_base=$(basename "$yaml" .yaml)
+  
   # Formulate the .txt filename
   txt_filename="${yaml_base}.txt"
+  
   # Find matching .txt file
   txt_file="${dir}${txt_filename}"
+  
   # Check if .txt file exists
   if [ -f "$txt_file" ]; then
     # create temp file
     touch "${dir}tempfile.tmp"
+
     # Check if yaml file starts with '---'
     first_line=$(head -n 1 "$yaml")
     if [ "$first_line" != "---" ]; then
       printf '%s\n' '---' > "${dir}tempfile.tmp"
     fi
+
     # append the yaml content
     cat "$yaml" >> "${dir}tempfile.tmp"
+
     # Check if yaml file ends with '---'
     last_line=$(tail -n 1 "$yaml")
     if [ "$last_line" != "---" ]; then
       printf '%s\n' '---' >> "${dir}tempfile.tmp"
+    fi
+
     # append the txt content
     cat "$txt_file" >> "${dir}tempfile.tmp"
+
     # if not a dry-run, replace original yaml with the new file and remove the txt file
     if [ "$dryrun" -ne 1 ]; then
       mv "${dir}tempfile.tmp" "$yaml"
@@ -82,12 +105,19 @@ for yaml in "${dir}"*.yaml; do
       cat "${dir}tempfile.tmp"
       # delete the temporary file
       rm -f "${dir}tempfile.tmp"
+    fi
+
     # increase count
     count=$((count + 1))
+
     # if verbose mode is on, print progress
     if [ "$verbose" -eq 1 ]; then
       printf '%s\n' "($count/$total_files) Merged: $yaml"
+    fi
   fi
+done
+}
+
 # Self-execute when run directly (not sourced)
 case "$0" in
   */merge-yaml-text) merge_yaml_text "$@" ;; esac
