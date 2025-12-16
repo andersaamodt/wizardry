@@ -96,7 +96,7 @@ fi
 
 # Export the detection so callers can key off the result.
 if [ -n "${distro-}" ]; then
-  distro=$distro
+  DISTRO=$distro
   export DISTRO
 else
   printf '%s\n' 'unknown'
