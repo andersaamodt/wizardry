@@ -549,14 +549,11 @@ test_no_undeclared_global_exports() {
 # Legitimate PATH modifications are allowed (handled by learn-spellbook).
 # cd hook now uses a function instead of WIZARDRY_CD_CANTRIP variable.
 test_no_pseudo_globals_in_rc_files() {
-  find "$ROOT_DIR/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r spell; do
-    name=$(basename "$spell")
-    should_skip_file "$name" && continue
-    is_posix_shell_script "$spell" || continue
-    
+  check_rc_globals() {
+    spell=$1
     # Skip legitimate PATH manipulation (learn-spellbook)
     case "$spell" in
-      */learn-spellbook) continue ;;
+      */learn-spellbook) return ;;
     esac
     
     # Check for the specific antipattern: writing "export VAR=" to rc files
@@ -572,10 +569,14 @@ test_no_pseudo_globals_in_rc_files() {
         fi
       fi
     fi
-  done > "${WIZARDRY_TMPDIR}/rc-pseudo-global-violations.txt"
+  }
   
-  violations=$(cat "${WIZARDRY_TMPDIR}/rc-pseudo-global-violations.txt" 2>/dev/null | sort -u | head -10 | tr '\n' ', ' | sed 's/, $//')
-  rm -f "${WIZARDRY_TMPDIR}/rc-pseudo-global-violations.txt"
+  tmpfile="${WIZARDRY_TMPDIR}/rc-pseudo-global-violations.txt"
+  : > "$tmpfile"
+  for_each_posix_spell check_rc_globals > "$tmpfile"
+  
+  violations=$(cat "$tmpfile" 2>/dev/null | sort -u | head -10 | tr '\n' ', ' | sed 's/, $//')
+  rm -f "$tmpfile"
   
   if [ -n "$violations" ]; then
     TEST_FAILURE_REASON="pseudo-globals stored in rc files: $violations"
@@ -776,11 +777,9 @@ system/update-all
 system/test-magic
 "
   
-  find "$ROOT_DIR/spells" -type f -not -path "*/.imps/*" -executable -print | while IFS= read -r spell; do
+  check_function_discipline() {
+    spell=$1
     name=$(basename "$spell")
-    should_skip_file "$name" && continue
-    is_posix_shell_script "$spell" || continue
-    
     rel_path=${spell#"$ROOT_DIR/spells/"}
     
     # Skip exempted spells
@@ -791,7 +790,7 @@ system/test-magic
         break
       fi
     done
-    [ "$is_exempted" -eq 1 ] && continue
+    [ "$is_exempted" -eq 1 ] && return
     
     # Count all function definitions
     # Note: This simple pattern-based approach may count functions in comments
@@ -819,7 +818,9 @@ system/test-magic
     elif [ "$additional_funcs" -eq 2 ]; then
       printf '%s(%s)\n' "$rel_path" "$additional_funcs" >> "$tmpfile_2"
     fi
-  done
+  }
+  
+  for_each_posix_spell_no_imps check_function_discipline
   
   # Read and format results
   warnings_2=$(head -20 "$tmpfile_2" 2>/dev/null | tr '\n' ', ' | sed 's/, $//')
@@ -952,11 +953,9 @@ test_no_function_name_collisions() {
 test_spells_have_true_name_functions() {
   warnings=""
   
-  # Check all executable shell files
-  find "$ROOT_DIR/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r spell; do
+  check_true_names() {
+    spell=$1
     name=$(basename "$spell")
-    should_skip_file "$name" && continue
-    is_posix_shell_script "$spell" || continue
     
     # Determine if this is an imp
     is_imp=0
@@ -978,10 +977,14 @@ test_spells_have_true_name_functions() {
       rel_path=${spell#"$ROOT_DIR/spells/"}
       printf '%s (missing %s)\n' "$rel_path" "$true_name"
     fi
-  done > "${WIZARDRY_TMPDIR}/missing-true-names.txt"
+  }
   
-  warnings=$(cat "${WIZARDRY_TMPDIR}/missing-true-names.txt" 2>/dev/null | head -20 | tr '\n' ', ' | sed 's/, $//')
-  rm -f "${WIZARDRY_TMPDIR}/missing-true-names.txt"
+  tmpfile="${WIZARDRY_TMPDIR}/missing-true-names.txt"
+  : > "$tmpfile"
+  for_each_posix_spell check_true_names > "$tmpfile"
+  
+  warnings=$(cat "$tmpfile" 2>/dev/null | head -20 | tr '\n' ', ' | sed 's/, $//')
+  rm -f "$tmpfile"
   
   # This is a non-failing check - just print warnings
   if [ -n "$warnings" ]; then
@@ -1007,11 +1010,9 @@ test_spells_have_limited_flags() {
   tmpfile_3=$(mktemp "${WIZARDRY_TMPDIR}/flag-warn-3.XXXXXX")
   tmpfile_4plus=$(mktemp "${WIZARDRY_TMPDIR}/flag-viol-4plus.XXXXXX")
   
-  find "$ROOT_DIR/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r spell; do
+  check_flags() {
+    spell=$1
     name=$(basename "$spell")
-    should_skip_file "$name" && continue
-    is_posix_shell_script "$spell" || continue
-    
     rel_path=${spell#"$ROOT_DIR/spells/"}
     
     # Count distinct flag options by looking at both case and if patterns
@@ -1074,7 +1075,9 @@ test_spells_have_limited_flags() {
     elif [ "$flag_count" -eq 2 ]; then
       printf '%s(%s)\n' "$rel_path" "$flag_count" >> "$tmpfile_2"
     fi
-  done
+  }
+  
+  for_each_posix_spell check_flags
   
   # Read and format results
   warnings_2=$(head -20 "$tmpfile_2" 2>/dev/null | tr '\n' ', ' | sed 's/, $//')
@@ -1116,11 +1119,9 @@ test_spells_have_limited_positional_args() {
   tmpfile_3=$(mktemp "${WIZARDRY_TMPDIR}/posarg-warn-3.XXXXXX")
   tmpfile_4plus=$(mktemp "${WIZARDRY_TMPDIR}/posarg-viol-4plus.XXXXXX")
   
-  find "$ROOT_DIR/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r spell; do
+  check_positional_args() {
+    spell=$1
     name=$(basename "$spell")
-    should_skip_file "$name" && continue
-    is_posix_shell_script "$spell" || continue
-    
     rel_path=${spell#"$ROOT_DIR/spells/"}
     
     # Extract Usage line from the spell (from usage function or direct)
@@ -1140,7 +1141,7 @@ test_spells_have_limited_positional_args() {
     ' "$spell" 2>/dev/null | head -3)
     
     if [ -z "$usage" ]; then
-      continue
+      return
     fi
     
     # Count positional arguments from Usage line
@@ -1166,7 +1167,9 @@ test_spells_have_limited_positional_args() {
     elif [ "$arg_count" -eq 2 ]; then
       printf '%s(%s)\n' "$rel_path" "$arg_count" >> "$tmpfile_2"
     fi
-  done
+  }
+  
+  for_each_posix_spell check_positional_args
   
   # Read and format results
   warnings_2=$(head -20 "$tmpfile_2" 2>/dev/null | tr '\n' ', ' | sed 's/, $//')
