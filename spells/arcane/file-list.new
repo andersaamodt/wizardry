@@ -36,7 +36,6 @@ text_file="$folder_name.txt"
 
 # Read all the filenames in the folder and put them in the text file
 for filename in "$1"/*; do
-  filename="${filename#./}"
   printf '%s\n' "$(basename "$filename")" >> "$text_file"
 done
 
