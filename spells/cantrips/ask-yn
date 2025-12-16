@@ -57,6 +57,9 @@ while :; do
   stdin)
     input_source=stdin
     ;;
+  tty)
+    input_source=tty
+    ;;
   none)
     input_source=none
     ;;

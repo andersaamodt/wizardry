@@ -651,13 +651,28 @@ printf '\n'
 if [ "${WIZARDRY_INSTALL_ASSUME_YES-}" = "1" ]; then
         proceed=1
 else
-        # Only force non-interactive mode if both stdin is not a terminal AND /dev/tty is not available
-        # This allows curl | sh to work (where stdin is pipe but /dev/tty is available)
-        if [ ! -t 0 ] && [ ! -r /dev/tty ] && [ -z "${ASK_CANTRIP_INPUT-}" ]; then
-                if ASK_CANTRIP_INPUT=none "$ASK_YN" "Proceed with installation?" yes >/dev/null; then
-                        proceed=1
+        # Handle different input scenarios for curl|sh and other non-interactive cases
+        if [ ! -t 0 ]; then
+                # stdin is not a terminal (e.g., curl|sh, wget|sh, or piped input)
+                if [ -r /dev/tty ]; then
+                        # /dev/tty is available - force ask-yn to use it instead of stdin
+                        # This prevents ask-yn from trying to read from stdin (which contains the script)
+                        if ASK_CANTRIP_INPUT=tty "$ASK_YN" "Proceed with installation?" yes >/dev/null; then
+                                proceed=1
+                        fi
+                elif [ -z "${ASK_CANTRIP_INPUT-}" ]; then
+                        # No /dev/tty and no ASK_CANTRIP_INPUT set - use default
+                        if ASK_CANTRIP_INPUT=none "$ASK_YN" "Proceed with installation?" yes >/dev/null; then
+                                proceed=1
+                        fi
+                else
+                        # ASK_CANTRIP_INPUT is already set by the user - respect it
+                        if "$ASK_YN" "Proceed with installation?" yes >/dev/null; then
+                                proceed=1
+                        fi
                 fi
         else
+                # stdin is a terminal - normal interactive mode
                 if "$ASK_YN" "Proceed with installation?" yes >/dev/null; then
                         proceed=1
                 fi
@@ -828,14 +843,28 @@ if [ "${WIZARDRY_INSTALL_ASSUME_YES-}" = "1" ]; then
                 install_mud=1
         fi
 else
-        # Only force non-interactive mode if both stdin is not a terminal AND /dev/tty is not available
-        # This allows curl | sh to work (where stdin is pipe but /dev/tty is available)
-        if [ ! -t 0 ] && [ ! -r /dev/tty ] && [ -z "${ASK_CANTRIP_INPUT-}" ]; then
-                # Non-interactive mode - use ASK_CANTRIP_INPUT=none to allow the default
-                if ASK_CANTRIP_INPUT=none "$ASK_YN" "Install the MUD (multi-user dungeon) features?" yes >/dev/null; then
-                        install_mud=1
+        # Handle different input scenarios for curl|sh and other non-interactive cases
+        if [ ! -t 0 ]; then
+                # stdin is not a terminal (e.g., curl|sh, wget|sh, or piped input)
+                if [ -r /dev/tty ]; then
+                        # /dev/tty is available - force ask-yn to use it instead of stdin
+                        # This prevents ask-yn from trying to read from stdin (which contains the script)
+                        if ASK_CANTRIP_INPUT=tty "$ASK_YN" "Install the MUD (multi-user dungeon) features?" yes >/dev/null; then
+                                install_mud=1
+                        fi
+                elif [ -z "${ASK_CANTRIP_INPUT-}" ]; then
+                        # No /dev/tty and no ASK_CANTRIP_INPUT set - use default
+                        if ASK_CANTRIP_INPUT=none "$ASK_YN" "Install the MUD (multi-user dungeon) features?" yes >/dev/null; then
+                                install_mud=1
+                        fi
+                else
+                        # ASK_CANTRIP_INPUT is already set by the user - respect it
+                        if "$ASK_YN" "Install the MUD (multi-user dungeon) features?" yes >/dev/null; then
+                                install_mud=1
+                        fi
                 fi
         else
+                # stdin is a terminal - normal interactive mode
                 if "$ASK_YN" "Install the MUD (multi-user dungeon) features?" yes >/dev/null; then
                         install_mud=1
                 fi
