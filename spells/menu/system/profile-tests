@@ -41,6 +41,7 @@ test_dir="$root_dir/.tests"
 
 # Helper function for pattern matching
 matches_pattern() {
+  [ "$#" -ge 2 ] || return 1
   _mp_path=$1
   _mp_pattern=$2
   case "$_mp_path" in
