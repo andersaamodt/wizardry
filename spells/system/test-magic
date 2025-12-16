@@ -34,21 +34,7 @@ USAGE
 }
 
 test_magic() {
-cmd_name=$(basename "$0")
-script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-root_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd -P)
-test_dir="$root_dir/.tests"
-
-# Add wizardry spells and imps to PATH so we can use them directly
-# This allows running test-magic directly without wizardry being installed
-if [ -d "$root_dir/spells/.imps" ]; then
-  PATH="$root_dir/spells/.imps:$PATH"
-  for impdir in "$root_dir"/spells/.imps/*; do
-    [ -d "$impdir" ] || continue
-    PATH="$impdir:$PATH"
-  done
-fi
-
+# Handle help before set -eu so we don't need env-clear yet
 case "${1-}" in
 --help|--usage|-h)
   test_magic_usage
@@ -57,7 +43,26 @@ case "${1-}" in
 esac
 
 set -eu
+
+# Set up minimal PATH before env-clear so we can find it
+# Use temporary variable names with _ prefix to avoid conflicts
+_temp_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+_temp_root_dir=$(CDPATH= cd -- "$_temp_script_dir/../.." && pwd -P)
+if [ -d "$_temp_root_dir/spells/.imps" ]; then
+  PATH="$_temp_root_dir/spells/.imps:$PATH"
+  for _temp_impdir in "$_temp_root_dir"/spells/.imps/*; do
+    [ -d "$_temp_impdir" ] || continue
+    PATH="$_temp_impdir:$PATH"
+  done
+fi
+
 . env-clear
+
+# Now set real variables after env-clear
+cmd_name=$(basename "$0")
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+root_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd -P)
+test_dir="$root_dir/.tests"
 
 export PATH
 
