@@ -6,6 +6,16 @@ applyTo: "spells/.imps/**"
 
 Imps are micro-helper scripts—the smallest semantic building blocks in wizardry. They live in `spells/.imps/` and abstract common shell patterns into readable, well-documented microscripts.
 
+## Creating New Imps
+
+**CRITICAL**: When creating a new imp, you MUST also create a corresponding test file:
+- Imp location: `spells/.imps/family/imp-name`
+- Test location: `.tests/.imps/family/test_imp-name.sh`
+
+Test files are NOT optional. Every imp requires tests covering its behavior.
+
+See `.github/instructions/tests.instructions.md` for test patterns.
+
 ## Imp Requirements
 
 ### Required Elements

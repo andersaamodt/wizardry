@@ -2,6 +2,20 @@
 
 applyTo: ".tests/**"
 
+## CRITICAL: Tests Are Required
+
+**Every spell and imp MUST have a corresponding test file.** Tests are not optional.
+
+When you create:
+- A new spell at `spells/category/spell-name`
+- A new imp at `spells/.imps/family/imp-name`
+
+You MUST also create:
+- Test at `.tests/category/test_spell-name.sh`
+- Test at `.tests/.imps/family/test_imp-name.sh`
+
+Failure to create tests will cause CI to fail with "uncovered spells/imps" errors.
+
 ## Test File Location
 
 Test files mirror the `spells/` directory structure:
