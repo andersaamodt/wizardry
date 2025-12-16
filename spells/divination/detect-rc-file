@@ -52,7 +52,7 @@ while [ "$#" -gt 0 ]; do
                 ;;
         esac
 set -eu
-. "$(dirname "$0")/../.imps/sys/env-clear"
+. env-clear
 
 done
 

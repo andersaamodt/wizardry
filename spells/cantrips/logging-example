@@ -37,7 +37,7 @@ case "${1-}" in
 esac
 
 set -eu
-. "$(dirname "$0")/../.imps/sys/env-clear"
+. env-clear
 
 # Source the logging imps (in real usage, these would be bound at startup)
 # For this example, we'll source them directly

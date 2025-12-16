@@ -22,7 +22,7 @@ case "${1-}" in
 esac
 
 set -eu
-. "$(dirname "$0")/../.imps/sys/env-clear"
+. env-clear
 
 # Check that a folder path was provided as an argument
 if [ "$#" -ne 1 ]; then

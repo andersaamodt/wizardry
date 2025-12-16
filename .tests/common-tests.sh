@@ -1330,9 +1330,9 @@ test_spells_declare_env_clear_compliance() {
       install) return ;;
     esac
     
-    # Check for env-clear being sourced (with any path)
-    # Look for: ". " followed by something ending in "env-clear" in first 80 lines
-    if ! head -80 "$spell" | grep -qE '\. .*env-clear'; then
+    # Check for env-clear sourcing by name (not full path)
+    # Look for exactly ". env-clear" on its own line in first 80 lines
+    if ! head -80 "$spell" | grep -qE '^\. env-clear$|^[[:space:]]+\. env-clear$'; then
       printf '%s\n' "$rel_path"
     fi
   }
@@ -1345,7 +1345,7 @@ test_spells_declare_env_clear_compliance() {
   rm -f "$tmpfile"
   
   if [ -n "$missing" ]; then
-    TEST_FAILURE_REASON="spells missing env-clear: $missing (add '. env-clear' after set -eu)"
+    TEST_FAILURE_REASON="spells missing env-clear: $missing (add '. env-clear' on its own line after set -eu)"
     return 1
   fi
   

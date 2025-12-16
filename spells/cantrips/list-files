@@ -30,7 +30,7 @@ case "${1-}" in
 esac
 
 set -eu
-. "$(dirname "$0")/../.imps/sys/env-clear"
+. env-clear
 
 if [ "$#" -lt 1 ]; then
   printf '%s\n' "list-files: directory required" >&2

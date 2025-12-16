@@ -69,7 +69,7 @@ case "${1-}" in
 esac
 
 set -eu
-. "$(dirname "$0")/../.imps/sys/env-clear"
+. env-clear
 
 # Catch Ctrl-C and TERM signal to exit cleanly
 trap 'exit 0' INT TERM

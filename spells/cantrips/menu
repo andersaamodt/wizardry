@@ -26,7 +26,7 @@ case "${1-}" in
 esac
 
 set -eu
-. "$(dirname "$0")/../.imps/sys/env-clear"
+. env-clear
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 

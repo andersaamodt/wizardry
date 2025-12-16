@@ -23,7 +23,7 @@ case "${1-}" in
 esac
 
 set -eu
-. "$(dirname "$0")/../.imps/sys/env-clear"
+. env-clear
 
 # Resolve require-command location
 if [ -n "${REQUIRE_COMMAND-}" ]; then

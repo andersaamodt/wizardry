@@ -32,7 +32,7 @@ esac
 # callers can disable colour-aware features when needed.
 
 set -eu
-. "$(dirname "$0")/../.imps/sys/env-clear"
+. env-clear
 WIZARDRY_COLORS_AVAILABLE=1
 
 # Create the escape character in a POSIX-compliant way.

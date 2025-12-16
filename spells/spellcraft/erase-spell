@@ -29,7 +29,7 @@ case "${1-}" in
 esac
 
 set -eu
-. "$(dirname "$0")/../.imps/sys/env-clear"
+. env-clear
 
 # Initialize spell_home
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
