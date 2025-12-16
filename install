@@ -148,7 +148,11 @@ elif [ -n "${WIZARDRY_ROOT-}" ]; then
         INSTALL_INPUT=$WIZARDRY_ROOT
 else
         message="Wizardry install directory? [$PROMPT_DEFAULT] "
-        if [ -t 0 ]; then
+        # Check for interactive input using the same robust logic as ask-yn.
+        # Use /dev/fd/0 instead of /dev/stdin for cross-platform compatibility.
+        # On macOS, /dev/stdin is a symlink and -p/-s tests may fail on the symlink.
+        # Testing /dev/fd/0 directly works reliably on both Linux and macOS.
+        if [ -t 0 ] || [ -p /dev/fd/0 ] || [ -s /dev/fd/0 ]; then
                 # Print the prompt to stderr so the question is visible even if stdout is
                 # captured inside a subshell.
                 printf '%s' "$message" >&2
@@ -555,8 +559,10 @@ if [ "$needs_installation" -eq 0 ]; then
         
         # Read user choice
         # Check if we can read input (tty or pipe)
-        # Use /dev/fd/0 instead of /dev/stdin for cross-platform compatibility
-        if [ -t 0 ] || [ -p /dev/fd/0 ]; then
+        # Use /dev/fd/0 instead of /dev/stdin for cross-platform compatibility.
+        # On macOS, /dev/stdin is a symlink and -p/-s tests may fail on the symlink.
+        # Testing /dev/fd/0 directly works reliably on both Linux and macOS.
+        if [ -t 0 ] || [ -p /dev/fd/0 ] || [ -s /dev/fd/0 ]; then
                 printf '%sEnter your choice (1-4): %s' "$BOLD" "$RESET" >&2
                 IFS= read -r choice
         else
