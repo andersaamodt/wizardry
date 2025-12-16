@@ -646,14 +646,8 @@ printf '\n'
 if [ "${WIZARDRY_INSTALL_ASSUME_YES-}" = "1" ]; then
         proceed=1
 else
-        if [ ! -t 0 ] && [ -z "${ASK_CANTRIP_INPUT-}" ]; then
-                if ASK_CANTRIP_INPUT=none "$ASK_YN" "Proceed with installation?" yes >/dev/null; then
-                        proceed=1
-                fi
-        else
-                if "$ASK_YN" "Proceed with installation?" yes >/dev/null; then
-                        proceed=1
-                fi
+        if "$ASK_YN" "Proceed with installation?" yes >/dev/null; then
+                proceed=1
         fi
 fi
 
@@ -821,15 +815,8 @@ if [ "${WIZARDRY_INSTALL_ASSUME_YES-}" = "1" ]; then
                 install_mud=1
         fi
 else
-        if [ ! -t 0 ] && [ -z "${ASK_CANTRIP_INPUT-}" ]; then
-                # Non-interactive mode - use ASK_CANTRIP_INPUT=none to allow the default
-                if ASK_CANTRIP_INPUT=none "$ASK_YN" "Install the MUD (multi-user dungeon) features?" yes >/dev/null; then
-                        install_mud=1
-                fi
-        else
-                if "$ASK_YN" "Install the MUD (multi-user dungeon) features?" yes >/dev/null; then
-                        install_mud=1
-                fi
+        if "$ASK_YN" "Install the MUD (multi-user dungeon) features?" yes >/dev/null; then
+                install_mud=1
         fi
 fi
 
