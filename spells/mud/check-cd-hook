@@ -12,8 +12,6 @@ Exits with code 0 if installed, 1 if not installed.
 USAGE
 }
 
-
-
 check_cd_hook() {
 case "${1-}" in
 --help|--usage|-h)
@@ -67,6 +65,6 @@ fi
 return 1
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */check-cd-hook) check_cd_hook "$@" ;; esac
+# Execute function when run as script or when called by name
+# This pattern works both standalone and when inlined by compile-spell
+check_cd_hook "$@"
