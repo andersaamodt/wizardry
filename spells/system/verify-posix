@@ -21,12 +21,11 @@ case "${1-}" in
 esac
 
 set -eu
-. env-clear
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 repo_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd -P)
 
-# Add imps to PATH so we can use temp-file and cleanup-file directly
+# Add imps to PATH before env-clear so we can find it
 if [ -d "$repo_dir/spells/.imps" ]; then
   PATH="$repo_dir/spells/.imps:$PATH"
   for impdir in "$repo_dir"/spells/.imps/*; do
@@ -35,6 +34,8 @@ if [ -d "$repo_dir/spells/.imps" ]; then
   done
   export PATH
 fi
+
+. env-clear
 
 checkbashisms_cmd=${CHECKBASHISMS-}
 if [ -z "$checkbashisms_cmd" ] && command -v checkbashisms >/dev/null 2>&1; then
