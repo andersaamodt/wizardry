@@ -319,9 +319,9 @@ while IFS= read -r test_path <&3; do
   test_timeout="${WIZARDRY_TEST_TIMEOUT:-180}"
   test_exit_code=0
   if [ -n "$timeout_cmd" ]; then
-    output=$("$timeout_cmd" "$test_timeout" sh "$abs" 2>&1) || test_exit_code=$?
+    output=$("$timeout_cmd" "$test_timeout" sh "$abs" 2>&1 < /dev/null) || test_exit_code=$?
   else
-    output=$(sh "$abs" 2>&1) || test_exit_code=$?
+    output=$(sh "$abs" 2>&1 < /dev/null) || test_exit_code=$?
   fi
   
   # Check if test timed out (exit code 124 from GNU timeout, or 143 from TERM signal)
