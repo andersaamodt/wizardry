@@ -1,0 +1,127 @@
+#!/bin/sh
+# env-clear - clear environment variables except wizardry globals and system vars
+# Prevents env var antipattern by clearing all non-essential environment variables.
+# Call near top of each spell after opening comment.
+
+set -eu
+
+_env_clear() {
+  # Save standard system environment variables
+  saved_path="${PATH:-}"
+  saved_home="${HOME:-}"
+  saved_user="${USER:-}"
+  saved_shell="${SHELL:-}"
+  saved_term="${TERM:-}"
+  saved_lang="${LANG:-}"
+  saved_tmpdir="${TMPDIR:-}"
+  saved_pwd="${PWD:-}"
+  saved_oldpwd="${OLDPWD:-}"
+  
+  # Save wizardry declared globals
+  saved_wizardry_dir="${WIZARDRY_DIR:-}"
+  saved_spellbook_dir="${SPELLBOOK_DIR:-}"
+  saved_mud_dir="${MUD_DIR:-}"
+  
+  # Save feature flags
+  saved_log_level="${WIZARDRY_LOG_LEVEL:-}"
+  saved_disable_sandbox="${WIZARDRY_DISABLE_SANDBOX:-}"
+  saved_bwrap_warning="${WIZARDRY_BWRAP_WARNING:-}"
+  saved_colors_available="${WIZARDRY_COLORS_AVAILABLE:-}"
+  
+  # Save package manager override variables
+  saved_nix_pkg="${NIX_PACKAGE:-}"
+  saved_apt_pkg="${APT_PACKAGE:-}"
+  saved_dnf_pkg="${DNF_PACKAGE:-}"
+  saved_yum_pkg="${YUM_PACKAGE:-}"
+  saved_zypper_pkg="${ZYPPER_PACKAGE:-}"
+  saved_pacman_pkg="${PACMAN_PACKAGE:-}"
+  saved_apk_pkg="${APK_PACKAGE:-}"
+  saved_pkgin_pkg="${PKGIN_PACKAGE:-}"
+  saved_brew_pkg="${BREW_PACKAGE:-}"
+  
+  # Save test infrastructure variables
+  saved_test_failure="${TEST_FAILURE_REASON:-}"
+  saved_test_skip="${TEST_SKIP_REASON:-}"
+  saved_wiz_tmpdir="${WIZARDRY_TMPDIR:-}"
+  saved_global_subtest="${WIZARDRY_GLOBAL_SUBTEST_NUM:-}"
+  saved_test_compiled="${WIZARDRY_TEST_COMPILED:-}"
+  saved_test_helpers="${WIZARDRY_TEST_HELPERS_ONLY:-}"
+  saved_system_path="${WIZARDRY_SYSTEM_PATH:-}"
+  
+  # Save bootstrap/installer variables
+  saved_assume_yes="${ASSUME_YES:-}"
+  saved_force_install="${FORCE_INSTALL:-}"
+  saved_root_dir="${ROOT_DIR:-}"
+  
+  # Save RC detection variables
+  saved_platform="${WIZARDRY_PLATFORM:-}"
+  saved_rc_file="${WIZARDRY_RC_FILE:-}"
+  saved_rc_format="${WIZARDRY_RC_FORMAT:-}"
+  
+  # Save cantrip configuration
+  saved_await_keep_raw="${AWAIT_KEYPRESS_KEEP_RAW:-}"
+  
+  # Clear all environment variables
+  for var in $(env | cut -d= -f1); do
+    unset "$var" 2>/dev/null || true
+  done
+  
+  # Restore saved variables
+  [ -n "$saved_path" ] && export PATH="$saved_path"
+  [ -n "$saved_home" ] && export HOME="$saved_home"
+  [ -n "$saved_user" ] && export USER="$saved_user"
+  [ -n "$saved_shell" ] && export SHELL="$saved_shell"
+  [ -n "$saved_term" ] && export TERM="$saved_term"
+  [ -n "$saved_lang" ] && export LANG="$saved_lang"
+  [ -n "$saved_tmpdir" ] && export TMPDIR="$saved_tmpdir"
+  [ -n "$saved_pwd" ] && export PWD="$saved_pwd"
+  [ -n "$saved_oldpwd" ] && export OLDPWD="$saved_oldpwd"
+  
+  # Restore wizardry globals
+  [ -n "$saved_wizardry_dir" ] && export WIZARDRY_DIR="$saved_wizardry_dir"
+  [ -n "$saved_spellbook_dir" ] && export SPELLBOOK_DIR="$saved_spellbook_dir"
+  [ -n "$saved_mud_dir" ] && export MUD_DIR="$saved_mud_dir"
+  
+  # Restore feature flags
+  [ -n "$saved_log_level" ] && export WIZARDRY_LOG_LEVEL="$saved_log_level"
+  [ -n "$saved_disable_sandbox" ] && export WIZARDRY_DISABLE_SANDBOX="$saved_disable_sandbox"
+  [ -n "$saved_bwrap_warning" ] && export WIZARDRY_BWRAP_WARNING="$saved_bwrap_warning"
+  [ -n "$saved_colors_available" ] && export WIZARDRY_COLORS_AVAILABLE="$saved_colors_available"
+  
+  # Restore package manager variables
+  [ -n "$saved_nix_pkg" ] && export NIX_PACKAGE="$saved_nix_pkg"
+  [ -n "$saved_apt_pkg" ] && export APT_PACKAGE="$saved_apt_pkg"
+  [ -n "$saved_dnf_pkg" ] && export DNF_PACKAGE="$saved_dnf_pkg"
+  [ -n "$saved_yum_pkg" ] && export YUM_PACKAGE="$saved_yum_pkg"
+  [ -n "$saved_zypper_pkg" ] && export ZYPPER_PACKAGE="$saved_zypper_pkg"
+  [ -n "$saved_pacman_pkg" ] && export PACMAN_PACKAGE="$saved_pacman_pkg"
+  [ -n "$saved_apk_pkg" ] && export APK_PACKAGE="$saved_apk_pkg"
+  [ -n "$saved_pkgin_pkg" ] && export PKGIN_PACKAGE="$saved_pkgin_pkg"
+  [ -n "$saved_brew_pkg" ] && export BREW_PACKAGE="$saved_brew_pkg"
+  
+  # Restore test variables
+  [ -n "$saved_test_failure" ] && export TEST_FAILURE_REASON="$saved_test_failure"
+  [ -n "$saved_test_skip" ] && export TEST_SKIP_REASON="$saved_test_skip"
+  [ -n "$saved_wiz_tmpdir" ] && export WIZARDRY_TMPDIR="$saved_wiz_tmpdir"
+  [ -n "$saved_global_subtest" ] && export WIZARDRY_GLOBAL_SUBTEST_NUM="$saved_global_subtest"
+  [ -n "$saved_test_compiled" ] && export WIZARDRY_TEST_COMPILED="$saved_test_compiled"
+  [ -n "$saved_test_helpers" ] && export WIZARDRY_TEST_HELPERS_ONLY="$saved_test_helpers"
+  [ -n "$saved_system_path" ] && export WIZARDRY_SYSTEM_PATH="$saved_system_path"
+  
+  # Restore bootstrap variables
+  [ -n "$saved_assume_yes" ] && export ASSUME_YES="$saved_assume_yes"
+  [ -n "$saved_force_install" ] && export FORCE_INSTALL="$saved_force_install"
+  [ -n "$saved_root_dir" ] && export ROOT_DIR="$saved_root_dir"
+  
+  # Restore RC detection variables
+  [ -n "$saved_platform" ] && export WIZARDRY_PLATFORM="$saved_platform"
+  [ -n "$saved_rc_file" ] && export WIZARDRY_RC_FILE="$saved_rc_file"
+  [ -n "$saved_rc_format" ] && export WIZARDRY_RC_FORMAT="$saved_rc_format"
+  
+  # Restore cantrip configuration
+  [ -n "$saved_await_keep_raw" ] && export AWAIT_KEYPRESS_KEEP_RAW="$saved_await_keep_raw"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */env-clear) _env_clear "$@" ;; esac
