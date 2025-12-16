@@ -2,6 +2,37 @@
 # spell-menu - Display action menu for a spell or custom command
 # Shows options: Cast now, Memorize/Forget, Help, Test spell, Delete (for custom)
 
+spell_menu_usage() {
+	cat <<'USAGE'
+Usage: spell-menu <spell-name>
+
+Display an action menu for a spell with options to cast, memorize,
+get help, or erase.
+USAGE
+}
+
+# Handle help and action flags before set -eu
+case ${1-} in
+	--help|--usage|-h)
+		spell_menu_usage
+		exit 0
+		;;
+	--cast)
+		shift
+		eval "$*"
+		exit 0
+		;;
+	--install)
+		shift
+		cmd=$1
+		eval "$cmd" --install || true
+		exit 0
+		;;
+esac
+
+set -eu
+. env-clear
+
 # Check if memorized (used multiple times in loop)
 is_memorized() {
         check_name=$1
@@ -36,37 +67,7 @@ ENTRIES
         return 1
 }
 
-spell_menu_usage() {
-        cat <<'USAGE'
-Usage: spell-menu <spell-name>
-
-Display an action menu for a spell with options to cast, memorize,
-get help, or erase.
-USAGE
-}
-
-# Handle action flags (called by menu via subprocess)
-case ${1-} in
-        --cast)
-                shift
-                eval "$*"
-                exit 0
-                ;;
-        --install)
-                shift
-                cmd=$1
-                eval "$cmd" --install || true
-                exit 0
-                ;;
-esac
-
 spell_menu() {
-case "${1-}" in
---help|--usage|-h)
-  spell_menu_usage
-  return 0
-  ;;
-esac
 
 set -eu
 . env-clear

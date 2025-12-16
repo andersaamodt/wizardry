@@ -2,6 +2,8 @@
 # init-test-counters - initialize global test result counters
 # Must be sourced to set the global counter variables.
 
+set -eu
+
 # Initialize test counters (no function, just sets globals when sourced)
 _pass_count=0
 _fail_count=0
