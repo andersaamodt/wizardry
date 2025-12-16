@@ -45,14 +45,14 @@ if ! "$require_cmd" dd "The await-keypress spell needs 'dd' to capture raw key p
     return 1
 fi
 
-TTY_DEVICE=${AWAIT_KEYPRESS_DEVICE:-/dev/tty}
+tty_device=${AWAIT_KEYPRESS_DEVICE:-/dev/tty}
 skip_stty=${AWAIT_KEYPRESS_SKIP_STTY:-0}
 keep_raw=${AWAIT_KEYPRESS_KEEP_RAW:-0}
 
 if [ "${AWAIT_KEYPRESS_BUFFER_FILE+set}" = "set" ]; then
     buffer_file=$AWAIT_KEYPRESS_BUFFER_FILE
 else
-    buffer_key=$(printf '%s' "$TTY_DEVICE" | tr -c '[:alnum:]' '_')
+    buffer_key=$(printf '%s' "$tty_device" | tr -c '[:alnum:]' '_')
     buffer_file=$(temp-file await-keypress-buffer-"$buffer_key") || return 1
 fi
 
@@ -67,12 +67,12 @@ restore_terminal() {
 if [ "$skip_stty" -eq 1 ]; then
     # Allow tests to provide a preconfigured file descriptor instead of
     # toggling terminal attributes.
-    if [ ! -r "$TTY_DEVICE" ]; then
-        printf '%s\n' "await-keypress: unable to read from '$TTY_DEVICE'" >&2
+    if [ ! -r "$tty_device" ]; then
+        printf '%s\n' "await-keypress: unable to read from '$tty_device'" >&2
         return 1
     fi
 
-    exec 3<"$TTY_DEVICE" || return 1
+    exec 3<"$tty_device" || return 1
 else
     # When interacting with the real terminal, require stty for raw-mode
     # management and open the device read/write.
@@ -80,12 +80,12 @@ else
         return 1
     fi
 
-    if [ ! -r "$TTY_DEVICE" ] || [ ! -w "$TTY_DEVICE" ]; then
-        printf '%s\n' "await-keypress: unable to open controlling terminal '$TTY_DEVICE'" >&2
+    if [ ! -r "$tty_device" ] || [ ! -w "$tty_device" ]; then
+        printf '%s\n' "await-keypress: unable to open controlling terminal '$tty_device'" >&2
         return 1
     fi
 
-    exec 3<>"$TTY_DEVICE" || return 1
+    exec 3<>"$tty_device" || return 1
 
     # Persist the existing terminal configuration so we can restore it later.
     saved_state=$(stty -g <&3 2>/dev/null)

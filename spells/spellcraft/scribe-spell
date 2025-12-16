@@ -4,12 +4,12 @@
 
 require-wizardry || exit 1
 
-SCRIPT_NAME=$(basename "$0")
+script_name=$(basename "$0")
 
 scribe_spell_usage() {
         cat <<USAGE
-Usage: $SCRIPT_NAME [--category CAT] [NAME COMMAND...]
-       $SCRIPT_NAME --new-category [NAME]
+Usage: $script_name [--category CAT] [NAME COMMAND...]
+       $script_name --new-category [NAME]
 
 Scribe (create) a custom spell in your spellbook. Without arguments,
 prompts interactively. Names must be unique and not conflict with PATH.
@@ -59,18 +59,18 @@ while [ "$#" -gt 0 ]; do
                         ;;
                 --category)
                         if [ "$#" -lt 2 ]; then
-                                printf '%s\n' "$SCRIPT_NAME: --category requires a value." >&2
+                                printf '%s\n' "$script_name: --category requires a value." >&2
                                 return 1
                         fi
                         current_category=$2
                         # Validate category
                         case $current_category in
                         ''|*[!A-Za-z0-9._-]*)
-                                printf '%s\n' "$SCRIPT_NAME: category names may contain only letters, digits, dots, underscores, and dashes." >&2
+                                printf '%s\n' "$script_name: category names may contain only letters, digits, dots, underscores, and dashes." >&2
                                 return 1
                                 ;;
                         -*)
-                                printf '%s\n' "$SCRIPT_NAME: category names may not begin with a dash." >&2
+                                printf '%s\n' "$script_name: category names may not begin with a dash." >&2
                                 return 1
                                 ;;
                         esac
@@ -81,11 +81,11 @@ while [ "$#" -gt 0 ]; do
                         # Validate category
                         case $current_category in
                         ''|*[!A-Za-z0-9._-]*)
-                                printf '%s\n' "$SCRIPT_NAME: category names may contain only letters, digits, dots, underscores, and dashes." >&2
+                                printf '%s\n' "$script_name: category names may contain only letters, digits, dots, underscores, and dashes." >&2
                                 return 1
                                 ;;
                         -*)
-                                printf '%s\n' "$SCRIPT_NAME: category names may not begin with a dash." >&2
+                                printf '%s\n' "$script_name: category names may not begin with a dash." >&2
                                 return 1
                                 ;;
                         esac
@@ -93,7 +93,7 @@ while [ "$#" -gt 0 ]; do
                         ;;
                 --dir)
                         if [ "$#" -lt 2 ]; then
-                                printf '%s\n' "$SCRIPT_NAME: --dir requires a value." >&2
+                                printf '%s\n' "$script_name: --dir requires a value." >&2
                                 return 1
                         fi
                         override_dir=$2
@@ -108,7 +108,7 @@ while [ "$#" -gt 0 ]; do
                         break
                         ;;
                 -*)
-                        printf '%s\n' "$SCRIPT_NAME: unknown option '$1'" >&2
+                        printf '%s\n' "$script_name: unknown option '$1'" >&2
                         return 1
                         ;;
                 *)
@@ -138,11 +138,11 @@ if [ "$new_category_mode" -eq 1 ]; then
         # Validate category name
         case $category_name in
         ''|*[!A-Za-z0-9._-]*)
-                printf '%s\n' "$SCRIPT_NAME: category names may contain only letters, digits, dots, underscores, and dashes." >&2
+                printf '%s\n' "$script_name: category names may contain only letters, digits, dots, underscores, and dashes." >&2
                 return 1
                 ;;
         -*)
-                printf '%s\n' "$SCRIPT_NAME: category names may not begin with a dash." >&2
+                printf '%s\n' "$script_name: category names may not begin with a dash." >&2
                 return 1
                 ;;
         esac
@@ -171,29 +171,29 @@ if [ "$#" -ge 2 ]; then
         # Validate name
         case $name in
         ''|*[!A-Za-z0-9._-]*)
-                printf '%s\n' "$SCRIPT_NAME: names may contain only letters, digits, dots, underscores, and dashes (no spaces)." >&2
+                printf '%s\n' "$script_name: names may contain only letters, digits, dots, underscores, and dashes (no spaces)." >&2
                 return 1
                 ;;
         -*)
-                printf '%s\n' "$SCRIPT_NAME: names may not begin with a dash." >&2
+                printf '%s\n' "$script_name: names may not begin with a dash." >&2
                 return 1
                 ;;
         esac
         
         # Check for duplicate name
         if command -v "$name" >/dev/null 2>&1; then
-                printf '%s\n' "$SCRIPT_NAME: '$name' conflicts with an existing command." >&2
+                printf '%s\n' "$script_name: '$name' conflicts with an existing command." >&2
                 return 1
         fi
         if [ -e "$spell_home/$name" ]; then
-                printf '%s\n' "$SCRIPT_NAME: '$name' already exists in your spellbook." >&2
+                printf '%s\n' "$script_name: '$name' already exists in your spellbook." >&2
                 return 1
         fi
         if [ -d "$spell_home" ]; then
                 for subdir in "$spell_home"/*; do
                         [ -d "$subdir" ] || continue
                         if [ -e "$subdir/$name" ]; then
-                                printf '%s\n' "$SCRIPT_NAME: '$name' already exists in your spellbook." >&2
+                                printf '%s\n' "$script_name: '$name' already exists in your spellbook." >&2
                                 return 1
                         fi
                 done
@@ -201,15 +201,15 @@ if [ "$#" -ge 2 ]; then
         
         # Validate command
         if [ -z "$cmd" ]; then
-                printf '%s\n' "$SCRIPT_NAME: command must not be empty." >&2
+                printf '%s\n' "$script_name: command must not be empty." >&2
                 return 1
         fi
         if [ "$(printf '%s' "$cmd" | tr -d '\t')" != "$cmd" ]; then
-                printf '%s\n' "$SCRIPT_NAME: command may not contain tabs." >&2
+                printf '%s\n' "$script_name: command may not contain tabs." >&2
                 return 1
         fi
         if [ "$(printf '%s' "$cmd" | tr -d '\n')" != "$cmd" ]; then
-                printf '%s\n' "$SCRIPT_NAME: command must be a single line." >&2
+                printf '%s\n' "$script_name: command must be a single line." >&2
                 return 1
         fi
         
@@ -273,11 +273,11 @@ if [ -z "$current_category" ] && [ -z "$override_dir" ]; then
                                 # Validate category
                                 case $category_name in
                                 ''|*[!A-Za-z0-9._-]*)
-                                        printf '%s\n' "$SCRIPT_NAME: category names may contain only letters, digits, dots, underscores, and dashes." >&2
+                                        printf '%s\n' "$script_name: category names may contain only letters, digits, dots, underscores, and dashes." >&2
                                         return 1
                                         ;;
                                 -*)
-                                        printf '%s\n' "$SCRIPT_NAME: category names may not begin with a dash." >&2
+                                        printf '%s\n' "$script_name: category names may not begin with a dash." >&2
                                         return 1
                                         ;;
                                 esac
@@ -294,29 +294,29 @@ fi
 # Validate name
 case $cmd_name in
 ''|*[!A-Za-z0-9._-]*)
-        printf '%s\n' "$SCRIPT_NAME: names may contain only letters, digits, dots, underscores, and dashes (no spaces)." >&2
+        printf '%s\n' "$script_name: names may contain only letters, digits, dots, underscores, and dashes (no spaces)." >&2
         return 1
         ;;
 -*)
-        printf '%s\n' "$SCRIPT_NAME: names may not begin with a dash." >&2
+        printf '%s\n' "$script_name: names may not begin with a dash." >&2
         return 1
         ;;
 esac
 
 # Check for duplicate name
 if command -v "$cmd_name" >/dev/null 2>&1; then
-        printf '%s\n' "$SCRIPT_NAME: '$cmd_name' conflicts with an existing command." >&2
+        printf '%s\n' "$script_name: '$cmd_name' conflicts with an existing command." >&2
         return 1
 fi
 if [ -e "$spell_home/$cmd_name" ]; then
-        printf '%s\n' "$SCRIPT_NAME: '$cmd_name' already exists in your spellbook." >&2
+        printf '%s\n' "$script_name: '$cmd_name' already exists in your spellbook." >&2
         return 1
 fi
 if [ -d "$spell_home" ]; then
         for subdir in "$spell_home"/*; do
                 [ -d "$subdir" ] || continue
                 if [ -e "$subdir/$cmd_name" ]; then
-                        printf '%s\n' "$SCRIPT_NAME: '$cmd_name' already exists in your spellbook." >&2
+                        printf '%s\n' "$script_name: '$cmd_name' already exists in your spellbook." >&2
                         return 1
                 fi
         done
@@ -324,15 +324,15 @@ fi
 
 # Validate command
 if [ -z "$cmd_text" ]; then
-        printf '%s\n' "$SCRIPT_NAME: command must not be empty." >&2
+        printf '%s\n' "$script_name: command must not be empty." >&2
         return 1
 fi
 if [ "$(printf '%s' "$cmd_text" | tr -d '\t')" != "$cmd_text" ]; then
-        printf '%s\n' "$SCRIPT_NAME: command may not contain tabs." >&2
+        printf '%s\n' "$script_name: command may not contain tabs." >&2
         return 1
 fi
 if [ "$(printf '%s' "$cmd_text" | tr -d '\n')" != "$cmd_text" ]; then
-        printf '%s\n' "$SCRIPT_NAME: command must be a single line." >&2
+        printf '%s\n' "$script_name: command must be a single line." >&2
         return 1
 fi
 

@@ -54,7 +54,7 @@ get_clipboard_label() {
 }
 
 # A special command name marker for clipboard that's checked differently
-CLIPBOARD_MARKER="__clipboard_helper__"
+clipboard_marker="__clipboard_helper__"
 
 core_dependencies() {
   # Format: label:command_name:install_spell:uninstall_spell:essential

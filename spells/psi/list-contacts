@@ -24,13 +24,13 @@ esac
 set -eu
 
 # Default contacts directory
-CONTACTS_DIR="${1:-$HOME/.contacts}"
+contacts_dir="${1:-$HOME/.contacts}"
 
 # Ensure the contacts directory exists
-make dir "$CONTACTS_DIR"
+make dir "$contacts_dir"
 
 # Find all vCard files in the contacts directory (POSIX-compliant)
-find "$CONTACTS_DIR" -name '*.vcf' | while IFS= read -r file; do
+find "$contacts_dir" -name '*.vcf' | while IFS= read -r file; do
   # Skip if file doesn't exist (empty directory case)
   is file "$file" || continue
   

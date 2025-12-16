@@ -18,10 +18,10 @@ esac
 
 set -eu
 
-SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 
 ASSUME_YES=1
 FORCE_INSTALL=${INSTALL_GIT_FORCE_INSTALL:-0}
 export ASSUME_YES FORCE_INSTALL
 
-"$SCRIPT_DIR/manage-system-command" git git
+"$script_dir/manage-system-command" git git

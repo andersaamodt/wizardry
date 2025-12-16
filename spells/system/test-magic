@@ -250,8 +250,8 @@ test_total=$(grep -c . "$test_list_file")
 
 # Imps have no --help flag, so they need 2 subtests minimum.
 # Spells have a --help flag which needs testing, plus 2 additional subtests.
-MIN_SUBTESTS_IMP=2
-MIN_SUBTESTS_SPELL=3
+min_subtests_imp=2
+min_subtests_spell=3
 failure_output_file=$(temp-file test-magic) || return 1
 trap 'cleanup-file "$failure_output_file"; cleanup-file "$test_list_file"' EXIT HUP INT TERM
 
@@ -468,28 +468,28 @@ while IFS= read -r test_path <&3; do
   case "$test_path" in
     .imps/*|*/.imps/*)
       # Imps have no --help, just need MIN_SUBTESTS_IMP subtests
-      if [ -n "$test_subtest_count" ] && [ "$test_subtest_count" -lt "$MIN_SUBTESTS_IMP" ]; then
+      if [ -n "$test_subtest_count" ] && [ "$test_subtest_count" -lt "$min_subtests_imp" ]; then
         # Inline record_incomplete_test logic
-        entry="$spell_name ($test_subtest_count subtests, need $MIN_SUBTESTS_IMP)"
+        entry="$spell_name ($test_subtest_count subtests, need $min_subtests_imp)"
         if [ -n "$incomplete_tests" ]; then
           incomplete_tests="$incomplete_tests, $entry"
         else
           incomplete_tests="$entry"
         fi
-        test_incomplete_reasons="$test_subtest_count subtests, need $MIN_SUBTESTS_IMP"
+        test_incomplete_reasons="$test_subtest_count subtests, need $min_subtests_imp"
       fi
       ;;
     test-install.sh|test-suite.sh)
       # Global/special tests don't need --help test
-      if [ -n "$test_subtest_count" ] && [ "$test_subtest_count" -lt "$MIN_SUBTESTS_IMP" ]; then
+      if [ -n "$test_subtest_count" ] && [ "$test_subtest_count" -lt "$min_subtests_imp" ]; then
         # Inline record_incomplete_test logic
-        entry="$spell_name ($test_subtest_count subtests, need $MIN_SUBTESTS_IMP)"
+        entry="$spell_name ($test_subtest_count subtests, need $min_subtests_imp)"
         if [ -n "$incomplete_tests" ]; then
           incomplete_tests="$incomplete_tests, $entry"
         else
           incomplete_tests="$entry"
         fi
-        test_incomplete_reasons="$test_subtest_count subtests, need $MIN_SUBTESTS_IMP"
+        test_incomplete_reasons="$test_subtest_count subtests, need $min_subtests_imp"
       fi
       ;;
     *)
@@ -505,19 +505,19 @@ while IFS= read -r test_path <&3; do
         fi
         test_incomplete_reasons="missing --help test"
       fi
-      if [ -n "$test_subtest_count" ] && [ "$test_subtest_count" -lt "$MIN_SUBTESTS_SPELL" ]; then
+      if [ -n "$test_subtest_count" ] && [ "$test_subtest_count" -lt "$min_subtests_spell" ]; then
         # Inline record_incomplete_test logic
-        entry="$spell_name ($test_subtest_count subtests, need $MIN_SUBTESTS_SPELL)"
+        entry="$spell_name ($test_subtest_count subtests, need $min_subtests_spell)"
         if [ -n "$incomplete_tests" ]; then
           incomplete_tests="$incomplete_tests, $entry"
         else
           incomplete_tests="$entry"
         fi
         if [ -n "$test_incomplete_reasons" ]; then
-          subtest_reason="$test_subtest_count subtests, need $MIN_SUBTESTS_SPELL"
+          subtest_reason="$test_subtest_count subtests, need $min_subtests_spell"
           test_incomplete_reasons="$test_incomplete_reasons; $subtest_reason"
         else
-          test_incomplete_reasons="$test_subtest_count subtests, need $MIN_SUBTESTS_SPELL"
+          test_incomplete_reasons="$test_subtest_count subtests, need $min_subtests_spell"
         fi
       fi
       ;;
@@ -676,7 +676,7 @@ fi
 
 if [ -n "$incomplete_tests" ] && [ "${WIZARDRY_TEST_COMPILED-0}" != "1" ]; then
   printf 'Incomplete tests (imps need %d+ subtests, spells need %d+ including --help):\n' \
-    "$MIN_SUBTESTS_IMP" "$MIN_SUBTESTS_SPELL"
+    "$min_subtests_imp" "$min_subtests_spell"
   printf '  %s\n' "$incomplete_tests"
   status=1
 fi

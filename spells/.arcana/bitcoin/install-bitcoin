@@ -20,13 +20,13 @@ esac
 
 set -eu
 
-BITCOIN_VERSION_DEFAULT="25.0"
+bitcoin_version_default="25.0"
 
 # Prompt for version
 prompt="Which Bitcoin Core version should be installed?"
-printf "%s [%s]: " "$prompt" "$BITCOIN_VERSION_DEFAULT"
+printf "%s [%s]: " "$prompt" "$bitcoin_version_default"
 IFS= read -r version
-[ -z "$version" ] && version=$BITCOIN_VERSION_DEFAULT
+[ -z "$version" ] && version=$bitcoin_version_default
 
 # Detect distribution
 if command -v detect-distro >/dev/null 2>&1; then

@@ -33,7 +33,7 @@ fi
 __bootstrap_dir=$(CDPATH= cd -- "$(dirname "${0:-$PWD}")" && pwd -P)
 while [ "$__bootstrap_dir" != "/" ]; do
   if [ -d "$__bootstrap_dir/spells" ] && [ -d "$__bootstrap_dir/.tests" ]; then
-    ROOT_DIR=$__bootstrap_dir
+    root_dir=$__bootstrap_dir
     break
   fi
   __bootstrap_dir=$(dirname "$__bootstrap_dir")
@@ -44,11 +44,11 @@ unset __bootstrap_dir
 # The baseline PATH was already set at the top of this file.
 # Now add wizardry spells directories to PATH.
 initial_path=$PATH
-PATH="$ROOT_DIR/spells"
+PATH="$root_dir/spells"
 # Include .imps and its subdirectories (for organized imp families like input/, fs/)
-if [ -d "$ROOT_DIR/spells/.imps" ]; then
-  PATH="$PATH:$ROOT_DIR/spells/.imps"
-  for impdir in "$ROOT_DIR"/spells/.imps/*; do
+if [ -d "$root_dir/spells/.imps" ]; then
+  PATH="$PATH:$root_dir/spells/.imps"
+  for impdir in "$root_dir"/spells/.imps/*; do
     [ -d "$impdir" ] || continue
     PATH="$PATH:$impdir"
     # Include nested subdirectories (daemonic complexes like test/boot/)
@@ -58,7 +58,7 @@ if [ -d "$ROOT_DIR/spells/.imps" ]; then
     done
   done
 fi
-for dir in "$ROOT_DIR"/spells/*; do
+for dir in "$root_dir"/spells/*; do
   [ -d "$dir" ] || continue
   PATH="$PATH:$dir"
 done
@@ -154,7 +154,7 @@ elif [ "$MACOS_SANDBOX_AVAILABLE" -eq 1 ] && [ ! -f "$warn_once_file" ]; then
 fi
 
 # Source all boot imps to define their true-name functions
-for boot_imp in "$ROOT_DIR"/spells/.imps/test/boot/*; do
+for boot_imp in "$root_dir"/spells/.imps/test/boot/*; do
   [ -f "$boot_imp" ] || continue
   # shellcheck source=/dev/null
   . "$boot_imp"

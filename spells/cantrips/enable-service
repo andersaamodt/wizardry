@@ -23,42 +23,42 @@ esac
 
 set -eu
 
-SCRIPT_NAME=$(basename "$0")
+script_name=$(basename "$0")
 
-SCRIPT_SOURCE=$0
-case $SCRIPT_SOURCE in
+script_source=$0
+case $script_source in
 */*)
-  SCRIPT_DIR=${SCRIPT_SOURCE%/*}
+  script_dir=${SCRIPT_SOURCE%/*}
   ;;
 *)
-  resolved=$(command -v "$SCRIPT_SOURCE" 2>/dev/null || printf '%s' "$SCRIPT_SOURCE")
-  SCRIPT_DIR=${resolved%/*}
-  SCRIPT_SOURCE=$resolved
+  resolved=$(command -v "$script_source" 2>/dev/null || printf '%s' "$script_source")
+  script_dir=${resolved%/*}
+  script_source=$resolved
   ;;
 esac
-if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
-  SCRIPT_DIR=.
+if [ -z "$script_dir" ] || [ "$script_dir" = "$script_source" ]; then
+  script_dir=.
 fi
-SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
+script_dir=$(cd "$script_dir" && pwd -P)
 
 # Inline enable_service_find_ask_text - only used once
 if [ -n "${ENABLE_SERVICE_ASK_TEXT-}" ]; then
-  ASK_TEXT_HELPER=$ENABLE_SERVICE_ASK_TEXT
+  ask_text_helper=$ENABLE_SERVICE_ASK_TEXT
 elif command -v ask-text >/dev/null 2>&1; then
-  ASK_TEXT_HELPER=$(command -v ask-text)
-elif [ -x "$SCRIPT_DIR/ask-text" ]; then
-  ASK_TEXT_HELPER="$SCRIPT_DIR/ask-text"
+  ask_text_helper=$(command -v ask-text)
+elif [ -x "$script_dir/ask-text" ]; then
+  ask_text_helper="$script_dir/ask-text"
 else
-  printf '%s\n' "$SCRIPT_NAME: ask-text spell not found." >&2
+  printf '%s\n' "$script_name: ask-text spell not found." >&2
   return 1
 fi
 
 service_name=${1-}
 if [ -z "$service_name" ]; then
-  service_name=$("$ASK_TEXT_HELPER" "Which service should I enable?")
+  service_name=$("$ask_text_helper" "Which service should I enable?")
 fi
 if [ -z "$service_name" ]; then
-  printf '%s\n' "$SCRIPT_NAME: No service name supplied." >&2
+  printf '%s\n' "$script_name: No service name supplied." >&2
   return 1
 fi
 
@@ -77,18 +77,18 @@ printf 'Enabling %s so it starts at boot...\n' "$unit"
 # Inline enable_service_run_systemctl - only used once
 if [ -z "${SYSTEMCTL-}" ]; then
   if command -v systemctl >/dev/null 2>&1; then
-    SYSTEMCTL=$(command -v systemctl)
+    systemctl_cmd=$(command -v systemctl)
   else
-    printf '%s\n' "$SCRIPT_NAME: systemctl is not available on this system." >&2
+    printf '%s\n' "$script_name: systemctl is not available on this system." >&2
     return 1
   fi
 fi
 if [ "$(id -u)" -eq 0 ]; then
-  "$SYSTEMCTL" enable "$unit"
+  "$systemctl_cmd" enable "$unit"
 elif command -v sudo >/dev/null 2>&1; then
-  sudo "$SYSTEMCTL" enable "$unit"
+  sudo "$systemctl_cmd" enable "$unit"
 else
-  printf '%s\n' "$SCRIPT_NAME: systemctl requires root. Re-run as root or install sudo." >&2
+  printf '%s\n' "$script_name: systemctl requires root. Re-run as root or install sudo." >&2
   return 1
 fi
 
