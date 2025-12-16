@@ -269,13 +269,15 @@ Tests code duplication detection across the codebase.
 1. ✅ **Profile created** - We now have baseline performance data
 2. ✅ **Analysis complete** - Identified root causes of slow tests
 3. 🔴 **Investigate test-install.sh failure** (HIGH PRIORITY)
-   - Determine why test hangs
-   - Fix or skip problematic test case
-   - Re-run profile after fix
-4. 🟡 **Optimize common-tests.sh** (HIGH IMPACT - saves ~20-30s)
-   - Implement file list caching
-   - Batch file processing
-   - Consider parallelization
+   - **Status:** Test hangs during execution (runs install script which waits for input)
+   - **Root cause:** Install script interaction issue, needs environment variable tuning
+   - **Recommendation:** Requires deeper investigation or test isolation improvement
+4. ✅ **Optimize common-tests.sh** (COMPLETE)
+   - ✅ Implemented file list caching
+   - ✅ Eliminated 11 redundant find operations (reduced to 1)
+   - ✅ All 11 tests converted to use cached list
+   - **Result:** Structural improvement complete, but runtime remains ~40s
+   - **Note:** Bottleneck is file reading/grep operations, not find operations
 5. 🟢 **Document performance expectations** (set CI time budgets)
 6. 🟢 **Add performance regression detection** (alert on significant slowdowns)
 
