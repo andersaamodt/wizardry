@@ -11,25 +11,33 @@ Check whether a string is a non-negative integer. Exits 0 when the value is digi
 USAGE
 }
 
+
+
+validate_number() {
 case "${1-}" in
 --help|--usage|-h)
-        validate_number_usage
-        exit 0
-        ;;
+  validate_number_usage
+  return 0
+  ;;
 esac
 
 set -eu
 
 # Check argument
 if [ -z "${1+x}" ]; then
-        exit 1
+        return 1
 fi
 
 case $1 in
         ''|*[!0-9]*)
-                exit 1
+                return 1
                 ;;
         *)
-                exit 0
+                return 0
                 ;;
 esac
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */validate-number) validate_number "$@" ;; esac

@@ -10,10 +10,13 @@ Checks the provided spells—or every executable spell by default—for POSIX sh
 USAGE
 }
 
+
+
+verify_posix() {
 case "${1-}" in
 --help|--usage|-h)
   verify_posix_usage
-  exit 0
+  return 0
   ;;
 esac
 
@@ -39,7 +42,7 @@ fi
 
 if [ -z "$checkbashisms_cmd" ]; then
   printf '%s\n' "verify-posix: checkbashisms is required but not found in PATH." >&2
-  exit 1
+  return 1
 fi
 
 failures=0
@@ -61,7 +64,7 @@ record_failure() {
   fi
 }
 
-targets_file=$(temp-file verify-posix-targets) || exit 1
+targets_file=$(temp-file verify-posix-targets) || return 1
 trap 'cleanup-file "$targets_file"' EXIT HUP INT TERM
 
 # Inline verify_posix_collect_targets and verify_posix_gather_default_targets
@@ -148,7 +151,7 @@ while IFS= read -r target; do
       ;;
   esac
 
-  tmp_log=$(temp-file verify-posix-log) || exit 1
+  tmp_log=$(temp-file verify-posix-log) || return 1
   if "$checkbashisms_cmd" "$path" >"$tmp_log" 2>&1; then
     print-pass "$target"
   else
@@ -187,5 +190,10 @@ else
   else
     printf '\nFailing spells: %s\n' "$failed_targets"
   fi
-  exit 1
+  return 1
 fi
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */verify-posix) verify_posix "$@" ;; esac

@@ -11,11 +11,14 @@ Reload the SSH daemon configuration without a full restart. Detects the operatin
 USAGE
 }
 
+
+
+reload_ssh() {
 case "${1-}" in
 --help|--usage|-h)
-        reload_ssh_usage
-        exit 0
-        ;;
+  reload_ssh_usage
+  return 0
+  ;;
 esac
 
 set -eu
@@ -42,3 +45,8 @@ case "$current_os" in
 esac
 
 say "SSH service reloaded."
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */reload-ssh) reload_ssh "$@" ;; esac

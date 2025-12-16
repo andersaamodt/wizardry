@@ -11,11 +11,14 @@ Print a message in muted, indented text to mark it as a command or technical asi
 USAGE
 }
 
+
+
+wizard_eyes() {
 case "${1-}" in
 --help|--usage|-h)
-        wizard_eyes_usage
-        exit 0
-        ;;
+  wizard_eyes_usage
+  return 0
+  ;;
 esac
 
 set -eu
@@ -36,3 +39,8 @@ if [ "$wizard_mode" = "1" ]; then
         
         printf '    %s%s%s\n' "${THEME_MUTED:-$GREY}" "$*" "$RESET"
 fi
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */wizard-eyes) wizard_eyes "$@" ;; esac

@@ -12,12 +12,15 @@ Copy the contents of a text file to the system clipboard using pbcopy, xsel, or 
 USAGE
 }
 
+
+copy() {
 case "${1-}" in
 --help|--usage|-h)
-        copy_usage
-        exit 0
-        ;;
+  copy_usage
+  return 0
+  ;;
 esac
+
 set -eu
 
 # Handle missing argument - prompt interactively
@@ -26,12 +29,12 @@ if [ "$#" -eq 0 ]; then
         file_path=$(ask-text "Enter file path to copy to clipboard:")
         if [ -z "$file_path" ]; then
             say 'No file path provided.'
-            exit 1
+            return 1
         fi
         set -- "$file_path"
     else
         copy_usage >&2
-        exit 1
+        return 1
     fi
 fi
 
@@ -41,7 +44,7 @@ is file "$1" || {
   else
     say 'That file does not exist.'
   fi
-  exit 1
+  return 1
 }
 
 # Copy file contents to clipboard using the clip-copy imp
@@ -53,14 +56,19 @@ if ! clip-copy < "$1" 2>/dev/null; then
             : # Installation succeeded and copy worked
         else
             warn 'Your spell fizzles. No clipboard utility available (xsel, xclip, wl-copy, or pbcopy).'
-            exit 1
+            return 1
         fi
     else
         warn 'Your spell fizzles. No clipboard utility available (xsel, xclip, wl-copy, or pbcopy).'
-        exit 1
+        return 1
     fi
 fi
 
 # Normalize path for display
 display_path=$(norm-path "$1")
 say "Copied $display_path to your clipboard."
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */copy) copy "$@" ;; esac

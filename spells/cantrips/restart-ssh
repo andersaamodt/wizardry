@@ -11,11 +11,14 @@ Fully restart the SSH daemon when you need a clean slate after configuration cha
 USAGE
 }
 
+
+
+restart_ssh() {
 case "${1-}" in
 --help|--usage|-h)
-        restart_ssh_usage
-        exit 0
-        ;;
+  restart_ssh_usage
+  return 0
+  ;;
 esac
 
 set -eu
@@ -46,3 +49,8 @@ case "$current_os" in
 esac
 
 say "SSH service restarted."
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */restart-ssh) restart_ssh "$@" ;; esac

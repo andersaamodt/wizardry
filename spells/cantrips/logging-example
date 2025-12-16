@@ -26,10 +26,13 @@ Examples:
 USAGE
 }
 
+
+
+logging_example() {
 case "${1-}" in
 --help|--usage|-h)
   logging_example_usage
-  exit 0
+  return 0
   ;;
 esac
 
@@ -81,3 +84,8 @@ case "${1-}" in
   _say "Try: WIZARDRY_LOG_LEVEL=1 logging-example --simulate"
   ;;
 esac
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */logging-example) logging_example "$@" ;; esac

@@ -13,6 +13,10 @@ Prints key=value pairs for the detected platform, rc_file, and format.
 USAGE
 }
 
+
+
+detect_rc_file() {
+
 platform="${DETECT_RC_FILE_PLATFORM-}"
 
 while [ "$#" -gt 0 ]; do
@@ -21,7 +25,7 @@ while [ "$#" -gt 0 ]; do
                 if [ "$#" -lt 2 ]; then
                         printf '%s\n' "detect-rc-file: --platform expects a value." >&2
                         detect_rc_file_usage
-                        exit 1
+                        return 1
                 fi
                 platform=$2
                 shift 2
@@ -32,7 +36,7 @@ while [ "$#" -gt 0 ]; do
                         ;;
         --help|--usage|-h)
                 detect_rc_file_usage
-                exit 0
+                return 0
                 ;;
         --)
                 shift
@@ -41,7 +45,7 @@ while [ "$#" -gt 0 ]; do
         -*)
                 printf '%s\n' "detect-rc-file: unknown option '$1'." >&2
                 detect_rc_file_usage
-                exit 1
+                return 1
                 ;;
         *)
                 break
@@ -54,7 +58,7 @@ done
 if [ "$#" -gt 0 ]; then
         printf '%s\n' "detect-rc-file: unexpected argument '$1'." >&2
         detect_rc_file_usage
-        exit 1
+        return 1
 fi
 
 add_candidate() {
@@ -198,3 +202,8 @@ case $rc_file in
 printf 'platform=%s\n' "$platform"
 printf 'rc_file=%s\n' "$rc_file"
 printf 'format=%s\n' "$format"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */detect-rc-file) detect_rc_file "$@" ;; esac

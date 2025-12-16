@@ -3,7 +3,6 @@
 # This spell retrieves the priority value of a file from its extended attributes.
 # Use it to check the relative importance of files within a directory.
 
-require-wizardry || exit 1
 
 get_priority_usage() {
 cat <<'USAGE'
@@ -13,10 +12,14 @@ Read and print the priority extended attribute from a file, outputting the numbe
 USAGE
 }
 
+
+
+get_priority() {
+
 case "${1-}" in
 --help|--usage|-h)
         get_priority_usage
-        exit 0
+        return 0
         ;;
 esac
 
@@ -26,7 +29,7 @@ set -eu
 if [ -z "${1-}" ]; then
         printf '%s\n' "get-priority: file path required." >&2
         get_priority_usage >&2
-        exit 1
+        return 1
 fi
 
 file=$1
@@ -42,9 +45,14 @@ priority=$(read-magic "$file" priority 2>/dev/null || true)
 # Handle error messages or empty values
 case "$priority" in
         *Error*|'')
-                exit 0
+                return 0
                 ;;
         *)
                 say "$priority"
                 ;;
 esac
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */get-priority) get_priority "$@" ;; esac

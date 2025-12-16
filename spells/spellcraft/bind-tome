@@ -13,12 +13,15 @@ Bind every file in a directory into a single <dirname>.txt tome. Use -d to delet
 USAGE
 }
 
+
+bind_tome() {
 case "${1-}" in
 --help|--usage|-h)
-        bind_tome_usage
-        exit 0
-        ;;
+  bind_tome_usage
+  return 0
+  ;;
 esac
+
 set -eu
 
 # Parse options early so -h works even with missing args.
@@ -30,11 +33,11 @@ while getopts ":dh" opt; do
             ;;
         h)
             bind_tome_usage
-            exit 0
+            return 0
             ;;
         *)
             bind_tome_usage >&2
-            exit 1
+            return 1
             ;;
     esac
 done
@@ -44,12 +47,12 @@ shift $((OPTIND - 1))
 if [ "$#" -lt 1 ]; then
     warn "bind-tome: folder path required."
     bind_tome_usage >&2
-    exit 1
+    return 1
 fi
 
 pages_dir=$1
 # Fail fast if the provided path is not a directory of pages.
-is dir "$pages_dir" || { warn "Error: '$pages_dir' is not a directory."; exit 1; }
+is dir "$pages_dir" || { warn "Error: '$pages_dir' is not a directory."; return 1; }
 
 folder_name=$(basename -- "$pages_dir")
 text_file="${folder_name}.txt"
@@ -76,3 +79,8 @@ if [ "$delete_sources" -eq 1 ]; then
     done
     say "Original files deleted."
 fi
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */bind-tome) bind_tome "$@" ;; esac

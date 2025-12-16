@@ -12,11 +12,14 @@ Displays the system maintenance menu.
 USAGE
 }
 
+
+
+system_menu() {
 case "${1-}" in
-  --help|--usage|-h)
-    system_menu_usage
-    exit 0
-    ;;
+--help|--usage|-h)
+  system_menu_usage
+  return 0
+  ;;
 esac
 
 set -eu
@@ -29,7 +32,7 @@ repo_dir=$(dirname "$spells_dir")
 . "$(command -v colors)"
 
 if ! require menu "The system menu needs the 'menu' command to present options."; then
-  exit 1
+  return 1
 fi
 
 # Detect whether we are running on NixOS to offer system-specific actions.
@@ -58,7 +61,7 @@ system_menu_display_menu() {
   menu "System Menu:" "$@"
 }
 
-# Catch Ctrl-C and TERM signal to exit cleanly
+# Catch Ctrl-C and TERM signal to return 1 cleanly
 trap 'exit 0' INT TERM
 
 first_run=1
@@ -72,3 +75,8 @@ while true; do
 
   system_menu_display_menu || true
 done
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */system-menu) system_menu "$@" ;; esac

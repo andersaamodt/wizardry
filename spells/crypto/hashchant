@@ -12,24 +12,27 @@ Compute a CRC-32 hash from the filename and contents, write it to the file's use
 USAGE
 }
 
+
+hashchant() {
 case "${1-}" in
 --help|--usage|-h)
   hashchant_usage
-  exit 0
+  return 0
   ;;
 esac
+
 set -eu
 
 if [ -z "${1-}" ]; then
   printf '%s\n' "hashchant: file path required" >&2
-  exit 2
+  return 2
 fi
 
 file=$1
 
 if [ ! -e "$file" ]; then
   printf '%s\n' "hashchant: file not found" >&2
-  exit 1
+  return 1
 fi
 
 filename=$(basename "$file")
@@ -78,7 +81,7 @@ for helper in attr xattr setfattr; do
 
   if [ "$applied" -eq 1 ]; then
     echo "File enchanted with hash: $hash"
-    exit 0
+    return 0
   fi
 
   last_helper=$helper
@@ -86,9 +89,14 @@ for helper in attr xattr setfattr; do
 done
 
 if [ -n "$last_helper" ]; then
-  printf '%s\n' "hashchant: failed to write hash using $last_helper (exit $last_status)" >&2
+  printf '%s\n' "hashchant: failed to write hash using $last_helper (return 1 $last_status)" >&2
 else
   printf '%s\n' "hashchant: xattr and attr commands not found, cannot enchant file" >&2
 fi
 
-exit 1
+return 1
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */hashchant) hashchant "$@" ;; esac

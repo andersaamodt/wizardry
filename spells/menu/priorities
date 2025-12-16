@@ -11,10 +11,14 @@ Display prioritized items in the current directory as an interactive menu, with 
 USAGE
 }
 
+
+
+priorities() {
+
 case "${1-}" in
 --help|--usage|-h)
         priorities_usage
-        exit 0
+        return 0
         ;;
 esac
 
@@ -46,7 +50,7 @@ display_priorities() {
   # If there are no priorities, print an error message and exit
   if [ -z "${dir_priorities}" ] || [ "$dir_priorities" = "read-magic: attribute does not exist." ]; then
     echo "No priorities set in the current folder. Try 'prioritize <filename>'."
-    exit 1
+    return 1
   fi
 
   # Initialize variables
@@ -105,10 +109,17 @@ first_run=1
 
 while true; do
   if [ "$first_run" -eq 0 ]; then
-    :
+    display_priorities || true
   else
     first_run=0
+    # On first run, exit if display_priorities fails (no priorities set)
+    if ! display_priorities; then
+      return 1
+    fi
   fi
-
-  display_priorities || true
 done
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */priorities) priorities "$@" ;; esac

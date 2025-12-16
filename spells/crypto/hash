@@ -12,17 +12,19 @@ Compute the CRC-32 hash of a file and print it in hexadecimal, resolving the pat
 USAGE
 }
 
+hash() {
 case "${1-}" in
 --help|--usage|-h)
-        hash_usage
-        exit 0
-        ;;
+  hash_usage
+  return 0
+  ;;
 esac
+
 set -eu
 
 if [ "$#" != 1 ]; then
     printf 'Usage: hash file\n'
-    exit 1
+    return 1
 fi
 
 # Get the directory where the script is being called from
@@ -36,7 +38,7 @@ file="$script_dir/$file_name"
 
 if [ ! -f "$file" ]; then
     printf 'Your spell fizzles. There is no file.\n'
-    exit 1
+    return 1
 fi
 
 # Normalize double slashes for macOS compatibility
@@ -47,3 +49,8 @@ crc=$(cksum "$file" | awk '{print $1}')
 
 # Convert the hash to hexadecimal and display it
 printf "0x%x\n" "$crc"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */hash) hash "$@" ;; esac

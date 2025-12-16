@@ -18,18 +18,21 @@ List all extended attributes on a file or print the value of one attribute when 
 USAGE
 }
 
+
+read_magic() {
 case "${1-}" in
 --help|--usage|-h)
-        read_magic_usage
-        exit 0
-        ;;
+  read_magic_usage
+  return 0
+  ;;
 esac
+
 set -eu
 
 # Validate arguments
 if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
   printf '%s\n' "read-magic: one or two parameters expected (file path and optional attribute name)."
-  exit 1
+  return 1
 fi
 
 file=$1
@@ -38,7 +41,7 @@ attribute=${2-}
 # Check file exists
 if [ ! -e "$file" ]; then
   printf '%s\n' "read-magic: file does not exist."
-  exit 1
+  return 1
 fi
 
 # If specific attribute requested, read and print it
@@ -47,9 +50,9 @@ if [ -n "$attribute" ]; then
     printf '%s\n' "$value"
   else
     printf '%s\n' "read-magic: attribute does not exist."
-    exit 1
+    return 1
   fi
-  exit 0
+  return 0
 fi
 
 # Otherwise, list all attributes
@@ -57,7 +60,7 @@ keys=$(xattr-list-keys "$file" || printf '')
 
 if [ -z "$keys" ]; then
   printf '%s\n' "No enchanted attributes found."
-  exit 0
+  return 0
 fi
 
 # Print each attribute with its value
@@ -66,3 +69,8 @@ printf '%s\n' "$keys" | while IFS= read -r key || [ -n "$key" ]; do
   value=$(xattr-read-value "$key" "$file" || printf '')
   printf '%s: %s\n' "$key" "$value"
 done
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */read-magic) read_magic "$@" ;; esac

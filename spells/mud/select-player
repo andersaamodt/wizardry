@@ -13,11 +13,14 @@ Display an interactive menu of player identities from ~/.ssh/*.pub and set MUD_P
 USAGE
 }
 
+
+
+select_player() {
 case "${1-}" in
 --help|--usage|-h)
-        select_player_usage
-        exit 0
-        ;;
+  select_player_usage
+  return 0
+  ;;
 esac
 
 set -eu
@@ -44,3 +47,8 @@ set -- "$@" "Cancel%return"
 
 # Execute menu with options
 menu "Choose your player:" "$@"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */select-player) select_player "$@" ;; esac

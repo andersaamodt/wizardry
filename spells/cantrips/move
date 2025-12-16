@@ -11,11 +11,14 @@ Move a file or directory to a new location. Accepts natural language forms like 
 USAGE
 }
 
+
+
+move() {
 case "${1-}" in
 --help|--usage|-h)
-        move_usage
-        exit 0
-        ;;
+  move_usage
+  return 0
+  ;;
 esac
 
 set -eu
@@ -55,13 +58,13 @@ done
 if is unset "$from"; then
         printf '%s\n' "move: source path required." >&2
         move_usage >&2
-        exit 1
+        return 1
 fi
 
 if is unset "$to"; then
         printf '%s\n' "move: destination path required." >&2
         move_usage >&2
-        exit 1
+        return 1
 fi
 
 # Check source exists
@@ -82,3 +85,8 @@ fi
 # Perform the move
 mv "$from" "$to"
 say "Moved '$(file-name "$from")' to '$to'."
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */move) move "$@" ;; esac

@@ -3,7 +3,6 @@
 # This spell determines the next appropriate priority for a file in a directory.
 # Use it to find what priority value to assign when adding a file to a priority list.
 
-require-wizardry || exit 1
 
 get_new_priority_usage() {
 cat <<'USAGE'
@@ -13,10 +12,14 @@ Compute the next priority value for a file within its directory's list. It looks
 USAGE
 }
 
+
+
+get_new_priority() {
+
 case "${1-}" in
 --help|--usage|-h)
         get_new_priority_usage
-        exit 0
+        return 0
         ;;
 esac
 
@@ -26,7 +29,7 @@ set -eu
 if [ -z "${1-}" ]; then
         printf '%s\n' "get-new-priority: file path required." >&2
         get_new_priority_usage >&2
-        exit 1
+        return 1
 fi
 
 file=$1
@@ -66,3 +69,8 @@ done
 
 # The new priority is one higher than the highest
 say "$((highest_priority + 1))"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */get-new-priority) get_new_priority "$@" ;; esac

@@ -10,10 +10,13 @@ Stops the given systemd service from starting at boot, prompting for a unit name
 USAGE
 }
 
+
+
+disable_service() {
 case "${1-}" in
 --help|--usage|-h)
   disable_service_usage
-  exit 0
+  return 0
   ;;
 esac
 
@@ -46,7 +49,7 @@ elif [ -x "$SCRIPT_DIR/ask-text" ]; then
   ASK_TEXT_HELPER="$SCRIPT_DIR/ask-text"
 else
   printf '%s\n' "$SCRIPT_NAME: ask-text spell not found." >&2
-  exit 1
+  return 1
 fi
 
 service_name=${1-}
@@ -55,7 +58,7 @@ if [ -z "$service_name" ]; then
 fi
 if [ -z "$service_name" ]; then
   printf '%s\n' "$SCRIPT_NAME: No service name supplied." >&2
-  exit 1
+  return 1
 fi
 
 # Inline disable_service_normalize_unit - only used once
@@ -76,7 +79,7 @@ if [ -z "${SYSTEMCTL-}" ]; then
     SYSTEMCTL=$(command -v systemctl)
   else
     printf '%s\n' "$SCRIPT_NAME: systemctl is not available on this system." >&2
-    exit 1
+    return 1
   fi
 fi
 if [ "$(id -u)" -eq 0 ]; then
@@ -85,7 +88,12 @@ elif command -v sudo >/dev/null 2>&1; then
   sudo "$SYSTEMCTL" disable "$unit"
 else
   printf '%s\n' "$SCRIPT_NAME: systemctl requires root. Re-run as root or install sudo." >&2
-  exit 1
+  return 1
 fi
 
 printf '%s\n' "systemd disable request submitted."
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */disable-service) disable_service "$@" ;; esac

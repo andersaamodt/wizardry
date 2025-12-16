@@ -11,11 +11,14 @@ Open an interactive menu of system log files to view. The list adapts to your op
 USAGE
 }
 
+
+
+logs() {
 case "${1-}" in
 --help|--usage|-h)
-        logs_usage
-        exit 0
-        ;;
+  logs_usage
+  return 0
+  ;;
 esac
 
 set -eu
@@ -38,3 +41,8 @@ case "$distro" in
 esac
 
 menu "Log Viewer" "$logs" "$logs"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */logs) logs "$@" ;; esac

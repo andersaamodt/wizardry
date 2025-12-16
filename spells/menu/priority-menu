@@ -3,7 +3,6 @@
 # This spell displays a menu of commands for a prioritized file or folder.
 # Use 'priorities' to easily select a priority with this menu.
 
-require-wizardry || exit 1
 
 priority_menu_usage() {
 cat <<'USAGE'
@@ -13,10 +12,14 @@ Display an interactive menu of actions for a prioritized file, offering quick op
 USAGE
 }
 
+
+
+priority_menu() {
+
 case "${1-}" in
 --help|--usage|-h)
         priority_menu_usage
-        exit 0
+        return 0
         ;;
 esac
 
@@ -30,14 +33,14 @@ trap 'exit 0' INT TERM
 . "$(command -v colors)"
 
 if ! require menu "The Priority menu needs the 'menu' command to present options."; then
-  exit 1
+  return 1
 fi
 
 FILE="${1-}"
 
 if [ -z "$FILE" ]; then
         printf '%s\n' "priority-menu: file path required." >&2
-        exit 1
+        return 1
 fi
 
 priority_menu_display_menu() {
@@ -72,3 +75,8 @@ while true; do
 
   priority_menu_display_menu || true
 done
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */priority-menu) priority_menu "$@" ;; esac

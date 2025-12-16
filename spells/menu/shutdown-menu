@@ -13,11 +13,14 @@ Displays the shutdown and power management menu.
 USAGE
 }
 
+
+
+shutdown_menu() {
 case "${1-}" in
-  --help|--usage|-h)
-    shutdown_menu_usage
-    exit 0
-    ;;
+--help|--usage|-h)
+  shutdown_menu_usage
+  return 0
+  ;;
 esac
 
 set -eu
@@ -27,7 +30,7 @@ set -eu
 . "$(command -v colors)"
 
 if ! require menu "The shutdown menu needs the 'menu' command to present options."; then
-  exit 1
+  return 1
 fi
 
 # Detect whether sleep is available (systemd or pmset on macOS)
@@ -78,7 +81,7 @@ else
   logout_cmd="pkill -TERM -u \"\$USER\""
 fi
 
-# Catch Ctrl-C and TERM signal to exit cleanly
+# Catch Ctrl-C and TERM signal to return 1 cleanly
 trap 'exit 0' INT TERM
 
 shutdown_menu_display_menu() {
@@ -116,3 +119,8 @@ while true; do
 
   shutdown_menu_display_menu || true
 done
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */shutdown-menu) shutdown_menu "$@" ;; esac

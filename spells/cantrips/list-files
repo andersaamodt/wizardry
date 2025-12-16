@@ -20,18 +20,21 @@ Examples:
 USAGE
 }
 
+
+list_files() {
 case "${1-}" in
 --help|--usage|-h)
   list_files_usage
-  exit 0
+  return 0
   ;;
 esac
+
 set -eu
 
 if [ "$#" -lt 1 ]; then
   printf '%s\n' "list-files: directory required" >&2
   list_files_usage >&2
-  exit 1
+  return 1
 fi
 
 directory=$1
@@ -50,21 +53,21 @@ while [ "$#" -gt 0 ]; do
     -t|--type)
       if [ "$#" -lt 2 ]; then
         printf '%s\n' "list-files: -t requires an argument" >&2
-        exit 1
+        return 1
       fi
       file_type=$2
       shift 2
       ;;
     *)
       printf '%s\n' "list-files: unknown option: $1" >&2
-      exit 1
+      return 1
       ;;
   esac
 done
 
 if [ ! -d "$directory" ]; then
   printf '%s\n' "list-files: not a directory: $directory" >&2
-  exit 1
+  return 1
 fi
 
 # Build find command
@@ -79,3 +82,8 @@ elif [ -n "$file_type" ]; then
 else
   find "$directory" 2>/dev/null
 fi
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */list-files) list_files "$@" ;; esac

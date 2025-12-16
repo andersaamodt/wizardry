@@ -20,10 +20,13 @@ Examples:
 USAGE
 }
 
+
+
+learn() {
 case "${1-}" in
 --help|--usage|-h)
   learn_usage
-  exit 0
+  return 0
   ;;
 esac
 
@@ -49,7 +52,7 @@ esac
 if [ $# -eq 0 ]; then
   printf '%s\n' "learn: spell or directory path required" >&2
   learn_usage >&2
-  exit 1
+  return 1
 fi
 
 source_path=$1
@@ -57,7 +60,7 @@ source_path=$1
 # Validate source exists
 if [ ! -e "$source_path" ]; then
   printf '%s\n' "learn: path not found: $source_path" >&2
-  exit 1
+  return 1
 fi
 
 # Get absolute path
@@ -83,7 +86,7 @@ target_path="$spellbook/$target_name"
 if [ -e "$target_path" ] || [ -L "$target_path" ]; then
   printf '%s\n' "learn: '$target_name' already exists in spellbook" >&2
   printf '%s\n' "  Remove it first with: forget $target_name" >&2
-  exit 1
+  return 1
 fi
 
 # Copy or link
@@ -107,3 +110,8 @@ fi
 printf '%s\n' ""
 printf '%s\n' "The spell is now available. Try it:"
 printf '%s\n' "  $target_name --help"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */learn) learn "$@" ;; esac
