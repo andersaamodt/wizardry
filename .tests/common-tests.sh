@@ -1381,6 +1381,8 @@ test_spells_source_env_clear_after_set_eu() {
       .arcana/*) return ;;
       # install script exempt (bootstrap)
       install) return ;;
+      # detect-rc-file exempt (used by install, must be standalone)
+      divination/detect-rc-file) return ;;
       # test-magic exempt (needs PATH setup before env-clear to find it)
       system/test-magic) return ;;
     esac

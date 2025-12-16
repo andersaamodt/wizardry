@@ -31,7 +31,6 @@ while [ "$#" -gt 0 ]; do
 done
 
 set -eu
-. env-clear
 
 platform="${DETECT_RC_FILE_PLATFORM-}"
 
