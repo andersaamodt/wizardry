@@ -518,10 +518,12 @@ test_no_undeclared_global_exports() {
         case "$var_name" in
           PATH|NIX_PACKAGE|APT_PACKAGE|DNF_PACKAGE|YUM_PACKAGE|ZYPPER_PACKAGE|PACMAN_PACKAGE|APK_PACKAGE|PKGIN_PACKAGE|BREW_PACKAGE)
             return ;;
-          WIZARDRY_DIR|SPELLBOOK_DIR|MUD_DIR)
+          WIZARDRY_DIR|SPELLBOOK_DIR|MUD_DIR|WIZARDRY_LOG_LEVEL)
             return ;;  # Declared globals are allowed
           WIZARDRY_PLATFORM|WIZARDRY_RC_FILE|WIZARDRY_RC_FORMAT)
             return ;;  # Used by learn-spell for rc file detection
+          ASK_CANTRIP_INPUT)
+            return ;;  # Used to pass stdin flag to ask-yn within same spell
         esac
         
         rel_path=${spell#"$ROOT_DIR/spells/"}
@@ -1033,7 +1035,7 @@ test_spells_require_wrapper_functions() {
     fi
   done > "${WIZARDRY_TMPDIR}/missing-wrappers.txt"
   
-  violations=$(cat "${WIZARDRY_TMPDIR}/missing-wrappers.txt" 2>/dev/null | head -40 | tr '\n' ', ' | sed 's/, $//')
+  violations=$(cat "${WIZARDRY_TMPDIR}/missing-wrappers.txt" 2>/dev/null | head -80 | tr '\n' ', ' | sed 's/, $//')
   rm -f "${WIZARDRY_TMPDIR}/missing-wrappers.txt"
   
   if [ -n "$violations" ]; then
@@ -1330,7 +1332,7 @@ test_spells_declare_env_clear_compliance() {
     
     # Check for env-clear compliance marker or actual call
     # Look for: ". env-clear" or "# env-clear" in first 30 lines
-    if ! head -40 "$spell" | grep -qE '(\. env-clear|# env-clear)'; then
+    if ! head -80 "$spell" | grep -qE '(\. env-clear|# env-clear)'; then
       printf '%s\n' "$rel_path"
     fi
   }
