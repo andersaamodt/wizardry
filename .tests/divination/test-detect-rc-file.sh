@@ -182,6 +182,40 @@ test_nixos_uses_system_config_without_home_manager() {
   _assert_output_contains "format=nix" || return 1
 }
 
+test_mac_prefers_zsh_over_bashrc() {
+  # On macOS with zsh, even if .bashrc exists, .zprofile or .zshrc should be preferred
+  # This regression test ensures generic fallbacks don't override platform-specific preferences
+  home_dir=$(_make_tempdir)
+  _run_cmd env DETECT_RC_FILE_PLATFORM=mac HOME="$home_dir" SHELL=/bin/zsh sh -c '
+    # Create .bashrc but not .zprofile or .zshrc
+    touch "$HOME/.bashrc"
+    exec spells/divination/detect-rc-file
+  '
+
+  _assert_success || return 1
+  _assert_output_contains "platform=mac" || return 1
+  # Should prefer .zprofile (first Mac candidate) over .bashrc, even though .bashrc exists
+  _assert_output_contains "rc_file=$home_dir/.zprofile" || return 1
+  _assert_output_contains "format=shell" || return 1
+}
+
+test_mac_uses_existing_zshrc_over_bashrc() {
+  # On macOS with zsh, if .zshrc exists and .zprofile doesn't, use .zshrc
+  # even if .bashrc also exists
+  home_dir=$(_make_tempdir)
+  _run_cmd env DETECT_RC_FILE_PLATFORM=mac HOME="$home_dir" SHELL=/bin/zsh sh -c '
+    touch "$HOME/.bashrc"
+    touch "$HOME/.zshrc"
+    exec spells/divination/detect-rc-file
+  '
+
+  _assert_success || return 1
+  _assert_output_contains "platform=mac" || return 1
+  # Should use .zshrc (exists and is higher priority) over .bashrc
+  _assert_output_contains "rc_file=$home_dir/.zshrc" || return 1
+  _assert_output_contains "format=shell" || return 1
+}
+
 _run_test_case "detect-rc-file prints usage" test_help
 _run_test_case "detect-rc-file validates arguments" test_rejects_bad_arguments
 _run_test_case "detect-rc-file picks preferred files for platform" test_picks_known_platform_files
@@ -194,4 +228,6 @@ _run_test_case "detect-rc-file detects new home-manager path" test_nixos_detects
 _run_test_case "detect-rc-file respects NIXOS_CONFIG env var" test_nixos_respects_nixos_config_env
 _run_test_case "detect-rc-file prefers home-manager over system config" test_nixos_prefers_home_manager_over_system_config
 _run_test_case "detect-rc-file uses system config without home-manager" test_nixos_uses_system_config_without_home_manager
+_run_test_case "detect-rc-file prefers zsh files over bashrc on Mac" test_mac_prefers_zsh_over_bashrc
+_run_test_case "detect-rc-file uses existing zshrc over bashrc on Mac" test_mac_uses_existing_zshrc_over_bashrc
 _finish_tests

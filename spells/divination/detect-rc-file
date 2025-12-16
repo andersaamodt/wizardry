@@ -167,8 +167,12 @@ bash)
         ;;
         esac
 
-add_candidate "$HOME/.bashrc"
-add_candidate "$HOME/.profile"
+# Only add generic fallbacks if no platform-specific candidates were added
+# This prevents .bashrc from overriding macOS's .zprofile/.zshrc preference
+if [ -z "$RC_CANDIDATES" ]; then
+        add_candidate "$HOME/.bashrc"
+        add_candidate "$HOME/.profile"
+fi
 
 rc_file=''
 for candidate in $RC_CANDIDATES; do
