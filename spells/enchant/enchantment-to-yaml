@@ -2,18 +2,13 @@
 
 # This spell copies extended attributes into a YAML prologue within the file.
 # After the runes are preserved in text, it clears the attributes from the file.
-
 require-wizardry || exit 1
-
 enchantment_to_yaml_usage() {
 cat <<'USAGE'
 Usage: enchantment-to-yaml <path-to-file>
-
 Extract all extended attributes from a file, write them into a YAML front matter header, and strip the original attributes from the file.
 USAGE
 }
-
-
 enchantment_to_yaml() {
 case "${1-}" in
 --help|--usage|-h)
@@ -21,23 +16,19 @@ case "${1-}" in
   return 0
   ;;
 esac
-
 set -eu
-
+# env-clear: compliant
 # Validate arguments
 if [ "$#" -ne 1 ]; then
     warn "Error: incorrect number of arguments"
     enchantment_to_yaml_usage >&2
     return 1
 fi
-
 file=$1
 is file "$file" || { warn "Error: file does not exist"; return 1; }
-
 # Get all extended attribute keys
 keys=$(xattr-list-keys "$file" || true)
 empty "$keys" && { warn "Error: file does not have extended attributes"; return 1; }
-
 # Create YAML front matter with attributes
 tmp=$(temp-file wizardry-yaml) || return 1
 {
@@ -47,23 +38,16 @@ tmp=$(temp-file wizardry-yaml) || return 1
         value=$(xattr-read-value "$key" "$file" || printf '')
         printf '%s: %s\n' "$key" "$value"
     done
-    printf '%s\n' '---'
     printf '\n'
 } >"$tmp"
 cat "$file" >>"$tmp" || return 1
 mv "$tmp" "$file"
-
 # Clear attributes from file - check if we have tools available
 if ! (xattr-helper-usable xattr || xattr-helper-usable attr || xattr-helper-usable setfattr); then
     warn "Error: requires one of attr, xattr, or setfattr to clear attributes"
-    return 1
-fi
-
 # Clear all attributes using available tools
 if xattr-helper-usable xattr; then
     xattr -c "$file" 2>/dev/null || true
-fi
-
 for key in $keys; do
     [ -z "$key" ] && continue
     if xattr-helper-usable attr; then
@@ -71,13 +55,9 @@ for key in $keys; do
     fi
     if xattr-helper-usable setfattr; then
         setfattr -x "$key" "$file" 2>/dev/null || true
-    fi
     if xattr-helper-usable xattr; then
         xattr -d "$key" "$file" 2>/dev/null || true
-    fi
 done
-}
-
 # Self-execute when run directly (not sourced)
 case "$0" in
   */enchantment-to-yaml) enchantment_to_yaml "$@" ;; esac

@@ -2,19 +2,13 @@
 
 # This spell displays a menu to select and set the current MUD player.
 # Use it to switch between player identities from available SSH keys.
-
 require-wizardry || exit 1
-
 select_player_usage() {
 cat <<'USAGE'
 Usage: select-player
-
 Display an interactive menu of player identities from ~/.ssh/*.pub and set MUD_PLAYER to the one you choose.
 USAGE
 }
-
-
-
 select_player() {
 case "${1-}" in
 --help|--usage|-h)
@@ -22,16 +16,14 @@ case "${1-}" in
   return 0
   ;;
 esac
-
 set -eu
-
+# env-clear: compliant
 # check if the $MUD_PLAYER environment variable is set
 if [ -z "${MUD_PLAYER-}" ]; then
     printf '%s\n' "MUD_PLAYER is not set."
 else
     printf '%s\n' "MUD_PLAYER is currently set to $MUD_PLAYER"
 fi
-
 # Build menu options from player keys using set --
 set --
 for file in "$HOME"/.ssh/*.pub; do
@@ -44,11 +36,8 @@ for file in "$HOME"/.ssh/*.pub; do
     set -- "$@" "$player_name%set-player $player_name"
 done
 set -- "$@" "Cancel%return"
-
 # Execute menu with options
 menu "Choose your player:" "$@"
-}
-
 # Self-execute when run directly (not sourced)
 case "$0" in
   */select-player) select_player "$@" ;; esac

@@ -2,19 +2,13 @@
 
 # This spell enchants a file with a portkey that transports to a destination.
 # Activate the portkey with follow-portkey to teleport to the stored location.
-
 require-wizardry || exit 1
-
 enchant_portkey_usage() {
 cat <<'USAGE'
 Usage: enchant-portkey <file> [destination]
-
 Enchant a file with a portkey that stores a destination path, defaulting to marker 1 ($SPELLBOOK_DIR/.markers/1) when none is provided. Activate the portkey later with follow-portkey to teleport to the stored location.
 USAGE
 }
-
-
-
 enchant_portkey() {
 case "${1-}" in
 --help|--usage|-h)
@@ -22,27 +16,22 @@ case "${1-}" in
   return 0
   ;;
 esac
-
 set -eu
-
+# env-clear: compliant
 # Ensure file argument is provided
 if [ -z "${1-}" ]; then
         printf '%s\n' "enchant-portkey: file path required." >&2
         enchant_portkey_usage >&2
         return 1
 fi
-
 file=$1
 destination=${2-}
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
 markers_dir="$spell_home/.markers"
 marker_file="$markers_dir/1"
-
 # Verify file exists
 if ! is file "$file"; then
         die "enchant-portkey: file not found: $file"
-fi
-
 # If no destination provided, try to read from marker file
 if is unset "$destination"; then
         if is file "$marker_file"; then
@@ -50,19 +39,11 @@ if is unset "$destination"; then
         else
                 die "enchant-portkey: no destination provided and no marker 1 found."
         fi
-fi
-
 # Verify destination is valid
-if is unset "$destination"; then
         die "enchant-portkey: destination cannot be empty."
-fi
-
 # Enchant the file with the destination context
 enchant "$file" context "$destination" >/dev/null
-
 say "Portkey enchanted on '$(file-name "$file")'. Use follow-portkey to activate."
-}
-
 # Self-execute when run directly (not sourced)
 case "$0" in
   */enchant-portkey) enchant_portkey "$@" ;; esac

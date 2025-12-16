@@ -2,19 +2,14 @@
 # This spell provides a menu interface for managing the spellbook.
 
 require-wizardry || exit 1
-
 spellbook_usage() {
         cat <<'USAGE'
 Usage: spellbook [PATH|--list]
-
 Open the interactive spellbook to browse categories, scribe commands,
 and manage the cast menu. Optionally pass a PATH to jump to a category.
 Use --list to display all memorized commands.
 USAGE
 }
-
-
-
 spellbook() {
 case "${1-}" in
 --help|--usage|-h)
@@ -22,18 +17,14 @@ case "${1-}" in
   return 0
   ;;
 esac
-
 set -eu
-
+# env-clear: compliant
 # Catch Ctrl-C and TERM signal to return 1 cleanly
 trap 'exit 0' INT TERM
-
 root_dir=$(CDPATH= cd -- "$(dirname "$0")/../.." && pwd -P)
-
 # Load color palette (colors handles terminal capability detection internally)
 # shellcheck source=/dev/null
 . "$(command -v colors)"
-
 cast_store=${CAST_STORE-memorize}
 if cast_store_path=$(command -v "$cast_store" 2>/dev/null); then
         cast_store=$cast_store_path
@@ -41,15 +32,10 @@ else
         printf '%s\n' "spellbook: memorize helper is missing." >&2
         return 1
 fi
-
 cast_dir=$($cast_store dir)
-
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
-
 if [ -d "$spell_home" ]; then
         PATH="$spell_home:$PATH"
-fi
-
 spellbook_menu() {
         current_path=${1-}
         first_run=1
@@ -59,7 +45,6 @@ spellbook_menu() {
                 else
                         first_run=0
                 fi
-
                 set --
                 # Determine the resolved path for non-root views
                 # Inline resolve_category_path
@@ -86,9 +71,6 @@ spellbook_menu() {
                                                 resolved_path="$spell_home/$current_path"
                                         # Search in current directory
                                         elif [ -d "$current_path" ]; then
-                                                resolved_path=$current_path
-                                        fi
-                                        ;;
                         esac
                         if [ -n "$resolved_path" ]; then
                                 case "$resolved_path" in
@@ -98,7 +80,6 @@ spellbook_menu() {
                                 printf '%s\n' "spellbook: category '$current_path' not found" >&2
                                 return 1
                         fi
-                fi
                 
                 # Only show three sections at root level (no path argument)
                 if [ -z "$current_path" ]; then
@@ -126,9 +107,7 @@ spellbook_menu() {
                                                         *)
                                                                 # Found in system PATH - skip this built-in spell
                                                                 continue
-                                                                ;;
                                                 esac
-                                        fi
                                         # Extract command from scribed script
                                         cmd_text=""
                                         # First try to extract from scribed format
@@ -151,20 +130,16 @@ spellbook_menu() {
                                                         cmd_text=$(printf '%s\n' \
                                                                 "$no_comments_text" | head -n 1)
                                                 fi
-                                        fi
                                         if [ -n "$cmd_text" ]; then
                                                 # Show the command text as the label
                                                 label=$(printf '%s' "$cmd_text")
                                                 set -- "$@" "$label%spell-menu $script_name"
-                                        fi
                                 done
-                        fi
                         
                         # SECTION 2: User folders in ~/.spellbook
                         # (if any exist, excluding those matching built-in)
                         # Inline list_user_folders
                         user_folder_count=0
-                        if [ -d "$spell_home" ]; then
                                 # Inline list_spell_directories to get builtin categories
                                 builtin_cats=""
                                 for dir in "$root_dir"/spells/*; do
@@ -173,22 +148,18 @@ spellbook_menu() {
                                         cat_name=$(basename "$dir")
                                         builtin_cats="${builtin_cats}${cat_name}
 "
-                                done
                                 builtin_cats=$(printf '%s' "$builtin_cats" | sort)
                                 for folder in "$spell_home"/*; do
                                         [ -d "$folder" ] || continue
                                         folder_name=$(basename "$folder")
                                         # Skip hidden folders
                                         case $folder_name in
-                                                .*) continue ;;
-                                        esac
                                         # Skip folders that match a built-in category
                                         is_builtin=0
                                         for cat in $builtin_cats; do
                                                 if [ "$folder_name" = "$cat" ]; then
                                                         is_builtin=1
                                                         break
-                                                fi
                                         done
                                         if [ "$is_builtin" -eq 0 ]; then
                                                 # Add divider before first user folder
@@ -196,20 +167,14 @@ spellbook_menu() {
                                                 if [ "$user_folder_count" -eq 0 ] && \
                                                         [ "$#" -gt 0 ]; then
                                                         set -- "$@" "---"
-                                                fi
                                                 user_folder_count=$((user_folder_count + 1))
                                                 # Don't capitalize - just use the folder name
                                                 folder_path="$spell_home/$folder_name"
                                                 set -- "$@" "${folder_name}%spellbook $folder_path"
-                                        fi
-                                done
-                        fi
-                        
                         # SECTION 3: Built-in spell categories
                         # Add divider between user folders and built-in categories (only if there are items before)
                         if [ "$#" -gt 0 ]; then
                                 set -- "$@" "---"
-                        fi
                         # Inline list_spell_directories
                         for dir in "$root_dir"/spells/*; do
                                 [ -d "$dir" ] || continue
@@ -218,12 +183,10 @@ spellbook_menu() {
                                 # Don't capitalize - just use the folder name
                                 set -- "$@" "${category}%spellbook $category"
                         done
-                else
                         # Non-root view: show spells from both built-in and custom folders combined
                         # First, list built-in spells
                         builtin_dir="$root_dir/spells/$category_name"
                         custom_dir="$spell_home/$category_name"
-                        
                         # List built-in spells
                         if [ -d "$builtin_dir" ]; then
                                 builtin_spells=$(find "$builtin_dir" -maxdepth 1 \
@@ -231,30 +194,18 @@ spellbook_menu() {
                                 for spell in $builtin_spells; do
                                         spell_name=$(basename "$spell")
                                         set -- "$@" "${spell_name}%spell-menu $spell_name"
-                                done
-                        fi
-                        
                         # List custom spells from ~/.spellbook/<category> with custom theme color
                         if [ -d "$custom_dir" ]; then
                                 custom_spells=$(find "$custom_dir" -maxdepth 1 \
-                                  -type f -perm -111 2>/dev/null | sort)
                                 for spell in $custom_spells; do
-                                        spell_name=$(basename "$spell")
                                         # Use THEME_CUSTOM for custom spell names (distinct from highlight)
                                         set -- "$@" "${THEME_CUSTOM}${spell_name}${RESET}%spell-menu $spell_name"
-                                done
-                        fi
-                        
                         # List subdirectories (only for navigation, shown after spells)
                         if [ -d "$resolved_path" ]; then
                                 for subdir in "$resolved_path"/*; do
                                         [ -d "$subdir" ] || continue
                                         subname=$(basename "$subdir")
                                         set -- "$@" "${subname}%spellbook $resolved_path/$subname"
-                                done
-                        fi
-                fi
-                
                 # Add "Delete category" option for empty custom category folders
                 is_empty="no"
                 if [ -n "$current_path" ] && [ -n "$resolved_path" ]; then
@@ -265,51 +216,27 @@ spellbook_menu() {
                                         if ! find "$resolved_path" -maxdepth 1 -type f -perm -111 \
                                                 2>/dev/null | grep -q .; then
                                                 is_empty="yes"
-                                        fi
-                                        ;;
-                        esac
-                fi
-                
                 if [ "$is_empty" = "yes" ]; then
                         # Use escaped path in the command
                         escaped_path=$(printf '%s' "$resolved_path" | sed "s/'/'\\\\''/g")
                         set -- "$@" "Delete category%rm -rf '$escaped_path' && kill -TERM \$PPID"
-                fi
-                
                 # Add "New category" at root level (third-to-last item)
-                if [ -z "$current_path" ]; then
                         set -- "$@" "New category%scribe-spell --new-category"
-                fi
-                
                 # Add "Scribe new spell" as penultimate menu item
-                if [ -z "$current_path" ]; then
                         # Root level - create in ~/.spellbook
                         set -- "$@" "Scribe new spell%scribe-spell"
-                else
                         # Category level - create in ~/.spellbook/<category>
                         set -- "$@" "Scribe new spell%scribe-spell --dir $spell_home/$category_name"
-                fi
-                
                 # Use "Back" when in a submenu, "Exit" at root
-                if [ -z "$current_path" ]; then
                         exit_label=$(exit-label)
-                else
                         exit_label="Back"
-                fi
                 set -- "$@" "${exit_label}%kill -TERM \$PPID"
-                
                 # Build menu title - use original folder name for category
-                if [ -z "$current_path" ]; then
                         menu_title="Spellbook:"
-                else
                         menu_title="${category_name}:"
-                fi
                 menu "$menu_title" "$@" || true
         done
-}
-
 spellbook_path=""
-
 case ${1-} in
         --list)
                 "$cast_store" list
@@ -317,32 +244,20 @@ case ${1-} in
                 ;;
         --help|--usage|-h)
                 spellbook_usage
-                return 0
-                ;;
         --)
                 shift
                 spellbook_path=${1-}
-                ;;
         "")
                 :
-                ;;
         -*)
                 spellbook_usage >&2
                 return 1
-                ;;
         *)
                 # Treat as a path to a category
                 spellbook_path=$1
-                ;;
         esac
-
 if ! require menu "The spellbook menu needs the 'menu' command."; then
-        return 1
-fi
-
 spellbook_menu "$spellbook_path"
-}
-
 # Self-execute when run directly (not sourced)
 case "$0" in
   */spellbook) spellbook "$@" ;; esac

@@ -2,17 +2,12 @@
 
 # This spell moves files or directories from one location to another.
 # Use it as a more intuitive wrapper around the mv command.
-
 move_usage() {
 cat <<'USAGE'
 Usage: move <source> <destination>
-
 Move a file or directory to a new location. Accepts natural language forms like "move <source> to <destination>" or "move from <source> to <destination>" so the command reads like a sentence.
 USAGE
 }
-
-
-
 move() {
 case "${1-}" in
 --help|--usage|-h)
@@ -20,12 +15,10 @@ case "${1-}" in
   return 0
   ;;
 esac
-
 set -eu
-
+# env-clear: compliant
 from=''
 to=''
-
 # Parse arguments supporting both simple and natural language forms
 while [ "$#" -gt 0 ]; do
         case "$1" in
@@ -37,56 +30,32 @@ while [ "$#" -gt 0 ]; do
                         fi
                         ;;
                 to)
-                        shift
-                        if [ "$#" -gt 0 ]; then
                                 to=$1
-                                shift
-                        fi
-                        ;;
                 *)
                         if is unset "$from"; then
-                                from=$1
                         elif is unset "$to"; then
-                                to=$1
-                        fi
-                        shift
-                        ;;
         esac
 done
-
 # Validate arguments
 if is unset "$from"; then
         printf '%s\n' "move: source path required." >&2
         move_usage >&2
         return 1
 fi
-
 if is unset "$to"; then
         printf '%s\n' "move: destination path required." >&2
-        move_usage >&2
-        return 1
-fi
-
 # Check source exists
 if ! there "$from"; then
         die "move: source not found: $from"
-fi
-
 # Check write permission on destination directory
 dest_dir=$(parent "$to")
 if [ "$dest_dir" = "." ]; then
         dest_dir=$(here)
-fi
-
 if ! is writable "$dest_dir"; then
         die "move: no write permission on: $dest_dir"
-fi
-
 # Perform the move
 mv "$from" "$to"
 say "Moved '$(file-name "$from")' to '$to'."
-}
-
 # Self-execute when run directly (not sourced)
 case "$0" in
   */move) move "$@" ;; esac

@@ -2,17 +2,12 @@
 
 # Guard a script against missing external commands by exiting with a
 # descriptive error if the binary is absent.
-
-
 require_command_usage() {
   cat <<'USAGE' >&2
 Usage: require-command <command> [message...]
-
 Checks for a required binary, optionally offers to install it through wizardry installers, and exits non-zero with a helpful message when the dependency is missing.
 USAGE
 }
-
-
 require_command() {
 case "${1-}" in
 --help|--usage|-h)
@@ -20,32 +15,24 @@ case "${1-}" in
   return 0
   ;;
 esac
-
 set -eu
-
+# env-clear: compliant
 if [ "$#" -lt 1 ]; then
     require_command_usage
 fi
-
 command_name=$1
 shift
-
 auto_install=${REQUIRE_COMMAND_ASSUME_YES:-0}
-
 # Succeed immediately when the command is already available on PATH.
 has "$command_name" && return 0
-
 # Inline attempt_install with inlined find_install_spell
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-
 # Inline find_install_spell logic
 install_spell=""
 if has "install-$command_name"; then
     install_spell=$(where "install-$command_name")
 elif [ -x "$script_dir/../install/core/install-$command_name" ]; then
     install_spell="$script_dir/../install/core/install-$command_name"
-fi
-
 if [ -n "$install_spell" ]; then
     # Inline attempt_install logic
     if [ "$auto_install" = "1" ] || ! [ -t 0 ]; then
@@ -63,8 +50,6 @@ if [ -n "$install_spell" ]; then
                 ;;
         esac
     fi
-fi
-
 if [ "$#" -gt 0 ]; then
     message=$*
 else
@@ -72,12 +57,8 @@ else
     # missing dependency the Wizardry way instead of reaching for system
     # package managers.
     message="The '${command_name}' command is required. See 'core-menu' for installation options."
-fi
-
 warn "require-command: $message"
 return 1
-}
-
 # Self-execute when run directly (not sourced)
 case "$0" in
   */require-command) require_command "$@" ;; esac

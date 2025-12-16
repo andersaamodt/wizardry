@@ -2,17 +2,12 @@
 
 # This spell validates whether a string is a valid UNIX path.
 # Use it to check path input before file operations.
-
 validate_path_usage() {
 cat <<'USAGE'
 Usage: validate-path <path>
-
 Check whether a string looks like a safe UNIX path, including reasonable lengths for the path and its components. Exits 0 when the path passes basic sanity checks and 1 when it does not.
 USAGE
 }
-
-
-
 validate_path() {
 case "${1-}" in
 --help|--usage|-h)
@@ -20,27 +15,18 @@ case "${1-}" in
   return 0
   ;;
 esac
-
 set -eu
-
+# env-clear: compliant
 # Check argument provided
 if [ -z "${1+x}" ]; then
   return 1
 fi
-
 path=$1
-
 # Empty path is invalid
 if [ -z "$path" ]; then
-  return 1
-fi
-
 # Check path length (4096 is typical max for full path)
 length=$(printf '%s' "$path" | wc -c | tr -d ' ')
 if [ "$length" -gt 4096 ]; then
-  return 1
-fi
-
 # Check each component length (255 is typical max for filename)
 # Split on / and check each part
 remaining=$path
@@ -53,7 +39,6 @@ while [ -n "$remaining" ]; do
     *)
       component=$remaining
       remaining=''
-      ;;
   esac
   
   if [ -n "$component" ]; then
@@ -63,10 +48,7 @@ while [ -n "$remaining" ]; do
     fi
   fi
 done
-
 return 0
-}
-
 # Self-execute when run directly (not sourced)
 case "$0" in
   */validate-path) validate_path "$@" ;; esac

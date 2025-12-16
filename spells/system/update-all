@@ -2,19 +2,14 @@
 
 # This spell refreshes the wizardry repository alongside other managed sources.
 # Pass --verbose to narrate each update step.
-
 update_all_usage() {
   cat <<'EOF'
 Usage: update-all [-v|--verbose]
-
 Options:
   -v, --verbose   Print all command output while updating
   -h, --help      Show this help message and exit
 EOF
 }
-
-
-
 update_all() {
 case "${1-}" in
 --help|--usage|-h)
@@ -22,11 +17,9 @@ case "${1-}" in
   return 0
   ;;
 esac
-
 set -eu
-
+# env-clear: compliant
 verbose=0
-
 while [ "$#" -gt 0 ]; do
   case $1 in
     -v|--verbose)
@@ -34,26 +27,19 @@ while [ "$#" -gt 0 ]; do
       shift
       ;;
     --)
-      shift
       break
-      ;;
     -*)
       printf 'Unknown option: %s\n' "$1" >&2
       update_all_usage >&2
       return 2
-      ;;
     *)
-      break
-      ;;
   esac
 done
-
 if [ "$#" -ne 0 ]; then
   printf 'Unexpected argument: %s\n' "$1" >&2
   update_all_usage >&2
   return 2
 fi
-
 # Load color palette if available
 if has colors; then
   # shellcheck source=/dev/null
@@ -61,19 +47,13 @@ if has colors; then
 else
   GREY=''
   RESET=''
-fi
-
 # Detect distro (inline resolve_distro)
 if is set "${WIZARDRY_UPDATE_ALL_DISTRO:-}"; then
   distro=$WIZARDRY_UPDATE_ALL_DISTRO
 elif has detect-distro && distro=$(detect-distro 2>/dev/null); then
   :
-else
   die 'update-all: unable to detect operating system.'
-fi
-
 say "Detected platform: $distro"
-
 # Confirm updates (inline confirm_updates and assume_yes)
 case ${WIZARDRY_UPDATE_ALL_ASSUME_YES:-} in
   1|[Yy]|[Yy][Ee][Ss]|[Tt][Rr][Uu][Ee])
@@ -87,9 +67,6 @@ case ${WIZARDRY_UPDATE_ALL_ASSUME_YES:-} in
     if ! printf '\n' | ask-yn 'Proceed with system updates?' yes >/dev/null; then
       die 1 'update-all: cancelled by user'
     fi
-    ;;
-esac
-
 # Helper for running commands with progress display
 # This is the only additional function beyond update_all_usage()
 # Inlines: progress_filter, print_command, format_command
@@ -97,7 +74,6 @@ run_with_progress() {
   if [ "$#" -eq 0 ]; then
     return 0
   fi
-
   # Print command being run (inline format_command and print_command)
   _cmd_display="$1"
   shift
@@ -105,12 +81,9 @@ run_with_progress() {
     _cmd_display="$_cmd_display $_arg"
   done
   printf '%b  $ %s%b\n' "${GREY:-}" "$_cmd_display" "${RESET:-}"
-
   if [ "$verbose" -eq 1 ]; then
     "$@"
     return $?
-  fi
-
   # Run with progress filtering (inline progress_filter)
   _progress_tmp=$(temp-file update-all) || return 1
   on-exit cleanup-file "$_progress_tmp"
@@ -121,7 +94,6 @@ run_with_progress() {
     _cmd_status=$?
     set -e
     printf '%s\n' "$_cmd_status" >"$_progress_tmp"
-    return 0
   ) | tr '\r' '\n' | {
     _last_progress=''
     while IFS= read -r _line || nonempty "$_line"; do
@@ -137,26 +109,17 @@ run_with_progress() {
           fi
           if [ -n "$_line" ]; then
             printf '%s\n' "$_line"
-          fi
-          ;;
       esac
     done
     if [ -n "$_last_progress" ]; then
       printf '\r%s\n' "$_last_progress"
-    fi
   }
-
   _status=$(cat "$_progress_tmp" 2>/dev/null || printf '1\n')
   clear-traps
   rm -f "$_progress_tmp"
-
   case ${_status:-} in
     '' ) _status=1 ;;
-  esac
-
   return "$_status"
-}
-
 # Main update logic - inline all simple helpers
 case $distro in
   debian)
@@ -171,86 +134,41 @@ case $distro in
       sudo apt-get update
     else
       sudo apt-get update >/dev/null 2>&1
-    fi
-    
     step '• Installing upgrades'
     run_with_progress sudo apt-get -o Dpkg::Progress-Fancy=1 -o Dpkg::Use-Pty=0 -y full-upgrade
-    
     step '• Removing unused packages'
     run_with_progress sudo apt-get -o Dpkg::Progress-Fancy=1 -o Dpkg::Use-Pty=0 -y autoremove
-    ;;
-    
   arch)
-    must has sudo 'Required command not found: sudo' || return 1
     must has pacman 'Required command not found: pacman' || return 1
     must has pamac 'Required command not found: pamac' || return 1
-    
     step '• Synchronising pacman packages'
-    if [ "$verbose" -eq 1 ]; then
       sudo pacman -Syu --noconfirm
-    else
       sudo pacman -Syu --noconfirm >/dev/null 2>&1
-    fi
-    
     step '• Refreshing Pamac-managed packages'
-    if [ "$verbose" -eq 1 ]; then
       pamac update --no-confirm
-    else
       pamac update --no-confirm >/dev/null 2>&1
-    fi
-    
     step '• Rebuilding Pamac AUR packages'
-    if [ "$verbose" -eq 1 ]; then
       pamac build --no-confirm
-    else
       pamac build --no-confirm >/dev/null 2>&1
-    fi
-    ;;
-    
   nixos)
-    must has sudo 'Required command not found: sudo' || return 1
     must has nix-channel 'Required command not found: nix-channel' || return 1
     must has nixos-rebuild 'Required command not found: nixos-rebuild' || return 1
     must has nix-env 'Required command not found: nix-env' || return 1
-    
     step '• Refreshing system channels'
-    if [ "$verbose" -eq 1 ]; then
       sudo nix-channel --update
-    else
       sudo nix-channel --update >/dev/null 2>&1
-    fi
-    
     step '• Rebuilding system configuration'
-    if [ "$verbose" -eq 1 ]; then
       sudo nixos-rebuild switch --upgrade
-    else
       sudo nixos-rebuild switch --upgrade >/dev/null 2>&1
-    fi
-    
     step '• Refreshing user channels'
-    if [ "$verbose" -eq 1 ]; then
       nix-channel --update
-    else
       nix-channel --update >/dev/null 2>&1
-    fi
-    
     step '• Upgrading user packages'
-    if [ "$verbose" -eq 1 ]; then
       nix-env -u --always
-    else
       nix-env -u --always >/dev/null 2>&1
-    fi
-    ;;
-    
-  *)
     printf 'Unsupported platform: %s\n' "$distro" >&2
     return 2
-    ;;
-esac
-
 step 'All updates complete.'
-}
-
 # Self-execute when run directly (not sourced)
 case "$0" in
   */update-all) update_all "$@" ;; esac

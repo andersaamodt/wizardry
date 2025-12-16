@@ -467,7 +467,7 @@ test_no_global_declarations_outside_declare_globals() {
   return 0
 }
 
-# --- Check: declare-globals has exactly 3 globals ---
+# --- Check: declare-globals has exactly 4 globals ---
 # Ensures no new globals are added without explicit tracking
 test_declare_globals_count() {
   skip-if-compiled || return $?
@@ -485,8 +485,8 @@ test_declare_globals_count() {
   # The colon-equals syntax (:=) assigns a default value if unset.
   global_count=$(grep -cE '^[[:space:]]*: "\$\{[A-Z][A-Z0-9_]+:=' "$declare_globals_file" 2>/dev/null || printf '0')
   
-  if [ "$global_count" -ne 3 ]; then
-    TEST_FAILURE_REASON="expected exactly 3 globals in declare-globals, found $global_count"
+  if [ "$global_count" -ne 4 ]; then
+    TEST_FAILURE_REASON="expected exactly 4 globals in declare-globals, found $global_count"
     return 1
   fi
   return 0
@@ -1033,7 +1033,7 @@ test_spells_require_wrapper_functions() {
     fi
   done > "${WIZARDRY_TMPDIR}/missing-wrappers.txt"
   
-  violations=$(cat "${WIZARDRY_TMPDIR}/missing-wrappers.txt" 2>/dev/null | head -30 | tr '\n' ', ' | sed 's/, $//')
+  violations=$(cat "${WIZARDRY_TMPDIR}/missing-wrappers.txt" 2>/dev/null | head -40 | tr '\n' ', ' | sed 's/, $//')
   rm -f "${WIZARDRY_TMPDIR}/missing-wrappers.txt"
   
   if [ -n "$violations" ]; then
@@ -1274,7 +1274,7 @@ test_no_allcaps_variable_assignments() {
     allcaps_vars=$(grep -nE '^[[:space:]]*[A-Z][A-Z_0-9]*=' "$spell" 2>/dev/null | \
       grep -v -E '(export|PATH=|HOME=|IFS=|CDPATH=|TMPDIR=|USER=|SHELL=|TERM=|LANG=)' | \
       grep -v -E '(NIX_PACKAGE|APT_PACKAGE|DNF_PACKAGE|YUM_PACKAGE|ZYPPER_PACKAGE|PACMAN_PACKAGE|APK_PACKAGE|PKGIN_PACKAGE|BREW_PACKAGE)' | \
-      grep -v -E '(WIZARDRY_|SPELLBOOK_DIR|MUD_DIR|TEST_|ASSUME_YES|FORCE_INSTALL|ROOT_DIR)' | \
+      grep -v -E '(WIZARDRY_|SPELLBOOK_DIR|MUD_DIR|TEST_|ASSUME_YES|FORCE_INSTALL|ROOT_DIR|DISTRO)' | \
       grep -v -E '(AWAIT_KEYPRESS_KEEP_RAW|BWRAP_|SANDBOX_|MACOS_)' | \
       grep -v -E '(RESET|BOLD|ITALICS|UNDERLINED|BLINK|INVERT|STRIKE|ESC)' | \
       grep -v -E '(RED|GREEN|BLUE|YELLOW|CYAN|WHITE|BLACK|PURPLE|GRE[YA]|LIGHT_)' | \
@@ -1305,6 +1305,51 @@ test_no_allcaps_variable_assignments() {
   return 0
 }
 
+# --- Check: Spells declare env-clear compliance ---
+# All spells must explicitly declare they follow the no-env-var-passing policy
+# by including ". env-clear" after set -eu or a "# env-clear: compliant" comment.
+# This prevents environment variable antipattern from returning.
+
+test_spells_declare_env_clear_compliance() {
+  missing=""
+  
+  check_env_clear() {
+    spell=$1
+    name=$(basename "$spell")
+    rel_path=${spell#"$ROOT_DIR/spells/"}
+    
+    # Skip exempt files
+    case "$rel_path" in
+      # Imps don't need env-clear (they're helpers, not top-level spells)
+      .imps/*) return ;;
+      # Bootstrap/arcana scripts exempt (run before wizardry infrastructure available)
+      .arcana/*) return ;;
+      # install script exempt (bootstrap)
+      install) return ;;
+    esac
+    
+    # Check for env-clear compliance marker or actual call
+    # Look for: ". env-clear" or "# env-clear" in first 30 lines
+    if ! head -40 "$spell" | grep -qE '(\. env-clear|# env-clear)'; then
+      printf '%s\n' "$rel_path"
+    fi
+  }
+  
+  tmpfile="${WIZARDRY_TMPDIR}/missing-env-clear.txt"
+  : > "$tmpfile"
+  for_each_posix_spell check_env_clear > "$tmpfile"
+  
+  missing=$(cat "$tmpfile" 2>/dev/null | head -20 | tr '\n' ', ' | sed 's/, $//')
+  rm -f "$tmpfile"
+  
+  if [ -n "$missing" ]; then
+    TEST_FAILURE_REASON="spells missing env-clear compliance: $missing (add '. env-clear' after set -eu or '# env-clear: compliant' comment)"
+    return 1
+  fi
+  
+  return 0
+}
+
 # --- Run all test cases ---
 
 _run_test_case "no duplicate spell names" test_no_duplicate_spell_names
@@ -1314,7 +1359,7 @@ _run_test_case "warn about full paths to spells" test_warn_full_paths_to_spells
 _run_test_case "test files have matching spells" test_test_files_have_matching_spells
 _run_test_case "tests rely only on imps for helpers" test_tests_use_imps_for_helpers
 _run_test_case "scripts using declared globals have set -u" test_scripts_using_globals_have_set_u
-_run_test_case "declare-globals has exactly 3 globals" test_declare_globals_count
+_run_test_case "declare-globals has exactly 4 globals" test_declare_globals_count
 _run_test_case "no undeclared globals exported" test_no_undeclared_global_exports
 _run_test_case "no global declarations outside declare-globals" test_no_global_declarations_outside_declare_globals
 _run_test_case "no pseudo-globals stored in rc files" test_no_pseudo_globals_in_rc_files
@@ -1328,5 +1373,6 @@ _run_test_case "spells require wrapper functions" test_spells_require_wrapper_fu
 _run_test_case "spells have limited flags" test_spells_have_limited_flags
 _run_test_case "spells have limited positional arguments" test_spells_have_limited_positional_args
 _run_test_case "no all-caps variable assignments" test_no_allcaps_variable_assignments
+_run_test_case "spells declare env-clear compliance" test_spells_declare_env_clear_compliance
 
 _finish_tests

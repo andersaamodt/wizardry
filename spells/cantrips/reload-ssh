@@ -2,17 +2,12 @@
 
 # This spell reloads the SSH service configuration without restarting.
 # Use it after modifying sshd_config to apply changes.
-
 reload_ssh_usage() {
 cat <<'USAGE'
 Usage: reload-ssh
-
 Reload the SSH daemon configuration without a full restart. Detects the operating system and calls the right service manager so sshd_config changes take effect immediately.
 USAGE
 }
-
-
-
 reload_ssh() {
 case "${1-}" in
 --help|--usage|-h)
@@ -20,11 +15,9 @@ case "${1-}" in
   return 0
   ;;
 esac
-
 set -eu
-
+# env-clear: compliant
 current_os=$(os)
-
 case "$current_os" in
         debian|arch|fedora|nixos|linux)
                 if has systemctl; then
@@ -38,15 +31,9 @@ case "$current_os" in
         mac)
                 sudo launchctl stop com.openssh.sshd
                 sudo launchctl start com.openssh.sshd
-                ;;
         *)
                 die "reload-ssh: unsupported OS: $current_os"
-                ;;
-esac
-
 say "SSH service reloaded."
-}
-
 # Self-execute when run directly (not sourced)
 case "$0" in
   */reload-ssh) reload_ssh "$@" ;; esac

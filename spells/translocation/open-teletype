@@ -2,19 +2,13 @@
 
 # This spell opens an SSH connection through Tor for anonymous remote access.
 # Use it to connect to remote servers while preserving anonymity.
-
 require-wizardry || exit 1
-
 open_teletype_usage() {
 cat <<'USAGE'
 Usage: open-teletype [remote_address] [user]
-
 Open an SSH connection over Tor for anonymous access to a remote server. Prompts for address and user if you don't pass them and uses the MUD_PLAYER key as your SSH identity.
 USAGE
 }
-
-
-
 open_teletype() {
 case "${1-}" in
 --help|--usage|-h)
@@ -22,43 +16,30 @@ case "${1-}" in
   return 0
   ;;
 esac
-
 set -eu
-
+# env-clear: compliant
 # Check for required commands
 if ! has torify; then
         die "open-teletype: torify (tor) not found."
 fi
-
 # Get player key from environment
 if is unset "${MUD_PLAYER-}"; then
         die "open-teletype: MUD_PLAYER environment variable not set."
-fi
 player_key="$HOME/.ssh/$MUD_PLAYER"
-
 if ! is file "$player_key"; then
         die "open-teletype: SSH key not found: $player_key"
-fi
-
 # Get address and user from arguments or prompt
 tor_address=${1-}
 remote_user=${2-}
-
 if is unset "$tor_address"; then
         printf '%s' "Enter the Tor address: "
         read -r tor_address
-fi
-
 if is unset "$remote_user"; then
         printf '%s' "Enter the remote user: "
         read -r remote_user
-fi
-
 # Connect via ssh through torify
 say "Opening teletype to $remote_user@$tor_address..."
 torify ssh -i "$player_key" "$remote_user@$tor_address"
-}
-
 # Self-execute when run directly (not sourced)
 case "$0" in
   */open-teletype) open_teletype "$@" ;; esac

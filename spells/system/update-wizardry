@@ -2,17 +2,12 @@
 
 # This spell fast-forwards the wizardry repository in place.
 # It locates the checkout directory or accepts WIZARDRY_DIR to target another path.
-
 update_wizardry_usage() {
 cat <<'USAGE'
 Usage: update-wizardry
-
 Fast-forward the wizardry repository by running git pull in the checkout directory. Finds the repo next to this spell or follows WIZARDRY_DIR if you point it elsewhere.
 USAGE
 }
-
-
-
 update_wizardry() {
 case "${1-}" in
 --help|--usage|-h)
@@ -20,21 +15,15 @@ case "${1-}" in
   return 0
   ;;
 esac
-
 set -eu
-
+# env-clear: compliant
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
-
 require_cmd=${REQUIRE_COMMAND-require-command}
-
 update_wizardry_require() {
   "$require_cmd" "$@"
-}
-
 if ! update_wizardry_require git "Update wizardry needs 'git' to pull the latest changes."; then
   return 1
 fi
-
 if [ -n "${WIZARDRY_DIR-}" ]; then
   wizardry_dir=$WIZARDRY_DIR
   if [ ! -d "$wizardry_dir" ]; then
@@ -43,8 +32,6 @@ if [ -n "${WIZARDRY_DIR-}" ]; then
   fi
   if ! git -C "$wizardry_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     printf '%s\n' "WIZARDRY_DIR is not a git repository: $wizardry_dir" >&2
-    return 1
-  fi
 else
   # Attempt to locate the wizardry repository based on this spell's location.
   candidate=$(dirname "$script_dir")
@@ -58,13 +45,8 @@ else
       printf '%s\n' 'Unable to determine the wizardry repository. Set WIZARDRY_DIR to the checkout location.' >&2
       return 1
     fi
-  fi
-fi
-
 printf 'Updating wizardry repository at %s\n' "$wizardry_dir"
 exec git -C "$wizardry_dir" pull --ff-only
-}
-
 # Self-execute when run directly (not sourced)
 case "$0" in
   */update-wizardry) update_wizardry "$@" ;; esac

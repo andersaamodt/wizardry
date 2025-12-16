@@ -2,16 +2,13 @@
 
 # This spell checks if the cd hook is installed in the user's shell RC file.
 # Use it to verify whether the MUD cd integration is active.
-
 check_cd_hook_usage() {
 cat <<'USAGE'
 Usage: check-cd-hook
-
 Check if the cd hook is installed by looking for the marker in the shell RC file.
 Exits with code 0 if installed, 1 if not installed.
 USAGE
 }
-
 check_cd_hook() {
 case "${1-}" in
 --help|--usage|-h)
@@ -19,9 +16,8 @@ case "${1-}" in
   return 0
   ;;
 esac
-
 set -eu
-
+# env-clear: compliant
 # Try to resolve rc file using same logic as cd spell
 rc_file=''
 if [ -n "${WIZARDRY_RC_FILE-}" ]; then
@@ -40,7 +36,6 @@ $detected
 EOF
   fi
 fi
-
 # Fallback to shell-specific defaults
 if [ -z "$rc_file" ] && [ -n "${HOME-}" ]; then
   shell_name=${SHELL-}
@@ -50,21 +45,12 @@ if [ -z "$rc_file" ] && [ -n "${HOME-}" ]; then
     ;;
   *)
     rc_file="$HOME/.bashrc"
-    ;;
   esac
-fi
-
 if [ -z "$rc_file" ] || [ ! -f "$rc_file" ]; then
   return 1
-fi
-
 # Check for cd hook markers
 if grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
-  return 0
-fi
 return 1
-}
-
 # Execute function when run as script or when called by name
 # This pattern works both standalone and when inlined by compile-spell
 check_cd_hook "$@"

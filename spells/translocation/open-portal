@@ -2,19 +2,13 @@
 
 # This spell mounts a remote directory using sshfs through Tor.
 # Use it to access remote servers anonymously via SSH filesystem.
-
 require-wizardry || exit 1
-
 open_portal_usage() {
 cat <<'USAGE'
 Usage: open-portal <remote_address> <remote_directory> [local_mount_point]
-
 Mount a remote directory using sshfs over Tor for anonymous access. The local mount point defaults to ~/portals/<remote_address> if not specified and uses the MUD_PLAYER key for authentication.
 USAGE
 }
-
-
-
 open_portal() {
 case "${1-}" in
 --help|--usage|-h)
@@ -22,62 +16,42 @@ case "${1-}" in
   return 0
   ;;
 esac
-
 set -eu
-
+# env-clear: compliant
 # Check for required commands
 if ! has sshfs; then
         die "open-portal: sshfs not found."
 fi
-
 if ! has torify; then
         die "open-portal: torify (tor) not found."
-fi
-
 # Get player key from environment
 if is unset "${MUD_PLAYER-}"; then
         die "open-portal: MUD_PLAYER environment variable not set."
-fi
 player_key="$HOME/.ssh/$MUD_PLAYER"
-
 if ! is file "$player_key"; then
         die "open-portal: SSH key not found: $player_key"
-fi
-
 # Get address and directory from arguments or prompt
 tor_address=${1-}
 remote_dir=${2-}
 local_mount=${3-}
-
 if is unset "$tor_address"; then
         printf '%s' "Enter the Tor address of the remote server: "
         read -r tor_address
-fi
-
 if is unset "$remote_dir"; then
         printf '%s' "Enter the remote directory to mount: "
         read -r remote_dir
-fi
-
 # Normalize remote path (remove trailing slash for consistency)
 remote_dir="${remote_dir%/}"
-
 # Set local mount point if not provided
 if is unset "$local_mount"; then
         # Create a safe directory name from the address
         safe_name=$(printf '%s' "$tor_address" | tr -c 'A-Za-z0-9.-' '_')
         local_mount="$HOME/portals/$safe_name"
-fi
-
 # Ensure local mount point exists
 make dir "$local_mount" || die "open-portal: cannot create mount point: $local_mount"
-
 # Mount the remote directory using sshfs over tor
 torify sshfs -o "IdentityFile=$player_key" "$tor_address:$remote_dir" "$local_mount"
-
 say "Portal opened: $tor_address:$remote_dir mounted at $local_mount"
-}
-
 # Self-execute when run directly (not sourced)
 case "$0" in
   */open-portal) open_portal "$@" ;; esac

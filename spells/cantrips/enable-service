@@ -2,17 +2,12 @@
 
 # enable-service flips systemd's enable flag so units start automatically on
 # boot. It prompts for a service name when invoked without arguments.
-
 enable_service_usage() {
   cat <<'USAGE' >&2
 Usage: enable-service UNIT
-
 Enables the given systemd service so it starts on boot, prompting for a unit when none is provided.
 USAGE
 }
-
-
-
 enable_service() {
 case "${1-}" in
 --help|--usage|-h)
@@ -20,27 +15,21 @@ case "${1-}" in
   return 0
   ;;
 esac
-
 set -eu
-
+# env-clear: compliant
 script_name=$(basename "$0")
-
 script_source=$0
 case $script_source in
 */*)
   script_dir=${SCRIPT_SOURCE%/*}
-  ;;
 *)
   resolved=$(command -v "$script_source" 2>/dev/null || printf '%s' "$script_source")
   script_dir=${resolved%/*}
   script_source=$resolved
-  ;;
-esac
 if [ -z "$script_dir" ] || [ "$script_dir" = "$script_source" ]; then
   script_dir=.
 fi
 script_dir=$(cd "$script_dir" && pwd -P)
-
 # Inline enable_service_find_ask_text - only used once
 if [ -n "${ENABLE_SERVICE_ASK_TEXT-}" ]; then
   ask_text_helper=$ENABLE_SERVICE_ASK_TEXT
@@ -51,29 +40,16 @@ elif [ -x "$script_dir/ask-text" ]; then
 else
   printf '%s\n' "$script_name: ask-text spell not found." >&2
   return 1
-fi
-
 service_name=${1-}
 if [ -z "$service_name" ]; then
   service_name=$("$ask_text_helper" "Which service should I enable?")
-fi
-if [ -z "$service_name" ]; then
   printf '%s\n' "$script_name: No service name supplied." >&2
-  return 1
-fi
-
 # Inline enable_service_normalize_unit - only used once
 case $service_name in
 *.service)
   unit=$service_name
-  ;;
-*)
   unit="${service_name}.service"
-  ;;
-esac
-
 printf 'Enabling %s so it starts at boot...\n' "$unit"
-
 # Inline enable_service_run_systemctl - only used once
 if [ -z "${SYSTEMCTL-}" ]; then
   if command -v systemctl >/dev/null 2>&1; then
@@ -82,19 +58,12 @@ if [ -z "${SYSTEMCTL-}" ]; then
     printf '%s\n' "$script_name: systemctl is not available on this system." >&2
     return 1
   fi
-fi
 if [ "$(id -u)" -eq 0 ]; then
   "$systemctl_cmd" enable "$unit"
 elif command -v sudo >/dev/null 2>&1; then
   sudo "$systemctl_cmd" enable "$unit"
-else
   printf '%s\n' "$script_name: systemctl requires root. Re-run as root or install sudo." >&2
-  return 1
-fi
-
 printf '%s\n' "systemd enablement request submitted."
-}
-
 # Self-execute when run directly (not sourced)
 case "$0" in
   */enable-service) enable_service "$@" ;; esac

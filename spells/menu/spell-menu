@@ -29,22 +29,17 @@ is_memorized() {
         while IFS=$(printf '\t') read -r alias _; do
                 if [ "$alias" = "$check_name" ]; then
                         return 0
-                fi
         done <<ENTRIES
 $cast_list_output
 ENTRIES
         return 1
 }
-
 spell_menu_usage() {
         cat <<'USAGE'
 Usage: spell-menu <spell-name>
-
 Display an action menu for a spell with options to cast, memorize,
 get help, or erase.
 USAGE
-}
-
 # Handle action flags (called by menu via subprocess)
 case ${1-} in
         --cast)
@@ -53,58 +48,40 @@ case ${1-} in
                 exit 0
                 ;;
         --install)
-                shift
                 cmd=$1
                 eval "$cmd" --install || true
-                exit 0
-                ;;
 esac
-
 spell_menu() {
 case "${1-}" in
 --help|--usage|-h)
   spell_menu_usage
   return 0
   ;;
-esac
-
 set -eu
-
+# env-clear: compliant
 # Catch Ctrl-C and TERM signal to exit cleanly
 trap 'exit 0' INT TERM
-
 if [ "$#" -lt 1 ]; then
         spell_menu_usage >&2
-        return 1
 fi
-
 name=$1
 command=$name
-
 if ! require menu "The spell menu needs the 'menu' command."; then
-        return 1
-fi
-
 # Get spell home directory
 if command -v env-or >/dev/null 2>&1; then
         spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
 else
         spell_home="${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}"
-fi
 if [ ! -d "$spell_home" ]; then
         mkdir -p "$spell_home" 2>/dev/null || {
                 spell_home="${TMPDIR:-/tmp}/wizardry-spellbook-$$"
                 mkdir -p "$spell_home"
         }
-fi
-
 # Escape single quotes in command for safe passing
 escaped_command=$(printf '%s' "$command" | sed "s/'/'\\\\''/g")
-
 first_run=1
 start_selection=1
 was_memorized=0
-
 while :; do
         if [ "$first_run" -eq 0 ]; then
                 # Check if memorization state changed
@@ -112,35 +89,23 @@ while :; do
                         now_memorized=1
                 else
                         now_memorized=0
-                fi
                 if [ "$was_memorized" != "$now_memorized" ]; then
                         start_selection=2
-                else
                         start_selection=1
-                fi
-        else
                 first_run=0
-        fi
-
         # Build menu toggle label
         if is_memorized "$name"; then
                 was_memorized=1
                 cast_toggle="[X] Forget%forget '$name'"
-        else
                 was_memorized=0
                 cast_toggle="[ ] Memorize%memorize '$name'"
-        fi
-        
         exit_label=$(exit-label)
         exit_item="${exit_label}%kill -TERM \$PPID"
-        
         # Check if spell has --help option (inline from has_help_option)
         help_item=""
         spell_path=$(command -v "$command" 2>/dev/null) || spell_path=$command
         if [ -r "$spell_path" ] && grep -Eq '(--help|-h\))' "$spell_path" 2>/dev/null; then
                 help_item="Help%$escaped_command --help"
-        fi
-        
         # Check if custom spell (inline from is_custom_spell)
         is_custom=0
         if cmd_path=$(command -v "$name" 2>/dev/null); then
@@ -151,15 +116,12 @@ while :; do
                         *)
                                 # Found elsewhere - built-in spell
                                 is_custom=0
-                                ;;
                 esac
-        fi
         if [ "$is_custom" -ne 1 ]; then
                 # Check if custom script exists
                 script_path="$spell_home/$name"
                 if [ -f "$script_path" ] && [ -x "$script_path" ]; then
                         is_custom=1
-                else
                         # Check subfolders
                         for subdir in "$spell_home"/*; do
                                 [ -d "$subdir" ] || continue
@@ -169,47 +131,25 @@ while :; do
                                         break
                                 fi
                         done
-                fi
-        fi
-        
         # Check if installable (inline from is_installable)
         is_install=0
         if command -v is-installable >/dev/null 2>&1; then
                 if is-installable "$command"; then
                         is_install=1
-                fi
-        else
                 test_spell_path=$(command -v "$command" 2>/dev/null) || test_spell_path=$command
                 if [ -r "$test_spell_path" ] && grep -Eq '^[[:space:]]*install[[:space:]]*\(\)' "$test_spell_path" 2>/dev/null; then
-                        is_install=1
-                fi
-        fi
-        
         # Build menu items based on spell type
         if [ "$is_custom" -eq 1 ]; then
                 if [ -n "$help_item" ]; then
                         set -- "Cast now%$escaped_command" "$cast_toggle" "$help_item" "Erase spell%erase-spell '$name' && kill -TERM \$PPID" "$exit_item"
-                else
                         set -- "Cast now%$escaped_command" "$cast_toggle" "Erase spell%erase-spell '$name' && kill -TERM \$PPID" "$exit_item"
-                fi
         elif [ "$is_install" -eq 1 ]; then
-                if [ -n "$help_item" ]; then
                         set -- "Cast now%$escaped_command" "$cast_toggle" "Learn%spell-menu --install '$escaped_command'" "$help_item" "$exit_item"
-                else
                         set -- "Cast now%$escaped_command" "$cast_toggle" "Learn%spell-menu --install '$escaped_command'" "$exit_item"
-                fi
-        else
-                if [ -n "$help_item" ]; then
                         set -- "Cast now%$escaped_command" "$cast_toggle" "$help_item" "$exit_item"
-                else
                         set -- "Cast now%$escaped_command" "$cast_toggle" "$exit_item"
-                fi
-        fi
-        
         menu --start-selection "$start_selection" "Spell: $name" "$@" || true
 done
-}
-
 # Self-execute when run directly (not sourced)
 case "$0" in
   */spell-menu) spell_menu "$@" ;; esac

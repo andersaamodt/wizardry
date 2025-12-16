@@ -4,22 +4,15 @@
 # Use this to remove memorized spells from the Cast menu.
 #
 # Usage: forget SPELL_NAME
-
 require-wizardry || exit 1
-
 spell_name="forget"
 tab_char=$(printf '\t')
-
 forget_usage() {
         cat <<USAGE
 Usage: $spell_name <spell-name>
-
 Remove a spell from the Cast menu.
 USAGE
 }
-
-
-
 forget() {
 case "${1-}" in
 --help|--usage|-h)
@@ -27,11 +20,9 @@ case "${1-}" in
   return 0
   ;;
 esac
-
 set -eu
-
+# env-clear: compliant
 # Helper for reading non-empty lines
-
 # Resolve cast directory with tilde expansion
 if [ -n "${WIZARDRY_CAST_DIR-}" ]; then
   cast_dir=$WIZARDRY_CAST_DIR
@@ -42,62 +33,32 @@ if [ -n "${WIZARDRY_CAST_DIR-}" ]; then
 else
   cast_dir=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
 fi
-
 # Resolve command file with tilde expansion
 if [ -n "${WIZARDRY_CAST_FILE-}" ]; then
   command_file=$WIZARDRY_CAST_FILE
   case $command_file in
     \~) command_file=${HOME:-.} ;;
     \~/*) command_file=${HOME:-.}/${command_file#\~/} ;;
-  esac
 elif [ -n "${MEMORIZE_COMMAND_FILE-}" ]; then
   command_file=$MEMORIZE_COMMAND_FILE
-  case $command_file in
-    \~) command_file=${HOME:-.} ;;
-    \~/*) command_file=${HOME:-.}/${command_file#\~/} ;;
-  esac
-else
   command_file=$cast_dir/.memorized
-fi
-
 # Validate arguments
 case ${1-} in
---help|--usage|-h)
-  forget_usage
-  return 0
-  ;;
 "")
   printf '%s\n' "$spell_name: spell name required." >&2
   forget_usage >&2
   return 1
-  ;;
 -*)
   printf '%s\n' "$spell_name: unknown option '$1'" >&2
-  forget_usage >&2
-  return 1
-  ;;
-esac
-
 name=$1
-
 # Validate spell name
 case $name in
 ''|*[!A-Za-z0-9._-]*)
   printf '%s\n' "$spell_name: names may contain only letters, digits, dots, underscores, and dashes." >&2
-  return 1
-  ;;
--*)
   printf '%s\n' "$spell_name: names may not begin with a dash." >&2
-  return 1
-  ;;
-esac
-
 # Check if command file exists
 if [ ! -f "$command_file" ]; then
   printf '%s\n' "$spell_name: spell '$name' is not memorized." >&2
-  return 1
-fi
-
 # Remove spell from command file
 tmp=$(temp-file forget) || return 1
 trap 'cleanup-file "$tmp"' EXIT HUP INT TERM
@@ -108,7 +69,6 @@ while IFS= read -r line || nonempty "$line"; do
   *"$tab_char"*)
     entry_name=${line%%"$tab_char"*}
     ;;
-  esac
   if [ "$entry_name" = "$name" ] || [ -z "$entry_name" ]; then
     if [ "$entry_name" = "$name" ]; then
       removed=1
@@ -118,18 +78,11 @@ while IFS= read -r line || nonempty "$line"; do
   fi
   printf '%s\n' "$line" >>"$tmp"
 done <"$command_file"
-
 if [ "$removed" -eq 0 ]; then
   trap - EXIT HUP INT TERM
   rm -f "$tmp"
-  printf '%s\n' "$spell_name: spell '$name' is not memorized." >&2
-  return 1
-fi
-
 trap - EXIT HUP INT TERM
 mv "$tmp" "$command_file"
-}
-
 # Self-execute when run directly (not sourced)
 case "$0" in
   */forget) forget "$@" ;; esac

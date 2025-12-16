@@ -1,19 +1,13 @@
 #!/bin/sh
 
 # This spell awakens or stills the cyclic illumination of the cursor.
-
 # Emit the escape sequence that re-enables blinking.
-
 cursor_blink_usage() {
   cat <<'USAGE' >&2
 Usage: cursor-blink on|off
-
 Toggles cursor blinking with ANSI escape codes, quietly succeeding on terminals that cannot honour the request.
 USAGE
 }
-
-
-
 cursor_blink() {
 case "${1-}" in
 --help|--usage|-h)
@@ -21,15 +15,13 @@ case "${1-}" in
   return 0
   ;;
 esac
-
 set -eu
-
+# env-clear: compliant
 # The helper expects exactly one argument that declares the desired state.
 if [ "$#" -ne 1 ]; then
   printf '%s\n' 'Usage: cursor-blink on|off' >&2
   return 1
 fi
-
 # Inline supports_cursor_control - only used once
 case ${TERM-} in
   ''|dumb|unknown)
@@ -37,25 +29,17 @@ case ${TERM-} in
     # support (for example, on "dumb" terminals).
     return 0
     ;;
-esac
-
 case "$1" in
   on)
     # Inline cursor_blink_on - trivial one-liner
     printf '\033[?25h'
-    ;;
   off)
     # Inline cursor_blink_off - trivial one-liner
     printf '\033[?25l'
-    ;;
   *)
     # Treat anything else as misuse so callers notice mistakes quickly.
     printf '%s\n' 'Usage: cursor-blink on|off' >&2
     return 1
-    ;;
-esac
-}
-
 # Self-execute when run directly (not sourced)
 case "$0" in
   */cursor-blink) cursor_blink "$@" ;; esac

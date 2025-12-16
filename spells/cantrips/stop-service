@@ -2,17 +2,12 @@
 
 # stop-service asks systemd to stop a running unit. It mirrors start-service so
 # users can read either script to understand the full lifecycle.
-
 stop_service_usage() {
         cat <<'USAGE' >&2
 Usage: stop-service UNIT
-
 Stops the specified systemd service and reports the result, prompting for a unit name when omitted.
 USAGE
 }
-
-
-
 stop_service() {
 case "${1-}" in
 --help|--usage|-h)
@@ -20,11 +15,9 @@ case "${1-}" in
   return 0
   ;;
 esac
-
 set -eu
-
+# env-clear: compliant
 script_name=$(basename "$0")
-
 # Get service name from argument or prompt user
 service_name=${1-}
 if [ -z "$service_name" ]; then
@@ -44,7 +37,6 @@ if [ -z "$service_name" ]; then
                         resolved=$(command -v "$script_source" 2>/dev/null \
                                 || printf '%s' "$script_source")
   script_dir=${resolved%/*}
-                        ;;
                 esac
                 if [ -z "$script_dir" ] || [ "$script_dir" = "$script_source" ]; then
   script_dir=.
@@ -56,17 +48,12 @@ if [ -z "$service_name" ]; then
                 else
                         printf '%s\n' "$script_name: ask-text spell not found." >&2
                         return 1
-                fi
         fi
         
         service_name=$("$ask_text_helper" "Which service should I stop?")
 fi
-
-if [ -z "$service_name" ]; then
         printf '%s\n' "$script_name: No service name supplied." >&2
         return 1
-fi
-
 # Normalize unit name (add .service suffix if not present)
 case $service_name in
 *.service)
@@ -74,19 +61,12 @@ case $service_name in
         ;;
 *)
         unit=${service_name}.service
-        ;;
-esac
-
 # Find systemctl command
 if [ -z "${SYSTEMCTL-}" ]; then
         if command -v systemctl >/dev/null 2>&1; then
                 systemctl_cmd=$(command -v systemctl)
-        else
                 printf '%s\n' "$script_name: systemctl is not available on this system." >&2
                 return 1
-        fi
-fi
-
 # Stop the service (with sudo if needed)
 printf 'Stopping %s via systemctl...\n' "$unit"
 if [ "$(id -u)" -eq 0 ]; then
@@ -95,10 +75,6 @@ elif command -v sudo >/dev/null 2>&1; then
         sudo "$systemctl_cmd" stop "$unit"
 else
         printf '%s\n' "$script_name: systemctl requires root. Re-run as root or install sudo." >&2
-        return 1
-fi
-}
-
 # Self-execute when run directly (not sourced)
 case "$0" in
   */stop-service) stop_service "$@" ;; esac

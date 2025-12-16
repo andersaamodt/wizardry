@@ -2,17 +2,12 @@
 
 # service-status prints systemctl's status output for a unit. The --no-pager
 # flag keeps results readable even when systemctl is configured to invoke less.
-
 service_status_usage() {
         cat <<'USAGE' >&2
 Usage: service-status UNIT
-
 Shows the current status of the specified systemd unit with paging disabled. Prompts for a unit when none is provided.
 USAGE
 }
-
-
-
 service_status() {
 case "${1-}" in
 --help|--usage|-h)
@@ -20,11 +15,9 @@ case "${1-}" in
   return 0
   ;;
 esac
-
 set -eu
-
+# env-clear: compliant
 script_name=$(basename "$0")
-
 # Get service name from argument or prompt user
 service_name=${1-}
 if [ -z "$service_name" ]; then
@@ -44,7 +37,6 @@ if [ -z "$service_name" ]; then
                         resolved=$(command -v "$script_source" 2>/dev/null \
                                 || printf '%s' "$script_source")
   script_dir=${resolved%/*}
-                        ;;
                 esac
                 if [ -z "$script_dir" ] || [ "$script_dir" = "$script_source" ]; then
   script_dir=.
@@ -56,17 +48,12 @@ if [ -z "$service_name" ]; then
                 else
                         printf '%s\n' "$script_name: ask-text spell not found." >&2
                         return 1
-                fi
         fi
         
         service_name=$("$ask_text_helper" "Which service status should I check?")
 fi
-
-if [ -z "$service_name" ]; then
         printf '%s\n' "$script_name: No service name supplied." >&2
         return 1
-fi
-
 # Normalize unit name (add .service suffix if not present)
 case $service_name in
 *.service)
@@ -74,32 +61,20 @@ case $service_name in
         ;;
 *)
         unit=${service_name}.service
-        ;;
-esac
-
 # Find systemctl command
 if [ -z "${SYSTEMCTL-}" ]; then
         if command -v systemctl >/dev/null 2>&1; then
                 systemctl_cmd=$(command -v systemctl)
-        else
                 printf '%s\n' "$script_name: systemctl is not available on this system." >&2
                 return 1
-        fi
-fi
-
 # Show status
 printf 'Showing status for %s...\n' "$unit"
 if "$systemctl_cmd" status --no-pager "$unit"; then
         return 0
-fi
 if [ "$(id -u)" -ne 0 ] && command -v sudo >/dev/null 2>&1; then
         sudo "$systemctl_cmd" status --no-pager "$unit"
-        return 0
-fi
 printf '%s\n' "$script_name: Unable to read service status; try running as root." >&2
 return 1
-}
-
 # Self-execute when run directly (not sourced)
 case "$0" in
   */service-status) service_status "$@" ;; esac
