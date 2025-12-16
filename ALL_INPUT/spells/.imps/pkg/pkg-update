@@ -1,0 +1,24 @@
+#!/bin/sh
+# pkg-update - refresh package repository lists
+# Example: pkg-update && pkg-install git
+
+_pkg_update() {
+  _pu_pm=$(_pkg_manager) || {
+    printf '%s\n' "pkg-update: no supported package manager" >&2
+    return 1
+  }
+
+  case $_pu_pm in
+    apt)    sudo apt-get update ;;
+    dnf)    sudo dnf check-update || [ $? -eq 100 ] ;;
+    pacman) sudo pacman -Sy ;;
+    brew)   brew update ;;
+    nix)    nix-channel --update ;;
+    pkgin)  sudo pkgin update ;;
+    apk)    sudo apk update ;;
+  esac
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */pkg-update) _pkg_update "$@" ;; esac

@@ -1,0 +1,52 @@
+#!/bin/sh
+
+# Toggle cd hook on/off using config imps
+
+toggle_cd_usage() {
+cat <<'USAGE'
+Usage: toggle-cd
+
+Turn the cd hook that runs 'look' after each directory change on or off.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        toggle_cd_usage
+        exit 0
+        ;;
+esac
+
+set -eu
+
+# Get script directory to find imps
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+ROOT_DIR=$(cd "$SCRIPT_DIR/../../.." && pwd -P)
+IMPS_DIR="$ROOT_DIR/spells/.imps/fs"
+
+# Determine config file location
+SPELLBOOK_DIR="${SPELLBOOK_DIR:-$HOME/.spellbook}"
+CONFIG_FILE="$SPELLBOOK_DIR/.mud/config"
+
+# Ensure parent directory exists
+mkdir -p "$(dirname "$CONFIG_FILE")"
+touch "$CONFIG_FILE"
+
+# Check current state
+if "$IMPS_DIR/config-has" "$CONFIG_FILE" "cd-look" 2>/dev/null; then
+        current_value=$("$IMPS_DIR/config-get" "$CONFIG_FILE" "cd-look" 2>/dev/null)
+        if [ "$current_value" = "1" ]; then
+                # Currently enabled, disable it
+                "$IMPS_DIR/config-del" "$CONFIG_FILE" "cd-look"
+                printf '%s\n' "✓ cd hook disabled. Directory changes will no longer display room descriptions."
+                exit 0
+        fi
+fi
+
+# Currently disabled, enable it
+"$IMPS_DIR/config-set" "$CONFIG_FILE" "cd-look" "1"
+printf '%s\n' "✓ cd hook enabled. Each directory change will now display the room description."
+printf '%s\n' ""
+printf '%s\n' "Note: Make sure the cd function is sourced in your shell:"
+printf '%s\n' "  Add this line to ~/.bashrc or ~/.zshrc:"
+printf '%s\n' "    . \$HOME/.wizardry/spells/.arcana/mud/cd"

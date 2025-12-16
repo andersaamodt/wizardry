@@ -1,0 +1,79 @@
+#!/bin/sh
+
+# This script is a magical tome of sorcery, commanding the elusive entity known as Bitcoin.
+
+bitcoin_menu_usage() {
+  cat <<'USAGE'
+Usage: bitcoin-menu
+
+Displays the Bitcoin management menu.
+USAGE
+}
+
+case "${1-}" in
+  --help|--usage|-h)
+    bitcoin_menu_usage
+    exit 0
+    ;;
+esac
+
+set -eu
+. colors
+
+# Catch Ctrl-C and TERM signal to exit cleanly
+trap 'exit 0' INT TERM
+
+# Displays the menu
+bitcoin_menu_display_menu() {
+  title="${BOLD}${CYAN}Bitcoin: $(bitcoin-status)"
+  blockchain_info="Display Blockchain Info%bitcoin-cli getblockchaininfo"
+  set_config="Configure Bitcoin%configure-bitcoin"
+  change_directory="Change Bitcoin Directory%change-bitcoin-directory"
+  clear_cache="Clear Bitcoin Cache%# coming soon"
+  repair_permissions="Repair Permissions%repair-bitcoin-permissions"
+  exit_label=$(exit-label)
+  exit_option="${exit_label}%kill -TERM \$PPID"
+  
+  if is-bitcoin-installed; then
+    install_bitcoin_option="Uninstall Bitcoin%uninstall-bitcoin"
+    if is-service-installed bitcoin; then
+      install_service_option="Uninstall Bitcoin Service%remove-service bitcoin"
+      service_status_option="View Bitcoin Service Status%sudo systemctl status bitcoin"
+      if is-bitcoin-running; then
+        bitcoin_service_option="Stop Bitcoin Service%sudo systemctl stop bitcoin"
+        menu "$title" "$blockchain_info" "$set_config" "$change_directory" \
+          "$clear_cache" "$repair_permissions" "$service_status_option" \
+          "$bitcoin_service_option" "$install_service_option" \
+          "$install_bitcoin_option" "$exit_option"
+      else
+        bitcoin_service_option="Start Bitcoin Service%sudo systemctl start bitcoin"
+        menu "$title" "$set_config" "$change_directory" "$clear_cache" \
+          "$repair_permissions" "$service_status_option" "$bitcoin_service_option" \
+          "$install_service_option" "$install_bitcoin_option" "$exit_option"
+      fi
+    else
+      script_dir=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
+      install_service_option="Install Bitcoin Service%install-service-template \
+$script_dir/bitcoin.service \"BITCOIND=\$(command -v bitcoind)\""
+      menu "$title" "$set_config" "$change_directory" "$clear_cache" \
+        "$repair_permissions" "$install_service_option" "$install_bitcoin_option" \
+        "$exit_option"
+  fi
+  else
+    install_bitcoin_option="Install Bitcoin%install-bitcoin"
+    menu "$title" "$install_bitcoin_option" "$exit_option"
+  fi
+}
+
+first_run=1
+
+# Main execution loop
+while true; do
+  if [ "$first_run" -eq 0 ]; then
+    printf '\n'
+  else
+    first_run=0
+  fi
+
+  bitcoin_menu_display_menu || true
+done

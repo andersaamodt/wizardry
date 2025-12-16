@@ -1,0 +1,136 @@
+#!/bin/sh
+# This spell casts previously memorized commands from the spellbook.
+
+cast_usage() {
+        cat <<'USAGE'
+Usage: cast [--list|--dir]
+
+  --list   Show the stored spells in NAME<TAB>COMMAND format.
+  --dir    Print the directory containing cast menu spells.
+  --help   Show this help text.
+
+Run without arguments to open the interactive casting menu.
+USAGE
+}
+
+cast() {
+case "${1-}" in
+--help|--usage|-h)
+  cast_usage
+  return 0
+  ;;
+esac
+
+set -eu
+
+# Catch Ctrl-C and TERM signal to exit cleanly
+trap 'exit 0' INT TERM
+
+# Create spellbook directory if missing (self-healing)
+spellbook_dir="${XDG_DATA_HOME:-$HOME/.local/share}/wizardry/spellbook"
+if ! [ -d "$spellbook_dir" ]; then
+        mkdir -p "$spellbook_dir" 2>/dev/null || {
+                spellbook_dir="${TMPDIR:-/tmp}/wizardry-spellbook-$$"
+                mkdir -p "$spellbook_dir"
+        }
+fi
+
+# Direct call to memorize spell (no variable indirection)
+if ! has memorize; then
+        cast_dir=$spellbook_dir
+else
+        cast_dir=$(memorize dir 2>/dev/null) || cast_dir=$spellbook_dir
+fi
+
+case ${1-} in
+        --list)
+                # List memorized spells
+                if has memorize; then
+                        entries=$(memorize list)
+                else
+                        # Fallback: list files directly
+                        entries=""
+                        for f in "$cast_dir"/*; do
+                                [ -f "$f" ] || continue
+                                name=$(basename "$f")
+                                cmd=$(cat "$f" 2>/dev/null || printf '')
+                                [ -n "$cmd" ] && entries="${entries}${name}	${cmd}
+"
+                        done
+                fi
+                if [ -n "$entries" ]; then
+                        printf '%s' "$entries"
+                fi
+                return 0
+                ;;
+        --dir)
+                printf '%s\n' "$cast_dir"
+                return 0
+                ;;
+        --)
+                shift
+                ;;
+        "")
+                :
+                ;;
+        *)
+                cast_usage >&2
+                return 1
+                ;;
+esac
+
+if ! require menu "The casting menu needs the 'menu' command."; then
+        return 1
+fi
+
+# Interactive casting menu loop
+first_run=1
+while :
+do
+        if [ "$first_run" -eq 0 ]; then
+                :
+        else
+                first_run=0
+        fi
+
+        # Get list of memorized spells
+        if has memorize; then
+                entries=$(memorize list)
+        else
+                # Fallback: list files directly
+                entries=""
+                for f in "$cast_dir"/*; do
+                        [ -f "$f" ] || continue
+                        name=$(basename "$f")
+                        cmd=$(cat "$f" 2>/dev/null || printf '')
+                        [ -n "$cmd" ] && entries="${entries}${name}	${cmd}
+"
+                done
+        fi
+        
+        if [ -z "$entries" ]; then
+                printf '%s\n' "No spells are available to cast."
+                printf '%s\n' "Add spells from the Spellbook menu."
+                break
+        fi
+        
+        set --
+        while IFS=$(printf '\t') read -r alias command
+        do
+                [ -z "$alias" ] && continue
+                # Memorized spells are called directly by name
+                entry_cmd=$command
+                # Label is just the alias; menu shows and executes entry_cmd on the right
+                set -- "$@" "$(printf '%s%%%s' "$alias" "$entry_cmd")"
+        done <<SPELLS
+$entries
+SPELLS
+        exit_label=$(exit-label)
+        set -- "$@" "${exit_label}%kill -TERM \$PPID"
+        menu "Cast a Spell:" "$@" || true
+done
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */cast) cast "$@" ;; esac

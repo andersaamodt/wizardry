@@ -1,0 +1,26 @@
+#!/bin/sh
+# test-heading NUMBER TOTAL NAME - output a test heading
+# Example: test-heading 5 10 "my-spell"
+# Example: test-heading 5 10 "my-spell (skipped: reason)"
+
+set -eu
+
+_test_heading() {
+  number=$1
+  total=$2
+  name=$3
+  
+  # Use colors if supported (check if terminal supports colors)
+  if [ -t 1 ] && command -v tput >/dev/null 2>&1 && tput setaf 1 >/dev/null 2>&1; then
+    # Bold cyan for test heading
+    bold=$(tput bold 2>/dev/null || true)
+    cyan=$(tput setaf 6 2>/dev/null || true)
+    reset=$(tput sgr0 2>/dev/null || true)
+    printf '%s%s[%d/%d]%s %s\n' "$bold" "$cyan" "$number" "$total" "$reset" "$name"
+  else
+    printf '[%d/%d] %s\n' "$number" "$total" "$name"
+  fi
+}
+
+# Self-execution when run directly (not sourced)
+case "${0##*/}" in test-heading) _test_heading "$@" ;; esac

@@ -1,0 +1,56 @@
+#!/bin/sh
+# This spell checks and displays the status of Tor bridges.
+
+tor_bridge_status_usage() {
+        cat <<'USAGE' >&2
+Usage: tor-bridge-status
+
+Checks the local torrc to see if bridge mode is enabled. Requires root; exits 0 when bridges are on and 1 otherwise.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        tor_bridge_status_usage
+        exit 0
+        ;;
+esac
+
+set -eu
+if [ "$(id -u)" != "0" ]; then
+   echo "tor-bridge-status: root privileges required."
+   exit 1
+fi
+
+# Identify torrc file location based on platform
+platform=$(detect-distro 2>/dev/null || printf 'unknown')
+case "$platform" in
+   mac)
+     torrc_location="/usr/local/etc/tor/torrc"
+     ;;
+   *)
+     if [ -f "/etc/tor/torrc" ]; then
+        torrc_location="/etc/tor/torrc"
+     elif [ -f "/usr/local/etc/tor/torrc" ]; then
+        torrc_location="/usr/local/etc/tor/torrc"
+     else
+        echo "Cannot locate torrc file. Exiting."
+        exit 1
+     fi
+     ;;
+esac
+
+# Check if bridge mode is currently enabled
+bridge_enabled=$(awk '/^BridgeRelay 1/ {print $2}' "$torrc_location")
+
+if [ "$bridge_enabled" = "1" ]; then
+    if [ -t 1 ]; then
+        echo "Bridge mode is enabled."
+    fi
+    exit 0
+else
+    if [ -t 1 ]; then
+        echo "Bridge mode is disabled."
+    fi
+    exit 1
+fi

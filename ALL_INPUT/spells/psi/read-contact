@@ -1,0 +1,134 @@
+#!/bin/sh
+
+# This spell reads a vCard and prints its fields with friendly labels.
+# Provide an optional field name to extract a single detail.
+
+read_contact_usage() {
+cat <<'USAGE'
+Usage: read-contact <vcard-file> [field]
+
+Print all fields from a vCard file or a specific field when you name one. Escapes are normalized for readability and friendly labels make the details easy to scan.
+USAGE
+}
+
+
+
+read_contact() {
+case "${1-}" in
+--help|--usage|-h)
+  read_contact_usage
+  return 0
+  ;;
+esac
+
+set -eu
+
+handle_escapes() {
+    escape_value=$1
+    printf '%s\n' "$escape_value" | awk '
+        { gsub(/\\n/,"\n"); gsub(/\\\\/,"\\"); gsub(/\\,/,", "); gsub(/\\;/,"\n"); print }
+    '
+}
+
+card_lines() {
+    awk -F':' '
+        { sub(/\r$/, "") }
+        /^BEGIN:VCARD$/ { in_card=1; next }
+        /^END:VCARD$/ { if (in_card) exit }
+        in_card && index($0, ":") { if ($1 != "VERSION") print }
+    ' "$1"
+}
+
+nicer_name() {
+    # Convert the field name to lower case and remove any type annotations
+    lower=$(printf '%s' "$1" | awk '{print tolower($0)}')
+    no_type=$(printf '%s' "$lower" | awk -F';' '{print $1}')
+    normalized_field=$(printf '%s' "$no_type" | awk -F'.' '{print $NF}')
+
+    case "$normalized_field" in
+        fn|fullname) printf '%s' "Full Name: " ;;
+        n|name|lastname|firstname) printf '%s' "Name: " ;;
+        org|organization) printf '%s' "Organization: " ;;
+        title|jobtitle) printf '%s' "Title: " ;;
+        email) printf '%s' "Email: " ;;
+        tel|phone|telephone) printf '%s' "Telephone: " ;;
+        adr|address) printf '%s' "Address: " ;;
+        bday|birthday) printf '%s' "Birthday: " ;;
+        rev|revision) printf '%s' "Revision: " ;;
+        nickname) printf '%s' "Nickname: " ;;
+        photo) printf '%s' "Photo: " ;;
+        url|website) printf '%s' "URL: " ;;
+        label) printf '%s' "Label: " ;;
+        role) printf '%s' "Role: " ;;
+        note) printf '%s' "Note: " ;;
+        uid) printf '%s' "UID: " ;;
+        tz|timezone) printf '%s' "Timezone: " ;;
+        geo|geoposition) printf '%s' "Geo Position: " ;;
+        categories) printf '%s' "Categories: " ;;
+        *) printf '%s' "$1: " ;;
+    esac
+}
+
+if [ $# -lt 1 ]; then
+    read_contact_usage >&2
+    return 1
+fi
+
+vcard_path="$1"
+
+# Validate vCard file
+if [ ! -f "$vcard_path" ]; then
+    printf '%s\n' "read-contact: vCard file not found: $vcard_path" >&2
+    return 1
+fi
+
+begins=$(tr -d '\r' <"$vcard_path" | grep -Ec '^BEGIN:VCARD$' || true)
+ends=$(tr -d '\r' <"$vcard_path" | grep -Ec '^END:VCARD$' || true)
+
+if [ "$begins" -eq 0 ] && [ "$ends" -eq 0 ]; then
+    printf '%s\n' "read-contact: No vCard entries found in $vcard_path" >&2
+    return 1
+fi
+
+if [ "$begins" -ne "$ends" ]; then
+    printf '%s\n' "read-contact: Unbalanced vCard entries in $vcard_path" >&2
+    return 1
+fi
+
+if [ "$begins" -gt 1 ]; then
+    printf '%s\n' "read-contact: Multiple vCard entries are not supported" >&2
+    return 1
+fi
+
+# Process vCard - either print specific field or all fields
+if [ $# -eq 2 ]; then
+    # Print specific field
+    requested_field=$2
+    card_lines_output=$(card_lines "$vcard_path")
+    card_line=$(printf '%s\n' "$card_lines_output" | \
+      awk -F':' -v field="$requested_field" '$1 ~ field { print; exit }')
+    if [ -z "${card_line:-}" ]; then
+        printf '%s\n' "read-contact: $requested_field not found" >&2
+        return 1
+    fi
+
+    field_name=$(printf '%s' "$card_line" | awk -F':' '{print $1}')
+    field_value=$(printf '%s' "$card_line" | awk -F':' '{print substr($0, length($1) + 2)}')
+    field_value=$(handle_escapes "$field_value")
+    field_label=$(nicer_name "$field_name")
+    printf '%s\n' "$field_label$field_value"
+else
+    # Print all fields
+    card_lines "$vcard_path" | while IFS=':' read -r field value; do
+        field_label=$(nicer_name "$field")
+        value=$(handle_escapes "$value")
+        if [ -n "$field_label" ]; then
+            printf '%s\n' "$field_label$value"
+        fi
+    done
+fi
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */read-contact) read_contact "$@" ;; esac

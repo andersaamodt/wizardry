@@ -1,0 +1,119 @@
+#!/bin/sh
+
+# ask-yn coaxes a yes or no from the adventurer.  Defaults guide hesitant
+# wanderers, and every response is echoed so other spells can heed the choice.
+
+ask_yn_usage() {
+  cat <<'USAGE' >&2
+Usage: ask-yn "Question" [default]
+
+Prompt for a yes/no response. Defaults may be 'yes' or 'no'.
+Exit status 0 represents "yes", 1 represents "no".
+USAGE
+}
+
+
+
+ask_yn() {
+case "${1-}" in
+--help|--usage|-h)
+  ask_yn_usage
+  return 0
+  ;;
+esac
+
+set -eu
+
+if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
+  ask_yn_usage
+  return 1
+fi
+
+question=$1
+default_choice=""
+default_hint="[y/n]"
+if [ "$#" -eq 2 ]; then
+  case $2 in
+  y|Y|yes|YES)
+    default_choice=yes
+    default_hint="[Y/n]"
+    ;;
+  n|N|no|NO)
+    default_choice=no
+    default_hint="[y/N]"
+    ;;
+  *)
+    printf '%s\n' "ask-yn: default must be 'yes' or 'no'." >&2
+    return 1
+    ;;
+  esac
+fi
+
+while :; do
+  # Inline prompt_and_read with inlined ask_yn_select_input
+  printf '%s %s ' "$question" "$default_hint" >&2
+  
+  case ${ASK_CANTRIP_INPUT:-auto} in
+  stdin)
+    input_source=stdin
+    ;;
+  none)
+    input_source=none
+    ;;
+  *)
+    # Prefer stdin whenever something is piped to us, even if a tty is also
+    # present, so scripted callers can answer without interactivity.
+    # Use /dev/fd/0 instead of /dev/stdin for better cross-platform compatibility.
+    # On macOS, /dev/stdin is a symlink and -p/-s tests may fail on the symlink.
+    # Testing /dev/fd/0 directly works reliably on both Linux and macOS.
+    if [ -t 0 ] || [ -p /dev/fd/0 ] || [ -s /dev/fd/0 ]; then
+      input_source=stdin
+    elif [ -r /dev/tty ]; then
+      input_source=tty
+    else
+      input_source=none
+    fi
+    ;;
+  esac
+
+  case $input_source in
+  stdin)
+    IFS= read -r response || response=
+    ;;
+  tty)
+    IFS= read -r response </dev/tty || response=
+    ;;
+  *)
+    if [ -n "$default_choice" ]; then
+      response=$default_choice
+    else
+      printf '%s\n' "ask-yn: No interactive input available." >&2
+      return 1
+    fi
+    ;;
+  esac
+
+  if [ -z "$response" ] && [ -n "$default_choice" ]; then
+    response=$default_choice
+  fi
+
+  case $response in
+  y|Y|yes|YES)
+    printf '%s\n' "yes"
+    return 0
+    ;;
+  n|N|no|NO)
+    printf '%s\n' "no"
+    return 1
+    ;;
+  esac
+
+  printf '%s\n' "Yes or no?" >&2
+  default_hint="[y/n]" # remove default hint after invalid input
+  default_choice=""
+done
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */ask-yn) ask_yn "$@" ;; esac

@@ -1,0 +1,11 @@
+#!/bin/sh
+# warn MESSAGE - print message to stderr (does not exit)
+# Example: warn "Something unexpected happened"
+
+_warn() {
+  printf '%s\n' "$*" >&2
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */warn) _warn "$@" ;; esac

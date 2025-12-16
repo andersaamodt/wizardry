@@ -1,0 +1,50 @@
+#!/bin/sh
+
+# ask is the gentlest cantrip: it simply relays a question to ask-text so
+# callers can depend on a single entrypoint.  Keeping this shim separate lets
+# other spells import ask-text directly while users enjoy the concise ask name.
+
+ask_usage() {
+        cat <<'USAGE'
+Usage: ask "Question" [default]
+
+Prompts with the given question and echoes the response, forwarding all arguments to ask-text. Accepts an optional default that is used when the user presses Enter.
+USAGE
+}
+
+
+
+ask() {
+case "${1-}" in
+--help|--usage|-h)
+  ask_usage
+  return 0
+  ;;
+esac
+
+set -eu
+
+SCRIPT=$0
+case $SCRIPT in
+*/*)
+        SCRIPT_DIR=${SCRIPT%/*}
+        ;;
+*)
+        SCRIPT_DIR=.
+        ;;
+esac
+SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
+HELPER="$SCRIPT_DIR/ask-text"
+
+if [ ! -x "$HELPER" ]; then
+        printf '%s\n' "ask: missing required helper '$HELPER'." >&2
+        return 1
+fi
+
+# Pass every incantation straight through so ask behaves exactly like ask-text.
+exec "$HELPER" "$@"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */ask) ask "$@" ;; esac

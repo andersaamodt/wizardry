@@ -1,0 +1,12 @@
+#!/bin/sh
+# given VALUE - test if string is non-empty (provided)
+# DEPRECATED: Use 'nonempty' instead for clarity
+# Example: nonempty "$NAME" && echo "Hello, $NAME"
+
+_given() {
+  [ -n "$1" ]
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */given) _given "$@" ;; esac

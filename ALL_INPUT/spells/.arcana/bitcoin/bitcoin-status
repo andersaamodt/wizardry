@@ -1,0 +1,85 @@
+#!/bin/sh
+
+# Get Bitcoin sync status: 'syncing', 'synced', 'unknown', or 'error'
+
+bitcoin_status_usage() {
+        cat <<'USAGE' >&2
+Usage: bitcoin-status
+
+Shows whether Bitcoin Core is installed, running, and synced by inspecting systemd state and recent node logs with coloured status labels.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        bitcoin_status_usage
+        exit 0
+        ;;
+esac
+
+set -eu
+
+# Load colors if available
+if command -v colors >/dev/null 2>&1; then
+  # shellcheck source=/dev/null
+  . colors
+else
+  RESET=""
+  THEME_SUCCESS=""
+  THEME_WARNING=""
+  THEME_ERROR=""
+  GREY=""
+fi
+# Older scripts expect GRAY, so mirror GREY when missing.
+GRAY=${GREY-}
+
+# Determine installation and running status
+if is-bitcoin-installed; then
+  if is-bitcoin-running > /dev/null; then
+    running_status="running"
+    
+    # Get sync status from blockchain info
+    blockchain_info=$(bitcoin-cli getblockchaininfo 2>&1)
+    filtered=$(echo "$blockchain_info" | grep 'initialblockdownload' || echo "")
+    sync_status=$(echo "$filtered" | awk '{print $2}' | tr -d ',')
+    
+    if [ -z "$sync_status" ]; then
+      sync_status="error"
+    elif [ "$sync_status" = "true" ]; then
+      sync_status="syncing"
+    elif [ "$sync_status" = "false" ]; then
+      sync_status="synced"
+    else
+      sync_status="unknown"
+    fi
+    
+    # Build status message with sync info
+    if [ "$sync_status" = "synced" ]; then
+      install_status="installed, $running_status, synced"
+      status_color="$THEME_SUCCESS"
+    elif [ "$sync_status" = "syncing" ]; then
+      progress_line=$(echo "$blockchain_info" | grep 'progress')
+      progress=$(echo "$progress_line" | awk -F":" '{gsub(/,/, "", $2); printf "%.2f", $2*100}')
+      install_status="installed, $running_status, syncing $progress%%"
+      status_color="$THEME_WARNING"
+    elif [ "$sync_status" = "unknown" ]; then
+      install_status="installed, $running_status, not synced"
+      status_color="$THEME_WARNING"
+    elif [ "$sync_status" = "error" ]; then
+      install_status="installed, $running_status, error"
+      status_color="$THEME_ERROR"
+    else
+      install_status="installed, $running_status, not synced"
+      status_color="$THEME_WARNING"
+    fi
+  else
+    install_status="installed, not running"
+    status_color="$THEME_WARNING"
+  fi
+else
+  install_status="not installed"
+  status_color="$GRAY"
+fi
+
+# Print colored status
+printf "${status_color}${install_status}${RESET}\n"

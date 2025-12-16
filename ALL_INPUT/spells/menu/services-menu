@@ -1,0 +1,82 @@
+#!/bin/sh
+
+# services-menu collects all service-management spells in one place so users
+# never need to remember flags. Each menu item launches a single-purpose spell.
+
+require-wizardry || exit 1
+
+services_menu_usage() {
+  cat <<'USAGE'
+Usage: services-menu
+
+Displays the system services management menu.
+USAGE
+}
+
+
+
+services_menu() {
+case "${1-}" in
+--help|--usage|-h)
+  services_menu_usage
+  return 0
+  ;;
+esac
+
+set -eu
+set -u
+
+# Load color palette (colors handles terminal capability detection internally)
+# shellcheck source=/dev/null
+. "$(command -v colors)"
+
+if ! require menu "The services menu needs the 'menu' command to present options."; then
+  return 1
+fi
+
+for spell in start-service stop-service restart-service enable-service disable-service \
+  service-status is-service-installed remove-service install-service-template; do
+  if ! require "$spell" "The services menu expects the '$spell' spell."; then
+    return 1
+  fi
+done
+
+# Catch Ctrl-C and TERM signal to return 1 cleanly
+trap 'exit 0' INT TERM
+
+services_menu_display_menu() {
+  start_item="Start a service%start-service"
+  stop_item="Stop a service%stop-service"
+  restart_item="Restart a service%restart-service"
+  enable_item="Enable a service at boot%enable-service"
+  disable_item="Disable a service at boot%disable-service"
+  status_item="Check service status%service-status"
+  installed_item="Check if a service is installed%is-service-installed"
+  remove_item="Remove a service%remove-service"
+  install_item="Install service from template%install-service-template"
+  exit_label=$(exit-label)
+  exit_item="${exit_label}%kill -TERM \$PPID"
+
+  set -- "$start_item" "$stop_item" "$restart_item" \
+    "$enable_item" "$disable_item" "$status_item" \
+    "$installed_item" "$remove_item" "$install_item" "$exit_item"
+
+  menu "Services Menu:" "$@"
+}
+
+first_run=1
+
+while true; do
+  if [ "$first_run" -eq 0 ]; then
+    :
+  else
+    first_run=0
+  fi
+
+  services_menu_display_menu || true
+done
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */services-menu) services_menu "$@" ;; esac

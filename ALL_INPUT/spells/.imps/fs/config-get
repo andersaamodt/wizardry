@@ -1,0 +1,45 @@
+#!/bin/sh
+# config-get FILE KEY - get value for key from key=value config file
+# Returns the value if found, empty string if not found
+# Example: value=$(config-get ~/.app/config db-host)
+
+set -eu
+
+_config_get() {
+  _cg_file=${1:?config-get: file path required}
+  _cg_key=${2:?config-get: key required}
+  
+  # Validate key format (alphanumeric, dash, underscore only)
+  case "$_cg_key" in
+    *[!a-zA-Z0-9_-]*)
+      printf 'config-get: invalid key format (use alphanumeric, dash, underscore only)\n' >&2
+      return 1
+      ;;
+    "")
+      printf 'config-get: key cannot be empty\n' >&2
+      return 1
+      ;;
+  esac
+  
+  # File doesn't exist - return empty
+  if [ ! -f "$_cg_file" ]; then
+    return 0
+  fi
+  
+  # Find and extract value
+  # Use awk for safe parsing (handles = in values, no shell expansion)
+  awk -F= -v key="$_cg_key" '
+    $1 == key {
+      # Print everything after first =
+      sub(/^[^=]+=/, "")
+      print
+      found=1
+      exit
+    }
+    END { exit !found }
+  ' "$_cg_file"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */config-get) _config_get "$@" ;; esac

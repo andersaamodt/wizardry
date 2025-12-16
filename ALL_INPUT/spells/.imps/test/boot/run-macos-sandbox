@@ -1,0 +1,26 @@
+#!/bin/sh
+# run-macos-sandbox - execute command in macOS sandbox-exec with permissive profile
+# Provides minimal isolation for test consistency on macOS.
+
+_run_macos_sandbox() {
+  # Create a permissive sandbox profile that provides minimal isolation
+  # NOTE: macOS sandboxing is DISABLED BY DEFAULT due to compatibility issues
+  # Enable with WIZARDRY_ENABLE_MACOS_SANDBOX=1 if needed for testing
+  sandbox_profile='(version 1)
+(allow default)
+(allow file-read*)
+(allow file-write*)
+(allow process*)
+(allow network*)
+(allow ipc*)
+(allow mach*)
+(allow sysctl*)
+(allow signal)
+(allow system*)
+'
+
+  "${SANDBOX_EXEC_BIN:?}" -p "$sandbox_profile" "$@"
+}
+
+# Self-execution when run directly (not sourced)
+case "${0##*/}" in run-macos-sandbox) _run_macos_sandbox "$@" ;; esac

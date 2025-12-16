@@ -1,0 +1,11 @@
+#!/bin/sh
+# first [FILE] - output first line of input or file
+# Examples: ls | first   # or: first /etc/passwd
+
+_first() {
+  if [ "$#" -ge 1 ]; then head -n 1 "$1"; else head -n 1; fi
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */first) _first "$@" ;; esac

@@ -1,0 +1,176 @@
+#!/bin/sh
+
+# This spell memorizes spells for the Cast menu.
+# It keeps a tiny spellbook of spell names in a dotfile so
+# Wizards can queue their favorite incantations without editing menus by hand.
+#
+# Usage: memorize SPELL_NAME
+#        memorize list         - list all memorized spells
+#        memorize path         - print the command list file path
+#        memorize dir          - print the cast directory
+
+require-wizardry || exit 1
+
+spell_name="memorize"
+tab_char=$(printf '\t')
+
+memorize_usage() {
+        cat <<USAGE >&2
+Usage: $spell_name <spell-name>
+       $spell_name {list|path|dir}
+
+Add a spell to the Cast menu, or use list/path/dir to inspect the spellbook.
+Spells must exist in PATH or \$SPELLBOOK_DIR.
+USAGE
+}
+
+
+
+memorize() {
+case "${1-}" in
+--help|--usage|-h)
+  memorize_usage
+  return 0
+  ;;
+esac
+
+set -eu
+
+# Expand tilde in paths
+expand_path() {
+  path=$1
+  case $path in
+  \~)
+    if [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
+      path=$HOME
+    fi
+    ;;
+  \~/*)
+    if [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
+      path=$HOME/${path#\~/}
+    fi
+    ;;
+  esac
+  printf '%s' "$path"
+}
+
+# Resolve cast directory
+if [ -n "${WIZARDRY_CAST_DIR-}" ]; then
+  cast_dir=$(expand_path "$WIZARDRY_CAST_DIR")
+else
+  cast_dir=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+fi
+
+# Resolve command file
+if [ -n "${WIZARDRY_CAST_FILE-}" ]; then
+  command_file=$(expand_path "$WIZARDRY_CAST_FILE")
+elif [ -n "${MEMORIZE_COMMAND_FILE-}" ]; then
+  command_file=$(expand_path "$MEMORIZE_COMMAND_FILE")
+else
+  command_file=$cast_dir/.memorized
+fi
+
+if [ "$#" -eq 0 ]; then
+  memorize_usage
+  return 1
+fi
+
+action=$1
+
+case $action in
+list)
+  if [ "$#" -ne 1 ]; then
+    memorize_usage
+    return 1
+  fi
+  if [ -f "$command_file" ]; then
+    cat "$command_file"
+  fi
+  ;;
+path)
+  if [ "$#" -ne 1 ]; then
+    memorize_usage
+    return 1
+  fi
+  printf '%s\n' "$command_file"
+  ;;
+dir)
+  if [ "$#" -ne 1 ]; then
+    memorize_usage
+    return 1
+  fi
+  printf '%s\n' "$cast_dir"
+  ;;
+--help|--usage|-h)
+  memorize_usage
+  ;;
+-*)
+  printf '%s\n' "$spell_name: unknown option '$action'" >&2
+  memorize_usage
+  return 1
+  ;;
+*)
+  # Default action: memorize the spell
+  if [ "$#" -ne 1 ]; then
+    printf '%s\n' "$spell_name: expects exactly one spell name." >&2
+    memorize_usage
+    return 1
+  fi
+  
+  name=$action
+  
+  # Validate name
+  case $name in
+  ''|*[!A-Za-z0-9._-]*)
+    printf '%s\n' "$spell_name: names may contain only letters, digits, dots, underscores, and dashes." >&2
+    return 1
+    ;;
+  -*)
+    printf '%s\n' "$spell_name: names may not begin with a dash." >&2
+    return 1
+    ;;
+  esac
+  
+  # Ensure parent directories exist
+  if [ ! -d "$cast_dir" ]; then
+    mkdir -p "$cast_dir"
+  fi
+  dir=${command_file%/*}
+  if [ "$dir" != "$command_file" ] && [ ! -d "$dir" ]; then
+    mkdir -p "$dir"
+  fi
+  
+  # Add spell to memorized list (removing any existing entry first)
+  cmd=$name
+  tmp=$(temp-file memorize) || return 1
+  trap 'cleanup-file "$tmp"' EXIT HUP INT TERM
+  
+  if [ -f "$command_file" ]; then
+    while IFS= read -r line || [ -n "$line" ]; do
+      entry_name=$line
+      case $line in
+      *"$tab_char"*)
+        entry_name=${line%%"$tab_char"*}
+        ;;
+      esac
+      if [ "$entry_name" = "$name" ] || [ -z "$entry_name" ]; then
+        continue
+      fi
+      printf '%s\n' "$line" >>"$tmp"
+    done <"$command_file"
+  fi
+  
+  # Write new entry at top
+  printf '%s%s%s\n' "$name" "$tab_char" "$cmd" >"$command_file"
+  if [ -f "$tmp" ]; then
+    cat "$tmp" >>"$command_file"
+  fi
+  trap - EXIT HUP INT TERM
+  rm -f "$tmp"
+  ;;
+esac
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */memorize) memorize "$@" ;; esac

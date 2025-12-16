@@ -1,0 +1,47 @@
+#!/bin/sh
+# Tests for the 'and-then' linking word imp
+
+test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
+  test_root=$(dirname "$test_root")
+done
+# shellcheck source=/dev/null
+. "$test_root/spells/.imps/test/test-bootstrap"
+
+test_and_then_is_executable() {
+  skip-if-compiled || return $?
+  [ -x "$ROOT_DIR/spells/.imps/lex/and-then" ]
+}
+
+test_and_then_continues_on_success() {
+  skip-if-compiled || return $?
+  _run_spell spells/.imps/lex/and-then "true" "" echo hello
+  _assert_success || return 1
+  _assert_output_contains "hello" || return 1
+}
+
+test_and_then_stops_on_failure() {
+  skip-if-compiled || return $?
+  _run_spell spells/.imps/lex/and-then "false" "" echo shouldnt_run
+  _assert_failure || return 1
+  case "$OUTPUT" in
+    *shouldnt_run*)
+      TEST_FAILURE_REASON="and-then continued after failure"
+      return 1
+      ;;
+  esac
+}
+
+test_and_then_no_prior_command() {
+  skip-if-compiled || return $?
+  _run_spell spells/.imps/lex/and-then "" "" echo hello
+  _assert_success || return 1
+  _assert_output_contains "hello" || return 1
+}
+
+_run_test_case "and-then is executable" test_and_then_is_executable
+_run_test_case "and-then continues on success" test_and_then_continues_on_success
+_run_test_case "and-then stops on failure" test_and_then_stops_on_failure
+_run_test_case "and-then with no prior command" test_and_then_no_prior_command
+
+_finish_tests

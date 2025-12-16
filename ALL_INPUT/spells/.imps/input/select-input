@@ -1,0 +1,30 @@
+#!/bin/sh
+# select-input - detect best input source (stdin/tty/none)
+# Example: src=$(select-input) && case $src in stdin) read line ;; tty) read </dev/tty ;; esac
+# Set SELECT_INPUT_MODE=stdin|tty|none to override auto-detection
+
+_select_input() {
+  case ${SELECT_INPUT_MODE:-auto} in
+    stdin) printf '%s\n' stdin; return 0 ;;
+    tty)   printf '%s\n' tty;   return 0 ;;
+    none)  return 1 ;;
+  esac
+
+  # Use /dev/fd/0 instead of /dev/stdin for cross-platform compatibility.
+  # On macOS, /dev/stdin is a symlink and tests may fail on the symlink itself.
+  if [ -t 0 ] || [ -p /dev/fd/0 ] || [ -s /dev/fd/0 ]; then
+    printf '%s\n' stdin
+    return 0
+  fi
+
+  if [ -r /dev/tty ]; then
+    printf '%s\n' tty
+    return 0
+  fi
+
+  return 1
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */select-input) _select_input "$@" ;; esac

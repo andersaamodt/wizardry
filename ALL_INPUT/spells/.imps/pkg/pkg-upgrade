@@ -1,0 +1,24 @@
+#!/bin/sh
+# pkg-upgrade - upgrade all installed packages
+# Example: pkg-update && pkg-upgrade
+
+_pkg_upgrade() {
+  _pug_pm=$(_pkg_manager) || {
+    printf '%s\n' "pkg-upgrade: no supported package manager" >&2
+    return 1
+  }
+
+  case $_pug_pm in
+    apt)    sudo apt-get -y upgrade ;;
+    dnf)    sudo dnf -y upgrade ;;
+    pacman) sudo pacman --noconfirm -Su ;;
+    brew)   brew upgrade ;;
+    nix)    nix-env -u ;;
+    pkgin)  sudo pkgin -y upgrade ;;
+    apk)    sudo apk upgrade ;;
+  esac
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */pkg-upgrade) _pkg_upgrade "$@" ;; esac

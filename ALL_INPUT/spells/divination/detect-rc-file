@@ -1,0 +1,209 @@
+#!/bin/sh
+
+# This spell selects the best shell rc file for PATH exports or memorization.
+# It prints platform, rc_file, and format hints so callers can update startup files safely.
+
+
+detect_rc_file_usage() {
+        cat <<'USAGE' >&2
+Usage: detect-rc-file [--platform PLATFORM]
+
+Detects the best startup file to modify for PATH exports or spell memorization.
+Prints key=value pairs for the detected platform, rc_file, and format.
+USAGE
+}
+
+
+
+detect_rc_file() {
+
+platform="${DETECT_RC_FILE_PLATFORM-}"
+
+while [ "$#" -gt 0 ]; do
+        case $1 in
+        --platform)
+                if [ "$#" -lt 2 ]; then
+                        printf '%s\n' "detect-rc-file: --platform expects a value." >&2
+                        detect_rc_file_usage
+                        return 1
+                fi
+                platform=$2
+                shift 2
+                ;;
+        --platform=*)
+                        platform=${1#*=}
+                        shift
+                        ;;
+        --help|--usage|-h)
+                detect_rc_file_usage
+                return 0
+                ;;
+        --)
+                shift
+                break
+                ;;
+        -*)
+                printf '%s\n' "detect-rc-file: unknown option '$1'." >&2
+                detect_rc_file_usage
+                return 1
+                ;;
+        *)
+                break
+                ;;
+        esac
+set -eu
+
+done
+
+if [ "$#" -gt 0 ]; then
+        printf '%s\n' "detect-rc-file: unexpected argument '$1'." >&2
+        detect_rc_file_usage
+        return 1
+fi
+
+add_candidate() {
+        file=$1
+        if [ -z "$file" ]; then
+                return 0
+        fi
+        for candidate in $RC_CANDIDATES; do
+                if [ "$candidate" = "$file" ]; then
+                        return 0
+                fi
+        done
+        if [ -z "$RC_CANDIDATES" ]; then
+                RC_CANDIDATES=$file
+        else
+                RC_CANDIDATES="$RC_CANDIDATES $file"
+        fi
+}
+
+# Decide platform once so the downstream selection stays predictable.
+if [ -z "$platform" ]; then
+        if command -v detect-distro >/dev/null 2>&1; then
+                platform=$(detect-distro 2>/dev/null || printf 'unknown')
+        else
+                platform=unknown
+        fi
+fi
+
+RC_CANDIDATES=''
+
+case $platform in
+mac)
+        # On macOS, Terminal.app and iTerm2 open login shells by default.
+        # Login shells source .zprofile (not .zshrc), so we prefer .zprofile
+        # for PATH additions to ensure they take effect in new terminal windows.
+        # If .zshrc exists but .zprofile doesn't, we use .zshrc since the user
+        # may have configured their terminal to use interactive shells.
+        add_candidate "$HOME/.zprofile"
+        add_candidate "$HOME/.zshrc"
+        add_candidate "$HOME/.bash_profile"
+        ;;
+nixos)
+        # On NixOS, prefer nix config if home-manager is available or the config
+        # file already exists. Otherwise fall back to shell RC files to ensure
+        # PATH changes take effect immediately.
+        # Check NIXOS_CONFIG env var first - this is the standard way to specify
+        # a custom configuration location on NixOS.
+        if [ -n "${NIXOS_CONFIG-}" ] && [ -f "$NIXOS_CONFIG" ]; then
+                add_candidate "$NIXOS_CONFIG"
+        fi
+        # Check if home-manager is installed - if so, prioritize home-manager paths
+        # over system-level configuration to avoid requiring sudo.
+        home_manager_installed=0
+        if command -v home-manager >/dev/null 2>&1; then
+                home_manager_installed=1
+        fi
+        # Check for home-manager configurations in both old and new paths.
+        # Newer home-manager uses ~/.config/home-manager/home.nix
+        # Older standalone home-manager uses ~/.config/nixpkgs/home.nix
+        if [ -f "$HOME/.config/home-manager/home.nix" ]; then
+                add_candidate "$HOME/.config/home-manager/home.nix"
+        fi
+        if [ -f "$HOME/.config/nixpkgs/home.nix" ]; then
+                add_candidate "$HOME/.config/nixpkgs/home.nix"
+        fi
+        # If home-manager is installed but no config exists yet, suggest the new path
+        if [ "$home_manager_installed" -eq 1 ]; then
+                add_candidate "$HOME/.config/home-manager/home.nix"
+        fi
+        # Check for system-level configuration (requires sudo to edit).
+        # Only add this if home-manager is NOT installed, since home-manager
+        # is preferred when available (doesn't require sudo).
+        if [ "$home_manager_installed" -eq 0 ] && [ -f /etc/nixos/configuration.nix ]; then
+                add_candidate /etc/nixos/configuration.nix
+        fi
+        add_candidate "$HOME/.bashrc"
+        add_candidate "$HOME/.bash_profile"
+        add_candidate "$HOME/.profile"
+        ;;
+debian|arch|fedora)
+        add_candidate "$HOME/.bashrc"
+        add_candidate "$HOME/.profile"
+        ;;
+*) : ;;
+        esac
+
+shell_name=${SHELL-}
+if [ -z "$shell_name" ]; then
+# Some non-interactive shells (like dash) do not export SHELL, so default to
+# sh to keep the rc-file selection predictable even when the variable is
+# unset.
+shell_name=sh
+fi
+
+case ${shell_name##*/} in
+zsh)
+        add_candidate "$HOME/.zshrc"
+        add_candidate "$HOME/.zprofile"
+        ;;
+bash)
+        add_candidate "$HOME/.bashrc"
+        add_candidate "$HOME/.bash_profile"
+        ;;
+*)
+        add_candidate "$HOME/.profile"
+        ;;
+        esac
+
+add_candidate "$HOME/.bashrc"
+add_candidate "$HOME/.profile"
+
+rc_file=''
+for candidate in $RC_CANDIDATES; do
+        if [ -f "$candidate" ]; then
+                rc_file=$candidate
+                break
+        fi
+done
+
+if [ -z "$rc_file" ]; then
+        for candidate in $RC_CANDIDATES; do
+                rc_file=$candidate
+                break
+        done
+fi
+
+if [ -z "$rc_file" ]; then
+        printf '%s\n' "detect-rc-file: unable to determine a startup file." >&2
+        exit 1
+fi
+
+case $rc_file in
+*.nix)
+        format=nix
+        ;;
+*)
+        format=shell
+        ;;
+        esac
+
+printf 'platform=%s\n' "$platform"
+printf 'rc_file=%s\n' "$rc_file"
+printf 'format=%s\n' "$format"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */detect-rc-file) detect_rc_file "$@" ;; esac

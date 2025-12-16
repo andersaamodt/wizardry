@@ -1,0 +1,18 @@
+#!/bin/sh
+# ensure-parent-dir FILE - create parent directory of file if it doesn't exist
+# Example: ensure-parent-dir "$HOME/.config/app/config.txt"
+
+set -eu
+
+_ensure_parent_dir() {
+  _epd_file=${1-}
+  _epd_dir=${_epd_file%/*}
+  
+  if [ "$_epd_dir" != "$_epd_file" ] && [ ! -d "$_epd_dir" ]; then
+    mkdir -p "$_epd_dir"
+  fi
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */ensure-parent-dir) _ensure_parent_dir "$@" ;; esac

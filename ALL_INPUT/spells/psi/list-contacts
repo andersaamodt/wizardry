@@ -1,0 +1,64 @@
+#!/bin/sh
+
+# This spell lists all contacts in the contacts directory.
+# Each vCard file is parsed to extract the name, organization, or telephone.
+
+list_contacts_usage() {
+  cat <<'USAGE'
+Usage: list-contacts [directory]
+
+List contacts from vCard files in a directory, defaulting to ~/.contacts when none is provided.
+USAGE
+}
+
+
+
+list_contacts() {
+case "${1-}" in
+--help|--usage|-h)
+  list_contacts_usage
+  return 0
+  ;;
+esac
+
+set -eu
+
+# Default contacts directory
+CONTACTS_DIR="${1:-$HOME/.contacts}"
+
+# Ensure the contacts directory exists
+make dir "$CONTACTS_DIR"
+
+# Find all vCard files in the contacts directory (POSIX-compliant)
+find "$CONTACTS_DIR" -name '*.vcf' | while IFS= read -r file; do
+  # Skip if file doesn't exist (empty directory case)
+  is file "$file" || continue
+  
+  # Attempt to extract the FN, ORG, or TEL field from the vCard
+  name=$(perl -pe 's/\r\n[[:space:]]/ /g' "$file" |
+    awk -v RS='END:VCARD' '
+      BEGIN {FPAT = "([^:]+:)?([^\\\\]*\\\\.)*[^\\\\]*"}
+      /^FN:/  {name = substr($0,5); gsub(/\\\\n/,"\n",name); \
+               gsub(/\\\\,/,",",name); gsub(/\\\\;/,";",name); \
+               gsub(/\\\\\\\\/,"\\",name); return 1}
+      /^ORG:/ {org  = substr($0,5); gsub(/\\\\n/,"\n",org); \
+               gsub(/\\\\,/,",",org); gsub(/\\\\;/,";",org); \
+               gsub(/\\\\\\\\/,"\\",org);}
+      /^TEL:/ {tel  = substr($0,5); gsub(/\\\\n/,"\n",tel); \
+               gsub(/\\\\,/,",",tel); gsub(/\\\\;/,";",tel); \
+               gsub(/\\\\\\\\/,"\\",tel);}
+      END     {print name != "" ? name : (org != "" ? org : tel)}
+    ')
+
+  if is unset "$name"; then
+    # No name, organization, or telephone found, print the filename
+    name="<$(basename "$file")>"
+  fi
+
+  say "$name"
+done | sort
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */list-contacts) list_contacts "$@" ;; esac

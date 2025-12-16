@@ -1,0 +1,198 @@
+#!/bin/sh
+
+# This spell applies an extended attribute to a file.
+# With 2 or fewer args, it autodetects order: one is a file, one is attribute=value.
+
+enchant_usage() {
+cat <<'USAGE'
+Usage: enchant [file] attribute=value
+
+Apply an extended attribute with the given name and value to a file using attr, xattr, or setfattr. With two arguments the spell figures out which is the path and which is attribute=value, defaulting to the current directory, and the legacy <file> <attribute> <value> [helper] form still works.
+USAGE
+}
+
+
+enchant() {
+case "${1-}" in
+--help|--usage|-h)
+  enchant_usage
+  return 0
+  ;;
+esac
+
+set -eu
+
+# Add imps directory to PATH
+script_dir=$(cd "$(dirname "$0")" && pwd -P)
+imps_dir="${script_dir%/spells*}/spells/.imps"
+PATH="$imps_dir/fs:$imps_dir/cond:$PATH"
+
+# Parse arguments
+file=""
+key=""
+value=""
+preferred=""
+
+if [ $# -eq 0 ]; then
+        printf '%s\n' "Error: At least one argument is required (attribute=value)." >&2
+        return 1
+elif [ $# -eq 1 ]; then
+        # One arg: must be attribute=value, use current directory
+        case "$1" in
+        *=*)
+                # Check both sides are non-empty
+                _attr="${1%%=*}"
+                _val="${1#*=}"
+                if [ -n "$_attr" ] && [ -n "$_val" ]; then
+                        key=$_attr
+                        value=$_val
+                        file=$PWD
+                else
+                        printf '%s\n' "Error: Single argument must be attribute=value format." >&2
+                        return 1
+                fi
+                ;;
+        *)
+                printf '%s\n' "Error: Single argument must be attribute=value format." >&2
+                return 1
+                ;;
+        esac
+elif [ $# -eq 2 ]; then
+        # Two args: detect which is file and which is attribute=value
+        arg1_is_attr=0
+        arg2_is_attr=0
+        
+        # Check if arg1 is attribute=value
+        case "$1" in
+        *=*)
+                _attr1="${1%%=*}"
+                _val1="${1#*=}"
+                [ -n "$_attr1" ] && [ -n "$_val1" ] && arg1_is_attr=1
+                ;;
+        esac
+        
+        # Check if arg2 is attribute=value
+        case "$2" in
+        *=*)
+                _attr2="${2%%=*}"
+                _val2="${2#*=}"
+                [ -n "$_attr2" ] && [ -n "$_val2" ] && arg2_is_attr=1
+                ;;
+        esac
+        
+        if [ "$arg1_is_attr" -eq 1 ] && [ "$arg2_is_attr" -eq 1 ]; then
+                printf '%s\n' "Error: Both arguments look like attribute=value pairs." >&2
+                return 1
+        elif [ "$arg1_is_attr" -eq 1 ]; then
+                # First is attr=val, second is file
+                key="${1%%=*}"
+                value="${1#*=}"
+                file=$2
+        elif [ "$arg2_is_attr" -eq 1 ]; then
+                # First is file, second is attr=val
+                file=$1
+                key="${2%%=*}"
+                value="${2#*=}"
+        else
+                # Neither has valid attr=value format
+                printf '%s\n' "Error: Two-argument format requires one argument to be in 'attribute=value' format." >&2
+                printf '%s\n' "       Use 'enchant <file> attr=value' or 'enchant attr=value <file>'" >&2
+                return 1
+        fi
+elif [ $# -eq 3 ] || [ $# -eq 4 ]; then
+        # Legacy 3-4 arg format: file, attribute, value, [helper]
+        file=$1
+        key=$2
+        value=$3
+        preferred=${4-}
+else
+        printf '%s\n' "Error: Too many arguments provided." >&2
+        return 1
+fi
+
+# Validate we have all required parts
+if [ -z "$file" ] || [ -z "$key" ] || [ -z "$value" ]; then
+        printf '%s\n' "Error: File, attribute, and value are all required." >&2
+        return 1
+fi
+
+# Check file exists
+gone "$file" && fail "Error: The file does not exist."
+
+# Set attribute with fallback chain
+attempted_helper=""
+attempt_status=0
+success=0
+
+# Determine helper preference  
+helpers=""
+case "$preferred" in
+"")
+        helpers="attr xattr setfattr"
+        ;;
+attr|xattr|setfattr)
+        # Preferred helper first, then others
+        helpers="$preferred"
+        for h in attr xattr setfattr; do
+                if [ "$h" != "$preferred" ]; then
+                        helpers="$helpers $h"
+                fi
+        done
+        ;;
+*)
+        printf '%s\n' "Error: Unknown helper '$preferred'. Choose attr, xattr, or setfattr." >&2
+        return 1
+        ;;
+esac
+
+# Try each helper
+for helper in $helpers; do
+        if ! xattr-helper-usable "$helper"; then
+                continue  # Helper not available, try next
+        fi
+        
+        helper_path=$(command -v "$helper")
+        status=0
+        case "$helper" in
+        attr)
+                "$helper_path" -s "$key" -V "$value" "$file" || status=$?
+                ;;
+        xattr)
+                "$helper_path" -w "$key" "$value" "$file" || status=$?
+                ;;
+        setfattr)
+                "$helper_path" -n "$key" -v "$value" "$file" || status=$?
+                ;;
+        esac
+        
+        case "$status" in
+        0)
+                success=1
+                break
+                ;;
+        127)
+                # Helper unavailable (returned 127), try next
+                ;;
+        *)
+                # Helper ran but failed - record it but keep trying others
+                attempted_helper=$helper
+                attempt_status=$status
+                ;;
+        esac
+done
+
+if [ "$success" -eq 0 ]; then
+        if [ -n "$attempted_helper" ]; then
+                printf "%s\n" "Error: Failed to set attribute using '$attempted_helper' (return 1 $attempt_status)." >&2
+        else
+                printf "%s\n" "Error: This spell requires the 'attr', 'xattr', or 'setfattr' command to be installed." >&2
+        fi
+        return 1
+fi
+
+printf "The file has been enchanted with the attribute '%s' and value '%s'.\n" "$key" "$value"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */enchant) enchant "$@" ;; esac

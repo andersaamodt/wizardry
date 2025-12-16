@@ -1,0 +1,11 @@
+#!/bin/sh
+# has COMMAND - test if command exists on PATH
+# Example: has git && git status
+
+_has() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */has) _has "$@" ;; esac

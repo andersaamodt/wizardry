@@ -1,0 +1,227 @@
+#!/bin/sh
+# Performance profiling for the wizardry test suite.
+# Times each test individually and reports slowest tests.
+
+profile_tests_usage() {
+  cat <<'USAGE'
+Usage: profile-tests [--only PATTERN] [--output FILE]
+
+Time each test in the test suite individually and report performance metrics.
+
+Options:
+  --only PATTERN    Only profile tests matching PATTERN
+  --output FILE     Write detailed report to FILE (default: stdout)
+  
+Output includes:
+  - Total runtime for each test
+  - Sorted list of slowest tests
+  - Summary statistics
+
+Examples:
+  profile-tests
+  profile-tests --only "arcane/*"
+  profile-tests --output /tmp/test-profile.txt
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  profile_tests_usage
+  exit 0
+  ;;
+esac
+
+set -eu
+
+profile_tests() {
+# Find the script directory and root
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+root_dir=$(CDPATH= cd -- "$script_dir/../../.." && pwd -P)
+test_dir="$root_dir/.tests"
+
+# Helper function for pattern matching
+matches_pattern() {
+  [ "$#" -ge 2 ] || return 1
+  _mp_path=$1
+  _mp_pattern=$2
+  case "$_mp_path" in
+    $_mp_pattern) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# Parse arguments
+only_pattern=""
+output_file=""
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --only)
+      if [ "$#" -lt 2 ]; then
+        printf 'profile-tests: --only requires a pattern\n' >&2
+        exit 1
+      fi
+      only_pattern="$2"
+      shift 2
+      ;;
+    --output)
+      if [ "$#" -lt 2 ]; then
+        printf 'profile-tests: --output requires a file path\n' >&2
+        exit 1
+      fi
+      output_file="$2"
+      shift 2
+      ;;
+    *)
+      printf 'profile-tests: unknown option: %s\n' "$1" >&2
+      profile_tests_usage
+      exit 1
+      ;;
+  esac
+done
+
+# Get list of tests to profile
+test_list=""
+if [ -n "$only_pattern" ]; then
+  test_list=$(
+    find "$test_dir" -type f \( -name 'test-*.sh' -o -name 'common-*.sh' \) | \
+      while IFS= read -r test_path; do
+        rel=${test_path#"$test_dir/"}
+        if matches_pattern "$rel" "$only_pattern"; then
+          printf '%s\n' "$test_path"
+        fi
+      done | sort
+  )
+else
+  test_list=$(find "$test_dir" -maxdepth 1 -type f \
+    \( -name 'test-*.sh' -o -name 'common-*.sh' \) 2>/dev/null | sort)
+  test_list="$test_list
+$(find "$test_dir" -mindepth 2 -type f -name 'test-*.sh' 2>/dev/null | sort)"
+fi
+
+if [ -z "$test_list" ]; then
+  printf 'profile-tests: no tests found\n' >&2
+  exit 1
+fi
+
+# Create temporary file for timing data
+tmpfile=$(mktemp "${TMPDIR:-/tmp}/profile-tests.XXXXXX")
+trap 'rm -f "$tmpfile"' EXIT HUP INT TERM
+
+printf 'Profiling tests...\n' >&2
+
+# Time each test
+test_count=$(printf '%s\n' "$test_list" | grep -c .)
+current=0
+
+printf '%s\n' "$test_list" | while IFS= read -r test_path; do
+  [ -n "$test_path" ] || continue
+  current=$((current + 1))
+  
+  test_name=$(basename "$test_path" .sh)
+  rel_path=${test_path#"$test_dir/"}
+  
+  printf '\r[%d/%d] %s...' "$current" "$test_count" "$test_name" >&2
+  
+  # Time the test execution
+  start_time=$(date +%s.%N 2>/dev/null || date +%s)
+  
+  # Run test and capture exit code but suppress output
+  test_exit=0
+  sh "$test_path" >/dev/null 2>&1 || test_exit=$?
+  
+  end_time=$(date +%s.%N 2>/dev/null || date +%s)
+  
+  # Calculate duration
+  duration=$(awk -v start="$start_time" -v end="$end_time" \
+    'BEGIN { printf "%.3f", end - start; exit }')
+  
+  # Record: duration|status|path
+  printf '%s|%s|%s\n' "$duration" "$test_exit" "$rel_path" >> "$tmpfile"
+done
+
+printf '\n' >&2
+
+# Sort results by duration (descending)
+sorted_results=$(sort -t'|' -k1 -rn "$tmpfile")
+
+# Calculate statistics
+total_time=$(awk -F'|' '{ sum += $1 } END { printf "%.3f", sum }' "$tmpfile")
+test_total=$(wc -l < "$tmpfile" | tr -d ' ')
+avg_time=$(awk -v total="$total_time" -v count="$test_total" \
+  'BEGIN { printf "%.3f", total / count; exit }')
+passed=$(awk -F'|' '$2 == 0 { count++ } END { print count+0 }' "$tmpfile")
+failed=$(awk -F'|' '$2 != 0 { count++ } END { print count+0 }' "$tmpfile")
+
+# Generate report
+report() {
+  printf '=================================================\n'
+  printf 'Test Suite Performance Profile\n'
+  printf '=================================================\n'
+  printf '\n'
+  printf 'Summary:\n'
+  printf '  Total tests:     %d\n' "$test_total"
+  printf '  Passed:          %d\n' "$passed"
+  printf '  Failed:          %d\n' "$failed"
+  printf '  Total time:      %ss\n' "$total_time"
+  printf '  Average time:    %ss\n' "$avg_time"
+  printf '\n'
+  
+  # Show top 20 slowest tests
+  printf 'Top 20 Slowest Tests:\n'
+  printf '%-8s %-8s %s\n' 'TIME(s)' 'STATUS' 'TEST'
+  printf '%s\n' '-----------------------------------------------'
+  
+  printf '%s\n' "$sorted_results" | head -20 | while IFS='|' read -r duration status path; do
+    status_str="PASS"
+    [ "$status" -ne 0 ] && status_str="FAIL"
+    printf '%-8s %-8s %s\n' "$duration" "$status_str" "$path"
+  done
+  
+  printf '\n'
+  
+  # Show distribution by time ranges
+  printf 'Time Distribution:\n'
+  
+  under_01=$(awk -F'|' '$1 < 0.1 { count++ } END { print count+0 }' "$tmpfile")
+  range_01_05=$(awk -F'|' '$1 >= 0.1 && $1 < 0.5 { count++ } END { print count+0 }' "$tmpfile")
+  range_05_1=$(awk -F'|' '$1 >= 0.5 && $1 < 1.0 { count++ } END { print count+0 }' "$tmpfile")
+  range_1_5=$(awk -F'|' '$1 >= 1.0 && $1 < 5.0 { count++ } END { print count+0 }' "$tmpfile")
+  range_5_10=$(awk -F'|' '$1 >= 5.0 && $1 < 10.0 { count++ } END { print count+0 }' "$tmpfile")
+  over_10=$(awk -F'|' '$1 >= 10.0 { count++ } END { print count+0 }' "$tmpfile")
+  
+  printf '  < 0.1s:     %d tests\n' "$under_01"
+  printf '  0.1-0.5s:   %d tests\n' "$range_01_05"
+  printf '  0.5-1.0s:   %d tests\n' "$range_05_1"
+  printf '  1.0-5.0s:   %d tests\n' "$range_1_5"
+  printf '  5.0-10.0s:  %d tests\n' "$range_5_10"
+  printf '  > 10.0s:    %d tests\n' "$over_10"
+  
+  printf '\n'
+  printf 'Complete Results (sorted by duration):\n'
+  printf '%-8s %-8s %s\n' 'TIME(s)' 'STATUS' 'TEST'
+  printf '%s\n' '-----------------------------------------------'
+  
+  printf '%s\n' "$sorted_results" | while IFS='|' read -r duration status path; do
+    status_str="PASS"
+    [ "$status" -ne 0 ] && status_str="FAIL"
+    printf '%-8s %-8s %s\n' "$duration" "$status_str" "$path"
+  done
+}
+
+# Output report
+if [ -n "$output_file" ]; then
+  report > "$output_file"
+  printf 'Performance profile written to: %s\n' "$output_file"
+else
+  report
+fi
+
+# Cleanup
+trap - EXIT HUP INT TERM
+rm -f "$tmpfile"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */profile-tests) profile_tests "$@" ;; esac

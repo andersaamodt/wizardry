@@ -1,0 +1,86 @@
+#!/bin/sh
+
+# Report the installation and runtime status of Bitcoin Lightning.
+
+lightning_status_usage() {
+        cat <<'USAGE' >&2
+Usage: lightning-status
+
+Reports whether Bitcoin Lightning (lightningd/lightning-cli) is installed and running.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        lightning_status_usage
+        exit 0
+        ;;
+esac
+
+set -eu
+
+if command -v colors >/dev/null 2>&1; then
+  # shellcheck source=/dev/null
+  . colors
+else
+  RESET=""
+  THEME_SUCCESS=""
+  THEME_WARNING=""
+  THEME_ERROR=""
+  GREY=""
+fi
+# Older scripts expect GRAY, so mirror GREY when missing.
+GRAY=${GREY-}
+
+# Main execution - get_lightning_status inlined
+# Determine service name - lightning_service_name inlined
+service_name="lightningd"
+if [ -n "${LIGHTNING_SERVICE-}" ]; then
+  service_name=$LIGHTNING_SERVICE
+else
+  # Default to lightningd; fallback to clightningd or similar names if present.
+  for candidate in lightningd clightningd c-lightning; do
+    if has "$candidate" 2>/dev/null; then
+      service_name=$candidate
+      break
+    fi
+    if is-service-installed "$candidate" >/dev/null 2>&1; then
+      service_name=$candidate
+      break
+    fi
+  done
+fi
+
+# Determine status
+if has lightning-cli 2>/dev/null || has "$service_name" 2>/dev/null; then
+  if is-service-running "$service_name" >/dev/null 2>&1; then
+    if lightning-cli getinfo >/dev/null 2>&1; then
+      status="installed, running"
+    else
+      status="installed, needs setup"
+    fi
+  else
+    status="installed, not running"
+  fi
+else
+  status="not installed"
+fi
+
+# color_for_status - inlined
+color=""
+case "$status" in
+  "installed, running")
+    color="$THEME_SUCCESS"
+    ;;
+  "installed, not running")
+    color="$THEME_WARNING"
+    ;;
+  "installed, needs setup"|"installed, error")
+    color="$THEME_ERROR"
+    ;;
+  *)
+    color="$GRAY"
+    ;;
+esac
+
+printf "%s%s%s\n" "$color" "$status" "$RESET"

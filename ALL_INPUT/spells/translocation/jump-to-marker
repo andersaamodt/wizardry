@@ -1,0 +1,271 @@
+#!/bin/sh
+
+# This spell teleports to markers set with mark-location.
+# Source this file or use word-of-binding to invoke it.
+
+require-wizardry || exit 1
+
+jump_to_marker_usage() {
+cat <<'USAGE'
+Usage: jump-to-marker [marker]
+
+Teleport to a marker set with mark-location. Defaults to marker "1", marker "0" cycles through all saved locations.
+USAGE
+}
+
+
+
+jump_to_marker() {
+case "${1-}" in
+--help|--usage|-h)
+  jump_to_marker_usage
+  return 0
+  ;;
+-*)
+  warn "jump-to-marker: unknown option '$1'."
+  return 1
+  ;;
+esac
+
+set -eu
+
+# Resolve markers directory
+_jm_spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+MARKERS_DIR=$(env-or JUMP_TO_MARKERS_DIR "$_jm_spell_home/.markers")
+
+# Call the implementation
+jump_to_marker_impl "$@"
+}
+
+jump_to_marker_impl() {
+        # Initialize MARKERS_DIR if not already set (for when called directly after sourcing)
+        if [ -z "${MARKERS_DIR:-}" ]; then
+                _jm_spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+                MARKERS_DIR=$(env-or JUMP_TO_MARKERS_DIR "$_jm_spell_home/.markers")
+        fi
+        
+        markers_dir=$MARKERS_DIR
+        marker_name="${1:-}"
+        
+        # If no marker specified OR marker is "0", cycle through markers
+        if [ -z "$marker_name" ] || [ "$marker_name" = "0" ]; then
+                # Find the most recently used marker (by mtime) and get the next one
+                last_marker=""
+                if [ -d "$markers_dir" ]; then
+                        sorted=$(ls -t "$markers_dir" 2>/dev/null || true)
+                        recent=$(printf '%s\n' "$sorted" | head -1)
+                        oldest=$(printf '%s\n' "$sorted" | tail -1)
+                        
+                        # Need at least two different files to have meaningful "most recent"
+                        if [ -n "$recent" ] && [ -f "$markers_dir/$recent" ] \
+                            && [ "$recent" != "$oldest" ]; then
+                                # Check if mtimes are actually different
+                                recent_mtime=$(stat -c %Y "$markers_dir/$recent" 2>/dev/null) \
+                                    || recent_mtime=$(stat -f %m "$markers_dir/$recent" 2>/dev/null)
+                                oldest_mtime=$(stat -c %Y "$markers_dir/$oldest" 2>/dev/null) \
+                                    || oldest_mtime=$(stat -f %m "$markers_dir/$oldest" 2>/dev/null)
+                                
+                                if [ "$recent_mtime" != "$oldest_mtime" ]; then
+                                        # Check if the most recent marker is older than 4 hours
+                                        current_time=$(now)
+                                        four_hours=$((4 * 60 * 60))
+                                        age=$((current_time - recent_mtime))
+                                        if [ "$age" -le "$four_hours" ]; then
+                                                last_marker=$recent
+                                        fi
+                                fi
+                        fi
+                fi
+                
+                # Get next marker in sequence for cycling
+                if [ -n "$last_marker" ]; then
+                        # Get all available marker names, sorted
+                        all_markers=""
+                        if [ -d "$markers_dir" ]; then
+                                numeric_markers=""
+                                alpha_markers=""
+                                for marker in "$markers_dir"/*; do
+                                        [ -f "$marker" ] || continue
+                                        name=$(file-name "$marker")
+                                        # Skip hidden files
+                                        case "$name" in
+                                                .*) continue ;;
+                                        esac
+                                        # Separate numeric and non-numeric markers
+                                        case "$name" in
+                                                *[!0-9]*)
+                                                        alpha_markers="$alpha_markers $name"
+                                                        ;;
+                                                *)
+                                                        numeric_markers="$numeric_markers $name"
+                                                        ;;
+                                        esac
+                                done
+                                # Sort and output: numbers first (numerically), then names (alphabetically)
+                                for n in $(printf '%s\n' $numeric_markers | sort -n); do
+                                        all_markers="$all_markers $n"
+                                done
+                                for n in $(printf '%s\n' $alpha_markers | sort); do
+                                        all_markers="$all_markers $n"
+                                done
+                        fi
+                        
+                        found=0
+                        first=""
+                        for m in $all_markers; do
+                                if [ -z "$first" ]; then
+                                        first=$m
+                                fi
+                                if [ "$found" -eq 1 ]; then
+                                        marker_name=$m
+                                        break
+                                fi
+                                if [ "$m" = "$last_marker" ]; then
+                                        found=1
+                                fi
+                        done
+                        # Wrap around to first marker if at end
+                        if [ "$found" -eq 1 ] && [ -z "$marker_name" ]; then
+                                marker_name=$first
+                        fi
+                else
+                        marker_name="1"
+                fi
+        fi
+        
+        marker_file="$markers_dir/$marker_name"
+        
+        # Check for markers directory
+        if [ ! -d "$markers_dir" ]; then
+                say "No markers have been set. Use 'mark-location' to mark a location first."
+                return 1
+        fi
+        
+        # Check for specific marker file
+        if [ ! -f "$marker_file" ]; then
+                say "No marker '$marker_name' found. Use 'mark-location $marker_name' to set it."
+                # List available markers
+                if [ -d "$markers_dir" ]; then
+                        numeric_markers=""
+                        alpha_markers=""
+                        for marker in "$markers_dir"/*; do
+                                [ -f "$marker" ] || continue
+                                name=$(file-name "$marker")
+                                # Skip hidden files
+                                case "$name" in
+                                        .*) continue ;;
+                                esac
+                                # Separate numeric and non-numeric markers
+                                case "$name" in
+                                        *[!0-9]*)
+                                                alpha_markers="$alpha_markers $name"
+                                                ;;
+                                        *)
+                                                numeric_markers="$numeric_markers $name"
+                                                ;;
+                                esac
+                        done
+                        # Sort and output: numbers first (numerically), then names (alphabetically)
+                        available=""
+                        for n in $(printf '%s\n' $numeric_markers | sort -n); do
+                                available="$available $n"
+                        done
+                        for n in $(printf '%s\n' $alpha_markers | sort); do
+                                available="$available $n"
+                        done
+                        if [ -n "$available" ]; then
+                                printf '%s' "Available markers:"
+                                for m in $available; do
+                                        printf ' %s' "$m"
+                                done
+                                printf '\n'
+                        fi
+                fi
+                return 1
+        fi
+        
+        destination=$(cat "$marker_file")
+        if [ -z "$destination" ]; then
+                say "The rune '$marker_name' is blank; the marked location has faded away."
+                return 1
+        fi
+        if [ ! -d "$destination" ]; then
+                say "The ley-line remembers '$destination' for marker '$marker_name', but it no longer exists."
+                return 1
+        fi
+        # Normalize paths to handle macOS double slashes
+        current=$(here | norm-path)
+        normalized_destination=$(norm-path "$destination")
+        if [ "$current" = "$normalized_destination" ]; then
+                say "You are already standing at marker '$marker_name'."
+                # Touch marker to update mtime for cycling
+                touch "$marker_file"
+                return 0
+        fi
+        if ! cd "$destination"; then
+                warn "The portal refuses to stabilize; try marking again."
+                return 1
+        fi
+        
+        # Pick a random arrival message
+        arrival=$(cat <<'PORTAL'
+You feel a sudden warmth as you are enveloped in a glowing aura. When it fades, you find yourself at your destination.
+A strange sensation comes over you as you close your eyes. When you open them again, you are standing at your destination.
+You focus your mind on the marked location and feel yourself being pulled through the fabric of space. You open your eyes to find yourself at your destination.
+You feel a jolt as you are momentarily suspended in midair. When you land, you find yourself at your destination.
+You close your eyes and take a deep breath. When you open them, you are standing at your destination.
+A swirling vortex appears before you. You take a step forward and find yourself at your destination.
+You feel a tug on your stomach as you are suddenly pulled through a tunnel of light. When you emerge, you are at your destination.
+You hold out your hand and a bright portal appears. You step through and find yourself at your destination.
+You feel a rush of wind as you are teleported to your destination.
+You hear a faint ringing in your ears as you are transported to your destination.
+You close your eyes and visualize your destination. When you open them, you are standing there.
+You step into a glowing portal and are immediately transported to your destination.
+You feel a tug on your ankle as you are pulled through a wormhole. When you emerge, you are at your destination.
+You hear a faint hum as you are enveloped in a field of energy. When it dissipates, you are at your destination.
+You feel a sudden pressure on your chest as you are teleported to your destination.
+You feel a surge of magical energy as you are transported through the veil of reality.
+A glowing portal opens before you, and you step through it to your destination.
+A shimmering aura envelops you, and when it fades, you find yourself at the marked location.
+You close your eyes and focus, and when you open them again, you are standing at the marked location.
+A burst of light and sound surrounds you, and when it subsides, you are at the marked location.
+You feel a tug on your soul, and when it releases, you are standing at the marked location.
+You focus your magical energy and teleport to the marked location.
+A warp in the fabric of reality opens up, and you step through it to the marked location.
+You feel a sudden jolt, and when you regain your bearings, you are at the marked location.
+You close your eyes and visualize the marked location, and when you open them, you are there.
+You call upon the power of the elements to transport you to the marked location.
+You channel the energy of the celestial bodies to jump to the marked location.
+You recite an ancient incantation, and a magical portal appears, taking you to the marked location.
+A shimmering rune circle flares beneath your feet.
+You step through a swirling vortex of starlight.
+A gust of glittering dust whips past as space folds around you.
+Your stomach flips as ley-lines knit a tunnel through reality.
+A bell tolls softly as the air warps into a crystalline doorway.
+You whisper the coordinates and a ribbon of light drags you forward.
+A ripple of color cascades outward before snapping you elsewhere.
+The scent of ozone and old tomes surrounds you mid-teleport.
+A chalk sigil burns bright, then launches you into the void.
+You ride a comet of sparks toward the marked destination.
+A murmured incantation bends distance like molten glass.
+Reality hiccups; when it steadies, you are already in motion.
+PORTAL
+)
+        arrival=$(printf '%s\n' "$arrival" | awk 'BEGIN{srand();}{lines[NR]=$0}END{if (NR==0) exit 0; idx=int(rand()*NR)+1; print lines[idx];}')
+        
+        if [ -n "$arrival" ]; then
+                say "$arrival"
+        fi
+        
+        # Touch marker to update mtime for cycling
+        touch "$marker_file"
+        
+        # Describe current location if look command exists
+        if has look; then
+                look 2>/dev/null || true
+        fi
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */jump-to-marker|*/jump) jump_to_marker "$@" ;; esac

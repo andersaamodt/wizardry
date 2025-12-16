@@ -1,0 +1,11 @@
+#!/bin/sh
+# now [FORMAT] - output current timestamp (default: epoch seconds)
+# Examples: now | now %Y-%m-%d | now %H:%M:%S
+
+_now() {
+  date "+${1:-%s}" 2>/dev/null || printf '%s' "$$"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */now) _now "$@" ;; esac

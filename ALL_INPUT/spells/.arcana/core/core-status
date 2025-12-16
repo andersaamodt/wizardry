@@ -1,0 +1,52 @@
+#!/bin/sh
+
+# Bootstrap spell: report readiness of core prerequisites for wizardry.
+
+core_status_usage() {
+        cat <<'USAGE' >&2
+Usage: core-status
+
+Reports whether wizardry's core prerequisites are installed, printing "installed", "not installed", or "partial install".
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        core_status_usage
+        exit 0
+        ;;
+esac
+
+
+# Report readiness of core prerequisites for wizardry.
+
+
+set -eu
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+# shellcheck source=/dev/null
+. "$script_dir/install-core"
+
+total=0
+installed=0
+
+while IFS=: read -r _ command_name _ _; do
+  total=$((total + 1))
+  # Handle the special clipboard helper marker using the clipboard-available imp
+  if [ "$command_name" = "$CLIPBOARD_MARKER" ]; then
+    if clipboard-available; then
+      installed=$((installed + 1))
+    fi
+  elif command -v "$command_name" >/dev/null 2>&1; then
+    installed=$((installed + 1))
+  fi
+done <<EOF
+$(core_dependencies)
+EOF
+
+if [ "$installed" -eq "$total" ]; then
+  printf '%s\n' "installed"
+elif [ "$installed" -eq 0 ]; then
+  printf '%s\n' "not installed"
+else
+  printf '%s\n' "partial install"
+fi

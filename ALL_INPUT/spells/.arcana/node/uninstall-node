@@ -1,0 +1,64 @@
+#!/bin/sh
+
+# Uninstall Node.js using the available package manager, with optional NixOS rebuild.
+
+uninstall_node_usage() {
+        cat <<'USAGE' >&2
+Usage: uninstall-node
+
+Removes Node.js using the detected package manager and can trigger a nixos-rebuild on NixOS systems.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        uninstall_node_usage
+        exit 0
+        ;;
+esac
+
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+manage_cmd=${MANAGE_SYSTEM_COMMAND:-manage-system-command}
+
+if ! command -v "$manage_cmd" >/dev/null 2>&1; then
+  if [ -x "$script_dir/../core/manage-system-command" ]; then
+    manage_cmd="$script_dir/../core/manage-system-command"
+  else
+    printf '%s\n' "uninstall-node: unable to find manage-system-command" >&2
+    exit 1
+  fi
+fi
+
+uninstall_node_detect_nixos() {
+  if command -v detect-distro >/dev/null 2>&1 && [ "$(detect-distro 2>/dev/null)" = "nixos" ]; then
+    return 0
+  fi
+  return 1
+}
+
+node_package_default=${NODE_PACKAGE_DEFAULT:-nodejs}
+node_package=${NODE_PACKAGE:-$node_package_default}
+
+printf '\nRemoving Node.js using %s...\n' "$manage_cmd"
+"$manage_cmd" --uninstall node "$node_package"
+
+if uninstall_node_detect_nixos && command -v nixos-rebuild >/dev/null 2>&1; then
+  printf '\nA NixOS system was detected. Run a system rebuild to propagate removal? [y/N]: '
+  read -r rebuild || rebuild=""
+  case "$rebuild" in
+    [Yy]*)
+      if command -v sudo >/dev/null 2>&1; then
+        sudo nixos-rebuild switch
+      else
+        nixos-rebuild switch
+      fi
+      ;;
+    *)
+      printf '%s\n' "Skipping nixos-rebuild. Run 'sudo nixos-rebuild switch' later if you removed Node.js from configuration.nix."
+      ;;
+  esac
+fi
+
+printf '\nNode.js removal complete.\n'

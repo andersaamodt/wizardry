@@ -1,0 +1,31 @@
+[Unit]
+Description=Anonymizing overlay network for TCP (multi-instance-master)
+After=syslog.target network.target nss-lookup.target
+
+[Service]
+Type=notify
+NotifyAccess=all
+ExecStartPre=$TORPATH -f $TORRCPATH --verify-config
+ExecStart=$TORPATH -f $TORRCPATH
+
+ExecReload=/bin/kill -HUP ${MAINPID}
+KillSignal=SIGINT
+TimeoutSec=60
+Restart=on-failure
+WatchdogSec=60
+LimitNOFILE=32768
+User=$TORUSER
+Group=$TORUSER
+
+# Hardening
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=full
+ProtectHome=no
+ReadOnlyDirectories=/
+ReadWriteDirectories=-$HOME/.tor
+NoNewPrivileges=no
+CapabilityBoundingSet=CAP_SETUID CAP_SETGID CAP_NET_BIND_SERVICE CAP_DAC_READ_SEARCH
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,31 @@
+#!/bin/sh
+# report-result DESC STATUS [REASON] - record the result of a test case
+# Prints PASS or FAIL with description, incrementing global counters.
+
+_report_result() {
+  desc=$1
+  status=$2
+  reason=${3-}
+  
+  # Get global subtest number if available
+  num=${WIZARDRY_GLOBAL_SUBTEST_NUM-}
+  
+  if [ "$status" -eq 0 ]; then
+    _pass_count=$((_pass_count + 1))
+    if [ -n "$num" ]; then
+      _test_pass "$num" "$desc"
+    else
+      _test_pass "$desc"
+    fi
+  else
+    _fail_count=$((_fail_count + 1))
+    if [ -n "$num" ]; then
+      _test_fail "$num" "$desc" "$reason"
+    else
+      _test_fail "$desc" "$reason"
+    fi
+  fi
+}
+
+# Self-execution when run directly (not sourced)
+case "${0##*/}" in report-result) _report_result "$@" ;; esac

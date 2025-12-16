@@ -1,0 +1,27 @@
+#!/bin/sh
+# pkg-remove PACKAGE - remove a package using the system package manager
+# Example: pkg-remove vim
+
+_pkg_remove() {
+  _pr_package=${1:-}
+  [ -z "$_pr_package" ] && { printf '%s\n' "pkg-remove: package name required" >&2; return 1; }
+
+  _pr_pm=$(_pkg_manager) || {
+    printf '%s\n' "pkg-remove: no supported package manager" >&2
+    return 1
+  }
+
+  case $_pr_pm in
+    apt)    sudo apt-get -y remove "$_pr_package" ;;
+    dnf)    sudo dnf -y remove "$_pr_package" ;;
+    pacman) sudo pacman --noconfirm -R "$_pr_package" ;;
+    brew)   brew uninstall "$_pr_package" ;;
+    nix)    nix-env -e "$_pr_package" ;;
+    pkgin)  sudo pkgin -y remove "$_pr_package" ;;
+    apk)    sudo apk del "$_pr_package" ;;
+  esac
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */pkg-remove) _pkg_remove "$@" ;; esac

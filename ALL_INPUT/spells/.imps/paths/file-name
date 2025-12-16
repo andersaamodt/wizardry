@@ -1,0 +1,11 @@
+#!/bin/sh
+# file-name PATH - extract filename from path (like basename but pure shell)
+# Example: name=$(file-name /path/to/file.txt)  # outputs: file.txt
+
+_file_name() {
+  printf '%s\n' "${1##*/}"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */file-name) _file_name "$@" ;; esac

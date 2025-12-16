@@ -1,0 +1,112 @@
+#!/bin/sh
+
+# Present the Lightning management menu.
+
+lightning_menu_usage() {
+  cat <<'USAGE'
+Usage: lightning-menu
+
+Displays the Lightning management menu.
+USAGE
+}
+
+case "${1-}" in
+  --help|--usage|-h)
+    lightning_menu_usage
+    exit 0
+    ;;
+esac
+
+lightning_menu() {
+set -eu
+. colors
+
+trap 'exit 0' INT TERM
+
+command_available() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+is_lightning_installed() {
+  if command_available lightning-cli || command_available lightningd; then
+    return 0
+  fi
+  return 1
+}
+
+lightning_service_name() {
+  for candidate in "${LIGHTNING_SERVICE-}" lightningd clightningd c-lightning; do
+    if [ -n "$candidate" ] && command_available "$candidate"; then
+      printf '%s' "$candidate"
+      return
+    fi
+    if [ -n "$candidate" ] && is-service-installed "$candidate" >/dev/null 2>&1; then
+      printf '%s' "$candidate"
+      return
+    fi
+  done
+  printf '%s' lightningd
+}
+
+service_status_options() {
+  service_name=$(lightning_service_name)
+  status="Service Status%sudo systemctl status $service_name"
+  if is-service-running "$service_name" >/dev/null 2>&1; then
+    toggle="Stop Lightning%sudo systemctl stop $service_name"
+  else
+    toggle="Start Lightning%sudo systemctl start $service_name"
+  fi
+  printf '%s\n%s\n' "$status" "$toggle"
+}
+
+lightning_menu_display_menu() {
+  title="${BOLD}${CYAN}Lightning: $(lightning-status)"
+  info_option="Lightning Info%lightning-cli getinfo"
+  peers_option="List Peers%lightning-cli listpeers"
+  funds_option="List Funds%lightning-cli listfunds"
+  address_option="New On-chain Address%lightning-cli newaddr"
+  wallet_menu_option="Lightning Wallet Menu%lightning-wallet-menu"
+  services=$(service_status_options)
+  service_status_option=$(printf '%s' "$services" | sed -n '1p')
+  toggle_service_option=$(printf '%s' "$services" | sed -n '2p')
+  install_option="Install Lightning%install-lightning"
+  uninstall_option="Uninstall Lightning%uninstall-lightning"
+  exit_label=$(exit-label)
+  exit_option="${exit_label}%kill -TERM \$PPID"
+
+  if is_lightning_installed; then
+    menu "$title" \
+      "$info_option" \
+      "$peers_option" \
+      "$funds_option" \
+      "$address_option" \
+      "$wallet_menu_option" \
+      "$service_status_option" \
+      "$toggle_service_option" \
+      "$uninstall_option" \
+      "$exit_option" || true
+  else
+    menu "$title" "$install_option" "$exit_option" || true
+  fi
+}
+
+first_run=1
+while :; do
+  if [ "$first_run" -eq 0 ]; then
+    printf '\n'
+  else
+    first_run=0
+  fi
+  lightning_menu_display_menu || true
+  if ! is_lightning_installed; then
+    # When lightning is not installed, allow user to exit after running installer once.
+    :
+  fi
+  # Loop continues so status updates are shown.
+done
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */lightning-menu|lightning-menu) lightning_menu "$@" ;;
+esac

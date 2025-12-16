@@ -1,0 +1,45 @@
+#!/bin/sh
+
+# This spell displays a command before executing it for teaching purposes.
+# Use it to show commands to those learning the path of wizardry.
+
+wizard_cast_usage() {
+cat <<'USAGE'
+Usage: wizard-cast <command> [arguments...]
+
+Show a command with wizard-eyes before executing it so learners can see exactly what will run. Ideal for demonstrating spells or shell commands to novices while keeping execution transparent.
+USAGE
+}
+
+
+
+wizard_cast() {
+case "${1-}" in
+--help|--usage|-h)
+  wizard_cast_usage
+  return 0
+  ;;
+esac
+
+set -eu
+
+# Check argument
+if [ -z "${1-}" ]; then
+        printf '%s\n' "wizard-cast: command required." >&2
+        return 1
+fi
+
+# Display the command using wizard-eyes if available
+if has wizard-eyes; then
+        wizard-eyes "$*"
+else
+        printf '    %s\n' "$*" >&2
+fi
+
+# Execute the command
+"$@"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */wizard-cast) wizard_cast "$@" ;; esac

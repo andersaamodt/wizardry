@@ -1,0 +1,104 @@
+#!/bin/sh
+
+# This spell splits a bound tome back into individual page files.
+# It derives filenames from page headers so the restored pages are easy to revisit.
+
+require-wizardry || exit 1
+
+unbind_tome_usage() {
+    cat <<'USAGE'
+Usage: unbind-tome <tome-path>
+
+Split a bound tome back into individual files, naming each page from its contents and placing them in a directory derived from the tome name.
+USAGE
+}
+
+
+unbind_tome() {
+case "${1-}" in
+--help|--usage|-h)
+  unbind_tome_usage
+  return 0
+  ;;
+esac
+
+set -eu
+
+if [ "$#" -lt 1 ]; then
+    warn "unbind-tome: file path required."
+    unbind_tome_usage >&2
+    return 1
+fi
+
+tome=$1
+is file "$tome" || { warn "Error: '$tome' is not a file."; return 1; }
+
+stem=$(basename -- "$tome")
+stem=${stem%.*}
+
+pages_dir=$stem
+suffix=1
+while there "$pages_dir"; do
+    pages_dir="${stem}${suffix}"
+    suffix=$((suffix + 1))
+done
+make dir "$pages_dir"
+
+# Parse tome - auto-detect format
+# New format: Single-line centered separators like "# -------- filename --------"
+# Old format: Plain text, each line is a page name
+current_page=""
+page_num=1
+
+# Detect format by reading first line
+first_line=""
+{
+    IFS= read -r first_line || true
+} <"$tome"
+
+if printf '%s' "$first_line" | grep -q "^# -.*- "; then
+    # New format with centered separators
+    while IFS= read -r line || nonempty "$line"; do
+        # Check if this line is a centered separator (starts with "# " and contains " - ")
+        case "$line" in
+            "# "-*" "*)
+                # Extract filename from between the dashes
+                # Remove leading "# " and leading dashes/spaces
+                temp=${line#"# "}
+                temp=${temp#"${temp%%[! -]*}"}  # Remove leading dashes and spaces
+                # Remove trailing dashes and spaces
+                page_name=${temp%"${temp##*[! -]}"}
+                
+                # Clean up the page name
+                clean_name=$(printf '%s' "$page_name" | tr -dc '[:alnum:] .,;_-' | tr ' ' '_')
+                if empty "$clean_name"; then
+                    clean_name="page_${page_num}"
+                fi
+                current_page="$pages_dir/$clean_name"
+                : >"$current_page"
+                page_num=$((page_num + 1))
+                ;;
+            *)
+                # Regular content line - write to current page if we have one
+                if nonempty "$current_page"; then
+                    say "$line" >>"$current_page"
+                fi
+                ;;
+        esac
+    done <"$tome"
+else
+    # Old format - each line is a page name
+    while IFS= read -r line || nonempty "$line"; do
+        clean_name=$(printf '%s' "$line" | tr -dc '[:alnum:] .,;_-' | tr ' ' '_')
+        empty "$clean_name" && clean_name="page_${page_num}"
+        say "$line" >"$pages_dir/$clean_name"
+        page_num=$((page_num + 1))
+    done <"$tome"
+fi
+
+return 0
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */unbind-tome) unbind_tome "$@" ;; esac

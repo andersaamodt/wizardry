@@ -1,0 +1,173 @@
+#!/bin/sh
+
+# This spell surveys the current directory for enchanted files via read-magic.
+# It tallies each file's attributes and narrates the ambience with gentle colour.
+
+# The flow stays linear: discover the helper, choose colour, scan the room, then
+# summarize the ambience so new spellwrights can follow along.
+
+detect_magic_usage() {
+cat <<'USAGE'
+Usage: detect-magic
+
+Scan the current directory for files with extended attributes using the read-magic spell, tally how many enchantments each file holds, and print a whimsical summary of the ambient magic.
+USAGE
+}
+
+
+
+detect_magic() {
+case "${1-}" in
+--help|--usage|-h)
+  detect_magic_usage
+  return 0
+  ;;
+esac
+
+set -eu
+
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd -P)
+
+# Let tests or callers override the helper path; otherwise look beside this
+# script first, then in PATH so the spell still works when installed globally.
+# This keeps installation optional while preserving predictability.
+READ_MAGIC=${DETECT_MAGIC_READ_MAGIC-}
+if [ -z "$READ_MAGIC" ]; then
+        if [ -x "$SCRIPT_DIR/read-magic" ]; then
+                READ_MAGIC="$SCRIPT_DIR/read-magic"
+        elif command -v read-magic >/dev/null 2>&1; then
+                READ_MAGIC=$(command -v read-magic)
+        else
+                printf '%s\n' "detect-magic: read-magic spell is missing." >&2
+                return 1
+        fi
+fi
+
+# Disable colour on plain terminals so the narration stays legible. The
+# keyword helpers collapse to plain words when colour disappears so the rest of
+# the spell can sprinkle colour without conditional branches.
+# Load colors when available, falling back to inline escape codes.
+if [ "${NO_COLOR-}" = "1" ] || [ "${NO_COLOR-}" = "true" ] || [ "${TERM:-}" = "dumb" ]; then
+        blue=""
+        purple=""
+        reset=""
+elif command -v colors >/dev/null 2>&1; then
+        # shellcheck disable=SC1091
+        . colors
+        blue="$CYAN"
+        purple="$MUD_SPELL"
+        reset="$RESET"
+else
+        # Fallback to hardcoded escape sequences if colors script is not available
+        ESC=$(printf '\033')
+        blue="${ESC}[36m"
+        purple="${ESC}[0;35m"
+        reset="${ESC}[0m"
+fi
+magic_word="${purple}magic${reset}"
+enchanted_word="${purple}enchanted${reset}"
+enchantments_word="${purple}enchantments${reset}"
+
+total=0
+found_any=0
+
+# Open with a header so seers know which column holds names and which counts.
+printf "%s%-30s %s%s%s\n" "$blue" "File" "$purple" "$enchantments_word" "$reset"
+
+for entry in *; do
+        # Skip globs that did not match files and ignore directories.
+        [ -e "$entry" ] || continue
+        [ -f "$entry" ] || continue
+
+        # read-magic reports every incantation decorating the file. We quietly
+        # ignore unreadable files so the rest of the room still reports.
+        if attrs_output=$("$READ_MAGIC" "$entry" 2>&1); then
+                :
+        else
+                printf '%s\n' "detect-magic: failed to read $entry: $attrs_output" >&2
+                continue
+        fi
+
+        set +e
+        clean_attrs=$(printf '%s\n' "$attrs_output" | awk '
+                $0 == "" {next}
+                $0 == "No enchanted attributes found." {next}
+                index($0, ":") == 0 {bad=1; next}
+                {print}
+                END { if (bad) exit 97 }
+        ')
+        filter_status=$?
+        set -e
+
+        if [ "$filter_status" -eq 97 ]; then
+                printf '%s\n' "detect-magic: ignoring malformed output from $entry" >&2
+                continue
+        elif [ "$filter_status" -ne 0 ]; then
+                printf '%s\n' "detect-magic: failed to parse output from $entry" >&2
+                continue
+        fi
+
+        # Count only non-blank lines so empty outputs do not skew totals.
+        count=$(printf '%s\n' "$clean_attrs" | awk 'NF{c++} END{print c+0}')
+        if [ "$count" -eq 0 ]; then
+                continue
+        fi
+
+        printf '%-40s %s%d%s\n' "$entry" "$purple" "$count" "$reset"
+        total=$((total + count))
+        found_any=1
+
+done
+
+if [ "$found_any" -eq 1 ]; then
+        # Rotate through themed whispers based on how many charms fill the room.
+        # Use case statements instead of heredocs for better cross-platform compatibility.
+        message_idx=$((total % 7 + 1))
+        
+        if [ "$total" -gt 120 ]; then
+                case "$message_idx" in
+                        1) message="Whoa, this room is seriously __ENCHANTED__!" ;;
+                        2) message="I can feel the __MAGIC__ emanating from these files!" ;;
+                        3) message="This room is practically pulsating with __MAGIC__!" ;;
+                        4) message="I've never sensed this much __MAGIC__ in one place before!" ;;
+                        5) message="The amount of __MAGIC__ in this room is off the charts!" ;;
+                        6) message="These files are practically glowing with __MAGIC__!" ;;
+                        7) message="I can hardly contain all this __MAGIC__!" ;;
+                esac
+        elif [ "$total" -gt 50 ]; then
+                case "$message_idx" in
+                        1) message="I can feel the __MAGIC__ in the air." ;;
+                        2) message="There seems to be quite a bit of __MAGIC__ in this room." ;;
+                        3) message="This room is positively brimming with __MAGIC__." ;;
+                        4) message="These files are infused with __MAGIC__." ;;
+                        5) message="The __MAGIC__ in this room is palpable." ;;
+                        6) message="The __MAGIC__ in these files is almost tangible." ;;
+                        7) message="This room is filled with __MAGIC__." ;;
+                esac
+        elif [ "$total" -gt 15 ]; then
+                case "$message_idx" in
+                        1) message="I sense a bit of __MAGIC__ in this room." ;;
+                        2) message="There seems to be a hint of __MAGIC__ in these files." ;;
+                        3) message="I can feel a faint aura of __MAGIC__ in this room." ;;
+                        4) message="These files have a touch of __MAGIC__." ;;
+                        5) message="I detect a faint trace of __MAGIC__ in this room." ;;
+                        6) message="There is a subtle essence of __MAGIC__ in these files." ;;
+                        7) message="This room has a faint glimmer of __MAGIC__." ;;
+                esac
+        fi
+
+        if [ -n "${message-}" ]; then
+                message=$(printf '%s\n' "$message" | sed "s/__MAGIC__/$magic_word/g; s/__ENCHANTED__/$enchanted_word/g")
+                printf '%s\n' "$message"
+        fi
+        printf 'I can feel the %smagic%s in the air.\n' "$purple" "$reset"
+else
+        printf 'No enchantments reveal themselves today.\n'
+fi
+
+printf '%s' "$reset"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */detect-magic) detect_magic "$@" ;; esac

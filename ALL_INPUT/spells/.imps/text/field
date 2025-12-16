@@ -1,0 +1,22 @@
+#!/bin/sh
+# field N [DELIM] - extract Nth field (1-based), default delimiter is whitespace
+# Example: echo "a:b:c" | field 2 ":"  # outputs: b
+
+_field() {
+  _field_n=$1
+  _field_delim=${2-}
+
+  case "$_field_n" in
+    ''|*[!0-9]*) return 1 ;;
+  esac
+
+  if [ -n "$_field_delim" ]; then
+    cut -d"$_field_delim" -f"$_field_n"
+  else
+    awk "{print \$$_field_n}"
+  fi
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */field) _field "$@" ;; esac

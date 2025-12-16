@@ -1,0 +1,350 @@
+#!/bin/sh
+
+# The command-not-found cantrip installs a hook that intercepts unknown commands
+# and displays helpful messages. When installed, unrecognized commands will print
+# a notice instead of the default shell error.
+
+handle_command_not_found_usage() {
+cat <<'USAGE'
+Usage: handle-command-not-found {install|uninstall}
+
+Install or uninstall the command-not-found hook in your shell rc file. When enabled, unknown commands display a helpful message. On NixOS, rebuilds the configuration automatically.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  handle_command_not_found_usage
+  exit 0
+  ;;
+esac
+
+set -eu
+
+SCRIPT_SOURCE=$0
+case $SCRIPT_SOURCE in
+*/*)
+  SCRIPT_DIR=${SCRIPT_SOURCE%/*}
+  ;;
+*)
+  SCRIPT_DIR=.
+  ;;
+esac
+SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
+
+handle_command_not_found_warn() {
+  printf '%s\n' "handle-command-not-found: $1" >&2
+}
+
+# Run nixos-rebuild or home-manager switch to apply NixOS configuration changes
+handle_command_not_found_run_nix_rebuild() {
+  # Allow tests to skip the rebuild
+  [ "${WIZARDRY_SKIP_NIX_REBUILD-}" = "1" ] && return 0
+
+  rebuild_success=0
+
+  # Try to detect if we should use sudo or doas
+  priv_cmd=""
+  command -v sudo >/dev/null 2>&1 && priv_cmd="sudo"
+  command -v doas >/dev/null 2>&1 && [ -z "$priv_cmd" ] && priv_cmd="doas"
+
+  # Try home-manager first (doesn't need privileges)
+  if command -v home-manager >/dev/null 2>&1; then
+    printf '%s\n' "handle-command-not-found: running home-manager switch..."
+    if home-manager switch; then
+      printf '%s\n' "handle-command-not-found: user environment rebuilt successfully."
+      rebuild_success=1
+    fi
+  fi
+
+  # If home-manager didn't work and we have privilege escalation, try nixos-rebuild
+  if [ "$rebuild_success" -eq 0 ] && [ -n "$priv_cmd" ] \
+      && command -v nixos-rebuild >/dev/null 2>&1; then
+    printf '%s\n' "handle-command-not-found: running $priv_cmd nixos-rebuild switch..."
+    if "$priv_cmd" nixos-rebuild switch; then
+      printf '%s\n' "handle-command-not-found: NixOS system rebuilt successfully."
+      rebuild_success=1
+    fi
+  fi
+
+  if [ "$rebuild_success" -eq 0 ]; then
+    handle_command_not_found_warn "NixOS configuration could not be automatically rebuilt."
+    return 1
+  fi
+
+  return 0
+}
+
+# Cache for detect-rc-file output to avoid multiple calls
+_detect_rc_cache=""
+
+# Handle command-line invocation for install/uninstall commands
+case "${1-}" in
+install)
+  # Detect nix format from detect-rc-file output
+  rc_format="shell"
+  rc_file=""
+  
+  # Check env var overrides
+  if [ -n "${WIZARDRY_RC_FORMAT-}" ]; then
+    rc_format="$WIZARDRY_RC_FORMAT"
+  fi
+  
+  if [ -n "${WIZARDRY_RC_FILE-}" ]; then
+    rc_file="$WIZARDRY_RC_FILE"
+  else
+    # Try to use detect-rc-file for cross-platform support
+    if command -v detect-rc-file >/dev/null 2>&1; then
+      if _detect_rc_cache=$(detect-rc-file 2>/dev/null); then
+        # Parse rc_file= and format= lines
+        while IFS= read -r line; do
+          case $line in
+          rc_file=*)
+            rc_value=${line#rc_file=}
+            [ -n "$rc_value" ] && rc_file="$rc_value"
+            ;;
+          format=*)
+            format_value=${line#format=}
+            [ -n "$format_value" ] && rc_format="$format_value"
+            ;;
+          esac
+        done <<EOF
+$_detect_rc_cache
+EOF
+      fi
+    fi
+    
+    # Fallback to shell-specific defaults if still empty
+    if [ -z "$rc_file" ]; then
+      if [ -z "${HOME-}" ]; then
+        handle_command_not_found_warn "HOME is not set; cannot determine rc file."
+        exit 1
+      fi
+      
+      shell_name=${SHELL-}
+      case ${shell_name##*/} in
+      zsh)
+        rc_file="$HOME/.zshrc"
+        ;;
+      *)
+        rc_file="$HOME/.bashrc"
+        ;;
+      esac
+    fi
+  fi
+
+  # Detect format from file extension if not set
+  if [ "$rc_format" = "shell" ]; then
+    case $rc_file in
+    *.nix) rc_format="nix" ;;
+    esac
+  fi
+
+  # For nix format, use nix-shell-add imp to add shell init code
+  if [ "$rc_format" = "nix" ]; then
+    # Find nix-shell-add helper
+    nix_helper=""
+    if [ -x "$SCRIPT_DIR/../../.imps/sys/nix-shell-add" ]; then
+      nix_helper="$SCRIPT_DIR/../../.imps/sys/nix-shell-add"
+    elif command -v nix-shell-add >/dev/null 2>&1; then
+      nix_helper=$(command -v nix-shell-add)
+    fi
+
+    if [ -z "$nix_helper" ]; then
+      printf '%s\n' "handle-command-not-found: nix-shell-add imp not found for NixOS installation."
+      exit 1
+    fi
+
+    # Create the shell hook code for bash
+    hook_code='command_not_found_handle() {
+  # Try word-of-binding first for autoloading wizardry commands
+  if command -v word-of-binding >/dev/null 2>&1; then
+    if word-of-binding "$@" 2>/dev/null; then
+      return $?
+    fi
+  fi
+  # Fall back to parse for recursive grammar parsing
+  if command -v parse >/dev/null 2>&1; then
+    parse "$@"
+    return $?
+  fi
+  printf '\''%s: command not found. Try '\''menu'\'' for available spells.\n'\'' "$1" >&2
+  return 127
+}'
+
+    if printf '%s\n' "$hook_code" | "$nix_helper" command-not-found "$rc_file" bash; then
+      printf '%s\n' "handle-command-not-found: installed hook in '$rc_file'."
+      # Run nixos-rebuild to apply the changes
+      handle_command_not_found_run_nix_rebuild || true
+    else
+      handle_command_not_found_warn "unable to update '$rc_file'."
+      exit 1
+    fi
+    exit 0
+  fi
+
+  # Standard shell format installation
+  rc_dir=${rc_file%/*}
+  [ "$rc_dir" = "$rc_file" ] && rc_dir=.
+  if [ ! -d "$rc_dir" ]; then
+    if ! mkdir -p "$rc_dir"; then
+      handle_command_not_found_warn "unable to create directory '$rc_dir'."
+      exit 1
+    fi
+  fi
+  
+  tmp_file=$(temp-file wizardry-cnf) || exit 1
+  trap 'cleanup-file "$tmp_file"' EXIT HUP INT TERM
+  if [ -f "$rc_file" ]; then
+    sed '/^# >>> wizardry command-not-found >>>$/,/^# <<< wizardry command-not-found <<</d' "$rc_file" >"$tmp_file"
+  else
+    : >"$tmp_file"
+  fi
+  
+  # Install the command_not_found_handle function
+  cat <<'HOOK' >>"$tmp_file"
+# >>> wizardry command-not-found >>>
+command_not_found_handle() {
+  # Try word-of-binding first for autoloading wizardry commands
+  if command -v word-of-binding >/dev/null 2>&1; then
+    if word-of-binding "$@" 2>/dev/null; then
+      return $?
+    fi
+  fi
+  # Fall back to parse for recursive grammar parsing
+  if command -v parse >/dev/null 2>&1; then
+    parse "$@"
+    return $?
+  fi
+  printf '%s: command not found. Try '\''menu'\'' for available spells.\n' "$1" >&2
+  return 127
+}
+# <<< wizardry command-not-found <<<
+HOOK
+  if ! mv "$tmp_file" "$rc_file"; then
+    trap - EXIT HUP INT TERM
+    rm -f "$tmp_file"
+    handle_command_not_found_warn "unable to update '$rc_file'."
+    exit 1
+  fi
+  trap - EXIT HUP INT TERM
+  printf '%s\n' "handle-command-not-found: installed hook in '$rc_file'."
+  exit 0
+  ;;
+uninstall)
+  # Detect rc format and file
+  rc_format="shell"
+  rc_file=""
+  
+  if [ -n "${WIZARDRY_RC_FORMAT-}" ]; then
+    rc_format="$WIZARDRY_RC_FORMAT"
+  fi
+  
+  if [ -n "${WIZARDRY_RC_FILE-}" ]; then
+    rc_file="$WIZARDRY_RC_FILE"
+  else
+    # Try detect-rc-file
+    if command -v detect-rc-file >/dev/null 2>&1; then
+      if _detect_rc_cache=$(detect-rc-file 2>/dev/null); then
+        while IFS= read -r line; do
+          case $line in
+          rc_file=*)
+            rc_value=${line#rc_file=}
+            [ -n "$rc_value" ] && rc_file="$rc_value"
+            ;;
+          format=*)
+            format_value=${line#format=}
+            [ -n "$format_value" ] && rc_format="$format_value"
+            ;;
+          esac
+        done <<EOF
+$_detect_rc_cache
+EOF
+      fi
+    fi
+    
+    # Fallback
+    if [ -z "$rc_file" ]; then
+      if [ -z "${HOME-}" ]; then
+        handle_command_not_found_warn "HOME is not set; cannot determine rc file."
+        exit 1
+      fi
+      
+      shell_name=${SHELL-}
+      case ${shell_name##*/} in
+      zsh) rc_file="$HOME/.zshrc" ;;
+      *) rc_file="$HOME/.bashrc" ;;
+      esac
+    fi
+  fi
+  
+  if [ ! -f "$rc_file" ]; then
+    printf '%s\n' "handle-command-not-found: no rc file found at '$rc_file'."
+    exit 0
+  fi
+  
+  # Check if hook is present
+  hook_present=0
+  if grep -Fq '# >>> wizardry command-not-found >>>' "$rc_file"; then
+    hook_present=1
+  elif grep -Fq '#wizardry: command-not-found' "$rc_file"; then
+    hook_present=1
+  elif grep-Fq 'WIZARDRY_COMMAND_NOT_FOUND' "$rc_file"; then
+    hook_present=1
+  fi
+  
+  if [ "$hook_present" -eq 0 ]; then
+    printf '%s\n' "handle-command-not-found: not installed in '$rc_file'."
+    exit 0
+  fi
+
+  # Detect format from file extension if needed
+  if [ "$rc_format" = "shell" ]; then
+    case $rc_file in
+    *.nix) rc_format="nix" ;;
+    esac
+  fi
+
+  # For nix format, use nix-shell-remove to remove the block
+  if [ "$rc_format" = "nix" ]; then
+    nix_helper=""
+    if [ -x "$SCRIPT_DIR/../../.imps/sys/nix-shell-remove" ]; then
+      nix_helper="$SCRIPT_DIR/../../.imps/sys/nix-shell-remove"
+    elif command -v nix-shell-remove >/dev/null 2>&1; then
+      nix_helper=$(command -v nix-shell-remove)
+    fi
+
+    if [ -n "$nix_helper" ]; then
+      if "$nix_helper" command-not-found "$rc_file"; then
+        printf '%s\n' "handle-command-not-found: uninstalled hook from '$rc_file'."
+        # Run nixos-rebuild to apply the changes
+        handle_command_not_found_run_nix_rebuild || true
+        exit 0
+      else
+        handle_command_not_found_warn "unable to update '$rc_file'."
+        exit 1
+      fi
+    fi
+    # nix-shell-remove helper not found - handle_command_not_found_warn and attempt shell method fallback
+    handle_command_not_found_warn "nix-shell-remove imp not found; attempting shell-style removal (may not work for nix files)."
+  fi
+
+  # Shell format: use sed to remove the block
+  tmp_file=$(temp-file wizardry-cnf) || exit 1
+  trap 'cleanup-file "$tmp_file"' EXIT HUP INT TERM
+  sed '/^# >>> wizardry command-not-found >>>$/,/^# <<< wizardry command-not-found <<</d' "$rc_file" >"$tmp_file"
+  if ! mv "$tmp_file" "$rc_file"; then
+    trap - EXIT HUP INT TERM
+    rm -f "$tmp_file"
+    handle_command_not_found_warn "unable to update '$rc_file'."
+    exit 1
+  fi
+  trap - EXIT HUP INT TERM
+  printf '%s\n' "handle-command-not-found: uninstalled hook from '$rc_file'."
+  exit 0
+  ;;
+*)
+  handle_command_not_found_usage >&2
+  exit 1
+  ;;
+esac

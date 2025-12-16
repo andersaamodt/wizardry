@@ -1,0 +1,181 @@
+#!/bin/sh
+
+# Bootstrap spell: install or uninstall a system command using the available package manager.
+
+manage_system_command_usage() {
+        cat <<'USAGE' >&2
+Usage: manage-system-command [--uninstall] <command> <default-package>
+
+Installs or removes a system command via the available package manager, falling back to the provided default package name when no override is set. Respects FORCE_INSTALL to reinstall an already present command.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        manage_system_command_usage
+        exit 0
+        ;;
+esac
+
+
+# Install or uninstall a system command using the available package manager.
+# Usage: manage-system-command [--uninstall] <command> <default-package>
+
+set -eu
+
+action=install
+if [ "${1-}" = "--uninstall" ]; then
+  action=uninstall
+  shift
+fi
+
+if [ "$#" -lt 2 ]; then
+  printf '%s\n' "Usage: manage-system-command [--uninstall] <command> <default-package>" >&2
+  exit 1
+fi
+
+command_name=$1
+package_default=$2
+force_install=${FORCE_INSTALL:-0}
+
+# Detect NixOS for automatic installation via nix-env
+is_nixos=0
+if [ -d /etc/nixos ] || [ -f /etc/NIXOS ] || grep -qi 'ID=nixos' /etc/os-release 2>/dev/null; then
+        is_nixos=1
+fi
+
+# Allow per-manager nix package override
+nix_package=${NIX_PACKAGE:-$package_default}
+
+# Allow per-manager package overrides when names diverge across distros.
+apt_package=${APT_PACKAGE:-$package_default}
+dnf_package=${DNF_PACKAGE:-$package_default}
+yum_package=${YUM_PACKAGE:-$package_default}
+zypper_package=${ZYPPER_PACKAGE:-$package_default}
+pacman_package=${PACMAN_PACKAGE:-$package_default}
+apk_package=${APK_PACKAGE:-$package_default}
+pkgin_package=${PKGIN_PACKAGE:-$package_default}
+pkgin_candidates=${PKGIN_CANDIDATES:-/usr/pkg/bin/pkgin /opt/pkg/bin/pkgin /usr/local/pkg/bin/pkgin}
+
+if ! command -v pkgin >/dev/null 2>&1; then
+  for candidate in $pkgin_candidates; do
+    if [ -x "$candidate" ]; then
+      PATH="$(dirname "$candidate"):$PATH"
+      export PATH
+      break
+    fi
+  done
+fi
+
+manage_system_command_run_installer() {
+  cmd=$1
+  shift
+  if command -v sudo >/dev/null 2>&1; then
+    sudo "$cmd" "$@"
+  else
+    "$cmd" "$@"
+  fi
+}
+
+try_action() {
+  installer=$1
+  shift
+  if ! command -v "$installer" >/dev/null 2>&1; then
+    return 1
+  fi
+  manage_system_command_run_installer "$installer" "$@"
+}
+
+if [ "$action" = "install" ]; then
+  if [ "$force_install" != "1" ] && command -v "$command_name" >/dev/null 2>&1; then
+    printf '%s\n' "${command_name} is already installed."
+    exit 0
+  fi
+
+  # Prefer non-interactive installs when possible.
+  # Try nix-env first on NixOS for user-local installation
+  if [ "$is_nixos" -eq 1 ] && command -v nix-env >/dev/null 2>&1; then
+    if nix-env -iA "nixpkgs.$nix_package" 2>/dev/null; then
+      exit 0
+    fi
+  fi
+
+  if try_action pkgin -y install "$pkgin_package"; then
+    exit 0
+  fi
+
+  if try_action apt-get -y update && try_action apt-get -y install "$apt_package"; then
+    exit 0
+  fi
+
+  if try_action dnf -y install "$dnf_package"; then
+    exit 0
+  fi
+
+  if try_action yum -y install "$yum_package"; then
+    exit 0
+  fi
+
+  if try_action zypper --non-interactive install "$zypper_package"; then
+    exit 0
+  fi
+
+  if try_action pacman --noconfirm -Sy "$pacman_package"; then
+    exit 0
+  fi
+
+  if try_action apk add --no-cache "$apk_package"; then
+    exit 0
+  fi
+
+  if try_action pkgin -y install "$pkgin_package"; then
+    exit 0
+  fi
+
+  printf '%s\n' "manage-system-command: unable to install $package_default automatically." >&2
+  exit 1
+fi
+
+# Uninstall path
+if ! command -v "$command_name" >/dev/null 2>&1; then
+  printf '%s\n' "${command_name} is not installed."
+  exit 0
+fi
+
+# Try nix-env first on NixOS
+if [ "$is_nixos" -eq 1 ] && command -v nix-env >/dev/null 2>&1; then
+  if nix-env -e "$nix_package" 2>/dev/null; then
+    exit 0
+  fi
+fi
+
+if try_action pkgin -y remove "$pkgin_package"; then
+  exit 0
+fi
+
+if try_action apt-get -y remove "$apt_package"; then
+  exit 0
+fi
+
+if try_action dnf -y remove "$dnf_package"; then
+  exit 0
+fi
+
+if try_action yum -y remove "$yum_package"; then
+  exit 0
+fi
+
+if try_action zypper --non-interactive remove "$zypper_package"; then
+  exit 0
+fi
+
+if try_action pacman --noconfirm -R "$pacman_package"; then
+  exit 0
+fi
+
+if try_action apk del "$apk_package"; then
+  exit 0
+fi
+
+printf '%s\n' "manage-system-command: unable to uninstall $command_name automatically." >&2
+exit 1

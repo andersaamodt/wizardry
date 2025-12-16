@@ -1,0 +1,27 @@
+#!/bin/sh
+# Bootstrap spell: installs the git command using the system package manager.
+
+install_git_usage() {
+        cat <<'USAGE' >&2
+Usage: install-git
+
+This spell installs the git command using the system package manager.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        install_git_usage
+        exit 0
+        ;;
+esac
+
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+
+ASSUME_YES=1
+FORCE_INSTALL=${INSTALL_GIT_FORCE_INSTALL:-0}
+export ASSUME_YES FORCE_INSTALL
+
+"$SCRIPT_DIR/manage-system-command" git git

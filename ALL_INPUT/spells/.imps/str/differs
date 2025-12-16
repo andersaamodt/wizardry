@@ -1,0 +1,11 @@
+#!/bin/sh
+# differs A B - test if two strings are different (opposite of equals)
+# Example: differs "$old" "$new" && update
+
+_differs() {
+  [ "$1" != "$2" ]
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */differs) _differs "$@" ;; esac

@@ -1,0 +1,68 @@
+#!/bin/sh
+# test-fail NUM DESC [REASON] - output a test fail message with subtest number
+# Example: test-fail 5 "spell handles error" "expected exit code 1"
+
+set -eu
+
+_test_fail() {
+  num=${1-}
+  desc=${2-}
+  reason=${3-}
+  
+  # Handle old format for backwards compatibility
+  # Old format: _test_fail "desc" ["reason"]
+  # New format: _test_fail num "desc" ["reason"]
+  if [ -z "$desc" ]; then
+    # Only one argument provided, it's the description
+    desc=$num
+    num=""
+  elif [ -z "$reason" ]; then
+    # Two arguments provided: check if first is a number
+    case "$num" in
+      ''|*[!0-9]*) 
+        # First arg is not a number, use old format: desc, reason
+        reason=$desc
+        desc=$num
+        num=""
+        ;;
+      # else: first arg is a number, use new format: num, desc
+    esac
+  fi
+  # If three args provided, we already have num, desc, reason correctly assigned
+  
+  # Use colors if supported
+  if [ -t 1 ] && command -v tput >/dev/null 2>&1 && tput setaf 1 >/dev/null 2>&1; then
+    red=$(tput setaf 1 2>/dev/null || true)
+    reset=$(tput sgr0 2>/dev/null || true)
+    if [ -n "$num" ]; then
+      if [ -n "$reason" ]; then
+        printf '%sFAIL%s #%s %s: %s\n' "$red" "$reset" "$num" "$desc" "$reason"
+      else
+        printf '%sFAIL%s #%s %s\n' "$red" "$reset" "$num" "$desc"
+      fi
+    else
+      if [ -n "$reason" ]; then
+        printf '%sFAIL%s %s: %s\n' "$red" "$reset" "$desc" "$reason"
+      else
+        printf '%sFAIL%s %s\n' "$red" "$reset" "$desc"
+      fi
+    fi
+  else
+    if [ -n "$num" ]; then
+      if [ -n "$reason" ]; then
+        printf 'FAIL #%s %s: %s\n' "$num" "$desc" "$reason"
+      else
+        printf 'FAIL #%s %s\n' "$num" "$desc"
+      fi
+    else
+      if [ -n "$reason" ]; then
+        printf 'FAIL %s: %s\n' "$desc" "$reason"
+      else
+        printf 'FAIL %s\n' "$desc"
+      fi
+    fi
+  fi
+}
+
+# Self-execution when run directly (not sourced)
+case "${0##*/}" in test-fail) _test_fail "$@" ;; esac

@@ -1,0 +1,11 @@
+#!/bin/sh
+# empty VALUE - test if string is empty or unset
+# Example: empty "$VAR" && echo "no value provided"
+
+_empty() {
+  [ -z "$1" ]
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */empty) _empty "$@" ;; esac

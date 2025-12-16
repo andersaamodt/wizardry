@@ -1,0 +1,51 @@
+#!/bin/sh
+
+# Manage Lightning wallets directly through lightning-cli.
+
+lightning_wallet_menu_usage() {
+  cat <<'USAGE'
+Usage: lightning-wallet-menu
+
+Displays wallet-focused Lightning commands.
+USAGE
+}
+
+case "${1-}" in
+  --help|--usage|-h)
+    lightning_wallet_menu_usage
+    exit 0
+    ;;
+esac
+
+set -eu
+. colors
+
+trap 'exit 0' INT TERM
+
+read_prompt() {
+  prompt=$1
+  printf "%s: " "$prompt"
+  read -r value
+  printf '%s' "$value"
+}
+
+wallet_menu() {
+  title="${BOLD}${CYAN}Lightning Wallet"
+  balance_option="List Funds%lightning-cli listfunds"
+  new_address_option="Generate New Address%lightning-cli newaddr"
+  invoices_option="List Invoices%lightning-cli listinvoices"
+  create_invoice_option="Create Invoice%sh -c 'amt=$(printf "Amount (msat): "; read -r a; printf "%s" "$a"); label=$(printf "Label: "; read -r l; printf "%s" "$l"); desc=$(printf "Description: "; read -r d; printf "%s" "$d"); lightning-cli invoice "$amt" "$label" "$desc"'"
+  pay_invoice_option="Pay Invoice%sh -c 'printf "Invoice: "; read -r inv; lightning-cli pay "$inv"'"
+  exit_label=$(exit-label)
+  exit_option="${exit_label}%kill -TERM \$PPID"
+
+  menu "$title" \
+    "$balance_option" \
+    "$new_address_option" \
+    "$invoices_option" \
+    "$create_invoice_option" \
+    "$pay_invoice_option" \
+    "$exit_option" || true
+}
+
+wallet_menu

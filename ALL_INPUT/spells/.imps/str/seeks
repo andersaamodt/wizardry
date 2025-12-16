@@ -1,0 +1,11 @@
+#!/bin/sh
+# seeks PATTERN FILE - silently test if file contains literal pattern
+# Example: seeks "error" log.txt && echo "found errors"
+
+_seeks() {
+  grep -Fq -- "$1" "$2" 2>/dev/null
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */seeks) _seeks "$@" ;; esac
