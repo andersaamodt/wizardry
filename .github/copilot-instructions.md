@@ -20,6 +20,8 @@ Wizardry is a collection of POSIX shell scripts themed as magical spells for the
 3. **No globals**: Avoid shell variables; use parameters or stdout instead
 4. **No wrappers**: All files are standalone, portable, and front-facing
 5. **Self-healing failures**: Fix missing prerequisites automatically or offer to fix them—never quit with imperative error messages
+6. **Always add tests**: When creating new spells or imps, ALWAYS create corresponding test files in `.tests/` following the mirrored directory structure
+7. **Only report actual test results**: NEVER guess, assume, or claim tests pass without actually running them. Only report test results you have verified by executing the tests. If you haven't run tests, explicitly state "tests not yet run" rather than claiming success.
 
 ## Essential Code Quality Rules
 
@@ -47,7 +49,9 @@ Every spell must have:
 - `show_usage()` function with heredoc (unless it's an imp)
 - Help handler for `--help`, `--usage`, `-h`
 - `set -eu` strict mode
-- Corresponding test file in `.tests/`
+- Corresponding test file in `.tests/` (REQUIRED - never create a spell without its test)
+
+**IMPORTANT**: When creating a new spell, you MUST also create a test file at `.tests/category/test_spell-name.sh` that mirrors the spell's location. Test files are not optional.
 
 ## References
 

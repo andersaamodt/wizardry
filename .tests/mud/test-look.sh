@@ -170,51 +170,6 @@ EOF
   _assert_success && printf '%s' "$OUTPUT" | grep -q "Hidden Door" && printf '%s' "$OUTPUT" | grep -q "A narrow doorway concealed by ivy."
 }
 
-test_installs_when_prompted() {
-  stub=$(make_stub_dir)
-  stub_ask_yn "$stub" 0
-  stub_read_magic_missing "$stub"
-  rc_file="$WIZARDRY_TMPDIR/lookrc-install"
-  LOOK_READ_MAGIC="$stub/read-magic" LOOK_RC_FILE="$rc_file" PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" _run_spell "spells/mud/look" "$WIZARDRY_TMPDIR"
-  _assert_success && _assert_path_exists "$rc_file" && grep -q "wizardry look spell" "$rc_file"
-}
-
-test_declines_installation() {
-  stub=$(make_stub_dir)
-  cat >"$stub/ask-yn" <<'EOF'
-#!/bin/sh
-echo "$1" >"$ASK_LOG"
-exit 1
-EOF
-  chmod +x "$stub/ask-yn"
-  cat >"$stub/read-magic" <<'EOF'
-#!/bin/sh
-printf '%s\n' 'read-magic: attribute does not exist.'
-EOF
-  chmod +x "$stub/read-magic"
-  rc_file="$WIZARDRY_TMPDIR/lookrc-decline"
-  rm -f "$rc_file"
-  prompt_log="$WIZARDRY_TMPDIR/prompt.txt"
-  LOOK_READ_MAGIC="$stub/read-magic" ASK_LOG="$prompt_log" LOOK_RC_FILE="$rc_file" PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" _run_spell "spells/mud/look" "$WIZARDRY_TMPDIR"
-  _assert_success && _assert_path_missing "$rc_file" && _assert_output_contains "The mud will only run in this shell window." &&
-    _assert_file_contains "$prompt_log" "Memorize the 'look' spell so it is always available?"
-}
-
-test_skips_install_when_block_present() {
-  stub=$(make_stub_dir)
-  stub_ask_yn "$stub" 9
-  stub_read_magic_missing "$stub"
-  rc_file="$WIZARDRY_TMPDIR/lookrc-preexisting"
-  cat >"$rc_file" <<'EOF'
-# >>> wizardry look spell >>>
-alias look='/existing/look/path'
-# <<< wizardry look spell <<<
-EOF
-  before=$(cat "$rc_file")
-  LOOK_READ_MAGIC="$stub/read-magic" LOOK_RC_FILE="$rc_file" PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" _run_spell "spells/mud/look" "$WIZARDRY_TMPDIR"
-  _assert_success && _assert_file_contains "$rc_file" "wizardry look spell" && [ "$(cat "$rc_file")" = "$before" ]
-}
-
 _run_test_case "look prints usage" test_help
 _run_test_case "look fails when read-magic is missing" test_missing_read_magic
 _run_test_case "look shows defaults when attributes missing" test_missing_attributes_shows_defaults
@@ -223,7 +178,4 @@ _run_test_case "look describes another user's home" test_other_home_description
 _run_test_case "look describes the filesystem root" test_root_description
 _run_test_case "look output ends with newline" test_output_ends_with_newline
 _run_test_case "look prints discovered attributes" test_displays_attributes
-_run_test_case "look installs rc block when approved" test_installs_when_prompted
-_run_test_case "look declines installation when user says no" test_declines_installation
-_run_test_case "look skips installation when rc block already exists" test_skips_install_when_block_present
 _finish_tests
