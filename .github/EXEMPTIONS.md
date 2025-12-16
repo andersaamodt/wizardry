@@ -11,7 +11,7 @@ Documents all deviations from project standards with justification.
 - **Testing**: Bootstrap scripts can't use wizardry infrastructure
 - **Non-Shell Files**: Systemd service files exempt from all shell checks (2 files)
 - **CI**: No exemptions - all checks required
-- **All-Caps Variables**: 🟡 Comprehensive tracking active - 100+ grandfathered variables documented for elimination
+- **All-Caps Variables**: ✅ ELIMINATED - 100+ grandfathered variables converted to lowercase (2025-12-16)
 
 ---
 
@@ -535,49 +535,64 @@ fi
 
 **Context**: Used by `await-keypress` for terminal state management.
 
-#### 11. Grandfathered Variables (To Be Eliminated)
+#### 11. Grandfathered Variables (ELIMINATED ✅)
 
-**Status**: ⚠️ Temporary exemptions. These SHOULD be lowercase but are allowed for backward compatibility.
+**Status**: ✅ COMPLETE (2025-12-16) - All grandfathered ALL_CAPS variables converted to lowercase.
 
-**Action Required**: Convert to lowercase in future refactoring.
+**Converted Variables**:
 
-**Script Path Variables** (used in ~40 files):
-- `SCRIPT_DIR` → should be `script_dir`
-- `SCRIPT_NAME` → should be `script_name`
-- `SCRIPT_SOURCE` → should be `script_source`
+**Script Path Variables** (converted in ~60 files):
+- `SCRIPT_DIR` → `script_dir`
+- `SCRIPT_NAME` → `script_name`
+- `SCRIPT_SOURCE` → `script_source`
+- `SCRIPT` → `script`
 
 **Helper Locator Variables**:
-- `ASK_TEXT_HELPER`, `ASK_TEXT`, `ASK_YN` → should be lowercase
-- `READ_MAGIC`, `SYSTEMCTL` → should be lowercase
+- `ASK_TEXT_HELPER` → `ask_text_helper`
+- `ASK_TEXT` → `ask_text`
+- `ASK_YN` → `ask_yn`
+- `READ_MAGIC` → `read_magic`
+- `SYSTEMCTL` → `systemctl_cmd`
+- `HELPER` → `helper`
 
 **Service Management**:
-- `SERVICE_DIR`, `TTY_DEVICE` → should be lowercase
+- `SERVICE_DIR` → `service_dir`
+- `TTY_DEVICE` → `tty_device`
 
 **Spell-Specific Configuration**:
-- `MARKERS_DIR`, `CONTACTS_DIR`, `MUD_CONFIG`, `MUD_*` → should be lowercase
-- `LOOK_SCRIPT_PATH`, `MISSING_ATTR_MSG`, `IDENTIFY_*` → should be lowercase
-- `STATUS`, `VERBOSE`, `RUNNING_AS_SCRIPT` → should be lowercase
-- `ERROR`, `OUTPUT`, `KEY`, `HELPER`, `FILE`, `DIR` → should be lowercase
-- `DISTRO`, `OS`, `RC_CANDIDATES`, `TORRC_PATHS` → should be lowercase
-- `IMPS_DIR`, `IMPS_TEXT_DIR`, `CONFIG_FILE`, `FEATURES` → should be lowercase
-- `MIN_SUBTESTS_*`, `CLIPBOARD_MARKER` → should be lowercase
-- `RUN_CMD_WORKDIR`, `PS_NAMES`, `SCRIPT` → should be lowercase
-- `BITCOIN_VERSION_DEFAULT` → should be lowercase
+- `MARKERS_DIR` → `markers_dir`
+- `CONTACTS_DIR` → `contacts_dir`
+- `MUD_CONFIG` → `mud_config`
+- `MUD_LOCATION`, `MUD_TITLE`, `MUD_DESCRIPTION` → lowercase
+- `LOOK_SCRIPT_PATH` → `look_script_path`
+- `MISSING_ATTR_MSG` → `missing_attr_msg`
+- `IDENTIFY_TITLE`, `IDENTIFY_DESCRIPTION` → `identify_title`, `identify_description`
+- `STATUS` → `status`
+- `VERBOSE` → `verbose`
+- `RUNNING_AS_SCRIPT` → `running_as_script`
+- `ERROR`, `OUTPUT`, `KEY`, `FILE`, `DIR` → lowercase
+- `DISTRO` → `distro`
+- `OS` → `os`
+- `RC_CANDIDATES` → `rc_candidates`
+- `TORRC_PATHS` → `torrc_paths`
+- `IMPS_DIR`, `IMPS_TEXT_DIR` → `imps_dir`, `imps_text_dir`
+- `CONFIG_FILE` → `config_file`
+- `FEATURES` → `features`
+- `MIN_SUBTESTS_IMP`, `MIN_SUBTESTS_SPELL` → `min_subtests_imp`, `min_subtests_spell`
+- `CLIPBOARD_MARKER` → `clipboard_marker`
+- `RUN_CMD_WORKDIR` → `run_cmd_workdir`
+- `PS_NAMES` → `ps_names`
+- `BITCOIN_VERSION_DEFAULT` → `bitcoin_version_default`
+- `ASK_CANTRIP_INPUT` → `ask_cantrip_input`
+- `ROOT_DIR` (in non-bootstrap contexts) → `root_dir`
 
-**Files Affected**: Primarily `.arcana/*`, `cantrips/*`, and older spells.
-
-**Elimination Strategy**:
-1. **Phase 1**: Document all current usage (✅ COMPLETE)
-2. **Phase 2**: Convert one category at a time (e.g., all SCRIPT_* variables)
-3. **Phase 3**: Update tests and tests to fail on new additions
-4. **Phase 4**: Remove exemptions from test once eliminated
-
-**Progress Tracking**: Each eliminated category should be noted here with date.
+**Enforcement**: Test `test_no_allcaps_variable_assignments` added to `common-tests.sh` to prevent reintroduction of this antipattern.
 
 ### Files Exempt from All-Caps Check
 
 - `cantrips/colors` — Intentionally sets all-caps color variables for sourcing
-- `spells/.imps/test/*` — Test infrastructure files
+- `spells/.imps/test/*` — Test infrastructure files  
+- `spells/.imps/out/*` — Output/logging imps that set feature flags
 - `spells/.arcana/*` — Bootstrap/installation scripts (different context)
 
 ### Adding New All-Caps Variables
@@ -586,14 +601,17 @@ fi
 
 1. They modify a standard environment variable (PATH, HOME, etc.)
 2. They're in a bootstrap/installation script (`.arcana/*`)
-3. They're in test infrastructure (`test/`)
-4. They're color variables (rare, must be justified)
+3. They're in test infrastructure (`.imps/test/*`)
+4. They're in output imps (`.imps/out/*`) setting feature flags
+5. They're color variables in `cantrips/colors` (rare, must be justified)
+
+**Enforcement**: The `test_no_allcaps_variable_assignments` test in `common-tests.sh` automatically catches violations.
 
 **Process**:
 1. Justify why lowercase won't work
 2. Document in EXEMPTIONS.md with justification
-3. Add to test exemption list
+3. Add to test exemption list in `common-tests.sh`
 4. Get PR approval
 
-**Remember**: The goal is **0 all-caps variables** in production spells. Use lowercase for all local variables.
+**Remember**: The goal is **0 all-caps variables** in production spells outside documented exceptions. Use lowercase for all local variables.
 
