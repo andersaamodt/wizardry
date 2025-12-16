@@ -502,16 +502,18 @@ test_no_allcaps_variable_assignments() {
     # - Inline with read (IFS= read pattern)
     # - Export statements (handled by other test)
     # - Variable expansions within strings
-    assignments=$(grep -nE '^[[:space:]]*[A-Z][A-Z0-9_]+=' "$spell" 2>/dev/null | \
+    assignments=$(grep -nE '^[[:space:]]*[A-Z][A-Z_][A-Z0-9_]*=' "$spell" 2>/dev/null | \
       grep -v '^[0-9]*:[[:space:]]*#' | \
-      grep -v 'IFS=.*read' | \
+      grep -v 'IFS=[^[:space:]]*[[:space:]]*read' | \
       grep -v 'export[[:space:]]' || true)
     
     if [ -n "$assignments" ]; then
       # Check each assignment
-      printf '%s\n' "$assignments" | while IFS=: read -r line_num line_content; do
-        # Extract variable name (everything before the first =)
-        var_name=$(printf '%s' "$line_content" | sed -E 's/^[[:space:]]*([A-Z][A-Z0-9_]+)=.*/\1/')
+      # Use subshell with explicit IFS to avoid affecting outer shell
+      printf '%s\n' "$assignments" | (
+        while IFS=: read -r line_num line_content; do
+          # Extract variable name (everything before the first =)
+          var_name=$(printf '%s' "$line_content" | sed -E 's/^[[:space:]]*([A-Z][A-Z_][A-Z0-9_]*)=.*/\1/')
         
         # Skip allowed standard environment variables and wizardry-specific patterns
         case "$var_name" in
@@ -576,6 +578,7 @@ test_no_allcaps_variable_assignments() {
         # If we get here, it's a violation
         printf '%s:%s:%s\n' "$rel_path" "$line_num" "$var_name"
       done
+      ) # End subshell for IFS isolation
     fi
   done > "${WIZARDRY_TMPDIR}/allcaps-violations.txt"
   
