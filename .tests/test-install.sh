@@ -693,6 +693,35 @@ install_shows_menu_when_already_installed() {
   _assert_output_contains "Exit" || return 1
 }
 
+install_fresh_does_not_show_menu() {
+  skip-if-compiled || return $?
+  # When installing fresh (simulating curl | sh), the installer should NOT show
+  # the "already installed" menu, even though it just downloaded the files.
+  # This is the bug we're fixing.
+  fixture=$(_make_fixture)
+  _provide_basic_tools "$fixture"
+  _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+
+  install_dir="$fixture/home/.wizardry"
+  
+  # Run fresh install (simulating curl | sh with downloaded files)
+  _run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
+      HOME="$fixture/home" \
+      WIZARDRY_INSTALL_ASSUME_YES=1 \
+      "$ROOT_DIR/install"
+  
+  _assert_success || return 1
+  
+  # Should NOT show "already installed" menu
+  if printf '%s' "$OUTPUT" | grep -q "already installed"; then
+    TEST_FAILURE_REASON="Fresh install should not show 'already installed' menu"
+    return 1
+  fi
+  
+  # Should show completion message
+  _assert_output_contains "Installation Complete" || return 1
+}
+
 # === Output Message Tests ===
 
 install_nixos_shows_shell_config_updated() {
@@ -1263,6 +1292,7 @@ _run_test_case "learn-spellbook uses explicit helper paths" path_wizard_uses_exp
 _run_test_case "learn-spellbook accepts helper overrides" path_wizard_accepts_helper_overrides
 _run_test_case "install uses only bootstrappable spells" install_uses_only_bootstrappable_spells
 _run_test_case "install shows menu when already installed" install_shows_menu_when_already_installed
+_run_test_case "install fresh does not show menu" install_fresh_does_not_show_menu
 _run_test_case "install shows help" shows_help
 _run_test_case "install NixOS shows shell config updated" install_nixos_shows_shell_config_updated
 _run_test_case "install does not show spell installation" install_does_not_show_spell_installation
