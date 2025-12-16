@@ -21,12 +21,13 @@ case "${1-}" in
 esac
 
 set -eu
-. env-clear
 
-# Add imps directory to PATH
+# Add imps directory to PATH before env-clear so we can find it
 script_dir=$(cd "$(dirname "$0")" && pwd -P)
 imps_dir="${script_dir%/spells*}/spells/.imps"
 PATH="$imps_dir/fs:$imps_dir/cond:$PATH"
+
+. env-clear
 
 # Parse arguments
 file=""
