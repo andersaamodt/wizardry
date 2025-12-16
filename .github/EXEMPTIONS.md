@@ -11,6 +11,7 @@ Documents all deviations from project standards with justification.
 - **Testing**: Bootstrap scripts can't use wizardry infrastructure
 - **Non-Shell Files**: Systemd service files exempt from all shell checks (2 files)
 - **CI**: No exemptions - all checks required
+- **All-Caps Variables**: 🟡 Comprehensive tracking active - 100+ grandfathered variables documented for elimination
 
 ---
 
@@ -373,4 +374,226 @@ These exemptions have been resolved and are documented here to prevent backslidi
 **Implementation**: The test excludes paths matching `*/.arcana/*` and `cantrips/colors` from the wrapper function requirement.
 
 **Future**: If specific arcana need to be sourceable (e.g., for testing or composition), they can be updated individually.
+
+---
+
+## 8. All-Caps Variable Assignments (Environment Variable Overrides)
+
+### Policy
+
+**Goal**: 0 all-caps variable assignments in spells. Use lowercase for local variables.
+
+**Rationale**: All-caps variables in POSIX shell conventionally indicate environment variables. Using all-caps for local variables creates confusion about scope and can shadow important environment variables.
+
+**Test**: `test_no_allcaps_variable_assignments` in `.tests/common-tests.sh`
+
+**Detection**: Checks for ALL all-caps variable assignments (not just `export` statements), catching patterns like `VAR=value` that might override environment variables.
+
+### Allowed All-Caps Variables
+
+All exemptions documented here for management and eventual elimination.
+
+#### 1. Standard Environment Variables
+
+**Allowed**: Modifying standard environment variables is acceptable when needed.
+
+- `PATH` — Adding directories to search path
+- `HOME` — Home directory (rarely modified)
+- `TMPDIR` — Temporary directory location
+- `IFS` — Field separator (inline with `read` command only)
+- `CDPATH` — cd search path (setting to empty for predictable behavior)
+- `SHELL`, `EDITOR`, `PAGER`, `VISUAL` — User preference variables
+
+**Examples**:
+```sh
+PATH="$imps_dir:$PATH"  # Add imps to PATH
+IFS= read -r line       # Inline IFS to preserve whitespace
+CDPATH= cd "$dir"       # Disable CDPATH for reliable cd
+```
+
+#### 2. Package Manager Override Variables
+
+**Allowed**: Used by `pkg-install` to allow callers to specify package names per platform.
+
+- `NIX_PACKAGE`, `APT_PACKAGE`, `DNF_PACKAGE`, `YUM_PACKAGE`
+- `ZYPPER_PACKAGE`, `PACMAN_PACKAGE`, `APK_PACKAGE`, `PKGIN_PACKAGE`, `BREW_PACKAGE`
+
+**Context**: Install scripts in `.arcana/` use these to pass platform-specific package names to `pkg-install`.
+
+**Example**:
+```sh
+export APT_PACKAGE="nodejs"
+export DNF_PACKAGE="nodejs"
+pkg-install node
+```
+
+#### 3. Declared Wizardry Globals
+
+**Allowed**: These are the only project-wide globals (declared in `declare-globals` imp).
+
+- `WIZARDRY_DIR` — Wizardry installation directory
+- `SPELLBOOK_DIR` — User's personal spellbook directory
+- `MUD_DIR` — MUD feature configuration directory
+
+**Status**: Managed by `declare-globals` imp, must use `set -u` when accessed.
+
+#### 4. RC Detection Variables
+
+**Allowed**: Used by installation and configuration scripts for shell RC file detection.
+
+- `WIZARDRY_PLATFORM` — Detected platform (linux, mac, etc.)
+- `WIZARDRY_RC_FILE` — User's shell RC file path
+- `WIZARDRY_RC_FORMAT` — RC file format/syntax
+
+**Context**: Used during installation to add wizardry to user's PATH.
+
+#### 5. Test Infrastructure Variables
+
+**Allowed**: Used within test framework for test coordination.
+
+- `TEST_FAILURE_REASON` — Why a test failed
+- `TEST_SKIP_REASON` — Why a test was skipped
+- `WIZARDRY_TMPDIR` — Test temporary directory
+- `WIZARDRY_GLOBAL_SUBTEST_NUM` — Global subtest counter
+- `WIZARDRY_TEST_COMPILED` — Flag indicating doppelganger testing
+- `WIZARDRY_TEST_HELPERS_ONLY` — Flag for helper-only mode
+- `WIZARDRY_SYSTEM_PATH` — System PATH for test isolation
+
+**Context**: Test imps in `spells/.imps/test/` use these for coordination.
+
+#### 6. Feature Flag Variables
+
+**Allowed**: User-configurable feature flags and environment configuration.
+
+- `WIZARDRY_LOG_LEVEL` — Logging verbosity (0=quiet, 1=info, 2=debug)
+- `WIZARDRY_DISABLE_SANDBOX` — Disable bubblewrap sandboxing
+- `WIZARDRY_BWRAP_WARNING` — Suppress bubblewrap warning
+- `WIZARDRY_COLORS_AVAILABLE` — Terminal supports ANSI colors
+
+**Context**: Users set these in their environment to configure wizardry behavior.
+
+#### 7. Bootstrap/Installer Variables
+
+**Allowed**: Variables used by bootstrap scripts before wizardry is fully installed.
+
+- `ASSUME_YES` — Skip confirmation prompts (for automated installation)
+- `FORCE_INSTALL` — Force reinstallation of components
+- `ROOT_DIR` — Repository root (in install scripts and test-magic)
+
+**Context**: `install` script and `.arcana/core/*` use these before imps are available.
+
+#### 8. Sandbox-Related Variables
+
+**Allowed**: Variables for platform-specific sandboxing configuration.
+
+- `BWRAP_AVAILABLE`, `BWRAP_BIN`, `BWRAP_REASON` — Bubblewrap sandbox status
+- `BWRAP_USE_UNSHARE`, `BWRAP_VIA_SUDO` — Bubblewrap configuration
+- `MACOS_SANDBOX_AVAILABLE`, `SANDBOX_EXEC_BIN`, `SANDBOX_PLATFORM` — macOS sandbox
+- `REAL_SUDO_BIN` — Real sudo path (when testing with stubs)
+
+**Context**: Test infrastructure and security-sensitive operations use sandboxing.
+
+#### 9. Color and Theme Variables
+
+**Allowed**: ANSI escape sequences for terminal styling.
+
+**Source**: Defined in `cantrips/colors` (meant to be sourced).
+
+**Variables**:
+- **Colors**: `RED`, `GREEN`, `BLUE`, `YELLOW`, `CYAN`, `WHITE`, `BLACK`, `PURPLE`, `GREY`/`GRAY`, `LIGHT_BLUE`
+- **Bright Colors**: `BRIGHT_*` (e.g., `BRIGHT_RED`, `BRIGHT_GREEN`)
+- **Backgrounds**: `BG_*` (e.g., `BG_BLACK`, `BG_RED`)
+- **Formatting**: `RESET`, `BOLD`, `ITALICS`, `UNDERLINED`, `BLINK`, `INVERT`, `STRIKE`
+- **Theme**: `THEME_WARNING`, `THEME_SUCCESS`, `THEME_ERROR`, `THEME_MUTED`, `THEME_HIGHLIGHT`, `THEME_HEADING`, `THEME_DIVIDER`, `THEME_CUSTOM`
+- **Escape**: `ESC` — ASCII escape character (used to build sequences)
+
+**Usage Pattern**:
+```sh
+# Option 1: Source colors
+. colors
+printf '%sError:%s Message\n' "$RED" "$RESET"
+
+# Option 2: Inline definition (when colors unavailable)
+RED=''
+RESET=''
+if has tput; then
+  RED=$(tput setaf 1)
+  RESET=$(tput sgr0)
+fi
+```
+
+**Rationale**: Color variables are intentionally all-caps because:
+1. They're meant to be sourced like environment variables
+2. ANSI standard uses uppercase (e.g., terminal `$TERM`, `$COLORTERM`)
+3. Makes colored output code more readable (inline variables stand out)
+
+#### 10. Cantrip Configuration Variables
+
+**Allowed**: Configuration variables for interactive cantrips.
+
+- `AWAIT_KEYPRESS_KEEP_RAW` — Don't restore terminal after keypress (for chaining)
+
+**Context**: Used by `await-keypress` for terminal state management.
+
+#### 11. Grandfathered Variables (To Be Eliminated)
+
+**Status**: ⚠️ Temporary exemptions. These SHOULD be lowercase but are allowed for backward compatibility.
+
+**Action Required**: Convert to lowercase in future refactoring.
+
+**Script Path Variables** (used in ~40 files):
+- `SCRIPT_DIR` → should be `script_dir`
+- `SCRIPT_NAME` → should be `script_name`
+- `SCRIPT_SOURCE` → should be `script_source`
+
+**Helper Locator Variables**:
+- `ASK_TEXT_HELPER`, `ASK_TEXT`, `ASK_YN` → should be lowercase
+- `READ_MAGIC`, `SYSTEMCTL` → should be lowercase
+
+**Service Management**:
+- `SERVICE_DIR`, `TTY_DEVICE` → should be lowercase
+
+**Spell-Specific Configuration**:
+- `MARKERS_DIR`, `CONTACTS_DIR`, `MUD_CONFIG`, `MUD_*` → should be lowercase
+- `LOOK_SCRIPT_PATH`, `MISSING_ATTR_MSG`, `IDENTIFY_*` → should be lowercase
+- `STATUS`, `VERBOSE`, `RUNNING_AS_SCRIPT` → should be lowercase
+- `ERROR`, `OUTPUT`, `KEY`, `HELPER`, `FILE`, `DIR` → should be lowercase
+- `DISTRO`, `OS`, `RC_CANDIDATES`, `TORRC_PATHS` → should be lowercase
+- `IMPS_DIR`, `IMPS_TEXT_DIR`, `CONFIG_FILE`, `FEATURES` → should be lowercase
+- `MIN_SUBTESTS_*`, `CLIPBOARD_MARKER` → should be lowercase
+- `RUN_CMD_WORKDIR`, `PS_NAMES`, `SCRIPT` → should be lowercase
+- `BITCOIN_VERSION_DEFAULT` → should be lowercase
+
+**Files Affected**: Primarily `.arcana/*`, `cantrips/*`, and older spells.
+
+**Elimination Strategy**:
+1. **Phase 1**: Document all current usage (✅ COMPLETE)
+2. **Phase 2**: Convert one category at a time (e.g., all SCRIPT_* variables)
+3. **Phase 3**: Update tests and tests to fail on new additions
+4. **Phase 4**: Remove exemptions from test once eliminated
+
+**Progress Tracking**: Each eliminated category should be noted here with date.
+
+### Files Exempt from All-Caps Check
+
+- `cantrips/colors` — Intentionally sets all-caps color variables for sourcing
+- `spells/.imps/test/*` — Test infrastructure files
+- `spells/.arcana/*` — Bootstrap/installation scripts (different context)
+
+### Adding New All-Caps Variables
+
+**Policy**: New all-caps variables are **PROHIBITED** unless:
+
+1. They modify a standard environment variable (PATH, HOME, etc.)
+2. They're in a bootstrap/installation script (`.arcana/*`)
+3. They're in test infrastructure (`test/`)
+4. They're color variables (rare, must be justified)
+
+**Process**:
+1. Justify why lowercase won't work
+2. Document in EXEMPTIONS.md with justification
+3. Add to test exemption list
+4. Get PR approval
+
+**Remember**: The goal is **0 all-caps variables** in production spells. Use lowercase for all local variables.
 
