@@ -43,6 +43,7 @@ _saved_test_compiled="${WIZARDRY_TEST_COMPILED:-}"
 _saved_test_helpers="${WIZARDRY_TEST_HELPERS_ONLY:-}"
 _saved_system_path="${WIZARDRY_SYSTEM_PATH:-}"
 _saved_ask_input="${ASK_CANTRIP_INPUT:-}"
+_saved_select_input="${SELECT_INPUT_MODE:-}"
 
 # Preserve bootstrap/installer variables
 _saved_assume_yes="${ASSUME_YES:-}"
@@ -102,6 +103,7 @@ export OLDPWD="$_saved_oldpwd"
 [ -n "$_saved_test_helpers" ] && export WIZARDRY_TEST_HELPERS_ONLY="$_saved_test_helpers"
 [ -n "$_saved_system_path" ] && export WIZARDRY_SYSTEM_PATH="$_saved_system_path"
 [ -n "$_saved_ask_input" ] && export ASK_CANTRIP_INPUT="$_saved_ask_input"
+[ -n "$_saved_select_input" ] && export SELECT_INPUT_MODE="$_saved_select_input"
 
 # Restore bootstrap variables
 [ -n "$_saved_assume_yes" ] && export ASSUME_YES="$_saved_assume_yes"
