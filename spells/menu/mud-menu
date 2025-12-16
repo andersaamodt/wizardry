@@ -35,51 +35,6 @@ if ! require menu "The MUD Install menu needs the 'menu' command to present opti
   return 1
 fi
 
-# Check if cd hook is currently installed by looking for the marker in rc file
-is_cd_hook_installed() {
-  # Try to resolve rc file using same logic as cd spell
-  rc_file=''
-  if [ -n "${WIZARDRY_RC_FILE-}" ]; then
-    rc_file=$WIZARDRY_RC_FILE
-  elif command -v detect-rc-file >/dev/null 2>&1; then
-    if detected=$(detect-rc-file 2>/dev/null); then
-      while IFS= read -r line; do
-        case $line in
-        rc_file=*)
-          rc_file=${line#rc_file=}
-          break
-          ;;
-        esac
-      done <<EOF
-$detected
-EOF
-    fi
-  fi
-  
-  # Fallback to shell-specific defaults
-  if [ -z "$rc_file" ] && [ -n "${HOME-}" ]; then
-    shell_name=${SHELL-}
-    case ${shell_name##*/} in
-    zsh)
-      rc_file="$HOME/.zshrc"
-      ;;
-    *)
-      rc_file="$HOME/.bashrc"
-      ;;
-    esac
-  fi
-  
-  if [ -z "$rc_file" ] || [ ! -f "$rc_file" ]; then
-    return 1
-  fi
-  
-  # Check for cd hook markers
-  if grep -Fq '# >>> wizardry cd cantrip >>>' "$rc_file" 2>/dev/null; then
-    return 0
-  fi
-  return 1
-}
-
 # Check if a MUD config feature is enabled
 is_feature_enabled() {
   feature=$1
@@ -107,7 +62,7 @@ was_all=0
 while true; do
   if [ "$first_run" -eq 0 ]; then
     # Check which toggle changed and keep cursor there
-    if is_cd_hook_installed; then now_cd=1; else now_cd=0; fi
+    if check-cd-hook 2>/dev/null; then now_cd=1; else now_cd=0; fi
     if is_feature_enabled "command-not-found"; then now_cnf=1; else now_cnf=0; fi
     if is_feature_enabled "touch-hook"; then now_touch=1; else now_touch=0; fi
     if is_feature_enabled "fantasy-theme"; then now_fantasy=1; else now_fantasy=0; fi
@@ -145,7 +100,7 @@ while true; do
   fi
 
   # Save toggle states before displaying menu (for comparison on next iteration)
-  if is_cd_hook_installed; then was_cd=1; else was_cd=0; fi
+  if check-cd-hook 2>/dev/null; then was_cd=1; else was_cd=0; fi
   if is_feature_enabled "command-not-found"; then was_cnf=1; else was_cnf=0; fi
   if is_feature_enabled "touch-hook"; then was_touch=1; else was_touch=0; fi
   if is_feature_enabled "fantasy-theme"; then was_fantasy=1; else was_fantasy=0; fi
@@ -163,7 +118,7 @@ while true; do
 
   # Build menu entries based on current state
   # Build cd hook toggle label based on current state
-  if is_cd_hook_installed; then
+  if check-cd-hook 2>/dev/null; then
     cd_hook="[X] cd hook (look on directory change)%toggle-cd"
   else
     cd_hook="[ ] cd hook (look on directory change)%toggle-cd"
