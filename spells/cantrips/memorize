@@ -35,6 +35,7 @@ case "${1-}" in
 esac
 
 set -eu
+. env-clear
 
 # Expand tilde in paths
 expand_path() {

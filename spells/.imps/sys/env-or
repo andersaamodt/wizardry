@@ -2,6 +2,8 @@
 # env-or VAR DEFAULT - output env var value if set and non-empty, else default
 # Example: dir=$(env-or SPELLBOOK_DIR "$HOME/.spellbook")
 
+set -eu
+
 _env_or() {
   _eo_var=$1
   # Validate variable name contains only alphanumerics and underscores

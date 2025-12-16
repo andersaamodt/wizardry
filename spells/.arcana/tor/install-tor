@@ -21,22 +21,22 @@ esac
 set -eu
 
 # Find script directory for sibling resources
-SCRIPT_SOURCE=$0
-case $SCRIPT_SOURCE in
+script_source=$0
+case $script_source in
 */*)
-        SCRIPT_DIR=${SCRIPT_SOURCE%/*}
+  script_dir=${SCRIPT_SOURCE%/*}
         ;;
 *)
-        resolved=$(command -v "$SCRIPT_SOURCE" 2>/dev/null || printf '%s' "$SCRIPT_SOURCE")
-        SCRIPT_DIR=${resolved%/*}
-        SCRIPT_SOURCE=$resolved
+        resolved=$(command -v "$script_source" 2>/dev/null || printf '%s' "$script_source")
+  script_dir=${resolved%/*}
+  script_source=$resolved
         ;;
 esac
-if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
-        SCRIPT_DIR=.
+if [ -z "$script_dir" ] || [ "$script_dir" = "$script_source" ]; then
+  script_dir=.
 fi
-SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
-IMPS_TEXT_DIR="$SCRIPT_DIR/../../.imps/text"
+script_dir=$(cd "$script_dir" && pwd -P)
+imps_text_dir="$script_dir/../../.imps/text"
 
 # Welcome message
 printf '%s\n' 'Welcome to the Tor installation wizard.'
@@ -90,9 +90,9 @@ case $distro in
     # Detect indentation style from config file
     indent_l1="  "
     indent_l2="    "
-    if [ -x "$IMPS_TEXT_DIR/make-indent" ]; then
-      indent_l1=$("$IMPS_TEXT_DIR/make-indent" 1 "$config_path")
-      indent_l2=$("$IMPS_TEXT_DIR/make-indent" 2 "$config_path")
+    if [ -x "$imps_text_dir/make-indent" ]; then
+      indent_l1=$("$imps_text_dir/make-indent" 1 "$config_path")
+      indent_l2=$("$imps_text_dir/make-indent" 2 "$config_path")
     fi
 
     if grep -q 'environment.systemPackages' "$config_path"; then

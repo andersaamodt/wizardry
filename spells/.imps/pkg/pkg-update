@@ -2,6 +2,8 @@
 # pkg-update - refresh package repository lists
 # Example: pkg-update && pkg-install git
 
+set -eu
+
 _pkg_update() {
   _pu_pm=$(_pkg_manager) || {
     printf '%s\n' "pkg-update: no supported package manager" >&2

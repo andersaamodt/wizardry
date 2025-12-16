@@ -2,6 +2,8 @@
 # detect-indent-width FILE - detect the number of spaces per indentation level
 # Outputs: number of spaces (default: 2). Example: width=$(detect-indent-width config.nix)
 
+set -eu
+
 _detect_indent_width() {
   _diw_file=${1-}
 

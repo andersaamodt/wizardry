@@ -2,6 +2,8 @@
 # ends STRING SUFFIX - test if string ends with suffix
 # Example: ends "$file" ".sh" && echo "shell script"
 
+set -eu
+
 _ends() {
   case "$1" in
     *"$2") return 0 ;;

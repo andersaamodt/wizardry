@@ -2,6 +2,8 @@
 # ok COMMAND [ARGS...] - run command silently, succeed if it succeeds
 # Example: ok mkdir -p /tmp/test && echo "created"
 
+set -eu
+
 _ok() {
   "$@" >/dev/null 2>&1
 }

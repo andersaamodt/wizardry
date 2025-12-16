@@ -2,6 +2,8 @@
 # upper - convert stdin to uppercase
 # Example: echo "hello" | upper
 
+set -eu
+
 _upper() {
   tr '[:lower:]' '[:upper:]'
 }

@@ -6,6 +6,9 @@
 #   skip_if_compiled - Call at start of test to skip when WIZARDRY_TEST_COMPILED=1
 #   skip_if_uncompiled - Call at start of test to skip when WIZARDRY_TEST_COMPILED!=1
 
+set -eu
+. env-clear
+
 _run_test_case() {
   desc=$1
   func=$2

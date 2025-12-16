@@ -2,6 +2,9 @@
 # record-failure-detail IDX - add a test index to the list of failures
 # Appends the index to _fail_detail_indices for summary output.
 
+set -eu
+. env-clear
+
 _record_failure_detail() {
   idx=$1
 

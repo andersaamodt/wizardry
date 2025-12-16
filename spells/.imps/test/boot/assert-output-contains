@@ -2,6 +2,9 @@
 # assert-output-contains SUBSTRING - verify OUTPUT contains the substring
 # Sets TEST_FAILURE_REASON on mismatch.
 
+set -eu
+. env-clear
+
 _assert_output_contains() {
   substring=$1
   case "$OUTPUT" in

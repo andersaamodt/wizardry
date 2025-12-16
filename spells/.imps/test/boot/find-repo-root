@@ -2,6 +2,9 @@
 # find-repo-root - locate the wizardry repository root by walking up directories
 # Prints the repository root path containing spells/ and .tests/ directories.
 
+set -eu
+. env-clear
+
 _find_repo_root() {
   dir=$(CDPATH= cd -- "$(dirname "${0:-$PWD}")" && pwd -P)
   while [ "$dir" != "/" ]; do

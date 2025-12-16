@@ -24,6 +24,7 @@ case "${1-}" in
 esac
 
 set -eu
+. env-clear
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 spells_dir=$(CDPATH= cd -- "$script_dir/.." && pwd)
 install_dir=${INSTALL_MENU_ROOT:-$spells_dir/.arcana}

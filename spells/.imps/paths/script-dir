@@ -4,6 +4,8 @@
 # Returns absolute normalized path to the directory containing the script.
 # Follows symlinks to return the actual filesystem location.
 
+set -eu
+
 _script_dir() {
   _sd_script=${1:-$0}
   

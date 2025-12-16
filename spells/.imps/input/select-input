@@ -3,6 +3,8 @@
 # Example: src=$(select-input) && case $src in stdin) read line ;; tty) read </dev/tty ;; esac
 # Set SELECT_INPUT_MODE=stdin|tty|none to override auto-detection
 
+set -eu
+
 _select_input() {
   case ${SELECT_INPUT_MODE:-auto} in
     stdin) printf '%s\n' stdin; return 0 ;;

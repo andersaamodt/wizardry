@@ -23,6 +23,7 @@ case "${1-}" in
 esac
 
 set -eu
+. env-clear
 verbose=0
 if [ "${1-}" = "-v" ]; then
   verbose=1

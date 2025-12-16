@@ -2,6 +2,9 @@
 # assert-success - verify STATUS is 0
 # Shorthand for assert-status 0.
 
+set -eu
+. env-clear
+
 _assert_success() {
   _assert_status 0
 }

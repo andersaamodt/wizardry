@@ -2,6 +2,8 @@
 # contains HAYSTACK NEEDLE - test if string contains substring
 # Example: contains "$PATH" "/usr/local/bin" && echo "found"
 
+set -eu
+
 _contains() {
   case "$1" in
     *"$2"*) return 0 ;;

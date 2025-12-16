@@ -23,6 +23,7 @@ case "${1-}" in
 esac
 
 set -eu
+. env-clear
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 spells_dir=$(dirname "$script_dir")
 repo_dir=$(dirname "$spells_dir")

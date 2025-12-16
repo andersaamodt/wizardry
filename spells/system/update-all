@@ -24,13 +24,14 @@ case "${1-}" in
 esac
 
 set -eu
+. env-clear
 
-VERBOSE=0
+verbose=0
 
 while [ "$#" -gt 0 ]; do
   case $1 in
     -v|--verbose)
-      VERBOSE=1
+      verbose=1
       shift
       ;;
     --)
@@ -83,7 +84,7 @@ case ${WIZARDRY_UPDATE_ALL_ASSUME_YES:-} in
     # Ask for confirmation
     has ask-yn || fail 'ask-yn spell is missing; cannot confirm updates.'
     say 'Proceed with system updates?'
-    ASK_CANTRIP_INPUT=stdin
+    ask_cantrip_input=stdin
     export ASK_CANTRIP_INPUT
     if ! printf '\n' | ask-yn 'Proceed with system updates?' yes >/dev/null; then
       die 1 'update-all: cancelled by user'
@@ -107,7 +108,7 @@ run_with_progress() {
   done
   printf '%b  $ %s%b\n' "${GREY:-}" "$_cmd_display" "${RESET:-}"
 
-  if [ "$VERBOSE" -eq 1 ]; then
+  if [ "$verbose" -eq 1 ]; then
     "$@"
     return $?
   fi
@@ -168,7 +169,7 @@ case $distro in
     # Use step imp instead of print_step
     step '• Refreshing apt package lists'
     # Inline run_quiet - direct execution with output control
-    if [ "$VERBOSE" -eq 1 ]; then
+    if [ "$verbose" -eq 1 ]; then
       sudo apt-get update
     else
       sudo apt-get update >/dev/null 2>&1
@@ -187,21 +188,21 @@ case $distro in
     must has pamac 'Required command not found: pamac' || return 1
     
     step '• Synchronising pacman packages'
-    if [ "$VERBOSE" -eq 1 ]; then
+    if [ "$verbose" -eq 1 ]; then
       sudo pacman -Syu --noconfirm
     else
       sudo pacman -Syu --noconfirm >/dev/null 2>&1
     fi
     
     step '• Refreshing Pamac-managed packages'
-    if [ "$VERBOSE" -eq 1 ]; then
+    if [ "$verbose" -eq 1 ]; then
       pamac update --no-confirm
     else
       pamac update --no-confirm >/dev/null 2>&1
     fi
     
     step '• Rebuilding Pamac AUR packages'
-    if [ "$VERBOSE" -eq 1 ]; then
+    if [ "$verbose" -eq 1 ]; then
       pamac build --no-confirm
     else
       pamac build --no-confirm >/dev/null 2>&1
@@ -215,28 +216,28 @@ case $distro in
     must has nix-env 'Required command not found: nix-env' || return 1
     
     step '• Refreshing system channels'
-    if [ "$VERBOSE" -eq 1 ]; then
+    if [ "$verbose" -eq 1 ]; then
       sudo nix-channel --update
     else
       sudo nix-channel --update >/dev/null 2>&1
     fi
     
     step '• Rebuilding system configuration'
-    if [ "$VERBOSE" -eq 1 ]; then
+    if [ "$verbose" -eq 1 ]; then
       sudo nixos-rebuild switch --upgrade
     else
       sudo nixos-rebuild switch --upgrade >/dev/null 2>&1
     fi
     
     step '• Refreshing user channels'
-    if [ "$VERBOSE" -eq 1 ]; then
+    if [ "$verbose" -eq 1 ]; then
       nix-channel --update
     else
       nix-channel --update >/dev/null 2>&1
     fi
     
     step '• Upgrading user packages'
-    if [ "$VERBOSE" -eq 1 ]; then
+    if [ "$verbose" -eq 1 ]; then
       nix-env -u --always
     else
       nix-env -u --always >/dev/null 2>&1

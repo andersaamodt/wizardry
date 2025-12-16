@@ -26,6 +26,7 @@ case "${1-}" in
 esac
 
 set -eu
+. env-clear
 
 list_only=0
 case "${1-}" in

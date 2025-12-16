@@ -3,6 +3,8 @@
 # NOTE: This imp executes immediately when sourced, unlike other imps.
 # This is required for compatibility with the colors spell which sources it.
 
+set -eu
+
 _disable_palette() {
   for _dp_name in \
     RESET BLACK RED GREEN YELLOW BLUE PURPLE CYAN WHITE GREY \

@@ -2,6 +2,9 @@
 # link-tools DIR TOOL... - symlink specified tools into directory
 # Skips tools that already exist in the directory.
 
+set -eu
+. env-clear
+
 _link_tools() {
   dir=$1
   shift

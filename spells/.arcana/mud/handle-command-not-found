@@ -21,16 +21,16 @@ esac
 
 set -eu
 
-SCRIPT_SOURCE=$0
-case $SCRIPT_SOURCE in
+script_source=$0
+case $script_source in
 */*)
-  SCRIPT_DIR=${SCRIPT_SOURCE%/*}
+  script_dir=${SCRIPT_SOURCE%/*}
   ;;
 *)
-  SCRIPT_DIR=.
+  script_dir=.
   ;;
 esac
-SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
+script_dir=$(cd "$script_dir" && pwd -P)
 
 handle_command_not_found_warn() {
   printf '%s\n' "handle-command-not-found: $1" >&2
@@ -144,8 +144,8 @@ EOF
   if [ "$rc_format" = "nix" ]; then
     # Find nix-shell-add helper
     nix_helper=""
-    if [ -x "$SCRIPT_DIR/../../.imps/sys/nix-shell-add" ]; then
-      nix_helper="$SCRIPT_DIR/../../.imps/sys/nix-shell-add"
+    if [ -x "$script_dir/../../.imps/sys/nix-shell-add" ]; then
+      nix_helper="$script_dir/../../.imps/sys/nix-shell-add"
     elif command -v nix-shell-add >/dev/null 2>&1; then
       nix_helper=$(command -v nix-shell-add)
     fi
@@ -308,8 +308,8 @@ EOF
   # For nix format, use nix-shell-remove to remove the block
   if [ "$rc_format" = "nix" ]; then
     nix_helper=""
-    if [ -x "$SCRIPT_DIR/../../.imps/sys/nix-shell-remove" ]; then
-      nix_helper="$SCRIPT_DIR/../../.imps/sys/nix-shell-remove"
+    if [ -x "$script_dir/../../.imps/sys/nix-shell-remove" ]; then
+      nix_helper="$script_dir/../../.imps/sys/nix-shell-remove"
     elif command -v nix-shell-remove >/dev/null 2>&1; then
       nix_helper=$(command -v nix-shell-remove)
     fi

@@ -3,6 +3,8 @@
 # Attempts home-manager first, then nixos-rebuild with privilege escalation.
 # Set WIZARDRY_SKIP_NIX_REBUILD=1 to skip without error.
 
+set -eu
+
 _nix_rebuild() {
   if [ "${WIZARDRY_SKIP_NIX_REBUILD-}" = "1" ]; then
     return 0

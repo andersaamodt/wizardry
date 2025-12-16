@@ -24,6 +24,7 @@ case "${1-}" in
 esac
 
 set -eu
+. env-clear
 
 # Load color palette (colors handles terminal capability detection internally)
 # shellcheck source=/dev/null

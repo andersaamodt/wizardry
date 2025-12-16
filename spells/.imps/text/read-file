@@ -2,6 +2,8 @@
 # read-file FILE - read entire file contents to stdout
 # Example: content=$(read-file config.txt)
 
+set -eu
+
 _read_file() {
   cat "$1"
 }

@@ -3,6 +3,8 @@
 # Dispatcher for autoloading missing commands via handle-command-not-found.
 # Sources the module and calls its true-name function.
 
+set -eu
+
 _word_of_binding() {
   if [ $# -eq 0 ]; then
     printf '%s\n' "word-of-binding: command name required" >&2

@@ -22,6 +22,7 @@ case "${1-}" in
 esac
 
 set -eu
+. env-clear
 
 levels=${1:-1}
 

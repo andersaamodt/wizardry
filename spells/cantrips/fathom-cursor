@@ -25,6 +25,7 @@ case "${1-}" in
 esac
 
 set -eu
+. env-clear
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 
@@ -83,7 +84,7 @@ if ! "$require_cmd" dd "The fathom-cursor spell needs 'dd' to read the terminal 
     return 1
 fi
 
-TTY_DEVICE=${FATHOM_CURSOR_DEVICE:-/dev/tty}
+tty_device=${FATHOM_CURSOR_DEVICE:-/dev/tty}
 skip_stty=${FATHOM_CURSOR_SKIP_STTY:-0}
 
 # Only reach for stty when we are manipulating a real tty
@@ -95,24 +96,24 @@ fi
 
 if [ "$skip_stty" -eq 1 ]; then
     # Test harnesses can feed canned responses via a read-only file
-    if [ ! -r "$TTY_DEVICE" ]; then
-        printf '%s\n' "fathom-cursor: unable to read from '$TTY_DEVICE'" >&2
+    if [ ! -r "$tty_device" ]; then
+        printf '%s\n' "fathom-cursor: unable to read from '$tty_device'" >&2
         return 1
     fi
 
-    exec 3<"$TTY_DEVICE" || return 1
+    exec 3<"$tty_device" || return 1
     restore_test() {
         exec 3>&- 2>/dev/null || :
     }
     trap 'restore_test' EXIT
 else
     # When running interactively, open the tty for both reading and writing
-    if [ ! -r "$TTY_DEVICE" ] || [ ! -w "$TTY_DEVICE" ]; then
-        printf '%s\n' "fathom-cursor: unable to open controlling terminal '$TTY_DEVICE'" >&2
+    if [ ! -r "$tty_device" ] || [ ! -w "$tty_device" ]; then
+        printf '%s\n' "fathom-cursor: unable to open controlling terminal '$tty_device'" >&2
         return 1
     fi
 
-    exec 3<>"$TTY_DEVICE" || return 1
+    exec 3<>"$tty_device" || return 1
 
     # Preserve the terminal state and restore it on exit
     saved_state=$(stty -g <&3 2>/dev/null)

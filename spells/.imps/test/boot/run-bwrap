@@ -2,6 +2,9 @@
 # run-bwrap - execute bubblewrap with optional sudo support
 # Wraps bwrap invocation, using sudo when BWRAP_VIA_SUDO is set.
 
+set -eu
+. env-clear
+
 _run_bwrap() {
   if [ "${BWRAP_VIA_SUDO:-0}" -eq 1 ]; then
     # Use REAL_SUDO_BIN to avoid picking up a test stub sudo from PATH

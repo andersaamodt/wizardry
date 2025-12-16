@@ -103,6 +103,93 @@ var=
 value=$1                 # Fails with set -u
 ```
 
+### Variable Naming Convention
+
+**CRITICAL**: Variable names indicate scope and purpose.
+
+#### Lowercase for Local Variables
+
+**ALL local variables MUST use lowercase naming**:
+
+```sh
+# CORRECT - local variables (used only within this script)
+script_dir=$(dirname "$0")
+config_file="$HOME/.config/myapp"
+user_input=""
+temp_file=$(mktemp)
+marker_name="${1:-}"
+```
+
+**NEVER use ALL_CAPS for local variables**:
+
+```sh
+# WRONG - looks like environment variable but is only local
+SCRIPT_DIR=$(dirname "$0")
+CONFIG_FILE="$HOME/.config/myapp"
+USER_INPUT=""
+TEMP_FILE=$(mktemp)
+```
+
+**Rationale**: In POSIX shell, ALL_CAPS conventionally indicates environment variables that may be exported or overridden. Using ALL_CAPS for local variables:
+- Creates confusion about variable scope
+- Suggests the variable might be used for inter-script communication
+- Violates the principle of least surprise
+- Is caught by `test_no_allcaps_variable_assignments` in common-tests.sh
+
+#### ALL_CAPS for Environment Variables and Constants
+
+**Use ALL_CAPS ONLY for**:
+
+1. **Declared globals** (from `declare-globals`):
+   ```sh
+   WIZARDRY_DIR="${WIZARDRY_DIR:-}"
+   SPELLBOOK_DIR="${SPELLBOOK_DIR:-}"
+   MUD_DIR="${MUD_DIR:-}"
+   ```
+
+2. **Standard system environment variables**:
+   ```sh
+   PATH="$new_dir:$PATH"
+   HOME="${HOME:-}"
+   TMPDIR="${TMPDIR:-/tmp}"
+   ```
+
+3. **Feature flags and configuration** (documented in EXEMPTIONS.md):
+   ```sh
+   WIZARDRY_LOG_LEVEL="${WIZARDRY_LOG_LEVEL:-0}"
+   AWAIT_KEYPRESS_KEEP_RAW=1
+   ```
+
+4. **Package manager override variables**:
+   ```sh
+   export APT_PACKAGE="package-name"
+   export NIX_PACKAGE="package-name"
+   ```
+
+5. **True constants** (rare, must be justified):
+   ```sh
+   BITCOIN_PORT=8333  # Standard Bitcoin port
+   ```
+
+#### Avoid Environment Variable Antipattern
+
+**DO NOT use environment variables to pass data between scripts.**
+
+```sh
+# WRONG - environment variable antipattern
+export MY_CONFIG_FILE="$config"
+other-spell  # expects MY_CONFIG_FILE
+
+# CORRECT - explicit arguments
+other-spell "$config"
+```
+
+**Exception**: Package manager variables (APT_PACKAGE, NIX_PACKAGE, etc.) are explicitly approved for arcana install scripts to communicate with `pkg-install`.
+
+**Test-only overrides**: Environment variables like `*_ASK_TEXT` used in tests for stubbing are acceptable but should not be added to production code.
+
+**Enforcement**: The `test_no_allcaps_variable_assignments` test in `.tests/common-tests.sh` prevents ALL_CAPS local variables from being introduced.
+
 ### Quoting
 Always quote variables unless word splitting is intended:
 ```sh

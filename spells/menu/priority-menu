@@ -24,6 +24,7 @@ case "${1-}" in
 esac
 
 set -eu
+. env-clear
 
 # Catch Ctrl-C and TERM signal to exit cleanly
 trap 'exit 0' INT TERM
@@ -36,7 +37,7 @@ if ! require menu "The Priority menu needs the 'menu' command to present options
   return 1
 fi
 
-FILE="${1-}"
+file="${1-}"
 
 if [ -z "$FILE" ]; then
         printf '%s\n' "priority-menu: file path required." >&2
@@ -44,7 +45,7 @@ if [ -z "$FILE" ]; then
 fi
 
 priority_menu_display_menu() {
-        checked_state=$(read-magic "${FILE}" checked)
+        checked_state=$(read-magic "${file}" checked)
         if [ "${checked_state}" = "read-magic: attribute does not exist." ]; then
           check_item="Check%echo 'Placeholder: Check command'"
         else

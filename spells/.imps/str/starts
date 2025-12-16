@@ -2,6 +2,8 @@
 # starts STRING PREFIX - test if string starts with prefix
 # Example: starts "$line" "#" && echo "comment"
 
+set -eu
+
 _starts() {
   case "$1" in
     "$2"*) return 0 ;;

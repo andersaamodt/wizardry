@@ -24,6 +24,7 @@ case "${1-}" in
 esac
 
 set -eu
+. env-clear
 
 # check if the $MUD_PLAYER environment variable is set
 if [ -z "${MUD_PLAYER-}" ]; then

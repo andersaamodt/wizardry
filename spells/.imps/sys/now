@@ -2,6 +2,8 @@
 # now [FORMAT] - output current timestamp (default: epoch seconds)
 # Examples: now | now %Y-%m-%d | now %H:%M:%S
 
+set -eu
+
 _now() {
   date "+${1:-%s}" 2>/dev/null || printf '%s' "$$"
 }

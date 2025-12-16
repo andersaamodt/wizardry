@@ -3,6 +3,8 @@
 # Use with 'set -e' or '|| return $?' to propagate failure
 # Examples: must there /etc/config "config missing" || return $?
 
+set -eu
+
 _must() {
   _must_type=$1
   shift

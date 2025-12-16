@@ -2,6 +2,8 @@
 # take N [FILE] - take first N lines of input or file
 # Example: take 5 file.txt   # first 5 lines
 
+set -eu
+
 _take() {
   if [ "$#" -ge 2 ]; then head -n "$1" "$2"; else head -n "$1"; fi
 }

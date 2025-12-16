@@ -2,6 +2,9 @@
 # assert-file-contains FILE SUBSTRING - verify file contains the substring
 # Sets TEST_FAILURE_REASON on mismatch or missing file.
 
+set -eu
+. env-clear
+
 _assert_file_contains() {
   file=$1
   substring=$2

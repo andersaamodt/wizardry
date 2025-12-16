@@ -2,6 +2,9 @@
 # write-apt-stub FIXTURE - create an apt-get stub script in fixture/bin
 # Stub logs invocations to APT_LOG and exits with APT_EXIT code.
 
+set -eu
+. env-clear
+
 _write_apt_stub() {
   fixture=$1
   cat <<'STUB' >"$fixture/bin/apt-get"

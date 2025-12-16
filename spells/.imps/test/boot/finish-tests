@@ -2,6 +2,9 @@
 # finish-tests - print test summary and return appropriate exit status
 # Returns 0 if all tests passed, 1 otherwise. Prints failure indices if any.
 
+set -eu
+. env-clear
+
 _finish_tests() {
   total=$((_pass_count + _fail_count))
   _test_summary "$_pass_count" "$total" "${_skip_count-0}"

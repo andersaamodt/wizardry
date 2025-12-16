@@ -2,6 +2,8 @@
 # backup FILE [SUFFIX] - create backup copy of file (default suffix: .bak)
 # Example: backup /etc/ssh/sshd_config | backup myfile .orig
 
+set -eu
+
 _backup() {
   _bk_file=${1:-}
   _bk_suffix=${2:-.bak}

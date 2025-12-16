@@ -2,6 +2,9 @@
 # provide-basic-tools FIXTURE - symlink essential tools into fixture/bin
 # Links mktemp, mkdir, rm, cat, env, ln, sh, dirname, readlink if available.
 
+set -eu
+. env-clear
+
 _provide_basic_tools() {
   fixture=$1
   for cmd in mktemp mkdir rm cat env ln sh dirname readlink; do

@@ -24,11 +24,12 @@ case "${1-}" in
 esac
 
 set -eu
+. env-clear
 
 # Catch Ctrl-C and TERM signal to return 1 cleanly
 trap 'exit 0' INT TERM
 
-ROOT_DIR=$(CDPATH= cd -- "$(dirname "$0")/../.." && pwd -P)
+root_dir=$(CDPATH= cd -- "$(dirname "$0")/../.." && pwd -P)
 
 # Load color palette (colors handles terminal capability detection internally)
 # shellcheck source=/dev/null
@@ -79,8 +80,8 @@ spellbook_menu() {
                                         ;;
                                 *)
                                         # Search in spells/ directory first
-                                        if [ -d "$ROOT_DIR/spells/$current_path" ]; then
-                                                resolved_path="$ROOT_DIR/spells/$current_path"
+                                        if [ -d "$root_dir/spells/$current_path" ]; then
+                                                resolved_path="$root_dir/spells/$current_path"
                                         # Search in ~/.spellbook (user spell home)
                                         elif [ -d "$spell_home/$current_path" ]; then
                                                 resolved_path="$spell_home/$current_path"
@@ -167,7 +168,7 @@ spellbook_menu() {
                         if [ -d "$spell_home" ]; then
                                 # Inline list_spell_directories to get builtin categories
                                 builtin_cats=""
-                                for dir in "$ROOT_DIR"/spells/*; do
+                                for dir in "$root_dir"/spells/*; do
                                         [ -d "$dir" ] || continue
                                         [ "$(basename "$dir")" = "menu" ] && continue
                                         cat_name=$(basename "$dir")
@@ -211,7 +212,7 @@ spellbook_menu() {
                                 set -- "$@" "---"
                         fi
                         # Inline list_spell_directories
-                        for dir in "$ROOT_DIR"/spells/*; do
+                        for dir in "$root_dir"/spells/*; do
                                 [ -d "$dir" ] || continue
                                 [ "$(basename "$dir")" = "menu" ] && continue
                                 category=$(basename "$dir")
@@ -221,7 +222,7 @@ spellbook_menu() {
                 else
                         # Non-root view: show spells from both built-in and custom folders combined
                         # First, list built-in spells
-                        builtin_dir="$ROOT_DIR/spells/$category_name"
+                        builtin_dir="$root_dir/spells/$category_name"
                         custom_dir="$spell_home/$category_name"
                         
                         # List built-in spells

@@ -2,6 +2,8 @@
 # sed-inplace PATTERN FILE - perform in-place sed substitution portably (mac/linux)
 # Example: sed-inplace 's/foo/bar/g' config.txt
 
+set -eu
+
 _sed_inplace() {
   _si_pattern=${1:-}
   _si_file=${2:-}

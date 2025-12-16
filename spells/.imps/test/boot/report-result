@@ -2,6 +2,9 @@
 # report-result DESC STATUS [REASON] - record the result of a test case
 # Prints PASS or FAIL with description, incrementing global counters.
 
+set -eu
+. env-clear
+
 _report_result() {
   desc=$1
   status=$2

@@ -23,6 +23,7 @@ case "${1-}" in
 esac
 
 set -eu
+. env-clear
 
 if [ "$#" -ne 1 ]; then
     warn "Error: incorrect number of arguments"

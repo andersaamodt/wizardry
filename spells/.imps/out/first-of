@@ -2,6 +2,8 @@
 # first-of A B - output first non-empty value, fail if both empty
 # Example: name=$(first-of "$NICK" "$USER")
 
+set -eu
+
 _first_of() {
   if [ -n "$1" ]; then printf '%s' "$1"
   elif [ -n "$2" ]; then printf '%s' "$2"

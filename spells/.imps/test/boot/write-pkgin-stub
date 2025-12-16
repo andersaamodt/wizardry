@@ -2,6 +2,9 @@
 # write-pkgin-stub FIXTURE - create a pkgin stub script for testing
 # Stub logs install/remove invocations to PKGIN_LOG.
 
+set -eu
+. env-clear
+
 _write_pkgin_stub() {
   fixture=$1
   mkdir -p "$fixture/opt/pkg/bin"

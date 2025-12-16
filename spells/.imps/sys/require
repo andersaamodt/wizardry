@@ -3,6 +3,8 @@
 # Delegates to require-command if available; falls back to simple command check.
 # Example: require menu "The menu command is needed"
 
+set -eu
+
 _require() {
   _req_tool=$1
   shift

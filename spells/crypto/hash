@@ -21,6 +21,7 @@ case "${1-}" in
 esac
 
 set -eu
+. env-clear
 
 if [ "$#" != 1 ]; then
     printf 'Usage: hash file\n'

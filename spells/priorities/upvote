@@ -24,6 +24,7 @@ case "${1-}" in
 esac
 
 set -eu
+. env-clear
 
 # Ensure file argument is provided
 if [ -z "${1-}" ]; then

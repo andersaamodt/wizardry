@@ -21,6 +21,7 @@ case "${1-}" in
 esac
 
 set -eu
+. env-clear
 
 # Add imps directory to PATH
 script_dir=$(cd "$(dirname "$0")" && pwd -P)

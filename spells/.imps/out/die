@@ -2,6 +2,8 @@
 # die [CODE] MESSAGE - print to stderr and exit (default code 1)
 # Examples: die "fatal error" | die 2 "file not found"
 
+set -eu
+
 _die() {
   case "$1" in
     [0-9]|[0-9][0-9]|[0-9][0-9][0-9]) _die_code=$1; shift ;;

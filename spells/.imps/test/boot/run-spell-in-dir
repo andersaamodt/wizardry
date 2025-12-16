@@ -2,6 +2,9 @@
 # run-spell-in-dir DIR SCRIPT [ARGS...] - run a spell in a specific directory
 # Sets RUN_CMD_WORKDIR before calling run-spell.
 
+set -eu
+. env-clear
+
 _run_spell_in_dir() {
   dir=$1
   shift

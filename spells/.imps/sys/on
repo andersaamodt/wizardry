@@ -2,6 +2,8 @@
 # on PLATFORM - test if running on platform (mac/linux/debian/nixos/arch/fedora/bsd)
 # Example: on mac && brew install git
 
+set -eu
+
 _on() {
   _on_platform=$1
   _on_kernel=$(uname -s 2>/dev/null || echo unknown)
