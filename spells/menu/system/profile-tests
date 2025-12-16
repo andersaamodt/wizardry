@@ -35,7 +35,7 @@ set -eu
 
 # Find the script directory and root
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-root_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd -P)
+root_dir=$(CDPATH= cd -- "$script_dir/../../.." && pwd -P)
 test_dir="$root_dir/.tests"
 
 # Parse arguments
