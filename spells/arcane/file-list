@@ -35,9 +35,8 @@ folder_name=$(basename "$1")
 text_file="$folder_name.txt"
 
 # Read all the filenames in the folder and put them in the text file
-# Todo: Remove the folder/ name from before the filename
 for filename in "$1"/*; do
-  printf '%s\n' "$filename" >> "$text_file"
+  printf '%s\n' "$(basename "$filename")" >> "$text_file"
 done
 
 printf '%s\n' "Text file created: $text_file"
