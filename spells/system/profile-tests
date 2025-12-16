@@ -79,7 +79,8 @@ if [ -n "$only_pattern" ]; then
       esac
     done | sort)
 else
-  test_list=$(find "$test_dir" -maxdepth 1 -type f \( -name 'test-*.sh' -o -name 'common-*.sh' \) 2>/dev/null | sort)
+  test_list=$(find "$test_dir" -maxdepth 1 -type f \
+    \( -name 'test-*.sh' -o -name 'common-*.sh' \) 2>/dev/null | sort)
   test_list="$test_list
 $(find "$test_dir" -mindepth 2 -type f -name 'test-*.sh' 2>/dev/null | sort)"
 fi
