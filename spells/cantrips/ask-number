@@ -35,15 +35,13 @@ max=$3
 
 case $min in
 *[!0-9-]*|"")
-  printf '%s\n' "ask-number: MIN must be an integer." >&2
-  return 1
+  die "ask-number: MIN must be an integer."
   ;;
 *) : ;;
 esac
 case $max in
 *[!0-9-]*|"")
-  printf '%s\n' "ask-number: MAX must be an integer." >&2
-  return 1
+  die "ask-number: MAX must be an integer."
   ;;
 *) : ;;
 esac
@@ -52,8 +50,7 @@ min=$(printf '%s' "$min")
 max=$(printf '%s' "$max")
 
 if [ "$min" -gt "$max" ]; then
-  printf '%s\n' "ask-number: MIN must be less than or equal to MAX." >&2
-  return 1
+  die "ask-number: MIN must be less than or equal to MAX."
 fi
 
 while :; do
@@ -89,8 +86,7 @@ while :; do
     IFS= read -r response </dev/tty || response=
     ;;
   *)
-    printf '%s\n' "ask-number: No interactive input available." >&2
-    return 1
+    die "ask-number: No interactive input available."
     ;;
   esac
 

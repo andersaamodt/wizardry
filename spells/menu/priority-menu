@@ -40,8 +40,7 @@ fi
 file="${1-}"
 
 if [ -z "$file" ]; then
-        printf '%s\n' "priority-menu: file path required." >&2
-        return 1
+        usage-error "priority-menu" "file path required"
 fi
 
 priority_menu_display_menu() {
