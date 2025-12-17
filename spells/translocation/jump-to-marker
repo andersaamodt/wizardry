@@ -28,6 +28,7 @@ case "${1-}" in
 esac
 
 set -eu
+. env-clear
 
 # Resolve markers directory
 _jm_spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")

@@ -1,6 +1,7 @@
 #!/bin/sh
 # os - print current OS identifier (mac/linux/debian/nixos/arch/fedora/unknown)
 # Example: case $(os) in debian) apt-get ;; mac) brew ;; esac
+set -eu
 
 _os() {
   _os_kernel=$(uname -s 2>/dev/null || echo unknown)
@@ -16,5 +17,6 @@ _os() {
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */os) _os "$@" ;; esac

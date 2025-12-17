@@ -1,6 +1,7 @@
 #!/bin/sh
 # path PATH - convert relative path to absolute, normalized
 # Example: path ./foo -> /current/dir/foo
+set -eu
 
 _path() {
   _p_path=$1
@@ -12,5 +13,6 @@ _path() {
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */path) _path "$@" ;; esac

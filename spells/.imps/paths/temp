@@ -1,6 +1,7 @@
 #!/bin/sh
 # temp [PREFIX] - create temp file with optional prefix (outputs path)
 # Example: f=$(temp myapp) && echo "content" > "$f"
+set -eu
 
 _temp() {
   _temp_prefix=${1:-wizardry}
@@ -8,5 +9,6 @@ _temp() {
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */temp) _temp "$@" ;; esac

@@ -2,6 +2,9 @@
 # spell-menu - Display action menu for a spell or custom command
 # Shows options: Cast now, Memorize/Forget, Help, Test spell, Delete (for custom)
 
+set -eu
+. env-clear
+
 # Check if memorized (used multiple times in loop)
 is_memorized() {
         check_name=$1

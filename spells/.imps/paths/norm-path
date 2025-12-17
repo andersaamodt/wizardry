@@ -1,6 +1,7 @@
 #!/bin/sh
 # norm-path [PATH] - normalize path (collapse //, resolve . and ..)
 # Reads stdin if no arg. Example: norm-path "/tmp//foo/../bar" -> /tmp/bar
+set -eu
 
 _norm_path() {
   if [ "$#" -ge 1 ]; then
@@ -11,5 +12,6 @@ _norm_path() {
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */norm-path) _norm_path "$@" ;; esac

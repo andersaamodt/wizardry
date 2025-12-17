@@ -2,6 +2,7 @@
 # nix-shell-add NAME FILE [SHELL] - add shell init code to nix config (from stdin)
 # Example: echo 'source "/path/to/spell"' | nix-shell-add myspell home.nix
 # SHELL defaults to 'bash'; valid values: bash, zsh
+set -eu
 
 _nix_shell_add() {
   _nsa_block_name=${1:-}
@@ -128,5 +129,6 @@ $_nsa_line"; fi
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */nix-shell-add) _nix_shell_add "$@" ;; esac
