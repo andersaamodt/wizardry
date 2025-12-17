@@ -153,7 +153,7 @@ if [ "$new_category_mode" -eq 1 ]; then
         fi
         mkdir -p "$spell_home/$category_name"
         display_path=$(tilde-path "$spell_home")
-        printf "Created category '%s' in %s.\n" "$category_name" "$display_path"
+        success "Created category '$category_name' in $display_path."
         return 0
 fi
 
@@ -240,10 +240,10 @@ EOF_SCRIPT
         
         if [ -n "$current_category" ]; then
                 display_path=$(tilde-path "$spell_home")
-                printf "Scribed '%s' to %s/%s.\n" "$name" "$display_path" "$current_category"
+                success "Scribed '$name' to $display_path/$current_category."
         else
                 display_path=$(tilde-path "$spell_home")
-                printf "Scribed '%s' to %s.\n" "$name" "$display_path"
+                success "Scribed '$name' to $display_path."
         fi
         return 0
 fi
