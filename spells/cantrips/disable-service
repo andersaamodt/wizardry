@@ -28,7 +28,7 @@ script_name=$(basename "$0")
 script_source=$0
 case $script_source in
 */*)
-  script_dir=${SCRIPT_SOURCE%/*}
+  script_dir=${script_source%/*}
   ;;
 *)
   resolved=$(command -v "$script_source" 2>/dev/null || printf '%s' "$script_source")
