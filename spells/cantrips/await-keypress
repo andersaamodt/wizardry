@@ -46,7 +46,7 @@ if ! "$require_cmd" dd "The await-keypress spell needs 'dd' to capture raw key p
     return 1
 fi
 
-tty_device=${await_keypress_device:-/dev/tty}
+tty_device=${AWAIT_KEYPRESS_DEVICE:-/dev/tty}
 skip_stty=${AWAIT_KEYPRESS_SKIP_STTY:-0}
 keep_raw=${AWAIT_KEYPRESS_KEEP_RAW:-0}
 

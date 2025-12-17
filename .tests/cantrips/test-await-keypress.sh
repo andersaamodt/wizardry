@@ -18,6 +18,7 @@ await_with_buffer() {
   buffer=$1
   shift
   _run_cmd env \
+    PATH="$WIZARDRY_IMPS_PATH:/bin:/usr/bin" \
     AWAIT_KEYPRESS_BUFFER_FILE="$buffer" \
     AWAIT_KEYPRESS_SKIP_STTY=1 \
     AWAIT_KEYPRESS_DEVICE=/dev/null \

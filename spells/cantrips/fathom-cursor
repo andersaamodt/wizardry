@@ -84,7 +84,7 @@ if ! "$require_cmd" dd "The fathom-cursor spell needs 'dd' to read the terminal 
     return 1
 fi
 
-tty_device=${fathom_cursor_device:-/dev/tty}
+tty_device=${FATHOM_CURSOR_DEVICE:-/dev/tty}
 skip_stty=${FATHOM_CURSOR_SKIP_STTY:-0}
 
 # Only reach for stty when we are manipulating a real tty
