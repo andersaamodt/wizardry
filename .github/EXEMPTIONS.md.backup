@@ -4,15 +4,14 @@ Documents all deviations from project standards with justification.
 
 ## Summary
 
-- **Style**: ✅ **353/353 files compliant** - All long-line and mixed tabs/spaces exemptions eliminated (2025-12-17)
-- **Code Structure**: Conditional imps exempt from `set -eu`; imps exempt from `--help` (architectural decisions)
+- **Style**: ✅ **353/353 files compliant** - All long-line exemptions eliminated (2025-12-17)
+- **Code Structure**: Conditional imps exempt from `set -eu`; imps exempt from `--help`
 - **Function Discipline**: ✅ 0 spells with 4+ extra functions (57/57 spells refactored)
-  - 6 spells with 2-3 extra functions remain (documented below) - functions used 2-20x each, acceptable per guidelines
-- **Testing**: Bootstrap scripts can't use wizardry infrastructure (run before installation)
+  - 7 spells with 2-3 extra functions remain (documented below) - functions used 2-20x each, acceptable per guidelines
+- **Testing**: Bootstrap scripts can't use wizardry infrastructure
 - **Non-Shell Files**: Systemd service files exempt from all shell checks (2 files)
 - **CI**: No exemptions - all checks required
 - **All-Caps Variables**: ✅ **COMPLETED** - All production spells use lowercase (Dec 2025). Only `.arcana/*` bootstrap scripts remain (exempt category)
-- **Shebangs**: ✅ **STANDARDIZED** - All scripts use `#!/bin/sh` (38 files converted, 5 tutorials converted)
 
 ---
 
@@ -291,20 +290,16 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 
 **Progress**: 57/57 spells refactored (100%) - 3 spells removed as obsolete
 
-**Remaining acceptable cases** (6 spells with 2-3 extra functions):
+**Remaining acceptable cases** (7 spells with 2-3 extra functions):
 
-**Spells with 3 extra functions:**
-- `psi/read-contact` (5 functions total): handle_escapes (3x), card_lines (3x), nicer_name (3x) - vCard parsing logic, substantive domain-specific helpers
-- `cantrips/menu` (5 functions total): cleanup (8x), render_row (4x), position_cursor_below_menu (3x) - core menu rendering
+**Spells with 3 extra functions (4 total):**
+- `psi/read-contact` (4 functions): handle_escapes (3x), card_lines (3x), nicer_name (3x) - vCard parsing logic, substantive helpers
+- `cantrips/menu` (4 functions): cleanup (8x), render_row (4x), position_cursor_below_menu (3x) - core menu rendering
 
-**Spells with 2 extra functions:**
-- `cantrips/await-keypress` (4 functions total): restore_terminal (4x), codes_to_string (5x) - complex terminal state handling
-- `menu/mud` (4 functions total): get_portal_location (2x), mud_display_menu (2x) - menu display pattern
-- `menu/mud-settings` (4 functions total): has_player_key (2x), mud_settings_display_menu (2x) - menu display pattern
-- `menu/main-menu` (4 functions total): is_mud_enabled (2x), main_menu_display_menu (2x) - menu display pattern
-
-**Recently improved:**
-- ✅ `menu/mud-menu` (3 functions total, 1 extra): Reduced from 3 extra functions to 1 (removed is_cd_hook_installed, kept is_feature_enabled used 20x)
+**Spells with 2 extra functions (3 total):**
+- `cantrips/await-keypress` (3 functions): restore_terminal (4x), codes_to_string (5x) - complex terminal handling
+- `menu/mud`, `menu/mud-settings`, `menu/main-menu` (3 functions each): menu display pattern with 2 helpers used 2-20x
+- `menu/mud-menu` (3 functions): is_cd_hook_installed (4x), is_feature_enabled (20x) - MUD feature checks
 
 ---
 
@@ -322,6 +317,36 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 4. Update this file
 
 ---
+
+## Resolved Exemptions
+
+These exemptions have been resolved and are documented here to prevent backsliding.
+
+### ✅ Alternative Shebangs: `#!/usr/bin/env sh` (Resolved 2025-12-11)
+
+**Previously Affected** (38 files):
+- **Cantrips** (10 files): `assertions`, `colors`, `cursor-blink`, `fathom-cursor`, `fathom-terminal`, `max-length`, `menu`, `move-cursor`, `require-command`, `require-wizardry`
+- **System/Menu** (3 files): `divination/detect-distro`, `system/update-all`, `menu/install-menu`
+- **Arcana** (25 files): All `.arcana/core/*` install/uninstall scripts (24 files), plus `tor/setup-tor`
+
+**Resolution**: All files converted to standard `#!/bin/sh` shebang. Test infrastructure updated to only accept `#!/bin/sh` (with optional space after `#!`).
+
+**Reason for Resolution**: Standardize on single shebang format across entire project. The standard `#!/bin/sh` is widely supported and the claimed portability benefits of `#!/usr/bin/env sh` were not compelling enough to maintain two shebang styles.
+
+### ✅ Bash Tutorials: `#!/bin/bash` (Resolved 2025-12-11)
+
+**Previously Affected** (5 files):
+- `tutorials/26_history.sh`
+- `tutorials/28_distribution.sh`
+- `tutorials/29_ssh.sh`
+- `tutorials/30_git.sh`
+- `tutorials/31_usability.sh`
+
+**Resolution**: All tutorial files converted to standard `#!/bin/sh` shebang.
+
+**Reason for Resolution**: Educational materials should exemplify project standards. All 26 tutorials now use POSIX-compliant `#!/bin/sh`. Tutorials can still teach bash-specific concepts by noting them as non-portable extensions.
+
+**Review**: Quarterly (next: 2026-03-10) | **Last Updated**: 2025-12-11
 
 ## 7. Word-of-Binding / Wrapper Function Exemptions
 
@@ -597,78 +622,4 @@ fi
 4. Get PR approval
 
 **Remember**: The goal is **0 all-caps variables** in production spells. Use lowercase for all local variables.
-
----
-
-## Completed Exemptions Checklist
-
-This section documents all exemptions that have been successfully resolved. Items are maintained here to prevent backsliding and to track project improvements over time.
-
-### ✅ Style Exemptions (COMPLETED)
-
-- [x] **Long Lines (>100 chars)** - All hardcoded exemptions eliminated (2025-12-17)
-  - [x] `spells/.imps/cond/is` line 13 - Refactored to multi-line format
-  - [x] `spells/divination/identify-room` lines 112, 263 - Refactored complex conditionals and split long directory lists
-  - **Result**: 353/353 files compliant, 0 hardcoded exemptions
-
-- [x] **Mixed Tabs/Spaces** - All files resolved (commit 4463607)
-  - [x] 8 files converted to 2-space indentation
-  - **Result**: Consistent indentation across entire codebase
-
-### ✅ Shebang Standardization (COMPLETED 2025-12-11)
-
-- [x] **Alternative Shebangs (`#!/usr/bin/env sh`)** - 38 files converted to `#!/bin/sh`
-  - [x] Cantrips (10 files): `assertions`, `colors`, `cursor-blink`, `fathom-cursor`, `fathom-terminal`, `max-length`, `menu`, `move-cursor`, `require-command`, `require-wizardry`
-  - [x] System/Menu (3 files): `divination/detect-distro`, `system/update-all`, `menu/install-menu`
-  - [x] Arcana (25 files): All `.arcana/core/*` install/uninstall scripts (24 files), plus `tor/setup-tor`
-  - **Reason**: Standardized on single shebang format across entire project
-
-- [x] **Bash Tutorials (`#!/bin/bash`)** - 5 files converted to `#!/bin/sh`
-  - [x] `tutorials/26_history.sh`
-  - [x] `tutorials/28_distribution.sh`
-  - [x] `tutorials/29_ssh.sh`
-  - [x] `tutorials/30_git.sh`
-  - [x] `tutorials/31_usability.sh`
-  - **Reason**: Educational materials should exemplify project standards
-
-### ✅ Function Discipline (COMPLETED)
-
-- [x] **Spells with 4+ Additional Functions** - All 57 spells refactored to 0-3 additional functions
-  - [x] Removed/obsolete spells (3): `spellcraft/learn-spell`, `spellcraft/learn-spellbook`, `cantrips/assertions`
-  - [x] Major refactors (54 spells): Created reusable imps, inlined single-use functions, delegated to existing spells
-  - **Result**: 0 spells with 4+ extra functions (was 57 violations)
-  - **Remaining**: 6 spells with 2-3 extra functions (acceptable per guidelines)
-
-### ✅ All-Caps Variables (COMPLETED December 2025)
-
-- [x] **Production Spells** - All converted to lowercase for local variables
-  - [x] `SCRIPT_DIR` → `script_dir`
-  - [x] `LOOK_SCRIPT_PATH` → `look_script_path`
-  - [x] `DISTRO` → `distro`
-  - [x] `IMPS_DIR` → `imps_dir`
-  - [x] All other local variables in production spells
-  - **Result**: All production spells use lowercase. Only `.arcana/*` bootstrap scripts (exempt category) may use all-caps.
-
-### ✅ Recent Improvements
-
-- [x] **`menu/mud-menu`** - Reduced from 3 extra functions to 1 (2025-12-17)
-  - Removed `is_cd_hook_installed` function
-  - Kept `is_feature_enabled` (used 20x throughout the spell)
-  - **Result**: Now compliant with guidelines (1 extra function is acceptable)
-
-### Summary
-
-**Total Exemptions Eliminated:**
-- Style: 100% (all long lines and mixed indentation fixed)
-- Shebangs: 43 files standardized to `#!/bin/sh`
-- Function Discipline: 57 spells refactored from 4+ to 0-3 extra functions
-- All-Caps Variables: All production spells converted to lowercase
-- CI: 0 exemptions (all checks required)
-
-**Current Status:**
-- **0 unresolved style issues**
-- **0 spells with 4+ extra functions**
-- **0 all-caps variables in production spells**
-- **6 spells with acceptable 2-3 extra functions** (within guidelines)
-
 
