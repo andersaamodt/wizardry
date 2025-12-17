@@ -44,7 +44,7 @@ script_dir=$(cd "$script_dir" && pwd -P)
 look_script_path="$script_dir/$(basename "$script_source")"
 
 look_warn() {
-        printf '%s\n' "look: $1" >&2
+        warn "look: $1"
 }
 
 # Load colors if available
@@ -78,8 +78,7 @@ if [ -z "$read_magic" ]; then
         elif command -v read-magic >/dev/null 2>&1; then
                 read_magic=$(command -v read-magic)
         else
-                printf '%s\n' "look: read-magic spell is missing." >&2
-                return 1
+                die "look: read-magic spell is missing."
         fi
 fi
 
