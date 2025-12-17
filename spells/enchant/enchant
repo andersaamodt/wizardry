@@ -180,7 +180,7 @@ done
 
 if [ "$success" -eq 0 ]; then
         if [ -n "$attempted_helper" ]; then
-                die "enchant: Failed to set attribute using '$attempted_helper' (exit $attempt_status)."
+                die "enchant: Failed to set attribute using '$attempted_helper' (exit status $attempt_status)."
         else
                 die "enchant: This spell requires the 'attr', 'xattr', or 'setfattr' command to be installed."
         fi
