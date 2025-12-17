@@ -45,8 +45,8 @@ fi
 script_dir=$(cd "$script_dir" && pwd -P)
 
 # Inline remove_service_find_ask_text - only used once
-if [ -n "${remove_service_ask_text-}" ]; then
-  ask_text_helper=$remove_service_ask_text
+if [ -n "${REMOVE_SERVICE_ASK_TEXT-}" ]; then
+  ask_text_helper=$REMOVE_SERVICE_ASK_TEXT
 elif command -v ask-text >/dev/null 2>&1; then
   ask_text_helper=$(command -v ask-text)
 elif [ -x "$script_dir/ask-text" ]; then

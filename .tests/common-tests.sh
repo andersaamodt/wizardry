@@ -1422,6 +1422,95 @@ test_spells_source_env_clear_after_set_eu() {
   return 0
 }
 
+# --- Check: No mixed-case variables ---
+# All variables must be either ALL_UPPERCASE or all_lowercase.
+# Mixed case like SOME_var or some_VAR is not allowed as it's confusing and inconsistent.
+# Environment variable REFERENCES (like ${PATH}, ${HOME}) are allowed to be uppercase.
+# This enforces consistency in variable naming conventions.
+
+test_no_mixed_case_variables() {
+  violations=""
+  
+  check_mixed_case() {
+    spell=$1
+    name=$(basename "$spell")
+    rel_path=${spell#"$ROOT_DIR/spells/"}
+    
+    # Skip exempt files
+    case "$rel_path" in
+      # Test infrastructure exempt
+      .imps/test/*) return ;;
+      # Bootstrap/arcana scripts have different rules
+      .arcana/*) return ;;
+    esac
+    
+    # Look for variable assignments and references with mixed case
+    # Pattern: Variable name has both uppercase and lowercase (excluding environment vars in ${})
+    # Match patterns like: SOME_var= or some_VAR= or ${SOME_var} or $SOME_var
+    # Allow: ALL_CAPS, all_lowercase, ${ALL_CAPS} (env vars), $all_lowercase
+    # Disallow: Mixed_Case, SOME_lower, some_UPPER
+    
+    # Find variable assignments with mixed case (has both upper and lower in same word)
+    mixed_vars=$(grep -nE '^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*=' "$spell" 2>/dev/null | \
+      awk -F: '{
+        # Extract variable name from assignment
+        match($2, /^[[:space:]]*([A-Za-z_][A-Za-z0-9_]*)=/, arr)
+        if (arr[1] != "") {
+          var = arr[1]
+          # Check if variable has both uppercase and lowercase letters
+          has_upper = (var ~ /[A-Z]/)
+          has_lower = (var ~ /[a-z]/)
+          if (has_upper && has_lower) {
+            print $1 ":" var
+          }
+        }
+      }' | head -5)
+    
+    # Find variable references with mixed case ${SOME_var} or $SOME_var
+    # But exclude environment variable references that are conventionally uppercase
+    mixed_refs=$(grep -nE '\$\{?[A-Za-z_][A-Za-z0-9_]*' "$spell" 2>/dev/null | \
+      grep -v -E '\$\{?(PATH|HOME|USER|SHELL|TMPDIR|PWD|OLDPWD|IFS|CDPATH|LANG|LC_|TERM|DISPLAY|EDITOR|PAGER|VISUAL)' | \
+      grep -v -E '\$\{?(ROOT_DIR|SPELLBOOK_DIR|MUD_DIR|MUD_PLAYER|WIZARDRY_|TEST_|NO_COLOR|BWRAP_|SANDBOX_|MACOS_)' | \
+      grep -v -E '\$\{?(APT_|DNF_|YUM_|ZYPPER_|PACMAN_|APK_|PKGIN_|BREW_|NIX_)' | \
+      grep -v -E '\$\{?(DETECT_|LOOK_|ASK_|INSTALL_|REMOVE_|START_|STOP_|RESTART_|ENABLE_|DISABLE_)' | \
+      awk -F: '{
+        line = $2
+        while (match(line, /\$\{?([A-Za-z_][A-Za-z0-9_]*)/, arr)) {
+          var = arr[1]
+          has_upper = (var ~ /[A-Z]/)
+          has_lower = (var ~ /[a-z]/)
+          if (has_upper && has_lower) {
+            print $1 ":" var
+            break
+          }
+          line = substr(line, RSTART + RLENGTH)
+        }
+      }' | head -5)
+    
+    if [ -n "$mixed_vars" ] || [ -n "$mixed_refs" ]; then
+      violations_found=""
+      [ -n "$mixed_vars" ] && violations_found="$mixed_vars"
+      [ -n "$mixed_refs" ] && violations_found="${violations_found:+$violations_found; }$mixed_refs"
+      formatted=$(printf '%s\n' "$violations_found" | sed "s|^|$rel_path:|" | tr '\n' '; ' | sed 's/; $//')
+      violations="${violations}${violations:+; }$formatted"
+    fi
+  }
+  
+  tmpfile="${WIZARDRY_TMPDIR}/mixed-case-vars.txt"
+  : > "$tmpfile"
+  for_each_posix_spell check_mixed_case > "$tmpfile"
+  
+  violations=$(cat "$tmpfile" 2>/dev/null | grep -v '^$' | head -10 | tr '\n' '; ' | sed 's/; $//')
+  rm -f "$tmpfile"
+  
+  if [ -n "$violations" ]; then
+    TEST_FAILURE_REASON="mixed-case variables found (must be ALL_UPPERCASE or all_lowercase): $violations"
+    return 1
+  fi
+  
+  return 0
+}
+
 # --- Run all test cases ---
 
 _run_test_case "no duplicate spell names" test_no_duplicate_spell_names
@@ -1445,6 +1534,7 @@ _run_test_case "spells require wrapper functions" test_spells_require_wrapper_fu
 _run_test_case "spells have limited flags" test_spells_have_limited_flags
 _run_test_case "spells have limited positional arguments" test_spells_have_limited_positional_args
 _run_test_case "no all-caps variable assignments" test_no_allcaps_variable_assignments
+_run_test_case "no mixed-case variables" test_no_mixed_case_variables
 _run_test_case "scripts have set -eu early" test_scripts_have_set_eu_early
 _run_test_case "spells source env-clear after set -eu" test_spells_source_env_clear_after_set_eu
 

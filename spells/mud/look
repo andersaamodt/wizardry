@@ -71,7 +71,7 @@ mud_description=""
 # Let tests or callers override the helper path; otherwise look beside this
 # script first, then in PATH so the spell still works when installed globally.
 # This keeps installation optional while preserving predictability.
-read_magic=${LOOK_read_magic-}
+read_magic=${LOOK_READ_MAGIC-}
 if [ -z "$read_magic" ]; then
         if [ -x "$script_dir/read-magic" ]; then
                 read_magic="$script_dir/read-magic"

@@ -30,8 +30,8 @@ script_name=$(basename "$0")
 service_name=${1-}
 if [ -z "$service_name" ]; then
         # Find ask-text helper
-        if [ -n "${REstart_service_ask_text-}" ]; then
-                ask_text_helper=$REstart_service_ask_text
+        if [ -n "${RESTART_SERVICE_ASK_TEXT-}" ]; then
+                ask_text_helper=$RESTART_SERVICE_ASK_TEXT
         elif command -v ask-text >/dev/null 2>&1; then
                 ask_text_helper=$(command -v ask-text)
         else
