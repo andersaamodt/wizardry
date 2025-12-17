@@ -135,7 +135,9 @@ detect_magic_reports_missing_helper() {
   cp "$ROOT_DIR/spells/divination/detect-magic" "$tmpdir/detect-magic"
   chmod +x "$tmpdir/detect-magic"
 
-  _run_cmd env PATH="/bin:/usr/bin" "$tmpdir/detect-magic"
+  # Include imps in PATH so spell can run, but not read-magic
+  imp_path="$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/fs"
+  _run_cmd env PATH="/bin:/usr/bin:$imp_path" "$tmpdir/detect-magic"
   _assert_failure || return 1
   case "$OUTPUT" in
     "") : ;;
