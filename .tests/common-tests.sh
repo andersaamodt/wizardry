@@ -1368,7 +1368,16 @@ test_scripts_have_set_eu_early() {
       cantrips/list-files|cantrips/validate-number|cantrips/colors|cantrips/restart-service) return ;;
       cantrips/require-wizardry|cantrips/ask|cantrips/cursor-blink|cantrips/disable-service) return ;;
       cantrips/ask-text|cantrips/fathom-terminal|cantrips/ask-number|cantrips/up) return ;;
-      cantrips/restart-ssh|cantrips/is-service-installed) return ;;
+      cantrips/restart-ssh|cantrips/is-service-installed|cantrips/menu|cantrips/move-cursor) return ;;
+      cantrips/service-status|cantrips/wizard-cast|cantrips/logging-example|cantrips/fathom-cursor) return ;;
+      cantrips/await-keypress|cantrips/enable-service|cantrips/ask-yn|cantrips/memorize) return ;;
+      cantrips/reload-ssh|cantrips/install-service-template|cantrips/move|cantrips/validate-ssh-key) return ;;
+      # Imps using wrapper function pattern (word-of-binding)
+      .imps/sys/must|.imps/sys/require) return ;;
+      .imps/fs/xattr-list-keys|.imps/fs/xattr-read-value) return ;;
+      .imps/text/make-indent) return ;;
+      # Divination spells using wrapper function pattern
+      divination/detect-distro) return ;;
     esac
     
     # Check if set -eu appears in first 50 lines (allows for longer help handlers)
