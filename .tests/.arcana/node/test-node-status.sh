@@ -29,7 +29,7 @@ _run_test_case "node-status prints usage with --help" renders_usage_information
 reports_not_installed_without_node_binary() {
   skip-if-compiled || return $?
   tmp=$(_make_tempdir)
-  _run_cmd env PATH="$tmp:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps:$ROOT_DIR/spells/.imps/menu" \
+  _run_cmd env PATH="$WIZARDRY_IMPS_PATH:$tmp:$ROOT_DIR/spells/cantrips" \
     "$ROOT_DIR/spells/.arcana/node/node-status"
 
   _assert_success || return 1
@@ -51,7 +51,7 @@ exit 0
 SHI
   chmod +x "$tmp/node"
 
-  _run_cmd env PATH="$tmp:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps:$ROOT_DIR/spells/.imps/menu" \
+  _run_cmd env PATH="$WIZARDRY_IMPS_PATH:$tmp:$ROOT_DIR/spells/cantrips" \
     "$ROOT_DIR/spells/.arcana/node/node-status"
 
   _assert_success || return 1
@@ -95,7 +95,7 @@ exit 0
 SHI
   chmod +x "$tmp/is-service-running"
 
-  _run_cmd env PATH="$tmp:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps:$ROOT_DIR/spells/.imps/menu" \
+  _run_cmd env PATH="$WIZARDRY_IMPS_PATH:$tmp:$ROOT_DIR/spells/cantrips" \
     "$ROOT_DIR/spells/.arcana/node/node-status"
 
   _assert_success || return 1

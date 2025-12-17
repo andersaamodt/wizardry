@@ -161,7 +161,7 @@ STUB
   chmod +x "$stub/uname"
   # Symlink essential utilities but NOT gio, so trash-put is used as fallback
   _link_tools "$stub" sh cat printf test env basename dirname pwd command
-  PATH="$stub" _run_spell "spells/arcane/trash" "$target_file"
+  PATH="$WIZARDRY_IMPS_PATH:$stub" _run_spell "spells/arcane/trash" "$target_file"
   _assert_success && _assert_file_contains "$log_file" "$target_file"
 }
 
@@ -221,7 +221,7 @@ STUB
   chmod +x "$stub/uname"
   # Provide only basic utilities, no trash commands
   _link_tools "$stub" sh cat printf test env basename dirname pwd
-  PATH="$stub" _run_spell "spells/arcane/trash" "$target_file"
+  PATH="$WIZARDRY_IMPS_PATH:$stub" _run_spell "spells/arcane/trash" "$target_file"
   _assert_failure && _assert_error_contains "no supported trash utility"
 }
 
