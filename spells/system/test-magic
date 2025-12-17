@@ -314,15 +314,42 @@ while IFS= read -r test_path <&3; do
   
   _test_heading "$test_number" "$test_total" "$spell_name"
 
-  # Always run test and collect full output
+  # Run test and stream output line-by-line
+  # Save full output to file for later detailed display
   # Use timeout if available to prevent indefinite hangs (default: 180s per test)
   test_timeout="${WIZARDRY_TEST_TIMEOUT:-180}"
   test_exit_code=0
+  test_output_file=$(temp-file test-output) || return 1
+  
   if [ -n "$timeout_cmd" ]; then
-    output=$("$timeout_cmd" "$test_timeout" sh "$abs" 2>&1 < /dev/null) || test_exit_code=$?
+    "$timeout_cmd" "$test_timeout" sh "$abs" < /dev/null > "$test_output_file" 2>&1 || test_exit_code=$?
   else
-    output=$(sh "$abs" 2>&1 < /dev/null) || test_exit_code=$?
+    sh "$abs" < /dev/null > "$test_output_file" 2>&1 || test_exit_code=$?
   fi
+  
+  # Stream PASS/FAIL lines as they appear (immediate feedback)
+  # Show PASS lines and FAIL lines (without extended error details)
+  # Extended error output (reason text) is saved for later Failure Details section
+  awk '
+    /^PASS / { print "  " $0; fflush(); next }
+    /^FAIL #[0-9]+ / { 
+      # Extract just the FAIL line without the reason (after colon)
+      if (index($0, ":") > 0) {
+        line = $0
+        sub(/:.*$/, "", line)
+        print "  " line
+      } else {
+        print "  " $0
+      }
+      fflush()
+      next
+    }
+    /^LACK / { print "  " $0; fflush() }
+  ' "$test_output_file"
+  
+  # Read full output for processing
+  output=$(cat "$test_output_file")
+  cleanup-file "$test_output_file"
   
   # Check if test timed out (exit code 124 from GNU timeout, or 143 from TERM signal)
   # We check for timeout when timeout_cmd is available and exit code indicates timeout
@@ -349,10 +376,6 @@ while IFS= read -r test_path <&3; do
       printf '=== %s ===\n' "$test_path"
       printf '%s\n\n' "$cleaned_output"
     } >>"$failure_output_file"
-    
-    if [ "$verbose" -eq 1 ]; then
-      printf '  %s\n' "$cleaned_output"
-    fi
   elif [ "$test_exit_code" -eq 0 ]; then
     pass=$((pass + 1))
     cleaned_output=$(printf '%s\n' "$output" | sed '/^FAIL_DETAIL:/d')
@@ -372,11 +395,6 @@ while IFS= read -r test_path <&3; do
     if [ "$#" -eq 2 ]; then
       subtests_passed=$((subtests_passed + $1))
       subtests_total=$((subtests_total + $2))
-    fi
-    
-    # In verbose mode, show all PASS lines
-    if [ "$verbose" -eq 1 ]; then
-      printf '%s\n' "$cleaned_output" | sed 's/^/  /'
     fi
   else
     status=1
@@ -441,14 +459,6 @@ while IFS= read -r test_path <&3; do
       printf '=== %s ===\n' "$test_path"
       printf '%s\n\n' "$cleaned_output"
     } >>"$failure_output_file"
-    
-    # In verbose mode, show only FAIL lines inline
-    if [ "$verbose" -eq 1 ]; then
-      printf '%s\n' "$cleaned_output" | awk '
-        /^FAIL / { print "  " $0 }
-        /^LACK / { print "  " $0 }
-      '
-    fi
   fi
 
   # Check minimum subtest requirements based on test type.
@@ -660,22 +670,21 @@ fi
 if [ "$incomplete_count" -gt 0 ]; then
   printf 'Incomplete: %d tests\n' "$incomplete_count"
 fi
-printf '\n'
 
 if [ "$coverage_uncovered" -gt 0 ]; then
-  printf 'Uncovered spells:\n'
+  printf '\nUncovered spells:\n'
   printf '  %s\n' "$uncovered_spells"
   status=1
 fi
 
 if [ -n "$extraneous_files" ] && [ "${WIZARDRY_TEST_COMPILED-0}" != "1" ]; then
-  printf 'Extraneous test files (no corresponding spell):\n'
+  printf '\nExtraneous test files (no corresponding spell):\n'
   printf '  %s\n' "$extraneous_files"
   status=1
 fi
 
 if [ -n "$incomplete_tests" ] && [ "${WIZARDRY_TEST_COMPILED-0}" != "1" ]; then
-  printf 'Incomplete tests (imps need %d+ subtests, spells need %d+ including --help):\n' \
+  printf '\nIncomplete tests (imps need %d+ subtests, spells need %d+ including --help):\n' \
     "$min_subtests_imp" "$min_subtests_spell"
   printf '  %s\n' "$incomplete_tests"
   status=1
@@ -683,14 +692,9 @@ fi
 
 # Show detailed failure output for ≤12 failures
 if [ "$status" -ne 0 ] && [ -n "$failed_scripts" ]; then
-  show_failure_output=0
   if [ "$fail" -le 12 ] && [ -s "$failure_output_file" ]; then
-    show_failure_output=1
-  fi
-
-  if [ "$show_failure_output" -eq 1 ]; then
     printf '\n'
-    heading-section "Failure Details (showing $fail)"
+    heading-section "Failure Details"
     while IFS= read -r line; do
       case $line in
         "=== "*)
@@ -728,8 +732,6 @@ if [ "$status" -ne 0 ] && [ -n "$failed_scripts" ]; then
           ;;
       esac
     done <"$failure_output_file"
-  elif [ "$fail" -gt 12 ]; then
-    printf '\nToo many failures (%d > 12); detailed output suppressed.\n' "$fail"
   fi
 
   # Detect OS label for failure report
