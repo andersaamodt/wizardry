@@ -28,9 +28,7 @@ set -eu
 
 # Ensure file argument is provided
 if [ -z "${1-}" ]; then
-        printf '%s\n' "enchant-portkey: file path required." >&2
-        enchant_portkey_usage >&2
-        return 1
+        usage-error "enchant-portkey" "file path required"
 fi
 
 file=$1

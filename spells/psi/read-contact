@@ -79,26 +79,22 @@ vcard_path="$1"
 
 # Validate vCard file
 if [ ! -f "$vcard_path" ]; then
-    printf '%s\n' "read-contact: vCard file not found: $vcard_path" >&2
-    return 1
+    die "read-contact: vCard file not found: $vcard_path"
 fi
 
 begins=$(tr -d '\r' <"$vcard_path" | grep -Ec '^BEGIN:VCARD$' || true)
 ends=$(tr -d '\r' <"$vcard_path" | grep -Ec '^END:VCARD$' || true)
 
 if [ "$begins" -eq 0 ] && [ "$ends" -eq 0 ]; then
-    printf '%s\n' "read-contact: No vCard entries found in $vcard_path" >&2
-    return 1
+    die "read-contact: No vCard entries found in $vcard_path"
 fi
 
 if [ "$begins" -ne "$ends" ]; then
-    printf '%s\n' "read-contact: Unbalanced vCard entries in $vcard_path" >&2
-    return 1
+    die "read-contact: Unbalanced vCard entries in $vcard_path"
 fi
 
 if [ "$begins" -gt 1 ]; then
-    printf '%s\n' "read-contact: Multiple vCard entries are not supported" >&2
-    return 1
+    die "read-contact: Multiple vCard entries are not supported"
 fi
 
 # Process vCard - either print specific field or all fields
@@ -109,8 +105,7 @@ if [ $# -eq 2 ]; then
     card_line=$(printf '%s\n' "$card_lines_output" | \
       awk -F':' -v field="$requested_field" '$1 ~ field { print; exit }')
     if [ -z "${card_line:-}" ]; then
-        printf '%s\n' "read-contact: $requested_field not found" >&2
-        return 1
+        die "read-contact: $requested_field not found"
     fi
 
     field_name=$(printf '%s' "$card_line" | awk -F':' '{print $1}')

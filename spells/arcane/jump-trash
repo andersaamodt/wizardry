@@ -74,8 +74,8 @@ USAGE
   fi
 
   if [ ! -d "$trash_path" ]; then
-    printf '%s\n' "jump-trash: trash directory does not exist: $trash_path" >&2
-    printf '%s\n' "The trash may be empty or the directory has not been created yet." >&2
+    warn "jump-trash: trash directory does not exist: $trash_path"
+    info "The trash may be empty or the directory has not been created yet."
     return 1
   fi
 
@@ -95,8 +95,8 @@ if [ "$running_as_script" -eq 1 ]; then
     jump_trash || true
     ;;
   *)
-    printf '%s\n' "jump-trash: unknown option '$1'." >&2
-    exit 1
+    usage-error "jump-trash" "unknown option '$1'"
+    exit 2
     ;;
   esac
 fi

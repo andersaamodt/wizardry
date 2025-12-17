@@ -28,9 +28,7 @@ set -eu
 
 # Ensure file argument is provided
 if [ -z "${1-}" ]; then
-        printf '%s\n' "upvote: file path required." >&2
-        upvote_usage >&2
-        return 1
+        usage-error "upvote" "file path required"
 fi
 
 file=$1

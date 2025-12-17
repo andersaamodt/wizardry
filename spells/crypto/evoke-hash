@@ -33,8 +33,7 @@ hash=$1
 directory=${2:-.}
 
 if [ ! -d "$directory" ]; then
-  printf '%s\n' "evoke-hash: directory not found" >&2
-  return 1
+  die "evoke-hash: directory not found"
 fi
 
 found=0
@@ -51,8 +50,8 @@ for file in "$directory"/*; do
 done
 
 if [ "$found" -eq 0 ]; then
-  printf 'No file found for hash %s.\n' "$hash" >&2
-  printf 'Tip: use "forall hashchant" to hash files in this directory.\n' >&2
+  warn "No file found for hash $hash."
+  info "Tip: use \"forall hashchant\" to hash files in this directory."
   return 1
 fi
 }

@@ -28,9 +28,7 @@ set -eu
 
 # Ensure file argument is provided
 if [ -z "${1-}" ]; then
-        printf '%s\n' "get-priority: file path required." >&2
-        get_priority_usage >&2
-        return 1
+        usage-error "get-priority" "file path required"
 fi
 
 file=$1

@@ -25,15 +25,13 @@ set -eu
 . env-clear
 
 if [ -z "${1-}" ]; then
-  printf '%s\n' "hashchant: file path required" >&2
-  return 2
+  usage-error "hashchant" "file path required"
 fi
 
 file=$1
 
 if [ ! -e "$file" ]; then
-  printf '%s\n' "hashchant: file not found" >&2
-  return 1
+  die "hashchant: file not found"
 fi
 
 filename=$(basename "$file")
@@ -90,9 +88,9 @@ for helper in attr xattr setfattr; do
 done
 
 if [ -n "$last_helper" ]; then
-  printf '%s\n' "hashchant: failed to write hash using $last_helper (return 1 $last_status)" >&2
+  die "hashchant: failed to write hash using $last_helper (return 1 $last_status)"
 else
-  printf '%s\n' "hashchant: xattr and attr commands not found, cannot enchant file" >&2
+  die "hashchant: xattr and attr commands not found, cannot enchant file"
 fi
 
 return 1
