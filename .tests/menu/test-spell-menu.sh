@@ -105,7 +105,7 @@ STUB
 
 test_errors_when_helper_missing() {
   stub_dir=$(make_stub_dir)
-  PATH="$stub_dir:/bin:/usr/bin" CAST_STORE="$stub_dir/does-not-exist" _run_spell "spells/menu/spell-menu" --help
+  PATH="$stub_dir:$WIZARDRY_TEST_MINIMAL_PATH" CAST_STORE="$stub_dir/does-not-exist" _run_spell "spells/menu/spell-menu" --help
   # --help should work even without memorize
   _assert_success || return 1
 }
@@ -244,7 +244,7 @@ kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
 SH
   chmod +x "$stub_dir/menu"
   
-  _run_cmd env PATH="$stub_dir:$PATH:/usr/bin:/bin" MENU_LOG="$stub_dir/log" CALL_COUNT_FILE="$call_count_file" "$ROOT_DIR/spells/menu/spell-menu" testspell
+  _run_cmd env PATH="$stub_dir:$PATH:$WIZARDRY_TEST_MINIMAL_PATH" MENU_LOG="$stub_dir/log" CALL_COUNT_FILE="$call_count_file" "$ROOT_DIR/spells/menu/spell-menu" testspell
   _assert_success || { TEST_FAILURE_REASON="menu should exit successfully"; return 1; }
   
   log_content=$(cat "$stub_dir/log")
@@ -320,7 +320,7 @@ kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
 SH
   chmod +x "$stub_dir/menu"
   
-  _run_cmd env PATH="$stub_dir:$PATH:/usr/bin:/bin" MENU_LOG="$stub_dir/log" CALL_COUNT_FILE="$call_count_file" "$ROOT_DIR/spells/menu/spell-menu" testspell
+  _run_cmd env PATH="$stub_dir:$PATH:$WIZARDRY_TEST_MINIMAL_PATH" MENU_LOG="$stub_dir/log" CALL_COUNT_FILE="$call_count_file" "$ROOT_DIR/spells/menu/spell-menu" testspell
   _assert_success || { TEST_FAILURE_REASON="menu should exit successfully"; return 1; }
   
   log_content=$(cat "$stub_dir/log")

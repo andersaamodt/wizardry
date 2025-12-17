@@ -31,7 +31,7 @@ run_jump() {
   marker_arg=${1:-}
   markers_dir=${2:-$WIZARDRY_TMPDIR/markers}
   RUN_CMD_WORKDIR=${3:-$WIZARDRY_TMPDIR}
-  PATH="$(wizardry_base_path):/bin:/usr/bin"
+  PATH="$(wizardry_base_path):$WIZARDRY_TEST_MINIMAL_PATH"
   JUMP_TO_MARKERS_DIR="$markers_dir"
   export JUMP_TO_MARKERS_DIR PATH
   if [ -n "$marker_arg" ]; then

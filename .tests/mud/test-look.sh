@@ -51,7 +51,7 @@ test_help() {
 test_missing_read_magic() {
   skip-if-compiled || return $?
   stub=$(make_stub_dir)
-  PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" _run_spell "spells/mud/look" "$WIZARDRY_TMPDIR"
+  PATH="$stub:$(wizardry_base_path):$WIZARDRY_TEST_MINIMAL_PATH" _run_spell "spells/mud/look" "$WIZARDRY_TMPDIR"
   _assert_failure && _assert_error_contains "look: read-magic spell is missing."
 }
 
@@ -60,7 +60,7 @@ test_missing_attributes_shows_defaults() {
   test_room=$(_make_tempdir)
   stub_ask_yn "$stub" 0
   stub_read_magic_missing "$stub"
-  LOOK_READ_MAGIC="$stub/read-magic" PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" _run_spell "spells/mud/look" "$test_room"
+  LOOK_READ_MAGIC="$stub/read-magic" PATH="$stub:$(wizardry_base_path):$WIZARDRY_TEST_MINIMAL_PATH" _run_spell "spells/mud/look" "$test_room"
   _assert_success
   # Should show folder name as title
   room_name=$(basename "$test_room")
@@ -82,7 +82,7 @@ test_output_ends_with_newline() {
   test_room=$(_make_tempdir)
   stub_ask_yn "$stub" 0
   stub_read_magic_missing "$stub"
-  NO_COLOR=1 LOOK_READ_MAGIC="$stub/read-magic" PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" _run_spell "spells/mud/look" "$test_room"
+  NO_COLOR=1 LOOK_READ_MAGIC="$stub/read-magic" PATH="$stub:$(wizardry_base_path):$WIZARDRY_TEST_MINIMAL_PATH" _run_spell "spells/mud/look" "$test_room"
   _assert_success
   # With MUD formatting, output should always end with a newline after the description
   # Check that the output ends with period+newline for the default description
@@ -102,7 +102,7 @@ test_home_description_defaults() {
   stub_ask_yn "$stub" 1
   stub_read_magic_missing "$stub"
   # Don't set HOME to match the directory we're looking at, so identify-room won't think it's home
-  LOOK_READ_MAGIC="$stub/read-magic" PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" \
+  LOOK_READ_MAGIC="$stub/read-magic" PATH="$stub:$(wizardry_base_path):$WIZARDRY_TEST_MINIMAL_PATH" \
     _run_spell "spells/mud/look" "$home_dir"
   _assert_success || return 1
   _assert_output_contains "$(basename "$home_dir")" || return 1
@@ -118,7 +118,7 @@ test_other_home_description() {
   stub_ask_yn "$stub" 1
   stub_read_magic_missing "$stub"
   # Set HOME to base_home but look at other_home directory
-  LOOK_READ_MAGIC="$stub/read-magic" HOME="$base_home" PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" \
+  LOOK_READ_MAGIC="$stub/read-magic" HOME="$base_home" PATH="$stub:$(wizardry_base_path):$WIZARDRY_TEST_MINIMAL_PATH" \
     _run_spell "spells/mud/look" "$other_home"
   _assert_success || return 1
   _assert_output_contains "chris" || return 1
@@ -138,7 +138,7 @@ test_root_description() {
   stub=$(make_stub_dir)
   stub_ask_yn "$stub" 1
   stub_read_magic_missing "$stub"
-  LOOK_READ_MAGIC="$stub/read-magic" PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" _run_spell "spells/mud/look" /
+  LOOK_READ_MAGIC="$stub/read-magic" PATH="$stub:$(wizardry_base_path):$WIZARDRY_TEST_MINIMAL_PATH" _run_spell "spells/mud/look" /
   _assert_success || return 1
   # Accept either "/" (when identify-room is unavailable) or "Root" (when it's available)
   if printf '%s' "$OUTPUT" | grep -q "/"; then
@@ -166,7 +166,7 @@ case "$2" in
 esac
 EOF
   chmod +x "$stub/read-magic"
-  LOOK_READ_MAGIC="$stub/read-magic" PATH="$stub:$(wizardry_base_path):/bin:/usr/bin" _run_spell "spells/mud/look" "$WIZARDRY_TMPDIR"
+  LOOK_READ_MAGIC="$stub/read-magic" PATH="$stub:$(wizardry_base_path):$WIZARDRY_TEST_MINIMAL_PATH" _run_spell "spells/mud/look" "$WIZARDRY_TMPDIR"
   _assert_success && printf '%s' "$OUTPUT" | grep -q "Hidden Door" && printf '%s' "$OUTPUT" | grep -q "A narrow doorway concealed by ivy."
 }
 
