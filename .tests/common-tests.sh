@@ -1356,8 +1356,14 @@ test_scripts_have_set_eu_early() {
       enchant/enchant|enchant/enchantment-to-yaml|enchant/disenchant|enchant/yaml-to-enchantment) return ;;
       # MUD spells using wrapper function pattern
       mud/check-cd-hook|mud/select-player|mud/look|mud/decorate) return ;;
-      # Menu spells using wrapper function pattern
-      menu/priorities) return ;;
+      # Menu spells using wrapper function pattern (word-of-binding)
+      menu/priorities|menu/mud-menu|menu/services-menu|menu/network-menu|menu/install-menu) return ;;
+      menu/shutdown-menu|menu/users-menu|menu/spellbook|menu/mud-admin-menu|menu/mud) return ;;
+      menu/cast|menu/spell-menu|menu/priority-menu|menu/mud-settings|menu/main-menu) return ;;
+      menu/mud-admin/set-player|menu/mud-admin/add-ssh-player|menu/mud-admin/new-player) return ;;
+      menu/system/profile-tests) return ;;
+      # Cantrips using wrapper function pattern (word-of-binding)
+      cantrips/remove-service|cantrips/wizard-eyes) return ;;
     esac
     
     # Check if set -eu appears in first 50 lines (allows for longer help handlers)
