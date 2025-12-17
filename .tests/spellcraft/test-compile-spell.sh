@@ -30,7 +30,7 @@ test_compile_spell_help_h_flag() {
 test_compile_spell_requires_args() {
   _run_spell spells/spellcraft/compile-spell
   _assert_failure
-  _assert_error_contains "spell name required"
+  _assert_error_contains "Usage:"
 }
 
 test_compile_spell_unknown_spell() {

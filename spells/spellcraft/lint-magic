@@ -50,7 +50,7 @@ while [ "$#" -gt 0 ]; do
       ;;
     --only)
       if [ "$#" -lt 2 ]; then
-        printf '%s\n' "lint-magic: --only requires a pattern argument." >&2
+        lint_magic_usage >&2
         return 2
       fi
       pattern=$2
@@ -61,7 +61,6 @@ while [ "$#" -gt 0 ]; do
       break
       ;;
     -*)
-      printf '%s\n' "lint-magic: unknown option: $1" >&2
       lint_magic_usage >&2
       return 2
       ;;
