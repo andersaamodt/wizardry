@@ -29,7 +29,7 @@ test_requires_sshfs() {
       ln -sf "$(command -v "$util")" "$stubdir/$util" 2>/dev/null || true
     fi
   done
-  PATH="$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$stubdir" _run_spell "spells/translocation/open-portal"
+  PATH="$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$stubdir" _run_spell "spells/translocation/open-portal"
   _assert_failure || return 1
   _assert_error_contains "sshfs not found" || return 1
 }
@@ -53,7 +53,7 @@ EOF
     fi
   done
   # Run without MUD_PLAYER set
-  MUD_PLAYER="" PATH="$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$stubdir" _run_spell "spells/translocation/open-portal"
+  MUD_PLAYER="" PATH="$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$stubdir" _run_spell "spells/translocation/open-portal"
   _assert_failure || return 1
   _assert_error_contains "MUD_PLAYER" || return 1
 }
