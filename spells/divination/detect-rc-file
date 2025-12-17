@@ -51,9 +51,9 @@ while [ "$#" -gt 0 ]; do
                 break
                 ;;
         esac
-set -eu
-
 done
+
+set -eu
 
 if [ "$#" -gt 0 ]; then
         printf '%s\n' "detect-rc-file: unexpected argument '$1'." >&2
