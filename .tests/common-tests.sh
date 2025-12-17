@@ -1382,7 +1382,7 @@ test_spells_source_env_clear_after_set_eu() {
       # install script exempt (bootstrap)
       install) return ;;
       # Bootstrap spells used by install (must be standalone)
-      divination/detect-rc-file|cantrips/ask-yn|cantrips/memorize|spellcraft/learn) return ;;
+      divination/detect-rc-file|cantrips/ask-yn|cantrips/memorize|cantrips/require-wizardry|spellcraft/learn) return ;;
       # Scripts that need PATH setup before env-clear to find it
       system/test-magic|system/verify-posix|spellcraft/lint-magic|enchant/enchant) return ;;
     esac
