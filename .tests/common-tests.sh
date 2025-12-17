@@ -1334,6 +1334,8 @@ test_scripts_have_set_eu_early() {
       .imps/test/test-bootstrap) return ;;
       # env-clear itself exempt (special case)
       .imps/sys/env-clear) return ;;
+      # invoke-wizardry exempt (sourced into user shell, can't use set -eu at top level)
+      .imps/sys/invoke-wizardry) return ;;
       # Conditional imps exempt (return exit codes, not errors)
       .imps/cond/*|.imps/lex/*|.imps/menu/*) return ;;
     esac
