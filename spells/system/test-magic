@@ -322,7 +322,8 @@ while IFS= read -r test_path <&3; do
   test_output_file=$(temp-file test-output) || return 1
   
   if [ -n "$timeout_cmd" ]; then
-    "$timeout_cmd" "$test_timeout" sh "$abs" < /dev/null > "$test_output_file" 2>&1 || test_exit_code=$?
+    timeout_prefix="$timeout_cmd $test_timeout"
+    $timeout_prefix sh "$abs" < /dev/null > "$test_output_file" 2>&1 || test_exit_code=$?
   else
     sh "$abs" < /dev/null > "$test_output_file" 2>&1 || test_exit_code=$?
   fi
