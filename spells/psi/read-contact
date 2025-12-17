@@ -3,26 +3,18 @@
 # This spell reads a vCard and prints its fields with friendly labels.
 # Provide an optional field name to extract a single detail.
 
-read_contact_usage() {
-cat <<'USAGE'
-Usage: read-contact <vcard-file> [field]
-
-Print all fields from a vCard file or a specific field when you name one. Escapes are normalized for readability and friendly labels make the details easy to scan.
-USAGE
-}
-
-
-
-read_contact() {
 case "${1-}" in
 --help|--usage|-h)
   read_contact_usage
-  return 0
+  exit 0
   ;;
 esac
 
 set -eu
 . env-clear
+
+read_contact_usage() {
+
 
 handle_escapes() {
     escape_value=$1

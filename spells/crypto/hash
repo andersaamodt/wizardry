@@ -4,24 +4,18 @@
 # Prints the checksum in hexadecimal alongside the resolved path.
 
 
-hash_usage() {
-cat <<'USAGE'
-Usage: hash <file>
-
-Compute the CRC-32 hash of a file and print it in hexadecimal, resolving the path relative to this spell when needed.
-USAGE
-}
-
-hash() {
 case "${1-}" in
 --help|--usage|-h)
   hash_usage
-  return 0
+  exit 0
   ;;
 esac
 
 set -eu
 . env-clear
+
+hash_usage() {
+
 
 if [ "$#" != 1 ]; then
     printf 'Usage: hash file\n'

@@ -18,12 +18,13 @@ case "${1-}" in
   ;;
 esac
 
+set -eu
+. env-clear
+
 running_as_script=0
 case $0 in
 */jump-trash|jump-trash)
   running_as_script=1
-  set -eu
-  . env-clear
   ;;
 *) : ;;
 esac

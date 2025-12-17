@@ -5,26 +5,18 @@
 
 require-wizardry || exit 1
 
-open_teletype_usage() {
-cat <<'USAGE'
-Usage: open-teletype [remote_address] [user]
-
-Open an SSH connection over Tor for anonymous access to a remote server. Prompts for address and user if you don't pass them and uses the MUD_PLAYER key as your SSH identity.
-USAGE
-}
-
-
-
-open_teletype() {
 case "${1-}" in
 --help|--usage|-h)
   open_teletype_usage
-  return 0
+  exit 0
   ;;
 esac
 
 set -eu
 . env-clear
+
+open_teletype_usage() {
+
 
 # Check for required commands
 if ! has torify; then

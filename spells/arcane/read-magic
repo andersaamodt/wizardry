@@ -10,25 +10,18 @@ script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 imps_dir="$script_dir/../.imps"
 export PATH="$imps_dir/fs:$PATH"
 
-read_magic_usage() {
-cat <<'USAGE'
-Usage: read-magic <file> [attribute]
-
-List all extended attributes on a file or print the value of one attribute when named, using attr, xattr, or getfattr as available.
-USAGE
-}
-
-
-read_magic() {
 case "${1-}" in
 --help|--usage|-h)
   read_magic_usage
-  return 0
+  exit 0
   ;;
 esac
 
 set -eu
 . env-clear
+
+read_magic_usage() {
+
 
 # Validate arguments
 if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then

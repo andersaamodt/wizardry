@@ -14,16 +14,17 @@ USAGE
 
 
 
-system_menu() {
 case "${1-}" in
 --help|--usage|-h)
   system_menu_usage
-  return 0
+  exit 0
   ;;
 esac
 
 set -eu
 . env-clear
+
+system_menu() {
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 spells_dir=$(dirname "$script_dir")
 repo_dir=$(dirname "$spells_dir")

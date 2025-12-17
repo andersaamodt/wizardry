@@ -5,21 +5,10 @@
 
 require-wizardry || exit 1
 
-jump_to_marker_usage() {
-cat <<'USAGE'
-Usage: jump-to-marker [marker]
-
-Teleport to a marker set with mark-location. Defaults to marker "1", marker "0" cycles through all saved locations.
-USAGE
-}
-
-
-
-jump_to_marker() {
 case "${1-}" in
 --help|--usage|-h)
   jump_to_marker_usage
-  return 0
+  exit 0
   ;;
 -*)
   warn "jump-to-marker: unknown option '$1'."
@@ -29,6 +18,9 @@ esac
 
 set -eu
 . env-clear
+
+jump_to_marker_usage() {
+
 
 # Resolve markers directory
 _jm_spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")

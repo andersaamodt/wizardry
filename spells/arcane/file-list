@@ -3,26 +3,18 @@
 # This spell creates a text file listing all filenames in a folder.
 # Use it to generate an index of files in a directory.
 
-file_list_usage() {
-cat <<'USAGE'
-Usage: file-list <folder>
-
-Create a text file named after the folder that lists all files inside it.
-USAGE
-}
-
-
-
-file_list() {
 case "${1-}" in
 --help|--usage|-h)
   file_list_usage
-  return 0
+  exit 0
   ;;
 esac
 
 set -eu
 . env-clear
+
+file_list_usage() {
+
 
 # Check that a folder path was provided as an argument
 if [ "$#" -ne 1 ]; then

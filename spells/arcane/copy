@@ -4,25 +4,18 @@
 # It takes one argument, the path to the text file.
 # When run without arguments, it prompts for the file path interactively.
 
-copy_usage() {
-cat <<'USAGE'
-Usage: copy <file>
-
-Copy the contents of a text file to the system clipboard using pbcopy, xsel, or xclip. Prompts for a path when none is given and prints a confirmation when successful.
-USAGE
-}
-
-
-copy() {
 case "${1-}" in
 --help|--usage|-h)
   copy_usage
-  return 0
+  exit 0
   ;;
 esac
 
 set -eu
 . env-clear
+
+copy_usage() {
+
 
 # Handle missing argument - prompt interactively
 if [ "$#" -eq 0 ]; then
