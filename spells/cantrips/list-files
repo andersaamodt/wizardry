@@ -33,9 +33,7 @@ set -eu
 . env-clear
 
 if [ "$#" -lt 1 ]; then
-  printf '%s\n' "list-files: directory required" >&2
-  list_files_usage >&2
-  return 1
+  usage-error "list-files" "directory required"
 fi
 
 directory=$1
@@ -53,22 +51,19 @@ while [ "$#" -gt 0 ]; do
       ;;
     -t|--type)
       if [ "$#" -lt 2 ]; then
-        printf '%s\n' "list-files: -t requires an argument" >&2
-        return 1
+        usage-error "list-files" "-t requires an argument"
       fi
       file_type=$2
       shift 2
       ;;
     *)
-      printf '%s\n' "list-files: unknown option: $1" >&2
-      return 1
+      usage-error "list-files" "unknown option: $1"
       ;;
   esac
 done
 
 if [ ! -d "$directory" ]; then
-  printf '%s\n' "list-files: not a directory: $directory" >&2
-  return 1
+  die "list-files: not a directory: $directory"
 fi
 
 # Build find command

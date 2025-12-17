@@ -66,9 +66,7 @@ case $action in
 add)
   # Add entry to spellbook
   if [ "$#" -lt 2 ]; then
-    printf '%s\n' "spellbook-store: add expects a NAME followed by COMMAND words." >&2
-    spellbook_store_usage
-    return 1
+    usage-error "spellbook-store" "add expects a NAME followed by COMMAND words"
   fi
   name=$1
   shift
@@ -82,28 +80,23 @@ add)
   # Validate name
   case $name in
   ''|*[!A-Za-z0-9._-]*)
-    printf '%s\n' "spellbook-store: alias names may contain only letters, digits, dots, underscores, and dashes." >&2
-    return 1
+    die "spellbook-store: alias names may contain only letters, digits, dots, underscores, and dashes."
     ;;
   -*)
-    printf '%s\n' "spellbook-store: alias names may not begin with a dash." >&2
-    return 1
+    die "spellbook-store: alias names may not begin with a dash."
     ;;
   esac
   
   # Validate command
   if [ -z "$cmd" ]; then
-    printf '%s\n' "spellbook-store: command must not be empty." >&2
-    return 1
+    die "spellbook-store: command must not be empty."
   fi
   case $cmd in
   *"$tab_char"*)
-    printf '%s\n' "spellbook-store: command may not contain tabs." >&2
-    return 1
+    die "spellbook-store: command may not contain tabs."
     ;;
   *"$newline_char"*)
-    printf '%s\n' "spellbook-store: command must be a single line." >&2
-    return 1
+    die "spellbook-store: command must be a single line."
     ;;
   esac
   
