@@ -260,7 +260,7 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 - `cantrips/menu` (14→2) - Flattened navigation and rendering flow
 - `menu/cast` (4→1)
 - `menu/mud-menu` (4→3)
-- `spellcraft/doppelganger` (4→4) - fallback functions
+- `spellcraft/doppelganger` (4→1) - **Eliminated fallback functions (2025-12-17)** - Now uses wizardry imps (say, warn, success) as spells should assume wizardry is installed
 - `spellcraft/forget` (6→2)
 - `psi/read-contact` (5→4) - Kept 3 helpers (used 3x each)
 - `arcane/trash` (6→1)
