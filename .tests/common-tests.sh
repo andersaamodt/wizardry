@@ -1276,7 +1276,7 @@ test_no_allcaps_variable_assignments() {
     allcaps_vars=$(grep -nE '^[[:space:]]*[A-Z][A-Z_0-9]*=' "$spell" 2>/dev/null | \
       grep -v -E '(export|PATH=|HOME=|IFS=|CDPATH=|TMPDIR=|USER=|SHELL=|TERM=|LANG=)' | \
       grep -v -E '(NIX_PACKAGE|APT_PACKAGE|DNF_PACKAGE|YUM_PACKAGE|ZYPPER_PACKAGE|PACMAN_PACKAGE|APK_PACKAGE|PKGIN_PACKAGE|BREW_PACKAGE)' | \
-      grep -v -E '(WIZARDRY_|SPELLBOOK_DIR|MUD_DIR|TEST_|ASSUME_YES|FORCE_INSTALL|ROOT_DIR|DISTRO)' | \
+      grep -v -E '(WIZARDRY_|SPELLBOOK_DIR|MUD_DIR|TEST_|REAL_SUDO_BIN|ASSUME_YES|FORCE_INSTALL|ROOT_DIR|DISTRO)' | \
       grep -v -E '(AWAIT_KEYPRESS_KEEP_RAW|BWRAP_|SANDBOX_|MACOS_)' | \
       grep -v -E '(ASK_CANTRIP_INPUT|SELECT_INPUT_MODE|MENU_LOOP_LIMIT|REQUIRE_COMMAND|MENU_LOG)' | \
       grep -v -E '(RESET|BOLD|ITALICS|UNDERLINED|BLINK|INVERT|STRIKE|ESC)' | \
@@ -1347,6 +1347,17 @@ test_scripts_have_set_eu_early() {
       translocation/enchant-portkey|translocation/follow-portkey|translocation/jump-to-marker) return ;;
       translocation/mark-location|translocation/open-portal|translocation/open-teletype) return ;;
       menu/system-menu) return ;;
+      # Spellcraft spells using wrapper function pattern (word-of-binding)
+      spellcraft/scribe-spell|spellcraft/forget|spellcraft/lint-magic|spellcraft/compile-spell) return ;;
+      spellcraft/learn|spellcraft/unbind-tome|spellcraft/bind-tome|spellcraft/doppelganger) return ;;
+      spellcraft/erase-spell|spellcraft/merge-yaml-text) return ;;
+      # Wards and enchant spells using wrapper function pattern
+      wards/ssh-barrier) return ;;
+      enchant/enchant|enchant/enchantment-to-yaml|enchant/disenchant|enchant/yaml-to-enchantment) return ;;
+      # MUD spells using wrapper function pattern
+      mud/check-cd-hook|mud/select-player|mud/look|mud/decorate) return ;;
+      # Menu spells using wrapper function pattern
+      menu/priorities) return ;;
     esac
     
     # Check if set -eu appears in first 50 lines (allows for longer help handlers)

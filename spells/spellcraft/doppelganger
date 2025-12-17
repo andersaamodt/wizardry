@@ -22,7 +22,7 @@ The doppelganger includes:
 Example:
   doppelganger /tmp/wizardry-standalone
   cd /tmp/wizardry-standalone
-  ./spells/cantrips/hash --help
+  hash --help
 USAGE
 }
 
