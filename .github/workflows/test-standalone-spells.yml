@@ -192,6 +192,7 @@ jobs:
           # Set up environment
           export ROOT_DIR="/tmp/compiled"
           export WIZARDRY_TEST_COMPILED=1
+          export WIZARDRY_OS_LABEL="standalone tests"
           export PATH="/tmp/compiled:$PATH"
           
           # Run test-magic with compiled spells

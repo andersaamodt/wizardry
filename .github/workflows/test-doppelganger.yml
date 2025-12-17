@@ -125,6 +125,7 @@ jobs:
           export ROOT_DIR="/tmp/wizardry-doppelganger"
           export WIZARDRY_DIR="/tmp/wizardry-doppelganger"
           export WIZARDRY_TEST_COMPILED=1  # Flag to indicate testing compiled spells
+          export WIZARDRY_OS_LABEL="doppelganger"  # Identify in test output
           
           # Add doppelganger to PATH
           export PATH="/tmp/wizardry-doppelganger/spells:$PATH"
