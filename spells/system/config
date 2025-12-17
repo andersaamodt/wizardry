@@ -41,9 +41,9 @@ set -eu
 . env-clear
 
 # Get script directory to find imps
-SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-ROOT_DIR=$(cd "$SCRIPT_DIR/../.." && pwd -P)
-IMPS_DIR="$ROOT_DIR/spells/.imps/fs"
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+root_dir=$(cd "$script_dir/../.." && pwd -P)
+imps_dir="$root_dir/spells/.imps/fs"
 
 config() {
     command="${1-}"
@@ -51,7 +51,7 @@ config() {
     case "$command" in
         get|set|has|del)
             shift
-            "$IMPS_DIR/config-$command" "$@"
+            "$imps_dir/config-$command" "$@"
             ;;
         "")
             printf '%s\n' "config: command required" >&2

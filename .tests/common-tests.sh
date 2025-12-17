@@ -1276,7 +1276,7 @@ test_no_allcaps_variable_assignments() {
     allcaps_vars=$(grep -nE '^[[:space:]]*[A-Z][A-Z_0-9]*=' "$spell" 2>/dev/null | \
       grep -v -E '(export|PATH=|HOME=|IFS=|CDPATH=|TMPDIR=|USER=|SHELL=|TERM=|LANG=)' | \
       grep -v -E '(NIX_PACKAGE|APT_PACKAGE|DNF_PACKAGE|YUM_PACKAGE|ZYPPER_PACKAGE|PACMAN_PACKAGE|APK_PACKAGE|PKGIN_PACKAGE|BREW_PACKAGE)' | \
-      grep -v -E '(WIZARDRY_|SPELLBOOK_DIR|MUD_DIR|TEST_|ASSUME_YES|FORCE_INSTALL|ROOT_DIR|DISTRO)' | \
+      grep -v -E '(WIZARDRY_|SPELLBOOK_DIR|MUD_DIR|TEST_|REAL_SUDO_BIN|ASSUME_YES|FORCE_INSTALL|ROOT_DIR|DISTRO)' | \
       grep -v -E '(AWAIT_KEYPRESS_KEEP_RAW|BWRAP_|SANDBOX_|MACOS_)' | \
       grep -v -E '(ASK_CANTRIP_INPUT|SELECT_INPUT_MODE|MENU_LOOP_LIMIT|REQUIRE_COMMAND|MENU_LOG)' | \
       grep -v -E '(RESET|BOLD|ITALICS|UNDERLINED|BLINK|INVERT|STRIKE|ESC)' | \
@@ -1321,7 +1321,7 @@ test_scripts_have_set_eu_early() {
     name=$(basename "$spell")
     rel_path=${spell#"$ROOT_DIR/spells/"}
     
-    # Skip exempt files
+    # Skip exempt files (bootstrap/special cases only)
     case "$rel_path" in
       # Bootstrap/arcana scripts exempt (different rules)
       .arcana/*) return ;;
@@ -1339,20 +1339,53 @@ test_scripts_have_set_eu_early() {
       .imps/cond/*|.imps/lex/*|.imps/menu/*) return ;;
       # Bootstrap spells that have long argument parsing before set -eu
       divination/detect-rc-file|system/test-magic) return ;;
-      # Spells using wrapper function pattern (set -eu inside function for sourceable spells)
-      priorities/get-priority|priorities/prioritize|priorities/upvote|priorities/get-new-priority) return ;;
-      arcane/copy|arcane/file-list|arcane/forall|arcane/jump-trash|arcane/read-magic|arcane/trash) return ;;
-      psi/list-contacts|psi/read-contact) return ;;
-      crypto/evoke-hash|crypto/hash|crypto/hashchant) return ;;
-      translocation/enchant-portkey|translocation/follow-portkey|translocation/jump-to-marker) return ;;
-      translocation/mark-location|translocation/open-portal|translocation/open-teletype) return ;;
-      menu/system-menu) return ;;
     esac
     
-    # Check if set -eu appears in first 50 lines (allows for longer help handlers)
-    # Pattern matches: set -eu, set -ue, set -euo, etc.
-    if ! head -50 "$spell" | grep -qE '^[[:space:]]*set +-[euo]*[eu][euo]*'; then
-      printf '%s\n' "$rel_path"
+    # In compiled mode, wrapper functions are unwrapped so set -eu may appear later
+    # Just check that set -eu exists somewhere in the file
+    if [ "${WIZARDRY_TEST_COMPILED:-0}" = "1" ]; then
+      if ! grep -qE '^[[:space:]]*set +-[euo]*[eu][euo]*' "$spell"; then
+        printf '%s\n' "$rel_path"
+      fi
+      return
+    fi
+    
+    # Auto-detect word-of-binding pattern:
+    # 1. Has wrapper function matching filename (with underscores for hyphens)
+    #    OR has true name function for imps (underscore prefix)
+    # 2. Has self-execute pattern: case "$0" in */name) wrapper "$@" ;; esac
+    # If both present, spell uses word-of-binding and set -eu can be inside wrapper
+    
+    # Convert filename to function name (hyphens to underscores)
+    func_name=$(printf '%s' "$name" | tr '-' '_')
+    true_name="_${func_name}"  # For imps
+    
+    # Check for wrapper function definition (spell pattern) or true name function (imp pattern)
+    has_wrapper=0
+    if grep -qE "^[[:space:]]*${func_name}[[:space:]]*\(\)" "$spell" 2>/dev/null || \
+       grep -qE "^[[:space:]]*${true_name}[[:space:]]*\(\)" "$spell" 2>/dev/null; then
+      has_wrapper=1
+    fi
+    
+    # Check for self-execute pattern
+    has_self_execute=0
+    if grep -qE 'case[[:space:]]+"\$0"[[:space:]]+in' "$spell" 2>/dev/null && \
+       grep -qE "\*/${name}\)" "$spell" 2>/dev/null; then
+      has_self_execute=1
+    fi
+    
+    # If word-of-binding pattern detected, check for set -eu anywhere
+    if [ "$has_wrapper" = "1" ] && [ "$has_self_execute" = "1" ]; then
+      # Word-of-binding spell: set -eu should exist somewhere (inside or outside wrapper)
+      if ! grep -qE '^[[:space:]]*set +-[euo]*[eu][euo]*' "$spell"; then
+        printf '%s\n' "$rel_path"
+      fi
+    else
+      # Regular spell: check if set -eu appears in first 50 lines
+      # Pattern matches: set -eu, set -ue, set -euo, etc.
+      if ! head -50 "$spell" | grep -qE '^[[:space:]]*set +-[euo]*[eu][euo]*'; then
+        printf '%s\n' "$rel_path"
+      fi
     fi
   }
   

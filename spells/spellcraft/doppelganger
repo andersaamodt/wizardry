@@ -22,7 +22,7 @@ The doppelganger includes:
 Example:
   doppelganger /tmp/wizardry-standalone
   cd /tmp/wizardry-standalone
-  ./spells/cantrips/hash --help
+  hash --help
 USAGE
 }
 
@@ -38,17 +38,6 @@ esac
 
 set -eu
 . env-clear
-
-# Fallbacks for standalone execution
-if ! command -v say >/dev/null 2>&1; then
-  say() { printf '%s\n' "$*"; }
-fi
-if ! command -v warn >/dev/null 2>&1; then
-  warn() { printf '%s\n' "$*" >&2; }
-fi
-if ! command -v success >/dev/null 2>&1; then
-  success() { printf '%s\n' "$*"; }
-fi
 
 # Get output directory
 output_dir=${1:-./wizardry-compiled}

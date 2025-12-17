@@ -41,7 +41,7 @@ if [ -z "$script_dir" ] || [ "$script_dir" = "$script_source" ]; then
         script_dir=.
 fi
 script_dir=$(cd "$script_dir" && pwd -P)
-LOOK_SCRIPT_PATH="$script_dir/$(basename "$script_source")"
+look_script_path="$script_dir/$(basename "$script_source")"
 
 look_warn() {
         printf '%s\n' "look: $1" >&2
