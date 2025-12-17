@@ -1321,7 +1321,7 @@ test_scripts_have_set_eu_early() {
     name=$(basename "$spell")
     rel_path=${spell#"$ROOT_DIR/spells/"}
     
-    # Skip exempt files
+    # Skip exempt files (bootstrap/special cases only)
     case "$rel_path" in
       # Bootstrap/arcana scripts exempt (different rules)
       .arcana/*) return ;;
@@ -1339,51 +1339,44 @@ test_scripts_have_set_eu_early() {
       .imps/cond/*|.imps/lex/*|.imps/menu/*) return ;;
       # Bootstrap spells that have long argument parsing before set -eu
       divination/detect-rc-file|system/test-magic) return ;;
-      # Spells using wrapper function pattern (set -eu inside function for sourceable spells)
-      priorities/get-priority|priorities/prioritize|priorities/upvote|priorities/get-new-priority) return ;;
-      arcane/copy|arcane/file-list|arcane/forall|arcane/jump-trash|arcane/read-magic|arcane/trash) return ;;
-      psi/list-contacts|psi/read-contact) return ;;
-      crypto/evoke-hash|crypto/hash|crypto/hashchant) return ;;
-      translocation/enchant-portkey|translocation/follow-portkey|translocation/jump-to-marker) return ;;
-      translocation/mark-location|translocation/open-portal|translocation/open-teletype) return ;;
-      menu/system-menu) return ;;
-      # Spellcraft spells using wrapper function pattern (word-of-binding)
-      spellcraft/scribe-spell|spellcraft/forget|spellcraft/lint-magic|spellcraft/compile-spell) return ;;
-      spellcraft/learn|spellcraft/unbind-tome|spellcraft/bind-tome|spellcraft/doppelganger) return ;;
-      spellcraft/erase-spell|spellcraft/merge-yaml-text) return ;;
-      # Wards and enchant spells using wrapper function pattern
-      wards/ssh-barrier) return ;;
-      enchant/enchant|enchant/enchantment-to-yaml|enchant/disenchant|enchant/yaml-to-enchantment) return ;;
-      # MUD spells using wrapper function pattern
-      mud/check-cd-hook|mud/select-player|mud/look|mud/decorate) return ;;
-      # Menu spells using wrapper function pattern (word-of-binding)
-      menu/priorities|menu/mud-menu|menu/services-menu|menu/network-menu|menu/install-menu) return ;;
-      menu/shutdown-menu|menu/users-menu|menu/spellbook|menu/mud-admin-menu|menu/mud) return ;;
-      menu/cast|menu/spell-menu|menu/priority-menu|menu/mud-settings|menu/main-menu) return ;;
-      menu/mud-admin/set-player|menu/mud-admin/add-ssh-player|menu/mud-admin/new-player) return ;;
-      menu/system/profile-tests) return ;;
-      # Cantrips using wrapper function pattern (word-of-binding)
-      cantrips/remove-service|cantrips/wizard-eyes|cantrips/validate-path|cantrips/max-length) return ;;
-      cantrips/start-service|cantrips/require-command|cantrips/stop-service|cantrips/spellbook-store) return ;;
-      cantrips/list-files|cantrips/validate-number|cantrips/colors|cantrips/restart-service) return ;;
-      cantrips/require-wizardry|cantrips/ask|cantrips/cursor-blink|cantrips/disable-service) return ;;
-      cantrips/ask-text|cantrips/fathom-terminal|cantrips/ask-number|cantrips/up) return ;;
-      cantrips/restart-ssh|cantrips/is-service-installed|cantrips/menu|cantrips/move-cursor) return ;;
-      cantrips/service-status|cantrips/wizard-cast|cantrips/logging-example|cantrips/fathom-cursor) return ;;
-      cantrips/await-keypress|cantrips/enable-service|cantrips/ask-yn|cantrips/memorize) return ;;
-      cantrips/reload-ssh|cantrips/install-service-template|cantrips/move|cantrips/validate-ssh-key) return ;;
-      # Imps using wrapper function pattern (word-of-binding)
-      .imps/sys/must|.imps/sys/require) return ;;
-      .imps/fs/xattr-list-keys|.imps/fs/xattr-read-value) return ;;
-      .imps/text/make-indent) return ;;
-      # Divination spells using wrapper function pattern
-      divination/detect-distro) return ;;
     esac
     
-    # Check if set -eu appears in first 50 lines (allows for longer help handlers)
-    # Pattern matches: set -eu, set -ue, set -euo, etc.
-    if ! head -50 "$spell" | grep -qE '^[[:space:]]*set +-[euo]*[eu][euo]*'; then
-      printf '%s\n' "$rel_path"
+    # Auto-detect word-of-binding pattern:
+    # 1. Has wrapper function matching filename (with underscores for hyphens)
+    #    OR has true name function for imps (underscore prefix)
+    # 2. Has self-execute pattern: case "$0" in */name) wrapper "$@" ;; esac
+    # If both present, spell uses word-of-binding and set -eu can be inside wrapper
+    
+    # Convert filename to function name (hyphens to underscores)
+    func_name=$(printf '%s' "$name" | tr '-' '_')
+    true_name="_${func_name}"  # For imps
+    
+    # Check for wrapper function definition (spell pattern) or true name function (imp pattern)
+    has_wrapper=0
+    if grep -qE "^[[:space:]]*${func_name}[[:space:]]*\(\)" "$spell" 2>/dev/null || \
+       grep -qE "^[[:space:]]*${true_name}[[:space:]]*\(\)" "$spell" 2>/dev/null; then
+      has_wrapper=1
+    fi
+    
+    # Check for self-execute pattern
+    has_self_execute=0
+    if grep -qE 'case[[:space:]]+"\$0"[[:space:]]+in' "$spell" 2>/dev/null && \
+       grep -qE "\*/${name}\)" "$spell" 2>/dev/null; then
+      has_self_execute=1
+    fi
+    
+    # If word-of-binding pattern detected, check for set -eu anywhere
+    if [ "$has_wrapper" = "1" ] && [ "$has_self_execute" = "1" ]; then
+      # Word-of-binding spell: set -eu should exist somewhere (inside or outside wrapper)
+      if ! grep -qE '^[[:space:]]*set +-[euo]*[eu][euo]*' "$spell"; then
+        printf '%s\n' "$rel_path"
+      fi
+    else
+      # Regular spell: check if set -eu appears in first 50 lines
+      # Pattern matches: set -eu, set -ue, set -euo, etc.
+      if ! head -50 "$spell" | grep -qE '^[[:space:]]*set +-[euo]*[eu][euo]*'; then
+        printf '%s\n' "$rel_path"
+      fi
     fi
   }
   
