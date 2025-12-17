@@ -105,16 +105,12 @@ dir)
   memorize_usage
   ;;
 -*)
-  printf '%s\n' "$spell_name: unknown option '$action'" >&2
-  memorize_usage
-  return 1
+  usage-error "$spell_name" "unknown option '$action'"
   ;;
 *)
   # Default action: memorize the spell
   if [ "$#" -ne 1 ]; then
-    printf '%s\n' "$spell_name: expects exactly one spell name." >&2
-    memorize_usage
-    return 1
+    usage-error "$spell_name" "expects exactly one spell name"
   fi
   
   name=$action
@@ -122,12 +118,10 @@ dir)
   # Validate name
   case $name in
   ''|*[!A-Za-z0-9._-]*)
-    printf '%s\n' "$spell_name: names may contain only letters, digits, dots, underscores, and dashes." >&2
-    return 1
+    die "$spell_name: names may contain only letters, digits, dots, underscores, and dashes."
     ;;
   -*)
-    printf '%s\n' "$spell_name: names may not begin with a dash." >&2
-    return 1
+    die "$spell_name: names may not begin with a dash."
     ;;
   esac
   
