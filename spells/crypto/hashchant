@@ -79,7 +79,7 @@ for helper in attr xattr setfattr; do
   esac
 
   if [ "$applied" -eq 1 ]; then
-    echo "File enchanted with hash: $hash"
+    success "File enchanted with hash: $hash"
     return 0
   fi
 
