@@ -61,10 +61,12 @@ else
         BLUE=""
         BOLD=""
         RESET=""
-        mud_location=""
-        mud_title=""
-        mud_description=""
 fi
+
+# Initialize MUD formatting variables (colors doesn't define these)
+mud_location="${BLUE}${BOLD}"
+mud_title="${BLUE}${BOLD}"
+mud_description=""
 
 # Let tests or callers override the helper path; otherwise look beside this
 # script first, then in PATH so the spell still works when installed globally.
