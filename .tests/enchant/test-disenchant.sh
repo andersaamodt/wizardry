@@ -27,10 +27,10 @@ test_help() {
 
 test_argument_validation() {
   _run_spell "spells/enchant/disenchant"
-  _assert_failure && _assert_error_contains "requires one or two arguments"
+  _assert_failure && _assert_error_contains "Usage: disenchant"
 
   _run_spell "spells/enchant/disenchant" a b c
-  _assert_failure && _assert_error_contains "requires one or two arguments"
+  _assert_failure && _assert_error_contains "Usage: disenchant"
 }
 
 test_missing_file() {

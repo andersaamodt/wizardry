@@ -26,15 +26,14 @@ set -eu
 
 # Validate arguments
 if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
-  printf '%s\n' "Error: This spell requires one or two arguments: a file path and an optional attribute name." >&2
   disenchant_usage >&2
-  return 1
+  return 2
 fi
 
 file=$1
 requested_key=${2-}
 
-gone "$file" && fail "Error: The file does not exist."
+gone "$file" && die "disenchant: The file does not exist."
 
 # Function to remove a single attribute
 disenchant_attr() {
@@ -47,19 +46,19 @@ disenchant_attr() {
       case "$helper" in
         attr)
           if attr -r "$key" "$target" 2>/dev/null; then
-            printf '%s\n' "Disenchanted $key attribute from $target."
+            success "Disenchanted $key attribute from $target."
             return 0
           fi
           ;;
         xattr)
           if xattr -d "$key" "$target" 2>/dev/null; then
-            printf '%s\n' "Disenchanted $key attribute from $target."
+            success "Disenchanted $key attribute from $target."
             return 0
           fi
           ;;
         setfattr)
           if setfattr -x "$key" "$target" 2>/dev/null; then
-            printf '%s\n' "Disenchanted $key attribute from $target."
+            success "Disenchanted $key attribute from $target."
             return 0
           fi
           ;;
@@ -67,8 +66,7 @@ disenchant_attr() {
     fi
   done
 
-  printf '%s\n' "Error: requires the 'attr', 'xattr', or 'setfattr' helper to remove attributes." >&2
-  return 1
+  die "disenchant: requires the 'attr', 'xattr', or 'setfattr' helper to remove attributes."
 }
 
 # If specific key requested, remove it directly
