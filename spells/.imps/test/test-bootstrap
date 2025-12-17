@@ -67,6 +67,21 @@ export PATH
 WIZARDRY_TEST_HELPERS_ONLY=1
 export WIZARDRY_TEST_HELPERS_ONLY
 
+# Export just the imps directories for tests that need to set a minimal PATH
+# but still need access to imps (especially env-clear which spells source)
+WIZARDRY_IMPS_PATH="$ROOT_DIR/spells/.imps"
+if [ -d "$ROOT_DIR/spells/.imps" ]; then
+  for impdir in "$ROOT_DIR"/spells/.imps/*; do
+    [ -d "$impdir" ] || continue
+    WIZARDRY_IMPS_PATH="$WIZARDRY_IMPS_PATH:$impdir"
+    for subdir in "$impdir"/*; do
+      [ -d "$subdir" ] || continue
+      WIZARDRY_IMPS_PATH="$WIZARDRY_IMPS_PATH:$subdir"
+    done
+  done
+fi
+export WIZARDRY_IMPS_PATH
+
 # Save the system PATH for run_cmd to use internally
 # This ensures run_cmd can always find essential utilities like mktemp, mkdir, cat, rm
 # even when tests intentionally set a restricted PATH to test error conditions

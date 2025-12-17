@@ -49,7 +49,7 @@ printf 'gio called\n' >&2
 exit 0
 STUB
   chmod +x "$stub/gio"
-  PATH="$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" "$WIZARDRY_TMPDIR/does_not_exist"
+  PATH="$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" "$WIZARDRY_TMPDIR/does_not_exist"
   _assert_failure && _assert_error_contains "No such file or directory"
 }
 
@@ -60,7 +60,7 @@ test_nonexistent_file_with_force() {
 exit 0
 STUB
   chmod +x "$stub/gio"
-  PATH="$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" -f "$WIZARDRY_TMPDIR/does_not_exist"
+  PATH="$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" -f "$WIZARDRY_TMPDIR/does_not_exist"
   _assert_success
 }
 
@@ -73,7 +73,7 @@ test_directory_without_recursive() {
 exit 0
 STUB
   chmod +x "$stub/gio"
-  PATH="$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" "$target_dir"
+  PATH="$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" "$target_dir"
   _assert_failure && _assert_error_contains "Is a directory"
 }
 
@@ -94,7 +94,7 @@ STUB
 printf 'Linux\n'
 STUB
   chmod +x "$stub/uname"
-  PATH="$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" -r "$target_dir"
+  PATH="$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" -r "$target_dir"
   _assert_success && _assert_file_contains "$log_file" "trash"
 }
 
@@ -115,7 +115,7 @@ STUB
 printf 'Linux\n'
 STUB
   chmod +x "$stub/uname"
-  PATH="$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" "$target_file"
+  PATH="$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" "$target_file"
   _assert_success && _assert_file_contains "$log_file" "trash"
 }
 
@@ -138,7 +138,7 @@ printf 'Darwin\n'
 STUB
   chmod +x "$stub/uname"
   # Remove gio and trash-put from path to ensure osascript is chosen
-  PATH="$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" "$target_file"
+  PATH="$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" "$target_file"
   _assert_success && _assert_file_contains "$log_file" "Finder"
 }
 
@@ -184,7 +184,7 @@ STUB
 printf 'Linux\n'
 STUB
   chmod +x "$stub/uname"
-  PATH="$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" "$file1" "$file2"
+  PATH="$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" "$file1" "$file2"
   _assert_success && _assert_file_contains "$log_file" "file1.txt" && _assert_file_contains "$log_file" "file2.txt"
 }
 
@@ -205,7 +205,7 @@ STUB
 printf 'Linux\n'
 STUB
   chmod +x "$stub/uname"
-  PATH="$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" -rf "$target_dir" "$WIZARDRY_TMPDIR/nonexistent"
+  PATH="$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" -rf "$target_dir" "$WIZARDRY_TMPDIR/nonexistent"
   _assert_success && _assert_file_contains "$log_file" "testdir"
 }
 
