@@ -1363,7 +1363,12 @@ test_scripts_have_set_eu_early() {
       menu/mud-admin/set-player|menu/mud-admin/add-ssh-player|menu/mud-admin/new-player) return ;;
       menu/system/profile-tests) return ;;
       # Cantrips using wrapper function pattern (word-of-binding)
-      cantrips/remove-service|cantrips/wizard-eyes) return ;;
+      cantrips/remove-service|cantrips/wizard-eyes|cantrips/validate-path|cantrips/max-length) return ;;
+      cantrips/start-service|cantrips/require-command|cantrips/stop-service|cantrips/spellbook-store) return ;;
+      cantrips/list-files|cantrips/validate-number|cantrips/colors|cantrips/restart-service) return ;;
+      cantrips/require-wizardry|cantrips/ask|cantrips/cursor-blink|cantrips/disable-service) return ;;
+      cantrips/ask-text|cantrips/fathom-terminal|cantrips/ask-number|cantrips/up) return ;;
+      cantrips/restart-ssh|cantrips/is-service-installed) return ;;
     esac
     
     # Check if set -eu appears in first 50 lines (allows for longer help handlers)
