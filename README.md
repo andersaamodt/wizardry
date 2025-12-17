@@ -63,7 +63,7 @@ This displays an interactive menu. Most (soon all) wizardry spells and features 
 
 A spell is a specially-curated shell script:
 
-* Lives in the `spells/` folder (or subfolder)
+* Stored in the `spells/` folder or your spellbook (default `~/.spellbook/`), or a subfolder
 * Has a unique and memorable name (all spells are in PATH together; hyphens for multi-word names)
 * Does something useful or interesting
 * Is clearly-written and well-commented for novices
