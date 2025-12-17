@@ -39,12 +39,10 @@ fi
 if [ -n "${WIZARDRY_DIR-}" ]; then
   wizardry_dir=$WIZARDRY_DIR
   if [ ! -d "$wizardry_dir" ]; then
-    printf '%s\n' "WIZARDRY_DIR does not exist or is not a directory: $wizardry_dir" >&2
-    return 1
+    die "update-wizardry: WIZARDRY_DIR does not exist or is not a directory: $wizardry_dir"
   fi
   if ! git -C "$wizardry_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-    printf '%s\n' "WIZARDRY_DIR is not a git repository: $wizardry_dir" >&2
-    return 1
+    die "update-wizardry: WIZARDRY_DIR is not a git repository: $wizardry_dir"
   fi
 else
   # Attempt to locate the wizardry repository based on this spell's location.
@@ -56,13 +54,12 @@ else
     if git -C "$candidate" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
       wizardry_dir=$(git -C "$candidate" rev-parse --show-toplevel)
     else
-      printf '%s\n' 'Unable to determine the wizardry repository. Set WIZARDRY_DIR to the checkout location.' >&2
-      return 1
+      die "update-wizardry: Unable to determine the wizardry repository. Set WIZARDRY_DIR to the checkout location."
     fi
   fi
 fi
 
-printf 'Updating wizardry repository at %s\n' "$wizardry_dir"
+info "Updating wizardry repository at $wizardry_dir"
 exec git -C "$wizardry_dir" pull --ff-only
 }
 
