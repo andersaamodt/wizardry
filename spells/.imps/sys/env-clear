@@ -69,6 +69,25 @@ _saved_disable_sandbox="${WIZARDRY_DISABLE_SANDBOX:-}"
 _saved_bwrap_warning="${WIZARDRY_BWRAP_WARNING:-}"
 _saved_colors_available="${WIZARDRY_COLORS_AVAILABLE:-}"
 
+# Preserve GitHub Actions environment variables (for CI/CD workflows)
+_saved_github_env="${GITHUB_ENV:-}"
+_saved_github_path="${GITHUB_PATH:-}"
+_saved_github_output="${GITHUB_OUTPUT:-}"
+_saved_github_step_summary="${GITHUB_STEP_SUMMARY:-}"
+_saved_github_workspace="${GITHUB_WORKSPACE:-}"
+_saved_github_action="${GITHUB_ACTION:-}"
+_saved_github_actions="${GITHUB_ACTIONS:-}"
+_saved_github_actor="${GITHUB_ACTOR:-}"
+_saved_github_repository="${GITHUB_REPOSITORY:-}"
+_saved_github_sha="${GITHUB_SHA:-}"
+_saved_github_ref="${GITHUB_REF:-}"
+_saved_github_ref_name="${GITHUB_REF_NAME:-}"
+_saved_github_head_ref="${GITHUB_HEAD_REF:-}"
+_saved_github_base_ref="${GITHUB_BASE_REF:-}"
+_saved_runner_os="${RUNNER_OS:-}"
+_saved_runner_temp="${RUNNER_TEMP:-}"
+_saved_runner_tool_cache="${RUNNER_TOOL_CACHE:-}"
+
 # Clear all environment variables
 for _var in $(env | cut -d= -f1); do
   unset "$_var" 2>/dev/null || true
@@ -132,6 +151,25 @@ export OLDPWD="$_saved_oldpwd"
 [ -n "$_saved_bwrap_warning" ] && export WIZARDRY_BWRAP_WARNING="$_saved_bwrap_warning"
 [ -n "$_saved_colors_available" ] && export WIZARDRY_COLORS_AVAILABLE="$_saved_colors_available"
 
+# Restore GitHub Actions variables
+[ -n "$_saved_github_env" ] && export GITHUB_ENV="$_saved_github_env"
+[ -n "$_saved_github_path" ] && export GITHUB_PATH="$_saved_github_path"
+[ -n "$_saved_github_output" ] && export GITHUB_OUTPUT="$_saved_github_output"
+[ -n "$_saved_github_step_summary" ] && export GITHUB_STEP_SUMMARY="$_saved_github_step_summary"
+[ -n "$_saved_github_workspace" ] && export GITHUB_WORKSPACE="$_saved_github_workspace"
+[ -n "$_saved_github_action" ] && export GITHUB_ACTION="$_saved_github_action"
+[ -n "$_saved_github_actions" ] && export GITHUB_ACTIONS="$_saved_github_actions"
+[ -n "$_saved_github_actor" ] && export GITHUB_ACTOR="$_saved_github_actor"
+[ -n "$_saved_github_repository" ] && export GITHUB_REPOSITORY="$_saved_github_repository"
+[ -n "$_saved_github_sha" ] && export GITHUB_SHA="$_saved_github_sha"
+[ -n "$_saved_github_ref" ] && export GITHUB_REF="$_saved_github_ref"
+[ -n "$_saved_github_ref_name" ] && export GITHUB_REF_NAME="$_saved_github_ref_name"
+[ -n "$_saved_github_head_ref" ] && export GITHUB_HEAD_REF="$_saved_github_head_ref"
+[ -n "$_saved_github_base_ref" ] && export GITHUB_BASE_REF="$_saved_github_base_ref"
+[ -n "$_saved_runner_os" ] && export RUNNER_OS="$_saved_runner_os"
+[ -n "$_saved_runner_temp" ] && export RUNNER_TEMP="$_saved_runner_temp"
+[ -n "$_saved_runner_tool_cache" ] && export RUNNER_TOOL_CACHE="$_saved_runner_tool_cache"
+
 # Clean up temporary variables
 unset _saved_path _saved_home _saved_user _saved_shell _saved_term _saved_lang
 unset _saved_tmpdir _saved_pwd _saved_oldpwd _saved_wizardry_dir _saved_spellbook_dir
@@ -142,7 +180,12 @@ unset _saved_global_subtest _saved_test_compiled _saved_test_helpers _saved_syst
 unset _saved_ask_input _saved_select_input _saved_menu_loop_limit _saved_require_command
 unset _saved_menu_log _saved_assume_yes _saved_force_install _saved_root_dir
 unset _saved_platform _saved_rc_file _saved_rc_format _saved_await_keep_raw
-unset _saved_disable_sandbox _saved_bwrap_warning _saved_colors_available _var
+unset _saved_disable_sandbox _saved_bwrap_warning _saved_colors_available
+unset _saved_github_env _saved_github_path _saved_github_output _saved_github_step_summary
+unset _saved_github_workspace _saved_github_action _saved_github_actions _saved_github_actor
+unset _saved_github_repository _saved_github_sha _saved_github_ref _saved_github_ref_name
+unset _saved_github_head_ref _saved_github_base_ref _saved_runner_os _saved_runner_temp
+unset _saved_runner_tool_cache _var
 
 # Return 0 explicitly (some shells return the exit code of the last unset)
 return 0
