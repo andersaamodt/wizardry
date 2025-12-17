@@ -3,18 +3,26 @@
 # This spell lists all contacts in the contacts directory.
 # Each vCard file is parsed to extract the name, organization, or telephone.
 
+list_contacts_usage() {
+  cat <<'USAGE'
+Usage: list-contacts [directory]
+
+List contacts from vCard files in a directory, defaulting to ~/.contacts when none is provided.
+USAGE
+}
+
+
+
+list_contacts() {
 case "${1-}" in
 --help|--usage|-h)
   list_contacts_usage
-  exit 0
+  return 0
   ;;
 esac
 
 set -eu
 . env-clear
-
-list_contacts_usage() {
-
 
 # Default contacts directory
 contacts_dir="${1:-$HOME/.contacts}"

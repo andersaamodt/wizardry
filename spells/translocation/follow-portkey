@@ -5,18 +5,26 @@
 
 require-wizardry || exit 1
 
+follow_portkey_usage() {
+cat <<'USAGE'
+Usage: follow-portkey <file>
+
+Read the destination from a portkey-enchanted file and print the cd command needed to teleport there. Use with eval, for example: eval "$(follow-portkey file)".
+USAGE
+}
+
+
+
+follow_portkey() {
 case "${1-}" in
 --help|--usage|-h)
   follow_portkey_usage
-  exit 0
+  return 0
   ;;
 esac
 
 set -eu
 . env-clear
-
-follow_portkey_usage() {
-
 
 # Ensure file argument is provided
 if [ -z "${1-}" ]; then

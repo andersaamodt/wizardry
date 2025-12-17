@@ -4,18 +4,27 @@
 # Use it to track popularity or priority through file metadata.
 
 
+upvote_usage() {
+cat <<'USAGE'
+Usage: upvote <file>
+
+Increment the upvote count stored in a file's 'upvotes' attribute, creating it with a value of 1 if it doesn't exist yet.
+USAGE
+}
+
+
+
+upvote() {
+
 case "${1-}" in
 --help|--usage|-h)
         upvote_usage
-        exit 0
+        return 0
         ;;
 esac
 
 set -eu
 . env-clear
-
-upvote_usage() {
-
 
 # Ensure file argument is provided
 if [ -z "${1-}" ]; then

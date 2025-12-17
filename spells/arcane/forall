@@ -4,18 +4,25 @@
 # Use it as a batch helper to apply one incantation across many files.
 
 
+forall_usage() {
+cat <<'USAGE'
+Usage: forall <spell> [args...]
+
+Run a spell or command against every file in the current directory, printing each filename before piping its output with indentation.
+USAGE
+}
+
+
+forall() {
 case "${1-}" in
 --help|--usage|-h)
   forall_usage
-  exit 0
+  return 0
   ;;
 esac
 
 set -eu
 . env-clear
-
-forall_usage() {
-
 
 if [ "$#" -lt 1 ]; then
         forall_usage >&2

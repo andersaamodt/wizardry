@@ -5,18 +5,26 @@
 
 require-wizardry || exit 1
 
+enchant_portkey_usage() {
+cat <<'USAGE'
+Usage: enchant-portkey <file> [destination]
+
+Enchant a file with a portkey that stores a destination path, defaulting to marker 1 ($SPELLBOOK_DIR/.markers/1) when none is provided. Activate the portkey later with follow-portkey to teleport to the stored location.
+USAGE
+}
+
+
+
+enchant_portkey() {
 case "${1-}" in
 --help|--usage|-h)
   enchant_portkey_usage
-  exit 0
+  return 0
   ;;
 esac
 
 set -eu
 . env-clear
-
-enchant_portkey_usage() {
-
 
 # Ensure file argument is provided
 if [ -z "${1-}" ]; then

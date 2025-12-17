@@ -4,18 +4,25 @@
 # Searches current directory by default.
 
 
+evoke_hash_usage() {
+  cat <<'USAGE'
+Usage: evoke-hash <hash> [directory]
+
+Find files whose hash attribute matches a given value, searching the current directory by default. The hash should be set beforehand with the hashchant spell.
+USAGE
+}
+
+
+evoke_hash() {
 case "${1-}" in
 --help|--usage|-h)
   evoke_hash_usage
-  exit 0
+  return 0
   ;;
 esac
 
 set -eu
 . env-clear
-
-evoke_hash_usage() {
-
 
 if [ "$#" -lt 1 ]; then
   evoke_hash_usage >&2

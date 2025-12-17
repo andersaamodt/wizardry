@@ -4,18 +4,27 @@
 # Use it to find what priority value to assign when adding a file to a priority list.
 
 
+get_new_priority_usage() {
+cat <<'USAGE'
+Usage: get-new-priority <file>
+
+Compute the next priority value for a file within its directory's list. It looks at existing priorities and returns the highest value plus one, or 1 if none exist.
+USAGE
+}
+
+
+
+get_new_priority() {
+
 case "${1-}" in
 --help|--usage|-h)
         get_new_priority_usage
-        exit 0
+        return 0
         ;;
 esac
 
 set -eu
 . env-clear
-
-get_new_priority_usage() {
-
 
 # Ensure file argument is provided
 if [ -z "${1-}" ]; then

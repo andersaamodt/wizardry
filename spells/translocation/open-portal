@@ -5,18 +5,26 @@
 
 require-wizardry || exit 1
 
+open_portal_usage() {
+cat <<'USAGE'
+Usage: open-portal <remote_address> <remote_directory> [local_mount_point]
+
+Mount a remote directory using sshfs over Tor for anonymous access. The local mount point defaults to ~/portals/<remote_address> if not specified and uses the MUD_PLAYER key for authentication.
+USAGE
+}
+
+
+
+open_portal() {
 case "${1-}" in
 --help|--usage|-h)
   open_portal_usage
-  exit 0
+  return 0
   ;;
 esac
 
 set -eu
 . env-clear
-
-open_portal_usage() {
-
 
 # Check for required commands
 if ! has sshfs; then

@@ -5,18 +5,26 @@
 
 require-wizardry || exit 1
 
+mark_location_usage() {
+  cat <<'USAGE'
+Usage: mark-location [marker] [path]
+
+Record the current directory (or path) for jump-to-marker to return to later.
+Markers are stored in $SPELLBOOK_DIR/.markers/.
+USAGE
+}
+
+
+mark_location() {
 case "${1-}" in
 --help|--usage|-h)
   mark_location_usage
-  exit 0
+  return 0
   ;;
 esac
 
 set -eu
 . env-clear
-
-mark_location_usage() {
-
 
 if [ "$#" -gt 2 ]; then
   mark_location_usage

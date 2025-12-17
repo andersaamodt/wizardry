@@ -4,18 +4,27 @@
 # Use it to organize files by importance using extended attributes.
 
 
+prioritize_usage() {
+cat <<'USAGE'
+Usage: prioritize <file> [directory]
+
+Set or update the priority of a file, storing it in the file's extended attributes and the directory's priorities list. If no directory is specified, the file's parent directory is used.
+USAGE
+}
+
+
+
+prioritize() {
+
 case "${1-}" in
 --help|--usage|-h)
         prioritize_usage
-        exit 0
+        return 0
         ;;
 esac
 
 set -eu
 . env-clear
-
-prioritize_usage() {
-
 
 # Ensure file argument is provided
 if [ -z "${1-}" ]; then

@@ -14,17 +14,17 @@ USAGE
 
 
 
+get_priority() {
+
 case "${1-}" in
 --help|--usage|-h)
         get_priority_usage
-        exit 0
+        return 0
         ;;
 esac
 
 set -eu
 . env-clear
-
-get_priority() {
 
 # Ensure file argument is provided
 if [ -z "${1-}" ]; then
