@@ -1396,10 +1396,11 @@ test_spells_source_env_clear_after_set_eu() {
     fi
     
     # Check that ". env-clear" appears within 2 lines after set -eu
+    # Accepts both direct sourcing and conditional sourcing
     start_line=$((set_eu_line + 1))
     end_line=$((set_eu_line + 2))
     
-    if ! sed -n "${start_line},${end_line}p" "$spell" 2>/dev/null | grep -qE '^\. env-clear$|^[[:space:]]+\. env-clear$'; then
+    if ! sed -n "${start_line},${end_line}p" "$spell" 2>/dev/null | grep -qE '^\. env-clear$|^[[:space:]]+\. env-clear$|env-clear.*&&.*\. env-clear'; then
       printf '%s\n' "$rel_path"
     fi
   }
