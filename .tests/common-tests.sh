@@ -1246,6 +1246,179 @@ test_spells_have_limited_positional_args() {
   return 0
 }
 
+# --- Check: No all-caps variable assignments (env var antipattern) ---
+# All local variables should use lowercase. ALL_CAPS conventionally indicates
+# environment variables and using it for local vars creates confusion.
+# Only documented exceptions in EXEMPTIONS.md are allowed.
+
+test_no_allcaps_variable_assignments() {
+  violations=""
+  
+  check_allcaps() {
+    spell=$1
+    name=$(basename "$spell")
+    rel_path=${spell#"$ROOT_DIR/spells/"}
+    
+    # Skip exempt files
+    case "$rel_path" in
+      # cantrips/colors defines color variables (documented exception)
+      cantrips/colors) return ;;
+      # Test infrastructure exempt
+      .imps/test/*) return ;;
+      # Output/logging imps exempt (they set WIZARDRY_* flags)
+      .imps/out/*) return ;;
+      # Bootstrap/arcana scripts have different rules  
+      .arcana/*) return ;;
+    esac
+    
+    # Look for ALL_CAPS variable assignments
+    # Match: VAR= or VAR=$... or VAR=$(...) but not export statements (those are checked elsewhere)
+    allcaps_vars=$(grep -nE '^[[:space:]]*[A-Z][A-Z_0-9]*=' "$spell" 2>/dev/null | \
+      grep -v -E '(export|PATH=|HOME=|IFS=|CDPATH=|TMPDIR=|USER=|SHELL=|TERM=|LANG=)' | \
+      grep -v -E '(NIX_PACKAGE|APT_PACKAGE|DNF_PACKAGE|YUM_PACKAGE|ZYPPER_PACKAGE|PACMAN_PACKAGE|APK_PACKAGE|PKGIN_PACKAGE|BREW_PACKAGE)' | \
+      grep -v -E '(WIZARDRY_|SPELLBOOK_DIR|MUD_DIR|TEST_|ASSUME_YES|FORCE_INSTALL|ROOT_DIR|DISTRO)' | \
+      grep -v -E '(AWAIT_KEYPRESS_KEEP_RAW|BWRAP_|SANDBOX_|MACOS_)' | \
+      grep -v -E '(RESET|BOLD|ITALICS|UNDERLINED|BLINK|INVERT|STRIKE|ESC)' | \
+      grep -v -E '(RED|GREEN|BLUE|YELLOW|CYAN|WHITE|BLACK|PURPLE|GRE[YA]|LIGHT_)' | \
+      grep -v -E '(BRIGHT_|BG_|THEME_)' | \
+      grep -v -E '(KEY=value)' | \
+      grep -v -E 'logging-example|spell-name' | \
+      head -5)
+    
+    if [ -n "$allcaps_vars" ]; then
+      # Format: filename:linenum:content
+      formatted=$(printf '%s\n' "$allcaps_vars" | sed "s|^|$rel_path:|" | tr '\n' '; ' | sed 's/; $//')
+      printf '%s\n' "$formatted"
+    fi
+  }
+  
+  tmpfile="${WIZARDRY_TMPDIR}/allcaps-violations.txt"
+  : > "$tmpfile"
+  for_each_posix_spell check_allcaps > "$tmpfile"
+  
+  violations=$(cat "$tmpfile" 2>/dev/null | head -20)
+  rm -f "$tmpfile"
+  
+  if [ -n "$violations" ]; then
+    TEST_FAILURE_REASON="ALL_CAPS variable assignments found (use lowercase for local vars): $violations"
+    return 1
+  fi
+  
+  return 0
+}
+
+# --- Check: Scripts have set -eu early ---
+# All spells and action imps must have "set -eu" early in the file (within first 50 lines).
+# Allowed before set -eu: shebang, opening comment, help handler.
+# This enforces strict mode and catches errors early.
+
+test_scripts_have_set_eu_early() {
+  violations=""
+  
+  check_set_eu() {
+    spell=$1
+    name=$(basename "$spell")
+    rel_path=${spell#"$ROOT_DIR/spells/"}
+    
+    # Skip exempt files
+    case "$rel_path" in
+      # Bootstrap/arcana scripts exempt (different rules)
+      .arcana/*) return ;;
+      # install script exempt (bootstrap, has special PATH setup)
+      install) return ;;
+      # declare-globals exempt (just variable declarations)
+      .imps/declare-globals) return ;;
+      # Test bootstrap exempt (sets up test environment)
+      .imps/test/test-bootstrap) return ;;
+      # env-clear itself exempt (special case)
+      .imps/sys/env-clear) return ;;
+      # invoke-wizardry exempt (sourced into user shell, can't use set -eu at top level)
+      .imps/sys/invoke-wizardry) return ;;
+      # Conditional imps exempt (return exit codes, not errors)
+      .imps/cond/*|.imps/lex/*|.imps/menu/*) return ;;
+    esac
+    
+    # Check if set -eu appears in first 50 lines (allows for longer help handlers)
+    # Pattern matches: set -eu, set -ue, set -euo, etc.
+    if ! head -50 "$spell" | grep -qE '^[[:space:]]*set +-[euo]*[eu][euo]*'; then
+      printf '%s\n' "$rel_path"
+    fi
+  }
+  
+  tmpfile="${WIZARDRY_TMPDIR}/missing-set-eu.txt"
+  : > "$tmpfile"
+  for_each_posix_spell check_set_eu > "$tmpfile"
+  
+  violations=$(cat "$tmpfile" 2>/dev/null | head -20 | tr '\n' ', ' | sed 's/, $//')
+  rm -f "$tmpfile"
+  
+  if [ -n "$violations" ]; then
+    TEST_FAILURE_REASON="scripts missing early set -eu: $violations (add 'set -eu' after opening comment, within first 50 lines)"
+    return 1
+  fi
+  
+  return 0
+}
+
+# --- Check: Spells source env-clear immediately after set -eu ---
+# All spells must source env-clear on the line immediately after set -eu (or within 2 lines).
+# This prevents environment variable antipattern from returning.
+# Imps are exempt as they're helpers, not top-level entry points.
+
+test_spells_source_env_clear_after_set_eu() {
+  violations=""
+  
+  check_env_clear_placement() {
+    spell=$1
+    name=$(basename "$spell")
+    rel_path=${spell#"$ROOT_DIR/spells/"}
+    
+    # Skip exempt files
+    case "$rel_path" in
+      # Imps exempt (they're helpers, not top-level spells)
+      .imps/*) return ;;
+      # Bootstrap/arcana scripts exempt (run before wizardry infrastructure available)
+      .arcana/*) return ;;
+      # install script exempt (bootstrap)
+      install) return ;;
+      # Bootstrap spells used by install (must be standalone)
+      divination/detect-rc-file|cantrips/ask-yn|cantrips/memorize|cantrips/require-wizardry|spellcraft/learn) return ;;
+      # Scripts that need PATH setup before env-clear to find it
+      system/test-magic|system/verify-posix|spellcraft/lint-magic|enchant/enchant) return ;;
+    esac
+    
+    # Find line number of set -eu
+    set_eu_line=$(grep -nE '^[[:space:]]*set +-[euo]*[eu][euo]*' "$spell" 2>/dev/null | head -1 | cut -d: -f1)
+    
+    if [ -z "$set_eu_line" ]; then
+      # No set -eu found - will be caught by other test
+      return
+    fi
+    
+    # Check that ". env-clear" appears within 2 lines after set -eu
+    start_line=$((set_eu_line + 1))
+    end_line=$((set_eu_line + 2))
+    
+    if ! sed -n "${start_line},${end_line}p" "$spell" 2>/dev/null | grep -qE '^\. env-clear$|^[[:space:]]+\. env-clear$'; then
+      printf '%s\n' "$rel_path"
+    fi
+  }
+  
+  tmpfile="${WIZARDRY_TMPDIR}/missing-env-clear-placement.txt"
+  : > "$tmpfile"
+  for_each_posix_spell check_env_clear_placement > "$tmpfile"
+  
+  violations=$(cat "$tmpfile" 2>/dev/null | head -20 | tr '\n' ', ' | sed 's/, $//')
+  rm -f "$tmpfile"
+  
+  if [ -n "$violations" ]; then
+    TEST_FAILURE_REASON="spells missing env-clear after set -eu: $violations (add '. env-clear' on line after 'set -eu')"
+    return 1
+  fi
+  
+  return 0
+}
+
 # --- Run all test cases ---
 
 _run_test_case "no duplicate spell names" test_no_duplicate_spell_names
@@ -1268,5 +1441,8 @@ _run_test_case "spells have true name functions" test_spells_have_true_name_func
 _run_test_case "spells require wrapper functions" test_spells_require_wrapper_functions
 _run_test_case "spells have limited flags" test_spells_have_limited_flags
 _run_test_case "spells have limited positional arguments" test_spells_have_limited_positional_args
+_run_test_case "no all-caps variable assignments" test_no_allcaps_variable_assignments
+_run_test_case "scripts have set -eu early" test_scripts_have_set_eu_early
+_run_test_case "spells source env-clear after set -eu" test_spells_source_env_clear_after_set_eu
 
 _finish_tests
