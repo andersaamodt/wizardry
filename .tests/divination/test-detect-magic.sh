@@ -135,7 +135,7 @@ detect_magic_reports_missing_helper() {
   cp "$ROOT_DIR/spells/divination/detect-magic" "$tmpdir/detect-magic"
   chmod +x "$tmpdir/detect-magic"
 
-  _run_cmd env PATH="/bin:/usr/bin" "$tmpdir/detect-magic"
+  _run_cmd env PATH="$WIZARDRY_IMPS_PATH:/bin:/usr/bin" "$tmpdir/detect-magic"
   _assert_failure || return 1
   case "$OUTPUT" in
     "") : ;;

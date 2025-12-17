@@ -1,11 +1,13 @@
 #!/bin/sh
 # pick N [FILE] - output Nth line of input or file
 # Example: pick 3 config.txt   # or: ls | pick 2
+set -eu
 
 _pick() {
   if [ "$#" -ge 2 ]; then sed -n "${1}p" "$2"; else sed -n "${1}p"; fi
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */pick) _pick "$@" ;; esac

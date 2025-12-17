@@ -1,6 +1,7 @@
 #!/bin/sh
 # assert-path-exists PATH - verify path exists
 # Sets TEST_FAILURE_REASON if path does not exist.
+set -eu
 
 _assert_path_exists() {
   if [ ! -e "$1" ]; then
@@ -11,4 +12,5 @@ _assert_path_exists() {
 }
 
 # Self-execution when run directly (not sourced)
+set -eu
 case "${0##*/}" in assert-path-exists) _assert_path_exists "$@" ;; esac

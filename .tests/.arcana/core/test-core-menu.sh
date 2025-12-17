@@ -41,7 +41,7 @@ SH
   ln -s /bin/grep "$tmp/grep"
   ln -s /bin/cat "$tmp/cat"
 
-  MENU_LOG="$tmp/log" _run_cmd env PATH="$tmp:/bin:/usr/bin" MENU_LOOP_LIMIT=1 MENU_LOG="$tmp/log" COLORS_BIN="$tmp/colors" MENU_BIN="$tmp/menu" \
+  MENU_LOG="$tmp/log" _run_cmd env PATH="$WIZARDRY_IMPS_PATH:$tmp:/bin:/usr/bin" MENU_LOOP_LIMIT=1 MENU_LOG="$tmp/log" COLORS_BIN="$tmp/colors" MENU_BIN="$tmp/menu" \
     "$ROOT_DIR/spells/.arcana/core/core-menu"
 
   _assert_success || return 1
@@ -94,7 +94,7 @@ SH
 
   # dd, stty, tput are essential and should show "- installed" or "- not installed"
   # instead of "Uninstall dd"
-  MENU_LOG="$tmp/log" _run_cmd env PATH="$tmp:/bin:/usr/bin" MENU_LOOP_LIMIT=1 MENU_LOG="$tmp/log" COLORS_BIN="$tmp/colors" MENU_BIN="$tmp/menu" \
+  MENU_LOG="$tmp/log" _run_cmd env PATH="$WIZARDRY_IMPS_PATH:$tmp:/bin:/usr/bin" MENU_LOOP_LIMIT=1 MENU_LOG="$tmp/log" COLORS_BIN="$tmp/colors" MENU_BIN="$tmp/menu" \
     "$ROOT_DIR/spells/.arcana/core/core-menu"
 
   _assert_success || return 1

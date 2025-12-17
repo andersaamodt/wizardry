@@ -1,6 +1,7 @@
 #!/bin/sh
 # make-indent LEVEL [FILE] - generate indentation string for a given level
 # Uses detected indent style from FILE, or defaults to 2 spaces. Example: indent=$(make-indent 2)
+set -eu
 
 _make_indent() {
   _mi_level=${1:-1}
@@ -35,5 +36,6 @@ _make_indent() {
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */make-indent) _make_indent "$@" ;; esac

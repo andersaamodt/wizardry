@@ -1,11 +1,13 @@
 #!/bin/sh
 # drop N [FILE] - output all lines except last N
 # Example: drop 5 log.txt   # all except last 5 lines
+set -eu
 
 _drop() {
   if [ "$#" -ge 2 ]; then head -n "-$1" "$2"; else head -n "-$1"; fi
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */drop) _drop "$@" ;; esac

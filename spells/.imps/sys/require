@@ -2,6 +2,7 @@
 # require COMMAND [MESSAGE] - check if dependency is available, offer to install
 # Delegates to require-command if available; falls back to simple command check.
 # Example: require menu "The menu command is needed"
+set -eu
 
 _require() {
   _req_tool=$1
@@ -34,5 +35,6 @@ _require() {
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */require) _require "$@" ;; esac

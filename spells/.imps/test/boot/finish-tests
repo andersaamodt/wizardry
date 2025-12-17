@@ -1,6 +1,7 @@
 #!/bin/sh
 # finish-tests - print test summary and return appropriate exit status
 # Returns 0 if all tests passed, 1 otherwise. Prints failure indices if any.
+set -eu
 
 _finish_tests() {
   total=$((_pass_count + _fail_count))
@@ -15,4 +16,5 @@ _finish_tests() {
 }
 
 # Self-execution when run directly (not sourced)
+set -eu
 case "${0##*/}" in finish-tests) _finish_tests "$@" ;; esac

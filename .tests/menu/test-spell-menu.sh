@@ -105,7 +105,7 @@ STUB
 
 test_errors_when_helper_missing() {
   stub_dir=$(make_stub_dir)
-  PATH="$stub_dir:/bin:/usr/bin" CAST_STORE="$stub_dir/does-not-exist" _run_spell "spells/menu/spell-menu" --help
+  PATH="$WIZARDRY_IMPS_PATH:$stub_dir:/bin:/usr/bin" CAST_STORE="$stub_dir/does-not-exist" _run_spell "spells/menu/spell-menu" --help
   # --help should work even without memorize
   _assert_success || return 1
 }

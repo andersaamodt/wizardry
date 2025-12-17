@@ -1,6 +1,7 @@
 #!/bin/sh
 # run-bwrap - execute bubblewrap with optional sudo support
 # Wraps bwrap invocation, using sudo when BWRAP_VIA_SUDO is set.
+set -eu
 
 _run_bwrap() {
   if [ "${BWRAP_VIA_SUDO:-0}" -eq 1 ]; then
@@ -12,4 +13,5 @@ _run_bwrap() {
 }
 
 # Self-execution when run directly (not sourced)
+set -eu
 case "${0##*/}" in run-bwrap) _run_bwrap "$@" ;; esac

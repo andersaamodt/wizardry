@@ -1,6 +1,7 @@
 #!/bin/sh
 # write-sudo-stub FIXTURE - create a sudo stub script in fixture/bin
 # Stub strips common flags and executes the actual command.
+set -eu
 
 _write_sudo_stub() {
   fixture=$1
@@ -8,6 +9,7 @@ _write_sudo_stub() {
 #!/bin/sh
 # Strip common sudo flags before executing the actual command.
 # This stub handles flags used by wizardry spells; add more as needed.
+set -eu
 while [ $# -gt 0 ]; do
   case "$1" in
     -n|--non-interactive) shift ;;  # Skip non-interactive flag
@@ -21,4 +23,5 @@ STUB
 }
 
 # Self-execution when run directly (not sourced)
+set -eu
 case "${0##*/}" in write-sudo-stub) _write_sudo_stub "$@" ;; esac

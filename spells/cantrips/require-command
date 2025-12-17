@@ -22,6 +22,7 @@ case "${1-}" in
 esac
 
 set -eu
+. env-clear
 
 if [ "$#" -lt 1 ]; then
     require_command_usage

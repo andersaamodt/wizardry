@@ -1,6 +1,7 @@
 #!/bin/sh
 # parent PATH - extract directory from path (like dirname but pure shell)
 # Example: dir=$(parent /path/to/file.txt)  # outputs: /path/to
+set -eu
 
 _parent() {
   _par_path=$1
@@ -11,5 +12,6 @@ _parent() {
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */parent) _parent "$@" ;; esac

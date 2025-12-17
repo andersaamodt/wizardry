@@ -33,7 +33,7 @@ STUB
   _link_tools "$stub" sh printf test command
   
   # Run nix-rebuild - should find and run home-manager
-  PATH="$stub:/bin:/usr/bin" _run_spell spells/.imps/sys/nix-rebuild
+  PATH="$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" _run_spell spells/.imps/sys/nix-rebuild
   _assert_success || return 1
   
   # Check that home-manager switch was called
@@ -61,7 +61,7 @@ STUB
   chmod +x "$stub/command"
   
   # Run nix-rebuild with no home-manager or nixos-rebuild available
-  PATH="$stub:/bin:/usr/bin" _run_spell spells/.imps/sys/nix-rebuild
+  PATH="$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" _run_spell spells/.imps/sys/nix-rebuild
   _assert_failure || return 1
   _assert_error_contains "could not be automatically rebuilt" || return 1
 }

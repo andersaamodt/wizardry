@@ -25,18 +25,19 @@ case "${1-}" in
 esac
 
 set -eu
+. env-clear
 
-SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd -P)
+script_dir=$(cd "$(dirname "$0")" && pwd -P)
 
 # Let tests or callers override the helper path; otherwise look beside this
 # script first, then in PATH so the spell still works when installed globally.
 # This keeps installation optional while preserving predictability.
-READ_MAGIC=${DETECT_MAGIC_READ_MAGIC-}
-if [ -z "$READ_MAGIC" ]; then
-        if [ -x "$SCRIPT_DIR/read-magic" ]; then
-                READ_MAGIC="$SCRIPT_DIR/read-magic"
+read_magic=${DETECT_MAGIC_READ_MAGIC-}
+if [ -z "$read_magic" ]; then
+        if [ -x "$script_dir/read-magic" ]; then
+                read_magic="$script_dir/read-magic"
         elif command -v read-magic >/dev/null 2>&1; then
-                READ_MAGIC=$(command -v read-magic)
+                read_magic=$(command -v read-magic)
         else
                 printf '%s\n' "detect-magic: read-magic spell is missing." >&2
                 return 1
@@ -81,7 +82,7 @@ for entry in *; do
 
         # read-magic reports every incantation decorating the file. We quietly
         # ignore unreadable files so the rest of the room still reports.
-        if attrs_output=$("$READ_MAGIC" "$entry" 2>&1); then
+        if attrs_output=$("$read_magic" "$entry" 2>&1); then
                 :
         else
                 printf '%s\n' "detect-magic: failed to read $entry: $attrs_output" >&2

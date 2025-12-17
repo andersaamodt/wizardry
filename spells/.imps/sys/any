@@ -1,6 +1,7 @@
 #!/bin/sh
 # any CMD [CMD...] - return first available command from list
 # Example: pkg=$(any apt-get brew pkgin) && $pkg install foo
+set -eu
 
 _any() {
   for _any_cmd in "$@"; do
@@ -13,5 +14,6 @@ _any() {
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */any) _any "$@" ;; esac

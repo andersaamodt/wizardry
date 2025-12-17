@@ -22,6 +22,7 @@ case "${1-}" in
 esac
 
 set -eu
+. env-clear
 
 # default directory is current directory unless given as a parameter
 dir="${1:-.}"

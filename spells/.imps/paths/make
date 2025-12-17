@@ -1,6 +1,7 @@
 #!/bin/sh
 # make TYPE PATH - create resource if missing (currently only dir)
 # Example: make dir ~/.config/myapp
+set -eu
 
 _make() {
   case "$1" in
@@ -10,5 +11,6 @@ _make() {
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */make) _make "$@" ;; esac

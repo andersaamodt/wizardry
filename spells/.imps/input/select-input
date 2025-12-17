@@ -2,6 +2,7 @@
 # select-input - detect best input source (stdin/tty/none)
 # Example: src=$(select-input) && case $src in stdin) read line ;; tty) read </dev/tty ;; esac
 # Set SELECT_INPUT_MODE=stdin|tty|none to override auto-detection
+set -eu
 
 _select_input() {
   case ${SELECT_INPUT_MODE:-auto} in
@@ -26,5 +27,6 @@ _select_input() {
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */select-input) _select_input "$@" ;; esac

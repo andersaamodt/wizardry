@@ -1,6 +1,7 @@
 #!/bin/sh
 # clipboard-available - check if any clipboard helper is installed
 # Returns 0 if pbcopy, xsel, xclip, or wl-copy is available
+set -eu
 
 _clipboard_available() {
   command -v pbcopy >/dev/null 2>&1 || \
@@ -10,5 +11,6 @@ _clipboard_available() {
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */clipboard-available) _clipboard_available "$@" ;; esac

@@ -1,6 +1,7 @@
 #!/bin/sh
 # else DEFAULT - output stdin if non-empty, else output default value
 # Example: echo "" | else "fallback"
+set -eu
 
 _else() {
   _else_input=$(cat)
@@ -8,5 +9,6 @@ _else() {
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */else) _else "$@" ;; esac

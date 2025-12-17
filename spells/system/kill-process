@@ -22,17 +22,18 @@ case "${1-}" in
 esac
 
 set -eu
+. env-clear
 
 # Present the process list so the user can choose what to terminate.
 say "List of running processes:"
 ps -ax | awk '{print $5}' | tail -n +2 | nl -w 2 -s ') '
 
-PS_NAMES=$(ps -ax | awk '{print $5}' | tail -n +2)
+ps_names=$(ps -ax | awk '{print $5}' | tail -n +2)
 
 lacks ask-number && { warn "ask-number spell is required to choose a process."; return 1; }
 lacks ask-yn && { warn "ask-yn spell is required to confirm termination."; return 1; }
 
-total_processes=$(printf '%s\n' "$PS_NAMES" | sed '/^$/d' | wc -l | tr -d ' ')
+total_processes=$(printf '%s\n' "$ps_names" | sed '/^$/d' | wc -l | tr -d ' ')
 
 if [ "$total_processes" -eq 0 ]; then
     warn "No processes available to kill."
@@ -40,7 +41,7 @@ if [ "$total_processes" -eq 0 ]; then
 fi
 
 choice=$(ask-number "Enter the number of the process you want to kill:" 1 "$total_processes")
-selected_name=$(printf '%s\n' "$PS_NAMES" | sed -n "${choice}p")
+selected_name=$(printf '%s\n' "$ps_names" | sed -n "${choice}p")
 
 pid=$(ps -ax | awk '{print $1 " " $5}' | grep "$selected_name" | awk '{print $1}')
 if is set "$pid"; then

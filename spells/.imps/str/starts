@@ -1,6 +1,7 @@
 #!/bin/sh
 # starts STRING PREFIX - test if string starts with prefix
 # Example: starts "$line" "#" && echo "comment"
+set -eu
 
 _starts() {
   case "$1" in
@@ -10,5 +11,6 @@ _starts() {
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */starts) _starts "$@" ;; esac

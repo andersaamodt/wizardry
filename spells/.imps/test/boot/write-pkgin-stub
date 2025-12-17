@@ -1,6 +1,7 @@
 #!/bin/sh
 # write-pkgin-stub FIXTURE - create a pkgin stub script for testing
 # Stub logs install/remove invocations to PKGIN_LOG.
+set -eu
 
 _write_pkgin_stub() {
   fixture=$1
@@ -25,4 +26,5 @@ STUB
 }
 
 # Self-execution when run directly (not sourced)
+set -eu
 case "${0##*/}" in write-pkgin-stub) _write_pkgin_stub "$@" ;; esac

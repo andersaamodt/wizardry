@@ -29,7 +29,7 @@ test_help() {
 test_missing_enchant() {
   skip-if-compiled || return $?
   stub=$(make_stub_dir)
-  PATH="$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$stub:/bin:/usr/bin" _run_spell "spells/mud/decorate"
+  PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$stub:/bin:/usr/bin" _run_spell "spells/mud/decorate"
   _assert_failure && _assert_error_contains "decorate: enchant spell is missing."
 }
 
@@ -40,7 +40,7 @@ test_no_valid_path() {
 exit 0
 EOF
   chmod +x "$stub/enchant"
-  PATH="$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$stub:/bin:/usr/bin" _run_spell "spells/mud/decorate" "/nonexistent/path" "description"
+  PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$stub:/bin:/usr/bin" _run_spell "spells/mud/decorate" "/nonexistent/path" "description"
   _assert_failure && _assert_error_contains "no valid path found"
 }
 
@@ -53,7 +53,7 @@ test_empty_description() {
 exit 0
 EOF
   chmod +x "$stub/enchant"
-  PATH="$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$stub:/bin:/usr/bin" _run_spell "spells/mud/decorate" "$target" ""
+  PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$stub:/bin:/usr/bin" _run_spell "spells/mud/decorate" "$target" ""
   _assert_failure && _assert_error_contains "description cannot be empty"
 }
 
@@ -66,7 +66,7 @@ printf '%s\n' "$*" >"${WIZARDRY_TMPDIR:?}/decorate.called"
 exit 0
 EOF
   chmod +x "$stub/enchant"
-  PATH="$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$stub:/bin:/usr/bin" _run_spell "spells/mud/decorate" "$target" "A mystical chamber"
+  PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$stub:/bin:/usr/bin" _run_spell "spells/mud/decorate" "$target" "A mystical chamber"
   _assert_success && _assert_output_contains "decorated with the description"
   called=$(cat "$WIZARDRY_TMPDIR/decorate.called")
   # Check that enchant was called with correct arguments
@@ -91,7 +91,7 @@ exit 0
 EOF
   chmod +x "$stub/enchant"
   # Pass description first, then path
-  PATH="$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$stub:/bin:/usr/bin" _run_spell "spells/mud/decorate" "A secret alcove" "$target"
+  PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$stub:/bin:/usr/bin" _run_spell "spells/mud/decorate" "A secret alcove" "$target"
   _assert_success && _assert_output_contains "decorated with the description"
   called=$(cat "$WIZARDRY_TMPDIR/decorate.called")
   # Check that enchant was called with correct arguments
@@ -116,7 +116,7 @@ exit 0
 EOF
   chmod +x "$stub/enchant"
   # Pass only description - should use current directory
-  RUN_CMD_WORKDIR="$target" PATH="$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$stub:/bin:/usr/bin" _run_spell "spells/mud/decorate" "The entrance hall"
+  RUN_CMD_WORKDIR="$target" PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$stub:/bin:/usr/bin" _run_spell "spells/mud/decorate" "The entrance hall"
   _assert_success
   called=$(cat "$WIZARDRY_TMPDIR/decorate.called")
   # Check that the description is in the call
@@ -139,7 +139,7 @@ test_reports_enchant_failure() {
 exit 1
 EOF
   chmod +x "$stub/enchant"
-  PATH="$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$stub:/bin:/usr/bin" _run_spell "spells/mud/decorate" "$target" "description"
+  PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$stub:/bin:/usr/bin" _run_spell "spells/mud/decorate" "$target" "description"
   _assert_failure && _assert_error_contains "failed to apply description"
 }
 

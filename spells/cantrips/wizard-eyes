@@ -22,6 +22,7 @@ case "${1-}" in
 esac
 
 set -eu
+. env-clear
 
 # Check if wizard mode is enabled (default to showing for teaching)
 wizard_mode=${WIZARD:-1}

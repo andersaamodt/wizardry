@@ -20,6 +20,7 @@ case "${1-}" in
 esac
 
 set -eu
+. env-clear
 
 require-command menu
 

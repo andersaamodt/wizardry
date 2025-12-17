@@ -5,6 +5,7 @@
 # Supports per-subtest compilation mode markers via skip_if_compiled() and skip_if_uncompiled():
 #   skip_if_compiled - Call at start of test to skip when WIZARDRY_TEST_COMPILED=1
 #   skip_if_uncompiled - Call at start of test to skip when WIZARDRY_TEST_COMPILED!=1
+set -eu
 
 _run_test_case() {
   desc=$1
@@ -39,4 +40,5 @@ _run_test_case() {
 }
 
 # Self-execution when run directly (not sourced)
+set -eu
 case "${0##*/}" in run-test-case) _run_test_case "$@" ;; esac

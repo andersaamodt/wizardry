@@ -1,6 +1,7 @@
 #!/bin/sh
 # die [CODE] MESSAGE - print to stderr and exit (default code 1)
 # Examples: die "fatal error" | die 2 "file not found"
+set -eu
 
 _die() {
   case "$1" in
@@ -12,5 +13,6 @@ _die() {
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */die) _die "$@" ;; esac

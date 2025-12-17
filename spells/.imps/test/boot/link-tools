@@ -1,6 +1,7 @@
 #!/bin/sh
 # link-tools DIR TOOL... - symlink specified tools into directory
 # Skips tools that already exist in the directory.
+set -eu
 
 _link_tools() {
   dir=$1
@@ -17,4 +18,5 @@ _link_tools() {
 }
 
 # Self-execution when run directly (not sourced)
+set -eu
 case "${0##*/}" in link-tools) _link_tools "$@" ;; esac

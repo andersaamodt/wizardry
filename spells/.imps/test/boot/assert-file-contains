@@ -1,6 +1,7 @@
 #!/bin/sh
 # assert-file-contains FILE SUBSTRING - verify file contains the substring
 # Sets TEST_FAILURE_REASON on mismatch or missing file.
+set -eu
 
 _assert_file_contains() {
   file=$1
@@ -19,4 +20,5 @@ _assert_file_contains() {
 }
 
 # Self-execution when run directly (not sourced)
+set -eu
 case "${0##*/}" in assert-file-contains) _assert_file_contains "$@" ;; esac

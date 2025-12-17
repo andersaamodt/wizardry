@@ -2,6 +2,7 @@
 # xattr-read-value KEY FILE - read the value of a specific extended attribute
 # Tries xattr, attr, and getfattr in order
 # Returns 0 and outputs value if found, 1 if not found or all helpers failed
+set -eu
 
 _xattr_read_value() {
   key=$1
@@ -36,6 +37,7 @@ _xattr_read_value() {
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */xattr-read-value) _xattr_read_value "$@" ;; 
 esac

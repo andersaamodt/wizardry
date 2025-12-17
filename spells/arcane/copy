@@ -22,6 +22,7 @@ case "${1-}" in
 esac
 
 set -eu
+. env-clear
 
 # Handle missing argument - prompt interactively
 if [ "$#" -eq 0 ]; then

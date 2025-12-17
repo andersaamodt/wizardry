@@ -1,11 +1,13 @@
 #!/bin/sh
 # lower - convert stdin to lowercase
 # Example: echo "HELLO" | lower
+set -eu
 
 _lower() {
   tr '[:upper:]' '[:lower:]'
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */lower) _lower "$@" ;; esac

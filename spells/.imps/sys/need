@@ -1,6 +1,7 @@
 #!/bin/sh
 # need COMMAND [MESSAGE] - return failure with error if command not available
 # Example: need git | need curl "curl is required for downloads"
+set -eu
 
 _need() {
   if command -v "$1" >/dev/null 2>&1; then return 0; fi
@@ -10,5 +11,6 @@ _need() {
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */need) _need "$@" ;; esac

@@ -43,7 +43,7 @@ SHI
 
   MENU_LOG="$tmp/menu.log"
 
-  _run_cmd env PATH="$tmp:$ROOT_DIR/spells/cantrips" MENU_LOG="$MENU_LOG" \
+  _run_cmd env PATH="$WIZARDRY_IMPS_PATH:$tmp:$ROOT_DIR/spells/cantrips" MENU_LOG="$MENU_LOG" \
     "$ROOT_DIR/spells/.arcana/node/node-menu"
 
   _assert_success || return 1
@@ -124,7 +124,7 @@ SHI
   chmod +x "$tmp/is-service-running"
 
   MENU_LOG="$tmp/menu.log"
-  _run_cmd env PATH="$tmp:$ROOT_DIR/spells/cantrips" MENU_LOG="$MENU_LOG" \
+  _run_cmd env PATH="$WIZARDRY_IMPS_PATH:$tmp:$ROOT_DIR/spells/cantrips" MENU_LOG="$MENU_LOG" \
     "$ROOT_DIR/spells/.arcana/node/node-menu"
 
   _assert_success || return 1

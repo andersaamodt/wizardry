@@ -1,6 +1,7 @@
 #!/bin/sh
 # contains HAYSTACK NEEDLE - test if string contains substring
 # Example: contains "$PATH" "/usr/local/bin" && echo "found"
+set -eu
 
 _contains() {
   case "$1" in
@@ -10,5 +11,6 @@ _contains() {
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */contains) _contains "$@" ;; esac

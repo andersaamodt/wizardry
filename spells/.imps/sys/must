@@ -2,6 +2,7 @@
 # must TEST TARGET [MESSAGE] - return failure with message if test fails
 # Use with 'set -e' or '|| return $?' to propagate failure
 # Examples: must there /etc/config "config missing" || return $?
+set -eu
 
 _must() {
   _must_type=$1
@@ -61,5 +62,6 @@ _must() {
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */must) _must "$@" ;; esac

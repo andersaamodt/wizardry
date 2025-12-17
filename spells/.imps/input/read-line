@@ -2,6 +2,7 @@
 # read-line [PROMPT] - read a line from stdin or tty, optional prompt to stderr
 # Example: name=$(read-line "Enter name: ") | line=$(read-line)
 # Set SELECT_INPUT_MODE=stdin|tty|none to override source detection
+set -eu
 
 _read_line() {
   _rl_prompt=${1:-}
@@ -32,5 +33,6 @@ _read_line() {
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */read-line) _read_line "$@" ;; esac
