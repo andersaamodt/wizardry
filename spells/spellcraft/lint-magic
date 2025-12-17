@@ -497,14 +497,9 @@ $warning_entry"
   fi
   
   # Inline check_long_lines
-  case "$path" in
-    */spells/.imps/cond/is|*/spells/divination/identify-room)
-      : # exempted
-      ;;
-    *)
-      awk_script=$(mktemp "${TMPDIR:-/tmp}/lint-magic-lines-awk.XXXXXX") || true
-      if [ -n "$awk_script" ]; then
-        cat >"$awk_script" <<'AWKSCRIPT'
+  awk_script=$(mktemp "${TMPDIR:-/tmp}/lint-magic-lines-awk.XXXXXX") || true
+  if [ -n "$awk_script" ]; then
+    cat >"$awk_script" <<'AWKSCRIPT'
 BEGIN { in_heredoc = 0; heredoc_end = ""; max_len = 100; sq = sprintf("%c", 39) }
 /<<-?[ \t]*'[A-Za-z_][A-Za-z0-9_]*'/ {
   delim = $0
@@ -589,8 +584,6 @@ AWKSCRIPT
           issue_count=$((issue_count + 1))
         fi
       fi
-      ;;
-  esac
   
   # Inline check_echo_usage
   awk_script=$(mktemp "${TMPDIR:-/tmp}/lint-magic-echo-awk.XXXXXX") || true
