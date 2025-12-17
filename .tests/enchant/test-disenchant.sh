@@ -109,7 +109,7 @@ STUB
 
   target="$WIZARDRY_TMPDIR/multi"
   : >"$target"
-  PATH="$stub_dir:/usr/bin:/bin" _run_spell "spells/enchant/disenchant" "$target"
+  PATH="$stub_dir:$WIZARDRY_TEST_MINIMAL_PATH" _run_spell "spells/enchant/disenchant" "$target"
   _assert_failure && _assert_error_contains "multiple attributes"
 }
 
