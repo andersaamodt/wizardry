@@ -1,11 +1,13 @@
 #!/bin/sh
 # upper - convert stdin to uppercase
 # Example: echo "hello" | upper
+set -eu
 
 _upper() {
   tr '[:lower:]' '[:upper:]'
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */upper) _upper "$@" ;; esac

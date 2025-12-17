@@ -1,6 +1,7 @@
 #!/bin/sh
 # sed-inplace PATTERN FILE - perform in-place sed substitution portably (mac/linux)
 # Example: sed-inplace 's/foo/bar/g' config.txt
+set -eu
 
 _sed_inplace() {
   _si_pattern=${1:-}
@@ -26,5 +27,6 @@ _sed_inplace() {
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */sed-inplace) _sed_inplace "$@" ;; esac

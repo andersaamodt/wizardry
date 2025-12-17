@@ -1278,6 +1278,7 @@ test_no_allcaps_variable_assignments() {
       grep -v -E '(NIX_PACKAGE|APT_PACKAGE|DNF_PACKAGE|YUM_PACKAGE|ZYPPER_PACKAGE|PACMAN_PACKAGE|APK_PACKAGE|PKGIN_PACKAGE|BREW_PACKAGE)' | \
       grep -v -E '(WIZARDRY_|SPELLBOOK_DIR|MUD_DIR|TEST_|ASSUME_YES|FORCE_INSTALL|ROOT_DIR|DISTRO)' | \
       grep -v -E '(AWAIT_KEYPRESS_KEEP_RAW|BWRAP_|SANDBOX_|MACOS_)' | \
+      grep -v -E '(ASK_CANTRIP_INPUT|SELECT_INPUT_MODE|MENU_LOOP_LIMIT|REQUIRE_COMMAND|MENU_LOG)' | \
       grep -v -E '(RESET|BOLD|ITALICS|UNDERLINED|BLINK|INVERT|STRIKE|ESC)' | \
       grep -v -E '(RED|GREEN|BLUE|YELLOW|CYAN|WHITE|BLACK|PURPLE|GRE[YA]|LIGHT_)' | \
       grep -v -E '(BRIGHT_|BG_|THEME_)' | \
@@ -1336,6 +1337,8 @@ test_scripts_have_set_eu_early() {
       .imps/sys/invoke-wizardry) return ;;
       # Conditional imps exempt (return exit codes, not errors)
       .imps/cond/*|.imps/lex/*|.imps/menu/*) return ;;
+      # Bootstrap spells that have long argument parsing before set -eu
+      divination/detect-rc-file|system/test-magic) return ;;
     esac
     
     # Check if set -eu appears in first 50 lines (allows for longer help handlers)

@@ -38,6 +38,7 @@ case "${1-}" in
 esac
 
 set -eu
+. env-clear
 
 # Get script directory to find imps
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)

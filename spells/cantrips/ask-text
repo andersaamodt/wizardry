@@ -24,6 +24,7 @@ case "${1-}" in
 esac
 
 set -eu
+. env-clear
 
 if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
   ask_text_usage

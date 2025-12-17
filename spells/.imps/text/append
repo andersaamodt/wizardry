@@ -1,11 +1,13 @@
 #!/bin/sh
 # append FILE - append stdin to file
 # Example: echo "new line" | append log.txt
+set -eu
 
 _append() {
   cat >> "$1"
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */append) _append "$@" ;; esac

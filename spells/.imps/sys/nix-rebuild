@@ -2,6 +2,7 @@
 # nix-rebuild - run nixos-rebuild or home-manager switch automatically
 # Attempts home-manager first, then nixos-rebuild with privilege escalation.
 # Set WIZARDRY_SKIP_NIX_REBUILD=1 to skip without error.
+set -eu
 
 _nix_rebuild() {
   if [ "${WIZARDRY_SKIP_NIX_REBUILD-}" = "1" ]; then
@@ -51,5 +52,6 @@ _nix_rebuild() {
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */nix-rebuild) _nix_rebuild "$@" ;; esac

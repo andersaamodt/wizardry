@@ -32,20 +32,19 @@ set -eu
 
 # Resolve markers directory
 _jm_spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
-MARKERS_DIR=$(env-or JUMP_TO_MARKERS_DIR "$_jm_spell_home/.markers")
+markers_dir=$(env-or JUMP_TO_MARKERS_DIR "$_jm_spell_home/.markers")
 
 # Call the implementation
 jump_to_marker_impl "$@"
 }
 
 jump_to_marker_impl() {
-        # Initialize MARKERS_DIR if not already set (for when called directly after sourcing)
-        if [ -z "${MARKERS_DIR:-}" ]; then
+        # Initialize markers_dir if not already set (for when called directly after sourcing)
+        if [ -z "${markers_dir:-}" ]; then
                 _jm_spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
-                MARKERS_DIR=$(env-or JUMP_TO_MARKERS_DIR "$_jm_spell_home/.markers")
+                markers_dir=$(env-or JUMP_TO_MARKERS_DIR "$_jm_spell_home/.markers")
         fi
         
-        markers_dir=$MARKERS_DIR
         marker_name="${1:-}"
         
         # If no marker specified OR marker is "0", cycle through markers

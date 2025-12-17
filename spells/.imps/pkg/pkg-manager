@@ -1,6 +1,7 @@
 #!/bin/sh
 # pkg-manager - detect which package manager is available
 # Example: pm=$(pkg-manager) && case $pm in apt) apt-get install ;; esac
+set -eu
 
 _pkg_manager() {
   if command -v apt-get >/dev/null 2>&1; then echo apt
@@ -14,5 +15,6 @@ _pkg_manager() {
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */pkg-manager) _pkg_manager "$@" ;; esac

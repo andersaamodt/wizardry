@@ -23,42 +23,43 @@ case "${1-}" in
 esac
 
 set -eu
+. env-clear
 
-SCRIPT_NAME=$(basename "$0")
-SERVICE_DIR=${SERVICE_DIR:-/etc/systemd/system}
+script_name=$(basename "$0")
+service_dir=${service_dir:-/etc/systemd/system}
 
-SCRIPT_SOURCE=$0
-case $SCRIPT_SOURCE in
+script_source=$0
+case $script_source in
 */*)
-        SCRIPT_DIR=${SCRIPT_SOURCE%/*}
+        script_dir=${script_source%/*}
         ;;
 *)
-        resolved=$(command -v "$SCRIPT_SOURCE" 2>/dev/null || printf '%s' "$SCRIPT_SOURCE")
-        SCRIPT_DIR=${resolved%/*}
-        SCRIPT_SOURCE=$resolved
+        resolved=$(command -v "$script_source" 2>/dev/null || printf '%s' "$script_source")
+        script_dir=${resolved%/*}
+        script_source=$resolved
         ;;
 esac
-if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
-        SCRIPT_DIR=.
+if [ -z "$script_dir" ] || [ "$script_dir" = "$script_source" ]; then
+        script_dir=.
 fi
-SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
+script_dir=$(cd "$script_dir" && pwd -P)
 
 # Inline remove_service_find_ask_text - only used once
-if [ -n "${REMOVE_SERVICE_ASK_TEXT-}" ]; then
-  ASK_TEXT_HELPER=$REMOVE_SERVICE_ASK_TEXT
+if [ -n "${remove_service_ask_text-}" ]; then
+  ask_text_helper=$remove_service_ask_text
 elif command -v ask-text >/dev/null 2>&1; then
-  ASK_TEXT_HELPER=$(command -v ask-text)
-elif [ -x "$SCRIPT_DIR/ask-text" ]; then
-  ASK_TEXT_HELPER="$SCRIPT_DIR/ask-text"
+  ask_text_helper=$(command -v ask-text)
+elif [ -x "$script_dir/ask-text" ]; then
+  ask_text_helper="$script_dir/ask-text"
 else
-  printf '%s\n' "$SCRIPT_NAME: ask-text spell is required for prompts." >&2
+  printf '%s\n' "$script_name: ask-text spell is required for prompts." >&2
   return 1
 fi
 
 if command -v systemctl >/dev/null 2>&1; then
-        SYSTEMCTL=$(command -v systemctl)
+        systemctl_cmd=$(command -v systemctl)
 else
-        printf '%s\n' "$SCRIPT_NAME: systemctl is not installed." >&2
+        printf '%s\n' "$script_name: systemctl is not installed." >&2
         return 1
 fi
 
@@ -71,16 +72,16 @@ remove_service_require_privilege() {
                 sudo "$@"
                 return 0
         fi
-        printf '%s\n' "$SCRIPT_NAME: run as root or install sudo to modify $SERVICE_DIR." >&2
+        printf '%s\n' "$script_name: run as root or install sudo to modify $service_dir." >&2
         return 1
 }
 
 service_name=${1-}
 if [ -z "$service_name" ]; then
-        service_name=$("$ASK_TEXT_HELPER" "Which service should I remove?")
+        service_name=$("$ask_text_helper" "Which service should I remove?")
 fi
 if [ -z "$service_name" ]; then
-        printf '%s\n' "$SCRIPT_NAME: no service specified." >&2
+        printf '%s\n' "$script_name: no service specified." >&2
         return 1
 fi
 case $service_name in
@@ -88,21 +89,21 @@ case $service_name in
 *) service_name="$service_name.service" ;;
 esac
 
-service_path="$SERVICE_DIR/$service_name"
+service_path="$service_dir/$service_name"
 
 if [ ! -f "$service_path" ]; then
 printf 'Service %s does not exist.\n' "$service_name"
 return 1
 fi
 
-if "$SYSTEMCTL" is-active --quiet "$service_name"; then
+if "$systemctl_cmd" is-active --quiet "$service_name"; then
         printf '%s\n' "Stopping $service_name before removal..."
-        remove_service_require_privilege "$SYSTEMCTL" stop "$service_name"
+        remove_service_require_privilege "$systemctl_cmd" stop "$service_name"
 fi
 
-printf '%s\n' "Removing $service_name from $SERVICE_DIR..."
+printf '%s\n' "Removing $service_name from $service_dir..."
 remove_service_require_privilege rm -f "$service_path"
-remove_service_require_privilege "$SYSTEMCTL" daemon-reload
+remove_service_require_privilege "$systemctl_cmd" daemon-reload
 printf 'Service %s removed.\n' "$service_name"
 }
 

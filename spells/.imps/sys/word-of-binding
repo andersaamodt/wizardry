@@ -2,6 +2,7 @@
 # word-of-binding NAME [ARGS...] - resolve and invoke a wizardry command by name
 # Dispatcher for autoloading missing commands via handle-command-not-found.
 # Sources the module and calls its true-name function.
+set -eu
 
 _word_of_binding() {
   if [ $# -eq 0 ]; then
@@ -89,5 +90,6 @@ _word_of_binding() {
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */word-of-binding) _word_of_binding "$@" ;; esac

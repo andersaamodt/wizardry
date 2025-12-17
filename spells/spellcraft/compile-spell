@@ -30,6 +30,7 @@ case "${1-}" in
 esac
 
 set -eu
+. env-clear
 
 if [ "$#" -lt 1 ]; then
   printf '%s\n' "compile-spell: spell name required" >&2

@@ -1,6 +1,7 @@
 #!/bin/sh
 # run-spell SCRIPT [ARGS...] - run a spell script in a sandboxed environment
 # Wraps run-cmd with the ROOT_DIR prefix for the script path.
+set -eu
 
 _run_spell() {
   script=$1
@@ -9,4 +10,5 @@ _run_spell() {
 }
 
 # Self-execution when run directly (not sourced)
+set -eu
 case "${0##*/}" in run-spell) _run_spell "$@" ;; esac

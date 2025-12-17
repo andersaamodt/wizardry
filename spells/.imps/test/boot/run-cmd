@@ -1,6 +1,7 @@
 #!/bin/sh
 # run-cmd CMD [ARGS...] - execute command in a sandboxed environment
 # Captures stdout, stderr, and exit status into STATUS, OUTPUT, and ERROR.
+set -eu
 
 _run_cmd() {
   # Save the caller's PATH and temporarily use the system PATH for run_cmd's
@@ -104,4 +105,5 @@ _run_cmd() {
 }
 
 # Self-execution when run directly (not sourced)
+set -eu
 case "${0##*/}" in run-cmd) _run_cmd "$@" ;; esac

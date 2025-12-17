@@ -1,10 +1,12 @@
 #!/bin/sh
 # make-tempdir - create a temporary directory for test cases
 # Returns normalized path for macOS compatibility.
+set -eu
 
 _make_tempdir() {
   mktemp -d "${WIZARDRY_TMPDIR}/case.XXXXXX" | sed 's|//|/|g'
 }
 
 # Self-execution when run directly (not sourced)
+set -eu
 case "${0##*/}" in make-tempdir) _make_tempdir "$@" ;; esac

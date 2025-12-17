@@ -2,6 +2,7 @@
 # xattr-list-keys FILE - list all extended attribute keys for a file
 # Tries xattr, attr, and getfattr in order, outputting keys one per line
 # Returns 0 if keys found, 1 if no attributes or all helpers failed
+set -eu
 
 _xattr_list_keys() {
   file=$1
@@ -55,6 +56,7 @@ _xattr_list_keys() {
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */xattr-list-keys) _xattr_list_keys "$@" ;; 
 esac

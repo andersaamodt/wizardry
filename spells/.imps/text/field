@@ -1,6 +1,7 @@
 #!/bin/sh
 # field N [DELIM] - extract Nth field (1-based), default delimiter is whitespace
 # Example: echo "a:b:c" | field 2 ":"  # outputs: b
+set -eu
 
 _field() {
   _field_n=$1
@@ -18,5 +19,6 @@ _field() {
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */field) _field "$@" ;; esac

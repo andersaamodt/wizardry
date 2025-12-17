@@ -66,15 +66,15 @@ add_candidate() {
         if [ -z "$file" ]; then
                 return 0
         fi
-        for candidate in $RC_CANDIDATES; do
+        for candidate in $rc_candidates; do
                 if [ "$candidate" = "$file" ]; then
                         return 0
                 fi
         done
-        if [ -z "$RC_CANDIDATES" ]; then
-                RC_CANDIDATES=$file
+        if [ -z "$rc_candidates" ]; then
+                rc_candidates=$file
         else
-                RC_CANDIDATES="$RC_CANDIDATES $file"
+                rc_candidates="$rc_candidates $file"
         fi
 }
 
@@ -87,7 +87,7 @@ if [ -z "$platform" ]; then
         fi
 fi
 
-RC_CANDIDATES=''
+rc_candidates=''
 
 case $platform in
 mac)
@@ -169,13 +169,13 @@ bash)
 
 # Only add generic fallbacks if no platform-specific candidates were added
 # This prevents .bashrc from overriding macOS's .zprofile/.zshrc preference
-if [ -z "$RC_CANDIDATES" ]; then
+if [ -z "$rc_candidates" ]; then
         add_candidate "$HOME/.bashrc"
         add_candidate "$HOME/.profile"
 fi
 
 rc_file=''
-for candidate in $RC_CANDIDATES; do
+for candidate in $rc_candidates; do
         if [ -f "$candidate" ]; then
                 rc_file=$candidate
                 break
@@ -183,7 +183,7 @@ for candidate in $RC_CANDIDATES; do
 done
 
 if [ -z "$rc_file" ]; then
-        for candidate in $RC_CANDIDATES; do
+        for candidate in $rc_candidates; do
                 rc_file=$candidate
                 break
         done

@@ -1,6 +1,7 @@
 #!/bin/sh
 # first-of A B - output first non-empty value, fail if both empty
 # Example: name=$(first-of "$NICK" "$USER")
+set -eu
 
 _first_of() {
   if [ -n "$1" ]; then printf '%s' "$1"
@@ -10,5 +11,6 @@ _first_of() {
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */first-of) _first_of "$@" ;; esac

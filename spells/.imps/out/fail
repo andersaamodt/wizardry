@@ -1,6 +1,7 @@
 #!/bin/sh
 # fail MESSAGE - print message to stderr and return failure (1)
 # Example: has git || fail "git required"
+set -eu
 
 _fail() {
   printf '%s\n' "$*" >&2
@@ -8,5 +9,6 @@ _fail() {
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */fail) _fail "$@" ;; esac

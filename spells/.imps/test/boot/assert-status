@@ -1,6 +1,7 @@
 #!/bin/sh
 # assert-status EXPECTED - verify STATUS matches expected exit code
 # Sets TEST_FAILURE_REASON on mismatch.
+set -eu
 
 _assert_status() {
   expected_status=$1
@@ -16,4 +17,5 @@ _assert_status() {
 }
 
 # Self-execution when run directly (not sourced)
+set -eu
 case "${0##*/}" in assert-status) _assert_status "$@" ;; esac

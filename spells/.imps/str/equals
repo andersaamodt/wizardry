@@ -1,11 +1,13 @@
 #!/bin/sh
 # equals A B - test if two strings are exactly equal
 # Example: equals "$choice" "yes" && proceed
+set -eu
 
 _equals() {
   [ "$1" = "$2" ]
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */equals) _equals "$@" ;; esac

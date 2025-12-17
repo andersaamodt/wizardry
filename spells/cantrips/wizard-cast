@@ -22,6 +22,7 @@ case "${1-}" in
 esac
 
 set -eu
+. env-clear
 
 # Check argument
 if [ -z "${1-}" ]; then

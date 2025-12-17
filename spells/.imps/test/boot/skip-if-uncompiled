@@ -1,6 +1,7 @@
 #!/bin/sh
 # skip-if-uncompiled - skip test if running in uncompiled mode
 # Returns 222 if test should be skipped, 0 otherwise.
+set -eu
 
 _skip_if_uncompiled() {
   if [ "${WIZARDRY_TEST_COMPILED-0}" != "1" ]; then

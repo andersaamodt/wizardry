@@ -1,6 +1,7 @@
 #!/bin/sh
 # cleanup-file FILE - remove temp file if it exists (silent on missing)
 # Example: trap 'cleanup-file "$tmp"' EXIT
+set -eu
 
 _cleanup_file() {
   [ -n "${1:-}" ] && [ -f "$1" ] && rm -f "$1"
@@ -8,5 +9,6 @@ _cleanup_file() {
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */cleanup-file) _cleanup_file "$@" ;; esac

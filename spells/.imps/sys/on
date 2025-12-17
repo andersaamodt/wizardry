@@ -1,6 +1,7 @@
 #!/bin/sh
 # on PLATFORM - test if running on platform (mac/linux/debian/nixos/arch/fedora/bsd)
 # Example: on mac && brew install git
+set -eu
 
 _on() {
   _on_platform=$1
@@ -27,5 +28,6 @@ _on() {
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */on) _on "$@" ;; esac

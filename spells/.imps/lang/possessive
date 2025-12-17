@@ -1,6 +1,7 @@
 #!/bin/sh
 # possessive NOUN - render NOUN in possessive form with appropriate apostrophe
 # Example: possessive "James" -> "James'" | possessive "John" -> "John's"
+set -eu
 
 _possessive() {
   _pos_noun=${1-}
@@ -15,5 +16,6 @@ _possessive() {
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */possessive) _possessive "$@" ;; esac

@@ -2,6 +2,7 @@
 # backup-nix-config FILE - back up nix config file before editing
 # Prints backup path to stderr. Callers responsible for calling once per operation.
 # Example: backup-nix-config /etc/nixos/configuration.nix
+set -eu
 
 _backup_nix_config() {
   _bnc_file=${1:-}
@@ -46,5 +47,6 @@ _backup_nix_config() {
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */backup-nix-config) _backup_nix_config "$@" ;; esac

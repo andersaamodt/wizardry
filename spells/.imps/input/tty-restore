@@ -1,6 +1,7 @@
 #!/bin/sh
 # tty-restore STATE - restore previously saved terminal settings
 # Example: state=$(tty-save) && ... && tty-restore "$state"
+set -eu
 
 _tty_restore() {
   _tr_state=${1:-}
@@ -14,5 +15,6 @@ _tty_restore() {
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */tty-restore) _tty_restore "$@" ;; esac

@@ -1,6 +1,7 @@
 #!/bin/sh
 # write-apt-stub FIXTURE - create an apt-get stub script in fixture/bin
 # Stub logs invocations to APT_LOG and exits with APT_EXIT code.
+set -eu
 
 _write_apt_stub() {
   fixture=$1
@@ -13,4 +14,5 @@ STUB
 }
 
 # Self-execution when run directly (not sourced)
+set -eu
 case "${0##*/}" in write-apt-stub) _write_apt_stub "$@" ;; esac

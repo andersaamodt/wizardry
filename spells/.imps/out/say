@@ -1,11 +1,13 @@
 #!/bin/sh
 # say MESSAGE - print message to stdout with newline
 # Example: say "Hello world"
+set -eu
 
 _say() {
   printf '%s\n' "$*"
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */say) _say "$@" ;; esac

@@ -1,6 +1,7 @@
 #!/bin/sh
 # ends STRING SUFFIX - test if string ends with suffix
 # Example: ends "$file" ".sh" && echo "shell script"
+set -eu
 
 _ends() {
   case "$1" in
@@ -10,5 +11,6 @@ _ends() {
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */ends) _ends "$@" ;; esac

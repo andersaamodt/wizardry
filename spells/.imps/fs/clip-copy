@@ -1,6 +1,7 @@
 #!/bin/sh
 # clip-copy [TEXT] - copy stdin or argument to system clipboard
 # Examples: echo "text" | clip-copy | clip-copy "direct text"
+set -eu
 
 _clip_copy() {
   if command -v pbcopy >/dev/null 2>&1; then
@@ -34,5 +35,6 @@ _clip_copy() {
 }
 
 # Self-execute when run directly (not sourced)
+set -eu
 case "$0" in
   */clip-copy) _clip_copy "$@" ;; esac
