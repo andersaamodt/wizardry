@@ -36,6 +36,9 @@ esac
 
 set -eu
 
+# Clear wizardry env vars (bootstrap spell - must be standalone)
+unset WIZARDRY_DIR WIZARDRY_COLORS_AVAILABLE WIZARDRY_LOG_LEVEL || true
+
 # Expand tilde in paths
 expand_path() {
   path=$1

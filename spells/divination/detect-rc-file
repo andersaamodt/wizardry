@@ -32,6 +32,9 @@ done
 
 set -eu
 
+# Clear wizardry env vars (bootstrap spell - must be standalone)
+unset WIZARDRY_DIR WIZARDRY_COLORS_AVAILABLE WIZARDRY_LOG_LEVEL || true
+
 platform="${DETECT_RC_FILE_PLATFORM-}"
 
 while [ "$#" -gt 0 ]; do

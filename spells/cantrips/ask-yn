@@ -24,6 +24,9 @@ esac
 
 set -eu
 
+# Clear wizardry env vars (bootstrap spell - must be standalone)
+unset WIZARDRY_DIR WIZARDRY_COLORS_AVAILABLE WIZARDRY_LOG_LEVEL || true
+
 if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
   ask_yn_usage
   return 1
