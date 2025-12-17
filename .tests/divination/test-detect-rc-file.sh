@@ -18,13 +18,13 @@ test_help() {
 
 test_rejects_bad_arguments() {
   _run_spell "spells/divination/detect-rc-file" --platform
-  _assert_failure && _assert_error_contains "--platform expects a value" || return 1
+  _assert_failure && _assert_error_contains "Usage: detect-rc-file" || return 1
 
   _run_spell "spells/divination/detect-rc-file" --unknown
-  _assert_failure && _assert_error_contains "unknown option '--unknown'" || return 1
+  _assert_failure && _assert_error_contains "Usage: detect-rc-file" || return 1
 
   _run_spell "spells/divination/detect-rc-file" extra
-  _assert_failure && _assert_error_contains "unexpected argument 'extra'" || return 1
+  _assert_failure && _assert_error_contains "Usage: detect-rc-file" || return 1
 }
 
 test_picks_known_platform_files() {

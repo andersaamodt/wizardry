@@ -23,9 +23,8 @@ while [ "$#" -gt 0 ]; do
         case $1 in
         --platform)
                 if [ "$#" -lt 2 ]; then
-                        printf '%s\n' "detect-rc-file: --platform expects a value." >&2
-                        detect_rc_file_usage
-                        return 1
+                        detect_rc_file_usage >&2
+                        return 2
                 fi
                 platform=$2
                 shift 2
@@ -43,9 +42,8 @@ while [ "$#" -gt 0 ]; do
                 break
                 ;;
         -*)
-                printf '%s\n' "detect-rc-file: unknown option '$1'." >&2
-                detect_rc_file_usage
-                return 1
+                detect_rc_file_usage >&2
+                return 2
                 ;;
         *)
                 break
@@ -56,9 +54,8 @@ done
 set -eu
 
 if [ "$#" -gt 0 ]; then
-        printf '%s\n' "detect-rc-file: unexpected argument '$1'." >&2
-        detect_rc_file_usage
-        return 1
+        detect_rc_file_usage >&2
+        return 2
 fi
 
 add_candidate() {
