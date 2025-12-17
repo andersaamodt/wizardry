@@ -5,10 +5,18 @@
 
 require-wizardry || exit 1
 
-# Locate imps directory
+# Locate imps directory and add to PATH so we can source env-clear
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 imps_dir="$script_dir/../.imps"
-export PATH="$imps_dir/fs:$PATH"
+# Add .imps and its subdirectories to PATH before sourcing env-clear
+if [ -d "$imps_dir" ]; then
+  PATH="$imps_dir:$PATH"
+  for impsubdir in "$imps_dir"/*; do
+    [ -d "$impsubdir" ] || continue
+    PATH="$impsubdir:$PATH"
+  done
+fi
+export PATH
 
 read_magic_usage() {
 cat <<'USAGE'
