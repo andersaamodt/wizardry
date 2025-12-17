@@ -1339,6 +1339,14 @@ test_scripts_have_set_eu_early() {
       .imps/cond/*|.imps/lex/*|.imps/menu/*) return ;;
       # Bootstrap spells that have long argument parsing before set -eu
       divination/detect-rc-file|system/test-magic) return ;;
+      # Spells using wrapper function pattern (set -eu inside function for sourceable spells)
+      priorities/get-priority|priorities/prioritize|priorities/upvote|priorities/get-new-priority) return ;;
+      arcane/copy|arcane/file-list|arcane/forall|arcane/jump-trash|arcane/read-magic|arcane/trash) return ;;
+      psi/list-contacts|psi/read-contact) return ;;
+      crypto/evoke-hash|crypto/hash|crypto/hashchant) return ;;
+      translocation/enchant-portkey|translocation/follow-portkey|translocation/jump-to-marker) return ;;
+      translocation/mark-location|translocation/open-portal|translocation/open-teletype) return ;;
+      menu/system-menu) return ;;
     esac
     
     # Check if set -eu appears in first 50 lines (allows for longer help handlers)
@@ -1388,6 +1396,14 @@ test_spells_source_env_clear_after_set_eu() {
       divination/detect-rc-file|cantrips/ask-yn|cantrips/memorize|cantrips/require-wizardry|spellcraft/learn) return ;;
       # Scripts that need PATH setup before env-clear to find it
       system/test-magic|system/verify-posix|spellcraft/lint-magic|enchant/enchant) return ;;
+      # Spells using wrapper function pattern (set -eu inside function for sourceable spells)
+      priorities/get-priority|priorities/prioritize|priorities/upvote|priorities/get-new-priority) return ;;
+      arcane/copy|arcane/file-list|arcane/forall|arcane/jump-trash|arcane/read-magic|arcane/trash) return ;;
+      psi/list-contacts|psi/read-contact) return ;;
+      crypto/evoke-hash|crypto/hash|crypto/hashchant) return ;;
+      translocation/enchant-portkey|translocation/follow-portkey|translocation/jump-to-marker) return ;;
+      translocation/mark-location|translocation/open-portal|translocation/open-teletype) return ;;
+      menu/system-menu) return ;;
     esac
     
     # Find line number of set -eu
