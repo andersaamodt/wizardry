@@ -24,6 +24,18 @@ case "${1-}" in
 esac
 
 set -eu
+
+# Set up PATH to include imps so we can source env-clear
+_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+_imps_dir="$_script_dir/../.imps"
+if [ -d "$_imps_dir" ]; then
+  PATH="$_imps_dir:$PATH"
+  for _impdir in "$_imps_dir"/*; do
+    [ -d "$_impdir" ] || continue
+    PATH="$_impdir:$PATH"
+  done
+fi
+export PATH
 . env-clear
 
 script_source=$0
