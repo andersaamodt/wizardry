@@ -72,7 +72,7 @@ test_declines_overwrite() {
   SYSTEMCTL_STATE_DIR="$service_dir/state" \
   INSTALL_SERVICE_TEMPLATE_ASK_YN="$stub_dir/ask-yn" \
   INSTALL_SERVICE_TEMPLATE_ASK_TEXT="$stub_dir/ask-text" \
-  PATH="$stub_dir:$PATH" _run_spell "spells/cantrips/install-service-template" "$template"
+  PATH="$WIZARDRY_IMPS_PATH:$stub_dir:/bin:/usr/bin" _run_spell "spells/cantrips/install-service-template" "$template"
 
   _assert_failure && _assert_output_contains "Installation cancelled"
   [ "$(cat "$service_path")" = "keep me" ] || { TEST_FAILURE_REASON="service file was overwritten"; return 1; }
@@ -103,7 +103,7 @@ SERVICE
   INSTALL_SERVICE_TEMPLATE_ASK_YN="$stub_dir/ask-yn" \
   INSTALL_SERVICE_TEMPLATE_ASK_TEXT="$stub_dir/ask-text" \
   ASK_TEXT_STUB_FILE="$placeholders" \
-  PATH="$stub_dir:$PATH" _run_spell "spells/cantrips/install-service-template" "$template" EXECUTABLE=magic
+  PATH="$WIZARDRY_IMPS_PATH:$stub_dir:/bin:/usr/bin" _run_spell "spells/cantrips/install-service-template" "$template" EXECUTABLE=magic
 
   _assert_success
   _assert_output_contains "Service installed"
@@ -136,7 +136,7 @@ test_skips_sudo_when_service_dir_writable() {
   SERVICE_DIR="$service_dir" \
   INSTALL_SERVICE_TEMPLATE_ASK_YN="$stub_dir/ask-yn" \
   INSTALL_SERVICE_TEMPLATE_ASK_TEXT="$stub_dir/ask-text" \
-  PATH="$stub_dir:$PATH" _run_spell "spells/cantrips/install-service-template" "$template" NAME=mere
+  PATH="$WIZARDRY_IMPS_PATH:$stub_dir:/bin:/usr/bin" _run_spell "spells/cantrips/install-service-template" "$template" NAME=mere
 
   _assert_success
   _assert_output_contains "Service installed"
@@ -168,7 +168,7 @@ SERVICE
   INSTALL_SERVICE_TEMPLATE_ASK_YN="$stub_dir/ask-yn" \
   INSTALL_SERVICE_TEMPLATE_ASK_TEXT="$stub_dir/ask-text" \
   ASK_TEXT_STUB_FILE="$placeholders" \
-  PATH="$stub_dir:$PATH" _run_spell "spells/cantrips/install-service-template" "$template"
+  PATH="$WIZARDRY_IMPS_PATH:$stub_dir:/bin:/usr/bin" _run_spell "spells/cantrips/install-service-template" "$template"
 
   _assert_success
   contents=$(cat "$service_path")
