@@ -4,7 +4,7 @@ Documents all deviations from project standards with justification.
 
 ## Summary
 
-- **Style**: 330/330 files compliant (2 hardcoded exemptions for doppelganger)
+- **Style**: ✅ **353/353 files compliant** - All long-line exemptions eliminated (2025-12-17)
 - **Code Structure**: Conditional imps exempt from `set -eu`; imps exempt from `--help`
 - **Function Discipline**: ✅ 0 spells with 4+ extra functions (57/57 spells refactored)
   - 7 spells with 2-3 extra functions remain (documented below) - functions used 2-20x each, acceptable per guidelines
@@ -23,21 +23,17 @@ Documents all deviations from project standards with justification.
 
 **Automatic Exemptions**: Error messages, prompts, help text (auto-detected by lint-magic)
 
-**Hardcoded Exemptions** (2 files, 2 lines):
+**Hardcoded Exemptions**: ✅ NONE - All eliminated (2025-12-17)
 
-1. **`spells/.imps/cond/is` line 13** (156 chars)
-   - Case: `empty) if [...]; elif [...]; else ...; fi ;;`
-   - Reason: Doppelganger's compile-spell expects case labels on single line
-   - Splitting breaks: `empty` → incorrectly renamed to `_empty`
-
-2. **`spells/divination/identify-room` line 260** (~180 chars)
-   - Pattern: `case $dir in *dir1*|*dir2*|...|*dirN*) ... ;; esac`
-   - Reason: Same doppelganger compilation issue as above
+**Previously Exempted** (resolved):
+1. **`spells/.imps/cond/is` line 13** - Refactored to multi-line format while preserving case label structure
+2. **`spells/divination/identify-room` lines 112, 263** - Refactored complex conditionals and split long directory lists
 
 **How to Split Other Long Lines**:
 - Pipelines → intermediate variables: `filtered=$(cmd1 | cmd2); result=$(echo "$filtered" | cmd3)`
-- Conditionals → separate checks
+- Conditionals → separate checks or intermediate variables
 - Command chains → break at `&&`/`||`
+- Long lists → use line continuations with backslash
 
 ### Mixed Tabs/Spaces
 
