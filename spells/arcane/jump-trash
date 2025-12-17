@@ -80,7 +80,7 @@ USAGE
   fi
 
   cd "$trash_path" || return 1
-  printf '%s\n' "You teleport to the trash at $trash_path"
+  say "You teleport to the trash at $trash_path"
 }
 
 alias jump-trash=jump_trash 2>/dev/null || true

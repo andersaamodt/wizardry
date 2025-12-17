@@ -37,19 +37,19 @@ test_help() {
 test_requires_argument() {
   reset_path
   _run_spell "spells/arcane/read-magic"
-  _assert_failure && _assert_output_contains "one or two parameters expected"
+  _assert_failure && _assert_error_contains "one or two parameters expected"
 }
 
 test_rejects_extra_argument() {
   reset_path
   _run_spell "spells/arcane/read-magic" one two three
-  _assert_failure && _assert_output_contains "one or two parameters expected"
+  _assert_failure && _assert_error_contains "one or two parameters expected"
 }
 
 test_missing_file() {
   reset_path
   _run_spell "spells/arcane/read-magic" "$WIZARDRY_TMPDIR/does-not-exist"
-  _assert_failure && _assert_output_contains "file does not exist"
+  _assert_failure && _assert_error_contains "file does not exist"
 }
 
 test_lists_attributes_via_attr() {
@@ -224,7 +224,7 @@ exit 1
 STUB
   chmod +x "$stub_dir/attr"
   PATH="$stub_dir:$PATH" _run_spell "spells/arcane/read-magic" "$target" user.none
-  _assert_failure && _assert_output_contains "attribute does not exist"
+  _assert_failure && _assert_error_contains "attribute does not exist"
 }
 
 test_handles_missing_helpers() {

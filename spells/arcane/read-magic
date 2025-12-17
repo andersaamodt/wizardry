@@ -32,8 +32,7 @@ set -eu
 
 # Validate arguments
 if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
-  printf '%s\n' "read-magic: one or two parameters expected (file path and optional attribute name)."
-  return 1
+  die "read-magic: one or two parameters expected (file path and optional attribute name)."
 fi
 
 file=$1
@@ -41,17 +40,15 @@ attribute=${2-}
 
 # Check file exists
 if [ ! -e "$file" ]; then
-  printf '%s\n' "read-magic: file does not exist."
-  return 1
+  die "read-magic: file does not exist."
 fi
 
 # If specific attribute requested, read and print it
 if [ -n "$attribute" ]; then
   if value=$(xattr-read-value "$attribute" "$file"); then
-    printf '%s\n' "$value"
+    say "$value"
   else
-    printf '%s\n' "read-magic: attribute does not exist."
-    return 1
+    die "read-magic: attribute does not exist."
   fi
   return 0
 fi
@@ -60,15 +57,15 @@ fi
 keys=$(xattr-list-keys "$file" || printf '')
 
 if [ -z "$keys" ]; then
-  printf '%s\n' "No enchanted attributes found."
+  say "No enchanted attributes found."
   return 0
 fi
 
 # Print each attribute with its value
-printf '%s\n' "$keys" | while IFS= read -r key || [ -n "$key" ]; do
+say "$keys" | while IFS= read -r key || [ -n "$key" ]; do
   [ -z "$key" ] && continue
   value=$(xattr-read-value "$key" "$file" || printf '')
-  printf '%s: %s\n' "$key" "$value"
+  say "$key: $value"
 done
 }
 
