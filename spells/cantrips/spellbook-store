@@ -132,27 +132,22 @@ add)
 remove)
   # Remove entry from spellbook
   if [ "$#" -ne 1 ]; then
-    printf '%s\n' "spellbook-store: remove expects a NAME." >&2
-    spellbook_store_usage
-    return 1
+    usage-error "spellbook-store" "remove expects a NAME"
   fi
   name=$1
   
   # Validate name
   case $name in
   ''|*[!A-Za-z0-9._-]*)
-    printf '%s\n' "spellbook-store: alias names may contain only letters, digits, dots, underscores, and dashes." >&2
-    return 1
+    die "spellbook-store: alias names may contain only letters, digits, dots, underscores, and dashes."
     ;;
   -*)
-    printf '%s\n' "spellbook-store: alias names may not begin with a dash." >&2
-    return 1
+    die "spellbook-store: alias names may not begin with a dash."
     ;;
   esac
   
   if [ ! -f "$spellbook_file" ]; then
-    printf '%s\n' "spellbook-store: spell '$name' is not recorded." >&2
-    return 1
+    die "spellbook-store: spell '$name' is not recorded."
   fi
   
   # Remove entry
@@ -179,8 +174,7 @@ remove)
   if [ "$removed" -eq 0 ]; then
     trap - EXIT HUP INT TERM
     rm -f "$tmp"
-    printf '%s\n' "spellbook-store: spell '$name' is not recorded." >&2
-    return 1
+    die "spellbook-store: spell '$name' is not recorded."
   fi
   trap - EXIT HUP INT TERM
   mv "$tmp" "$spellbook_file"
