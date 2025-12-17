@@ -22,6 +22,19 @@ case "${1-}" in
 esac
 
 set -eu
+
+# Set up PATH to include imps so we can source env-clear
+_trash_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+_trash_imps_dir="$_trash_script_dir/../.imps"
+if [ -d "$_trash_imps_dir" ]; then
+  PATH="$_trash_imps_dir:$PATH"
+  for _trash_impdir in "$_trash_imps_dir"/*; do
+    [ -d "$_trash_impdir" ] || continue
+    PATH="$_trash_impdir:$PATH"
+  done
+fi
+export PATH
+
 . env-clear
 
 recursive=0
