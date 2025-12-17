@@ -13,7 +13,13 @@ MKTEMP_BIN=$(command -v mktemp)
 TOUCH_BIN=$(command -v touch)
 
 reset_path() {
-  PATH="$ROOT_DIR/spells:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/menu:$ROOT_DIR/spells/menu/system:$ROOT_DIR/spells/menu/install/core:/usr/bin:/bin"
+  # Include .imps and subdirectories so spells can source env-clear and other imps
+  PATH="$ROOT_DIR/spells:$ROOT_DIR/spells/.imps"
+  for impdir in "$ROOT_DIR"/spells/.imps/*; do
+    [ -d "$impdir" ] || continue
+    PATH="$PATH:$impdir"
+  done
+  PATH="$PATH:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/menu:$ROOT_DIR/spells/menu/system:$ROOT_DIR/spells/menu/install/core:/usr/bin:/bin"
   export PATH
 }
 
