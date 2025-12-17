@@ -1341,6 +1341,15 @@ test_scripts_have_set_eu_early() {
       divination/detect-rc-file|system/test-magic) return ;;
     esac
     
+    # In compiled mode, wrapper functions are unwrapped so set -eu may appear later
+    # Just check that set -eu exists somewhere in the file
+    if [ "${WIZARDRY_TEST_COMPILED:-0}" = "1" ]; then
+      if ! grep -qE '^[[:space:]]*set +-[euo]*[eu][euo]*' "$spell"; then
+        printf '%s\n' "$rel_path"
+      fi
+      return
+    fi
+    
     # Auto-detect word-of-binding pattern:
     # 1. Has wrapper function matching filename (with underscores for hyphens)
     #    OR has true name function for imps (underscore prefix)
