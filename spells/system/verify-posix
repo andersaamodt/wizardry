@@ -41,8 +41,7 @@ if [ -z "$checkbashisms_cmd" ] && command -v checkbashisms >/dev/null 2>&1; then
 fi
 
 if [ -z "$checkbashisms_cmd" ]; then
-  printf '%s\n' "verify-posix: checkbashisms is required but not found in PATH." >&2
-  return 1
+  die "verify-posix: checkbashisms is required but not found in PATH."
 fi
 
 failures=0

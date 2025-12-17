@@ -74,9 +74,7 @@ for required_cmd in sh find grep awk sed sort cat printf; do
 done
 
 if [ -n "$missing_commands" ]; then
-  printf '%s: error: required commands not found: %s\n' "$cmd_name" "$missing_commands" >&2
-  printf '%s: cannot run tests without these commands.\n' "$cmd_name" >&2
-  return 127
+  die "test-magic: required commands not found: $missing_commands (cannot run tests without these commands)"
 fi
 
 # Check if timeout command is available for test execution protection
@@ -100,9 +98,8 @@ while [ "$#" -gt 0 ]; do
   case "$1" in
     --only)
       if [ "$#" -lt 2 ]; then
-        echo "$cmd_name: --only requires a pattern" >&2
-        test_magic_usage
-        return 1
+        test_magic_usage >&2
+        return 2
       fi
       if [ -n "$only_patterns" ]; then
         only_patterns="$only_patterns\n$2"
@@ -128,9 +125,8 @@ while [ "$#" -gt 0 ]; do
       break
       ;;
     *)
-      echo "$cmd_name: unknown option '$1'" >&2
-      test_magic_usage
-      return 1
+      test_magic_usage >&2
+      return 2
       ;;
   esac
 done
@@ -168,7 +164,7 @@ $(
 )
 EOF_TESTS
     if [ "$found" -ne 0 ]; then
-      echo "$cmd_name: pattern '$pat' matched no tests" >&2
+      warn "test-magic: pattern '$pat' matched no tests"
       return 1
     fi
   done <<EOF_PATS
@@ -219,9 +215,7 @@ EOF_TESTS
 } > "$test_list_file"
 
 if [ ! -s "$test_list_file" ]; then
-  echo "$cmd_name: no tests discovered." >&2
-  cleanup-file "$test_list_file"
-  return 1
+  die "test-magic: no tests discovered."
 fi
 
 if [ "$list_only" -eq 1 ]; then
