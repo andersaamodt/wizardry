@@ -467,7 +467,7 @@ test_no_global_declarations_outside_declare_globals() {
   return 0
 }
 
-# --- Check: declare-globals has exactly 3 globals ---
+# --- Check: declare-globals has exactly 4 globals ---
 # Ensures no new globals are added without explicit tracking
 test_declare_globals_count() {
   skip-if-compiled || return $?
@@ -485,8 +485,8 @@ test_declare_globals_count() {
   # The colon-equals syntax (:=) assigns a default value if unset.
   global_count=$(grep -cE '^[[:space:]]*: "\$\{[A-Z][A-Z0-9_]+:=' "$declare_globals_file" 2>/dev/null || printf '0')
   
-  if [ "$global_count" -ne 3 ]; then
-    TEST_FAILURE_REASON="expected exactly 3 globals in declare-globals, found $global_count"
+  if [ "$global_count" -ne 4 ]; then
+    TEST_FAILURE_REASON="expected exactly 4 globals in declare-globals, found $global_count"
     return 1
   fi
   return 0
@@ -518,10 +518,12 @@ test_no_undeclared_global_exports() {
         case "$var_name" in
           PATH|NIX_PACKAGE|APT_PACKAGE|DNF_PACKAGE|YUM_PACKAGE|ZYPPER_PACKAGE|PACMAN_PACKAGE|APK_PACKAGE|PKGIN_PACKAGE|BREW_PACKAGE)
             return ;;
-          WIZARDRY_DIR|SPELLBOOK_DIR|MUD_DIR)
+          WIZARDRY_DIR|SPELLBOOK_DIR|MUD_DIR|WIZARDRY_LOG_LEVEL)
             return ;;  # Declared globals are allowed
           WIZARDRY_PLATFORM|WIZARDRY_RC_FILE|WIZARDRY_RC_FORMAT)
             return ;;  # Used by learn-spell for rc file detection
+          ASK_CANTRIP_INPUT)
+            return ;;  # Used to pass stdin flag to ask-yn within same spell
         esac
         
         rel_path=${spell#"$ROOT_DIR/spells/"}
@@ -1253,7 +1255,7 @@ _run_test_case "warn about full paths to spells" test_warn_full_paths_to_spells
 _run_test_case "test files have matching spells" test_test_files_have_matching_spells
 _run_test_case "tests rely only on imps for helpers" test_tests_use_imps_for_helpers
 _run_test_case "scripts using declared globals have set -u" test_scripts_using_globals_have_set_u
-_run_test_case "declare-globals has exactly 3 globals" test_declare_globals_count
+_run_test_case "declare-globals has exactly 4 globals" test_declare_globals_count
 _run_test_case "no undeclared globals exported" test_no_undeclared_global_exports
 _run_test_case "no global declarations outside declare-globals" test_no_global_declarations_outside_declare_globals
 _run_test_case "no pseudo-globals stored in rc files" test_no_pseudo_globals_in_rc_files
