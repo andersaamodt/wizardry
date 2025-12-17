@@ -24,7 +24,7 @@ case "${1-}" in
 esac
 
 set -eu
-. env-clear
+command -v env-clear >/dev/null 2>&1 && . env-clear || true
 
 # Check for required commands
 if ! has sshfs; then
