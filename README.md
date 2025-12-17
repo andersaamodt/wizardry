@@ -64,7 +64,7 @@ This displays an interactive menu. Most (soon all) wizardry spells and features 
 A spell is a specially-curated shell script:
 
 * Lives in the `spells/` folder (or subfolder)
-* Has a unique name (all spells are in PATH together)
+* Has a unique and memorable name (all spells are in PATH together; hyphens for multi-word names)
 * Does something useful or interesting
 * Is clearly-written and well-commented for novices
 * Is themed like a fantasy MUD
@@ -112,7 +112,7 @@ An **imp** is a microscript that:
 
 * Does exactly one thing
 * Has exactly one function (the "true name") with no executable code outside it, OR has zero functions
-* Has a self-documenting name that novices can understand without looking it up (use hyphens for multi-word names)
+* Has a unique and self-documenting name that novices can understand without looking it up (hyphens for multi-word names)
 * Uses space-separated arguments instead of `--flags`
 * Has no `--help` flag (just a comment header—imps are for coding, not running standalone)
 * Is cross-platform, abstracting OS differences behind a clean interface
@@ -135,12 +135,15 @@ Criteria for inclusion:
 
 Using the free software suite makes it easy to establish a standardized software environment across OSes, without having to use a heavier package manager or containerized solution. Wizardry helps you install the right software in the correct way, using built-in package managers on each OS when possible.
 
+The arcana menu (`install-menu`) loads arcana automatically from files, so you can also author your own modules, to make installing the software you use more convenient and repeatable.
+
 ## Magical Glossary
 
 | Term | Definition |
 | ---- | ---------- |
 | **arcanum** (pl. **arcana**) | A grand working—a spell that installs and configures software across supported platforms, presented as a menu of functions. Also refers to the apps themselves. |
 | **aura** | The proto-meaning a spell name bears when evoked (future feature). |
+| **banish** | To reset to a known configuration in the execution environment via systematic assumption-checking. For example, spells begin with `env-clear` and `set -eu`. (future: full `banish` spell) |
 | **bootstrap spell** | A spell that can run before wizardry is fully installed. These self-contained scripts (namely `install`, `detect-distro`, and spells in `spells/install/core/`) don't rely on other wizardry spells. |
 | **bound imp** | An *invoked* imp; sourced so its true-name function exists in the current shell and can be called without subprocess overhead. |
 | **cantrip** | A small utility spell for common tasks. |
