@@ -97,15 +97,14 @@ fi
 
 # Export the detection so callers can key off the result.
 if [ -n "${distro-}" ]; then
-  DISTRO=$distro
-  export DISTRO
+  export distro
 else
   printf '%s\n' 'unknown'
   return 1
 fi
 
 if [ "$verbose" -eq 1 ]; then
-  case $DISTRO in
+  case $distro in
   debian)
     printf '%s\n' 'Debian, Ubuntu, or Raspbian OS detected.'
     ;;
@@ -123,7 +122,7 @@ if [ "$verbose" -eq 1 ]; then
     ;;
   esac
 else
-  printf '%s\n' "$DISTRO"
+  printf '%s\n' "$distro"
 fi
 }
 

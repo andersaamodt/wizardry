@@ -11,7 +11,7 @@ Documents all deviations from project standards with justification.
 - **Testing**: Bootstrap scripts can't use wizardry infrastructure
 - **Non-Shell Files**: Systemd service files exempt from all shell checks (2 files)
 - **CI**: No exemptions - all checks required
-- **All-Caps Variables**: 🟡 Comprehensive tracking active - 100+ grandfathered variables documented for elimination
+- **All-Caps Variables**: ✅ **COMPLETED** - All production spells use lowercase (Dec 2025). Only `.arcana/*` bootstrap scripts remain (exempt category)
 
 ---
 
@@ -537,42 +537,50 @@ fi
 
 #### 11. Grandfathered Variables (To Be Eliminated)
 
-**Status**: ⚠️ Temporary exemptions. These SHOULD be lowercase but are allowed for backward compatibility.
+**Status**: ⚠️ Temporary exemptions in `.arcana/*` only. Production spells fully converted to lowercase.
 
-**Action Required**: Convert to lowercase in future refactoring.
+**Action Required**: Convert remaining `.arcana/*` variables to lowercase in future refactoring.
 
-**Script Path Variables** (used in ~40 files):
-- `SCRIPT_DIR` → should be `script_dir`
-- `SCRIPT_NAME` → should be `script_name`
-- `SCRIPT_SOURCE` → should be `script_source`
+**Progress Tracking**:
 
-**Helper Locator Variables**:
-- `ASK_TEXT_HELPER`, `ASK_TEXT`, `ASK_YN` → should be lowercase
-- `READ_MAGIC`, `SYSTEMCTL` → should be lowercase
+**✅ ELIMINATED from production spells (2025-12-17)**:
+- `SCRIPT_DIR` → converted to `script_dir` (was in `system/config`)
+- `SCRIPT_NAME` → already eliminated
+- `SCRIPT_SOURCE` → already eliminated  
+- `LOOK_SCRIPT_PATH` → converted to `look_script_path` (was in `mud/look`)
+- `DISTRO` → converted to `distro` (was in `divination/detect-distro`)
+- `IMPS_DIR` → converted to `imps_dir` (was in `system/config`)
+- `ASK_TEXT_HELPER`, `ASK_TEXT`, `ASK_YN` → already eliminated
+- `READ_MAGIC`, `SYSTEMCTL` → already eliminated
+- `SERVICE_DIR`, `TTY_DEVICE` → already eliminated
+- `MARKERS_DIR`, `CONTACTS_DIR`, `MUD_CONFIG`, `MUD_*` → already eliminated
+- `MISSING_ATTR_MSG`, `IDENTIFY_*` → already eliminated
+- `STATUS`, `VERBOSE`, `RUNNING_AS_SCRIPT` → already eliminated from production (STATUS remains in test infrastructure only)
+- `ERROR`, `OUTPUT`, `KEY`, `HELPER`, `FILE`, `DIR` → already eliminated from production (ERROR/OUTPUT remain in test infrastructure only)
+- `OS`, `RC_CANDIDATES`, `TORRC_PATHS` → already eliminated
+- `IMPS_TEXT_DIR`, `CONFIG_FILE`, `FEATURES` → already eliminated
+- `MIN_SUBTESTS_*`, `CLIPBOARD_MARKER` → already eliminated
+- `RUN_CMD_WORKDIR`, `PS_NAMES`, `SCRIPT` → already eliminated from production (RUN_CMD_WORKDIR remains in test infrastructure only)
+- `BITCOIN_VERSION_DEFAULT` → already eliminated
 
-**Service Management**:
-- `SERVICE_DIR`, `TTY_DEVICE` → should be lowercase
+**Remaining in `.arcana/*` bootstrap/installation scripts** (exempt category):
+- Various installation-specific variables in `.arcana/*` files
+- These follow different conventions as bootstrap scripts (documented exemption in section 11)
 
-**Spell-Specific Configuration**:
-- `MARKERS_DIR`, `CONTACTS_DIR`, `MUD_CONFIG`, `MUD_*` → should be lowercase
-- `LOOK_SCRIPT_PATH`, `MISSING_ATTR_MSG`, `IDENTIFY_*` → should be lowercase
-- `STATUS`, `VERBOSE`, `RUNNING_AS_SCRIPT` → should be lowercase
-- `ERROR`, `OUTPUT`, `KEY`, `HELPER`, `FILE`, `DIR` → should be lowercase
-- `DISTRO`, `OS`, `RC_CANDIDATES`, `TORRC_PATHS` → should be lowercase
-- `IMPS_DIR`, `IMPS_TEXT_DIR`, `CONFIG_FILE`, `FEATURES` → should be lowercase
-- `MIN_SUBTESTS_*`, `CLIPBOARD_MARKER` → should be lowercase
-- `RUN_CMD_WORKDIR`, `PS_NAMES`, `SCRIPT` → should be lowercase
-- `BITCOIN_VERSION_DEFAULT` → should be lowercase
+**Test Infrastructure Variables** (properly exempt):
+- `STATUS`, `ERROR`, `OUTPUT` in `spells/.imps/test/boot/run-cmd` — Test framework coordination
+- `RUN_CMD_WORKDIR` in `spells/.imps/test/boot/run-spell-in-dir` — Test working directory control
+- These are intentionally all-caps as they coordinate test execution and are part of test infrastructure
 
-**Files Affected**: Primarily `.arcana/*`, `cantrips/*`, and older spells.
+**Files Affected**: Only `.arcana/*` bootstrap/installation scripts remain (which are exempt from this check).
 
 **Elimination Strategy**:
 1. **Phase 1**: Document all current usage (✅ COMPLETE)
-2. **Phase 2**: Convert one category at a time (e.g., all SCRIPT_* variables)
-3. **Phase 3**: Update tests and tests to fail on new additions
-4. **Phase 4**: Remove exemptions from test once eliminated
+2. **Phase 2**: Convert production spells (✅ COMPLETE — 2025-12-17)
+3. **Phase 3**: Tests enforce lowercase in production spells (✅ ACTIVE)
+4. **Phase 4**: Future work - standardize `.arcana/*` scripts (deferred as they're exempt)
 
-**Progress Tracking**: Each eliminated category should be noted here with date.
+**Summary**: **All production spells now use lowercase variables.** Only `.arcana/*` bootstrap scripts (which are exempt) may still contain all-caps variables. The test suite enforces this policy going forward.
 
 ### Files Exempt from All-Caps Check
 
