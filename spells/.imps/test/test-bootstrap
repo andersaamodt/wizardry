@@ -153,19 +153,17 @@ elif [ "$MACOS_SANDBOX_AVAILABLE" -eq 1 ] && [ ! -f "$warn_once_file" ]; then
   : >"$warn_once_file" 2>/dev/null || true
 fi
 
-# Helper function to get minimal test PATH (imps + system, no spells)
+# Create standard minimal test PATH (imps + system, no spells)
 # Use this when tests need to restrict PATH to test error conditions
 # while still allowing spells to source env-clear and use imps
-_test_minimal_path() {
-  test_path="$WIZARDRY_SYSTEM_PATH"
-  if [ -d "$ROOT_DIR/spells/.imps" ]; then
-    test_path="$ROOT_DIR/spells/.imps:$test_path"
-    for impdir in "$ROOT_DIR"/spells/.imps/*; do
-      [ -d "$impdir" ] && [ "$(basename "$impdir")" != "test" ] && test_path="$test_path:$impdir"
-    done
-  fi
-  printf '%s' "$test_path"
-}
+WIZARDRY_TEST_MINIMAL_PATH="$WIZARDRY_SYSTEM_PATH"
+if [ -d "$ROOT_DIR/spells/.imps" ]; then
+  WIZARDRY_TEST_MINIMAL_PATH="$ROOT_DIR/spells/.imps:$WIZARDRY_TEST_MINIMAL_PATH"
+  for impdir in "$ROOT_DIR"/spells/.imps/*; do
+    [ -d "$impdir" ] && [ "$(basename "$impdir")" != "test" ] && WIZARDRY_TEST_MINIMAL_PATH="$WIZARDRY_TEST_MINIMAL_PATH:$impdir"
+  done
+fi
+export WIZARDRY_TEST_MINIMAL_PATH
 
 # Source all boot imps to define their true-name functions
 for boot_imp in "$root_dir"/spells/.imps/test/boot/*; do
