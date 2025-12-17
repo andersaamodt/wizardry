@@ -95,9 +95,10 @@ else
   fi
 fi
 
-# Export the detection so callers can key off the result.
+# Output the detection result
 if [ -n "${distro-}" ]; then
-  export distro
+  # distro is output to stdout for callers to capture via command substitution
+  :
 else
   printf '%s\n' 'unknown'
   return 1

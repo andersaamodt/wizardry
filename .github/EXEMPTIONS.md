@@ -383,11 +383,33 @@ These exemptions have been resolved and are documented here to prevent backslidi
 
 **Goal**: 0 all-caps variable assignments in spells. Use lowercase for local variables.
 
-**Rationale**: All-caps variables in POSIX shell conventionally indicate environment variables. Using all-caps for local variables creates confusion about scope and can shadow important environment variables.
+**Export Rule**: Variables should ONLY be exported if they are uppercase (environment variables). Lowercase variables should NEVER be exported.
+
+**Rationale**: 
+- All-caps variables in POSIX shell conventionally indicate environment variables
+- Using all-caps for local variables creates confusion about scope and can shadow important environment variables
+- Exporting lowercase variables violates the convention that exports are environment variables
+- Local variables should be lowercase and never exported
 
 **Test**: `test_no_allcaps_variable_assignments` in `.tests/common-tests.sh`
 
 **Detection**: Checks for ALL all-caps variable assignments (not just `export` statements), catching patterns like `VAR=value` that might override environment variables.
+
+**Code Style Rules**:
+```sh
+# CORRECT - lowercase local variable, not exported
+distro=$(detect-distro)
+output="$distro"
+
+# CORRECT - uppercase environment variable, exported
+export WIZARDRY_DIR=/path/to/wizardry
+
+# WRONG - lowercase variable exported (violates convention)
+export distro=linux  # ❌ Never do this
+
+# WRONG - uppercase local variable (creates confusion)
+DISTRO=linux  # ❌ Use lowercase unless exporting
+```
 
 ### Allowed All-Caps Variables
 
