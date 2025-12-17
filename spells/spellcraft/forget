@@ -68,14 +68,10 @@ case ${1-} in
   return 0
   ;;
 "")
-  printf '%s\n' "$spell_name: spell name required." >&2
-  forget_usage >&2
-  return 1
+  usage-error "$spell_name" "spell name required"
   ;;
 -*)
-  printf '%s\n' "$spell_name: unknown option '$1'" >&2
-  forget_usage >&2
-  return 1
+  usage-error "$spell_name" "unknown option '$1'"
   ;;
 esac
 
@@ -84,19 +80,16 @@ name=$1
 # Validate spell name
 case $name in
 ''|*[!A-Za-z0-9._-]*)
-  printf '%s\n' "$spell_name: names may contain only letters, digits, dots, underscores, and dashes." >&2
-  return 1
+  die "$spell_name: names may contain only letters, digits, dots, underscores, and dashes."
   ;;
 -*)
-  printf '%s\n' "$spell_name: names may not begin with a dash." >&2
-  return 1
+  die "$spell_name: names may not begin with a dash."
   ;;
 esac
 
 # Check if command file exists
 if [ ! -f "$command_file" ]; then
-  printf '%s\n' "$spell_name: spell '$name' is not memorized." >&2
-  return 1
+  die "$spell_name: spell '$name' is not memorized."
 fi
 
 # Remove spell from command file
@@ -123,8 +116,7 @@ done <"$command_file"
 if [ "$removed" -eq 0 ]; then
   trap - EXIT HUP INT TERM
   rm -f "$tmp"
-  printf '%s\n' "$spell_name: spell '$name' is not memorized." >&2
-  return 1
+  die "$spell_name: spell '$name' is not memorized."
 fi
 
 trap - EXIT HUP INT TERM

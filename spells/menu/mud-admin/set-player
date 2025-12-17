@@ -28,9 +28,7 @@ set -eu
 player="${1-}"
 
 if [ -z "$player" ]; then
-    printf '%s\n' "set-player: player name required." >&2
-    set_player_usage >&2
-    return 1
+    usage-error "set-player" "player name required"
 fi
 
 # Store player name using mud-config instead of polluting rc files
@@ -38,8 +36,7 @@ if command -v mud-config >/dev/null 2>&1; then
     mud-config set player "$player"
     printf '%s\n' "Player identity set to '$player'."
 else
-    printf '%s\n' "set-player: mud-config not found. Install wizardry or ensure spells are in PATH." >&2
-    return 1
+    die "set-player: mud-config not found. Install wizardry or ensure spells are in PATH."
 fi
 }
 

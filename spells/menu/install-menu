@@ -75,8 +75,7 @@ while :; do
     entries=$(list_entries)
 
     if [ -z "$entries" ]; then
-        printf '%s\n' 'install-menu: no installable spells found' >&2
-        return 1
+        die 'install-menu: no installable spells found'
     fi
 
     if [ "$first_run" -eq 0 ]; then

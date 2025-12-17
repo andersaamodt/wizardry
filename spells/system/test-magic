@@ -317,7 +317,16 @@ while IFS= read -r test_path <&3; do
   # Run test and stream output line-by-line
   # Save full output to file for later detailed display
   # Use timeout if available to prevent indefinite hangs (default: 180s per test)
-  test_timeout="${WIZARDRY_TEST_TIMEOUT:-180}"
+  # Special cases: test-install.sh needs more time due to 44 test cases with fixtures
+  case "$spell_name" in
+    install)
+      # Install test has 44 test cases, each creating fixtures - needs more time
+      test_timeout="${WIZARDRY_TEST_TIMEOUT:-360}"
+      ;;
+    *)
+      test_timeout="${WIZARDRY_TEST_TIMEOUT:-180}"
+      ;;
+  esac
   test_exit_code=0
   test_output_file=$(temp-file test-output) || return 1
   

@@ -56,8 +56,7 @@ if [ -x "$script_dir/ask-text" ]; then
 printf '%s' "$script_dir/ask-text"
 return 0
 fi
-printf '%s\n' "$script_name: ask-text spell is required for prompts." >&2
-return 1
+die "$script_name: ask-text spell is required for prompts."
 }
 
 ask_text_helper=$(is_service_installed_find_ask_text)
@@ -67,8 +66,7 @@ if [ -z "$service_name" ]; then
         service_name=$("$ask_text_helper" "Which service should I check?")
 fi
 if [ -z "$service_name" ]; then
-        printf '%s\n' "$script_name: no service specified." >&2
-        return 1
+        die "$script_name: no service specified."
 fi
 case $service_name in
 *.service) : ;;

@@ -35,7 +35,7 @@ verbose=0
 while getopts "v" opt; do
   case $opt in
     v) verbose=1 ;; # If -v is passed, set verbose to 1
-    \?) printf '%s\n' "Invalid option: -$OPTARG" >&2 ;; # Invalid option
+    \?) usage-error "priorities" "Invalid option: -$OPTARG" ;; # Invalid option
   esac
 done
 shift $((OPTIND-1)) # Shift off the options and optional --.

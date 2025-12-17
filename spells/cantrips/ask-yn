@@ -43,8 +43,7 @@ if [ "$#" -eq 2 ]; then
     default_hint="[y/N]"
     ;;
   *)
-    printf '%s\n' "ask-yn: default must be 'yes' or 'no'." >&2
-    return 1
+    die "ask-yn: default must be 'yes' or 'no'."
     ;;
   esac
 fi
@@ -90,8 +89,7 @@ while :; do
     if [ -n "$default_choice" ]; then
       response=$default_choice
     else
-      printf '%s\n' "ask-yn: No interactive input available." >&2
-      return 1
+      die "ask-yn: No interactive input available."
     fi
     ;;
   esac

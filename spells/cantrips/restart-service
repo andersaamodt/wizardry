@@ -55,8 +55,7 @@ if [ -z "$service_name" ]; then
                 if [ -x "$script_dir/ask-text" ]; then
                         ask_text_helper=$script_dir/ask-text
                 else
-                        printf '%s\n' "$script_name: ask-text spell not found." >&2
-                        return 1
+                        die "$script_name: ask-text spell not found."
                 fi
         fi
         
@@ -64,8 +63,7 @@ if [ -z "$service_name" ]; then
 fi
 
 if [ -z "$service_name" ]; then
-        printf '%s\n' "$script_name: No service name supplied." >&2
-        return 1
+        die "$script_name: No service name supplied."
 fi
 
 # Normalize unit name (add .service suffix if not present)
@@ -83,8 +81,7 @@ if [ -z "${systemctl_cmd-}" ]; then
         if command -v systemctl >/dev/null 2>&1; then
                 systemctl_cmd=$(command -v systemctl)
         else
-                printf '%s\n' "$script_name: systemctl is not available on this system." >&2
-                return 1
+                die "$script_name: systemctl is not available on this system."
         fi
 fi
 
@@ -95,8 +92,7 @@ if [ "$(id -u)" -eq 0 ]; then
 elif command -v sudo >/dev/null 2>&1; then
         sudo "$systemctl_cmd" restart "$unit"
 else
-        printf '%s\n' "$script_name: systemctl requires root. Re-run as root or install sudo." >&2
-        return 1
+        die "$script_name: systemctl requires root. Re-run as root or install sudo."
 fi
 }
 
