@@ -50,17 +50,14 @@ esac
 
 # Validate arguments
 if [ $# -eq 0 ]; then
-  printf '%s\n' "learn: spell or directory path required" >&2
-  learn_usage >&2
-  return 1
+  usage-error "learn" "spell or directory path required"
 fi
 
 source_path=$1
 
 # Validate source exists
 if [ ! -e "$source_path" ]; then
-  printf '%s\n' "learn: path not found: $source_path" >&2
-  return 1
+  die "learn: path not found: $source_path"
 fi
 
 # Get absolute path
@@ -84,8 +81,8 @@ target_name=$(basename "$source_path")
 # Check if already exists
 target_path="$spellbook/$target_name"
 if [ -e "$target_path" ] || [ -L "$target_path" ]; then
-  printf '%s\n' "learn: '$target_name' already exists in spellbook" >&2
-  printf '%s\n' "  Remove it first with: forget $target_name" >&2
+  warn "learn: '$target_name' already exists in spellbook"
+  info "  Remove it first with: forget $target_name"
   return 1
 fi
 
