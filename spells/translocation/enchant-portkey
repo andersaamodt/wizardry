@@ -3,7 +3,7 @@
 # This spell enchants a file with a portkey that transports to a destination.
 # Activate the portkey with follow-portkey to teleport to the stored location.
 
-require-wizardry || exit 1
+require-wizardry --check || exit 1
 
 enchant_portkey_usage() {
 cat <<'USAGE'

@@ -2,7 +2,7 @@
 # This spell scribes (creates) a custom spell in your spellbook.
 # It prompts for name, command text, and optionally a category.
 
-require-wizardry || exit 1
+require-wizardry --check || exit 1
 
 script_name=$(basename "$0")
 

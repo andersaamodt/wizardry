@@ -3,7 +3,7 @@
 # This spell reads a location's extended attributes and presents its description.
 # Use it to view MUD-style room descriptions for directories.
 
-require-wizardry || exit 1
+require-wizardry --check || exit 1
 
 look_usage() {
 cat <<'USAGE'

@@ -3,7 +3,7 @@
 # This spell names common system rooms and describes their usual roles.
 # Use it to learn what important directories are for or to list recognized rooms.
 
-require-wizardry || exit 1
+require-wizardry --check || exit 1
 
 identify_room_usage() {
 cat <<'USAGE'

@@ -6,7 +6,7 @@
 # The flow stays linear: discover the helper, choose colour, scan the room, then
 # summarize the ambience so new spellwrights can follow along.
 
-require-wizardry || exit 1
+require-wizardry --check || exit 1
 
 detect_magic_usage() {
 cat <<'USAGE'

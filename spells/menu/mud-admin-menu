@@ -2,7 +2,7 @@
 
 # This spell displays the menu for adminning hosting a MUD server.
 
-require-wizardry || exit 1
+require-wizardry --check || exit 1
 
 mud_admin_menu_usage() {
         cat <<'USAGE' >&2

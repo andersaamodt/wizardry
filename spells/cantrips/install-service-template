@@ -4,7 +4,7 @@
 # substituting placeholders. It prefers interactive prompts so the services menu
 # can call it without arguments.
 
-require-wizardry || exit 1
+require-wizardry --check || exit 1
 
 script_name=$(basename "$0")
 service_dir=${SERVICE_DIR:-/etc/systemd/system}
@@ -29,7 +29,7 @@ case "${1-}" in
   ;;
 esac
 
-require-wizardry || exit 1
+require-wizardry --check || exit 1
 
 set -eu
 . env-clear
