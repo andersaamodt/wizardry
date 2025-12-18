@@ -1,5 +1,6 @@
 #!/bin/sh
-# stub-fathom-terminal - test stub for fathom-terminal that returns fixed size
+# stub-fathom-terminal - test stub mimicking fathom-terminal system command
+# Stubs mimic the interface of commands they replace, including flags
 # Example: stub-fathom-terminal --width
 
 _stub_fathom_terminal() {

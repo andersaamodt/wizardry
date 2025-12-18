@@ -275,7 +275,7 @@ Principles of the testing suite:
 | Shared test harness   | Tests use imps for consistent logging and helpers. |
 | Unique behavior focus | Each test covers that spell’s unique behaviors and failure modes, avoiding redundant coverage. |
 | Full mode coverage    | Subtests cover all valid paths and error conditions. |
-| Explicit shims        | Shims exist only within tests; each test that needs one creates and manages it explicitly. |
+| Explicit shims        | Stub imps in `spells/.imps/test/stub-*` provide reusable terminal I/O mocking. Tests link to them via symlinks. Single-use stubs may remain inline in tests. Test real wizardry—stub only the bare minimum (terminal I/O). |
 | Sandboxed execution   | The `test-magic` spell discovers and runs all tests in an isolated bubblewrap environment. |
 | Tests required | All tests are required to pass before new code may be merged. |
 

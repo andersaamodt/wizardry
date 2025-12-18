@@ -1,5 +1,6 @@
 #!/bin/sh
-# stub-stty - test stub for stty with minimal implementation
+# stub-stty - test stub mimicking stty system command
+# Stubs mimic the interface of commands they replace, including flags
 # Example: stub-stty -g
 
 _stub_stty() {

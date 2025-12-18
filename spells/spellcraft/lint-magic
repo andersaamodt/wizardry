@@ -340,9 +340,14 @@ AWKSCRIPT
     fi
     
     # Inline check_imp_no_flags
-    awk_script=$(temp-file lint-magic-awk) || true
-    if [ -n "$awk_script" ]; then
-      cat >"$awk_script" <<'AWKSCRIPT'
+    # Exempt stub imps (they mimic system command interfaces)
+    imp_rel_path=${path#"$repo_dir/"}
+    case "$imp_rel_path" in
+      spells/.imps/test/stub-*) ;;  # Stubs mimic system commands, may use flags
+      *)
+        awk_script=$(temp-file lint-magic-awk) || true
+        if [ -n "$awk_script" ]; then
+          cat >"$awk_script" <<'AWKSCRIPT'
 BEGIN { in_heredoc = 0; heredoc_end = "" }
 /<<-?[ \t]*'[A-Za-z_][A-Za-z0-9_]*'/ {
   match($0, /<<-?[ \t]*'([A-Za-z_][A-Za-z0-9_]*)'/)
@@ -375,17 +380,19 @@ in_heredoc { next }
 /^[ \t]*#/ { next }
 { print }
 AWKSCRIPT
-      
-      flag_pattern='^[[:space:]]*(--[a-zA-Z][-a-zA-Z0-9_=]*(\|--[a-zA-Z][-a-zA-Z0-9_=]*)*(\|-[a-zA-Z])*'
-      flag_pattern="$flag_pattern|-[a-zA-Z](\|--[a-zA-Z][-a-zA-Z0-9_=]*|\|-[a-zA-Z])*)[[:space:]]*\)"
-      has_flags=$(awk -f "$awk_script" "$path" 2>/dev/null | grep -E "$flag_pattern") || true
-      if [ -n "$has_flags" ]; then
-        flag_msg='imp uses --flags (imps should use space-separated arguments only)'
-        issues=${issues:+$issues; }"$flag_msg"
-        issue_count=$((issue_count + 1))
-      fi
-      rm -f "$awk_script"
-    fi
+          
+          flag_pattern='^[[:space:]]*(--[a-zA-Z][-a-zA-Z0-9_=]*(\|--[a-zA-Z][-a-zA-Z0-9_=]*)*(\|-[a-zA-Z])*'
+          flag_pattern="$flag_pattern|-[a-zA-Z](\|--[a-zA-Z][-a-zA-Z0-9_=]*|\|-[a-zA-Z])*)[[:space:]]*\)"
+          has_flags=$(awk -f "$awk_script" "$path" 2>/dev/null | grep -E "$flag_pattern") || true
+          if [ -n "$has_flags" ]; then
+            flag_msg='imp uses --flags (imps should use space-separated arguments only)'
+            issues=${issues:+$issues; }"$flag_msg"
+            issue_count=$((issue_count + 1))
+          fi
+          rm -f "$awk_script"
+        fi
+        ;;
+    esac
     
     # Inline check_imp_param_count (inline count_parameters logic)
     comment_line=""

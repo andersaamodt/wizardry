@@ -1,5 +1,6 @@
 #!/bin/sh
-# stub-fathom-cursor - test stub for fathom-cursor that returns fixed position
+# stub-fathom-cursor - test stub mimicking fathom-cursor system command
+# Stubs mimic the interface of commands they replace, including flags
 # Example: stub-fathom-cursor -y
 
 _stub_fathom_cursor() {
