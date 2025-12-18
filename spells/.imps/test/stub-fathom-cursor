@@ -12,5 +12,6 @@ _stub_fathom_cursor() {
 }
 
 # Self-execute when run directly (not sourced)
+# Match both stub name and symlink name (tests create symlinks without stub- prefix)
 case "$0" in
-  */stub-fathom-cursor) _stub_fathom_cursor "$@" ;; esac
+  */fathom-cursor|*/stub-fathom-cursor) _stub_fathom_cursor "$@" ;; esac
