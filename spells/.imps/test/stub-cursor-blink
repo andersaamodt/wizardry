@@ -2,6 +2,8 @@
 # stub-cursor-blink - test stub for cursor-blink that outputs escape codes
 # Example: stub-cursor-blink on
 
+set -eu
+
 _stub_cursor_blink() {
   case "${1-}" in
     on) printf '\033[?25h' ;;

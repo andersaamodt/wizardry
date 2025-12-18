@@ -3,6 +3,8 @@
 # Stubs mimic the interface of commands they replace, including flags
 # Example: stub-fathom-terminal --width
 
+set -eu
+
 _stub_fathom_terminal() {
   case ${1-} in
     --width) printf '80\n' ;;

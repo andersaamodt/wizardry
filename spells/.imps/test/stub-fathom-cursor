@@ -3,6 +3,8 @@
 # Stubs mimic the interface of commands they replace, including flags
 # Example: stub-fathom-cursor -y
 
+set -eu
+
 _stub_fathom_cursor() {
   case ${1-} in
     -y) printf '1\n' ;;
