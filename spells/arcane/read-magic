@@ -5,11 +5,6 @@
 
 require-wizardry || exit 1
 
-# Locate imps directory
-script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-imps_dir="$script_dir/../.imps"
-export PATH="$imps_dir/fs:$PATH"
-
 read_magic_usage() {
 cat <<'USAGE'
 Usage: read-magic <file> [attribute]

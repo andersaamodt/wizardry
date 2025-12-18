@@ -42,18 +42,13 @@ require-wizardry || exit 1
 set -eu
 . env-clear
 
-# Get script directory to find imps
-script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-root_dir=$(cd "$script_dir/../.." && pwd -P)
-imps_dir="$root_dir/spells/.imps/fs"
-
 config() {
     command="${1-}"
     
     case "$command" in
         get|set|has|del)
             shift
-            "$imps_dir/config-$command" "$@"
+            "config-$command" "$@"
             ;;
         "")
             config_usage >&2

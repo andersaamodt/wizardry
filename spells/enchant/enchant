@@ -22,11 +22,6 @@ esac
 
 set -eu
 
-# Add imps directory to PATH
-script_dir=$(cd "$(dirname "$0")" && pwd -P)
-imps_dir="${script_dir%/spells*}/spells/.imps"
-PATH="$imps_dir/fs:$imps_dir/cond:$PATH"
-
 # Parse arguments
 file=""
 key=""
