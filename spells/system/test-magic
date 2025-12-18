@@ -331,8 +331,9 @@ while IFS= read -r test_path <&3; do
     timeout_prefix="$timeout_cmd $test_timeout"
     $timeout_prefix sh "$abs" < /dev/null 2>&1 | tee "$test_output_file" | awk '
       /^PASS / { print "  " $0; fflush(); next }
-      /^FAIL #[0-9]+ / { 
+      /^FAIL/ { 
         # Extract just the FAIL line without the reason (after colon)
+        # Matches both "FAIL #N" and plain "FAIL" lines
         if (index($0, ":") > 0) {
           line = $0
           sub(/:.*$/, "", line)
@@ -348,8 +349,9 @@ while IFS= read -r test_path <&3; do
   else
     sh "$abs" < /dev/null 2>&1 | tee "$test_output_file" | awk '
       /^PASS / { print "  " $0; fflush(); next }
-      /^FAIL #[0-9]+ / { 
+      /^FAIL/ { 
         # Extract just the FAIL line without the reason (after colon)
+        # Matches both "FAIL #N" and plain "FAIL" lines
         if (index($0, ":") > 0) {
           line = $0
           sub(/:.*$/, "", line)
