@@ -3,7 +3,7 @@
 # This spell lists extended attributes from a file, optionally narrowing to one key.
 # It walks through existence checks and available helpers in a linear, didactic order.
 
-require-wizardry --check || exit 1
+require-wizardry || exit 1
 
 # Locate imps directory
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)

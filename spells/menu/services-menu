@@ -3,7 +3,7 @@
 # services-menu collects all service-management spells in one place so users
 # never need to remember flags. Each menu item launches a single-purpose spell.
 
-require-wizardry --check || exit 1
+require-wizardry || exit 1
 
 services_menu_usage() {
   cat <<'USAGE'

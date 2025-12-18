@@ -31,7 +31,7 @@ esac
 # Record whether the terminal appears to support ANSI escape sequences so
 # callers can disable colour-aware features when needed.
 
-require-wizardry --check || exit 1
+require-wizardry || exit 1
 
 set -eu
 . env-clear

@@ -3,7 +3,7 @@
 # This spell records the current directory (or a provided path) for jump-to-marker.
 # It resolves the destination to an absolute path and stores it in a named marker file.
 
-require-wizardry --check || exit 1
+require-wizardry || exit 1
 
 mark_location_usage() {
   cat <<'USAGE'

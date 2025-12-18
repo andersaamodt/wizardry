@@ -5,7 +5,7 @@
 #
 # Usage: forget SPELL_NAME
 
-require-wizardry --check || exit 1
+require-wizardry || exit 1
 
 spell_name="forget"
 tab_char=$(printf '\t')

@@ -3,7 +3,7 @@
 # Manage MUD feature configuration stored in $MUD_DIR/config
 # This is a helper for reading and writing MUD feature toggle states.
 
-require-wizardry --check || exit 1
+require-wizardry || exit 1
 
 mud_config_usage() {
 cat <<'USAGE'

@@ -15,7 +15,7 @@ USAGE
   ;;
 esac
 
-require-wizardry --check || exit 1
+require-wizardry || exit 1
 
 set -eu
 . env-clear

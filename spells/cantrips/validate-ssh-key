@@ -3,7 +3,7 @@
 # This spell validates whether a string is a valid SSH public key format.
 # Use it to check SSH key input before adding to authorized_keys.
 
-require-wizardry --check || exit 1
+require-wizardry || exit 1
 
 validate_ssh_key_usage() {
 cat <<'USAGE'
