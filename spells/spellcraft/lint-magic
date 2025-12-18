@@ -268,7 +268,7 @@ while IFS= read -r target; do
   esac
   
   # Inline check_function_naming  
-  awk_script=$(mktemp "${TMPDIR:-/tmp}/lint-magic-naming-awk.XXXXXX") || true
+  awk_script=$(temp-file lint-magic-naming-awk) || true
   if [ -n "$awk_script" ]; then
     cat >"$awk_script" <<'AWKSCRIPT'
 BEGIN { in_heredoc = 0; heredoc_end = "" }
@@ -340,7 +340,7 @@ AWKSCRIPT
     fi
     
     # Inline check_imp_no_flags
-    awk_script=$(mktemp "${TMPDIR:-/tmp}/lint-magic-awk.XXXXXX") || true
+    awk_script=$(temp-file lint-magic-awk) || true
     if [ -n "$awk_script" ]; then
       cat >"$awk_script" <<'AWKSCRIPT'
 BEGIN { in_heredoc = 0; heredoc_end = "" }
@@ -496,7 +496,7 @@ $warning_entry"
   fi
   
   # Inline check_long_lines
-  awk_script=$(mktemp "${TMPDIR:-/tmp}/lint-magic-lines-awk.XXXXXX") || true
+  awk_script=$(temp-file lint-magic-lines-awk) || true
   if [ -n "$awk_script" ]; then
     cat >"$awk_script" <<'AWKSCRIPT'
 BEGIN { in_heredoc = 0; heredoc_end = ""; max_len = 100; sq = sprintf("%c", 39) }
@@ -585,7 +585,7 @@ AWKSCRIPT
       fi
   
   # Inline check_echo_usage
-  awk_script=$(mktemp "${TMPDIR:-/tmp}/lint-magic-echo-awk.XXXXXX") || true
+  awk_script=$(temp-file lint-magic-echo-awk) || true
   if [ -n "$awk_script" ]; then
     cat >"$awk_script" <<'AWKSCRIPT'
 BEGIN { in_heredoc = 0; heredoc_end = "" }
