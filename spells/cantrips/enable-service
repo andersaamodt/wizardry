@@ -77,7 +77,7 @@ printf 'Enabling %s so it starts at boot...\n' "$unit"
 
 # Inline enable_service_run_systemctl - only used once
 if [ -z "${systemctl_cmd-}" ]; then
-  if command -v systemctl >/dev/null 2>&1; then
+  if has systemctl; then
     systemctl_cmd=$(command -v systemctl)
   else
     die "$script_name: systemctl is not available on this system."
@@ -85,7 +85,7 @@ if [ -z "${systemctl_cmd-}" ]; then
 fi
 if [ "$(id -u)" -eq 0 ]; then
   "$systemctl_cmd" enable "$unit"
-elif command -v sudo >/dev/null 2>&1; then
+elif has sudo; then
   sudo "$systemctl_cmd" enable "$unit"
 else
   die "$script_name: systemctl requires root. Re-run as root or install sudo."

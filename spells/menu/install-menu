@@ -131,7 +131,7 @@ while :; do
     import_arcanum_cmd=""
     if [ -x "$install_dir/import-arcanum" ]; then
         import_arcanum_cmd="$install_dir/import-arcanum"
-    elif command -v import-arcanum >/dev/null 2>&1; then
+    elif has import-arcanum; then
         import_arcanum_cmd="import-arcanum"
     fi
     

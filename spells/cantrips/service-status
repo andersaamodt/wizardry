@@ -80,7 +80,7 @@ esac
 
 # Find systemctl command
 if [ -z "${systemctl_cmd-}" ]; then
-        if command -v systemctl >/dev/null 2>&1; then
+        if has systemctl; then
                 systemctl_cmd=$(command -v systemctl)
         else
                 die "$script_name: systemctl is not available on this system."

@@ -81,7 +81,7 @@ esac
 
 # Find systemctl command
 if [ -z "${systemctl_cmd-}" ]; then
-        if command -v systemctl >/dev/null 2>&1; then
+        if has systemctl; then
                 systemctl_cmd=$(command -v systemctl)
         else
                 die "$script_name: systemctl is not available on this system."
@@ -92,7 +92,7 @@ fi
 printf 'Starting %s via systemctl...\n' "$unit"
 if [ "$(id -u)" -eq 0 ]; then
         "$systemctl_cmd" start "$unit"
-elif command -v sudo >/dev/null 2>&1; then
+elif has sudo; then
         sudo "$systemctl_cmd" start "$unit"
 else
         die "$script_name: systemctl requires root. Re-run as root or install sudo."

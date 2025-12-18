@@ -57,7 +57,7 @@ else
   die "$script_name: ask-text spell is required for prompts."
 fi
 
-if command -v systemctl >/dev/null 2>&1; then
+if has systemctl; then
         systemctl_cmd=$(command -v systemctl)
 else
         die "$script_name: systemctl is not installed."
@@ -68,7 +68,7 @@ remove_service_require_privilege() {
                 "$@"
                 return 0
         fi
-        if command -v sudo >/dev/null 2>&1; then
+        if has sudo; then
                 sudo "$@"
                 return 0
         fi

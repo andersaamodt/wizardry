@@ -97,7 +97,7 @@ missing_attr_msg='read-magic: attribute does not exist.'
 # Get identify-room data if available
 identify_title=''
 identify_description=''
-if command -v identify-room >/dev/null 2>&1; then
+if has identify-room; then
         if identify_room_output=$(identify-room "$path" 2>/dev/null); then
                 identify_title=$(printf '%s' "$identify_room_output" | sed -n '1p')
                 identify_description=$(printf '%s' "$identify_room_output" | sed -n '2p')
