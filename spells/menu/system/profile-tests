@@ -59,24 +59,20 @@ while [ "$#" -gt 0 ]; do
   case "$1" in
     --only)
       if [ "$#" -lt 2 ]; then
-        printf 'profile-tests: --only requires a pattern\n' >&2
-        exit 1
+        fail "profile-tests: --only requires a pattern"
       fi
       only_pattern="$2"
       shift 2
       ;;
     --output)
       if [ "$#" -lt 2 ]; then
-        printf 'profile-tests: --output requires a file path\n' >&2
-        exit 1
+        fail "profile-tests: --output requires a file path"
       fi
       output_file="$2"
       shift 2
       ;;
     *)
-      printf 'profile-tests: unknown option: %s\n' "$1" >&2
-      profile_tests_usage
-      exit 1
+      die 2 "profile-tests: unknown option: $1"
       ;;
   esac
 done
@@ -101,15 +97,14 @@ $(find "$test_dir" -mindepth 2 -type f -name 'test-*.sh' 2>/dev/null | sort)"
 fi
 
 if [ -z "$test_list" ]; then
-  printf 'profile-tests: no tests found\n' >&2
-  exit 1
+  die "profile-tests: no tests found"
 fi
 
 # Create temporary file for timing data
 tmpfile=$(mktemp "${TMPDIR:-/tmp}/profile-tests.XXXXXX")
 trap 'rm -f "$tmpfile"' EXIT HUP INT TERM
 
-printf 'Profiling tests...\n' >&2
+info "Profiling tests..."
 
 # Time each test
 test_count=$(printf '%s\n' "$test_list" | grep -c .)

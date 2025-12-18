@@ -22,11 +22,6 @@ esac
 
 set -eu
 
-# Add imps directory to PATH
-script_dir=$(cd "$(dirname "$0")" && pwd -P)
-imps_dir="${script_dir%/spells*}/spells/.imps"
-PATH="$imps_dir/fs:$imps_dir/cond:$PATH"
-
 # Parse arguments
 file=""
 key=""
@@ -78,8 +73,7 @@ elif [ $# -eq 2 ]; then
         esac
         
         if [ "$arg1_is_attr" -eq 1 ] && [ "$arg2_is_attr" -eq 1 ]; then
-                printf '%s\n' "Error: Both arguments look like attribute=value pairs." >&2
-                return 1
+                fail "enchant: Both arguments look like attribute=value pairs."
         elif [ "$arg1_is_attr" -eq 1 ]; then
                 # First is attr=val, second is file
                 key="${1%%=*}"
@@ -92,9 +86,7 @@ elif [ $# -eq 2 ]; then
                 value="${2#*=}"
         else
                 # Neither has valid attr=value format
-                printf '%s\n' "Error: Two-argument format requires one argument to be in 'attribute=value' format." >&2
-                printf '%s\n' "       Use 'enchant <file> attr=value' or 'enchant attr=value <file>'" >&2
-                return 1
+                fail "enchant: Two-argument format requires one argument to be in 'attribute=value' format. Use 'enchant <file> attr=value' or 'enchant attr=value <file>'"
         fi
 elif [ $# -eq 3 ] || [ $# -eq 4 ]; then
         # Legacy 3-4 arg format: file, attribute, value, [helper]

@@ -44,16 +44,14 @@ supports_cursor_positioning() {
 # Validate that both coordinates are purely numeric.
 case "$x" in
     *[!0-9]*)
-        printf '%s\n' "move-cursor: invalid column '$x'" >&2
-        return 1
+        fail "move-cursor: invalid column '$x'"
         ;;
     *) : ;;
 esac
 
 case "$y" in
     *[!0-9]*)
-        printf '%s\n' "move-cursor: invalid row '$y'" >&2
-        return 1
+        fail "move-cursor: invalid row '$y'"
         ;;
     *) : ;;
 esac
