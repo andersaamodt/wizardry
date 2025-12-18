@@ -71,7 +71,7 @@ if [ "$skip_stty" -eq 1 ]; then
     # Allow tests to provide a preconfigured file descriptor instead of
     # toggling terminal attributes.
     if [ ! -r "$tty_device" ]; then
-        printf '%s\n' "await-keypress: unable to read from '$tty_device'" >&2
+        warn "await-keypress: unable to read from '$tty_device'"
         return 1
     fi
 
@@ -84,7 +84,7 @@ else
     fi
 
     if [ ! -r "$tty_device" ] || [ ! -w "$tty_device" ]; then
-        printf '%s\n' "await-keypress: unable to open controlling terminal '$tty_device'" >&2
+        warn "await-keypress: unable to open controlling terminal '$tty_device'"
         return 1
     fi
 
@@ -93,7 +93,7 @@ else
     # Persist the existing terminal configuration so we can restore it later.
     saved_state=$(stty -g <&3 2>/dev/null)
     if [ -z "$saved_state" ]; then
-        printf '%s\n' 'await-keypress: unable to read terminal settings' >&2
+        warn 'await-keypress: unable to read terminal settings'
         return 1
     fi
 
@@ -102,7 +102,7 @@ else
 
     # Configure canonical mode to wait for exactly one byte of input.
     if ! stty -icanon -echo min 1 time 0 <&3 2>/dev/null; then
-        printf '%s\n' 'await-keypress: unable to configure terminal' >&2
+        warn 'await-keypress: unable to configure terminal'
         return 1
     fi
 fi
@@ -133,7 +133,7 @@ fi
 # Allow escape sequences to provide additional bytes.
 if [ "$skip_stty" -eq 0 ] && [ "$had_buffer" -eq 0 ]; then
     if ! stty -icanon -echo min 0 time 1 <&3 2>/dev/null; then
-        printf '%s\n' 'await-keypress: unable to update terminal timing' >&2
+        warn 'await-keypress: unable to update terminal timing'
         return 1
     fi
 fi
