@@ -1560,6 +1560,61 @@ test_no_mixed_case_variables() {
   return 0
 }
 
+# --- Warning Check: No parent directory references /../ outside cd commands ---
+# Spells should use proper path resolution (cd with pwd -P) instead of bare /../
+# references in path strings. This prevents fragile path construction.
+# The pattern "cd -- \"$var/../..\" && pwd -P" is acceptable (proper resolution).
+# The pattern "$var/../something" is problematic (no resolution).
+
+test_warn_parent_dir_references() {
+  found_refs=""
+  
+  check_parent_refs() {
+    spell=$1
+    name=$(basename "$spell")
+    
+    # Skip bootstrap/installation spells that need to find repo structure
+    case $spell in
+      */install/core/*|*/system/test-magic|*/spellcraft/lint-magic) return ;;
+      */spellcraft/compile-spell|*/spellcraft/doppelganger) return ;;
+      */menu/spellbook|*/system/verify-posix|*/menu/system/profile-tests) return ;;
+      */cantrips/require-command) return ;;  # Bootstrap-related, finding install scripts
+    esac
+    
+    # Look for /../ pattern that's NOT in a cd command followed by pwd -P
+    # Pattern: /../ but not preceded by "cd " or "cd --" on same/previous line
+    if grep -n '/\.\./' "$spell" 2>/dev/null | while IFS=: read -r line_num line_text; do
+      # Check if this is part of a cd + pwd -P pattern (acceptable)
+      if printf '%s' "$line_text" | grep -qE 'cd[[:space:]]+(--|[^&|;])*\$[^/]*/\.\./.*&&.*pwd -P'; then
+        continue  # This is acceptable: cd with pwd -P
+      fi
+      
+      # Check if line contains cd to parent dir (acceptable pattern)
+      if printf '%s' "$line_text" | grep -qE 'cd[[:space:]]+(--|[^&|;])*[^)]*\.\./'; then
+        continue  # Part of cd command (likely with pwd -P later)
+      fi
+      
+      # If we get here, it's a bare /../ reference (potentially problematic)
+      printf '%s:%s\n' "$name" "$line_num"
+    done | head -1; then
+      found_refs="${found_refs}${found_refs:+, }$name"
+    fi
+  }
+  
+  tmpfile="${WIZARDRY_TMPDIR}/parent-dir-refs.txt"
+  : > "$tmpfile"
+  for_each_posix_spell_no_imps check_parent_refs > "$tmpfile"
+  
+  found_refs=$(cat "$tmpfile" 2>/dev/null | head -10 | tr '\n' ', ' | sed 's/, $//')
+  rm -f "$tmpfile"
+  
+  if [ -n "$found_refs" ]; then
+    printf 'WARNING: spells with parent directory references (/../) outside cd commands (use cd with pwd -P instead): %s\n' "$found_refs" >&2
+  fi
+  
+  return 0
+}
+
 # --- Run all test cases ---
 
 _run_test_case "no duplicate spell names" test_no_duplicate_spell_names
@@ -1586,5 +1641,6 @@ _run_test_case "no all-caps variable assignments" test_no_allcaps_variable_assig
 _run_test_case "no mixed-case variables" test_no_mixed_case_variables
 _run_test_case "scripts have set -eu early" test_scripts_have_set_eu_early
 _run_test_case "spells source env-clear after set -eu" test_spells_source_env_clear_after_set_eu
+_run_test_case "warn about parent directory references" test_warn_parent_dir_references
 
 _finish_tests
