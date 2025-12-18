@@ -39,7 +39,6 @@ while [ "$#" -gt 0 ]; do
       break
       ;;
     -*)
-      printf 'Unknown option: %s\n' "$1" >&2
       update_all_usage >&2
       return 2
       ;;
@@ -50,7 +49,6 @@ while [ "$#" -gt 0 ]; do
 done
 
 if [ "$#" -ne 0 ]; then
-  printf 'Unexpected argument: %s\n' "$1" >&2
   update_all_usage >&2
   return 2
 fi
@@ -245,8 +243,7 @@ case $distro in
     ;;
     
   *)
-    printf 'Unsupported platform: %s\n' "$distro" >&2
-    return 2
+    die "update-all: Unsupported platform: $distro"
     ;;
 esac
 

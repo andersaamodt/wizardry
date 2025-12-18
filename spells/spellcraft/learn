@@ -72,7 +72,7 @@ fi
 # Create spellbook directory if needed
 if [ ! -d "$spellbook" ]; then
   mkdir -p "$spellbook"
-  printf '%s\n' "Created spellbook directory: $spellbook"
+  info "Created spellbook directory: $spellbook"
 fi
 
 # Determine target name
@@ -89,19 +89,19 @@ fi
 # Copy or link
 if [ "$use_link" -eq 1 ]; then
   ln -s "$source_path" "$target_path"
-  printf '%s\n' "Linked $target_name to spellbook"
-  printf '%s\n' "  Source: $source_path"
-  printf '%s\n' "  Target: $target_path"
+  success "Linked $target_name to spellbook"
+  info "  Source: $source_path"
+  info "  Target: $target_path"
 else
   if [ -d "$source_path" ]; then
     cp -r "$source_path" "$target_path"
-    printf '%s\n' "Copied spellbook $target_name"
+    success "Copied spellbook $target_name"
   else
     cp "$source_path" "$target_path"
     chmod +x "$target_path"
-    printf '%s\n' "Copied spell $target_name"
+    success "Copied spell $target_name"
   fi
-  printf '%s\n' "  Location: $target_path"
+  info "  Location: $target_path"
 fi
 
 printf '%s\n' ""

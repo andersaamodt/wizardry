@@ -36,11 +36,10 @@ read_magic=${DETECT_MAGIC_READ_MAGIC-}
 if [ -z "$read_magic" ]; then
         if [ -x "$script_dir/read-magic" ]; then
                 read_magic="$script_dir/read-magic"
-        elif command -v read-magic >/dev/null 2>&1; then
+        elif has read-magic; then
                 read_magic=$(command -v read-magic)
         else
-                printf '%s\n' "detect-magic: read-magic spell is missing." >&2
-                return 1
+                die "detect-magic: read-magic spell is missing."
         fi
 fi
 
@@ -52,7 +51,7 @@ if [ "${NO_COLOR-}" = "1" ] || [ "${NO_COLOR-}" = "true" ] || [ "${TERM:-}" = "d
         blue=""
         purple=""
         reset=""
-elif command -v colors >/dev/null 2>&1; then
+elif has colors; then
         # shellcheck disable=SC1091
         . colors
         blue="$CYAN"
@@ -85,7 +84,7 @@ for entry in *; do
         if attrs_output=$("$read_magic" "$entry" 2>&1); then
                 :
         else
-                printf '%s\n' "detect-magic: failed to read $entry: $attrs_output" >&2
+                warn "detect-magic: failed to read $entry: $attrs_output"
                 continue
         fi
 

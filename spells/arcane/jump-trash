@@ -42,12 +42,12 @@ USAGE
   esac
 
   # Inline get_trash_path - only used once
-  if command -v detect-trash >/dev/null 2>&1; then
+  if has detect-trash; then
     trash_path=$(detect-trash)
   else
     # Inline fallback if detect-trash is not available
     platform=''
-    if command -v detect-distro >/dev/null 2>&1; then
+    if has detect-distro; then
       platform=$(detect-distro 2>/dev/null || printf 'unknown')
     else
       kernel=$(uname -s 2>/dev/null || printf 'unknown')
@@ -80,7 +80,7 @@ USAGE
   fi
 
   cd "$trash_path" || return 1
-  printf '%s\n' "You teleport to the trash at $trash_path"
+  say "You teleport to the trash at $trash_path"
 }
 
 alias jump-trash=jump_trash 2>/dev/null || true

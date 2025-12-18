@@ -50,7 +50,7 @@ while [ "$#" -gt 0 ]; do
       ;;
     --only)
       if [ "$#" -lt 2 ]; then
-        printf '%s\n' "lint-magic: --only requires a pattern argument." >&2
+        lint_magic_usage >&2
         return 2
       fi
       pattern=$2
@@ -61,7 +61,6 @@ while [ "$#" -gt 0 ]; do
       break
       ;;
     -*)
-      printf '%s\n' "lint-magic: unknown option: $1" >&2
       lint_magic_usage >&2
       return 2
       ;;
@@ -229,7 +228,7 @@ while IFS= read -r target; do
   
   # Inline check_posix_compliance
   checkbashisms_cmd=${CHECKBASHISMS-}
-  if [ -z "$checkbashisms_cmd" ] && command -v checkbashisms >/dev/null 2>&1; then
+  if [ -z "$checkbashisms_cmd" ] && has checkbashisms; then
     checkbashisms_cmd=$(command -v checkbashisms)
   fi
   if [ -n "$checkbashisms_cmd" ]; then

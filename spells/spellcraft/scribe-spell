@@ -60,15 +60,13 @@ while [ "$#" -gt 0 ]; do
                         ;;
                 --category)
                         if [ "$#" -lt 2 ]; then
-                                printf '%s\n' "$script_name: --category requires a value." >&2
-                                return 1
+                                fail "$script_name: --category requires a value"
                         fi
                         current_category=$2
                         # Validate category
                         case $current_category in
                         ''|*[!A-Za-z0-9._-]*)
-                                printf '%s\n' "$script_name: category names may contain only letters, digits, dots, underscores, and dashes." >&2
-                                return 1
+                                fail "$script_name: category names may contain only letters, digits, dots, underscores, and dashes"
                                 ;;
                         -*)
                                 printf '%s\n' "$script_name: category names may not begin with a dash." >&2
@@ -153,7 +151,7 @@ if [ "$new_category_mode" -eq 1 ]; then
         fi
         mkdir -p "$spell_home/$category_name"
         display_path=$(tilde-path "$spell_home")
-        printf "Created category '%s' in %s.\n" "$category_name" "$display_path"
+        success "Created category '$category_name' in $display_path."
         return 0
 fi
 
@@ -182,7 +180,7 @@ if [ "$#" -ge 2 ]; then
         esac
         
         # Check for duplicate name
-        if command -v "$name" >/dev/null 2>&1; then
+        if has "$name"; then
                 printf '%s\n' "$script_name: '$name' conflicts with an existing command." >&2
                 return 1
         fi
@@ -240,10 +238,10 @@ EOF_SCRIPT
         
         if [ -n "$current_category" ]; then
                 display_path=$(tilde-path "$spell_home")
-                printf "Scribed '%s' to %s/%s.\n" "$name" "$display_path" "$current_category"
+                success "Scribed '$name' to $display_path/$current_category."
         else
                 display_path=$(tilde-path "$spell_home")
-                printf "Scribed '%s' to %s.\n" "$name" "$display_path"
+                success "Scribed '$name' to $display_path."
         fi
         return 0
 fi
@@ -305,7 +303,7 @@ case $cmd_name in
 esac
 
 # Check for duplicate name
-if command -v "$cmd_name" >/dev/null 2>&1; then
+if has "$cmd_name"; then
         printf '%s\n' "$script_name: '$cmd_name' conflicts with an existing command." >&2
         return 1
 fi

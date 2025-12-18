@@ -64,7 +64,7 @@ export PATH
 # This prevents test-magic from hanging if critical commands are missing.
 missing_commands=""
 for required_cmd in sh find grep awk sed sort cat printf; do
-  if ! command -v "$required_cmd" >/dev/null 2>&1; then
+  if ! has "$required_cmd"; then
     if [ -z "$missing_commands" ]; then
       missing_commands="$required_cmd"
     else
@@ -74,14 +74,12 @@ for required_cmd in sh find grep awk sed sort cat printf; do
 done
 
 if [ -n "$missing_commands" ]; then
-  printf '%s: error: required commands not found: %s\n' "$cmd_name" "$missing_commands" >&2
-  printf '%s: cannot run tests without these commands.\n' "$cmd_name" >&2
-  return 127
+  die "test-magic: required commands not found: $missing_commands (cannot run tests without these commands)"
 fi
 
 # Check if timeout command is available for test execution protection
 timeout_cmd=""
-if command -v timeout >/dev/null 2>&1; then
+if has timeout; then
   timeout_cmd="timeout"
 fi
 
@@ -100,9 +98,8 @@ while [ "$#" -gt 0 ]; do
   case "$1" in
     --only)
       if [ "$#" -lt 2 ]; then
-        echo "$cmd_name: --only requires a pattern" >&2
-        test_magic_usage
-        return 1
+        test_magic_usage >&2
+        return 2
       fi
       if [ -n "$only_patterns" ]; then
         only_patterns="$only_patterns\n$2"
@@ -128,9 +125,8 @@ while [ "$#" -gt 0 ]; do
       break
       ;;
     *)
-      echo "$cmd_name: unknown option '$1'" >&2
-      test_magic_usage
-      return 1
+      test_magic_usage >&2
+      return 2
       ;;
   esac
 done
@@ -168,7 +164,7 @@ $(
 )
 EOF_TESTS
     if [ "$found" -ne 0 ]; then
-      echo "$cmd_name: pattern '$pat' matched no tests" >&2
+      warn "test-magic: pattern '$pat' matched no tests"
       return 1
     fi
   done <<EOF_PATS
@@ -219,9 +215,7 @@ EOF_TESTS
 } > "$test_list_file"
 
 if [ ! -s "$test_list_file" ]; then
-  echo "$cmd_name: no tests discovered." >&2
-  cleanup-file "$test_list_file"
-  return 1
+  die "test-magic: no tests discovered."
 fi
 
 if [ "$list_only" -eq 1 ]; then
@@ -750,10 +744,10 @@ if [ "$status" -ne 0 ] && [ -n "$failed_scripts" ]; then
     os_label="$WIZARDRY_OS_LABEL"
   elif [ -x "$root_dir/spells/divination/detect-distro" ]; then
     os_label=$("$root_dir/spells/divination/detect-distro" 2>/dev/null || printf 'unknown')
-  elif command -v detect-distro >/dev/null 2>&1; then
+  elif has detect-distro; then
     os_label=$(detect-distro 2>/dev/null || printf 'unknown')
-  elif command -v uname >/dev/null 2>&1; then
-    os_label=$(uname -s 2>/dev/null | tr ' A-Z' '_a-z' || printf 'unknown')
+  elif has uname; then
+    os_label=$(uname -s 2>/dev/null | tr 'A-Z' 'a-z' || printf 'unknown')
   fi
 
   printf '\nFailed tests (%s): %s\n' "$os_label" "$failed_scripts"

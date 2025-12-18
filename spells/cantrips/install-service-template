@@ -40,7 +40,7 @@ install_service_template_require_privilege() {
     "$@"
     return 0
   fi
-  if command -v sudo >/dev/null 2>&1; then
+  if has sudo; then
     sudo "$@"
     return 0
   fi

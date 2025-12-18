@@ -24,13 +24,13 @@ test_help() {
 hash_requires_single_argument() {
   _run_spell "spells/crypto/hash"
   _assert_failure || return 1
-  _assert_output_contains "Usage: hash" || return 1
+  _assert_error_contains "Usage: hash" || return 1
 }
 
 hash_fails_on_missing_file() {
   _run_spell "spells/crypto/hash" "missing.txt"
   _assert_failure || return 1
-  _assert_output_contains "Your spell fizzles. There is no file." || return 1
+  _assert_error_contains "Your spell fizzles. There is no file." || return 1
 }
 
 hash_rejects_directory() {
@@ -39,7 +39,7 @@ hash_rejects_directory() {
 
   _run_spell "spells/crypto/hash" "$tmpdir"
   _assert_failure || return 1
-  _assert_output_contains "Your spell fizzles. There is no file." || return 1
+  _assert_error_contains "Your spell fizzles. There is no file." || return 1
 }
 
 hash_rejects_extra_arguments() {
@@ -48,7 +48,7 @@ hash_rejects_extra_arguments() {
 
   _run_spell "spells/crypto/hash" "$file" another
   _assert_failure || return 1
-  _assert_output_contains "Usage: hash" || return 1
+  _assert_error_contains "Usage: hash" || return 1
 }
 
 hash_reports_path_and_checksum() {

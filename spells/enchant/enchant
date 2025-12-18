@@ -34,8 +34,7 @@ value=""
 preferred=""
 
 if [ $# -eq 0 ]; then
-        printf '%s\n' "Error: At least one argument is required (attribute=value)." >&2
-        return 1
+        fail "enchant: at least one argument required (attribute=value)"
 elif [ $# -eq 1 ]; then
         # One arg: must be attribute=value, use current directory
         case "$1" in
@@ -48,13 +47,11 @@ elif [ $# -eq 1 ]; then
                         value=$_val
                         file=$PWD
                 else
-                        printf '%s\n' "Error: Single argument must be attribute=value format." >&2
-                        return 1
+                        fail "enchant: argument must be attribute=value format"
                 fi
                 ;;
         *)
-                printf '%s\n' "Error: Single argument must be attribute=value format." >&2
-                return 1
+                fail "enchant: argument must be attribute=value format"
                 ;;
         esac
 elif [ $# -eq 2 ]; then
@@ -106,18 +103,16 @@ elif [ $# -eq 3 ] || [ $# -eq 4 ]; then
         value=$3
         preferred=${4-}
 else
-        printf '%s\n' "Error: Too many arguments provided." >&2
-        return 1
+        die "enchant: Too many arguments provided."
 fi
 
 # Validate we have all required parts
 if [ -z "$file" ] || [ -z "$key" ] || [ -z "$value" ]; then
-        printf '%s\n' "Error: File, attribute, and value are all required." >&2
-        return 1
+        die "enchant: File, attribute, and value are all required."
 fi
 
 # Check file exists
-gone "$file" && fail "Error: The file does not exist."
+gone "$file" && die "enchant: The file does not exist."
 
 # Set attribute with fallback chain
 attempted_helper=""
@@ -140,8 +135,7 @@ attr|xattr|setfattr)
         done
         ;;
 *)
-        printf '%s\n' "Error: Unknown helper '$preferred'. Choose attr, xattr, or setfattr." >&2
-        return 1
+        die "enchant: Unknown helper '$preferred'. Choose attr, xattr, or setfattr."
         ;;
 esac
 
@@ -183,14 +177,13 @@ done
 
 if [ "$success" -eq 0 ]; then
         if [ -n "$attempted_helper" ]; then
-                printf "%s\n" "Error: Failed to set attribute using '$attempted_helper' (return 1 $attempt_status)." >&2
+                die "enchant: Failed to set attribute using '$attempted_helper' (exit status $attempt_status)."
         else
-                printf "%s\n" "Error: This spell requires the 'attr', 'xattr', or 'setfattr' command to be installed." >&2
+                die "enchant: This spell requires the 'attr', 'xattr', or 'setfattr' command to be installed."
         fi
-        return 1
 fi
 
-printf "The file has been enchanted with the attribute '%s' and value '%s'.\n" "$key" "$value"
+success "The file has been enchanted with the attribute '$key' and value '$value'."
 }
 
 # Self-execute when run directly (not sourced)

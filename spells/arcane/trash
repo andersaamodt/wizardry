@@ -61,7 +61,7 @@ if [ "$#" -eq 0 ]; then
 fi
 
 # Detect the OS
-if command -v detect-distro >/dev/null 2>&1; then
+if has detect-distro; then
   platform=$(detect-distro 2>/dev/null || printf 'unknown')
   case "$platform" in
   mac)
@@ -89,18 +89,18 @@ fi
 # Detect the best trash command available
 case "$os" in
 mac)
-  if command -v osascript >/dev/null 2>&1; then
+  if has osascript; then
     trash_cmd=osascript
   else
     trash_cmd=none
   fi
   ;;
 linux)
-  if command -v gio >/dev/null 2>&1; then
+  if has gio; then
     trash_cmd=gio
-  elif command -v trash-put >/dev/null 2>&1; then
+  elif has trash-put; then
     trash_cmd=trash-put
-  elif command -v kioclient5 >/dev/null 2>&1; then
+  elif has kioclient5; then
     trash_cmd=kioclient5
   else
     trash_cmd=none

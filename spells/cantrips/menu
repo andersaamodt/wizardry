@@ -41,13 +41,11 @@ require stty "The menu spell needs 'stty' to manage terminal modes." || return 1
 
 menu_tty=${AWAIT_KEYPRESS_DEVICE:-/dev/tty}
 if [ ! -r "$menu_tty" ] || [ ! -w "$menu_tty" ]; then
-        printf '%s\n' "menu: unable to access controlling terminal '$menu_tty'" >&2
-        return 1
+        die "menu: unable to access controlling terminal '$menu_tty'"
 fi
 
 if ! menu_saved_tty_state=$(stty -g <"$menu_tty" 2>/dev/null); then
-        printf '%s\n' 'menu: unable to read terminal settings' >&2
-        return 1
+        die "menu: unable to read terminal settings"
 fi
 
 terminal_restored=0
@@ -59,7 +57,7 @@ export AWAIT_KEYPRESS_KEEP_RAW
 if [ -r "$script_dir/colors" ]; then
         # shellcheck disable=SC1090
         . "$script_dir/colors"
-elif command -v colors >/dev/null 2>&1; then
+elif has colors; then
         # shellcheck disable=SC1091
         . colors
 else
@@ -90,12 +88,11 @@ if [ "${1-}" = "--start-selection" ]; then
 fi
 
 if [ "$#" -lt 2 ]; then
-        if command -v main-menu >/dev/null 2>&1; then
+        if has main-menu; then
                 main-menu
                 return 0
         fi
-        printf '%s\n' "menu: no menu entries provided" >&2
-        return 1
+        die "menu: no menu entries provided"
 fi
 
 description=$1
@@ -154,8 +151,7 @@ do
 done
 
 if [ "$menu_length" -eq 0 ]; then
-        printf '%s\n' "menu: no menu entries provided" >&2
-        return 1
+        die "menu: no menu entries provided"
 fi
 
 # Use start_selection if valid, otherwise default to 1

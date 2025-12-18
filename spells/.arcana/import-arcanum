@@ -32,14 +32,10 @@ arcana_dir=${INSTALL_MENU_ROOT:-$script_dir}
 if [ "$#" -ge 1 ]; then
   source_path=$1
 else
-  if ! command -v ask-text >/dev/null 2>&1; then
-    printf '%s\n' "import-arcanum: ask-text command not found." >&2
-    exit 1
+  if ! has ask-text; then
+    die "import-arcanum: ask-text command not found"
   fi
-  source_path=$(ask-text "Path to arcanum:") || {
-    printf '%s\n' "import-arcanum: no path provided." >&2
-    exit 1
-  }
+  source_path=$(ask-text "Path to arcanum:") || die "import-arcanum: no path provided"
 fi
 
 # Validate that source path is not empty

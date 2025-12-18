@@ -23,10 +23,10 @@ test_help() {
 
 test_argument_validation() {
   _run_spell "spells/system/update-all" --unknown
-  _assert_failure && _assert_error_contains "Unknown option"
+  _assert_failure && _assert_error_contains "Usage:"
 
   _run_spell "spells/system/update-all" extra
-  _assert_failure && _assert_error_contains "Unexpected argument"
+  _assert_failure && _assert_error_contains "Usage:"
 }
 
 test_missing_confirmation_helper() {

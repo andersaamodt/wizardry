@@ -202,7 +202,7 @@ test_list_option() {
 
 test_unknown_option() {
   _run_spell "spells/spellcraft/lint-magic" --unknown
-  _assert_failure && _assert_error_contains "unknown option"
+  _assert_failure && _assert_error_contains "Usage:"
 }
 
 test_fails_nonexistent_file() {

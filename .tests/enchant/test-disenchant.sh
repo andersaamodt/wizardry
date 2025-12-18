@@ -27,10 +27,10 @@ test_help() {
 
 test_argument_validation() {
   _run_spell "spells/enchant/disenchant"
-  _assert_failure && _assert_error_contains "requires one or two arguments"
+  _assert_failure && _assert_error_contains "Usage: disenchant"
 
   _run_spell "spells/enchant/disenchant" a b c
-  _assert_failure && _assert_error_contains "requires one or two arguments"
+  _assert_failure && _assert_error_contains "Usage: disenchant"
 }
 
 test_missing_file() {
@@ -51,7 +51,7 @@ STUB
   tmpfile="$WIZARDRY_TMPDIR/blank"
   : >"$tmpfile"
   PATH="$WIZARDRY_IMPS_PATH:$stub_dir:/bin:/usr/bin" _run_spell "spells/enchant/disenchant" "$tmpfile"
-  _assert_failure && _assert_error_contains "No enchanted attributes"
+  _assert_failure && _assert_error_contains "no enchanted attributes"
 }
 
 test_removes_specific_key_with_attr() {

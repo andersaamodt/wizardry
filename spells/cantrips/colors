@@ -118,7 +118,7 @@ MUD_MONSTER="${RED}"             # Monster/enemy names
 # Helper function to disable color palette (works in both compiled and uncompiled modes)
 try_disable_palette() {
         # Check if _disable_palette function exists (inlined by compiler)
-        if command -v _disable_palette >/dev/null 2>&1; then
+        if has _disable_palette; then
                 _disable_palette
         elif disable_palette_path=$(command -v disable-palette 2>/dev/null) \
                 && [ -n "$disable_palette_path" ]; then
@@ -138,7 +138,7 @@ case ${TERM-} in
                 try_disable_palette
                 ;;
         *)
-                if command -v tput >/dev/null 2>&1; then
+                if has tput; then
                         colors=$(tput colors 2>/dev/null || printf '')
                         case ${colors:-} in
                                 ''|0|-*)

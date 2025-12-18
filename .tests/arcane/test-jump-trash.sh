@@ -65,7 +65,7 @@ STUB
 
   # Source the spell and call the jump_trash function with custom HOME
   _run_cmd sh -c "
-    PATH='$stub:/bin:/usr/bin'
+    PATH='$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin'
     HOME='$fake_home'
     export PATH HOME
     . '$ROOT_DIR/spells/arcane/jump-trash'

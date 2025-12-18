@@ -36,7 +36,7 @@ fi
 
 # Detect whether sleep is available (systemd or pmset on macOS)
 sleep_available=""
-if command -v systemctl >/dev/null 2>&1; then
+if has systemctl; then
   # Try can-suspend first; fall back to kernel power state if unavailable
   # (NixOS and older systemd versions may not support can-suspend)
   can_suspend_result=$(systemctl can-suspend 2>&1) || true
@@ -51,7 +51,7 @@ if command -v systemctl >/dev/null 2>&1; then
       fi
       ;;
   esac
-elif command -v pmset >/dev/null 2>&1; then
+elif has pmset; then
   sleep_available="Sleep%sudo pmset sleepnow"
 fi
 

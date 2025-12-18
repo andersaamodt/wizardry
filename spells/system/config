@@ -54,12 +54,10 @@ config() {
             "$imps_dir/config-$command" "$@"
             ;;
         "")
-            printf '%s\n' "config: command required" >&2
             config_usage >&2
             return 2
             ;;
         *)
-            printf '%s\n' "config: unknown command: $command" >&2
             config_usage >&2
             return 2
             ;;

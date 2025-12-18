@@ -22,7 +22,7 @@ test_help() {
 test_requires_argument() {
   _run_spell "spells/arcane/file-list"
   _assert_failure || return 1
-  _assert_output_contains "folder path required" || return 1
+  _assert_error_contains "Usage: file-list" || return 1
 }
 
 test_creates_file() {

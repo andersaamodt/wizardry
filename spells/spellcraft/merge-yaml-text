@@ -112,7 +112,7 @@ for yaml in "${dir}"*.yaml; do
 
     # if verbose mode is on, print progress
     if [ "$verbose" -eq 1 ]; then
-      printf '%s\n' "($count/$total_files) Merged: $yaml"
+      info "($count/$total_files) Merged: $yaml"
     fi
   fi
 done

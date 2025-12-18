@@ -30,7 +30,7 @@ if [ "$#" -lt 1 ]; then
 fi
 
 for file in ./*; do
-        printf '%s\n' "${file#./}"
+        say "${file#./}"
     "$@" "$file" | awk '{print "   " $0}'
 done
 }

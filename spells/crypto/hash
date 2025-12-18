@@ -24,8 +24,8 @@ set -eu
 . env-clear
 
 if [ "$#" != 1 ]; then
-    printf 'Usage: hash file\n'
-    return 1
+    hash_usage >&2
+    return 2
 fi
 
 # Get the directory where the script is being called from
@@ -38,18 +38,17 @@ file_name="$1"
 file="$script_dir/$file_name"
 
 if [ ! -f "$file" ]; then
-    printf 'Your spell fizzles. There is no file.\n'
-    return 1
+    die "hash: Your spell fizzles. There is no file."
 fi
 
 # Normalize double slashes for macOS compatibility
-normalized_file=$(printf '%s' "$file" | sed 's|//|/|g')
-printf '%s\n' "$normalized_file"
+normalized_file=$(norm-path "$file")
+say "$normalized_file"
 # Compute the CRC-32 hash
 crc=$(cksum "$file" | awk '{print $1}')
 
 # Convert the hash to hexadecimal and display it
-printf "0x%x\n" "$crc"
+say "$(printf "0x%x" "$crc")"
 }
 
 # Self-execute when run directly (not sourced)

@@ -33,7 +33,7 @@ if [ -z "$service_name" ]; then
         # Find ask-text helper
         if [ -n "${START_SERVICE_ASK_TEXT-}" ]; then
                 ask_text_helper=$START_SERVICE_ASK_TEXT
-        elif command -v ask-text >/dev/null 2>&1; then
+        elif has ask-text; then
                 ask_text_helper=$(command -v ask-text)
         else
                 # Try to find in same directory as script

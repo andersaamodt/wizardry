@@ -44,7 +44,7 @@ script_dir=$(cd "$script_dir" && pwd -P)
 # Inline disable_service_find_ask_text - only used once
 if [ -n "${DISABLE_SERVICE_ASK_TEXT-}" ]; then
   ask_text_helper=$DISABLE_SERVICE_ASK_TEXT
-elif command -v ask-text >/dev/null 2>&1; then
+elif has ask-text; then
   ask_text_helper=$(command -v ask-text)
 elif [ -x "$script_dir/ask-text" ]; then
   ask_text_helper="$script_dir/ask-text"

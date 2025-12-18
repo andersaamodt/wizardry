@@ -44,7 +44,7 @@ last_status=0
 
 for helper in attr xattr setfattr; do
   # Inline helper_usable logic
-  if ! command -v "$helper" >/dev/null 2>&1; then
+  if ! has "$helper"; then
     continue
   fi
 
@@ -79,7 +79,7 @@ for helper in attr xattr setfattr; do
   esac
 
   if [ "$applied" -eq 1 ]; then
-    echo "File enchanted with hash: $hash"
+    success "File enchanted with hash: $hash"
     return 0
   fi
 
