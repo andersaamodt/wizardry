@@ -187,8 +187,7 @@ if [ -z "$rc_file" ]; then
 fi
 
 if [ -z "$rc_file" ]; then
-        printf '%s\n' "detect-rc-file: unable to determine a startup file." >&2
-        exit 1
+        die "detect-rc-file: unable to determine a startup file."
 fi
 
 case $rc_file in

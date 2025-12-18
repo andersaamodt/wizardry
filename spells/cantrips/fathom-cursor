@@ -99,7 +99,7 @@ fi
 if [ "$skip_stty" -eq 1 ]; then
     # Test harnesses can feed canned responses via a read-only file
     if [ ! -r "$tty_device" ]; then
-        printf '%s\n' "fathom-cursor: unable to read from '$tty_device'" >&2
+        warn "fathom-cursor: unable to read from '$tty_device'"
         return 1
     fi
 
@@ -111,7 +111,7 @@ if [ "$skip_stty" -eq 1 ]; then
 else
     # When running interactively, open the tty for both reading and writing
     if [ ! -r "$tty_device" ] || [ ! -w "$tty_device" ]; then
-        printf '%s\n' "fathom-cursor: unable to open controlling terminal '$tty_device'" >&2
+        warn "fathom-cursor: unable to open controlling terminal '$tty_device'"
         return 1
     fi
 
@@ -120,7 +120,7 @@ else
     # Preserve the terminal state and restore it on exit
     saved_state=$(stty -g <&3 2>/dev/null)
     if [ -z "$saved_state" ]; then
-        printf '%s\n' 'fathom-cursor: unable to read terminal settings' >&2
+        warn 'fathom-cursor: unable to read terminal settings'
         return 1
     fi
 
@@ -134,7 +134,7 @@ else
 
     # Configure raw mode with a short timeout
     if ! stty -icanon -echo min 0 time 5 <&3 2>/dev/null; then
-        printf '%s\n' 'fathom-cursor: unable to configure terminal' >&2
+        warn 'fathom-cursor: unable to configure terminal'
         return 1
     fi
 fi
@@ -166,7 +166,7 @@ esc=$(printf '\033')
 
 case "$response" in
     '')
-        printf '%s\n' 'fathom-cursor: terminal did not respond' >&2
+        warn 'fathom-cursor: terminal did not respond'
         return 1
         ;;
     "$esc"'['*'R')
@@ -187,7 +187,7 @@ column=${coords#*;}
 # Validate numeric values
 case "$row" in
     *[!0-9]*)
-        printf '%s\n' "fathom-cursor: invalid row '$row'" >&2
+        warn "fathom-cursor: invalid row '$row'"
         return 1
         ;;
     *) : ;;
@@ -195,7 +195,7 @@ esac
 
 case "$column" in
     *[!0-9]*)
-        printf '%s\n' "fathom-cursor: invalid column '$column'" >&2
+        warn "fathom-cursor: invalid column '$column'"
         return 1
         ;;
     *) : ;;

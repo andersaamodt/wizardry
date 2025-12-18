@@ -101,8 +101,8 @@ if [ -z "$test_list" ]; then
 fi
 
 # Create temporary file for timing data
-tmpfile=$(mktemp "${TMPDIR:-/tmp}/profile-tests.XXXXXX")
-trap 'rm -f "$tmpfile"' EXIT HUP INT TERM
+tmpfile=$(temp-file profile-tests)
+on-exit cleanup-file "$tmpfile"
 
 info "Profiling tests..."
 

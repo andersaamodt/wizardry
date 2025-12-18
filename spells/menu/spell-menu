@@ -192,7 +192,7 @@ while :; do
         
         # Check if installable (inline from is_installable)
         is_install=0
-        if command -v is-installable >/dev/null 2>&1; then
+        if has is-installable; then
                 if is-installable "$command"; then
                         is_install=1
                 fi

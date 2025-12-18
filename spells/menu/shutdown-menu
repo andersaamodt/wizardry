@@ -57,7 +57,7 @@ fi
 
 # Detect whether hibernate is available (systemd only)
 hibernate_available=""
-if command -v systemctl >/dev/null 2>&1; then
+if has systemctl; then
   # Try can-hibernate first; fall back to kernel power state if unavailable
   # (NixOS and older systemd versions may not support can-hibernate)
   can_hibernate_result=$(systemctl can-hibernate 2>&1) || true
@@ -76,7 +76,7 @@ fi
 
 # Detect whether loginctl is available for graceful logout (systemd only)
 logout_cmd=""
-if command -v loginctl >/dev/null 2>&1; then
+if has loginctl; then
   logout_cmd="loginctl terminate-user \"\$USER\""
 else
   logout_cmd="pkill -TERM -u \"\$USER\""

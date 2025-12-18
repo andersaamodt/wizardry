@@ -71,7 +71,7 @@ script_dir=$(cd "$script_dir" && pwd -P)
 # Find ask-yn helper
 if [ -n "${INSTALL_SERVICE_TEMPLATE_ASK_YN-}" ]; then
   ask_yn=$INSTALL_SERVICE_TEMPLATE_ASK_YN
-elif command -v ask-yn >/dev/null 2>&1; then
+elif has ask-yn; then
   ask_yn=$(command -v ask-yn)
 elif [ -x "$script_dir/ask-yn" ]; then
   ask_yn=$script_dir/ask-yn
@@ -82,7 +82,7 @@ fi
 # Find ask-text helper
 if [ -n "${INSTALL_SERVICE_TEMPLATE_ASK_TEXT-}" ]; then
   ask_text=$INSTALL_SERVICE_TEMPLATE_ASK_TEXT
-elif command -v ask-text >/dev/null 2>&1; then
+elif has ask-text; then
   ask_text=$(command -v ask-text)
 elif [ -x "$script_dir/ask-text" ]; then
   ask_text=$script_dir/ask-text
@@ -91,7 +91,7 @@ else
 fi
 
 # Check for systemctl
-if command -v systemctl >/dev/null 2>&1; then
+if has systemctl; then
         systemctl_cmd=$(command -v systemctl)
 else
         fail "$script_name: systemctl is required for this spell"

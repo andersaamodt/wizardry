@@ -32,7 +32,7 @@ if [ -z "$player" ]; then
 fi
 
 # Store player name using mud-config instead of polluting rc files
-if command -v mud-config >/dev/null 2>&1; then
+if has mud-config; then
     mud-config set player "$player"
     printf '%s\n' "Player identity set to '$player'."
 else
