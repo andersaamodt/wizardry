@@ -42,12 +42,12 @@ USAGE
   esac
 
   # Inline get_trash_path - only used once
-  if command -v detect-trash >/dev/null 2>&1; then
+  if has detect-trash; then
     trash_path=$(detect-trash)
   else
     # Inline fallback if detect-trash is not available
     platform=''
-    if command -v detect-distro >/dev/null 2>&1; then
+    if has detect-distro; then
       platform=$(detect-distro 2>/dev/null || printf 'unknown')
     else
       kernel=$(uname -s 2>/dev/null || printf 'unknown')

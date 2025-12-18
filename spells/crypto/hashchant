@@ -44,7 +44,7 @@ last_status=0
 
 for helper in attr xattr setfattr; do
   # Inline helper_usable logic
-  if ! command -v "$helper" >/dev/null 2>&1; then
+  if ! has "$helper"; then
     continue
   fi
 

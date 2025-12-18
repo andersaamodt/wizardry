@@ -26,7 +26,7 @@ set -eu
 
 # Handle missing argument - prompt interactively
 if [ "$#" -eq 0 ]; then
-    if command -v ask-text >/dev/null 2>&1; then
+    if has ask-text; then
         file_path=$(ask-text "Enter file path to copy to clipboard:")
         if [ -z "$file_path" ]; then
             say 'No file path provided.'
@@ -52,7 +52,7 @@ is file "$1" || {
 # Suppress clip-copy's error to avoid duplicate messages
 if ! clip-copy < "$1" 2>/dev/null; then
     # Attempt to install a clipboard utility using the unified installer
-    if command -v install-clipboard-helper >/dev/null 2>&1; then
+    if has install-clipboard-helper; then
         if install-clipboard-helper >/dev/null 2>&1 && clip-copy < "$1" 2>/dev/null; then
             : # Installation succeeded and copy worked
         else
