@@ -78,8 +78,7 @@ fi
 # Otherwise, list keys and let user choose
 keys=$(xattr-list-keys "$file" || printf '')
 if empty "$keys"; then
-  printf '%s\n' "Error: No enchanted attributes found on $file." >&2
-  return 1
+  fail "disenchant: no enchanted attributes found on $file"
 fi
 
 # Count keys
@@ -94,8 +93,7 @@ else
   count=$#
 
   if ! has ask-number; then
-    printf '%s\n' "Error: multiple attributes found; install ask-number or specify a key." >&2
-    return 1
+    fail "disenchant: multiple attributes found; install ask-number or specify a key"
   fi
 
   printf '%s\n' "Available attributes:" >&2

@@ -60,15 +60,13 @@ while [ "$#" -gt 0 ]; do
                         ;;
                 --category)
                         if [ "$#" -lt 2 ]; then
-                                printf '%s\n' "$script_name: --category requires a value." >&2
-                                return 1
+                                fail "$script_name: --category requires a value"
                         fi
                         current_category=$2
                         # Validate category
                         case $current_category in
                         ''|*[!A-Za-z0-9._-]*)
-                                printf '%s\n' "$script_name: category names may contain only letters, digits, dots, underscores, and dashes." >&2
-                                return 1
+                                fail "$script_name: category names may contain only letters, digits, dots, underscores, and dashes"
                                 ;;
                         -*)
                                 printf '%s\n' "$script_name: category names may not begin with a dash." >&2

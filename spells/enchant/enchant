@@ -34,8 +34,7 @@ value=""
 preferred=""
 
 if [ $# -eq 0 ]; then
-        printf '%s\n' "Error: At least one argument is required (attribute=value)." >&2
-        return 1
+        fail "enchant: at least one argument required (attribute=value)"
 elif [ $# -eq 1 ]; then
         # One arg: must be attribute=value, use current directory
         case "$1" in
@@ -48,13 +47,11 @@ elif [ $# -eq 1 ]; then
                         value=$_val
                         file=$PWD
                 else
-                        printf '%s\n' "Error: Single argument must be attribute=value format." >&2
-                        return 1
+                        fail "enchant: argument must be attribute=value format"
                 fi
                 ;;
         *)
-                printf '%s\n' "Error: Single argument must be attribute=value format." >&2
-                return 1
+                fail "enchant: argument must be attribute=value format"
                 ;;
         esac
 elif [ $# -eq 2 ]; then
