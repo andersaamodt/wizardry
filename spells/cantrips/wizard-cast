@@ -3,6 +3,8 @@
 # This spell displays a command before executing it for teaching purposes.
 # Use it to show commands to those learning the path of wizardry.
 
+require-wizardry || exit 1
+
 wizard_cast_usage() {
 cat <<'USAGE'
 Usage: wizard-cast <command> [arguments...]
@@ -26,8 +28,7 @@ set -eu
 
 # Check argument
 if [ -z "${1-}" ]; then
-        printf '%s\n' "wizard-cast: command required." >&2
-        return 1
+        fail "wizard-cast: command required"
 fi
 
 # Display the command using wizard-eyes if available

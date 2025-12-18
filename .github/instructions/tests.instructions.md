@@ -6,13 +6,24 @@ applyTo: ".tests/**"
 
 **Every spell and imp MUST have a corresponding test file.** Tests are not optional.
 
+### Test Naming Convention
+
+**IMPORTANT:** Test files use `test-<name>.sh` format (all hyphens, NO underscores).
+
 When you create:
 - A new spell at `spells/category/spell-name`
 - A new imp at `spells/.imps/family/imp-name`
 
 You MUST also create:
-- Test at `.tests/category/test_spell-name.sh`
-- Test at `.tests/.imps/family/test_imp-name.sh`
+- Test at `.tests/category/test-spell-name.sh` (note: `test-` prefix, not `test_`)
+- Test at `.tests/.imps/family/test-imp-name.sh` (note: `test-` prefix, not `test_`)
+
+**Examples:**
+- Spell: `spells/cantrips/ask-yn` → Test: `.tests/cantrips/test-ask-yn.sh`
+- Spell: `spells/arcane/read-magic` → Test: `.tests/arcane/test-read-magic.sh`
+- Imp: `spells/.imps/out/say` → Test: `.tests/.imps/out/test-say.sh`
+
+**Common Mistake:** Using `test_spell-name.sh` instead of `test-spell-name.sh` (underscores vs hyphens)
 
 Failure to create tests will cause CI to fail with "uncovered spells/imps" errors.
 
@@ -33,11 +44,18 @@ cd /home/runner/work/wizardry/wizardry && .tests/category/test-spell-name.sh
 
 Only report test results you have personally verified by executing the test file. Include the actual pass/fail counts in your reports.
 
-## Test File Location
+## Test File Location and Naming
 
-Test files mirror the `spells/` directory structure:
-- Spell: `spells/category/spell-name`
-- Test: `.tests/category/test_spell-name.sh`
+Test files mirror the `spells/` directory structure with `test-` prefix (all hyphens):
+
+| Spell Path | Test Path | Correct |
+|------------|-----------|---------|
+| `spells/category/spell-name` | `.tests/category/test-spell-name.sh` | ✅ Correct |
+| `spells/category/spell-name` | `.tests/category/test_spell-name.sh` | ❌ Wrong (underscore) |
+| `spells/.imps/family/imp-name` | `.tests/.imps/family/test-imp-name.sh` | ✅ Correct |
+| `spells/.imps/family/imp-name` | `.tests/.imps/family/test_imp-name.sh` | ❌ Wrong (underscore) |
+
+**Pattern:** Replace the spell/imp filename with `test-<filename>.sh` in the mirrored directory.
 
 ## Test Template
 

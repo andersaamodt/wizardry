@@ -4,6 +4,8 @@
 # substituting placeholders. It prefers interactive prompts so the services menu
 # can call it without arguments.
 
+require-wizardry || exit 1
+
 script_name=$(basename "$0")
 service_dir=${SERVICE_DIR:-/etc/systemd/system}
 
@@ -27,6 +29,8 @@ case "${1-}" in
   ;;
 esac
 
+require-wizardry || exit 1
+
 set -eu
 . env-clear
 
@@ -44,8 +48,7 @@ install_service_template_require_privilege() {
     sudo "$@"
     return 0
   fi
-  printf '%s\n' "$script_name: run as root or install sudo to write $service_dir." >&2
-  return 1
+  fail "$script_name: run as root or install sudo to write $service_dir"
 }
 
 # Find script directory for relative helper lookup
@@ -73,8 +76,7 @@ elif command -v ask-yn >/dev/null 2>&1; then
 elif [ -x "$script_dir/ask-yn" ]; then
   ask_yn=$script_dir/ask-yn
 else
-  printf '%s\n' "$script_name: unable to locate helper 'ask-yn'." >&2
-  return 1
+  fail "$script_name: unable to locate helper 'ask-yn'"
 fi
 
 # Find ask-text helper
@@ -85,16 +87,14 @@ elif command -v ask-text >/dev/null 2>&1; then
 elif [ -x "$script_dir/ask-text" ]; then
   ask_text=$script_dir/ask-text
 else
-  printf '%s\n' "$script_name: unable to locate helper 'ask-text'." >&2
-  return 1
+  fail "$script_name: unable to locate helper 'ask-text'"
 fi
 
 # Check for systemctl
 if command -v systemctl >/dev/null 2>&1; then
         systemctl_cmd=$(command -v systemctl)
 else
-        printf '%s\n' "$script_name: systemctl is required for this spell." >&2
-        return 1
+        fail "$script_name: systemctl is required for this spell"
 fi
 
 # Get template path
@@ -109,8 +109,7 @@ if [ -z "$template_path" ]; then
         return 1
 fi
 if [ ! -f "$template_path" ]; then
-        printf '%s\n' "$script_name: template '$template_path' not found." >&2
-        return 1
+        fail "$script_name: template '$template_path' not found"
 fi
 
 service_file=$(basename "$template_path")
@@ -144,7 +143,7 @@ for arg in "$@"; do
                 mv "$tmp_swap" "$tmp_file"
                 ;;
         *)
-                printf '%s\n' "$script_name: ignoring malformed substitution '$arg'." >&2
+                warn "$script_name: ignoring malformed substitution '$arg'"
                 ;;
         esac
 done

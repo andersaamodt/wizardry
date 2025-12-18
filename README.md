@@ -262,13 +262,13 @@ Run the complete shell test suite with:
 test-magic
 ```
 
-The spell discovers every `test_*.sh` file in `.tests/` and executes each in a sandboxed bubblewrap environment.
+The spell discovers every `test-*.sh` file (note: hyphen, not underscore) in `.tests/` and executes each in a sandboxed bubblewrap environment.
 
 Principles of the testing suite:
 
 | Testing Rule          | Description |
 | --------------------- | ----------- |
-| Tests are the spec    | Each spell’s behavior is fully specified by its `test_*.sh` counterpart. |
+| Tests are the spec    | Each spell's behavior is fully specified by its `test-*.sh` counterpart (e.g., `test-spell-name.sh`). |
 | Tests are POSIX shell | Tests are simply POSIX-compliant shell scripts that exercise expected behaviors. |
 | Help-as-spec          | Each spell's `--help` usage note is its primary spec; each unit test is the operationalized spec. |
 | Mirrored tree         | `.tests/` mirrors `spells/` structurally: one test script per spell. |

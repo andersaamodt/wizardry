@@ -6,6 +6,8 @@
 # The flow stays linear: discover the helper, choose colour, scan the room, then
 # summarize the ambience so new spellwrights can follow along.
 
+require-wizardry || exit 1
+
 detect_magic_usage() {
 cat <<'USAGE'
 Usage: detect-magic
@@ -100,10 +102,10 @@ for entry in *; do
         set -e
 
         if [ "$filter_status" -eq 97 ]; then
-                printf '%s\n' "detect-magic: ignoring malformed output from $entry" >&2
+                warn "detect-magic: ignoring malformed output from $entry"
                 continue
         elif [ "$filter_status" -ne 0 ]; then
-                printf '%s\n' "detect-magic: failed to parse output from $entry" >&2
+                warn "detect-magic: failed to parse output from $entry"
                 continue
         fi
 

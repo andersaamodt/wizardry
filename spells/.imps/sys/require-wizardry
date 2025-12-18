@@ -1,0 +1,42 @@
+#!/bin/sh
+# require-wizardry - check if wizardry is installed, offer to install if not
+# Returns 0 if wizardry is installed
+# Returns 1 if wizardry is not installed and user declined/failed to install
+# In test mode (WIZARDRY_TEST_HELPERS_ONLY=1), always returns 0
+set -eu
+
+_require_wizardry() {
+  # In test mode, assume wizardry is available (tests set up their own PATH)
+  if [ "${WIZARDRY_TEST_HELPERS_ONLY:-}" = "1" ]; then
+    return 0
+  fi
+  
+  # Check if wizardry is installed by looking for a core spell
+  if has menu; then
+    return 0
+  fi
+  
+  # Wizardry not found - print error and offer to install
+  printf '%s\n' "Error: wizardry is not installed or not in PATH." >&2
+  printf '%s\n' "" >&2
+  
+  # Offer to install wizardry
+  if ask-install-wizardry; then
+    # Installation succeeded - verify it worked
+    if has menu; then
+      return 0
+    else
+      printf '%s\n' "Installation completed but wizardry is still not in PATH." >&2
+      printf '%s\n' "You may need to restart your shell or run: source ~/.bashrc" >&2
+      return 1
+    fi
+  else
+    # User declined or installation failed
+    return 1
+  fi
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */require-wizardry) _require_wizardry "$@" ;; esac
+
