@@ -89,7 +89,7 @@ if [ "$have_home" -eq 1 ]; then
 fi
 
 # Use detect-distro spell (exists and is available)
-if command -v detect-distro >/dev/null 2>&1; then
+if has detect-distro; then
   distro=$(detect-distro 2>/dev/null || true)
 else
   kernel=$(uname -s 2>/dev/null || printf '')
@@ -141,7 +141,7 @@ recognize_room() {
         "$home_name") ;;
         *)
           # Inline possessive_name logic - only used once in this spell
-          if command -v possessive >/dev/null 2>&1; then
+          if has possessive; then
             owner=$(possessive "$other_user")
           else
             case $other_user in

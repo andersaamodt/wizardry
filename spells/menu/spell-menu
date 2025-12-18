@@ -21,7 +21,7 @@ set -eu
 # Check if memorized (used multiple times in loop)
 is_memorized() {
         check_name=$1
-        if command -v memorize >/dev/null 2>&1; then
+        if has memorize; then
                 cast_list_output=$(memorize list)
         else
                 # Fallback: list files directly from spellbook
@@ -102,7 +102,7 @@ if ! require menu "The spell menu needs the 'menu' command."; then
 fi
 
 # Get spell home directory
-if command -v env-or >/dev/null 2>&1; then
+if has env-or; then
         spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
 else
         spell_home="${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}"

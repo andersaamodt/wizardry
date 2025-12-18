@@ -87,7 +87,7 @@ while :; do
     set --
     for name in $entries; do
         status_cmd=""
-        if command -v "${name}-status" >/dev/null 2>&1; then
+        if has "${name}-status"; then
             status_cmd="${name}-status"
         elif [ -x "$install_dir/$name-status" ] && [ ! -d "$install_dir/$name-status" ]; then
             status_cmd="$install_dir/$name-status"
@@ -101,7 +101,7 @@ while :; do
             status='coming soon'
         fi
 
-        if command -v "${name}-menu" >/dev/null 2>&1; then
+        if has "${name}-menu"; then
             cmd="${name}-menu"
         elif [ -x "$install_dir/$name-menu" ] && [ ! -d "$install_dir/$name-menu" ]; then
             cmd="$install_dir/$name-menu"

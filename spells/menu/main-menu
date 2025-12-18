@@ -37,7 +37,7 @@ fi
 # Check if MUD is enabled in config
 is_mud_enabled() {
   # Check if mud-config exists and mud-enabled is set to 1
-  if command -v mud-config >/dev/null 2>&1; then
+  if has mud-config; then
     value=$(mud-config get mud-enabled 2>/dev/null) || return 1
     [ "$value" = "1" ]
   else
