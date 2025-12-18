@@ -70,13 +70,13 @@ while [ "$#" -gt 0 ]; do
                         shift
                         ;;
                 -*)
-                        usage-error "erase-spell" "unknown option: $1"
+                        usage-error "erase-spell" "unknown option: $1" || return 1
                         ;;
                 *)
                         if [ -z "$name" ]; then
                                 name=$1
                         else
-                                usage-error "erase-spell" "unexpected argument: $1"
+                                usage-error "erase-spell" "unexpected argument: $1" || return 1
                         fi
                         shift
                         ;;
@@ -91,7 +91,7 @@ fi
 # Find the spell
 script_path=$(find_custom_spell "$name") || {
         display_path=$(tilde-path "$spell_home")
-        die "erase-spell: spell \"$name\" not found in $display_path"
+        die "erase-spell: spell \"$name\" not found in $display_path" || return 1
 }
 
 # Check if it's actually in spell_home (not a built-in spell)
@@ -100,7 +100,7 @@ case "$script_path" in
                 : # OK, it's a custom spell
                 ;;
         *)
-                die "erase-spell: \"$name\" is not a custom spell and cannot be erased"
+                die "erase-spell: \"$name\" is not a custom spell and cannot be erased" || return 1
                 ;;
 esac
 
