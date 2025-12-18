@@ -3,6 +3,8 @@
 # This spell validates whether a string is a valid SSH public key format.
 # Use it to check SSH key input before adding to authorized_keys.
 
+require-wizardry || exit 1
+
 validate_ssh_key_usage() {
 cat <<'USAGE'
 Usage: validate-ssh-key <key>
@@ -26,8 +28,7 @@ set -eu
 
 # Check argument
 if [ -z "${1+x}" ]; then
-        printf '%s\n' "validate-ssh-key: key required." >&2
-        return 1
+        fail "validate-ssh-key: key required"
 fi
 
 ssh_key=$1
