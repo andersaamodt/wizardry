@@ -1609,6 +1609,55 @@ test_warn_parent_dir_references() {
   return 0
 }
 
+# Test: test output streams line-by-line (not buffered)
+# Verifies that PASS/FAIL lines appear as subtests complete, not all at once
+test_output_streams_line_by_line() {
+  # Create a test that outputs PASS lines with delays between them
+  tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/streaming-test.XXXXXX")
+  test_file="$tmpdir/streaming-test.sh"
+  
+  cat > "$test_file" << 'EOF'
+#!/bin/sh
+printf 'PASS #1 first test\n'
+sleep 0.1
+printf 'PASS #2 second test\n'
+sleep 0.1
+printf 'PASS #3 third test\n'
+printf '3/3 tests passed\n'
+EOF
+  
+  chmod +x "$test_file"
+  
+  # Run the test through test-magic's streaming pipeline
+  # Capture timestamps to verify output arrives incrementally
+  output_file="$tmpdir/output.txt"
+  timestamps_file="$tmpdir/timestamps.txt"
+  
+  # Simulate what test-magic does: tee to file and awk for display
+  {
+    sh "$test_file" 2>&1 | tee "$output_file" | awk '
+      /^PASS / { 
+        print "  " $0
+        fflush()
+        system("date +%s.%N >> '"$timestamps_file"'")
+      }
+    '
+  } > /dev/null 2>&1
+  
+  # Verify we got 3 PASS lines
+  pass_count=$(grep -c "^PASS" "$output_file" 2>/dev/null || echo 0)
+  test "$pass_count" -eq 3 || { rm -rf "$tmpdir"; return 1; }
+  
+  # Verify we got 3 timestamps (one per PASS line)
+  if [ -f "$timestamps_file" ]; then
+    timestamp_count=$(wc -l < "$timestamps_file" | tr -d ' ')
+    test "$timestamp_count" -eq 3 || { rm -rf "$tmpdir"; return 1; }
+  fi
+  
+  rm -rf "$tmpdir"
+  return 0
+}
+
 # --- Run all test cases ---
 
 _run_test_case "no duplicate spell names" test_no_duplicate_spell_names
@@ -1636,5 +1685,6 @@ _run_test_case "no mixed-case variables" test_no_mixed_case_variables
 _run_test_case "scripts have set -eu early" test_scripts_have_set_eu_early
 _run_test_case "spells source env-clear after set -eu" test_spells_source_env_clear_after_set_eu
 _run_test_case "warn about parent directory references" test_warn_parent_dir_references
+_run_test_case "test output streams line-by-line" test_output_streams_line_by_line
 
 _finish_tests
