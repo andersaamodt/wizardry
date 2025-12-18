@@ -15,6 +15,5 @@ _usage_error() {
 }
 
 # Self-execute when run directly (not sourced)
-set -eu
 case "$0" in
   */usage-error) _usage_error "$@" ;; esac
