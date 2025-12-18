@@ -26,5 +26,4 @@ _disable_palette() {
 
 # Execute immediately when sourced (for colors spell compatibility)
 # This imp is designed to be sourced by colors to disable the palette
-set -eu
 _disable_palette

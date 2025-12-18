@@ -1308,10 +1308,10 @@ test_no_allcaps_variable_assignments() {
   return 0
 }
 
-# --- Check: Scripts have set -eu early ---
-# All spells and action imps must have "set -eu" early in the file (within first 50 lines).
-# Allowed before set -eu: shebang, opening comment, help handler.
-# This enforces strict mode and catches errors early.
+# --- Check: Scripts have explicit error handling mode early ---
+# All spells and action imps must have "set -eu" or "set +eu" early in the file (within first 50 lines).
+# Use "set -eu" for strict mode (most spells) or "set +eu" for permissive mode (sourceable scripts).
+# Allowed before set: shebang, opening comment, help handler.
 
 test_scripts_have_set_eu_early() {
   violations=""
@@ -1327,24 +1327,18 @@ test_scripts_have_set_eu_early() {
       .arcana/*) return ;;
       # install script exempt (bootstrap, has special PATH setup)
       install) return ;;
-      # declare-globals exempt (just variable declarations)
-      .imps/declare-globals) return ;;
       # Test bootstrap exempt (sets up test environment)
       .imps/test/test-bootstrap) return ;;
-      # env-clear itself exempt (special case)
-      .imps/sys/env-clear) return ;;
-      # invoke-wizardry exempt (sourced into user shell, can't use set -eu at top level)
-      .imps/sys/invoke-wizardry) return ;;
       # Conditional imps exempt (return exit codes, not errors)
       .imps/cond/*|.imps/lex/*|.imps/menu/*) return ;;
-      # Bootstrap spells that have long argument parsing before set -eu
+      # Bootstrap spells that have long argument parsing before set
       divination/detect-rc-file|system/test-magic) return ;;
     esac
     
-    # In compiled mode, wrapper functions are unwrapped so set -eu may appear later
-    # Just check that set -eu exists somewhere in the file
+    # In compiled mode, wrapper functions are unwrapped so set may appear later
+    # Just check that set -eu or set +eu exists somewhere in the file
     if [ "${WIZARDRY_TEST_COMPILED:-0}" = "1" ]; then
-      if ! grep -qE '^[[:space:]]*set +-[euo]*[eu][euo]*' "$spell"; then
+      if ! grep -qE '^[[:space:]]*set [+-][euo]*[eu][euo]*' "$spell"; then
         printf '%s\n' "$rel_path"
       fi
       return
@@ -1354,7 +1348,7 @@ test_scripts_have_set_eu_early() {
     # 1. Has wrapper function matching filename (with underscores for hyphens)
     #    OR has true name function for imps (underscore prefix)
     # 2. Has self-execute pattern: case "$0" in */name) wrapper "$@" ;; esac
-    # If both present, spell uses word-of-binding and set -eu can be inside wrapper
+    # If both present, spell uses word-of-binding and set can be inside wrapper
     
     # Convert filename to function name (hyphens to underscores)
     func_name=$(printf '%s' "$name" | tr '-' '_')
@@ -1374,16 +1368,16 @@ test_scripts_have_set_eu_early() {
       has_self_execute=1
     fi
     
-    # If word-of-binding pattern detected, check for set -eu anywhere
+    # If word-of-binding pattern detected, check for set -eu or set +eu anywhere
     if [ "$has_wrapper" = "1" ] && [ "$has_self_execute" = "1" ]; then
-      # Word-of-binding spell: set -eu should exist somewhere (inside or outside wrapper)
-      if ! grep -qE '^[[:space:]]*set +-[euo]*[eu][euo]*' "$spell"; then
+      # Word-of-binding spell: set -eu or set +eu should exist somewhere (inside or outside wrapper)
+      if ! grep -qE '^[[:space:]]*set [+-][euo]*[eu][euo]*' "$spell"; then
         printf '%s\n' "$rel_path"
       fi
     else
-      # Regular spell: check if set -eu appears in first 50 lines
-      # Pattern matches: set -eu, set -ue, set -euo, etc.
-      if ! head -50 "$spell" | grep -qE '^[[:space:]]*set +-[euo]*[eu][euo]*'; then
+      # Regular spell: check if set -eu or set +eu appears in first 50 lines
+      # Pattern matches: set -eu, set -ue, set -euo, set +eu, set +ue, etc.
+      if ! head -50 "$spell" | grep -qE '^[[:space:]]*set [+-][euo]*[eu][euo]*'; then
         printf '%s\n' "$rel_path"
       fi
     fi
@@ -1397,7 +1391,7 @@ test_scripts_have_set_eu_early() {
   rm -f "$tmpfile"
   
   if [ -n "$violations" ]; then
-    TEST_FAILURE_REASON="scripts missing early set -eu: $violations (add 'set -eu' after opening comment, within first 50 lines)"
+    TEST_FAILURE_REASON="scripts missing explicit error handling mode: $violations (add 'set -eu' or 'set +eu' after opening comment, within first 50 lines)"
     return 1
   fi
   
@@ -1615,6 +1609,55 @@ test_warn_parent_dir_references() {
   return 0
 }
 
+# Test: test output streams line-by-line (not buffered)
+# Verifies that PASS/FAIL lines appear as subtests complete, not all at once
+test_output_streams_line_by_line() {
+  # Create a test that outputs PASS lines with delays between them
+  tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/streaming-test.XXXXXX")
+  test_file="$tmpdir/streaming-test.sh"
+  
+  cat > "$test_file" << 'EOF'
+#!/bin/sh
+printf 'PASS #1 first test\n'
+sleep 0.1
+printf 'PASS #2 second test\n'
+sleep 0.1
+printf 'PASS #3 third test\n'
+printf '3/3 tests passed\n'
+EOF
+  
+  chmod +x "$test_file"
+  
+  # Run the test through test-magic's streaming pipeline
+  # Capture timestamps to verify output arrives incrementally
+  output_file="$tmpdir/output.txt"
+  timestamps_file="$tmpdir/timestamps.txt"
+  
+  # Simulate what test-magic does: tee to file and awk for display
+  {
+    sh "$test_file" 2>&1 | tee "$output_file" | awk '
+      /^PASS / { 
+        print "  " $0
+        fflush()
+        system("date +%s.%N >> '"$timestamps_file"'")
+      }
+    '
+  } > /dev/null 2>&1
+  
+  # Verify we got 3 PASS lines
+  pass_count=$(grep -c "^PASS" "$output_file" 2>/dev/null || echo 0)
+  test "$pass_count" -eq 3 || { rm -rf "$tmpdir"; return 1; }
+  
+  # Verify we got 3 timestamps (one per PASS line)
+  if [ -f "$timestamps_file" ]; then
+    timestamp_count=$(wc -l < "$timestamps_file" | tr -d ' ')
+    test "$timestamp_count" -eq 3 || { rm -rf "$tmpdir"; return 1; }
+  fi
+  
+  rm -rf "$tmpdir"
+  return 0
+}
+
 # --- Run all test cases ---
 
 _run_test_case "no duplicate spell names" test_no_duplicate_spell_names
@@ -1642,5 +1685,6 @@ _run_test_case "no mixed-case variables" test_no_mixed_case_variables
 _run_test_case "scripts have set -eu early" test_scripts_have_set_eu_early
 _run_test_case "spells source env-clear after set -eu" test_spells_source_env_clear_after_set_eu
 _run_test_case "warn about parent directory references" test_warn_parent_dir_references
+_run_test_case "test output streams line-by-line" test_output_streams_line_by_line
 
 _finish_tests

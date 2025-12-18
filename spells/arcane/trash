@@ -50,7 +50,7 @@ while [ "$#" -gt 0 ]; do
     break
     ;;
   -*)
-    usage-error "trash" "unknown option: $1"
+    usage-error "trash" "unknown option: $1" || return 1
     ;;
   *)
     break
@@ -59,7 +59,7 @@ while [ "$#" -gt 0 ]; do
 done
 
 if [ "$#" -eq 0 ]; then
-  usage-error "trash" "missing file operand"
+  usage-error "trash" "missing file operand" || return 1
 fi
 
 # Detect the OS

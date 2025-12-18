@@ -1,0 +1,14 @@
+#!/bin/sh
+# stub-move-cursor - test stub for move-cursor (no-op)
+# Example: stub-move-cursor 10 20
+
+set -eu
+
+_stub_move_cursor() {
+  exit 0
+}
+
+# Self-execute when run directly (not sourced)
+# Match both stub name and symlink name (tests create symlinks without stub- prefix)
+case "$0" in
+  */move-cursor|*/stub-move-cursor) _stub_move_cursor "$@" ;; esac

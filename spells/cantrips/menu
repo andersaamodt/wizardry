@@ -43,11 +43,11 @@ require stty "The menu spell needs 'stty' to manage terminal modes." || return 1
 
 menu_tty=${AWAIT_KEYPRESS_DEVICE:-/dev/tty}
 if [ ! -r "$menu_tty" ] || [ ! -w "$menu_tty" ]; then
-        die "menu: unable to access controlling terminal '$menu_tty'"
+        die "menu: unable to access controlling terminal '$menu_tty'" || return 1
 fi
 
 if ! menu_saved_tty_state=$(stty -g <"$menu_tty" 2>/dev/null); then
-        die "menu: unable to read terminal settings"
+        die "menu: unable to read terminal settings" || return 1
 fi
 
 terminal_restored=0
@@ -94,7 +94,7 @@ if [ "$#" -lt 2 ]; then
                 main-menu
                 return 0
         fi
-        die "menu: no menu entries provided"
+        die "menu: no menu entries provided" || return 1
 fi
 
 description=$1
@@ -153,7 +153,7 @@ do
 done
 
 if [ "$menu_length" -eq 0 ]; then
-        die "menu: no menu entries provided"
+        die "menu: no menu entries provided" || return 1
 fi
 
 # Use start_selection if valid, otherwise default to 1

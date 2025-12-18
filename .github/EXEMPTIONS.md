@@ -128,11 +128,23 @@ function_to_override() { ... }
 
 **Reason**: Run before wizardry installed; must be self-contained
 
-### Test-Only Imps: Require `test-` Prefix
+### Test-Only Imps: Require `test-` or `stub-` Prefix
 
 **Affected**: `spells/.imps/test/*`
 
 **Reason**: Distinguish test infrastructure from production code
+
+**Prefixes**:
+- `test-` for test infrastructure and utilities
+- `stub-` for test stubs that mimic system commands
+
+### Stub Imps: May Use Flags
+
+**Affected**: `spells/.imps/test/stub-*`
+
+**Reason**: Stub imps mimic the interface of system commands they replace (e.g., `stty -g`, `fathom-cursor -y`). They must accept the same flags as the original commands to work as drop-in replacements in tests.
+
+**Policy**: Only stub imps may use flags. Regular imps must use space-separated arguments.
 
 ### Test-Doppelganger: Skipped in Regular test-magic Runs
 

@@ -8,6 +8,5 @@ _ok() {
 }
 
 # Self-execute when run directly (not sourced)
-set -eu
 case "$0" in
   */ok) _ok "$@" ;; esac

@@ -8,6 +8,5 @@ _warn() {
 }
 
 # Self-execute when run directly (not sourced)
-set -eu
 case "$0" in
   */warn) _warn "$@" ;; esac

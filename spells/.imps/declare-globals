@@ -3,6 +3,9 @@
 # Each global requires two comment lines: description and justification.
 # ENFORCEMENT: Tests verify exactly 4 globals, 'set -u' usage, no undeclared exports.
 
+# Explicitly use permissive mode - this file is sourced into other scripts
+set +eu
+
 _declare_globals() {
   # Installation root directory path.
   # Required for spells to locate resources relative to install location.
