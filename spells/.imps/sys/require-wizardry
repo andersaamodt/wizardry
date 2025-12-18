@@ -3,7 +3,7 @@
 # Guard a script against wizardry not being installed by exiting with a
 # descriptive error or offering to install wizardry.
 
-require_wizardry_usage() {
+_require_wizardry_usage() {
 cat <<'USAGE'
 Usage: require-wizardry [--check|--offer|--snippet]
 
@@ -13,10 +13,10 @@ USAGE
 
 
 
-require_wizardry() {
+_require_wizardry() {
 case "${1-}" in
 --help|--usage|-h)
-  require_wizardry_usage
+  _require_wizardry_usage
   return 0
   ;;
 esac
@@ -111,7 +111,7 @@ SNIPPET
 return 0
 ;;
 *)
-require_wizardry_usage >&2
+_require_wizardry_usage >&2
 return 1
 ;;
 esac
@@ -119,4 +119,4 @@ esac
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */require-wizardry) require_wizardry "$@" ;; esac
+  */require-wizardry) _require_wizardry "$@" ;; esac

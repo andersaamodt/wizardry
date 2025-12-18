@@ -40,7 +40,7 @@ test_missing_helpers() {
   tmpdir=$(_make_tempdir)
   file="$tmpdir/target.txt"
   echo "lore" >"$file"
-  PATH="$WIZARDRY_CANTRIPS_PATH:$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" _run_spell "spells/crypto/hashchant" "$file"
+  PATH="$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" _run_spell "spells/crypto/hashchant" "$file"
   _assert_failure && _assert_error_contains "hashchant: xattr and attr commands not found"
 }
 
@@ -64,7 +64,7 @@ exit 1
 EOF
   chmod +x "$stub/xattr"
   export ATTR_LOG="$log"
-  PATH="$WIZARDRY_CANTRIPS_PATH:$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" _run_spell "spells/crypto/hashchant" "$file"
+  PATH="$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" _run_spell "spells/crypto/hashchant" "$file"
   _assert_success || return 1
   _assert_output_contains "$expected" || return 1
   _assert_path_exists "$log" || return 1
@@ -98,7 +98,7 @@ exit 1
 EOF
   chmod +x "$stub/setfattr"
   export ATTR_LOG="$log"
-  PATH="$WIZARDRY_CANTRIPS_PATH:$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" _run_spell "spells/crypto/hashchant" "$file"
+  PATH="$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" _run_spell "spells/crypto/hashchant" "$file"
   _assert_success || return 1
   _assert_output_contains "$expected" || return 1
   _assert_path_exists "$log" || return 1
@@ -126,7 +126,7 @@ printf '%s\n' "$*" >>"$ATTR_LOG"
 EOF
   chmod +x "$stub/setfattr"
   export ATTR_LOG="$log"
-  PATH="$WIZARDRY_CANTRIPS_PATH:$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" _run_spell "spells/crypto/hashchant" "$file"
+  PATH="$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" _run_spell "spells/crypto/hashchant" "$file"
   _assert_success || return 1
   _assert_output_contains "$expected" || return 1
   _assert_path_exists "$log" || return 1

@@ -21,13 +21,13 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-	_run_spell spells/cantrips/require-wizardry --help
+	_run_spell spells/.imps/sys/require-wizardry --help
 	_assert_success && _assert_output_contains "Usage:" && _assert_output_contains "require-wizardry"
 }
 
 test_check_when_installed() {
 	# When running tests, wizardry is on PATH, so --check should succeed
-	_run_spell spells/cantrips/require-wizardry --check
+	_run_spell spells/.imps/sys/require-wizardry --check
 	_assert_success
 }
 
@@ -40,7 +40,7 @@ test_check_when_not_installed() {
 	_link_tools "$tmp" sh printf cat command env
 	
 	# Save wizardry script to run it with absolute path
-	script="$ROOT_DIR/spells/cantrips/require-wizardry"
+	script="$ROOT_DIR/spells/.imps/sys/require-wizardry"
 	
 	# Temporarily restrict PATH for this test
 	OLD_PATH=$PATH
@@ -56,7 +56,7 @@ test_check_when_not_installed() {
 }
 
 test_snippet_output() {
-	_run_spell spells/cantrips/require-wizardry --snippet
+	_run_spell spells/.imps/sys/require-wizardry --snippet
 	_assert_success && \
 		_assert_output_contains "_require_wizardry" && \
 		_assert_output_contains "curl" && \
@@ -64,7 +64,7 @@ test_snippet_output() {
 }
 
 test_snippet_is_valid_posix() {
-	_run_spell spells/cantrips/require-wizardry --snippet
+	_run_spell spells/.imps/sys/require-wizardry --snippet
 	_assert_success || return 1
 	
 	# Write the snippet to a temp file and check if it's valid shell
@@ -78,7 +78,7 @@ test_snippet_is_valid_posix() {
 
 test_offer_when_installed() {
 	# When wizardry is installed, --offer should succeed silently
-	_run_spell spells/cantrips/require-wizardry --offer
+	_run_spell spells/.imps/sys/require-wizardry --offer
 	_assert_success
 }
 
@@ -91,7 +91,7 @@ test_offer_guidance_when_not_installed() {
 	_link_tools "$tmp" sh printf cat command env
 	
 	# Save wizardry script to run it with absolute path
-	script="$ROOT_DIR/spells/cantrips/require-wizardry"
+	script="$ROOT_DIR/spells/.imps/sys/require-wizardry"
 	
 	# Temporarily restrict PATH for this test
 	OLD_PATH=$PATH
@@ -110,7 +110,7 @@ test_offer_guidance_when_not_installed() {
 
 test_default_mode_is_offer() {
 	# Running without arguments should default to --offer mode
-	_run_spell spells/cantrips/require-wizardry
+	_run_spell spells/.imps/sys/require-wizardry
 	_assert_success  # Wizardry is installed in test environment
 }
 

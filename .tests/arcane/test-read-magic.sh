@@ -13,7 +13,7 @@ MKTEMP_BIN=$(command -v mktemp)
 TOUCH_BIN=$(command -v touch)
 
 reset_path() {
-  PATH="$WIZARDRY_CANTRIPS_PATH:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/menu:$ROOT_DIR/spells/menu/system:$ROOT_DIR/spells/menu/install/core:/usr/bin:/bin"
+  PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/menu:$ROOT_DIR/spells/menu/system:$ROOT_DIR/spells/menu/install/core:/usr/bin:/bin"
   export PATH
 }
 

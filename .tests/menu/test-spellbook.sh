@@ -96,7 +96,7 @@ STUB
 test_errors_when_helper_missing() {
   skip-if-compiled || return $?
   stub_dir=$(make_stub_dir)
-  PATH="$WIZARDRY_CANTRIPS_PATH:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$stub_dir:/bin:/usr/bin" CAST_STORE="$stub_dir/does-not-exist" _run_spell "spells/menu/spellbook" --list
+  PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$stub_dir:/bin:/usr/bin" CAST_STORE="$stub_dir/does-not-exist" _run_spell "spells/menu/spellbook" --list
   _assert_failure || return 1
   case "$OUTPUT$ERROR" in
     *"memorize helper is missing"*) : ;;

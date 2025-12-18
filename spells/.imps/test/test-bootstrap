@@ -82,11 +82,6 @@ if [ -d "$ROOT_DIR/spells/.imps" ]; then
 fi
 export WIZARDRY_IMPS_PATH
 
-# Export cantrips directory for tests that need require-wizardry in restricted PATH
-# require-wizardry is called by spells before set -eu, so it must be in PATH
-WIZARDRY_CANTRIPS_PATH="$ROOT_DIR/spells/cantrips"
-export WIZARDRY_CANTRIPS_PATH
-
 # Save the system PATH for run_cmd to use internally
 # This ensures run_cmd can always find essential utilities like mktemp, mkdir, cat, rm
 # even when tests intentionally set a restricted PATH to test error conditions
