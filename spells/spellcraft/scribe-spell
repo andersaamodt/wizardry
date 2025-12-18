@@ -231,7 +231,8 @@ fi
 
 # Check for partial arguments
 if [ "$#" -eq 1 ]; then
-        usage-error "$script_name" "both name and command are required"
+        scribe_spell_usage >&2
+        return 1
 fi
 
 # Interactive mode - ask for command FIRST, then name

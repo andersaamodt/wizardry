@@ -49,7 +49,7 @@ printf 'gio called\n' >&2
 exit 0
 STUB
   chmod +x "$stub/gio"
-  PATH="$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" "$WIZARDRY_TMPDIR/does_not_exist"
+  PATH="$WIZARDRY_CANTRIPS_PATH:$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" "$WIZARDRY_TMPDIR/does_not_exist"
   _assert_failure && _assert_error_contains "No such file or directory"
 }
 
@@ -60,7 +60,7 @@ test_nonexistent_file_with_force() {
 exit 0
 STUB
   chmod +x "$stub/gio"
-  PATH="$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" -f "$WIZARDRY_TMPDIR/does_not_exist"
+  PATH="$WIZARDRY_CANTRIPS_PATH:$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" -f "$WIZARDRY_TMPDIR/does_not_exist"
   _assert_success
 }
 
@@ -73,7 +73,7 @@ test_directory_without_recursive() {
 exit 0
 STUB
   chmod +x "$stub/gio"
-  PATH="$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" "$target_dir"
+  PATH="$WIZARDRY_CANTRIPS_PATH:$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" "$target_dir"
   _assert_failure && _assert_error_contains "Is a directory"
 }
 
@@ -94,7 +94,7 @@ STUB
 printf 'Linux\n'
 STUB
   chmod +x "$stub/uname"
-  PATH="$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" -r "$target_dir"
+  PATH="$WIZARDRY_CANTRIPS_PATH:$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" -r "$target_dir"
   _assert_success && _assert_file_contains "$log_file" "trash"
 }
 
@@ -115,7 +115,7 @@ STUB
 printf 'Linux\n'
 STUB
   chmod +x "$stub/uname"
-  PATH="$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" "$target_file"
+  PATH="$WIZARDRY_CANTRIPS_PATH:$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" "$target_file"
   _assert_success && _assert_file_contains "$log_file" "trash"
 }
 
@@ -138,7 +138,7 @@ printf 'Darwin\n'
 STUB
   chmod +x "$stub/uname"
   # Remove gio and trash-put from path to ensure osascript is chosen
-  PATH="$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" "$target_file"
+  PATH="$WIZARDRY_CANTRIPS_PATH:$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" "$target_file"
   _assert_success && _assert_file_contains "$log_file" "Finder"
 }
 
@@ -161,7 +161,7 @@ STUB
   chmod +x "$stub/uname"
   # Symlink essential utilities but NOT gio, so trash-put is used as fallback
   _link_tools "$stub" sh cat printf test env basename dirname pwd command
-  PATH="$WIZARDRY_IMPS_PATH:$stub" _run_spell "spells/arcane/trash" "$target_file"
+  PATH="$WIZARDRY_CANTRIPS_PATH:$WIZARDRY_IMPS_PATH:$stub" _run_spell "spells/arcane/trash" "$target_file"
   _assert_success && _assert_file_contains "$log_file" "$target_file"
 }
 
@@ -184,7 +184,7 @@ STUB
 printf 'Linux\n'
 STUB
   chmod +x "$stub/uname"
-  PATH="$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" "$file1" "$file2"
+  PATH="$WIZARDRY_CANTRIPS_PATH:$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" "$file1" "$file2"
   _assert_success && _assert_file_contains "$log_file" "file1.txt" && _assert_file_contains "$log_file" "file2.txt"
 }
 
@@ -205,7 +205,7 @@ STUB
 printf 'Linux\n'
 STUB
   chmod +x "$stub/uname"
-  PATH="$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" -rf "$target_dir" "$WIZARDRY_TMPDIR/nonexistent"
+  PATH="$WIZARDRY_CANTRIPS_PATH:$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" _run_spell "spells/arcane/trash" -rf "$target_dir" "$WIZARDRY_TMPDIR/nonexistent"
   _assert_success && _assert_file_contains "$log_file" "testdir"
 }
 
@@ -221,7 +221,7 @@ STUB
   chmod +x "$stub/uname"
   # Provide only basic utilities, no trash commands
   _link_tools "$stub" sh cat printf test env basename dirname pwd
-  PATH="$WIZARDRY_IMPS_PATH:$stub" _run_spell "spells/arcane/trash" "$target_file"
+  PATH="$WIZARDRY_CANTRIPS_PATH:$WIZARDRY_IMPS_PATH:$stub" _run_spell "spells/arcane/trash" "$target_file"
   _assert_failure && _assert_error_contains "no supported trash utility"
 }
 

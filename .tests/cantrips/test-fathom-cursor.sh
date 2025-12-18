@@ -22,7 +22,7 @@ make_response() {
 run_fathom() {
   resp_file=$1
   shift
-  _run_cmd env PATH="$WIZARDRY_IMPS_PATH:/bin:/usr/bin" FATHOM_CURSOR_DEVICE="$resp_file" FATHOM_CURSOR_SKIP_STTY=1 "$ROOT_DIR/spells/cantrips/fathom-cursor" "$@"
+  _run_cmd env PATH="$WIZARDRY_CANTRIPS_PATH:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" FATHOM_CURSOR_DEVICE="$resp_file" FATHOM_CURSOR_SKIP_STTY=1 "$ROOT_DIR/spells/cantrips/fathom-cursor" "$@"
 }
 
 normalize_output() {
