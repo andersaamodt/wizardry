@@ -36,66 +36,31 @@ _run_test_case "menu reports missing controlling terminal" menu_reports_missing_
 # Test --start-selection argument - Issue #198
 # When --start-selection 2 is passed, pressing enter should select the second item
 menu_respects_start_selection() {
-  stub_dir=$(_make_tempdir)
+  tmpdir=$(_make_tempdir)
   
-  # Create a fake TTY for testing
-  touch "$stub_dir/fake-tty"
-  chmod 600 "$stub_dir/fake-tty"
+  # Create a fake TTY file for testing
+  touch "$tmpdir/fake-tty"
+  chmod 600 "$tmpdir/fake-tty"
   
-  # Create stubs for all required helper commands
-  cat >"$stub_dir/fathom-cursor" <<'STUB'
-#!/bin/sh
-case $1 in
-  -y) printf '1\n' ;;
-  -x) printf '1\n' ;;
-  *) printf '1 1\n' ;;
-esac
-STUB
-  chmod +x "$stub_dir/fathom-cursor"
+  # Create buffer file with enter key (newline character = byte 10)
+  # await-keypress will read this and interpret it as "enter"
+  printf '\n' > "$tmpdir/fake-tty"
   
-  cat >"$stub_dir/fathom-terminal" <<'STUB'
-#!/bin/sh
-case $1 in
-  --width) printf '80\n' ;;
-  --height) printf '24\n' ;;
-  *) printf '80 24\n' ;;
-esac
-STUB
-  chmod +x "$stub_dir/fathom-terminal"
+  # Use real wizardry spells, but create symlinks to stub imps for terminal I/O
+  # This tests the REAL menu spell with REAL await-keypress
+  stub_dir="$tmpdir/stubs"
+  mkdir -p "$stub_dir"
   
-  cat >"$stub_dir/move-cursor" <<'STUB'
-#!/bin/sh
-exit 0
-STUB
-  chmod +x "$stub_dir/move-cursor"
+  # Link to stub imps (terminal I/O stubs only)
+  for stub in fathom-cursor fathom-terminal move-cursor cursor-blink stty; do
+    ln -s "$ROOT_DIR/spells/.imps/test/stub-$stub" "$stub_dir/$stub"
+  done
   
-  # await-keypress returns "enter" immediately
-  cat >"$stub_dir/await-keypress" <<'STUB'
-#!/bin/sh
-printf 'enter\n'
-STUB
-  chmod +x "$stub_dir/await-keypress"
-  
-  cat >"$stub_dir/cursor-blink" <<'STUB'
-#!/bin/sh
-exit 0
-STUB
-  chmod +x "$stub_dir/cursor-blink"
-  
-  cat >"$stub_dir/stty" <<'STUB'
-#!/bin/sh
-case $1 in
-  -g) printf 'saved-state\n' ;;
-  *) exit 0 ;;
-esac
-STUB
-  chmod +x "$stub_dir/stty"
-  
-  # Run menu with --start-selection 2 and press enter immediately
-  # Should execute the second item's command (printf second)
-  PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:$stub_dir:/bin:/usr/bin" _run_cmd env \
-    PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:$stub_dir:/bin:/usr/bin" \
-    AWAIT_KEYPRESS_DEVICE="$stub_dir/fake-tty" \
+  # Run REAL menu with REAL await-keypress, using stub imps only for terminal I/O
+  PATH="$stub_dir:$ROOT_DIR/spells/cantrips:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:/bin:/usr/bin" _run_cmd env \
+    PATH="$stub_dir:$ROOT_DIR/spells/cantrips:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:/bin:/usr/bin" \
+    AWAIT_KEYPRESS_DEVICE="$tmpdir/fake-tty" \
+    AWAIT_KEYPRESS_SKIP_STTY=1 \
     "$ROOT_DIR/spells/cantrips/menu" --start-selection 2 "Test:" \
     "First%printf first" \
     "Second%printf second" \
@@ -125,6 +90,9 @@ menu_highlight_strips_ansi_codes() {
   touch "$stub_dir/fake-tty"
   chmod 600 "$stub_dir/fake-tty"
   
+  # Create a buffer file with the input sequence: just "enter" to select the item
+  printf 'enter\n' > "$stub_dir/input-buffer"
+  
   # Create stubs for all required helper commands
   cat >"$stub_dir/fathom-cursor" <<'STUB'
 #!/bin/sh
@@ -152,13 +120,6 @@ exit 0
 STUB
   chmod +x "$stub_dir/move-cursor"
   
-  # await-keypress returns "enter" immediately
-  cat >"$stub_dir/await-keypress" <<'STUB'
-#!/bin/sh
-printf 'enter\n'
-STUB
-  chmod +x "$stub_dir/await-keypress"
-  
   cat >"$stub_dir/cursor-blink" <<'STUB'
 #!/bin/sh
 exit 0
@@ -183,6 +144,8 @@ STUB
   PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:$stub_dir:/bin:/usr/bin" _run_cmd env \
     PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:$stub_dir:/bin:/usr/bin" \
     AWAIT_KEYPRESS_DEVICE="$stub_dir/fake-tty" \
+    AWAIT_KEYPRESS_SKIP_STTY=1 \
+    AWAIT_KEYPRESS_BUFFER_FILE="$stub_dir/input-buffer" \
     TERM=xterm \
     "$ROOT_DIR/spells/cantrips/menu" "Test:" \
     "${yellow_code}ColoredItem${reset_code}%printf selected"
@@ -223,6 +186,9 @@ menu_restores_cursor_on_exit() {
   touch "$stub_dir/fake-tty"
   chmod 600 "$stub_dir/fake-tty"
   
+  # Create a buffer file with the input sequence: just "enter" to select
+  printf 'enter\n' > "$stub_dir/input-buffer"
+  
   # Create stubs for all required helper commands
   cat >"$stub_dir/fathom-cursor" <<'STUB'
 #!/bin/sh
@@ -250,13 +216,6 @@ exit 0
 STUB
   chmod +x "$stub_dir/move-cursor"
   
-  # await-keypress returns "enter" immediately
-  cat >"$stub_dir/await-keypress" <<'STUB'
-#!/bin/sh
-printf 'enter\n'
-STUB
-  chmod +x "$stub_dir/await-keypress"
-  
   # cursor-blink outputs what it receives for verification
   cat >"$stub_dir/cursor-blink" <<'STUB'
 #!/bin/sh
@@ -280,6 +239,8 @@ STUB
   PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:$stub_dir:/bin:/usr/bin" _run_cmd env \
     PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:$stub_dir:/bin:/usr/bin" \
     AWAIT_KEYPRESS_DEVICE="$stub_dir/fake-tty" \
+    AWAIT_KEYPRESS_SKIP_STTY=1 \
+    AWAIT_KEYPRESS_BUFFER_FILE="$stub_dir/input-buffer" \
     TERM=xterm \
     "$ROOT_DIR/spells/cantrips/menu" "Test:" "Item%printf selected"
   

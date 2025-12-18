@@ -27,6 +27,67 @@ You MUST also create:
 
 Failure to create tests will cause CI to fail with "uncovered spells/imps" errors.
 
+## Stub Imps for Testing
+
+**Reusable stubs are test imps, not inline scripts.**
+
+Located in `spells/.imps/test/stub-*`, these provide consistent mocking across tests:
+- `stub-fathom-cursor` - Mock cursor position detection
+- `stub-fathom-terminal` - Mock terminal size detection
+- `stub-move-cursor` - Mock cursor movement (no-op)
+- `stub-cursor-blink` - Mock cursor visibility control
+- `stub-stty` - Mock terminal settings
+
+### Using Stub Imps
+
+```sh
+# Create symlink directory for PATH override
+stub_dir="$tmpdir/stubs"
+mkdir -p "$stub_dir"
+
+# Link to reusable stub imps (stub only what's necessary)
+for stub in fathom-cursor fathom-terminal move-cursor; do
+  ln -s "$ROOT_DIR/spells/.imps/test/stub-$stub" "$stub_dir/$stub"
+done
+
+# Run with stubs in PATH (stubs override real commands)
+PATH="$stub_dir:$ROOT_DIR/spells/cantrips:...:$PATH" run_spell "spells/cantrips/menu"
+```
+
+### Stub Philosophy
+
+**Stub the minimum necessary, test real wizardry:**
+- ✅ **DO**: Stub terminal I/O (fathom-cursor, stty, move-cursor)
+- ✅ **DO**: Use real wizardry spells and imps
+- ✅ **DO**: Create reusable stub imps in `spells/.imps/test/`
+- ❌ **DON'T**: Create inline stubs in test files
+- ❌ **DON'T**: Stub wizardry internals (await-keypress, menu logic)
+- ❌ **DON'T**: Rely on timeouts as a testing strategy
+
+### Creating New Stub Imps
+
+When adding a new stub, create it as a test imp:
+
+```sh
+# File: spells/.imps/test/stub-example
+#!/bin/sh
+# stub-example - test stub for example command
+# Example: stub-example arg1
+
+_stub_example() {
+  # Stub implementation
+  printf 'mocked-output\n'
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */stub-example) _stub_example "$@" ;; esac
+```
+
+Make it executable: `chmod +x spells/.imps/test/stub-example`
+
+Then use it in tests via symlink, not by copying or inlining the stub code.
+
 ## CRITICAL: Test Result Accuracy
 
 **NEVER report test success without actually running the tests.**
@@ -96,28 +157,29 @@ tmpdir=$(make_tempdir)
 
 ## PATH Isolation for Tests
 
-Use complete PATH isolation with symlinks for essential utilities:
+**Use real wizardry with minimal stubs:**
 
 ```sh
-stubdir="$tmpdir/stubs"
-mkdir -p "$stubdir"
+# Create symlink directory for stub imps
+stub_dir="$tmpdir/stubs"
+mkdir -p "$stub_dir"
 
-# Create test stub
-cat <<'STUB' >"$stubdir/xsel"
-#!/bin/sh
-cat >"${CLIPBOARD_FILE:?}"
-STUB
-chmod +x "$stubdir/xsel"
-
-# Symlink essential utilities
-for util in sh sed cat printf test env basename dirname; do
-  util_path=$(command -v "$util" 2>/dev/null) || continue
-  [ -x "$util_path" ] && ln -sf "$util_path" "$stubdir/$util"
+# Link to reusable stub imps (terminal I/O only)
+for stub in fathom-cursor fathom-terminal stty; do
+  ln -s "$ROOT_DIR/spells/.imps/test/stub-$stub" "$stub_dir/$stub"
 done
 
-# Run with isolated PATH
-PATH="$stubdir" run_spell "spells/category/spell"
+# Symlink essential system utilities
+for util in sh sed cat printf test env basename dirname; do
+  util_path=$(command -v "$util" 2>/dev/null) || continue
+  [ -x "$util_path" ] && ln -sf "$util_path" "$stub_dir/$util"
+done
+
+# Run with stubs overriding only what's necessary
+PATH="$stub_dir:$ROOT_DIR/spells/cantrips:$WIZARDRY_IMPS_PATH:...:$PATH" run_spell "spells/category/spell"
 ```
+
+**Key principle**: Stub the bare minimum (terminal I/O), test real wizardry for everything else.
 
 ## Cross-Platform Testing
 

@@ -1,0 +1,15 @@
+#!/bin/sh
+# stub-cursor-blink - test stub for cursor-blink that outputs escape codes
+# Example: stub-cursor-blink on
+
+_stub_cursor_blink() {
+  case "${1-}" in
+    on) printf '\033[?25h' ;;
+    off) printf '\033[?25l' ;;
+    *) exit 0 ;;
+  esac
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */stub-cursor-blink) _stub_cursor_blink "$@" ;; esac

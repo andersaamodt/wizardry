@@ -1,0 +1,15 @@
+#!/bin/sh
+# stub-fathom-terminal - test stub for fathom-terminal that returns fixed size
+# Example: stub-fathom-terminal --width
+
+_stub_fathom_terminal() {
+  case ${1-} in
+    --width) printf '80\n' ;;
+    --height) printf '24\n' ;;
+    *) printf '80 24\n' ;;
+  esac
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */stub-fathom-terminal) _stub_fathom_terminal "$@" ;; esac

@@ -1,0 +1,11 @@
+#!/bin/sh
+# stub-move-cursor - test stub for move-cursor (no-op)
+# Example: stub-move-cursor 10 20
+
+_stub_move_cursor() {
+  exit 0
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */stub-move-cursor) _stub_move_cursor "$@" ;; esac

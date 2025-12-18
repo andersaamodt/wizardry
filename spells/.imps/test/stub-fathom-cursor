@@ -1,0 +1,15 @@
+#!/bin/sh
+# stub-fathom-cursor - test stub for fathom-cursor that returns fixed position
+# Example: stub-fathom-cursor -y
+
+_stub_fathom_cursor() {
+  case ${1-} in
+    -y) printf '1\n' ;;
+    -x) printf '1\n' ;;
+    *) printf '1 1\n' ;;
+  esac
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */stub-fathom-cursor) _stub_fathom_cursor "$@" ;; esac

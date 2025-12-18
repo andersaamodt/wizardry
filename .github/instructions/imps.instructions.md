@@ -237,9 +237,12 @@ case "$0" in
   */say) _say "$@" ;; esac
 ```
 
-## Test-Only Imps
+## Stub Imps
 
-Imps used only in tests must be prefixed with `test-`:
+Imps used for mocking in tests must be prefixed with `stub-`:
 - Location: `spells/.imps/test/`
-- Purpose: Test stubs, fixtures, helpers
-- Not for production use
+- Purpose: Reusable test stubs for terminal I/O, system commands
+- Naming: `stub-{command-name}` (e.g., `stub-fathom-cursor`, `stub-stty`)
+- Usage: Tests create symlinks to these, not inline stub scripts
+
+**Philosophy**: Stub the bare minimum (terminal I/O), test real wizardry for everything else.

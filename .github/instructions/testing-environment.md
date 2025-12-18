@@ -157,15 +157,11 @@ This document explains common reasons why tests may pass in a local development 
 - `read` commands will fail immediately with EOF
 
 **Solution:**
-- Use environment variables to control behavior (e.g., `ASK_CANTRIP_INPUT=none`)
-- Provide input via redirects: `command < input.txt`
-- Mock interactive commands with test stubs
-- Check if stdin is a terminal before prompting:
-  ```sh
-  if [ -t 0 ]; then
-    # stdin is terminal, can prompt
-  fi
-  ```
+- Use stub imps from `spells/.imps/test/stub-*` for terminal I/O
+- Provide canned input via fake TTY files for await-keypress
+- Use `AWAIT_KEYPRESS_SKIP_STTY=1` with fake TTY device
+- Test real wizardry, stub only the bare minimum (terminal I/O)
+- Never rely on timeouts as a testing strategy
 
 ### 7. Platform-Specific Differences
 
@@ -351,12 +347,19 @@ done
 set -eu
 ```
 
-### Fix 5: Provide Test Input for Interactive Commands
+### Fix 5: Use Stub Imps, Not Inline Stubs
 ```sh
-# In test
-echo "y" | run_spell "path/to/spell"
-# Or
-ASK_CANTRIP_INPUT=none run_spell "path/to/spell"
+# WRONG - inline stub in test file
+cat >"$tmpdir/fathom-cursor" <<'STUB'
+#!/bin/sh
+printf '1 1\n'
+STUB
+chmod +x "$tmpdir/fathom-cursor"
+
+# CORRECT - use reusable stub imp
+mkdir -p "$tmpdir/stubs"
+ln -s "$ROOT_DIR/spells/.imps/test/stub-fathom-cursor" "$tmpdir/stubs/fathom-cursor"
+PATH="$tmpdir/stubs:$PATH" run_spell "path/to/spell"
 ```
 
 ## Summary
