@@ -48,7 +48,7 @@ if [ -n "${IS_SERVICE_INSTALLED_ASK_TEXT-}" ]; then
 printf '%s' "$IS_SERVICE_INSTALLED_ASK_TEXT"
 return 0
 fi
-if command -v ask-text >/dev/null 2>&1; then
+if has ask-text; then
 command -v ask-text
 return 0
 fi

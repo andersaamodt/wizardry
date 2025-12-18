@@ -28,7 +28,7 @@ mode=${1:---offer}
 case $mode in
 --check)
 # Check if wizardry is installed by looking for a core spell
-if command -v menu >/dev/null 2>&1; then
+if has menu; then
 return 0
 else
 return 1
@@ -36,7 +36,7 @@ fi
 ;;
 --offer)
 # Check if wizardry is installed
-if command -v menu >/dev/null 2>&1; then
+if has menu; then
 return 0
 fi
 
@@ -53,12 +53,12 @@ y|Y|yes|YES)
 printf '%s\n' "" >&2
 printf '%s\n' "Installing wizardry..." >&2
 # Download and run the install script
-if command -v curl >/dev/null 2>&1; then
+if has curl; then
 curl -fsSL https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh
-return 1 $?
-elif command -v wget >/dev/null 2>&1; then
+return $?
+elif has wget; then
 wget -qO- https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh
-return 1 $?
+return $?
 else
 printf '%s\n' "Error: neither curl nor wget is available to download wizardry." >&2
 return 1
@@ -90,7 +90,7 @@ cat <<'SNIPPET'
 
 _require_wizardry() {
 # Check for a core wizardry spell to verify installation
-if command -v menu >/dev/null 2>&1; then
+if has menu; then
 return 0
 fi
 

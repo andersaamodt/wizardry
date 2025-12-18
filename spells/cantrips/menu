@@ -57,7 +57,7 @@ export AWAIT_KEYPRESS_KEEP_RAW
 if [ -r "$script_dir/colors" ]; then
         # shellcheck disable=SC1090
         . "$script_dir/colors"
-elif command -v colors >/dev/null 2>&1; then
+elif has colors; then
         # shellcheck disable=SC1091
         . colors
 else
@@ -88,7 +88,7 @@ if [ "${1-}" = "--start-selection" ]; then
 fi
 
 if [ "$#" -lt 2 ]; then
-        if command -v main-menu >/dev/null 2>&1; then
+        if has main-menu; then
                 main-menu
                 return 0
         fi
