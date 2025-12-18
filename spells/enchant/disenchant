@@ -35,7 +35,7 @@ fi
 file=$1
 requested_key=${2-}
 
-gone "$file" && die "disenchant: The file does not exist."
+gone "$file" && die "disenchant: The file does not exist." || return 1
 
 # Function to remove a single attribute
 disenchant_attr() {
@@ -68,7 +68,7 @@ disenchant_attr() {
     fi
   done
 
-  die "disenchant: requires the 'attr', 'xattr', or 'setfattr' helper to remove attributes."
+  die "disenchant: requires the 'attr', 'xattr', or 'setfattr' helper to remove attributes." || return 1
 }
 
 # If specific key requested, remove it directly
@@ -80,7 +80,7 @@ fi
 # Otherwise, list keys and let user choose
 keys=$(xattr-list-keys "$file" || printf '')
 if empty "$keys"; then
-  fail "disenchant: no enchanted attributes found on $file"
+  fail "disenchant: no enchanted attributes found on $file" || return 1
 fi
 
 # Count keys
@@ -95,7 +95,7 @@ else
   count=$#
 
   if ! has ask-number; then
-    fail "disenchant: multiple attributes found; install ask-number or specify a key"
+    fail "disenchant: multiple attributes found; install ask-number or specify a key" || return 1
   fi
 
   printf '%s\n' "Available attributes:" >&2
