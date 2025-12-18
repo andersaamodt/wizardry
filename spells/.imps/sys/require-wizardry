@@ -1,7 +1,7 @@
 #!/bin/sh
-# require-wizardry - check if wizardry is installed, exit 1 if not
-# Returns 0 if wizardry is installed (menu spell found in PATH)
-# Returns 1 if wizardry is not installed
+# require-wizardry - check if wizardry is installed, offer to install if not
+# Returns 0 if wizardry is installed
+# Returns 1 if wizardry is not installed and user declined/failed to install
 # In test mode (WIZARDRY_TEST_HELPERS_ONLY=1), always returns 0
 set -eu
 
@@ -14,16 +14,24 @@ _require_wizardry() {
   # Check if wizardry is installed by looking for a core spell
   if has menu; then
     return 0
+  fi
+  
+  # Wizardry not found - print error and offer to install
+  printf '%s\n' "Error: wizardry is not installed or not in PATH." >&2
+  printf '%s\n' "" >&2
+  
+  # Offer to install wizardry
+  if ask-install-wizardry; then
+    # Installation succeeded - verify it worked
+    if has menu; then
+      return 0
+    else
+      printf '%s\n' "Installation completed but wizardry is still not in PATH." >&2
+      printf '%s\n' "You may need to restart your shell or run: source ~/.bashrc" >&2
+      return 1
+    fi
   else
-    # Wizardry not found - print helpful error
-    printf '%s\n' "Error: wizardry is not installed or not in PATH." >&2
-    printf '%s\n' "" >&2
-    printf '%s\n' "To install wizardry, run:" >&2
-    printf '%s\n' "  curl -fsSL https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh" >&2
-    printf '%s\n' "" >&2
-    printf '%s\n' "Or clone and install with git:" >&2
-    printf '%s\n' "  git clone https://github.com/andersaamodt/wizardry ~/.wizardry" >&2
-    printf '%s\n' "  cd ~/.wizardry && ./install" >&2
+    # User declined or installation failed
     return 1
   fi
 }
@@ -31,3 +39,4 @@ _require_wizardry() {
 # Self-execute when run directly (not sourced)
 case "$0" in
   */require-wizardry) _require_wizardry "$@" ;; esac
+

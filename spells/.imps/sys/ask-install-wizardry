@@ -1,0 +1,52 @@
+#!/bin/sh
+# ask-install-wizardry - offer to install wizardry interactively
+# Prompts user to install wizardry if running in interactive mode (TTY)
+# Returns 0 if wizardry was installed, 1 if declined or failed
+set -eu
+
+_ask_install_wizardry() {
+  # Check if we're in interactive mode
+  if [ ! -t 0 ]; then
+    # Not interactive - just print instructions
+    printf '%s\n' "This script requires wizardry. To install:" >&2
+    printf '%s\n' "  curl -fsSL https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh" >&2
+    printf '%s\n' "" >&2
+    printf '%s\n' "Or clone and install with git:" >&2
+    printf '%s\n' "  git clone https://github.com/andersaamodt/wizardry ~/.wizardry" >&2
+    printf '%s\n' "  cd ~/.wizardry && ./install" >&2
+    return 1
+  fi
+  
+  # Interactive mode - ask user
+  printf '%s' "Would you like to install wizardry? [y/N] " >&2
+  IFS= read -r reply || reply=""
+  
+  case $reply in
+    y|Y|yes|YES)
+      printf '%s\n' "" >&2
+      printf '%s\n' "Installing wizardry..." >&2
+      
+      # Try curl first, then wget
+      if command -v curl >/dev/null 2>&1; then
+        curl -fsSL https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh
+        return $?
+      elif command -v wget >/dev/null 2>&1; then
+        wget -qO- https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh
+        return $?
+      else
+        printf '%s\n' "Error: neither curl nor wget is available to download wizardry." >&2
+        return 1
+      fi
+      ;;
+    *)
+      printf '%s\n' "" >&2
+      printf '%s\n' "To install wizardry later, run:" >&2
+      printf '%s\n' "  curl -fsSL https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh" >&2
+      return 1
+      ;;
+  esac
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */ask-install-wizardry) _ask_install_wizardry "$@" ;; esac
