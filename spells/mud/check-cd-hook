@@ -27,7 +27,7 @@ set -eu
 rc_file=''
 if [ -n "${WIZARDRY_RC_FILE-}" ]; then
   rc_file=$WIZARDRY_RC_FILE
-elif command -v detect-rc-file >/dev/null 2>&1; then
+elif has detect-rc-file; then
   if detected=$(detect-rc-file 2>/dev/null); then
     while IFS= read -r line; do
       case $line in

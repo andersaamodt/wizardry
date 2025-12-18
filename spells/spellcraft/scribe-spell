@@ -182,7 +182,7 @@ if [ "$#" -ge 2 ]; then
         esac
         
         # Check for duplicate name
-        if command -v "$name" >/dev/null 2>&1; then
+        if has "$name"; then
                 printf '%s\n' "$script_name: '$name' conflicts with an existing command." >&2
                 return 1
         fi
@@ -305,7 +305,7 @@ case $cmd_name in
 esac
 
 # Check for duplicate name
-if command -v "$cmd_name" >/dev/null 2>&1; then
+if has "$cmd_name"; then
         printf '%s\n' "$script_name: '$cmd_name' conflicts with an existing command." >&2
         return 1
 fi

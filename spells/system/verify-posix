@@ -36,7 +36,7 @@ if [ -d "$repo_dir/spells/.imps" ]; then
 fi
 
 checkbashisms_cmd=${CHECKBASHISMS-}
-if [ -z "$checkbashisms_cmd" ] && command -v checkbashisms >/dev/null 2>&1; then
+if [ -z "$checkbashisms_cmd" ] && has checkbashisms; then
   checkbashisms_cmd=$(command -v checkbashisms)
 fi
 
@@ -167,7 +167,7 @@ rm -f "$targets_file"
 
 printf '\n'
 if [ "$failures" -eq 0 ]; then
-  if [ -t 1 ] && command -v tput >/dev/null 2>&1 && tput setaf 1 >/dev/null 2>&1; then
+  if [ -t 1 ] && has tput && tput setaf 1 >/dev/null 2>&1; then
     green=$(tput setaf 2 2>/dev/null || true)
     bold=$(tput bold 2>/dev/null || true)
     reset=$(tput sgr0 2>/dev/null || true)

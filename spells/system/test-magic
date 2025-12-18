@@ -64,7 +64,7 @@ export PATH
 # This prevents test-magic from hanging if critical commands are missing.
 missing_commands=""
 for required_cmd in sh find grep awk sed sort cat printf; do
-  if ! command -v "$required_cmd" >/dev/null 2>&1; then
+  if ! has "$required_cmd"; then
     if [ -z "$missing_commands" ]; then
       missing_commands="$required_cmd"
     else
@@ -79,7 +79,7 @@ fi
 
 # Check if timeout command is available for test execution protection
 timeout_cmd=""
-if command -v timeout >/dev/null 2>&1; then
+if has timeout; then
   timeout_cmd="timeout"
 fi
 
@@ -744,10 +744,10 @@ if [ "$status" -ne 0 ] && [ -n "$failed_scripts" ]; then
     os_label="$WIZARDRY_OS_LABEL"
   elif [ -x "$root_dir/spells/divination/detect-distro" ]; then
     os_label=$("$root_dir/spells/divination/detect-distro" 2>/dev/null || printf 'unknown')
-  elif command -v detect-distro >/dev/null 2>&1; then
+  elif has detect-distro; then
     os_label=$(detect-distro 2>/dev/null || printf 'unknown')
-  elif command -v uname >/dev/null 2>&1; then
-    os_label=$(uname -s 2>/dev/null | tr ' A-Z' '_a-z' || printf 'unknown')
+  elif has uname; then
+    os_label=$(uname -s 2>/dev/null | tr 'A-Z' 'a-z' || printf 'unknown')
   fi
 
   printf '\nFailed tests (%s): %s\n' "$os_label" "$failed_scripts"

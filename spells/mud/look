@@ -51,7 +51,7 @@ look_warn() {
 if [ -n "${LOOK_COLORS_PATH-}" ] && [ -f "$LOOK_COLORS_PATH" ]; then
         # shellcheck disable=SC1090
         . "$LOOK_COLORS_PATH"
-elif command -v colors >/dev/null 2>&1; then
+elif has colors; then
         # shellcheck disable=SC1090
         . "$(command -v colors)"
 elif [ -x "$script_dir/cantrips/colors" ]; then
@@ -75,7 +75,7 @@ read_magic=${LOOK_READ_MAGIC-}
 if [ -z "$read_magic" ]; then
         if [ -x "$script_dir/read-magic" ]; then
                 read_magic="$script_dir/read-magic"
-        elif command -v read-magic >/dev/null 2>&1; then
+        elif has read-magic; then
                 read_magic=$(command -v read-magic)
         else
                 die "look: read-magic spell is missing."
