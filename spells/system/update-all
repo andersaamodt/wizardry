@@ -23,6 +23,8 @@ case "${1-}" in
   ;;
 esac
 
+require-wizardry || exit 1
+
 set -eu
 . env-clear
 
