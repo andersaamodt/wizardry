@@ -36,8 +36,43 @@ HEADER
   _it_initialized="${SPELLBOOK_DIR}/.synonyms-initialized"
   if [ ! -f "$_it_initialized" ]; then
     # Define default synonyms (word -> spell)
+    # Spell synonyms
     _it_defaults="detect-os detect-distro
-home cd"
+home jump
+ls-magic identify-room
+read-file read-magic
+copy-file copy
+move-file move
+delete-file trash
+remove-file trash
+erase-file trash
+edit-file edit-magic
+find-file file-list
+search-file file-list
+list-files file-list
+where-am-i identify-room
+where identify-room
+goto jump
+cd-to jump
+teleport jump
+portal jump"
+    
+    # Also add common system command aliases
+    _it_defaults="$_it_defaults
+delete rm
+remove rm
+erase rm
+list ls
+show cat
+display cat
+copy cp
+move mv
+rename mv
+link ln
+make-link ln
+directory pwd
+where-is which
+find-command which"
     
     printf '%s\n' "$_it_defaults" | while IFS=' ' read -r _word _spell; do
       [ -n "$_word" ] && [ -n "$_spell" ] || continue

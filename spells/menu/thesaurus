@@ -1,12 +1,14 @@
 #!/bin/sh
-# This spell displays a menu listing all synonyms with management options.
+# This spell displays a menu for managing synonyms (aliases).
+# Use --list for view-only mode, otherwise includes add and toggle options.
 
 show_usage() {
   cat <<'USAGE'
-Usage: thesaurus
+Usage: thesaurus [--list]
 
-Display a menu listing all synonyms. Select a synonym to view its
-management menu with options to edit or delete it.
+Display a menu for managing synonyms. Without --list, includes
+options to add synonyms and toggle synonym support. With --list,
+shows a read-only list of existing synonyms.
 USAGE
 }
 
@@ -29,16 +31,25 @@ if ! require menu "The thesaurus menu needs the 'menu' command."; then
   exit 1
 fi
 
+# Check for --list flag
+list_mode=0
+case "${1-}" in
+  --list)
+    list_mode=1
+    shift
+    ;;
+esac
+
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
 synonyms_file="$spell_home/.synonyms"
+synonyms_enabled_file="$spell_home/.synonyms-enabled"
 
-# Initialize defaults if needed (invoke-thesaurus handles this)
-# Just ensure the file exists by touching it if needed
-if [ ! -f "$synonyms_file" ]; then
+# Ensure spellbook directory exists
+if [ ! -d "$spell_home" ]; then
   mkdir -p "$spell_home" 2>/dev/null || true
 fi
 
-# Check if we need to initialize - if so, source invoke-thesaurus once
+# Initialize defaults if needed (invoke-thesaurus handles this)
 if [ ! -f "$spell_home/.synonyms-initialized" ]; then
   # Source invoke-thesaurus to initialize defaults
   # This is safe in a non-interactive context
@@ -48,10 +59,29 @@ if [ ! -f "$spell_home/.synonyms-initialized" ]; then
   fi
 fi
 
+# Check if synonyms are enabled (for full mode)
+synonyms_enabled=1
+if [ "$list_mode" -eq 0 ]; then
+  if [ -f "$synonyms_enabled_file" ]; then
+    enabled_value=$(cat "$synonyms_enabled_file" 2>/dev/null || printf '1')
+    case $enabled_value in
+      0) synonyms_enabled=0 ;;
+      *) synonyms_enabled=1 ;;
+    esac
+  fi
+fi
+
 while :; do
   set --
   
+  # Add "Add synonym" option in full mode only
+  if [ "$list_mode" -eq 0 ]; then
+    set -- "$@" "Add synonym%add-synonym"
+    set -- "$@" "---"
+  fi
+  
   # List all synonyms from the alias file
+  has_synonyms=0
   if [ -f "$synonyms_file" ]; then
     while IFS= read -r line; do
       # Skip comments and empty lines
@@ -65,6 +95,7 @@ while :; do
         target_spell=$(printf '%s' "$line" | sed "s/^alias [^=]*='\\(.*\\)'$/\\1/" | sed "s/'\\\\''/'/g")
         
         if [ -n "$synonym_word" ] && [ -n "$target_spell" ]; then
+          has_synonyms=1
           # Escape single quotes for safe passing
           escaped_word=$(printf '%s' "$synonym_word" | sed "s/'/'\\\\''/g")
           set -- "$@" "$synonym_word → $target_spell%synonym-menu '$escaped_word'"
@@ -74,12 +105,40 @@ while :; do
   fi
   
   # If no synonyms exist, show a message
-  if [ "$#" -eq 0 ]; then
-    set -- "No synonyms defined%:"
+  if [ "$has_synonyms" -eq 0 ]; then
+    set -- "$@" "No synonyms defined%:"
+  fi
+  
+  # Add toggle and divider in full mode only
+  if [ "$list_mode" -eq 0 ]; then
+    set -- "$@" "---"
+    
+    # Toggle for enabling/disabling synonyms
+    if [ "$synonyms_enabled" -eq 1 ]; then
+      toggle_label="[X] Synonyms enabled"
+      toggle_cmd="printf '0' > '$synonyms_enabled_file'"
+    else
+      toggle_label="[ ] Synonyms enabled"
+      toggle_cmd="printf '1' > '$synonyms_enabled_file'"
+    fi
+    set -- "$@" "$toggle_label%$toggle_cmd"
   fi
   
   exit_label=$(exit-label)
   set -- "$@" "${exit_label}%kill -TERM \$PPID"
   
   menu "Thesaurus:" "$@" || true
+  
+  # Re-check enabled state for next iteration (full mode only)
+  if [ "$list_mode" -eq 0 ]; then
+    if [ -f "$synonyms_enabled_file" ]; then
+      enabled_value=$(cat "$synonyms_enabled_file" 2>/dev/null || printf '1')
+      case $enabled_value in
+        0) synonyms_enabled=0 ;;
+        *) synonyms_enabled=1 ;;
+      esac
+    else
+      synonyms_enabled=1
+    fi
+  fi
 done

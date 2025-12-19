@@ -280,8 +280,8 @@ spellbook_menu() {
                 # Add horizontal divider and synonym-related menu items (only at root level)
                 if [ -z "$current_path" ]; then
                         set -- "$@" "---"
-                        set -- "$@" "View synonyms%thesaurus"
-                        set -- "$@" "Thesaurus%spell-thesaurus"
+                        set -- "$@" "View synonyms%thesaurus --list"
+                        set -- "$@" "Thesaurus%thesaurus"
                 fi
                 
                 # Add "New category" at root level
