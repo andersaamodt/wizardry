@@ -21,7 +21,7 @@ test_shows_help() {
 
 test_edits_synonym_word() {
   case_dir=$(_make_tempdir)
-  synonyms_dir="$case_dir/.synonyms"
+  synonyms_file="$case_dir/.synonyms"
   
   # Create a synonym first
   SPELLBOOK_DIR="$case_dir" \
@@ -33,13 +33,23 @@ test_edits_synonym_word() {
     _run_spell "spells/spellcraft/edit-synonym" oldalias --word newalias
   
   _assert_success || return 1
-  [ ! -f "$synonyms_dir/oldalias" ] || { TEST_FAILURE_REASON="old synonym still exists"; return 1; }
-  [ -f "$synonyms_dir/newalias" ] || { TEST_FAILURE_REASON="new synonym not created"; return 1; }
+  
+  # Verify old alias is gone
+  if grep -q "^alias oldalias=" "$synonyms_file"; then
+    TEST_FAILURE_REASON="old synonym still exists"
+    return 1
+  fi
+  
+  # Verify new alias exists
+  if ! grep -q "^alias newalias=" "$synonyms_file"; then
+    TEST_FAILURE_REASON="new synonym not created"
+    return 1
+  fi
 }
 
 test_edits_target_spell() {
   case_dir=$(_make_tempdir)
-  synonyms_dir="$case_dir/.synonyms"
+  synonyms_file="$case_dir/.synonyms"
   
   # Create a synonym first
   SPELLBOOK_DIR="$case_dir" \
@@ -53,11 +63,10 @@ test_edits_target_spell() {
   _assert_success || return 1
   
   # Verify new target
-  script_content=$(cat "$synonyms_dir/myalias")
-  case "$script_content" in
-    *"exec 'printf'"*) : ;;
-    *) TEST_FAILURE_REASON="target spell not updated"; return 1 ;;
-  esac
+  if ! grep -q "^alias myalias='printf'" "$synonyms_file"; then
+    TEST_FAILURE_REASON="target spell not updated"
+    return 1
+  fi
 }
 
 test_fails_when_synonym_not_found() {

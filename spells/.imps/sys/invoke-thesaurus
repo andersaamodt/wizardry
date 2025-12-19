@@ -1,6 +1,7 @@
 #!/bin/sh
 # invoke-thesaurus - load or reload synonyms (aliases) into the current shell
 # Source this script to activate synonyms without restarting your shell.
+# Also initializes default synonyms if not already set up.
 
 # This script must be sourced, not executed
 case "$0" in
@@ -19,10 +20,33 @@ _invoke_thesaurus() {
   
   _it_synonyms_file="${SPELLBOOK_DIR}/.synonyms"
   
-  # Check if synonyms file exists
+  # Initialize synonyms file if it doesn't exist
   if [ ! -f "$_it_synonyms_file" ]; then
-    printf '%s\n' "invoke-thesaurus: no synonyms file found at $_it_synonyms_file" >&2
-    return 1
+    mkdir -p "$SPELLBOOK_DIR" 2>/dev/null || true
+    cat > "$_it_synonyms_file" << 'HEADER'
+# Wizardry Synonyms
+# This file contains shell aliases for wizardry spells.
+# Loaded automatically by invoke-wizardry at shell startup.
+# Reload with: . invoke-thesaurus
+
+HEADER
+  fi
+  
+  # Add default synonyms if not already present
+  _it_initialized="${SPELLBOOK_DIR}/.synonyms-initialized"
+  if [ ! -f "$_it_initialized" ]; then
+    # Define default synonyms (word -> spell)
+    _it_defaults="detect-os detect-distro
+home cd"
+    
+    printf '%s\n' "$_it_defaults" | while IFS=' ' read -r _word _spell; do
+      [ -n "$_word" ] && [ -n "$_spell" ] || continue
+      if ! grep -q "^alias $_word=" "$_it_synonyms_file" 2>/dev/null; then
+        printf "alias %s='%s'\n" "$_word" "$_spell" >> "$_it_synonyms_file"
+      fi
+    done
+    
+    touch "$_it_initialized" 2>/dev/null || true
   fi
   
   # Check if synonyms are enabled

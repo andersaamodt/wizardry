@@ -32,17 +32,19 @@ fi
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
 synonyms_file="$spell_home/.synonyms"
 
-# Initialize default synonyms if file doesn't exist
+# Initialize defaults if needed (invoke-thesaurus handles this)
+# Just ensure the file exists by touching it if needed
 if [ ! -f "$synonyms_file" ]; then
-  if has init-synonyms; then
-    init-synonyms 2>/dev/null || :
-  fi
+  mkdir -p "$spell_home" 2>/dev/null || true
 fi
 
-# Initialize defaults if not already done
+# Check if we need to initialize - if so, source invoke-thesaurus once
 if [ ! -f "$spell_home/.synonyms-initialized" ]; then
-  if has init-synonyms; then
-    init-synonyms 2>/dev/null || :
+  # Source invoke-thesaurus to initialize defaults
+  # This is safe in a non-interactive context
+  if [ -f "$ROOT_DIR/spells/.imps/sys/invoke-thesaurus" ]; then
+    # shellcheck disable=SC1090,SC1091
+    . "$ROOT_DIR/spells/.imps/sys/invoke-thesaurus" 2>/dev/null || :
   fi
 fi
 

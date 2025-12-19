@@ -26,7 +26,8 @@ set -eu
 trap 'exit 0' INT TERM
 
 if [ "$#" -lt 1 ]; then
-  die 2 "synonym-menu: requires WORD argument"
+  printf '%s\n' "synonym-menu: requires WORD argument" >&2
+  exit 2
 fi
 
 synonym_word=$1
@@ -36,19 +37,23 @@ if ! require menu "The synonym menu needs the 'menu' command."; then
 fi
 
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
-synonyms_dir="$spell_home/.synonyms"
-synonym_path="$synonyms_dir/$synonym_word"
+synonyms_file="$spell_home/.synonyms"
 
-# Check if synonym exists
-if [ ! -f "$synonym_path" ]; then
-  die "synonym-menu: synonym '$synonym_word' not found"
+# Check if synonyms file exists
+if [ ! -f "$synonyms_file" ]; then
+  printf '%s\n' "synonym-menu: no synonyms defined" >&2
+  exit 1
 fi
 
-# Read the target spell
-target_spell=$(grep "^exec " "$synonym_path" | sed "s/^exec '\(.*\)' \"\$@\"$/\1/" | sed "s/'\\\\''/'/g")
+# Check if synonym exists and read target spell
+target_spell=""
+if grep -q "^alias $synonym_word=" "$synonyms_file"; then
+  target_spell=$(grep "^alias $synonym_word=" "$synonyms_file" | sed "s/^alias $synonym_word='\\(.*\\)'$/\\1/" | sed "s/'\\\\''/'/g")
+fi
 
 if [ -z "$target_spell" ]; then
-  die "synonym-menu: could not parse target spell from synonym"
+  printf '%s\n' "synonym-menu: synonym '$synonym_word' not found" >&2
+  exit 1
 fi
 
 # Escape single quotes for safe passing

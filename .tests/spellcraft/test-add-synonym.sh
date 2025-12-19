@@ -2,11 +2,11 @@
 # Tests for add-synonym spell
 # - prints usage with --help
 # - adds synonym in non-interactive mode
-# - creates executable synonym script
-# - synonym forwards arguments correctly
+# - creates alias definition in file
 # - rejects invalid synonym names
-# - warns about conflicts with existing commands
-# - warns about missing target spells
+# - warns about shell builtins
+# - validates against shell keywords
+# - handles special characters properly
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
@@ -22,54 +22,36 @@ test_shows_help() {
 
 test_adds_synonym_noninteractive() {
   case_dir=$(_make_tempdir)
-  synonyms_dir="$case_dir/.synonyms"
+  synonyms_file="$case_dir/.synonyms"
   
   SPELLBOOK_DIR="$case_dir" \
     _run_spell "spells/spellcraft/add-synonym" myalias echo
   
   _assert_success || return 1
   _assert_output_contains "Synonym created" || return 1
-  [ -x "$synonyms_dir/myalias" ] || { TEST_FAILURE_REASON="synonym not created"; return 1; }
+  [ -f "$synonyms_file" ] || { TEST_FAILURE_REASON="synonyms file not created"; return 1; }
 }
 
-test_synonym_script_content() {
+test_alias_definition_content() {
   case_dir=$(_make_tempdir)
-  synonyms_dir="$case_dir/.synonyms"
+  synonyms_file="$case_dir/.synonyms"
   
   SPELLBOOK_DIR="$case_dir" \
     _run_spell "spells/spellcraft/add-synonym" myalias echo
   
   _assert_success || return 1
   
-  # Check script contains the target spell
-  script_content=$(cat "$synonyms_dir/myalias")
-  case "$script_content" in
-    *"exec 'echo'"*) : ;;
-    *) TEST_FAILURE_REASON="script missing exec statement: $script_content"; return 1 ;;
-  esac
+  # Check file contains the alias definition
+  if ! grep -q "^alias myalias=" "$synonyms_file"; then
+    TEST_FAILURE_REASON="alias definition not found in file"
+    return 1
+  fi
   
-  # Check for synonym marker comment
-  case "$script_content" in
-    *"# Synonym:"*) : ;;
-    *) TEST_FAILURE_REASON="script missing synonym marker"; return 1 ;;
-  esac
-}
-
-test_synonym_forwards_arguments() {
-  case_dir=$(_make_tempdir)
-  synonyms_dir="$case_dir/.synonyms"
-  
-  SPELLBOOK_DIR="$case_dir" \
-    _run_spell "spells/spellcraft/add-synonym" myecho printf
-  
-  _assert_success || return 1
-  
-  # Test that the synonym works
-  PATH="$synonyms_dir:$PATH" output=$("$synonyms_dir/myecho" "test message")
-  case "$output" in
-    *"test message"*) : ;;
-    *) TEST_FAILURE_REASON="synonym did not forward arguments correctly: $output"; return 1 ;;
-  esac
+  # Check alias points to echo
+  if ! grep -q "^alias myalias='echo'" "$synonyms_file"; then
+    TEST_FAILURE_REASON="alias does not point to echo"
+    return 1
+  fi
 }
 
 test_rejects_empty_word() {
@@ -117,6 +99,15 @@ test_rejects_word_starting_with_dot() {
   _assert_failure || return 1
 }
 
+test_rejects_word_starting_with_number() {
+  case_dir=$(_make_tempdir)
+  
+  SPELLBOOK_DIR="$case_dir" \
+    _run_spell "spells/spellcraft/add-synonym" "1alias" echo
+  
+  _assert_failure || return 1
+}
+
 test_rejects_empty_spell() {
   case_dir=$(_make_tempdir)
   
@@ -128,7 +119,7 @@ test_rejects_empty_spell() {
 
 test_allows_overwriting_existing_synonym() {
   case_dir=$(_make_tempdir)
-  synonyms_dir="$case_dir/.synonyms"
+  synonyms_file="$case_dir/.synonyms"
   
   # Create first synonym
   SPELLBOOK_DIR="$case_dir" \
@@ -141,23 +132,45 @@ test_allows_overwriting_existing_synonym() {
   _assert_success || return 1
   
   # Check it was updated
-  script_content=$(cat "$synonyms_dir/myalias")
-  case "$script_content" in
-    *"exec 'printf'"*) : ;;
-    *) TEST_FAILURE_REASON="synonym not updated"; return 1 ;;
-  esac
+  if ! grep -q "^alias myalias='printf'" "$synonyms_file"; then
+    TEST_FAILURE_REASON="synonym not updated"
+    return 1
+  fi
+  
+  # Check old definition is gone
+  if grep -q "^alias myalias='echo'" "$synonyms_file"; then
+    TEST_FAILURE_REASON="old synonym definition still present"
+    return 1
+  fi
+}
+
+test_handles_complex_target_with_args() {
+  case_dir=$(_make_tempdir)
+  synonyms_file="$case_dir/.synonyms"
+  
+  SPELLBOOK_DIR="$case_dir" \
+    _run_spell "spells/spellcraft/add-synonym" ll "ls -la"
+  
+  _assert_success || return 1
+  
+  # Check alias has both command and args
+  if ! grep -q "^alias ll='ls -la'" "$synonyms_file"; then
+    TEST_FAILURE_REASON="alias does not contain command with arguments"
+    return 1
+  fi
 }
 
 _run_test_case "prints help" test_shows_help
 _run_test_case "adds synonym non-interactively" test_adds_synonym_noninteractive
-_run_test_case "creates correct script content" test_synonym_script_content
-_run_test_case "synonym forwards arguments" test_synonym_forwards_arguments
+_run_test_case "creates correct alias definition" test_alias_definition_content
 _run_test_case "rejects empty word" test_rejects_empty_word
 _run_test_case "rejects word with spaces" test_rejects_word_with_spaces
 _run_test_case "rejects word with slash" test_rejects_word_with_slash
 _run_test_case "rejects word starting with dash" test_rejects_word_starting_with_dash
 _run_test_case "rejects word starting with dot" test_rejects_word_starting_with_dot
+_run_test_case "rejects word starting with number" test_rejects_word_starting_with_number
 _run_test_case "rejects empty spell" test_rejects_empty_spell
 _run_test_case "allows overwriting synonym" test_allows_overwriting_existing_synonym
+_run_test_case "handles complex target with args" test_handles_complex_target_with_args
 
 _finish_tests

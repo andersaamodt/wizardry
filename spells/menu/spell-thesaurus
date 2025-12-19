@@ -29,18 +29,23 @@ if ! require menu "The spell thesaurus menu needs the 'menu' command."; then
 fi
 
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
-synonyms_dir="$spell_home/.synonyms"
+synonyms_file="$spell_home/.synonyms"
 synonyms_enabled_file="$spell_home/.synonyms-enabled"
 
-# Ensure synonyms directory exists and initialize defaults
-if [ ! -d "$synonyms_dir" ]; then
-  mkdir -p "$synonyms_dir" || die "spell-thesaurus: could not create synonyms directory"
+# Ensure spellbook directory exists
+if [ ! -d "$spell_home" ]; then
+  mkdir -p "$spell_home" 2>/dev/null || {
+    printf '%s\n' "spell-thesaurus: could not create spellbook directory" >&2
+    exit 1
+  }
 fi
 
-# Initialize default synonyms if not already done
-if [ ! -f "$synonyms_dir/.initialized" ]; then
-  if has init-synonyms; then
-    init-synonyms 2>/dev/null || :
+# Initialize defaults if needed (invoke-thesaurus handles this)
+if [ ! -f "$spell_home/.synonyms-initialized" ]; then
+  # Source invoke-thesaurus to initialize defaults
+  if [ -f "$ROOT_DIR/spells/.imps/sys/invoke-thesaurus" ]; then
+    # shellcheck disable=SC1090,SC1091
+    . "$ROOT_DIR/spells/.imps/sys/invoke-thesaurus" 2>/dev/null || :
   fi
 fi
 
@@ -63,33 +68,28 @@ while :; do
   # Horizontal divider
   set -- "$@" "---"
   
-  # List all synonyms
+  # List all synonyms from the alias file
   has_synonyms=0
-  if [ -d "$synonyms_dir" ]; then
-    for synonym_file in "$synonyms_dir"/*; do
-      [ -f "$synonym_file" ] || continue
-      [ -x "$synonym_file" ] || continue
-      
-      synonym_word=$(basename "$synonym_file")
-      
-      # Skip hidden files
-      case $synonym_word in
-        .*) continue ;;
+  if [ -f "$synonyms_file" ]; then
+    while IFS= read -r line; do
+      # Skip comments and empty lines
+      case $line in
+        \#*|'') continue ;;
       esac
       
-      # Read the target spell from the synonym file
-      target_spell=""
-      if grep -q "^# Synonym:" "$synonym_file" 2>/dev/null; then
-        target_spell=$(grep "^exec " "$synonym_file" | sed "s/^exec '\(.*\)' \"\$@\"$/\1/" | sed "s/'\\\\''/'/g")
+      # Parse alias definition: alias word='spell'
+      if printf '%s' "$line" | grep -q "^alias "; then
+        synonym_word=$(printf '%s' "$line" | sed "s/^alias \\([^=]*\\)=.*$/\\1/")
+        target_spell=$(printf '%s' "$line" | sed "s/^alias [^=]*='\\(.*\\)'$/\\1/" | sed "s/'\\\\''/'/g")
+        
+        if [ -n "$synonym_word" ] && [ -n "$target_spell" ]; then
+          has_synonyms=1
+          # Escape single quotes for safe passing
+          escaped_word=$(printf '%s' "$synonym_word" | sed "s/'/'\\\\''/g")
+          set -- "$@" "$synonym_word → $target_spell%synonym-menu '$escaped_word'"
+        fi
       fi
-      
-      if [ -n "$target_spell" ]; then
-        has_synonyms=1
-        # Escape single quotes for safe passing
-        escaped_word=$(printf '%s' "$synonym_word" | sed "s/'/'\\\\''/g")
-        set -- "$@" "$synonym_word → $target_spell%synonym-menu '$escaped_word'"
-      fi
-    done
+    done < "$synonyms_file"
   fi
   
   # If no synonyms exist, show a message
