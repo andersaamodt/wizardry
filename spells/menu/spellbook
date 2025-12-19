@@ -121,13 +121,13 @@ spellbook_menu() {
                                         # Skip if this command exists elsewhere in PATH (it's a built-in spell, not custom)
                                         if cmd_path=$(command -v "$script_name" 2>/dev/null); then
                                                 case "$cmd_path" in
-                                                        "$spell_home"/*) 
-                                                                # Only found in spell_home - this is a custom command
-                                                                ;;
+                                                        "$spell_home"/*)
+                                                        # Only found in spell_home - this is a custom command
+                                                        ;;
                                                         *)
-                                                                # Found in system PATH - skip this built-in spell
-                                                                continue
-                                                                ;;
+                                                        # Found in system PATH - skip this built-in spell
+                                                        continue
+                                                        ;;
                                                 esac
                                         fi
                                         # Extract command from scribed script
@@ -150,7 +150,7 @@ spellbook_menu() {
                                                 if [ "$code_lines" -eq 1 ]; then
                                                         # Return the single code line
                                                         cmd_text=$(printf '%s\n' \
-                                                                "$no_comments_text" | head -n 1)
+                                                        "$no_comments_text" | head -n 1)
                                                 fi
                                         fi
                                         if [ -n "$cmd_text" ]; then

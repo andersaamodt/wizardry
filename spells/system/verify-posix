@@ -6,7 +6,7 @@ verify_posix_usage() {
   cat <<'USAGE' >&2
 Usage: verify-posix [script ...]
 
-Checks the provided spells—or every executable spell by default—for POSIX sh shebangs and common bashism pitfalls using checkbashisms.
+Checks the provided spells—or every executable spell by default—for POSIX sh shebangs and common bashism pitfalls using checkbashisms. GNU-isms are treated as failures with no exceptions.
 USAGE
 }
 
