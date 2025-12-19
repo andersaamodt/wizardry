@@ -48,6 +48,7 @@ failures=0
 total=0
 failed_targets=""
 failed_details=""
+detail_log=$(temp-file verify-posix-details) || return 1
 
 record_failure() {
   target=$1
@@ -66,10 +67,43 @@ record_failure() {
 check_gnuisms() {
   path=$1
   filtered=$(temp-file verify-posix-filter) || return 1
-  awk '
-    /^[[:space:]]*#/ { next }
-    { printf "%d:%s\n", NR, $0 }
-  ' "$path" >"$filtered"
+  awk_script=$(temp-file verify-posix-gnuisms-awk) || return 1
+  cat >"$awk_script" <<'AWKSCRIPT'
+BEGIN { in_heredoc = 0; heredoc_end = "" }
+/<<-?[ \t]*'[A-Za-z_][A-Za-z0-9_]*'/ {
+  match($0, /<<-?[ \t]*'([A-Za-z_][A-Za-z0-9_]*)'/)
+  delim = $0
+  sub(/.*<<-?[ \t]*'/, "", delim)
+  sub(/'.*/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+/<<-?[ \t]*"[A-Za-z_][A-Za-z0-9_]*"/ {
+  match($0, /<<-?[ \t]*"([A-Za-z_][A-Za-z0-9_]*)"/)
+  delim = $0
+  sub(/.*<<-?[ \t]*"/, "", delim)
+  sub(/".*/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+/<<-?[ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {
+  delim = $0
+  sub(/.*<<-?[ \t]*/, "", delim)
+  sub(/[ \t]*$/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+in_heredoc && $0 == heredoc_end { in_heredoc = 0; next }
+in_heredoc { next }
+/^[ \t]*#/ { next }
+{ printf "%d:%s\n", NR, $0 }
+AWKSCRIPT
+
+  awk -f "$awk_script" "$path" >"$filtered"
+  cleanup-file "$awk_script"
 
   found=0
   while IFS='|' read -r pattern message; do
@@ -102,7 +136,7 @@ PATTERNS
 }
 
 targets_file=$(temp-file verify-posix-targets) || return 1
-trap 'cleanup-file "$targets_file"' EXIT HUP INT TERM
+trap 'cleanup-file "$targets_file"; cleanup-file "$detail_log"' EXIT HUP INT TERM
 
 # Inline verify_posix_collect_targets and verify_posix_gather_default_targets
 if [ "$#" -gt 0 ]; then
@@ -208,13 +242,21 @@ while IFS= read -r target; do
   else
     print-fail "$target"
     if [ -s "$tmp_log" ]; then
-      while IFS= read -r line; do
-        printf '  %s\n' "$line"
-      done <"$tmp_log"
+      {
+        printf '%s\n' "$target"
+        while IFS= read -r line; do
+          printf '  %s\n' "$line"
+        done <"$tmp_log"
+      } >>"$detail_log"
       record_failure "$target" "bashisms detected"
     fi
     if [ -s "$gnuisms_log" ]; then
-      cat "$gnuisms_log"
+      {
+        if [ ! -s "$tmp_log" ]; then
+          printf '%s\n' "$target"
+        fi
+        cat "$gnuisms_log"
+      } >>"$detail_log"
       record_failure "$target" "non-POSIX usage"
     fi
   fi
@@ -234,6 +276,7 @@ if [ "$failures" -eq 0 ]; then
   else
     printf 'All %d scripts are POSIX-compliant.\n' "$total"
   fi
+  cleanup-file "$detail_log"
 else
   heading-section "POSIX Compliance Summary"
   passed=$((total - failures))
@@ -248,6 +291,11 @@ else
   else
     printf '\nFailing spells: %s\n' "$failed_targets"
   fi
+  if [ -s "$detail_log" ]; then
+    printf '\nFailure details:\n'
+    cat "$detail_log"
+  fi
+  cleanup-file "$detail_log"
   return 1
 fi
 }
