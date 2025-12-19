@@ -10,16 +10,16 @@ The language of magic—a human heirloom—is rich in evocative words for hidden
 
 ## Status for target platforms:
 
-**Current status:** 🟢 `install` and `menu` work well on Debian/Ubuntu, Arch, and NixOS. Wizardry is brand new, so not all spells have been tested and debugged yet.
+**Current status:** 🟡 `install` + `menu` untested across listed platforms. Wizardry is brand new, so not all spells have been tested and debugged yet.
 
 | OS                        | Shortname | Status                              |
 | ------------------------- | --------- | ----------------------------------- |
-| **Debian (and Ubuntu)**   | `debian`  | 🟢 **`install` + `menu` work well**   |
-| **NixOS**                 | `nixos`   | 🟢 **`install` + `menu` work well**   |
+| **Debian (and Ubuntu)**   | `debian`  | 🟡 **`install` + `menu` untested**    |
+| **NixOS**                 | `nixos`   | 🟡 **`install` + `menu` untested**    |
 | **MacOS**                 | `macos`   | 🟡 **`install` + `menu` untested**    |
-| **Arch**                  | `arch`    | 🟢 **`install` + `menu` work well**   |
-| **Android (Linux-based)** | —         | 🟠 **currently unsupported**          |
-| **Windows**               | —         | ✘ **no support planned (except WSL)** |
+| **Arch**                  | `arch`    | 🟡 **`install` + `menu` untested**    |
+| **Android (Linux-based)** | —         | 🟡 **`install` + `menu` untested**    |
+| **Windows**               | —         | 🟡 **`install` + `menu` untested**    |
 
 ## Installation
 
