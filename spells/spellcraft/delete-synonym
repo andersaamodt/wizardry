@@ -1,0 +1,50 @@
+#!/bin/sh
+# This spell deletes a custom synonym.
+
+show_usage() {
+  cat <<'USAGE'
+Usage: delete-synonym WORD
+
+Delete a custom synonym. Cannot delete default synonyms.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+if [ "$#" -lt 1 ]; then
+  printf '%s\n' "delete-synonym: requires WORD argument" >&2
+  exit 2
+fi
+
+synonym_word=$1
+
+spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+custom_file="$spell_home/.synonyms"
+default_file="$spell_home/.default-synonyms"
+
+# Check which file contains the synonym
+if [ -f "$custom_file" ] && grep -q "^alias $synonym_word=" "$custom_file" 2>/dev/null; then
+  # Found in custom - OK to delete
+  temp_file=$(temp-file synonyms) || exit 1
+  grep -v "^alias $synonym_word=" "$custom_file" > "$temp_file" || true
+  mv "$temp_file" "$custom_file"
+  success "Synonym deleted: $synonym_word"
+elif [ -f "$default_file" ] && grep -q "^alias $synonym_word=" "$default_file" 2>/dev/null; then
+  # Found in default - can't delete
+  printf '%s\n' "delete-synonym: cannot delete default synonym '$synonym_word'" >&2
+  printf '%s\n' "Use 'reset-default-synonyms' to reset all defaults" >&2
+  exit 1
+else
+  printf '%s\n' "delete-synonym: synonym '$synonym_word' not found" >&2
+  exit 1
+fi
