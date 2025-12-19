@@ -2,6 +2,16 @@
 
 Always read `README.md` first for project principles before making changes.
 
+**Essential documentation**:
+- `README.md` — Project principles, values, and standards
+- `.AGENTS.md` — Comprehensive agent instructions and style guide
+- `.github/QUICK-REFERENCE.md` — Quick lookup card for common patterns
+- `.github/instructions/best-practices.instructions.md` — Proven patterns from the codebase
+- `.github/instructions/spells.instructions.md` — Spell writing guide
+- `.github/instructions/imps.instructions.md` — Imp (micro-helper) guide
+- `.github/instructions/logging.instructions.md` — Output and error handling
+- `.github/instructions/tests.instructions.md` — Testing framework and patterns
+
 ## Project Overview
 
 Wizardry is a collection of POSIX shell scripts themed as magical spells for the terminal. It turns folders into rooms and files into items, like a fantasy MUD (Multi-User Dungeon).
