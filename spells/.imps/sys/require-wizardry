@@ -11,8 +11,14 @@ _require_wizardry() {
     return 0
   fi
   
-  # Check if wizardry is installed by looking for a core spell
-  if has menu; then
+  # Check if wizardry is installed by checking for WIZARDRY_DIR environment variable
+  # This is set by invoke-wizardry when sourced in shell startup
+  if [ -n "${WIZARDRY_DIR-}" ] && [ -d "${WIZARDRY_DIR}/spells" ]; then
+    return 0
+  fi
+  
+  # Fallback: check if invoke-wizardry exists in standard location
+  if [ -f "${HOME-}/.wizardry/spells/.imps/sys/invoke-wizardry" ]; then
     return 0
   fi
   
@@ -22,11 +28,13 @@ _require_wizardry() {
   
   # Offer to install wizardry
   if ask-install-wizardry; then
-    # Installation succeeded - verify it worked
-    if has menu; then
+    # Installation succeeded - verify it worked by checking for WIZARDRY_DIR or standard location
+    if [ -n "${WIZARDRY_DIR-}" ] && [ -d "${WIZARDRY_DIR}/spells" ]; then
+      return 0
+    elif [ -f "${HOME-}/.wizardry/spells/.imps/sys/invoke-wizardry" ]; then
       return 0
     else
-      printf '%s\n' "Installation completed but wizardry is still not in PATH." >&2
+      printf '%s\n' "Installation completed but wizardry is still not available." >&2
       printf '%s\n' "You may need to restart your shell or run: source ~/.bashrc" >&2
       return 1
     fi
