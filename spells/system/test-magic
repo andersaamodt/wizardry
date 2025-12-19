@@ -83,6 +83,13 @@ if has timeout; then
   timeout_cmd="timeout"
 fi
 
+# Check if stdbuf is available to prevent output buffering
+# This ensures PASS/FAIL lines appear immediately as tests complete
+stdbuf_cmd=""
+if has stdbuf; then
+  stdbuf_cmd="stdbuf -oL"
+fi
+
 # Source test boot imps for standardized output functions
 for boot_imp in "$root_dir"/spells/.imps/test/boot/*; do
   [ -f "$boot_imp" ] || continue
@@ -326,10 +333,11 @@ while IFS= read -r test_path <&3; do
   
   # Stream test output in real-time while capturing to file
   # Use tee to send output to both file and awk for immediate display
+  # Use stdbuf to prevent output buffering so PASS/FAIL lines appear immediately
   # This ensures PASS/FAIL lines appear as subtests complete, not after test finishes
   if [ -n "$timeout_cmd" ]; then
     timeout_prefix="$timeout_cmd $test_timeout"
-    $timeout_prefix sh "$abs" < /dev/null 2>&1 | tee "$test_output_file" | awk '
+    $timeout_prefix $stdbuf_cmd sh "$abs" < /dev/null 2>&1 | tee "$test_output_file" | awk '
       /^PASS / { print "  " $0; fflush(); next }
       /^FAIL/ { 
         # Extract just the FAIL line without the reason (after colon)
@@ -347,7 +355,7 @@ while IFS= read -r test_path <&3; do
       /^LACK / { print "  " $0; fflush() }
     ' || test_exit_code=$?
   else
-    sh "$abs" < /dev/null 2>&1 | tee "$test_output_file" | awk '
+    $stdbuf_cmd sh "$abs" < /dev/null 2>&1 | tee "$test_output_file" | awk '
       /^PASS / { print "  " $0; fflush(); next }
       /^FAIL/ { 
         # Extract just the FAIL line without the reason (after colon)
