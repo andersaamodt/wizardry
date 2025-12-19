@@ -74,7 +74,8 @@ for required_cmd in sh find grep awk sed sort cat printf; do
 done
 
 if [ -n "$missing_commands" ]; then
-  die "test-magic: required commands not found: $missing_commands (cannot run tests without these commands)"
+  die "test-magic: required commands not found: $missing_commands" \
+    "(cannot run tests without these commands)"
 fi
 
 # Check if timeout command is available for test execution protection
@@ -338,7 +339,8 @@ while IFS= read -r test_path <&3; do
   if [ -n "$timeout_cmd" ]; then
     timeout_prefix="$timeout_cmd $test_timeout"
     # shellcheck disable=SC2086
-    $timeout_prefix ${stdbuf_cmd:+$stdbuf_cmd} sh "$abs" < /dev/null 2>&1 | tee "$test_output_file" | awk '
+    $timeout_prefix ${stdbuf_cmd:+$stdbuf_cmd} sh "$abs" < /dev/null 2>&1 | \
+      tee "$test_output_file" | awk '
       /^PASS / { print "  " $0; fflush(); next }
       /^FAIL/ { 
         # Extract just the FAIL line without the reason (after colon)
