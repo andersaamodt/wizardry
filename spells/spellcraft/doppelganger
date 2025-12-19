@@ -195,7 +195,7 @@ for file in "$repo_dir"/*; do
   esac
 done
 
-success "Doppelganger created successfully!"
+_success "Doppelganger created successfully!"
 _say "Location: $output_dir"
 _say "Compiled: $compiled_count spells"
 if [ "$failed_count" -gt 0 ]; then
