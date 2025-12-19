@@ -1611,50 +1611,61 @@ test_warn_parent_dir_references() {
 
 # Test: test output streams line-by-line (not buffered)
 # Verifies that PASS/FAIL lines appear as subtests complete, not all at once
+# This is a fast regression test for the stdbuf fix in test-magic
 test_output_streams_line_by_line() {
-  # Create a test that outputs PASS lines with delays between them
+  # Verify stdbuf is available (core requirement for unbuffered output)
+  if ! command -v stdbuf >/dev/null 2>&1; then
+    # Without stdbuf, output may be buffered but tests will still work
+    # Just skip this validation
+    return 0
+  fi
+  
+  # Create a simple test that outputs PASS lines with timing
   tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/streaming-test.XXXXXX")
   test_file="$tmpdir/streaming-test.sh"
   
   cat > "$test_file" << 'EOF'
 #!/bin/sh
-printf 'PASS #1 first test\n'
-sleep 0.1
-printf 'PASS #2 second test\n'
-sleep 0.1
-printf 'PASS #3 third test\n'
-printf '3/3 tests passed\n'
+printf 'PASS #1 first\n'
+sleep 0.15
+printf 'PASS #2 second\n'
+sleep 0.15
+printf 'PASS #3 third\n'
 EOF
   
   chmod +x "$test_file"
   
-  # Run the test through test-magic's streaming pipeline
-  # Capture timestamps to verify output arrives incrementally
+  # Run with stdbuf (as test-magic does) and capture with timestamps
   output_file="$tmpdir/output.txt"
-  timestamps_file="$tmpdir/timestamps.txt"
+  stdbuf -oL sh "$test_file" 2>&1 | while IFS= read -r line; do
+    printf '%s|%s\n' "$(date +%s.%N)" "$line"
+  done > "$output_file"
   
-  # Simulate what test-magic does: tee to file and awk for display
-  {
-    sh "$test_file" 2>&1 | tee "$output_file" | awk '
-      /^PASS / { 
-        print "  " $0
-        fflush()
-        system("date +%s.%N >> '"$timestamps_file"'")
-      }
-    '
-  } > /dev/null 2>&1
+  # Extract timestamps for PASS lines
+  pass_times=$(grep '|PASS ' "$output_file" | cut -d'|' -f1)
+  pass_count=$(printf '%s\n' "$pass_times" | grep -c '^' || echo 0)
   
   # Verify we got 3 PASS lines
-  pass_count=$(grep -c "^PASS" "$output_file" 2>/dev/null || echo 0)
-  test "$pass_count" -eq 3 || { rm -rf "$tmpdir"; return 1; }
-  
-  # Verify we got 3 timestamps (one per PASS line)
-  if [ -f "$timestamps_file" ]; then
-    timestamp_count=$(wc -l < "$timestamps_file" | tr -d ' ')
-    test "$timestamp_count" -eq 3 || { rm -rf "$tmpdir"; return 1; }
+  if [ "$pass_count" -ne 3 ]; then
+    rm -rf "$tmpdir"
+    TEST_FAILURE_REASON="expected 3 PASS lines, got $pass_count"
+    return 1
   fi
   
+  # Check timing spread: first and last PASS should be at least 0.2s apart
+  first_time=$(printf '%s\n' "$pass_times" | head -1)
+  last_time=$(printf '%s\n' "$pass_times" | tail -1)
+  
+  # Use awk for floating point comparison
+  is_spaced=$(awk "BEGIN {print ($last_time - $first_time >= 0.2) ? 1 : 0}")
+  
   rm -rf "$tmpdir"
+  
+  if [ "$is_spaced" -ne 1 ]; then
+    TEST_FAILURE_REASON="PASS lines appeared too quickly, indicating buffered output"
+    return 1
+  fi
+  
   return 0
 }
 

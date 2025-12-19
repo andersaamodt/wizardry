@@ -337,7 +337,8 @@ while IFS= read -r test_path <&3; do
   # This ensures PASS/FAIL lines appear as subtests complete, not after test finishes
   if [ -n "$timeout_cmd" ]; then
     timeout_prefix="$timeout_cmd $test_timeout"
-    $timeout_prefix $stdbuf_cmd sh "$abs" < /dev/null 2>&1 | tee "$test_output_file" | awk '
+    # shellcheck disable=SC2086
+    $timeout_prefix ${stdbuf_cmd:+$stdbuf_cmd} sh "$abs" < /dev/null 2>&1 | tee "$test_output_file" | awk '
       /^PASS / { print "  " $0; fflush(); next }
       /^FAIL/ { 
         # Extract just the FAIL line without the reason (after colon)
@@ -355,7 +356,8 @@ while IFS= read -r test_path <&3; do
       /^LACK / { print "  " $0; fflush() }
     ' || test_exit_code=$?
   else
-    $stdbuf_cmd sh "$abs" < /dev/null 2>&1 | tee "$test_output_file" | awk '
+    # shellcheck disable=SC2086
+    ${stdbuf_cmd:+$stdbuf_cmd} sh "$abs" < /dev/null 2>&1 | tee "$test_output_file" | awk '
       /^PASS / { print "  " $0; fflush(); next }
       /^FAIL/ { 
         # Extract just the FAIL line without the reason (after colon)
