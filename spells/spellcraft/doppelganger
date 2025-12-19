@@ -36,22 +36,23 @@ case "${1-}" in
   ;;
 esac
 
-# Source require-wizardry if not available (handles script execution without invoke-wizardry)
-_rw_sourced=0
-if ! command -v require-wizardry >/dev/null 2>&1; then
+# Handle require-wizardry availability (for script execution without invoke-wizardry in current shell)
+# Check if _require_wizardry function exists (may have been sourced already)
+if command -v _require_wizardry >/dev/null 2>&1; then
+  _require_wizardry || exit 1
+elif command -v require-wizardry >/dev/null 2>&1; then
+  require-wizardry || exit 1
+else
+  # Neither available - source it now
   _rw_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
   _rw_imp_path="$_rw_script_dir/../../.imps/sys/require-wizardry"
   if [ -f "$_rw_imp_path" ]; then
     . "$_rw_imp_path"
-    _rw_sourced=1
+    _require_wizardry || exit 1
+  else
+    printf 'Error: require-wizardry not found\n' >&2
+    exit 1
   fi
-fi
-
-# Call require-wizardry (or _require_wizardry if we just sourced it)
-if [ "$_rw_sourced" -eq 1 ]; then
-  _require_wizardry || exit 1
-else
-  require-wizardry || exit 1
 fi
 
 set -eu
