@@ -160,14 +160,27 @@ do
   
   # Call compile-spell from repo directory with full relative path and redirect output to target
   # Source invoke-wizardry in subshell to make all imps available for compilation
-  # Redirect stdout to file, stderr to /dev/null (don't let error messages corrupt the compiled spell)
   compile_spell_path="$repo_dir/spells/spellcraft/compile-spell"
-  if (cd "$repo_dir" && WIZARDRY_DIR="$repo_dir" . "$repo_dir/spells/.imps/sys/invoke-wizardry" >/dev/null 2>&1 && "$compile_spell_path" "$spell_rel_path" 2>/dev/null) > "$target_file"; then
-    chmod +x "$target_file"
-    compiled_count=$((compiled_count + 1))
+  if (
+    cd "$repo_dir" && \
+    WIZARDRY_DIR="$repo_dir" && \
+    export WIZARDRY_DIR && \
+    . "$repo_dir/spells/.imps/sys/invoke-wizardry" && \
+    "$compile_spell_path" "$spell_rel_path"
+  ) > "$target_file" 2>&1; then
+    # Check if the target file is valid (has shebang)
+    if head -n 1 "$target_file" 2>/dev/null | grep -q '^#!'; then
+      chmod +x "$target_file"
+      compiled_count=$((compiled_count + 1))
+    else
+      _warn "doppelganger: compilation produced invalid output for $spell_name"
+      failed_count=$((failed_count + 1))
+      rm -f "$target_file"
+    fi
   else
     _warn "doppelganger: failed to compile $spell_name"
     failed_count=$((failed_count + 1))
+    rm -f "$target_file"
   fi
 done
 
