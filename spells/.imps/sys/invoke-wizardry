@@ -29,26 +29,16 @@ _invoke_wizardry() {
   : "${SPELLBOOK_DIR:=${HOME-}/.spellbook}"
   export SPELLBOOK_DIR
   
-  # Set up PATH to include wizardry spell directories, imps, and user's spellbook
-  # This makes all spells and imps directly callable as commands
+  # Set up PATH to include wizardry spell directories and user's spellbook
+  # This makes all spells directly callable as commands
   _iw_new_path="$SPELLBOOK_DIR"
   for _iw_spell_cat in "$WIZARDRY_DIR"/spells/*; do
     [ -d "$_iw_spell_cat" ] || continue
-    # Include .imps directories for command access, exclude .arcana
     case "$_iw_spell_cat" in
-      */.arcana) continue ;;
+      */.imps|*/.arcana) continue ;;
     esac
     _iw_new_path="$_iw_new_path:$_iw_spell_cat"
   done
-  
-  # Also add imp family directories to PATH for direct command access
-  _iw_imps_dir="$WIZARDRY_DIR/spells/.imps"
-  if [ -d "$_iw_imps_dir" ]; then
-    for _iw_family in "$_iw_imps_dir"/*; do
-      [ -d "$_iw_family" ] || continue
-      _iw_new_path="$_iw_new_path:$_iw_family"
-    done
-  fi
   
   # Add to PATH if not already present
   case ":${PATH-}:" in
@@ -63,6 +53,10 @@ _invoke_wizardry() {
   if [ -d "$_iw_imps_dir" ]; then
     for _iw_family in "$_iw_imps_dir"/*; do
       [ -d "$_iw_family" ] || continue
+      # Skip test imps - they're only for testing, not production use
+      case "$_iw_family" in
+        */test) continue ;;
+      esac
       for _iw_imp in "$_iw_family"/*; do
         [ -f "$_iw_imp" ] && [ -r "$_iw_imp" ] || continue
         # Skip invoke-wizardry itself to prevent recursion
