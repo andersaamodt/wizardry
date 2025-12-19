@@ -57,7 +57,7 @@ _run_test_case "install-core uses pkgin on Darwin" install_core_uses_pkgin_on_da
 
 install_core_uses_pacman_on_arch() {
   fixture=$(_make_fixture)
-  _write_pacman_stub "$fixture"
+  _stub_pacman "$fixture"
   _write_sudo_stub "$fixture"
   _provide_basic_tools "$fixture"
   _link_tools "$fixture/bin" grep uname
@@ -75,7 +75,7 @@ _run_test_case "install-core uses pacman on Arch" install_core_uses_pacman_on_ar
 
 install_core_uses_nix_env_on_nixos() {
   fixture=$(_make_fixture)
-  _write_nix_env_stub "$fixture"
+  _stub_nix_env "$fixture"
   _provide_basic_tools "$fixture"
   _link_tools "$fixture/bin" grep uname
 

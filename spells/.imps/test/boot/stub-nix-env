@@ -1,9 +1,9 @@
 #!/bin/sh
-# write-nix-env-stub FIXTURE - create a nix-env stub script in fixture/bin
+# stub-nix-env FIXTURE - create a nix-env stub script in fixture/bin
 # Stub logs invocations to NIX_ENV_LOG and exits with NIX_ENV_EXIT code.
 set -eu
 
-_write_nix_env_stub() {
+_stub_nix_env() {
   fixture=$1
   cat <<'STUB' >"$fixture/bin/nix-env"
 #!/bin/sh
@@ -15,4 +15,4 @@ STUB
 
 # Self-execution when run directly (not sourced)
 set -eu
-case "${0##*/}" in write-nix-env-stub) _write_nix_env_stub "$@" ;; esac
+case "${0##*/}" in stub-nix-env) _stub_nix_env "$@" ;; esac

@@ -1,9 +1,9 @@
 #!/bin/sh
-# write-pacman-stub FIXTURE - create a pacman stub script in fixture/bin
+# stub-pacman FIXTURE - create a pacman stub script in fixture/bin
 # Stub logs invocations to PACMAN_LOG and exits with PACMAN_EXIT code.
 set -eu
 
-_write_pacman_stub() {
+_stub_pacman() {
   fixture=$1
   cat <<'STUB' >"$fixture/bin/pacman"
 #!/bin/sh
@@ -15,4 +15,4 @@ STUB
 
 # Self-execution when run directly (not sourced)
 set -eu
-case "${0##*/}" in write-pacman-stub) _write_pacman_stub "$@" ;; esac
+case "${0##*/}" in stub-pacman) _stub_pacman "$@" ;; esac

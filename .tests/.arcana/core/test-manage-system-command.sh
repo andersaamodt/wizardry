@@ -106,7 +106,7 @@ STUB
 
 manage_system_prefers_pacman_when_available() {
   fixture=$(_make_fixture)
-  _write_pacman_stub "$fixture"
+  _stub_pacman "$fixture"
   _write_sudo_stub "$fixture"
   _provide_basic_tools "$fixture"
   _link_tools "$fixture/bin" grep
@@ -122,7 +122,7 @@ manage_system_prefers_pacman_when_available() {
 
 manage_system_uses_nix_env_on_nixos() {
   fixture=$(_make_fixture)
-  _write_nix_env_stub "$fixture"
+  _stub_nix_env "$fixture"
   _provide_basic_tools "$fixture"
   _link_tools "$fixture/bin" grep
 
