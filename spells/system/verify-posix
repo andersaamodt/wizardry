@@ -67,6 +67,7 @@ record_failure() {
 check_gnuisms() {
   path=$1
   filtered=$(temp-file verify-posix-filter) || return 1
+  patterns_file=$repo_dir/spells/system/.verify-posix-gnuisms
   awk_script=$(temp-file verify-posix-gnuisms-awk) || return 1
   cat >"$awk_script" <<'AWKSCRIPT'
 BEGIN { in_heredoc = 0; heredoc_end = "" }
@@ -105,6 +106,12 @@ AWKSCRIPT
   awk -f "$awk_script" "$path" >"$filtered"
   cleanup-file "$awk_script"
 
+  if [ ! -f "$patterns_file" ]; then
+    printf 'verify-posix: missing patterns file: %s\n' "$patterns_file" >&2
+    cleanup-file "$filtered"
+    return 1
+  fi
+
   found=0
   while IFS='|' read -r pattern message; do
     [ -n "$pattern" ] || continue
@@ -116,18 +123,7 @@ AWKSCRIPT
         printf '  non-POSIX: %s (line %s)\n' "$message" "$line_num"
       done
     fi
-  done <<'PATTERNS'
-\bgrep[[:space:]].*-P\b|grep -P (PCRE, non-POSIX)
-\bgrep[[:space:]].*-o\b|grep -o (non-POSIX)
-\bsed[[:space:]].*-r\b|sed -r (GNU extension)
-\bsed[[:space:]].*-E\b|sed -E (non-POSIX)
-\bxargs[[:space:]].*-r\b|xargs -r (GNU extension)
-\breadlink[[:space:]].*-f\b|readlink -f (non-POSIX)
-\bstat[[:space:]].*-c\b|stat -c (GNU extension)
-\bdate[[:space:]].*-d\b|date -d (GNU extension)
-\brealpath\b|realpath (non-POSIX)
-\bmktemp[[:space:]].*-p\b|mktemp -p (non-POSIX)
-PATTERNS
+  done <"$patterns_file"
   cleanup-file "$filtered"
   if [ "$found" -eq 1 ]; then
     return 1
