@@ -1,8 +1,8 @@
 #!/bin/sh
 
-# This spell copies the text file at the specified path to the clipboard.
-# It takes one argument, the path to the text file.
-# When run without arguments, it prompts for the file path interactively.
+# This spell transcribes the contents of a text scroll to your clipboard, making
+# its words available to paste elsewhere. It takes one argument—the path to the
+# file—or prompts you interactively when called without arguments.
 
 copy_usage() {
 cat <<'USAGE'
@@ -26,7 +26,7 @@ require-wizardry || exit 1
 set -eu
 . env-clear
 
-# Handle missing argument - prompt interactively
+# Handle missing argument - prompt interactively when spell is invoked without a path
 if [ "$#" -eq 0 ]; then
     if has ask-text; then
         file_path=$(ask-text "Enter file path to copy to clipboard:")
@@ -34,6 +34,7 @@ if [ "$#" -eq 0 ]; then
             say 'No file path provided.'
             return 1
         fi
+        # Rebuild argument list with the provided path
         set -- "$file_path"
     else
         copy_usage >&2

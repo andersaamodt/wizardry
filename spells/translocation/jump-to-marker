@@ -1,7 +1,8 @@
 #!/bin/sh
 
-# This spell teleports to markers set with mark-location.
-# Source this file or use word-of-binding to invoke it.
+# This spell teleports you to locations inscribed by mark-location, allowing
+# instant travel to bookmarked directories. Source this file or use word-of-
+# binding to make the jump_to_marker function available in your current shell.
 
 require-wizardry || exit 1
 
