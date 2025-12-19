@@ -3,11 +3,11 @@
 
 show_usage() {
   cat <<'USAGE'
-Usage: synonym-menu WORD [TYPE]
+Usage: synonym-menu WORD
 
 Display a management menu for a specific synonym with options to
 edit the word, edit the target spell, or delete the synonym.
-TYPE can be 'custom' or 'default' (defaults to 'custom').
+Auto-detects whether the synonym is custom or default.
 USAGE
 }
 
@@ -32,7 +32,6 @@ if [ "$#" -lt 1 ]; then
 fi
 
 synonym_word=$1
-synonym_type=${2:-custom}
 
 if ! require menu "The synonym menu needs the 'menu' command."; then
   exit 1
@@ -42,23 +41,20 @@ spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
 custom_file="$spell_home/.synonyms"
 default_file="$spell_home/.default-synonyms"
 
-# Determine which file to check based on type
-if [ "$synonym_type" = "default" ]; then
-  synonyms_file="$default_file"
-else
-  synonyms_file="$custom_file"
-fi
-
-# Check if synonyms file exists
-if [ ! -f "$synonyms_file" ]; then
-  printf '%s\n' "synonym-menu: no synonyms file found" >&2
-  exit 1
-fi
-
-# Check if synonym exists and read target spell
+# Auto-detect which file contains the synonym
+# Check custom first (takes precedence)
+synonym_type=""
+synonyms_file=""
 target_spell=""
-if grep -q "^alias $synonym_word=" "$synonyms_file"; then
-  target_spell=$(grep "^alias $synonym_word=" "$synonyms_file" | sed "s/^alias $synonym_word='\\(.*\\)'$/\\1/" | sed "s/'\\\\''/'/g")
+
+if [ -f "$custom_file" ] && grep -q "^alias $synonym_word=" "$custom_file" 2>/dev/null; then
+  synonym_type="custom"
+  synonyms_file="$custom_file"
+  target_spell=$(grep "^alias $synonym_word=" "$custom_file" | sed "s/^alias $synonym_word='\\(.*\\)'$/\\1/" | sed "s/'\\\\''/'/g")
+elif [ -f "$default_file" ] && grep -q "^alias $synonym_word=" "$default_file" 2>/dev/null; then
+  synonym_type="default"
+  synonyms_file="$default_file"
+  target_spell=$(grep "^alias $synonym_word=" "$default_file" | sed "s/^alias $synonym_word='\\(.*\\)'$/\\1/" | sed "s/'\\\\''/'/g")
 fi
 
 if [ -z "$target_spell" ]; then

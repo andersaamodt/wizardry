@@ -99,7 +99,7 @@ while :; do
           has_custom=1
           # Escape single quotes for safe passing
           escaped_word=$(printf '%s' "$synonym_word" | sed "s/'/'\\\\''/g")
-          set -- "$@" "$synonym_word → $target_spell%synonym-menu '$escaped_word' custom"
+          set -- "$@" "$synonym_word → $target_spell%synonym-menu '$escaped_word'"
         fi
       fi
     done < "$custom_file"
@@ -139,7 +139,7 @@ while :; do
           if [ "$is_overridden" -eq 0 ]; then
             # Escape single quotes for safe passing
             escaped_word=$(printf '%s' "$synonym_word" | sed "s/'/'\\\\''/g")
-            set -- "$@" "$synonym_word → $target_spell%synonym-menu '$escaped_word' default"
+            set -- "$@" "$synonym_word → $target_spell%synonym-menu '$escaped_word'"
           fi
         fi
       fi

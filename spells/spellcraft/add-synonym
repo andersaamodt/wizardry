@@ -34,20 +34,6 @@ require-wizardry || exit 1
 set -eu
 . env-clear
 
-spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
-synonyms_file="$spell_home/.synonyms"
-
-# Ensure synonyms file exists
-if [ ! -f "$synonyms_file" ]; then
-  cat > "$synonyms_file" << 'HEADER'
-# Wizardry Synonyms
-# This file contains shell aliases for wizardry spells.
-# Loaded automatically by invoke-wizardry at shell startup.
-# Reload with: . invoke-thesaurus
-
-HEADER
-fi
-
 # Parse arguments
 synonym_word=""
 target_spell=""
@@ -166,20 +152,68 @@ if [ -n "$target_first_word" ]; then
   fi
 fi
 
-# Check if synonym already exists
-if grep -q "^alias $synonym_word=" "$synonyms_file" 2>/dev/null; then
-  warn "add-synonym: overwriting existing synonym '$synonym_word'"
-  # Remove old alias definition
-  temp_file=$(temp-file synonyms) || exit 1
-  grep -v "^alias $synonym_word=" "$synonyms_file" > "$temp_file" || true
-  mv "$temp_file" "$synonyms_file"
+# Check if synonym already exists (in either file)
+spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+custom_file="$spell_home/.synonyms"
+default_file="$spell_home/.default-synonyms"
+
+# Check for duplicates in both files
+already_exists=0
+existing_location=""
+existing_target=""
+
+if [ -f "$custom_file" ] && grep -q "^alias $synonym_word=" "$custom_file" 2>/dev/null; then
+  already_exists=1
+  existing_location="custom"
+  existing_target=$(grep "^alias $synonym_word=" "$custom_file" | sed "s/^alias $synonym_word='\\(.*\\)'$/\\1/" | sed "s/'\\\\''/'/g")
+fi
+
+# Only check default if not already found in custom
+if [ "$already_exists" -eq 0 ] && [ -f "$default_file" ] && grep -q "^alias $synonym_word=" "$default_file" 2>/dev/null; then
+  already_exists=1
+  existing_location="default"
+  existing_target=$(grep "^alias $synonym_word=" "$default_file" | sed "s/^alias $synonym_word='\\(.*\\)'$/\\1/" | sed "s/'\\\\''/'/g")
+fi
+
+if [ "$already_exists" -eq 1 ]; then
+  warn "add-synonym: synonym '$synonym_word' already exists ($existing_location: $synonym_word → $existing_target)"
+  printf 'Overwrite with new target? (y/N): ' >&2
+  IFS= read -r confirm || confirm="n"
+  case $confirm in
+    y|Y|yes|YES) ;;
+    *) 
+      printf '%s\n' "add-synonym: cancelled" >&2
+      exit 1
+      ;;
+  esac
+  
+  # If overwriting a default, we create/update in custom
+  # If overwriting a custom, we update in custom
+  # Remove old custom definition if it exists
+  if [ -f "$custom_file" ] && grep -q "^alias $synonym_word=" "$custom_file" 2>/dev/null; then
+    temp_file=$(temp-file synonyms) || exit 1
+    grep -v "^alias $synonym_word=" "$custom_file" > "$temp_file" || true
+    mv "$temp_file" "$custom_file"
+  fi
+fi
+
+# Ensure custom synonyms file exists
+if [ ! -f "$custom_file" ]; then
+  mkdir -p "$spell_home" 2>/dev/null || true
+  cat > "$custom_file" << 'HEADER'
+# Wizardry Custom Synonyms
+# This file contains your custom shell aliases.
+# Loaded automatically by invoke-wizardry at shell startup.
+# Reload with: . invoke-thesaurus
+
+HEADER
 fi
 
 # Escape single quotes in target_spell for alias definition
 escaped_spell=$(printf '%s' "$target_spell" | sed "s/'/'\\\\''/g")
 
-# Add the alias to the file
-printf "alias %s='%s'\n" "$synonym_word" "$escaped_spell" >> "$synonyms_file"
+# Add the alias to the custom file
+printf "alias %s='%s'\n" "$synonym_word" "$escaped_spell" >> "$custom_file"
 
 success "Synonym created: $synonym_word -> $target_spell"
 info "Reload with: . invoke-thesaurus"

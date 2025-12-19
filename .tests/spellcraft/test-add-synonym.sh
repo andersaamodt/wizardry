@@ -126,8 +126,8 @@ test_allows_overwriting_existing_synonym() {
     _run_spell "spells/spellcraft/add-synonym" myalias echo
   _assert_success || return 1
   
-  # Overwrite with second synonym
-  SPELLBOOK_DIR="$case_dir" \
+  # Overwrite with second synonym (answer yes to confirm)
+  printf 'y\n' | SPELLBOOK_DIR="$case_dir" \
     _run_spell "spells/spellcraft/add-synonym" myalias printf
   _assert_success || return 1
   
@@ -137,9 +137,10 @@ test_allows_overwriting_existing_synonym() {
     return 1
   fi
   
-  # Check old definition is gone
-  if grep -q "^alias myalias='echo'" "$synonyms_file"; then
-    TEST_FAILURE_REASON="old synonym definition still present"
+  # Check old definition is gone - there should only be one alias myalias line
+  alias_count=$(grep -c "^alias myalias=" "$synonyms_file")
+  if [ "$alias_count" -ne 1 ]; then
+    TEST_FAILURE_REASON="multiple myalias definitions found ($alias_count)"
     return 1
   fi
 }

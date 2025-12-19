@@ -24,7 +24,8 @@ set -eu
 . env-clear
 
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
-synonyms_file="$spell_home/.synonyms"
+custom_file="$spell_home/.synonyms"
+default_file="$spell_home/.default-synonyms"
 
 # Parse arguments
 if [ "$#" -lt 1 ]; then
@@ -70,14 +71,16 @@ if [ -z "$edit_mode" ]; then
   exit 2
 fi
 
-# Check if synonyms file exists
-if [ ! -f "$synonyms_file" ]; then
-  printf '%s\n' "edit-synonym: no synonyms defined" >&2
+# Check which file contains the synonym (custom only - can't edit defaults)
+if [ -f "$custom_file" ] && grep -q "^alias $synonym_word=" "$custom_file" 2>/dev/null; then
+  # Found in custom - OK to edit
+  synonyms_file="$custom_file"
+elif [ -f "$default_file" ] && grep -q "^alias $synonym_word=" "$default_file" 2>/dev/null; then
+  # Found in default - can't edit
+  printf '%s\n' "edit-synonym: cannot edit default synonym '$synonym_word'" >&2
+  printf '%s\n' "Use 'Override' option in synonym-menu to create a custom version" >&2
   exit 1
-fi
-
-# Check if synonym exists
-if ! grep -q "^alias $synonym_word=" "$synonyms_file"; then
+else
   printf '%s\n' "edit-synonym: synonym '$synonym_word' not found" >&2
   exit 1
 fi
