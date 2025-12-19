@@ -5,6 +5,7 @@ Always read `README.md` first for project principles before making changes.
 **Essential documentation**:
 - `README.md` — Project principles, values, and standards
 - `.AGENTS.md` — Comprehensive agent instructions and style guide
+- `.github/QUICK-REFERENCE.md` — Quick lookup card for common patterns
 - `.github/instructions/best-practices.instructions.md` — Proven patterns from the codebase
 - `.github/instructions/spells.instructions.md` — Spell writing guide
 - `.github/instructions/imps.instructions.md` — Imp (micro-helper) guide
