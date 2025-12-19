@@ -1,7 +1,6 @@
 #!/bin/sh
 
-# This spell reads a location's extended attributes and presents its description.
-# Use it to view MUD-style room descriptions for directories.
+# Read MUD-style room descriptions from extended attributes.
 
 require-wizardry || exit 1
 

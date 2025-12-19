@@ -1,7 +1,6 @@
 #!/bin/sh
 
-# This spell teleports to markers set with mark-location.
-# Source this file or use word-of-binding to invoke it.
+# Teleport to bookmarks set by mark-location.
 
 require-wizardry || exit 1
 

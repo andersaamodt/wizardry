@@ -1,7 +1,6 @@
 #!/bin/sh
 
-# This spell moves files or directories from one location to another.
-# Use it as a more intuitive wrapper around the mv command.
+# Relocate files using natural language: "move from here to there".
 
 move_usage() {
 cat <<'USAGE'
@@ -29,7 +28,6 @@ set -eu
 from=''
 to=''
 
-# Parse arguments supporting both simple and natural language forms
 while [ "$#" -gt 0 ]; do
         case "$1" in
                 from)
@@ -70,9 +68,9 @@ if is unset "$to"; then
         return 1
 fi
 
-# Check source exists
+# Check source exists before attempting move
 if ! there "$from"; then
-        die "move: source not found: $from"
+        die "move: source not found: $from" || return 1
 fi
 
 # Check write permission on destination directory
@@ -82,7 +80,7 @@ if [ "$dest_dir" = "." ]; then
 fi
 
 if ! is writable "$dest_dir"; then
-        die "move: no write permission on: $dest_dir"
+        die "move: no write permission on: $dest_dir" || return 1
 fi
 
 # Perform the move

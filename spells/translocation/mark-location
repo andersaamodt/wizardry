@@ -1,7 +1,6 @@
 #!/bin/sh
 
-# This spell records the current directory (or a provided path) for jump-to-marker.
-# It resolves the destination to an absolute path and stores it in a named marker file.
+# Inscribe bookmarks for jump-to-marker to teleport you back.
 
 require-wizardry || exit 1
 
@@ -89,7 +88,6 @@ esac
 if [ -z "$target_path" ]; then
   destination=$(here)
 else
-  # Expand the provided path to an absolute destination for consistent recall.
   case "$target_path" in
     /*)
       if [ -d "$target_path" ]; then

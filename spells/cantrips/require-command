@@ -1,7 +1,6 @@
 #!/bin/sh
 
-# Guard a script against missing external commands by exiting with a
-# descriptive error if the binary is absent.
+# Guard against missing commands, offering to install them.
 
 
 require_command_usage() {
@@ -35,13 +34,10 @@ shift
 
 auto_install=${REQUIRE_COMMAND_ASSUME_YES:-0}
 
-# Succeed immediately when the command is already available on PATH.
 has "$command_name" && return 0
 
-# Inline attempt_install with inlined find_install_spell
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 
-# Inline find_install_spell logic
 install_spell=""
 if has "install-$command_name"; then
     install_spell=$(where "install-$command_name")
@@ -50,7 +46,6 @@ elif [ -x "$script_dir/../install/core/install-$command_name" ]; then
 fi
 
 if [ -n "$install_spell" ]; then
-    # Inline attempt_install logic
     if [ "$auto_install" = "1" ] || ! [ -t 0 ]; then
         if ASSUME_YES=1 "$install_spell" && has "$command_name"; then
             return 0
@@ -71,9 +66,6 @@ fi
 if [ "$#" -gt 0 ]; then
     message=$*
 else
-    # Point users toward the core prerequisite menu so they can resolve the
-    # missing dependency the Wizardry way instead of reaching for system
-    # package managers.
     message="The '${command_name}' command is required. See 'core-menu' for installation options."
 fi
 

@@ -1,7 +1,6 @@
 #!/bin/sh
 
-# This spell moves files or folders to the system trash (recycle bin) safely.
-# Use this instead of `rm` when you want items to be recoverable.
+# Banish files to the trash for later recall. Safer than `rm`.
 
 trash_usage() {
   cat <<'USAGE'
