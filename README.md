@@ -17,9 +17,9 @@ The language of magic—a human heirloom—is rich in evocative words for hidden
 | **Debian (and Ubuntu)**   | `debian`  | 🟡 **`install` + `menu` untested**    |
 | **NixOS**                 | `nixos`   | 🟡 **`install` + `menu` untested**    |
 | **MacOS**                 | `macos`   | 🟡 **`install` + `menu` untested**    |
-| **Arch**                  | `arch`    | 🟡 **`install` + `menu` untested**    |
-| **Android (Linux-based)** | —         | 🟡 **`install` + `menu` untested**    |
-| **Windows**               | —         | 🟡 **`install` + `menu` untested**    |
+| **Arch**                  | `arch`    | 🟠 **untested**    |
+| **Android (Linux-based)** | —         | 🟠 **currently unsupported**    |
+| **Windows**               | —         | ✘ **no support planned (except WSL)**    |
 
 ## Installation
 
