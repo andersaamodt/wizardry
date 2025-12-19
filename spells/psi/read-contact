@@ -1,7 +1,6 @@
 #!/bin/sh
 
-# This spell reads a vCard and prints its fields with friendly labels.
-# Provide an optional field name to extract a single detail.
+# Read vCard fields with friendly labels.
 
 read_contact_usage() {
 cat <<'USAGE'

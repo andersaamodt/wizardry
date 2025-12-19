@@ -1,8 +1,6 @@
 #!/bin/sh
 
-# This spell inscribes a bookmark upon a location—the current directory or a
-# specified path—so that jump-to-marker can later teleport you there. It resolves
-# paths to their absolute form and stores them in named marker files.
+# Inscribe bookmarks for jump-to-marker to teleport you back.
 
 require-wizardry || exit 1
 
@@ -90,9 +88,6 @@ esac
 if [ -z "$target_path" ]; then
   destination=$(here)
 else
-  # Expand the provided path to an absolute destination for consistent recall.
-  # This ensures bookmarks always point to the same location regardless of
-  # where they're invoked from.
   case "$target_path" in
     /*)
       if [ -d "$target_path" ]; then

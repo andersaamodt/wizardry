@@ -1,8 +1,6 @@
 #!/bin/sh
 
-# This spell banishes unwanted files to the system trash, where they rest in
-# exile until recalled or permanently dismissed. Use this instead of `rm` when
-# you wish to preserve the possibility of restoration.
+# Banish files to the trash for later recall. Safer than `rm`.
 
 trash_usage() {
   cat <<'USAGE'

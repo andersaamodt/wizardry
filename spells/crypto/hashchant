@@ -1,7 +1,6 @@
 #!/bin/sh
 
-# Hashchant spell: weave a checksum into a file's extended attributes.
-# Stores a CRC-32 derived from the filename and contents under user.hash.
+# Weave CRC-32 checksums into extended attributes.
 
 
 hashchant_usage() {
@@ -41,12 +40,10 @@ filename=$(basename "$file")
 hash=$( (echo "$filename" && cat "$file") | cksum | awk '{ print $1 }')
 hash=$(printf '0x%X' "$hash")
 
-# Inline apply_first_available logic - try each helper in order
 last_helper=""
 last_status=0
 
 for helper in attr xattr setfattr; do
-  # Inline helper_usable logic
   if ! has "$helper"; then
     continue
   fi
@@ -61,7 +58,6 @@ for helper in attr xattr setfattr; do
     esac
   fi
 
-  # Inline apply_hash logic - try to apply with this helper
   applied=0
   case "$helper" in
     attr)

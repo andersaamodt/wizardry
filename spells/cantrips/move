@@ -1,9 +1,6 @@
 #!/bin/sh
 
-# This spell relocates files or directories from one place to another with a
-# more intuitive incantation. It wraps `mv` to accept natural language forms
-# like "move this to there" or "move from here to there" so commands read like
-# sentences rather than cryptic abbreviations.
+# Relocate files using natural language: "move from here to there".
 
 move_usage() {
 cat <<'USAGE'
@@ -31,10 +28,6 @@ set -eu
 from=''
 to=''
 
-# Parse arguments supporting both simple and natural language forms:
-#   move source dest          (traditional)
-#   move from source to dest  (natural language)
-#   move source to dest       (hybrid)
 while [ "$#" -gt 0 ]; do
         case "$1" in
                 from)
