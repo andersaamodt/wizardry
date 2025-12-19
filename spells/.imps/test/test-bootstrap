@@ -82,6 +82,20 @@ if [ -d "$ROOT_DIR/spells/.imps" ]; then
 fi
 export WIZARDRY_IMPS_PATH
 
+# Set WIZARDRY_DIR to the repository root for consistency with production environment
+WIZARDRY_DIR=$ROOT_DIR
+export WIZARDRY_DIR
+
+# Run banish to verify environment assumptions (if available)
+# This helps catch environment issues early in test runs
+if [ -f "$ROOT_DIR/spells/system/banish" ]; then
+  # Run banish silently (log level 0) - it will only output warnings/errors
+  if ! "$ROOT_DIR/spells/system/banish" >/dev/null 2>&1; then
+    # banish failed - environment has issues, but proceed with warning
+    printf 'WARNING: banish detected environment issues (tests may fail)\n' >&2
+  fi
+fi
+
 # Save the system PATH for run_cmd to use internally
 # This ensures run_cmd can always find essential utilities like mktemp, mkdir, cat, rm
 # even when tests intentionally set a restricted PATH to test error conditions
