@@ -38,6 +38,7 @@ file=$1
 # Verify file exists
 if ! is file "$file"; then
         die "get-new-priority: file not found: $file"
+        return 1
 fi
 
 # Get the directory containing the file

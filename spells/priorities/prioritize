@@ -39,6 +39,7 @@ directory=${2-}
 # Check if the target file exists
 if ! is file "$file"; then
         die "prioritize: file not found: $file"
+        return 1
 fi
 
 # Hash the target file for identification
@@ -47,6 +48,7 @@ target_hash=$(read-magic "$file" hash 2>/dev/null || true)
 
 if is unset "$target_hash" || starts "$target_hash" "Error"; then
         die "prioritize: failed to hash file: $file"
+        return 1
 fi
 
 # Get the directory the file is in, if a target directory was not provided

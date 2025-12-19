@@ -76,6 +76,7 @@ esac
 
 if [ -z "$spell_path" ] || [ ! -f "$spell_path" ]; then
   die "compile-spell: spell '$spell_name' not found"
+        return 1
 fi
 
 # Read spell content

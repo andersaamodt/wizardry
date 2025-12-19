@@ -36,6 +36,7 @@ directory=${2:-.}
 
 if [ ! -d "$directory" ]; then
   die "evoke-hash: directory not found"
+  return 1
 fi
 
 found=0

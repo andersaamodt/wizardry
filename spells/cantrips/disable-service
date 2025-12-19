@@ -52,6 +52,7 @@ elif [ -x "$script_dir/ask-text" ]; then
   ask_text_helper="$script_dir/ask-text"
 else
   die "$script_name: ask-text spell not found."
+  return 1
 fi
 
 service_name=${1-}
@@ -60,6 +61,7 @@ if [ -z "$service_name" ]; then
 fi
 if [ -z "$service_name" ]; then
   die "$script_name: No service name supplied."
+  return 1
 fi
 
 # Inline disable_service_normalize_unit - only used once
@@ -80,6 +82,7 @@ if [ -z "${systemctl_cmd-}" ]; then
     systemctl_cmd=$(command -v systemctl)
   else
     die "$script_name: systemctl is not available on this system."
+    return 1
   fi
 fi
 if [ "$(id -u)" -eq 0 ]; then
@@ -88,6 +91,7 @@ elif has sudo; then
   sudo "$systemctl_cmd" disable "$unit"
 else
   die "$script_name: systemctl requires root. Re-run as root or install sudo."
+  return 1
 fi
 
 printf '%s\n' "systemd disable request submitted."

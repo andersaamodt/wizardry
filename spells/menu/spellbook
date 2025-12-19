@@ -40,6 +40,7 @@ if cast_store_path=$(command -v "$cast_store" 2>/dev/null); then
         cast_store=$cast_store_path
 else
         die "spellbook: memorize helper is missing."
+        return 1
 fi
 
 cast_dir=$($cast_store dir)
@@ -96,6 +97,7 @@ spellbook_menu() {
                                 esac
                         else
                                 die "spellbook: category '$current_path' not found"
+        return 1
                         fi
                 fi
                 

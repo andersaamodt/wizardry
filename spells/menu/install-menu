@@ -76,6 +76,7 @@ while :; do
 
     if [ -z "$entries" ]; then
         die 'install-menu: no installable spells found'
+        return 1
     fi
 
     if [ "$first_run" -eq 0 ]; then

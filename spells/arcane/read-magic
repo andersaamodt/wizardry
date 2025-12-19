@@ -28,6 +28,7 @@ set -eu
 # Validate arguments
 if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
   die "read-magic: one or two parameters expected (file path and optional attribute name)."
+  return 1
 fi
 
 file=$1
@@ -36,6 +37,7 @@ attribute=${2-}
 # Check file exists
 if [ ! -e "$file" ]; then
   die "read-magic: file does not exist."
+  return 1
 fi
 
 # If specific attribute requested, read and print it
@@ -44,6 +46,7 @@ if [ -n "$attribute" ]; then
     say "$value"
   else
     die "read-magic: attribute does not exist."
+    return 1
   fi
   return 0
 fi

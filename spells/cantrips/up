@@ -29,9 +29,11 @@ set -eu
 levels=${1:-1}
 
 # Validate levels is a positive integer
+# Note: env-clear disables set -e, so we must explicitly return after die
 case "$levels" in
         ''|*[!0-9]*|0)
                 die "up: levels must be a positive integer."
+                return 1
                 ;;
 esac
 
