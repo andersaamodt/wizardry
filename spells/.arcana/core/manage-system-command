@@ -40,7 +40,9 @@ force_install=${FORCE_INSTALL:-0}
 
 # Detect NixOS for automatic installation via nix-env
 is_nixos=0
-if [ -d /etc/nixos ] || [ -f /etc/NIXOS ] || grep -qi 'ID=nixos' /etc/os-release 2>/dev/null; then
+if [ "${MANAGE_SYSTEM_COMMAND_NIXOS-}" = "1" ]; then
+        is_nixos=1
+elif [ -d /etc/nixos ] || [ -f /etc/NIXOS ] || grep -qi 'ID=nixos' /etc/os-release 2>/dev/null; then
         is_nixos=1
 fi
 

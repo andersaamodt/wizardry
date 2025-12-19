@@ -10,16 +10,16 @@ The language of magic—a human heirloom—is rich in evocative words for hidden
 
 ## Status for target platforms:
 
-**Current status:** 🟢 `install` and `menu` work well on Debian. Wizardry is brand new, so not all spells have been tested and debugged yet.
+**Current status:** 🟡 `install` + `menu` untested across listed platforms. Wizardry is brand new, so not all spells have been tested and debugged yet.
 
 | OS                        | Shortname | Status                              |
 | ------------------------- | --------- | ----------------------------------- |
-| **Debian (and Ubuntu)**   | `debian`  | 🟢 **`install` + `menu` work well**   |
-| **NixOS**                 | `nixos`   | 🟢 **`install` + `menu` work well**   |
+| **Debian (and Ubuntu)**   | `debian`  | 🟡 **`install` + `menu` untested**    |
+| **NixOS**                 | `nixos`   | 🟡 **`install` + `menu` untested**    |
 | **MacOS**                 | `macos`   | 🟡 **`install` + `menu` untested**    |
-| **Arch**                  | `arch`    | 🟠 **untested**          |
-| **Android (Linux-based)** | —         | 🟠 **currently unsupported**          |
-| **Windows**               | —         | ✘ **no support planned (except WSL)** |
+| **Arch**                  | `arch`    | 🟠 **untested**    |
+| **Android (Linux-based)** | —         | 🟠 **currently unsupported**    |
+| **Windows**               | —         | ✘ **no support planned (except WSL)**    |
 
 ## Installation
 
@@ -278,4 +278,3 @@ Principles of the testing suite:
 | Explicit shims        | Stub imps in `spells/.imps/test/stub-*` provide reusable terminal I/O mocking. Tests link to them via symlinks. Single-use stubs may remain inline in tests. Test real wizardry—stub only the bare minimum (terminal I/O). |
 | Sandboxed execution   | The `test-magic` spell discovers and runs all tests in an isolated bubblewrap environment. |
 | Tests required | All tests are required to pass before new code may be merged. |
-
