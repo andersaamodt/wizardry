@@ -11,6 +11,9 @@ _require_wizardry() {
     return 0
   fi
   
+  # Standard wizardry installation location
+  _rw_standard_invoke="${HOME-}/.wizardry/spells/.imps/sys/invoke-wizardry"
+  
   # Check if wizardry is installed by checking for WIZARDRY_DIR environment variable
   # This is set by invoke-wizardry when sourced in shell startup
   if [ -n "${WIZARDRY_DIR-}" ] && [ -d "${WIZARDRY_DIR}/spells" ]; then
@@ -18,7 +21,7 @@ _require_wizardry() {
   fi
   
   # Fallback: check if invoke-wizardry exists in standard location
-  if [ -f "${HOME-}/.wizardry/spells/.imps/sys/invoke-wizardry" ]; then
+  if [ -f "$_rw_standard_invoke" ]; then
     return 0
   fi
   
@@ -31,7 +34,7 @@ _require_wizardry() {
     # Installation succeeded - verify it worked by checking for WIZARDRY_DIR or standard location
     if [ -n "${WIZARDRY_DIR-}" ] && [ -d "${WIZARDRY_DIR}/spells" ]; then
       return 0
-    elif [ -f "${HOME-}/.wizardry/spells/.imps/sys/invoke-wizardry" ]; then
+    elif [ -f "$_rw_standard_invoke" ]; then
       return 0
     else
       printf '%s\n' "Installation completed but wizardry is still not available." >&2
