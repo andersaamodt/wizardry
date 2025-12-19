@@ -98,7 +98,8 @@ esac
 
 # Check for common builtins that should not be overridden
 case $synonym_word in
-  cd|echo|printf|test|true|false|exit|return|break|continue|eval|exec|export|readonly|set|shift|source|trap|unset)
+  cd|echo|printf|test|true|false|exit|return|break|continue|eval|exec| \
+  export|readonly|set|shift|source|trap|unset)
     warn "add-synonym: '$synonym_word' is a shell builtin"
     printf 'Aliases cannot override builtins. Continue anyway? (y/N): ' >&2
     IFS= read -r confirm || confirm="n"
@@ -165,18 +166,23 @@ existing_target=""
 if [ -f "$custom_file" ] && grep -q "^alias $synonym_word=" "$custom_file" 2>/dev/null; then
   already_exists=1
   existing_location="custom"
-  existing_target=$(grep "^alias $synonym_word=" "$custom_file" | sed "s/^alias $synonym_word='\\(.*\\)'$/\\1/" | sed "s/'\\\\''/'/g")
+  existing_target=$(grep "^alias $synonym_word=" "$custom_file" | \
+    sed "s/^alias $synonym_word='\\(.*\\)'$/\\1/" | sed "s/'\\\\''/'/g")
 fi
 
 # Only check default if not already found in custom
-if [ "$already_exists" -eq 0 ] && [ -f "$default_file" ] && grep -q "^alias $synonym_word=" "$default_file" 2>/dev/null; then
+default_match=$(grep "^alias $synonym_word=" "$default_file" 2>/dev/null || true)
+if [ "$already_exists" -eq 0 ] && [ -f "$default_file" ] && [ -n "$default_match" ]; then
   already_exists=1
   existing_location="default"
-  existing_target=$(grep "^alias $synonym_word=" "$default_file" | sed "s/^alias $synonym_word='\\(.*\\)'$/\\1/" | sed "s/'\\\\''/'/g")
+  existing_target=$(printf '%s' "$default_match" | \
+    sed "s/^alias $synonym_word='\\(.*\\)'$/\\1/" | sed "s/'\\\\''/'/g")
 fi
 
 if [ "$already_exists" -eq 1 ]; then
-  warn "add-synonym: synonym '$synonym_word' already exists ($existing_location: $synonym_word → $existing_target)"
+  warn "add-synonym: synonym '$synonym_word' already exists"
+  info "  Location: $existing_location"
+  info "  Current: $synonym_word → $existing_target"
   printf 'Overwrite with new target? (y/N): ' >&2
   IFS= read -r confirm || confirm="n"
   case $confirm in

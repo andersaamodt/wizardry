@@ -93,7 +93,8 @@ while :; do
       # Parse alias definition: alias word='spell'
       if printf '%s' "$line" | grep -q "^alias "; then
         synonym_word=$(printf '%s' "$line" | sed "s/^alias \\([^=]*\\)=.*$/\\1/")
-        target_spell=$(printf '%s' "$line" | sed "s/^alias [^=]*='\\(.*\\)'$/\\1/" | sed "s/'\\\\''/'/g")
+        target_spell=$(printf '%s' "$line" | sed "s/^alias [^=]*='\\(.*\\)'$/\\1/")
+        target_spell=$(printf '%s' "$target_spell" | sed "s/'\\\\''/'/g")
         
         if [ -n "$synonym_word" ] && [ -n "$target_spell" ]; then
           has_custom=1
@@ -126,12 +127,14 @@ while :; do
       # Parse alias definition: alias word='spell'
       if printf '%s' "$line" | grep -q "^alias "; then
         synonym_word=$(printf '%s' "$line" | sed "s/^alias \\([^=]*\\)=.*$/\\1/")
-        target_spell=$(printf '%s' "$line" | sed "s/^alias [^=]*='\\(.*\\)'$/\\1/" | sed "s/'\\\\''/'/g")
+        target_spell=$(printf '%s' "$line" | sed "s/^alias [^=]*='\\(.*\\)'$/\\1/")
+        target_spell=$(printf '%s' "$target_spell" | sed "s/'\\\\''/'/g")
         
         if [ -n "$synonym_word" ] && [ -n "$target_spell" ]; then
           # Check if this default is overridden by a custom synonym
           is_overridden=0
-          if [ -f "$custom_file" ] && grep -q "^alias $synonym_word=" "$custom_file" 2>/dev/null; then
+          custom_override=$(grep "^alias $synonym_word=" "$custom_file" 2>/dev/null || true)
+          if [ -f "$custom_file" ] && [ -n "$custom_override" ]; then
             is_overridden=1
           fi
           
