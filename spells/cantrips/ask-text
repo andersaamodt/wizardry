@@ -76,7 +76,7 @@ tty)
     printf '%s\n' "$default_value"
     return 0
   fi
-  die "ask-text: No interactive input available."
+  die "ask-text: No interactive input available." || return 1
   ;;
 esac
 
