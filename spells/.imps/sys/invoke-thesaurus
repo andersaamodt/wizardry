@@ -18,23 +18,32 @@ set +eu
 _invoke_thesaurus() {
   : "${SPELLBOOK_DIR:=${HOME-}/.spellbook}"
   
-  _it_synonyms_file="${SPELLBOOK_DIR}/.synonyms"
+  _it_custom_file="${SPELLBOOK_DIR}/.synonyms"
+  _it_default_file="${SPELLBOOK_DIR}/.default-synonyms"
   
-  # Initialize synonyms file if it doesn't exist
-  if [ ! -f "$_it_synonyms_file" ]; then
+  # Initialize custom synonyms file if it doesn't exist
+  if [ ! -f "$_it_custom_file" ]; then
     mkdir -p "$SPELLBOOK_DIR" 2>/dev/null || true
-    cat > "$_it_synonyms_file" << 'HEADER'
-# Wizardry Synonyms
-# This file contains shell aliases for wizardry spells.
+    cat > "$_it_custom_file" << 'HEADER'
+# Wizardry Custom Synonyms
+# This file contains your custom shell aliases.
 # Loaded automatically by invoke-wizardry at shell startup.
 # Reload with: . invoke-thesaurus
 
 HEADER
   fi
   
-  # Add default synonyms if not already present
-  _it_initialized="${SPELLBOOK_DIR}/.synonyms-initialized"
-  if [ ! -f "$_it_initialized" ]; then
+  # Initialize default synonyms file if it doesn't exist
+  _it_default_initialized="${SPELLBOOK_DIR}/.default-synonyms-initialized"
+  if [ ! -f "$_it_default_initialized" ]; then
+    mkdir -p "$SPELLBOOK_DIR" 2>/dev/null || true
+    cat > "$_it_default_file" << 'HEADER'
+# Wizardry Default Synonyms
+# These are built-in synonyms that can be reset with reset-default-synonyms.
+# To override a default, add your custom version to .synonyms instead.
+
+HEADER
+    
     # Define default synonyms (word -> spell)
     # Spell synonyms
     _it_defaults="detect-os detect-distro
@@ -76,12 +85,10 @@ find-command which"
     
     printf '%s\n' "$_it_defaults" | while IFS=' ' read -r _word _spell; do
       [ -n "$_word" ] && [ -n "$_spell" ] || continue
-      if ! grep -q "^alias $_word=" "$_it_synonyms_file" 2>/dev/null; then
-        printf "alias %s='%s'\n" "$_word" "$_spell" >> "$_it_synonyms_file"
-      fi
+      printf "alias %s='%s'\n" "$_word" "$_spell" >> "$_it_default_file"
     done
     
-    touch "$_it_initialized" 2>/dev/null || true
+    touch "$_it_default_initialized" 2>/dev/null || true
   fi
   
   # Check if synonyms are enabled
@@ -102,15 +109,53 @@ find-command which"
     return 1
   fi
   
-  # Source the synonyms file to load all aliases
-  # shellcheck disable=SC1090
-  . "$_it_synonyms_file" 2>/dev/null || {
-    printf '%s\n' "invoke-thesaurus: failed to load synonyms" >&2
-    return 1
-  }
+  # Check if default synonyms are enabled
+  _it_default_enabled_file="${SPELLBOOK_DIR}/.default-synonyms-enabled"
+  _it_default_enabled=1
+  if [ -f "$_it_default_enabled_file" ]; then
+    _it_default_enabled=$(cat "$_it_default_enabled_file" 2>/dev/null || printf '1')
+    case $_it_default_enabled in
+      0) _it_default_enabled=0 ;;
+      *) _it_default_enabled=1 ;;
+    esac
+  fi
   
-  # Count number of aliases loaded
-  _it_count=$(grep -c "^alias " "$_it_synonyms_file" 2>/dev/null || printf '0')
+  # Check if custom synonyms are enabled
+  _it_custom_enabled_file="${SPELLBOOK_DIR}/.custom-synonyms-enabled"
+  _it_custom_enabled=1
+  if [ -f "$_it_custom_enabled_file" ]; then
+    _it_custom_enabled=$(cat "$_it_custom_enabled_file" 2>/dev/null || printf '1')
+    case $_it_custom_enabled in
+      0) _it_custom_enabled=0 ;;
+      *) _it_custom_enabled=1 ;;
+    esac
+  fi
+  
+  # Source both files to load all aliases
+  # Default synonyms first, then custom (so custom can override)
+  _it_count=0
+  
+  if [ "$_it_default_enabled" -eq 1 ] && [ -f "$_it_default_file" ]; then
+    # shellcheck disable=SC1090
+    . "$_it_default_file" 2>/dev/null || true
+    _it_default_count=$(grep -c "^alias " "$_it_default_file" 2>/dev/null || printf '0')
+    # Ensure it's a valid number
+    case "$_it_default_count" in
+      ''|*[!0-9]*) _it_default_count=0 ;;
+    esac
+    _it_count=$((_it_count + _it_default_count))
+  fi
+  
+  if [ "$_it_custom_enabled" -eq 1 ] && [ -f "$_it_custom_file" ]; then
+    # shellcheck disable=SC1090
+    . "$_it_custom_file" 2>/dev/null || true
+    _it_custom_count=$(grep -c "^alias " "$_it_custom_file" 2>/dev/null || printf '0')
+    # Ensure it's a valid number
+    case "$_it_custom_count" in
+      ''|*[!0-9]*) _it_custom_count=0 ;;
+    esac
+    _it_count=$((_it_count + _it_custom_count))
+  fi
   
   printf '%s\n' "invoke-thesaurus: loaded $_it_count synonym(s)"
   return 0

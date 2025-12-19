@@ -3,10 +3,11 @@
 
 show_usage() {
   cat <<'USAGE'
-Usage: synonym-menu WORD
+Usage: synonym-menu WORD [TYPE]
 
 Display a management menu for a specific synonym with options to
 edit the word, edit the target spell, or delete the synonym.
+TYPE can be 'custom' or 'default' (defaults to 'custom').
 USAGE
 }
 
@@ -31,17 +32,26 @@ if [ "$#" -lt 1 ]; then
 fi
 
 synonym_word=$1
+synonym_type=${2:-custom}
 
 if ! require menu "The synonym menu needs the 'menu' command."; then
   exit 1
 fi
 
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
-synonyms_file="$spell_home/.synonyms"
+custom_file="$spell_home/.synonyms"
+default_file="$spell_home/.default-synonyms"
+
+# Determine which file to check based on type
+if [ "$synonym_type" = "default" ]; then
+  synonyms_file="$default_file"
+else
+  synonyms_file="$custom_file"
+fi
 
 # Check if synonyms file exists
 if [ ! -f "$synonyms_file" ]; then
-  printf '%s\n' "synonym-menu: no synonyms defined" >&2
+  printf '%s\n' "synonym-menu: no synonyms file found" >&2
   exit 1
 fi
 
@@ -62,19 +72,35 @@ escaped_word=$(printf '%s' "$synonym_word" | sed "s/'/'\\\\''/g")
 while :; do
   set --
   
-  # Prompt for new word
-  edit_word_cmd="printf 'New synonym word: ' >&2 && read new_word && edit-synonym '$escaped_word' --word \"\$new_word\""
-  set -- "$@" "Edit word%$edit_word_cmd"
-  
-  # Prompt for new spell
-  edit_spell_cmd="printf 'New target spell: ' >&2 && read new_spell && edit-synonym '$escaped_word' --spell \"\$new_spell\""
-  set -- "$@" "Edit spell%$edit_spell_cmd"
-  
-  # Delete synonym
-  set -- "$@" "Delete synonym%delete-synonym '$escaped_word' && kill -TERM \$PPID"
+  # For default synonyms, editing creates a custom override
+  if [ "$synonym_type" = "default" ]; then
+    # Edit creates custom override
+    edit_word_cmd="printf 'New synonym word: ' >&2 && read new_word && add-synonym \"\$new_word\" '$target_spell' && info 'Created custom synonym (original default preserved)'"
+    set -- "$@" "Override word%$edit_word_cmd"
+    
+    edit_spell_cmd="printf 'New target spell: ' >&2 && read new_spell && add-synonym '$escaped_word' \"\$new_spell\" && info 'Created custom synonym (original default preserved)'"
+    set -- "$@" "Override spell%$edit_spell_cmd"
+    
+    # Cannot delete default synonyms, only reset them
+    set -- "$@" "Reset default synonyms%reset-default-synonyms && kill -TERM \$PPID"
+  else
+    # Custom synonyms can be edited directly
+    edit_word_cmd="printf 'New synonym word: ' >&2 && read new_word && edit-synonym '$escaped_word' --word \"\$new_word\""
+    set -- "$@" "Edit word%$edit_word_cmd"
+    
+    edit_spell_cmd="printf 'New target spell: ' >&2 && read new_spell && edit-synonym '$escaped_word' --spell \"\$new_spell\""
+    set -- "$@" "Edit spell%$edit_spell_cmd"
+    
+    # Delete synonym
+    set -- "$@" "Delete synonym%delete-synonym '$escaped_word' && kill -TERM \$PPID"
+  fi
   
   exit_label=$(exit-label)
   set -- "$@" "${exit_label}%kill -TERM \$PPID"
   
-  menu "Synonym: $synonym_word → $target_spell" "$@" || true
+  if [ "$synonym_type" = "default" ]; then
+    menu "Default: $synonym_word → $target_spell" "$@" || true
+  else
+    menu "Synonym: $synonym_word → $target_spell" "$@" || true
+  fi
 done
