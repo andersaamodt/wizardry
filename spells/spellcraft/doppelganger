@@ -36,6 +36,14 @@ case "${1-}" in
   ;;
 esac
 
+# Source require-wizardry if not available (handles script execution without invoke-wizardry)
+if ! command -v require-wizardry >/dev/null 2>&1; then
+  _rw_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _rw_imp_path="$_rw_script_dir/../../.imps/sys/require-wizardry"
+  if [ -f "$_rw_imp_path" ]; then
+    . "$_rw_imp_path"
+  fi
+fi
 require-wizardry || exit 1
 
 set -eu
