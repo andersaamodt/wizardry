@@ -66,12 +66,19 @@ record_failure() {
 
 check_gnuisms() {
   path=$1
-  patterns_file=$repo_dir/spells/system/.verify-posix-gnuisms
-
-  if [ ! -f "$patterns_file" ]; then
-    printf 'verify-posix: missing patterns file: %s\n' "$patterns_file" >&2
-    return 1
-  fi
+  patterns_file=$(temp-file verify-posix-gnuisms) || return 1
+  cat >"$patterns_file" <<'PATTERNS'
+\bgrep[[:space:]].*-P\b|grep -P (PCRE, non-POSIX)
+\bgrep[[:space:]].*-o\b|grep -o (non-POSIX)
+\bsed[[:space:]].*-r\b|sed -r (GNU extension)
+\bsed[[:space:]].*-E\b|sed -E (non-POSIX)
+\bxargs[[:space:]].*-r\b|xargs -r (GNU extension)
+\breadlink[[:space:]].*-f\b|readlink -f (non-POSIX)
+\bstat[[:space:]].*-c\b|stat -c (GNU extension)
+\bdate[[:space:]].*-d\b|date -d (GNU extension)
+\brealpath\b|realpath (non-POSIX)
+\bmktemp[[:space:]].*-p\b|mktemp -p (non-POSIX)
+PATTERNS
 
   awk -v patterns_file="$patterns_file" '
     BEGIN {
@@ -126,6 +133,9 @@ check_gnuisms() {
     }
     END { exit found }
   ' "$path"
+  status=$?
+  cleanup-file "$patterns_file"
+  return "$status"
 }
 
 targets_file=$(temp-file verify-posix-targets) || return 1
