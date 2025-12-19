@@ -47,17 +47,9 @@ if [ -d "$bitcoin_dir" ]; then
     config_mode=$default_mode
   fi
 
-  # Get the current permission mode of the directory
-  current_mode=$(stat -c "%a" "$bitcoin_dir")
-
-  # Compare the current mode with the configured mode
-  if [ "$current_mode" != "$config_mode" ]; then
-    # Fix the permission by setting the correct mode
-    chmod "$config_mode" "$bitcoin_dir"
-    echo "The permission on the Bitcoin configuration directory has been set to $config_mode."
-  else
-    echo "The Bitcoin configuration directory is already configured with the correct permissions."
-  fi
+  # Apply the configured mode
+  chmod "$config_mode" "$bitcoin_dir"
+  echo "The permission on the Bitcoin configuration directory has been set to $config_mode."
 else
   echo "The provided directory does not exist."
 fi

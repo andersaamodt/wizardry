@@ -59,22 +59,11 @@ set_permissions() {
         return
     fi
 
-    current_user=$(stat -c %U "$perm_path")
-    current_group=$(stat -c %G "$perm_path")
-    
-    if [ "$current_user" != "$perm_user" ] || [ "$current_group" != "$perm_group" ]; then
-        chown -R "$perm_user":"$perm_group" "$perm_path"
-        printf '%s\n' "Changed owner and group of $perm_path to $perm_user and $perm_group."
-    else
-        printf '%s\n' "Owner and group of $perm_path are correct."
-    fi
+    chown -R "$perm_user":"$perm_group" "$perm_path"
+    printf '%s\n' "Changed owner and group of $perm_path to $perm_user and $perm_group."
 
-    if [ "$(stat -c %a "$perm_path")" != "$perm_mode" ]; then
-        chmod "$perm_mode" "$perm_path"
-        printf '%s\n' "Changed permissions of $perm_path to $perm_mode."
-    else
-        printf '%s\n' "Permissions of $perm_path are correct."
-    fi
+    chmod "$perm_mode" "$perm_path"
+    printf '%s\n' "Changed permissions of $perm_path to $perm_mode."
 }
 
 set_permissions "/etc/tor" "$user_owner" "$group_owner" "700"
