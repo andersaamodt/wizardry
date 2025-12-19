@@ -124,6 +124,27 @@ _invoke_wizardry() {
       return 127
     }'
   fi
+  
+  # Load synonyms (aliases) from spellbook
+  _iw_synonyms_file="${SPELLBOOK_DIR}/.synonyms"
+  if [ -f "$_iw_synonyms_file" ] && [ -r "$_iw_synonyms_file" ]; then
+    # Check if synonyms are enabled
+    _iw_enabled_file="${SPELLBOOK_DIR}/.synonyms-enabled"
+    _iw_enabled=1
+    if [ -f "$_iw_enabled_file" ]; then
+      _iw_enabled=$(cat "$_iw_enabled_file" 2>/dev/null || printf '1')
+      case $_iw_enabled in
+        0) _iw_enabled=0 ;;
+        *) _iw_enabled=1 ;;
+      esac
+    fi
+    
+    if [ "$_iw_enabled" -eq 1 ]; then
+      # Source the synonyms file to load all aliases
+      # shellcheck disable=SC1090
+      . "$_iw_synonyms_file" 2>/dev/null || true
+    fi
+  fi
 }
 
 # Run the setup when sourced

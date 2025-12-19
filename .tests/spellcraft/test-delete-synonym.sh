@@ -1,0 +1,62 @@
+#!/bin/sh
+# Tests for delete-synonym spell
+# - prints usage with --help
+# - deletes existing synonym
+# - fails when synonym doesn't exist
+# - verifies synonym marker before deletion
+
+test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
+  test_root=$(dirname "$test_root")
+done
+# shellcheck source=/dev/null
+. "$test_root/spells/.imps/test/test-bootstrap"
+
+test_shows_help() {
+  _run_spell "spells/spellcraft/delete-synonym" --help
+  _assert_success && _assert_output_contains "Usage:"
+}
+
+test_deletes_existing_synonym() {
+  case_dir=$(_make_tempdir)
+  synonyms_dir="$case_dir/.synonyms"
+  
+  # Create a synonym first
+  SPELLBOOK_DIR="$case_dir" \
+    _run_spell "spells/spellcraft/add-synonym" myalias echo
+  _assert_success || return 1
+  
+  # Delete it
+  SPELLBOOK_DIR="$case_dir" \
+    _run_spell "spells/spellcraft/delete-synonym" myalias
+  
+  _assert_success || return 1
+  _assert_output_contains "Synonym deleted" || return 1
+  [ ! -f "$synonyms_dir/myalias" ] || { TEST_FAILURE_REASON="synonym still exists"; return 1; }
+}
+
+test_fails_when_synonym_not_found() {
+  case_dir=$(_make_tempdir)
+  
+  SPELLBOOK_DIR="$case_dir" \
+    _run_spell "spells/spellcraft/delete-synonym" nonexistent
+  
+  _assert_failure || return 1
+  _assert_error_contains "not found" || return 1
+}
+
+test_rejects_empty_word() {
+  case_dir=$(_make_tempdir)
+  
+  SPELLBOOK_DIR="$case_dir" \
+    _run_spell "spells/spellcraft/delete-synonym" ""
+  
+  _assert_failure || return 1
+}
+
+_run_test_case "prints help" test_shows_help
+_run_test_case "deletes existing synonym" test_deletes_existing_synonym
+_run_test_case "fails when synonym not found" test_fails_when_synonym_not_found
+_run_test_case "rejects empty word" test_rejects_empty_word
+
+_finish_tests

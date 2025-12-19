@@ -1,0 +1,61 @@
+#!/bin/sh
+# invoke-thesaurus - load or reload synonyms (aliases) into the current shell
+# Source this script to activate synonyms without restarting your shell.
+
+# This script must be sourced, not executed
+case "$0" in
+  */invoke-thesaurus|invoke-thesaurus)
+    printf '%s\n' "invoke-thesaurus: must be sourced, not executed" >&2
+    printf '%s\n' "Usage: . invoke-thesaurus" >&2
+    exit 1
+    ;;
+esac
+
+# Explicitly use permissive mode - this file is sourced into user's shell
+set +eu
+
+_invoke_thesaurus() {
+  : "${SPELLBOOK_DIR:=${HOME-}/.spellbook}"
+  
+  _it_synonyms_file="${SPELLBOOK_DIR}/.synonyms"
+  
+  # Check if synonyms file exists
+  if [ ! -f "$_it_synonyms_file" ]; then
+    printf '%s\n' "invoke-thesaurus: no synonyms file found at $_it_synonyms_file" >&2
+    return 1
+  fi
+  
+  # Check if synonyms are enabled
+  _it_enabled_file="${SPELLBOOK_DIR}/.synonyms-enabled"
+  _it_enabled=1
+  if [ -f "$_it_enabled_file" ]; then
+    _it_enabled=$(cat "$_it_enabled_file" 2>/dev/null || printf '1')
+    case $_it_enabled in
+      0) _it_enabled=0 ;;
+      *) _it_enabled=1 ;;
+    esac
+  fi
+  
+  if [ "$_it_enabled" -eq 0 ]; then
+    printf '%s\n' "invoke-thesaurus: synonyms are disabled" >&2
+    printf '%s\n' "Enable synonyms through the thesaurus menu or by running:" >&2
+    printf '%s\n' "  printf '1' > \$SPELLBOOK_DIR/.synonyms-enabled" >&2
+    return 1
+  fi
+  
+  # Source the synonyms file to load all aliases
+  # shellcheck disable=SC1090
+  . "$_it_synonyms_file" 2>/dev/null || {
+    printf '%s\n' "invoke-thesaurus: failed to load synonyms" >&2
+    return 1
+  }
+  
+  # Count number of aliases loaded
+  _it_count=$(grep -c "^alias " "$_it_synonyms_file" 2>/dev/null || printf '0')
+  
+  printf '%s\n' "invoke-thesaurus: loaded $_it_count synonym(s)"
+  return 0
+}
+
+# Run the function
+_invoke_thesaurus

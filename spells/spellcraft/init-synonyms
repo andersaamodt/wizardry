@@ -8,11 +8,17 @@ set -eu
 . env-clear
 
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
-synonyms_dir="$spell_home/.synonyms"
+synonyms_file="$spell_home/.synonyms"
 
-# Ensure synonyms directory exists
-if [ ! -d "$synonyms_dir" ]; then
-  mkdir -p "$synonyms_dir" || die "init-synonyms: could not create synonyms directory"
+# Ensure synonyms file exists
+if [ ! -f "$synonyms_file" ]; then
+  cat > "$synonyms_file" << 'HEADER'
+# Wizardry Synonyms
+# This file contains shell aliases for wizardry spells.
+# Loaded automatically by invoke-wizardry at shell startup.
+# Reload with: . invoke-thesaurus
+
+HEADER
 fi
 
 # Define default synonyms (word -> spell)
@@ -35,19 +41,12 @@ echo "$default_synonyms" | while IFS= read -r line; do
   [ -n "$synonym_word" ] || continue
   [ -n "$target_spell" ] || continue
   
-  synonym_path="$synonyms_dir/$synonym_word"
-  
   # Only create if it doesn't exist
-  if [ ! -f "$synonym_path" ]; then
-    # Create the synonym script
-    cat > "$synonym_path" <<SYNONYM
-#!/bin/sh
-# Synonym: $synonym_word -> $target_spell (built-in)
-exec '$target_spell' "\$@"
-SYNONYM
-    chmod +x "$synonym_path" 2>/dev/null || :
+  if ! grep -q "^alias $synonym_word=" "$synonyms_file" 2>/dev/null; then
+    # Add the alias to the file
+    printf "alias %s='%s'\n" "$synonym_word" "$target_spell" >> "$synonyms_file"
   fi
 done
 
 # Mark that initialization has been done
-touch "$synonyms_dir/.initialized" 2>/dev/null || :
+touch "$spell_home/.synonyms-initialized" 2>/dev/null || :

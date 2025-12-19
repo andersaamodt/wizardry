@@ -1,6 +1,6 @@
 #!/bin/sh
 # This spell deletes a synonym (alias) from your spellbook.
-# Removes the synonym script from SPELLBOOK_DIR/.synonyms.
+# Removes the alias from SPELLBOOK_DIR/.synonyms.
 
 show_usage() {
   cat <<'USAGE'
@@ -24,7 +24,7 @@ set -eu
 . env-clear
 
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
-synonyms_dir="$spell_home/.synonyms"
+synonyms_file="$spell_home/.synonyms"
 
 # Parse arguments
 synonym_word=""
@@ -34,35 +34,38 @@ if [ "$#" -ge 1 ]; then
 else
   # Interactive mode
   printf 'Synonym word to delete: ' >&2
-  IFS= read -r synonym_word || die "delete-synonym: failed to read synonym word"
+  if ! IFS= read -r synonym_word; then
+    printf '%s\n' "delete-synonym: failed to read synonym word" >&2
+    exit 1
+  fi
 fi
 
 # Validate synonym word
-case $synonym_word in
-  "")
-    die 2 "delete-synonym: synonym word cannot be empty"
-    ;;
-esac
+if [ -z "$synonym_word" ]; then
+  printf '%s\n' "delete-synonym: synonym word cannot be empty" >&2
+  exit 2
+fi
 
-synonym_path="$synonyms_dir/$synonym_word"
+# Check if synonyms file exists
+if [ ! -f "$synonyms_file" ]; then
+  printf '%s\n' "delete-synonym: no synonyms defined" >&2
+  exit 1
+fi
 
 # Check if synonym exists
-if [ ! -f "$synonym_path" ]; then
-  die "delete-synonym: synonym '$synonym_word' not found"
+if ! grep -q "^alias $synonym_word=" "$synonyms_file"; then
+  printf '%s\n' "delete-synonym: synonym '$synonym_word' not found" >&2
+  exit 1
 fi
 
-# Verify it's actually a synonym (has our marker comment)
-if ! grep -q "^# Synonym:" "$synonym_path" 2>/dev/null; then
-  warn "delete-synonym: '$synonym_word' does not appear to be a synonym"
-  printf 'Delete anyway? (y/N): ' >&2
-  IFS= read -r confirm || confirm="n"
-  case $confirm in
-    y|Y|yes|YES) ;;
-    *) die "delete-synonym: cancelled" ;;
-  esac
+# Remove the alias from the file
+temp_file=$(temp-file synonyms) || exit 1
+if ! grep -v "^alias $synonym_word=" "$synonyms_file" > "$temp_file"; then
+  rm -f "$temp_file"
+  printf '%s\n' "delete-synonym: could not delete synonym" >&2
+  exit 1
 fi
 
-# Delete the synonym
-rm -f "$synonym_path" || die "delete-synonym: could not delete synonym"
+mv "$temp_file" "$synonyms_file"
 
 success "Synonym deleted: $synonym_word"
