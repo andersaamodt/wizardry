@@ -38,6 +38,7 @@ file=$1
 # Verify file exists
 if ! is file "$file"; then
         die "upvote: file not found: $file"
+        return 1
 fi
 
 # Get current upvotes count, default to 0 if not set

@@ -34,6 +34,7 @@ file=$1
 
 if [ ! -e "$file" ]; then
   die "hashchant: file not found"
+  return 1
 fi
 
 filename=$(basename "$file")
@@ -91,11 +92,11 @@ done
 
 if [ -n "$last_helper" ]; then
   die "hashchant: failed to write hash using $last_helper (return 1 $last_status)"
+  return 1
 else
   die "hashchant: xattr and attr commands not found, cannot enchant file"
+  return 1
 fi
-
-return 1
 }
 
 # Self-execute when run directly (not sourced)

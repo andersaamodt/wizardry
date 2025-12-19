@@ -41,6 +41,7 @@ file="$script_dir/$file_name"
 
 if [ ! -f "$file" ]; then
     die "hash: Your spell fizzles. There is no file."
+    return 1
 fi
 
 # Normalize double slashes for macOS compatibility
