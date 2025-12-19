@@ -72,6 +72,18 @@ else
   . "$_dg_script_dir/../../.imps/sys/env-clear"
 fi
 
+# Source output imps (say, warn, etc.)
+if [ -n "${WIZARDRY_DIR-}" ] && [ -d "${WIZARDRY_DIR}/spells/.imps/out" ]; then
+  for _dg_out_imp in "${WIZARDRY_DIR}"/spells/.imps/out/*; do
+    [ -f "$_dg_out_imp" ] && . "$_dg_out_imp"
+  done
+else
+  _dg_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  for _dg_out_imp in "$_dg_script_dir"/../../.imps/out/*; do
+    [ -f "$_dg_out_imp" ] && . "$_dg_out_imp"
+  done
+fi
+
 # Get output directory
 output_dir=${1:-./wizardry-compiled}
 
@@ -85,14 +97,14 @@ case "$output_dir" in
   *) output_dir="$repo_dir/$output_dir" ;;
 esac
 
-say "Creating wizardry doppelganger in: $output_dir"
+_say "Creating wizardry doppelganger in: $output_dir"
 
 # Create output directory structure
 mkdir -p "$output_dir/spells"
 mkdir -p "$output_dir/.tests"
 
 # Compile all spells
-say "Compiling all spells..."
+_say "Compiling all spells..."
 compiled_count=0
 failed_count=0
 
@@ -152,7 +164,7 @@ do
     chmod +x "$target_file"
     compiled_count=$((compiled_count + 1))
   else
-    warn "doppelganger: failed to compile $spell_name"
+    _warn "doppelganger: failed to compile $spell_name"
     failed_count=$((failed_count + 1))
   fi
 done
@@ -161,7 +173,7 @@ compiled_count=$((compiled_count))
 failed_count=$((failed_count))
 
 # Copy test files (including hidden directories like .arcana and .imps)
-say "Copying test files..."
+_say "Copying test files..."
 if [ -d "$repo_dir/.tests" ]; then
   # Copy all files including hidden ones
   (cd "$repo_dir/.tests" && \
@@ -170,7 +182,7 @@ if [ -d "$repo_dir/.tests" ]; then
 fi
 
 # Copy essential files (README, LICENSE, etc.) but skip .git and .github
-say "Copying essential files..."
+_say "Copying essential files..."
 for file in "$repo_dir"/*; do
   basename_file=$(basename "$file")
   case "$basename_file" in
@@ -184,10 +196,10 @@ for file in "$repo_dir"/*; do
 done
 
 success "Doppelganger created successfully!"
-say "Location: $output_dir"
-say "Compiled: $compiled_count spells"
+_say "Location: $output_dir"
+_say "Compiled: $compiled_count spells"
 if [ "$failed_count" -gt 0 ]; then
-  warn "doppelganger: $failed_count spells failed to compile"
+  _warn "doppelganger: $failed_count spells failed to compile"
 fi
 }
 
