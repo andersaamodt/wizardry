@@ -1,0 +1,136 @@
+#!/bin/sh
+# This spell edits an existing synonym.
+# Can change either the synonym word or the target spell.
+
+show_usage() {
+  cat <<'USAGE'
+Usage: edit-synonym WORD [--word NEW_WORD | --spell NEW_SPELL]
+
+Edit an existing synonym. Can change the synonym word (--word)
+or the target spell (--spell).
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+synonyms_dir="$spell_home/.synonyms"
+
+# Parse arguments
+if [ "$#" -lt 1 ]; then
+  die 2 "edit-synonym: requires WORD argument"
+fi
+
+synonym_word=$1
+shift
+
+edit_mode=""
+new_value=""
+
+while [ "$#" -gt 0 ]; do
+  case $1 in
+    --word)
+      if [ "$#" -lt 2 ]; then
+        die 2 "edit-synonym: --word requires a value"
+      fi
+      edit_mode="word"
+      new_value=$2
+      shift 2
+      ;;
+    --spell)
+      if [ "$#" -lt 2 ]; then
+        die 2 "edit-synonym: --spell requires a value"
+      fi
+      edit_mode="spell"
+      new_value=$2
+      shift 2
+      ;;
+    *)
+      die 2 "edit-synonym: unknown option: $1"
+      ;;
+  esac
+done
+
+if [ -z "$edit_mode" ]; then
+  die 2 "edit-synonym: must specify either --word or --spell"
+fi
+
+synonym_path="$synonyms_dir/$synonym_word"
+
+# Check if synonym exists
+if [ ! -f "$synonym_path" ]; then
+  die "edit-synonym: synonym '$synonym_word' not found"
+fi
+
+# Read current target spell from the synonym file
+current_spell=$(grep "^exec " "$synonym_path" | sed "s/^exec '\(.*\)' \"\$@\"$/\1/" | sed "s/'\\\\''/'/g")
+
+if [ -z "$current_spell" ]; then
+  die "edit-synonym: could not parse target spell from synonym"
+fi
+
+case $edit_mode in
+  word)
+    # Validate new synonym word
+    case $new_value in
+      "")
+        die 2 "edit-synonym: new synonym word cannot be empty"
+        ;;
+      *[/\ ]*)
+        die 2 "edit-synonym: synonym word cannot contain spaces or slashes"
+        ;;
+      -*)
+        die 2 "edit-synonym: synonym word cannot start with a dash"
+        ;;
+      .*)
+        die 2 "edit-synonym: synonym word cannot start with a dot"
+        ;;
+    esac
+    
+    # Check for conflicts
+    new_path="$synonyms_dir/$new_value"
+    if [ -f "$new_path" ] && [ "$new_path" != "$synonym_path" ]; then
+      die "edit-synonym: synonym '$new_value' already exists"
+    fi
+    
+    # Rename the synonym
+    add-synonym "$new_value" "$current_spell" || die "edit-synonym: failed to create new synonym"
+    delete-synonym "$synonym_word" || die "edit-synonym: failed to delete old synonym"
+    success "Synonym renamed: $synonym_word -> $new_value"
+    ;;
+    
+  spell)
+    # Validate target spell
+    case $new_value in
+      "")
+        die 2 "edit-synonym: target spell cannot be empty"
+        ;;
+    esac
+    
+    # Check if target spell exists
+    if ! command -v "$new_value" >/dev/null 2>&1; then
+      warn "edit-synonym: target spell '$new_value' not found in PATH"
+      printf 'Continue anyway? (y/N): ' >&2
+      IFS= read -r confirm || confirm="n"
+      case $confirm in
+        y|Y|yes|YES) ;;
+        *) die "edit-synonym: cancelled" ;;
+      esac
+    fi
+    
+    # Update the synonym
+    delete-synonym "$synonym_word" || die "edit-synonym: failed to delete old synonym"
+    add-synonym "$synonym_word" "$new_value" || die "edit-synonym: failed to create new synonym"
+    success "Synonym updated: $synonym_word -> $new_value"
+    ;;
+esac

@@ -277,7 +277,14 @@ spellbook_menu() {
                         set -- "$@" "Delete category%rm -rf '$escaped_path' && kill -TERM \$PPID"
                 fi
                 
-                # Add "New category" at root level (third-to-last item)
+                # Add horizontal divider and synonym-related menu items (only at root level)
+                if [ -z "$current_path" ]; then
+                        set -- "$@" "---"
+                        set -- "$@" "View synonyms%thesaurus"
+                        set -- "$@" "Thesaurus%spell-thesaurus"
+                fi
+                
+                # Add "New category" at root level
                 if [ -z "$current_path" ]; then
                         set -- "$@" "New category%scribe-spell --new-category"
                 fi

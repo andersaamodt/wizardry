@@ -1,0 +1,86 @@
+#!/bin/sh
+# This spell displays a menu listing all synonyms with management options.
+
+show_usage() {
+  cat <<'USAGE'
+Usage: thesaurus
+
+Display a menu listing all synonyms. Select a synonym to view its
+management menu with options to edit or delete it.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+# Catch Ctrl-C and TERM signal to return cleanly
+trap 'exit 0' INT TERM
+
+if ! require menu "The thesaurus menu needs the 'menu' command."; then
+  exit 1
+fi
+
+spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+synonyms_dir="$spell_home/.synonyms"
+
+# Ensure synonyms directory exists and initialize defaults
+if [ ! -d "$synonyms_dir" ]; then
+  mkdir -p "$synonyms_dir" || die "thesaurus: could not create synonyms directory"
+fi
+
+# Initialize default synonyms if not already done
+if [ ! -f "$synonyms_dir/.initialized" ]; then
+  if has init-synonyms; then
+    init-synonyms 2>/dev/null || :
+  fi
+fi
+
+while :; do
+  set --
+  
+  # List all synonyms
+  if [ -d "$synonyms_dir" ]; then
+    for synonym_file in "$synonyms_dir"/*; do
+      [ -f "$synonym_file" ] || continue
+      [ -x "$synonym_file" ] || continue
+      
+      synonym_word=$(basename "$synonym_file")
+      
+      # Skip hidden files
+      case $synonym_word in
+        .*) continue ;;
+      esac
+      
+      # Read the target spell from the synonym file
+      target_spell=""
+      if grep -q "^# Synonym:" "$synonym_file" 2>/dev/null; then
+        target_spell=$(grep "^exec " "$synonym_file" | sed "s/^exec '\(.*\)' \"\$@\"$/\1/" | sed "s/'\\\\''/'/g")
+      fi
+      
+      if [ -n "$target_spell" ]; then
+        # Escape single quotes for safe passing
+        escaped_word=$(printf '%s' "$synonym_word" | sed "s/'/'\\\\''/g")
+        set -- "$@" "$synonym_word → $target_spell%synonym-menu '$escaped_word'"
+      fi
+    done
+  fi
+  
+  # If no synonyms exist, show a message
+  if [ "$#" -eq 0 ]; then
+    set -- "No synonyms defined%:"
+  fi
+  
+  exit_label=$(exit-label)
+  set -- "$@" "${exit_label}%kill -TERM \$PPID"
+  
+  menu "Thesaurus:" "$@" || true
+done

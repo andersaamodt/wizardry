@@ -1,0 +1,128 @@
+#!/bin/sh
+# This spell displays a menu for adding and managing synonyms.
+
+show_usage() {
+  cat <<'USAGE'
+Usage: spell-thesaurus
+
+Display a menu for adding synonyms and toggling synonym support.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+# Catch Ctrl-C and TERM signal to return cleanly
+trap 'exit 0' INT TERM
+
+if ! require menu "The spell thesaurus menu needs the 'menu' command."; then
+  exit 1
+fi
+
+spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+synonyms_dir="$spell_home/.synonyms"
+synonyms_enabled_file="$spell_home/.synonyms-enabled"
+
+# Ensure synonyms directory exists and initialize defaults
+if [ ! -d "$synonyms_dir" ]; then
+  mkdir -p "$synonyms_dir" || die "spell-thesaurus: could not create synonyms directory"
+fi
+
+# Initialize default synonyms if not already done
+if [ ! -f "$synonyms_dir/.initialized" ]; then
+  if has init-synonyms; then
+    init-synonyms 2>/dev/null || :
+  fi
+fi
+
+# Check if synonyms are enabled
+synonyms_enabled=1
+if [ -f "$synonyms_enabled_file" ]; then
+  enabled_value=$(cat "$synonyms_enabled_file" 2>/dev/null || printf '1')
+  case $enabled_value in
+    0) synonyms_enabled=0 ;;
+    *) synonyms_enabled=1 ;;
+  esac
+fi
+
+while :; do
+  set --
+  
+  # Add synonym option
+  set -- "$@" "Add synonym%add-synonym"
+  
+  # Horizontal divider
+  set -- "$@" "---"
+  
+  # List all synonyms
+  has_synonyms=0
+  if [ -d "$synonyms_dir" ]; then
+    for synonym_file in "$synonyms_dir"/*; do
+      [ -f "$synonym_file" ] || continue
+      [ -x "$synonym_file" ] || continue
+      
+      synonym_word=$(basename "$synonym_file")
+      
+      # Skip hidden files
+      case $synonym_word in
+        .*) continue ;;
+      esac
+      
+      # Read the target spell from the synonym file
+      target_spell=""
+      if grep -q "^# Synonym:" "$synonym_file" 2>/dev/null; then
+        target_spell=$(grep "^exec " "$synonym_file" | sed "s/^exec '\(.*\)' \"\$@\"$/\1/" | sed "s/'\\\\''/'/g")
+      fi
+      
+      if [ -n "$target_spell" ]; then
+        has_synonyms=1
+        # Escape single quotes for safe passing
+        escaped_word=$(printf '%s' "$synonym_word" | sed "s/'/'\\\\''/g")
+        set -- "$@" "$synonym_word → $target_spell%synonym-menu '$escaped_word'"
+      fi
+    done
+  fi
+  
+  # If no synonyms exist, show a message
+  if [ "$has_synonyms" -eq 0 ]; then
+    set -- "$@" "No synonyms defined%:"
+  fi
+  
+  # Horizontal divider before toggle and exit
+  set -- "$@" "---"
+  
+  # Toggle for enabling/disabling synonyms
+  if [ "$synonyms_enabled" -eq 1 ]; then
+    toggle_label="[X] Synonyms enabled"
+    toggle_cmd="printf '0' > '$synonyms_enabled_file'"
+  else
+    toggle_label="[ ] Synonyms enabled"
+    toggle_cmd="printf '1' > '$synonyms_enabled_file'"
+  fi
+  set -- "$@" "$toggle_label%$toggle_cmd"
+  
+  exit_label=$(exit-label)
+  set -- "$@" "${exit_label}%kill -TERM \$PPID"
+  
+  menu "Thesaurus:" "$@" || true
+  
+  # Re-check enabled state for next iteration
+  if [ -f "$synonyms_enabled_file" ]; then
+    enabled_value=$(cat "$synonyms_enabled_file" 2>/dev/null || printf '1')
+    case $enabled_value in
+      0) synonyms_enabled=0 ;;
+      *) synonyms_enabled=1 ;;
+    esac
+  else
+    synonyms_enabled=1
+  fi
+done

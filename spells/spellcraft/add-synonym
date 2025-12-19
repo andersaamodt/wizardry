@@ -1,0 +1,130 @@
+#!/bin/sh
+# This spell adds a synonym (alias) for an existing spell.
+# Synonyms are stored in SPELLBOOK_DIR/.synonyms as executable scripts.
+
+show_usage() {
+  cat <<'USAGE'
+Usage: add-synonym [WORD SPELL]
+
+Add a synonym (alias) for an existing spell. Without arguments,
+prompts interactively for the synonym word and target spell.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+synonyms_dir="$spell_home/.synonyms"
+
+# Ensure synonyms directory exists
+if [ ! -d "$synonyms_dir" ]; then
+  mkdir -p "$synonyms_dir" || die "add-synonym: could not create synonyms directory"
+fi
+
+# Check if synonyms are in PATH
+case ":$PATH:" in
+  *":$synonyms_dir:"*) ;;
+  *) 
+    warn "add-synonym: synonyms directory not in PATH"
+    info "Add this to your shell rc file: export PATH=\"\$PATH:$synonyms_dir\""
+    ;;
+esac
+
+# Parse arguments
+synonym_word=""
+target_spell=""
+
+if [ "$#" -ge 2 ]; then
+  synonym_word=$1
+  target_spell=$2
+elif [ "$#" -eq 1 ]; then
+  die 2 "add-synonym: requires both WORD and SPELL arguments"
+else
+  # Interactive mode
+  printf 'Synonym word: ' >&2
+  IFS= read -r synonym_word || die "add-synonym: failed to read synonym word"
+  
+  printf 'Target spell: ' >&2
+  IFS= read -r target_spell || die "add-synonym: failed to read target spell"
+fi
+
+# Validate synonym word
+case $synonym_word in
+  "")
+    die 2 "add-synonym: synonym word cannot be empty"
+    ;;
+  *[/\ ]*)
+    die 2 "add-synonym: synonym word cannot contain spaces or slashes"
+    ;;
+  -*)
+    die 2 "add-synonym: synonym word cannot start with a dash"
+    ;;
+  .*)
+    die 2 "add-synonym: synonym word cannot start with a dot"
+    ;;
+esac
+
+# Validate target spell
+case $target_spell in
+  "")
+    die 2 "add-synonym: target spell cannot be empty"
+    ;;
+esac
+
+# Check if target spell exists
+if ! command -v "$target_spell" >/dev/null 2>&1; then
+  warn "add-synonym: target spell '$target_spell' not found in PATH"
+  printf 'Continue anyway? (y/N): ' >&2
+  IFS= read -r confirm || confirm="n"
+  case $confirm in
+    y|Y|yes|YES) ;;
+    *) die "add-synonym: cancelled" ;;
+  esac
+fi
+
+# Check for conflicts with existing commands (excluding our own synonyms)
+if command -v "$synonym_word" >/dev/null 2>&1; then
+  existing_path=$(command -v "$synonym_word" 2>/dev/null)
+  case $existing_path in
+    "$synonyms_dir/"*)
+      # It's already a synonym - allow overwriting
+      warn "add-synonym: overwriting existing synonym '$synonym_word'"
+      ;;
+    *)
+      # It's a real command - warn but allow
+      warn "add-synonym: '$synonym_word' conflicts with existing command at: $existing_path"
+      printf 'Continue anyway? (y/N): ' >&2
+      IFS= read -r confirm || confirm="n"
+      case $confirm in
+        y|Y|yes|YES) ;;
+        *) die "add-synonym: cancelled" ;;
+      esac
+      ;;
+  esac
+fi
+
+# Create the synonym script
+synonym_path="$synonyms_dir/$synonym_word"
+
+# Escape single quotes in target_spell
+escaped_spell=$(printf '%s' "$target_spell" | sed "s/'/'\\\\''/g")
+
+cat > "$synonym_path" <<SYNONYM
+#!/bin/sh
+# Synonym: $synonym_word -> $target_spell
+exec '$escaped_spell' "\$@"
+SYNONYM
+
+chmod +x "$synonym_path" || die "add-synonym: could not make synonym executable"
+
+success "Synonym created: $synonym_word -> $target_spell"

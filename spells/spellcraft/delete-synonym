@@ -1,0 +1,68 @@
+#!/bin/sh
+# This spell deletes a synonym (alias) from your spellbook.
+# Removes the synonym script from SPELLBOOK_DIR/.synonyms.
+
+show_usage() {
+  cat <<'USAGE'
+Usage: delete-synonym [WORD]
+
+Delete a synonym (alias) from your spellbook. Without arguments,
+prompts for the synonym word to delete.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+synonyms_dir="$spell_home/.synonyms"
+
+# Parse arguments
+synonym_word=""
+
+if [ "$#" -ge 1 ]; then
+  synonym_word=$1
+else
+  # Interactive mode
+  printf 'Synonym word to delete: ' >&2
+  IFS= read -r synonym_word || die "delete-synonym: failed to read synonym word"
+fi
+
+# Validate synonym word
+case $synonym_word in
+  "")
+    die 2 "delete-synonym: synonym word cannot be empty"
+    ;;
+esac
+
+synonym_path="$synonyms_dir/$synonym_word"
+
+# Check if synonym exists
+if [ ! -f "$synonym_path" ]; then
+  die "delete-synonym: synonym '$synonym_word' not found"
+fi
+
+# Verify it's actually a synonym (has our marker comment)
+if ! grep -q "^# Synonym:" "$synonym_path" 2>/dev/null; then
+  warn "delete-synonym: '$synonym_word' does not appear to be a synonym"
+  printf 'Delete anyway? (y/N): ' >&2
+  IFS= read -r confirm || confirm="n"
+  case $confirm in
+    y|Y|yes|YES) ;;
+    *) die "delete-synonym: cancelled" ;;
+  esac
+fi
+
+# Delete the synonym
+rm -f "$synonym_path" || die "delete-synonym: could not delete synonym"
+
+success "Synonym deleted: $synonym_word"

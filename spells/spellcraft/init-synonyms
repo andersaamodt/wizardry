@@ -1,0 +1,53 @@
+#!/bin/sh
+# This spell initializes default built-in synonyms if they don't exist.
+# Called automatically when accessing synonym features.
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+synonyms_dir="$spell_home/.synonyms"
+
+# Ensure synonyms directory exists
+if [ ! -d "$synonyms_dir" ]; then
+  mkdir -p "$synonyms_dir" || die "init-synonyms: could not create synonyms directory"
+fi
+
+# Define default synonyms (word -> spell)
+# Each line: synonym_word target_spell
+default_synonyms="
+detect-os detect-distro
+home cd
+"
+
+# Install each default synonym if it doesn't exist
+echo "$default_synonyms" | while IFS= read -r line; do
+  # Skip empty lines
+  [ -n "$line" ] || continue
+  
+  # Parse word and spell
+  synonym_word=$(echo "$line" | awk '{print $1}')
+  target_spell=$(echo "$line" | awk '{print $2}')
+  
+  # Skip if either is empty
+  [ -n "$synonym_word" ] || continue
+  [ -n "$target_spell" ] || continue
+  
+  synonym_path="$synonyms_dir/$synonym_word"
+  
+  # Only create if it doesn't exist
+  if [ ! -f "$synonym_path" ]; then
+    # Create the synonym script
+    cat > "$synonym_path" <<SYNONYM
+#!/bin/sh
+# Synonym: $synonym_word -> $target_spell (built-in)
+exec '$target_spell' "\$@"
+SYNONYM
+    chmod +x "$synonym_path" 2>/dev/null || :
+  fi
+done
+
+# Mark that initialization has been done
+touch "$synonyms_dir/.initialized" 2>/dev/null || :
