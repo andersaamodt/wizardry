@@ -63,7 +63,14 @@ else
 fi
 
 set -eu
-. env-clear
+
+# Source env-clear (use WIZARDRY_DIR if available, otherwise compute relative path)
+if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/env-clear" ]; then
+  . "${WIZARDRY_DIR}/spells/.imps/sys/env-clear"
+else
+  _dg_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  . "$_dg_script_dir/../../.imps/sys/env-clear"
+fi
 
 # Get output directory
 output_dir=${1:-./wizardry-compiled}
