@@ -190,5 +190,9 @@ unset _saved_github_repository _saved_github_sha _saved_github_ref _saved_github
 unset _saved_github_head_ref _saved_github_base_ref _saved_runner_os _saved_runner_temp
 unset _saved_runner_tool_cache _var
 
+# Re-enable strict mode for the calling spell
+# The spell set `-eu` before sourcing this file, so we restore that state
+set -eu
+
 # Return 0 explicitly (some shells return the exit code of the last unset)
 return 0
