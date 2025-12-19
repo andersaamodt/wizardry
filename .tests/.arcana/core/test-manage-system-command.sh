@@ -104,6 +104,37 @@ STUB
   [ ! -s "$fixture/log/apt.log" ] || { TEST_FAILURE_REASON="apt should not be used on Darwin"; return 1; }
 }
 
+manage_system_prefers_pacman_when_available() {
+  fixture=$(_make_fixture)
+  _write_pacman_stub "$fixture"
+  _write_sudo_stub "$fixture"
+  _provide_basic_tools "$fixture"
+  _link_tools "$fixture/bin" grep
+
+  PATH="$fixture/bin" PACMAN_LOG="$fixture/log/pacman.log" _run_cmd \
+    env PATH="$fixture/bin" PACMAN_LOG="$fixture/log/pacman.log" \
+    "$ROOT_DIR/spells/.arcana/core/manage-system-command" example example-pkg
+
+  _assert_success || return 1
+  installs=$(grep -c "pacman --noconfirm -Sy example-pkg" "$fixture/log/pacman.log" || true)
+  [ "$installs" -ge 1 ] || { TEST_FAILURE_REASON="pacman not used"; return 1; }
+}
+
+manage_system_uses_nix_env_on_nixos() {
+  fixture=$(_make_fixture)
+  _write_nix_env_stub "$fixture"
+  _provide_basic_tools "$fixture"
+  _link_tools "$fixture/bin" grep
+
+  PATH="$fixture/bin" MANAGE_SYSTEM_COMMAND_NIXOS=1 NIX_ENV_LOG="$fixture/log/nix-env.log" _run_cmd \
+    env PATH="$fixture/bin" MANAGE_SYSTEM_COMMAND_NIXOS=1 NIX_ENV_LOG="$fixture/log/nix-env.log" \
+    "$ROOT_DIR/spells/.arcana/core/manage-system-command" example example-pkg
+
+  _assert_success || return 1
+  installs=$(grep -c "nix-env -iA nixpkgs.example-pkg" "$fixture/log/nix-env.log" || true)
+  [ "$installs" -ge 1 ] || { TEST_FAILURE_REASON="nix-env not used"; return 1; }
+}
+
 manage_system_rejects_missing_arguments() {
   # No arguments should trigger usage error
   _run_cmd "$ROOT_DIR/spells/.arcana/core/manage-system-command"
@@ -126,6 +157,8 @@ _run_test_case "manage-system-command reports failed installation" manage_system
 _run_test_case "manage-system-command uninstalls when present" manage_system_uninstalls_when_present
 _run_test_case "manage-system-command reports failed removal" manage_system_reports_failure_when_uninstallers_fail
 _run_test_case "manage-system-command uses pkgin on Darwin" manage_system_prefers_pkgin_on_darwin
+_run_test_case "manage-system-command uses pacman when available" manage_system_prefers_pacman_when_available
+_run_test_case "manage-system-command uses nix-env on NixOS" manage_system_uses_nix_env_on_nixos
 
 shows_help() {
   _run_spell spells/.arcana/core/manage-system-command --help
