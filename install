@@ -632,11 +632,22 @@ fi
 
 section_msg "Installation Plan"
 
+# Show platform detection results for debugging
+if [ -n "$detect_platform_value" ]; then
+        info_msg "Detected platform: $detect_platform_value"
+else
+        info_msg "Platform detection: ${YELLOW}unknown${RESET}"
+fi
+
 # Show what will be installed
 if [ -n "$detect_rc_file_value" ]; then
         info_msg "Will modify shell configuration: $detect_rc_file_value"
+        if [ -n "$detect_format_value" ]; then
+                substep_msg "Format: $detect_format_value"
+        fi
 else
         info_msg "Will add invoke-wizardry to your shell configuration"
+        substep_msg "${YELLOW}Warning: Could not auto-detect shell configuration file${RESET}"
 fi
 substep_msg "This sets up wizardry environment and PATH at shell startup"
 substep_msg "(invoke-wizardry path: $INVOKE_WIZARDRY)"
@@ -779,16 +790,33 @@ fi
 # Skip if detect-rc-file failed to find a configuration file
 if [ -n "$detect_rc_file_value" ]; then
         info_msg "Updating $rc_destination..."
+        substep_msg "Configuration file: $detect_rc_file_value"
+        substep_msg "Format: $detect_format_value"
+        
+        # Check if configuration file exists and is writable
+        if [ -f "$detect_rc_file_value" ]; then
+                substep_msg "File exists: ${GREEN}yes${RESET}"
+                if [ -w "$detect_rc_file_value" ]; then
+                        substep_msg "File writable: ${GREEN}yes${RESET}"
+                else
+                        substep_msg "File writable: ${YELLOW}no (will attempt anyway)${RESET}"
+                fi
+        else
+                substep_msg "File exists: ${YELLOW}no (will create)${RESET}"
+        fi
 
         # Generate the source line for invoke-wizardry
         invoke_wizardry_source_line=". \"$INVOKE_WIZARDRY\""
+        substep_msg "Source line: $invoke_wizardry_source_line"
 
         case $detect_format_value in
         nix)
                 # For NixOS, use nix-shell-add to add shell initialization code
+                substep_msg "Using nix-shell-add for NixOS integration"
                 if [ -x "$NIX_SHELL_ADD" ]; then
                         if printf '%s\n' "$invoke_wizardry_source_line" | "$NIX_SHELL_ADD" wizardry-init "$detect_rc_file_value" bash 2>/dev/null; then
                                 shell_setup_made=1
+                                substep_msg "Added to NixOS configuration: ${GREEN}success${RESET}"
                         else
                                 printf '%s\n' "Error: Failed to add wizardry initialization to '$detect_rc_file_value'." >&2
                                 exit 1
@@ -801,16 +829,31 @@ if [ -n "$detect_rc_file_value" ]; then
         *)
                 # For standard shell rc files, add the source line directly with a wizardry marker
                 # Check if the source line already exists
+                substep_msg "Checking for existing wizardry initialization..."
                 if grep -qE "(invoke-wizardry|wizardry: wizardry-init)" "$detect_rc_file_value" 2>/dev/null; then
                         shell_setup_made=0
+                        substep_msg "Already configured: ${GREEN}yes${RESET} (skipping)"
                 else
+                        substep_msg "Already configured: no (adding now)"
                         # Create rc file if it doesn't exist
                         if [ ! -f "$detect_rc_file_value" ]; then
-                                touch "$detect_rc_file_value"
+                                if touch "$detect_rc_file_value" 2>/dev/null; then
+                                        substep_msg "Created new file: ${GREEN}success${RESET}"
+                                else
+                                        printf '%s\n' "Error: Failed to create '$detect_rc_file_value'." >&2
+                                        printf '%s\n' "Check that the directory exists and you have write permissions." >&2
+                                        exit 1
+                                fi
                         fi
                         # Add the source line with inline marker
-                        printf '%s\n' "$invoke_wizardry_source_line # wizardry: wizardry-init" >> "$detect_rc_file_value"
-                        shell_setup_made=1
+                        if printf '%s\n' "$invoke_wizardry_source_line # wizardry: wizardry-init" >> "$detect_rc_file_value" 2>/dev/null; then
+                                shell_setup_made=1
+                                substep_msg "Added source line: ${GREEN}success${RESET}"
+                        else
+                                printf '%s\n' "Error: Failed to write to '$detect_rc_file_value'." >&2
+                                printf '%s\n' "Check that you have write permissions for this file." >&2
+                                exit 1
+                        fi
                 fi
                 ;;
         esac
