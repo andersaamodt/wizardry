@@ -159,8 +159,10 @@ do
   target_file="$target_dir/$spell_name"
   
   # Call compile-spell from repo directory with full relative path and redirect output to target
+  # Source invoke-wizardry in subshell to make all imps available for compilation
   # Redirect stdout to file, stderr to /dev/null (don't let error messages corrupt the compiled spell)
-  if (cd "$repo_dir" && compile-spell "$spell_rel_path" 2>/dev/null) > "$target_file"; then
+  compile_spell_path="$repo_dir/spells/spellcraft/compile-spell"
+  if (cd "$repo_dir" && WIZARDRY_DIR="$repo_dir" . "$repo_dir/spells/.imps/sys/invoke-wizardry" >/dev/null 2>&1 && "$compile_spell_path" "$spell_rel_path" 2>/dev/null) > "$target_file"; then
     chmod +x "$target_file"
     compiled_count=$((compiled_count + 1))
   else
