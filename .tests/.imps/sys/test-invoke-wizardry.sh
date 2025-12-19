@@ -45,7 +45,30 @@ EOF
   # The key is it shouldn't error
 }
 
+# Test: invoke-wizardry adds spell directories to PATH
+test_adds_to_path() {
+  tmpdir=$(_make_tempdir)
+  cat > "$tmpdir/test-path.sh" << EOF
+#!/bin/sh
+WIZARDRY_DIR="$ROOT_DIR"
+export WIZARDRY_DIR
+. "$ROOT_DIR/spells/.imps/sys/invoke-wizardry"
+# Check if PATH contains spell directories
+case ":\${PATH}:" in
+  *":$ROOT_DIR/spells/cantrips:"*)
+    printf 'cantrips in path\n'
+    ;;
+esac
+EOF
+  chmod +x "$tmpdir/test-path.sh"
+  
+  _run_cmd sh "$tmpdir/test-path.sh"
+  _assert_success || return 1
+  _assert_output_contains "cantrips in path" || return 1
+}
+
 _run_test_case "invoke-wizardry is sourceable" test_sourceable
 _run_test_case "invoke-wizardry sets WIZARDRY_DIR" test_sets_wizardry_dir
+_run_test_case "invoke-wizardry adds spell directories to PATH" test_adds_to_path
 
 _finish_tests
