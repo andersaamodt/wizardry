@@ -278,3 +278,19 @@ Principles of the testing suite:
 | Explicit shims        | Stub imps in `spells/.imps/test/stub-*` provide reusable terminal I/O mocking. Tests link to them via symlinks. Single-use stubs may remain inline in tests. Test real wizardry—stub only the bare minimum (terminal I/O). |
 | Sandboxed execution   | The `test-magic` spell discovers and runs all tests in an isolated bubblewrap environment. |
 | Tests required | All tests are required to pass before new code may be merged. |
+
+## POSIX Compatibility Matrix
+
+Wizardry assumes a small, portable POSIX toolchain. These are the interfaces we depend on and the minimal POSIX expectations for each.
+
+| Interface | Expected POSIX baseline | Wizardry reliance |
+| --- | --- | --- |
+| `sh` | POSIX `sh` with standard builtins and `set -eu` | All spells |
+| `awk` | POSIX awk (`BEGIN`, field splitting, basic patterns) | Parsing system files, linting, and checks |
+| `sed` | POSIX sed (basic regular expressions) | Transformations and extraction |
+| `grep` | POSIX grep (basic regex and exit codes) | Filtering and matching |
+| `find` | POSIX find predicates (`-type`, `-name`) | Discovering spells, tests, and files |
+| `xargs` | POSIX xargs (basic argument batching) | Batch command execution |
+| `sort`, `cut`, `head`, `tail`, `tr`, `wc` | POSIX text utilities | Core text shaping |
+| `mktemp` | POSIX temp file/dir creation | `temp-file` and `temp-dir` imps |
+| `uname` | POSIX `uname -s` | Platform detection |
