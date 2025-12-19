@@ -37,6 +37,7 @@ if has mud-config; then
     printf '%s\n' "Player identity set to '$player'."
 else
     die "set-player: mud-config not found. Install wizardry or ensure spells are in PATH."
+        return 1
 fi
 }
 

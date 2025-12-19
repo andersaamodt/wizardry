@@ -79,6 +79,7 @@ if [ -z "$read_magic" ]; then
                 read_magic=$(command -v read-magic)
         else
                 die "look: read-magic spell is missing."
+        return 1
         fi
 fi
 

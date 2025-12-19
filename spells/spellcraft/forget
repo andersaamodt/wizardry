@@ -81,15 +81,18 @@ name=$1
 case $name in
 ''|*[!A-Za-z0-9._-]*)
   die "$spell_name: names may contain only letters, digits, dots, underscores, and dashes."
+        return 1
   ;;
 -*)
   die "$spell_name: names may not begin with a dash."
+        return 1
   ;;
 esac
 
 # Check if command file exists
 if [ ! -f "$command_file" ]; then
   die "$spell_name: spell '$name' is not memorized."
+        return 1
 fi
 
 # Remove spell from command file
@@ -117,6 +120,7 @@ if [ "$removed" -eq 0 ]; then
   trap - EXIT HUP INT TERM
   rm -f "$tmp"
   die "$spell_name: spell '$name' is not memorized."
+        return 1
 fi
 
 trap - EXIT HUP INT TERM

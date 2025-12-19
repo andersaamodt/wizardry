@@ -36,6 +36,7 @@ file=$1
 # Verify file exists
 if ! is file "$file"; then
         die "follow-portkey: file not found: $file"
+        return 1
 fi
 
 # Read the context attribute from the file
@@ -45,6 +46,7 @@ context=$(read-magic "$file" context 2>/dev/null || true)
 case "$context" in
         ''|*Error*)
                 die "follow-portkey: no portkey enchantment on file: $file"
+        return 1
                 ;;
 esac
 

@@ -40,6 +40,7 @@ marker_file="$markers_dir/1"
 # Verify file exists
 if ! is file "$file"; then
         die "enchant-portkey: file not found: $file"
+        return 1
 fi
 
 # If no destination provided, try to read from marker file
@@ -48,12 +49,14 @@ if is unset "$destination"; then
                 destination=$(read-file "$marker_file")
         else
                 die "enchant-portkey: no destination provided and no marker 1 found."
+        return 1
         fi
 fi
 
 # Verify destination is valid
 if is unset "$destination"; then
         die "enchant-portkey: destination cannot be empty."
+        return 1
 fi
 
 # Enchant the file with the destination context

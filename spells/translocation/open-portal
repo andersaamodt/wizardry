@@ -29,20 +29,24 @@ set -eu
 # Check for required commands
 if ! has sshfs; then
         die "open-portal: sshfs not found."
+        return 1
 fi
 
 if ! has torify; then
         die "open-portal: torify (tor) not found."
+        return 1
 fi
 
 # Get player key from environment
 if is unset "${MUD_PLAYER-}"; then
         die "open-portal: MUD_PLAYER environment variable not set."
+        return 1
 fi
 player_key="$HOME/.ssh/$MUD_PLAYER"
 
 if ! is file "$player_key"; then
         die "open-portal: SSH key not found: $player_key"
+        return 1
 fi
 
 # Get address and directory from arguments or prompt
@@ -72,6 +76,7 @@ fi
 
 # Ensure local mount point exists
 make dir "$local_mount" || die "open-portal: cannot create mount point: $local_mount"
+        return 1
 
 # Mount the remote directory using sshfs over tor
 torify sshfs -o "IdentityFile=$player_key" "$tor_address:$remote_dir" "$local_mount"
