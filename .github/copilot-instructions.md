@@ -1,7 +1,7 @@
 # Wizardry Repository - GitHub Copilot Instructions
 
 > **New to wizardry?** → Start with **`.github/AI-ONBOARDING.md`** for a complete step-by-step guide.  
-> **Looking for something specific?** → Check **`.github/DOCUMENTATION-INDEX.md`** to find the right docs.
+> **Looking for something specific?** → Use the "How to Find Documentation" section below.
 
 ## Quick Start
 
