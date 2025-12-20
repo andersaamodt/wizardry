@@ -125,8 +125,7 @@ if [ -n "$wizardry_dir_override" ]; then
   WIZARDRY_DIR=$wizardry_dir_override
   banish_check "Using override: $WIZARDRY_DIR"
 elif [ -n "${WIZARDRY_DIR-}" ]; then
-  # Already set in environment
-  WIZARDRY_DIR="${WIZARDRY_DIR}"
+  # Already set in environment - no need to reassign
   banish_check "Using existing: $WIZARDRY_DIR"
 else
   # Auto-detect
@@ -255,12 +254,13 @@ case ":${PATH-}:" in
 esac
 
 # Success
+success_msg="Banish complete - environment ready for invoke-wizardry"
 if [ "$log_level" -ge 2 ]; then
-  printf '\n✓ Banish complete - environment ready for invoke-wizardry\n'
+  printf '\n✓ %s\n' "$success_msg"
 elif [ "$log_level" -eq 0 ]; then
   printf 'Banish complete - environment ready\n'
 else
-  printf 'Banish complete - environment ready for invoke-wizardry\n'
+  printf '%s\n' "$success_msg"
 fi
 
 if [ -n "$missing_recommended" ]; then
