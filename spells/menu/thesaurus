@@ -60,6 +60,65 @@ if [ ! -f "$spell_home/.default-synonyms-initialized" ]; then
   fi
 fi
 
+# If --list mode, print flat list and exit
+if [ "$list_mode" -eq 1 ]; then
+  # Print custom synonyms first
+  if [ -f "$custom_file" ]; then
+    while IFS= read -r line; do
+      # Skip comments and empty lines
+      case $line in
+        \#*|'') continue ;;
+      esac
+      
+      # Parse alias definition: alias word='spell'
+      if printf '%s' "$line" | grep -q "^alias "; then
+        synonym_word=$(printf '%s' "$line" | sed "s/^alias \\([^=]*\\)=.*$/\\1/")
+        target_spell=$(printf '%s' "$line" | sed "s/^alias [^=]*='\\(.*\\)'$/\\1/")
+        target_spell=$(printf '%s' "$target_spell" | sed "s/'\\\\''/'/g")
+        
+        if [ -n "$synonym_word" ] && [ -n "$target_spell" ]; then
+          printf '%s → %s\n' "$synonym_word" "$target_spell"
+        fi
+      fi
+    done < "$custom_file"
+  fi
+  
+  # Print default synonyms
+  if [ -f "$default_file" ]; then
+    while IFS= read -r line; do
+      # Skip comments and empty lines
+      case $line in
+        \#*|'') continue ;;
+      esac
+      
+      # Parse alias definition: alias word='spell'
+      if printf '%s' "$line" | grep -q "^alias "; then
+        synonym_word=$(printf '%s' "$line" | sed "s/^alias \\([^=]*\\)=.*$/\\1/")
+        target_spell=$(printf '%s' "$line" | sed "s/^alias [^=]*='\\(.*\\)'$/\\1/")
+        target_spell=$(printf '%s' "$target_spell" | sed "s/'\\\\''/'/g")
+        
+        if [ -n "$synonym_word" ] && [ -n "$target_spell" ]; then
+          # Check if this default is overridden by a custom synonym
+          is_overridden=0
+          if [ -f "$custom_file" ]; then
+            custom_override=$(grep "^alias $synonym_word=" "$custom_file" 2>/dev/null || true)
+            if [ -n "$custom_override" ]; then
+              is_overridden=1
+            fi
+          fi
+          
+          # Only show if not overridden
+          if [ "$is_overridden" -eq 0 ]; then
+            printf '%s → %s\n' "$synonym_word" "$target_spell"
+          fi
+        fi
+      fi
+    done < "$default_file"
+  fi
+  
+  exit 0
+fi
+
 # Check if synonyms are enabled (for full mode)
 synonyms_enabled=1
 if [ "$list_mode" -eq 0 ]; then

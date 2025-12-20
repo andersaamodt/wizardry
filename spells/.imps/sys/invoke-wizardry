@@ -79,8 +79,9 @@ _invoke_wizardry() {
       for _iw_imp in "$_iw_family"/*; do
         [ -f "$_iw_imp" ] && [ -r "$_iw_imp" ] || continue
         # Skip invoke-wizardry itself to prevent recursion
+        # Skip invoke-thesaurus to prevent double execution (loaded separately later for synonym handling)
         case "$_iw_imp" in
-          */invoke-wizardry) continue ;;
+          */invoke-wizardry|*/invoke-thesaurus) continue ;;
         esac
         # Source the imp to load its function
         # shellcheck disable=SC1090
@@ -166,55 +167,12 @@ _invoke_wizardry() {
     }'
   fi
   
-  # Load synonyms (aliases) from spellbook
-  _iw_default_synonyms="${SPELLBOOK_DIR}/.default-synonyms"
-  _iw_custom_synonyms="${SPELLBOOK_DIR}/.synonyms"
-  if [ -f "$_iw_default_synonyms" ] || [ -f "$_iw_custom_synonyms" ]; then
-    # Check if synonyms are enabled
-    _iw_enabled_file="${SPELLBOOK_DIR}/.synonyms-enabled"
-    _iw_enabled=1
-    if [ -f "$_iw_enabled_file" ]; then
-      _iw_enabled=$(cat "$_iw_enabled_file" 2>/dev/null || printf '1')
-      case $_iw_enabled in
-        0) _iw_enabled=0 ;;
-        *) _iw_enabled=1 ;;
-      esac
-    fi
-    
-    if [ "$_iw_enabled" -eq 1 ]; then
-      # Check if default synonyms are enabled
-      _iw_default_enabled_file="${SPELLBOOK_DIR}/.default-synonyms-enabled"
-      _iw_default_enabled=1
-      if [ -f "$_iw_default_enabled_file" ]; then
-        _iw_default_enabled=$(cat "$_iw_default_enabled_file" 2>/dev/null || printf '1')
-        case $_iw_default_enabled in
-          0) _iw_default_enabled=0 ;;
-          *) _iw_default_enabled=1 ;;
-        esac
-      fi
-      
-      # Check if custom synonyms are enabled
-      _iw_custom_enabled_file="${SPELLBOOK_DIR}/.custom-synonyms-enabled"
-      _iw_custom_enabled=1
-      if [ -f "$_iw_custom_enabled_file" ]; then
-        _iw_custom_enabled=$(cat "$_iw_custom_enabled_file" 2>/dev/null || printf '1')
-        case $_iw_custom_enabled in
-          0) _iw_custom_enabled=0 ;;
-          *) _iw_custom_enabled=1 ;;
-        esac
-      fi
-      
-      # Source default synonyms first (if enabled)
-      if [ "$_iw_default_enabled" -eq 1 ] && [ -f "$_iw_default_synonyms" ] && [ -r "$_iw_default_synonyms" ]; then
-        # shellcheck disable=SC1090
-        . "$_iw_default_synonyms" 2>/dev/null || true
-      fi
-      # Then source custom synonyms (so they can override defaults, if enabled)
-      if [ "$_iw_custom_enabled" -eq 1 ] && [ -f "$_iw_custom_synonyms" ] && [ -r "$_iw_custom_synonyms" ]; then
-        # shellcheck disable=SC1090
-        . "$_iw_custom_synonyms" 2>/dev/null || true
-      fi
-    fi
+  # Load synonyms (aliases) from spellbook by sourcing invoke-thesaurus
+  # invoke-thesaurus handles initialization, enable/disable checks, and sourcing
+  _iw_invoke_thesaurus="$WIZARDRY_DIR/spells/.imps/sys/invoke-thesaurus"
+  if [ -f "$_iw_invoke_thesaurus" ] && [ -r "$_iw_invoke_thesaurus" ]; then
+    # shellcheck disable=SC1090
+    . "$_iw_invoke_thesaurus" 2>/dev/null || true
   fi
 }
 

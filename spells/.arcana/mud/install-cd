@@ -1,0 +1,88 @@
+#!/bin/sh
+
+# Install the cd hook that runs 'look' after directory changes.
+# This adds the cd function to your shell RC file and enables it.
+
+install_cd_usage() {
+cat <<'USAGE'
+Usage: install-cd
+
+Install the cd hook that runs 'look' after each directory change.
+This adds the necessary source line to your shell RC file.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+        install_cd_usage
+        exit 0
+        ;;
+esac
+
+set -eu
+
+# Get script directory
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+ROOT_DIR=$(cd "$SCRIPT_DIR/../../.." && pwd -P)
+
+# Path to the cd hook file
+CD_HOOK="$SCRIPT_DIR/cd"
+
+# Detect RC file using detect-rc-file
+DETECT_RC_FILE="$ROOT_DIR/spells/divination/detect-rc-file"
+if [ ! -x "$DETECT_RC_FILE" ]; then
+        printf '%s\n' "install-cd: detect-rc-file not found" >&2
+        exit 1
+fi
+
+# Get RC file path
+detect_output=$("$DETECT_RC_FILE" 2>/dev/null) || {
+        printf '%s\n' "install-cd: could not detect shell RC file" >&2
+        exit 1
+}
+
+rc_file=""
+rc_format=""
+while IFS='=' read -r key value; do
+        case $key in
+        rc_file) rc_file=$value ;;
+        format) rc_format=$value ;;
+        esac
+done <<EOF
+$detect_output
+EOF
+
+if [ -z "$rc_file" ]; then
+        printf '%s\n' "install-cd: no RC file detected" >&2
+        exit 1
+fi
+
+# Check if already installed (check for the cd hook file path in rc file)
+if [ -f "$rc_file" ] && grep -qF "$CD_HOOK" "$rc_file" 2>/dev/null; then
+        printf '%s\n' "✓ cd hook is already installed in $rc_file"
+        exit 0
+fi
+
+# Add source line to RC file
+if [ "$rc_format" = "nix" ]; then
+        # For NixOS, we'd need to use nix-shell-add, but cd hook doesn't work well with NixOS
+        # declarative config. Skip installation on NixOS.
+        printf '%s\n' "Note: cd hook installation not supported on NixOS (use toggle-cd manually)" >&2
+        exit 0
+fi
+
+# Create RC file if it doesn't exist
+if [ ! -f "$rc_file" ]; then
+        touch "$rc_file" || {
+                printf '%s\n' "install-cd: could not create $rc_file" >&2
+                exit 1
+        }
+fi
+
+# Add source line with marker
+printf '\n# wizardry: cd-hook\n. "%s"\n' "$CD_HOOK" >> "$rc_file"
+
+printf '%s\n' "✓ cd hook installed to $rc_file"
+printf '%s\n' ""
+printf '%s\n' "The cd function will be available in new terminal windows."
+printf '%s\n' "Use 'toggle-cd' to enable or disable the look-on-cd behavior."
