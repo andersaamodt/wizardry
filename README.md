@@ -27,22 +27,25 @@ The language of magic—a human heirloom—is rich in evocative words for hidden
 
 Run the following line in a terminal to download and run the wizardry installer script:
 
-```
+```bash
 curl -fsSL https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh
 ```
+
+After installation completes, follow the instructions shown to start using wizardry immediately, or simply open a new terminal window.
+
 The install script requires `tar` plus either `curl` or `wget` to be available.
 
 ### Install with git
 
 To download wizardry using git and then install it:
 
-```
+```bash
 git clone https://github.com/andersaamodt/wizardry ~/.wizardry
 cd ~/.wizardry
 ./install
 ```
 
-This downloads wizardry to the default install location, `~/.wizardry`. After installing, you must reopen your terminal window before wizardry spells will work.
+This downloads wizardry to the default install location, `~/.wizardry`. Follow the instructions shown after installation to start using wizardry.
 
 ### Portable build
 

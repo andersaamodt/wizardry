@@ -1,6 +1,10 @@
 #!/bin/sh
 
 # Bootstrap spell: main wizardry installer.
+#
+# After installation, wizardry will be available in new terminal windows.
+# To use it immediately in the current terminal, run the command shown at the end.
+
 # Abort if unexpected arguments are supplied so we do not accidentally discard
 # them when repurposing the positional parameters to track missing directories.
 if [ "$#" -ne 0 ]; then
@@ -776,7 +780,6 @@ section_msg "Setting up Shell Integration"
 
 shell_setup_made=0
 rebuild_success=0
-sourcing_succeeded=0
 
 # Determine the destination description for messages
 if [ -n "$detect_rc_file_value" ]; then
@@ -861,6 +864,41 @@ if [ -n "$detect_rc_file_value" ]; then
 
         if [ "$shell_setup_made" -eq 1 ]; then
                 success_msg "Shell configuration updated in $rc_destination"
+                
+                # For bash users: if we modified .bashrc, ensure .bash_profile sources it
+                # This is needed because bash login shells (common on macOS) don't source .bashrc
+                # We do this after modifying .bashrc to ensure login shells pick up the changes
+                case "$detect_rc_file_value" in
+                */.bashrc)
+                        bash_profile="$HOME/.bash_profile"
+                        if [ ! -f "$bash_profile" ]; then
+                                # Create a .bash_profile that sources .bashrc
+                                # This is the standard pattern for bash configuration
+                                substep_msg "Creating .bash_profile to source .bashrc (for login shells)"
+                                cat > "$bash_profile" <<'BASH_PROFILE_EOF'
+# Source .bashrc if it exists
+# This ensures bash login shells (like those opened by Terminal.app on macOS)
+# get the same configuration as interactive shells
+if [ -f ~/.bashrc ]; then
+        . ~/.bashrc
+fi
+BASH_PROFILE_EOF
+                                substep_msg "Created $bash_profile"
+                        elif ! grep -q '\.bashrc' "$bash_profile" 2>/dev/null; then
+                                # .bash_profile exists but doesn't source .bashrc
+                                # Add the sourcing logic to ensure our changes are picked up
+                                substep_msg "Updating .bash_profile to source .bashrc"
+                                cat >> "$bash_profile" <<'BASH_PROFILE_APPEND'
+
+# Source .bashrc if it exists (added by wizardry installer)
+if [ -f ~/.bashrc ]; then
+        . ~/.bashrc
+fi
+BASH_PROFILE_APPEND
+                                substep_msg "Updated $bash_profile"
+                        fi
+                        ;;
+                esac
         fi
 else
         printf '%s\n' "Warning: Could not detect shell configuration file. You may need to manually source invoke-wizardry." >&2
@@ -972,15 +1010,6 @@ if [ "$shell_setup_made" -eq 1 ]; then
                         if home-manager switch; then
                                 success_msg "NixOS environment rebuilt successfully"
                                 rebuild_success=1
-                                # Source the session variables to make PATH available immediately
-                                # home-manager stores session vars in hm-session-vars.sh
-                                hm_session_vars="$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"
-                                if [ -f "$hm_session_vars" ]; then
-                                        # shellcheck disable=SC1090
-                                        if . "$hm_session_vars" 2>/dev/null; then
-                                                sourcing_succeeded=1
-                                        fi
-                                fi
                         fi
                 fi
 
@@ -990,12 +1019,6 @@ if [ "$shell_setup_made" -eq 1 ]; then
                         if "$priv_cmd" nixos-rebuild switch; then
                                 success_msg "NixOS environment rebuilt successfully"
                                 rebuild_success=1
-                                # Source /etc/profile to get the new PATH immediately
-                                # This runs the system-wide profile scripts that include our PATH changes
-                                # shellcheck disable=SC1091
-                                if . /etc/profile 2>/dev/null; then
-                                        sourcing_succeeded=1
-                                fi
                         fi
                 fi
 
@@ -1004,15 +1027,6 @@ if [ "$shell_setup_made" -eq 1 ]; then
                         printf 'To activate changes, use one of these commands:\n'
                         printf '  home-manager switch  (for home-manager users)\n'
                         printf '  sudo nixos-rebuild switch  (for system-level configuration)\n'
-                fi
-        else
-                # Source invoke-wizardry directly to make wizardry available in the current shell
-                # This is more reliable than sourcing the full rc file, which may contain
-                # interactive-only code that errors in non-interactive mode.
-                # shellcheck disable=SC1090
-                sourcing_succeeded=0
-                if [ -f "$INVOKE_WIZARDRY" ] && . "$INVOKE_WIZARDRY" 2>/dev/null; then
-                        sourcing_succeeded=1
                 fi
         fi
 fi
@@ -1219,16 +1233,11 @@ fi
 # Show platform-specific guidance for when changes take effect
 printf '\n'
 if [ "$detect_format_value" = "nix" ]; then
-        if [ "$sourcing_succeeded" -eq 1 ]; then
-                printf 'Wizardry is now ready to use in this terminal.\n'
-                printf '(New terminal windows will also have wizardry available.)\n'
+        if [ "$rebuild_success" -eq 1 ]; then
+                # Rebuild succeeded - wizardry available in new terminals
+                printf 'Wizardry is ready! Open a new terminal window to start using it.\n'
                 printf '\n'
-                printf 'Run %smenu%s or %smud%s to start using wizardry.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
-        elif [ "$rebuild_success" -eq 1 ]; then
-                # Rebuild succeeded but sourcing failed - need to open new terminal
-                printf 'Wizardry will be available when you open a new terminal window.\n'
-                printf '\n'
-                printf 'After opening a new terminal, run %smenu%s or %smud%s to start.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
+                printf 'Then run %smenu%s or %smud%s to explore.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
         else
                 # Rebuild failed - need manual intervention
                 printf '%sNote:%s After rebuilding your NixOS configuration, open a new terminal to use wizardry.\n' "$YELLOW" "$RESET"
@@ -1236,16 +1245,9 @@ if [ "$detect_format_value" = "nix" ]; then
                 printf 'After rebuilding and opening a new terminal, run %smenu%s or %smud%s to start.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
         fi
 elif [ -n "$detect_rc_file_value" ]; then
-        if [ "$sourcing_succeeded" -eq 1 ]; then
-                printf 'Wizardry is now ready to use in this terminal.\n'
-                printf '(New terminal windows will also have wizardry available.)\n'
-                printf '\n'
-                printf 'Run %smenu%s or %smud%s to start using wizardry.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
-        else
-                printf 'Wizardry will be available when you open a new terminal window.\n'
-                printf '\n'
-                printf 'After opening a new terminal, run %smenu%s or %smud%s to start.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
-        fi
+        printf 'Wizardry is ready! Open a new terminal window to start using it.\n'
+        printf '\n'
+        printf 'Then run %smenu%s or %smud%s to explore.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
 fi
 printf '\n'
 
