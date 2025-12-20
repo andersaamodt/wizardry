@@ -158,17 +158,18 @@ do
   spell_rel_path=${spell_path#$repo_dir/}
   target_file="$target_dir/$spell_name"
   
-  # Call compile-spell from repo directory with full relative path and redirect output to target
-  # Source invoke-wizardry in subshell to make all imps available for compilation
-  # Call the function compile_spell directly (not the alias compile-spell)
-  # because aliases don't work in non-interactive subshells without expand_aliases
-  if (
-    cd "$repo_dir" && \
-    WIZARDRY_DIR="$repo_dir" && \
-    export WIZARDRY_DIR && \
-    . "$repo_dir/spells/.imps/sys/invoke-wizardry" && \
-    compile_spell "$spell_rel_path"
-  ) > "$target_file" 2>&1; then
+  # Compile spell: save current directory, cd to repo, compile, return
+  # Don't use subshell () because functions don't pass to child processes
+  # compile-spell needs require-wizardry which was sourced earlier in this script
+  _dg_pwd=$(pwd -P)
+  cd "$repo_dir" || {
+    _warn "doppelganger: failed to cd to $repo_dir"
+    failed_count=$((failed_count + 1))
+    continue
+  }
+  
+  if "$repo_dir/spells/spellcraft/compile-spell" "$spell_rel_path" > "$target_file" 2>&1; then
+    cd "$_dg_pwd" || true
     # Check if the target file is valid (has shebang)
     if head -n 1 "$target_file" 2>/dev/null | grep -q '^#!'; then
       chmod +x "$target_file"
@@ -179,6 +180,7 @@ do
       rm -f "$target_file"
     fi
   else
+    cd "$_dg_pwd" || true
     _warn "doppelganger: failed to compile $spell_name"
     failed_count=$((failed_count + 1))
     rm -f "$target_file"
