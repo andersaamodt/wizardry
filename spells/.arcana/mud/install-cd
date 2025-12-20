@@ -72,13 +72,7 @@ if [ ! -x "$RC_ADD_LINE" ]; then
         exit 1
 fi
 
-# Migrate old marker format to new inline format if needed
-RC_MIGRATE_MARKER="$ROOT_DIR/spells/.imps/sys/rc-migrate-marker"
-if [ -x "$RC_MIGRATE_MARKER" ]; then
-        "$RC_MIGRATE_MARKER" cd-hook "$rc_file" ". \"$CD_HOOK\"" 2>/dev/null || true
-fi
-
-# Check if already installed (will find both new inline format and migrated format)
+# Check if already installed
 RC_HAS_LINE="$ROOT_DIR/spells/.imps/sys/rc-has-line"
 if [ -x "$RC_HAS_LINE" ] && "$RC_HAS_LINE" cd-hook "$rc_file" 2>/dev/null; then
         printf '%s\n' "✓ cd hook is already installed in $rc_file"
