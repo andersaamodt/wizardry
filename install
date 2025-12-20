@@ -898,38 +898,6 @@ BASH_PROFILE_APPEND
                                 substep_msg "Updated $bash_profile"
                         fi
                         ;;
-                */.zshrc)
-                        # For zsh users on macOS: if we modified .zshrc, ensure .zprofile sources it
-                        # This is needed because macOS Terminal opens login shells which source .zprofile
-                        # We only do this on macOS where login shells are the default
-                        if [ "$detect_platform_value" = "mac" ]; then
-                                zprofile="$HOME/.zprofile"
-                                if [ ! -f "$zprofile" ]; then
-                                        # Create a .zprofile that sources .zshrc
-                                        substep_msg "Creating .zprofile to source .zshrc (for login shells)"
-                                        cat > "$zprofile" <<'ZPROFILE_EOF'
-# Source .zshrc if it exists
-# This ensures zsh login shells (like those opened by Terminal.app on macOS)
-# get the same configuration as interactive shells
-if [ -f ~/.zshrc ]; then
-        . ~/.zshrc
-fi
-ZPROFILE_EOF
-                                        substep_msg "Created $zprofile"
-                                elif ! grep -q '\.zshrc' "$zprofile" 2>/dev/null; then
-                                        # .zprofile exists but doesn't source .zshrc
-                                        substep_msg "Updating .zprofile to source .zshrc"
-                                        cat >> "$zprofile" <<'ZPROFILE_APPEND'
-
-# Source .zshrc if it exists (added by wizardry installer)
-if [ -f ~/.zshrc ]; then
-        . ~/.zshrc
-fi
-ZPROFILE_APPEND
-                                        substep_msg "Updated $zprofile"
-                                fi
-                        fi
-                        ;;
                 esac
         fi
 else
