@@ -123,10 +123,83 @@ EOF
   _assert_output_contains "completed without hanging" || return 1
 }
 
+# Test: Sourcing invoke-wizardry maintains permissive shell mode (set +eu)
+# This is critical - imps have set -eu but shouldn't change parent shell mode
+test_maintains_permissive_mode() {
+  tmpdir=$(_make_tempdir)
+  cat > "$tmpdir/test-mode.sh" << EOF
+#!/bin/sh
+# Start in permissive mode (default for sh)
+WIZARDRY_DIR="$ROOT_DIR"
+export WIZARDRY_DIR
+
+# Source invoke-wizardry
+. "$ROOT_DIR/spells/.imps/sys/invoke-wizardry" 2>&1 | grep -v "invoke-thesaurus"
+
+# Check shell mode - errexit and nounset should still be off
+# Using 'set -o' to check mode is portable across shells
+if set -o | grep -E "errexit.*on" >/dev/null 2>&1; then
+  printf 'ERROR: errexit is on (strict mode active)\n'
+  exit 1
+fi
+
+if set -o | grep -E "nounset.*on" >/dev/null 2>&1; then
+  printf 'ERROR: nounset is on (strict mode active)\n'
+  exit 1
+fi
+
+printf 'permissive mode maintained\n'
+EOF
+  chmod +x "$tmpdir/test-mode.sh"
+  
+  _run_cmd sh "$tmpdir/test-mode.sh"
+  _assert_success || return 1
+  _assert_output_contains "permissive mode maintained" || return 1
+}
+
+# Test: Sourcing invoke-wizardry from rc file works (simulates new terminal)
+test_rc_file_sourcing() {
+  tmpdir=$(_make_tempdir)
+  
+  # Create a test rc file with invoke-wizardry source line
+  cat > "$tmpdir/.testrc" << EOF
+# Test rc file
+export WIZARDRY_DIR="$ROOT_DIR"
+. "$ROOT_DIR/spells/.imps/sys/invoke-wizardry"
+EOF
+  
+  # Create a test script that sources the rc file
+  cat > "$tmpdir/test-rc.sh" << EOF
+#!/bin/sh
+. "$tmpdir/.testrc" 2>&1 | grep -v "invoke-thesaurus"
+
+# Check that commands are available
+if command -v menu >/dev/null 2>&1; then
+  printf 'menu available after rc sourcing\n'
+fi
+
+# Check that shell is still in permissive mode
+if set -o | grep -E "errexit.*on" >/dev/null 2>&1; then
+  printf 'ERROR: errexit is on after rc sourcing\n'
+  exit 1
+fi
+
+printf 'rc file sourcing successful\n'
+EOF
+  chmod +x "$tmpdir/test-rc.sh"
+  
+  _run_cmd sh "$tmpdir/test-rc.sh"
+  _assert_success || return 1
+  _assert_output_contains "menu available after rc sourcing" || return 1
+  _assert_output_contains "rc file sourcing successful" || return 1
+}
+
 _run_test_case "invoke-wizardry is sourceable" test_sourceable
 _run_test_case "invoke-wizardry sets WIZARDRY_DIR" test_sets_wizardry_dir
 _run_test_case "invoke-wizardry adds spell directories to PATH" test_adds_to_path
 _run_test_case "core imps are available as commands" test_core_imps_available
 _run_test_case "sourcing invoke-wizardry doesn't hang" test_no_hanging
+_run_test_case "invoke-wizardry maintains permissive shell mode" test_maintains_permissive_mode
+_run_test_case "invoke-wizardry works when sourced from rc file" test_rc_file_sourcing
 
 _finish_tests
