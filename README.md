@@ -31,13 +31,7 @@ Run the following line in a terminal to download and run the wizardry installer 
 curl -fsSL https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh
 ```
 
-After installation, **open a new terminal window** to start using wizardry.
-
-**For immediate availability** (without opening a new terminal), use:
-
-```bash
-eval "$(curl -fsSL https://raw.githubusercontent.com/andersaamodt/wizardry/main/install)"
-```
+After installation completes, follow the instructions shown to start using wizardry immediately, or simply open a new terminal window.
 
 The install script requires `tar` plus either `curl` or `wget` to be available.
 
@@ -48,10 +42,10 @@ To download wizardry using git and then install it:
 ```bash
 git clone https://github.com/andersaamodt/wizardry ~/.wizardry
 cd ~/.wizardry
-eval "$(./install)"
+./install
 ```
 
-This downloads wizardry to the default install location, `~/.wizardry`, and makes it immediately available in your current terminal.
+This downloads wizardry to the default install location, `~/.wizardry`. Follow the instructions shown after installation to start using wizardry.
 
 ### Portable build
 

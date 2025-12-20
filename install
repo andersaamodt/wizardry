@@ -2,17 +2,8 @@
 
 # Bootstrap spell: main wizardry installer.
 #
-# USAGE:
-#   Normal install (requires opening new terminal):
-#     curl -fsSL https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh
-#     ./install
-#
-#   Install with immediate availability (using eval):
-#     eval "$(curl -fsSL https://raw.githubusercontent.com/andersaamodt/wizardry/main/install)"
-#     eval "$(./install)"
-#
-# When used with eval, wizardry becomes immediately available in the current shell.
-# When used normally, wizardry is available in new terminal windows.
+# After installation, wizardry will be available in new terminal windows.
+# To use it immediately in the current terminal, run the command shown at the end.
 
 # Abort if unexpected arguments are supplied so we do not accidentally discard
 # them when repurposing the positional parameters to track missing directories.
@@ -25,14 +16,6 @@ fi
 # custom search path configured in their environment.  This keeps the script
 # portable across login shells that set CDPATH to multiple directories.
 unset CDPATH
-
-# Redirect all output to stderr by default.
-# This allows the install script to be used with eval:
-#   eval "$(./install)"
-# Only the final source command will be sent to stdout (at the end of the script).
-# All informational messages go to stderr so they don't interfere with eval.
-exec 3>&1  # Save original stdout to fd 3
-exec 1>&2  # Redirect stdout to stderr
 
 # NOTE: With the new word-of-binding paradigm (PR #410), directories no longer
 # need to be added to PATH manually. Instead, invoke-wizardry is sourced from
@@ -1264,15 +1247,10 @@ if [ "$detect_format_value" = "nix" ]; then
 elif [ -n "$detect_rc_file_value" ]; then
         printf 'Wizardry is ready! Open a new terminal window to start using it.\n'
         printf '\n'
-        printf 'Then run %smenu%s or %smud%s to explore.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
+        printf '%sOr, to use it immediately in this terminal, run:%s\n' "$BOLD" "$RESET"
+        printf '  %s. %s%s\n' "$CYAN" "$detect_rc_file_value" "$RESET"
         printf '\n'
-        printf '%sTip:%s For immediate availability in this terminal, you can run:\n' "$BOLD" "$RESET"
-        printf '  eval "$(%s)"\n' "$0"
-        
-        # Output the source command to the original stdout (fd 3) for eval pattern
-        # This is the magic that makes "eval $(./install)" work!
-        # All messages above go to stderr (current stdout), only this goes to real stdout
-        printf '. "%s"\n' "$detect_rc_file_value" >&3
+        printf 'Then run %smenu%s or %smud%s to explore.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
 fi
 printf '\n'
 
