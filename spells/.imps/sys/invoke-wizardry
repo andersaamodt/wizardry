@@ -31,7 +31,9 @@ _invoke_wizardry() {
   
   # Set up PATH to include wizardry spell directories and user's spellbook
   # This makes all spells directly callable as commands
+  # Also include .imps/sys for essential system imps like require-wizardry
   _iw_new_path="$SPELLBOOK_DIR"
+  _iw_new_path="$_iw_new_path:$WIZARDRY_DIR/spells/.imps/sys"
   for _iw_spell_cat in "$WIZARDRY_DIR"/spells/*; do
     [ -d "$_iw_spell_cat" ] || continue
     case "$_iw_spell_cat" in

@@ -1002,13 +1002,12 @@ if [ "$shell_setup_made" -eq 1 ]; then
                         printf '  sudo nixos-rebuild switch  (for system-level configuration)\n'
                 fi
         else
-                # Source the rc file immediately to make wizardry available in the current shell
-                # Note: This sources the user's own shell config (e.g., .bashrc), which they already
-                # trust since it runs on every shell startup. We redirect stderr and ignore failures
-                # since rc files may contain interactive-only code that errors in non-interactive mode.
+                # Source invoke-wizardry directly to make wizardry available in the current shell
+                # This is more reliable than sourcing the full rc file, which may contain
+                # interactive-only code that errors in non-interactive mode.
                 # shellcheck disable=SC1090
                 sourcing_succeeded=0
-                if . "$detect_rc_file_value" 2>/dev/null; then
+                if [ -f "$INVOKE_WIZARDRY" ] && . "$INVOKE_WIZARDRY" 2>/dev/null; then
                         sourcing_succeeded=1
                 fi
         fi
