@@ -57,12 +57,6 @@ if [ -z "$rc_file" ]; then
         exit 1
 fi
 
-# Check if already installed (check for the cd hook file path in rc file)
-if [ -f "$rc_file" ] && grep -qF "$CD_HOOK" "$rc_file" 2>/dev/null; then
-        printf '%s\n' "✓ cd hook is already installed in $rc_file"
-        exit 0
-fi
-
 # Add source line to RC file
 if [ "$rc_format" = "nix" ]; then
         # For NixOS, we'd need to use nix-shell-add, but cd hook doesn't work well with NixOS
@@ -71,16 +65,25 @@ if [ "$rc_format" = "nix" ]; then
         exit 0
 fi
 
-# Create RC file if it doesn't exist
-if [ ! -f "$rc_file" ]; then
-        touch "$rc_file" || {
-                printf '%s\n' "install-cd: could not create $rc_file" >&2
-                exit 1
-        }
+# Use rc-add-line to add source line with inline marker
+RC_ADD_LINE="$ROOT_DIR/spells/.imps/sys/rc-add-line"
+if [ ! -x "$RC_ADD_LINE" ]; then
+        printf '%s\n' "install-cd: rc-add-line not found" >&2
+        exit 1
 fi
 
-# Add source line with marker
-printf '\n# wizardry: cd-hook\n. "%s"\n' "$CD_HOOK" >> "$rc_file"
+# Check if already installed
+RC_HAS_LINE="$ROOT_DIR/spells/.imps/sys/rc-has-line"
+if [ -x "$RC_HAS_LINE" ] && "$RC_HAS_LINE" cd-hook "$rc_file" 2>/dev/null; then
+        printf '%s\n' "✓ cd hook is already installed in $rc_file"
+        exit 0
+fi
+
+# Add source line with inline marker using rc-add-line
+if ! "$RC_ADD_LINE" cd-hook "$rc_file" ". \"$CD_HOOK\"" 2>/dev/null; then
+        printf '%s\n' "install-cd: failed to add cd hook to $rc_file" >&2
+        exit 1
+fi
 
 printf '%s\n' "✓ cd hook installed to $rc_file"
 printf '%s\n' ""

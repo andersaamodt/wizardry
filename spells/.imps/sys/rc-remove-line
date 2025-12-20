@@ -1,0 +1,44 @@
+#!/bin/sh
+# rc-remove-line MARKER RC_FILE - remove lines with marker from rc file
+# Example: rc-remove-line cd-hook ~/.zshrc
+set -eu
+
+_rc_remove_line() {
+  _rrl_marker=${1:-}
+  _rrl_rc_file=${2:-}
+
+  if [ -z "$_rrl_marker" ] || [ -z "$_rrl_rc_file" ]; then
+    printf '%s\n' "rc-remove-line: MARKER and RC_FILE are required" >&2
+    return 1
+  fi
+
+  if [ ! -f "$_rrl_rc_file" ]; then
+    # File doesn't exist, nothing to remove
+    return 0
+  fi
+
+  _rrl_full_marker="# wizardry: $_rrl_marker"
+
+  # Check if marker exists
+  if ! grep -qF "$_rrl_full_marker" "$_rrl_rc_file" 2>/dev/null; then
+    # Marker doesn't exist, nothing to remove
+    return 0
+  fi
+
+  # Remove lines containing the marker
+  _rrl_tmp_file="${_rrl_rc_file}.wizardry.$$"
+  if grep -vF "$_rrl_full_marker" "$_rrl_rc_file" > "$_rrl_tmp_file" 2>/dev/null; then
+    mv "$_rrl_tmp_file" "$_rrl_rc_file"
+  else
+    rm -f "$_rrl_tmp_file"
+    printf '%s\n' "rc-remove-line: failed to remove marker from $_rrl_rc_file" >&2
+    return 1
+  fi
+
+  return 0
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */rc-remove-line) _rc_remove_line "$@" ;;
+esac
