@@ -53,6 +53,11 @@ _invoke_wizardry() {
   if [ -d "$_iw_imps_dir" ]; then
     for _iw_family in "$_iw_imps_dir"/*; do
       [ -d "$_iw_family" ] || continue
+      # Skip test imps - they're only for testing, not production use
+      _iw_family_name=$(basename "$_iw_family")
+      case "$_iw_family_name" in
+        test) continue ;;
+      esac
       for _iw_imp in "$_iw_family"/*; do
         [ -f "$_iw_imp" ] && [ -r "$_iw_imp" ] || continue
         # Skip invoke-wizardry itself to prevent recursion
