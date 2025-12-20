@@ -37,7 +37,15 @@ mud_main_loop() {
 install_mud() {
   shell_rc=$HOME/.bashrc
 
-  if [ -f "$shell_rc" ] && grep -Fq "source $script_path" "$shell_rc"; then
+  # Build the source line using WIZARDRY_DIR if available
+  if [ -n "${WIZARDRY_DIR-}" ]; then
+    source_line=". \"\${WIZARDRY_DIR}/spells/.arcana/mud/install-mud\""
+  else
+    # Fallback to absolute path if WIZARDRY_DIR not set
+    source_line="source $script_path"
+  fi
+
+  if [ -f "$shell_rc" ] && grep -Fq "$source_line" "$shell_rc"; then
     printf '%s\n' "You have already memorized this spell"
     return 0
   fi
@@ -45,7 +53,7 @@ install_mud() {
   printf '%s' "Do you wish to memorize this spell? (yes/no) "
   read -r answer
   if [ "$answer" = "yes" ]; then
-    printf '%s\n' "source $script_path" >> "$shell_rc"
+    printf '%s\n' "$source_line" >> "$shell_rc"
     printf '%s\n' "Spell memorized in .bashrc, so the mud will always be active in the terminal."
   else
     printf '%s\n' "The mud will only run in this shell window."

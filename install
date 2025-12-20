@@ -934,23 +934,23 @@ else
                 if [ -r /dev/tty ]; then
                         # /dev/tty is available - force ask-yn to use it instead of stdin
                         # This prevents ask-yn from trying to read from stdin (which contains the script)
-                        if ASK_CANTRIP_INPUT=tty "$ASK_YN" "Install the MUD (multi-user dungeon) features?" yes >/dev/null; then
+                        if ASK_CANTRIP_INPUT=tty "$ASK_YN" "Install the MUD (multi-user dungeon) features?" no >/dev/null; then
                                 install_mud=1
                         fi
                 elif [ -z "${ASK_CANTRIP_INPUT-}" ]; then
                         # No /dev/tty and no ASK_CANTRIP_INPUT set - use default
-                        if ASK_CANTRIP_INPUT=none "$ASK_YN" "Install the MUD (multi-user dungeon) features?" yes >/dev/null; then
+                        if ASK_CANTRIP_INPUT=none "$ASK_YN" "Install the MUD (multi-user dungeon) features?" no >/dev/null; then
                                 install_mud=1
                         fi
                 else
                         # ASK_CANTRIP_INPUT is already set by the user - respect it
-                        if "$ASK_YN" "Install the MUD (multi-user dungeon) features?" yes >/dev/null; then
+                        if "$ASK_YN" "Install the MUD (multi-user dungeon) features?" no >/dev/null; then
                                 install_mud=1
                         fi
                 fi
         else
                 # stdin is a terminal - normal interactive mode
-                if "$ASK_YN" "Install the MUD (multi-user dungeon) features?" yes >/dev/null; then
+                if "$ASK_YN" "Install the MUD (multi-user dungeon) features?" no >/dev/null; then
                         install_mud=1
                 fi
         fi
@@ -1007,6 +1007,7 @@ if [ "$shell_setup_made" -eq 1 ]; then
                 # Try home-manager first (doesn't need privileges)
                 if command -v home-manager >/dev/null 2>&1; then
                         info_msg "Running 'home-manager switch'..."
+                        substep_msg "This may take several minutes, please wait..."
                         if home-manager switch; then
                                 success_msg "NixOS environment rebuilt successfully"
                                 rebuild_success=1
@@ -1016,6 +1017,7 @@ if [ "$shell_setup_made" -eq 1 ]; then
                 # If home-manager didn't work and we have privilege escalation, try nixos-rebuild
                 if [ "$rebuild_success" -eq 0 ] && [ -n "$priv_cmd" ] && command -v nixos-rebuild >/dev/null 2>&1; then
                         info_msg "Running '$priv_cmd nixos-rebuild switch'..."
+                        substep_msg "This may take several minutes, please wait..."
                         if "$priv_cmd" nixos-rebuild switch; then
                                 success_msg "NixOS environment rebuilt successfully"
                                 rebuild_success=1

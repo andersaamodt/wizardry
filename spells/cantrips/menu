@@ -433,23 +433,23 @@ do
                 else
                         to_run=$(sed -n "${selected}p" "$commands_file")
                 fi
+                cleanup
+                trap - EXIT INT TERM
                 if [ -n "$to_run" ]; then
-                        cleanup
-                        trap - EXIT INT TERM
                         printf '\n'
                         # shellcheck disable=SC2039,SC3045 # POSIX sh allows eval
                         eval "$to_run"
-                else
-                        cleanup
-                        trap - EXIT INT TERM
                 fi
                 return 0
                 ;;
         escape|ESC|esc)
                 cleanup
                 trap - EXIT INT TERM
-                # Signal the parent process to return 1 its menu loop
-                kill -TERM "$PPID" 2>/dev/null || return 0
+                # Signal parent menu to exit if this is a nested menu
+                # Check if parent PID is not 1 (init) or current shell
+                if [ "${PPID:-0}" -gt 1 ] && [ "${PPID:-0}" -ne "$$" ]; then
+                        kill -TERM "$PPID" 2>/dev/null || :
+                fi
                 return 0
                 ;;
         esac
