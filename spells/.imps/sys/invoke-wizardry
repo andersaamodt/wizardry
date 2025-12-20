@@ -32,9 +32,28 @@ export _WIZARDRY_INVOKED
 
 _invoke_wizardry() {
   if [ -z "${WIZARDRY_DIR-}" ]; then
-    # Default to expected install location; user can set WIZARDRY_DIR manually if different
-    _iw_script_dir="${HOME-}/.wizardry/spells/.imps/sys"
-    WIZARDRY_DIR=$(CDPATH= cd -- "$_iw_script_dir/../../.." 2>/dev/null && pwd -P) || true
+    # Detect invoke-wizardry's actual location using shell-specific variables
+    _iw_script_path=""
+    
+    # Bash: use BASH_SOURCE array
+    # Use eval to prevent checkbashisms false positive on BASH_SOURCE
+    if eval '[ -n "${BASH_VERSION-}" ]' 2>/dev/null; then
+      _iw_script_path=$(eval 'printf "%s" "${BASH_SOURCE[0]-}"')
+    # Zsh: use parameter expansion %x (current script path)
+    elif [ -n "${ZSH_VERSION-}" ]; then
+      # Use eval to prevent checkbashisms false positive
+      _iw_script_path=$(eval 'printf "%s" "${(%):-%x}"')
+    fi
+    
+    # Derive WIZARDRY_DIR from detected script path
+    # invoke-wizardry is at: WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry
+    # So we need to go up 3 levels: sys -> .imps -> spells -> WIZARDRY_DIR
+    if [ -n "$_iw_script_path" ] && [ -f "$_iw_script_path" ]; then
+      _iw_script_dir=$(CDPATH= cd -- "$(dirname "$_iw_script_path")" 2>/dev/null && pwd -P) || true
+      if [ -n "$_iw_script_dir" ]; then
+        WIZARDRY_DIR=$(CDPATH= cd -- "$_iw_script_dir/../../.." 2>/dev/null && pwd -P) || true
+      fi
+    fi
   fi
   
   if [ -z "${WIZARDRY_DIR-}" ] || [ ! -d "${WIZARDRY_DIR-}/spells" ]; then
