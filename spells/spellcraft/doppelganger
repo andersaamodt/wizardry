@@ -160,13 +160,14 @@ do
   
   # Call compile-spell from repo directory with full relative path and redirect output to target
   # Source invoke-wizardry in subshell to make all imps available for compilation
-  # Use the alias 'compile-spell' instead of the full path so invoke-wizardry loading works
+  # Call the function compile_spell directly (not the alias compile-spell)
+  # because aliases don't work in non-interactive subshells without expand_aliases
   if (
     cd "$repo_dir" && \
     WIZARDRY_DIR="$repo_dir" && \
     export WIZARDRY_DIR && \
     . "$repo_dir/spells/.imps/sys/invoke-wizardry" && \
-    compile-spell "$spell_rel_path"
+    compile_spell "$spell_rel_path"
   ) > "$target_file" 2>&1; then
     # Check if the target file is valid (has shebang)
     if head -n 1 "$target_file" 2>/dev/null | grep -q '^#!'; then
