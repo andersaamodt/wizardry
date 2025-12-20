@@ -1432,6 +1432,52 @@ EOF
   _assert_output_contains ".imps/sys is in PATH" || return 1
 }
 
+install_invoke_wizardry_custom_location() {
+  # Test that invoke-wizardry auto-detects its location (fixes macOS menu issue)
+  # This tests the fix for the bug where menu wasn't found after install on macOS
+  # when wizardry is installed to a location other than ~/.wizardry
+  tmp=$(_make_tempdir)
+  
+  # Create a custom install location (simulating WIZARDRY_INSTALL_DIR=/custom/path)
+  custom_install="$tmp/custom/wizardry-install"
+  mkdir -p "$(dirname "$custom_install")"
+  cp -R "$ROOT_DIR" "$custom_install"
+  
+  test_script="$tmp/test-custom.sh"
+  
+  cat >"$test_script" <<'EOF'
+#!/bin/sh
+# Simulate sourcing invoke-wizardry from a custom location (like .zprofile does)
+CUSTOM_INSTALL="$1"
+. "$CUSTOM_INSTALL/spells/.imps/sys/invoke-wizardry" >/dev/null 2>&1 || exit 1
+
+# Verify WIZARDRY_DIR was set correctly
+if [ -z "$WIZARDRY_DIR" ]; then
+  echo "FAIL: WIZARDRY_DIR not set"
+  exit 1
+fi
+
+# Verify menu is available in PATH
+if ! command -v menu >/dev/null 2>&1; then
+  echo "FAIL: menu not in PATH"
+  echo "WIZARDRY_DIR: $WIZARDRY_DIR"
+  echo "PATH: $PATH"
+  exit 1
+fi
+
+echo "SUCCESS: menu found at custom location"
+echo "WIZARDRY_DIR: $WIZARDRY_DIR"
+EOF
+  
+  chmod +x "$test_script"
+  
+  # Run with bash to test BASH_SOURCE detection
+  _run_cmd bash "$test_script" "$custom_install"
+  _assert_success || return 1
+  _assert_output_contains "SUCCESS: menu found at custom location" || return 1
+  _assert_output_contains "WIZARDRY_DIR: $custom_install" || return 1
+}
+
 # === Run Tests ===
 
 _run_test_case "install runs core installer" install_invokes_core_installer
@@ -1483,5 +1529,6 @@ _run_test_case "install rc file sources invoke-wizardry" install_rc_file_sources
 _run_test_case "install menu works after invoke-wizardry" install_menu_help_works_after_invoke
 _run_test_case "install require-wizardry available" install_require_wizardry_available
 _run_test_case "install imps/sys in PATH" install_imps_sys_in_path
+_run_test_case "install invoke-wizardry custom location (macOS fix)" install_invoke_wizardry_custom_location
 
 _finish_tests
