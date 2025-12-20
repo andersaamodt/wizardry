@@ -1273,6 +1273,165 @@ install_mud_shows_planned_features() {
   _assert_output_contains "planned feature" || return 1
 }
 
+# === Mac Install Bug Fix Tests ===
+# Tests for the fix that adds .imps/sys to PATH and sources invoke-wizardry directly
+
+install_sources_invoke_wizardry_successfully() {
+  # Simulate what happens when install script sources invoke-wizardry
+  tmp=$(_make_tempdir)
+  test_script="$tmp/test-install.sh"
+  
+  cat >"$test_script" <<'EOF'
+#!/bin/sh
+# Simulate install script sourcing invoke-wizardry
+export WIZARDRY_DIR="$1"
+INVOKE_WIZARDRY="$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
+
+# Source invoke-wizardry like the install script does
+sourcing_succeeded=0
+if [ -f "$INVOKE_WIZARDRY" ] && . "$INVOKE_WIZARDRY" 2>/dev/null; then
+  sourcing_succeeded=1
+fi
+
+if [ "$sourcing_succeeded" -eq 1 ]; then
+  echo "Sourcing succeeded"
+  # Try to run menu --help
+  if command -v menu >/dev/null 2>&1; then
+    echo "menu is available"
+  else
+    echo "menu is NOT available"
+    exit 1
+  fi
+else
+  echo "Sourcing failed"
+  exit 1
+fi
+EOF
+  
+  chmod +x "$test_script"
+  
+  # Run the test script
+  _run_cmd sh "$test_script" "$ROOT_DIR"
+  _assert_success || return 1
+  _assert_output_contains "Sourcing succeeded" || return 1
+  _assert_output_contains "menu is available" || return 1
+}
+
+install_rc_file_sources_invoke_wizardry() {
+  # Simulate what happens when a new shell sources the rc file
+  tmp=$(_make_tempdir)
+  rc_file="$tmp/.bashrc"
+  test_script="$tmp/test-rc.sh"
+  
+  # Create a fake rc file with invoke-wizardry source line
+  cat >"$rc_file" <<EOF
+# Fake bashrc
+export WIZARDRY_DIR="\$1"
+. "\$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry" # wizardry: wizardry-init
+EOF
+  
+  # Create a script that sources the rc file then runs menu
+  cat >"$test_script" <<'EOF'
+#!/bin/sh
+export HOME="$2"
+. "$2/.bashrc" "$1" >/dev/null 2>&1 || exit 1
+# Try to run menu --help
+if command -v menu >/dev/null 2>&1; then
+  echo "menu is available after sourcing rc"
+else
+  echo "menu is NOT available after sourcing rc"
+  exit 1
+fi
+EOF
+  
+  chmod +x "$test_script"
+  
+  # Run the test script
+  _run_cmd sh "$test_script" "$ROOT_DIR" "$tmp"
+  _assert_success || return 1
+  _assert_output_contains "menu is available after sourcing rc" || return 1
+}
+
+install_menu_help_works_after_invoke() {
+  # Test that menu works after invoke-wizardry is sourced
+  tmp=$(_make_tempdir)
+  test_script="$tmp/test-menu.sh"
+  
+  cat >"$test_script" <<'EOF'
+#!/bin/sh
+export WIZARDRY_DIR="$1"
+# Redirect invoke-wizardry's output to stderr so it doesn't pollute menu's output
+. "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry" >/dev/null 2>&1 || exit 1
+"$WIZARDRY_DIR/spells/cantrips/menu" --help
+EOF
+  
+  chmod +x "$test_script"
+  
+  # Run the test script
+  _run_cmd sh "$test_script" "$ROOT_DIR"
+  _assert_success || return 1
+  # menu --help outputs to stderr, so check ERROR instead of OUTPUT
+  _assert_error_contains "Usage:" || return 1
+  _assert_error_contains "menu" || return 1
+}
+
+install_require_wizardry_available() {
+  # Test that require-wizardry is available after invoke-wizardry is sourced
+  tmp=$(_make_tempdir)
+  test_script="$tmp/test-require.sh"
+  
+  cat >"$test_script" <<'EOF'
+#!/bin/sh
+export WIZARDRY_DIR="$1"
+. "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry" 2>/dev/null || exit 1
+# Try to execute require-wizardry - it should be in PATH or aliased
+if command -v require-wizardry >/dev/null 2>&1; then
+  echo "require-wizardry is available"
+  exit 0
+else
+  echo "require-wizardry NOT available"
+  exit 1
+fi
+EOF
+  
+  chmod +x "$test_script"
+  
+  # Run the test script
+  _run_cmd sh "$test_script" "$ROOT_DIR"
+  _assert_success || return 1
+  _assert_output_contains "require-wizardry is available" || return 1
+}
+
+install_imps_sys_in_path() {
+  # Test that .imps/sys is in PATH after invoke-wizardry is sourced
+  tmp=$(_make_tempdir)
+  test_script="$tmp/test-path.sh"
+  
+  cat >"$test_script" <<'EOF'
+#!/bin/sh
+export WIZARDRY_DIR="$1"
+. "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry" 2>/dev/null || exit 1
+# Check if .imps/sys is in PATH
+case ":$PATH:" in
+  *":$WIZARDRY_DIR/spells/.imps/sys:"*)
+    echo ".imps/sys is in PATH"
+    exit 0
+    ;;
+  *)
+    echo ".imps/sys NOT in PATH"
+    exit 1
+    ;;
+esac
+EOF
+  
+  chmod +x "$test_script"
+  
+  # Run the test script
+  _run_cmd sh "$test_script" "$ROOT_DIR"
+  _assert_success || return 1
+  _assert_output_contains ".imps/sys is in PATH" || return 1
+}
+
 # === Run Tests ===
 
 _run_test_case "install runs core installer" install_invokes_core_installer
@@ -1319,5 +1478,10 @@ _run_test_case "install MUD installs CD hook" install_mud_installs_cd_hook
 _run_test_case "install MUD enables config features" install_mud_enables_config_features
 _run_test_case "install without MUD skips MUD section" install_without_mud_skips_mud_section
 _run_test_case "install MUD shows planned features" install_mud_shows_planned_features
+_run_test_case "install sources invoke-wizardry successfully" install_sources_invoke_wizardry_successfully
+_run_test_case "install rc file sources invoke-wizardry" install_rc_file_sources_invoke_wizardry
+_run_test_case "install menu works after invoke-wizardry" install_menu_help_works_after_invoke
+_run_test_case "install require-wizardry available" install_require_wizardry_available
+_run_test_case "install imps/sys in PATH" install_imps_sys_in_path
 
 _finish_tests
