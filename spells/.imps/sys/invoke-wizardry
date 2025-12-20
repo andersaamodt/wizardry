@@ -3,6 +3,20 @@
 # Source this script to make all spells and imps available.
 # Example in .bashrc: . ~/.wizardry/spells/.imps/sys/invoke-wizardry
 
+# Ensure baseline PATH before anything else (macOS may have empty PATH)
+# This prevents failures when trying to use basic commands like cd, pwd, etc.
+baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+case ":${PATH-}:" in
+  *":/usr/bin:"*|*":/bin:"*)
+    # Already has at least one standard directory
+    ;;
+  *)
+    # PATH is empty or missing standard directories, prepend baseline
+    PATH="${baseline_path}${PATH:+:}${PATH-}"
+    export PATH
+    ;;
+esac
+
 # Explicitly use permissive mode - this file is sourced into user's shell
 set +eu
 
