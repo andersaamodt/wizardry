@@ -776,7 +776,6 @@ section_msg "Setting up Shell Integration"
 
 shell_setup_made=0
 rebuild_success=0
-sourcing_succeeded=0
 
 # Determine the destination description for messages
 if [ -n "$detect_rc_file_value" ]; then
@@ -972,15 +971,6 @@ if [ "$shell_setup_made" -eq 1 ]; then
                         if home-manager switch; then
                                 success_msg "NixOS environment rebuilt successfully"
                                 rebuild_success=1
-                                # Source the session variables to make PATH available immediately
-                                # home-manager stores session vars in hm-session-vars.sh
-                                hm_session_vars="$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"
-                                if [ -f "$hm_session_vars" ]; then
-                                        # shellcheck disable=SC1090
-                                        if . "$hm_session_vars" 2>/dev/null; then
-                                                sourcing_succeeded=1
-                                        fi
-                                fi
                         fi
                 fi
 
@@ -990,12 +980,6 @@ if [ "$shell_setup_made" -eq 1 ]; then
                         if "$priv_cmd" nixos-rebuild switch; then
                                 success_msg "NixOS environment rebuilt successfully"
                                 rebuild_success=1
-                                # Source /etc/profile to get the new PATH immediately
-                                # This runs the system-wide profile scripts that include our PATH changes
-                                # shellcheck disable=SC1091
-                                if . /etc/profile 2>/dev/null; then
-                                        sourcing_succeeded=1
-                                fi
                         fi
                 fi
 
@@ -1004,15 +988,6 @@ if [ "$shell_setup_made" -eq 1 ]; then
                         printf 'To activate changes, use one of these commands:\n'
                         printf '  home-manager switch  (for home-manager users)\n'
                         printf '  sudo nixos-rebuild switch  (for system-level configuration)\n'
-                fi
-        else
-                # Source invoke-wizardry directly to make wizardry available in the current shell
-                # This is more reliable than sourcing the full rc file, which may contain
-                # interactive-only code that errors in non-interactive mode.
-                # shellcheck disable=SC1090
-                sourcing_succeeded=0
-                if [ -f "$INVOKE_WIZARDRY" ] && . "$INVOKE_WIZARDRY" 2>/dev/null; then
-                        sourcing_succeeded=1
                 fi
         fi
 fi
@@ -1219,13 +1194,8 @@ fi
 # Show platform-specific guidance for when changes take effect
 printf '\n'
 if [ "$detect_format_value" = "nix" ]; then
-        if [ "$sourcing_succeeded" -eq 1 ]; then
-                printf 'Wizardry is now ready to use in this terminal.\n'
-                printf '(New terminal windows will also have wizardry available.)\n'
-                printf '\n'
-                printf 'Run %smenu%s or %smud%s to start using wizardry.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
-        elif [ "$rebuild_success" -eq 1 ]; then
-                # Rebuild succeeded but sourcing failed - need to open new terminal
+        if [ "$rebuild_success" -eq 1 ]; then
+                # Rebuild succeeded - wizardry available in new terminals
                 printf 'Wizardry will be available when you open a new terminal window.\n'
                 printf '\n'
                 printf 'After opening a new terminal, run %smenu%s or %smud%s to start.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
@@ -1236,16 +1206,12 @@ if [ "$detect_format_value" = "nix" ]; then
                 printf 'After rebuilding and opening a new terminal, run %smenu%s or %smud%s to start.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
         fi
 elif [ -n "$detect_rc_file_value" ]; then
-        if [ "$sourcing_succeeded" -eq 1 ]; then
-                printf 'Wizardry is now ready to use in this terminal.\n'
-                printf '(New terminal windows will also have wizardry available.)\n'
-                printf '\n'
-                printf 'Run %smenu%s or %smud%s to start using wizardry.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
-        else
-                printf 'Wizardry will be available when you open a new terminal window.\n'
-                printf '\n'
-                printf 'After opening a new terminal, run %smenu%s or %smud%s to start.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
-        fi
+        printf 'Wizardry will be available when you open a new terminal window.\n'
+        printf '\n'
+        printf '%sTo use wizardry in this terminal right now, run:%s\n' "$BOLD" "$RESET"
+        printf '  source %s\n' "$detect_rc_file_value"
+        printf '\n'
+        printf 'Then you can run %smenu%s or %smud%s to start using wizardry.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
 fi
 printf '\n'
 
