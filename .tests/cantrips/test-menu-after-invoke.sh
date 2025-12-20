@@ -20,7 +20,7 @@ test_menu_help_works() {
 export WIZARDRY_DIR="$1"
 # Redirect invoke-wizardry's output to stderr so it doesn't pollute menu's output
 . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry" >/dev/null 2>&1 || exit 1
-exec "$WIZARDRY_DIR/spells/cantrips/menu" --help
+"$WIZARDRY_DIR/spells/cantrips/menu" --help
 EOF
   
   chmod +x "$test_script"
