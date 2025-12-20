@@ -44,7 +44,8 @@ cp "$ROOT_DIR/spells/.imps/cond/has" "$tmp/imps/has"
 script="$ROOT_DIR/spells/.imps/sys/require-wizardry"
 
 # Run with restricted PATH (no menu, no wizardry, not in test mode)
-WIZARDRY_TEST_HELPERS_ONLY="" PATH="$tmp:$tmp/imps" _run_cmd sh "$script" </dev/null
+# Unset WIZARDRY_DIR to simulate environment without wizardry
+WIZARDRY_DIR="" WIZARDRY_TEST_HELPERS_ONLY="" PATH="$tmp:$tmp/imps" _run_cmd sh "$script" </dev/null
 _assert_failure || return 1
 _assert_error_contains "wizardry is not installed" || return 1
 }
