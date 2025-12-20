@@ -95,9 +95,15 @@ banish_info() {
   fi
 }
 
-banish_debug() {
+banish_step() {
   if [ "$log_level" -ge 2 ]; then
-    printf 'DEBUG: %s\n' "$*"
+    printf '  • %s\n' "$*"
+  fi
+}
+
+banish_check() {
+  if [ "$log_level" -ge 2 ]; then
+    printf '  ✓ %s\n' "$*"
   fi
 }
 
@@ -110,18 +116,21 @@ banish_error() {
 }
 
 # Stage 1: Set up WIZARDRY_DIR first (needed for detect-posix)
-banish_debug "Configuring WIZARDRY_DIR..."
+if [ "$log_level" -ge 2 ]; then
+  printf 'Configuring WIZARDRY_DIR:\n'
+fi
 
 if [ -n "$wizardry_dir_override" ]; then
   # User specified directory
   WIZARDRY_DIR=$wizardry_dir_override
-  banish_debug "  Using override: $WIZARDRY_DIR"
+  banish_check "Using override: $WIZARDRY_DIR"
 elif [ -n "${WIZARDRY_DIR-}" ]; then
   # Already set in environment
-  banish_debug "  Using existing: $WIZARDRY_DIR"
+  WIZARDRY_DIR="${WIZARDRY_DIR}"
+  banish_check "Using existing: $WIZARDRY_DIR"
 else
   # Auto-detect
-  banish_debug "  Auto-detecting wizardry installation..."
+  banish_step "Auto-detecting wizardry installation..."
   
   # Try to find wizardry by looking for this script's location
   has_dirname=$(command -v dirname >/dev/null 2>&1 && echo 1 || echo 0)
@@ -134,7 +143,7 @@ else
       _potential_dir=$(CDPATH= cd -- "$_script_dir/../.." 2>/dev/null && pwd -P) || true
       if [ -n "$_potential_dir" ] && [ -d "$_potential_dir/spells" ]; then
         WIZARDRY_DIR=$_potential_dir
-        banish_debug "  Detected from script location: $WIZARDRY_DIR"
+        banish_check "Detected from script location: $WIZARDRY_DIR"
       fi
     fi
   fi
@@ -143,7 +152,7 @@ else
   if [ -z "${WIZARDRY_DIR-}" ]; then
     if [ -n "${HOME-}" ] && [ -d "${HOME}/.wizardry/spells" ]; then
       WIZARDRY_DIR="${HOME}/.wizardry"
-      banish_debug "  Found standard location: $WIZARDRY_DIR"
+      banish_check "Found standard location: $WIZARDRY_DIR"
     else
       banish_warn "Could not auto-detect WIZARDRY_DIR"
       banish_warn "Set WIZARDRY_DIR environment variable or use --wizardry-dir option"
@@ -160,16 +169,23 @@ fi
 
 # Export WIZARDRY_DIR for downstream tools
 export WIZARDRY_DIR
-banish_info "Environment prepared: WIZARDRY_DIR=$WIZARDRY_DIR"
+if [ "$log_level" -eq 0 ]; then
+  # Non-verbose mode: show simple success message
+  printf 'Environment prepared: WIZARDRY_DIR=%s\n' "$WIZARDRY_DIR"
+else
+  banish_info "Environment prepared: WIZARDRY_DIR=$WIZARDRY_DIR"
+fi
 
 # Stage 2: Check POSIX environment using detect-posix if available
-banish_debug "Checking POSIX toolchain..."
+if [ "$log_level" -ge 2 ]; then
+  printf '\nChecking POSIX toolchain:\n'
+fi
 posix_check_failed=0
 missing_recommended=''
 
 # Try to use detect-posix if available
 if [ -f "${WIZARDRY_DIR}/spells/system/detect-posix" ]; then
-  banish_debug "  Using detect-posix for environment checks"
+  banish_step "Using detect-posix for environment checks"
   if [ "$verbose" -eq 1 ]; then
     "${WIZARDRY_DIR}/spells/system/detect-posix" --verbose 2>&1 || posix_check_failed=1
   else
@@ -182,7 +198,7 @@ if [ -f "${WIZARDRY_DIR}/spells/system/detect-posix" ]; then
   fi
 else
   # Fallback: manual check of critical tools if detect-posix not available
-  banish_debug "  detect-posix not found, using fallback checks"
+  banish_step "detect-posix not found, using fallback checks"
   critical_tools="sh test printf"
   missing_critical=''
   
@@ -190,7 +206,7 @@ else
     if ! command -v "$tool" >/dev/null 2>&1; then
       missing_critical="${missing_critical:+$missing_critical }$tool"
     else
-      banish_debug "  Found: $tool"
+      banish_check "Found: $tool"
     fi
   done
   
@@ -207,25 +223,29 @@ else
       missing_recommended="${missing_recommended:+$missing_recommended }$tool"
       banish_warn "Recommended tool missing: $tool"
     else
-      banish_debug "  Found: $tool"
+      banish_check "Found: $tool"
     fi
   done
 fi
 
 # Stage 3: Verify invoke-wizardry is available
-banish_debug "Verifying invoke-wizardry..."
+if [ "$log_level" -ge 2 ]; then
+  printf '\nVerifying invoke-wizardry:\n'
+fi
 if [ ! -f "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry" ]; then
   banish_error "invoke-wizardry not found at $WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
   return 1
 fi
-banish_debug "  invoke-wizardry is available"
+banish_check "invoke-wizardry is available"
 
 # Stage 4: Set baseline PATH if needed
-banish_debug "Checking PATH..."
+if [ "$log_level" -ge 2 ]; then
+  printf '\nChecking PATH:\n'
+fi
 baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 case ":${PATH-}:" in
   *":/usr/bin:"*|*":/bin:"*)
-    banish_debug "  PATH includes standard directories"
+    banish_check "PATH includes standard directories"
     ;;
   *)
     banish_warn "PATH missing standard directories, adding baseline"
@@ -235,7 +255,11 @@ case ":${PATH-}:" in
 esac
 
 # Success
-if [ "$log_level" -ge 1 ]; then
+if [ "$log_level" -ge 2 ]; then
+  printf '\n✓ Banish complete - environment ready for invoke-wizardry\n'
+elif [ "$log_level" -eq 0 ]; then
+  printf 'Banish complete - environment ready\n'
+else
   printf 'Banish complete - environment ready for invoke-wizardry\n'
 fi
 

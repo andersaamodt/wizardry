@@ -136,34 +136,39 @@ _invoke_wizardry() {
   fi
   
   # Source all function-based spells that have self-execute guards
+  # PERFORMANCE: This section can be slow on macOS due to grep operations on many files.
+  # By default, skip eager spell sourcing and rely on lazy loading via word-of-binding.
+  # Set WIZARDRY_EAGER_LOAD=1 to enable eager spell loading if needed.
   # Function-based spells have both:
   # 1. A snake_case function definition matching the spell name (e.g., spell_name() for spell-name)
   # 2. A self-execute pattern (case "$0" in */spell-name) that prevents execution when sourced
   # Non-function spells will be handled by command_not_found_handle
-  for _iw_spell_dir in "$WIZARDRY_DIR"/spells/*; do
-    [ -d "$_iw_spell_dir" ] || continue
-    case "$_iw_spell_dir" in
-      */.imps|*/.arcana) continue ;;
-    esac
-    for _iw_spell in "$_iw_spell_dir"/*; do
-      [ -f "$_iw_spell" ] && [ -r "$_iw_spell" ] || continue
-      _iw_spell_name=$(basename "$_iw_spell")
-      _iw_spell_func=$(printf '%s' "$_iw_spell_name" | sed 's/-/_/g')
-      # Check if spell has both function definition AND self-execute guard
-      if grep -qE "^[[:space:]]*${_iw_spell_func}[[:space:]]*\\(\\)" "$_iw_spell" 2>/dev/null && \
-         grep -qE "case.*\\\$0.*in.*\\*/${_iw_spell_name}\\)" "$_iw_spell" 2>/dev/null; then
-        # Safe to source - has function and self-execute guard
-        # shellcheck disable=SC1090
-        . "$_iw_spell" 2>/dev/null || true
-        # Restore permissive mode - sourcing spells with set -eu changes parent shell mode
-        set +eu
-        # Create alias if function exists
-        if command -v "$_iw_spell_func" >/dev/null 2>&1; then
-          alias "$_iw_spell_name=$_iw_spell_func" 2>/dev/null || true
+  if [ "${WIZARDRY_EAGER_LOAD-}" = "1" ]; then
+    for _iw_spell_dir in "$WIZARDRY_DIR"/spells/*; do
+      [ -d "$_iw_spell_dir" ] || continue
+      case "$_iw_spell_dir" in
+        */.imps|*/.arcana) continue ;;
+      esac
+      for _iw_spell in "$_iw_spell_dir"/*; do
+        [ -f "$_iw_spell" ] && [ -r "$_iw_spell" ] || continue
+        _iw_spell_name=$(basename "$_iw_spell")
+        _iw_spell_func=$(printf '%s' "$_iw_spell_name" | sed 's/-/_/g')
+        # Check if spell has both function definition AND self-execute guard
+        if grep -qE "^[[:space:]]*${_iw_spell_func}[[:space:]]*\\(\\)" "$_iw_spell" 2>/dev/null && \
+           grep -qE "case.*\\\$0.*in.*\\*/${_iw_spell_name}\\)" "$_iw_spell" 2>/dev/null; then
+          # Safe to source - has function and self-execute guard
+          # shellcheck disable=SC1090
+          . "$_iw_spell" 2>/dev/null || true
+          # Restore permissive mode - sourcing spells with set -eu changes parent shell mode
+          set +eu
+          # Create alias if function exists
+          if command -v "$_iw_spell_func" >/dev/null 2>&1; then
+            alias "$_iw_spell_name=$_iw_spell_func" 2>/dev/null || true
+          fi
         fi
-      fi
+      done
     done
-  done
+  fi
   
   # Set up command_not_found_handle for non-function spells, parser, and .spellbook support
   # This enables:
