@@ -1,5 +1,7 @@
 # Testing Environment Differences: AI Documentation
 
+applyTo: ".tests/**"
+
 This document explains common reasons why tests may pass in a local development environment but fail in CI, and vice versa. Understanding these differences is critical for AI agents debugging test failures.
 
 ## Key Differences Between Environments

@@ -1,5 +1,7 @@
 # Logging and Output Standards
 
+applyTo: "spells/**"
+
 ## Overview
 
 Wizardry uses a standardized logging and output framework through the `out/` family of imps. This provides consistent messaging, error handling, and verbosity control across all spells.
