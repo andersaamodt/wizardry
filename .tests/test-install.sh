@@ -1454,6 +1454,9 @@ install_invoke_wizardry_custom_location() {
 # Simulate sourcing invoke-wizardry from a custom location (like .zprofile does)
 CUSTOM_INSTALL="$1"
 
+# Unset WIZARDRY_DIR to force auto-detection (test framework sets it)
+unset WIZARDRY_DIR
+
 # Source invoke-wizardry - it should auto-detect its location via BASH_SOURCE
 . "$CUSTOM_INSTALL/spells/.imps/sys/invoke-wizardry" >/dev/null 2>&1 || exit 1
 
