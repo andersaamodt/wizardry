@@ -8,10 +8,13 @@
 baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 case ":${PATH-}:" in
   *":/usr/bin:"*|*":/bin:"*)
-    # Already has at least one standard directory
+    # Already has at least one standard directory (with proper colon delimiters)
     ;;
   *)
     # PATH is empty or missing standard directories, prepend baseline
+    # The ${PATH:+:}${PATH-} pattern adds a colon only if PATH is non-empty:
+    # - ${PATH:+:} expands to ":" if PATH is set and non-empty, otherwise ""
+    # - ${PATH-} expands to PATH's value if set, otherwise ""
     PATH="${baseline_path}${PATH:+:}${PATH-}"
     export PATH
     ;;

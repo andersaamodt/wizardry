@@ -127,14 +127,14 @@ EOF
 # This is critical - imps have set -eu but shouldn't change parent shell mode
 test_maintains_permissive_mode() {
   tmpdir=$(_make_tempdir)
-  cat > "$tmpdir/test-mode.sh" << EOF
+  cat > "$tmpdir/test-mode.sh" << 'EOF'
 #!/bin/sh
 # Start in permissive mode (default for sh)
 WIZARDRY_DIR="$ROOT_DIR"
 export WIZARDRY_DIR
 
-# Source invoke-wizardry
-. "$ROOT_DIR/spells/.imps/sys/invoke-wizardry" 2>&1 | grep -v "invoke-thesaurus"
+# Source invoke-wizardry and redirect stderr to suppress thesaurus message
+. "$ROOT_DIR/spells/.imps/sys/invoke-wizardry" 2>/dev/null
 
 # Check shell mode - errexit and nounset should still be off
 # Using 'set -o' to check mode is portable across shells
@@ -152,6 +152,9 @@ printf 'permissive mode maintained\n'
 EOF
   chmod +x "$tmpdir/test-mode.sh"
   
+  # Replace ROOT_DIR in the heredoc
+  sed -i "s|\$ROOT_DIR|$ROOT_DIR|g" "$tmpdir/test-mode.sh"
+  
   _run_cmd sh "$tmpdir/test-mode.sh"
   _assert_success || return 1
   _assert_output_contains "permissive mode maintained" || return 1
@@ -165,13 +168,13 @@ test_rc_file_sourcing() {
   cat > "$tmpdir/.testrc" << EOF
 # Test rc file
 export WIZARDRY_DIR="$ROOT_DIR"
-. "$ROOT_DIR/spells/.imps/sys/invoke-wizardry"
+. "$ROOT_DIR/spells/.imps/sys/invoke-wizardry" 2>/dev/null
 EOF
   
   # Create a test script that sources the rc file
   cat > "$tmpdir/test-rc.sh" << EOF
 #!/bin/sh
-. "$tmpdir/.testrc" 2>&1 | grep -v "invoke-thesaurus"
+. "$tmpdir/.testrc"
 
 # Check that commands are available
 if command -v menu >/dev/null 2>&1; then
