@@ -57,8 +57,8 @@ if [ -z "$rc_file" ]; then
         exit 1
 fi
 
-# Check if already installed
-if [ -f "$rc_file" ] && grep -qF ". \"$CD_HOOK\"" "$rc_file" 2>/dev/null; then
+# Check if already installed (check for the cd hook file path in rc file)
+if [ -f "$rc_file" ] && grep -qF "$CD_HOOK" "$rc_file" 2>/dev/null; then
         printf '%s\n' "✓ cd hook is already installed in $rc_file"
         exit 0
 fi

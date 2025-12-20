@@ -79,7 +79,7 @@ _invoke_wizardry() {
       for _iw_imp in "$_iw_family"/*; do
         [ -f "$_iw_imp" ] && [ -r "$_iw_imp" ] || continue
         # Skip invoke-wizardry itself to prevent recursion
-        # Skip invoke-thesaurus since it's loaded separately later for synonym handling
+        # Skip invoke-thesaurus to prevent double execution (loaded separately later for synonym handling)
         case "$_iw_imp" in
           */invoke-wizardry|*/invoke-thesaurus) continue ;;
         esac

@@ -934,6 +934,7 @@ if [ "$install_mud" -eq 1 ]; then
         # Enable CD hook by default using toggle-cd
         if [ -x "$TOGGLE_CD" ]; then
                 "$TOGGLE_CD" >/dev/null 2>&1 || true
+                substep_msg "CD hook enabled (runs 'look' on directory change)"
         fi
 
         # Enable all other MUD features using toggle-all-mud
