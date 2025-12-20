@@ -123,10 +123,133 @@ EOF
   _assert_output_contains "completed without hanging" || return 1
 }
 
+# Test: Sourcing invoke-wizardry maintains permissive shell mode (set +eu)
+# This is critical - imps have set -eu but shouldn't change parent shell mode
+test_maintains_permissive_mode() {
+  tmpdir=$(_make_tempdir)
+  cat > "$tmpdir/test-mode.sh" << 'EOF'
+#!/bin/sh
+# Start in permissive mode (default for sh)
+WIZARDRY_DIR="$ROOT_DIR"
+export WIZARDRY_DIR
+
+# Source invoke-wizardry and redirect stderr to suppress thesaurus message
+. "$ROOT_DIR/spells/.imps/sys/invoke-wizardry" 2>/dev/null
+
+# Check shell mode - errexit and nounset should still be off
+# Using 'set -o' to check mode is portable across shells
+if set -o | grep -E "errexit.*on" >/dev/null 2>&1; then
+  printf 'ERROR: errexit is on (strict mode active)\n'
+  exit 1
+fi
+
+if set -o | grep -E "nounset.*on" >/dev/null 2>&1; then
+  printf 'ERROR: nounset is on (strict mode active)\n'
+  exit 1
+fi
+
+printf 'permissive mode maintained\n'
+EOF
+  chmod +x "$tmpdir/test-mode.sh"
+  
+  # Replace ROOT_DIR in the heredoc
+  sed -i "s|\$ROOT_DIR|$ROOT_DIR|g" "$tmpdir/test-mode.sh"
+  
+  _run_cmd sh "$tmpdir/test-mode.sh"
+  _assert_success || return 1
+  _assert_output_contains "permissive mode maintained" || return 1
+}
+
+# Test: Sourcing invoke-wizardry from rc file works (simulates new terminal)
+test_rc_file_sourcing() {
+  tmpdir=$(_make_tempdir)
+  
+  # Create a test rc file with invoke-wizardry source line
+  cat > "$tmpdir/.testrc" << EOF
+# Test rc file
+export WIZARDRY_DIR="$ROOT_DIR"
+. "$ROOT_DIR/spells/.imps/sys/invoke-wizardry" 2>/dev/null
+EOF
+  
+  # Create a test script that sources the rc file
+  cat > "$tmpdir/test-rc.sh" << EOF
+#!/bin/sh
+. "$tmpdir/.testrc"
+
+# Check that commands are available
+if command -v menu >/dev/null 2>&1; then
+  printf 'menu available after rc sourcing\n'
+fi
+
+# Check that shell is still in permissive mode
+if set -o | grep -E "errexit.*on" >/dev/null 2>&1; then
+  printf 'ERROR: errexit is on after rc sourcing\n'
+  exit 1
+fi
+
+printf 'rc file sourcing successful\n'
+EOF
+  chmod +x "$tmpdir/test-rc.sh"
+  
+  _run_cmd sh "$tmpdir/test-rc.sh"
+  _assert_success || return 1
+  _assert_output_contains "menu available after rc sourcing" || return 1
+  _assert_output_contains "rc file sourcing successful" || return 1
+}
+
+# Test: Sourcing invoke-wizardry with empty PATH sets baseline PATH
+test_empty_path_handling() {
+  tmpdir=$(_make_tempdir)
+  cat > "$tmpdir/test-empty-path.sh" << EOF
+#!/bin/sh
+# Simulate macOS with empty PATH
+unset PATH
+
+WIZARDRY_DIR="$ROOT_DIR"
+export WIZARDRY_DIR
+
+# Source invoke-wizardry - should set baseline PATH
+# Don't filter output since grep might not be in PATH
+. "$ROOT_DIR/spells/.imps/sys/invoke-wizardry" 2>/dev/null
+
+# Check that PATH is now set
+if [ -z "\${PATH-}" ]; then
+  printf 'ERROR: PATH is still empty\n'
+  exit 1
+fi
+
+# Check that PATH contains standard directories
+case ":\${PATH}:" in
+  *":/usr/bin:"*|*":/bin:"*)
+    printf 'baseline PATH set correctly\n'
+    ;;
+  *)
+    printf 'ERROR: PATH does not contain standard directories\n'
+    printf 'PATH=%s\n' "\${PATH}"
+    exit 1
+    ;;
+esac
+
+# Verify basic commands work
+if command -v pwd >/dev/null 2>&1; then
+  printf 'basic commands available\n'
+fi
+EOF
+  chmod +x "$tmpdir/test-empty-path.sh"
+  
+  _run_cmd sh "$tmpdir/test-empty-path.sh"
+  _assert_success || return 1
+  _assert_output_contains "baseline PATH set correctly" || return 1
+  _assert_output_contains "basic commands available" || return 1
+}
+
 _run_test_case "invoke-wizardry is sourceable" test_sourceable
 _run_test_case "invoke-wizardry sets WIZARDRY_DIR" test_sets_wizardry_dir
 _run_test_case "invoke-wizardry adds spell directories to PATH" test_adds_to_path
 _run_test_case "core imps are available as commands" test_core_imps_available
 _run_test_case "sourcing invoke-wizardry doesn't hang" test_no_hanging
+_run_test_case "invoke-wizardry maintains permissive shell mode" test_maintains_permissive_mode
+_run_test_case "invoke-wizardry works when sourced from rc file" test_rc_file_sourcing
+_run_test_case "invoke-wizardry handles empty PATH" test_empty_path_handling
 
 _finish_tests

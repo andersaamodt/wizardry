@@ -3,6 +3,23 @@
 # Source this script to make all spells and imps available.
 # Example in .bashrc: . ~/.wizardry/spells/.imps/sys/invoke-wizardry
 
+# Ensure baseline PATH before anything else (macOS may have empty PATH)
+# This prevents failures when trying to use basic commands like cd, pwd, etc.
+baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+case ":${PATH-}:" in
+  *":/usr/bin:"*|*":/bin:"*)
+    # Already has at least one standard directory (with proper colon delimiters)
+    ;;
+  *)
+    # PATH is empty or missing standard directories, prepend baseline
+    # The ${PATH:+:}${PATH-} pattern adds a colon only if PATH is non-empty:
+    # - ${PATH:+:} expands to ":" if PATH is set and non-empty, otherwise ""
+    # - ${PATH-} expands to PATH's value if set, otherwise ""
+    PATH="${baseline_path}${PATH:+:}${PATH-}"
+    export PATH
+    ;;
+esac
+
 # Explicitly use permissive mode - this file is sourced into user's shell
 set +eu
 
@@ -86,6 +103,8 @@ _invoke_wizardry() {
         # Source the imp to load its function
         # shellcheck disable=SC1090
         . "$_iw_imp" 2>/dev/null || true
+        # Restore permissive mode - sourcing imps with set -eu changes parent shell mode
+        set +eu
         # Create alias from hyphenated name to underscore function name
         _iw_imp_name=$(basename "$_iw_imp")
         _iw_true_name=$(printf '_%s' "$_iw_imp_name" | sed 's/-/_/g')
@@ -117,6 +136,8 @@ _invoke_wizardry() {
         # Safe to source - has function and self-execute guard
         # shellcheck disable=SC1090
         . "$_iw_spell" 2>/dev/null || true
+        # Restore permissive mode - sourcing spells with set -eu changes parent shell mode
+        set +eu
         # Create alias if function exists
         if command -v "$_iw_spell_func" >/dev/null 2>&1; then
           alias "$_iw_spell_name=$_iw_spell_func" 2>/dev/null || true
@@ -173,6 +194,8 @@ _invoke_wizardry() {
   if [ -f "$_iw_invoke_thesaurus" ] && [ -r "$_iw_invoke_thesaurus" ]; then
     # shellcheck disable=SC1090
     . "$_iw_invoke_thesaurus" 2>/dev/null || true
+    # Restore permissive mode - sourcing may have changed shell mode
+    set +eu
   fi
 }
 
