@@ -285,8 +285,9 @@ CORE_INSTALLER=${WIZARDRY_CORE_INSTALLER:-$ABS_DIR/spells/.arcana/core/install-c
 ASK_YN="$ABS_DIR/spells/cantrips/ask-yn"
 
 # MUD-related helpers (these are used in the optional MUD installation section)
-MUD_CD_SPELL="$ABS_DIR/spells/.arcana/mud/cd"
-MUD_CONFIG="$ABS_DIR/spells/.arcana/mud/mud-config"
+INSTALL_CD="$ABS_DIR/spells/.arcana/mud/install-cd"
+TOGGLE_CD="$ABS_DIR/spells/.arcana/mud/toggle-cd"
+TOGGLE_ALL_MUD="$ABS_DIR/spells/.arcana/mud/toggle-all-mud"
 
 # NOTE: With the word-of-binding paradigm, spells no longer need to be pre-installed.
 # word-of-binding auto-sources spells on first use when called via handle-command-not-found.
@@ -920,23 +921,25 @@ fi
 if [ "$install_mud" -eq 1 ]; then
         section_msg "Installing MUD"
 
-        # Install the CD hook (runs 'look' on directory change)
-        if [ -x "$MUD_CD_SPELL" ]; then
+        # Install the CD hook using install-cd script
+        if [ -x "$INSTALL_CD" ]; then
                 info_msg "Installing CD hook..."
-                if "$MUD_CD_SPELL" install >/dev/null 2>&1; then
-                        substep_msg "CD hook (runs 'look' on directory change)"
+                if "$INSTALL_CD" >/dev/null 2>&1; then
+                        substep_msg "CD hook installed (use toggle-cd to enable/disable)"
                 else
                         printf '%sNote:%s CD hook installation skipped.\n' "$YELLOW" "$RESET" >&2
                 fi
         fi
 
-        # Enable MUD config features (including command-not-found which is planned)
-        if [ -x "$MUD_CONFIG" ]; then
+        # Enable CD hook by default using toggle-cd
+        if [ -x "$TOGGLE_CD" ]; then
+                "$TOGGLE_CD" >/dev/null 2>&1 || true
+        fi
+
+        # Enable all other MUD features using toggle-all-mud
+        if [ -x "$TOGGLE_ALL_MUD" ]; then
                 info_msg "Enabling MUD features..."
-                # Enable all MUD config features
-                for feature in command-not-found touch-hook fantasy-theme inventory combat mud-enabled; do
-                        "$MUD_CONFIG" set "$feature" 1 >/dev/null 2>&1 || true
-                done
+                "$TOGGLE_ALL_MUD" --enable >/dev/null 2>&1 || true
                 substep_msg "Command not found hook (planned feature)"
                 substep_msg "Touch hook (planned feature)"
                 substep_msg "Fantasy theme (planned feature)"
