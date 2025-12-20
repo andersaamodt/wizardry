@@ -47,7 +47,22 @@ test_verbose_mode() {
   
   WIZARDRY_DIR="$tmpdir/.wizardry" _run_spell "spells/system/banish" --verbose
   _assert_success || return 1
-  _assert_output_contains "DEBUG:" || return 1
+  # Verbose mode now uses checklist format with ✓ instead of DEBUG:
+  _assert_output_contains "✓" || return 1
+  _assert_output_contains "Configuring WIZARDRY_DIR:" || return 1
+}
+
+test_non_verbose_has_output() {
+  tmpdir=$(_make_tempdir)
+  
+  mkdir -p "$tmpdir/.wizardry/spells/.imps/sys"
+  touch "$tmpdir/.wizardry/spells/.imps/sys/invoke-wizardry"
+  
+  # Non-verbose mode should now have output (this is the fix)
+  WIZARDRY_DIR="$tmpdir/.wizardry" _run_spell "spells/system/banish"
+  _assert_success || return 1
+  _assert_output_contains "Environment prepared" || return 1
+  _assert_output_contains "Banish complete" || return 1
 }
 
 test_custom_wizardry_dir() {
@@ -87,6 +102,7 @@ _run_test_case "banish prints help" test_help
 _run_test_case "banish basic execution" test_basic_execution
 _run_test_case "banish auto-detects from HOME" test_auto_detect_from_home
 _run_test_case "banish verbose mode" test_verbose_mode
+_run_test_case "banish non-verbose has output" test_non_verbose_has_output
 _run_test_case "banish custom wizardry-dir" test_custom_wizardry_dir
 _run_test_case "banish fails without invoke-wizardry" test_missing_invoke_wizardry
 _run_test_case "banish fails with invalid dir" test_invalid_wizardry_dir
