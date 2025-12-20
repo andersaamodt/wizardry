@@ -2,6 +2,10 @@
 # invoke-wizardry - set up wizardry environment at shell startup
 # Source this script to make all spells and imps available.
 # Example in .bashrc: . ~/.wizardry/spells/.imps/sys/invoke-wizardry
+#
+# Environment Variables:
+#   WIZARDRY_EAGER_LOAD=1  - Enable eager loading of all function-based spells
+#                            (disabled by default for faster startup)
 
 # Ensure baseline PATH before anything else (macOS may have empty PATH)
 # This prevents failures when trying to use basic commands like cd, pwd, etc.
