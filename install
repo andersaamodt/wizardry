@@ -1218,23 +1218,31 @@ if [ "$detect_format_value" = "nix" ]; then
         if [ "$sourcing_succeeded" -eq 1 ]; then
                 printf 'Wizardry is now ready to use in this terminal.\n'
                 printf '(New terminal windows will also have wizardry available.)\n'
+                printf '\n'
+                printf 'Run %smenu%s or %smud%s to start using wizardry.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
         elif [ "$rebuild_success" -eq 1 ]; then
                 # Rebuild succeeded but sourcing failed - need to open new terminal
                 printf 'Wizardry will be available when you open a new terminal window.\n'
+                printf '\n'
+                printf 'After opening a new terminal, run %smenu%s or %smud%s to start.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
         else
                 # Rebuild failed - need manual intervention
                 printf '%sNote:%s After rebuilding your NixOS configuration, open a new terminal to use wizardry.\n' "$YELLOW" "$RESET"
+                printf '\n'
+                printf 'After rebuilding and opening a new terminal, run %smenu%s or %smud%s to start.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
         fi
 elif [ -n "$detect_rc_file_value" ]; then
         if [ "$sourcing_succeeded" -eq 1 ]; then
                 printf 'Wizardry is now ready to use in this terminal.\n'
                 printf '(New terminal windows will also have wizardry available.)\n'
+                printf '\n'
+                printf 'Run %smenu%s or %smud%s to start using wizardry.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
         else
                 printf 'Wizardry will be available when you open a new terminal window.\n'
+                printf '\n'
+                printf 'After opening a new terminal, run %smenu%s or %smud%s to start.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
         fi
 fi
-printf '\n'
-printf 'Run %smenu%s or %smud%s to start using wizardry.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
 printf '\n'
 
 exit 0
