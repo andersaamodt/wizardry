@@ -31,8 +31,25 @@ _invoke_wizardry() {
   
   # Set up PATH to include wizardry spell directories and user's spellbook
   # This makes all spells directly callable as commands
-  # Also include .imps/sys for essential system imps like require-wizardry
-  _iw_new_path="$SPELLBOOK_DIR:$WIZARDRY_DIR/spells/.imps/sys"
+  # Also include ALL imp families so imps are available before they're sourced
+  _iw_new_path="$SPELLBOOK_DIR"
+  
+  # Add all imp family directories to PATH first (before spell categories)
+  # This ensures imps like 'has' and 'warn' are available as commands
+  _iw_imps_dir="$WIZARDRY_DIR/spells/.imps"
+  if [ -d "$_iw_imps_dir" ]; then
+    for _iw_family in "$_iw_imps_dir"/*; do
+      [ -d "$_iw_family" ] || continue
+      # Skip test imps - they're only for testing, not production use
+      _iw_family_name=$(basename "$_iw_family")
+      case "$_iw_family_name" in
+        test) continue ;;
+      esac
+      _iw_new_path="$_iw_new_path:$_iw_family"
+    done
+  fi
+  
+  # Add spell category directories to PATH
   for _iw_spell_cat in "$WIZARDRY_DIR"/spells/*; do
     [ -d "$_iw_spell_cat" ] || continue
     case "$_iw_spell_cat" in
