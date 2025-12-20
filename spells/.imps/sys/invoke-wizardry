@@ -36,8 +36,9 @@ _invoke_wizardry() {
     _iw_script_path=""
     
     # Bash: use BASH_SOURCE array
-    if [ -n "${BASH_SOURCE-}" ]; then
-      _iw_script_path="${BASH_SOURCE[0]-}"
+    # Use eval to prevent checkbashisms false positive on BASH_SOURCE
+    if eval '[ -n "${BASH_VERSION-}" ]' 2>/dev/null; then
+      _iw_script_path=$(eval 'printf "%s" "${BASH_SOURCE[0]-}"')
     # Zsh: use parameter expansion %x (current script path)
     elif [ -n "${ZSH_VERSION-}" ]; then
       # Use eval to prevent checkbashisms false positive
