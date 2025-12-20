@@ -1436,46 +1436,59 @@ install_invoke_wizardry_custom_location() {
   # Test that invoke-wizardry auto-detects its location (fixes macOS menu issue)
   # This tests the fix for the bug where menu wasn't found after install on macOS
   # when wizardry is installed to a location other than ~/.wizardry
+  #
+  # NOTE: This test runs outside the sandbox (no _run_cmd) because bwrap's
+  # filesystem bindings interfere with path resolution testing
   tmp=$(_make_tempdir)
   
   # Create a custom install location (simulating WIZARDRY_INSTALL_DIR=/custom/path)
   custom_install="$tmp/custom/wizardry-install"
-  mkdir -p "$(dirname "$custom_install")"
-  cp -R "$ROOT_DIR" "$custom_install"
+  mkdir -p "$custom_install"
+  # Only copy spells directory (not the entire repo) to avoid confusion
+  cp -R "$ROOT_DIR/spells" "$custom_install/"
   
   test_script="$tmp/test-custom.sh"
   
   cat >"$test_script" <<'EOF'
-#!/bin/sh
+#!/bin/bash
 # Simulate sourcing invoke-wizardry from a custom location (like .zprofile does)
 CUSTOM_INSTALL="$1"
+
+# Source invoke-wizardry - it should auto-detect its location via BASH_SOURCE
 . "$CUSTOM_INSTALL/spells/.imps/sys/invoke-wizardry" >/dev/null 2>&1 || exit 1
 
-# Verify WIZARDRY_DIR was set correctly
-if [ -z "$WIZARDRY_DIR" ]; then
-  echo "FAIL: WIZARDRY_DIR not set"
+# Verify WIZARDRY_DIR was set correctly to the custom location
+if [ "$WIZARDRY_DIR" != "$CUSTOM_INSTALL" ]; then
+  echo "FAIL: WIZARDRY_DIR mismatch"
+  echo "Expected: $CUSTOM_INSTALL"
+  echo "Got: $WIZARDRY_DIR"
   exit 1
 fi
 
 # Verify menu is available in PATH
 if ! command -v menu >/dev/null 2>&1; then
   echo "FAIL: menu not in PATH"
-  echo "WIZARDRY_DIR: $WIZARDRY_DIR"
   echo "PATH: $PATH"
   exit 1
 fi
 
 echo "SUCCESS: menu found at custom location"
-echo "WIZARDRY_DIR: $WIZARDRY_DIR"
 EOF
   
   chmod +x "$test_script"
   
-  # Run with bash to test BASH_SOURCE detection
-  _run_cmd bash "$test_script" "$custom_install"
-  _assert_success || return 1
-  _assert_output_contains "SUCCESS: menu found at custom location" || return 1
-  _assert_output_contains "WIZARDRY_DIR: $custom_install" || return 1
+  # Run directly with bash (not via _run_cmd) to avoid bwrap path issues
+  if OUTPUT=$(bash "$test_script" "$custom_install" 2>&1); then
+    if printf '%s' "$OUTPUT" | grep -q "SUCCESS: menu found at custom location"; then
+      return 0
+    else
+      TEST_FAILURE_REASON="output missing success message: $OUTPUT"
+      return 1
+    fi
+  else
+    TEST_FAILURE_REASON="test script failed: $OUTPUT"
+    return 1
+  fi
 }
 
 # === Run Tests ===
