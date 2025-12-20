@@ -60,9 +60,15 @@ STUB_EOF
     return 1
   fi
   
-  # Verify marker comment was added
+  # Verify marker comment was added (inline format)
   if ! grep -q "wizardry: cd-hook" "$rc_file"; then
     TEST_FAILURE_REASON="RC file doesn't contain marker comment"
+    return 1
+  fi
+  
+  # Verify inline marker format (marker at end of line, not separate line)
+  if ! grep -qE '^\. .* # wizardry: cd-hook$' "$rc_file"; then
+    TEST_FAILURE_REASON="RC file doesn't use inline marker format. Contents: $(cat "$rc_file")"
     return 1
   fi
 }
@@ -76,9 +82,9 @@ test_install_cd_skips_if_already_installed() {
   mkdir -p "$fake_home"
   rc_file="$fake_home/.bashrc"
   
-  # Pre-populate RC file with cd hook
+  # Pre-populate RC file with cd hook (using new inline marker format)
   cd_hook_path="$ROOT_DIR/spells/.arcana/mud/cd"
-  printf '# wizardry: cd-hook\n. "%s"\n' "$cd_hook_path" > "$rc_file"
+  printf '. "%s" # wizardry: cd-hook\n' "$cd_hook_path" > "$rc_file"
   
   # Create stub detect-rc-file
   stub_dir="$tmpdir/stubs"
