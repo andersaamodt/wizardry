@@ -34,10 +34,11 @@ _rc_remove_line() {
     printf '%s\n' "rc-remove-line: failed to remove marker from $_rrl_rc_file" >&2
     return 1
   fi
-  
+
   return 0
 }
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */rc-remove-line) _rc_remove_line "$@" ;; esac
+  */rc-remove-line) _rc_remove_line "$@" ;;
+esac

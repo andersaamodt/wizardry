@@ -20,4 +20,5 @@ _rc_has_line() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */rc-has-line) _rc_has_line "$@" ;; esac
+  */rc-has-line) _rc_has_line "$@" ;;
+esac

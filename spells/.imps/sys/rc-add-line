@@ -39,4 +39,5 @@ _rc_add_line() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */rc-add-line) _rc_add_line "$@" ;; esac
+  */rc-add-line) _rc_add_line "$@" ;;
+esac

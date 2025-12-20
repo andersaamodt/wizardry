@@ -70,7 +70,12 @@ if ! command -v menu >/dev/null 2>&1; then
   echo "  2. Does .zprofile have the correct path to invoke-wizardry?"
   echo "  3. Open a NEW terminal window (not tab) to test"
   echo ""
-  echo "Expected line in ~/.zprofile:"
-  echo '  . "$HOME/.wizardry/spells/.imps/sys/invoke-wizardry" # wizardry: wizardry-init'
+  if [ -n "${WIZARDRY_DIR:-}" ]; then
+    echo "Expected line in ~/.zprofile:"
+    echo "  . \"$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry\" # wizardry: wizardry-init"
+  else
+    echo "Expected line in ~/.zprofile:"
+    echo '  . "$HOME/.wizardry/spells/.imps/sys/invoke-wizardry" # wizardry: wizardry-init'
+  fi
   echo ""
 fi

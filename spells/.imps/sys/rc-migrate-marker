@@ -87,4 +87,5 @@ _rc_migrate_marker() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */rc-migrate-marker) _rc_migrate_marker "$@" ;; esac
+  */rc-migrate-marker) _rc_migrate_marker "$@" ;;
+esac
