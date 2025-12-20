@@ -1111,25 +1111,25 @@ if [ -f "$RC_FILE" ]; then
                                 printf '  %sNote:%s No wizardry initialization found in %s\n' "$YELLOW" "$RESET" "$RC_FILE"
                         fi
                 else
-                        # Fallback: try to remove lines containing wizardry-init marker
+                        # Fallback: try to remove all lines containing wizardry markers
                         tmp_file="${RC_FILE}.wizardry.$$"
-                        if grep -v 'wizardry: wizardry-init' "$RC_FILE" > "$tmp_file" 2>/dev/null; then
+                        if grep -v '# wizardry:' "$RC_FILE" > "$tmp_file" 2>/dev/null; then
                                 mv "$tmp_file" "$RC_FILE"
-                                printf '  %s✓%s Removed wizardry initialization from %s\n' "$GREEN" "$RESET" "$RC_FILE"
+                                printf '  %s✓%s Removed all wizardry lines from %s\n' "$GREEN" "$RESET" "$RC_FILE"
                         else
                                 rm -f "$tmp_file"
-                                printf '  %sNote:%s Could not remove wizardry initialization\n' "$YELLOW" "$RESET"
+                                printf '  %sNote:%s Could not remove wizardry lines\n' "$YELLOW" "$RESET"
                         fi
                 fi
         else
-                # For shell rc files, remove lines containing the wizardry-init marker
+                # For shell rc files, remove all lines containing wizardry markers
                 tmp_file="${RC_FILE}.wizardry.$$"
-                if grep -v 'wizardry: wizardry-init' "$RC_FILE" > "$tmp_file" 2>/dev/null; then
+                if grep -v '# wizardry:' "$RC_FILE" > "$tmp_file" 2>/dev/null; then
                         mv "$tmp_file" "$RC_FILE"
-                        printf '  %s✓%s Removed wizardry initialization from %s\n' "$GREEN" "$RESET" "$RC_FILE"
+                        printf '  %s✓%s Removed all wizardry lines from %s\n' "$GREEN" "$RESET" "$RC_FILE"
                 else
                         rm -f "$tmp_file"
-                        printf '  %sNote:%s No wizardry initialization found to remove\n' "$YELLOW" "$RESET"
+                        printf '  %sNote:%s No wizardry lines found to remove\n' "$YELLOW" "$RESET"
                 fi
         fi
 else
