@@ -62,6 +62,23 @@ _invoke_wizardry() {
   
   export WIZARDRY_DIR
   
+  # Auto-detect platform and enable lazy loading on macOS by default
+  # macOS has particularly slow shell startup with many sourced files
+  if [ -z "${WIZARDRY_LAZY_LOAD-}" ]; then
+    _iw_kernel=$(uname -s 2>/dev/null || printf 'unknown')
+    case "$_iw_kernel" in
+      Darwin)
+        # Enable lazy loading by default on macOS for faster shell startup
+        WIZARDRY_LAZY_LOAD=1
+        ;;
+      *)
+        # Other platforms: disable lazy loading (pre-source for performance)
+        WIZARDRY_LAZY_LOAD=0
+        ;;
+    esac
+    export WIZARDRY_LAZY_LOAD
+  fi
+  
   : "${SPELLBOOK_DIR:=${HOME-}/.spellbook}"
   export SPELLBOOK_DIR
   
@@ -102,37 +119,41 @@ _invoke_wizardry() {
   export PATH
   
   # Source all imps to load their functions into the shell
-  # This makes them available as shell functions for standardization and reliability
-  _iw_imps_dir="$WIZARDRY_DIR/spells/.imps"
-  if [ -d "$_iw_imps_dir" ]; then
-    for _iw_family in "$_iw_imps_dir"/*; do
-      [ -d "$_iw_family" ] || continue
-      # Skip test imps - they're only for testing, not production use
-      _iw_family_name=$(basename "$_iw_family")
-      case "$_iw_family_name" in
-        test) continue ;;
-      esac
-      for _iw_imp in "$_iw_family"/*; do
-        [ -f "$_iw_imp" ] && [ -r "$_iw_imp" ] || continue
-        # Skip invoke-wizardry itself to prevent recursion
-        # Skip invoke-thesaurus to prevent double execution (loaded separately later for synonym handling)
-        case "$_iw_imp" in
-          */invoke-wizardry|*/invoke-thesaurus) continue ;;
+  # This makes them available as shell functions for performance
+  # Can be disabled by setting WIZARDRY_LAZY_LOAD=1 to speed up shell startup
+  # When disabled, imps will be executed as commands (slower per-call but faster startup)
+  if [ "${WIZARDRY_LAZY_LOAD:-0}" != "1" ]; then
+    _iw_imps_dir="$WIZARDRY_DIR/spells/.imps"
+    if [ -d "$_iw_imps_dir" ]; then
+      for _iw_family in "$_iw_imps_dir"/*; do
+        [ -d "$_iw_family" ] || continue
+        # Skip test imps - they're only for testing, not production use
+        _iw_family_name=$(basename "$_iw_family")
+        case "$_iw_family_name" in
+          test) continue ;;
         esac
-        # Source the imp to load its function
-        # shellcheck disable=SC1090
-        . "$_iw_imp" 2>/dev/null || true
-        # Restore permissive mode - sourcing imps with set -eu changes parent shell mode
-        set +eu
-        # Create alias from hyphenated name to underscore function name
-        _iw_imp_name=$(basename "$_iw_imp")
-        _iw_true_name=$(printf '_%s' "$_iw_imp_name" | sed 's/-/_/g')
-        # Only create alias if the function exists
-        if command -v "$_iw_true_name" >/dev/null 2>&1; then
-          alias "$_iw_imp_name=$_iw_true_name" 2>/dev/null || true
-        fi
+        for _iw_imp in "$_iw_family"/*; do
+          [ -f "$_iw_imp" ] && [ -r "$_iw_imp" ] || continue
+          # Skip invoke-wizardry itself to prevent recursion
+          # Skip invoke-thesaurus to prevent double execution (loaded separately later for synonym handling)
+          case "$_iw_imp" in
+            */invoke-wizardry|*/invoke-thesaurus) continue ;;
+          esac
+          # Source the imp to load its function
+          # shellcheck disable=SC1090
+          . "$_iw_imp" 2>/dev/null || true
+          # Restore permissive mode - sourcing imps with set -eu changes parent shell mode
+          set +eu
+          # Create alias from hyphenated name to underscore function name
+          _iw_imp_name=$(basename "$_iw_imp")
+          _iw_true_name=$(printf '_%s' "$_iw_imp_name" | sed 's/-/_/g')
+          # Only create alias if the function exists
+          if command -v "$_iw_true_name" >/dev/null 2>&1; then
+            alias "$_iw_imp_name=$_iw_true_name" 2>/dev/null || true
+          fi
+        done
       done
-    done
+    fi
   fi
   
   # Source all function-based spells that have self-execute guards

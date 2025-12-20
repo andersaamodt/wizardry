@@ -24,7 +24,7 @@ test_basic_execution() {
   # Run banish with explicit WIZARDRY_DIR and verbose to get output
   WIZARDRY_DIR="$tmpdir/.wizardry" WIZARDRY_LOG_LEVEL=1 _run_spell "spells/system/banish"
   _assert_success || return 1
-  _assert_output_contains "Banish complete" || return 1
+  _assert_output_contains "chaos banished" || return 1
 }
 
 test_auto_detect_from_home() {
@@ -58,7 +58,7 @@ test_custom_wizardry_dir() {
   
   WIZARDRY_LOG_LEVEL=1 _run_spell "spells/system/banish" --wizardry-dir "$tmpdir/custom"
   _assert_success || return 1
-  _assert_output_contains "Banish complete" || return 1
+  _assert_output_contains "chaos banished" || return 1
 }
 
 test_missing_invoke_wizardry() {

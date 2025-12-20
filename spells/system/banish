@@ -234,8 +234,8 @@ case ":${PATH-}:" in
     ;;
 esac
 
-# Success - always show completion message
-printf 'Banish complete - environment ready for invoke-wizardry\n'
+# Success - always show completion message with MUD-style flavor
+printf 'Environmental chaos banished. The way is prepared.\n'
 
 if [ -n "$missing_recommended" ]; then
   banish_warn "Some recommended tools are missing: $missing_recommended"
