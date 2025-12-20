@@ -157,11 +157,7 @@ find-command which"
     _it_count=$((_it_count + _it_custom_count))
   fi
   
-  # Don't print during shell initialization - it can block terminal on macOS
-  # Only print if explicitly requested (INVOKE_THESAURUS_VERBOSE=1)
-  if [ "${INVOKE_THESAURUS_VERBOSE-}" = "1" ]; then
-    printf '%s\n' "invoke-thesaurus: loaded $_it_count synonym(s)"
-  fi
+  printf '%s\n' "invoke-thesaurus: loaded $_it_count synonym(s)"
   return 0
 }
 
