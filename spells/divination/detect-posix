@@ -109,7 +109,7 @@ for probe in $probe_set; do
       fi
       ;;
     awk)
-      if sh -c "printf 'a\\n' | awk 'NR==1 {print \\$1}' | grep -q '^a$'"; then
+      if sh -c 'printf "a\n" | awk "NR==1 {print \$1}" | grep -q "^a$"'; then
         if [ "$verbose" -eq 1 ]; then
           print-pass "awk basics"
         fi

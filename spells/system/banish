@@ -234,10 +234,8 @@ case ":${PATH-}:" in
     ;;
 esac
 
-# Success
-if [ "$log_level" -ge 1 ]; then
-  printf 'Banish complete - environment ready for invoke-wizardry\n'
-fi
+# Success - always show completion message
+printf 'Banish complete - environment ready for invoke-wizardry\n'
 
 if [ -n "$missing_recommended" ]; then
   banish_warn "Some recommended tools are missing: $missing_recommended"
