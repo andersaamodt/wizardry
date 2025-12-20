@@ -1247,9 +1247,6 @@ if [ "$detect_format_value" = "nix" ]; then
 elif [ -n "$detect_rc_file_value" ]; then
         printf 'Wizardry is ready! Open a new terminal window to start using it.\n'
         printf '\n'
-        printf '%sOr, to use it immediately in this terminal, run:%s\n' "$BOLD" "$RESET"
-        printf '  %s. %s%s\n' "$CYAN" "$detect_rc_file_value" "$RESET"
-        printf '\n'
         printf 'Then run %smenu%s or %smud%s to explore.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
 fi
 printf '\n'
