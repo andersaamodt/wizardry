@@ -1,6 +1,19 @@
 #!/bin/sh
 
 # Bootstrap spell: main wizardry installer.
+#
+# USAGE:
+#   Normal install (requires opening new terminal):
+#     curl -fsSL https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh
+#     ./install
+#
+#   Install with immediate availability (using eval):
+#     eval "$(curl -fsSL https://raw.githubusercontent.com/andersaamodt/wizardry/main/install)"
+#     eval "$(./install)"
+#
+# When used with eval, wizardry becomes immediately available in the current shell.
+# When used normally, wizardry is available in new terminal windows.
+
 # Abort if unexpected arguments are supplied so we do not accidentally discard
 # them when repurposing the positional parameters to track missing directories.
 if [ "$#" -ne 0 ]; then
@@ -12,6 +25,14 @@ fi
 # custom search path configured in their environment.  This keeps the script
 # portable across login shells that set CDPATH to multiple directories.
 unset CDPATH
+
+# Redirect all output to stderr by default.
+# This allows the install script to be used with eval:
+#   eval "$(./install)"
+# Only the final source command will be sent to stdout (at the end of the script).
+# All informational messages go to stderr so they don't interfere with eval.
+exec 3>&1  # Save original stdout to fd 3
+exec 1>&2  # Redirect stdout to stderr
 
 # NOTE: With the new word-of-binding paradigm (PR #410), directories no longer
 # need to be added to PATH manually. Instead, invoke-wizardry is sourced from
@@ -860,6 +881,41 @@ if [ -n "$detect_rc_file_value" ]; then
 
         if [ "$shell_setup_made" -eq 1 ]; then
                 success_msg "Shell configuration updated in $rc_destination"
+                
+                # For bash users: if we modified .bashrc, ensure .bash_profile sources it
+                # This is needed because bash login shells (common on macOS) don't source .bashrc
+                # We do this after modifying .bashrc to ensure login shells pick up the changes
+                case "$detect_rc_file_value" in
+                */.bashrc)
+                        bash_profile="$HOME/.bash_profile"
+                        if [ ! -f "$bash_profile" ]; then
+                                # Create a .bash_profile that sources .bashrc
+                                # This is the standard pattern for bash configuration
+                                substep_msg "Creating .bash_profile to source .bashrc (for login shells)"
+                                cat > "$bash_profile" <<'BASH_PROFILE_EOF'
+# Source .bashrc if it exists
+# This ensures bash login shells (like those opened by Terminal.app on macOS)
+# get the same configuration as interactive shells
+if [ -f ~/.bashrc ]; then
+        . ~/.bashrc
+fi
+BASH_PROFILE_EOF
+                                substep_msg "Created $bash_profile"
+                        elif ! grep -q '\.bashrc' "$bash_profile" 2>/dev/null; then
+                                # .bash_profile exists but doesn't source .bashrc
+                                # Add the sourcing logic to ensure our changes are picked up
+                                substep_msg "Updating .bash_profile to source .bashrc"
+                                cat >> "$bash_profile" <<'BASH_PROFILE_APPEND'
+
+# Source .bashrc if it exists (added by wizardry installer)
+if [ -f ~/.bashrc ]; then
+        . ~/.bashrc
+fi
+BASH_PROFILE_APPEND
+                                substep_msg "Updated $bash_profile"
+                        fi
+                        ;;
+                esac
         fi
 else
         printf '%s\n' "Warning: Could not detect shell configuration file. You may need to manually source invoke-wizardry." >&2
@@ -1196,9 +1252,9 @@ printf '\n'
 if [ "$detect_format_value" = "nix" ]; then
         if [ "$rebuild_success" -eq 1 ]; then
                 # Rebuild succeeded - wizardry available in new terminals
-                printf 'Wizardry will be available when you open a new terminal window.\n'
+                printf 'Wizardry is ready! Open a new terminal window to start using it.\n'
                 printf '\n'
-                printf 'After opening a new terminal, run %smenu%s or %smud%s to start.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
+                printf 'Then run %smenu%s or %smud%s to explore.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
         else
                 # Rebuild failed - need manual intervention
                 printf '%sNote:%s After rebuilding your NixOS configuration, open a new terminal to use wizardry.\n' "$YELLOW" "$RESET"
@@ -1206,12 +1262,17 @@ if [ "$detect_format_value" = "nix" ]; then
                 printf 'After rebuilding and opening a new terminal, run %smenu%s or %smud%s to start.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
         fi
 elif [ -n "$detect_rc_file_value" ]; then
-        printf 'Wizardry will be available when you open a new terminal window.\n'
+        printf 'Wizardry is ready! Open a new terminal window to start using it.\n'
         printf '\n'
-        printf '%sTo use wizardry in this terminal right now, run:%s\n' "$BOLD" "$RESET"
-        printf '  source %s\n' "$detect_rc_file_value"
+        printf 'Then run %smenu%s or %smud%s to explore.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
         printf '\n'
-        printf 'Then you can run %smenu%s or %smud%s to start using wizardry.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
+        printf '%sTip:%s For immediate availability in this terminal, you can run:\n' "$BOLD" "$RESET"
+        printf '  eval "$(%s)"\n' "$0"
+        
+        # Output the source command to the original stdout (fd 3) for eval pattern
+        # This is the magic that makes "eval $(./install)" work!
+        # All messages above go to stderr (current stdout), only this goes to real stdout
+        printf '. "%s"\n' "$detect_rc_file_value" >&3
 fi
 printf '\n'
 
