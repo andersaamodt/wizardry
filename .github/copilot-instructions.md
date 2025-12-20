@@ -1,74 +1,278 @@
-# Wizardry Repository Custom Instructions
+# Wizardry Repository - GitHub Copilot Instructions
 
-Always read `README.md` first for project principles before making changes.
+## Essential Reading
 
-**Essential documentation**:
-- `README.md` — Project principles, values, and standards
-- `.AGENTS.md` — Comprehensive agent instructions and style guide
-- `.github/QUICK-REFERENCE.md` — Quick lookup card for common patterns
-- `.github/instructions/best-practices.instructions.md` — Proven patterns from the codebase
-- `.github/instructions/spells.instructions.md` — Spell writing guide
-- `.github/instructions/imps.instructions.md` — Imp (micro-helper) guide
-- `.github/instructions/logging.instructions.md` — Output and error handling
-- `.github/instructions/tests.instructions.md` — Testing framework and patterns
+1. **`README.md`** — Project principles, values, and standards (READ FIRST)
+2. **`.AGENTS.md`** — Comprehensive agent instructions and style guide
+3. **Topic-specific instructions** (consult as needed):
+   - `.github/instructions/spells.instructions.md` — Spell writing guide
+   - `.github/instructions/imps.instructions.md` — Imp (micro-helper) guide  
+   - `.github/instructions/tests.instructions.md` — Testing framework and patterns
+   - `.github/instructions/logging.instructions.md` — Output and error handling
+   - `.github/instructions/cross-platform.instructions.md` — Platform compatibility
+   - `.github/instructions/best-practices.instructions.md` — Proven patterns
 
-## Project Overview
+## What is Wizardry?
 
-Wizardry is a collection of POSIX shell scripts themed as magical spells for the terminal. It turns folders into rooms and files into items, like a fantasy MUD (Multi-User Dungeon).
+A collection of POSIX shell scripts themed as magical spells for the terminal. Turns folders into rooms and files into items, like a fantasy MUD (Multi-User Dungeon).
 
-## Tech Stack
-
+**Tech Stack:**
 - **Language**: POSIX sh only (`#!/bin/sh`) — no bash-isms
-- **Style checker**: `lint-magic` and `checkbashisms`
-- **Testing**: `.tests/` directory with `test_common.sh` framework
-- **CI**: GitHub Actions (see `.github/workflows/`)
+- **Linting**: `lint-magic` and `checkbashisms`
+- **Testing**: `.tests/` directory with test-bootstrap framework
+- **CI**: GitHub Actions (`.github/workflows/`)
 
-## Core AI Directives
+**Architecture:**
+- **Spells** = User-facing scripts in `spells/` (can assume wizardry installed and in PATH)
+- **Imps** = Micro-helpers in `spells/.imps/` (abstract common patterns)
+- **Tests** = Mirror structure in `.tests/` (ALWAYS required for new spells/imps)
+- **Bootstrap scripts** = Can't assume wizardry in PATH (`install`, `spells/install/core/`)
 
-1. **Preserve the spec**: Do not edit spec comments at the top of scripts or `--help` usage text unless specifically instructed
-2. **Preserve the lore**: Do not delete, modify, or add flavor text unless specifically instructed
-3. **No globals**: Avoid shell variables; use parameters or stdout instead
-4. **No wrappers**: All files are standalone, portable, and front-facing
-5. **Self-healing failures**: Fix missing prerequisites automatically or offer to fix them—never quit with imperative error messages
-6. **Always add tests**: When creating new spells or imps, ALWAYS create corresponding test files in `.tests/` following the mirrored directory structure
-7. **Only report actual test results**: NEVER guess, assume, or claim tests pass without actually running them. Only report test results you have verified by executing the tests. If you haven't run tests, explicitly state "tests not yet run" rather than claiming success.
+## CRITICAL: Common AI Compliance Issues
 
-## Essential Code Quality Rules
+**You MUST follow these at all times:**
 
-- **Shebang**: `#!/bin/sh` (not `#!/bin/bash`)
-- **Strict mode**: `set -eu`
-- **Quotes**: Always quote variables: `"$var"`
-- **Tests**: Use `[ ]` not `[[ ]]`, `=` not `==`
-- **Output**: Use `printf` not `echo`
-- **Commands**: Use `command -v` not `which`
-- **Paths**: Use `pwd -P`, not `realpath`
+1. **Tests are NON-NEGOTIABLE**
+   - ALWAYS create test files in `.tests/` when creating spells or imps
+   - Test naming: `spells/category/spell-name` → `.tests/category/test-spell-name.sh` (hyphens, not underscores!)
+   - Use test-driven development (TDD) when possible
+   - **ONLY report actual test results** — NEVER assume or guess tests will pass
+   - Run tests and report exact pass/fail counts
 
-## File Structure
+2. **Abstract into imps (but only when reused)**
+   - Create new imps ONLY if code is used in at least 2 spells
+   - Always prefer using imps over inline code (except in bootstrap scripts)
+   - Imps make spells clean, readable, and minimal
 
+3. **Spells assume wizardry is installed**
+   - All spells can assume wizardry is in PATH
+   - All spells and imps are available
+   - Testing setup goes in tests, NOT in spell code
+
+4. **No new exemptions without permission**
+   - All exceptions are documented in `EXEMPTIONS.md`
+   - Don't add new exemptions without asking first
+   - Always try to reduce/eliminate existing exemptions
+
+5. **All CI must pass before merge**
+   - Fix preexisting and unrelated test failures if blocking merge
+   - Don't back down from or mutate requirements
+   - Don't give up until all requirements are fully completed
+
+6. **Follow ALL project rules**
+   - Don't excuse yourself from any project policies
+   - Keep clean, readable, minimal spell files
+   - Make surgical, minimal changes
+
+## Core Principles (Must Follow)
+
+1. **Preserve the spec** — Don't edit `--help` usage text or spec comments without explicit instruction
+2. **Preserve the lore** — Don't modify flavor text unless specifically asked
+3. **Self-healing** — Fix missing prerequisites automatically; never quit with imperative error messages
+4. **Tests required** — ALWAYS create test files in `.tests/` when creating spells/imps (NON-NEGOTIABLE)
+5. **Report actual results** — ONLY report test results you've verified by running tests (NEVER guess)
+
+## Critical Quality Rules
+
+| Rule | Required | Wrong |
+|------|----------|-------|
+| Shebang | `#!/bin/sh` | `#!/bin/bash` |
+| Strict mode | `set -eu` | (missing) |
+| Variables | `"$var"` | `$var` |
+| Tests | `[ ]` | `[[ ]]` |
+| Comparison | `=` | `==` |
+| Output | `printf` | `echo` |
+| Commands | `command -v` | `which` |
+| Paths | `pwd -P` | `realpath` |
+| Test naming | `test-name.sh` | `test_name.sh` |
+
+## Quick Templates
+
+### Spell Template
+```sh
+#!/bin/sh
+# Brief description
+
+show_usage() { cat <<'USAGE'
+Usage: spell-name [args]
+Description.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h) show_usage; exit 0 ;; esac
+
+require-wizardry || exit 1
+set -eu
+. env-clear
+
+# Main logic
 ```
-spells/           # Main spell scripts (categories as subdirs)
-spells/.imps/     # Micro-helper scripts (imps)
-.tests/           # Test files mirroring spells/ structure
-install           # Bootstrap install script
+
+### Imp Template (Action)
+```sh
+#!/bin/sh
+# imp-name ARG - brief description
+set -eu
+
+_imp_name() {
+  # Implementation
+}
+
+case "$0" in
+  */imp-name) _imp_name "$@" ;; esac
 ```
 
-## Spell Requirements
+### Imp Template (Conditional - NO set -eu!)
+```sh
+#!/bin/sh
+# imp-name ARG - test if condition
 
-Every spell must have:
+_imp_name() {
+  # Return 0 for true, 1 for false
+}
+
+case "$0" in
+  */imp-name) _imp_name "$@" ;; esac
+```
+
+### Test Template
+```sh
+#!/bin/sh
+test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
+  test_root=$(dirname "$test_root")
+done
+. "$test_root/spells/.imps/test/test-bootstrap"
+
+test_feature() {
+  _run_spell "spells/category/name" arg
+  _assert_success && _assert_output_contains "expected"
+}
+
+_run_test_case "description" test_feature
+_finish_tests
+```
+
+## Common Patterns
+
+```sh
+# Check command exists
+has git || fail "git required"
+
+# Variable defaults
+name=${1-}                  # Empty if unset
+path=${1:-/default/path}    # Use default if unset/empty
+
+# Output (respects WIZARDRY_LOG_LEVEL)
+say "Normal message"        # Always shown
+success "Complete"          # Always shown
+info "Processing..."        # Level >= 1
+step "Installing..."        # Level >= 1
+debug "Debug info"          # Level >= 2
+
+# Errors (always shown)
+warn "spell-name: warning message"
+die "spell-name: fatal error"
+die 2 "spell-name: usage error"
+has git || fail "git required"
+```
+
+## Common Mistakes to AVOID
+
+| Don't Do This | Do This Instead |
+|---------------|-----------------|
+| `#!/bin/bash` | `#!/bin/sh` |
+| Skip tests | Always create test files |
+| `[[ ]]` or `==` | `[ ]` and `=` |
+| `echo` | `printf '%s\n'` |
+| `$var` unquoted | `"$var"` |
+| `value=$1` | `value=${1-}` |
+| "Please install X" | "spell-name: X not found" + auto-fix |
+| 4+ functions in spell | Split into spells or use imps |
+| `test_name.sh` | `test-name.sh` (hyphens!) |
+| Guess test results | Run tests, report actual counts |
+
+## Workflows
+
+### Creating a New Spell
+
+1. **Plan**: One focused thing? < 100 lines? ≤ 3 functions?
+2. **Copy template** from above
+3. **Implement** following `.github/instructions/spells.instructions.md`
+4. **Create test** at `.tests/category/test-spell-name.sh` (REQUIRED)
+5. **Run test** and verify it passes
+6. **Lint**: `lint-magic spells/category/spell-name`
+7. **Check POSIX**: `checkbashisms spells/category/spell-name`
+
+### Creating a New Imp
+
+1. **Verify reuse**: Is code used in at least 2 spells? (If not, don't create imp)
+2. **Plan**: One thing? < 50 lines? Zero or one function?
+3. **Determine type**: Conditional (no `set -eu`) or Action (`set -eu`)?
+4. **Copy template** from above
+5. **Implement** following `.github/instructions/imps.instructions.md`
+6. **Create test** at `.tests/.imps/family/test-imp-name.sh` (REQUIRED)
+7. **Run test** and verify it passes
+
+## File Types
+
+| Type | Location | Purpose |
+|------|----------|---------|
+| **Spell** | `spells/category/name` | User-facing command |
+| **Imp** | `spells/.imps/family/name` | Micro-helper (internal, reusable) |
+| **Test** | `.tests/category/test-name.sh` | Test for spell/imp (REQUIRED) |
+| **Bootstrap** | `install`, `spells/install/core/` | Pre-wizardry scripts |
+
+## Key Concepts
+
+- **Spell** = Focused, self-contained script that does one thing well
+- **Imp** = Smallest building block; abstracts common patterns (`has`, `say`, `die`)
+- **Test** = POSIX sh script that exercises a spell's behavior (ALWAYS required)
+- **Function discipline** = Spells have `show_usage()` + at most 1-2 other functions
+- **Bootstrap** = Scripts that run before wizardry is installed (can't use imps)
+
+## Documentation Map
+
+**Working on spells?** → `.github/instructions/spells.instructions.md`  
+**Working on imps?** → `.github/instructions/imps.instructions.md`  
+**Writing tests?** → `.github/instructions/tests.instructions.md`  
+**Need logging/output?** → `.github/instructions/logging.instructions.md`  
+**Cross-platform issues?** → `.github/instructions/cross-platform.instructions.md`  
+**Proven patterns?** → `.github/instructions/best-practices.instructions.md`  
+**Full style guide?** → `.AGENTS.md`  
+**Project philosophy?** → `README.md`
+
+## Model Code to Study
+
+- **Spells**: `spells/arcane/forall` (minimal), `spells/arcane/look` (excellent help text)
+- **Imps**: `spells/.imps/out/say` (action), `spells/.imps/cond/has` (conditional)
+- **Tests**: `.tests/arcane/test-forall.sh` (comprehensive)
+
+## Every Spell Must Have
+
 - Opening description comment (1-2 lines after shebang)
 - `show_usage()` function with heredoc (unless it's an imp)
 - Help handler for `--help`, `--usage`, `-h`
 - `set -eu` strict mode
-- Corresponding test file in `.tests/` (REQUIRED - never create a spell without its test)
+- **Corresponding test file in `.tests/`** (NON-NEGOTIABLE)
 
-**IMPORTANT**: When creating a new spell, you MUST also create a test file at `.tests/category/test_spell-name.sh` that mirrors the spell's location. Test files are not optional.
+## Before Submitting
 
-## References
+- [ ] Read README.md (Values, Design Tenets, Engineering Standards)
+- [ ] Consulted relevant instruction file
+- [ ] Created tests for any new spells or imps
+- [ ] **Ran tests and verified they pass** (report actual counts, don't guess!)
+- [ ] Checked style with `lint-magic`
+- [ ] Verified POSIX compliance with `checkbashisms`
+- [ ] Used templates from this file
+- [ ] Preserved `--help` text and flavor text (unless explicitly changing)
+- [ ] Made minimal, surgical changes
+- [ ] All variables quoted, using `${var-}` for optional args
+- [ ] Error messages are descriptive, not imperative
+- [ ] Abstract reusable code into imps (if used in 2+ spells)
+- [ ] No new exemptions added without permission
 
-- See `README.md` for project principles and values
-- See `.AGENTS.md` for detailed style guide and cross-platform patterns
-- See `.github/instructions/` for topic-specific guidance:
-  - `spells.instructions.md` — Spell style guide
-  - `imps.instructions.md` — Imp (micro-helper) guide
-  - `cross-platform.instructions.md` — Platform compatibility
-  - `tests.instructions.md` — Testing patterns
+---
+
+**Remember:** Clean, readable, minimal spell files. Testing setup in tests, not spells. Always TDD. Always run tests. Always use imps. Always follow ALL project rules.

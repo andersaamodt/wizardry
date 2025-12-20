@@ -1,5 +1,7 @@
 # Best Practices from Wizardry Codebase
 
+applyTo: "spells/**,.tests/**"
+
 This document extracts proven patterns and practices discovered in the wizardry codebase that should guide AI assistants when working with the project.
 
 ## Self-Execute Pattern for Invocable Spells
