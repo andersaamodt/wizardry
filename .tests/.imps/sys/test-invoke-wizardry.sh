@@ -67,8 +67,66 @@ EOF
   _assert_output_contains "cantrips in path" || return 1
 }
 
+# Test: Core imps are available as commands after sourcing invoke-wizardry
+test_core_imps_available() {
+  tmpdir=$(_make_tempdir)
+  cat > "$tmpdir/test-imps.sh" << EOF
+#!/bin/sh
+WIZARDRY_DIR="$ROOT_DIR"
+export WIZARDRY_DIR
+. "$ROOT_DIR/spells/.imps/sys/invoke-wizardry"
+
+# Check that core imps are available as commands
+if command -v has >/dev/null 2>&1; then
+  printf 'has available\n'
+fi
+if command -v warn >/dev/null 2>&1; then
+  printf 'warn available\n'
+fi
+if command -v die >/dev/null 2>&1; then
+  printf 'die available\n'
+fi
+if command -v say >/dev/null 2>&1; then
+  printf 'say available\n'
+fi
+EOF
+  chmod +x "$tmpdir/test-imps.sh"
+  
+  _run_cmd sh "$tmpdir/test-imps.sh"
+  _assert_success || return 1
+  _assert_output_contains "has available" || return 1
+  _assert_output_contains "warn available" || return 1
+  _assert_output_contains "die available" || return 1
+  _assert_output_contains "say available" || return 1
+}
+
+# Test: Sourcing invoke-wizardry doesn't hang (timeout after 5 seconds)
+test_no_hanging() {
+  tmpdir=$(_make_tempdir)
+  cat > "$tmpdir/test-hang.sh" << EOF
+#!/bin/sh
+WIZARDRY_DIR="$ROOT_DIR"
+export WIZARDRY_DIR
+. "$ROOT_DIR/spells/.imps/sys/invoke-wizardry"
+printf 'completed without hanging\n'
+EOF
+  chmod +x "$tmpdir/test-hang.sh"
+  
+  # Run with a timeout to detect hanging (5 seconds should be plenty)
+  if command -v timeout >/dev/null 2>&1; then
+    _run_cmd timeout 5 sh "$tmpdir/test-hang.sh"
+  else
+    # Fallback if timeout not available
+    _run_cmd sh "$tmpdir/test-hang.sh"
+  fi
+  _assert_success || return 1
+  _assert_output_contains "completed without hanging" || return 1
+}
+
 _run_test_case "invoke-wizardry is sourceable" test_sourceable
 _run_test_case "invoke-wizardry sets WIZARDRY_DIR" test_sets_wizardry_dir
 _run_test_case "invoke-wizardry adds spell directories to PATH" test_adds_to_path
+_run_test_case "core imps are available as commands" test_core_imps_available
+_run_test_case "sourcing invoke-wizardry doesn't hang" test_no_hanging
 
 _finish_tests

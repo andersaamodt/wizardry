@@ -34,20 +34,26 @@ shift
 
 auto_install=${REQUIRE_COMMAND_ASSUME_YES:-0}
 
-has "$command_name" && return 0
+# Use POSIX command -v instead of has imp (may not be loaded yet)
+if command -v "$command_name" >/dev/null 2>&1; then
+    return 0
+fi
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 
 install_spell=""
-if has "install-$command_name"; then
-    install_spell=$(where "install-$command_name")
+# Use POSIX command -v instead of has imp (may not be loaded yet)
+if command -v "install-$command_name" >/dev/null 2>&1; then
+    # where might not be available, use command -v with which fallback
+    install_spell=$(command -v "install-$command_name")
 elif [ -x "$script_dir/../install/core/install-$command_name" ]; then
     install_spell="$script_dir/../install/core/install-$command_name"
 fi
 
 if [ -n "$install_spell" ]; then
     if [ "$auto_install" = "1" ] || ! [ -t 0 ]; then
-        if ASSUME_YES=1 "$install_spell" && has "$command_name"; then
+        # Use POSIX command -v instead of has imp (may not be loaded yet)
+        if ASSUME_YES=1 "$install_spell" && command -v "$command_name" >/dev/null 2>&1; then
             return 0
         fi
     else
@@ -55,7 +61,8 @@ if [ -n "$install_spell" ]; then
         IFS= read -r reply || reply=""
         case $reply in
             y|Y|yes|YES)
-                if ASSUME_YES=1 "$install_spell" && has "$command_name"; then
+                # Use POSIX command -v instead of has imp (may not be loaded yet)
+                if ASSUME_YES=1 "$install_spell" && command -v "$command_name" >/dev/null 2>&1; then
                     return 0
                 fi
                 ;;
@@ -69,7 +76,8 @@ else
     message="The '${command_name}' command is required. See 'core-menu' for installation options."
 fi
 
-warn "require-command: $message"
+# Use POSIX printf instead of warn imp (may not be loaded yet)
+printf '%s\n' "require-command: $message" >&2
 return 1
 }
 
