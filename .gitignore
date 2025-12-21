@@ -4,5 +4,4 @@ wizardry-compiled/
 ALL_INPUT
 
 # Test temporary files
-.tests/temp/
-.tests/fixtures/
+.tests/__temp_test_fixtures/

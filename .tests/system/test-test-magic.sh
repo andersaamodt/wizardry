@@ -162,10 +162,39 @@ failed_subtests_fail_parent_test() {
   tmpdir="$(_make_tempdir)"
   tmpfile="$tmpdir/output.txt"
   
+  # Create a test fixture in .tests directory
+  fixture_dir="$ROOT_DIR/.tests/__temp_test_fixtures"
+  mkdir -p "$fixture_dir"
+  test_fixture="$fixture_dir/test-with-failures.sh"
+  
+  cat > "$test_fixture" << 'EOF'
+#!/bin/sh
+test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
+  test_root=$(dirname "$test_root")
+done
+. "$test_root/spells/.imps/test/test-bootstrap"
+
+test_pass1() { return 0; }
+test_fail1() { TEST_FAILURE_REASON="failure 1"; return 1; }
+test_pass2() { return 0; }
+test_fail2() { TEST_FAILURE_REASON="failure 2"; return 1; }
+
+_run_test_case "pass 1" test_pass1
+_run_test_case "fail 1" test_fail1
+_run_test_case "pass 2" test_pass2
+_run_test_case "fail 2" test_fail2
+_finish_tests
+EOF
+  chmod +x "$test_fixture"
+  
   cd "$ROOT_DIR" || return 1
   
-  # Run test-magic on a test that has failing subtests
-  sh spells/system/test-magic --only "fixtures/test-with-failures.sh" >"$tmpfile" 2>&1 || true
+  # Run test-magic on the fixture
+  sh spells/system/test-magic --only "__temp_test_fixtures/test-with-failures.sh" >"$tmpfile" 2>&1 || true
+  
+  # Clean up fixture
+  rm -rf "$fixture_dir"
   
   # Extract summary line
   summary=$(grep "^Tests:" "$tmpfile" || true)
@@ -187,10 +216,35 @@ fail_detail_hidden_from_output() {
   tmpdir="$(_make_tempdir)"
   tmpfile="$tmpdir/output.txt"
   
+  # Create a test fixture in .tests directory
+  fixture_dir="$ROOT_DIR/.tests/__temp_test_fixtures"
+  mkdir -p "$fixture_dir"
+  test_fixture="$fixture_dir/test-with-failures.sh"
+  
+  cat > "$test_fixture" << 'EOF'
+#!/bin/sh
+test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
+  test_root=$(dirname "$test_root")
+done
+. "$test_root/spells/.imps/test/test-bootstrap"
+
+test_pass1() { return 0; }
+test_fail1() { TEST_FAILURE_REASON="failure 1"; return 1; }
+
+_run_test_case "pass 1" test_pass1
+_run_test_case "fail 1" test_fail1
+_finish_tests
+EOF
+  chmod +x "$test_fixture"
+  
   cd "$ROOT_DIR" || return 1
   
-  # Run test-magic on a test that has failing subtests
-  sh spells/system/test-magic --only "fixtures/test-with-failures.sh" >"$tmpfile" 2>&1 || true
+  # Run test-magic on the fixture
+  sh spells/system/test-magic --only "__temp_test_fixtures/test-with-failures.sh" >"$tmpfile" 2>&1 || true
+  
+  # Clean up fixture
+  rm -rf "$fixture_dir"
   
   # FAIL_DETAIL lines should not appear in the per-test output section
   # They should only be used internally for parsing
@@ -208,10 +262,37 @@ test_summary_line_visible() {
   tmpdir="$(_make_tempdir)"
   tmpfile="$tmpdir/output.txt"
   
+  # Create a test fixture in .tests directory
+  fixture_dir="$ROOT_DIR/.tests/__temp_test_fixtures"
+  mkdir -p "$fixture_dir"
+  test_fixture="$fixture_dir/test-all-pass.sh"
+  
+  cat > "$test_fixture" << 'EOF'
+#!/bin/sh
+test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
+  test_root=$(dirname "$test_root")
+done
+. "$test_root/spells/.imps/test/test-bootstrap"
+
+test_pass1() { return 0; }
+test_pass2() { return 0; }
+test_pass3() { return 0; }
+
+_run_test_case "pass 1" test_pass1
+_run_test_case "pass 2" test_pass2
+_run_test_case "pass 3" test_pass3
+_finish_tests
+EOF
+  chmod +x "$test_fixture"
+  
   cd "$ROOT_DIR" || return 1
   
-  # Run test-magic on a test with subtests
-  sh spells/system/test-magic --only "fixtures/test-all-pass.sh" >"$tmpfile" 2>&1 || true
+  # Run test-magic on the fixture
+  sh spells/system/test-magic --only "__temp_test_fixtures/test-all-pass.sh" >"$tmpfile" 2>&1 || true
+  
+  # Clean up fixture
+  rm -rf "$fixture_dir"
   
   # The test should show its own summary line like "3/3 tests passed"
   # This helps users see the subtest results for each test
@@ -228,10 +309,39 @@ failed_subtest_numbers_in_summary() {
   tmpdir="$(_make_tempdir)"
   tmpfile="$tmpdir/output.txt"
   
+  # Create a test fixture in .tests directory
+  fixture_dir="$ROOT_DIR/.tests/__temp_test_fixtures"
+  mkdir -p "$fixture_dir"
+  test_fixture="$fixture_dir/test-with-failures.sh"
+  
+  cat > "$test_fixture" << 'EOF'
+#!/bin/sh
+test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
+  test_root=$(dirname "$test_root")
+done
+. "$test_root/spells/.imps/test/test-bootstrap"
+
+test_pass1() { return 0; }
+test_fail1() { TEST_FAILURE_REASON="failure 1"; return 1; }
+test_pass2() { return 0; }
+test_fail2() { TEST_FAILURE_REASON="failure 2"; return 1; }
+
+_run_test_case "pass 1" test_pass1
+_run_test_case "fail 1" test_fail1
+_run_test_case "pass 2" test_pass2
+_run_test_case "fail 2" test_fail2
+_finish_tests
+EOF
+  chmod +x "$test_fixture"
+  
   cd "$ROOT_DIR" || return 1
   
-  # Run test-magic on a test that has failing subtests
-  sh spells/system/test-magic --only "fixtures/test-with-failures.sh" >"$tmpfile" 2>&1 || true
+  # Run test-magic on the fixture
+  sh spells/system/test-magic --only "__temp_test_fixtures/test-with-failures.sh" >"$tmpfile" 2>&1 || true
+  
+  # Clean up fixture
+  rm -rf "$fixture_dir"
   
   # Look for the failed tests line at the end showing subtest numbers
   # Should be like: "Failed tests (os): with-failures (2, 4)"
@@ -256,10 +366,37 @@ detailed_output_for_few_failures() {
   tmpdir="$(_make_tempdir)"
   tmpfile="$tmpdir/output.txt"
   
+  # Create a test fixture in .tests directory
+  fixture_dir="$ROOT_DIR/.tests/__temp_test_fixtures"
+  mkdir -p "$fixture_dir"
+  test_fixture="$fixture_dir/test-with-failures.sh"
+  
+  cat > "$test_fixture" << 'EOF'
+#!/bin/sh
+test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
+  test_root=$(dirname "$test_root")
+done
+. "$test_root/spells/.imps/test/test-bootstrap"
+
+test_pass1() { return 0; }
+test_fail1() { TEST_FAILURE_REASON="failure 1"; return 1; }
+test_fail2() { TEST_FAILURE_REASON="failure 2"; return 1; }
+
+_run_test_case "pass 1" test_pass1
+_run_test_case "fail 1" test_fail1
+_run_test_case "fail 2" test_fail2
+_finish_tests
+EOF
+  chmod +x "$test_fixture"
+  
   cd "$ROOT_DIR" || return 1
   
-  # Run test-magic on a test that has failing subtests
-  sh spells/system/test-magic --only "fixtures/test-with-failures.sh" >"$tmpfile" 2>&1 || true
+  # Run test-magic on the fixture
+  sh spells/system/test-magic --only "__temp_test_fixtures/test-with-failures.sh" >"$tmpfile" 2>&1 || true
+  
+  # Clean up fixture
+  rm -rf "$fixture_dir"
   
   # With only 1 failing test, detailed output should be shown
   # Look for "Failure Details" section
