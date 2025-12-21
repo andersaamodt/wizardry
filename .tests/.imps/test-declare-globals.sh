@@ -27,7 +27,7 @@ test_declare_globals_allows_set_u() {
 
 test_declare_globals_sets_empty_defaults() {
   # Globals should default to empty string, not cause unbound variable error
-  _run_cmd sh -c ". '$ROOT_DIR/spells/.imps/declare-globals'; _declare_globals; printf '%s' \"\$WIZARDRY_DIR\""
+  _run_cmd sh -c "unset WIZARDRY_DIR SPELLBOOK_DIR MUD_DIR WIZARDRY_LOG_LEVEL; . '$ROOT_DIR/spells/.imps/declare-globals'; _declare_globals; printf '%s' \"\$WIZARDRY_DIR\""
   _assert_success
   [ -z "$OUTPUT" ] || { TEST_FAILURE_REASON="expected empty default"; return 1; }
 }
