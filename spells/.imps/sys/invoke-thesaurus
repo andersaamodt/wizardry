@@ -16,9 +16,9 @@ esac
 set +eu
 
 _invoke_thesaurus() {
-  # Use global SPELLBOOK_DIR if set, otherwise use default
-  # Avoid modifying the global - just use a local variable
-  _it_spellbook_dir="${SPELLBOOK_DIR:-${HOME-}/.spellbook}"
+  # Use hardcoded default for spellbook directory
+  # (Can't use SPELLBOOK_DIR global because this is sourced into user shell without set -u)
+  _it_spellbook_dir="${HOME-}/.spellbook"
   
   _it_custom_file="${_it_spellbook_dir}/.synonyms"
   _it_default_file="${_it_spellbook_dir}/.default-synonyms"
@@ -107,7 +107,7 @@ find-command which"
   if [ "$_it_enabled" -eq 0 ]; then
     printf '%s\n' "invoke-thesaurus: synonyms are disabled" >&2
     printf '%s\n' "Enable synonyms through the thesaurus menu or by running:" >&2
-    printf '%s\n' "  printf '1' > \$SPELLBOOK_DIR/.synonyms-enabled" >&2
+    printf '%s\n' "  printf '1' > ~/.spellbook/.synonyms-enabled" >&2
     return 1
   fi
   

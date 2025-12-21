@@ -1,7 +1,7 @@
 #!/bin/sh
 # This spell deletes a custom synonym.
 
-show_usage() {
+delete_synonym_usage() {
   cat <<'USAGE'
 Usage: delete-synonym WORD
 
@@ -11,7 +11,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-  show_usage
+  delete_synonym_usage
   exit 0
   ;;
 esac
@@ -21,30 +21,36 @@ require-wizardry || exit 1
 set -eu
 . env-clear
 
-if [ "$#" -lt 1 ]; then
-  printf '%s\n' "delete-synonym: requires WORD argument" >&2
-  exit 2
-fi
+delete_synonym() {
+  if [ "$#" -lt 1 ]; then
+    printf '%s\n' "delete-synonym: requires WORD argument" >&2
+    return 2
+  fi
 
-synonym_word=$1
+  synonym_word=$1
 
-spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
-custom_file="$spell_home/.synonyms"
-default_file="$spell_home/.default-synonyms"
+  spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+  custom_file="$spell_home/.synonyms"
+  default_file="$spell_home/.default-synonyms"
 
-# Check which file contains the synonym
-if [ -f "$custom_file" ] && grep -q "^alias $synonym_word=" "$custom_file" 2>/dev/null; then
-  # Found in custom - OK to delete
-  temp_file=$(temp-file synonyms) || exit 1
-  grep -v "^alias $synonym_word=" "$custom_file" > "$temp_file" || true
-  mv "$temp_file" "$custom_file"
-  success "Synonym deleted: $synonym_word"
-elif [ -f "$default_file" ] && grep -q "^alias $synonym_word=" "$default_file" 2>/dev/null; then
-  # Found in default - can't delete
-  printf '%s\n' "delete-synonym: cannot delete default synonym '$synonym_word'" >&2
-  printf '%s\n' "Use 'reset-default-synonyms' to reset all defaults" >&2
-  exit 1
-else
-  printf '%s\n' "delete-synonym: synonym '$synonym_word' not found" >&2
-  exit 1
-fi
+  # Check which file contains the synonym
+  if [ -f "$custom_file" ] && grep -q "^alias $synonym_word=" "$custom_file" 2>/dev/null; then
+    # Found in custom - OK to delete
+    temp_file=$(temp-file synonyms) || return 1
+    grep -v "^alias $synonym_word=" "$custom_file" > "$temp_file" || true
+    mv "$temp_file" "$custom_file"
+    success "Synonym deleted: $synonym_word"
+  elif [ -f "$default_file" ] && grep -q "^alias $synonym_word=" "$default_file" 2>/dev/null; then
+    # Found in default - can't delete
+    printf '%s\n' "delete-synonym: cannot delete default synonym '$synonym_word'" >&2
+    printf '%s\n' "Use 'reset-default-synonyms' to reset all defaults" >&2
+    return 1
+  else
+    printf '%s\n' "delete-synonym: synonym '$synonym_word' not found" >&2
+    return 1
+  fi
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */delete-synonym) delete_synonym "$@" ;; esac
