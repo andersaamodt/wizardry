@@ -237,7 +237,6 @@ pass=0
 fail=0
 subtests_passed=0
 subtests_total=0
-subtests_skipped=0
 global_subtest_num=0
 failed_scripts=""
 incomplete_tests=""
@@ -410,9 +409,7 @@ WRAPPER_EOF
   
   # Read exit code from file
   if [ -f "$test_exit_file" ]; then
-    test_exit_code=$(cat "$test_exit_file" 2>/dev/null | tr -d '\n\r' || printf '0')
-    # Strip leading/trailing whitespace
-    test_exit_code=$(printf '%s' "$test_exit_code" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+    test_exit_code=$(cat "$test_exit_file" 2>/dev/null | tr -d '\n\r ' || printf '0')
     # Validate it's a number, default to 0 if not
     case "$test_exit_code" in
       ''|*[!0-9]*) test_exit_code=0 ;;
@@ -460,22 +457,15 @@ WRAPPER_EOF
         split($1, parts, "/")
         passed += parts[1]
         total += parts[2]
-        # Extract skip count if present - e.g., "(1 skipped)" or "(1 failed, 2 skipped)"
-        if (match($0, /[0-9]+ skipped/)) {
-          skip_str = substr($0, RSTART, RLENGTH)
-          split(skip_str, skip_parts, " ")
-          skipped += skip_parts[1]
-        }
         next
       }
       /^FAIL_DETAIL:/ { next }
-      END { print (passed+0) " " (total+0) " " (skipped+0) }
+      END { print (passed+0) " " (total+0) }
     ')
     set -- $counts
-    if [ "$#" -eq 3 ]; then
+    if [ "$#" -eq 2 ]; then
       subtests_passed=$((subtests_passed + $1))
       subtests_total=$((subtests_total + $2))
-      subtests_skipped=$((subtests_skipped + $3))
     fi
   else
     status=1
@@ -512,22 +502,15 @@ WRAPPER_EOF
         split($1, parts, "/")
         passed += parts[1]
         total += parts[2]
-        # Extract skip count if present - e.g., "(1 skipped)" or "(1 failed, 2 skipped)"
-        if (match($0, /[0-9]+ skipped/)) {
-          skip_str = substr($0, RSTART, RLENGTH)
-          split(skip_str, skip_parts, " ")
-          skipped += skip_parts[1]
-        }
         next
       }
       /^FAIL_DETAIL:/ { next }
-      END { print (passed+0) " " (total+0) " " (skipped+0) }
+      END { print (passed+0) " " (total+0) }
     ')
     set -- $counts
-    if [ "$#" -eq 3 ]; then
+    if [ "$#" -eq 2 ]; then
       subtests_passed=$((subtests_passed + $1))
       subtests_total=$((subtests_total + $2))
-      subtests_skipped=$((subtests_skipped + $3))
     fi
     
     # Inline record_failed_script logic
@@ -751,11 +734,7 @@ total_scripts=$((pass + fail))
 printf '\n'
 heading-section "Summary"
 printf 'Tests: %d passed, %d failed, %d total\n' "$pass" "$fail" "$total_scripts"
-if [ "$subtests_skipped" -gt 0 ]; then
-  printf 'Subtests: %d passed, %d total (%d skipped)\n' "$subtests_passed" "$subtests_total" "$subtests_skipped"
-else
-  printf 'Subtests: %d passed, %d total\n' "$subtests_passed" "$subtests_total"
-fi
+printf 'Subtests: %d passed, %d total\n' "$subtests_passed" "$subtests_total"
 if [ "$coverage_uncovered" -gt 0 ]; then
   printf 'Coverage: %d uncovered\n' "$coverage_uncovered"
 fi
