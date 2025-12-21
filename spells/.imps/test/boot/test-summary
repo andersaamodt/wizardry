@@ -10,7 +10,7 @@ _test_summary() {
   passed=$1
   total=$2
   skipped=${3-0}
-  failed=$((total - passed))
+  failed=$((total - passed - skipped))
   
   printf '%s/%s tests passed' "$passed" "$total"
   

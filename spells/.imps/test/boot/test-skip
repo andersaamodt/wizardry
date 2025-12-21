@@ -7,10 +7,22 @@ set -eu
 _test_skip() {
   desc=$1
   reason=${2-}
-  if [ -n "$reason" ]; then
-    printf '  SKIP %s %s\n' "$desc" "$reason"
+  
+  # Get global subtest number if available
+  num=${WIZARDRY_GLOBAL_SUBTEST_NUM-}
+  
+  if [ -n "$num" ]; then
+    if [ -n "$reason" ]; then
+      printf 'SKIP #%s %s: %s\n' "$num" "$desc" "$reason"
+    else
+      printf 'SKIP #%s %s\n' "$num" "$desc"
+    fi
   else
-    printf '  SKIP %s\n' "$desc"
+    if [ -n "$reason" ]; then
+      printf 'SKIP %s: %s\n' "$desc" "$reason"
+    else
+      printf 'SKIP %s\n' "$desc"
+    fi
   fi
 }
 
