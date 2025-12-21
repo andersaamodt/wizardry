@@ -344,7 +344,6 @@ set +e
 ${stdbuf_cmd:+$stdbuf_cmd }sh "$abs" < /dev/null 2>&1
 exit_code=\$?
 printf '%s\n' "\$exit_code" > "$test_exit_file"
-exit \$exit_code
 WRAPPER_EOF
   chmod +x "$test_wrapper"
   
