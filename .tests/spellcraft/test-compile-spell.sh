@@ -28,12 +28,14 @@ test_compile_spell_help_h_flag() {
 }
 
 test_compile_spell_requires_args() {
+  skip-if-compiled || return $?
   _run_spell spells/spellcraft/compile-spell
   _assert_failure
   _assert_error_contains "Usage:"
 }
 
 test_compile_spell_unknown_spell() {
+  skip-if-compiled || return $?
   _run_spell spells/spellcraft/compile-spell nonexistent_spell_xyz
   _assert_failure
   _assert_error_contains "not found"
