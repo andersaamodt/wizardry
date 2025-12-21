@@ -1406,6 +1406,9 @@ test_scripts_have_set_eu_early() {
 # Imps are exempt as they're helpers, not top-level entry points.
 
 test_spells_source_env_clear_after_set_eu() {
+  # Skip in compiled mode - compiled spells don't need env-clear (they're standalone)
+  skip-if-compiled || return $?
+  
   violations=""
   
   check_env_clear_placement() {
