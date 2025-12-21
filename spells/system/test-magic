@@ -357,7 +357,8 @@ while IFS= read -r test_path <&3; do
       }
       next
     }
-    /^LACK / { print "  " $0 }
+    /^LACK / { print "  " $0; next }
+    /^FAIL_DETAIL:/ { next }
   ' < "$test_output_file"
   
   # Read full output for processing
