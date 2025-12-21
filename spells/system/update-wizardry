@@ -62,7 +62,7 @@ else
 fi
 
 info "Updating wizardry repository at $wizardry_dir"
-exec git -C "$wizardry_dir" pull --ff-only
+git -C "$wizardry_dir" pull --ff-only
 }
 
 # Self-execute when run directly (not sourced)
