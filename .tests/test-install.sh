@@ -1460,11 +1460,16 @@ unset WIZARDRY_DIR
 # Source invoke-wizardry - it should auto-detect its location via BASH_SOURCE
 . "$CUSTOM_INSTALL/spells/.imps/sys/invoke-wizardry" >/dev/null 2>&1 || exit 1
 
+# Normalize both paths for comparison (macOS /var -> /private/var symlink)
+# Use cd + pwd -P to resolve symlinks to canonical paths
+EXPECTED=$(cd "$CUSTOM_INSTALL" 2>/dev/null && pwd -P)
+ACTUAL=$(cd "$WIZARDRY_DIR" 2>/dev/null && pwd -P)
+
 # Verify WIZARDRY_DIR was set correctly to the custom location
-if [ "$WIZARDRY_DIR" != "$CUSTOM_INSTALL" ]; then
+if [ "$ACTUAL" != "$EXPECTED" ]; then
   echo "FAIL: WIZARDRY_DIR mismatch"
-  echo "Expected: $CUSTOM_INSTALL"
-  echo "Got: $WIZARDRY_DIR"
+  echo "Expected: $EXPECTED"
+  echo "Got: $ACTUAL"
   exit 1
 fi
 

@@ -127,10 +127,13 @@ test_install_cd_handles_nix_format() {
   nix_file="$fake_home/.config/home-manager/home.nix"
   printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$nix_file"
   
+  # Set up PATH to include wizardry imps and spells (needed for nix-shell-add, detect-rc-file, etc.)
+  test_path="$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/divination:$PATH"
+  
   # Run install-cd with DETECT_RC_FILE_PLATFORM set to nixos and HOME set to fake home
   # This will make detect-rc-file find the home.nix file
   cd_hook_path="$ROOT_DIR/spells/.arcana/mud/cd"
-  output=$(env HOME="$fake_home" DETECT_RC_FILE_PLATFORM=nixos sh "$ROOT_DIR/spells/.arcana/mud/install-cd" 2>&1)
+  output=$(env HOME="$fake_home" PATH="$test_path" DETECT_RC_FILE_PLATFORM=nixos sh "$ROOT_DIR/spells/.arcana/mud/install-cd" 2>&1)
   
   # Should successfully install using nix-shell-add
   case "$output" in
@@ -181,8 +184,11 @@ printf 'format=shell\n'
 STUB_EOF
   chmod +x "$stub_dir/detect-rc-file"
   
+  # Set up PATH to include wizardry imps (needed for rc-add-line)
+  test_path="$stub_dir:$ROOT_DIR/spells/.imps/sys:$PATH"
+  
   # Run install-cd
-  output=$(env HOME="$fake_home" PATH="$stub_dir:$PATH" sh "$ROOT_DIR/spells/.arcana/mud/install-cd" 2>&1)
+  output=$(env HOME="$fake_home" PATH="$test_path" sh "$ROOT_DIR/spells/.arcana/mud/install-cd" 2>&1)
   
   # Verify RC file was created
   if [ ! -f "$rc_file" ]; then

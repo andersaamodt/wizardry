@@ -77,6 +77,7 @@ _run_cmd() {
     PATH=$PATH
     HOME=$HOME
     TMPDIR="$tmpdir"
+    WIZARDRY_TMPDIR=$WIZARDRY_TMPDIR
     
     if (cd "$workdir" && _run_macos_sandbox "$@" >"$_stdout" 2>"$_stderr"); then
       STATUS=0
@@ -87,6 +88,7 @@ _run_cmd() {
     PATH=$PATH
     HOME=$HOME
     TMPDIR="$tmpdir"
+    WIZARDRY_TMPDIR=$WIZARDRY_TMPDIR
     
     if (cd "$workdir" && "$@" >"$_stdout" 2>"$_stderr"); then
       STATUS=0
