@@ -160,6 +160,7 @@ has_timeout_protection() {
 # Test that failed subtests cause the parent test to fail
 failed_subtests_fail_parent_test() {
   tmpdir="$(_make_tempdir)"
+  [ -d "$tmpdir" ] || { TEST_FAILURE_REASON="tmpdir not created: $tmpdir"; return 1; }
   tmpfile="$tmpdir/output.txt"
   
   # Create a test fixture in .tests directory
@@ -196,8 +197,19 @@ EOF
   # Clean up fixture
   rm -rf "$fixture_dir"
   
+  # Check tmpfile exists and has content
+  [ -f "$tmpfile" ] || { TEST_FAILURE_REASON="tmpfile not created: $tmpfile"; return 1; }
+  [ -s "$tmpfile" ] || { TEST_FAILURE_REASON="tmpfile is empty: $tmpfile"; return 1; }
+  
   # Extract summary line
   summary=$(grep "^Tests:" "$tmpfile" || true)
+  
+  # Debug: if no summary found, show what's in the file
+  if [ -z "$summary" ]; then
+    tmpfile_content=$(head -20 "$tmpfile" 2>/dev/null || echo "ERROR reading tmpfile")
+    TEST_FAILURE_REASON="No summary line found. tmpfile content (first 20 lines): $tmpfile_content"
+    return 1
+  fi
   
   # The test should be marked as FAILED, not PASSED
   # Look for "X failed" where X > 0
@@ -294,10 +306,15 @@ EOF
   # Clean up fixture
   rm -rf "$fixture_dir"
   
+  # Check tmpfile exists and has content
+  [ -f "$tmpfile" ] || { TEST_FAILURE_REASON="tmpfile not created: $tmpfile"; return 1; }
+  [ -s "$tmpfile" ] || { TEST_FAILURE_REASON="tmpfile is empty: $tmpfile"; return 1; }
+  
   # The test should show its own summary line like "3/3 tests passed"
   # This helps users see the subtest results for each test
   if ! grep -E "^  [0-9]+/[0-9]+ tests passed" "$tmpfile" >/dev/null 2>&1; then
-    TEST_FAILURE_REASON="Test summary line not visible in output"
+    tmpfile_content=$(cat "$tmpfile" 2>/dev/null || echo "ERROR reading tmpfile")
+    TEST_FAILURE_REASON="Test summary line not visible in output. Content: $tmpfile_content"
     return 1
   fi
   
