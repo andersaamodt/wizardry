@@ -2,7 +2,7 @@
 # This spell displays a menu for managing synonyms (aliases).
 # Use --list for view-only mode, otherwise includes add and toggle options.
 
-show_usage() {
+thesaurus_usage() {
   cat <<'USAGE'
 Usage: thesaurus [--list]
 
@@ -14,7 +14,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-  show_usage
+  thesaurus_usage
   exit 0
   ;;
 esac

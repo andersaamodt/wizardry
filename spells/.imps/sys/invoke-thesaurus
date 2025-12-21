@@ -19,7 +19,7 @@ _invoke_thesaurus() {
   # Use global SPELLBOOK_DIR if set, otherwise use default
   # Use a local variable to avoid modifying the global
   if [ -n "${SPELLBOOK_DIR-}" ]; then
-    _it_spellbook_dir="$SPELLBOOK_DIR"
+    _it_spellbook_dir="${SPELLBOOK_DIR-}"
   else
     _it_spellbook_dir="${HOME-}/.spellbook"
   fi
