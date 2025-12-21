@@ -189,8 +189,8 @@ STUB_EOF
   test_path="$stub_dir:$WIZARDRY_IMPS_PATH:$PATH"
   
   # Run install-cd with TMPDIR set for mktemp
-  # WIZARDRY_TMPDIR is already exported by test-bootstrap
-  output=$(env HOME="$fake_home" PATH="$test_path" TMPDIR="$tmpdir" sh "$ROOT_DIR/spells/.arcana/mud/install-cd" 2>&1)
+  # Pass WIZARDRY_TMPDIR explicitly for temp-file imp
+  output=$(env HOME="$fake_home" PATH="$test_path" TMPDIR="$tmpdir" WIZARDRY_TMPDIR="$WIZARDRY_TMPDIR" sh "$ROOT_DIR/spells/.arcana/mud/install-cd" 2>&1)
   
   # Verify RC file was created
   if [ ! -f "$rc_file" ]; then
