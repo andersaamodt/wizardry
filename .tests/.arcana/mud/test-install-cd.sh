@@ -188,8 +188,9 @@ STUB_EOF
   # Set up PATH to include wizardry imps (needed for rc-add-line, temp-file, etc)
   test_path="$stub_dir:$WIZARDRY_IMPS_PATH:$PATH"
   
-  # Run install-cd with TMPDIR and WIZARDRY_TMPDIR set for mktemp and temp-file
-  output=$(env HOME="$fake_home" PATH="$test_path" TMPDIR="$tmpdir" WIZARDRY_TMPDIR="$WIZARDRY_TMPDIR" sh "$ROOT_DIR/spells/.arcana/mud/install-cd" 2>&1)
+  # Run install-cd with TMPDIR set for mktemp
+  # WIZARDRY_TMPDIR is already exported by test-bootstrap
+  output=$(env HOME="$fake_home" PATH="$test_path" TMPDIR="$tmpdir" sh "$ROOT_DIR/spells/.arcana/mud/install-cd" 2>&1)
   
   # Verify RC file was created
   if [ ! -f "$rc_file" ]; then
