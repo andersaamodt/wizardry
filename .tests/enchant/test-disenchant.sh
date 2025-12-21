@@ -56,7 +56,8 @@ STUB
 
   tmpfile="$WIZARDRY_TMPDIR/blank"
   : >"$tmpfile"
-  WIZARDRY_TMPDIR="$WIZARDRY_TMPDIR" PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/menu:$stub_dir:/bin:/usr/bin" _run_spell "spells/enchant/disenchant" "$tmpfile"
+  export WIZARDRY_TMPDIR
+  PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/menu:$stub_dir:/bin:/usr/bin" _run_spell "spells/enchant/disenchant" "$tmpfile"
   _assert_failure && _assert_error_contains "no enchanted attributes"
 }
 
@@ -80,7 +81,8 @@ STUB
   target="$WIZARDRY_TMPDIR/scroll"
   : >"$target"
 
-  WIZARDRY_TMPDIR="$WIZARDRY_TMPDIR" PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/menu:$stub_dir:/bin:/usr/bin" _run_spell "spells/enchant/disenchant" "$target" user.note
+  export WIZARDRY_TMPDIR
+  PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/menu:$stub_dir:/bin:/usr/bin" _run_spell "spells/enchant/disenchant" "$target" user.note
   _assert_success && _assert_output_contains "Disenchanted user.note"
   called=$(cat "$WIZARDRY_TMPDIR/disenchant.call")
   [ "$called" = "-r user.note $target" ] || { TEST_FAILURE_REASON="unexpected attr call: $called"; return 1; }
@@ -108,7 +110,8 @@ STUB
   target="$WIZARDRY_TMPDIR/scroll-alt"
   : >"$target"
 
-  WIZARDRY_TMPDIR="$WIZARDRY_TMPDIR" PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/menu:$stub_dir:/bin:/usr/bin" _run_spell "spells/enchant/disenchant" "$target"
+  export WIZARDRY_TMPDIR
+  PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/menu:$stub_dir:/bin:/usr/bin" _run_spell "spells/enchant/disenchant" "$target"
   _assert_success
   called=$(cat "$WIZARDRY_TMPDIR/disenchant.call")
   [ "$called" = "-x user.alt $target" ] || { TEST_FAILURE_REASON="unexpected setfattr call: $called"; return 1; }
@@ -133,7 +136,8 @@ STUB
 
   target="$WIZARDRY_TMPDIR/multi"
   : >"$target"
-  WIZARDRY_TMPDIR="$WIZARDRY_TMPDIR" PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/menu:$stub_dir:/usr/bin:/bin" _run_spell "spells/enchant/disenchant" "$target"
+  export WIZARDRY_TMPDIR
+  PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/menu:$stub_dir:/usr/bin:/bin" _run_spell "spells/enchant/disenchant" "$target"
   _assert_failure && _assert_error_contains "multiple attributes"
 }
 
@@ -161,7 +165,8 @@ STUB
 
   target="$WIZARDRY_TMPDIR/multi-choice"
   : >"$target"
-  WIZARDRY_TMPDIR="$WIZARDRY_TMPDIR" PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/menu:$stub_dir:/bin:/usr/bin" _run_spell "spells/enchant/disenchant" "$target"
+  export WIZARDRY_TMPDIR
+  PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/menu:$stub_dir:/bin:/usr/bin" _run_spell "spells/enchant/disenchant" "$target"
   _assert_success && _assert_output_contains "user.two"
   called=$(cat "$WIZARDRY_TMPDIR/disenchant.call")
   [ "$called" = "-d user.two $target" ] || { TEST_FAILURE_REASON="unexpected xattr call: $called"; return 1; }
@@ -195,8 +200,9 @@ STUB
 
   target="$WIZARDRY_TMPDIR/multi-all"
   : >"$target"
-  WIZARDRY_TMPDIR="$WIZARDRY_TMPDIR" PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/menu:$stub_dir:/bin:/usr/bin" _run_spell "spells/enchant/disenchant" "$target"
-  _assert_success && _assert_output_contains "Disenchanted all"
+  export WIZARDRY_TMPDIR
+  PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/menu:$stub_dir:/bin:/usr/bin" _run_spell "spells/enchant/disenchant" "$target"
+  _assert_success && _assert_output_contains "Disenchant all"
   calls=$(cat "$WIZARDRY_TMPDIR/disenchant.calls")
   expected="-r user.alpha $target
 -r user.beta $target"

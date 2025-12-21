@@ -185,8 +185,8 @@ printf 'format=shell\n'
 STUB_EOF
   chmod +x "$stub_dir/detect-rc-file"
   
-  # Set up PATH to include wizardry imps (needed for rc-add-line) and TMPDIR
-  test_path="$stub_dir:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/fs:$PATH"
+  # Set up PATH to include wizardry imps (needed for rc-add-line, temp-file, etc)
+  test_path="$stub_dir:$WIZARDRY_IMPS_PATH:$PATH"
   
   # Run install-cd with TMPDIR set for mktemp
   output=$(env HOME="$fake_home" PATH="$test_path" TMPDIR="$tmpdir" sh "$ROOT_DIR/spells/.arcana/mud/install-cd" 2>&1)
