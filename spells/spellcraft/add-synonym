@@ -90,8 +90,10 @@ add_synonym() {
   esac
 
   # Check if synonym word is a shell keyword or builtin
+  shell_keywords="if|then|else|elif|fi|case|esac|for|while|until|do|done"
+  shell_keywords="$shell_keywords|in|function|time|select|\{|\}|\[\[|\]\]|!"
   case $synonym_word in
-    if|then|else|elif|fi|case|esac|for|while|until|do|done|in|function|time|select|\{|\}|\[\[|\]\]|!)
+    $shell_keywords)
       printf '%s\n' "add-synonym: cannot override shell keyword: $synonym_word" >&2
       return 2
       ;;

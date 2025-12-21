@@ -16,9 +16,13 @@ esac
 set +eu
 
 _invoke_thesaurus() {
-  # Use hardcoded default for spellbook directory
-  # (Can't use SPELLBOOK_DIR global because this is sourced into user shell without set -u)
-  _it_spellbook_dir="${HOME-}/.spellbook"
+  # Use global SPELLBOOK_DIR if set, otherwise use default
+  # Use a local variable to avoid modifying the global
+  if [ -n "${SPELLBOOK_DIR-}" ]; then
+    _it_spellbook_dir="$SPELLBOOK_DIR"
+  else
+    _it_spellbook_dir="${HOME-}/.spellbook"
+  fi
   
   _it_custom_file="${_it_spellbook_dir}/.synonyms"
   _it_default_file="${_it_spellbook_dir}/.default-synonyms"
