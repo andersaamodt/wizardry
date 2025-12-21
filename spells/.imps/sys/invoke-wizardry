@@ -142,46 +142,20 @@ _invoke_wizardry() {
     done
   fi
   
-  # Source all function-based spells that have self-execute guards
-  # Function-based spells have both:
-  # 1. A snake_case function definition matching the spell name (e.g., spell_name() for spell-name)
-  # 2. A self-execute pattern (case "$0" in */spell-name) that prevents execution when sourced
-  # Non-function spells will be handled by command_not_found_handle
-  for _iw_spell_dir in "$WIZARDRY_DIR"/spells/*; do
-    [ -d "$_iw_spell_dir" ] || continue
-    case "$_iw_spell_dir" in
-      */.imps|*/.arcana) continue ;;
-    esac
-    for _iw_spell in "$_iw_spell_dir"/*; do
-      [ -f "$_iw_spell" ] && [ -r "$_iw_spell" ] || continue
-      _iw_spell_name=$(basename "$_iw_spell")
-      _iw_spell_func=$(printf '%s' "$_iw_spell_name" | sed 's/-/_/g')
-      # Check if spell has both function definition AND self-execute guard
-      if grep -qE "^[[:space:]]*${_iw_spell_func}[[:space:]]*\\(\\)" "$_iw_spell" 2>/dev/null && \
-         grep -qE "case.*\\\$0.*in.*\\*/${_iw_spell_name}\\)" "$_iw_spell" 2>/dev/null; then
-        # Safe to source - has function and self-execute guard
-        # shellcheck disable=SC1090
-        . "$_iw_spell" 2>/dev/null || true
-        # Restore permissive mode - sourcing spells with set -eu changes parent shell mode
-        set +eu
-        # Create alias if function exists
-        if command -v "$_iw_spell_func" >/dev/null 2>&1; then
-          alias "$_iw_spell_name=$_iw_spell_func" 2>/dev/null || true
-        fi
-      fi
-    done
-  done
+  # Spells are loaded on-demand via word-of-binding (command_not_found_handle)
+  # This provides fast shell startup while still making all spells available
+  # User spells in .spellbook are also auto-loaded this way
   
-  # Set up command_not_found_handle for non-function spells, parser, and .spellbook support
+  # Set up command_not_found_handle for lazy spell loading via word-of-binding
   # This enables:
-  # - Non-function spells (not yet converted or without self-execute guards) to be executed
+  # - All spells to be loaded on-demand (lazy loading for fast startup)
   # - Recursive parser functionality
-  # - User spells in .spellbook to work on-the-fly
+  # - User spells in .spellbook to work automatically
   # Use eval to check shell type while avoiding checkbashisms false positive
   if eval '[ -n "${BASH_VERSION+x}" ]' 2>/dev/null; then
     # Bash-specific command_not_found_handle
     eval 'command_not_found_handle() {
-      # Try word-of-binding for autoloading (handles .spellbook and spell execution)
+      # Try word-of-binding for autoloading (handles all spells including .spellbook)
       if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" ]; then
         if "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" "$@" 2>/dev/null; then
           return $?
@@ -198,7 +172,7 @@ _invoke_wizardry() {
   elif eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
     # Zsh-specific command_not_found_handler
     eval 'command_not_found_handler() {
-      # Try word-of-binding for autoloading (handles .spellbook and spell execution)
+      # Try word-of-binding for autoloading (handles all spells including .spellbook)
       if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" ]; then
         if "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" "$@" 2>/dev/null; then
           return $?
