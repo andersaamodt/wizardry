@@ -39,6 +39,12 @@ menu_reports_missing_tty() {
   _assert_error_contains "menu: unable to access controlling terminal" || return 1
 }
 
+menu_shows_help() {
+  _run_cmd "$ROOT_DIR/spells/cantrips/menu" --help
+  _assert_success || return 1
+}
+
+_run_test_case "menu shows help" menu_shows_help
 _run_test_case "menu requires helper spells" menu_requires_all_helpers
 _run_test_case "menu reports missing controlling terminal" menu_reports_missing_tty
 
