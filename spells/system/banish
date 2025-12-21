@@ -88,6 +88,33 @@ if [ "$verbose" -eq 1 ]; then
   log_level=2
 fi
 
+# Helper functions for output (inline since this is a bootstrap script)
+banish_info() {
+  if [ "$log_level" -ge 1 ]; then
+    printf '%s\n' "$*"
+  fi
+}
+
+banish_step() {
+  if [ "$log_level" -ge 2 ]; then
+    printf '  • %s\n' "$*"
+  fi
+}
+
+banish_check() {
+  if [ "$log_level" -ge 2 ]; then
+    printf '  ✓ %s\n' "$*"
+  fi
+}
+
+banish_warn() {
+  printf 'Warning: %s\n' "$*" >&2
+}
+
+banish_error() {
+  printf 'Error: %s\n' "$*" >&2
+}
+
 # Stage 1: Set up WIZARDRY_DIR first (needed for detect-posix)
 if [ "$log_level" -ge 2 ]; then
   printf 'Configuring WIZARDRY_DIR:\n'
@@ -96,13 +123,13 @@ fi
 if [ -n "$wizardry_dir_override" ]; then
   # User specified directory
   WIZARDRY_DIR=$wizardry_dir_override
-  debug "Using override: $WIZARDRY_DIR"
+  banish_check "Using override: $WIZARDRY_DIR"
 elif [ -n "${WIZARDRY_DIR-}" ]; then
   # Already set in environment - no need to reassign
-  debug "Using existing: $WIZARDRY_DIR"
+  banish_check "Using existing: $WIZARDRY_DIR"
 else
   # Auto-detect
-  step "Auto-detecting wizardry installation..."
+  banish_step "Auto-detecting wizardry installation..."
   
   # Try to find wizardry by looking for this script's location
   has_dirname=$(command -v dirname >/dev/null 2>&1 && echo 1 || echo 0)
@@ -115,7 +142,7 @@ else
       _potential_dir=$(CDPATH= cd -- "$_script_dir/../.." 2>/dev/null && pwd -P) || true
       if [ -n "$_potential_dir" ] && [ -d "$_potential_dir/spells" ]; then
         WIZARDRY_DIR=$_potential_dir
-        debug "Detected from script location: $WIZARDRY_DIR"
+        banish_check "Detected from script location: $WIZARDRY_DIR"
       fi
     fi
   fi
@@ -124,10 +151,10 @@ else
   if [ -z "${WIZARDRY_DIR-}" ]; then
     if [ -n "${HOME-}" ] && [ -d "${HOME}/.wizardry/spells" ]; then
       WIZARDRY_DIR="${HOME}/.wizardry"
-      debug "Found standard location: $WIZARDRY_DIR"
+      banish_check "Found standard location: $WIZARDRY_DIR"
     else
-      warn "Could not auto-detect WIZARDRY_DIR"
-      warn "Set WIZARDRY_DIR environment variable or use --wizardry-dir option"
+      banish_warn "Could not auto-detect WIZARDRY_DIR"
+      banish_warn "Set WIZARDRY_DIR environment variable or use --wizardry-dir option"
       return 1
     fi
   fi
@@ -135,7 +162,7 @@ fi
 
 # Verify WIZARDRY_DIR is valid
 if [ ! -d "${WIZARDRY_DIR}/spells" ]; then
-  warn "WIZARDRY_DIR does not contain spells directory: $WIZARDRY_DIR"
+  banish_warn "WIZARDRY_DIR does not contain spells directory: $WIZARDRY_DIR"
   return 1
 fi
 
@@ -145,7 +172,7 @@ if [ "$log_level" -eq 0 ]; then
   # Non-verbose mode: show simple success message
   printf 'Environment prepared: WIZARDRY_DIR=%s\n' "$WIZARDRY_DIR"
 else
-  info "Environment prepared: WIZARDRY_DIR=$WIZARDRY_DIR"
+  banish_info "Environment prepared: WIZARDRY_DIR=$WIZARDRY_DIR"
 fi
 
 # Stage 2: Check POSIX environment using detect-posix if available
@@ -157,7 +184,7 @@ missing_recommended=''
 
 # Try to use detect-posix if available
 if [ -f "${WIZARDRY_DIR}/spells/system/detect-posix" ]; then
-  step "Using detect-posix for environment checks"
+  banish_step "Using detect-posix for environment checks"
   if [ "$verbose" -eq 1 ]; then
     "${WIZARDRY_DIR}/spells/system/detect-posix" --verbose 2>&1 || posix_check_failed=1
   else
@@ -165,12 +192,12 @@ if [ -f "${WIZARDRY_DIR}/spells/system/detect-posix" ]; then
   fi
   
   if [ "$posix_check_failed" -ne 0 ]; then
-    warn "detect-posix reported issues with POSIX environment"
-    warn "Some wizardry features may not work correctly"
+    banish_warn "detect-posix reported issues with POSIX environment"
+    banish_warn "Some wizardry features may not work correctly"
   fi
 else
   # Fallback: manual check of critical tools if detect-posix not available
-  step "detect-posix not found, using fallback checks"
+  banish_step "detect-posix not found, using fallback checks"
   critical_tools="sh test printf"
   missing_critical=''
   
@@ -178,13 +205,13 @@ else
     if ! command -v "$tool" >/dev/null 2>&1; then
       missing_critical="${missing_critical:+$missing_critical }$tool"
     else
-      debug "Found: $tool"
+      banish_check "Found: $tool"
     fi
   done
   
   if [ -n "$missing_critical" ]; then
-    warn "Critical POSIX tools missing: $missing_critical"
-    warn "Cannot self-heal without basic shell utilities"
+    banish_warn "Critical POSIX tools missing: $missing_critical"
+    banish_warn "Cannot self-heal without basic shell utilities"
     return 1
   fi
   
@@ -193,9 +220,9 @@ else
   for tool in $recommended_tools; do
     if ! command -v "$tool" >/dev/null 2>&1; then
       missing_recommended="${missing_recommended:+$missing_recommended }$tool"
-      warn "Recommended tool missing: $tool"
+      banish_warn "Recommended tool missing: $tool"
     else
-      debug "Found: $tool"
+      banish_check "Found: $tool"
     fi
   done
 fi
@@ -205,10 +232,10 @@ if [ "$log_level" -ge 2 ]; then
   printf '\nVerifying invoke-wizardry:\n'
 fi
 if [ ! -f "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry" ]; then
-  warn "invoke-wizardry not found at $WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
+  banish_warn "invoke-wizardry not found at $WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
   return 1
 fi
-debug "invoke-wizardry is available"
+banish_check "invoke-wizardry is available"
 
 # Stage 4: Set baseline PATH if needed
 if [ "$log_level" -ge 2 ]; then
@@ -217,10 +244,10 @@ fi
 baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 case ":${PATH-}:" in
   *":/usr/bin:"*|*":/bin:"*)
-    debug "PATH includes standard directories"
+    banish_check "PATH includes standard directories"
     ;;
   *)
-    warn "PATH missing standard directories, adding baseline"
+    banish_warn "PATH missing standard directories, adding baseline"
     PATH="${baseline_path}${PATH:+:}${PATH-}"
     export PATH
     ;;
@@ -237,8 +264,8 @@ else
 fi
 
 if [ -n "$missing_recommended" ]; then
-  warn "Some recommended tools are missing: $missing_recommended"
-  warn "Wizardry may have reduced functionality"
+  banish_warn "Some recommended tools are missing: $missing_recommended"
+  banish_warn "Wizardry may have reduced functionality"
 fi
 
 return 0
