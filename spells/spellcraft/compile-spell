@@ -251,10 +251,10 @@ done
 transformed=$(printf '%s\n' "$spell_content" | \
   tail -n +2 | \
   grep -v "^require-wizardry" | \
-  grep -v "^\. env-clear" | \
-  grep -v "^source env-clear" | \
-  grep -v "^\. .*invoke-wizardry" | \
-  grep -v "^source .*invoke-wizardry")
+  grep -vE '^[[:space:]]*\. env-clear([[:space:]]|$)' | \
+  grep -vE '^[[:space:]]*source env-clear([[:space:]]|$)' | \
+  grep -vE '^[[:space:]]*\. .*invoke-wizardry' | \
+  grep -vE '^[[:space:]]*source .*invoke-wizardry')
 
 # For each inlined imp, replace calls in the spell
 # Note: func_name comes from sanitized internal processing (tr '-' '_')
