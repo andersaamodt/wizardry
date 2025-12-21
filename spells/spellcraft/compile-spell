@@ -244,9 +244,17 @@ $spell_body
 done
 
 # Transform spell content:
-# 1. Remove shebang and require-wizardry
+# 1. Remove shebang, require-wizardry, and wizardry infrastructure sourcing
 # 2. Replace imp calls with underscore versions (e.g., say -> _say, clip-copy -> _clip_copy)
-transformed=$(printf '%s\n' "$spell_content" | tail -n +2 | grep -v "^require-wizardry")
+# Remove lines that source wizardry infrastructure (env-clear, invoke-wizardry)
+# These don't make sense in standalone compiled spells
+transformed=$(printf '%s\n' "$spell_content" | \
+  tail -n +2 | \
+  grep -v "^require-wizardry" | \
+  grep -v "^\. env-clear" | \
+  grep -v "^source env-clear" | \
+  grep -v "^\. .*invoke-wizardry" | \
+  grep -v "^source .*invoke-wizardry")
 
 # For each inlined imp, replace calls in the spell
 # Note: func_name comes from sanitized internal processing (tr '-' '_')
