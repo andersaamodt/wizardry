@@ -139,8 +139,10 @@ for dep in $dependencies; do
   # Skip self-reference - spell cannot be its own dependency
   [ "$dep" = "$spell_basename" ] && continue
   
-  # Skip require-wizardry - doesn't make sense in standalone
+  # Skip require-wizardry and invoke-wizardry - they don't make sense in standalone
+  # invoke-wizardry is the runtime environment, not a library function
   [ "$dep" = "require-wizardry" ] && continue
+  [ "$dep" = "invoke-wizardry" ] && continue
   
   # Skip common English words that are rarely used as commands
   # These cause issues when replaced in strings
@@ -154,8 +156,9 @@ for dep in $dependencies; do
   
   # Skip interactive spells - they must remain external for test stubbing
   # These contain terminal I/O code that can't be stubbed when inlined
+  # Also skip test stubs themselves - they're test infrastructure, not dependencies
   case "$dep" in
-    ask-number|ask-yn|ask-text|await-keypress|select-input|read-line|tty-*) continue ;;
+    ask-number|ask-yn|ask-text|await-keypress|select-input|read-line|tty-*|stub-*) continue ;;
   esac
   
   # Skip if already inlined
