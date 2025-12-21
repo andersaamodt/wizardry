@@ -45,6 +45,12 @@ _run_test_case "menu reports missing controlling terminal" menu_reports_missing_
 # Test --start-selection argument - Issue #198
 # When --start-selection 2 is passed, pressing enter should select the second item
 menu_respects_start_selection() {
+  # Skip if /dev/tty is not available (e.g., in CI environment)
+  if [ ! -r /dev/tty ] || [ ! -w /dev/tty ]; then
+    _test_skip "menu respects --start-selection (Issue #198)" "requires /dev/tty"
+    return 0
+  fi
+  
   tmpdir=$(_make_tempdir)
   
   # Use real wizardry spells with stub imps for terminal I/O AND interactive input
@@ -83,6 +89,12 @@ _run_test_case "menu respects --start-selection (Issue #198)" menu_respects_star
 # Test that highlighted items strip ANSI codes from labels
 # This ensures the highlight color (CYAN) overrides embedded colors (like YELLOW)
 menu_highlight_strips_ansi_codes() {
+  # Skip if /dev/tty is not available (e.g., in CI environment)
+  if [ ! -r /dev/tty ] || [ ! -w /dev/tty ]; then
+    _test_skip "menu highlight strips ANSI codes from labels" "requires /dev/tty"
+    return 0
+  fi
+  
   tmpdir=$(_make_tempdir)
   
   # Create a fake TTY for testing
@@ -139,6 +151,12 @@ _run_test_case "menu highlight strips ANSI codes from labels" menu_highlight_str
 # Test that cursor is restored when exiting menu
 # This verifies the fix for the cursor disappearance issue
 menu_restores_cursor_on_exit() {
+  # Skip if /dev/tty is not available (e.g., in CI environment)
+  if [ ! -r /dev/tty ] || [ ! -w /dev/tty ]; then
+    _test_skip "menu restores cursor on exit" "requires /dev/tty"
+    return 0
+  fi
+  
   tmpdir=$(_make_tempdir)
   
   # Create a fake TTY for testing

@@ -39,6 +39,12 @@ test_missing_file() {
 }
 
 test_no_attributes() {
+  # Skip if no xattr commands available
+  if ! command -v attr >/dev/null 2>&1 && ! command -v xattr >/dev/null 2>&1 && ! command -v getfattr >/dev/null 2>&1; then
+    _test_skip "disenchant reports missing attributes" "requires attr, xattr, or getfattr"
+    return 0
+  fi
+  
   stub_dir=$(make_stub_dir)
   cat >"$stub_dir/attr" <<'STUB'
 #!/bin/sh
@@ -55,6 +61,12 @@ STUB
 }
 
 test_removes_specific_key_with_attr() {
+  # Skip if no xattr commands available
+  if ! command -v attr >/dev/null 2>&1 && ! command -v xattr >/dev/null 2>&1 && ! command -v getfattr >/dev/null 2>&1; then
+    _test_skip "disenchant removes a named key with attr" "requires attr, xattr, or getfattr"
+    return 0
+  fi
+  
   stub_dir=$(make_stub_dir)
   cat >"$stub_dir/attr" <<'STUB'
 #!/bin/sh
@@ -75,6 +87,12 @@ STUB
 }
 
 test_falls_back_to_setfattr() {
+  # Skip if no xattr commands available
+  if ! command -v attr >/dev/null 2>&1 && ! command -v xattr >/dev/null 2>&1 && ! command -v getfattr >/dev/null 2>&1; then
+    _test_skip "disenchant falls back to setfattr when attr missing" "requires attr, xattr, or getfattr"
+    return 0
+  fi
+  
   stub_dir=$(make_stub_dir)
   cat >"$stub_dir/getfattr" <<'STUB'
 #!/bin/sh
@@ -97,6 +115,12 @@ STUB
 }
 
 test_requires_ask_number_when_many() {
+  # Skip if no xattr commands available
+  if ! command -v attr >/dev/null 2>&1 && ! command -v xattr >/dev/null 2>&1 && ! command -v getfattr >/dev/null 2>&1; then
+    _test_skip "disenchant requires ask_number for multiple attributes" "requires attr, xattr, or getfattr"
+    return 0
+  fi
+  
   stub_dir=$(make_stub_dir)
   cat >"$stub_dir/xattr" <<'STUB'
 #!/bin/sh
@@ -114,6 +138,12 @@ STUB
 }
 
 test_selects_specific_entry_with_ask_number() {
+  # Skip if no xattr commands available
+  if ! command -v attr >/dev/null 2>&1 && ! command -v xattr >/dev/null 2>&1 && ! command -v getfattr >/dev/null 2>&1; then
+    _test_skip "disenchant selects a specific entry with ask_number" "requires attr, xattr, or getfattr"
+    return 0
+  fi
+  
   stub_dir=$(make_stub_dir)
   cat >"$stub_dir/xattr" <<'STUB'
 #!/bin/sh
@@ -138,6 +168,12 @@ STUB
 }
 
 test_selects_all_with_menu_choice() {
+  # Skip if no xattr commands available
+  if ! command -v attr >/dev/null 2>&1 && ! command -v xattr >/dev/null 2>&1 && ! command -v getfattr >/dev/null 2>&1; then
+    _test_skip "disenchant can remove all attributes" "requires attr, xattr, or getfattr"
+    return 0
+  fi
+  
   stub_dir=$(make_stub_dir)
   cat >"$stub_dir/attr" <<'STUB'
 #!/bin/sh
