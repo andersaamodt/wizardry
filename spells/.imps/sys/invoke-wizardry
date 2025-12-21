@@ -151,6 +151,9 @@ _invoke_wizardry() {
     _iw_cat_name=$(basename "$_iw_spell_cat")
     case "$_iw_cat_name" in
       .imps|.arcana) continue ;;
+      # Skip spellcraft directory - these are build/compilation tools that use $0
+      # and should be executed as scripts, not sourced as functions
+      spellcraft) continue ;;
     esac
     for _iw_spell in "$_iw_spell_cat"/*; do
       [ -f "$_iw_spell" ] && [ -r "$_iw_spell" ] || continue
