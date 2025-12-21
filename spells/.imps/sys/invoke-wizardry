@@ -85,12 +85,19 @@ _invoke_wizardry() {
     done
   fi
   
+  # Add .arcana subdirectories (bitcoin, mud, etc.) to PATH
+  # These are installation/configuration scripts that users may want to run directly
+  _iw_arcana_dir="$WIZARDRY_DIR/spells/.arcana"
+  if [ -d "$_iw_arcana_dir" ]; then
+    for _iw_arcana_cat in "$_iw_arcana_dir"/*; do
+      [ -d "$_iw_arcana_cat" ] || continue
+      _iw_new_path="$_iw_new_path:$_iw_arcana_cat"
+    done
+  fi
+  
   # Add spell category directories to PATH
   for _iw_spell_cat in "$WIZARDRY_DIR"/spells/*; do
     [ -d "$_iw_spell_cat" ] || continue
-    case "$_iw_spell_cat" in
-      */.imps|*/.arcana) continue ;;
-    esac
     _iw_new_path="$_iw_new_path:$_iw_spell_cat"
   done
   

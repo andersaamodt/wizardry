@@ -19,7 +19,8 @@ _nix_rebuild() {
   fi
 
   if command -v home-manager >/dev/null 2>&1; then
-    printf '%s\n' "nix-rebuild: running home-manager switch..."
+    printf '%s\n' "nix-rebuild: running home-manager switch..." >&2
+    printf '%s\n' "nix-rebuild: this may take several minutes, please wait..." >&2
     if home-manager switch; then
       printf '%s\n' "nix-rebuild: user environment rebuilt successfully."
       _nr_rebuild_success=1
@@ -36,7 +37,8 @@ _nix_rebuild() {
   )
   
   if [ "$should_rebuild" = "yes" ]; then
-    printf '%s\n' "nix-rebuild: running $_nr_priv_cmd nixos-rebuild switch..."
+    printf '%s\n' "nix-rebuild: running $_nr_priv_cmd nixos-rebuild switch..." >&2
+    printf '%s\n' "nix-rebuild: this may take several minutes, please wait..." >&2
     if "$_nr_priv_cmd" nixos-rebuild switch; then
       printf '%s\n' "nix-rebuild: NixOS system rebuilt successfully."
       _nr_rebuild_success=1

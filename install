@@ -934,23 +934,23 @@ else
                 if [ -r /dev/tty ]; then
                         # /dev/tty is available - force ask-yn to use it instead of stdin
                         # This prevents ask-yn from trying to read from stdin (which contains the script)
-                        if ASK_CANTRIP_INPUT=tty "$ASK_YN" "Install the MUD (multi-user dungeon) features?" yes >/dev/null; then
+                        if ASK_CANTRIP_INPUT=tty "$ASK_YN" "Install the MUD (multi-user dungeon) features?" no >/dev/null; then
                                 install_mud=1
                         fi
                 elif [ -z "${ASK_CANTRIP_INPUT-}" ]; then
                         # No /dev/tty and no ASK_CANTRIP_INPUT set - use default
-                        if ASK_CANTRIP_INPUT=none "$ASK_YN" "Install the MUD (multi-user dungeon) features?" yes >/dev/null; then
+                        if ASK_CANTRIP_INPUT=none "$ASK_YN" "Install the MUD (multi-user dungeon) features?" no >/dev/null; then
                                 install_mud=1
                         fi
                 else
                         # ASK_CANTRIP_INPUT is already set by the user - respect it
-                        if "$ASK_YN" "Install the MUD (multi-user dungeon) features?" yes >/dev/null; then
+                        if "$ASK_YN" "Install the MUD (multi-user dungeon) features?" no >/dev/null; then
                                 install_mud=1
                         fi
                 fi
         else
                 # stdin is a terminal - normal interactive mode
-                if "$ASK_YN" "Install the MUD (multi-user dungeon) features?" yes >/dev/null; then
+                if "$ASK_YN" "Install the MUD (multi-user dungeon) features?" no >/dev/null; then
                         install_mud=1
                 fi
         fi
@@ -1007,6 +1007,7 @@ if [ "$shell_setup_made" -eq 1 ]; then
                 # Try home-manager first (doesn't need privileges)
                 if command -v home-manager >/dev/null 2>&1; then
                         info_msg "Running 'home-manager switch'..."
+                        substep_msg "This may take several minutes, please wait..."
                         if home-manager switch; then
                                 success_msg "NixOS environment rebuilt successfully"
                                 rebuild_success=1
@@ -1016,6 +1017,7 @@ if [ "$shell_setup_made" -eq 1 ]; then
                 # If home-manager didn't work and we have privilege escalation, try nixos-rebuild
                 if [ "$rebuild_success" -eq 0 ] && [ -n "$priv_cmd" ] && command -v nixos-rebuild >/dev/null 2>&1; then
                         info_msg "Running '$priv_cmd nixos-rebuild switch'..."
+                        substep_msg "This may take several minutes, please wait..."
                         if "$priv_cmd" nixos-rebuild switch; then
                                 success_msg "NixOS environment rebuilt successfully"
                                 rebuild_success=1
@@ -1109,25 +1111,25 @@ if [ -f "$RC_FILE" ]; then
                                 printf '  %sNote:%s No wizardry initialization found in %s\n' "$YELLOW" "$RESET" "$RC_FILE"
                         fi
                 else
-                        # Fallback: try to remove lines containing wizardry-init marker
+                        # Fallback: try to remove all lines containing wizardry markers
                         tmp_file="${RC_FILE}.wizardry.$$"
-                        if grep -v 'wizardry: wizardry-init' "$RC_FILE" > "$tmp_file" 2>/dev/null; then
+                        if grep -v '# wizardry:' "$RC_FILE" > "$tmp_file" 2>/dev/null; then
                                 mv "$tmp_file" "$RC_FILE"
-                                printf '  %s✓%s Removed wizardry initialization from %s\n' "$GREEN" "$RESET" "$RC_FILE"
+                                printf '  %s✓%s Removed all wizardry lines from %s\n' "$GREEN" "$RESET" "$RC_FILE"
                         else
                                 rm -f "$tmp_file"
-                                printf '  %sNote:%s Could not remove wizardry initialization\n' "$YELLOW" "$RESET"
+                                printf '  %sNote:%s Could not remove wizardry lines\n' "$YELLOW" "$RESET"
                         fi
                 fi
         else
-                # For shell rc files, remove lines containing the wizardry-init marker
+                # For shell rc files, remove all lines containing wizardry markers
                 tmp_file="${RC_FILE}.wizardry.$$"
-                if grep -v 'wizardry: wizardry-init' "$RC_FILE" > "$tmp_file" 2>/dev/null; then
+                if grep -v '# wizardry:' "$RC_FILE" > "$tmp_file" 2>/dev/null; then
                         mv "$tmp_file" "$RC_FILE"
-                        printf '  %s✓%s Removed wizardry initialization from %s\n' "$GREEN" "$RESET" "$RC_FILE"
+                        printf '  %s✓%s Removed all wizardry lines from %s\n' "$GREEN" "$RESET" "$RC_FILE"
                 else
                         rm -f "$tmp_file"
-                        printf '  %sNote:%s No wizardry initialization found to remove\n' "$YELLOW" "$RESET"
+                        printf '  %sNote:%s No wizardry lines found to remove\n' "$YELLOW" "$RESET"
                 fi
         fi
 else
