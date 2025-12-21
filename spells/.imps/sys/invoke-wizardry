@@ -142,50 +142,54 @@ _invoke_wizardry() {
     done
   fi
   
-  # Spells are loaded on-demand via word-of-binding (command_not_found_handle)
-  # This provides fast shell startup while still making all spells available
-  # User spells in .spellbook are also auto-loaded this way
+  # Source all spells recursively to load them into the shell
+  # This is simpler and more reliable than lazy loading via command_not_found_handle
+  # Spells with the self-execute pattern (case "$0" in */spell-name) ...) will define
+  # their functions but not execute them when sourced
+  for _iw_spell_cat in "$WIZARDRY_DIR"/spells/*; do
+    [ -d "$_iw_spell_cat" ] || continue
+    # Skip .imps and .arcana - they're handled separately
+    _iw_cat_name=$(basename "$_iw_spell_cat")
+    case "$_iw_cat_name" in
+      .imps|.arcana) continue ;;
+    esac
+    for _iw_spell in "$_iw_spell_cat"/*; do
+      [ -f "$_iw_spell" ] && [ -r "$_iw_spell" ] || continue
+      # Skip files that shouldn't be sourced
+      _iw_spell_name=$(basename "$_iw_spell")
+      case "$_iw_spell_name" in
+        *.md|*.txt|*.sh|.*) continue ;;
+      esac
+      # Source the spell to load its function (if it has the self-execute pattern)
+      # shellcheck disable=SC1090
+      . "$_iw_spell" 2>/dev/null || true
+      # Restore permissive mode - sourcing spells with set -eu changes parent shell mode
+      set +eu
+    done
+  done
   
-  # Set up command_not_found_handle for lazy spell loading via word-of-binding
-  # This enables:
-  # - All spells to be loaded on-demand (lazy loading for fast startup)
-  # - Recursive parser functionality
-  # - User spells in .spellbook to work automatically
-  # Use eval to check shell type while avoiding checkbashisms false positive
-  if eval '[ -n "${BASH_VERSION+x}" ]' 2>/dev/null; then
-    # Bash-specific command_not_found_handle
-    eval 'command_not_found_handle() {
-      # Try word-of-binding for autoloading (handles all spells including .spellbook)
-      if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" ]; then
-        if "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" "$@" 2>/dev/null; then
-          return $?
-        fi
-      fi
-      # Fall back to parse for recursive grammar parsing
-      if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/lex/parse" ]; then
-        "$WIZARDRY_DIR/spells/.imps/lex/parse" "$@"
-        return $?
-      fi
-      printf '\''%s: command not found\n'\'' "$1" >&2
-      return 127
-    }'
-  elif eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
-    # Zsh-specific command_not_found_handler
-    eval 'command_not_found_handler() {
-      # Try word-of-binding for autoloading (handles all spells including .spellbook)
-      if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" ]; then
-        if "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" "$@" 2>/dev/null; then
-          return $?
-        fi
-      fi
-      # Fall back to parse for recursive grammar parsing
-      if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/lex/parse" ]; then
-        "$WIZARDRY_DIR/spells/.imps/lex/parse" "$@"
-        return $?
-      fi
-      printf '\''%s: command not found\n'\'' "$1" >&2
-      return 127
-    }'
+  # Also source spells from .spellbook if it exists
+  if [ -n "${SPELLBOOK_DIR-}" ] && [ -d "$SPELLBOOK_DIR" ]; then
+    for _iw_user_spell in "$SPELLBOOK_DIR"/*; do
+      [ -f "$_iw_user_spell" ] && [ -r "$_iw_user_spell" ] || continue
+      _iw_user_spell_name=$(basename "$_iw_user_spell")
+      case "$_iw_user_spell_name" in
+        *.md|*.txt|*.sh|.*) continue ;;
+      esac
+      # Source user spell
+      # shellcheck disable=SC1090
+      . "$_iw_user_spell" 2>/dev/null || true
+      set +eu
+    done
+  fi
+  
+  # Source the cd hook if MUD features are installed
+  # This enables the cd hook that runs 'look' after directory changes
+  _iw_cd_hook="$WIZARDRY_DIR/spells/.arcana/mud/cd"
+  if [ -f "$_iw_cd_hook" ] && [ -r "$_iw_cd_hook" ]; then
+    # shellcheck disable=SC1090
+    . "$_iw_cd_hook" 2>/dev/null || true
+    set +eu
   fi
   
   # Load synonyms (aliases) from spellbook by sourcing invoke-thesaurus
