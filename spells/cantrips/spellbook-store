@@ -82,23 +82,23 @@ add)
   # Validate name
   case $name in
   ''|*[!A-Za-z0-9._-]*)
-    die "spellbook-store: alias names may contain only letters, digits, dots, underscores, and dashes."
+    die "spellbook-store: alias names may contain only letters, digits, dots, underscores, and dashes." || return 1
     ;;
   -*)
-    die "spellbook-store: alias names may not begin with a dash."
+    die "spellbook-store: alias names may not begin with a dash." || return 1
     ;;
   esac
   
   # Validate command
   if [ -z "$cmd" ]; then
-    die "spellbook-store: command must not be empty."
+    die "spellbook-store: command must not be empty." || return 1
   fi
   case $cmd in
   *"$tab_char"*)
-    die "spellbook-store: command may not contain tabs."
+    die "spellbook-store: command may not contain tabs." || return 1
     ;;
   *"$newline_char"*)
-    die "spellbook-store: command must be a single line."
+    die "spellbook-store: command must be a single line." || return 1
     ;;
   esac
   
