@@ -127,7 +127,9 @@ test_jump_zero_cycles() {
   mkdir -p "$start_dir" "$dest1" "$dest2" "$markers_dir"
   dest1_resolved=$(cd "$dest1" && pwd -P | sed 's|//|/|g')
   dest2_resolved=$(cd "$dest2" && pwd -P | sed 's|//|/|g')
+  # Create markers with different timestamps to ensure deterministic ls -t ordering
   printf '%s\n' "$dest1_resolved" >"$markers_dir/1"
+  sleep 1
   printf '%s\n' "$dest2_resolved" >"$markers_dir/2"
   # jump 0 should behave like jump with no args (start at 1)
   run_jump "0" "$markers_dir" "$start_dir"
