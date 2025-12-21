@@ -1421,6 +1421,8 @@ test_spells_source_env_clear_after_set_eu() {
       install) return ;;
       # Bootstrap spells used by install (must be standalone)
       divination/detect-rc-file|cantrips/ask-yn|cantrips/memorize|cantrips/require-wizardry|spellcraft/learn) return ;;
+      # Bootstrap scripts with conditional env-clear sourcing (run before wizardry fully installed)
+      system/banish|spellcraft/compile-spell|spellcraft/doppelganger) return ;;
       # Scripts that need PATH setup before env-clear to find it
       system/test-magic|system/verify-posix|spellcraft/lint-magic|enchant/enchant) return ;;
       # Spells using wrapper function pattern (set -eu inside function for sourceable spells)

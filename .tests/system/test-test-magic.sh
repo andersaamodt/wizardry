@@ -157,6 +157,329 @@ has_timeout_protection() {
   return 0
 }
 
+# Test that failed subtests cause the parent test to fail
+failed_subtests_fail_parent_test() {
+  tmpdir="$(_make_tempdir)"
+  tmpfile="$tmpdir/output.txt"
+  
+  # Create a test fixture in .tests directory
+  fixture_dir="$ROOT_DIR/.tests/__temp_test_fixtures"
+  mkdir -p "$fixture_dir"
+  test_fixture="$fixture_dir/test-with-failures.sh"
+  
+  cat > "$test_fixture" << 'EOF'
+#!/bin/sh
+test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
+  test_root=$(dirname "$test_root")
+done
+. "$test_root/spells/.imps/test/test-bootstrap"
+
+test_pass1() { return 0; }
+test_fail1() { TEST_FAILURE_REASON="failure 1"; return 1; }
+test_pass2() { return 0; }
+test_fail2() { TEST_FAILURE_REASON="failure 2"; return 1; }
+
+_run_test_case "pass 1" test_pass1
+_run_test_case "fail 1" test_fail1
+_run_test_case "pass 2" test_pass2
+_run_test_case "fail 2" test_fail2
+_finish_tests
+EOF
+  chmod +x "$test_fixture"
+  
+  cd "$ROOT_DIR" || return 1
+  
+  # Run test-magic on the fixture
+  sh spells/system/test-magic --only "__temp_test_fixtures/test-with-failures.sh" >"$tmpfile" 2>&1 || true
+  
+  # Clean up fixture
+  rm -rf "$fixture_dir"
+  
+  # Extract summary line
+  summary=$(grep "^Tests:" "$tmpfile" || true)
+  
+  # The test should be marked as FAILED, not PASSED
+  # Look for "X failed" where X > 0
+  failed_count=$(printf '%s\n' "$summary" | awk '{for(i=1;i<=NF;i++) if($(i+1)=="failed,") print $i}')
+  
+  [ -n "$failed_count" ] && [ "$failed_count" -gt 0 ] || {
+    TEST_FAILURE_REASON="Test with failing subtests was not counted as failed (summary: $summary)"
+    return 1
+  }
+  
+  return 0
+}
+
+# Test that FAIL_DETAIL lines are not visible in output
+fail_detail_hidden_from_output() {
+  tmpdir="$(_make_tempdir)"
+  tmpfile="$tmpdir/output.txt"
+  
+  # Create a test fixture in .tests directory
+  fixture_dir="$ROOT_DIR/.tests/__temp_test_fixtures"
+  mkdir -p "$fixture_dir"
+  test_fixture="$fixture_dir/test-with-failures.sh"
+  
+  cat > "$test_fixture" << 'EOF'
+#!/bin/sh
+test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
+  test_root=$(dirname "$test_root")
+done
+. "$test_root/spells/.imps/test/test-bootstrap"
+
+test_pass1() { return 0; }
+test_fail1() { TEST_FAILURE_REASON="failure 1"; return 1; }
+
+_run_test_case "pass 1" test_pass1
+_run_test_case "fail 1" test_fail1
+_finish_tests
+EOF
+  chmod +x "$test_fixture"
+  
+  cd "$ROOT_DIR" || return 1
+  
+  # Run test-magic on the fixture
+  sh spells/system/test-magic --only "__temp_test_fixtures/test-with-failures.sh" >"$tmpfile" 2>&1 || true
+  
+  # Clean up fixture
+  rm -rf "$fixture_dir"
+  
+  # FAIL_DETAIL lines should not appear in the per-test output section
+  # They should only be used internally for parsing
+  # Look for lines like "  FAIL_DETAIL" in the indented test output
+  if grep -E "^  FAIL_DETAIL" "$tmpfile" >/dev/null 2>&1; then
+    TEST_FAILURE_REASON="FAIL_DETAIL line visible in test output"
+    return 1
+  fi
+  
+  return 0
+}
+
+# Test that test summary line (X/Y tests passed) is visible in output
+test_summary_line_visible() {
+  tmpdir="$(_make_tempdir)"
+  tmpfile="$tmpdir/output.txt"
+  
+  # Create a test fixture in .tests directory
+  fixture_dir="$ROOT_DIR/.tests/__temp_test_fixtures"
+  mkdir -p "$fixture_dir"
+  test_fixture="$fixture_dir/test-all-pass.sh"
+  
+  cat > "$test_fixture" << 'EOF'
+#!/bin/sh
+test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
+  test_root=$(dirname "$test_root")
+done
+. "$test_root/spells/.imps/test/test-bootstrap"
+
+test_pass1() { return 0; }
+test_pass2() { return 0; }
+test_pass3() { return 0; }
+
+_run_test_case "pass 1" test_pass1
+_run_test_case "pass 2" test_pass2
+_run_test_case "pass 3" test_pass3
+_finish_tests
+EOF
+  chmod +x "$test_fixture"
+  
+  cd "$ROOT_DIR" || return 1
+  
+  # Run test-magic on the fixture
+  sh spells/system/test-magic --only "__temp_test_fixtures/test-all-pass.sh" >"$tmpfile" 2>&1 || true
+  
+  # Clean up fixture
+  rm -rf "$fixture_dir"
+  
+  # The test should show its own summary line like "3/3 tests passed"
+  # This helps users see the subtest results for each test
+  if ! grep -E "^  [0-9]+/[0-9]+ tests passed" "$tmpfile" >/dev/null 2>&1; then
+    TEST_FAILURE_REASON="Test summary line not visible in output"
+    return 1
+  fi
+  
+  return 0
+}
+
+# Test that failed subtest numbers appear in failure summary
+failed_subtest_numbers_in_summary() {
+  tmpdir="$(_make_tempdir)"
+  tmpfile="$tmpdir/output.txt"
+  
+  # Create a test fixture in .tests directory
+  fixture_dir="$ROOT_DIR/.tests/__temp_test_fixtures"
+  mkdir -p "$fixture_dir"
+  test_fixture="$fixture_dir/test-with-failures.sh"
+  
+  cat > "$test_fixture" << 'EOF'
+#!/bin/sh
+test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
+  test_root=$(dirname "$test_root")
+done
+. "$test_root/spells/.imps/test/test-bootstrap"
+
+test_pass1() { return 0; }
+test_fail1() { TEST_FAILURE_REASON="failure 1"; return 1; }
+test_pass2() { return 0; }
+test_fail2() { TEST_FAILURE_REASON="failure 2"; return 1; }
+
+_run_test_case "pass 1" test_pass1
+_run_test_case "fail 1" test_fail1
+_run_test_case "pass 2" test_pass2
+_run_test_case "fail 2" test_fail2
+_finish_tests
+EOF
+  chmod +x "$test_fixture"
+  
+  cd "$ROOT_DIR" || return 1
+  
+  # Run test-magic on the fixture
+  sh spells/system/test-magic --only "__temp_test_fixtures/test-with-failures.sh" >"$tmpfile" 2>&1 || true
+  
+  # Clean up fixture
+  rm -rf "$fixture_dir"
+  
+  # Look for the failed tests line at the end showing subtest numbers
+  # Should be like: "Failed tests (os): with-failures (2, 4)"
+  failed_line=$(grep "^Failed tests" "$tmpfile" || true)
+  
+  [ -n "$failed_line" ] || {
+    TEST_FAILURE_REASON="Failed tests summary line not found"
+    return 1
+  }
+  
+  # Should contain the subtest numbers in parentheses
+  if ! printf '%s\n' "$failed_line" | grep -E '\([0-9]+(, [0-9]+)*\)' >/dev/null 2>&1; then
+    TEST_FAILURE_REASON="Failed subtest numbers not shown in summary (got: $failed_line)"
+    return 1
+  fi
+  
+  return 0
+}
+
+# Test that detailed failure output shows when there are few failures
+detailed_output_for_few_failures() {
+  tmpdir="$(_make_tempdir)"
+  tmpfile="$tmpdir/output.txt"
+  
+  # Create a test fixture in .tests directory
+  fixture_dir="$ROOT_DIR/.tests/__temp_test_fixtures"
+  mkdir -p "$fixture_dir"
+  test_fixture="$fixture_dir/test-with-failures.sh"
+  
+  cat > "$test_fixture" << 'EOF'
+#!/bin/sh
+test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
+  test_root=$(dirname "$test_root")
+done
+. "$test_root/spells/.imps/test/test-bootstrap"
+
+test_pass1() { return 0; }
+test_fail1() { TEST_FAILURE_REASON="failure 1"; return 1; }
+test_fail2() { TEST_FAILURE_REASON="failure 2"; return 1; }
+
+_run_test_case "pass 1" test_pass1
+_run_test_case "fail 1" test_fail1
+_run_test_case "fail 2" test_fail2
+_finish_tests
+EOF
+  chmod +x "$test_fixture"
+  
+  cd "$ROOT_DIR" || return 1
+  
+  # Run test-magic on the fixture
+  sh spells/system/test-magic --only "__temp_test_fixtures/test-with-failures.sh" >"$tmpfile" 2>&1 || true
+  
+  # Clean up fixture
+  rm -rf "$fixture_dir"
+  
+  # With only 1 failing test, detailed output should be shown
+  # Look for "Failure Details" section
+  if ! grep "Failure Details" "$tmpfile" >/dev/null 2>&1; then
+    TEST_FAILURE_REASON="Failure Details section not found for test with failures"
+    return 1
+  fi
+  
+  # The detailed section should contain information about the failures
+  # Look for lines that show FAIL messages
+  if ! grep -A 10 "Failure Details" "$tmpfile" | grep "FAIL" >/dev/null 2>&1; then
+    TEST_FAILURE_REASON="No failure details shown under Failure Details section"
+    return 1
+  fi
+  
+  return 0
+}
+
+# Test that output streams line-by-line (not buffered)
+output_streams_line_by_line() {
+  tmpdir="$(_make_tempdir)"
+  tmpfile="$tmpdir/output.txt"
+  
+  # Create a test fixture with delays
+  fixture_dir="$ROOT_DIR/.tests/__temp_test_fixtures"
+  mkdir -p "$fixture_dir"
+  test_fixture="$fixture_dir/test-streaming.sh"
+  
+  cat > "$test_fixture" << 'EOF'
+#!/bin/sh
+test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
+  test_root=$(dirname "$test_root")
+done
+. "$test_root/spells/.imps/test/test-bootstrap"
+
+test_1() { return 0; }
+test_2() { return 0; }
+test_3() { return 0; }
+
+_run_test_case "test 1" test_1
+_run_test_case "test 2" test_2
+_run_test_case "test 3" test_3
+_finish_tests
+EOF
+  chmod +x "$test_fixture"
+  
+  cd "$ROOT_DIR" || return 1
+  
+  # Run test-magic and verify stdbuf is applied inside wrapper
+  # We verify this by checking that the wrapper script contains stdbuf
+  sh spells/system/test-magic --only "__temp_test_fixtures/test-streaming.sh" >"$tmpfile" 2>&1 || true
+  
+  # Clean up fixture
+  rm -rf "$fixture_dir"
+  
+  # Verify that PASS lines appear in output (confirming streaming works)
+  # If output is not streaming, subtests would be buffered
+  if ! grep -q "PASS #1" "$tmpfile"; then
+    TEST_FAILURE_REASON="PASS #1 not found in output (streaming may be broken)"
+    return 1
+  fi
+  
+  if ! grep -q "PASS #2" "$tmpfile"; then
+    TEST_FAILURE_REASON="PASS #2 not found in output (streaming may be broken)"
+    return 1
+  fi
+  
+  if ! grep -q "PASS #3" "$tmpfile"; then
+    TEST_FAILURE_REASON="PASS #3 not found in output (streaming may be broken)"
+    return 1
+  fi
+  
+  # Verify that the wrapper applies stdbuf to the sh command
+  # This is a white-box test to ensure the fix stays in place
+  if ! grep -q 'stdbuf.*sh.*"\$abs"' "$ROOT_DIR/spells/system/test-magic"; then
+    TEST_FAILURE_REASON="stdbuf not applied to sh command in wrapper (streaming optimization missing)"
+    return 1
+  fi
+  
+  return 0
+}
+
 _run_test_case "system/test-magic is executable" spell_is_executable
 _run_test_case "system/test-magic shows help" shows_help
 _run_test_case "system/test-magic has content" spell_has_content
@@ -164,5 +487,11 @@ _run_test_case "system/test-magic processes all tests without skipping" all_test
 _run_test_case "system/test-magic has no test rerun logic" no_test_reruns
 _run_test_case "system/test-magic has pre-flight checks" has_preflight_checks
 _run_test_case "system/test-magic has timeout protection" has_timeout_protection
+_run_test_case "failed subtests cause parent test to fail" failed_subtests_fail_parent_test
+_run_test_case "FAIL_DETAIL lines hidden from output" fail_detail_hidden_from_output
+_run_test_case "test summary line visible in output" test_summary_line_visible
+_run_test_case "failed subtest numbers in summary" failed_subtest_numbers_in_summary
+_run_test_case "detailed output shown for few failures" detailed_output_for_few_failures
+_run_test_case "output streams line-by-line" output_streams_line_by_line
 
 _finish_tests
