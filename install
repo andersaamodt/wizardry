@@ -1104,13 +1104,22 @@ printf '\n%s==> Removing shell configuration...%s\n' "$CYAN" "$RESET"
 # Remove the invoke-wizardry source line from the rc file
 if [ -f "$RC_FILE" ]; then
         if [ "$RC_FORMAT" = "nix" ]; then
-                # For NixOS, use nix-shell-remove to remove the wizardry-init block
+                # For NixOS, use nix-shell-remove to remove all wizardry blocks
                 NIX_SHELL_REMOVE="$INSTALL_DIR/spells/.imps/sys/nix-shell-remove"
                 if [ -x "$NIX_SHELL_REMOVE" ]; then
+                        # Remove wizardry-init (main initialization)
+                        removed_any=0
                         if "$NIX_SHELL_REMOVE" wizardry-init "$RC_FILE" 2>/dev/null; then
-                                printf '  %s✓%s Removed wizardry initialization from %s\n' "$GREEN" "$RESET" "$RC_FILE"
+                                removed_any=1
+                        fi
+                        # Remove cd-hook if it exists (from older installations)
+                        if "$NIX_SHELL_REMOVE" cd-hook "$RC_FILE" 2>/dev/null; then
+                                removed_any=1
+                        fi
+                        if [ "$removed_any" -eq 1 ]; then
+                                printf '  %s✓%s Removed wizardry blocks from %s\n' "$GREEN" "$RESET" "$RC_FILE"
                         else
-                                printf '  %sNote:%s No wizardry initialization found in %s\n' "$YELLOW" "$RESET" "$RC_FILE"
+                                printf '  %sNote:%s No wizardry blocks found in %s\n' "$YELLOW" "$RESET" "$RC_FILE"
                         fi
                 else
                         # Fallback: try to remove all lines containing wizardry markers

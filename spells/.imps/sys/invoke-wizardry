@@ -160,7 +160,13 @@ _invoke_wizardry() {
       case "$_iw_spell_name" in
         *.md|*.txt|*.sh|.*) continue ;;
       esac
-      # Source the spell to load its function (if it has the self-execute pattern)
+      # Only source spells that have the self-execute pattern
+      # This pattern indicates the spell defines functions but doesn't run code when sourced
+      # Pattern: case "$0" in */spell-name) ... esac
+      if ! grep -qE 'case[[:space:]]+"?\$0"?[[:space:]]+in' "$_iw_spell" 2>/dev/null; then
+        continue
+      fi
+      # Source the spell to load its function
       # shellcheck disable=SC1090
       . "$_iw_spell" 2>/dev/null || true
       # Restore permissive mode - sourcing spells with set -eu changes parent shell mode
@@ -176,6 +182,10 @@ _invoke_wizardry() {
       case "$_iw_user_spell_name" in
         *.md|*.txt|*.sh|.*) continue ;;
       esac
+      # Only source spells that have the self-execute pattern
+      if ! grep -qE 'case[[:space:]]+"?\$0"?[[:space:]]+in' "$_iw_user_spell" 2>/dev/null; then
+        continue
+      fi
       # Source user spell
       # shellcheck disable=SC1090
       . "$_iw_user_spell" 2>/dev/null || true
@@ -183,8 +193,9 @@ _invoke_wizardry() {
     done
   fi
   
-  # Source the cd hook if MUD features are installed
-  # This enables the cd hook that runs 'look' after directory changes
+  # Source the cd hook unconditionally if it exists
+  # The cd hook is designed to be sourced (not executed), so it doesn't have
+  # the self-execute pattern. It's always safe to source.
   _iw_cd_hook="$WIZARDRY_DIR/spells/.arcana/mud/cd"
   if [ -f "$_iw_cd_hook" ] && [ -r "$_iw_cd_hook" ]; then
     # shellcheck disable=SC1090
