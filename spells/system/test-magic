@@ -360,14 +360,20 @@ while IFS= read -r test_path <&3; do
       next
     }
     /^LACK / { print "  " $0; fflush(); next }
-    /^FAIL_DETAIL:/ { next }
+    /^FAIL_DETAIL/ { next }
+    /^[0-9]+\/[0-9]+ tests passed/ { next }
   '
   
   # Read exit code from file
   if [ -f "$test_exit_file" ]; then
-    test_exit_code=$(cat "$test_exit_file")
+    test_exit_code=$(cat "$test_exit_file" 2>/dev/null || printf '1')
     cleanup-file "$test_exit_file"
   fi
+  
+  # Ensure test_exit_code is a valid number (default to 1 if not)
+  case "$test_exit_code" in
+    ''|*[!0-9]*) test_exit_code=1 ;;
+  esac
   
   # Read full output for processing
   output=$(cat "$test_output_file")
