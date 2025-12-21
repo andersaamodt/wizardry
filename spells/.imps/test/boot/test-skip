@@ -12,16 +12,18 @@ _test_skip() {
   num=${WIZARDRY_GLOBAL_SUBTEST_NUM-}
   
   if [ -n "$num" ]; then
+    # When run through test-magic with global numbering
     if [ -n "$reason" ]; then
       printf 'SKIP #%s %s: %s\n' "$num" "$desc" "$reason"
     else
       printf 'SKIP #%s %s\n' "$num" "$desc"
     fi
   else
+    # When run standalone, use old format for backward compatibility
     if [ -n "$reason" ]; then
-      printf 'SKIP %s: %s\n' "$desc" "$reason"
+      printf '  SKIP %s %s\n' "$desc" "$reason"
     else
-      printf 'SKIP %s\n' "$desc"
+      printf '  SKIP %s\n' "$desc"
     fi
   fi
 }
