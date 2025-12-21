@@ -120,6 +120,7 @@ test_jump_lists_available_markers() {
 }
 
 test_jump_zero_cycles() {
+  skip-if-compiled "test sources spell and calls internal function"
   start_dir="$WIZARDRY_TMPDIR/start-zero"
   dest1="$WIZARDRY_TMPDIR/dest1"
   dest2="$WIZARDRY_TMPDIR/dest2"
