@@ -1277,6 +1277,7 @@ install_mud_shows_planned_features() {
 # Tests for the fix that adds .imps/sys to PATH and sources invoke-wizardry directly
 
 install_sources_invoke_wizardry_successfully() {
+  skip-if-compiled || return $?
   # Simulate what happens when install script sources invoke-wizardry
   tmp=$(_make_tempdir)
   test_script="$tmp/test-install.sh"
@@ -1318,6 +1319,7 @@ EOF
 }
 
 install_rc_file_sources_invoke_wizardry() {
+  skip-if-compiled || return $?
   # Simulate what happens when a new shell sources the rc file
   tmp=$(_make_tempdir)
   rc_file="$tmp/.bashrc"
@@ -1353,6 +1355,7 @@ EOF
 }
 
 install_menu_help_works_after_invoke() {
+  skip-if-compiled || return $?
   # Test that menu works after invoke-wizardry is sourced
   tmp=$(_make_tempdir)
   test_script="$tmp/test-menu.sh"
@@ -1376,6 +1379,7 @@ EOF
 }
 
 install_require_wizardry_available() {
+  skip-if-compiled || return $?
   # Test that require-wizardry is available after invoke-wizardry is sourced
   tmp=$(_make_tempdir)
   test_script="$tmp/test-require.sh"
@@ -1403,6 +1407,7 @@ EOF
 }
 
 install_imps_sys_in_path() {
+  skip-if-compiled || return $?
   # Test that .imps/sys is in PATH after invoke-wizardry is sourced
   tmp=$(_make_tempdir)
   test_script="$tmp/test-path.sh"
@@ -1433,6 +1438,7 @@ EOF
 }
 
 install_invoke_wizardry_custom_location() {
+  skip-if-compiled || return $?
   # Test that invoke-wizardry auto-detects its location (fixes macOS menu issue)
   # This tests the fix for the bug where menu wasn't found after install on macOS
   # when wizardry is installed to a location other than ~/.wizardry
