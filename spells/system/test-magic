@@ -355,6 +355,10 @@ WRAPPER_EOF
     # shellcheck disable=SC2086
     $timeout_prefix ${stdbuf_cmd:+$stdbuf_cmd} "$test_wrapper" | \
       tee "$test_output_file" | awk '
+      # CRITICAL: Check FAIL_DETAIL before FAIL pattern
+      # FAIL_DETAIL lines start with "FAIL_DETAIL:" which matches /^FAIL/
+      # If we check /^FAIL/ first, it will strip the ":..." leaving "FAIL_DETAIL" visible
+      # We must filter FAIL_DETAIL completely before processing other FAIL lines
       /^FAIL_DETAIL:/ { next }
       /^PASS / { print "  " $0; fflush(); next }
       /^FAIL/ { 
@@ -377,6 +381,10 @@ WRAPPER_EOF
     # shellcheck disable=SC2086
     ${stdbuf_cmd:+$stdbuf_cmd} "$test_wrapper" | \
       tee "$test_output_file" | awk '
+      # CRITICAL: Check FAIL_DETAIL before FAIL pattern
+      # FAIL_DETAIL lines start with "FAIL_DETAIL:" which matches /^FAIL/
+      # If we check /^FAIL/ first, it will strip the ":..." leaving "FAIL_DETAIL" visible
+      # We must filter FAIL_DETAIL completely before processing other FAIL lines
       /^FAIL_DETAIL:/ { next }
       /^PASS / { print "  " $0; fflush(); next }
       /^FAIL/ { 
@@ -399,7 +407,9 @@ WRAPPER_EOF
   
   # Read exit code from file
   if [ -f "$test_exit_file" ]; then
-    test_exit_code=$(cat "$test_exit_file" 2>/dev/null | tr -d '\n\r ' || printf '0')
+    test_exit_code=$(cat "$test_exit_file" 2>/dev/null | tr -d '\n\r' || printf '0')
+    # Strip leading/trailing whitespace
+    test_exit_code=$(printf '%s' "$test_exit_code" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
     # Validate it's a number, default to 0 if not
     case "$test_exit_code" in
       ''|*[!0-9]*) test_exit_code=0 ;;
