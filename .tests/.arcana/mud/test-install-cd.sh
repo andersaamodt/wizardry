@@ -132,8 +132,9 @@ test_install_cd_handles_nix_format() {
   
   # Run install-cd with DETECT_RC_FILE_PLATFORM set to nixos and HOME set to fake home
   # This will make detect-rc-file find the home.nix file
+  # Also set TMPDIR to ensure mktemp works correctly
   cd_hook_path="$ROOT_DIR/spells/.arcana/mud/cd"
-  output=$(env HOME="$fake_home" PATH="$test_path" DETECT_RC_FILE_PLATFORM=nixos sh "$ROOT_DIR/spells/.arcana/mud/install-cd" 2>&1)
+  output=$(env HOME="$fake_home" PATH="$test_path" TMPDIR="$tmpdir" DETECT_RC_FILE_PLATFORM=nixos sh "$ROOT_DIR/spells/.arcana/mud/install-cd" 2>&1)
   
   # Should successfully install using nix-shell-add
   case "$output" in

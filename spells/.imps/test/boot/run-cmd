@@ -74,10 +74,11 @@ _run_cmd() {
     fi
   elif [ "${MACOS_SANDBOX_AVAILABLE:-0}" -eq 1 ]; then
     # Use macOS sandbox-exec for isolation
-    PATH=$PATH
-    HOME=$HOME
-    TMPDIR="$tmpdir"
-    WIZARDRY_TMPDIR=$WIZARDRY_TMPDIR
+    # Export variables to subprocess environment
+    export PATH="$PATH"
+    export HOME="$HOME"
+    export TMPDIR="$tmpdir"
+    export WIZARDRY_TMPDIR="$WIZARDRY_TMPDIR"
     
     if (cd "$workdir" && _run_macos_sandbox "$@" >"$_stdout" 2>"$_stderr"); then
       STATUS=0
@@ -85,10 +86,11 @@ _run_cmd() {
       STATUS=$?
     fi
   else
-    PATH=$PATH
-    HOME=$HOME
-    TMPDIR="$tmpdir"
-    WIZARDRY_TMPDIR=$WIZARDRY_TMPDIR
+    # Export variables to subprocess environment
+    export PATH="$PATH"
+    export HOME="$HOME"
+    export TMPDIR="$tmpdir"
+    export WIZARDRY_TMPDIR="$WIZARDRY_TMPDIR"
     
     if (cd "$workdir" && "$@" >"$_stdout" 2>"$_stderr"); then
       STATUS=0
