@@ -765,6 +765,7 @@ test_spells_follow_function_discipline() {
   # These spells are large (500-1200 lines) with genuinely multi-use helper functions
   # and complex state management that justifies preserving helper functions.
   # Documented in EXEMPTIONS.md as requiring careful decomposition analysis.
+  # Bootstrap scripts (system/banish) require inline helpers since wizardry isn't installed yet.
   exempted_spells="
 spellcraft/lint-magic
 menu/spellbook
@@ -777,6 +778,7 @@ cantrips/menu
 divination/identify-room
 system/update-all
 system/test-magic
+system/banish
 "
   
   check_function_discipline() {
