@@ -694,7 +694,15 @@ total_scripts=$((pass + fail))
 printf '\n'
 heading-section "Summary"
 printf 'Tests: %d passed, %d failed, %d total\n' "$pass" "$fail" "$total_scripts"
-printf 'Subtests: %d passed, %d total\n' "$subtests_passed" "$subtests_total"
+# Calculate and display failed subtests explicitly
+subtests_failed=$((subtests_total - subtests_passed))
+if [ "$subtests_failed" -gt 0 ]; then
+  printf 'Subtests: %d passed, %d failed, %d total\n' "$subtests_passed" "$subtests_failed" "$subtests_total"
+  # Ensure status is set to failure if any subtests failed
+  status=1
+else
+  printf 'Subtests: %d passed, %d total\n' "$subtests_passed" "$subtests_total"
+fi
 if [ "$coverage_uncovered" -gt 0 ]; then
   printf 'Coverage: %d uncovered\n' "$coverage_uncovered"
 fi
