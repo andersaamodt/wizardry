@@ -59,9 +59,32 @@ fi
 
 # Add source line to RC file
 if [ "$rc_format" = "nix" ]; then
-        # For NixOS, we'd need to use nix-shell-add, but cd hook doesn't work well with NixOS
-        # declarative config. Skip installation on NixOS.
-        printf '%s\n' "Note: cd hook installation not supported on NixOS (use toggle-cd manually)" >&2
+        # For NixOS, use nix-shell-add to add cd hook to configuration file
+        NIX_SHELL_ADD="$ROOT_DIR/spells/.imps/sys/nix-shell-add"
+        NIX_SHELL_STATUS="$ROOT_DIR/spells/.imps/sys/nix-shell-status"
+        
+        if [ ! -x "$NIX_SHELL_ADD" ]; then
+                printf '%s\n' "install-cd: nix-shell-add not found" >&2
+                exit 1
+        fi
+        
+        # Check if already installed using nix-shell-status
+        if [ -x "$NIX_SHELL_STATUS" ] && "$NIX_SHELL_STATUS" cd-hook "$rc_file" 2>/dev/null; then
+                printf '%s\n' "✓ cd hook is already installed in $rc_file"
+                exit 0
+        fi
+        
+        # Add cd hook source line to NixOS configuration
+        if ! printf '. "%s"' "$CD_HOOK" | "$NIX_SHELL_ADD" cd-hook "$rc_file" bash 2>/dev/null; then
+                printf '%s\n' "install-cd: failed to add cd hook to $rc_file" >&2
+                exit 1
+        fi
+        
+        printf '%s\n' "✓ cd hook installed to $rc_file"
+        printf '%s\n' ""
+        printf '%s\n' "The cd function will be available after rebuilding your NixOS configuration."
+        printf '%s\n' "Run 'sudo nixos-rebuild switch' or 'home-manager switch' to apply changes."
+        printf '%s\n' "Use 'toggle-cd' to enable or disable the look-on-cd behavior."
         exit 0
 fi
 

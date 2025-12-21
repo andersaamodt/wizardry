@@ -121,37 +121,44 @@ test_install_cd_handles_nix_format() {
   skip-if-compiled || return $?
   tmpdir=$(_make_tempdir)
   
-  # Create a test root directory structure
-  test_root="$tmpdir/wizardry"
-  mkdir -p "$test_root/spells/divination"
-  mkdir -p "$test_root/spells/.arcana/mud"
+  # Create a fake home directory with NixOS configuration
+  fake_home="$tmpdir/home"
+  mkdir -p "$fake_home/.config/home-manager"
+  nix_file="$fake_home/.config/home-manager/home.nix"
+  printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$nix_file"
   
-  # Copy the cd hook file
-  cp "$ROOT_DIR/spells/.arcana/mud/cd" "$test_root/spells/.arcana/mud/cd"
+  # Run install-cd with DETECT_RC_FILE_PLATFORM set to nixos and HOME set to fake home
+  # This will make detect-rc-file find the home.nix file
+  cd_hook_path="$ROOT_DIR/spells/.arcana/mud/cd"
+  output=$(env HOME="$fake_home" DETECT_RC_FILE_PLATFORM=nixos sh "$ROOT_DIR/spells/.arcana/mud/install-cd" 2>&1)
   
-  # Create a fake detect-rc-file that returns nix format
-  cat > "$test_root/spells/divination/detect-rc-file" << 'DETECT_EOF'
-#!/bin/sh
-printf 'rc_file=/etc/nixos/configuration.nix\n'
-printf 'format=nix\n'
-DETECT_EOF
-  chmod +x "$test_root/spells/divination/detect-rc-file"
-  
-  # Copy install-cd to test location
-  cp "$ROOT_DIR/spells/.arcana/mud/install-cd" "$test_root/spells/.arcana/mud/install-cd"
-  
-  # Run install-cd from the test root
-  output=$(cd "$test_root/spells/.arcana/mud" && sh install-cd 2>&1)
-  
-  # Should skip installation for NixOS
+  # Should successfully install using nix-shell-add
   case "$output" in
-    *"not supported on NixOS"*)
+    *"cd hook installed"*)
       ;;
     *)
-      TEST_FAILURE_REASON="Expected NixOS skip message, got: $output"
+      TEST_FAILURE_REASON="Expected success message, got: $output"
       return 1
       ;;
   esac
+  
+  # Verify nix file contains the cd hook marker
+  if ! grep -q "wizardry: cd-hook" "$nix_file"; then
+    TEST_FAILURE_REASON="NixOS config doesn't contain cd-hook marker. Contents: $(cat "$nix_file")"
+    return 1
+  fi
+  
+  # Verify nix file contains reference to cd hook path
+  if ! grep -qF "$cd_hook_path" "$nix_file"; then
+    TEST_FAILURE_REASON="NixOS config doesn't contain cd hook path. Contents: $(cat "$nix_file")"
+    return 1
+  fi
+  
+  # Verify proper nix option is used (programs.bash.initExtra for home-manager)
+  if ! grep -q "programs\.bash\.initExtra" "$nix_file"; then
+    TEST_FAILURE_REASON="NixOS config doesn't use programs.bash.initExtra. Contents: $(cat "$nix_file")"
+    return 1
+  fi
 }
 
 test_install_cd_creates_rc_file_if_missing() {
