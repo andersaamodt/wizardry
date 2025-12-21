@@ -29,6 +29,7 @@ set -eu
 # Check argument
 if [ -z "${1-}" ]; then
         fail "wizard-cast: command required"
+        return 1
 fi
 
 # Display the command using wizard-eyes if available
