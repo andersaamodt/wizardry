@@ -732,7 +732,6 @@ coverage_uncovered=$((coverage_total - coverage_covered))
 
 total_scripts=$((pass + fail))
 
-printf '\n'
 heading-section "Summary"
 printf 'Tests: %d passed, %d failed, %d total\n' "$pass" "$fail" "$total_scripts"
 printf 'Subtests: %d passed, %d total\n' "$subtests_passed" "$subtests_total"

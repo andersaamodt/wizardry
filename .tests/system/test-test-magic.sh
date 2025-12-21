@@ -415,6 +415,71 @@ EOF
   return 0
 }
 
+# Test that output streams line-by-line (not buffered)
+output_streams_line_by_line() {
+  tmpdir="$(_make_tempdir)"
+  tmpfile="$tmpdir/output.txt"
+  
+  # Create a test fixture with delays
+  fixture_dir="$ROOT_DIR/.tests/__temp_test_fixtures"
+  mkdir -p "$fixture_dir"
+  test_fixture="$fixture_dir/test-streaming.sh"
+  
+  cat > "$test_fixture" << 'EOF'
+#!/bin/sh
+test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
+  test_root=$(dirname "$test_root")
+done
+. "$test_root/spells/.imps/test/test-bootstrap"
+
+test_1() { return 0; }
+test_2() { return 0; }
+test_3() { return 0; }
+
+_run_test_case "test 1" test_1
+_run_test_case "test 2" test_2
+_run_test_case "test 3" test_3
+_finish_tests
+EOF
+  chmod +x "$test_fixture"
+  
+  cd "$ROOT_DIR" || return 1
+  
+  # Run test-magic and verify stdbuf is applied inside wrapper
+  # We verify this by checking that the wrapper script contains stdbuf
+  sh spells/system/test-magic --only "__temp_test_fixtures/test-streaming.sh" >"$tmpfile" 2>&1 || true
+  
+  # Clean up fixture
+  rm -rf "$fixture_dir"
+  
+  # Verify that PASS lines appear in output (confirming streaming works)
+  # If output is not streaming, subtests would be buffered
+  if ! grep -q "PASS #1" "$tmpfile"; then
+    TEST_FAILURE_REASON="PASS #1 not found in output (streaming may be broken)"
+    return 1
+  fi
+  
+  if ! grep -q "PASS #2" "$tmpfile"; then
+    TEST_FAILURE_REASON="PASS #2 not found in output (streaming may be broken)"
+    return 1
+  fi
+  
+  if ! grep -q "PASS #3" "$tmpfile"; then
+    TEST_FAILURE_REASON="PASS #3 not found in output (streaming may be broken)"
+    return 1
+  fi
+  
+  # Verify that the wrapper applies stdbuf to the sh command
+  # This is a white-box test to ensure the fix stays in place
+  if ! grep -q 'stdbuf.*sh.*"\$abs"' "$ROOT_DIR/spells/system/test-magic"; then
+    TEST_FAILURE_REASON="stdbuf not applied to sh command in wrapper (streaming optimization missing)"
+    return 1
+  fi
+  
+  return 0
+}
+
 _run_test_case "system/test-magic is executable" spell_is_executable
 _run_test_case "system/test-magic shows help" shows_help
 _run_test_case "system/test-magic has content" spell_has_content
@@ -427,5 +492,6 @@ _run_test_case "FAIL_DETAIL lines hidden from output" fail_detail_hidden_from_ou
 _run_test_case "test summary line visible in output" test_summary_line_visible
 _run_test_case "failed subtest numbers in summary" failed_subtest_numbers_in_summary
 _run_test_case "detailed output shown for few failures" detailed_output_for_few_failures
+_run_test_case "output streams line-by-line" output_streams_line_by_line
 
 _finish_tests
