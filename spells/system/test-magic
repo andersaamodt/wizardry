@@ -695,7 +695,8 @@ printf 'Tests: %d passed, %d failed, %d total\n' "$pass" "$fail" "$total_scripts
 # Calculate and display failed subtests explicitly
 subtests_failed=$((subtests_total - subtests_passed))
 if [ "$subtests_failed" -gt 0 ]; then
-  printf 'Subtests: %d passed, %d failed, %d total\n' "$subtests_passed" "$subtests_failed" "$subtests_total"
+  printf 'Subtests: %d passed, %d failed, %d total\n' \
+    "$subtests_passed" "$subtests_failed" "$subtests_total"
   # Ensure status is set to failure if any subtests failed
   status=1
 else
