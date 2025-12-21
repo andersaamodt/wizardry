@@ -78,9 +78,10 @@ menu_respects_start_selection() {
   esac
 }
 
-# Skip if /dev/tty is not available (e.g., in CI environment)
-if [ ! -r /dev/tty ] || [ ! -w /dev/tty ]; then
-  _test_skip "menu respects --start-selection (Issue #198)" "requires /dev/tty"
+# Skip if /dev/tty is not functional (e.g., in CI environment)
+# Check if stty can actually read from /dev/tty, not just if file exists
+if ! stty -g </dev/tty >/dev/null 2>&1; then
+  _test_skip "menu respects --start-selection (Issue #198)" "requires functional /dev/tty"
 else
   _run_test_case "menu respects --start-selection (Issue #198)" menu_respects_start_selection
 fi
@@ -139,9 +140,10 @@ menu_highlight_strips_ansi_codes() {
   return 0
 }
 
-# Skip if /dev/tty is not available (e.g., in CI environment)
-if [ ! -r /dev/tty ] || [ ! -w /dev/tty ]; then
-  _test_skip "menu highlight strips ANSI codes from labels" "requires /dev/tty"
+# Skip if /dev/tty is not functional (e.g., in CI environment)
+# Check if stty can actually read from /dev/tty, not just if file exists
+if ! stty -g </dev/tty >/dev/null 2>&1; then
+  _test_skip "menu highlight strips ANSI codes from labels" "requires functional /dev/tty"
 else
   _run_test_case "menu highlight strips ANSI codes from labels" menu_highlight_strips_ansi_codes
 fi
@@ -197,9 +199,10 @@ menu_restores_cursor_on_exit() {
   esac
 }
 
-# Skip if /dev/tty is not available (e.g., in CI environment)
-if [ ! -r /dev/tty ] || [ ! -w /dev/tty ]; then
-  _test_skip "menu restores cursor on exit" "requires /dev/tty"
+# Skip if /dev/tty is not functional (e.g., in CI environment)
+# Check if stty can actually read from /dev/tty, not just if file exists
+if ! stty -g </dev/tty >/dev/null 2>&1; then
+  _test_skip "menu restores cursor on exit" "requires functional /dev/tty"
 else
   _run_test_case "menu restores cursor on exit" menu_restores_cursor_on_exit
 fi
