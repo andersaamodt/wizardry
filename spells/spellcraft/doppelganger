@@ -63,15 +63,12 @@ else
 fi
 
 set -eu
-. env-clear
 
 # Source env-clear (use WIZARDRY_DIR if available, otherwise compute relative path)
-# Note: Simple `. env-clear` above for test compliance; full sourcing below for functionality
 if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/env-clear" ]; then
-  : # Already sourced above
+  . "${WIZARDRY_DIR}/spells/.imps/sys/env-clear"
 else
   _dg_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-  # Re-source from relative path if WIZARDRY_DIR not available
   . "$_dg_script_dir/../../.imps/sys/env-clear"
 fi
 
