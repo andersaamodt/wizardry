@@ -97,7 +97,7 @@ $(find "$test_dir" -mindepth 2 -type f -name 'test-*.sh' 2>/dev/null | sort)"
 fi
 
 if [ -z "$test_list" ]; then
-  die "profile-tests: no tests found"
+  die "profile-tests: no tests found" || return 1
 fi
 
 # Create temporary file for timing data
