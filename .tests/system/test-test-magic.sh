@@ -157,6 +157,127 @@ has_timeout_protection() {
   return 0
 }
 
+# Test that failed subtests cause the parent test to fail
+failed_subtests_fail_parent_test() {
+  tmpdir="$(_make_tempdir)"
+  tmpfile="$tmpdir/output.txt"
+  
+  cd "$ROOT_DIR" || return 1
+  
+  # Run test-magic on a test that has failing subtests
+  sh spells/system/test-magic --only "fixtures/test-with-failures.sh" >"$tmpfile" 2>&1 || true
+  
+  # Extract summary line
+  summary=$(grep "^Tests:" "$tmpfile" || true)
+  
+  # The test should be marked as FAILED, not PASSED
+  # Look for "X failed" where X > 0
+  failed_count=$(printf '%s\n' "$summary" | awk '{for(i=1;i<=NF;i++) if($(i+1)=="failed,") print $i}')
+  
+  [ -n "$failed_count" ] && [ "$failed_count" -gt 0 ] || {
+    TEST_FAILURE_REASON="Test with failing subtests was not counted as failed (summary: $summary)"
+    return 1
+  }
+  
+  return 0
+}
+
+# Test that FAIL_DETAIL lines are not visible in output
+fail_detail_hidden_from_output() {
+  tmpdir="$(_make_tempdir)"
+  tmpfile="$tmpdir/output.txt"
+  
+  cd "$ROOT_DIR" || return 1
+  
+  # Run test-magic on a test that has failing subtests
+  sh spells/system/test-magic --only "fixtures/test-with-failures.sh" >"$tmpfile" 2>&1 || true
+  
+  # FAIL_DETAIL lines should not appear in the per-test output section
+  # They should only be used internally for parsing
+  # Look for lines like "  FAIL_DETAIL" in the indented test output
+  if grep -E "^  FAIL_DETAIL" "$tmpfile" >/dev/null 2>&1; then
+    TEST_FAILURE_REASON="FAIL_DETAIL line visible in test output"
+    return 1
+  fi
+  
+  return 0
+}
+
+# Test that test summary line (X/Y tests passed) is visible in output
+test_summary_line_visible() {
+  tmpdir="$(_make_tempdir)"
+  tmpfile="$tmpdir/output.txt"
+  
+  cd "$ROOT_DIR" || return 1
+  
+  # Run test-magic on a test with subtests
+  sh spells/system/test-magic --only "fixtures/test-all-pass.sh" >"$tmpfile" 2>&1 || true
+  
+  # The test should show its own summary line like "3/3 tests passed"
+  # This helps users see the subtest results for each test
+  if ! grep -E "^  [0-9]+/[0-9]+ tests passed" "$tmpfile" >/dev/null 2>&1; then
+    TEST_FAILURE_REASON="Test summary line not visible in output"
+    return 1
+  fi
+  
+  return 0
+}
+
+# Test that failed subtest numbers appear in failure summary
+failed_subtest_numbers_in_summary() {
+  tmpdir="$(_make_tempdir)"
+  tmpfile="$tmpdir/output.txt"
+  
+  cd "$ROOT_DIR" || return 1
+  
+  # Run test-magic on a test that has failing subtests
+  sh spells/system/test-magic --only "fixtures/test-with-failures.sh" >"$tmpfile" 2>&1 || true
+  
+  # Look for the failed tests line at the end showing subtest numbers
+  # Should be like: "Failed tests (os): with-failures (2, 4)"
+  failed_line=$(grep "^Failed tests" "$tmpfile" || true)
+  
+  [ -n "$failed_line" ] || {
+    TEST_FAILURE_REASON="Failed tests summary line not found"
+    return 1
+  }
+  
+  # Should contain the subtest numbers in parentheses
+  if ! printf '%s\n' "$failed_line" | grep -E '\([0-9]+(, [0-9]+)*\)' >/dev/null 2>&1; then
+    TEST_FAILURE_REASON="Failed subtest numbers not shown in summary (got: $failed_line)"
+    return 1
+  fi
+  
+  return 0
+}
+
+# Test that detailed failure output shows when there are few failures
+detailed_output_for_few_failures() {
+  tmpdir="$(_make_tempdir)"
+  tmpfile="$tmpdir/output.txt"
+  
+  cd "$ROOT_DIR" || return 1
+  
+  # Run test-magic on a test that has failing subtests
+  sh spells/system/test-magic --only "fixtures/test-with-failures.sh" >"$tmpfile" 2>&1 || true
+  
+  # With only 1 failing test, detailed output should be shown
+  # Look for "Failure Details" section
+  if ! grep "Failure Details" "$tmpfile" >/dev/null 2>&1; then
+    TEST_FAILURE_REASON="Failure Details section not found for test with failures"
+    return 1
+  fi
+  
+  # The detailed section should contain information about the failures
+  # Look for lines that show FAIL messages
+  if ! grep -A 10 "Failure Details" "$tmpfile" | grep "FAIL" >/dev/null 2>&1; then
+    TEST_FAILURE_REASON="No failure details shown under Failure Details section"
+    return 1
+  fi
+  
+  return 0
+}
+
 _run_test_case "system/test-magic is executable" spell_is_executable
 _run_test_case "system/test-magic shows help" shows_help
 _run_test_case "system/test-magic has content" spell_has_content
@@ -164,5 +285,10 @@ _run_test_case "system/test-magic processes all tests without skipping" all_test
 _run_test_case "system/test-magic has no test rerun logic" no_test_reruns
 _run_test_case "system/test-magic has pre-flight checks" has_preflight_checks
 _run_test_case "system/test-magic has timeout protection" has_timeout_protection
+_run_test_case "failed subtests cause parent test to fail" failed_subtests_fail_parent_test
+_run_test_case "FAIL_DETAIL lines hidden from output" fail_detail_hidden_from_output
+_run_test_case "test summary line visible in output" test_summary_line_visible
+_run_test_case "failed subtest numbers in summary" failed_subtest_numbers_in_summary
+_run_test_case "detailed output shown for few failures" detailed_output_for_few_failures
 
 _finish_tests

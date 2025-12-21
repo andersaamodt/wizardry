@@ -2,3 +2,7 @@
 .uninstall
 wizardry-compiled/
 ALL_INPUT
+
+# Test temporary files
+.tests/temp/
+.tests/fixtures/
