@@ -243,6 +243,152 @@ EOF
   _assert_output_contains "basic commands available" || return 1
 }
 
+# Test: Spells with self-execute pattern are loaded at startup
+test_spells_loaded_at_startup() {
+  tmpdir=$(_make_tempdir)
+  cat > "$tmpdir/test-spells.sh" << EOF
+#!/bin/sh
+WIZARDRY_DIR="$ROOT_DIR"
+export WIZARDRY_DIR
+. "$ROOT_DIR/spells/.imps/sys/invoke-wizardry" 2>/dev/null
+
+# Check that spell functions are available immediately
+if command -v forall >/dev/null 2>&1; then
+  printf 'forall function available\n'
+fi
+
+# Test calling a spell function
+if forall --help 2>&1 | grep -q "Usage: forall"; then
+  printf 'forall function works\n'
+fi
+EOF
+  chmod +x "$tmpdir/test-spells.sh"
+  
+  _run_cmd sh "$tmpdir/test-spells.sh"
+  _assert_success || return 1
+  _assert_output_contains "forall function available" || return 1
+  _assert_output_contains "forall function works" || return 1
+}
+
+# Test: CD hook is loaded and available
+test_cd_hook_loaded() {
+  tmpdir=$(_make_tempdir)
+  cat > "$tmpdir/test-cd.sh" << EOF
+#!/bin/sh
+WIZARDRY_DIR="$ROOT_DIR"
+export WIZARDRY_DIR
+. "$ROOT_DIR/spells/.imps/sys/invoke-wizardry" 2>/dev/null
+
+# Check that cd is a function (not just the builtin)
+if type cd 2>&1 | grep -q "function"; then
+  printf 'cd hook loaded\n'
+fi
+EOF
+  chmod +x "$tmpdir/test-cd.sh"
+  
+  _run_cmd sh "$tmpdir/test-cd.sh"
+  _assert_success || return 1
+  _assert_output_contains "cd hook loaded" || return 1
+}
+
+# Test: command_not_found_handle is set up for hotloading
+test_command_not_found_handle_exists() {
+  tmpdir=$(_make_tempdir)
+  cat > "$tmpdir/test-cnf.sh" << 'EOF'
+#!/bin/bash
+WIZARDRY_DIR="$ROOT_DIR"
+export WIZARDRY_DIR
+. "$ROOT_DIR/spells/.imps/sys/invoke-wizardry" 2>/dev/null
+
+# Check that command_not_found_handle is defined (bash-specific)
+if type command_not_found_handle >/dev/null 2>&1; then
+  printf 'command_not_found_handle defined\n'
+fi
+EOF
+  chmod +x "$tmpdir/test-cnf.sh"
+  
+  # Replace ROOT_DIR in the heredoc
+  sed -i "s|\$ROOT_DIR|$ROOT_DIR|g" "$tmpdir/test-cnf.sh"
+  
+  # Only run this test if bash is available
+  if command -v bash >/dev/null 2>&1; then
+    _run_cmd bash "$tmpdir/test-cnf.sh"
+    _assert_success || return 1
+    _assert_output_contains "command_not_found_handle defined" || return 1
+  else
+    # Skip test if bash not available
+    return 0
+  fi
+}
+
+# Test: Wrong command doesn't exit the shell
+test_wrong_command_doesnt_exit_shell() {
+  tmpdir=$(_make_tempdir)
+  cat > "$tmpdir/test-wrong-cmd.sh" << 'EOF'
+#!/bin/bash
+WIZARDRY_DIR="$ROOT_DIR"
+export WIZARDRY_DIR
+. "$ROOT_DIR/spells/.imps/sys/invoke-wizardry" 2>/dev/null
+
+# Try a command that doesn't exist
+wrongcommand_that_does_not_exist_12345 2>&1 | head -1
+
+# If we get here, the shell didn't exit
+printf 'shell still alive after wrong command\n'
+EOF
+  chmod +x "$tmpdir/test-wrong-cmd.sh"
+  
+  # Replace ROOT_DIR in the heredoc
+  sed -i "s|\$ROOT_DIR|$ROOT_DIR|g" "$tmpdir/test-wrong-cmd.sh"
+  
+  # Only run this test if bash is available
+  if command -v bash >/dev/null 2>&1; then
+    _run_cmd bash "$tmpdir/test-wrong-cmd.sh"
+    _assert_success || return 1
+    _assert_output_contains "shell still alive after wrong command" || return 1
+  else
+    # Skip test if bash not available
+    return 0
+  fi
+}
+
+# Test: command_not_found_handle returns proper exit code
+test_command_not_found_returns_127() {
+  tmpdir=$(_make_tempdir)
+  cat > "$tmpdir/test-exit-code.sh" << 'EOF'
+#!/bin/bash
+WIZARDRY_DIR="$ROOT_DIR"
+export WIZARDRY_DIR
+. "$ROOT_DIR/spells/.imps/sys/invoke-wizardry" 2>/dev/null
+
+# Try a command that doesn't exist and capture exit code
+wrongcommand_that_does_not_exist_12345 >/dev/null 2>&1
+exit_code=$?
+
+printf 'exit code: %d\n' "$exit_code"
+
+# Exit code should be 127 for command not found
+if [ "$exit_code" -eq 127 ]; then
+  printf 'correct exit code\n'
+fi
+EOF
+  chmod +x "$tmpdir/test-exit-code.sh"
+  
+  # Replace ROOT_DIR in the heredoc
+  sed -i "s|\$ROOT_DIR|$ROOT_DIR|g" "$tmpdir/test-exit-code.sh"
+  
+  # Only run this test if bash is available
+  if command -v bash >/dev/null 2>&1; then
+    _run_cmd bash "$tmpdir/test-exit-code.sh"
+    _assert_success || return 1
+    _assert_output_contains "exit code: 127" || return 1
+    _assert_output_contains "correct exit code" || return 1
+  else
+    # Skip test if bash not available
+    return 0
+  fi
+}
+
 _run_test_case "invoke-wizardry is sourceable" test_sourceable
 _run_test_case "invoke-wizardry sets WIZARDRY_DIR" test_sets_wizardry_dir
 _run_test_case "invoke-wizardry adds spell directories to PATH" test_adds_to_path
@@ -251,5 +397,10 @@ _run_test_case "sourcing invoke-wizardry doesn't hang" test_no_hanging
 _run_test_case "invoke-wizardry maintains permissive shell mode" test_maintains_permissive_mode
 _run_test_case "invoke-wizardry works when sourced from rc file" test_rc_file_sourcing
 _run_test_case "invoke-wizardry handles empty PATH" test_empty_path_handling
+_run_test_case "spells are loaded at startup" test_spells_loaded_at_startup
+_run_test_case "cd hook is loaded" test_cd_hook_loaded
+_run_test_case "command_not_found_handle exists" test_command_not_found_handle_exists
+_run_test_case "wrong command doesn't exit shell" test_wrong_command_doesnt_exit_shell
+_run_test_case "command_not_found returns 127" test_command_not_found_returns_127
 
 _finish_tests

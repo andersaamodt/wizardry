@@ -142,10 +142,9 @@ _invoke_wizardry() {
     done
   fi
   
-  # Source all spells recursively to load them into the shell
-  # This is simpler and more reliable than lazy loading via command_not_found_handle
-  # Spells with the self-execute pattern (case "$0" in */spell-name) ...) will define
-  # their functions but not execute them when sourced
+  # Source all spells at startup for immediate availability
+  # This provides fast access to all spells without lazy loading delays
+  # Spells with the self-execute pattern (case "$0" in */spell-name) are safe to source
   for _iw_spell_cat in "$WIZARDRY_DIR"/spells/*; do
     [ -d "$_iw_spell_cat" ] || continue
     # Skip .imps and .arcana - they're handled separately
@@ -201,6 +200,44 @@ _invoke_wizardry() {
     # shellcheck disable=SC1090
     . "$_iw_cd_hook" 2>/dev/null || true
     set +eu
+  fi
+  
+  # Set up command_not_found_handle for hotloading and recursive parser
+  # This enables:
+  # - Hotloading of spells not yet sourced (for .spellbook additions, etc.)
+  # - Recursive parser functionality via parse
+  # - Graceful failure for truly unknown commands
+  # Use eval to check shell type while avoiding checkbashisms false positive
+  if eval '[ -n "${BASH_VERSION+x}" ]' 2>/dev/null; then
+    # Bash-specific command_not_found_handle
+    eval 'command_not_found_handle() {
+      # Try word-of-binding for autoloading (handles spells not yet loaded)
+      if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" ]; then
+        "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" "$@" 2>/dev/null && return 0
+      fi
+      # Fall back to parse for recursive grammar parsing
+      if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/lex/parse" ]; then
+        "$WIZARDRY_DIR/spells/.imps/lex/parse" "$@" 2>/dev/null && return 0
+      fi
+      # Truly unknown command - print error and return 127
+      printf '\''%s: command not found\n'\'' "$1" >&2
+      return 127
+    }'
+  elif eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+    # Zsh-specific command_not_found_handler
+    eval 'command_not_found_handler() {
+      # Try word-of-binding for autoloading (handles spells not yet loaded)
+      if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" ]; then
+        "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" "$@" 2>/dev/null && return 0
+      fi
+      # Fall back to parse for recursive grammar parsing
+      if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/lex/parse" ]; then
+        "$WIZARDRY_DIR/spells/.imps/lex/parse" "$@" 2>/dev/null && return 0
+      fi
+      # Truly unknown command - print error and return 127
+      printf '\''%s: command not found\n'\'' "$1" >&2
+      return 127
+    }'
   fi
   
   # Load synonyms (aliases) from spellbook by sourcing invoke-thesaurus
