@@ -41,7 +41,6 @@ case "${1-}" in
 esac
 
 set -eu
-. env-clear
 
 # Parse arguments
 verbose=0
