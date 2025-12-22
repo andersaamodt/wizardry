@@ -1429,7 +1429,7 @@ test_spells_source_env_clear_after_set_eu() {
       # Bootstrap scripts with conditional env-clear sourcing (run before wizardry fully installed)
       system/banish|spellcraft/compile-spell|spellcraft/doppelganger) return ;;
       # Scripts that need PATH setup before env-clear to find it
-      system/test-magic|system/verify-posix|spellcraft/lint-magic|enchant/enchant) return ;;
+      system/test-magic|system/test-spell|system/verify-posix|spellcraft/lint-magic|enchant/enchant) return ;;
       # Spells using wrapper function pattern (set -eu inside function for sourceable spells)
       priorities/get-priority|priorities/prioritize|priorities/upvote|priorities/get-new-priority) return ;;
       arcane/copy|arcane/file-list|arcane/forall|arcane/jump-trash|arcane/read-magic|arcane/trash) return ;;
