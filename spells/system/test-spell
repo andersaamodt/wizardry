@@ -120,7 +120,7 @@ if [ -n "$subtest_filter" ]; then
   # Filter mode: only run specified subtests
   # We need to intercept the test output and filter based on subtest numbers
   
-  # Create temp file for full test output
+  # Create temp file for full test output and set trap immediately
   output_file=$(temp-file test-spell-output) || exit 1
   trap 'cleanup-file "$output_file"' EXIT HUP INT TERM
   
@@ -147,8 +147,13 @@ if [ -n "$subtest_filter" ]; then
     # Detect subtest lines (PASS/FAIL #N format)
     case "$line" in
       "  PASS #"*|"  FAIL #"*|"PASS #"*|"FAIL #"*)
-        # Extract subtest number
-        num=$(printf '%s' "$line" | sed 's/^[[:space:]]*\(PASS\|FAIL\) #\([0-9]*\).*/\2/')
+        # Extract subtest number (use + to require at least one digit)
+        num=$(printf '%s' "$line" | sed 's/^[[:space:]]*\(PASS\|FAIL\) #\([0-9]\+\).*/\2/')
+        
+        # Skip if number extraction failed (empty or non-numeric)
+        case "$num" in
+          ''|*[!0-9]*) continue ;;
+        esac
         
         # Check if this subtest should be shown
         show_line=0
@@ -177,10 +182,8 @@ if [ -n "$subtest_filter" ]; then
     esac
   done < "$output_file"
   
-  cleanup-file "$output_file"
-  trap - EXIT HUP INT TERM
-  
   # Exit with success if all selected subtests passed
+  # Trap will clean up the temp file automatically
   if [ "$fail_count" -eq 0 ] && [ "$pass_count" -gt 0 ]; then
     exit 0
   else
