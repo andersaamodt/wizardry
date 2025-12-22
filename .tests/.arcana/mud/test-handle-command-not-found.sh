@@ -34,17 +34,14 @@ test_handle_cnf_installs_hook() {
   tmp=$(_make_tempdir)
   : >"$tmp/rc"
   
+  # Install is now deprecated and should just print a message
   _run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/.arcana/mud/handle-command-not-found" install
   _assert_success || return 1
-  _assert_output_contains "installed" || return 1
+  _assert_error_contains "deprecated" || return 1
   
-  # Verify hook was installed
-  if ! grep -q ">>> wizardry command-not-found >>>" "$tmp/rc"; then
-    TEST_FAILURE_REASON="Hook opening marker not found in rc file"
-    return 1
-  fi
-  if ! grep -q "command_not_found_handle" "$tmp/rc"; then
-    TEST_FAILURE_REASON="command_not_found_handle function not found in rc file"
+  # Verify hook was NOT installed (since it's deprecated)
+  if grep -q ">>> wizardry command-not-found >>>" "$tmp/rc" 2>/dev/null; then
+    TEST_FAILURE_REASON="Hook was installed despite being deprecated"
     return 1
   fi
 }
@@ -52,13 +49,19 @@ test_handle_cnf_installs_hook() {
 test_handle_cnf_uninstalls_hook() {
   tmp=$(_make_tempdir)
   
-  # First install the hook
-  _run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/.arcana/mud/handle-command-not-found" install
-  _assert_success || return 1
+  # Manually create an old-style hook for testing uninstall
+  cat > "$tmp/rc" << 'EOF'
+# >>> wizardry command-not-found >>>
+command_not_found_handle() {
+  printf '%s: command not found\n' "$1" >&2
+  return 127
+}
+# <<< wizardry command-not-found <<<
+EOF
   
-  # Verify it was installed
+  # Verify it was created
   if ! grep -q ">>> wizardry command-not-found >>>" "$tmp/rc"; then
-    TEST_FAILURE_REASON="Hook not installed for uninstall test"
+    TEST_FAILURE_REASON="Hook not created for uninstall test"
     return 1
   fi
   
@@ -87,36 +90,26 @@ test_handle_cnf_install_idempotent() {
   tmp=$(_make_tempdir)
   : >"$tmp/rc"
   
-  # Install twice
+  # Install is now deprecated - calling it twice should still work
   _run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/.arcana/mud/handle-command-not-found" install
   _assert_success || return 1
-  _run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/.arcana/mud/handle-command-not-found" install
-  _assert_success || return 1
+  _assert_error_contains "deprecated" || return 1
   
-  # Count how many times the marker appears - should be exactly 1
-  count=$(grep -c ">>> wizardry command-not-found >>>" "$tmp/rc" || true)
-  if [ "$count" != "1" ]; then
-    TEST_FAILURE_REASON="Multiple hook blocks installed: found $count markers"
-    return 1
-  fi
+  _run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/.arcana/mud/handle-command-not-found" install
+  _assert_success || return 1
+  _assert_error_contains "deprecated" || return 1
 }
 
 test_handle_cnf_hook_has_proper_function() {
+  # This test is no longer relevant since install is deprecated
+  # The hook is now provided by invoke-wizardry, not this spell
+  # Just verify the spell shows the deprecation message
   tmp=$(_make_tempdir)
   : >"$tmp/rc"
   
   _run_cmd env WIZARDRY_RC_FILE="$tmp/rc" "$ROOT_DIR/spells/.arcana/mud/handle-command-not-found" install
   _assert_success || return 1
-  
-  # Verify the function has proper content
-  if ! grep -q "return 127" "$tmp/rc"; then
-    TEST_FAILURE_REASON="command_not_found_handle should return 127"
-    return 1
-  fi
-  if ! grep -q "menu" "$tmp/rc"; then
-    TEST_FAILURE_REASON="command_not_found_handle should mention menu"
-    return 1
-  fi
+  _assert_error_contains "deprecated" || return 1
 }
 
 _run_test_case "handle-command-not-found is executable" test_handle_cnf_is_executable

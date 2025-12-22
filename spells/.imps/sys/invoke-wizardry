@@ -262,6 +262,9 @@ _invoke_wizardry() {
     # Restore permissive mode
     set +eu
   fi
+  
+  # Return success
+  return 0
 }
 
 # Run the setup when sourced

@@ -154,7 +154,7 @@ EOF
     hook_present=1
   elif grep -Fq '#wizardry: command-not-found' "$rc_file"; then
     hook_present=1
-  elif grep-Fq 'WIZARDRY_COMMAND_NOT_FOUND' "$rc_file"; then
+  elif grep -Fq 'WIZARDRY_COMMAND_NOT_FOUND' "$rc_file"; then
     hook_present=1
   fi
   
