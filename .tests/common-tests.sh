@@ -859,16 +859,10 @@ system/banish
     [ "$is_exempted" -eq 1 ] && return
     
     # Count all function definitions
-    # Note: This simple pattern-based approach may count functions in comments
-    # or heredocs, but this is acceptable for a stylistic check that identifies
-    # proto-libraries. False positives would be rare in practice.
-    # Pattern 1: func() { on same line
-    func_count_inline=$(grep -cE '^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*[[:space:]]*\(\)[[:space:]]*\{' "$spell" 2>/dev/null || true)
-    func_count_inline=${func_count_inline:-0}
-    # Pattern 2: func() on one line, { on next line
-    func_count_multiline=$(grep -cE '^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*[[:space:]]*\(\)[[:space:]]*$' "$spell" 2>/dev/null || true)
-    func_count_multiline=${func_count_multiline:-0}
-    func_count=$((func_count_inline + func_count_multiline))
+    # OPTIMIZED: Single grep pass instead of two separate greps
+    # Pattern matches both inline "func() {" and multiline "func()" followed by "{"
+    func_count=$(grep -cE '^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*[[:space:]]*\(\)([[:space:]]*\{|[[:space:]]*$)' "$spell" 2>/dev/null || true)
+    func_count=${func_count:-0}
     
     # Subtract 2 for standard functions: *_usage and the wrapper function (incantation)
     # Every spell now has both a *_usage function and a wrapper function matching its name
@@ -1120,6 +1114,12 @@ test_spells_have_limited_flags() {
     return 0
   fi
   
+  # Exempted spells that legitimately need 4+ flags
+  # Must be documented in EXEMPTIONS.md with justification
+  exempted_spells="
+    system/test-magic
+  "
+  
   tmpfile_2=$(mktemp "${WIZARDRY_TMPDIR}/flag-warn-2.XXXXXX")
   tmpfile_3=$(mktemp "${WIZARDRY_TMPDIR}/flag-warn-3.XXXXXX")
   tmpfile_4plus=$(mktemp "${WIZARDRY_TMPDIR}/flag-viol-4plus.XXXXXX")
@@ -1129,10 +1129,21 @@ test_spells_have_limited_flags() {
     name=$(basename "$spell")
     rel_path=${spell#"$ROOT_DIR/spells/"}
     
+    # Skip exempted spells
+    is_exempted=0
+    for exempted in $exempted_spells; do
+      if [ "$rel_path" = "$exempted" ]; then
+        is_exempted=1
+        break
+      fi
+    done
+    [ "$is_exempted" -eq 1 ] && return
+    
     # Count distinct flag options by looking at both case and if patterns
     # Exclude standard --help|--usage|-h, catch-all -*, -- (end of options), and --- (dividers)
+    # OPTIMIZED: Single awk pass instead of multiple grep/awk passes
     flag_count=$(awk '
-      BEGIN { seen_flags = "" }
+      BEGIN { seen_flags = ""; flag_count = 0 }
       
       # Track if we are in argument parsing section (case or while loop)
       /while.*\$.*-gt 0/ { in_args = 1 }
@@ -1144,40 +1155,32 @@ test_spells_have_limited_flags() {
       
       # When in argument parsing, capture flag patterns from case statements
       in_args && /^[[:space:]]+(-[a-zA-Z]|--[a-zA-Z-]+)(\||[[:space:]]*\))/ {
-        line = $0
-        # Skip help flags
-        if (line ~ /--help|--usage|-h\)/) next
-        # Skip catch-all pattern
-        if (line ~ /^[[:space:]]+-\*\)/) next
-        # Skip -- (end of options marker)
-        if (line ~ /^[[:space:]]+--\)/) next
-        # Skip --- (divider marker)
-        if (line ~ /^[[:space:]]+---\)/) next
+        # Skip help flags, catch-all, and dividers in a single check
+        if ($0 ~ /--help|--usage|-h\)|^\s+-\*\)|^\s+--\)|^\s+---\)/) next
         
         # Extract flag name
-        match(line, /(--[a-zA-Z-]+|-[a-zA-Z])/, flag)
+        match($0, /(--[a-zA-Z-]+|-[a-zA-Z])/, flag)
         if (flag[0] && index(seen_flags, flag[0]) == 0) {
           seen_flags = seen_flags " " flag[0]
-          print flag[0]
+          flag_count++
         }
       }
       
       # Also check for if-based flag handling: if [ "$1" = "--flag" ]
       /if[[:space:]]*\[[[:space:]]*["\$]*\{?1/ && /(=|==)[[:space:]]*["'\''](--[a-zA-Z-]+|-[a-zA-Z])["'\'']/ {
-        line = $0
-        # Skip help flags
-        if (line ~ /--help|--usage|-h/) next
-        # Skip --- dividers
-        if (line ~ /---/) next
+        # Skip help flags and dividers
+        if ($0 ~ /--help|--usage|-h|---/) next
         
         # Extract flag name
-        match(line, /(--[a-zA-Z-]+|-[a-zA-Z])/, flag)
+        match($0, /(--[a-zA-Z-]+|-[a-zA-Z])/, flag)
         if (flag[0] && index(seen_flags, flag[0]) == 0) {
           seen_flags = seen_flags " " flag[0]
-          print flag[0]
+          flag_count++
         }
       }
-    ' "$spell" 2>/dev/null | wc -l)
+      
+      END { print flag_count }
+    ' "$spell" 2>/dev/null)
     
     flag_count=${flag_count:-0}
     

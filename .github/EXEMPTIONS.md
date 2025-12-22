@@ -301,6 +301,23 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 - `cantrips/remove-service` (3→2) - **Inlined find_ask_text**; kept require_privilege (used 4x)
 - `enchant/yaml-to-enchantment` (3→2) - **Inlined set_attr**; kept resolve_helper (used 7x)
 
+### Spells with 4+ Flags
+
+**Rule**: Spells should have no more than 3 flags (0-1 freely, 2-3 with warnings, 4+ requires exemption).
+
+**Status**: 1 exemption documented
+
+**Exempted Spells**:
+- **`system/test-magic`** (4 flags: `--only`, `--list`, `--verbose`, `--profile`) - Test runner with multiple operational modes
+  - **Reason**: Testing infrastructure spell that needs multiple modes of operation
+  - **Flags**:
+    - `--only PATTERN`: Filter tests by pattern (essential for selective testing)
+    - `--list`: List available tests without running (essential for discovery)
+    - `--verbose`: Show detailed output (debugging aid)
+    - `--profile`: Show timing information for test optimization (performance analysis)
+  - **Justification**: Each flag serves a distinct operational mode for the test infrastructure. Combining or removing any would reduce testing flexibility and make debugging/optimization harder.
+  - **Added**: 2025-12-22 - When profiling feature was added to help optimize test suite performance
+
 **Progress**: 57/57 spells refactored (100%) - 3 spells removed as obsolete
 
 **Remaining acceptable cases** (6 spells with 2-3 extra functions):
