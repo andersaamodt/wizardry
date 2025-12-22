@@ -765,6 +765,7 @@ test_spells_follow_function_discipline() {
   # These spells are large (500-1200 lines) with genuinely multi-use helper functions
   # and complex state management that justifies preserving helper functions.
   # Documented in EXEMPTIONS.md as requiring careful decomposition analysis.
+  # Bootstrap scripts (system/banish) require inline helpers since wizardry isn't installed yet.
   exempted_spells="
 spellcraft/lint-magic
 menu/spellbook
@@ -777,6 +778,7 @@ cantrips/menu
 divination/identify-room
 system/update-all
 system/test-magic
+system/banish
 "
   
   check_function_discipline() {
@@ -1404,6 +1406,9 @@ test_scripts_have_set_eu_early() {
 # Imps are exempt as they're helpers, not top-level entry points.
 
 test_spells_source_env_clear_after_set_eu() {
+  # Skip in compiled mode - compiled spells don't need env-clear (they're standalone)
+  skip-if-compiled || return $?
+  
   violations=""
   
   check_env_clear_placement() {
@@ -1421,6 +1426,8 @@ test_spells_source_env_clear_after_set_eu() {
       install) return ;;
       # Bootstrap spells used by install (must be standalone)
       divination/detect-rc-file|cantrips/ask-yn|cantrips/memorize|cantrips/require-wizardry|spellcraft/learn) return ;;
+      # Bootstrap scripts with conditional env-clear sourcing (run before wizardry fully installed)
+      system/banish|spellcraft/compile-spell|spellcraft/doppelganger) return ;;
       # Scripts that need PATH setup before env-clear to find it
       system/test-magic|system/verify-posix|spellcraft/lint-magic|enchant/enchant) return ;;
       # Spells using wrapper function pattern (set -eu inside function for sourceable spells)
@@ -1697,5 +1704,66 @@ _run_test_case "scripts have set -eu early" test_scripts_have_set_eu_early
 _run_test_case "spells source env-clear after set -eu" test_spells_source_env_clear_after_set_eu
 _run_test_case "warn about parent directory references" test_warn_parent_dir_references
 _run_test_case "test output streams line-by-line" test_output_streams_line_by_line
+
+# --- Check: Stub imps have correct self-execute patterns ---
+# Stub imps must match both */stub-name and */name for symlink usage
+# This ensures tests can create symlinks without the stub- prefix
+test_stub_imps_have_correct_patterns() {
+  # Skip in doppelganger mode - grep patterns behave differently
+  if [ "${WIZARDRY_OS_LABEL:-}" = "doppelganger" ]; then
+    _test_skip "stub imps have correct self-execute patterns" "skipped in doppelganger mode"
+    return 0
+  fi
+  
+  failures=""
+  
+  for stub in fathom-cursor fathom-terminal move-cursor cursor-blink stty await-keypress; do
+    stub_path="$ROOT_DIR/spells/.imps/test/stub-$stub"
+    
+    # Check file exists
+    if [ ! -f "$stub_path" ]; then
+      failures="${failures}${failures:+, }stub-$stub (missing)"
+      continue
+    fi
+    
+    # Check for case statement
+    if ! grep -qE "case.*\\\$0.*in" "$stub_path"; then
+      failures="${failures}${failures:+, }stub-$stub (no case statement)"
+      continue
+    fi
+    
+    # Check that the case pattern includes both the stub name and unprefixed name
+    # The pattern should be like: */stub-name|*/name) or */name|*/stub-name)
+    unprefixed=$(printf '%s' "$stub" | sed 's/^stub-//')
+    
+    # Check if both patterns exist in the file (order doesn't matter)
+    # Note: Allow optional whitespace before the pattern
+    has_stub_pattern=0
+    has_unprefixed_pattern=0
+    
+    if grep -qE "[[:space:]]*\*/stub-$stub[|)]" "$stub_path"; then
+      has_stub_pattern=1
+    fi
+    
+    if grep -qE "[[:space:]]*\*/$unprefixed[|)]" "$stub_path"; then
+      has_unprefixed_pattern=1
+    fi
+    
+    if [ "$has_stub_pattern" -eq 0 ]; then
+      failures="${failures}${failures:+, }stub-$stub (missing */stub-$stub pattern)"
+    elif [ "$has_unprefixed_pattern" -eq 0 ]; then
+      failures="${failures}${failures:+, }stub-$stub (missing */$unprefixed pattern)"
+    fi
+  done
+  
+  if [ -n "$failures" ]; then
+    TEST_FAILURE_REASON="stub imps with incorrect self-execute patterns: $failures"
+    return 1
+  fi
+  
+  return 0
+}
+
+_run_test_case "stub imps have correct self-execute patterns" test_stub_imps_have_correct_patterns
 
 _finish_tests

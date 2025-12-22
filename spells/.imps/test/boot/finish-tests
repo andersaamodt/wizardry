@@ -4,7 +4,7 @@
 set -eu
 
 _finish_tests() {
-  total=$((_pass_count + _fail_count))
+  total=$((_pass_count + _fail_count + ${_skip_count-0}))
   _test_summary "$_pass_count" "$total" "${_skip_count-0}"
   if [ "$_fail_count" -gt 0 ]; then
     if [ -n "$_fail_detail_indices" ]; then

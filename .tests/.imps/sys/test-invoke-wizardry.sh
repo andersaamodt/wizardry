@@ -152,8 +152,11 @@ printf 'permissive mode maintained\n'
 EOF
   chmod +x "$tmpdir/test-mode.sh"
   
-  # Replace ROOT_DIR in the heredoc
-  sed -i "s|\$ROOT_DIR|$ROOT_DIR|g" "$tmpdir/test-mode.sh"
+  # Replace ROOT_DIR in the heredoc (use temp file for cross-platform compatibility)
+  tmpfile="$tmpdir/test-mode.tmp"
+  sed "s|\$ROOT_DIR|$ROOT_DIR|g" "$tmpdir/test-mode.sh" > "$tmpfile"
+  mv "$tmpfile" "$tmpdir/test-mode.sh"
+  chmod +x "$tmpdir/test-mode.sh"
   
   _run_cmd sh "$tmpdir/test-mode.sh"
   _assert_success || return 1

@@ -24,7 +24,7 @@ require-wizardry || exit 1
 set -eu
 . env-clear
 
-require-command menu
+require-command menu || return 1
 
 trap 'exit 0' INT TERM
 exit_label=$(exit-label)

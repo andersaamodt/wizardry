@@ -40,6 +40,8 @@ Located in `spells/.imps/test/stub-*`, these provide consistent mocking across t
 
 ### Using Stub Imps
 
+**CRITICAL**: Stub directory must be FIRST in PATH to override real commands.
+
 ```sh
 # Create symlink directory for PATH override
 stub_dir="$tmpdir/stubs"
@@ -50,8 +52,12 @@ for stub in fathom-cursor fathom-terminal move-cursor; do
   ln -s "$ROOT_DIR/spells/.imps/test/stub-$stub" "$stub_dir/$stub"
 done
 
-# Run with stubs in PATH (stubs override real commands)
+# CRITICAL: Put stub_dir FIRST in PATH so stubs override real commands
 PATH="$stub_dir:$ROOT_DIR/spells/cantrips:...:$PATH" run_spell "spells/cantrips/menu"
+
+# Or with export (preferred for complex tests)
+export PATH="$stub_dir:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:...:$PATH"
+_run_spell "spells/cantrips/menu"
 ```
 
 ### Stub Philosophy
@@ -74,19 +80,24 @@ When adding a new stub, create it as a test imp:
 # stub-example - test stub for example command
 # Example: stub-example arg1
 
+set -eu
+
 _stub_example() {
   # Stub implementation
   printf 'mocked-output\n'
 }
 
 # Self-execute when run directly (not sourced)
+# CRITICAL: Match both stub name AND unprefixed name (for symlinks)
 case "$0" in
-  */stub-example) _stub_example "$@" ;; esac
+  */example|*/stub-example) _stub_example "$@" ;; esac
 ```
 
 Make it executable: `chmod +x spells/.imps/test/stub-example`
 
 Then use it in tests via symlink, not by copying or inlining the stub code.
+
+**CRITICAL**: The case pattern MUST match both `*/stub-example` (direct execution) and `*/example` (symlink execution). This allows tests to create symlinks without the `stub-` prefix.
 
 ## CRITICAL: Test Result Accuracy
 

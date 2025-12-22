@@ -139,8 +139,10 @@ for dep in $dependencies; do
   # Skip self-reference - spell cannot be its own dependency
   [ "$dep" = "$spell_basename" ] && continue
   
-  # Skip require-wizardry - doesn't make sense in standalone
+  # Skip require-wizardry and invoke-wizardry - they don't make sense in standalone
+  # invoke-wizardry is the runtime environment, not a library function
   [ "$dep" = "require-wizardry" ] && continue
+  [ "$dep" = "invoke-wizardry" ] && continue
   
   # Skip common English words that are rarely used as commands
   # These cause issues when replaced in strings
@@ -154,8 +156,9 @@ for dep in $dependencies; do
   
   # Skip interactive spells - they must remain external for test stubbing
   # These contain terminal I/O code that can't be stubbed when inlined
+  # Also skip test stubs themselves - they're test infrastructure, not dependencies
   case "$dep" in
-    ask-number|ask-yn|ask-text|await-keypress|select-input|read-line|tty-*) continue ;;
+    ask-number|ask-yn|ask-text|await-keypress|select-input|read-line|tty-*|stub-*) continue ;;
   esac
   
   # Skip if already inlined
@@ -241,9 +244,17 @@ $spell_body
 done
 
 # Transform spell content:
-# 1. Remove shebang and require-wizardry
+# 1. Remove shebang, require-wizardry, and wizardry infrastructure sourcing
 # 2. Replace imp calls with underscore versions (e.g., say -> _say, clip-copy -> _clip_copy)
-transformed=$(printf '%s\n' "$spell_content" | tail -n +2 | grep -v "^require-wizardry")
+# Remove lines that source wizardry infrastructure (env-clear, invoke-wizardry)
+# These don't make sense in standalone compiled spells
+transformed=$(printf '%s\n' "$spell_content" | \
+  tail -n +2 | \
+  grep -v "^require-wizardry" | \
+  grep -vE '^[[:space:]]*\. env-clear([[:space:]]|$)' | \
+  grep -vE '^[[:space:]]*source env-clear([[:space:]]|$)' | \
+  grep -vE '^[[:space:]]*\. .*invoke-wizardry' | \
+  grep -vE '^[[:space:]]*source .*invoke-wizardry')
 
 # For each inlined imp, replace calls in the spell
 # Note: func_name comes from sanitized internal processing (tr '-' '_')

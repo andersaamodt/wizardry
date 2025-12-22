@@ -27,6 +27,7 @@ set -eu
 
 if [ "$#" -ne 2 ]; then
     move_cursor_usage
+    return 2
 fi
 
 x=$1
@@ -44,14 +45,14 @@ supports_cursor_positioning() {
 # Validate that both coordinates are purely numeric.
 case "$x" in
     *[!0-9]*)
-        fail "move-cursor: invalid column '$x'"
+        fail "move-cursor: invalid column '$x'" || return 1
         ;;
     *) : ;;
 esac
 
 case "$y" in
     *[!0-9]*)
-        fail "move-cursor: invalid row '$y'"
+        fail "move-cursor: invalid row '$y'" || return 1
         ;;
     *) : ;;
 esac

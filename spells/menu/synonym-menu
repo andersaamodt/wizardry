@@ -1,7 +1,7 @@
 #!/bin/sh
 # This spell displays a management menu for a specific synonym.
 
-show_usage() {
+synonym_menu_usage() {
   cat <<'USAGE'
 Usage: synonym-menu WORD
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-  show_usage
+  synonym_menu_usage
   exit 0
   ;;
 esac
@@ -23,80 +23,87 @@ require-wizardry || exit 1
 set -eu
 . env-clear
 
-# Catch Ctrl-C and TERM signal to return cleanly
-trap 'exit 0' INT TERM
-
-if [ "$#" -lt 1 ]; then
-  printf '%s\n' "synonym-menu: requires WORD argument" >&2
-  exit 2
-fi
-
-synonym_word=$1
-
-if ! require menu "The synonym menu needs the 'menu' command."; then
-  exit 1
-fi
-
-spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
-custom_file="$spell_home/.synonyms"
-default_file="$spell_home/.default-synonyms"
-
-# Auto-detect which file contains the synonym
-# Check custom first (takes precedence)
-synonym_type=""
-synonyms_file=""
-target_spell=""
-
-if [ -f "$custom_file" ] && grep -q "^alias $synonym_word=" "$custom_file" 2>/dev/null; then
-  synonym_type="custom"
-  synonyms_file="$custom_file"
-  target_spell=$(grep "^alias $synonym_word=" "$custom_file" | sed "s/^alias $synonym_word='\\(.*\\)'$/\\1/" | sed "s/'\\\\''/'/g")
-elif [ -f "$default_file" ] && grep -q "^alias $synonym_word=" "$default_file" 2>/dev/null; then
-  synonym_type="default"
-  synonyms_file="$default_file"
-  target_spell=$(grep "^alias $synonym_word=" "$default_file" | sed "s/^alias $synonym_word='\\(.*\\)'$/\\1/" | sed "s/'\\\\''/'/g")
-fi
-
-if [ -z "$target_spell" ]; then
-  printf '%s\n' "synonym-menu: synonym '$synonym_word' not found" >&2
-  exit 1
-fi
-
-# Escape single quotes for safe passing
-escaped_word=$(printf '%s' "$synonym_word" | sed "s/'/'\\\\''/g")
-
-while :; do
-  set --
+synonym_menu() {
   
-  # For default synonyms, editing creates a custom override
-  if [ "$synonym_type" = "default" ]; then
-    # Edit creates custom override
-    edit_word_cmd="printf 'New synonym word: ' >&2 && read new_word && add-synonym \"\$new_word\" '$target_spell' && info 'Created custom synonym (original default preserved)'"
-    set -- "$@" "Override word%$edit_word_cmd"
-    
-    edit_spell_cmd="printf 'New target spell: ' >&2 && read new_spell && add-synonym '$escaped_word' \"\$new_spell\" && info 'Created custom synonym (original default preserved)'"
-    set -- "$@" "Override spell%$edit_spell_cmd"
-    
-    # Cannot delete default synonyms, only reset them
-    set -- "$@" "Reset default synonyms%reset-default-synonyms && kill -TERM \$PPID"
-  else
-    # Custom synonyms can be edited directly
-    edit_word_cmd="printf 'New synonym word: ' >&2 && read new_word && edit-synonym '$escaped_word' --word \"\$new_word\""
-    set -- "$@" "Edit word%$edit_word_cmd"
-    
-    edit_spell_cmd="printf 'New target spell: ' >&2 && read new_spell && edit-synonym '$escaped_word' --spell \"\$new_spell\""
-    set -- "$@" "Edit spell%$edit_spell_cmd"
-    
-    # Delete synonym
-    set -- "$@" "Delete synonym%delete-synonym '$escaped_word' && kill -TERM \$PPID"
+  # Catch Ctrl-C and TERM signal to return cleanly
+  trap 'exit 0' INT TERM
+  
+  if [ "$#" -lt 1 ]; then
+    printf '%s\n' "synonym-menu: requires WORD argument" >&2
+    return 2
   fi
   
-  exit_label=$(exit-label)
-  set -- "$@" "${exit_label}%kill -TERM \$PPID"
+  synonym_word=$1
   
-  if [ "$synonym_type" = "default" ]; then
-    menu "Default: $synonym_word → $target_spell" "$@" || true
-  else
-    menu "Synonym: $synonym_word → $target_spell" "$@" || true
+  if ! require menu "The synonym menu needs the 'menu' command."; then
+    return 1
   fi
-done
+  
+  spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+  custom_file="$spell_home/.synonyms"
+  default_file="$spell_home/.default-synonyms"
+  
+  # Auto-detect which file contains the synonym
+  # Check custom first (takes precedence)
+  synonym_type=""
+  synonyms_file=""
+  target_spell=""
+  
+  if [ -f "$custom_file" ] && grep -q "^alias $synonym_word=" "$custom_file" 2>/dev/null; then
+    synonym_type="custom"
+    synonyms_file="$custom_file"
+    target_spell=$(grep "^alias $synonym_word=" "$custom_file" | sed "s/^alias $synonym_word='\\(.*\\)'$/\\1/" | sed "s/'\\\\''/'/g")
+  elif [ -f "$default_file" ] && grep -q "^alias $synonym_word=" "$default_file" 2>/dev/null; then
+    synonym_type="default"
+    synonyms_file="$default_file"
+    target_spell=$(grep "^alias $synonym_word=" "$default_file" | sed "s/^alias $synonym_word='\\(.*\\)'$/\\1/" | sed "s/'\\\\''/'/g")
+  fi
+  
+  if [ -z "$target_spell" ]; then
+    printf '%s\n' "synonym-menu: synonym '$synonym_word' not found" >&2
+    return 1
+  fi
+  
+  # Escape single quotes for safe passing
+  escaped_word=$(printf '%s' "$synonym_word" | sed "s/'/'\\\\''/g")
+  
+  while :; do
+    set --
+    
+    # For default synonyms, editing creates a custom override
+    if [ "$synonym_type" = "default" ]; then
+      # Edit creates custom override
+      edit_word_cmd="printf 'New synonym word: ' >&2 && read new_word && add-synonym \"\$new_word\" '$target_spell' && info 'Created custom synonym (original default preserved)'"
+      set -- "$@" "Override word%$edit_word_cmd"
+      
+      edit_spell_cmd="printf 'New target spell: ' >&2 && read new_spell && add-synonym '$escaped_word' \"\$new_spell\" && info 'Created custom synonym (original default preserved)'"
+      set -- "$@" "Override spell%$edit_spell_cmd"
+      
+      # Cannot delete default synonyms, only reset them
+      set -- "$@" "Reset default synonyms%reset-default-synonyms && kill -TERM \$PPID"
+    else
+      # Custom synonyms can be edited directly
+      edit_word_cmd="printf 'New synonym word: ' >&2 && read new_word && edit-synonym '$escaped_word' --word \"\$new_word\""
+      set -- "$@" "Edit word%$edit_word_cmd"
+      
+      edit_spell_cmd="printf 'New target spell: ' >&2 && read new_spell && edit-synonym '$escaped_word' --spell \"\$new_spell\""
+      set -- "$@" "Edit spell%$edit_spell_cmd"
+      
+      # Delete synonym
+      set -- "$@" "Delete synonym%delete-synonym '$escaped_word' && kill -TERM \$PPID"
+    fi
+    
+    exit_label=$(exit-label)
+    set -- "$@" "${exit_label}%kill -TERM \$PPID"
+    
+    if [ "$synonym_type" = "default" ]; then
+      menu "Default: $synonym_word → $target_spell" "$@" || true
+    else
+      menu "Synonym: $synonym_word → $target_spell" "$@" || true
+    fi
+  done
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */synonym-menu) synonym_menu "$@" ;; esac

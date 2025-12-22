@@ -127,10 +127,14 @@ test_install_cd_handles_nix_format() {
   nix_file="$fake_home/.config/home-manager/home.nix"
   printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$nix_file"
   
+  # Set up PATH to include wizardry imps and spells (needed for nix-shell-add, detect-rc-file, etc.)
+  test_path="$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/divination:$PATH"
+  
   # Run install-cd with DETECT_RC_FILE_PLATFORM set to nixos and HOME set to fake home
   # This will make detect-rc-file find the home.nix file
+  # Also set TMPDIR to ensure mktemp works correctly
   cd_hook_path="$ROOT_DIR/spells/.arcana/mud/cd"
-  output=$(env HOME="$fake_home" DETECT_RC_FILE_PLATFORM=nixos sh "$ROOT_DIR/spells/.arcana/mud/install-cd" 2>&1)
+  output=$(env HOME="$fake_home" PATH="$test_path" TMPDIR="$tmpdir" DETECT_RC_FILE_PLATFORM=nixos sh "$ROOT_DIR/spells/.arcana/mud/install-cd" 2>&1)
   
   # Should successfully install using nix-shell-add
   case "$output" in
@@ -165,34 +169,49 @@ test_install_cd_creates_rc_file_if_missing() {
   skip-if-compiled || return $?
   tmpdir=$(_make_tempdir)
   
-  # Create fake home WITHOUT bashrc
+  # Create fake home WITHOUT any rc file
   fake_home="$tmpdir/home"
   mkdir -p "$fake_home"
-  rc_file="$fake_home/.bashrc"
-  # Don't create the file - let install-cd create it
   
-  # Create stub detect-rc-file
+  # Create stub detect-rc-file that returns a suggested rc_file
   stub_dir="$tmpdir/stubs"
   mkdir -p "$stub_dir"
-  cat > "$stub_dir/detect-rc-file" << STUB_EOF
+  cat > "$stub_dir/detect-rc-file" << 'STUB_EOF'
 #!/bin/sh
+# Return suggested rc file based on SHELL or default
+case "${SHELL:-/bin/bash}" in
+  */zsh) rc_file="$HOME/.zprofile" ;;
+  */bash) rc_file="$HOME/.bashrc" ;;
+  *) rc_file="$HOME/.profile" ;;
+esac
 printf 'rc_file=%s\n' "$rc_file"
 printf 'format=shell\n'
 STUB_EOF
   chmod +x "$stub_dir/detect-rc-file"
   
-  # Run install-cd
-  output=$(env HOME="$fake_home" PATH="$stub_dir:$PATH" sh "$ROOT_DIR/spells/.arcana/mud/install-cd" 2>&1)
+  # Set up PATH to include wizardry imps (needed for rc-add-line, temp-file, etc)
+  test_path="$stub_dir:$WIZARDRY_IMPS_PATH:$PATH"
   
-  # Verify RC file was created
-  if [ ! -f "$rc_file" ]; then
-    TEST_FAILURE_REASON="RC file was not created"
+  # Run install-cd with TMPDIR set for mktemp
+  output=$(env HOME="$fake_home" PATH="$test_path" TMPDIR="$tmpdir" sh "$ROOT_DIR/spells/.arcana/mud/install-cd" 2>&1)
+  
+  # Extract which rc_file was actually created from the output
+  created_rc_file=""
+  case "$output" in
+    *".zprofile"*) created_rc_file="$fake_home/.zprofile" ;;
+    *".bashrc"*) created_rc_file="$fake_home/.bashrc" ;;
+    *".profile"*) created_rc_file="$fake_home/.profile" ;;
+  esac
+  
+  # Verify some RC file was created
+  if [ -z "$created_rc_file" ] || [ ! -f "$created_rc_file" ]; then
+    TEST_FAILURE_REASON="No RC file was created (output: $output)"
     return 1
   fi
   
   # Verify it has the cd hook source line
   cd_hook_path="$ROOT_DIR/spells/.arcana/mud/cd"
-  if ! grep -qF "$cd_hook_path" "$rc_file"; then
+  if ! grep -qF "$cd_hook_path" "$created_rc_file"; then
     TEST_FAILURE_REASON="RC file doesn't contain cd hook path"
     return 1
   fi
