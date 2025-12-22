@@ -47,19 +47,41 @@ test_no_attributes() {
   
   stub_dir=$(make_stub_dir)
   
+  # Create comprehensive debug stub
   cat >"$stub_dir/attr" <<'STUB'
 #!/bin/sh
+printf '[STUB ATTR CALLED] args=%s\n' "$*" >&2
+printf '[STUB ATTR] PATH=%s\n' "$PATH" >&2
+printf '[STUB ATTR] PWD=%s\n' "$PWD" >&2
+printf '[STUB ATTR] WIZARDRY_TEST_HELPERS_ONLY=%s\n' "${WIZARDRY_TEST_HELPERS_ONLY:-UNSET}" >&2
+printf '[STUB ATTR] command -v attr returns: %s\n' "$(command -v attr)" >&2
 if [ "$1" = "-l" ]; then
+  printf '[STUB ATTR] Returning empty list (no attrs)\n' >&2
   exit 0
 fi
+printf '[STUB ATTR] Unknown args, exiting 1\n' >&2
+exit 1
 STUB
   chmod +x "$stub_dir/attr"
 
   tmpfile="$WIZARDRY_TMPDIR/blank"
   : >"$tmpfile"
   
-  export PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/menu:$stub_dir:/bin:/usr/bin"
+  printf '[DEBUG test#4] About to set PATH and run spell\n' >&2
+  printf '[DEBUG test#4] stub_dir=%s\n' "$stub_dir" >&2
+  printf '[DEBUG test#4] stub exists: %s\n' "$(ls -la "$stub_dir/attr" 2>&1)" >&2
+  printf '[DEBUG test#4] stub is executable: %s\n' "$(test -x "$stub_dir/attr" && echo YES || echo NO)" >&2
+  printf '[DEBUG test#4] WIZARDRY_TEST_HELPERS_ONLY=%s\n' "${WIZARDRY_TEST_HELPERS_ONLY:-UNSET}" >&2
+  
+  export PATH="$stub_dir:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/menu:/bin:/usr/bin"
+  printf '[DEBUG test#4] PATH after export=%s\n' "$PATH" >&2
+  printf '[DEBUG test#4] command -v attr before _run_spell=%s\n' "$(command -v attr)" >&2
+  
   _run_spell "spells/enchant/disenchant" "$tmpfile"
+  
+  printf '[DEBUG test#4] After _run_spell: STATUS=%s\n' "$STATUS" >&2
+  printf '[DEBUG test#4] OUTPUT=%s\n' "$OUTPUT" >&2
+  printf '[DEBUG test#4] ERROR=%s\n' "$ERROR" >&2
   
   _assert_failure && _assert_error_contains "no enchanted attributes"
 }
