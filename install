@@ -893,7 +893,7 @@ if [ -n "$detect_rc_file_value" ]; then
                                 # This is the standard pattern for bash configuration
                                 substep_msg "Creating .bash_profile to source .bashrc (for login shells)"
                                 cat > "$bash_profile" <<'BASH_PROFILE_EOF'
-# Source .bashrc if it exists
+# Source .bashrc if it exists (added by wizardry installer)
 # This ensures bash login shells (like those opened by Terminal.app on macOS)
 # get the same configuration as interactive shells
 if [ -f ~/.bashrc ]; then
@@ -925,7 +925,7 @@ BASH_PROFILE_APPEND
                                 # Create a .zprofile that sources .zshrc
                                 substep_msg "Creating .zprofile to source .zshrc (for login shells)"
                                 cat > "$zsh_profile" <<'ZSH_PROFILE_EOF'
-# Source .zshrc if it exists
+# Source .zshrc if it exists (added by wizardry installer)
 # This ensures zsh login shells get the same configuration as interactive shells
 if [ -f ~/.zshrc ]; then
         . ~/.zshrc
@@ -1140,26 +1140,31 @@ fi
 if [ -n "$PROFILE_FILE" ] && [ -f "$PROFILE_FILE" ]; then
         printf '\n%s==> Removing profile file modifications...%s\n' "$CYAN" "$RESET"
         tmp_file="${PROFILE_FILE}.wizardry.$$"
-        # Remove lines added by wizardry installer (between markers or with marker comments)
-        if grep -v 'added by wizardry installer' "$PROFILE_FILE" > "$tmp_file" 2>/dev/null; then
-                # Check if file changed (has content different from original)
-                if ! cmp -s "$PROFILE_FILE" "$tmp_file" 2>/dev/null; then
-                        mv "$tmp_file" "$PROFILE_FILE"
-                        printf '  %s✓%s Removed wizardry lines from %s\n' "$GREEN" "$RESET" "$PROFILE_FILE"
-                else
-                        rm -f "$tmp_file"
-                fi
+        
+        # Remove the entire wizardry block from profile file
+        # The block starts with "# Source .* if it exists (added by wizardry installer)"
+        # and ends with "fi" on its own line after the if statement
+        awk '
+        /^# Source \..*rc if it exists \(added by wizardry installer\)$/ { skip = 1; next }
+        skip == 1 && /^fi$/ { skip = 0; next }
+        skip == 0 { print }
+        ' "$PROFILE_FILE" > "$tmp_file" 2>/dev/null || true
+        
+        # Check if file changed
+        if [ -f "$tmp_file" ] && ! cmp -s "$PROFILE_FILE" "$tmp_file" 2>/dev/null; then
+                mv "$tmp_file" "$PROFILE_FILE"
+                printf '  %s✓%s Removed wizardry lines from %s\n' "$GREEN" "$RESET" "$PROFILE_FILE"
         else
                 rm -f "$tmp_file"
         fi
         
-        # If profile file is now empty or only contains whitespace/comments, offer to delete it
+        # If profile file is now empty or only contains whitespace/comments, delete it
         if [ -f "$PROFILE_FILE" ]; then
                 # Check if file has only whitespace and comments
                 if ! grep -qE '^[^#[:space:]]' "$PROFILE_FILE" 2>/dev/null; then
                         # File only has comments/whitespace - safe to delete if it was created by us
                         # We know it was created by us if it still exists and we modified it
-                        # The grep above already removed our content, so if it's empty, we created it
+                        # The awk above already removed our content, so if it's empty, we created it
                         if [ ! -s "$PROFILE_FILE" ] || ! grep -qE '^[^#[:space:]]' "$PROFILE_FILE" 2>/dev/null; then
                                 rm -f "$PROFILE_FILE"
                                 printf '  %s✓%s Removed empty profile file %s\n' "$GREEN" "$RESET" "$PROFILE_FILE"
