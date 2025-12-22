@@ -391,8 +391,10 @@ WRAPPER_EOF
   # Read exit code from file
   if [ -f "$test_exit_file" ]; then
     test_exit_code=$(cat "$test_exit_file" 2>/dev/null || printf '0')
-    # Remove any whitespace and validate it's a number, default to 0 if not
+    # Remove any whitespace (trailing newlines from file, potential spaces)
+    # The file contains just the exit code number but may have newline appended
     test_exit_code=$(printf '%s' "$test_exit_code" | tr -d '[:space:]')
+    # Validate it's a number, default to 0 if not
     case "$test_exit_code" in
       ''|*[!0-9]*) test_exit_code=0 ;;
     esac
