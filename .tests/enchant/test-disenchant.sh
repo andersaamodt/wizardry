@@ -107,7 +107,7 @@ STUB
   target="$WIZARDRY_TMPDIR/scroll"
   : >"$target"
 
-  export PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/menu:$stub_dir:/bin:/usr/bin"
+  export PATH="$stub_dir:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/menu:/bin:/usr/bin"
   _run_spell "spells/enchant/disenchant" "$target" user.note
   
   _assert_success && _assert_output_contains "Disenchanted user.note"
@@ -138,7 +138,7 @@ STUB
   target="$WIZARDRY_TMPDIR/scroll-alt"
   : >"$target"
 
-  export PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/menu:$stub_dir:/bin:/usr/bin"
+  export PATH="$stub_dir:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/menu:/bin:/usr/bin"
   _run_spell "spells/enchant/disenchant" "$target"
   _assert_success
   called=$(cat "$WIZARDRY_TMPDIR/disenchant.call")
@@ -165,7 +165,7 @@ STUB
   target="$WIZARDRY_TMPDIR/multi"
   : >"$target"
   
-  export PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/menu:$stub_dir:/usr/bin:/bin"
+  export PATH="$stub_dir:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/menu:/usr/bin:/bin"
   _run_spell "spells/enchant/disenchant" "$target"
   _assert_failure && _assert_error_contains "multiple attributes"
 }
@@ -195,7 +195,7 @@ STUB
   target="$WIZARDRY_TMPDIR/multi-choice"
   : >"$target"
   
-  export PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/menu:$stub_dir:/bin:/usr/bin"
+  export PATH="$stub_dir:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/menu:/bin:/usr/bin"
   _run_spell "spells/enchant/disenchant" "$target"
   _assert_success && _assert_output_contains "user.two"
   called=$(cat "$WIZARDRY_TMPDIR/disenchant.call")
@@ -231,7 +231,7 @@ STUB
   target="$WIZARDRY_TMPDIR/multi-all"
   : >"$target"
   
-  export PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/menu:$stub_dir:/bin:/usr/bin"
+  export PATH="$stub_dir:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/menu:/bin:/usr/bin"
   _run_spell "spells/enchant/disenchant" "$target"
   _assert_success && _assert_output_contains "Disenchant all"
   calls=$(cat "$WIZARDRY_TMPDIR/disenchant.calls")
