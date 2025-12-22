@@ -131,47 +131,39 @@ _invoke_wizardry() {
     for _iw_spell in "$_iw_spell_cat"/*; do
       [ -f "$_iw_spell" ] && [ -r "$_iw_spell" ] || continue
       
-      # Check if spell has a function (word-of-binding pattern)
-      # Format: spell-name defines either _spell_name() or spell_name() function
+      # Spells use spell_name() true-names (no underscore prefix)
+      # Format: spell-name defines spell_name() function
       _iw_spell_name=$(basename "$_iw_spell")
-      _iw_spell_true_name=$(printf '_%s' "$_iw_spell_name" | sed 's/-/_/g')
-      _iw_spell_func_name=$(printf '%s' "$_iw_spell_name" | sed 's/-/_/g')
+      _iw_spell_true_name=$(printf '%s' "$_iw_spell_name" | sed 's/-/_/g')
       
-      # Check for either _underscore_name() or regular_name() pattern
+      # Only source spells that define their true-name function
+      # This skips standalone scripts that don't use the binding pattern
       if grep -qE "^[[:space:]]*${_iw_spell_true_name}[[:space:]]*\\(\\)" "$_iw_spell" 2>/dev/null; then
-        # Source the spell to load its true-name function
+        # Source the spell to load its function
         # shellcheck disable=SC1090
         . "$_iw_spell" 2>/dev/null || true
         # Restore permissive mode - sourcing spells with set -eu changes parent shell mode
         set +eu
         
         # Create alias from hyphenated name to underscore function name
+        # spell-name -> spell_name
         if command -v "$_iw_spell_true_name" >/dev/null 2>&1; then
           alias "$_iw_spell_name=$_iw_spell_true_name" 2>/dev/null || true
-        fi
-      elif grep -qE "^[[:space:]]*${_iw_spell_func_name}[[:space:]]*\\(\\)" "$_iw_spell" 2>/dev/null; then
-        # Source spell with regular function name (no underscore prefix)
-        # shellcheck disable=SC1090
-        . "$_iw_spell" 2>/dev/null || true
-        set +eu
-        
-        # Create alias from hyphenated name to underscore function name
-        if command -v "$_iw_spell_func_name" >/dev/null 2>&1; then
-          alias "$_iw_spell_name=$_iw_spell_func_name" 2>/dev/null || true
         fi
       fi
     done
   done
   
   # Pre-load spells from user's spellbook
+  # User spells follow the same pattern as regular spells (spell_name, no underscore)
   if [ -d "$SPELLBOOK_DIR" ]; then
     for _iw_user_spell in "$SPELLBOOK_DIR"/*; do
       [ -f "$_iw_user_spell" ] && [ -r "$_iw_user_spell" ] || continue
       
       _iw_user_spell_name=$(basename "$_iw_user_spell")
-      _iw_user_spell_true_name=$(printf '_%s' "$_iw_user_spell_name" | sed 's/-/_/g')
+      _iw_user_spell_true_name=$(printf '%s' "$_iw_user_spell_name" | sed 's/-/_/g')
       
-      # Only source if it has a true-name function
+      # Only source if it has a true-name function (spell_name, not _spell_name)
       if grep -qE "^[[:space:]]*${_iw_user_spell_true_name}[[:space:]]*\\(\\)" "$_iw_user_spell" 2>/dev/null; then
         # shellcheck disable=SC1090
         . "$_iw_user_spell" 2>/dev/null || true
