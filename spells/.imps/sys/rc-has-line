@@ -2,6 +2,9 @@
 # rc-has-line MARKER RC_FILE - check if marker exists in rc file
 # Example: rc-has-line cd-hook ~/.zshrc && echo "found"
 
+# Conditional imp - no set -eu (returns exit codes for flow control)
+set +eu
+
 _rc_has_line() {
   _rhl_marker=${1:-}
   _rhl_rc_file=${2:-}

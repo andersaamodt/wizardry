@@ -765,6 +765,7 @@ test_spells_follow_function_discipline() {
   # These spells are large (500-1200 lines) with genuinely multi-use helper functions
   # and complex state management that justifies preserving helper functions.
   # Documented in EXEMPTIONS.md as requiring careful decomposition analysis.
+  # Bootstrap scripts (system/banish) require inline helpers since wizardry isn't installed yet.
   exempted_spells="
 spellcraft/lint-magic
 menu/spellbook
@@ -777,6 +778,7 @@ cantrips/menu
 divination/identify-room
 system/update-all
 system/test-magic
+system/banish
 "
   
   check_function_discipline() {
@@ -1404,6 +1406,9 @@ test_scripts_have_set_eu_early() {
 # Imps are exempt as they're helpers, not top-level entry points.
 
 test_spells_source_env_clear_after_set_eu() {
+  # Skip in compiled mode - compiled spells don't need env-clear (they're standalone)
+  skip-if-compiled || return $?
+  
   violations=""
   
   check_env_clear_placement() {
@@ -1421,6 +1426,8 @@ test_spells_source_env_clear_after_set_eu() {
       install) return ;;
       # Bootstrap spells used by install (must be standalone)
       divination/detect-rc-file|cantrips/ask-yn|cantrips/memorize|cantrips/require-wizardry|spellcraft/learn) return ;;
+      # Bootstrap scripts with conditional env-clear sourcing (run before wizardry fully installed)
+      system/banish|spellcraft/compile-spell|spellcraft/doppelganger) return ;;
       # Scripts that need PATH setup before env-clear to find it
       system/test-magic|system/verify-posix|spellcraft/lint-magic|enchant/enchant) return ;;
       # Spells using wrapper function pattern (set -eu inside function for sourceable spells)

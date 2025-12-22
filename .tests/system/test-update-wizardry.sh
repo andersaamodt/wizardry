@@ -157,6 +157,7 @@ exit 0
 STUB
   chmod +x "$stub_dir/require-command"
 
+  unset WIZARDRY_DIR
   PATH="$stub_dir:$PATH" REQUIRE_COMMAND="$stub_dir/require-command" GIT_LOG="$git_log" MOCK_TOPLEVEL="$toplevel" \
     _run_spell "spells/system/update-wizardry"
   _assert_success
@@ -181,6 +182,7 @@ exit 0
 STUB
   chmod +x "$stub_dir/require-command"
 
+  unset WIZARDRY_DIR
   PATH="$stub_dir:$PATH" REQUIRE_COMMAND="$stub_dir/require-command" _run_spell "spells/system/update-wizardry"
   _assert_failure
   _assert_error_contains "Unable to determine the wizardry repository"
@@ -210,6 +212,7 @@ exit 0
 STUB
   chmod +x "$stub_dir/require-command"
 
+  unset WIZARDRY_DIR
   PATH="$stub_dir:$PATH" REQUIRE_COMMAND="$stub_dir/require-command" GIT_LOG="$git_log" MOCK_TOPLEVEL="$toplevel" \
     _run_spell "spells/system/update-wizardry"
   _assert_status 42
