@@ -151,8 +151,8 @@ if [ -n "$subtest_filter" ]; then
     # Detect subtest lines (PASS/FAIL #N format)
     case "$line" in
       "  PASS #"*|"  FAIL #"*|"PASS #"*|"FAIL #"*)
-        # Extract subtest number (use + to require at least one digit)
-        num=$(printf '%s' "$line" | sed 's/^[[:space:]]*\(PASS\|FAIL\) #\([0-9]\+\).*/\2/')
+        # Extract subtest number (use extended regex for portability)
+        num=$(printf '%s' "$line" | sed -E 's/^[[:space:]]*(PASS|FAIL) #([0-9]+).*/\2/')
         
         # Skip if number extraction failed (empty or non-numeric)
         case "$num" in
