@@ -27,6 +27,7 @@ jobs:
           # Source invoke-wizardry to set up environment
           export WIZARDRY_DIR="${{ github.workspace }}"
           . "${{ github.workspace }}/spells/.imps/sys/invoke-wizardry"
+        shell: bash
       
       - name: Create doppelganger
         run: |

@@ -27,6 +27,7 @@ jobs:
           echo "${{ github.workspace }}/spells" >> "$GITHUB_PATH"
           echo "${{ github.workspace }}/spells/cantrips" >> "$GITHUB_PATH"
           echo "${{ github.workspace }}/spells/spellcraft" >> "$GITHUB_PATH"
+        shell: bash
 
       - name: Create compiled doppelganger
         run: |
