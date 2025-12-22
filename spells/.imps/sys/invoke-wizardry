@@ -65,40 +65,20 @@ _invoke_wizardry() {
   : "${SPELLBOOK_DIR:=${HOME-}/.spellbook}"
   export SPELLBOOK_DIR
   
-  # Word-of-binding paradigm: Pre-load (source) all spells at startup
-  # This makes spell functions immediately available without PATH manipulation
-  # Imps are still added to PATH for backward compatibility
+  # Word-of-binding paradigm: Pre-load all spells and imps by sourcing them
+  # Imps and spells are both loaded the same way - no PATH manipulation
+  # The only difference is imps use _underscore true-names, spells use their own convention
   
-  # Add imp family directories to PATH
-  # Imps need to be in PATH so they work as commands before being sourced
-  _iw_new_path=""
-  _iw_imps_dir="$WIZARDRY_DIR/spells/.imps"
-  if [ -d "$_iw_imps_dir" ]; then
-    for _iw_family in "$_iw_imps_dir"/*; do
-      [ -d "$_iw_family" ] || continue
-      # Skip test imps - they're only for testing, not production use
-      _iw_family_name=$(basename "$_iw_family")
-      case "$_iw_family_name" in
-        test) continue ;;
-      esac
-      _iw_new_path="${_iw_new_path:+$_iw_new_path:}$_iw_family"
-    done
-  fi
-  
-  # Add spellbook to PATH (for user's custom scripts)
-  _iw_new_path="${_iw_new_path:+$_iw_new_path:}$SPELLBOOK_DIR"
-  
-  # Update PATH if we have new paths to add
-  if [ -n "$_iw_new_path" ]; then
-    case ":${PATH-}:" in
-      *":$SPELLBOOK_DIR:"*) ;;
-      *) PATH="$_iw_new_path:${PATH-}" ;;
-    esac
-    export PATH
-  fi
+  # Add only spellbook to PATH (for user's custom standalone scripts)
+  case ":${PATH-}:" in
+    *":$SPELLBOOK_DIR:"*) ;;
+    *) PATH="$SPELLBOOK_DIR:${PATH-}" ;;
+  esac
+  export PATH
   
   # Source all imps to load their functions into the shell
-  # This makes them available as shell functions for standardization and reliability
+  # Imps are spells too - they're loaded the same way as regular spells
+  # The only difference is imps use _underscore true-names
   _iw_imps_dir="$WIZARDRY_DIR/spells/.imps"
   if [ -d "$_iw_imps_dir" ]; then
     for _iw_family in "$_iw_imps_dir"/*; do
@@ -115,17 +95,24 @@ _invoke_wizardry() {
         case "$_iw_imp" in
           */invoke-wizardry|*/invoke-thesaurus) continue ;;
         esac
-        # Source the imp to load its function
-        # shellcheck disable=SC1090
-        . "$_iw_imp" 2>/dev/null || true
-        # Restore permissive mode - sourcing imps with set -eu changes parent shell mode
-        set +eu
-        # Create alias from hyphenated name to underscore function name
+        
+        # Imps use _underscore true-names (e.g., say -> _say)
         _iw_imp_name=$(basename "$_iw_imp")
-        _iw_true_name=$(printf '_%s' "$_iw_imp_name" | sed 's/-/_/g')
-        # Only create alias if the function exists
-        if command -v "$_iw_true_name" >/dev/null 2>&1; then
-          alias "$_iw_imp_name=$_iw_true_name" 2>/dev/null || true
+        _iw_imp_true_name=$(printf '_%s' "$_iw_imp_name" | sed 's/-/_/g')
+        
+        # Only source imps that define their true-name function
+        if grep -qE "^[[:space:]]*${_iw_imp_true_name}[[:space:]]*\\(\\)" "$_iw_imp" 2>/dev/null; then
+          # Source the imp to load its function
+          # shellcheck disable=SC1090
+          . "$_iw_imp" 2>/dev/null || true
+          # Restore permissive mode - sourcing imps with set -eu changes parent shell mode
+          set +eu
+          
+          # Create alias from hyphenated name to underscore function name
+          # This is the imp paradigm: hyphenated command -> _underscore_function
+          if command -v "$_iw_imp_true_name" >/dev/null 2>&1; then
+            alias "$_iw_imp_name=$_iw_imp_true_name" 2>/dev/null || true
+          fi
         fi
       done
     done

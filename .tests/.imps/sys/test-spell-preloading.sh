@@ -84,8 +84,8 @@ EOF
   _assert_output_contains "spell directories not added to PATH" || return 1
 }
 
-# Test: Imps ARE still in PATH (needed for backward compatibility)
-test_imps_in_path() {
+# Test: Imps are NOT added to PATH (word-of-binding paradigm)
+test_imps_not_added_to_path() {
   tmpdir=$(_make_tempdir)
   
   cat > "$tmpdir/test-imps-path.sh" << EOF
@@ -93,25 +93,69 @@ test_imps_in_path() {
 WIZARDRY_DIR="$ROOT_DIR"
 export WIZARDRY_DIR
 
+# Start with minimal PATH
+PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+export PATH
+
 # Source invoke-wizardry
 . "$ROOT_DIR/spells/.imps/sys/invoke-wizardry" 2>/dev/null
 
-# Check that imp directories ARE in PATH
+# Check that imp directories were NOT added to PATH
 case ":\${PATH}:" in
   *":$ROOT_DIR/spells/.imps/out:"*)
-    printf 'imp directories in PATH (correct)\n'
-    exit 0
+    printf 'ERROR: imp directory added to PATH (old antipattern)\n'
+    exit 1
+    ;;
+  *":$ROOT_DIR/spells/.imps/cond:"*)
+    printf 'ERROR: imp directory added to PATH (old antipattern)\n'
+    exit 1
     ;;
 esac
 
-printf 'ERROR: imp directories not in PATH\n'
-exit 1
+printf 'imp directories not added to PATH (correct)\n'
+exit 0
 EOF
   chmod +x "$tmpdir/test-imps-path.sh"
   
   _run_cmd sh "$tmpdir/test-imps-path.sh"
   _assert_success || return 1
-  _assert_output_contains "imp directories in PATH (correct)" || return 1
+  _assert_output_contains "imp directories not added to PATH (correct)" || return 1
+}
+
+# Test: Imps are still available as commands (pre-loaded)
+test_imps_preloaded() {
+  tmpdir=$(_make_tempdir)
+  
+  cat > "$tmpdir/test-imps-available.sh" << EOF
+#!/bin/sh
+WIZARDRY_DIR="$ROOT_DIR"
+export WIZARDRY_DIR
+
+# Source invoke-wizardry
+. "$ROOT_DIR/spells/.imps/sys/invoke-wizardry" 2>/dev/null
+
+# Check that common imps are available even though not in PATH
+preloaded_count=0
+
+for imp_cmd in say has warn die; do
+  if command -v "\$imp_cmd" >/dev/null 2>&1; then
+    preloaded_count=\$((preloaded_count + 1))
+  fi
+done
+
+if [ "\$preloaded_count" -ge 3 ]; then
+  printf '%d imps pre-loaded and available\n' "\$preloaded_count"
+  exit 0
+else
+  printf 'ERROR: only %d imps pre-loaded (expected at least 3)\n' "\$preloaded_count"
+  exit 1
+fi
+EOF
+  chmod +x "$tmpdir/test-imps-available.sh"
+  
+  _run_cmd sh "$tmpdir/test-imps-available.sh"
+  _assert_success || return 1
+  _assert_output_contains "imps pre-loaded and available" || return 1
 }
 
 # Test: Multiple common spells are pre-loaded
@@ -152,7 +196,8 @@ EOF
 
 _run_test_case "menu is pre-loaded as function" test_menu_preloaded
 _run_test_case "spell directories not added to PATH by invoke-wizardry" test_spell_dirs_not_added_to_path
-_run_test_case "imp directories still in PATH" test_imps_in_path
+_run_test_case "imp directories not added to PATH" test_imps_not_added_to_path
+_run_test_case "imps are pre-loaded and available" test_imps_preloaded
 _run_test_case "multiple common spells pre-loaded" test_multiple_spells_preloaded
 
 _finish_tests
