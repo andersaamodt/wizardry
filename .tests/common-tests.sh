@@ -5,10 +5,34 @@
 # This file contains cross-cutting tests that verify properties across the
 # entire spellbook. Style/opinionated checks belong in vet-spell instead.
 # Note: POSIX compliance (shebang, bashisms) is checked by verify-posix.
-#
-# Usage: common-tests.sh [SPELL_PATH...]
-# If spell paths are provided, only tests those specific spells.
-# Otherwise, tests all spells in the repository.
+
+common_tests_usage() {
+  cat <<'USAGE'
+Usage: common-tests.sh [SPELL_PATH...]
+
+Run common structural and behavioral checks that apply across all spells.
+
+Arguments:
+  SPELL_PATH     Optional spell path(s) to test (e.g., spells/cantrips/ask-yn)
+                 If provided, only tests the specified spells.
+                 If omitted, tests all spells in the repository.
+
+Examples:
+  common-tests.sh                              # Test all spells
+  common-tests.sh spells/cantrips/ask-yn       # Test one spell
+  common-tests.sh spells/cantrips/ask-yn spells/cantrips/ask-text  # Test multiple
+
+Note: This is an exception to the .tests/ naming schema. It does not mirror
+a spell in spells/ - it's a special test suite for cross-cutting checks.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  common_tests_usage
+  exit 0
+  ;;
+esac
 
 set -eu
 
@@ -1714,8 +1738,35 @@ EOF
   return 0
 }
 
+# --- Test: common-tests shows help ---
+# Verify that common-tests.sh responds to --help flag
+test_common_tests_shows_help() {
+  # Run common-tests.sh with --help flag
+  output=$(sh "$ROOT_DIR/.tests/common-tests.sh" --help 2>&1)
+  exit_code=$?
+  
+  if [ "$exit_code" -ne 0 ]; then
+    TEST_FAILURE_REASON="--help should exit with code 0"
+    return 1
+  fi
+  
+  # Check that help output contains usage information
+  if ! printf '%s' "$output" | grep -q "Usage:"; then
+    TEST_FAILURE_REASON="--help output missing Usage:"
+    return 1
+  fi
+  
+  if ! printf '%s' "$output" | grep -q "common-tests.sh"; then
+    TEST_FAILURE_REASON="--help output missing script name"
+    return 1
+  fi
+  
+  return 0
+}
+
 # --- Run all test cases ---
 
+_run_test_case "common-tests shows help" test_common_tests_shows_help
 _run_test_case "no duplicate spell names" test_no_duplicate_spell_names
 _run_test_case "menu spells require menu command" test_menu_spells_require_menu
 _run_test_case "spells have standard help handlers" test_spells_have_help_usage_handlers
