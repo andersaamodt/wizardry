@@ -1705,4 +1705,58 @@ _run_test_case "spells source env-clear after set -eu" test_spells_source_env_cl
 _run_test_case "warn about parent directory references" test_warn_parent_dir_references
 _run_test_case "test output streams line-by-line" test_output_streams_line_by_line
 
+# --- Check: Stub imps have correct self-execute patterns ---
+# Stub imps must match both */stub-name and */name for symlink usage
+# This ensures tests can create symlinks without the stub- prefix
+test_stub_imps_have_correct_patterns() {
+  failures=""
+  
+  for stub in fathom-cursor fathom-terminal move-cursor cursor-blink stty await-keypress; do
+    stub_path="$ROOT_DIR/spells/.imps/test/stub-$stub"
+    
+    # Check file exists
+    if [ ! -f "$stub_path" ]; then
+      failures="${failures}${failures:+, }stub-$stub (missing)"
+      continue
+    fi
+    
+    # Check for case statement
+    if ! grep -qE "case.*\\\$0.*in" "$stub_path"; then
+      failures="${failures}${failures:+, }stub-$stub (no case statement)"
+      continue
+    fi
+    
+    # Check that the case pattern includes both the stub name and unprefixed name
+    # The pattern should be like: */stub-name|*/name) or */name|*/stub-name)
+    unprefixed=$(printf '%s' "$stub" | sed 's/^stub-//')
+    
+    # Check if both patterns exist in the file (order doesn't matter)
+    has_stub_pattern=0
+    has_unprefixed_pattern=0
+    
+    if grep -qE "\*/stub-$stub[|)]" "$stub_path"; then
+      has_stub_pattern=1
+    fi
+    
+    if grep -qE "\*/$unprefixed[|)]" "$stub_path"; then
+      has_unprefixed_pattern=1
+    fi
+    
+    if [ "$has_stub_pattern" -eq 0 ]; then
+      failures="${failures}${failures:+, }stub-$stub (missing */stub-$stub pattern)"
+    elif [ "$has_unprefixed_pattern" -eq 0 ]; then
+      failures="${failures}${failures:+, }stub-$stub (missing */$unprefixed pattern)"
+    fi
+  done
+  
+  if [ -n "$failures" ]; then
+    TEST_FAILURE_REASON="stub imps with incorrect self-execute patterns: $failures"
+    return 1
+  fi
+  
+  return 0
+}
+
+_run_test_case "stub imps have correct self-execute patterns" test_stub_imps_have_correct_patterns
+
 _finish_tests
