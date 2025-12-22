@@ -2,7 +2,7 @@
 # This spell resets default synonyms to their original values.
 # Does not affect custom synonyms.
 
-show_usage() {
+reset_default_synonyms_usage() {
   cat <<'USAGE'
 Usage: reset-default-synonyms
 
@@ -13,7 +13,7 @@ USAGE
 
 case "${1-}" in
 --help|--usage|-h)
-  show_usage
+  reset_default_synonyms_usage
   exit 0
   ;;
 esac
@@ -23,33 +23,39 @@ require-wizardry || exit 1
 set -eu
 . env-clear
 
-spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
-default_synonyms_file="$spell_home/.default-synonyms"
+reset_default_synonyms() {
+  spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+  default_synonyms_file="$spell_home/.default-synonyms"
 
-# Confirm before resetting
-printf 'Reset default synonyms? Your custom synonyms will NOT be affected. (y/N): ' >&2
-IFS= read -r confirm || confirm="n"
-case $confirm in
-  y|Y|yes|YES) ;;
-  *)
-    printf '%s\n' "reset-default-synonyms: cancelled" >&2
-    exit 0
-    ;;
-esac
+  # Confirm before resetting
+  printf 'Reset default synonyms? Your custom synonyms will NOT be affected. (y/N): ' >&2
+  IFS= read -r confirm || confirm="n"
+  case $confirm in
+    y|Y|yes|YES) ;;
+    *)
+      printf '%s\n' "reset-default-synonyms: cancelled" >&2
+      return 0
+      ;;
+  esac
 
-# Remove existing default synonyms file
-if [ -f "$default_synonyms_file" ]; then
-  rm -f "$default_synonyms_file"
-fi
+  # Remove existing default synonyms file
+  if [ -f "$default_synonyms_file" ]; then
+    rm -f "$default_synonyms_file"
+  fi
 
-# Remove initialization marker to trigger re-initialization
-rm -f "$spell_home/.default-synonyms-initialized"
+  # Remove initialization marker to trigger re-initialization
+  rm -f "$spell_home/.default-synonyms-initialized"
 
-# Reinitialize defaults by sourcing invoke-thesaurus
-if [ -f "$ROOT_DIR/spells/.imps/sys/invoke-thesaurus" ]; then
-  # shellcheck disable=SC1090,SC1091
-  . "$ROOT_DIR/spells/.imps/sys/invoke-thesaurus" 2>/dev/null || :
-  success "Default synonyms reset. Custom synonyms preserved."
-else
-  success "Default synonyms reset. Reload with: . invoke-thesaurus"
-fi
+  # Reinitialize defaults by sourcing invoke-thesaurus
+  if [ -f "$ROOT_DIR/spells/.imps/sys/invoke-thesaurus" ]; then
+    # shellcheck disable=SC1090,SC1091
+    . "$ROOT_DIR/spells/.imps/sys/invoke-thesaurus" 2>/dev/null || :
+    success "Default synonyms reset. Custom synonyms preserved."
+  else
+    success "Default synonyms reset. Reload with: . invoke-thesaurus"
+  fi
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */reset-default-synonyms) reset_default_synonyms "$@" ;; esac

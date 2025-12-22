@@ -5,7 +5,15 @@ set -eu
 
 _temp_file() {
   _tf_prefix=${1:-wizardry}
-  mktemp "${TMPDIR:-/tmp}/${_tf_prefix}.XXXXXX"
+  # Prefer WIZARDRY_TMPDIR if set and exists, otherwise use TMPDIR or /tmp
+  # This handles test environments where TMPDIR may point to sandbox dirs
+  if [ -n "${WIZARDRY_TMPDIR-}" ] && [ -d "$WIZARDRY_TMPDIR" ]; then
+    mktemp "${WIZARDRY_TMPDIR}/${_tf_prefix}.XXXXXX"
+  elif [ -n "${TMPDIR-}" ] && [ -d "$TMPDIR" ]; then
+    mktemp "${TMPDIR}/${_tf_prefix}.XXXXXX"
+  else
+    mktemp "/tmp/${_tf_prefix}.XXXXXX"
+  fi
 }
 
 # Self-execute when run directly (not sourced)

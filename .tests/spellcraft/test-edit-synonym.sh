@@ -20,6 +20,7 @@ test_shows_help() {
 }
 
 test_edits_synonym_word() {
+  skip-if-compiled || return $?
   case_dir=$(_make_tempdir)
   synonyms_file="$case_dir/.synonyms"
   
@@ -48,6 +49,7 @@ test_edits_synonym_word() {
 }
 
 test_edits_target_spell() {
+  skip-if-compiled || return $?
   case_dir=$(_make_tempdir)
   synonyms_file="$case_dir/.synonyms"
   

@@ -331,16 +331,35 @@ while IFS= read -r test_path <&3; do
   esac
   test_exit_code=0
   test_output_file=$(temp-file test-output) || return 1
+  test_wrapper=$(temp-file test-wrapper) || return 1
+  test_exit_file=$(temp-file test-exit) || return 1
   
-  # Stream test output in real-time while capturing to file
-  # Use tee to send output to both file and awk for immediate display
-  # Use stdbuf to prevent output buffering so PASS/FAIL lines appear immediately
-  # This ensures PASS/FAIL lines appear as subtests complete, not after test finishes
+  # Create a wrapper script that runs the test and saves the exit code
+  # This is necessary because POSIX sh pipelines return the exit code of the
+  # last command, not the test script itself. We need to capture the real exit code.
+  # CRITICAL: Apply stdbuf to the sh command to ensure line-buffered output from the test itself
+  cat > "$test_wrapper" << WRAPPER_EOF
+#!/bin/sh
+set +e
+${stdbuf_cmd:+$stdbuf_cmd }sh "$abs" < /dev/null 2>&1
+exit_code=\$?
+printf '%s\n' "\$exit_code" > "$test_exit_file"
+WRAPPER_EOF
+  chmod +x "$test_wrapper"
+  
+  # Run test and stream output in real-time while capturing to file
+  # The wrapper runs the test with stdbuf applied internally, saves exit code to file
+  # tee saves output to file, awk filters and displays it in real-time
   if [ -n "$timeout_cmd" ]; then
     timeout_prefix="$timeout_cmd $test_timeout"
     # shellcheck disable=SC2086
-    $timeout_prefix ${stdbuf_cmd:+$stdbuf_cmd} sh "$abs" < /dev/null 2>&1 | \
+    $timeout_prefix "$test_wrapper" | \
       tee "$test_output_file" | awk '
+      # CRITICAL: Check FAIL_DETAIL before FAIL pattern
+      # FAIL_DETAIL lines start with "FAIL_DETAIL:" which matches /^FAIL/
+      # If we check /^FAIL/ first, it will strip the ":..." leaving "FAIL_DETAIL" visible
+      # We must filter FAIL_DETAIL completely before processing other FAIL lines
+      /^FAIL_DETAIL:/ { next }
       /^PASS / { print "  " $0; fflush(); next }
       /^FAIL/ { 
         # Extract just the FAIL line without the reason (after colon)
@@ -355,11 +374,19 @@ while IFS= read -r test_path <&3; do
         fflush()
         next
       }
-      /^LACK / { print "  " $0; fflush() }
-    ' || test_exit_code=$?
+      /^SKIP / { print "  " $0; fflush(); next }
+      /^LACK / { print "  " $0; fflush(); next }
+      /^[0-9]+\/[0-9]+ tests passed/ { print "  " $0; fflush(); next }
+    '
   else
     # shellcheck disable=SC2086
-    ${stdbuf_cmd:+$stdbuf_cmd} sh "$abs" < /dev/null 2>&1 | tee "$test_output_file" | awk '
+    "$test_wrapper" | \
+      tee "$test_output_file" | awk '
+      # CRITICAL: Check FAIL_DETAIL before FAIL pattern
+      # FAIL_DETAIL lines start with "FAIL_DETAIL:" which matches /^FAIL/
+      # If we check /^FAIL/ first, it will strip the ":..." leaving "FAIL_DETAIL" visible
+      # We must filter FAIL_DETAIL completely before processing other FAIL lines
+      /^FAIL_DETAIL:/ { next }
       /^PASS / { print "  " $0; fflush(); next }
       /^FAIL/ { 
         # Extract just the FAIL line without the reason (after colon)
@@ -374,9 +401,22 @@ while IFS= read -r test_path <&3; do
         fflush()
         next
       }
-      /^LACK / { print "  " $0; fflush() }
-    ' || test_exit_code=$?
+      /^SKIP / { print "  " $0; fflush(); next }
+      /^LACK / { print "  " $0; fflush(); next }
+      /^[0-9]+\/[0-9]+ tests passed/ { print "  " $0; fflush(); next }
+    '
   fi
+  
+  # Read exit code from file
+  if [ -f "$test_exit_file" ]; then
+    test_exit_code=$(cat "$test_exit_file" 2>/dev/null | tr -d '\n\r ' || printf '0')
+    # Validate it's a number, default to 0 if not
+    case "$test_exit_code" in
+      ''|*[!0-9]*) test_exit_code=0 ;;
+    esac
+  fi
+  cleanup-file "$test_exit_file"
+  cleanup-file "$test_wrapper"
   
   # Read full output for processing
   output=$(cat "$test_output_file")
@@ -691,7 +731,6 @@ coverage_uncovered=$((coverage_total - coverage_covered))
 
 total_scripts=$((pass + fail))
 
-printf '\n'
 heading-section "Summary"
 printf 'Tests: %d passed, %d failed, %d total\n' "$pass" "$fail" "$total_scripts"
 printf 'Subtests: %d passed, %d total\n' "$subtests_passed" "$subtests_total"

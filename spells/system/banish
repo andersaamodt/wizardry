@@ -88,7 +88,7 @@ if [ "$verbose" -eq 1 ]; then
   log_level=2
 fi
 
-# Helper functions for output
+# Helper functions for output (inline since this is a bootstrap script)
 banish_info() {
   if [ "$log_level" -ge 1 ]; then
     printf '%s\n' "$*"
@@ -162,7 +162,7 @@ fi
 
 # Verify WIZARDRY_DIR is valid
 if [ ! -d "${WIZARDRY_DIR}/spells" ]; then
-  banish_error "WIZARDRY_DIR does not contain spells directory: $WIZARDRY_DIR"
+  banish_warn "WIZARDRY_DIR does not contain spells directory: $WIZARDRY_DIR"
   return 1
 fi
 
@@ -210,8 +210,8 @@ else
   done
   
   if [ -n "$missing_critical" ]; then
-    banish_error "Critical POSIX tools missing: $missing_critical"
-    banish_error "Cannot self-heal without basic shell utilities"
+    banish_warn "Critical POSIX tools missing: $missing_critical"
+    banish_warn "Cannot self-heal without basic shell utilities"
     return 1
   fi
   
@@ -232,7 +232,7 @@ if [ "$log_level" -ge 2 ]; then
   printf '\nVerifying invoke-wizardry:\n'
 fi
 if [ ! -f "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry" ]; then
-  banish_error "invoke-wizardry not found at $WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
+  banish_warn "invoke-wizardry not found at $WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
   return 1
 fi
 banish_check "invoke-wizardry is available"

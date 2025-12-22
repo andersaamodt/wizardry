@@ -646,7 +646,11 @@ fi
 
 # Show what will be installed
 if [ -n "$detect_rc_file_value" ]; then
-        info_msg "Will modify shell configuration: $detect_rc_file_value"
+        if [ "$detect_format_value" = "nix" ]; then
+                info_msg "Configuration file to be modified: $detect_rc_file_value"
+        else
+                info_msg "Will modify shell configuration: $detect_rc_file_value"
+        fi
         if [ -n "$detect_format_value" ]; then
                 substep_msg "Format: $detect_format_value"
         fi
@@ -1239,17 +1243,17 @@ if [ "$detect_format_value" = "nix" ]; then
                 # Rebuild succeeded - wizardry available in new terminals
                 printf 'Wizardry is ready! Open a new terminal window to start using it.\n'
                 printf '\n'
-                printf 'Then run %smenu%s or %smud%s to explore.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
+                printf 'Then run %smenu%s or %smud%s to start using wizardry.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
         else
                 # Rebuild failed - need manual intervention
                 printf '%sNote:%s After rebuilding your NixOS configuration, open a new terminal to use wizardry.\n' "$YELLOW" "$RESET"
                 printf '\n'
-                printf 'After rebuilding and opening a new terminal, run %smenu%s or %smud%s to start.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
+                printf 'After rebuilding and opening a new terminal, run %smenu%s or %smud%s to start using wizardry.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
         fi
 elif [ -n "$detect_rc_file_value" ]; then
-        printf 'Wizardry is ready! Open a new terminal window to start using it.\n'
+        printf 'Wizardry is ready to use! It will be available when you open a new terminal window.\n'
         printf '\n'
-        printf 'Then run %smenu%s or %smud%s to explore.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
+        printf 'Then run %smenu%s or %smud%s to start using wizardry.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
 fi
 printf '\n'
 

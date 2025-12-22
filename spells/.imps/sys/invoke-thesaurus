@@ -16,14 +16,20 @@ esac
 set +eu
 
 _invoke_thesaurus() {
-  : "${SPELLBOOK_DIR:=${HOME-}/.spellbook}"
+  # Use global SPELLBOOK_DIR if set, otherwise use default
+  # Use a local variable to avoid modifying the global
+  if [ -n "${SPELLBOOK_DIR-}" ]; then
+    _it_spellbook_dir="${SPELLBOOK_DIR-}"
+  else
+    _it_spellbook_dir="${HOME-}/.spellbook"
+  fi
   
-  _it_custom_file="${SPELLBOOK_DIR}/.synonyms"
-  _it_default_file="${SPELLBOOK_DIR}/.default-synonyms"
+  _it_custom_file="${_it_spellbook_dir}/.synonyms"
+  _it_default_file="${_it_spellbook_dir}/.default-synonyms"
   
   # Initialize custom synonyms file if it doesn't exist
   if [ ! -f "$_it_custom_file" ]; then
-    mkdir -p "$SPELLBOOK_DIR" 2>/dev/null || true
+    mkdir -p "$_it_spellbook_dir" 2>/dev/null || true
     cat > "$_it_custom_file" << 'HEADER'
 # Wizardry Custom Synonyms
 # This file contains your custom shell aliases.
@@ -34,9 +40,9 @@ HEADER
   fi
   
   # Initialize default synonyms file if it doesn't exist
-  _it_default_initialized="${SPELLBOOK_DIR}/.default-synonyms-initialized"
+  _it_default_initialized="${_it_spellbook_dir}/.default-synonyms-initialized"
   if [ ! -f "$_it_default_initialized" ]; then
-    mkdir -p "$SPELLBOOK_DIR" 2>/dev/null || true
+    mkdir -p "$_it_spellbook_dir" 2>/dev/null || true
     cat > "$_it_default_file" << 'HEADER'
 # Wizardry Default Synonyms
 # These are built-in synonyms that can be reset with reset-default-synonyms.
@@ -92,7 +98,7 @@ find-command which"
   fi
   
   # Check if synonyms are enabled
-  _it_enabled_file="${SPELLBOOK_DIR}/.synonyms-enabled"
+  _it_enabled_file="${_it_spellbook_dir}/.synonyms-enabled"
   _it_enabled=1
   if [ -f "$_it_enabled_file" ]; then
     _it_enabled=$(cat "$_it_enabled_file" 2>/dev/null || printf '1')
@@ -105,12 +111,12 @@ find-command which"
   if [ "$_it_enabled" -eq 0 ]; then
     printf '%s\n' "invoke-thesaurus: synonyms are disabled" >&2
     printf '%s\n' "Enable synonyms through the thesaurus menu or by running:" >&2
-    printf '%s\n' "  printf '1' > \$SPELLBOOK_DIR/.synonyms-enabled" >&2
+    printf '%s\n' "  printf '1' > ~/.spellbook/.synonyms-enabled" >&2
     return 1
   fi
   
   # Check if default synonyms are enabled
-  _it_default_enabled_file="${SPELLBOOK_DIR}/.default-synonyms-enabled"
+  _it_default_enabled_file="${_it_spellbook_dir}/.default-synonyms-enabled"
   _it_default_enabled=1
   if [ -f "$_it_default_enabled_file" ]; then
     _it_default_enabled=$(cat "$_it_default_enabled_file" 2>/dev/null || printf '1')
@@ -121,7 +127,7 @@ find-command which"
   fi
   
   # Check if custom synonyms are enabled
-  _it_custom_enabled_file="${SPELLBOOK_DIR}/.custom-synonyms-enabled"
+  _it_custom_enabled_file="${_it_spellbook_dir}/.custom-synonyms-enabled"
   _it_custom_enabled=1
   if [ -f "$_it_custom_enabled_file" ]; then
     _it_custom_enabled=$(cat "$_it_custom_enabled_file" 2>/dev/null || printf '1')

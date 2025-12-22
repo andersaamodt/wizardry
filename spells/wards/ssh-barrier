@@ -38,8 +38,7 @@ if ! ask-yn "Do you wish to cast the SSH Standard Barrier spell?" no; then
 fi
 
 # Make a backup of the original SSH configuration file
-backup "$sshd_config" ".original" || die "Cannot backup $sshd_config"
-        return 1
+backup "$sshd_config" ".original" || die "Cannot backup $sshd_config" || return 1
 
 # Disable root login
 sed-inplace 's/#PermitRootLogin prohibit-password/PermitRootLogin no/g' "$sshd_config"

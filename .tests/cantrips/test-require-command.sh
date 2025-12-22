@@ -59,6 +59,7 @@ require_command_requires_arguments() {
 
 # Test: require-command does not produce "has: command not found" error
 test_require_command_no_has_error() {
+  skip-if-compiled || return $?
   tmpdir=$(_make_tempdir)
   
   cat > "$tmpdir/test-require.sh" << 'EOF'
@@ -87,6 +88,7 @@ EOF
 
 # Test: require-command does not produce "warn: command not found" error
 test_require_command_no_warn_error() {
+  skip-if-compiled || return $?
   tmpdir=$(_make_tempdir)
   
   cat > "$tmpdir/test-warn.sh" << 'EOF'
@@ -113,6 +115,7 @@ EOF
 
 # Test: Simulate installation - menu is available after invoke-wizardry
 test_menu_after_install() {
+  skip-if-compiled || return $?
   tmpdir=$(_make_tempdir)
   
   # Create a script that simulates shell startup after installation
@@ -151,6 +154,7 @@ EOF
 
 # Test: Shell startup doesn't hang after installation
 test_shell_startup_no_hang() {
+  skip-if-compiled || return $?
   tmpdir=$(_make_tempdir)
   
   cat > "$tmpdir/startup-test.sh" << 'EOF'

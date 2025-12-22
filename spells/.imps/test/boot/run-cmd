@@ -53,7 +53,8 @@ _run_cmd() {
       SPELLBOOK_DIR WIZARDRY_DIR MUD_DIR \
       WIZARDRY_SKIP_NIX_REBUILD WIZARDRY_SKIP_CONFIRM \
       WIZARDRY_INSTALL_ASSUME_YES WIZARDRY_INSTALL_DIR WIZARDRY_CORE_INSTALLER \
-      DETECT_RC_FILE_PLATFORM CORE_LOG
+      DETECT_RC_FILE_PLATFORM CORE_LOG \
+      GIT_LOG MOCK_TOPLEVEL PULL_STATUS REQUIRE_COMMAND
     do
       eval "val=\${$envvar-}"
       if [ -n "$val" ]; then
@@ -73,9 +74,11 @@ _run_cmd() {
     fi
   elif [ "${MACOS_SANDBOX_AVAILABLE:-0}" -eq 1 ]; then
     # Use macOS sandbox-exec for isolation
-    PATH=$PATH
-    HOME=$HOME
-    TMPDIR="$tmpdir"
+    # Export variables to subprocess environment
+    export PATH="$PATH"
+    export HOME="$HOME"
+    export TMPDIR="$tmpdir"
+    export WIZARDRY_TMPDIR="$WIZARDRY_TMPDIR"
     
     if (cd "$workdir" && _run_macos_sandbox "$@" >"$_stdout" 2>"$_stderr"); then
       STATUS=0
@@ -83,9 +86,11 @@ _run_cmd() {
       STATUS=$?
     fi
   else
-    PATH=$PATH
-    HOME=$HOME
-    TMPDIR="$tmpdir"
+    # Export variables to subprocess environment
+    export PATH="$PATH"
+    export HOME="$HOME"
+    export TMPDIR="$tmpdir"
+    export WIZARDRY_TMPDIR="$WIZARDRY_TMPDIR"
     
     if (cd "$workdir" && "$@" >"$_stdout" 2>"$_stderr"); then
       STATUS=0
