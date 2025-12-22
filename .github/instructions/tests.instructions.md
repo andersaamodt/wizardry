@@ -110,9 +110,26 @@ Then use it in tests via symlink, not by copying or inlining the stub code.
 - ✅ **CORRECT**: If tests not run: "Tests created but not yet verified"
 
 **Always run tests after creating or modifying them:**
+
+**Recommended (faster for individual spells):**
+```sh
+# test-spell runs BOTH the spell's test file AND common structural tests by default
+cd /home/runner/work/wizardry/wizardry && ./spells/system/test-spell category/test-spell-name.sh
+
+# Skip common tests if only debugging a specific test failure
+cd /home/runner/work/wizardry/wizardry && ./spells/system/test-spell --skip-common category/test-spell-name.sh
+```
+
+**Alternative (direct execution):**
 ```sh
 cd /home/runner/work/wizardry/wizardry && .tests/category/test-spell-name.sh
 ```
+
+**Why use test-spell?**
+- Automatically runs common structural/behavioral tests on the spell being tested
+- Much faster than running `test-magic` on all tests when you only changed one spell
+- Provides complete test coverage for a single spell (both specific and common tests)
+- AI agents should prefer `test-spell` for individual spell testing as it completes faster
 
 Only report test results you have personally verified by executing the test file. Include the actual pass/fail counts in your reports.
 

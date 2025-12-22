@@ -201,7 +201,7 @@ has git || fail "git required"
 2. **Copy template** from above
 3. **Implement** following `.github/instructions/spells.instructions.md`
 4. **Create test** at `.tests/category/test-spell-name.sh` (REQUIRED)
-5. **Run test** and verify it passes
+5. **Run test** with `test-spell category/test-spell-name.sh` (includes common tests)
 6. **Lint**: `lint-magic spells/category/spell-name`
 7. **Check POSIX**: `checkbashisms spells/category/spell-name`
 
@@ -213,7 +213,7 @@ has git || fail "git required"
 4. **Copy template** from above
 5. **Implement** following `.github/instructions/imps.instructions.md`
 6. **Create test** at `.tests/.imps/family/test-imp-name.sh` (REQUIRED)
-7. **Run test** and verify it passes
+7. **Run test** with `test-spell .imps/family/test-imp-name.sh` (includes common tests)
 
 ## File Types
 
