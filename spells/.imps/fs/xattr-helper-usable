@@ -37,6 +37,17 @@ _xattr_helper_usable() {
 
 # Self-execute when run directly (not sourced)
 set -eu
+
+# DEBUG: Log $0 to see if case pattern matches
+logfile="${WIZARDRY_TMPDIR:-/tmp}/xattr-helper-usable.log"
+printf '[SELF-EXECUTE] $0=%s\n' "$0" >> "$logfile" 2>&1 || true
+
 case "$0" in
-  */xattr-helper-usable) _xattr_helper_usable "$@" ;; 
+  */xattr-helper-usable) 
+    printf '[SELF-EXECUTE] Pattern matched, calling function\n' >> "$logfile" 2>&1 || true
+    _xattr_helper_usable "$@"  
+    ;;
+  *)
+    printf '[SELF-EXECUTE] Pattern NOT matched, exiting\n' >> "$logfile" 2>&1 || true
+    ;;
 esac
