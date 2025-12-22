@@ -46,8 +46,17 @@ test_no_attributes() {
   fi
   
   stub_dir=$(make_stub_dir)
+  
+  # DEBUG: Log environment
+  printf '[DEBUG test#4] Before stub creation:\n' >&2
+  printf '[DEBUG test#4] WIZARDRY_TEST_HELPERS_ONLY=%s\n' "${WIZARDRY_TEST_HELPERS_ONLY:-UNSET}" >&2
+  printf '[DEBUG test#4] stub_dir=%s\n' "$stub_dir" >&2
+  printf '[DEBUG test#4] System attr available: %s\n' "$(command -v attr || echo NONE)" >&2
+  
   cat >"$stub_dir/attr" <<'STUB'
 #!/bin/sh
+printf '[DEBUG stub attr test#4] Called with: %s\n' "$*" >&2
+printf '[DEBUG stub attr test#4] WIZARDRY_TEST_HELPERS_ONLY=%s\n' "${WIZARDRY_TEST_HELPERS_ONLY:-UNSET}" >&2
 if [ "$1" = "-l" ]; then
   exit 0
 fi
@@ -57,7 +66,12 @@ STUB
   tmpfile="$WIZARDRY_TMPDIR/blank"
   : >"$tmpfile"
   
+  printf '[DEBUG test#4] Running _run_spell...\n' >&2
   PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/menu:$stub_dir:/bin:/usr/bin" _run_spell "spells/enchant/disenchant" "$tmpfile"
+  printf '[DEBUG test#4] After _run_spell: STATUS=%s\n' "$STATUS" >&2
+  printf '[DEBUG test#4] ERROR length=%s\n' "${#ERROR}" >&2
+  printf '[DEBUG test#4] ERROR content=%s\n' "$ERROR" >&2
+  
   _assert_failure && _assert_error_contains "no enchanted attributes"
 }
 
@@ -69,10 +83,22 @@ test_removes_specific_key_with_attr() {
   fi
   
   stub_dir=$(make_stub_dir)
+  
+  # DEBUG: Log environment before creating stub
+  printf '[DEBUG test#5] Before stub creation:\n' >&2
+  printf '[DEBUG test#5] WIZARDRY_TEST_HELPERS_ONLY=%s\n' "${WIZARDRY_TEST_HELPERS_ONLY:-UNSET}" >&2
+  printf '[DEBUG test#5] WIZARDRY_TMPDIR=%s\n' "$WIZARDRY_TMPDIR" >&2
+  printf '[DEBUG test#5] stub_dir=%s\n' "$stub_dir" >&2
+  
   cat >"$stub_dir/attr" <<'STUB'
 #!/bin/sh
+printf '[DEBUG stub attr] Called with args: %s\n' "$*" >&2
+printf '[DEBUG stub attr] WIZARDRY_TEST_HELPERS_ONLY=%s\n' "${WIZARDRY_TEST_HELPERS_ONLY:-UNSET}" >&2
+printf '[DEBUG stub attr] WIZARDRY_TMPDIR=%s\n' "${WIZARDRY_TMPDIR:-UNSET}" >&2
 if [ "$1" = "-r" ]; then
+  printf '[DEBUG stub attr] Writing to: %s/disenchant.call\n' "$WIZARDRY_TMPDIR" >&2
   printf '%s\n' "$*" >"$WIZARDRY_TMPDIR/disenchant.call"
+  printf '[DEBUG stub attr] Write result: %s\n' "$?" >&2
 fi
 exit 0
 STUB
@@ -81,9 +107,24 @@ STUB
   target="$WIZARDRY_TMPDIR/scroll"
   : >"$target"
 
+  printf '[DEBUG test#5] Running _run_spell...\n' >&2
   PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/menu:$stub_dir:/bin:/usr/bin" _run_spell "spells/enchant/disenchant" "$target" user.note
+  printf '[DEBUG test#5] After _run_spell: STATUS=%s\n' "$STATUS" >&2
+  printf '[DEBUG test#5] ERROR=%s\n' "$ERROR" >&2
+  
   _assert_success && _assert_output_contains "Disenchanted user.note"
-  called=$(cat "$WIZARDRY_TMPDIR/disenchant.call")
+  
+  if [ -f "$WIZARDRY_TMPDIR/disenchant.call" ]; then
+    called=$(cat "$WIZARDRY_TMPDIR/disenchant.call")
+    printf '[DEBUG test#5] File exists, content: %s\n' "$called" >&2
+  else
+    printf '[DEBUG test#5] File NOT found at: %s/disenchant.call\n' "$WIZARDRY_TMPDIR" >&2
+    printf '[DEBUG test#5] Directory contents:\n' >&2
+    ls -la "$WIZARDRY_TMPDIR" >&2 || true
+    TEST_FAILURE_REASON="stub output file not found"
+    return 1
+  fi
+  
   [ "$called" = "-r user.note $target" ] || { TEST_FAILURE_REASON="unexpected attr call: $called"; return 1; }
 }
 

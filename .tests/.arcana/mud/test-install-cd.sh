@@ -169,17 +169,28 @@ test_install_cd_creates_rc_file_if_missing() {
   skip-if-compiled || return $?
   tmpdir=$(_make_tempdir)
   
+  # DEBUG: Log environment
+  printf '[DEBUG test#6] Starting test...\n' >&2
+  printf '[DEBUG test#6] tmpdir=%s\n' "$tmpdir" >&2
+  printf '[DEBUG test#6] WIZARDRY_TEST_HELPERS_ONLY=%s\n' "${WIZARDRY_TEST_HELPERS_ONLY:-UNSET}" >&2
+  
   # Create fake home WITHOUT bashrc
   fake_home="$tmpdir/home"
   mkdir -p "$fake_home"
   rc_file="$fake_home/.bashrc"
   # Don't create the file - let install-cd create it
   
+  printf '[DEBUG test#6] fake_home=%s\n' "$fake_home" >&2
+  printf '[DEBUG test#6] rc_file=%s\n' "$rc_file" >&2
+  printf '[DEBUG test#6] rc_file exists before: %s\n' "$([ -f "$rc_file" ] && echo YES || echo NO)" >&2
+  
   # Create stub detect-rc-file
   stub_dir="$tmpdir/stubs"
   mkdir -p "$stub_dir"
   cat > "$stub_dir/detect-rc-file" << STUB_EOF
 #!/bin/sh
+printf '[DEBUG stub detect-rc-file] Called\n' >&2
+printf '[DEBUG stub detect-rc-file] Returning rc_file=%s\n' "$rc_file" >&2
 printf 'rc_file=%s\n' "$rc_file"
 printf 'format=shell\n'
 STUB_EOF
@@ -188,8 +199,24 @@ STUB_EOF
   # Set up PATH to include wizardry imps (needed for rc-add-line, temp-file, etc)
   test_path="$stub_dir:$WIZARDRY_IMPS_PATH:$PATH"
   
+  printf '[DEBUG test#6] Running install-cd...\n' >&2
+  printf '[DEBUG test#6] PATH includes stub_dir: %s\n' "$stub_dir" >&2
+  
   # Run install-cd with TMPDIR set for mktemp
   output=$(env HOME="$fake_home" PATH="$test_path" TMPDIR="$tmpdir" sh "$ROOT_DIR/spells/.arcana/mud/install-cd" 2>&1)
+  exit_code=$?
+  
+  printf '[DEBUG test#6] install-cd exit code: %s\n' "$exit_code" >&2
+  printf '[DEBUG test#6] install-cd output: %s\n' "$output" >&2
+  printf '[DEBUG test#6] rc_file exists after: %s\n' "$([ -f "$rc_file" ] && echo YES || echo NO)" >&2
+  
+  if [ -f "$rc_file" ]; then
+    printf '[DEBUG test#6] rc_file contents:\n' >&2
+    cat "$rc_file" >&2
+  else
+    printf '[DEBUG test#6] Listing fake_home:\n' >&2
+    ls -la "$fake_home" >&2 || true
+  fi
   
   # Verify RC file was created
   if [ ! -f "$rc_file" ]; then
