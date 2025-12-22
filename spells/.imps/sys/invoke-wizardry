@@ -65,13 +65,13 @@ _invoke_wizardry() {
   : "${SPELLBOOK_DIR:=${HOME-}/.spellbook}"
   export SPELLBOOK_DIR
   
-  # Set up PATH to include wizardry spell directories and user's spellbook
-  # This makes all spells directly callable as commands
-  # Also include ALL imp families so imps are available before they're sourced
-  _iw_new_path="$SPELLBOOK_DIR"
+  # Word-of-binding paradigm: Pre-load (source) all spells at startup
+  # This makes spell functions immediately available without PATH manipulation
+  # Imps are still added to PATH for backward compatibility
   
-  # Add all imp family directories to PATH first (before spell categories)
-  # This ensures imps like 'has' and 'warn' are available as commands
+  # Add imp family directories to PATH
+  # Imps need to be in PATH so they work as commands before being sourced
+  _iw_new_path=""
   _iw_imps_dir="$WIZARDRY_DIR/spells/.imps"
   if [ -d "$_iw_imps_dir" ]; then
     for _iw_family in "$_iw_imps_dir"/*; do
@@ -81,32 +81,21 @@ _invoke_wizardry() {
       case "$_iw_family_name" in
         test) continue ;;
       esac
-      _iw_new_path="$_iw_new_path:$_iw_family"
+      _iw_new_path="${_iw_new_path:+$_iw_new_path:}$_iw_family"
     done
   fi
   
-  # Add .arcana subdirectories (bitcoin, mud, etc.) to PATH
-  # These are installation/configuration scripts that users may want to run directly
-  _iw_arcana_dir="$WIZARDRY_DIR/spells/.arcana"
-  if [ -d "$_iw_arcana_dir" ]; then
-    for _iw_arcana_cat in "$_iw_arcana_dir"/*; do
-      [ -d "$_iw_arcana_cat" ] || continue
-      _iw_new_path="$_iw_new_path:$_iw_arcana_cat"
-    done
+  # Add spellbook to PATH (for user's custom scripts)
+  _iw_new_path="${_iw_new_path:+$_iw_new_path:}$SPELLBOOK_DIR"
+  
+  # Update PATH if we have new paths to add
+  if [ -n "$_iw_new_path" ]; then
+    case ":${PATH-}:" in
+      *":$SPELLBOOK_DIR:"*) ;;
+      *) PATH="$_iw_new_path:${PATH-}" ;;
+    esac
+    export PATH
   fi
-  
-  # Add spell category directories to PATH
-  for _iw_spell_cat in "$WIZARDRY_DIR"/spells/*; do
-    [ -d "$_iw_spell_cat" ] || continue
-    _iw_new_path="$_iw_new_path:$_iw_spell_cat"
-  done
-  
-  # Add to PATH if not already present
-  case ":${PATH-}:" in
-    *":$SPELLBOOK_DIR:"*) ;;
-    *) PATH="$_iw_new_path:${PATH-}" ;;
-  esac
-  export PATH
   
   # Source all imps to load their functions into the shell
   # This makes them available as shell functions for standardization and reliability
@@ -142,20 +131,72 @@ _invoke_wizardry() {
     done
   fi
   
-  # Spells are loaded on-demand via word-of-binding (command_not_found_handle)
-  # This provides fast shell startup while still making all spells available
-  # User spells in .spellbook are also auto-loaded this way
+  # Word-of-binding: Pre-load all spells by sourcing them
+  # This makes spell functions immediately available in the current shell
+  # Spells are sourced (not executed) to bind their functions into the shell
+  for _iw_spell_cat in "$WIZARDRY_DIR"/spells/*; do
+    [ -d "$_iw_spell_cat" ] || continue
+    # Skip hidden directories (like .imps and .arcana)
+    case "$_iw_spell_cat" in
+      */.*) continue ;;
+    esac
+    
+    for _iw_spell in "$_iw_spell_cat"/*; do
+      [ -f "$_iw_spell" ] && [ -r "$_iw_spell" ] || continue
+      
+      # Check if spell has a true-name function (word-of-binding pattern)
+      # Format: spell-name defines _spell_name() function
+      _iw_spell_name=$(basename "$_iw_spell")
+      _iw_spell_true_name=$(printf '_%s' "$_iw_spell_name" | sed 's/-/_/g')
+      
+      # Only source spells that define a true-name function
+      # This skips standalone scripts that don't use the binding pattern
+      if grep -qE "^[[:space:]]*${_iw_spell_true_name}[[:space:]]*\\(\\)" "$_iw_spell" 2>/dev/null; then
+        # Source the spell to load its function
+        # shellcheck disable=SC1090
+        . "$_iw_spell" 2>/dev/null || true
+        # Restore permissive mode - sourcing spells with set -eu changes parent shell mode
+        set +eu
+        
+        # Create alias from hyphenated name to underscore function name
+        if command -v "$_iw_spell_true_name" >/dev/null 2>&1; then
+          alias "$_iw_spell_name=$_iw_spell_true_name" 2>/dev/null || true
+        fi
+      fi
+    done
+  done
   
-  # Set up command_not_found_handle for lazy spell loading via word-of-binding
-  # This enables:
-  # - All spells to be loaded on-demand (lazy loading for fast startup)
-  # - Recursive parser functionality
-  # - User spells in .spellbook to work automatically
+  # Pre-load spells from user's spellbook
+  if [ -d "$SPELLBOOK_DIR" ]; then
+    for _iw_user_spell in "$SPELLBOOK_DIR"/*; do
+      [ -f "$_iw_user_spell" ] && [ -r "$_iw_user_spell" ] || continue
+      
+      _iw_user_spell_name=$(basename "$_iw_user_spell")
+      _iw_user_spell_true_name=$(printf '_%s' "$_iw_user_spell_name" | sed 's/-/_/g')
+      
+      # Only source if it has a true-name function
+      if grep -qE "^[[:space:]]*${_iw_user_spell_true_name}[[:space:]]*\\(\\)" "$_iw_user_spell" 2>/dev/null; then
+        # shellcheck disable=SC1090
+        . "$_iw_user_spell" 2>/dev/null || true
+        set +eu
+        
+        if command -v "$_iw_user_spell_true_name" >/dev/null 2>&1; then
+          alias "$_iw_user_spell_name=$_iw_user_spell_true_name" 2>/dev/null || true
+        fi
+      fi
+    done
+  fi
+  
+  # Hotloading: command_not_found_handle provides fallback for spells not yet loaded
+  # This handles new spells added after shell startup and non-function spells
+  
+  # Hotloading: command_not_found_handle provides fallback for spells not yet loaded
+  # This handles new spells added after shell startup and non-function spells
   # Use eval to check shell type while avoiding checkbashisms false positive
   if eval '[ -n "${BASH_VERSION+x}" ]' 2>/dev/null; then
     # Bash-specific command_not_found_handle
     eval 'command_not_found_handle() {
-      # Try word-of-binding for autoloading (handles all spells including .spellbook)
+      # Try word-of-binding for autoloading (handles hotloaded spells)
       if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" ]; then
         "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" "$@" 2>/dev/null && return 0
       fi
@@ -170,7 +211,7 @@ _invoke_wizardry() {
   elif eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
     # Zsh-specific command_not_found_handler
     eval 'command_not_found_handler() {
-      # Try word-of-binding for autoloading (handles all spells including .spellbook)
+      # Try word-of-binding for autoloading (handles hotloaded spells)
       if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" ]; then
         "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" "$@" 2>/dev/null && return 0
       fi
