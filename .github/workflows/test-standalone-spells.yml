@@ -18,12 +18,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       
-      - name: Set up wizardry
+      - name: Set up wizardry environment variables
         run: |
-          export WIZARDRY_DIR="${GITHUB_WORKSPACE}"
-          . ./spells/.imps/sys/invoke-wizardry
-          echo "PATH=$PATH" >> "$GITHUB_ENV"
-          echo "WIZARDRY_DIR=$WIZARDRY_DIR" >> "$GITHUB_ENV"
+          echo "WIZARDRY_DIR=${GITHUB_WORKSPACE}" >> "$GITHUB_ENV"
       
       - name: Create output directory
         run: mkdir -p /tmp/compiled
@@ -31,50 +28,32 @@ jobs:
       - name: Compile all spells
         id: compile
         run: |
-          . ./spells/.imps/sys/invoke-wizardry
-          
           compiled=0
           failed=0
           failed_list=""
           
-          echo "=== Compiling all spells and imps ==="
+          echo "=== Compiling all spells and imps using doppelganger ==="
           
-          # Use a temp file to collect failures since subshell won't persist variables
-          tmpfile="/tmp/failed_spells.txt"
-          : > "$tmpfile"
-          
-          # Use list-files cantrip to recursively find all executable files
-          # Include imps and .arcana directories
-          list-files spells -x | while IFS= read -r spell_file; do
-            
-            spell_name=$(basename "$spell_file")
-            
-            # Compile the spell/imp
-            if compile-spell "$spell_name" > "/tmp/compiled/${spell_name}" 2>/dev/null; then
-              chmod +x "/tmp/compiled/${spell_name}"
-              echo "  ✓ $spell_name"
-            else
-              echo "$spell_name" >> "$tmpfile"
-              echo "  ✗ $spell_name"
-            fi
-          done
+          # Use doppelganger to compile everything
+          export WIZARDRY_DIR="${GITHUB_WORKSPACE}"
+          "${GITHUB_WORKSPACE}/spells/spellcraft/doppelganger" /tmp/compiled
           
           # Count results
-          compiled=$(find /tmp/compiled -type f 2>/dev/null | wc -l)
-          failed=$(wc -l < "$tmpfile" 2>/dev/null || echo 0)
+          compiled=$(find /tmp/compiled/spells -type f -executable 2>/dev/null | wc -l)
           
           echo ""
-          echo "Compiled: $compiled"
-          echo "Failed: $failed"
+          echo "Compiled: $compiled spells"
           
-          if [ "$failed" -gt 0 ]; then
-            # Build comma-delimited list
-            failed_list=$(tr '\n' ',' < "$tmpfile" | sed 's/,$//')
-            echo "FAILED_COMPILE=$failed_list" >> "$GITHUB_OUTPUT"
+          if [ "$compiled" -eq 0 ]; then
+            echo "FAILED_COMPILE=all" >> "$GITHUB_OUTPUT"
             echo ""
-            echo "Failed to compile: $failed_list"
+            echo "Failed to compile spells - doppelganger produced no output"
             exit 1
           fi
+          
+          # Copy compiled spells to test directory
+          mkdir -p /tmp/compiled-standalone
+          find /tmp/compiled/spells -type f -executable -exec cp {} /tmp/compiled-standalone/ \;
       
       - name: Test compiled spells standalone
         if: success()
@@ -96,7 +75,7 @@ jobs:
           excluded="invoke-wizardry require-wizardry declare-globals learn-spellbook learn mud decorate select-player"
           
           # Test each compiled spell with minimal PATH and timeout
-          for compiled in /tmp/compiled/*; do
+          for compiled in /tmp/compiled-standalone/*; do
             [ -f "$compiled" ] || continue
             spell_name=$(basename "$compiled")
             
@@ -151,7 +130,7 @@ jobs:
           done
           
           # Count results
-          total_tested=$(find /tmp/compiled -type f 2>/dev/null | wc -l)
+          total_tested=$(find /tmp/compiled-standalone -type f 2>/dev/null | wc -l)
           total_tested=$((total_tested - skipped))
           failed=$(wc -l < "$tmpfile" 2>/dev/null || echo 0)
           passed=$((total_tested - failed))
@@ -190,10 +169,10 @@ jobs:
           echo "=== Running Behavioral Tests on Compiled Spells ==="
           
           # Set up environment
-          export ROOT_DIR="/tmp/compiled"
+          export ROOT_DIR="/tmp/compiled-standalone"
           export WIZARDRY_TEST_COMPILED=1
           export WIZARDRY_OS_LABEL="standalone tests"
-          export PATH="/tmp/compiled:$PATH"
+          export PATH="/tmp/compiled-standalone:$PATH"
           
           # Run test-magic with compiled spells
           # Only supported tests (not marked COMPILED_UNSUPPORTED) will run
@@ -217,7 +196,7 @@ jobs:
           echo ""
           
           # Get compiled count
-          compiled_count=$(find /tmp/compiled -type f 2>/dev/null | wc -l || echo 0)
+          compiled_count=$(find /tmp/compiled-standalone -type f 2>/dev/null | wc -l || echo 0)
           echo "✓ Compiled: $compiled_count spells"
           
           # Check for failures
