@@ -19,12 +19,8 @@ jobs:
       
       - name: Install wizardry
         run: |
-          # Add wizardry to PATH for compilation
-          echo "${{ github.workspace }}/spells" >> $GITHUB_PATH
-          echo "${{ github.workspace }}/spells/cantrips" >> $GITHUB_PATH
-          echo "${{ github.workspace }}/spells/spellcraft" >> $GITHUB_PATH
-          
-          # Source invoke-wizardry to set up environment
+          # Source invoke-wizardry to pre-load all spells and imps
+          # Word-of-binding paradigm: spells are pre-loaded, NOT added to PATH
           export WIZARDRY_DIR="${{ github.workspace }}"
           . "${{ github.workspace }}/spells/.imps/sys/invoke-wizardry"
         shell: bash
