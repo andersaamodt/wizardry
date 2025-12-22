@@ -47,30 +47,50 @@ test_no_attributes() {
   
   stub_dir=$(make_stub_dir)
   
-  # DEBUG: Log environment
+  # DEBUG: Log environment before creating stub
   printf '[DEBUG test#4] Before stub creation:\n' >&2
   printf '[DEBUG test#4] WIZARDRY_TEST_HELPERS_ONLY=%s\n' "${WIZARDRY_TEST_HELPERS_ONLY:-UNSET}" >&2
   printf '[DEBUG test#4] stub_dir=%s\n' "$stub_dir" >&2
   printf '[DEBUG test#4] System attr available: %s\n' "$(command -v attr || echo NONE)" >&2
   
+  # Create wrapper that logs all calls
   cat >"$stub_dir/attr" <<'STUB'
 #!/bin/sh
-printf '[DEBUG stub attr test#4] Called with: %s\n' "$*" >&2
-printf '[DEBUG stub attr test#4] WIZARDRY_TEST_HELPERS_ONLY=%s\n' "${WIZARDRY_TEST_HELPERS_ONLY:-UNSET}" >&2
+{
+  printf '[DEBUG stub attr test#4] ========== STUB CALLED ==========\n'
+  printf '[DEBUG stub attr test#4] Called with: %s\n' "$*"
+  printf '[DEBUG stub attr test#4] WIZARDRY_TEST_HELPERS_ONLY=%s\n' "${WIZARDRY_TEST_HELPERS_ONLY:-UNSET}"
+  printf '[DEBUG stub attr test#4] PATH=%s\n' "$PATH"
+  printf '[DEBUG stub attr test#4] command -v attr=%s\n' "$(command -v attr)"
+  printf '[DEBUG stub attr test#4] pwd=%s\n' "$(pwd)"
+} >&2
 if [ "$1" = "-l" ]; then
   exit 0
 fi
 STUB
   chmod +x "$stub_dir/attr"
 
+  # Also stub xattr and getfattr to ensure attr stub is used
+  for cmd in xattr getfattr setfattr; do
+    cat >"$stub_dir/$cmd" <<'ENDSTUB'
+#!/bin/sh
+printf '[DEBUG stub %s] called, exiting 1\n' "$0" >&2
+exit 1
+ENDSTUB
+    chmod +x "$stub_dir/$cmd"
+  done
+
   tmpfile="$WIZARDRY_TMPDIR/blank"
   : >"$tmpfile"
   
   printf '[DEBUG test#4] Running _run_spell...\n' >&2
+  printf '[DEBUG test#4] Test PATH=%s\n' "$PATH" >&2
+  printf '[DEBUG test#4] Setting PATH to: IMPS:menu:stub:/bin:/usr/bin\n' >&2
   PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/menu:$stub_dir:/bin:/usr/bin" _run_spell "spells/enchant/disenchant" "$tmpfile"
   printf '[DEBUG test#4] After _run_spell: STATUS=%s\n' "$STATUS" >&2
   printf '[DEBUG test#4] ERROR length=%s\n' "${#ERROR}" >&2
   printf '[DEBUG test#4] ERROR content=%s\n' "$ERROR" >&2
+  printf '[DEBUG test#4] OUTPUT=%s\n' "$OUTPUT" >&2
   
   _assert_failure && _assert_error_contains "no enchanted attributes"
 }
