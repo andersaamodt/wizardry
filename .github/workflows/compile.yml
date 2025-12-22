@@ -19,22 +19,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up wizardry environment
-        run: |
-          # Source invoke-wizardry to pre-load all spells and imps
-          # Word-of-binding paradigm: spells are pre-loaded, NOT added to PATH
-          export WIZARDRY_DIR="${{ github.workspace }}"
-          . "${{ github.workspace }}/spells/.imps/sys/invoke-wizardry"
-          echo "WIZARDRY_DIR=$WIZARDRY_DIR" >> "$GITHUB_ENV"
-        shell: bash
-
       - name: Create compiled doppelganger
         run: |
+          # Set wizardry directory
           export WIZARDRY_DIR="${{ github.workspace }}"
-          . "${{ github.workspace }}/spells/.imps/sys/invoke-wizardry"
-
-          # Create doppelganger in /tmp
-          doppelganger /tmp/wizardry-compiled
+          
+          # Call doppelganger directly (as standalone script)
+          # Don't source invoke-wizardry here - it would try to pre-load all spells
+          # including doppelganger itself, creating a circular dependency
+          "${{ github.workspace }}/spells/spellcraft/doppelganger" /tmp/wizardry-compiled
 
           echo "=== Doppelganger created ==="
           ls -la /tmp/wizardry-compiled/
