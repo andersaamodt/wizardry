@@ -1,5 +1,11 @@
 #!/bin/sh
-# die [CODE] MESSAGE - print to stderr and exit (default code 1)
+# die [CODE] MESSAGE - print to stderr and exit script (default code 1)
+#
+# Uses 'return' not 'exit' for word-of-binding compatibility.
+# When called from a spell function, the function returns with error code,
+# which causes the script to exit. This allows spells to be both sourced
+# (for word-of-binding) and executed (as standalone scripts).
+#
 # Examples: die "fatal error" | die 2 "file not found"
 set -eu
 
