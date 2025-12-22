@@ -35,7 +35,10 @@ fi
 file=$1
 requested_key=${2-}
 
-gone "$file" && die "disenchant: The file does not exist." || return 1
+if gone "$file"; then
+  die "disenchant: The file does not exist."
+  return 1
+fi
 
 # Function to remove a single attribute
 disenchant_attr() {

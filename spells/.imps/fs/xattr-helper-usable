@@ -24,7 +24,6 @@ _xattr_helper_usable() {
 }
 
 # Self-execute when run directly (not sourced)
-set -eu
 case "$0" in
   */xattr-helper-usable) _xattr_helper_usable "$@" ;;
 esac
