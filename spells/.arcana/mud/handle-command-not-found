@@ -1,14 +1,19 @@
 #!/bin/sh
 
-# The command-not-found cantrip installs a hook that intercepts unknown commands
-# and displays helpful messages. When installed, unrecognized commands will print
-# a notice instead of the default shell error.
+# DEPRECATED: command-not-found hook is now automatically installed by invoke-wizardry.
+# This spell is no longer needed and will be removed in a future version.
 
 handle_command_not_found_usage() {
 cat <<'USAGE'
 Usage: handle-command-not-found {install|uninstall}
 
-Install or uninstall the command-not-found hook in your shell rc file. When enabled, unknown commands display a helpful message. On NixOS, rebuilds the configuration automatically.
+DEPRECATED: The command-not-found hook is now automatically installed by
+invoke-wizardry when you install wizardry. This spell is no longer needed.
+
+If you previously installed this hook manually, you can safely run:
+  handle-command-not-found uninstall
+
+to remove the old hook. The new hook in invoke-wizardry will continue to work.
 USAGE
 }
 
@@ -20,6 +25,11 @@ case "${1-}" in
 esac
 
 set -eu
+
+# Inform users that this is deprecated
+printf '%s\n' "handle-command-not-found: This spell is deprecated." >&2
+printf '%s\n' "handle-command-not-found: Command-not-found hook is now built into invoke-wizardry." >&2
+printf '%s\n' "" >&2
 
 SCRIPT_SOURCE=$0
 case $SCRIPT_SOURCE in
@@ -81,154 +91,9 @@ _detect_rc_cache=""
 # Handle command-line invocation for install/uninstall commands
 case "${1-}" in
 install)
-  # Detect nix format from detect-rc-file output
-  rc_format="shell"
-  rc_file=""
-  
-  # Check env var overrides
-  if [ -n "${WIZARDRY_RC_FORMAT-}" ]; then
-    rc_format="$WIZARDRY_RC_FORMAT"
-  fi
-  
-  if [ -n "${WIZARDRY_RC_FILE-}" ]; then
-    rc_file="$WIZARDRY_RC_FILE"
-  else
-    # Try to use detect-rc-file for cross-platform support
-    if command -v detect-rc-file >/dev/null 2>&1; then
-      if _detect_rc_cache=$(detect-rc-file 2>/dev/null); then
-        # Parse rc_file= and format= lines
-        while IFS= read -r line; do
-          case $line in
-          rc_file=*)
-            rc_value=${line#rc_file=}
-            [ -n "$rc_value" ] && rc_file="$rc_value"
-            ;;
-          format=*)
-            format_value=${line#format=}
-            [ -n "$format_value" ] && rc_format="$format_value"
-            ;;
-          esac
-        done <<EOF
-$_detect_rc_cache
-EOF
-      fi
-    fi
-    
-    # Fallback to shell-specific defaults if still empty
-    if [ -z "$rc_file" ]; then
-      if [ -z "${HOME-}" ]; then
-        handle_command_not_found_warn "HOME is not set; cannot determine rc file."
-        exit 1
-      fi
-      
-      shell_name=${SHELL-}
-      case ${shell_name##*/} in
-      zsh)
-        rc_file="$HOME/.zshrc"
-        ;;
-      *)
-        rc_file="$HOME/.bashrc"
-        ;;
-      esac
-    fi
-  fi
-
-  # Detect format from file extension if not set
-  if [ "$rc_format" = "shell" ]; then
-    case $rc_file in
-    *.nix) rc_format="nix" ;;
-    esac
-  fi
-
-  # For nix format, use nix-shell-add imp to add shell init code
-  if [ "$rc_format" = "nix" ]; then
-    # Find nix-shell-add helper
-    nix_helper=""
-    if [ -x "$SCRIPT_DIR/../../.imps/sys/nix-shell-add" ]; then
-      nix_helper="$SCRIPT_DIR/../../.imps/sys/nix-shell-add"
-    elif command -v nix-shell-add >/dev/null 2>&1; then
-      nix_helper=$(command -v nix-shell-add)
-    fi
-
-    if [ -z "$nix_helper" ]; then
-      printf '%s\n' "handle-command-not-found: nix-shell-add imp not found for NixOS installation."
-      exit 1
-    fi
-
-    # Create the shell hook code for bash
-    hook_code='command_not_found_handle() {
-  # Try word-of-binding first for autoloading wizardry commands
-  if command -v word-of-binding >/dev/null 2>&1; then
-    if word-of-binding "$@" 2>/dev/null; then
-      return $?
-    fi
-  fi
-  # Fall back to parse for recursive grammar parsing
-  if command -v parse >/dev/null 2>&1; then
-    parse "$@"
-    return $?
-  fi
-  printf '\''%s: command not found. Try '\''menu'\'' for available spells.\n'\'' "$1" >&2
-  return 127
-}'
-
-    if printf '%s\n' "$hook_code" | "$nix_helper" command-not-found "$rc_file" bash; then
-      printf '%s\n' "handle-command-not-found: installed hook in '$rc_file'."
-      # Run nixos-rebuild to apply the changes
-      handle_command_not_found_run_nix_rebuild || true
-    else
-      handle_command_not_found_warn "unable to update '$rc_file'."
-      exit 1
-    fi
-    exit 0
-  fi
-
-  # Standard shell format installation
-  rc_dir=${rc_file%/*}
-  [ "$rc_dir" = "$rc_file" ] && rc_dir=.
-  if [ ! -d "$rc_dir" ]; then
-    if ! mkdir -p "$rc_dir"; then
-      handle_command_not_found_warn "unable to create directory '$rc_dir'."
-      exit 1
-    fi
-  fi
-  
-  tmp_file=$(temp-file wizardry-cnf) || exit 1
-  trap 'cleanup-file "$tmp_file"' EXIT HUP INT TERM
-  if [ -f "$rc_file" ]; then
-    sed '/^# >>> wizardry command-not-found >>>$/,/^# <<< wizardry command-not-found <<</d' "$rc_file" >"$tmp_file"
-  else
-    : >"$tmp_file"
-  fi
-  
-  # Install the command_not_found_handle function
-  cat <<'HOOK' >>"$tmp_file"
-# >>> wizardry command-not-found >>>
-command_not_found_handle() {
-  # Try word-of-binding first for autoloading wizardry commands
-  if command -v word-of-binding >/dev/null 2>&1; then
-    if word-of-binding "$@" 2>/dev/null; then
-      return $?
-    fi
-  fi
-  # Fall back to parse for recursive grammar parsing
-  if command -v parse >/dev/null 2>&1; then
-    parse "$@"
-    return $?
-  fi
-  printf '%s: command not found. Try '\''menu'\'' for available spells.\n' "$1" >&2
-  return 127
-}
-# <<< wizardry command-not-found <<<
-HOOK
-  if ! mv "$tmp_file" "$rc_file"; then
-    trap - EXIT HUP INT TERM
-    rm -f "$tmp_file"
-    handle_command_not_found_warn "unable to update '$rc_file'."
-    exit 1
-  fi
-  trap - EXIT HUP INT TERM
-  printf '%s\n' "handle-command-not-found: installed hook in '$rc_file'."
+  printf '%s\n' "handle-command-not-found: Installation is deprecated." >&2
+  printf '%s\n' "handle-command-not-found: The command-not-found hook is now automatically installed by invoke-wizardry." >&2
+  printf '%s\n' "handle-command-not-found: No action needed - wizardry already provides this functionality." >&2
   exit 0
   ;;
 uninstall)
