@@ -17,18 +17,32 @@ esac
 
 test_spell_usage() {
   cat <<'USAGE'
-Usage: test-spell TEST_PATH [SUBTEST_NUM...]
+Usage: test-spell [--skip-common] TEST_PATH [SUBTEST_NUM...]
 
-Run a specific test file from the .tests/ directory.
+Run a specific test file from the .tests/ directory with common structural tests.
+
+By default, test-spell runs BOTH the spell's specific test file AND common
+structural/behavioral tests on that spell. This ensures full test coverage.
+
+Options:
+  --skip-common  Skip common structural tests (only run the spell's test file)
 
 Arguments:
   TEST_PATH      Path to test file (relative to .tests/)
   SUBTEST_NUM    Optional subtest number(s) to run (can specify multiple)
 
 Examples:
-  test-spell cantrips/test-ask-yn.sh
-  test-spell cantrips/test-ask-yn.sh 5
-  test-spell cantrips/test-ask-yn.sh 5 10 15
+  test-spell cantrips/test-ask-yn.sh              # Runs test + common tests
+  test-spell --skip-common cantrips/test-ask-yn.sh # Runs test only
+  test-spell cantrips/test-ask-yn.sh 5             # Runs subtest #5 only
+  test-spell cantrips/test-ask-yn.sh 5 10 15       # Runs subtests 5, 10, 15
+
+For AI: Use test-spell to test individual spells quickly. It automatically runs
+both the spell's specific tests AND common structural checks. This is much faster
+than running test-magic on all tests when you only changed one spell.
+
+Use --skip-common only if you need to debug a specific test failure without
+the additional common test output.
 
 Environment variables:
   WIZARDRY_TEST_TIMEOUT    Timeout in seconds for the test (default: 180)
@@ -36,12 +50,31 @@ USAGE
 }
 
 test_spell() {
-case "${1-}" in
---help|--usage|-h)
-  test_spell_usage
-  return 0
-  ;;
-esac
+# Parse options before help check
+run_common_tests=1  # Default: run common tests
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --skip-common)
+      run_common_tests=0
+      shift
+      ;;
+    --help|--usage|-h)
+      test_spell_usage
+      return 0
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -*)
+      test_spell_usage >&2
+      return 2
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
 
 set -eu
 
@@ -99,6 +132,39 @@ esac
 # Verify test file exists
 if [ ! -f "$abs_test" ]; then
   die "$cmd_name: test file not found: $abs_test"
+fi
+
+# Determine the spell path from the test path for common tests
+spell_path=""
+if [ "$run_common_tests" -eq 1 ]; then
+  # Convert test path to spell path
+  # Example: cantrips/test-ask-yn.sh -> cantrips/ask-yn
+  dir=$(dirname "$rel_test")
+  base=$(basename "$rel_test")
+  base=${base#test-}
+  base=${base%.sh}
+  
+  # Handle special cases
+  case "$rel_test" in
+    common-tests.sh)
+      # Skip common tests on common-tests itself
+      spell_path=""
+      ;;
+    *)
+      # Construct spell path
+      if [ "$dir" = "." ]; then
+        spell_path="$base"
+      else
+        spell_path="$dir/$base"
+      fi
+      
+      # Verify spell exists
+      if [ ! -f "$root_dir/spells/$spell_path" ]; then
+        warn "$cmd_name: cannot run common tests: spell not found at spells/$spell_path"
+        spell_path=""
+      fi
+      ;;
+  esac
 fi
 
 # Parse subtest numbers if provided
@@ -195,10 +261,41 @@ if [ -n "$subtest_filter" ]; then
   fi
 else
   # Normal mode: run full test
+  test_exit_code=0
   if [ -n "$timeout_cmd" ]; then
-    exec "$timeout_cmd" "$test_timeout" sh "$abs_test"
+    if [ "$run_common_tests" -eq 1 ] && [ -n "$spell_path" ]; then
+      # Don't use exec - we need to run common tests after
+      "$timeout_cmd" "$test_timeout" sh "$abs_test" || test_exit_code=$?
+    else
+      # Can use exec - no common tests to run after
+      exec "$timeout_cmd" "$test_timeout" sh "$abs_test"
+    fi
   else
-    exec sh "$abs_test"
+    if [ "$run_common_tests" -eq 1 ] && [ -n "$spell_path" ]; then
+      # Don't use exec - we need to run common tests after
+      sh "$abs_test" || test_exit_code=$?
+    else
+      # Can use exec - no common tests to run after
+      exec sh "$abs_test"
+    fi
+  fi
+  
+  # If main test failed, return failure immediately
+  if [ "$test_exit_code" -ne 0 ]; then
+    return "$test_exit_code"
+  fi
+  
+  # Run common tests if requested and spell path was determined
+  if [ "$run_common_tests" -eq 1 ] && [ -n "$spell_path" ]; then
+    info ""
+    info "Running common tests on spells/$spell_path..."
+    
+    # Run common-tests.sh with the spell path
+    if [ -n "$timeout_cmd" ]; then
+      "$timeout_cmd" "$test_timeout" sh "$test_dir/common-tests.sh" "spells/$spell_path"
+    else
+      sh "$test_dir/common-tests.sh" "spells/$spell_path"
+    fi
   fi
 fi
 }
