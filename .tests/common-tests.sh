@@ -1766,4 +1766,187 @@ test_stub_imps_have_correct_patterns() {
 
 _run_test_case "stub imps have correct self-execute patterns" test_stub_imps_have_correct_patterns
 
+# ==============================================================================
+# META-TESTS - Testing the testing system itself
+# These tests validate that the testing infrastructure is properly architected
+# ==============================================================================
+
+# META: Baseline PATH must be established before any commands
+test_bootstrap_sets_baseline_path() {
+  # Verify test-bootstrap content has PATH setup before set -eu
+  bootstrap_file="$ROOT_DIR/spells/.imps/test/test-bootstrap"
+  
+  # Find line number of "set -eu"
+  set_eu_line=$(grep -n "^set -eu" "$bootstrap_file" | head -1 | cut -d: -f1)
+  
+  # Find line number of PATH setup
+  path_line=$(grep -n "baseline_path=" "$bootstrap_file" | head -1 | cut -d: -f1)
+  
+  # PATH setup must come before set -eu
+  if [ -z "$set_eu_line" ] || [ -z "$path_line" ]; then
+    TEST_FAILURE_REASON="Could not find set -eu or PATH setup in test-bootstrap"
+    return 1
+  fi
+  
+  if [ "$path_line" -ge "$set_eu_line" ]; then
+    TEST_FAILURE_REASON="PATH setup (line $path_line) must come before set -eu (line $set_eu_line)"
+    return 1
+  fi
+  
+  return 0
+}
+
+# META: Sandbox unavailability must not fail tests
+test_sandbox_fallback_is_graceful() {
+  # Verify BWRAP_AVAILABLE flag exists and fallback logic is present
+  if [ -z "${BWRAP_AVAILABLE-}" ]; then
+    TEST_FAILURE_REASON="BWRAP_AVAILABLE flag not set by test-bootstrap"
+    return 1
+  fi
+  
+  # If bwrap is not available, verify we have a reason
+  if [ "$BWRAP_AVAILABLE" -eq 0 ]; then
+    if [ -z "${BWRAP_REASON-}" ]; then
+      TEST_FAILURE_REASON="BWRAP_AVAILABLE=0 but no BWRAP_REASON set"
+      return 1
+    fi
+  fi
+  
+  return 0
+}
+
+# META: Test output must stream line-by-line
+test_test_magic_uses_stdbuf() {
+  test_magic_file="$ROOT_DIR/spells/system/test-magic"
+  
+  # Check if stdbuf is available and used
+  if ! command -v stdbuf >/dev/null 2>&1; then
+    # stdbuf not available - test is skipped but requirement noted
+    return 0
+  fi
+  
+  # Verify test-magic mentions stdbuf
+  if ! grep -q "stdbuf" "$test_magic_file"; then
+    TEST_FAILURE_REASON="test-magic doesn't use stdbuf for line-buffered output"
+    return 1
+  fi
+  
+  return 0
+}
+
+# META: Test failures must report clearly
+test_test_bootstrap_provides_failure_reporting() {
+  # Verify TEST_FAILURE_REASON is used in test framework
+  if ! grep -q "TEST_FAILURE_REASON" "$ROOT_DIR/spells/.imps/test/boot/"* 2>/dev/null; then
+    TEST_FAILURE_REASON="Test framework doesn't support TEST_FAILURE_REASON"
+    return 1
+  fi
+  
+  return 0
+}
+
+# META: die imp must work correctly with word-of-binding
+test_die_imp_uses_return_not_exit() {
+  die_file="$ROOT_DIR/spells/.imps/out/die"
+  
+  # Verify die uses return, not exit
+  if grep -q "^[[:space:]]*exit " "$die_file"; then
+    TEST_FAILURE_REASON="die imp uses 'exit' instead of 'return' (breaks word-of-binding)"
+    return 1
+  fi
+  
+  if ! grep -q "^[[:space:]]*return " "$die_file"; then
+    TEST_FAILURE_REASON="die imp doesn't use 'return' (required for word-of-binding)"
+    return 1
+  fi
+  
+  return 0
+}
+
+# META: fail imp must NOT exit script
+test_fail_imp_returns_error_code() {
+  fail_file="$ROOT_DIR/spells/.imps/out/fail"
+  
+  # Verify fail uses return 1, not exit
+  if grep -q "^[[:space:]]*exit " "$fail_file"; then
+    TEST_FAILURE_REASON="fail imp uses 'exit' (should use 'return' to continue execution)"
+    return 1
+  fi
+  
+  if ! grep -q "return 1" "$fail_file"; then
+    TEST_FAILURE_REASON="fail imp doesn't return 1"
+    return 1
+  fi
+  
+  return 0
+}
+
+# META: Platform detection must work
+test_platform_detection_available() {
+  # Verify detect-distro spell exists
+  if [ ! -f "$ROOT_DIR/spells/divination/detect-distro" ]; then
+    TEST_FAILURE_REASON="detect-distro spell not found"
+    return 1
+  fi
+  
+  # Verify it's executable
+  if [ ! -x "$ROOT_DIR/spells/divination/detect-distro" ]; then
+    TEST_FAILURE_REASON="detect-distro is not executable"
+    return 1
+  fi
+  
+  return 0
+}
+
+# META: banish spell exists and is the environment preparer
+test_banish_spell_exists_and_is_executable() {
+  if [ ! -f "$ROOT_DIR/spells/system/banish" ]; then
+    TEST_FAILURE_REASON="banish spell not found"
+    return 1
+  fi
+  
+  if [ ! -x "$ROOT_DIR/spells/system/banish" ]; then
+    TEST_FAILURE_REASON="banish spell is not executable"
+    return 1
+  fi
+  
+  # Verify banish has usage that mentions environment preparation
+  if ! grep -qi "environment" "$ROOT_DIR/spells/system/banish"; then
+    TEST_FAILURE_REASON="banish doesn't mention environment preparation"
+    return 1
+  fi
+  
+  return 0
+}
+
+# META: test-bootstrap checks environment
+test_test_bootstrap_checks_environment() {
+  bootstrap_file="$ROOT_DIR/spells/.imps/test/test-bootstrap"
+  
+  # Verify it sets up PATH
+  if ! grep -q "PATH=" "$bootstrap_file"; then
+    TEST_FAILURE_REASON="test-bootstrap doesn't set up PATH"
+    return 1
+  fi
+  
+  # Verify it sets up WIZARDRY_DIR
+  if ! grep -q "WIZARDRY_DIR" "$bootstrap_file"; then
+    TEST_FAILURE_REASON="test-bootstrap doesn't set up WIZARDRY_DIR"
+    return 1
+  fi
+  
+  return 0
+}
+
+# Run meta-tests
+_run_test_case "META: baseline PATH before set -eu" test_bootstrap_sets_baseline_path
+_run_test_case "META: sandbox fallback is graceful" test_sandbox_fallback_is_graceful
+_run_test_case "META: test-magic uses stdbuf" test_test_magic_uses_stdbuf
+_run_test_case "META: test framework supports failure reporting" test_test_bootstrap_provides_failure_reporting
+_run_test_case "META: die imp uses return for word-of-binding" test_die_imp_uses_return_not_exit
+_run_test_case "META: fail imp returns error code" test_fail_imp_returns_error_code
+_run_test_case "META: platform detection available" test_platform_detection_available
+_run_test_case "META: banish spell exists and is executable" test_banish_spell_exists_and_is_executable
+_run_test_case "META: test-bootstrap checks environment" test_test_bootstrap_checks_environment
+
 _finish_tests
