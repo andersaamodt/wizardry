@@ -246,6 +246,36 @@ EOF
   _assert_status 127 || return 1
 }
 
+# Test: command_not_found_handle has recursion guard to prevent infinite loops
+test_recursion_guard() {
+  # This test verifies that the command_not_found_handle function in invoke-wizardry
+  # includes a recursion guard using the _WIZARDRY_IN_CNF_HANDLER variable
+  
+  # Check that the recursion guard is present in the code
+  if ! grep -q "_WIZARDRY_IN_CNF_HANDLER" "$ROOT_DIR/spells/.imps/sys/invoke-wizardry"; then
+    TEST_FAILURE_REASON="Recursion guard variable not found in invoke-wizardry"
+    return 1
+  fi
+  
+  # Check that the guard is checked at the start of the handler
+  if ! grep -q 'if.*_WIZARDRY_IN_CNF_HANDLER.*=.*1' "$ROOT_DIR/spells/.imps/sys/invoke-wizardry"; then
+    TEST_FAILURE_REASON="Recursion guard check not found in command_not_found_handle"
+    return 1
+  fi
+  
+  # Check that the guard is set to 1
+  if ! grep -q '_WIZARDRY_IN_CNF_HANDLER=1' "$ROOT_DIR/spells/.imps/sys/invoke-wizardry"; then
+    TEST_FAILURE_REASON="Recursion guard not set to 1"
+    return 1
+  fi
+  
+  # Check that the guard is unset after execution
+  if ! grep -q 'unset _WIZARDRY_IN_CNF_HANDLER' "$ROOT_DIR/spells/.imps/sys/invoke-wizardry"; then
+    TEST_FAILURE_REASON="Recursion guard not cleaned up (unset)"
+    return 1
+  fi
+}
+
 # Test: cd function is defined after sourcing invoke-wizardry
 test_cd_function_defined() {
   tmpdir=$(_make_tempdir)
@@ -351,6 +381,7 @@ _run_test_case "invoke-wizardry maintains permissive shell mode" test_maintains_
 _run_test_case "invoke-wizardry works when sourced from rc file" test_rc_file_sourcing
 # Test #7 removed: edge case (empty PATH) not realistic and difficult to test reliably
 _run_test_case "command_not_found_handle returns 127 for unknown commands" test_returns_127_for_unknown_command
+_run_test_case "command_not_found_handle has recursion guard" test_recursion_guard
 _run_test_case "cd function is defined in invoke-wizardry" test_cd_function_defined
 _run_test_case "menu is pre-loaded as function" test_menu_preloaded
 # Test #11 removed: redundant with word-of-binding paradigm (spell dirs never added to PATH)

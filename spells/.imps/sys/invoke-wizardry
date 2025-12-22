@@ -185,30 +185,58 @@ _invoke_wizardry() {
   if eval '[ -n "${BASH_VERSION+x}" ]' 2>/dev/null; then
     # Bash-specific command_not_found_handle
     eval 'command_not_found_handle() {
+      # Prevent infinite recursion - check if we'\''re already in the handler
+      if [ "${_WIZARDRY_IN_CNF_HANDLER-}" = "1" ]; then
+        printf '\''%s: command not found\n'\'' "$1" >&2
+        return 127
+      fi
+      _WIZARDRY_IN_CNF_HANDLER=1
+      
       # Try word-of-binding for autoloading (handles hotloaded spells)
       if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" ]; then
-        "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" "$@" 2>/dev/null && return 0
+        if "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" "$@" 2>/dev/null; then
+          unset _WIZARDRY_IN_CNF_HANDLER
+          return 0
+        fi
       fi
       # Fall back to parse for recursive grammar parsing
       if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/lex/parse" ]; then
-        "$WIZARDRY_DIR/spells/.imps/lex/parse" "$@" && return 0
+        if "$WIZARDRY_DIR/spells/.imps/lex/parse" "$@" 2>/dev/null; then
+          unset _WIZARDRY_IN_CNF_HANDLER
+          return 0
+        fi
       fi
       # Command truly not found - return 127
+      unset _WIZARDRY_IN_CNF_HANDLER
       printf '\''%s: command not found\n'\'' "$1" >&2
       return 127
     }'
   elif eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
     # Zsh-specific command_not_found_handler
     eval 'command_not_found_handler() {
+      # Prevent infinite recursion - check if we'\''re already in the handler
+      if [ "${_WIZARDRY_IN_CNF_HANDLER-}" = "1" ]; then
+        printf '\''%s: command not found\n'\'' "$1" >&2
+        return 127
+      fi
+      _WIZARDRY_IN_CNF_HANDLER=1
+      
       # Try word-of-binding for autoloading (handles hotloaded spells)
       if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" ]; then
-        "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" "$@" 2>/dev/null && return 0
+        if "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" "$@" 2>/dev/null; then
+          unset _WIZARDRY_IN_CNF_HANDLER
+          return 0
+        fi
       fi
       # Fall back to parse for recursive grammar parsing
       if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/lex/parse" ]; then
-        "$WIZARDRY_DIR/spells/.imps/lex/parse" "$@" && return 0
+        if "$WIZARDRY_DIR/spells/.imps/lex/parse" "$@" 2>/dev/null; then
+          unset _WIZARDRY_IN_CNF_HANDLER
+          return 0
+        fi
       fi
       # Command truly not found - return 127
+      unset _WIZARDRY_IN_CNF_HANDLER
       printf '\''%s: command not found\n'\'' "$1" >&2
       return 127
     }'
@@ -234,6 +262,9 @@ _invoke_wizardry() {
     # Restore permissive mode
     set +eu
   fi
+  
+  # Return success
+  return 0
 }
 
 # Run the setup when sourced

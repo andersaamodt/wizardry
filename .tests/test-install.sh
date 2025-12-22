@@ -762,7 +762,7 @@ EOF
 install_does_not_show_spell_installation() {
   skip-if-compiled || return $?
   # With word-of-binding paradigm, the installer should NOT pre-install spells
-  # Spells are auto-sourced on first use via handle-command-not-found
+  # Spells are auto-sourced on first use via command_not_found_handle
   fixture=$(_make_fixture)
   _provide_basic_tools "$fixture"
   _link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq

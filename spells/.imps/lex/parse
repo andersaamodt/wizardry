@@ -30,6 +30,12 @@ _parse() {
   shift
 
   if [ $# -eq 0 ]; then
+    # Check if command exists before executing to prevent infinite recursion
+    # when called from command_not_found_handle
+    if ! command -v "$_parse_cmd" >/dev/null 2>&1; then
+      printf '%s: command not found\n' "$_parse_cmd" >&2
+      return 127
+    fi
     "$_parse_cmd"
     return $?
   fi
@@ -77,6 +83,12 @@ _parse() {
       eval "set -- \"\$@\" \"\$_parse_arg_$_parse_i\""
       _parse_i=$((_parse_i + 1))
     done
+    # Check if command exists before executing to prevent infinite recursion
+    # when called from command_not_found_handle
+    if ! command -v "$_parse_cmd" >/dev/null 2>&1; then
+      printf '%s: command not found\n' "$_parse_cmd" >&2
+      return 127
+    fi
     "$_parse_cmd" "$@"
     return $?
   fi

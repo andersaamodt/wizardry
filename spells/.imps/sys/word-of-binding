@@ -1,6 +1,6 @@
 #!/bin/sh
 # word-of-binding NAME [ARGS...] - resolve and invoke a wizardry command by name
-# Dispatcher for autoloading missing commands via handle-command-not-found.
+# Dispatcher for autoloading missing commands.
 # Sources the module and calls its true-name function.
 set -eu
 
