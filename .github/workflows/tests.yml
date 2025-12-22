@@ -68,26 +68,6 @@ jobs:
         uses: actions/checkout@v4
       - name: Ensure installer spells are executable
         run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
-      - name: Install test dependencies
-        run: pacman -Syu --noconfirm bubblewrap sudo shadow
-      - name: Configure bubblewrap user namespaces
-        run: |
-          usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
-          usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
-          {
-            echo 'kernel.unprivileged_userns_clone=1'
-            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
-          } | tee /etc/sysctl.d/99-unprivileged-userns.conf
-          sysctl --system || true
-      - name: Verify bubblewrap setup
-        run: |
-          if bwrap --unshare-user-try --ro-bind / / /bin/true; then
-            echo "bubblewrap usable with user namespaces"
-          elif bwrap --ro-bind / / /bin/true 2>/dev/null; then
-            echo "bubblewrap usable via privileged execution"
-          else
-            echo "bubblewrap unusable; proceeding without sandboxing" >&2
-          fi
       - name: Run unit tests
         run: ./spells/system/test-magic --verbose
 
@@ -105,26 +85,6 @@ jobs:
         uses: actions/checkout@v4
       - name: Ensure installer spells are executable
         run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
-      - name: Install bubblewrap dependency
-        run: apt-get update && apt-get install -y bubblewrap uidmap sudo
-      - name: Configure bubblewrap user namespaces
-        run: |
-          usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
-          usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
-          {
-            echo 'kernel.unprivileged_userns_clone=1'
-            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
-          } | tee /etc/sysctl.d/99-unprivileged-userns.conf
-          sysctl --system || true
-      - name: Verify bubblewrap setup
-        run: |
-          if bwrap --unshare-user-try --ro-bind / / /bin/true; then
-            echo "bubblewrap usable with user namespaces"
-          elif bwrap --ro-bind / / /bin/true 2>/dev/null; then
-            echo "bubblewrap usable via privileged execution"
-          else
-            echo "bubblewrap unusable; proceeding without sandboxing" >&2
-          fi
       - name: Run unit tests
         run: ./spells/system/test-magic --verbose
 
