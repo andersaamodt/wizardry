@@ -1710,7 +1710,7 @@ _run_test_case "test output streams line-by-line" test_output_streams_line_by_li
 # This ensures tests can create symlinks without the stub- prefix
 test_stub_imps_have_correct_patterns() {
   # Skip in doppelganger mode - grep patterns behave differently
-  if [ "${WIZARDRY_TEST_MODE:-}" = "doppelganger" ]; then
+  if [ "${WIZARDRY_OS_LABEL:-}" = "doppelganger" ]; then
     _test_skip "stub imps have correct self-execute patterns" "skipped in doppelganger mode"
     return 0
   fi
