@@ -157,15 +157,13 @@ _invoke_wizardry() {
     eval 'command_not_found_handle() {
       # Try word-of-binding for autoloading (handles all spells including .spellbook)
       if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" ]; then
-        if "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" "$@" 2>/dev/null; then
-          return $?
-        fi
+        "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" "$@" 2>/dev/null && return 0
       fi
       # Fall back to parse for recursive grammar parsing
       if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/lex/parse" ]; then
-        "$WIZARDRY_DIR/spells/.imps/lex/parse" "$@"
-        return $?
+        "$WIZARDRY_DIR/spells/.imps/lex/parse" "$@" && return 0
       fi
+      # Command truly not found - return 127
       printf '\''%s: command not found\n'\'' "$1" >&2
       return 127
     }'
@@ -174,15 +172,13 @@ _invoke_wizardry() {
     eval 'command_not_found_handler() {
       # Try word-of-binding for autoloading (handles all spells including .spellbook)
       if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" ]; then
-        if "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" "$@" 2>/dev/null; then
-          return $?
-        fi
+        "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" "$@" 2>/dev/null && return 0
       fi
       # Fall back to parse for recursive grammar parsing
       if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/lex/parse" ]; then
-        "$WIZARDRY_DIR/spells/.imps/lex/parse" "$@"
-        return $?
+        "$WIZARDRY_DIR/spells/.imps/lex/parse" "$@" && return 0
       fi
+      # Command truly not found - return 127
       printf '\''%s: command not found\n'\'' "$1" >&2
       return 127
     }'
@@ -197,6 +193,19 @@ _invoke_wizardry() {
     # Restore permissive mode - sourcing may have changed shell mode
     set +eu
   fi
+  
+  # Set up cd hook for MUD features (integrated into invoke-wizardry)
+  # This replaces the separate install-cd step - the cd function is defined here
+  # and the toggle-cd spell controls whether it runs 'look' via the config file
+  cd() {
+    command cd "$@" || return $?
+    
+    # Check if cd-look is enabled via config file (cd-look=1)
+    _iw_config_file="${SPELLBOOK_DIR:-$HOME/.spellbook}/.mud/config"
+    if [ -f "$_iw_config_file" ] && grep -q "^cd-look=1$" "$_iw_config_file" 2>/dev/null; then
+      command -v look >/dev/null 2>&1 && look 2>/dev/null || true
+    fi
+  }
 }
 
 # Run the setup when sourced
