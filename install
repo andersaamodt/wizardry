@@ -944,19 +944,6 @@ if [ "$install_mud" -eq 1 ]; then
                 "$TOGGLE_CD" >/dev/null 2>&1 || true
                 substep_msg "CD hook enabled (runs 'look' on directory change)"
         fi
-                fi
-        fi
-fi
-
-if [ "$install_mud" -eq 1 ]; then
-        section_msg "Installing MUD"
-
-        # CD hook is now built into invoke-wizardry, so we just need to enable it
-        # Enable CD hook by default using toggle-cd
-        if [ -x "$TOGGLE_CD" ]; then
-                "$TOGGLE_CD" >/dev/null 2>&1 || true
-                substep_msg "CD hook enabled (runs 'look' on directory change)"
-        fi
 
         # Enable all other MUD features using toggle-all-mud
         if [ -x "$TOGGLE_ALL_MUD" ]; then

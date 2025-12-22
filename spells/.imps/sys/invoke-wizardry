@@ -222,18 +222,16 @@ _invoke_wizardry() {
     set +eu
   fi
   
-  # Set up cd hook for MUD features (integrated into invoke-wizardry)
-  # This replaces the separate install-cd step - the cd function is defined here
-  # and the toggle-cd spell controls whether it runs 'look' via the config file
-  cd() {
-    command cd "$@" || return $?
-    
-    # Check if cd-look is enabled via config file (cd-look=1)
-    _iw_config_file="${SPELLBOOK_DIR:-$HOME/.spellbook}/.mud/config"
-    if [ -f "$_iw_config_file" ] && grep -q "^cd-look=1$" "$_iw_config_file" 2>/dev/null; then
-      command -v look >/dev/null 2>&1 && look 2>/dev/null || true
-    fi
-  }
+  # Set up cd hook for MUD features by sourcing the cd spell
+  # This replaces the separate install-cd step
+  # The cd spell checks config file to determine if look should run
+  _iw_cd_spell="$WIZARDRY_DIR/spells/.arcana/mud/cd"
+  if [ -f "$_iw_cd_spell" ] && [ -r "$_iw_cd_spell" ]; then
+    # shellcheck disable=SC1090
+    . "$_iw_cd_spell" 2>/dev/null || true
+    # Restore permissive mode
+    set +eu
+  fi
 }
 
 # Run the setup when sourced
