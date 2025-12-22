@@ -560,7 +560,8 @@ WRAPPER_EOF
     *)
       # Spells need a --help test plus additional behavioral subtests.
       # Total must be at least min_subtests_spell (1 help + 2 behavioral = 3).
-      if ! printf '%s\n' "$cleaned_output" 2>/dev/null | grep -qiE "(PASS|FAIL).*(--help|-h|help|usage)"; then
+      help_pattern="(PASS|FAIL).*(--help|-h|help|usage)"
+      if ! printf '%s\n' "$cleaned_output" 2>/dev/null | grep -qiE "$help_pattern"; then
         # Inline record_incomplete_test logic
         entry="$spell_name (missing --help test)"
         if [ -n "$incomplete_tests" ]; then

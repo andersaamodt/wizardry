@@ -80,6 +80,7 @@ _run_cmd() {
     export HOME="$HOME"
     export TMPDIR="$tmpdir"
     export WIZARDRY_TMPDIR="$WIZARDRY_TMPDIR"
+    export WIZARDRY_TEST_HELPERS_ONLY="${WIZARDRY_TEST_HELPERS_ONLY:-}"
     
     if (cd "$workdir" && _run_macos_sandbox "$@" >"$_stdout" 2>"$_stderr"); then
       STATUS=0
@@ -92,6 +93,7 @@ _run_cmd() {
     export HOME="$HOME"
     export TMPDIR="$tmpdir"
     export WIZARDRY_TMPDIR="$WIZARDRY_TMPDIR"
+    export WIZARDRY_TEST_HELPERS_ONLY="${WIZARDRY_TEST_HELPERS_ONLY:-}"
     
     if (cd "$workdir" && "$@" >"$_stdout" 2>"$_stderr"); then
       STATUS=0
