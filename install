@@ -640,7 +640,7 @@ section_msg "Installation Plan"
 # Show what will be installed (streamlined for novice users)
 if [ -n "$detect_rc_file_value" ]; then
         if [ "$detect_format_value" = "nix" ]; then
-                info_msg "Configuration file: $detect_rc_file_value"
+                info_msg "Configuration file to be modified: $detect_rc_file_value"
         else
                 info_msg "Shell configuration: $detect_rc_file_value"
         fi
@@ -649,6 +649,7 @@ else
         substep_msg "${YELLOW}Warning: Could not auto-detect shell configuration file${RESET}"
 fi
 substep_msg "This sets up wizardry commands in your terminal"
+substep_msg "(invoke-wizardry path: $INVOKE_WIZARDRY)"
 
 # Ask about MUD features BEFORE writing to rc file (so we only write once)
 install_mud=0
@@ -949,7 +950,11 @@ if [ "$install_mud" -eq 1 ]; then
         if [ -x "$TOGGLE_ALL_MUD" ]; then
                 info_msg "Enabling MUD features..."
                 "$TOGGLE_ALL_MUD" --enable >/dev/null 2>&1 || true
-                substep_msg "Fantasy theme and other features configured"
+                substep_msg "Command not found hook (planned feature)"
+                substep_msg "Touch hook (planned feature)"
+                substep_msg "Fantasy theme (planned feature)"
+                substep_msg "Inventory feature (planned feature)"
+                substep_msg "HP/MP and combat (planned feature)"
         fi
 
         success_msg "MUD features installed"
