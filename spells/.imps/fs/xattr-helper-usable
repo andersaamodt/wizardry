@@ -7,28 +7,31 @@ set -eu
 _xattr_helper_usable() {
   helper=$1
   
-  # DEBUG
-  printf '[xattr-helper-usable] Checking helper: %s\n' "$helper" >&2
+  # DEBUG - log to file to avoid command substitution capture
+  logfile="${WIZARDRY_TMPDIR:-/tmp}/xattr-helper-usable.log"
+  
+  printf '[xattr-helper-usable] Checking helper: %s\n' "$helper" >> "$logfile"
+  printf '[xattr-helper-usable] PATH=%s\n' "$PATH" >> "$logfile"
   
   if ! command -v "$helper" >/dev/null 2>&1; then
-    printf '[xattr-helper-usable] command -v %s: NOT FOUND\n' "$helper" >&2
+    printf '[xattr-helper-usable] command -v %s: NOT FOUND\n' "$helper" >> "$logfile"
     return 1
   fi
   
   helper_path=$(command -v "$helper")
-  printf '[xattr-helper-usable] command -v %s=%s\n' "$helper" "$helper_path" >&2
-  printf '[xattr-helper-usable] WIZARDRY_TEST_HELPERS_ONLY=%s\n' "${WIZARDRY_TEST_HELPERS_ONLY-0}" >&2
+  printf '[xattr-helper-usable] command -v %s=%s\n' "$helper" "$helper_path" >> "$logfile"
+  printf '[xattr-helper-usable] WIZARDRY_TEST_HELPERS_ONLY=%s\n' "${WIZARDRY_TEST_HELPERS_ONLY-0}" >> "$logfile"
 
   if [ "${WIZARDRY_TEST_HELPERS_ONLY-0}" -eq 1 ]; then
     case "$helper_path" in
       /bin/*|/sbin/*|/usr/bin/*|/usr/sbin/*|/usr/local/bin/*|/usr/local/sbin/*|/nix/store/*)
-        printf '[xattr-helper-usable] Path matches system dir, REJECTING\n' >&2
+        printf '[xattr-helper-usable] Path matches system dir, REJECTING\n' >> "$logfile"
         return 1 ;;
     esac
-    printf '[xattr-helper-usable] Path is non-system, ALLOWING\n' >&2
+    printf '[xattr-helper-usable] Path is non-system, ALLOWING\n' >> "$logfile"
   fi
 
-  printf '[xattr-helper-usable] Returning SUCCESS\n' >&2
+  printf '[xattr-helper-usable] Returning SUCCESS\n' >> "$logfile"
   return 0
 }
 

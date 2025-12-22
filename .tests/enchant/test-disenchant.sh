@@ -92,11 +92,19 @@ STUB
   printf '[DEBUG test#4] After _run_spell: STATUS=%s\n' "$STATUS" >&2
   printf '[DEBUG test#4] OUTPUT=%s\n' "$OUTPUT" >&2
   printf '[DEBUG test#4] ERROR=%s\n' "$ERROR" >&2
+  
   printf '[DEBUG test#4] Stub log file contents:\n' >&2
   if [ -f "$WIZARDRY_TMPDIR/attr-stub.log" ]; then
     cat "$WIZARDRY_TMPDIR/attr-stub.log" >&2
   else
     printf '  (log file not created - stub was never called)\n' >&2
+  fi
+  
+  printf '[DEBUG test#4] xattr-helper-usable log contents:\n' >&2
+  if [ -f "$WIZARDRY_TMPDIR/xattr-helper-usable.log" ]; then
+    cat "$WIZARDRY_TMPDIR/xattr-helper-usable.log" >&2
+  else
+    printf '  (log file not created)\n' >&2
   fi
   
   _assert_failure && _assert_error_contains "no enchanted attributes"
