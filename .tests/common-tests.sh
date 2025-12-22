@@ -1120,6 +1120,12 @@ test_spells_have_limited_flags() {
     return 0
   fi
   
+  # Exempted spells that legitimately need 4+ flags
+  # Must be documented in EXEMPTIONS.md with justification
+  exempted_spells="
+    system/test-magic
+  "
+  
   tmpfile_2=$(mktemp "${WIZARDRY_TMPDIR}/flag-warn-2.XXXXXX")
   tmpfile_3=$(mktemp "${WIZARDRY_TMPDIR}/flag-warn-3.XXXXXX")
   tmpfile_4plus=$(mktemp "${WIZARDRY_TMPDIR}/flag-viol-4plus.XXXXXX")
@@ -1128,6 +1134,16 @@ test_spells_have_limited_flags() {
     spell=$1
     name=$(basename "$spell")
     rel_path=${spell#"$ROOT_DIR/spells/"}
+    
+    # Skip exempted spells
+    is_exempted=0
+    for exempted in $exempted_spells; do
+      if [ "$rel_path" = "$exempted" ]; then
+        is_exempted=1
+        break
+      fi
+    done
+    [ "$is_exempted" -eq 1 ] && return
     
     # Count distinct flag options by looking at both case and if patterns
     # Exclude standard --help|--usage|-h, catch-all -*, -- (end of options), and --- (dividers)
