@@ -23,17 +23,12 @@ _xattr_list_keys() {
       # Parse attr -l output which may be in format:
       # Attribute "key" has a value...
       # or just: key
-      parsed=$(printf '%s\n' "$keys" | awk '
-        /^Attribute "/ {
-          # Extract key from quoted format: Attribute "key" ...
-          if (match($0, /"([^"]+)"/)) {
-            key = substr($0, RSTART+1, RLENGTH-2)
-            print key
-          }
-          next
-        }
-        NF { print }
-      ')
+      # Use simpler sed/awk to avoid GNU awk extensions
+      parsed=$(printf '%s\n' "$keys" | sed -n 's/^Attribute "\([^"]*\)".*/\1/p')
+      if [ -z "$parsed" ]; then
+        # Try plain format (just key names)
+        parsed=$(printf '%s\n' "$keys" | awk 'NF {print}')
+      fi
       if [ -n "$parsed" ]; then
         printf '%s\n' "$parsed"
         return 0
@@ -56,7 +51,6 @@ _xattr_list_keys() {
 }
 
 # Self-execute when run directly (not sourced)
-set -eu
 case "$0" in
-  */xattr-list-keys) _xattr_list_keys "$@" ;; 
+  */xattr-list-keys) _xattr_list_keys "$@" ;;
 esac
