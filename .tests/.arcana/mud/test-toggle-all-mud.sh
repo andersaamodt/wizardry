@@ -22,10 +22,9 @@ test_enable_flag_enables_all() {
   _assert_success || return 1
   _assert_output_contains "All MUD features enabled" || return 1
   
-  # Verify all features are enabled
+  # Verify all features are enabled (command-not-found removed - always enabled via invoke-wizardry)
   _run_cmd env MUD_DIR="$tmp" "$ROOT_DIR/spells/.arcana/mud/mud-config" list
   _assert_success || return 1
-  _assert_output_contains "command-not-found=1" || return 1
   _assert_output_contains "touch-hook=1" || return 1
   _assert_output_contains "fantasy-theme=1" || return 1
   _assert_output_contains "inventory=1" || return 1
@@ -43,10 +42,9 @@ test_disable_flag_disables_all() {
   _assert_success || return 1
   _assert_output_contains "All MUD features disabled" || return 1
   
-  # Verify all features are disabled
+  # Verify all features are disabled (command-not-found removed - always enabled via invoke-wizardry)
   _run_cmd env MUD_DIR="$tmp" "$ROOT_DIR/spells/.arcana/mud/mud-config" list
   _assert_success || return 1
-  _assert_output_contains "command-not-found=0" || return 1
   _assert_output_contains "touch-hook=0" || return 1
   _assert_output_contains "fantasy-theme=0" || return 1
   _assert_output_contains "inventory=0" || return 1

@@ -283,108 +283,6 @@ _run_test_case "cd hook toggle shows [ ] when not installed" test_cd_hook_toggle
 _run_test_case "cd hook toggle shows [X] when installed" test_cd_hook_toggle_checked
 _run_test_case "mud-menu --help shows usage" test_mud_install_menu_help
 
-# Test new MUD feature toggles
-test_command_not_found_toggle_unchecked() {
-  tmp=$(_make_tempdir)
-  make_stub_colors "$tmp"
-  
-  # Create menu stub that logs and exits
-  cat >"$tmp/menu" <<'SH'
-#!/bin/sh
-printf '%s\n' "$@" >>"$MENU_LOG"
-kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
-SH
-  chmod +x "$tmp/menu"
-  
-  cat >"$tmp/require-command" <<'SH'
-#!/bin/sh
-exit 0
-SH
-  chmod +x "$tmp/require-command"
-  
-  cat >"$tmp/exit-label" <<'SH'
-#!/bin/sh
-printf '%s' "Exit"
-SH
-  chmod +x "$tmp/exit-label"
-  
-  make_stub_check_cd_hook "$tmp"
-  
-  # Use a temp rc file and config dir with no features enabled
-  rc_file="$tmp/rc"
-  : >"$rc_file"
-  config_dir="$tmp/mud"
-  mkdir -p "$config_dir"
-  
-  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$WIZARDRY_IMPS_PATH:$tmp:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:/bin:/usr/bin" MENU_LOG="$tmp/log" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
-  _assert_success || return 1
-  
-  args=$(cat "$tmp/log")
-  case "$args" in
-    *"[ ] Command not found hook"*) : ;;
-    *) TEST_FAILURE_REASON="Command not found hook should show [ ] when not enabled: $args"; return 1 ;;
-  esac
-}
-
-test_command_not_found_toggle_checked() {
-  tmp=$(_make_tempdir)
-  make_stub_colors "$tmp"
-  
-  cat >"$tmp/menu" <<'SH'
-#!/bin/sh
-printf '%s\n' "$@" >>"$MENU_LOG"
-kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
-SH
-  chmod +x "$tmp/menu"
-  
-  cat >"$tmp/require-command" <<'SH'
-#!/bin/sh
-exit 0
-SH
-  chmod +x "$tmp/require-command"
-  
-  cat >"$tmp/exit-label" <<'SH'
-#!/bin/sh
-printf '%s' "Exit"
-SH
-  chmod +x "$tmp/exit-label"
-  
-  make_stub_check_cd_hook "$tmp"
-  
-  # Use a temp rc file and config dir with feature enabled
-  rc_file="$tmp/rc"
-  : >"$rc_file"
-  config_dir="$tmp/mud"
-  mkdir -p "$config_dir"
-  printf '%s\n' "command-not-found=1" >"$config_dir/config"
-  
-  # Create mud-config stub that reads from MUD_DIR
-  cat >"$tmp/mud-config" <<'SH'
-#!/bin/sh
-config_dir=${MUD_DIR:-$HOME/.spellbook/.mud}
-config_file="$config_dir/config"
-case $1 in
-  get)
-    feature=$2
-    if [ -f "$config_file" ]; then
-      value=$(grep "^$feature=" "$config_file" 2>/dev/null | cut -d= -f2)
-      printf '%s\n' "$value"
-    fi
-    ;;
-esac
-SH
-  chmod +x "$tmp/mud-config"
-  
-  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$WIZARDRY_IMPS_PATH:$tmp:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:/bin:/usr/bin" MENU_LOG="$tmp/log" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
-  _assert_success || return 1
-  
-  args=$(cat "$tmp/log")
-  case "$args" in
-    *"[X] Command not found hook"*) : ;;
-    *) TEST_FAILURE_REASON="Command not found hook should show [X] when enabled: $args"; return 1 ;;
-  esac
-}
-
 test_all_features_toggle_shown() {
   tmp=$(_make_tempdir)
   make_stub_colors "$tmp"
@@ -479,8 +377,6 @@ SH
   esac
 }
 
-_run_test_case "Command not found toggle shows [ ] when disabled" test_command_not_found_toggle_unchecked
-_run_test_case "Command not found toggle shows [X] when enabled" test_command_not_found_toggle_checked
 _run_test_case "Enable all MUD features toggle shown" test_all_features_toggle_shown
 _run_test_case "All planned MUD features shown" test_all_planned_features_shown
 
@@ -567,97 +463,6 @@ SH
 }
 
 # Test that command-not-found toggle keeps cursor at position 2
-test_toggle_keeps_cursor_position_cnf() {
-  tmp=$(_make_tempdir)
-  make_stub_colors "$tmp"
-  
-  cat >"$tmp/require-command" <<'SH'
-#!/bin/sh
-exit 0
-SH
-  chmod +x "$tmp/require-command"
-  
-  cat >"$tmp/exit-label" <<'SH'
-#!/bin/sh
-printf '%s' "Exit"
-SH
-  chmod +x "$tmp/exit-label"
-  
-  make_stub_check_cd_hook "$tmp"
-  
-  # Create mud-config stub that reads from MUD_DIR
-  cat >"$tmp/mud-config" <<'SH'
-#!/bin/sh
-config_dir=${MUD_DIR:-$HOME/.spellbook/.mud}
-config_file="$config_dir/config"
-case $1 in
-  get)
-    feature=$2
-    if [ -f "$config_file" ]; then
-      value=$(grep "^$feature=" "$config_file" 2>/dev/null | cut -d= -f2)
-      printf '%s\n' "$value"
-    fi
-    ;;
-esac
-SH
-  chmod +x "$tmp/mud-config"
-  
-  call_count_file="$tmp/call_count"
-  printf '0\n' >"$call_count_file"
-  
-  rc_file="$tmp/rc"
-  : >"$rc_file"
-  config_dir="$tmp/mud"
-  mkdir -p "$config_dir"
-  
-  # Menu stub that simulates CNF toggle by directly modifying the config file
-  cat >"$tmp/menu" <<'SH'
-#!/bin/sh
-call_count=$(cat "$CALL_COUNT_FILE")
-start_sel=1
-while [ "$#" -gt 0 ]; do
-  case $1 in
-    --start-selection)
-      start_sel=$2
-      shift 2
-      ;;
-    *)
-      break
-      ;;
-  esac
-done
-printf '%s\n' "START_SELECTION=$start_sel" >>"$MENU_LOG"
-call_count=$((call_count + 1))
-printf '%s\n' "$call_count" >"$CALL_COUNT_FILE"
-if [ "$call_count" -eq 1 ]; then
-  # First call: simulate CNF toggle by directly modifying config file
-  config_dir=${MUD_DIR:-$HOME/.wizardry/mud}
-  mkdir -p "$config_dir"
-  printf '%s\n' "command-not-found=1" >> "$config_dir/config"
-  exit 0
-fi
-kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
-SH
-  chmod +x "$tmp/menu"
-  
-  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$WIZARDRY_IMPS_PATH:$tmp:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:/bin:/usr/bin" MENU_LOG="$tmp/log" CALL_COUNT_FILE="$call_count_file" MUD_DIR="$config_dir" WIZARDRY_RC_FILE="$rc_file" "$ROOT_DIR/spells/menu/mud-menu"
-  _assert_success || { TEST_FAILURE_REASON="menu should exit successfully"; return 1; }
-  
-  log_content=$(cat "$tmp/log")
-  first_selection=$(printf '%s\n' "$log_content" | head -1 | sed 's/.*START_SELECTION=//')
-  second_selection=$(printf '%s\n' "$log_content" | sed -n '2p' | sed 's/.*START_SELECTION=//')
-  
-  if [ "$first_selection" != "1" ]; then
-    TEST_FAILURE_REASON="first menu call should have start_selection=1, got $first_selection"
-    return 1
-  fi
-  
-  if [ "$second_selection" != "2" ]; then
-    TEST_FAILURE_REASON="after CNF toggle, menu should have start_selection=2, got $second_selection (log: $log_content)"
-    return 1
-  fi
-}
-
 # Test that non-toggle action resets cursor to first item
 test_non_toggle_resets_cursor() {
   tmp=$(_make_tempdir)
@@ -732,7 +537,6 @@ SH
 }
 
 _run_test_case "mud-menu cd hook toggle keeps cursor position" test_toggle_keeps_cursor_position_cd_hook
-_run_test_case "mud-menu CNF toggle keeps cursor at position 2" test_toggle_keeps_cursor_position_cnf
 _run_test_case "mud-menu non-toggle resets cursor" test_non_toggle_resets_cursor
 
 _finish_tests
