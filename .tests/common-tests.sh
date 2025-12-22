@@ -1731,14 +1731,15 @@ test_stub_imps_have_correct_patterns() {
     unprefixed=$(printf '%s' "$stub" | sed 's/^stub-//')
     
     # Check if both patterns exist in the file (order doesn't matter)
+    # Note: Allow optional whitespace before the pattern
     has_stub_pattern=0
     has_unprefixed_pattern=0
     
-    if grep -qE "\*/stub-$stub[|)]" "$stub_path"; then
+    if grep -qE "[[:space:]]*\*/stub-$stub[|)]" "$stub_path"; then
       has_stub_pattern=1
     fi
     
-    if grep -qE "\*/$unprefixed[|)]" "$stub_path"; then
+    if grep -qE "[[:space:]]*\*/$unprefixed[|)]" "$stub_path"; then
       has_unprefixed_pattern=1
     fi
     

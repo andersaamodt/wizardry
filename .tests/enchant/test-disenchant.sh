@@ -72,10 +72,14 @@ test_removes_specific_key_with_attr() {
   stub_dir="$tmpdir/stubs"
   mkdir -p "$stub_dir"
   
+  # Use WIZARDRY_TMPDIR for output file so it's accessible in sandbox
+  output_file="$WIZARDRY_TMPDIR/disenchant.call"
+  rm -f "$output_file"
+  
   cat >"$stub_dir/attr" <<EOF
 #!/bin/sh
 if [ "\$1" = "-r" ]; then
-  printf '%s\n' "\$*" >"$tmpdir/disenchant.call"
+  printf '%s\n' "\$*" >"$output_file"
 fi
 exit 0
 EOF
@@ -89,7 +93,7 @@ EOF
   
   _assert_success && _assert_output_contains "Disenchanted user.note"
   
-  called=$(cat "$tmpdir/disenchant.call")
+  called=$(cat "$output_file")
   [ "$called" = "-r user.note $target" ] || { TEST_FAILURE_REASON="unexpected attr call: $called"; return 1; }
 }
 
@@ -104,13 +108,17 @@ test_falls_back_to_setfattr() {
   stub_dir="$tmpdir/stubs"
   mkdir -p "$stub_dir"
   
+  # Use WIZARDRY_TMPDIR for output file so it's accessible in sandbox
+  output_file="$WIZARDRY_TMPDIR/disenchant.call"
+  rm -f "$output_file"
+  
   cat >"$stub_dir/getfattr" <<'STUB'
 #!/bin/sh
 printf '%s\n' 'user.alt'
 STUB
   cat >"$stub_dir/setfattr" <<EOF
 #!/bin/sh
-printf '%s\n' "\$*" >"$tmpdir/disenchant.call"
+printf '%s\n' "\$*" >"$output_file"
 exit 0
 EOF
   chmod +x "$stub_dir/getfattr" "$stub_dir/setfattr"
@@ -121,7 +129,7 @@ EOF
   export PATH="$stub_dir:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/menu:/bin:/usr/bin"
   _run_spell "spells/enchant/disenchant" "$target"
   _assert_success
-  called=$(cat "$tmpdir/disenchant.call")
+  called=$(cat "$output_file")
   [ "$called" = "-x user.alt $target" ] || { TEST_FAILURE_REASON="unexpected setfattr call: $called"; return 1; }
 }
 
@@ -164,10 +172,14 @@ test_selects_specific_entry_with_ask_number() {
   stub_dir="$tmpdir/stubs"
   mkdir -p "$stub_dir"
   
+  # Use WIZARDRY_TMPDIR for output file so it's accessible in sandbox
+  output_file="$WIZARDRY_TMPDIR/disenchant.call"
+  rm -f "$output_file"
+  
   cat >"$stub_dir/xattr" <<EOF
 #!/bin/sh
 if [ "\$1" = "-d" ]; then
-  printf '%s\n' "\$*" >"$tmpdir/disenchant.call"
+  printf '%s\n' "\$*" >"$output_file"
   exit 0
 fi
 printf '%s\n' 'user.one' 'user.two'
@@ -184,7 +196,7 @@ STUB
   export PATH="$stub_dir:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/menu:/bin:/usr/bin"
   _run_spell "spells/enchant/disenchant" "$target"
   _assert_success && _assert_output_contains "user.two"
-  called=$(cat "$tmpdir/disenchant.call")
+  called=$(cat "$output_file")
   [ "$called" = "-d user.two $target" ] || { TEST_FAILURE_REASON="unexpected xattr call: $called"; return 1; }
 }
 
@@ -199,6 +211,10 @@ test_selects_all_with_menu_choice() {
   stub_dir="$tmpdir/stubs"
   mkdir -p "$stub_dir"
   
+  # Use WIZARDRY_TMPDIR for output file so it's accessible in sandbox
+  output_file="$WIZARDRY_TMPDIR/disenchant.calls"
+  rm -f "$output_file"
+  
   cat >"$stub_dir/attr" <<EOF
 #!/bin/sh
 case "\$1" in
@@ -206,7 +222,7 @@ case "\$1" in
     printf '%s\n' 'Attribute "user.alpha" has a value: 1' 'Attribute "user.beta" has a value: 2'
     ;;
   -r)
-    printf '%s\n' "\$*" >>"$tmpdir/disenchant.calls"
+    printf '%s\n' "\$*" >>"$output_file"
     ;;
 esac
 exit 0
@@ -223,7 +239,7 @@ STUB
   export PATH="$stub_dir:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/menu:/bin:/usr/bin"
   _run_spell "spells/enchant/disenchant" "$target"
   _assert_success && _assert_output_contains "Disenchant all"
-  calls=$(cat "$tmpdir/disenchant.calls")
+  calls=$(cat "$output_file")
   expected="-r user.alpha $target
 -r user.beta $target"
   [ "$calls" = "$expected" ] || { TEST_FAILURE_REASON="unexpected attr calls: $calls"; return 1; }
