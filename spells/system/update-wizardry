@@ -63,6 +63,7 @@ fi
 
 info "Updating wizardry repository at $wizardry_dir"
 git -C "$wizardry_dir" pull --ff-only
+return $?
 }
 
 # Self-execute when run directly (not sourced)
