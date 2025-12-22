@@ -47,26 +47,11 @@ test_no_attributes() {
   
   stub_dir=$(make_stub_dir)
   
-  # Create comprehensive debug stub that writes to a file AND stderr
   cat >"$stub_dir/attr" <<'STUB'
 #!/bin/sh
-# Log to both a file and stderr to ensure we can see if stub is called
-logfile="${WIZARDRY_TMPDIR:-/tmp}/attr-stub.log"
-{
-  printf '=== STUB ATTR CALLED ===\n'
-  printf 'args=%s\n' "$*"
-  printf 'PATH=%s\n' "$PATH"
-  printf 'PWD=%s\n' "$PWD"
-  printf 'WIZARDRY_TEST_HELPERS_ONLY=%s\n' "${WIZARDRY_TEST_HELPERS_ONLY:-UNSET}"
-  printf 'command -v attr returns: %s\n' "$(command -v attr 2>&1)"
-  printf 'caller PID=%s\n' "$$"
-} | tee -a "$logfile" >&2
-
 if [ "$1" = "-l" ]; then
-  printf 'Returning empty list (no attrs)\n' | tee -a "$logfile" >&2
   exit 0
 fi
-printf 'Unknown args, exiting 1\n' | tee -a "$logfile" >&2
 exit 1
 STUB
   chmod +x "$stub_dir/attr"
@@ -74,38 +59,8 @@ STUB
   tmpfile="$WIZARDRY_TMPDIR/blank"
   : >"$tmpfile"
   
-  printf '[DEBUG test#4] About to set PATH and run spell\n' >&2
-  printf '[DEBUG test#4] stub_dir=%s\n' "$stub_dir" >&2
-  printf '[DEBUG test#4] stub exists: %s\n' "$(ls -la "$stub_dir/attr" 2>&1)" >&2
-  printf '[DEBUG test#4] stub is executable: %s\n' "$(test -x "$stub_dir/attr" && echo YES || echo NO)" >&2
-  printf '[DEBUG test#4] WIZARDRY_TEST_HELPERS_ONLY=%s\n' "${WIZARDRY_TEST_HELPERS_ONLY:-UNSET}" >&2
-  
-  # Clear any previous log
-  rm -f "$WIZARDRY_TMPDIR/attr-stub.log"
-  
   export PATH="$stub_dir:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/menu:/bin:/usr/bin"
-  printf '[DEBUG test#4] PATH after export=%s\n' "$PATH" >&2
-  printf '[DEBUG test#4] command -v attr before _run_spell=%s\n' "$(command -v attr)" >&2
-  
   _run_spell "spells/enchant/disenchant" "$tmpfile"
-  
-  printf '[DEBUG test#4] After _run_spell: STATUS=%s\n' "$STATUS" >&2
-  printf '[DEBUG test#4] OUTPUT=%s\n' "$OUTPUT" >&2
-  printf '[DEBUG test#4] ERROR=%s\n' "$ERROR" >&2
-  
-  printf '[DEBUG test#4] Stub log file contents:\n' >&2
-  if [ -f "$WIZARDRY_TMPDIR/attr-stub.log" ]; then
-    cat "$WIZARDRY_TMPDIR/attr-stub.log" >&2
-  else
-    printf '  (log file not created - stub was never called)\n' >&2
-  fi
-  
-  printf '[DEBUG test#4] xattr-helper-usable log contents:\n' >&2
-  if [ -f "$WIZARDRY_TMPDIR/xattr-helper-usable.log" ]; then
-    cat "$WIZARDRY_TMPDIR/xattr-helper-usable.log" >&2
-  else
-    printf '  (log file not created)\n' >&2
-  fi
   
   _assert_failure && _assert_error_contains "no enchanted attributes"
 }

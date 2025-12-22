@@ -19,11 +19,6 @@ _xattr_list_keys() {
   
   # Try attr (Linux)
   if xattr-helper-usable attr; then
-    # DEBUG: Log that we're about to call attr
-    printf '[xattr-list-keys] About to call: attr -l "%s"\n' "$file" >&2
-    printf '[xattr-list-keys] PATH=%s\n' "$PATH" >&2
-    printf '[xattr-list-keys] command -v attr=%s\n' "$(command -v attr)" >&2
-    
     if keys=$(attr -l "$file" 2>/dev/null); then
       # Parse attr -l output which may be in format:
       # Attribute "key" has a value...
