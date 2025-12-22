@@ -168,7 +168,7 @@ do
     continue
   }
   
-  if "$repo_dir/spells/spellcraft/compile-spell" "$spell_rel_path" > "$target_file" 2>&1; then
+  if "$repo_dir/spells/spellcraft/compile-spell" "$spell_rel_path" < /dev/null > "$target_file" 2>&1; then
     cd "$_dg_pwd" || true
     # Check if the target file is valid (has shebang)
     if head -n 1 "$target_file" 2>/dev/null | grep -q '^#!'; then
