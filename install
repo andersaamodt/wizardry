@@ -637,29 +637,56 @@ fi
 
 section_msg "Installation Plan"
 
-# Show platform detection results for debugging
-if [ -n "$detect_platform_value" ]; then
-        info_msg "Detected platform: $detect_platform_value"
-else
-        info_msg "Platform detection: ${YELLOW}unknown${RESET}"
-fi
-
-# Show what will be installed
+# Show what will be installed (streamlined for novice users)
 if [ -n "$detect_rc_file_value" ]; then
         if [ "$detect_format_value" = "nix" ]; then
-                info_msg "Configuration file to be modified: $detect_rc_file_value"
+                info_msg "Configuration file: $detect_rc_file_value"
         else
-                info_msg "Will modify shell configuration: $detect_rc_file_value"
-        fi
-        if [ -n "$detect_format_value" ]; then
-                substep_msg "Format: $detect_format_value"
+                info_msg "Shell configuration: $detect_rc_file_value"
         fi
 else
-        info_msg "Will add invoke-wizardry to your shell configuration"
+        info_msg "Will add wizardry to your shell configuration"
         substep_msg "${YELLOW}Warning: Could not auto-detect shell configuration file${RESET}"
 fi
-substep_msg "This sets up wizardry environment and PATH at shell startup"
-substep_msg "(invoke-wizardry path: $INVOKE_WIZARDRY)"
+substep_msg "This sets up wizardry commands in your terminal"
+
+# Ask about MUD features BEFORE writing to rc file (so we only write once)
+install_mud=0
+printf '\n'
+if [ "${WIZARDRY_INSTALL_ASSUME_YES-}" = "1" ]; then
+        # In non-interactive mode, skip MUD installation by default
+        # unless explicitly requested via environment variable
+        if [ "${WIZARDRY_INSTALL_MUD-}" = "1" ]; then
+                install_mud=1
+        fi
+else
+        # Handle different input scenarios for curl|sh and other non-interactive cases
+        if [ ! -t 0 ]; then
+                # stdin is not a terminal (e.g., curl|sh, wget|sh, or piped input)
+                if [ -r /dev/tty ]; then
+                        # /dev/tty is available - force ask-yn to use it instead of stdin
+                        # This prevents ask-yn from trying to read from stdin (which contains the script)
+                        if ASK_CANTRIP_INPUT=tty "$ASK_YN" "Install the MUD (multi-user dungeon) features?" yes >/dev/null; then
+                                install_mud=1
+                        fi
+                elif [ -z "${ASK_CANTRIP_INPUT-}" ]; then
+                        # No /dev/tty and no ASK_CANTRIP_INPUT set - use default
+                        if ASK_CANTRIP_INPUT=none "$ASK_YN" "Install the MUD (multi-user dungeon) features?" yes >/dev/null; then
+                                install_mud=1
+                        fi
+                else
+                        # ASK_CANTRIP_INPUT is already set by the user - respect it
+                        if "$ASK_YN" "Install the MUD (multi-user dungeon) features?" yes >/dev/null; then
+                                install_mud=1
+                        fi
+                fi
+        else
+                # stdin is a terminal - normal interactive mode
+                if "$ASK_YN" "Install the MUD (multi-user dungeon) features?" yes >/dev/null; then
+                        install_mud=1
+                fi
+        fi
+fi
 
 # Confirm with the user (or their automation) before editing their configuration.
 # When stdin is not interactive we fall back to the non-blocking ASK_CANTRIP_INPUT=none
@@ -798,24 +825,9 @@ fi
 # Skip if detect-rc-file failed to find a configuration file
 if [ -n "$detect_rc_file_value" ]; then
         info_msg "Updating $rc_destination..."
-        substep_msg "Configuration file: $detect_rc_file_value"
-        substep_msg "Format: $detect_format_value"
         
-        # Check if configuration file exists and is writable
-        if [ -f "$detect_rc_file_value" ]; then
-                substep_msg "File exists: ${GREEN}yes${RESET}"
-                if [ -w "$detect_rc_file_value" ]; then
-                        substep_msg "File writable: ${GREEN}yes${RESET}"
-                else
-                        substep_msg "File writable: ${YELLOW}no (will attempt anyway)${RESET}"
-                fi
-        else
-                substep_msg "File exists: ${YELLOW}no (will create)${RESET}"
-        fi
-
         # Generate the source line for invoke-wizardry
         invoke_wizardry_source_line=". \"$INVOKE_WIZARDRY\""
-        substep_msg "Source line: $invoke_wizardry_source_line"
 
         case $detect_format_value in
         nix)
@@ -922,57 +934,11 @@ fi
 # first use via handle-command-not-found. Pre-installing spells is no longer needed.
 # Users can still manually run spell install() functions for customizations.
 
-# MUD Installation (optional)
-# After setting up shell integration, ask if user wants to install the MUD features
-install_mud=0
-if [ "${WIZARDRY_INSTALL_ASSUME_YES-}" = "1" ]; then
-        # In non-interactive mode, skip MUD installation by default
-        # unless explicitly requested via environment variable
-        if [ "${WIZARDRY_INSTALL_MUD-}" = "1" ]; then
-                install_mud=1
-        fi
-else
-        # Handle different input scenarios for curl|sh and other non-interactive cases
-        if [ ! -t 0 ]; then
-                # stdin is not a terminal (e.g., curl|sh, wget|sh, or piped input)
-                if [ -r /dev/tty ]; then
-                        # /dev/tty is available - force ask-yn to use it instead of stdin
-                        # This prevents ask-yn from trying to read from stdin (which contains the script)
-                        if ASK_CANTRIP_INPUT=tty "$ASK_YN" "Install the MUD (multi-user dungeon) features?" yes >/dev/null; then
-                                install_mud=1
-                        fi
-                elif [ -z "${ASK_CANTRIP_INPUT-}" ]; then
-                        # No /dev/tty and no ASK_CANTRIP_INPUT set - use default
-                        if ASK_CANTRIP_INPUT=none "$ASK_YN" "Install the MUD (multi-user dungeon) features?" yes >/dev/null; then
-                                install_mud=1
-                        fi
-                else
-                        # ASK_CANTRIP_INPUT is already set by the user - respect it
-                        if "$ASK_YN" "Install the MUD (multi-user dungeon) features?" yes >/dev/null; then
-                                install_mud=1
-                        fi
-                fi
-        else
-                # stdin is a terminal - normal interactive mode
-                if "$ASK_YN" "Install the MUD (multi-user dungeon) features?" yes >/dev/null; then
-                        install_mud=1
-                fi
-        fi
-fi
-
+# MUD Installation (optional) - already asked earlier, now configure if enabled
 if [ "$install_mud" -eq 1 ]; then
         section_msg "Installing MUD"
 
-        # Install the CD hook using install-cd script
-        if [ -x "$INSTALL_CD" ]; then
-                info_msg "Installing CD hook..."
-                if "$INSTALL_CD" >/dev/null 2>&1; then
-                        substep_msg "CD hook installed (use toggle-cd to enable/disable)"
-                else
-                        printf '%sNote:%s CD hook installation skipped.\n' "$YELLOW" "$RESET" >&2
-                fi
-        fi
-
+        # CD hook is now built into invoke-wizardry, so we just need to enable it
         # Enable CD hook by default using toggle-cd
         if [ -x "$TOGGLE_CD" ]; then
                 "$TOGGLE_CD" >/dev/null 2>&1 || true
@@ -981,13 +947,8 @@ if [ "$install_mud" -eq 1 ]; then
 
         # Enable all other MUD features using toggle-all-mud
         if [ -x "$TOGGLE_ALL_MUD" ]; then
-                info_msg "Enabling MUD features..."
                 "$TOGGLE_ALL_MUD" --enable >/dev/null 2>&1 || true
-                substep_msg "Command not found hook (planned feature)"
-                substep_msg "Touch hook (planned feature)"
-                substep_msg "Fantasy theme (planned feature)"
-                substep_msg "Inventory feature (planned feature)"
-                substep_msg "HP/MP and combat (planned feature)"
+                substep_msg "MUD features configured"
         fi
 
         success_msg "MUD features installed"

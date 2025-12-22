@@ -47,6 +47,5 @@ fi
 "$IMPS_DIR/config-set" "$CONFIG_FILE" "cd-look" "1"
 printf '%s\n' "✓ cd hook enabled. Each directory change will now display the room description."
 printf '%s\n' ""
-printf '%s\n' "Note: Make sure the cd function is sourced in your shell:"
-printf '%s\n' "  Add this line to ~/.bashrc or ~/.zshrc:"
-printf '%s\n' "    . \$HOME/.wizardry/spells/.arcana/mud/cd"
+printf '%s\n' "Note: The cd function is automatically loaded by invoke-wizardry."
+printf '%s\n' "Open a new terminal window for changes to take effect."
