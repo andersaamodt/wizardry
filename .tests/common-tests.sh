@@ -5,6 +5,10 @@
 # This file contains cross-cutting tests that verify properties across the
 # entire spellbook. Style/opinionated checks belong in vet-spell instead.
 # Note: POSIX compliance (shebang, bashisms) is checked by verify-posix.
+#
+# Usage: common-tests.sh [SPELL_PATH...]
+# If spell paths are provided, only tests those specific spells.
+# Otherwise, tests all spells in the repository.
 
 set -eu
 
@@ -14,6 +18,14 @@ while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" !
 done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
+
+# Store filter mode and spell paths if provided
+FILTER_MODE=0
+FILTERED_SPELL_PATHS=""
+if [ "$#" -gt 0 ]; then
+  FILTER_MODE=1
+  FILTERED_SPELL_PATHS="$*"
+fi
 
 # Helper: Check if a file is a POSIX shell script
 is_posix_shell_script() {
@@ -55,8 +67,34 @@ SPELL_LIST_CACHE=$(mktemp "${WIZARDRY_TMPDIR}/spell-list-cache.XXXXXX")
 trap 'rm -f "$SPELL_LIST_CACHE"' EXIT HUP INT TERM
 
 # Build cached spell file list (run find once instead of 11+ times)
-find "$ROOT_DIR/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) \
-  -print > "$SPELL_LIST_CACHE"
+if [ "$FILTER_MODE" -eq 1 ]; then
+  # Filter mode: only include specified spell paths
+  for spell_path in $FILTERED_SPELL_PATHS; do
+    # Convert to absolute path if relative
+    case "$spell_path" in
+      /*) abs_path="$spell_path" ;;
+      *) 
+        # Try with and without spells/ prefix
+        if [ -f "$ROOT_DIR/$spell_path" ]; then
+          abs_path="$ROOT_DIR/$spell_path"
+        elif [ -f "$ROOT_DIR/spells/$spell_path" ]; then
+          abs_path="$ROOT_DIR/spells/$spell_path"
+        else
+          abs_path="$spell_path"
+        fi
+        ;;
+    esac
+    
+    # Add to cache if file exists and is executable
+    if [ -f "$abs_path" ] && [ -x "$abs_path" ]; then
+      printf '%s\n' "$abs_path" >> "$SPELL_LIST_CACHE"
+    fi
+  done
+else
+  # Normal mode: test all spells
+  find "$ROOT_DIR/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) \
+    -print > "$SPELL_LIST_CACHE"
+fi
 
 # Helper: Iterate over cached spell list
 for_each_spell() {
