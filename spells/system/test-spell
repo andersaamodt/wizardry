@@ -1,0 +1,196 @@
+#!/bin/sh
+
+# Run individual test files with optional subtest filtering.
+
+show_usage() {
+  cat <<'USAGE'
+Usage: test-spell TEST_PATH [SUBTEST_NUM...]
+
+Run a specific test file from the .tests/ directory.
+
+Arguments:
+  TEST_PATH      Path to test file (relative to .tests/)
+  SUBTEST_NUM    Optional subtest number(s) to run (can specify multiple)
+
+Examples:
+  test-spell cantrips/test-ask-yn.sh
+  test-spell cantrips/test-ask-yn.sh 5
+  test-spell cantrips/test-ask-yn.sh 5 10 15
+
+Environment variables:
+  WIZARDRY_TEST_TIMEOUT    Timeout in seconds for the test (default: 180)
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
+# CRITICAL: Seed a baseline PATH BEFORE set -eu and before any commands
+# On macOS GitHub Actions, PATH may be completely empty, causing immediate failure
+baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+case ":${PATH-}:" in
+  *":/usr/bin:"*|*":/bin:"*)
+    # Already has at least one standard directory
+    ;;
+  *)
+    # PATH is empty or missing standard directories, prepend baseline
+    PATH="${baseline_path}${PATH:+:}${PATH-}"
+    ;;
+esac
+
+set -eu
+
+cmd_name=$(basename "$0")
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+root_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd -P)
+test_dir="$root_dir/.tests"
+
+# Add wizardry spells and imps to PATH so we can use them directly
+if [ -d "$root_dir/spells/.imps" ]; then
+  PATH="$root_dir/spells/.imps:$PATH"
+  for impdir in "$root_dir"/spells/.imps/*; do
+    [ -d "$impdir" ] || continue
+    PATH="$impdir:$PATH"
+  done
+fi
+
+export PATH
+
+# Source test boot imps for standardized output functions
+for boot_imp in "$root_dir"/spells/.imps/test/boot/*; do
+  [ -f "$boot_imp" ] || continue
+  # shellcheck source=/dev/null
+  . "$boot_imp"
+done
+
+# Check required arguments
+if [ "$#" -lt 1 ]; then
+  show_usage >&2
+  exit 2
+fi
+
+test_path=$1
+shift
+
+# Convert test path to absolute path
+# Support both relative paths (from .tests/) and absolute paths
+case "$test_path" in
+  /*)
+    # Absolute path
+    abs_test="$test_path"
+    # Extract relative path from absolute
+    rel_test=${abs_test#"$test_dir/"}
+    ;;
+  *)
+    # Relative path from .tests/
+    rel_test="$test_path"
+    abs_test="$test_dir/$test_path"
+    ;;
+esac
+
+# Verify test file exists
+if [ ! -f "$abs_test" ]; then
+  die "$cmd_name: test file not found: $abs_test"
+fi
+
+# Parse subtest numbers if provided
+subtest_filter=""
+if [ "$#" -gt 0 ]; then
+  subtest_filter="$*"
+fi
+
+# Check if timeout command is available
+timeout_cmd=""
+if has timeout; then
+  timeout_cmd="timeout"
+fi
+
+# Initialize global subtest counter for tests
+WIZARDRY_GLOBAL_SUBTEST_NUM=0
+export WIZARDRY_GLOBAL_SUBTEST_NUM
+
+# Run the test
+test_timeout="${WIZARDRY_TEST_TIMEOUT:-180}"
+
+if [ -n "$subtest_filter" ]; then
+  # Filter mode: only run specified subtests
+  # We need to intercept the test output and filter based on subtest numbers
+  
+  # Create temp file for full test output
+  output_file=$(temp-file test-spell-output) || exit 1
+  trap 'cleanup-file "$output_file"' EXIT HUP INT TERM
+  
+  # Run test and capture output
+  if [ -n "$timeout_cmd" ]; then
+    if ! "$timeout_cmd" "$test_timeout" sh "$abs_test" > "$output_file" 2>&1; then
+      exit_code=$?
+      if [ "$exit_code" -eq 124 ] || [ "$exit_code" -eq 143 ]; then
+        die "$cmd_name: test timed out after ${test_timeout}s"
+      fi
+      # Test failed, but we'll show filtered output
+    fi
+  else
+    sh "$abs_test" > "$output_file" 2>&1 || true
+  fi
+  
+  # Parse and filter output
+  # Show only the specified subtest lines
+  current_subtest=0
+  pass_count=0
+  fail_count=0
+  
+  while IFS= read -r line; do
+    # Detect subtest lines (PASS/FAIL #N format)
+    case "$line" in
+      "  PASS #"*|"  FAIL #"*|"PASS #"*|"FAIL #"*)
+        # Extract subtest number
+        num=$(printf '%s' "$line" | sed 's/^[[:space:]]*\(PASS\|FAIL\) #\([0-9]*\).*/\2/')
+        
+        # Check if this subtest should be shown
+        show_line=0
+        for wanted in $subtest_filter; do
+          if [ "$num" = "$wanted" ]; then
+            show_line=1
+            break
+          fi
+        done
+        
+        if [ "$show_line" -eq 1 ]; then
+          printf '%s\n' "$line"
+          case "$line" in
+            *"PASS"*) pass_count=$((pass_count + 1)) ;;
+            *"FAIL"*) fail_count=$((fail_count + 1)) ;;
+          esac
+        fi
+        ;;
+      *" tests passed"*)
+        # Show summary line at end
+        total=$((pass_count + fail_count))
+        if [ "$total" -gt 0 ]; then
+          printf '%d/%d tests passed\n' "$pass_count" "$total"
+        fi
+        ;;
+    esac
+  done < "$output_file"
+  
+  cleanup-file "$output_file"
+  trap - EXIT HUP INT TERM
+  
+  # Exit with success if all selected subtests passed
+  if [ "$fail_count" -eq 0 ] && [ "$pass_count" -gt 0 ]; then
+    exit 0
+  else
+    exit 1
+  fi
+else
+  # Normal mode: run full test
+  if [ -n "$timeout_cmd" ]; then
+    exec "$timeout_cmd" "$test_timeout" sh "$abs_test"
+  else
+    exec sh "$abs_test"
+  fi
+fi
