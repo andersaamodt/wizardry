@@ -274,7 +274,6 @@ _invoke_wizardry() {
         return 127
       }'
     fi
-  else
   fi
   
   
