@@ -109,6 +109,11 @@ cleanup_bootstrap() {
         if [ -n "${BOOTSTRAP_TMP_DIR-}" ] && [ -d "$BOOTSTRAP_TMP_DIR" ]; then
                 rm -rf "$BOOTSTRAP_TMP_DIR"
         fi
+        # If installation was not completed and wizardry was downloaded by this installer
+        # (not pre-existing), remove it. This cleanup happens when user cancels or interrupts.
+        if [ "${INSTALL_COMPLETED-}" != "1" ] && [ "${WIZARDRY_EXISTED_BEFORE-}" = "0" ] && [ -n "${INSTALL_DIR-}" ] && [ -d "$INSTALL_DIR" ]; then
+                rm -rf "$INSTALL_DIR"
+        fi
 }
 
 # Handle interrupt signals (Ctrl-C, HUP, TERM) by cleaning up and exiting.
@@ -1289,4 +1294,6 @@ elif [ -n "$detect_rc_file_value" ]; then
 fi
 printf '\n'
 
+# Mark installation as completed to prevent cleanup of INSTALL_DIR
+INSTALL_COMPLETED=1
 exit 0
