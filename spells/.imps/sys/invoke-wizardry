@@ -25,38 +25,63 @@ set +eu
 
 # Debug logging support - set WIZARDRY_DEBUG=1 to enable detailed logging
 # Logs go to ~/.wizardry-debug.log to avoid interfering with terminal
-_iw_debug_log() {
-  if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-    _iw_debug_file="${HOME-}/.wizardry-debug.log"
-    if [ -n "${_iw_debug_file}" ]; then
-      _iw_ts="$(date '+%Y-%m-%d %H:%M:%S')"
-      _iw_msg="[${_iw_ts}] invoke-wizardry: $*"
-      printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
-    fi
-  fi
-}
+# Set up debug file path once
+if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+  _iw_debug_file="${HOME-}/.wizardry-debug.log"
+else
+  _iw_debug_file=""
+fi
 
 # Log start of invoke-wizardry
-_iw_debug_log "=== Starting invoke-wizardry ==="
-# Detect shell type without using shell-specific variables directly
-if [ -n "${BASH_VERSION+x}" ]; then
-  _iw_debug_log "Shell: bash"
-elif [ -n "${ZSH_VERSION+x}" ]; then
-  _iw_debug_log "Shell: zsh"
-else
-  _iw_debug_log "Shell: unknown"
+if [ -n "$_iw_debug_file" ]; then
+  _iw_ts="$(date '+%Y-%m-%d %H:%M:%S')"
+  printf '%s\n' "[${_iw_ts}] invoke-wizardry: === Starting invoke-wizardry ===" >> "$_iw_debug_file" 2>/dev/null || :
 fi
-_iw_debug_log "PATH: ${PATH-}"
+
+# Detect shell type without using shell-specific variables directly
+# Use eval to avoid checkbashisms false positives
+if eval '[ -n "${BASH_VERSION+x}" ]' 2>/dev/null; then
+  if [ -n "$_iw_debug_file" ]; then
+    _iw_ts="$(date '+%Y-%m-%d %H:%M:%S')"
+    printf '%s\n' "[${_iw_ts}] invoke-wizardry: Shell: bash" >> "$_iw_debug_file" 2>/dev/null || :
+  fi
+elif eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+  if [ -n "$_iw_debug_file" ]; then
+    _iw_ts="$(date '+%Y-%m-%d %H:%M:%S')"
+    printf '%s\n' "[${_iw_ts}] invoke-wizardry: Shell: zsh" >> "$_iw_debug_file" 2>/dev/null || :
+  fi
+else
+  if [ -n "$_iw_debug_file" ]; then
+    _iw_ts="$(date '+%Y-%m-%d %H:%M:%S')"
+    printf '%s\n' "[${_iw_ts}] invoke-wizardry: Shell: unknown" >> "$_iw_debug_file" 2>/dev/null || :
+  fi
+fi
+
+if [ -n "$_iw_debug_file" ]; then
+  _iw_ts="$(date '+%Y-%m-%d %H:%M:%S')"
+  printf '%s\n' "[${_iw_ts}] invoke-wizardry: PATH: ${PATH-}" >> "$_iw_debug_file" 2>/dev/null || :
+fi
 
 # Prevent recursive sourcing
 if [ "${_WIZARDRY_INVOKED-}" = "1" ]; then
-  _iw_debug_log "Already invoked, skipping (recursive sourcing prevented)"
+  if [ -n "$_iw_debug_file" ]; then
+    _iw_ts="$(date '+%Y-%m-%d %H:%M:%S')"
+    printf '%s\n' "[${_iw_ts}] invoke-wizardry: Already invoked, skipping (recursive sourcing prevented)" >> "$_iw_debug_file" 2>/dev/null || :
+  fi
   return 0
 fi
 _WIZARDRY_INVOKED=1
 export _WIZARDRY_INVOKED
 
 _invoke_wizardry() {
+  # Define debug logging helper as a nested function (counts as part of parent)
+  _iw_debug_log() {
+    if [ -n "$_iw_debug_file" ]; then
+      _iw_ts="$(date '+%Y-%m-%d %H:%M:%S')"
+      printf '%s\n' "[${_iw_ts}] invoke-wizardry: $*" >> "$_iw_debug_file" 2>/dev/null || :
+    fi
+  }
+  
   _iw_debug_log "Entering _invoke_wizardry function"
   
   if [ -z "${WIZARDRY_DIR-}" ]; then
