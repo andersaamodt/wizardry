@@ -22,6 +22,7 @@ case "${1-}" in
 esac
 
 set -eu
+. env-clear
 
 # Determine config file location
 spellbook_dir="${SPELLBOOK_DIR:-$HOME/.spellbook}"
