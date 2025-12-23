@@ -1,0 +1,43 @@
+#!/bin/sh
+
+# This spell checks if the command-not-found hook is enabled via config.
+# Use it to verify whether the handle-command-not-found integration is active.
+
+check_command_not_found_hook_usage() {
+cat <<'USAGE'
+Usage: check-command-not-found-hook
+
+Check if the command-not-found hook is enabled by looking at the config file.
+Exits with code 0 if enabled (or not explicitly disabled), 1 if explicitly disabled.
+Defaults to enabled if not configured (matches invoke-wizardry behavior).
+USAGE
+}
+
+check_command_not_found_hook() {
+case "${1-}" in
+--help|--usage|-h)
+  check_command_not_found_hook_usage
+  return 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+# Determine config file location
+spellbook_dir="${SPELLBOOK_DIR:-$HOME/.spellbook}"
+config_file="$spellbook_dir/.mud/config"
+
+# Default to enabled (matches invoke-wizardry behavior)
+# Only return disabled (1) if explicitly set to command-not-found=0
+if [ -f "$config_file" ] && grep -q "^command-not-found=0$" "$config_file" 2>/dev/null; then
+  return 1
+fi
+
+# Otherwise, enabled (either explicitly set to 1, or not configured = default enabled)
+return 0
+}
+
+# Execute function when run as script or when called by name
+# This pattern works both standalone and when inlined by compile-spell
+check_command_not_found_hook "$@"
