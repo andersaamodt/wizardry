@@ -51,38 +51,49 @@ else
   printf '%s\n' "[invoke-wizardry] Debug logging disabled" >&2
 fi
 
-# Helper function for debug logging with timestamp
-# Uses inline implementation to avoid adding another function
-_iw_debug_log() {
-  # ALWAYS output to stderr for diagnostics
-  printf '%s\n' "[invoke-wizardry] $*" >&2
-  
-  if [ -n "$_iw_debug_file" ]; then
-    _iw_ts=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || printf 'NO-DATE')
-    printf '%s\n' "[${_iw_ts}] invoke-wizardry: $*" >> "$_iw_debug_file" 2>/dev/null || :
-  fi
-}
-
 # Log start of invoke-wizardry
-_iw_debug_log "=== Starting invoke-wizardry ==="
+printf '%s\n' "[invoke-wizardry] === Starting invoke-wizardry ===" >&2
+if [ -n "$_iw_debug_file" ]; then
+  _iw_ts=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || printf 'NO-DATE')
+  printf '%s\n' "[${_iw_ts}] invoke-wizardry: === Starting invoke-wizardry ===" >> "$_iw_debug_file" 2>/dev/null || :
+fi
 
 # Detect shell type without using shell-specific variables directly
 # Use eval to avoid checkbashisms false positives
 if eval '[ -n "${BASH_VERSION+x}" ]' 2>/dev/null; then
-  _iw_debug_log "Shell: bash"
+  printf '%s\n' "[invoke-wizardry] Shell: bash" >&2
+  if [ -n "$_iw_debug_file" ]; then
+    _iw_ts=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || printf 'NO-DATE')
+    printf '%s\n' "[${_iw_ts}] invoke-wizardry: Shell: bash" >> "$_iw_debug_file" 2>/dev/null || :
+  fi
 elif eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
-  _iw_debug_log "Shell: zsh"
+  printf '%s\n' "[invoke-wizardry] Shell: zsh" >&2
+  if [ -n "$_iw_debug_file" ]; then
+    _iw_ts=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || printf 'NO-DATE')
+    printf '%s\n' "[${_iw_ts}] invoke-wizardry: Shell: zsh" >> "$_iw_debug_file" 2>/dev/null || :
+  fi
 else
-  _iw_debug_log "Shell: unknown"
+  printf '%s\n' "[invoke-wizardry] Shell: unknown" >&2
+  if [ -n "$_iw_debug_file" ]; then
+    _iw_ts=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || printf 'NO-DATE')
+    printf '%s\n' "[${_iw_ts}] invoke-wizardry: Shell: unknown" >> "$_iw_debug_file" 2>/dev/null || :
+  fi
 fi
 
-_iw_debug_log "PATH: ${PATH-}"
+printf '%s\n' "[invoke-wizardry] PATH: ${PATH-}" >&2
+if [ -n "$_iw_debug_file" ]; then
+  _iw_ts=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || printf 'NO-DATE')
+  printf '%s\n' "[${_iw_ts}] invoke-wizardry: PATH: ${PATH-}" >> "$_iw_debug_file" 2>/dev/null || :
+fi
 
 # Prevent recursive sourcing
 printf '%s\n' "[invoke-wizardry] Checking for recursive sourcing" >&2
 if [ "${_WIZARDRY_INVOKED-}" = "1" ]; then
   printf '%s\n' "[invoke-wizardry] Already invoked, skipping" >&2
-  _iw_debug_log "Already invoked, skipping (recursive sourcing prevented)"
+  if [ -n "$_iw_debug_file" ]; then
+    _iw_ts=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || printf 'NO-DATE')
+    printf '%s\n' "[${_iw_ts}] invoke-wizardry: Already invoked, skipping (recursive sourcing prevented)" >> "$_iw_debug_file" 2>/dev/null || :
+  fi
   return 0
 fi
 printf '%s\n' "[invoke-wizardry] First invocation, continuing" >&2
