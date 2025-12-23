@@ -26,51 +26,39 @@ set +eu
 # Debug logging support - set WIZARDRY_DEBUG=1 to enable detailed logging
 # Logs go to ~/.wizardry-debug.log to avoid interfering with terminal
 # Set up debug file path once
-if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-  _iw_debug_file="${HOME-}/.wizardry-debug.log"
+if [ "${WIZARDRY_DEBUG-}" = "1" ] && [ -n "${HOME-}" ]; then
+  _iw_debug_file="$HOME/.wizardry-debug.log"
 else
   _iw_debug_file=""
 fi
 
+# Helper function for debug logging with timestamp
+# Uses inline implementation to avoid adding another function
+_iw_debug_log() {
+  if [ -n "$_iw_debug_file" ]; then
+    _iw_ts=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || printf 'NO-DATE')
+    printf '%s\n' "[${_iw_ts}] invoke-wizardry: $*" >> "$_iw_debug_file" 2>/dev/null || :
+  fi
+}
+
 # Log start of invoke-wizardry
-if [ -n "$_iw_debug_file" ]; then
-  _iw_ts="$(date '+%Y-%m-%d %H:%M:%S')"
-  _iw_msg="[${_iw_ts}] invoke-wizardry: === Starting invoke-wizardry ==="
-  printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
-fi
+_iw_debug_log "=== Starting invoke-wizardry ==="
 
 # Detect shell type without using shell-specific variables directly
 # Use eval to avoid checkbashisms false positives
 if eval '[ -n "${BASH_VERSION+x}" ]' 2>/dev/null; then
-  if [ -n "$_iw_debug_file" ]; then
-    _iw_ts="$(date '+%Y-%m-%d %H:%M:%S')"
-    printf '%s\n' "[${_iw_ts}] invoke-wizardry: Shell: bash" >> "$_iw_debug_file" 2>/dev/null || :
-  fi
+  _iw_debug_log "Shell: bash"
 elif eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
-  if [ -n "$_iw_debug_file" ]; then
-    _iw_ts="$(date '+%Y-%m-%d %H:%M:%S')"
-    printf '%s\n' "[${_iw_ts}] invoke-wizardry: Shell: zsh" >> "$_iw_debug_file" 2>/dev/null || :
-  fi
+  _iw_debug_log "Shell: zsh"
 else
-  if [ -n "$_iw_debug_file" ]; then
-    _iw_ts="$(date '+%Y-%m-%d %H:%M:%S')"
-    _iw_msg="[${_iw_ts}] invoke-wizardry: Shell: unknown"
-    printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
-  fi
+  _iw_debug_log "Shell: unknown"
 fi
 
-if [ -n "$_iw_debug_file" ]; then
-  _iw_ts="$(date '+%Y-%m-%d %H:%M:%S')"
-  printf '%s\n' "[${_iw_ts}] invoke-wizardry: PATH: ${PATH-}" >> "$_iw_debug_file" 2>/dev/null || :
-fi
+_iw_debug_log "PATH: ${PATH-}"
 
 # Prevent recursive sourcing
 if [ "${_WIZARDRY_INVOKED-}" = "1" ]; then
-  if [ -n "$_iw_debug_file" ]; then
-    _iw_ts="$(date '+%Y-%m-%d %H:%M:%S')"
-    _iw_msg="Already invoked, skipping (recursive sourcing prevented)"
-    printf '%s\n' "[${_iw_ts}] invoke-wizardry: $_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
-  fi
+  _iw_debug_log "Already invoked, skipping (recursive sourcing prevented)"
   return 0
 fi
 _WIZARDRY_INVOKED=1
@@ -756,8 +744,7 @@ _invoke_wizardry() {
 }
 
 # Run the setup when sourced
+# Note: invoke-wizardry is ONLY meant to be sourced, never executed directly
+# The self-execute pattern is intentionally omitted to avoid double invocation in Zsh
+# (In Zsh, $0 is set to the sourced file's path, which would cause the pattern to match)
 _invoke_wizardry
-
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */invoke-wizardry) _invoke_wizardry "$@" ;; esac
