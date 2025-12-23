@@ -29,14 +29,23 @@ _iw_debug_log() {
   if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
     _iw_debug_file="${HOME-}/.wizardry-debug.log"
     if [ -n "${_iw_debug_file}" ]; then
-      printf '[%s] invoke-wizardry: %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" >> "$_iw_debug_file" 2>/dev/null || :
+      _iw_ts="$(date '+%Y-%m-%d %H:%M:%S')"
+      _iw_msg="[${_iw_ts}] invoke-wizardry: $*"
+      printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
     fi
   fi
 }
 
 # Log start of invoke-wizardry
 _iw_debug_log "=== Starting invoke-wizardry ==="
-_iw_debug_log "Shell: ${BASH_VERSION-}${ZSH_VERSION-}"
+# Detect shell type without using shell-specific variables directly
+if [ -n "${BASH_VERSION+x}" ]; then
+  _iw_debug_log "Shell: bash"
+elif [ -n "${ZSH_VERSION+x}" ]; then
+  _iw_debug_log "Shell: zsh"
+else
+  _iw_debug_log "Shell: unknown"
+fi
 _iw_debug_log "PATH: ${PATH-}"
 
 # Prevent recursive sourcing
@@ -130,7 +139,7 @@ _invoke_wizardry() {
         _iw_imp_count=$((_iw_imp_count + 1))
         
         # Skip invoke-wizardry itself to prevent recursion
-        # Skip invoke-thesaurus to prevent double execution (loaded separately later for synonym handling)
+        # Skip invoke-thesaurus (loaded separately later for synonyms)
         case "$_iw_imp" in
           */invoke-wizardry|*/invoke-thesaurus) 
             _iw_imp_skipped=$((_iw_imp_skipped + 1))
@@ -144,7 +153,8 @@ _invoke_wizardry() {
         _iw_imp_true_name=$(printf '_%s' "$_iw_imp_name" | sed 's/-/_/g')
         
         # Only source imps that define their true-name function
-        if grep -qE "^[[:space:]]*${_iw_imp_true_name}[[:space:]]*\\(\\)" "$_iw_imp" 2>/dev/null; then
+        _iw_pattern="^[[:space:]]*${_iw_imp_true_name}[[:space:]]*\\(\\)"
+        if grep -qE "$_iw_pattern" "$_iw_imp" 2>/dev/null; then
           _iw_debug_log "Sourcing imp: $_iw_imp_name -> $_iw_imp_true_name"
           # Source the imp to load its function
           # shellcheck disable=SC1090
@@ -179,7 +189,9 @@ _invoke_wizardry() {
     done
   fi
   
-  _iw_debug_log "Imp sourcing complete: total=$_iw_imp_count success=$_iw_imp_success skipped=$_iw_imp_skipped failed=$_iw_imp_failed"
+  _iw_imp_summary="total=$_iw_imp_count success=$_iw_imp_success"
+  _iw_imp_summary="$_iw_imp_summary skipped=$_iw_imp_skipped failed=$_iw_imp_failed"
+  _iw_debug_log "Imp sourcing complete: $_iw_imp_summary"
   
   # Word-of-binding: Pre-load all spells by sourcing them
   # This makes spell functions immediately available in the current shell
@@ -214,7 +226,8 @@ _invoke_wizardry() {
       
       # Only source spells that define their true-name function
       # This skips standalone scripts that don't use the binding pattern
-      if grep -qE "^[[:space:]]*${_iw_spell_true_name}[[:space:]]*\\(\\)" "$_iw_spell" 2>/dev/null; then
+      _iw_pattern="^[[:space:]]*${_iw_spell_true_name}[[:space:]]*\\(\\)"
+      if grep -qE "$_iw_pattern" "$_iw_spell" 2>/dev/null; then
         _iw_debug_log "Sourcing spell: $_iw_spell_name -> $_iw_spell_true_name"
         # Source the spell to load its function
         # shellcheck disable=SC1090
@@ -248,7 +261,9 @@ _invoke_wizardry() {
     done
   done
   
-  _iw_debug_log "Spell sourcing complete: total=$_iw_spell_count success=$_iw_spell_success skipped=$_iw_spell_skipped failed=$_iw_spell_failed"
+  _iw_spell_summary="total=$_iw_spell_count success=$_iw_spell_success"
+  _iw_spell_summary="$_iw_spell_summary skipped=$_iw_spell_skipped failed=$_iw_spell_failed"
+  _iw_debug_log "Spell sourcing complete: $_iw_spell_summary"
   
   # Pre-load spells from user's spellbook
   # User spells follow the same pattern as regular spells (spell_name, no underscore)
@@ -265,7 +280,8 @@ _invoke_wizardry() {
       _iw_user_spell_true_name=$(printf '%s' "$_iw_user_spell_name" | sed 's/-/_/g')
       
       # Only source if it has a true-name function (spell_name, not _spell_name)
-      if grep -qE "^[[:space:]]*${_iw_user_spell_true_name}[[:space:]]*\\(\\)" "$_iw_user_spell" 2>/dev/null; then
+      _iw_pattern="^[[:space:]]*${_iw_user_spell_true_name}[[:space:]]*\\(\\)"
+      if grep -qE "$_iw_pattern" "$_iw_user_spell" 2>/dev/null; then
         _iw_debug_log "Sourcing user spell: $_iw_user_spell_name"
         # shellcheck disable=SC1090
         if . "$_iw_user_spell" 2>/dev/null; then
@@ -285,7 +301,8 @@ _invoke_wizardry() {
     done
   fi
   
-  _iw_debug_log "User spell sourcing complete: total=$_iw_user_spell_count success=$_iw_user_spell_success"
+  _iw_user_summary="total=$_iw_user_spell_count success=$_iw_user_spell_success"
+  _iw_debug_log "User spell sourcing complete: $_iw_user_summary"
   
   # Hotloading: command_not_found_handle provides fallback for spells not yet loaded
   # This handles new spells added after shell startup and non-function spells
@@ -317,41 +334,85 @@ _invoke_wizardry() {
       eval 'command_not_found_handle() {
         # Debug logging for command_not_found_handle
         if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-          _cnf_debug_file="${HOME-}/.wizardry-debug.log"
-          printf '\''[%s] CNF: command not found: %s (args: %s)\n'\'' "$(date '\''+%Y-%m-%d %H:%M:%S'\'')" "$1" "$*" >> "$_cnf_debug_file" 2>/dev/null || :
+          _cnf_file="${HOME-}/.wizardry-debug.log"
+          _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
+          _cnf_msg="[${_cnf_ts}] CNF: command not found: $1 (args: $*)"
+          printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
         fi
         
-        # Prevent infinite recursion - check if we'\''re already in the handler
+        # Prevent infinite recursion - check if already in handler
         if [ "${_WIZARDRY_IN_CNF_HANDLER-}" = "1" ]; then
-          [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '\''[%s] CNF: recursion detected, bailing out\n'\'' "$(date '\''+%Y-%m-%d %H:%M:%S'\'')" >> "${HOME-}/.wizardry-debug.log" 2>/dev/null || :
+          if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+            _cnf_file="${HOME-}/.wizardry-debug.log"
+            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
+            _cnf_msg="[${_cnf_ts}] CNF: recursion detected, bailing out"
+            printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
+          fi
           printf '\''%s: command not found\n'\'' "$1" >&2
           return 127
         fi
         _WIZARDRY_IN_CNF_HANDLER=1
         
         # Try word-of-binding for autoloading (handles hotloaded spells)
-        if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" ]; then
-          [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '\''[%s] CNF: trying word-of-binding for: %s\n'\'' "$(date '\''+%Y-%m-%d %H:%M:%S'\'')" "$1" >> "${HOME-}/.wizardry-debug.log" 2>/dev/null || :
-          if "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" "$@" 2>/dev/null; then
-            [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '\''[%s] CNF: word-of-binding succeeded for: %s\n'\'' "$(date '\''+%Y-%m-%d %H:%M:%S'\'')" "$1" >> "${HOME-}/.wizardry-debug.log" 2>/dev/null || :
+        _cnf_wob="$WIZARDRY_DIR/spells/.imps/sys/word-of-binding"
+        if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$_cnf_wob" ]; then
+          if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+            _cnf_file="${HOME-}/.wizardry-debug.log"
+            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
+            _cnf_msg="[${_cnf_ts}] CNF: trying word-of-binding for: $1"
+            printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
+          fi
+          if "$_cnf_wob" "$@" 2>/dev/null; then
+            if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+              _cnf_file="${HOME-}/.wizardry-debug.log"
+              _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
+              _cnf_msg="[${_cnf_ts}] CNF: word-of-binding succeeded for: $1"
+              printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
+            fi
             unset _WIZARDRY_IN_CNF_HANDLER
             return 0
           fi
-          [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '\''[%s] CNF: word-of-binding failed for: %s\n'\'' "$(date '\''+%Y-%m-%d %H:%M:%S'\'')" "$1" >> "${HOME-}/.wizardry-debug.log" 2>/dev/null || :
+          if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+            _cnf_file="${HOME-}/.wizardry-debug.log"
+            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
+            _cnf_msg="[${_cnf_ts}] CNF: word-of-binding failed for: $1"
+            printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
+          fi
         fi
         # Fall back to parse for recursive grammar parsing
-        if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/lex/parse" ]; then
-          [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '\''[%s] CNF: trying parse for: %s\n'\'' "$(date '\''+%Y-%m-%d %H:%M:%S'\'')" "$1" >> "${HOME-}/.wizardry-debug.log" 2>/dev/null || :
-          if "$WIZARDRY_DIR/spells/.imps/lex/parse" "$@" 2>/dev/null; then
-            [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '\''[%s] CNF: parse succeeded for: %s\n'\'' "$(date '\''+%Y-%m-%d %H:%M:%S'\'')" "$1" >> "${HOME-}/.wizardry-debug.log" 2>/dev/null || :
+        _cnf_parse="$WIZARDRY_DIR/spells/.imps/lex/parse"
+        if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$_cnf_parse" ]; then
+          if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+            _cnf_file="${HOME-}/.wizardry-debug.log"
+            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
+            _cnf_msg="[${_cnf_ts}] CNF: trying parse for: $1"
+            printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
+          fi
+          if "$_cnf_parse" "$@" 2>/dev/null; then
+            if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+              _cnf_file="${HOME-}/.wizardry-debug.log"
+              _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
+              _cnf_msg="[${_cnf_ts}] CNF: parse succeeded for: $1"
+              printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
+            fi
             unset _WIZARDRY_IN_CNF_HANDLER
             return 0
           fi
-          [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '\''[%s] CNF: parse failed for: %s\n'\'' "$(date '\''+%Y-%m-%d %H:%M:%S'\'')" "$1" >> "${HOME-}/.wizardry-debug.log" 2>/dev/null || :
+          if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+            _cnf_file="${HOME-}/.wizardry-debug.log"
+            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
+            _cnf_msg="[${_cnf_ts}] CNF: parse failed for: $1"
+            printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
+          fi
         fi
         # Command truly not found - return 127
         unset _WIZARDRY_IN_CNF_HANDLER
-        [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '\''[%s] CNF: command truly not found: %s\n'\'' "$(date '\''+%Y-%m-%d %H:%M:%S'\'')" "$1" >> "${HOME-}/.wizardry-debug.log" 2>/dev/null || :
+        if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+          _cnf_file="${HOME-}/.wizardry-debug.log"
+          _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
+          _cnf_msg="[${_cnf_ts}] CNF: command truly not found: $1"
+          printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
+        fi
         printf '\''%s: command not found\n'\'' "$1" >&2
         return 127
       }'
@@ -361,41 +422,85 @@ _invoke_wizardry() {
       eval 'command_not_found_handler() {
         # Debug logging for command_not_found_handler
         if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-          _cnf_debug_file="${HOME-}/.wizardry-debug.log"
-          printf '\''[%s] CNF: command not found: %s (args: %s)\n'\'' "$(date '\''+%Y-%m-%d %H:%M:%S'\'')" "$1" "$*" >> "$_cnf_debug_file" 2>/dev/null || :
+          _cnf_file="${HOME-}/.wizardry-debug.log"
+          _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
+          _cnf_msg="[${_cnf_ts}] CNF: command not found: $1 (args: $*)"
+          printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
         fi
         
-        # Prevent infinite recursion - check if we'\''re already in the handler
+        # Prevent infinite recursion - check if already in handler
         if [ "${_WIZARDRY_IN_CNF_HANDLER-}" = "1" ]; then
-          [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '\''[%s] CNF: recursion detected, bailing out\n'\'' "$(date '\''+%Y-%m-%d %H:%M:%S'\'')" >> "${HOME-}/.wizardry-debug.log" 2>/dev/null || :
+          if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+            _cnf_file="${HOME-}/.wizardry-debug.log"
+            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
+            _cnf_msg="[${_cnf_ts}] CNF: recursion detected, bailing out"
+            printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
+          fi
           printf '\''%s: command not found\n'\'' "$1" >&2
           return 127
         fi
         _WIZARDRY_IN_CNF_HANDLER=1
         
         # Try word-of-binding for autoloading (handles hotloaded spells)
-        if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" ]; then
-          [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '\''[%s] CNF: trying word-of-binding for: %s\n'\'' "$(date '\''+%Y-%m-%d %H:%M:%S'\'')" "$1" >> "${HOME-}/.wizardry-debug.log" 2>/dev/null || :
-          if "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" "$@" 2>/dev/null; then
-            [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '\''[%s] CNF: word-of-binding succeeded for: %s\n'\'' "$(date '\''+%Y-%m-%d %H:%M:%S'\'')" "$1" >> "${HOME-}/.wizardry-debug.log" 2>/dev/null || :
+        _cnf_wob="$WIZARDRY_DIR/spells/.imps/sys/word-of-binding"
+        if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$_cnf_wob" ]; then
+          if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+            _cnf_file="${HOME-}/.wizardry-debug.log"
+            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
+            _cnf_msg="[${_cnf_ts}] CNF: trying word-of-binding for: $1"
+            printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
+          fi
+          if "$_cnf_wob" "$@" 2>/dev/null; then
+            if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+              _cnf_file="${HOME-}/.wizardry-debug.log"
+              _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
+              _cnf_msg="[${_cnf_ts}] CNF: word-of-binding succeeded for: $1"
+              printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
+            fi
             unset _WIZARDRY_IN_CNF_HANDLER
             return 0
           fi
-          [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '\''[%s] CNF: word-of-binding failed for: %s\n'\'' "$(date '\''+%Y-%m-%d %H:%M:%S'\'')" "$1" >> "${HOME-}/.wizardry-debug.log" 2>/dev/null || :
+          if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+            _cnf_file="${HOME-}/.wizardry-debug.log"
+            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
+            _cnf_msg="[${_cnf_ts}] CNF: word-of-binding failed for: $1"
+            printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
+          fi
         fi
         # Fall back to parse for recursive grammar parsing
-        if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/lex/parse" ]; then
-          [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '\''[%s] CNF: trying parse for: %s\n'\'' "$(date '\''+%Y-%m-%d %H:%M:%S'\'')" "$1" >> "${HOME-}/.wizardry-debug.log" 2>/dev/null || :
-          if "$WIZARDRY_DIR/spells/.imps/lex/parse" "$@" 2>/dev/null; then
-            [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '\''[%s] CNF: parse succeeded for: %s\n'\'' "$(date '\''+%Y-%m-%d %H:%M:%S'\'')" "$1" >> "${HOME-}/.wizardry-debug.log" 2>/dev/null || :
+        _cnf_parse="$WIZARDRY_DIR/spells/.imps/lex/parse"
+        if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$_cnf_parse" ]; then
+          if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+            _cnf_file="${HOME-}/.wizardry-debug.log"
+            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
+            _cnf_msg="[${_cnf_ts}] CNF: trying parse for: $1"
+            printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
+          fi
+          if "$_cnf_parse" "$@" 2>/dev/null; then
+            if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+              _cnf_file="${HOME-}/.wizardry-debug.log"
+              _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
+              _cnf_msg="[${_cnf_ts}] CNF: parse succeeded for: $1"
+              printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
+            fi
             unset _WIZARDRY_IN_CNF_HANDLER
             return 0
           fi
-          [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '\''[%s] CNF: parse failed for: %s\n'\'' "$(date '\''+%Y-%m-%d %H:%M:%S'\'')" "$1" >> "${HOME-}/.wizardry-debug.log" 2>/dev/null || :
+          if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+            _cnf_file="${HOME-}/.wizardry-debug.log"
+            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
+            _cnf_msg="[${_cnf_ts}] CNF: parse failed for: $1"
+            printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
+          fi
         fi
         # Command truly not found - return 127
         unset _WIZARDRY_IN_CNF_HANDLER
-        [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '\''[%s] CNF: command truly not found: %s\n'\'' "$(date '\''+%Y-%m-%d %H:%M:%S'\'')" "$1" >> "${HOME-}/.wizardry-debug.log" 2>/dev/null || :
+        if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+          _cnf_file="${HOME-}/.wizardry-debug.log"
+          _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
+          _cnf_msg="[${_cnf_ts}] CNF: command truly not found: $1"
+          printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
+        fi
         printf '\''%s: command not found\n'\'' "$1" >&2
         return 127
       }'
