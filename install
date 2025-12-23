@@ -1274,9 +1274,8 @@ printf '\n'
 if [ "$detect_format_value" = "nix" ]; then
         if [ "$rebuild_success" -eq 1 ]; then
                 # Rebuild succeeded - wizardry available in new terminals
-                printf 'Wizardry is ready! Open a new terminal window to start using it.\n'
+                printf 'Wizardry is ready! Open a new terminal window, then run %smenu%s or %smud%s to start using it.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
                 printf '\n'
-                printf 'Then run %smenu%s or %smud%s to start using wizardry.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
         else
                 # Rebuild failed - need manual intervention
                 printf '%sNote:%s After rebuilding your NixOS configuration, open a new terminal to use wizardry.\n' "$YELLOW" "$RESET"
