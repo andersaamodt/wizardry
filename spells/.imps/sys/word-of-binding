@@ -18,21 +18,21 @@ _word_of_binding() {
     WIZARDRY_DIR=$(CDPATH= cd -- "$_wob_script_dir/../../.." 2>/dev/null && pwd -P) || true
   fi
 
-  # Convert hyphenated name to true-name: clip-copy -> _clip_copy
-  _wob_true_name=$(printf '_%s\n' "$_wob_name" | sed 's/-/_/g')
-
   # Find module file
   _wob_module=""
+  _wob_is_imp=0
   if [ -n "${WIZARDRY_DIR-}" ]; then
     _wob_imps_dir="$WIZARDRY_DIR/spells/.imps"
     if [ -d "$_wob_imps_dir" ]; then
       if [ -f "$_wob_imps_dir/$_wob_name" ]; then
         _wob_module="$_wob_imps_dir/$_wob_name"
+        _wob_is_imp=1
       else
         for _wob_family_dir in "$_wob_imps_dir"/*; do
           [ -d "$_wob_family_dir" ] || continue
           if [ -f "$_wob_family_dir/$_wob_name" ]; then
             _wob_module="$_wob_family_dir/$_wob_name"
+            _wob_is_imp=1
             break
           fi
         done
@@ -66,6 +66,15 @@ _word_of_binding() {
   if [ -z "$_wob_module" ]; then
     printf '%s\n' "word-of-binding: unknown command '$_wob_name'" >&2
     return 127
+  fi
+
+  # Determine true-name based on module type
+  # Imps use _underscore true-names (e.g., clip-copy -> _clip_copy)
+  # Spells use non-underscore true-names (e.g., menu -> menu)
+  if [ "$_wob_is_imp" -eq 1 ]; then
+    _wob_true_name=$(printf '_%s\n' "$_wob_name" | sed 's/-/_/g')
+  else
+    _wob_true_name=$(printf '%s\n' "$_wob_name" | sed 's/-/_/g')
   fi
 
   # Check if module has true-name function (for binding/sourcing)

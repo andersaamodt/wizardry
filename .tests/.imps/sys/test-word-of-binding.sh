@@ -50,9 +50,40 @@ EOF
   _assert_output_contains "evoked: myarg" || return 1
 }
 
+# Test: word-of-binding correctly handles spells (without underscore prefix)
+test_handles_spells_without_underscore() {
+  skip-if-compiled || return $?
+  # The 'forall' spell defines forall() function (not _forall())
+  _run_spell "spells/.imps/sys/word-of-binding" forall --help
+  _assert_success || return 1
+  _assert_output_contains "Usage:" || return 1
+}
+
+# Test: word-of-binding can handle imp with hyphenated name
+test_handles_hyphenated_imp() {
+  skip-if-compiled || return $?
+  # The 'usage-error' imp defines _usage_error() function
+  _run_spell "spells/.imps/sys/word-of-binding" usage-error "test-spell" "test error"
+  _assert_status 2 || return 1
+  _assert_error_contains "test-spell: test error" || return 1
+}
+
+# Test: word-of-binding can handle spell with hyphenated name
+test_handles_hyphenated_spell() {
+  skip-if-compiled || return $?
+  # The 'read-magic' spell defines read_magic() function (not _read_magic())
+  # Call with --help to avoid file requirements
+  _run_spell "spells/.imps/sys/word-of-binding" read-magic --help
+  _assert_success || return 1
+  _assert_output_contains "Usage:" || return 1
+}
+
 _run_test_case "finds module in imps directory" test_finds_module_in_imps
 _run_test_case "unknown command returns 127" test_unknown_command_returns_127
 _run_test_case "requires command name argument" test_requires_command_name
 _run_test_case "evokes scripts without functions" test_evokes_scripts_without_functions
+_run_test_case "handles spells without underscore prefix" test_handles_spells_without_underscore
+_run_test_case "handles hyphenated imp names" test_handles_hyphenated_imp
+_run_test_case "handles hyphenated spell names" test_handles_hyphenated_spell
 
 _finish_tests
