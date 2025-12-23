@@ -109,6 +109,12 @@ cleanup_bootstrap() {
         if [ -n "${BOOTSTRAP_TMP_DIR-}" ] && [ -d "$BOOTSTRAP_TMP_DIR" ]; then
                 rm -rf "$BOOTSTRAP_TMP_DIR"
         fi
+        # If installation was not completed and wizardry was downloaded by this installer
+        # (not pre-existing), remove it. This cleanup happens when user cancels or interrupts.
+        # Safety check: only delete if it looks like a wizardry directory (has spells/ subdirectory)
+        if [ "${INSTALL_COMPLETED-}" != "1" ] && [ "${WIZARDRY_EXISTED_BEFORE-}" = "0" ] && [ -n "${INSTALL_DIR-}" ] && [ -d "$INSTALL_DIR/spells" ]; then
+                rm -rf "$INSTALL_DIR"
+        fi
 }
 
 # Handle interrupt signals (Ctrl-C, HUP, TERM) by cleaning up and exiting.
@@ -666,23 +672,23 @@ else
                 if [ -r /dev/tty ]; then
                         # /dev/tty is available - force ask-yn to use it instead of stdin
                         # This prevents ask-yn from trying to read from stdin (which contains the script)
-                        if ASK_CANTRIP_INPUT=tty "$ASK_YN" "Install the MUD (multi-user dungeon) features?" yes >/dev/null; then
+                        if ASK_CANTRIP_INPUT=tty "$ASK_YN" "Also install MUD (multi-user dungeon) features?" yes >/dev/null; then
                                 install_mud=1
                         fi
                 elif [ -z "${ASK_CANTRIP_INPUT-}" ]; then
                         # No /dev/tty and no ASK_CANTRIP_INPUT set - use default
-                        if ASK_CANTRIP_INPUT=none "$ASK_YN" "Install the MUD (multi-user dungeon) features?" yes >/dev/null; then
+                        if ASK_CANTRIP_INPUT=none "$ASK_YN" "Also install MUD (multi-user dungeon) features?" yes >/dev/null; then
                                 install_mud=1
                         fi
                 else
                         # ASK_CANTRIP_INPUT is already set by the user - respect it
-                        if "$ASK_YN" "Install the MUD (multi-user dungeon) features?" yes >/dev/null; then
+                        if "$ASK_YN" "Also install MUD (multi-user dungeon) features?" yes >/dev/null; then
                                 install_mud=1
                         fi
                 fi
         else
                 # stdin is a terminal - normal interactive mode
-                if "$ASK_YN" "Install the MUD (multi-user dungeon) features?" yes >/dev/null; then
+                if "$ASK_YN" "Also install MUD (multi-user dungeon) features?" yes >/dev/null; then
                         install_mud=1
                 fi
         fi
@@ -1274,9 +1280,8 @@ printf '\n'
 if [ "$detect_format_value" = "nix" ]; then
         if [ "$rebuild_success" -eq 1 ]; then
                 # Rebuild succeeded - wizardry available in new terminals
-                printf 'Wizardry is ready! Open a new terminal window to start using it.\n'
+                printf 'Wizardry is ready! Open a new terminal window, then run %smenu%s or %smud%s to start using it.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
                 printf '\n'
-                printf 'Then run %smenu%s or %smud%s to start using wizardry.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
         else
                 # Rebuild failed - need manual intervention
                 printf '%sNote:%s After rebuilding your NixOS configuration, open a new terminal to use wizardry.\n' "$YELLOW" "$RESET"
@@ -1284,10 +1289,12 @@ if [ "$detect_format_value" = "nix" ]; then
                 printf 'After rebuilding and opening a new terminal, run %smenu%s or %smud%s to start using wizardry.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
         fi
 elif [ -n "$detect_rc_file_value" ]; then
-        printf 'Wizardry is ready to use! It will be available when you open a new terminal window.\n'
+        printf 'Wizardry has been installed successfully!\n'
         printf '\n'
-        printf 'Then run %smenu%s or %smud%s to start using wizardry.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
+        printf 'Open a new terminal window, then run %smenu%s or %smud%s to start using wizardry.\n' "$CYAN" "$RESET" "$CYAN" "$RESET"
 fi
 printf '\n'
 
+# Mark installation as completed to prevent cleanup of INSTALL_DIR
+INSTALL_COMPLETED=1
 exit 0
