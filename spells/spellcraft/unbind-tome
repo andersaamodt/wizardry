@@ -3,7 +3,6 @@
 # This spell splits a bound tome back into individual page files.
 # It derives filenames from page headers so the restored pages are easy to revisit.
 
-require-wizardry || exit 1
 
 unbind_tome_usage() {
     cat <<'USAGE'
@@ -21,6 +20,8 @@ case "${1-}" in
   return 0
   ;;
 esac
+
+require-wizardry || exit 1
 
 set -eu
 . env-clear

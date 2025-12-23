@@ -3,7 +3,6 @@
 # This spell displays shutdown, restart, logout, and power management options.
 # Commands are invoked directly via the menu without external spell dependencies.
 
-require-wizardry || exit 1
 
 shutdown_menu_usage() {
   cat <<'USAGE'
@@ -22,6 +21,8 @@ case "${1-}" in
   return 0
   ;;
 esac
+
+require-wizardry || exit 1
 
 set -eu
 . env-clear

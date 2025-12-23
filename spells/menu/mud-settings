@@ -2,7 +2,6 @@
 
 # This spell displays the MUD settings menu.
 
-require-wizardry || exit 1
 
 mud_settings_usage() {
         cat <<'USAGE' >&2
@@ -21,6 +20,8 @@ case "${1-}" in
   return 0
   ;;
 esac
+
+require-wizardry || exit 1
 
 set -eu
 . env-clear

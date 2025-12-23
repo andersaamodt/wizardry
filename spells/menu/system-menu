@@ -2,7 +2,6 @@
 
 # This spell displays system maintenance tasks.
 
-require-wizardry || exit 1
 
 system_menu_usage() {
   cat <<'USAGE'
@@ -21,6 +20,8 @@ case "${1-}" in
   return 0
   ;;
 esac
+
+require-wizardry || exit 1
 
 set -eu
 . env-clear

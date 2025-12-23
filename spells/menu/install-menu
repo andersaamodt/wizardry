@@ -2,7 +2,6 @@
 
 # Present a menu of spells that can install supporting software.
 
-require-wizardry || exit 1
 
 install_menu_usage() {
         cat <<'USAGE' >&2
@@ -22,6 +21,8 @@ case "${1-}" in
   return 0
   ;;
 esac
+
+require-wizardry || exit 1
 
 set -eu
 . env-clear

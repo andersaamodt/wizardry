@@ -3,7 +3,6 @@
 # This spell displays a menu to select and set the current MUD player.
 # Use it to switch between player identities from available SSH keys.
 
-require-wizardry || exit 1
 
 select_player_usage() {
 cat <<'USAGE'
@@ -22,6 +21,8 @@ case "${1-}" in
   return 0
   ;;
 esac
+
+require-wizardry || exit 1
 
 set -eu
 . env-clear

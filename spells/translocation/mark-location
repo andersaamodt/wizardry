@@ -2,7 +2,6 @@
 
 # Inscribe bookmarks for jump-to-marker to teleport you back.
 
-require-wizardry || exit 1
 
 mark_location_usage() {
   cat <<'USAGE'
@@ -21,6 +20,8 @@ case "${1-}" in
   return 0
   ;;
 esac
+
+require-wizardry || exit 1
 
 set -eu
 . env-clear

@@ -1,7 +1,6 @@
 #!/bin/sh
 # This spell displays the main MUD (Multi-User Dungeon) menu interface.
 
-require-wizardry || exit 1
 
 mud_usage() {
   cat <<'USAGE'
@@ -20,6 +19,8 @@ case "${1-}" in
   return 0
   ;;
 esac
+
+require-wizardry || exit 1
 
 set -eu
 . env-clear

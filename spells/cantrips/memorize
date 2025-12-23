@@ -9,7 +9,6 @@
 #        memorize path         - print the command list file path
 #        memorize dir          - print the cast directory
 
-require-wizardry || exit 1
 
 spell_name="memorize"
 tab_char=$(printf '\t')
@@ -33,6 +32,8 @@ case "${1-}" in
   return 0
   ;;
 esac
+
+require-wizardry || exit 1
 
 set -eu
 

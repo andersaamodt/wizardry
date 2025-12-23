@@ -3,7 +3,6 @@
 # This spell decorates a location with a description, making it visible to 'look'.
 # It's a convenient wrapper around 'enchant' for setting room descriptions.
 
-require-wizardry || exit 1
 
 decorate_usage() {
 cat <<'USAGE'
@@ -22,6 +21,8 @@ case "${1-}" in
   return 0
   ;;
 esac
+
+require-wizardry || exit 1
 
 set -eu
 . env-clear

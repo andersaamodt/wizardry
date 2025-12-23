@@ -15,7 +15,6 @@ USAGE
   ;;
 esac
 
-require-wizardry || exit 1
 
 set -eu
 . env-clear
@@ -77,6 +76,8 @@ case ${1-} in
                 exit 0
                 ;;
 esac
+
+require-wizardry || exit 1
 
 spell_menu() {
 case "${1-}" in

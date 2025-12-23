@@ -2,7 +2,6 @@
 
 # This spell displays the menu for adminning hosting a MUD server.
 
-require-wizardry || exit 1
 
 mud_admin_menu_usage() {
         cat <<'USAGE' >&2
@@ -21,6 +20,8 @@ case "${1-}" in
   return 0
   ;;
 esac
+
+require-wizardry || exit 1
 
 set -eu
 . env-clear

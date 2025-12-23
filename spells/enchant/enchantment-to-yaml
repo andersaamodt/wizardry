@@ -3,7 +3,6 @@
 # This spell copies extended attributes into a YAML prologue within the file.
 # After the runes are preserved in text, it clears the attributes from the file.
 
-require-wizardry || exit 1
 
 enchantment_to_yaml_usage() {
 cat <<'USAGE'
@@ -21,6 +20,8 @@ case "${1-}" in
   return 0
   ;;
 esac
+
+require-wizardry || exit 1
 
 set -eu
 . env-clear

@@ -2,7 +2,6 @@
 # This spell scribes (creates) a custom spell in your spellbook.
 # It prompts for name, command text, and optionally a category.
 
-require-wizardry || exit 1
 
 script_name=$(basename "$0")
 
@@ -26,6 +25,8 @@ case "${1-}" in
   return 0
   ;;
 esac
+
+require-wizardry || exit 1
 
 set -eu
 . env-clear

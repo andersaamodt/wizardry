@@ -1,7 +1,6 @@
 #!/bin/sh
 # This spell provides a menu interface for managing the spellbook.
 
-require-wizardry || exit 1
 
 spellbook_usage() {
         cat <<'USAGE'
@@ -22,6 +21,8 @@ case "${1-}" in
   return 0
   ;;
 esac
+
+require-wizardry || exit 1
 
 set -eu
 . env-clear

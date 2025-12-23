@@ -23,15 +23,29 @@ esac
 # Explicitly use permissive mode - this file is sourced into user's shell
 set +eu
 
+# Debug logging (set WIZARDRY_DEBUG=1 to enable)
+_iw_debug() {
+  if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+    printf '[invoke-wizardry] %s\n' "$*" >> "${TMPDIR:-/tmp}/wizardry-debug.log" 2>/dev/null || true
+  fi
+}
+
+_iw_debug "=== Starting invoke-wizardry ==="
+_iw_debug "Shell: ${SHELL-unknown}"
+_iw_debug "PATH: ${PATH-empty}"
+
 # Prevent recursive sourcing
 if [ "${_WIZARDRY_INVOKED-}" = "1" ]; then
+  _iw_debug "Already invoked, returning early"
   return 0
 fi
 _WIZARDRY_INVOKED=1
 export _WIZARDRY_INVOKED
 
 _invoke_wizardry() {
+  _iw_debug "Entering _invoke_wizardry function"
   if [ -z "${WIZARDRY_DIR-}" ]; then
+    _iw_debug "Detecting WIZARDRY_DIR..."
     # Detect invoke-wizardry's actual location using shell-specific variables
     _iw_script_path=""
     
@@ -56,14 +70,19 @@ _invoke_wizardry() {
     fi
   fi
   
+  _iw_debug "WIZARDRY_DIR=${WIZARDRY_DIR-}"
+  
   if [ -z "${WIZARDRY_DIR-}" ] || [ ! -d "${WIZARDRY_DIR-}/spells" ]; then
+    _iw_debug "ERROR: WIZARDRY_DIR not set or invalid"
     return 1
   fi
   
   export WIZARDRY_DIR
   
+  _iw_debug "Setting SPELLBOOK_DIR..."
   : "${SPELLBOOK_DIR:=${HOME-}/.spellbook}"
   export SPELLBOOK_DIR
+  _iw_debug "SPELLBOOK_DIR=$SPELLBOOK_DIR"
   
   # Word-of-binding paradigm: Pre-load all spells and imps by sourcing them
   # Imps and spells are both loaded the same way - no PATH manipulation
@@ -76,10 +95,13 @@ _invoke_wizardry() {
   esac
   export PATH
   
+  _iw_debug "Starting to source imps..."
+  
   # Source all imps to load their functions into the shell
   # Imps are spells too - they're loaded the same way as regular spells
   # The only difference is imps use _underscore true-names
   _iw_imps_dir="$WIZARDRY_DIR/spells/.imps"
+  _iw_imp_count=0
   if [ -d "$_iw_imps_dir" ]; then
     for _iw_family in "$_iw_imps_dir"/*; do
       [ -d "$_iw_family" ] || continue
@@ -112,21 +134,29 @@ _invoke_wizardry() {
           # This is the imp paradigm: hyphenated command -> _underscore_function
           if command -v "$_iw_imp_true_name" >/dev/null 2>&1; then
             alias "$_iw_imp_name=$_iw_imp_true_name" 2>/dev/null || true
+            _iw_imp_count=$((_iw_imp_count + 1))
           fi
         fi
       done
     done
   fi
   
+  _iw_debug "Sourced $_iw_imp_count imps"
+  _iw_debug "Starting to source spells..."
+  
   # Word-of-binding: Pre-load all spells by sourcing them
   # This makes spell functions immediately available in the current shell
   # Spells are sourced (not executed) to bind their functions into the shell
+  _iw_spell_count=0
   for _iw_spell_cat in "$WIZARDRY_DIR"/spells/*; do
     [ -d "$_iw_spell_cat" ] || continue
     # Skip hidden directories (like .imps and .arcana)
     case "$_iw_spell_cat" in
       */.*) continue ;;
     esac
+    
+    _iw_cat_name=$(basename "$_iw_spell_cat")
+    _iw_debug "Sourcing spells from category: $_iw_cat_name"
     
     for _iw_spell in "$_iw_spell_cat"/*; do
       [ -f "$_iw_spell" ] && [ -r "$_iw_spell" ] || continue
@@ -139,6 +169,7 @@ _invoke_wizardry() {
       # Only source spells that define their true-name function
       # This skips standalone scripts that don't use the binding pattern
       if grep -qE "^[[:space:]]*${_iw_spell_true_name}[[:space:]]*\\(\\)" "$_iw_spell" 2>/dev/null; then
+        _iw_debug "  Sourcing: $_iw_spell_name -> $_iw_spell_true_name"
         # Source the spell to load its function
         # shellcheck disable=SC1090
         . "$_iw_spell" 2>/dev/null || true
@@ -149,13 +180,18 @@ _invoke_wizardry() {
         # spell-name -> spell_name
         if command -v "$_iw_spell_true_name" >/dev/null 2>&1; then
           alias "$_iw_spell_name=$_iw_spell_true_name" 2>/dev/null || true
+          _iw_spell_count=$((_iw_spell_count + 1))
         fi
       fi
     done
   done
   
+  _iw_debug "Sourced $_iw_spell_count spells"
+  _iw_debug "Starting to source user spellbook..."
+  
   # Pre-load spells from user's spellbook
   # User spells follow the same pattern as regular spells (spell_name, no underscore)
+  _iw_user_spell_count=0
   if [ -d "$SPELLBOOK_DIR" ]; then
     for _iw_user_spell in "$SPELLBOOK_DIR"/*; do
       [ -f "$_iw_user_spell" ] && [ -r "$_iw_user_spell" ] || continue
@@ -171,10 +207,14 @@ _invoke_wizardry() {
         
         if command -v "$_iw_user_spell_true_name" >/dev/null 2>&1; then
           alias "$_iw_user_spell_name=$_iw_user_spell_true_name" 2>/dev/null || true
+          _iw_user_spell_count=$((_iw_user_spell_count + 1))
         fi
       fi
     done
   fi
+  
+  _iw_debug "Sourced $_iw_user_spell_count user spells"
+  _iw_debug "Checking command-not-found config..."
   
   # Hotloading: command_not_found_handle provides fallback for spells not yet loaded
   # This handles new spells added after shell startup and non-function spells
@@ -193,6 +233,7 @@ _invoke_wizardry() {
   
   # Only set up command_not_found_handle if enabled
   if [ "$_iw_cnf_enabled" -eq 1 ]; then
+    _iw_debug "Setting up command_not_found_handle..."
     # Use eval to check shell type while avoiding checkbashisms false positive
     if eval '[ -n "${BASH_VERSION+x}" ]' 2>/dev/null; then
       # Bash-specific command_not_found_handle
@@ -253,10 +294,15 @@ _invoke_wizardry() {
         return 127
       }'
     fi
+  else
+    _iw_debug "command_not_found_handle disabled by config"
   fi
+  
+  _iw_debug "Loading invoke-thesaurus..."
   
   # Load synonyms (aliases) from spellbook by sourcing invoke-thesaurus
   # invoke-thesaurus handles initialization, enable/disable checks, and sourcing
+  _iw_debug "Loading invoke-thesaurus..."
   _iw_invoke_thesaurus="$WIZARDRY_DIR/spells/.imps/sys/invoke-thesaurus"
   if [ -f "$_iw_invoke_thesaurus" ] && [ -r "$_iw_invoke_thesaurus" ]; then
     # shellcheck disable=SC1090
@@ -264,10 +310,14 @@ _invoke_wizardry() {
     # Restore permissive mode - sourcing may have changed shell mode
     set +eu
   fi
+  _iw_debug "invoke-thesaurus loaded"
+  
+  _iw_debug "Loading cd spell..."
   
   # Set up cd hook for MUD features by sourcing the cd spell
   # This replaces the separate install-cd step
   # The cd spell checks config file to determine if look should run
+  _iw_debug "Loading cd spell..."
   _iw_cd_spell="$WIZARDRY_DIR/spells/.arcana/mud/cd"
   if [ -f "$_iw_cd_spell" ] && [ -r "$_iw_cd_spell" ]; then
     # shellcheck disable=SC1090
@@ -275,13 +325,18 @@ _invoke_wizardry() {
     # Restore permissive mode
     set +eu
   fi
+  _iw_debug "cd spell loaded"
+  
+  _iw_debug "=== invoke-wizardry complete ==="
   
   # Return success
   return 0
 }
 
 # Run the setup when sourced
+_iw_debug "Calling _invoke_wizardry..."
 _invoke_wizardry
+_iw_debug "Returned from _invoke_wizardry with exit code $?"
 
 # Self-execute when run directly (not sourced)
 case "$0" in

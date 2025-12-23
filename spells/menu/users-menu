@@ -3,7 +3,6 @@
 # This spell presents a menu of options for managing users on the system.
 # Use it to manage passwords, groups, and user accounts.
 
-require-wizardry || exit 1
 
 users_menu_usage() {
 cat <<'USAGE'
@@ -22,6 +21,8 @@ case "${1-}" in
   return 0
   ;;
 esac
+
+require-wizardry || exit 1
 
 set -eu
 . env-clear
