@@ -109,7 +109,8 @@ find-command which"
   fi
   
   if [ "$_it_enabled" -eq 0 ]; then
-    # Synonyms disabled - return silently (not an error during shell init)
+    # Synonyms disabled - print message to stderr for visibility
+    printf '%s\n' "invoke-thesaurus: synonyms are disabled" >&2
     return 0
   fi
   
