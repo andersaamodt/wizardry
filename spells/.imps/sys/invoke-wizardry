@@ -3,25 +3,37 @@
 # Source this script to make all spells and imps available.
 # Example in .bashrc: . ~/.wizardry/spells/.imps/sys/invoke-wizardry
 
+# IMMEDIATE DIAGNOSTIC - Output BEFORE anything else
+printf '%s\n' "[invoke-wizardry] SCRIPT LOADED - Starting execution" >&2
+
 # Ensure baseline PATH before anything else (macOS may have empty PATH)
 # This prevents failures when trying to use basic commands like cd, pwd, etc.
 baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+printf '%s\n' "[invoke-wizardry] Setting baseline PATH" >&2
 case ":${PATH-}:" in
   *":/usr/bin:"*|*":/bin:"*)
     # Already has at least one standard directory (with proper colon delimiters)
+    printf '%s\n' "[invoke-wizardry] PATH already has standard directories" >&2
     ;;
   *)
     # PATH is empty or missing standard directories, prepend baseline
     # The ${PATH:+:}${PATH-} pattern adds a colon only if PATH is non-empty:
     # - ${PATH:+:} expands to ":" if PATH is set and non-empty, otherwise ""
     # - ${PATH-} expands to PATH's value if set, otherwise ""
+    printf '%s\n' "[invoke-wizardry] PATH missing standard directories, adding baseline" >&2
     PATH="${baseline_path}${PATH:+:}${PATH-}"
     export PATH
     ;;
 esac
+printf '%s\n' "[invoke-wizardry] PATH setup complete" >&2
 
 # Explicitly use permissive mode - this file is sourced into user's shell
 set +eu
+printf '%s\n' "[invoke-wizardry] Permissive mode set" >&2
+
+# DIAGNOSTIC MODE: Always show progress on stderr to diagnose hangs
+# This will be visible in the terminal to help identify where it's hanging
+printf '%s\n' "[invoke-wizardry] Starting (unconditional diagnostic output enabled)" >&2
 
 # Debug logging support - set WIZARDRY_DEBUG=1 to enable detailed logging
 # Logs go to ~/.wizardry-debug.log to avoid interfering with terminal
@@ -33,13 +45,18 @@ if [ "${WIZARDRY_DEBUG-}" = "1" ] && [ -n "${HOME-}" ]; then
   printf '%s\n' "=== invoke-wizardry: DEBUG LOGGING ENABLED ===" >> "$_iw_debug_file" 2>/dev/null || :
   printf '%s\n' "HOME=$HOME" >> "$_iw_debug_file" 2>/dev/null || :
   printf '%s\n' "WIZARDRY_DEBUG=$WIZARDRY_DEBUG" >> "$_iw_debug_file" 2>/dev/null || :
+  printf '%s\n' "[invoke-wizardry] Debug file: $_iw_debug_file" >&2
 else
   _iw_debug_file=""
+  printf '%s\n' "[invoke-wizardry] Debug logging disabled" >&2
 fi
 
 # Helper function for debug logging with timestamp
 # Uses inline implementation to avoid adding another function
 _iw_debug_log() {
+  # ALWAYS output to stderr for diagnostics
+  printf '%s\n' "[invoke-wizardry] $*" >&2
+  
   if [ -n "$_iw_debug_file" ]; then
     _iw_ts=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || printf 'NO-DATE')
     printf '%s\n' "[${_iw_ts}] invoke-wizardry: $*" >> "$_iw_debug_file" 2>/dev/null || :
@@ -62,14 +79,19 @@ fi
 _iw_debug_log "PATH: ${PATH-}"
 
 # Prevent recursive sourcing
+printf '%s\n' "[invoke-wizardry] Checking for recursive sourcing" >&2
 if [ "${_WIZARDRY_INVOKED-}" = "1" ]; then
+  printf '%s\n' "[invoke-wizardry] Already invoked, skipping" >&2
   _iw_debug_log "Already invoked, skipping (recursive sourcing prevented)"
   return 0
 fi
+printf '%s\n' "[invoke-wizardry] First invocation, continuing" >&2
 _WIZARDRY_INVOKED=1
 export _WIZARDRY_INVOKED
 
+printf '%s\n' "[invoke-wizardry] Defining _invoke_wizardry function" >&2
 _invoke_wizardry() {
+  printf '%s\n' "[invoke-wizardry] INSIDE _invoke_wizardry function" >&2
   # Debug logging inline (no function to comply with one-function-or-zero rule)
   if [ -n "$_iw_debug_file" ]; then
     _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
@@ -752,4 +774,6 @@ _invoke_wizardry() {
 # Note: invoke-wizardry is ONLY meant to be sourced, never executed directly
 # The self-execute pattern is intentionally omitted to avoid double invocation in Zsh
 # (In Zsh, $0 is set to the sourced file's path, which would cause the pattern to match)
+printf '%s\n' "[invoke-wizardry] About to call _invoke_wizardry function" >&2
 _invoke_wizardry
+printf '%s\n' "[invoke-wizardry] FINISHED - invoke-wizardry complete" >&2
