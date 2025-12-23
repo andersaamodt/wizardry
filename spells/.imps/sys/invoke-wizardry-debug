@@ -1,0 +1,270 @@
+#!/bin/sh
+# invoke-wizardry-debug - DEBUG VERSION with timing output
+# Source this script to make all spells and imps available WITH DEBUGGING
+# Example in .bashrc: . ~/.wizardry/spells/.imps/sys/invoke-wizardry-debug
+
+# Enable debug output
+_IW_DEBUG=1
+
+_iw_debug() {
+  if [ "${_IW_DEBUG-}" = "1" ]; then
+    printf '[DEBUG] %s\n' "$*" >&2
+  fi
+}
+
+_iw_timer_start() {
+  _IW_TIMER_START=$(date +%s 2>/dev/null || printf '0')
+}
+
+_iw_timer_lap() {
+  _IW_TIMER_NOW=$(date +%s 2>/dev/null || printf '0')
+  _IW_TIMER_ELAPSED=$((_IW_TIMER_NOW - _IW_TIMER_START))
+  printf '[TIMER] %s: %d seconds\n' "$1" "$_IW_TIMER_ELAPSED" >&2
+}
+
+_iw_debug "=== invoke-wizardry-debug starting ==="
+_iw_timer_start
+
+# Ensure baseline PATH before anything else (macOS may have empty PATH)
+baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+case ":${PATH-}:" in
+  *":/usr/bin:"*|*":/bin:"*)
+    ;;
+  *)
+    PATH="${baseline_path}${PATH:+:}${PATH-}"
+    export PATH
+    _iw_debug "Set baseline PATH: $PATH"
+    ;;
+esac
+
+# Explicitly use permissive mode
+set +eu
+
+# Prevent recursive sourcing
+if [ "${_WIZARDRY_INVOKED-}" = "1" ]; then
+  _iw_debug "Already invoked, skipping"
+  return 0
+fi
+_WIZARDRY_INVOKED=1
+export _WIZARDRY_INVOKED
+
+_invoke_wizardry_debug() {
+  if [ -z "${WIZARDRY_DIR-}" ]; then
+    _iw_debug "Detecting WIZARDRY_DIR..."
+    _iw_script_path=""
+    
+    if eval '[ -n "${BASH_VERSION-}" ]' 2>/dev/null; then
+      _iw_script_path=$(eval 'printf "%s" "${BASH_SOURCE[0]-}"')
+      _iw_debug "Bash detected, script_path=$_iw_script_path"
+    elif [ -n "${ZSH_VERSION-}" ]; then
+      _iw_script_path=$(eval 'printf "%s" "${(%):-%x}"')
+      _iw_debug "Zsh detected, script_path=$_iw_script_path"
+    fi
+    
+    if [ -n "$_iw_script_path" ] && [ -f "$_iw_script_path" ]; then
+      _iw_script_dir=$(CDPATH= cd -- "$(dirname "$_iw_script_path")" 2>/dev/null && pwd -P) || true
+      if [ -n "$_iw_script_dir" ]; then
+        WIZARDRY_DIR=$(CDPATH= cd -- "$_iw_script_dir/../../.." 2>/dev/null && pwd -P) || true
+        _iw_debug "Detected WIZARDRY_DIR=$WIZARDRY_DIR"
+      fi
+    fi
+  fi
+  
+  if [ -z "${WIZARDRY_DIR-}" ] || [ ! -d "${WIZARDRY_DIR-}/spells" ]; then
+    _iw_debug "ERROR: WIZARDRY_DIR not found or invalid"
+    return 1
+  fi
+  
+  export WIZARDRY_DIR
+  _iw_debug "Using WIZARDRY_DIR=$WIZARDRY_DIR"
+  
+  : "${SPELLBOOK_DIR:=${HOME-}/.spellbook}"
+  export SPELLBOOK_DIR
+  _iw_debug "Using SPELLBOOK_DIR=$SPELLBOOK_DIR"
+  
+  # Add spellbook to PATH
+  case ":${PATH-}:" in
+    *":$SPELLBOOK_DIR:"*) ;;
+    *) PATH="$SPELLBOOK_DIR:${PATH-}" ;;
+  esac
+  export PATH
+  
+  _iw_timer_lap "Initialization"
+  
+  # Source all imps
+  _iw_debug "Sourcing imps..."
+  _iw_imps_dir="$WIZARDRY_DIR/spells/.imps"
+  _iw_imp_count=0
+  if [ -d "$_iw_imps_dir" ]; then
+    for _iw_family in "$_iw_imps_dir"/*; do
+      [ -d "$_iw_family" ] || continue
+      _iw_family_name=$(basename "$_iw_family")
+      case "$_iw_family_name" in
+        test) continue ;;
+      esac
+      _iw_debug "  Family: $_iw_family_name"
+      for _iw_imp in "$_iw_family"/*; do
+        [ -f "$_iw_imp" ] && [ -r "$_iw_imp" ] || continue
+        case "$_iw_imp" in
+          */invoke-wizardry|*/invoke-wizardry-debug|*/invoke-thesaurus) continue ;;
+        esac
+        
+        _iw_imp_name=$(basename "$_iw_imp")
+        _iw_imp_true_name=$(printf '_%s' "$_iw_imp_name" | sed 's/-/_/g')
+        
+        if grep -qE "^[[:space:]]*${_iw_imp_true_name}[[:space:]]*\\(\\)" "$_iw_imp" 2>/dev/null; then
+          . "$_iw_imp" 2>/dev/null || true
+          set +eu
+          
+          if command -v "$_iw_imp_true_name" >/dev/null 2>&1; then
+            alias "$_iw_imp_name=$_iw_imp_true_name" 2>/dev/null || true
+            _iw_imp_count=$((_iw_imp_count + 1))
+          fi
+        fi
+      done
+    done
+  fi
+  _iw_debug "Sourced $_iw_imp_count imps"
+  _iw_timer_lap "Imps loaded"
+  
+  # Source all spells
+  _iw_debug "Sourcing spells..."
+  _iw_spell_count=0
+  for _iw_spell_cat in "$WIZARDRY_DIR"/spells/*; do
+    [ -d "$_iw_spell_cat" ] || continue
+    case "$_iw_spell_cat" in
+      */.*) continue ;;
+    esac
+    
+    _iw_cat_name=$(basename "$_iw_spell_cat")
+    _iw_debug "  Category: $_iw_cat_name"
+    
+    for _iw_spell in "$_iw_spell_cat"/*; do
+      [ -f "$_iw_spell" ] && [ -r "$_iw_spell" ] || continue
+      
+      _iw_spell_name=$(basename "$_iw_spell")
+      _iw_spell_true_name=$(printf '%s' "$_iw_spell_name" | sed 's/-/_/g')
+      
+      if grep -qE "^[[:space:]]*${_iw_spell_true_name}[[:space:]]*\\(\\)" "$_iw_spell" 2>/dev/null; then
+        . "$_iw_spell" 2>/dev/null || true
+        set +eu
+        
+        if command -v "$_iw_spell_true_name" >/dev/null 2>&1; then
+          alias "$_iw_spell_name=$_iw_spell_true_name" 2>/dev/null || true
+          _iw_spell_count=$((_iw_spell_count + 1))
+        fi
+      fi
+    done
+  done
+  _iw_debug "Sourced $_iw_spell_count spells"
+  _iw_timer_lap "Spells loaded"
+  
+  # Source user spells
+  _iw_debug "Sourcing user spells..."
+  _iw_user_spell_count=0
+  if [ -d "$SPELLBOOK_DIR" ]; then
+    for _iw_user_spell in "$SPELLBOOK_DIR"/*; do
+      [ -f "$_iw_user_spell" ] && [ -r "$_iw_user_spell" ] || continue
+      
+      _iw_user_spell_name=$(basename "$_iw_user_spell")
+      _iw_user_spell_true_name=$(printf '%s' "$_iw_user_spell_name" | sed 's/-/_/g')
+      
+      if grep -qE "^[[:space:]]*${_iw_user_spell_true_name}[[:space:]]*\\(\\)" "$_iw_user_spell" 2>/dev/null; then
+        . "$_iw_user_spell" 2>/dev/null || true
+        set +eu
+        
+        if command -v "$_iw_user_spell_true_name" >/dev/null 2>&1; then
+          alias "$_iw_user_spell_name=$_iw_user_spell_true_name" 2>/dev/null || true
+          _iw_user_spell_count=$((_iw_user_spell_count + 1))
+        fi
+      fi
+    done
+  fi
+  _iw_debug "Sourced $_iw_user_spell_count user spells"
+  _iw_timer_lap "User spells loaded"
+  
+  # Set up command_not_found_handle
+  _iw_debug "Setting up command_not_found_handle..."
+  if eval '[ -n "${BASH_VERSION+x}" ]' 2>/dev/null; then
+    eval 'command_not_found_handle() {
+      if [ "${_WIZARDRY_IN_CNF_HANDLER-}" = "1" ]; then
+        printf '\''%s: command not found\n'\'' "$1" >&2
+        return 127
+      fi
+      _WIZARDRY_IN_CNF_HANDLER=1
+      
+      if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" ]; then
+        if "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" "$@" 2>/dev/null; then
+          unset _WIZARDRY_IN_CNF_HANDLER
+          return 0
+        fi
+      fi
+      if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/lex/parse" ]; then
+        if "$WIZARDRY_DIR/spells/.imps/lex/parse" "$@" 2>/dev/null; then
+          unset _WIZARDRY_IN_CNF_HANDLER
+          return 0
+        fi
+      fi
+      unset _WIZARDRY_IN_CNF_HANDLER
+      printf '\''%s: command not found\n'\'' "$1" >&2
+      return 127
+    }'
+    _iw_debug "Set up Bash command_not_found_handle"
+  elif eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+    eval 'command_not_found_handler() {
+      if [ "${_WIZARDRY_IN_CNF_HANDLER-}" = "1" ]; then
+        printf '\''%s: command not found\n'\'' "$1" >&2
+        return 127
+      fi
+      _WIZARDRY_IN_CNF_HANDLER=1
+      
+      if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" ]; then
+        if "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" "$@" 2>/dev/null; then
+          unset _WIZARDRY_IN_CNF_HANDLER
+          return 0
+        fi
+      fi
+      if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/lex/parse" ]; then
+        if "$WIZARDRY_DIR/spells/.imps/lex/parse" "$@" 2>/dev/null; then
+          unset _WIZARDRY_IN_CNF_HANDLER
+          return 0
+        fi
+      fi
+      unset _WIZARDRY_IN_CNF_HANDLER
+      printf '\''%s: command not found\n'\'' "$1" >&2
+      return 127
+    }'
+    _iw_debug "Set up Zsh command_not_found_handler"
+  fi
+  _iw_timer_lap "command_not_found_handle set up"
+  
+  # Load synonyms
+  _iw_debug "Loading synonyms..."
+  _iw_invoke_thesaurus="$WIZARDRY_DIR/spells/.imps/sys/invoke-thesaurus"
+  if [ -f "$_iw_invoke_thesaurus" ] && [ -r "$_iw_invoke_thesaurus" ]; then
+    . "$_iw_invoke_thesaurus" 2>/dev/null || true
+    set +eu
+  fi
+  _iw_timer_lap "Synonyms loaded"
+  
+  # Set up cd hook
+  _iw_debug "Setting up cd hook..."
+  _iw_cd_spell="$WIZARDRY_DIR/spells/.arcana/mud/cd"
+  if [ -f "$_iw_cd_spell" ] && [ -r "$_iw_cd_spell" ]; then
+    . "$_iw_cd_spell" 2>/dev/null || true
+    set +eu
+  fi
+  _iw_timer_lap "cd hook set up"
+  
+  _iw_debug "=== invoke-wizardry-debug complete ==="
+  _iw_timer_lap "TOTAL TIME"
+  
+  return 0
+}
+
+# Run the setup when sourced
+_invoke_wizardry_debug
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */invoke-wizardry-debug) _invoke_wizardry_debug "$@" ;; esac
