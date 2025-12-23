@@ -28,6 +28,11 @@ set +eu
 # Set up debug file path once
 if [ "${WIZARDRY_DEBUG-}" = "1" ] && [ -n "${HOME-}" ]; then
   _iw_debug_file="$HOME/.wizardry-debug.log"
+  # Write a marker immediately to confirm logging is working
+  # Use printf directly without date to avoid potential hangs
+  printf '%s\n' "=== invoke-wizardry: DEBUG LOGGING ENABLED ===" >> "$_iw_debug_file" 2>/dev/null || :
+  printf '%s\n' "HOME=$HOME" >> "$_iw_debug_file" 2>/dev/null || :
+  printf '%s\n' "WIZARDRY_DEBUG=$WIZARDRY_DEBUG" >> "$_iw_debug_file" 2>/dev/null || :
 else
   _iw_debug_file=""
 fi
