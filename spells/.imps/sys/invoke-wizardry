@@ -23,15 +23,35 @@ esac
 # Explicitly use permissive mode - this file is sourced into user's shell
 set +eu
 
+# Debug logging support - set WIZARDRY_DEBUG=1 to enable detailed logging
+# Logs go to ~/.wizardry-debug.log to avoid interfering with terminal
+_iw_debug_log() {
+  if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+    _iw_debug_file="${HOME-}/.wizardry-debug.log"
+    if [ -n "${_iw_debug_file}" ]; then
+      printf '[%s] invoke-wizardry: %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" >> "$_iw_debug_file" 2>/dev/null || :
+    fi
+  fi
+}
+
+# Log start of invoke-wizardry
+_iw_debug_log "=== Starting invoke-wizardry ==="
+_iw_debug_log "Shell: ${BASH_VERSION-}${ZSH_VERSION-}"
+_iw_debug_log "PATH: ${PATH-}"
+
 # Prevent recursive sourcing
 if [ "${_WIZARDRY_INVOKED-}" = "1" ]; then
+  _iw_debug_log "Already invoked, skipping (recursive sourcing prevented)"
   return 0
 fi
 _WIZARDRY_INVOKED=1
 export _WIZARDRY_INVOKED
 
 _invoke_wizardry() {
+  _iw_debug_log "Entering _invoke_wizardry function"
+  
   if [ -z "${WIZARDRY_DIR-}" ]; then
+    _iw_debug_log "WIZARDRY_DIR not set, attempting detection"
     # Detect invoke-wizardry's actual location using shell-specific variables
     _iw_script_path=""
     
@@ -39,10 +59,12 @@ _invoke_wizardry() {
     # Use eval to prevent checkbashisms false positive on BASH_SOURCE
     if eval '[ -n "${BASH_VERSION-}" ]' 2>/dev/null; then
       _iw_script_path=$(eval 'printf "%s" "${BASH_SOURCE[0]-}"')
+      _iw_debug_log "Detected script path via BASH_SOURCE: $_iw_script_path"
     # Zsh: use parameter expansion %x (current script path)
     elif [ -n "${ZSH_VERSION-}" ]; then
       # Use eval to prevent checkbashisms false positive
       _iw_script_path=$(eval 'printf "%s" "${(%):-%x}"')
+      _iw_debug_log "Detected script path via ZSH %x: $_iw_script_path"
     fi
     
     # Derive WIZARDRY_DIR from detected script path
@@ -52,11 +74,15 @@ _invoke_wizardry() {
       _iw_script_dir=$(CDPATH= cd -- "$(dirname "$_iw_script_path")" 2>/dev/null && pwd -P) || true
       if [ -n "$_iw_script_dir" ]; then
         WIZARDRY_DIR=$(CDPATH= cd -- "$_iw_script_dir/../../.." 2>/dev/null && pwd -P) || true
+        _iw_debug_log "Derived WIZARDRY_DIR: $WIZARDRY_DIR"
       fi
     fi
+  else
+    _iw_debug_log "WIZARDRY_DIR already set: $WIZARDRY_DIR"
   fi
   
   if [ -z "${WIZARDRY_DIR-}" ] || [ ! -d "${WIZARDRY_DIR-}/spells" ]; then
+    _iw_debug_log "ERROR: WIZARDRY_DIR invalid or spells directory not found"
     return 1
   fi
   
@@ -80,20 +106,37 @@ _invoke_wizardry() {
   # Imps are spells too - they're loaded the same way as regular spells
   # The only difference is imps use _underscore true-names
   _iw_imps_dir="$WIZARDRY_DIR/spells/.imps"
+  _iw_debug_log "Starting imp sourcing from: $_iw_imps_dir"
+  _iw_imp_count=0
+  _iw_imp_success=0
+  _iw_imp_skipped=0
+  _iw_imp_failed=0
+  
   if [ -d "$_iw_imps_dir" ]; then
     for _iw_family in "$_iw_imps_dir"/*; do
       [ -d "$_iw_family" ] || continue
       # Skip test imps - they're only for testing, not production use
       _iw_family_name=$(basename "$_iw_family")
       case "$_iw_family_name" in
-        test) continue ;;
+        test) 
+          _iw_debug_log "Skipping test family: $_iw_family_name"
+          continue 
+          ;;
       esac
+      _iw_debug_log "Processing imp family: $_iw_family_name"
+      
       for _iw_imp in "$_iw_family"/*; do
         [ -f "$_iw_imp" ] && [ -r "$_iw_imp" ] || continue
+        _iw_imp_count=$((_iw_imp_count + 1))
+        
         # Skip invoke-wizardry itself to prevent recursion
         # Skip invoke-thesaurus to prevent double execution (loaded separately later for synonym handling)
         case "$_iw_imp" in
-          */invoke-wizardry|*/invoke-thesaurus) continue ;;
+          */invoke-wizardry|*/invoke-thesaurus) 
+            _iw_imp_skipped=$((_iw_imp_skipped + 1))
+            _iw_debug_log "Skipping special imp: $(basename "$_iw_imp")"
+            continue 
+            ;;
         esac
         
         # Imps use _underscore true-names (e.g., say -> _say)
@@ -102,34 +145,67 @@ _invoke_wizardry() {
         
         # Only source imps that define their true-name function
         if grep -qE "^[[:space:]]*${_iw_imp_true_name}[[:space:]]*\\(\\)" "$_iw_imp" 2>/dev/null; then
+          _iw_debug_log "Sourcing imp: $_iw_imp_name -> $_iw_imp_true_name"
           # Source the imp to load its function
           # shellcheck disable=SC1090
-          . "$_iw_imp" 2>/dev/null || true
-          # Restore permissive mode - sourcing imps with set -eu changes parent shell mode
-          set +eu
-          
-          # Create alias from hyphenated name to underscore function name
-          # This is the imp paradigm: hyphenated command -> _underscore_function
-          if command -v "$_iw_imp_true_name" >/dev/null 2>&1; then
-            alias "$_iw_imp_name=$_iw_imp_true_name" 2>/dev/null || true
+          if . "$_iw_imp" 2>/dev/null; then
+            # Restore permissive mode - sourcing imps with set -eu changes parent shell mode
+            set +eu
+            
+            # Create alias from hyphenated name to underscore function name
+            # This is the imp paradigm: hyphenated command -> _underscore_function
+            if command -v "$_iw_imp_true_name" >/dev/null 2>&1; then
+              if alias "$_iw_imp_name=$_iw_imp_true_name" 2>/dev/null; then
+                _iw_imp_success=$((_iw_imp_success + 1))
+                _iw_debug_log "✓ Loaded imp: $_iw_imp_name"
+              else
+                _iw_imp_failed=$((_iw_imp_failed + 1))
+                _iw_debug_log "✗ Failed to alias imp: $_iw_imp_name"
+              fi
+            else
+              _iw_imp_failed=$((_iw_imp_failed + 1))
+              _iw_debug_log "✗ Function not found after sourcing: $_iw_imp_true_name"
+            fi
+          else
+            _iw_imp_failed=$((_iw_imp_failed + 1))
+            _iw_debug_log "✗ Failed to source imp: $_iw_imp_name"
+            set +eu  # Ensure permissive mode even after failure
           fi
+        else
+          _iw_imp_skipped=$((_iw_imp_skipped + 1))
+          _iw_debug_log "Skipping imp (no function): $_iw_imp_name"
         fi
       done
     done
   fi
   
+  _iw_debug_log "Imp sourcing complete: total=$_iw_imp_count success=$_iw_imp_success skipped=$_iw_imp_skipped failed=$_iw_imp_failed"
+  
   # Word-of-binding: Pre-load all spells by sourcing them
   # This makes spell functions immediately available in the current shell
   # Spells are sourced (not executed) to bind their functions into the shell
+  _iw_debug_log "Starting spell sourcing from: $WIZARDRY_DIR/spells"
+  _iw_spell_count=0
+  _iw_spell_success=0
+  _iw_spell_skipped=0
+  _iw_spell_failed=0
+  
   for _iw_spell_cat in "$WIZARDRY_DIR"/spells/*; do
     [ -d "$_iw_spell_cat" ] || continue
     # Skip hidden directories (like .imps and .arcana)
     case "$_iw_spell_cat" in
-      */.*) continue ;;
+      */.*) 
+        _iw_debug_log "Skipping hidden directory: $(basename "$_iw_spell_cat")"
+        continue 
+        ;;
     esac
+    
+    _iw_spell_cat_name=$(basename "$_iw_spell_cat")
+    _iw_debug_log "Processing spell category: $_iw_spell_cat_name"
     
     for _iw_spell in "$_iw_spell_cat"/*; do
       [ -f "$_iw_spell" ] && [ -r "$_iw_spell" ] || continue
+      _iw_spell_count=$((_iw_spell_count + 1))
       
       # Spells use spell_name() true-names (no underscore prefix)
       # Format: spell-name defines spell_name() function
@@ -139,42 +215,77 @@ _invoke_wizardry() {
       # Only source spells that define their true-name function
       # This skips standalone scripts that don't use the binding pattern
       if grep -qE "^[[:space:]]*${_iw_spell_true_name}[[:space:]]*\\(\\)" "$_iw_spell" 2>/dev/null; then
+        _iw_debug_log "Sourcing spell: $_iw_spell_name -> $_iw_spell_true_name"
         # Source the spell to load its function
         # shellcheck disable=SC1090
-        . "$_iw_spell" 2>/dev/null || true
-        # Restore permissive mode - sourcing spells with set -eu changes parent shell mode
-        set +eu
-        
-        # Create alias from hyphenated name to underscore function name
-        # spell-name -> spell_name
-        if command -v "$_iw_spell_true_name" >/dev/null 2>&1; then
-          alias "$_iw_spell_name=$_iw_spell_true_name" 2>/dev/null || true
+        if . "$_iw_spell" 2>/dev/null; then
+          # Restore permissive mode - sourcing spells with set -eu changes parent shell mode
+          set +eu
+          
+          # Create alias from hyphenated name to underscore function name
+          # spell-name -> spell_name
+          if command -v "$_iw_spell_true_name" >/dev/null 2>&1; then
+            if alias "$_iw_spell_name=$_iw_spell_true_name" 2>/dev/null; then
+              _iw_spell_success=$((_iw_spell_success + 1))
+              _iw_debug_log "✓ Loaded spell: $_iw_spell_name"
+            else
+              _iw_spell_failed=$((_iw_spell_failed + 1))
+              _iw_debug_log "✗ Failed to alias spell: $_iw_spell_name"
+            fi
+          else
+            _iw_spell_failed=$((_iw_spell_failed + 1))
+            _iw_debug_log "✗ Function not found after sourcing: $_iw_spell_true_name"
+          fi
+        else
+          _iw_spell_failed=$((_iw_spell_failed + 1))
+          _iw_debug_log "✗ Failed to source spell: $_iw_spell_name"
+          set +eu  # Ensure permissive mode even after failure
         fi
+      else
+        _iw_spell_skipped=$((_iw_spell_skipped + 1))
+        _iw_debug_log "Skipping spell (no function): $_iw_spell_name"
       fi
     done
   done
   
+  _iw_debug_log "Spell sourcing complete: total=$_iw_spell_count success=$_iw_spell_success skipped=$_iw_spell_skipped failed=$_iw_spell_failed"
+  
   # Pre-load spells from user's spellbook
   # User spells follow the same pattern as regular spells (spell_name, no underscore)
+  _iw_debug_log "Checking for user spells in: $SPELLBOOK_DIR"
+  _iw_user_spell_count=0
+  _iw_user_spell_success=0
+  
   if [ -d "$SPELLBOOK_DIR" ]; then
     for _iw_user_spell in "$SPELLBOOK_DIR"/*; do
       [ -f "$_iw_user_spell" ] && [ -r "$_iw_user_spell" ] || continue
+      _iw_user_spell_count=$((_iw_user_spell_count + 1))
       
       _iw_user_spell_name=$(basename "$_iw_user_spell")
       _iw_user_spell_true_name=$(printf '%s' "$_iw_user_spell_name" | sed 's/-/_/g')
       
       # Only source if it has a true-name function (spell_name, not _spell_name)
       if grep -qE "^[[:space:]]*${_iw_user_spell_true_name}[[:space:]]*\\(\\)" "$_iw_user_spell" 2>/dev/null; then
+        _iw_debug_log "Sourcing user spell: $_iw_user_spell_name"
         # shellcheck disable=SC1090
-        . "$_iw_user_spell" 2>/dev/null || true
-        set +eu
-        
-        if command -v "$_iw_user_spell_true_name" >/dev/null 2>&1; then
-          alias "$_iw_user_spell_name=$_iw_user_spell_true_name" 2>/dev/null || true
+        if . "$_iw_user_spell" 2>/dev/null; then
+          set +eu
+          
+          if command -v "$_iw_user_spell_true_name" >/dev/null 2>&1; then
+            if alias "$_iw_user_spell_name=$_iw_user_spell_true_name" 2>/dev/null; then
+              _iw_user_spell_success=$((_iw_user_spell_success + 1))
+              _iw_debug_log "✓ Loaded user spell: $_iw_user_spell_name"
+            fi
+          fi
+        else
+          set +eu
+          _iw_debug_log "✗ Failed to source user spell: $_iw_user_spell_name"
         fi
       fi
     done
   fi
+  
+  _iw_debug_log "User spell sourcing complete: total=$_iw_user_spell_count success=$_iw_user_spell_success"
   
   # Hotloading: command_not_found_handle provides fallback for spells not yet loaded
   # This handles new spells added after shell startup and non-function spells
@@ -188,17 +299,31 @@ _invoke_wizardry() {
     # Check if explicitly disabled (command-not-found=0)
     if grep -q "^command-not-found=0$" "$_iw_cnf_config" 2>/dev/null; then
       _iw_cnf_enabled=0
+      _iw_debug_log "command-not-found hook: DISABLED (config file)"
+    else
+      _iw_debug_log "command-not-found hook: enabled (config file allows)"
     fi
+  else
+    _iw_debug_log "command-not-found hook: enabled (no config file, default enabled)"
   fi
   
   # Only set up command_not_found_handle if enabled
   if [ "$_iw_cnf_enabled" -eq 1 ]; then
+    _iw_debug_log "Setting up command_not_found_handle"
     # Use eval to check shell type while avoiding checkbashisms false positive
     if eval '[ -n "${BASH_VERSION+x}" ]' 2>/dev/null; then
+      _iw_debug_log "Bash detected, installing command_not_found_handle"
       # Bash-specific command_not_found_handle
       eval 'command_not_found_handle() {
+        # Debug logging for command_not_found_handle
+        if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+          _cnf_debug_file="${HOME-}/.wizardry-debug.log"
+          printf '\''[%s] CNF: command not found: %s (args: %s)\n'\'' "$(date '\''+%Y-%m-%d %H:%M:%S'\'')" "$1" "$*" >> "$_cnf_debug_file" 2>/dev/null || :
+        fi
+        
         # Prevent infinite recursion - check if we'\''re already in the handler
         if [ "${_WIZARDRY_IN_CNF_HANDLER-}" = "1" ]; then
+          [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '\''[%s] CNF: recursion detected, bailing out\n'\'' "$(date '\''+%Y-%m-%d %H:%M:%S'\'')" >> "${HOME-}/.wizardry-debug.log" 2>/dev/null || :
           printf '\''%s: command not found\n'\'' "$1" >&2
           return 127
         fi
@@ -206,28 +331,43 @@ _invoke_wizardry() {
         
         # Try word-of-binding for autoloading (handles hotloaded spells)
         if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" ]; then
+          [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '\''[%s] CNF: trying word-of-binding for: %s\n'\'' "$(date '\''+%Y-%m-%d %H:%M:%S'\'')" "$1" >> "${HOME-}/.wizardry-debug.log" 2>/dev/null || :
           if "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" "$@" 2>/dev/null; then
+            [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '\''[%s] CNF: word-of-binding succeeded for: %s\n'\'' "$(date '\''+%Y-%m-%d %H:%M:%S'\'')" "$1" >> "${HOME-}/.wizardry-debug.log" 2>/dev/null || :
             unset _WIZARDRY_IN_CNF_HANDLER
             return 0
           fi
+          [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '\''[%s] CNF: word-of-binding failed for: %s\n'\'' "$(date '\''+%Y-%m-%d %H:%M:%S'\'')" "$1" >> "${HOME-}/.wizardry-debug.log" 2>/dev/null || :
         fi
         # Fall back to parse for recursive grammar parsing
         if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/lex/parse" ]; then
+          [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '\''[%s] CNF: trying parse for: %s\n'\'' "$(date '\''+%Y-%m-%d %H:%M:%S'\'')" "$1" >> "${HOME-}/.wizardry-debug.log" 2>/dev/null || :
           if "$WIZARDRY_DIR/spells/.imps/lex/parse" "$@" 2>/dev/null; then
+            [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '\''[%s] CNF: parse succeeded for: %s\n'\'' "$(date '\''+%Y-%m-%d %H:%M:%S'\'')" "$1" >> "${HOME-}/.wizardry-debug.log" 2>/dev/null || :
             unset _WIZARDRY_IN_CNF_HANDLER
             return 0
           fi
+          [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '\''[%s] CNF: parse failed for: %s\n'\'' "$(date '\''+%Y-%m-%d %H:%M:%S'\'')" "$1" >> "${HOME-}/.wizardry-debug.log" 2>/dev/null || :
         fi
         # Command truly not found - return 127
         unset _WIZARDRY_IN_CNF_HANDLER
+        [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '\''[%s] CNF: command truly not found: %s\n'\'' "$(date '\''+%Y-%m-%d %H:%M:%S'\'')" "$1" >> "${HOME-}/.wizardry-debug.log" 2>/dev/null || :
         printf '\''%s: command not found\n'\'' "$1" >&2
         return 127
       }'
     elif eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+      _iw_debug_log "Zsh detected, installing command_not_found_handler"
       # Zsh-specific command_not_found_handler
       eval 'command_not_found_handler() {
+        # Debug logging for command_not_found_handler
+        if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+          _cnf_debug_file="${HOME-}/.wizardry-debug.log"
+          printf '\''[%s] CNF: command not found: %s (args: %s)\n'\'' "$(date '\''+%Y-%m-%d %H:%M:%S'\'')" "$1" "$*" >> "$_cnf_debug_file" 2>/dev/null || :
+        fi
+        
         # Prevent infinite recursion - check if we'\''re already in the handler
         if [ "${_WIZARDRY_IN_CNF_HANDLER-}" = "1" ]; then
+          [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '\''[%s] CNF: recursion detected, bailing out\n'\'' "$(date '\''+%Y-%m-%d %H:%M:%S'\'')" >> "${HOME-}/.wizardry-debug.log" 2>/dev/null || :
           printf '\''%s: command not found\n'\'' "$1" >&2
           return 127
         fi
@@ -235,46 +375,61 @@ _invoke_wizardry() {
         
         # Try word-of-binding for autoloading (handles hotloaded spells)
         if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" ]; then
+          [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '\''[%s] CNF: trying word-of-binding for: %s\n'\'' "$(date '\''+%Y-%m-%d %H:%M:%S'\'')" "$1" >> "${HOME-}/.wizardry-debug.log" 2>/dev/null || :
           if "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" "$@" 2>/dev/null; then
+            [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '\''[%s] CNF: word-of-binding succeeded for: %s\n'\'' "$(date '\''+%Y-%m-%d %H:%M:%S'\'')" "$1" >> "${HOME-}/.wizardry-debug.log" 2>/dev/null || :
             unset _WIZARDRY_IN_CNF_HANDLER
             return 0
           fi
+          [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '\''[%s] CNF: word-of-binding failed for: %s\n'\'' "$(date '\''+%Y-%m-%d %H:%M:%S'\'')" "$1" >> "${HOME-}/.wizardry-debug.log" 2>/dev/null || :
         fi
         # Fall back to parse for recursive grammar parsing
         if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$WIZARDRY_DIR/spells/.imps/lex/parse" ]; then
+          [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '\''[%s] CNF: trying parse for: %s\n'\'' "$(date '\''+%Y-%m-%d %H:%M:%S'\'')" "$1" >> "${HOME-}/.wizardry-debug.log" 2>/dev/null || :
           if "$WIZARDRY_DIR/spells/.imps/lex/parse" "$@" 2>/dev/null; then
+            [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '\''[%s] CNF: parse succeeded for: %s\n'\'' "$(date '\''+%Y-%m-%d %H:%M:%S'\'')" "$1" >> "${HOME-}/.wizardry-debug.log" 2>/dev/null || :
             unset _WIZARDRY_IN_CNF_HANDLER
             return 0
           fi
+          [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '\''[%s] CNF: parse failed for: %s\n'\'' "$(date '\''+%Y-%m-%d %H:%M:%S'\'')" "$1" >> "${HOME-}/.wizardry-debug.log" 2>/dev/null || :
         fi
         # Command truly not found - return 127
         unset _WIZARDRY_IN_CNF_HANDLER
+        [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '\''[%s] CNF: command truly not found: %s\n'\'' "$(date '\''+%Y-%m-%d %H:%M:%S'\'')" "$1" >> "${HOME-}/.wizardry-debug.log" 2>/dev/null || :
         printf '\''%s: command not found\n'\'' "$1" >&2
         return 127
       }'
     fi
+  else
+    _iw_debug_log "command_not_found_handle NOT installed (disabled by config)"
   fi
   
   # Load synonyms (aliases) from spellbook by sourcing invoke-thesaurus
   # invoke-thesaurus handles initialization, enable/disable checks, and sourcing
+  _iw_debug_log "Loading synonyms from invoke-thesaurus"
   _iw_invoke_thesaurus="$WIZARDRY_DIR/spells/.imps/sys/invoke-thesaurus"
   if [ -f "$_iw_invoke_thesaurus" ] && [ -r "$_iw_invoke_thesaurus" ]; then
     # shellcheck disable=SC1090
     . "$_iw_invoke_thesaurus" 2>/dev/null || true
     # Restore permissive mode - sourcing may have changed shell mode
     set +eu
+    _iw_debug_log "invoke-thesaurus sourced"
   fi
   
   # Set up cd hook for MUD features by sourcing the cd spell
   # This replaces the separate install-cd step
   # The cd spell checks config file to determine if look should run
+  _iw_debug_log "Setting up cd hook"
   _iw_cd_spell="$WIZARDRY_DIR/spells/.arcana/mud/cd"
   if [ -f "$_iw_cd_spell" ] && [ -r "$_iw_cd_spell" ]; then
     # shellcheck disable=SC1090
     . "$_iw_cd_spell" 2>/dev/null || true
     # Restore permissive mode
     set +eu
+    _iw_debug_log "cd hook sourced"
   fi
+  
+  _iw_debug_log "=== invoke-wizardry complete ==="
   
   # Return success
   return 0
