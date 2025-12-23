@@ -953,15 +953,14 @@ install_non_nixos_shows_source_message() {
 
   _assert_success || return 1
   
-  # Should indicate either "ready to use" (if sourcing succeeded) or "available when you open"
-  # (if sourcing failed - which happens in test environments)
-  if ! printf '%s' "$OUTPUT" | grep -qE "(ready to use|available when you open)"; then
-    TEST_FAILURE_REASON="output should indicate when wizardry will be available"
+  # Should indicate installation was successful
+  if ! printf '%s' "$OUTPUT" | grep -qE "(has been installed successfully|Wizardry is ready)"; then
+    TEST_FAILURE_REASON="output should indicate successful installation"
     return 1
   fi
-  # Should mention new terminal windows will also have wizardry
-  if ! printf '%s' "$OUTPUT" | grep -qi "terminal"; then
-    TEST_FAILURE_REASON="output should mention terminal windows"
+  # Should mention opening a new terminal window
+  if ! printf '%s' "$OUTPUT" | grep -qE "(Open a new terminal|open a new terminal)"; then
+    TEST_FAILURE_REASON="output should mention opening a new terminal"
     return 1
   fi
 }
