@@ -19,12 +19,11 @@ case "${1-}" in
   ;;
 esac
 
+thesaurus() {
 require-wizardry || exit 1
 
 set -eu
 . env-clear
-
-thesaurus() {
   
   # Catch Ctrl-C and TERM signal to return cleanly
   trap 'exit 0' INT TERM

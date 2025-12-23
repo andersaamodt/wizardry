@@ -77,9 +77,9 @@ case ${1-} in
                 ;;
 esac
 
+spell_menu() {
 require-wizardry || exit 1
 
-spell_menu() {
 case "${1-}" in
 --help|--usage|-h)
   spell_menu_usage

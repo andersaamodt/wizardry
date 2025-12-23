@@ -144,6 +144,10 @@ _invoke_wizardry() {
   _iw_debug "Sourced $_iw_imp_count imps"
   _iw_debug "Starting to source spells..."
   
+  # Set flag to prevent env-clear from clearing parent's variables
+  _WIZARDRY_LOADING_SPELLS=1
+  export _WIZARDRY_LOADING_SPELLS
+  
   # Word-of-binding: Pre-load all spells by sourcing them
   # This makes spell functions immediately available in the current shell
   # Spells are sourced (not executed) to bind their functions into the shell
@@ -170,6 +174,7 @@ _invoke_wizardry() {
       # This skips standalone scripts that don't use the binding pattern
       if grep -qE "^[[:space:]]*${_iw_spell_true_name}[[:space:]]*\\(\\)" "$_iw_spell" 2>/dev/null; then
         _iw_debug "  Sourcing: $_iw_spell_name -> $_iw_spell_true_name"
+        sync 2>/dev/null || true  # Flush debug log
         # Source the spell to load its function
         # shellcheck disable=SC1090
         . "$_iw_spell" 2>/dev/null || true
@@ -214,6 +219,10 @@ _invoke_wizardry() {
   fi
   
   _iw_debug "Sourced $_iw_user_spell_count user spells"
+  
+  # Clear the spell loading flag
+  unset _WIZARDRY_LOADING_SPELLS
+  
   _iw_debug "Checking command-not-found config..."
   
   # Hotloading: command_not_found_handle provides fallback for spells not yet loaded
