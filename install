@@ -111,7 +111,8 @@ cleanup_bootstrap() {
         fi
         # If installation was not completed and wizardry was downloaded by this installer
         # (not pre-existing), remove it. This cleanup happens when user cancels or interrupts.
-        if [ "${INSTALL_COMPLETED-}" != "1" ] && [ "${WIZARDRY_EXISTED_BEFORE-}" = "0" ] && [ -n "${INSTALL_DIR-}" ] && [ -d "$INSTALL_DIR" ]; then
+        # Safety check: only delete if it looks like a wizardry directory (has spells/ subdirectory)
+        if [ "${INSTALL_COMPLETED-}" != "1" ] && [ "${WIZARDRY_EXISTED_BEFORE-}" = "0" ] && [ -n "${INSTALL_DIR-}" ] && [ -d "$INSTALL_DIR/spells" ]; then
                 rm -rf "$INSTALL_DIR"
         fi
 }
