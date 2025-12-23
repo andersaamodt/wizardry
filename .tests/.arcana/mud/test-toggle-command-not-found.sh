@@ -7,6 +7,11 @@ done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
+test_help() {
+  _run_spell "spells/.arcana/mud/toggle-command-not-found" --help
+  _assert_success && _assert_output_contains "Usage: toggle-command-not-found"
+}
+
 test_toggle_enables_and_disables() {
   skip-if-compiled || return $?
   tmpdir=$(_make_tempdir)
@@ -134,6 +139,7 @@ test_invoke_wizardry_respects_toggle() {
   fi
 }
 
+_run_test_case "toggle-command-not-found prints usage" test_help
 _run_test_case "toggle enables and disables" test_toggle_enables_and_disables
 _run_test_case "toggle is idempotent" test_toggle_is_idempotent
 _run_test_case "invoke-wizardry respects toggle" test_invoke_wizardry_respects_toggle
