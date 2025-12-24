@@ -440,6 +440,8 @@ test_zsh_handles_empty_spellbook() {
       return 1
       ;;
   esac
+
+  rm -rf "$tmp_spellbook"
 }
 
 _run_test_case "invoke-wizardry is sourceable" test_sourceable
