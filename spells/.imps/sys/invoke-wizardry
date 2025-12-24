@@ -537,6 +537,19 @@ function brace_delta(s, n, m) {
   _iw_user_spell_success=0
   
   if [ -d "$SPELLBOOK_DIR" ]; then
+    # Zsh-specific: Disable nomatch to prevent errors when glob doesn't match
+    # In zsh, unmatched globs cause an error by default
+    _iw_zsh_nomatch_saved=""
+    if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+      # Save current nomatch setting
+      if eval 'setopt | grep -q "^nomatch$"' 2>/dev/null; then
+        _iw_zsh_nomatch_saved="yes"
+      fi
+      # Disable nomatch for the glob pattern
+      eval 'setopt null_glob 2>/dev/null' || :
+      eval 'unsetopt nomatch 2>/dev/null' || :
+    fi
+    
     for _iw_user_spell in "$SPELLBOOK_DIR"/*; do
       # POSIX-compliant: Skip if glob didn't match (returns literal pattern)
       [ -e "$_iw_user_spell" ] || continue
@@ -620,6 +633,11 @@ function brace_delta(s, n, m) {
         fi
       fi
     done
+    
+    # Restore zsh nomatch setting if it was changed
+    if [ -n "$_iw_zsh_nomatch_saved" ] && eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+      eval 'setopt nomatch 2>/dev/null' || :
+    fi
   fi
   
   _iw_user_summary="total=$_iw_user_spell_count success=$_iw_user_spell_success"
