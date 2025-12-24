@@ -94,6 +94,21 @@ printf '%s\n' "[invoke-wizardry] First invocation, continuing" >&2
 _WIZARDRY_INVOKED=1
 export _WIZARDRY_INVOKED
 
+# CRITICAL: Capture script path at TOP LEVEL before entering function
+# In Zsh, $0 contains the sourced file path ONLY at top level
+# Inside a function, $0 becomes the function name
+printf '%s\n' "[invoke-wizardry] Capturing script path at top level" >&2
+_iw_script_path_captured=""
+if eval '[ -n "${BASH_VERSION-}" ]' 2>/dev/null; then
+  printf '%s\n' "[invoke-wizardry] Bash detected, capturing from BASH_SOURCE" >&2
+  _iw_script_path_captured=$(eval 'printf "%s" "${BASH_SOURCE[0]-}"')
+  printf '%s\n' "[invoke-wizardry] Captured script path: $_iw_script_path_captured" >&2
+elif [ -n "${ZSH_VERSION-}" ]; then
+  printf '%s\n' "[invoke-wizardry] Zsh detected, capturing from \$0" >&2
+  _iw_script_path_captured="$0"
+  printf '%s\n' "[invoke-wizardry] Captured script path: $_iw_script_path_captured" >&2
+fi
+
 printf '%s\n' "[invoke-wizardry] Defining _invoke_wizardry function" >&2
 _invoke_wizardry() {
   printf '%s\n' "[invoke-wizardry] INSIDE _invoke_wizardry function" >&2
@@ -110,30 +125,17 @@ _invoke_wizardry() {
       _iw_msg="invoke-wizardry: WIZARDRY_DIR not set, attempting detection"
       printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
     fi
-    # Detect invoke-wizardry's actual location using shell-specific variables
-    _iw_script_path=""
     
-    # Bash: use BASH_SOURCE array
-    # Use eval to prevent checkbashisms false positive on BASH_SOURCE
-    if eval '[ -n "${BASH_VERSION-}" ]' 2>/dev/null; then
-      printf '%s\n' "[invoke-wizardry] Bash detected, using BASH_SOURCE" >&2
-      _iw_script_path=$(eval 'printf "%s" "${BASH_SOURCE[0]-}"')
+    # Use the script path captured at top level (before entering function)
+    # In Zsh, $0 inside a function is the function name, not the script path
+    _iw_script_path="$_iw_script_path_captured"
+    
+    if [ -n "$_iw_script_path" ]; then
+      printf '%s\n' "[invoke-wizardry] Using captured script path: $_iw_script_path" >&2
       if [ -n "$_iw_debug_file" ]; then
-        _iw_msg="Detected script path via BASH_SOURCE: $_iw_script_path"
+        _iw_msg="Using captured script path: $_iw_script_path"
         printf '%s\n' "invoke-wizardry: $_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
       fi
-      printf '%s\n' "[invoke-wizardry] Script path from BASH_SOURCE: $_iw_script_path" >&2
-    # Zsh: use $0 which contains the sourced file path
-    # Note: In Zsh, when a file is sourced, $0 is set to the sourced file's path
-    # This is simpler and more reliable than using ${(%):-%x} with eval
-    elif [ -n "${ZSH_VERSION-}" ]; then
-      printf '%s\n' "[invoke-wizardry] Zsh detected, using \$0" >&2
-      _iw_script_path="$0"
-      if [ -n "$_iw_debug_file" ]; then
-        _iw_msg="invoke-wizardry: Detected script path via ZSH \$0: $_iw_script_path"
-        printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
-      fi
-      printf '%s\n' "[invoke-wizardry] Script path from \$0: $_iw_script_path" >&2
     fi
     
     printf '%s\n' "[invoke-wizardry] Deriving WIZARDRY_DIR from script path" >&2
