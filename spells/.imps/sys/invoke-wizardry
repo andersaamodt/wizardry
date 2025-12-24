@@ -511,7 +511,7 @@ _invoke_wizardry() {
         # Debug logging for command_not_found_handle
         if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
           _cnf_file="${HOME-}/.wizardry-debug.log"
-          _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
+          _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'' 2>/dev/null || printf '\''NO-DATE'\'')"
           _cnf_msg="[${_cnf_ts}] CNF: command not found: $1 (args: $*)"
           printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
         fi
@@ -520,7 +520,7 @@ _invoke_wizardry() {
         if [ "${_WIZARDRY_IN_CNF_HANDLER-}" = "1" ]; then
           if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
             _cnf_file="${HOME-}/.wizardry-debug.log"
-            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
+            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'' 2>/dev/null || printf '\''NO-DATE'\'')"
             _cnf_msg="[${_cnf_ts}] CNF: recursion detected, bailing out"
             printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
           fi
@@ -534,14 +534,14 @@ _invoke_wizardry() {
         if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$_cnf_wob" ]; then
           if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
             _cnf_file="${HOME-}/.wizardry-debug.log"
-            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
+            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'' 2>/dev/null || printf '\''NO-DATE'\'')"
             _cnf_msg="[${_cnf_ts}] CNF: trying word-of-binding for: $1"
             printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
           fi
           if "$_cnf_wob" "$@" 2>/dev/null; then
             if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
               _cnf_file="${HOME-}/.wizardry-debug.log"
-              _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
+              _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'' 2>/dev/null || printf '\''NO-DATE'\'')"
               _cnf_msg="[${_cnf_ts}] CNF: word-of-binding succeeded for: $1"
               printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
             fi
@@ -550,7 +550,7 @@ _invoke_wizardry() {
           fi
           if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
             _cnf_file="${HOME-}/.wizardry-debug.log"
-            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
+            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'' 2>/dev/null || printf '\''NO-DATE'\'')"
             _cnf_msg="[${_cnf_ts}] CNF: word-of-binding failed for: $1"
             printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
           fi
@@ -560,14 +560,14 @@ _invoke_wizardry() {
         if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$_cnf_parse" ]; then
           if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
             _cnf_file="${HOME-}/.wizardry-debug.log"
-            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
+            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'' 2>/dev/null || printf '\''NO-DATE'\'')"
             _cnf_msg="[${_cnf_ts}] CNF: trying parse for: $1"
             printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
           fi
           if "$_cnf_parse" "$@" 2>/dev/null; then
             if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
               _cnf_file="${HOME-}/.wizardry-debug.log"
-              _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
+              _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'' 2>/dev/null || printf '\''NO-DATE'\'')"
               _cnf_msg="[${_cnf_ts}] CNF: parse succeeded for: $1"
               printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
             fi
@@ -576,7 +576,7 @@ _invoke_wizardry() {
           fi
           if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
             _cnf_file="${HOME-}/.wizardry-debug.log"
-            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
+            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'' 2>/dev/null || printf '\''NO-DATE'\'')"
             _cnf_msg="[${_cnf_ts}] CNF: parse failed for: $1"
             printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
           fi
@@ -585,7 +585,7 @@ _invoke_wizardry() {
         unset _WIZARDRY_IN_CNF_HANDLER
         if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
           _cnf_file="${HOME-}/.wizardry-debug.log"
-          _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
+          _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'' 2>/dev/null || printf '\''NO-DATE'\'')"
           _cnf_msg="[${_cnf_ts}] CNF: command truly not found: $1"
           printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
         fi
@@ -603,7 +603,7 @@ _invoke_wizardry() {
         # Debug logging for command_not_found_handler
         if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
           _cnf_file="${HOME-}/.wizardry-debug.log"
-          _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
+          _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'' 2>/dev/null || printf '\''NO-DATE'\'')"
           _cnf_msg="[${_cnf_ts}] CNF: command not found: $1 (args: $*)"
           printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
         fi
@@ -612,7 +612,7 @@ _invoke_wizardry() {
         if [ "${_WIZARDRY_IN_CNF_HANDLER-}" = "1" ]; then
           if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
             _cnf_file="${HOME-}/.wizardry-debug.log"
-            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
+            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'' 2>/dev/null || printf '\''NO-DATE'\'')"
             _cnf_msg="[${_cnf_ts}] CNF: recursion detected, bailing out"
             printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
           fi
@@ -626,14 +626,14 @@ _invoke_wizardry() {
         if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$_cnf_wob" ]; then
           if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
             _cnf_file="${HOME-}/.wizardry-debug.log"
-            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
+            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'' 2>/dev/null || printf '\''NO-DATE'\'')"
             _cnf_msg="[${_cnf_ts}] CNF: trying word-of-binding for: $1"
             printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
           fi
           if "$_cnf_wob" "$@" 2>/dev/null; then
             if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
               _cnf_file="${HOME-}/.wizardry-debug.log"
-              _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
+              _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'' 2>/dev/null || printf '\''NO-DATE'\'')"
               _cnf_msg="[${_cnf_ts}] CNF: word-of-binding succeeded for: $1"
               printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
             fi
@@ -642,7 +642,7 @@ _invoke_wizardry() {
           fi
           if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
             _cnf_file="${HOME-}/.wizardry-debug.log"
-            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
+            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'' 2>/dev/null || printf '\''NO-DATE'\'')"
             _cnf_msg="[${_cnf_ts}] CNF: word-of-binding failed for: $1"
             printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
           fi
@@ -652,14 +652,14 @@ _invoke_wizardry() {
         if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$_cnf_parse" ]; then
           if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
             _cnf_file="${HOME-}/.wizardry-debug.log"
-            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
+            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'' 2>/dev/null || printf '\''NO-DATE'\'')"
             _cnf_msg="[${_cnf_ts}] CNF: trying parse for: $1"
             printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
           fi
           if "$_cnf_parse" "$@" 2>/dev/null; then
             if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
               _cnf_file="${HOME-}/.wizardry-debug.log"
-              _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
+              _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'' 2>/dev/null || printf '\''NO-DATE'\'')"
               _cnf_msg="[${_cnf_ts}] CNF: parse succeeded for: $1"
               printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
             fi
@@ -668,7 +668,7 @@ _invoke_wizardry() {
           fi
           if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
             _cnf_file="${HOME-}/.wizardry-debug.log"
-            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
+            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'' 2>/dev/null || printf '\''NO-DATE'\'')"
             _cnf_msg="[${_cnf_ts}] CNF: parse failed for: $1"
             printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
           fi
@@ -677,7 +677,7 @@ _invoke_wizardry() {
         unset _WIZARDRY_IN_CNF_HANDLER
         if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
           _cnf_file="${HOME-}/.wizardry-debug.log"
-          _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
+          _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'' 2>/dev/null || printf '\''NO-DATE'\'')"
           _cnf_msg="[${_cnf_ts}] CNF: command truly not found: $1"
           printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
         fi
