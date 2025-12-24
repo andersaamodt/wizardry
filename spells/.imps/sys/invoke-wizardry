@@ -118,6 +118,10 @@ _invoke_wizardry() {
     printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
   fi
   
+  if [ -n "${ZSH_VERSION-}" ]; then
+    setopt LOCAL_OPTIONS NONOMATCH 2>/dev/null || :
+  fi
+  
   printf '%s\n' "[invoke-wizardry] Checking WIZARDRY_DIR: ${WIZARDRY_DIR-<unset>}" >&2
   if [ -z "${WIZARDRY_DIR-}" ]; then
     printf '%s\n' "[invoke-wizardry] WIZARDRY_DIR not set, will attempt detection" >&2
@@ -385,8 +389,8 @@ function brace_delta(s, n, m) {
     printf '%s\n' "[invoke-wizardry] Checking category: $_iw_spell_cat" >&2
     [ -d "$_iw_spell_cat" ] || continue
     # Skip hidden directories (like .imps and .arcana)
-    case "$_iw_spell_cat" in
-      */.*) 
+    case "$_iw_spell_cat_name" in
+      .*) 
         printf '%s\n' "[invoke-wizardry] Skipping hidden directory: $(basename "$_iw_spell_cat")" >&2
         if [ -n "$_iw_debug_file" ]; then
           _iw_msg="Skipping hidden directory: $(basename "$_iw_spell_cat")"
