@@ -393,8 +393,9 @@ _invoke_wizardry() {
       _iw_spell_count=$((_iw_spell_count + 1))
       
       # Output progress every 10 spells to avoid overwhelming output
+      # Also output individually for higher counts to prevent buffer-related hangs
       _iw_spell_mod=$((_iw_spell_count % 10))
-      if [ "$_iw_spell_mod" -eq 0 ] || [ "$_iw_spell_count" -eq 1 ]; then
+      if [ "$_iw_spell_mod" -eq 0 ] || [ "$_iw_spell_count" -eq 1 ] || [ "$_iw_spell_count" -gt 55 ]; then
         printf '%s\n' "[invoke-wizardry] Spell progress: count=$_iw_spell_count" >&2
       fi
       

@@ -2,7 +2,7 @@
 
 # Read MUD-style room descriptions from extended attributes.
 
-require-wizardry || exit 1
+# require-wizardry - check moved inside function (prevents exit during sourcing)
 
 look_usage() {
 cat <<'USAGE'

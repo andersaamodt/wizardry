@@ -3,7 +3,7 @@
 # This spell decorates a location with a description, making it visible to 'look'.
 # It's a convenient wrapper around 'enchant' for setting room descriptions.
 
-require-wizardry || exit 1
+# require-wizardry - check moved inside function (prevents exit during sourcing)
 
 decorate_usage() {
 cat <<'USAGE'

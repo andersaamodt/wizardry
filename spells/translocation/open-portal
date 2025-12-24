@@ -3,7 +3,7 @@
 # This spell mounts a remote directory using sshfs through Tor.
 # Use it to access remote servers anonymously via SSH filesystem.
 
-require-wizardry || exit 1
+# require-wizardry - check moved inside function (prevents exit during sourcing)
 
 open_portal_usage() {
 cat <<'USAGE'

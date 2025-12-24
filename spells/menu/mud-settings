@@ -2,7 +2,7 @@
 
 # This spell displays the MUD settings menu.
 
-require-wizardry || exit 1
+# require-wizardry - check moved inside function (prevents exit during sourcing)
 
 mud_settings_usage() {
         cat <<'USAGE' >&2

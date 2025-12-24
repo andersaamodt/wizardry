@@ -3,7 +3,7 @@
 # This spell binds every file in a directory into a single tome.
 # Pass -d to recycle the loose pages after the binding completes.
 
-require-wizardry || exit 1
+# require-wizardry - check moved inside function (prevents exit during sourcing)
 
 bind_tome_usage() {
 cat <<'USAGE'

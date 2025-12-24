@@ -2,7 +2,7 @@
 
 # Present a menu of spells that can install supporting software.
 
-require-wizardry || exit 1
+# require-wizardry moved inside function
 
 install_menu_usage() {
         cat <<'USAGE' >&2

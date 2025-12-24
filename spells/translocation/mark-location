@@ -2,7 +2,7 @@
 
 # Inscribe bookmarks for jump-to-marker to teleport you back.
 
-require-wizardry || exit 1
+# require-wizardry - check moved inside function (prevents exit during sourcing)
 
 mark_location_usage() {
   cat <<'USAGE'

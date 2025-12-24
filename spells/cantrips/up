@@ -21,7 +21,7 @@ case "${1-}" in
   ;;
 esac
 
-require-wizardry || exit 1
+# require-wizardry moved inside function
 
 set -eu
 . env-clear

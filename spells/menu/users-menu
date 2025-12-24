@@ -3,7 +3,7 @@
 # This spell presents a menu of options for managing users on the system.
 # Use it to manage passwords, groups, and user accounts.
 
-require-wizardry || exit 1
+# require-wizardry - check moved inside function (prevents exit during sourcing)
 
 users_menu_usage() {
 cat <<'USAGE'

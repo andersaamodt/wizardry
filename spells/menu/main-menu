@@ -2,7 +2,7 @@
 
 # This spell displays the ao-mud main menu.
 
-require-wizardry || exit 1
+# require-wizardry moved inside function
 
 main_menu_usage() {
         cat <<'USAGE' >&2
