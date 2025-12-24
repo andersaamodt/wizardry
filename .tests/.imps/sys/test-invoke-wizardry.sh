@@ -352,8 +352,8 @@ test_default_path_in_unknown_shell() {
 #!/bin/sh
 HOME=$1
 export HOME
-PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
-. "$HOME/.wizardry/spells/.imps/sys/invoke-wizardry" 2>/dev/null || exit 1
+PATH="$2"
+. "$3" 2>/dev/null || exit 1
 
 if [ -n "${WIZARDRY_DIR-}" ] && [ -d "$WIZARDRY_DIR/spells" ]; then
   printf '%s\n' "wizardry dir set"
@@ -371,7 +371,10 @@ fi
 EOF
   chmod +x "$tmpdir/test-unknown-shell.sh"
 
-  _run_cmd dash "$tmpdir/test-unknown-shell.sh" "$home"
+  baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+  default_invoke="$home/.wizardry/spells/.imps/sys/invoke-wizardry"
+
+  _run_cmd dash "$tmpdir/test-unknown-shell.sh" "$home" "$baseline_path" "$default_invoke"
   _assert_success || return 1
   _assert_output_contains "wizardry dir set" || return 1
   _assert_output_contains "menu available" || return 1

@@ -130,6 +130,8 @@ _invoke_wizardry() {
     # In Zsh, $0 inside a function is the function name, not the script path
     _iw_script_path="$_iw_script_path_captured"
 
+    # Fallbacks for shells without BASH/ZSH metadata: honor an explicit
+    # INVOKE_WIZARDRY path or the default ~/.wizardry install location.
     if [ -z "$_iw_script_path" ] && [ -n "${INVOKE_WIZARDRY-}" ] && [ -f "$INVOKE_WIZARDRY" ]; then
       printf '%s\n' "[invoke-wizardry] Script path missing, using INVOKE_WIZARDRY environment path" >&2
       if [ -n "$_iw_debug_file" ]; then
