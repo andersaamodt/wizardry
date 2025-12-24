@@ -99,12 +99,6 @@ _invoke_wizardry() {
   printf '%s\n' "[invoke-wizardry] INSIDE _invoke_wizardry function" >&2
   # Debug logging inline (no function to comply with one-function-or-zero rule)
   if [ -n "$_iw_debug_file" ]; then
-    _iw_msg="Entering _invoke_wizardry function"
-    _iw_full="invoke-wizardry: $_iw_msg"
-    printf '%s\n' "$_iw_full" >> "$_iw_debug_file" 2>/dev/null || :
-  fi
-  
-  if [ -n "$_iw_debug_file" ]; then
     _iw_msg="invoke-wizardry: Entering _invoke_wizardry function"
     printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
   fi
