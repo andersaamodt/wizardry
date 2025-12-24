@@ -110,11 +110,26 @@ _word_of_binding() {
       printf '%s\n' "word-of-binding: failed to prepare module '$_wob_name'" >&2
       return 1
     fi
+    _wob_prev_loading_spells="${_WIZARDRY_LOADING_SPELLS-}"
+    _WIZARDRY_LOADING_SPELLS=1
+    export _WIZARDRY_LOADING_SPELLS
     # shellcheck disable=SC1090
     if ! . "$_wob_tmp"; then
       rm -f "$_wob_tmp"
+      if [ -n "$_wob_prev_loading_spells" ]; then
+        _WIZARDRY_LOADING_SPELLS="$_wob_prev_loading_spells"
+        export _WIZARDRY_LOADING_SPELLS
+      else
+        unset _WIZARDRY_LOADING_SPELLS
+      fi
       printf '%s\n' "word-of-binding: failed to bind '$_wob_name'" >&2
       return 1
+    fi
+    if [ -n "$_wob_prev_loading_spells" ]; then
+      _WIZARDRY_LOADING_SPELLS="$_wob_prev_loading_spells"
+      export _WIZARDRY_LOADING_SPELLS
+    else
+      unset _WIZARDRY_LOADING_SPELLS
     fi
     rm -f "$_wob_tmp"
     

@@ -181,6 +181,9 @@ _invoke_wizardry() {
   
   # Word-of-binding paradigm: Pre-load all spells and imps by sourcing them.
   # Use a safe loader that strips self-exec blocks so sourcing never executes.
+  _iw_prev_loading_spells="${_WIZARDRY_LOADING_SPELLS-}"
+  _WIZARDRY_LOADING_SPELLS=1
+  export _WIZARDRY_LOADING_SPELLS
   
   printf '%s\n' "[invoke-wizardry] Starting imp sourcing" >&2
   # Source all imps to load their functions into the shell.
@@ -552,6 +555,12 @@ _invoke_wizardry() {
   if [ -n "$_iw_debug_file" ]; then
     _iw_msg="invoke-wizardry: User spell sourcing complete: $_iw_user_summary"
     printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
+  fi
+  if [ -n "$_iw_prev_loading_spells" ]; then
+    _WIZARDRY_LOADING_SPELLS="$_iw_prev_loading_spells"
+    export _WIZARDRY_LOADING_SPELLS
+  else
+    unset _WIZARDRY_LOADING_SPELLS
   fi
   
   printf '%s\n' "[invoke-wizardry] Checking command-not-found configuration" >&2
