@@ -719,7 +719,8 @@ function brace_delta(s, n, m) {
         printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
       fi
       # Bash-specific command_not_found_handle
-      command_not_found_handle() {
+      _iw_cnf_name="command_not_found_handle"
+      _iw_cnf_body=$(cat <<'IW_CNF_EOF'
         # Debug logging for command_not_found_handle
         if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
           _cnf_file="${HOME-}/.wizardry-debug.log"
@@ -794,15 +795,25 @@ function brace_delta(s, n, m) {
         fi
         printf '%s: command not found\n' "$1" >&2
         return 127
-      }
-      printf '%s\n' "[invoke-wizardry] command_not_found_handle installed (bash)" >&2
+IW_CNF_EOF
+      )
+      _iw_cnf_body="${_iw_cnf_name}() {
+${_iw_cnf_body}
+}"
+      if eval "$_iw_cnf_body"; then
+        printf '%s\n' "[invoke-wizardry] command_not_found_handle installed (bash)" >&2
+      else
+        printf '%s\n' "[invoke-wizardry] ERROR: failed to install command_not_found_handle" >&2
+      fi
+      unset _iw_cnf_body _iw_cnf_name
     elif eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
       if [ -n "$_iw_debug_file" ]; then
         _iw_msg="invoke-wizardry: Zsh detected, installing command_not_found_handler"
         printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
       fi
       # Zsh-specific command_not_found_handler
-      command_not_found_handler() {
+      _iw_cnf_name="command_not_found_handler"
+      _iw_cnf_body=$(cat <<'IW_CNF_EOF'
         # Debug logging for command_not_found_handler
         if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
           _cnf_file="${HOME-}/.wizardry-debug.log"
@@ -877,8 +888,17 @@ function brace_delta(s, n, m) {
         fi
         printf '%s: command not found\n' "$1" >&2
         return 127
-      }
-      printf '%s\n' "[invoke-wizardry] command_not_found_handler installed (zsh)" >&2
+IW_CNF_EOF
+      )
+      _iw_cnf_body="${_iw_cnf_name}() {
+${_iw_cnf_body}
+}"
+      if eval "$_iw_cnf_body"; then
+        printf '%s\n' "[invoke-wizardry] command_not_found_handler installed (zsh)" >&2
+      else
+        printf '%s\n' "[invoke-wizardry] ERROR: failed to install command_not_found_handler" >&2
+      fi
+      unset _iw_cnf_body _iw_cnf_name
     fi
   else
     printf '%s\n' "[invoke-wizardry] command_not_found_handle NOT installed (disabled)" >&2
