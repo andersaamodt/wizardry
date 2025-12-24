@@ -194,22 +194,30 @@ _invoke_wizardry() {
   # Imps are spells too - they're loaded the same way as regular spells
   # The only difference is imps use _underscore true-names
   _iw_imps_dir="$WIZARDRY_DIR/spells/.imps"
+  printf '%s\n' "[invoke-wizardry] Imp directory: $_iw_imps_dir" >&2
   if [ -n "$_iw_debug_file" ]; then
     _iw_msg="invoke-wizardry: Starting imp sourcing from: $_iw_imps_dir"
     printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
   fi
+  printf '%s\n' "[invoke-wizardry] Initializing imp counters" >&2
   _iw_imp_count=0
   _iw_imp_success=0
   _iw_imp_skipped=0
   _iw_imp_failed=0
   
+  printf '%s\n' "[invoke-wizardry] Checking if imp directory exists" >&2
   if [ -d "$_iw_imps_dir" ]; then
+    printf '%s\n' "[invoke-wizardry] Imp directory exists, starting family loop" >&2
     for _iw_family in "$_iw_imps_dir"/*; do
+      printf '%s\n' "[invoke-wizardry] Checking family: $_iw_family" >&2
       [ -d "$_iw_family" ] || continue
       # Skip test imps - they're only for testing, not production use
       _iw_family_name=$(basename "$_iw_family")
+      printf '%s\n' "[invoke-wizardry] Family name: $_iw_family_name" >&2
+      printf '%s\n' "[invoke-wizardry] Family name: $_iw_family_name" >&2
       case "$_iw_family_name" in
         test) 
+          printf '%s\n' "[invoke-wizardry] Skipping test family" >&2
           if [ -n "$_iw_debug_file" ]; then
             _iw_msg="invoke-wizardry: Skipping test family: $_iw_family_name"
             printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
@@ -217,19 +225,25 @@ _invoke_wizardry() {
           continue 
           ;;
       esac
+      printf '%s\n' "[invoke-wizardry] Processing family: $_iw_family_name" >&2
       if [ -n "$_iw_debug_file" ]; then
         _iw_msg="invoke-wizardry: Processing imp family: $_iw_family_name"
         printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
       fi
       
+      printf '%s\n' "[invoke-wizardry] Starting imp loop for family: $_iw_family_name" >&2
       for _iw_imp in "$_iw_family"/*; do
+        printf '%s\n' "[invoke-wizardry] Checking file: $(basename "$_iw_imp")" >&2
         [ -f "$_iw_imp" ] && [ -r "$_iw_imp" ] || continue
         _iw_imp_count=$((_iw_imp_count + 1))
         
+        printf '%s\n' "[invoke-wizardry] Imp count: $_iw_imp_count" >&2
         # Skip invoke-wizardry itself to prevent recursion
         # Skip invoke-thesaurus (loaded separately later for synonyms)
         case "$_iw_imp" in
           */invoke-wizardry|*/invoke-thesaurus) 
+            printf '%s\n' "[invoke-wizardry] Skipping special imp: $(basename "$_iw_imp")" >&2 
+            printf '%s\n' "[invoke-wizardry] Skipping special imp: $(basename "$_iw_imp")" >&2
             _iw_imp_skipped=$((_iw_imp_skipped + 1))
             if [ -n "$_iw_debug_file" ]; then
               _iw_msg="Skipping special imp: $(basename "$_iw_imp")"
@@ -240,35 +254,49 @@ _invoke_wizardry() {
             ;;
         esac
         
+        printf '%s\n' "[invoke-wizardry] Processing imp: $(basename "$_iw_imp")" >&2
         # Imps use _underscore true-names (e.g., say -> _say)
         _iw_imp_name=$(basename "$_iw_imp")
+        printf '%s\n' "[invoke-wizardry] Imp name: $_iw_imp_name" >&2
         _iw_imp_true_name=$(printf '_%s' "$_iw_imp_name" | sed 's/-/_/g')
+        printf '%s\n' "[invoke-wizardry] Imp true name: $_iw_imp_true_name" >&2
         
+        printf '%s\n' "[invoke-wizardry] Checking if imp has function definition" >&2
         # Only source imps that define their true-name function
         _iw_grep_pattern="^[[:space:]]*${_iw_imp_true_name}[[:space:]]*\\(\\)"
         if grep -qE "$_iw_grep_pattern" "$_iw_imp" 2>/dev/null; then
+          printf '%s\n' "[invoke-wizardry] Imp has function, will source: $_iw_imp_name" >&2
+          printf '%s\n' "[invoke-wizardry] Imp has function, will source: $_iw_imp_name" >&2
           if [ -n "$_iw_debug_file" ]; then
             _iw_msg="Sourcing imp: $_iw_imp_name -> $_iw_imp_true_name"
             _iw_full="invoke-wizardry: $_iw_msg"
             printf '%s\n' "$_iw_full" >> "$_iw_debug_file" 2>/dev/null || :
           fi
+          printf '%s\n' "[invoke-wizardry] About to source: $_iw_imp" >&2
           # Source the imp to load its function
           # shellcheck disable=SC1090
           if . "$_iw_imp" 2>/dev/null; then
+            printf '%s\n' "[invoke-wizardry] Successfully sourced imp: $_iw_imp_name" >&2
             # Restore permissive mode - sourcing imps with set -eu changes parent shell mode
             set +eu
+            printf '%s\n' "[invoke-wizardry] Restored permissive mode" >&2
             
+            printf '%s\n' "[invoke-wizardry] Checking if function exists: $_iw_imp_true_name" >&2
             # Create alias from hyphenated name to underscore function name
             # This is the imp paradigm: hyphenated command -> _underscore_function
             if command -v "$_iw_imp_true_name" >/dev/null 2>&1; then
+              printf '%s\n' "[invoke-wizardry] Function exists, creating alias" >&2
               if alias "$_iw_imp_name=$_iw_imp_true_name" 2>/dev/null; then
                 _iw_imp_success=$((_iw_imp_success + 1))
+                printf '%s\n' "[invoke-wizardry] ✓ Loaded imp: $_iw_imp_name (success=$_iw_imp_success)" >&2
+                printf '%s\n' "[invoke-wizardry] ✓ Loaded imp: $_iw_imp_name (success=$_iw_imp_success)" >&2
                 if [ -n "$_iw_debug_file" ]; then
                   _iw_msg="invoke-wizardry: ✓ Loaded imp: $_iw_imp_name"
                   printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
                 fi
               else
                 _iw_imp_failed=$((_iw_imp_failed + 1))
+                printf '%s\n' "[invoke-wizardry] ✗ Failed to alias imp: $_iw_imp_name" >&2
                 if [ -n "$_iw_debug_file" ]; then
                   _iw_msg="invoke-wizardry: ✗ Failed to alias imp: $_iw_imp_name"
                   printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
@@ -276,6 +304,7 @@ _invoke_wizardry() {
               fi
             else
               _iw_imp_failed=$((_iw_imp_failed + 1))
+              printf '%s\n' "[invoke-wizardry] ✗ Function not found after sourcing: $_iw_imp_true_name" >&2
               if [ -n "$_iw_debug_file" ]; then
                 _iw_msg="✗ Function not found after sourcing: $_iw_imp_true_name"
                 _iw_full="invoke-wizardry: $_iw_msg"
@@ -284,6 +313,7 @@ _invoke_wizardry() {
             fi
           else
             _iw_imp_failed=$((_iw_imp_failed + 1))
+            printf '%s\n' "[invoke-wizardry] ✗ Failed to source imp: $_iw_imp_name" >&2
             if [ -n "$_iw_debug_file" ]; then
               _iw_msg="invoke-wizardry: ✗ Failed to source imp: $_iw_imp_name"
               printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
@@ -292,13 +322,18 @@ _invoke_wizardry() {
           fi
         else
           _iw_imp_skipped=$((_iw_imp_skipped + 1))
+          printf '%s\n' "[invoke-wizardry] Skipping imp (no function): $_iw_imp_name" >&2
+          printf '%s\n' "[invoke-wizardry] Skipping imp (no function): $_iw_imp_name" >&2
           if [ -n "$_iw_debug_file" ]; then
             _iw_msg="invoke-wizardry: Skipping imp (no function): $_iw_imp_name"
             printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
           fi
         fi
+        printf '%s\n' "[invoke-wizardry] Finished processing imp: $_iw_imp_name" >&2
       done
+      printf '%s\n' "[invoke-wizardry] Finished imp loop for family: $_iw_family_name" >&2
     done
+    printf '%s\n' "[invoke-wizardry] Finished all imp families" >&2
   fi
   
   _iw_imp_summary="total=$_iw_imp_count success=$_iw_imp_success"
@@ -310,6 +345,7 @@ _invoke_wizardry() {
   fi
   
   # Set flag to prevent env-clear from clearing parent's variables
+  printf '%s\n' "[invoke-wizardry] Setting _WIZARDRY_LOADING_SPELLS flag" >&2
   _WIZARDRY_LOADING_SPELLS=1
   export _WIZARDRY_LOADING_SPELLS
   
@@ -321,16 +357,20 @@ _invoke_wizardry() {
     _iw_msg="invoke-wizardry: Starting spell sourcing from: $WIZARDRY_DIR/spells"
     printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
   fi
+  printf '%s\n' "[invoke-wizardry] Initializing spell counters" >&2
   _iw_spell_count=0
   _iw_spell_success=0
   _iw_spell_skipped=0
   _iw_spell_failed=0
   
+  printf '%s\n' "[invoke-wizardry] Starting spell category loop" >&2
   for _iw_spell_cat in "$WIZARDRY_DIR"/spells/*; do
+    printf '%s\n' "[invoke-wizardry] Checking category: $_iw_spell_cat" >&2
     [ -d "$_iw_spell_cat" ] || continue
     # Skip hidden directories (like .imps and .arcana)
     case "$_iw_spell_cat" in
       */.*) 
+        printf '%s\n' "[invoke-wizardry] Skipping hidden directory: $(basename "$_iw_spell_cat")" >&2
         if [ -n "$_iw_debug_file" ]; then
           _iw_msg="Skipping hidden directory: $(basename "$_iw_spell_cat")"
           _iw_full="invoke-wizardry: $_iw_msg"
@@ -341,14 +381,23 @@ _invoke_wizardry() {
     esac
     
     _iw_spell_cat_name=$(basename "$_iw_spell_cat")
+    printf '%s\n' "[invoke-wizardry] Processing category: $_iw_spell_cat_name" >&2
+    printf '%s\n' "[invoke-wizardry] Processing category: $_iw_spell_cat_name" >&2
     if [ -n "$_iw_debug_file" ]; then
       _iw_msg="invoke-wizardry: Processing spell category: $_iw_spell_cat_name"
       printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
     fi
     
+    printf '%s\n' "[invoke-wizardry] Starting spell loop for category: $_iw_spell_cat_name" >&2
     for _iw_spell in "$_iw_spell_cat"/*; do
       [ -f "$_iw_spell" ] && [ -r "$_iw_spell" ] || continue
       _iw_spell_count=$((_iw_spell_count + 1))
+      
+      # Output progress every 10 spells to avoid overwhelming output
+      _iw_spell_mod=$((_iw_spell_count % 10))
+      if [ "$_iw_spell_mod" -eq 0 ] || [ "$_iw_spell_count" -eq 1 ]; then
+        printf '%s\n' "[invoke-wizardry] Spell progress: count=$_iw_spell_count" >&2
+      fi
       
       # Spells use spell_name() true-names (no underscore prefix)
       # Format: spell-name defines spell_name() function
@@ -410,7 +459,9 @@ _invoke_wizardry() {
         fi
       fi
     done
+    printf '%s\n' "[invoke-wizardry] Finished spell loop for category: $_iw_spell_cat_name" >&2
   done
+  printf '%s\n' "[invoke-wizardry] Finished all spell categories" >&2
   
   _iw_spell_summary="total=$_iw_spell_count success=$_iw_spell_success"
   _iw_spell_summary="$_iw_spell_summary skipped=$_iw_spell_skipped failed=$_iw_spell_failed"
@@ -471,14 +522,17 @@ _invoke_wizardry() {
   fi
   
   _iw_user_summary="total=$_iw_user_spell_count success=$_iw_user_spell_success"
+  printf '%s\n' "[invoke-wizardry] User spell sourcing complete: $_iw_user_summary" >&2
   if [ -n "$_iw_debug_file" ]; then
     _iw_msg="invoke-wizardry: User spell sourcing complete: $_iw_user_summary"
     printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
   fi
   
   # Clear the spell loading flag
+  printf '%s\n' "[invoke-wizardry] Clearing _WIZARDRY_LOADING_SPELLS flag" >&2
   unset _WIZARDRY_LOADING_SPELLS
   
+  printf '%s\n' "[invoke-wizardry] Checking command-not-found configuration" >&2
   # Hotloading: command_not_found_handle provides fallback for spells not yet loaded
   # This handles new spells added after shell startup and non-function spells
   # Only set up if enabled via config (command-not-found=1 in ~/.spellbook/.mud/config)
@@ -487,29 +541,37 @@ _invoke_wizardry() {
   _iw_cnf_enabled=1
   _iw_spellbook="${SPELLBOOK_DIR:-${HOME-}/.spellbook}"
   _iw_cnf_config="$_iw_spellbook/.mud/config"
+  printf '%s\n' "[invoke-wizardry] Config file: $_iw_cnf_config" >&2
+  printf '%s\n' "[invoke-wizardry] Config file: $_iw_cnf_config" >&2
   if [ -f "$_iw_cnf_config" ]; then
+    printf '%s\n' "[invoke-wizardry] Config file exists, checking settings" >&2
     # Check if explicitly disabled (command-not-found=0)
     if grep -q "^command-not-found=0$" "$_iw_cnf_config" 2>/dev/null; then
       _iw_cnf_enabled=0
+      printf '%s\n' "[invoke-wizardry] command-not-found hook DISABLED by config" >&2
       if [ -n "$_iw_debug_file" ]; then
         _iw_msg="invoke-wizardry: command-not-found hook: DISABLED (config file)"
         printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
       fi
     else
+      printf '%s\n' "[invoke-wizardry] command-not-found hook enabled (config allows)" >&2
       if [ -n "$_iw_debug_file" ]; then
         _iw_msg="invoke-wizardry: command-not-found hook: enabled (config file allows)"
         printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
       fi
     fi
   else
+    printf '%s\n' "[invoke-wizardry] No config file, using default (enabled)" >&2
     if [ -n "$_iw_debug_file" ]; then
       _iw_msg="command-not-found hook: enabled (no config file, default enabled)"
       printf '%s\n' "invoke-wizardry: $_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
     fi
   fi
   
+  printf '%s\n' "[invoke-wizardry] CNF enabled status: $_iw_cnf_enabled" >&2
   # Only set up command_not_found_handle if enabled
   if [ "$_iw_cnf_enabled" -eq 1 ]; then
+    printf '%s\n' "[invoke-wizardry] Setting up command_not_found_handle" >&2
     if [ -n "$_iw_debug_file" ]; then
       _iw_msg="invoke-wizardry: Setting up command_not_found_handle"
       printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
@@ -681,12 +743,14 @@ _invoke_wizardry() {
       }'
     fi
   else
+    printf '%s\n' "[invoke-wizardry] command_not_found_handle NOT installed (disabled)" >&2
     if [ -n "$_iw_debug_file" ]; then
       _iw_msg="command_not_found_handle NOT installed (disabled by config)"
       printf '%s\n' "invoke-wizardry: $_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
     fi
   fi
   
+  printf '%s\n' "[invoke-wizardry] Loading invoke-thesaurus for synonyms" >&2
   # Load synonyms (aliases) from spellbook by sourcing invoke-thesaurus
   # invoke-thesaurus handles initialization, enable/disable checks, and sourcing
   if [ -n "$_iw_debug_file" ]; then
@@ -694,17 +758,24 @@ _invoke_wizardry() {
     printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
   fi
   _iw_invoke_thesaurus="$WIZARDRY_DIR/spells/.imps/sys/invoke-thesaurus"
+  printf '%s\n' "[invoke-wizardry] Thesaurus path: $_iw_invoke_thesaurus" >&2
   if [ -f "$_iw_invoke_thesaurus" ] && [ -r "$_iw_invoke_thesaurus" ]; then
+    printf '%s\n' "[invoke-wizardry] Sourcing invoke-thesaurus" >&2
+    printf '%s\n' "[invoke-wizardry] Sourcing invoke-thesaurus" >&2
     # shellcheck disable=SC1090
     . "$_iw_invoke_thesaurus" 2>/dev/null || true
+    printf '%s\n' "[invoke-wizardry] invoke-thesaurus sourced successfully" >&2
     # Restore permissive mode - sourcing may have changed shell mode
     set +eu
     if [ -n "$_iw_debug_file" ]; then
       _iw_msg="invoke-wizardry: invoke-thesaurus sourced"
       printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
     fi
+  else
+    printf '%s\n' "[invoke-wizardry] invoke-thesaurus not found or not readable" >&2
   fi
   
+  printf '%s\n' "[invoke-wizardry] Setting up cd hook" >&2
   # Set up cd hook for MUD features by sourcing the cd spell
   # This replaces the separate install-cd step
   # The cd spell checks config file to determine if look should run
@@ -713,17 +784,23 @@ _invoke_wizardry() {
     printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
   fi
   _iw_cd_spell="$WIZARDRY_DIR/spells/.arcana/mud/cd"
+  printf '%s\n' "[invoke-wizardry] CD spell path: $_iw_cd_spell" >&2
   if [ -f "$_iw_cd_spell" ] && [ -r "$_iw_cd_spell" ]; then
+    printf '%s\n' "[invoke-wizardry] Sourcing cd hook" >&2
     # shellcheck disable=SC1090
     . "$_iw_cd_spell" 2>/dev/null || true
+    printf '%s\n' "[invoke-wizardry] cd hook sourced successfully" >&2
     # Restore permissive mode
     set +eu
     if [ -n "$_iw_debug_file" ]; then
       _iw_msg="invoke-wizardry: cd hook sourced"
       printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
     fi
+  else
+    printf '%s\n' "[invoke-wizardry] cd hook not found or not readable" >&2
   fi
   
+  printf '%s\n' "[invoke-wizardry] === invoke-wizardry COMPLETE ===" >&2
   if [ -n "$_iw_debug_file" ]; then
     _iw_msg="invoke-wizardry: === invoke-wizardry complete ==="
     printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
