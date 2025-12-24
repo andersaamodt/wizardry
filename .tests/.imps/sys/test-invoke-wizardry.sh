@@ -416,6 +416,41 @@ EOF
   _assert_output_contains "spell directories not added to PATH" || return 1
 }
 
+# Test: invoke-wizardry handles empty spellbook directory without errors
+test_empty_spellbook_directory() {
+  tmpdir=$(_make_tempdir)
+  empty_spellbook="$tmpdir/empty_spellbook"
+  mkdir -p "$empty_spellbook"
+  
+  cat > "$tmpdir/test-empty-spellbook.sh" << EOF
+#!/bin/sh
+WIZARDRY_DIR="$ROOT_DIR"
+export WIZARDRY_DIR
+SPELLBOOK_DIR="$empty_spellbook"
+export SPELLBOOK_DIR
+
+. "$ROOT_DIR/spells/.imps/sys/invoke-wizardry" 2>/dev/null
+
+if [ \$? -eq 0 ]; then
+  printf 'sourcing completed successfully\n'
+else
+  printf 'ERROR: sourcing failed\n'
+  exit 1
+fi
+
+# Verify wizardry still works
+if command -v menu >/dev/null 2>&1; then
+  printf 'menu available\n'
+fi
+EOF
+  chmod +x "$tmpdir/test-empty-spellbook.sh"
+  
+  _run_cmd sh "$tmpdir/test-empty-spellbook.sh"
+  _assert_success || return 1
+  _assert_output_contains "sourcing completed successfully" || return 1
+  _assert_output_contains "menu available" || return 1
+}
+
 _run_test_case "invoke-wizardry is sourceable" test_sourceable
 _run_test_case "invoke-wizardry sets WIZARDRY_DIR" test_sets_wizardry_dir
 # Test #3 removed: outdated (word-of-binding means spell dirs NOT in PATH)
@@ -429,6 +464,7 @@ _run_test_case "command_not_found_handle returns 127 for unknown commands" test_
 _run_test_case "command_not_found_handle has recursion guard" test_recursion_guard
 _run_test_case "cd function is defined in invoke-wizardry" test_cd_function_defined
 _run_test_case "menu is pre-loaded as function" test_menu_preloaded
+_run_test_case "empty spellbook directory doesn't cause errors" test_empty_spellbook_directory
 # Test #11 removed: redundant with word-of-binding paradigm (spell dirs never added to PATH)
 
 _finish_tests
