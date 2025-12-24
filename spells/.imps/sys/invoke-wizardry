@@ -137,7 +137,6 @@ _invoke_wizardry() {
     fi
     
     printf '%s\n' "[invoke-wizardry] Deriving WIZARDRY_DIR from script path" >&2
-    printf '%s\n' "[invoke-wizardry] Deriving WIZARDRY_DIR from script path" >&2
     # Derive WIZARDRY_DIR from detected script path
     # invoke-wizardry is at: WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry
     # So we need to go up 3 levels: sys -> .imps -> spells -> WIZARDRY_DIR
@@ -171,7 +170,6 @@ _invoke_wizardry() {
     return 1
   fi
   
-  printf '%s\n' "[invoke-wizardry] WIZARDRY_DIR validated successfully" >&2
   printf '%s\n' "[invoke-wizardry] WIZARDRY_DIR validated successfully" >&2
   export WIZARDRY_DIR
   
