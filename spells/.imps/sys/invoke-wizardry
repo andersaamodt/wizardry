@@ -258,13 +258,23 @@ _invoke_wizardry() {
             || mktemp "/tmp/wizardry-imp.XXXXXX")
           if [ -n "$_iw_imp_tmp" ]; then
             if awk '
-NR==1 && /^#!/ {next}
-/^[[:space:]]*case[[:space:]]+["][$]0["][[:space:]]+in/ {skip=1}
-skip {
-  if ($0 ~ /^[[:space:]]*esac[[:space:]]*$/) {skip=0}
-  next
+{
+  line += 1
+  if (line == 1 && $0 ~ /^#!/) {
+    next
+  }
+  if ($0 ~ /^[[:space:]]*case[[:space:]]+"[$]0"[[:space:]]+in/) {
+    skip = 1
+    next
+  }
+  if (skip) {
+    if ($0 ~ /^[[:space:]]*esac[[:space:]]*$/) {
+      skip = 0
+    }
+    next
+  }
+  print
 }
-{print}
 ' "$_iw_imp" > "$_iw_imp_tmp"; then
               # shellcheck disable=SC1090
               if . "$_iw_imp_tmp" 2>/dev/null; then
@@ -382,13 +392,23 @@ skip {
           || mktemp "/tmp/wizardry-spell.XXXXXX")
         if [ -n "$_iw_spell_tmp" ]; then
           if awk '
-NR==1 && /^#!/ {next}
-/^[[:space:]]*case[[:space:]]+["][$]0["][[:space:]]+in/ {skip=1}
-skip {
-  if ($0 ~ /^[[:space:]]*esac[[:space:]]*$/) {skip=0}
-  next
+{
+  line += 1
+  if (line == 1 && $0 ~ /^#!/) {
+    next
+  }
+  if ($0 ~ /^[[:space:]]*case[[:space:]]+"[$]0"[[:space:]]+in/) {
+    skip = 1
+    next
+  }
+  if (skip) {
+    if ($0 ~ /^[[:space:]]*esac[[:space:]]*$/) {
+      skip = 0
+    }
+    next
+  }
+  print
 }
-{print}
 ' "$_iw_spell" > "$_iw_spell_tmp"; then
             # shellcheck disable=SC1090
             if . "$_iw_spell_tmp" 2>/dev/null; then
@@ -479,13 +499,23 @@ skip {
           || mktemp "/tmp/wizardry-user.XXXXXX")
         if [ -n "$_iw_user_tmp" ]; then
           if awk '
-NR==1 && /^#!/ {next}
-/^[[:space:]]*case[[:space:]]+["][$]0["][[:space:]]+in/ {skip=1}
-skip {
-  if ($0 ~ /^[[:space:]]*esac[[:space:]]*$/) {skip=0}
-  next
+{
+  line += 1
+  if (line == 1 && $0 ~ /^#!/) {
+    next
+  }
+  if ($0 ~ /^[[:space:]]*case[[:space:]]+"[$]0"[[:space:]]+in/) {
+    skip = 1
+    next
+  }
+  if (skip) {
+    if ($0 ~ /^[[:space:]]*esac[[:space:]]*$/) {
+      skip = 0
+    }
+    next
+  }
+  print
 }
-{print}
 ' "$_iw_user_spell" > "$_iw_user_tmp"; then
             # shellcheck disable=SC1090
             if . "$_iw_user_tmp" 2>/dev/null; then

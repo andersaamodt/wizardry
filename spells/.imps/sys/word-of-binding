@@ -88,13 +88,23 @@ _word_of_binding() {
       return 1
     fi
     if ! awk '
-NR==1 && /^#!/ {next}
-/^[[:space:]]*case[[:space:]]+["][$]0["][[:space:]]+in/ {skip=1}
-skip {
-  if ($0 ~ /^[[:space:]]*esac[[:space:]]*$/) {skip=0}
-  next
+{
+  line += 1
+  if (line == 1 && $0 ~ /^#!/) {
+    next
+  }
+  if ($0 ~ /^[[:space:]]*case[[:space:]]+"[$]0"[[:space:]]+in/) {
+    skip = 1
+    next
+  }
+  if (skip) {
+    if ($0 ~ /^[[:space:]]*esac[[:space:]]*$/) {
+      skip = 0
+    }
+    next
+  }
+  print
 }
-{print}
 ' \
       "$_wob_module" > "$_wob_tmp"; then
       rm -f "$_wob_tmp"
