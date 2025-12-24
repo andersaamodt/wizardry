@@ -117,6 +117,9 @@ _invoke_wizardry() {
     _iw_msg="invoke-wizardry: Entering _invoke_wizardry function"
     printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
   fi
+  if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+    setopt localoptions nonomatch
+  fi
   
   printf '%s\n' "[invoke-wizardry] Checking WIZARDRY_DIR: ${WIZARDRY_DIR-<unset>}" >&2
   if [ -z "${WIZARDRY_DIR-}" ]; then
