@@ -228,11 +228,8 @@ _invoke_wizardry() {
       
       printf '%s\n' "[invoke-wizardry] Starting imp loop for family: $_iw_family_name" >&2
       for _iw_imp in "$_iw_family"/*; do
-        printf '%s\n' "[invoke-wizardry] Checking file: $(basename "$_iw_imp")" >&2
         [ -f "$_iw_imp" ] && [ -r "$_iw_imp" ] || continue
         _iw_imp_count=$((_iw_imp_count + 1))
-        
-        printf '%s\n' "[invoke-wizardry] Imp count: $_iw_imp_count" >&2
         # Skip invoke-wizardry itself to prevent recursion
         # Skip invoke-thesaurus (loaded separately later for synonyms)
         case "$_iw_imp" in
@@ -249,73 +246,76 @@ _invoke_wizardry() {
             ;;
         esac
         
-        printf '%s\n' "[invoke-wizardry] Processing imp: $(basename "$_iw_imp")" >&2
         _iw_imp_name=$(basename "$_iw_imp")
-        printf '%s\n' "[invoke-wizardry] Imp name: $_iw_imp_name" >&2
         _iw_imp_true_name=$(printf '_%s' "$_iw_imp_name" | sed 's/-/_/g')
-        printf '%s\n' "[invoke-wizardry] Imp true name: $_iw_imp_true_name" >&2
         
         _iw_grep_pattern="^[[:space:]]*${_iw_imp_true_name}[[:space:]]*\\(\\)"
         if grep -qE "$_iw_grep_pattern" "$_iw_imp" 2>/dev/null; then
-          _iw_imp_tmp=$(mktemp "${TMPDIR:-/tmp}/wizardry-imp.XXXXXX" 2>/dev/null \
-            || mktemp "/tmp/wizardry-imp.XXXXXX")
-          if [ -n "$_iw_imp_tmp" ]; then
-            if awk '
+          if _iw_imp_body=$(awk '
+function brace_delta(s, n, m) {
+  n = gsub(/{/, "{", s)
+  m = gsub(/}/, "}", s)
+  return n - m
+} # awk: brace delta
 {
-  line += 1
-  if (line == 1 && $0 ~ /^#!/) {
+  if (!in_func) {
+    if ($0 ~ /^[[:space:]]*function[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\(\\)?[[:space:]]*\\{/) {
+      in_func = 1
+      brace = brace_delta($0)
+      print
+      if (brace <= 0) {
+        in_func = 0
+      } # awk: end one-line function
+      next
+    } # awk: function keyword
+    if ($0 ~ /^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\(\\)[[:space:]]*\\{/) {
+      in_func = 1
+      brace = brace_delta($0)
+      print
+      if (brace <= 0) {
+        in_func = 0
+      } # awk: end one-line function
+      next
+    } # awk: function with brace
+    if ($0 ~ /^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\(\\)[[:space:]]*$/) {
+      in_func = 1
+      brace = 0
+      print
+      next
+    } # awk: function header
     next
-  } # awk: skip shebang
-  if ($0 ~ /^[[:space:]]*case[[:space:]]+"[$]0"[[:space:]]+in/) {
-    skip = 1
-    next
-  } # awk: start self-exec block
-  if (skip) {
-    if ($0 ~ /^[[:space:]]*esac[[:space:]]*$/) {
-      skip = 0
-    } # awk: end self-exec block
-    next
-  } # awk: skip body
+  }
+  brace += brace_delta($0)
   print
+  if (brace <= 0) {
+    in_func = 0
+  } # awk: end function
 } # awk: end program
-' "$_iw_imp" > "$_iw_imp_tmp"; then
-              # shellcheck disable=SC1090
-              if . "$_iw_imp_tmp" 2>/dev/null; then
-                set +eu
-                if command -v "$_iw_imp_true_name" >/dev/null 2>&1; then
-                  if alias "$_iw_imp_name=$_iw_imp_true_name" 2>/dev/null; then
-                    _iw_imp_success=$((_iw_imp_success + 1))
-                    printf '%s\n' \
-                      "[invoke-wizardry] ✓ Loaded imp: $_iw_imp_name" >&2
-                    if [ -n "$_iw_debug_file" ]; then
-                      _iw_msg="invoke-wizardry: ✓ Loaded imp: $_iw_imp_name"
-                      printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
-                    fi
-                  else
-                    _iw_imp_failed=$((_iw_imp_failed + 1))
-                    printf '%s\n' \
-                      "[invoke-wizardry] ✗ Failed to alias imp: $_iw_imp_name" >&2
-                  fi
-                else
-                  _iw_imp_failed=$((_iw_imp_failed + 1))
-                  printf '%s\n' \
-                    "[invoke-wizardry] ✗ Function not found: $_iw_imp_true_name" >&2
-                fi
-              else
+' "$_iw_imp"); then
+            if [ -n "$_iw_imp_body" ]; then
+              if ! eval "$_iw_imp_body" 2>/dev/null; then
                 _iw_imp_failed=$((_iw_imp_failed + 1))
                 printf '%s\n' \
                   "[invoke-wizardry] ✗ Failed to source imp: $_iw_imp_name" >&2
+                continue
+              fi
+            fi
+            set +eu
+            if alias "$_iw_imp_name=$_iw_imp_true_name" 2>/dev/null; then
+              _iw_imp_success=$((_iw_imp_success + 1))
+              if [ -n "$_iw_debug_file" ]; then
+                _iw_msg="invoke-wizardry: ✓ Loaded imp: $_iw_imp_name"
+                printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
               fi
             else
               _iw_imp_failed=$((_iw_imp_failed + 1))
               printf '%s\n' \
-                "[invoke-wizardry] ✗ Failed to prepare imp: $_iw_imp_name" >&2
+                "[invoke-wizardry] ✗ Failed to alias imp: $_iw_imp_name" >&2
             fi
-            rm -f "$_iw_imp_tmp"
           else
             _iw_imp_failed=$((_iw_imp_failed + 1))
             printf '%s\n' \
-              "[invoke-wizardry] ✗ Failed to create temp file for $_iw_imp_name" >&2
+              "[invoke-wizardry] ✗ Failed to prepare imp: $_iw_imp_name" >&2
           fi
         else
           _iw_imp_skipped=$((_iw_imp_skipped + 1))
@@ -324,7 +324,6 @@ _invoke_wizardry() {
             printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
           fi
         fi
-        printf '%s\n' "[invoke-wizardry] Finished processing imp: $_iw_imp_name" >&2
       done
       printf '%s\n' "[invoke-wizardry] Finished imp loop for family: $_iw_family_name" >&2
     done
@@ -391,72 +390,75 @@ _invoke_wizardry() {
       _iw_spell_true_name=$(printf '%s' "$_iw_spell_name" | sed 's/-/_/g')
       _iw_grep_pattern="^[[:space:]]*${_iw_spell_true_name}[[:space:]]*\\(\\)"
       if grep -qE "$_iw_grep_pattern" "$_iw_spell" 2>/dev/null; then
-        _iw_spell_tmp=$(mktemp "${TMPDIR:-/tmp}/wizardry-spell.XXXXXX" 2>/dev/null \
-          || mktemp "/tmp/wizardry-spell.XXXXXX")
-        if [ -n "$_iw_spell_tmp" ]; then
-          if awk '
+        if _iw_spell_body=$(awk '
+function brace_delta(s, n, m) {
+  n = gsub(/{/, "{", s)
+  m = gsub(/}/, "}", s)
+  return n - m
+} # awk: brace delta
 {
-  line += 1
-  if (line == 1 && $0 ~ /^#!/) {
+  if (!in_func) {
+    if ($0 ~ /^[[:space:]]*function[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\(\\)?[[:space:]]*\\{/) {
+      in_func = 1
+      brace = brace_delta($0)
+      print
+      if (brace <= 0) {
+        in_func = 0
+      } # awk: end one-line function
+      next
+    } # awk: function keyword
+    if ($0 ~ /^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\(\\)[[:space:]]*\\{/) {
+      in_func = 1
+      brace = brace_delta($0)
+      print
+      if (brace <= 0) {
+        in_func = 0
+      } # awk: end one-line function
+      next
+    } # awk: function with brace
+    if ($0 ~ /^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\(\\)[[:space:]]*$/) {
+      in_func = 1
+      brace = 0
+      print
+      next
+    } # awk: function header
     next
-  } # awk: skip shebang
-  if ($0 ~ /^[[:space:]]*case[[:space:]]+"[$]0"[[:space:]]+in/) {
-    skip = 1
-    next
-  } # awk: start self-exec block
-  if (skip) {
-    if ($0 ~ /^[[:space:]]*esac[[:space:]]*$/) {
-      skip = 0
-    } # awk: end self-exec block
-    next
-  } # awk: skip body
+  }
+  brace += brace_delta($0)
   print
+  if (brace <= 0) {
+    in_func = 0
+  } # awk: end function
 } # awk: end program
-' "$_iw_spell" > "$_iw_spell_tmp"; then
-            # shellcheck disable=SC1090
-            if . "$_iw_spell_tmp" 2>/dev/null; then
-              set +eu
-              if command -v "$_iw_spell_true_name" >/dev/null 2>&1; then
-                if alias "$_iw_spell_name=$_iw_spell_true_name" 2>/dev/null; then
-                  _iw_spell_success=$((_iw_spell_success + 1))
-                  if [ -n "$_iw_debug_file" ]; then
-                    _iw_msg="invoke-wizardry: ✓ Loaded spell: $_iw_spell_name"
-                    printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
-                  fi
-                else
-                  _iw_spell_failed=$((_iw_spell_failed + 1))
-                  if [ -n "$_iw_debug_file" ]; then
-                    _iw_msg="invoke-wizardry: ✗ Failed to alias spell: $_iw_spell_name"
-                    printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
-                  fi
-                fi
-              else
-                _iw_spell_failed=$((_iw_spell_failed + 1))
-                if [ -n "$_iw_debug_file" ]; then
-                  _iw_msg="✗ Function not found: $_iw_spell_true_name"
-                  _iw_full="invoke-wizardry: $_iw_msg"
-                  printf '%s\n' "$_iw_full" >> "$_iw_debug_file" 2>/dev/null || :
-                fi
-              fi
-            else
+' "$_iw_spell"); then
+          if [ -n "$_iw_spell_body" ]; then
+            if ! eval "$_iw_spell_body" 2>/dev/null; then
               _iw_spell_failed=$((_iw_spell_failed + 1))
               if [ -n "$_iw_debug_file" ]; then
                 _iw_msg="invoke-wizardry: ✗ Failed to source spell: $_iw_spell_name"
                 printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
               fi
+              continue
+            fi
+          fi
+          set +eu
+          if alias "$_iw_spell_name=$_iw_spell_true_name" 2>/dev/null; then
+            _iw_spell_success=$((_iw_spell_success + 1))
+            if [ -n "$_iw_debug_file" ]; then
+              _iw_msg="invoke-wizardry: ✓ Loaded spell: $_iw_spell_name"
+              printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
             fi
           else
             _iw_spell_failed=$((_iw_spell_failed + 1))
             if [ -n "$_iw_debug_file" ]; then
-              _iw_msg="invoke-wizardry: ✗ Failed to prepare spell: $_iw_spell_name"
+              _iw_msg="invoke-wizardry: ✗ Failed to alias spell: $_iw_spell_name"
               printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
             fi
           fi
-          rm -f "$_iw_spell_tmp"
         else
           _iw_spell_failed=$((_iw_spell_failed + 1))
           if [ -n "$_iw_debug_file" ]; then
-            _iw_msg="invoke-wizardry: ✗ Failed to create temp file for $_iw_spell_name"
+            _iw_msg="invoke-wizardry: ✗ Failed to prepare spell: $_iw_spell_name"
             printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
           fi
         fi
@@ -498,51 +500,67 @@ _invoke_wizardry() {
       _iw_user_spell_true_name=$(printf '%s' "$_iw_user_spell_name" | sed 's/-/_/g')
       _iw_grep_pattern="^[[:space:]]*${_iw_user_spell_true_name}[[:space:]]*\\(\\)"
       if grep -qE "$_iw_grep_pattern" "$_iw_user_spell" 2>/dev/null; then
-        _iw_user_tmp=$(mktemp "${TMPDIR:-/tmp}/wizardry-user.XXXXXX" 2>/dev/null \
-          || mktemp "/tmp/wizardry-user.XXXXXX")
-        if [ -n "$_iw_user_tmp" ]; then
-          if awk '
+        if _iw_user_body=$(awk '
+function brace_delta(s, n, m) {
+  n = gsub(/{/, "{", s)
+  m = gsub(/}/, "}", s)
+  return n - m
+} # awk: brace delta
 {
-  line += 1
-  if (line == 1 && $0 ~ /^#!/) {
+  if (!in_func) {
+    if ($0 ~ /^[[:space:]]*function[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\(\\)?[[:space:]]*\\{/) {
+      in_func = 1
+      brace = brace_delta($0)
+      print
+      if (brace <= 0) {
+        in_func = 0
+      } # awk: end one-line function
+      next
+    } # awk: function keyword
+    if ($0 ~ /^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\(\\)[[:space:]]*\\{/) {
+      in_func = 1
+      brace = brace_delta($0)
+      print
+      if (brace <= 0) {
+        in_func = 0
+      } # awk: end one-line function
+      next
+    } # awk: function with brace
+    if ($0 ~ /^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\(\\)[[:space:]]*$/) {
+      in_func = 1
+      brace = 0
+      print
+      next
+    } # awk: function header
     next
-  } # awk: skip shebang
-  if ($0 ~ /^[[:space:]]*case[[:space:]]+"[$]0"[[:space:]]+in/) {
-    skip = 1
-    next
-  } # awk: start self-exec block
-  if (skip) {
-    if ($0 ~ /^[[:space:]]*esac[[:space:]]*$/) {
-      skip = 0
-    } # awk: end self-exec block
-    next
-  } # awk: skip body
+  }
+  brace += brace_delta($0)
   print
+  if (brace <= 0) {
+    in_func = 0
+  } # awk: end function
 } # awk: end program
-' "$_iw_user_spell" > "$_iw_user_tmp"; then
-            # shellcheck disable=SC1090
-            if . "$_iw_user_tmp" 2>/dev/null; then
-              set +eu
-              if command -v "$_iw_user_spell_true_name" >/dev/null 2>&1; then
-                if alias "$_iw_user_spell_name=$_iw_user_spell_true_name" 2>/dev/null; then
-                  _iw_user_spell_success=$((_iw_user_spell_success + 1))
-                  if [ -n "$_iw_debug_file" ]; then
-                    _iw_msg="invoke-wizardry: ✓ Loaded user spell: $_iw_user_spell_name"
-                    printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
-                  fi
-                fi
+' "$_iw_user_spell"); then
+          if [ -n "$_iw_user_body" ]; then
+            if ! eval "$_iw_user_body" 2>/dev/null; then
+              if [ -n "$_iw_debug_file" ]; then
+                _iw_msg="invoke-wizardry: ✗ Failed to source user spell: $_iw_user_spell_name"
+                printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
               fi
+              continue
             fi
-          else
+          fi
+          set +eu
+          if alias "$_iw_user_spell_name=$_iw_user_spell_true_name" 2>/dev/null; then
+            _iw_user_spell_success=$((_iw_user_spell_success + 1))
             if [ -n "$_iw_debug_file" ]; then
-              _iw_msg="invoke-wizardry: ✗ Failed to prepare user spell: $_iw_user_spell_name"
+              _iw_msg="invoke-wizardry: ✓ Loaded user spell: $_iw_user_spell_name"
               printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
             fi
           fi
-          rm -f "$_iw_user_tmp"
         else
           if [ -n "$_iw_debug_file" ]; then
-            _iw_msg="invoke-wizardry: ✗ Failed to create temp file for $_iw_user_spell_name"
+            _iw_msg="invoke-wizardry: ✗ Failed to prepare user spell: $_iw_user_spell_name"
             printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
           fi
         fi
