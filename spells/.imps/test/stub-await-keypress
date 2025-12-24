@@ -15,4 +15,7 @@ _stub_await_keypress() {
 # Self-execute when run directly (not sourced)
 # Match both stub name and symlink name (tests create symlinks without stub- prefix)
 case "$0" in
-  */await-keypress|*/stub-await-keypress) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _stub_await_keypress "$@" ;; esac
+  */await-keypress|*/stub-await-keypress)
+    [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _stub_await_keypress "$@"
+    ;;
+esac

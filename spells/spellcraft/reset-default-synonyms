@@ -58,4 +58,7 @@ reset_default_synonyms() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */reset-default-synonyms) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && reset_default_synonyms "$@" ;; esac
+  */reset-default-synonyms)
+    [ "${_WIZARDRY_SOURCING:-}" != "1" ] && reset_default_synonyms "$@"
+    ;;
+esac

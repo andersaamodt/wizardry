@@ -42,7 +42,8 @@ if [ "${WIZARDRY_DEBUG-}" = "1" ] && [ -n "${HOME-}" ]; then
   _iw_debug_file="$HOME/.wizardry-debug.log"
   # Write a marker immediately to confirm logging is working
   # Use printf directly without date to avoid potential hangs
-  printf '%s\n' "=== invoke-wizardry: DEBUG LOGGING ENABLED ===" >> "$_iw_debug_file" 2>/dev/null || :
+  _iw_msg="=== invoke-wizardry: DEBUG LOGGING ENABLED ==="
+  printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
   printf '%s\n' "HOME=$HOME" >> "$_iw_debug_file" 2>/dev/null || :
   printf '%s\n' "WIZARDRY_DEBUG=$WIZARDRY_DEBUG" >> "$_iw_debug_file" 2>/dev/null || :
   printf '%s\n' "[invoke-wizardry] Debug file: $_iw_debug_file" >&2
@@ -54,7 +55,8 @@ fi
 # Log start of invoke-wizardry
 printf '%s\n' "[invoke-wizardry] === Starting invoke-wizardry ===" >&2
 if [ -n "$_iw_debug_file" ]; then
-  printf '%s\n' "invoke-wizardry: === Starting invoke-wizardry ===" >> "$_iw_debug_file" 2>/dev/null || :
+  _iw_msg="invoke-wizardry: === Starting invoke-wizardry ==="
+  printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
 fi
 
 # Detect shell type without using shell-specific variables directly
@@ -86,7 +88,9 @@ printf '%s\n' "[invoke-wizardry] Checking for recursive sourcing" >&2
 if [ "${_WIZARDRY_INVOKED-}" = "1" ]; then
   printf '%s\n' "[invoke-wizardry] Already invoked, skipping" >&2
   if [ -n "$_iw_debug_file" ]; then
-    printf '%s\n' "invoke-wizardry: Already invoked, skipping (recursive sourcing prevented)" >> "$_iw_debug_file" 2>/dev/null || :
+    _iw_msg="invoke-wizardry: Already invoked, skipping"
+    _iw_msg="$_iw_msg (recursive sourcing prevented)"
+    printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
   fi
   return 0
 fi
@@ -296,15 +300,18 @@ _invoke_wizardry() {
             printf '%s\n' "[invoke-wizardry] Function exists, creating alias" >&2
             if alias "$_iw_imp_name=$_iw_imp_true_name" 2>/dev/null; then
               _iw_imp_success=$((_iw_imp_success + 1))
-              printf '%s\n' "[invoke-wizardry] ✓ Loaded imp: $_iw_imp_name (success=$_iw_imp_success)" >&2
-              printf '%s\n' "[invoke-wizardry] ✓ Loaded imp: $_iw_imp_name (success=$_iw_imp_success)" >&2
+              _iw_msg="[invoke-wizardry] ✓ Loaded imp: $_iw_imp_name"
+              _iw_msg="$_iw_msg (success=$_iw_imp_success)"
+              printf '%s\n' "$_iw_msg" >&2
+              printf '%s\n' "$_iw_msg" >&2
               if [ -n "$_iw_debug_file" ]; then
                 _iw_msg="invoke-wizardry: ✓ Loaded imp: $_iw_imp_name"
                 printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
               fi
             else
               _iw_imp_failed=$((_iw_imp_failed + 1))
-              printf '%s\n' "[invoke-wizardry] ✗ Failed to alias imp: $_iw_imp_name" >&2
+              _iw_msg="[invoke-wizardry] ✗ Failed to alias imp: $_iw_imp_name"
+              printf '%s\n' "$_iw_msg" >&2
               if [ -n "$_iw_debug_file" ]; then
                 _iw_msg="invoke-wizardry: ✗ Failed to alias imp: $_iw_imp_name"
                 printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
@@ -312,7 +319,9 @@ _invoke_wizardry() {
             fi
           else
             _iw_imp_failed=$((_iw_imp_failed + 1))
-            printf '%s\n' "[invoke-wizardry] ✗ Function not found after sourcing: $_iw_imp_true_name" >&2
+            _iw_msg="[invoke-wizardry] ✗ Function not found after sourcing:"
+            _iw_msg="$_iw_msg $_iw_imp_true_name"
+            printf '%s\n' "$_iw_msg" >&2
             if [ -n "$_iw_debug_file" ]; then
               _iw_msg="✗ Function not found after sourcing: $_iw_imp_true_name"
               _iw_full="invoke-wizardry: $_iw_msg"
@@ -369,7 +378,9 @@ _invoke_wizardry() {
     # Skip hidden directories (like .imps and .arcana)
     case "$_iw_spell_cat" in
       */.*) 
-        printf '%s\n' "[invoke-wizardry] Skipping hidden directory: $(basename "$_iw_spell_cat")" >&2
+        _iw_msg="[invoke-wizardry] Skipping hidden directory:"
+        _iw_msg="$_iw_msg $(basename "$_iw_spell_cat")"
+        printf '%s\n' "$_iw_msg" >&2
         if [ -n "$_iw_debug_file" ]; then
           _iw_msg="Skipping hidden directory: $(basename "$_iw_spell_cat")"
           _iw_full="invoke-wizardry: $_iw_msg"
@@ -395,7 +406,13 @@ _invoke_wizardry() {
       # Output progress every 10 spells to avoid overwhelming output
       # Also output individually for higher counts to prevent buffer-related hangs
       _iw_spell_mod=$((_iw_spell_count % 10))
-      if [ "$_iw_spell_mod" -eq 0 ] || [ "$_iw_spell_count" -eq 1 ] || [ "$_iw_spell_count" -gt 55 ]; then
+      _iw_print_progress=0
+      if [ "$_iw_spell_mod" -eq 0 ] || [ "$_iw_spell_count" -eq 1 ]; then
+        _iw_print_progress=1
+      elif [ "$_iw_spell_count" -gt 55 ]; then
+        _iw_print_progress=1
+      fi
+      if [ "$_iw_print_progress" -eq 1 ]; then
         printf '%s\n' "[invoke-wizardry] Spell progress: count=$_iw_spell_count" >&2
       fi
       

@@ -14,4 +14,7 @@ _strip_trailing_slashes() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */strip-trailing-slashes) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _strip_trailing_slashes "$@" ;; esac
+  */strip-trailing-slashes)
+    [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _strip_trailing_slashes "$@"
+    ;;
+esac

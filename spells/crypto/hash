@@ -8,7 +8,8 @@ hash_usage() {
 cat <<'USAGE'
 Usage: hash <file>
 
-Compute the CRC-32 hash of a file and print it in hexadecimal, resolving the path relative to this spell when needed.
+Compute the CRC-32 hash of a file and print it in hexadecimal,
+resolving the path relative to this spell when needed.
 USAGE
 }
 
@@ -56,4 +57,7 @@ say "$(printf "0x%x" "$crc")"
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */hash) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && hash "$@" ;; esac
+  */hash)
+    [ "${_WIZARDRY_SOURCING:-}" != "1" ] && hash "$@"
+    ;;
+esac
