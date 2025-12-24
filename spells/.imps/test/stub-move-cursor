@@ -10,4 +10,7 @@ _stub_move_cursor() {
 
 # Self-execute when run directly (not sourced); match stub and symlink names
 case "$0" in
-  */move-cursor|*/stub-move-cursor) [ -z "${_WIZARDRY_SOURCING-}" ] && _stub_move_cursor "$@" ;; esac
+  */move-cursor|*/stub-move-cursor)
+    [ -z "${_WIZARDRY_SOURCING-}" ] && _stub_move_cursor "$@"
+    ;;
+esac

@@ -15,4 +15,7 @@ _stub_fathom_terminal() {
 
 # Self-execute when run directly (not sourced); match stub and symlink names
 case "$0" in
-  */fathom-terminal|*/stub-fathom-terminal) [ -z "${_WIZARDRY_SOURCING-}" ] && _stub_fathom_terminal "$@" ;; esac
+  */fathom-terminal|*/stub-fathom-terminal)
+    [ -z "${_WIZARDRY_SOURCING-}" ] && _stub_fathom_terminal "$@"
+    ;;
+esac

@@ -15,4 +15,7 @@ _stub_fathom_cursor() {
 
 # Self-execute when run directly (not sourced); match stub and symlink names
 case "$0" in
-  */fathom-cursor|*/stub-fathom-cursor) [ -z "${_WIZARDRY_SOURCING-}" ] && _stub_fathom_cursor "$@" ;; esac
+  */fathom-cursor|*/stub-fathom-cursor)
+    [ -z "${_WIZARDRY_SOURCING-}" ] && _stub_fathom_cursor "$@"
+    ;;
+esac

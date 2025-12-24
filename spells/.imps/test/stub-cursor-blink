@@ -14,4 +14,7 @@ _stub_cursor_blink() {
 
 # Self-execute when run directly (not sourced); match stub and symlink names
 case "$0" in
-  */cursor-blink|*/stub-cursor-blink) [ -z "${_WIZARDRY_SOURCING-}" ] && _stub_cursor_blink "$@" ;; esac
+  */cursor-blink|*/stub-cursor-blink)
+    [ -z "${_WIZARDRY_SOURCING-}" ] && _stub_cursor_blink "$@"
+    ;;
+esac
