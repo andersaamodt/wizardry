@@ -16,6 +16,8 @@
 # - lint-magic passes imps that generate code with flags (heredoc content)
 # - lint-magic fails imps with more than 3 parameters (FAIL)
 # - lint-magic passes imps with variadic params (...) that don't count toward limit
+# - lint-magic fails imps with duplicate set -eu statements
+# - lint-magic passes imps with single set -eu statement
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
@@ -341,6 +343,51 @@ EOF
   _assert_success && _assert_output_contains "passed"
 }
 
+test_imp_fails_with_duplicate_set_eu() {
+  # Imps should not have duplicate "set -eu" statements
+  spell_dir=$(make_spell_dir)
+  mkdir -p "$spell_dir/.imps"
+  cat >"$spell_dir/.imps/bad-duplicate-imp" <<'EOF'
+#!/bin/sh
+
+# bad-duplicate-imp - imp with duplicate set -eu
+set -eu
+
+_bad_duplicate_imp() {
+  echo "test"
+}
+
+set -eu
+case "$0" in
+  */bad-duplicate-imp) _bad_duplicate_imp "$@" ;; esac
+EOF
+  chmod +x "$spell_dir/.imps/bad-duplicate-imp"
+  _run_spell "spells/spellcraft/lint-magic" "$spell_dir/.imps/bad-duplicate-imp"
+  _assert_failure && _assert_output_contains "duplicate 'set -eu'"
+}
+
+test_imp_passes_with_single_set_eu() {
+  # Imps with single "set -eu" should pass
+  spell_dir=$(make_spell_dir)
+  mkdir -p "$spell_dir/.imps"
+  cat >"$spell_dir/.imps/good-imp" <<'EOF'
+#!/bin/sh
+
+# good-imp - imp with single set -eu
+set -eu
+
+_good_imp() {
+  echo "test"
+}
+
+case "$0" in
+  */good-imp) _good_imp "$@" ;; esac
+EOF
+  chmod +x "$spell_dir/.imps/good-imp"
+  _run_spell "spells/spellcraft/lint-magic" "$spell_dir/.imps/good-imp"
+  _assert_success && _assert_output_contains "passed"
+}
+
 _run_test_case "lint-magic prints usage" test_help
 _run_test_case "lint-magic accepts --usage" test_usage_alias
 _run_test_case "lint-magic rejects unknown option" test_unknown_option
@@ -360,5 +407,7 @@ _run_test_case "lint-magic fails imp using flags" test_imp_fails_with_flags
 _run_test_case "lint-magic passes imp with heredoc flags" test_imp_passes_with_heredoc_flags
 _run_test_case "lint-magic fails imp with too many params" test_imp_fails_with_too_many_params
 _run_test_case "lint-magic passes imp with variadic params" test_imp_passes_with_variadic_params
+_run_test_case "lint-magic fails imp with duplicate set -eu" test_imp_fails_with_duplicate_set_eu
+_run_test_case "lint-magic passes imp with single set -eu" test_imp_passes_with_single_set_eu
 
 _finish_tests
