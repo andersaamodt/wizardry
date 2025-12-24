@@ -336,6 +336,42 @@ EOF
   _assert_output_contains "menu is pre-loaded" || return 1
 }
 
+# Test: invoke-wizardry succeeds in shells without BASH/ZSH detection by using default install path
+test_default_path_in_unknown_shell() {
+  tmpdir=$(_make_tempdir)
+  home="$tmpdir/home"
+  mkdir -p "$home"
+  ln -s "$ROOT_DIR" "$home/.wizardry"
+
+  cat > "$tmpdir/test-unknown-shell.sh" <<'EOF'
+#!/bin/sh
+HOME=$1
+export HOME
+PATH="/usr/bin:/bin"
+. "$HOME/.wizardry/spells/.imps/sys/invoke-wizardry" 2>/dev/null || exit 1
+
+if [ -n "${WIZARDRY_DIR-}" ] && [ -d "$WIZARDRY_DIR/spells" ]; then
+  printf '%s\n' "wizardry dir set"
+else
+  printf '%s\n' "wizardry dir missing"
+  exit 1
+fi
+
+if command -v menu >/dev/null 2>&1; then
+  printf '%s\n' "menu available"
+else
+  printf '%s\n' "menu missing"
+  exit 1
+fi
+EOF
+  chmod +x "$tmpdir/test-unknown-shell.sh"
+
+  _run_cmd dash "$tmpdir/test-unknown-shell.sh" "$home"
+  _assert_success || return 1
+  _assert_output_contains "wizardry dir set" || return 1
+  _assert_output_contains "menu available" || return 1
+}
+
 # Test: Spell directories not added to PATH (word-of-binding paradigm)
 test_spell_dirs_not_added_to_path() {
   tmpdir=$(_make_tempdir)
@@ -379,6 +415,7 @@ _run_test_case "core imps are available as commands" test_core_imps_available
 _run_test_case "sourcing invoke-wizardry doesn't hang" test_no_hanging
 _run_test_case "invoke-wizardry maintains permissive shell mode" test_maintains_permissive_mode
 _run_test_case "invoke-wizardry works when sourced from rc file" test_rc_file_sourcing
+_run_test_case "invoke-wizardry works in non-bash shells via default path" test_default_path_in_unknown_shell
 # Test #7 removed: edge case (empty PATH) not realistic and difficult to test reliably
 _run_test_case "command_not_found_handle returns 127 for unknown commands" test_returns_127_for_unknown_command
 _run_test_case "command_not_found_handle has recursion guard" test_recursion_guard
