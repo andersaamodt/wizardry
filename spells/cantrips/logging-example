@@ -91,4 +91,4 @@ esac
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */logging-example) logging_example "$@" ;; esac
+  */logging-example) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && logging_example "$@" ;; esac

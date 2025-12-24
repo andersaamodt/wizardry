@@ -48,4 +48,4 @@ _backup_nix_config() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */backup-nix-config) _backup_nix_config "$@" ;; esac
+  */backup-nix-config) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _backup_nix_config "$@" ;; esac

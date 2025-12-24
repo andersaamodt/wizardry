@@ -12,4 +12,4 @@ _make() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */make) _make "$@" ;; esac
+  */make) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _make "$@" ;; esac

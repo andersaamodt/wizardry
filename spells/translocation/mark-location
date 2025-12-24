@@ -127,4 +127,4 @@ say "Marked location $marker_name at $destination."
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */mark-location) mark_location "$@" ;; esac
+  */mark-location) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && mark_location "$@" ;; esac

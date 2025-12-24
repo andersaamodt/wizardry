@@ -377,4 +377,4 @@ printf '%s\n' "$transformed"
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */compile-spell) compile_spell "$@" ;; esac
+  */compile-spell) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && compile_spell "$@" ;; esac

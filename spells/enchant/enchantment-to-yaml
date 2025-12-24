@@ -81,4 +81,4 @@ done
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */enchantment-to-yaml) enchantment_to_yaml "$@" ;; esac
+  */enchantment-to-yaml) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && enchantment_to_yaml "$@" ;; esac

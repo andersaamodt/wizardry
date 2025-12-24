@@ -81,4 +81,4 @@ printf '\033[%s;%sH' "$y" "$x"
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */move-cursor) move_cursor "$@" ;; esac
+  */move-cursor) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && move_cursor "$@" ;; esac

@@ -224,4 +224,4 @@ return $exit_status
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */trash) trash "$@" ;; esac
+  */trash) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && trash "$@" ;; esac

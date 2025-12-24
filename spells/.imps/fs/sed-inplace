@@ -28,4 +28,4 @@ _sed_inplace() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */sed-inplace) _sed_inplace "$@" ;; esac
+  */sed-inplace) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _sed_inplace "$@" ;; esac

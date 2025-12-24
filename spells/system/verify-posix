@@ -305,4 +305,4 @@ fi
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */verify-posix) verify_posix "$@" ;; esac
+  */verify-posix) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && verify_posix "$@" ;; esac

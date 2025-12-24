@@ -206,4 +206,4 @@ printf 'format=%s\n' "$format"
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */detect-rc-file) detect_rc_file "$@" ;; esac
+  */detect-rc-file) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && detect_rc_file "$@" ;; esac

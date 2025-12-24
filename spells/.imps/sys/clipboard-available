@@ -12,4 +12,4 @@ _clipboard_available() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */clipboard-available) _clipboard_available "$@" ;; esac
+  */clipboard-available) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _clipboard_available "$@" ;; esac

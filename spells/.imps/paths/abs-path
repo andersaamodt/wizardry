@@ -24,4 +24,4 @@ _abs_path() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */abs-path) _abs_path "$@" ;; esac
+  */abs-path) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _abs_path "$@" ;; esac

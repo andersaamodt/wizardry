@@ -97,4 +97,4 @@ fi
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */hashchant) hashchant "$@" ;; esac
+  */hashchant) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && hashchant "$@" ;; esac

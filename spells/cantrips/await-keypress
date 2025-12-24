@@ -296,4 +296,4 @@ printf '%s\n' "$output"
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */await-keypress) await_keypress "$@" ;; esac
+  */await-keypress) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && await_keypress "$@" ;; esac

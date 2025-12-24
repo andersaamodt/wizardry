@@ -124,4 +124,4 @@ done
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */shutdown-menu) shutdown_menu "$@" ;; esac
+  */shutdown-menu) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && shutdown_menu "$@" ;; esac

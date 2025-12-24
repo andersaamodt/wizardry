@@ -27,4 +27,4 @@ _is() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */is) _is "$@" ;; esac
+  */is) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _is "$@" ;; esac

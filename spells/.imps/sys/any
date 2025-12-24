@@ -15,4 +15,4 @@ _any() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */any) _any "$@" ;; esac
+  */any) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _any "$@" ;; esac

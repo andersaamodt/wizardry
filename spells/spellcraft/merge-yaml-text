@@ -122,4 +122,4 @@ done
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */merge-yaml-text) merge_yaml_text "$@" ;; esac
+  */merge-yaml-text) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && merge_yaml_text "$@" ;; esac

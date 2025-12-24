@@ -70,4 +70,4 @@ say "SSH barrier spell cast successfully. Restart sshd to apply changes."
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */ssh-barrier) ssh_barrier "$@" ;; esac
+  */ssh-barrier) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && ssh_barrier "$@" ;; esac

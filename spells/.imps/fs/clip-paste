@@ -20,4 +20,4 @@ _clip_paste() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */clip-paste) _clip_paste "$@" ;; esac
+  */clip-paste) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _clip_paste "$@" ;; esac

@@ -9,4 +9,4 @@ _now() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */now) _now "$@" ;; esac
+  */now) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _now "$@" ;; esac

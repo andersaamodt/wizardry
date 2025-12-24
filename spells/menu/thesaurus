@@ -295,4 +295,4 @@ thesaurus() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */thesaurus) thesaurus "$@" ;; esac
+  */thesaurus) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && thesaurus "$@" ;; esac

@@ -9,4 +9,4 @@ _in_range() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */in-range) _in_range "$@" ;; esac
+  */in-range) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _in_range "$@" ;; esac

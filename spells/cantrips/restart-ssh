@@ -56,4 +56,4 @@ say "SSH service restarted."
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */restart-ssh) restart_ssh "$@" ;; esac
+  */restart-ssh) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && restart_ssh "$@" ;; esac

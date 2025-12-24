@@ -254,4 +254,4 @@ step 'All updates complete.'
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */update-all) update_all "$@" ;; esac
+  */update-all) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && update_all "$@" ;; esac

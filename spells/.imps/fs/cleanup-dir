@@ -10,4 +10,4 @@ _cleanup_dir() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */cleanup-dir) _cleanup_dir "$@" ;; esac
+  */cleanup-dir) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _cleanup_dir "$@" ;; esac

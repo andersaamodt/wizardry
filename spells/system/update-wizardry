@@ -68,4 +68,4 @@ return $?
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */update-wizardry) update_wizardry "$@" ;; esac
+  */update-wizardry) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && update_wizardry "$@" ;; esac

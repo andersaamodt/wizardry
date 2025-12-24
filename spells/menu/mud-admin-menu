@@ -71,4 +71,4 @@ done
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */mud-admin-menu) mud_admin_menu "$@" ;; esac
+  */mud-admin-menu) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && mud_admin_menu "$@" ;; esac

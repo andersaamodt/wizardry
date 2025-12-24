@@ -84,4 +84,4 @@ fi
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */bind-tome) bind_tome "$@" ;; esac
+  */bind-tome) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && bind_tome "$@" ;; esac

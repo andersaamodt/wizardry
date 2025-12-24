@@ -9,4 +9,4 @@ _write_file() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */write-file) _write_file "$@" ;; esac
+  */write-file) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _write_file "$@" ;; esac

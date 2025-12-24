@@ -61,4 +61,4 @@ fi
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */evoke-hash) evoke_hash "$@" ;; esac
+  */evoke-hash) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && evoke_hash "$@" ;; esac

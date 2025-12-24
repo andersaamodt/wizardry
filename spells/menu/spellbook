@@ -352,4 +352,4 @@ spellbook_menu "$spellbook_path"
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */spellbook) spellbook "$@" ;; esac
+  */spellbook) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && spellbook "$@" ;; esac

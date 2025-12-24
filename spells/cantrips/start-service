@@ -101,4 +101,4 @@ fi
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */start-service) start_service "$@" ;; esac
+  */start-service) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && start_service "$@" ;; esac

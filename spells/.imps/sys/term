@@ -10,4 +10,4 @@ _term() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */term) _term "$@" ;; esac
+  */term) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _term "$@" ;; esac

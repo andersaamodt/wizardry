@@ -227,4 +227,4 @@ fi
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */fathom-cursor) fathom_cursor "$@" ;; esac
+  */fathom-cursor) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && fathom_cursor "$@" ;; esac

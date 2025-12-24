@@ -255,4 +255,4 @@ PORTAL
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */jump-to-marker|*/jump) jump_to_marker "$@" ;; esac
+  */jump-to-marker|*/jump) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && jump_to_marker "$@" ;; esac

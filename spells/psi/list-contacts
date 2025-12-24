@@ -64,4 +64,4 @@ done | sort
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */list-contacts) list_contacts "$@" ;; esac
+  */list-contacts) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && list_contacts "$@" ;; esac

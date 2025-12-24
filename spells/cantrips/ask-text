@@ -89,4 +89,4 @@ printf '%s\n' "$response"
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */ask-text) ask_text "$@" ;; esac
+  */ask-text) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && ask_text "$@" ;; esac

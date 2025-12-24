@@ -43,4 +43,4 @@ esac
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */validate-number) validate_number "$@" ;; esac
+  */validate-number) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && validate_number "$@" ;; esac

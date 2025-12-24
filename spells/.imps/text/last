@@ -9,4 +9,4 @@ _last() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */last) _last "$@" ;; esac
+  */last) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _last "$@" ;; esac

@@ -102,4 +102,4 @@ return 0
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */unbind-tome) unbind_tome "$@" ;; esac
+  */unbind-tome) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && unbind_tome "$@" ;; esac

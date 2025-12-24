@@ -107,4 +107,4 @@ printf 'Service %s removed.\n' "$service_name"
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */remove-service) remove_service "$@" ;; esac
+  */remove-service) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && remove_service "$@" ;; esac

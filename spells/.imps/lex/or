@@ -25,4 +25,4 @@ _or() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */or) _or "$@" ;; esac
+  */or) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _or "$@" ;; esac

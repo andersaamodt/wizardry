@@ -62,4 +62,4 @@ return 0
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */validate-ssh-key) validate_ssh_key "$@" ;; esac
+  */validate-ssh-key) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && validate_ssh_key "$@" ;; esac

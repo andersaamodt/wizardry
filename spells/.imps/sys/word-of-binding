@@ -100,4 +100,4 @@ _word_of_binding() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */word-of-binding) _word_of_binding "$@" ;; esac
+  */word-of-binding) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _word_of_binding "$@" ;; esac

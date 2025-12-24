@@ -90,4 +90,4 @@ say "Moved '$(file-name "$from")' to '$to'."
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */move) move "$@" ;; esac
+  */move) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && move "$@" ;; esac

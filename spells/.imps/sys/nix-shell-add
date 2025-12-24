@@ -130,4 +130,4 @@ $_nsa_line"; fi
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */nix-shell-add) _nix_shell_add "$@" ;; esac
+  */nix-shell-add) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _nix_shell_add "$@" ;; esac

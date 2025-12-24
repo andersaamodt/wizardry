@@ -59,4 +59,4 @@ esac
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */cursor-blink) cursor_blink "$@" ;; esac
+  */cursor-blink) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && cursor_blink "$@" ;; esac

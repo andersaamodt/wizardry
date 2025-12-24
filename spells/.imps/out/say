@@ -9,4 +9,4 @@ _say() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */say) _say "$@" ;; esac
+  */say) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _say "$@" ;; esac

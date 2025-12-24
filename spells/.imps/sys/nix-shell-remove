@@ -45,4 +45,4 @@ _nix_shell_remove() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */nix-shell-remove) _nix_shell_remove "$@" ;; esac
+  */nix-shell-remove) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _nix_shell_remove "$@" ;; esac

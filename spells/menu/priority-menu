@@ -81,4 +81,4 @@ done
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */priority-menu) priority_menu "$@" ;; esac
+  */priority-menu) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && priority_menu "$@" ;; esac

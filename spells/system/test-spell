@@ -302,4 +302,4 @@ fi
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */test-spell) test_spell "$@" ;; esac
+  */test-spell) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && test_spell "$@" ;; esac

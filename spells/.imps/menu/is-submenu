@@ -9,4 +9,4 @@ _is_submenu() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */is-submenu) _is_submenu "$@" ;; esac
+  */is-submenu) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _is_submenu "$@" ;; esac

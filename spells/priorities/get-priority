@@ -57,4 +57,4 @@ esac
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */get-priority) get_priority "$@" ;; esac
+  */get-priority) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && get_priority "$@" ;; esac

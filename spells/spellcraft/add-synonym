@@ -230,4 +230,4 @@ HEADER
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */add-synonym) add_synonym "$@" ;; esac
+  */add-synonym) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && add_synonym "$@" ;; esac

@@ -9,4 +9,4 @@ _skip() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */skip) _skip "$@" ;; esac
+  */skip) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _skip "$@" ;; esac

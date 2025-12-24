@@ -72,4 +72,4 @@ return 0
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */validate-path) validate_path "$@" ;; esac
+  */validate-path) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && validate_path "$@" ;; esac

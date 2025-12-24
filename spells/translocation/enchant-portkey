@@ -67,4 +67,4 @@ say "Portkey enchanted on '$(file-name "$file")'. Use follow-portkey to activate
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */enchant-portkey) enchant_portkey "$@" ;; esac
+  */enchant-portkey) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && enchant_portkey "$@" ;; esac

@@ -13,4 +13,4 @@ _parent() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */parent) _parent "$@" ;; esac
+  */parent) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _parent "$@" ;; esac

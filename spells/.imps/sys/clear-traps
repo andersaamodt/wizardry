@@ -10,4 +10,4 @@ _clear_traps() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */clear-traps) _clear_traps "$@" ;; esac
+  */clear-traps) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _clear_traps "$@" ;; esac

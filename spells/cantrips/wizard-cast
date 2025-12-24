@@ -44,4 +44,4 @@ fi
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */wizard-cast) wizard_cast "$@" ;; esac
+  */wizard-cast) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && wizard_cast "$@" ;; esac

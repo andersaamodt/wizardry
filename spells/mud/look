@@ -141,4 +141,4 @@ printf '%s%s%s\n' "$mud_description" "$room_description" "$RESET"
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */look) look "$@" ;; esac
+  */look) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && look "$@" ;; esac

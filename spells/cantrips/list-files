@@ -84,4 +84,4 @@ fi
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */list-files) list_files "$@" ;; esac
+  */list-files) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && list_files "$@" ;; esac

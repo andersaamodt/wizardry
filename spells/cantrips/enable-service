@@ -100,4 +100,4 @@ printf '%s\n' "systemd enablement request submitted."
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */enable-service) enable_service "$@" ;; esac
+  */enable-service) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && enable_service "$@" ;; esac

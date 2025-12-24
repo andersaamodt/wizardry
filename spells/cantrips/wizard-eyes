@@ -46,4 +46,4 @@ fi
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */wizard-eyes) wizard_eyes "$@" ;; esac
+  */wizard-eyes) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && wizard_eyes "$@" ;; esac

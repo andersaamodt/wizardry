@@ -65,4 +65,4 @@ fi
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */kill-process) kill_process "$@" ;; esac
+  */kill-process) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && kill_process "$@" ;; esac

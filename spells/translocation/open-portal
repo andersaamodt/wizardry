@@ -86,4 +86,4 @@ say "Portal opened: $tor_address:$remote_dir mounted at $local_mount"
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */open-portal) open_portal "$@" ;; esac
+  */open-portal) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && open_portal "$@" ;; esac

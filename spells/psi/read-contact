@@ -133,4 +133,4 @@ fi
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */read-contact) read_contact "$@" ;; esac
+  */read-contact) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && read_contact "$@" ;; esac

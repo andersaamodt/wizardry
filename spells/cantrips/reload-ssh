@@ -52,4 +52,4 @@ say "SSH service reloaded."
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */reload-ssh) reload_ssh "$@" ;; esac
+  */reload-ssh) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && reload_ssh "$@" ;; esac

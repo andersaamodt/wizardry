@@ -12,4 +12,4 @@ _full() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */full) _full "$@" ;; esac
+  */full) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _full "$@" ;; esac

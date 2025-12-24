@@ -25,4 +25,4 @@ _validate_name() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */validate-name) _validate_name "$@" ;; esac
+  */validate-name) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _validate_name "$@" ;; esac

@@ -75,4 +75,4 @@ done
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */users-menu) users_menu "$@" ;; esac
+  */users-menu) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && users_menu "$@" ;; esac

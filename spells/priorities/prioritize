@@ -111,4 +111,4 @@ say "Prioritized '$(file-name "$file")'."
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */prioritize) prioritize "$@" ;; esac
+  */prioritize) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && prioritize "$@" ;; esac

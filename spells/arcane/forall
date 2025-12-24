@@ -39,4 +39,4 @@ done
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */forall) forall "$@" ;; esac
+  */forall) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && forall "$@" ;; esac

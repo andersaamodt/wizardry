@@ -49,4 +49,4 @@ exec "$helper" "$@"
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */ask) ask "$@" ;; esac
+  */ask) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && ask "$@" ;; esac

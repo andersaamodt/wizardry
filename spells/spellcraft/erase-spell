@@ -126,4 +126,4 @@ printf 'Erased spell "%s".\n' "$name"
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */erase-spell) erase_spell "$@" ;; esac
+  */erase-spell) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && erase_spell "$@" ;; esac

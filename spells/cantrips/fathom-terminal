@@ -127,4 +127,4 @@ fi
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */fathom-terminal) fathom_terminal "$@" ;; esac
+  */fathom-terminal) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && fathom_terminal "$@" ;; esac

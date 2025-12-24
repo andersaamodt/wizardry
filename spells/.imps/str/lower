@@ -9,4 +9,4 @@ _lower() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */lower) _lower "$@" ;; esac
+  */lower) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _lower "$@" ;; esac

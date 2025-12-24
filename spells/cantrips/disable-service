@@ -99,4 +99,4 @@ printf '%s\n' "systemd disable request submitted."
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */disable-service) disable_service "$@" ;; esac
+  */disable-service) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && disable_service "$@" ;; esac

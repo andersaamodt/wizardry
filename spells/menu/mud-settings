@@ -92,4 +92,4 @@ done
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */mud-settings) mud_settings "$@" ;; esac
+  */mud-settings) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && mud_settings "$@" ;; esac

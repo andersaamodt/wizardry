@@ -185,4 +185,4 @@ printf '%s\n' "Service installed at $service_path"
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */install-service-template) install_service_template "$@" ;; esac
+  */install-service-template) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && install_service_template "$@" ;; esac

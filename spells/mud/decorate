@@ -110,4 +110,4 @@ fi
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */decorate) decorate "$@" ;; esac
+  */decorate) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && decorate "$@" ;; esac

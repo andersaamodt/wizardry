@@ -467,4 +467,4 @@ done
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */menu) menu "$@" ;; esac
+  */menu) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && menu "$@" ;; esac

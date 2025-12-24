@@ -62,4 +62,4 @@ say "Following portkey to $context."
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */follow-portkey) follow_portkey "$@" ;; esac
+  */follow-portkey) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && follow_portkey "$@" ;; esac

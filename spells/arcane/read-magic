@@ -69,4 +69,4 @@ done
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */read-magic) read_magic "$@" ;; esac
+  */read-magic) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && read_magic "$@" ;; esac

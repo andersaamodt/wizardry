@@ -81,4 +81,4 @@ done
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */system-menu) system_menu "$@" ;; esac
+  */system-menu) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && system_menu "$@" ;; esac

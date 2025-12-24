@@ -80,4 +80,4 @@ done
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */services-menu) services_menu "$@" ;; esac
+  */services-menu) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && services_menu "$@" ;; esac

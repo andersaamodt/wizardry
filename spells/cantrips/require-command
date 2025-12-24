@@ -83,4 +83,4 @@ return 1
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */require-command) require_command "$@" ;; esac
+  */require-command) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && require_command "$@" ;; esac

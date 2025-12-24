@@ -104,4 +104,4 @@ return 1
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */service-status) service_status "$@" ;; esac
+  */service-status) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && service_status "$@" ;; esac

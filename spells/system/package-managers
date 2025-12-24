@@ -74,4 +74,4 @@ esac
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */package-managers) package_managers "$@" ;; esac
+  */package-managers) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && package_managers "$@" ;; esac

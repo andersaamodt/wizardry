@@ -167,4 +167,4 @@ esac
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */memorize) memorize "$@" ;; esac
+  */memorize) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && memorize "$@" ;; esac

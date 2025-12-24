@@ -47,4 +47,4 @@ success "Text file created: $text_file"
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */file-list) file_list "$@" ;; esac
+  */file-list) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && file_list "$@" ;; esac

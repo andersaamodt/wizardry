@@ -61,4 +61,4 @@ printf '%s\n' "$longest"
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */max-length) max_length "$@" ;; esac
+  */max-length) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && max_length "$@" ;; esac

@@ -150,4 +150,4 @@ done
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */install-menu) install_menu "$@" ;; esac
+  */install-menu) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && install_menu "$@" ;; esac

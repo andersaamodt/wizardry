@@ -106,4 +106,4 @@ synonym_menu() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */synonym-menu) synonym_menu "$@" ;; esac
+  */synonym-menu) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && synonym_menu "$@" ;; esac

@@ -129,4 +129,4 @@ fi
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */detect-distro) detect_distro "$@" ;; esac
+  */detect-distro) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && detect_distro "$@" ;; esac

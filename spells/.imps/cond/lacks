@@ -8,4 +8,4 @@ _lacks() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */lacks) _lacks "$@" ;; esac
+  */lacks) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _lacks "$@" ;; esac

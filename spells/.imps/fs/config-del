@@ -50,4 +50,4 @@ _config_del() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */config-del) _config_del "$@" ;; esac
+  */config-del) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _config_del "$@" ;; esac

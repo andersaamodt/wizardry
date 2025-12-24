@@ -175,4 +175,4 @@ edit_synonym() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */edit-synonym) edit_synonym "$@" ;; esac
+  */edit-synonym) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && edit_synonym "$@" ;; esac

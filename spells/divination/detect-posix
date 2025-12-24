@@ -179,4 +179,4 @@ return 1
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */detect-posix) detect_posix "$@" ;; esac
+  */detect-posix) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && detect_posix "$@" ;; esac

@@ -129,4 +129,4 @@ mv "$tmp" "$command_file"
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */forget) forget "$@" ;; esac
+  */forget) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && forget "$@" ;; esac

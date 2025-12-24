@@ -65,4 +65,4 @@ torify ssh -i "$player_key" "$remote_user@$tor_address"
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */open-teletype) open_teletype "$@" ;; esac
+  */open-teletype) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && open_teletype "$@" ;; esac

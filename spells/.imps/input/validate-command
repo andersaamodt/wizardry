@@ -28,4 +28,4 @@ _validate_command() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */validate-command) _validate_command "$@" ;; esac
+  */validate-command) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _validate_command "$@" ;; esac

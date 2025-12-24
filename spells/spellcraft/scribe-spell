@@ -342,4 +342,4 @@ fi
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */scribe-spell) scribe_spell "$@" ;; esac
+  */scribe-spell) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && scribe_spell "$@" ;; esac

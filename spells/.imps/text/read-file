@@ -9,4 +9,4 @@ _read_file() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */read-file) _read_file "$@" ;; esac
+  */read-file) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _read_file "$@" ;; esac
