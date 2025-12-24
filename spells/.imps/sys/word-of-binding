@@ -79,9 +79,24 @@ _word_of_binding() {
 
   # Check if module has true-name function (for binding/sourcing)
   if grep -qE "^[[:space:]]*${_wob_true_name}[[:space:]]*\\(\\)" "$_wob_module" 2>/dev/null; then
-    # Bind (source) the module to load its function
+    # Bind (source) the module to load its function without running self-exec blocks.
+    if ! _wob_tmp=$(mktemp "${TMPDIR:-/tmp}/wizardry-wob.XXXXXX" 2>/dev/null || mktemp "/tmp/wizardry-wob.XXXXXX"); then
+      printf '%s\n' "word-of-binding: failed to create temp file" >&2
+      return 1
+    fi
+    if ! awk 'NR==1 && /^#!/ {next} /^[[:space:]]*case "\\$0" in/ {skip=1} skip {if ($0 ~ /^[[:space:]]*esac[[:space:]]*$/) {skip=0}; next} {print}' \
+      "$_wob_module" > "$_wob_tmp"; then
+      rm -f "$_wob_tmp"
+      printf '%s\n' "word-of-binding: failed to prepare module '$_wob_name'" >&2
+      return 1
+    fi
     # shellcheck disable=SC1090
-    . "$_wob_module"
+    if ! . "$_wob_tmp"; then
+      rm -f "$_wob_tmp"
+      printf '%s\n' "word-of-binding: failed to bind '$_wob_name'" >&2
+      return 1
+    fi
+    rm -f "$_wob_tmp"
     
     # Create alias for future calls
     alias "$_wob_name=$_wob_true_name" 2>/dev/null || true
