@@ -13,10 +13,6 @@ _stub_fathom_terminal() {
   esac
 }
 
-# Self-execute when run directly (not sourced)
-# Match both stub name and symlink name (tests create symlinks without stub- prefix)
+# Self-execute when run directly (not sourced); match stub and symlink names
 case "$0" in
-  */fathom-terminal|*/stub-fathom-terminal)
-    [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _stub_fathom_terminal "$@"
-    ;;
-esac
+  */fathom-terminal|*/stub-fathom-terminal) [ -z "${_WIZARDRY_SOURCING-}" ] && _stub_fathom_terminal "$@" ;; esac
