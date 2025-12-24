@@ -258,7 +258,7 @@ BEGIN {
   func_paren = "[[:space:]]*\\\\(\\\\)?[[:space:]]*\\\\{"
   func_simple = "^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\\\(\\\\)[[:space:]]*\\\\{"
   func_header = "^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\\\(\\\\)[[:space:]]*$"
-}
+} # end BEGIN
 function brace_delta(s, n, m) {
   n = gsub(/{/, "{", s)
   m = gsub(/}/, "}", s)
@@ -404,7 +404,7 @@ BEGIN {
   func_paren = "[[:space:]]*\\\\(\\\\)?[[:space:]]*\\\\{"
   func_simple = "^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\\\(\\\\)[[:space:]]*\\\\{"
   func_header = "^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\\\(\\\\)[[:space:]]*$"
-}
+} # end BEGIN
 function brace_delta(s, n, m) {
   n = gsub(/{/, "{", s)
   m = gsub(/}/, "}", s)
@@ -521,7 +521,7 @@ BEGIN {
   func_paren = "[[:space:]]*\\\\(\\\\)?[[:space:]]*\\\\{"
   func_simple = "^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\\\(\\\\)[[:space:]]*\\\\{"
   func_header = "^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\\\(\\\\)[[:space:]]*$"
-}
+} # end BEGIN
 function brace_delta(s, n, m) {
   n = gsub(/{/, "{", s)
   m = gsub(/}/, "}", s)
