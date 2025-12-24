@@ -103,7 +103,9 @@ _invoke_wizardry() {
     printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
   fi
   
+  printf '%s\n' "[invoke-wizardry] Checking WIZARDRY_DIR: ${WIZARDRY_DIR-<unset>}" >&2
   if [ -z "${WIZARDRY_DIR-}" ]; then
+    printf '%s\n' "[invoke-wizardry] WIZARDRY_DIR not set, will attempt detection" >&2
     if [ -n "$_iw_debug_file" ]; then
       _iw_msg="invoke-wizardry: WIZARDRY_DIR not set, attempting detection"
       printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
@@ -114,28 +116,37 @@ _invoke_wizardry() {
     # Bash: use BASH_SOURCE array
     # Use eval to prevent checkbashisms false positive on BASH_SOURCE
     if eval '[ -n "${BASH_VERSION-}" ]' 2>/dev/null; then
+      printf '%s\n' "[invoke-wizardry] Bash detected, using BASH_SOURCE" >&2
       _iw_script_path=$(eval 'printf "%s" "${BASH_SOURCE[0]-}"')
       if [ -n "$_iw_debug_file" ]; then
         _iw_msg="Detected script path via BASH_SOURCE: $_iw_script_path"
         printf '%s\n' "invoke-wizardry: $_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
       fi
-    # Zsh: use parameter expansion %x (current script path)
+      printf '%s\n' "[invoke-wizardry] Script path from BASH_SOURCE: $_iw_script_path" >&2
+    # Zsh: use $0 which contains the sourced file path
+    # Note: In Zsh, when a file is sourced, $0 is set to the sourced file's path
+    # This is simpler and more reliable than using ${(%):-%x} with eval
     elif [ -n "${ZSH_VERSION-}" ]; then
-      # Use eval to prevent checkbashisms false positive
-      _iw_script_path=$(eval 'printf "%s" "${(%):-%x}"')
+      printf '%s\n' "[invoke-wizardry] Zsh detected, using \$0" >&2
+      _iw_script_path="$0"
       if [ -n "$_iw_debug_file" ]; then
-        _iw_msg="invoke-wizardry: Detected script path via ZSH %x: $_iw_script_path"
+        _iw_msg="invoke-wizardry: Detected script path via ZSH \$0: $_iw_script_path"
         printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
       fi
+      printf '%s\n' "[invoke-wizardry] Script path from \$0: $_iw_script_path" >&2
     fi
     
+    printf '%s\n' "[invoke-wizardry] Deriving WIZARDRY_DIR from script path" >&2
+    printf '%s\n' "[invoke-wizardry] Deriving WIZARDRY_DIR from script path" >&2
     # Derive WIZARDRY_DIR from detected script path
     # invoke-wizardry is at: WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry
     # So we need to go up 3 levels: sys -> .imps -> spells -> WIZARDRY_DIR
     if [ -n "$_iw_script_path" ] && [ -f "$_iw_script_path" ]; then
+      printf '%s\n' "[invoke-wizardry] Script path exists, computing directory" >&2
       _iw_script_dir=$(CDPATH= cd -- "$(dirname "$_iw_script_path")" 2>/dev/null && pwd -P) || true
       if [ -n "$_iw_script_dir" ]; then
         WIZARDRY_DIR=$(CDPATH= cd -- "$_iw_script_dir/../../.." 2>/dev/null && pwd -P) || true
+        printf '%s\n' "[invoke-wizardry] WIZARDRY_DIR derived: $WIZARDRY_DIR" >&2
         if [ -n "$_iw_debug_file" ]; then
           _iw_msg="invoke-wizardry: Derived WIZARDRY_DIR: $WIZARDRY_DIR"
           printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
@@ -143,13 +154,16 @@ _invoke_wizardry() {
       fi
     fi
   else
+    printf '%s\n' "[invoke-wizardry] WIZARDRY_DIR already set: $WIZARDRY_DIR" >&2
     if [ -n "$_iw_debug_file" ]; then
       _iw_msg="invoke-wizardry: WIZARDRY_DIR already set: $WIZARDRY_DIR"
       printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
     fi
   fi
   
+  printf '%s\n' "[invoke-wizardry] Validating WIZARDRY_DIR" >&2
   if [ -z "${WIZARDRY_DIR-}" ] || [ ! -d "${WIZARDRY_DIR-}/spells" ]; then
+    printf '%s\n' "[invoke-wizardry] ERROR: WIZARDRY_DIR invalid or spells not found" >&2
     if [ -n "$_iw_debug_file" ]; then
       _iw_msg="ERROR: WIZARDRY_DIR invalid or spells directory not found"
       printf '%s\n' "invoke-wizardry: $_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
@@ -157,8 +171,11 @@ _invoke_wizardry() {
     return 1
   fi
   
+  printf '%s\n' "[invoke-wizardry] WIZARDRY_DIR validated successfully" >&2
+  printf '%s\n' "[invoke-wizardry] WIZARDRY_DIR validated successfully" >&2
   export WIZARDRY_DIR
   
+  printf '%s\n' "[invoke-wizardry] Setting up SPELLBOOK_DIR" >&2
   : "${SPELLBOOK_DIR:=${HOME-}/.spellbook}"
   export SPELLBOOK_DIR
   
@@ -167,12 +184,14 @@ _invoke_wizardry() {
   # The only difference is imps use _underscore true-names, spells use their own convention
   
   # Add only spellbook to PATH (for user's custom standalone scripts)
+  printf '%s\n' "[invoke-wizardry] Adding SPELLBOOK_DIR to PATH" >&2
   case ":${PATH-}:" in
     *":$SPELLBOOK_DIR:"*) ;;
     *) PATH="$SPELLBOOK_DIR:${PATH-}" ;;
   esac
   export PATH
   
+  printf '%s\n' "[invoke-wizardry] Starting imp sourcing" >&2
   # Source all imps to load their functions into the shell
   # Imps are spells too - they're loaded the same way as regular spells
   # The only difference is imps use _underscore true-names
@@ -286,6 +305,7 @@ _invoke_wizardry() {
   
   _iw_imp_summary="total=$_iw_imp_count success=$_iw_imp_success"
   _iw_imp_summary="$_iw_imp_summary skipped=$_iw_imp_skipped failed=$_iw_imp_failed"
+  printf '%s\n' "[invoke-wizardry] Imp sourcing complete: $_iw_imp_summary" >&2
   if [ -n "$_iw_debug_file" ]; then
     _iw_msg="invoke-wizardry: Imp sourcing complete: $_iw_imp_summary"
     printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
@@ -295,6 +315,7 @@ _invoke_wizardry() {
   _WIZARDRY_LOADING_SPELLS=1
   export _WIZARDRY_LOADING_SPELLS
   
+  printf '%s\n' "[invoke-wizardry] Starting spell sourcing" >&2
   # Word-of-binding: Pre-load all spells by sourcing them
   # This makes spell functions immediately available in the current shell
   # Spells are sourced (not executed) to bind their functions into the shell
@@ -395,11 +416,13 @@ _invoke_wizardry() {
   
   _iw_spell_summary="total=$_iw_spell_count success=$_iw_spell_success"
   _iw_spell_summary="$_iw_spell_summary skipped=$_iw_spell_skipped failed=$_iw_spell_failed"
+  printf '%s\n' "[invoke-wizardry] Spell sourcing complete: $_iw_spell_summary" >&2
   if [ -n "$_iw_debug_file" ]; then
     _iw_msg="invoke-wizardry: Spell sourcing complete: $_iw_spell_summary"
     printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
   fi
   
+  printf '%s\n' "[invoke-wizardry] Checking for user spells" >&2
   # Pre-load spells from user's spellbook
   # User spells follow the same pattern as regular spells (spell_name, no underscore)
   if [ -n "$_iw_debug_file" ]; then
