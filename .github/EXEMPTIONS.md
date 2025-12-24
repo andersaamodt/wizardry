@@ -557,7 +557,27 @@ fi
 
 **Context**: Used by `await-keypress` for terminal state management.
 
-#### 11. Grandfathered Variables (To Be Eliminated)
+#### 11. Internal Spell Loading Variables
+
+**Allowed**: Variables used by the word-of-binding infrastructure during spell sourcing.
+
+- `_WIZARDRY_LOADING_SPELLS` — Flag indicating spells are being sourced by `invoke-wizardry`
+
+**Context**: Set by `invoke-wizardry` before sourcing spells, checked by `env-clear` to prevent clearing parent shell's loop variables.
+
+**Rationale**: 
+- When `invoke-wizardry` sources spells to load their functions, some spells execute `. env-clear` at top level
+- Without this flag, `env-clear` would unset ALL environment variables including `invoke-wizardry`'s loop counters (`_iw_spell_count`, etc.)
+- This caused silent failures mid-loop on macOS, hanging terminal initialization
+- The flag allows `env-clear` to skip clearing when being sourced for binding (not when actually executed)
+
+**Alternative Considered**: Moving all top-level code into functions (ideal but requires refactoring 100+ spells with complex helper functions)
+
+**Status**: ⚠️ Not ideal - workaround for spells with top-level imperative code. Should be eliminated when spell structure is fully standardized.
+
+**Added**: 2025-12-23 - Mac terminal hang fix
+
+#### 12. Grandfathered Variables (To Be Eliminated)
 
 **Status**: ⚠️ Temporary exemptions in `.arcana/*` only. Production spells fully converted to lowercase.
 
