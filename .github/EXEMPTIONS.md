@@ -4,7 +4,7 @@ Documents all deviations from project standards with justification.
 
 ## Summary
 
-- **Style**: ✅ **353/353 files compliant** - All long-line and mixed tabs/spaces exemptions eliminated (2025-12-17)
+- **Style**: **348/353 files compliant** - 5 test stub files (101-113 chars) exempt for awk parsing compatibility
 - **Code Structure**: Conditional imps exempt from `set -eu`; imps exempt from `--help` (architectural decisions)
 - **Function Discipline**: ✅ 0 spells with 4+ extra functions (57/57 spells refactored)
   - 6 spells with 2-3 extra functions remain (documented below) - functions used 2-20x each, acceptable per guidelines
@@ -24,7 +24,27 @@ Documents all deviations from project standards with justification.
 
 **Automatic Exemptions**: Error messages, prompts, help text (auto-detected by lint-magic)
 
-**Hardcoded Exemptions**: ✅ NONE - All eliminated (2025-12-17)
+**Hardcoded Exemptions**: 5 test stub files (101-113 chars) - Required for awk parsing compatibility
+
+**Active Exemptions**:
+
+1. **Test Stub Self-Execute Patterns** (5 files, 101-113 chars each):
+   - `spells/.imps/test/stub-move-cursor` line 13 (101 chars)
+   - `spells/.imps/test/stub-cursor-blink` line 17 (104 chars)
+   - `spells/.imps/test/stub-fathom-cursor` line 18 (107 chars)
+   - `spells/.imps/test/stub-await-keypress` line 17 (110 chars)
+   - `spells/.imps/test/stub-fathom-terminal` line 18 (113 chars)
+
+   **Pattern**: `*/name|*/stub-name) [ -z "${_WIZARDRY_SOURCING-}" ] && _stub_name "$@" ;; esac`
+   
+   **Reason**: Must be single-line format for awk parsing compatibility. Multi-line case statements cause awk syntax errors during compile-spell processing and test infrastructure parsing. The pattern includes two file path matches (symlink and direct) plus the sourcing flag check, making it unavoidably long.
+   
+   **Attempted Solutions**:
+   - ❌ Multi-line case statement: Breaks awk parsing with "syntax error at or near ," errors
+   - ❌ Shorter variable names: Pattern still exceeds 100 chars
+   - ✅ Current: Single-line format (works correctly, 1-13 chars over limit)
+   
+   **Test-Only**: These files are exclusively for test infrastructure, not production code.
 
 **Previously Exempted** (resolved):
 1. **`spells/.imps/cond/is` line 13** - Refactored to multi-line format while preserving case label structure
@@ -35,6 +55,7 @@ Documents all deviations from project standards with justification.
 - Conditionals → separate checks or intermediate variables
 - Command chains → break at `&&`/`||`
 - Long lists → use line continuations with backslash
+- **Exception**: Test stubs must use single-line case statements for awk compatibility
 
 ### Mixed Tabs/Spaces
 
