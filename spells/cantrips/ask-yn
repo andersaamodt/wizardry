@@ -117,4 +117,4 @@ done
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */ask-yn) ask_yn "$@" ;; esac
+  */ask-yn) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && ask_yn "$@" ;; esac

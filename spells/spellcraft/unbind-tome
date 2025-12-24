@@ -3,7 +3,7 @@
 # This spell splits a bound tome back into individual page files.
 # It derives filenames from page headers so the restored pages are easy to revisit.
 
-require-wizardry || exit 1
+# require-wizardry - check moved inside function (prevents exit during sourcing)
 
 unbind_tome_usage() {
     cat <<'USAGE'
@@ -102,4 +102,4 @@ return 0
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */unbind-tome) unbind_tome "$@" ;; esac
+  */unbind-tome) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && unbind_tome "$@" ;; esac

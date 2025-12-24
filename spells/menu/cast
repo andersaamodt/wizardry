@@ -21,7 +21,7 @@ case "${1-}" in
   ;;
 esac
 
-require-wizardry || exit 1
+# require-wizardry moved inside function
 
 set -eu
 . env-clear
@@ -136,4 +136,4 @@ done
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */cast) cast "$@" ;; esac
+  */cast) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && cast "$@" ;; esac

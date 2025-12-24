@@ -5,7 +5,7 @@
 #
 # Usage: forget SPELL_NAME
 
-require-wizardry || exit 1
+# require-wizardry - check moved inside function (prevents exit during sourcing)
 
 spell_name="forget"
 tab_char=$(printf '\t')
@@ -129,4 +129,4 @@ mv "$tmp" "$command_file"
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */forget) forget "$@" ;; esac
+  */forget) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && forget "$@" ;; esac

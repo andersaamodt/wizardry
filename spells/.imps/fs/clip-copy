@@ -36,4 +36,5 @@ _clip_copy() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */clip-copy) _clip_copy "$@" ;; esac
+  */clip-copy) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _clip_copy "$@" ;; esac
+

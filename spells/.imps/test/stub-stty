@@ -15,4 +15,4 @@ _stub_stty() {
 # Self-execute when run directly (not sourced)
 # Match both stub name and symlink name (tests create symlinks without stub- prefix)
 case "$0" in
-  */stty|*/stub-stty) _stub_stty "$@" ;; esac
+  */stty|*/stub-stty) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _stub_stty "$@" ;; esac

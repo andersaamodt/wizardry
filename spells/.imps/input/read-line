@@ -34,4 +34,4 @@ _read_line() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */read-line) _read_line "$@" ;; esac
+  */read-line) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _read_line "$@" ;; esac

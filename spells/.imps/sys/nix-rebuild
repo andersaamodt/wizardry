@@ -55,4 +55,4 @@ _nix_rebuild() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */nix-rebuild) _nix_rebuild "$@" ;; esac
+  */nix-rebuild) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _nix_rebuild "$@" ;; esac

@@ -29,4 +29,4 @@ _config_has() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */config-has) _config_has "$@" ;; esac
+  */config-has) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _config_has "$@" ;; esac

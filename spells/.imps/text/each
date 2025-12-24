@@ -9,4 +9,4 @@ _each() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */each) _each "$@" ;; esac
+  */each) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _each "$@" ;; esac

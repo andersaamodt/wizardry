@@ -8,4 +8,4 @@ _older() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */older) _older "$@" ;; esac
+  */older) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _older "$@" ;; esac

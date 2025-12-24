@@ -49,5 +49,5 @@ _require_wizardry() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */require-wizardry) _require_wizardry "$@" ;; esac
+  */require-wizardry) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _require_wizardry "$@" ;; esac
 

@@ -49,4 +49,4 @@ _ask_install_wizardry() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */ask-install-wizardry) _ask_install_wizardry "$@" ;; esac
+  */ask-install-wizardry) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _ask_install_wizardry "$@" ;; esac

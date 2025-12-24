@@ -1,7 +1,7 @@
 #!/bin/sh
 # This spell provides a menu interface for managing the spellbook.
 
-require-wizardry || exit 1
+# require-wizardry - check moved inside function (prevents exit during sourcing)
 
 spellbook_usage() {
         cat <<'USAGE'
@@ -352,4 +352,4 @@ spellbook_menu "$spellbook_path"
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */spellbook) spellbook "$@" ;; esac
+  */spellbook) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && spellbook "$@" ;; esac

@@ -11,4 +11,4 @@ _yes() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */yes) _yes "$@" ;; esac
+  */yes) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _yes "$@" ;; esac

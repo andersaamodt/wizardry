@@ -16,4 +16,4 @@ _pkg_manager() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */pkg-manager) _pkg_manager "$@" ;; esac
+  */pkg-manager) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _pkg_manager "$@" ;; esac

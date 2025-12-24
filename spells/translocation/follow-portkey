@@ -3,7 +3,7 @@
 # This spell activates a portkey enchantment to teleport to the stored destination.
 # The destination is read from the file's 'context' extended attribute.
 
-require-wizardry || exit 1
+# require-wizardry - check moved inside function (prevents exit during sourcing)
 
 follow_portkey_usage() {
 cat <<'USAGE'
@@ -62,4 +62,4 @@ say "Following portkey to $context."
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */follow-portkey) follow_portkey "$@" ;; esac
+  */follow-portkey) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && follow_portkey "$@" ;; esac

@@ -9,4 +9,4 @@ _append() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */append) _append "$@" ;; esac
+  */append) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _append "$@" ;; esac

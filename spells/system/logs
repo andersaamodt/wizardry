@@ -21,7 +21,7 @@ case "${1-}" in
   ;;
 esac
 
-require-wizardry || exit 1
+# require-wizardry - check moved inside function (prevents exit during sourcing)
 
 set -eu
 . env-clear
@@ -48,4 +48,4 @@ menu "Log Viewer" "$logs" "$logs"
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */logs) logs "$@" ;; esac
+  */logs) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && logs "$@" ;; esac

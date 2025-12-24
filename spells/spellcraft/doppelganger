@@ -223,4 +223,4 @@ fi
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */doppelganger) doppelganger "$@" ;; esac
+  */doppelganger) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && doppelganger "$@" ;; esac

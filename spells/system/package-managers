@@ -21,7 +21,7 @@ case "${1-}" in
   ;;
 esac
 
-require-wizardry || exit 1
+# require-wizardry - check moved inside function (prevents exit during sourcing)
 
 set -eu
 . env-clear
@@ -74,4 +74,4 @@ esac
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */package-managers) package_managers "$@" ;; esac
+  */package-managers) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && package_managers "$@" ;; esac

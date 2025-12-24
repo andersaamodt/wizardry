@@ -856,4 +856,4 @@ return $status
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */test-magic) test_magic "$@" ;; esac
+  */test-magic) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && test_magic "$@" ;; esac

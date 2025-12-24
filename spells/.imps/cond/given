@@ -9,4 +9,4 @@ _given() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */given) _given "$@" ;; esac
+  */given) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _given "$@" ;; esac

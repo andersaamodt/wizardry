@@ -42,7 +42,8 @@ if [ "${WIZARDRY_DEBUG-}" = "1" ] && [ -n "${HOME-}" ]; then
   _iw_debug_file="$HOME/.wizardry-debug.log"
   # Write a marker immediately to confirm logging is working
   # Use printf directly without date to avoid potential hangs
-  printf '%s\n' "=== invoke-wizardry: DEBUG LOGGING ENABLED ===" >> "$_iw_debug_file" 2>/dev/null || :
+  _iw_msg="=== invoke-wizardry: DEBUG LOGGING ENABLED ==="
+  printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
   printf '%s\n' "HOME=$HOME" >> "$_iw_debug_file" 2>/dev/null || :
   printf '%s\n' "WIZARDRY_DEBUG=$WIZARDRY_DEBUG" >> "$_iw_debug_file" 2>/dev/null || :
   printf '%s\n' "[invoke-wizardry] Debug file: $_iw_debug_file" >&2
@@ -54,7 +55,8 @@ fi
 # Log start of invoke-wizardry
 printf '%s\n' "[invoke-wizardry] === Starting invoke-wizardry ===" >&2
 if [ -n "$_iw_debug_file" ]; then
-  printf '%s\n' "invoke-wizardry: === Starting invoke-wizardry ===" >> "$_iw_debug_file" 2>/dev/null || :
+  _iw_msg="invoke-wizardry: === Starting invoke-wizardry ==="
+  printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
 fi
 
 # Detect shell type without using shell-specific variables directly
@@ -86,7 +88,9 @@ printf '%s\n' "[invoke-wizardry] Checking for recursive sourcing" >&2
 if [ "${_WIZARDRY_INVOKED-}" = "1" ]; then
   printf '%s\n' "[invoke-wizardry] Already invoked, skipping" >&2
   if [ -n "$_iw_debug_file" ]; then
-    printf '%s\n' "invoke-wizardry: Already invoked, skipping (recursive sourcing prevented)" >> "$_iw_debug_file" 2>/dev/null || :
+    _iw_msg="invoke-wizardry: Already invoked, skipping"
+    _iw_msg="$_iw_msg (recursive sourcing prevented)"
+    printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
   fi
   return 0
 fi
@@ -276,51 +280,53 @@ _invoke_wizardry() {
           fi
           printf '%s\n' "[invoke-wizardry] About to source: $_iw_imp" >&2
           # Source the imp to load its function
+          # In zsh, when sourcing a file, $0 is set to the sourced file's path,
+          # which causes the self-execute case statement to match and run.
+          # To prevent this, we set _WIZARDRY_SOURCING=1 before sourcing.
+          # Imps and spells should check this flag and skip self-execution.
           # shellcheck disable=SC1090
-          if . "$_iw_imp" 2>/dev/null; then
-            printf '%s\n' "[invoke-wizardry] Successfully sourced imp: $_iw_imp_name" >&2
-            # Restore permissive mode - sourcing imps with set -eu changes parent shell mode
-            set +eu
-            printf '%s\n' "[invoke-wizardry] Restored permissive mode" >&2
-            
-            printf '%s\n' "[invoke-wizardry] Checking if function exists: $_iw_imp_true_name" >&2
-            # Create alias from hyphenated name to underscore function name
-            # This is the imp paradigm: hyphenated command -> _underscore_function
-            if command -v "$_iw_imp_true_name" >/dev/null 2>&1; then
-              printf '%s\n' "[invoke-wizardry] Function exists, creating alias" >&2
-              if alias "$_iw_imp_name=$_iw_imp_true_name" 2>/dev/null; then
-                _iw_imp_success=$((_iw_imp_success + 1))
-                printf '%s\n' "[invoke-wizardry] ✓ Loaded imp: $_iw_imp_name (success=$_iw_imp_success)" >&2
-                printf '%s\n' "[invoke-wizardry] ✓ Loaded imp: $_iw_imp_name (success=$_iw_imp_success)" >&2
-                if [ -n "$_iw_debug_file" ]; then
-                  _iw_msg="invoke-wizardry: ✓ Loaded imp: $_iw_imp_name"
-                  printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
-                fi
-              else
-                _iw_imp_failed=$((_iw_imp_failed + 1))
-                printf '%s\n' "[invoke-wizardry] ✗ Failed to alias imp: $_iw_imp_name" >&2
-                if [ -n "$_iw_debug_file" ]; then
-                  _iw_msg="invoke-wizardry: ✗ Failed to alias imp: $_iw_imp_name"
-                  printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
-                fi
+          _WIZARDRY_SOURCING=1
+          . "$_iw_imp" 2>/dev/null || true
+          unset _WIZARDRY_SOURCING
+          printf '%s\n' "[invoke-wizardry] Sourcing complete, checking for function" >&2
+          # Restore permissive mode - sourcing imps with set -eu changes parent shell mode
+          set +eu
+          printf '%s\n' "[invoke-wizardry] Restored permissive mode" >&2
+          
+          printf '%s\n' "[invoke-wizardry] Checking if function exists: $_iw_imp_true_name" >&2
+          # Create alias from hyphenated name to underscore function name
+          # This is the imp paradigm: hyphenated command -> _underscore_function
+          if command -v "$_iw_imp_true_name" >/dev/null 2>&1; then
+            printf '%s\n' "[invoke-wizardry] Function exists, creating alias" >&2
+            if alias "$_iw_imp_name=$_iw_imp_true_name" 2>/dev/null; then
+              _iw_imp_success=$((_iw_imp_success + 1))
+              _iw_msg="[invoke-wizardry] ✓ Loaded imp: $_iw_imp_name"
+              _iw_msg="$_iw_msg (success=$_iw_imp_success)"
+              printf '%s\n' "$_iw_msg" >&2
+              printf '%s\n' "$_iw_msg" >&2
+              if [ -n "$_iw_debug_file" ]; then
+                _iw_msg="invoke-wizardry: ✓ Loaded imp: $_iw_imp_name"
+                printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
               fi
             else
               _iw_imp_failed=$((_iw_imp_failed + 1))
-              printf '%s\n' "[invoke-wizardry] ✗ Function not found after sourcing: $_iw_imp_true_name" >&2
+              _iw_msg="[invoke-wizardry] ✗ Failed to alias imp: $_iw_imp_name"
+              printf '%s\n' "$_iw_msg" >&2
               if [ -n "$_iw_debug_file" ]; then
-                _iw_msg="✗ Function not found after sourcing: $_iw_imp_true_name"
-                _iw_full="invoke-wizardry: $_iw_msg"
-                printf '%s\n' "$_iw_full" >> "$_iw_debug_file" 2>/dev/null || :
+                _iw_msg="invoke-wizardry: ✗ Failed to alias imp: $_iw_imp_name"
+                printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
               fi
             fi
           else
             _iw_imp_failed=$((_iw_imp_failed + 1))
-            printf '%s\n' "[invoke-wizardry] ✗ Failed to source imp: $_iw_imp_name" >&2
+            _iw_msg="[invoke-wizardry] ✗ Function not found after sourcing:"
+            _iw_msg="$_iw_msg $_iw_imp_true_name"
+            printf '%s\n' "$_iw_msg" >&2
             if [ -n "$_iw_debug_file" ]; then
-              _iw_msg="invoke-wizardry: ✗ Failed to source imp: $_iw_imp_name"
-              printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
+              _iw_msg="✗ Function not found after sourcing: $_iw_imp_true_name"
+              _iw_full="invoke-wizardry: $_iw_msg"
+              printf '%s\n' "$_iw_full" >> "$_iw_debug_file" 2>/dev/null || :
             fi
-            set +eu  # Ensure permissive mode even after failure
           fi
         else
           _iw_imp_skipped=$((_iw_imp_skipped + 1))
@@ -372,7 +378,9 @@ _invoke_wizardry() {
     # Skip hidden directories (like .imps and .arcana)
     case "$_iw_spell_cat" in
       */.*) 
-        printf '%s\n' "[invoke-wizardry] Skipping hidden directory: $(basename "$_iw_spell_cat")" >&2
+        _iw_msg="[invoke-wizardry] Skipping hidden directory:"
+        _iw_msg="$_iw_msg $(basename "$_iw_spell_cat")"
+        printf '%s\n' "$_iw_msg" >&2
         if [ -n "$_iw_debug_file" ]; then
           _iw_msg="Skipping hidden directory: $(basename "$_iw_spell_cat")"
           _iw_full="invoke-wizardry: $_iw_msg"
@@ -396,8 +404,15 @@ _invoke_wizardry() {
       _iw_spell_count=$((_iw_spell_count + 1))
       
       # Output progress every 10 spells to avoid overwhelming output
+      # Also output individually for higher counts to prevent buffer-related hangs
       _iw_spell_mod=$((_iw_spell_count % 10))
+      _iw_print_progress=0
       if [ "$_iw_spell_mod" -eq 0 ] || [ "$_iw_spell_count" -eq 1 ]; then
+        _iw_print_progress=1
+      elif [ "$_iw_spell_count" -gt 55 ]; then
+        _iw_print_progress=1
+      fi
+      if [ "$_iw_print_progress" -eq 1 ]; then
         printf '%s\n' "[invoke-wizardry] Spell progress: count=$_iw_spell_count" >&2
       fi
       
@@ -416,42 +431,40 @@ _invoke_wizardry() {
           printf '%s\n' "$_iw_full" >> "$_iw_debug_file" 2>/dev/null || :
         fi
         # Source the spell to load its function
+        # In zsh, when sourcing a file, $0 is set to the sourced file's path,
+        # which causes the self-execute case statement to match and run.
+        # To prevent this, we set _WIZARDRY_SOURCING=1 before sourcing.
+        # Spells should check this flag and skip self-execution.
         # shellcheck disable=SC1090
-        if . "$_iw_spell" 2>/dev/null; then
-          # Restore permissive mode - sourcing spells with set -eu changes parent shell mode
-          set +eu
-          
-          # Create alias from hyphenated name to underscore function name
-          # spell-name -> spell_name
-          if command -v "$_iw_spell_true_name" >/dev/null 2>&1; then
-            if alias "$_iw_spell_name=$_iw_spell_true_name" 2>/dev/null; then
-              _iw_spell_success=$((_iw_spell_success + 1))
-              if [ -n "$_iw_debug_file" ]; then
-                _iw_msg="invoke-wizardry: ✓ Loaded spell: $_iw_spell_name"
-                printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
-              fi
-            else
-              _iw_spell_failed=$((_iw_spell_failed + 1))
-              if [ -n "$_iw_debug_file" ]; then
-                _iw_msg="invoke-wizardry: ✗ Failed to alias spell: $_iw_spell_name"
-                printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
-              fi
+        _WIZARDRY_SOURCING=1
+        . "$_iw_spell" 2>/dev/null || true
+        unset _WIZARDRY_SOURCING
+        # Restore permissive mode - sourcing spells with set -eu changes parent shell mode
+        set +eu
+        
+        # Create alias from hyphenated name to underscore function name
+        # spell-name -> spell_name
+        if command -v "$_iw_spell_true_name" >/dev/null 2>&1; then
+          if alias "$_iw_spell_name=$_iw_spell_true_name" 2>/dev/null; then
+            _iw_spell_success=$((_iw_spell_success + 1))
+            if [ -n "$_iw_debug_file" ]; then
+              _iw_msg="invoke-wizardry: ✓ Loaded spell: $_iw_spell_name"
+              printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
             fi
           else
             _iw_spell_failed=$((_iw_spell_failed + 1))
             if [ -n "$_iw_debug_file" ]; then
-              _iw_msg="✗ Function not found after sourcing: $_iw_spell_true_name"
-              _iw_full="invoke-wizardry: $_iw_msg"
-              printf '%s\n' "$_iw_full" >> "$_iw_debug_file" 2>/dev/null || :
+              _iw_msg="invoke-wizardry: ✗ Failed to alias spell: $_iw_spell_name"
+              printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
             fi
           fi
         else
           _iw_spell_failed=$((_iw_spell_failed + 1))
           if [ -n "$_iw_debug_file" ]; then
-            _iw_msg="invoke-wizardry: ✗ Failed to source spell: $_iw_spell_name"
-            printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
+            _iw_msg="✗ Function not found after sourcing: $_iw_spell_true_name"
+            _iw_full="invoke-wizardry: $_iw_msg"
+            printf '%s\n' "$_iw_full" >> "$_iw_debug_file" 2>/dev/null || :
           fi
-          set +eu  # Ensure permissive mode even after failure
         fi
       else
         _iw_spell_skipped=$((_iw_spell_skipped + 1))
@@ -499,22 +512,24 @@ _invoke_wizardry() {
           printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
         fi
         # shellcheck disable=SC1090
-        if . "$_iw_user_spell" 2>/dev/null; then
-          set +eu
-          
-          if command -v "$_iw_user_spell_true_name" >/dev/null 2>&1; then
-            if alias "$_iw_user_spell_name=$_iw_user_spell_true_name" 2>/dev/null; then
-              _iw_user_spell_success=$((_iw_user_spell_success + 1))
-              if [ -n "$_iw_debug_file" ]; then
-                _iw_msg="invoke-wizardry: ✓ Loaded user spell: $_iw_user_spell_name"
-                printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
-              fi
+        # Source user spell - set flag to prevent self-execution during sourcing
+        # shellcheck disable=SC1090
+        _WIZARDRY_SOURCING=1
+        . "$_iw_user_spell" 2>/dev/null || true
+        unset _WIZARDRY_SOURCING
+        set +eu
+        
+        if command -v "$_iw_user_spell_true_name" >/dev/null 2>&1; then
+          if alias "$_iw_user_spell_name=$_iw_user_spell_true_name" 2>/dev/null; then
+            _iw_user_spell_success=$((_iw_user_spell_success + 1))
+            if [ -n "$_iw_debug_file" ]; then
+              _iw_msg="invoke-wizardry: ✓ Loaded user spell: $_iw_user_spell_name"
+              printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
             fi
           fi
         else
-          set +eu
           if [ -n "$_iw_debug_file" ]; then
-            _iw_msg="✗ Failed to source user spell: $_iw_user_spell_name"
+            _iw_msg="✗ User spell function not found: $_iw_user_spell_true_name"
             _iw_full="invoke-wizardry: $_iw_msg"
             printf '%s\n' "$_iw_full" >> "$_iw_debug_file" 2>/dev/null || :
           fi

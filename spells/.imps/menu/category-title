@@ -28,4 +28,4 @@ _category_title() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */category-title) _category_title "$@" ;; esac
+  */category-title) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _category_title "$@" ;; esac

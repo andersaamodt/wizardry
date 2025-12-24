@@ -23,7 +23,7 @@ case "${1-}" in
   ;;
 esac
 
-require-wizardry || exit 1
+# require-wizardry - check moved inside function (prevents exit during sourcing)
 
 set -eu
 . env-clear
@@ -254,4 +254,4 @@ step 'All updates complete.'
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */update-all) update_all "$@" ;; esac
+  */update-all) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && update_all "$@" ;; esac

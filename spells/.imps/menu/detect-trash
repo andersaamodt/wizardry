@@ -23,4 +23,4 @@ _detect_trash() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */detect-trash) _detect_trash "$@" ;; esac
+  */detect-trash) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _detect_trash "$@" ;; esac

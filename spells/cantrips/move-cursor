@@ -20,7 +20,7 @@ case "${1-}" in
   ;;
 esac
 
-require-wizardry || exit 1
+# require-wizardry moved inside function
 
 set -eu
 . env-clear
@@ -81,4 +81,4 @@ printf '\033[%s;%sH' "$y" "$x"
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */move-cursor) move_cursor "$@" ;; esac
+  */move-cursor) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && move_cursor "$@" ;; esac

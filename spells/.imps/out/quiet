@@ -9,4 +9,4 @@ _quiet() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */quiet) _quiet "$@" ;; esac
+  */quiet) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _quiet "$@" ;; esac

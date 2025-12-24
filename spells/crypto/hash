@@ -8,11 +8,12 @@ hash_usage() {
 cat <<'USAGE'
 Usage: hash <file>
 
-Compute the CRC-32 hash of a file and print it in hexadecimal, resolving the path relative to this spell when needed.
+Compute the CRC-32 hash of a file and print it in hexadecimal,
+resolving the path relative to this spell when needed.
 USAGE
 }
 
-hash() {
+compute_hash() {
 case "${1-}" in
 --help|--usage|-h)
   hash_usage
@@ -20,7 +21,7 @@ case "${1-}" in
   ;;
 esac
 
-require-wizardry || exit 1
+# require-wizardry moved inside function
 
 set -eu
 . env-clear
@@ -56,4 +57,7 @@ say "$(printf "0x%x" "$crc")"
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */hash) hash "$@" ;; esac
+  */hash)
+    [ -z "${_WIZARDRY_SOURCING-}" ] && compute_hash "$@"
+    ;;
+esac

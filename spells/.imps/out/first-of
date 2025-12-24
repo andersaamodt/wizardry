@@ -12,4 +12,4 @@ _first_of() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */first-of) _first_of "$@" ;; esac
+  */first-of) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _first_of "$@" ;; esac

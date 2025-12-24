@@ -2,7 +2,7 @@
 
 # Inscribe bookmarks for jump-to-marker to teleport you back.
 
-require-wizardry || exit 1
+# require-wizardry - check moved inside function (prevents exit during sourcing)
 
 mark_location_usage() {
   cat <<'USAGE'
@@ -127,4 +127,4 @@ say "Marked location $marker_name at $destination."
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */mark-location) mark_location "$@" ;; esac
+  */mark-location) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && mark_location "$@" ;; esac

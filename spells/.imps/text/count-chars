@@ -13,4 +13,4 @@ _count_chars() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */count-chars) _count_chars "$@" ;; esac
+  */count-chars) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _count_chars "$@" ;; esac

@@ -9,4 +9,4 @@ _file_name() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */file-name) _file_name "$@" ;; esac
+  */file-name) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _file_name "$@" ;; esac

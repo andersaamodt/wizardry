@@ -27,4 +27,4 @@ _then() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */then) _then "$@" ;; esac
+  */then) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _then "$@" ;; esac

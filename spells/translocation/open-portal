@@ -3,7 +3,7 @@
 # This spell mounts a remote directory using sshfs through Tor.
 # Use it to access remote servers anonymously via SSH filesystem.
 
-require-wizardry || exit 1
+# require-wizardry - check moved inside function (prevents exit during sourcing)
 
 open_portal_usage() {
 cat <<'USAGE'
@@ -86,4 +86,4 @@ say "Portal opened: $tor_address:$remote_dir mounted at $local_mount"
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */open-portal) open_portal "$@" ;; esac
+  */open-portal) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && open_portal "$@" ;; esac

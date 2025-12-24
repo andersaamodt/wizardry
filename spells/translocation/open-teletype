@@ -3,7 +3,7 @@
 # This spell opens an SSH connection through Tor for anonymous remote access.
 # Use it to connect to remote servers while preserving anonymity.
 
-require-wizardry || exit 1
+# require-wizardry - check moved inside function (prevents exit during sourcing)
 
 open_teletype_usage() {
 cat <<'USAGE'
@@ -65,4 +65,4 @@ torify ssh -i "$player_key" "$remote_user@$tor_address"
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */open-teletype) open_teletype "$@" ;; esac
+  */open-teletype) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && open_teletype "$@" ;; esac

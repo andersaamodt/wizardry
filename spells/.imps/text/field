@@ -20,4 +20,4 @@ _field() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */field) _field "$@" ;; esac
+  */field) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _field "$@" ;; esac

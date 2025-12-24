@@ -16,7 +16,7 @@ case "${1-}" in
   ;;
 esac
 
-require-wizardry || exit 1
+# require-wizardry - check moved inside function (prevents exit during sourcing)
 
 set -eu
 . env-clear
@@ -53,4 +53,4 @@ delete_synonym() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */delete-synonym) delete_synonym "$@" ;; esac
+  */delete-synonym) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && delete_synonym "$@" ;; esac

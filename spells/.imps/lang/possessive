@@ -17,4 +17,4 @@ _possessive() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */possessive) _possessive "$@" ;; esac
+  */possessive) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _possessive "$@" ;; esac

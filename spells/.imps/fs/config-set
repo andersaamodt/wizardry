@@ -82,4 +82,4 @@ _config_set() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */config-set) _config_set "$@" ;; esac
+  */config-set) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _config_set "$@" ;; esac

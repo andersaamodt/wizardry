@@ -8,4 +8,4 @@ _newer() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */newer) _newer "$@" ;; esac
+  */newer) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _newer "$@" ;; esac

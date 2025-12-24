@@ -13,4 +13,4 @@ _info() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */info) _info "$@" ;; esac
+  */info) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _info "$@" ;; esac

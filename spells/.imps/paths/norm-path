@@ -13,4 +13,4 @@ _norm_path() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */norm-path) _norm_path "$@" ;; esac
+  */norm-path) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _norm_path "$@" ;; esac

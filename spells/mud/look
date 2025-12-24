@@ -2,7 +2,7 @@
 
 # Read MUD-style room descriptions from extended attributes.
 
-require-wizardry || exit 1
+# require-wizardry - check moved inside function (prevents exit during sourcing)
 
 look_usage() {
 cat <<'USAGE'
@@ -141,4 +141,4 @@ printf '%s%s%s\n' "$mud_description" "$room_description" "$RESET"
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */look) look "$@" ;; esac
+  */look) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && look "$@" ;; esac

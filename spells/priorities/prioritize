@@ -23,7 +23,7 @@ case "${1-}" in
         ;;
 esac
 
-require-wizardry || exit 1
+# require-wizardry - check moved inside function (prevents exit during sourcing)
 
 set -eu
 . env-clear
@@ -111,4 +111,4 @@ say "Prioritized '$(file-name "$file")'."
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */prioritize) prioritize "$@" ;; esac
+  */prioritize) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && prioritize "$@" ;; esac

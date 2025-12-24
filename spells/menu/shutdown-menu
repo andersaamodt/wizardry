@@ -3,7 +3,7 @@
 # This spell displays shutdown, restart, logout, and power management options.
 # Commands are invoked directly via the menu without external spell dependencies.
 
-require-wizardry || exit 1
+# require-wizardry - check moved inside function (prevents exit during sourcing)
 
 shutdown_menu_usage() {
   cat <<'USAGE'
@@ -124,4 +124,4 @@ done
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */shutdown-menu) shutdown_menu "$@" ;; esac
+  */shutdown-menu) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && shutdown_menu "$@" ;; esac

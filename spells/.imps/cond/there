@@ -8,4 +8,4 @@ _there() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */there) _there "$@" ;; esac
+  */there) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _there "$@" ;; esac

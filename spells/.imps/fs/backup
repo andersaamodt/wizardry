@@ -23,4 +23,4 @@ _backup() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */backup) _backup "$@" ;; esac
+  */backup) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _backup "$@" ;; esac

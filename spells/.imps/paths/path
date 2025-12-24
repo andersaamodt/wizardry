@@ -14,4 +14,4 @@ _path() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */path) _path "$@" ;; esac
+  */path) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _path "$@" ;; esac

@@ -14,4 +14,4 @@ _die() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */die) _die "$@" ;; esac
+  */die) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _die "$@" ;; esac

@@ -120,4 +120,4 @@ _parse() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */parse) _parse "$@" ;; esac
+  */parse) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _parse "$@" ;; esac

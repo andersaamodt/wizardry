@@ -10,4 +10,4 @@ _temp() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */temp) _temp "$@" ;; esac
+  */temp) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _temp "$@" ;; esac

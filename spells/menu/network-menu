@@ -19,7 +19,7 @@ case "${1-}" in
   ;;
 esac
 
-require-wizardry || exit 1
+# require-wizardry - check moved inside function (prevents exit during sourcing)
 
 set -eu
 . env-clear
@@ -39,4 +39,4 @@ menu "Network Menu:" \
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */network-menu) network_menu "$@" ;; esac
+  */network-menu) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && network_menu "$@" ;; esac

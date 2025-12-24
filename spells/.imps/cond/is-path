@@ -8,4 +8,4 @@ _is_path() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */is-path) _is_path "$@" ;; esac
+  */is-path) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _is_path "$@" ;; esac

@@ -2,7 +2,7 @@
 
 # This spell displays the MUD install menu.
 
-require-wizardry || exit 1
+# require-wizardry - check moved inside function (prevents exit during sourcing)
 
 mud_menu_usage() {
   cat <<'USAGE'
@@ -201,4 +201,4 @@ done
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */mud-menu) mud_menu "$@" ;; esac
+  */mud-menu) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && mud_menu "$@" ;; esac

@@ -12,4 +12,4 @@ _ends() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */ends) _ends "$@" ;; esac
+  */ends) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _ends "$@" ;; esac

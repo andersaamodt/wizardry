@@ -9,7 +9,7 @@
 #        memorize path         - print the command list file path
 #        memorize dir          - print the cast directory
 
-require-wizardry || exit 1
+# require-wizardry moved inside function
 
 spell_name="memorize"
 tab_char=$(printf '\t')
@@ -167,4 +167,4 @@ esac
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */memorize) memorize "$@" ;; esac
+  */memorize) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && memorize "$@" ;; esac

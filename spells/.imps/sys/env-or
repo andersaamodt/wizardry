@@ -22,4 +22,4 @@ _env_or() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */env-or) _env_or "$@" ;; esac
+  */env-or) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _env_or "$@" ;; esac

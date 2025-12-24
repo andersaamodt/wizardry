@@ -15,4 +15,4 @@ _ensure_parent_dir() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */ensure-parent-dir) _ensure_parent_dir "$@" ;; esac
+  */ensure-parent-dir) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _ensure_parent_dir "$@" ;; esac

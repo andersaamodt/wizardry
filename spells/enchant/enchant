@@ -179,4 +179,4 @@ success "The file has been enchanted with the attribute '$key' and value '$value
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */enchant) enchant "$@" ;; esac
+  */enchant) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && enchant "$@" ;; esac

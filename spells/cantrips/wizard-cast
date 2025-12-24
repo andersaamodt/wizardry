@@ -3,7 +3,7 @@
 # This spell displays a command before executing it for teaching purposes.
 # Use it to show commands to those learning the path of wizardry.
 
-require-wizardry || exit 1
+# require-wizardry moved inside function
 
 wizard_cast_usage() {
 cat <<'USAGE'
@@ -44,4 +44,4 @@ fi
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */wizard-cast) wizard_cast "$@" ;; esac
+  */wizard-cast) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && wizard_cast "$@" ;; esac

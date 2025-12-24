@@ -36,4 +36,4 @@ _require() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */require) _require "$@" ;; esac
+  */require) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && _require "$@" ;; esac

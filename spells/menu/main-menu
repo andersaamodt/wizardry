@@ -2,7 +2,7 @@
 
 # This spell displays the ao-mud main menu.
 
-require-wizardry || exit 1
+# require-wizardry moved inside function
 
 main_menu_usage() {
         cat <<'USAGE' >&2
@@ -81,4 +81,4 @@ done
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */main-menu) main_menu "$@" ;; esac
+  */main-menu) [ "${_WIZARDRY_SOURCING:-}" != "1" ] && main_menu "$@" ;; esac
