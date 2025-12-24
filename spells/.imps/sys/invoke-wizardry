@@ -262,19 +262,19 @@ _invoke_wizardry() {
   line += 1
   if (line == 1 && $0 ~ /^#!/) {
     next
-  }
+  } # awk: skip shebang
   if ($0 ~ /^[[:space:]]*case[[:space:]]+"[$]0"[[:space:]]+in/) {
     skip = 1
     next
-  }
+  } # awk: start self-exec block
   if (skip) {
     if ($0 ~ /^[[:space:]]*esac[[:space:]]*$/) {
       skip = 0
-    }
+    } # awk: end self-exec block
     next
-  }
+  } # awk: skip body
   print
-}
+} # awk: end program
 ' "$_iw_imp" > "$_iw_imp_tmp"; then
               # shellcheck disable=SC1090
               if . "$_iw_imp_tmp" 2>/dev/null; then
@@ -396,19 +396,19 @@ _invoke_wizardry() {
   line += 1
   if (line == 1 && $0 ~ /^#!/) {
     next
-  }
+  } # awk: skip shebang
   if ($0 ~ /^[[:space:]]*case[[:space:]]+"[$]0"[[:space:]]+in/) {
     skip = 1
     next
-  }
+  } # awk: start self-exec block
   if (skip) {
     if ($0 ~ /^[[:space:]]*esac[[:space:]]*$/) {
       skip = 0
-    }
+    } # awk: end self-exec block
     next
-  }
+  } # awk: skip body
   print
-}
+} # awk: end program
 ' "$_iw_spell" > "$_iw_spell_tmp"; then
             # shellcheck disable=SC1090
             if . "$_iw_spell_tmp" 2>/dev/null; then
@@ -503,19 +503,19 @@ _invoke_wizardry() {
   line += 1
   if (line == 1 && $0 ~ /^#!/) {
     next
-  }
+  } # awk: skip shebang
   if ($0 ~ /^[[:space:]]*case[[:space:]]+"[$]0"[[:space:]]+in/) {
     skip = 1
     next
-  }
+  } # awk: start self-exec block
   if (skip) {
     if ($0 ~ /^[[:space:]]*esac[[:space:]]*$/) {
       skip = 0
-    }
+    } # awk: end self-exec block
     next
-  }
+  } # awk: skip body
   print
-}
+} # awk: end program
 ' "$_iw_user_spell" > "$_iw_user_tmp"; then
             # shellcheck disable=SC1090
             if . "$_iw_user_tmp" 2>/dev/null; then

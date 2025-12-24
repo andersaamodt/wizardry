@@ -92,21 +92,20 @@ _word_of_binding() {
   line += 1
   if (line == 1 && $0 ~ /^#!/) {
     next
-  }
+  } # awk: skip shebang
   if ($0 ~ /^[[:space:]]*case[[:space:]]+"[$]0"[[:space:]]+in/) {
     skip = 1
     next
-  }
+  } # awk: start self-exec block
   if (skip) {
     if ($0 ~ /^[[:space:]]*esac[[:space:]]*$/) {
       skip = 0
-    }
+    } # awk: end self-exec block
     next
-  }
+  } # awk: skip body
   print
-}
-' \
-      "$_wob_module" > "$_wob_tmp"; then
+} # awk: end program
+' "$_wob_module" > "$_wob_tmp"; then
       rm -f "$_wob_tmp"
       printf '%s\n' "word-of-binding: failed to prepare module '$_wob_name'" >&2
       return 1
