@@ -129,7 +129,30 @@ _invoke_wizardry() {
     # Use the script path captured at top level (before entering function)
     # In Zsh, $0 inside a function is the function name, not the script path
     _iw_script_path="$_iw_script_path_captured"
-    
+
+    # Fallbacks for shells without BASH/ZSH metadata: honor an explicit
+    # INVOKE_WIZARDRY path or the default ~/.wizardry install location.
+    if [ -z "$_iw_script_path" ] && [ -n "${INVOKE_WIZARDRY-}" ] && [ -f "$INVOKE_WIZARDRY" ]; then
+      printf '%s\n' "[invoke-wizardry] Script path missing, using INVOKE_WIZARDRY environment path" >&2
+      if [ -n "$_iw_debug_file" ]; then
+        _iw_msg="invoke-wizardry: Fallback using INVOKE_WIZARDRY path: $INVOKE_WIZARDRY"
+        printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
+      fi
+      _iw_script_path="$INVOKE_WIZARDRY"
+    fi
+
+    if [ -z "$_iw_script_path" ] && [ -n "${HOME-}" ]; then
+      _iw_default_script="$HOME/.wizardry/spells/.imps/sys/invoke-wizardry"
+      if [ -f "$_iw_default_script" ]; then
+        printf '%s\n' "[invoke-wizardry] Script path missing, using default install path: $_iw_default_script" >&2
+        if [ -n "$_iw_debug_file" ]; then
+          _iw_msg="invoke-wizardry: Default install path detected: $_iw_default_script"
+          printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
+        fi
+        _iw_script_path="$_iw_default_script"
+      fi
+    fi
+
     if [ -n "$_iw_script_path" ]; then
       printf '%s\n' "[invoke-wizardry] Using captured script path: $_iw_script_path" >&2
       if [ -n "$_iw_debug_file" ]; then
