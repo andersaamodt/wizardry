@@ -226,14 +226,10 @@ _invoke_wizardry() {
   printf '%s\n' "[invoke-wizardry] Checking if imp directory exists" >&2
   if [ -d "$_iw_imps_dir" ]; then
     printf '%s\n' "[invoke-wizardry] Imp directory exists, starting family loop" >&2
-    # Disable Zsh nomatch error for glob patterns
-    if [ -n "${ZSH_VERSION-}" ]; then
-      setopt local_options 2>/dev/null || true
-      setopt null_glob 2>/dev/null || true
-    fi
-    
     for _iw_family in "$_iw_imps_dir"/*; do
       printf '%s\n' "[invoke-wizardry] Checking family: $_iw_family" >&2
+      # POSIX-compliant: Skip if glob didn't match (returns literal pattern)
+      [ -e "$_iw_family" ] || continue
       [ -d "$_iw_family" ] || continue
       # Skip test imps - they're only for testing, not production use
       _iw_family_name=$(basename "$_iw_family")
@@ -256,8 +252,9 @@ _invoke_wizardry() {
       fi
       
       printf '%s\n' "[invoke-wizardry] Starting imp loop for family: $_iw_family_name" >&2
-      # Disable Zsh nomatch error for glob patterns (already set at parent level, but being explicit)
       for _iw_imp in "$_iw_family"/*; do
+        # POSIX-compliant: Skip if glob didn't match (returns literal pattern)
+        [ -e "$_iw_imp" ] || continue
         [ -f "$_iw_imp" ] && [ -r "$_iw_imp" ] || continue
         _iw_imp_count=$((_iw_imp_count + 1))
         # Skip invoke-wizardry itself to prevent recursion
@@ -388,14 +385,10 @@ function brace_delta(s, n, m) {
   _iw_spell_failed=0
   
   printf '%s\n' "[invoke-wizardry] Starting spell category loop" >&2
-  # Disable Zsh nomatch error for glob patterns
-  if [ -n "${ZSH_VERSION-}" ]; then
-    setopt local_options 2>/dev/null || true
-    setopt null_glob 2>/dev/null || true
-  fi
-  
   for _iw_spell_cat in "$WIZARDRY_DIR"/spells/*; do
     printf '%s\n' "[invoke-wizardry] Checking category: $_iw_spell_cat" >&2
+    # POSIX-compliant: Skip if glob didn't match (returns literal pattern)
+    [ -e "$_iw_spell_cat" ] || continue
     [ -d "$_iw_spell_cat" ] || continue
     # Skip hidden directories (like .imps and .arcana)
     case "$_iw_spell_cat" in
@@ -419,8 +412,9 @@ function brace_delta(s, n, m) {
     fi
     
     printf '%s\n' "[invoke-wizardry] Starting spell loop for category: $_iw_spell_cat_name" >&2
-    # Disable Zsh nomatch error for glob patterns (already set at parent level, but being explicit)
     for _iw_spell in "$_iw_spell_cat"/*; do
+      # POSIX-compliant: Skip if glob didn't match (returns literal pattern)
+      [ -e "$_iw_spell" ] || continue
       [ -f "$_iw_spell" ] && [ -r "$_iw_spell" ] || continue
       _iw_spell_count=$((_iw_spell_count + 1))
       
@@ -543,15 +537,9 @@ function brace_delta(s, n, m) {
   _iw_user_spell_success=0
   
   if [ -d "$SPELLBOOK_DIR" ]; then
-    # Disable Zsh nomatch error for empty directories
-    # In Zsh, glob patterns that don't match throw "no matches found" error
-    # We need to temporarily disable this for the user spell loop
-    if [ -n "${ZSH_VERSION-}" ]; then
-      setopt local_options 2>/dev/null || true
-      setopt null_glob 2>/dev/null || true
-    fi
-    
     for _iw_user_spell in "$SPELLBOOK_DIR"/*; do
+      # POSIX-compliant: Skip if glob didn't match (returns literal pattern)
+      [ -e "$_iw_user_spell" ] || continue
       [ -f "$_iw_user_spell" ] && [ -r "$_iw_user_spell" ] || continue
       _iw_user_spell_count=$((_iw_user_spell_count + 1))
       
