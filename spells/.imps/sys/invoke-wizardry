@@ -645,7 +645,10 @@ function brace_delta(s, n, m) {
         eval 'setopt nomatch 2>/dev/null' || :
       fi
       # Restore null_glob to its original state
-      if [ -z "$_iw_zsh_nullglob_saved" ]; then
+      if [ -n "$_iw_zsh_nullglob_saved" ]; then
+        # null_glob was originally set, ensure it's still set
+        eval 'setopt null_glob 2>/dev/null' || :
+      else
         # null_glob was not set originally, so unset it
         eval 'unsetopt null_glob 2>/dev/null' || :
       fi
