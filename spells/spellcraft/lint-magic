@@ -218,6 +218,16 @@ while IFS= read -r target; do
     fi
   fi
   
+  # Inline check_duplicate_set_eu (imps only)
+  # Imps should have at most ONE "set -eu" statement to prevent breaking invoke-wizardry
+  if [ "$is_imp_file" -eq 1 ]; then
+    set_eu_count=$(grep -c '^set -eu$' "$path" 2>/dev/null || echo 0)
+    if [ "$set_eu_count" -gt 1 ]; then
+      issues=${issues:+$issues; }"duplicate 'set -eu' statements ($set_eu_count found, should be 0 or 1)"
+      issue_count=$((issue_count + 1))
+    fi
+  fi
+  
   # Inline check_trailing_space_assignment
   match=$(grep -En '^[a-zA-Z_][a-zA-Z0-9_]*= $' "$path" 2>/dev/null | head -1) || true
   if [ -n "$match" ]; then

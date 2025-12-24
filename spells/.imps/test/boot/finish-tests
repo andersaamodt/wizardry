@@ -16,5 +16,4 @@ _finish_tests() {
 }
 
 # Self-execution when run directly (not sourced)
-set -eu
 case "${0##*/}" in finish-tests) _finish_tests "$@" ;; esac

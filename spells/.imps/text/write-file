@@ -8,6 +8,5 @@ _write_file() {
 }
 
 # Self-execute when run directly (not sourced)
-set -eu
 case "$0" in
   */write-file) _write_file "$@" ;; esac

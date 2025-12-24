@@ -29,5 +29,4 @@ _report_result() {
 }
 
 # Self-execution when run directly (not sourced)
-set -eu
 case "${0##*/}" in report-result) _report_result "$@" ;; esac

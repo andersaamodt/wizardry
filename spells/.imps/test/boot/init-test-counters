@@ -4,7 +4,6 @@
 set -eu
 
 # Initialize test counters (no function, just sets globals when sourced)
-set -eu
 _pass_count=0
 _fail_count=0
 _skip_count=0

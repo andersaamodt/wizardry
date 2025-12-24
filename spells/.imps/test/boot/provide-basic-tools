@@ -14,5 +14,4 @@ _provide_basic_tools() {
 }
 
 # Self-execution when run directly (not sourced)
-set -eu
 case "${0##*/}" in provide-basic-tools) _provide_basic_tools "$@" ;; esac

@@ -14,5 +14,4 @@ STUB
 }
 
 # Self-execution when run directly (not sourced)
-set -eu
 case "${0##*/}" in write-command-stub) _write_command_stub "$@" ;; esac

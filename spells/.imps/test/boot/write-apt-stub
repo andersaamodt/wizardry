@@ -14,5 +14,4 @@ STUB
 }
 
 # Self-execution when run directly (not sourced)
-set -eu
 case "${0##*/}" in write-apt-stub) _write_apt_stub "$@" ;; esac

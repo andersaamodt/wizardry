@@ -8,6 +8,5 @@ _pick() {
 }
 
 # Self-execute when run directly (not sourced)
-set -eu
 case "$0" in
   */pick) _pick "$@" ;; esac

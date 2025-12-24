@@ -6,6 +6,12 @@ applyTo: ".tests/**"
 
 **Every spell and imp MUST have a corresponding test file.** Tests are not optional.
 
+## CRITICAL: Test File Location Must Mirror Spell Structure
+
+**Test files MUST mirror the `spells/` directory structure exactly.** You CANNOT create test files without corresponding spells or imps.
+
+**DO NOT create standalone test files for validation checks, linting, or project-wide tests.** These should be integrated into existing spells like `lint-magic` or `test-magic`.
+
 ### Test Naming Convention
 
 **IMPORTANT:** Test files use `test-<name>.sh` format (all hyphens, NO underscores).
@@ -134,6 +140,11 @@ cd /home/runner/work/wizardry/wizardry && .tests/category/test-spell-name.sh
 Only report test results you have personally verified by executing the test file. Include the actual pass/fail counts in your reports.
 
 ## Test File Location and Naming
+
+**CRITICAL RULE: Test files MUST correspond to actual spells or imps.** The `.tests/` directory structure must exactly mirror the `spells/` directory structure.
+
+❌ **WRONG**: Creating `.tests/spellcraft/test-no-duplicate-set-eu.sh` when there's no `spells/spellcraft/no-duplicate-set-eu` spell  
+✅ **CORRECT**: Integrating validation checks into existing spells like `lint-magic`
 
 Test files mirror the `spells/` directory structure with `test-` prefix (all hyphens):
 

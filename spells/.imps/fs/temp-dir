@@ -17,6 +17,5 @@ _temp_dir() {
 }
 
 # Self-execute when run directly (not sourced)
-set -eu
 case "$0" in
   */temp-dir) _temp_dir "$@" ;; esac

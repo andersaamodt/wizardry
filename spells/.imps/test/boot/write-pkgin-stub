@@ -26,5 +26,4 @@ STUB
 }
 
 # Self-execution when run directly (not sourced)
-set -eu
 case "${0##*/}" in write-pkgin-stub) _write_pkgin_stub "$@" ;; esac

@@ -8,6 +8,5 @@ _tty_raw() {
 }
 
 # Self-execute when run directly (not sourced)
-set -eu
 case "$0" in
   */tty-raw) _tty_raw "$@" ;; esac

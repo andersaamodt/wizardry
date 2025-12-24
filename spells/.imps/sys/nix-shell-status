@@ -19,6 +19,5 @@ _nix_shell_status() {
 }
 
 # Self-execute when run directly (not sourced)
-set -eu
 case "$0" in
   */nix-shell-status) _nix_shell_status "$@" ;; esac

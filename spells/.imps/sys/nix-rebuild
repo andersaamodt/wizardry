@@ -54,6 +54,5 @@ _nix_rebuild() {
 }
 
 # Self-execute when run directly (not sourced)
-set -eu
 case "$0" in
   */nix-rebuild) _nix_rebuild "$@" ;; esac

@@ -21,6 +21,5 @@ _pkg_upgrade() {
 }
 
 # Self-execute when run directly (not sourced)
-set -eu
 case "$0" in
   */pkg-upgrade) _pkg_upgrade "$@" ;; esac

@@ -27,6 +27,5 @@ _select_input() {
 }
 
 # Self-execute when run directly (not sourced)
-set -eu
 case "$0" in
   */select-input) _select_input "$@" ;; esac

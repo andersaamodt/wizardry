@@ -24,6 +24,5 @@ _detect_indent_char() {
 }
 
 # Self-execute when run directly (not sourced)
-set -eu
 case "$0" in
   */detect-indent-char) _detect_indent_char "$@" ;; esac

@@ -24,6 +24,5 @@ _pkg_remove() {
 }
 
 # Self-execute when run directly (not sourced)
-set -eu
 case "$0" in
   */pkg-remove) _pkg_remove "$@" ;; esac

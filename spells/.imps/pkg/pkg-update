@@ -21,6 +21,5 @@ _pkg_update() {
 }
 
 # Self-execute when run directly (not sourced)
-set -eu
 case "$0" in
   */pkg-update) _pkg_update "$@" ;; esac
