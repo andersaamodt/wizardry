@@ -147,7 +147,7 @@ function brace_delta(s, n, m) {
     # Create alias for future calls
     alias "$_wob_name=$_wob_true_name" 2>/dev/null || true
     
-    if type "$_wob_true_name" >/dev/null 2>&1; then
+    if command -v "$_wob_true_name" >/dev/null 2>&1; then
       "$_wob_true_name" "$@"
     else
       printf '%s\n' \
