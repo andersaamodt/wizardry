@@ -2,7 +2,7 @@
 
 ## Summary
 
-Fixed the macOS terminal hanging issue by adding error handling to ALL `date` commands in invoke-wizardry. The previous fix (PR #631) only applied error handling to 6 out of 70+ date calls, leaving most of them vulnerable to hanging.
+Fixed the macOS terminal hanging issue by adding error handling to ALL `date` commands in invoke-wizardry. The previous fix (PR #631) only applied error handling to 6 out of 70 date calls, leaving most of them vulnerable to hanging.
 
 ## Root Cause
 
@@ -36,7 +36,7 @@ _iw_ts=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || printf 'NO-DATE')
 - ✅ Main code: 52 date calls fixed
 - ✅ Bash command-not-found handler: 9 date calls fixed
 - ✅ Zsh command-not-found handler: 9 date calls fixed
-- ✅ **Total: 70+ date calls now have error handling**
+- ✅ **Total: 70 date calls now have error handling**
 
 ### 2. Removed Unconditional Diagnostic Output
 
@@ -74,7 +74,7 @@ $ .tests/.imps/sys/test-invoke-wizardry.sh
 
 **Root Cause:** Date commands without error handling hanging on macOS.
 
-**Fix:** Added error handling to ALL 70+ date calls.
+**Fix:** Added error handling to ALL 70 date calls.
 
 **Status:** ✅ FIXED - invoke-wizardry should no longer hang
 
@@ -176,7 +176,7 @@ If this works, the issue is in your previous .zshrc configuration.
 
 ## Files Changed
 
-- `spells/.imps/sys/invoke-wizardry` - Fixed 70+ date calls, removed diagnostic output, simplified debug logging
+- `spells/.imps/sys/invoke-wizardry` - Fixed 70 date calls, removed diagnostic output, simplified debug logging
 
 ## Comparison: Before vs After
 
@@ -187,7 +187,7 @@ If this works, the issue is in your previous .zshrc configuration.
 - Could hang on macOS due to date failures
 
 ### After (This Fix)
-- ALL 70+ date calls have error handling
+- ALL 70 date calls have error handling
 - No unconditional diagnostic output (only when WIZARDRY_DEBUG=1)
 - Should not hang on macOS
 - Cleaner, more robust code
