@@ -58,6 +58,6 @@ say "$(printf "0x%x" "$crc")"
 # Self-execute when run directly (not sourced)
 case "$0" in
   */hash)
-    [ "${_WIZARDRY_SOURCING:-}" != "1" ] && hash "$@"
+    [ -z "${_WIZARDRY_SOURCING-}" ] && hash "$@"
     ;;
 esac
