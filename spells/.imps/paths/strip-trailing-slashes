@@ -13,6 +13,5 @@ _strip_trailing_slashes() {
 }
 
 # Self-execute when run directly (not sourced)
-set -eu
 case "$0" in
   */strip-trailing-slashes) _strip_trailing_slashes "$@" ;; esac

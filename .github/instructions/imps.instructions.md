@@ -30,14 +30,21 @@ See `.github/instructions/tests.instructions.md` for test patterns.
 
 ### Strict Mode (`set -eu`)
 
-Imps that perform **actions** (produce output, modify state) should use `set -eu`.
+**⚠️ CRITICAL: Only ONE `set -eu` per imp file!**
 
-**Conditional imps** that return exit codes for flow control do **NOT** use `set -eu`:
+**NEVER duplicate `set -eu`** before the case statement. This breaks invoke-wizardry and causes terminal hangs. See `.github/instructions/imp-set-eu.instructions.md` for full details.
+
+**Action imps** that perform actions (produce output, modify state) should have ONE `set -eu` at the top:
+- `fs/`, `out/`, `paths/`, `pkg/`, `str/`, `sys/`, `text/`, `input/`, `lang/` families
+
+**Conditional imps** that return exit codes for flow control should have NO `set -eu`:
 - `cond/` family — `has`, `there`, `is`, `yes`, `no`, `empty`, `nonempty`, etc.
 - `lex/` family — parsing helpers that signal success/failure via exit code
 - `menu/` family — menu helpers that return true/false
 
 This exception exists because conditional imps are designed to be used in `if` statements and `&&`/`||` chains, where non-zero exit codes indicate false rather than error.
+
+**Automated test:** `.tests/spellcraft/test-no-duplicate-set-eu.sh` enforces this rule in CI.
 
 ### Relaxed Rules (compared to spells)
 - **No `--help` required**: The opening comment serves as the imp's spec

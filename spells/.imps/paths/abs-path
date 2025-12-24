@@ -23,6 +23,5 @@ _abs_path() {
 }
 
 # Self-execute when run directly (not sourced)
-set -eu
 case "$0" in
   */abs-path) _abs_path "$@" ;; esac

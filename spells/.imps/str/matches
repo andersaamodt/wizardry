@@ -8,6 +8,5 @@ _matches() {
 }
 
 # Self-execute when run directly (not sourced)
-set -eu
 case "$0" in
   */matches) _matches "$@" ;; esac

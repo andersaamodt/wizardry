@@ -12,5 +12,4 @@ _assert_failure() {
 }
 
 # Self-execution when run directly (not sourced)
-set -eu
 case "${0##*/}" in assert-failure) _assert_failure "$@" ;; esac

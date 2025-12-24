@@ -12,6 +12,5 @@ _count_chars() {
 }
 
 # Self-execute when run directly (not sourced)
-set -eu
 case "$0" in
   */count-chars) _count_chars "$@" ;; esac

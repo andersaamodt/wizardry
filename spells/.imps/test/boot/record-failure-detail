@@ -12,5 +12,4 @@ _record_failure_detail() {
 }
 
 # Self-execution when run directly (not sourced)
-set -eu
 case "${0##*/}" in record-failure-detail) _record_failure_detail "$@" ;; esac

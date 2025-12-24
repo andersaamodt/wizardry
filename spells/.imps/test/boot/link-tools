@@ -18,5 +18,4 @@ _link_tools() {
 }
 
 # Self-execution when run directly (not sourced)
-set -eu
 case "${0##*/}" in link-tools) _link_tools "$@" ;; esac

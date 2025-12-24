@@ -17,5 +17,4 @@ _assert_status() {
 }
 
 # Self-execution when run directly (not sourced)
-set -eu
 case "${0##*/}" in assert-status) _assert_status "$@" ;; esac

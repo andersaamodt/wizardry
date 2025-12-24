@@ -21,6 +21,5 @@ _env_or() {
 }
 
 # Self-execute when run directly (not sourced)
-set -eu
 case "$0" in
   */env-or) _env_or "$@" ;; esac

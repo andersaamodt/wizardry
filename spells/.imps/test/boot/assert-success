@@ -8,5 +8,4 @@ _assert_success() {
 }
 
 # Self-execution when run directly (not sourced)
-set -eu
 case "${0##*/}" in assert-success) _assert_success "$@" ;; esac

@@ -9,6 +9,5 @@ _cleanup_dir() {
 }
 
 # Self-execute when run directly (not sourced)
-set -eu
 case "$0" in
   */cleanup-dir) _cleanup_dir "$@" ;; esac

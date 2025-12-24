@@ -37,7 +37,6 @@ _xattr_read_value() {
 }
 
 # Self-execute when run directly (not sourced)
-set -eu
 case "$0" in
   */xattr-read-value) _xattr_read_value "$@" ;; 
 esac

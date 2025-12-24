@@ -8,6 +8,5 @@ _now() {
 }
 
 # Self-execute when run directly (not sourced)
-set -eu
 case "$0" in
   */now) _now "$@" ;; esac

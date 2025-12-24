@@ -8,5 +8,4 @@ _make_tempdir() {
 }
 
 # Self-execution when run directly (not sourced)
-set -eu
 case "${0##*/}" in make-tempdir) _make_tempdir "$@" ;; esac

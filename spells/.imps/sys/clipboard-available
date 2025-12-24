@@ -11,6 +11,5 @@ _clipboard_available() {
 }
 
 # Self-execute when run directly (not sourced)
-set -eu
 case "$0" in
   */clipboard-available) _clipboard_available "$@" ;; esac

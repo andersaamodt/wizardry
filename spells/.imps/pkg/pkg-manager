@@ -15,6 +15,5 @@ _pkg_manager() {
 }
 
 # Self-execute when run directly (not sourced)
-set -eu
 case "$0" in
   */pkg-manager) _pkg_manager "$@" ;; esac

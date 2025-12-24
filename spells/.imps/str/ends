@@ -11,6 +11,5 @@ _ends() {
 }
 
 # Self-execute when run directly (not sourced)
-set -eu
 case "$0" in
   */ends) _ends "$@" ;; esac

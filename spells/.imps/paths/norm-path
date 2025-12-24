@@ -12,6 +12,5 @@ _norm_path() {
 }
 
 # Self-execute when run directly (not sourced)
-set -eu
 case "$0" in
   */norm-path) _norm_path "$@" ;; esac

@@ -43,6 +43,5 @@ _script_dir() {
 }
 
 # Self-execute when run directly (not sourced)
-set -eu
 case "$0" in
   */script-dir) _script_dir "$@" ;; esac

@@ -32,6 +32,5 @@ _detect_indent_width() {
 }
 
 # Self-execute when run directly (not sourced)
-set -eu
 case "$0" in
   */detect-indent-width) _detect_indent_width "$@" ;; esac

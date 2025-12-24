@@ -44,6 +44,5 @@ _nix_shell_remove() {
 }
 
 # Self-execute when run directly (not sourced)
-set -eu
 case "$0" in
   */nix-shell-remove) _nix_shell_remove "$@" ;; esac

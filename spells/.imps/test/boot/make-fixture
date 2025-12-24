@@ -10,5 +10,4 @@ _make_fixture() {
 }
 
 # Self-execution when run directly (not sourced)
-set -eu
 case "${0##*/}" in make-fixture) _make_fixture "$@" ;; esac

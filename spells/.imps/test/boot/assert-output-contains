@@ -17,5 +17,4 @@ _assert_output_contains() {
 }
 
 # Self-execution when run directly (not sourced)
-set -eu
 case "${0##*/}" in assert-output-contains) _assert_output_contains "$@" ;; esac

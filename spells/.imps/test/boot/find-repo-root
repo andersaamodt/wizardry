@@ -16,5 +16,4 @@ _find_repo_root() {
 }
 
 # Self-execution when run directly (not sourced)
-set -eu
 case "${0##*/}" in find-repo-root) _find_repo_root "$@" ;; esac
