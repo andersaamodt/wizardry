@@ -13,7 +13,7 @@ resolving the path relative to this spell when needed.
 USAGE
 }
 
-hash() {
+compute_hash() {
 case "${1-}" in
 --help|--usage|-h)
   hash_usage
@@ -56,12 +56,8 @@ say "$(printf "0x%x" "$crc")"
 }
 
 # Self-execute when run directly (not sourced)
-_hash_main() {
-  hash "$@"
-}
-
 case "$0" in
   */hash)
-    [ -z "${_WIZARDRY_SOURCING-}" ] && _hash_main "$@"
+    [ -z "${_WIZARDRY_SOURCING-}" ] && compute_hash "$@"
     ;;
 esac
