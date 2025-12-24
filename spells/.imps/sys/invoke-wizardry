@@ -225,6 +225,9 @@ _invoke_wizardry() {
   
   printf '%s\n' "[invoke-wizardry] Checking if imp directory exists" >&2
   if [ -d "$_iw_imps_dir" ]; then
+    if [ -n "${ZSH_VERSION-}" ]; then
+      setopt LOCAL_OPTIONS NONOMATCH 2>/dev/null || :
+    fi
     printf '%s\n' "[invoke-wizardry] Imp directory exists, starting family loop" >&2
     for _iw_family in "$_iw_imps_dir"/*; do
       printf '%s\n' "[invoke-wizardry] Checking family: $_iw_family" >&2
@@ -385,21 +388,19 @@ function brace_delta(s, n, m) {
     printf '%s\n' "[invoke-wizardry] Checking category: $_iw_spell_cat" >&2
     [ -d "$_iw_spell_cat" ] || continue
     # Skip hidden directories (like .imps and .arcana)
-    case "$_iw_spell_cat" in
-      */.*) 
-        printf '%s\n' "[invoke-wizardry] Skipping hidden directory: $(basename "$_iw_spell_cat")" >&2
+    _iw_spell_cat_name=$(basename "$_iw_spell_cat")
+    case "$_iw_spell_cat_name" in
+      .*) 
+        printf '%s\n' "[invoke-wizardry] Skipping hidden directory: $_iw_spell_cat_name" >&2
         if [ -n "$_iw_debug_file" ]; then
-          _iw_msg="Skipping hidden directory: $(basename "$_iw_spell_cat")"
+          _iw_msg="Skipping hidden directory: $_iw_spell_cat_name"
           _iw_full="invoke-wizardry: $_iw_msg"
           printf '%s\n' "$_iw_full" >> "$_iw_debug_file" 2>/dev/null || :
         fi
         continue 
-        ;;
+      ;;
     esac
     
-    _iw_spell_cat_name=$(basename "$_iw_spell_cat")
-    printf '%s\n' "[invoke-wizardry] Processing category: $_iw_spell_cat_name" >&2
-    printf '%s\n' "[invoke-wizardry] Processing category: $_iw_spell_cat_name" >&2
     if [ -n "$_iw_debug_file" ]; then
       _iw_msg="invoke-wizardry: Processing spell category: $_iw_spell_cat_name"
       printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :

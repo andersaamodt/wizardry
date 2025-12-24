@@ -416,6 +416,34 @@ EOF
   _assert_output_contains "spell directories not added to PATH" || return 1
 }
 
+test_zsh_handles_empty_spellbook() {
+  if ! command -v zsh >/dev/null 2>&1; then
+    TEST_SKIP_REASON="zsh not installed"
+    return 222
+  fi
+
+  tmp_spellbook=$(_make_tempdir)
+  WIZARDRY_DIR=$ROOT_DIR SPELLBOOK_DIR=$tmp_spellbook _run_cmd zsh -f -c 'unset _WIZARDRY_INVOKED; . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"'
+  _assert_success || return 1
+
+  case "$ERROR" in
+    *"no matches found"*)
+      TEST_FAILURE_REASON="glob failure when spellbook empty"
+      return 1
+      ;;
+  esac
+
+  # Core spells should still load even when the user spellbook is empty.
+  case "$ERROR" in
+    *"Spell sourcing complete: total=0"*)
+      TEST_FAILURE_REASON="invoke-wizardry skipped spells"
+      return 1
+      ;;
+  esac
+
+  rm -rf "$tmp_spellbook"
+}
+
 _run_test_case "invoke-wizardry is sourceable" test_sourceable
 _run_test_case "invoke-wizardry sets WIZARDRY_DIR" test_sets_wizardry_dir
 # Test #3 removed: outdated (word-of-binding means spell dirs NOT in PATH)
@@ -430,5 +458,6 @@ _run_test_case "command_not_found_handle has recursion guard" test_recursion_gua
 _run_test_case "cd function is defined in invoke-wizardry" test_cd_function_defined
 _run_test_case "menu is pre-loaded as function" test_menu_preloaded
 # Test #11 removed: redundant with word-of-binding paradigm (spell dirs never added to PATH)
+_run_test_case "invoke-wizardry handles empty spellbook in zsh" test_zsh_handles_empty_spellbook
 
 _finish_tests
