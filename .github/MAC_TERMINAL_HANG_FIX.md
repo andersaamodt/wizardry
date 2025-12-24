@@ -204,6 +204,10 @@ Then we can determine:
 - `spells/.imps/sys/invoke-thesaurus` - Silenced output, only print if WIZARDRY_DEBUG=1
 - `.github/EXEMPTIONS.md` - Documented `_WIZARDRY_LOADING_SPELLS` variable
 
+## Related Issues
+
+**NEW (Dec 2025)**: See `ZSH_SELF_EXECUTION_HANG_FIX.md` for the latest zsh hang issue where case statements execute during sourcing, causing clipboard and menu commands to hang waiting for input.
+
 ## Tests Passing
 
 All tests pass:

@@ -136,6 +136,8 @@ Please test and report back:
 
 ## See Also
 
+- `ZSH_SELF_EXECUTION_HANG_FIX.md` - Latest fix for zsh sourcing hang (Dec 2025)
+- `MAC_TERMINAL_HANG_FIX.md` - Earlier terminal hang investigation (slow loading)
 - `HANDLE_COMMAND_NOT_FOUND_TOGGLE.md` - Full technical documentation
 - `.tests/.arcana/mud/test-toggle-command-not-found.sh` - Test suite
 - `spells/.imps/sys/invoke-wizardry` - Implementation details
