@@ -54,8 +54,7 @@ fi
 # Log start of invoke-wizardry
 printf '%s\n' "[invoke-wizardry] === Starting invoke-wizardry ===" >&2
 if [ -n "$_iw_debug_file" ]; then
-  _iw_ts=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || printf 'NO-DATE')
-  printf '%s\n' "[${_iw_ts}] invoke-wizardry: === Starting invoke-wizardry ===" >> "$_iw_debug_file" 2>/dev/null || :
+  printf '%s\n' "invoke-wizardry: === Starting invoke-wizardry ===" >> "$_iw_debug_file" 2>/dev/null || :
 fi
 
 # Detect shell type without using shell-specific variables directly
@@ -63,27 +62,23 @@ fi
 if eval '[ -n "${BASH_VERSION+x}" ]' 2>/dev/null; then
   printf '%s\n' "[invoke-wizardry] Shell: bash" >&2
   if [ -n "$_iw_debug_file" ]; then
-    _iw_ts=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || printf 'NO-DATE')
-    printf '%s\n' "[${_iw_ts}] invoke-wizardry: Shell: bash" >> "$_iw_debug_file" 2>/dev/null || :
+    printf '%s\n' "invoke-wizardry: Shell: bash" >> "$_iw_debug_file" 2>/dev/null || :
   fi
 elif eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
   printf '%s\n' "[invoke-wizardry] Shell: zsh" >&2
   if [ -n "$_iw_debug_file" ]; then
-    _iw_ts=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || printf 'NO-DATE')
-    printf '%s\n' "[${_iw_ts}] invoke-wizardry: Shell: zsh" >> "$_iw_debug_file" 2>/dev/null || :
+    printf '%s\n' "invoke-wizardry: Shell: zsh" >> "$_iw_debug_file" 2>/dev/null || :
   fi
 else
   printf '%s\n' "[invoke-wizardry] Shell: unknown" >&2
   if [ -n "$_iw_debug_file" ]; then
-    _iw_ts=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || printf 'NO-DATE')
-    printf '%s\n' "[${_iw_ts}] invoke-wizardry: Shell: unknown" >> "$_iw_debug_file" 2>/dev/null || :
+    printf '%s\n' "invoke-wizardry: Shell: unknown" >> "$_iw_debug_file" 2>/dev/null || :
   fi
 fi
 
 printf '%s\n' "[invoke-wizardry] PATH: ${PATH-}" >&2
 if [ -n "$_iw_debug_file" ]; then
-  _iw_ts=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || printf 'NO-DATE')
-  printf '%s\n' "[${_iw_ts}] invoke-wizardry: PATH: ${PATH-}" >> "$_iw_debug_file" 2>/dev/null || :
+  printf '%s\n' "invoke-wizardry: PATH: ${PATH-}" >> "$_iw_debug_file" 2>/dev/null || :
 fi
 
 # Prevent recursive sourcing
@@ -91,8 +86,7 @@ printf '%s\n' "[invoke-wizardry] Checking for recursive sourcing" >&2
 if [ "${_WIZARDRY_INVOKED-}" = "1" ]; then
   printf '%s\n' "[invoke-wizardry] Already invoked, skipping" >&2
   if [ -n "$_iw_debug_file" ]; then
-    _iw_ts=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || printf 'NO-DATE')
-    printf '%s\n' "[${_iw_ts}] invoke-wizardry: Already invoked, skipping (recursive sourcing prevented)" >> "$_iw_debug_file" 2>/dev/null || :
+    printf '%s\n' "invoke-wizardry: Already invoked, skipping (recursive sourcing prevented)" >> "$_iw_debug_file" 2>/dev/null || :
   fi
   return 0
 fi
@@ -105,22 +99,13 @@ _invoke_wizardry() {
   printf '%s\n' "[invoke-wizardry] INSIDE _invoke_wizardry function" >&2
   # Debug logging inline (no function to comply with one-function-or-zero rule)
   if [ -n "$_iw_debug_file" ]; then
-    _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
-    _iw_msg="Entering _invoke_wizardry function"
-    _iw_full="[${_iw_ts}] invoke-wizardry: $_iw_msg"
-    printf '%s\n' "$_iw_full" >> "$_iw_debug_file" 2>/dev/null || :
-  fi
-  
-  if [ -n "$_iw_debug_file" ]; then
-    _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
-    _iw_msg="[${_iw_ts}] invoke-wizardry: Entering _invoke_wizardry function"
+    _iw_msg="invoke-wizardry: Entering _invoke_wizardry function"
     printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
   fi
   
   if [ -z "${WIZARDRY_DIR-}" ]; then
     if [ -n "$_iw_debug_file" ]; then
-      _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
-      _iw_msg="[${_iw_ts}] invoke-wizardry: WIZARDRY_DIR not set, attempting detection"
+      _iw_msg="invoke-wizardry: WIZARDRY_DIR not set, attempting detection"
       printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
     fi
     # Detect invoke-wizardry's actual location using shell-specific variables
@@ -131,17 +116,15 @@ _invoke_wizardry() {
     if eval '[ -n "${BASH_VERSION-}" ]' 2>/dev/null; then
       _iw_script_path=$(eval 'printf "%s" "${BASH_SOURCE[0]-}"')
       if [ -n "$_iw_debug_file" ]; then
-        _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
         _iw_msg="Detected script path via BASH_SOURCE: $_iw_script_path"
-        printf '%s\n' "[${_iw_ts}] invoke-wizardry: $_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
+        printf '%s\n' "invoke-wizardry: $_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
       fi
     # Zsh: use parameter expansion %x (current script path)
     elif [ -n "${ZSH_VERSION-}" ]; then
       # Use eval to prevent checkbashisms false positive
       _iw_script_path=$(eval 'printf "%s" "${(%):-%x}"')
       if [ -n "$_iw_debug_file" ]; then
-        _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
-        _iw_msg="[${_iw_ts}] invoke-wizardry: Detected script path via ZSH %x: $_iw_script_path"
+        _iw_msg="invoke-wizardry: Detected script path via ZSH %x: $_iw_script_path"
         printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
       fi
     fi
@@ -154,25 +137,22 @@ _invoke_wizardry() {
       if [ -n "$_iw_script_dir" ]; then
         WIZARDRY_DIR=$(CDPATH= cd -- "$_iw_script_dir/../../.." 2>/dev/null && pwd -P) || true
         if [ -n "$_iw_debug_file" ]; then
-          _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
-          _iw_msg="[${_iw_ts}] invoke-wizardry: Derived WIZARDRY_DIR: $WIZARDRY_DIR"
+          _iw_msg="invoke-wizardry: Derived WIZARDRY_DIR: $WIZARDRY_DIR"
           printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
         fi
       fi
     fi
   else
     if [ -n "$_iw_debug_file" ]; then
-      _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
-      _iw_msg="[${_iw_ts}] invoke-wizardry: WIZARDRY_DIR already set: $WIZARDRY_DIR"
+      _iw_msg="invoke-wizardry: WIZARDRY_DIR already set: $WIZARDRY_DIR"
       printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
     fi
   fi
   
   if [ -z "${WIZARDRY_DIR-}" ] || [ ! -d "${WIZARDRY_DIR-}/spells" ]; then
     if [ -n "$_iw_debug_file" ]; then
-      _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
       _iw_msg="ERROR: WIZARDRY_DIR invalid or spells directory not found"
-      printf '%s\n' "[${_iw_ts}] invoke-wizardry: $_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
+      printf '%s\n' "invoke-wizardry: $_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
     fi
     return 1
   fi
@@ -198,8 +178,7 @@ _invoke_wizardry() {
   # The only difference is imps use _underscore true-names
   _iw_imps_dir="$WIZARDRY_DIR/spells/.imps"
   if [ -n "$_iw_debug_file" ]; then
-    _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
-    _iw_msg="[${_iw_ts}] invoke-wizardry: Starting imp sourcing from: $_iw_imps_dir"
+    _iw_msg="invoke-wizardry: Starting imp sourcing from: $_iw_imps_dir"
     printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
   fi
   _iw_imp_count=0
@@ -215,16 +194,14 @@ _invoke_wizardry() {
       case "$_iw_family_name" in
         test) 
           if [ -n "$_iw_debug_file" ]; then
-            _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
-            _iw_msg="[${_iw_ts}] invoke-wizardry: Skipping test family: $_iw_family_name"
+            _iw_msg="invoke-wizardry: Skipping test family: $_iw_family_name"
             printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
           fi
           continue 
           ;;
       esac
       if [ -n "$_iw_debug_file" ]; then
-        _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
-        _iw_msg="[${_iw_ts}] invoke-wizardry: Processing imp family: $_iw_family_name"
+        _iw_msg="invoke-wizardry: Processing imp family: $_iw_family_name"
         printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
       fi
       
@@ -238,9 +215,8 @@ _invoke_wizardry() {
           */invoke-wizardry|*/invoke-thesaurus) 
             _iw_imp_skipped=$((_iw_imp_skipped + 1))
             if [ -n "$_iw_debug_file" ]; then
-              _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
               _iw_msg="Skipping special imp: $(basename "$_iw_imp")"
-              _iw_full="[${_iw_ts}] invoke-wizardry: $_iw_msg"
+              _iw_full="invoke-wizardry: $_iw_msg"
               printf '%s\n' "$_iw_full" >> "$_iw_debug_file" 2>/dev/null || :
             fi
             continue 
@@ -255,9 +231,8 @@ _invoke_wizardry() {
         _iw_grep_pattern="^[[:space:]]*${_iw_imp_true_name}[[:space:]]*\\(\\)"
         if grep -qE "$_iw_grep_pattern" "$_iw_imp" 2>/dev/null; then
           if [ -n "$_iw_debug_file" ]; then
-            _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
             _iw_msg="Sourcing imp: $_iw_imp_name -> $_iw_imp_true_name"
-            _iw_full="[${_iw_ts}] invoke-wizardry: $_iw_msg"
+            _iw_full="invoke-wizardry: $_iw_msg"
             printf '%s\n' "$_iw_full" >> "$_iw_debug_file" 2>/dev/null || :
           fi
           # Source the imp to load its function
@@ -272,32 +247,28 @@ _invoke_wizardry() {
               if alias "$_iw_imp_name=$_iw_imp_true_name" 2>/dev/null; then
                 _iw_imp_success=$((_iw_imp_success + 1))
                 if [ -n "$_iw_debug_file" ]; then
-                  _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
-                  _iw_msg="[${_iw_ts}] invoke-wizardry: ✓ Loaded imp: $_iw_imp_name"
+                  _iw_msg="invoke-wizardry: ✓ Loaded imp: $_iw_imp_name"
                   printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
                 fi
               else
                 _iw_imp_failed=$((_iw_imp_failed + 1))
                 if [ -n "$_iw_debug_file" ]; then
-                  _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
-                  _iw_msg="[${_iw_ts}] invoke-wizardry: ✗ Failed to alias imp: $_iw_imp_name"
+                  _iw_msg="invoke-wizardry: ✗ Failed to alias imp: $_iw_imp_name"
                   printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
                 fi
               fi
             else
               _iw_imp_failed=$((_iw_imp_failed + 1))
               if [ -n "$_iw_debug_file" ]; then
-                _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
                 _iw_msg="✗ Function not found after sourcing: $_iw_imp_true_name"
-                _iw_full="[${_iw_ts}] invoke-wizardry: $_iw_msg"
+                _iw_full="invoke-wizardry: $_iw_msg"
                 printf '%s\n' "$_iw_full" >> "$_iw_debug_file" 2>/dev/null || :
               fi
             fi
           else
             _iw_imp_failed=$((_iw_imp_failed + 1))
             if [ -n "$_iw_debug_file" ]; then
-              _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
-              _iw_msg="[${_iw_ts}] invoke-wizardry: ✗ Failed to source imp: $_iw_imp_name"
+              _iw_msg="invoke-wizardry: ✗ Failed to source imp: $_iw_imp_name"
               printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
             fi
             set +eu  # Ensure permissive mode even after failure
@@ -305,8 +276,7 @@ _invoke_wizardry() {
         else
           _iw_imp_skipped=$((_iw_imp_skipped + 1))
           if [ -n "$_iw_debug_file" ]; then
-            _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
-            _iw_msg="[${_iw_ts}] invoke-wizardry: Skipping imp (no function): $_iw_imp_name"
+            _iw_msg="invoke-wizardry: Skipping imp (no function): $_iw_imp_name"
             printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
           fi
         fi
@@ -317,8 +287,7 @@ _invoke_wizardry() {
   _iw_imp_summary="total=$_iw_imp_count success=$_iw_imp_success"
   _iw_imp_summary="$_iw_imp_summary skipped=$_iw_imp_skipped failed=$_iw_imp_failed"
   if [ -n "$_iw_debug_file" ]; then
-    _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
-    _iw_msg="[${_iw_ts}] invoke-wizardry: Imp sourcing complete: $_iw_imp_summary"
+    _iw_msg="invoke-wizardry: Imp sourcing complete: $_iw_imp_summary"
     printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
   fi
   
@@ -330,8 +299,7 @@ _invoke_wizardry() {
   # This makes spell functions immediately available in the current shell
   # Spells are sourced (not executed) to bind their functions into the shell
   if [ -n "$_iw_debug_file" ]; then
-    _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
-    _iw_msg="[${_iw_ts}] invoke-wizardry: Starting spell sourcing from: $WIZARDRY_DIR/spells"
+    _iw_msg="invoke-wizardry: Starting spell sourcing from: $WIZARDRY_DIR/spells"
     printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
   fi
   _iw_spell_count=0
@@ -345,9 +313,8 @@ _invoke_wizardry() {
     case "$_iw_spell_cat" in
       */.*) 
         if [ -n "$_iw_debug_file" ]; then
-          _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
           _iw_msg="Skipping hidden directory: $(basename "$_iw_spell_cat")"
-          _iw_full="[${_iw_ts}] invoke-wizardry: $_iw_msg"
+          _iw_full="invoke-wizardry: $_iw_msg"
           printf '%s\n' "$_iw_full" >> "$_iw_debug_file" 2>/dev/null || :
         fi
         continue 
@@ -356,8 +323,7 @@ _invoke_wizardry() {
     
     _iw_spell_cat_name=$(basename "$_iw_spell_cat")
     if [ -n "$_iw_debug_file" ]; then
-      _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
-      _iw_msg="[${_iw_ts}] invoke-wizardry: Processing spell category: $_iw_spell_cat_name"
+      _iw_msg="invoke-wizardry: Processing spell category: $_iw_spell_cat_name"
       printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
     fi
     
@@ -375,9 +341,8 @@ _invoke_wizardry() {
       _iw_grep_pattern="^[[:space:]]*${_iw_spell_true_name}[[:space:]]*\\(\\)"
       if grep -qE "$_iw_grep_pattern" "$_iw_spell" 2>/dev/null; then
         if [ -n "$_iw_debug_file" ]; then
-          _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
           _iw_msg="Sourcing spell: $_iw_spell_name -> $_iw_spell_true_name"
-          _iw_full="[${_iw_ts}] invoke-wizardry: $_iw_msg"
+          _iw_full="invoke-wizardry: $_iw_msg"
           printf '%s\n' "$_iw_full" >> "$_iw_debug_file" 2>/dev/null || :
         fi
         # Source the spell to load its function
@@ -392,32 +357,28 @@ _invoke_wizardry() {
             if alias "$_iw_spell_name=$_iw_spell_true_name" 2>/dev/null; then
               _iw_spell_success=$((_iw_spell_success + 1))
               if [ -n "$_iw_debug_file" ]; then
-                _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
-                _iw_msg="[${_iw_ts}] invoke-wizardry: ✓ Loaded spell: $_iw_spell_name"
+                _iw_msg="invoke-wizardry: ✓ Loaded spell: $_iw_spell_name"
                 printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
               fi
             else
               _iw_spell_failed=$((_iw_spell_failed + 1))
               if [ -n "$_iw_debug_file" ]; then
-                _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
-                _iw_msg="[${_iw_ts}] invoke-wizardry: ✗ Failed to alias spell: $_iw_spell_name"
+                _iw_msg="invoke-wizardry: ✗ Failed to alias spell: $_iw_spell_name"
                 printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
               fi
             fi
           else
             _iw_spell_failed=$((_iw_spell_failed + 1))
             if [ -n "$_iw_debug_file" ]; then
-              _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
               _iw_msg="✗ Function not found after sourcing: $_iw_spell_true_name"
-              _iw_full="[${_iw_ts}] invoke-wizardry: $_iw_msg"
+              _iw_full="invoke-wizardry: $_iw_msg"
               printf '%s\n' "$_iw_full" >> "$_iw_debug_file" 2>/dev/null || :
             fi
           fi
         else
           _iw_spell_failed=$((_iw_spell_failed + 1))
           if [ -n "$_iw_debug_file" ]; then
-            _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
-            _iw_msg="[${_iw_ts}] invoke-wizardry: ✗ Failed to source spell: $_iw_spell_name"
+            _iw_msg="invoke-wizardry: ✗ Failed to source spell: $_iw_spell_name"
             printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
           fi
           set +eu  # Ensure permissive mode even after failure
@@ -425,8 +386,7 @@ _invoke_wizardry() {
       else
         _iw_spell_skipped=$((_iw_spell_skipped + 1))
         if [ -n "$_iw_debug_file" ]; then
-          _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
-          _iw_msg="[${_iw_ts}] invoke-wizardry: Skipping spell (no function): $_iw_spell_name"
+          _iw_msg="invoke-wizardry: Skipping spell (no function): $_iw_spell_name"
           printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
         fi
       fi
@@ -436,16 +396,14 @@ _invoke_wizardry() {
   _iw_spell_summary="total=$_iw_spell_count success=$_iw_spell_success"
   _iw_spell_summary="$_iw_spell_summary skipped=$_iw_spell_skipped failed=$_iw_spell_failed"
   if [ -n "$_iw_debug_file" ]; then
-    _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
-    _iw_msg="[${_iw_ts}] invoke-wizardry: Spell sourcing complete: $_iw_spell_summary"
+    _iw_msg="invoke-wizardry: Spell sourcing complete: $_iw_spell_summary"
     printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
   fi
   
   # Pre-load spells from user's spellbook
   # User spells follow the same pattern as regular spells (spell_name, no underscore)
   if [ -n "$_iw_debug_file" ]; then
-    _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
-    _iw_msg="[${_iw_ts}] invoke-wizardry: Checking for user spells in: $SPELLBOOK_DIR"
+    _iw_msg="invoke-wizardry: Checking for user spells in: $SPELLBOOK_DIR"
     printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
   fi
   _iw_user_spell_count=0
@@ -463,8 +421,7 @@ _invoke_wizardry() {
       _iw_grep_pattern="^[[:space:]]*${_iw_user_spell_true_name}[[:space:]]*\\(\\)"
       if grep -qE "$_iw_grep_pattern" "$_iw_user_spell" 2>/dev/null; then
         if [ -n "$_iw_debug_file" ]; then
-          _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
-          _iw_msg="[${_iw_ts}] invoke-wizardry: Sourcing user spell: $_iw_user_spell_name"
+          _iw_msg="invoke-wizardry: Sourcing user spell: $_iw_user_spell_name"
           printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
         fi
         # shellcheck disable=SC1090
@@ -475,8 +432,7 @@ _invoke_wizardry() {
             if alias "$_iw_user_spell_name=$_iw_user_spell_true_name" 2>/dev/null; then
               _iw_user_spell_success=$((_iw_user_spell_success + 1))
               if [ -n "$_iw_debug_file" ]; then
-                _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
-                _iw_msg="[${_iw_ts}] invoke-wizardry: ✓ Loaded user spell: $_iw_user_spell_name"
+                _iw_msg="invoke-wizardry: ✓ Loaded user spell: $_iw_user_spell_name"
                 printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
               fi
             fi
@@ -484,9 +440,8 @@ _invoke_wizardry() {
         else
           set +eu
           if [ -n "$_iw_debug_file" ]; then
-            _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
             _iw_msg="✗ Failed to source user spell: $_iw_user_spell_name"
-            _iw_full="[${_iw_ts}] invoke-wizardry: $_iw_msg"
+            _iw_full="invoke-wizardry: $_iw_msg"
             printf '%s\n' "$_iw_full" >> "$_iw_debug_file" 2>/dev/null || :
           fi
         fi
@@ -496,8 +451,7 @@ _invoke_wizardry() {
   
   _iw_user_summary="total=$_iw_user_spell_count success=$_iw_user_spell_success"
   if [ -n "$_iw_debug_file" ]; then
-    _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
-    _iw_msg="[${_iw_ts}] invoke-wizardry: User spell sourcing complete: $_iw_user_summary"
+    _iw_msg="invoke-wizardry: User spell sourcing complete: $_iw_user_summary"
     printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
   fi
   
@@ -517,37 +471,32 @@ _invoke_wizardry() {
     if grep -q "^command-not-found=0$" "$_iw_cnf_config" 2>/dev/null; then
       _iw_cnf_enabled=0
       if [ -n "$_iw_debug_file" ]; then
-        _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
-        _iw_msg="[${_iw_ts}] invoke-wizardry: command-not-found hook: DISABLED (config file)"
+        _iw_msg="invoke-wizardry: command-not-found hook: DISABLED (config file)"
         printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
       fi
     else
       if [ -n "$_iw_debug_file" ]; then
-        _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
-        _iw_msg="[${_iw_ts}] invoke-wizardry: command-not-found hook: enabled (config file allows)"
+        _iw_msg="invoke-wizardry: command-not-found hook: enabled (config file allows)"
         printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
       fi
     fi
   else
     if [ -n "$_iw_debug_file" ]; then
-      _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
       _iw_msg="command-not-found hook: enabled (no config file, default enabled)"
-      printf '%s\n' "[${_iw_ts}] invoke-wizardry: $_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
+      printf '%s\n' "invoke-wizardry: $_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
     fi
   fi
   
   # Only set up command_not_found_handle if enabled
   if [ "$_iw_cnf_enabled" -eq 1 ]; then
     if [ -n "$_iw_debug_file" ]; then
-      _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
-      _iw_msg="[${_iw_ts}] invoke-wizardry: Setting up command_not_found_handle"
+      _iw_msg="invoke-wizardry: Setting up command_not_found_handle"
       printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
     fi
     # Use eval to check shell type while avoiding checkbashisms false positive
     if eval '[ -n "${BASH_VERSION+x}" ]' 2>/dev/null; then
       if [ -n "$_iw_debug_file" ]; then
-        _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
-        _iw_msg="[${_iw_ts}] invoke-wizardry: Bash detected, installing command_not_found_handle"
+        _iw_msg="invoke-wizardry: Bash detected, installing command_not_found_handle"
         printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
       fi
       # Bash-specific command_not_found_handle
@@ -555,8 +504,7 @@ _invoke_wizardry() {
         # Debug logging for command_not_found_handle
         if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
           _cnf_file="${HOME-}/.wizardry-debug.log"
-          _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
-          _cnf_msg="[${_cnf_ts}] CNF: command not found: $1 (args: $*)"
+          _cnf_msg="CNF: command not found: $1 (args: $*)"
           printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
         fi
         
@@ -564,8 +512,7 @@ _invoke_wizardry() {
         if [ "${_WIZARDRY_IN_CNF_HANDLER-}" = "1" ]; then
           if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
             _cnf_file="${HOME-}/.wizardry-debug.log"
-            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
-            _cnf_msg="[${_cnf_ts}] CNF: recursion detected, bailing out"
+            _cnf_msg="CNF: recursion detected, bailing out"
             printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
           fi
           printf '\''%s: command not found\n'\'' "$1" >&2
@@ -578,15 +525,13 @@ _invoke_wizardry() {
         if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$_cnf_wob" ]; then
           if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
             _cnf_file="${HOME-}/.wizardry-debug.log"
-            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
-            _cnf_msg="[${_cnf_ts}] CNF: trying word-of-binding for: $1"
+            _cnf_msg="CNF: trying word-of-binding for: $1"
             printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
           fi
           if "$_cnf_wob" "$@" 2>/dev/null; then
             if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
               _cnf_file="${HOME-}/.wizardry-debug.log"
-              _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
-              _cnf_msg="[${_cnf_ts}] CNF: word-of-binding succeeded for: $1"
+              _cnf_msg="CNF: word-of-binding succeeded for: $1"
               printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
             fi
             unset _WIZARDRY_IN_CNF_HANDLER
@@ -594,8 +539,7 @@ _invoke_wizardry() {
           fi
           if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
             _cnf_file="${HOME-}/.wizardry-debug.log"
-            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
-            _cnf_msg="[${_cnf_ts}] CNF: word-of-binding failed for: $1"
+            _cnf_msg="CNF: word-of-binding failed for: $1"
             printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
           fi
         fi
@@ -604,15 +548,13 @@ _invoke_wizardry() {
         if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$_cnf_parse" ]; then
           if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
             _cnf_file="${HOME-}/.wizardry-debug.log"
-            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
-            _cnf_msg="[${_cnf_ts}] CNF: trying parse for: $1"
+            _cnf_msg="CNF: trying parse for: $1"
             printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
           fi
           if "$_cnf_parse" "$@" 2>/dev/null; then
             if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
               _cnf_file="${HOME-}/.wizardry-debug.log"
-              _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
-              _cnf_msg="[${_cnf_ts}] CNF: parse succeeded for: $1"
+              _cnf_msg="CNF: parse succeeded for: $1"
               printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
             fi
             unset _WIZARDRY_IN_CNF_HANDLER
@@ -620,8 +562,7 @@ _invoke_wizardry() {
           fi
           if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
             _cnf_file="${HOME-}/.wizardry-debug.log"
-            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
-            _cnf_msg="[${_cnf_ts}] CNF: parse failed for: $1"
+            _cnf_msg="CNF: parse failed for: $1"
             printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
           fi
         fi
@@ -629,8 +570,7 @@ _invoke_wizardry() {
         unset _WIZARDRY_IN_CNF_HANDLER
         if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
           _cnf_file="${HOME-}/.wizardry-debug.log"
-          _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
-          _cnf_msg="[${_cnf_ts}] CNF: command truly not found: $1"
+          _cnf_msg="CNF: command truly not found: $1"
           printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
         fi
         printf '\''%s: command not found\n'\'' "$1" >&2
@@ -638,8 +578,7 @@ _invoke_wizardry() {
       }'
     elif eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
       if [ -n "$_iw_debug_file" ]; then
-        _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
-        _iw_msg="[${_iw_ts}] invoke-wizardry: Zsh detected, installing command_not_found_handler"
+        _iw_msg="invoke-wizardry: Zsh detected, installing command_not_found_handler"
         printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
       fi
       # Zsh-specific command_not_found_handler
@@ -647,8 +586,7 @@ _invoke_wizardry() {
         # Debug logging for command_not_found_handler
         if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
           _cnf_file="${HOME-}/.wizardry-debug.log"
-          _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
-          _cnf_msg="[${_cnf_ts}] CNF: command not found: $1 (args: $*)"
+          _cnf_msg="CNF: command not found: $1 (args: $*)"
           printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
         fi
         
@@ -656,8 +594,7 @@ _invoke_wizardry() {
         if [ "${_WIZARDRY_IN_CNF_HANDLER-}" = "1" ]; then
           if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
             _cnf_file="${HOME-}/.wizardry-debug.log"
-            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
-            _cnf_msg="[${_cnf_ts}] CNF: recursion detected, bailing out"
+            _cnf_msg="CNF: recursion detected, bailing out"
             printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
           fi
           printf '\''%s: command not found\n'\'' "$1" >&2
@@ -670,15 +607,13 @@ _invoke_wizardry() {
         if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$_cnf_wob" ]; then
           if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
             _cnf_file="${HOME-}/.wizardry-debug.log"
-            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
-            _cnf_msg="[${_cnf_ts}] CNF: trying word-of-binding for: $1"
+            _cnf_msg="CNF: trying word-of-binding for: $1"
             printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
           fi
           if "$_cnf_wob" "$@" 2>/dev/null; then
             if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
               _cnf_file="${HOME-}/.wizardry-debug.log"
-              _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
-              _cnf_msg="[${_cnf_ts}] CNF: word-of-binding succeeded for: $1"
+              _cnf_msg="CNF: word-of-binding succeeded for: $1"
               printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
             fi
             unset _WIZARDRY_IN_CNF_HANDLER
@@ -686,8 +621,7 @@ _invoke_wizardry() {
           fi
           if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
             _cnf_file="${HOME-}/.wizardry-debug.log"
-            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
-            _cnf_msg="[${_cnf_ts}] CNF: word-of-binding failed for: $1"
+            _cnf_msg="CNF: word-of-binding failed for: $1"
             printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
           fi
         fi
@@ -696,15 +630,13 @@ _invoke_wizardry() {
         if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$_cnf_parse" ]; then
           if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
             _cnf_file="${HOME-}/.wizardry-debug.log"
-            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
-            _cnf_msg="[${_cnf_ts}] CNF: trying parse for: $1"
+            _cnf_msg="CNF: trying parse for: $1"
             printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
           fi
           if "$_cnf_parse" "$@" 2>/dev/null; then
             if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
               _cnf_file="${HOME-}/.wizardry-debug.log"
-              _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
-              _cnf_msg="[${_cnf_ts}] CNF: parse succeeded for: $1"
+              _cnf_msg="CNF: parse succeeded for: $1"
               printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
             fi
             unset _WIZARDRY_IN_CNF_HANDLER
@@ -712,8 +644,7 @@ _invoke_wizardry() {
           fi
           if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
             _cnf_file="${HOME-}/.wizardry-debug.log"
-            _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
-            _cnf_msg="[${_cnf_ts}] CNF: parse failed for: $1"
+            _cnf_msg="CNF: parse failed for: $1"
             printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
           fi
         fi
@@ -721,8 +652,7 @@ _invoke_wizardry() {
         unset _WIZARDRY_IN_CNF_HANDLER
         if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
           _cnf_file="${HOME-}/.wizardry-debug.log"
-          _cnf_ts="$(date '\''+%Y-%m-%d %H:%M:%S'\'')"
-          _cnf_msg="[${_cnf_ts}] CNF: command truly not found: $1"
+          _cnf_msg="CNF: command truly not found: $1"
           printf '\''%s\n'\'' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
         fi
         printf '\''%s: command not found\n'\'' "$1" >&2
@@ -731,17 +661,15 @@ _invoke_wizardry() {
     fi
   else
     if [ -n "$_iw_debug_file" ]; then
-      _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
       _iw_msg="command_not_found_handle NOT installed (disabled by config)"
-      printf '%s\n' "[${_iw_ts}] invoke-wizardry: $_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
+      printf '%s\n' "invoke-wizardry: $_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
     fi
   fi
   
   # Load synonyms (aliases) from spellbook by sourcing invoke-thesaurus
   # invoke-thesaurus handles initialization, enable/disable checks, and sourcing
   if [ -n "$_iw_debug_file" ]; then
-    _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
-    _iw_msg="[${_iw_ts}] invoke-wizardry: Loading synonyms from invoke-thesaurus"
+    _iw_msg="invoke-wizardry: Loading synonyms from invoke-thesaurus"
     printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
   fi
   _iw_invoke_thesaurus="$WIZARDRY_DIR/spells/.imps/sys/invoke-thesaurus"
@@ -751,8 +679,7 @@ _invoke_wizardry() {
     # Restore permissive mode - sourcing may have changed shell mode
     set +eu
     if [ -n "$_iw_debug_file" ]; then
-      _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
-      _iw_msg="[${_iw_ts}] invoke-wizardry: invoke-thesaurus sourced"
+      _iw_msg="invoke-wizardry: invoke-thesaurus sourced"
       printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
     fi
   fi
@@ -761,8 +688,7 @@ _invoke_wizardry() {
   # This replaces the separate install-cd step
   # The cd spell checks config file to determine if look should run
   if [ -n "$_iw_debug_file" ]; then
-    _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
-    _iw_msg="[${_iw_ts}] invoke-wizardry: Setting up cd hook"
+    _iw_msg="invoke-wizardry: Setting up cd hook"
     printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
   fi
   _iw_cd_spell="$WIZARDRY_DIR/spells/.arcana/mud/cd"
@@ -772,15 +698,13 @@ _invoke_wizardry() {
     # Restore permissive mode
     set +eu
     if [ -n "$_iw_debug_file" ]; then
-      _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
-      _iw_msg="[${_iw_ts}] invoke-wizardry: cd hook sourced"
+      _iw_msg="invoke-wizardry: cd hook sourced"
       printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
     fi
   fi
   
   if [ -n "$_iw_debug_file" ]; then
-    _iw_ts=$(date '+%Y-%m-%d %H:%M:%S')
-    _iw_msg="[${_iw_ts}] invoke-wizardry: === invoke-wizardry complete ==="
+    _iw_msg="invoke-wizardry: === invoke-wizardry complete ==="
     printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
   fi
   
