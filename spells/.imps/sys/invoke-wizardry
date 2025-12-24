@@ -130,7 +130,7 @@ _invoke_wizardry() {
     # In Zsh, $0 inside a function is the function name, not the script path
     _iw_script_path="$_iw_script_path_captured"
 
-    if [ -z "$_iw_script_path" ] && [ -n "${INVOKE_WIZARDRY-}" ]; then
+    if [ -z "$_iw_script_path" ] && [ -n "${INVOKE_WIZARDRY-}" ] && [ -f "$INVOKE_WIZARDRY" ]; then
       printf '%s\n' "[invoke-wizardry] Fallback to INVOKE_WIZARDRY environment path" >&2
       _iw_script_path="$INVOKE_WIZARDRY"
     fi

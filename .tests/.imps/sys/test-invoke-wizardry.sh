@@ -343,11 +343,16 @@ test_default_path_in_unknown_shell() {
   mkdir -p "$home"
   ln -s "$ROOT_DIR" "$home/.wizardry"
 
+  if ! command -v dash >/dev/null 2>&1; then
+    printf '%s\n' "dash not available, skipping"
+    return 0
+  fi
+
   cat > "$tmpdir/test-unknown-shell.sh" <<'EOF'
 #!/bin/sh
 HOME=$1
 export HOME
-PATH="/usr/bin:/bin"
+PATH="/usr/local/bin:/usr/bin:/bin"
 . "$HOME/.wizardry/spells/.imps/sys/invoke-wizardry" 2>/dev/null || exit 1
 
 if [ -n "${WIZARDRY_DIR-}" ] && [ -d "$WIZARDRY_DIR/spells" ]; then
