@@ -252,6 +252,13 @@ _invoke_wizardry() {
         _iw_grep_pattern="^[[:space:]]*${_iw_imp_true_name}[[:space:]]*\\(\\)"
         if grep -qE "$_iw_grep_pattern" "$_iw_imp" 2>/dev/null; then
           if _iw_imp_body=$(awk '
+BEGIN {
+  # Define regex patterns to keep line length under 100 chars
+  func_kw = "^[[:space:]]*function[[:space:]]+[A-Za-z_][A-Za-z0-9_]*"
+  func_paren = "[[:space:]]*\\\\(\\\\)?[[:space:]]*\\\\{"
+  func_simple = "^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\\\(\\\\)[[:space:]]*\\\\{"
+  func_header = "^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\\\(\\\\)[[:space:]]*$"
+}
 function brace_delta(s, n, m) {
   n = gsub(/{/, "{", s)
   m = gsub(/}/, "}", s)
@@ -259,7 +266,7 @@ function brace_delta(s, n, m) {
 } # awk: brace delta
 {
   if (!in_func) {
-    if ($0 ~ /^[[:space:]]*function[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\(\\)?[[:space:]]*\\{/) {
+    if (match($0, func_kw func_paren)) {
       in_func = 1
       brace = brace_delta($0)
       print
@@ -268,7 +275,7 @@ function brace_delta(s, n, m) {
       } # awk: end one-line function
       next
     } # awk: function keyword
-    if ($0 ~ /^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\(\\)[[:space:]]*\\{/) {
+    if (match($0, func_simple)) {
       in_func = 1
       brace = brace_delta($0)
       print
@@ -277,7 +284,7 @@ function brace_delta(s, n, m) {
       } # awk: end one-line function
       next
     } # awk: function with brace
-    if ($0 ~ /^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\(\\)[[:space:]]*$/) {
+    if (match($0, func_header)) {
       in_func = 1
       brace = 0
       print
@@ -391,6 +398,13 @@ function brace_delta(s, n, m) {
       _iw_grep_pattern="^[[:space:]]*${_iw_spell_true_name}[[:space:]]*\\(\\)"
       if grep -qE "$_iw_grep_pattern" "$_iw_spell" 2>/dev/null; then
         if _iw_spell_body=$(awk '
+BEGIN {
+  # Define regex patterns to keep line length under 100 chars
+  func_kw = "^[[:space:]]*function[[:space:]]+[A-Za-z_][A-Za-z0-9_]*"
+  func_paren = "[[:space:]]*\\\\(\\\\)?[[:space:]]*\\\\{"
+  func_simple = "^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\\\(\\\\)[[:space:]]*\\\\{"
+  func_header = "^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\\\(\\\\)[[:space:]]*$"
+}
 function brace_delta(s, n, m) {
   n = gsub(/{/, "{", s)
   m = gsub(/}/, "}", s)
@@ -398,7 +412,7 @@ function brace_delta(s, n, m) {
 } # awk: brace delta
 {
   if (!in_func) {
-    if ($0 ~ /^[[:space:]]*function[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\(\\)?[[:space:]]*\\{/) {
+    if (match($0, func_kw func_paren)) {
       in_func = 1
       brace = brace_delta($0)
       print
@@ -407,7 +421,7 @@ function brace_delta(s, n, m) {
       } # awk: end one-line function
       next
     } # awk: function keyword
-    if ($0 ~ /^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\(\\)[[:space:]]*\\{/) {
+    if (match($0, func_simple)) {
       in_func = 1
       brace = brace_delta($0)
       print
@@ -416,7 +430,7 @@ function brace_delta(s, n, m) {
       } # awk: end one-line function
       next
     } # awk: function with brace
-    if ($0 ~ /^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\(\\)[[:space:]]*$/) {
+    if (match($0, func_header)) {
       in_func = 1
       brace = 0
       print
@@ -501,6 +515,13 @@ function brace_delta(s, n, m) {
       _iw_grep_pattern="^[[:space:]]*${_iw_user_spell_true_name}[[:space:]]*\\(\\)"
       if grep -qE "$_iw_grep_pattern" "$_iw_user_spell" 2>/dev/null; then
         if _iw_user_body=$(awk '
+BEGIN {
+  # Define regex patterns to keep line length under 100 chars
+  func_kw = "^[[:space:]]*function[[:space:]]+[A-Za-z_][A-Za-z0-9_]*"
+  func_paren = "[[:space:]]*\\\\(\\\\)?[[:space:]]*\\\\{"
+  func_simple = "^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\\\(\\\\)[[:space:]]*\\\\{"
+  func_header = "^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\\\(\\\\)[[:space:]]*$"
+}
 function brace_delta(s, n, m) {
   n = gsub(/{/, "{", s)
   m = gsub(/}/, "}", s)
@@ -508,7 +529,7 @@ function brace_delta(s, n, m) {
 } # awk: brace delta
 {
   if (!in_func) {
-    if ($0 ~ /^[[:space:]]*function[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\(\\)?[[:space:]]*\\{/) {
+    if (match($0, func_kw func_paren)) {
       in_func = 1
       brace = brace_delta($0)
       print
@@ -517,7 +538,7 @@ function brace_delta(s, n, m) {
       } # awk: end one-line function
       next
     } # awk: function keyword
-    if ($0 ~ /^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\(\\)[[:space:]]*\\{/) {
+    if (match($0, func_simple)) {
       in_func = 1
       brace = brace_delta($0)
       print
@@ -526,7 +547,7 @@ function brace_delta(s, n, m) {
       } # awk: end one-line function
       next
     } # awk: function with brace
-    if ($0 ~ /^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\(\\)[[:space:]]*$/) {
+    if (match($0, func_header)) {
       in_func = 1
       brace = 0
       print
