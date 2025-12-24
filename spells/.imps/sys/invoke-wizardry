@@ -403,7 +403,6 @@ function brace_delta(s, n, m) {
     esac
     
     printf '%s\n' "[invoke-wizardry] Processing category: $_iw_spell_cat_name" >&2
-    printf '%s\n' "[invoke-wizardry] Processing category: $_iw_spell_cat_name" >&2
     if [ -n "$_iw_debug_file" ]; then
       _iw_msg="invoke-wizardry: Processing spell category: $_iw_spell_cat_name"
       printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
