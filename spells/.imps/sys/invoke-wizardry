@@ -234,6 +234,8 @@ _invoke_wizardry() {
         # Skip invoke-thesaurus (loaded separately later for synonyms)
         case "$_iw_imp" in
           */invoke-wizardry|*/invoke-thesaurus) 
+            printf '%s\n' "[invoke-wizardry] Skipping special imp: $(basename "$_iw_imp")" >&2 
+            printf '%s\n' "[invoke-wizardry] Skipping special imp: $(basename "$_iw_imp")" >&2
             _iw_imp_skipped=$((_iw_imp_skipped + 1))
             if [ -n "$_iw_debug_file" ]; then
               _iw_msg="Skipping special imp: $(basename "$_iw_imp")"
@@ -257,7 +259,7 @@ function brace_delta(s, n, m) {
 } # awk: brace delta
 {
   if (!in_func) {
-    if ($0 ~ /^[[:space:]]*function[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\(\)?[[:space:]]*\{/) {
+    if ($0 ~ /^[[:space:]]*function[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\(\\)?[[:space:]]*\\{/) {
       in_func = 1
       brace = brace_delta($0)
       print
@@ -266,7 +268,7 @@ function brace_delta(s, n, m) {
       } # awk: end one-line function
       next
     } # awk: function keyword
-    if ($0 ~ /^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\(\)[[:space:]]*\{/) {
+    if ($0 ~ /^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\(\\)[[:space:]]*\\{/) {
       in_func = 1
       brace = brace_delta($0)
       print
@@ -275,7 +277,7 @@ function brace_delta(s, n, m) {
       } # awk: end one-line function
       next
     } # awk: function with brace
-    if ($0 ~ /^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\(\)[[:space:]]*$/) {
+    if ($0 ~ /^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\(\\)[[:space:]]*$/) {
       in_func = 1
       brace = 0
       print
@@ -396,7 +398,7 @@ function brace_delta(s, n, m) {
 } # awk: brace delta
 {
   if (!in_func) {
-    if ($0 ~ /^[[:space:]]*function[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\(\)?[[:space:]]*\{/) {
+    if ($0 ~ /^[[:space:]]*function[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\(\\)?[[:space:]]*\\{/) {
       in_func = 1
       brace = brace_delta($0)
       print
@@ -405,7 +407,7 @@ function brace_delta(s, n, m) {
       } # awk: end one-line function
       next
     } # awk: function keyword
-    if ($0 ~ /^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\(\)[[:space:]]*\{/) {
+    if ($0 ~ /^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\(\\)[[:space:]]*\\{/) {
       in_func = 1
       brace = brace_delta($0)
       print
@@ -414,7 +416,7 @@ function brace_delta(s, n, m) {
       } # awk: end one-line function
       next
     } # awk: function with brace
-    if ($0 ~ /^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\(\)[[:space:]]*$/) {
+    if ($0 ~ /^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\(\\)[[:space:]]*$/) {
       in_func = 1
       brace = 0
       print
@@ -506,7 +508,7 @@ function brace_delta(s, n, m) {
 } # awk: brace delta
 {
   if (!in_func) {
-    if ($0 ~ /^[[:space:]]*function[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\(\)?[[:space:]]*\{/) {
+    if ($0 ~ /^[[:space:]]*function[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\(\\)?[[:space:]]*\\{/) {
       in_func = 1
       brace = brace_delta($0)
       print
@@ -515,7 +517,7 @@ function brace_delta(s, n, m) {
       } # awk: end one-line function
       next
     } # awk: function keyword
-    if ($0 ~ /^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\(\)[[:space:]]*\{/) {
+    if ($0 ~ /^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\(\\)[[:space:]]*\\{/) {
       in_func = 1
       brace = brace_delta($0)
       print
@@ -524,7 +526,7 @@ function brace_delta(s, n, m) {
       } # awk: end one-line function
       next
     } # awk: function with brace
-    if ($0 ~ /^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\(\)[[:space:]]*$/) {
+    if ($0 ~ /^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\(\\)[[:space:]]*$/) {
       in_func = 1
       brace = 0
       print
