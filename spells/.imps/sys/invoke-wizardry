@@ -540,12 +540,16 @@ function brace_delta(s, n, m) {
     # Zsh-specific: Disable nomatch to prevent errors when glob doesn't match
     # In zsh, unmatched globs cause an error by default
     _iw_zsh_nomatch_saved=""
+    _iw_zsh_nullglob_saved=""
     if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
-      # Save current nomatch setting
+      # Save current nomatch and null_glob settings
       if eval 'setopt | grep -q "^nomatch$"' 2>/dev/null; then
         _iw_zsh_nomatch_saved="yes"
       fi
-      # Disable nomatch for the glob pattern
+      if eval 'setopt | grep -q "^nullglob$"' 2>/dev/null; then
+        _iw_zsh_nullglob_saved="yes"
+      fi
+      # Disable nomatch and enable null_glob for the glob pattern
       eval 'setopt null_glob 2>/dev/null' || :
       eval 'unsetopt nomatch 2>/dev/null' || :
     fi
@@ -634,9 +638,17 @@ function brace_delta(s, n, m) {
       fi
     done
     
-    # Restore zsh nomatch setting if it was changed
-    if [ -n "$_iw_zsh_nomatch_saved" ] && eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
-      eval 'setopt nomatch 2>/dev/null' || :
+    # Restore zsh settings if they were changed
+    if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+      # Restore nomatch if it was originally set
+      if [ -n "$_iw_zsh_nomatch_saved" ]; then
+        eval 'setopt nomatch 2>/dev/null' || :
+      fi
+      # Restore null_glob to its original state
+      if [ -z "$_iw_zsh_nullglob_saved" ]; then
+        # null_glob was not set originally, so unset it
+        eval 'unsetopt null_glob 2>/dev/null' || :
+      fi
     fi
   fi
   
