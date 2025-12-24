@@ -118,10 +118,6 @@ _invoke_wizardry() {
     printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
   fi
   
-  if [ -n "${ZSH_VERSION-}" ]; then
-    setopt LOCAL_OPTIONS NONOMATCH 2>/dev/null || :
-  fi
-  
   printf '%s\n' "[invoke-wizardry] Checking WIZARDRY_DIR: ${WIZARDRY_DIR-<unset>}" >&2
   if [ -z "${WIZARDRY_DIR-}" ]; then
     printf '%s\n' "[invoke-wizardry] WIZARDRY_DIR not set, will attempt detection" >&2
@@ -229,6 +225,9 @@ _invoke_wizardry() {
   
   printf '%s\n' "[invoke-wizardry] Checking if imp directory exists" >&2
   if [ -d "$_iw_imps_dir" ]; then
+    if [ -n "${ZSH_VERSION-}" ]; then
+      setopt LOCAL_OPTIONS NONOMATCH 2>/dev/null || :
+    fi
     printf '%s\n' "[invoke-wizardry] Imp directory exists, starting family loop" >&2
     for _iw_family in "$_iw_imps_dir"/*; do
       printf '%s\n' "[invoke-wizardry] Checking family: $_iw_family" >&2
