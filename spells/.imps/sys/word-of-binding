@@ -78,18 +78,80 @@ _word_of_binding() {
   fi
 
   # Check if module has true-name function (for binding/sourcing)
-  if grep -qE "^[[:space:]]*${_wob_true_name}[[:space:]]*\\(\\)" "$_wob_module" 2>/dev/null; then
-    # Bind (source) the module to load its function
-    # shellcheck disable=SC1090
-    . "$_wob_module"
-    
+  _wob_true_pattern="^[[:space:]]*${_wob_true_name}[[:space:]]*\\(\\)"
+  if grep -qE "$_wob_true_pattern" "$_wob_module" 2>/dev/null; then
+    # Bind (source) the module to load its function without running self-exec blocks.
+    if ! _wob_body=$(awk '
+function brace_delta(s, n, m) {
+  n = gsub(/{/, "{", s)
+  m = gsub(/}/, "}", s)
+  return n - m
+} # awk: brace delta
+{
+  if (!in_func) {
+    if ($0 ~ /^[[:space:]]*function[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\(\)?[[:space:]]*\{/) {
+      in_func = 1
+      brace = brace_delta($0)
+      print
+      if (brace <= 0) {
+        in_func = 0
+      } # awk: end one-line function
+      next
+    } # awk: function keyword
+    if ($0 ~ /^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\(\)[[:space:]]*\{/) {
+      in_func = 1
+      brace = brace_delta($0)
+      print
+      if (brace <= 0) {
+        in_func = 0
+      } # awk: end one-line function
+      next
+    } # awk: function with brace
+    if ($0 ~ /^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\(\)[[:space:]]*$/) {
+      in_func = 1
+      brace = 0
+      print
+      next
+    } # awk: function header
+    next
+  }
+  brace += brace_delta($0)
+  print
+  if (brace <= 0) {
+    in_func = 0
+  } # awk: end function
+} # awk: end program
+' "$_wob_module"); then
+      printf '%s\n' "word-of-binding: failed to prepare module '$_wob_name'" >&2
+      return 1
+    fi
+    _wob_prev_loading_spells="${_WIZARDRY_LOADING_SPELLS-}"
+    _WIZARDRY_LOADING_SPELLS=1
+    export _WIZARDRY_LOADING_SPELLS
+    if [ -n "$_wob_body" ] && ! eval "$_wob_body"; then
+      if [ -n "$_wob_prev_loading_spells" ]; then
+        _WIZARDRY_LOADING_SPELLS="$_wob_prev_loading_spells"
+        export _WIZARDRY_LOADING_SPELLS
+      else
+        unset _WIZARDRY_LOADING_SPELLS
+      fi
+      printf '%s\n' "word-of-binding: failed to bind '$_wob_name'" >&2
+      return 1
+    fi
+    if [ -n "$_wob_prev_loading_spells" ]; then
+      _WIZARDRY_LOADING_SPELLS="$_wob_prev_loading_spells"
+      export _WIZARDRY_LOADING_SPELLS
+    else
+      unset _WIZARDRY_LOADING_SPELLS
+    fi
     # Create alias for future calls
     alias "$_wob_name=$_wob_true_name" 2>/dev/null || true
     
-    if command -v "$_wob_true_name" >/dev/null 2>&1; then
+    if type "$_wob_true_name" >/dev/null 2>&1; then
       "$_wob_true_name" "$@"
     else
-      printf '%s\n' "word-of-binding: failed to bind '$_wob_name' - function not defined" >&2
+      printf '%s\n' \
+        "word-of-binding: failed to bind '$_wob_name' - function not defined" >&2
       return 1
     fi
   else
