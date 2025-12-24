@@ -433,6 +433,7 @@ test_zsh_handles_empty_spellbook() {
       ;;
   esac
 
+  # Core spells should still load even when the user spellbook is empty.
   case "$ERROR" in
     *"Spell sourcing complete: total=0"*)
       TEST_FAILURE_REASON="invoke-wizardry skipped spells"

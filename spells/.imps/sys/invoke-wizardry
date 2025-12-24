@@ -383,6 +383,10 @@ function brace_delta(s, n, m) {
   _iw_spell_skipped=0
   _iw_spell_failed=0
   
+  if [ -n "${ZSH_VERSION-}" ]; then
+    setopt LOCAL_OPTIONS NONOMATCH 2>/dev/null || :
+  fi
+  
   printf '%s\n' "[invoke-wizardry] Starting spell category loop" >&2
   for _iw_spell_cat in "$WIZARDRY_DIR"/spells/*; do
     printf '%s\n' "[invoke-wizardry] Checking category: $_iw_spell_cat" >&2
@@ -398,10 +402,9 @@ function brace_delta(s, n, m) {
           printf '%s\n' "$_iw_full" >> "$_iw_debug_file" 2>/dev/null || :
         fi
         continue 
-        ;;
+      ;;
     esac
     
-    printf '%s\n' "[invoke-wizardry] Processing category: $_iw_spell_cat_name" >&2
     if [ -n "$_iw_debug_file" ]; then
       _iw_msg="invoke-wizardry: Processing spell category: $_iw_spell_cat_name"
       printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
