@@ -131,7 +131,7 @@ _invoke_wizardry() {
     _iw_script_path="$_iw_script_path_captured"
 
     if [ -z "$_iw_script_path" ] && [ -n "${INVOKE_WIZARDRY-}" ] && [ -f "$INVOKE_WIZARDRY" ]; then
-      printf '%s\n' "[invoke-wizardry] Fallback to INVOKE_WIZARDRY environment path" >&2
+      printf '%s\n' "[invoke-wizardry] Script path missing, using INVOKE_WIZARDRY environment path" >&2
       if [ -n "$_iw_debug_file" ]; then
         _iw_msg="invoke-wizardry: Fallback using INVOKE_WIZARDRY path: $INVOKE_WIZARDRY"
         printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
@@ -142,7 +142,7 @@ _invoke_wizardry() {
     if [ -z "$_iw_script_path" ] && [ -n "${HOME-}" ]; then
       _iw_default_script="$HOME/.wizardry/spells/.imps/sys/invoke-wizardry"
       if [ -f "$_iw_default_script" ]; then
-        printf '%s\n' "[invoke-wizardry] Using default install path: $_iw_default_script" >&2
+        printf '%s\n' "[invoke-wizardry] Script path missing, using default install path: $_iw_default_script" >&2
         if [ -n "$_iw_debug_file" ]; then
           _iw_msg="invoke-wizardry: Default install path detected: $_iw_default_script"
           printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
