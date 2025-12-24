@@ -389,11 +389,12 @@ function brace_delta(s, n, m) {
     printf '%s\n' "[invoke-wizardry] Checking category: $_iw_spell_cat" >&2
     [ -d "$_iw_spell_cat" ] || continue
     # Skip hidden directories (like .imps and .arcana)
+    _iw_spell_cat_name=$(basename "$_iw_spell_cat")
     case "$_iw_spell_cat_name" in
       .*) 
-        printf '%s\n' "[invoke-wizardry] Skipping hidden directory: $(basename "$_iw_spell_cat")" >&2
+        printf '%s\n' "[invoke-wizardry] Skipping hidden directory: $_iw_spell_cat_name" >&2
         if [ -n "$_iw_debug_file" ]; then
-          _iw_msg="Skipping hidden directory: $(basename "$_iw_spell_cat")"
+          _iw_msg="Skipping hidden directory: $_iw_spell_cat_name"
           _iw_full="invoke-wizardry: $_iw_msg"
           printf '%s\n' "$_iw_full" >> "$_iw_debug_file" 2>/dev/null || :
         fi
@@ -401,7 +402,6 @@ function brace_delta(s, n, m) {
         ;;
     esac
     
-    _iw_spell_cat_name=$(basename "$_iw_spell_cat")
     printf '%s\n' "[invoke-wizardry] Processing category: $_iw_spell_cat_name" >&2
     printf '%s\n' "[invoke-wizardry] Processing category: $_iw_spell_cat_name" >&2
     if [ -n "$_iw_debug_file" ]; then
