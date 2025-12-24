@@ -56,7 +56,10 @@ say "$(printf "0x%x" "$crc")"
 }
 
 # Self-execute when run directly (not sourced)
-_hash_main() { hash "$@"; }
+_hash_main() {
+  hash "$@"
+}
+
 case "$0" in
   */hash)
     [ -z "${_WIZARDRY_SOURCING-}" ] && _hash_main "$@"
