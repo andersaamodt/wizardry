@@ -4,13 +4,15 @@
 # Also initializes default synonyms if not already set up.
 
 # This script must be sourced, not executed
-case "$0" in
-  */invoke-thesaurus|invoke-thesaurus)
+if command -v _uncastable >/dev/null 2>&1; then
+  _uncastable
+else
+  if ! (return 0 2>/dev/null); then
     printf '%s\n' "invoke-thesaurus: must be sourced, not executed" >&2
     printf '%s\n' "Usage: . invoke-thesaurus" >&2
     exit 1
-    ;;
-esac
+  fi
+fi
 
 # Explicitly use permissive mode - this file is sourced into user's shell
 set +eu

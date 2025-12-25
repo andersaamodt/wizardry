@@ -1,0 +1,32 @@
+#!/bin/sh
+# castable [ARGS...]
+# Allow a spell/imp to self-execute only when run directly.
+# SPELL_NAME defaults to basename of $0.
+# FUNCTION_NAME defaults to SPELL_NAME with hyphens replaced by underscores.
+# Override detection with CASTABLE_NAME and/or CASTABLE_FUNC if needed.
+# Example: castable "$@"
+# Example: CASTABLE_FUNC=erase_spell castable "$@"
+set -eu
+
+_castable() {
+  _cast_name=${CASTABLE_NAME-}
+  _cast_func=${CASTABLE_FUNC-}
+  if [ -z "$_cast_name" ]; then
+    _cast_name=$(basename "${0-}")
+  fi
+  if [ -z "$_cast_func" ] && [ -n "$_cast_name" ]; then
+    _cast_func=$(printf '%s' "$_cast_name" | tr '-' '_')
+  fi
+  if [ -z "$_cast_name" ] || [ -z "$_cast_func" ]; then
+    printf '%s\n' "castable: unable to detect spell or function name" >&2
+    return 2
+  fi
+
+  case "$0" in
+    */"$_cast_name") "$_cast_func" "$@" ;;
+  esac
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */castable) _castable "$@" ;; esac
