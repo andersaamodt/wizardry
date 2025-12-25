@@ -26,13 +26,12 @@ _uncastable() {
       _uncast_sourced=1
     fi
   else
-    _uncast_shell=0
-    case "${0##*/}" in
-      sh|dash|bash|zsh|ksh|mksh) _uncast_shell=1 ;;
+    _uncast_base=${0##*/}
+    case "$_uncast_base" in
+      sh|dash|bash|zsh|ksh|mksh) _uncast_sourced=1 ;;
+      "$_uncast_name") _uncast_sourced=0 ;;
+      *) _uncast_sourced=1 ;;
     esac
-    if [ "$_uncast_shell" -eq 1 ] && (return 0 2>/dev/null); then
-      _uncast_sourced=1
-    fi
   fi
 
   if [ "$_uncast_sourced" -eq 1 ]; then
