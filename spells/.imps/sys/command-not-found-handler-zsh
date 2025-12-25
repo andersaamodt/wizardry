@@ -1,6 +1,7 @@
 #!/bin/sh
 # command-not-found handler for zsh.
 # Defines command_not_found_handler for invoke-wizardry to load.
+set -eu
 
 command_not_found_handler() {
   # Debug logging for command_not_found_handler
