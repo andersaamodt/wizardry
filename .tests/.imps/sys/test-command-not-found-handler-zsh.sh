@@ -18,7 +18,17 @@ test_handler_defines_function() {
 }
 
 test_handler_returns_127() {
-  _run_cmd sh -c ". \"$handler_path\"; WIZARDRY_DIR=\"$ROOT_DIR\"; export WIZARDRY_DIR; if command_not_found_handler wizardry_nope >/dev/null 2>&1; then status=0; else status=\$?; fi; printf '%s\n' \"$status\""
+  _run_cmd env HANDLER_PATH="$handler_path" ROOT_DIR="$ROOT_DIR" sh -c '
+    . "$HANDLER_PATH"
+    WIZARDRY_DIR="$ROOT_DIR"
+    export WIZARDRY_DIR
+    if command_not_found_handler wizardry_nope >/dev/null 2>&1; then
+      status=0
+    else
+      status=$?
+    fi
+    printf "%s\n" "$status"
+  '
   _assert_success
   _assert_output_contains "127"
 }
