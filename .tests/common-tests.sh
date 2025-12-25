@@ -1159,9 +1159,13 @@ test_spells_have_limited_flags() {
         if ($0 ~ /--help|--usage|-h\)|^\s+-\*\)|^\s+--\)|^\s+---\)/) next
         
         # Extract flag name
-        match($0, /(--[a-zA-Z-]+|-[a-zA-Z])/, flag)
-        if (flag[0] && index(seen_flags, flag[0]) == 0) {
-          seen_flags = seen_flags " " flag[0]
+        if (match($0, /(--[a-zA-Z-]+|-[a-zA-Z])/)) {
+          flag = substr($0, RSTART, RLENGTH)
+        } else {
+          flag = ""
+        }
+        if (flag != "" && index(seen_flags, flag) == 0) {
+          seen_flags = seen_flags " " flag
           flag_count++
         }
       }
@@ -1172,9 +1176,13 @@ test_spells_have_limited_flags() {
         if ($0 ~ /--help|--usage|-h|---/) next
         
         # Extract flag name
-        match($0, /(--[a-zA-Z-]+|-[a-zA-Z])/, flag)
-        if (flag[0] && index(seen_flags, flag[0]) == 0) {
-          seen_flags = seen_flags " " flag[0]
+        if (match($0, /(--[a-zA-Z-]+|-[a-zA-Z])/)) {
+          flag = substr($0, RSTART, RLENGTH)
+        } else {
+          flag = ""
+        }
+        if (flag != "" && index(seen_flags, flag) == 0) {
+          seen_flags = seen_flags " " flag
           flag_count++
         }
       }
@@ -1569,9 +1577,10 @@ test_no_mixed_case_variables() {
     mixed_vars=$(grep -nE '^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*=' "$spell" 2>/dev/null | \
       awk -F: '{
         # Extract variable name from assignment
-        match($2, /^[[:space:]]*([A-Za-z_][A-Za-z0-9_]*)=/, arr)
-        if (arr[1] != "") {
-          var = arr[1]
+        var = $2
+        sub(/^[[:space:]]*/, "", var)
+        sub(/=.*/, "", var)
+        if (var != "") {
           # Check if variable has both uppercase and lowercase letters
           has_upper = (var ~ /[A-Z]/)
           has_lower = (var ~ /[a-z]/)
@@ -1590,8 +1599,9 @@ test_no_mixed_case_variables() {
       grep -v -E '\$\{?(DETECT_|LOOK_|ASK_|INSTALL_|REMOVE_|START_|STOP_|RESTART_|ENABLE_|DISABLE_)' | \
       awk -F: '{
         line = $2
-        while (match(line, /\$[{]?([A-Za-z_][A-Za-z0-9_]*)/, arr)) {
-          var = arr[1]
+        while (match(line, /\$[{]?[A-Za-z_][A-Za-z0-9_]*/)) {
+          var = substr(line, RSTART, RLENGTH)
+          sub(/^\$[{]?/, "", var)
           has_upper = (var ~ /[A-Z]/)
           has_lower = (var ~ /[a-z]/)
           if (has_upper && has_lower) {

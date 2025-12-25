@@ -36,7 +36,7 @@ if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
         SCRIPT_DIR=.
 fi
 SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
-IMPS_TEXT_DIR="$SCRIPT_DIR/../../.imps/text"
+IMPS_TEXT_DIR=$(cd "$SCRIPT_DIR" 2>/dev/null && cd .. && cd .. && cd .imps/text && pwd -P)
 
 # Welcome message
 printf '%s\n' 'Welcome to the Tor installation wizard.'

@@ -71,12 +71,20 @@ case "$source_path" in
 esac
 
 # Validate that resolved path doesn't contain '..' components (path traversal protection)
-case "$source_path" in
-  */../*|*/..)
-    printf '%s\n' "import-arcanum: path traversal detected: $source_path" >&2
-    exit 1
-    ;;
-esac
+parent_ref_found=0
+old_ifs=$IFS
+IFS='/'
+for part in $source_path; do
+  if [ "$part" = ".." ]; then
+    parent_ref_found=1
+    break
+  fi
+done
+IFS=$old_ifs
+if [ "$parent_ref_found" -eq 1 ]; then
+  printf '%s\n' "import-arcanum: path traversal detected: $source_path" >&2
+  exit 1
+fi
 
 # Validate that source path exists and is a directory
 if [ ! -d "$source_path" ]; then
