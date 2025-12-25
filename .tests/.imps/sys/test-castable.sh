@@ -13,13 +13,20 @@ test_castable_defaults() {
   cat >"$script" <<'SCRIPT'
 #!/bin/sh
 set -eu
+PATH="$TEST_WORKDIR:$PATH"
+export PATH
 . "$WIZARDRY_DIR/spells/.imps/sys/castable"
-demo_spell() { printf 'demo:%s\n' "$*"; }
 _castable "$@"
 SCRIPT
   chmod +x "$script"
 
-  _run_cmd "$script" "one" "two"
+  cat >"$workdir/demo_spell" <<'SCRIPT'
+#!/bin/sh
+printf 'demo:%s\n' "$*"
+SCRIPT
+  chmod +x "$workdir/demo_spell"
+
+  _run_cmd env TEST_WORKDIR="$workdir" "$script" "one" "two"
   _assert_success || return 1
   _assert_output_contains "demo:one two" || return 1
   [ -z "${ERROR}" ] || { TEST_FAILURE_REASON="expected no stderr"; return 1; }
@@ -31,13 +38,20 @@ test_castable_override_func() {
   cat >"$script" <<'SCRIPT'
 #!/bin/sh
 set -eu
+PATH="$TEST_WORKDIR:$PATH"
+export PATH
 . "$WIZARDRY_DIR/spells/.imps/sys/castable"
-custom_runner() { printf 'custom:%s\n' "$*"; }
 CASTABLE_FUNC=custom_runner _castable "$@"
 SCRIPT
   chmod +x "$script"
 
-  _run_cmd "$script" "alpha"
+  cat >"$workdir/custom_runner" <<'SCRIPT'
+#!/bin/sh
+printf 'custom:%s\n' "$*"
+SCRIPT
+  chmod +x "$workdir/custom_runner"
+
+  _run_cmd env TEST_WORKDIR="$workdir" "$script" "alpha"
   _assert_success || return 1
   _assert_output_contains "custom:alpha" || return 1
   [ -z "${ERROR}" ] || { TEST_FAILURE_REASON="expected no stderr"; return 1; }

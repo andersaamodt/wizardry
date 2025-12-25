@@ -12,10 +12,6 @@ else
     case "${ZSH_EVAL_CONTEXT-}" in
       *:file) _it_sourced=1 ;;
     esac
-  elif eval '[ -n "${BASH_VERSION+x}" ]' 2>/dev/null; then
-    if [ "${BASH_SOURCE[0]-}" != "$0" ]; then
-      _it_sourced=1
-    fi
   else
     case "${0##*/}" in
       invoke-thesaurus) _it_sourced=0 ;;

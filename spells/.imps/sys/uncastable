@@ -21,10 +21,6 @@ _uncastable() {
     case "${ZSH_EVAL_CONTEXT-}" in
       *:file) _uncast_sourced=1 ;;
     esac
-  elif eval '[ -n "${BASH_VERSION+x}" ]' 2>/dev/null; then
-    if [ "${BASH_SOURCE[0]-}" != "$0" ]; then
-      _uncast_sourced=1
-    fi
   else
     _uncast_base=${0##*/}
     case "$_uncast_base" in

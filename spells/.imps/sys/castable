@@ -23,10 +23,10 @@ _castable() {
   fi
 
   case "$0" in
-    */"$_cast_name") "$_cast_func" "$@" ;;
+    */"$_cast_name"| "$_cast_name") "$_cast_func" "$@" ;;
   esac
 }
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */castable) _castable "$@" ;; esac
+  */castable|castable) _castable "$@" ;; esac
