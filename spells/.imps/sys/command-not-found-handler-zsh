@@ -1,0 +1,80 @@
+#!/bin/sh
+# command-not-found handler for zsh.
+# Defines command_not_found_handler for invoke-wizardry to load.
+
+command_not_found_handler() {
+  # Debug logging for command_not_found_handler
+  if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+    _cnf_file="${HOME-}/.wizardry-debug.log"
+    _cnf_msg="CNF: command not found: $1 (args: $*)"
+    printf '%s\n' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
+  fi
+
+  # Prevent infinite recursion - check if already in handler
+  if [ "${_WIZARDRY_IN_CNF_HANDLER-}" = "1" ]; then
+    if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+      _cnf_file="${HOME-}/.wizardry-debug.log"
+      _cnf_msg="CNF: recursion detected, bailing out"
+      printf '%s\n' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
+    fi
+    printf '%s: command not found\n' "$1" >&2
+    return 127
+  fi
+  _WIZARDRY_IN_CNF_HANDLER=1
+
+  # Try word-of-binding for autoloading (handles hotloaded spells)
+  _cnf_wob="$WIZARDRY_DIR/spells/.imps/sys/word-of-binding"
+  if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$_cnf_wob" ]; then
+    if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+      _cnf_file="${HOME-}/.wizardry-debug.log"
+      _cnf_msg="CNF: trying word-of-binding for: $1"
+      printf '%s\n' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
+    fi
+    if "$_cnf_wob" "$@" 2>/dev/null; then
+      if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+        _cnf_file="${HOME-}/.wizardry-debug.log"
+        _cnf_msg="CNF: word-of-binding succeeded for: $1"
+        printf '%s\n' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
+      fi
+      unset _WIZARDRY_IN_CNF_HANDLER
+      return 0
+    fi
+    if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+      _cnf_file="${HOME-}/.wizardry-debug.log"
+      _cnf_msg="CNF: word-of-binding failed for: $1"
+      printf '%s\n' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
+    fi
+  fi
+  # Fall back to parse for recursive grammar parsing
+  _cnf_parse="$WIZARDRY_DIR/spells/.imps/lex/parse"
+  if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$_cnf_parse" ]; then
+    if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+      _cnf_file="${HOME-}/.wizardry-debug.log"
+      _cnf_msg="CNF: trying parse for: $1"
+      printf '%s\n' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
+    fi
+    if "$_cnf_parse" "$@" 2>/dev/null; then
+      if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+        _cnf_file="${HOME-}/.wizardry-debug.log"
+        _cnf_msg="CNF: parse succeeded for: $1"
+        printf '%s\n' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
+      fi
+      unset _WIZARDRY_IN_CNF_HANDLER
+      return 0
+    fi
+    if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+      _cnf_file="${HOME-}/.wizardry-debug.log"
+      _cnf_msg="CNF: parse failed for: $1"
+      printf '%s\n' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
+    fi
+  fi
+  # Command truly not found - return 127
+  unset _WIZARDRY_IN_CNF_HANDLER
+  if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+    _cnf_file="${HOME-}/.wizardry-debug.log"
+    _cnf_msg="CNF: command truly not found: $1"
+    printf '%s\n' "$_cnf_msg" >> "$_cnf_file" 2>/dev/null || :
+  fi
+  printf '%s: command not found\n' "$1" >&2
+  return 127
+}

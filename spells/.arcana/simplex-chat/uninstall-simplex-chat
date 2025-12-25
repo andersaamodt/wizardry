@@ -23,8 +23,9 @@ script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 manage_cmd=${MANAGE_SYSTEM_COMMAND:-manage-system-command}
 
 if ! command -v "$manage_cmd" >/dev/null 2>&1; then
-  if [ -x "$script_dir/../core/manage-system-command" ]; then
-    manage_cmd="$script_dir/../core/manage-system-command"
+  core_dir=$(CDPATH= cd -- "$script_dir" 2>/dev/null && cd .. && cd core && pwd -P)
+  if [ -n "$core_dir" ] && [ -x "$core_dir/manage-system-command" ]; then
+    manage_cmd="$core_dir/manage-system-command"
   else
     printf '%s\n' "uninstall-simplex-chat: unable to find manage-system-command" >&2
     exit 1
