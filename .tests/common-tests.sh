@@ -1590,7 +1590,7 @@ test_no_mixed_case_variables() {
       grep -v -E '\$\{?(DETECT_|LOOK_|ASK_|INSTALL_|REMOVE_|START_|STOP_|RESTART_|ENABLE_|DISABLE_)' | \
       awk -F: '{
         line = $2
-        while (match(line, /\$\{?([A-Za-z_][A-Za-z0-9_]*)/, arr)) {
+        while (match(line, /\$[{]?([A-Za-z_][A-Za-z0-9_]*)/, arr)) {
           var = arr[1]
           has_upper = (var ~ /[A-Z]/)
           has_lower = (var ~ /[a-z]/)

@@ -897,7 +897,7 @@ printf '%s: command not found\n' "$1" >&2
 return 127
 IW_CNF_EOF
       )
-      if eval "functions[$_iw_cnf_name]=\$_iw_cnf_body"; then
+      if functions["$_iw_cnf_name"]="$_iw_cnf_body"; then
         printf '%s\n' "[invoke-wizardry] command_not_found_handler installed (zsh)" >&2
       else
         printf '%s\n' "[invoke-wizardry] ERROR: failed to install command_not_found_handler" >&2
