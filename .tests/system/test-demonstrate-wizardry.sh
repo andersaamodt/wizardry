@@ -15,6 +15,14 @@ test_help() {
   _assert_output_contains "Usage: demonstrate-wizardry" || return 1
 }
 
+test_works_with_no_arguments() {
+  # Test that demonstrate-wizardry works when called without arguments
+  # This is different from the full output test as it just checks success
+  WIZARDRY_DEMO_NO_BWRAP=1 _run_spell spells/system/demonstrate-wizardry
+  _assert_success || return 1
+  _assert_output_contains "Wizardry stands ready" || return 1
+}
+
 demonstration_output_matches() {
   WIZARDRY_DEMO_NO_BWRAP=1 _run_spell spells/system/demonstrate-wizardry
   _assert_success || return 1
@@ -42,6 +50,7 @@ OUT
 }
 
 _run_test_case "demonstrate-wizardry shows help" test_help
+_run_test_case "demonstrate-wizardry works with no arguments" test_works_with_no_arguments
 _run_test_case "demonstrate-wizardry output matches expected transcript" demonstration_output_matches
 
 _finish_tests
