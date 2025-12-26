@@ -25,54 +25,42 @@ _run_sourced_spell() {
   # Restore caller's PATH for the test
   PATH=$_saved_path
   
-  # Create a script that sources invoke-wizardry then calls the spell function
-  test_script=$(mktemp "${WIZARDRY_TMPDIR}/sourced-test.XXXXXX")
-  cat > "$test_script" <<'SCRIPT_TEMPLATE'
-#!/bin/bash
-# Test script: source invoke-wizardry then invoke spell function
-
-# Enable alias expansion in non-interactive bash
-shopt -s expand_aliases 2>/dev/null || true
-
-# Disable strict mode for sourcing invoke-wizardry (it manages its own modes)
-set +eu
-
-# Export necessary variables for invoke-wizardry
-export WIZARDRY_DIR="WIZARDRY_DIR_PLACEHOLDER"
+  # Build shell command string with all necessary escaping
+  # Use bash -c instead of a script file because functions persist in bash -c context
+  # but NOT in script files (bash limitation with eval/sourcing interaction)
+  
+  # Escape arguments for safe inclusion in command string
+  escaped_args=""
+  for arg in "$@"; do
+    # Escape single quotes in arguments
+    escaped_arg=$(printf '%s' "$arg" | sed "s/'/'\\\\''/g")
+    escaped_args="$escaped_args '$escaped_arg'"
+  done
+  
+  # Build the bash -c command
+  bash_cmd="
+set +eu  # Permissive mode for sourcing invoke-wizardry
+export WIZARDRY_DIR='${WIZARDRY_DIR:-$ROOT_DIR}'
 export WIZARDRY_LOAD_ALL=1
-export PATH="PATH_PLACEHOLDER"
-export HOME="HOME_PLACEHOLDER"
-export TMPDIR="TMPDIR_PLACEHOLDER"
-export WIZARDRY_TMPDIR="WIZARDRY_TMPDIR_PLACEHOLDER"
-export WIZARDRY_TEST_HELPERS_ONLY="WIZARDRY_TEST_HELPERS_ONLY_PLACEHOLDER"
+export PATH='$PATH'
+export HOME='${HOME:-/tmp}'
+export TMPDIR='${TMPDIR:-/tmp}'
+export WIZARDRY_TMPDIR='${WIZARDRY_TMPDIR}'
+export WIZARDRY_TEST_HELPERS_ONLY='${WIZARDRY_TEST_HELPERS_ONLY:-0}'
 
-# Source invoke-wizardry (redirects its diagnostic output to /dev/null)
-. "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry" >/dev/null 2>&1
+# Source invoke-wizardry (suppress its diagnostic output)
+. \"\$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry\" >/dev/null 2>&1
 
-# Now the spell function should be available - call it with the provided arguments
-# Use the hyphenated spell name which should be aliased to the underscore function
-# Enable strict mode for the spell execution  
-set -eu  # strict mode for spell
+# Enable strict mode for spell execution
+set -eu
 
-# Execute the spell function (use underscore version since aliases don't work in scripts)
-FUNC_NAME_PLACEHOLDER "$@"
-SCRIPT_TEMPLATE
+# Call the spell function with provided arguments
+$func_name $escaped_args
+"
   
-  # Replace placeholders with actual values
-  sed -i "s|WIZARDRY_DIR_PLACEHOLDER|${WIZARDRY_DIR:-$ROOT_DIR}|g" "$test_script"
-  sed -i "s|PATH_PLACEHOLDER|$PATH|g" "$test_script"
-  sed -i "s|HOME_PLACEHOLDER|${HOME:-/tmp}|g" "$test_script"
-  sed -i "s|TMPDIR_PLACEHOLDER|${TMPDIR:-/tmp}|g" "$test_script"
-  sed -i "s|WIZARDRY_TMPDIR_PLACEHOLDER|${WIZARDRY_TMPDIR}|g" "$test_script"
-  sed -i "s|WIZARDRY_TEST_HELPERS_ONLY_PLACEHOLDER|${WIZARDRY_TEST_HELPERS_ONLY:-0}|g" "$test_script"
-  sed -i "s|SPELL_NAME_PLACEHOLDER|$spell_name|g" "$test_script"
-  sed -i "s|FUNC_NAME_PLACEHOLDER|$func_name|g" "$test_script"
-  
-  chmod +x "$test_script"
-  
-  # Run the test script and capture output/error/status
+  # Run via bash -c and capture output/error/status
   PATH=${WIZARDRY_SYSTEM_PATH:-$PATH}
-  if (cd "$workdir" && "$test_script" "$@" >"$_stdout" 2>"$_stderr"); then
+  if (cd "$workdir" && bash -c "$bash_cmd" >"$_stdout" 2>"$_stderr"); then
     STATUS=0
   else
     STATUS=$?
@@ -82,11 +70,7 @@ SCRIPT_TEMPLATE
   ERROR=$(cat "$_stderr")
   
   # Cleanup
-  # DEBUG: Save script for inspection
-  if [ -n "${DEBUG_SOURCED_SPELL-}" ]; then
-    cp "$test_script" "/tmp/last-sourced-test.sh" 2>/dev/null || true
-  fi
-  rm -f "$_stdout" "$_stderr" "$test_script"
+  rm -f "$_stdout" "$_stderr"
   
   # Restore caller's PATH
   PATH=$_saved_path
