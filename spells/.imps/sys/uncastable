@@ -47,7 +47,3 @@ _uncastable() {
 uncastable() {
   _uncastable "$@"
 }
-
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */uncastable) _uncastable "$@" ;; esac

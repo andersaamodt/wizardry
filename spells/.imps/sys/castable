@@ -9,29 +9,44 @@
 set -eu
 
 _castable() {
+  # First check if we're being sourced (not executed)
+  # When sourced, $0 won't match the spell name
   _cast_name=${CASTABLE_NAME-}
-  _cast_func=${CASTABLE_FUNC-}
   if [ -z "$_cast_name" ]; then
     _cast_name=$(basename "${0-}")
   fi
+  
+  # Detect if being sourced by checking if $0 matches common shell names
+  # or doesn't match the expected spell name pattern
+  case "$0" in
+    sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
+      # Being sourced - don't execute, just return
+      return 0
+      ;;
+    */"$_cast_name"|"$_cast_name")
+      # Being executed directly - proceed with execution
+      ;;
+    *)
+      # $0 doesn't match spell name - being sourced from another script
+      return 0
+      ;;
+  esac
+  
+  # If we get here, we're being executed directly (not sourced)
+  _cast_func=${CASTABLE_FUNC-}
   if [ -z "$_cast_func" ] && [ -n "$_cast_name" ]; then
     _cast_func=$(printf '%s' "$_cast_name" | tr '-' '_')
   fi
-  if [ -z "$_cast_name" ] || [ -z "$_cast_func" ]; then
-    printf '%s\n' "castable: unable to detect spell or function name" >&2
+  if [ -z "$_cast_func" ]; then
+    printf '%s\n' "castable: unable to detect function name" >&2
     return 2
   fi
 
-  case "$0" in
-    */"$_cast_name"| "$_cast_name") "$_cast_func" "$@" ;;
-  esac
+  # Call the spell function
+  "$_cast_func" "$@"
 }
 
 # Public function that spells can call
 castable() {
   _castable "$@"
 }
-
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */castable|castable) _castable "$@" ;; esac
