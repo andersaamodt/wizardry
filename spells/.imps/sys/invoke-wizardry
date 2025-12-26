@@ -524,17 +524,8 @@ function brace_delta(s, n, m) {
       _iw_spell_name=$(basename "$_iw_spell")
       _iw_spell_true_name=$(printf '%s' "$_iw_spell_name" | sed 's/-/_/g')
       
-      # DEBUG: Track copy spell processing
-      if [ "$_iw_spell_name" = "copy" ]; then
-        printf '%s\n' "invoke-wizardry: DEBUG: Processing copy spell..." >&2
-      fi
-      
       _iw_grep_pattern="^[[:space:]]*${_iw_spell_true_name}[[:space:]]*\\(\\)"
       if grep -qE "$_iw_grep_pattern" "$_iw_spell" 2>/dev/null; then
-        # DEBUG
-        if [ "$_iw_spell_name" = "copy" ]; then
-          printf '%s\n' "invoke-wizardry: DEBUG: copy has function pattern, extracting..." >&2
-        fi
         if _iw_spell_body=$(awk '
 BEGIN {
   # Define regex patterns to keep line length under 100 chars
@@ -583,15 +574,7 @@ function brace_delta(s, n, m) {
   } # awk: end function
 } # awk: end program
 ' "$_iw_spell"); then
-          # DEBUG
-          if [ "$_iw_spell_name" = "copy" ]; then
-            printf '%s\n' "invoke-wizardry: DEBUG: AWK extraction succeeded for copy" >&2
-          fi
           if [ -n "$_iw_spell_body" ]; then
-            # DEBUG
-            if [ "$_iw_spell_name" = "copy" ]; then
-              printf '%s\n' "invoke-wizardry: DEBUG: copy has non-empty body ($(echo "$_iw_spell_body" | wc -l) lines)" >&2
-            fi
             _iw_spell_error=""
             _iw_spell_error_file=""
             if [ -n "$_iw_debug_file" ]; then
@@ -610,28 +593,10 @@ function brace_delta(s, n, m) {
                 continue
               fi
               rm -f "$_iw_spell_error_file" 2>/dev/null || :
-              # DEBUG: Check if function exists after eval
-              if [ "$_iw_spell_name" = "copy" ]; then
-                printf '%s\n' "invoke-wizardry: DEBUG: After eval, checking for copy function..." >&2
-                if command -v copy >/dev/null 2>&1; then
-                  printf '%s\n' "invoke-wizardry: DEBUG: ✓ copy EXISTS after eval!" >&2
-                else
-                  printf '%s\n' "invoke-wizardry: DEBUG: ✗ copy NOT FOUND after eval!" >&2
-                fi
-              fi
             else
               if ! eval "$_iw_spell_body" 2>/dev/null; then
                 _iw_spell_failed=$((_iw_spell_failed + 1))
                 continue
-              fi
-              # DEBUG: Check if function actually exists after eval
-              if [ "$_iw_spell_name" = "copy" ]; then
-                printf '%s\n' "invoke-wizardry: DEBUG: (else path) After eval, checking for copy..." >&2
-                if command -v copy >/dev/null 2>&1; then
-                  printf '%s\n' "invoke-wizardry: DEBUG: (else path) ✓ copy EXISTS!" >&2
-                else
-                  printf '%s\n' "invoke-wizardry: DEBUG: (else path) ✗ copy NOT FOUND!" >&2
-                fi
               fi
             fi
           fi
