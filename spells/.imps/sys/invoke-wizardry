@@ -649,12 +649,12 @@ function brace_delta(s, n, m) {
     _iw_menu_spell="$WIZARDRY_DIR/spells/cantrips/menu"
     if [ -f "$_iw_menu_spell" ] && [ -r "$_iw_menu_spell" ]; then
       # shellcheck disable=SC1090
-      . "$_iw_menu_spell" 2>/dev/null || :
+      . "$_iw_menu_spell" || :
     fi
     unset _iw_menu_spell
   fi
-  if [ -n "$_iw_debug_file" ]; then
-    if command -v menu >/dev/null 2>&1; then
+  if command -v menu >/dev/null 2>&1; then
+    if [ -n "$_iw_debug_file" ]; then
       printf '%s\n' "[invoke-wizardry] menu is pre-loaded" >&2
     fi
   fi
