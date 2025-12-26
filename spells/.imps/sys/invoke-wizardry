@@ -653,8 +653,10 @@ function brace_delta(s, n, m) {
     fi
     unset _iw_menu_spell
   fi
-  if command -v menu >/dev/null 2>&1; then
-    printf '%s\n' "[invoke-wizardry] menu is pre-loaded" >&2
+  if [ -n "$_iw_debug_file" ]; then
+    if command -v menu >/dev/null 2>&1; then
+      printf '%s\n' "[invoke-wizardry] menu is pre-loaded" >&2
+    fi
   fi
   if [ -n "$_iw_debug_file" ]; then
     _iw_msg="invoke-wizardry: Spell sourcing complete: $_iw_spell_summary"
