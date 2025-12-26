@@ -215,4 +215,25 @@ _run_test_case "kill-process skips termination when declined" kill_process_respe
 _run_test_case "kill-process validates kill command presence" kill_process_requires_kill_command
 _run_test_case "kill-process reports kill failures" kill_process_reports_failed_kill
 
+
+# Test via source-then-invoke pattern  
+kill_process_help_via_sourcing() {
+  _run_sourced_spell kill-process --help
+  _assert_success || return 1
+  # Help text may go to stdout or stderr depending on spell
+  if [ -n "$OUTPUT" ]; then
+    case "$OUTPUT" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  if [ -n "$ERROR" ]; then
+    case "$ERROR" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  TEST_FAILURE_REASON="expected 'Usage:' in output or error"
+  return 1
+}
+
+_run_test_case "kill-process works via source-then-invoke" kill_process_help_via_sourcing
 _finish_tests

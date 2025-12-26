@@ -219,4 +219,25 @@ _run_test_case "enchant falls back when preferred helper is missing" test_prefer
 _run_test_case "enchant rejects unknown helper" test_rejects_unknown_helper
 _run_test_case "enchant reports missing helpers" test_reports_missing_helpers
 _run_test_case "enchant reports helper failures" test_reports_helper_failure
+
+# Test via source-then-invoke pattern  
+enchant_help_via_sourcing() {
+  _run_sourced_spell enchant --help
+  _assert_success || return 1
+  # Help text may go to stdout or stderr depending on spell
+  if [ -n "$OUTPUT" ]; then
+    case "$OUTPUT" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  if [ -n "$ERROR" ]; then
+    case "$ERROR" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  TEST_FAILURE_REASON="expected 'Usage:' in output or error"
+  return 1
+}
+
+_run_test_case "enchant works via source-then-invoke" enchant_help_via_sourcing
 _finish_tests

@@ -77,4 +77,25 @@ _run_test_case "doppelganger prints usage" test_help
 _run_test_case "doppelganger uses default directory" test_uses_default_directory
 _run_test_case "doppelganger creates compiled wizardry" test_creates_compiled_wizardry
 
+
+# Test via source-then-invoke pattern  
+doppelganger_help_via_sourcing() {
+  _run_sourced_spell doppelganger --help
+  _assert_success || return 1
+  # Help text may go to stdout or stderr depending on spell
+  if [ -n "$OUTPUT" ]; then
+    case "$OUTPUT" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  if [ -n "$ERROR" ]; then
+    case "$ERROR" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  TEST_FAILURE_REASON="expected 'Usage:' in output or error"
+  return 1
+}
+
+_run_test_case "doppelganger works via source-then-invoke" doppelganger_help_via_sourcing
 _finish_tests

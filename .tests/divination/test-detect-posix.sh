@@ -44,4 +44,25 @@ _run_test_case "detect-posix succeeds for minimal probe" detect_posix_reports_su
 _run_test_case "detect-posix reports missing tools" detect_posix_reports_missing_tools
 _run_test_case "detect-posix awk probe works without unbound variable error" detect_posix_awk_probe_works
 
+
+# Test via source-then-invoke pattern  
+detect_posix_help_via_sourcing() {
+  _run_sourced_spell detect-posix --help
+  _assert_success || return 1
+  # Help text may go to stdout or stderr depending on spell
+  if [ -n "$OUTPUT" ]; then
+    case "$OUTPUT" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  if [ -n "$ERROR" ]; then
+    case "$ERROR" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  TEST_FAILURE_REASON="expected 'Usage:' in output or error"
+  return 1
+}
+
+_run_test_case "detect-posix works via source-then-invoke" detect_posix_help_via_sourcing
 _finish_tests

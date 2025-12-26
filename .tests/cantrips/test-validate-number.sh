@@ -52,4 +52,25 @@ _run_test_case "validate-number rejects letters" test_rejects_letters
 _run_test_case "validate-number rejects mixed input" test_rejects_mixed
 _run_test_case "validate-number rejects empty input" test_rejects_empty
 
+
+# Test via source-then-invoke pattern  
+validate_number_help_via_sourcing() {
+  _run_sourced_spell validate-number --help
+  _assert_success || return 1
+  # Help text may go to stdout or stderr depending on spell
+  if [ -n "$OUTPUT" ]; then
+    case "$OUTPUT" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  if [ -n "$ERROR" ]; then
+    case "$ERROR" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  TEST_FAILURE_REASON="expected 'Usage:' in output or error"
+  return 1
+}
+
+_run_test_case "validate-number works via source-then-invoke" validate_number_help_via_sourcing
 _finish_tests

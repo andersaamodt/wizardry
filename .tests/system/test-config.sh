@@ -248,4 +248,25 @@ _run_test_case "config-del handles missing file" test_config_del_handles_missing
 _run_test_case "config roundtrip with special chars" test_config_roundtrip_special_chars
 _run_test_case "config handles many keys (20)" test_config_many_keys
 
+
+# Test via source-then-invoke pattern  
+config_help_via_sourcing() {
+  _run_sourced_spell config --help
+  _assert_success || return 1
+  # Help text may go to stdout or stderr depending on spell
+  if [ -n "$OUTPUT" ]; then
+    case "$OUTPUT" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  if [ -n "$ERROR" ]; then
+    case "$ERROR" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  TEST_FAILURE_REASON="expected 'Usage:' in output or error"
+  return 1
+}
+
+_run_test_case "config works via source-then-invoke" config_help_via_sourcing
 _finish_tests

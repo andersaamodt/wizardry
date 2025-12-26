@@ -174,4 +174,25 @@ _run_test_case "rejects empty spell" test_rejects_empty_spell
 _run_test_case "allows overwriting synonym" test_allows_overwriting_existing_synonym
 _run_test_case "handles complex target with args" test_handles_complex_target_with_args
 
+
+# Test via source-then-invoke pattern  
+add_synonym_help_via_sourcing() {
+  _run_sourced_spell add-synonym --help
+  _assert_success || return 1
+  # Help text may go to stdout or stderr depending on spell
+  if [ -n "$OUTPUT" ]; then
+    case "$OUTPUT" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  if [ -n "$ERROR" ]; then
+    case "$ERROR" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  TEST_FAILURE_REASON="expected 'Usage:' in output or error"
+  return 1
+}
+
+_run_test_case "add-synonym works via source-then-invoke" add_synonym_help_via_sourcing
 _finish_tests

@@ -80,4 +80,25 @@ _run_test_case "forget removes spell from cast menu" test_forget_removes_spell
 _run_test_case "forget requires spell name" test_forget_requires_name
 _run_test_case "forget fails when spell not memorized" test_forget_fails_when_not_memorized
 
+
+# Test via source-then-invoke pattern  
+forget_help_via_sourcing() {
+  _run_sourced_spell forget --help
+  _assert_success || return 1
+  # Help text may go to stdout or stderr depending on spell
+  if [ -n "$OUTPUT" ]; then
+    case "$OUTPUT" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  if [ -n "$ERROR" ]; then
+    case "$ERROR" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  TEST_FAILURE_REASON="expected 'Usage:' in output or error"
+  return 1
+}
+
+_run_test_case "forget works via source-then-invoke" forget_help_via_sourcing
 _finish_tests

@@ -61,4 +61,25 @@ shows_help() {
 }
 
 _run_test_case "is-service-installed accepts --help" shows_help
+
+# Test via source-then-invoke pattern  
+is_service_installed_help_via_sourcing() {
+  _run_sourced_spell is-service-installed --help
+  _assert_success || return 1
+  # Help text may go to stdout or stderr depending on spell
+  if [ -n "$OUTPUT" ]; then
+    case "$OUTPUT" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  if [ -n "$ERROR" ]; then
+    case "$ERROR" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  TEST_FAILURE_REASON="expected 'Usage:' in output or error"
+  return 1
+}
+
+_run_test_case "is-service-installed works via source-then-invoke" is_service_installed_help_via_sourcing
 _finish_tests

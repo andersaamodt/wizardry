@@ -107,4 +107,25 @@ _run_test_case "banish custom wizardry-dir" test_custom_wizardry_dir
 _run_test_case "banish fails without invoke-wizardry" test_missing_invoke_wizardry
 _run_test_case "banish fails with invalid dir" test_invalid_wizardry_dir
 
+
+# Test via source-then-invoke pattern  
+banish_help_via_sourcing() {
+  _run_sourced_spell banish --help
+  _assert_success || return 1
+  # Help text may go to stdout or stderr depending on spell
+  if [ -n "$OUTPUT" ]; then
+    case "$OUTPUT" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  if [ -n "$ERROR" ]; then
+    case "$ERROR" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  TEST_FAILURE_REASON="expected 'Usage:' in output or error"
+  return 1
+}
+
+_run_test_case "banish works via source-then-invoke" banish_help_via_sourcing
 _finish_tests

@@ -35,4 +35,25 @@ _run_test_case "follow-portkey shows usage text" test_help
 _run_test_case "follow-portkey requires file argument" test_requires_argument
 _run_test_case "follow-portkey fails on missing file" test_fails_on_missing_file
 
+
+# Test via source-then-invoke pattern  
+follow_portkey_help_via_sourcing() {
+  _run_sourced_spell follow-portkey --help
+  _assert_success || return 1
+  # Help text may go to stdout or stderr depending on spell
+  if [ -n "$OUTPUT" ]; then
+    case "$OUTPUT" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  if [ -n "$ERROR" ]; then
+    case "$ERROR" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  TEST_FAILURE_REASON="expected 'Usage:' in output or error"
+  return 1
+}
+
+_run_test_case "follow-portkey works via source-then-invoke" follow_portkey_help_via_sourcing
 _finish_tests

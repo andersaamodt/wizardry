@@ -111,4 +111,25 @@ _run_test_case "detect-distro detects arch via release marker" detects_arch_rele
 _run_test_case "detect-distro detects mac via uname fallback" detects_mac_via_stubbed_uname
 _run_test_case "detect-distro fails when no markers are present" fails_when_no_markers_found
 
+
+# Test via source-then-invoke pattern  
+detect_distro_help_via_sourcing() {
+  _run_sourced_spell detect-distro --help
+  _assert_success || return 1
+  # Help text may go to stdout or stderr depending on spell
+  if [ -n "$OUTPUT" ]; then
+    case "$OUTPUT" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  if [ -n "$ERROR" ]; then
+    case "$ERROR" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  TEST_FAILURE_REASON="expected 'Usage:' in output or error"
+  return 1
+}
+
+_run_test_case "detect-distro works via source-then-invoke" detect_distro_help_via_sourcing
 _finish_tests

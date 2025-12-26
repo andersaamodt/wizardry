@@ -164,4 +164,25 @@ _run_test_case "mark-location resolves symlinked working directory" test_resolve
 _run_test_case "mark-location expands tilde arguments" test_expands_tilde_argument
 _run_test_case "mark-location errors when marker directory is blocked" test_marker_dir_blocked
 _run_test_case "mark-location auto-increments marker number" test_auto_increments_marker
+
+# Test via source-then-invoke pattern  
+mark_location_help_via_sourcing() {
+  _run_sourced_spell mark-location --help
+  _assert_success || return 1
+  # Help text may go to stdout or stderr depending on spell
+  if [ -n "$OUTPUT" ]; then
+    case "$OUTPUT" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  if [ -n "$ERROR" ]; then
+    case "$ERROR" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  TEST_FAILURE_REASON="expected 'Usage:' in output or error"
+  return 1
+}
+
+_run_test_case "mark-location works via source-then-invoke" mark_location_help_via_sourcing
 _finish_tests

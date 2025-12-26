@@ -62,4 +62,25 @@ _run_test_case "open-portal shows usage text" test_help
 _run_test_case "open-portal requires sshfs" test_requires_sshfs
 _run_test_case "open-portal requires MUD_PLAYER" test_requires_mud_player
 
+
+# Test via source-then-invoke pattern  
+open_portal_help_via_sourcing() {
+  _run_sourced_spell open-portal --help
+  _assert_success || return 1
+  # Help text may go to stdout or stderr depending on spell
+  if [ -n "$OUTPUT" ]; then
+    case "$OUTPUT" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  if [ -n "$ERROR" ]; then
+    case "$ERROR" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  TEST_FAILURE_REASON="expected 'Usage:' in output or error"
+  return 1
+}
+
+_run_test_case "open-portal works via source-then-invoke" open_portal_help_via_sourcing
 _finish_tests

@@ -231,4 +231,25 @@ _run_test_case "detect-magic skips unreadable files" detect_magic_skips_unreadab
 _run_test_case "detect-magic reports helper failures" detect_magic_reports_helper_errors_without_stopping
 _run_test_case "detect-magic skips malformed helper output" detect_magic_skips_malformed_helper_output
 
+
+# Test via source-then-invoke pattern  
+detect_magic_help_via_sourcing() {
+  _run_sourced_spell detect-magic --help
+  _assert_success || return 1
+  # Help text may go to stdout or stderr depending on spell
+  if [ -n "$OUTPUT" ]; then
+    case "$OUTPUT" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  if [ -n "$ERROR" ]; then
+    case "$ERROR" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  TEST_FAILURE_REASON="expected 'Usage:' in output or error"
+  return 1
+}
+
+_run_test_case "detect-magic works via source-then-invoke" detect_magic_help_via_sourcing
 _finish_tests

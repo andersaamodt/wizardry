@@ -76,4 +76,25 @@ _run_test_case "hash fails when given a directory" hash_rejects_directory
 _run_test_case "hash rejects extra arguments" hash_rejects_extra_arguments
 _run_test_case "hash reports the resolved path and checksum" hash_reports_path_and_checksum
 
+
+# Test via source-then-invoke pattern  
+hash_help_via_sourcing() {
+  _run_sourced_spell hash --help
+  _assert_success || return 1
+  # Help text may go to stdout or stderr depending on spell
+  if [ -n "$OUTPUT" ]; then
+    case "$OUTPUT" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  if [ -n "$ERROR" ]; then
+    case "$ERROR" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  TEST_FAILURE_REASON="expected 'Usage:' in output or error"
+  return 1
+}
+
+_run_test_case "hash works via source-then-invoke" hash_help_via_sourcing
 _finish_tests

@@ -166,4 +166,25 @@ _run_test_case "scribe-spell rejects existing command names" test_rejects_existi
 _run_test_case "scribe-spell rejects duplicate spell in spellbook" test_rejects_duplicate_spell_in_spellbook
 _run_test_case "scribe-spell rejects duplicate spell in subfolder" test_rejects_duplicate_spell_in_subfolder
 
+
+# Test via source-then-invoke pattern  
+scribe_spell_help_via_sourcing() {
+  _run_sourced_spell scribe-spell --help
+  _assert_success || return 1
+  # Help text may go to stdout or stderr depending on spell
+  if [ -n "$OUTPUT" ]; then
+    case "$OUTPUT" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  if [ -n "$ERROR" ]; then
+    case "$ERROR" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  TEST_FAILURE_REASON="expected 'Usage:' in output or error"
+  return 1
+}
+
+_run_test_case "scribe-spell works via source-then-invoke" scribe_spell_help_via_sourcing
 _finish_tests

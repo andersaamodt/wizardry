@@ -42,4 +42,25 @@ _run_test_case "wizard-eyes shows usage text" test_help
 _run_test_case "wizard-eyes outputs formatted message" test_outputs_message
 _run_test_case "wizard-eyes suppresses output when disabled" test_suppresses_when_disabled
 
+
+# Test via source-then-invoke pattern  
+wizard_eyes_help_via_sourcing() {
+  _run_sourced_spell wizard-eyes --help
+  _assert_success || return 1
+  # Help text may go to stdout or stderr depending on spell
+  if [ -n "$OUTPUT" ]; then
+    case "$OUTPUT" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  if [ -n "$ERROR" ]; then
+    case "$ERROR" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  TEST_FAILURE_REASON="expected 'Usage:' in output or error"
+  return 1
+}
+
+_run_test_case "wizard-eyes works via source-then-invoke" wizard_eyes_help_via_sourcing
 _finish_tests

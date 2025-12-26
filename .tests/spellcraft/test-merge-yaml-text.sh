@@ -36,4 +36,25 @@ _run_test_case "merge-yaml-text shows usage text" test_help
 _run_test_case "merge-yaml-text shows usage with -h" test_help_h_flag
 _run_test_case "merge-yaml-text uses strict mode" test_has_strict_mode
 
+
+# Test via source-then-invoke pattern  
+merge_yaml_text_help_via_sourcing() {
+  _run_sourced_spell merge-yaml-text --help
+  _assert_success || return 1
+  # Help text may go to stdout or stderr depending on spell
+  if [ -n "$OUTPUT" ]; then
+    case "$OUTPUT" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  if [ -n "$ERROR" ]; then
+    case "$ERROR" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  TEST_FAILURE_REASON="expected 'Usage:' in output or error"
+  return 1
+}
+
+_run_test_case "merge-yaml-text works via source-then-invoke" merge_yaml_text_help_via_sourcing
 _finish_tests

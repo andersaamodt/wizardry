@@ -250,4 +250,25 @@ _run_test_case "read-magic uses getfattr as a final fallback" test_reads_attribu
 _run_test_case "read-magic reports missing attribute" test_reports_missing_attribute
 _run_test_case "read-magic reports no attributes without helpers" test_handles_missing_helpers
 
+
+# Test via source-then-invoke pattern  
+read_magic_help_via_sourcing() {
+  _run_sourced_spell read-magic --help
+  _assert_success || return 1
+  # Help text may go to stdout or stderr depending on spell
+  if [ -n "$OUTPUT" ]; then
+    case "$OUTPUT" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  if [ -n "$ERROR" ]; then
+    case "$ERROR" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  TEST_FAILURE_REASON="expected 'Usage:' in output or error"
+  return 1
+}
+
+_run_test_case "read-magic works via source-then-invoke" read_magic_help_via_sourcing
 _finish_tests

@@ -119,4 +119,25 @@ _run_test_case "ask_text shows usage with no arguments" test_ask_text_shows_usag
 _run_test_case "ask_text shows usage with too many arguments" test_ask_text_shows_usage_too_many_args
 _run_test_case "ask_text handles special characters" test_ask_text_handles_special_chars
 _run_test_case "ask_text default with spaces" test_ask_text_default_with_spaces
+
+# Test via source-then-invoke pattern  
+ask_text_help_via_sourcing() {
+  _run_sourced_spell ask-text --help
+  _assert_success || return 1
+  # Help text may go to stdout or stderr depending on spell
+  if [ -n "$OUTPUT" ]; then
+    case "$OUTPUT" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  if [ -n "$ERROR" ]; then
+    case "$ERROR" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  TEST_FAILURE_REASON="expected 'Usage:' in output or error"
+  return 1
+}
+
+_run_test_case "ask-text works via source-then-invoke" ask_text_help_via_sourcing
 _finish_tests

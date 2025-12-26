@@ -206,4 +206,25 @@ _run_test_case "update-all performs debian updates" test_debian_update_flow
 _run_test_case "update-all propagates update failures" test_debian_update_failure_propagates
 _run_test_case "update-all performs arch updates" test_arch_update_flow
 _run_test_case "update-all performs nixos updates" test_nixos_update_flow
+
+# Test via source-then-invoke pattern  
+update_all_help_via_sourcing() {
+  _run_sourced_spell update-all --help
+  _assert_success || return 1
+  # Help text may go to stdout or stderr depending on spell
+  if [ -n "$OUTPUT" ]; then
+    case "$OUTPUT" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  if [ -n "$ERROR" ]; then
+    case "$ERROR" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  TEST_FAILURE_REASON="expected 'Usage:' in output or error"
+  return 1
+}
+
+_run_test_case "update-all works via source-then-invoke" update_all_help_via_sourcing
 _finish_tests

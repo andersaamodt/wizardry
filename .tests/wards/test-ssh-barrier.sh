@@ -76,4 +76,25 @@ _run_test_case "wards/ssh-barrier has content" spell_has_content
 _run_test_case "ssh-barrier shows help" shows_help
 _run_test_case "ssh-barrier hardens provided config" applies_hardening_to_temp_file
 
+
+# Test via source-then-invoke pattern  
+ssh_barrier_help_via_sourcing() {
+  _run_sourced_spell ssh-barrier --help
+  _assert_success || return 1
+  # Help text may go to stdout or stderr depending on spell
+  if [ -n "$OUTPUT" ]; then
+    case "$OUTPUT" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  if [ -n "$ERROR" ]; then
+    case "$ERROR" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  TEST_FAILURE_REASON="expected 'Usage:' in output or error"
+  return 1
+}
+
+_run_test_case "ssh-barrier works via source-then-invoke" ssh_barrier_help_via_sourcing
 _finish_tests

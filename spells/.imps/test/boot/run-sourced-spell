@@ -9,6 +9,9 @@ _run_sourced_spell() {
   spell_name=$1
   shift || true
   
+  # Convert spell name to function name (replace hyphens with underscores)
+  func_name=$(printf '%s' "$spell_name" | tr '-' '_')
+  
   # Save the caller's PATH for cleanup operations
   _saved_path=$PATH
   PATH=${WIZARDRY_SYSTEM_PATH:-$PATH}
@@ -25,8 +28,11 @@ _run_sourced_spell() {
   # Create a script that sources invoke-wizardry then calls the spell function
   test_script=$(mktemp "${WIZARDRY_TMPDIR}/sourced-test.XXXXXX")
   cat > "$test_script" <<'SCRIPT_TEMPLATE'
-#!/bin/sh
+#!/bin/bash
 # Test script: source invoke-wizardry then invoke spell function
+
+# Enable alias expansion in non-interactive bash
+shopt -s expand_aliases 2>/dev/null || true
 
 # Disable strict mode for sourcing invoke-wizardry (it manages its own modes)
 set +eu
@@ -44,11 +50,12 @@ export WIZARDRY_TEST_HELPERS_ONLY="WIZARDRY_TEST_HELPERS_ONLY_PLACEHOLDER"
 . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry" >/dev/null 2>&1
 
 # Now the spell function should be available - call it with the provided arguments
+# Use the hyphenated spell name which should be aliased to the underscore function
 # Enable strict mode for the spell execution  
 set -eu  # strict mode for spell
 
-# Execute the spell function
-SPELL_NAME_PLACEHOLDER "$@"
+# Execute the spell function (use underscore version since aliases don't work in scripts)
+FUNC_NAME_PLACEHOLDER "$@"
 SCRIPT_TEMPLATE
   
   # Replace placeholders with actual values
@@ -59,6 +66,7 @@ SCRIPT_TEMPLATE
   sed -i "s|WIZARDRY_TMPDIR_PLACEHOLDER|${WIZARDRY_TMPDIR}|g" "$test_script"
   sed -i "s|WIZARDRY_TEST_HELPERS_ONLY_PLACEHOLDER|${WIZARDRY_TEST_HELPERS_ONLY:-0}|g" "$test_script"
   sed -i "s|SPELL_NAME_PLACEHOLDER|$spell_name|g" "$test_script"
+  sed -i "s|FUNC_NAME_PLACEHOLDER|$func_name|g" "$test_script"
   
   chmod +x "$test_script"
   
@@ -74,6 +82,10 @@ SCRIPT_TEMPLATE
   ERROR=$(cat "$_stderr")
   
   # Cleanup
+  # DEBUG: Save script for inspection
+  if [ -n "${DEBUG_SOURCED_SPELL-}" ]; then
+    cp "$test_script" "/tmp/last-sourced-test.sh" 2>/dev/null || true
+  fi
   rm -f "$_stdout" "$_stderr" "$test_script"
   
   # Restore caller's PATH

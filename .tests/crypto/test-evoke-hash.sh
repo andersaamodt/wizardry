@@ -51,4 +51,25 @@ _run_test_case "evoke-hash shows help" shows_help
 _run_test_case "evoke-hash requires hash argument" test_requires_hash_argument
 _run_test_case "evoke-hash fails for nonexistent directory" test_fails_for_nonexistent_directory
 _run_test_case "evoke-hash fails for non-directory path" test_fails_for_non_directory
+
+# Test via source-then-invoke pattern  
+evoke_hash_help_via_sourcing() {
+  _run_sourced_spell evoke-hash --help
+  _assert_success || return 1
+  # Help text may go to stdout or stderr depending on spell
+  if [ -n "$OUTPUT" ]; then
+    case "$OUTPUT" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  if [ -n "$ERROR" ]; then
+    case "$ERROR" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  TEST_FAILURE_REASON="expected 'Usage:' in output or error"
+  return 1
+}
+
+_run_test_case "evoke-hash works via source-then-invoke" evoke_hash_help_via_sourcing
 _finish_tests

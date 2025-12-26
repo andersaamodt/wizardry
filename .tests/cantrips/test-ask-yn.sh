@@ -168,4 +168,25 @@ _run_test_case "ask_yn accepts Y as default" test_ask_yn_accepts_uppercase_Y_def
 _run_test_case "ask_yn accepts N as default" test_ask_yn_accepts_uppercase_N_default
 _run_test_case "ask_yn accepts YES as default" test_ask_yn_accepts_uppercase_YES_default
 _run_test_case "ask_yn accepts NO as default" test_ask_yn_accepts_uppercase_NO_default
+
+# Test via source-then-invoke pattern  
+ask_yn_help_via_sourcing() {
+  _run_sourced_spell ask-yn --help
+  _assert_success || return 1
+  # Help text may go to stdout or stderr depending on spell
+  if [ -n "$OUTPUT" ]; then
+    case "$OUTPUT" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  if [ -n "$ERROR" ]; then
+    case "$ERROR" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  TEST_FAILURE_REASON="expected 'Usage:' in output or error"
+  return 1
+}
+
+_run_test_case "ask-yn works via source-then-invoke" ask_yn_help_via_sourcing
 _finish_tests

@@ -143,4 +143,25 @@ _run_test_case "hashchant errors when helpers are unavailable" test_missing_help
 _run_test_case "hashchant prefers attr helper" test_prefers_attr
 _run_test_case "hashchant falls back to xattr" test_fallback_to_xattr
 _run_test_case "hashchant falls back to setfattr" test_fallback_to_setfattr
+
+# Test via source-then-invoke pattern  
+hashchant_help_via_sourcing() {
+  _run_sourced_spell hashchant --help
+  _assert_success || return 1
+  # Help text may go to stdout or stderr depending on spell
+  if [ -n "$OUTPUT" ]; then
+    case "$OUTPUT" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  if [ -n "$ERROR" ]; then
+    case "$ERROR" in
+      *Usage:*|*usage:*) return 0 ;;
+    esac
+  fi
+  TEST_FAILURE_REASON="expected 'Usage:' in output or error"
+  return 1
+}
+
+_run_test_case "hashchant works via source-then-invoke" hashchant_help_via_sourcing
 _finish_tests
