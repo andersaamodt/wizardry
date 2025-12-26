@@ -298,7 +298,6 @@ _invoke_wizardry() {
       _iw_family_name=$(basename "$_iw_family")
       if [ -n "$_iw_debug_file" ]; then
         printf '%s\n' "[invoke-wizardry] Family name: $_iw_family_name" >&2
-        printf '%s\n' "[invoke-wizardry] Family name: $_iw_family_name" >&2
       fi
       case "$_iw_family_name" in
         test) 
@@ -333,7 +332,6 @@ _invoke_wizardry() {
         case "$_iw_imp" in
           */invoke-wizardry|*/invoke-thesaurus) 
             if [ -n "$_iw_debug_file" ]; then
-              printf '%s\n' "[invoke-wizardry] Skipping special imp: $(basename "$_iw_imp")" >&2
               printf '%s\n' "[invoke-wizardry] Skipping special imp: $(basename "$_iw_imp")" >&2
             fi
             _iw_imp_skipped=$((_iw_imp_skipped + 1))
