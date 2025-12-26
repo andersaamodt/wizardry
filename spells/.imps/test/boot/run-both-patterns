@@ -30,13 +30,18 @@ _run_both_patterns() {
   # Track pattern-specific failures for organized output
   # These will be collected in finish-tests
   
+  # Temporarily enable single-pattern mode to prevent infinite recursion
+  # (since _run_test_case calls _run_both_patterns by default)
+  WIZARDRY_TEST_SINGLE_PATTERN=1
+  export WIZARDRY_TEST_SINGLE_PATTERN
+  
   # Run direct execution test for castable spells
   if [ "$is_castable" -eq 1 ]; then
     # Mark this as direct execution pattern
     WIZARDRY_TEST_PATTERN="direct-exec"
     export WIZARDRY_TEST_PATTERN
     
-    _run_test_case "$desc [exec]" "$func"
+    _run_test_case "$desc (direct execution)" "$func"
     
     # Check if this test failed
     if [ "$_fail_count" -gt "${WIZARDRY_PREV_FAIL_COUNT:-0}" ]; then
@@ -54,12 +59,11 @@ _run_both_patterns() {
   WIZARDRY_TEST_PATTERN="sourced"
   export WIZARDRY_TEST_PATTERN
   
-  # Set flag to use sourced spell instead of modifying the function
-  # This avoids recursion issues
+  # Set flag to use sourced spell instead of direct execution
   WIZARDRY_USE_SOURCED_SPELL=1
   export WIZARDRY_USE_SOURCED_SPELL
   
-  _run_test_case "$desc [src]" "$func"
+  _run_test_case "$desc (sourced)" "$func"
   
   # Clear the flag
   unset WIZARDRY_USE_SOURCED_SPELL
@@ -74,9 +78,12 @@ _run_both_patterns() {
   WIZARDRY_PREV_FAIL_COUNT=$_fail_count
   export WIZARDRY_PREV_FAIL_COUNT
   
-  # Clear pattern marker
+  # Clear pattern marker and single-pattern flag
   unset WIZARDRY_TEST_PATTERN
+  unset WIZARDRY_TEST_SINGLE_PATTERN
 }
 
-# Self-execution when run directly (not sourced)
-case "${0##*/}" in run-both-patterns) _run_both_patterns "$@" ;; esac
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */run-both-patterns) _run_both_patterns "$@" ;;
+esac
