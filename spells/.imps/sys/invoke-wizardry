@@ -130,8 +130,42 @@ _invoke_wizardry() {
     # In Zsh, $0 inside a function is the function name, not the script path
     _iw_script_path="$_iw_script_path_captured"
 
+    # Fallbacks for shells without BASH/ZSH metadata: prefer a PATH lookup,
+    # then honor an explicit INVOKE_WIZARDRY path or the default install.
+    if [ -z "$_iw_script_path" ]; then
+      _iw_command_path=$(command -v invoke-wizardry 2>/dev/null || :)
+      for _iw_candidate in $_iw_command_path; do
+        case $_iw_candidate in
+          /*)
+            _iw_script_path="$_iw_candidate"
+            ;;
+          */*)
+            _iw_command_dir=${_iw_candidate%/*}
+            _iw_command_base=${_iw_candidate##*/}
+            _iw_command_abs=$(CDPATH= cd -- "$_iw_command_dir" 2>/dev/null && pwd -P)
+            if [ -n "$_iw_command_abs" ]; then
+              _iw_script_path="$_iw_command_abs/$_iw_command_base"
+            fi
+            ;;
+          *)
+            _iw_script_path=""
+            ;;
+        esac
+        if [ -n "$_iw_script_path" ] && [ -f "$_iw_script_path" ]; then
+          printf '%s\n' "[invoke-wizardry] Script path missing, using PATH lookup: $_iw_script_path" >&2
+          if [ -n "$_iw_debug_file" ]; then
+            _iw_msg="invoke-wizardry: PATH lookup detected: $_iw_script_path"
+            printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
+          fi
+          break
+        fi
+        _iw_script_path=""
+      done
+      unset _iw_command_path _iw_candidate _iw_command_dir _iw_command_base _iw_command_abs
+    fi
+
     # Fallbacks for shells without BASH/ZSH metadata: honor an explicit
-    # INVOKE_WIZARDRY path or the default ~/.wizardry install location.
+    # INVOKE_WIZARDRY path or the default install location.
     if [ -z "$_iw_script_path" ] && [ -n "${INVOKE_WIZARDRY-}" ] && [ -f "$INVOKE_WIZARDRY" ]; then
       printf '%s\n' "[invoke-wizardry] Script path missing, using INVOKE_WIZARDRY environment path" >&2
       if [ -n "$_iw_debug_file" ]; then
@@ -489,7 +523,13 @@ function brace_delta(s, n, m) {
             fi
           fi
           set +eu
-          if alias "$_iw_spell_name=$_iw_spell_true_name" 2>/dev/null; then
+          if [ "$_iw_spell_name" = "$_iw_spell_true_name" ]; then
+            _iw_spell_success=$((_iw_spell_success + 1))
+            if [ -n "$_iw_debug_file" ]; then
+              _iw_msg="invoke-wizardry: ✓ Loaded spell: $_iw_spell_name"
+              printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
+            fi
+          elif alias "$_iw_spell_name=$_iw_spell_true_name" 2>/dev/null; then
             _iw_spell_success=$((_iw_spell_success + 1))
             if [ -n "$_iw_debug_file" ]; then
               _iw_msg="invoke-wizardry: ✓ Loaded spell: $_iw_spell_name"
@@ -524,11 +564,15 @@ function brace_delta(s, n, m) {
   _iw_spell_summary="total=$_iw_spell_count success=$_iw_spell_success"
   _iw_spell_summary="$_iw_spell_summary skipped=$_iw_spell_skipped failed=$_iw_spell_failed"
   printf '%s\n' "[invoke-wizardry] Spell sourcing complete: $_iw_spell_summary" >&2
+  if command -v menu >/dev/null 2>&1; then
+    printf '%s\n' "[invoke-wizardry] menu is pre-loaded" >&2
+  fi
   if [ -n "$_iw_debug_file" ]; then
     _iw_msg="invoke-wizardry: Spell sourcing complete: $_iw_spell_summary"
     printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
     if command -v menu >/dev/null 2>&1; then
       printf '%s\n' "invoke-wizardry: Debug: menu spell is available" >> "$_iw_debug_file" 2>/dev/null || :
+      printf '%s\n' "invoke-wizardry: Debug: menu binding: $(command -v menu 2>/dev/null)" >> "$_iw_debug_file" 2>/dev/null || :
       if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
         printf '%s\n' "invoke-wizardry: Debug: menu details: $(whence -v menu 2>/dev/null)" >> "$_iw_debug_file" 2>/dev/null || :
       fi
