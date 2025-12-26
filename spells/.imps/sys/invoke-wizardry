@@ -646,15 +646,6 @@ function brace_delta(s, n, m) {
   _iw_spell_summary="total=$_iw_spell_count success=$_iw_spell_success"
   _iw_spell_summary="$_iw_spell_summary skipped=$_iw_spell_skipped failed=$_iw_spell_failed"
   printf '%s\n' "[invoke-wizardry] Spell sourcing complete: $_iw_spell_summary" >&2
-  # Ensure menu spell function is loaded for interactive use
-  # Always load the menu spell to ensure it's available as a function
-  # (sourcing it multiple times is safe, it just redefines the function)
-  _iw_menu_spell="$WIZARDRY_DIR/spells/cantrips/menu"
-  if [ -f "$_iw_menu_spell" ] && [ -r "$_iw_menu_spell" ]; then
-    # shellcheck disable=SC1090
-    . "$_iw_menu_spell" || :
-  fi
-  unset _iw_menu_spell
   if command -v menu >/dev/null 2>&1; then
     if [ -n "$_iw_debug_file" ]; then
       printf '%s\n' "[invoke-wizardry] menu is pre-loaded" >&2
