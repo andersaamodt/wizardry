@@ -645,7 +645,9 @@ function brace_delta(s, n, m) {
   _iw_spell_summary="total=$_iw_spell_count success=$_iw_spell_success"
   _iw_spell_summary="$_iw_spell_summary skipped=$_iw_spell_skipped failed=$_iw_spell_failed"
   printf '%s\n' "[invoke-wizardry] Spell sourcing complete: $_iw_spell_summary" >&2
-  if ! command -v menu >/dev/null 2>&1; then
+  # Ensure menu is available as a function for interactive use
+  # Check if menu is NOT a function (it might be a binary in PATH on some systems)
+  if ! type menu 2>/dev/null | grep -q "function"; then
     _iw_menu_spell="$WIZARDRY_DIR/spells/cantrips/menu"
     if [ -f "$_iw_menu_spell" ] && [ -r "$_iw_menu_spell" ]; then
       # shellcheck disable=SC1090
