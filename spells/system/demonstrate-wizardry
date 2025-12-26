@@ -1,0 +1,69 @@
+#!/bin/sh
+
+# This spell demonstrates core wizardry features with narrated output.
+# It validates a curated set of spells and reports readiness.
+
+demonstrate_wizardry_usage() {
+  cat <<'USAGE'
+Usage: demonstrate-wizardry
+
+Demonstrate core wizardry features by running quiet checks on key spells and
+narrating the results.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  demonstrate_wizardry_usage
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+check_spell() {
+  label=$1
+  shift
+
+  if "$@" >/dev/null 2>&1; then
+    say "$label: ready"
+    return 0
+  fi
+
+  die "demonstrate-wizardry: ${label} check failed"
+}
+
+if [ "${WIZARDRY_DEMO_IN_BWRAP-0}" -ne 1 ] && [ "${WIZARDRY_DEMO_NO_BWRAP-0}" -ne 1 ]; then
+  if command -v bwrap >/dev/null 2>&1; then
+    bwrap --unshare-user-try --ro-bind / / --dev-bind /dev /dev --bind /proc /proc \
+      --bind /tmp /tmp --setenv PATH "$PATH" --setenv WIZARDRY_DEMO_IN_BWRAP 1 -- \
+      "$0" "$@"
+    exit $?
+  fi
+
+  die "demonstrate-wizardry: bubblewrap unavailable"
+fi
+
+demonstrate_wizardry() {
+  say "A circle of chalk flares into view."
+  say "The wizardry demonstration begins."
+  say "Validating core spells:"
+
+  check_spell "menu" menu --help
+  check_spell "spellbook" spellbook --help
+  check_spell "cast" cast --help
+  check_spell "memorize" memorize --help
+  check_spell "look" look --help
+  check_spell "ask-yn" ask-yn --help
+  check_spell "wizard-cast" wizard-cast --help
+  check_spell "test-magic" test-magic --help
+
+  say "The circle closes. Wizardry stands ready."
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */demonstrate-wizardry) demonstrate_wizardry "$@" ;; esac

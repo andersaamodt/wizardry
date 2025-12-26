@@ -1,10 +1,12 @@
-name: POSIX compliance checks
+name: POSIX, linting, and style checks
 
 on:
   push:
     branches:
       - main
   pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -12,13 +14,15 @@ permissions:
   pull-requests: read
 
 jobs:
-  posix:
-    name: POSIX compliance
+  lint:
+    name: POSIX, linting, and style checks
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install checkbashisms dependency
         run: ./spells/.arcana/core/install-checkbashisms
-      - name: Verify POSIX compliance
-        run: ./spells/system/verify-posix
+      - name: Run lint-magic (includes verify-posix)
+        run: |
+          echo "Running spell style, linting, and POSIX checks..."
+          ./spells/spellcraft/lint-magic --verbose
