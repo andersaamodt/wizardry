@@ -44,6 +44,12 @@ else
   _iw_debug_file=""
   printf '%s\n' "[invoke-wizardry] Debug logging disabled" >&2
 fi
+if [ -n "$_iw_debug_file" ]; then
+  printf '%s\n' "invoke-wizardry: Debug: pid=$$ ppid=$PPID shell=$0 opts=$-" >> "$_iw_debug_file" 2>/dev/null || :
+  if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+    printf '%s\n' "invoke-wizardry: Debug: zsh_version=$ZSH_VERSION eval_context=${ZSH_EVAL_CONTEXT-}" >> "$_iw_debug_file" 2>/dev/null || :
+  fi
+fi
 
 # Log start of invoke-wizardry
 printf '%s\n' "[invoke-wizardry] === Starting invoke-wizardry ===" >&2
@@ -523,6 +529,9 @@ function brace_delta(s, n, m) {
     printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
     if command -v menu >/dev/null 2>&1; then
       printf '%s\n' "invoke-wizardry: Debug: menu spell is available" >> "$_iw_debug_file" 2>/dev/null || :
+      if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+        printf '%s\n' "invoke-wizardry: Debug: menu details: $(whence -v menu 2>/dev/null)" >> "$_iw_debug_file" 2>/dev/null || :
+      fi
     else
       printf '%s\n' "invoke-wizardry: Debug: menu spell NOT found after loading" >> "$_iw_debug_file" 2>/dev/null || :
     fi
