@@ -112,6 +112,14 @@ fi
 printf '%s\n' "[invoke-wizardry] Defining _invoke_wizardry function" >&2
 _invoke_wizardry() {
   printf '%s\n' "[invoke-wizardry] INSIDE _invoke_wizardry function" >&2
+  _iw_non_interactive=0
+  case $- in
+    *i*)
+      ;;
+    *)
+      _iw_non_interactive=1
+      ;;
+  esac
   # Debug logging inline (no function to comply with one-function-or-zero rule)
   if [ -n "$_iw_debug_file" ]; then
     _iw_msg="invoke-wizardry: Entering _invoke_wizardry function"
@@ -264,21 +272,39 @@ _invoke_wizardry() {
   _iw_imp_skipped=0
   _iw_imp_failed=0
   
-  printf '%s\n' "[invoke-wizardry] Checking if imp directory exists" >&2
+  if [ -n "$_iw_debug_file" ]; then
+    printf '%s\n' "[invoke-wizardry] Checking if imp directory exists" >&2
+  fi
   if [ -d "$_iw_imps_dir" ]; then
-    printf '%s\n' "[invoke-wizardry] Imp directory exists, starting family loop" >&2
-    for _iw_family in "$_iw_imps_dir"/*; do
-      printf '%s\n' "[invoke-wizardry] Checking family: $_iw_family" >&2
+    if [ -n "$_iw_debug_file" ]; then
+      printf '%s\n' "[invoke-wizardry] Imp directory exists, starting family loop" >&2
+    fi
+    _iw_imp_family_globs="$_iw_imps_dir/*"
+    if [ "$_iw_non_interactive" -eq 1 ] && [ "${WIZARDRY_LOAD_ALL-}" != "1" ]; then
+      _iw_imp_family_globs="$_iw_imps_dir/cond $_iw_imps_dir/out $_iw_imps_dir/sys"
+      if [ -n "$_iw_debug_file" ]; then
+        _iw_msg="invoke-wizardry: Non-interactive shell detected; loading minimal imp families"
+        printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
+      fi
+    fi
+    for _iw_family in $_iw_imp_family_globs; do
+      if [ -n "$_iw_debug_file" ]; then
+        printf '%s\n' "[invoke-wizardry] Checking family: $_iw_family" >&2
+      fi
       # POSIX-compliant: Skip if glob didn't match (returns literal pattern)
       [ -e "$_iw_family" ] || continue
       [ -d "$_iw_family" ] || continue
       # Skip test imps - they're only for testing, not production use
       _iw_family_name=$(basename "$_iw_family")
-      printf '%s\n' "[invoke-wizardry] Family name: $_iw_family_name" >&2
-      printf '%s\n' "[invoke-wizardry] Family name: $_iw_family_name" >&2
+      if [ -n "$_iw_debug_file" ]; then
+        printf '%s\n' "[invoke-wizardry] Family name: $_iw_family_name" >&2
+        printf '%s\n' "[invoke-wizardry] Family name: $_iw_family_name" >&2
+      fi
       case "$_iw_family_name" in
         test) 
-          printf '%s\n' "[invoke-wizardry] Skipping test family" >&2
+          if [ -n "$_iw_debug_file" ]; then
+            printf '%s\n' "[invoke-wizardry] Skipping test family" >&2
+          fi
           if [ -n "$_iw_debug_file" ]; then
             _iw_msg="invoke-wizardry: Skipping test family: $_iw_family_name"
             printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
@@ -286,13 +312,17 @@ _invoke_wizardry() {
           continue 
           ;;
       esac
-      printf '%s\n' "[invoke-wizardry] Processing family: $_iw_family_name" >&2
+      if [ -n "$_iw_debug_file" ]; then
+        printf '%s\n' "[invoke-wizardry] Processing family: $_iw_family_name" >&2
+      fi
       if [ -n "$_iw_debug_file" ]; then
         _iw_msg="invoke-wizardry: Processing imp family: $_iw_family_name"
         printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
       fi
       
-      printf '%s\n' "[invoke-wizardry] Starting imp loop for family: $_iw_family_name" >&2
+      if [ -n "$_iw_debug_file" ]; then
+        printf '%s\n' "[invoke-wizardry] Starting imp loop for family: $_iw_family_name" >&2
+      fi
       for _iw_imp in "$_iw_family"/*; do
         # POSIX-compliant: Skip if glob didn't match (returns literal pattern)
         [ -e "$_iw_imp" ] || continue
@@ -302,8 +332,10 @@ _invoke_wizardry() {
         # Skip invoke-thesaurus (loaded separately later for synonyms)
         case "$_iw_imp" in
           */invoke-wizardry|*/invoke-thesaurus) 
-            printf '%s\n' "[invoke-wizardry] Skipping special imp: $(basename "$_iw_imp")" >&2 
-            printf '%s\n' "[invoke-wizardry] Skipping special imp: $(basename "$_iw_imp")" >&2
+            if [ -n "$_iw_debug_file" ]; then
+              printf '%s\n' "[invoke-wizardry] Skipping special imp: $(basename "$_iw_imp")" >&2
+              printf '%s\n' "[invoke-wizardry] Skipping special imp: $(basename "$_iw_imp")" >&2
+            fi
             _iw_imp_skipped=$((_iw_imp_skipped + 1))
             if [ -n "$_iw_debug_file" ]; then
               _iw_msg="Skipping special imp: $(basename "$_iw_imp")"
@@ -400,9 +432,13 @@ function brace_delta(s, n, m) {
           fi
         fi
       done
-      printf '%s\n' "[invoke-wizardry] Finished imp loop for family: $_iw_family_name" >&2
+      if [ -n "$_iw_debug_file" ]; then
+        printf '%s\n' "[invoke-wizardry] Finished imp loop for family: $_iw_family_name" >&2
+      fi
     done
-    printf '%s\n' "[invoke-wizardry] Finished all imp families" >&2
+    if [ -n "$_iw_debug_file" ]; then
+      printf '%s\n' "[invoke-wizardry] Finished all imp families" >&2
+    fi
   fi
   
   _iw_imp_summary="total=$_iw_imp_count success=$_iw_imp_success"
@@ -424,10 +460,24 @@ function brace_delta(s, n, m) {
   _iw_spell_success=0
   _iw_spell_skipped=0
   _iw_spell_failed=0
+
+  _iw_load_minimal=0
+  if [ "$_iw_non_interactive" -eq 1 ] && [ "${WIZARDRY_LOAD_ALL-}" != "1" ]; then
+    _iw_load_minimal=1
+    if [ -n "$_iw_debug_file" ]; then
+      _iw_msg="invoke-wizardry: Non-interactive shell detected; loading minimal spell set"
+      printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
+    fi
+  fi
   
-  printf '%s\n' "[invoke-wizardry] Starting spell category loop" >&2
-  for _iw_spell_cat in "$WIZARDRY_DIR"/spells/*; do
-    printf '%s\n' "[invoke-wizardry] Checking category: $_iw_spell_cat" >&2
+  if [ "$_iw_load_minimal" -eq 0 ]; then
+    if [ -n "$_iw_debug_file" ]; then
+      printf '%s\n' "[invoke-wizardry] Starting spell category loop" >&2
+    fi
+    for _iw_spell_cat in "$WIZARDRY_DIR"/spells/*; do
+    if [ -n "$_iw_debug_file" ]; then
+      printf '%s\n' "[invoke-wizardry] Checking category: $_iw_spell_cat" >&2
+    fi
     # POSIX-compliant: Skip if glob didn't match (returns literal pattern)
     [ -e "$_iw_spell_cat" ] || continue
     [ -d "$_iw_spell_cat" ] || continue
@@ -435,7 +485,9 @@ function brace_delta(s, n, m) {
     # Skip hidden directories (like .imps and .arcana)
     case "$_iw_spell_cat_name" in
       .* )
-        printf '%s\n' "[invoke-wizardry] Skipping hidden directory: $_iw_spell_cat_name" >&2
+        if [ -n "$_iw_debug_file" ]; then
+          printf '%s\n' "[invoke-wizardry] Skipping hidden directory: $_iw_spell_cat_name" >&2
+        fi
         if [ -n "$_iw_debug_file" ]; then
           _iw_msg="Skipping hidden directory: $_iw_spell_cat_name"
           _iw_full="invoke-wizardry: $_iw_msg"
@@ -444,14 +496,18 @@ function brace_delta(s, n, m) {
         continue
         ;;
     esac
-    printf '%s\n' "[invoke-wizardry] Processing category: $_iw_spell_cat_name" >&2
-    printf '%s\n' "[invoke-wizardry] Processing category: $_iw_spell_cat_name" >&2
+    if [ -n "$_iw_debug_file" ]; then
+      printf '%s\n' "[invoke-wizardry] Processing category: $_iw_spell_cat_name" >&2
+      printf '%s\n' "[invoke-wizardry] Processing category: $_iw_spell_cat_name" >&2
+    fi
     if [ -n "$_iw_debug_file" ]; then
       _iw_msg="invoke-wizardry: Processing spell category: $_iw_spell_cat_name"
       printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
     fi
     
-    printf '%s\n' "[invoke-wizardry] Starting spell loop for category: $_iw_spell_cat_name" >&2
+    if [ -n "$_iw_debug_file" ]; then
+      printf '%s\n' "[invoke-wizardry] Starting spell loop for category: $_iw_spell_cat_name" >&2
+    fi
     for _iw_spell in "$_iw_spell_cat"/*; do
       # POSIX-compliant: Skip if glob didn't match (returns literal pattern)
       [ -e "$_iw_spell" ] || continue
@@ -459,9 +515,11 @@ function brace_delta(s, n, m) {
       _iw_spell_count=$((_iw_spell_count + 1))
       
       # Output progress every 10 spells to avoid overwhelming output
-      _iw_spell_mod=$((_iw_spell_count % 10))
-      if [ "$_iw_spell_mod" -eq 0 ] || [ "$_iw_spell_count" -eq 1 ]; then
-        printf '%s\n' "[invoke-wizardry] Spell progress: count=$_iw_spell_count" >&2
+      if [ -n "$_iw_debug_file" ]; then
+        _iw_spell_mod=$((_iw_spell_count % 10))
+        if [ "$_iw_spell_mod" -eq 0 ] || [ "$_iw_spell_count" -eq 1 ]; then
+          printf '%s\n' "[invoke-wizardry] Spell progress: count=$_iw_spell_count" >&2
+        fi
       fi
       
       _iw_spell_name=$(basename "$_iw_spell")
@@ -517,16 +575,29 @@ function brace_delta(s, n, m) {
 } # awk: end program
 ' "$_iw_spell"); then
           if [ -n "$_iw_spell_body" ]; then
-            if ! _iw_spell_error=$(eval "$_iw_spell_body" 2>&1); then
-              _iw_spell_failed=$((_iw_spell_failed + 1))
-              if [ -n "$_iw_debug_file" ]; then
+            _iw_spell_error=""
+            _iw_spell_error_file=""
+            if [ -n "$_iw_debug_file" ]; then
+              _iw_spell_error_file="${TMPDIR:-/tmp}/wizardry-spell-error-$$-$_iw_spell_count"
+              if eval "$_iw_spell_body" 2> "$_iw_spell_error_file"; then
+                :
+              else
+                _iw_spell_failed=$((_iw_spell_failed + 1))
+                _iw_spell_error=$(cat "$_iw_spell_error_file" 2>/dev/null || :)
                 _iw_msg="invoke-wizardry: ✗ Failed to source spell: $_iw_spell_name"
                 printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
                 if [ -n "$_iw_spell_error" ]; then
                   printf '%s\n' "invoke-wizardry:   error: $_iw_spell_error" >> "$_iw_debug_file" 2>/dev/null || :
                 fi
+                rm -f "$_iw_spell_error_file" 2>/dev/null || :
+                continue
               fi
-              continue
+              rm -f "$_iw_spell_error_file" 2>/dev/null || :
+            else
+              if ! eval "$_iw_spell_body" 2>/dev/null; then
+                _iw_spell_failed=$((_iw_spell_failed + 1))
+                continue
+              fi
             fi
           fi
           set +eu
@@ -564,13 +635,26 @@ function brace_delta(s, n, m) {
         fi
       fi
     done
-    printf '%s\n' "[invoke-wizardry] Finished spell loop for category: $_iw_spell_cat_name" >&2
-  done
-  printf '%s\n' "[invoke-wizardry] Finished all spell categories" >&2
+      if [ -n "$_iw_debug_file" ]; then
+        printf '%s\n' "[invoke-wizardry] Finished spell loop for category: $_iw_spell_cat_name" >&2
+      fi
+    done
+    if [ -n "$_iw_debug_file" ]; then
+      printf '%s\n' "[invoke-wizardry] Finished all spell categories" >&2
+    fi
+  fi
   
   _iw_spell_summary="total=$_iw_spell_count success=$_iw_spell_success"
   _iw_spell_summary="$_iw_spell_summary skipped=$_iw_spell_skipped failed=$_iw_spell_failed"
   printf '%s\n' "[invoke-wizardry] Spell sourcing complete: $_iw_spell_summary" >&2
+  if ! command -v menu >/dev/null 2>&1; then
+    _iw_menu_spell="$WIZARDRY_DIR/spells/cantrips/menu"
+    if [ -f "$_iw_menu_spell" ] && [ -r "$_iw_menu_spell" ]; then
+      # shellcheck disable=SC1090
+      . "$_iw_menu_spell" 2>/dev/null || :
+    fi
+    unset _iw_menu_spell
+  fi
   if command -v menu >/dev/null 2>&1; then
     printf '%s\n' "[invoke-wizardry] menu is pre-loaded" >&2
   fi
