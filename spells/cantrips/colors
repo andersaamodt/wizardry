@@ -7,26 +7,19 @@
 # This script contains all color codes in the POSIX standard.
 # You must source this script with '. ./colors' (or an absolute path) to use it.
 
-colors_usage() {
-        cat <<'USAGE'
-Usage: colors (source)
+# Enforce sourced-only behavior
+# Source uncastable imp if not already available (for direct execution)
+if ! command -v uncastable >/dev/null 2>&1; then
+  # Try to find imps directory relative to this spell
+  _spell_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _repo_root=$(cd "$_spell_dir" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  WIZARDRY_IMPS_SYS="${WIZARDRY_DIR:-${_repo_root}}/spells/.imps/sys"
+  if [ -f "$WIZARDRY_IMPS_SYS/uncastable" ]; then
+    . "$WIZARDRY_IMPS_SYS/uncastable"
+  fi
+fi
 
-Sources a palette of ANSI escape variables and wizardry theme accents so scripts can style output, gracefully disabling colour when the terminal cannot render it.
-USAGE
-}
-
-# Only handle --help when run directly as a script, not when sourced
-# When sourced, $0 is the parent script, not 'colors'
-case "$0" in
-*colors)
-        case "${1-}" in
-        --help|--usage|-h)
-                colors_usage
-                exit 0
-                ;;
-        esac
-        ;;
-esac
+uncastable colors "Usage: . colors"
 
 # Record whether the terminal appears to support ANSI escape sequences so
 # callers can disable colour-aware features when needed.

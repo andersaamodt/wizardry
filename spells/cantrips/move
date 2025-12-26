@@ -88,6 +88,16 @@ mv "$from" "$to"
 say "Moved '$(file-name "$from")' to '$to'."
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */move) move "$@" ;; esac
+
+# Source uncastable imp if not already available (for direct execution)
+if ! command -v uncastable >/dev/null 2>&1; then
+  # Try to find imps directory relative to this spell
+  _spell_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _repo_root=$(cd "$_spell_dir" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  WIZARDRY_IMPS_SYS="${WIZARDRY_DIR:-${_repo_root}}/spells/.imps/sys"
+  if [ -f "$WIZARDRY_IMPS_SYS/uncastable" ]; then
+    . "$WIZARDRY_IMPS_SYS/uncastable"
+  fi
+fi
+
+uncastable

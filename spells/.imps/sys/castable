@@ -27,6 +27,11 @@ _castable() {
   esac
 }
 
+# Public function that spells can call
+castable() {
+  _castable "$@"
+}
+
 # Self-execute when run directly (not sourced)
 case "$0" in
   */castable|castable) _castable "$@" ;; esac
