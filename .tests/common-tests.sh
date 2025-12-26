@@ -1917,6 +1917,54 @@ test_spells_declare_invocation_type() {
 
 _run_test_case "spells declare castable or uncastable" test_spells_declare_invocation_type
 
+# --- Check: All spells respond to --help flag ---
+# Every spell must support --help, --usage, or -h flags
+# This eliminates duplication in individual test files
+test_all_spells_respond_to_help() {
+  failures=""
+  
+  check_help_flag() {
+    spell=$1
+    rel_path=${spell#"$ROOT_DIR/spells/"}
+    
+    # Try each help flag variant
+    for flag in --help --usage -h; do
+      # Run spell with help flag and capture output
+      output=$("$spell" "$flag" 2>&1)
+      exit_code=$?
+      
+      # Spell must exit with code 0 for help
+      if [ "$exit_code" -ne 0 ]; then
+        failures="${failures}${failures:+, }$rel_path ($flag: exit code $exit_code)"
+        return
+      fi
+      
+      # Output must contain "Usage:" keyword
+      if ! printf '%s' "$output" | grep -qi "usage:"; then
+        failures="${failures}${failures:+, }$rel_path ($flag: missing Usage:)"
+        return
+      fi
+      
+      # Found working help flag, move to next spell
+      return
+    done
+    
+    # If we get here, none of the help flags worked
+    failures="${failures}${failures:+, }$rel_path (no help flags work)"
+  }
+  
+  for_each_posix_spell_no_imps check_help_flag
+  
+  if [ -n "$failures" ]; then
+    TEST_FAILURE_REASON="spells not responding to --help flags: $failures"
+    return 1
+  fi
+  
+  return 0
+}
+
+_run_test_case "all spells respond to --help flag" test_all_spells_respond_to_help
+
 # ==============================================================================
 # META-TESTS - Testing the testing system itself
 # These tests validate that the testing infrastructure is properly architected
