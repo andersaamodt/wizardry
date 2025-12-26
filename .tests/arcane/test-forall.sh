@@ -125,6 +125,23 @@ forall_handles_empty_directory() {
   _assert_output_contains "   seen ./*" || return 1
 }
 
+# Test via source-then-invoke pattern
+forall_works_via_sourcing() {
+  # Create a test directory with files
+  workdir=$(_make_tempdir)
+  printf 'one' > "$workdir/a.txt"
+  printf 'two' > "$workdir/b.txt"
+  
+  # Run forall via sourcing
+  RUN_CMD_WORKDIR=$workdir _run_sourced_spell forall cat
+  
+  _assert_success || return 1
+  _assert_output_contains "a.txt" || return 1
+  _assert_output_contains "b.txt" || return 1
+  _assert_output_contains "   one" || return 1
+  _assert_output_contains "   two" || return 1
+}
+
 _run_test_case "forall prints usage" test_help
 _run_test_case "forall accepts --usage" test_usage_alias
 _run_test_case "forall fails without a command" forall_requires_command
@@ -135,5 +152,6 @@ _run_test_case "forall continues when commands fail" forall_continues_on_failure
 _run_test_case "forall lists files even when command is silent" forall_lists_silent_entries
 _run_test_case "forall includes directories" forall_handles_directories
 _run_test_case "forall runs in empty directories" forall_handles_empty_directory
+_run_test_case "forall works via source-then-invoke" forall_works_via_sourcing
 
 _finish_tests

@@ -44,7 +44,16 @@ menu_shows_help() {
   _assert_success || return 1
 }
 
-_run_test_case "menu shows help" menu_shows_help
+menu_shows_help_via_sourcing() {
+  # Test menu --help via source-then-invoke pattern
+  # This tests the real user workflow after sourcing invoke-wizardry
+  _run_sourced_spell menu --help
+  _assert_success || return 1
+  _assert_error_contains "Usage: menu" || return 1
+}
+
+_run_test_case "menu shows help (direct execution)" menu_shows_help
+_run_test_case "menu shows help (via sourcing)" menu_shows_help_via_sourcing
 _run_test_case "menu requires helper spells" menu_requires_all_helpers
 _run_test_case "menu reports missing controlling terminal" menu_reports_missing_tty
 
