@@ -6,10 +6,13 @@
 set -eu
 
 _run_sourced_spell() {
-  spell_name=$1
+  spell_path=$1
   shift || true
   
-  # Convert spell name to function name (replace hyphens with underscores)
+  # Extract spell name from path and convert to function name
+  # spell_path is like "spells/translocation/jump-to-marker"
+  # We need just "jump-to-marker" -> "jump_to_marker"
+  spell_name=$(basename "$spell_path")
   func_name=$(printf '%s' "$spell_name" | tr '-' '_')
   
   # Save the caller's PATH for cleanup operations
@@ -38,6 +41,7 @@ _run_sourced_spell() {
   done
   
   # Build the bash -c command
+  # Note: func_name must be expanded here, not inside bash -c
   bash_cmd="
 set +eu  # Permissive mode for sourcing invoke-wizardry
 export WIZARDRY_DIR='${WIZARDRY_DIR:-$ROOT_DIR}'
