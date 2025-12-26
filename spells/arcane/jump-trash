@@ -100,3 +100,13 @@ if [ "$running_as_script" -eq 1 ]; then
     ;;
   esac
 fi
+
+# Load castable imp for direct execution
+if ! command -v castable >/dev/null 2>&1; then
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"

@@ -7,16 +7,32 @@
 # This script contains all color codes in the POSIX standard.
 # You must source this script with '. ./colors' (or an absolute path) to use it.
 
-# Enforce sourced-only behavior
-# Source uncastable imp if not already available (for direct execution)
+colors_usage() {
+  cat <<'USAGE'
+Usage: . colors
+
+Source this file to load color variables for terminal output.
+This spell must be sourced, not executed.
+
+Example:
+  . colors
+  printf '%sError:%s An error message.\n' "${RED}" "${RESET}"
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  colors_usage
+  exit 0
+  ;;
+esac
+
+# Load uncastable imp for direct execution
 if ! command -v uncastable >/dev/null 2>&1; then
-  # Try to find imps directory relative to this spell
-  _spell_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-  _repo_root=$(cd "$_spell_dir" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
-  WIZARDRY_IMPS_SYS="${WIZARDRY_DIR:-${_repo_root}}/spells/.imps/sys"
-  if [ -f "$WIZARDRY_IMPS_SYS/uncastable" ]; then
-    . "$WIZARDRY_IMPS_SYS/uncastable"
-  fi
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/uncastable" ] && . "$_i/uncastable"
 fi
 
 uncastable colors "Usage: . colors"
