@@ -279,15 +279,16 @@ _invoke_wizardry() {
     if [ -n "$_iw_debug_file" ]; then
       printf '%s\n' "[invoke-wizardry] Imp directory exists, starting family loop" >&2
     fi
-    _iw_imp_family_globs="$_iw_imps_dir/*"
     if [ "$_iw_non_interactive" -eq 1 ] && [ "${WIZARDRY_LOAD_ALL-}" != "1" ]; then
-      _iw_imp_family_globs="$_iw_imps_dir/cond $_iw_imps_dir/out $_iw_imps_dir/sys"
+      set -- "$_iw_imps_dir/cond" "$_iw_imps_dir/out" "$_iw_imps_dir/sys"
       if [ -n "$_iw_debug_file" ]; then
         _iw_msg="invoke-wizardry: Non-interactive shell detected; loading minimal imp families"
         printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
       fi
+    else
+      set -- "$_iw_imps_dir"/*
     fi
-    for _iw_family in $_iw_imp_family_globs; do
+    for _iw_family in "$@"; do
       if [ -n "$_iw_debug_file" ]; then
         printf '%s\n' "[invoke-wizardry] Checking family: $_iw_family" >&2
       fi
