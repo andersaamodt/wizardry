@@ -110,7 +110,7 @@ EOF
   
   _run_cmd sh "$tmpdir/test-warn.sh" "$ROOT_DIR"
   _assert_success || return 1
-  _assert_output_contains "SUCCESS: no warn command not found error" || return 1
+_assert_output_contains "SUCCESS: no warn command not found error" || return 1
 }
 
 # Test: Simulate installation - menu is available after invoke-wizardry
@@ -152,6 +152,20 @@ EOF
   _assert_output_contains "SUCCESS: menu is available and works" || return 1
 }
 
+test_menu_available_in_zsh_after_install() {
+  skip-if-compiled || return $?
+  if ! command -v zsh >/dev/null 2>&1; then
+    _test_skip "menu available in zsh after install" "zsh not installed"
+    return 0
+  fi
+
+  _run_cmd env WIZARDRY_DIR="$ROOT_DIR" zsh -f -c '
+    . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry" >/dev/null 2>&1
+    command -v menu >/dev/null 2>&1 && menu --help >/dev/null 2>&1
+  '
+  _assert_success || return 1
+}
+
 # Test: Shell startup doesn't hang after installation
 test_shell_startup_no_hang() {
   skip-if-compiled || return $?
@@ -187,6 +201,7 @@ _run_test_case "require-command installs when helper is available" require_comma
 _run_test_case "require-command: no 'has: command not found' error" test_require_command_no_has_error
 _run_test_case "require-command: no 'warn: command not found' error" test_require_command_no_warn_error
 _run_test_case "menu is available immediately after install" test_menu_after_install
+_run_test_case "menu is available in zsh after install" test_menu_available_in_zsh_after_install
 _run_test_case "shell startup doesn't hang" test_shell_startup_no_hang
 
 _finish_tests
