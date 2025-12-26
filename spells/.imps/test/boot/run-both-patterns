@@ -1,0 +1,82 @@
+#!/bin/sh
+# run-both-patterns DESC FUNC [SPELL_PATH] - run a test with both execution patterns
+# Automatically tests both direct execution and source-then-invoke patterns.
+# If SPELL_PATH is not provided, extracts it from the test function's _run_spell calls.
+# For uncastable spells, only runs the source-then-invoke pattern.
+# Provides clear output organization for easy failure identification.
+set -eu
+
+_run_both_patterns() {
+  desc=$1
+  func=$2
+  spell_path=${3-}
+  
+  # If spell_path not provided, try to extract from test function
+  if [ -z "$spell_path" ]; then
+    # Get the function definition and look for _run_spell calls
+    # This is a heuristic - if it fails, tests will still run once
+    spell_path=$(type "$func" 2>/dev/null | grep -oE 'spells/[^"[:space:]]+' | head -1 || true)
+  fi
+  
+  # Determine if spell is castable or uncastable
+  is_castable=1
+  if [ -n "$spell_path" ] && [ -f "$ROOT_DIR/$spell_path" ]; then
+    # Check if spell uses uncastable
+    if grep -q "^uncastable" "$ROOT_DIR/$spell_path" 2>/dev/null; then
+      is_castable=0
+    fi
+  fi
+  
+  # Track pattern-specific failures for organized output
+  # These will be collected in finish-tests
+  
+  # Run direct execution test for castable spells
+  if [ "$is_castable" -eq 1 ]; then
+    # Mark this as direct execution pattern
+    WIZARDRY_TEST_PATTERN="direct-exec"
+    export WIZARDRY_TEST_PATTERN
+    
+    _run_test_case "$desc [exec]" "$func"
+    
+    # Check if this test failed
+    if [ "$_fail_count" -gt "${WIZARDRY_PREV_FAIL_COUNT:-0}" ]; then
+      # Track direct execution failure
+      WIZARDRY_DIRECT_EXEC_FAILURES="${WIZARDRY_DIRECT_EXEC_FAILURES-}${WIZARDRY_DIRECT_EXEC_FAILURES:+,}$desc"
+      export WIZARDRY_DIRECT_EXEC_FAILURES
+    fi
+    
+    WIZARDRY_PREV_FAIL_COUNT=$_fail_count
+    export WIZARDRY_PREV_FAIL_COUNT
+  fi
+  
+  # Run source-then-invoke test for all spells
+  # Mark this as sourced pattern
+  WIZARDRY_TEST_PATTERN="sourced"
+  export WIZARDRY_TEST_PATTERN
+  
+  # Set flag to use sourced spell instead of modifying the function
+  # This avoids recursion issues
+  WIZARDRY_USE_SOURCED_SPELL=1
+  export WIZARDRY_USE_SOURCED_SPELL
+  
+  _run_test_case "$desc [src]" "$func"
+  
+  # Clear the flag
+  unset WIZARDRY_USE_SOURCED_SPELL
+  
+  # Check if this test failed
+  if [ "$_fail_count" -gt "${WIZARDRY_PREV_FAIL_COUNT:-0}" ]; then
+    # Track sourced failure
+    WIZARDRY_SOURCED_FAILURES="${WIZARDRY_SOURCED_FAILURES-}${WIZARDRY_SOURCED_FAILURES:+,}$desc"
+    export WIZARDRY_SOURCED_FAILURES
+  fi
+  
+  WIZARDRY_PREV_FAIL_COUNT=$_fail_count
+  export WIZARDRY_PREV_FAIL_COUNT
+  
+  # Clear pattern marker
+  unset WIZARDRY_TEST_PATTERN
+}
+
+# Self-execution when run directly (not sourced)
+case "${0##*/}" in run-both-patterns) _run_both_patterns "$@" ;; esac
