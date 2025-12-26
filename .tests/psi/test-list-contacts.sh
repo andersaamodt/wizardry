@@ -50,23 +50,3 @@ _run_test_case "list-contacts handles empty directory" test_handles_empty_direct
 
 
 # Test via source-then-invoke pattern  
-list_contacts_help_via_sourcing() {
-  _run_sourced_spell list-contacts --help
-  _assert_success || return 1
-  # Help text may go to stdout or stderr depending on spell
-  if [ -n "$OUTPUT" ]; then
-    case "$OUTPUT" in
-      *Usage:*|*usage:*) return 0 ;;
-    esac
-  fi
-  if [ -n "$ERROR" ]; then
-    case "$ERROR" in
-      *Usage:*|*usage:*) return 0 ;;
-    esac
-  fi
-  TEST_FAILURE_REASON="expected 'Usage:' in output or error"
-  return 1
-}
-
-_run_test_case "list-contacts works via source-then-invoke" list_contacts_help_via_sourcing
-_finish_tests

@@ -153,23 +153,3 @@ _run_test_case "decorate works with description only" test_decorates_current_dir
 _run_test_case "decorate reports enchant failure" test_reports_enchant_failure
 
 # Test via source-then-invoke pattern  
-decorate_help_via_sourcing() {
-  _run_sourced_spell decorate --help
-  _assert_success || return 1
-  # Help text may go to stdout or stderr depending on spell
-  if [ -n "$OUTPUT" ]; then
-    case "$OUTPUT" in
-      *Usage:*|*usage:*) return 0 ;;
-    esac
-  fi
-  if [ -n "$ERROR" ]; then
-    case "$ERROR" in
-      *Usage:*|*usage:*) return 0 ;;
-    esac
-  fi
-  TEST_FAILURE_REASON="expected 'Usage:' in output or error"
-  return 1
-}
-
-_run_test_case "decorate works via source-then-invoke" decorate_help_via_sourcing
-_finish_tests

@@ -8,7 +8,7 @@
 # Example: CASTABLE_FUNC=erase_spell castable "$@"
 set -eu
 
-_castable() {
+castable() {
   # First check if we're being sourced (not executed)
   # When sourced, $0 won't match the spell name
   _cast_name=${CASTABLE_NAME-}
@@ -44,9 +44,4 @@ _castable() {
 
   # Call the spell function
   "$_cast_func" "$@"
-}
-
-# Public function that spells can call
-castable() {
-  _castable "$@"
 }

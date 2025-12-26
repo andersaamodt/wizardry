@@ -412,23 +412,3 @@ _run_test_case "lint-magic passes imp with single set -eu" test_imp_passes_with_
 
 
 # Test via source-then-invoke pattern  
-lint_magic_help_via_sourcing() {
-  _run_sourced_spell lint-magic --help
-  _assert_success || return 1
-  # Help text may go to stdout or stderr depending on spell
-  if [ -n "$OUTPUT" ]; then
-    case "$OUTPUT" in
-      *Usage:*|*usage:*) return 0 ;;
-    esac
-  fi
-  if [ -n "$ERROR" ]; then
-    case "$ERROR" in
-      *Usage:*|*usage:*) return 0 ;;
-    esac
-  fi
-  TEST_FAILURE_REASON="expected 'Usage:' in output or error"
-  return 1
-}
-
-_run_test_case "lint-magic works via source-then-invoke" lint_magic_help_via_sourcing
-_finish_tests

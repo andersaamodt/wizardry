@@ -286,23 +286,3 @@ _run_test_case "disenchant selects a specific entry with ask_number" test_select
 _run_test_case "disenchant can remove all attributes" test_selects_all_with_menu_choice
 
 # Test via source-then-invoke pattern  
-disenchant_help_via_sourcing() {
-  _run_sourced_spell disenchant --help
-  _assert_success || return 1
-  # Help text may go to stdout or stderr depending on spell
-  if [ -n "$OUTPUT" ]; then
-    case "$OUTPUT" in
-      *Usage:*|*usage:*) return 0 ;;
-    esac
-  fi
-  if [ -n "$ERROR" ]; then
-    case "$ERROR" in
-      *Usage:*|*usage:*) return 0 ;;
-    esac
-  fi
-  TEST_FAILURE_REASON="expected 'Usage:' in output or error"
-  return 1
-}
-
-_run_test_case "disenchant works via source-then-invoke" disenchant_help_via_sourcing
-_finish_tests

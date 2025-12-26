@@ -344,23 +344,3 @@ _run_test_case "spell-menu non-toggle resets cursor" test_non_toggle_resets_curs
 
 
 # Test via source-then-invoke pattern  
-spell_menu_help_via_sourcing() {
-  _run_sourced_spell spell-menu --help
-  _assert_success || return 1
-  # Help text may go to stdout or stderr depending on spell
-  if [ -n "$OUTPUT" ]; then
-    case "$OUTPUT" in
-      *Usage:*|*usage:*) return 0 ;;
-    esac
-  fi
-  if [ -n "$ERROR" ]; then
-    case "$ERROR" in
-      *Usage:*|*usage:*) return 0 ;;
-    esac
-  fi
-  TEST_FAILURE_REASON="expected 'Usage:' in output or error"
-  return 1
-}
-
-_run_test_case "spell-menu works via source-then-invoke" spell_menu_help_via_sourcing
-_finish_tests

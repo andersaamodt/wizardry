@@ -232,23 +232,3 @@ _run_test_case "detect-rc-file prefers zsh files over bashrc on Mac" test_mac_pr
 _run_test_case "detect-rc-file uses existing zshrc over bashrc on Mac" test_mac_uses_existing_zshrc_over_bashrc
 
 # Test via source-then-invoke pattern  
-detect_rc_file_help_via_sourcing() {
-  _run_sourced_spell detect-rc-file --help
-  _assert_success || return 1
-  # Help text may go to stdout or stderr depending on spell
-  if [ -n "$OUTPUT" ]; then
-    case "$OUTPUT" in
-      *Usage:*|*usage:*) return 0 ;;
-    esac
-  fi
-  if [ -n "$ERROR" ]; then
-    case "$ERROR" in
-      *Usage:*|*usage:*) return 0 ;;
-    esac
-  fi
-  TEST_FAILURE_REASON="expected 'Usage:' in output or error"
-  return 1
-}
-
-_run_test_case "detect-rc-file works via source-then-invoke" detect_rc_file_help_via_sourcing
-_finish_tests

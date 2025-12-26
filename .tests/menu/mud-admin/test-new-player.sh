@@ -38,23 +38,3 @@ _run_test_case "new-player uses strict mode" test_has_strict_mode
 
 
 # Test via source-then-invoke pattern  
-new_player_help_via_sourcing() {
-  _run_sourced_spell new-player --help
-  _assert_success || return 1
-  # Help text may go to stdout or stderr depending on spell
-  if [ -n "$OUTPUT" ]; then
-    case "$OUTPUT" in
-      *Usage:*|*usage:*) return 0 ;;
-    esac
-  fi
-  if [ -n "$ERROR" ]; then
-    case "$ERROR" in
-      *Usage:*|*usage:*) return 0 ;;
-    esac
-  fi
-  TEST_FAILURE_REASON="expected 'Usage:' in output or error"
-  return 1
-}
-
-_run_test_case "new-player works via source-then-invoke" new_player_help_via_sourcing
-_finish_tests

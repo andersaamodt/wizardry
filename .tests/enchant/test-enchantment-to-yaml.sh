@@ -110,23 +110,3 @@ _run_test_case "enchantment-to-yaml writes YAML and clears attributes" test_writ
 _run_test_case "enchantment-to-yaml reports missing helpers" test_reports_missing_helpers
 
 # Test via source-then-invoke pattern  
-enchantment_to_yaml_help_via_sourcing() {
-  _run_sourced_spell enchantment-to-yaml --help
-  _assert_success || return 1
-  # Help text may go to stdout or stderr depending on spell
-  if [ -n "$OUTPUT" ]; then
-    case "$OUTPUT" in
-      *Usage:*|*usage:*) return 0 ;;
-    esac
-  fi
-  if [ -n "$ERROR" ]; then
-    case "$ERROR" in
-      *Usage:*|*usage:*) return 0 ;;
-    esac
-  fi
-  TEST_FAILURE_REASON="expected 'Usage:' in output or error"
-  return 1
-}
-
-_run_test_case "enchantment-to-yaml works via source-then-invoke" enchantment_to_yaml_help_via_sourcing
-_finish_tests

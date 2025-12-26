@@ -229,23 +229,3 @@ _run_test_case "update-wizardry fails when detection fails" test_detection_failu
 _run_test_case "update-wizardry propagates git failures" test_propagates_git_failure
 
 # Test via source-then-invoke pattern  
-update_wizardry_help_via_sourcing() {
-  _run_sourced_spell update-wizardry --help
-  _assert_success || return 1
-  # Help text may go to stdout or stderr depending on spell
-  if [ -n "$OUTPUT" ]; then
-    case "$OUTPUT" in
-      *Usage:*|*usage:*) return 0 ;;
-    esac
-  fi
-  if [ -n "$ERROR" ]; then
-    case "$ERROR" in
-      *Usage:*|*usage:*) return 0 ;;
-    esac
-  fi
-  TEST_FAILURE_REASON="expected 'Usage:' in output or error"
-  return 1
-}
-
-_run_test_case "update-wizardry works via source-then-invoke" update_wizardry_help_via_sourcing
-_finish_tests

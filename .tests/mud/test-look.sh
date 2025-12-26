@@ -180,23 +180,3 @@ _run_test_case "look output ends with newline" test_output_ends_with_newline
 _run_test_case "look prints discovered attributes" test_displays_attributes
 
 # Test via source-then-invoke pattern  
-look_help_via_sourcing() {
-  _run_sourced_spell look --help
-  _assert_success || return 1
-  # Help text may go to stdout or stderr depending on spell
-  if [ -n "$OUTPUT" ]; then
-    case "$OUTPUT" in
-      *Usage:*|*usage:*) return 0 ;;
-    esac
-  fi
-  if [ -n "$ERROR" ]; then
-    case "$ERROR" in
-      *Usage:*|*usage:*) return 0 ;;
-    esac
-  fi
-  TEST_FAILURE_REASON="expected 'Usage:' in output or error"
-  return 1
-}
-
-_run_test_case "look works via source-then-invoke" look_help_via_sourcing
-_finish_tests

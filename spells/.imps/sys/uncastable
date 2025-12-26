@@ -6,7 +6,7 @@
 # Example: uncastable invoke-thesaurus "Usage: . invoke-thesaurus"
 set -eu
 
-_uncastable() {
+uncastable() {
   _uncast_name=${1-}
   if [ -n "$_uncast_name" ]; then
     shift
@@ -41,9 +41,4 @@ _uncastable() {
     printf '%s\n' "Usage: . $_uncast_name" >&2
   fi
   exit 1
-}
-
-# Public function that spells can call  
-uncastable() {
-  _uncastable "$@"
 }

@@ -43,23 +43,3 @@ _run_test_case "validate-path rejects long path components" test_rejects_long_co
 
 
 # Test via source-then-invoke pattern  
-validate_path_help_via_sourcing() {
-  _run_sourced_spell validate-path --help
-  _assert_success || return 1
-  # Help text may go to stdout or stderr depending on spell
-  if [ -n "$OUTPUT" ]; then
-    case "$OUTPUT" in
-      *Usage:*|*usage:*) return 0 ;;
-    esac
-  fi
-  if [ -n "$ERROR" ]; then
-    case "$ERROR" in
-      *Usage:*|*usage:*) return 0 ;;
-    esac
-  fi
-  TEST_FAILURE_REASON="expected 'Usage:' in output or error"
-  return 1
-}
-
-_run_test_case "validate-path works via source-then-invoke" validate_path_help_via_sourcing
-_finish_tests

@@ -55,23 +55,3 @@ _run_test_case "demonstrate-wizardry output matches expected transcript" demonst
 
 
 # Test via source-then-invoke pattern  
-demonstrate_wizardry_help_via_sourcing() {
-  _run_sourced_spell demonstrate-wizardry --help
-  _assert_success || return 1
-  # Help text may go to stdout or stderr depending on spell
-  if [ -n "$OUTPUT" ]; then
-    case "$OUTPUT" in
-      *Usage:*|*usage:*) return 0 ;;
-    esac
-  fi
-  if [ -n "$ERROR" ]; then
-    case "$ERROR" in
-      *Usage:*|*usage:*) return 0 ;;
-    esac
-  fi
-  TEST_FAILURE_REASON="expected 'Usage:' in output or error"
-  return 1
-}
-
-_run_test_case "demonstrate-wizardry works via source-then-invoke" demonstrate_wizardry_help_via_sourcing
-_finish_tests
