@@ -108,6 +108,8 @@ failed_targets=''
 failed_messages=''
 spell_param_warnings=''
 spell_param_warning_count=0
+posix_failures=0
+posix_output=''
 
 if [ "$list_only" -eq 1 ]; then
   cat "$targets_file"
@@ -221,7 +223,8 @@ while IFS= read -r target; do
   # Inline check_duplicate_set_eu (imps only)
   # Imps should have at most ONE "set -eu" statement to prevent breaking invoke-wizardry
   if [ "$is_imp_file" -eq 1 ]; then
-    set_eu_count=$(grep -c '^set -eu$' "$path" 2>/dev/null || echo 0)
+    set_eu_count=$(grep -c '^set -eu$' "$path" 2>/dev/null || true)
+    set_eu_count=${set_eu_count:-0}
     if [ "$set_eu_count" -gt 1 ]; then
       issues=${issues:+$issues; }"duplicate 'set -eu' statements ($set_eu_count found, should be 0 or 1)"
       issue_count=$((issue_count + 1))
@@ -724,6 +727,7 @@ AWKSCRIPT
   fi
 done <"$targets_file"
 
+posix_targets=$(cat "$targets_file")
 trap - EXIT HUP INT TERM
 rm -f "$targets_file"
 
@@ -734,7 +738,6 @@ fi
 
 if [ "$failures" -eq 0 ]; then
   printf 'All %d spells passed style checks.\n' "$total"
-  return 0
 else
   printf '%d of %d spells failed style checks.\n' "$failures" "$total"
   if [ -n "$failed_targets" ]; then
@@ -744,8 +747,24 @@ else
     printf '\nFailed style checks:\n'
     printf '%s' "$failed_messages"
   fi
-  return 1
 fi
+
+if [ -x "$repo_dir/spells/system/verify-posix" ] && has checkbashisms; then
+  set -- $posix_targets
+  if posix_output=$("$repo_dir/spells/system/verify-posix" "$@" 2>&1); then
+    posix_failures=0
+  else
+    posix_failures=1
+  fi
+  if [ -n "$posix_output" ]; then
+    printf '\n%s\n' "$posix_output"
+  fi
+fi
+
+if [ "$failures" -eq 0 ] && [ "$posix_failures" -eq 0 ]; then
+  return 0
+fi
+return 1
 }
 
 # Self-execute when run directly (not sourced)
