@@ -1899,6 +1899,11 @@ test_spells_declare_invocation_type() {
     # Get spell name for reporting
     spell_name=${spell_file#"$ROOT_DIR/spells/"}
     
+    # Skip imps - they use a different self-execute pattern (true name function + case statement)
+    case "$spell_name" in
+      .imps/*) continue ;;
+    esac
+    
     # Check if spell has castable or uncastable declaration
     has_castable=0
     has_uncastable=0
