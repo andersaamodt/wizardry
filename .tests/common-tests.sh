@@ -1419,11 +1419,15 @@ test_scripts_have_set_eu_early() {
       return
     fi
     
-    # Auto-detect word-of-binding pattern:
-    # 1. Has wrapper function matching filename (with underscores for hyphens)
-    #    OR has true name function for imps (underscore prefix)
-    # 2. Has self-execute pattern: case "$0" in */name) wrapper "$@" ;; esac
-    # If both present, spell uses word-of-binding and set can be inside wrapper
+    # Auto-detect castable/uncastable pattern or traditional word-of-binding pattern:
+    # Castable/uncastable pattern:
+    #   1. Has wrapper function matching filename (with underscores for hyphens)
+    #      OR has true name function for imps (underscore prefix)
+    #   2. Has castable or uncastable call
+    # Traditional word-of-binding pattern:
+    #   1. Has wrapper function matching filename
+    #   2. Has self-execute pattern: case "$0" in */name) wrapper "$@" ;; esac
+    # If either pattern is present, spell uses word-of-binding and set can be inside wrapper
     
     # Convert filename to function name (hyphens to underscores)
     func_name=$(printf '%s' "$name" | tr '-' '_')
@@ -1436,15 +1440,23 @@ test_scripts_have_set_eu_early() {
       has_wrapper=1
     fi
     
-    # Check for self-execute pattern
+    # Check for castable/uncastable pattern
+    has_castable_pattern=0
+    if grep -qE '^[[:space:]]*castable[[:space:]]+"?\$@"?' "$spell" 2>/dev/null || \
+       grep -qE '^[[:space:]]*uncastable([[:space:]]|$)' "$spell" 2>/dev/null; then
+      has_castable_pattern=1
+    fi
+    
+    # Check for traditional self-execute pattern
     has_self_execute=0
     if grep -qE 'case[[:space:]]+"\$0"[[:space:]]+in' "$spell" 2>/dev/null && \
        grep -qE "\*/${name}\)" "$spell" 2>/dev/null; then
       has_self_execute=1
     fi
     
-    # If word-of-binding pattern detected, check for set -eu or set +eu anywhere
-    if [ "$has_wrapper" = "1" ] && [ "$has_self_execute" = "1" ]; then
+    # If word-of-binding pattern detected (castable/uncastable OR traditional), 
+    # check for set -eu or set +eu anywhere in the file
+    if [ "$has_wrapper" = "1" ] && { [ "$has_castable_pattern" = "1" ] || [ "$has_self_execute" = "1" ]; }; then
       # Word-of-binding spell: set -eu or set +eu should exist somewhere (inside or outside wrapper)
       if ! grep -qE '^[[:space:]]*set [+-][euo]*[eu][euo]*' "$spell"; then
         printf '%s\n' "$rel_path"

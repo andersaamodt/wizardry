@@ -5,6 +5,8 @@
 # The castable/uncastable imps guarantee parity between patterns.
 
 _run_both_patterns() {
+  set -eu
+  
   _desc=$1
   _func=$2
   _spell_path=${3-}

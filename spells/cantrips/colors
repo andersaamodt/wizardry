@@ -35,7 +35,7 @@ if true; then  # Always source uncastable, never use from PATH
   [ -f "$_i/uncastable" ] && . "$_i/uncastable"
 fi
 
-uncastable
+uncastable colors
 
 require-wizardry || exit 1
 
@@ -161,4 +161,5 @@ case ${TERM-} in
 esac
 }
 
+# Execute colors() automatically when sourced (common pattern for environment setup scripts)
 colors
