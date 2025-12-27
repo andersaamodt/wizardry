@@ -10,8 +10,6 @@ Move files or folders to the system trash so they remain recoverable. Use -r for
 USAGE
 }
 
-
-
 trash() {
 case "${1-}" in
 --help|--usage|-h)
@@ -19,8 +17,6 @@ case "${1-}" in
   return 0
   ;;
 esac
-
-require-wizardry || exit 1
 
 set -eu
 . env-clear
