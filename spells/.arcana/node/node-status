@@ -42,14 +42,14 @@ if ! command -v node >/dev/null 2>&1; then
   status="not installed"
   color="$GRAY"
   printf "%s%s%s\n" "$color" "$status" "$RESET"
-  exit 0
+  return 0
 fi
 
 if ! node --version >/dev/null 2>&1; then
   status="installed, error"
   color="$THEME_ERROR"
   printf "%s%s%s\n" "$color" "$status" "$RESET"
-  exit 0
+  return 0
 fi
 
 if ! command -v npm >/dev/null 2>&1; then

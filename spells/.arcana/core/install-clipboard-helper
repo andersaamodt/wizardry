@@ -14,14 +14,19 @@ Installs a clipboard helper for the current environment. Detects if one is alrea
 USAGE
 }
 
+install_clipboard_helper() {
 case "${1-}" in
 --help|--usage|-h)
         install_clipboard_helper_usage
-        exit 0
+        return 0
         ;;
 esac
 
+require-wizardry || return 1
+
+
 set -eu
+. env-clear
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 
@@ -85,13 +90,13 @@ case "${1:-}" in
     # If already have a clipboard helper, we're done
     if [ -n "$installed" ]; then
       printf '%s\n' "Clipboard helper already installed: $installed"
-      exit 0
+      return 0
     fi
     
     # pbcopy is built-in on macOS, no installation needed
     if [ "$preferred" = "pbcopy" ]; then
       printf '%s\n' "pbcopy is built-in on macOS"
-      exit 0
+      return 0
     fi
     
     # Install the preferred helper
@@ -111,8 +116,20 @@ case "${1:-}" in
         ;;
       *)
         printf '%s\n' "Unknown clipboard helper: $preferred" >&2
-        exit 1
+        return 1
         ;;
     esac
     ;;
 esac
+
+}
+
+# Load castable imp for direct execution
+if true; then  # Always source castable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"

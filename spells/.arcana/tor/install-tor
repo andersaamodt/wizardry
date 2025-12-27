@@ -72,7 +72,7 @@ case $distro in
     printf '%s\n' 'Installing tor via Homebrew...'
     if ! command -v brew >/dev/null 2>&1; then
       printf '%s\n' 'Homebrew is required to install Tor on macOS.'
-      exit 1
+      return 1
     fi
     brew install tor
     ;;
@@ -85,7 +85,7 @@ case $distro in
     changes=0
     if [ ! -f "$config_path" ]; then
       printf '%s\n' "NixOS configuration file $config_path was not found."
-      exit 1
+      return 1
     fi
 
     if command -v backup-nix-config >/dev/null 2>&1; then
@@ -129,7 +129,7 @@ case $distro in
     ;;
   *)
     printf '%s\n' "Unsupported distribution for automatic Tor installation."
-    exit 1
+    return 1
     ;;
 esac
 

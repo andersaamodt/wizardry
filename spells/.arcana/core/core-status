@@ -10,18 +10,23 @@ Reports whether wizardry's core prerequisites are installed, printing "installed
 USAGE
 }
 
+core_status() {
 case "${1-}" in
 --help|--usage|-h)
         core_status_usage
-        exit 0
+        return 0
         ;;
 esac
+
+require-wizardry || return 1
+
 
 
 # Report readiness of core prerequisites for wizardry.
 
 
 set -eu
+. env-clear
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 # shellcheck source=/dev/null
 . "$script_dir/install-core"
@@ -50,3 +55,15 @@ elif [ "$installed" -eq 0 ]; then
 else
   printf '%s\n' "partial install"
 fi
+
+}
+
+# Load castable imp for direct execution
+if true; then  # Always source castable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"

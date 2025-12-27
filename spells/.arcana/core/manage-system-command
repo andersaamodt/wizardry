@@ -10,18 +10,23 @@ Installs or removes a system command via the available package manager, falling 
 USAGE
 }
 
+manage_system_command() {
 case "${1-}" in
 --help|--usage|-h)
         manage_system_command_usage
-        exit 0
+        return 0
         ;;
 esac
+
+require-wizardry || return 1
+
 
 
 # Install or uninstall a system command using the available package manager.
 # Usage: manage-system-command [--uninstall] <command> <default-package>
 
 set -eu
+. env-clear
 
 action=install
 if [ "${1-}" = "--uninstall" ]; then
@@ -91,93 +96,105 @@ try_action() {
 if [ "$action" = "install" ]; then
   if [ "$force_install" != "1" ] && command -v "$command_name" >/dev/null 2>&1; then
     printf '%s\n' "${command_name} is already installed."
-    exit 0
+    return 0
   fi
 
   # Prefer non-interactive installs when possible.
   # Try nix-env first on NixOS for user-local installation
   if [ "$is_nixos" -eq 1 ] && command -v nix-env >/dev/null 2>&1; then
     if nix-env -iA "nixpkgs.$nix_package" 2>/dev/null; then
-      exit 0
+      return 0
     fi
   fi
 
   if try_action pkgin -y install "$pkgin_package"; then
-    exit 0
+    return 0
   fi
 
   if try_action apt-get -y update && try_action apt-get -y install "$apt_package"; then
-    exit 0
+    return 0
   fi
 
   if try_action dnf -y install "$dnf_package"; then
-    exit 0
+    return 0
   fi
 
   if try_action yum -y install "$yum_package"; then
-    exit 0
+    return 0
   fi
 
   if try_action zypper --non-interactive install "$zypper_package"; then
-    exit 0
+    return 0
   fi
 
   if try_action pacman --noconfirm -Sy "$pacman_package"; then
-    exit 0
+    return 0
   fi
 
   if try_action apk add --no-cache "$apk_package"; then
-    exit 0
+    return 0
   fi
 
   if try_action pkgin -y install "$pkgin_package"; then
-    exit 0
+    return 0
   fi
 
   printf '%s\n' "manage-system-command: unable to install $package_default automatically." >&2
-  exit 1
+  return 1
 fi
 
 # Uninstall path
 if ! command -v "$command_name" >/dev/null 2>&1; then
   printf '%s\n' "${command_name} is not installed."
-  exit 0
+  return 0
 fi
 
 # Try nix-env first on NixOS
 if [ "$is_nixos" -eq 1 ] && command -v nix-env >/dev/null 2>&1; then
   if nix-env -e "$nix_package" 2>/dev/null; then
-    exit 0
+    return 0
   fi
 fi
 
 if try_action pkgin -y remove "$pkgin_package"; then
-  exit 0
+  return 0
 fi
 
 if try_action apt-get -y remove "$apt_package"; then
-  exit 0
+  return 0
 fi
 
 if try_action dnf -y remove "$dnf_package"; then
-  exit 0
+  return 0
 fi
 
 if try_action yum -y remove "$yum_package"; then
-  exit 0
+  return 0
 fi
 
 if try_action zypper --non-interactive remove "$zypper_package"; then
-  exit 0
+  return 0
 fi
 
 if try_action pacman --noconfirm -R "$pacman_package"; then
-  exit 0
+  return 0
 fi
 
 if try_action apk del "$apk_package"; then
-  exit 0
+  return 0
 fi
 
 printf '%s\n' "manage-system-command: unable to uninstall $command_name automatically." >&2
-exit 1
+return 1
+
+}
+
+# Load castable imp for direct execution
+if true; then  # Always source castable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"

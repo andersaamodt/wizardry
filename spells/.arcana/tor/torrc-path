@@ -48,7 +48,7 @@ case $platform in
         ;;
       *)
         printf '%s\n' "Unsupported platform: $platform" >&2
-        exit 1
+        return 1
         ;;
     esac
     ;;
@@ -58,7 +58,7 @@ esac
 for torrc_path in $TORRC_PATHS; do
   if [ -f "$torrc_path" ]; then
     printf '%s\n' "$torrc_path"
-    exit 0
+    return 0
   fi
 done
 

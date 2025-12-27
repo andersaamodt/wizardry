@@ -10,14 +10,19 @@ Displays the core prerequisites management menu.
 USAGE
 }
 
+core_menu() {
 case "${1-}" in
   --help|--usage|-h)
     core_menu_usage
-    exit 0
+    return 0
     ;;
 esac
 
+require-wizardry || return 1
+
+
 set -eu
+. env-clear
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 root_dir=$(CDPATH= cd -- "$script_dir/../../.." && pwd -P)
 
@@ -134,17 +139,17 @@ while true; do
         # and contains only alphanumeric characters, making it safe to use
         set -- "$@" "${display_label}%printf '\\n%s is essential for the shell to function and should not be uninstalled.\\n' '$label'; printf 'Press Enter to continue...'; read dummy"
       else
-        spell=$(core_menu_resolve_spell "$install_spell") || exit 1
+        spell=$(core_menu_resolve_spell "$install_spell") || return 1
         set -- "$@" "${display_label}%$spell"
       fi
     else
       # Non-essential command handling (original logic)
       if [ "$installed" -eq 1 ]; then
         entry_label="Uninstall $label"
-        spell=$(core_menu_resolve_spell "$uninstall_spell") || exit 1
+        spell=$(core_menu_resolve_spell "$uninstall_spell") || return 1
       else
         entry_label="Install $label"
-        spell=$(core_menu_resolve_spell "$install_spell") || exit 1
+        spell=$(core_menu_resolve_spell "$install_spell") || return 1
       fi
 
       display_label=$entry_label
@@ -170,3 +175,15 @@ EOF
   fi
 
 done
+
+}
+
+# Load castable imp for direct execution
+if true; then  # Always source castable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"

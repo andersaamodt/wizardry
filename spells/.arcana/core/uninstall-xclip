@@ -9,14 +9,31 @@ This spell uninstalls the xclip clipboard utility.
 USAGE
 }
 
+uninstall_xclip() {
 case "${1-}" in
 --help|--usage|-h)
         uninstall_xclip_usage
-        exit 0
+        return 0
         ;;
 esac
 
+require-wizardry || return 1
+
+
 set -eu
+. env-clear
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 "$SCRIPT_DIR/manage-system-command" --uninstall xclip xclip
+
+}
+
+# Load castable imp for direct execution
+if true; then  # Always source castable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"

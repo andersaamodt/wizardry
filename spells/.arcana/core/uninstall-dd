@@ -9,14 +9,19 @@ This spell uninstalls the dd command using the system package manager.
 USAGE
 }
 
+uninstall_dd() {
 case "${1-}" in
 --help|--usage|-h)
         uninstall_dd_usage
-        exit 0
+        return 0
         ;;
 esac
 
+require-wizardry || return 1
+
+
 set -eu
+. env-clear
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 
@@ -33,3 +38,15 @@ export APT_PACKAGE DNF_PACKAGE YUM_PACKAGE ZYPPER_PACKAGE
 export PACMAN_PACKAGE APK_PACKAGE BREW_PACKAGE ASSUME_YES
 
 "$SCRIPT_DIR/manage-system-command" --uninstall dd coreutils
+
+}
+
+# Load castable imp for direct execution
+if true; then  # Always source castable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"

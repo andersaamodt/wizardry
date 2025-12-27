@@ -34,7 +34,7 @@ while true; do
       ;;
     [Nn]*)
       echo "Uninstallation cancelled"
-      exit 0
+      return 0
       ;;
     *)
       echo "Invalid input. Answer with Y (yes) or N (no)"

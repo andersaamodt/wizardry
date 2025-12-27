@@ -11,18 +11,23 @@ Install the checkbashisms command with your system package manager if it's missi
 USAGE
 }
 
+install_checkbashisms() {
 case "${1-}" in
 --help|--usage|-h)
         install_checkbashisms_usage
-        exit 0
+        return 0
         ;;
 -*)
         printf '%s\n' "install-checkbashisms: unknown option '$1'" >&2
         install_checkbashisms_usage
-        exit 1
+        return 1
         ;;
 esac
+
+require-wizardry || return 1
+
 set -eu
+. env-clear
 
 force_install="${INSTALL_CHECKBASHISMS_FORCE_INSTALL-}"
 has_checkbashisms=$(command -v checkbashisms >/dev/null 2>&1 && echo "yes" || echo "no")
@@ -54,57 +59,69 @@ try_install() {
 # Debian/Ubuntu: checkbashisms is packaged within devscripts.
 if try_install apt-get -y update && try_install apt-get -y install devscripts; then
         if command -v checkbashisms >/dev/null 2>&1; then
-                exit 0
+                return 0
         fi
 fi
 
 # Fedora/RHEL based: devscripts-checkbashisms or devscripts depending on repo.
 if try_install dnf -y install devscripts-checkbashisms; then
-        if command -v checkbashisms >/dev/null 2>&1; then exit 0; fi
+        if command -v checkbashisms >/dev/null 2>&1; then return 0; fi
 fi
 if try_install dnf -y install devscripts; then
-        if command -v checkbashisms >/dev/null 2>&1; then exit 0; fi
+        if command -v checkbashisms >/dev/null 2>&1; then return 0; fi
 fi
 
 if try_install yum -y install devscripts-checkbashisms; then
-        if command -v checkbashisms >/dev/null 2>&1; then exit 0; fi
+        if command -v checkbashisms >/dev/null 2>&1; then return 0; fi
 fi
 if try_install yum -y install devscripts; then
-        if command -v checkbashisms >/dev/null 2>&1; then exit 0; fi
+        if command -v checkbashisms >/dev/null 2>&1; then return 0; fi
 fi
 
 # openSUSE and derivatives.
 if try_install zypper --non-interactive install devscripts-checkbashisms; then
-        if command -v checkbashisms >/dev/null 2>&1; then exit 0; fi
+        if command -v checkbashisms >/dev/null 2>&1; then return 0; fi
 fi
 if try_install zypper --non-interactive install checkbashisms; then
-        if command -v checkbashisms >/dev/null 2>&1; then exit 0; fi
+        if command -v checkbashisms >/dev/null 2>&1; then return 0; fi
 fi
 if try_install zypper --non-interactive install devscripts; then
-        if command -v checkbashisms >/dev/null 2>&1; then exit 0; fi
+        if command -v checkbashisms >/dev/null 2>&1; then return 0; fi
 fi
 
 # Arch/Manjaro.
 if try_install pacman --noconfirm -Sy devscripts-checkbashisms; then
-        if command -v checkbashisms >/dev/null 2>&1; then exit 0; fi
+        if command -v checkbashisms >/dev/null 2>&1; then return 0; fi
 fi
 if try_install pacman --noconfirm -Sy devscripts; then
-        if command -v checkbashisms >/dev/null 2>&1; then exit 0; fi
+        if command -v checkbashisms >/dev/null 2>&1; then return 0; fi
 fi
 
 # Alpine.
 if try_install apk add --no-cache checkbashisms || try_install apk add --no-cache devscripts; then
         if command -v checkbashisms >/dev/null 2>&1; then
-                exit 0
+                return 0
         fi
 fi
 
 # Homebrew.
 if try_install brew install devscripts; then
         if command -v checkbashisms >/dev/null 2>&1; then
-                exit 0
+                return 0
         fi
 fi
 
 printf '%s\n' "install-checkbashisms: unable to install checkbashisms automatically." >&2
-exit 1
+return 1
+
+}
+
+# Load castable imp for direct execution
+if true; then  # Always source castable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"

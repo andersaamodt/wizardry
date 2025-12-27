@@ -66,7 +66,7 @@ case "$control_reply" in
 esac
 
 # Rewrite torrc
-tmp=$(temp-file configure-tor) || exit 1
+tmp=$(temp-file configure-tor) || return 1
 trap 'cleanup-file "$tmp"' EXIT HUP INT TERM
 awk -v socks="$socks_port" -v enable_control="$enable_control" -v control="$control_port" '
   BEGIN {added_socks=0; added_control=0; added_cookie=0}

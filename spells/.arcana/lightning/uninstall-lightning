@@ -10,14 +10,19 @@ Removes Bitcoin Lightning binaries and undoes NixOS configuration where possible
 USAGE
 }
 
+uninstall_lightning() {
 case "${1-}" in
 --help|--usage|-h)
         uninstall_lightning_usage
-        exit 0
+        return 0
         ;;
 esac
 
+require-wizardry || return 1
+
+
 set -eu
+. env-clear
 
 remove_nixos_entry() {
   config=${1:-/etc/nixos/configuration.nix}
@@ -78,3 +83,15 @@ uninstall_lightning() {
 }
 
 uninstall_lightning
+
+}
+
+# Load castable imp for direct execution
+if true; then  # Always source castable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"

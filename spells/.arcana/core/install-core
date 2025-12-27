@@ -10,124 +10,29 @@ Install the core wizardry dependencies required for running spells.
 USAGE
 }
 
-script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-
-install_core_detect_platform() {
-  if command -v uname >/dev/null 2>&1; then
-    uname -s 2>/dev/null || printf '%s' "unknown"
-  else
-    printf '%s' "unknown"
-  fi
-}
-
-# Get the clipboard helper label (shows which is installed or preferred)
-get_clipboard_label() {
-  # Check installed helpers first
-  if command -v pbcopy >/dev/null 2>&1; then
-    printf 'Clipboard (pbcopy)'
-    return
-  elif command -v xsel >/dev/null 2>&1; then
-    printf 'Clipboard (xsel)'
-    return
-  elif command -v xclip >/dev/null 2>&1; then
-    printf 'Clipboard (xclip)'
-    return
-  elif command -v wl-copy >/dev/null 2>&1; then
-    printf 'Clipboard (wl-copy)'
-    return
-  fi
-  
-  # No helper installed, show preferred
-  if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
-    printf 'Clipboard (pbcopy)'
-    return
-  fi
-  
-  # Check for Wayland session
-  if [ "${XDG_SESSION_TYPE:-}" = "wayland" ] || [ -n "${WAYLAND_DISPLAY:-}" ]; then
-    printf 'Clipboard (wl-copy)'
-    return
-  fi
-  
-  # Default to xsel for X11
-  printf 'Clipboard (xsel)'
-}
-
-# A special command name marker for clipboard that's checked differently
-CLIPBOARD_MARKER="__clipboard_helper__"
-
-core_dependencies() {
-  # Format: label:command_name:install_spell:uninstall_spell:essential
-  # essential=1 means the command is critical for shell/wizardry operation
-  # and should not be uninstalled
-  # Note: __clipboard_helper__ is a special marker handled by core-menu
-  platform=$(install_core_detect_platform)
-  clipboard_label=$(get_clipboard_label)
-  case $platform in
-    Darwin)
-      # macOS has pbcopy built-in, so no clipboard utilities needed in menu
-      cat <<'EOF'
-Git:git:install-git:uninstall-git:0
-dd:dd:install-dd:uninstall-dd:1
-stty:stty:install-stty:uninstall-stty:1
-tput:tput:install-tput:uninstall-tput:1
-EOF
-      ;;
-    *)
-      # Linux needs a clipboard utility - unified under install-clipboard-helper
-      cat <<EOF
-Git:git:install-git:uninstall-git:0
-${clipboard_label}:${CLIPBOARD_MARKER}:install-clipboard-helper:uninstall-clipboard-helper:0
-Bubblewrap:bwrap:install-bwrap:uninstall-bwrap:0
-dd:dd:install-dd:uninstall-dd:1
-stty:stty:install-stty:uninstall-stty:1
-tput:tput:install-tput:uninstall-tput:1
-EOF
-      ;;
-  esac
-}
-
-install_core_resolve_spell() {
-  spell_name=$1
-  if command -v "$spell_name" >/dev/null 2>&1; then
-    printf '%s\n' "$spell_name"
-    return 0
-  fi
-
-  if [ -x "$script_dir/$spell_name" ]; then
-    printf '%s\n' "$script_dir/$spell_name"
-    return 0
-  fi
-
-  printf '%s\n' "install-core: missing helper '$spell_name'" >&2
-  return 1
-}
-
 install_core() {
-  # Try to install each core dependency, but don't fail if optional packages
-  # can't be installed (e.g., on NixOS where packages must be installed declaratively).
-  # We silently skip failures to avoid confusing novice users during first-time install.
-  core_dependencies | while IFS=: read -r label command_name install_spell _ _; do
-    if command -v "$command_name" >/dev/null 2>&1; then
-      continue
-    fi
-
-    spell=$(install_core_resolve_spell "$install_spell" 2>/dev/null) || continue
-    # Run installation silently - failures are expected on some platforms
-    ASSUME_YES=1 "$spell" >/dev/null 2>&1 || true
-  done
-  # Always return success - optional package installation failures are non-fatal
-  return 0
-}
-
-if [ "${0##*/}" = "install-core" ]; then
   case "${1-}" in
     --help|--usage|-h)
       install_core_usage
-      exit 0
+      return 0
       ;;
   esac
+
+require-wizardry || return 1
+
 
   set -eu
   install_core "$@"
 fi
+
+}
+
+# Load castable imp for direct execution
+if true; then  # Always source castable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"
