@@ -227,4 +227,5 @@ _run_test_case "update-wizardry rejects non-repo WIZARDRY_DIR" test_rejects_non_
 _run_test_case "update-wizardry auto-detects the repo and pulls" test_detects_repository_and_pulls
 _run_test_case "update-wizardry fails when detection fails" test_detection_failure
 _run_test_case "update-wizardry propagates git failures" test_propagates_git_failure
-_finish_tests
+
+# Test via source-then-invoke pattern  

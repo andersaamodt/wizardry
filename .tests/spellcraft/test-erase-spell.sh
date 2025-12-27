@@ -95,4 +95,5 @@ _run_test_case "erase-spell errors when spell not found" test_errors_when_spell_
 _run_test_case "erase-spell --force deletes without confirmation" test_force_deletes_spell_without_confirmation
 _run_test_case "erase-spell --force deletes spell in subfolder" test_force_deletes_spell_in_subfolder
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

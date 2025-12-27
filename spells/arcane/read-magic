@@ -3,7 +3,7 @@
 # This spell lists extended attributes from a file, optionally narrowing to one key.
 # It walks through existence checks and available helpers in a linear, didactic order.
 
-require-wizardry || exit 1
+require-wizardry || return 1
 
 read_magic_usage() {
 cat <<'USAGE'
@@ -67,6 +67,13 @@ say "$keys" | while IFS= read -r key || [ -n "$key" ]; do
 done
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */read-magic) read_magic "$@" ;; esac
+
+# Load castable imp for direct execution
+if true; then  # Always source castable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"

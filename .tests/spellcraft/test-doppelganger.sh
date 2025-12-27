@@ -77,4 +77,5 @@ _run_test_case "doppelganger prints usage" test_help
 _run_test_case "doppelganger uses default directory" test_uses_default_directory
 _run_test_case "doppelganger creates compiled wizardry" test_creates_compiled_wizardry
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

@@ -178,4 +178,5 @@ _run_test_case "look describes another user's home" test_other_home_description
 _run_test_case "look describes the filesystem root" test_root_description
 _run_test_case "look output ends with newline" test_output_ends_with_newline
 _run_test_case "look prints discovered attributes" test_displays_attributes
-_finish_tests
+
+# Test via source-then-invoke pattern  

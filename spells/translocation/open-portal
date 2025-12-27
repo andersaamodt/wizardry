@@ -3,7 +3,7 @@
 # This spell mounts a remote directory using sshfs through Tor.
 # Use it to access remote servers anonymously via SSH filesystem.
 
-require-wizardry || exit 1
+require-wizardry || return 1
 
 open_portal_usage() {
 cat <<'USAGE'
@@ -84,6 +84,13 @@ torify sshfs -o "IdentityFile=$player_key" "$tor_address:$remote_dir" "$local_mo
 say "Portal opened: $tor_address:$remote_dir mounted at $local_mount"
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */open-portal) open_portal "$@" ;; esac
+
+# Load castable imp for direct execution
+if true; then  # Always source castable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"

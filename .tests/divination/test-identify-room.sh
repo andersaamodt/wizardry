@@ -172,4 +172,5 @@ _run_test_case "identifies home district" test_home_district
 _run_test_case "formats possessive names ending with s" test_other_home_possessive_s
 _run_test_case "requires list flag to be standalone" test_list_argument_error
 _run_test_case "lists tmp once" test_list_deduplicates_tmp
-_finish_tests
+
+# Test via source-then-invoke pattern  

@@ -215,4 +215,5 @@ _run_test_case "kill-process skips termination when declined" kill_process_respe
 _run_test_case "kill-process validates kill command presence" kill_process_requires_kill_command
 _run_test_case "kill-process reports kill failures" kill_process_reports_failed_kill
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

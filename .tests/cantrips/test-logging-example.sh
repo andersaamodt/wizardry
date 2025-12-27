@@ -61,4 +61,5 @@ _run_test_case "logging-example simulate at level 0" test_simulate_level_0
 _run_test_case "logging-example simulate at level 1" test_simulate_level_1
 _run_test_case "logging-example simulate at level 2" test_simulate_level_2
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

@@ -36,4 +36,5 @@ _run_test_case "upvote shows usage text" test_help
 _run_test_case "upvote requires file argument" test_requires_argument
 _run_test_case "upvote fails on missing file" test_fails_on_missing_file
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

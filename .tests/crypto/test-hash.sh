@@ -76,4 +76,5 @@ _run_test_case "hash fails when given a directory" hash_rejects_directory
 _run_test_case "hash rejects extra arguments" hash_rejects_extra_arguments
 _run_test_case "hash reports the resolved path and checksum" hash_reports_path_and_checksum
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

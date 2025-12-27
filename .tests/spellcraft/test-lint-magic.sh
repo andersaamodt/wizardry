@@ -410,4 +410,5 @@ _run_test_case "lint-magic passes imp with variadic params" test_imp_passes_with
 _run_test_case "lint-magic fails imp with duplicate set -eu" test_imp_fails_with_duplicate_set_eu
 _run_test_case "lint-magic passes imp with single set -eu" test_imp_passes_with_single_set_eu
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

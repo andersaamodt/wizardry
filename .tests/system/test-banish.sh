@@ -107,4 +107,5 @@ _run_test_case "banish custom wizardry-dir" test_custom_wizardry_dir
 _run_test_case "banish fails without invoke-wizardry" test_missing_invoke_wizardry
 _run_test_case "banish fails with invalid dir" test_invalid_wizardry_dir
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

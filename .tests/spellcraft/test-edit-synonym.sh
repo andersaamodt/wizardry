@@ -137,4 +137,5 @@ _run_test_case "requires edit mode flag" test_requires_edit_mode
 _run_test_case "rejects invalid new word" test_rejects_invalid_new_word
 _run_test_case "prevents duplicate word" test_prevents_duplicate_word
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

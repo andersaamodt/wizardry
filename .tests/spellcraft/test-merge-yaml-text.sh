@@ -36,4 +36,5 @@ _run_test_case "merge-yaml-text shows usage text" test_help
 _run_test_case "merge-yaml-text shows usage with -h" test_help_h_flag
 _run_test_case "merge-yaml-text uses strict mode" test_has_strict_mode
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

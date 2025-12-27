@@ -35,4 +35,5 @@ _run_test_case "set-player shows usage text" test_help
 _run_test_case "set-player requires player argument" test_requires_argument
 _run_test_case "set-player shows usage with -h" test_help_h_flag
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

@@ -44,4 +44,5 @@ _run_test_case "detect-posix succeeds for minimal probe" detect_posix_reports_su
 _run_test_case "detect-posix reports missing tools" detect_posix_reports_missing_tools
 _run_test_case "detect-posix awk probe works without unbound variable error" detect_posix_awk_probe_works
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

@@ -62,4 +62,5 @@ _run_test_case "open-portal shows usage text" test_help
 _run_test_case "open-portal requires sshfs" test_requires_sshfs
 _run_test_case "open-portal requires MUD_PLAYER" test_requires_mud_player
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

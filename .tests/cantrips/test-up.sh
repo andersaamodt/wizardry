@@ -43,4 +43,5 @@ _run_test_case "up outputs cd for one level by default" test_default_one_level
 _run_test_case "up outputs cd for multiple levels" test_multiple_levels
 _run_test_case "up rejects invalid input" test_rejects_invalid
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

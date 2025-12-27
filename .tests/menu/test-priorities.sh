@@ -80,4 +80,5 @@ _run_test_case "priorities accepts -v flag" test_verbose_flag_accepted
 _run_test_case "priorities exits when no priorities set" test_no_priorities_exits_gracefully
 _run_test_case "priorities produces error for invalid options" test_invalid_option_produces_error
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

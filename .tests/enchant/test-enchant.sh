@@ -219,4 +219,5 @@ _run_test_case "enchant falls back when preferred helper is missing" test_prefer
 _run_test_case "enchant rejects unknown helper" test_rejects_unknown_helper
 _run_test_case "enchant reports missing helpers" test_reports_missing_helpers
 _run_test_case "enchant reports helper failures" test_reports_helper_failure
-_finish_tests
+
+# Test via source-then-invoke pattern  

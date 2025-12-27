@@ -16,15 +16,14 @@ set -eu
 PATH="$TEST_WORKDIR:$PATH"
 export PATH
 . "$WIZARDRY_DIR/spells/.imps/sys/castable"
-_castable "$@"
+
+demo_spell() {
+  printf 'demo:%s\n' "$*"
+}
+
+castable "$@"
 SCRIPT
   chmod +x "$script"
-
-  cat >"$workdir/demo_spell" <<'SCRIPT'
-#!/bin/sh
-printf 'demo:%s\n' "$*"
-SCRIPT
-  chmod +x "$workdir/demo_spell"
 
   _run_cmd env TEST_WORKDIR="$workdir" "$script" "one" "two"
   _assert_success || return 1
@@ -41,15 +40,14 @@ set -eu
 PATH="$TEST_WORKDIR:$PATH"
 export PATH
 . "$WIZARDRY_DIR/spells/.imps/sys/castable"
-CASTABLE_FUNC=custom_runner _castable "$@"
+
+custom_runner() {
+  printf 'custom:%s\n' "$*"
+}
+
+CASTABLE_FUNC=custom_runner castable "$@"
 SCRIPT
   chmod +x "$script"
-
-  cat >"$workdir/custom_runner" <<'SCRIPT'
-#!/bin/sh
-printf 'custom:%s\n' "$*"
-SCRIPT
-  chmod +x "$workdir/custom_runner"
 
   _run_cmd env TEST_WORKDIR="$workdir" "$script" "alpha"
   _assert_success || return 1

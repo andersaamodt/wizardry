@@ -143,4 +143,5 @@ _run_test_case "hashchant errors when helpers are unavailable" test_missing_help
 _run_test_case "hashchant prefers attr helper" test_prefers_attr
 _run_test_case "hashchant falls back to xattr" test_fallback_to_xattr
 _run_test_case "hashchant falls back to setfattr" test_fallback_to_setfattr
-_finish_tests
+
+# Test via source-then-invoke pattern  

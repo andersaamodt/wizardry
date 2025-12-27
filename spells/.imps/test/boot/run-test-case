@@ -1,40 +1,42 @@
 #!/bin/sh
-# run-test-case DESC FUNC - execute a named test function and report its result
-# Runs the function, captures TEST_FAILURE_REASON, and calls report-result.
-#
-# Supports per-subtest compilation mode markers via skip_if_compiled() and skip_if_uncompiled():
-#   skip_if_compiled - Call at start of test to skip when WIZARDRY_TEST_COMPILED=1
-#   skip_if_uncompiled - Call at start of test to skip when WIZARDRY_TEST_COMPILED!=1
+# run-test-case DESC FUNC [SPELL_PATH] - execute test function
+# By default, tests use direct execution (fast, sufficient for most testing).
+# Set WIZARDRY_TEST_BOTH_PATTERNS=1 to test both execution patterns.
 set -eu
 
 _run_test_case() {
   desc=$1
   func=$2
-  _test_index=$((_test_index + 1))
+  spell_path=${3-}
   
-  # Increment global subtest number if it exists
-  if [ -n "${WIZARDRY_GLOBAL_SUBTEST_NUM-}" ]; then
-    WIZARDRY_GLOBAL_SUBTEST_NUM=$((WIZARDRY_GLOBAL_SUBTEST_NUM + 1))
-    export WIZARDRY_GLOBAL_SUBTEST_NUM
-  fi
-  
-  # Run the test
-  if "$func"; then
-    _report_result "$desc" 0
+  # Check if dual-pattern testing is explicitly requested
+  if [ "${WIZARDRY_TEST_BOTH_PATTERNS-}" = "1" ]; then
+    # Use run-both-patterns for comprehensive validation
+    _run_both_patterns "$desc" "$func" "$spell_path"
   else
-    # Check if test was skipped (exit code 222 is our skip marker)
-    ec=$?
-    if [ "$ec" = "222" ]; then
-      _skip_count=$((_skip_count + 1))
-      skip_reason=${TEST_SKIP_REASON-(mode mismatch)}
-      _test_skip "$desc" "$skip_reason"
-      unset TEST_SKIP_REASON 2>/dev/null || true
+    # Default: Direct execution (fast, sufficient for most testing)
+    _test_index=$((_test_index + 1))
+    
+    if [ -n "${WIZARDRY_GLOBAL_SUBTEST_NUM-}" ]; then
+      WIZARDRY_GLOBAL_SUBTEST_NUM=$((WIZARDRY_GLOBAL_SUBTEST_NUM + 1))
+      export WIZARDRY_GLOBAL_SUBTEST_NUM
+    fi
+    
+    if "$func"; then
+      _report_result "$desc" 0
     else
-      # Test failed
-      reason=${TEST_FAILURE_REASON-}
-      _report_result "$desc" 1 "$reason"
-      _record_failure_detail "$_test_index"
-      unset TEST_FAILURE_REASON 2>/dev/null || true
+      ec=$?
+      if [ "$ec" = "222" ]; then
+        _skip_count=$((_skip_count + 1))
+        skip_reason=${TEST_SKIP_REASON-(mode mismatch)}
+        _test_skip "$desc" "$skip_reason"
+        unset TEST_SKIP_REASON 2>/dev/null || true
+      else
+        reason=${TEST_FAILURE_REASON-}
+        _report_result "$desc" 1 "$reason"
+        _record_failure_detail "$_test_index"
+        unset TEST_FAILURE_REASON 2>/dev/null || true
+      fi
     fi
   fi
 }

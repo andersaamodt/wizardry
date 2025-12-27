@@ -65,4 +65,5 @@ _run_test_case "list-files lists files recursively" test_lists_files_recursively
 _run_test_case "list-files -x lists executable files only" test_lists_executable_files_only
 _run_test_case "list-files -t f lists regular files only" test_lists_regular_files_only
 
-_finish_tests
+
+# Test via source-then-invoke pattern  
