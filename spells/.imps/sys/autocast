@@ -45,7 +45,12 @@ _autocast() {
   _autocast_func=""
   if [ -n "$_autocast_name" ]; then
     # Convert hyphenated spell name to underscored function name
-    _autocast_func=$(printf '%s' "$_autocast_name" | tr '-' '_')
+    # Use shell parameter expansion to avoid forking external commands
+    _autocast_func="$_autocast_name"
+    # Replace all hyphens with underscores using a loop
+    while [ "$_autocast_func" != "${_autocast_func#*-}" ]; do
+      _autocast_func="${_autocast_func%%-*}_${_autocast_func#*-}"
+    done
   fi
   
   # If we don't have a function name yet, we're being sourced without explicit name
