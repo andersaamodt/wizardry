@@ -37,7 +37,9 @@ set -eu
 }
 
 # Load castable imp for direct execution (AFTER all functions defined)
-if ! command -v castable >/dev/null 2>&1; then
+# CRITICAL: Always source, never use from PATH
+# The imp must be sourced to define the castable function
+if true; then  # Always source castable, ensures consistency
   _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
   _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
   _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
@@ -85,7 +87,9 @@ case "${1-}" in
 esac
 
 # Load uncastable imp for direct execution (BEFORE main logic)
-if ! command -v uncastable >/dev/null 2>&1; then
+# CRITICAL: Always source, never use from PATH
+# The imp must be sourced to define the uncastable function
+if true; then  # Always source uncastable, ensures consistency
   _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
   _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
   _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
@@ -226,10 +230,10 @@ spell_name() {
 - [ ] Usage function defined
 - [ ] Main function defined with `spell_name()` 
 - [ ] Help handler uses `return 0` (not `exit`)
+- [ ] `require-wizardry || return 1` INSIDE function (uses return, not exit)
 - [ ] `set -eu` INSIDE function
 - [ ] `. env-clear` INSIDE function
-- [ ] NO `require-wizardry` call
-- [ ] Castable loading code AFTER all functions
+- [ ] Castable loading code AFTER all functions (uses `if true; then`)
 - [ ] `castable "$@"` at end of file
 
 **Uncastable spell checklist:**
