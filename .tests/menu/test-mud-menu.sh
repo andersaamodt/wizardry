@@ -539,4 +539,5 @@ SH
 _run_test_case "mud-menu cd hook toggle keeps cursor position" test_toggle_keeps_cursor_position_cd_hook
 _run_test_case "mud-menu non-toggle resets cursor" test_non_toggle_resets_cursor
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

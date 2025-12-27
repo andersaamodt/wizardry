@@ -85,4 +85,5 @@ _run_test_case "test-spell fails on missing test file" test_missing_test_file
 _run_test_case "test-spell requires test path argument" test_requires_test_path
 _run_test_case "test-spell help mentions default behavior" test_help_mentions_default_behavior
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

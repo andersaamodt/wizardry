@@ -41,6 +41,14 @@ else
 fi
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */set-player) set_player "$@" ;; esac
+
+# Load castable imp (for direct execution)
+# Always source castable, never use from PATH
+  if true; then
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"

@@ -164,4 +164,5 @@ _run_test_case "mark-location resolves symlinked working directory" test_resolve
 _run_test_case "mark-location expands tilde arguments" test_expands_tilde_argument
 _run_test_case "mark-location errors when marker directory is blocked" test_marker_dir_blocked
 _run_test_case "mark-location auto-increments marker number" test_auto_increments_marker
-_finish_tests
+
+# Test via source-then-invoke pattern  

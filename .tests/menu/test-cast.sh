@@ -259,4 +259,5 @@ SH
 
 _run_test_case "cast ESC/Exit behavior" test_esc_exit_behavior
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

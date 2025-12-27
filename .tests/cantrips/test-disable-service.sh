@@ -82,4 +82,5 @@ shows_help() {
 }
 
 _run_test_case "disable-service shows help" shows_help
-_finish_tests
+
+# Test via source-then-invoke pattern  

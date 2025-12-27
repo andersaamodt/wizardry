@@ -119,4 +119,5 @@ _run_test_case "ask_text shows usage with no arguments" test_ask_text_shows_usag
 _run_test_case "ask_text shows usage with too many arguments" test_ask_text_shows_usage_too_many_args
 _run_test_case "ask_text handles special characters" test_ask_text_handles_special_chars
 _run_test_case "ask_text default with spaces" test_ask_text_default_with_spaces
-_finish_tests
+
+# Test via source-then-invoke pattern  

@@ -3,7 +3,7 @@
 # This spell copies extended attributes into a YAML prologue within the file.
 # After the runes are preserved in text, it clears the attributes from the file.
 
-require-wizardry || exit 1
+require-wizardry || return 1
 
 enchantment_to_yaml_usage() {
 cat <<'USAGE'
@@ -79,6 +79,13 @@ for key in $keys; do
 done
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */enchantment-to-yaml) enchantment_to_yaml "$@" ;; esac
+
+# Load castable imp for direct execution
+if true; then  # Always source castable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"

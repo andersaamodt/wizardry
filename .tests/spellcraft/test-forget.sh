@@ -80,4 +80,5 @@ _run_test_case "forget removes spell from cast menu" test_forget_removes_spell
 _run_test_case "forget requires spell name" test_forget_requires_name
 _run_test_case "forget fails when spell not memorized" test_forget_fails_when_not_memorized
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

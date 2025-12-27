@@ -48,4 +48,5 @@ _run_test_case "list-contacts shows help with -h" shows_help_h_flag
 _run_test_case "psi/list-contacts has content" spell_has_content
 _run_test_case "list-contacts handles empty directory" test_handles_empty_directory
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

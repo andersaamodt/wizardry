@@ -163,4 +163,5 @@ _run_test_case "mud presents admin options" test_mud_presents_admin_options
 _run_test_case "mud shows menu title" test_mud_shows_menu_title
 _run_test_case "mud ESC/Exit behavior" test_esc_exit_behavior
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

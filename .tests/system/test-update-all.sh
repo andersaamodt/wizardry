@@ -206,4 +206,5 @@ _run_test_case "update-all performs debian updates" test_debian_update_flow
 _run_test_case "update-all propagates update failures" test_debian_update_failure_propagates
 _run_test_case "update-all performs arch updates" test_arch_update_flow
 _run_test_case "update-all performs nixos updates" test_nixos_update_flow
-_finish_tests
+
+# Test via source-then-invoke pattern  

@@ -53,4 +53,5 @@ _run_test_case "demonstrate-wizardry shows help" test_help
 _run_test_case "demonstrate-wizardry works with no arguments" test_works_with_no_arguments
 _run_test_case "demonstrate-wizardry output matches expected transcript" demonstration_output_matches
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

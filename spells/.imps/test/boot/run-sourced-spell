@@ -1,0 +1,81 @@
+#!/bin/sh
+# run-sourced-spell SPELL_NAME [ARGS...] - test a spell via source-then-invoke pattern
+# Sources invoke-wizardry in permissive mode, then calls the spell function.
+# Captures stdout, stderr, and exit status into STATUS, OUTPUT, and ERROR.
+# This tests the REAL user workflow: source invoke-wizardry → call spell functions
+
+_run_sourced_spell() {
+  set -eu
+  spell_path=$1
+  shift || true
+  
+  # Extract spell name from path and convert to function name
+  # spell_path is like "spells/translocation/jump-to-marker"
+  # We need just "jump-to-marker" -> "jump_to_marker"
+  spell_name=$(basename "$spell_path")
+  func_name=$(printf '%s' "$spell_name" | tr '-' '_')
+  
+  # Save the caller's PATH for cleanup operations
+  _saved_path=$PATH
+  PATH=${WIZARDRY_SYSTEM_PATH:-$PATH}
+  
+  _stdout=$(mktemp "${WIZARDRY_TMPDIR}/stdout.XXXXXX") || return 1
+  _stderr=$(mktemp "${WIZARDRY_TMPDIR}/stderr.XXXXXX") || return 1
+  
+  workdir=${RUN_CMD_WORKDIR:-$(pwd)}
+  mkdir -p "$workdir"
+  
+  # Restore caller's PATH for the test
+  PATH=$_saved_path
+  
+  # Build shell command string with all necessary escaping
+  # Use bash -c instead of a script file because functions persist in bash -c context
+  # but NOT in script files (bash limitation with eval/sourcing interaction)
+  
+  # Escape arguments for safe inclusion in command string
+  escaped_args=""
+  for arg in "$@"; do
+    # Escape single quotes in arguments
+    escaped_arg=$(printf '%s' "$arg" | sed "s/'/'\\\\''/g")
+    escaped_args="$escaped_args '$escaped_arg'"
+  done
+  
+  # Build the bash -c command
+  # Note: func_name must be expanded here, not inside bash -c
+  bash_cmd="
+set +eu  # Permissive mode for sourcing invoke-wizardry
+export WIZARDRY_DIR='${WIZARDRY_DIR:-$ROOT_DIR}'
+export WIZARDRY_LOAD_ALL=1
+export PATH='$PATH'
+export HOME='${HOME:-/tmp}'
+export TMPDIR='${TMPDIR:-/tmp}'
+export WIZARDRY_TMPDIR='${WIZARDRY_TMPDIR}'
+export WIZARDRY_TEST_HELPERS_ONLY='${WIZARDRY_TEST_HELPERS_ONLY:-0}'
+
+# Source invoke-wizardry (suppress its diagnostic output)
+. \"\$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry\" >/dev/null 2>&1
+
+# Call the spell function with provided arguments (already in permissive mode)
+$func_name $escaped_args
+"
+  
+  # Run via bash -c and capture output/error/status
+  PATH=${WIZARDRY_SYSTEM_PATH:-$PATH}
+  if (cd "$workdir" && bash -c "$bash_cmd" >"$_stdout" 2>"$_stderr"); then
+    STATUS=0
+  else
+    STATUS=$?
+  fi
+  
+  OUTPUT=$(cat "$_stdout")
+  ERROR=$(cat "$_stderr")
+  
+  # Cleanup
+  rm -f "$_stdout" "$_stderr"
+  
+  # Restore caller's PATH
+  PATH=$_saved_path
+}
+
+# Self-execution when run directly (not sourced)
+case "${0##*/}" in run-sourced-spell) _run_sourced_spell "$@" ;; esac

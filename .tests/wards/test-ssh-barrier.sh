@@ -76,4 +76,5 @@ _run_test_case "wards/ssh-barrier has content" spell_has_content
 _run_test_case "ssh-barrier shows help" shows_help
 _run_test_case "ssh-barrier hardens provided config" applies_hardening_to_temp_file
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

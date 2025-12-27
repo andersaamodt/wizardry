@@ -149,4 +149,5 @@ _run_test_case "ask_number shows usage with no args" test_ask_number_shows_usage
 _run_test_case "ask_number shows range hint in prompt" test_ask_number_shows_range_hint
 _run_test_case "ask_number accepts zero" test_ask_number_accepts_zero
 _run_test_case "ask_number equal bounds" test_ask_number_equal_bounds
-_finish_tests
+
+# Test via source-then-invoke pattern  

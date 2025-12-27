@@ -81,4 +81,5 @@ shows_help() {
 }
 
 _run_test_case "restart-service shows help" shows_help
-_finish_tests
+
+# Test via source-then-invoke pattern  

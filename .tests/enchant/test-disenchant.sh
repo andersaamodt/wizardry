@@ -284,4 +284,5 @@ _run_test_case "disenchant falls back to setfattr when attr missing" test_falls_
 _run_test_case "disenchant requires ask_number for multiple attributes" test_requires_ask_number_when_many
 _run_test_case "disenchant selects a specific entry with ask_number" test_selects_specific_entry_with_ask_number
 _run_test_case "disenchant can remove all attributes" test_selects_all_with_menu_choice
-_finish_tests
+
+# Test via source-then-invoke pattern  

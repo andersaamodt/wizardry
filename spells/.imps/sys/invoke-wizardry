@@ -354,9 +354,9 @@ _invoke_wizardry() {
 BEGIN {
   # Define regex patterns to keep line length under 100 chars
   func_kw = "^[[:space:]]*function[[:space:]]+[A-Za-z_][A-Za-z0-9_]*"
-  func_paren = "[[:space:]]*\\\\(\\\\)?[[:space:]]*\\\\{"
-  func_simple = "^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\\\(\\\\)[[:space:]]*\\\\{"
-  func_header = "^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\\\(\\\\)[[:space:]]*$"
+  func_paren = "[[:space:]]*\\(\\)?[[:space:]]*\\{"
+  func_simple = "^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\(\\)[[:space:]]*\\{"
+  func_header = "^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\(\\)[[:space:]]*$"
 } # end BEGIN
 function brace_delta(s, n, m) {
   n = gsub(/{/, "{", s)
@@ -523,15 +523,16 @@ function brace_delta(s, n, m) {
       
       _iw_spell_name=$(basename "$_iw_spell")
       _iw_spell_true_name=$(printf '%s' "$_iw_spell_name" | sed 's/-/_/g')
+      
       _iw_grep_pattern="^[[:space:]]*${_iw_spell_true_name}[[:space:]]*\\(\\)"
       if grep -qE "$_iw_grep_pattern" "$_iw_spell" 2>/dev/null; then
         if _iw_spell_body=$(awk '
 BEGIN {
   # Define regex patterns to keep line length under 100 chars
   func_kw = "^[[:space:]]*function[[:space:]]+[A-Za-z_][A-Za-z0-9_]*"
-  func_paren = "[[:space:]]*\\\\(\\\\)?[[:space:]]*\\\\{"
-  func_simple = "^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\\\(\\\\)[[:space:]]*\\\\{"
-  func_header = "^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\\\(\\\\)[[:space:]]*$"
+  func_paren = "[[:space:]]*\\(\\)?[[:space:]]*\\{"
+  func_simple = "^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\(\\)[[:space:]]*\\{"
+  func_header = "^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\(\\)[[:space:]]*$"
 } # end BEGIN
 function brace_delta(s, n, m) {
   n = gsub(/{/, "{", s)
@@ -646,20 +647,6 @@ function brace_delta(s, n, m) {
   _iw_spell_summary="total=$_iw_spell_count success=$_iw_spell_success"
   _iw_spell_summary="$_iw_spell_summary skipped=$_iw_spell_skipped failed=$_iw_spell_failed"
   printf '%s\n' "[invoke-wizardry] Spell sourcing complete: $_iw_spell_summary" >&2
-  # Ensure menu spell function is loaded for interactive use
-  # Always load the menu spell to ensure it's available as a function
-  # (sourcing it multiple times is safe, it just redefines the function)
-  _iw_menu_spell="$WIZARDRY_DIR/spells/cantrips/menu"
-  if [ -f "$_iw_menu_spell" ] && [ -r "$_iw_menu_spell" ]; then
-    # shellcheck disable=SC1090
-    . "$_iw_menu_spell" || :
-  fi
-  unset _iw_menu_spell
-  if command -v menu >/dev/null 2>&1; then
-    if [ -n "$_iw_debug_file" ]; then
-      printf '%s\n' "[invoke-wizardry] menu is pre-loaded" >&2
-    fi
-  fi
   if [ -n "$_iw_debug_file" ]; then
     _iw_msg="invoke-wizardry: Spell sourcing complete: $_iw_spell_summary"
     printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
@@ -715,9 +702,9 @@ function brace_delta(s, n, m) {
 BEGIN {
   # Define regex patterns to keep line length under 100 chars
   func_kw = "^[[:space:]]*function[[:space:]]+[A-Za-z_][A-Za-z0-9_]*"
-  func_paren = "[[:space:]]*\\\\(\\\\)?[[:space:]]*\\\\{"
-  func_simple = "^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\\\(\\\\)[[:space:]]*\\\\{"
-  func_header = "^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\\\(\\\\)[[:space:]]*$"
+  func_paren = "[[:space:]]*\\(\\)?[[:space:]]*\\{"
+  func_simple = "^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\(\\)[[:space:]]*\\{"
+  func_header = "^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\(\\)[[:space:]]*$"
 } # end BEGIN
 function brace_delta(s, n, m) {
   n = gsub(/{/, "{", s)

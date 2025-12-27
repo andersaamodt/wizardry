@@ -18,7 +18,7 @@ case "${1-}" in
   ;;
 esac
 
-require-wizardry || exit 1
+require-wizardry || return 1
 
 set -eu
 . env-clear
@@ -47,15 +47,23 @@ reset_default_synonyms() {
   rm -f "$spell_home/.default-synonyms-initialized"
 
   # Reinitialize defaults by sourcing invoke-thesaurus
-  if [ -f "$ROOT_DIR/spells/.imps/sys/invoke-thesaurus" ]; then
+  _invoke_thes="$_i/invoke-thesaurus"
+  if [ -f "$_invoke_thes" ]; then
     # shellcheck disable=SC1090,SC1091
-    . "$ROOT_DIR/spells/.imps/sys/invoke-thesaurus" 2>/dev/null || :
+    . "$_invoke_thes" 2>/dev/null || :
     success "Default synonyms reset. Custom synonyms preserved."
   else
     success "Default synonyms reset. Reload with: . invoke-thesaurus"
   fi
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */reset-default-synonyms) reset_default_synonyms "$@" ;; esac
+
+# Load castable imp for direct execution
+if true; then  # Always source castable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"
