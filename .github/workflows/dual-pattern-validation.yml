@@ -2,12 +2,16 @@ name: Dual-pattern validation
 
 # This workflow provides comprehensive validation that both execution patterns
 # (direct execution and source-then-invoke) work correctly for all castable spells.
-# It runs weekly to ensure the castable/uncastable imps maintain parity between patterns.
+# It runs on every push/PR to ensure the castable/uncastable imps maintain parity between patterns.
+# This workflow is non-required and can be made optional in branch protection rules.
 
 on:
-  # Run weekly on Sundays at 00:00 UTC
-  schedule:
-    - cron: '0 0 * * 0'
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
   # Allow manual trigger for on-demand validation
   workflow_dispatch:
 
