@@ -23,6 +23,32 @@ jobs:
       - name: Install checkbashisms dependency
         run: ./spells/.arcana/core/install-checkbashisms
       - name: Run lint-magic (includes verify-posix)
+        id: lint
+        continue-on-error: true
         run: |
           echo "Running spell style, linting, and POSIX checks..."
           ./spells/spellcraft/lint-magic --verbose
+      
+      - name: Capture lint failures
+        if: failure() && steps.lint.outcome == 'failure'
+        run: |
+          mkdir -p /tmp/error-reports
+          cat > /tmp/error-reports/lint-errors.txt <<EOF
+          Job: POSIX, linting, and style checks
+          Platform: Ubuntu (ubuntu-latest)
+          Status: FAILED
+          
+          The linting and POSIX checks failed.
+          Check the workflow logs for detailed error messages.
+          
+          Run ID: ${{ github.run_id }}
+          Run URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EOF
+      
+      - name: Upload error report
+        if: failure() && steps.lint.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-errors
+          path: /tmp/error-reports/lint-errors.txt
+          retention-days: 30

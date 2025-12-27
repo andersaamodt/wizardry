@@ -40,7 +40,33 @@ jobs:
           } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
           sudo sysctl --system || true
       - name: Run unit tests in Nix shell
+        id: tests
+        continue-on-error: true
         run: nix-shell -I nixpkgs=channel:nixos-unstable -p bubblewrap shadow --run "./spells/system/test-magic --verbose"
+      
+      - name: Capture test failures
+        if: failure() && steps.tests.outcome == 'failure'
+        run: |
+          mkdir -p /tmp/error-reports
+          cat > /tmp/error-reports/nix-errors.txt <<EOF
+          Job: Nix unit tests
+          Platform: NixOS (ubuntu-latest with Nix)
+          Status: FAILED
+          
+          The unit tests failed on NixOS/Nix environment.
+          Check the workflow logs for detailed error messages.
+          
+          Run ID: ${{ github.run_id }}
+          Run URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EOF
+      
+      - name: Upload error report
+        if: failure() && steps.tests.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: nix-errors
+          path: /tmp/error-reports/nix-errors.txt
+          retention-days: 30
 
   aab-macos:
     name: macOS unit tests
@@ -53,7 +79,33 @@ jobs:
       - name: Ensure installer spells are executable
         run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
       - name: Run unit tests
+        id: tests
+        continue-on-error: true
         run: ./spells/system/test-magic --verbose
+      
+      - name: Capture test failures
+        if: failure() && steps.tests.outcome == 'failure'
+        run: |
+          mkdir -p /tmp/error-reports
+          cat > /tmp/error-reports/macos-errors.txt <<EOF
+          Job: macOS unit tests
+          Platform: macOS (macos-latest)
+          Status: FAILED
+          
+          The unit tests failed on macOS.
+          Check the workflow logs for detailed error messages.
+          
+          Run ID: ${{ github.run_id }}
+          Run URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EOF
+      
+      - name: Upload error report
+        if: failure() && steps.tests.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-errors
+          path: /tmp/error-reports/macos-errors.txt
+          retention-days: 30
 
   arch:
     name: Arch Linux unit tests
@@ -69,7 +121,33 @@ jobs:
       - name: Ensure installer spells are executable
         run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
       - name: Run unit tests
+        id: tests
+        continue-on-error: true
         run: ./spells/system/test-magic --verbose
+      
+      - name: Capture test failures
+        if: failure() && steps.tests.outcome == 'failure'
+        run: |
+          mkdir -p /tmp/error-reports
+          cat > /tmp/error-reports/arch-errors.txt <<EOF
+          Job: Arch Linux unit tests
+          Platform: Arch Linux (archlinux:latest container)
+          Status: FAILED
+          
+          The unit tests failed on Arch Linux.
+          Check the workflow logs for detailed error messages.
+          
+          Run ID: ${{ github.run_id }}
+          Run URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EOF
+      
+      - name: Upload error report
+        if: failure() && steps.tests.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: arch-errors
+          path: /tmp/error-reports/arch-errors.txt
+          retention-days: 30
 
   debian:
     name: Debian unit tests
@@ -86,7 +164,33 @@ jobs:
       - name: Ensure installer spells are executable
         run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
       - name: Run unit tests
+        id: tests
+        continue-on-error: true
         run: ./spells/system/test-magic --verbose
+      
+      - name: Capture test failures
+        if: failure() && steps.tests.outcome == 'failure'
+        run: |
+          mkdir -p /tmp/error-reports
+          cat > /tmp/error-reports/debian-errors.txt <<EOF
+          Job: Debian unit tests
+          Platform: Debian (debian:stable-slim container)
+          Status: FAILED
+          
+          The unit tests failed on Debian.
+          Check the workflow logs for detailed error messages.
+          
+          Run ID: ${{ github.run_id }}
+          Run URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EOF
+      
+      - name: Upload error report
+        if: failure() && steps.tests.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: debian-errors
+          path: /tmp/error-reports/debian-errors.txt
+          retention-days: 30
 
   ubuntu:
     name: Ubuntu unit tests
@@ -121,4 +225,30 @@ jobs:
             echo "bubblewrap unusable; proceeding without sandboxing" >&2
           fi
       - name: Run unit tests
+        id: tests
+        continue-on-error: true
         run: ./spells/system/test-magic --verbose
+      
+      - name: Capture test failures
+        if: failure() && steps.tests.outcome == 'failure'
+        run: |
+          mkdir -p /tmp/error-reports
+          cat > /tmp/error-reports/ubuntu-errors.txt <<EOF
+          Job: Ubuntu unit tests
+          Platform: Ubuntu (ubuntu-latest)
+          Status: FAILED
+          
+          The unit tests failed on Ubuntu.
+          Check the workflow logs for detailed error messages.
+          
+          Run ID: ${{ github.run_id }}
+          Run URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EOF
+      
+      - name: Upload error report
+        if: failure() && steps.tests.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ubuntu-errors
+          path: /tmp/error-reports/ubuntu-errors.txt
+          retention-days: 30

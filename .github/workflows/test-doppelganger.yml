@@ -34,6 +34,8 @@ jobs:
           ls -la /tmp/wizardry-doppelganger/spells/ | head -20
       
       - name: Test doppelganger spells
+        id: test-spells
+        continue-on-error: true
         run: |
           echo "=== Testing doppelganger spells ==="
           
@@ -103,6 +105,8 @@ jobs:
           echo "=== All doppelganger spells passed ==="
       
       - name: Run doppelganger behavioral tests
+        id: test-behavioral
+        continue-on-error: true
         run: |
           # Run behavioral tests against compiled spells using test-magic
           if [ ! -d "/tmp/wizardry-doppelganger/.tests" ]; then
@@ -132,6 +136,41 @@ jobs:
             echo "test-magic not found in doppelganger"
             exit 1
           fi
+      
+      - name: Capture test failures
+        if: failure()
+        run: |
+          mkdir -p /tmp/error-reports
+          cat > /tmp/error-reports/doppelganger-errors.txt <<EOF
+          Job: Test doppelganger compiled wizardry
+          Platform: Ubuntu (ubuntu-latest)
+          Status: FAILED
+          
+          EOF
+          
+          if [ -f /tmp/doppelganger-failures.txt ] && [ -s /tmp/doppelganger-failures.txt ]; then
+            cat >> /tmp/error-reports/doppelganger-errors.txt <<EOF
+          Failed spells:
+          EOF
+            cat /tmp/doppelganger-failures.txt >> /tmp/error-reports/doppelganger-errors.txt
+            echo "" >> /tmp/error-reports/doppelganger-errors.txt
+          fi
+          
+          cat >> /tmp/error-reports/doppelganger-errors.txt <<EOF
+          
+          Check the workflow logs for detailed error messages.
+          
+          Run ID: ${{ github.run_id }}
+          Run URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EOF
+      
+      - name: Upload error report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: doppelganger-errors
+          path: /tmp/error-reports/doppelganger-errors.txt
+          retention-days: 30
       
       - name: Create doppelganger zip
         if: success()

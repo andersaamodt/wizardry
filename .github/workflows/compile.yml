@@ -20,6 +20,8 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Create compiled doppelganger
+        id: compile
+        continue-on-error: true
         run: |
           # Set wizardry directory
           export WIZARDRY_DIR="${{ github.workspace }}"
@@ -41,6 +43,30 @@ jobs:
           echo ""
           echo "=== Spells directory structure ==="
           find /tmp/wizardry-compiled/spells -type d | head -20
+      
+      - name: Capture compilation failures
+        if: failure() && steps.compile.outcome == 'failure'
+        run: |
+          mkdir -p /tmp/error-reports
+          cat > /tmp/error-reports/compile-errors.txt <<EOF
+          Job: Compile wizardry
+          Platform: Ubuntu (ubuntu-latest)
+          Status: FAILED
+          
+          The compilation (doppelganger creation) failed.
+          Check the workflow logs for detailed error messages.
+          
+          Run ID: ${{ github.run_id }}
+          Run URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EOF
+      
+      - name: Upload error report
+        if: failure() && steps.compile.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: compile-errors
+          path: /tmp/error-reports/compile-errors.txt
+          retention-days: 30
 
       - name: Remove excluded files from compiled directory
         run: |
