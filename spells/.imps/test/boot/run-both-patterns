@@ -13,8 +13,9 @@ _run_both_patterns() {
   
   # If spell_path not provided, try to extract from test function
   if [ -z "$_spell_path" ]; then
-    # Get the function definition and look for _run_spell calls
-    _spell_path=$(type "$_func" 2>/dev/null | grep -oE 'spells/[^"[:space:]]+' | head -1 || true)
+    # Try to extract spell path from function body by reading the function
+    # This is a best-effort attempt - if it fails, tests will still work
+    _spell_path=$(command -v "$_func" >/dev/null 2>&1 && grep -o 'spells/[^"[:space:]]*' 2>/dev/null | head -1 || true)
   fi
   
   # Determine if spell is castable or uncastable

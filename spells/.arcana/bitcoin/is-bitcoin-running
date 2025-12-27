@@ -10,12 +10,16 @@ Checks whether bitcoind is active by probing the bitcoin-cli RPC; emits "Yes" or
 USAGE
 }
 
+is_bitcoin_running() {
 case "${1-}" in
 --help|--usage|-h)
         is_bitcoin_running_usage
-        exit 0
+        return 0
         ;;
 esac
+
+require-wizardry || return 1
+
 
 
 # This script serves as a magic mirror, reflecting the running status of Bitcoin
@@ -34,3 +38,15 @@ else
     fi
     exit 1  # Bitcoin is not running (failure)
 fi
+
+}
+
+# Load castable imp for direct execution
+if true; then  # Always source castable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"

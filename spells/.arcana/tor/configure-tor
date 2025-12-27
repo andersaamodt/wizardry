@@ -11,12 +11,16 @@ then restarts Tor if the service is available.
 USAGE
 }
 
+configure_tor() {
 case "${1-}" in
 --help|--usage|-h)
         configure_tor_usage
-        exit 0
+        return 0
         ;;
 esac
+
+require-wizardry || return 1
+
 
 set -eu
 
@@ -103,3 +107,15 @@ if [ "$has_systemctl" = "yes" ]; then
     esac
   fi
 fi
+
+}
+
+# Load castable imp for direct execution
+if true; then  # Always source castable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"

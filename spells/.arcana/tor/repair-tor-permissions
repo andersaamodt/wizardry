@@ -9,12 +9,16 @@ Resets ownership and permissions on Tor configuration and runtime directories fo
 USAGE
 }
 
+repair_tor_permissions() {
 case "${1-}" in
 --help|--usage|-h)
         repair_tor_permissions_usage
-        exit 0
+        return 0
         ;;
 esac
+
+require-wizardry || return 1
+
 
 
 set -eu
@@ -69,3 +73,15 @@ set_permissions() {
 set_permissions "/etc/tor" "$user_owner" "$group_owner" "700"
 set_permissions "/var/lib/tor" "$user_owner" "$group_owner" "700"
 set_permissions "$HOME/.tor" "$user_owner" "$group_owner" "700"
+
+}
+
+# Load castable imp for direct execution
+if true; then  # Always source castable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"

@@ -11,12 +11,16 @@ o point to the new location.
 USAGE
 }
 
+change_bitcoin_directory() {
 case "${1-}" in
 --help|--usage|-h)
         change_bitcoin_directory_usage
-        exit 0
+        return 0
         ;;
 esac
+
+require-wizardry || return 1
+
 
 
 # This spell alters the location of thy Bitcoin data chamber on your system.
@@ -109,3 +113,15 @@ echo "The Bitcoin data chamber now resides in: $new_directory"
 case "$0" in
   */change-bitcoin-directory|change-bitcoin-directory) change_bitcoin_directory "$@" ;;
 esac
+
+}
+
+# Load castable imp for direct execution
+if true; then  # Always source castable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"

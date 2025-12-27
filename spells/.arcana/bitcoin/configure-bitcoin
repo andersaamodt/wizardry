@@ -10,12 +10,16 @@ Creates or updates bitcoin.conf with sensible defaults for paths, RPC, and pruni
 USAGE
 }
 
+configure_bitcoin() {
 case "${1-}" in
 --help|--usage|-h)
         configure_bitcoin_usage
-        exit 0
+        return 0
         ;;
 esac
+
+require-wizardry || return 1
+
 
 
 # This spell facilitates the setting of the configurations for thy Bitcoin system.
@@ -132,3 +136,15 @@ printf "Bitcoin configuration has been updated.\n"
 case "$0" in
   */configure-bitcoin|configure-bitcoin) configure_bitcoin "$@" ;;
 esac
+
+}
+
+# Load castable imp for direct execution
+if true; then  # Always source castable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"

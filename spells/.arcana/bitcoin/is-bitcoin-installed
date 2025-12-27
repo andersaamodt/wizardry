@@ -10,15 +10,31 @@ Checks PATH for bitcoin-cli to confirm whether Bitcoin Core is installed, respon
 USAGE
 }
 
+is_bitcoin_installed() {
 case "${1-}" in
 --help|--usage|-h)
         is_bitcoin_installed_usage
-        exit 0
+        return 0
         ;;
 esac
+
+require-wizardry || return 1
+
 
 
 # Returns 0 (true) if Bitcoin is installed, 1 (false) if not
 
 set -eu
 command -v bitcoin-cli >/dev/null 2>&1
+
+}
+
+# Load castable imp for direct execution
+if true; then  # Always source castable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"
