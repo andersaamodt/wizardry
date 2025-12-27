@@ -470,10 +470,12 @@ function brace_delta(s, n, m) {
   fi
   
   if [ "$_iw_load_minimal" -eq 0 ]; then
+    printf '%s\n' "[invoke-wizardry] Starting spell category loop (WIZARDRY_LOAD_ALL mode)" >&2
     if [ -n "$_iw_debug_file" ]; then
       printf '%s\n' "[invoke-wizardry] Starting spell category loop" >&2
     fi
     for _iw_spell_cat in "$WIZARDRY_DIR"/spells/*; do
+    printf '%s\n' "[invoke-wizardry] Processing category: $_iw_spell_cat" >&2
     if [ -n "$_iw_debug_file" ]; then
       printf '%s\n' "[invoke-wizardry] Checking category: $_iw_spell_cat" >&2
     fi
@@ -522,10 +524,26 @@ function brace_delta(s, n, m) {
       fi
       
       _iw_spell_name=$(basename "$_iw_spell")
+      
+      # Skip certain development tools that don't need to be pre-loaded
+      # These spells have complex structures that can break the AWK extraction
+      case "$_iw_spell_name" in
+        compile-spell)
+          _iw_spell_skipped=$((_iw_spell_skipped + 1))
+          if [ -n "$_iw_debug_file" ]; then
+            _iw_msg="invoke-wizardry: Skipping development tool: $_iw_spell_name"
+            printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
+          fi
+          continue
+          ;;
+      esac
+      
+      printf '%s\n' "[invoke-wizardry] About to source spell: $_iw_spell_name" >&2
       _iw_spell_true_name=$(printf '%s' "$_iw_spell_name" | sed 's/-/_/g')
       
       _iw_grep_pattern="^[[:space:]]*${_iw_spell_true_name}[[:space:]]*\\(\\)"
       if grep -qE "$_iw_grep_pattern" "$_iw_spell" 2>/dev/null; then
+        printf '%s\n' "[invoke-wizardry] Spell has function, extracting with awk..." >&2
         if _iw_spell_body=$(awk '
 BEGIN {
   # Define regex patterns to keep line length under 100 chars
@@ -594,10 +612,13 @@ function brace_delta(s, n, m) {
               fi
               rm -f "$_iw_spell_error_file" 2>/dev/null || :
             else
+              printf '%s\n' "[invoke-wizardry] About to eval function body for: $_iw_spell_name" >&2
               if ! eval "$_iw_spell_body" 2>/dev/null; then
+                printf '%s\n' "[invoke-wizardry] eval failed for: $_iw_spell_name" >&2
                 _iw_spell_failed=$((_iw_spell_failed + 1))
                 continue
               fi
+              printf '%s\n' "[invoke-wizardry] eval succeeded for: $_iw_spell_name" >&2
             fi
           fi
           set +eu
