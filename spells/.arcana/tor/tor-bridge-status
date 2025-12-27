@@ -21,6 +21,7 @@ require-wizardry || return 1
 
 
 set -eu
+. env-clear
 if [ "$(id -u)" != "0" ]; then
    echo "tor-bridge-status: root privileges required."
    exit 1

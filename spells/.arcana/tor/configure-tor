@@ -23,6 +23,7 @@ require-wizardry || return 1
 
 
 set -eu
+. env-clear
 
 torrc_path=$(torrc-path)
 

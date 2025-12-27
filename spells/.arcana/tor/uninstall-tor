@@ -22,6 +22,7 @@ require-wizardry || return 1
 
 
 set -eu
+. env-clear
 
 uninstall_tor_is_nixos() {
   if command -v detect-distro >/dev/null 2>&1 && [ "$(detect-distro 2>/dev/null)" = "nixos" ]; then

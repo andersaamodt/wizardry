@@ -22,6 +22,7 @@ require-wizardry || return 1
 
 
 set -eu
+. env-clear
 . colors
 
 # Returns colored text based on status

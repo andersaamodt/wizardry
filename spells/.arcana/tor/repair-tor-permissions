@@ -22,6 +22,7 @@ require-wizardry || return 1
 
 
 set -eu
+. env-clear
 if [ "$(id -u)" != "0" ]; then
    printf '%s\n' "repair-tor-permissions: root privileges required."
    exit 1

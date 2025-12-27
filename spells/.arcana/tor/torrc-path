@@ -24,6 +24,7 @@ require-wizardry || return 1
 
 
 set -eu
+. env-clear
 platform=$(detect-distro 2>/dev/null || printf 'unknown')
 TORRC_PATHS=""
 
