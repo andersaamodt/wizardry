@@ -57,4 +57,5 @@ shows_help() {
 
 _run_test_case "move-cursor shows help" shows_help
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

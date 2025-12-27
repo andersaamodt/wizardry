@@ -41,4 +41,5 @@ _run_test_case "validate-path accepts simple paths" test_accepts_simple_path
 _run_test_case "validate-path accepts relative paths" test_accepts_relative_path
 _run_test_case "validate-path rejects long path components" test_rejects_long_component
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

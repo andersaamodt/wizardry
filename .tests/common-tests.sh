@@ -1419,11 +1419,15 @@ test_scripts_have_set_eu_early() {
       return
     fi
     
-    # Auto-detect word-of-binding pattern:
-    # 1. Has wrapper function matching filename (with underscores for hyphens)
-    #    OR has true name function for imps (underscore prefix)
-    # 2. Has self-execute pattern: case "$0" in */name) wrapper "$@" ;; esac
-    # If both present, spell uses word-of-binding and set can be inside wrapper
+    # Auto-detect castable/uncastable pattern or traditional word-of-binding pattern:
+    # Castable/uncastable pattern:
+    #   1. Has wrapper function matching filename (with underscores for hyphens)
+    #      OR has true name function for imps (underscore prefix)
+    #   2. Has castable or uncastable call
+    # Traditional word-of-binding pattern:
+    #   1. Has wrapper function matching filename
+    #   2. Has self-execute pattern: case "$0" in */name) wrapper "$@" ;; esac
+    # If either pattern is present, spell uses word-of-binding and set can be inside wrapper
     
     # Convert filename to function name (hyphens to underscores)
     func_name=$(printf '%s' "$name" | tr '-' '_')
@@ -1436,15 +1440,23 @@ test_scripts_have_set_eu_early() {
       has_wrapper=1
     fi
     
-    # Check for self-execute pattern
+    # Check for castable/uncastable pattern
+    has_castable_pattern=0
+    if grep -qE '^[[:space:]]*castable[[:space:]]+"?\$@"?' "$spell" 2>/dev/null || \
+       grep -qE '^[[:space:]]*uncastable([[:space:]]|$)' "$spell" 2>/dev/null; then
+      has_castable_pattern=1
+    fi
+    
+    # Check for traditional self-execute pattern
     has_self_execute=0
     if grep -qE 'case[[:space:]]+"\$0"[[:space:]]+in' "$spell" 2>/dev/null && \
        grep -qE "\*/${name}\)" "$spell" 2>/dev/null; then
       has_self_execute=1
     fi
     
-    # If word-of-binding pattern detected, check for set -eu or set +eu anywhere
-    if [ "$has_wrapper" = "1" ] && [ "$has_self_execute" = "1" ]; then
+    # If word-of-binding pattern detected (castable/uncastable OR traditional), 
+    # check for set -eu or set +eu anywhere in the file
+    if [ "$has_wrapper" = "1" ] && { [ "$has_castable_pattern" = "1" ] || [ "$has_self_execute" = "1" ]; }; then
       # Word-of-binding spell: set -eu or set +eu should exist somewhere (inside or outside wrapper)
       if ! grep -qE '^[[:space:]]*set [+-][euo]*[eu][euo]*' "$spell"; then
         printf '%s\n' "$rel_path"
@@ -1497,6 +1509,8 @@ test_spells_source_env_clear_after_set_eu() {
       .arcana/*) return ;;
       # install script exempt (bootstrap)
       install) return ;;
+      # Autocast spells exempt (use autocast pattern, not env-clear)
+      cantrips/colors) return ;;
       # Bootstrap spells used by install (must be standalone)
       divination/detect-rc-file|cantrips/ask-yn|cantrips/memorize|cantrips/require-wizardry|spellcraft/learn) return ;;
       # Bootstrap scripts with conditional env-clear sourcing (run before wizardry fully installed)
@@ -1867,6 +1881,118 @@ test_stub_imps_have_correct_patterns() {
 }
 
 _run_test_case "stub imps have correct self-execute patterns" test_stub_imps_have_correct_patterns
+
+# ==============================================================================
+# SPELL INVOCATION REQUIREMENTS - Castable/Uncastable Declaration
+# All spells must declare whether they are castable or uncastable
+# ==============================================================================
+
+# All spells must declare castable or uncastable
+test_spells_declare_invocation_type() {
+  failures=""
+  
+  # Check all spell files (not imps, not tests)
+  while IFS= read -r spell_file; do
+    # Skip non-shell scripts
+    if ! is_posix_shell_script "$spell_file"; then
+      continue
+    fi
+    
+    # Get spell name for reporting
+    spell_name=${spell_file#"$ROOT_DIR/spells/"}
+    
+    # Skip imps - they use a different self-execute pattern (true name function + case statement)
+    # Skip bootstrap spells in .arcana/core - they use traditional if [ "${0##*/}" = "name" ] pattern
+    case "$spell_name" in
+      .imps/*) continue ;;
+      .arcana/core/*) continue ;;
+    esac
+    
+    # Check if spell has castable, uncastable, or autocast declaration
+    has_castable=0
+    has_uncastable=0
+    has_autocast=0
+    
+    if grep -q "^castable" "$spell_file" 2>/dev/null; then
+      has_castable=1
+    fi
+    
+    if grep -q "^uncastable" "$spell_file" 2>/dev/null; then
+      has_uncastable=1
+    fi
+    
+    if grep -q "^autocast" "$spell_file" 2>/dev/null; then
+      has_autocast=1
+    fi
+    
+    # Count declarations
+    declaration_count=$((has_castable + has_uncastable + has_autocast))
+    
+    # Spell must have exactly one declaration
+    if [ "$declaration_count" -eq 0 ]; then
+      failures="${failures}${failures:+, }$spell_name (missing declaration)"
+    elif [ "$declaration_count" -gt 1 ]; then
+      failures="${failures}${failures:+, }$spell_name (multiple declarations)"
+    fi
+  done < "$SPELL_LIST_CACHE"
+  
+  if [ -n "$failures" ]; then
+    TEST_FAILURE_REASON="spells without proper castable/uncastable/autocast declaration: $failures"
+    return 1
+  fi
+  
+  return 0
+}
+
+_run_test_case "spells declare castable/uncastable/autocast" test_spells_declare_invocation_type
+
+# --- Check: All spells respond to --help flag ---
+# Every spell must support --help, --usage, or -h flags
+# This eliminates duplication in individual test files
+test_all_spells_respond_to_help() {
+  failures=""
+  
+  check_help_flag() {
+    spell=$1
+    rel_path=${spell#"$ROOT_DIR/spells/"}
+    
+    # Try each help flag variant
+    for flag in --help --usage -h; do
+      # Run spell with help flag and capture output
+      output=$("$spell" "$flag" 2>&1)
+      exit_code=$?
+      
+      # Spell must exit with code 0 for help
+      if [ "$exit_code" -ne 0 ]; then
+        failures="${failures}${failures:+, }$rel_path ($flag: exit code $exit_code)"
+        return
+      fi
+      
+      # Output must contain "Usage:" keyword
+      if ! printf '%s' "$output" | grep -qi "usage:"; then
+        failures="${failures}${failures:+, }$rel_path ($flag: missing Usage:)"
+        return
+      fi
+      
+      # Found working help flag, move to next spell
+      return
+    done
+    
+    # If we get here, none of the help flags worked
+    failures="${failures}${failures:+, }$rel_path (no help flags work)"
+  }
+  
+  for_each_posix_spell_no_imps check_help_flag
+  
+  if [ -n "$failures" ]; then
+    TEST_FAILURE_REASON="spells not responding to --help flags: $failures"
+    return 1
+  fi
+  
+  return 0
+}
+
+_run_test_case "all spells respond to --help flag" test_all_spells_respond_to_help
 
 # ==============================================================================
 # META-TESTS - Testing the testing system itself

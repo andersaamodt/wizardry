@@ -23,6 +23,16 @@ case "${1-}" in
     ;;
 esac
 
+# Load uncastable imp for direct execution
+if true; then  # Always source uncastable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/uncastable" ] && . "$_i/uncastable"
+fi
+
+uncastable cd
+
 # Explicitly use permissive mode - this file is meant to be sourced into user's shell
 # and we don't want to change their shell options with strict mode
 set +eu

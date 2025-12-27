@@ -51,4 +51,5 @@ _run_test_case "evoke-hash shows help" shows_help
 _run_test_case "evoke-hash requires hash argument" test_requires_hash_argument
 _run_test_case "evoke-hash fails for nonexistent directory" test_fails_for_nonexistent_directory
 _run_test_case "evoke-hash fails for non-directory path" test_fails_for_non_directory
-_finish_tests
+
+# Test via source-then-invoke pattern  

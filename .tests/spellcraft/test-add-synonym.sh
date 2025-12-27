@@ -174,4 +174,5 @@ _run_test_case "rejects empty spell" test_rejects_empty_spell
 _run_test_case "allows overwriting synonym" test_allows_overwriting_existing_synonym
 _run_test_case "handles complex target with args" test_handles_complex_target_with_args
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

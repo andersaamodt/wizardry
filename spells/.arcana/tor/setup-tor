@@ -12,17 +12,22 @@ Prompts for confirmation before writing to torrc and restarting Tor.
 USAGE
 }
 
+setup_tor() {
 case "${1-}" in
 --help|--usage|-h)
         setup_tor_usage
-        exit 0
+        return 0
         ;;
 esac
 
+require-wizardry || return 1
+
+
 set -eu
+. env-clear
 
 printf '%s' "Do you want to set up a Tor hidden service? [y/n]: "
-IFS= read -r choice || exit 1
+IFS= read -r choice || return 1
 
 case $choice in
 y|Y)
@@ -41,7 +46,7 @@ y|Y)
                 ;;
         *)
                 printf '%s\n' "Error: Unsupported operating system" >&2
-                exit 1
+                return 1
                 ;;
         esac
 
@@ -57,3 +62,15 @@ y|Y)
         printf '%s\n' "Tor setup skipped."
         ;;
 esac
+
+}
+
+# Load castable imp for direct execution
+if true; then  # Always source castable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"

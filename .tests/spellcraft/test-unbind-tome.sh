@@ -97,4 +97,5 @@ _run_test_case "unbind-tome refuses non-file inputs" unbind_requires_a_file
 _run_test_case "unbind-tome avoids clobbering existing folders" unbind_avoids_clobbering_existing_folder
 _run_test_case "unbind-tome invents names for blank pages" unbind_names_blank_pages
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

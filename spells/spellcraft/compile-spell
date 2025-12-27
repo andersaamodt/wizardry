@@ -33,7 +33,7 @@ esac
 if command -v _require_wizardry >/dev/null 2>&1; then
   _require_wizardry || exit 1
 elif command -v require-wizardry >/dev/null 2>&1; then
-  require-wizardry || exit 1
+  require-wizardry || return 1
 else
   # Neither available - source it now
   if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/require-wizardry" ]; then
@@ -375,6 +375,13 @@ fi
 printf '%s\n' "$transformed"
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */compile-spell) compile_spell "$@" ;; esac
+
+# Load castable imp for direct execution
+if true; then  # Always source castable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"

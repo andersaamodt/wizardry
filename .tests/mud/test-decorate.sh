@@ -151,4 +151,5 @@ _run_test_case "decorate applies description successfully" test_decorates_with_d
 _run_test_case "decorate works with reversed argument order" test_decorates_with_reversed_args
 _run_test_case "decorate works with description only" test_decorates_current_directory_with_description_only
 _run_test_case "decorate reports enchant failure" test_reports_enchant_failure
-_finish_tests
+
+# Test via source-then-invoke pattern  

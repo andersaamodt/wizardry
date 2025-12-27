@@ -248,4 +248,5 @@ _run_test_case "config-del handles missing file" test_config_del_handles_missing
 _run_test_case "config roundtrip with special chars" test_config_roundtrip_special_chars
 _run_test_case "config handles many keys (20)" test_config_many_keys
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

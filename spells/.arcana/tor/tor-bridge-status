@@ -9,17 +9,22 @@ Checks the local torrc to see if bridge mode is enabled. Requires root; exits 0 
 USAGE
 }
 
+tor_bridge_status() {
 case "${1-}" in
 --help|--usage|-h)
         tor_bridge_status_usage
-        exit 0
+        return 0
         ;;
 esac
 
+require-wizardry || return 1
+
+
 set -eu
+. env-clear
 if [ "$(id -u)" != "0" ]; then
    echo "tor-bridge-status: root privileges required."
-   exit 1
+   return 1
 fi
 
 # Identify torrc file location based on platform
@@ -35,7 +40,7 @@ case "$platform" in
         torrc_location="/usr/local/etc/tor/torrc"
      else
         echo "Cannot locate torrc file. Exiting."
-        exit 1
+        return 1
      fi
      ;;
 esac
@@ -47,10 +52,22 @@ if [ "$bridge_enabled" = "1" ]; then
     if [ -t 1 ]; then
         echo "Bridge mode is enabled."
     fi
-    exit 0
+    return 0
 else
     if [ -t 1 ]; then
         echo "Bridge mode is disabled."
     fi
-    exit 1
+    return 1
 fi
+
+}
+
+# Load castable imp for direct execution
+if true; then  # Always source castable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"

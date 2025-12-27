@@ -71,4 +71,5 @@ shows_help() {
 }
 
 _run_test_case "await-keypress shows help" shows_help
-_finish_tests
+
+# Test via source-then-invoke pattern  

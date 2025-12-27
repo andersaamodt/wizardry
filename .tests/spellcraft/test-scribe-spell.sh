@@ -166,4 +166,5 @@ _run_test_case "scribe-spell rejects existing command names" test_rejects_existi
 _run_test_case "scribe-spell rejects duplicate spell in spellbook" test_rejects_duplicate_spell_in_spellbook
 _run_test_case "scribe-spell rejects duplicate spell in subfolder" test_rejects_duplicate_spell_in_subfolder
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

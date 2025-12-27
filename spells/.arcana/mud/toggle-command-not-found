@@ -12,14 +12,19 @@ Defaults to enabled if not configured.
 USAGE
 }
 
+toggle_command_not_found() {
 case "${1-}" in
 --help|--usage|-h)
 	toggle_command_not_found_usage
-	exit 0
+	return 0
 	;;
 esac
 
+require-wizardry || return 1
+
+
 set -eu
+. env-clear
 
 # Get script directory to find imps
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
@@ -42,7 +47,7 @@ if [ -f "$CONFIG_FILE" ] && grep -q "^command-not-found=0$" "$CONFIG_FILE" 2>/de
 	printf '%s\n' "✓ command-not-found hook enabled. Wizardry will auto-load spells via command_not_found_handle."
 	printf '%s\n' ""
 	printf '%s\n' "Note: Open a new terminal window for changes to take effect."
-	exit 0
+	return 0
 fi
 
 # Currently enabled (either explicitly =1 or not configured), disable it
@@ -50,3 +55,15 @@ fi
 printf '%s\n' "✓ command-not-found hook disabled. Wizardry will not auto-load spells via command_not_found_handle."
 printf '%s\n' ""
 printf '%s\n' "Note: Open a new terminal window for changes to take effect."
+
+}
+
+# Load castable imp for direct execution
+if true; then  # Always source castable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"

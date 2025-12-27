@@ -2,8 +2,6 @@
 
 # Teleport to bookmarks set by mark-location.
 
-require-wizardry || exit 1
-
 jump_to_marker_usage() {
 cat <<'USAGE'
 Usage: jump-to-marker [marker]
@@ -12,7 +10,24 @@ Teleport to a marker set with mark-location. Defaults to marker "1", marker "0" 
 USAGE
 }
 
+case "${1-}" in
+--help|--usage|-h)
+  jump_to_marker_usage
+  exit 0
+  ;;
+esac
 
+# Load uncastable imp for direct execution
+if true; then  # Always source uncastable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/uncastable" ] && . "$_i/uncastable"
+fi
+
+uncastable jump-to-marker
+
+require-wizardry || exit 1
 
 jump_to_marker() {
 case "${1-}" in
@@ -252,7 +267,3 @@ PORTAL
                 look 2>/dev/null || true
         fi
 }
-
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */jump-to-marker|*/jump) jump_to_marker "$@" ;; esac

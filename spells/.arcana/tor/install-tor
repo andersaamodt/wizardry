@@ -11,14 +11,19 @@ when possible and run sudo nixos-rebuild all for you.
 USAGE
 }
 
+install_tor() {
 case "${1-}" in
 --help|--usage|-h)
         install_tor_usage
-        exit 0
+        return 0
         ;;
 esac
 
+require-wizardry || return 1
+
+
 set -eu
+. env-clear
 
 # Find script directory for sibling resources
 SCRIPT_SOURCE=$0
@@ -67,7 +72,7 @@ case $distro in
     printf '%s\n' 'Installing tor via Homebrew...'
     if ! command -v brew >/dev/null 2>&1; then
       printf '%s\n' 'Homebrew is required to install Tor on macOS.'
-      exit 1
+      return 1
     fi
     brew install tor
     ;;
@@ -80,7 +85,7 @@ case $distro in
     changes=0
     if [ ! -f "$config_path" ]; then
       printf '%s\n' "NixOS configuration file $config_path was not found."
-      exit 1
+      return 1
     fi
 
     if command -v backup-nix-config >/dev/null 2>&1; then
@@ -124,7 +129,7 @@ case $distro in
     ;;
   *)
     printf '%s\n' "Unsupported distribution for automatic Tor installation."
-    exit 1
+    return 1
     ;;
 esac
 
@@ -149,3 +154,15 @@ if command -v tor >/dev/null 2>&1; then
 else
   printf '%s\n' 'Tor installation attempted, but the tor binary is not yet available. Check logs.'
 fi
+
+}
+
+# Load castable imp for direct execution
+if true; then  # Always source castable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"

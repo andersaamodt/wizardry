@@ -11,21 +11,26 @@ Toggle the planned inventory feature on or off. When enabled it will track items
 USAGE
 }
 
+toggle_inventory() {
 case "${1-}" in
 --help|--usage|-h)
         toggle_inventory_usage
-        exit 0
+        return 0
         ;;
 esac
 
+require-wizardry || return 1
+
+
 set -eu
+. env-clear
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 MUD_CONFIG="$SCRIPT_DIR/mud-config"
 
 if [ ! -x "$MUD_CONFIG" ]; then
         printf '%s\n' "Error: mud-config not found at '$MUD_CONFIG'." >&2
-        exit 1
+        return 1
 fi
 
 # Toggle the feature and report state
@@ -36,3 +41,15 @@ if [ "$new_state" = "1" ]; then
 else
         printf '%s\n' "✓ Inventory feature disabled."
 fi
+
+}
+
+# Load castable imp for direct execution
+if true; then  # Always source castable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"

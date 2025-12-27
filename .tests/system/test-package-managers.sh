@@ -31,4 +31,5 @@ _run_test_case "package-managers shows usage text" test_help
 _run_test_case "package-managers spell exists" test_spell_exists
 _run_test_case "package-managers spell is executable" test_is_executable
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

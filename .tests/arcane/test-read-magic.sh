@@ -250,4 +250,5 @@ _run_test_case "read-magic uses getfattr as a final fallback" test_reads_attribu
 _run_test_case "read-magic reports missing attribute" test_reports_missing_attribute
 _run_test_case "read-magic reports no attributes without helpers" test_handles_missing_helpers
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

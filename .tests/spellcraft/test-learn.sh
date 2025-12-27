@@ -131,4 +131,5 @@ _run_test_case "learn copies directory to spellbook" test_copy_directory
 _run_test_case "learn links spell to spellbook" test_link_spell
 _run_test_case "learn prevents duplicate names" test_prevents_duplicates
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

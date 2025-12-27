@@ -6,7 +6,7 @@
 # Example: uncastable invoke-thesaurus "Usage: . invoke-thesaurus"
 set -eu
 
-_uncastable() {
+uncastable() {
   _uncast_name=${1-}
   if [ -n "$_uncast_name" ]; then
     shift
@@ -42,7 +42,3 @@ _uncastable() {
   fi
   exit 1
 }
-
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */uncastable) _uncastable "$@" ;; esac

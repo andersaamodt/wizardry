@@ -11,12 +11,16 @@ o point to the new location.
 USAGE
 }
 
+change_bitcoin_directory() {
 case "${1-}" in
 --help|--usage|-h)
         change_bitcoin_directory_usage
-        exit 0
+        return 0
         ;;
 esac
+
+require-wizardry || return 1
+
 
 
 # This spell alters the location of thy Bitcoin data chamber on your system.
@@ -25,6 +29,7 @@ esac
 
 change_bitcoin_directory() {
 set -eu
+. env-clear
 retry_with_sudo() {
     echo "Permission denied. Invoking the power of the super user..."
     sudo "$@"
@@ -40,7 +45,7 @@ if [ ! -f "$HOME/.bitcoin/bitcoin.conf" ]; then
     read bitcoin_conf
     if [ ! -f "$bitcoin_conf" ]; then
         echo "bitcoin.conf file not found at the provided location. The spell must end here."
-        exit 1
+        return 1
     fi
 else
     bitcoin_conf="$HOME/.bitcoin/bitcoin.conf"
@@ -54,7 +59,7 @@ else
     # Confirm that the directory actually exists
     if [ ! -d "$current_directory" ]; then
         echo "The Bitcoin data chamber specified in bitcoin.conf doth not exist. Check the 'datadir' value in bitcoin.conf."
-        exit 1
+        return 1
     fi
     echo "Verified the existence of the Bitcoin data chamber at: $current_directory"
 fi
@@ -92,7 +97,7 @@ case "$move_choice" in
         ;;
     *)
         echo "Invalid choice, the spell ends here without moving anything."
-        exit 1
+        return 1
         ;;
 esac
 
@@ -109,3 +114,15 @@ echo "The Bitcoin data chamber now resides in: $new_directory"
 case "$0" in
   */change-bitcoin-directory|change-bitcoin-directory) change_bitcoin_directory "$@" ;;
 esac
+
+}
+
+# Load castable imp for direct execution
+if true; then  # Always source castable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"

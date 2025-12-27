@@ -10,8 +10,6 @@ Move a file or directory to a new location. Accepts natural language forms like 
 USAGE
 }
 
-
-
 move() {
 case "${1-}" in
 --help|--usage|-h)
@@ -20,7 +18,7 @@ case "${1-}" in
   ;;
 esac
 
-require-wizardry || exit 1
+require-wizardry || return 1
 
 set -eu
 . env-clear
@@ -88,6 +86,12 @@ mv "$from" "$to"
 say "Moved '$(file-name "$from")' to '$to'."
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */move) move "$@" ;; esac
+# Load castable imp for direct execution
+if true; then  # Always source castable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"

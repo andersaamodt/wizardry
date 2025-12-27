@@ -342,4 +342,5 @@ SH
 
 _run_test_case "spell-menu non-toggle resets cursor" test_non_toggle_resets_cursor
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

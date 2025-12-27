@@ -10,12 +10,16 @@ Fixes ownership and permissions on bitcoin directories and files so the node can
 USAGE
 }
 
+repair_bitcoin_permissions() {
 case "${1-}" in
 --help|--usage|-h)
         repair_bitcoin_permissions_usage
-        exit 0
+        return 0
         ;;
 esac
+
+require-wizardry || return 1
+
 
 
 # This script sets the correct permissions on the Bitcoin configuration directory.
@@ -23,6 +27,7 @@ esac
 # Set the default Bitcoin configuration directory
 
 set -eu
+. env-clear
 default_dir="$HOME/.bitcoin"
 
 # Check if the default directory exists
@@ -53,3 +58,15 @@ if [ -d "$bitcoin_dir" ]; then
 else
   echo "The provided directory does not exist."
 fi
+
+}
+
+# Load castable imp for direct execution
+if true; then  # Always source castable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"

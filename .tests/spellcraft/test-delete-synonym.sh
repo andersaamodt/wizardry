@@ -64,4 +64,5 @@ _run_test_case "deletes existing synonym" test_deletes_existing_synonym
 _run_test_case "fails when synonym not found" test_fails_when_synonym_not_found
 _run_test_case "rejects empty word" test_rejects_empty_word
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

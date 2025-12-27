@@ -11,14 +11,19 @@ then restarts Tor if the service is available.
 USAGE
 }
 
+configure_tor() {
 case "${1-}" in
 --help|--usage|-h)
         configure_tor_usage
-        exit 0
+        return 0
         ;;
 esac
 
+require-wizardry || return 1
+
+
 set -eu
+. env-clear
 
 torrc_path=$(torrc-path)
 
@@ -61,7 +66,7 @@ case "$control_reply" in
 esac
 
 # Rewrite torrc
-tmp=$(temp-file configure-tor) || exit 1
+tmp=$(temp-file configure-tor) || return 1
 trap 'cleanup-file "$tmp"' EXIT HUP INT TERM
 awk -v socks="$socks_port" -v enable_control="$enable_control" -v control="$control_port" '
   BEGIN {added_socks=0; added_control=0; added_cookie=0}
@@ -103,3 +108,15 @@ if [ "$has_systemctl" = "yes" ]; then
     esac
   fi
 fi
+
+}
+
+# Load castable imp for direct execution
+if true; then  # Always source castable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"

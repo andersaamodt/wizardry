@@ -13,14 +13,19 @@ Manage MUD feature toggles stored in $MUD_DIR/config. Supports get, set, toggle,
 USAGE
 }
 
+mud_config() {
 case "${1-}" in
 --help|--usage|-h)
         mud_config_usage
-        exit 0
+        return 0
         ;;
 esac
 
+require-wizardry || return 1
+
+
 set -eu
+. env-clear
 
 # Resolve config directory
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
@@ -86,7 +91,7 @@ set_feature() {
 # Main command dispatch
 if [ "$#" -lt 1 ]; then
         mud_config_usage >&2
-        exit 1
+        return 1
 fi
 
 cmd=$1
@@ -96,14 +101,14 @@ case "$cmd" in
         get)
                 if [ "$#" -lt 1 ]; then
                         printf '%s\n' "mud-config: get requires a feature name" >&2
-                        exit 1
+                        return 1
                 fi
                 get_feature "$1"
                 ;;
         set)
                 if [ "$#" -lt 2 ]; then
                         printf '%s\n' "mud-config: set requires a feature name and value" >&2
-                        exit 1
+                        return 1
                 fi
                 set_feature "$1" "$2"
                 ;;
@@ -111,7 +116,7 @@ case "$cmd" in
                 # Toggle feature between 1/0
                 if [ "$#" -lt 1 ]; then
                         printf '%s\n' "mud-config: toggle requires a feature name" >&2
-                        exit 1
+                        return 1
                 fi
                 feature=$1
                 current=$(get_feature "$feature")
@@ -134,6 +139,18 @@ case "$cmd" in
         *)
                 printf '%s\n' "mud-config: unknown command '$cmd'" >&2
                 mud_config_usage >&2
-                exit 1
+                return 1
                 ;;
 esac
+
+}
+
+# Load castable imp for direct execution
+if true; then  # Always source castable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"

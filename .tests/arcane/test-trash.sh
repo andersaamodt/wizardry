@@ -160,7 +160,7 @@ printf 'Linux\n'
 STUB
   chmod +x "$stub/uname"
   # Symlink essential utilities but NOT gio, so trash-put is used as fallback
-  _link_tools "$stub" sh cat printf test env basename dirname pwd command
+  _link_tools "$stub" sh cat printf test env basename dirname pwd command tr
   PATH="$WIZARDRY_IMPS_PATH:$stub" _run_spell "spells/arcane/trash" "$target_file"
   _assert_success && _assert_file_contains "$log_file" "$target_file"
 }
@@ -220,9 +220,9 @@ printf 'FreeBSD\n'
 STUB
   chmod +x "$stub/uname"
   # Provide only basic utilities, no trash commands
-  _link_tools "$stub" sh cat printf test env basename dirname pwd
+  _link_tools "$stub" sh cat printf test env basename dirname pwd tr
   PATH="$WIZARDRY_IMPS_PATH:$stub" _run_spell "spells/arcane/trash" "$target_file"
-  _assert_failure && _assert_error_contains "no supported trash utility"
+  _assert_failure && _assert_error_contains "no supported trash utility found"
 }
 
 _run_test_case "trash prints usage" test_help

@@ -8,33 +8,28 @@
 # You must source this script with '. ./colors' (or an absolute path) to use it.
 
 colors_usage() {
-        cat <<'USAGE'
-Usage: colors (source)
+  cat <<'USAGE'
+Usage: . colors
 
-Sources a palette of ANSI escape variables and wizardry theme accents so scripts can style output, gracefully disabling colour when the terminal cannot render it.
+Source this file to load color variables for terminal output.
+This spell must be sourced, not executed.
+
+Example:
+  . colors
+  printf '%sError:%s An error message.\n' "${RED}" "${RESET}"
 USAGE
 }
 
-# Only handle --help when run directly as a script, not when sourced
-# When sourced, $0 is the parent script, not 'colors'
-case "$0" in
-*colors)
-        case "${1-}" in
-        --help|--usage|-h)
-                colors_usage
-                exit 0
-                ;;
-        esac
-        ;;
+case "${1-}" in
+--help|--usage|-h)
+  colors_usage
+  exit 0
+  ;;
 esac
 
-# Record whether the terminal appears to support ANSI escape sequences so
-# callers can disable colour-aware features when needed.
-
-require-wizardry || exit 1
-
+colors() {
+# Note: No require-wizardry check here - colors must work standalone
 set -eu
-. env-clear
 WIZARDRY_COLORS_AVAILABLE=1
 
 # Create the escape character in a POSIX-compliant way.
@@ -152,3 +147,14 @@ case ${TERM-} in
                 fi
                 ;;
 esac
+}
+
+# Load autocast imp for auto-execution when sourced
+if true; then  # Always source autocast, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/autocast" ] && . "$_i/autocast"
+fi
+
+autocast colors "$@"

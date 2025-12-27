@@ -10,17 +10,22 @@ Guides a root user through enabling or disabling Tor bridge mode by updating tor
 USAGE
 }
 
+configure_tor_bridge() {
 case "${1-}" in
 --help|--usage|-h)
         configure_tor_bridge_usage
-        exit 0
+        return 0
         ;;
 esac
 
+require-wizardry || return 1
+
+
 set -eu
+. env-clear
 if [ "$(id -u)" -ne 0 ]; then
     echo "configure-tor-bridge: root privileges required."
-    exit 1
+    return 1
 fi
 
 # Identify torrc file location based on OS
@@ -62,3 +67,14 @@ else
         echo "Bridge mode remains disabled."
     fi
 fi
+}
+
+# Load castable imp for direct execution
+if true; then  # Always source castable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"
