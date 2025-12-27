@@ -28,6 +28,8 @@ case "${1-}" in
   ;;
 esac
 
+require-wizardry || return 1  # ← RETURN (not exit) - allows sourcing to work
+
 set -eu
 . env-clear
 
@@ -47,15 +49,16 @@ castable "$@"
 
 **CRITICAL RULES:**
 
-1. **--help handler BEFORE set -eu**: Must use `return 0` (not `exit 0`) so sourcing works
-2. **set -eu INSIDE function**: Strict mode only applies to function body, not to castable loading
-3. **castable AFTER all definitions**: Must be last thing in file
-4. **NO require-wizardry**: Tests provide wizardry via PATH; spell function assumes it's available
+1. **--help handler BEFORE require-wizardry and set -eu**: Must use `return 0` (not `exit 0`) so sourcing works
+2. **require-wizardry uses RETURN**: `require-wizardry || return 1` (not `exit 1`) so sourcing works
+3. **set -eu INSIDE function**: Strict mode only applies to function body, not to castable loading
+4. **castable AFTER all definitions**: Must be last thing in file
 5. **Function uses RETURN**: Always `return`, never `exit` (except in error cases with `die`)
 
 **Why This Works:**
 - When executed: `castable` detects direct execution, calls `spell_name()` function
 - When sourced: `castable` detects sourcing, just returns (leaves function defined)
+- `require-wizardry || return 1` ensures wizardry is available without killing the shell
 - Tests work: test-bootstrap adds all imps to PATH before running spells
 
 ### Uncastable Spells (Source-Only)
@@ -149,6 +152,7 @@ set -eu
 spell_name() {
   case "$1" in
     --help) usage; exit 0 ;; esac  # ← WRONG! Kills shell when sourced
+  require-wizardry || exit 1  # ← WRONG! Kills shell when sourced
   set -eu
   # logic
 }
@@ -160,6 +164,7 @@ castable "$@"
 spell_name() {
   case "$1" in
     --help) usage; return 0 ;; esac  # ← CORRECT
+  require-wizardry || return 1  # ← CORRECT - returns without killing shell
   set -eu
   # logic
 }
@@ -188,21 +193,21 @@ if ! command -v castable >/dev/null 2>&1; then
 fi
 ```
 
-### ❌ WRONG: require-wizardry inside castable function
+### ❌ WRONG: require-wizardry with exit instead of return
 ```sh
 spell_name() {
-  require-wizardry || exit 1  # ← WRONG! Command not guaranteed to exist
+  require-wizardry || exit 1  # ← WRONG! exit kills shell when sourced
   set -eu
   # logic
 }
 ```
 
-### ✅ CORRECT: Assume wizardry available (tests provide it)
+### ✅ CORRECT: require-wizardry with return
 ```sh
 spell_name() {
-  # NO require-wizardry call - tests set up PATH with all imps
+  require-wizardry || return 1  # ← CORRECT - returns without killing shell
   set -eu
-  . env-clear  # This imp is available via PATH
+  . env-clear
   # logic
 }
 ```
