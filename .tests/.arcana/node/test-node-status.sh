@@ -29,7 +29,10 @@ _run_test_case "node-status prints usage with --help" renders_usage_information
 reports_not_installed_without_node_binary() {
   skip-if-compiled || return $?
   tmp=$(_make_tempdir)
-  _run_cmd env PATH="$WIZARDRY_SYSTEM_PATH:$WIZARDRY_IMPS_PATH:$tmp:$ROOT_DIR/spells/cantrips" \
+  # Link only essential utilities, NOT node
+  _link_tools "$tmp" sh cat printf test env basename dirname pwd tr
+  
+  _run_cmd env PATH="$tmp:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips" \
     "$ROOT_DIR/spells/.arcana/node/node-status"
 
   _assert_success || return 1
@@ -41,6 +44,9 @@ _run_test_case "node-status reports not installed when node is absent" reports_n
 reports_installed_when_node_exists() {
   skip-if-compiled || return $?
   tmp=$(_make_tempdir)
+  # Link essential utilities
+  _link_tools "$tmp" sh cat printf test env basename dirname pwd tr
+  # Create node stub without npm
   cat >"$tmp/node" <<'SHI'
 #!/bin/sh
 if [ "$1" = "--version" ]; then
@@ -51,7 +57,7 @@ exit 0
 SHI
   chmod +x "$tmp/node"
 
-  _run_cmd env PATH="$WIZARDRY_SYSTEM_PATH:$WIZARDRY_IMPS_PATH:$tmp:$ROOT_DIR/spells/cantrips" \
+  _run_cmd env PATH="$tmp:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips" \
     "$ROOT_DIR/spells/.arcana/node/node-status"
 
   _assert_success || return 1
@@ -63,6 +69,9 @@ _run_test_case "node-status flags missing npm" reports_installed_when_node_exist
 reports_running_service_state() {
   skip-if-compiled || return $?
   tmp=$(_make_tempdir)
+  # Link essential utilities
+  _link_tools "$tmp" sh cat printf test env basename dirname pwd tr
+  # Create node and npm stubs
   cat >"$tmp/node" <<'SHI'
 #!/bin/sh
 if [ "$1" = "--version" ]; then
@@ -95,7 +104,7 @@ exit 0
 SHI
   chmod +x "$tmp/is-service-running"
 
-  _run_cmd env PATH="$WIZARDRY_SYSTEM_PATH:$WIZARDRY_IMPS_PATH:$tmp:$ROOT_DIR/spells/cantrips" \
+  _run_cmd env PATH="$tmp:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips" \
     "$ROOT_DIR/spells/.arcana/node/node-status"
 
   _assert_success || return 1
