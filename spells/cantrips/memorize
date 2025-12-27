@@ -9,7 +9,7 @@
 #        memorize path         - print the command list file path
 #        memorize dir          - print the cast directory
 
-require-wizardry || exit 1
+require-wizardry || return 1
 
 spell_name="memorize"
 tab_char=$(printf '\t')

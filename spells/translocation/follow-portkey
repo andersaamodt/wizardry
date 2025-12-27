@@ -3,7 +3,7 @@
 # This spell activates a portkey enchantment to teleport to the stored destination.
 # The destination is read from the file's 'context' extended attribute.
 
-require-wizardry || exit 1
+require-wizardry || return 1
 
 follow_portkey_usage() {
 cat <<'USAGE'

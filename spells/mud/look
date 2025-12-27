@@ -2,7 +2,7 @@
 
 # Read MUD-style room descriptions from extended attributes.
 
-require-wizardry || exit 1
+require-wizardry || return 1
 
 look_usage() {
 cat <<'USAGE'

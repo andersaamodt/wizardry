@@ -2,7 +2,7 @@
 
 # This spell displays the MUD install menu.
 
-require-wizardry || exit 1
+require-wizardry || return 1
 
 mud_menu_usage() {
   cat <<'USAGE'

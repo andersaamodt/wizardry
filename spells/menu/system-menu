@@ -2,7 +2,7 @@
 
 # This spell displays system maintenance tasks.
 
-require-wizardry || exit 1
+require-wizardry || return 1
 
 system_menu_usage() {
   cat <<'USAGE'

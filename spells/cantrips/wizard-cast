@@ -3,7 +3,7 @@
 # This spell displays a command before executing it for teaching purposes.
 # Use it to show commands to those learning the path of wizardry.
 
-require-wizardry || exit 1
+require-wizardry || return 1
 
 wizard_cast_usage() {
 cat <<'USAGE'

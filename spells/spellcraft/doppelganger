@@ -41,7 +41,7 @@ esac
 if command -v _require_wizardry >/dev/null 2>&1; then
   _require_wizardry || exit 1
 elif command -v require-wizardry >/dev/null 2>&1; then
-  require-wizardry || exit 1
+  require-wizardry || return 1
 else
   # Neither available - source it now
   # Try WIZARDRY_DIR first (set by invoke-wizardry)

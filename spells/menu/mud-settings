@@ -2,7 +2,7 @@
 
 # This spell displays the MUD settings menu.
 
-require-wizardry || exit 1
+require-wizardry || return 1
 
 mud_settings_usage() {
         cat <<'USAGE' >&2
