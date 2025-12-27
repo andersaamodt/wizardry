@@ -14,7 +14,7 @@ test_uncastable_executed_errors() {
 #!/bin/sh
 set -eu
 . "$WIZARDRY_DIR/spells/.imps/sys/uncastable"
-_uncastable
+uncastable
 printf '%s\n' "after"
 SCRIPT
   chmod +x "$script"
@@ -32,7 +32,7 @@ test_uncastable_sourced_ok() {
 #!/bin/sh
 set -eu
 . "$WIZARDRY_DIR/spells/.imps/sys/uncastable"
-_uncastable
+uncastable
 printf '%s\n' "sourced-ok"
 SCRIPT
   chmod +x "$script"
