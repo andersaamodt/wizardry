@@ -231,3 +231,44 @@ jobs:
             echo "(none)"
           fi
           echo "----------------------------------------------------------------------"
+      
+      - name: Capture test failures
+        if: failure()
+        run: |
+          mkdir -p /tmp/error-reports
+          cat > /tmp/error-reports/standalone-errors.txt <<EOF
+          Job: Test standalone compiled spells
+          Platform: Ubuntu (ubuntu-latest)
+          Status: FAILED
+          
+          EOF
+          
+          if [ -n "${{ steps.compile.outputs.FAILED_COMPILE }}" ]; then
+            cat >> /tmp/error-reports/standalone-errors.txt <<EOF
+          Compilation failures: ${{ steps.compile.outputs.FAILED_COMPILE }}
+          
+          EOF
+          fi
+          
+          if [ -n "${{ steps.test.outputs.FAILED_TESTS }}" ]; then
+            cat >> /tmp/error-reports/standalone-errors.txt <<EOF
+          Standalone test failures: ${{ steps.test.outputs.FAILED_COUNT }} spells
+          Failed spells: ${{ steps.test.outputs.FAILED_TESTS }}
+          
+          EOF
+          fi
+          
+          cat >> /tmp/error-reports/standalone-errors.txt <<EOF
+          Check the workflow logs for detailed error messages.
+          
+          Run ID: ${{ github.run_id }}
+          Run URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EOF
+      
+      - name: Upload error report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: standalone-errors
+          path: /tmp/error-reports/standalone-errors.txt
+          retention-days: 30

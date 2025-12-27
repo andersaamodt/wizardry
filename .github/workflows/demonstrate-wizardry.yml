@@ -42,4 +42,30 @@ jobs:
             exit 1
           fi
       - name: Run demonstrate-wizardry test
+        id: test
+        continue-on-error: true
         run: ./spells/system/test-spell system/test-demonstrate-wizardry.sh
+      
+      - name: Capture test failures
+        if: failure() && steps.test.outcome == 'failure'
+        run: |
+          mkdir -p /tmp/error-reports
+          cat > /tmp/error-reports/demonstrate-errors.txt <<EOF
+          Job: Demonstrate wizardry
+          Platform: Ubuntu (ubuntu-latest)
+          Status: FAILED
+          
+          The demonstrate-wizardry test failed.
+          Check the workflow logs for detailed error messages.
+          
+          Run ID: ${{ github.run_id }}
+          Run URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EOF
+      
+      - name: Upload error report
+        if: failure() && steps.test.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: demonstrate-errors
+          path: /tmp/error-reports/demonstrate-errors.txt
+          retention-days: 30
