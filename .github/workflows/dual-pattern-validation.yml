@@ -1,0 +1,44 @@
+name: Dual-pattern validation
+
+# This workflow provides comprehensive validation that both execution patterns
+# (direct execution and source-then-invoke) work correctly for all castable spells.
+# It runs weekly to ensure the castable/uncastable imps maintain parity between patterns.
+
+on:
+  # Run weekly on Sundays at 00:00 UTC
+  schedule:
+    - cron: '0 0 * * 0'
+  # Allow manual trigger for on-demand validation
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  debian-dual-pattern:
+    name: Debian dual-pattern validation
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: debian
+      WIZARDRY_TEST_BOTH_PATTERNS: 1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Ensure installer spells are executable
+        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+      - name: Run dual-pattern validation tests
+        run: ./spells/system/test-magic --verbose
+
+  macos-dual-pattern:
+    name: macOS dual-pattern validation
+    runs-on: macos-latest
+    env:
+      WIZARDRY_OS_LABEL: mac
+      WIZARDRY_TEST_BOTH_PATTERNS: 1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Ensure installer spells are executable
+        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+      - name: Run dual-pattern validation tests
+        run: ./spells/system/test-magic --verbose
