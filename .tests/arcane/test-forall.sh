@@ -125,4 +125,15 @@ forall_handles_empty_directory() {
   _assert_output_contains "   seen ./*" || return 1
 }
 
-# Test via source-then-invoke pattern
+# Run all tests
+_run_test_case "forall prints usage" test_help
+_run_test_case "forall accepts --usage flag" test_usage_alias
+_run_test_case "forall requires command" forall_requires_command
+_run_test_case "forall runs command over entries" forall_runs_command_over_entries
+_run_test_case "forall runs commands on entries with spaces" forall_handles_spaces
+_run_test_case "forall continues on failures" forall_continues_on_failures
+_run_test_case "forall lists silent entries" forall_lists_silent_entries
+_run_test_case "forall handles directories" forall_handles_directories
+_run_test_case "forall handles empty directory" forall_handles_empty_directory
+
+_finish_tests
