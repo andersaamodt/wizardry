@@ -47,9 +47,10 @@ reset_default_synonyms() {
   rm -f "$spell_home/.default-synonyms-initialized"
 
   # Reinitialize defaults by sourcing invoke-thesaurus
-  if [ -f "$ROOT_DIR/spells/.imps/sys/invoke-thesaurus" ]; then
+  _invoke_thes="$_i/invoke-thesaurus"
+  if [ -f "$_invoke_thes" ]; then
     # shellcheck disable=SC1090,SC1091
-    . "$ROOT_DIR/spells/.imps/sys/invoke-thesaurus" 2>/dev/null || :
+    . "$_invoke_thes" 2>/dev/null || :
     success "Default synonyms reset. Custom synonyms preserved."
   else
     success "Default synonyms reset. Reload with: . invoke-thesaurus"

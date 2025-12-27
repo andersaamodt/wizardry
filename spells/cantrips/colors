@@ -35,13 +35,11 @@ if true; then  # Always source uncastable, never use from PATH
   [ -f "$_i/uncastable" ] && . "$_i/uncastable"
 fi
 
-uncastable colors "Usage: . colors"
-
-# Record whether the terminal appears to support ANSI escape sequences so
-# callers can disable colour-aware features when needed.
+uncastable
 
 require-wizardry || exit 1
 
+colors() {
 set -eu
 . env-clear
 WIZARDRY_COLORS_AVAILABLE=1
@@ -161,3 +159,6 @@ case ${TERM-} in
                 fi
                 ;;
 esac
+}
+
+colors
