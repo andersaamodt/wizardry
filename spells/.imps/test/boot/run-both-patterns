@@ -1,9 +1,9 @@
 #!/bin/sh
-# run-both-patterns DESC FUNC [SPELL_PATH] - run a test with both execution patterns
-# Automatically tests both direct execution and source-then-invoke patterns.
-# If SPELL_PATH is not provided, extracts it from the test function's _run_spell calls.
-# For uncastable spells, only runs the source-then-invoke pattern.
-# Provides clear output organization for easy failure identification.
+# run-both-patterns DESC FUNC [SPELL_PATH] - run test with source-then-invoke pattern
+# By default, tests ONLY source-then-invoke (the primary use case).
+# Set WIZARDRY_TEST_BOTH_PATTERNS=1 to test both execution patterns.
+# The castable/uncastable imps guarantee parity, so testing source-then-invoke
+# provides full coverage while cutting test time in half.
 set -eu
 
 _run_both_patterns() {
@@ -14,7 +14,6 @@ _run_both_patterns() {
   # If spell_path not provided, try to extract from test function
   if [ -z "$spell_path" ]; then
     # Get the function definition and look for _run_spell calls
-    # This is a heuristic - if it fails, tests will still run once
     spell_path=$(type "$func" 2>/dev/null | grep -oE 'spells/[^"[:space:]]+' | head -1 || true)
   fi
   
@@ -27,25 +26,20 @@ _run_both_patterns() {
     fi
   fi
   
-  # Track pattern-specific failures for organized output
-  # These will be collected in finish-tests
-  
   # Temporarily enable single-pattern mode to prevent infinite recursion
-  # (since _run_test_case calls _run_both_patterns by default)
   WIZARDRY_TEST_SINGLE_PATTERN=1
   export WIZARDRY_TEST_SINGLE_PATTERN
   
-  # Run direct execution test for castable spells
-  if [ "$is_castable" -eq 1 ]; then
-    # Mark this as direct execution pattern
+  # Opt-in: Test both patterns if explicitly requested
+  if [ "${WIZARDRY_TEST_BOTH_PATTERNS-}" = "1" ] && [ "$is_castable" -eq 1 ]; then
+    # Mark as direct execution pattern
     WIZARDRY_TEST_PATTERN="direct-exec"
     export WIZARDRY_TEST_PATTERN
     
     _run_test_case "$desc (direct execution)" "$func"
     
-    # Check if this test failed
+    # Track failures
     if [ "$_fail_count" -gt "${WIZARDRY_PREV_FAIL_COUNT:-0}" ]; then
-      # Track direct execution failure
       WIZARDRY_DIRECT_EXEC_FAILURES="${WIZARDRY_DIRECT_EXEC_FAILURES-}${WIZARDRY_DIRECT_EXEC_FAILURES:+,}$desc"
       export WIZARDRY_DIRECT_EXEC_FAILURES
     fi
@@ -54,7 +48,7 @@ _run_both_patterns() {
     export WIZARDRY_PREV_FAIL_COUNT
   fi
   
-  # Run source-then-invoke test for all spells
+  # Always run source-then-invoke test (the primary use case)
   # Mark this as sourced pattern
   WIZARDRY_TEST_PATTERN="sourced"
   export WIZARDRY_TEST_PATTERN
@@ -63,14 +57,18 @@ _run_both_patterns() {
   WIZARDRY_USE_SOURCED_SPELL=1
   export WIZARDRY_USE_SOURCED_SPELL
   
-  _run_test_case "$desc (sourced)" "$func"
+  # Add pattern suffix only if testing both patterns
+  if [ "${WIZARDRY_TEST_BOTH_PATTERNS-}" = "1" ] && [ "$is_castable" -eq 1 ]; then
+    _run_test_case "$desc (sourced)" "$func"
+  else
+    _run_test_case "$desc" "$func"
+  fi
   
   # Clear the flag
   unset WIZARDRY_USE_SOURCED_SPELL
   
-  # Check if this test failed
+  # Track failures
   if [ "$_fail_count" -gt "${WIZARDRY_PREV_FAIL_COUNT:-0}" ]; then
-    # Track sourced failure
     WIZARDRY_SOURCED_FAILURES="${WIZARDRY_SOURCED_FAILURES-}${WIZARDRY_SOURCED_FAILURES:+,}$desc"
     export WIZARDRY_SOURCED_FAILURES
   fi

@@ -1,7 +1,8 @@
 #!/bin/sh
-# run-test-case DESC FUNC [SPELL_PATH] - execute test with dual-pattern by default
-# Automatically tests both execution patterns for castable spells.
-# Set WIZARDRY_TEST_SINGLE_PATTERN=1 to disable dual-pattern testing.
+# run-test-case DESC FUNC [SPELL_PATH] - execute test with source-then-invoke pattern
+# By default, tests ONLY source-then-invoke (optimized, 50% faster).
+# Set WIZARDRY_TEST_BOTH_PATTERNS=1 to test both patterns.
+# Set WIZARDRY_TEST_SINGLE_PATTERN=1 to skip pattern detection entirely.
 set -eu
 
 _run_test_case() {

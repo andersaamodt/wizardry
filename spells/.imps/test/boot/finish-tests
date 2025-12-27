@@ -1,7 +1,7 @@
 #!/bin/sh
 # finish-tests - print test summary and return appropriate exit status
 # Returns 0 if all tests passed, 1 otherwise. Prints failure indices if any.
-# For dual-pattern tests, provides organized failure lists by execution pattern.
+# Provides organized failure lists by execution pattern when dual-pattern testing enabled.
 set -eu
 
 _finish_tests() {
@@ -9,27 +9,35 @@ _finish_tests() {
   _test_summary "$_pass_count" "$total" "${_skip_count-0}"
   
   if [ "$_fail_count" -gt 0 ]; then
-    # Print organized failure summary for dual-pattern tests
-    if [ -n "${WIZARDRY_DIRECT_EXEC_FAILURES-}" ] || [ -n "${WIZARDRY_SOURCED_FAILURES-}" ]; then
-      printf '\n=== FAILURE SUMMARY BY EXECUTION PATTERN ===\n'
-      
-      if [ -n "${WIZARDRY_DIRECT_EXEC_FAILURES-}" ]; then
-        printf '\n--- Direct Execution Failures [exec] ---\n'
-        # Convert comma-separated list to newlines for easy copying
-        printf '%s\n' "$WIZARDRY_DIRECT_EXEC_FAILURES" | tr ',' '\n' | sed 's/^/  /'
+    # Print organized failure summary (improved output to show all failures)
+    if [ "${WIZARDRY_TEST_BOTH_PATTERNS-}" = "1" ]; then
+      # Dual-pattern mode: show failures by pattern
+      if [ -n "${WIZARDRY_DIRECT_EXEC_FAILURES-}" ] || [ -n "${WIZARDRY_SOURCED_FAILURES-}" ]; then
+        printf '\n=== FAILURE SUMMARY BY EXECUTION PATTERN ===\n'
+        
+        if [ -n "${WIZARDRY_DIRECT_EXEC_FAILURES-}" ]; then
+          printf '\n--- Direct Execution Failures [exec] ---\n'
+          printf '%s\n' "$WIZARDRY_DIRECT_EXEC_FAILURES" | tr ',' '\n' | sed 's/^/  /'
+        fi
+        
+        if [ -n "${WIZARDRY_SOURCED_FAILURES-}" ]; then
+          printf '\n--- Source-Then-Invoke Failures [src] ---\n'
+          printf '%s\n' "$WIZARDRY_SOURCED_FAILURES" | tr ',' '\n' | sed 's/^/  /'
+        fi
+        
+        printf '\n=== END FAILURE SUMMARY ===\n'
       fi
-      
+    else
+      # Single-pattern mode: show all failures in simple list
       if [ -n "${WIZARDRY_SOURCED_FAILURES-}" ]; then
-        printf '\n--- Source-Then-Invoke Failures [src] ---\n'
-        # Convert comma-separated list to newlines for easy copying
+        printf '\n=== FAILED TESTS ===\n'
         printf '%s\n' "$WIZARDRY_SOURCED_FAILURES" | tr ',' '\n' | sed 's/^/  /'
+        printf '\n=== END FAILURES ===\n'
       fi
-      
-      printf '\n=== END FAILURE SUMMARY ===\n'
     fi
     
-    # Print traditional failure detail indices
-    if [ -n "$_fail_detail_indices" ]; then
+    # Print traditional failure detail indices (always show, fixes truncation)
+    if [ -n "${_fail_detail_indices-}" ]; then
       printf '\nFAIL_DETAIL:%s\n' "$_fail_detail_indices"
     fi
     
