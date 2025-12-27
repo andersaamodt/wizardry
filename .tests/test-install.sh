@@ -201,16 +201,29 @@ install_nixos_adds_path_to_system_config() {
 }
 EOF
 
+  # Stub nixos-rebuild and home-manager commands to prevent actual system modifications
+  cat >"$fixture/bin/nixos-rebuild" <<'STUB'
+#!/bin/sh
+exit 0
+STUB
+  chmod +x "$fixture/bin/nixos-rebuild"
+  
+  cat >"$fixture/bin/home-manager" <<'STUB'
+#!/bin/sh
+exit 0
+STUB
+  chmod +x "$fixture/bin/home-manager"
+
   install_dir="$fixture/home/.wizardry"
   
-  # Simulate user input: the path to the config file, then "y" to confirm
-  _run_cmd sh -c "
-    printf '%s\n%s\n' '$fixture/etc/nixos/configuration.nix' 'y' | \
-    env PATH="$fixture/bin:$initial_path" DETECT_RC_FILE_PLATFORM=nixos \
-        WIZARDRY_INSTALL_DIR='$install_dir' \
-        HOME='$fixture/home' \
-        '$ROOT_DIR/install'
-  "
+  # Set NIXOS_CONFIG to tell the installer where the config file is
+  _run_cmd env PATH="$fixture/bin:$initial_path" \
+      DETECT_RC_FILE_PLATFORM=nixos \
+      NIXOS_CONFIG="$fixture/etc/nixos/configuration.nix" \
+      WIZARDRY_INSTALL_DIR="$install_dir" \
+      WIZARDRY_INSTALL_ASSUME_YES=1 \
+      HOME="$fixture/home" \
+      "$ROOT_DIR/install"
 
   _assert_success || return 1
   
