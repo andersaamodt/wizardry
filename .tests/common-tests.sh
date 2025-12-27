@@ -1902,8 +1902,10 @@ test_spells_declare_invocation_type() {
     spell_name=${spell_file#"$ROOT_DIR/spells/"}
     
     # Skip imps - they use a different self-execute pattern (true name function + case statement)
+    # Skip bootstrap spells in .arcana/core - they use traditional if [ "${0##*/}" = "name" ] pattern
     case "$spell_name" in
       .imps/*) continue ;;
+      .arcana/core/*) continue ;;
     esac
     
     # Check if spell has castable, uncastable, or autocast declaration

@@ -12,7 +12,6 @@ Install the bubblewrap sandboxing utility. Options:
 EOF
 }
 
-install_bwrap() {
 force_install=${INSTALL_BWRAP_FORCE_INSTALL:-0}
 
 while [ "$#" -gt 0 ]; do
@@ -22,31 +21,18 @@ while [ "$#" -gt 0 ]; do
       ;;
     --help|--usage|-h)
       install_bwrap_usage
-      return 0
+      exit 0
       ;;
     *)
       printf '%s\n' "install-bwrap: unknown option: $1" >&2
       install_bwrap_usage >&2
-      return 1
+      exit 1
       ;;
   esac
   shift
 done
 
-
 set -eu
-. env-clear
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 ASSUME_YES=1 FORCE_INSTALL=$force_install "$SCRIPT_DIR/manage-system-command" bwrap bubblewrap
-}
-
-# Load castable imp for direct execution
-if true; then  # Always source castable, never use from PATH
-  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
-  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
-  [ -f "$_i/castable" ] && . "$_i/castable"
-fi
-
-castable "$@"

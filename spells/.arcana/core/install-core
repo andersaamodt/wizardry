@@ -104,15 +104,6 @@ install_core_resolve_spell() {
 }
 
 install_core() {
-  case "${1-}" in
-    --help|--usage|-h)
-      install_core_usage
-      return 0
-      ;;
-  esac
-
-  set -eu
-
   # Try to install each core dependency, but don't fail if optional packages
   # can't be installed (e.g., on NixOS where packages must be installed declaratively).
   # We silently skip failures to avoid confusing novice users during first-time install.
@@ -129,12 +120,14 @@ install_core() {
   return 0
 }
 
-# Load castable imp for direct execution
-if true; then  # Always source castable, ensures consistency
-  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
-  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
-  [ -f "$_i/castable" ] && . "$_i/castable"
-fi
+if [ "${0##*/}" = "install-core" ]; then
+  case "${1-}" in
+    --help|--usage|-h)
+      install_core_usage
+      exit 0
+      ;;
+  esac
 
-castable "$@"
+  set -eu
+  install_core "$@"
+fi
