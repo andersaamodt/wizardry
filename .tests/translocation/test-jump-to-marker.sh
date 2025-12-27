@@ -23,7 +23,7 @@ test_help() {
 }
 
 test_unknown_option_fails() {
-  _run_spell "spells/translocation/jump-to-marker" --bad
+  _run_cmd sh -c "PATH=\"$WIZARDRY_IMPS_PATH:$(wizardry_base_path):/bin:/usr/bin\" . \"$ROOT_DIR/spells/translocation/jump-to-marker\"; jump_to_marker --bad"
   _assert_failure && _assert_error_contains "unknown option"
 }
 
