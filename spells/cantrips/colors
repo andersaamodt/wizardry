@@ -27,21 +27,9 @@ case "${1-}" in
   ;;
 esac
 
-# Load uncastable imp for direct execution
-if true; then  # Always source uncastable, never use from PATH
-  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
-  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
-  [ -f "$_i/uncastable" ] && . "$_i/uncastable"
-fi
-
-uncastable colors
-
-require-wizardry || exit 1
-
 colors() {
+# Note: No require-wizardry check here - colors must work standalone
 set -eu
-. env-clear
 WIZARDRY_COLORS_AVAILABLE=1
 
 # Create the escape character in a POSIX-compliant way.
@@ -161,5 +149,12 @@ case ${TERM-} in
 esac
 }
 
-# Execute colors() automatically when sourced (common pattern for environment setup scripts)
-colors
+# Load autocast imp for auto-execution when sourced
+if true; then  # Always source autocast, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/autocast" ] && . "$_i/autocast"
+fi
+
+autocast colors "$@"
