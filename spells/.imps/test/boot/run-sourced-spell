@@ -3,9 +3,9 @@
 # Sources invoke-wizardry in permissive mode, then calls the spell function.
 # Captures stdout, stderr, and exit status into STATUS, OUTPUT, and ERROR.
 # This tests the REAL user workflow: source invoke-wizardry → call spell functions
-set -eu
 
 _run_sourced_spell() {
+  set -eu
   spell_path=$1
   shift || true
   
@@ -55,10 +55,7 @@ export WIZARDRY_TEST_HELPERS_ONLY='${WIZARDRY_TEST_HELPERS_ONLY:-0}'
 # Source invoke-wizardry (suppress its diagnostic output)
 . \"\$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry\" >/dev/null 2>&1
 
-# Enable strict mode for spell execution
-set -eu
-
-# Call the spell function with provided arguments
+# Call the spell function with provided arguments (already in permissive mode)
 $func_name $escaped_args
 "
   

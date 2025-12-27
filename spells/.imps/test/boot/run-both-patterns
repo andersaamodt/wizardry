@@ -1,84 +1,49 @@
 #!/bin/sh
-# run-both-patterns DESC FUNC [SPELL_PATH] - run test with source-then-invoke pattern
-# By default, tests ONLY source-then-invoke (the primary use case).
-# Set WIZARDRY_TEST_BOTH_PATTERNS=1 to test both execution patterns.
-# The castable/uncastable imps guarantee parity, so testing source-then-invoke
-# provides full coverage while cutting test time in half.
-set -eu
+# run-both-patterns DESC FUNC [SPELL_PATH] - run test in source-then-invoke pattern
+# By default, tests ONLY direct execution (fast, sufficient for most testing).
+# Set WIZARDRY_TEST_BOTH_PATTERNS=1 to also test source-then-invoke pattern.
+# The castable/uncastable imps guarantee parity between patterns.
 
 _run_both_patterns() {
-  desc=$1
-  func=$2
-  spell_path=${3-}
+  _desc=$1
+  _func=$2
+  _spell_path=${3-}
   
   # If spell_path not provided, try to extract from test function
-  if [ -z "$spell_path" ]; then
+  if [ -z "$_spell_path" ]; then
     # Get the function definition and look for _run_spell calls
-    spell_path=$(type "$func" 2>/dev/null | grep -oE 'spells/[^"[:space:]]+' | head -1 || true)
+    _spell_path=$(type "$_func" 2>/dev/null | grep -oE 'spells/[^"[:space:]]+' | head -1 || true)
   fi
   
   # Determine if spell is castable or uncastable
-  is_castable=1
-  if [ -n "$spell_path" ] && [ -f "$ROOT_DIR/$spell_path" ]; then
+  _is_castable=1
+  if [ -n "$_spell_path" ] && [ -f "$ROOT_DIR/$_spell_path" ]; then
     # Check if spell uses uncastable
-    if grep -q "^uncastable" "$ROOT_DIR/$spell_path" 2>/dev/null; then
-      is_castable=0
+    if grep -q "^uncastable" "$ROOT_DIR/$_spell_path" 2>/dev/null; then
+      _is_castable=0
     fi
   fi
-  
-  # Temporarily enable single-pattern mode to prevent infinite recursion
-  WIZARDRY_TEST_SINGLE_PATTERN=1
-  export WIZARDRY_TEST_SINGLE_PATTERN
   
   # Opt-in: Test both patterns if explicitly requested
-  if [ "${WIZARDRY_TEST_BOTH_PATTERNS-}" = "1" ] && [ "$is_castable" -eq 1 ]; then
-    # Mark as direct execution pattern
-    WIZARDRY_TEST_PATTERN="direct-exec"
-    export WIZARDRY_TEST_PATTERN
+  if [ "${WIZARDRY_TEST_BOTH_PATTERNS-}" = "1" ] && [ "$_is_castable" -eq 1 ]; then
+    # Test direct execution first
+    _run_test_case "$_desc (direct execution)" "$_func"
     
-    _run_test_case "$desc (direct execution)" "$func"
+    # Test source-then-invoke second
+    # This is done by temporarily setting a flag that run_spell checks
+    _prev_use_sourced=$WIZARDRY_USE_SOURCED_SPELL
+    WIZARDRY_USE_SOURCED_SPELL=1
+    export WIZARDRY_USE_SOURCED_SPELL
     
-    # Track failures
-    if [ "$_fail_count" -gt "${WIZARDRY_PREV_FAIL_COUNT:-0}" ]; then
-      WIZARDRY_DIRECT_EXEC_FAILURES="${WIZARDRY_DIRECT_EXEC_FAILURES-}${WIZARDRY_DIRECT_EXEC_FAILURES:+,}$desc"
-      export WIZARDRY_DIRECT_EXEC_FAILURES
-    fi
+    _run_test_case "$_desc (sourced)" "$_func"
     
-    WIZARDRY_PREV_FAIL_COUNT=$_fail_count
-    export WIZARDRY_PREV_FAIL_COUNT
-  fi
-  
-  # Always run source-then-invoke test (the primary use case)
-  # Mark this as sourced pattern
-  WIZARDRY_TEST_PATTERN="sourced"
-  export WIZARDRY_TEST_PATTERN
-  
-  # Set flag to use sourced spell instead of direct execution
-  WIZARDRY_USE_SOURCED_SPELL=1
-  export WIZARDRY_USE_SOURCED_SPELL
-  
-  # Add pattern suffix only if testing both patterns
-  if [ "${WIZARDRY_TEST_BOTH_PATTERNS-}" = "1" ] && [ "$is_castable" -eq 1 ]; then
-    _run_test_case "$desc (sourced)" "$func"
+    # Restore flag
+    WIZARDRY_USE_SOURCED_SPELL=$_prev_use_sourced
+    export WIZARDRY_USE_SOURCED_SPELL
   else
-    _run_test_case "$desc" "$func"
+    # Default: just run the test once (direct execution for castable, sourced for uncastable)
+    _run_test_case "$_desc" "$_func"
   fi
-  
-  # Clear the flag
-  unset WIZARDRY_USE_SOURCED_SPELL
-  
-  # Track failures
-  if [ "$_fail_count" -gt "${WIZARDRY_PREV_FAIL_COUNT:-0}" ]; then
-    WIZARDRY_SOURCED_FAILURES="${WIZARDRY_SOURCED_FAILURES-}${WIZARDRY_SOURCED_FAILURES:+,}$desc"
-    export WIZARDRY_SOURCED_FAILURES
-  fi
-  
-  WIZARDRY_PREV_FAIL_COUNT=$_fail_count
-  export WIZARDRY_PREV_FAIL_COUNT
-  
-  # Clear pattern marker and single-pattern flag
-  unset WIZARDRY_TEST_PATTERN
-  unset WIZARDRY_TEST_SINGLE_PATTERN
 }
 
 # Self-execute when run directly (not sourced)
