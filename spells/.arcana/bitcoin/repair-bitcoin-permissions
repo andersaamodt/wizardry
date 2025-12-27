@@ -61,13 +61,26 @@ fi
 
 }
 
-# Load castable imp for direct execution
-# CRITICAL: Check if already available before sourcing to avoid fork limits
-if ! command -v castable >/dev/null 2>&1; then
-  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
-  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
-  [ -f "$_i/castable" ] && . "$_i/castable"
-fi
+# Load castable imp for direct execution (AFTER all functions defined)
+# When executed directly: always source to ensure castable sees correct $0
+# When sourced (testing): use from PATH if available to avoid forks
+case "$0" in
+  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
+    # Being sourced - use from PATH if available
+    if ! command -v castable >/dev/null 2>&1; then
+      _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+      _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+      _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+      [ -f "$_i/castable" ] && . "$_i/castable"
+    fi
+    ;;
+  *)
+    # Being executed - always source to ensure correct $0 detection
+      _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+      _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+      _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+      [ -f "$_i/castable" ] && . "$_i/castable"
+    ;;
+esac
 
 castable "$@"
