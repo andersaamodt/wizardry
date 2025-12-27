@@ -1,8 +1,7 @@
 #!/bin/sh
-# run-test-case DESC FUNC [SPELL_PATH] - execute test with source-then-invoke pattern
-# By default, tests ONLY source-then-invoke (optimized, 50% faster).
-# Set WIZARDRY_TEST_BOTH_PATTERNS=1 to test both patterns.
-# Set WIZARDRY_TEST_SINGLE_PATTERN=1 to skip pattern detection entirely.
+# run-test-case DESC FUNC [SPELL_PATH] - execute test function
+# By default, tests use direct execution (fast, sufficient for most testing).
+# Set WIZARDRY_TEST_BOTH_PATTERNS=1 to test both execution patterns.
 set -eu
 
 _run_test_case() {
@@ -10,9 +9,12 @@ _run_test_case() {
   func=$2
   spell_path=${3-}
   
-  # Check if dual-pattern testing is disabled
-  if [ "${WIZARDRY_TEST_SINGLE_PATTERN-}" = "1" ]; then
-    # Original single-pattern behavior
+  # Check if dual-pattern testing is explicitly requested
+  if [ "${WIZARDRY_TEST_BOTH_PATTERNS-}" = "1" ]; then
+    # Use run-both-patterns for comprehensive validation
+    _run_both_patterns "$desc" "$func" "$spell_path"
+  else
+    # Default: Direct execution (fast, sufficient for most testing)
     _test_index=$((_test_index + 1))
     
     if [ -n "${WIZARDRY_GLOBAL_SUBTEST_NUM-}" ]; then
@@ -36,9 +38,6 @@ _run_test_case() {
         unset TEST_FAILURE_REASON 2>/dev/null || true
       fi
     fi
-  else
-    # Dual-pattern testing is the default
-    _run_both_patterns "$desc" "$func" "$spell_path"
   fi
 }
 
