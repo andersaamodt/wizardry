@@ -1040,4 +1040,7 @@ ${_iw_cnf_body}
 # (In Zsh, $0 is set to the sourced file's path, which would cause the pattern to match)
 printf '%s\n' "[invoke-wizardry] About to call _invoke_wizardry function" >&2
 _invoke_wizardry
+_iw_status=$?
+printf '%s\n' "[invoke-wizardry] _invoke_wizardry returned: $_iw_status" >&2
 printf '%s\n' "[invoke-wizardry] FINISHED - invoke-wizardry complete" >&2
+return $_iw_status
