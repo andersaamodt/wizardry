@@ -1509,6 +1509,8 @@ test_spells_source_env_clear_after_set_eu() {
       .arcana/*) return ;;
       # install script exempt (bootstrap)
       install) return ;;
+      # Autocast spells exempt (use autocast pattern, not env-clear)
+      cantrips/colors) return ;;
       # Bootstrap spells used by install (must be standalone)
       divination/detect-rc-file|cantrips/ask-yn|cantrips/memorize|cantrips/require-wizardry|spellcraft/learn) return ;;
       # Bootstrap scripts with conditional env-clear sourcing (run before wizardry fully installed)
@@ -1904,9 +1906,10 @@ test_spells_declare_invocation_type() {
       .imps/*) continue ;;
     esac
     
-    # Check if spell has castable or uncastable declaration
+    # Check if spell has castable, uncastable, or autocast declaration
     has_castable=0
     has_uncastable=0
+    has_autocast=0
     
     if grep -q "^castable" "$spell_file" 2>/dev/null; then
       has_castable=1
@@ -1916,23 +1919,30 @@ test_spells_declare_invocation_type() {
       has_uncastable=1
     fi
     
+    if grep -q "^autocast" "$spell_file" 2>/dev/null; then
+      has_autocast=1
+    fi
+    
+    # Count declarations
+    declaration_count=$((has_castable + has_uncastable + has_autocast))
+    
     # Spell must have exactly one declaration
-    if [ "$has_castable" -eq 0 ] && [ "$has_uncastable" -eq 0 ]; then
-      failures="${failures}${failures:+, }$spell_name (missing both)"
-    elif [ "$has_castable" -eq 1 ] && [ "$has_uncastable" -eq 1 ]; then
-      failures="${failures}${failures:+, }$spell_name (has both)"
+    if [ "$declaration_count" -eq 0 ]; then
+      failures="${failures}${failures:+, }$spell_name (missing declaration)"
+    elif [ "$declaration_count" -gt 1 ]; then
+      failures="${failures}${failures:+, }$spell_name (multiple declarations)"
     fi
   done < "$SPELL_LIST_CACHE"
   
   if [ -n "$failures" ]; then
-    TEST_FAILURE_REASON="spells without proper castable/uncastable declaration: $failures"
+    TEST_FAILURE_REASON="spells without proper castable/uncastable/autocast declaration: $failures"
     return 1
   fi
   
   return 0
 }
 
-_run_test_case "spells declare castable or uncastable" test_spells_declare_invocation_type
+_run_test_case "spells declare castable/uncastable/autocast" test_spells_declare_invocation_type
 
 # --- Check: All spells respond to --help flag ---
 # Every spell must support --help, --usage, or -h flags

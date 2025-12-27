@@ -33,7 +33,6 @@ while [ "$#" -gt 0 ]; do
   shift
 done
 
-require-wizardry || return 1
 
 set -eu
 . env-clear
