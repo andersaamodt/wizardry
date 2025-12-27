@@ -355,7 +355,7 @@ export HOME
 PATH="$2"
 WIZARDRY_LOAD_ALL=1
 export WIZARDRY_LOAD_ALL
-. "$3" 2>/dev/null || exit 1
+. "$3" || exit 1
 
 if [ -n "${WIZARDRY_DIR-}" ] && [ -d "$WIZARDRY_DIR/spells" ]; then
   printf '%s\n' "wizardry dir set"
