@@ -10,15 +10,18 @@ Displays the Node.js management menu.
 USAGE
 }
 
+node_menu() {
 case "${1-}" in
-  --help|--usage|-h)
-    node_menu_usage
-    exit 0
-    ;;
+--help|--usage|-h)
+  node_menu_usage
+  return 0
+  ;;
 esac
 
-node_menu() {
+require-wizardry || return 1
+
 set -eu
+. env-clear
 . colors
 
 trap 'exit 0' INT TERM
@@ -137,7 +140,12 @@ while :; do
 done
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */node-menu|node-menu) node_menu "$@" ;;
-esac
+# Load castable imp for direct execution
+if true; then  # Always source castable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"

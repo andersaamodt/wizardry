@@ -3,7 +3,7 @@
 # This spell displays a menu to select and set the current MUD player.
 # Use it to switch between player identities from available SSH keys.
 
-require-wizardry || exit 1
+require-wizardry || return 1
 
 select_player_usage() {
 cat <<'USAGE'
@@ -50,6 +50,13 @@ set -- "$@" "Cancel%return"
 menu "Choose your player:" "$@"
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */select-player) select_player "$@" ;; esac
+
+# Load castable imp for direct execution
+if true; then  # Always source castable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"

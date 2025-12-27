@@ -46,4 +46,5 @@ _run_test_case "compile-spell shows help with -h" test_compile_spell_help_h_flag
 _run_test_case "compile-spell requires arguments" test_compile_spell_requires_args
 _run_test_case "compile-spell fails for unknown spell" test_compile_spell_unknown_spell
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

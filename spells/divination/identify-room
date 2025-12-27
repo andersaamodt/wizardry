@@ -3,7 +3,7 @@
 # This spell names common system rooms and describes their usual roles.
 # Use it to learn what important directories are for or to list recognized rooms.
 
-require-wizardry || exit 1
+require-wizardry || return 1
 
 identify_room_usage() {
 cat <<'USAGE'
@@ -300,6 +300,13 @@ printf '%s\n' 'This room has no special meaning within the UNIX system.'
 return 1
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */identify-room) identify_room "$@" ;; esac
+
+# Load castable imp for direct execution
+if true; then  # Always source castable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"

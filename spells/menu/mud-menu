@@ -2,7 +2,7 @@
 
 # This spell displays the MUD install menu.
 
-require-wizardry || exit 1
+require-wizardry || return 1
 
 mud_menu_usage() {
   cat <<'USAGE'
@@ -199,6 +199,13 @@ while true; do
 done
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */mud-menu) mud_menu "$@" ;; esac
+
+# Load castable imp for direct execution
+if true; then  # Always source castable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"

@@ -1,0 +1,55 @@
+#!/bin/sh
+# run-both-patterns DESC FUNC [SPELL_PATH] - run test in source-then-invoke pattern
+# By default, tests ONLY direct execution (fast, sufficient for most testing).
+# Set WIZARDRY_TEST_BOTH_PATTERNS=1 to also test source-then-invoke pattern.
+# The castable/uncastable imps guarantee parity between patterns.
+
+_run_both_patterns() {
+  set -eu
+  
+  _desc=$1
+  _func=$2
+  _spell_path=${3-}
+  
+  # If spell_path not provided, try to extract from test function
+  if [ -z "$_spell_path" ]; then
+    # Try to extract spell path from function body by reading the function
+    # This is a best-effort attempt - if it fails, tests will still work
+    _spell_path=$(command -v "$_func" >/dev/null 2>&1 && grep -o 'spells/[^"[:space:]]*' 2>/dev/null | head -1 || true)
+  fi
+  
+  # Determine if spell is castable or uncastable
+  _is_castable=1
+  if [ -n "$_spell_path" ] && [ -f "$ROOT_DIR/$_spell_path" ]; then
+    # Check if spell uses uncastable
+    if grep -q "^uncastable" "$ROOT_DIR/$_spell_path" 2>/dev/null; then
+      _is_castable=0
+    fi
+  fi
+  
+  # Opt-in: Test both patterns if explicitly requested
+  if [ "${WIZARDRY_TEST_BOTH_PATTERNS-}" = "1" ] && [ "$_is_castable" -eq 1 ]; then
+    # Test direct execution first
+    _run_test_case "$_desc (direct execution)" "$_func"
+    
+    # Test source-then-invoke second
+    # This is done by temporarily setting a flag that run_spell checks
+    _prev_use_sourced=$WIZARDRY_USE_SOURCED_SPELL
+    WIZARDRY_USE_SOURCED_SPELL=1
+    export WIZARDRY_USE_SOURCED_SPELL
+    
+    _run_test_case "$_desc (sourced)" "$_func"
+    
+    # Restore flag
+    WIZARDRY_USE_SOURCED_SPELL=$_prev_use_sourced
+    export WIZARDRY_USE_SOURCED_SPELL
+  else
+    # Default: just run the test once (direct execution for castable, sourced for uncastable)
+    _run_test_case "$_desc" "$_func"
+  fi
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */run-both-patterns) _run_both_patterns "$@" ;;
+esac

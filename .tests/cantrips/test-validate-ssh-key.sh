@@ -49,4 +49,5 @@ _run_test_case "validate-ssh-key accepts ed25519 keys" test_accepts_ed25519_key
 _run_test_case "validate-ssh-key rejects invalid format" test_rejects_invalid_format
 _run_test_case "validate-ssh-key requires argument" test_requires_argument
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

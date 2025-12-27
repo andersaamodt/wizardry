@@ -10,14 +10,19 @@ Displays the simplex-chat management menu.
 USAGE
 }
 
+simplex_chat_menu() {
 case "${1-}" in
   --help|--usage|-h)
     simplex_chat_menu_usage
-    exit 0
+    return 0
     ;;
 esac
 
+require-wizardry || return 1
+
+
 set -eu
+. env-clear
 . colors
 
 trap 'exit 0' INT TERM
@@ -79,3 +84,15 @@ while :; do
   build_menu_entries || true
 
 done
+
+}
+
+# Load castable imp for direct execution
+if true; then  # Always source castable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"

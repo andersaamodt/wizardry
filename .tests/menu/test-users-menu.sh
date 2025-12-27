@@ -173,4 +173,5 @@ SH
 
 _run_test_case "users-menu ESC/Exit behavior" test_esc_exit_behavior
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

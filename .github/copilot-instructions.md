@@ -5,6 +5,7 @@
 1. **`README.md`** — Project principles, values, and standards (READ FIRST)
 2. **`.AGENTS.md`** — Comprehensive agent instructions and style guide
 3. **Topic-specific instructions** (consult as needed):
+   - `.github/instructions/castable-uncastable-pattern.instructions.md` — **CRITICAL**: Self-execute pattern rules (return vs exit, set -eu placement, function structure)
    - `.github/instructions/spells.instructions.md` — Spell writing guide
    - `.github/instructions/imps.instructions.md` — Imp (micro-helper) guide  
    - `.github/instructions/tests.instructions.md` — Testing framework and patterns

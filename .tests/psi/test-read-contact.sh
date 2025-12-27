@@ -172,4 +172,5 @@ _run_test_case "read-contact rejects malformed cards" read_contact_rejects_malfo
 _run_test_case "read-contact rejects multi-card vcf inputs" read_contact_rejects_multiple_cards
 _run_test_case "read-contact handles CRLF vCards" read_contact_handles_crlf_cards
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

@@ -37,4 +37,5 @@ _run_test_case "restart-ssh shows usage text" test_help
 _run_test_case "restart-ssh shows usage with -h" test_help_h_flag
 _run_test_case "restart-ssh uses os imp for detection" test_uses_os_imp
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

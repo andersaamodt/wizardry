@@ -11,14 +11,19 @@ upstream binaries), updates bitcoin.conf, and optionally starts the node.
 USAGE
 }
 
+install_bitcoin() {
 case "${1-}" in
 --help|--usage|-h)
 install_bitcoin_usage
-exit 0
+return 0
 ;;
 esac
 
+require-wizardry || return 1
+
+
 set -eu
+. env-clear
 
 BITCOIN_VERSION_DEFAULT="25.0"
 
@@ -60,15 +65,15 @@ if [ "$distro" = "nixos" ]; then
       armv7l) binary_name="bitcoin-$version-arm-linux-gnueabihf.tar.gz" ;;
       *)
         echo "Unsupported architecture: $arch"
-        exit 1
+        return 1
         ;;
     esac
     
     bitcoin_url="https://bitcoincore.org/bin/bitcoin-core-$version/$binary_name"
-    tmp_dir=$(temp-dir bitcoin-install) || exit 1
+    tmp_dir=$(temp-dir bitcoin-install) || return 1
     trap 'cleanup-dir "$tmp_dir"' EXIT HUP INT TERM
-    cd "$tmp_dir" || exit 1
-    wget "$bitcoin_url" || exit 1
+    cd "$tmp_dir" || return 1
+    wget "$bitcoin_url" || return 1
     tar -xzf "$binary_name"
     sudo install -m 0755 -o root -g root -t /usr/local/bin "bitcoin-$version"/bin/*
     cd - >/dev/null || true
@@ -126,7 +131,7 @@ if [ "$distro" = "nixos" ]; then
       fi
     fi
   fi
-  exit 0
+  return 0
 fi
 
 # Standard Linux installation
@@ -175,15 +180,15 @@ if [ "$pkg_install_success" -eq 0 ]; then
     armv7l) binary_name="bitcoin-$version-arm-linux-gnueabihf.tar.gz" ;;
     *)
       echo "Unsupported architecture: $arch"
-      exit 1
+      return 1
       ;;
   esac
   
   bitcoin_url="https://bitcoincore.org/bin/bitcoin-core-$version/$binary_name"
-  tmp_dir=$(temp-dir bitcoin-install) || exit 1
+  tmp_dir=$(temp-dir bitcoin-install) || return 1
   trap 'cleanup-dir "$tmp_dir"' EXIT HUP INT TERM
-  cd "$tmp_dir" || exit 1
-  wget "$bitcoin_url" || exit 1
+  cd "$tmp_dir" || return 1
+  wget "$bitcoin_url" || return 1
   tar -xzf "$binary_name"
   sudo install -m 0755 -o root -g root -t /usr/local/bin "bitcoin-$version"/bin/*
   cd - >/dev/null || true
@@ -245,3 +250,15 @@ else
     fi
   fi
 fi
+
+}
+
+# Load castable imp for direct execution
+if true; then  # Always source castable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"

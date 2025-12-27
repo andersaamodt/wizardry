@@ -10,14 +10,19 @@ Turn the cd hook that runs 'look' after each directory change on or off.
 USAGE
 }
 
+toggle_cd() {
 case "${1-}" in
 --help|--usage|-h)
         toggle_cd_usage
-        exit 0
+        return 0
         ;;
 esac
 
+require-wizardry || return 1
+
+
 set -eu
+. env-clear
 
 # Get script directory to find imps
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
@@ -39,7 +44,7 @@ if "$IMPS_DIR/config-has" "$CONFIG_FILE" "cd-look" 2>/dev/null; then
                 # Currently enabled, disable it
                 "$IMPS_DIR/config-del" "$CONFIG_FILE" "cd-look"
                 printf '%s\n' "✓ cd hook disabled. Directory changes will no longer display room descriptions."
-                exit 0
+                return 0
         fi
 fi
 
@@ -49,3 +54,15 @@ printf '%s\n' "✓ cd hook enabled. Each directory change will now display the r
 printf '%s\n' ""
 printf '%s\n' "Note: The cd function is automatically loaded by invoke-wizardry."
 printf '%s\n' "Open a new terminal window for changes to take effect."
+
+}
+
+# Load castable imp for direct execution
+if true; then  # Always source castable, never use from PATH
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"

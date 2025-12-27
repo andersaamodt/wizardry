@@ -1,9 +1,17 @@
 #!/bin/sh
 # run-spell SCRIPT [ARGS...] - run a spell script in a sandboxed environment
 # Wraps run-cmd with the ROOT_DIR prefix for the script path.
+# Automatically switches to _run_sourced_spell when WIZARDRY_USE_SOURCED_SPELL=1
 set -eu
 
 _run_spell() {
+  # Check if we should use sourced spell instead
+  if [ "${WIZARDRY_USE_SOURCED_SPELL-0}" = "1" ]; then
+    _run_sourced_spell "$@"
+    return $?
+  fi
+  
+  # Normal direct execution
   script=$1
   shift || true
   _run_cmd "$ROOT_DIR/$script" "$@"

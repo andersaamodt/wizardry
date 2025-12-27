@@ -42,4 +42,5 @@ _run_test_case "wizard-eyes shows usage text" test_help
 _run_test_case "wizard-eyes outputs formatted message" test_outputs_message
 _run_test_case "wizard-eyes suppresses output when disabled" test_suppresses_when_disabled
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

@@ -110,4 +110,5 @@ _run_test_case "bind-tome deletes pages when -d is provided" bind_deletes_pages_
 _run_test_case "bind-tome shows usage text" bind_shows_usage
 _run_test_case "bind-tome rejects unknown options" bind_rejects_unknown_option
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

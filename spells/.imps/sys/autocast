@@ -1,0 +1,78 @@
+#!/bin/sh
+# autocast [SPELL_NAME]
+# Automatically execute spell function when sourced, while still allowing direct execution.
+# Use for environment setup spells that define variables (like colors).
+# SPELL_NAME is optional - if not provided, autocast will detect the true-name function.
+# Example: autocast colors
+# Example: autocast  (auto-detects function)
+
+set -eu
+
+_autocast() {
+  _autocast_name=${1:-}
+  shift || :  # Remove first arg if present, ignore error if no args
+  
+  # Try to detect spell name if not provided
+  if [ -z "$_autocast_name" ]; then
+    _autocast_name=$(basename "${0-}" 2>/dev/null || true)
+  fi
+  
+  # Detect if being executed vs sourced
+  _autocast_executed=0
+  _autocast_base=${0##*/}
+  case "$_autocast_base" in
+    sh|dash|bash|zsh|ksh|mksh)
+      _autocast_executed=0  # sourced
+      # When sourced, basename might be shell name, try to find actual function
+      if [ -z "$_autocast_name" ] || [ "$_autocast_name" = "$_autocast_base" ]; then
+        # Try common function name patterns based on caller's file name
+        # Check if any snake_case function exists that isn't internal
+        _autocast_name=""
+        _autocast_func=""
+      fi
+      ;;
+    *)
+      # Check if executed directly
+      if [ "$_autocast_base" = "$_autocast_name" ]; then
+        _autocast_executed=1
+      else
+        _autocast_executed=0  # sourced from another script
+      fi
+      ;;
+  esac
+  
+  # Determine function name to call
+  _autocast_func=""
+  if [ -n "$_autocast_name" ]; then
+    # Convert hyphenated spell name to underscored function name
+    _autocast_func=$(printf '%s' "$_autocast_name" | tr '-' '_')
+  fi
+  
+  # If we don't have a function name yet, we're being sourced without explicit name
+  # The spell should have defined its true-name function already
+  # Just return silently - this is fine for spells that don't follow autocast pattern
+  if [ -z "$_autocast_func" ]; then
+    return 0
+  fi
+  
+  # If executed directly, call the function with remaining arguments
+  if [ "$_autocast_executed" -eq 1 ]; then
+    if command -v "$_autocast_func" >/dev/null 2>&1; then
+      "$_autocast_func" "$@"
+    else
+      # Function not found - this is an error when executed
+      printf '%s\n' "autocast: function $_autocast_func not found" >&2
+      return 2
+    fi
+  else
+    # If sourced, automatically call the function (this is what makes it "autocast")
+    # Only call if function exists - silently skip if not
+    if command -v "$_autocast_func" >/dev/null 2>&1; then
+      "$_autocast_func"
+    fi
+  fi
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */autocast) _autocast "$@" ;; esac

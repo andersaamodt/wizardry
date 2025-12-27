@@ -231,4 +231,5 @@ _run_test_case "detect-magic skips unreadable files" detect_magic_skips_unreadab
 _run_test_case "detect-magic reports helper failures" detect_magic_reports_helper_errors_without_stopping
 _run_test_case "detect-magic skips malformed helper output" detect_magic_skips_malformed_helper_output
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

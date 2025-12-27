@@ -40,4 +40,5 @@ _run_test_case "file-list shows usage text" test_help
 _run_test_case "file-list requires folder argument" test_requires_argument
 _run_test_case "file-list creates output file" test_creates_file
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

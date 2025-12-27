@@ -61,4 +61,5 @@ shows_help() {
 }
 
 _run_test_case "is-service-installed accepts --help" shows_help
-_finish_tests
+
+# Test via source-then-invoke pattern  

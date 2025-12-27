@@ -57,4 +57,5 @@ _run_test_case "open-teletype shows usage text" test_help
 _run_test_case "open-teletype requires torify" test_requires_torify
 _run_test_case "open-teletype requires MUD_PLAYER" test_requires_mud_player
 
-_finish_tests
+
+# Test via source-then-invoke pattern  
