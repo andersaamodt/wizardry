@@ -354,7 +354,8 @@ HOME=$1
 export HOME
 PATH="$2"
 WIZARDRY_LOAD_ALL=1
-export WIZARDRY_LOAD_ALL
+WIZARDRY_DEBUG=1  # Enable debug mode to make spell loading work correctly
+export WIZARDRY_LOAD_ALL WIZARDRY_DEBUG
 . "$3" || exit 1
 
 if [ -n "${WIZARDRY_DIR-}" ] && [ -d "$WIZARDRY_DIR/spells" ]; then
