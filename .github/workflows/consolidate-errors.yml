@@ -53,25 +53,25 @@ jobs:
           
           # Create consolidated report file
           report_file="/tmp/consolidated-errors.txt"
-          cat > "$report_file" <<EOF
-====================================================================
- CONSOLIDATED WORKFLOW ERROR REPORT
-====================================================================
-
-Workflow: ${{ github.event.workflow_run.name }}
-Conclusion: ${{ github.event.workflow_run.conclusion }}
-Run URL: ${{ github.event.workflow_run.html_url }}
-Run ID: ${{ github.event.workflow_run.id }}
-Triggered by: ${{ github.event.workflow_run.event }}
-Head branch: ${{ github.event.workflow_run.head_branch }}
-Head SHA: ${{ github.event.workflow_run.head_sha }}
-Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
-
-====================================================================
- ERROR DETAILS
-====================================================================
-
-EOF
+          {
+            echo "===================================================================="
+            echo " CONSOLIDATED WORKFLOW ERROR REPORT"
+            echo "===================================================================="
+            echo ""
+            echo "Workflow: ${{ github.event.workflow_run.name }}"
+            echo "Conclusion: ${{ github.event.workflow_run.conclusion }}"
+            echo "Run URL: ${{ github.event.workflow_run.html_url }}"
+            echo "Run ID: ${{ github.event.workflow_run.id }}"
+            echo "Triggered by: ${{ github.event.workflow_run.event }}"
+            echo "Head branch: ${{ github.event.workflow_run.head_branch }}"
+            echo "Head SHA: ${{ github.event.workflow_run.head_sha }}"
+            echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+            echo ""
+            echo "===================================================================="
+            echo " ERROR DETAILS"
+            echo "===================================================================="
+            echo ""
+          } > "$report_file"
           
           # Check if any error artifacts were downloaded
           if [ -d "/tmp/error-reports" ] && [ "$(find /tmp/error-reports -type f | wc -l)" -gt 0 ]; then
@@ -89,11 +89,11 @@ EOF
               echo ""
               
               # Add to consolidated report
-              cat >> "$report_file" <<EOF
-----------------------------------------------------------------------
-ERROR REPORT: $(basename $(dirname "$error_file"))
-----------------------------------------------------------------------
-EOF
+              {
+                echo "----------------------------------------------------------------------"
+                echo "ERROR REPORT: $(basename $(dirname "$error_file"))"
+                echo "----------------------------------------------------------------------"
+              } >> "$report_file"
               cat "$error_file" >> "$report_file"
               echo "" >> "$report_file"
               echo "" >> "$report_file"
@@ -115,17 +115,17 @@ EOF
           echo ""
           
           # Add summary
-          cat >> "$report_file" <<EOF
-
-====================================================================
- SUMMARY
-====================================================================
-
-Complete error report for workflow: ${{ github.event.workflow_run.name }}
-Run URL: ${{ github.event.workflow_run.html_url }}
-
-This report consolidates all errors from the failed workflow run.
-EOF
+          {
+            echo ""
+            echo "===================================================================="
+            echo " SUMMARY"
+            echo "===================================================================="
+            echo ""
+            echo "Complete error report for workflow: ${{ github.event.workflow_run.name }}"
+            echo "Run URL: ${{ github.event.workflow_run.html_url }}"
+            echo ""
+            echo "This report consolidates all errors from the failed workflow run."
+          } >> "$report_file"
       
       - name: Upload consolidated error report
         uses: actions/upload-artifact@v4
@@ -137,21 +137,21 @@ EOF
       
       - name: Display error summary in job summary
         run: |
-          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
-          # Workflow Error Report
-
-          **Workflow:** ${{ github.event.workflow_run.name }}  
-          **Conclusion:** ${{ github.event.workflow_run.conclusion }}  
-          **Run URL:** ${{ github.event.workflow_run.html_url }}  
-          **Triggered by:** ${{ github.event.workflow_run.event }}  
-          **Branch:** ${{ github.event.workflow_run.head_branch }}  
-          **SHA:** \`${{ github.event.workflow_run.head_sha }}\`
-
-          ---
-
-          ## Error Details
-
-          EOF
+          {
+            echo "# Workflow Error Report"
+            echo ""
+            echo "**Workflow:** ${{ github.event.workflow_run.name }}"
+            echo "**Conclusion:** ${{ github.event.workflow_run.conclusion }}"
+            echo "**Run URL:** ${{ github.event.workflow_run.html_url }}"
+            echo "**Triggered by:** ${{ github.event.workflow_run.event }}"
+            echo "**Branch:** ${{ github.event.workflow_run.head_branch }}"
+            echo "**SHA:** \`${{ github.event.workflow_run.head_sha }}\`"
+            echo ""
+            echo "---"
+            echo ""
+            echo "## Error Details"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
           
           if [ -f /tmp/consolidated-errors.txt ]; then
             echo '```' >> "$GITHUB_STEP_SUMMARY"
@@ -161,9 +161,9 @@ EOF
             echo "No consolidated error report generated." >> "$GITHUB_STEP_SUMMARY"
           fi
           
-          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
-
-          ---
-
-          📥 Download the **consolidated-workflow-errors** artifact for the complete error report.
-          EOF
+          {
+            echo ""
+            echo "---"
+            echo ""
+            echo "📥 Download the **consolidated-workflow-errors** artifact for the complete error report."
+          } >> "$GITHUB_STEP_SUMMARY"
