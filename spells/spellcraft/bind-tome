@@ -84,7 +84,8 @@ fi
 
 
 # Load castable imp for direct execution
-if true; then  # Always source castable, never use from PATH
+# CRITICAL: Check if already available before sourcing to avoid fork limits
+if ! command -v castable >/dev/null 2>&1; then
   _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
   _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
   _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
