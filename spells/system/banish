@@ -932,7 +932,7 @@ banish_run_tests_for_level() {
           if [ "$verbose" -eq 1 ]; then
             banish_step "Running $test_name..."
           fi
-          if "${WIZARDRY_DIR}/spells/system/test-spell" --skip-common "${test_file#${WIZARDRY_DIR}/.tests/}" >/dev/null 2>&1; then
+          if "${WIZARDRY_DIR}/spells/system/test-spell" --skip-common "${test_file#${WIZARDRY_DIR}/.tests/}" </dev/null >/dev/null 2>&1; then
             passed=$((passed + 1))
             if [ "$verbose" -eq 1 ]; then
               banish_check "$test_name passed"
