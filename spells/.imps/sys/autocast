@@ -85,6 +85,11 @@ _autocast() {
   fi
 }
 
+# Public wrapper function (for when autocast is sourced)
+autocast() {
+  _autocast "$@"
+}
+
 # Self-execute when run directly (not sourced)
 case "$0" in
   */autocast) _autocast "$@" ;; esac
