@@ -119,6 +119,12 @@ After all features work:
 - **Fix**: menu now sources the colors file when `command -v colors` returns a path, otherwise it invokes the already-loaded `colors` function.
 - **Next**: Re-test `menu` in a fresh terminal after install.
 
+### 2025-12-28: Hotload main-menu when menu has no entries
+
+- **Issue**: `menu` in a fresh shell returned "no menu entries provided" because `main-menu` was not preloaded and the `has` check never invoked word-of-binding.
+- **Fix**: when no entries are passed, `menu` now attempts to load and run `main-menu` via word-of-binding before erroring.
+- **Next**: Re-test `menu` in a fresh terminal after install.
+
 ## Testing Strategy
 
 For each phase, we will:
