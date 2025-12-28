@@ -218,6 +218,17 @@ function brace_delta(s, n, m) {
     done
   done
 
+  # If a legacy alias points menu at word-of-binding, remove it so the function wins.
+  if alias menu >/dev/null 2>&1; then
+    _iw_menu_alias=$(alias menu 2>/dev/null || :)
+    case "$_iw_menu_alias" in
+      *word-of-binding*|*_word_of_binding*)
+        _iw_debug "Removing legacy menu alias: $_iw_menu_alias"
+        unalias menu 2>/dev/null || :
+        ;;
+    esac
+  fi
+
   if ! command -v menu >/dev/null 2>&1; then
     printf '%s\n' "invoke-wizardry: ERROR - failed to load menu spell" >&2
     return 1
