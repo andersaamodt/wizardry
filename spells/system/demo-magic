@@ -12,11 +12,12 @@ Demonstrate wizardry features by running checks on spells and narrating results.
 Each level demonstrates spells validated by the corresponding banish level.
 
 Arguments:
-  LEVEL         Demonstration level (0-9, default: 1)
+  LEVEL         Demonstration level (0-26, default: 1)
                 Level 0: System foundation (POSIX tools, wizardry structure)
                 Level 1: Menu core (interactive menu system)
-                Level 2: Arcane spells & MUD basics (file operations, cd-hook, look)
-                Level 3+: Higher-level spells
+                Level 2: MUD basics (cd-hook, look)
+                Level 3: Navigation (jump-to-marker, mark-location)
+                Level 4+: Higher-level spells (see .github/SPELL_LEVELS.md)
 USAGE
 }
 

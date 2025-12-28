@@ -56,9 +56,9 @@ Each `banish N` command:
 - Offer to install missing recommended tools
 
 ### Spells
-- banish - The validation spell itself
-- detect-posix - POSIX toolchain validation
-- detect-distro - OS distribution detection
+* banish - The validation spell itself
+* detect-posix - POSIX toolchain validation
+* detect-distro - OS distribution detection
 
 ### Imps Used by Level 0 Spells
 **Note**: Level 0 assumes wizardry is installed. The banish spell itself can work with minimal dependencies for bootstrapping scenarios, but is designed for post-install validation.
@@ -71,9 +71,9 @@ Each `banish N` command:
 
 ### Detection Capabilities (Optional)
 If wizardry is already installed, Level 0 can use:
-- detect-posix - Probe POSIX toolchain
-- detect-distro - Detect Linux distribution
-- verify-posix - Verify POSIX environment
+* detect-posix - Probe POSIX toolchain
+* detect-distro - Detect Linux distribution
+* verify-posix - Verify POSIX environment
 
 ### Tests
 - `.tests/system/test-banish.sh` - Test banish level 0 functionality
@@ -102,16 +102,16 @@ If wizardry is already installed, Level 0 can use:
 - Fall back to basic menu if ANSI codes unavailable
 
 ### Core Spell
-- menu - Interactive menu system (depends on: fathom-terminal, fathom-cursor, move-cursor, await-keypress, cursor-blink, colors)
+* menu (fathom-terminal, fathom-cursor, move-cursor, await-keypress, cursor-blink, colors) - Interactive menu system
 
 ### Menu Dependencies (in dependency order)
-1. fathom-terminal - Measure terminal size
-2. fathom-cursor - Get cursor position  
-3. move-cursor - Move cursor to position
-4. await-keypress - Read keyboard input
-5. cursor-blink - Control cursor visibility
-6. colors - Terminal color codes
-7. main-menu - Top-level menu content (depends on: menu)
+* fathom-terminal - Measure terminal size
+* fathom-cursor - Get cursor position  
+* move-cursor - Move cursor to position
+* await-keypress - Read keyboard input
+* cursor-blink - Control cursor visibility
+* colors - Terminal color codes
+* main-menu - Top-level menu content (menu)
 
 ### Imps Used by Level 1 Spells
 
@@ -184,38 +184,78 @@ If wizardry is already installed, Level 0 can use:
 
 ---
 
-## Level 2: Arcane Spells & MUD Basics
+## Level 2: MUD Basics
 
-**Purpose**: Core file and directory manipulation spells used throughout wizardry, plus basic MUD features.
+**Purpose**: Basic MUD integration - directory navigation awareness and CD hook management.
 
 ### Assumptions
 - [ ] Level 1 complete (menu works)
+- [ ] Extended attributes supported (or fallback available)
+
+### Self-Healing Actions
+- Check extended attribute support  
+- Offer to install xattr tools if missing
+
+### Spells
+* check-cd-hook - Check if CD hook is installed
+* look (read-magic from Level 4) - Display location's title and description
+
+### Additional Imps Introduced
+- `fs/xattr-helper-usable` - Check extended attributes support
+- `fs/xattr-list-keys` - List xattr keys
+- `fs/xattr-read-value` - Read xattr value
+
+### Tests
+- `.tests/mud/test-check-cd-hook.sh`
+- `.tests/mud/test-look.sh`
+
+---
+
+## Level 3: Navigation
+
+**Purpose**: Bookmark-based navigation system for quick directory teleportation.
+
+### Assumptions
+- [ ] Level 2 complete (MUD basics work)
+- [ ] Marker directory can be created
+
+### Self-Healing Actions
+- Create marker directory if missing
+
+### Spells
+* jump-to-marker - Teleport to bookmarks
+* mark-location - Record location bookmarks
+
+### Tests
+- `.tests/translocation/test-jump-to-marker.sh`
+- `.tests/translocation/test-mark-location.sh`
+
+---
+
+## Level 4: Arcane File Operations
+
+**Purpose**: Core file and directory manipulation spells.
+
+### Assumptions
+- [ ] Level 3 complete (navigation works)
 - [ ] File system is readable/writable
 - [ ] Standard UNIX file utilities work (`cp`, `mv`, `rm`, `find`)
-- [ ] Extended attributes supported (or fallback available)
 
 ### Self-Healing Actions
 - Verify file system permissions
 - Check disk space for temporary operations
 - Install missing file utilities if needed
-- Check extended attribute support
-- Offer to install xattr tools if missing
 
 ### Spells
-- copy - Copy files/directories
-- trash - Move to trash (safe delete)
-- jump-trash - Jump to trash directory (depends on: trash)
-- forall - Execute command for each item
-- read-magic - Read extended attributes
-- file-list - List files with details
-- check-cd-hook - Check if CD hook is installed
-- look - Display location's title and description (depends on: read-magic)
+* copy - Copy files/directories
+* trash - Move to trash (safe delete)
+* jump-trash (trash) - Jump to trash directory
+* forall - Execute command for each item
+* read-magic - Read extended attributes
+* file-list - List files with details
 
 ### Additional Imps Introduced
 - `fs/backup` - Backup file before modification
-- `fs/xattr-helper-usable` - Check extended attributes support
-- `fs/xattr-list-keys` - List xattr keys
-- `fs/xattr-read-value` - Read xattr value
 - `menu/detect-trash` - Detect trash directory location
 - `text/read-file` - Read file contents
 - `text/write-file` - Write file contents
@@ -229,140 +269,201 @@ If wizardry is already installed, Level 0 can use:
 - `.tests/arcane/test-forall.sh`
 - `.tests/arcane/test-read-magic.sh`
 - `.tests/arcane/test-file-list.sh`
-- `.tests/mud/test-check-cd-hook.sh`
-- `.tests/mud/test-look.sh`
 
 ---
 
-## Level 3: Cantrips & Navigation
+## Level 5: Basic Cantrips
 
-**Purpose**: Simple interactive spells for user input and basic navigation operations.
+**Purpose**: Simple interactive spells for user input and basic operations.
 
 ### Assumptions
-- [ ] Level 2 complete (arcane spells and basic MUD work)
+- [ ] Level 4 complete (file operations work)
 - [ ] Terminal supports interactive input
 - [ ] User can respond to prompts
-- [ ] Marker directory can be created
 
 ### Self-Healing Actions
 - Verify TTY is interactive
 - Check terminal supports required features
 - Fall back to simple prompts if needed
-- Create marker directory if missing
 
 ### Spells
-- ask - Generic prompt
-- ask-yn - Yes/no question (depends on: ask)
-- ask-number - Numeric input (depends on: ask, validate-number)
-- ask-text - Text input (depends on: ask)
-- list-files - List files in directory
-- max-length - Find maximum line length
-- move - Move file/directory
-- memorize - Add spell to shell rc
-- validate-number - Validate numeric input
-- validate-path - Validate file path
-- require-command - Require command availability
-- up - Navigate up directory levels
-- jump-to-marker - Teleport to bookmarks
-- mark-location - Record location bookmarks
+* ask - Generic prompt
+* ask-yn (ask) - Yes/no question
+* ask-text (ask) - Text input
+* list-files - List files in directory
+* max-length - Find maximum line length
+* move - Move file/directory
+* up - Navigate up directory levels
 
 ### Additional Imps Introduced
 - `input/select-input` - Select from options
-- `input/validate-command` - Validate command name
-- `input/validate-name` - Validate file name
 - `lex/parse` - Parse command line
 - `lex/from` - Extract from delimiter
 - `lex/to` - Extract to delimiter
-- `lex/and` - Logical AND
-- `lex/or` - Logical OR
 
 ### Tests
 - `.tests/cantrips/test-ask.sh`
 - `.tests/cantrips/test-ask-yn.sh`
-- `.tests/cantrips/test-ask-number.sh`
 - `.tests/cantrips/test-ask-text.sh`
 - `.tests/cantrips/test-list-files.sh`
 - `.tests/cantrips/test-max-length.sh`
 - `.tests/cantrips/test-move.sh`
-- `.tests/cantrips/test-memorize.sh`
-- `.tests/translocation/test-jump-to-marker.sh`
-- `.tests/translocation/test-mark-location.sh`
 
 ---
 
-## Level 4: System Spells (Configuration & Testing)
+## Level 6: Validation Helpers
 
-**Purpose**: System-level configuration, testing, and verification spells.
+**Purpose**: Input validation and requirement checking.
 
 ### Assumptions
-- [ ] Level 3 complete (cantrips work)
+- [ ] Level 5 complete (basic cantrips work)
+
+### Spells
+* validate-number - Validate numeric input
+* validate-path - Validate file path
+* require-command - Require command availability
+
+### Additional Imps Introduced
+- `input/validate-command` - Validate command name
+- `input/validate-name` - Validate file name
+- `lex/and` - Logical AND
+- `lex/or` - Logical OR
+
+### Tests
+- `.tests/cantrips/test-validate-number.sh` (if exists)
+- `.tests/cantrips/test-validate-path.sh` (if exists)
+
+---
+
+## Level 7: Advanced Cantrips
+
+**Purpose**: More complex user interaction spells that build on validation.
+
+### Assumptions
+- [ ] Level 6 complete (validation works)
+
+### Spells
+* ask-number (ask from Level 5, validate-number from Level 6) - Numeric input
+* memorize - Add spell to shell rc
+
+### Tests
+- `.tests/cantrips/test-ask-number.sh`
+- `.tests/cantrips/test-memorize.sh`
+
+---
+
+## Level 8: System Configuration
+
+**Purpose**: System-level configuration management.
+
+### Assumptions
+- [ ] Level 7 complete (advanced cantrips work)
 - [ ] Write access to config files
-- [ ] Test infrastructure available
 
 ### Self-Healing Actions
 - Create config directory if missing
 - Set proper permissions on config files
-- Verify test infrastructure
 
 ### Spells
-- config - Manage configuration
-- test-magic - Run all tests (depends on: test-spell)
-- test-spell - Run single test
-- demo-magic - Demonstrate wizardry features (depends on: multiple lower-level spells)
-- verify-posix - Verify POSIX compliance
-- logs - View wizardry logs
-- update-wizardry - Update wizardry
-- update-all - Update everything (depends on: update-wizardry)
-- kill-process - Kill process by name
-- package-managers - Manage packages
-- wizard-cast - Execute spells with wizard powers
-- wizard-eyes - Enhanced spell inspection
-- logging-example - Tutorial for logging framework
+* config - Manage configuration
+* logs - View wizardry logs
+* package-managers - Manage packages
 
 ### Additional Imps Introduced
 - `fs/config-get` - Get config value
 - `fs/config-set` - Set config value
 - `fs/config-has` - Check config key exists
 - `fs/config-del` - Delete config key
-- `sys/rc-add-line` - Add line to rc file
-- `sys/rc-has-line` - Check if rc has line
-- `sys/rc-remove-line` - Remove line from rc
-- `test/*` - All test framework imps
 
 ### Tests
 - `.tests/system/test-config.sh`
-- `.tests/system/test-test-magic.sh`
-- `.tests/system/test-test-spell.sh`
-- `.tests/system/test-demonstrate-wizardry.sh`
-- `.tests/system/test-verify-posix.sh`
 - `.tests/system/test-logs.sh`
-- `.tests/system/test-update-wizardry.sh`
-- `.tests/system/test-update-all.sh`
-- `.tests/system/test-kill-process.sh`
 - `.tests/system/test-package-managers.sh`
 
 ---
 
-## Level 5: Divination Spells (Detection & Analysis)
+## Level 9: Testing Infrastructure
+
+**Purpose**: Test execution and validation framework.
+
+### Assumptions
+- [ ] Level 8 complete (config works)
+- [ ] Test infrastructure available
+
+### Self-Healing Actions
+- Verify test infrastructure
+
+### Spells
+* test-spell - Run single test
+* test-magic (test-spell) - Run all tests
+* logging-example - Tutorial for logging framework
+* wizard-eyes - Enhanced spell inspection
+
+### Additional Imps Introduced
+- `test/*` - All test framework imps
+- `sys/rc-add-line` - Add line to rc file
+- `sys/rc-has-line` - Check if rc has line
+- `sys/rc-remove-line` - Remove line from rc
+
+### Tests
+- `.tests/system/test-test-spell.sh`
+- `.tests/system/test-test-magic.sh`
+
+---
+
+## Level 10: System Maintenance
+
+**Purpose**: System updates and process management.
+
+### Assumptions
+- [ ] Level 9 complete (testing works)
+
+### Spells
+* update-wizardry - Update wizardry
+* update-all (update-wizardry) - Update everything
+* kill-process - Kill process by name
+
+### Tests
+- `.tests/system/test-update-wizardry.sh`
+- `.tests/system/test-update-all.sh`
+- `.tests/system/test-kill-process.sh`
+
+---
+
+## Level 11: Advanced System Tools
+
+**Purpose**: Advanced system validation and demonstration.
+
+### Assumptions
+- [ ] Level 10 complete (system maintenance works)
+
+### Spells
+* demo-magic (multiple lower-level spells) - Demonstrate wizardry features
+* verify-posix - Verify POSIX compliance
+* wizard-cast - Execute spells with wizard powers
+
+### Tests
+- `.tests/system/test-demo-magic.sh`
+- `.tests/system/test-verify-posix.sh`
+
+---
+
+## Level 12: Divination
 
 **Purpose**: Detection and analysis spells for system information.
 
 ### Assumptions
-- [ ] Level 4 complete (system spells work)
+- [ ] Level 11 complete (advanced system tools work)
 - [ ] System information accessible
-- [ ] Platform-specific tools available
 
 ### Self-Healing Actions
 - Install platform detection tools if missing
 - Verify system information sources
-- Fall back to generic detection if needed
 
 ### Spells
-- detect-posix - Detect POSIX tools
-- detect-distro - Detect OS distribution
-- detect-rc-file - Detect shell rc file
-- detect-magic - Detect file metadata (depends on: read-magic)
-- identify-room - Identify current directory as MUD room (depends on: detect-magic)
+* detect-rc-file - Detect shell rc file
+* detect-magic (read-magic from Level 4) - Detect file metadata
+* identify-room (detect-magic) - Identify current directory as MUD room
 
 ### Additional Imps Introduced
 - `sys/os` - Get operating system name
@@ -371,32 +472,24 @@ If wizardry is already installed, Level 0 can use:
 - `text/detect-indent-width` - Detect indentation width
 
 ### Tests
-- `.tests/divination/test-detect-posix.sh`
-- `.tests/divination/test-detect-distro.sh`
 - `.tests/divination/test-detect-rc-file.sh`
 - `.tests/divination/test-detect-magic.sh`
+- `.tests/divination/test-identify-room.sh`
 
 ---
 
-## Level 6: MUD Spells (Multi-User Dungeon Features)
+## Level 13: Advanced MUD Features
 
-**Purpose**: Advanced MUD-themed features - player management, decorations, and integration.
+**Purpose**: Advanced MUD theme integration building on basic MUD (Level 2).
 
 ### Assumptions
-- [ ] Level 5 complete (divination works)
-- [ ] Extended attributes supported (or fallback available)
-- [ ] User wants MUD features enabled
-- [ ] CD hook and look spell work (from Level 2)
-
-### Self-Healing Actions
-- Set up MUD directory structure
-- Configure CD hook if desired
-- Configure command-not-found hook if desired
+- [ ] Level 12 complete (divination works)
+- [ ] Extended attributes working (from Level 2)
 
 ### Spells
-- decorate - Add decorative elements (depends on: look, read-magic)
-- select-player - Select player/character
-- check-command-not-found-hook - Check command-not-found hook
+* decorate (look from Level 2, read-magic from Level 4) - Add decorative elements
+* select-player - Select player/character
+* check-command-not-found-hook - Check command-not-found hook
 
 ### Tests
 - `.tests/mud/test-decorate.sh`
@@ -405,128 +498,253 @@ If wizardry is already installed, Level 0 can use:
 
 ---
 
-## Level 7: Specialized Spells (Domain-Specific)
+## Level 14: Cryptography
 
-**Purpose**: Specialized functionality for specific use cases.
-
-### Spells
-
-#### Cryptography
-- hash - Generate cryptographic hashes
-- evoke-hash - Interactive hash generation (depends on: hash)
-- hashchant - Chained hash operations (depends on: hash)
-
-#### Translocation - Advanced
-- enchant-portkey - Configure SSH connection
-- follow-portkey - Connect via SSH (depends on: enchant-portkey)
-- open-portal - Open remote session
-- open-teletype - Connect to remote terminal
-- validate-ssh-key - Validate SSH key format
-- reload-ssh - Reload SSH service
-- restart-ssh - Restart SSH service
-
-#### Priorities
-- prioritize - Set task priority
-- get-priority - Get priority value
-- get-new-priority - Calculate new priority (depends on: get-priority)
-- upvote - Increase priority (depends on: get-priority)
-
-#### Wards
-- ssh-barrier - SSH security hardening
-
-#### Enchant
-- enchant - Add extended attributes (depends on: read-magic)
-- disenchant - Remove extended attributes (depends on: read-magic)
-- enchantment-to-yaml - Export attributes to YAML (depends on: read-magic)
-- yaml-to-enchantment - Import attributes from YAML (depends on: read-magic)
-
-#### PSI
-- list-contacts - List contact information
-- read-contact - Read contact details (depends on: list-contacts)
-
-#### Spellcraft
-- scribe-spell - Create new spell
-- lint-magic - Lint spell code
-- compile-spell - Compile spell
-- learn - Learn spell syntax
-- forget - Remove spell from memory
-- erase-spell - Delete spell file
-- doppelganger - Duplicate spell
-- add-synonym - Add spell synonym
-- edit-synonym - Edit spell synonym (depends on: add-synonym)
-- delete-synonym - Delete spell synonym (depends on: add-synonym)
-- reset-default-synonyms - Reset synonyms to defaults
-- bind-tome - Bind spellbook
-- unbind-tome - Unbind spellbook (depends on: bind-tome)
-- merge-yaml-text - Merge YAML configurations
-
-### Tests
-- All tests in respective `.tests/` subdirectories
-
----
-
-## Level 8: Menu Spells (High-Level Interfaces)
-
-**Purpose**: Menu-based interfaces that aggregate and present lower-level spells to users. These depend on many lower-level spells and provide user-friendly navigation.
+**Purpose**: Cryptographic operations and hashing.
 
 ### Assumptions
-- [ ] Level 7 complete (all specialized spells work)
-- [ ] Interactive menu system works (from Level 1)
-- [ ] User wants menu interfaces
+- [ ] Level 13 complete (advanced MUD works)
 
 ### Spells
-
-#### Core Menu Infrastructure
-- spellbook - Interactive spellbook browser (depends on: menu, read-magic)
-- cast - Cast menu interface (depends on: menu, spellbook)
-- spell-menu - Spell management menu (depends on: menu, spellbook)
-- spellbook-store - Spellbook storage backend
-
-#### System & Configuration Menus
-- system-menu - System configuration menu (depends on: menu, config)
-- install-menu - Installation menu (depends on: menu)
-- synonym-menu - Synonym management menu (depends on: menu, add-synonym, edit-synonym, delete-synonym)
-- thesaurus - Thesaurus spell lookup (depends on: menu)
-
-#### MUD-Specific Menus
-- mud - MUD features menu (depends on: menu)
-- mud-menu - MUD navigation menu (depends on: menu, look, decorate)
-- mud-settings - MUD configuration menu (depends on: menu, config)
-- mud-admin-menu - MUD admin menu (depends on: menu)
-- add-ssh-player - Add SSH player (depends on: menu)
-- new-player - Create new player (depends on: menu)
-- set-player - Configure player (depends on: menu)
-
-#### Domain-Specific Menus
-- network-menu - Network operations menu (depends on: menu)
-- services-menu - Service management menu (depends on: menu, enable-service, disable-service, start-service, stop-service)
-- shutdown-menu - Shutdown options menu (depends on: menu)
-- priority-menu - Priority management menu (depends on: menu, prioritize, get-priority)
-- priorities - Priority task menu (depends on: menu, priority-menu)
-- users-menu - User management menu (depends on: menu)
-- profile-tests - Test profiling menu (depends on: menu, test-magic)
+* hash - Generate cryptographic hashes
+* evoke-hash (hash) - Interactive hash generation
+* hashchant (hash) - Chained hash operations
 
 ### Tests
-- `.tests/menu/` - All menu tests
+- `.tests/crypto/` - Crypto tests
 
 ---
 
-## Level 9: Services & Optional Integrations
+## Level 15: SSH & Remote Access
 
-**Purpose**: System service management and optional third-party integrations.
+**Purpose**: SSH management and remote translocation.
 
-### Service Management Spells
-- install-service-template - Service template installer
-- enable-service - Enable system service
-- disable-service - Disable system service
-- start-service - Start system service
-- stop-service - Stop system service
-- restart-service - Restart system service (depends on: stop-service, start-service)
-- is-service-installed - Check service status
-- service-status - View service status (depends on: is-service-installed)
-- remove-service - Remove system service (depends on: disable-service, stop-service)
+### Assumptions
+- [ ] Level 14 complete (crypto works)
+- [ ] SSH available
 
-### Optional Arcana (Third-Party Integrations)
+### Spells
+* validate-ssh-key - Validate SSH key format
+* enchant-portkey - Configure SSH connection
+* follow-portkey (enchant-portkey) - Connect via SSH
+* open-portal - Open remote session
+* open-teletype - Connect to remote terminal
+* reload-ssh - Reload SSH service
+* restart-ssh - Restart SSH service
+
+### Tests
+- `.tests/translocation/` - SSH-related tests
+- `.tests/cantrips/test-validate-ssh-key.sh`
+
+---
+
+## Level 16: Task Priorities
+
+**Purpose**: Task priority management.
+
+### Assumptions
+- [ ] Level 15 complete (SSH works)
+
+### Spells
+* get-priority - Get priority value
+* get-new-priority (get-priority) - Calculate new priority
+* prioritize (get-priority) - Set task priority
+* upvote (get-priority) - Increase priority
+
+### Tests
+- `.tests/priorities/` - Priority tests
+
+---
+
+## Level 17: Security Wards
+
+**Purpose**: Security hardening and monitoring.
+
+### Assumptions
+- [ ] Level 16 complete (priorities work)
+
+### Spells
+* ssh-barrier (SSH spells from Level 15) - SSH security hardening
+
+### Tests
+- `.tests/wards/` - Security tests
+
+---
+
+## Level 18: Extended Attributes
+
+**Purpose**: File attribute management and manipulation.
+
+### Assumptions
+- [ ] Level 17 complete (wards work)
+- [ ] Extended attributes working (from Level 2)
+
+### Spells
+* enchant (read-magic from Level 4) - Add extended attributes
+* disenchant (read-magic from Level 4) - Remove extended attributes
+* enchantment-to-yaml (read-magic from Level 4) - Export attributes to YAML
+* yaml-to-enchantment (read-magic from Level 4) - Import attributes from YAML
+
+### Tests
+- `.tests/enchant/` - Enchant tests
+
+---
+
+## Level 19: Process & System Info (PSI)
+
+**Purpose**: Process management and contact information.
+
+### Assumptions
+- [ ] Level 18 complete (enchant works)
+
+### Spells
+* list-contacts - List contact information
+* read-contact (list-contacts) - Read contact details
+
+### Tests
+- `.tests/psi/` - PSI tests
+
+---
+
+## Level 20: Spellcraft Development Tools
+
+**Purpose**: Tools for spell development, linting, and management.
+
+### Assumptions
+- [ ] Level 19 complete (PSI works)
+
+### Spells
+* scribe-spell - Create new spell
+* lint-magic - Lint spell code
+* compile-spell - Compile spell
+* learn - Learn spell syntax
+* forget - Remove spell from memory
+* erase-spell - Delete spell file
+* doppelganger - Duplicate spell
+* add-synonym - Add spell synonym
+* edit-synonym (add-synonym) - Edit spell synonym
+* delete-synonym (add-synonym) - Delete spell synonym
+* reset-default-synonyms - Reset synonyms to defaults
+* bind-tome - Bind spellbook
+* unbind-tome (bind-tome) - Unbind spellbook
+* merge-yaml-text - Merge YAML configurations
+
+### Tests
+- `.tests/spellcraft/` - All spellcraft tests
+
+---
+
+## Level 21: Core Menu Infrastructure
+
+**Purpose**: Core menu system components that aggregate spells.
+
+### Assumptions
+- [ ] Level 20 complete (spellcraft works)
+- [ ] Menu system from Level 1 works
+
+### Spells
+* spellbook-store - Spellbook storage backend
+* spellbook (menu from Level 1, read-magic from Level 4) - Interactive spellbook browser
+* cast (menu from Level 1, spellbook) - Cast menu interface
+* spell-menu (menu from Level 1, spellbook) - Spell management menu
+
+### Tests
+- `.tests/menu/test-spellbook.sh`
+- `.tests/menu/test-cast.sh`
+
+---
+
+## Level 22: System & Configuration Menus
+
+**Purpose**: Menu interfaces for system configuration and management.
+
+### Assumptions
+- [ ] Level 21 complete (core menus work)
+
+### Spells
+* system-menu (menu from Level 1, config from Level 8) - System configuration menu
+* install-menu (menu from Level 1) - Installation menu
+* synonym-menu (menu from Level 1, add-synonym/edit-synonym/delete-synonym from Level 20) - Synonym management menu
+* thesaurus (menu from Level 1) - Thesaurus spell lookup
+
+### Tests
+- `.tests/menu/test-system-menu.sh`
+
+---
+
+## Level 23: MUD Administration Menus
+
+**Purpose**: Menu interfaces for MUD features and administration.
+
+### Assumptions
+- [ ] Level 22 complete (system menus work)
+
+### Spells
+* mud (menu from Level 1) - MUD features menu
+* mud-menu (menu from Level 1, look from Level 2, decorate from Level 13) - MUD navigation menu
+* mud-settings (menu from Level 1, config from Level 8) - MUD configuration menu
+* mud-admin-menu (menu from Level 1) - MUD admin menu
+* add-ssh-player (menu from Level 1) - Add SSH player
+* new-player (menu from Level 1) - Create new player
+* set-player (menu from Level 1) - Configure player
+
+### Tests
+- `.tests/menu/test-mud-menu.sh`
+
+---
+
+## Level 24: Domain-Specific Menus
+
+**Purpose**: Menu interfaces for specialized domains (network, services, priorities, etc.).
+
+### Assumptions
+- [ ] Level 23 complete (MUD menus work)
+
+### Spells
+* network-menu (menu from Level 1) - Network operations menu
+* services-menu (menu from Level 1, service spells from Level 25) - Service management menu
+* shutdown-menu (menu from Level 1) - Shutdown options menu
+* priority-menu (menu from Level 1, prioritize/get-priority from Level 16) - Priority management menu
+* priorities (menu from Level 1, priority-menu) - Priority task menu
+* users-menu (menu from Level 1) - User management menu
+* profile-tests (menu from Level 1, test-magic from Level 9) - Test profiling menu
+
+### Tests
+- `.tests/menu/` - Domain menu tests
+
+---
+
+## Level 25: System Service Management
+
+**Purpose**: System service installation and management.
+
+### Assumptions
+- [ ] Level 24 complete (domain menus work)
+
+### Spells
+* install-service-template - Service template installer
+* is-service-installed - Check service status
+* enable-service (is-service-installed) - Enable system service
+* disable-service (is-service-installed) - Disable system service
+* start-service (is-service-installed) - Start system service
+* stop-service (is-service-installed) - Stop system service
+* restart-service (stop-service, start-service) - Restart system service
+* service-status (is-service-installed) - View service status
+* remove-service (disable-service, stop-service) - Remove system service
+
+### Tests
+- Service-related tests in `.tests/cantrips/`
+
+---
+
+## Level 26: Optional Arcana & Third-Party Integrations
+
+**Purpose**: Optional third-party software integrations.
+
+### Assumptions
+- [ ] Level 25 complete (services work)
+
+### Spells
 - All spells in `spells/.arcana/`
 - Bitcoin integration
 - Tor integration
@@ -536,9 +754,9 @@ If wizardry is already installed, Level 0 can use:
 - And more...
 
 ### Tests
-- Service-related tests in `.tests/cantrips/`
 - Tests in `.tests/.arcana/` (where applicable)
 - Many arcana spells are install-only
+
 
 ---
 
@@ -562,43 +780,74 @@ Level 0: Pre-Install Foundation
     └── POSIX tools, environment setup
         │
 Level 1: Menu Core
-    ├── menu (core UI)
-    ├── await-keypress, fathom-*, move-cursor, cursor-blink
-    ├── colors, main-menu
+    ├── menu, terminal control, colors
     └── Core imps (require, has, say, die, temp-file, etc.)
         │
-Level 2: Arcane Spells & MUD Basics
-    ├── copy, trash, forall, read-magic, file-list
+Level 2: MUD Basics (2 spells)
     ├── check-cd-hook, look
-    └── File/xattr imps
+    └── Extended attribute imps
         │
-Level 3: Cantrips & Navigation
-    ├── ask-*, list-files, move, memorize
+Level 3: Navigation (2 spells)
     ├── jump-to-marker, mark-location
-    └── Input/validation imps
+    └── Bookmark system
         │
-Level 4: System Spells
-    ├── config, test-magic, test-spell, demo-magic, update-*, wizard-cast
-    └── Config/rc/test imps
+Level 4: Arcane File Operations (6 spells)
+    ├── copy, trash, forall, read-magic, file-list
+    └── File manipulation imps
         │
-Level 5: Divination
-    ├── detect-posix, detect-distro, detect-rc-file, identify-room
-    └── Detection imps
+Level 5: Basic Cantrips (7 spells)
+    ├── ask, ask-yn, ask-text, list-files, move
+    └── Basic user interaction
         │
-Level 6: MUD Features
+Level 6: Validation (3 spells)
+    ├── validate-number, validate-path, require-command
+    └── Input validation
+        │
+Level 7: Advanced Cantrips (2 spells)
+    ├── ask-number, memorize
+    └── Builds on validation
+        │
+Level 8: System Configuration (3 spells)
+    ├── config, logs, package-managers
+    └── Config management
+        │
+Level 9: Testing (4 spells)
+    ├── test-spell, test-magic, logging-example
+    └── Test framework
+        │
+Level 10: System Maintenance (3 spells)
+    ├── update-wizardry, update-all, kill-process
+    └── System updates
+        │
+Level 11: Advanced System (3 spells)
+    ├── demo-magic, verify-posix, wizard-cast
+    └── Advanced validation
+        │
+Level 12: Divination (3 spells)
+    ├── detect-rc-file, detect-magic, identify-room
+    └── System detection
+        │
+Level 13: Advanced MUD (3 spells)
     ├── decorate, select-player, check-command-not-found-hook
-    └── Extended attributes, hooks
+    └── MUD features
         │
-Level 7: Specialized
-    ├── crypto, translocation (advanced), priorities, wards, enchant, psi, spellcraft
-    └── Domain-specific imps
+Level 14-19: Specialized Domains
+    ├── Crypto, SSH, Priorities, Wards, Enchant, PSI
+    └── Domain-specific functionality
         │
-Level 8: Menus
-    ├── spellbook, cast, all menu interfaces
-    └── Aggregation of lower-level spells
+Level 20: Spellcraft (14 spells)
+    ├── All spell development tools
+    └── Development framework
         │
-Level 9: Services & Arcana
-    ├── Service management (enable, disable, start, stop, etc.)
+Level 21-24: Menus (4 levels, ~27 spells)
+    ├── Core menus, system menus, MUD menus, domain menus
+    └── High-level aggregation
+        │
+Level 25: Services (9 spells)
+    ├── Service management
+    └── System integration
+        │
+Level 26: Arcana
     └── Optional third-party integrations
 ```
 
@@ -613,17 +862,44 @@ banish 0
 # Prepare system and verify menu works
 banish 1
 
-# Prepare system, menu, arcane spells, and basic MUD features (cd-hook, look)
+# MUD basics (just cd-hook and look)
 banish 2
 
-# Prepare through cantrips and navigation (includes jump-to-marker, mark-location)
+# Navigation (just jump-to-marker and mark-location)
 banish 3
 
-# Prepare everything through system spells
+# Through arcane file operations
 banish 4
 
-# Full system validation
+# Through basic cantrips
+banish 5
+
+# Through validation helpers
+banish 6
+
+# Through advanced cantrips
+banish 7
+
+# Through system configuration
+banish 8
+
+# Through testing infrastructure
 banish 9
+
+# Through system maintenance
+banish 10
+
+# Through all specialized domains
+banish 20
+
+# Through all menus
+banish 24
+
+# Through services
+banish 25
+
+# Full system validation (all levels including arcana)
+banish 26
 
 # Verbose mode shows all checks and tests
 banish --verbose 2
@@ -641,7 +917,7 @@ banish --no-heal 1
 
 ### Banish Enhancement TODO
 
-1. **Parse level argument** - Default to 0, support 0-9
+1. **Parse level argument** - Default to 0, support 0-26
 2. **Recursive execution** - Level N runs 0..(N-1) first
 3. **Assumption checking** - Per-level assumption validation
 4. **Interactive self-healing** - Prompt user before fixes
@@ -665,4 +941,4 @@ banish --no-heal 1
 - **Partial re-banish** - Re-run only failed assumptions
 - **Banish report** - Generate HTML/markdown report of system state
 - **CI integration** - Use banish levels in CI pipelines
-- **Level aliases** - `banish core` = `banish 1`, `banish full` = `banish 9`
+- **Level aliases** - `banish core` = `banish 1`, `banish full` = `banish 26`
