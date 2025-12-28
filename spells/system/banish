@@ -6,29 +6,47 @@
 
 show_usage() {
   cat <<'USAGE'
-Usage: banish [--verbose] [--wizardry-dir DIR]
+Usage: banish [LEVEL] [OPTIONS]
 
-Bootstrap the environment for wizardry by checking POSIX toolchain availability
-and setting up essential environment variables. This spell is designed to be
-called before invoke-wizardry to ensure all prerequisites are met.
+Banish environmental chaos and prepare wizardry to the specified spell level.
+Each level builds on previous levels, checking assumptions, self-healing issues,
+and running tests. See SPIRAL_DEBUG.md for complete level documentation.
+
+Arguments:
+  LEVEL                 Spell level to banish to (0-9, default: 0)
+                        Level 0: Pre-install foundation (POSIX tools)
+                        Level 1: Menu core (interactive menu system)
+                        Level 2: Arcane spells (file operations)
+                        Level 3: Cantrips (user interaction)
+                        Level 4: System spells (config & testing)
+                        Level 5: Divination (detection & analysis)
+                        Level 6: MUD features (fantasy theme)
+                        Level 7: Specialized (domain-specific)
+                        Level 8: Arcana (third-party integrations)
+                        Level 9: Services (system service management)
 
 Options:
   --verbose, -v         Show detailed diagnostics
   --wizardry-dir DIR    Set WIZARDRY_DIR to DIR (default: auto-detect)
+  --no-tests            Skip running tests (only check assumptions)
+  --no-heal             Skip self-healing (only report issues)
+  --yes, -y             Auto-accept all prompts (non-interactive)
 
 Environment Variables:
-  WIZARDRY_DIR         Target wizardry installation directory
-  WIZARDRY_LOG_LEVEL   Control verbosity (0=quiet, 1=info, 2=debug)
+  WIZARDRY_DIR          Target wizardry installation directory
+  WIZARDRY_LOG_LEVEL    Control verbosity (0=quiet, 1=info, 2=debug)
 
 Exit Codes:
-  0  Environment is ready for wizardry
-  1  Critical prerequisites missing (cannot self-heal)
+  0  Level is ready (all checks passed, tests passed)
+  1  Critical issues found (cannot continue)
   2  Invalid usage
 
 Examples:
-  banish                          # Auto-detect and prepare environment
-  banish --verbose                # Show detailed diagnostics
-  banish --wizardry-dir ~/.wiz    # Use custom wizardry location
+  banish                    # Banish to level 0 (pre-install, current behavior)
+  banish 1                  # Banish through level 1 (menu ready)
+  banish 2 --verbose        # Banish to level 2 with detailed output
+  banish 4 --no-tests       # Prepare through level 4, skip tests
+  banish 1 --yes            # Non-interactive level 1 banish
 USAGE
 }
 
@@ -43,8 +61,22 @@ esac
 set -eu
 
 # Parse arguments
+target_level=0
 verbose=0
 wizardry_dir_override=''
+skip_tests=0
+skip_heal=0
+auto_yes=0
+
+# First, check if first arg is a number (the level)
+if [ "$#" -gt 0 ]; then
+  case "$1" in
+    [0-9])
+      target_level=$1
+      shift
+      ;;
+  esac
+fi
 
 while [ "$#" -gt 0 ]; do
   case $1 in
@@ -61,6 +93,18 @@ while [ "$#" -gt 0 ]; do
       wizardry_dir_override=$2
       shift 2
       ;;
+    --no-tests)
+      skip_tests=1
+      shift
+      ;;
+    --no-heal)
+      skip_heal=1
+      shift
+      ;;
+    --yes|-y)
+      auto_yes=1
+      shift
+      ;;
     --)
       shift
       break
@@ -71,13 +115,25 @@ while [ "$#" -gt 0 ]; do
       return 2
       ;;
     *)
-      break
+      # Check if it's a valid level number
+      case "$1" in
+        [0-9])
+          target_level=$1
+          shift
+          ;;
+        *)
+          printf 'Error: unexpected argument: %s\n' "$1" >&2
+          show_usage >&2
+          return 2
+          ;;
+      esac
       ;;
   esac
 done
 
-if [ "$#" -gt 0 ]; then
-  printf 'Error: unexpected arguments\n' >&2
+# Validate level
+if [ "$target_level" -lt 0 ] || [ "$target_level" -gt 9 ]; then
+  printf 'Error: level must be 0-9, got: %s\n' "$target_level" >&2
   show_usage >&2
   return 2
 fi
@@ -115,157 +171,656 @@ banish_error() {
   printf 'Error: %s\n' "$*" >&2
 }
 
-# Stage 1: Set up WIZARDRY_DIR first (needed for detect-posix)
-if [ "$log_level" -ge 2 ]; then
-  printf 'Configuring WIZARDRY_DIR:\n'
-fi
-
-if [ -n "$wizardry_dir_override" ]; then
-  # User specified directory
-  WIZARDRY_DIR=$wizardry_dir_override
-  banish_check "Using override: $WIZARDRY_DIR"
-elif [ -n "${WIZARDRY_DIR-}" ]; then
-  # Already set in environment - no need to reassign
-  banish_check "Using existing: $WIZARDRY_DIR"
-else
-  # Auto-detect
-  banish_step "Auto-detecting wizardry installation..."
+# Prompt user for yes/no confirmation
+banish_ask_yn() {
+  question=$1
+  if [ "$auto_yes" -eq 1 ]; then
+    banish_info "  [auto-yes] $question"
+    return 0
+  fi
   
-  # Try to find wizardry by looking for this script's location
-  has_dirname=$(command -v dirname >/dev/null 2>&1 && echo 1 || echo 0)
-  has_cd=$(command -v cd >/dev/null 2>&1 && echo 1 || echo 0)
-  has_pwd=$(command -v pwd >/dev/null 2>&1 && echo 1 || echo 0)
-  if [ "$has_dirname" = "1" ] && [ "$has_cd" = "1" ] && [ "$has_pwd" = "1" ]; then
-    script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || true
-    if [ -n "$script_dir" ]; then
-      # We're in spells/system, so go up two levels
-      _potential_dir=$(CDPATH= cd -- "$script_dir/../.." 2>/dev/null && pwd -P) || true
-      if [ -n "$_potential_dir" ] && [ -d "$_potential_dir/spells" ]; then
-        WIZARDRY_DIR=$_potential_dir
-        banish_check "Detected from script location: $WIZARDRY_DIR"
+  printf '%s (y/n) ' "$question" >&2
+  read -r answer
+  case "$answer" in
+    y|Y|yes|Yes|YES) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# Get level name for display
+banish_level_name() {
+  case "$1" in
+    0) printf 'Pre-Install Foundation' ;;
+    1) printf 'Menu Core' ;;
+    2) printf 'Arcane Spells' ;;
+    3) printf 'Cantrips' ;;
+    4) printf 'System Spells' ;;
+    5) printf 'Divination' ;;
+    6) printf 'MUD Features' ;;
+    7) printf 'Specialized' ;;
+    8) printf 'Arcana' ;;
+    9) printf 'Services' ;;
+    *) printf 'Unknown' ;;
+  esac
+}
+
+# Run level-specific checks and actions
+banish_level() {
+  level=$1
+  level_name=$(banish_level_name "$level")
+  
+  if [ "$log_level" -ge 1 ]; then
+    printf '\n=== Level %d: %s ===\n' "$level" "$level_name"
+  fi
+  
+  case "$level" in
+    0)
+      banish_level_0
+      ;;
+    1)
+      banish_level_1
+      ;;
+    2)
+      banish_level_2
+      ;;
+    3)
+      banish_level_3
+      ;;
+    4)
+      banish_level_4
+      ;;
+    5)
+      banish_level_5
+      ;;
+    6)
+      banish_level_6
+      ;;
+    7)
+      banish_level_7
+      ;;
+    8)
+      banish_level_8
+      ;;
+    9)
+      banish_level_9
+      ;;
+    *)
+      banish_warn "Level $level not yet implemented"
+      ;;
+  esac
+}
+
+# Level 0: Pre-Install Foundation (existing banish functionality + OS detection)
+banish_level_0() {
+  # Stage 1: Set up WIZARDRY_DIR first (needed for detect-posix)
+  if [ "$log_level" -ge 2 ]; then
+    printf 'Configuring WIZARDRY_DIR:\n'
+  fi
+  
+  if [ -n "$wizardry_dir_override" ]; then
+    # User specified directory
+    WIZARDRY_DIR=$wizardry_dir_override
+    banish_check "Using override: $WIZARDRY_DIR"
+  elif [ -n "${WIZARDRY_DIR-}" ]; then
+    # Already set in environment - no need to reassign
+    banish_check "Using existing: $WIZARDRY_DIR"
+  else
+    # Auto-detect
+    banish_step "Auto-detecting wizardry installation..."
+    
+    # Try to find wizardry by looking for this script's location
+    has_dirname=$(command -v dirname >/dev/null 2>&1 && echo 1 || echo 0)
+    has_cd=$(command -v cd >/dev/null 2>&1 && echo 1 || echo 0)
+    has_pwd=$(command -v pwd >/dev/null 2>&1 && echo 1 || echo 0)
+    if [ "$has_dirname" = "1" ] && [ "$has_cd" = "1" ] && [ "$has_pwd" = "1" ]; then
+      script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || true
+      if [ -n "$script_dir" ]; then
+        # We're in spells/system, so go up two levels
+        _potential_dir=$(CDPATH= cd -- "$script_dir/../.." 2>/dev/null && pwd -P) || true
+        if [ -n "$_potential_dir" ] && [ -d "$_potential_dir/spells" ]; then
+          WIZARDRY_DIR=$_potential_dir
+          banish_check "Detected from script location: $WIZARDRY_DIR"
+        fi
+      fi
+    fi
+    
+    # Fallback to standard location
+    if [ -z "${WIZARDRY_DIR-}" ]; then
+      if [ -n "${HOME-}" ] && [ -d "${HOME}/.wizardry/spells" ]; then
+        WIZARDRY_DIR="${HOME}/.wizardry"
+        banish_check "Found standard location: $WIZARDRY_DIR"
+      else
+        banish_warn "Could not auto-detect WIZARDRY_DIR"
+        banish_warn "Set WIZARDRY_DIR environment variable or use --wizardry-dir option"
+        return 1
       fi
     fi
   fi
   
-  # Fallback to standard location
-  if [ -z "${WIZARDRY_DIR-}" ]; then
-    if [ -n "${HOME-}" ] && [ -d "${HOME}/.wizardry/spells" ]; then
-      WIZARDRY_DIR="${HOME}/.wizardry"
-      banish_check "Found standard location: $WIZARDRY_DIR"
+  # Verify WIZARDRY_DIR is valid (only if it was set)
+  if [ -n "${WIZARDRY_DIR-}" ]; then
+    if [ ! -d "${WIZARDRY_DIR}/spells" ]; then
+      banish_warn "WIZARDRY_DIR does not contain spells directory: $WIZARDRY_DIR"
+      # For level 0, this is just a warning - we're preparing for install
+      WIZARDRY_DIR=""
     else
-      banish_warn "Could not auto-detect WIZARDRY_DIR"
-      banish_warn "Set WIZARDRY_DIR environment variable or use --wizardry-dir option"
-      return 1
+      # Export WIZARDRY_DIR for downstream tools
+      export WIZARDRY_DIR
+      if [ "$log_level" -eq 0 ]; then
+        # Non-verbose mode: show simple success message
+        printf 'Environment prepared: WIZARDRY_DIR=%s\n' "$WIZARDRY_DIR"
+      else
+        banish_info "Environment prepared: WIZARDRY_DIR=$WIZARDRY_DIR"
+      fi
     fi
   fi
-fi
-
-# Verify WIZARDRY_DIR is valid
-if [ ! -d "${WIZARDRY_DIR}/spells" ]; then
-  banish_warn "WIZARDRY_DIR does not contain spells directory: $WIZARDRY_DIR"
-  return 1
-fi
-
-# Export WIZARDRY_DIR for downstream tools
-export WIZARDRY_DIR
-if [ "$log_level" -eq 0 ]; then
-  # Non-verbose mode: show simple success message
-  printf 'Environment prepared: WIZARDRY_DIR=%s\n' "$WIZARDRY_DIR"
-else
-  banish_info "Environment prepared: WIZARDRY_DIR=$WIZARDRY_DIR"
-fi
-
-# Stage 2: Check POSIX environment using detect-posix if available
-if [ "$log_level" -ge 2 ]; then
-  printf '\nChecking POSIX toolchain:\n'
-fi
-posix_check_failed=0
-missing_recommended=''
-
-# Try to use detect-posix if available
-if [ -f "${WIZARDRY_DIR}/spells/system/detect-posix" ]; then
-  banish_step "Using detect-posix for environment checks"
-  if [ "$verbose" -eq 1 ]; then
-    "${WIZARDRY_DIR}/spells/system/detect-posix" --verbose 2>&1 || posix_check_failed=1
+  
+  # Stage 2: Detect OS and system information
+  if [ "$log_level" -ge 2 ]; then
+    printf '\nDetecting OS and system information:\n'
+  fi
+  
+  # Detect operating system
+  if command -v uname >/dev/null 2>&1; then
+    os_kernel=$(uname -s 2>/dev/null || printf 'unknown')
+    banish_check "Kernel: $os_kernel"
+    
+    # Try to detect distribution if available
+    if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/divination/detect-distro" ]; then
+      distro=$("${WIZARDRY_DIR}/spells/divination/detect-distro" 2>/dev/null || printf 'unknown')
+      banish_check "Distribution: $distro"
+    elif [ -f /etc/os-release ]; then
+      distro=$(grep '^ID=' /etc/os-release 2>/dev/null | cut -d= -f2 | tr -d '"' || printf 'unknown')
+      banish_check "Distribution: $distro"
+    fi
   else
-    "${WIZARDRY_DIR}/spells/system/detect-posix" 2>&1 || posix_check_failed=1
+    banish_warn "uname not found - cannot detect OS"
   fi
   
-  if [ "$posix_check_failed" -ne 0 ]; then
-    banish_warn "detect-posix reported issues with POSIX environment"
-    banish_warn "Some wizardry features may not work correctly"
+  # Stage 3: Check POSIX environment using detect-posix if available
+  if [ "$log_level" -ge 2 ]; then
+    printf '\nChecking POSIX toolchain:\n'
   fi
-else
-  # Fallback: manual check of critical tools if detect-posix not available
-  banish_step "detect-posix not found, using fallback checks"
-  critical_tools="sh test printf"
-  missing_critical=''
+  posix_check_failed=0
+  missing_recommended=''
   
-  for tool in $critical_tools; do
-    if ! command -v "$tool" >/dev/null 2>&1; then
-      missing_critical="${missing_critical:+$missing_critical }$tool"
+  # Try to use detect-posix if available
+  if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/divination/detect-posix" ]; then
+    banish_step "Using detect-posix for environment checks"
+    if [ "$verbose" -eq 1 ]; then
+      "${WIZARDRY_DIR}/spells/divination/detect-posix" --verbose 2>&1 || posix_check_failed=1
     else
-      banish_check "Found: $tool"
+      "${WIZARDRY_DIR}/spells/divination/detect-posix" 2>&1 || posix_check_failed=1
+    fi
+    
+    if [ "$posix_check_failed" -ne 0 ]; then
+      banish_warn "detect-posix reported issues with POSIX environment"
+      banish_warn "Some wizardry features may not work correctly"
+    fi
+  else
+    # Fallback: manual check of critical tools if detect-posix not available
+    banish_step "detect-posix not found, using fallback checks"
+    critical_tools="sh test printf"
+    missing_critical=''
+    
+    for tool in $critical_tools; do
+      if ! command -v "$tool" >/dev/null 2>&1; then
+        missing_critical="${missing_critical:+$missing_critical }$tool"
+      else
+        banish_check "Found: $tool"
+      fi
+    done
+    
+    if [ -n "$missing_critical" ]; then
+      banish_warn "Critical POSIX tools missing: $missing_critical"
+      banish_warn "Cannot self-heal without basic shell utilities"
+      return 1
+    fi
+    
+    # Check recommended tools
+    recommended_tools="awk sed grep find mktemp dirname basename pwd cd curl wget tar"
+    for tool in $recommended_tools; do
+      if ! command -v "$tool" >/dev/null 2>&1; then
+        missing_recommended="${missing_recommended:+$missing_recommended }$tool"
+        banish_warn "Recommended tool missing: $tool"
+      else
+        banish_check "Found: $tool"
+      fi
+    done
+  fi
+  
+  # Stage 4: Verify invoke-wizardry is available (only if wizardry is installed)
+  if [ -n "${WIZARDRY_DIR-}" ]; then
+    if [ "$log_level" -ge 2 ]; then
+      printf '\nVerifying invoke-wizardry:\n'
+    fi
+    if [ ! -f "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry" ]; then
+      banish_warn "invoke-wizardry not found at $WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
+      # Not a fatal error for level 0 - install may fix this
+    else
+      banish_check "invoke-wizardry is available"
+    fi
+  fi
+  
+  # Stage 5: Set baseline PATH if needed
+  if [ "$log_level" -ge 2 ]; then
+    printf '\nChecking PATH:\n'
+  fi
+  baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+  case ":${PATH-}:" in
+    *":/usr/bin:"*|*":/bin:"*)
+      banish_check "PATH includes standard directories"
+      ;;
+    *)
+      banish_warn "PATH missing standard directories, adding baseline"
+      PATH="${baseline_path}${PATH:+:}${PATH-}"
+      export PATH
+      ;;
+  esac
+  
+  # Stage 6: Check for package managers (system foundation)
+  if [ "$log_level" -ge 2 ]; then
+    printf '\nChecking package managers:\n'
+  fi
+  found_pkg_mgr=0
+  for pkg_mgr in apt yum dnf pacman brew nix-env; do
+    if command -v "$pkg_mgr" >/dev/null 2>&1; then
+      banish_check "Found package manager: $pkg_mgr"
+      found_pkg_mgr=1
     fi
   done
   
-  if [ -n "$missing_critical" ]; then
-    banish_warn "Critical POSIX tools missing: $missing_critical"
-    banish_warn "Cannot self-heal without basic shell utilities"
+  if [ "$found_pkg_mgr" -eq 0 ]; then
+    banish_warn "No known package manager found"
+    banish_warn "Self-healing capabilities will be limited"
+  fi
+  
+  # Report summary
+  if [ -n "$missing_recommended" ]; then
+    banish_warn "Some recommended tools are missing: $missing_recommended"
+    banish_warn "Wizardry may have reduced functionality"
+    
+    if [ "$skip_heal" -eq 0 ] && [ "$found_pkg_mgr" -eq 1 ]; then
+      if banish_ask_yn "Attempt to install missing tools?"; then
+        banish_info "Installing missing tools (this may require sudo)..."
+        # Try to install missing tools based on detected package manager
+        for pkg_mgr in apt yum dnf pacman brew; do
+          if command -v "$pkg_mgr" >/dev/null 2>&1; then
+            case "$pkg_mgr" in
+              apt)
+                for tool in $missing_recommended; do
+                  banish_step "Installing $tool..."
+                  sudo apt-get install -y "$tool" 2>&1 || banish_warn "Failed to install $tool"
+                done
+                break
+                ;;
+              yum|dnf)
+                for tool in $missing_recommended; do
+                  banish_step "Installing $tool..."
+                  sudo "$pkg_mgr" install -y "$tool" 2>&1 || banish_warn "Failed to install $tool"
+                done
+                break
+                ;;
+              pacman)
+                for tool in $missing_recommended; do
+                  banish_step "Installing $tool..."
+                  sudo pacman -S --noconfirm "$tool" 2>&1 || banish_warn "Failed to install $tool"
+                done
+                break
+                ;;
+              brew)
+                for tool in $missing_recommended; do
+                  banish_step "Installing $tool..."
+                  brew install "$tool" 2>&1 || banish_warn "Failed to install $tool"
+                done
+                break
+                ;;
+            esac
+          fi
+        done
+      fi
+    fi
+  fi
+  
+  # Success
+  banish_info "Level 0 complete - system foundation validated"
+  return 0
+}
+
+# Level 1: Menu Core
+banish_level_1() {
+  banish_info "Checking Level 1: Menu Core..."
+  
+  # Check if wizardry is installed
+  if [ ! -d "${WIZARDRY_DIR}/spells" ]; then
+    banish_warn "Wizardry not installed at $WIZARDRY_DIR"
+    banish_warn "Please run ./install first"
     return 1
   fi
   
-  # Check recommended tools
-  recommended_tools="awk sed grep find mktemp dirname basename pwd cd"
-  for tool in $recommended_tools; do
-    if ! command -v "$tool" >/dev/null 2>&1; then
-      missing_recommended="${missing_recommended:+$missing_recommended }$tool"
-      banish_warn "Recommended tool missing: $tool"
+  # Check for menu dependencies
+  missing_spells=""
+  for spell in menu await-keypress fathom-cursor fathom-terminal move-cursor cursor-blink; do
+    if [ ! -f "${WIZARDRY_DIR}/spells/cantrips/$spell" ]; then
+      missing_spells="${missing_spells:+$missing_spells }$spell"
     else
-      banish_check "Found: $tool"
+      banish_check "Found spell: $spell"
     fi
   done
+  
+  if [ -n "$missing_spells" ]; then
+    banish_warn "Missing menu spells: $missing_spells"
+    return 1
+  fi
+  
+  # Check if stty is available (required for menu)
+  if ! command -v stty >/dev/null 2>&1; then
+    banish_warn "stty command not found - required for menu"
+    if [ "$skip_heal" -eq 0 ]; then
+      if banish_ask_yn "Attempt to install stty?"; then
+        if [ -x "${WIZARDRY_DIR}/spells/.arcana/core/install-stty" ]; then
+          "${WIZARDRY_DIR}/spells/.arcana/core/install-stty" || banish_warn "Failed to install stty"
+        else
+          banish_warn "No install-stty script available"
+        fi
+      fi
+    fi
+  else
+    banish_check "stty available"
+  fi
+  
+  # Run tests if not skipped
+  if [ "$skip_tests" -eq 0 ]; then
+    banish_run_tests_for_level 1
+  fi
+  
+  banish_info "Level 1 complete"
+}
+
+# Level 2: Arcane Spells
+banish_level_2() {
+  banish_info "Checking Level 2: Arcane Spells..."
+  
+  # Check for arcane spells
+  arcane_spells="copy trash forall read-magic file-list"
+  missing=""
+  for spell in $arcane_spells; do
+    if [ ! -f "${WIZARDRY_DIR}/spells/arcane/$spell" ]; then
+      missing="${missing:+$missing }$spell"
+    else
+      banish_check "Found spell: $spell"
+    fi
+  done
+  
+  if [ -n "$missing" ]; then
+    banish_warn "Missing arcane spells: $missing"
+  fi
+  
+  # Run tests if not skipped
+  if [ "$skip_tests" -eq 0 ]; then
+    banish_run_tests_for_level 2
+  fi
+  
+  banish_info "Level 2 complete"
+}
+
+# Level 3: Cantrips
+banish_level_3() {
+  banish_info "Checking Level 3: Cantrips..."
+  
+  # Check for cantrip spells
+  cantrip_spells="ask ask-yn ask-number ask-text list-files"
+  missing=""
+  for spell in $cantrip_spells; do
+    if [ ! -f "${WIZARDRY_DIR}/spells/cantrips/$spell" ]; then
+      missing="${missing:+$missing }$spell"
+    else
+      banish_check "Found spell: $spell"
+    fi
+  done
+  
+  if [ -n "$missing" ]; then
+    banish_warn "Missing cantrips: $missing"
+  fi
+  
+  # Run tests if not skipped
+  if [ "$skip_tests" -eq 0 ]; then
+    banish_run_tests_for_level 3
+  fi
+  
+  banish_info "Level 3 complete"
+}
+
+# Level 4: System Spells
+banish_level_4() {
+  banish_info "Checking Level 4: System Spells..."
+  
+  # Check for system spells
+  system_spells="config test-magic test-spell"
+  missing=""
+  for spell in $system_spells; do
+    if [ ! -f "${WIZARDRY_DIR}/spells/system/$spell" ]; then
+      missing="${missing:+$missing }$spell"
+    else
+      banish_check "Found spell: $spell"
+    fi
+  done
+  
+  if [ -n "$missing" ]; then
+    banish_warn "Missing system spells: $missing"
+  fi
+  
+  # Run tests if not skipped
+  if [ "$skip_tests" -eq 0 ]; then
+    banish_run_tests_for_level 4
+  fi
+  
+  banish_info "Level 4 complete"
+}
+
+# Level 5: Divination
+banish_level_5() {
+  banish_info "Checking Level 5: Divination..."
+  
+  # Check for divination spells
+  if [ -d "${WIZARDRY_DIR}/spells/divination" ]; then
+    divination_count=$(find "${WIZARDRY_DIR}/spells/divination" -type f | wc -l)
+    banish_check "Found $divination_count divination spells"
+  else
+    banish_warn "Divination directory not found"
+  fi
+  
+  # Run tests if not skipped
+  if [ "$skip_tests" -eq 0 ]; then
+    banish_run_tests_for_level 5
+  fi
+  
+  banish_info "Level 5 complete"
+}
+
+# Level 6: MUD Features
+banish_level_6() {
+  banish_info "Checking Level 6: MUD Features..."
+  
+  # Check for MUD spells
+  if [ -d "${WIZARDRY_DIR}/spells/mud" ]; then
+    mud_count=$(find "${WIZARDRY_DIR}/spells/mud" -type f | wc -l)
+    banish_check "Found $mud_count MUD spells"
+  else
+    banish_warn "MUD directory not found"
+  fi
+  
+  # Run tests if not skipped
+  if [ "$skip_tests" -eq 0 ]; then
+    banish_run_tests_for_level 6
+  fi
+  
+  banish_info "Level 6 complete"
+}
+
+# Level 7: Specialized
+banish_level_7() {
+  banish_info "Checking Level 7: Specialized Spells..."
+  
+  # Check for specialized spell directories
+  for dir in crypto translocation priorities wards enchant psi spellcraft; do
+    if [ -d "${WIZARDRY_DIR}/spells/$dir" ]; then
+      count=$(find "${WIZARDRY_DIR}/spells/$dir" -type f 2>/dev/null | wc -l)
+      banish_check "Found $count $dir spells"
+    fi
+  done
+  
+  # Run tests if not skipped
+  if [ "$skip_tests" -eq 0 ]; then
+    banish_run_tests_for_level 7
+  fi
+  
+  banish_info "Level 7 complete"
+}
+
+# Level 8: Arcana
+banish_level_8() {
+  banish_info "Checking Level 8: Arcana (Optional Integrations)..."
+  
+  # Check for arcana directory
+  if [ -d "${WIZARDRY_DIR}/spells/.arcana" ]; then
+    arcana_count=$(find "${WIZARDRY_DIR}/spells/.arcana" -type f 2>/dev/null | wc -l)
+    banish_check "Found $arcana_count arcana spells/scripts"
+  else
+    banish_info "Arcana directory not found (optional)"
+  fi
+  
+  # Run tests if not skipped (most arcana don't have tests)
+  if [ "$skip_tests" -eq 0 ]; then
+    banish_run_tests_for_level 8
+  fi
+  
+  banish_info "Level 8 complete"
+}
+
+# Level 9: Services
+banish_level_9() {
+  banish_info "Checking Level 9: Service Management..."
+  
+  # Check for service management spells
+  service_spells="install-service-template enable-service disable-service is-service-installed"
+  missing=""
+  found=0
+  for spell in $service_spells; do
+    if [ ! -f "${WIZARDRY_DIR}/spells/cantrips/$spell" ]; then
+      missing="${missing:+$missing }$spell"
+    else
+      banish_check "Found spell: $spell"
+      found=$((found + 1))
+    fi
+  done
+  
+  if [ "$found" -eq 0 ]; then
+    banish_warn "No service management spells found"
+  elif [ -n "$missing" ]; then
+    banish_info "Some service spells missing: $missing"
+  fi
+  
+  # Run tests if not skipped
+  if [ "$skip_tests" -eq 0 ]; then
+    banish_run_tests_for_level 9
+  fi
+  
+  banish_info "Level 9 complete"
+}
+
+# Run tests for a specific level
+banish_run_tests_for_level() {
+  level=$1
+  level_name=$(banish_level_name "$level")
+  
+  # Check if test-spell exists
+  if [ ! -x "${WIZARDRY_DIR}/spells/system/test-spell" ]; then
+    banish_warn "test-spell not found, skipping tests"
+    return 0
+  fi
+  
+  # Prompt user
+  if [ "$auto_yes" -eq 0 ]; then
+    if ! banish_ask_yn "Run tests for Level $level ($level_name)?"; then
+      banish_info "Skipping tests for Level $level"
+      return 0
+    fi
+  fi
+  
+  banish_info "Running tests for Level $level..."
+  
+  # Determine which tests to run based on level
+  test_pattern=""
+  case "$level" in
+    1)
+      test_pattern="cantrips/test-menu.sh cantrips/test-await-keypress.sh cantrips/test-fathom-cursor.sh cantrips/test-fathom-terminal.sh"
+      ;;
+    2)
+      test_pattern="arcane/test-*.sh"
+      ;;
+    3)
+      test_pattern="cantrips/test-ask*.sh cantrips/test-list-files.sh"
+      ;;
+    4)
+      test_pattern="system/test-config.sh system/test-test-spell.sh"
+      ;;
+    5)
+      test_pattern="divination/test-*.sh"
+      ;;
+    6)
+      test_pattern="mud/test-*.sh"
+      ;;
+    7|8|9)
+      banish_info "No standard tests defined for Level $level"
+      return 0
+      ;;
+    *)
+      banish_warn "Unknown test pattern for level $level"
+      return 0
+      ;;
+  esac
+  
+  # Run the tests
+  if [ -n "$test_pattern" ]; then
+    for pattern in $test_pattern; do
+      # Expand pattern
+      for test_file in "${WIZARDRY_DIR}/.tests/$pattern"; do
+        if [ -f "$test_file" ]; then
+          test_name=$(basename "$test_file")
+          banish_step "Running $test_name..."
+          if "${WIZARDRY_DIR}/spells/system/test-spell" --skip-common "${test_file#${WIZARDRY_DIR}/.tests/}" >/dev/null 2>&1; then
+            banish_check "$test_name passed"
+          else
+            banish_warn "$test_name failed"
+          fi
+        fi
+      done
+    done
+  fi
+}
+
+# Main execution: Run levels 0 through target_level
+if [ "$log_level" -ge 1 ]; then
+  printf '\n=== Banishing to Level %d: %s ===\n' "$target_level" "$(banish_level_name "$target_level")"
 fi
 
-# Stage 3: Verify invoke-wizardry is available
-if [ "$log_level" -ge 2 ]; then
-  printf '\nVerifying invoke-wizardry:\n'
-fi
-if [ ! -f "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry" ]; then
-  banish_warn "invoke-wizardry not found at $WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
-  return 1
-fi
-banish_check "invoke-wizardry is available"
+# Run each level from 0 to target_level
+current_level=0
+while [ "$current_level" -le "$target_level" ]; do
+  banish_level "$current_level" || {
+    exit_code=$?
+    banish_error "Level $current_level failed, cannot continue"
+    return "$exit_code"
+  }
+  current_level=$((current_level + 1))
+done
 
-# Stage 4: Set baseline PATH if needed
-if [ "$log_level" -ge 2 ]; then
-  printf '\nChecking PATH:\n'
-fi
-baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
-case ":${PATH-}:" in
-  *":/usr/bin:"*|*":/bin:"*)
-    banish_check "PATH includes standard directories"
-    ;;
-  *)
-    banish_warn "PATH missing standard directories, adding baseline"
-    PATH="${baseline_path}${PATH:+:}${PATH-}"
-    export PATH
-    ;;
-esac
-
-# Success
-success_msg="Banish complete - environment ready for invoke-wizardry"
-if [ "$log_level" -ge 2 ]; then
-  printf '\n✓ %s\n' "$success_msg"
-elif [ "$log_level" -eq 0 ]; then
-  printf 'Banish complete - environment ready\n'
+# Final success message
+if [ "$log_level" -ge 1 ]; then
+  printf '\n✓ Banish complete - Level %d ready\n' "$target_level"
 else
-  printf '%s\n' "$success_msg"
-fi
-
-if [ -n "$missing_recommended" ]; then
-  banish_warn "Some recommended tools are missing: $missing_recommended"
-  banish_warn "Wizardry may have reduced functionality"
+  printf 'Banish complete - Level %d ready\n' "$target_level"
 fi
 
 return 0

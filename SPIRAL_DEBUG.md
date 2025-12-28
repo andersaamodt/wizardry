@@ -31,7 +31,7 @@ Each `banish N` command:
 
 ## Level 0: Pre-Install Foundation
 
-**Purpose**: Prepare the system for wizardry installation. This level ensures the basic POSIX environment is ready and `install` can succeed.
+**Purpose**: Prepare the system for wizardry installation. This level ensures the basic POSIX environment is ready, detects OS information, checks system-foundational assumptions, and verifies that `install` can succeed.
 
 ### Assumptions
 - [ ] POSIX shell available (`sh`)
@@ -43,29 +43,37 @@ Each `banish N` command:
 - [ ] Standard PATH includes `/bin`, `/usr/bin`, etc.
 - [ ] Either `curl` or `wget` available (for install)
 - [ ] `tar` available (for install)
+- [ ] Operating system detectable via `uname`
+- [ ] Package manager available for self-healing
+- [ ] Distribution identifiable (Linux only)
 
 ### Self-Healing Actions
+- Detect operating system and distribution
 - Install missing package manager if none found (platform-specific)
-- Install missing core utilities via package manager
+- Install missing core utilities via package manager (with user confirmation)
 - Set baseline PATH if missing standard directories
 - Report critical failures that cannot be auto-healed
+- Offer to install missing recommended tools
 
 ### Spells
-- `banish` - The bootstrap spell itself (current functionality)
+- `banish` - The bootstrap spell itself (enhanced with multi-level support)
 - None yet - this level prepares for installing wizardry
 
 ### Imps Used by Level 0 Spells
 **Note**: `banish` is a bootstrap spell and cannot use imps - it must be self-contained.
 
+### Detection Capabilities (Optional)
+If wizardry is already installed, Level 0 can use:
+- `spells/divination/detect-posix` - Probe POSIX toolchain
+- `spells/divination/detect-distro` - Detect Linux distribution
+- `spells/system/verify-posix` - Verify POSIX environment
+
 ### Tests
 - `.tests/system/test-banish.sh` - Test banish level 0 functionality
 - Manual verification: Can `./install` succeed after `banish 0`?
-
-### Detection Spells (Optional Enhancement)
-- `spells/divination/detect-posix` - Probe POSIX toolchain
-- `spells/system/verify-posix` - Verify POSIX environment
-- `spells/divination/detect-distro` - Detect Linux distribution
-- `spells/system/package-managers` - List available package managers
+- Test OS detection on multiple platforms
+- Test package manager detection
+- Test self-healing with missing tools
 
 ---
 
