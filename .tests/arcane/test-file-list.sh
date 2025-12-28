@@ -14,31 +14,31 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  _run_spell "spells/arcane/file-list" --help
-  _assert_success || return 1
-  _assert_output_contains "Usage: file-list" || return 1
+  run_spell "spells/arcane/file-list" --help
+  assert_success || return 1
+  assert_output_contains "Usage: file-list" || return 1
 }
 
 test_requires_argument() {
-  _run_spell "spells/arcane/file-list"
-  _assert_failure || return 1
-  _assert_error_contains "Usage: file-list" || return 1
+  run_spell "spells/arcane/file-list"
+  assert_failure || return 1
+  assert_error_contains "Usage: file-list" || return 1
 }
 
 test_creates_file() {
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   mkdir -p "$tmpdir/testfolder"
   touch "$tmpdir/testfolder/file1.txt"
   touch "$tmpdir/testfolder/file2.txt"
   cd "$tmpdir"
-  _run_spell "spells/arcane/file-list" "testfolder"
-  _assert_success || return 1
+  run_spell "spells/arcane/file-list" "testfolder"
+  assert_success || return 1
   [ -f "testfolder.txt" ] || { TEST_FAILURE_REASON="output file not created"; return 1; }
 }
 
-_run_test_case "file-list shows usage text" test_help
-_run_test_case "file-list requires folder argument" test_requires_argument
-_run_test_case "file-list creates output file" test_creates_file
+run_test_case "file-list shows usage text" test_help
+run_test_case "file-list requires folder argument" test_requires_argument
+run_test_case "file-list creates output file" test_creates_file
 
 
 # Test via source-then-invoke pattern  

@@ -13,26 +13,26 @@ done
 
 test_first_of_first() {
   skip-if-compiled || return $?
-  _run_spell spells/.imps/out/first-of "first" "second"
-  _assert_success
-  _assert_output_contains "first"
+  run_spell spells/.imps/out/first-of "first" "second"
+  assert_success
+  assert_output_contains "first"
 }
 
 test_first_of_second() {
   skip-if-compiled || return $?
-  _run_spell spells/.imps/out/first-of "" "second"
-  _assert_success
-  _assert_output_contains "second"
+  run_spell spells/.imps/out/first-of "" "second"
+  assert_success
+  assert_output_contains "second"
 }
 
 test_first_of_fails_both_empty() {
   skip-if-compiled || return $?
-  _run_spell spells/.imps/out/first-of "" ""
-  _assert_failure
+  run_spell spells/.imps/out/first-of "" ""
+  assert_failure
 }
 
-_run_test_case "first-of returns first non-empty" test_first_of_first
-_run_test_case "first-of returns second if first empty" test_first_of_second
-_run_test_case "first-of fails if both empty" test_first_of_fails_both_empty
+run_test_case "first-of returns first non-empty" test_first_of_first
+run_test_case "first-of returns second if first empty" test_first_of_second
+run_test_case "first-of fails if both empty" test_first_of_fails_both_empty
 
-_finish_tests
+finish_tests

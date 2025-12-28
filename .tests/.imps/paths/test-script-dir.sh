@@ -13,8 +13,8 @@ done
 
 test_script_dir_returns_absolute_path() {
   skip-if-compiled || return $?
-  _run_spell spells/.imps/paths/script-dir spells/.imps/paths/script-dir
-  _assert_success || return 1
+  run_spell spells/.imps/paths/script-dir spells/.imps/paths/script-dir
+  assert_success || return 1
   # Should output an absolute path
   case "$OUTPUT" in
     /*) return 0 ;;
@@ -24,8 +24,8 @@ test_script_dir_returns_absolute_path() {
 
 test_script_dir_returns_correct_directory() {
   skip-if-compiled || return $?
-  _run_spell spells/.imps/paths/script-dir spells/.imps/paths/script-dir
-  _assert_success || return 1
+  run_spell spells/.imps/paths/script-dir spells/.imps/paths/script-dir
+  assert_success || return 1
   # Output should end with /spells/.imps/paths
   case "$OUTPUT" in
     */spells/.imps/paths) return 0 ;;
@@ -34,8 +34,8 @@ test_script_dir_returns_correct_directory() {
 }
 
 test_script_dir_normalized_path() {
-  _run_spell spells/.imps/paths/script-dir spells/.imps/paths/script-dir
-  _assert_success || return 1
+  run_spell spells/.imps/paths/script-dir spells/.imps/paths/script-dir
+  assert_success || return 1
   # Output should not contain multiple consecutive slashes
   case "$OUTPUT" in
     *///*) TEST_FAILURE_REASON="path should be normalized, got: $OUTPUT"; return 1 ;;
@@ -46,7 +46,7 @@ test_script_dir_normalized_path() {
 test_script_dir_handles_simple_name() {
   skip-if-compiled || return $?
   # When given just a filename without path separators
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   cp "$ROOT_DIR/spells/.imps/paths/script-dir" "$tmpdir/script-dir"
   chmod +x "$tmpdir/script-dir"
   
@@ -64,7 +64,7 @@ test_script_dir_handles_simple_name() {
 
 test_script_dir_handles_symlink() {
   skip-if-compiled || return $?
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   mkdir -p "$tmpdir/actual"
   mkdir -p "$tmpdir/link_dir"
   
@@ -91,7 +91,7 @@ test_script_dir_handles_symlink() {
 test_script_dir_handles_relative_path() {
   skip-if-compiled || return $?
   # Create a temp script and run with a relative path
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   mkdir -p "$tmpdir/sub/dir"
   cp "$ROOT_DIR/spells/.imps/paths/script-dir" "$tmpdir/sub/dir/script-dir"
   chmod +x "$tmpdir/sub/dir/script-dir"
@@ -110,7 +110,7 @@ test_script_dir_handles_relative_path() {
 
 test_script_dir_handles_dot_slash() {
   skip-if-compiled || return $?
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   cp "$ROOT_DIR/spells/.imps/paths/script-dir" "$tmpdir/script-dir"
   chmod +x "$tmpdir/script-dir"
   
@@ -128,7 +128,7 @@ test_script_dir_handles_dot_slash() {
 
 test_script_dir_handles_relative_symlink() {
   skip-if-compiled || return $?
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   mkdir -p "$tmpdir/actual"
   mkdir -p "$tmpdir/links"
   
@@ -155,7 +155,7 @@ test_script_dir_handles_relative_symlink() {
 test_script_dir_handles_same_dir_symlink() {
   skip-if-compiled || return $?
   # Edge case: symlink points to a file in the same directory
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   
   # Create the actual script
   cp "$ROOT_DIR/spells/.imps/paths/script-dir" "$tmpdir/real-script-dir"
@@ -177,14 +177,14 @@ test_script_dir_handles_same_dir_symlink() {
   esac
 }
 
-_run_test_case "script-dir returns absolute path" test_script_dir_returns_absolute_path
-_run_test_case "script-dir returns correct directory" test_script_dir_returns_correct_directory
-_run_test_case "script-dir returns normalized path" test_script_dir_normalized_path
-_run_test_case "script-dir handles simple name" test_script_dir_handles_simple_name
-_run_test_case "script-dir handles symlinks" test_script_dir_handles_symlink
-_run_test_case "script-dir handles relative paths" test_script_dir_handles_relative_path
-_run_test_case "script-dir handles ./script syntax" test_script_dir_handles_dot_slash
-_run_test_case "script-dir handles relative symlinks" test_script_dir_handles_relative_symlink
-_run_test_case "script-dir handles same-dir symlinks" test_script_dir_handles_same_dir_symlink
+run_test_case "script-dir returns absolute path" test_script_dir_returns_absolute_path
+run_test_case "script-dir returns correct directory" test_script_dir_returns_correct_directory
+run_test_case "script-dir returns normalized path" test_script_dir_normalized_path
+run_test_case "script-dir handles simple name" test_script_dir_handles_simple_name
+run_test_case "script-dir handles symlinks" test_script_dir_handles_symlink
+run_test_case "script-dir handles relative paths" test_script_dir_handles_relative_path
+run_test_case "script-dir handles ./script syntax" test_script_dir_handles_dot_slash
+run_test_case "script-dir handles relative symlinks" test_script_dir_handles_relative_symlink
+run_test_case "script-dir handles same-dir symlinks" test_script_dir_handles_same_dir_symlink
 
-_finish_tests
+finish_tests

@@ -23,7 +23,7 @@ fi
 _WIZARDRY_INVOKED=1
 export _WIZARDRY_INVOKED
 
-_invoke_wizardry() {
+invoke_wizardry() {
   # Detect WIZARDRY_DIR
   if [ -z "${WIZARDRY_DIR-}" ]; then
     # Capture script path - in bash use BASH_SOURCE, in zsh use $0
@@ -124,6 +124,6 @@ _invoke_wizardry() {
 }
 
 # Run the setup
-_invoke_wizardry
+invoke_wizardry
 _iw_status=$?
 return $_iw_status

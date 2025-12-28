@@ -12,16 +12,16 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_contains_finds_substring() {
-  _run_spell spells/.imps/str/contains "hello world" "wor"
-  _assert_success
+  run_spell spells/.imps/str/contains "hello world" "wor"
+  assert_success
 }
 
 test_contains_rejects_missing() {
-  _run_spell spells/.imps/str/contains "hello world" "xyz"
-  _assert_failure
+  run_spell spells/.imps/str/contains "hello world" "xyz"
+  assert_failure
 }
 
-_run_test_case "contains finds substring" test_contains_finds_substring
-_run_test_case "contains rejects missing substring" test_contains_rejects_missing
+run_test_case "contains finds substring" test_contains_finds_substring
+run_test_case "contains rejects missing substring" test_contains_rejects_missing
 
-_finish_tests
+finish_tests

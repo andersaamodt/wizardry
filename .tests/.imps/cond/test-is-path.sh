@@ -12,46 +12,46 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_is_path_absolute() {
-  _run_spell spells/.imps/cond/is-path "/tmp/test"
-  _assert_success
+  run_spell spells/.imps/cond/is-path "/tmp/test"
+  assert_success
 }
 
 test_is_path_relative() {
-  _run_spell spells/.imps/cond/is-path "relative/path"
-  _assert_success
+  run_spell spells/.imps/cond/is-path "relative/path"
+  assert_success
 }
 
 test_is_path_filename() {
-  _run_spell spells/.imps/cond/is-path "file.txt"
-  _assert_success
+  run_spell spells/.imps/cond/is-path "file.txt"
+  assert_success
 }
 
 test_is_path_dot() {
-  _run_spell spells/.imps/cond/is-path "."
-  _assert_success
+  run_spell spells/.imps/cond/is-path "."
+  assert_success
 }
 
 test_is_path_dotdot() {
-  _run_spell spells/.imps/cond/is-path ".."
-  _assert_success
+  run_spell spells/.imps/cond/is-path ".."
+  assert_success
 }
 
 test_is_path_home() {
-  _run_spell spells/.imps/cond/is-path "~"
-  _assert_success
+  run_spell spells/.imps/cond/is-path "~"
+  assert_success
 }
 
 test_is_path_fails_for_empty() {
-  _run_spell spells/.imps/cond/is-path ""
-  _assert_failure
+  run_spell spells/.imps/cond/is-path ""
+  assert_failure
 }
 
-_run_test_case "is-path succeeds for absolute path" test_is_path_absolute
-_run_test_case "is-path succeeds for relative path" test_is_path_relative
-_run_test_case "is-path succeeds for filename" test_is_path_filename
-_run_test_case "is-path succeeds for dot" test_is_path_dot
-_run_test_case "is-path succeeds for dotdot" test_is_path_dotdot
-_run_test_case "is-path succeeds for tilde" test_is_path_home
-_run_test_case "is-path fails for empty" test_is_path_fails_for_empty
+run_test_case "is-path succeeds for absolute path" test_is_path_absolute
+run_test_case "is-path succeeds for relative path" test_is_path_relative
+run_test_case "is-path succeeds for filename" test_is_path_filename
+run_test_case "is-path succeeds for dot" test_is_path_dot
+run_test_case "is-path succeeds for dotdot" test_is_path_dotdot
+run_test_case "is-path succeeds for tilde" test_is_path_home
+run_test_case "is-path fails for empty" test_is_path_fails_for_empty
 
-_finish_tests
+finish_tests

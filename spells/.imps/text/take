@@ -3,10 +3,10 @@
 # Example: take 5 file.txt   # first 5 lines
 set -eu
 
-_take() {
+take() {
   if [ "$#" -ge 2 ]; then head -n "$1" "$2"; else head -n "$1"; fi
 }
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */take) _take "$@" ;; esac
+  */take) take "$@" ;; esac

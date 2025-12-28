@@ -57,34 +57,34 @@ env-clear
 
 case "${1-}" in
 --simulate)
-  _info "Starting multi-step process"
-  _debug "Current working directory: $(pwd)"
+  info "Starting multi-step process"
+  debug "Current working directory: $(pwd)"
   
-  _step "Step 1: Creating temporary file"
-  tmpfile=$(_temp_file)
-  _on_exit _cleanup_file "$tmpfile"
-  _debug "Created temp file: $tmpfile"
+  step "Step 1: Creating temporary file"
+  tmpfile=$(temp_file)
+  on_exit cleanup_file "$tmpfile"
+  debug "Created temp file: $tmpfile"
   
-  _step "Step 2: Writing data"
+  step "Step 2: Writing data"
   printf '%s\n' "test data" > "$tmpfile"
-  _debug "Wrote test data to temp file"
+  debug "Wrote test data to temp file"
   
-  _step "Step 3: Processing data"
+  step "Step 3: Processing data"
   # Simulate some processing
   sleep 1
-  _debug "Processing complete"
+  debug "Processing complete"
   
-  _success "Multi-step process completed successfully"
+  success "Multi-step process completed successfully"
   ;;
 *)
-  _say "Welcome to the logging example!"
-  _say ""
-  _say "Set WIZARDRY_LOG_LEVEL to control verbosity:"
-  _say "  0 (default) - Critical messages only"
-  _say "  1           - Include info and step messages"
-  _say "  2+          - Include debug messages"
-  _say ""
-  _say "Try: WIZARDRY_LOG_LEVEL=1 logging-example --simulate"
+  say "Welcome to the logging example!"
+  say ""
+  say "Set WIZARDRY_LOG_LEVEL to control verbosity:"
+  say "  0 (default) - Critical messages only"
+  say "  1           - Include info and step messages"
+  say "  2+          - Include debug messages"
+  say ""
+  say "Try: WIZARDRY_LOG_LEVEL=1 logging-example --simulate"
   ;;
 esac
 }

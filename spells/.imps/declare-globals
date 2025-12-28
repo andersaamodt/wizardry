@@ -6,7 +6,7 @@
 # Explicitly use permissive mode - this file is sourced into other scripts
 set +eu
 
-_declare_globals() {
+declare_globals() {
   # Installation root directory path.
   # Required for spells to locate resources relative to install location.
   : "${WIZARDRY_DIR:=}"
@@ -26,4 +26,4 @@ _declare_globals() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */declare-globals) _declare_globals "$@" ;; esac
+  */declare-globals) declare_globals "$@" ;; esac

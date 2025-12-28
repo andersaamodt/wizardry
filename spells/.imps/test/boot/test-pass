@@ -4,13 +4,13 @@
 
 set -eu
 
-_test_pass() {
+test_pass() {
   num=${1-}
   desc=${2-}
   
   # Handle old single-arg format for backwards compatibility
-  # Old format: _test_pass "desc"
-  # New format: _test_pass num "desc"
+  # Old format: test_pass "desc"
+  # New format: test_pass num "desc"
   if [ -z "$desc" ]; then
     # Only one argument provided, it's the description
     desc=$num
@@ -46,4 +46,4 @@ _test_pass() {
 }
 
 # Self-execution when run directly (not sourced)
-case "${0##*/}" in test-pass) _test_pass "$@" ;; esac
+case "${0##*/}" in test-pass) test_pass "$@" ;; esac

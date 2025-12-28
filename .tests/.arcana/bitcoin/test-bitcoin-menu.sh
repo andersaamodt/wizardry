@@ -62,7 +62,7 @@ SH
 }
 
 test_bitcoin_menu_prompts_install_when_missing() {
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_colors "$tmp"
   make_stub_exit_label "$tmp"
@@ -71,15 +71,15 @@ test_bitcoin_menu_prompts_install_when_missing() {
   make_boolean_stub "$tmp/is-service-installed" 1
   make_boolean_stub "$tmp/is-bitcoin-running" 1
 
-  _run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/.arcana/bitcoin/bitcoin-menu"
-  _assert_success
-  _assert_file_contains "$tmp/log" "Bitcoin: missing"
-  _assert_file_contains "$tmp/log" "Install Bitcoin%install-bitcoin"
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/.arcana/bitcoin/bitcoin-menu"
+  assert_success
+  assert_file_contains "$tmp/log" "Bitcoin: missing"
+  assert_file_contains "$tmp/log" "Install Bitcoin%install-bitcoin"
 }
 
 test_bitcoin_menu_controls_running_service() {
   skip-if-compiled || return $?
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_colors "$tmp"
   make_stub_exit_label "$tmp"
@@ -88,16 +88,16 @@ test_bitcoin_menu_controls_running_service() {
   make_boolean_stub "$tmp/is-service-installed" 0
   make_boolean_stub "$tmp/is-bitcoin-running" 0
 
-  _run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/.arcana/bitcoin/bitcoin-menu"
-  _assert_success
-  _assert_file_contains "$tmp/log" "Stop Bitcoin Service%sudo systemctl stop bitcoin"
-  _assert_file_contains "$tmp/log" "Uninstall Bitcoin Service%remove-service bitcoin"
-  _assert_file_contains "$tmp/log" "Uninstall Bitcoin%uninstall-bitcoin"
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/.arcana/bitcoin/bitcoin-menu"
+  assert_success
+  assert_file_contains "$tmp/log" "Stop Bitcoin Service%sudo systemctl stop bitcoin"
+  assert_file_contains "$tmp/log" "Uninstall Bitcoin Service%remove-service bitcoin"
+  assert_file_contains "$tmp/log" "Uninstall Bitcoin%uninstall-bitcoin"
 }
 
 test_bitcoin_menu_offers_service_install_when_missing() {
   skip-if-compiled || return $?
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_colors "$tmp"
   make_stub_exit_label "$tmp"
@@ -111,22 +111,22 @@ echo /usr/bin/bitcoind
 SH
   chmod +x "$tmp/which"
 
-  _run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/.arcana/bitcoin/bitcoin-menu"
-  _assert_success
-  _assert_file_contains "$tmp/log" "Install Bitcoin Service%install-service-template $ROOT_DIR/spells/.arcana/bitcoin/bitcoin.service \"BITCOIND=/usr/bin/bitcoind\""
-  _assert_file_contains "$tmp/log" "Uninstall Bitcoin%uninstall-bitcoin"
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/.arcana/bitcoin/bitcoin-menu"
+  assert_success
+  assert_file_contains "$tmp/log" "Install Bitcoin Service%install-service-template $ROOT_DIR/spells/.arcana/bitcoin/bitcoin.service \"BITCOIND=/usr/bin/bitcoind\""
+  assert_file_contains "$tmp/log" "Uninstall Bitcoin%uninstall-bitcoin"
 }
 
-_run_test_case "bitcoin-menu prompts for install when missing" test_bitcoin_menu_prompts_install_when_missing
-_run_test_case "bitcoin-menu manages running services" test_bitcoin_menu_controls_running_service
-_run_test_case "bitcoin-menu installs service when absent" test_bitcoin_menu_offers_service_install_when_missing
+run_test_case "bitcoin-menu prompts for install when missing" test_bitcoin_menu_prompts_install_when_missing
+run_test_case "bitcoin-menu manages running services" test_bitcoin_menu_controls_running_service
+run_test_case "bitcoin-menu installs service when absent" test_bitcoin_menu_offers_service_install_when_missing
 
 test_shows_help() {
-  _run_cmd "$ROOT_DIR/spells/.arcana/bitcoin/bitcoin-menu" --help
-  _assert_success
-  _assert_output_contains "Usage: bitcoin-menu"
+  run_cmd "$ROOT_DIR/spells/.arcana/bitcoin/bitcoin-menu" --help
+  assert_success
+  assert_output_contains "Usage: bitcoin-menu"
 }
 
-_run_test_case "bitcoin-menu --help shows usage" test_shows_help
+run_test_case "bitcoin-menu --help shows usage" test_shows_help
 
-_finish_tests
+finish_tests

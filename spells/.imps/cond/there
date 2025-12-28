@@ -2,10 +2,10 @@
 # there PATH - test if path exists (any type: file, dir, link, etc.)
 # Example: there /etc/passwd && echo "found"
 
-_there() {
+there() {
   [ -e "$1" ]
 }
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */there) _there "$@" ;; esac
+  */there) there "$@" ;; esac

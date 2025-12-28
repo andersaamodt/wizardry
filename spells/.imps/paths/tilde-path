@@ -4,7 +4,7 @@
 
 set -eu
 
-_tilde_path() {
+tilde_path() {
   # Require exactly one argument
   if [ "$#" -ne 1 ]; then
     printf 'tilde-path: exactly one argument required\n' >&2
@@ -39,4 +39,4 @@ _tilde_path() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */tilde-path) _tilde_path "$@" ;; esac
+  */tilde-path) tilde_path "$@" ;; esac

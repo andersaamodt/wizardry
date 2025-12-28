@@ -4,9 +4,9 @@
 # Provides organized failure lists by execution pattern when dual-pattern testing enabled.
 set -eu
 
-_finish_tests() {
+finish_tests() {
   total=$((_pass_count + _fail_count + ${_skip_count-0}))
-  _test_summary "$_pass_count" "$total" "${_skip_count-0}"
+  test_summary "$_pass_count" "$total" "${_skip_count-0}"
   
   if [ "$_fail_count" -gt 0 ]; then
     # Print organized failure summary (improved output to show all failures)
@@ -47,4 +47,4 @@ _finish_tests() {
 }
 
 # Self-execution when run directly (not sourced)
-case "${0##*/}" in finish-tests) _finish_tests "$@" ;; esac
+case "${0##*/}" in finish-tests) finish_tests "$@" ;; esac

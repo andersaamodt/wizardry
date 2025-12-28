@@ -8,19 +8,19 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_provides_tools() {
-  fixture=$(_make_fixture)
-  _provide_basic_tools "$fixture"
+  fixture=$(make_fixture)
+  provide_basic_tools "$fixture"
   # Check that at least cat is linked (should exist on all systems)
   [ -L "$fixture/bin/cat" ]
 }
 
 test_provides_sh() {
-  fixture=$(_make_fixture)
-  _provide_basic_tools "$fixture"
+  fixture=$(make_fixture)
+  provide_basic_tools "$fixture"
   [ -L "$fixture/bin/sh" ]
 }
 
-_run_test_case "provide-basic-tools links common tools" test_provides_tools
-_run_test_case "provide-basic-tools links shell" test_provides_sh
+run_test_case "provide-basic-tools links common tools" test_provides_tools
+run_test_case "provide-basic-tools links shell" test_provides_sh
 
-_finish_tests
+finish_tests

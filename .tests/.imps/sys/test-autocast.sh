@@ -8,7 +8,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_autocast_when_executed() {
-  workdir=$(_make_tempdir)
+  workdir=$(make_tempdir)
   script="$workdir/demo-autocast"
   cat >"$script" <<'SCRIPT'
 #!/bin/sh
@@ -25,14 +25,14 @@ autocast demo-autocast "$@"
 SCRIPT
   chmod +x "$script"
 
-  _run_cmd env TEST_WORKDIR="$workdir" "$script" "test-arg"
-  _assert_success || return 1
-  _assert_output_contains "executed:test-arg" || return 1
+  run_cmd env TEST_WORKDIR="$workdir" "$script" "test-arg"
+  assert_success || return 1
+  assert_output_contains "executed:test-arg" || return 1
   [ -z "${ERROR}" ] || { TEST_FAILURE_REASON="expected no stderr"; return 1; }
 }
 
 test_autocast_when_sourced() {
-  workdir=$(_make_tempdir)
+  workdir=$(make_tempdir)
   script="$workdir/demo-source"
   cat >"$script" <<'SCRIPT'
 #!/bin/sh
@@ -47,13 +47,13 @@ autocast demo-source
 SCRIPT
   chmod +x "$script"
 
-  _run_cmd env WIZARDRY_DIR="$ROOT_DIR" sh "$script"
-  _assert_success || return 1
-  _assert_output_contains "sourced:ok" || return 1
+  run_cmd env WIZARDRY_DIR="$ROOT_DIR" sh "$script"
+  assert_success || return 1
+  assert_output_contains "sourced:ok" || return 1
 }
 
 test_autocast_auto_detects_name() {
-  workdir=$(_make_tempdir)
+  workdir=$(make_tempdir)
   # Script name must match function name pattern for auto-detection
   script="$workdir/auto_detect"
   cat >"$script" <<'SCRIPT'
@@ -70,13 +70,13 @@ autocast
 SCRIPT
   chmod +x "$script"
 
-  _run_cmd env WIZARDRY_DIR="$ROOT_DIR" "$script"
-  _assert_success || return 1
-  _assert_output_contains "detected:success" || return 1
+  run_cmd env WIZARDRY_DIR="$ROOT_DIR" "$script"
+  assert_success || return 1
+  assert_output_contains "detected:success" || return 1
 }
 
-_run_test_case "autocast executes function when script is executed" test_autocast_when_executed
-_run_test_case "autocast calls function when sourced" test_autocast_when_sourced
-_run_test_case "autocast auto-detects spell name from script path" test_autocast_auto_detects_name
+run_test_case "autocast executes function when script is executed" test_autocast_when_executed
+run_test_case "autocast calls function when sourced" test_autocast_when_sourced
+run_test_case "autocast auto-detects spell name from script path" test_autocast_auto_detects_name
 
-_finish_tests
+finish_tests

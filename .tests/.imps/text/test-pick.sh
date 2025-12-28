@@ -14,22 +14,22 @@ done
 test_pick_selects_line() {
   tmpfile=$(mktemp "$WIZARDRY_TMPDIR/pick_test.XXXXXX")
   printf 'one\ntwo\nthree\n' > "$tmpfile"
-  _run_spell spells/.imps/text/pick 2 "$tmpfile"
+  run_spell spells/.imps/text/pick 2 "$tmpfile"
   rm -f "$tmpfile"
-  _assert_success
-  _assert_output_contains "two"
+  assert_success
+  assert_output_contains "two"
 }
 
 test_pick_selects_first_line() {
   tmpfile=$(mktemp "$WIZARDRY_TMPDIR/pick_test.XXXXXX")
   printf 'first\nsecond\n' > "$tmpfile"
-  _run_spell spells/.imps/text/pick 1 "$tmpfile"
+  run_spell spells/.imps/text/pick 1 "$tmpfile"
   rm -f "$tmpfile"
-  _assert_success
-  _assert_output_contains "first"
+  assert_success
+  assert_output_contains "first"
 }
 
-_run_test_case "pick selects line by number" test_pick_selects_line
-_run_test_case "pick selects first line" test_pick_selects_first_line
+run_test_case "pick selects line by number" test_pick_selects_line
+run_test_case "pick selects first line" test_pick_selects_first_line
 
-_finish_tests
+finish_tests

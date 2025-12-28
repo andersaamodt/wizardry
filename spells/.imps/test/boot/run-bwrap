@@ -3,7 +3,7 @@
 # Wraps bwrap invocation, using sudo when BWRAP_VIA_SUDO is set.
 set -eu
 
-_run_bwrap() {
+run_bwrap() {
   if [ "${BWRAP_VIA_SUDO:-0}" -eq 1 ]; then
     # Use REAL_SUDO_BIN to avoid picking up a test stub sudo from PATH
     "${REAL_SUDO_BIN:?}" -n "${BWRAP_BIN:?}" "$@"
@@ -13,4 +13,4 @@ _run_bwrap() {
 }
 
 # Self-execution when run directly (not sourced)
-case "${0##*/}" in run-bwrap) _run_bwrap "$@" ;; esac
+case "${0##*/}" in run-bwrap) run_bwrap "$@" ;; esac

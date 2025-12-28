@@ -14,15 +14,15 @@ test_install_cd_is_executable() {
 }
 
 test_install_cd_help_shows_usage() {
-  _run_spell spells/.arcana/mud/install-cd --help
-  _assert_success || return 1
-  _assert_output_contains "Usage:" || return 1
-  _assert_output_contains "install-cd" || return 1
+  run_spell spells/.arcana/mud/install-cd --help
+  assert_success || return 1
+  assert_output_contains "Usage:" || return 1
+  assert_output_contains "install-cd" || return 1
 }
 
 test_install_cd_installs_to_rc_file() {
   skip-if-compiled || return $?
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   
   # Create fake home with bashrc
   fake_home="$tmpdir/home"
@@ -75,7 +75,7 @@ STUB_EOF
 
 test_install_cd_skips_if_already_installed() {
   skip-if-compiled || return $?
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   
   # Create fake home with bashrc
   fake_home="$tmpdir/home"
@@ -119,7 +119,7 @@ STUB_EOF
 
 test_install_cd_handles_nix_format() {
   skip-if-compiled || return $?
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   
   # Create a fake home directory with NixOS configuration
   fake_home="$tmpdir/home"
@@ -167,7 +167,7 @@ test_install_cd_handles_nix_format() {
 
 test_install_cd_creates_rc_file_if_missing() {
   skip-if-compiled || return $?
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   
   # Create fake home WITHOUT any rc file
   fake_home="$tmpdir/home"
@@ -217,10 +217,10 @@ STUB_EOF
   fi
 }
 
-_run_test_case "install-cd is executable" test_install_cd_is_executable
-_run_test_case "install-cd --help shows usage" test_install_cd_help_shows_usage
-_run_test_case "install-cd installs to rc file" test_install_cd_installs_to_rc_file
-_run_test_case "install-cd skips if already installed" test_install_cd_skips_if_already_installed
-_run_test_case "install-cd handles nix format" test_install_cd_handles_nix_format
-_run_test_case "install-cd creates rc file if missing" test_install_cd_creates_rc_file_if_missing
-_finish_tests
+run_test_case "install-cd is executable" test_install_cd_is_executable
+run_test_case "install-cd --help shows usage" test_install_cd_help_shows_usage
+run_test_case "install-cd installs to rc file" test_install_cd_installs_to_rc_file
+run_test_case "install-cd skips if already installed" test_install_cd_skips_if_already_installed
+run_test_case "install-cd handles nix format" test_install_cd_handles_nix_format
+run_test_case "install-cd creates rc file if missing" test_install_cd_creates_rc_file_if_missing
+finish_tests

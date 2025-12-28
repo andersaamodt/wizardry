@@ -1,11 +1,11 @@
 #!/bin/sh
 # script-dir SCRIPT - resolve directory containing script (handles symlinks)
-# Example: dir=$(script-dir "$0") or dir=$(_script_dir "$0")
+# Example: dir=$(script-dir "$0") or dir=$(script_dir "$0")
 # Returns absolute normalized path to the directory containing the script.
 # Follows symlinks to return the actual filesystem location.
 set -eu
 
-_script_dir() {
+script_dir() {
   _sd_script=${1:-$0}
   
   # Extract initial directory portion
@@ -44,4 +44,4 @@ _script_dir() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */script-dir) _script_dir "$@" ;; esac
+  */script-dir) script_dir "$@" ;; esac

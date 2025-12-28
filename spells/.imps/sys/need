@@ -3,7 +3,7 @@
 # Example: need git | need curl "curl is required for downloads"
 set -eu
 
-_need() {
+need() {
   if command -v "$1" >/dev/null 2>&1; then return 0; fi
   _need_msg=${2:-"required command not found: $1"}
   printf '%s\n' "$_need_msg" >&2
@@ -12,4 +12,4 @@ _need() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */need) _need "$@" ;; esac
+  */need) need "$@" ;; esac

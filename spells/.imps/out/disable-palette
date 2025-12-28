@@ -4,7 +4,7 @@
 # This is required for compatibility with the colors spell which sources it.
 set -eu
 
-_disable_palette() {
+disable_palette() {
   for _dp_name in \
     RESET BLACK RED GREEN YELLOW BLUE PURPLE CYAN WHITE GREY \
     BOLD ITALICS UNDERLINED BLINK INVERT STRIKE \
@@ -26,4 +26,4 @@ _disable_palette() {
 
 # Execute immediately when sourced (for colors spell compatibility)
 # This imp is designed to be sourced by colors to disable the palette
-_disable_palette
+disable_palette

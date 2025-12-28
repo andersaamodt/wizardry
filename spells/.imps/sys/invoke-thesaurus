@@ -4,8 +4,8 @@
 # Also initializes default synonyms if not already set up.
 
 # This script must be sourced, not executed
-if command -v _uncastable >/dev/null 2>&1; then
-  _uncastable
+if command -v uncastable >/dev/null 2>&1; then
+  uncastable
 else
   _it_sourced=0
   if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
@@ -31,7 +31,7 @@ fi
 # Explicitly use permissive mode - this file is sourced into user's shell
 set +eu
 
-_invoke_thesaurus() {
+invoke_thesaurus() {
   # Use global SPELLBOOK_DIR if set, otherwise use default
   # Use a local variable to avoid modifying the global
   if [ -n "${SPELLBOOK_DIR-}" ]; then
@@ -186,4 +186,4 @@ find-command which"
 }
 
 # Run the function
-_invoke_thesaurus
+invoke_thesaurus

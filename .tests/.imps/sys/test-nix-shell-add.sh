@@ -18,7 +18,7 @@ export WIZARDRY_SKIP_CONFIRM=1
 
 test_nix_shell_add_creates_block() {
   skip-if-compiled || return $?
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   nix_file="$tmpdir/test.nix"
   
   # Create minimal nix file
@@ -46,7 +46,7 @@ test_nix_shell_add_creates_block() {
 }
 
 test_nix_shell_add_is_idempotent() {
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   nix_file="$tmpdir/test.nix"
   
   # Create minimal nix file
@@ -66,7 +66,7 @@ test_nix_shell_add_is_idempotent() {
 
 test_nix_shell_add_zsh_uses_correct_option() {
   skip-if-compiled || return $?
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   nix_file="$tmpdir/test.nix"
   
   # Create minimal nix file
@@ -84,7 +84,7 @@ test_nix_shell_add_zsh_uses_correct_option() {
 
 test_nix_shell_add_creates_file_if_missing() {
   skip-if-compiled || return $?
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   nix_file="$tmpdir/subdir/test.nix"
   
   # File doesn't exist yet
@@ -119,11 +119,11 @@ test_nix_shell_add_requires_file() {
   return 0
 }
 
-_run_test_case "nix-shell-add creates block" test_nix_shell_add_creates_block
-_run_test_case "nix-shell-add is idempotent" test_nix_shell_add_is_idempotent
-_run_test_case "nix-shell-add zsh uses correct option" test_nix_shell_add_zsh_uses_correct_option
-_run_test_case "nix-shell-add creates file if missing" test_nix_shell_add_creates_file_if_missing
-_run_test_case "nix-shell-add requires name" test_nix_shell_add_requires_name
-_run_test_case "nix-shell-add requires file" test_nix_shell_add_requires_file
+run_test_case "nix-shell-add creates block" test_nix_shell_add_creates_block
+run_test_case "nix-shell-add is idempotent" test_nix_shell_add_is_idempotent
+run_test_case "nix-shell-add zsh uses correct option" test_nix_shell_add_zsh_uses_correct_option
+run_test_case "nix-shell-add creates file if missing" test_nix_shell_add_creates_file_if_missing
+run_test_case "nix-shell-add requires name" test_nix_shell_add_requires_name
+run_test_case "nix-shell-add requires file" test_nix_shell_add_requires_file
 
-_finish_tests
+finish_tests

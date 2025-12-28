@@ -5,7 +5,7 @@
 
 set -eu
 
-_stub_stty() {
+stub_stty() {
   case ${1-} in
     -g) printf 'saved-state\n' ;;
     *) exit 0 ;;
@@ -15,4 +15,4 @@ _stub_stty() {
 # Self-execute when run directly (not sourced)
 # Match both stub name and symlink name (tests create symlinks without stub- prefix)
 case "$0" in
-  */stty|*/stub-stty) _stub_stty "$@" ;; esac
+  */stty|*/stub-stty) stub_stty "$@" ;; esac

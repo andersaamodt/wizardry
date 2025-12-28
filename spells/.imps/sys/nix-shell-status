@@ -3,7 +3,7 @@
 # Example: nix-shell-status myspell home.nix && echo "installed"
 set -eu
 
-_nix_shell_status() {
+nix_shell_status() {
   _nss_block_name=${1:-}
   _nss_nix_file=${2:-}
 
@@ -20,4 +20,4 @@ _nix_shell_status() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */nix-shell-status) _nix_shell_status "$@" ;; esac
+  */nix-shell-status) nix_shell_status "$@" ;; esac

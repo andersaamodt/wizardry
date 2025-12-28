@@ -14,16 +14,16 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  _run_spell "spells/spellcraft/doppelganger" --help
-  _assert_success && _assert_output_contains "Usage:"
+  run_spell "spells/spellcraft/doppelganger" --help
+  assert_success && assert_output_contains "Usage:"
 }
 
 test_uses_default_directory() {
   # doppelganger uses ./wizardry-compiled as default
   # Just verify it doesn't fail without arguments
   # (don't actually run it as it would create files in the working directory)
-  _run_spell "spells/spellcraft/doppelganger" --help
-  _assert_success
+  run_spell "spells/spellcraft/doppelganger" --help
+  assert_success
 }
 
 test_creates_compiled_wizardry() {
@@ -32,7 +32,7 @@ test_creates_compiled_wizardry() {
     return 0
   fi
   
-  workdir=$(_make_tempdir)
+  workdir=$(make_tempdir)
   target="$workdir/wizardry-clone"
   
   # Verify compile-spell exists before trying to use it
@@ -46,8 +46,8 @@ test_creates_compiled_wizardry() {
   saved_path="$PATH"
   export PATH="${ROOT_DIR}/spells/spellcraft:${ROOT_DIR}/spells:${PATH}"
   
-  _run_spell "spells/spellcraft/doppelganger" "$target"
-  _assert_success || { export PATH="$saved_path"; return 1; }
+  run_spell "spells/spellcraft/doppelganger" "$target"
+  assert_success || { export PATH="$saved_path"; return 1; }
   
   # Check directory structure exists
   [ -d "$target" ] || { TEST_FAILURE_REASON="target directory not created"; return 1; }
@@ -73,9 +73,9 @@ test_creates_compiled_wizardry() {
   export PATH="$saved_path"
 }
 
-_run_test_case "doppelganger prints usage" test_help
-_run_test_case "doppelganger uses default directory" test_uses_default_directory
-_run_test_case "doppelganger creates compiled wizardry" test_creates_compiled_wizardry
+run_test_case "doppelganger prints usage" test_help
+run_test_case "doppelganger uses default directory" test_uses_default_directory
+run_test_case "doppelganger creates compiled wizardry" test_creates_compiled_wizardry
 
 
 # Test via source-then-invoke pattern  

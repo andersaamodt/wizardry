@@ -4,7 +4,7 @@
 # Respects WIZARDRY_TEST_HELPERS_ONLY to skip system helpers during tests
 set -eu
 
-_xattr_helper_usable() {
+xattr_helper_usable() {
   helper=$1
   
   if ! command -v "$helper" >/dev/null 2>&1; then
@@ -25,5 +25,5 @@ _xattr_helper_usable() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */xattr-helper-usable) _xattr_helper_usable "$@" ;;
+  */xattr-helper-usable) xattr_helper_usable "$@" ;;
 esac

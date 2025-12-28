@@ -4,7 +4,7 @@
 
 set -eu
 
-_config_del() {
+config_del() {
   _cd_file=${1:?config-del: file path required}
   _cd_key=${2:?config-del: key required}
   
@@ -50,4 +50,4 @@ _config_del() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */config-del) _config_del "$@" ;; esac
+  */config-del) config_del "$@" ;; esac

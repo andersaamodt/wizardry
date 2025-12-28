@@ -3,7 +3,7 @@
 # Appends the index to _fail_detail_indices for summary output.
 set -eu
 
-_record_failure_detail() {
+record_failure_detail() {
   idx=$1
 
   _fail_detail_indices=$(printf '%s\n%s\n' "$_fail_detail_indices" "$idx" |
@@ -12,4 +12,4 @@ _record_failure_detail() {
 }
 
 # Self-execution when run directly (not sourced)
-case "${0##*/}" in record-failure-detail) _record_failure_detail "$@" ;; esac
+case "${0##*/}" in record-failure-detail) record_failure_detail "$@" ;; esac

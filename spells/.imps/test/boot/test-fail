@@ -4,14 +4,14 @@
 
 set -eu
 
-_test_fail() {
+test_fail() {
   num=${1-}
   desc=${2-}
   reason=${3-}
   
   # Handle old format for backwards compatibility
-  # Old format: _test_fail "desc" ["reason"]
-  # New format: _test_fail num "desc" ["reason"]
+  # Old format: test_fail "desc" ["reason"]
+  # New format: test_fail num "desc" ["reason"]
   if [ -z "$desc" ]; then
     # Only one argument provided, it's the description
     desc=$num
@@ -65,4 +65,4 @@ _test_fail() {
 }
 
 # Self-execution when run directly (not sourced)
-case "${0##*/}" in test-fail) _test_fail "$@" ;; esac
+case "${0##*/}" in test-fail) test_fail "$@" ;; esac

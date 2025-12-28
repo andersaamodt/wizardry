@@ -32,16 +32,16 @@ SH
 
 test_system_menu_checks_requirements() {
   skip-if-compiled || return $?
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
-  _run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/req" "$ROOT_DIR/spells/menu/system-menu"
-  _assert_success && _assert_path_exists "$tmp/req"
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/req" "$ROOT_DIR/spells/menu/system-menu"
+  assert_success && assert_path_exists "$tmp/req"
 }
 
 test_system_menu_includes_test_utilities() {
   skip-if-compiled || return $?
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
   cat >"$tmp/exit-label" <<'SH'
@@ -49,8 +49,8 @@ test_system_menu_includes_test_utilities() {
 printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
-  _run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/system-menu"
-  _assert_success
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/system-menu"
+  assert_success
   args=$(cat "$tmp/log")
   case "$args" in
     *"System Menu:"*"Restart...%shutdown-menu"*"Update all software%update-all -v"*"Update wizardry%update-wizardry"*"Manage services%"*"services-menu"*"Test all wizardry spells%test-magic"*'Exit%kill -TERM $PPID' ) : ;;
@@ -58,13 +58,13 @@ SH
   esac
 }
 
-_run_test_case "system-menu requires menu dependency" test_system_menu_checks_requirements
-_run_test_case "system-menu passes system actions to menu" test_system_menu_includes_test_utilities
+run_test_case "system-menu requires menu dependency" test_system_menu_checks_requirements
+run_test_case "system-menu passes system actions to menu" test_system_menu_includes_test_utilities
 
 # Test ESC and Exit behavior - menu exits properly when escape status returned
 test_esc_exit_behavior() {
   skip-if-compiled || return $?
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
   
@@ -74,8 +74,8 @@ printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
   
-  _run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/system-menu"
-  _assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/system-menu"
+  assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
   
   args=$(cat "$tmp/log")
   case "$args" in
@@ -84,20 +84,20 @@ SH
   esac
 }
 
-_run_test_case "system-menu ESC/Exit behavior" test_esc_exit_behavior
+run_test_case "system-menu ESC/Exit behavior" test_esc_exit_behavior
 
 test_shows_help() {
-  _run_cmd "$ROOT_DIR/spells/menu/system-menu" --help
-  _assert_success
-  _assert_output_contains "Usage: system-menu"
+  run_cmd "$ROOT_DIR/spells/menu/system-menu" --help
+  assert_success
+  assert_output_contains "Usage: system-menu"
 }
 
-_run_test_case "system-menu --help shows usage" test_shows_help
+run_test_case "system-menu --help shows usage" test_shows_help
 
 # Test that no exit message is printed when ESC or Exit is used
 test_no_exit_message_on_esc() {
   skip-if-compiled || return $?
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
   
@@ -107,8 +107,8 @@ printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
   
-  _run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/system-menu"
-  _assert_success || return 1
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/system-menu"
+  assert_success || return 1
   
   # Verify no "Exiting" message appears in stderr
   case "$ERROR" in
@@ -120,12 +120,12 @@ SH
   return 0
 }
 
-_run_test_case "system-menu no exit message on ESC" test_no_exit_message_on_esc
+run_test_case "system-menu no exit message on ESC" test_no_exit_message_on_esc
 
 # Test that exactly one blank line appears when selecting menu items
 test_single_blank_line_on_selection() {
   skip-if-compiled || return $?
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   
   # Create a stub service menu
   cat >"$tmp/services-menu" <<'SH'
@@ -159,8 +159,8 @@ SH
   chmod +x "$tmp/exit-label"
   
   MENU_OUTPUT="$tmp/output"
-  _run_cmd env PATH="$tmp:$PATH" MENU_OUTPUT="$MENU_OUTPUT" "$ROOT_DIR/spells/menu/system-menu"
-  _assert_success || return 1
+  run_cmd env PATH="$tmp:$PATH" MENU_OUTPUT="$MENU_OUTPUT" "$ROOT_DIR/spells/menu/system-menu"
+  assert_success || return 1
   
   if [ -f "$MENU_OUTPUT" ]; then
     blank_count=$(grep -c '^$' "$MENU_OUTPUT" || true)
@@ -173,7 +173,7 @@ SH
   return 0
 }
 
-_run_test_case "system-menu shows exactly one blank line on selection" test_single_blank_line_on_selection
+run_test_case "system-menu shows exactly one blank line on selection" test_single_blank_line_on_selection
 
 
 # Test via source-then-invoke pattern  

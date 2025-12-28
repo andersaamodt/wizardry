@@ -12,20 +12,20 @@ done
 
 test_returns_exit_always() {
   skip-if-compiled || return $?
-  _run_cmd "$ROOT_DIR/spells/.imps/menu/exit-label"
-  _assert_success
-  _assert_output_contains "Exit"
+  run_cmd "$ROOT_DIR/spells/.imps/menu/exit-label"
+  assert_success
+  assert_output_contains "Exit"
 }
 
 test_ignores_submenu_env() {
   skip-if-compiled || return $?
   # Even with WIZARDRY_SUBMENU set, exit-label returns "Exit"
-  _run_cmd env WIZARDRY_SUBMENU=1 "$ROOT_DIR/spells/.imps/menu/exit-label"
-  _assert_success
-  _assert_output_contains "Exit"
+  run_cmd env WIZARDRY_SUBMENU=1 "$ROOT_DIR/spells/.imps/menu/exit-label"
+  assert_success
+  assert_output_contains "Exit"
 }
 
-_run_test_case "exit-label always returns Exit" test_returns_exit_always
-_run_test_case "exit-label ignores WIZARDRY_SUBMENU env var" test_ignores_submenu_env
+run_test_case "exit-label always returns Exit" test_returns_exit_always
+run_test_case "exit-label ignores WIZARDRY_SUBMENU env var" test_ignores_submenu_env
 
-_finish_tests
+finish_tests

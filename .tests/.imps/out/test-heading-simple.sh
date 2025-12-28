@@ -11,19 +11,19 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 heading_simple_outputs_text() {
-  _run_spell "spells/.imps/out/heading-simple" "Installation"
-  _assert_success || return 1
-  _assert_output_contains "Installation" || return 1
+  run_spell "spells/.imps/out/heading-simple" "Installation"
+  assert_success || return 1
+  assert_output_contains "Installation" || return 1
 }
 
 heading_simple_accepts_prefix() {
-  _run_spell "spells/.imps/out/heading-simple" "Step 1" "==>"
-  _assert_success || return 1
-  _assert_output_contains "==>" || return 1
-  _assert_output_contains "Step 1" || return 1
+  run_spell "spells/.imps/out/heading-simple" "Step 1" "==>"
+  assert_success || return 1
+  assert_output_contains "==>" || return 1
+  assert_output_contains "Step 1" || return 1
 }
 
-_run_test_case "heading-simple outputs text" heading_simple_outputs_text
-_run_test_case "heading-simple accepts prefix" heading_simple_accepts_prefix
+run_test_case "heading-simple outputs text" heading_simple_outputs_text
+run_test_case "heading-simple accepts prefix" heading_simple_accepts_prefix
 
-_finish_tests
+finish_tests

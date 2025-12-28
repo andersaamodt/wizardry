@@ -13,17 +13,17 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 install_wl_clipboard_installs_package() {
-  fixture=$(_make_fixture)
-  _write_apt_stub "$fixture"
-  _write_sudo_stub "$fixture"
-  _provide_basic_tools "$fixture"
+  fixture=$(make_fixture)
+  write_apt_stub "$fixture"
+  write_sudo_stub "$fixture"
+  provide_basic_tools "$fixture"
 
-  PATH="$fixture/bin" HOME="$fixture/home" APT_LOG="$fixture/log/apt.log" _run_cmd \
+  PATH="$fixture/bin" HOME="$fixture/home" APT_LOG="$fixture/log/apt.log" run_cmd \
     env PATH="$fixture/bin" HOME="$fixture/home" APT_LOG="$fixture/log/apt.log" \
     "$ROOT_DIR/spells/.arcana/core/install-wl-clipboard"
 
-  _assert_success || return 1
-  _assert_file_contains "$fixture/log/apt.log" "apt-get -y install wl-clipboard" || return 1
+  assert_success || return 1
+  assert_file_contains "$fixture/log/apt.log" "apt-get -y install wl-clipboard" || return 1
 }
 
 spell_has_content() {
@@ -31,28 +31,28 @@ spell_has_content() {
 }
 
 install_wl_clipboard_reports_failure_when_package_manager_fails() {
-  fixture=$(_make_fixture)
-  _write_apt_stub "$fixture"
-  _write_sudo_stub "$fixture"
-  _provide_basic_tools "$fixture"
+  fixture=$(make_fixture)
+  write_apt_stub "$fixture"
+  write_sudo_stub "$fixture"
+  provide_basic_tools "$fixture"
 
   # Force package manager to fail
-  PATH="$fixture/bin" HOME="$fixture/home" APT_LOG="$fixture/log/apt.log" APT_EXIT=1 _run_cmd \
+  PATH="$fixture/bin" HOME="$fixture/home" APT_LOG="$fixture/log/apt.log" APT_EXIT=1 run_cmd \
     env PATH="$fixture/bin" HOME="$fixture/home" APT_LOG="$fixture/log/apt.log" APT_EXIT=1 \
     "$ROOT_DIR/spells/.arcana/core/install-wl-clipboard"
 
-  _assert_failure || return 1
-  _assert_error_contains "unable to install wl-clipboard automatically" || return 1
+  assert_failure || return 1
+  assert_error_contains "unable to install wl-clipboard automatically" || return 1
 }
 
-_run_test_case "install-wl-clipboard installs via package manager" install_wl_clipboard_installs_package
-_run_test_case "install-wl-clipboard has content" spell_has_content
-_run_test_case "install-wl-clipboard reports failure when package manager fails" install_wl_clipboard_reports_failure_when_package_manager_fails
+run_test_case "install-wl-clipboard installs via package manager" install_wl_clipboard_installs_package
+run_test_case "install-wl-clipboard has content" spell_has_content
+run_test_case "install-wl-clipboard reports failure when package manager fails" install_wl_clipboard_reports_failure_when_package_manager_fails
 
 shows_help() {
-  _run_spell spells/.arcana/core/install-wl-clipboard --help
+  run_spell spells/.arcana/core/install-wl-clipboard --help
   true
 }
 
-_run_test_case "install-wl-clipboard shows help" shows_help
-_finish_tests
+run_test_case "install-wl-clipboard shows help" shows_help
+finish_tests

@@ -11,21 +11,21 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 print_pass_outputs_pass_message() {
-  _run_spell "spells/.imps/out/print-pass" "my-spell"
-  _assert_success || return 1
-  _assert_output_contains "PASS" || return 1
-  _assert_output_contains "my-spell" || return 1
+  run_spell "spells/.imps/out/print-pass" "my-spell"
+  assert_success || return 1
+  assert_output_contains "PASS" || return 1
+  assert_output_contains "my-spell" || return 1
 }
 
 print_pass_formats_correctly() {
-  _run_spell "spells/.imps/out/print-pass" "test-name"
-  _assert_success || return 1
+  run_spell "spells/.imps/out/print-pass" "test-name"
+  assert_success || return 1
   # Should contain "PASS test-name"
-  _assert_output_contains "PASS" || return 1
-  _assert_output_contains "test-name" || return 1
+  assert_output_contains "PASS" || return 1
+  assert_output_contains "test-name" || return 1
 }
 
-_run_test_case "print-pass outputs PASS message" print_pass_outputs_pass_message
-_run_test_case "print-pass formats correctly" print_pass_formats_correctly
+run_test_case "print-pass outputs PASS message" print_pass_outputs_pass_message
+run_test_case "print-pass formats correctly" print_pass_formats_correctly
 
-_finish_tests
+finish_tests

@@ -12,9 +12,9 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_strip_trailing_slashes_removes_slash() {
-  _run_spell spells/.imps/paths/strip-trailing-slashes "/tmp/foo/"
-  _assert_success
-  _assert_output_contains "/tmp/foo"
+  run_spell spells/.imps/paths/strip-trailing-slashes "/tmp/foo/"
+  assert_success
+  assert_output_contains "/tmp/foo"
   # Should not end with a slash
   case "$OUTPUT" in
     */) TEST_FAILURE_REASON="should strip trailing slash"; return 1 ;;
@@ -24,8 +24,8 @@ test_strip_trailing_slashes_removes_slash() {
 
 test_strip_trailing_slashes_root() {
   skip-if-compiled || return $?
-  _run_spell spells/.imps/paths/strip-trailing-slashes "/"
-  _assert_success
+  run_spell spells/.imps/paths/strip-trailing-slashes "/"
+  assert_success
   # Root should remain as /
   case "$OUTPUT" in
     /) return 0 ;;
@@ -35,8 +35,8 @@ test_strip_trailing_slashes_root() {
 
 test_strip_trailing_slashes_multiple() {
   skip-if-compiled || return $?
-  _run_spell spells/.imps/paths/strip-trailing-slashes "///"
-  _assert_success
+  run_spell spells/.imps/paths/strip-trailing-slashes "///"
+  assert_success
   # Multiple slashes should become /
   case "$OUTPUT" in
     /) return 0 ;;
@@ -46,14 +46,14 @@ test_strip_trailing_slashes_multiple() {
 
 test_strip_trailing_slashes_no_change() {
   skip-if-compiled || return $?
-  _run_spell spells/.imps/paths/strip-trailing-slashes "/tmp/foo"
-  _assert_success
-  _assert_output_contains "/tmp/foo"
+  run_spell spells/.imps/paths/strip-trailing-slashes "/tmp/foo"
+  assert_success
+  assert_output_contains "/tmp/foo"
 }
 
-_run_test_case "strip-trailing-slashes removes trailing slash" test_strip_trailing_slashes_removes_slash
-_run_test_case "strip-trailing-slashes handles root" test_strip_trailing_slashes_root
-_run_test_case "strip-trailing-slashes handles multiple slashes" test_strip_trailing_slashes_multiple
-_run_test_case "strip-trailing-slashes handles no trailing slash" test_strip_trailing_slashes_no_change
+run_test_case "strip-trailing-slashes removes trailing slash" test_strip_trailing_slashes_removes_slash
+run_test_case "strip-trailing-slashes handles root" test_strip_trailing_slashes_root
+run_test_case "strip-trailing-slashes handles multiple slashes" test_strip_trailing_slashes_multiple
+run_test_case "strip-trailing-slashes handles no trailing slash" test_strip_trailing_slashes_no_change
 
-_finish_tests
+finish_tests

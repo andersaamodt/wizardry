@@ -13,14 +13,14 @@ test_or_is_executable() {
 }
 
 test_or_continues_on_failure() {
-  _run_spell spells/.imps/lex/or "false" "" echo fallback
-  _assert_success || return 1
-  _assert_output_contains "fallback" || return 1
+  run_spell spells/.imps/lex/or "false" "" echo fallback
+  assert_success || return 1
+  assert_output_contains "fallback" || return 1
 }
 
 test_or_skips_on_success() {
-  _run_spell spells/.imps/lex/or "true" "" echo shouldnt_appear
-  _assert_success || return 1
+  run_spell spells/.imps/lex/or "true" "" echo shouldnt_appear
+  assert_success || return 1
   case "$OUTPUT" in
     *shouldnt_appear*)
       TEST_FAILURE_REASON="or fallback executed when command succeeded"
@@ -30,14 +30,14 @@ test_or_skips_on_success() {
 }
 
 test_or_no_prior_command_continues() {
-  _run_spell spells/.imps/lex/or "" "" echo hello
-  _assert_success || return 1
-  _assert_output_contains "hello" || return 1
+  run_spell spells/.imps/lex/or "" "" echo hello
+  assert_success || return 1
+  assert_output_contains "hello" || return 1
 }
 
-_run_test_case "or is executable" test_or_is_executable
-_run_test_case "or continues on failure" test_or_continues_on_failure
-_run_test_case "or skips on success" test_or_skips_on_success
-_run_test_case "or with no prior command continues" test_or_no_prior_command_continues
+run_test_case "or is executable" test_or_is_executable
+run_test_case "or continues on failure" test_or_continues_on_failure
+run_test_case "or skips on success" test_or_skips_on_success
+run_test_case "or with no prior command continues" test_or_no_prior_command_continues
 
-_finish_tests
+finish_tests

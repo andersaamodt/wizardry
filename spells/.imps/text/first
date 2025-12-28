@@ -3,10 +3,10 @@
 # Examples: ls | first   # or: first /etc/passwd
 set -eu
 
-_first() {
+first() {
   if [ "$#" -ge 1 ]; then head -n 1 "$1"; else head -n 1; fi
 }
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */first) _first "$@" ;; esac
+  */first) first "$@" ;; esac

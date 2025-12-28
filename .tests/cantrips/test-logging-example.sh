@@ -12,22 +12,22 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  _run_spell spells/cantrips/logging-example --help
-  _assert_success
-  _assert_output_contains "Usage:"
+  run_spell spells/cantrips/logging-example --help
+  assert_success
+  assert_output_contains "Usage:"
 }
 
 test_default_output() {
   skip-if-compiled || return $?
-  _run_spell spells/cantrips/logging-example
-  _assert_success
-  _assert_output_contains "Welcome to the logging example"
+  run_spell spells/cantrips/logging-example
+  assert_success
+  assert_output_contains "Welcome to the logging example"
 }
 
 test_simulate_level_0() {
-  WIZARDRY_LOG_LEVEL=0 _run_spell spells/cantrips/logging-example --simulate
-  _assert_success
-  _assert_output_contains "Multi-step process completed successfully"
+  WIZARDRY_LOG_LEVEL=0 run_spell spells/cantrips/logging-example --simulate
+  assert_success
+  assert_output_contains "Multi-step process completed successfully"
   # At level 0, info/step/debug should not appear
   if printf '%s' "$OUTPUT" | grep -q "Starting multi-step"; then
     TEST_FAILURE_REASON="info message should not appear at level 0"
@@ -37,29 +37,29 @@ test_simulate_level_0() {
 
 test_simulate_level_1() {
   skip-if-compiled || return $?
-  WIZARDRY_LOG_LEVEL=1 _run_spell spells/cantrips/logging-example --simulate
-  _assert_success
-  _assert_output_contains "Starting multi-step process"
-  _assert_output_contains "Step 1:"
-  _assert_output_contains "Multi-step process completed successfully"
+  WIZARDRY_LOG_LEVEL=1 run_spell spells/cantrips/logging-example --simulate
+  assert_success
+  assert_output_contains "Starting multi-step process"
+  assert_output_contains "Step 1:"
+  assert_output_contains "Multi-step process completed successfully"
 }
 
 test_simulate_level_2() {
   skip-if-compiled || return $?
-  WIZARDRY_LOG_LEVEL=2 _run_spell spells/cantrips/logging-example --simulate
-  _assert_success
-  _assert_output_contains "Starting multi-step process"
-  _assert_output_contains "Step 1:"
+  WIZARDRY_LOG_LEVEL=2 run_spell spells/cantrips/logging-example --simulate
+  assert_success
+  assert_output_contains "Starting multi-step process"
+  assert_output_contains "Step 1:"
   # Debug output goes to stderr with DEBUG: prefix
-  _assert_error_contains "DEBUG:"
-  _assert_error_contains "Current working directory"
+  assert_error_contains "DEBUG:"
+  assert_error_contains "Current working directory"
 }
 
-_run_test_case "logging-example prints usage" test_help
-_run_test_case "logging-example shows default output" test_default_output
-_run_test_case "logging-example simulate at level 0" test_simulate_level_0
-_run_test_case "logging-example simulate at level 1" test_simulate_level_1
-_run_test_case "logging-example simulate at level 2" test_simulate_level_2
+run_test_case "logging-example prints usage" test_help
+run_test_case "logging-example shows default output" test_default_output
+run_test_case "logging-example simulate at level 0" test_simulate_level_0
+run_test_case "logging-example simulate at level 1" test_simulate_level_1
+run_test_case "logging-example simulate at level 2" test_simulate_level_2
 
 
 # Test via source-then-invoke pattern  

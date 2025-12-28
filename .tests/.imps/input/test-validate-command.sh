@@ -10,13 +10,13 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_valid_command() {
-  _run_cmd validate-command "echo hello" "command"
-  _assert_success || return 1
+  run_cmd validate-command "echo hello" "command"
+  assert_success || return 1
 }
 
 test_rejects_empty_command() {
-  _run_cmd validate-command "" "command"
-  _assert_failure || return 1
+  run_cmd validate-command "" "command"
+  assert_failure || return 1
   case "$OUTPUT$ERROR" in
     *"must not be empty"*) : ;;
     *) TEST_FAILURE_REASON="expected error about empty command"; return 1 ;;
@@ -25,8 +25,8 @@ test_rejects_empty_command() {
 
 test_rejects_tabs() {
   # Create a command with a tab character
-  _run_cmd sh -c 'validate-command "echo	hello" "command"'
-  _assert_failure || return 1
+  run_cmd sh -c 'validate-command "echo	hello" "command"'
+  assert_failure || return 1
   case "$OUTPUT$ERROR" in
     *"may not contain tabs"*) : ;;
     *) TEST_FAILURE_REASON="expected error about tabs"; return 1 ;;
@@ -34,9 +34,9 @@ test_rejects_tabs() {
 }
 
 test_rejects_newlines() {
-  _run_cmd sh -c 'validate-command "echo
+  run_cmd sh -c 'validate-command "echo
 hello" "command"'
-  _assert_failure || return 1
+  assert_failure || return 1
   case "$OUTPUT$ERROR" in
     *"must be a single line"*) : ;;
     *) TEST_FAILURE_REASON="expected error about single line"; return 1 ;;
@@ -44,18 +44,18 @@ hello" "command"'
 }
 
 test_context_in_error() {
-  _run_cmd validate-command "" "spell command"
-  _assert_failure || return 1
+  run_cmd validate-command "" "spell command"
+  assert_failure || return 1
   case "$OUTPUT$ERROR" in
     *"spell command must not be empty"*) : ;;
     *) TEST_FAILURE_REASON="expected context in error message"; return 1 ;;
   esac
 }
 
-_run_test_case "validate-command accepts valid command" test_valid_command
-_run_test_case "validate-command rejects empty command" test_rejects_empty_command
-_run_test_case "validate-command rejects tabs" test_rejects_tabs
-_run_test_case "validate-command rejects newlines" test_rejects_newlines
-_run_test_case "validate-command includes context in error" test_context_in_error
+run_test_case "validate-command accepts valid command" test_valid_command
+run_test_case "validate-command rejects empty command" test_rejects_empty_command
+run_test_case "validate-command rejects tabs" test_rejects_tabs
+run_test_case "validate-command rejects newlines" test_rejects_newlines
+run_test_case "validate-command includes context in error" test_context_in_error
 
-_finish_tests
+finish_tests

@@ -4,7 +4,7 @@
 
 set -eu
 
-_validate_command() {
+validate_command() {
   _vc_cmd=${1-}
   _vc_context=${2:-command}
   
@@ -28,4 +28,4 @@ _validate_command() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */validate-command) _validate_command "$@" ;; esac
+  */validate-command) validate_command "$@" ;; esac

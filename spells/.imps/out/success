@@ -4,10 +4,10 @@
 
 set -eu
 
-_success() {
+success() {
   printf '%s\n' "$*"
 }
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */success) _success "$@" ;; esac
+  */success) success "$@" ;; esac

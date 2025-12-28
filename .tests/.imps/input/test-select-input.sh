@@ -13,34 +13,34 @@ done
 
 test_select_input_stdin_mode() {
   skip-if-compiled || return $?
-  _run_cmd sh -c 'SELECT_INPUT_MODE=stdin select-input'
-  _assert_success
-  _assert_output_contains "stdin"
+  run_cmd sh -c 'SELECT_INPUT_MODE=stdin select-input'
+  assert_success
+  assert_output_contains "stdin"
 }
 
 test_select_input_tty_mode() {
   skip-if-compiled || return $?
-  _run_cmd sh -c 'SELECT_INPUT_MODE=tty select-input'
-  _assert_success
-  _assert_output_contains "tty"
+  run_cmd sh -c 'SELECT_INPUT_MODE=tty select-input'
+  assert_success
+  assert_output_contains "tty"
 }
 
 test_select_input_none_mode() {
   skip-if-compiled || return $?
-  _run_cmd sh -c 'SELECT_INPUT_MODE=none select-input'
-  _assert_failure
+  run_cmd sh -c 'SELECT_INPUT_MODE=none select-input'
+  assert_failure
 }
 
 test_select_input_with_stdin() {
   skip-if-compiled || return $?
-  _run_cmd sh -c 'echo "input" | select-input'
-  _assert_success
-  _assert_output_contains "stdin"
+  run_cmd sh -c 'echo "input" | select-input'
+  assert_success
+  assert_output_contains "stdin"
 }
 
-_run_test_case "select-input stdin mode" test_select_input_stdin_mode
-_run_test_case "select-input tty mode" test_select_input_tty_mode
-_run_test_case "select-input none mode fails" test_select_input_none_mode
-_run_test_case "select-input detects piped stdin" test_select_input_with_stdin
+run_test_case "select-input stdin mode" test_select_input_stdin_mode
+run_test_case "select-input tty mode" test_select_input_tty_mode
+run_test_case "select-input none mode fails" test_select_input_none_mode
+run_test_case "select-input detects piped stdin" test_select_input_with_stdin
 
-_finish_tests
+finish_tests

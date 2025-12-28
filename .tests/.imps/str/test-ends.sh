@@ -12,16 +12,16 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_ends_with() {
-  _run_spell spells/.imps/str/ends "hello world" "world"
-  _assert_success
+  run_spell spells/.imps/str/ends "hello world" "world"
+  assert_success
 }
 
 test_ends_not() {
-  _run_spell spells/.imps/str/ends "hello world" "hello"
-  _assert_failure
+  run_spell spells/.imps/str/ends "hello world" "hello"
+  assert_failure
 }
 
-_run_test_case "ends matches suffix" test_ends_with
-_run_test_case "ends rejects non-suffix" test_ends_not
+run_test_case "ends matches suffix" test_ends_with
+run_test_case "ends rejects non-suffix" test_ends_not
 
-_finish_tests
+finish_tests

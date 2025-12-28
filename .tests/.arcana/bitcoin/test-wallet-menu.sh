@@ -62,7 +62,7 @@ SH
 }
 
 test_wallet_menu_prompts_install_when_missing() {
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_colors "$tmp"
   make_stub_exit_label "$tmp"
@@ -71,15 +71,15 @@ test_wallet_menu_prompts_install_when_missing() {
   make_boolean_stub "$tmp/is-service-installed" 1
   make_boolean_stub "$tmp/is-bitcoin-running" 1
 
-  _run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/.arcana/bitcoin/wallet-menu"
-  _assert_success
-  _assert_file_contains "$tmp/log" "Bitcoin: missing"
-  _assert_file_contains "$tmp/log" "Install or Upgrade Bitcoin%install-bitcoin"
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/.arcana/bitcoin/wallet-menu"
+  assert_success
+  assert_file_contains "$tmp/log" "Bitcoin: missing"
+  assert_file_contains "$tmp/log" "Install or Upgrade Bitcoin%install-bitcoin"
 }
 
 test_wallet_menu_shows_wallet_controls_when_installed() {
   skip-if-compiled || return $?
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_colors "$tmp"
   make_stub_exit_label "$tmp"
@@ -88,17 +88,17 @@ test_wallet_menu_shows_wallet_controls_when_installed() {
   make_boolean_stub "$tmp/is-service-installed" 1
   make_boolean_stub "$tmp/is-bitcoin-running" 0
 
-  _run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/.arcana/bitcoin/wallet-menu"
-  _assert_success
-  _assert_file_contains "$tmp/log" "Check Wallet Balance"
-  _assert_file_contains "$tmp/log" "Get New Receive Address"
-  _assert_file_contains "$tmp/log" "Send Bitcoin"
-  _assert_file_contains "$tmp/log" "Uninstall Bitcoin%uninstall-bitcoin"
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/.arcana/bitcoin/wallet-menu"
+  assert_success
+  assert_file_contains "$tmp/log" "Check Wallet Balance"
+  assert_file_contains "$tmp/log" "Get New Receive Address"
+  assert_file_contains "$tmp/log" "Send Bitcoin"
+  assert_file_contains "$tmp/log" "Uninstall Bitcoin%uninstall-bitcoin"
 }
 
 test_wallet_menu_shows_stop_when_running() {
   skip-if-compiled || return $?
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_colors "$tmp"
   make_stub_exit_label "$tmp"
@@ -107,21 +107,21 @@ test_wallet_menu_shows_stop_when_running() {
   make_boolean_stub "$tmp/is-service-installed" 1
   make_boolean_stub "$tmp/is-bitcoin-running" 0
 
-  _run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/.arcana/bitcoin/wallet-menu"
-  _assert_success
-  _assert_file_contains "$tmp/log" "Stop bitcoind%bitcoin-cli stop"
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/.arcana/bitcoin/wallet-menu"
+  assert_success
+  assert_file_contains "$tmp/log" "Stop bitcoind%bitcoin-cli stop"
 }
 
-_run_test_case "wallet-menu prompts for install when missing" test_wallet_menu_prompts_install_when_missing
-_run_test_case "wallet-menu shows wallet controls when installed" test_wallet_menu_shows_wallet_controls_when_installed
-_run_test_case "wallet-menu shows stop when daemon running" test_wallet_menu_shows_stop_when_running
+run_test_case "wallet-menu prompts for install when missing" test_wallet_menu_prompts_install_when_missing
+run_test_case "wallet-menu shows wallet controls when installed" test_wallet_menu_shows_wallet_controls_when_installed
+run_test_case "wallet-menu shows stop when daemon running" test_wallet_menu_shows_stop_when_running
 
 test_shows_help() {
-  _run_cmd "$ROOT_DIR/spells/.arcana/bitcoin/wallet-menu" --help
-  _assert_success
-  _assert_output_contains "Usage: wallet-menu"
+  run_cmd "$ROOT_DIR/spells/.arcana/bitcoin/wallet-menu" --help
+  assert_success
+  assert_output_contains "Usage: wallet-menu"
 }
 
-_run_test_case "wallet-menu --help shows usage" test_shows_help
+run_test_case "wallet-menu --help shows usage" test_shows_help
 
-_finish_tests
+finish_tests

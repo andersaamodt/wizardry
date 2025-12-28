@@ -16,19 +16,19 @@ done
 
 test_succeeds_when_installed() {
 # When running tests, wizardry is on PATH, so should succeed
-_run_spell spells/.imps/sys/require-wizardry
-_assert_success
+run_spell spells/.imps/sys/require-wizardry
+assert_success
 }
 
 test_auto_succeeds_in_test_mode() {
 # With WIZARDRY_TEST_HELPERS_ONLY=1, should always succeed
-WIZARDRY_TEST_HELPERS_ONLY=1 _run_spell spells/.imps/sys/require-wizardry
-_assert_success
+WIZARDRY_TEST_HELPERS_ONLY=1 run_spell spells/.imps/sys/require-wizardry
+assert_success
 }
 
 test_fails_when_not_installed() {
 # Create an isolated environment without wizardry on PATH
-tmp=$(_make_tempdir)
+tmp=$(make_tempdir)
 
 # Link basic shell tools needed for the script to run
 for tool in sh printf cat command env; do
@@ -45,12 +45,12 @@ script="$ROOT_DIR/spells/.imps/sys/require-wizardry"
 
 # Run with restricted PATH (no menu, no wizardry, not in test mode)
 # Unset WIZARDRY_DIR to simulate environment without wizardry
-WIZARDRY_DIR="" WIZARDRY_TEST_HELPERS_ONLY="" PATH="$tmp:$tmp/imps" _run_cmd sh "$script" </dev/null
-_assert_failure || return 1
-_assert_error_contains "wizardry is not installed" || return 1
+WIZARDRY_DIR="" WIZARDRY_TEST_HELPERS_ONLY="" PATH="$tmp:$tmp/imps" run_cmd sh "$script" </dev/null
+assert_failure || return 1
+assert_error_contains "wizardry is not installed" || return 1
 }
 
-_run_test_case "succeeds when wizardry installed" test_succeeds_when_installed
-_run_test_case "auto-succeeds in test mode" test_auto_succeeds_in_test_mode
-_run_test_case "fails when not installed" test_fails_when_not_installed
-_finish_tests
+run_test_case "succeeds when wizardry installed" test_succeeds_when_installed
+run_test_case "auto-succeeds in test mode" test_auto_succeeds_in_test_mode
+run_test_case "fails when not installed" test_fails_when_not_installed
+finish_tests

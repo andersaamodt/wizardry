@@ -13,19 +13,19 @@ done
 
 test_count_chars_simple() {
   skip-if-compiled || return $?
-  _run_spell spells/.imps/text/count-chars "hello"
-  _assert_success
-  _assert_output_contains "5"
+  run_spell spells/.imps/text/count-chars "hello"
+  assert_success
+  assert_output_contains "5"
 }
 
 test_count_chars_empty() {
   skip-if-compiled || return $?
-  _run_spell spells/.imps/text/count-chars ""
-  _assert_success
-  _assert_output_contains "0"
+  run_spell spells/.imps/text/count-chars ""
+  assert_success
+  assert_output_contains "0"
 }
 
-_run_test_case "count-chars counts simple string" test_count_chars_simple
-_run_test_case "count-chars handles empty" test_count_chars_empty
+run_test_case "count-chars counts simple string" test_count_chars_simple
+run_test_case "count-chars handles empty" test_count_chars_empty
 
-_finish_tests
+finish_tests

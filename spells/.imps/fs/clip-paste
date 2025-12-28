@@ -3,7 +3,7 @@
 # Example: text=$(clip-paste)
 set -eu
 
-_clip_paste() {
+clip_paste() {
   if command -v pbpaste >/dev/null 2>&1; then
     pbpaste
   elif command -v xsel >/dev/null 2>&1; then
@@ -20,4 +20,4 @@ _clip_paste() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */clip-paste) _clip_paste "$@" ;; esac
+  */clip-paste) clip_paste "$@" ;; esac

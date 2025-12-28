@@ -3,7 +3,7 @@
 # Example: dir=$(env-or SPELLBOOK_DIR "$HOME/.spellbook")
 set -eu
 
-_env_or() {
+env_or() {
   _eo_var=$1
   # Validate variable name contains only alphanumerics and underscores
   case "$_eo_var" in
@@ -22,4 +22,4 @@ _env_or() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */env-or) _env_or "$@" ;; esac
+  */env-or) env_or "$@" ;; esac

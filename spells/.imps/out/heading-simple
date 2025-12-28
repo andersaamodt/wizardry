@@ -6,7 +6,7 @@
 
 set -eu
 
-_heading_simple() {
+heading_simple() {
   text=${1-}
   prefix=${2:-}
   
@@ -29,4 +29,4 @@ _heading_simple() {
 }
 
 # Self-execution when run directly (not sourced)
-case "${0##*/}" in heading-simple) _heading_simple "$@" ;; esac
+case "${0##*/}" in heading-simple) heading_simple "$@" ;; esac

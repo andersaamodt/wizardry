@@ -12,24 +12,24 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_any_finds_first() {
-  _run_spell spells/.imps/sys/any sh nonexistent_xyz
-  _assert_success
-  _assert_output_contains "sh"
+  run_spell spells/.imps/sys/any sh nonexistent_xyz
+  assert_success
+  assert_output_contains "sh"
 }
 
 test_any_finds_second() {
-  _run_spell spells/.imps/sys/any nonexistent_xyz sh
-  _assert_success
-  _assert_output_contains "sh"
+  run_spell spells/.imps/sys/any nonexistent_xyz sh
+  assert_success
+  assert_output_contains "sh"
 }
 
 test_any_fails_when_none_exist() {
-  _run_spell spells/.imps/sys/any nonexistent_xyz1 nonexistent_xyz2
-  _assert_failure
+  run_spell spells/.imps/sys/any nonexistent_xyz1 nonexistent_xyz2
+  assert_failure
 }
 
-_run_test_case "any finds first available" test_any_finds_first
-_run_test_case "any finds second if first missing" test_any_finds_second
-_run_test_case "any fails when none exist" test_any_fails_when_none_exist
+run_test_case "any finds first available" test_any_finds_first
+run_test_case "any finds second if first missing" test_any_finds_second
+run_test_case "any fails when none exist" test_any_fails_when_none_exist
 
-_finish_tests
+finish_tests

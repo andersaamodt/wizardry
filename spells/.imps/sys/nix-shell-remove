@@ -3,7 +3,7 @@
 # Example: nix-shell-remove myspell home.nix
 set -eu
 
-_nix_shell_remove() {
+nix_shell_remove() {
   _nsr_block_name=${1:-}
   _nsr_nix_file=${2:-}
 
@@ -45,4 +45,4 @@ _nix_shell_remove() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */nix-shell-remove) _nix_shell_remove "$@" ;; esac
+  */nix-shell-remove) nix_shell_remove "$@" ;; esac

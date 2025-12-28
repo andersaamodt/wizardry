@@ -3,7 +3,7 @@
 # Creates an executable script at DIR/NAME that always succeeds.
 set -eu
 
-_write_command_stub() {
+write_command_stub() {
   dir=$1
   name=$2
   cat <<'STUB' >"$dir/$name"
@@ -14,4 +14,4 @@ STUB
 }
 
 # Self-execution when run directly (not sourced)
-case "${0##*/}" in write-command-stub) _write_command_stub "$@" ;; esac
+case "${0##*/}" in write-command-stub) write_command_stub "$@" ;; esac

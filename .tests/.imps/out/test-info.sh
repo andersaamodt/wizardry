@@ -12,25 +12,25 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_info_outputs_when_level_1() {
-  WIZARDRY_LOG_LEVEL=1 _run_spell spells/.imps/out/info "test info message"
-  _assert_success
-  _assert_output_contains "test info message"
+  WIZARDRY_LOG_LEVEL=1 run_spell spells/.imps/out/info "test info message"
+  assert_success
+  assert_output_contains "test info message"
 }
 
 test_info_silent_when_level_0() {
-  WIZARDRY_LOG_LEVEL=0 _run_spell spells/.imps/out/info "test info message"
-  _assert_success
+  WIZARDRY_LOG_LEVEL=0 run_spell spells/.imps/out/info "test info message"
+  assert_success
   [ -z "$OUTPUT" ] || { TEST_FAILURE_REASON="expected no output, got: $OUTPUT"; return 1; }
 }
 
 test_info_default_level_0() {
-  _run_spell spells/.imps/out/info "test info message"
-  _assert_success
+  run_spell spells/.imps/out/info "test info message"
+  assert_success
   [ -z "$OUTPUT" ] || { TEST_FAILURE_REASON="expected no output with default level, got: $OUTPUT"; return 1; }
 }
 
-_run_test_case "info outputs when log level >= 1" test_info_outputs_when_level_1
-_run_test_case "info silent when log level 0" test_info_silent_when_level_0
-_run_test_case "info defaults to level 0" test_info_default_level_0
+run_test_case "info outputs when log level >= 1" test_info_outputs_when_level_1
+run_test_case "info silent when log level 0" test_info_silent_when_level_0
+run_test_case "info defaults to level 0" test_info_default_level_0
 
-_finish_tests
+finish_tests

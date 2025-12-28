@@ -14,20 +14,20 @@ done
 test_matches_pattern() {
   tmpfile=$(mktemp "$WIZARDRY_TMPDIR/matches_test.XXXXXX")
   printf 'hello123\n' > "$tmpfile"
-  _run_spell spells/.imps/str/matches "[a-z]*[0-9]*" "$tmpfile"
+  run_spell spells/.imps/str/matches "[a-z]*[0-9]*" "$tmpfile"
   rm -f "$tmpfile"
-  _assert_success
+  assert_success
 }
 
 test_matches_rejects_nonmatch() {
   tmpfile=$(mktemp "$WIZARDRY_TMPDIR/matches_test.XXXXXX")
   printf 'hello\n' > "$tmpfile"
-  _run_spell spells/.imps/str/matches "^[0-9]+$" "$tmpfile"
+  run_spell spells/.imps/str/matches "^[0-9]+$" "$tmpfile"
   rm -f "$tmpfile"
-  _assert_failure
+  assert_failure
 }
 
-_run_test_case "matches finds pattern" test_matches_pattern
-_run_test_case "matches rejects non-match" test_matches_rejects_nonmatch
+run_test_case "matches finds pattern" test_matches_pattern
+run_test_case "matches rejects non-match" test_matches_rejects_nonmatch
 
-_finish_tests
+finish_tests

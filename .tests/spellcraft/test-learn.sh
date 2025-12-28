@@ -9,22 +9,22 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  _run_spell "spells/spellcraft/learn" --help
-  _assert_success && _assert_output_contains "Usage: learn"
+  run_spell "spells/spellcraft/learn" --help
+  assert_success && assert_output_contains "Usage: learn"
 }
 
 test_missing_args() {
-  _run_spell "spells/spellcraft/learn"
-  _assert_failure && _assert_error_contains "spell or directory path required"
+  run_spell "spells/spellcraft/learn"
+  assert_failure && assert_error_contains "spell or directory path required"
 }
 
 test_nonexistent_path() {
-  _run_spell "spells/spellcraft/learn" /nonexistent/path
-  _assert_failure && _assert_error_contains "path not found"
+  run_spell "spells/spellcraft/learn" /nonexistent/path
+  assert_failure && assert_error_contains "path not found"
 }
 
 test_copy_spell() {
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   spellbook="$tmpdir/spellbook"
   
   # Create a test spell
@@ -36,8 +36,8 @@ EOF
   chmod +x "$test_spell"
   
   # Copy it to spellbook
-  SPELLBOOK_DIR="$spellbook" _run_spell "spells/spellcraft/learn" "$test_spell"
-  _assert_success || return 1
+  SPELLBOOK_DIR="$spellbook" run_spell "spells/spellcraft/learn" "$test_spell"
+  assert_success || return 1
   
   # Verify it was copied
   [ -f "$spellbook/my-test-spell" ] || {
@@ -51,7 +51,7 @@ EOF
 }
 
 test_copy_directory() {
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   spellbook="$tmpdir/spellbook"
   
   # Create a test spellbook directory
@@ -64,8 +64,8 @@ EOF
   chmod +x "$test_dir/spell1"
   
   # Copy it to spellbook
-  SPELLBOOK_DIR="$spellbook" _run_spell "spells/spellcraft/learn" "$test_dir"
-  _assert_success || return 1
+  SPELLBOOK_DIR="$spellbook" run_spell "spells/spellcraft/learn" "$test_dir"
+  assert_success || return 1
   
   # Verify directory was copied
   [ -d "$spellbook/my-spells" ] || {
@@ -79,7 +79,7 @@ EOF
 }
 
 test_link_spell() {
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   spellbook="$tmpdir/spellbook"
   
   # Create a test spell
@@ -91,8 +91,8 @@ EOF
   chmod +x "$test_spell"
   
   # Link it to spellbook
-  SPELLBOOK_DIR="$spellbook" _run_spell "spells/spellcraft/learn" --link "$test_spell"
-  _assert_success || return 1
+  SPELLBOOK_DIR="$spellbook" run_spell "spells/spellcraft/learn" --link "$test_spell"
+  assert_success || return 1
   
   # Verify it's a link
   [ -L "$spellbook/my-linked-spell" ] || {
@@ -102,7 +102,7 @@ EOF
 }
 
 test_prevents_duplicates() {
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   spellbook="$tmpdir/spellbook"
   
   # Create a test spell
@@ -114,22 +114,22 @@ EOF
   chmod +x "$test_spell"
   
   # Copy it once
-  SPELLBOOK_DIR="$spellbook" _run_spell "spells/spellcraft/learn" "$test_spell"
-  _assert_success || return 1
+  SPELLBOOK_DIR="$spellbook" run_spell "spells/spellcraft/learn" "$test_spell"
+  assert_success || return 1
   
   # Try to copy again - should fail
-  SPELLBOOK_DIR="$spellbook" _run_spell "spells/spellcraft/learn" "$test_spell"
-  _assert_failure || return 1
-  _assert_error_contains "already exists" || return 1
+  SPELLBOOK_DIR="$spellbook" run_spell "spells/spellcraft/learn" "$test_spell"
+  assert_failure || return 1
+  assert_error_contains "already exists" || return 1
 }
 
-_run_test_case "learn prints usage" test_help
-_run_test_case "learn requires path argument" test_missing_args
-_run_test_case "learn rejects nonexistent path" test_nonexistent_path
-_run_test_case "learn copies spell to spellbook" test_copy_spell
-_run_test_case "learn copies directory to spellbook" test_copy_directory
-_run_test_case "learn links spell to spellbook" test_link_spell
-_run_test_case "learn prevents duplicate names" test_prevents_duplicates
+run_test_case "learn prints usage" test_help
+run_test_case "learn requires path argument" test_missing_args
+run_test_case "learn rejects nonexistent path" test_nonexistent_path
+run_test_case "learn copies spell to spellbook" test_copy_spell
+run_test_case "learn copies directory to spellbook" test_copy_directory
+run_test_case "learn links spell to spellbook" test_link_spell
+run_test_case "learn prevents duplicate names" test_prevents_duplicates
 
 
 # Test via source-then-invoke pattern  

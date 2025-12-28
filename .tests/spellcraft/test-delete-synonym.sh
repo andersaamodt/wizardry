@@ -12,25 +12,25 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_shows_help() {
-  _run_spell "spells/spellcraft/delete-synonym" --help
-  _assert_success && _assert_output_contains "Usage:"
+  run_spell "spells/spellcraft/delete-synonym" --help
+  assert_success && assert_output_contains "Usage:"
 }
 
 test_deletes_existing_synonym() {
-  case_dir=$(_make_tempdir)
+  case_dir=$(make_tempdir)
   synonyms_file="$case_dir/.synonyms"
   
   # Create a synonym first
   SPELLBOOK_DIR="$case_dir" \
-    _run_spell "spells/spellcraft/add-synonym" myalias echo
-  _assert_success || return 1
+    run_spell "spells/spellcraft/add-synonym" myalias echo
+  assert_success || return 1
   
   # Delete it
   SPELLBOOK_DIR="$case_dir" \
-    _run_spell "spells/spellcraft/delete-synonym" myalias
+    run_spell "spells/spellcraft/delete-synonym" myalias
   
-  _assert_success || return 1
-  _assert_output_contains "Synonym deleted" || return 1
+  assert_success || return 1
+  assert_output_contains "Synonym deleted" || return 1
   
   # Verify alias is removed from file
   if grep -q "^alias myalias=" "$synonyms_file"; then
@@ -40,29 +40,29 @@ test_deletes_existing_synonym() {
 }
 
 test_fails_when_synonym_not_found() {
-  case_dir=$(_make_tempdir)
+  case_dir=$(make_tempdir)
   
   SPELLBOOK_DIR="$case_dir" \
-    _run_spell "spells/spellcraft/delete-synonym" nonexistent
+    run_spell "spells/spellcraft/delete-synonym" nonexistent
   
-  _assert_failure || return 1
+  assert_failure || return 1
   # Error message will say "no synonyms defined" if file doesn't exist
-  _assert_error_contains "synonym" || return 1
+  assert_error_contains "synonym" || return 1
 }
 
 test_rejects_empty_word() {
-  case_dir=$(_make_tempdir)
+  case_dir=$(make_tempdir)
   
   SPELLBOOK_DIR="$case_dir" \
-    _run_spell "spells/spellcraft/delete-synonym" ""
+    run_spell "spells/spellcraft/delete-synonym" ""
   
-  _assert_failure || return 1
+  assert_failure || return 1
 }
 
-_run_test_case "prints help" test_shows_help
-_run_test_case "deletes existing synonym" test_deletes_existing_synonym
-_run_test_case "fails when synonym not found" test_fails_when_synonym_not_found
-_run_test_case "rejects empty word" test_rejects_empty_word
+run_test_case "prints help" test_shows_help
+run_test_case "deletes existing synonym" test_deletes_existing_synonym
+run_test_case "fails when synonym not found" test_fails_when_synonym_not_found
+run_test_case "rejects empty word" test_rejects_empty_word
 
 
 # Test via source-then-invoke pattern  

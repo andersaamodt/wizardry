@@ -3,10 +3,10 @@
 # Example: seeks "error" log.txt && echo "found errors"
 set -eu
 
-_seeks() {
+seeks() {
   grep -Fq -- "$1" "$2" 2>/dev/null
 }
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */seeks) _seeks "$@" ;; esac
+  */seeks) seeks "$@" ;; esac

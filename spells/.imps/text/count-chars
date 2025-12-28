@@ -3,7 +3,7 @@
 # Note: counts bytes, not Unicode characters. Example: n=$(count-chars "hello")
 set -eu
 
-_count_chars() {
+count_chars() {
   if [ "$#" -ge 1 ]; then
     printf '%s' "$1" | wc -c | tr -d ' '
   else
@@ -13,4 +13,4 @@ _count_chars() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */count-chars) _count_chars "$@" ;; esac
+  */count-chars) count_chars "$@" ;; esac

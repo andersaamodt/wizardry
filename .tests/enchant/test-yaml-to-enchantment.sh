@@ -15,34 +15,34 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 make_stub_dir() {
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   mkdir -p "$tmpdir/stubs"
   printf '%s\n' "$tmpdir/stubs"
 }
 
 test_help() {
-  _run_spell "spells/enchant/yaml-to-enchantment" --help
-  _assert_success && _assert_output_contains "Usage: yaml-to-enchantment"
+  run_spell "spells/enchant/yaml-to-enchantment" --help
+  assert_success && assert_output_contains "Usage: yaml-to-enchantment"
 }
 
 test_argument_validation() {
-  _run_spell "spells/enchant/yaml-to-enchantment"
-  _assert_failure && _assert_error_contains "incorrect number of arguments"
+  run_spell "spells/enchant/yaml-to-enchantment"
+  assert_failure && assert_error_contains "incorrect number of arguments"
 
-  _run_spell "spells/enchant/yaml-to-enchantment" one two
-  _assert_failure && _assert_error_contains "incorrect number of arguments"
+  run_spell "spells/enchant/yaml-to-enchantment" one two
+  assert_failure && assert_error_contains "incorrect number of arguments"
 }
 
 test_missing_file() {
-  _run_spell "spells/enchant/yaml-to-enchantment" "$WIZARDRY_TMPDIR/missing"
-  _assert_failure && _assert_error_contains "file does not exist"
+  run_spell "spells/enchant/yaml-to-enchantment" "$WIZARDRY_TMPDIR/missing"
+  assert_failure && assert_error_contains "file does not exist"
 }
 
 test_requires_header() {
   tmpfile="$WIZARDRY_TMPDIR/no-header"
   printf 'content\n' >"$tmpfile"
-  _run_spell "spells/enchant/yaml-to-enchantment" "$tmpfile"
-  _assert_failure && _assert_error_contains "does not have a YAML header"
+  run_spell "spells/enchant/yaml-to-enchantment" "$tmpfile"
+  assert_failure && assert_error_contains "does not have a YAML header"
 }
 
 test_restores_attributes_and_strips_header() {
@@ -65,8 +65,8 @@ user.beta: moon
 body
 FILE
 
-  PATH="$stub_dir:$PATH" _run_spell "spells/enchant/yaml-to-enchantment" "$tmpfile"
-  _assert_success
+  PATH="$stub_dir:$PATH" run_spell "spells/enchant/yaml-to-enchantment" "$tmpfile"
+  assert_success
   restored=$(cat "$WIZARDRY_TMPDIR/restored.attrs")
   expected="user.alpha: sun
 user.beta: moon"
@@ -84,8 +84,8 @@ user.alpha: sky
 spell
 FILE
   # remove helper availability while keeping core utilities
-  PATH="$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:/usr/bin:/bin" _run_spell "spells/enchant/yaml-to-enchantment" "$tmpfile"
-  _assert_failure && _assert_error_contains "requires attr, setfattr, or xattr"
+  PATH="$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:/usr/bin:/bin" run_spell "spells/enchant/yaml-to-enchantment" "$tmpfile"
+  assert_failure && assert_error_contains "requires attr, setfattr, or xattr"
 }
 
 test_fails_on_attribute_error() {
@@ -104,16 +104,16 @@ user.alpha: fail
 body
 FILE
 
-  PATH="$stub_dir:$PATH" _run_spell "spells/enchant/yaml-to-enchantment" "$tmpfile"
-  _assert_failure && _assert_error_contains "failed to set attribute"
+  PATH="$stub_dir:$PATH" run_spell "spells/enchant/yaml-to-enchantment" "$tmpfile"
+  assert_failure && assert_error_contains "failed to set attribute"
 }
 
-_run_test_case "yaml-to-enchantment prints usage" test_help
-_run_test_case "yaml-to-enchantment validates arguments" test_argument_validation
-_run_test_case "yaml-to-enchantment fails for missing files" test_missing_file
-_run_test_case "yaml-to-enchantment requires YAML header" test_requires_header
-_run_test_case "yaml-to-enchantment restores attributes and strips header" test_restores_attributes_and_strips_header
-_run_test_case "yaml-to-enchantment reports missing helpers" test_reports_missing_helpers
-_run_test_case "yaml-to-enchantment fails when helper errors" test_fails_on_attribute_error
+run_test_case "yaml-to-enchantment prints usage" test_help
+run_test_case "yaml-to-enchantment validates arguments" test_argument_validation
+run_test_case "yaml-to-enchantment fails for missing files" test_missing_file
+run_test_case "yaml-to-enchantment requires YAML header" test_requires_header
+run_test_case "yaml-to-enchantment restores attributes and strips header" test_restores_attributes_and_strips_header
+run_test_case "yaml-to-enchantment reports missing helpers" test_reports_missing_helpers
+run_test_case "yaml-to-enchantment fails when helper errors" test_fails_on_attribute_error
 
 # Test via source-then-invoke pattern  

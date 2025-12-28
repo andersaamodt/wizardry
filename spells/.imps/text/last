@@ -3,10 +3,10 @@
 # Example: tail_entry=$(last log.txt)
 set -eu
 
-_last() {
+last() {
   if [ "$#" -ge 1 ]; then tail -n 1 "$1"; else tail -n 1; fi
 }
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */last) _last "$@" ;; esac
+  */last) last "$@" ;; esac

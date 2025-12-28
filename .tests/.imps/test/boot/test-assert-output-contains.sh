@@ -9,18 +9,18 @@ done
 
 test_matches_substring() {
   OUTPUT="some output text here"
-  _assert_output_contains "output text"
+  assert_output_contains "output text"
 }
 
 test_no_match() {
   OUTPUT="some output text here"
-  if _assert_output_contains "not found"; then
+  if assert_output_contains "not found"; then
     return 1
   fi
   return 0
 }
 
-_run_test_case "assert-output-contains matches substring" test_matches_substring
-_run_test_case "assert-output-contains fails when substring missing" test_no_match
+run_test_case "assert-output-contains matches substring" test_matches_substring
+run_test_case "assert-output-contains fails when substring missing" test_no_match
 
-_finish_tests
+finish_tests

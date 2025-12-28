@@ -11,20 +11,20 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 heading_section_outputs_section_heading() {
-  _run_spell "spells/.imps/out/heading-section" "Summary"
-  _assert_success || return 1
-  _assert_output_contains "Summary" || return 1
-  _assert_output_contains "---" || return 1
+  run_spell "spells/.imps/out/heading-section" "Summary"
+  assert_success || return 1
+  assert_output_contains "Summary" || return 1
+  assert_output_contains "---" || return 1
 }
 
 heading_section_formats_with_dashes() {
-  _run_spell "spells/.imps/out/heading-section" "Test Results"
-  _assert_success || return 1
+  run_spell "spells/.imps/out/heading-section" "Test Results"
+  assert_success || return 1
   # Should contain "--- Test Results ---"
-  _assert_output_contains "--- Test Results ---" || return 1
+  assert_output_contains "--- Test Results ---" || return 1
 }
 
-_run_test_case "heading-section outputs section heading" heading_section_outputs_section_heading
-_run_test_case "heading-section formats with dashes" heading_section_formats_with_dashes
+run_test_case "heading-section outputs section heading" heading_section_outputs_section_heading
+run_test_case "heading-section formats with dashes" heading_section_formats_with_dashes
 
-_finish_tests
+finish_tests

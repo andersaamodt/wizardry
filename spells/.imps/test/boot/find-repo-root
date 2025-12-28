@@ -3,7 +3,7 @@
 # Prints the repository root path containing spells/ and .tests/ directories.
 set -eu
 
-_find_repo_root() {
+find_repo_root() {
   dir=$(CDPATH= cd -- "$(dirname "${0:-$PWD}")" && pwd -P)
   while [ "$dir" != "/" ]; do
     if [ -d "$dir/spells" ] && [ -d "$dir/.tests" ]; then
@@ -16,4 +16,4 @@ _find_repo_root() {
 }
 
 # Self-execution when run directly (not sourced)
-case "${0##*/}" in find-repo-root) _find_repo_root "$@" ;; esac
+case "${0##*/}" in find-repo-root) find_repo_root "$@" ;; esac

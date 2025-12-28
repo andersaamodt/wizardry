@@ -12,31 +12,31 @@ done
 test_finds_module_in_imps() {
   skip-if-compiled || return $?
   # The 'say' imp should be findable
-  _run_spell "spells/.imps/sys/word-of-binding" say "hello world"
-  _assert_success || return 1
-  _assert_output_contains "hello world" || return 1
+  run_spell "spells/.imps/sys/word-of-binding" say "hello world"
+  assert_success || return 1
+  assert_output_contains "hello world" || return 1
 }
 
 # Test: word-of-binding returns 127 for unknown commands  
 test_unknown_command_returns_127() {
   skip-if-compiled || return $?
-  _run_spell "spells/.imps/sys/word-of-binding" nonexistent-spell-12345
-  _assert_status 127 || return 1
+  run_spell "spells/.imps/sys/word-of-binding" nonexistent-spell-12345
+  assert_status 127 || return 1
 }
 
 # Test: word-of-binding requires command name
 test_requires_command_name() {
   skip-if-compiled || return $?
-  _run_spell "spells/.imps/sys/word-of-binding"
-  _assert_failure || return 1
-  _assert_error_contains "command name required" || return 1
+  run_spell "spells/.imps/sys/word-of-binding"
+  assert_failure || return 1
+  assert_error_contains "command name required" || return 1
 }
 
 # Test: word-of-binding evokes scripts without true-name functions
 test_evokes_scripts_without_functions() {
   skip-if-compiled || return $?
   # Create a test script without a function
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   mkdir -p "$tmpdir/.spellbook"
   cat > "$tmpdir/.spellbook/test-evoke-script" << 'EOF'
 #!/bin/sh
@@ -45,27 +45,27 @@ EOF
   chmod +x "$tmpdir/.spellbook/test-evoke-script"
   
   # Set SPELLBOOK_DIR to our temp location
-  SPELLBOOK_DIR="$tmpdir/.spellbook" _run_spell "spells/.imps/sys/word-of-binding" test-evoke-script myarg
-  _assert_success || return 1
-  _assert_output_contains "evoked: myarg" || return 1
+  SPELLBOOK_DIR="$tmpdir/.spellbook" run_spell "spells/.imps/sys/word-of-binding" test-evoke-script myarg
+  assert_success || return 1
+  assert_output_contains "evoked: myarg" || return 1
 }
 
 # Test: word-of-binding correctly handles spells (without underscore prefix)
 test_handles_spells_without_underscore() {
   skip-if-compiled || return $?
   # The 'forall' spell defines forall() function (not _forall())
-  _run_spell "spells/.imps/sys/word-of-binding" forall --help
-  _assert_success || return 1
-  _assert_output_contains "Usage:" || return 1
+  run_spell "spells/.imps/sys/word-of-binding" forall --help
+  assert_success || return 1
+  assert_output_contains "Usage:" || return 1
 }
 
 # Test: word-of-binding can handle imp with hyphenated name
 test_handles_hyphenated_imp() {
   skip-if-compiled || return $?
-  # The 'usage-error' imp defines _usage_error() function
-  _run_spell "spells/.imps/sys/word-of-binding" usage-error "test-spell" "test error"
-  _assert_status 2 || return 1
-  _assert_error_contains "test-spell: test error" || return 1
+  # The 'usage-error' imp defines usage_error() function
+  run_spell "spells/.imps/sys/word-of-binding" usage-error "test-spell" "test error"
+  assert_status 2 || return 1
+  assert_error_contains "test-spell: test error" || return 1
 }
 
 # Test: word-of-binding can handle spell with hyphenated name
@@ -73,17 +73,17 @@ test_handles_hyphenated_spell() {
   skip-if-compiled || return $?
   # The 'read-magic' spell defines read_magic() function (not _read_magic())
   # Call with --help to avoid file requirements
-  _run_spell "spells/.imps/sys/word-of-binding" read-magic --help
-  _assert_success || return 1
-  _assert_output_contains "Usage:" || return 1
+  run_spell "spells/.imps/sys/word-of-binding" read-magic --help
+  assert_success || return 1
+  assert_output_contains "Usage:" || return 1
 }
 
-_run_test_case "finds module in imps directory" test_finds_module_in_imps
-_run_test_case "unknown command returns 127" test_unknown_command_returns_127
-_run_test_case "requires command name argument" test_requires_command_name
-_run_test_case "evokes scripts without functions" test_evokes_scripts_without_functions
-_run_test_case "handles spells without underscore prefix" test_handles_spells_without_underscore
-_run_test_case "handles hyphenated imp names" test_handles_hyphenated_imp
-_run_test_case "handles hyphenated spell names" test_handles_hyphenated_spell
+run_test_case "finds module in imps directory" test_finds_module_in_imps
+run_test_case "unknown command returns 127" test_unknown_command_returns_127
+run_test_case "requires command name argument" test_requires_command_name
+run_test_case "evokes scripts without functions" test_evokes_scripts_without_functions
+run_test_case "handles spells without underscore prefix" test_handles_spells_without_underscore
+run_test_case "handles hyphenated imp names" test_handles_hyphenated_imp
+run_test_case "handles hyphenated spell names" test_handles_hyphenated_spell
 
-_finish_tests
+finish_tests

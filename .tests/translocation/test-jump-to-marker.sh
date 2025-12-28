@@ -18,13 +18,13 @@ wizardry_base_path() {
 }
 
 test_help() {
-  _run_spell "spells/translocation/jump-to-marker" --help
-  _assert_success && _assert_output_contains "Usage: jump"
+  run_spell "spells/translocation/jump-to-marker" --help
+  assert_success && assert_output_contains "Usage: jump"
 }
 
 test_unknown_option_fails() {
-  _run_cmd sh -c "PATH=\"$WIZARDRY_IMPS_PATH:$(wizardry_base_path):/bin:/usr/bin\" . \"$ROOT_DIR/spells/translocation/jump-to-marker\"; jump_to_marker --bad"
-  _assert_failure && _assert_error_contains "unknown option"
+  run_cmd sh -c "PATH=\"$WIZARDRY_IMPS_PATH:$(wizardry_base_path):/bin:/usr/bin\" . \"$ROOT_DIR/spells/translocation/jump-to-marker\"; jump_to_marker --bad"
+  assert_failure && assert_error_contains "unknown option"
 }
 
 run_jump() {
@@ -35,9 +35,9 @@ run_jump() {
   JUMP_TO_MARKERS_DIR="$markers_dir"
   export JUMP_TO_MARKERS_DIR PATH
   if [ -n "$marker_arg" ]; then
-    _run_cmd sh -c ". \"$ROOT_DIR/spells/translocation/jump-to-marker\"; jump_to_marker_impl \"$marker_arg\""
+    run_cmd sh -c ". \"$ROOT_DIR/spells/translocation/jump-to-marker\"; jump_to_marker_impl \"$marker_arg\""
   else
-    _run_cmd sh -c ". \"$ROOT_DIR/spells/translocation/jump-to-marker\"; jump_to_marker_impl"
+    run_cmd sh -c ". \"$ROOT_DIR/spells/translocation/jump-to-marker\"; jump_to_marker_impl"
   fi
 }
 
@@ -45,14 +45,14 @@ test_jump_requires_markers_dir() {
   missing_dir="$WIZARDRY_TMPDIR/no-markers"
   rm -rf "$missing_dir"
   run_jump "" "$missing_dir"
-  _assert_failure && _assert_output_contains "No markers have been set"
+  assert_failure && assert_output_contains "No markers have been set"
 }
 
 test_jump_requires_specific_marker() {
   markers_dir="$WIZARDRY_TMPDIR/markers-test"
   mkdir -p "$markers_dir"
   run_jump "nonexistent" "$markers_dir"
-  _assert_failure && _assert_output_contains "No marker 'nonexistent' found"
+  assert_failure && assert_output_contains "No marker 'nonexistent' found"
 }
 
 test_jump_rejects_blank_marker() {
@@ -60,7 +60,7 @@ test_jump_rejects_blank_marker() {
   mkdir -p "$markers_dir"
   : >"$markers_dir/1"
   run_jump "1" "$markers_dir"
-  _assert_failure && _assert_output_contains "is blank"
+  assert_failure && assert_output_contains "is blank"
 }
 
 test_jump_rejects_missing_destination() {
@@ -68,7 +68,7 @@ test_jump_rejects_missing_destination() {
   mkdir -p "$markers_dir"
   printf '%s\n' "$WIZARDRY_TMPDIR/nonexistent" >"$markers_dir/1"
   run_jump "1" "$markers_dir"
-  _assert_failure && _assert_output_contains "no longer exists"
+  assert_failure && assert_output_contains "no longer exists"
 }
 
 test_jump_detects_current_location() {
@@ -79,7 +79,7 @@ test_jump_detects_current_location() {
   destination_resolved=$(cd "$destination" && pwd -P | sed 's|//|/|g')
   printf '%s\n' "$destination_resolved" >"$markers_dir/1"
   run_jump "1" "$markers_dir" "$destination"
-  _assert_success && _assert_output_contains "already standing"
+  assert_success && assert_output_contains "already standing"
 }
 
 test_jump_changes_directory() {
@@ -91,7 +91,7 @@ test_jump_changes_directory() {
   destination_resolved=$(cd "$destination" && pwd -P | sed 's|//|/|g')
   printf '%s\n' "$destination_resolved" >"$markers_dir/1"
   run_jump "1" "$markers_dir" "$start_dir"
-  _assert_success
+  assert_success
 }
 
 test_jump_to_named_marker() {
@@ -102,7 +102,7 @@ test_jump_to_named_marker() {
   destination_resolved=$(cd "$destination" && pwd -P | sed 's|//|/|g')
   printf '%s\n' "$destination_resolved" >"$markers_dir/alpha"
   run_jump "alpha" "$markers_dir" "$start_dir"
-  _assert_success
+  assert_success
 }
 
 test_jump_lists_available_markers() {
@@ -113,10 +113,10 @@ test_jump_lists_available_markers() {
   printf '%s\n' "$dest_resolved" >"$markers_dir/1"
   printf '%s\n' "$dest_resolved" >"$markers_dir/alpha"
   run_jump "nonexistent" "$markers_dir"
-  _assert_failure
-  _assert_output_contains "Available markers:"
-  _assert_output_contains "1"
-  _assert_output_contains "alpha"
+  assert_failure
+  assert_output_contains "Available markers:"
+  assert_output_contains "1"
+  assert_output_contains "alpha"
 }
 
 test_jump_zero_cycles() {
@@ -134,18 +134,18 @@ test_jump_zero_cycles() {
   printf '%s\n' "$dest2_resolved" >"$markers_dir/2"
   # jump 0 should behave like jump with no args (start at 1)
   run_jump "0" "$markers_dir" "$start_dir"
-  _assert_success
+  assert_success
 }
 
-_run_test_case "jump-to-marker prints usage" test_help
-_run_test_case "jump-to-marker rejects unknown options" test_unknown_option_fails
-_run_test_case "jump-to-marker fails when markers dir is missing" test_jump_requires_markers_dir
-_run_test_case "jump-to-marker fails when specific marker is missing" test_jump_requires_specific_marker
-_run_test_case "jump-to-marker fails when marker is blank" test_jump_rejects_blank_marker
-_run_test_case "jump-to-marker fails when destination is missing" test_jump_rejects_missing_destination
-_run_test_case "jump-to-marker reports when already at destination" test_jump_detects_current_location
-_run_test_case "jump-to-marker jumps to marked directory" test_jump_changes_directory
-_run_test_case "jump-to-marker jumps to named marker" test_jump_to_named_marker
-_run_test_case "jump-to-marker lists available markers on error" test_jump_lists_available_markers
-_run_test_case "jump 0 cycles like jump with no args" test_jump_zero_cycles
-_finish_tests
+run_test_case "jump-to-marker prints usage" test_help
+run_test_case "jump-to-marker rejects unknown options" test_unknown_option_fails
+run_test_case "jump-to-marker fails when markers dir is missing" test_jump_requires_markers_dir
+run_test_case "jump-to-marker fails when specific marker is missing" test_jump_requires_specific_marker
+run_test_case "jump-to-marker fails when marker is blank" test_jump_rejects_blank_marker
+run_test_case "jump-to-marker fails when destination is missing" test_jump_rejects_missing_destination
+run_test_case "jump-to-marker reports when already at destination" test_jump_detects_current_location
+run_test_case "jump-to-marker jumps to marked directory" test_jump_changes_directory
+run_test_case "jump-to-marker jumps to named marker" test_jump_to_named_marker
+run_test_case "jump-to-marker lists available markers on error" test_jump_lists_available_markers
+run_test_case "jump 0 cycles like jump with no args" test_jump_zero_cycles
+finish_tests

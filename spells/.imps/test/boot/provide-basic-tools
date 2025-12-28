@@ -3,7 +3,7 @@
 # Links mktemp, mkdir, rm, cat, env, ln, sh, dirname, readlink if available.
 set -eu
 
-_provide_basic_tools() {
+provide_basic_tools() {
   fixture=$1
   for cmd in mktemp mkdir rm cat env ln sh dirname readlink; do
     tool_path=$(command -v "$cmd" 2>/dev/null || true)
@@ -14,4 +14,4 @@ _provide_basic_tools() {
 }
 
 # Self-execution when run directly (not sourced)
-case "${0##*/}" in provide-basic-tools) _provide_basic_tools "$@" ;; esac
+case "${0##*/}" in provide-basic-tools) provide_basic_tools "$@" ;; esac

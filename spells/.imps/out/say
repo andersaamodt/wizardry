@@ -3,10 +3,10 @@
 # Example: say "Hello world"
 set -eu
 
-_say() {
+say() {
   printf '%s\n' "$*"
 }
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */say) _say "$@" ;; esac
+  */say) say "$@" ;; esac

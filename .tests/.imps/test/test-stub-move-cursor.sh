@@ -8,17 +8,17 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_stub_accepts_coordinates() {
-  _run_spell spells/.imps/test/stub-move-cursor 1 1
-  _assert_success || return 1
+  run_spell spells/.imps/test/stub-move-cursor 1 1
+  assert_success || return 1
 }
 
 test_stub_no_output() {
-  _run_spell spells/.imps/test/stub-move-cursor 10 20
-  _assert_success || return 1
+  run_spell spells/.imps/test/stub-move-cursor 10 20
+  assert_success || return 1
   [ -z "$OUTPUT" ] || { TEST_FAILURE_REASON="stub should produce no output"; return 1; }
 }
 
-_run_test_case "stub accepts coordinate arguments" test_stub_accepts_coordinates
-_run_test_case "stub produces no output" test_stub_no_output
+run_test_case "stub accepts coordinate arguments" test_stub_accepts_coordinates
+run_test_case "stub produces no output" test_stub_no_output
 
-_finish_tests
+finish_tests

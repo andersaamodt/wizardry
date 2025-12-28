@@ -13,17 +13,17 @@ done
 
 test_there_exists() {
   tmpfile=$(mktemp "$WIZARDRY_TMPDIR/there_test.XXXXXX")
-  _run_spell spells/.imps/cond/there "$tmpfile"
+  run_spell spells/.imps/cond/there "$tmpfile"
   rm -f "$tmpfile"
-  _assert_success
+  assert_success
 }
 
 test_there_missing() {
-  _run_spell spells/.imps/cond/there "$WIZARDRY_TMPDIR/nonexistent_xyz123"
-  _assert_failure
+  run_spell spells/.imps/cond/there "$WIZARDRY_TMPDIR/nonexistent_xyz123"
+  assert_failure
 }
 
-_run_test_case "there succeeds for existing path" test_there_exists
-_run_test_case "there fails for missing path" test_there_missing
+run_test_case "there succeeds for existing path" test_there_exists
+run_test_case "there fails for missing path" test_there_missing
 
-_finish_tests
+finish_tests

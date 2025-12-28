@@ -136,10 +136,10 @@ else
   has_cd=$(command -v cd >/dev/null 2>&1 && echo 1 || echo 0)
   has_pwd=$(command -v pwd >/dev/null 2>&1 && echo 1 || echo 0)
   if [ "$has_dirname" = "1" ] && [ "$has_cd" = "1" ] && [ "$has_pwd" = "1" ]; then
-    _script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || true
-    if [ -n "$_script_dir" ]; then
+    script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || true
+    if [ -n "$script_dir" ]; then
       # We're in spells/system, so go up two levels
-      _potential_dir=$(CDPATH= cd -- "$_script_dir/../.." 2>/dev/null && pwd -P) || true
+      _potential_dir=$(CDPATH= cd -- "$script_dir/../.." 2>/dev/null && pwd -P) || true
       if [ -n "$_potential_dir" ] && [ -d "$_potential_dir/spells" ]; then
         WIZARDRY_DIR=$_potential_dir
         banish_check "Detected from script location: $WIZARDRY_DIR"

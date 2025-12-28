@@ -3,9 +3,9 @@
 # Shorthand for assert-status 0.
 set -eu
 
-_assert_success() {
-  _assert_status 0
+assert_success() {
+  assert_status 0
 }
 
 # Self-execution when run directly (not sourced)
-case "${0##*/}" in assert-success) _assert_success "$@" ;; esac
+case "${0##*/}" in assert-success) assert_success "$@" ;; esac

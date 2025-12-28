@@ -3,7 +3,7 @@
 # Example: pm=$(pkg-manager) && case $pm in apt) apt-get install ;; esac
 set -eu
 
-_pkg_manager() {
+pkg_manager() {
   if command -v apt-get >/dev/null 2>&1; then echo apt
   elif command -v dnf >/dev/null 2>&1; then echo dnf
   elif command -v pacman >/dev/null 2>&1; then echo pacman
@@ -16,4 +16,4 @@ _pkg_manager() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */pkg-manager) _pkg_manager "$@" ;; esac
+  */pkg-manager) pkg_manager "$@" ;; esac

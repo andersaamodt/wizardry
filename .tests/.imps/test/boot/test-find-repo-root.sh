@@ -8,16 +8,16 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_finds_root() {
-  root=$(_find_repo_root)
+  root=$(find_repo_root)
   [ -n "$root" ] && [ -d "$root/spells" ] && [ -d "$root/.tests" ]
 }
 
 test_root_has_spells() {
-  root=$(_find_repo_root)
+  root=$(find_repo_root)
   [ -d "$root/spells/.imps" ]
 }
 
-_run_test_case "find-repo-root locates repository root" test_finds_root
-_run_test_case "find-repo-root returns path with spells directory" test_root_has_spells
+run_test_case "find-repo-root locates repository root" test_finds_root
+run_test_case "find-repo-root returns path with spells directory" test_root_has_spells
 
-_finish_tests
+finish_tests

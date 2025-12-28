@@ -66,10 +66,10 @@ test_env_clear_preserves_wizardry_globals() {
   esac
 }
 
-_run_test_case "env-clear exits successfully when sourced" test_env_clear_succeeds
-_run_test_case "env-clear preserves PATH" test_env_clear_preserves_path
-_run_test_case "env-clear preserves HOME" test_env_clear_preserves_home
-_run_test_case "env-clear clears custom exported variables" test_env_clear_clears_custom_vars
-_run_test_case "env-clear preserves WIZARDRY_DIR" test_env_clear_preserves_wizardry_globals
+run_test_case "env-clear exits successfully when sourced" test_env_clear_succeeds
+run_test_case "env-clear preserves PATH" test_env_clear_preserves_path
+run_test_case "env-clear preserves HOME" test_env_clear_preserves_home
+run_test_case "env-clear clears custom exported variables" test_env_clear_clears_custom_vars
+run_test_case "env-clear preserves WIZARDRY_DIR" test_env_clear_preserves_wizardry_globals
 
-_finish_tests
+finish_tests

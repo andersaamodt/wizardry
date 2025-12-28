@@ -11,24 +11,24 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_cd_help_shows_usage() {
-  _run_spell spells/.arcana/mud/cd --help
-  _assert_success || return 1
-  _assert_output_contains "Usage:" || return 1
-  _assert_output_contains "Source this file" || return 1
+  run_spell spells/.arcana/mud/cd --help
+  assert_success || return 1
+  assert_output_contains "Usage:" || return 1
+  assert_output_contains "Source this file" || return 1
 }
 
 test_cd_defines_cd_function_when_sourced() {
   skip-if-compiled || return $?
-  _run_cmd sh -c '
+  run_cmd sh -c '
     . '"$ROOT_DIR"'/spells/.arcana/mud/cd &&
     type cd | grep -q "function"
   '
-  _assert_success || return 1
+  assert_success || return 1
 }
 
 test_cd_function_runs_look_when_enabled() {
   skip-if-compiled || return $?
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   
   # Create settings file with cd-look enabled
   mkdir -p "$tmpdir/.spellbook/.mud"
@@ -45,7 +45,7 @@ SH
   mkdir -p "$tmpdir/testdir"
   
   # Test: cd with settings enabled should run look
-  _run_cmd sh -c '
+  run_cmd sh -c '
     export HOME='"$tmpdir"'
     export SPELLBOOK_DIR='"$tmpdir"'/.spellbook
     export PATH='"$tmpdir"':$PATH
@@ -53,13 +53,13 @@ SH
     cd '"$tmpdir"'/testdir &&
     [ -f .looked ] && printf "look-ran"
   '
-  _assert_success || return 1
-  _assert_output_contains "look-ran" || return 1
+  assert_success || return 1
+  assert_output_contains "look-ran" || return 1
 }
 
 test_cd_function_skips_look_when_disabled() {
   skip-if-compiled || return $?
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   
   # Create settings file with cd-look disabled (no cd-look=1 line)
   mkdir -p "$tmpdir/.spellbook/.mud"
@@ -76,7 +76,7 @@ SH
   mkdir -p "$tmpdir/testdir"
   
   # Test: cd with settings disabled should NOT run look
-  _run_cmd sh -c '
+  run_cmd sh -c '
     export HOME='"$tmpdir"'
     export SPELLBOOK_DIR='"$tmpdir"'/.spellbook
     export PATH='"$tmpdir"':$PATH
@@ -84,12 +84,12 @@ SH
     cd '"$tmpdir"'/testdir &&
     [ ! -f .looked ] && printf "look-not-ran"
   '
-  _assert_success || return 1
-  _assert_output_contains "look-not-ran" || return 1
+  assert_success || return 1
+  assert_output_contains "look-not-ran" || return 1
 }
 
-_run_test_case "cd --help shows usage" test_cd_help_shows_usage
-_run_test_case "cd defines cd function when sourced" test_cd_defines_cd_function_when_sourced
-_run_test_case "cd function runs look when enabled" test_cd_function_runs_look_when_enabled
-_run_test_case "cd function skips look when disabled" test_cd_function_skips_look_when_disabled
-_finish_tests
+run_test_case "cd --help shows usage" test_cd_help_shows_usage
+run_test_case "cd defines cd function when sourced" test_cd_defines_cd_function_when_sourced
+run_test_case "cd function runs look when enabled" test_cd_function_runs_look_when_enabled
+run_test_case "cd function skips look when disabled" test_cd_function_skips_look_when_disabled
+finish_tests

@@ -17,9 +17,9 @@ spell_is_executable() {
 }
 
 shows_help() {
-  _run_spell spells/system/test-magic --help
-  _assert_success
-  _assert_output_contains "Usage:"
+  run_spell spells/system/test-magic --help
+  assert_success
+  assert_output_contains "Usage:"
 }
 
 spell_has_content() {
@@ -32,7 +32,7 @@ spell_has_content() {
 # This verifies all tests are processed correctly.
 all_tests_are_processed() {
   # Run test-magic on a small, fast test and verify counts match
-  tmpdir="$(_make_tempdir)"
+  tmpdir="$(make_tempdir)"
   tmpfile="$tmpdir/output.txt"
   
   cd "$ROOT_DIR" || return 1
@@ -159,7 +159,7 @@ has_timeout_protection() {
 
 # Test that failed subtests cause the parent test to fail
 failed_subtests_fail_parent_test() {
-  tmpdir="$(_make_tempdir)"
+  tmpdir="$(make_tempdir)"
   [ -d "$tmpdir" ] || { TEST_FAILURE_REASON="tmpdir not created: $tmpdir"; return 1; }
   tmpfile="$tmpdir/output.txt"
   
@@ -181,11 +181,11 @@ test_fail1() { TEST_FAILURE_REASON="failure 1"; return 1; }
 test_pass2() { return 0; }
 test_fail2() { TEST_FAILURE_REASON="failure 2"; return 1; }
 
-_run_test_case "pass 1" test_pass1
-_run_test_case "fail 1" test_fail1
-_run_test_case "pass 2" test_pass2
-_run_test_case "fail 2" test_fail2
-_finish_tests
+run_test_case "pass 1" test_pass1
+run_test_case "fail 1" test_fail1
+run_test_case "pass 2" test_pass2
+run_test_case "fail 2" test_fail2
+finish_tests
 EOF
   chmod +x "$test_fixture"
   
@@ -225,7 +225,7 @@ EOF
 
 # Test that FAIL_DETAIL lines are not visible in output
 fail_detail_hidden_from_output() {
-  tmpdir="$(_make_tempdir)"
+  tmpdir="$(make_tempdir)"
   tmpfile="$tmpdir/output.txt"
   
   # Create a test fixture in .tests directory
@@ -244,9 +244,9 @@ done
 test_pass1() { return 0; }
 test_fail1() { TEST_FAILURE_REASON="failure 1"; return 1; }
 
-_run_test_case "pass 1" test_pass1
-_run_test_case "fail 1" test_fail1
-_finish_tests
+run_test_case "pass 1" test_pass1
+run_test_case "fail 1" test_fail1
+finish_tests
 EOF
   chmod +x "$test_fixture"
   
@@ -271,7 +271,7 @@ EOF
 
 # Test that test summary line (X/Y tests passed) is visible in output
 test_summary_line_visible() {
-  tmpdir="$(_make_tempdir)"
+  tmpdir="$(make_tempdir)"
   tmpfile="$tmpdir/output.txt"
   
   # Create a test fixture in .tests directory
@@ -291,10 +291,10 @@ test_pass1() { return 0; }
 test_pass2() { return 0; }
 test_pass3() { return 0; }
 
-_run_test_case "pass 1" test_pass1
-_run_test_case "pass 2" test_pass2
-_run_test_case "pass 3" test_pass3
-_finish_tests
+run_test_case "pass 1" test_pass1
+run_test_case "pass 2" test_pass2
+run_test_case "pass 3" test_pass3
+finish_tests
 EOF
   chmod +x "$test_fixture"
   
@@ -323,7 +323,7 @@ EOF
 
 # Test that failed subtest numbers appear in failure summary
 failed_subtest_numbers_in_summary() {
-  tmpdir="$(_make_tempdir)"
+  tmpdir="$(make_tempdir)"
   tmpfile="$tmpdir/output.txt"
   
   # Create a test fixture in .tests directory
@@ -344,11 +344,11 @@ test_fail1() { TEST_FAILURE_REASON="failure 1"; return 1; }
 test_pass2() { return 0; }
 test_fail2() { TEST_FAILURE_REASON="failure 2"; return 1; }
 
-_run_test_case "pass 1" test_pass1
-_run_test_case "fail 1" test_fail1
-_run_test_case "pass 2" test_pass2
-_run_test_case "fail 2" test_fail2
-_finish_tests
+run_test_case "pass 1" test_pass1
+run_test_case "fail 1" test_fail1
+run_test_case "pass 2" test_pass2
+run_test_case "fail 2" test_fail2
+finish_tests
 EOF
   chmod +x "$test_fixture"
   
@@ -380,7 +380,7 @@ EOF
 
 # Test that detailed failure output shows when there are few failures
 detailed_output_for_few_failures() {
-  tmpdir="$(_make_tempdir)"
+  tmpdir="$(make_tempdir)"
   tmpfile="$tmpdir/output.txt"
   
   # Create a test fixture in .tests directory
@@ -400,10 +400,10 @@ test_pass1() { return 0; }
 test_fail1() { TEST_FAILURE_REASON="failure 1"; return 1; }
 test_fail2() { TEST_FAILURE_REASON="failure 2"; return 1; }
 
-_run_test_case "pass 1" test_pass1
-_run_test_case "fail 1" test_fail1
-_run_test_case "fail 2" test_fail2
-_finish_tests
+run_test_case "pass 1" test_pass1
+run_test_case "fail 1" test_fail1
+run_test_case "fail 2" test_fail2
+finish_tests
 EOF
   chmod +x "$test_fixture"
   
@@ -434,7 +434,7 @@ EOF
 
 # Test that output streams line-by-line (not buffered)
 output_streams_line_by_line() {
-  tmpdir="$(_make_tempdir)"
+  tmpdir="$(make_tempdir)"
   tmpfile="$tmpdir/output.txt"
   
   # Create a test fixture with delays
@@ -454,10 +454,10 @@ test_1() { return 0; }
 test_2() { return 0; }
 test_3() { return 0; }
 
-_run_test_case "test 1" test_1
-_run_test_case "test 2" test_2
-_run_test_case "test 3" test_3
-_finish_tests
+run_test_case "test 1" test_1
+run_test_case "test 2" test_2
+run_test_case "test 3" test_3
+finish_tests
 EOF
   chmod +x "$test_fixture"
   
@@ -497,18 +497,18 @@ EOF
   return 0
 }
 
-_run_test_case "system/test-magic is executable" spell_is_executable
-_run_test_case "system/test-magic shows help" shows_help
-_run_test_case "system/test-magic has content" spell_has_content
-_run_test_case "system/test-magic processes all tests without skipping" all_tests_are_processed
-_run_test_case "system/test-magic has no test rerun logic" no_test_reruns
-_run_test_case "system/test-magic has pre-flight checks" has_preflight_checks
-_run_test_case "system/test-magic has timeout protection" has_timeout_protection
-_run_test_case "failed subtests cause parent test to fail" failed_subtests_fail_parent_test
-_run_test_case "FAIL_DETAIL lines hidden from output" fail_detail_hidden_from_output
-_run_test_case "test summary line visible in output" test_summary_line_visible
-_run_test_case "failed subtest numbers in summary" failed_subtest_numbers_in_summary
-_run_test_case "detailed output shown for few failures" detailed_output_for_few_failures
-_run_test_case "output streams line-by-line" output_streams_line_by_line
+run_test_case "system/test-magic is executable" spell_is_executable
+run_test_case "system/test-magic shows help" shows_help
+run_test_case "system/test-magic has content" spell_has_content
+run_test_case "system/test-magic processes all tests without skipping" all_tests_are_processed
+run_test_case "system/test-magic has no test rerun logic" no_test_reruns
+run_test_case "system/test-magic has pre-flight checks" has_preflight_checks
+run_test_case "system/test-magic has timeout protection" has_timeout_protection
+run_test_case "failed subtests cause parent test to fail" failed_subtests_fail_parent_test
+run_test_case "FAIL_DETAIL lines hidden from output" fail_detail_hidden_from_output
+run_test_case "test summary line visible in output" test_summary_line_visible
+run_test_case "failed subtest numbers in summary" failed_subtest_numbers_in_summary
+run_test_case "detailed output shown for few failures" detailed_output_for_few_failures
+run_test_case "output streams line-by-line" output_streams_line_by_line
 
-_finish_tests
+finish_tests

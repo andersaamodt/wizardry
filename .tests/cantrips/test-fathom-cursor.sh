@@ -22,7 +22,7 @@ make_response() {
 run_fathom() {
   resp_file=$1
   shift
-  _run_cmd env PATH="$WIZARDRY_IMPS_PATH:/bin:/usr/bin" FATHOM_CURSOR_DEVICE="$resp_file" FATHOM_CURSOR_SKIP_STTY=1 "$ROOT_DIR/spells/cantrips/fathom-cursor" "$@"
+  run_cmd env PATH="$WIZARDRY_IMPS_PATH:/bin:/usr/bin" FATHOM_CURSOR_DEVICE="$resp_file" FATHOM_CURSOR_SKIP_STTY=1 "$ROOT_DIR/spells/cantrips/fathom-cursor" "$@"
 }
 
 normalize_output() {
@@ -81,17 +81,17 @@ fails_on_invalid_response() {
   [ "$STATUS" -ne 0 ] || { TEST_FAILURE_REASON="expected failure"; return 1; }
 }
 
-_run_test_case "reports both axes" reports_both_axes
-_run_test_case "selects a single axis" selects_single_axis
-_run_test_case "adds labels in verbose mode" prints_verbose_labels
-_run_test_case "fails on invalid response" fails_on_invalid_response
+run_test_case "reports both axes" reports_both_axes
+run_test_case "selects a single axis" selects_single_axis
+run_test_case "adds labels in verbose mode" prints_verbose_labels
+run_test_case "fails on invalid response" fails_on_invalid_response
 
 shows_help() {
-  _run_spell spells/cantrips/fathom-cursor --help
+  run_spell spells/cantrips/fathom-cursor --help
   # Note: spell may not have --help implemented yet
   true
 }
 
-_run_test_case "fathom-cursor shows help" shows_help
+run_test_case "fathom-cursor shows help" shows_help
 
 # Test via source-then-invoke pattern  

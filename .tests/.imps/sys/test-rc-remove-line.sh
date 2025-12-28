@@ -10,7 +10,7 @@ done
 
 test_rc_remove_line_removes_marked_lines() {
   skip-if-compiled || return $?
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   rc_file="$tmpdir/.testrc"
   
   # Create file with marked line
@@ -44,7 +44,7 @@ EOF
 }
 
 test_rc_remove_line_handles_missing_file() {
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   rc_file="$tmpdir/.nonexistent"
   
   # Should succeed (nothing to remove)
@@ -55,7 +55,7 @@ test_rc_remove_line_handles_missing_file() {
 }
 
 test_rc_remove_line_handles_missing_marker() {
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   rc_file="$tmpdir/.testrc"
   
   # Create file without marker
@@ -75,7 +75,7 @@ test_rc_remove_line_handles_missing_marker() {
 }
 
 test_rc_remove_line_requires_arguments() {
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   rc_file="$tmpdir/.testrc"
   
   # Missing RC_FILE argument
@@ -85,9 +85,9 @@ test_rc_remove_line_requires_arguments() {
   fi
 }
 
-_run_test_case "rc-remove-line removes marked lines" test_rc_remove_line_removes_marked_lines
-_run_test_case "rc-remove-line handles missing file" test_rc_remove_line_handles_missing_file
-_run_test_case "rc-remove-line handles missing marker" test_rc_remove_line_handles_missing_marker
-_run_test_case "rc-remove-line requires arguments" test_rc_remove_line_requires_arguments
+run_test_case "rc-remove-line removes marked lines" test_rc_remove_line_removes_marked_lines
+run_test_case "rc-remove-line handles missing file" test_rc_remove_line_handles_missing_file
+run_test_case "rc-remove-line handles missing marker" test_rc_remove_line_handles_missing_marker
+run_test_case "rc-remove-line requires arguments" test_rc_remove_line_requires_arguments
 
-_finish_tests
+finish_tests

@@ -15,22 +15,22 @@ test_read_file_outputs_content() {
   skip-if-compiled || return $?
   tmpfile=$(mktemp "$WIZARDRY_TMPDIR/readfile_test.XXXXXX")
   printf 'test content' > "$tmpfile"
-  _run_spell spells/.imps/text/read-file "$tmpfile"
+  run_spell spells/.imps/text/read-file "$tmpfile"
   rm -f "$tmpfile"
-  _assert_success
-  _assert_output_contains "test content"
+  assert_success
+  assert_output_contains "test content"
 }
 
 test_read_file_handles_empty_file() {
   tmpfile=$(mktemp "$WIZARDRY_TMPDIR/readfile_test.XXXXXX")
   : > "$tmpfile"
-  _run_spell spells/.imps/text/read-file "$tmpfile"
+  run_spell spells/.imps/text/read-file "$tmpfile"
   rm -f "$tmpfile"
-  _assert_success
+  assert_success
   [ -z "$OUTPUT" ] || { TEST_FAILURE_REASON="output should be empty"; return 1; }
 }
 
-_run_test_case "read-file outputs content" test_read_file_outputs_content
-_run_test_case "read-file handles empty file" test_read_file_handles_empty_file
+run_test_case "read-file outputs content" test_read_file_outputs_content
+run_test_case "read-file handles empty file" test_read_file_handles_empty_file
 
-_finish_tests
+finish_tests

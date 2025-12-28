@@ -3,10 +3,10 @@
 # Example: quiet rm -f /tmp/file
 set -eu
 
-_quiet() {
+quiet() {
   "$@" >/dev/null 2>&1
 }
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */quiet) _quiet "$@" ;; esac
+  */quiet) quiet "$@" ;; esac

@@ -4,7 +4,7 @@
 
 set -eu
 
-_print_fail() {
+print_fail() {
   text=${1-}
   reason=${2-}
   
@@ -27,4 +27,4 @@ _print_fail() {
 }
 
 # Self-execution when run directly (not sourced)
-case "${0##*/}" in print-fail) _print_fail "$@" ;; esac
+case "${0##*/}" in print-fail) print_fail "$@" ;; esac

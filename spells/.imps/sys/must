@@ -4,7 +4,7 @@
 # Examples: must there /etc/config "config missing" || return $?
 set -eu
 
-_must() {
+must() {
   _must_type=$1
   shift
 
@@ -63,4 +63,4 @@ _must() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */must) _must "$@" ;; esac
+  */must) must "$@" ;; esac

@@ -3,7 +3,7 @@
 # Example: pkg=$(any apt-get brew pkgin) && $pkg install foo
 set -eu
 
-_any() {
+any() {
   for _any_cmd in "$@"; do
     if command -v "$_any_cmd" >/dev/null 2>&1; then
       printf '%s' "$_any_cmd"
@@ -15,4 +15,4 @@ _any() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */any) _any "$@" ;; esac
+  */any) any "$@" ;; esac

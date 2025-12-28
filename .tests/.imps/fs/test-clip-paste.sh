@@ -16,17 +16,17 @@ done
 test_clip_paste_no_utility_fails_gracefully() {
   # This test runs in sandbox without clipboard utilities
   # It should fail gracefully with an error message
-  _run_spell spells/.imps/fs/clip-paste
+  run_spell spells/.imps/fs/clip-paste
   # Either succeeds (if clipboard util available) or fails gracefully
 }
 
 test_clip_paste_produces_output() {
   # Test that the imp runs and produces output or fails gracefully
-  _run_spell spells/.imps/fs/clip-paste
+  run_spell spells/.imps/fs/clip-paste
   # Either succeeds or fails gracefully depending on clipboard availability
 }
 
-_run_test_case "clip-paste handles missing utility" test_clip_paste_no_utility_fails_gracefully
-_run_test_case "clip-paste produces output" test_clip_paste_produces_output
+run_test_case "clip-paste handles missing utility" test_clip_paste_no_utility_fails_gracefully
+run_test_case "clip-paste produces output" test_clip_paste_produces_output
 
-_finish_tests
+finish_tests

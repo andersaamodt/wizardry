@@ -13,7 +13,7 @@ spell_is_executable() {
   [ -x "$ROOT_DIR/spells/.arcana/simplex-chat/simplex-chat-menu" ]
 }
 
-_run_test_case "install/simplex-chat/simplex-chat-menu is executable" spell_is_executable
+run_test_case "install/simplex-chat/simplex-chat-menu is executable" spell_is_executable
 
 make_stub_menu() {
   tmp=$1
@@ -36,7 +36,7 @@ SHI
 
 menu_prompts_install_when_missing() {
   skip-if-compiled || return $?
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_exit_label "$tmp"
   cat >"$tmp/simplex-chat-status" <<'SHI'
@@ -45,9 +45,9 @@ echo "not installed"
 SHI
   chmod +x "$tmp/simplex-chat-status"
   MENU_LOG="$tmp/menu.log"
-  _run_cmd env PATH="$WIZARDRY_SYSTEM_PATH:$WIZARDRY_IMPS_PATH:$tmp:$ROOT_DIR/spells/cantrips" MENU_LOG="$MENU_LOG" \
+  run_cmd env PATH="$WIZARDRY_SYSTEM_PATH:$WIZARDRY_IMPS_PATH:$tmp:$ROOT_DIR/spells/cantrips" MENU_LOG="$MENU_LOG" \
     "$ROOT_DIR/spells/.arcana/simplex-chat/simplex-chat-menu"
-  _assert_success || return 1
+  assert_success || return 1
   entries=$(tail -n +2 "$MENU_LOG")
   case "$entries" in
     *"Install simplex-chat%install-simplex-chat"* ) : ;;
@@ -59,11 +59,11 @@ SHI
   esac
 }
 
-_run_test_case "simplex-chat-menu offers install when simplex-chat is missing" menu_prompts_install_when_missing
+run_test_case "simplex-chat-menu offers install when simplex-chat is missing" menu_prompts_install_when_missing
 
 menu_orders_uninstall_before_exit_when_installed() {
   skip-if-compiled || return $?
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_exit_label "$tmp"
 
@@ -80,10 +80,10 @@ SHI
   chmod +x "$tmp/simplex-chat"
 
   MENU_LOG="$tmp/menu.log"
-  _run_cmd env PATH="$WIZARDRY_SYSTEM_PATH:$WIZARDRY_IMPS_PATH:$tmp:$ROOT_DIR/spells/cantrips" MENU_LOG="$MENU_LOG" \
+  run_cmd env PATH="$WIZARDRY_SYSTEM_PATH:$WIZARDRY_IMPS_PATH:$tmp:$ROOT_DIR/spells/cantrips" MENU_LOG="$MENU_LOG" \
     "$ROOT_DIR/spells/.arcana/simplex-chat/simplex-chat-menu"
 
-  _assert_success || return 1
+  assert_success || return 1
   entries=$(tail -n +2 "$MENU_LOG")
   last_line=$(printf '%s\n' "$entries" | tail -n 1)
   second_last=$(printf '%s\n' "$entries" | tail -n 2 | head -n 1)
@@ -108,6 +108,6 @@ SHI
   esac
 }
 
-_run_test_case "simplex-chat-menu surfaces CLI helpers and orders uninstall before exit" menu_orders_uninstall_before_exit_when_installed
+run_test_case "simplex-chat-menu surfaces CLI helpers and orders uninstall before exit" menu_orders_uninstall_before_exit_when_installed
 
-_finish_tests
+finish_tests

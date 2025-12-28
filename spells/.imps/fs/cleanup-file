@@ -3,11 +3,11 @@
 # Example: trap 'cleanup-file "$tmp"' EXIT
 set -eu
 
-_cleanup_file() {
+cleanup_file() {
   [ -n "${1:-}" ] && [ -f "$1" ] && rm -f "$1"
   return 0
 }
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */cleanup-file) _cleanup_file "$@" ;; esac
+  */cleanup-file) cleanup_file "$@" ;; esac

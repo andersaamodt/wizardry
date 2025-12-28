@@ -2,7 +2,7 @@
 # yes VALUE - test if value is affirmative (y/yes/true/1/Y/YES/TRUE)
 # Example: yes "$VERBOSE" && echo "verbose mode"
 
-_yes() {
+yes() {
   case "$1" in
     y|Y|yes|YES|Yes|true|TRUE|True|1) return 0 ;;
     *) return 1 ;;
@@ -11,4 +11,4 @@ _yes() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */yes) _yes "$@" ;; esac
+  */yes) yes "$@" ;; esac

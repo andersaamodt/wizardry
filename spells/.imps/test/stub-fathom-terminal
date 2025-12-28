@@ -5,7 +5,7 @@
 
 set -eu
 
-_stub_fathom_terminal() {
+stub_fathom_terminal() {
   case ${1-} in
     --width) printf '80\n' ;;
     --height) printf '24\n' ;;
@@ -16,4 +16,4 @@ _stub_fathom_terminal() {
 # Self-execute when run directly (not sourced)
 # Match both stub name and symlink name (tests create symlinks without stub- prefix)
 case "$0" in
-  */fathom-terminal|*/stub-fathom-terminal) _stub_fathom_terminal "$@" ;; esac
+  */fathom-terminal|*/stub-fathom-terminal) stub_fathom_terminal "$@" ;; esac

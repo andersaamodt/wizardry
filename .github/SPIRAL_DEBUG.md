@@ -108,7 +108,7 @@ After all features work:
 - **Test results**: 
   - ✅ invoke-wizardry sources successfully
   - ✅ menu function pre-loaded and available
-  - ✅ Essential imps (_has, _say, _die, _warn) pre-loaded
+  - ✅ Essential imps (has, say, die, warn) pre-loaded
   - ✅ command_not_found_handle defined for hotloading
   - ✅ menu --help works immediately
 - **Next**: User will manually test in real terminal before Phase 2
@@ -141,7 +141,7 @@ After all features work:
 - **Local tests (container)**:
   - `zsh -c 'source spells/.imps/sys/invoke-wizardry; whence -v menu; menu --help'` → menu is a function, help prints.
   - `WIZARDRY_DEBUG=1 WIZARDRY_SPIRAL_MINIMAL=1 zsh -c 'source spells/.imps/sys/invoke-wizardry; whence -v menu; menu --help'` → menu bound and callable with CNF disabled.
-  - Diagnostic: `command_not_found_handler` always receives args; when calling `_word_of_binding "$@"`, `_word_of_binding` sees the command name. The error `word-of-binding: command name required` happens **before** CNF output, so it is not caused by CNF.
+  - Diagnostic: `command_not_found_handler` always receives args; when calling `word_of_binding "$@"`, `word_of_binding` sees the command name. The error `word-of-binding: command name required` happens **before** CNF output, so it is not caused by CNF.
 - **Working hypothesis**:
   - The observed `word-of-binding: command name required` implies that the `menu` *command* is directly invoking `word-of-binding` with no arguments. That only happens if `menu` resolves to an executable wrapper (or script) that calls `word-of-binding` without args, or if `menu` isn't bound as a function at all.
   - Next step is to test in a fresh terminal:
@@ -149,6 +149,28 @@ After all features work:
     2. Run: `type menu` (bash) or `whence -v menu` (zsh) and record the output.
     3. Run `menu --help` and confirm whether it uses the function or hits the error.
     4. If it fails, capture: `command -v menu`, `alias menu`, and the output of `type menu`/`whence -v menu`.
+
+### 2025-12-28: Preload via word-of-binding bind-only
+
+- **Changes**:
+  - Switched `word-of-binding` to bind-only by default (no alias creation; no execution unless `--run` is used).
+  - Updated `invoke-wizardry` to source `word-of-binding` and preload menu + essential imps/spells using bind-only calls.
+  - Updated command-not-found handlers to call `word_of_binding --run` when executing missing commands.
+  - Updated `menu` to call `word_of_binding --run main-menu` when no entries are provided.
+  - Added a hard failure if `word-of-binding` cannot be sourced (preloading cannot proceed).
+- **Local tests (container, bash)**:
+  - `bash -lc 'source spells/.imps/sys/invoke-wizardry; type menu'` → menu is a function.
+  - `bash -lc 'source spells/.imps/sys/invoke-wizardry; menu --help | head -n 3'` → usage text prints.
+  - `bash -lc 'source spells/.imps/sys/invoke-wizardry; command -v word_of_binding'` → function available.
+  - Note: full interactive menu run requires a TTY; not exercised in this container.
+
+### 2025-12-28: Remove leading underscores from imp true-names
+
+- **Changes**:
+  - Renamed all imp true-names to drop the leading underscore (imps now match spells: `imp-name` → `imp_name()`).
+  - Updated `word-of-binding` to use the same true-name mapping for spells and imps.
+  - Updated `invoke-wizardry`, menu, and tests to use `word_of_binding` (no leading underscore) and the new imp function names.
+  - Hardened `has`/`require` to treat hyphenated command names as underscore function names when checking availability.
 
 ## Testing Strategy
 

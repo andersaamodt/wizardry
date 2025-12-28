@@ -3,10 +3,10 @@
 # Example: equals "$choice" "yes" && proceed
 set -eu
 
-_equals() {
+equals() {
   [ "$1" = "$2" ]
 }
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */equals) _equals "$@" ;; esac
+  */equals) equals "$@" ;; esac

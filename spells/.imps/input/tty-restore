@@ -3,7 +3,7 @@
 # Example: state=$(tty-save) && ... && tty-restore "$state"
 set -eu
 
-_tty_restore() {
+tty_restore() {
   _tr_state=${1:-}
 
   if [ -z "$_tr_state" ]; then
@@ -16,4 +16,4 @@ _tty_restore() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */tty-restore) _tty_restore "$@" ;; esac
+  */tty-restore) tty_restore "$@" ;; esac

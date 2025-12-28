@@ -12,16 +12,16 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_lacks_missing_command() {
-  _run_spell spells/.imps/cond/lacks nonexistent_command_xyz123
-  _assert_success
+  run_spell spells/.imps/cond/lacks nonexistent_command_xyz123
+  assert_success
 }
 
 test_lacks_existing_command() {
-  _run_spell spells/.imps/cond/lacks sh
-  _assert_failure
+  run_spell spells/.imps/cond/lacks sh
+  assert_failure
 }
 
-_run_test_case "lacks succeeds for missing command" test_lacks_missing_command
-_run_test_case "lacks fails for existing command" test_lacks_existing_command
+run_test_case "lacks succeeds for missing command" test_lacks_missing_command
+run_test_case "lacks fails for existing command" test_lacks_existing_command
 
-_finish_tests
+finish_tests

@@ -27,18 +27,18 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 make_spell_dir() {
-  dir=$(_make_tempdir)
+  dir=$(make_tempdir)
   printf '%s\n' "$dir"
 }
 
 test_help() {
-  _run_spell "spells/spellcraft/lint-magic" --help
-  _assert_success && _assert_output_contains "Usage: lint-magic"
+  run_spell "spells/spellcraft/lint-magic" --help
+  assert_success && assert_output_contains "Usage: lint-magic"
 }
 
 test_usage_alias() {
-  _run_spell "spells/spellcraft/lint-magic" --usage
-  _assert_success && _assert_output_contains "Usage: lint-magic"
+  run_spell "spells/spellcraft/lint-magic" --usage
+  assert_success && assert_output_contains "Usage: lint-magic"
 }
 
 test_passes_well_formed_spell() {
@@ -69,8 +69,8 @@ set -eu
 echo "Hello from good spell"
 EOF
   chmod +x "$spell_dir/good-spell"
-  _run_spell "spells/spellcraft/lint-magic" "$spell_dir/good-spell"
-  _assert_success && _assert_output_contains "passed"
+  run_spell "spells/spellcraft/lint-magic" "$spell_dir/good-spell"
+  assert_success && assert_output_contains "passed"
 }
 
 test_fails_missing_shebang() {
@@ -83,8 +83,8 @@ set -eu
 echo "bad"
 EOF
   chmod +x "$spell_dir/bad-spell"
-  _run_spell "spells/spellcraft/lint-magic" "$spell_dir/bad-spell"
-  _assert_failure && _assert_output_contains "shebang"
+  run_spell "spells/spellcraft/lint-magic" "$spell_dir/bad-spell"
+  assert_failure && assert_output_contains "shebang"
 }
 
 test_fails_wrong_shebang() {
@@ -99,8 +99,8 @@ set -eu
 echo "bad"
 EOF
   chmod +x "$spell_dir/bad-spell"
-  _run_spell "spells/spellcraft/lint-magic" "$spell_dir/bad-spell"
-  _assert_failure && _assert_output_contains "shebang"
+  run_spell "spells/spellcraft/lint-magic" "$spell_dir/bad-spell"
+  assert_failure && assert_output_contains "shebang"
 }
 
 test_fails_missing_description() {
@@ -113,8 +113,8 @@ set -eu
 echo "bad"
 EOF
   chmod +x "$spell_dir/bad-spell"
-  _run_spell "spells/spellcraft/lint-magic" "$spell_dir/bad-spell"
-  _assert_failure && _assert_output_contains "description comment"
+  run_spell "spells/spellcraft/lint-magic" "$spell_dir/bad-spell"
+  assert_failure && assert_output_contains "description comment"
 }
 
 test_fails_missing_strict_mode() {
@@ -127,8 +127,8 @@ test_fails_missing_strict_mode() {
 echo "bad"
 EOF
   chmod +x "$spell_dir/bad-spell"
-  _run_spell "spells/spellcraft/lint-magic" "$spell_dir/bad-spell"
-  _assert_failure && _assert_output_contains "explicit mode"
+  run_spell "spells/spellcraft/lint-magic" "$spell_dir/bad-spell"
+  assert_failure && assert_output_contains "explicit mode"
 }
 
 test_fails_trailing_space_assignment() {
@@ -136,8 +136,8 @@ test_fails_trailing_space_assignment() {
   # Create spell with trailing space in assignment
   printf '%s\n' '#!/bin/sh' '' '# Spell with bad assignment.' '' 'set -eu' '' 'var= ' '' 'echo "$var"' >"$spell_dir/bad-spell"
   chmod +x "$spell_dir/bad-spell"
-  _run_spell "spells/spellcraft/lint-magic" "$spell_dir/bad-spell"
-  _assert_failure && _assert_output_contains "trailing space"
+  run_spell "spells/spellcraft/lint-magic" "$spell_dir/bad-spell"
+  assert_failure && assert_output_contains "trailing space"
 }
 
 test_passes_imp_without_usage() {
@@ -153,8 +153,8 @@ set -eu
 date
 EOF
   chmod +x "$spell_dir/.imps/simple-imp"
-  _run_spell "spells/spellcraft/lint-magic" "$spell_dir/.imps/simple-imp"
-  _assert_success && _assert_output_contains "passed"
+  run_spell "spells/spellcraft/lint-magic" "$spell_dir/.imps/simple-imp"
+  assert_success && assert_output_contains "passed"
 }
 
 test_requires_usage_function() {
@@ -171,8 +171,8 @@ EOF
   chmod +x "$spell_dir/no-usage-spell"
   
   # Should fail without a usage function
-  _run_spell "spells/spellcraft/lint-magic" "$spell_dir/no-usage-spell"
-  _assert_failure && _assert_output_contains "usage function"
+  run_spell "spells/spellcraft/lint-magic" "$spell_dir/no-usage-spell"
+  assert_failure && assert_output_contains "usage function"
 }
 
 test_requires_help_handler() {
@@ -193,23 +193,23 @@ EOF
   chmod +x "$spell_dir/no-help-spell"
   
   # Should fail without a help handler
-  _run_spell "spells/spellcraft/lint-magic" "$spell_dir/no-help-spell"
-  _assert_failure && _assert_output_contains "help"
+  run_spell "spells/spellcraft/lint-magic" "$spell_dir/no-help-spell"
+  assert_failure && assert_output_contains "help"
 }
 
 test_list_option() {
-  _run_spell "spells/spellcraft/lint-magic" --list --only "look"
-  _assert_success && _assert_output_contains "spells/mud/look"
+  run_spell "spells/spellcraft/lint-magic" --list --only "look"
+  assert_success && assert_output_contains "spells/mud/look"
 }
 
 test_unknown_option() {
-  _run_spell "spells/spellcraft/lint-magic" --unknown
-  _assert_failure && _assert_error_contains "Usage:"
+  run_spell "spells/spellcraft/lint-magic" --unknown
+  assert_failure && assert_error_contains "Usage:"
 }
 
 test_fails_nonexistent_file() {
-  _run_spell "spells/spellcraft/lint-magic" "/nonexistent/path/to/spell"
-  _assert_failure && _assert_output_contains "file not found"
+  run_spell "spells/spellcraft/lint-magic" "/nonexistent/path/to/spell"
+  assert_failure && assert_output_contains "file not found"
 }
 
 test_imp_fails_with_help_handler() {
@@ -236,8 +236,8 @@ set -eu
 echo "hello"
 EOF
   chmod +x "$spell_dir/.imps/bad-imp"
-  _run_spell "spells/spellcraft/lint-magic" "$spell_dir/.imps/bad-imp"
-  _assert_failure && _assert_output_contains "--help handler"
+  run_spell "spells/spellcraft/lint-magic" "$spell_dir/.imps/bad-imp"
+  assert_failure && assert_output_contains "--help handler"
 }
 
 test_imp_fails_with_flags() {
@@ -263,8 +263,8 @@ case "$0" in
   */flag-imp) _flag_imp "$@" ;; esac
 EOF
   chmod +x "$spell_dir/.imps/flag-imp"
-  _run_spell "spells/spellcraft/lint-magic" "$spell_dir/.imps/flag-imp"
-  _assert_failure && _assert_output_contains "--flags"
+  run_spell "spells/spellcraft/lint-magic" "$spell_dir/.imps/flag-imp"
+  assert_failure && assert_output_contains "--flags"
 }
 
 test_imp_passes_with_heredoc_flags() {
@@ -297,8 +297,8 @@ case "$0" in
   */stub-gen) _stub_gen "$@" ;; esac
 EOF
   chmod +x "$spell_dir/.imps/stub-gen"
-  _run_spell "spells/spellcraft/lint-magic" "$spell_dir/.imps/stub-gen"
-  _assert_success && _assert_output_contains "passed"
+  run_spell "spells/spellcraft/lint-magic" "$spell_dir/.imps/stub-gen"
+  assert_success && assert_output_contains "passed"
 }
 
 test_imp_fails_with_too_many_params() {
@@ -318,8 +318,8 @@ case "$0" in
   */many-params-imp) _many_params_imp "$@" ;; esac
 EOF
   chmod +x "$spell_dir/.imps/many-params-imp"
-  _run_spell "spells/spellcraft/lint-magic" "$spell_dir/.imps/many-params-imp"
-  _assert_failure && _assert_output_contains "4 parameters"
+  run_spell "spells/spellcraft/lint-magic" "$spell_dir/.imps/many-params-imp"
+  assert_failure && assert_output_contains "4 parameters"
 }
 
 test_imp_passes_with_variadic_params() {
@@ -339,8 +339,8 @@ case "$0" in
   */variadic-imp) _variadic_imp "$@" ;; esac
 EOF
   chmod +x "$spell_dir/.imps/variadic-imp"
-  _run_spell "spells/spellcraft/lint-magic" "$spell_dir/.imps/variadic-imp"
-  _assert_success && _assert_output_contains "passed"
+  run_spell "spells/spellcraft/lint-magic" "$spell_dir/.imps/variadic-imp"
+  assert_success && assert_output_contains "passed"
 }
 
 test_imp_fails_with_duplicate_set_eu() {
@@ -362,8 +362,8 @@ case "$0" in
   */bad-duplicate-imp) _bad_duplicate_imp "$@" ;; esac
 EOF
   chmod +x "$spell_dir/.imps/bad-duplicate-imp"
-  _run_spell "spells/spellcraft/lint-magic" "$spell_dir/.imps/bad-duplicate-imp"
-  _assert_failure && _assert_output_contains "duplicate 'set -eu'"
+  run_spell "spells/spellcraft/lint-magic" "$spell_dir/.imps/bad-duplicate-imp"
+  assert_failure && assert_output_contains "duplicate 'set -eu'"
 }
 
 test_imp_passes_with_single_set_eu() {
@@ -384,31 +384,31 @@ case "$0" in
   */good-imp) _good_imp "$@" ;; esac
 EOF
   chmod +x "$spell_dir/.imps/good-imp"
-  _run_spell "spells/spellcraft/lint-magic" "$spell_dir/.imps/good-imp"
-  _assert_success && _assert_output_contains "passed"
+  run_spell "spells/spellcraft/lint-magic" "$spell_dir/.imps/good-imp"
+  assert_success && assert_output_contains "passed"
 }
 
-_run_test_case "lint-magic prints usage" test_help
-_run_test_case "lint-magic accepts --usage" test_usage_alias
-_run_test_case "lint-magic rejects unknown option" test_unknown_option
-_run_test_case "lint-magic fails for nonexistent file" test_fails_nonexistent_file
-_run_test_case "lint-magic passes well-formed spell" test_passes_well_formed_spell
-_run_test_case "lint-magic fails missing shebang" test_fails_missing_shebang
-_run_test_case "lint-magic fails wrong shebang" test_fails_wrong_shebang
-_run_test_case "lint-magic fails missing description" test_fails_missing_description
-_run_test_case "lint-magic fails missing strict mode" test_fails_missing_strict_mode
-_run_test_case "lint-magic fails trailing space assignment" test_fails_trailing_space_assignment
-_run_test_case "lint-magic passes imp without usage" test_passes_imp_without_usage
-_run_test_case "lint-magic requires usage function" test_requires_usage_function
-_run_test_case "lint-magic requires help handler" test_requires_help_handler
-_run_test_case "lint-magic --list shows matching files" test_list_option
-_run_test_case "lint-magic fails imp with --help handler" test_imp_fails_with_help_handler
-_run_test_case "lint-magic fails imp using flags" test_imp_fails_with_flags
-_run_test_case "lint-magic passes imp with heredoc flags" test_imp_passes_with_heredoc_flags
-_run_test_case "lint-magic fails imp with too many params" test_imp_fails_with_too_many_params
-_run_test_case "lint-magic passes imp with variadic params" test_imp_passes_with_variadic_params
-_run_test_case "lint-magic fails imp with duplicate set -eu" test_imp_fails_with_duplicate_set_eu
-_run_test_case "lint-magic passes imp with single set -eu" test_imp_passes_with_single_set_eu
+run_test_case "lint-magic prints usage" test_help
+run_test_case "lint-magic accepts --usage" test_usage_alias
+run_test_case "lint-magic rejects unknown option" test_unknown_option
+run_test_case "lint-magic fails for nonexistent file" test_fails_nonexistent_file
+run_test_case "lint-magic passes well-formed spell" test_passes_well_formed_spell
+run_test_case "lint-magic fails missing shebang" test_fails_missing_shebang
+run_test_case "lint-magic fails wrong shebang" test_fails_wrong_shebang
+run_test_case "lint-magic fails missing description" test_fails_missing_description
+run_test_case "lint-magic fails missing strict mode" test_fails_missing_strict_mode
+run_test_case "lint-magic fails trailing space assignment" test_fails_trailing_space_assignment
+run_test_case "lint-magic passes imp without usage" test_passes_imp_without_usage
+run_test_case "lint-magic requires usage function" test_requires_usage_function
+run_test_case "lint-magic requires help handler" test_requires_help_handler
+run_test_case "lint-magic --list shows matching files" test_list_option
+run_test_case "lint-magic fails imp with --help handler" test_imp_fails_with_help_handler
+run_test_case "lint-magic fails imp using flags" test_imp_fails_with_flags
+run_test_case "lint-magic passes imp with heredoc flags" test_imp_passes_with_heredoc_flags
+run_test_case "lint-magic fails imp with too many params" test_imp_fails_with_too_many_params
+run_test_case "lint-magic passes imp with variadic params" test_imp_passes_with_variadic_params
+run_test_case "lint-magic fails imp with duplicate set -eu" test_imp_fails_with_duplicate_set_eu
+run_test_case "lint-magic passes imp with single set -eu" test_imp_passes_with_single_set_eu
 
 
 # Test via source-then-invoke pattern  

@@ -16,13 +16,13 @@ spell_has_content() {
   [ -s "$ROOT_DIR/spells/.arcana/mud/install-mud" ]
 }
 
-_run_test_case "install/mud/install-mud is executable" spell_is_executable
-_run_test_case "install/mud/install-mud has content" spell_has_content
+run_test_case "install/mud/install-mud is executable" spell_is_executable
+run_test_case "install/mud/install-mud has content" spell_has_content
 
 shows_help() {
-  _run_spell spells/.arcana/mud/install-mud --help
+  run_spell spells/.arcana/mud/install-mud --help
   true
 }
 
-_run_test_case "install-mud shows help" shows_help
-_finish_tests
+run_test_case "install-mud shows help" shows_help
+finish_tests

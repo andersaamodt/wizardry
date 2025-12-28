@@ -3,7 +3,7 @@
 # Example: path ./foo -> /current/dir/foo
 set -eu
 
-_path() {
+path() {
   _p_path=$1
   case "$_p_path" in
     /*) : ;;
@@ -14,4 +14,4 @@ _path() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */path) _path "$@" ;; esac
+  */path) path "$@" ;; esac

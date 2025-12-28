@@ -12,16 +12,16 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_on_exit_succeeds() {
-  _run_spell spells/.imps/sys/on-exit "echo cleanup"
-  _assert_success
+  run_spell spells/.imps/sys/on-exit "echo cleanup"
+  assert_success
 }
 
 test_on_exit_accepts_complex_command() {
-  _run_spell spells/.imps/sys/on-exit "rm -f /tmp/test && echo done"
-  _assert_success
+  run_spell spells/.imps/sys/on-exit "rm -f /tmp/test && echo done"
+  assert_success
 }
 
-_run_test_case "on-exit sets trap successfully" test_on_exit_succeeds
-_run_test_case "on-exit accepts complex command" test_on_exit_accepts_complex_command
+run_test_case "on-exit sets trap successfully" test_on_exit_succeeds
+run_test_case "on-exit accepts complex command" test_on_exit_accepts_complex_command
 
-_finish_tests
+finish_tests

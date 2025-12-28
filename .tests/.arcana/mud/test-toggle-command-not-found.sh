@@ -8,13 +8,13 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  _run_spell "spells/.arcana/mud/toggle-command-not-found" --help
-  _assert_success && _assert_output_contains "Usage: toggle-command-not-found"
+  run_spell "spells/.arcana/mud/toggle-command-not-found" --help
+  assert_success && assert_output_contains "Usage: toggle-command-not-found"
 }
 
 test_toggle_enables_and_disables() {
   skip-if-compiled || return $?
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   config_file="$tmpdir/.spellbook/.mud/config"
   
   # Initially enabled (default when no config)
@@ -80,7 +80,7 @@ test_toggle_enables_and_disables() {
 
 test_toggle_is_idempotent() {
   skip-if-compiled || return $?
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   
   # Default is enabled, first toggle disables
   output1=$(env SPELLBOOK_DIR="$tmpdir/.spellbook" sh "$ROOT_DIR/spells/.arcana/mud/toggle-command-not-found" 2>&1)
@@ -107,7 +107,7 @@ test_toggle_is_idempotent() {
 
 test_invoke_wizardry_respects_toggle() {
   skip-if-compiled || return $?
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   config_file="$tmpdir/.spellbook/.mud/config"
   mkdir -p "$(dirname "$config_file")"
   
@@ -139,9 +139,9 @@ test_invoke_wizardry_respects_toggle() {
   fi
 }
 
-_run_test_case "toggle-command-not-found prints usage" test_help
-_run_test_case "toggle enables and disables" test_toggle_enables_and_disables
-_run_test_case "toggle is idempotent" test_toggle_is_idempotent
-_run_test_case "invoke-wizardry respects toggle" test_invoke_wizardry_respects_toggle
+run_test_case "toggle-command-not-found prints usage" test_help
+run_test_case "toggle enables and disables" test_toggle_enables_and_disables
+run_test_case "toggle is idempotent" test_toggle_is_idempotent
+run_test_case "invoke-wizardry respects toggle" test_invoke_wizardry_respects_toggle
 
-_finish_tests
+finish_tests

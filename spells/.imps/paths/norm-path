@@ -3,7 +3,7 @@
 # Reads stdin if no arg. Example: norm-path "/tmp//foo/../bar" -> /tmp/bar
 set -eu
 
-_norm_path() {
+norm_path() {
   if [ "$#" -ge 1 ]; then
     printf '%s' "$1" | sed 's|///*|/|g'
   else
@@ -13,4 +13,4 @@ _norm_path() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */norm-path) _norm_path "$@" ;; esac
+  */norm-path) norm_path "$@" ;; esac

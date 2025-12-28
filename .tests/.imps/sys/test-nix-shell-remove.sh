@@ -18,7 +18,7 @@ export WIZARDRY_SKIP_CONFIRM=1
 
 test_nix_shell_remove_clears_block() {
   skip-if-compiled || return $?
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   nix_file="$tmpdir/test.nix"
   
   # Create minimal nix file
@@ -44,7 +44,7 @@ test_nix_shell_remove_clears_block() {
 }
 
 test_nix_shell_remove_is_idempotent() {
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   nix_file="$tmpdir/test.nix"
   
   # Create minimal nix file
@@ -57,7 +57,7 @@ test_nix_shell_remove_is_idempotent() {
   fi
 }
 
-_run_test_case "nix-shell-remove clears block" test_nix_shell_remove_clears_block
-_run_test_case "nix-shell-remove is idempotent" test_nix_shell_remove_is_idempotent
+run_test_case "nix-shell-remove clears block" test_nix_shell_remove_clears_block
+run_test_case "nix-shell-remove is idempotent" test_nix_shell_remove_is_idempotent
 
-_finish_tests
+finish_tests

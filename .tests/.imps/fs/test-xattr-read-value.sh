@@ -8,14 +8,14 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_xattr_read_value_exists() {
-  _run_cmd sh -c 'command -v xattr-read-value'
-  _assert_success || return 1
+  run_cmd sh -c 'command -v xattr-read-value'
+  assert_success || return 1
 }
 
 test_xattr_read_value_with_mock_xattr() {
   skip-if-compiled || return $?
   # Create test environment with mock xattr
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   testfile="$tmpdir/testfile.txt"
   printf "test content\n" > "$testfile"
   
@@ -39,9 +39,9 @@ STUB
 STUB
   chmod +x "$tmpdir/bin/xattr-helper-usable"
   
-  _run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && xattr-read-value user.name "'"$testfile"'"'
-  _assert_success || return 1
-  _assert_output_contains "Alice" || return 1
+  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && xattr-read-value user.name "'"$testfile"'"'
+  assert_success || return 1
+  assert_output_contains "Alice" || return 1
   
   rm -rf "$tmpdir"
 }
@@ -49,7 +49,7 @@ STUB
 test_xattr_read_value_fallback_to_attr() {
   skip-if-compiled || return $?
   # Test fallback to attr command
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   testfile="$tmpdir/testfile.txt"
   printf "test content\n" > "$testfile"
   
@@ -70,9 +70,9 @@ STUB
 STUB
   chmod +x "$tmpdir/bin/xattr-helper-usable"
   
-  _run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && xattr-read-value user.name "'"$testfile"'"'
-  _assert_success || return 1
-  _assert_output_contains "Alice" || return 1
+  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && xattr-read-value user.name "'"$testfile"'"'
+  assert_success || return 1
+  assert_output_contains "Alice" || return 1
   # Should NOT contain the header line
   if printf '%s' "$OUTPUT" | grep -q "Attribute"; then
     return 1
@@ -84,7 +84,7 @@ STUB
 test_xattr_read_value_returns_error_for_missing_key() {
   skip-if-compiled || return $?
   # Should return 1 when key doesn't exist
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   testfile="$tmpdir/testfile.txt"
   printf "test content\n" > "$testfile"
   
@@ -102,15 +102,15 @@ STUB
 STUB
   chmod +x "$tmpdir/bin/xattr-helper-usable"
   
-  _run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && xattr-read-value nonexistent.key "'"$testfile"'"'
-  _assert_failure || return 1
+  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && xattr-read-value nonexistent.key "'"$testfile"'"'
+  assert_failure || return 1
   
   rm -rf "$tmpdir"
 }
 
-_run_test_case "xattr-read-value exists" test_xattr_read_value_exists
-_run_test_case "xattr-read-value with mock xattr" test_xattr_read_value_with_mock_xattr
-_run_test_case "xattr-read-value fallback to attr" test_xattr_read_value_fallback_to_attr
-_run_test_case "xattr-read-value returns error for missing key" test_xattr_read_value_returns_error_for_missing_key
+run_test_case "xattr-read-value exists" test_xattr_read_value_exists
+run_test_case "xattr-read-value with mock xattr" test_xattr_read_value_with_mock_xattr
+run_test_case "xattr-read-value fallback to attr" test_xattr_read_value_fallback_to_attr
+run_test_case "xattr-read-value returns error for missing key" test_xattr_read_value_returns_error_for_missing_key
 
-_finish_tests
+finish_tests

@@ -8,14 +8,14 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_xattr_list_keys_exists() {
-  _run_cmd sh -c 'command -v xattr-list-keys'
-  _assert_success || return 1
+  run_cmd sh -c 'command -v xattr-list-keys'
+  assert_success || return 1
 }
 
 test_xattr_list_keys_with_mock_xattr() {
   skip-if-compiled || return $?
   # Create a test file and mock xattr command
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   testfile="$tmpdir/testfile.txt"
   printf "test content\n" > "$testfile"
   
@@ -35,10 +35,10 @@ STUB
   chmod +x "$tmpdir/bin/xattr-helper-usable"
   
   # Run xattr-list-keys with mocked PATH
-  _run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && xattr-list-keys "'"$testfile"'"'
-  _assert_success || return 1
-  _assert_output_contains "user.key1" || return 1
-  _assert_output_contains "user.key2" || return 1
+  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && xattr-list-keys "'"$testfile"'"'
+  assert_success || return 1
+  assert_output_contains "user.key1" || return 1
+  assert_output_contains "user.key2" || return 1
   
   rm -rf "$tmpdir"
 }
@@ -46,7 +46,7 @@ STUB
 test_xattr_list_keys_fallback_to_attr() {
   skip-if-compiled || return $?
   # Test fallback to attr command when xattr not available
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   testfile="$tmpdir/testfile.txt"
   printf "test content\n" > "$testfile"
   
@@ -66,10 +66,10 @@ STUB
 STUB
   chmod +x "$tmpdir/bin/xattr-helper-usable"
   
-  _run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && xattr-list-keys "'"$testfile"'"'
-  _assert_success || return 1
-  _assert_output_contains "user.name" || return 1
-  _assert_output_contains "user.email" || return 1
+  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && xattr-list-keys "'"$testfile"'"'
+  assert_success || return 1
+  assert_output_contains "user.name" || return 1
+  assert_output_contains "user.email" || return 1
   
   rm -rf "$tmpdir"
 }
@@ -77,7 +77,7 @@ STUB
 test_xattr_list_keys_returns_error_when_no_attrs() {
   skip-if-compiled || return $?
   # Should return 1 when no attributes found
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   testfile="$tmpdir/testfile.txt"
   printf "test content\n" > "$testfile"
   
@@ -95,15 +95,15 @@ STUB
 STUB
   chmod +x "$tmpdir/bin/xattr-helper-usable"
   
-  _run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && xattr-list-keys "'"$testfile"'"'
-  _assert_failure || return 1
+  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && xattr-list-keys "'"$testfile"'"'
+  assert_failure || return 1
   
   rm -rf "$tmpdir"
 }
 
-_run_test_case "xattr-list-keys exists" test_xattr_list_keys_exists
-_run_test_case "xattr-list-keys with mock xattr" test_xattr_list_keys_with_mock_xattr
-_run_test_case "xattr-list-keys fallback to attr" test_xattr_list_keys_fallback_to_attr
-_run_test_case "xattr-list-keys returns error when no attrs" test_xattr_list_keys_returns_error_when_no_attrs
+run_test_case "xattr-list-keys exists" test_xattr_list_keys_exists
+run_test_case "xattr-list-keys with mock xattr" test_xattr_list_keys_with_mock_xattr
+run_test_case "xattr-list-keys fallback to attr" test_xattr_list_keys_fallback_to_attr
+run_test_case "xattr-list-keys returns error when no attrs" test_xattr_list_keys_returns_error_when_no_attrs
 
-_finish_tests
+finish_tests

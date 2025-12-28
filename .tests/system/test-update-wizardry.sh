@@ -17,14 +17,14 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 make_stub_dir() {
-  dir=$(_make_tempdir)
+  dir=$(make_tempdir)
   mkdir -p "$dir"
   printf '%s\n' "$dir"
 }
 
 test_help() {
-  _run_spell "spells/system/update-wizardry" --help
-  _assert_success && _assert_output_contains "Usage: update-wizardry"
+  run_spell "spells/system/update-wizardry" --help
+  assert_success && assert_output_contains "Usage: update-wizardry"
 }
 
 test_requires_git() {
@@ -39,14 +39,14 @@ exit 1
 STUB
   chmod +x "$stub_dir/require-command"
 
-  REQUIRE_LOG="$require_log" REQUIRE_COMMAND="$stub_dir/require-command" _run_spell "spells/system/update-wizardry"
-  _assert_failure && _assert_error_contains "Update wizardry needs 'git'"
-  _assert_file_contains "$require_log" "git"
+  REQUIRE_LOG="$require_log" REQUIRE_COMMAND="$stub_dir/require-command" run_spell "spells/system/update-wizardry"
+  assert_failure && assert_error_contains "Update wizardry needs 'git'"
+  assert_file_contains "$require_log" "git"
 }
 
 test_uses_env_directory() {
   stub_dir=$(make_stub_dir)
-  wizard_dir=$(_make_tempdir)
+  wizard_dir=$(make_tempdir)
   git_log="$stub_dir/git.log"
 
   cat >"$stub_dir/git" <<'STUB'
@@ -69,9 +69,9 @@ STUB
   chmod +x "$stub_dir/require-command"
 
   PATH="$stub_dir:$PATH" REQUIRE_COMMAND="$stub_dir/require-command" GIT_LOG="$git_log" WIZARDRY_DIR="$wizard_dir" \
-    _run_spell "spells/system/update-wizardry"
-  _assert_success
-  _assert_file_contains "$git_log" "-C $wizard_dir pull --ff-only"
+    run_spell "spells/system/update-wizardry"
+  assert_success
+  assert_file_contains "$git_log" "-C $wizard_dir pull --ff-only"
 }
 
 test_rejects_missing_env_directory() {
@@ -94,17 +94,17 @@ STUB
   missing_dir="$stub_dir/nowhere"
 
   PATH="$stub_dir:$PATH" REQUIRE_COMMAND="$stub_dir/require-command" GIT_LOG="$git_log" WIZARDRY_DIR="$missing_dir" \
-    _run_spell "spells/system/update-wizardry"
-  _assert_failure
-  _assert_error_contains "does not exist or is not a directory"
-  _assert_path_missing "$git_log"
+    run_spell "spells/system/update-wizardry"
+  assert_failure
+  assert_error_contains "does not exist or is not a directory"
+  assert_path_missing "$git_log"
 }
 
 test_rejects_non_repo_env_directory() {
   skip-if-compiled || return $?
   stub_dir=$(make_stub_dir)
   git_log="$stub_dir/git.log"
-  not_repo=$(_make_tempdir)
+  not_repo=$(make_tempdir)
 
   cat >"$stub_dir/git" <<'STUB'
 #!/bin/sh
@@ -123,17 +123,17 @@ STUB
   chmod +x "$stub_dir/require-command"
 
   PATH="$stub_dir:$PATH" REQUIRE_COMMAND="$stub_dir/require-command" GIT_LOG="$git_log" WIZARDRY_DIR="$not_repo" \
-    _run_spell "spells/system/update-wizardry"
-  _assert_failure
-  _assert_error_contains "is not a git repository"
-  _assert_file_contains "$git_log" "-C $not_repo rev-parse --is-inside-work-tree"
+    run_spell "spells/system/update-wizardry"
+  assert_failure
+  assert_error_contains "is not a git repository"
+  assert_file_contains "$git_log" "-C $not_repo rev-parse --is-inside-work-tree"
 }
 
 test_detects_repository_and_pulls() {
   skip-if-compiled || return $?
   stub_dir=$(make_stub_dir)
   git_log="$stub_dir/git.log"
-  toplevel=$(_make_tempdir)
+  toplevel=$(make_tempdir)
 
   cat >"$stub_dir/git" <<'STUB'
 #!/bin/sh
@@ -159,11 +159,11 @@ STUB
 
   unset WIZARDRY_DIR
   PATH="$stub_dir:$PATH" REQUIRE_COMMAND="$stub_dir/require-command" GIT_LOG="$git_log" MOCK_TOPLEVEL="$toplevel" \
-    _run_spell "spells/system/update-wizardry"
-  _assert_success
-  _assert_output_contains "$toplevel"
-  _assert_file_contains "$git_log" "--show-toplevel"
-  _assert_file_contains "$git_log" "-C $toplevel pull --ff-only"
+    run_spell "spells/system/update-wizardry"
+  assert_success
+  assert_output_contains "$toplevel"
+  assert_file_contains "$git_log" "--show-toplevel"
+  assert_file_contains "$git_log" "-C $toplevel pull --ff-only"
 }
 
 test_detection_failure() {
@@ -183,16 +183,16 @@ STUB
   chmod +x "$stub_dir/require-command"
 
   unset WIZARDRY_DIR
-  PATH="$stub_dir:$PATH" REQUIRE_COMMAND="$stub_dir/require-command" _run_spell "spells/system/update-wizardry"
-  _assert_failure
-  _assert_error_contains "Unable to determine the wizardry repository"
+  PATH="$stub_dir:$PATH" REQUIRE_COMMAND="$stub_dir/require-command" run_spell "spells/system/update-wizardry"
+  assert_failure
+  assert_error_contains "Unable to determine the wizardry repository"
 }
 
 test_propagates_git_failure() {
   skip-if-compiled || return $?
   stub_dir=$(make_stub_dir)
   git_log="$stub_dir/git.log"
-  toplevel=$(_make_tempdir)
+  toplevel=$(make_tempdir)
 
   cat >"$stub_dir/git" <<'STUB'
 #!/bin/sh
@@ -214,18 +214,18 @@ STUB
 
   unset WIZARDRY_DIR
   PATH="$stub_dir:$PATH" REQUIRE_COMMAND="$stub_dir/require-command" GIT_LOG="$git_log" MOCK_TOPLEVEL="$toplevel" \
-    _run_spell "spells/system/update-wizardry"
-  _assert_status 42
-  _assert_file_contains "$git_log" "-C $toplevel pull --ff-only"
+    run_spell "spells/system/update-wizardry"
+  assert_status 42
+  assert_file_contains "$git_log" "-C $toplevel pull --ff-only"
 }
 
-_run_test_case "update-wizardry prints usage" test_help
-_run_test_case "update-wizardry requires git" test_requires_git
-_run_test_case "update-wizardry uses WIZARDRY_DIR when provided" test_uses_env_directory
-_run_test_case "update-wizardry rejects missing WIZARDRY_DIR" test_rejects_missing_env_directory
-_run_test_case "update-wizardry rejects non-repo WIZARDRY_DIR" test_rejects_non_repo_env_directory
-_run_test_case "update-wizardry auto-detects the repo and pulls" test_detects_repository_and_pulls
-_run_test_case "update-wizardry fails when detection fails" test_detection_failure
-_run_test_case "update-wizardry propagates git failures" test_propagates_git_failure
+run_test_case "update-wizardry prints usage" test_help
+run_test_case "update-wizardry requires git" test_requires_git
+run_test_case "update-wizardry uses WIZARDRY_DIR when provided" test_uses_env_directory
+run_test_case "update-wizardry rejects missing WIZARDRY_DIR" test_rejects_missing_env_directory
+run_test_case "update-wizardry rejects non-repo WIZARDRY_DIR" test_rejects_non_repo_env_directory
+run_test_case "update-wizardry auto-detects the repo and pulls" test_detects_repository_and_pulls
+run_test_case "update-wizardry fails when detection fails" test_detection_failure
+run_test_case "update-wizardry propagates git failures" test_propagates_git_failure
 
 # Test via source-then-invoke pattern  

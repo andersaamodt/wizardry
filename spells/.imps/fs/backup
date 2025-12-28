@@ -3,7 +3,7 @@
 # Example: backup /etc/ssh/sshd_config | backup myfile .orig
 set -eu
 
-_backup() {
+backup() {
   _bk_file=${1:-}
   _bk_suffix=${2:-.bak}
 
@@ -23,4 +23,4 @@ _backup() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */backup) _backup "$@" ;; esac
+  */backup) backup "$@" ;; esac

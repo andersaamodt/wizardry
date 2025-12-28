@@ -3,7 +3,7 @@
 # Returns the correct trash directory path for the current OS.
 # Example: cd "$(detect-trash)"
 
-_detect_trash() {
+detect_trash() {
   _dt_kernel=$(uname -s 2>/dev/null || printf 'unknown')
 
   case "$_dt_kernel" in
@@ -23,4 +23,4 @@ _detect_trash() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */detect-trash) _detect_trash "$@" ;; esac
+  */detect-trash) detect_trash "$@" ;; esac

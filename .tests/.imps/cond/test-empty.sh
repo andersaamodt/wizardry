@@ -12,16 +12,16 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_empty_succeeds_for_empty() {
-  _run_spell spells/.imps/cond/empty ""
-  _assert_success
+  run_spell spells/.imps/cond/empty ""
+  assert_success
 }
 
 test_empty_fails_for_nonempty() {
-  _run_spell spells/.imps/cond/empty "something"
-  _assert_failure
+  run_spell spells/.imps/cond/empty "something"
+  assert_failure
 }
 
-_run_test_case "empty succeeds for empty string" test_empty_succeeds_for_empty
-_run_test_case "empty fails for non-empty string" test_empty_fails_for_nonempty
+run_test_case "empty succeeds for empty string" test_empty_succeeds_for_empty
+run_test_case "empty fails for non-empty string" test_empty_fails_for_nonempty
 
-_finish_tests
+finish_tests

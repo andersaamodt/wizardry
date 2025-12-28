@@ -3,7 +3,7 @@
 # Receives: $1=command, $2=command_args, $3+=remaining args
 # Example: parse echo hello then echo world
 
-_then() {
+then() {
   _then_cmd=${1:-}
   _then_cmd_args=${2:-}
   shift 2 2>/dev/null || shift $#
@@ -27,4 +27,4 @@ _then() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */then) _then "$@" ;; esac
+  */then) then "$@" ;; esac

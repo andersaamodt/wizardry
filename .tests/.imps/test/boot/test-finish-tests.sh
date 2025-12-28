@@ -15,7 +15,7 @@ test_reports_pass_count() {
   # Reset counters for this test
   _pass_count=5
   _fail_count=0
-  output=$(_finish_tests)
+  output=$(finish_tests)
   result=$?
   # Restore counters
   _pass_count=$_orig_pass
@@ -27,7 +27,7 @@ test_returns_failure_on_fails() {
   # Reset counters for this test
   _pass_count=4
   _fail_count=1
-  _finish_tests >/dev/null 2>&1
+  finish_tests >/dev/null 2>&1
   result=$?
   # Restore counters
   _pass_count=$_orig_pass
@@ -40,4 +40,4 @@ printf 'PASS finish-tests reports pass count\n'
 printf 'PASS finish-tests returns failure when tests fail\n'
 _pass_count=$((_pass_count + 2))
 
-_finish_tests
+finish_tests

@@ -7,7 +7,15 @@ if [ "${WIZARDRY_SOURCE_WORD_OF_BINDING-}" != "1" ]; then
   set -eu
 fi
 
-_word_of_binding() {
+word_of_binding() {
+  _wob_run=0
+  case "${1-}" in
+    --run)
+      _wob_run=1
+      shift
+      ;;
+  esac
+
   if [ $# -eq 0 ]; then
     printf '%s\n' "word-of-binding: command name required" >&2
     return 1
@@ -71,14 +79,10 @@ _word_of_binding() {
     return 127
   fi
 
-  # Determine true-name based on module type
-  # Imps use _underscore true-names (e.g., clip-copy -> _clip_copy)
-  # Spells use non-underscore true-names (e.g., menu -> menu)
-  if [ "$_wob_is_imp" -eq 1 ]; then
-    _wob_true_name=$(printf '_%s\n' "$_wob_name" | sed 's/-/_/g')
-  else
-    _wob_true_name=$(printf '%s\n' "$_wob_name" | sed 's/-/_/g')
-  fi
+  # Determine true-name based on module name.
+  # Spells and imps now share the same naming scheme:
+  #   clip-copy -> clip_copy
+  _wob_true_name=$(printf '%s\n' "$_wob_name" | sed 's/-/_/g')
 
   # Check if module has true-name function (for binding/sourcing)
   _wob_true_pattern="^[[:space:]]*${_wob_true_name}[[:space:]]*\\(\\)"
@@ -154,9 +158,9 @@ function brace_delta(s, n, m) {
     else
       unset _WIZARDRY_LOADING_SPELLS
     fi
-    # Create alias for future calls
-    alias "$_wob_name=$_wob_true_name" 2>/dev/null || true
-    
+    if [ "$_wob_run" -ne 1 ]; then
+      return 0
+    fi
     if command -v "$_wob_true_name" >/dev/null 2>&1; then
       "$_wob_true_name" "$@"
     else
@@ -165,6 +169,9 @@ function brace_delta(s, n, m) {
       return 1
     fi
   else
+    if [ "$_wob_run" -ne 1 ]; then
+      return 0
+    fi
     # Evoke (execute) the script directly in a subshell
     "$_wob_module" "$@"
   fi
@@ -172,4 +179,4 @@ function brace_delta(s, n, m) {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */word-of-binding) _word_of_binding "$@" ;; esac
+  */word-of-binding) word_of_binding --run "$@" ;; esac

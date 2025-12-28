@@ -3,7 +3,7 @@
 # Canonical linking word for shell's && operator.
 # Receives: $1=command, $2=command_args, $3+=remaining args
 
-_and_then() {
+and_then() {
   _at_cmd=${1:-}
   _at_cmd_args=${2:-}
   shift 2 2>/dev/null || shift $#
@@ -27,4 +27,4 @@ _and_then() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */and-then) _and_then "$@" ;; esac
+  */and-then) and_then "$@" ;; esac

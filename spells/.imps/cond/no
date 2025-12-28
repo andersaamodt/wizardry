@@ -2,7 +2,7 @@
 # no VALUE - test if value is negative (n/no/false/0/N/NO/FALSE)
 # Example: no "$VERBOSE" && echo "quiet mode"
 
-_no() {
+no() {
   case "$1" in
     n|N|no|NO|No|false|FALSE|False|0) return 0 ;;
     *) return 1 ;;
@@ -11,4 +11,4 @@ _no() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */no) _no "$@" ;; esac
+  */no) no "$@" ;; esac

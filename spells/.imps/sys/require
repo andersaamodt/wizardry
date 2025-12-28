@@ -4,7 +4,7 @@
 # Example: require menu "The menu command is needed"
 set -eu
 
-_require() {
+require() {
   _req_tool=$1
   shift
 
@@ -12,6 +12,8 @@ _require() {
     _req_cmd=$REQUIRE_COMMAND
   elif command -v require-command >/dev/null 2>&1; then
     _req_cmd=require-command
+  elif command -v require_command >/dev/null 2>&1; then
+    _req_cmd=require_command
   else
     _req_cmd=""
   fi
@@ -24,6 +26,14 @@ _require() {
   if command -v "$_req_tool" >/dev/null 2>&1; then
     return 0
   fi
+  case $_req_tool in
+    *-*)
+      _req_alt=$(printf '%s' "$_req_tool" | tr '-' '_')
+      if command -v "$_req_alt" >/dev/null 2>&1; then
+        return 0
+      fi
+      ;;
+  esac
 
   if [ "$#" -gt 0 ]; then
     printf '%s\n' "$*" >&2
@@ -36,4 +46,4 @@ _require() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */require) _require "$@" ;; esac
+  */require) require "$@" ;; esac

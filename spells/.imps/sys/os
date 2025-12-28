@@ -3,7 +3,7 @@
 # Example: case $(os) in debian) apt-get ;; mac) brew ;; esac
 set -eu
 
-_os() {
+os() {
   _os_kernel=$(uname -s 2>/dev/null || echo unknown)
 
   if [ -f /etc/NIXOS ]; then echo nixos
@@ -18,4 +18,4 @@ _os() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */os) _os "$@" ;; esac
+  */os) os "$@" ;; esac

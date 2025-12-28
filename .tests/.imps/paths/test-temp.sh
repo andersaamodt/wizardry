@@ -33,7 +33,7 @@ test_temp_creates_unique_files() {
   return $result
 }
 
-_run_test_case "temp creates file" test_temp_creates_file
-_run_test_case "temp creates unique files" test_temp_creates_unique_files
+run_test_case "temp creates file" test_temp_creates_file
+run_test_case "temp creates unique files" test_temp_creates_unique_files
 
-_finish_tests
+finish_tests

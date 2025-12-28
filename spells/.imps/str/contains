@@ -3,7 +3,7 @@
 # Example: contains "$PATH" "/usr/local/bin" && echo "found"
 set -eu
 
-_contains() {
+contains() {
   case "$1" in
     *"$2"*) return 0 ;;
     *) return 1 ;;
@@ -12,4 +12,4 @@ _contains() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */contains) _contains "$@" ;; esac
+  */contains) contains "$@" ;; esac

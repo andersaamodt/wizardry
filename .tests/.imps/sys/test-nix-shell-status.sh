@@ -18,7 +18,7 @@ export WIZARDRY_SKIP_CONFIRM=1
 
 test_nix_shell_status_returns_false_when_not_present() {
   skip-if-compiled || return $?
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   nix_file="$tmpdir/test.nix"
   
   # Create minimal nix file
@@ -32,7 +32,7 @@ test_nix_shell_status_returns_false_when_not_present() {
 }
 
 test_nix_shell_status_returns_true_when_present() {
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   nix_file="$tmpdir/test.nix"
   
   # Create minimal nix file
@@ -48,7 +48,7 @@ test_nix_shell_status_returns_true_when_present() {
   fi
 }
 
-_run_test_case "nix-shell-status returns false when not present" test_nix_shell_status_returns_false_when_not_present
-_run_test_case "nix-shell-status returns true when present" test_nix_shell_status_returns_true_when_present
+run_test_case "nix-shell-status returns false when not present" test_nix_shell_status_returns_false_when_not_present
+run_test_case "nix-shell-status returns true when present" test_nix_shell_status_returns_true_when_present
 
-_finish_tests
+finish_tests

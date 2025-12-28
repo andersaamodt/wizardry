@@ -34,21 +34,21 @@ SH
 }
 
 test_help() {
-  _run_spell "spells/menu/users-menu" --help
-  _assert_success || return 1
-  _assert_output_contains "Usage: users-menu" || return 1
+  run_spell "spells/menu/users-menu" --help
+  assert_success || return 1
+  assert_output_contains "Usage: users-menu" || return 1
 }
 
 test_help_h_flag() {
-  _run_spell "spells/menu/users-menu" -h
-  _assert_success || return 1
-  _assert_output_contains "Usage: users-menu" || return 1
+  run_spell "spells/menu/users-menu" -h
+  assert_success || return 1
+  assert_output_contains "Usage: users-menu" || return 1
 }
 
 test_help_usage_flag() {
-  _run_spell "spells/menu/users-menu" --usage
-  _assert_success || return 1
-  _assert_output_contains "Usage: users-menu" || return 1
+  run_spell "spells/menu/users-menu" --usage
+  assert_success || return 1
+  assert_output_contains "Usage: users-menu" || return 1
 }
 
 test_sources_colors() {
@@ -61,16 +61,16 @@ test_sources_colors() {
 
 test_users_menu_checks_requirements() {
   skip-if-compiled || return $?
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
-  _run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/req" "$ROOT_DIR/spells/menu/users-menu"
-  _assert_success && _assert_path_exists "$tmp/req"
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/req" "$ROOT_DIR/spells/menu/users-menu"
+  assert_success && assert_path_exists "$tmp/req"
 }
 
 test_users_menu_presents_actions() {
   skip-if-compiled || return $?
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
   cat >"$tmp/exit-label" <<'SH'
@@ -78,8 +78,8 @@ test_users_menu_presents_actions() {
 printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
-  _run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/users-menu"
-  _assert_success
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/users-menu"
+  assert_success
   args=$(cat "$tmp/log")
   # Verify key user management actions are present
   case "$args" in
@@ -90,7 +90,7 @@ SH
 
 test_users_menu_includes_group_management() {
   skip-if-compiled || return $?
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
   cat >"$tmp/exit-label" <<'SH'
@@ -98,8 +98,8 @@ test_users_menu_includes_group_management() {
 printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
-  _run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/users-menu"
-  _assert_success
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/users-menu"
+  assert_success
   args=$(cat "$tmp/log")
   # Verify group management actions are present
   case "$args" in
@@ -110,7 +110,7 @@ SH
 
 test_users_menu_includes_user_admin() {
   skip-if-compiled || return $?
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
   cat >"$tmp/exit-label" <<'SH'
@@ -118,8 +118,8 @@ test_users_menu_includes_user_admin() {
 printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
-  _run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/users-menu"
-  _assert_success
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/users-menu"
+  assert_success
   # Check menu log contains expected user admin actions (one per line in log)
   grep -q "Create new user%" "$tmp/log" || {
     TEST_FAILURE_REASON="Create new user action missing"
@@ -139,19 +139,19 @@ SH
   }
 }
 
-_run_test_case "users-menu shows usage text" test_help
-_run_test_case "users-menu shows usage with -h" test_help_h_flag
-_run_test_case "users-menu shows usage with --usage" test_help_usage_flag
-_run_test_case "users-menu sources colors" test_sources_colors
-_run_test_case "users-menu requires menu dependency" test_users_menu_checks_requirements
-_run_test_case "users-menu presents user actions" test_users_menu_presents_actions
-_run_test_case "users-menu includes group management" test_users_menu_includes_group_management
-_run_test_case "users-menu includes user admin actions" test_users_menu_includes_user_admin
+run_test_case "users-menu shows usage text" test_help
+run_test_case "users-menu shows usage with -h" test_help_h_flag
+run_test_case "users-menu shows usage with --usage" test_help_usage_flag
+run_test_case "users-menu sources colors" test_sources_colors
+run_test_case "users-menu requires menu dependency" test_users_menu_checks_requirements
+run_test_case "users-menu presents user actions" test_users_menu_presents_actions
+run_test_case "users-menu includes group management" test_users_menu_includes_group_management
+run_test_case "users-menu includes user admin actions" test_users_menu_includes_user_admin
 
 # Test ESC and Exit behavior - menu exits properly when escape status returned
 test_esc_exit_behavior() {
   skip-if-compiled || return $?
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
   
@@ -161,8 +161,8 @@ printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
   
-  _run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/users-menu"
-  _assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/users-menu"
+  assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
   
   args=$(cat "$tmp/log")
   case "$args" in
@@ -171,7 +171,7 @@ SH
   esac
 }
 
-_run_test_case "users-menu ESC/Exit behavior" test_esc_exit_behavior
+run_test_case "users-menu ESC/Exit behavior" test_esc_exit_behavior
 
 
 # Test via source-then-invoke pattern  

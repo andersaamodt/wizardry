@@ -8,16 +8,16 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_outputs_pass_message() {
-  output=$(_test_pass "test description")
+  output=$(test_pass "test description")
   echo "$output" | grep -q "^PASS test description$"
 }
 
 test_handles_special_chars() {
-  output=$(_test_pass "test with 'quotes' and spaces")
+  output=$(test_pass "test with 'quotes' and spaces")
   echo "$output" | grep -q "PASS test with 'quotes' and spaces"
 }
 
-_run_test_case "test-pass outputs PASS message" test_outputs_pass_message
-_run_test_case "test-pass handles special characters" test_handles_special_chars
+run_test_case "test-pass outputs PASS message" test_outputs_pass_message
+run_test_case "test-pass handles special characters" test_handles_special_chars
 
-_finish_tests
+finish_tests

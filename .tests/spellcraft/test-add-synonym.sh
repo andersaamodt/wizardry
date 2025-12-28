@@ -16,30 +16,30 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_shows_help() {
-  _run_spell "spells/spellcraft/add-synonym" --help
-  _assert_success && _assert_output_contains "Usage:"
+  run_spell "spells/spellcraft/add-synonym" --help
+  assert_success && assert_output_contains "Usage:"
 }
 
 test_adds_synonym_noninteractive() {
-  case_dir=$(_make_tempdir)
+  case_dir=$(make_tempdir)
   synonyms_file="$case_dir/.synonyms"
   
   SPELLBOOK_DIR="$case_dir" \
-    _run_spell "spells/spellcraft/add-synonym" myalias echo
+    run_spell "spells/spellcraft/add-synonym" myalias echo
   
-  _assert_success || return 1
-  _assert_output_contains "Synonym created" || return 1
+  assert_success || return 1
+  assert_output_contains "Synonym created" || return 1
   [ -f "$synonyms_file" ] || { TEST_FAILURE_REASON="synonyms file not created"; return 1; }
 }
 
 test_alias_definition_content() {
-  case_dir=$(_make_tempdir)
+  case_dir=$(make_tempdir)
   synonyms_file="$case_dir/.synonyms"
   
   SPELLBOOK_DIR="$case_dir" \
-    _run_spell "spells/spellcraft/add-synonym" myalias echo
+    run_spell "spells/spellcraft/add-synonym" myalias echo
   
-  _assert_success || return 1
+  assert_success || return 1
   
   # Check file contains the alias definition
   if ! grep -q "^alias myalias=" "$synonyms_file"; then
@@ -55,81 +55,81 @@ test_alias_definition_content() {
 }
 
 test_rejects_empty_word() {
-  case_dir=$(_make_tempdir)
+  case_dir=$(make_tempdir)
   
   SPELLBOOK_DIR="$case_dir" \
-    _run_spell "spells/spellcraft/add-synonym" "" echo
+    run_spell "spells/spellcraft/add-synonym" "" echo
   
-  _assert_failure || return 1
+  assert_failure || return 1
 }
 
 test_rejects_word_with_spaces() {
-  case_dir=$(_make_tempdir)
+  case_dir=$(make_tempdir)
   
   SPELLBOOK_DIR="$case_dir" \
-    _run_spell "spells/spellcraft/add-synonym" "my alias" echo
+    run_spell "spells/spellcraft/add-synonym" "my alias" echo
   
-  _assert_failure || return 1
+  assert_failure || return 1
 }
 
 test_rejects_word_with_slash() {
-  case_dir=$(_make_tempdir)
+  case_dir=$(make_tempdir)
   
   SPELLBOOK_DIR="$case_dir" \
-    _run_spell "spells/spellcraft/add-synonym" "my/alias" echo
+    run_spell "spells/spellcraft/add-synonym" "my/alias" echo
   
-  _assert_failure || return 1
+  assert_failure || return 1
 }
 
 test_rejects_word_starting_with_dash() {
-  case_dir=$(_make_tempdir)
+  case_dir=$(make_tempdir)
   
   SPELLBOOK_DIR="$case_dir" \
-    _run_spell "spells/spellcraft/add-synonym" "-myalias" echo
+    run_spell "spells/spellcraft/add-synonym" "-myalias" echo
   
-  _assert_failure || return 1
+  assert_failure || return 1
 }
 
 test_rejects_word_starting_with_dot() {
-  case_dir=$(_make_tempdir)
+  case_dir=$(make_tempdir)
   
   SPELLBOOK_DIR="$case_dir" \
-    _run_spell "spells/spellcraft/add-synonym" ".myalias" echo
+    run_spell "spells/spellcraft/add-synonym" ".myalias" echo
   
-  _assert_failure || return 1
+  assert_failure || return 1
 }
 
 test_rejects_word_starting_with_number() {
-  case_dir=$(_make_tempdir)
+  case_dir=$(make_tempdir)
   
   SPELLBOOK_DIR="$case_dir" \
-    _run_spell "spells/spellcraft/add-synonym" "1alias" echo
+    run_spell "spells/spellcraft/add-synonym" "1alias" echo
   
-  _assert_failure || return 1
+  assert_failure || return 1
 }
 
 test_rejects_empty_spell() {
-  case_dir=$(_make_tempdir)
+  case_dir=$(make_tempdir)
   
   SPELLBOOK_DIR="$case_dir" \
-    _run_spell "spells/spellcraft/add-synonym" myalias ""
+    run_spell "spells/spellcraft/add-synonym" myalias ""
   
-  _assert_failure || return 1
+  assert_failure || return 1
 }
 
 test_allows_overwriting_existing_synonym() {
-  case_dir=$(_make_tempdir)
+  case_dir=$(make_tempdir)
   synonyms_file="$case_dir/.synonyms"
   
   # Create first synonym
   SPELLBOOK_DIR="$case_dir" \
-    _run_spell "spells/spellcraft/add-synonym" myalias echo
-  _assert_success || return 1
+    run_spell "spells/spellcraft/add-synonym" myalias echo
+  assert_success || return 1
   
   # Overwrite with second synonym (answer yes to confirm)
   printf 'y\n' | SPELLBOOK_DIR="$case_dir" \
-    _run_spell "spells/spellcraft/add-synonym" myalias printf
-  _assert_success || return 1
+    run_spell "spells/spellcraft/add-synonym" myalias printf
+  assert_success || return 1
   
   # Check it was updated
   if ! grep -q "^alias myalias='printf'" "$synonyms_file"; then
@@ -146,13 +146,13 @@ test_allows_overwriting_existing_synonym() {
 }
 
 test_handles_complex_target_with_args() {
-  case_dir=$(_make_tempdir)
+  case_dir=$(make_tempdir)
   synonyms_file="$case_dir/.synonyms"
   
   SPELLBOOK_DIR="$case_dir" \
-    _run_spell "spells/spellcraft/add-synonym" ll "ls -la"
+    run_spell "spells/spellcraft/add-synonym" ll "ls -la"
   
-  _assert_success || return 1
+  assert_success || return 1
   
   # Check alias has both command and args
   if ! grep -q "^alias ll='ls -la'" "$synonyms_file"; then
@@ -161,18 +161,18 @@ test_handles_complex_target_with_args() {
   fi
 }
 
-_run_test_case "prints help" test_shows_help
-_run_test_case "adds synonym non-interactively" test_adds_synonym_noninteractive
-_run_test_case "creates correct alias definition" test_alias_definition_content
-_run_test_case "rejects empty word" test_rejects_empty_word
-_run_test_case "rejects word with spaces" test_rejects_word_with_spaces
-_run_test_case "rejects word with slash" test_rejects_word_with_slash
-_run_test_case "rejects word starting with dash" test_rejects_word_starting_with_dash
-_run_test_case "rejects word starting with dot" test_rejects_word_starting_with_dot
-_run_test_case "rejects word starting with number" test_rejects_word_starting_with_number
-_run_test_case "rejects empty spell" test_rejects_empty_spell
-_run_test_case "allows overwriting synonym" test_allows_overwriting_existing_synonym
-_run_test_case "handles complex target with args" test_handles_complex_target_with_args
+run_test_case "prints help" test_shows_help
+run_test_case "adds synonym non-interactively" test_adds_synonym_noninteractive
+run_test_case "creates correct alias definition" test_alias_definition_content
+run_test_case "rejects empty word" test_rejects_empty_word
+run_test_case "rejects word with spaces" test_rejects_word_with_spaces
+run_test_case "rejects word with slash" test_rejects_word_with_slash
+run_test_case "rejects word starting with dash" test_rejects_word_starting_with_dash
+run_test_case "rejects word starting with dot" test_rejects_word_starting_with_dot
+run_test_case "rejects word starting with number" test_rejects_word_starting_with_number
+run_test_case "rejects empty spell" test_rejects_empty_spell
+run_test_case "allows overwriting synonym" test_allows_overwriting_existing_synonym
+run_test_case "handles complex target with args" test_handles_complex_target_with_args
 
 
 # Test via source-then-invoke pattern  

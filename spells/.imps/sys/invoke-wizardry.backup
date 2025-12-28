@@ -109,9 +109,9 @@ elif [ -n "${ZSH_VERSION-}" ]; then
   printf '%s\n' "[invoke-wizardry] Captured script path: $_iw_script_path_captured" >&2
 fi
 
-printf '%s\n' "[invoke-wizardry] Defining _invoke_wizardry function" >&2
-_invoke_wizardry() {
-  printf '%s\n' "[invoke-wizardry] INSIDE _invoke_wizardry function" >&2
+printf '%s\n' "[invoke-wizardry] Defining invoke_wizardry function" >&2
+invoke_wizardry() {
+  printf '%s\n' "[invoke-wizardry] INSIDE invoke_wizardry function" >&2
   _iw_non_interactive=0
   case $- in
     *i*)
@@ -122,7 +122,7 @@ _invoke_wizardry() {
   esac
   # Debug logging inline (no function to comply with one-function-or-zero rule)
   if [ -n "$_iw_debug_file" ]; then
-    _iw_msg="invoke-wizardry: Entering _invoke_wizardry function"
+    _iw_msg="invoke-wizardry: Entering invoke_wizardry function"
     printf '%s\n' "$_iw_msg" >> "$_iw_debug_file" 2>/dev/null || :
   fi
   
@@ -259,7 +259,7 @@ _invoke_wizardry() {
   
   printf '%s\n' "[invoke-wizardry] Starting imp sourcing" >&2
   # Source all imps to load their functions into the shell.
-  # Imps use _underscore true-names (e.g., say -> _say).
+  # Imps use _underscore true-names (e.g., say -> say).
   _iw_imps_dir="$WIZARDRY_DIR/spells/.imps"
   printf '%s\n' "[invoke-wizardry] Imp directory: $_iw_imps_dir" >&2
   if [ -n "$_iw_debug_file" ]; then
@@ -1059,9 +1059,9 @@ ${_iw_cnf_body}
 # Note: invoke-wizardry is ONLY meant to be sourced, never executed directly
 # The self-execute pattern is intentionally omitted to avoid double invocation in Zsh
 # (In Zsh, $0 is set to the sourced file's path, which would cause the pattern to match)
-printf '%s\n' "[invoke-wizardry] About to call _invoke_wizardry function" >&2
-_invoke_wizardry
+printf '%s\n' "[invoke-wizardry] About to call invoke_wizardry function" >&2
+invoke_wizardry
 _iw_status=$?
-printf '%s\n' "[invoke-wizardry] _invoke_wizardry returned: $_iw_status" >&2
+printf '%s\n' "[invoke-wizardry] invoke_wizardry returned: $_iw_status" >&2
 printf '%s\n' "[invoke-wizardry] FINISHED - invoke-wizardry complete" >&2
 return $_iw_status

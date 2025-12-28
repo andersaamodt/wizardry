@@ -5,7 +5,7 @@
 
 set -eu
 
-_validate_name() {
+validate_name() {
   _vn_name=${1-}
   _vn_context=${2:-name}
   
@@ -25,4 +25,4 @@ _validate_name() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */validate-name) _validate_name "$@" ;; esac
+  */validate-name) validate_name "$@" ;; esac

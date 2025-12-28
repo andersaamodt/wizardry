@@ -13,7 +13,7 @@ test_run_when_compiled() {
   
   # Source and call the function
   . "$test_root/spells/.imps/test/boot/skip-if-uncompiled"
-  _skip_if_uncompiled
+  skip_if_uncompiled
   result=$?
   
   [ "$result" = "0" ] || return 1
@@ -26,12 +26,12 @@ test_skip_when_uncompiled() {
   
   # Source and call the function
   . "$test_root/spells/.imps/test/boot/skip-if-uncompiled"
-  _skip_if_uncompiled
+  skip_if_uncompiled
   result=$?
   
   [ "$result" = "222" ] || return 1
 }
 
-_run_test_case "runs when compiled" test_run_when_compiled
-_run_test_case "skips when uncompiled" test_skip_when_uncompiled
-_finish_tests
+run_test_case "runs when compiled" test_run_when_compiled
+run_test_case "skips when uncompiled" test_skip_when_uncompiled
+finish_tests
