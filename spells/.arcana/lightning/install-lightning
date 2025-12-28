@@ -23,7 +23,7 @@ require-wizardry || return 1
 
 
 set -eu
-. env-clear
+env-clear
 
 ask() {
   prompt=${1-}

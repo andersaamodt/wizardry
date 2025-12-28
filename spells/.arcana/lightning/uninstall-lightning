@@ -22,7 +22,7 @@ require-wizardry || return 1
 
 
 set -eu
-. env-clear
+env-clear
 
 remove_nixos_entry() {
   config=${1:-/etc/nixos/configuration.nix}

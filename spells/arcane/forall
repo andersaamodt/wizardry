@@ -24,7 +24,7 @@ esac
 require-wizardry || return 1
 
 set -eu
-. env-clear
+env-clear
 
 if [ "$#" -lt 1 ]; then
         forall_usage >&2

@@ -28,7 +28,7 @@ esac
 require-wizardry || return 1
 
 set -eu
-. env-clear
+env-clear
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 
@@ -58,12 +58,11 @@ AWAIT_KEYPRESS_KEEP_RAW=1
 export AWAIT_KEYPRESS_KEEP_RAW
 
 # Load colour helpers when present; otherwise fall back to plain text.
-if [ -r "$script_dir/colors" ]; then
+if has colors; then
+        colors
+elif [ -r "$script_dir/colors" ]; then
         # shellcheck disable=SC1090
         . "$script_dir/colors"
-elif has colors; then
-        # shellcheck disable=SC1091
-        . colors
 else
         RESET=''
         CYAN=''

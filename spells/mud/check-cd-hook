@@ -23,7 +23,7 @@ esac
 require-wizardry || return 1
 
 set -eu
-. env-clear
+env-clear
 
 # Try to resolve rc file using same logic as cd spell
 rc_file=''

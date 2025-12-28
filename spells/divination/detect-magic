@@ -27,7 +27,7 @@ case "${1-}" in
 esac
 
 set -eu
-. env-clear
+env-clear
 
 script_dir=$(cd "$(dirname "$0")" && pwd -P)
 
@@ -55,7 +55,7 @@ if [ "${NO_COLOR-}" = "1" ] || [ "${NO_COLOR-}" = "true" ] || [ "${TERM:-}" = "d
         reset=""
 elif has colors; then
         # shellcheck disable=SC1091
-        . colors
+        colors
         blue="$CYAN"
         purple="$MUD_SPELL"
         reset="$RESET"

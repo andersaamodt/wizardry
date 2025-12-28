@@ -25,7 +25,7 @@ esac
 require-wizardry || return 1
 
 set -eu
-. env-clear
+env-clear
 
 # The helper expects exactly one argument that declares the desired state.
 if [ "$#" -ne 1 ]; then

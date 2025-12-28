@@ -22,7 +22,7 @@ require-wizardry || return 1
 
 
 set -eu
-. env-clear
+env-clear
 
 # Confirm uninstallation
 while true; do

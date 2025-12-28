@@ -23,8 +23,8 @@ require-wizardry || return 1
 
 lightning_menu() {
 set -eu
-. env-clear
-. colors
+env-clear
+colors
 
 trap 'exit 0' INT TERM
 

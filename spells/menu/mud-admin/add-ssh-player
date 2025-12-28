@@ -22,7 +22,7 @@ case "${1-}" in
 esac
 
 set -eu
-. env-clear
+env-clear
 
 printf '%s\n' "This spell authorizes a new player to connect to this computer via their player key (SSH key). Run this on the MUD host computer."
 printf '%s\n' "A new user account will be created on your system with limited permissions for the new player."

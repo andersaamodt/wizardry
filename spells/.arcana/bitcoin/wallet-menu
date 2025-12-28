@@ -22,12 +22,12 @@ require-wizardry || return 1
 
 
 set -eu
-. env-clear
+env-clear
 
 load_colors() {
   if command -v colors >/dev/null 2>&1; then
     # shellcheck source=/dev/null
-    . colors
+    colors
   else
     BOLD=""
     CYAN=""

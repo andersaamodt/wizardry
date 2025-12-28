@@ -32,7 +32,7 @@ esac
 require-wizardry || return 1
 
 set -eu
-. env-clear
+env-clear
 
 # Helper to run commands with privilege escalation if needed
 install_service_template_require_privilege() {

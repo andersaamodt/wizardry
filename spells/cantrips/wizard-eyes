@@ -24,7 +24,7 @@ esac
 require-wizardry || return 1
 
 set -eu
-. env-clear
+env-clear
 
 # Check if wizard mode is enabled (default to showing for teaching)
 wizard_mode=${WIZARD:-1}
@@ -33,7 +33,7 @@ if [ "$wizard_mode" = "1" ]; then
         # Load colors if available
         if has colors; then
                 # shellcheck disable=SC1091
-                . colors
+                colors
         else
                 GREY=''
                 RESET=''

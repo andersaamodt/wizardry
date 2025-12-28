@@ -28,7 +28,7 @@ case "${1-}" in
 esac
 
 set -eu
-. env-clear
+env-clear
 
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
 

@@ -24,10 +24,10 @@ esac
 require-wizardry || return 1
 
 set -eu
-. env-clear
+env-clear
 
 # Source colors for colored output
-. colors
+colors
 
 sshd_config="${SSHD_CONFIG:-/etc/ssh/sshd_config}"
 

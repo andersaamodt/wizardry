@@ -24,9 +24,9 @@ esac
 require-wizardry || return 1
 
 set -eu
-. env-clear
+env-clear
 
-. colors
+colors
 
 distro=$(detect-distro)
 logs="/var/log/messages,/var/log/secure,/var/log/auth.log,"

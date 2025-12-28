@@ -22,8 +22,8 @@ require-wizardry || return 1
 
 
 set -eu
-. env-clear
-. colors
+env-clear
+colors
 
 # Catch Ctrl-C and TERM signal to exit cleanly
 trap 'exit 0' INT TERM

@@ -25,7 +25,7 @@ require-wizardry || return 1
 # Returns 0 (true) if Bitcoin is installed, 1 (false) if not
 
 set -eu
-. env-clear
+env-clear
 command -v bitcoin-cli >/dev/null 2>&1
 
 }

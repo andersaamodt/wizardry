@@ -24,7 +24,7 @@ case "${1-}" in
 esac
 
 set -eu
-. env-clear
+env-clear
 
 # Check for required commands
 if ! has torify; then

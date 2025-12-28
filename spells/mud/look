@@ -23,7 +23,7 @@ case "${1-}" in
 esac
 
 set -eu
-. env-clear
+env-clear
 
 script_source=$0
 case $script_source in
@@ -51,8 +51,7 @@ if [ -n "${LOOK_COLORS_PATH-}" ] && [ -f "$LOOK_COLORS_PATH" ]; then
         # shellcheck disable=SC1090
         . "$LOOK_COLORS_PATH"
 elif has colors; then
-        # shellcheck disable=SC1090
-        . "$(command -v colors)"
+        colors
 elif [ -x "$script_dir/cantrips/colors" ]; then
         # shellcheck disable=SC1090
         . "$script_dir/cantrips/colors"

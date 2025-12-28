@@ -2,7 +2,10 @@
 # word-of-binding NAME [ARGS...] - resolve and invoke a wizardry command by name
 # Dispatcher for autoloading missing commands.
 # Sources the module and calls its true-name function.
-set -eu
+# NOTE: Avoid changing shell options when sourced into an interactive shell.
+if [ "${WIZARDRY_SOURCE_WORD_OF_BINDING-}" != "1" ]; then
+  set -eu
+fi
 
 _word_of_binding() {
   if [ $# -eq 0 ]; then

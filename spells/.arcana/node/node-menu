@@ -21,8 +21,8 @@ esac
 require-wizardry || return 1
 
 set -eu
-. env-clear
-. colors
+env-clear
+colors
 
 trap 'exit 0' INT TERM
 

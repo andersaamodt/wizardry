@@ -23,7 +23,7 @@ case $0 in
 */jump-trash|jump-trash)
   running_as_script=1
   set -eu
-  . env-clear
+  env-clear
   ;;
 *) : ;;
 esac

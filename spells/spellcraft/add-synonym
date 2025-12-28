@@ -32,7 +32,7 @@ esac
 require-wizardry || return 1
 
 set -eu
-. env-clear
+env-clear
 
 add_synonym() {
   # Parse arguments

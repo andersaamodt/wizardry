@@ -5,17 +5,17 @@
 # Use these variables to add color to your writing.
 # Example: printf '%sError:%s An error message.\n' "${RED}" "${RESET}"
 # This script contains all color codes in the POSIX standard.
-# You must source this script with '. ./colors' (or an absolute path) to use it.
+# Call the colors function to populate the current shell with variables.
 
 colors_usage() {
   cat <<'USAGE'
-Usage: . colors
+Usage: colors
 
 Source this file to load color variables for terminal output.
-This spell must be sourced, not executed.
+This spell must be called in the current shell.
 
 Example:
-  . colors
+  colors
   printf '%sError:%s An error message.\n' "${RED}" "${RESET}"
 USAGE
 }
