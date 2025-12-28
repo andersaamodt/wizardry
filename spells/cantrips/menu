@@ -486,17 +486,18 @@ do
                 fi
                 return 0
                 ;;
-        escape|ESC|esc)
-                cleanup
-                trap - EXIT INT TERM
-                # Signal parent menu to exit if this is a nested menu
-                # Check if parent PID is not 1 (init) or current shell
-                if [ "${PPID:-0}" -gt 1 ] && [ "${PPID:-0}" -ne "$$" ]; then
-                        kill -TERM "$PPID" 2>/dev/null || :
+escape|ESC|esc)
+        cleanup
+        trap - EXIT INT TERM
+        # Signal parent menu to exit only when explicitly nested.
+        if [ "${MENU_NESTED:-0}" = "1" ] && [ -n "${MENU_PARENT_PID-}" ]; then
+                if [ "${PPID:-0}" -eq "$MENU_PARENT_PID" ]; then
+                        kill -TERM "$MENU_PARENT_PID" 2>/dev/null || :
                 fi
-                return 0
-                ;;
-        esac
+        fi
+        return 0
+        ;;
+esac
 
         if [ "$step" -ne 0 ]; then
                 pending_step=$step
