@@ -62,8 +62,13 @@ if [ -r "$script_dir/colors" ]; then
         # shellcheck disable=SC1090
         . "$script_dir/colors"
 elif has colors; then
-        # shellcheck disable=SC1091
-        . colors
+        colors_path=$(command -v colors 2>/dev/null || printf '')
+        if [ -n "$colors_path" ] && [ -f "$colors_path" ]; then
+                # shellcheck disable=SC1090
+                . "$colors_path"
+        else
+                colors
+        fi
 else
         RESET=''
         CYAN=''
