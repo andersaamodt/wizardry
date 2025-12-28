@@ -36,7 +36,7 @@ _run_both_patterns() {
     
     # Test source-then-invoke second
     # This is done by temporarily setting a flag that run_spell checks
-    _prev_use_sourced=$WIZARDRY_USE_SOURCED_SPELL
+    _prev_use_sourced=${WIZARDRY_USE_SOURCED_SPELL-}
     WIZARDRY_USE_SOURCED_SPELL=1
     export WIZARDRY_USE_SOURCED_SPELL
     
