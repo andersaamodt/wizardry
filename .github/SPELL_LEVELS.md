@@ -35,25 +35,17 @@ Each `banish N` command:
 
 ### Assumptions
 - [ ] POSIX shell available (`sh`)
-- [ ] Core POSIX utilities available: `printf`, `test`, `command`
-- [ ] Path utilities: `dirname`, `basename`, `cd`, `pwd`
-- [ ] File utilities: `cat`, `grep`, `find`, `sort`
-- [ ] Text processing: `awk`, `sed`
-- [ ] Temporary files: `mktemp`
-- [ ] Standard PATH includes `/bin`, `/usr/bin`, etc.
-- [ ] Either `curl` or `wget` available (for install)
-- [ ] `tar` available (for install)
-- [ ] Operating system detectable via `uname`
-- [ ] Package manager available for self-healing
-- [ ] Distribution identifiable (Linux only)
-
-### Self-Healing Actions
-- Detect operating system and distribution
-- Install missing package manager if none found (platform-specific)
-- Install missing core utilities via package manager (with user confirmation)
-- Set baseline PATH if missing standard directories
-- Report critical failures that cannot be auto-healed
-- Offer to install missing recommended tools
+- [ ] Core POSIX utilities available: `printf`, `test`, `command` (install missing utilities via package manager with confirmation)
+- [ ] Path utilities: `dirname`, `basename`, `cd`, `pwd` (install if missing)
+- [ ] File utilities: `cat`, `grep`, `find`, `sort` (install if missing)
+- [ ] Text processing: `awk`, `sed` (install if missing)
+- [ ] Temporary files: `mktemp` (install if missing)
+- [ ] Standard PATH includes `/bin`, `/usr/bin`, etc. (set baseline PATH if missing)
+- [ ] Either `curl` or `wget` available for install (install one if missing)
+- [ ] `tar` available for install (install if missing)
+- [ ] Operating system detectable via `uname` (detect OS and distribution)
+- [ ] Package manager available for self-healing (install if none found, platform-specific)
+- [ ] Distribution identifiable, Linux only (detect and report)
 
 ### Spells
 * banish - The validation spell itself
@@ -77,16 +69,10 @@ If wizardry is already installed, Level 0 can use:
 
 ### Assumptions
 - [ ] Wizardry is installed (WIZARDRY_DIR is set)
-- [ ] invoke-wizardry available and sourceable
-- [ ] Terminal supports ANSI escape codes
+- [ ] invoke-wizardry available and sourceable (verify can be sourced)
+- [ ] Terminal supports ANSI escape codes (check capabilities, fall back to basic menu if unavailable)
 - [ ] TTY is readable/writable
-- [ ] `stty` command available (for terminal control)
-
-### Self-Healing Actions
-- Install `stty` if missing (via pkg-install)
-- Verify invoke-wizardry can be sourced
-- Check terminal capabilities
-- Fall back to basic menu if ANSI codes unavailable
+- [ ] `stty` command available for terminal control (install if missing via pkg-install)
 
 ### Core Spell
 * menu (fathom-terminal, fathom-cursor, move-cursor, await-keypress, cursor-blink, colors) - Interactive menu system
@@ -125,11 +111,7 @@ Menu-specific: `menu/is-submenu`, `menu/is-integer`, `menu/category-title`, `men
 
 ### Assumptions
 - [ ] Level 1 complete (menu works)
-- [ ] Extended attributes supported (or fallback available)
-
-### Self-Healing Actions
-- Check extended attribute support  
-- Offer to install xattr tools if missing
+- [ ] Extended attributes supported or fallback available (check support, offer to install xattr tools if missing)
 
 ### Spells
 * check-cd-hook - Check if CD hook is installed
@@ -146,10 +128,7 @@ Menu-specific: `menu/is-submenu`, `menu/is-integer`, `menu/category-title`, `men
 
 ### Assumptions
 - [ ] Level 2 complete (MUD basics work)
-- [ ] Marker directory can be created
-
-### Self-Healing Actions
-- Create marker directory if missing
+- [ ] Marker directory can be created (create if missing)
 
 ### Spells
 * jump-to-marker - Teleport to bookmarks
@@ -163,13 +142,9 @@ Menu-specific: `menu/is-submenu`, `menu/is-integer`, `menu/category-title`, `men
 
 ### Assumptions
 - [ ] Level 3 complete (navigation works)
-- [ ] File system is readable/writable
-- [ ] Standard UNIX file utilities work (`cp`, `mv`, `rm`, `find`)
-
-### Self-Healing Actions
-- Verify file system permissions
-- Check disk space for temporary operations
-- Install missing file utilities if needed
+- [ ] File system is readable/writable (verify permissions)
+- [ ] Standard UNIX file utilities work (`cp`, `mv`, `rm`, `find`) (install missing utilities if needed)
+- [ ] Sufficient disk space (check disk space for temporary operations)
 
 ### Spells
 * copy - Copy files/directories
@@ -190,13 +165,8 @@ Menu-specific: `menu/is-submenu`, `menu/is-integer`, `menu/category-title`, `men
 
 ### Assumptions
 - [ ] Level 4 complete (file operations work)
-- [ ] Terminal supports interactive input
-- [ ] User can respond to prompts
-
-### Self-Healing Actions
-- Verify TTY is interactive
-- Check terminal supports required features
-- Fall back to simple prompts if needed
+- [ ] Terminal supports interactive input (verify TTY is interactive)
+- [ ] User can respond to prompts (check terminal supports required features, fall back to simple prompts if needed)
 
 ### Spells
 * ask - Generic prompt
@@ -219,6 +189,7 @@ Menu-specific: `menu/is-submenu`, `menu/is-integer`, `menu/category-title`, `men
 ### Assumptions
 - [ ] Level 5 complete (basic cantrips work)
 
+
 ### Spells
 * validate-number - Validate numeric input
 * validate-path - Validate file path
@@ -236,6 +207,7 @@ Menu-specific: `menu/is-submenu`, `menu/is-integer`, `menu/category-title`, `men
 ### Assumptions
 - [ ] Level 6 complete (validation works)
 
+
 ### Spells
 * ask-number (ask from Level 5, validate-number from Level 6) - Numeric input
 * memorize - Add spell to shell rc
@@ -248,11 +220,7 @@ Menu-specific: `menu/is-submenu`, `menu/is-integer`, `menu/category-title`, `men
 
 ### Assumptions
 - [ ] Level 7 complete (advanced cantrips work)
-- [ ] Write access to config files
-
-### Self-Healing Actions
-- Create config directory if missing
-- Set proper permissions on config files
+- [ ] Write access to config files (create config directory if missing, set proper permissions)
 
 ### Spells
 * config - Manage configuration
@@ -270,10 +238,7 @@ Menu-specific: `menu/is-submenu`, `menu/is-integer`, `menu/category-title`, `men
 
 ### Assumptions
 - [ ] Level 8 complete (config works)
-- [ ] Test infrastructure available
-
-### Self-Healing Actions
-- Verify test infrastructure
+- [ ] Test infrastructure available (verify infrastructure)
 
 ### Spells
 * test-spell - Run single test
@@ -293,6 +258,7 @@ Menu-specific: `menu/is-submenu`, `menu/is-integer`, `menu/category-title`, `men
 ### Assumptions
 - [ ] Level 9 complete (testing works)
 
+
 ### Spells
 * update-wizardry - Update wizardry
 * update-all (update-wizardry) - Update everything
@@ -307,6 +273,7 @@ Menu-specific: `menu/is-submenu`, `menu/is-integer`, `menu/category-title`, `men
 ### Assumptions
 - [ ] Level 10 complete (system maintenance works)
 
+
 ### Spells
 * demo-magic (multiple lower-level spells) - Demonstrate wizardry features
 * verify-posix - Verify POSIX compliance
@@ -320,11 +287,7 @@ Menu-specific: `menu/is-submenu`, `menu/is-integer`, `menu/category-title`, `men
 
 ### Assumptions
 - [ ] Level 11 complete (advanced system tools work)
-- [ ] System information accessible
-
-### Self-Healing Actions
-- Install platform detection tools if missing
-- Verify system information sources
+- [ ] System information accessible (install platform detection tools if missing, verify system information sources)
 
 ### Spells
 * detect-rc-file - Detect shell rc file
@@ -344,6 +307,7 @@ Menu-specific: `menu/is-submenu`, `menu/is-integer`, `menu/category-title`, `men
 - [ ] Level 12 complete (divination works)
 - [ ] Extended attributes working (from Level 2)
 
+
 ### Spells
 * decorate (look from Level 2, read-magic from Level 4) - Add decorative elements
 * select-player - Select player/character
@@ -357,6 +321,7 @@ Menu-specific: `menu/is-submenu`, `menu/is-integer`, `menu/category-title`, `men
 
 ### Assumptions
 - [ ] Level 13 complete (advanced MUD works)
+
 
 ### Spells
 * hash - Generate cryptographic hashes
@@ -372,6 +337,7 @@ Menu-specific: `menu/is-submenu`, `menu/is-integer`, `menu/category-title`, `men
 ### Assumptions
 - [ ] Level 14 complete (crypto works)
 - [ ] SSH available
+
 
 ### Spells
 * validate-ssh-key - Validate SSH key format
@@ -391,6 +357,7 @@ Menu-specific: `menu/is-submenu`, `menu/is-integer`, `menu/category-title`, `men
 ### Assumptions
 - [ ] Level 15 complete (SSH works)
 
+
 ### Spells
 * get-priority - Get priority value
 * get-new-priority (get-priority) - Calculate new priority
@@ -406,6 +373,7 @@ Menu-specific: `menu/is-submenu`, `menu/is-integer`, `menu/category-title`, `men
 ### Assumptions
 - [ ] Level 16 complete (priorities work)
 
+
 ### Spells
 * ssh-barrier (SSH spells from Level 15) - SSH security hardening
 
@@ -418,6 +386,7 @@ Menu-specific: `menu/is-submenu`, `menu/is-integer`, `menu/category-title`, `men
 ### Assumptions
 - [ ] Level 17 complete (wards work)
 - [ ] Extended attributes working (from Level 2)
+
 
 ### Spells
 * enchant (read-magic from Level 4) - Add extended attributes
@@ -434,6 +403,7 @@ Menu-specific: `menu/is-submenu`, `menu/is-integer`, `menu/category-title`, `men
 ### Assumptions
 - [ ] Level 18 complete (enchant works)
 
+
 ### Spells
 * list-contacts - List contact information
 * read-contact (list-contacts) - Read contact details
@@ -446,6 +416,7 @@ Menu-specific: `menu/is-submenu`, `menu/is-integer`, `menu/category-title`, `men
 
 ### Assumptions
 - [ ] Level 19 complete (PSI works)
+
 
 ### Spells
 * scribe-spell - Create new spell
@@ -473,6 +444,7 @@ Menu-specific: `menu/is-submenu`, `menu/is-integer`, `menu/category-title`, `men
 - [ ] Level 20 complete (spellcraft works)
 - [ ] Menu system from Level 1 works
 
+
 ### Spells
 * spellbook-store - Spellbook storage backend
 * spellbook (menu from Level 1, read-magic from Level 4) - Interactive spellbook browser
@@ -488,6 +460,7 @@ Menu-specific: `menu/is-submenu`, `menu/is-integer`, `menu/category-title`, `men
 ### Assumptions
 - [ ] Level 21 complete (core menus work)
 
+
 ### Spells
 * system-menu (menu from Level 1, config from Level 8) - System configuration menu
 * install-menu (menu from Level 1) - Installation menu
@@ -502,6 +475,7 @@ Menu-specific: `menu/is-submenu`, `menu/is-integer`, `menu/category-title`, `men
 
 ### Assumptions
 - [ ] Level 22 complete (system menus work)
+
 
 ### Spells
 * mud (menu from Level 1) - MUD features menu
@@ -521,6 +495,7 @@ Menu-specific: `menu/is-submenu`, `menu/is-integer`, `menu/category-title`, `men
 ### Assumptions
 - [ ] Level 23 complete (MUD menus work)
 
+
 ### Spells
 * network-menu (menu from Level 1) - Network operations menu
 * services-menu (menu from Level 1, service spells from Level 25) - Service management menu
@@ -538,6 +513,7 @@ Menu-specific: `menu/is-submenu`, `menu/is-integer`, `menu/category-title`, `men
 
 ### Assumptions
 - [ ] Level 24 complete (domain menus work)
+
 
 ### Spells
 * install-service-template - Service template installer
@@ -558,6 +534,7 @@ Menu-specific: `menu/is-submenu`, `menu/is-integer`, `menu/category-title`, `men
 
 ### Assumptions
 - [ ] Level 25 complete (services work)
+
 
 ### Spells
 - All spells in `spells/.arcana/`
