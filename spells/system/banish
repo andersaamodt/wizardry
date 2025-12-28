@@ -252,12 +252,14 @@ banish_level() {
   esac
 }
 
-# Level 0: Pre-Install Foundation (existing banish functionality + OS detection)
+# Level 0: System Foundation (wizardry installation assumptions)
 banish_level_0() {
-  # Stage 1: Set up WIZARDRY_DIR first (needed for detect-posix)
+  # Stage 1: Set up WIZARDRY_DIR first (needed for other checks)
   if [ "$log_level" -ge 2 ]; then
     printf 'Configuring WIZARDRY_DIR:\n'
   fi
+  
+  wizardry_not_installed=0
   
   if [ -n "$wizardry_dir_override" ]; then
     # User specified directory
@@ -292,28 +294,52 @@ banish_level_0() {
         WIZARDRY_DIR="${HOME}/.wizardry"
         banish_check "Found standard location: $WIZARDRY_DIR"
       else
-        banish_warn "Could not auto-detect WIZARDRY_DIR"
-        banish_warn "Set WIZARDRY_DIR environment variable or use --wizardry-dir option"
-        return 1
+        wizardry_not_installed=1
       fi
     fi
   fi
   
-  # Verify WIZARDRY_DIR is valid (only if it was set)
+  # Verify WIZARDRY_DIR structure (essential wizardry assumptions)
   if [ -n "${WIZARDRY_DIR-}" ]; then
     if [ ! -d "${WIZARDRY_DIR}/spells" ]; then
-      banish_warn "WIZARDRY_DIR does not contain spells directory: $WIZARDRY_DIR"
-      # For level 0, this is just a warning - we're preparing for install
-      WIZARDRY_DIR=""
-    else
-      # Export WIZARDRY_DIR for downstream tools
-      export WIZARDRY_DIR
-      if [ "$log_level" -eq 0 ]; then
-        # Non-verbose mode: show simple success message
-        printf 'Environment prepared: WIZARDRY_DIR=%s\n' "$WIZARDRY_DIR"
+      wizardry_not_installed=1
+    fi
+  fi
+  
+  # Special case: If wizardry is not installed, report assumptions and stop
+  if [ "$wizardry_not_installed" -eq 1 ]; then
+    banish_info ""
+    banish_info "Wizardry installation not found."
+    banish_info ""
+    banish_info "The following assumptions are not met:"
+    banish_info "  • WIZARDRY_DIR not set or directory not found"
+    banish_info "  • Wizardry spells directory not found"
+    banish_info "  • invoke-wizardry not available"
+    banish_info ""
+    banish_info "To install wizardry, run: ./install"
+    banish_info ""
+    return 1
+  fi
+  
+  # Wizardry is installed - continue with validation
+  if [ -n "${WIZARDRY_DIR-}" ]; then
+    # Check for critical wizardry directories
+    banish_step "Checking wizardry structure..."
+    for dir in spells spells/.imps spells/.imps/sys .tests; do
+      if [ -d "${WIZARDRY_DIR}/$dir" ]; then
+        banish_check "Found: $dir/"
       else
-        banish_info "Environment prepared: WIZARDRY_DIR=$WIZARDRY_DIR"
+        banish_warn "Missing: $dir/"
       fi
+    done
+    
+    # Export WIZARDRY_DIR for downstream tools
+    export WIZARDRY_DIR
+    if [ "$log_level" -eq 0 ]; then
+      # Non-verbose mode: show simple success message
+      printf 'Environment prepared: WIZARDRY_DIR=%s\n' "$WIZARDRY_DIR"
+    else
+      banish_info "Environment prepared: WIZARDRY_DIR=$WIZARDRY_DIR"
     fi
   fi
   
@@ -391,16 +417,43 @@ banish_level_0() {
     done
   fi
   
-  # Stage 4: Verify invoke-wizardry is available (only if wizardry is installed)
+  # Stage 4: Verify invoke-wizardry and RC integration
   if [ -n "${WIZARDRY_DIR-}" ]; then
     if [ "$log_level" -ge 2 ]; then
-      printf '\nVerifying invoke-wizardry:\n'
+      printf '\nVerifying invoke-wizardry and shell integration:\n'
     fi
+    
+    # Check invoke-wizardry exists
     if [ ! -f "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry" ]; then
       banish_warn "invoke-wizardry not found at $WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
-      # Not a fatal error for level 0 - install may fix this
+      banish_warn "Run ./install to repair wizardry"
+      return 1
     else
       banish_check "invoke-wizardry is available"
+    fi
+    
+    # Check if shell RC file exists and contains wizardry invocation
+    rc_file=""
+    if [ -n "${SHELL-}" ]; then
+      case "$(basename "$SHELL")" in
+        bash) rc_file="${HOME}/.bashrc" ;;
+        zsh) rc_file="${HOME}/.zshrc" ;;
+        *) rc_file="${HOME}/.profile" ;;
+      esac
+    else
+      rc_file="${HOME}/.profile"
+    fi
+    
+    if [ -f "$rc_file" ]; then
+      if grep -q "invoke-wizardry" "$rc_file" 2>/dev/null; then
+        banish_check "Shell RC configured: $rc_file"
+      else
+        banish_warn "Shell RC exists but wizardry not sourced: $rc_file"
+        banish_info "Run: source \"\$HOME/.wizardry/spells/.imps/sys/invoke-wizardry\""
+      fi
+    else
+      banish_warn "Shell RC file not found: $rc_file"
+      banish_info "Wizardry may not be available in new shells"
     fi
   fi
   
@@ -548,14 +601,13 @@ banish_level_0() {
 banish_level_1() {
   banish_info "Checking Level 1: Menu Core..."
   
-  # Check if wizardry is installed
+  # Check if wizardry is installed (this should be caught by level 0)
   if [ ! -d "${WIZARDRY_DIR}/spells" ]; then
     banish_warn "Wizardry not installed at $WIZARDRY_DIR"
-    banish_warn "Please run ./install first"
     return 1
   fi
   
-  # Check for menu dependencies
+  # Check for menu spell dependencies
   missing_spells=""
   for spell in menu await-keypress fathom-cursor fathom-terminal move-cursor cursor-blink; do
     if [ ! -f "${WIZARDRY_DIR}/spells/cantrips/$spell" ]; then
@@ -567,18 +619,42 @@ banish_level_1() {
   
   if [ -n "$missing_spells" ]; then
     banish_warn "Missing menu spells: $missing_spells"
+    banish_warn "Wizardry installation appears incomplete"
     return 1
   fi
   
-  # Check if stty is available (required for menu)
+  # Check for colors (uncastable spell used by menu)
+  if [ ! -f "${WIZARDRY_DIR}/spells/cantrips/colors" ]; then
+    banish_warn "Missing: colors spell"
+  else
+    banish_check "Found spell: colors"
+  fi
+  
+  # Check critical imps needed by menu
+  banish_step "Checking menu imp dependencies..."
+  critical_imps="sys/require sys/castable cond/has out/say out/die out/warn"
+  for imp in $critical_imps; do
+    if [ ! -f "${WIZARDRY_DIR}/spells/.imps/$imp" ]; then
+      banish_warn "Missing imp: $imp"
+    else
+      banish_check "Found imp: $imp"
+    fi
+  done
+  
+  # Check if stty is available (required for menu terminal control)
   if ! command -v stty >/dev/null 2>&1; then
     banish_warn "stty command not found - required for menu"
     if [ "$skip_heal" -eq 0 ]; then
       if banish_ask_yn "Attempt to install stty?"; then
         if [ -x "${WIZARDRY_DIR}/spells/.arcana/core/install-stty" ]; then
+          banish_info "Running install-stty..."
           "${WIZARDRY_DIR}/spells/.arcana/core/install-stty" || banish_warn "Failed to install stty"
+          # Re-check after install
+          if command -v stty >/dev/null 2>&1; then
+            banish_check "stty installed successfully"
+          fi
         else
-          banish_warn "No install-stty script available"
+          banish_warn "install-stty script not found"
         fi
       fi
     fi

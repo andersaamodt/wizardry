@@ -80,12 +80,10 @@ test_missing_invoke_wizardry() {
   # Create incomplete structure (missing invoke-wizardry)
   mkdir -p "$tmpdir/.wizardry/spells/.imps/sys"
   
-  # Level 0 doesn't require invoke-wizardry (it's for pre-install)
-  # But it should warn about it
-  WIZARDRY_DIR="$tmpdir/.wizardry" WIZARDRY_LOG_LEVEL=1 run_spell "spells/system/banish"
-  assert_success || return 1
-  # Should still complete Level 0
-  assert_output_contains "Level 0" || return 1
+  # Level 0 now requires invoke-wizardry and will fail without it
+  WIZARDRY_DIR="$tmpdir/.wizardry" run_spell "spells/system/banish"
+  assert_failure || return 1
+  # Should report that wizardry needs to be repaired
 }
 
 test_invalid_wizardry_dir() {
@@ -94,10 +92,10 @@ test_invalid_wizardry_dir() {
   # Directory exists but no spells subdirectory
   mkdir -p "$tmpdir/.wizardry"
   
-  # Level 0 doesn't strictly require spells dir (preparing for install)
+  # Level 0 now requires valid wizardry structure
   WIZARDRY_DIR="$tmpdir/.wizardry" run_spell "spells/system/banish"
-  assert_success || return 1
-  # Should warn but not fail at level 0
+  assert_failure || return 1
+  # Should report that wizardry is not installed
 }
 
 run_test_case "banish prints help" test_help
