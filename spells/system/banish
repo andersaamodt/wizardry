@@ -12,20 +12,29 @@ Validate wizardry at the specified spell level, checking assumptions,
 self-healing issues, and running tests. Each level builds on previous levels.
 
 NOTE: Banish requires wizardry to be installed. Run ./install first.
-See SPIRAL_DEBUG.md for complete level documentation.
+See .github/SPELL_LEVELS.md for complete level documentation.
 
 Arguments:
-  LEVEL                 Spell level to validate (0-9, default: 0)
-                        Level 0: System foundation (POSIX tools, OS)
-                        Level 1: Menu core (interactive menu system)
-                        Level 2: Arcane spells (file operations)
-                        Level 3: Cantrips (user interaction)
-                        Level 4: System spells (config & testing)
-                        Level 5: Divination (detection & analysis)
-                        Level 6: MUD features (fantasy theme)
-                        Level 7: Specialized (domain-specific)
-                        Level 8: Arcana (third-party integrations)
-                        Level 9: Services (system service management)
+  LEVEL                 Spell level to validate (0-27, default: 1)
+                        Level 0: POSIX & platform foundation
+                        Level 1: Wizardry installation
+                        Level 2: Menu system
+                        Level 3: MUD basics (cd-hook, look)
+                        Level 4: Navigation (jump-to-marker, mark-location)
+                        Level 5: Arcane file operations
+                        Level 6: Basic cantrips
+                        Level 7: Validation helpers
+                        Level 8: Advanced cantrips
+                        Level 9: System configuration
+                        Level 10: Testing infrastructure
+                        Level 11: System maintenance
+                        Level 12: Advanced system tools
+                        Level 13: Divination
+                        Level 14: Advanced MUD
+                        Level 15-20: Specialized domains (crypto, SSH, priorities, wards, enchant, PSI, spellcraft)
+                        Level 21-25: Menus (core, system, MUD, domain)
+                        Level 26: System services
+                        Level 27: Optional arcana & third-party integrations
 
 Options:
   --no-heal             Skip self-healing (only report issues)
@@ -41,10 +50,11 @@ Exit Codes:
   2  Invalid usage
 
 Examples:
-  banish                    # Validate level 0 (system foundation)
-  banish 1                  # Validate through level 1 (menu ready)
+  banish                    # Validate through level 1 (default - levels 0-1: POSIX + wizardry)
+  banish 0                  # Validate level 0 only (POSIX foundation)
+  banish 2                  # Validate through level 2 (levels 0-2: POSIX + wizardry + menu)
   banish 4 --no-tests       # Validate through level 4, skip tests
-  banish 1 --no-heal        # Validate level 1, only report issues
+  banish 1 --no-heal        # Validate through level 1, only report issues
 USAGE
 }
 
@@ -59,7 +69,7 @@ esac
 set -eu
 
 # Parse arguments
-target_level=0
+target_level=1
 skip_tests=0
 skip_heal=0
 only_this_level=0
