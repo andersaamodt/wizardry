@@ -217,6 +217,11 @@ function brace_delta(s, n, m) {
       fi
     done
   done
+
+  if ! command -v menu >/dev/null 2>&1; then
+    printf '%s\n' "invoke-wizardry: ERROR - failed to load menu spell" >&2
+    return 1
+  fi
   
   # Set up command_not_found_handle for hotloading everything else
   _iw_debug "Setting up command_not_found handlers"

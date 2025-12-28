@@ -125,6 +125,12 @@ After all features work:
 - **Fix**: when no entries are passed, `menu` now attempts to load and run `main-menu` via word-of-binding before erroring.
 - **Next**: Re-test `menu` in a fresh terminal after install.
 
+### 2025-12-28: Enforce menu preloading (no fallback)
+
+- **Issue**: `menu` could resolve to `word-of-binding` without arguments in a fresh shell when the preloaded menu function was missing, leading to "word-of-binding: command name required".
+- **Fix**: removed the fallback wrapper and now fail fast if the menu spell is not preloaded during invoke-wizardry.
+- **Next**: Re-test `menu` in a fresh terminal after install; if it fails, continue stripping down invoke-wizardry to find the preloading break.
+
 ## Testing Strategy
 
 For each phase, we will:
