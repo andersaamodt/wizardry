@@ -2,6 +2,7 @@
 
 # Probe for POSIX toolchain availability and baseline POSIX shell behaviors.
 # Reports missing tools and simple capability checks to guide portability.
+# BOOTSTRAP: This spell works in bootstrap mode without requiring wizardry imps.
 
 detect_posix_usage() {
   cat <<'USAGE'
