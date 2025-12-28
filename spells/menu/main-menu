@@ -26,9 +26,17 @@ esac
 set -eu
 env-clear
 
-# Load color palette (colors handles terminal capability detection internally)
-# shellcheck source=/dev/null
-. "$(command -v colors)"
+# Load color palette (colors handles terminal capability detection internally).
+# When colors is preloaded as a function, call it directly; otherwise source the file.
+if has colors; then
+  colors_path=$(command -v colors 2>/dev/null || printf '')
+  if [ -n "$colors_path" ] && [ -f "$colors_path" ]; then
+    # shellcheck disable=SC1090
+    . "$colors_path"
+  else
+    colors
+  fi
+fi
 
 if ! require menu "The main menu needs the 'menu' command to present options."; then
   return 1
