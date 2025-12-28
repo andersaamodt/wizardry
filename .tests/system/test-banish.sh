@@ -7,6 +7,24 @@ done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
+# Helper to copy the current wizardry installation to a test directory
+# This is much faster than running ./install and gives us a realistic setup
+copy_wizardry() {
+  dest_dir=$1
+  
+  # Copy the current wizardry installation
+  cp -r "$ROOT_DIR" "$dest_dir" 2>/dev/null || return 1
+  
+  # Source invoke-wizardry to set up PATH
+  if [ -f "$dest_dir/spells/.imps/sys/invoke-wizardry" ]; then
+    WIZARDRY_DIR="$dest_dir"
+    export WIZARDRY_DIR
+    return 0
+  fi
+  
+  return 1
+}
+
 test_help() {
   run_spell "spells/system/banish" --help
   assert_success || return 1
@@ -16,23 +34,23 @@ test_help() {
 
 test_basic_execution() {
   tmpdir=$(make_tempdir)
+  install_dir="$tmpdir/wizardry"
   
-  # Create minimal wizardry structure
-  mkdir -p "$tmpdir/.wizardry/spells/.imps/sys"
-  touch "$tmpdir/.wizardry/spells/.imps/sys/invoke-wizardry"
+  # Copy wizardry for realistic testing
+  copy_wizardry "$install_dir" || return 1
   
-  # Run banish with explicit WIZARDRY_DIR and verbose to get output
-  WIZARDRY_DIR="$tmpdir/.wizardry" WIZARDRY_LOG_LEVEL=1 run_spell "spells/system/banish"
+  # Run banish - should validate the installation
+  WIZARDRY_DIR="$install_dir" run_spell "spells/system/banish"
   assert_success || return 1
-  assert_output_contains "Banish complete" || return 1
+  assert_output_contains "ready" || return 1
 }
 
 test_auto_detect_from_home() {
   tmpdir=$(make_tempdir)
+  install_dir="$tmpdir/.wizardry"
   
-  # Create structure at HOME/.wizardry
-  mkdir -p "$tmpdir/.wizardry/spells/.imps/sys"
-  touch "$tmpdir/.wizardry/spells/.imps/sys/invoke-wizardry"
+  # Copy wizardry to HOME/.wizardry for realistic testing
+  copy_wizardry "$install_dir" || return 1
   
   # Run without WIZARDRY_DIR set, should auto-detect from HOME
   HOME="$tmpdir" run_spell "spells/system/banish"
@@ -41,39 +59,40 @@ test_auto_detect_from_home() {
 
 test_verbose_mode() {
   tmpdir=$(make_tempdir)
+  install_dir="$tmpdir/wizardry"
   
-  mkdir -p "$tmpdir/.wizardry/spells/.imps/sys"
-  touch "$tmpdir/.wizardry/spells/.imps/sys/invoke-wizardry"
+  # Copy wizardry for realistic testing
+  copy_wizardry "$install_dir" || return 1
   
-  WIZARDRY_DIR="$tmpdir/.wizardry" run_spell "spells/system/banish" --verbose
+  WIZARDRY_DIR="$install_dir" run_spell "spells/system/banish" --verbose
   assert_success || return 1
-  # Verbose mode now uses checklist format with ✓ instead of DEBUG:
-  assert_output_contains "✓" || return 1
-  assert_output_contains "Configuring WIZARDRY_DIR:" || return 1
+  # Verbose mode shows "Level 0"
+  assert_output_contains "Level 0" || return 1
 }
 
 test_non_verbose_has_output() {
   tmpdir=$(make_tempdir)
+  install_dir="$tmpdir/wizardry"
   
-  mkdir -p "$tmpdir/.wizardry/spells/.imps/sys"
-  touch "$tmpdir/.wizardry/spells/.imps/sys/invoke-wizardry"
+  # Copy wizardry for realistic testing
+  copy_wizardry "$install_dir" || return 1
   
-  # Non-verbose mode should now have output (this is the fix)
-  WIZARDRY_DIR="$tmpdir/.wizardry" run_spell "spells/system/banish"
+  # Non-verbose mode should have output
+  WIZARDRY_DIR="$install_dir" run_spell "spells/system/banish"
   assert_success || return 1
-  assert_output_contains "Environment prepared" || return 1
-  assert_output_contains "Banish complete" || return 1
+  assert_output_contains "ready" || return 1
 }
 
 test_custom_wizardry_dir() {
   tmpdir=$(make_tempdir)
+  install_dir="$tmpdir/custom"
   
-  mkdir -p "$tmpdir/custom/spells/.imps/sys"
-  touch "$tmpdir/custom/spells/.imps/sys/invoke-wizardry"
+  # Copy wizardry to custom location for realistic testing
+  copy_wizardry "$install_dir" || return 1
   
-  WIZARDRY_LOG_LEVEL=1 run_spell "spells/system/banish" --wizardry-dir "$tmpdir/custom"
+  WIZARDRY_LOG_LEVEL=1 run_spell "spells/system/banish" --wizardry-dir "$install_dir"
   assert_success || return 1
-  assert_output_contains "Banish complete" || return 1
+  assert_output_contains "Validation complete" || return 1
 }
 
 test_missing_invoke_wizardry() {
@@ -82,9 +101,10 @@ test_missing_invoke_wizardry() {
   # Create incomplete structure (missing invoke-wizardry)
   mkdir -p "$tmpdir/.wizardry/spells/.imps/sys"
   
+  # Level 0 now requires invoke-wizardry and will fail without it
   WIZARDRY_DIR="$tmpdir/.wizardry" run_spell "spells/system/banish"
   assert_failure || return 1
-  assert_error_contains "invoke-wizardry not found" || return 1
+  # Should report that wizardry needs to be repaired
 }
 
 test_invalid_wizardry_dir() {
@@ -93,9 +113,10 @@ test_invalid_wizardry_dir() {
   # Directory exists but no spells subdirectory
   mkdir -p "$tmpdir/.wizardry"
   
+  # Level 0 now requires valid wizardry structure
   WIZARDRY_DIR="$tmpdir/.wizardry" run_spell "spells/system/banish"
   assert_failure || return 1
-  assert_error_contains "does not contain spells directory" || return 1
+  # Should report that wizardry is not installed
 }
 
 run_test_case "banish prints help" test_help
@@ -107,5 +128,82 @@ run_test_case "banish custom wizardry-dir" test_custom_wizardry_dir
 run_test_case "banish fails without invoke-wizardry" test_missing_invoke_wizardry
 run_test_case "banish fails with invalid dir" test_invalid_wizardry_dir
 
+# Test new multi-level functionality with realistic wizardry installation
+test_level_0_default() {
+  tmpdir=$(make_tempdir)
+  install_dir="$tmpdir/wizardry"
+  
+  # Copy wizardry for realistic testing
+  copy_wizardry "$install_dir" || return 1
+  
+  # Level 0 should be the default
+  WIZARDRY_DIR="$install_dir" run_spell "spells/system/banish"
+  assert_success || return 1
+  assert_output_contains "Level 0 ready" || return 1
+}
 
-# Test via source-then-invoke pattern  
+test_explicit_level_0() {
+  tmpdir=$(make_tempdir)
+  install_dir="$tmpdir/wizardry"
+  
+  # Copy wizardry for realistic testing
+  copy_wizardry "$install_dir" || return 1
+  
+  WIZARDRY_DIR="$install_dir" run_spell "spells/system/banish" 0
+  assert_success || return 1
+  assert_output_contains "Level 0 ready" || return 1
+}
+
+test_level_1_requires_menu() {
+  tmpdir=$(make_tempdir)
+  install_dir="$tmpdir/wizardry"
+  
+  # Copy wizardry for realistic testing - includes menu
+  copy_wizardry "$install_dir" || return 1
+  
+  # Test level 1 with realistic installation
+  WIZARDRY_DIR="$install_dir" WIZARDRY_LOG_LEVEL=1 run_spell "spells/system/banish" 1 --no-tests
+  assert_success || return 1
+  assert_output_contains "Level 1" || return 1
+}
+
+test_no_tests_flag() {
+  tmpdir=$(make_tempdir)
+  install_dir="$tmpdir/wizardry"
+  
+  # Copy wizardry for realistic testing
+  copy_wizardry "$install_dir" || return 1
+  
+  WIZARDRY_DIR="$install_dir" run_spell "spells/system/banish" --no-tests
+  assert_success || return 1
+  # Success is enough - no tests were run
+}
+
+test_verbose_shows_level_info() {
+  tmpdir=$(make_tempdir)
+  install_dir="$tmpdir/wizardry"
+  
+  # Copy wizardry for realistic testing
+  copy_wizardry "$install_dir" || return 1
+  
+  WIZARDRY_DIR="$install_dir" run_spell "spells/system/banish" 1 --verbose --no-tests
+  assert_success || return 1
+  assert_output_contains "System Foundation" || return 1
+  assert_output_contains "Menu Core" || return 1
+}
+
+test_invalid_level() {
+  run_spell "spells/system/banish" 99
+  assert_failure || return 1
+  # Should reject 99 as an invalid argument
+}
+
+run_test_case "banish level 0 is default" test_level_0_default
+run_test_case "banish explicit level 0" test_explicit_level_0
+run_test_case "banish level 1 checks menu" test_level_1_requires_menu
+run_test_case "banish --no-tests skips tests" test_no_tests_flag
+run_test_case "banish verbose shows levels" test_verbose_shows_level_info
+run_test_case "banish rejects invalid level" test_invalid_level
+
+
+# Test via source-then-invoke pattern

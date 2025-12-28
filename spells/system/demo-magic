@@ -1,0 +1,199 @@
+#!/bin/sh
+
+# Demonstrate wizardry spells at specified levels with narrated output.
+# Each demo level corresponds to a banish level and demonstrates the spells
+# that are validated and tested by that banish level.
+
+demo_magic_usage() {
+  cat <<'USAGE'
+Usage: demo-magic [LEVEL]
+
+Demonstrate wizardry features by running checks on spells and narrating results.
+Each level demonstrates spells validated by the corresponding banish level.
+
+Arguments:
+  LEVEL         Demonstration level (0-9, default: 1)
+                Level 0: System foundation (POSIX tools, wizardry structure)
+                Level 1: Menu core (interactive menu system)
+                Level 2: Arcane spells (file operations)
+                Level 3+: Higher-level spells
+USAGE
+}
+
+check_spell() {
+  label=$1
+  shift
+
+  if "$@" >/dev/null 2>&1; then
+    printf '%s: ready\n' "$label"
+    return 0
+  fi
+
+  printf 'Warning: %s check failed\n' "$label" >&2
+  return 1
+}
+
+demo_level_0() {
+  printf 'Level 0: System Foundation\n'
+  printf 'Checking POSIX environment and wizardry structure...\n'
+  
+  check_spell "WIZARDRY_DIR" test -n "${WIZARDRY_DIR-}"
+  check_spell "invoke-wizardry" test -f "${WIZARDRY_DIR}/spells/.imps/sys/invoke-wizardry"
+  check_spell "spells directory" test -d "${WIZARDRY_DIR}/spells"
+  check_spell "imps directory" test -d "${WIZARDRY_DIR}/spells/.imps"
+}
+
+demo_level_1() {
+  printf 'Level 1: Menu Core\n'
+  printf 'Validating interactive menu system...\n'
+  
+  check_spell "menu" test -f "${WIZARDRY_DIR}/spells/cantrips/menu"
+  check_spell "await-keypress" test -f "${WIZARDRY_DIR}/spells/cantrips/await-keypress"
+  check_spell "fathom-cursor" test -f "${WIZARDRY_DIR}/spells/cantrips/fathom-cursor"
+  check_spell "fathom-terminal" test -f "${WIZARDRY_DIR}/spells/cantrips/fathom-terminal"
+  check_spell "move-cursor" test -f "${WIZARDRY_DIR}/spells/cantrips/move-cursor"
+  check_spell "cursor-blink" test -f "${WIZARDRY_DIR}/spells/cantrips/cursor-blink"
+  check_spell "colors" test -f "${WIZARDRY_DIR}/spells/cantrips/colors"
+  check_spell "stty" command -v stty
+}
+
+demo_level_2() {
+  printf 'Level 2: Arcane Spells\n'
+  printf 'Checking file operation spells...\n'
+  
+  check_spell "copy" test -f "${WIZARDRY_DIR}/spells/arcane/copy"
+  check_spell "trash" test -f "${WIZARDRY_DIR}/spells/arcane/trash"
+  check_spell "forall" test -f "${WIZARDRY_DIR}/spells/arcane/forall"
+  check_spell "read-magic" test -f "${WIZARDRY_DIR}/spells/arcane/read-magic"
+}
+
+demo_level_higher() {
+  level=$1
+  printf 'Level %d: Advanced features\n' "$level"
+  printf 'Checking core spells...\n'
+  
+  check_spell "spellbook" spellbook --help
+  check_spell "cast" cast --help
+  check_spell "memorize" memorize --help
+  check_spell "look" look --help
+  check_spell "ask-yn" ask-yn --help
+  check_spell "wizard-cast" wizard-cast --help
+  check_spell "test-magic" test-magic --help
+}
+
+demo_magic() {
+case "${1-}" in
+--help|--usage|-h)
+  demo_magic_usage
+  return 0
+  ;;
+esac
+
+set -eu
+
+# Detect WIZARDRY_DIR if not set (for direct execution)
+if [ -z "${WIZARDRY_DIR-}" ]; then
+  # Try to detect from script location
+  if command -v dirname >/dev/null 2>&1 && command -v cd >/dev/null 2>&1 && command -v pwd >/dev/null 2>&1; then
+    _script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || _script_dir=""
+    if [ -n "$_script_dir" ]; then
+      _wiz_root=$(CDPATH= cd -- "$_script_dir/../.." 2>/dev/null && pwd -P) || _wiz_root=""
+      if [ -n "$_wiz_root" ] && [ -d "$_wiz_root/spells" ]; then
+        WIZARDRY_DIR=$_wiz_root
+        export WIZARDRY_DIR
+      fi
+    fi
+  fi
+  
+  # Fallback to standard location
+  if [ -z "${WIZARDRY_DIR-}" ] && [ -n "${HOME-}" ] && [ -d "${HOME}/.wizardry/spells" ]; then
+    WIZARDRY_DIR="${HOME}/.wizardry"
+    export WIZARDRY_DIR
+  fi
+fi
+
+# Parse level argument
+demo_level=1
+if [ "$#" -gt 0 ]; then
+  case "$1" in
+    [0-9])
+      demo_level=$1
+      shift
+      ;;
+    *)
+      printf 'demo-magic: invalid level: %s\n' "$1" >&2
+      demo_magic_usage >&2
+      return 2
+      ;;
+  esac
+fi
+
+if [ "${WIZARDRY_DEMO_IN_BWRAP-0}" -ne 1 ] && [ "${WIZARDRY_DEMO_NO_BWRAP-0}" -ne 1 ]; then
+  if command -v bwrap >/dev/null 2>&1; then
+    bwrap --unshare-user-try --ro-bind / / --dev-bind /dev /dev --bind /proc /proc \
+      --bind /tmp /tmp --setenv PATH "$PATH" --setenv WIZARDRY_DEMO_IN_BWRAP 1 -- \
+      "$0" "$@"
+    return $?
+  fi
+
+  printf 'Warning: bubblewrap unavailable, running without sandbox\n' >&2
+fi
+
+printf 'A circle of chalk flares into view.\n'
+printf 'The wizardry demonstration begins.\n'
+printf '\n'
+
+# Run all levels from 0 to target level
+current_level=0
+while [ "$current_level" -le "$demo_level" ]; do
+  case "$current_level" in
+    0) demo_level_0 ;;
+    1) demo_level_1 ;;
+    2) demo_level_2 ;;
+    *) demo_level_higher "$current_level" ;;
+  esac
+  
+  if [ "$current_level" -lt "$demo_level" ]; then
+    printf '\n'
+  fi
+  
+  current_level=$((current_level + 1))
+done
+
+printf '\n'
+printf 'The circle closes. Wizardry stands ready.\n'
+}
+
+
+# Load castable imp for direct execution (AFTER all functions defined)
+# When executed directly: always source to ensure castable sees correct $0
+# When sourced (testing): use from PATH if available to avoid forks
+case "$0" in
+  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
+    # Being sourced - use from PATH if available
+    if ! command -v castable >/dev/null 2>&1; then
+      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
+      if [ -n "${WIZARDRY_DIR-}" ]; then
+        _i="$WIZARDRY_DIR/spells/.imps/sys"
+      elif [ -n "${ROOT_DIR-}" ]; then
+        _i="$ROOT_DIR/spells/.imps/sys"
+      else
+        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
+      fi
+      [ -f "$_i/castable" ] && . "$_i/castable"
+    fi
+    ;;
+  *)
+    # Being executed - always source to ensure correct $0 detection
+    if [ -n "${WIZARDRY_DIR-}" ]; then
+      _i="$WIZARDRY_DIR/spells/.imps/sys"
+    elif [ -n "${ROOT_DIR-}" ]; then
+      _i="$ROOT_DIR/spells/.imps/sys"
+    else
+      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
+    fi
+    [ -f "$_i/castable" ] && . "$_i/castable"
+    ;;
+esac
+
+castable "$@"
