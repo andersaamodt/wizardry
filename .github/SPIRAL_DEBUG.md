@@ -27,22 +27,37 @@ These are the essential components that MUST work before we proceed:
   - Tests are taking too long to complete (stopped after 30s)
   - Menu may not be available after fresh install
 
-### Phase 1: Minimize invoke-wizardry
+### Phase 1: Minimize invoke-wizardry to word-of-binding + minimal pre-loading
 
-**Goal**: Strip invoke-wizardry down to only load the core imps and spells needed for menu to work.
+**Goal**: Strip invoke-wizardry down to:
+1. Pre-load menu and its imp dependencies (for immediate availability)
+2. Set up command_not_found_handle with word-of-binding for hotloading everything else
 
-**Changes to make**:
-1. Comment out all non-essential imp families (keep only: cond, out, sys)
-2. Comment out all spell loading except menu and its dependencies
-3. Comment out user spell loading
-4. Comment out invoke-thesaurus
-5. Comment out cd hook
-6. Reduce diagnostic output to critical errors only
+**The hybrid paradigm** (pre-load + hotload):
+1. **Pre-load**: menu spell + essential imps it needs (has, say, die, warn, require, etc.)
+2. **Hotload**: Everything else loads on-demand via word-of-binding
+3. command_not_found_handle calls word-of-binding when a command isn't found
+4. word-of-binding finds the spell/imp and either sources or executes it
 
-**Dependencies for menu**:
-- Imps: cond/has, out/say, out/die, out/warn, sys/require, sys/require-wizardry, sys/castable, sys/env-clear
-- Helper spells: await-keypress, move-cursor, fathom-cursor, fathom-terminal, cursor-blink, colors
-- Temp file management: temp-file, cleanup-file
+**Pre-loaded components**:
+- **Imps**: require, require-wizardry, castable, env-clear, temp-file, cleanup-file, has, die, warn, fail, say
+- **Spells**: menu, await-keypress, move-cursor, fathom-cursor, fathom-terminal, cursor-blink, colors
+
+**Hotloaded** (via command_not_found_handle):
+- All other spells and imps load on first use
+
+**Changes made**:
+1. Removed 900+ lines of diagnostic output
+2. Removed full spell/imp pre-loading loops
+3. Added minimal pre-loading for menu + its dependencies
+4. Kept command_not_found_handle setup for hotloading
+5. Deferred: invoke-thesaurus, cd hook, user spell loading
+
+**Why this is better**:
+- Menu available immediately (pre-loaded)
+- Everything else loads on-demand (performant)
+- More UNIXy: on-demand loading via command-not-found hook
+- Simpler: ~250 lines vs 1000+ lines
 
 ### Phase 2: Test Minimal Install
 
@@ -81,6 +96,22 @@ After all features work:
 - Created this document to track the spiral debug process
 - Identified core components that must work
 - Outlined debugging phases
+
+### 2025-12-28: Phase 1 Implementation (Multiple Attempts)
+
+- **First attempt (WRONG)**: Created PATH-only approach - but this was the OLD paradigm we moved away from
+- **Second attempt (INCOMPLETE)**: Created hotload-only (no pre-loading) - but we need BOTH
+- **Final implementation (CORRECT)**: Hybrid approach with pre-load + hotload
+  - Pre-loads menu + essential imps (has, say, die, warn, require, castable, etc.)
+  - Sets up command_not_found_handle for hotloading everything else
+  - Uses AWK extraction + eval for pre-loading (same as original, just minimal set)
+- **Test results**: 
+  - ✅ invoke-wizardry sources successfully
+  - ✅ menu function pre-loaded and available
+  - ✅ Essential imps (_has, _say, _die, _warn) pre-loaded
+  - ✅ command_not_found_handle defined for hotloading
+  - ✅ menu --help works immediately
+- **Next**: User will manually test in real terminal before Phase 2
 
 ## Testing Strategy
 
