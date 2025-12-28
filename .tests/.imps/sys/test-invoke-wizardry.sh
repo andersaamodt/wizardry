@@ -249,61 +249,36 @@ EOF
 # Test: command_not_found_handle has recursion guard to prevent infinite loops
 test_recursion_guard() {
   # This test verifies that the command_not_found_handle function in invoke-wizardry
-  # includes a recursion guard using the _WIZARDRY_IN_CNF_HANDLER variable
+  # includes a recursion guard using the _WIZARDRY_IN_CNF variable
   
   # Check that the recursion guard is present in the code
-  if ! grep -q "_WIZARDRY_IN_CNF_HANDLER" "$ROOT_DIR/spells/.imps/sys/invoke-wizardry"; then
+  if ! grep -q "_WIZARDRY_IN_CNF" "$ROOT_DIR/spells/.imps/sys/invoke-wizardry"; then
     TEST_FAILURE_REASON="Recursion guard variable not found in invoke-wizardry"
     return 1
   fi
   
   # Check that the guard is checked at the start of the handler
-  if ! grep -q 'if.*_WIZARDRY_IN_CNF_HANDLER.*=.*1' "$ROOT_DIR/spells/.imps/sys/invoke-wizardry"; then
+  if ! grep -q 'if.*_WIZARDRY_IN_CNF.*=.*1' "$ROOT_DIR/spells/.imps/sys/invoke-wizardry"; then
     TEST_FAILURE_REASON="Recursion guard check not found in command_not_found_handle"
     return 1
   fi
   
   # Check that the guard is set to 1
-  if ! grep -q '_WIZARDRY_IN_CNF_HANDLER=1' "$ROOT_DIR/spells/.imps/sys/invoke-wizardry"; then
+  if ! grep -q '_WIZARDRY_IN_CNF=1' "$ROOT_DIR/spells/.imps/sys/invoke-wizardry"; then
     TEST_FAILURE_REASON="Recursion guard not set to 1"
     return 1
   fi
   
   # Check that the guard is unset after execution
-  if ! grep -q 'unset _WIZARDRY_IN_CNF_HANDLER' "$ROOT_DIR/spells/.imps/sys/invoke-wizardry"; then
+  if ! grep -q 'unset _WIZARDRY_IN_CNF' "$ROOT_DIR/spells/.imps/sys/invoke-wizardry"; then
     TEST_FAILURE_REASON="Recursion guard not cleaned up (unset)"
     return 1
   fi
 }
 
-# Test: cd function is defined after sourcing invoke-wizardry
-test_cd_function_defined() {
-  tmpdir=$(_make_tempdir)
-  
-  cat > "$tmpdir/test-cd-defined.sh" << EOF
-#!/bin/sh
-WIZARDRY_DIR="$ROOT_DIR"
-export WIZARDRY_DIR
-
-. "$ROOT_DIR/spells/.imps/sys/invoke-wizardry" 2>/dev/null
-
-if command -v cd >/dev/null 2>&1; then
-  cd_type=\$(type cd 2>/dev/null | head -1)
-  case "\$cd_type" in
-    *function*) printf 'cd is a function\n'; exit 0 ;;
-    *) printf 'cd type: %s\n' "\$cd_type"; exit 0 ;;
-  esac
-else
-  printf 'cd not found\n'
-  exit 1
-fi
-EOF
-  chmod +x "$tmpdir/test-cd-defined.sh"
-  
-  _run_cmd sh "$tmpdir/test-cd-defined.sh"
-  _assert_success || return 1
-  _assert_output_contains "cd is a function" || return 1
-}
+# Test removed: cd function is no longer pre-loaded in word-of-binding paradigm
+# The cd hook is now installed separately if MUD features are enabled
+# See spells/.arcana/mud/toggle-cd for cd hook functionality
 
 # Test: menu is pre-loaded as function
 test_menu_preloaded() {
@@ -461,7 +436,7 @@ _run_test_case "invoke-wizardry works in non-bash shells via default path" test_
 # Test #7 removed: edge case (empty PATH) not realistic and difficult to test reliably
 _run_test_case "command_not_found_handle returns 127 for unknown commands" test_returns_127_for_unknown_command
 _run_test_case "command_not_found_handle has recursion guard" test_recursion_guard
-_run_test_case "cd function is defined in invoke-wizardry" test_cd_function_defined
+# Test #10 removed: cd function no longer pre-loaded (MUD features install separately)
 _run_test_case "menu is pre-loaded as function" test_menu_preloaded
 _run_test_case "empty spellbook directory doesn't cause errors" test_empty_spellbook_directory
 # Test #11 removed: redundant with word-of-binding paradigm (spell dirs never added to PATH)
