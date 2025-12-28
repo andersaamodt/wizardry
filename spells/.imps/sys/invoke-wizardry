@@ -216,8 +216,14 @@ function brace_delta(s, n, m) {
       
       # Try word-of-binding
       _cnf_wob="$WIZARDRY_DIR/spells/.imps/sys/word-of-binding"
-      if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$_cnf_wob" ]; then
-        if "$_cnf_wob" "$@" 2>/dev/null; then
+      if [ -n "${WIZARDRY_DIR-}" ] && [ -r "$_cnf_wob" ]; then
+        if [ "${_WIZARDRY_WOB_LOADED-}" != "1" ]; then
+          WIZARDRY_SOURCE_WORD_OF_BINDING=1 . "$_cnf_wob" 2>/dev/null || :
+          unset WIZARDRY_SOURCE_WORD_OF_BINDING
+          _WIZARDRY_WOB_LOADED=1
+          export _WIZARDRY_WOB_LOADED
+        fi
+        if command -v _word_of_binding >/dev/null 2>&1 && _word_of_binding "$@" 2>/dev/null; then
           unset _WIZARDRY_IN_CNF
           return 0
         fi
@@ -241,8 +247,14 @@ function brace_delta(s, n, m) {
       
       # Try word-of-binding
       _cnf_wob="$WIZARDRY_DIR/spells/.imps/sys/word-of-binding"
-      if [ -n "${WIZARDRY_DIR-}" ] && [ -x "$_cnf_wob" ]; then
-        if "$_cnf_wob" "$@" 2>/dev/null; then
+      if [ -n "${WIZARDRY_DIR-}" ] && [ -r "$_cnf_wob" ]; then
+        if [ "${_WIZARDRY_WOB_LOADED-}" != "1" ]; then
+          WIZARDRY_SOURCE_WORD_OF_BINDING=1 . "$_cnf_wob" 2>/dev/null || :
+          unset WIZARDRY_SOURCE_WORD_OF_BINDING
+          _WIZARDRY_WOB_LOADED=1
+          export _WIZARDRY_WOB_LOADED
+        fi
+        if command -v _word_of_binding >/dev/null 2>&1 && _word_of_binding "$@" 2>/dev/null; then
           unset _WIZARDRY_IN_CNF
           return 0
         fi
