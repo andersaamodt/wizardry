@@ -71,8 +71,8 @@ main_menu_display_menu() {
   menu "Main Menu:" "$@"
 }
 
-# Catch Ctrl-C and TERM signal to return 1 cleanly
-trap 'exit 0' INT TERM
+# Catch Ctrl-C and TERM signal to exit cleanly  
+trap 'return 0' INT TERM
 
 first_run=1
 
@@ -85,8 +85,13 @@ while true; do
 
   main_menu_display_menu
   menu_status=$?
+  
+  # Exit code 130 means ESC was pressed - continue loop to redisplay menu
+  # Any other exit code (including 0 for successful command execution) should exit
   if [ "$menu_status" -eq 130 ]; then
-    return 0
+    continue
+  else
+    return "$menu_status"
   fi
 done
 }

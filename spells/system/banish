@@ -33,6 +33,7 @@ Options:
   --no-tests            Skip running tests (only check assumptions)
   --no-heal             Skip self-healing (only report issues)
   --yes, -y             Auto-accept all prompts (non-interactive)
+  --only                Only validate this specific level (don't run lower levels)
 
 Environment Variables:
   WIZARDRY_DIR          Target wizardry installation directory
@@ -69,6 +70,7 @@ wizardry_dir_override=''
 skip_tests=0
 skip_heal=0
 auto_yes=0
+only_this_level=0
 
 # First, check if first arg is a number (the level)
 if [ "$#" -gt 0 ]; then
@@ -105,6 +107,10 @@ while [ "$#" -gt 0 ]; do
       ;;
     --yes|-y)
       auto_yes=1
+      shift
+      ;;
+    --only)
+      only_this_level=1
       shift
       ;;
     --)
@@ -376,9 +382,9 @@ banish_level_0() {
   if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/divination/detect-posix" ]; then
     banish_step "Using detect-posix for environment checks"
     if [ "$verbose" -eq 1 ]; then
-      "${WIZARDRY_DIR}/spells/divination/detect-posix" --verbose 2>&1 || posix_check_failed=1
+      "${WIZARDRY_DIR}/spells/divination/detect-posix" --verbose || posix_check_failed=1
     else
-      "${WIZARDRY_DIR}/spells/divination/detect-posix" 2>&1 || posix_check_failed=1
+      "${WIZARDRY_DIR}/spells/divination/detect-posix" >/dev/null || posix_check_failed=1
     fi
     
     if [ "$posix_check_failed" -ne 0 ]; then
@@ -915,37 +921,67 @@ banish_run_tests_for_level() {
   esac
   
   # Run the tests
+  passed=0
+  failed=0
   if [ -n "$test_pattern" ]; then
     for pattern in $test_pattern; do
       # Expand pattern
       for test_file in "${WIZARDRY_DIR}/.tests/$pattern"; do
         if [ -f "$test_file" ]; then
           test_name=$(basename "$test_file")
-          banish_step "Running $test_name..."
-          if "${WIZARDRY_DIR}/spells/system/test-spell" --skip-common "${test_file#${WIZARDRY_DIR}/.tests/}" >/dev/null 2>&1; then
-            banish_check "$test_name passed"
+          if [ "$verbose" -eq 1 ]; then
+            banish_step "Running $test_name..."
+          fi
+          if "${WIZARDRY_DIR}/spells/system/test-spell" --skip-common "${test_file#${WIZARDRY_DIR}/.tests/}" </dev/null >/dev/null 2>&1; then
+            passed=$((passed + 1))
+            if [ "$verbose" -eq 1 ]; then
+              banish_check "$test_name passed"
+            fi
           else
+            failed=$((failed + 1))
             banish_warn "$test_name failed"
           fi
         fi
       done
     done
   fi
+  
+  # Show summary
+  total=$((passed + failed))
+  if [ "$total" -gt 0 ]; then
+    if [ "$failed" -eq 0 ]; then
+      banish_info "All $passed tests passed"
+    else
+      banish_warn "$failed of $total tests failed"
+    fi
+  fi
 }
 
-# Main execution: Run levels 0 through target_level
+# Main execution: Run levels 0 through target_level (or only target_level if --only)
 if [ "$log_level" -ge 1 ]; then
-  printf '\n=== Validating Wizardry through Level %d: %s ===\n' "$target_level" "$(banish_level_name "$target_level")"
+  if [ "$only_this_level" -eq 1 ]; then
+    printf '\n=== Validating Wizardry Level %d: %s (only) ===\n' "$target_level" "$(banish_level_name "$target_level")"
+  else
+    printf '\n=== Validating Wizardry through Level %d: %s ===\n' "$target_level" "$(banish_level_name "$target_level")"
+  fi
 fi
 
-# Run each level from 0 to target_level
-current_level=0
+# Run each level from 0 to target_level (or just target_level if --only)
+if [ "$only_this_level" -eq 1 ]; then
+  current_level=$target_level
+else
+  current_level=0
+fi
+
 while [ "$current_level" -le "$target_level" ]; do
   banish_level "$current_level" || {
     exit_code=$?
     banish_error "Level $current_level validation failed, cannot continue"
     return "$exit_code"
   }
+  if [ "$only_this_level" -eq 1 ]; then
+    break
+  fi
   current_level=$((current_level + 1))
 done
 

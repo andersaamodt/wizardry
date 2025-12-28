@@ -120,8 +120,12 @@ else
 
     trap 'restore_terminal; exit 130' INT HUP TERM
     trap 'restore_terminal' EXIT
+fi
 
-    # Configure canonical mode to wait for exactly one byte of input.
+# Configure canonical mode to wait for exactly one byte of input.
+# CRITICAL: Always set terminal mode, even when KEEP_RAW=1, because previous
+# calls may have changed min/time settings for escape sequence handling
+if [ "$skip_stty" -eq 0 ]; then
     if ! stty -icanon -echo min 1 time 0 <&3 2>/dev/null; then
         warn 'await-keypress: unable to configure terminal'
         return 1
@@ -234,6 +238,9 @@ codes_to_string() {
 }
 
 case "$first" in
+    3)
+        output='ctrl-c'
+        ;;
     9)
         output='tab'
         ;;
