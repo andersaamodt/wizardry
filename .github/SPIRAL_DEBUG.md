@@ -200,6 +200,35 @@ After all features work:
   - All dependency checks pass when preloaded
 - **Next**: User should test menu navigation in actual terminal to confirm arrow keys work
 
+### 2025-12-28: Add debug logging for menu navigation issue
+
+- **Issue**: Menu still not responding to arrow keys or Enter after previous fixes
+- **Changes**: Added debug logging to `await-keypress` and `menu` to diagnose what's happening
+- **Debug flags**:
+  - `WIZARDRY_DEBUG_AWAIT=1` - Shows await-keypress internal state
+  - `WIZARDRY_DEBUG_MENU=1` - Shows keys received by menu
+- **Testing instructions**:
+  ```bash
+  # In your terminal, set debug flags and run menu:
+  export WIZARDRY_DEBUG_AWAIT=1
+  export WIZARDRY_DEBUG_MENU=1
+  menu
+  
+  # Then try pressing:
+  # 1. Down arrow key
+  # 2. Up arrow key  
+  # 3. Enter key
+  
+  # Capture the debug output and share it
+  ```
+- **What to look for**:
+  - Does `await-keypress` show "Found require-command"?
+  - Does `await-keypress` show "dd check passed"?
+  - Does `await-keypress` show "Read codes: ..." when you press keys?
+  - What does `await-keypress` return for arrow keys? (should be "up" or "down")
+  - What does `await-keypress` return for Enter? (should be "enter")
+  - What does menu receive? Does it match what await-keypress returns?
+
 ## Testing Strategy
 
 For each phase, we will:
