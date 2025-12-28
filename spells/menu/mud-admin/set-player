@@ -23,7 +23,7 @@ case "${1-}" in
 esac
 
 set -eu
-. env-clear
+env-clear
 
 player="${1-}"
 

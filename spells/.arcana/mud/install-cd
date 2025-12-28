@@ -24,7 +24,7 @@ require-wizardry || return 1
 
 
 set -eu
-. env-clear
+env-clear
 
 # Get script directory
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)

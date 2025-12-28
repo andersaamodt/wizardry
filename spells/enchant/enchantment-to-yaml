@@ -23,7 +23,7 @@ case "${1-}" in
 esac
 
 set -eu
-. env-clear
+env-clear
 
 # Validate arguments
 if [ "$#" -ne 1 ]; then

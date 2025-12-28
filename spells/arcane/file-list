@@ -24,7 +24,7 @@ esac
 require-wizardry || return 1
 
 set -eu
-. env-clear
+env-clear
 
 # Check that a folder path was provided as an argument
 if [ "$#" -ne 1 ]; then

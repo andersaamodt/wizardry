@@ -23,7 +23,7 @@ require-wizardry || return 1
 
 
 set -eu
-. env-clear
+env-clear
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 manage_cmd=${MANAGE_SYSTEM_COMMAND:-manage-system-command}

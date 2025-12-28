@@ -23,7 +23,7 @@ case "${1-}" in
 esac
 
 set -eu
-. env-clear
+env-clear
 
 # Parse options early so -h works even with missing args.
 delete_sources=0

@@ -22,7 +22,7 @@ require-wizardry || return 1
 
 
 set -eu
-. env-clear
+env-clear
 . colors
 
 # Catch Ctrl-C and TERM signal to exit cleanly

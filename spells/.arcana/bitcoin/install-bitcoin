@@ -23,7 +23,7 @@ require-wizardry || return 1
 
 
 set -eu
-. env-clear
+env-clear
 
 BITCOIN_VERSION_DEFAULT="25.0"
 
