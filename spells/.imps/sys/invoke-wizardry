@@ -218,9 +218,38 @@ function brace_delta(s, n, m) {
     done
   done
 
-  if ! command -v menu >/dev/null 2>&1; then
+  _iw_menu_ok=0
+  if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+    if whence -v menu 2>/dev/null | grep -q 'shell function'; then
+      _iw_menu_ok=1
+    fi
+  elif command -v type >/dev/null 2>&1; then
+    if type menu 2>/dev/null | grep -q 'function'; then
+      _iw_menu_ok=1
+    fi
+  elif command -v menu >/dev/null 2>&1; then
+    _iw_menu_ok=1
+  fi
+
+  if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+    if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+      _iw_debug "menu whence: $(whence -v menu 2>/dev/null)"
+    elif command -v type >/dev/null 2>&1; then
+      _iw_debug "menu type: $(type menu 2>/dev/null)"
+    else
+      _iw_debug "menu path: $(command -v menu 2>/dev/null)"
+    fi
+  fi
+
+  if [ "$_iw_menu_ok" -ne 1 ]; then
     printf '%s\n' "invoke-wizardry: ERROR - failed to load menu spell" >&2
     return 1
+  fi
+
+  if [ "${WIZARDRY_SPIRAL_MINIMAL-}" = "1" ]; then
+    _iw_debug "Spiral minimal mode: skipping command_not_found handlers"
+    _iw_debug "Wizardry initialization complete"
+    return 0
   fi
   
   # Set up command_not_found_handle for hotloading everything else

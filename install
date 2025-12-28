@@ -835,7 +835,6 @@ if [ -n "$detect_rc_file_value" ]; then
         
         # Generate the source line for invoke-wizardry
         invoke_wizardry_source_line=". \"$INVOKE_WIZARDRY\""
-
         case $detect_format_value in
         nix)
                 # For NixOS, use nix-shell-add to add shell initialization code

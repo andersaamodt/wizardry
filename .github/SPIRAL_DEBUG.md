@@ -131,6 +131,25 @@ After all features work:
 - **Fix**: removed the fallback wrapper and now fail fast if the menu spell is not preloaded during invoke-wizardry.
 - **Next**: Re-test `menu` in a fresh terminal after install; if it fails, continue stripping down invoke-wizardry to find the preloading break.
 
+### 2025-12-28: Phase 1a - Strip confounders, verify menu binding explicitly
+
+- **Goal**: Prove whether `menu` is actually bound as a shell function after invoke-wizardry runs, without command-not-found interference.
+- **Changes**:
+  - Removed fallback menu sourcing (no workaround).
+  - Added debug logging of menu binding (`whence`/`type`) when `WIZARDRY_DEBUG=1`.
+  - Added `WIZARDRY_SPIRAL_MINIMAL=1` to skip command-not-found handlers so only preloading is tested.
+- **Local tests (container)**:
+  - `zsh -c 'source spells/.imps/sys/invoke-wizardry; whence -v menu; menu --help'` → menu is a function, help prints.
+  - `WIZARDRY_DEBUG=1 WIZARDRY_SPIRAL_MINIMAL=1 zsh -c 'source spells/.imps/sys/invoke-wizardry; whence -v menu; menu --help'` → menu bound and callable with CNF disabled.
+  - Diagnostic: `command_not_found_handler` always receives args; when calling `_word_of_binding "$@"`, `_word_of_binding` sees the command name. The error `word-of-binding: command name required` happens **before** CNF output, so it is not caused by CNF.
+- **Working hypothesis**:
+  - The observed `word-of-binding: command name required` implies that the `menu` *command* is directly invoking `word-of-binding` with no arguments. That only happens if `menu` resolves to an executable wrapper (or script) that calls `word-of-binding` without args, or if `menu` isn't bound as a function at all.
+  - Next step is to test in a fresh terminal:
+    1. Set `WIZARDRY_DEBUG=1 WIZARDRY_SPIRAL_MINIMAL=1` and open a new shell.
+    2. Run: `type menu` (bash) or `whence -v menu` (zsh) and record the output.
+    3. Run `menu --help` and confirm whether it uses the function or hits the error.
+    4. If it fails, capture: `command -v menu`, `alias menu`, and the output of `type menu`/`whence -v menu`.
+
 ## Testing Strategy
 
 For each phase, we will:
