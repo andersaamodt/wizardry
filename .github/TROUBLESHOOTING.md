@@ -77,7 +77,16 @@ Then open a new terminal. You should see diagnostic output like:
 - Check for functions that might override: `type menu`
 - Try with a clean environment: `env -i HOME=$HOME SHELL=$SHELL $SHELL -l`
 
-### 4. Manual Workaround
+### 4. Understanding the Loading Mechanism
+
+**Important:** Wizardry uses TWO mechanisms to make spells available:
+
+1. **Pre-loading (for menu and essential spells)**: These are loaded as persistent functions when your shell starts
+2. **Hotloading (for other spells)**: These are loaded on-demand when you first use them
+
+The `menu` command MUST be pre-loaded to work efficiently. If pre-loading fails, hotloading cannot compensate - you'll get "command not found".
+
+### 5. Manual Workaround
 
 If all else fails, you can invoke spells using word-of-binding directly:
 
@@ -86,7 +95,7 @@ export WIZARDRY_DIR=~/.wizardry
 ~/.wizardry/spells/.imps/sys/word-of-binding menu
 ```
 
-### 5. Getting Help
+### 6. Getting Help
 
 If none of these steps help, please file an issue with:
 - Your OS and shell version (`uname -a` and `$SHELL --version`)
