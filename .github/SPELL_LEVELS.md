@@ -317,6 +317,7 @@ If wizardry is already installed, Level 0 can use:
 - package-managers - Manage packages
 - wizard-cast - Execute spells with wizard powers
 - wizard-eyes - Enhanced spell inspection
+- logging-example - Tutorial for logging framework
 
 ### Additional Imps Introduced
 - `fs/config-get` - Get config value
