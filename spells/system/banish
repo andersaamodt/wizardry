@@ -28,16 +28,12 @@ Arguments:
                         Level 9: Services (system service management)
 
 Options:
-  --verbose, -v         Show detailed diagnostics
-  --wizardry-dir DIR    Set WIZARDRY_DIR to DIR (default: auto-detect)
-  --no-tests            Skip running tests (only check assumptions)
   --no-heal             Skip self-healing (only report issues)
-  --yes, -y             Auto-accept all prompts (non-interactive)
+  --no-tests            Skip running tests (only check assumptions)
   --only                Only validate this specific level (don't run lower levels)
 
 Environment Variables:
   WIZARDRY_DIR          Target wizardry installation directory
-  WIZARDRY_LOG_LEVEL    Control verbosity (0=quiet, 1=info, 2=debug)
 
 Exit Codes:
   0  Level is ready (all checks passed, tests passed)
@@ -47,9 +43,8 @@ Exit Codes:
 Examples:
   banish                    # Validate level 0 (system foundation)
   banish 1                  # Validate through level 1 (menu ready)
-  banish 2 --verbose        # Validate to level 2 with detailed output
   banish 4 --no-tests       # Validate through level 4, skip tests
-  banish 1 --yes            # Non-interactive level 1 validation
+  banish 1 --no-heal        # Validate level 1, only report issues
 USAGE
 }
 
@@ -65,11 +60,8 @@ set -eu
 
 # Parse arguments
 target_level=0
-verbose=0
-wizardry_dir_override=''
 skip_tests=0
 skip_heal=0
-auto_yes=0
 only_this_level=0
 
 # First, check if first arg is a number (the level)
@@ -84,29 +76,12 @@ fi
 
 while [ "$#" -gt 0 ]; do
   case $1 in
-    --verbose|-v)
-      verbose=1
-      shift
-      ;;
-    --wizardry-dir)
-      if [ "$#" -lt 2 ]; then
-        printf 'Error: --wizardry-dir requires an argument\n' >&2
-        show_usage >&2
-        return 2
-      fi
-      wizardry_dir_override=$2
-      shift 2
-      ;;
-    --no-tests)
-      skip_tests=1
-      shift
-      ;;
     --no-heal)
       skip_heal=1
       shift
       ;;
-    --yes|-y)
-      auto_yes=1
+    --no-tests)
+      skip_tests=1
       shift
       ;;
     --only)
@@ -146,29 +121,19 @@ if [ "$target_level" -lt 0 ] || [ "$target_level" -gt 9 ]; then
   return 2
 fi
 
-# Determine verbosity
-log_level=${WIZARDRY_LOG_LEVEL:-0}
-if [ "$verbose" -eq 1 ]; then
-  log_level=2
-fi
+# Determine verbosity - removed, always show output
 
 # Helper functions for output (inline since this is a bootstrap script)
 banish_info() {
-  if [ "$log_level" -ge 1 ]; then
-    printf '%s\n' "$*"
-  fi
+  printf '%s\n' "$*"
 }
 
 banish_step() {
-  if [ "$log_level" -ge 2 ]; then
-    printf '  • %s\n' "$*"
-  fi
+  printf '  • %s\n' "$*"
 }
 
 banish_check() {
-  if [ "$log_level" -ge 2 ]; then
-    printf '  ✓ %s\n' "$*"
-  fi
+  printf '  ✓ %s\n' "$*"
 }
 
 banish_warn() {
@@ -179,21 +144,6 @@ banish_error() {
   printf 'Error: %s\n' "$*" >&2
 }
 
-# Prompt user for yes/no confirmation
-banish_ask_yn() {
-  question=$1
-  if [ "$auto_yes" -eq 1 ]; then
-    banish_info "  [auto-yes] $question"
-    return 0
-  fi
-  
-  printf '%s (y/n) ' "$question" >&2
-  read -r answer
-  case "$answer" in
-    y|Y|yes|Yes|YES) return 0 ;;
-    *) return 1 ;;
-  esac
-}
 
 # Get level name for display
 banish_level_name() {
@@ -217,9 +167,7 @@ banish_level() {
   level=$1
   level_name=$(banish_level_name "$level")
   
-  if [ "$log_level" -ge 1 ]; then
-    printf '\n=== Level %d: %s ===\n' "$level" "$level_name"
-  fi
+  printf '\n=== Level %d: %s ===\n' "$level" "$level_name"
   
   case "$level" in
     0)
@@ -261,18 +209,12 @@ banish_level() {
 # Level 0: System Foundation (wizardry installation assumptions)
 banish_level_0() {
   # Stage 1: Set up WIZARDRY_DIR first (needed for other checks)
-  if [ "$log_level" -ge 2 ]; then
-    printf 'Configuring WIZARDRY_DIR:\n'
-  fi
+  printf '\nConfiguring WIZARDRY_DIR:\n'
   
   wizardry_not_installed=0
   
-  if [ -n "$wizardry_dir_override" ]; then
-    # User specified directory
-    WIZARDRY_DIR=$wizardry_dir_override
-    banish_check "Using override: $WIZARDRY_DIR"
-  elif [ -n "${WIZARDRY_DIR-}" ]; then
-    # Already set in environment - no need to reassign
+  if [ -n "${WIZARDRY_DIR-}" ]; then
+    # Already set in environment
     banish_check "Using existing: $WIZARDRY_DIR"
   else
     # Auto-detect
@@ -341,14 +283,11 @@ banish_level_0() {
     
     # Export WIZARDRY_DIR for downstream tools
     export WIZARDRY_DIR
-    # Only show "Environment prepared" in verbose mode (log_level >= 1)
     banish_info "Environment prepared: WIZARDRY_DIR=$WIZARDRY_DIR"
   fi
   
   # Stage 2: Detect OS and system information
-  if [ "$log_level" -ge 2 ]; then
-    printf '\nDetecting OS and system information:\n'
-  fi
+  printf '\nDetecting OS and system information:\n'
   
   # Detect operating system
   if command -v uname >/dev/null 2>&1; then
@@ -368,20 +307,14 @@ banish_level_0() {
   fi
   
   # Stage 3: Check POSIX environment using detect-posix if available
-  if [ "$log_level" -ge 2 ]; then
-    printf '\nChecking POSIX toolchain:\n'
-  fi
+  printf '\nChecking POSIX toolchain:\n'
   posix_check_failed=0
   missing_recommended=''
   
   # Try to use detect-posix if available
   if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/divination/detect-posix" ]; then
     banish_step "Using detect-posix for environment checks"
-    if [ "$log_level" -ge 2 ]; then
-      "${WIZARDRY_DIR}/spells/divination/detect-posix" --verbose || posix_check_failed=1
-    else
-      "${WIZARDRY_DIR}/spells/divination/detect-posix" >/dev/null || posix_check_failed=1
-    fi
+    "${WIZARDRY_DIR}/spells/divination/detect-posix" --verbose || posix_check_failed=1
     
     if [ "$posix_check_failed" -ne 0 ]; then
       banish_warn "detect-posix reported issues with POSIX environment"
@@ -421,9 +354,7 @@ banish_level_0() {
   
   # Stage 4: Verify invoke-wizardry and RC integration
   if [ -n "${WIZARDRY_DIR-}" ]; then
-    if [ "$log_level" -ge 2 ]; then
-      printf '\nVerifying invoke-wizardry and shell integration:\n'
-    fi
+    printf '\nVerifying invoke-wizardry and shell integration:\n'
     
     # Check invoke-wizardry exists
     if [ ! -f "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry" ]; then
@@ -460,9 +391,7 @@ banish_level_0() {
   fi
   
   # Stage 5: Set baseline PATH if needed
-  if [ "$log_level" -ge 2 ]; then
-    printf '\nChecking PATH:\n'
-  fi
+  printf '\nChecking PATH:\n'
   baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
   case ":${PATH-}:" in
     *":/usr/bin:"*|*":/bin:"*)
@@ -476,9 +405,7 @@ banish_level_0() {
   esac
   
   # Stage 6: Check for package managers (system foundation)
-  if [ "$log_level" -ge 2 ]; then
-    printf '\nChecking package managers:\n'
-  fi
+  printf '\nChecking package managers:\n'
   found_pkg_mgr=0
   for pkg_mgr in apt yum dnf pacman brew nix-env; do
     if command -v "$pkg_mgr" >/dev/null 2>&1; then
@@ -492,105 +419,124 @@ banish_level_0() {
     banish_warn "Self-healing capabilities will be limited"
   fi
   
-  # Report summary
+  # Stage 7: Check and self-heal essential development tools
+  printf '\nChecking essential development tools:\n'
+  
+  # Check for git
+  if ! command -v git >/dev/null 2>&1; then
+    banish_warn "git not found - required for wizardry development"
+    if [ "$skip_heal" -eq 0 ] && [ -x "${WIZARDRY_DIR}/spells/.arcana/core/install-git" ]; then
+      banish_info "Attempting to install git..."
+      "${WIZARDRY_DIR}/spells/.arcana/core/install-git" || banish_warn "Failed to install git"
+      # Re-check
+      if command -v git >/dev/null 2>&1; then
+        banish_check "git installed successfully"
+      fi
+    fi
+  else
+    banish_check "git available"
+  fi
+  
+  # Stage 8: Check POSIX tools and attempt self-healing
+  # Report summary and attempt self-healing if enabled
   if [ -n "$missing_recommended" ]; then
     banish_warn "Some recommended tools are missing: $missing_recommended"
     banish_warn "Wizardry may have reduced functionality"
     
     if [ "$skip_heal" -eq 0 ] && [ "$found_pkg_mgr" -eq 1 ]; then
-      if banish_ask_yn "Attempt to install missing tools?"; then
-        banish_info "Installing missing tools (this may require sudo)..."
-        # Whitelist of allowed POSIX tools to install (security: prevent command injection)
-        allowed_tools="awk sed grep find mktemp dirname basename pwd cd curl wget tar sh test printf cat sort"
-        
-        # Try to install missing tools based on detected package manager
-        for pkg_mgr in apt yum dnf pacman brew; do
-          if command -v "$pkg_mgr" >/dev/null 2>&1; then
-            case "$pkg_mgr" in
-              apt)
-                for tool in $missing_recommended; do
-                  # Validate tool is in whitelist
-                  tool_allowed=0
-                  for allowed in $allowed_tools; do
-                    if [ "$tool" = "$allowed" ]; then
-                      tool_allowed=1
-                      break
-                    fi
-                  done
-                  
-                  if [ "$tool_allowed" -eq 1 ]; then
-                    banish_step "Installing $tool..."
-                    sudo apt-get install -y "$tool" 2>&1 || banish_warn "Failed to install $tool"
-                  else
-                    banish_warn "Skipping $tool (not in allowed tools list)"
+      banish_info "Attempting to install missing tools (this may require sudo)..."
+      # Whitelist of allowed POSIX tools to install (security: prevent command injection)
+      allowed_tools="awk sed grep find mktemp dirname basename pwd cd curl wget tar sh test printf cat sort"
+      
+      # Try to install missing tools based on detected package manager
+      for pkg_mgr in apt yum dnf pacman brew; do
+        if command -v "$pkg_mgr" >/dev/null 2>&1; then
+          case "$pkg_mgr" in
+            apt)
+              for tool in $missing_recommended; do
+                # Validate tool is in whitelist
+                tool_allowed=0
+                for allowed in $allowed_tools; do
+                  if [ "$tool" = "$allowed" ]; then
+                    tool_allowed=1
+                    break
                   fi
                 done
-                break
-                ;;
-              yum|dnf)
-                for tool in $missing_recommended; do
-                  # Validate tool is in whitelist
-                  tool_allowed=0
-                  for allowed in $allowed_tools; do
-                    if [ "$tool" = "$allowed" ]; then
-                      tool_allowed=1
-                      break
-                    fi
-                  done
-                  
-                  if [ "$tool_allowed" -eq 1 ]; then
-                    banish_step "Installing $tool..."
-                    sudo "$pkg_mgr" install -y "$tool" 2>&1 || banish_warn "Failed to install $tool"
-                  else
-                    banish_warn "Skipping $tool (not in allowed tools list)"
+                
+                if [ "$tool_allowed" -eq 1 ]; then
+                  banish_step "Installing $tool..."
+                  sudo apt-get install -y "$tool" >/dev/null 2>&1 || banish_warn "Failed to install $tool"
+                else
+                  banish_warn "Skipping $tool (not in allowed tools list)"
+                fi
+              done
+              break
+              ;;
+            yum|dnf)
+              for tool in $missing_recommended; do
+                # Validate tool is in whitelist
+                tool_allowed=0
+                for allowed in $allowed_tools; do
+                  if [ "$tool" = "$allowed" ]; then
+                    tool_allowed=1
+                    break
                   fi
                 done
-                break
-                ;;
-              pacman)
-                for tool in $missing_recommended; do
-                  # Validate tool is in whitelist
-                  tool_allowed=0
-                  for allowed in $allowed_tools; do
-                    if [ "$tool" = "$allowed" ]; then
-                      tool_allowed=1
-                      break
-                    fi
-                  done
-                  
-                  if [ "$tool_allowed" -eq 1 ]; then
-                    banish_step "Installing $tool..."
-                    sudo pacman -S --noconfirm "$tool" 2>&1 || banish_warn "Failed to install $tool"
-                  else
-                    banish_warn "Skipping $tool (not in allowed tools list)"
+                
+                if [ "$tool_allowed" -eq 1 ]; then
+                  banish_step "Installing $tool..."
+                  sudo "$pkg_mgr" install -y "$tool" >/dev/null 2>&1 || banish_warn "Failed to install $tool"
+                else
+                  banish_warn "Skipping $tool (not in allowed tools list)"
+                fi
+              done
+              break
+              ;;
+            pacman)
+              for tool in $missing_recommended; do
+                # Validate tool is in whitelist
+                tool_allowed=0
+                for allowed in $allowed_tools; do
+                  if [ "$tool" = "$allowed" ]; then
+                    tool_allowed=1
+                    break
                   fi
                 done
-                break
-                ;;
-              brew)
-                for tool in $missing_recommended; do
-                  # Validate tool is in whitelist
-                  tool_allowed=0
-                  for allowed in $allowed_tools; do
-                    if [ "$tool" = "$allowed" ]; then
-                      tool_allowed=1
-                      break
-                    fi
-                  done
-                  
-                  if [ "$tool_allowed" -eq 1 ]; then
-                    banish_step "Installing $tool..."
-                    brew install "$tool" 2>&1 || banish_warn "Failed to install $tool"
-                  else
-                    banish_warn "Skipping $tool (not in allowed tools list)"
+                
+                if [ "$tool_allowed" -eq 1 ]; then
+                  banish_step "Installing $tool..."
+                  sudo pacman -S --noconfirm "$tool" >/dev/null 2>&1 || banish_warn "Failed to install $tool"
+                else
+                  banish_warn "Skipping $tool (not in allowed tools list)"
+                fi
+              done
+              break
+              ;;
+            brew)
+              for tool in $missing_recommended; do
+                # Validate tool is in whitelist
+                tool_allowed=0
+                for allowed in $allowed_tools; do
+                  if [ "$tool" = "$allowed" ]; then
+                    tool_allowed=1
+                    break
                   fi
                 done
-                break
-                ;;
-            esac
-          fi
-        done
-      fi
+                
+                if [ "$tool_allowed" -eq 1 ]; then
+                  banish_step "Installing $tool..."
+                  brew install "$tool" >/dev/null 2>&1 || banish_warn "Failed to install $tool"
+                else
+                  banish_warn "Skipping $tool (not in allowed tools list)"
+                fi
+              done
+              break
+              ;;
+          esac
+        fi
+      done
+    else
+      banish_info "Install manually using your package manager if needed"
     fi
   fi
   
@@ -647,17 +593,15 @@ banish_level_1() {
   if ! command -v stty >/dev/null 2>&1; then
     banish_warn "stty command not found - required for menu"
     if [ "$skip_heal" -eq 0 ]; then
-      if banish_ask_yn "Attempt to install stty?"; then
-        if [ -x "${WIZARDRY_DIR}/spells/.arcana/core/install-stty" ]; then
-          banish_info "Running install-stty..."
-          "${WIZARDRY_DIR}/spells/.arcana/core/install-stty" || banish_warn "Failed to install stty"
-          # Re-check after install
-          if command -v stty >/dev/null 2>&1; then
-            banish_check "stty installed successfully"
-          fi
-        else
-          banish_warn "install-stty script not found"
+      if [ -x "${WIZARDRY_DIR}/spells/.arcana/core/install-stty" ]; then
+        banish_info "Attempting to install stty..."
+        "${WIZARDRY_DIR}/spells/.arcana/core/install-stty" || banish_warn "Failed to install stty"
+        # Re-check after install
+        if command -v stty >/dev/null 2>&1; then
+          banish_check "stty installed successfully"
         fi
+      else
+        banish_info "install-stty script not found - install stty manually"
       fi
     fi
   else
@@ -875,15 +819,8 @@ banish_run_tests_for_level() {
     return 0
   fi
   
-  # Prompt user
-  if [ "$auto_yes" -eq 0 ]; then
-    if ! banish_ask_yn "Run tests for Level $level ($level_name)?"; then
-      banish_info "Skipping tests for Level $level"
-      return 0
-    fi
-  fi
   
-  banish_info "Running tests for Level $level..."
+  banish_info "Running tests for Level $level ($level_name)..."
   
   # Determine which tests to run based on level
   test_pattern=""
@@ -925,14 +862,10 @@ banish_run_tests_for_level() {
       for test_file in "${WIZARDRY_DIR}/.tests/$pattern"; do
         if [ -f "$test_file" ]; then
           test_name=$(basename "$test_file")
-          if [ "$verbose" -eq 1 ]; then
-            banish_step "Running $test_name..."
-          fi
+          banish_step "Running $test_name..."
           if "${WIZARDRY_DIR}/spells/system/test-spell" --skip-common "${test_file#${WIZARDRY_DIR}/.tests/}" </dev/null >/dev/null 2>&1; then
             passed=$((passed + 1))
-            if [ "$verbose" -eq 1 ]; then
-              banish_check "$test_name passed"
-            fi
+            banish_check "$test_name passed"
           else
             failed=$((failed + 1))
             banish_warn "$test_name failed"
@@ -954,12 +887,10 @@ banish_run_tests_for_level() {
 }
 
 # Main execution: Run levels 0 through target_level (or only target_level if --only)
-if [ "$log_level" -ge 1 ]; then
-  if [ "$only_this_level" -eq 1 ]; then
-    printf '\n=== Validating Wizardry Level %d: %s (only) ===\n' "$target_level" "$(banish_level_name "$target_level")"
-  else
-    printf '\n=== Validating Wizardry through Level %d: %s ===\n' "$target_level" "$(banish_level_name "$target_level")"
-  fi
+if [ "$only_this_level" -eq 1 ]; then
+  printf '\n=== Validating Wizardry Level %d: %s (only) ===\n' "$target_level" "$(banish_level_name "$target_level")"
+else
+  printf '\n=== Validating Wizardry through Level %d: %s ===\n' "$target_level" "$(banish_level_name "$target_level")"
 fi
 
 # Run each level from 0 to target_level (or just target_level if --only)
@@ -982,11 +913,7 @@ while [ "$current_level" -le "$target_level" ]; do
 done
 
 # Final success message
-if [ "$log_level" -ge 1 ]; then
-  printf '\n✓ Validation complete - Level %d ready\n' "$target_level"
-else
-  printf 'Validation complete - Level %d ready\n' "$target_level"
-fi
+printf '\n✓ Validation complete - Level %d ready\n' "$target_level"
 
 return 0
 }
