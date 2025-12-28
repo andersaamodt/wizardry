@@ -27,6 +27,15 @@ require-wizardry || return 1
 set -eu
 env-clear
 
+# Prefer preloaded imp functions (underscore form) when available.
+await_keypress_temp_file() {
+    if command -v temp_file >/dev/null 2>&1; then
+        temp_file "$@"
+    else
+        temp-file "$@"
+    fi
+}
+
 # Resolve require-command location
 if [ -n "${REQUIRE_COMMAND-}" ]; then
     require_cmd=$REQUIRE_COMMAND
@@ -56,7 +65,7 @@ if [ "${AWAIT_KEYPRESS_BUFFER_FILE+set}" = "set" ]; then
     buffer_file=$AWAIT_KEYPRESS_BUFFER_FILE
 else
     buffer_key=$(printf '%s' "$tty_device" | tr -c '[:alnum:]' '_')
-    buffer_file=$(temp-file await-keypress-buffer-"$buffer_key") || return 1
+    buffer_file=$(await_keypress_temp_file await-keypress-buffer-"$buffer_key") || return 1
 fi
 
 # Helper to restore terminal and close file descriptor

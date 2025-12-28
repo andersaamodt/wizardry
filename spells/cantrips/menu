@@ -32,6 +32,23 @@ env-clear
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 
+# Prefer preloaded imp functions (underscore form) when available.
+menu_temp_file() {
+        if command -v temp_file >/dev/null 2>&1; then
+                temp_file "$@"
+        else
+                temp-file "$@"
+        fi
+}
+
+menu_cleanup_file() {
+        if command -v cleanup_file >/dev/null 2>&1; then
+                cleanup_file "$@"
+        else
+                cleanup-file "$@"
+        fi
+}
+
 # Verify that all helper spells are ready before drawing the menu.
 # Uses the shared 'require' imp for dependency checking.
 require fathom-cursor "The menu spell needs 'fathom-cursor' to place the menu." || return 1
@@ -122,8 +139,8 @@ fi
 description=$1
 shift
 
-items_file=$(temp-file menu-items) || return 1
-commands_file=$(temp-file menu-commands) || return 1
+items_file=$(menu_temp_file menu-items) || return 1
+commands_file=$(menu_temp_file menu-commands) || return 1
 cleanup_called=0
 cleanup() {
         if [ "$cleanup_called" -eq 1 ]; then
@@ -135,8 +152,8 @@ cleanup() {
                 stty "$menu_saved_tty_state" <"$menu_tty" >/dev/null 2>&1 || :
         fi
         cursor-blink on 2>/dev/null || :
-        cleanup-file "$items_file"
-        cleanup-file "$commands_file"
+        menu_cleanup_file "$items_file"
+        menu_cleanup_file "$commands_file"
 }
 trap 'cleanup; exit 1' INT TERM
 trap 'cleanup' EXIT
