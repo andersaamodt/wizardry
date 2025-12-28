@@ -155,6 +155,8 @@ env_clear() {
   [ -n "$_saved_disable_sandbox" ] && export WIZARDRY_DISABLE_SANDBOX="$_saved_disable_sandbox"
   [ -n "$_saved_bwrap_warning" ] && export WIZARDRY_BWRAP_WARNING="$_saved_bwrap_warning"
   [ -n "$_saved_colors_available" ] && export WIZARDRY_COLORS_AVAILABLE="$_saved_colors_available"
+
+  return 0
 }
 
 # Self-execute when run directly (not sourced)
