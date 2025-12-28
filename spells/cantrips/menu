@@ -209,6 +209,8 @@ case $start_selection in
 esac
 menu_column=1
 menu_row=1
+menu_use_saved_cursor=0
+menu_anchor_saved=0
 previous_selected=0
 window_width=0
 max_command_length=0
@@ -249,7 +251,7 @@ render_row() {
                 done
 
                 target_row=$((menu_row + row_index - 1))
-                if move-cursor "$menu_column" "$target_row"; then
+                if menu_move_cursor "$menu_column" "$target_row"; then
                         printf '\033[K'
                         printf '%b  %s%s%b' "$THEME_DIVIDER" "$pad" "$line" "$RESET"
                         printf '\r'
@@ -272,7 +274,7 @@ render_row() {
         adjusted_width=$((max_name_length + ansi_extra))
 
         target_row=$((menu_row + row_index - 1))
-        if move-cursor "$menu_column" "$target_row"; then
+        if menu_move_cursor "$menu_column" "$target_row"; then
                 printf '\033[K'
                 if [ "$highlight" -eq 1 ]; then
                         if [ "$max_command_length" -gt 0 ]; then
@@ -305,13 +307,29 @@ render_row() {
         fi
 }
 
+menu_move_cursor() {
+        x=$1
+        y=$2
+        if [ "$menu_use_saved_cursor" -eq 1 ]; then
+                printf '\033[u'
+                if [ "$y" -gt 1 ]; then
+                        printf '\033[%sB' "$((y - 1))"
+                fi
+                if [ "$x" -gt 0 ]; then
+                        printf '\033[%sG' "$x"
+                fi
+                return 0
+        fi
+        move-cursor "$x" "$y"
+}
+
 position_cursor_below_menu() {
         below_row=$((menu_row + menu_length))
         if [ "$terminal_height" -gt 0 ] && [ "$below_row" -gt "$terminal_height" ]; then
                 below_row=$terminal_height
         fi
 
-        if ! move-cursor "$menu_column" "$below_row"; then
+        if ! menu_move_cursor "$menu_column" "$below_row"; then
                 printf '\n'
         fi
 }
@@ -323,15 +341,26 @@ if [ -n "$description" ]; then
         printf '%b%s%b\n' "$THEME_HEADING" "$description" "$RESET"
 fi
 
-menu_row=$(fathom-cursor -y)
-case "$menu_row" in
-        ''|*[!0-9]*)
-                menu_row=1
-                ;;
-        0)
-                menu_row=1
-                ;;
-esac
+if menu_row=$(fathom-cursor -y 2>/dev/null); then
+        case "$menu_row" in
+                ''|*[!0-9]*)
+                        menu_row=1
+                        menu_use_saved_cursor=1
+                        ;;
+                0)
+                        menu_row=1
+                        menu_use_saved_cursor=1
+                        ;;
+        esac
+else
+        menu_row=1
+        menu_use_saved_cursor=1
+fi
+
+if [ "$menu_use_saved_cursor" -eq 1 ] && [ "$menu_anchor_saved" -eq 0 ]; then
+        printf '\033[s'
+        menu_anchor_saved=1
+fi
 
 # At this stage the cursor sits on the row immediately following the menu
 # heading (or at the top of the screen when no heading was provided). That row
@@ -410,6 +439,11 @@ do
         fi
 
         current_window_width=$(fathom-terminal --width)
+        case "$current_window_width" in
+                ''|*[!0-9]*)
+                        current_window_width=0
+                        ;;
+        esac
         current_max_command_length=$((current_window_width - max_name_length - 3))
         if [ "$current_max_command_length" -lt 0 ]; then
                 current_max_command_length=0
@@ -425,7 +459,7 @@ do
                 last_window_width=$current_window_width
                 last_max_command_length=$current_max_command_length
 
-                if move-cursor "$menu_column" "$menu_row"; then
+                if menu_move_cursor "$menu_column" "$menu_row"; then
                         printf '\033[J'
                 fi
 
