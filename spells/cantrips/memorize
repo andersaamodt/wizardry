@@ -179,7 +179,7 @@ case "$0" in
       elif [ -n "${ROOT_DIR-}" ]; then
         _i="$ROOT_DIR/spells/.imps/sys"
       else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*}}}/spells/.imps/sys"
+        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
       fi
       [ -f "$_i/castable" ] && . "$_i/castable"
     fi
@@ -191,7 +191,7 @@ case "$0" in
     elif [ -n "${ROOT_DIR-}" ]; then
       _i="$ROOT_DIR/spells/.imps/sys"
     else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*}}}/spells/.imps/sys"
+      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
     fi
     [ -f "$_i/castable" ] && . "$_i/castable"
     ;;
