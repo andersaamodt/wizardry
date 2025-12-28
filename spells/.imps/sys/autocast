@@ -80,7 +80,7 @@ autocast() {
     # If sourced, automatically call the function (this is what makes it "autocast")
     # Only call if function exists - silently skip if not
     if command -v "$_autocast_func" >/dev/null 2>&1; then
-      "$_autocast_func"
+      "$_autocast_func" "$@"
     fi
   fi
 }
