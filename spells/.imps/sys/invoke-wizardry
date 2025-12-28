@@ -16,12 +16,22 @@ esac
 # Permissive mode - this file is sourced into user's shell
 set +eu
 
+# Debug mode (set WIZARDRY_DEBUG=1 to enable diagnostic output)
+_iw_debug() {
+  if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+    printf '[invoke-wizardry] %s\n' "$*" >&2
+  fi
+}
+
 # Prevent recursive sourcing
 if [ "${_WIZARDRY_INVOKED-}" = "1" ]; then
+  _iw_debug "Already invoked, skipping"
   return 0
 fi
 _WIZARDRY_INVOKED=1
 export _WIZARDRY_INVOKED
+
+_iw_debug "Starting wizardry initialization"
 
 _invoke_wizardry() {
   # Detect WIZARDRY_DIR
@@ -65,14 +75,16 @@ _invoke_wizardry() {
     return 1
   fi
   
+  _iw_debug "WIZARDRY_DIR=$WIZARDRY_DIR"
   export WIZARDRY_DIR
   
   # Set up SPELLBOOK_DIR
   : "${SPELLBOOK_DIR:=${HOME-}/.spellbook}"
   export SPELLBOOK_DIR
   
-  # MINIMAL PHASE 1: Pre-load menu and its imp dependencies + hotloading
-  # Pre-load for immediate availability, hotload everything else on-demand
+  # SPIRAL DEBUG PHASE 1: Minimal pre-loading (menu + dependencies only)
+  # Future: ALL wizardry spells will be pre-loaded, hotloading only for ~/.spellbook
+  # Current: Pre-load menu essentials, hotload other wizardry spells temporarily
   
   # Helper function to extract and eval function bodies from spell/imp files
   _iw_load_module() {
@@ -153,6 +165,7 @@ function brace_delta(s, n, m) {
   
   # Pre-load essential imps needed by menu
   # These are from sys/, out/, fs/, cond/ families
+  _iw_debug "Pre-loading essential imps"
   _iw_essential_imps="require require-wizardry castable env-clear temp-file cleanup-file has die warn fail say"
   for _imp_name in $_iw_essential_imps; do
     # Search for imp in all families
@@ -167,6 +180,7 @@ function brace_delta(s, n, m) {
   done
   
   # Pre-load menu and its helper spell dependencies
+  _iw_debug "Pre-loading essential spells"
   _iw_essential_spells="menu await-keypress move-cursor fathom-cursor fathom-terminal cursor-blink colors"
   for _spell_name in $_iw_essential_spells; do
     # Search for spell in all categories
@@ -175,13 +189,20 @@ function brace_delta(s, n, m) {
       case "$_spell_dir" in */.imps|*/.arcana) continue ;; esac
       _spell_file="$_spell_dir/$_spell_name"
       if [ -f "$_spell_file" ]; then
-        _iw_load_module "$_spell_file" "$_spell_name" 0 2>/dev/null || :
+        _iw_debug "Loading spell: $_spell_name"
+        if _iw_load_module "$_spell_file" "$_spell_name" 0 2>/dev/null; then
+          _iw_status="✓ Loaded"
+        else
+          _iw_status="✗ Failed"
+        fi
+        _iw_debug "  $_iw_status: $_spell_name"
         break
       fi
     done
   done
   
   # Set up command_not_found_handle for hotloading everything else
+  _iw_debug "Setting up command_not_found handlers"
   # Set up command_not_found_handle for bash
   if eval '[ -n "${BASH_VERSION+x}" ]' 2>/dev/null; then
     # Bash-specific command_not_found_handle
@@ -207,6 +228,7 @@ function brace_delta(s, n, m) {
       printf '%s: command not found\n' "$1" >&2
       return 127
     }
+    _iw_debug "  ✓ bash command_not_found_handle configured"
   elif eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
     # Zsh-specific command_not_found_handler
     command_not_found_handler() {
@@ -231,8 +253,10 @@ function brace_delta(s, n, m) {
       printf '%s: command not found\n' "$1" >&2
       return 127
     }
+    _iw_debug "  ✓ zsh command_not_found_handler configured"
   fi
   
+  _iw_debug "Wizardry initialization complete"
   return 0
 }
 
