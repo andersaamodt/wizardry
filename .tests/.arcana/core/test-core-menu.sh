@@ -13,7 +13,7 @@ spell_is_executable() {
 }
 
 core_menu_lists_dependencies() {
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
 
   cat >"$tmp/menu" <<'SH'
 #!/bin/sh
@@ -41,11 +41,11 @@ SH
   ln -s /bin/grep "$tmp/grep"
   ln -s /bin/cat "$tmp/cat"
 
-  MENU_LOG="$tmp/log" _run_cmd env PATH="$WIZARDRY_IMPS_PATH:$tmp:/bin:/usr/bin" MENU_LOOP_LIMIT=1 MENU_LOG="$tmp/log" COLORS_BIN="$tmp/colors" MENU_BIN="$tmp/menu" \
+  MENU_LOG="$tmp/log" run_cmd env PATH="$WIZARDRY_IMPS_PATH:$tmp:/bin:/usr/bin" MENU_LOOP_LIMIT=1 MENU_LOG="$tmp/log" COLORS_BIN="$tmp/colors" MENU_BIN="$tmp/menu" \
     "$ROOT_DIR/spells/.arcana/core/core-menu"
 
-  _assert_success || return 1
-  _assert_path_exists "$tmp/log" || return 1
+  assert_success || return 1
+  assert_path_exists "$tmp/log" || return 1
   log=$(cat "$tmp/log")
 
   platform=$(uname -s 2>/dev/null || printf 'unknown')
@@ -71,7 +71,7 @@ SH
 }
 
 essential_commands_show_status_not_uninstall() {
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
 
   cat >"$tmp/menu" <<'SH'
 #!/bin/sh
@@ -94,11 +94,11 @@ SH
 
   # dd, stty, tput are essential and should show "- installed" or "- not installed"
   # instead of "Uninstall dd"
-  MENU_LOG="$tmp/log" _run_cmd env PATH="$WIZARDRY_IMPS_PATH:$tmp:/bin:/usr/bin" MENU_LOOP_LIMIT=1 MENU_LOG="$tmp/log" COLORS_BIN="$tmp/colors" MENU_BIN="$tmp/menu" \
+  MENU_LOG="$tmp/log" run_cmd env PATH="$WIZARDRY_IMPS_PATH:$tmp:/bin:/usr/bin" MENU_LOOP_LIMIT=1 MENU_LOG="$tmp/log" COLORS_BIN="$tmp/colors" MENU_BIN="$tmp/menu" \
     "$ROOT_DIR/spells/.arcana/core/core-menu"
 
-  _assert_success || return 1
-  _assert_path_exists "$tmp/log" || return 1
+  assert_success || return 1
+  assert_path_exists "$tmp/log" || return 1
   log=$(cat "$tmp/log")
 
   # Essential commands should NOT have "Uninstall" option
@@ -135,16 +135,16 @@ SH
   esac
 }
 
-_run_test_case "install/core/core-menu is executable" spell_is_executable
-_run_test_case "core menu lists install targets" core_menu_lists_dependencies
-_run_test_case "essential commands show status not uninstall" essential_commands_show_status_not_uninstall
+run_test_case "install/core/core-menu is executable" spell_is_executable
+run_test_case "core menu lists install targets" core_menu_lists_dependencies
+run_test_case "essential commands show status not uninstall" essential_commands_show_status_not_uninstall
 
 test_shows_help() {
-  _run_cmd "$ROOT_DIR/spells/.arcana/core/core-menu" --help
-  _assert_success
-  _assert_output_contains "Usage: core-menu"
+  run_cmd "$ROOT_DIR/spells/.arcana/core/core-menu" --help
+  assert_success
+  assert_output_contains "Usage: core-menu"
 }
 
-_run_test_case "core-menu --help shows usage" test_shows_help
+run_test_case "core-menu --help shows usage" test_shows_help
 
-_finish_tests
+finish_tests

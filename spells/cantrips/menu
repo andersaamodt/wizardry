@@ -101,8 +101,8 @@ if [ "$#" -lt 2 ]; then
                 main-menu
                 return 0
         fi
-        if command -v _word_of_binding >/dev/null 2>&1; then
-                if _word_of_binding main-menu; then
+        if command -v word_of_binding >/dev/null 2>&1; then
+                if word_of_binding --run main-menu; then
                         return 0
                 fi
         elif [ -n "${WIZARDRY_DIR-}" ] \
@@ -110,8 +110,8 @@ if [ "$#" -lt 2 ]; then
                 WIZARDRY_SOURCE_WORD_OF_BINDING=1 \
                         . "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding"
                 unset WIZARDRY_SOURCE_WORD_OF_BINDING
-                if command -v _word_of_binding >/dev/null 2>&1; then
-                        if _word_of_binding main-menu; then
+                if command -v word_of_binding >/dev/null 2>&1; then
+                        if word_of_binding --run main-menu; then
                                 return 0
                         fi
                 fi

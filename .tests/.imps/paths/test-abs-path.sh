@@ -13,10 +13,10 @@ done
 
 test_abs_path_directory() {
   skip-if-compiled || return $?
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   mkdir -p "$tmpdir/subdir"
-  _run_spell_in_dir "$tmpdir" spells/.imps/paths/abs-path "./subdir"
-  _assert_success
+  run_spell_in_dir "$tmpdir" spells/.imps/paths/abs-path "./subdir"
+  assert_success
   # Should output an absolute path containing subdir
   case "$OUTPUT" in
     *subdir*) return 0 ;;
@@ -26,10 +26,10 @@ test_abs_path_directory() {
 
 test_abs_path_file() {
   skip-if-compiled || return $?
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   touch "$tmpdir/testfile.txt"
-  _run_spell_in_dir "$tmpdir" spells/.imps/paths/abs-path "./testfile.txt"
-  _assert_success
+  run_spell_in_dir "$tmpdir" spells/.imps/paths/abs-path "./testfile.txt"
+  assert_success
   # Should output an absolute path containing the filename
   case "$OUTPUT" in
     */testfile.txt) return 0 ;;
@@ -38,8 +38,8 @@ test_abs_path_file() {
 }
 
 test_abs_path_normalizes_double_slashes() {
-  _run_spell spells/.imps/paths/abs-path "/tmp//test"
-  _assert_success
+  run_spell spells/.imps/paths/abs-path "/tmp//test"
+  assert_success
   # Should not contain double slashes
   case "$OUTPUT" in
     *//*) TEST_FAILURE_REASON="should normalize double slashes"; return 1 ;;
@@ -49,14 +49,14 @@ test_abs_path_normalizes_double_slashes() {
 
 test_abs_path_absolute_input() {
   skip-if-compiled || return $?
-  _run_spell spells/.imps/paths/abs-path "/tmp"
-  _assert_success
-  _assert_output_contains "/tmp"
+  run_spell spells/.imps/paths/abs-path "/tmp"
+  assert_success
+  assert_output_contains "/tmp"
 }
 
-_run_test_case "abs-path handles directory" test_abs_path_directory
-_run_test_case "abs-path handles file" test_abs_path_file
-_run_test_case "abs-path normalizes double slashes" test_abs_path_normalizes_double_slashes
-_run_test_case "abs-path handles absolute input" test_abs_path_absolute_input
+run_test_case "abs-path handles directory" test_abs_path_directory
+run_test_case "abs-path handles file" test_abs_path_file
+run_test_case "abs-path normalizes double slashes" test_abs_path_normalizes_double_slashes
+run_test_case "abs-path handles absolute input" test_abs_path_absolute_input
 
-_finish_tests
+finish_tests

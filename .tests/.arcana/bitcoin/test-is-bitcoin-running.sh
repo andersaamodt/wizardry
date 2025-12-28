@@ -12,18 +12,18 @@ spell_is_executable() {
   [ -x "$ROOT_DIR/spells/.arcana/bitcoin/is-bitcoin-running" ]
 }
 
-_run_test_case "install/bitcoin/is-bitcoin-running is executable" spell_is_executable
+run_test_case "install/bitcoin/is-bitcoin-running is executable" spell_is_executable
 spell_has_content() {
   [ -s "$ROOT_DIR/spells/.arcana/bitcoin/is-bitcoin-running" ]
 }
 
-_run_test_case "install/bitcoin/is-bitcoin-running has content" spell_has_content
+run_test_case "install/bitcoin/is-bitcoin-running has content" spell_has_content
 
 shows_help() {
-  _run_spell spells/.arcana/bitcoin/is-bitcoin-running --help
+  run_spell spells/.arcana/bitcoin/is-bitcoin-running --help
   # Note: spell may not have --help implemented yet
   true
 }
 
-_run_test_case "is-bitcoin-running shows help" shows_help
-_finish_tests
+run_test_case "is-bitcoin-running shows help" shows_help
+finish_tests

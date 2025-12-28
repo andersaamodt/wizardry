@@ -13,7 +13,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 make_stub_dir() {
-  dir=$(_make_tempdir)
+  dir=$(make_tempdir)
   mkdir -p "$dir"
   printf '%s\n' "$dir"
 }
@@ -51,10 +51,10 @@ disable_service_prompts_and_invokes() {
   write_stub_ask_text "$stub_dir" "epsilon"
   write_stub_systemctl "$stub_dir"
   write_stub_sudo "$stub_dir"
-  PATH="$stub_dir:$PATH" _run_spell "spells/cantrips/disable-service"
-  _assert_success || return 1
-  _assert_output_contains "Disabling epsilon.service so it no longer starts at boot..." || return 1
-  _assert_output_contains "systemd disable request submitted." || return 1
+  PATH="$stub_dir:$PATH" run_spell "spells/cantrips/disable-service"
+  assert_success || return 1
+  assert_output_contains "Disabling epsilon.service so it no longer starts at boot..." || return 1
+  assert_output_contains "systemd disable request submitted." || return 1
   [ "$(cat "$stub_dir/systemctl.args")" = "disable epsilon.service" ] || {
     TEST_FAILURE_REASON="systemctl called with unexpected args"; return 1; }
 }
@@ -62,25 +62,25 @@ disable_service_prompts_and_invokes() {
 disable_service_requires_name() {
   stub_dir=$(make_stub_dir)
   write_stub_ask_text "$stub_dir" ""
-  PATH="$stub_dir:$PATH" _run_spell "spells/cantrips/disable-service"
-  _assert_failure || return 1
-  _assert_error_contains "No service name supplied." || return 1
+  PATH="$stub_dir:$PATH" run_spell "spells/cantrips/disable-service"
+  assert_failure || return 1
+  assert_error_contains "No service name supplied." || return 1
 }
 
-_run_test_case "disable-service prompts then disables unit" disable_service_prompts_and_invokes
-_run_test_case "disable-service fails when name missing" disable_service_requires_name
+run_test_case "disable-service prompts then disables unit" disable_service_prompts_and_invokes
+run_test_case "disable-service fails when name missing" disable_service_requires_name
 
 spell_is_executable() {
   [ -x "$ROOT_DIR/spells/cantrips/disable-service" ]
 }
 
-_run_test_case "cantrips/disable-service is executable" spell_is_executable
+run_test_case "cantrips/disable-service is executable" spell_is_executable
 shows_help() {
-  _run_spell spells/cantrips/disable-service --help
+  run_spell spells/cantrips/disable-service --help
   # Note: spell may not have --help implemented yet
   true
 }
 
-_run_test_case "disable-service shows help" shows_help
+run_test_case "disable-service shows help" shows_help
 
 # Test via source-then-invoke pattern  

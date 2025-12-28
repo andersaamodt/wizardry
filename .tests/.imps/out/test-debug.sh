@@ -12,33 +12,33 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_debug_outputs_when_level_2() {
-  WIZARDRY_LOG_LEVEL=2 _run_spell spells/.imps/out/debug "debug message"
-  _assert_success
-  _assert_error_contains "DEBUG:"
-  _assert_error_contains "debug message"
+  WIZARDRY_LOG_LEVEL=2 run_spell spells/.imps/out/debug "debug message"
+  assert_success
+  assert_error_contains "DEBUG:"
+  assert_error_contains "debug message"
 }
 
 test_debug_silent_when_level_1() {
-  WIZARDRY_LOG_LEVEL=1 _run_spell spells/.imps/out/debug "debug message"
-  _assert_success
+  WIZARDRY_LOG_LEVEL=1 run_spell spells/.imps/out/debug "debug message"
+  assert_success
   [ -z "$ERROR" ] || { TEST_FAILURE_REASON="expected no output at level 1, got: $ERROR"; return 1; }
 }
 
 test_debug_silent_when_level_0() {
-  WIZARDRY_LOG_LEVEL=0 _run_spell spells/.imps/out/debug "debug message"
-  _assert_success
+  WIZARDRY_LOG_LEVEL=0 run_spell spells/.imps/out/debug "debug message"
+  assert_success
   [ -z "$ERROR" ] || { TEST_FAILURE_REASON="expected no output at level 0, got: $ERROR"; return 1; }
 }
 
 test_debug_default_level_0() {
-  _run_spell spells/.imps/out/debug "debug message"
-  _assert_success
+  run_spell spells/.imps/out/debug "debug message"
+  assert_success
   [ -z "$ERROR" ] || { TEST_FAILURE_REASON="expected no output with default level, got: $ERROR"; return 1; }
 }
 
-_run_test_case "debug outputs when log level >= 2" test_debug_outputs_when_level_2
-_run_test_case "debug silent when log level 1" test_debug_silent_when_level_1
-_run_test_case "debug silent when log level 0" test_debug_silent_when_level_0
-_run_test_case "debug defaults to level 0" test_debug_default_level_0
+run_test_case "debug outputs when log level >= 2" test_debug_outputs_when_level_2
+run_test_case "debug silent when log level 1" test_debug_silent_when_level_1
+run_test_case "debug silent when log level 0" test_debug_silent_when_level_0
+run_test_case "debug defaults to level 0" test_debug_default_level_0
 
-_finish_tests
+finish_tests

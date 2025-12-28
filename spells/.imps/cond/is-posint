@@ -2,7 +2,7 @@
 # is-posint VALUE - test if VALUE is a positive integer (greater than 0)
 # Example: is-posint "$count" && echo "valid count"
 
-_is_posint() {
+is_posint() {
   case "$1" in
     ''|*[!0-9]*) return 1 ;;
     0) return 1 ;;
@@ -12,4 +12,4 @@ _is_posint() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */is-posint) _is_posint "$@" ;; esac
+  */is-posint) is_posint "$@" ;; esac

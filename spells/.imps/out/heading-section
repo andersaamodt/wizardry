@@ -5,7 +5,7 @@
 
 set -eu
 
-_heading_section() {
+heading_section() {
   text=${1-}
   
   # Use colors if supported
@@ -19,4 +19,4 @@ _heading_section() {
 }
 
 # Self-execution when run directly (not sourced)
-case "${0##*/}" in heading-section) _heading_section "$@" ;; esac
+case "${0##*/}" in heading-section) heading_section "$@" ;; esac

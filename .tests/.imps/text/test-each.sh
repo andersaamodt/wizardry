@@ -14,20 +14,20 @@ done
 test_each_runs_for_lines() {
   tmpfile=$(mktemp "$WIZARDRY_TMPDIR/testfile.XXXXXX")
   printf 'a\nb\n' > "$tmpfile"
-  _run_cmd sh -c "cat '$tmpfile' | '$ROOT_DIR/spells/.imps/text/each' echo 'item:'"
+  run_cmd sh -c "cat '$tmpfile' | '$ROOT_DIR/spells/.imps/text/each' echo 'item:'"
   rm -f "$tmpfile"
-  _assert_success
-  _assert_output_contains "item: a"
-  _assert_output_contains "item: b"
+  assert_success
+  assert_output_contains "item: a"
+  assert_output_contains "item: b"
 }
 
 test_each_handles_empty_input() {
-  _run_cmd sh -c "printf '' | '$ROOT_DIR/spells/.imps/text/each' echo 'item:'"
-  _assert_success
+  run_cmd sh -c "printf '' | '$ROOT_DIR/spells/.imps/text/each' echo 'item:'"
+  assert_success
   [ -z "$OUTPUT" ] || { TEST_FAILURE_REASON="output should be empty"; return 1; }
 }
 
-_run_test_case "each runs for each line" test_each_runs_for_lines
-_run_test_case "each handles empty input" test_each_handles_empty_input
+run_test_case "each runs for each line" test_each_runs_for_lines
+run_test_case "each handles empty input" test_each_handles_empty_input
 
-_finish_tests
+finish_tests

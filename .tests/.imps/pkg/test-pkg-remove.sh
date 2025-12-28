@@ -13,19 +13,19 @@ done
 
 test_pkg_remove_no_package_fails() {
   skip-if-compiled || return $?
-  _run_spell spells/.imps/pkg/pkg-remove
-  _assert_failure
-  _assert_error_contains "package name required"
+  run_spell spells/.imps/pkg/pkg-remove
+  assert_failure
+  assert_error_contains "package name required"
 }
 
 test_pkg_remove_empty_package_fails() {
   skip-if-compiled || return $?
-  _run_spell spells/.imps/pkg/pkg-remove ""
-  _assert_failure
-  _assert_error_contains "package name required"
+  run_spell spells/.imps/pkg/pkg-remove ""
+  assert_failure
+  assert_error_contains "package name required"
 }
 
-_run_test_case "pkg-remove without package fails" test_pkg_remove_no_package_fails
-_run_test_case "pkg-remove with empty package fails" test_pkg_remove_empty_package_fails
+run_test_case "pkg-remove without package fails" test_pkg_remove_no_package_fails
+run_test_case "pkg-remove with empty package fails" test_pkg_remove_empty_package_fails
 
-_finish_tests
+finish_tests

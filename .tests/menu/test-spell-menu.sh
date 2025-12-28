@@ -105,17 +105,17 @@ STUB
 
 test_errors_when_helper_missing() {
   stub_dir=$(make_stub_dir)
-  PATH="$WIZARDRY_IMPS_PATH:$stub_dir:/bin:/usr/bin" CAST_STORE="$stub_dir/does-not-exist" _run_spell "spells/menu/spell-menu" --help
+  PATH="$WIZARDRY_IMPS_PATH:$stub_dir:/bin:/usr/bin" CAST_STORE="$stub_dir/does-not-exist" run_spell "spells/menu/spell-menu" --help
   # --help should work even without memorize
-  _assert_success || return 1
+  assert_success || return 1
 }
 
 test_shows_usage_with_help() {
   skip-if-compiled || return $?
   stub_dir=$(make_stub_dir)
   write_memorize_command_stub "$stub_dir"
-  PATH="$stub_dir:$PATH" _run_spell "spells/menu/spell-menu" --help
-  _assert_success || return 1
+  PATH="$stub_dir:$PATH" run_spell "spells/menu/spell-menu" --help
+  assert_success || return 1
   case "$OUTPUT" in
     *"Usage: spell-menu"*) : ;;
     *) TEST_FAILURE_REASON="help text should show usage: $OUTPUT"; return 1 ;;
@@ -128,8 +128,8 @@ test_requires_minimum_arguments() {
   write_memorize_command_stub "$stub_dir"
   write_require_command_stub "$stub_dir"
   # Call with no arguments (needs 1)
-  PATH="$stub_dir:$PATH" _run_spell "spells/menu/spell-menu"
-  _assert_failure || return 1
+  PATH="$stub_dir:$PATH" run_spell "spells/menu/spell-menu"
+  assert_failure || return 1
   case "$OUTPUT$ERROR" in
     *"Usage:"*) : ;;
     *) TEST_FAILURE_REASON="should show usage when too few arguments"; return 1 ;;
@@ -140,17 +140,17 @@ test_cast_action_executes_command() {
   skip-if-compiled || return $?
   stub_dir=$(make_stub_dir)
   write_memorize_command_stub "$stub_dir"
-  PATH="$stub_dir:$PATH" _run_spell "spells/menu/spell-menu" --cast "echo hello"
-  _assert_success || return 1
+  PATH="$stub_dir:$PATH" run_spell "spells/menu/spell-menu" --cast "echo hello"
+  assert_success || return 1
   case "$OUTPUT" in
     *"hello"*) : ;;
     *) TEST_FAILURE_REASON="cast action should execute command: $OUTPUT"; return 1 ;;
   esac
 }
 
-_run_test_case "spell-menu shows usage with --help" test_shows_usage_with_help
-_run_test_case "spell-menu requires minimum arguments" test_requires_minimum_arguments
-_run_test_case "spell-menu --cast executes command" test_cast_action_executes_command
+run_test_case "spell-menu shows usage with --help" test_shows_usage_with_help
+run_test_case "spell-menu requires minimum arguments" test_requires_minimum_arguments
+run_test_case "spell-menu --cast executes command" test_cast_action_executes_command
 
 # Test ESC and Exit behavior - menu exits properly when escape status returned
 test_esc_exit_behavior() {
@@ -175,8 +175,8 @@ SH
   chmod +x "$stub_dir/exit-label"
   
   
-  _run_cmd env PATH="$stub_dir:$PATH" MENU_LOG="$stub_dir/log" "$ROOT_DIR/spells/menu/spell-menu" testspell
-  _assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
+  run_cmd env PATH="$stub_dir:$PATH" MENU_LOG="$stub_dir/log" "$ROOT_DIR/spells/menu/spell-menu" testspell
+  assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
   
   args=$(cat "$stub_dir/log")
   case "$args" in
@@ -186,7 +186,7 @@ SH
   
 }
 
-_run_test_case "spell-menu ESC/Exit behavior" test_esc_exit_behavior
+run_test_case "spell-menu ESC/Exit behavior" test_esc_exit_behavior
 
 # Test that toggle selection keeps cursor position, other actions reset to first item
 test_toggle_keeps_cursor_position() {
@@ -244,8 +244,8 @@ kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
 SH
   chmod +x "$stub_dir/menu"
   
-  _run_cmd env PATH="$stub_dir:$PATH:/usr/bin:/bin" MENU_LOG="$stub_dir/log" CALL_COUNT_FILE="$call_count_file" "$ROOT_DIR/spells/menu/spell-menu" testspell
-  _assert_success || { TEST_FAILURE_REASON="menu should exit successfully"; return 1; }
+  run_cmd env PATH="$stub_dir:$PATH:/usr/bin:/bin" MENU_LOG="$stub_dir/log" CALL_COUNT_FILE="$call_count_file" "$ROOT_DIR/spells/menu/spell-menu" testspell
+  assert_success || { TEST_FAILURE_REASON="menu should exit successfully"; return 1; }
   
   log_content=$(cat "$stub_dir/log")
   # First call should have start_selection=1
@@ -264,7 +264,7 @@ SH
   fi
 }
 
-_run_test_case "spell-menu toggle keeps cursor position" test_toggle_keeps_cursor_position
+run_test_case "spell-menu toggle keeps cursor position" test_toggle_keeps_cursor_position
 
 # Test that non-toggle actions reset cursor to first item
 test_non_toggle_resets_cursor() {
@@ -320,8 +320,8 @@ kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
 SH
   chmod +x "$stub_dir/menu"
   
-  _run_cmd env PATH="$stub_dir:$PATH:/usr/bin:/bin" MENU_LOG="$stub_dir/log" CALL_COUNT_FILE="$call_count_file" "$ROOT_DIR/spells/menu/spell-menu" testspell
-  _assert_success || { TEST_FAILURE_REASON="menu should exit successfully"; return 1; }
+  run_cmd env PATH="$stub_dir:$PATH:/usr/bin:/bin" MENU_LOG="$stub_dir/log" CALL_COUNT_FILE="$call_count_file" "$ROOT_DIR/spells/menu/spell-menu" testspell
+  assert_success || { TEST_FAILURE_REASON="menu should exit successfully"; return 1; }
   
   log_content=$(cat "$stub_dir/log")
   # First call should have start_selection=1
@@ -340,7 +340,7 @@ SH
   fi
 }
 
-_run_test_case "spell-menu non-toggle resets cursor" test_non_toggle_resets_cursor
+run_test_case "spell-menu non-toggle resets cursor" test_non_toggle_resets_cursor
 
 
 # Test via source-then-invoke pattern  

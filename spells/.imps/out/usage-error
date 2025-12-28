@@ -3,7 +3,7 @@
 # Example: usage-error "my-spell" "unknown option: -x"
 set -eu
 
-_usage_error() {
+usage_error() {
   _ue_name=${1:-}
   _ue_message=${2:-}
   if [ -n "$_ue_name" ]; then
@@ -16,4 +16,4 @@ _usage_error() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */usage-error) _usage_error "$@" ;; esac
+  */usage-error) usage_error "$@" ;; esac

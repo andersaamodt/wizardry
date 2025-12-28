@@ -5,7 +5,7 @@
 
 set -eu
 
-_config_set() {
+config_set() {
   _cs_file=${1:?config-set: file path required}
   _cs_key=${2:?config-set: key required}
   _cs_value=${3-}  # Value can be empty
@@ -82,4 +82,4 @@ _config_set() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */config-set) _config_set "$@" ;; esac
+  */config-set) config_set "$@" ;; esac

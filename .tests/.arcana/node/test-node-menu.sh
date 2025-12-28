@@ -13,7 +13,7 @@ spell_is_executable() {
   [ -x "$ROOT_DIR/spells/.arcana/node/node-menu" ]
 }
 
-_run_test_case "install/node/node-menu is executable" spell_is_executable
+run_test_case "install/node/node-menu is executable" spell_is_executable
 
 make_stub_menu() {
   tmp=$1
@@ -27,9 +27,9 @@ SHI
 
 menu_shows_install_when_node_missing() {
   skip-if-compiled || return $?
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   # Link essential utilities but NOT node
-  _link_tools "$tmp" sh cat printf test env basename dirname pwd tr
+  link_tools "$tmp" sh cat printf test env basename dirname pwd tr
   
   make_stub_menu "$tmp"
   cat >"$tmp/exit-label" <<'SHI'
@@ -46,11 +46,11 @@ SHI
 
   MENU_LOG="$tmp/menu.log"
 
-  _run_cmd env PATH="$tmp:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips" MENU_LOG="$MENU_LOG" \
+  run_cmd env PATH="$tmp:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips" MENU_LOG="$MENU_LOG" \
     "$ROOT_DIR/spells/.arcana/node/node-menu"
 
-  _assert_success || return 1
-  _assert_path_exists "$MENU_LOG" || return 1
+  assert_success || return 1
+  assert_path_exists "$MENU_LOG" || return 1
   content=$(cat "$MENU_LOG")
   case "$content" in
     *"Install Node.js%install-node"* ) : ;;
@@ -62,13 +62,13 @@ SHI
   esac
 }
 
-_run_test_case "node-menu shows install flow when Node.js is absent" menu_shows_install_when_node_missing
+run_test_case "node-menu shows install flow when Node.js is absent" menu_shows_install_when_node_missing
 
 menu_places_uninstall_before_exit_when_installed() {
   skip-if-compiled || return $?
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   # Link essential utilities
-  _link_tools "$tmp" sh cat printf test env basename dirname pwd tr
+  link_tools "$tmp" sh cat printf test env basename dirname pwd tr
   
   make_stub_menu "$tmp"
 
@@ -130,11 +130,11 @@ SHI
   chmod +x "$tmp/is-service-running"
 
   MENU_LOG="$tmp/menu.log"
-  _run_cmd env PATH="$tmp:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips" MENU_LOG="$MENU_LOG" \
+  run_cmd env PATH="$tmp:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips" MENU_LOG="$MENU_LOG" \
     "$ROOT_DIR/spells/.arcana/node/node-menu"
 
-  _assert_success || return 1
-  _assert_path_exists "$MENU_LOG" || return 1
+  assert_success || return 1
+  assert_path_exists "$MENU_LOG" || return 1
 
   # Skip the title; inspect menu entries
   entries=$(tail -n +2 "$MENU_LOG")
@@ -162,6 +162,6 @@ SHI
   esac
 }
 
-_run_test_case "node-menu orders uninstall before exit and surfaces node helpers" menu_places_uninstall_before_exit_when_installed
+run_test_case "node-menu orders uninstall before exit and surfaces node helpers" menu_places_uninstall_before_exit_when_installed
 
-_finish_tests
+finish_tests

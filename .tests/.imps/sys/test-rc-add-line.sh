@@ -10,7 +10,7 @@ done
 
 test_rc_add_line_creates_file_and_adds_line() {
   skip-if-compiled || return $?
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   rc_file="$tmpdir/.testrc"
   
   # Add a line to non-existent file
@@ -33,7 +33,7 @@ test_rc_add_line_creates_file_and_adds_line() {
 }
 
 test_rc_add_line_is_idempotent() {
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   rc_file="$tmpdir/.testrc"
   
   # Add line twice
@@ -50,7 +50,7 @@ test_rc_add_line_is_idempotent() {
 
 test_rc_add_line_appends_to_existing_file() {
   skip-if-compiled || return $?
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   rc_file="$tmpdir/.testrc"
   
   # Create file with existing content
@@ -73,7 +73,7 @@ test_rc_add_line_appends_to_existing_file() {
 }
 
 test_rc_add_line_requires_all_arguments() {
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   rc_file="$tmpdir/.testrc"
   
   # Missing LINE argument
@@ -89,9 +89,9 @@ test_rc_add_line_requires_all_arguments() {
   fi
 }
 
-_run_test_case "rc-add-line creates file and adds line" test_rc_add_line_creates_file_and_adds_line
-_run_test_case "rc-add-line is idempotent" test_rc_add_line_is_idempotent
-_run_test_case "rc-add-line appends to existing file" test_rc_add_line_appends_to_existing_file
-_run_test_case "rc-add-line requires all arguments" test_rc_add_line_requires_all_arguments
+run_test_case "rc-add-line creates file and adds line" test_rc_add_line_creates_file_and_adds_line
+run_test_case "rc-add-line is idempotent" test_rc_add_line_is_idempotent
+run_test_case "rc-add-line appends to existing file" test_rc_add_line_appends_to_existing_file
+run_test_case "rc-add-line requires all arguments" test_rc_add_line_requires_all_arguments
 
-_finish_tests
+finish_tests

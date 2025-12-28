@@ -4,7 +4,7 @@
 
 set -eu
 
-_config_has() {
+config_has() {
   _ch_file=${1:?config-has: file path required}
   _ch_key=${2:?config-has: key required}
   
@@ -29,4 +29,4 @@ _config_has() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */config-has) _config_has "$@" ;; esac
+  */config-has) config_has "$@" ;; esac

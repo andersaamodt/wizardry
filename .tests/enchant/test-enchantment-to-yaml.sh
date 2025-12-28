@@ -14,27 +14,27 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 make_stub_dir() {
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   mkdir -p "$tmpdir/stubs"
   printf '%s\n' "$tmpdir/stubs"
 }
 
 test_help() {
-  _run_spell "spells/enchant/enchantment-to-yaml" --help
-  _assert_success && _assert_output_contains "Usage: enchantment-to-yaml"
+  run_spell "spells/enchant/enchantment-to-yaml" --help
+  assert_success && assert_output_contains "Usage: enchantment-to-yaml"
 }
 
 test_argument_validation() {
-  _run_spell "spells/enchant/enchantment-to-yaml"
-  _assert_failure && _assert_error_contains "incorrect number of arguments"
+  run_spell "spells/enchant/enchantment-to-yaml"
+  assert_failure && assert_error_contains "incorrect number of arguments"
 
-  _run_spell "spells/enchant/enchantment-to-yaml" one two
-  _assert_failure && _assert_error_contains "incorrect number of arguments"
+  run_spell "spells/enchant/enchantment-to-yaml" one two
+  assert_failure && assert_error_contains "incorrect number of arguments"
 }
 
 test_missing_file() {
-  _run_spell "spells/enchant/enchantment-to-yaml" "$WIZARDRY_TMPDIR/missing"
-  _assert_failure && _assert_error_contains "file does not exist"
+  run_spell "spells/enchant/enchantment-to-yaml" "$WIZARDRY_TMPDIR/missing"
+  assert_failure && assert_error_contains "file does not exist"
 }
 
 test_requires_attributes() {
@@ -47,8 +47,8 @@ STUB
 
   target="$WIZARDRY_TMPDIR/plain"
   printf 'body\n' >"$target"
-  PATH="$stub_dir:$PATH" _run_spell "spells/enchant/enchantment-to-yaml" "$target"
-  _assert_failure && _assert_error_contains "does not have extended attributes"
+  PATH="$stub_dir:$PATH" run_spell "spells/enchant/enchantment-to-yaml" "$target"
+  assert_failure && assert_error_contains "does not have extended attributes"
 }
 
 test_writes_yaml_with_values() {
@@ -72,8 +72,8 @@ STUB
   target="$WIZARDRY_TMPDIR/yaml-scroll"
   printf 'content\n' >"$target"
 
-  PATH="$stub_dir:$PATH" _run_spell "spells/enchant/enchantment-to-yaml" "$target"
-  _assert_success
+  PATH="$stub_dir:$PATH" run_spell "spells/enchant/enchantment-to-yaml" "$target"
+  assert_success
   # YAML header should be prepended with values
   header=$(head -n 4 "$target")
   printf '%s\n' "$header" | grep '^---$' >/dev/null || { TEST_FAILURE_REASON="missing YAML start"; return 1; }
@@ -98,15 +98,15 @@ STUB
   target="$WIZARDRY_TMPDIR/yaml-missing"
   printf 'content\n' >"$target"
 
-  PATH="$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/fs:$stub_dir:/usr/bin:/bin" _run_spell "spells/enchant/enchantment-to-yaml" "$target"
-  _assert_failure && _assert_error_contains "requires one of attr, xattr, or setfattr"
+  PATH="$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/fs:$stub_dir:/usr/bin:/bin" run_spell "spells/enchant/enchantment-to-yaml" "$target"
+  assert_failure && assert_error_contains "requires one of attr, xattr, or setfattr"
 }
 
-_run_test_case "enchantment-to-yaml prints usage" test_help
-_run_test_case "enchantment-to-yaml validates arguments" test_argument_validation
-_run_test_case "enchantment-to-yaml fails for missing files" test_missing_file
-_run_test_case "enchantment-to-yaml errors when no attributes exist" test_requires_attributes
-_run_test_case "enchantment-to-yaml writes YAML and clears attributes" test_writes_yaml_with_values
-_run_test_case "enchantment-to-yaml reports missing helpers" test_reports_missing_helpers
+run_test_case "enchantment-to-yaml prints usage" test_help
+run_test_case "enchantment-to-yaml validates arguments" test_argument_validation
+run_test_case "enchantment-to-yaml fails for missing files" test_missing_file
+run_test_case "enchantment-to-yaml errors when no attributes exist" test_requires_attributes
+run_test_case "enchantment-to-yaml writes YAML and clears attributes" test_writes_yaml_with_values
+run_test_case "enchantment-to-yaml reports missing helpers" test_reports_missing_helpers
 
 # Test via source-then-invoke pattern  

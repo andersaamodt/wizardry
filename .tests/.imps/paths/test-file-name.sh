@@ -13,19 +13,19 @@ done
 
 test_file_name_extracts() {
   skip-if-compiled || return $?
-  _run_spell spells/.imps/paths/file-name "/path/to/file.txt"
-  _assert_success
-  _assert_output_contains "file.txt"
+  run_spell spells/.imps/paths/file-name "/path/to/file.txt"
+  assert_success
+  assert_output_contains "file.txt"
 }
 
 test_file_name_handles_simple_name() {
   skip-if-compiled || return $?
-  _run_spell spells/.imps/paths/file-name "simple.txt"
-  _assert_success
-  _assert_output_contains "simple.txt"
+  run_spell spells/.imps/paths/file-name "simple.txt"
+  assert_success
+  assert_output_contains "simple.txt"
 }
 
-_run_test_case "file-name extracts filename" test_file_name_extracts
-_run_test_case "file-name handles simple name" test_file_name_handles_simple_name
+run_test_case "file-name extracts filename" test_file_name_extracts
+run_test_case "file-name handles simple name" test_file_name_handles_simple_name
 
-_finish_tests
+finish_tests

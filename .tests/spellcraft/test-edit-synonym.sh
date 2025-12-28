@@ -15,25 +15,25 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_shows_help() {
-  _run_spell "spells/spellcraft/edit-synonym" --help
-  _assert_success && _assert_output_contains "Usage:"
+  run_spell "spells/spellcraft/edit-synonym" --help
+  assert_success && assert_output_contains "Usage:"
 }
 
 test_edits_synonym_word() {
   skip-if-compiled || return $?
-  case_dir=$(_make_tempdir)
+  case_dir=$(make_tempdir)
   synonyms_file="$case_dir/.synonyms"
   
   # Create a synonym first
   SPELLBOOK_DIR="$case_dir" \
-    _run_spell "spells/spellcraft/add-synonym" oldalias echo
-  _assert_success || return 1
+    run_spell "spells/spellcraft/add-synonym" oldalias echo
+  assert_success || return 1
   
   # Rename it
   SPELLBOOK_DIR="$case_dir" \
-    _run_spell "spells/spellcraft/edit-synonym" oldalias --word newalias
+    run_spell "spells/spellcraft/edit-synonym" oldalias --word newalias
   
-  _assert_success || return 1
+  assert_success || return 1
   
   # Verify old alias is gone
   if grep -q "^alias oldalias=" "$synonyms_file"; then
@@ -50,19 +50,19 @@ test_edits_synonym_word() {
 
 test_edits_target_spell() {
   skip-if-compiled || return $?
-  case_dir=$(_make_tempdir)
+  case_dir=$(make_tempdir)
   synonyms_file="$case_dir/.synonyms"
   
   # Create a synonym first
   SPELLBOOK_DIR="$case_dir" \
-    _run_spell "spells/spellcraft/add-synonym" myalias echo
-  _assert_success || return 1
+    run_spell "spells/spellcraft/add-synonym" myalias echo
+  assert_success || return 1
   
   # Change target spell
   SPELLBOOK_DIR="$case_dir" \
-    _run_spell "spells/spellcraft/edit-synonym" myalias --spell printf
+    run_spell "spells/spellcraft/edit-synonym" myalias --spell printf
   
-  _assert_success || return 1
+  assert_success || return 1
   
   # Verify new target
   if ! grep -q "^alias myalias='printf'" "$synonyms_file"; then
@@ -72,70 +72,70 @@ test_edits_target_spell() {
 }
 
 test_fails_when_synonym_not_found() {
-  case_dir=$(_make_tempdir)
+  case_dir=$(make_tempdir)
   
   SPELLBOOK_DIR="$case_dir" \
-    _run_spell "spells/spellcraft/edit-synonym" nonexistent --word newalias
+    run_spell "spells/spellcraft/edit-synonym" nonexistent --word newalias
   
-  _assert_failure || return 1
+  assert_failure || return 1
 }
 
 test_requires_edit_mode() {
-  case_dir=$(_make_tempdir)
+  case_dir=$(make_tempdir)
   
   # Create a synonym first
   SPELLBOOK_DIR="$case_dir" \
-    _run_spell "spells/spellcraft/add-synonym" myalias echo
-  _assert_success || return 1
+    run_spell "spells/spellcraft/add-synonym" myalias echo
+  assert_success || return 1
   
   # Try to edit without --word or --spell
   SPELLBOOK_DIR="$case_dir" \
-    _run_spell "spells/spellcraft/edit-synonym" myalias
+    run_spell "spells/spellcraft/edit-synonym" myalias
   
-  _assert_failure || return 1
+  assert_failure || return 1
 }
 
 test_rejects_invalid_new_word() {
-  case_dir=$(_make_tempdir)
+  case_dir=$(make_tempdir)
   
   # Create a synonym first
   SPELLBOOK_DIR="$case_dir" \
-    _run_spell "spells/spellcraft/add-synonym" myalias echo
-  _assert_success || return 1
+    run_spell "spells/spellcraft/add-synonym" myalias echo
+  assert_success || return 1
   
   # Try to rename with spaces
   SPELLBOOK_DIR="$case_dir" \
-    _run_spell "spells/spellcraft/edit-synonym" myalias --word "new alias"
+    run_spell "spells/spellcraft/edit-synonym" myalias --word "new alias"
   
-  _assert_failure || return 1
+  assert_failure || return 1
 }
 
 test_prevents_duplicate_word() {
-  case_dir=$(_make_tempdir)
+  case_dir=$(make_tempdir)
   
   # Create two synonyms
   SPELLBOOK_DIR="$case_dir" \
-    _run_spell "spells/spellcraft/add-synonym" alias1 echo
-  _assert_success || return 1
+    run_spell "spells/spellcraft/add-synonym" alias1 echo
+  assert_success || return 1
   
   SPELLBOOK_DIR="$case_dir" \
-    _run_spell "spells/spellcraft/add-synonym" alias2 printf
-  _assert_success || return 1
+    run_spell "spells/spellcraft/add-synonym" alias2 printf
+  assert_success || return 1
   
   # Try to rename alias1 to alias2 (should fail)
   SPELLBOOK_DIR="$case_dir" \
-    _run_spell "spells/spellcraft/edit-synonym" alias1 --word alias2
+    run_spell "spells/spellcraft/edit-synonym" alias1 --word alias2
   
-  _assert_failure || return 1
+  assert_failure || return 1
 }
 
-_run_test_case "prints help" test_shows_help
-_run_test_case "edits synonym word" test_edits_synonym_word
-_run_test_case "edits target spell" test_edits_target_spell
-_run_test_case "fails when synonym not found" test_fails_when_synonym_not_found
-_run_test_case "requires edit mode flag" test_requires_edit_mode
-_run_test_case "rejects invalid new word" test_rejects_invalid_new_word
-_run_test_case "prevents duplicate word" test_prevents_duplicate_word
+run_test_case "prints help" test_shows_help
+run_test_case "edits synonym word" test_edits_synonym_word
+run_test_case "edits target spell" test_edits_target_spell
+run_test_case "fails when synonym not found" test_fails_when_synonym_not_found
+run_test_case "requires edit mode flag" test_requires_edit_mode
+run_test_case "rejects invalid new word" test_rejects_invalid_new_word
+run_test_case "prevents duplicate word" test_prevents_duplicate_word
 
 
 # Test via source-then-invoke pattern  

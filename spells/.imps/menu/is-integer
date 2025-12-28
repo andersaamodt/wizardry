@@ -2,7 +2,7 @@
 # is-integer VALUE - test if value is a valid integer (positive, negative, or zero)
 # Example: is-integer "42" && echo "valid"
 
-_is_integer() {
+is_integer() {
   case "$1" in
     '') return 1 ;;
     -) return 1 ;;
@@ -20,4 +20,4 @@ _is_integer() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */is-integer) _is_integer "$@" ;; esac
+  */is-integer) is_integer "$@" ;; esac

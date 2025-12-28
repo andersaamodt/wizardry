@@ -206,12 +206,12 @@ test_tutorials_sequential_numbering() {
 }
 
 # Run all tests
-_run_test_case "tutorials --help test" test_help
-_run_test_case "all tutorials have POSIX shebang" test_all_tutorials_have_posix_shebang
-_run_test_case "no bashisms in tutorials" test_no_bashisms_in_tutorials
-_run_test_case "no bash terminology in tutorials" test_no_bash_terminology
-_run_test_case "tutorials quote variables properly" test_tutorials_quote_variables
-_run_test_case "all tutorials are executable" test_tutorials_are_executable
-_run_test_case "tutorials have sequential numbering" test_tutorials_sequential_numbering
+run_test_case "tutorials --help test" test_help
+run_test_case "all tutorials have POSIX shebang" test_all_tutorials_have_posix_shebang
+run_test_case "no bashisms in tutorials" test_no_bashisms_in_tutorials
+run_test_case "no bash terminology in tutorials" test_no_bash_terminology
+run_test_case "tutorials quote variables properly" test_tutorials_quote_variables
+run_test_case "all tutorials are executable" test_tutorials_are_executable
+run_test_case "tutorials have sequential numbering" test_tutorials_sequential_numbering
 
-_finish_tests
+finish_tests

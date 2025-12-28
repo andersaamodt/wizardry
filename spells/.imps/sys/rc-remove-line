@@ -3,7 +3,7 @@
 # Example: rc-remove-line cd-hook ~/.zshrc
 set -eu
 
-_rc_remove_line() {
+rc_remove_line() {
   _rrl_marker=${1:-}
   _rrl_rc_file=${2:-}
 
@@ -40,5 +40,5 @@ _rc_remove_line() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */rc-remove-line) _rc_remove_line "$@" ;;
+  */rc-remove-line) rc_remove_line "$@" ;;
 esac

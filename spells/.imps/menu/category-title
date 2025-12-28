@@ -3,7 +3,7 @@
 # Maps known category folder names to their proper display titles.
 # Example: category-title enchant -> Enchantment
 
-_category_title() {
+category_title() {
   case $1 in
     arcane)       printf 'Arcane' ;;
     cantrips)     printf 'Cantrips' ;;
@@ -28,4 +28,4 @@ _category_title() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */category-title) _category_title "$@" ;; esac
+  */category-title) category_title "$@" ;; esac

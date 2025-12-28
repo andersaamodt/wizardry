@@ -10,7 +10,7 @@ done
 
 test_rc_has_line_finds_marker() {
   skip-if-compiled || return $?
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   rc_file="$tmpdir/.testrc"
   
   # Create file with marked line
@@ -28,7 +28,7 @@ EOF
 }
 
 test_rc_has_line_fails_when_marker_missing() {
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   rc_file="$tmpdir/.testrc"
   
   # Create file without marker
@@ -42,7 +42,7 @@ test_rc_has_line_fails_when_marker_missing() {
 }
 
 test_rc_has_line_fails_when_file_missing() {
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   rc_file="$tmpdir/.nonexistent"
   
   # Should fail on missing file
@@ -53,7 +53,7 @@ test_rc_has_line_fails_when_file_missing() {
 }
 
 test_rc_has_line_requires_arguments() {
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   rc_file="$tmpdir/.testrc"
   touch "$rc_file"
   
@@ -64,9 +64,9 @@ test_rc_has_line_requires_arguments() {
   fi
 }
 
-_run_test_case "rc-has-line finds marker" test_rc_has_line_finds_marker
-_run_test_case "rc-has-line fails when marker missing" test_rc_has_line_fails_when_marker_missing
-_run_test_case "rc-has-line fails when file missing" test_rc_has_line_fails_when_file_missing
-_run_test_case "rc-has-line requires arguments" test_rc_has_line_requires_arguments
+run_test_case "rc-has-line finds marker" test_rc_has_line_finds_marker
+run_test_case "rc-has-line fails when marker missing" test_rc_has_line_fails_when_marker_missing
+run_test_case "rc-has-line fails when file missing" test_rc_has_line_fails_when_file_missing
+run_test_case "rc-has-line requires arguments" test_rc_has_line_requires_arguments
 
-_finish_tests
+finish_tests

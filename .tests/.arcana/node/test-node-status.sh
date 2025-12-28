@@ -13,39 +13,39 @@ spell_is_executable() {
   [ -x "$ROOT_DIR/spells/.arcana/node/node-status" ]
 }
 
-_run_test_case "install/node/node-status is executable" spell_is_executable
+run_test_case "install/node/node-status is executable" spell_is_executable
 
 renders_usage_information() {
   skip-if-compiled || return $?
-  _run_cmd "$ROOT_DIR/spells/.arcana/node/node-status" --help
+  run_cmd "$ROOT_DIR/spells/.arcana/node/node-status" --help
 
-  _assert_success || return 1
-  _assert_error_contains "Usage: node-status" || return 1
-  _assert_error_contains "Reports whether Node.js is installed" || return 1
+  assert_success || return 1
+  assert_error_contains "Usage: node-status" || return 1
+  assert_error_contains "Reports whether Node.js is installed" || return 1
 }
 
-_run_test_case "node-status prints usage with --help" renders_usage_information
+run_test_case "node-status prints usage with --help" renders_usage_information
 
 reports_not_installed_without_node_binary() {
   skip-if-compiled || return $?
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   # Link only essential utilities, NOT node
-  _link_tools "$tmp" sh cat printf test env basename dirname pwd tr
+  link_tools "$tmp" sh cat printf test env basename dirname pwd tr
   
-  _run_cmd env PATH="$tmp:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips" \
+  run_cmd env PATH="$tmp:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips" \
     "$ROOT_DIR/spells/.arcana/node/node-status"
 
-  _assert_success || return 1
-  _assert_output_contains "not installed" || return 1
+  assert_success || return 1
+  assert_output_contains "not installed" || return 1
 }
 
-_run_test_case "node-status reports not installed when node is absent" reports_not_installed_without_node_binary
+run_test_case "node-status reports not installed when node is absent" reports_not_installed_without_node_binary
 
 reports_installed_when_node_exists() {
   skip-if-compiled || return $?
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   # Link essential utilities
-  _link_tools "$tmp" sh cat printf test env basename dirname pwd tr
+  link_tools "$tmp" sh cat printf test env basename dirname pwd tr
   # Create node stub without npm
   cat >"$tmp/node" <<'SHI'
 #!/bin/sh
@@ -57,20 +57,20 @@ exit 0
 SHI
   chmod +x "$tmp/node"
 
-  _run_cmd env PATH="$tmp:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips" \
+  run_cmd env PATH="$tmp:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips" \
     "$ROOT_DIR/spells/.arcana/node/node-status"
 
-  _assert_success || return 1
-  _assert_output_contains "installed, npm missing" || return 1
+  assert_success || return 1
+  assert_output_contains "installed, npm missing" || return 1
 }
 
-_run_test_case "node-status flags missing npm" reports_installed_when_node_exists
+run_test_case "node-status flags missing npm" reports_installed_when_node_exists
 
 reports_running_service_state() {
   skip-if-compiled || return $?
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   # Link essential utilities
-  _link_tools "$tmp" sh cat printf test env basename dirname pwd tr
+  link_tools "$tmp" sh cat printf test env basename dirname pwd tr
   # Create node and npm stubs
   cat >"$tmp/node" <<'SHI'
 #!/bin/sh
@@ -104,13 +104,13 @@ exit 0
 SHI
   chmod +x "$tmp/is-service-running"
 
-  _run_cmd env PATH="$tmp:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips" \
+  run_cmd env PATH="$tmp:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips" \
     "$ROOT_DIR/spells/.arcana/node/node-status"
 
-  _assert_success || return 1
-  _assert_output_contains "service running" || return 1
+  assert_success || return 1
+  assert_output_contains "service running" || return 1
 }
 
-_run_test_case "node-status reports running service when detectors succeed" reports_running_service_state
+run_test_case "node-status reports running service when detectors succeed" reports_running_service_state
 
-_finish_tests
+finish_tests

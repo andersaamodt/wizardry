@@ -3,7 +3,7 @@
 # Provides minimal isolation for test consistency on macOS.
 set -eu
 
-_run_macos_sandbox() {
+run_macos_sandbox() {
   # Create a permissive sandbox profile that provides minimal isolation
   # NOTE: macOS sandboxing is DISABLED BY DEFAULT due to compatibility issues
   # Enable with WIZARDRY_ENABLE_MACOS_SANDBOX=1 if needed for testing
@@ -24,4 +24,4 @@ _run_macos_sandbox() {
 }
 
 # Self-execution when run directly (not sourced)
-case "${0##*/}" in run-macos-sandbox) _run_macos_sandbox "$@" ;; esac
+case "${0##*/}" in run-macos-sandbox) run_macos_sandbox "$@" ;; esac

@@ -12,18 +12,18 @@ done
 spell_is_executable() {
   [ -x "$ROOT_DIR/spells/.arcana/lightning/install-lightning" ]
 }
-_run_test_case "install/lightning/install-lightning is executable" spell_is_executable
+run_test_case "install/lightning/install-lightning is executable" spell_is_executable
 
 spell_has_content() {
   [ -s "$ROOT_DIR/spells/.arcana/lightning/install-lightning" ]
 }
-_run_test_case "install/lightning/install-lightning has content" spell_has_content
+run_test_case "install/lightning/install-lightning has content" spell_has_content
 
 shows_usage_help() {
-  _run_spell spells/.arcana/lightning/install-lightning --help
-  _assert_success || return 1
-  _assert_error_contains "Usage: install-lightning"
+  run_spell spells/.arcana/lightning/install-lightning --help
+  assert_success || return 1
+  assert_error_contains "Usage: install-lightning"
 }
-_run_test_case "install-lightning shows usage help" shows_usage_help
+run_test_case "install-lightning shows usage help" shows_usage_help
 
-_finish_tests
+finish_tests

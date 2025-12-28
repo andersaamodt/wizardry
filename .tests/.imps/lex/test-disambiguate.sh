@@ -13,18 +13,18 @@ test_disambiguate_is_executable() {
 }
 
 test_disambiguate_no_args_succeeds() {
-  _run_spell spells/.imps/lex/disambiguate
-  _assert_success || return 1
+  run_spell spells/.imps/lex/disambiguate
+  assert_success || return 1
 }
 
 test_disambiguate_runs_single_command() {
-  _run_spell spells/.imps/lex/disambiguate echo hello
-  _assert_success || return 1
-  _assert_output_contains "hello" || return 1
+  run_spell spells/.imps/lex/disambiguate echo hello
+  assert_success || return 1
+  assert_output_contains "hello" || return 1
 }
 
-_run_test_case "disambiguate is executable" test_disambiguate_is_executable
-_run_test_case "disambiguate with no args succeeds" test_disambiguate_no_args_succeeds
-_run_test_case "disambiguate runs single command" test_disambiguate_runs_single_command
+run_test_case "disambiguate is executable" test_disambiguate_is_executable
+run_test_case "disambiguate with no args succeeds" test_disambiguate_no_args_succeeds
+run_test_case "disambiguate runs single command" test_disambiguate_runs_single_command
 
-_finish_tests
+finish_tests

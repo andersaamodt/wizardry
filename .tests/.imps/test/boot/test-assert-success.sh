@@ -9,18 +9,18 @@ done
 
 test_zero_status() {
   STATUS=0
-  _assert_success
+  assert_success
 }
 
 test_nonzero_status_fails() {
   STATUS=1
-  if _assert_success; then
+  if assert_success; then
     return 1
   fi
   return 0
 }
 
-_run_test_case "assert-success succeeds on zero status" test_zero_status
-_run_test_case "assert-success fails on non-zero status" test_nonzero_status_fails
+run_test_case "assert-success succeeds on zero status" test_zero_status
+run_test_case "assert-success fails on non-zero status" test_nonzero_status_fails
 
-_finish_tests
+finish_tests

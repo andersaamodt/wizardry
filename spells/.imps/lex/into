@@ -3,7 +3,7 @@
 # Receives: $1=command, $2=command_args, $3=target, $4+=remaining
 # Example: parse cp file.txt into /tmp
 
-_into() {
+into() {
   _into_cmd=${1:-}
   _into_cmd_args=${2:-}
   shift 2 2>/dev/null || shift $#
@@ -40,4 +40,4 @@ _into() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */into) _into "$@" ;; esac
+  */into) into "$@" ;; esac

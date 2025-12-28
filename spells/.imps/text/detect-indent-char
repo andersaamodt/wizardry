@@ -3,7 +3,7 @@
 # Outputs: "space", "tab", or "space" (default). Example: indent=$(detect-indent-char config.nix)
 set -eu
 
-_detect_indent_char() {
+detect_indent_char() {
   _dic_file=${1-}
 
   if [ -z "$_dic_file" ] || [ ! -f "$_dic_file" ]; then
@@ -25,4 +25,4 @@ _detect_indent_char() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */detect-indent-char) _detect_indent_char "$@" ;; esac
+  */detect-indent-char) detect_indent_char "$@" ;; esac

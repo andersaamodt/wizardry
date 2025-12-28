@@ -5,7 +5,7 @@
 
 set -eu
 
-_test_heading() {
+test_heading() {
   number=$1
   total=$2
   name=$3
@@ -23,4 +23,4 @@ _test_heading() {
 }
 
 # Self-execution when run directly (not sourced)
-case "${0##*/}" in test-heading) _test_heading "$@" ;; esac
+case "${0##*/}" in test-heading) test_heading "$@" ;; esac

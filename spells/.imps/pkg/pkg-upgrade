@@ -3,8 +3,8 @@
 # Example: pkg-update && pkg-upgrade
 set -eu
 
-_pkg_upgrade() {
-  _pug_pm=$(_pkg_manager) || {
+pkg_upgrade() {
+  _pug_pm=$(pkg_manager) || {
     printf '%s\n' "pkg-upgrade: no supported package manager" >&2
     return 1
   }
@@ -22,4 +22,4 @@ _pkg_upgrade() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */pkg-upgrade) _pkg_upgrade "$@" ;; esac
+  */pkg-upgrade) pkg_upgrade "$@" ;; esac

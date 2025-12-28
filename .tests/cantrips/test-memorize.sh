@@ -24,7 +24,7 @@ cast_env() {
 run_memorize() {
   env_var=$1
   shift
-  _run_cmd env "$env_var" "$ROOT_DIR/spells/cantrips/memorize" "$@"
+  run_cmd env "$env_var" "$ROOT_DIR/spells/cantrips/memorize" "$@"
 }
 
 normalize_output() {
@@ -81,148 +81,148 @@ writes_entries_to_memorized_file() {
   grep -q "spark" "$cast_dir/.memorized" || { TEST_FAILURE_REASON="spark not in .memorized"; return 1; }
 }
 
-_run_test_case "memorizes and lists entries" memorizes_and_lists_entries
-_run_test_case "pushes updates to the front" pushes_updates_to_front
-_run_test_case "prints cast path" prints_cast_path
-_run_test_case "rejects invalid arguments" rejects_invalid_args
-_run_test_case "writes entries to memorized file" writes_entries_to_memorized_file
+run_test_case "memorizes and lists entries" memorizes_and_lists_entries
+run_test_case "pushes updates to the front" pushes_updates_to_front
+run_test_case "prints cast path" prints_cast_path
+run_test_case "rejects invalid arguments" rejects_invalid_args
+run_test_case "writes entries to memorized file" writes_entries_to_memorized_file
 
 shows_help() {
-  _run_spell spells/cantrips/memorize --help
-  _assert_success || return 1
-  _assert_error_contains "Usage:" || return 1
+  run_spell spells/cantrips/memorize --help
+  assert_success || return 1
+  assert_error_contains "Usage:" || return 1
 }
 
-_run_test_case "memorize shows help" shows_help
+run_test_case "memorize shows help" shows_help
 
 # --- Additional test coverage below ---
 
 shows_help_short_flag() {
-  _run_spell spells/cantrips/memorize -h
-  _assert_success || return 1
-  _assert_error_contains "Usage:" || return 1
+  run_spell spells/cantrips/memorize -h
+  assert_success || return 1
+  assert_error_contains "Usage:" || return 1
 }
 
-_run_test_case "memorize shows help with -h" shows_help_short_flag
+run_test_case "memorize shows help with -h" shows_help_short_flag
 
 prints_cast_dir() {
   env_var=$(cast_env)
   cast_dir=${env_var#*=}
   run_memorize "$env_var" dir
-  _assert_success || return 1
+  assert_success || return 1
   [ "$OUTPUT" = "$cast_dir" ] || { TEST_FAILURE_REASON="unexpected dir output: $OUTPUT vs $cast_dir"; return 1; }
 }
 
-_run_test_case "prints cast dir" prints_cast_dir
+run_test_case "prints cast dir" prints_cast_dir
 
 no_args_shows_usage() {
   env_var=$(cast_env)
   run_memorize "$env_var"
-  _assert_failure || return 1
-  _assert_error_contains "Usage:" || return 1
+  assert_failure || return 1
+  assert_error_contains "Usage:" || return 1
 }
 
-_run_test_case "no args shows usage" no_args_shows_usage
+run_test_case "no args shows usage" no_args_shows_usage
 
 unknown_option_error() {
   env_var=$(cast_env)
   run_memorize "$env_var" "--unknown"
-  _assert_failure || return 1
-  _assert_error_contains "unknown option" || return 1
+  assert_failure || return 1
+  assert_error_contains "unknown option" || return 1
 }
 
-_run_test_case "unknown option shows error" unknown_option_error
+run_test_case "unknown option shows error" unknown_option_error
 
 empty_list_returns_nothing() {
   env_var=$(cast_env)
   run_memorize "$env_var" list
-  _assert_success || return 1
+  assert_success || return 1
   [ -z "$OUTPUT" ] || { TEST_FAILURE_REASON="expected empty output for empty list"; return 1; }
 }
 
-_run_test_case "empty list returns nothing" empty_list_returns_nothing
+run_test_case "empty list returns nothing" empty_list_returns_nothing
 
 rejects_empty_name() {
   env_var=$(cast_env)
   run_memorize "$env_var" ""
-  _assert_failure || return 1
-  _assert_error_contains "names may contain only" || return 1
+  assert_failure || return 1
+  assert_error_contains "names may contain only" || return 1
 }
 
-_run_test_case "rejects empty name" rejects_empty_name
+run_test_case "rejects empty name" rejects_empty_name
 
 rejects_name_with_special_chars() {
   env_var=$(cast_env)
   run_memorize "$env_var" "bad/name"
-  _assert_failure || return 1
-  _assert_error_contains "names may contain only" || return 1
+  assert_failure || return 1
+  assert_error_contains "names may contain only" || return 1
 }
 
-_run_test_case "rejects name with special chars" rejects_name_with_special_chars
+run_test_case "rejects name with special chars" rejects_name_with_special_chars
 
 rejects_name_starting_with_dash() {
   env_var=$(cast_env)
   run_memorize "$env_var" "-badname"
-  _assert_failure || return 1
+  assert_failure || return 1
   # Names starting with dash are treated as unknown options
-  _assert_error_contains "unknown option" || return 1
+  assert_error_contains "unknown option" || return 1
 }
 
-_run_test_case "rejects name starting with dash" rejects_name_starting_with_dash
+run_test_case "rejects name starting with dash" rejects_name_starting_with_dash
 
 allows_valid_name_with_dots() {
   env_var=$(cast_env)
   run_memorize "$env_var" "my.spell"
-  _assert_success || return 1
+  assert_success || return 1
   run_memorize "$env_var" list
-  _assert_output_contains "my.spell" || return 1
+  assert_output_contains "my.spell" || return 1
 }
 
-_run_test_case "allows name with dots" allows_valid_name_with_dots
+run_test_case "allows name with dots" allows_valid_name_with_dots
 
 allows_valid_name_with_underscores() {
   env_var=$(cast_env)
   run_memorize "$env_var" "my_spell"
-  _assert_success || return 1
+  assert_success || return 1
   run_memorize "$env_var" list
-  _assert_output_contains "my_spell" || return 1
+  assert_output_contains "my_spell" || return 1
 }
 
-_run_test_case "allows name with underscores" allows_valid_name_with_underscores
+run_test_case "allows name with underscores" allows_valid_name_with_underscores
 
 allows_valid_name_with_dashes() {
   env_var=$(cast_env)
   run_memorize "$env_var" "my-spell"
-  _assert_success || return 1
+  assert_success || return 1
   run_memorize "$env_var" list
-  _assert_output_contains "my-spell" || return 1
+  assert_output_contains "my-spell" || return 1
 }
 
-_run_test_case "allows name with dashes" allows_valid_name_with_dashes
+run_test_case "allows name with dashes" allows_valid_name_with_dashes
 
 # Test recursive sweeps - memorize multiple spells and verify list consistency
 recursive_sweep_multiple_spells() {
   env_var=$(cast_env)
   run_memorize "$env_var" spell1
-  _assert_success || return 1
+  assert_success || return 1
   run_memorize "$env_var" spell2
-  _assert_success || return 1
+  assert_success || return 1
   run_memorize "$env_var" spell3
-  _assert_success || return 1
+  assert_success || return 1
   run_memorize "$env_var" spell4
-  _assert_success || return 1
+  assert_success || return 1
   run_memorize "$env_var" spell5
-  _assert_success || return 1
+  assert_success || return 1
 
   run_memorize "$env_var" list
-  _assert_success || return 1
+  assert_success || return 1
 
   # Verify all spells are in the list
-  _assert_output_contains "spell1" || return 1
-  _assert_output_contains "spell2" || return 1
-  _assert_output_contains "spell3" || return 1
-  _assert_output_contains "spell4" || return 1
-  _assert_output_contains "spell5" || return 1
+  assert_output_contains "spell1" || return 1
+  assert_output_contains "spell2" || return 1
+  assert_output_contains "spell3" || return 1
+  assert_output_contains "spell4" || return 1
+  assert_output_contains "spell5" || return 1
 
   # Most recent spell should be first (spell5)
   first_line=$(printf '%s' "$OUTPUT" | head -n1)
@@ -232,7 +232,7 @@ recursive_sweep_multiple_spells() {
   esac
 }
 
-_run_test_case "recursive sweep multiple spells" recursive_sweep_multiple_spells
+run_test_case "recursive sweep multiple spells" recursive_sweep_multiple_spells
 
 # Test recursive sweeps - re-memorizing moves spell to front
 recursive_sweep_reorder() {
@@ -252,23 +252,23 @@ recursive_sweep_reorder() {
   esac
 
   # Verify all three are still in the list
-  _assert_output_contains "alpha" || return 1
-  _assert_output_contains "beta" || return 1
-  _assert_output_contains "gamma" || return 1
+  assert_output_contains "alpha" || return 1
+  assert_output_contains "beta" || return 1
+  assert_output_contains "gamma" || return 1
 
   # Count lines to ensure no duplicates (add trailing newline for correct wc -l count)
   line_count=$(printf '%s\n' "$OUTPUT" | grep -c .)
   [ "$line_count" -eq 3 ] || { TEST_FAILURE_REASON="expected 3 entries, got: $line_count"; return 1; }
 }
 
-_run_test_case "recursive sweep reorder" recursive_sweep_reorder
+run_test_case "recursive sweep reorder" recursive_sweep_reorder
 
 # Test that entries are recorded in .memorized file
 memorized_file_content() {
   env_var=$(cast_env)
   cast_dir=${env_var#*=}
   run_memorize "$env_var" testspell
-  _assert_success || return 1
+  assert_success || return 1
 
   # Memorize only records entries in .memorized file (no wrapper scripts)
   [ -f "$cast_dir/.memorized" ] || { TEST_FAILURE_REASON=".memorized file not created"; return 1; }
@@ -277,115 +277,115 @@ memorized_file_content() {
   grep -q "testspell	testspell" "$cast_dir/.memorized" || { TEST_FAILURE_REASON="testspell entry not in .memorized"; return 1; }
 }
 
-_run_test_case "memorized file content" memorized_file_content
+run_test_case "memorized file content" memorized_file_content
 
 # Test WIZARDRY_CAST_FILE environment variable
 custom_cast_file() {
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   mkdir -p "$tmpdir/custom"
   custom_file="$tmpdir/custom/my-memorized"
 
-  _run_cmd env "WIZARDRY_CAST_DIR=$tmpdir" "WIZARDRY_CAST_FILE=$custom_file" \
+  run_cmd env "WIZARDRY_CAST_DIR=$tmpdir" "WIZARDRY_CAST_FILE=$custom_file" \
     "$ROOT_DIR/spells/cantrips/memorize" path
-  _assert_success || return 1
+  assert_success || return 1
   [ "$OUTPUT" = "$custom_file" ] || { TEST_FAILURE_REASON="expected custom file path: $custom_file, got: $OUTPUT"; return 1; }
 }
 
-_run_test_case "custom cast file via WIZARDRY_CAST_FILE" custom_cast_file
+run_test_case "custom cast file via WIZARDRY_CAST_FILE" custom_cast_file
 
 # Test MEMORIZE_COMMAND_FILE environment variable (legacy)
 legacy_command_file() {
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   mkdir -p "$tmpdir/legacy"
   legacy_file="$tmpdir/legacy/legacy-memorized"
 
-  _run_cmd env "WIZARDRY_CAST_DIR=$tmpdir" "MEMORIZE_COMMAND_FILE=$legacy_file" \
+  run_cmd env "WIZARDRY_CAST_DIR=$tmpdir" "MEMORIZE_COMMAND_FILE=$legacy_file" \
     "$ROOT_DIR/spells/cantrips/memorize" path
-  _assert_success || return 1
+  assert_success || return 1
   [ "$OUTPUT" = "$legacy_file" ] || { TEST_FAILURE_REASON="expected legacy file path"; return 1; }
 }
 
-_run_test_case "custom cast file via MEMORIZE_COMMAND_FILE" legacy_command_file
+run_test_case "custom cast file via MEMORIZE_COMMAND_FILE" legacy_command_file
 
 # Test SPELLBOOK_DIR
 spellbook_dir_test() {
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   spell_home="$tmpdir/spell-home"
 
-  _run_cmd env "SPELLBOOK_DIR=$spell_home" \
+  run_cmd env "SPELLBOOK_DIR=$spell_home" \
     "$ROOT_DIR/spells/cantrips/memorize" dir
-  _assert_success || return 1
+  assert_success || return 1
   [ "$OUTPUT" = "$spell_home" ] || { TEST_FAILURE_REASON="expected spell home dir: $spell_home, got: $OUTPUT"; return 1; }
 }
 
-_run_test_case "SPELLBOOK_DIR" spellbook_dir_test
+run_test_case "SPELLBOOK_DIR" spellbook_dir_test
 
 # Test tilde expansion in WIZARDRY_CAST_DIR
 tilde_expansion_cast_dir() {
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   fake_home="$tmpdir/home"
   mkdir -p "$fake_home/.test-spellbook"
 
-  _run_cmd env "HOME=$fake_home" "WIZARDRY_CAST_DIR=~/.test-spellbook" \
+  run_cmd env "HOME=$fake_home" "WIZARDRY_CAST_DIR=~/.test-spellbook" \
     "$ROOT_DIR/spells/cantrips/memorize" dir
-  _assert_success || return 1
+  assert_success || return 1
   expected="$fake_home/.test-spellbook"
   [ "$OUTPUT" = "$expected" ] || { TEST_FAILURE_REASON="tilde not expanded: $OUTPUT vs $expected"; return 1; }
 }
 
-_run_test_case "tilde expansion in WIZARDRY_CAST_DIR" tilde_expansion_cast_dir
+run_test_case "tilde expansion in WIZARDRY_CAST_DIR" tilde_expansion_cast_dir
 
 # Test path extra args rejected
 path_extra_args_rejected() {
   env_var=$(cast_env)
   run_memorize "$env_var" path extra
-  _assert_failure || return 1
-  _assert_error_contains "Usage:" || return 1
+  assert_failure || return 1
+  assert_error_contains "Usage:" || return 1
 }
 
-_run_test_case "path rejects extra args" path_extra_args_rejected
+run_test_case "path rejects extra args" path_extra_args_rejected
 
 # Test dir extra args rejected
 dir_extra_args_rejected() {
   env_var=$(cast_env)
   run_memorize "$env_var" dir extra
-  _assert_failure || return 1
-  _assert_error_contains "Usage:" || return 1
+  assert_failure || return 1
+  assert_error_contains "Usage:" || return 1
 }
 
-_run_test_case "dir rejects extra args" dir_extra_args_rejected
+run_test_case "dir rejects extra args" dir_extra_args_rejected
 
 # Test memorize spell with multiple args rejected
 memorize_extra_args_rejected() {
   env_var=$(cast_env)
   run_memorize "$env_var" spell1 spell2
-  _assert_failure || return 1
-  _assert_error_contains "expects exactly one spell name" || return 1
+  assert_failure || return 1
+  assert_error_contains "expects exactly one spell name" || return 1
 }
 
-_run_test_case "memorize rejects extra args" memorize_extra_args_rejected
+run_test_case "memorize rejects extra args" memorize_extra_args_rejected
 
 # Test numeric spell names are allowed
 allows_numeric_names() {
   env_var=$(cast_env)
   run_memorize "$env_var" "123"
-  _assert_success || return 1
+  assert_success || return 1
   run_memorize "$env_var" list
-  _assert_output_contains "123" || return 1
+  assert_output_contains "123" || return 1
 }
 
-_run_test_case "allows numeric names" allows_numeric_names
+run_test_case "allows numeric names" allows_numeric_names
 
 # Test mixed alphanumeric names
 allows_mixed_alphanumeric() {
   env_var=$(cast_env)
   run_memorize "$env_var" "spell123"
-  _assert_success || return 1
+  assert_success || return 1
   run_memorize "$env_var" list
-  _assert_output_contains "spell123" || return 1
+  assert_output_contains "spell123" || return 1
 }
 
-_run_test_case "allows mixed alphanumeric names" allows_mixed_alphanumeric
+run_test_case "allows mixed alphanumeric names" allows_mixed_alphanumeric
 
 
 # Test via source-then-invoke pattern  

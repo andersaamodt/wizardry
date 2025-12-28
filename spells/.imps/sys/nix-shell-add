@@ -4,7 +4,7 @@
 # SHELL defaults to 'bash'; valid values: bash, zsh
 set -eu
 
-_nix_shell_add() {
+nix_shell_add() {
   _nsa_block_name=${1:-}
   _nsa_nix_file=${2:-}
   _nsa_shell_type=${3:-bash}
@@ -130,4 +130,4 @@ $_nsa_line"; fi
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */nix-shell-add) _nix_shell_add "$@" ;; esac
+  */nix-shell-add) nix_shell_add "$@" ;; esac

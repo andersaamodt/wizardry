@@ -3,7 +3,7 @@
 # Example: on mac && brew install git
 set -eu
 
-_on() {
+on() {
   _on_platform=$1
   _on_kernel=$(uname -s 2>/dev/null || echo unknown)
 
@@ -29,4 +29,4 @@ _on() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */on) _on "$@" ;; esac
+  */on) on "$@" ;; esac

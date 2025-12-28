@@ -4,7 +4,7 @@
 
 set -eu
 
-_print_pass() {
+print_pass() {
   text=${1-}
   
   # Use colors if supported
@@ -18,4 +18,4 @@ _print_pass() {
 }
 
 # Self-execution when run directly (not sourced)
-case "${0##*/}" in print-pass) _print_pass "$@" ;; esac
+case "${0##*/}" in print-pass) print_pass "$@" ;; esac

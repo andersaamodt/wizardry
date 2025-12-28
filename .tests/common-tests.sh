@@ -915,7 +915,7 @@ system/banish
 #
 # EXCEPTION: Compiled spells (doppelganger) are standalone executables that inline
 # their dependencies. Multiple compiled spells will naturally have duplicate function
-# definitions from shared imps (e.g., _has, _there). This is expected and acceptable
+# definitions from shared imps (e.g., has, there). This is expected and acceptable
 # since compiled spells never source each other - they are independent executables.
 
 test_no_function_name_collisions() {
@@ -1007,7 +1007,7 @@ test_no_function_name_collisions() {
 
 # --- Check: Spells and imps have true name functions ---
 # All spells and imps should have a true name function that matches the filename
-# For imps: _underscore_name (e.g., clip-copy -> _clip_copy)
+# For imps: _underscore_name (e.g., clip-copy -> clip_copy)
 # For spells: snake_case name (e.g., lint-magic -> lint_magic)
 # This enables word-of-binding to source and call them efficiently
 # This is a NON-FAILING check - warnings only for visibility
@@ -1793,33 +1793,33 @@ test_common_tests_shows_help() {
 
 # --- Run all test cases ---
 
-_run_test_case "common-tests shows help" test_common_tests_shows_help
-_run_test_case "no duplicate spell names" test_no_duplicate_spell_names
-_run_test_case "menu spells require menu command" test_menu_spells_require_menu
-_run_test_case "spells have standard help handlers" test_spells_have_help_usage_handlers
-_run_test_case "warn about full paths to spells" test_warn_full_paths_to_spells
-_run_test_case "test files have matching spells" test_test_files_have_matching_spells
-_run_test_case "tests rely only on imps for helpers" test_tests_use_imps_for_helpers
-_run_test_case "scripts using declared globals have set -u" test_scripts_using_globals_have_set_u
-_run_test_case "declare-globals has exactly 4 globals" test_declare_globals_count
-_run_test_case "no undeclared globals exported" test_no_undeclared_global_exports
-_run_test_case "no global declarations outside declare-globals" test_no_global_declarations_outside_declare_globals
-_run_test_case "no pseudo-globals stored in rc files" test_no_pseudo_globals_in_rc_files
-_run_test_case "imps follow one-function-or-zero rule" test_imps_follow_function_rule
-_run_test_case "imps have opening comments" test_imps_have_opening_comments
-_run_test_case "bootstrap spells have identifying comment" test_bootstrap_spells_identified
-_run_test_case "spells follow function discipline" test_spells_follow_function_discipline
-_run_test_case "no function name collisions" test_no_function_name_collisions
-_run_test_case "spells have true name functions" test_spells_have_true_name_functions
-_run_test_case "spells require wrapper functions" test_spells_require_wrapper_functions
-_run_test_case "spells have limited flags" test_spells_have_limited_flags
-_run_test_case "spells have limited positional arguments" test_spells_have_limited_positional_args
-_run_test_case "no all-caps variable assignments" test_no_allcaps_variable_assignments
-_run_test_case "no mixed-case variables" test_no_mixed_case_variables
-_run_test_case "scripts have set -eu early" test_scripts_have_set_eu_early
-_run_test_case "spells source env-clear after set -eu" test_spells_source_env_clear_after_set_eu
-_run_test_case "warn about parent directory references" test_warn_parent_dir_references
-_run_test_case "test output streams line-by-line" test_output_streams_line_by_line
+run_test_case "common-tests shows help" test_common_tests_shows_help
+run_test_case "no duplicate spell names" test_no_duplicate_spell_names
+run_test_case "menu spells require menu command" test_menu_spells_require_menu
+run_test_case "spells have standard help handlers" test_spells_have_help_usage_handlers
+run_test_case "warn about full paths to spells" test_warn_full_paths_to_spells
+run_test_case "test files have matching spells" test_test_files_have_matching_spells
+run_test_case "tests rely only on imps for helpers" test_tests_use_imps_for_helpers
+run_test_case "scripts using declared globals have set -u" test_scripts_using_globals_have_set_u
+run_test_case "declare-globals has exactly 4 globals" test_declare_globals_count
+run_test_case "no undeclared globals exported" test_no_undeclared_global_exports
+run_test_case "no global declarations outside declare-globals" test_no_global_declarations_outside_declare_globals
+run_test_case "no pseudo-globals stored in rc files" test_no_pseudo_globals_in_rc_files
+run_test_case "imps follow one-function-or-zero rule" test_imps_follow_function_rule
+run_test_case "imps have opening comments" test_imps_have_opening_comments
+run_test_case "bootstrap spells have identifying comment" test_bootstrap_spells_identified
+run_test_case "spells follow function discipline" test_spells_follow_function_discipline
+run_test_case "no function name collisions" test_no_function_name_collisions
+run_test_case "spells have true name functions" test_spells_have_true_name_functions
+run_test_case "spells require wrapper functions" test_spells_require_wrapper_functions
+run_test_case "spells have limited flags" test_spells_have_limited_flags
+run_test_case "spells have limited positional arguments" test_spells_have_limited_positional_args
+run_test_case "no all-caps variable assignments" test_no_allcaps_variable_assignments
+run_test_case "no mixed-case variables" test_no_mixed_case_variables
+run_test_case "scripts have set -eu early" test_scripts_have_set_eu_early
+run_test_case "spells source env-clear after set -eu" test_spells_source_env_clear_after_set_eu
+run_test_case "warn about parent directory references" test_warn_parent_dir_references
+run_test_case "test output streams line-by-line" test_output_streams_line_by_line
 
 # --- Check: Stub imps have correct self-execute patterns ---
 # Stub imps must match both */stub-name and */name for symlink usage
@@ -1827,7 +1827,7 @@ _run_test_case "test output streams line-by-line" test_output_streams_line_by_li
 test_stub_imps_have_correct_patterns() {
   # Skip in doppelganger mode - grep patterns behave differently
   if [ "${WIZARDRY_OS_LABEL:-}" = "doppelganger" ]; then
-    _test_skip "stub imps have correct self-execute patterns" "skipped in doppelganger mode"
+    test_skip "stub imps have correct self-execute patterns" "skipped in doppelganger mode"
     return 0
   fi
   
@@ -1880,7 +1880,7 @@ test_stub_imps_have_correct_patterns() {
   return 0
 }
 
-_run_test_case "stub imps have correct self-execute patterns" test_stub_imps_have_correct_patterns
+run_test_case "stub imps have correct self-execute patterns" test_stub_imps_have_correct_patterns
 
 # ==============================================================================
 # SPELL INVOCATION REQUIREMENTS - Castable/Uncastable Declaration
@@ -1944,7 +1944,7 @@ test_spells_declare_invocation_type() {
   return 0
 }
 
-_run_test_case "spells declare castable/uncastable/autocast" test_spells_declare_invocation_type
+run_test_case "spells declare castable/uncastable/autocast" test_spells_declare_invocation_type
 
 # --- Check: All spells respond to --help flag ---
 # Every spell must support --help, --usage, or -h flags
@@ -1992,7 +1992,7 @@ test_all_spells_respond_to_help() {
   return 0
 }
 
-_run_test_case "all spells respond to --help flag" test_all_spells_respond_to_help
+run_test_case "all spells respond to --help flag" test_all_spells_respond_to_help
 
 # ==============================================================================
 # META-TESTS - Testing the testing system itself
@@ -2167,14 +2167,14 @@ test_test_bootstrap_checks_environment() {
 }
 
 # Run meta-tests
-_run_test_case "META: baseline PATH before set -eu" test_bootstrap_sets_baseline_path
-_run_test_case "META: sandbox fallback is graceful" test_sandbox_fallback_is_graceful
-_run_test_case "META: test-magic uses stdbuf" test_test_magic_uses_stdbuf
-_run_test_case "META: test framework supports failure reporting" test_test_bootstrap_provides_failure_reporting
-_run_test_case "META: die imp uses return for word-of-binding" test_die_imp_uses_return_not_exit
-_run_test_case "META: fail imp returns error code" test_fail_imp_returns_error_code
-_run_test_case "META: platform detection available" test_platform_detection_available
-_run_test_case "META: banish spell exists and is executable" test_banish_spell_exists_and_is_executable
-_run_test_case "META: test-bootstrap checks environment" test_test_bootstrap_checks_environment
+run_test_case "META: baseline PATH before set -eu" test_bootstrap_sets_baseline_path
+run_test_case "META: sandbox fallback is graceful" test_sandbox_fallback_is_graceful
+run_test_case "META: test-magic uses stdbuf" test_test_magic_uses_stdbuf
+run_test_case "META: test framework supports failure reporting" test_test_bootstrap_provides_failure_reporting
+run_test_case "META: die imp uses return for word-of-binding" test_die_imp_uses_return_not_exit
+run_test_case "META: fail imp returns error code" test_fail_imp_returns_error_code
+run_test_case "META: platform detection available" test_platform_detection_available
+run_test_case "META: banish spell exists and is executable" test_banish_spell_exists_and_is_executable
+run_test_case "META: test-bootstrap checks environment" test_test_bootstrap_checks_environment
 
-_finish_tests
+finish_tests

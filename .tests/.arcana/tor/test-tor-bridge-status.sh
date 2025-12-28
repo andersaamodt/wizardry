@@ -12,17 +12,17 @@ spell_is_executable() {
   [ -x "$ROOT_DIR/spells/.arcana/tor/tor-bridge-status" ]
 }
 
-_run_test_case "install/tor/tor-bridge-status is executable" spell_is_executable
+run_test_case "install/tor/tor-bridge-status is executable" spell_is_executable
 spell_has_content() {
   [ -s "$ROOT_DIR/spells/.arcana/tor/tor-bridge-status" ]
 }
 
-_run_test_case "install/tor/tor-bridge-status has content" spell_has_content
+run_test_case "install/tor/tor-bridge-status has content" spell_has_content
 
 shows_help() {
-  _run_spell spells/.arcana/tor/tor-bridge-status --help
+  run_spell spells/.arcana/tor/tor-bridge-status --help
   true
 }
 
-_run_test_case "tor-bridge-status shows help" shows_help
-_finish_tests
+run_test_case "tor-bridge-status shows help" shows_help
+finish_tests

@@ -12,25 +12,25 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_step_outputs_when_level_1() {
-  WIZARDRY_LOG_LEVEL=1 _run_spell spells/.imps/out/step "step 1 of 3"
-  _assert_success
-  _assert_output_contains "step 1 of 3"
+  WIZARDRY_LOG_LEVEL=1 run_spell spells/.imps/out/step "step 1 of 3"
+  assert_success
+  assert_output_contains "step 1 of 3"
 }
 
 test_step_silent_when_level_0() {
-  WIZARDRY_LOG_LEVEL=0 _run_spell spells/.imps/out/step "step 1 of 3"
-  _assert_success
+  WIZARDRY_LOG_LEVEL=0 run_spell spells/.imps/out/step "step 1 of 3"
+  assert_success
   [ -z "$OUTPUT" ] || { TEST_FAILURE_REASON="expected no output, got: $OUTPUT"; return 1; }
 }
 
 test_step_default_level_0() {
-  _run_spell spells/.imps/out/step "step 1 of 3"
-  _assert_success
+  run_spell spells/.imps/out/step "step 1 of 3"
+  assert_success
   [ -z "$OUTPUT" ] || { TEST_FAILURE_REASON="expected no output with default level, got: $OUTPUT"; return 1; }
 }
 
-_run_test_case "step outputs when log level >= 1" test_step_outputs_when_level_1
-_run_test_case "step silent when log level 0" test_step_silent_when_level_0
-_run_test_case "step defaults to level 0" test_step_default_level_0
+run_test_case "step outputs when log level >= 1" test_step_outputs_when_level_1
+run_test_case "step silent when log level 0" test_step_silent_when_level_0
+run_test_case "step defaults to level 0" test_step_default_level_0
 
-_finish_tests
+finish_tests

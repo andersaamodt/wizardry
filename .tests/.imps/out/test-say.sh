@@ -12,17 +12,17 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_say_outputs() {
-  _run_spell spells/.imps/out/say "test message"
-  _assert_success
-  _assert_output_contains "test message"
+  run_spell spells/.imps/out/say "test message"
+  assert_success
+  assert_output_contains "test message"
 }
 
 test_say_handles_empty_message() {
-  _run_spell spells/.imps/out/say ""
-  _assert_success
+  run_spell spells/.imps/out/say ""
+  assert_success
 }
 
-_run_test_case "say outputs to stdout" test_say_outputs
-_run_test_case "say handles empty message" test_say_handles_empty_message
+run_test_case "say outputs to stdout" test_say_outputs
+run_test_case "say handles empty message" test_say_handles_empty_message
 
-_finish_tests
+finish_tests

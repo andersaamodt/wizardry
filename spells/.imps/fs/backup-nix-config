@@ -4,7 +4,7 @@
 # Example: backup-nix-config /etc/nixos/configuration.nix
 set -eu
 
-_backup_nix_config() {
+backup_nix_config() {
   _bnc_file=${1:-}
 
   if [ -z "$_bnc_file" ]; then
@@ -48,4 +48,4 @@ _backup_nix_config() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */backup-nix-config) _backup_nix_config "$@" ;; esac
+  */backup-nix-config) backup_nix_config "$@" ;; esac

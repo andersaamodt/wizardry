@@ -3,7 +3,7 @@
 # Stub strips common flags and executes the actual command.
 set -eu
 
-_write_sudo_stub() {
+write_sudo_stub() {
   fixture=$1
   cat <<'STUB' >"$fixture/bin/sudo"
 #!/bin/sh
@@ -22,4 +22,4 @@ STUB
 }
 
 # Self-execution when run directly (not sourced)
-case "${0##*/}" in write-sudo-stub) _write_sudo_stub "$@" ;; esac
+case "${0##*/}" in write-sudo-stub) write_sudo_stub "$@" ;; esac

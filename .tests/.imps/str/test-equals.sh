@@ -12,16 +12,16 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_equals_same_string() {
-  _run_spell spells/.imps/str/equals "hello" "hello"
-  _assert_success
+  run_spell spells/.imps/str/equals "hello" "hello"
+  assert_success
 }
 
 test_equals_different_strings() {
-  _run_spell spells/.imps/str/equals "hello" "world"
-  _assert_failure
+  run_spell spells/.imps/str/equals "hello" "world"
+  assert_failure
 }
 
-_run_test_case "equals accepts same string" test_equals_same_string
-_run_test_case "equals rejects different strings" test_equals_different_strings
+run_test_case "equals accepts same string" test_equals_same_string
+run_test_case "equals rejects different strings" test_equals_different_strings
 
-_finish_tests
+finish_tests

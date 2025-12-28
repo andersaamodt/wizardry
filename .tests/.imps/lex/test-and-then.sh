@@ -15,15 +15,15 @@ test_and_then_is_executable() {
 
 test_and_then_continues_on_success() {
   skip-if-compiled || return $?
-  _run_spell spells/.imps/lex/and-then "true" "" echo hello
-  _assert_success || return 1
-  _assert_output_contains "hello" || return 1
+  run_spell spells/.imps/lex/and-then "true" "" echo hello
+  assert_success || return 1
+  assert_output_contains "hello" || return 1
 }
 
 test_and_then_stops_on_failure() {
   skip-if-compiled || return $?
-  _run_spell spells/.imps/lex/and-then "false" "" echo shouldnt_run
-  _assert_failure || return 1
+  run_spell spells/.imps/lex/and-then "false" "" echo shouldnt_run
+  assert_failure || return 1
   case "$OUTPUT" in
     *shouldnt_run*)
       TEST_FAILURE_REASON="and-then continued after failure"
@@ -34,14 +34,14 @@ test_and_then_stops_on_failure() {
 
 test_and_then_no_prior_command() {
   skip-if-compiled || return $?
-  _run_spell spells/.imps/lex/and-then "" "" echo hello
-  _assert_success || return 1
-  _assert_output_contains "hello" || return 1
+  run_spell spells/.imps/lex/and-then "" "" echo hello
+  assert_success || return 1
+  assert_output_contains "hello" || return 1
 }
 
-_run_test_case "and-then is executable" test_and_then_is_executable
-_run_test_case "and-then continues on success" test_and_then_continues_on_success
-_run_test_case "and-then stops on failure" test_and_then_stops_on_failure
-_run_test_case "and-then with no prior command" test_and_then_no_prior_command
+run_test_case "and-then is executable" test_and_then_is_executable
+run_test_case "and-then continues on success" test_and_then_continues_on_success
+run_test_case "and-then stops on failure" test_and_then_stops_on_failure
+run_test_case "and-then with no prior command" test_and_then_no_prior_command
 
-_finish_tests
+finish_tests

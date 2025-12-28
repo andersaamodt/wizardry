@@ -33,16 +33,16 @@ SH
 
 test_shutdown_menu_checks_requirements() {
   skip-if-compiled || return $?
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
-  _run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/req" "$ROOT_DIR/spells/menu/shutdown-menu"
-  _assert_success && _assert_path_exists "$tmp/req"
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/req" "$ROOT_DIR/spells/menu/shutdown-menu"
+  assert_success && assert_path_exists "$tmp/req"
 }
 
 test_shutdown_menu_includes_core_actions() {
   skip-if-compiled || return $?
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
   cat >"$tmp/exit-label" <<'SH'
@@ -50,8 +50,8 @@ test_shutdown_menu_includes_core_actions() {
 printf '%s' "Back"
 SH
   chmod +x "$tmp/exit-label"
-  _run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/shutdown-menu"
-  _assert_success
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/shutdown-menu"
+  assert_success
   args=$(cat "$tmp/log")
   # Logout command varies: loginctl terminate-user on systemd, pkill -TERM otherwise
   case "$args" in
@@ -61,13 +61,13 @@ SH
   esac
 }
 
-_run_test_case "shutdown-menu requires menu dependency" test_shutdown_menu_checks_requirements
-_run_test_case "shutdown-menu passes shutdown actions to menu" test_shutdown_menu_includes_core_actions
+run_test_case "shutdown-menu requires menu dependency" test_shutdown_menu_checks_requirements
+run_test_case "shutdown-menu passes shutdown actions to menu" test_shutdown_menu_includes_core_actions
 
 # Test ESC and Exit behavior - menu exits properly when escape status returned
 test_esc_exit_behavior() {
   skip-if-compiled || return $?
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
   
@@ -77,8 +77,8 @@ printf '%s' "Back"
 SH
   chmod +x "$tmp/exit-label"
   
-  _run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/shutdown-menu"
-  _assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/shutdown-menu"
+  assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
   
   args=$(cat "$tmp/log")
   case "$args" in
@@ -87,7 +87,7 @@ SH
   esac
 }
 
-_run_test_case "shutdown-menu ESC/Exit behavior" test_esc_exit_behavior
+run_test_case "shutdown-menu ESC/Exit behavior" test_esc_exit_behavior
 
 # Test kernel-level fallback detection for sleep when can-suspend unavailable
 test_sleep_kernel_fallback() {
@@ -97,7 +97,7 @@ test_sleep_kernel_fallback() {
     return 0
   fi
   
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
   
@@ -124,8 +124,8 @@ esac
 SH
   chmod +x "$tmp/systemctl"
   
-  _run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/shutdown-menu"
-  _assert_success || return 1
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/shutdown-menu"
+  assert_success || return 1
   
   args=$(cat "$tmp/log")
   # Sleep should still be present if kernel supports it (mem in /sys/power/state)
@@ -137,7 +137,7 @@ SH
   fi
 }
 
-_run_test_case "shutdown-menu uses kernel fallback for sleep detection" test_sleep_kernel_fallback
+run_test_case "shutdown-menu uses kernel fallback for sleep detection" test_sleep_kernel_fallback
 
 # Test kernel-level fallback detection for hibernate when can-hibernate unavailable
 test_hibernate_kernel_fallback() {
@@ -147,7 +147,7 @@ test_hibernate_kernel_fallback() {
     return 0
   fi
   
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
   
@@ -174,8 +174,8 @@ esac
 SH
   chmod +x "$tmp/systemctl"
   
-  _run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/shutdown-menu"
-  _assert_success || return 1
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/shutdown-menu"
+  assert_success || return 1
   
   args=$(cat "$tmp/log")
   # Hibernate should still be present if kernel supports it (disk in /sys/power/state)
@@ -187,15 +187,15 @@ SH
   fi
 }
 
-_run_test_case "shutdown-menu uses kernel fallback for hibernate detection" test_hibernate_kernel_fallback
+run_test_case "shutdown-menu uses kernel fallback for hibernate detection" test_hibernate_kernel_fallback
 
 test_shows_help() {
-  _run_cmd "$ROOT_DIR/spells/menu/shutdown-menu" --help
-  _assert_success
-  _assert_output_contains "Usage: shutdown-menu"
+  run_cmd "$ROOT_DIR/spells/menu/shutdown-menu" --help
+  assert_success
+  assert_output_contains "Usage: shutdown-menu"
 }
 
-_run_test_case "shutdown-menu --help shows usage" test_shows_help
+run_test_case "shutdown-menu --help shows usage" test_shows_help
 
 
 # Test via source-then-invoke pattern  

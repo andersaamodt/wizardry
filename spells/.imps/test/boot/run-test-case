@@ -4,7 +4,7 @@
 # Set WIZARDRY_TEST_BOTH_PATTERNS=1 to test both execution patterns.
 set -eu
 
-_run_test_case() {
+run_test_case() {
   desc=$1
   func=$2
   spell_path=${3-}
@@ -12,7 +12,7 @@ _run_test_case() {
   # Check if dual-pattern testing is explicitly requested
   if [ "${WIZARDRY_TEST_BOTH_PATTERNS-}" = "1" ]; then
     # Use run-both-patterns for comprehensive validation
-    _run_both_patterns "$desc" "$func" "$spell_path"
+    run_both_patterns "$desc" "$func" "$spell_path"
   else
     # Default: Direct execution (fast, sufficient for most testing)
     _test_index=$((_test_index + 1))
@@ -23,18 +23,18 @@ _run_test_case() {
     fi
     
     if "$func"; then
-      _report_result "$desc" 0
+      report_result "$desc" 0
     else
       ec=$?
       if [ "$ec" = "222" ]; then
         _skip_count=$((_skip_count + 1))
         skip_reason=${TEST_SKIP_REASON-(mode mismatch)}
-        _test_skip "$desc" "$skip_reason"
+        test_skip "$desc" "$skip_reason"
         unset TEST_SKIP_REASON 2>/dev/null || true
       else
         reason=${TEST_FAILURE_REASON-}
-        _report_result "$desc" 1 "$reason"
-        _record_failure_detail "$_test_index"
+        report_result "$desc" 1 "$reason"
+        record_failure_detail "$_test_index"
         unset TEST_FAILURE_REASON 2>/dev/null || true
       fi
     fi
@@ -42,4 +42,4 @@ _run_test_case() {
 }
 
 # Self-execution when run directly (not sourced)
-case "${0##*/}" in run-test-case) _run_test_case "$@" ;; esac
+case "${0##*/}" in run-test-case) run_test_case "$@" ;; esac

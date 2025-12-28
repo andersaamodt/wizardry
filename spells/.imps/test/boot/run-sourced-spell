@@ -4,7 +4,7 @@
 # Captures stdout, stderr, and exit status into STATUS, OUTPUT, and ERROR.
 # This tests the REAL user workflow: source invoke-wizardry → call spell functions
 
-_run_sourced_spell() {
+run_sourced_spell() {
   set -eu
   spell_path=$1
   shift || true
@@ -78,4 +78,4 @@ $func_name $escaped_args
 }
 
 # Self-execution when run directly (not sourced)
-case "${0##*/}" in run-sourced-spell) _run_sourced_spell "$@" ;; esac
+case "${0##*/}" in run-sourced-spell) run_sourced_spell "$@" ;; esac

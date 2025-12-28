@@ -12,17 +12,17 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_success_outputs() {
-  _run_spell spells/.imps/out/success "operation successful"
-  _assert_success
-  _assert_output_contains "operation successful"
+  run_spell spells/.imps/out/success "operation successful"
+  assert_success
+  assert_output_contains "operation successful"
 }
 
 test_success_handles_empty_message() {
-  _run_spell spells/.imps/out/success ""
-  _assert_success
+  run_spell spells/.imps/out/success ""
+  assert_success
 }
 
-_run_test_case "success outputs to stdout" test_success_outputs
-_run_test_case "success handles empty message" test_success_handles_empty_message
+run_test_case "success outputs to stdout" test_success_outputs
+run_test_case "success handles empty message" test_success_handles_empty_message
 
-_finish_tests
+finish_tests

@@ -13,11 +13,11 @@ test_to_is_executable() {
 }
 
 test_to_appends_target() {
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   echo "content" > "$tmp/source.txt"
   
-  _run_spell spells/.imps/lex/to "cp" "$tmp/source.txt" "$tmp/dest.txt"
-  _assert_success || return 1
+  run_spell spells/.imps/lex/to "cp" "$tmp/source.txt" "$tmp/dest.txt"
+  assert_success || return 1
   
   if [ ! -f "$tmp/dest.txt" ]; then
     TEST_FAILURE_REASON="File not copied to destination"
@@ -26,18 +26,18 @@ test_to_appends_target() {
 }
 
 test_to_requires_target() {
-  _run_spell spells/.imps/lex/to "echo" "hello"
-  _assert_failure || return 1
+  run_spell spells/.imps/lex/to "echo" "hello"
+  assert_failure || return 1
 }
 
 test_to_requires_command() {
-  _run_spell spells/.imps/lex/to "" "" "/tmp/dest"
-  _assert_failure || return 1
+  run_spell spells/.imps/lex/to "" "" "/tmp/dest"
+  assert_failure || return 1
 }
 
-_run_test_case "to is executable" test_to_is_executable
-_run_test_case "to appends target to args" test_to_appends_target
-_run_test_case "to requires target" test_to_requires_target
-_run_test_case "to requires command" test_to_requires_command
+run_test_case "to is executable" test_to_is_executable
+run_test_case "to appends target to args" test_to_appends_target
+run_test_case "to requires target" test_to_requires_target
+run_test_case "to requires command" test_to_requires_command
 
-_finish_tests
+finish_tests

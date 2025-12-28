@@ -4,11 +4,11 @@
 
 set -eu
 
-_test_lack() {
+test_lack() {
   name=$1
   reason=$2
   printf 'LACK %s (%s)\n' "$name" "$reason"
 }
 
 # Self-execution when run directly (not sourced)
-case "${0##*/}" in test-lack) _test_lack "$@" ;; esac
+case "${0##*/}" in test-lack) test_lack "$@" ;; esac

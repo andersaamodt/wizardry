@@ -12,17 +12,17 @@ spell_is_executable() {
   [ -x "$ROOT_DIR/spells/.arcana/tor/torrc-path" ]
 }
 
-_run_test_case "install/tor/torrc-path is executable" spell_is_executable
+run_test_case "install/tor/torrc-path is executable" spell_is_executable
 spell_has_content() {
   [ -s "$ROOT_DIR/spells/.arcana/tor/torrc-path" ]
 }
 
-_run_test_case "install/tor/torrc-path has content" spell_has_content
+run_test_case "install/tor/torrc-path has content" spell_has_content
 
 shows_help() {
-  _run_spell spells/.arcana/tor/torrc-path --help
+  run_spell spells/.arcana/tor/torrc-path --help
   true
 }
 
-_run_test_case "torrc-path shows help" shows_help
-_finish_tests
+run_test_case "torrc-path shows help" shows_help
+finish_tests

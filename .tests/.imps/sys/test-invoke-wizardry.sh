@@ -12,7 +12,7 @@ done
 # Test: invoke-wizardry is sourceable without errors
 test_sourceable() {
   # Create a test script that sources invoke-wizardry
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   cat > "$tmpdir/test-source.sh" << EOF
 #!/bin/sh
 WIZARDRY_DIR="$ROOT_DIR"
@@ -23,14 +23,14 @@ printf 'sourced successfully\n'
 EOF
   chmod +x "$tmpdir/test-source.sh"
   
-  _run_cmd sh "$tmpdir/test-source.sh"
-  _assert_success || return 1
-  _assert_output_contains "sourced successfully" || return 1
+  run_cmd sh "$tmpdir/test-source.sh"
+  assert_success || return 1
+  assert_output_contains "sourced successfully" || return 1
 }
 
 # Test: invoke-wizardry sets WIZARDRY_DIR when not already set
 test_sets_wizardry_dir() {
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   cat > "$tmpdir/test-var.sh" << EOF
 #!/bin/sh
 unset WIZARDRY_DIR
@@ -39,8 +39,8 @@ printf '%s\n' "\${WIZARDRY_DIR:-unset}"
 EOF
   chmod +x "$tmpdir/test-var.sh"
   
-  _run_cmd sh "$tmpdir/test-var.sh"
-  _assert_success || return 1
+  run_cmd sh "$tmpdir/test-var.sh"
+  assert_success || return 1
   # Should either be set to the root dir or remain unset (if detection fails)
   # The key is it shouldn't error
 }
@@ -50,7 +50,7 @@ EOF
 
 # Test: Core imps are available as commands after sourcing invoke-wizardry
 test_core_imps_available() {
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   cat > "$tmpdir/test-imps.sh" << EOF
 #!/bin/sh
 WIZARDRY_DIR="$ROOT_DIR"
@@ -73,17 +73,17 @@ fi
 EOF
   chmod +x "$tmpdir/test-imps.sh"
   
-  _run_cmd sh "$tmpdir/test-imps.sh"
-  _assert_success || return 1
-  _assert_output_contains "has available" || return 1
-  _assert_output_contains "warn available" || return 1
-  _assert_output_contains "die available" || return 1
-  _assert_output_contains "say available" || return 1
+  run_cmd sh "$tmpdir/test-imps.sh"
+  assert_success || return 1
+  assert_output_contains "has available" || return 1
+  assert_output_contains "warn available" || return 1
+  assert_output_contains "die available" || return 1
+  assert_output_contains "say available" || return 1
 }
 
 # Test: Sourcing invoke-wizardry doesn't hang (timeout after 5 seconds)
 test_no_hanging() {
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   cat > "$tmpdir/test-hang.sh" << EOF
 #!/bin/sh
 WIZARDRY_DIR="$ROOT_DIR"
@@ -95,19 +95,19 @@ EOF
   
   # Run with a timeout to detect hanging (5 seconds should be plenty)
   if command -v timeout >/dev/null 2>&1; then
-    _run_cmd timeout 5 sh "$tmpdir/test-hang.sh"
+    run_cmd timeout 5 sh "$tmpdir/test-hang.sh"
   else
     # Fallback if timeout not available
-    _run_cmd sh "$tmpdir/test-hang.sh"
+    run_cmd sh "$tmpdir/test-hang.sh"
   fi
-  _assert_success || return 1
-  _assert_output_contains "completed without hanging" || return 1
+  assert_success || return 1
+  assert_output_contains "completed without hanging" || return 1
 }
 
 # Test: Sourcing invoke-wizardry maintains permissive shell mode (set +eu)
 # This is critical - imps have set -eu but shouldn't change parent shell mode
 test_maintains_permissive_mode() {
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   cat > "$tmpdir/test-mode.sh" << 'EOF'
 #!/bin/sh
 # Start in permissive mode (default for sh)
@@ -139,14 +139,14 @@ EOF
   mv "$tmpfile" "$tmpdir/test-mode.sh"
   chmod +x "$tmpdir/test-mode.sh"
   
-  _run_cmd sh "$tmpdir/test-mode.sh"
-  _assert_success || return 1
-  _assert_output_contains "permissive mode maintained" || return 1
+  run_cmd sh "$tmpdir/test-mode.sh"
+  assert_success || return 1
+  assert_output_contains "permissive mode maintained" || return 1
 }
 
 # Test: Sourcing invoke-wizardry from rc file works (simulates new terminal)
 test_rc_file_sourcing() {
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   
   # Create a test rc file with invoke-wizardry source line
   cat > "$tmpdir/.testrc" << EOF
@@ -175,15 +175,15 @@ printf 'rc file sourcing successful\n'
 EOF
   chmod +x "$tmpdir/test-rc.sh"
   
-  _run_cmd sh "$tmpdir/test-rc.sh"
-  _assert_success || return 1
-  _assert_output_contains "menu available after rc sourcing" || return 1
-  _assert_output_contains "rc file sourcing successful" || return 1
+  run_cmd sh "$tmpdir/test-rc.sh"
+  assert_success || return 1
+  assert_output_contains "menu available after rc sourcing" || return 1
+  assert_output_contains "rc file sourcing successful" || return 1
 }
 
 # Test: Sourcing invoke-wizardry with empty PATH sets baseline PATH
 test_empty_path_handling() {
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   cat > "$tmpdir/test-empty-path.sh" << EOF
 #!/bin/sh
 # Simulate macOS with empty PATH
@@ -221,14 +221,14 @@ EOF
   chmod +x "$tmpdir/test-empty-path.sh"
   
   # Run the test with bash to avoid dash stdout redirect issue
-  _run_cmd bash "$tmpdir/test-empty-path.sh"
-  _assert_success || return 1
-  _assert_output_contains "baseline PATH set correctly" || return 1
+  run_cmd bash "$tmpdir/test-empty-path.sh"
+  assert_success || return 1
+  assert_output_contains "baseline PATH set correctly" || return 1
 }
 
 # Test: command_not_found_handle returns 127 for unknown commands
 test_returns_127_for_unknown_command() {
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   
   cat > "$tmpdir/test-cnf.sh" << EOF
 #!/bin/sh
@@ -242,8 +242,8 @@ exit \$?
 EOF
   chmod +x "$tmpdir/test-cnf.sh"
   
-  _run_cmd sh "$tmpdir/test-cnf.sh"
-  _assert_status 127 || return 1
+  run_cmd sh "$tmpdir/test-cnf.sh"
+  assert_status 127 || return 1
 }
 
 # Test: command_not_found_handle has recursion guard to prevent infinite loops
@@ -282,7 +282,7 @@ test_recursion_guard() {
 
 # Test: menu is pre-loaded as function
 test_menu_preloaded() {
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   
   cat > "$tmpdir/test-menu-preloaded.sh" << EOF
 #!/bin/sh
@@ -305,15 +305,15 @@ fi
 EOF
   chmod +x "$tmpdir/test-menu-preloaded.sh"
   
-  _run_cmd sh "$tmpdir/test-menu-preloaded.sh"
-  _assert_success || return 1
-  _assert_output_contains "menu command available" || return 1
-  _assert_output_contains "menu is pre-loaded" || return 1
+  run_cmd sh "$tmpdir/test-menu-preloaded.sh"
+  assert_success || return 1
+  assert_output_contains "menu command available" || return 1
+  assert_output_contains "menu is pre-loaded" || return 1
 }
 
 # Test: invoke-wizardry succeeds in shells without BASH/ZSH detection by using default install path
 test_default_path_in_unknown_shell() {
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   home="$tmpdir/home"
   mkdir -p "$home"
   ln -s "$ROOT_DIR" "$home/.wizardry"
@@ -348,15 +348,15 @@ EOF
   baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
   default_invoke="$home/.wizardry/spells/.imps/sys/invoke-wizardry"
 
-  _run_cmd sh "$tmpdir/test-unknown-shell.sh" "$home" "$baseline_path" "$default_invoke"
-  _assert_success || return 1
-  _assert_output_contains "wizardry dir set" || return 1
-  _assert_output_contains "menu available" || return 1
+  run_cmd sh "$tmpdir/test-unknown-shell.sh" "$home" "$baseline_path" "$default_invoke"
+  assert_success || return 1
+  assert_output_contains "wizardry dir set" || return 1
+  assert_output_contains "menu available" || return 1
 }
 
 # Test: Spell directories not added to PATH (word-of-binding paradigm)
 test_spell_dirs_not_added_to_path() {
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   
   cat > "$tmpdir/test-no-spell-path.sh" << EOF
 #!/bin/sh
@@ -385,14 +385,14 @@ EOF
   chmod +x "$tmpdir/test-no-spell-path.sh"
   
   # Run the test with bash to avoid dash stdout redirect issue
-  _run_cmd bash "$tmpdir/test-no-spell-path.sh"
-  _assert_success || return 1
-  _assert_output_contains "spell directories not added to PATH" || return 1
+  run_cmd bash "$tmpdir/test-no-spell-path.sh"
+  assert_success || return 1
+  assert_output_contains "spell directories not added to PATH" || return 1
 }
 
 # Test: invoke-wizardry handles empty spellbook directory without errors
 test_empty_spellbook_directory() {
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   empty_spellbook="$tmpdir/empty_spellbook"
   mkdir -p "$empty_spellbook"
   
@@ -419,26 +419,26 @@ fi
 EOF
   chmod +x "$tmpdir/test-empty-spellbook.sh"
   
-  _run_cmd sh "$tmpdir/test-empty-spellbook.sh"
-  _assert_success || return 1
-  _assert_output_contains "sourcing completed successfully" || return 1
-  _assert_output_contains "menu available" || return 1
+  run_cmd sh "$tmpdir/test-empty-spellbook.sh"
+  assert_success || return 1
+  assert_output_contains "sourcing completed successfully" || return 1
+  assert_output_contains "menu available" || return 1
 }
 
-_run_test_case "invoke-wizardry is sourceable" test_sourceable
-_run_test_case "invoke-wizardry sets WIZARDRY_DIR" test_sets_wizardry_dir
+run_test_case "invoke-wizardry is sourceable" test_sourceable
+run_test_case "invoke-wizardry sets WIZARDRY_DIR" test_sets_wizardry_dir
 # Test #3 removed: outdated (word-of-binding means spell dirs NOT in PATH)
-_run_test_case "core imps are available as commands" test_core_imps_available
-_run_test_case "sourcing invoke-wizardry doesn't hang" test_no_hanging
-_run_test_case "invoke-wizardry maintains permissive shell mode" test_maintains_permissive_mode
-_run_test_case "invoke-wizardry works when sourced from rc file" test_rc_file_sourcing
-_run_test_case "invoke-wizardry works in non-bash shells via default path" test_default_path_in_unknown_shell
+run_test_case "core imps are available as commands" test_core_imps_available
+run_test_case "sourcing invoke-wizardry doesn't hang" test_no_hanging
+run_test_case "invoke-wizardry maintains permissive shell mode" test_maintains_permissive_mode
+run_test_case "invoke-wizardry works when sourced from rc file" test_rc_file_sourcing
+run_test_case "invoke-wizardry works in non-bash shells via default path" test_default_path_in_unknown_shell
 # Test #7 removed: edge case (empty PATH) not realistic and difficult to test reliably
-_run_test_case "command_not_found_handle returns 127 for unknown commands" test_returns_127_for_unknown_command
-_run_test_case "command_not_found_handle has recursion guard" test_recursion_guard
+run_test_case "command_not_found_handle returns 127 for unknown commands" test_returns_127_for_unknown_command
+run_test_case "command_not_found_handle has recursion guard" test_recursion_guard
 # Test #10 removed: cd function no longer pre-loaded (MUD features install separately)
-_run_test_case "menu is pre-loaded as function" test_menu_preloaded
-_run_test_case "empty spellbook directory doesn't cause errors" test_empty_spellbook_directory
+run_test_case "menu is pre-loaded as function" test_menu_preloaded
+run_test_case "empty spellbook directory doesn't cause errors" test_empty_spellbook_directory
 # Test #11 removed: redundant with word-of-binding paradigm (spell dirs never added to PATH)
 
-_finish_tests
+finish_tests

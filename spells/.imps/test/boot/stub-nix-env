@@ -3,7 +3,7 @@
 # Stub logs invocations to NIX_ENV_LOG and exits with NIX_ENV_EXIT code.
 set -eu
 
-_stub_nix_env() {
+stub_nix_env() {
   fixture=$1
   cat <<'STUB' >"$fixture/bin/nix-env"
 #!/bin/sh
@@ -14,4 +14,4 @@ STUB
 }
 
 # Self-execution when run directly (not sourced)
-case "${0##*/}" in stub-nix-env) _stub_nix_env "$@" ;; esac
+case "${0##*/}" in stub-nix-env) stub_nix_env "$@" ;; esac

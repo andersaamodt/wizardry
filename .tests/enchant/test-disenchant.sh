@@ -15,31 +15,31 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  _run_spell "spells/enchant/disenchant" --help
-  _assert_success && _assert_output_contains "Usage: disenchant"
+  run_spell "spells/enchant/disenchant" --help
+  assert_success && assert_output_contains "Usage: disenchant"
 }
 
 test_argument_validation() {
-  _run_spell "spells/enchant/disenchant"
-  _assert_failure && _assert_error_contains "Usage: disenchant"
+  run_spell "spells/enchant/disenchant"
+  assert_failure && assert_error_contains "Usage: disenchant"
 
-  _run_spell "spells/enchant/disenchant" a b c
-  _assert_failure && _assert_error_contains "Usage: disenchant"
+  run_spell "spells/enchant/disenchant" a b c
+  assert_failure && assert_error_contains "Usage: disenchant"
 }
 
 test_missing_file() {
-  _run_spell "spells/enchant/disenchant" "$WIZARDRY_TMPDIR/missing"
-  _assert_failure && _assert_error_contains "does not exist"
+  run_spell "spells/enchant/disenchant" "$WIZARDRY_TMPDIR/missing"
+  assert_failure && assert_error_contains "does not exist"
 }
 
 test_no_attributes() {
   # Skip if no xattr commands available
   if ! command -v attr >/dev/null 2>&1 && ! command -v xattr >/dev/null 2>&1 && ! command -v getfattr >/dev/null 2>&1; then
-    _test_skip "disenchant reports missing attributes" "requires attr, xattr, or getfattr"
+    test_skip "disenchant reports missing attributes" "requires attr, xattr, or getfattr"
     return 0
   fi
   
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   stub_dir="$tmpdir/stubs"
   mkdir -p "$stub_dir"
   
@@ -56,25 +56,25 @@ STUB
   : >"$tmpfile"
   
   export PATH="$stub_dir:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/menu:/bin:/usr/bin"
-  _run_spell "spells/enchant/disenchant" "$tmpfile"
+  run_spell "spells/enchant/disenchant" "$tmpfile"
   
-  _assert_failure && _assert_error_contains "no enchanted attributes"
+  assert_failure && assert_error_contains "no enchanted attributes"
 }
 
 test_removes_specific_key_with_attr() {
   # Skip if no xattr commands available
   if ! command -v attr >/dev/null 2>&1 && ! command -v xattr >/dev/null 2>&1 && ! command -v getfattr >/dev/null 2>&1; then
-    _test_skip "disenchant removes a named key with attr" "requires attr, xattr, or getfattr"
+    test_skip "disenchant removes a named key with attr" "requires attr, xattr, or getfattr"
     return 0
   fi
   
   # Skip in sandbox environments - inline stubs have path issues
   if [ "${BWRAP_AVAILABLE:-0}" -eq 1 ] || [ "${MACOS_SANDBOX_AVAILABLE:-0}" -eq 1 ]; then
-    _test_skip "disenchant removes a named key with attr" "skipped in sandbox environments"
+    test_skip "disenchant removes a named key with attr" "skipped in sandbox environments"
     return 0
   fi
   
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   stub_dir="$tmpdir/stubs"
   mkdir -p "$stub_dir"
   
@@ -95,9 +95,9 @@ EOF
   : >"$target"
 
   export PATH="$stub_dir:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/menu:/bin:/usr/bin"
-  _run_spell "spells/enchant/disenchant" "$target" user.note
+  run_spell "spells/enchant/disenchant" "$target" user.note
   
-  _assert_success && _assert_output_contains "Disenchanted user.note"
+  assert_success && assert_output_contains "Disenchanted user.note"
   
   called=$(cat "$output_file")
   [ "$called" = "-r user.note $target" ] || { TEST_FAILURE_REASON="unexpected attr call: $called"; return 1; }
@@ -106,17 +106,17 @@ EOF
 test_falls_back_to_setfattr() {
   # Skip if no xattr commands available
   if ! command -v attr >/dev/null 2>&1 && ! command -v xattr >/dev/null 2>&1 && ! command -v getfattr >/dev/null 2>&1; then
-    _test_skip "disenchant falls back to setfattr when attr missing" "requires attr, xattr, or getfattr"
+    test_skip "disenchant falls back to setfattr when attr missing" "requires attr, xattr, or getfattr"
     return 0
   fi
   
   # Skip in sandbox environments - inline stubs have path issues
   if [ "${BWRAP_AVAILABLE:-0}" -eq 1 ] || [ "${MACOS_SANDBOX_AVAILABLE:-0}" -eq 1 ]; then
-    _test_skip "disenchant falls back to setfattr when attr missing" "skipped in sandbox environments"
+    test_skip "disenchant falls back to setfattr when attr missing" "skipped in sandbox environments"
     return 0
   fi
   
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   stub_dir="$tmpdir/stubs"
   mkdir -p "$stub_dir"
   
@@ -139,8 +139,8 @@ EOF
   : >"$target"
 
   export PATH="$stub_dir:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/menu:/bin:/usr/bin"
-  _run_spell "spells/enchant/disenchant" "$target"
-  _assert_success
+  run_spell "spells/enchant/disenchant" "$target"
+  assert_success
   called=$(cat "$output_file")
   [ "$called" = "-x user.alt $target" ] || { TEST_FAILURE_REASON="unexpected setfattr call: $called"; return 1; }
 }
@@ -148,17 +148,17 @@ EOF
 test_requires_ask_number_when_many() {
   # Skip if no xattr commands available
   if ! command -v attr >/dev/null 2>&1 && ! command -v xattr >/dev/null 2>&1 && ! command -v getfattr >/dev/null 2>&1; then
-    _test_skip "disenchant requires ask_number for multiple attributes" "requires attr, xattr, or getfattr"
+    test_skip "disenchant requires ask_number for multiple attributes" "requires attr, xattr, or getfattr"
     return 0
   fi
   
   # Skip in sandbox environments - inline stubs have path issues
   if [ "${BWRAP_AVAILABLE:-0}" -eq 1 ] || [ "${MACOS_SANDBOX_AVAILABLE:-0}" -eq 1 ]; then
-    _test_skip "disenchant requires ask_number for multiple attributes" "skipped in sandbox environments"
+    test_skip "disenchant requires ask_number for multiple attributes" "skipped in sandbox environments"
     return 0
   fi
   
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   stub_dir="$tmpdir/stubs"
   mkdir -p "$stub_dir"
   
@@ -175,24 +175,24 @@ STUB
   : >"$target"
   
   export PATH="$stub_dir:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/menu:/usr/bin:/bin"
-  _run_spell "spells/enchant/disenchant" "$target"
-  _assert_failure && _assert_error_contains "multiple attributes"
+  run_spell "spells/enchant/disenchant" "$target"
+  assert_failure && assert_error_contains "multiple attributes"
 }
 
 test_selects_specific_entry_with_ask_number() {
   # Skip if no xattr commands available
   if ! command -v attr >/dev/null 2>&1 && ! command -v xattr >/dev/null 2>&1 && ! command -v getfattr >/dev/null 2>&1; then
-    _test_skip "disenchant selects a specific entry with ask_number" "requires attr, xattr, or getfattr"
+    test_skip "disenchant selects a specific entry with ask_number" "requires attr, xattr, or getfattr"
     return 0
   fi
   
   # Skip in sandbox environments - inline stubs have path issues
   if [ "${BWRAP_AVAILABLE:-0}" -eq 1 ] || [ "${MACOS_SANDBOX_AVAILABLE:-0}" -eq 1 ]; then
-    _test_skip "disenchant selects a specific entry with ask_number" "skipped in sandbox environments"
+    test_skip "disenchant selects a specific entry with ask_number" "skipped in sandbox environments"
     return 0
   fi
   
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   stub_dir="$tmpdir/stubs"
   mkdir -p "$stub_dir"
   
@@ -218,8 +218,8 @@ STUB
   : >"$target"
   
   export PATH="$stub_dir:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/menu:/bin:/usr/bin"
-  _run_spell "spells/enchant/disenchant" "$target"
-  _assert_success && _assert_output_contains "user.two"
+  run_spell "spells/enchant/disenchant" "$target"
+  assert_success && assert_output_contains "user.two"
   called=$(cat "$output_file")
   [ "$called" = "-d user.two $target" ] || { TEST_FAILURE_REASON="unexpected xattr call: $called"; return 1; }
 }
@@ -227,17 +227,17 @@ STUB
 test_selects_all_with_menu_choice() {
   # Skip if no xattr commands available
   if ! command -v attr >/dev/null 2>&1 && ! command -v xattr >/dev/null 2>&1 && ! command -v getfattr >/dev/null 2>&1; then
-    _test_skip "disenchant can remove all attributes" "requires attr, xattr, or getfattr"
+    test_skip "disenchant can remove all attributes" "requires attr, xattr, or getfattr"
     return 0
   fi
   
   # Skip in sandbox environments - inline stubs have path issues
   if [ "${BWRAP_AVAILABLE:-0}" -eq 1 ] || [ "${MACOS_SANDBOX_AVAILABLE:-0}" -eq 1 ]; then
-    _test_skip "disenchant can remove all attributes" "skipped in sandbox environments"
+    test_skip "disenchant can remove all attributes" "skipped in sandbox environments"
     return 0
   fi
   
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   stub_dir="$tmpdir/stubs"
   mkdir -p "$stub_dir"
   
@@ -267,22 +267,22 @@ STUB
   : >"$target"
   
   export PATH="$stub_dir:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/menu:/bin:/usr/bin"
-  _run_spell "spells/enchant/disenchant" "$target"
-  _assert_success && _assert_output_contains "Disenchant all"
+  run_spell "spells/enchant/disenchant" "$target"
+  assert_success && assert_output_contains "Disenchant all"
   calls=$(cat "$output_file")
   expected="-r user.alpha $target
 -r user.beta $target"
   [ "$calls" = "$expected" ] || { TEST_FAILURE_REASON="unexpected attr calls: $calls"; return 1; }
 }
 
-_run_test_case "disenchant prints usage" test_help
-_run_test_case "disenchant validates arguments" test_argument_validation
-_run_test_case "disenchant fails for missing files" test_missing_file
-_run_test_case "disenchant reports missing attributes" test_no_attributes
-_run_test_case "disenchant removes a named key with attr" test_removes_specific_key_with_attr
-_run_test_case "disenchant falls back to setfattr when attr missing" test_falls_back_to_setfattr
-_run_test_case "disenchant requires ask_number for multiple attributes" test_requires_ask_number_when_many
-_run_test_case "disenchant selects a specific entry with ask_number" test_selects_specific_entry_with_ask_number
-_run_test_case "disenchant can remove all attributes" test_selects_all_with_menu_choice
+run_test_case "disenchant prints usage" test_help
+run_test_case "disenchant validates arguments" test_argument_validation
+run_test_case "disenchant fails for missing files" test_missing_file
+run_test_case "disenchant reports missing attributes" test_no_attributes
+run_test_case "disenchant removes a named key with attr" test_removes_specific_key_with_attr
+run_test_case "disenchant falls back to setfattr when attr missing" test_falls_back_to_setfattr
+run_test_case "disenchant requires ask_number for multiple attributes" test_requires_ask_number_when_many
+run_test_case "disenchant selects a specific entry with ask_number" test_selects_specific_entry_with_ask_number
+run_test_case "disenchant can remove all attributes" test_selects_all_with_menu_choice
 
 # Test via source-then-invoke pattern  

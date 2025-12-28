@@ -3,7 +3,7 @@
 # Receives: $1=command, $2=command_args, $3+=remaining args
 # Example: parse false or echo fallback
 
-_or() {
+or() {
   _or_cmd=${1:-}
   _or_cmd_args=${2:-}
   shift 2 2>/dev/null || shift $#
@@ -25,4 +25,4 @@ _or() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */or) _or "$@" ;; esac
+  */or) or "$@" ;; esac

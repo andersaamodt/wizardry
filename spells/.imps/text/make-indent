@@ -3,7 +3,7 @@
 # Uses detected indent style from FILE, or defaults to 2 spaces. Example: indent=$(make-indent 2)
 set -eu
 
-_make_indent() {
+make_indent() {
   _mi_level=${1:-1}
   _mi_file=${2-}
   _mi_imp_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
@@ -37,4 +37,4 @@ _make_indent() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */make-indent) _make_indent "$@" ;; esac
+  */make-indent) make_indent "$@" ;; esac

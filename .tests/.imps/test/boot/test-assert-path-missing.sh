@@ -8,18 +8,18 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_missing_path() {
-  _assert_path_missing "/nonexistent/path/to/check"
+  assert_path_missing "/nonexistent/path/to/check"
 }
 
 test_existing_path_fails() {
-  tmpdir=$(_make_tempdir)
-  if _assert_path_missing "$tmpdir"; then
+  tmpdir=$(make_tempdir)
+  if assert_path_missing "$tmpdir"; then
     return 1
   fi
   return 0
 }
 
-_run_test_case "assert-path-missing succeeds on missing path" test_missing_path
-_run_test_case "assert-path-missing fails on existing path" test_existing_path_fails
+run_test_case "assert-path-missing succeeds on missing path" test_missing_path
+run_test_case "assert-path-missing fails on existing path" test_existing_path_fails
 
-_finish_tests
+finish_tests

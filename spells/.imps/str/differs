@@ -3,10 +3,10 @@
 # Example: differs "$old" "$new" && update
 set -eu
 
-_differs() {
+differs() {
   [ "$1" != "$2" ]
 }
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */differs) _differs "$@" ;; esac
+  */differs) differs "$@" ;; esac

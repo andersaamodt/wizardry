@@ -14,15 +14,15 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  _run_spell "spells/cantrips/reload-ssh" --help
-  _assert_success || return 1
-  _assert_output_contains "Usage: reload-ssh" || return 1
+  run_spell "spells/cantrips/reload-ssh" --help
+  assert_success || return 1
+  assert_output_contains "Usage: reload-ssh" || return 1
 }
 
 test_help_h_flag() {
-  _run_spell "spells/cantrips/reload-ssh" -h
-  _assert_success || return 1
-  _assert_output_contains "Usage: reload-ssh" || return 1
+  run_spell "spells/cantrips/reload-ssh" -h
+  assert_success || return 1
+  assert_output_contains "Usage: reload-ssh" || return 1
 }
 
 test_uses_os_imp() {
@@ -33,9 +33,9 @@ test_uses_os_imp() {
   }
 }
 
-_run_test_case "reload-ssh shows usage text" test_help
-_run_test_case "reload-ssh shows usage with -h" test_help_h_flag
-_run_test_case "reload-ssh uses os imp for detection" test_uses_os_imp
+run_test_case "reload-ssh shows usage text" test_help
+run_test_case "reload-ssh shows usage with -h" test_help_h_flag
+run_test_case "reload-ssh uses os imp for detection" test_uses_os_imp
 
 
 # Test via source-then-invoke pattern  

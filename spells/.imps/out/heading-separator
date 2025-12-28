@@ -6,7 +6,7 @@
 
 set -eu
 
-_heading_separator() {
+heading_separator() {
   text=${1-}
   width=${2:-76}
   prefix=${3:-#}
@@ -50,4 +50,4 @@ _heading_separator() {
 }
 
 # Self-execution when run directly (not sourced)
-case "${0##*/}" in heading-separator) _heading_separator "$@" ;; esac
+case "${0##*/}" in heading-separator) heading_separator "$@" ;; esac

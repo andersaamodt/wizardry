@@ -3,10 +3,10 @@
 # Example: echo "hello" | upper
 set -eu
 
-_upper() {
+upper() {
   tr '[:lower:]' '[:upper:]'
 }
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */upper) _upper "$@" ;; esac
+  */upper) upper "$@" ;; esac

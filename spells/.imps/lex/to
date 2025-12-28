@@ -3,7 +3,7 @@
 # Receives: $1=command, $2=command_args, $3=target, $4+=remaining
 # Example: parse cp file.txt to /tmp/dest.txt
 
-_to() {
+to() {
   _to_cmd=${1:-}
   _to_cmd_args=${2:-}
   shift 2 2>/dev/null || shift $#
@@ -40,4 +40,4 @@ _to() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */to) _to "$@" ;; esac
+  */to) to "$@" ;; esac

@@ -3,7 +3,7 @@
 # When a command has multiple meanings, presents a menu to choose.
 # Saves choice in $SPELLBOOK_DIR/.disambiguations for future use.
 
-_disambiguate() {
+disambiguate() {
   if [ $# -eq 0 ]; then
     return 0
   fi
@@ -101,4 +101,4 @@ _disambiguate() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */disambiguate) _disambiguate "$@" ;; esac
+  */disambiguate) disambiguate "$@" ;; esac

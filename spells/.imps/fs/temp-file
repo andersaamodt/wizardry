@@ -3,7 +3,7 @@
 # Example: tmp=$(temp-file myapp) && trap 'cleanup-file "$tmp"' EXIT
 set -eu
 
-_temp_file() {
+temp_file() {
   _tf_prefix=${1:-wizardry}
   # Prefer WIZARDRY_TMPDIR if set and exists, otherwise use TMPDIR or /tmp
   # This handles test environments where TMPDIR may point to sandbox dirs
@@ -18,4 +18,4 @@ _temp_file() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */temp-file) _temp_file "$@" ;; esac
+  */temp-file) temp_file "$@" ;; esac

@@ -11,7 +11,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_function_exists() {
-  command -v _run_both_patterns >/dev/null 2>&1
+  command -v run_both_patterns >/dev/null 2>&1
 }
 
 test_accepts_arguments() {
@@ -20,7 +20,7 @@ test_accepts_arguments() {
   true
 }
 
-_run_test_case "run-both-patterns function exists" test_function_exists
-_run_test_case "run-both-patterns accepts arguments" test_accepts_arguments
+run_test_case "run-both-patterns function exists" test_function_exists
+run_test_case "run-both-patterns accepts arguments" test_accepts_arguments
 
-_finish_tests
+finish_tests

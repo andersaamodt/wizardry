@@ -8,29 +8,29 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_creates_stub() {
-  fixture=$(_make_fixture)
-  _write_pkgin_stub "$fixture"
+  fixture=$(make_fixture)
+  write_pkgin_stub "$fixture"
   [ -x "$fixture/opt/pkg/bin/pkgin" ]
 }
 
 test_stub_logs_install() {
-  fixture=$(_make_fixture)
-  _write_pkgin_stub "$fixture"
+  fixture=$(make_fixture)
+  write_pkgin_stub "$fixture"
   export PKGIN_LOG="$fixture/log/pkgin.log"
   "$fixture/opt/pkg/bin/pkgin" -y install vim
   [ -f "$PKGIN_LOG" ] && grep -q "install vim" "$PKGIN_LOG"
 }
 
 test_stub_logs_remove() {
-  fixture=$(_make_fixture)
-  _write_pkgin_stub "$fixture"
+  fixture=$(make_fixture)
+  write_pkgin_stub "$fixture"
   export PKGIN_LOG="$fixture/log/pkgin.log"
   "$fixture/opt/pkg/bin/pkgin" -y remove vim
   [ -f "$PKGIN_LOG" ] && grep -q "remove vim" "$PKGIN_LOG"
 }
 
-_run_test_case "write-pkgin-stub creates executable" test_creates_stub
-_run_test_case "write-pkgin-stub logs install" test_stub_logs_install
-_run_test_case "write-pkgin-stub logs remove" test_stub_logs_remove
+run_test_case "write-pkgin-stub creates executable" test_creates_stub
+run_test_case "write-pkgin-stub logs install" test_stub_logs_install
+run_test_case "write-pkgin-stub logs remove" test_stub_logs_remove
 
-_finish_tests
+finish_tests

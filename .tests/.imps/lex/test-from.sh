@@ -13,11 +13,11 @@ test_from_is_executable() {
 }
 
 test_from_prepends_source() {
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   echo "content" > "$tmp/source.txt"
   
-  _run_spell spells/.imps/lex/from "cp" "$tmp/dest.txt" "$tmp/source.txt"
-  _assert_success || return 1
+  run_spell spells/.imps/lex/from "cp" "$tmp/dest.txt" "$tmp/source.txt"
+  assert_success || return 1
   
   if [ ! -f "$tmp/dest.txt" ]; then
     TEST_FAILURE_REASON="File not copied from source"
@@ -26,18 +26,18 @@ test_from_prepends_source() {
 }
 
 test_from_requires_source() {
-  _run_spell spells/.imps/lex/from "echo" "hello"
-  _assert_failure || return 1
+  run_spell spells/.imps/lex/from "echo" "hello"
+  assert_failure || return 1
 }
 
 test_from_requires_command() {
-  _run_spell spells/.imps/lex/from "" "" "/tmp/source"
-  _assert_failure || return 1
+  run_spell spells/.imps/lex/from "" "" "/tmp/source"
+  assert_failure || return 1
 }
 
-_run_test_case "from is executable" test_from_is_executable
-_run_test_case "from prepends source to args" test_from_prepends_source
-_run_test_case "from requires source" test_from_requires_source
-_run_test_case "from requires command" test_from_requires_command
+run_test_case "from is executable" test_from_is_executable
+run_test_case "from prepends source to args" test_from_prepends_source
+run_test_case "from requires source" test_from_requires_source
+run_test_case "from requires command" test_from_requires_command
 
-_finish_tests
+finish_tests

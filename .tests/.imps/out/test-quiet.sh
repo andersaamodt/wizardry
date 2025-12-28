@@ -12,8 +12,8 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_quiet_suppresses_output() {
-  _run_spell spells/.imps/out/quiet echo "should be silent"
-  _assert_success
+  run_spell spells/.imps/out/quiet echo "should be silent"
+  assert_success
   # Output should be empty
   if [ -n "$OUTPUT" ]; then
     TEST_FAILURE_REASON="output should be empty"
@@ -22,11 +22,11 @@ test_quiet_suppresses_output() {
 }
 
 test_quiet_preserves_exit_status() {
-  _run_spell spells/.imps/out/quiet false
-  _assert_failure
+  run_spell spells/.imps/out/quiet false
+  assert_failure
 }
 
-_run_test_case "quiet suppresses output" test_quiet_suppresses_output
-_run_test_case "quiet preserves exit status" test_quiet_preserves_exit_status
+run_test_case "quiet suppresses output" test_quiet_suppresses_output
+run_test_case "quiet preserves exit status" test_quiet_preserves_exit_status
 
-_finish_tests
+finish_tests

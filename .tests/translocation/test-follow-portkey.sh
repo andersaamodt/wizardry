@@ -14,26 +14,26 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  _run_spell "spells/translocation/follow-portkey" --help
-  _assert_success || return 1
-  _assert_output_contains "Usage: follow-portkey" || return 1
+  run_spell "spells/translocation/follow-portkey" --help
+  assert_success || return 1
+  assert_output_contains "Usage: follow-portkey" || return 1
 }
 
 test_requires_argument() {
-  _run_spell "spells/translocation/follow-portkey"
-  _assert_failure || return 1
-  _assert_error_contains "file path required" || return 1
+  run_spell "spells/translocation/follow-portkey"
+  assert_failure || return 1
+  assert_error_contains "file path required" || return 1
 }
 
 test_fails_on_missing_file() {
-  _run_spell "spells/translocation/follow-portkey" "/nonexistent/file.txt"
-  _assert_failure || return 1
-  _assert_error_contains "file not found" || return 1
+  run_spell "spells/translocation/follow-portkey" "/nonexistent/file.txt"
+  assert_failure || return 1
+  assert_error_contains "file not found" || return 1
 }
 
-_run_test_case "follow-portkey shows usage text" test_help
-_run_test_case "follow-portkey requires file argument" test_requires_argument
-_run_test_case "follow-portkey fails on missing file" test_fails_on_missing_file
+run_test_case "follow-portkey shows usage text" test_help
+run_test_case "follow-portkey requires file argument" test_requires_argument
+run_test_case "follow-portkey fails on missing file" test_fails_on_missing_file
 
 
 # Test via source-then-invoke pattern  

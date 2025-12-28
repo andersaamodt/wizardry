@@ -13,19 +13,19 @@ done
 
 test_pkg_has_no_package_fails() {
   skip-if-compiled || return $?
-  _run_spell spells/.imps/pkg/pkg-has
-  _assert_failure
-  _assert_error_contains "package name required"
+  run_spell spells/.imps/pkg/pkg-has
+  assert_failure
+  assert_error_contains "package name required"
 }
 
 test_pkg_has_empty_package_fails() {
   skip-if-compiled || return $?
-  _run_spell spells/.imps/pkg/pkg-has ""
-  _assert_failure
-  _assert_error_contains "package name required"
+  run_spell spells/.imps/pkg/pkg-has ""
+  assert_failure
+  assert_error_contains "package name required"
 }
 
-_run_test_case "pkg-has without package fails" test_pkg_has_no_package_fails
-_run_test_case "pkg-has with empty package fails" test_pkg_has_empty_package_fails
+run_test_case "pkg-has without package fails" test_pkg_has_no_package_fails
+run_test_case "pkg-has with empty package fails" test_pkg_has_empty_package_fails
 
-_finish_tests
+finish_tests

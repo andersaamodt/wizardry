@@ -33,7 +33,7 @@ export _WIZARDRY_INVOKED
 
 _iw_debug "Starting wizardry initialization"
 
-_invoke_wizardry() {
+invoke_wizardry() {
   # Detect WIZARDRY_DIR
   if [ -z "${WIZARDRY_DIR-}" ]; then
     # Capture script path - in bash use BASH_SOURCE, in zsh use ${(%):-%x}
@@ -87,82 +87,15 @@ _invoke_wizardry() {
   # Future: ALL wizardry spells will be pre-loaded, hotloading only for ~/.spellbook
   # Current: Pre-load menu essentials, hotload other wizardry spells temporarily
   
-  # Helper function to extract and eval function bodies from spell/imp files
-  _iw_load_module() {
-    _module_file="$1"
-    _module_name="$2"
-    _is_imp="${3:-0}"
-    
-    # Determine true-name (imps use _underscore, spells don't)
-    if [ "$_is_imp" -eq 1 ]; then
-      _true_name=$(printf '_%s' "$_module_name" | sed 's/-/_/g')
-    else
-      _true_name=$(printf '%s' "$_module_name" | sed 's/-/_/g')
-    fi
-    
-    # Check if has function
-    _pattern="^[[:space:]]*${_true_name}[[:space:]]*\\(\\)"
-    if ! grep -qE "$_pattern" "$_module_file" 2>/dev/null; then
-      return 1
-    fi
-    
-    # Extract function body with AWK
-    _body=$(awk '
-BEGIN {
-  func_kw = "^[[:space:]]*function[[:space:]]+[A-Za-z_][A-Za-z0-9_]*"
-  func_paren = "[[:space:]]*\\(\\)?[[:space:]]*\\{"
-  func_simple = "^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\(\\)[[:space:]]*\\{"
-  func_header = "^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\(\\)[[:space:]]*$"
-}
-function brace_delta(s, n, m) {
-  n = gsub(/{/, "{", s)
-  m = gsub(/}/, "}", s)
-  return n - m
-}
-{
-  if (!in_func) {
-    if (match($0, func_kw func_paren)) {
-      in_func = 1
-      brace = brace_delta($0)
-      print
-      if (brace <= 0) { in_func = 0 }
-      next
-    }
-    if (match($0, func_simple)) {
-      in_func = 1
-      brace = brace_delta($0)
-      print
-      if (brace <= 0) { in_func = 0 }
-      next
-    }
-    if (match($0, func_header)) {
-      in_func = 1
-      brace = 0
-      print
-      next
-    }
-    next
-  }
-  brace += brace_delta($0)
-  print
-  if (brace <= 0) { in_func = 0 }
-}
-' "$_module_file") || return 1
-    
-    # Eval the function body
-    if [ -n "$_body" ]; then
-      if ! eval "$_body" 2>/dev/null; then
-        return 1
-      fi
-    fi
-    
-    # Create alias if name differs from true-name
-    if [ "$_module_name" != "$_true_name" ]; then
-      alias "$_module_name=$_true_name" 2>/dev/null || :
-    fi
-    
-    return 0
-  }
+  _iw_wob="$WIZARDRY_DIR/spells/.imps/sys/word-of-binding"
+  if [ -r "$_iw_wob" ]; then
+    WIZARDRY_SOURCE_WORD_OF_BINDING=1 . "$_iw_wob" 2>/dev/null || :
+    unset WIZARDRY_SOURCE_WORD_OF_BINDING
+  fi
+  if ! command -v word_of_binding >/dev/null 2>&1; then
+    printf '%s\n' "invoke-wizardry: ERROR - failed to load word-of-binding" >&2
+    return 1
+  fi
   
   # Pre-load essential imps needed by menu
   # These are from sys/, out/, fs/, cond/ families
@@ -184,7 +117,9 @@ function brace_delta(s, n, m) {
       [ -d "$_family_dir" ] || continue
       _imp_file="$_family_dir/$_imp_name"
       if [ -f "$_imp_file" ]; then
-        _iw_load_module "$_imp_file" "$_imp_name" 1 2>/dev/null || :
+        if command -v word_of_binding >/dev/null 2>&1; then
+          word_of_binding "$_imp_name" 2>/dev/null || :
+        fi
         break
       fi
     done
@@ -207,7 +142,8 @@ function brace_delta(s, n, m) {
       _spell_file="$_spell_dir/$_spell_name"
       if [ -f "$_spell_file" ]; then
         _iw_debug "Loading spell: $_spell_name"
-        if _iw_load_module "$_spell_file" "$_spell_name" 0 2>/dev/null; then
+        if command -v word_of_binding >/dev/null 2>&1 \
+          && word_of_binding "$_spell_name" 2>/dev/null; then
           _iw_status="✓ Loaded"
         else
           _iw_status="✗ Failed"
@@ -274,7 +210,8 @@ function brace_delta(s, n, m) {
           _WIZARDRY_WOB_LOADED=1
           export _WIZARDRY_WOB_LOADED
         fi
-        if command -v _word_of_binding >/dev/null 2>&1 && _word_of_binding "$@" 2>/dev/null; then
+        if command -v word_of_binding >/dev/null 2>&1 \
+          && word_of_binding --run "$@" 2>/dev/null; then
           unset _WIZARDRY_IN_CNF
           return 0
         fi
@@ -305,7 +242,8 @@ function brace_delta(s, n, m) {
           _WIZARDRY_WOB_LOADED=1
           export _WIZARDRY_WOB_LOADED
         fi
-        if command -v _word_of_binding >/dev/null 2>&1 && _word_of_binding "$@" 2>/dev/null; then
+        if command -v word_of_binding >/dev/null 2>&1 \
+          && word_of_binding --run "$@" 2>/dev/null; then
           unset _WIZARDRY_IN_CNF
           return 0
         fi
@@ -324,6 +262,6 @@ function brace_delta(s, n, m) {
 }
 
 # Run the setup
-_invoke_wizardry
+invoke_wizardry
 _iw_status=$?
 return $_iw_status

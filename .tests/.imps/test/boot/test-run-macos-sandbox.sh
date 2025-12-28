@@ -9,28 +9,28 @@ done
 
 test_uses_sandbox_exec_bin() {
   # Create a stub that records invocation
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   printf '#!/bin/sh\necho "sandbox-exec called"\n' > "$tmpdir/sandbox-exec"
   chmod +x "$tmpdir/sandbox-exec"
   
   SANDBOX_EXEC_BIN="$tmpdir/sandbox-exec"
-  output=$(_run_macos_sandbox echo hello 2>&1)
+  output=$(run_macos_sandbox echo hello 2>&1)
   
   echo "$output" | grep -q "sandbox-exec called"
 }
 
 test_passes_command() {
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   printf '#!/bin/sh\nshift; shift; "$@"\n' > "$tmpdir/sandbox-exec"
   chmod +x "$tmpdir/sandbox-exec"
   
   SANDBOX_EXEC_BIN="$tmpdir/sandbox-exec"
-  output=$(_run_macos_sandbox echo hello 2>&1)
+  output=$(run_macos_sandbox echo hello 2>&1)
   
   echo "$output" | grep -q "hello"
 }
 
-_run_test_case "run-macos-sandbox uses SANDBOX_EXEC_BIN" test_uses_sandbox_exec_bin
-_run_test_case "run-macos-sandbox passes command" test_passes_command
+run_test_case "run-macos-sandbox uses SANDBOX_EXEC_BIN" test_uses_sandbox_exec_bin
+run_test_case "run-macos-sandbox passes command" test_passes_command
 
-_finish_tests
+finish_tests

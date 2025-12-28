@@ -14,9 +14,9 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  _run_spell "spells/system/logs" --help
-  _assert_success || return 1
-  _assert_output_contains "Usage: logs" || return 1
+  run_spell "spells/system/logs" --help
+  assert_success || return 1
+  assert_output_contains "Usage: logs" || return 1
 }
 
 test_spell_exists() {
@@ -27,9 +27,9 @@ test_is_executable() {
   [ -x "$ROOT_DIR/spells/system/logs" ] || { TEST_FAILURE_REASON="spell is not executable"; return 1; }
 }
 
-_run_test_case "logs shows usage text" test_help
-_run_test_case "logs spell exists" test_spell_exists
-_run_test_case "logs spell is executable" test_is_executable
+run_test_case "logs shows usage text" test_help
+run_test_case "logs spell exists" test_spell_exists
+run_test_case "logs spell is executable" test_is_executable
 
 
 # Test via source-then-invoke pattern  

@@ -15,9 +15,9 @@ test_detect_2space_width() {
   skip-if-compiled || return $?
   tmpfile="$WIZARDRY_TMPDIR/2space.nix"
   printf '{\n  foo = true;\n  bar = 1;\n}\n' > "$tmpfile"
-  _run_cmd "$ROOT_DIR/spells/.imps/text/detect-indent-width" "$tmpfile"
+  run_cmd "$ROOT_DIR/spells/.imps/text/detect-indent-width" "$tmpfile"
   rm -f "$tmpfile"
-  _assert_success
+  assert_success
   case "$OUTPUT" in
     2*) return 0 ;;
     *) TEST_FAILURE_REASON="expected '2' but got '$OUTPUT'"; return 1 ;;
@@ -28,9 +28,9 @@ test_detect_4space_width() {
   skip-if-compiled || return $?
   tmpfile="$WIZARDRY_TMPDIR/4space.nix"
   printf '{\n    foo = true;\n    bar = 1;\n}\n' > "$tmpfile"
-  _run_cmd "$ROOT_DIR/spells/.imps/text/detect-indent-width" "$tmpfile"
+  run_cmd "$ROOT_DIR/spells/.imps/text/detect-indent-width" "$tmpfile"
   rm -f "$tmpfile"
-  _assert_success
+  assert_success
   case "$OUTPUT" in
     4*) return 0 ;;
     *) TEST_FAILURE_REASON="expected '4' but got '$OUTPUT'"; return 1 ;;
@@ -39,16 +39,16 @@ test_detect_4space_width() {
 
 test_detect_default_for_missing_file() {
   skip-if-compiled || return $?
-  _run_cmd "$ROOT_DIR/spells/.imps/text/detect-indent-width" "/nonexistent/file.nix"
-  _assert_success
+  run_cmd "$ROOT_DIR/spells/.imps/text/detect-indent-width" "/nonexistent/file.nix"
+  assert_success
   case "$OUTPUT" in
     2*) return 0 ;;
     *) TEST_FAILURE_REASON="expected '2' as default but got '$OUTPUT'"; return 1 ;;
   esac
 }
 
-_run_test_case "detect-indent-width detects 2-space width" test_detect_2space_width
-_run_test_case "detect-indent-width detects 4-space width" test_detect_4space_width
-_run_test_case "detect-indent-width defaults to 2 for missing file" test_detect_default_for_missing_file
+run_test_case "detect-indent-width detects 2-space width" test_detect_2space_width
+run_test_case "detect-indent-width detects 4-space width" test_detect_4space_width
+run_test_case "detect-indent-width defaults to 2 for missing file" test_detect_default_for_missing_file
 
-_finish_tests
+finish_tests

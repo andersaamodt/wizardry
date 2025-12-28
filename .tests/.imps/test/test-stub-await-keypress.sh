@@ -8,8 +8,8 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_stub_returns_enter() {
-  _run_spell spells/.imps/test/stub-await-keypress
-  _assert_success || return 1
+  run_spell spells/.imps/test/stub-await-keypress
+  assert_success || return 1
   [ "$OUTPUT" = "enter" ] || { TEST_FAILURE_REASON="should output 'enter'"; return 1; }
 }
 
@@ -20,7 +20,7 @@ test_stub_executable() {
   }
 }
 
-_run_test_case "stub returns enter" test_stub_returns_enter
-_run_test_case "stub is executable" test_stub_executable
+run_test_case "stub returns enter" test_stub_returns_enter
+run_test_case "stub is executable" test_stub_executable
 
-_finish_tests
+finish_tests

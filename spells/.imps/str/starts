@@ -3,7 +3,7 @@
 # Example: starts "$line" "#" && echo "comment"
 set -eu
 
-_starts() {
+starts() {
   case "$1" in
     "$2"*) return 0 ;;
     *) return 1 ;;
@@ -12,4 +12,4 @@ _starts() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */starts) _starts "$@" ;; esac
+  */starts) starts "$@" ;; esac

@@ -4,7 +4,7 @@
 # Returns 0 if wizardry was installed, 1 if declined or failed
 set -eu
 
-_ask_install_wizardry() {
+ask_install_wizardry() {
   # Check if we're in interactive mode
   if [ ! -t 0 ]; then
     # Not interactive - just print instructions
@@ -49,4 +49,4 @@ _ask_install_wizardry() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */ask-install-wizardry) _ask_install_wizardry "$@" ;; esac
+  */ask-install-wizardry) ask_install_wizardry "$@" ;; esac

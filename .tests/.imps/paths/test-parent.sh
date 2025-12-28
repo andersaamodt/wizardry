@@ -12,18 +12,18 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_parent_extracts() {
-  _run_spell spells/.imps/paths/parent "/path/to/file.txt"
-  _assert_success
-  _assert_output_contains "/path/to"
+  run_spell spells/.imps/paths/parent "/path/to/file.txt"
+  assert_success
+  assert_output_contains "/path/to"
 }
 
 test_parent_handles_simple_file() {
-  _run_spell spells/.imps/paths/parent "file.txt"
-  _assert_success
-  _assert_output_contains "."
+  run_spell spells/.imps/paths/parent "file.txt"
+  assert_success
+  assert_output_contains "."
 }
 
-_run_test_case "parent extracts directory" test_parent_extracts
-_run_test_case "parent handles simple file" test_parent_handles_simple_file
+run_test_case "parent extracts directory" test_parent_extracts
+run_test_case "parent handles simple file" test_parent_handles_simple_file
 
-_finish_tests
+finish_tests

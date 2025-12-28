@@ -4,7 +4,7 @@
 
 set -eu
 
-_test_skip() {
+test_skip() {
   desc=$1
   reason=${2-}
   
@@ -29,4 +29,4 @@ _test_skip() {
 }
 
 # Self-execution when run directly (not sourced)
-case "${0##*/}" in test-skip) _test_skip "$@" ;; esac
+case "${0##*/}" in test-skip) test_skip "$@" ;; esac

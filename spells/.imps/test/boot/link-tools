@@ -3,7 +3,7 @@
 # Skips tools that already exist in the directory.
 set -eu
 
-_link_tools() {
+link_tools() {
   dir=$1
   shift
   for tool in "$@"; do
@@ -18,4 +18,4 @@ _link_tools() {
 }
 
 # Self-execution when run directly (not sourced)
-case "${0##*/}" in link-tools) _link_tools "$@" ;; esac
+case "${0##*/}" in link-tools) link_tools "$@" ;; esac

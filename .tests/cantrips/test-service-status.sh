@@ -13,7 +13,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 make_stub_dir() {
-  dir=$(_make_tempdir)
+  dir=$(make_tempdir)
   mkdir -p "$dir"
   printf '%s\n' "$dir"
 }
@@ -41,10 +41,10 @@ service_status_prompts_and_prints() {
   stub_dir=$(make_stub_dir)
   write_stub_ask_text "$stub_dir" "zeta"
   write_stub_systemctl "$stub_dir"
-  PATH="$stub_dir:$PATH" _run_spell "spells/cantrips/service-status"
-  _assert_success || return 1
-  _assert_output_contains "Showing status for zeta.service..." || return 1
-  _assert_output_contains "status-ok" || return 1
+  PATH="$stub_dir:$PATH" run_spell "spells/cantrips/service-status"
+  assert_success || return 1
+  assert_output_contains "Showing status for zeta.service..." || return 1
+  assert_output_contains "status-ok" || return 1
   [ "$(cat "$stub_dir/systemctl.args")" = "status --no-pager zeta.service" ] || {
     TEST_FAILURE_REASON="systemctl called with unexpected args"; return 1; }
 }
@@ -52,25 +52,25 @@ service_status_prompts_and_prints() {
 service_status_requires_name() {
   stub_dir=$(make_stub_dir)
   write_stub_ask_text "$stub_dir" ""
-  PATH="$stub_dir:$PATH" _run_spell "spells/cantrips/service-status"
-  _assert_failure || return 1
-  _assert_error_contains "No service name supplied." || return 1
+  PATH="$stub_dir:$PATH" run_spell "spells/cantrips/service-status"
+  assert_failure || return 1
+  assert_error_contains "No service name supplied." || return 1
 }
 
-_run_test_case "service-status prints systemctl output" service_status_prompts_and_prints
-_run_test_case "service-status fails when name missing" service_status_requires_name
+run_test_case "service-status prints systemctl output" service_status_prompts_and_prints
+run_test_case "service-status fails when name missing" service_status_requires_name
 
 spell_is_executable() {
   [ -x "$ROOT_DIR/spells/cantrips/service-status" ]
 }
 
-_run_test_case "cantrips/service-status is executable" spell_is_executable
+run_test_case "cantrips/service-status is executable" spell_is_executable
 shows_help() {
-  _run_spell spells/cantrips/service-status --help
+  run_spell spells/cantrips/service-status --help
   # Note: spell may not have --help implemented yet
   true
 }
 
-_run_test_case "service-status shows help" shows_help
+run_test_case "service-status shows help" shows_help
 
 # Test via source-then-invoke pattern  

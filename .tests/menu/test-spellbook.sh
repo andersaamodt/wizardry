@@ -96,8 +96,8 @@ STUB
 test_errors_when_helper_missing() {
   skip-if-compiled || return $?
   stub_dir=$(make_stub_dir)
-  PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$stub_dir:/bin:/usr/bin" CAST_STORE="$stub_dir/does-not-exist" _run_spell "spells/menu/spellbook" --list
-  _assert_failure || return 1
+  PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$stub_dir:/bin:/usr/bin" CAST_STORE="$stub_dir/does-not-exist" run_spell "spells/menu/spellbook" --list
+  assert_failure || return 1
   case "$OUTPUT$ERROR" in
     *"memorize helper is missing"*) : ;;
     *) TEST_FAILURE_REASON="helper missing warning not shown"; return 1 ;;
@@ -113,8 +113,8 @@ test_scribe_records_command() {
   write_require_command_stub "$stub_dir"
   
   # spellbook should not support --scribe anymore
-  PATH="$stub_dir:$PATH" _run_spell "spells/menu/spellbook" --scribe spark "echo ignite"
-  _assert_failure || return 1
+  PATH="$stub_dir:$PATH" run_spell "spells/menu/spellbook" --scribe spark "echo ignite"
+  assert_failure || return 1
 }
 
 test_scribe_multiple_commands() {
@@ -126,8 +126,8 @@ test_scribe_multiple_commands() {
   write_require_command_stub "$stub_dir"
   
   # spellbook should not support --scribe anymore
-  PATH="$stub_dir:$PATH" _run_spell "spells/menu/spellbook" --scribe spark1 "echo ignite1"
-  _assert_failure || return 1
+  PATH="$stub_dir:$PATH" run_spell "spells/menu/spellbook" --scribe spark1 "echo ignite1"
+  assert_failure || return 1
 }
 
 test_path_argument_accepted() {
@@ -135,18 +135,18 @@ test_path_argument_accepted() {
   write_memorize_command_stub "$stub_dir"
   write_require_command_stub "$stub_dir"
   # Test that spellbook --help includes the PATH usage
-  PATH="$stub_dir:$PATH" _run_spell "spells/menu/spellbook" --help
-  _assert_success || return 1
+  PATH="$stub_dir:$PATH" run_spell "spells/menu/spellbook" --help
+  assert_success || return 1
   case "$OUTPUT" in
     *"[PATH|"*) : ;;
     *) TEST_FAILURE_REASON="help text should mention PATH argument: $OUTPUT"; return 1 ;;
   esac
 }
 
-_run_test_case "spellbook fails when helper missing" test_errors_when_helper_missing
-_run_test_case "spellbook rejects --scribe (use scribe-spell)" test_scribe_records_command
-_run_test_case "spellbook rejects multiple --scribe calls" test_scribe_multiple_commands
-_run_test_case "spellbook accepts path argument" test_path_argument_accepted
+run_test_case "spellbook fails when helper missing" test_errors_when_helper_missing
+run_test_case "spellbook rejects --scribe (use scribe-spell)" test_scribe_records_command
+run_test_case "spellbook rejects multiple --scribe calls" test_scribe_multiple_commands
+run_test_case "spellbook accepts path argument" test_path_argument_accepted
 
 # Test ESC and Exit behavior - menu exits properly when escape status returned
 test_esc_exit_behavior() {
@@ -170,8 +170,8 @@ SH
   chmod +x "$stub_dir/exit-label"
   
   
-  _run_cmd env PATH="$stub_dir:$PATH" MENU_LOG="$stub_dir/log" "$ROOT_DIR/spells/menu/spellbook"
-  _assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
+  run_cmd env PATH="$stub_dir:$PATH" MENU_LOG="$stub_dir/log" "$ROOT_DIR/spells/menu/spellbook"
+  assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
   
   args=$(cat "$stub_dir/log")
   case "$args" in
@@ -181,7 +181,7 @@ SH
   
 }
 
-_run_test_case "spellbook ESC/Exit behavior" test_esc_exit_behavior
+run_test_case "spellbook ESC/Exit behavior" test_esc_exit_behavior
 
 
 # Test via source-then-invoke pattern  

@@ -3,7 +3,7 @@
 # Stub logs install/remove invocations to PKGIN_LOG.
 set -eu
 
-_write_pkgin_stub() {
+write_pkgin_stub() {
   fixture=$1
   mkdir -p "$fixture/opt/pkg/bin"
   cat <<'STUB' >"$fixture/opt/pkg/bin/pkgin"
@@ -26,4 +26,4 @@ STUB
 }
 
 # Self-execution when run directly (not sourced)
-case "${0##*/}" in write-pkgin-stub) _write_pkgin_stub "$@" ;; esac
+case "${0##*/}" in write-pkgin-stub) write_pkgin_stub "$@" ;; esac

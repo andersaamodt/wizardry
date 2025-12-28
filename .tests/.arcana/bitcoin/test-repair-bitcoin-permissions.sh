@@ -12,18 +12,18 @@ spell_is_executable() {
   [ -x "$ROOT_DIR/spells/.arcana/bitcoin/repair-bitcoin-permissions" ]
 }
 
-_run_test_case "install/bitcoin/repair-bitcoin-permissions is executable" spell_is_executable
+run_test_case "install/bitcoin/repair-bitcoin-permissions is executable" spell_is_executable
 spell_has_content() {
   [ -s "$ROOT_DIR/spells/.arcana/bitcoin/repair-bitcoin-permissions" ]
 }
 
-_run_test_case "install/bitcoin/repair-bitcoin-permissions has content" spell_has_content
+run_test_case "install/bitcoin/repair-bitcoin-permissions has content" spell_has_content
 
 shows_help() {
-  _run_spell spells/.arcana/bitcoin/repair-bitcoin-permissions --help
+  run_spell spells/.arcana/bitcoin/repair-bitcoin-permissions --help
   # Note: spell may not have --help implemented yet
   true
 }
 
-_run_test_case "repair-bitcoin-permissions shows help" shows_help
-_finish_tests
+run_test_case "repair-bitcoin-permissions shows help" shows_help
+finish_tests

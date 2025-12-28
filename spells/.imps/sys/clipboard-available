@@ -3,7 +3,7 @@
 # Returns 0 if pbcopy, xsel, xclip, or wl-copy is available
 set -eu
 
-_clipboard_available() {
+clipboard_available() {
   command -v pbcopy >/dev/null 2>&1 || \
   command -v xsel >/dev/null 2>&1 || \
   command -v xclip >/dev/null 2>&1 || \
@@ -12,4 +12,4 @@ _clipboard_available() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */clipboard-available) _clipboard_available "$@" ;; esac
+  */clipboard-available) clipboard_available "$@" ;; esac

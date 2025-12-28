@@ -3,10 +3,10 @@
 # Example: tty-raw && dd bs=1 count=1 2>/dev/null
 set -eu
 
-_tty_raw() {
+tty_raw() {
   stty -icanon -echo min 1 time 0 2>/dev/null
 }
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */tty-raw) _tty_raw "$@" ;; esac
+  */tty-raw) tty_raw "$@" ;; esac

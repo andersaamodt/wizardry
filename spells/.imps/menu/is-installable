@@ -3,7 +3,7 @@
 # Returns 0 if the spell has an install() function, 1 otherwise
 # Example: is-installable my-spell && echo "has install"
 
-_is_installable() {
+is_installable() {
   if [ -z "${1-}" ]; then
     return 1
   fi
@@ -20,4 +20,4 @@ _is_installable() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */is-installable) _is_installable "$@" ;; esac
+  */is-installable) is_installable "$@" ;; esac

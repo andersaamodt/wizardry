@@ -12,7 +12,7 @@ _orig_detail=$_fail_detail_indices
 
 test_records_index() {
   _fail_detail_indices=""
-  _record_failure_detail 1
+  record_failure_detail 1
   result=$_fail_detail_indices
   _fail_detail_indices=$_orig_detail
   [ "$result" = "1" ]
@@ -20,14 +20,14 @@ test_records_index() {
 
 test_multiple_indices() {
   _fail_detail_indices=""
-  _record_failure_detail 1
-  _record_failure_detail 3
+  record_failure_detail 1
+  record_failure_detail 3
   result=$_fail_detail_indices
   _fail_detail_indices=$_orig_detail
   [ "$result" = "1,3" ]
 }
 
-_run_test_case "record-failure-detail records single index" test_records_index
-_run_test_case "record-failure-detail records multiple indices" test_multiple_indices
+run_test_case "record-failure-detail records single index" test_records_index
+run_test_case "record-failure-detail records multiple indices" test_multiple_indices
 
-_finish_tests
+finish_tests

@@ -5,7 +5,7 @@
 
 set -eu
 
-_config_get() {
+config_get() {
   _cg_file=${1:?config-get: file path required}
   _cg_key=${2:?config-get: key required}
   
@@ -42,4 +42,4 @@ _config_get() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */config-get) _config_get "$@" ;; esac
+  */config-get) config_get "$@" ;; esac

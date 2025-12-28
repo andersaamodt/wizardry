@@ -3,10 +3,10 @@
 # Example: echo "new line" | append log.txt
 set -eu
 
-_append() {
+append() {
   cat >> "$1"
 }
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */append) _append "$@" ;; esac
+  */append) append "$@" ;; esac

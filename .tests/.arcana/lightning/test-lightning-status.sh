@@ -11,23 +11,23 @@ done
 spell_is_executable() {
   [ -x "$ROOT_DIR/spells/.arcana/lightning/lightning-status" ]
 }
-_run_test_case "install/lightning/lightning-status is executable" spell_is_executable
+run_test_case "install/lightning/lightning-status is executable" spell_is_executable
 
 spell_has_content() {
   [ -s "$ROOT_DIR/spells/.arcana/lightning/lightning-status" ]
 }
-_run_test_case "install/lightning/lightning-status has content" spell_has_content
+run_test_case "install/lightning/lightning-status has content" spell_has_content
 
 shows_usage_help() {
-  _run_spell spells/.arcana/lightning/lightning-status --help
-  _assert_success || return 1
-  _assert_error_contains "Usage: lightning-status"
+  run_spell spells/.arcana/lightning/lightning-status --help
+  assert_success || return 1
+  assert_error_contains "Usage: lightning-status"
 }
-_run_test_case "lightning-status shows usage help" shows_usage_help
+run_test_case "lightning-status shows usage help" shows_usage_help
 
 checks_lightning_cli() {
-  _assert_file_contains "$ROOT_DIR/spells/.arcana/lightning/lightning-status" "lightning-cli"
+  assert_file_contains "$ROOT_DIR/spells/.arcana/lightning/lightning-status" "lightning-cli"
 }
-_run_test_case "lightning-status references lightning-cli" checks_lightning_cli
+run_test_case "lightning-status references lightning-cli" checks_lightning_cli
 
-_finish_tests
+finish_tests

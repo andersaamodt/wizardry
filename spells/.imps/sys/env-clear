@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-_env_clear() {
+env_clear() {
   # Explicitly use permissive mode - this imp mutates the caller's environment.
   set +eu
 
@@ -159,7 +159,7 @@ _env_clear() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */env-clear) _env_clear "$@" ;; esac
+  */env-clear) env_clear "$@" ;; esac
 [ -n "$_saved_colors_available" ] && export WIZARDRY_COLORS_AVAILABLE="$_saved_colors_available"
 
 # Restore GitHub Actions variables

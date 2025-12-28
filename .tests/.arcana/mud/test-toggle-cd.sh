@@ -14,21 +14,21 @@ test_toggle_cd_is_executable() {
 }
 
 test_toggle_cd_help_shows_usage() {
-  _run_spell spells/.arcana/mud/toggle-cd --help
-  _assert_success || return 1
-  _assert_output_contains "Usage:" || return 1
-  _assert_output_contains "toggle" || return 1
+  run_spell spells/.arcana/mud/toggle-cd --help
+  assert_success || return 1
+  assert_output_contains "Usage:" || return 1
+  assert_output_contains "toggle" || return 1
 }
 
 test_toggle_cd_enables_when_disabled() {
   skip-if-compiled || return $?
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   mkdir -p "$tmpdir/.spellbook/.mud"
   
   # Start with disabled (no cd-look=1 line)
   printf "other-setting=1\n" > "$tmpdir/.spellbook/.mud/config"
   
-  # Run toggle-cd directly (not through _run_cmd sandbox)
+  # Run toggle-cd directly (not through run_cmd sandbox)
   output=$(env SPELLBOOK_DIR="$tmpdir/.spellbook" sh "$ROOT_DIR/spells/.arcana/mud/toggle-cd" 2>&1)
   
   # Check output
@@ -50,13 +50,13 @@ test_toggle_cd_enables_when_disabled() {
 
 test_toggle_cd_disables_when_enabled() {
   skip-if-compiled || return $?
-  tmpdir=$(_make_tempdir)
+  tmpdir=$(make_tempdir)
   mkdir -p "$tmpdir/.spellbook/.mud"
   
   # Start with enabled
   printf "cd-look=1\nother-setting=1\n" > "$tmpdir/.spellbook/.mud/config"
   
-  # Run toggle-cd directly (not through _run_cmd sandbox)
+  # Run toggle-cd directly (not through run_cmd sandbox)
   output=$(env SPELLBOOK_DIR="$tmpdir/.spellbook" sh "$ROOT_DIR/spells/.arcana/mud/toggle-cd" 2>&1)
   
   # Check output
@@ -82,8 +82,8 @@ test_toggle_cd_disables_when_enabled() {
   fi
 }
 
-_run_test_case "toggle-cd is executable" test_toggle_cd_is_executable
-_run_test_case "toggle-cd --help shows usage" test_toggle_cd_help_shows_usage
-_run_test_case "toggle-cd enables when disabled" test_toggle_cd_enables_when_disabled
-_run_test_case "toggle-cd disables when enabled" test_toggle_cd_disables_when_enabled
-_finish_tests
+run_test_case "toggle-cd is executable" test_toggle_cd_is_executable
+run_test_case "toggle-cd --help shows usage" test_toggle_cd_help_shows_usage
+run_test_case "toggle-cd enables when disabled" test_toggle_cd_enables_when_disabled
+run_test_case "toggle-cd disables when enabled" test_toggle_cd_disables_when_enabled
+finish_tests

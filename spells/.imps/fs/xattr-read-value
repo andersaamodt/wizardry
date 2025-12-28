@@ -4,7 +4,7 @@
 # Returns 0 and outputs value if found, 1 if not found or all helpers failed
 set -eu
 
-_xattr_read_value() {
+xattr_read_value() {
   key=$1
   file=$2
 
@@ -38,5 +38,5 @@ _xattr_read_value() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */xattr-read-value) _xattr_read_value "$@" ;; 
+  */xattr-read-value) xattr_read_value "$@" ;; 
 esac

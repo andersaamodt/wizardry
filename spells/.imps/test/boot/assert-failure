@@ -3,7 +3,7 @@
 # Sets TEST_FAILURE_REASON if status was 0.
 set -eu
 
-_assert_failure() {
+assert_failure() {
   if [ "$STATUS" -eq 0 ]; then
     TEST_FAILURE_REASON="expected failure status but got success"
     return 1
@@ -12,4 +12,4 @@ _assert_failure() {
 }
 
 # Self-execution when run directly (not sourced)
-case "${0##*/}" in assert-failure) _assert_failure "$@" ;; esac
+case "${0##*/}" in assert-failure) assert_failure "$@" ;; esac

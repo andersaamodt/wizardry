@@ -5,7 +5,7 @@
 # Conditional imp - no set -eu (returns exit codes for flow control)
 set +eu
 
-_rc_has_line() {
+rc_has_line() {
   _rhl_marker=${1:-}
   _rhl_rc_file=${2:-}
 
@@ -23,5 +23,5 @@ _rc_has_line() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */rc-has-line) _rc_has_line "$@" ;;
+  */rc-has-line) rc_has_line "$@" ;;
 esac

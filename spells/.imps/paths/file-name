@@ -3,10 +3,10 @@
 # Example: name=$(file-name /path/to/file.txt)  # outputs: file.txt
 set -eu
 
-_file_name() {
+file_name() {
   printf '%s\n' "${1##*/}"
 }
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */file-name) _file_name "$@" ;; esac
+  */file-name) file_name "$@" ;; esac

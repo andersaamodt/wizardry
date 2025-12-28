@@ -14,20 +14,20 @@ done
 test_seeks_finds_pattern() {
   tmpfile=$(mktemp "$WIZARDRY_TMPDIR/seeks_test.XXXXXX")
   printf 'hello world\n' > "$tmpfile"
-  _run_spell spells/.imps/str/seeks "wor" "$tmpfile"
+  run_spell spells/.imps/str/seeks "wor" "$tmpfile"
   rm -f "$tmpfile"
-  _assert_success
+  assert_success
 }
 
 test_seeks_rejects_missing() {
   tmpfile=$(mktemp "$WIZARDRY_TMPDIR/seeks_test.XXXXXX")
   printf 'hello world\n' > "$tmpfile"
-  _run_spell spells/.imps/str/seeks "xyz" "$tmpfile"
+  run_spell spells/.imps/str/seeks "xyz" "$tmpfile"
   rm -f "$tmpfile"
-  _assert_failure
+  assert_failure
 }
 
-_run_test_case "seeks finds pattern" test_seeks_finds_pattern
-_run_test_case "seeks rejects missing pattern" test_seeks_rejects_missing
+run_test_case "seeks finds pattern" test_seeks_finds_pattern
+run_test_case "seeks rejects missing pattern" test_seeks_rejects_missing
 
-_finish_tests
+finish_tests

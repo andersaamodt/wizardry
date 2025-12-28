@@ -3,7 +3,7 @@
 # Scans for linking words (imps in lex/) and delegates to them.
 # Longer linking words take precedence (and-then before and or then).
 
-_parse() {
+parse() {
   if [ $# -eq 0 ]; then
     return 0
   fi
@@ -120,4 +120,4 @@ _parse() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */parse) _parse "$@" ;; esac
+  */parse) parse "$@" ;; esac

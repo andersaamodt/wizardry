@@ -14,19 +14,19 @@ done
 test_last_from_file() {
   tmpfile=$(mktemp "$WIZARDRY_TMPDIR/testfile.XXXXXX")
   printf 'first\nsecond\nlast\n' > "$tmpfile"
-  _run_spell spells/.imps/text/last "$tmpfile"
+  run_spell spells/.imps/text/last "$tmpfile"
   rm -f "$tmpfile"
-  _assert_success
-  _assert_output_contains "last"
+  assert_success
+  assert_output_contains "last"
 }
 
 test_last_handles_empty_input() {
-  _run_cmd sh -c "printf '' | '$ROOT_DIR/spells/.imps/text/last'"
-  _assert_success
+  run_cmd sh -c "printf '' | '$ROOT_DIR/spells/.imps/text/last'"
+  assert_success
   [ -z "$OUTPUT" ] || { TEST_FAILURE_REASON="output should be empty"; return 1; }
 }
 
-_run_test_case "last reads from file" test_last_from_file
-_run_test_case "last handles empty input" test_last_handles_empty_input
+run_test_case "last reads from file" test_last_from_file
+run_test_case "last handles empty input" test_last_handles_empty_input
 
-_finish_tests
+finish_tests

@@ -3,7 +3,7 @@
 # Sets TEST_FAILURE_REASON on mismatch.
 set -eu
 
-_assert_output_contains() {
+assert_output_contains() {
   substring=$1
   case "$OUTPUT" in
     *"$substring"*)
@@ -17,4 +17,4 @@ _assert_output_contains() {
 }
 
 # Self-execution when run directly (not sourced)
-case "${0##*/}" in assert-output-contains) _assert_output_contains "$@" ;; esac
+case "${0##*/}" in assert-output-contains) assert_output_contains "$@" ;; esac

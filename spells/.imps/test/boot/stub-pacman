@@ -3,7 +3,7 @@
 # Stub logs invocations to PACMAN_LOG and exits with PACMAN_EXIT code.
 set -eu
 
-_stub_pacman() {
+stub_pacman() {
   fixture=$1
   cat <<'STUB' >"$fixture/bin/pacman"
 #!/bin/sh
@@ -14,4 +14,4 @@ STUB
 }
 
 # Self-execution when run directly (not sourced)
-case "${0##*/}" in stub-pacman) _stub_pacman "$@" ;; esac
+case "${0##*/}" in stub-pacman) stub_pacman "$@" ;; esac

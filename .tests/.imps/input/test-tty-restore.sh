@@ -16,19 +16,19 @@ done
 
 test_tty_restore_no_args_fails() {
   skip-if-compiled || return $?
-  _run_spell spells/.imps/input/tty-restore
-  _assert_failure
-  _assert_error_contains "state required"
+  run_spell spells/.imps/input/tty-restore
+  assert_failure
+  assert_error_contains "state required"
 }
 
 test_tty_restore_empty_state_fails() {
   skip-if-compiled || return $?
-  _run_spell spells/.imps/input/tty-restore ""
-  _assert_failure
-  _assert_error_contains "state required"
+  run_spell spells/.imps/input/tty-restore ""
+  assert_failure
+  assert_error_contains "state required"
 }
 
-_run_test_case "tty-restore no args fails" test_tty_restore_no_args_fails
-_run_test_case "tty-restore empty state fails" test_tty_restore_empty_state_fails
+run_test_case "tty-restore no args fails" test_tty_restore_no_args_fails
+run_test_case "tty-restore empty state fails" test_tty_restore_empty_state_fails
 
-_finish_tests
+finish_tests

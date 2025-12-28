@@ -3,7 +3,7 @@
 # Example: sed-inplace 's/foo/bar/g' config.txt
 set -eu
 
-_sed_inplace() {
+sed_inplace() {
   _si_pattern=${1:-}
   _si_file=${2:-}
 
@@ -28,4 +28,4 @@ _sed_inplace() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */sed-inplace) _sed_inplace "$@" ;; esac
+  */sed-inplace) sed_inplace "$@" ;; esac

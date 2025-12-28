@@ -46,7 +46,7 @@ SH
 
 test_mud_admin_calls_menu_with_actions() {
   skip-if-compiled || return $?
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_colors "$tmp"
   cat >"$tmp/require-command" <<'SH'
@@ -62,8 +62,8 @@ SH
   chmod +x "$tmp/exit-label"
   # Test as submenu (as it would be called from mud menu)
   # Use MENU_LOOP_LIMIT=1 to exit after one iteration
-  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MENU_LOOP_LIMIT=1 "$ROOT_DIR/spells/menu/mud-admin-menu"
-  _assert_success
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MENU_LOOP_LIMIT=1 "$ROOT_DIR/spells/menu/mud-admin-menu"
+  assert_success
   args=$(cat "$tmp/log")
   case "$args" in
     *"MUD Admin:"*"Add authorized player%add-player"*"List authorized players%new-player"*"List shared rooms%list-rooms"*'Exit%kill -TERM $PPID' ) : ;;
@@ -73,7 +73,7 @@ SH
 
 test_mud_admin_requires_menu_helper() {
   skip-if-compiled || return $?
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   make_stub_colors "$tmp"
   cat >"$tmp/require-command" <<'SH'
 #!/bin/sh
@@ -91,13 +91,13 @@ else
 fi
 SH
   chmod +x "$tmp/require"
-  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$tmp:/bin:/usr/bin" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud-admin-menu"
-  _assert_failure
-  _assert_error_contains "The MUD Admin menu needs the 'menu' command"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$tmp:/bin:/usr/bin" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud-admin-menu"
+  assert_failure
+  assert_error_contains "The MUD Admin menu needs the 'menu' command"
 }
 
 test_mud_admin_reports_menu_failure() {
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   make_stub_colors "$tmp"
   make_failing_menu "$tmp"
   cat >"$tmp/require-command" <<'SH'
@@ -111,25 +111,25 @@ SH
 printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
-  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MENU_LOOP_LIMIT=1 "$ROOT_DIR/spells/menu/mud-admin-menu"
-  _assert_status 7
-  _assert_file_contains "$tmp/log" "MUD Admin:"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MENU_LOOP_LIMIT=1 "$ROOT_DIR/spells/menu/mud-admin-menu"
+  assert_status 7
+  assert_file_contains "$tmp/log" "MUD Admin:"
 }
 
 test_shows_help() {
-  _run_spell "spells/menu/mud-admin-menu" --help
-  _assert_success || return 1
-  _assert_error_contains "Usage:" || return 1
+  run_spell "spells/menu/mud-admin-menu" --help
+  assert_success || return 1
+  assert_error_contains "Usage:" || return 1
 }
 
-_run_test_case "mud-admin shows usage" test_shows_help
-_run_test_case "mud-admin presents admin actions" test_mud_admin_calls_menu_with_actions
-_run_test_case "mud-admin fails fast when menu helper is missing" test_mud_admin_requires_menu_helper
-_run_test_case "mud-admin surfaces menu failures" test_mud_admin_reports_menu_failure
+run_test_case "mud-admin shows usage" test_shows_help
+run_test_case "mud-admin presents admin actions" test_mud_admin_calls_menu_with_actions
+run_test_case "mud-admin fails fast when menu helper is missing" test_mud_admin_requires_menu_helper
+run_test_case "mud-admin surfaces menu failures" test_mud_admin_reports_menu_failure
 
 # Test ESC and Exit behavior - menu exits properly when escape status returned
 test_esc_exit_behavior() {
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   make_stub_colors "$tmp"
   
   # Create menu stub that returns escape status
@@ -154,8 +154,8 @@ SH
   chmod +x "$tmp/exit-label"
   
   
-  _run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud-admin-menu"
-  _assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud-admin-menu"
+  assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
   
   args=$(cat "$tmp/log")
   case "$args" in
@@ -165,7 +165,7 @@ SH
   
 }
 
-_run_test_case "mud-admin ESC/Exit behavior" test_esc_exit_behavior
+run_test_case "mud-admin ESC/Exit behavior" test_esc_exit_behavior
 
 
 # Test via source-then-invoke pattern  

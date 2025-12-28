@@ -8,20 +8,20 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_creates_stub() {
-  fixture=$(_make_fixture)
-  _stub_pacman "$fixture"
+  fixture=$(make_fixture)
+  stub_pacman "$fixture"
   [ -x "$fixture/bin/pacman" ]
 }
 
 test_stub_logs_invocations() {
-  fixture=$(_make_fixture)
-  _stub_pacman "$fixture"
+  fixture=$(make_fixture)
+  stub_pacman "$fixture"
   export PACMAN_LOG="$fixture/log/pacman.log"
   "$fixture/bin/pacman" --noconfirm -Sy git
   [ -f "$PACMAN_LOG" ] && grep -q "pacman --noconfirm -Sy git" "$PACMAN_LOG"
 }
 
-_run_test_case "stub-pacman creates executable" test_creates_stub
-_run_test_case "stub-pacman logs invocations" test_stub_logs_invocations
+run_test_case "stub-pacman creates executable" test_creates_stub
+run_test_case "stub-pacman logs invocations" test_stub_logs_invocations
 
-_finish_tests
+finish_tests

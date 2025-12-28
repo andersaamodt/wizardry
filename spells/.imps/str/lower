@@ -3,10 +3,10 @@
 # Example: echo "HELLO" | lower
 set -eu
 
-_lower() {
+lower() {
   tr '[:upper:]' '[:lower:]'
 }
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */lower) _lower "$@" ;; esac
+  */lower) lower "$@" ;; esac

@@ -4,7 +4,7 @@
 # Adds: . "/path/to/cd" # wizardry: cd-hook
 set -eu
 
-_rc_add_line() {
+rc_add_line() {
   _ral_marker=${1:-}
   _ral_rc_file=${2:-}
   _ral_line=${3:-}
@@ -39,5 +39,5 @@ _rc_add_line() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */rc-add-line) _rc_add_line "$@" ;;
+  */rc-add-line) rc_add_line "$@" ;;
 esac

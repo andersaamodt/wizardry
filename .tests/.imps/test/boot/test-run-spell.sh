@@ -8,17 +8,17 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_runs_spell() {
-  _run_spell spells/.imps/out/ok
-  _assert_success
+  run_spell spells/.imps/out/ok
+  assert_success
 }
 
 test_captures_spell_output() {
-  _run_spell spells/.imps/out/ok
+  run_spell spells/.imps/out/ok
   # ok should produce some output (usually "ok")
   [ -n "$OUTPUT" ] || [ "$STATUS" -eq 0 ]
 }
 
-_run_test_case "run-spell executes spell scripts" test_runs_spell
-_run_test_case "run-spell captures spell output" test_captures_spell_output
+run_test_case "run-spell executes spell scripts" test_runs_spell
+run_test_case "run-spell captures spell output" test_captures_spell_output
 
-_finish_tests
+finish_tests

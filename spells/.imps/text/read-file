@@ -3,10 +3,10 @@
 # Example: content=$(read-file config.txt)
 set -eu
 
-_read_file() {
+read_file() {
   cat "$1"
 }
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */read-file) _read_file "$@" ;; esac
+  */read-file) read_file "$@" ;; esac

@@ -14,26 +14,26 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  _run_spell "spells/menu/mud-admin/set-player" --help
-  _assert_success || return 1
-  _assert_output_contains "Usage: set-player" || return 1
+  run_spell "spells/menu/mud-admin/set-player" --help
+  assert_success || return 1
+  assert_output_contains "Usage: set-player" || return 1
 }
 
 test_requires_argument() {
-  _run_spell "spells/menu/mud-admin/set-player"
-  _assert_failure || return 1
-  _assert_error_contains "player name required" || return 1
+  run_spell "spells/menu/mud-admin/set-player"
+  assert_failure || return 1
+  assert_error_contains "player name required" || return 1
 }
 
 test_help_h_flag() {
-  _run_spell "spells/menu/mud-admin/set-player" -h
-  _assert_success || return 1
-  _assert_output_contains "Usage: set-player" || return 1
+  run_spell "spells/menu/mud-admin/set-player" -h
+  assert_success || return 1
+  assert_output_contains "Usage: set-player" || return 1
 }
 
-_run_test_case "set-player shows usage text" test_help
-_run_test_case "set-player requires player argument" test_requires_argument
-_run_test_case "set-player shows usage with -h" test_help_h_flag
+run_test_case "set-player shows usage text" test_help
+run_test_case "set-player requires player argument" test_requires_argument
+run_test_case "set-player shows usage with -h" test_help_h_flag
 
 
 # Test via source-then-invoke pattern  

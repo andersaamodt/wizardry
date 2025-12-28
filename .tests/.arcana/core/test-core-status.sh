@@ -16,19 +16,19 @@ spell_has_content() {
   [ -s "$ROOT_DIR/spells/.arcana/core/core-status" ]
 }
 
-_run_test_case "install/core/core-status is executable" spell_is_executable
-_run_test_case "install/core/core-status has content" spell_has_content
+run_test_case "install/core/core-status is executable" spell_is_executable
+run_test_case "install/core/core-status has content" spell_has_content
 
 shows_help() {
-  _run_spell spells/.arcana/core/core-status --help
+  run_spell spells/.arcana/core/core-status --help
   true
 }
 
-_run_test_case "core-status shows help" shows_help
+run_test_case "core-status shows help" shows_help
 
 # Test that status output is one of the expected values
 status_output_is_valid() {
-  _run_spell spells/.arcana/core/core-status
+  run_spell spells/.arcana/core/core-status
   case "$OUTPUT" in
     installed|"not installed"|"partial install")
       return 0
@@ -40,11 +40,11 @@ status_output_is_valid() {
   esac
 }
 
-_run_test_case "core-status outputs valid status" status_output_is_valid
+run_test_case "core-status outputs valid status" status_output_is_valid
 
 # Test that status does not show internal markers like __clipboard_helper__
 status_no_internal_markers() {
-  _run_spell spells/.arcana/core/core-status
+  run_spell spells/.arcana/core/core-status
   case "$OUTPUT" in
     *__clipboard_helper__*)
       TEST_FAILURE_REASON="output contains internal marker __clipboard_helper__"
@@ -56,6 +56,6 @@ status_no_internal_markers() {
   esac
 }
 
-_run_test_case "core-status hides internal markers" status_no_internal_markers
+run_test_case "core-status hides internal markers" status_no_internal_markers
 
-_finish_tests
+finish_tests

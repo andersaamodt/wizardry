@@ -12,17 +12,17 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_warn_to_stderr() {
-  _run_spell spells/.imps/out/warn "warning message"
-  _assert_success
-  _assert_error_contains "warning message"
+  run_spell spells/.imps/out/warn "warning message"
+  assert_success
+  assert_error_contains "warning message"
 }
 
 test_warn_succeeds_with_empty_message() {
-  _run_spell spells/.imps/out/warn ""
-  _assert_success
+  run_spell spells/.imps/out/warn ""
+  assert_success
 }
 
-_run_test_case "warn outputs to stderr" test_warn_to_stderr
-_run_test_case "warn succeeds with empty message" test_warn_succeeds_with_empty_message
+run_test_case "warn outputs to stderr" test_warn_to_stderr
+run_test_case "warn succeeds with empty message" test_warn_succeeds_with_empty_message
 
-_finish_tests
+finish_tests

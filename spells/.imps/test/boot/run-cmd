@@ -3,7 +3,7 @@
 # Captures stdout, stderr, and exit status into STATUS, OUTPUT, and ERROR.
 set -eu
 
-_run_cmd() {
+run_cmd() {
   # Save the caller's PATH and temporarily use the system PATH for run_cmd's
   # internal operations (mktemp, mkdir, cat, rm, pwd). This ensures run_cmd
   # works even when tests intentionally set a restricted PATH.
@@ -68,7 +68,7 @@ _run_cmd() {
       set -- --unshare-user-try "$@"
     fi
 
-    if _run_bwrap "$@" >"$_stdout" 2>"$_stderr"; then
+    if run_bwrap "$@" >"$_stdout" 2>"$_stderr"; then
       STATUS=0
     else
       STATUS=$?
@@ -84,7 +84,7 @@ _run_cmd() {
       export WIZARDRY_TEST_HELPERS_ONLY="$WIZARDRY_TEST_HELPERS_ONLY"
     fi
     
-    if (cd "$workdir" && _run_macos_sandbox "$@" >"$_stdout" 2>"$_stderr"); then
+    if (cd "$workdir" && run_macos_sandbox "$@" >"$_stdout" 2>"$_stderr"); then
       STATUS=0
     else
       STATUS=$?
@@ -118,4 +118,4 @@ _run_cmd() {
 }
 
 # Self-execution when run directly (not sourced)
-case "${0##*/}" in run-cmd) _run_cmd "$@" ;; esac
+case "${0##*/}" in run-cmd) run_cmd "$@" ;; esac

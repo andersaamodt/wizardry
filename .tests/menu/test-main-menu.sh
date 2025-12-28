@@ -46,16 +46,16 @@ SH
 
 test_main_menu_checks_dependency() {
   skip-if-compiled || return $?
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
-  _run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/req" "$ROOT_DIR/spells/menu/main-menu"
-  _assert_success && _assert_path_exists "$tmp/req"
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/req" "$ROOT_DIR/spells/menu/main-menu"
+  assert_success && assert_path_exists "$tmp/req"
 }
 
 test_main_menu_passes_expected_entries() {
   skip-if-compiled || return $?
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
   cat >"$tmp/exit-label" <<'SH'
@@ -63,8 +63,8 @@ test_main_menu_passes_expected_entries() {
 printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
-  _run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/main-menu"
-  _assert_success
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/main-menu"
+  assert_success
   args=$(cat "$tmp/log")
   # MUD is not shown by default (requires enabling via mud-config)
   # The Exit command shows kill -TERM $PPID literally for didactic purposes
@@ -76,16 +76,16 @@ SH
 
 test_main_menu_fails_without_menu_dependency() {
   skip-if-compiled || return $?
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   make_failing_require "$tmp"
-  _run_cmd env PATH="$tmp:$PATH" "$ROOT_DIR/spells/menu/main-menu"
-  _assert_failure || return 1
-  _assert_error_contains "The main menu needs the 'menu' command" || return 1
+  run_cmd env PATH="$tmp:$PATH" "$ROOT_DIR/spells/menu/main-menu"
+  assert_failure || return 1
+  assert_error_contains "The main menu needs the 'menu' command" || return 1
 }
 
 test_main_menu_shows_title() {
   skip-if-compiled || return $?
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
   cat >"$tmp/exit-label" <<'SH'
@@ -93,8 +93,8 @@ test_main_menu_shows_title() {
 printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
-  _run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/main-menu"
-  _assert_success
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/main-menu"
+  assert_success
   grep -q "Main Menu:" "$tmp/log" || {
     TEST_FAILURE_REASON="Main Menu: title missing"
     return 1
@@ -109,16 +109,16 @@ test_main_menu_loads_colors_gracefully() {
   }
 }
 
-_run_test_case "main-menu requires menu dependency" test_main_menu_checks_dependency
-_run_test_case "main-menu forwards menu entries" test_main_menu_passes_expected_entries
-_run_test_case "main-menu fails without menu dependency" test_main_menu_fails_without_menu_dependency
-_run_test_case "main-menu shows title" test_main_menu_shows_title
-_run_test_case "main-menu loads colors gracefully" test_main_menu_loads_colors_gracefully
+run_test_case "main-menu requires menu dependency" test_main_menu_checks_dependency
+run_test_case "main-menu forwards menu entries" test_main_menu_passes_expected_entries
+run_test_case "main-menu fails without menu dependency" test_main_menu_fails_without_menu_dependency
+run_test_case "main-menu shows title" test_main_menu_shows_title
+run_test_case "main-menu loads colors gracefully" test_main_menu_loads_colors_gracefully
 
 # Test ESC and Exit behavior - menu exits properly when TERM signal is sent
 test_esc_exit_behavior() {
   skip-if-compiled || return $?
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   make_stub_require "$tmp"
   
   # Create menu stub that logs entries and sends TERM to parent
@@ -137,8 +137,8 @@ printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
   
-  _run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/main-menu"
-  _assert_success || { TEST_FAILURE_REASON="menu should exit successfully on TERM signal"; return 1; }
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/main-menu"
+  assert_success || { TEST_FAILURE_REASON="menu should exit successfully on TERM signal"; return 1; }
   
   args=$(cat "$tmp/log")
   # The Exit command shows kill -TERM $PPID literally for didactic purposes
@@ -148,12 +148,12 @@ SH
   esac
 }
 
-_run_test_case "main-menu ESC/Exit handles nested and unnested" test_esc_exit_behavior
+run_test_case "main-menu ESC/Exit handles nested and unnested" test_esc_exit_behavior
 
 # Test that MUD appears when enabled via mud-config
 test_main_menu_shows_mud_when_enabled() {
   skip-if-compiled || return $?
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
   cat >"$tmp/exit-label" <<'SH'
@@ -174,8 +174,8 @@ case "$1" in
 esac
 SH
   chmod +x "$tmp/mud-config"
-  _run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/main-menu"
-  _assert_success
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/main-menu"
+  assert_success
   args=$(cat "$tmp/log")
   case "$args" in
     *"MUD%"*"mud"*) : ;;
@@ -183,10 +183,10 @@ SH
   esac
 }
 
-_run_test_case "main-menu shows MUD when enabled" test_main_menu_shows_mud_when_enabled
+run_test_case "main-menu shows MUD when enabled" test_main_menu_shows_mud_when_enabled
 
 shows_help() {
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
   cat >"$tmp/exit-label" <<'SH'
@@ -194,17 +194,17 @@ shows_help() {
 printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
-  _run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/main-menu" --help
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/main-menu" --help
   # Note: spell may not have --help implemented yet, so we just ensure it doesn't crash
   true
 }
 
-_run_test_case "main-menu accepts --help" shows_help
+run_test_case "main-menu accepts --help" shows_help
 
 # Test that no exit message is printed when ESC or Exit is used
 test_no_exit_message_on_esc() {
   skip-if-compiled || return $?
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
   
@@ -214,8 +214,8 @@ printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
   
-  _run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/main-menu"
-  _assert_success || return 1
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/main-menu"
+  assert_success || return 1
   
   # Verify no "Exiting" message appears in stderr
   case "$ERROR" in
@@ -227,12 +227,12 @@ SH
   return 0
 }
 
-_run_test_case "main-menu no exit message on ESC" test_no_exit_message_on_esc
+run_test_case "main-menu no exit message on ESC" test_no_exit_message_on_esc
 
 # Test that nested menu return shows proper blank line spacing
 test_nested_menu_spacing() {
   skip-if-compiled || return $?
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   
   # Create a menu that records when it's called, and on second call sends TERM
   cat >"$tmp/menu" <<'SH'
@@ -256,20 +256,20 @@ SH
   chmod +x "$tmp/exit-label"
   
   INVOCATION_FILE="$tmp/invocations"
-  _run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" INVOCATION_FILE="$INVOCATION_FILE" "$ROOT_DIR/spells/menu/main-menu"
-  _assert_success || return 1
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" INVOCATION_FILE="$INVOCATION_FILE" "$ROOT_DIR/spells/menu/main-menu"
+  assert_success || return 1
   
   # The menu loop should have run once (on first_run, no leading newline)
   # This ensures consistent spacing behavior
   return 0
 }
 
-_run_test_case "main-menu nested spacing behavior" test_nested_menu_spacing
+run_test_case "main-menu nested spacing behavior" test_nested_menu_spacing
 
 # Test that exactly one blank line appears when going down/up menu levels
 test_single_blank_line_on_menu_selection() {
   skip-if-compiled || return $?
-  tmp=$(_make_tempdir)
+  tmp=$(make_tempdir)
   
   # Create a submenu that outputs and exits
   cat >"$tmp/system-menu" <<'SH'
@@ -310,8 +310,8 @@ SH
   chmod +x "$tmp/exit-label"
   
   MENU_OUTPUT="$tmp/output"
-  _run_cmd env PATH="$tmp:$PATH" MENU_OUTPUT="$MENU_OUTPUT" "$ROOT_DIR/spells/menu/main-menu"
-  _assert_success || return 1
+  run_cmd env PATH="$tmp:$PATH" MENU_OUTPUT="$MENU_OUTPUT" "$ROOT_DIR/spells/menu/main-menu"
+  assert_success || return 1
   
   # Count blank lines in output - should be exactly 1
   if [ -f "$MENU_OUTPUT" ]; then
@@ -328,7 +328,7 @@ SH
   return 0
 }
 
-_run_test_case "main-menu shows exactly one blank line on selection" test_single_blank_line_on_menu_selection
+run_test_case "main-menu shows exactly one blank line on selection" test_single_blank_line_on_menu_selection
 
 
 # Test via source-then-invoke pattern  

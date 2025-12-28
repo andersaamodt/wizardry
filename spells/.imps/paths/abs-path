@@ -4,7 +4,7 @@
 # Note: Returns original path unchanged if directory cannot be resolved.
 set -eu
 
-_abs_path() {
+abs_path() {
   _ap_loc=$1
   if [ -d "$_ap_loc" ]; then
     CDPATH= cd -- "$_ap_loc" 2>/dev/null && pwd -P | sed 's|///*|/|g'
@@ -24,4 +24,4 @@ _abs_path() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */abs-path) _abs_path "$@" ;; esac
+  */abs-path) abs_path "$@" ;; esac

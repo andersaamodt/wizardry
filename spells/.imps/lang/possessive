@@ -3,7 +3,7 @@
 # Example: possessive "James" -> "James'" | possessive "John" -> "John's"
 set -eu
 
-_possessive() {
+possessive() {
   _pos_noun=${1-}
   if [ -z "$_pos_noun" ]; then
     return 1
@@ -17,4 +17,4 @@ _possessive() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */possessive) _possessive "$@" ;; esac
+  */possessive) possessive "$@" ;; esac

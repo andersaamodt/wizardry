@@ -14,20 +14,20 @@ done
 test_full_file_with_content() {
   tmpfile=$(mktemp "$WIZARDRY_TMPDIR/full_test.XXXXXX")
   printf 'content' > "$tmpfile"
-  _run_spell spells/.imps/cond/full file "$tmpfile"
+  run_spell spells/.imps/cond/full file "$tmpfile"
   rm -f "$tmpfile"
-  _assert_success
+  assert_success
 }
 
 test_full_empty_file_fails() {
   tmpfile=$(mktemp "$WIZARDRY_TMPDIR/full_test.XXXXXX")
   : > "$tmpfile"
-  _run_spell spells/.imps/cond/full file "$tmpfile"
+  run_spell spells/.imps/cond/full file "$tmpfile"
   rm -f "$tmpfile"
-  _assert_failure
+  assert_failure
 }
 
-_run_test_case "full file succeeds with content" test_full_file_with_content
-_run_test_case "full file fails for empty" test_full_empty_file_fails
+run_test_case "full file succeeds with content" test_full_file_with_content
+run_test_case "full file fails for empty" test_full_empty_file_fails
 
-_finish_tests
+finish_tests

@@ -11,33 +11,33 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 print_fail_outputs_fail_message() {
-  _run_spell "spells/.imps/out/print-fail" "my-spell"
-  _assert_success || return 1
-  _assert_output_contains "FAIL" || return 1
-  _assert_output_contains "my-spell" || return 1
+  run_spell "spells/.imps/out/print-fail" "my-spell"
+  assert_success || return 1
+  assert_output_contains "FAIL" || return 1
+  assert_output_contains "my-spell" || return 1
 }
 
 print_fail_includes_reason() {
-  _run_spell "spells/.imps/out/print-fail" "test-spell" "missing shebang"
-  _assert_success || return 1
-  _assert_output_contains "FAIL" || return 1
-  _assert_output_contains "test-spell" || return 1
-  _assert_output_contains "missing shebang" || return 1
+  run_spell "spells/.imps/out/print-fail" "test-spell" "missing shebang"
+  assert_success || return 1
+  assert_output_contains "FAIL" || return 1
+  assert_output_contains "test-spell" || return 1
+  assert_output_contains "missing shebang" || return 1
 }
 
 print_fail_handles_empty_reason() {
-  _run_spell "spells/.imps/out/print-fail" "test-spell" ""
-  _assert_success || return 1
-  _assert_output_contains "FAIL" || return 1
-  _assert_output_contains "test-spell" || return 1
+  run_spell "spells/.imps/out/print-fail" "test-spell" ""
+  assert_success || return 1
+  assert_output_contains "FAIL" || return 1
+  assert_output_contains "test-spell" || return 1
   # Should not have a colon when reason is empty
   case "$OUTPUT" in
     *": "*) TEST_FAILURE_REASON="should not contain colon with empty reason"; return 1 ;;
   esac
 }
 
-_run_test_case "print-fail outputs FAIL message" print_fail_outputs_fail_message
-_run_test_case "print-fail includes reason when provided" print_fail_includes_reason
-_run_test_case "print-fail handles empty reason" print_fail_handles_empty_reason
+run_test_case "print-fail outputs FAIL message" print_fail_outputs_fail_message
+run_test_case "print-fail includes reason when provided" print_fail_includes_reason
+run_test_case "print-fail handles empty reason" print_fail_handles_empty_reason
 
-_finish_tests
+finish_tests

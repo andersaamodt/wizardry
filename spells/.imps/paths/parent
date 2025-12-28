@@ -3,7 +3,7 @@
 # Example: dir=$(parent /path/to/file.txt)  # outputs: /path/to
 set -eu
 
-_parent() {
+parent() {
   _par_path=$1
   case "$_par_path" in
     */*) printf '%s\n' "${_par_path%/*}" ;;
@@ -13,4 +13,4 @@ _parent() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */parent) _parent "$@" ;; esac
+  */parent) parent "$@" ;; esac

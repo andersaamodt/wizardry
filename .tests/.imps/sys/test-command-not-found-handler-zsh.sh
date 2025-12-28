@@ -13,12 +13,12 @@ done
 handler_path="$ROOT_DIR/spells/.imps/sys/command-not-found-handler-zsh"
 
 test_handler_defines_function() {
-  _run_cmd sh -c ". \"$handler_path\"; command -v command_not_found_handler >/dev/null"
-  _assert_success
+  run_cmd sh -c ". \"$handler_path\"; command -v command_not_found_handler >/dev/null"
+  assert_success
 }
 
 test_handler_returns_127() {
-  _run_cmd env HANDLER_PATH="$handler_path" ROOT_DIR="$ROOT_DIR" sh -c '
+  run_cmd env HANDLER_PATH="$handler_path" ROOT_DIR="$ROOT_DIR" sh -c '
     . "$HANDLER_PATH"
     WIZARDRY_DIR="$ROOT_DIR"
     export WIZARDRY_DIR
@@ -29,11 +29,11 @@ test_handler_returns_127() {
     fi
     printf "%s\n" "$status"
   '
-  _assert_success
-  _assert_output_contains "127"
+  assert_success
+  assert_output_contains "127"
 }
 
-_run_test_case "command_not_found_handler defines function" test_handler_defines_function
-_run_test_case "command_not_found_handler returns 127" test_handler_returns_127
+run_test_case "command_not_found_handler defines function" test_handler_defines_function
+run_test_case "command_not_found_handler returns 127" test_handler_returns_127
 
-_finish_tests
+finish_tests

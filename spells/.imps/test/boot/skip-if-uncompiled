@@ -3,7 +3,7 @@
 # Returns 222 if test should be skipped, 0 otherwise.
 set -eu
 
-_skip_if_uncompiled() {
+skip_if_uncompiled() {
   if [ "${WIZARDRY_TEST_COMPILED-0}" != "1" ]; then
     TEST_SKIP_REASON="(compiled only)"
     return 222
@@ -12,5 +12,5 @@ _skip_if_uncompiled() {
 }
 
 case "$0" in
-  */skip-if-uncompiled) _skip_if_uncompiled "$@" ;;
+  */skip-if-uncompiled) skip_if_uncompiled "$@" ;;
 esac

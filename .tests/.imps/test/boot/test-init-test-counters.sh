@@ -34,6 +34,6 @@ test_counters_start_at_zero() {
   [ "$output" = "ok" ] || return 1
 }
 
-_run_test_case "initializes test counters" test_initializes_counters
-_run_test_case "counters start at zero" test_counters_start_at_zero
-_finish_tests
+run_test_case "initializes test counters" test_initializes_counters
+run_test_case "counters start at zero" test_counters_start_at_zero
+finish_tests

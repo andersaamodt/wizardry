@@ -12,19 +12,19 @@ spell_is_executable() {
   [ -x "$ROOT_DIR/spells/.arcana/tor/tor-menu" ]
 }
 
-_run_test_case "install/tor/tor-menu is executable" spell_is_executable
+run_test_case "install/tor/tor-menu is executable" spell_is_executable
 spell_has_content() {
   [ -s "$ROOT_DIR/spells/.arcana/tor/tor-menu" ]
 }
 
-_run_test_case "install/tor/tor-menu has content" spell_has_content
+run_test_case "install/tor/tor-menu has content" spell_has_content
 
 test_shows_help() {
-  _run_cmd "$ROOT_DIR/spells/.arcana/tor/tor-menu" --help
-  _assert_success
-  _assert_output_contains "Usage: tor-menu"
+  run_cmd "$ROOT_DIR/spells/.arcana/tor/tor-menu" --help
+  assert_success
+  assert_output_contains "Usage: tor-menu"
 }
 
-_run_test_case "tor-menu --help shows usage" test_shows_help
+run_test_case "tor-menu --help shows usage" test_shows_help
 
-_finish_tests
+finish_tests

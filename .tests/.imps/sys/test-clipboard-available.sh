@@ -16,7 +16,7 @@ test_clipboard_returns_success_when_helper_exists() {
   # This test checks if the imp returns success when at least one helper is available
   # Since we can't guarantee which helpers are installed, we check if it returns
   # a valid exit code (0 or 1, or 127 in restricted sandbox environments)
-  _run_spell spells/.imps/sys/clipboard-available
+  run_spell spells/.imps/sys/clipboard-available
   # The output should be empty (no args mode just returns exit code)
   if [ "$STATUS" -eq 0 ]; then
     # Helper exists - this is valid
@@ -32,7 +32,7 @@ test_clipboard_returns_success_when_helper_exists() {
 
 test_clipboard_no_output_on_success() {
   # When a clipboard helper is available, there should be no output
-  _run_spell spells/.imps/sys/clipboard-available
+  run_spell spells/.imps/sys/clipboard-available
   if [ "$STATUS" -eq 0 ]; then
     if [ -n "$OUTPUT" ]; then
       TEST_FAILURE_REASON="expected no output, got: $OUTPUT"
@@ -44,57 +44,57 @@ test_clipboard_no_output_on_success() {
 
 test_clipboard_checks_pbcopy() {
   # Create a fixture with only pbcopy available
-  fixture=$(_make_tempdir)
-  _write_command_stub "$fixture" pbcopy
-  PATH="$fixture:$PATH" _run_spell spells/.imps/sys/clipboard-available
-  _assert_success
+  fixture=$(make_tempdir)
+  write_command_stub "$fixture" pbcopy
+  PATH="$fixture:$PATH" run_spell spells/.imps/sys/clipboard-available
+  assert_success
   rm -rf "$fixture"
 }
 
 test_clipboard_checks_xsel() {
   # Create a fixture with only xsel available
-  fixture=$(_make_tempdir)
-  _write_command_stub "$fixture" xsel
-  PATH="$fixture:$PATH" _run_spell spells/.imps/sys/clipboard-available
-  _assert_success
+  fixture=$(make_tempdir)
+  write_command_stub "$fixture" xsel
+  PATH="$fixture:$PATH" run_spell spells/.imps/sys/clipboard-available
+  assert_success
   rm -rf "$fixture"
 }
 
 test_clipboard_checks_xclip() {
   # Create a fixture with only xclip available
-  fixture=$(_make_tempdir)
-  _write_command_stub "$fixture" xclip
-  PATH="$fixture:$PATH" _run_spell spells/.imps/sys/clipboard-available
-  _assert_success
+  fixture=$(make_tempdir)
+  write_command_stub "$fixture" xclip
+  PATH="$fixture:$PATH" run_spell spells/.imps/sys/clipboard-available
+  assert_success
   rm -rf "$fixture"
 }
 
 test_clipboard_checks_wl_copy() {
   # Create a fixture with only wl-copy available
-  fixture=$(_make_tempdir)
-  _write_command_stub "$fixture" wl-copy
-  PATH="$fixture:$PATH" _run_spell spells/.imps/sys/clipboard-available
-  _assert_success
+  fixture=$(make_tempdir)
+  write_command_stub "$fixture" wl-copy
+  PATH="$fixture:$PATH" run_spell spells/.imps/sys/clipboard-available
+  assert_success
   rm -rf "$fixture"
 }
 
 test_clipboard_fails_when_none_available() {
   # Create an empty fixture directory with no clipboard commands
-  fixture=$(_make_tempdir)
+  fixture=$(make_tempdir)
   # Use only the fixture in PATH (no clipboard helpers)
   # Need to include basic commands for shell to work
-  _link_tools "$fixture" sh cat printf test
-  PATH="$fixture" _run_cmd "$ROOT_DIR/spells/.imps/sys/clipboard-available"
-  _assert_failure
+  link_tools "$fixture" sh cat printf test
+  PATH="$fixture" run_cmd "$ROOT_DIR/spells/.imps/sys/clipboard-available"
+  assert_failure
   rm -rf "$fixture"
 }
 
-_run_test_case "clipboard-available returns valid exit code" test_clipboard_returns_success_when_helper_exists
-_run_test_case "clipboard-available no output on success" test_clipboard_no_output_on_success
-_run_test_case "clipboard-available detects pbcopy" test_clipboard_checks_pbcopy
-_run_test_case "clipboard-available detects xsel" test_clipboard_checks_xsel
-_run_test_case "clipboard-available detects xclip" test_clipboard_checks_xclip
-_run_test_case "clipboard-available detects wl-copy" test_clipboard_checks_wl_copy
-_run_test_case "clipboard-available fails when no helpers" test_clipboard_fails_when_none_available
+run_test_case "clipboard-available returns valid exit code" test_clipboard_returns_success_when_helper_exists
+run_test_case "clipboard-available no output on success" test_clipboard_no_output_on_success
+run_test_case "clipboard-available detects pbcopy" test_clipboard_checks_pbcopy
+run_test_case "clipboard-available detects xsel" test_clipboard_checks_xsel
+run_test_case "clipboard-available detects xclip" test_clipboard_checks_xclip
+run_test_case "clipboard-available detects wl-copy" test_clipboard_checks_wl_copy
+run_test_case "clipboard-available fails when no helpers" test_clipboard_fails_when_none_available
 
-_finish_tests
+finish_tests
