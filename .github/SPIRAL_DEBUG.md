@@ -113,6 +113,12 @@ After all features work:
   - ✅ menu --help works immediately
 - **Next**: User will manually test in real terminal before Phase 2
 
+### 2025-12-28: Fix menu colors loading when colors is preloaded
+
+- **Issue**: menu was calling `. colors` when `colors` was preloaded as a function, leading to `no such file or directory: colors` after a fresh install.
+- **Fix**: menu now sources the colors file when `command -v colors` returns a path, otherwise it invokes the already-loaded `colors` function.
+- **Next**: Re-test `menu` in a fresh terminal after install.
+
 ## Testing Strategy
 
 For each phase, we will:
