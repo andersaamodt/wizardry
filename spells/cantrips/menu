@@ -73,6 +73,9 @@ terminal_restored=0
 
 AWAIT_KEYPRESS_KEEP_RAW=1
 export AWAIT_KEYPRESS_KEEP_RAW
+await_keypress_buffer_file=$(menu_temp_file await-keypress-buffer) || return 1
+AWAIT_KEYPRESS_BUFFER_FILE=$await_keypress_buffer_file
+export AWAIT_KEYPRESS_BUFFER_FILE
 
 # Load colour helpers when present; otherwise fall back to plain text.
 if [ -r "$script_dir/colors" ]; then
@@ -152,6 +155,9 @@ cleanup() {
                 stty "$menu_saved_tty_state" <"$menu_tty" >/dev/null 2>&1 || :
         fi
         cursor-blink on 2>/dev/null || :
+        if [ -n "${await_keypress_buffer_file-}" ]; then
+                menu_cleanup_file "$await_keypress_buffer_file"
+        fi
         menu_cleanup_file "$items_file"
         menu_cleanup_file "$commands_file"
 }
