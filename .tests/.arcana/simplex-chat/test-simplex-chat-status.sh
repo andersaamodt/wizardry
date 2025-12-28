@@ -41,7 +41,13 @@ SHI
 reports_not_installed_without_binary() {
   tmp=$(_make_tempdir)
   make_stub_colors "$tmp"
-  HOME="$tmp/home" _run_cmd env PATH="$tmp" HOME="$tmp/home" SIMPLEX_CHAT_CONFIG_DIR="$tmp/home/config" SIMPLEX_CHAT_DATA_DIR="$tmp/home/data" \
+  # Link essential utilities
+  _link_tools "$tmp" sh cat printf test env basename dirname pwd
+  
+  _run_cmd env PATH="$tmp:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips" \
+    HOME="$tmp/home" \
+    SIMPLEX_CHAT_CONFIG_DIR="$tmp/home/config" \
+    SIMPLEX_CHAT_DATA_DIR="$tmp/home/data" \
     "$ROOT_DIR/spells/.arcana/simplex-chat/simplex-chat-status"
   _assert_success || return 1
   _assert_output_contains "not installed" || return 1
@@ -53,6 +59,8 @@ reports_installed_with_directories() {
   tmp=$(_make_tempdir)
   make_stub_colors "$tmp"
   mkdir -p "$tmp/home/config" "$tmp/home/data"
+  # Link essential utilities
+  _link_tools "$tmp" sh cat printf test env basename dirname pwd
   cat >"$tmp/simplex-chat" <<'SHI'
 #!/bin/sh
 [ "$1" = "--version" ] && exit 0
@@ -60,7 +68,10 @@ exit 0
 SHI
   chmod +x "$tmp/simplex-chat"
 
-  HOME="$tmp/home" _run_cmd env PATH="$tmp" HOME="$tmp/home" SIMPLEX_CHAT_CONFIG_DIR="$tmp/home/config" SIMPLEX_CHAT_DATA_DIR="$tmp/home/data" \
+  _run_cmd env PATH="$tmp:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips" \
+    HOME="$tmp/home" \
+    SIMPLEX_CHAT_CONFIG_DIR="$tmp/home/config" \
+    SIMPLEX_CHAT_DATA_DIR="$tmp/home/data" \
     "$ROOT_DIR/spells/.arcana/simplex-chat/simplex-chat-status"
   _assert_success || return 1
   _assert_output_contains "installed" || return 1
@@ -72,6 +83,8 @@ warns_when_setup_missing() {
   tmp=$(_make_tempdir)
   make_stub_colors "$tmp"
   mkdir -p "$tmp/home/config"
+  # Link essential utilities
+  _link_tools "$tmp" sh cat printf test env basename dirname pwd
   cat >"$tmp/simplex-chat" <<'SHI'
 #!/bin/sh
 [ "$1" = "--version" ] && exit 0
@@ -79,7 +92,10 @@ exit 0
 SHI
   chmod +x "$tmp/simplex-chat"
 
-  HOME="$tmp/home" _run_cmd env PATH="$tmp" HOME="$tmp/home" SIMPLEX_CHAT_CONFIG_DIR="$tmp/home/config" SIMPLEX_CHAT_DATA_DIR="$tmp/home/data" \
+  _run_cmd env PATH="$tmp:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips" \
+    HOME="$tmp/home" \
+    SIMPLEX_CHAT_CONFIG_DIR="$tmp/home/config" \
+    SIMPLEX_CHAT_DATA_DIR="$tmp/home/data" \
     "$ROOT_DIR/spells/.arcana/simplex-chat/simplex-chat-status"
   _assert_success || return 1
   _assert_output_contains "installed, needs setup" || return 1
@@ -90,13 +106,18 @@ _run_test_case "simplex-chat-status warns when data directory is missing" warns_
 reports_error_when_version_fails() {
   tmp=$(_make_tempdir)
   make_stub_colors "$tmp"
+  # Link essential utilities
+  _link_tools "$tmp" sh cat printf test env basename dirname pwd
   cat >"$tmp/simplex-chat" <<'SHI'
 #!/bin/sh
 exit 1
 SHI
   chmod +x "$tmp/simplex-chat"
 
-  HOME="$tmp/home" _run_cmd env PATH="$tmp" HOME="$tmp/home" SIMPLEX_CHAT_CONFIG_DIR="$tmp/home/config" SIMPLEX_CHAT_DATA_DIR="$tmp/home/data" \
+  _run_cmd env PATH="$tmp:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips" \
+    HOME="$tmp/home" \
+    SIMPLEX_CHAT_CONFIG_DIR="$tmp/home/config" \
+    SIMPLEX_CHAT_DATA_DIR="$tmp/home/data" \
     "$ROOT_DIR/spells/.arcana/simplex-chat/simplex-chat-status"
   _assert_success || return 1
   _assert_output_contains "installed, error" || return 1

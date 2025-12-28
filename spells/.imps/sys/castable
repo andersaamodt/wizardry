@@ -13,7 +13,7 @@ castable() {
   # When sourced, $0 won't match the spell name
   _cast_name=${CASTABLE_NAME-}
   if [ -z "$_cast_name" ]; then
-    _cast_name=$(basename "${0-}")
+    _cast_name=${0##*/}  # Equivalent to basename, avoids external command
   fi
   
   # Detect if being sourced by checking if $0 matches common shell names
@@ -35,7 +35,20 @@ castable() {
   # If we get here, we're being executed directly (not sourced)
   _cast_func=${CASTABLE_FUNC-}
   if [ -z "$_cast_func" ] && [ -n "$_cast_name" ]; then
-    _cast_func=$(printf '%s' "$_cast_name" | tr '-' '_')
+    # Convert hyphens to underscores using pure shell (no external commands)
+    _cast_func="$_cast_name"
+    _cast_i=0
+    while [ "$_cast_i" -lt 20 ]; do
+      case "$_cast_func" in
+        *-*)
+          _cast_func="${_cast_func%%-*}_${_cast_func#*-}"
+          _cast_i=$((_cast_i + 1))
+          ;;
+        *)
+          break
+          ;;
+      esac
+    done
   fi
   if [ -z "$_cast_func" ]; then
     printf '%s\n' "castable: unable to detect function name" >&2

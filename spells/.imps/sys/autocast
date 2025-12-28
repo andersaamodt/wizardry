@@ -14,7 +14,7 @@ _autocast() {
   
   # Try to detect spell name if not provided
   if [ -z "$_autocast_name" ]; then
-    _autocast_name=$(basename "${0-}" 2>/dev/null || true)
+    _autocast_name=${0##*/}  # Equivalent to basename, avoids external command
   fi
   
   # Detect if being executed vs sourced
@@ -44,12 +44,19 @@ _autocast() {
   # Determine function name to call
   _autocast_func=""
   if [ -n "$_autocast_name" ]; then
-    # Convert hyphenated spell name to underscored function name
-    # Use shell parameter expansion to avoid forking external commands
+    # Convert hyphenated spell name to underscored function name (pure shell)
     _autocast_func="$_autocast_name"
-    # Replace all hyphens with underscores using a loop
-    while [ "$_autocast_func" != "${_autocast_func#*-}" ]; do
-      _autocast_func="${_autocast_func%%-*}_${_autocast_func#*-}"
+    _autocast_i=0
+    while [ "$_autocast_i" -lt 20 ]; do
+      case "$_autocast_func" in
+        *-*)
+          _autocast_func="${_autocast_func%%-*}_${_autocast_func#*-}"
+          _autocast_i=$((_autocast_i + 1))
+          ;;
+        *)
+          break
+          ;;
+      esac
     done
   fi
   
