@@ -440,31 +440,42 @@ WRAPPER_EOF
       printf '%s\n\n' "$cleaned_output"
     } >>"$failure_output_file"
   elif [ "$test_exit_code" -eq 0 ]; then
-    pass=$((pass + 1))
     cleaned_output=$(printf '%s\n' "$output" | sed '/^FAIL_DETAIL:/d')
     
-    # Record timing for profiling
-    if [ "$profile_mode" -eq 1 ]; then
-      test_end_time=$(date +%s 2>/dev/null || printf '0')
-      test_duration=$((test_end_time - test_start_time))
-      printf '%4ds  %-60s  PASS\n' "$test_duration" "$test_path" >> "$profile_file"
+    # Check if this test has any actual PASS/FAIL output (not just LACK messages)
+    # Tests that only output LACK messages shouldn't count in pass/fail statistics
+    has_test_output=0
+    if printf '%s\n' "$cleaned_output" | grep -q '^PASS \|^FAIL \|^[0-9]\+/[0-9]\+ tests passed'; then
+      has_test_output=1
     fi
     
-    # Inline record_subtests logic
-    counts=$(printf '%s\n' "$cleaned_output" | awk '
-      /^[0-9]+\/[0-9]+ tests passed/ {
-        split($1, parts, "/")
-        passed += parts[1]
-        total += parts[2]
-        next
-      }
-      /^FAIL_DETAIL:/ { next }
-      END { print (passed+0) " " (total+0) }
-    ')
-    set -- $counts
-    if [ "$#" -eq 2 ]; then
-      subtests_passed=$((subtests_passed + $1))
-      subtests_total=$((subtests_total + $2))
+    # Only count as passed if it has actual test output
+    if [ "$has_test_output" -eq 1 ]; then
+      pass=$((pass + 1))
+      
+      # Record timing for profiling
+      if [ "$profile_mode" -eq 1 ]; then
+        test_end_time=$(date +%s 2>/dev/null || printf '0')
+        test_duration=$((test_end_time - test_start_time))
+        printf '%4ds  %-60s  PASS\n' "$test_duration" "$test_path" >> "$profile_file"
+      fi
+      
+      # Inline record_subtests logic
+      counts=$(printf '%s\n' "$cleaned_output" | awk '
+        /^[0-9]+\/[0-9]+ tests passed/ {
+          split($1, parts, "/")
+          passed += parts[1]
+          total += parts[2]
+          next
+        }
+        /^FAIL_DETAIL:/ { next }
+        END { print (passed+0) " " (total+0) }
+      ')
+      set -- $counts
+      if [ "$#" -eq 2 ]; then
+        subtests_passed=$((subtests_passed + $1))
+        subtests_total=$((subtests_total + $2))
+      fi
     fi
   else
     status=1
