@@ -158,6 +158,11 @@ function brace_delta(s, n, m) {
     else
       unset _WIZARDRY_LOADING_SPELLS
     fi
+    case "$_wob_name" in
+      *-*)
+        alias "${_wob_name}=${_wob_true_name}" 2>/dev/null || :
+        ;;
+    esac
     if [ "$_wob_run" -ne 1 ]; then
       return 0
     fi
