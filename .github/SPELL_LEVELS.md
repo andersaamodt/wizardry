@@ -25,7 +25,7 @@ Each `banish N` command:
 1. Recursively runs previous levels (banish 2 → runs 0, 1, then 2)
 2. Checks assumptions for that level
 3. Offers to self-heal broken assumptions (with user confirmation)
-4. Runs tests for spells at that level (with user confirmation)
+4. Runs tests for spells at that level (automatically, no prompt)
 
 ---
 
@@ -61,26 +61,13 @@ Each `banish N` command:
 * detect-distro - OS distribution detection
 
 ### Imps Used by Level 0 Spells
-**Note**: Level 0 assumes wizardry is installed. The banish spell itself can work with minimal dependencies for bootstrapping scenarios, but is designed for post-install validation.
-
-#### Critical Infrastructure Imps
-- `sys/invoke-wizardry` - Shell integration system (sources spells into shell)
-- `sys/require-wizardry` - Check wizardry availability
-- Basic output imps (`out/say`, `out/warn`, `out/die`)
-- Basic conditional imps (`cond/has`, `cond/there`)
+**Note**: Level 0 assumes wizardry is installed. Critical infrastructure imps: `sys/invoke-wizardry`, `sys/require-wizardry`, `out/say`, `out/warn`, `out/die`, `cond/has`, `cond/there`
 
 ### Detection Capabilities (Optional)
 If wizardry is already installed, Level 0 can use:
 * detect-posix - Probe POSIX toolchain
 * detect-distro - Detect Linux distribution
 * verify-posix - Verify POSIX environment
-
-### Tests
-- `.tests/system/test-banish.sh` - Test banish level 0 functionality
-- Manual verification: Can `./install` succeed after `banish 0`?
-- Test OS detection on multiple platforms
-- Test package manager detection
-- Test self-healing with missing tools
 
 ---
 
@@ -114,73 +101,21 @@ If wizardry is already installed, Level 0 can use:
 * main-menu - Top-level menu content (menu)
 
 ### Imps Used by Level 1 Spells
+Core system: `sys/require-wizardry`, `sys/require`, `sys/castable`, `sys/env-clear`, `sys/on-exit`, `sys/clear-traps`
 
-#### Core System Imps
-- `sys/require-wizardry` - Check wizardry availability
-- `sys/require` - Check command/spell availability
-- `sys/castable` - Make spell both executable and sourceable
-- `sys/env-clear` - Clear environment variables
-- `sys/on-exit` - Register cleanup on exit
-- `sys/clear-traps` - Clear signal traps
+Conditional: `cond/has`, `cond/there`, `cond/is`, `cond/empty`, `cond/nonempty`
 
-#### Conditional Imps  
-- `cond/has` - Check if command exists
-- `cond/there` - Check if path exists
-- `cond/is` - Generic conditional check
-- `cond/empty` - Check if string/file is empty
-- `cond/nonempty` - Check if string/file is non-empty
+Output: `out/say`, `out/warn`, `out/die`, `out/fail`, `out/info`, `out/step`, `out/success`, `out/debug`
 
-#### Output Imps
-- `out/say` - Print message to stdout
-- `out/warn` - Print warning to stderr
-- `out/die` - Print error and exit
-- `out/fail` - Print error and return failure
-- `out/info` - Print informational message
-- `out/step` - Print step in process
-- `out/success` - Print success message
-- `out/debug` - Print debug message
+Filesystem: `fs/temp-file`, `fs/temp-dir`, `fs/cleanup-file`, `fs/cleanup-dir`
 
-#### Filesystem Imps
-- `fs/temp-file` - Create temporary file
-- `fs/temp-dir` - Create temporary directory
-- `fs/cleanup-file` - Remove file safely
-- `fs/cleanup-dir` - Remove directory safely
+Input: `input/tty-save`, `input/tty-restore`, `input/tty-raw`, `input/read-line`
 
-#### Input Imps
-- `input/tty-save` - Save terminal state
-- `input/tty-restore` - Restore terminal state
-- `input/tty-raw` - Set terminal to raw mode
-- `input/read-line` - Read line of input
+String: `str/contains`, `str/trim`, `str/equals`, `str/starts`, `str/ends`
 
-#### String Imps
-- `str/contains` - Check if string contains substring
-- `str/trim` - Trim whitespace from string
-- `str/equals` - Test string equality
-- `str/starts` - Check if string starts with prefix
-- `str/ends` - Check if string ends with suffix
+Path: `paths/here`, `paths/parent`, `paths/file-name`, `paths/abs-path`
 
-#### Path Imps
-- `paths/here` - Get current directory
-- `paths/parent` - Get parent directory
-- `paths/file-name` - Get file name from path
-- `paths/abs-path` - Get absolute path
-
-#### Menu-specific Imps
-- `menu/is-submenu` - Check if entry is a submenu
-- `menu/is-integer` - Check if value is integer
-- `menu/category-title` - Format category title
-- `menu/exit-label` - Format exit menu label
-
-### Tests
-- `.tests/cantrips/test-menu.sh` - Menu functionality
-- `.tests/cantrips/test-await-keypress.sh` - Keyboard input
-- `.tests/cantrips/test-fathom-cursor.sh` - Cursor position
-- `.tests/cantrips/test-fathom-terminal.sh` - Terminal size
-- `.tests/cantrips/test-move-cursor.sh` - Cursor movement
-- `.tests/cantrips/test-cursor-blink.sh` - Cursor visibility
-- `.tests/cantrips/test-colors.sh` - Color codes
-- `.tests/menu/test-main-menu.sh` - Main menu content
-- All imp tests in `.tests/.imps/` for imps listed above
+Menu-specific: `menu/is-submenu`, `menu/is-integer`, `menu/category-title`, `menu/exit-label`
 
 ---
 
@@ -201,13 +136,7 @@ If wizardry is already installed, Level 0 can use:
 * look (read-magic from Level 4) - Display location's title and description
 
 ### Additional Imps Introduced
-- `fs/xattr-helper-usable` - Check extended attributes support
-- `fs/xattr-list-keys` - List xattr keys
-- `fs/xattr-read-value` - Read xattr value
-
-### Tests
-- `.tests/mud/test-check-cd-hook.sh`
-- `.tests/mud/test-look.sh`
+`fs/xattr-helper-usable`, `fs/xattr-list-keys`, `fs/xattr-read-value`
 
 ---
 
@@ -225,10 +154,6 @@ If wizardry is already installed, Level 0 can use:
 ### Spells
 * jump-to-marker - Teleport to bookmarks
 * mark-location - Record location bookmarks
-
-### Tests
-- `.tests/translocation/test-jump-to-marker.sh`
-- `.tests/translocation/test-mark-location.sh`
 
 ---
 
@@ -255,20 +180,7 @@ If wizardry is already installed, Level 0 can use:
 * file-list - List files with details
 
 ### Additional Imps Introduced
-- `fs/backup` - Backup file before modification
-- `menu/detect-trash` - Detect trash directory location
-- `text/read-file` - Read file contents
-- `text/write-file` - Write file contents
-- `text/lines` - Split text into lines
-- `text/each` - Process each line
-
-### Tests
-- `.tests/arcane/test-copy.sh`
-- `.tests/arcane/test-trash.sh`
-- `.tests/arcane/test-jump-trash.sh`
-- `.tests/arcane/test-forall.sh`
-- `.tests/arcane/test-read-magic.sh`
-- `.tests/arcane/test-file-list.sh`
+`fs/backup`, `menu/detect-trash`, `text/read-file`, `text/write-file`, `text/lines`, `text/each`
 
 ---
 
@@ -296,18 +208,7 @@ If wizardry is already installed, Level 0 can use:
 * up - Navigate up directory levels
 
 ### Additional Imps Introduced
-- `input/select-input` - Select from options
-- `lex/parse` - Parse command line
-- `lex/from` - Extract from delimiter
-- `lex/to` - Extract to delimiter
-
-### Tests
-- `.tests/cantrips/test-ask.sh`
-- `.tests/cantrips/test-ask-yn.sh`
-- `.tests/cantrips/test-ask-text.sh`
-- `.tests/cantrips/test-list-files.sh`
-- `.tests/cantrips/test-max-length.sh`
-- `.tests/cantrips/test-move.sh`
+`input/select-input`, `lex/parse`, `lex/from`, `lex/to`
 
 ---
 
@@ -324,14 +225,7 @@ If wizardry is already installed, Level 0 can use:
 * require-command - Require command availability
 
 ### Additional Imps Introduced
-- `input/validate-command` - Validate command name
-- `input/validate-name` - Validate file name
-- `lex/and` - Logical AND
-- `lex/or` - Logical OR
-
-### Tests
-- `.tests/cantrips/test-validate-number.sh` (if exists)
-- `.tests/cantrips/test-validate-path.sh` (if exists)
+`input/validate-command`, `input/validate-name`, `lex/and`, `lex/or`
 
 ---
 
@@ -345,10 +239,6 @@ If wizardry is already installed, Level 0 can use:
 ### Spells
 * ask-number (ask from Level 5, validate-number from Level 6) - Numeric input
 * memorize - Add spell to shell rc
-
-### Tests
-- `.tests/cantrips/test-ask-number.sh`
-- `.tests/cantrips/test-memorize.sh`
 
 ---
 
@@ -370,15 +260,7 @@ If wizardry is already installed, Level 0 can use:
 * package-managers - Manage packages
 
 ### Additional Imps Introduced
-- `fs/config-get` - Get config value
-- `fs/config-set` - Set config value
-- `fs/config-has` - Check config key exists
-- `fs/config-del` - Delete config key
-
-### Tests
-- `.tests/system/test-config.sh`
-- `.tests/system/test-logs.sh`
-- `.tests/system/test-package-managers.sh`
+`fs/config-get`, `fs/config-set`, `fs/config-has`, `fs/config-del`
 
 ---
 
@@ -400,14 +282,7 @@ If wizardry is already installed, Level 0 can use:
 * wizard-eyes - Enhanced spell inspection
 
 ### Additional Imps Introduced
-- `test/*` - All test framework imps
-- `sys/rc-add-line` - Add line to rc file
-- `sys/rc-has-line` - Check if rc has line
-- `sys/rc-remove-line` - Remove line from rc
-
-### Tests
-- `.tests/system/test-test-spell.sh`
-- `.tests/system/test-test-magic.sh`
+`test/*`, `sys/rc-add-line`, `sys/rc-has-line`, `sys/rc-remove-line`
 
 ---
 
@@ -423,11 +298,6 @@ If wizardry is already installed, Level 0 can use:
 * update-all (update-wizardry) - Update everything
 * kill-process - Kill process by name
 
-### Tests
-- `.tests/system/test-update-wizardry.sh`
-- `.tests/system/test-update-all.sh`
-- `.tests/system/test-kill-process.sh`
-
 ---
 
 ## Level 11: Advanced System Tools
@@ -441,10 +311,6 @@ If wizardry is already installed, Level 0 can use:
 * demo-magic (multiple lower-level spells) - Demonstrate wizardry features
 * verify-posix - Verify POSIX compliance
 * wizard-cast - Execute spells with wizard powers
-
-### Tests
-- `.tests/system/test-demo-magic.sh`
-- `.tests/system/test-verify-posix.sh`
 
 ---
 
@@ -466,15 +332,7 @@ If wizardry is already installed, Level 0 can use:
 * identify-room (detect-magic) - Identify current directory as MUD room
 
 ### Additional Imps Introduced
-- `sys/os` - Get operating system name
-- `sys/term` - Get terminal type
-- `text/detect-indent-char` - Detect indentation character
-- `text/detect-indent-width` - Detect indentation width
-
-### Tests
-- `.tests/divination/test-detect-rc-file.sh`
-- `.tests/divination/test-detect-magic.sh`
-- `.tests/divination/test-identify-room.sh`
+`sys/os`, `sys/term`, `text/detect-indent-char`, `text/detect-indent-width`
 
 ---
 
@@ -491,11 +349,6 @@ If wizardry is already installed, Level 0 can use:
 * select-player - Select player/character
 * check-command-not-found-hook - Check command-not-found hook
 
-### Tests
-- `.tests/mud/test-decorate.sh`
-- `.tests/mud/test-select-player.sh`
-- `.tests/mud/test-check-command-not-found-hook.sh`
-
 ---
 
 ## Level 14: Cryptography
@@ -509,9 +362,6 @@ If wizardry is already installed, Level 0 can use:
 * hash - Generate cryptographic hashes
 * evoke-hash (hash) - Interactive hash generation
 * hashchant (hash) - Chained hash operations
-
-### Tests
-- `.tests/crypto/` - Crypto tests
 
 ---
 
@@ -532,10 +382,6 @@ If wizardry is already installed, Level 0 can use:
 * reload-ssh - Reload SSH service
 * restart-ssh - Restart SSH service
 
-### Tests
-- `.tests/translocation/` - SSH-related tests
-- `.tests/cantrips/test-validate-ssh-key.sh`
-
 ---
 
 ## Level 16: Task Priorities
@@ -551,9 +397,6 @@ If wizardry is already installed, Level 0 can use:
 * prioritize (get-priority) - Set task priority
 * upvote (get-priority) - Increase priority
 
-### Tests
-- `.tests/priorities/` - Priority tests
-
 ---
 
 ## Level 17: Security Wards
@@ -565,9 +408,6 @@ If wizardry is already installed, Level 0 can use:
 
 ### Spells
 * ssh-barrier (SSH spells from Level 15) - SSH security hardening
-
-### Tests
-- `.tests/wards/` - Security tests
 
 ---
 
@@ -585,9 +425,6 @@ If wizardry is already installed, Level 0 can use:
 * enchantment-to-yaml (read-magic from Level 4) - Export attributes to YAML
 * yaml-to-enchantment (read-magic from Level 4) - Import attributes from YAML
 
-### Tests
-- `.tests/enchant/` - Enchant tests
-
 ---
 
 ## Level 19: Process & System Info (PSI)
@@ -600,9 +437,6 @@ If wizardry is already installed, Level 0 can use:
 ### Spells
 * list-contacts - List contact information
 * read-contact (list-contacts) - Read contact details
-
-### Tests
-- `.tests/psi/` - PSI tests
 
 ---
 
@@ -629,9 +463,6 @@ If wizardry is already installed, Level 0 can use:
 * unbind-tome (bind-tome) - Unbind spellbook
 * merge-yaml-text - Merge YAML configurations
 
-### Tests
-- `.tests/spellcraft/` - All spellcraft tests
-
 ---
 
 ## Level 21: Core Menu Infrastructure
@@ -648,10 +479,6 @@ If wizardry is already installed, Level 0 can use:
 * cast (menu from Level 1, spellbook) - Cast menu interface
 * spell-menu (menu from Level 1, spellbook) - Spell management menu
 
-### Tests
-- `.tests/menu/test-spellbook.sh`
-- `.tests/menu/test-cast.sh`
-
 ---
 
 ## Level 22: System & Configuration Menus
@@ -666,9 +493,6 @@ If wizardry is already installed, Level 0 can use:
 * install-menu (menu from Level 1) - Installation menu
 * synonym-menu (menu from Level 1, add-synonym/edit-synonym/delete-synonym from Level 20) - Synonym management menu
 * thesaurus (menu from Level 1) - Thesaurus spell lookup
-
-### Tests
-- `.tests/menu/test-system-menu.sh`
 
 ---
 
@@ -688,9 +512,6 @@ If wizardry is already installed, Level 0 can use:
 * new-player (menu from Level 1) - Create new player
 * set-player (menu from Level 1) - Configure player
 
-### Tests
-- `.tests/menu/test-mud-menu.sh`
-
 ---
 
 ## Level 24: Domain-Specific Menus
@@ -708,9 +529,6 @@ If wizardry is already installed, Level 0 can use:
 * priorities (menu from Level 1, priority-menu) - Priority task menu
 * users-menu (menu from Level 1) - User management menu
 * profile-tests (menu from Level 1, test-magic from Level 9) - Test profiling menu
-
-### Tests
-- `.tests/menu/` - Domain menu tests
 
 ---
 
@@ -732,9 +550,6 @@ If wizardry is already installed, Level 0 can use:
 * service-status (is-service-installed) - View service status
 * remove-service (disable-service, stop-service) - Remove system service
 
-### Tests
-- Service-related tests in `.tests/cantrips/`
-
 ---
 
 ## Level 26: Optional Arcana & Third-Party Integrations
@@ -752,11 +567,6 @@ If wizardry is already installed, Level 0 can use:
 - SimpleX chat
 - Node.js tools
 - And more...
-
-### Tests
-- Tests in `.tests/.arcana/` (where applicable)
-- Many arcana spells are install-only
-
 
 ---
 
