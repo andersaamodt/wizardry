@@ -277,11 +277,15 @@ transformed=$(printf '%s\n' "$spell_content" | \
         # autocast spells call the spell_name function directly
         func_name = spell
         gsub(/-/, "_", func_name)
+        print "# Compiled spell - autocast declaration (inlined)"
+        print "autocast() { :; }  # Stub - spell already executed via function call below"
         print func_name
       } else {
         # castable/uncastable spells call spell_name "$@"
         func_name = spell
         gsub(/-/, "_", func_name)
+        print "# Compiled spell - " pattern_type " declaration (inlined)"
+        print pattern_type "() { :; }  # Stub - spell executed via direct function call below"
         print func_name " \"$@\""
       }
       next
