@@ -219,6 +219,37 @@ case "$first" in
             shift
             consumed="$consumed $second"
             case "$second" in
+                79)
+                    if [ "$#" -eq 0 ]; then
+                        partial=1
+                    else
+                        third=$1
+                        shift
+                        consumed="$consumed $third"
+                        case "$third" in
+                            65)
+                                output='up'
+                                buffer_leftover_codes="$*"
+                                ;;
+                            66)
+                                output='down'
+                                buffer_leftover_codes="$*"
+                                ;;
+                            67)
+                                output='right'
+                                buffer_leftover_codes="$*"
+                                ;;
+                            68)
+                                output='left'
+                                buffer_leftover_codes="$*"
+                                ;;
+                            *)
+                                output="escaped key: $(codes_to_string "$escape_rest_codes")"
+                                buffer_leftover_codes=''
+                                ;;
+                        esac
+                    fi
+                    ;;
                 91)
                     if [ "$#" -eq 0 ]; then
                         partial=1

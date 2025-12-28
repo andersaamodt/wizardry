@@ -73,6 +73,9 @@ terminal_restored=0
 
 AWAIT_KEYPRESS_KEEP_RAW=1
 export AWAIT_KEYPRESS_KEEP_RAW
+await_keypress_buffer_file=$(menu_temp_file await-keypress-buffer) || return 1
+AWAIT_KEYPRESS_BUFFER_FILE=$await_keypress_buffer_file
+export AWAIT_KEYPRESS_BUFFER_FILE
 
 # Load colour helpers when present; otherwise fall back to plain text.
 if [ -r "$script_dir/colors" ]; then
@@ -152,6 +155,9 @@ cleanup() {
                 stty "$menu_saved_tty_state" <"$menu_tty" >/dev/null 2>&1 || :
         fi
         cursor-blink on 2>/dev/null || :
+        if [ -n "${await_keypress_buffer_file-}" ]; then
+                menu_cleanup_file "$await_keypress_buffer_file"
+        fi
         menu_cleanup_file "$items_file"
         menu_cleanup_file "$commands_file"
 }
@@ -410,6 +416,11 @@ do
         fi
 
         current_window_width=$(fathom-terminal --width)
+        case "$current_window_width" in
+                ''|*[!0-9]*)
+                        current_window_width=0
+                        ;;
+        esac
         current_max_command_length=$((current_window_width - max_name_length - 3))
         if [ "$current_max_command_length" -lt 0 ]; then
                 current_max_command_length=0
@@ -481,17 +492,18 @@ do
                 fi
                 return 0
                 ;;
-        escape|ESC|esc)
-                cleanup
-                trap - EXIT INT TERM
-                # Signal parent menu to exit if this is a nested menu
-                # Check if parent PID is not 1 (init) or current shell
-                if [ "${PPID:-0}" -gt 1 ] && [ "${PPID:-0}" -ne "$$" ]; then
-                        kill -TERM "$PPID" 2>/dev/null || :
+escape|ESC|esc)
+        cleanup
+        trap - EXIT INT TERM
+        # Signal parent menu to exit only when explicitly nested.
+        if [ "${MENU_NESTED:-0}" = "1" ] && [ -n "${MENU_PARENT_PID-}" ]; then
+                if [ "${PPID:-0}" -eq "$MENU_PARENT_PID" ]; then
+                        kill -TERM "$MENU_PARENT_PID" 2>/dev/null || :
                 fi
-                return 0
-                ;;
-        esac
+        fi
+        return 130
+        ;;
+esac
 
         if [ "$step" -ne 0 ]; then
                 pending_step=$step
