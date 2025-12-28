@@ -62,8 +62,13 @@ if [ -r "$script_dir/colors" ]; then
         # shellcheck disable=SC1090
         . "$script_dir/colors"
 elif has colors; then
-        # shellcheck disable=SC1091
-        . colors
+        colors_path=$(command -v colors 2>/dev/null || printf '')
+        if [ -n "$colors_path" ] && [ -f "$colors_path" ]; then
+                # shellcheck disable=SC1090
+                . "$colors_path"
+        else
+                colors
+        fi
 else
         RESET=''
         CYAN=''
@@ -95,6 +100,21 @@ if [ "$#" -lt 2 ]; then
         if has main-menu; then
                 main-menu
                 return 0
+        fi
+        if command -v _word_of_binding >/dev/null 2>&1; then
+                if _word_of_binding main-menu; then
+                        return 0
+                fi
+        elif [ -n "${WIZARDRY_DIR-}" ] \
+                && [ -f "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" ]; then
+                WIZARDRY_SOURCE_WORD_OF_BINDING=1 \
+                        . "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding"
+                unset WIZARDRY_SOURCE_WORD_OF_BINDING
+                if command -v _word_of_binding >/dev/null 2>&1; then
+                        if _word_of_binding main-menu; then
+                                return 0
+                        fi
+                fi
         fi
         die "menu: no menu entries provided" || return 1
 fi
