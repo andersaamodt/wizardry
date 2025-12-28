@@ -669,7 +669,7 @@ banish_level_2() {
   
   # Check for menu spell dependencies
   missing_spells=""
-  for spell in menu fathom-terminal fathom-cursor move-cursor await-keypress cursor-blink colors main-menu; do
+  for spell in menu fathom-terminal fathom-cursor move-cursor await-keypress cursor-blink colors; do
     if [ ! -f "${WIZARDRY_DIR}/spells/cantrips/$spell" ]; then
       missing_spells="${missing_spells:+$missing_spells }$spell"
     else
@@ -904,7 +904,7 @@ banish_level_10() {
   banish_info "Checking Level 10: Testing Infrastructure..."
   
   # Check for testing spells
-  testing_spells="test-spell test-magic logging-example wizard-eyes"
+  testing_spells="test-spell test-magic"
   missing=""
   for spell in $testing_spells; do
     if [ ! -f "${WIZARDRY_DIR}/spells/system/$spell" ]; then

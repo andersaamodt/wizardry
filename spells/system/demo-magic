@@ -68,7 +68,6 @@ demo_level_2() {
   check_spell "move-cursor" test -f "${WIZARDRY_DIR}/spells/cantrips/move-cursor"
   check_spell "cursor-blink" test -f "${WIZARDRY_DIR}/spells/cantrips/cursor-blink"
   check_spell "colors" test -f "${WIZARDRY_DIR}/spells/cantrips/colors"
-  check_spell "main-menu" test -f "${WIZARDRY_DIR}/spells/cantrips/main-menu"
   check_spell "stty" command -v stty
 }
 
@@ -141,8 +140,6 @@ demo_level_10() {
   
   check_spell "test-spell" test -f "${WIZARDRY_DIR}/spells/system/test-spell"
   check_spell "test-magic" test -f "${WIZARDRY_DIR}/spells/system/test-magic"
-  check_spell "logging-example" test -f "${WIZARDRY_DIR}/spells/system/logging-example"
-  check_spell "wizard-eyes" test -f "${WIZARDRY_DIR}/spells/system/wizard-eyes"
 }
 
 demo_level_11() {
@@ -150,7 +147,7 @@ demo_level_11() {
   printf 'Checking maintenance spells...\n'
   
   check_spell "update-wizardry" test -f "${WIZARDRY_DIR}/spells/system/update-wizardry"
-  check_spell "kill-process" test -f "${WIZARDRY_DIR}/spells/cantrips/kill-process"
+  check_spell "kill-process" test -f "${WIZARDRY_DIR}/spells/system/kill-process"
 }
 
 demo_level_12() {
@@ -159,7 +156,7 @@ demo_level_12() {
   
   check_spell "demo-magic" test -f "${WIZARDRY_DIR}/spells/system/demo-magic"
   check_spell "verify-posix" test -f "${WIZARDRY_DIR}/spells/system/verify-posix"
-  check_spell "wizard-cast" test -f "${WIZARDRY_DIR}/spells/system/wizard-cast"
+  check_spell "wizard-cast" test -f "${WIZARDRY_DIR}/spells/cantrips/wizard-cast"
 }
 
 demo_level_13() {
@@ -243,8 +240,8 @@ demo_level_23() {
   printf 'Level 23: System & Configuration Menus\n'
   printf 'Checking system menu spells...\n'
   
-  check_spell "system-menu" test -f "${WIZARDRY_DIR}/spells/menu/system/system-menu"
-  check_spell "install-menu" test -f "${WIZARDRY_DIR}/spells/menu/system/install-menu"
+  check_spell "system-menu" test -f "${WIZARDRY_DIR}/spells/menu/system-menu"
+  check_spell "install-menu" test -f "${WIZARDRY_DIR}/spells/menu/install-menu"
 }
 
 demo_level_24() {
