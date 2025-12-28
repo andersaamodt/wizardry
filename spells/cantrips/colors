@@ -149,8 +149,8 @@ case ${TERM-} in
 esac
 }
 
-# Load autocast imp for direct execution
-if ! command -v autocast >/dev/null 2>&1; then
+# Load uncastable imp for direct execution
+if ! command -v uncastable >/dev/null 2>&1; then
   if [ -n "${WIZARDRY_DIR-}" ]; then
     _i="$WIZARDRY_DIR/spells/.imps/sys"
   elif [ -n "${ROOT_DIR-}" ]; then
@@ -160,7 +160,10 @@ if ! command -v autocast >/dev/null 2>&1; then
     _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
     _i="${_r}/spells/.imps/sys"
   fi
-  [ -f "$_i/autocast" ] && . "$_i/autocast"
+  [ -f "$_i/uncastable" ] && . "$_i/uncastable"
 fi
 
-autocast colors "$@"
+uncastable colors
+
+# When sourced, call the colors function to set up color variables
+colors

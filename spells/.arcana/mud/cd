@@ -40,9 +40,10 @@ fi
 uncastable cd
 
 # Explicitly use permissive error handling - this file is meant to be sourced into user's shell
-# and we don't want to change their shell error handling with strict mode
-# We don't set +u because our global usage provides safe defaults
+# and we don't want their shell to exit on command failures
+# We DO use set -u because our global usage provides safe defaults (${SPELLBOOK_DIR:-...})
 set +e
+set -u
 
 # The cd override - checks setting in .mud/config file before running look
 cd() {
