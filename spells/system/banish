@@ -154,6 +154,121 @@ banish_error() {
   printf 'Error: %s\n' "$*" >&2
 }
 
+# Level spell definitions - declarative data structure
+# Format: "spell:dir spell2:dir2 spell3" (if no :dir, assumes cantrips)
+get_level_spells() {
+  case "$1" in
+    0) printf 'detect-posix:divination detect-distro:divination verify-posix:system' ;;
+    1) printf 'banish:system' ;;
+    2) printf 'menu fathom-terminal fathom-cursor move-cursor await-keypress cursor-blink colors main-menu:menu' ;;
+    3) printf 'check-cd-hook:mud look:mud' ;;
+    4) printf 'jump-to-marker:translocation mark-location:translocation' ;;
+    5) printf 'copy:arcane trash:arcane jump-trash:arcane forall:arcane read-magic:arcane file-list:arcane' ;;
+    6) printf 'ask ask-yn ask-text list-files max-length move up' ;;
+    7) printf 'validate-number validate-path require-command' ;;
+    8) printf 'ask-number memorize' ;;
+    9) printf 'config:system logs:system package-managers:system' ;;
+    10) printf 'test-spell:system test-magic:system logging-example wizard-eyes' ;;
+    11) printf 'update-wizardry:system update-all:system kill-process:system' ;;
+    12) printf 'demo-magic:system verify-posix:system wizard-cast' ;;
+    13) printf 'detect-rc-file:divination detect-magic:divination identify-room:divination' ;;
+    14) printf 'decorate:mud select-player:mud check-command-not-found-hook:mud' ;;
+    15) printf 'hash:crypto evoke-hash:crypto hashchant:crypto' ;;
+    16) printf 'validate-ssh-key enchant-portkey:translocation follow-portkey:translocation open-portal:translocation open-teletype:translocation reload-ssh restart-ssh' ;;
+    17) printf 'get-priority:priorities get-new-priority:priorities prioritize:priorities upvote:priorities' ;;
+    18) printf 'ssh-barrier:wards' ;;
+    19) printf 'enchant:enchant disenchant:enchant enchantment-to-yaml:enchant yaml-to-enchantment:enchant' ;;
+    20) printf 'list-contacts:psi read-contact:psi' ;;
+    21) printf 'scribe-spell:spellcraft lint-magic:spellcraft compile-spell:spellcraft learn:spellcraft forget:spellcraft erase-spell:spellcraft doppelganger:spellcraft add-synonym:spellcraft edit-synonym:spellcraft delete-synonym:spellcraft reset-default-synonyms:spellcraft bind-tome:spellcraft unbind-tome:spellcraft merge-yaml-text:spellcraft' ;;
+    22) printf 'spellbook-store spellbook:menu cast:menu spell-menu:menu' ;;
+    23) printf 'system-menu:menu install-menu:menu synonym-menu:menu thesaurus:menu' ;;
+    24) printf 'mud:menu mud-menu:menu mud-settings:menu mud-admin-menu:menu add-ssh-player:menu/mud-admin new-player:menu/mud-admin set-player:menu/mud-admin' ;;
+    25) printf 'network-menu:menu services-menu:menu shutdown-menu:menu priority-menu:menu priorities:menu users-menu:menu profile-tests:menu/system' ;;
+    26) printf 'install-service-template is-service-installed enable-service disable-service start-service stop-service restart-service service-status remove-service' ;;
+    27) printf '' ;; # Level 27 is special - arcana directory
+    *) printf '' ;;
+  esac
+}
+
+# Level imp definitions (Level 1 only)
+get_level_imps() {
+  case "$1" in
+    1) printf 'sys/invoke-wizardry sys/require-wizardry sys/require sys/castable sys/env-clear sys/on-exit sys/clear-traps cond/has cond/there cond/is cond/empty cond/nonempty out/say out/warn out/die out/fail out/info out/step out/success out/debug fs/temp-file fs/temp-dir fs/cleanup-file fs/cleanup-dir input/tty-save input/tty-restore input/tty-raw input/read-line str/contains str/trim str/equals str/starts str/ends paths/here paths/parent paths/file-name paths/abs-path' ;;
+    *) printf '' ;;
+  esac
+}
+
+# Generic spell checking function with consistent formatting
+# Usage: banish_check_spells "spell1:dir1 spell2:dir2 spell3" "default_dir"
+banish_check_spells() {
+  spell_list=$1
+  default_dir=${2:-cantrips}
+  missing=""
+  
+  for spell_info in $spell_list; do
+    case "$spell_info" in
+      *:*)
+        # Format: spell:dir
+        spell=$(printf '%s' "$spell_info" | cut -d: -f1)
+        dir=$(printf '%s' "$spell_info" | cut -d: -f2)
+        ;;
+      *)
+        # Plain spell name, use default directory
+        spell=$spell_info
+        dir=$default_dir
+        ;;
+    esac
+    
+    if [ ! -f "${WIZARDRY_DIR}/spells/$dir/$spell" ]; then
+      missing="${missing:+$missing }$spell"
+    else
+      # Output to stderr so it doesn't get captured in missing=$(...)
+      banish_check "Found spell: $spell" >&2
+    fi
+  done
+  
+  # Return the missing list via stdout for caller to handle
+  printf '%s' "$missing"
+}
+
+# Generic level validation - validates spells and imps for a level
+banish_validate_level_spells() {
+  level=$1
+  
+  # Get spell list for this level
+  spell_list=$(get_level_spells "$level")
+  
+  if [ -n "$spell_list" ]; then
+    missing=$(banish_check_spells "$spell_list" "cantrips")
+    
+    if [ -n "$missing" ]; then
+      banish_warn "Missing Level $level spells: $missing"
+      return 1
+    fi
+  fi
+  
+  # Get imp list for this level  
+  imp_list=$(get_level_imps "$level")
+  
+  if [ -n "$imp_list" ]; then
+    banish_step "Checking Level $level imps..."
+    missing_imps=""
+    for imp in $imp_list; do
+      if [ ! -f "${WIZARDRY_DIR}/spells/.imps/$imp" ]; then
+        missing_imps="${missing_imps:+$missing_imps }$imp"
+      else
+        banish_check "Found imp: $imp" >&2
+      fi
+    done
+    
+    if [ -n "$missing_imps" ]; then
+      banish_warn "Missing Level $level imps: $missing_imps"
+      return 1
+    fi
+  fi
+  
+  return 0
+}
 
 # Get level name for display
 banish_level_name() {
@@ -631,29 +746,14 @@ banish_level_0() {
 banish_level_1() {
   banish_info "Checking Level 1: Wizardry Installation..."
   
-  # Check if wizardry is installed (this should be caught by level 0)
+  # Verify wizardry is installed
   if [ ! -d "${WIZARDRY_DIR}/spells" ]; then
     banish_warn "Wizardry not installed at $WIZARDRY_DIR"
     return 1
   fi
   
-  # Check for banish spell itself
-  if [ ! -f "${WIZARDRY_DIR}/spells/system/banish" ]; then
-    banish_warn "Missing: banish spell"
-  else
-    banish_check "Found spell: banish"
-  fi
-  
-  # Check critical imps from Level 1
-  banish_step "Checking Level 1 imps..."
-  critical_imps="sys/invoke-wizardry sys/require-wizardry sys/require sys/castable sys/env-clear sys/on-exit sys/clear-traps cond/has cond/there cond/is cond/empty cond/nonempty out/say out/warn out/die out/fail out/info out/step out/success out/debug"
-  for imp in $critical_imps; do
-    if [ ! -f "${WIZARDRY_DIR}/spells/.imps/$imp" ]; then
-      banish_warn "Missing imp: $imp"
-    else
-      banish_check "Found imp: $imp"
-    fi
-  done
+  # Validate spells and imps using generic function
+  banish_validate_level_spells 1 || return 1
   
   # Run tests if not skipped
   if [ "$skip_tests" -eq 0 ]; then
@@ -667,38 +767,8 @@ banish_level_1() {
 banish_level_2() {
   banish_info "Checking Level 2: Menu System..."
   
-  # Explicitly list all Level 2 spells from SPELL_LEVELS.md
-  level_2_spells="menu fathom-terminal fathom-cursor move-cursor await-keypress cursor-blink colors main-menu:menu"
-  
-  missing_spells=""
-  for spell_info in $level_2_spells; do
-    # Handle dir:spell format
-    case "$spell_info" in
-      *:*)
-        spell=$(printf '%s' "$spell_info" | cut -d: -f1)
-        dir=$(printf '%s' "$spell_info" | cut -d: -f2)
-        if [ ! -f "${WIZARDRY_DIR}/spells/$dir/$spell" ]; then
-          missing_spells="${missing_spells:+$missing_spells }$spell"
-        else
-          banish_check "Found spell: $spell"
-        fi
-        ;;
-      *)
-        spell=$spell_info
-        if [ ! -f "${WIZARDRY_DIR}/spells/cantrips/$spell" ]; then
-          missing_spells="${missing_spells:+$missing_spells }$spell"
-        else
-          banish_check "Found spell: $spell"
-        fi
-        ;;
-    esac
-  done
-  
-  if [ -n "$missing_spells" ]; then
-    banish_warn "Missing menu spells: $missing_spells"
-    banish_warn "Wizardry installation appears incomplete"
-    return 1
-  fi
+  # Validate spells using generic function
+  banish_validate_level_spells 2 || return 1
   
   # Check if stty is available (required for menu terminal control)
   if ! command -v stty >/dev/null 2>&1; then
@@ -727,717 +797,173 @@ banish_level_2() {
   banish_info "Level 2 complete"
 }
 
-# Level 3: MUD Basics
+# Levels 3-26: Standard validation pattern
+# These all follow the same simple pattern: validate spells, run tests
 banish_level_3() {
   banish_info "Checking Level 3: MUD Basics..."
-  
-  # Explicitly list all Level 3 spells from SPELL_LEVELS.md
-  level_3_spells="check-cd-hook:mud look:mud"
-  
-  missing=""
-  for spell_info in $level_3_spells; do
-    spell=$(printf '%s' "$spell_info" | cut -d: -f1)
-    dir=$(printf '%s' "$spell_info" | cut -d: -f2)
-    if [ ! -f "${WIZARDRY_DIR}/spells/$dir/$spell" ]; then
-      missing="${missing:+$missing }$spell"
-    else
-      banish_check "Found spell: $spell"
-    fi
-  done
-  
-  if [ -n "$missing" ]; then
-    banish_warn "Missing MUD spells: $missing"
-  fi
-  
-  # Run tests if not skipped
-  if [ "$skip_tests" -eq 0 ]; then
-    banish_run_tests_for_level 3
-  fi
-  
+  banish_validate_level_spells 3
+  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 3
   banish_info "Level 3 complete"
 }
 
-# Level 4: Navigation
 banish_level_4() {
   banish_info "Checking Level 4: Navigation..."
-  
-  # Explicitly list all Level 4 spells from SPELL_LEVELS.md
-  level_4_spells="jump-to-marker:translocation mark-location:translocation"
-  
-  missing=""
-  for spell_info in $level_4_spells; do
-    spell=$(printf '%s' "$spell_info" | cut -d: -f1)
-    dir=$(printf '%s' "$spell_info" | cut -d: -f2)
-    if [ ! -f "${WIZARDRY_DIR}/spells/$dir/$spell" ]; then
-      missing="${missing:+$missing }$spell"
-    else
-      banish_check "Found spell: $spell"
-    fi
-  done
-  
-  if [ -n "$missing" ]; then
-    banish_warn "Missing navigation spells: $missing"
-  fi
-  
-  # Run tests if not skipped
-  if [ "$skip_tests" -eq 0 ]; then
-    banish_run_tests_for_level 4
-  fi
-  
+  banish_validate_level_spells 4
+  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 4
   banish_info "Level 4 complete"
 }
 
-# Level 5: Arcane File Operations
 banish_level_5() {
   banish_info "Checking Level 5: Arcane File Operations..."
-  
-  # Explicitly list all Level 5 spells from SPELL_LEVELS.md
-  level_5_spells="copy:arcane trash:arcane jump-trash:arcane forall:arcane read-magic:arcane file-list:arcane"
-  
-  missing=""
-  for spell_info in $level_5_spells; do
-    spell=$(printf '%s' "$spell_info" | cut -d: -f1)
-    dir=$(printf '%s' "$spell_info" | cut -d: -f2)
-    if [ ! -f "${WIZARDRY_DIR}/spells/$dir/$spell" ]; then
-      missing="${missing:+$missing }$spell"
-    else
-      banish_check "Found spell: $spell"
-    fi
-  done
-  
-  if [ -n "$missing" ]; then
-    banish_warn "Missing arcane spells: $missing"
-  fi
-  
-  # Run tests if not skipped
-  if [ "$skip_tests" -eq 0 ]; then
-    banish_run_tests_for_level 5
-  fi
-  
+  banish_validate_level_spells 5
+  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 5
   banish_info "Level 5 complete"
 }
 
-# Level 6: Basic Cantrips
 banish_level_6() {
   banish_info "Checking Level 6: Basic Cantrips..."
-  
-  # Explicitly list all Level 6 spells from SPELL_LEVELS.md
-  level_6_spells="ask ask-yn ask-text list-files max-length move up"
-  
-  missing=""
-  for spell in $level_6_spells; do
-    if [ ! -f "${WIZARDRY_DIR}/spells/cantrips/$spell" ]; then
-      missing="${missing:+$missing }$spell"
-    else
-      banish_check "Found spell: $spell"
-    fi
-  done
-  
-  if [ -n "$missing" ]; then
-    banish_warn "Missing cantrips: $missing"
-  fi
-  
-  # Run tests if not skipped
-  if [ "$skip_tests" -eq 0 ]; then
-    banish_run_tests_for_level 6
-  fi
-  
+  banish_validate_level_spells 6
+  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 6
   banish_info "Level 6 complete"
 }
 
-# Level 7: Validation Helpers
 banish_level_7() {
   banish_info "Checking Level 7: Validation Helpers..."
-  
-  # Explicitly list all Level 7 spells from SPELL_LEVELS.md
-  level_7_spells="validate-number validate-path require-command"
-  
-  missing=""
-  for spell in $level_7_spells; do
-    if [ ! -f "${WIZARDRY_DIR}/spells/cantrips/$spell" ]; then
-      missing="${missing:+$missing }$spell"
-    else
-      banish_check "Found spell: $spell"
-    fi
-  done
-  
-  if [ -n "$missing" ]; then
-    banish_warn "Missing validation spells: $missing"
-  fi
-  
-  # Run tests if not skipped
-  if [ "$skip_tests" -eq 0 ]; then
-    banish_run_tests_for_level 7
-  fi
-  
+  banish_validate_level_spells 7
+  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 7
   banish_info "Level 7 complete"
 }
 
-# Level 8: Advanced Cantrips
 banish_level_8() {
   banish_info "Checking Level 8: Advanced Cantrips..."
-  
-  # Explicitly list all Level 8 spells from SPELL_LEVELS.md
-  level_8_spells="ask-number memorize"
-  
-  missing=""
-  for spell in $level_8_spells; do
-    if [ ! -f "${WIZARDRY_DIR}/spells/cantrips/$spell" ]; then
-      missing="${missing:+$missing }$spell"
-    else
-      banish_check "Found spell: $spell"
-    fi
-  done
-  
-  if [ -n "$missing" ]; then
-    banish_warn "Missing advanced cantrips: $missing"
-  fi
-  
-  # Run tests if not skipped
-  if [ "$skip_tests" -eq 0 ]; then
-    banish_run_tests_for_level 8
-  fi
-  
+  banish_validate_level_spells 8
+  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 8
   banish_info "Level 8 complete"
 }
 
-# Level 9: System Configuration
 banish_level_9() {
   banish_info "Checking Level 9: System Configuration..."
-  
-  # Explicitly list all Level 9 spells from SPELL_LEVELS.md
-  level_9_spells="config:system logs:system package-managers:system"
-  
-  missing=""
-  for spell_info in $level_9_spells; do
-    spell=$(printf '%s' "$spell_info" | cut -d: -f1)
-    dir=$(printf '%s' "$spell_info" | cut -d: -f2)
-    if [ ! -f "${WIZARDRY_DIR}/spells/$dir/$spell" ]; then
-      missing="${missing:+$missing }$spell"
-    else
-      banish_check "Found spell: $spell"
-    fi
-  done
-  
-  if [ -n "$missing" ]; then
-    banish_warn "Missing system configuration spells: $missing"
-  fi
-  
-  # Run tests if not skipped
-  if [ "$skip_tests" -eq 0 ]; then
-    banish_run_tests_for_level 9
-  fi
-  
+  banish_validate_level_spells 9
+  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 9
   banish_info "Level 9 complete"
 }
 
-# Level 10: Testing Infrastructure
 banish_level_10() {
   banish_info "Checking Level 10: Testing Infrastructure..."
-  
-  # Explicitly list all Level 10 spells from SPELL_LEVELS.md
-  level_10_spells="test-spell:system test-magic:system logging-example:cantrips wizard-eyes:cantrips"
-  
-  missing=""
-  for spell_info in $level_10_spells; do
-    spell=$(printf '%s' "$spell_info" | cut -d: -f1)
-    dir=$(printf '%s' "$spell_info" | cut -d: -f2)
-    if [ ! -f "${WIZARDRY_DIR}/spells/$dir/$spell" ]; then
-      missing="${missing:+$missing }$spell"
-    else
-      banish_check "Found spell: $spell"
-    fi
-  done
-  
-  if [ -n "$missing" ]; then
-    banish_warn "Missing testing spells: $missing"
-  fi
-  
-  # Run tests if not skipped
-  if [ "$skip_tests" -eq 0 ]; then
-    banish_run_tests_for_level 10
-  fi
-  
+  banish_validate_level_spells 10
+  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 10
   banish_info "Level 10 complete"
 }
 
-# Level 11: System Maintenance
 banish_level_11() {
   banish_info "Checking Level 11: System Maintenance..."
-  
-  # Explicitly list all Level 11 spells from SPELL_LEVELS.md
-  level_11_spells="update-wizardry:system update-all:system kill-process:system"
-  
-  missing=""
-  for spell_info in $level_11_spells; do
-    spell=$(printf '%s' "$spell_info" | cut -d: -f1)
-    dir=$(printf '%s' "$spell_info" | cut -d: -f2)
-    if [ ! -f "${WIZARDRY_DIR}/spells/$dir/$spell" ]; then
-      missing="${missing:+$missing }$spell"
-    else
-      banish_check "Found spell: $spell"
-    fi
-  done
-  
-  if [ -n "$missing" ]; then
-    banish_warn "Missing maintenance spells: $missing"
-  fi
-  
-  # Run tests if not skipped
-  if [ "$skip_tests" -eq 0 ]; then
-    banish_run_tests_for_level 11
-  fi
-  
+  banish_validate_level_spells 11
+  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 11
   banish_info "Level 11 complete"
 }
 
-# Level 12: Advanced System Tools
 banish_level_12() {
   banish_info "Checking Level 12: Advanced System Tools..."
-  
-  # Explicitly list all Level 12 spells from SPELL_LEVELS.md
-  level_12_spells="demo-magic:system verify-posix:system wizard-cast:cantrips"
-  
-  missing=""
-  for spell_info in $level_12_spells; do
-    spell=$(printf '%s' "$spell_info" | cut -d: -f1)
-    dir=$(printf '%s' "$spell_info" | cut -d: -f2)
-    if [ ! -f "${WIZARDRY_DIR}/spells/$dir/$spell" ]; then
-      missing="${missing:+$missing }$spell"
-    else
-      banish_check "Found spell: $spell"
-    fi
-  done
-  
-  if [ -n "$missing" ]; then
-    banish_warn "Missing advanced system spells: $missing"
-  fi
-  
-  # Run tests if not skipped
-  if [ "$skip_tests" -eq 0 ]; then
-    banish_run_tests_for_level 12
-  fi
-  
+  banish_validate_level_spells 12
+  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 12
   banish_info "Level 12 complete"
 }
 
-# Level 13: Divination
 banish_level_13() {
   banish_info "Checking Level 13: Divination..."
-  
-  # Explicitly list all Level 13 spells from SPELL_LEVELS.md
-  level_13_spells="detect-rc-file:divination detect-magic:divination identify-room:divination"
-  
-  missing=""
-  for spell_info in $level_13_spells; do
-    spell=$(printf '%s' "$spell_info" | cut -d: -f1)
-    dir=$(printf '%s' "$spell_info" | cut -d: -f2)
-    if [ ! -f "${WIZARDRY_DIR}/spells/$dir/$spell" ]; then
-      missing="${missing:+$missing }$spell"
-    else
-      banish_check "Found spell: $spell"
-    fi
-  done
-  
-  if [ -n "$missing" ]; then
-    banish_warn "Missing divination spells: $missing"
-  fi
-  
-  # Run tests if not skipped
-  if [ "$skip_tests" -eq 0 ]; then
-    banish_run_tests_for_level 13
-  fi
-  
+  banish_validate_level_spells 13
+  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 13
   banish_info "Level 13 complete"
 }
 
-# Level 14: Advanced MUD Features
 banish_level_14() {
   banish_info "Checking Level 14: Advanced MUD Features..."
-  
-  # Explicitly list all Level 14 spells from SPELL_LEVELS.md
-  level_14_spells="decorate:mud select-player:mud check-command-not-found-hook:mud"
-  
-  missing=""
-  for spell_info in $level_14_spells; do
-    spell=$(printf '%s' "$spell_info" | cut -d: -f1)
-    dir=$(printf '%s' "$spell_info" | cut -d: -f2)
-    if [ ! -f "${WIZARDRY_DIR}/spells/$dir/$spell" ]; then
-      missing="${missing:+$missing }$spell"
-    else
-      banish_check "Found spell: $spell"
-    fi
-  done
-  
-  if [ -n "$missing" ]; then
-    banish_warn "Missing advanced MUD spells: $missing"
-  fi
-  
-  # Run tests if not skipped
-  if [ "$skip_tests" -eq 0 ]; then
-    banish_run_tests_for_level 14
-  fi
-  
+  banish_validate_level_spells 14
+  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 14
   banish_info "Level 14 complete"
 }
 
-# Level 15: Cryptography
 banish_level_15() {
   banish_info "Checking Level 15: Cryptography..."
-  
-  # Explicitly list all Level 15 spells from SPELL_LEVELS.md
-  level_15_spells="hash:crypto evoke-hash:crypto hashchant:crypto"
-  
-  missing=""
-  for spell_info in $level_15_spells; do
-    spell=$(printf '%s' "$spell_info" | cut -d: -f1)
-    dir=$(printf '%s' "$spell_info" | cut -d: -f2)
-    if [ ! -f "${WIZARDRY_DIR}/spells/$dir/$spell" ]; then
-      missing="${missing:+$missing }$spell"
-    else
-      banish_check "Found spell: $spell"
-    fi
-  done
-  
-  if [ -n "$missing" ]; then
-    banish_warn "Missing cryptography spells: $missing"
-  fi
-  
-  # Run tests if not skipped
-  if [ "$skip_tests" -eq 0 ]; then
-    banish_run_tests_for_level 15
-  fi
-  
+  banish_validate_level_spells 15
+  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 15
   banish_info "Level 15 complete"
 }
 
-# Level 16: SSH & Remote Access
 banish_level_16() {
   banish_info "Checking Level 16: SSH & Remote Access..."
-  
-  # Explicitly list all Level 16 spells from SPELL_LEVELS.md
-  level_16_spells="validate-ssh-key:cantrips enchant-portkey:translocation follow-portkey:translocation open-portal:translocation open-teletype:translocation reload-ssh:cantrips restart-ssh:cantrips"
-  
-  missing=""
-  for spell_info in $level_16_spells; do
-    spell=$(printf '%s' "$spell_info" | cut -d: -f1)
-    dir=$(printf '%s' "$spell_info" | cut -d: -f2)
-    if [ ! -f "${WIZARDRY_DIR}/spells/$dir/$spell" ]; then
-      missing="${missing:+$missing }$spell"
-    else
-      banish_check "Found spell: $spell"
-    fi
-  done
-  
-  if [ -n "$missing" ]; then
-    banish_warn "Missing SSH & remote access spells: $missing"
-  fi
-  
-  # Run tests if not skipped
-  if [ "$skip_tests" -eq 0 ]; then
-    banish_run_tests_for_level 16
-  fi
-  
+  banish_validate_level_spells 16
+  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 16
   banish_info "Level 16 complete"
 }
 
-# Level 17: Task Priorities
 banish_level_17() {
   banish_info "Checking Level 17: Task Priorities..."
-  
-  # Explicitly list all Level 17 spells from SPELL_LEVELS.md
-  level_17_spells="get-priority:priorities get-new-priority:priorities prioritize:priorities upvote:priorities"
-  
-  missing=""
-  for spell_info in $level_17_spells; do
-    spell=$(printf '%s' "$spell_info" | cut -d: -f1)
-    dir=$(printf '%s' "$spell_info" | cut -d: -f2)
-    if [ ! -f "${WIZARDRY_DIR}/spells/$dir/$spell" ]; then
-      missing="${missing:+$missing }$spell"
-    else
-      banish_check "Found spell: $spell"
-    fi
-  done
-  
-  if [ -n "$missing" ]; then
-    banish_warn "Missing priority spells: $missing"
-  fi
-  
-  # Run tests if not skipped
-  if [ "$skip_tests" -eq 0 ]; then
-    banish_run_tests_for_level 17
-  fi
-  
+  banish_validate_level_spells 17
+  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 17
   banish_info "Level 17 complete"
 }
 
-# Level 18: Security Wards
 banish_level_18() {
   banish_info "Checking Level 18: Security Wards..."
-  
-  # Explicitly list all Level 18 spells from SPELL_LEVELS.md
-  level_18_spells="ssh-barrier:wards"
-  
-  missing=""
-  for spell_info in $level_18_spells; do
-    spell=$(printf '%s' "$spell_info" | cut -d: -f1)
-    dir=$(printf '%s' "$spell_info" | cut -d: -f2)
-    if [ ! -f "${WIZARDRY_DIR}/spells/$dir/$spell" ]; then
-      missing="${missing:+$missing }$spell"
-    else
-      banish_check "Found spell: $spell"
-    fi
-  done
-  
-  if [ -n "$missing" ]; then
-    banish_warn "Missing ward spells: $missing"
-  fi
-  
-  # Run tests if not skipped
-  if [ "$skip_tests" -eq 0 ]; then
-    banish_run_tests_for_level 18
-  fi
-  
+  banish_validate_level_spells 18
+  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 18
   banish_info "Level 18 complete"
 }
 
-# Level 19: Extended Attributes
 banish_level_19() {
   banish_info "Checking Level 19: Extended Attributes..."
-  
-  # Explicitly list all Level 19 spells from SPELL_LEVELS.md
-  level_19_spells="enchant:enchant disenchant:enchant enchantment-to-yaml:enchant yaml-to-enchantment:enchant"
-  
-  missing=""
-  for spell_info in $level_19_spells; do
-    spell=$(printf '%s' "$spell_info" | cut -d: -f1)
-    dir=$(printf '%s' "$spell_info" | cut -d: -f2)
-    if [ ! -f "${WIZARDRY_DIR}/spells/$dir/$spell" ]; then
-      missing="${missing:+$missing }$spell"
-    else
-      banish_check "Found spell: $spell"
-    fi
-  done
-  
-  if [ -n "$missing" ]; then
-    banish_warn "Missing enchantment spells: $missing"
-  fi
-  
-  # Run tests if not skipped
-  if [ "$skip_tests" -eq 0 ]; then
-    banish_run_tests_for_level 19
-  fi
-  
+  banish_validate_level_spells 19
+  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 19
   banish_info "Level 19 complete"
 }
 
-# Level 20: Process & System Info (PSI)
 banish_level_20() {
   banish_info "Checking Level 20: Process & System Info (PSI)..."
-  
-  # Explicitly list all Level 20 spells from SPELL_LEVELS.md
-  level_20_spells="list-contacts:psi read-contact:psi"
-  
-  missing=""
-  for spell_info in $level_20_spells; do
-    spell=$(printf '%s' "$spell_info" | cut -d: -f1)
-    dir=$(printf '%s' "$spell_info" | cut -d: -f2)
-    if [ ! -f "${WIZARDRY_DIR}/spells/$dir/$spell" ]; then
-      missing="${missing:+$missing }$spell"
-    else
-      banish_check "Found spell: $spell"
-    fi
-  done
-  
-  if [ -n "$missing" ]; then
-    banish_warn "Missing PSI spells: $missing"
-  fi
-  
-  # Run tests if not skipped
-  if [ "$skip_tests" -eq 0 ]; then
-    banish_run_tests_for_level 20
-  fi
-  
+  banish_validate_level_spells 20
+  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 20
   banish_info "Level 20 complete"
 }
 
-# Level 21: Spellcraft Development Tools
 banish_level_21() {
   banish_info "Checking Level 21: Spellcraft Development Tools..."
-  
-  # Explicitly list all Level 21 spells from SPELL_LEVELS.md
-  level_21_spells="scribe-spell:spellcraft lint-magic:spellcraft compile-spell:spellcraft learn:spellcraft forget:spellcraft erase-spell:spellcraft doppelganger:spellcraft add-synonym:spellcraft edit-synonym:spellcraft delete-synonym:spellcraft reset-default-synonyms:spellcraft bind-tome:spellcraft unbind-tome:spellcraft merge-yaml-text:spellcraft"
-  
-  missing=""
-  for spell_info in $level_21_spells; do
-    spell=$(printf '%s' "$spell_info" | cut -d: -f1)
-    dir=$(printf '%s' "$spell_info" | cut -d: -f2)
-    if [ ! -f "${WIZARDRY_DIR}/spells/$dir/$spell" ]; then
-      missing="${missing:+$missing }$spell"
-    else
-      banish_check "Found spell: $spell"
-    fi
-  done
-  
-  if [ -n "$missing" ]; then
-    banish_warn "Missing spellcraft spells: $missing"
-  fi
-  
-  # Run tests if not skipped
-  if [ "$skip_tests" -eq 0 ]; then
-    banish_run_tests_for_level 21
-  fi
-  
+  banish_validate_level_spells 21
+  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 21
   banish_info "Level 21 complete"
 }
 
-# Level 22: Core Menu Infrastructure
 banish_level_22() {
   banish_info "Checking Level 22: Core Menu Infrastructure..."
-  
-  # Explicitly list all Level 22 spells from SPELL_LEVELS.md
-  level_22_spells="spellbook-store:cantrips spellbook:menu cast:menu spell-menu:menu"
-  
-  missing=""
-  for spell_info in $level_22_spells; do
-    spell=$(printf '%s' "$spell_info" | cut -d: -f1)
-    dir=$(printf '%s' "$spell_info" | cut -d: -f2)
-    if [ ! -f "${WIZARDRY_DIR}/spells/$dir/$spell" ]; then
-      missing="${missing:+$missing }$spell"
-    else
-      banish_check "Found spell: $spell"
-    fi
-  done
-  
-  if [ -n "$missing" ]; then
-    banish_warn "Missing core menu spells: $missing"
-  fi
-  
-  # Run tests if not skipped
-  if [ "$skip_tests" -eq 0 ]; then
-    banish_run_tests_for_level 22
-  fi
-  
+  banish_validate_level_spells 22
+  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 22
   banish_info "Level 22 complete"
 }
 
-# Level 23: System & Configuration Menus
 banish_level_23() {
   banish_info "Checking Level 23: System & Configuration Menus..."
-  
-  # Explicitly list all Level 23 spells from SPELL_LEVELS.md
-  level_23_spells="system-menu:menu install-menu:menu synonym-menu:menu thesaurus:menu"
-  
-  missing=""
-  for spell_info in $level_23_spells; do
-    spell=$(printf '%s' "$spell_info" | cut -d: -f1)
-    dir=$(printf '%s' "$spell_info" | cut -d: -f2)
-    if [ ! -f "${WIZARDRY_DIR}/spells/$dir/$spell" ]; then
-      missing="${missing:+$missing }$spell"
-    else
-      banish_check "Found spell: $spell"
-    fi
-  done
-  
-  if [ -n "$missing" ]; then
-    banish_warn "Missing system menu spells: $missing"
-  fi
-  
-  # Run tests if not skipped
-  if [ "$skip_tests" -eq 0 ]; then
-    banish_run_tests_for_level 23
-  fi
-  
+  banish_validate_level_spells 23
+  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 23
   banish_info "Level 23 complete"
 }
 
-# Level 24: MUD Administration Menus
 banish_level_24() {
   banish_info "Checking Level 24: MUD Administration Menus..."
-  
-  # Explicitly list all Level 24 spells from SPELL_LEVELS.md
-  level_24_spells="mud:menu mud-menu:menu mud-settings:menu mud-admin-menu:menu add-ssh-player:menu/mud-admin new-player:menu/mud-admin set-player:menu/mud-admin"
-  
-  missing=""
-  for spell_info in $level_24_spells; do
-    spell=$(printf '%s' "$spell_info" | cut -d: -f1)
-    dir=$(printf '%s' "$spell_info" | cut -d: -f2)
-    if [ ! -f "${WIZARDRY_DIR}/spells/$dir/$spell" ]; then
-      missing="${missing:+$missing }$spell"
-    else
-      banish_check "Found spell: $spell"
-    fi
-  done
-  
-  if [ -n "$missing" ]; then
-    banish_warn "Missing MUD menu spells: $missing"
-  fi
-  
-  # Run tests if not skipped
-  if [ "$skip_tests" -eq 0 ]; then
-    banish_run_tests_for_level 24
-  fi
-  
+  banish_validate_level_spells 24
+  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 24
   banish_info "Level 24 complete"
 }
 
-# Level 25: Domain-Specific Menus
 banish_level_25() {
   banish_info "Checking Level 25: Domain-Specific Menus..."
-  
-  # Explicitly list all Level 25 spells from SPELL_LEVELS.md
-  level_25_spells="network-menu:menu services-menu:menu shutdown-menu:menu priority-menu:menu priorities:menu users-menu:menu profile-tests:menu/system"
-  
-  missing=""
-  for spell_info in $level_25_spells; do
-    spell=$(printf '%s' "$spell_info" | cut -d: -f1)
-    dir=$(printf '%s' "$spell_info" | cut -d: -f2)
-    if [ ! -f "${WIZARDRY_DIR}/spells/$dir/$spell" ]; then
-      missing="${missing:+$missing }$spell"
-    else
-      banish_check "Found spell: $spell"
-    fi
-  done
-  
-  if [ -n "$missing" ]; then
-    banish_warn "Missing domain menu spells: $missing"
-  fi
-  
-  # Run tests if not skipped
-  if [ "$skip_tests" -eq 0 ]; then
-    banish_run_tests_for_level 25
-  fi
-  
+  banish_validate_level_spells 25
+  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 25
   banish_info "Level 25 complete"
 }
 
-# Level 26: System Service Management
 banish_level_26() {
   banish_info "Checking Level 26: System Service Management..."
-  
-  # Explicitly list all Level 26 spells from SPELL_LEVELS.md
-  level_26_spells="install-service-template:cantrips is-service-installed:cantrips enable-service:cantrips disable-service:cantrips start-service:cantrips stop-service:cantrips restart-service:cantrips service-status:cantrips remove-service:cantrips"
-  
-  missing=""
-  for spell_info in $level_26_spells; do
-    spell=$(printf '%s' "$spell_info" | cut -d: -f1)
-    dir=$(printf '%s' "$spell_info" | cut -d: -f2)
-    if [ ! -f "${WIZARDRY_DIR}/spells/$dir/$spell" ]; then
-      missing="${missing:+$missing }$spell"
-    else
-      banish_check "Found spell: $spell"
-    fi
-  done
-  
-  if [ -n "$missing" ]; then
-    banish_warn "Missing service management spells: $missing"
-  fi
-  
-  # Run tests if not skipped
-  if [ "$skip_tests" -eq 0 ]; then
-    banish_run_tests_for_level 26
-  fi
-  
+  banish_validate_level_spells 26
+  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 26
   banish_info "Level 26 complete"
 }
 
@@ -1445,8 +971,7 @@ banish_level_26() {
 banish_level_27() {
   banish_info "Checking Level 27: Optional Arcana & Third-Party Integrations..."
   
-  # Level 27 contains all spells in spells/.arcana/
-  # These are optional third-party integrations and don't have explicit spell lists
+  # Level 27 is special - contains all spells in spells/.arcana/
   if [ -d "${WIZARDRY_DIR}/spells/.arcana" ]; then
     arcana_count=$(find "${WIZARDRY_DIR}/spells/.arcana" -type f 2>/dev/null | wc -l)
     banish_check "Found $arcana_count arcana spells/scripts"
