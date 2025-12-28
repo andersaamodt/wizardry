@@ -15,6 +15,7 @@ on:
 permissions:
   contents: read
   actions: read
+  checks: read
 
 jobs:
   consolidate-errors:
@@ -23,31 +24,86 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'failure' }}
     
     steps:
-      - name: Download error artifacts from triggering workflow
-        uses: actions/download-artifact@v4
-        continue-on-error: true
+      - name: Find all workflow runs for this commit
+        uses: actions/github-script@v7
+        id: find-runs
         with:
-          pattern: '*-errors'
-          path: /tmp/error-reports
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            // Get all workflow runs for the same commit SHA
+            const sha = '${{ github.event.workflow_run.head_sha }}';
+            console.log(`Finding all workflow runs for commit: ${sha}`);
+            
+            const response = await github.rest.actions.listWorkflowRunsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head_sha: sha,
+              per_page: 100
+            });
+            
+            const runs = response.data.workflow_runs;
+            console.log(`Found ${runs.length} workflow runs for this commit`);
+            
+            // Filter to only completed runs with failures
+            const failedRuns = runs.filter(run => 
+              run.conclusion === 'failure' && run.status === 'completed'
+            );
+            
+            console.log(`Found ${failedRuns.length} failed workflow runs`);
+            failedRuns.forEach(run => {
+              console.log(`  - ${run.name} (ID: ${run.id})`);
+            });
+            
+            // Return run IDs as comma-separated string
+            const runIds = failedRuns.map(r => r.id).join(',');
+            return { runIds, count: failedRuns.length };
+      
+      - name: Download error artifacts from all failed workflows
+        if: steps.find-runs.outputs.result != ''
+        continue-on-error: true
+        run: |
+          mkdir -p /tmp/error-reports
+          
+          # Parse run IDs from previous step
+          run_ids="${{ fromJSON(steps.find-runs.outputs.result).runIds }}"
+          
+          if [ -z "$run_ids" ]; then
+            echo "No failed workflow runs found"
+            exit 0
+          fi
+          
+          echo "Downloading error artifacts from workflow runs: $run_ids"
+          
+          # Download artifacts from each workflow run
+          IFS=',' read -ra RUN_ARRAY <<< "$run_ids"
+          for run_id in "${RUN_ARRAY[@]}"; do
+            echo "Downloading artifacts from run $run_id..."
+            
+            # Use GitHub CLI to download artifacts
+            gh run download "$run_id" \
+              --pattern '*-errors' \
+              --dir "/tmp/error-reports/run-$run_id" \
+              2>/dev/null || echo "No error artifacts found for run $run_id"
+          done
+          
+          echo "Download complete. Artifacts saved to /tmp/error-reports/"
+          find /tmp/error-reports -type f | head -20
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
       
       - name: Consolidate error reports
         run: |
           echo "======================================================================"
-          echo " CONSOLIDATED WORKFLOW ERROR REPORT"
+          echo " CONSOLIDATED WORKFLOW ERROR REPORT (ALL WORKFLOWS)"
           echo "======================================================================"
           echo ""
-          echo "Workflow: ${{ github.event.workflow_run.name }}"
-          echo "Conclusion: ${{ github.event.workflow_run.conclusion }}"
-          echo "Run URL: ${{ github.event.workflow_run.html_url }}"
-          echo "Run ID: ${{ github.event.workflow_run.id }}"
-          echo "Triggered by: ${{ github.event.workflow_run.event }}"
-          echo "Head branch: ${{ github.event.workflow_run.head_branch }}"
-          echo "Head SHA: ${{ github.event.workflow_run.head_sha }}"
+          echo "Branch: ${{ github.event.workflow_run.head_branch }}"
+          echo "Commit SHA: ${{ github.event.workflow_run.head_sha }}"
+          echo "Triggered by workflow: ${{ github.event.workflow_run.name }}"
+          echo "Total failed workflows: ${{ fromJSON(steps.find-runs.outputs.result).count }}"
           echo ""
           echo "======================================================================"
-          echo " ERROR DETAILS"
+          echo " ERROR DETAILS FROM ALL FAILED WORKFLOWS"
           echo "======================================================================"
           echo ""
           
@@ -55,17 +111,17 @@ jobs:
           report_file="/tmp/consolidated-errors.txt"
           {
             echo "===================================================================="
-            echo " CONSOLIDATED WORKFLOW ERROR REPORT"
+            echo " CONSOLIDATED ERROR REPORT - ALL WORKFLOWS"
             echo "===================================================================="
             echo ""
-            echo "Workflow: ${{ github.event.workflow_run.name }}"
-            echo "Conclusion: ${{ github.event.workflow_run.conclusion }}"
-            echo "Run URL: ${{ github.event.workflow_run.html_url }}"
-            echo "Run ID: ${{ github.event.workflow_run.id }}"
-            echo "Triggered by: ${{ github.event.workflow_run.event }}"
-            echo "Head branch: ${{ github.event.workflow_run.head_branch }}"
-            echo "Head SHA: ${{ github.event.workflow_run.head_sha }}"
-            echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+            echo "Branch: ${{ github.event.workflow_run.head_branch }}"
+            echo "Commit SHA: ${{ github.event.workflow_run.head_sha }}"
+            echo "Report generated: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+            echo "Triggered by: ${{ github.event.workflow_run.name }} workflow failure"
+            echo "Total failed workflows: ${{ fromJSON(steps.find-runs.outputs.result).count }}"
+            echo ""
+            echo "This report consolidates errors from ALL failed workflows for this commit."
+            echo "The artifact is updated each time a workflow fails, providing incremental updates."
             echo ""
             echo "===================================================================="
             echo " ERROR DETAILS"
@@ -75,42 +131,65 @@ jobs:
           
           # Check if any error artifacts were downloaded
           if [ -d "/tmp/error-reports" ] && [ "$(find /tmp/error-reports -type f | wc -l)" -gt 0 ]; then
-            echo "Found error reports:"
-            find /tmp/error-reports -type f
+            echo "Processing error reports from all failed workflows..."
             echo ""
             
-            # Process each error report
-            for error_file in $(find /tmp/error-reports -type f -name "*.txt" | sort); do
-              echo "----------------------------------------------------------------------"
-              echo "ERROR REPORT: $(basename $(dirname "$error_file"))"
-              echo "----------------------------------------------------------------------"
-              cat "$error_file"
-              echo ""
-              echo ""
+            # Group by workflow run
+            for run_dir in /tmp/error-reports/run-*; do
+              [ -d "$run_dir" ] || continue
               
-              # Add to consolidated report
+              run_id=$(basename "$run_dir" | sed 's/run-//')
+              
               {
-                echo "----------------------------------------------------------------------"
-                echo "ERROR REPORT: $(basename $(dirname "$error_file"))"
-                echo "----------------------------------------------------------------------"
+                echo ""
+                echo "======================================================================"
+                echo " WORKFLOW RUN: $run_id"
+                echo "======================================================================"
+                echo ""
               } >> "$report_file"
-              cat "$error_file" >> "$report_file"
-              echo "" >> "$report_file"
-              echo "" >> "$report_file"
+              
+              # Process each error artifact from this run
+              if [ -d "$run_dir" ] && [ "$(find "$run_dir" -type f -name "*.txt" | wc -l)" -gt 0 ]; then
+                for error_file in $(find "$run_dir" -type f -name "*.txt" | sort); do
+                  artifact_name=$(basename $(dirname "$error_file"))
+                  
+                  echo "----------------------------------------------------------------------"
+                  echo "ERROR: $artifact_name (Run: $run_id)"
+                  echo "----------------------------------------------------------------------"
+                  cat "$error_file"
+                  echo ""
+                  echo ""
+                  
+                  # Add to consolidated report
+                  {
+                    echo "----------------------------------------------------------------------"
+                    echo "ERROR ARTIFACT: $artifact_name"
+                    echo "----------------------------------------------------------------------"
+                  } >> "$report_file"
+                  cat "$error_file" >> "$report_file"
+                  echo "" >> "$report_file"
+                  echo "" >> "$report_file"
+                done
+              else
+                echo "No error artifacts found in run $run_id"
+                echo "No error artifacts found in this run." >> "$report_file"
+                echo "" >> "$report_file"
+              fi
             done
           else
-            echo "No error artifacts found for this workflow run."
-            echo "The workflow may have failed without generating error artifacts."
+            echo "No error artifacts found for any workflow run."
+            echo "The workflows may have failed without generating error artifacts."
             echo ""
-            echo "No error artifacts found for this workflow run." >> "$report_file"
-            echo "The workflow may have failed without generating error artifacts." >> "$report_file"
+            echo "No error artifacts found for any workflow run." >> "$report_file"
+            echo "The workflows may have failed without generating error artifacts." >> "$report_file"
           fi
           
           echo "======================================================================"
           echo " SUMMARY"
           echo "======================================================================"
           echo ""
-          echo "Complete error report saved to artifact: consolidated-workflow-errors"
+          echo "Complete error report saved to artifact: consolidated-errors-${{ github.event.workflow_run.head_branch }}-latest"
+          echo "This artifact contains errors from ALL failed workflows for this commit."
           echo "Download the artifact from the Actions tab to view full details."
           echo ""
           
@@ -121,31 +200,43 @@ jobs:
             echo " SUMMARY"
             echo "===================================================================="
             echo ""
-            echo "Complete error report for workflow: ${{ github.event.workflow_run.name }}"
-            echo "Run URL: ${{ github.event.workflow_run.html_url }}"
+            echo "This consolidated report includes errors from all failed workflows for:"
+            echo "  Branch: ${{ github.event.workflow_run.head_branch }}"
+            echo "  Commit: ${{ github.event.workflow_run.head_sha }}"
             echo ""
-            echo "This report consolidates all errors from the failed workflow run."
+            echo "The artifact is updated incrementally as each workflow fails."
+            echo "Always download the latest version for the most complete error report."
           } >> "$report_file"
       
       - name: Upload consolidated error report
         uses: actions/upload-artifact@v4
         with:
-          name: consolidated-workflow-errors-${{ github.event.workflow_run.id }}
+          name: consolidated-errors-${{ github.event.workflow_run.head_branch }}-latest
           path: /tmp/consolidated-errors.txt
           retention-days: 30
+          overwrite: true
           if-no-files-found: warn
       
       - name: Display error summary in job summary
         run: |
           {
-            echo "# Workflow Error Report"
+            echo "# Consolidated Workflow Error Report"
             echo ""
-            echo "**Workflow:** ${{ github.event.workflow_run.name }}"
-            echo "**Conclusion:** ${{ github.event.workflow_run.conclusion }}"
-            echo "**Run URL:** ${{ github.event.workflow_run.html_url }}"
-            echo "**Triggered by:** ${{ github.event.workflow_run.event }}"
             echo "**Branch:** ${{ github.event.workflow_run.head_branch }}"
-            echo "**SHA:** \`${{ github.event.workflow_run.head_sha }}\`"
+            echo "**Commit SHA:** \`${{ github.event.workflow_run.head_sha }}\`"
+            echo "**Triggered by:** ${{ github.event.workflow_run.name }} workflow failure"
+            echo "**Failed workflows:** ${{ fromJSON(steps.find-runs.outputs.result).count }}"
+            echo ""
+            echo "---"
+            echo ""
+            echo "## 📊 How This Works"
+            echo ""
+            echo "This report consolidates errors from **ALL failed workflows** for this commit."
+            echo "Each time a workflow fails, this consolidation runs and updates the artifact."
+            echo ""
+            echo "✓ **Single artifact location:** \`consolidated-errors-${{ github.event.workflow_run.head_branch }}-latest\`"
+            echo "✓ **Incremental updates:** Report grows as more workflows fail"
+            echo "✓ **One place to check:** Always download the same artifact name for latest errors"
             echo ""
             echo "---"
             echo ""
@@ -165,5 +256,7 @@ jobs:
             echo ""
             echo "---"
             echo ""
-            echo "📥 Download the **consolidated-workflow-errors** artifact for the complete error report."
+            echo "📥 **Download:** Look for the \`consolidated-errors-${{ github.event.workflow_run.head_branch }}-latest\` artifact"
+            echo ""
+            echo "💡 **Tip:** This artifact is updated each time a workflow fails. Download it at any time to see all errors so far, or wait for all workflows to complete for the full report."
           } >> "$GITHUB_STEP_SUMMARY"

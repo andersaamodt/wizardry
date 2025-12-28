@@ -4,7 +4,7 @@ This directory contains GitHub Actions workflows for testing and building wizard
 
 ## Error Consolidation
 
-All workflows now include error reporting that creates artifacts when failures occur. The `consolidate-errors.yml` workflow automatically collects these error reports into a single consolidated report.
+All workflows now include error reporting that creates artifacts when failures occur. The `consolidate-errors.yml` workflow automatically collects these error reports into a single, continuously-updated consolidated report.
 
 ### How Error Consolidation Works
 
@@ -15,13 +15,20 @@ All workflows now include error reporting that creates artifacts when failures o
 
 2. **Automatic Consolidation**: The `consolidate-errors.yml` workflow automatically triggers when any monitored workflow completes with a failure status.
 
-3. **Consolidated Report**: Downloads all error artifacts and creates a single `consolidated-workflow-errors` artifact containing:
-   - Summary of the failed workflow
-   - All error details from individual jobs
-   - Links to the original workflow run
-   - Downloadable artifact for offline review
+3. **Multi-Workflow Consolidation**: The workflow finds **ALL failed workflow runs** for the same commit/branch and consolidates their errors into a single report.
 
-4. **Job Summary**: The consolidation workflow also creates a GitHub Actions job summary with the consolidated error report for quick viewing.
+4. **Incremental Updates**: Each time a workflow fails, the consolidation runs again and updates the artifact with the latest errors. The artifact name remains constant per branch: `consolidated-errors-{branch}-latest`
+
+5. **Single Location**: You always check the same artifact name to get the latest errors - it updates incrementally as workflows fail.
+
+6. **Consolidated Report**: Creates a single artifact containing:
+   - Errors from ALL failed workflows for the commit
+   - Summary of each failed workflow
+   - All error details from individual jobs
+   - Links to the original workflow runs
+   - Timestamp of when the report was generated
+
+7. **Job Summary**: The consolidation workflow also creates a GitHub Actions job summary with the consolidated error report for quick viewing.
 
 ### Monitored Workflows
 
@@ -35,11 +42,17 @@ The following workflows are monitored for errors:
 
 ### Accessing Error Reports
 
-**To view consolidated errors:**
+**To view consolidated errors (recommended):**
 1. Go to the Actions tab
-2. Find the "Consolidate workflow errors" run for your failed workflow
+2. Find the "Consolidate workflow errors" run 
 3. View the job summary for inline error details
-4. Download the `consolidated-workflow-errors-*` artifact for the complete report
+4. Download the `consolidated-errors-{branch}-latest` artifact for the complete report
+
+**Key Benefits:**
+- ✓ **One place to check**: Same artifact name per branch
+- ✓ **Incremental updates**: Download at any time to see errors so far
+- ✓ **Complete view**: All failed workflows in one report
+- ✓ **Always current**: Automatically updates as each workflow fails
 
 **To view individual workflow errors:**
 1. Go to the Actions tab
@@ -69,6 +82,20 @@ The following workflows are monitored for errors:
 - Creates GitHub Actions job summary for quick viewing
 - Only runs when workflows fail (skips successful runs)
 
+**How it Works:**
+1. Triggered when any monitored workflow completes with failure
+2. Uses GitHub API to find ALL failed workflow runs for the same commit SHA
+3. Downloads error artifacts from each failed workflow run
+4. Combines all errors into a single consolidated report
+5. Uploads with fixed artifact name: `consolidated-errors-{branch}-latest`
+6. Uses `overwrite: true` to replace previous version
+
+**Key Features:**
+- **Incremental Updates**: Each workflow failure triggers re-consolidation with latest errors
+- **Single Location**: Always check the same artifact name per branch
+- **Multi-Workflow**: Includes errors from ALL failed workflows (tests, lint, compile, etc.)
+- **Complete View**: Download at any time to see all errors collected so far
+
 **Error Artifact Pattern**: Looks for artifacts matching `*-errors` pattern from:
 - `nix-errors` - Nix platform test failures
 - `macos-errors` - macOS platform test failures
@@ -80,6 +107,8 @@ The following workflows are monitored for errors:
 - `standalone-errors` - Standalone spell test failures
 - `doppelganger-errors` - Doppelganger test failures
 - `demonstrate-errors` - Demonstrate wizardry test failures
+
+**Artifact Naming**: `consolidated-errors-{branch}-latest` (e.g., `consolidated-errors-main-latest`)
 
 **Retention**: Consolidated error artifacts are kept for 30 days.
 
