@@ -443,35 +443,90 @@ banish_level_0() {
     if [ "$skip_heal" -eq 0 ] && [ "$found_pkg_mgr" -eq 1 ]; then
       if banish_ask_yn "Attempt to install missing tools?"; then
         banish_info "Installing missing tools (this may require sudo)..."
+        # Whitelist of allowed POSIX tools to install (security: prevent command injection)
+        allowed_tools="awk sed grep find mktemp dirname basename pwd cd curl wget tar sh test printf cat sort"
+        
         # Try to install missing tools based on detected package manager
         for pkg_mgr in apt yum dnf pacman brew; do
           if command -v "$pkg_mgr" >/dev/null 2>&1; then
             case "$pkg_mgr" in
               apt)
                 for tool in $missing_recommended; do
-                  banish_step "Installing $tool..."
-                  sudo apt-get install -y "$tool" 2>&1 || banish_warn "Failed to install $tool"
+                  # Validate tool is in whitelist
+                  tool_allowed=0
+                  for allowed in $allowed_tools; do
+                    if [ "$tool" = "$allowed" ]; then
+                      tool_allowed=1
+                      break
+                    fi
+                  done
+                  
+                  if [ "$tool_allowed" -eq 1 ]; then
+                    banish_step "Installing $tool..."
+                    sudo apt-get install -y "$tool" 2>&1 || banish_warn "Failed to install $tool"
+                  else
+                    banish_warn "Skipping $tool (not in allowed tools list)"
+                  fi
                 done
                 break
                 ;;
               yum|dnf)
                 for tool in $missing_recommended; do
-                  banish_step "Installing $tool..."
-                  sudo "$pkg_mgr" install -y "$tool" 2>&1 || banish_warn "Failed to install $tool"
+                  # Validate tool is in whitelist
+                  tool_allowed=0
+                  for allowed in $allowed_tools; do
+                    if [ "$tool" = "$allowed" ]; then
+                      tool_allowed=1
+                      break
+                    fi
+                  done
+                  
+                  if [ "$tool_allowed" -eq 1 ]; then
+                    banish_step "Installing $tool..."
+                    sudo "$pkg_mgr" install -y "$tool" 2>&1 || banish_warn "Failed to install $tool"
+                  else
+                    banish_warn "Skipping $tool (not in allowed tools list)"
+                  fi
                 done
                 break
                 ;;
               pacman)
                 for tool in $missing_recommended; do
-                  banish_step "Installing $tool..."
-                  sudo pacman -S --noconfirm "$tool" 2>&1 || banish_warn "Failed to install $tool"
+                  # Validate tool is in whitelist
+                  tool_allowed=0
+                  for allowed in $allowed_tools; do
+                    if [ "$tool" = "$allowed" ]; then
+                      tool_allowed=1
+                      break
+                    fi
+                  done
+                  
+                  if [ "$tool_allowed" -eq 1 ]; then
+                    banish_step "Installing $tool..."
+                    sudo pacman -S --noconfirm "$tool" 2>&1 || banish_warn "Failed to install $tool"
+                  else
+                    banish_warn "Skipping $tool (not in allowed tools list)"
+                  fi
                 done
                 break
                 ;;
               brew)
                 for tool in $missing_recommended; do
-                  banish_step "Installing $tool..."
-                  brew install "$tool" 2>&1 || banish_warn "Failed to install $tool"
+                  # Validate tool is in whitelist
+                  tool_allowed=0
+                  for allowed in $allowed_tools; do
+                    if [ "$tool" = "$allowed" ]; then
+                      tool_allowed=1
+                      break
+                    fi
+                  done
+                  
+                  if [ "$tool_allowed" -eq 1 ]; then
+                    banish_step "Installing $tool..."
+                    brew install "$tool" 2>&1 || banish_warn "Failed to install $tool"
+                  else
+                    banish_warn "Skipping $tool (not in allowed tools list)"
+                  fi
                 done
                 break
                 ;;
