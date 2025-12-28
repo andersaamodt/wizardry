@@ -14,11 +14,11 @@ The spiral organization starts from the most fundamental prerequisites (Level 0)
 The `banish` spell integrates assumption-checking, self-healing, and testing:
 
 ```bash
-banish           # Banish to level 1 (default) - validate wizardry installation
+banish           # Banish to level 1 (default) - validates levels 0-1 (POSIX + wizardry)
 banish 0         # Banish to level 0 only - validate POSIX foundation
-banish 1         # Banish through levels 0-1 (wizardry installed)
-banish 2         # Banish through levels 0-2 (menu ready)
-banish N         # Banish through levels 0-N (full system validated)
+banish 1         # Banish through levels 0-1 (POSIX + wizardry installed)
+banish 2         # Banish through levels 0-2 (POSIX + wizardry + menu ready)
+banish N         # Banish through levels 0-N (full system validated through level N)
 ```
 
 Each `banish N` command:
