@@ -479,6 +479,11 @@ do
         key=$(await-keypress)
         [ "${WIZARDRY_DEBUG_MENU:-0}" = "1" ] && printf '[menu] await-keypress returned: "%s"\n' "$key" >&2
         case $key in
+        ctrl-c)
+                cleanup
+                trap - EXIT INT TERM
+                return 130
+                ;;
         up)
                 step=-1
                 ;;
