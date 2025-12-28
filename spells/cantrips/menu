@@ -255,7 +255,7 @@ render_row() {
                 done
 
                 target_row=$((menu_row + row_index - 1))
-                if move-cursor "$menu_column" "$target_row"; then
+        if move-cursor "$menu_column" "$target_row"; then
                         printf '\033[K'
                         printf '%b  %s%s%b' "$THEME_DIVIDER" "$pad" "$line" "$RESET"
                         printf '\r'
