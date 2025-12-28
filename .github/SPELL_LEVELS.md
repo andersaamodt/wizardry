@@ -14,8 +14,8 @@ The spiral organization starts from the most fundamental prerequisites (Level 0)
 The `banish` spell integrates assumption-checking, self-healing, and testing:
 
 ```bash
-banish           # Banish to level 0 (default) - validate POSIX foundation
-banish 0         # Same as above
+banish           # Banish to level 1 (default) - validate wizardry installation
+banish 0         # Banish to level 0 only - validate POSIX foundation
 banish 1         # Banish through levels 0-1 (wizardry installed)
 banish 2         # Banish through levels 0-2 (menu ready)
 banish N         # Banish through levels 0-N (full system validated)
@@ -67,6 +67,7 @@ None (bootstrap level)
 - [ ] Wizardry globals properly set (*check-wizardry-globals, *set-wizardry-globals)
 
 ### Spells
+* install (special - bootstrap spell that must be run manually before wizardry is available)
 * banish
 
 ### Imps Introduced
