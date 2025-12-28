@@ -29,7 +29,7 @@ case "${1-}" in
 esac
 
 set -eu
-. env-clear
+env-clear
 
 # Helper for reading non-empty lines
 

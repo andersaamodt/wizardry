@@ -23,7 +23,7 @@ esac
 require-wizardry || return 1
 
 set -eu
-. env-clear
+env-clear
 
 if [ -z "${1-}" ]; then
   usage-error "hashchant" "file path required"

@@ -24,7 +24,7 @@ esac
 require-wizardry || return 1
 
 set -eu
-. env-clear
+env-clear
 
 # Validate arguments
 if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then

@@ -23,7 +23,7 @@ case "${1-}" in
 esac
 
 set -eu
-. env-clear
+env-clear
 
 if [ "$#" -lt 1 ]; then
     warn "unbind-tome: file path required."

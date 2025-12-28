@@ -22,7 +22,7 @@ case "${1-}" in
 esac
 
 set -eu
-. env-clear
+env-clear
 
 # Prompt user for player name
 printf '%s' "Enter a player name: "

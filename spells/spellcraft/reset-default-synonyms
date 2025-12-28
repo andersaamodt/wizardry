@@ -21,7 +21,7 @@ esac
 require-wizardry || return 1
 
 set -eu
-. env-clear
+env-clear
 
 reset_default_synonyms() {
   spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")

@@ -23,7 +23,7 @@ esac
 require-wizardry || return 1
 
 set -eu
-. env-clear
+env-clear
 
 if [ "$#" != 1 ]; then
     hash_usage >&2

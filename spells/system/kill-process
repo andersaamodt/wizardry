@@ -24,7 +24,7 @@ esac
 require-wizardry || return 1
 
 set -eu
-. env-clear
+env-clear
 
 # Present the process list so the user can choose what to terminate.
 say "List of running processes:"

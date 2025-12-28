@@ -24,7 +24,7 @@ esac
 require-wizardry || return 1
 
 set -eu
-. env-clear
+env-clear
 
 if [ "$#" -ne 3 ]; then
   ask_number_usage

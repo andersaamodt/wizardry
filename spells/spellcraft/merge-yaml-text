@@ -24,7 +24,7 @@ esac
 require-wizardry || return 1
 
 set -eu
-. env-clear
+env-clear
 
 # default directory is current directory unless given as a parameter
 dir="${1:-.}"

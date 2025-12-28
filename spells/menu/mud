@@ -22,7 +22,7 @@ case "${1-}" in
 esac
 
 set -eu
-. env-clear
+env-clear
 
 # Catch Ctrl-C and TERM signal to return 1 cleanly
 trap 'exit 0' INT TERM

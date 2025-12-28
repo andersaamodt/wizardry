@@ -23,7 +23,7 @@ case "${1-}" in
 esac
 
 set -eu
-. env-clear
+env-clear
 
 script_source=$0
 case $script_source in
