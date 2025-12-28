@@ -29,15 +29,22 @@ require-wizardry || return 1
 set -eu
 env-clear
 
-script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
-
-# Resolve the require-command helper
+# Resolve require-command location
+# Use command -v to find require-command when preloaded as a function
 if [ -n "${REQUIRE_COMMAND-}" ]; then
     require_cmd=$REQUIRE_COMMAND
-elif [ -x "$script_dir/require-command" ]; then
-    require_cmd="$script_dir/require-command"
-else
+elif command -v require-command >/dev/null 2>&1; then
     require_cmd=require-command
+elif command -v require_command >/dev/null 2>&1; then
+    require_cmd=require_command
+else
+    # Fallback to path-based resolution for direct execution
+    script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+    if [ -x "$script_dir/require-command" ]; then
+        require_cmd="$script_dir/require-command"
+    else
+        require_cmd=require-command
+    fi
 fi
 
 verbose=0

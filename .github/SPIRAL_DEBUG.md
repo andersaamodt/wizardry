@@ -172,6 +172,34 @@ After all features work:
   - Updated `invoke-wizardry`, menu, and tests to use `word_of_binding` (no leading underscore) and the new imp function names.
   - Hardened `has`/`require` to treat hyphenated command names as underscore function names when checking availability.
 
+### 2025-12-28: Fix menu navigation - preloaded spells cannot use $0
+
+- **Issue**: Menu was printing correctly but arrow keys did nothing and Enter just reprinted the menu.
+- **Root cause**: 
+  - When spells are preloaded as functions via `word_of_binding`, `$0` refers to the shell name (e.g., `zsh`), not the script path
+  - Several preloaded spells (`await-keypress`, `fathom-cursor`, `fathom-terminal`, `require-command`, `menu`) used `$0` for path resolution
+  - Path resolution failed, causing dependency lookups to fail
+  - `await-keypress` couldn't properly initialize, returned empty values to menu
+  - Menu loop continued with empty `$key`, slept 0.05s, and repeated (no navigation)
+- **Fix**:
+  - Changed all affected spells to use `command -v` for dependency resolution instead of `$0` path resolution
+  - Pattern matches what `require` imp already does successfully
+  - Works in both modes: direct execution and preloaded as function
+  - Delayed path computation in `require-command` until actually needed
+  - Optimized `menu` colors loading to avoid unnecessary `$0` usage when preloaded
+- **Files changed**:
+  - `spells/cantrips/await-keypress` - Fixed require-command resolution
+  - `spells/cantrips/fathom-cursor` - Fixed require-command resolution
+  - `spells/cantrips/fathom-terminal` - Fixed require-command resolution
+  - `spells/cantrips/menu` - Optimized colors loading
+  - `spells/cantrips/require-command` - Delayed $0 usage
+- **Testing**:
+  - Existing tests pass: `test-await-keypress.sh`, `test-fathom-cursor.sh`, `test-fathom-terminal.sh`
+  - invoke-wizardry successfully preloads all spells
+  - `menu --help` works correctly after preloading
+  - All dependency checks pass when preloaded
+- **Next**: User should test menu navigation in actual terminal to confirm arrow keys work
+
 ## Testing Strategy
 
 For each phase, we will:
