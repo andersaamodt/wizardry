@@ -47,15 +47,22 @@ case "$command_name" in
         ;;
 esac
 
-script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-
 install_spell=""
 # Use POSIX command -v instead of has imp (may not be loaded yet)
 if command -v "install-$command_name" >/dev/null 2>&1; then
     # where might not be available, use command -v with which fallback
     install_spell=$(command -v "install-$command_name")
-elif [ -x "$script_dir/../install/core/install-$command_name" ]; then
-    install_spell="$script_dir/../install/core/install-$command_name"
+else
+    # Only compute script_dir if needed for install spell lookup
+    script_dir=""
+    if [ "${_WIZARDRY_LOADING_SPELLS-}" != "1" ]; then
+        script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+    elif [ -n "${WIZARDRY_DIR-}" ]; then
+        script_dir="$WIZARDRY_DIR/spells/cantrips"
+    fi
+    if [ -n "$script_dir" ] && [ -x "$script_dir/../install/core/install-$command_name" ]; then
+        install_spell="$script_dir/../install/core/install-$command_name"
+    fi
 fi
 
 if [ -n "$install_spell" ]; then

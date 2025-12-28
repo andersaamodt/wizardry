@@ -30,8 +30,6 @@ require-wizardry || return 1
 set -eu
 env-clear
 
-script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
-
 # Prefer preloaded imp functions (underscore form) when available.
 menu_temp_file() {
         if command -v temp_file >/dev/null 2>&1; then
@@ -78,27 +76,36 @@ AWAIT_KEYPRESS_BUFFER_FILE=$await_keypress_buffer_file
 export AWAIT_KEYPRESS_BUFFER_FILE
 
 # Load colour helpers when present; otherwise fall back to plain text.
-if [ -r "$script_dir/colors" ]; then
-        # shellcheck disable=SC1090
-        . "$script_dir/colors"
-elif has colors; then
-        colors_path=$(command -v colors 2>/dev/null || printf '')
-        if [ -n "$colors_path" ] && [ -f "$colors_path" ]; then
+# Try to find colors in the same directory when executed directly
+if [ "${_WIZARDRY_LOADING_SPELLS-}" != "1" ]; then
+        script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+        if [ -r "$script_dir/colors" ]; then
                 # shellcheck disable=SC1090
-                . "$colors_path"
-        else
-                colors
+                . "$script_dir/colors"
         fi
-else
-        RESET=''
-        CYAN=''
-        GREY=''
-        WHITE=''
-        BOLD=''
-        THEME_HIGHLIGHT=''
-        THEME_MUTED=''
-        THEME_DIVIDER=''
-        THEME_HEADING=''
+fi
+
+# If not loaded from script_dir, try function or PATH
+if [ -z "${RESET-}" ]; then
+        if has colors; then
+                colors_path=$(command -v colors 2>/dev/null || printf '')
+                if [ -n "$colors_path" ] && [ -f "$colors_path" ]; then
+                        # shellcheck disable=SC1090
+                        . "$colors_path"
+                else
+                        colors
+                fi
+        else
+                RESET=''
+                CYAN=''
+                GREY=''
+                WHITE=''
+                BOLD=''
+                THEME_HIGHLIGHT=''
+                THEME_MUTED=''
+                THEME_DIVIDER=''
+                THEME_HEADING=''
+        fi
 fi
 
 # Check for --show-command flag (displays command as label instead of description)
