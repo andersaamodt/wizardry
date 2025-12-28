@@ -22,10 +22,10 @@ Arguments:
                         Level 3: Cantrips & navigation (user interaction, jump-to-marker, mark-location)
                         Level 4: System spells (config & testing)
                         Level 5: Divination (detection & analysis)
-                        Level 6: MUD features (fantasy theme)
-                        Level 7: Specialized (domain-specific)
-                        Level 8: Arcana (third-party integrations)
-                        Level 9: Services (system service management)
+                        Level 6: MUD features (advanced theme integration)
+                        Level 7: Specialized (crypto, ssh, priorities, spellcraft, etc.)
+                        Level 8: Menus (high-level spell aggregation interfaces)
+                        Level 9: Services & arcana (system services, third-party integrations)
 
 Options:
   --no-heal             Skip self-healing (only report issues)
