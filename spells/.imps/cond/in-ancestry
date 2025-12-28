@@ -1,0 +1,42 @@
+#!/bin/sh
+# in-ancestry COMMAND - test if command is running in process ancestry
+# Example: in-ancestry banish && echo "running inside banish"
+# Example: in-ancestry vim && echo "running inside vim"
+
+in_ancestry() {
+  search_cmd=${1-}
+  
+  # Require command argument
+  if [ -z "$search_cmd" ]; then
+    return 1
+  fi
+  
+  # Check if ps command is available
+  if ! command -v ps >/dev/null 2>&1; then
+    # Without ps, we can't detect, so assume not in ancestry
+    return 1
+  fi
+  
+  # Walk up the process tree checking each ancestor
+  pid=$$
+  while [ "$pid" -gt 1 ]; do
+    # Get parent PID
+    ppid=$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ')
+    [ -z "$ppid" ] && break
+    [ "$ppid" = "$pid" ] && break
+    [ "$ppid" -le 1 ] && break
+    
+    # Check if parent process matches the search command
+    if ps -o comm= -p "$ppid" 2>/dev/null | grep -q "$search_cmd"; then
+      return 0
+    fi
+    
+    pid=$ppid
+  done
+  
+  return 1
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */in-ancestry) in_ancestry "$@" ;; esac
