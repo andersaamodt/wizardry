@@ -154,49 +154,19 @@ banish_error() {
   printf 'Error: %s\n' "$*" >&2
 }
 
-# Level spell definitions - declarative data structure
-# Format: "spell:dir spell2:dir2 spell3" (if no :dir, assumes cantrips)
-get_level_spells() {
-  case "$1" in
-    0) printf 'detect-posix:divination detect-distro:divination verify-posix:system' ;;
-    1) printf 'banish:system' ;;
-    2) printf 'menu fathom-terminal fathom-cursor move-cursor await-keypress cursor-blink colors main-menu:menu' ;;
-    3) printf 'check-cd-hook:mud look:mud' ;;
-    4) printf 'jump-to-marker:translocation mark-location:translocation' ;;
-    5) printf 'copy:arcane trash:arcane jump-trash:arcane forall:arcane read-magic:arcane file-list:arcane' ;;
-    6) printf 'ask ask-yn ask-text list-files max-length move up' ;;
-    7) printf 'validate-number validate-path require-command' ;;
-    8) printf 'ask-number memorize' ;;
-    9) printf 'config:system logs:system package-managers:system' ;;
-    10) printf 'test-spell:system test-magic:system logging-example wizard-eyes' ;;
-    11) printf 'update-wizardry:system update-all:system kill-process:system' ;;
-    12) printf 'demo-magic:system verify-posix:system wizard-cast' ;;
-    13) printf 'detect-rc-file:divination detect-magic:divination identify-room:divination' ;;
-    14) printf 'decorate:mud select-player:mud check-command-not-found-hook:mud' ;;
-    15) printf 'hash:crypto evoke-hash:crypto hashchant:crypto' ;;
-    16) printf 'validate-ssh-key enchant-portkey:translocation follow-portkey:translocation open-portal:translocation open-teletype:translocation reload-ssh restart-ssh' ;;
-    17) printf 'get-priority:priorities get-new-priority:priorities prioritize:priorities upvote:priorities' ;;
-    18) printf 'ssh-barrier:wards' ;;
-    19) printf 'enchant:enchant disenchant:enchant enchantment-to-yaml:enchant yaml-to-enchantment:enchant' ;;
-    20) printf 'list-contacts:psi read-contact:psi' ;;
-    21) printf 'scribe-spell:spellcraft lint-magic:spellcraft compile-spell:spellcraft learn:spellcraft forget:spellcraft erase-spell:spellcraft doppelganger:spellcraft add-synonym:spellcraft edit-synonym:spellcraft delete-synonym:spellcraft reset-default-synonyms:spellcraft bind-tome:spellcraft unbind-tome:spellcraft merge-yaml-text:spellcraft' ;;
-    22) printf 'spellbook-store spellbook:menu cast:menu spell-menu:menu' ;;
-    23) printf 'system-menu:menu install-menu:menu synonym-menu:menu thesaurus:menu' ;;
-    24) printf 'mud:menu mud-menu:menu mud-settings:menu mud-admin-menu:menu add-ssh-player:menu/mud-admin new-player:menu/mud-admin set-player:menu/mud-admin' ;;
-    25) printf 'network-menu:menu services-menu:menu shutdown-menu:menu priority-menu:menu priorities:menu users-menu:menu profile-tests:menu/system' ;;
-    26) printf 'install-service-template is-service-installed enable-service disable-service start-service stop-service restart-service service-status remove-service' ;;
-    27) printf '' ;; # Level 27 is special - arcana directory
-    *) printf '' ;;
-  esac
-}
-
-# Level imp definitions (Level 1 only)
-get_level_imps() {
-  case "$1" in
-    1) printf 'sys/invoke-wizardry sys/require-wizardry sys/require sys/castable sys/env-clear sys/on-exit sys/clear-traps cond/has cond/there cond/is cond/empty cond/nonempty out/say out/warn out/die out/fail out/info out/step out/success out/debug fs/temp-file fs/temp-dir fs/cleanup-file fs/cleanup-dir input/tty-save input/tty-restore input/tty-raw input/read-line str/contains str/trim str/equals str/starts str/ends paths/here paths/parent paths/file-name paths/abs-path' ;;
-    *) printf '' ;;
-  esac
-}
+# Source shared spell level definitions
+# This file is shared by banish, test-magic, and demo-magic
+_banish_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+if [ -f "$_banish_dir/spell-levels" ]; then
+  . "$_banish_dir/spell-levels"
+elif [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/system/spell-levels" ]; then
+  . "${WIZARDRY_DIR}/spells/system/spell-levels"
+else
+  # Fallback: define inline if spell-levels not found
+  get_level_spells() { printf '' ; }
+  get_level_imps() { printf '' ; }
+  banish_level_name() { printf 'Unknown' ; }
+fi
 
 # Generic spell checking function with consistent formatting
 # Usage: banish_check_spells "spell1:dir1 spell2:dir2 spell3" "default_dir"
@@ -270,40 +240,6 @@ banish_validate_level_spells() {
   return 0
 }
 
-# Get level name for display
-banish_level_name() {
-  case "$1" in
-    0) printf 'POSIX & Platform Foundation' ;;
-    1) printf 'Wizardry Installation' ;;
-    2) printf 'Menu System' ;;
-    3) printf 'MUD Basics' ;;
-    4) printf 'Navigation' ;;
-    5) printf 'Arcane File Operations' ;;
-    6) printf 'Basic Cantrips' ;;
-    7) printf 'Validation Helpers' ;;
-    8) printf 'Advanced Cantrips' ;;
-    9) printf 'System Configuration' ;;
-    10) printf 'Testing Infrastructure' ;;
-    11) printf 'System Maintenance' ;;
-    12) printf 'Advanced System Tools' ;;
-    13) printf 'Divination' ;;
-    14) printf 'Advanced MUD Features' ;;
-    15) printf 'Cryptography' ;;
-    16) printf 'SSH & Remote Access' ;;
-    17) printf 'Task Priorities' ;;
-    18) printf 'Security Wards' ;;
-    19) printf 'Extended Attributes' ;;
-    20) printf 'Process & System Info (PSI)' ;;
-    21) printf 'Spellcraft Development Tools' ;;
-    22) printf 'Core Menu Infrastructure' ;;
-    23) printf 'System & Configuration Menus' ;;
-    24) printf 'MUD Administration Menus' ;;
-    25) printf 'Domain-Specific Menus' ;;
-    26) printf 'System Service Management' ;;
-    27) printf 'Optional Arcana & Third-Party Integrations' ;;
-    *) printf 'Unknown' ;;
-  esac
-}
 
 # Run level-specific checks and actions
 banish_level() {
@@ -755,11 +691,6 @@ banish_level_1() {
   # Validate spells and imps using generic function
   banish_validate_level_spells 1 || return 1
   
-  # Run tests if not skipped
-  if [ "$skip_tests" -eq 0 ]; then
-    banish_run_tests_for_level 1
-  fi
-  
   banish_info "Level 1 complete"
 }
 
@@ -789,11 +720,6 @@ banish_level_2() {
     banish_check "stty available"
   fi
   
-  # Run tests if not skipped
-  if [ "$skip_tests" -eq 0 ]; then
-    banish_run_tests_for_level 2
-  fi
-  
   banish_info "Level 2 complete"
 }
 
@@ -802,168 +728,144 @@ banish_level_2() {
 banish_level_3() {
   banish_info "Checking Level 3: MUD Basics..."
   banish_validate_level_spells 3
-  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 3
   banish_info "Level 3 complete"
 }
 
 banish_level_4() {
   banish_info "Checking Level 4: Navigation..."
   banish_validate_level_spells 4
-  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 4
   banish_info "Level 4 complete"
 }
 
 banish_level_5() {
   banish_info "Checking Level 5: Arcane File Operations..."
   banish_validate_level_spells 5
-  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 5
   banish_info "Level 5 complete"
 }
 
 banish_level_6() {
   banish_info "Checking Level 6: Basic Cantrips..."
   banish_validate_level_spells 6
-  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 6
   banish_info "Level 6 complete"
 }
 
 banish_level_7() {
   banish_info "Checking Level 7: Validation Helpers..."
   banish_validate_level_spells 7
-  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 7
   banish_info "Level 7 complete"
 }
 
 banish_level_8() {
   banish_info "Checking Level 8: Advanced Cantrips..."
   banish_validate_level_spells 8
-  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 8
   banish_info "Level 8 complete"
 }
 
 banish_level_9() {
   banish_info "Checking Level 9: System Configuration..."
   banish_validate_level_spells 9
-  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 9
   banish_info "Level 9 complete"
 }
 
 banish_level_10() {
   banish_info "Checking Level 10: Testing Infrastructure..."
   banish_validate_level_spells 10
-  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 10
   banish_info "Level 10 complete"
 }
 
 banish_level_11() {
   banish_info "Checking Level 11: System Maintenance..."
   banish_validate_level_spells 11
-  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 11
   banish_info "Level 11 complete"
 }
 
 banish_level_12() {
   banish_info "Checking Level 12: Advanced System Tools..."
   banish_validate_level_spells 12
-  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 12
   banish_info "Level 12 complete"
 }
 
 banish_level_13() {
   banish_info "Checking Level 13: Divination..."
   banish_validate_level_spells 13
-  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 13
   banish_info "Level 13 complete"
 }
 
 banish_level_14() {
   banish_info "Checking Level 14: Advanced MUD Features..."
   banish_validate_level_spells 14
-  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 14
   banish_info "Level 14 complete"
 }
 
 banish_level_15() {
   banish_info "Checking Level 15: Cryptography..."
   banish_validate_level_spells 15
-  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 15
   banish_info "Level 15 complete"
 }
 
 banish_level_16() {
   banish_info "Checking Level 16: SSH & Remote Access..."
   banish_validate_level_spells 16
-  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 16
   banish_info "Level 16 complete"
 }
 
 banish_level_17() {
   banish_info "Checking Level 17: Task Priorities..."
   banish_validate_level_spells 17
-  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 17
   banish_info "Level 17 complete"
 }
 
 banish_level_18() {
   banish_info "Checking Level 18: Security Wards..."
   banish_validate_level_spells 18
-  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 18
   banish_info "Level 18 complete"
 }
 
 banish_level_19() {
   banish_info "Checking Level 19: Extended Attributes..."
   banish_validate_level_spells 19
-  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 19
   banish_info "Level 19 complete"
 }
 
 banish_level_20() {
   banish_info "Checking Level 20: Process & System Info (PSI)..."
   banish_validate_level_spells 20
-  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 20
   banish_info "Level 20 complete"
 }
 
 banish_level_21() {
   banish_info "Checking Level 21: Spellcraft Development Tools..."
   banish_validate_level_spells 21
-  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 21
   banish_info "Level 21 complete"
 }
 
 banish_level_22() {
   banish_info "Checking Level 22: Core Menu Infrastructure..."
   banish_validate_level_spells 22
-  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 22
   banish_info "Level 22 complete"
 }
 
 banish_level_23() {
   banish_info "Checking Level 23: System & Configuration Menus..."
   banish_validate_level_spells 23
-  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 23
   banish_info "Level 23 complete"
 }
 
 banish_level_24() {
   banish_info "Checking Level 24: MUD Administration Menus..."
   banish_validate_level_spells 24
-  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 24
   banish_info "Level 24 complete"
 }
 
 banish_level_25() {
   banish_info "Checking Level 25: Domain-Specific Menus..."
   banish_validate_level_spells 25
-  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 25
   banish_info "Level 25 complete"
 }
 
 banish_level_26() {
   banish_info "Checking Level 26: System Service Management..."
   banish_validate_level_spells 26
-  [ "$skip_tests" -eq 0 ] && banish_run_tests_for_level 26
   banish_info "Level 26 complete"
 }
 
@@ -979,117 +881,7 @@ banish_level_27() {
     banish_info "Arcana directory not found (optional)"
   fi
   
-  # Run tests if not skipped (most arcana don't have tests)
-  if [ "$skip_tests" -eq 0 ]; then
-    banish_run_tests_for_level 27
-  fi
-  
   banish_info "Level 27 complete"
-}
-
-# Run tests for a specific level
-banish_run_tests_for_level() {
-  level=$1
-  level_name=$(banish_level_name "$level")
-  
-  # Check if test-spell exists
-  if [ ! -x "${WIZARDRY_DIR}/spells/system/test-spell" ]; then
-    banish_warn "test-spell not found, skipping tests"
-    return 0
-  fi
-  
-  
-  banish_info "Running tests for Level $level ($level_name)..."
-  
-  # Determine which tests to run based on level
-  test_pattern=""
-  case "$level" in
-    0)
-      # Level 0 uses detect-posix and detect-distro tests
-      test_pattern="divination/test-detect-posix.sh divination/test-detect-distro.sh"
-      ;;
-    1)
-      # Level 1: Wizardry installation - test banish itself
-      test_pattern="system/test-banish.sh"
-      ;;
-    2)
-      # Level 2: Menu system
-      test_pattern="cantrips/test-menu.sh cantrips/test-await-keypress.sh cantrips/test-fathom-cursor.sh cantrips/test-fathom-terminal.sh"
-      ;;
-    3)
-      # Level 3: MUD basics
-      test_pattern="mud/test-check-cd-hook.sh mud/test-look.sh"
-      ;;
-    4)
-      # Level 4: Navigation
-      test_pattern="translocation/test-*.sh"
-      ;;
-    5)
-      # Level 5: Arcane file operations
-      test_pattern="arcane/test-*.sh"
-      ;;
-    6)
-      # Level 6: Basic cantrips
-      test_pattern="cantrips/test-ask.sh cantrips/test-ask-yn.sh cantrips/test-ask-text.sh cantrips/test-list-files.sh"
-      ;;
-    7)
-      # Level 7: Validation helpers
-      test_pattern="cantrips/test-validate-*.sh cantrips/test-require-command.sh"
-      ;;
-    8)
-      # Level 8: Advanced cantrips
-      test_pattern="cantrips/test-ask-number.sh cantrips/test-memorize.sh"
-      ;;
-    9)
-      # Level 9: System configuration
-      test_pattern="system/test-config.sh system/test-logs.sh"
-      ;;
-    10)
-      # Level 10: Testing infrastructure
-      test_pattern="system/test-test-spell.sh system/test-test-magic.sh"
-      ;;
-    11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27)
-      # Higher levels - no specific test patterns defined yet
-      banish_info "No standard tests defined for Level $level"
-      return 0
-      ;;
-    *)
-      banish_warn "Unknown test pattern for level $level"
-      return 0
-      ;;
-  esac
-  
-  # Run the tests
-  passed=0
-  failed=0
-  if [ -n "$test_pattern" ]; then
-    for pattern in $test_pattern; do
-      # Expand pattern
-      for test_file in "${WIZARDRY_DIR}/.tests/$pattern"; do
-        if [ -f "$test_file" ]; then
-          test_name=$(basename "$test_file")
-          banish_step "Running $test_name..."
-          if "${WIZARDRY_DIR}/spells/system/test-spell" --skip-common "${test_file#${WIZARDRY_DIR}/.tests/}" </dev/null >/dev/null 2>&1; then
-            passed=$((passed + 1))
-            banish_check "$test_name passed"
-          else
-            failed=$((failed + 1))
-            banish_warn "$test_name failed"
-          fi
-        fi
-      done
-    done
-  fi
-  
-  # Show summary
-  total=$((passed + failed))
-  if [ "$total" -gt 0 ]; then
-    if [ "$failed" -eq 0 ]; then
-      banish_info "All $passed tests passed"
-    else
-      banish_warn "$failed of $total tests failed"
-    fi
-  fi
 }
 
 # Main execution: Run levels 0 through target_level (or only target_level if --only)
