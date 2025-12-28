@@ -80,7 +80,7 @@ word_of_binding() {
   fi
 
   # Determine true-name based on module name.
-  # Spells and imps now share the same naming scheme:
+  # Spells and imps share the same naming scheme:
   #   clip-copy -> clip_copy
   _wob_true_name=$(printf '%s\n' "$_wob_name" | sed 's/-/_/g')
 
@@ -160,7 +160,11 @@ function brace_delta(s, n, m) {
     fi
     case "$_wob_name" in
       *-*)
-        alias "${_wob_name}=${_wob_true_name}" 2>/dev/null || :
+        # Provide a hyphenated wrapper function when the shell permits it.
+        # This avoids alias-based dispatch while keeping user-facing names.
+        if ! eval "${_wob_name}() { ${_wob_true_name} \"\$@\"; }" 2>/dev/null; then
+          :
+        fi
         ;;
     esac
     if [ "$_wob_run" -ne 1 ]; then

@@ -1007,7 +1007,7 @@ test_no_function_name_collisions() {
 
 # --- Check: Spells and imps have true name functions ---
 # All spells and imps should have a true name function that matches the filename
-# For imps: _underscore_name (e.g., clip-copy -> clip_copy)
+# For imps: underscore_name (e.g., clip-copy -> clip_copy)
 # For spells: snake_case name (e.g., lint-magic -> lint_magic)
 # This enables word-of-binding to source and call them efficiently
 # This is a NON-FAILING check - warnings only for visibility
@@ -1029,11 +1029,6 @@ test_spells_have_true_name_functions() {
     # For hyphenated names: clip-copy -> clip_copy
     true_name=$(printf '%s' "$name" | sed 's/-/_/g')
     
-    # For imps, add underscore prefix
-    if [ "$is_imp" -eq 1 ]; then
-      true_name="_$true_name"
-    fi
-    
     # Check if the true name function exists
     if ! grep -qE "^[[:space:]]*${true_name}[[:space:]]*\(\)" "$spell" 2>/dev/null; then
       rel_path=${spell#"$ROOT_DIR/spells/"}
@@ -1054,6 +1049,40 @@ test_spells_have_true_name_functions() {
   fi
   
   # Always return success (non-failing check)
+  return 0
+}
+
+# --- Check: True name functions do not use leading underscores (FAILING TEST) ---
+# True names should match filename with hyphens converted to underscores, without
+# any leading underscore prefix. This enforces the standardized naming scheme
+# for both spells and imps.
+
+test_true_names_have_no_leading_underscore() {
+  violations=""
+
+  check_true_name_prefix() {
+    spell=$1
+    name=$(basename "$spell")
+    rel_path=${spell#"$ROOT_DIR/spells/"}
+    true_name=$(printf '%s' "$name" | sed 's/-/_/g')
+    leading_name="_$true_name"
+
+    if grep -qE "^[[:space:]]*${leading_name}[[:space:]]*\(\)" "$spell" 2>/dev/null; then
+      printf '%s (uses %s)\n' "$rel_path" "$leading_name"
+    fi
+  }
+
+  tmpfile="${WIZARDRY_TMPDIR}/leading-underscore-true-names.txt"
+  : > "$tmpfile"
+  for_each_posix_spell check_true_name_prefix > "$tmpfile"
+
+  violations=$(cat "$tmpfile" 2>/dev/null | head -30 | tr '\n' ', ' | sed 's/, $//')
+  rm -f "$tmpfile"
+
+  if [ -n "$violations" ]; then
+    TEST_FAILURE_REASON="true name functions must not use leading underscores: $violations"
+    return 1
+  fi
   return 0
 }
 
@@ -1811,6 +1840,7 @@ run_test_case "bootstrap spells have identifying comment" test_bootstrap_spells_
 run_test_case "spells follow function discipline" test_spells_follow_function_discipline
 run_test_case "no function name collisions" test_no_function_name_collisions
 run_test_case "spells have true name functions" test_spells_have_true_name_functions
+run_test_case "true names do not use leading underscores" test_true_names_have_no_leading_underscore
 run_test_case "spells require wrapper functions" test_spells_require_wrapper_functions
 run_test_case "spells have limited flags" test_spells_have_limited_flags
 run_test_case "spells have limited positional arguments" test_spells_have_limited_positional_args
