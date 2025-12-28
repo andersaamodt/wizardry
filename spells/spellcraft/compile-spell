@@ -33,7 +33,7 @@ esac
 if command -v _require_wizardry >/dev/null 2>&1; then
   _require_wizardry || exit 1
 elif command -v require-wizardry >/dev/null 2>&1; then
-  require-wizardry || exit 1
+  require-wizardry || return 1
 else
   # Neither available - source it now
   if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/require-wizardry" ]; then
@@ -198,9 +198,9 @@ $func_def
     inlined_names="$inlined_names $dep"
   else
     # It's a spell without _funcname() pattern - inline entire spell as function
-    # Remove shebang, *_usage, --help handler, require-wizardry, and set -eu
+    # Remove shebang, *_usage, --help handler, require-wizardry, set -eu, and loading patterns
     spell_body=$(printf '%s\n' "$dep_content" | awk '
-      BEGIN { skip=0; in_usage=0 }
+      BEGIN { skip=0; in_usage=0; skip_loading=0 }
       /^#!/ { next }
       /^[a-zA-Z_][a-zA-Z0-9_]*_usage\(\)/ { in_usage=1; next }
       in_usage && /^}$/ { in_usage=0; next }
@@ -210,6 +210,9 @@ $func_def
       skip { next }
       /^set -eu$/ { next }
       /^require-wizardry/ { next }
+      /^# Load (castable|autocast|uncastable) imp/ { skip_loading=1; next }
+      skip_loading && /^(castable|autocast|uncastable) / { skip_loading=0; next }
+      skip_loading { next }
       { print }
     ')
     
@@ -246,6 +249,7 @@ done
 # Transform spell content:
 # 1. Remove shebang, require-wizardry, and wizardry infrastructure sourcing
 # 2. Replace imp calls with underscore versions (e.g., say -> _say, clip-copy -> _clip_copy)
+# 3. Replace castable/autocast/uncastable loading patterns with direct function calls
 # Remove lines that source wizardry infrastructure (env-clear, invoke-wizardry)
 # These don't make sense in standalone compiled spells
 transformed=$(printf '%s\n' "$spell_content" | \
@@ -254,7 +258,41 @@ transformed=$(printf '%s\n' "$spell_content" | \
   grep -vE '^[[:space:]]*\. env-clear([[:space:]]|$)' | \
   grep -vE '^[[:space:]]*source env-clear([[:space:]]|$)' | \
   grep -vE '^[[:space:]]*\. .*invoke-wizardry' | \
-  grep -vE '^[[:space:]]*source .*invoke-wizardry')
+  grep -vE '^[[:space:]]*source .*invoke-wizardry' | \
+  awk -v spell="$spell_basename" '
+    # Skip loading pattern sections but remember what to call
+    /^# Load (castable|autocast|uncastable) imp/ { 
+      skip=1
+      # Extract which type (castable/autocast/uncastable)
+      if (/castable/) { pattern_type="castable" }
+      else if (/autocast/) { pattern_type="autocast" }
+      else if (/uncastable/) { pattern_type="uncastable" }
+      next
+    }
+    skip && /^(castable|autocast|uncastable) / {
+      skip=0
+      # For castable/uncastable: replace with direct function call
+      # For autocast: replace with direct function call (spell name with underscores)
+      if (pattern_type == "autocast") {
+        # autocast spells call the spell_name function directly
+        func_name = spell
+        gsub(/-/, "_", func_name)
+        print "# Compiled spell - autocast declaration (inlined)"
+        print "autocast() { :; }  # Stub - spell already executed via function call below"
+        print func_name
+      } else {
+        # castable/uncastable spells call spell_name "$@"
+        func_name = spell
+        gsub(/-/, "_", func_name)
+        print "# Compiled spell - " pattern_type " declaration (inlined)"
+        print pattern_type "() { :; }  # Stub - spell executed via direct function call below"
+        print func_name " \"$@\""
+      }
+      next
+    }
+    skip { next }
+    { print }
+  ')
 
 # For each inlined imp, replace calls in the spell
 # Note: func_name comes from sanitized internal processing (tr '-' '_')
@@ -375,6 +413,36 @@ fi
 printf '%s\n' "$transformed"
 }
 
-# Self-execute when run directly (not sourced)
+
+# Load castable imp for direct execution (AFTER all functions defined)
+# When executed directly: always source to ensure castable sees correct $0
+# When sourced (testing): use from PATH if available to avoid forks
 case "$0" in
-  */compile-spell) compile_spell "$@" ;; esac
+  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
+    # Being sourced - use from PATH if available
+    if ! command -v castable >/dev/null 2>&1; then
+      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
+      if [ -n "${WIZARDRY_DIR-}" ]; then
+        _i="$WIZARDRY_DIR/spells/.imps/sys"
+      elif [ -n "${ROOT_DIR-}" ]; then
+        _i="$ROOT_DIR/spells/.imps/sys"
+      else
+        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
+      fi
+      [ -f "$_i/castable" ] && . "$_i/castable"
+    fi
+    ;;
+  *)
+    # Being executed - always source to ensure correct $0 detection
+    if [ -n "${WIZARDRY_DIR-}" ]; then
+      _i="$WIZARDRY_DIR/spells/.imps/sys"
+    elif [ -n "${ROOT_DIR-}" ]; then
+      _i="$ROOT_DIR/spells/.imps/sys"
+    else
+      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
+    fi
+    [ -f "$_i/castable" ] && . "$_i/castable"
+    ;;
+esac
+
+castable "$@"

@@ -48,4 +48,5 @@ SH
 
 _run_test_case "network-menu fails without menu dependency" test_fails_without_menu_dependency
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

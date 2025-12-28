@@ -11,14 +11,19 @@ then restarts Tor if the service is available.
 USAGE
 }
 
+configure_tor() {
 case "${1-}" in
 --help|--usage|-h)
         configure_tor_usage
-        exit 0
+        return 0
         ;;
 esac
 
+require-wizardry || return 1
+
+
 set -eu
+. env-clear
 
 torrc_path=$(torrc-path)
 
@@ -61,7 +66,7 @@ case "$control_reply" in
 esac
 
 # Rewrite torrc
-tmp=$(temp-file configure-tor) || exit 1
+tmp=$(temp-file configure-tor) || return 1
 trap 'cleanup-file "$tmp"' EXIT HUP INT TERM
 awk -v socks="$socks_port" -v enable_control="$enable_control" -v control="$control_port" '
   BEGIN {added_socks=0; added_control=0; added_cookie=0}
@@ -103,3 +108,38 @@ if [ "$has_systemctl" = "yes" ]; then
     esac
   fi
 fi
+
+}
+
+# Load castable imp for direct execution (AFTER all functions defined)
+# When executed directly: always source to ensure castable sees correct $0
+# When sourced (testing): use from PATH if available to avoid forks
+case "$0" in
+  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
+    # Being sourced - use from PATH if available
+    if ! command -v castable >/dev/null 2>&1; then
+      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
+      if [ -n "${WIZARDRY_DIR-}" ]; then
+        _i="$WIZARDRY_DIR/spells/.imps/sys"
+      elif [ -n "${ROOT_DIR-}" ]; then
+        _i="$ROOT_DIR/spells/.imps/sys"
+      else
+        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*/*}}}/spells/.imps/sys"
+      fi
+      [ -f "$_i/castable" ] && . "$_i/castable"
+    fi
+    ;;
+  *)
+    # Being executed - always source to ensure correct $0 detection
+    if [ -n "${WIZARDRY_DIR-}" ]; then
+      _i="$WIZARDRY_DIR/spells/.imps/sys"
+    elif [ -n "${ROOT_DIR-}" ]; then
+      _i="$ROOT_DIR/spells/.imps/sys"
+    else
+      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*/*}}}/spells/.imps/sys"
+    fi
+    [ -f "$_i/castable" ] && . "$_i/castable"
+    ;;
+esac
+
+castable "$@"

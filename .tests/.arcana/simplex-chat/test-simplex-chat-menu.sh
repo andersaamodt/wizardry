@@ -45,7 +45,7 @@ echo "not installed"
 SHI
   chmod +x "$tmp/simplex-chat-status"
   MENU_LOG="$tmp/menu.log"
-  _run_cmd env PATH="$WIZARDRY_IMPS_PATH:$tmp:$ROOT_DIR/spells/cantrips" MENU_LOG="$MENU_LOG" \
+  _run_cmd env PATH="$WIZARDRY_SYSTEM_PATH:$WIZARDRY_IMPS_PATH:$tmp:$ROOT_DIR/spells/cantrips" MENU_LOG="$MENU_LOG" \
     "$ROOT_DIR/spells/.arcana/simplex-chat/simplex-chat-menu"
   _assert_success || return 1
   entries=$(tail -n +2 "$MENU_LOG")
@@ -80,7 +80,7 @@ SHI
   chmod +x "$tmp/simplex-chat"
 
   MENU_LOG="$tmp/menu.log"
-  _run_cmd env PATH="$WIZARDRY_IMPS_PATH:$tmp:$ROOT_DIR/spells/cantrips" MENU_LOG="$MENU_LOG" \
+  _run_cmd env PATH="$WIZARDRY_SYSTEM_PATH:$WIZARDRY_IMPS_PATH:$tmp:$ROOT_DIR/spells/cantrips" MENU_LOG="$MENU_LOG" \
     "$ROOT_DIR/spells/.arcana/simplex-chat/simplex-chat-menu"
 
   _assert_success || return 1

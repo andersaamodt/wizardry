@@ -36,4 +36,5 @@ _run_test_case "wizard-cast shows usage text" test_help
 _run_test_case "wizard-cast requires command argument" test_requires_argument
 _run_test_case "wizard-cast executes the command" test_executes_command
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

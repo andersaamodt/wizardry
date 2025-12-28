@@ -115,4 +115,5 @@ _run_test_case "yaml-to-enchantment requires YAML header" test_requires_header
 _run_test_case "yaml-to-enchantment restores attributes and strips header" test_restores_attributes_and_strips_header
 _run_test_case "yaml-to-enchantment reports missing helpers" test_reports_missing_helpers
 _run_test_case "yaml-to-enchantment fails when helper errors" test_fails_on_attribute_error
-_finish_tests
+
+# Test via source-then-invoke pattern  

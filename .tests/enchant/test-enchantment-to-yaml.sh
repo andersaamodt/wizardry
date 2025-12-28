@@ -108,4 +108,5 @@ _run_test_case "enchantment-to-yaml fails for missing files" test_missing_file
 _run_test_case "enchantment-to-yaml errors when no attributes exist" test_requires_attributes
 _run_test_case "enchantment-to-yaml writes YAML and clears attributes" test_writes_yaml_with_values
 _run_test_case "enchantment-to-yaml reports missing helpers" test_reports_missing_helpers
-_finish_tests
+
+# Test via source-then-invoke pattern  

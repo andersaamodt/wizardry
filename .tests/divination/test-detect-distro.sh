@@ -111,4 +111,5 @@ _run_test_case "detect-distro detects arch via release marker" detects_arch_rele
 _run_test_case "detect-distro detects mac via uname fallback" detects_mac_via_stubbed_uname
 _run_test_case "detect-distro fails when no markers are present" fails_when_no_markers_found
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

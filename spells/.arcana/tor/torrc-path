@@ -11,15 +11,20 @@ Prints the path to the active torrc configuration if one exists, or the standard
 USAGE
 }
 
+torrc_path() {
 case "${1-}" in
 --help|--usage|-h)
         torrc_path_usage
-        exit 0
+        return 0
         ;;
 esac
 
+require-wizardry || return 1
+
+
 
 set -eu
+. env-clear
 platform=$(detect-distro 2>/dev/null || printf 'unknown')
 TORRC_PATHS=""
 
@@ -43,7 +48,7 @@ case $platform in
         ;;
       *)
         printf '%s\n' "Unsupported platform: $platform" >&2
-        exit 1
+        return 1
         ;;
     esac
     ;;
@@ -53,9 +58,43 @@ esac
 for torrc_path in $TORRC_PATHS; do
   if [ -f "$torrc_path" ]; then
     printf '%s\n' "$torrc_path"
-    exit 0
+    return 0
   fi
 done
 
 # If no torrc file is found, output the first standard path for the current platform
 printf '%s\n' "$(printf '%s' "$TORRC_PATHS" | cut -d' ' -f1)"
+}
+
+# Load castable imp for direct execution (AFTER all functions defined)
+# When executed directly: always source to ensure castable sees correct $0
+# When sourced (testing): use from PATH if available to avoid forks
+case "$0" in
+  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
+    # Being sourced - use from PATH if available
+    if ! command -v castable >/dev/null 2>&1; then
+      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
+      if [ -n "${WIZARDRY_DIR-}" ]; then
+        _i="$WIZARDRY_DIR/spells/.imps/sys"
+      elif [ -n "${ROOT_DIR-}" ]; then
+        _i="$ROOT_DIR/spells/.imps/sys"
+      else
+        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*/*}}}/spells/.imps/sys"
+      fi
+      [ -f "$_i/castable" ] && . "$_i/castable"
+    fi
+    ;;
+  *)
+    # Being executed - always source to ensure correct $0 detection
+    if [ -n "${WIZARDRY_DIR-}" ]; then
+      _i="$WIZARDRY_DIR/spells/.imps/sys"
+    elif [ -n "${ROOT_DIR-}" ]; then
+      _i="$ROOT_DIR/spells/.imps/sys"
+    else
+      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*/*}}}/spells/.imps/sys"
+    fi
+    [ -f "$_i/castable" ] && . "$_i/castable"
+    ;;
+esac
+
+castable "$@"

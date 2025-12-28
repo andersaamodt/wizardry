@@ -63,4 +63,5 @@ _run_test_case "profile-tests shows time distribution" test_shows_time_distribut
 _run_test_case "profile-tests shows slowest tests" test_shows_slowest_tests
 _run_test_case "profile-tests handles no pattern match" test_handles_no_pattern_match
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

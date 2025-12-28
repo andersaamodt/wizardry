@@ -230,4 +230,5 @@ _run_test_case "detect-rc-file prefers home-manager over system config" test_nix
 _run_test_case "detect-rc-file uses system config without home-manager" test_nixos_uses_system_config_without_home_manager
 _run_test_case "detect-rc-file prefers zsh files over bashrc on Mac" test_mac_prefers_zsh_over_bashrc
 _run_test_case "detect-rc-file uses existing zshrc over bashrc on Mac" test_mac_uses_existing_zshrc_over_bashrc
-_finish_tests
+
+# Test via source-then-invoke pattern  

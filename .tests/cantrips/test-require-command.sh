@@ -189,4 +189,5 @@ _run_test_case "require-command: no 'warn: command not found' error" test_requir
 _run_test_case "menu is available immediately after install" test_menu_after_install
 _run_test_case "shell startup doesn't hang" test_shell_startup_no_hang
 
-_finish_tests
+
+# Test via source-then-invoke pattern  

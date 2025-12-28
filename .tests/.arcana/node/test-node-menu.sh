@@ -28,6 +28,9 @@ SHI
 menu_shows_install_when_node_missing() {
   skip-if-compiled || return $?
   tmp=$(_make_tempdir)
+  # Link essential utilities but NOT node
+  _link_tools "$tmp" sh cat printf test env basename dirname pwd tr
+  
   make_stub_menu "$tmp"
   cat >"$tmp/exit-label" <<'SHI'
 #!/bin/sh
@@ -43,7 +46,7 @@ SHI
 
   MENU_LOG="$tmp/menu.log"
 
-  _run_cmd env PATH="$WIZARDRY_IMPS_PATH:$tmp:$ROOT_DIR/spells/cantrips" MENU_LOG="$MENU_LOG" \
+  _run_cmd env PATH="$tmp:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips" MENU_LOG="$MENU_LOG" \
     "$ROOT_DIR/spells/.arcana/node/node-menu"
 
   _assert_success || return 1
@@ -64,6 +67,9 @@ _run_test_case "node-menu shows install flow when Node.js is absent" menu_shows_
 menu_places_uninstall_before_exit_when_installed() {
   skip-if-compiled || return $?
   tmp=$(_make_tempdir)
+  # Link essential utilities
+  _link_tools "$tmp" sh cat printf test env basename dirname pwd tr
+  
   make_stub_menu "$tmp"
 
   cat >"$tmp/exit-label" <<'SHI'
@@ -124,7 +130,7 @@ SHI
   chmod +x "$tmp/is-service-running"
 
   MENU_LOG="$tmp/menu.log"
-  _run_cmd env PATH="$WIZARDRY_IMPS_PATH:$tmp:$ROOT_DIR/spells/cantrips" MENU_LOG="$MENU_LOG" \
+  _run_cmd env PATH="$tmp:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips" MENU_LOG="$MENU_LOG" \
     "$ROOT_DIR/spells/.arcana/node/node-menu"
 
   _assert_success || return 1

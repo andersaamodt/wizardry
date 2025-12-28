@@ -3,7 +3,7 @@
 # This spell opens an SSH connection through Tor for anonymous remote access.
 # Use it to connect to remote servers while preserving anonymity.
 
-require-wizardry || exit 1
+require-wizardry || return 1
 
 open_teletype_usage() {
 cat <<'USAGE'
@@ -63,6 +63,36 @@ say "Opening teletype to $remote_user@$tor_address..."
 torify ssh -i "$player_key" "$remote_user@$tor_address"
 }
 
-# Self-execute when run directly (not sourced)
+
+# Load castable imp for direct execution (AFTER all functions defined)
+# When executed directly: always source to ensure castable sees correct $0
+# When sourced (testing): use from PATH if available to avoid forks
 case "$0" in
-  */open-teletype) open_teletype "$@" ;; esac
+  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
+    # Being sourced - use from PATH if available
+    if ! command -v castable >/dev/null 2>&1; then
+      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
+      if [ -n "${WIZARDRY_DIR-}" ]; then
+        _i="$WIZARDRY_DIR/spells/.imps/sys"
+      elif [ -n "${ROOT_DIR-}" ]; then
+        _i="$ROOT_DIR/spells/.imps/sys"
+      else
+        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
+      fi
+      [ -f "$_i/castable" ] && . "$_i/castable"
+    fi
+    ;;
+  *)
+    # Being executed - always source to ensure correct $0 detection
+    if [ -n "${WIZARDRY_DIR-}" ]; then
+      _i="$WIZARDRY_DIR/spells/.imps/sys"
+    elif [ -n "${ROOT_DIR-}" ]; then
+      _i="$ROOT_DIR/spells/.imps/sys"
+    else
+      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
+    fi
+    [ -f "$_i/castable" ] && . "$_i/castable"
+    ;;
+esac
+
+castable "$@"

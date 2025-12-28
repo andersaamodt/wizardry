@@ -73,4 +73,5 @@ _run_test_case "ask fails without default and no input" test_ask_fails_without_d
 _run_test_case "ask returns user input" test_ask_returns_user_input
 _run_test_case "ask user input overrides default" test_ask_user_overrides_default
 _run_test_case "ask --help behavior (delegates to ask_text)" test_ask_help_behavior
-_finish_tests
+
+# Test via source-then-invoke pattern  

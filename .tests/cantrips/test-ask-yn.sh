@@ -168,4 +168,5 @@ _run_test_case "ask_yn accepts Y as default" test_ask_yn_accepts_uppercase_Y_def
 _run_test_case "ask_yn accepts N as default" test_ask_yn_accepts_uppercase_N_default
 _run_test_case "ask_yn accepts YES as default" test_ask_yn_accepts_uppercase_YES_default
 _run_test_case "ask_yn accepts NO as default" test_ask_yn_accepts_uppercase_NO_default
-_finish_tests
+
+# Test via source-then-invoke pattern  

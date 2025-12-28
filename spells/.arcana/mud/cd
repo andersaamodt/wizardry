@@ -23,9 +23,27 @@ case "${1-}" in
     ;;
 esac
 
-# Explicitly use permissive mode - this file is meant to be sourced into user's shell
-# and we don't want to change their shell options with strict mode
-set +eu
+# Load uncastable imp for direct execution
+if ! command -v uncastable >/dev/null 2>&1; then
+  if [ -n "${WIZARDRY_DIR-}" ]; then
+    _i="$WIZARDRY_DIR/spells/.imps/sys"
+  elif [ -n "${ROOT_DIR-}" ]; then
+    _i="$ROOT_DIR/spells/.imps/sys"
+  else
+    _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+    _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+    _i="${_r}/spells/.imps/sys"
+  fi
+  [ -f "$_i/uncastable" ] && . "$_i/uncastable"
+fi
+
+uncastable cd
+
+# Explicitly use permissive error handling - this file is meant to be sourced into user's shell
+# and we don't want their shell to exit on command failures
+# We DO use set -u because our global usage provides safe defaults (${SPELLBOOK_DIR:-...})
+set +e
+set -u
 
 # The cd override - checks setting in .mud/config file before running look
 cd() {

@@ -52,4 +52,5 @@ _run_test_case "validate-number rejects letters" test_rejects_letters
 _run_test_case "validate-number rejects mixed input" test_rejects_mixed
 _run_test_case "validate-number rejects empty input" test_rejects_empty
 
-_finish_tests
+
+# Test via source-then-invoke pattern  
