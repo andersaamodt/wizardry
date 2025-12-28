@@ -82,8 +82,9 @@ _invoke_wizardry() {
   : "${SPELLBOOK_DIR:=${HOME-}/.spellbook}"
   export SPELLBOOK_DIR
   
-  # MINIMAL PHASE 1: Pre-load menu and its imp dependencies + hotloading
-  # Pre-load for immediate availability, hotload everything else on-demand
+  # SPIRAL DEBUG PHASE 1: Minimal pre-loading (menu + dependencies only)
+  # Future: ALL wizardry spells will be pre-loaded, hotloading only for ~/.spellbook
+  # Current: Pre-load menu essentials, hotload other wizardry spells temporarily
   
   # Helper function to extract and eval function bodies from spell/imp files
   _iw_load_module() {
@@ -190,10 +191,11 @@ function brace_delta(s, n, m) {
       if [ -f "$_spell_file" ]; then
         _iw_debug "Loading spell: $_spell_name"
         if _iw_load_module "$_spell_file" "$_spell_name" 0 2>/dev/null; then
-          _iw_debug "  ✓ Loaded: $_spell_name"
+          _iw_status="✓ Loaded"
         else
-          _iw_debug "  ✗ Failed: $_spell_name"
+          _iw_status="✗ Failed"
         fi
+        _iw_debug "  $_iw_status: $_spell_name"
         break
       fi
     done

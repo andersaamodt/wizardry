@@ -79,12 +79,14 @@ Then open a new terminal. You should see diagnostic output like:
 
 ### 4. Understanding the Loading Mechanism
 
-**Important:** Wizardry uses TWO mechanisms to make spells available:
+**Current (Spiral Debug Phase 1):** Wizardry uses a minimal pre-loading approach:
 
-1. **Pre-loading (for menu and essential spells)**: These are loaded as persistent functions when your shell starts
-2. **Hotloading (for other spells)**: These are loaded on-demand when you first use them
+1. **Pre-loading (menu and dependencies only)**: Menu and its helper spells are loaded as persistent functions when your shell starts
+2. **Hotloading (for user spellbooks)**: Custom spells in `~/.spellbook` are loaded on-demand via command_not_found_handle
 
-The `menu` command MUST be pre-loaded to work efficiently. If pre-loading fails, hotloading cannot compensate - you'll get "command not found".
+**Future (Post-Spiral Debug):** All wizardry spells will be pre-loaded, and hotloading will only apply to user spellbooks.
+
+**Important:** The `menu` command MUST be pre-loaded to work. If pre-loading fails, you'll get "command not found".
 
 ### 5. Manual Workaround
 

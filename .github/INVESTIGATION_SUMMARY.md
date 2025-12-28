@@ -18,18 +18,27 @@ The `menu` spell IS being pre-loaded successfully in all automated tests:
 - Test: "invoke-wizardry works when sourced from rc file" **PASSES**  
 - Manual testing confirms menu function is defined after sourcing invoke-wizardry
 
-### 2. Hotloading Cannot Fix Pre-loading Failures ✗
+### 2. Hotloading is for User Spellbooks Only
 
-Critical discovery: The hotloading mechanism (command_not_found_handle + word-of-binding) **does not persist functions** in the parent shell.
+The hotloading mechanism (command_not_found_handle + word-of-binding) is designed for **user spellbooks** (`~/.spellbook`), not for core wizardry spells.
 
-**How it works:**
-1. User types unknown command (e.g., `some-spell`)
+**Current implementation (Spiral Debug Phase 1):**
+- Menu and its dependencies are pre-loaded
+- Other core spells use hotloading (temporary measure)
+- User spellbooks use hotloading
+
+**Future implementation:**
+- ALL wizardry spells will be pre-loaded
+- ONLY user spellbooks will use hotloading
+
+**How hotloading works:**
+1. User types unknown command (e.g., `my-custom-spell`)
 2. Shell triggers `command_not_found_handle`
-3. Handler executes `word-of-binding some-spell` in a **subshell**
-4. word-of-binding loads spell, calls it, subshell exits
-5. Function is **lost** when subshell exits
+3. Handler executes `word-of-binding my-custom-spell` in a **subshell**
+4. word-of-binding loads spell from ~/.spellbook, calls it, subshell exits
+5. Function is **not persisted** (re-loaded on each use)
 
-**Implication:** If `menu` fails to pre-load, hotloading won't help. The user will get "command not found" every time.
+**Implication:** Core wizardry spells like `menu` cannot rely on hotloading - they must be pre-loaded.
 
 ### 3. The Issue Is Environment-Specific
 
@@ -77,6 +86,30 @@ Created `.github/TROUBLESHOOTING.md` with:
 - Fixed test for recursion guard variable (`_WIZARDRY_IN_CNF`)
 - Removed obsolete cd function test (MUD features are now separate)
 - All relevant tests pass
+
+## Architecture Clarification
+
+### Current (Spiral Debug Phase 1)
+
+**Minimal Pre-loading:**
+- Menu and its dependencies are pre-loaded as persistent functions
+- Essential imps needed by menu are pre-loaded
+- This is the minimal viable setup for Phase 1
+
+**Hotloading:**
+- Currently used for other wizardry spells (temporary during spiral debug)
+- Intended for user spellbooks in `~/.spellbook`
+- Does not persist functions (re-loads on each use)
+
+### Future (Post-Spiral Debug)
+
+**Full Pre-loading:**
+- ALL wizardry spells will be pre-loaded
+- Functions persist for entire shell session
+
+**Hotloading:**
+- ONLY for user spellbooks in `~/.spellbook`
+- Provides on-demand execution of custom user spells
 
 ## Possible Root Causes
 
