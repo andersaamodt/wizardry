@@ -40,10 +40,13 @@ await_keypress_temp_file() {
 # Use command -v to find require-command when preloaded as a function
 if [ -n "${REQUIRE_COMMAND-}" ]; then
     require_cmd=$REQUIRE_COMMAND
+    [ "${WIZARDRY_DEBUG_AWAIT:-0}" = "1" ] && printf '[await-keypress] Using REQUIRE_COMMAND=%s\n' "$require_cmd" >&2
 elif command -v require-command >/dev/null 2>&1; then
     require_cmd=require-command
+    [ "${WIZARDRY_DEBUG_AWAIT:-0}" = "1" ] && printf '[await-keypress] Found require-command via command -v\n' >&2
 elif command -v require_command >/dev/null 2>&1; then
     require_cmd=require_command
+    [ "${WIZARDRY_DEBUG_AWAIT:-0}" = "1" ] && printf '[await-keypress] Found require_command via command -v\n' >&2
 else
     # Fallback to path-based resolution for direct execution
     spell_dir_val=""
@@ -56,12 +59,15 @@ else
     else
         require_cmd=require-command
     fi
+    [ "${WIZARDRY_DEBUG_AWAIT:-0}" = "1" ] && printf '[await-keypress] Fallback require_cmd=%s\n' "$require_cmd" >&2
 fi
 
 # Capture raw bytes with dd; bail out immediately when it is missing.
 if ! "$require_cmd" dd "The await-keypress spell needs 'dd' to capture raw key presses."; then
+    [ "${WIZARDRY_DEBUG_AWAIT:-0}" = "1" ] && printf '[await-keypress] require-command dd check failed\n' >&2
     return 1
 fi
+[ "${WIZARDRY_DEBUG_AWAIT:-0}" = "1" ] && printf '[await-keypress] dd check passed\n' >&2
 
 tty_device=${AWAIT_KEYPRESS_DEVICE:-/dev/tty}
 skip_stty=${AWAIT_KEYPRESS_SKIP_STTY:-0}
@@ -198,15 +204,19 @@ fi
 codes=${codes# }
 codes=${codes% }
 if [ -z "$codes" ]; then
+    [ "${WIZARDRY_DEBUG_AWAIT:-0}" = "1" ] && printf '[await-keypress] No codes read, returning empty\n' >&2
     printf '\n'
     return 0
 fi
 
 set -- $codes
 if [ "$#" -eq 0 ]; then
+    [ "${WIZARDRY_DEBUG_AWAIT:-0}" = "1" ] && printf '[await-keypress] Empty codes list, returning empty\n' >&2
     printf '\n'
     return 0
 fi
+
+[ "${WIZARDRY_DEBUG_AWAIT:-0}" = "1" ] && printf '[await-keypress] Read codes: %s\n' "$codes" >&2
 
 first=$1
 shift
@@ -358,6 +368,7 @@ if [ -n "$buffer_file" ]; then
 fi
 
 printf '%s\n' "$output"
+[ "${WIZARDRY_DEBUG_AWAIT:-0}" = "1" ] && printf '[await-keypress] Returning: %s\n' "$output" >&2
 }
 
 
