@@ -10,7 +10,7 @@ set -eu
 
 autocast() {
   _autocast_name=${1:-}
-  shift || :  # Remove first arg if present, ignore error if no args
+  [ "$#" -gt 0 ] && shift  # Remove first arg if present
   
   # Try to detect spell name if not provided
   if [ -z "$_autocast_name" ]; then
