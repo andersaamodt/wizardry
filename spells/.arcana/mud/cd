@@ -39,9 +39,10 @@ fi
 
 uncastable cd
 
-# Explicitly use permissive mode - this file is meant to be sourced into user's shell
-# and we don't want to change their shell options with strict mode
-set +eu
+# Explicitly use permissive error handling - this file is meant to be sourced into user's shell
+# and we don't want to change their shell error handling with strict mode
+# We don't set +u because our global usage provides safe defaults
+set +e
 
 # The cd override - checks setting in .mud/config file before running look
 cd() {
