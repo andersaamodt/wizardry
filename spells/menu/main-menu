@@ -83,7 +83,11 @@ while true; do
     first_run=0
   fi
 
-  main_menu_display_menu || true
+  main_menu_display_menu
+  menu_status=$?
+  if [ "$menu_status" -eq 130 ]; then
+    return 0
+  fi
 done
 }
 

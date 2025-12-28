@@ -501,7 +501,7 @@ escape|ESC|esc)
                         kill -TERM "$MENU_PARENT_PID" 2>/dev/null || :
                 fi
         fi
-        return 0
+        return 130
         ;;
 esac
 
