@@ -15,9 +15,9 @@ USAGE
 toggle_command_not_found() {
 case "${1-}" in
 --help|--usage|-h)
-	toggle_command_not_found_usage
-	return 0
-	;;
+  toggle_command_not_found_usage
+  return 0
+  ;;
 esac
 
 require-wizardry || return 1
@@ -42,12 +42,12 @@ touch "$CONFIG_FILE"
 # Check current state (defaults to enabled if not configured)
 # Only disabled if explicitly set to command-not-found=0
 if [ -f "$CONFIG_FILE" ] && grep -q "^command-not-found=0$" "$CONFIG_FILE" 2>/dev/null; then
-	# Currently disabled, enable it (remove the line to restore default)
-	"$IMPS_DIR/config-del" "$CONFIG_FILE" "command-not-found"
-	printf '%s\n' "✓ command-not-found hook enabled. Wizardry will auto-load spells via command_not_found_handle."
-	printf '%s\n' ""
-	printf '%s\n' "Note: Open a new terminal window for changes to take effect."
-	return 0
+  # Currently disabled, enable it (remove the line to restore default)
+  "$IMPS_DIR/config-del" "$CONFIG_FILE" "command-not-found"
+  printf '%s\n' "✓ command-not-found hook enabled. Wizardry will auto-load spells via command_not_found_handle."
+  printf '%s\n' ""
+  printf '%s\n' "Note: Open a new terminal window for changes to take effect."
+  return 0
 fi
 
 # Currently enabled (either explicitly =1 or not configured), disable it

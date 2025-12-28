@@ -115,7 +115,7 @@ MUD_MONSTER="${RED}"             # Monster/enemy names
 # Helper function to disable color palette (works in both compiled and uncompiled modes)
 try_disable_palette() {
         # Check if _disable_palette function exists (inlined by compiler)
-        if has _disable_palette; then
+        if command -v _disable_palette >/dev/null 2>&1; then
                 _disable_palette
         elif disable_palette_path=$(command -v disable-palette 2>/dev/null) \
                 && [ -n "$disable_palette_path" ]; then
@@ -135,7 +135,7 @@ case ${TERM-} in
                 try_disable_palette
                 ;;
         *)
-                if has tput; then
+                if command -v tput >/dev/null 2>&1; then
                         colors=$(tput colors 2>/dev/null || printf '')
                         case ${colors:-} in
                                 ''|0|-*)
@@ -149,34 +149,18 @@ case ${TERM-} in
 esac
 }
 
-# Load autocast imp for auto-execution when sourced
-# When executed directly: always source to ensure autocast sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v autocast >/dev/null 2>&1; then
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="$(cd "$(dirname "$0")" && cd .. && cd .. && pwd)/spells/.imps/sys"
-      fi
-      [ -f "$_i/autocast" ] && . "$_i/autocast"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="$(cd "$(dirname "$0")" && cd .. && cd .. && pwd)/spells/.imps/sys"
-    fi
-    [ -f "$_i/autocast" ] && . "$_i/autocast"
-    ;;
-esac
+# Load autocast imp for direct execution
+if ! command -v autocast >/dev/null 2>&1; then
+  if [ -n "${WIZARDRY_DIR-}" ]; then
+    _i="$WIZARDRY_DIR/spells/.imps/sys"
+  elif [ -n "${ROOT_DIR-}" ]; then
+    _i="$ROOT_DIR/spells/.imps/sys"
+  else
+    _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+    _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+    _i="${_r}/spells/.imps/sys"
+  fi
+  [ -f "$_i/autocast" ] && . "$_i/autocast"
+fi
 
 autocast colors "$@"

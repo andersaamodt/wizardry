@@ -8,7 +8,7 @@
 
 set -eu
 
-_autocast() {
+autocast() {
   _autocast_name=${1:-}
   shift || :  # Remove first arg if present, ignore error if no args
   
@@ -85,11 +85,6 @@ _autocast() {
   fi
 }
 
-# Public wrapper function (for when autocast is sourced)
-autocast() {
-  _autocast "$@"
-}
-
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */autocast) _autocast "$@" ;; esac
+  */autocast) autocast "$@" ;; esac

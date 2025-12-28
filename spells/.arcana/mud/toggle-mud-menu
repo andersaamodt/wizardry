@@ -14,9 +14,9 @@ USAGE
 toggle_mud_menu() {
 case "${1-}" in
 --help|--usage|-h)
-	toggle_mud_menu_usage
-	return 0
-	;;
+  toggle_mud_menu_usage
+  return 0
+  ;;
 esac
 
 require-wizardry || return 1
@@ -29,17 +29,17 @@ SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 MUD_CONFIG="$SCRIPT_DIR/mud-config"
 
 if [ ! -x "$MUD_CONFIG" ]; then
-	printf '%s\n' "Error: mud-config not found at '$MUD_CONFIG'." >&2
-	return 1
+  printf '%s\n' "Error: mud-config not found at '$MUD_CONFIG'." >&2
+  return 1
 fi
 
 # Toggle the mud-enabled setting
 new_state=$("$MUD_CONFIG" toggle "mud-enabled")
 
 if [ "$new_state" = "1" ]; then
-	printf '%s\n' "✓ MUD menu enabled in main menu."
+  printf '%s\n' "✓ MUD menu enabled in main menu."
 else
-	printf '%s\n' "✓ MUD menu hidden from main menu."
+  printf '%s\n' "✓ MUD menu hidden from main menu."
 fi
 
 }
