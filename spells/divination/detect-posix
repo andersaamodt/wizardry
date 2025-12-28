@@ -20,8 +20,34 @@ case "${1-}" in
   ;;
 esac
 
+# Optional: try to use wizardry if available (for when used in normal mode)
+# But don't fail if wizardry isn't set up yet (for bootstrap use)
+if command -v require-wizardry >/dev/null 2>&1; then
+  require-wizardry || return 1
+fi
+
 set -eu
-env-clear
+
+# Inline helper functions (detect-posix needs to work as a bootstrap tool)
+detect_posix_has() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+detect_posix_temp_dir() {
+  mktemp -d "${TMPDIR:-/tmp}/detect-posix.XXXXXX"
+}
+
+detect_posix_cleanup_dir() {
+  [ -n "${1-}" ] && [ -d "$1" ] && rm -rf "$1"
+}
+
+detect_posix_print_pass() {
+  printf '  ✓ %s\n' "$*"
+}
+
+detect_posix_print_fail() {
+  printf '  ✗ %s: %s\n' "$1" "$2" >&2
+}
 
 verbose=0
 while [ "$#" -gt 0 ]; do
@@ -66,9 +92,9 @@ probe_fail=0
 tmpdir=''
 case " $probe_set " in
   *" find "*)
-    tmpdir=$(temp-dir detect-posix) || return 1
+    tmpdir=$(detect_posix_temp_dir) || return 1
     touch "$tmpdir/probe"
-    trap 'cleanup-dir "$tmpdir"' EXIT HUP INT TERM
+    trap 'detect_posix_cleanup_dir "$tmpdir"' EXIT HUP INT TERM
     ;;
 esac
 
@@ -77,15 +103,15 @@ if [ "$verbose" -eq 1 ]; then
 fi
 
 for tool in $toolchain; do
-  if has "$tool"; then
+  if detect_posix_has "$tool"; then
     if [ "$verbose" -eq 1 ]; then
-      print-pass "$tool"
+      detect_posix_print_pass "$tool"
     fi
   else
     tool_fail=1
     missing_tools="${missing_tools:+$missing_tools }$tool"
     if [ "$verbose" -eq 1 ]; then
-      print-fail "$tool" "missing"
+      detect_posix_print_fail "$tool" "missing"
     fi
   fi
 done
@@ -99,65 +125,65 @@ for probe in $probe_set; do
     sh)
       if sh -c 'foo=bar; [ "$foo" = "bar" ]'; then
         if [ "$verbose" -eq 1 ]; then
-          print-pass "sh basics"
+          detect_posix_print_pass "sh basics"
         fi
       else
         probe_fail=1
         if [ "$verbose" -eq 1 ]; then
-          print-fail "sh basics" "failed"
+          detect_posix_print_fail "sh basics" "failed"
         fi
       fi
       ;;
     awk)
       if sh -c "printf 'a\\n' | awk 'NR==1 {print \$1}' | grep -q '^a$'"; then
         if [ "$verbose" -eq 1 ]; then
-          print-pass "awk basics"
+          detect_posix_print_pass "awk basics"
         fi
       else
         probe_fail=1
         if [ "$verbose" -eq 1 ]; then
-          print-fail "awk basics" "failed"
+          detect_posix_print_fail "awk basics" "failed"
         fi
       fi
       ;;
     sed)
       if sh -c "printf 'a\\n' | sed 's/a/b/' | grep -q '^b$'"; then
         if [ "$verbose" -eq 1 ]; then
-          print-pass "sed basics"
+          detect_posix_print_pass "sed basics"
         fi
       else
         probe_fail=1
         if [ "$verbose" -eq 1 ]; then
-          print-fail "sed basics" "failed"
+          detect_posix_print_fail "sed basics" "failed"
         fi
       fi
       ;;
     grep)
       if sh -c "printf 'a\\n' | grep -q 'a'"; then
         if [ "$verbose" -eq 1 ]; then
-          print-pass "grep basics"
+          detect_posix_print_pass "grep basics"
         fi
       else
         probe_fail=1
         if [ "$verbose" -eq 1 ]; then
-          print-fail "grep basics" "failed"
+          detect_posix_print_fail "grep basics" "failed"
         fi
       fi
       ;;
     find)
       if [ -n "$tmpdir" ] && sh -c "find '$tmpdir' -type f -name probe | grep -q 'probe'"; then
         if [ "$verbose" -eq 1 ]; then
-          print-pass "find basics"
+          detect_posix_print_pass "find basics"
         fi
       else
         probe_fail=1
         if [ "$verbose" -eq 1 ]; then
-          print-fail "find basics" "failed"
+          detect_posix_print_fail "find basics" "failed"
         fi
       fi
       ;;
     *)
-      print-fail "detect-posix" "unknown probe '$probe'"
+      detect_posix_print_fail "detect-posix" "unknown probe '$probe'"
       return 2
       ;;
   esac
