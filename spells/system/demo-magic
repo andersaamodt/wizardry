@@ -36,18 +36,30 @@ check_spell() {
 }
 
 demo_level_0() {
-  printf 'Level 0: System Foundation\n'
+  printf 'Level 0: POSIX & Platform Foundation\n'
   printf 'Checking POSIX environment and wizardry structure...\n'
   
   check_spell "WIZARDRY_DIR" test -n "${WIZARDRY_DIR-}"
   check_spell "invoke-wizardry" test -f "${WIZARDRY_DIR}/spells/.imps/sys/invoke-wizardry"
   check_spell "spells directory" test -d "${WIZARDRY_DIR}/spells"
   check_spell "imps directory" test -d "${WIZARDRY_DIR}/spells/.imps"
+  check_spell "detect-posix" test -f "${WIZARDRY_DIR}/spells/divination/detect-posix"
+  check_spell "detect-distro" test -f "${WIZARDRY_DIR}/spells/divination/detect-distro"
 }
 
 demo_level_1() {
-  printf 'Level 1: Menu Core\n'
-  printf 'Validating interactive menu system...\n'
+  printf 'Level 1: Wizardry Installation\n'
+  printf 'Validating wizardry core installation...\n'
+  
+  check_spell "banish" test -f "${WIZARDRY_DIR}/spells/system/banish"
+  check_spell "invoke-wizardry" test -f "${WIZARDRY_DIR}/spells/.imps/sys/invoke-wizardry"
+  check_spell "require-wizardry" test -f "${WIZARDRY_DIR}/spells/.imps/sys/require-wizardry"
+  check_spell "castable" test -f "${WIZARDRY_DIR}/spells/.imps/sys/castable"
+}
+
+demo_level_2() {
+  printf 'Level 2: Menu System\n'
+  printf 'Checking interactive menu system...\n'
   
   check_spell "menu" test -f "${WIZARDRY_DIR}/spells/cantrips/menu"
   check_spell "await-keypress" test -f "${WIZARDRY_DIR}/spells/cantrips/await-keypress"
@@ -56,29 +68,213 @@ demo_level_1() {
   check_spell "move-cursor" test -f "${WIZARDRY_DIR}/spells/cantrips/move-cursor"
   check_spell "cursor-blink" test -f "${WIZARDRY_DIR}/spells/cantrips/cursor-blink"
   check_spell "colors" test -f "${WIZARDRY_DIR}/spells/cantrips/colors"
+  check_spell "main-menu" test -f "${WIZARDRY_DIR}/spells/cantrips/main-menu"
   check_spell "stty" command -v stty
 }
 
-demo_level_2() {
-  printf 'Level 2: Arcane Spells & MUD Basics\n'
-  printf 'Checking file operation spells and basic MUD features...\n'
+demo_level_3() {
+  printf 'Level 3: MUD Basics\n'
+  printf 'Checking basic MUD features...\n'
+  
+  check_spell "check-cd-hook" test -f "${WIZARDRY_DIR}/spells/mud/check-cd-hook"
+  check_spell "look" test -f "${WIZARDRY_DIR}/spells/mud/look"
+}
+
+demo_level_4() {
+  printf 'Level 4: Navigation\n'
+  printf 'Checking navigation spells...\n'
+  
+  check_spell "jump-to-marker" test -f "${WIZARDRY_DIR}/spells/translocation/jump-to-marker"
+  check_spell "mark-location" test -f "${WIZARDRY_DIR}/spells/translocation/mark-location"
+}
+
+demo_level_5() {
+  printf 'Level 5: Arcane File Operations\n'
+  printf 'Checking file operation spells...\n'
   
   check_spell "copy" test -f "${WIZARDRY_DIR}/spells/arcane/copy"
   check_spell "trash" test -f "${WIZARDRY_DIR}/spells/arcane/trash"
   check_spell "forall" test -f "${WIZARDRY_DIR}/spells/arcane/forall"
   check_spell "read-magic" test -f "${WIZARDRY_DIR}/spells/arcane/read-magic"
-  check_spell "check-cd-hook" test -f "${WIZARDRY_DIR}/spells/mud/check-cd-hook"
-  check_spell "look" test -f "${WIZARDRY_DIR}/spells/mud/look"
+  check_spell "file-list" test -f "${WIZARDRY_DIR}/spells/arcane/file-list"
 }
 
-demo_level_3() {
-  printf 'Level 3: Cantrips & Navigation\n'
-  printf 'Checking user interaction and navigation spells...\n'
+demo_level_6() {
+  printf 'Level 6: Basic Cantrips\n'
+  printf 'Checking user interaction spells...\n'
   
+  check_spell "ask" test -f "${WIZARDRY_DIR}/spells/cantrips/ask"
   check_spell "ask-yn" test -f "${WIZARDRY_DIR}/spells/cantrips/ask-yn"
+  check_spell "ask-text" test -f "${WIZARDRY_DIR}/spells/cantrips/ask-text"
+  check_spell "list-files" test -f "${WIZARDRY_DIR}/spells/cantrips/list-files"
+}
+
+demo_level_7() {
+  printf 'Level 7: Validation Helpers\n'
+  printf 'Checking validation spells...\n'
+  
+  check_spell "validate-number" test -f "${WIZARDRY_DIR}/spells/cantrips/validate-number"
+  check_spell "validate-path" test -f "${WIZARDRY_DIR}/spells/cantrips/validate-path"
+  check_spell "require-command" test -f "${WIZARDRY_DIR}/spells/cantrips/require-command"
+}
+
+demo_level_8() {
+  printf 'Level 8: Advanced Cantrips\n'
+  printf 'Checking advanced interaction spells...\n'
+  
+  check_spell "ask-number" test -f "${WIZARDRY_DIR}/spells/cantrips/ask-number"
   check_spell "memorize" test -f "${WIZARDRY_DIR}/spells/cantrips/memorize"
-  check_spell "jump-to-marker" test -f "${WIZARDRY_DIR}/spells/translocation/jump-to-marker"
-  check_spell "mark-location" test -f "${WIZARDRY_DIR}/spells/translocation/mark-location"
+}
+
+demo_level_9() {
+  printf 'Level 9: System Configuration\n'
+  printf 'Checking system configuration spells...\n'
+  
+  check_spell "config" test -f "${WIZARDRY_DIR}/spells/system/config"
+  check_spell "logs" test -f "${WIZARDRY_DIR}/spells/system/logs"
+  check_spell "package-managers" test -f "${WIZARDRY_DIR}/spells/system/package-managers"
+}
+
+demo_level_10() {
+  printf 'Level 10: Testing Infrastructure\n'
+  printf 'Checking testing spells...\n'
+  
+  check_spell "test-spell" test -f "${WIZARDRY_DIR}/spells/system/test-spell"
+  check_spell "test-magic" test -f "${WIZARDRY_DIR}/spells/system/test-magic"
+  check_spell "logging-example" test -f "${WIZARDRY_DIR}/spells/system/logging-example"
+  check_spell "wizard-eyes" test -f "${WIZARDRY_DIR}/spells/system/wizard-eyes"
+}
+
+demo_level_11() {
+  printf 'Level 11: System Maintenance\n'
+  printf 'Checking maintenance spells...\n'
+  
+  check_spell "update-wizardry" test -f "${WIZARDRY_DIR}/spells/system/update-wizardry"
+  check_spell "kill-process" test -f "${WIZARDRY_DIR}/spells/cantrips/kill-process"
+}
+
+demo_level_12() {
+  printf 'Level 12: Advanced System Tools\n'
+  printf 'Checking advanced system spells...\n'
+  
+  check_spell "demo-magic" test -f "${WIZARDRY_DIR}/spells/system/demo-magic"
+  check_spell "verify-posix" test -f "${WIZARDRY_DIR}/spells/system/verify-posix"
+  check_spell "wizard-cast" test -f "${WIZARDRY_DIR}/spells/system/wizard-cast"
+}
+
+demo_level_13() {
+  printf 'Level 13: Divination\n'
+  printf 'Checking divination spells...\n'
+  
+  check_spell "detect-rc-file" test -f "${WIZARDRY_DIR}/spells/divination/detect-rc-file"
+  check_spell "detect-magic" test -f "${WIZARDRY_DIR}/spells/divination/detect-magic"
+  check_spell "identify-room" test -f "${WIZARDRY_DIR}/spells/divination/identify-room"
+}
+
+demo_level_14() {
+  printf 'Level 14: Advanced MUD Features\n'
+  printf 'Checking advanced MUD spells...\n'
+  
+  check_spell "decorate" test -f "${WIZARDRY_DIR}/spells/mud/decorate"
+  check_spell "select-player" test -f "${WIZARDRY_DIR}/spells/mud/select-player"
+}
+
+demo_level_15() {
+  printf 'Level 15: Cryptography\n'
+  printf 'Checking cryptography spells...\n'
+  
+  check_spell "crypto directory" test -d "${WIZARDRY_DIR}/spells/crypto"
+}
+
+demo_level_16() {
+  printf 'Level 16: SSH & Remote Access\n'
+  printf 'Checking SSH and remote spells...\n'
+  
+  check_spell "translocation directory" test -d "${WIZARDRY_DIR}/spells/translocation"
+}
+
+demo_level_17() {
+  printf 'Level 17: Task Priorities\n'
+  printf 'Checking priority spells...\n'
+  
+  check_spell "priorities directory" test -d "${WIZARDRY_DIR}/spells/priorities"
+}
+
+demo_level_18() {
+  printf 'Level 18: Security Wards\n'
+  printf 'Checking security ward spells...\n'
+  
+  check_spell "wards directory" test -d "${WIZARDRY_DIR}/spells/wards"
+}
+
+demo_level_19() {
+  printf 'Level 19: Extended Attributes\n'
+  printf 'Checking enchantment spells...\n'
+  
+  check_spell "enchant directory" test -d "${WIZARDRY_DIR}/spells/enchant"
+}
+
+demo_level_20() {
+  printf 'Level 20: Process & System Info (PSI)\n'
+  printf 'Checking PSI spells...\n'
+  
+  check_spell "psi directory" test -d "${WIZARDRY_DIR}/spells/psi"
+}
+
+demo_level_21() {
+  printf 'Level 21: Spellcraft Development Tools\n'
+  printf 'Checking spellcraft spells...\n'
+  
+  check_spell "spellcraft directory" test -d "${WIZARDRY_DIR}/spells/spellcraft"
+  check_spell "scribe-spell" test -f "${WIZARDRY_DIR}/spells/spellcraft/scribe-spell"
+  check_spell "lint-magic" test -f "${WIZARDRY_DIR}/spells/spellcraft/lint-magic"
+}
+
+demo_level_22() {
+  printf 'Level 22: Core Menu Infrastructure\n'
+  printf 'Checking core menu spells...\n'
+  
+  check_spell "spellbook" test -f "${WIZARDRY_DIR}/spells/menu/spellbook"
+  check_spell "cast" test -f "${WIZARDRY_DIR}/spells/menu/cast"
+  check_spell "spell-menu" test -f "${WIZARDRY_DIR}/spells/menu/spell-menu"
+}
+
+demo_level_23() {
+  printf 'Level 23: System & Configuration Menus\n'
+  printf 'Checking system menu spells...\n'
+  
+  check_spell "system-menu" test -f "${WIZARDRY_DIR}/spells/menu/system/system-menu"
+  check_spell "install-menu" test -f "${WIZARDRY_DIR}/spells/menu/system/install-menu"
+}
+
+demo_level_24() {
+  printf 'Level 24: MUD Administration Menus\n'
+  printf 'Checking MUD menu spells...\n'
+  
+  check_spell "mud" test -f "${WIZARDRY_DIR}/spells/menu/mud"
+  check_spell "mud-menu" test -f "${WIZARDRY_DIR}/spells/menu/mud-menu"
+}
+
+demo_level_25() {
+  printf 'Level 25: Domain-Specific Menus\n'
+  printf 'Checking domain menu spells...\n'
+  
+  check_spell "menu directory" test -d "${WIZARDRY_DIR}/spells/menu"
+}
+
+demo_level_26() {
+  printf 'Level 26: System Service Management\n'
+  printf 'Checking service management spells...\n'
+  
+  check_spell "install-service-template" test -f "${WIZARDRY_DIR}/spells/cantrips/install-service-template"
+  check_spell "is-service-installed" test -f "${WIZARDRY_DIR}/spells/cantrips/is-service-installed"
+}
+
+demo_level_27() {
+  printf 'Level 27: Optional Arcana & Third-Party Integrations\n'
+  printf 'Checking arcana integrations...\n'
+  
+  check_spell "arcana directory" test -d "${WIZARDRY_DIR}/spells/.arcana"
 }
 
 demo_level_higher() {
@@ -127,7 +323,7 @@ fi
 demo_level=1
 if [ "$#" -gt 0 ]; then
   case "$1" in
-    [0-9])
+    [0-9]|[0-9][0-9])
       demo_level=$1
       shift
       ;;
@@ -162,6 +358,30 @@ while [ "$current_level" -le "$demo_level" ]; do
     1) demo_level_1 ;;
     2) demo_level_2 ;;
     3) demo_level_3 ;;
+    4) demo_level_4 ;;
+    5) demo_level_5 ;;
+    6) demo_level_6 ;;
+    7) demo_level_7 ;;
+    8) demo_level_8 ;;
+    9) demo_level_9 ;;
+    10) demo_level_10 ;;
+    11) demo_level_11 ;;
+    12) demo_level_12 ;;
+    13) demo_level_13 ;;
+    14) demo_level_14 ;;
+    15) demo_level_15 ;;
+    16) demo_level_16 ;;
+    17) demo_level_17 ;;
+    18) demo_level_18 ;;
+    19) demo_level_19 ;;
+    20) demo_level_20 ;;
+    21) demo_level_21 ;;
+    22) demo_level_22 ;;
+    23) demo_level_23 ;;
+    24) demo_level_24 ;;
+    25) demo_level_25 ;;
+    26) demo_level_26 ;;
+    27) demo_level_27 ;;
     *) demo_level_higher "$current_level" ;;
   esac
   
