@@ -28,6 +28,7 @@ Arguments:
                         Level 9: Services (system service management)
 
 Options:
+  --no-heal             Skip self-healing (only report issues)
   --no-tests            Skip running tests (only check assumptions)
   --only                Only validate this specific level (don't run lower levels)
 
@@ -43,6 +44,7 @@ Examples:
   banish                    # Validate level 0 (system foundation)
   banish 1                  # Validate through level 1 (menu ready)
   banish 4 --no-tests       # Validate through level 4, skip tests
+  banish 1 --no-heal        # Validate level 1, only report issues
 USAGE
 }
 
@@ -59,6 +61,7 @@ set -eu
 # Parse arguments
 target_level=0
 skip_tests=0
+skip_heal=0
 only_this_level=0
 
 # First, check if first arg is a number (the level)
@@ -73,6 +76,10 @@ fi
 
 while [ "$#" -gt 0 ]; do
   case $1 in
+    --no-heal)
+      skip_heal=1
+      shift
+      ;;
     --no-tests)
       skip_tests=1
       shift
@@ -412,11 +419,125 @@ banish_level_0() {
     banish_warn "Self-healing capabilities will be limited"
   fi
   
-  # Report summary
+  # Stage 7: Check and self-heal essential development tools
+  printf '\nChecking essential development tools:\n'
+  
+  # Check for git
+  if ! command -v git >/dev/null 2>&1; then
+    banish_warn "git not found - required for wizardry development"
+    if [ "$skip_heal" -eq 0 ] && [ -x "${WIZARDRY_DIR}/spells/.arcana/core/install-git" ]; then
+      banish_info "Attempting to install git..."
+      "${WIZARDRY_DIR}/spells/.arcana/core/install-git" || banish_warn "Failed to install git"
+      # Re-check
+      if command -v git >/dev/null 2>&1; then
+        banish_check "git installed successfully"
+      fi
+    fi
+  else
+    banish_check "git available"
+  fi
+  
+  # Stage 8: Check POSIX tools and attempt self-healing
+  # Report summary and attempt self-healing if enabled
   if [ -n "$missing_recommended" ]; then
     banish_warn "Some recommended tools are missing: $missing_recommended"
     banish_warn "Wizardry may have reduced functionality"
-    banish_info "Install manually using your package manager if needed"
+    
+    if [ "$skip_heal" -eq 0 ] && [ "$found_pkg_mgr" -eq 1 ]; then
+      banish_info "Attempting to install missing tools (this may require sudo)..."
+      # Whitelist of allowed POSIX tools to install (security: prevent command injection)
+      allowed_tools="awk sed grep find mktemp dirname basename pwd cd curl wget tar sh test printf cat sort"
+      
+      # Try to install missing tools based on detected package manager
+      for pkg_mgr in apt yum dnf pacman brew; do
+        if command -v "$pkg_mgr" >/dev/null 2>&1; then
+          case "$pkg_mgr" in
+            apt)
+              for tool in $missing_recommended; do
+                # Validate tool is in whitelist
+                tool_allowed=0
+                for allowed in $allowed_tools; do
+                  if [ "$tool" = "$allowed" ]; then
+                    tool_allowed=1
+                    break
+                  fi
+                done
+                
+                if [ "$tool_allowed" -eq 1 ]; then
+                  banish_step "Installing $tool..."
+                  sudo apt-get install -y "$tool" >/dev/null 2>&1 || banish_warn "Failed to install $tool"
+                else
+                  banish_warn "Skipping $tool (not in allowed tools list)"
+                fi
+              done
+              break
+              ;;
+            yum|dnf)
+              for tool in $missing_recommended; do
+                # Validate tool is in whitelist
+                tool_allowed=0
+                for allowed in $allowed_tools; do
+                  if [ "$tool" = "$allowed" ]; then
+                    tool_allowed=1
+                    break
+                  fi
+                done
+                
+                if [ "$tool_allowed" -eq 1 ]; then
+                  banish_step "Installing $tool..."
+                  sudo "$pkg_mgr" install -y "$tool" >/dev/null 2>&1 || banish_warn "Failed to install $tool"
+                else
+                  banish_warn "Skipping $tool (not in allowed tools list)"
+                fi
+              done
+              break
+              ;;
+            pacman)
+              for tool in $missing_recommended; do
+                # Validate tool is in whitelist
+                tool_allowed=0
+                for allowed in $allowed_tools; do
+                  if [ "$tool" = "$allowed" ]; then
+                    tool_allowed=1
+                    break
+                  fi
+                done
+                
+                if [ "$tool_allowed" -eq 1 ]; then
+                  banish_step "Installing $tool..."
+                  sudo pacman -S --noconfirm "$tool" >/dev/null 2>&1 || banish_warn "Failed to install $tool"
+                else
+                  banish_warn "Skipping $tool (not in allowed tools list)"
+                fi
+              done
+              break
+              ;;
+            brew)
+              for tool in $missing_recommended; do
+                # Validate tool is in whitelist
+                tool_allowed=0
+                for allowed in $allowed_tools; do
+                  if [ "$tool" = "$allowed" ]; then
+                    tool_allowed=1
+                    break
+                  fi
+                done
+                
+                if [ "$tool_allowed" -eq 1 ]; then
+                  banish_step "Installing $tool..."
+                  brew install "$tool" >/dev/null 2>&1 || banish_warn "Failed to install $tool"
+                else
+                  banish_warn "Skipping $tool (not in allowed tools list)"
+                fi
+              done
+              break
+              ;;
+          esac
+        fi
+      done
+    else
+      banish_info "Install manually using your package manager if needed"
+    fi
   fi
   
   # Success
@@ -471,6 +592,18 @@ banish_level_1() {
   # Check if stty is available (required for menu terminal control)
   if ! command -v stty >/dev/null 2>&1; then
     banish_warn "stty command not found - required for menu"
+    if [ "$skip_heal" -eq 0 ]; then
+      if [ -x "${WIZARDRY_DIR}/spells/.arcana/core/install-stty" ]; then
+        banish_info "Attempting to install stty..."
+        "${WIZARDRY_DIR}/spells/.arcana/core/install-stty" || banish_warn "Failed to install stty"
+        # Re-check after install
+        if command -v stty >/dev/null 2>&1; then
+          banish_check "stty installed successfully"
+        fi
+      else
+        banish_info "install-stty script not found - install stty manually"
+      fi
+    fi
   else
     banish_check "stty available"
   fi
