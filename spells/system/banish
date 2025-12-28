@@ -12,14 +12,14 @@ Validate wizardry at the specified spell level, checking assumptions,
 self-healing issues, and running tests. Each level builds on previous levels.
 
 NOTE: Banish requires wizardry to be installed. Run ./install first.
-See SPIRAL_DEBUG.md for complete level documentation.
+See .github/SPELL_LEVELS.md for complete level documentation.
 
 Arguments:
   LEVEL                 Spell level to validate (0-9, default: 0)
                         Level 0: System foundation (POSIX tools, OS)
                         Level 1: Menu core (interactive menu system)
-                        Level 2: Arcane spells (file operations)
-                        Level 3: Cantrips (user interaction)
+                        Level 2: Arcane spells & MUD basics (file operations, cd-hook, look)
+                        Level 3: Cantrips & navigation (user interaction, jump-to-marker, mark-location)
                         Level 4: System spells (config & testing)
                         Level 5: Divination (detection & analysis)
                         Level 6: MUD features (fantasy theme)

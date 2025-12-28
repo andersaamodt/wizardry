@@ -15,7 +15,7 @@ Arguments:
   LEVEL         Demonstration level (0-9, default: 1)
                 Level 0: System foundation (POSIX tools, wizardry structure)
                 Level 1: Menu core (interactive menu system)
-                Level 2: Arcane spells (file operations)
+                Level 2: Arcane spells & MUD basics (file operations, cd-hook, look)
                 Level 3+: Higher-level spells
 USAGE
 }
@@ -58,13 +58,25 @@ demo_level_1() {
 }
 
 demo_level_2() {
-  printf 'Level 2: Arcane Spells\n'
-  printf 'Checking file operation spells...\n'
+  printf 'Level 2: Arcane Spells & MUD Basics\n'
+  printf 'Checking file operation spells and basic MUD features...\n'
   
   check_spell "copy" test -f "${WIZARDRY_DIR}/spells/arcane/copy"
   check_spell "trash" test -f "${WIZARDRY_DIR}/spells/arcane/trash"
   check_spell "forall" test -f "${WIZARDRY_DIR}/spells/arcane/forall"
   check_spell "read-magic" test -f "${WIZARDRY_DIR}/spells/arcane/read-magic"
+  check_spell "check-cd-hook" test -f "${WIZARDRY_DIR}/spells/mud/check-cd-hook"
+  check_spell "look" test -f "${WIZARDRY_DIR}/spells/mud/look"
+}
+
+demo_level_3() {
+  printf 'Level 3: Cantrips & Navigation\n'
+  printf 'Checking user interaction and navigation spells...\n'
+  
+  check_spell "ask-yn" test -f "${WIZARDRY_DIR}/spells/cantrips/ask-yn"
+  check_spell "memorize" test -f "${WIZARDRY_DIR}/spells/cantrips/memorize"
+  check_spell "jump-to-marker" test -f "${WIZARDRY_DIR}/spells/translocation/jump-to-marker"
+  check_spell "mark-location" test -f "${WIZARDRY_DIR}/spells/translocation/mark-location"
 }
 
 demo_level_higher() {
@@ -74,9 +86,6 @@ demo_level_higher() {
   
   check_spell "spellbook" spellbook --help
   check_spell "cast" cast --help
-  check_spell "memorize" memorize --help
-  check_spell "look" look --help
-  check_spell "ask-yn" ask-yn --help
   check_spell "wizard-cast" wizard-cast --help
   check_spell "test-magic" test-magic --help
 }
@@ -150,6 +159,7 @@ while [ "$current_level" -le "$demo_level" ]; do
     0) demo_level_0 ;;
     1) demo_level_1 ;;
     2) demo_level_2 ;;
+    3) demo_level_3 ;;
     *) demo_level_higher "$current_level" ;;
   esac
   
