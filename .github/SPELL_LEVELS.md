@@ -34,18 +34,18 @@ Each `banish N` command:
 **Purpose**: Validate POSIX environment and platform detection capabilities.
 
 ### Assumptions
-- [ ] POSIX shell available (`sh`) - *detect-posix*
-- [ ] Core POSIX utilities: `printf`, `test`, `command` - detect-posix
-- [ ] Path utilities: `dirname`, `basename`, `cd`, `pwd` - detect-posix
-- [ ] File utilities: `cat`, `grep`, `find`, `sort` - detect-posix  
-- [ ] Text processing: `awk`, `sed` - detect-posix
-- [ ] Temporary files: `mktemp` - detect-posix
-- [ ] Standard PATH includes `/bin`, `/usr/bin` - detect-posix
-- [ ] Either `curl` or `wget` available - detect-posix
-- [ ] `tar` available - detect-posix
-- [ ] Operating system detectable via `uname` - detect-distro
-- [ ] Package manager available - detect-distro
-- [ ] Distribution identifiable (Linux only) - detect-distro
+- [ ] POSIX shell available (`sh`) (detect-posix, *install-posix-shell*)
+- [ ] Core POSIX utilities: `printf`, `test`, `command` (detect-posix, *install-core-utils*)
+- [ ] Path utilities: `dirname`, `basename`, `cd`, `pwd` (detect-posix, *install-path-utils*)
+- [ ] File utilities: `cat`, `grep`, `find`, `sort` (detect-posix, *install-file-utils*)
+- [ ] Text processing: `awk`, `sed` (detect-posix, *install-text-utils*)
+- [ ] Temporary files: `mktemp` (detect-posix, *install-mktemp*)
+- [ ] Standard PATH includes `/bin`, `/usr/bin` (detect-posix, *fix-path*)
+- [ ] Either `curl` or `wget` available (detect-posix, *install-download-tool*)
+- [ ] `tar` available (detect-posix, *install-tar*)
+- [ ] Operating system detectable via `uname` (detect-distro, *fix-uname*)
+- [ ] Package manager available (detect-distro, *install-package-manager*)
+- [ ] Distribution identifiable (Linux only) (detect-distro, *identify-distro*)
 
 ### Spells
 * detect-posix
@@ -62,9 +62,9 @@ None (bootstrap level)
 **Purpose**: Wizardry core infrastructure and shell integration.
 
 ### Assumptions
-- [ ] Wizardry is installed (WIZARDRY_DIR is set) - *check-wizardry-installed*
-- [ ] invoke-wizardry available and sourceable - *check-invoke-wizardry*
-- [ ] Wizardry globals properly set - *check-wizardry-globals*
+- [ ] Wizardry is installed (WIZARDRY_DIR is set) (*check-wizardry-installed*, *install-wizardry*)
+- [ ] invoke-wizardry available and sourceable (*check-invoke-wizardry*, *fix-invoke-wizardry*)
+- [ ] Wizardry globals properly set (*check-wizardry-globals*, *set-wizardry-globals*)
 
 ### Spells
 * banish
@@ -79,10 +79,10 @@ None (bootstrap level)
 **Purpose**: Interactive menu system - primary user interface to wizardry.
 
 ### Assumptions
-- [ ] Level 1 complete - banish
-- [ ] Terminal supports ANSI escape codes - *check-terminal-ansi*
-- [ ] TTY is readable/writable - *check-tty*
-- [ ] `stty` command available - detect-posix
+- [ ] Level 1 complete (banish, *noop*)
+- [ ] Terminal supports ANSI escape codes (*check-terminal-ansi*, *disable-ansi-fallback*)
+- [ ] TTY is readable/writable (*check-tty*, *fix-tty-permissions*)
+- [ ] `stty` command available (detect-posix, *install-stty*)
 
 ### Spells
 * menu
@@ -104,8 +104,8 @@ None (bootstrap level)
 **Purpose**: Basic MUD integration - directory navigation awareness and CD hook management.
 
 ### Assumptions
-- [ ] Level 2 complete - banish
-- [ ] Extended attributes supported or fallback available - *check-xattr-support*
+- [ ] Level 2 complete (banish, *noop*)
+- [ ] Extended attributes supported or fallback available (*check-xattr-support*, *install-xattr-tools*)
 
 ### Spells
 * check-cd-hook
@@ -121,8 +121,8 @@ None (bootstrap level)
 **Purpose**: Bookmark-based navigation system for quick directory teleportation.
 
 ### Assumptions
-- [ ] Level 3 complete - banish
-- [ ] Marker directory can be created - *check-marker-directory*
+- [ ] Level 3 complete (banish, *noop*)
+- [ ] Marker directory can be created (*check-marker-directory*, *create-marker-directory*)
 
 ### Spells
 * jump-to-marker
@@ -138,10 +138,10 @@ None
 **Purpose**: Core file and directory manipulation spells.
 
 ### Assumptions
-- [ ] Level 4 complete - banish
-- [ ] File system is readable/writable - *check-filesystem-rw*
-- [ ] Standard UNIX file utilities work (`cp`, `mv`, `rm`, `find`) - detect-posix
-- [ ] Sufficient disk space - *check-disk-space*
+- [ ] Level 4 complete (banish, *noop*)
+- [ ] File system is readable/writable (*check-filesystem-rw*, *fix-filesystem-permissions*)
+- [ ] Standard UNIX file utilities work (`cp`, `mv`, `rm`, `find`) (detect-posix, *install-file-utils*)
+- [ ] Sufficient disk space (*check-disk-space*, *warn-low-disk-space*)
 
 ### Spells
 * copy
@@ -161,9 +161,9 @@ None
 **Purpose**: Simple interactive spells for user input and basic operations.
 
 ### Assumptions
-- [ ] Level 5 complete - banish
-- [ ] Terminal supports interactive input - *check-tty-interactive*
-- [ ] User can respond to prompts - *check-tty-interactive*
+- [ ] Level 5 complete (banish, *noop*)
+- [ ] Terminal supports interactive input (*check-tty-interactive*, *enable-interactive-mode*)
+- [ ] User can respond to prompts (*check-tty-interactive*, *enable-interactive-mode*)
 
 ### Spells
 * ask
@@ -184,7 +184,7 @@ None
 **Purpose**: Input validation and requirement checking.
 
 ### Assumptions
-- [ ] Level 6 complete - banish
+- [ ] Level 6 complete (banish, *noop*)
 
 ### Spells
 * validate-number
@@ -201,7 +201,7 @@ None
 **Purpose**: More complex user interaction spells that build on validation.
 
 ### Assumptions
-- [ ] Level 7 complete - banish
+- [ ] Level 7 complete (banish, *noop*)
 
 ### Spells
 * ask-number (ask from Level 6, validate-number from Level 7)
@@ -217,8 +217,8 @@ None
 **Purpose**: System-level configuration management.
 
 ### Assumptions
-- [ ] Level 8 complete - banish
-- [ ] Write access to config files - *check-config-writable*
+- [ ] Level 8 complete (banish, *noop*)
+- [ ] Write access to config files (*check-config-writable*, *create-config-directory*)
 
 ### Spells
 * config
@@ -235,8 +235,8 @@ None
 **Purpose**: Test execution and validation framework.
 
 ### Assumptions
-- [ ] Level 9 complete - banish
-- [ ] Test infrastructure available - *check-test-infrastructure*
+- [ ] Level 9 complete (banish, *noop*)
+- [ ] Test infrastructure available (*check-test-infrastructure*, *setup-test-infrastructure*)
 
 ### Spells
 * test-spell
@@ -254,7 +254,7 @@ None
 **Purpose**: System updates and process management.
 
 ### Assumptions
-- [ ] Level 10 complete - banish
+- [ ] Level 10 complete (banish, *noop*)
 
 ### Spells
 * update-wizardry
@@ -271,7 +271,7 @@ None
 **Purpose**: Advanced system validation and demonstration.
 
 ### Assumptions
-- [ ] Level 11 complete - banish
+- [ ] Level 11 complete (banish, *noop*)
 
 ### Spells
 * demo-magic
@@ -288,8 +288,8 @@ None
 **Purpose**: Detection and analysis spells for system information.
 
 ### Assumptions
-- [ ] Level 12 complete - banish
-- [ ] System information accessible - detect-posix
+- [ ] Level 12 complete (banish, *noop*)
+- [ ] System information accessible (detect-posix, *install-sysinfo-tools*)
 
 ### Spells
 * detect-rc-file
@@ -306,8 +306,8 @@ None
 **Purpose**: Advanced MUD theme integration building on basic MUD (Level 3).
 
 ### Assumptions
-- [ ] Level 13 complete - banish
-- [ ] Extended attributes working - check-xattr-support
+- [ ] Level 13 complete (banish, *noop*)
+- [ ] Extended attributes working (*check-xattr-support*, *install-xattr-tools*)
 
 ### Spells
 * decorate (look from Level 3, read-magic from Level 5)
@@ -324,7 +324,7 @@ None
 **Purpose**: Cryptographic operations and hashing.
 
 ### Assumptions
-- [ ] Level 14 complete - banish
+- [ ] Level 14 complete (banish, *noop*)
 
 ### Spells
 * hash
@@ -341,8 +341,8 @@ None
 **Purpose**: SSH management and remote translocation.
 
 ### Assumptions
-- [ ] Level 15 complete - banish
-- [ ] SSH available - detect-posix
+- [ ] Level 15 complete (banish, *noop*)
+- [ ] SSH available (detect-posix, *install-ssh*)
 
 ### Spells
 * validate-ssh-key
@@ -363,7 +363,7 @@ None
 **Purpose**: Task priority management.
 
 ### Assumptions
-- [ ] Level 16 complete - banish
+- [ ] Level 16 complete (banish, *noop*)
 
 ### Spells
 * get-priority
@@ -381,7 +381,7 @@ None
 **Purpose**: Security hardening and monitoring.
 
 ### Assumptions
-- [ ] Level 17 complete - banish
+- [ ] Level 17 complete (banish, *noop*)
 
 ### Spells
 * ssh-barrier (SSH spells from Level 16)
@@ -396,8 +396,8 @@ None
 **Purpose**: File attribute management and manipulation.
 
 ### Assumptions
-- [ ] Level 18 complete - banish
-- [ ] Extended attributes working - check-xattr-support
+- [ ] Level 18 complete (banish, *noop*)
+- [ ] Extended attributes working (*check-xattr-support*, *install-xattr-tools*)
 
 ### Spells
 * enchant (read-magic from Level 5)
@@ -415,7 +415,7 @@ None
 **Purpose**: Process management and contact information.
 
 ### Assumptions
-- [ ] Level 19 complete - banish
+- [ ] Level 19 complete (banish, *noop*)
 
 ### Spells
 * list-contacts
@@ -431,7 +431,7 @@ None
 **Purpose**: Tools for spell development, linting, and management.
 
 ### Assumptions
-- [ ] Level 20 complete - banish
+- [ ] Level 20 complete (banish, *noop*)
 
 ### Spells
 * scribe-spell
@@ -459,8 +459,8 @@ None
 **Purpose**: Core menu system components that aggregate spells.
 
 ### Assumptions
-- [ ] Level 21 complete - banish
-- [ ] Menu system from Level 2 works - menu
+- [ ] Level 21 complete (banish, *noop*)
+- [ ] Menu system from Level 2 works (menu, *fix-menu-system*)
 
 ### Spells
 * spellbook-store
@@ -478,7 +478,7 @@ None
 **Purpose**: Menu interfaces for system configuration and management.
 
 ### Assumptions
-- [ ] Level 22 complete - banish
+- [ ] Level 22 complete (banish, *noop*)
 
 ### Spells
 * system-menu (menu from Level 2, config from Level 9)
@@ -496,7 +496,7 @@ None
 **Purpose**: Menu interfaces for MUD features and administration.
 
 ### Assumptions
-- [ ] Level 23 complete - banish
+- [ ] Level 23 complete (banish, *noop*)
 
 ### Spells
 * mud (menu from Level 2)
@@ -517,7 +517,7 @@ None
 **Purpose**: Menu interfaces for specialized domains (network, services, priorities, etc.).
 
 ### Assumptions
-- [ ] Level 24 complete - banish
+- [ ] Level 24 complete (banish, *noop*)
 
 ### Spells
 * network-menu (menu from Level 2)
@@ -538,7 +538,7 @@ None
 **Purpose**: System service installation and management.
 
 ### Assumptions
-- [ ] Level 25 complete - banish
+- [ ] Level 25 complete (banish, *noop*)
 
 ### Spells
 * install-service-template
@@ -561,7 +561,7 @@ None
 **Purpose**: Optional third-party software integrations.
 
 ### Assumptions
-- [ ] Level 26 complete - banish
+- [ ] Level 26 complete (banish, *noop*)
 
 ### Spells
 All spells in `spells/.arcana/`
