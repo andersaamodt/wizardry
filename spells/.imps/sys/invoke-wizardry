@@ -133,6 +133,7 @@ invoke_wizardry() {
     move-cursor \
     fathom-cursor \
     fathom-terminal \
+    require-command \
     cursor-blink \
     colors; do
     # Search for spell in all categories

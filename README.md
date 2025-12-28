@@ -208,6 +208,7 @@ These policies describe Wizardry’s stance toward software freedom, tooling, an
 | Built-in tools first  | Where possible, arcana use each OS’s built-in package managers rather than heavy external packaging layers.                     |
 | Hand-finished AI code | AI may help draft POSIX shell, but final scripts are hand-reviewed, commented, and tested.                                      |
 | No AI integration     | Wizardry spells themselves do not call out to AI tools or services.                                                             |
+| No fallback forks     | When debugging, fix the primary execution path instead of adding alternate fallback implementations that duplicate behavior.    |
 
 ## **Design Tenets**
 
