@@ -26,12 +26,18 @@ export _WIZARDRY_INVOKED
 _invoke_wizardry() {
   # Detect WIZARDRY_DIR
   if [ -z "${WIZARDRY_DIR-}" ]; then
-    # Capture script path - in bash use BASH_SOURCE, in zsh use $0
+    # Capture script path - in bash use BASH_SOURCE, in zsh use ${(%):-%x}
     _iw_script_path=""
     if eval '[ -n "${BASH_VERSION-}" ]' 2>/dev/null; then
       _iw_script_path=$(eval 'printf "%s" "${BASH_SOURCE[0]-}"')
     elif [ -n "${ZSH_VERSION-}" ]; then
-      _iw_script_path="$0"
+      # In zsh, use %x expansion to get sourced file path
+      # Note: $0 contains the shell name when sourced, not the file path
+      _iw_script_path=$(eval 'printf "%s" "${(%):-%x}"' 2>/dev/null) || :
+      # Fallback to %N if %x didn't work
+      if [ -z "$_iw_script_path" ]; then
+        _iw_script_path=$(eval 'printf "%s" "${(%):-%N}"' 2>/dev/null) || :
+      fi
     fi
     
     # Fallback to command -v
