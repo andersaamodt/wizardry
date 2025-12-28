@@ -71,7 +71,7 @@ test_custom_wizardry_dir() {
   
   WIZARDRY_LOG_LEVEL=1 run_spell "spells/system/banish" --wizardry-dir "$tmpdir/custom"
   assert_success || return 1
-  assert_output_contains "Banish complete" || return 1
+  assert_output_contains "Validation complete" || return 1
 }
 
 test_missing_invoke_wizardry() {
@@ -165,7 +165,7 @@ test_verbose_shows_level_info() {
   
   WIZARDRY_DIR="$tmpdir/.wizardry" run_spell "spells/system/banish" 1 --verbose --no-tests
   assert_success || return 1
-  assert_output_contains "Pre-Install" || return 1
+  assert_output_contains "System Foundation" || return 1
   assert_output_contains "Menu Core" || return 1
 }
 

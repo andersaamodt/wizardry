@@ -14,11 +14,11 @@ The spiral organization starts from the most fundamental prerequisites (Level 0)
 The `banish` spell integrates assumption-checking, self-healing, and testing:
 
 ```bash
-banish           # Banish to level 0 (default) - prepare for install
+banish           # Banish to level 0 (default) - validate system foundation
 banish 0         # Same as above
 banish 1         # Banish through levels 0-1 (menu core ready)
 banish 2         # Banish through levels 0-2 (arcane spells ready)
-banish N         # Banish through levels 0-N (full system)
+banish N         # Banish through levels 0-N (full system validated)
 ```
 
 Each `banish N` command:
@@ -29,9 +29,9 @@ Each `banish N` command:
 
 ---
 
-## Level 0: Pre-Install Foundation
+## Level 0: System Foundation
 
-**Purpose**: Prepare the system for wizardry installation. This level ensures the basic POSIX environment is ready, detects OS information, checks system-foundational assumptions, and verifies that `install` can succeed.
+**Purpose**: Validate the system foundation. This level checks the basic POSIX environment, detects OS information, verifies system-foundational assumptions, and confirms wizardry is properly installed. While this level can help diagnose pre-install issues, banish is designed to run AFTER wizardry is installed.
 
 ### Assumptions
 - [ ] POSIX shell available (`sh`)
@@ -56,11 +56,13 @@ Each `banish N` command:
 - Offer to install missing recommended tools
 
 ### Spells
-- `banish` - The bootstrap spell itself (enhanced with multi-level support)
-- None yet - this level prepares for installing wizardry
+- `spells/system/banish` - The validation spell itself
+- Detection spells used by banish level 0:
+  - `spells/divination/detect-posix` - POSIX toolchain validation
+  - `spells/divination/detect-distro` - OS distribution detection
 
 ### Imps Used by Level 0 Spells
-**Note**: `banish` is a bootstrap spell and cannot use imps - it must be self-contained.
+**Note**: Level 0 assumes wizardry is installed. The banish spell itself can work with minimal dependencies for bootstrapping scenarios, but is designed for post-install validation.
 
 ### Detection Capabilities (Optional)
 If wizardry is already installed, Level 0 can use:

@@ -1,20 +1,22 @@
 #!/bin/sh
 
-# Banish environmental chaos and prepare the runtime for wizardry.
-# This bootstrapping spell assumption-checks and self-heals the environment,
-# ensuring POSIX tools are available and WIZARDRY_DIR is properly configured.
+# Banish environmental chaos and validate wizardry readiness at different levels.
+# This spell assumption-checks, self-heals, and tests the environment,
+# ensuring all prerequisites are met for each spell level.
 
 show_usage() {
   cat <<'USAGE'
 Usage: banish [LEVEL] [OPTIONS]
 
-Banish environmental chaos and prepare wizardry to the specified spell level.
-Each level builds on previous levels, checking assumptions, self-healing issues,
-and running tests. See SPIRAL_DEBUG.md for complete level documentation.
+Validate wizardry at the specified spell level, checking assumptions, 
+self-healing issues, and running tests. Each level builds on previous levels.
+
+NOTE: Banish requires wizardry to be installed. Run ./install first.
+See SPIRAL_DEBUG.md for complete level documentation.
 
 Arguments:
-  LEVEL                 Spell level to banish to (0-9, default: 0)
-                        Level 0: Pre-install foundation (POSIX tools)
+  LEVEL                 Spell level to validate (0-9, default: 0)
+                        Level 0: System foundation (POSIX tools, OS)
                         Level 1: Menu core (interactive menu system)
                         Level 2: Arcane spells (file operations)
                         Level 3: Cantrips (user interaction)
@@ -42,11 +44,11 @@ Exit Codes:
   2  Invalid usage
 
 Examples:
-  banish                    # Banish to level 0 (pre-install, current behavior)
-  banish 1                  # Banish through level 1 (menu ready)
-  banish 2 --verbose        # Banish to level 2 with detailed output
-  banish 4 --no-tests       # Prepare through level 4, skip tests
-  banish 1 --yes            # Non-interactive level 1 banish
+  banish                    # Validate level 0 (system foundation)
+  banish 1                  # Validate through level 1 (menu ready)
+  banish 2 --verbose        # Validate to level 2 with detailed output
+  banish 4 --no-tests       # Validate through level 4, skip tests
+  banish 1 --yes            # Non-interactive level 1 validation
 USAGE
 }
 
@@ -190,7 +192,7 @@ banish_ask_yn() {
 # Get level name for display
 banish_level_name() {
   case "$1" in
-    0) printf 'Pre-Install Foundation' ;;
+    0) printf 'System Foundation' ;;
     1) printf 'Menu Core' ;;
     2) printf 'Arcane Spells' ;;
     3) printf 'Cantrips' ;;
@@ -857,7 +859,7 @@ banish_run_tests_for_level() {
 
 # Main execution: Run levels 0 through target_level
 if [ "$log_level" -ge 1 ]; then
-  printf '\n=== Banishing to Level %d: %s ===\n' "$target_level" "$(banish_level_name "$target_level")"
+  printf '\n=== Validating Wizardry through Level %d: %s ===\n' "$target_level" "$(banish_level_name "$target_level")"
 fi
 
 # Run each level from 0 to target_level
@@ -865,7 +867,7 @@ current_level=0
 while [ "$current_level" -le "$target_level" ]; do
   banish_level "$current_level" || {
     exit_code=$?
-    banish_error "Level $current_level failed, cannot continue"
+    banish_error "Level $current_level validation failed, cannot continue"
     return "$exit_code"
   }
   current_level=$((current_level + 1))
@@ -873,9 +875,9 @@ done
 
 # Final success message
 if [ "$log_level" -ge 1 ]; then
-  printf '\n✓ Banish complete - Level %d ready\n' "$target_level"
+  printf '\n✓ Validation complete - Level %d ready\n' "$target_level"
 else
-  printf 'Banish complete - Level %d ready\n' "$target_level"
+  printf 'Validation complete - Level %d ready\n' "$target_level"
 fi
 
 return 0
