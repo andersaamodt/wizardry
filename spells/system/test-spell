@@ -95,7 +95,7 @@ fi
 export PATH
 
 # Source env-clear after PATH is set up
-. env-clear
+env-clear
 
 # Source test boot imps for standardized output functions
 for boot_imp in "$root_dir"/spells/.imps/test/boot/*; do

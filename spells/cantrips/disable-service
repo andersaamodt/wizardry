@@ -23,7 +23,7 @@ esac
 require-wizardry || return 1
 
 set -eu
-. env-clear
+env-clear
 
 script_name=$(basename "$0")
 

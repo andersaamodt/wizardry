@@ -22,7 +22,7 @@ require-wizardry || return 1
 
 
 set -eu
-. env-clear
+env-clear
 . colors
 
 trap 'exit 0' INT TERM

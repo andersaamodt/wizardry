@@ -31,7 +31,7 @@ esac
 require-wizardry || return 1
 
 set -eu
-. env-clear
+env-clear
 
 # Initialize spell_home
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")

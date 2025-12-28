@@ -81,6 +81,7 @@ _invoke_wizardry() {
   # Set up SPELLBOOK_DIR
   : "${SPELLBOOK_DIR:=${HOME-}/.spellbook}"
   export SPELLBOOK_DIR
+
   
   # SPIRAL DEBUG PHASE 1: Minimal pre-loading (menu + dependencies only)
   # Future: ALL wizardry spells will be pre-loaded, hotloading only for ~/.spellbook

@@ -18,7 +18,7 @@ esac
 require-wizardry || return 1
 
 set -eu
-. env-clear
+env-clear
 
 # Check if memorized (used multiple times in loop)
 is_memorized() {

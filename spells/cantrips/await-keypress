@@ -25,7 +25,7 @@ esac
 require-wizardry || return 1
 
 set -eu
-. env-clear
+env-clear
 
 # Resolve require-command location
 if [ -n "${REQUIRE_COMMAND-}" ]; then

@@ -25,7 +25,7 @@ esac
 require-wizardry || return 1
 
 set -eu
-. env-clear
+env-clear
 verbose=0
 if [ "${1-}" = "-v" ]; then
   verbose=1

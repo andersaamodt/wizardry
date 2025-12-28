@@ -23,7 +23,7 @@ esac
 require-wizardry || return 1
 
 set -eu
-. env-clear
+env-clear
 
 if [ "$#" -ne 2 ]; then
     move_cursor_usage

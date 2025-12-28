@@ -39,7 +39,7 @@ esac
 require-wizardry || return 1
 
 set -eu
-. env-clear
+env-clear
 
 # Source the logging imps (in real usage, these would be bound at startup)
 # For this example, we'll source them directly
