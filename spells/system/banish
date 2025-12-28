@@ -341,12 +341,8 @@ banish_level_0() {
     
     # Export WIZARDRY_DIR for downstream tools
     export WIZARDRY_DIR
-    if [ "$log_level" -eq 0 ]; then
-      # Non-verbose mode: show simple success message
-      printf 'Environment prepared: WIZARDRY_DIR=%s\n' "$WIZARDRY_DIR"
-    else
-      banish_info "Environment prepared: WIZARDRY_DIR=$WIZARDRY_DIR"
-    fi
+    # Only show "Environment prepared" in verbose mode (log_level >= 1)
+    banish_info "Environment prepared: WIZARDRY_DIR=$WIZARDRY_DIR"
   fi
   
   # Stage 2: Detect OS and system information
