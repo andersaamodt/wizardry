@@ -166,8 +166,18 @@ function brace_delta(s, n, m) {
   # Pre-load essential imps needed by menu
   # These are from sys/, out/, fs/, cond/ families
   _iw_debug "Pre-loading essential imps"
-  _iw_essential_imps="require require-wizardry castable env-clear temp-file cleanup-file has die warn fail say"
-  for _imp_name in $_iw_essential_imps; do
+  for _imp_name in \
+    require \
+    require-wizardry \
+    castable \
+    env-clear \
+    temp-file \
+    cleanup-file \
+    has \
+    die \
+    warn \
+    fail \
+    say; do
     # Search for imp in all families
     for _family_dir in "$WIZARDRY_DIR"/spells/.imps/*; do
       [ -d "$_family_dir" ] || continue
@@ -181,8 +191,14 @@ function brace_delta(s, n, m) {
   
   # Pre-load menu and its helper spell dependencies
   _iw_debug "Pre-loading essential spells"
-  _iw_essential_spells="menu await-keypress move-cursor fathom-cursor fathom-terminal cursor-blink colors"
-  for _spell_name in $_iw_essential_spells; do
+  for _spell_name in \
+    menu \
+    await-keypress \
+    move-cursor \
+    fathom-cursor \
+    fathom-terminal \
+    cursor-blink \
+    colors; do
     # Search for spell in all categories
     for _spell_dir in "$WIZARDRY_DIR"/spells/*; do
       [ -d "$_spell_dir" ] || continue
