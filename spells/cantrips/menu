@@ -410,6 +410,11 @@ do
         fi
 
         current_window_width=$(fathom-terminal --width)
+        case "$current_window_width" in
+                ''|*[!0-9]*)
+                        current_window_width=0
+                        ;;
+        esac
         current_max_command_length=$((current_window_width - max_name_length - 3))
         if [ "$current_max_command_length" -lt 0 ]; then
                 current_max_command_length=0
