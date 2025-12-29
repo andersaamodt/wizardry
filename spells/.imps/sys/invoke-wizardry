@@ -136,7 +136,8 @@ invoke_wizardry() {
     require-command \
     cursor-blink \
     colors \
-    banish; do
+    banish \
+    validate-spells; do
     # Search for spell in all categories
     for _spell_dir in "$WIZARDRY_DIR"/spells/*; do
       [ -d "$_spell_dir" ] || continue
