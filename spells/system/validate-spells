@@ -17,6 +17,7 @@ Options:
   --quiet, -q           Only report missing spells (no success messages)
   --missing-only        Return list of missing spells on stdout
   --imps                Validate imps instead of spells
+  --show-status         Show detailed status (loaded vs available)
 
 Examples:
   validate-spells ask-yn menu                    # Check cantrips
@@ -59,6 +60,7 @@ fi
 quiet=0
 missing_only=0
 validate_imps=0
+show_status=0
 default_dir="cantrips"
 
 while [ "$#" -gt 0 ]; do
@@ -75,6 +77,10 @@ while [ "$#" -gt 0 ]; do
     --imps)
       validate_imps=1
       default_dir=".imps"
+      shift
+      ;;
+    --show-status)
+      show_status=1
       shift
       ;;
     -*)
@@ -95,6 +101,8 @@ fi
 # Validate each spell
 missing=""
 found_count=0
+loaded_count=0
+available_count=0
 
 for spell_info in "$@"; do
   # Parse spell:dir format
@@ -116,9 +124,54 @@ for spell_info in "$@"; do
     spell_path="${WIZARDRY_DIR}/spells/$dir/$spell"
   fi
   
+  # Determine function name
+  if [ "$validate_imps" -eq 1 ]; then
+    # For imps, extract just the name part after the family/
+    # Keep hyphens as-is (imps use hyphenated names)
+    func_name=$(printf '%s' "$spell" | sed 's|.*/||')
+  else
+    # For spells, use hyphenated name as-is
+    func_name=$(printf '%s' "$spell" | sed 's|.*/||')
+  fi
+  
+  # Check if loaded as function (try both hyphenated and underscored versions)
+  is_loaded=0
+  for name_variant in "$func_name" "$(printf '%s' "$func_name" | tr '-' '_')"; do
+    if command -v "$name_variant" >/dev/null 2>&1; then
+      func_type=$(type "$name_variant" 2>/dev/null || true)
+      case "$func_type" in
+        *"function"*|*"shell function"*)
+          is_loaded=1
+          break
+          ;;
+      esac
+    fi
+  done
+  
   if [ -f "$spell_path" ]; then
     found_count=$((found_count + 1))
-    if [ "$quiet" -eq 0 ]; then
+    
+    if [ "$is_loaded" -eq 1 ]; then
+      loaded_count=$((loaded_count + 1))
+      if [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ]; then
+        if [ "$validate_imps" -eq 1 ]; then
+          printf '\033[32m✓\033[0m Loaded imp: %s\n' "$spell"
+        else
+          printf '\033[32m✓\033[0m Loaded spell: %s\n' "$spell"
+        fi
+      fi
+    else
+      available_count=$((available_count + 1))
+      if [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ]; then
+        if [ "$validate_imps" -eq 1 ]; then
+          printf '\033[34m●\033[0m Available imp: %s\n' "$spell"
+        else
+          printf '\033[34m●\033[0m Available spell: %s\n' "$spell"
+        fi
+      fi
+    fi
+    
+    if [ "$quiet" -eq 0 ] && [ "$show_status" -eq 0 ]; then
       if [ "$validate_imps" -eq 1 ]; then
         printf '✓ Found imp: %s\n' "$spell"
       else
