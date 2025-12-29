@@ -71,7 +71,10 @@ if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
   printf '[banish] Function called\n' >&2
 fi
 
-set -eu
+# Use set -u only (not set -e) to avoid interactive shell exit issues.
+# When a function with set -e returns non-zero, it can cause the calling shell to exit.
+# Since banish is called from interactive shells, we must avoid this.
+set -u
 
 # Detect WIZARDRY_DIR if not already set
 # When sourced by invoke-wizardry, WIZARDRY_DIR will already be set
@@ -183,9 +186,13 @@ if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/spell-lev
   . "${WIZARDRY_DIR}/spells/.imps/sys/spell-levels"
 else
   # Fallback: try to find from script location
-  _banish_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-  _wiz_root=$(CDPATH= cd -- "$_banish_dir/../.." && pwd -P)
-  if [ -f "$_wiz_root/spells/.imps/sys/spell-levels" ]; then
+  _banish_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || _banish_dir=""
+  if [ -n "$_banish_dir" ]; then
+    _wiz_root=$(CDPATH= cd -- "$_banish_dir/../.." 2>/dev/null && pwd -P) || _wiz_root=""
+  else
+    _wiz_root=""
+  fi
+  if [ -n "$_wiz_root" ] && [ -f "$_wiz_root/spells/.imps/sys/spell-levels" ]; then
     . "$_wiz_root/spells/.imps/sys/spell-levels"
   else
     # Final fallback: define inline if spell-levels not found
