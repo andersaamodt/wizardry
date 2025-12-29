@@ -117,7 +117,7 @@ loaded_count=0
 available_count=0
 
 # For imps with --show-status, we'll collect results for category-based output
-# Store results as space-separated lists instead of using eval-based dynamic variables
+# Store results as newline-separated "category|status|name" entries
 imp_results=""
 
 for spell_info in "$@"; do
@@ -175,7 +175,8 @@ for spell_info in "$@"; do
         category=$(printf '%s' "$spell" | cut -d/ -f1)
         imp_name=$(printf '%s' "$spell" | sed 's|.*/||')
         # Format: category|status|name (status: L=loaded, A=available)
-        imp_results="${imp_results}${imp_results:+ }${category}|L|${imp_name}"
+        imp_results="${imp_results}${imp_results:+
+}${category}|L|${imp_name}"
       elif [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ]; then
         # For spells, show individually
         printf '\033[32m✓\033[0m Loaded spell: %s\n' "$spell"
@@ -188,7 +189,8 @@ for spell_info in "$@"; do
         category=$(printf '%s' "$spell" | cut -d/ -f1)
         imp_name=$(printf '%s' "$spell" | sed 's|.*/||')
         # Format: category|status|name (status: L=loaded, A=available)
-        imp_results="${imp_results}${imp_results:+ }${category}|A|${imp_name}"
+        imp_results="${imp_results}${imp_results:+
+}${category}|A|${imp_name}"
       elif [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ]; then
         # For spells, show individually
         printf '\033[34m●\033[0m Available spell: %s\n' "$spell"
@@ -212,14 +214,16 @@ if [ "$validate_imps" -eq 1 ] && [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ];
   if [ -n "$imp_results" ]; then
   # Get all unique categories
   categories=""
-  for result in $imp_results; do
-    category=$(printf '%s' "$result" | cut -d'|' -f1)
+  while IFS='|' read -r category _status _name; do
+    [ -z "$category" ] && continue
     # Add category to list if not already present
     case " $categories " in
       *" $category "*) ;;
       *) categories="${categories:+$categories }$category" ;;
     esac
-  done
+  done <<EOF
+$imp_results
+EOF
   
   # Output each category
   for category in $categories; do
@@ -227,11 +231,8 @@ if [ "$validate_imps" -eq 1 ] && [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ];
     available_imps=""
     
     # Collect imps for this category
-    for result in $imp_results; do
-      result_category=$(printf '%s' "$result" | cut -d'|' -f1)
-      result_status=$(printf '%s' "$result" | cut -d'|' -f2)
-      result_name=$(printf '%s' "$result" | cut -d'|' -f3-)
-      
+    while IFS='|' read -r result_category result_status result_name; do
+      [ -z "$result_category" ] && continue
       if [ "$result_category" = "$category" ]; then
         if [ "$result_status" = "L" ]; then
           loaded_imps="${loaded_imps}${loaded_imps:+ }${result_name}"
@@ -239,7 +240,9 @@ if [ "$validate_imps" -eq 1 ] && [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ];
           available_imps="${available_imps}${available_imps:+ }${result_name}"
         fi
       fi
-    done
+    done <<EOF
+$imp_results
+EOF
     
     # Count and output loaded imps with proper pluralization
     if [ -n "$loaded_imps" ]; then
