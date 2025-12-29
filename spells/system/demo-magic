@@ -16,80 +16,65 @@ Arguments:
                 Level 0: POSIX & platform foundation
                 Level 1: Wizardry installation
                 Level 2: Menu system
-                Level 3: MUD basics (cd-hook, look)
-                Level 4: Navigation (jump-to-marker, mark-location)
-                Level 5+: Higher-level spells (see .github/SPELL_LEVELS.md)
+                Level 3+: Higher-level spells (see SPELL_LEVELS.md)
 USAGE
 }
 
-check_spell() {
-  label=$1
-  shift
-
-  if "$@" >/dev/null 2>&1; then
-    printf '%s: ready\n' "$label"
-    return 0
-  fi
-
-  printf 'Warning: %s check failed\n' "$label" >&2
-  return 1
-}
-
-demo_level_0() {
-  printf 'Level 0: System Foundation\n'
-  printf 'Checking POSIX environment and wizardry structure...\n'
-  
-  check_spell "WIZARDRY_DIR" test -n "${WIZARDRY_DIR-}"
-  check_spell "invoke-wizardry" test -f "${WIZARDRY_DIR}/spells/.imps/sys/invoke-wizardry"
-  check_spell "spells directory" test -d "${WIZARDRY_DIR}/spells"
-  check_spell "imps directory" test -d "${WIZARDRY_DIR}/spells/.imps"
-}
-
-demo_level_1() {
-  printf 'Level 1: Menu Core\n'
-  printf 'Validating interactive menu system...\n'
-  
-  check_spell "menu" test -f "${WIZARDRY_DIR}/spells/cantrips/menu"
-  check_spell "await-keypress" test -f "${WIZARDRY_DIR}/spells/cantrips/await-keypress"
-  check_spell "fathom-cursor" test -f "${WIZARDRY_DIR}/spells/cantrips/fathom-cursor"
-  check_spell "fathom-terminal" test -f "${WIZARDRY_DIR}/spells/cantrips/fathom-terminal"
-  check_spell "move-cursor" test -f "${WIZARDRY_DIR}/spells/cantrips/move-cursor"
-  check_spell "cursor-blink" test -f "${WIZARDRY_DIR}/spells/cantrips/cursor-blink"
-  check_spell "colors" test -f "${WIZARDRY_DIR}/spells/cantrips/colors"
-  check_spell "stty" command -v stty
-}
-
-demo_level_2() {
-  printf 'Level 2: Arcane Spells & MUD Basics\n'
-  printf 'Checking file operation spells and basic MUD features...\n'
-  
-  check_spell "copy" test -f "${WIZARDRY_DIR}/spells/arcane/copy"
-  check_spell "trash" test -f "${WIZARDRY_DIR}/spells/arcane/trash"
-  check_spell "forall" test -f "${WIZARDRY_DIR}/spells/arcane/forall"
-  check_spell "read-magic" test -f "${WIZARDRY_DIR}/spells/arcane/read-magic"
-  check_spell "check-cd-hook" test -f "${WIZARDRY_DIR}/spells/mud/check-cd-hook"
-  check_spell "look" test -f "${WIZARDRY_DIR}/spells/mud/look"
-}
-
-demo_level_3() {
-  printf 'Level 3: Cantrips & Navigation\n'
-  printf 'Checking user interaction and navigation spells...\n'
-  
-  check_spell "ask-yn" test -f "${WIZARDRY_DIR}/spells/cantrips/ask-yn"
-  check_spell "memorize" test -f "${WIZARDRY_DIR}/spells/cantrips/memorize"
-  check_spell "jump-to-marker" test -f "${WIZARDRY_DIR}/spells/translocation/jump-to-marker"
-  check_spell "mark-location" test -f "${WIZARDRY_DIR}/spells/translocation/mark-location"
-}
-
-demo_level_higher() {
+# Demo a single level using spell-levels data
+demo_level() {
   level=$1
-  printf 'Level %d: Advanced features\n' "$level"
-  printf 'Checking core spells...\n'
   
-  check_spell "spellbook" spellbook --help
-  check_spell "cast" cast --help
-  check_spell "wizard-cast" wizard-cast --help
-  check_spell "test-magic" test-magic --help
+  # Get level name and spell list
+  level_name=$(banish_level_name "$level")
+  spell_list=$(get_level_spells "$level")
+  imp_list=$(get_level_imps "$level")
+  
+  printf 'Level %d: %s\n' "$level" "$level_name"
+  
+  # Special case for level 0 - infrastructure checks
+  if [ "$level" -eq 0 ]; then
+    printf 'Checking POSIX environment and wizardry structure...\n'
+    [ -f "${WIZARDRY_DIR}/spells/.imps/sys/invoke-wizardry" ] && \
+      printf 'invoke-wizardry: ready\n' || printf 'Warning: invoke-wizardry check failed\n' >&2
+    [ -d "${WIZARDRY_DIR}/spells" ] && \
+      printf 'spells directory: ready\n' || printf 'Warning: spells directory check failed\n' >&2
+    [ -d "${WIZARDRY_DIR}/spells/.imps" ] && \
+      printf 'imps directory: ready\n' || printf 'Warning: imps directory check failed\n' >&2
+  fi
+  
+  # Check spells for this level (note: spell_list is intentionally unquoted for word splitting)
+  if [ -n "$spell_list" ]; then
+    # shellcheck disable=SC2086
+    validate-spells --quiet $spell_list 2>&1 | sed 's/✓ Found spell://; s/^  *//; s/$/:ready/'
+    
+    # Report missing spells if any
+    # shellcheck disable=SC2086
+    if ! validate-spells $spell_list >/dev/null 2>&1; then
+      # shellcheck disable=SC2086
+      missing=$(validate-spells --missing-only $spell_list)
+      printf 'Warning: missing spells: %s\n' "$missing" >&2
+    fi
+  fi
+  
+  # Check imps for this level (note: imp_list is intentionally unquoted for word splitting)
+  if [ -n "$imp_list" ]; then
+    # shellcheck disable=SC2086
+    validate-spells --quiet --imps $imp_list 2>&1 | sed 's/✓ Found imp://; s/^  *//; s/$/  (imp):ready/'
+    
+    # Report missing imps if any
+    # shellcheck disable=SC2086
+    if ! validate-spells --imps $imp_list >/dev/null 2>&1; then
+      # shellcheck disable=SC2086
+      missing=$(validate-spells --imps --missing-only $imp_list)
+      printf 'Warning: missing imps: %s\n' "$missing" >&2
+    fi
+  fi
+  
+  # Special checks for level 27 (arcana)
+  if [ "$level" -eq 27 ]; then
+    [ -d "${WIZARDRY_DIR}/spells/.arcana" ] && \
+      printf 'arcana directory: ready\n' || printf 'Warning: arcana directory check failed\n' >&2
+  fi
 }
 
 demo_magic() {
@@ -100,12 +85,16 @@ case "${1-}" in
   ;;
 esac
 
+require-wizardry || return 1
+
 set -eu
+env-clear
 
 # Detect WIZARDRY_DIR if not set (for direct execution)
 if [ -z "${WIZARDRY_DIR-}" ]; then
   # Try to detect from script location
-  if command -v dirname >/dev/null 2>&1 && command -v cd >/dev/null 2>&1 && command -v pwd >/dev/null 2>&1; then
+  if command -v dirname >/dev/null 2>&1 && command -v cd >/dev/null 2>&1 \
+     && command -v pwd >/dev/null 2>&1; then
     _script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || _script_dir=""
     if [ -n "$_script_dir" ]; then
       _wiz_root=$(CDPATH= cd -- "$_script_dir/../.." 2>/dev/null && pwd -P) || _wiz_root=""
@@ -123,11 +112,19 @@ if [ -z "${WIZARDRY_DIR-}" ]; then
   fi
 fi
 
+# Source spell-levels from sys imp
+if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/spell-levels" ]; then
+  . "${WIZARDRY_DIR}/spells/.imps/sys/spell-levels"
+else
+  printf 'demo-magic: spell-levels imp not found\n' >&2
+  return 1
+fi
+
 # Parse level argument
 demo_level=1
 if [ "$#" -gt 0 ]; then
   case "$1" in
-    [0-9])
+    [0-9]|[0-9][0-9])
       demo_level=$1
       shift
       ;;
@@ -139,15 +136,46 @@ if [ "$#" -gt 0 ]; then
   esac
 fi
 
+# Sandbox with bwrap if not in GitHub Actions and not already sandboxed
 if [ "${WIZARDRY_DEMO_IN_BWRAP-0}" -ne 1 ] && [ "${WIZARDRY_DEMO_NO_BWRAP-0}" -ne 1 ]; then
-  if command -v bwrap >/dev/null 2>&1; then
-    bwrap --unshare-user-try --ro-bind / / --dev-bind /dev /dev --bind /proc /proc \
-      --bind /tmp /tmp --setenv PATH "$PATH" --setenv WIZARDRY_DEMO_IN_BWRAP 1 -- \
-      "$0" "$@"
-    return $?
+  # Skip bwrap in GitHub Actions (already isolated)
+  if [ -z "${GITHUB_ACTIONS-}" ] || [ "${GITHUB_ACTIONS}" != "true" ]; then
+    if command -v bwrap >/dev/null 2>&1; then
+      # Re-exec with bwrap sandbox
+      exec bwrap --unshare-user --ro-bind / / --dev-bind /dev /dev --bind /proc /proc \
+        --bind /tmp /tmp --setenv PATH "$PATH" --setenv WIZARDRY_DEMO_IN_BWRAP 1 -- \
+        "$0" "$@"
+    else
+      # bwrap not available - offer to install
+      printf 'demo-magic: bubblewrap (bwrap) not found\n' >&2
+      printf 'demo-magic: Running demos in an isolated sandbox is recommended for safety.\n' >&2
+      
+      # Check if we can install it
+      if command -v pkg-install >/dev/null 2>&1; then
+        if command -v ask-yn >/dev/null 2>&1; then
+          if ask-yn "Install bubblewrap now?" yes; then
+            printf 'Installing bubblewrap...\n' >&2
+            if pkg-install bubblewrap 2>/dev/null || pkg-install bwrap 2>/dev/null; then
+              printf 'Bubblewrap installed successfully. Re-running demo-magic...\n' >&2
+              exec "$0" "$@"
+            else
+              printf 'demo-magic: failed to install bubblewrap\n' >&2
+            fi
+          fi
+        fi
+      fi
+      
+      # Either install failed or user declined - ask to continue
+      if command -v ask-yn >/dev/null 2>&1; then
+        if ! ask-yn "Continue without sandbox?" no; then
+          printf 'demo-magic: aborting\n' >&2
+          return 1
+        fi
+      else
+        printf 'demo-magic: continuing without sandbox (set WIZARDRY_DEMO_NO_BWRAP=1 to skip this check)\n' >&2
+      fi
+    fi
   fi
-
-  printf 'Warning: bubblewrap unavailable, running without sandbox\n' >&2
 fi
 
 printf 'A circle of chalk flares into view.\n'
@@ -157,13 +185,7 @@ printf '\n'
 # Run all levels from 0 to target level
 current_level=0
 while [ "$current_level" -le "$demo_level" ]; do
-  case "$current_level" in
-    0) demo_level_0 ;;
-    1) demo_level_1 ;;
-    2) demo_level_2 ;;
-    3) demo_level_3 ;;
-    *) demo_level_higher "$current_level" ;;
-  esac
+  demo_level "$current_level"
   
   if [ "$current_level" -lt "$demo_level" ]; then
     printf '\n'

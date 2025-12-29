@@ -1,0 +1,148 @@
+#!/bin/sh
+
+# Validate that specified spells and imps exist in wizardry installation.
+# Used by banish, test-magic, and demo-magic to verify spell availability.
+
+show_usage() {
+  cat <<'USAGE'
+Usage: validate-spells [OPTIONS] SPELL...
+
+Validate that specified spells or imps exist in the wizardry installation.
+
+Arguments:
+  SPELL...              One or more spells to validate
+                        Format: "spell" or "spell:dir" or "imp:.imps/family/name"
+
+Options:
+  --quiet, -q           Only report missing spells (no success messages)
+  --missing-only        Return list of missing spells on stdout
+  --imps                Validate imps instead of spells
+
+Examples:
+  validate-spells ask-yn menu                    # Check cantrips
+  validate-spells hash:crypto evoke-hash:crypto  # Check crypto spells  
+  validate-spells --imps sys/has cond/there      # Check imps
+  missing=$(validate-spells --missing-only ask-yn menu)  # Get missing list
+
+Exit Codes:
+  0  All spells/imps found
+  1  One or more spells/imps missing
+  2  Invalid usage
+USAGE
+}
+
+validate_spells() {
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  return 0
+  ;;
+esac
+
+require-wizardry || return 1
+
+set -eu
+
+# Parse options
+quiet=0
+missing_only=0
+validate_imps=0
+default_dir="cantrips"
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --quiet|-q)
+      quiet=1
+      shift
+      ;;
+    --missing-only)
+      missing_only=1
+      quiet=1
+      shift
+      ;;
+    --imps)
+      validate_imps=1
+      default_dir=".imps"
+      shift
+      ;;
+    -*)
+      printf 'validate-spells: unknown option: %s\n' "$1" >&2
+      return 2
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
+if [ "$#" -eq 0 ]; then
+  printf 'validate-spells: no spells specified\n' >&2
+  return 2
+fi
+
+# Validate each spell
+missing=""
+found_count=0
+
+for spell_info in "$@"; do
+  # Parse spell:dir format
+  case "$spell_info" in
+    *:*)
+      spell=$(printf '%s' "$spell_info" | cut -d: -f1)
+      dir=$(printf '%s' "$spell_info" | cut -d: -f2)
+      ;;
+    *)
+      spell=$spell_info
+      dir=$default_dir
+      ;;
+  esac
+  
+  # Check if spell/imp exists
+  if [ "$validate_imps" -eq 1 ]; then
+    spell_path="${WIZARDRY_DIR}/spells/.imps/$spell"
+  else
+    spell_path="${WIZARDRY_DIR}/spells/$dir/$spell"
+  fi
+  
+  if [ -f "$spell_path" ]; then
+    found_count=$((found_count + 1))
+    if [ "$quiet" -eq 0 ]; then
+      if [ "$validate_imps" -eq 1 ]; then
+        printf '✓ Found imp: %s\n' "$spell"
+      else
+        printf '✓ Found spell: %s\n' "$spell"
+      fi
+    fi
+  else
+    missing="${missing:+$missing }$spell"
+  fi
+done
+
+# Output results
+if [ "$missing_only" -eq 1 ]; then
+  printf '%s' "$missing"
+  [ -n "$missing" ] && return 1
+  return 0
+fi
+
+if [ -n "$missing" ]; then
+  if [ "$validate_imps" -eq 1 ]; then
+    printf 'Missing imps: %s\n' "$missing" >&2
+  else
+    printf 'Missing spells: %s\n' "$missing" >&2
+  fi
+  return 1
+fi
+
+return 0
+}
+
+# Load castable imp for direct execution
+if true; then
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"
