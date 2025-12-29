@@ -45,13 +45,13 @@ demo_level() {
   # Check spells for this level (note: spell_list is intentionally unquoted for word splitting)
   if [ -n "$spell_list" ]; then
     # shellcheck disable=SC2086
-    validate-spells --quiet $spell_list 2>&1 | sed 's/✓ Found spell://; s/^  *//; s/$/:ready/'
+    validate_spells --quiet $spell_list 2>&1 | sed 's/✓ Found spell://; s/^  *//; s/$/:ready/'
     
     # Report missing spells if any
     # shellcheck disable=SC2086
-    if ! validate-spells $spell_list >/dev/null 2>&1; then
+    if ! validate_spells $spell_list >/dev/null 2>&1; then
       # shellcheck disable=SC2086
-      missing=$(validate-spells --missing-only $spell_list)
+      missing=$(validate_spells --missing-only $spell_list)
       printf 'Warning: missing spells: %s\n' "$missing" >&2
     fi
   fi
@@ -59,13 +59,13 @@ demo_level() {
   # Check imps for this level (note: imp_list is intentionally unquoted for word splitting)
   if [ -n "$imp_list" ]; then
     # shellcheck disable=SC2086
-    validate-spells --quiet --imps $imp_list 2>&1 | sed 's/✓ Found imp://; s/^  *//; s/$/  (imp):ready/'
+    validate_spells --quiet --imps $imp_list 2>&1 | sed 's/✓ Found imp://; s/^  *//; s/$/  (imp):ready/'
     
     # Report missing imps if any
     # shellcheck disable=SC2086
-    if ! validate-spells --imps $imp_list >/dev/null 2>&1; then
+    if ! validate_spells --imps $imp_list >/dev/null 2>&1; then
       # shellcheck disable=SC2086
-      missing=$(validate-spells --imps --missing-only $imp_list)
+      missing=$(validate_spells --imps --missing-only $imp_list)
       printf 'Warning: missing imps: %s\n' "$missing" >&2
     fi
   fi
@@ -152,8 +152,8 @@ if [ "${WIZARDRY_DEMO_IN_BWRAP-0}" -ne 1 ] && [ "${WIZARDRY_DEMO_NO_BWRAP-0}" -n
       
       # Check if we can install it
       if command -v pkg-install >/dev/null 2>&1; then
-        if command -v ask-yn >/dev/null 2>&1; then
-          if ask-yn "Install bubblewrap now?" yes; then
+        if command -v ask_yn >/dev/null 2>&1; then
+          if ask_yn "Install bubblewrap now?" yes; then
             printf 'Installing bubblewrap...\n' >&2
             if pkg-install bubblewrap 2>/dev/null || pkg-install bwrap 2>/dev/null; then
               printf 'Bubblewrap installed successfully. Re-running demo-magic...\n' >&2
@@ -166,8 +166,8 @@ if [ "${WIZARDRY_DEMO_IN_BWRAP-0}" -ne 1 ] && [ "${WIZARDRY_DEMO_NO_BWRAP-0}" -n
       fi
       
       # Either install failed or user declined - ask to continue
-      if command -v ask-yn >/dev/null 2>&1; then
-        if ! ask-yn "Continue without sandbox?" no; then
+      if command -v ask_yn >/dev/null 2>&1; then
+        if ! ask_yn "Continue without sandbox?" no; then
           printf 'demo-magic: aborting\n' >&2
           return 1
         fi

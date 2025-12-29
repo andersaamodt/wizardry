@@ -98,7 +98,7 @@ else
   count=$#
 
   if ! has ask-number; then
-    fail "disenchant: multiple attributes found; install ask-number or specify a key" || return 1
+    fail "disenchant: multiple attributes found; install ask_number or specify a key" || return 1
   fi
 
   printf '%s\n' "Available attributes:" >&2
@@ -108,7 +108,7 @@ else
     idx=$((idx + 1))
   done
 
-  choice=$(ask-number "Choose which attribute to disenchant" 1 "$count") || return 1
+  choice=$(ask_number "Choose which attribute to disenchant" 1 "$count") || return 1
   eval "chosen_key=\"\${$choice}\""
 fi
 

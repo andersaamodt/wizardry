@@ -44,7 +44,7 @@ fi
 
 # Hash the target file for identification
 hashchant "$file" >/dev/null
-target_hash=$(read-magic "$file" hash 2>/dev/null || true)
+target_hash=$(read_magic "$file" hash 2>/dev/null || true)
 
 if is unset "$target_hash" || starts "$target_hash" "Error"; then
         die "prioritize: failed to hash file: $file"
@@ -60,13 +60,13 @@ if is unset "$directory"; then
 fi
 
 # Get the file's priority, or default to 0
-target_priority=$(read-magic "$file" priority 2>/dev/null || printf '0')
+target_priority=$(read_magic "$file" priority 2>/dev/null || printf '0')
 case "$target_priority" in
         *Error*|''|*[!0-9]*) target_priority=0 ;;
 esac
 
 # Retrieve the priority list from the directory's extended attributes
-priorities=$(read-magic "$directory" priorities 2>/dev/null || true)
+priorities=$(read_magic "$directory" priorities 2>/dev/null || true)
 
 # If there are no priorities, add the target file as the only priority
 case "$priorities" in

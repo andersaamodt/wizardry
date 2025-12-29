@@ -51,14 +51,13 @@ printf '%s' "$IS_SERVICE_INSTALLED_ASK_TEXT"
 return 0
 fi
 if has ask-text; then
-command -v ask-text
-return 0
+command -v ask_text return 0
 fi
 if [ -x "$script_dir/ask-text" ]; then
 printf '%s' "$script_dir/ask-text"
 return 0
 fi
-die "$script_name: ask-text spell is required for prompts."
+die "$script_name: ask_text spell is required for prompts."
 }
 
 ask_text_helper=$(is_service_installed_find_ask_text)

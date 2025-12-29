@@ -56,7 +56,7 @@ for f in "$dir"/*; do
         is file "$f" || continue
 
         # Get the file's priority
-        file_priority=$(read-magic "$f" priority 2>/dev/null || true)
+        file_priority=$(read_magic "$f" priority 2>/dev/null || true)
 
         # Skip if no priority or error
         case "$file_priority" in

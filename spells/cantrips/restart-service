@@ -55,9 +55,8 @@ if [ -z "$service_name" ]; then
                 script_dir=$(cd "$script_dir" && pwd -P)
                 
                 if [ -x "$script_dir/ask-text" ]; then
-                        ask_text_helper=$script_dir/ask-text
-                else
-                        die "$script_name: ask-text spell not found."
+                        ask_text_helper=$script_dir/ask_text                 else
+                        die "$script_name: ask_text spell not found."
                 fi
         fi
         
