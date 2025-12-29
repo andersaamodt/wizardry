@@ -54,7 +54,7 @@ elif has ask-text; then
 elif [ -x "$script_dir/ask-text" ]; then
   ask_text_helper="$script_dir/ask-text"
 else
-  die "$script_name: ask-text spell is required for prompts."
+  die "$script_name: ask_text spell is required for prompts."
 fi
 
 if has systemctl; then

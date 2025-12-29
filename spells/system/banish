@@ -73,22 +73,46 @@ fi
 
 set -eu
 
-# Add wizardry spells to PATH for validate-spells and other system spells
-# Detect WIZARDRY_DIR first if not set
+# Detect WIZARDRY_DIR if not already set
+# When sourced by invoke-wizardry, WIZARDRY_DIR will already be set
+# When run directly, we need to detect it from script location
 if [ -z "${WIZARDRY_DIR-}" ]; then
-  _script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || _script_dir=""
-  if [ -n "$_script_dir" ]; then
-    _wiz_root=$(CDPATH= cd -- "$_script_dir/../.." 2>/dev/null && pwd -P) || _wiz_root=""
-    if [ -n "$_wiz_root" ] && [ -d "$_wiz_root/spells" ]; then
-      WIZARDRY_DIR=$_wiz_root
-    fi
-  fi
+  # Check if we're being run as a function (sourced context)
+  # In this case, $0 is the shell name (bash, zsh, etc.), not the script path
+  case "$0" in
+    sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
+      # We're sourced but WIZARDRY_DIR not set - this shouldn't happen if
+      # invoke-wizardry loaded us, but try common locations as fallback
+      if [ -n "${HOME-}" ] && [ -d "${HOME}/.wizardry/spells" ]; then
+        WIZARDRY_DIR="${HOME}/.wizardry"
+      fi
+      ;;
+    *)
+      # We're being executed directly - detect from script location
+      _script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || _script_dir=""
+      if [ -n "$_script_dir" ]; then
+        _wiz_root=$(CDPATH= cd -- "$_script_dir/../.." 2>/dev/null && pwd -P) || _wiz_root=""
+        if [ -n "$_wiz_root" ] && [ -d "$_wiz_root/spells" ]; then
+          WIZARDRY_DIR=$_wiz_root
+        fi
+      fi
+      ;;
+  esac
 fi
 
-# Add spells/system to PATH so we can use validate-spells
-if [ -n "${WIZARDRY_DIR-}" ] && [ -d "${WIZARDRY_DIR}/spells/system" ]; then
-  PATH="${WIZARDRY_DIR}/spells/system:${PATH}"
+# Validate WIZARDRY_DIR is set and valid
+if [ -z "${WIZARDRY_DIR-}" ]; then
+  printf 'banish: WIZARDRY_DIR not set and could not be detected\n' >&2
+  printf 'Run from wizardry installation or set WIZARDRY_DIR environment variable\n' >&2
+  return 1
 fi
+
+if [ ! -d "${WIZARDRY_DIR}/spells" ]; then
+  printf 'banish: invalid WIZARDRY_DIR: %s\n' "$WIZARDRY_DIR" >&2
+  return 1
+fi
+
+export WIZARDRY_DIR
 
 # Parse arguments
 target_level=1
@@ -270,8 +294,8 @@ banish_process_level() {
       # Validate spells (single item - combine on one line)
       spell_list=$(get_level_spells 1)
       if [ -n "$spell_list" ]; then
-        if ! validate-spells --quiet $spell_list 2>/dev/null; then
-          missing=$(validate-spells --missing-only $spell_list)
+        if ! validate_spells --quiet $spell_list 2>/dev/null; then
+          missing=$(validate_spells --missing-only $spell_list)
           printf '  %s✗%s Required spells: Missing: %s\n' "$_red" "$_reset" "$missing"
           return 1
         fi
@@ -281,8 +305,8 @@ banish_process_level() {
       # Validate imps (single item - combine on one line)
       imp_list=$(get_level_imps 1)
       if [ -n "$imp_list" ]; then
-        if ! validate-spells --quiet --imps $imp_list 2>/dev/null; then
-          missing=$(validate-spells --imps --missing-only $imp_list)
+        if ! validate_spells --quiet --imps $imp_list 2>/dev/null; then
+          missing=$(validate_spells --imps --missing-only $imp_list)
           printf '  %s✗%s Required imps: Missing: %s\n' "$_red" "$_reset" "$missing"
           return 1
         fi
@@ -296,8 +320,8 @@ banish_process_level() {
       # Check spells (single item - combine on one line)
       spell_list=$(get_level_spells 2)
       if [ -n "$spell_list" ]; then
-        if ! validate-spells --quiet $spell_list 2>/dev/null; then
-          missing=$(validate-spells --missing-only $spell_list)
+        if ! validate_spells --quiet $spell_list 2>/dev/null; then
+          missing=$(validate_spells --missing-only $spell_list)
           printf '  %s✗%s Menu spells: Missing: %s\n' "$_red" "$_reset" "$missing"
           return 1
         fi
@@ -344,8 +368,8 @@ banish_process_level() {
       # Check spells (single item - combine on one line)
       spell_list=$(get_level_spells "$level")
       if [ -n "$spell_list" ]; then
-        if ! validate-spells --quiet $spell_list 2>/dev/null; then
-          missing=$(validate-spells --missing-only $spell_list)
+        if ! validate_spells --quiet $spell_list 2>/dev/null; then
+          missing=$(validate_spells --missing-only $spell_list)
           printf '  %s✗%s Spells: Missing: %s\n' "$_red" "$_reset" "$missing"
           return 1
         fi
@@ -355,8 +379,8 @@ banish_process_level() {
       # Check imps (single item - combine on one line)
       imp_list=$(get_level_imps "$level")
       if [ -n "$imp_list" ]; then
-        if ! validate-spells --quiet --imps $imp_list 2>/dev/null; then
-          missing=$(validate-spells --imps --missing-only $imp_list)
+        if ! validate_spells --quiet --imps $imp_list 2>/dev/null; then
+          missing=$(validate_spells --imps --missing-only $imp_list)
           printf '  %s✗%s Imps: Missing: %s\n' "$_red" "$_reset" "$missing"
           return 1
         fi

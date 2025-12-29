@@ -343,6 +343,94 @@ EOF
   assert_success && assert_output_contains "passed"
 }
 
+test_spell_fails_with_hyphenated_function_call() {
+  # Spells should call other spells with underscores, not hyphens
+  spell_dir=$(make_spell_dir)
+  cat >"$spell_dir/bad-hyphen-call" <<'EOF'
+#!/bin/sh
+
+# bad-hyphen-call - spell with hyphenated function call
+
+bad_hyphen_call_usage() {
+  cat <<'USAGE'
+Usage: bad-hyphen-call
+USAGE
+}
+
+bad_hyphen_call() {
+case "${1-}" in
+--help|--usage|-h)
+  bad_hyphen_call_usage
+  return 0
+  ;;
+esac
+
+set -eu
+
+# This should fail - hyphenated spell call
+if ask-yn "Continue?" yes; then
+  echo "Continuing"
+fi
+}
+
+if true; then
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"
+EOF
+  chmod +x "$spell_dir/bad-hyphen-call"
+  run_spell "spells/spellcraft/lint-magic" "$spell_dir/bad-hyphen-call"
+  assert_failure && assert_output_contains "hyphenated spell call"
+}
+
+test_spell_passes_with_underscore_function_call() {
+  # Spells using underscore function calls should pass
+  spell_dir=$(make_spell_dir)
+  cat >"$spell_dir/good-underscore-call" <<'EOF'
+#!/bin/sh
+
+# good-underscore-call - spell with proper underscore function call
+
+good_underscore_call_usage() {
+  cat <<'USAGE'
+Usage: good-underscore-call
+USAGE
+}
+
+good_underscore_call() {
+case "${1-}" in
+--help|--usage|-h)
+  good_underscore_call_usage
+  return 0
+  ;;
+esac
+
+set -eu
+
+# This should pass - underscore spell call
+if ask_yn "Continue?" yes; then
+  echo "Continuing"
+fi
+}
+
+if true; then
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"
+EOF
+  chmod +x "$spell_dir/good-underscore-call"
+  run_spell "spells/spellcraft/lint-magic" "$spell_dir/good-underscore-call"
+  assert_success && assert_output_contains "passed"
+}
+
 test_imp_fails_with_duplicate_set_eu() {
   # Imps should not have duplicate "set -eu" statements
   spell_dir=$(make_spell_dir)
@@ -407,6 +495,8 @@ run_test_case "lint-magic fails imp using flags" test_imp_fails_with_flags
 run_test_case "lint-magic passes imp with heredoc flags" test_imp_passes_with_heredoc_flags
 run_test_case "lint-magic fails imp with too many params" test_imp_fails_with_too_many_params
 run_test_case "lint-magic passes imp with variadic params" test_imp_passes_with_variadic_params
+run_test_case "lint-magic fails spell with hyphenated call" test_spell_fails_with_hyphenated_function_call
+run_test_case "lint-magic passes spell with underscore call" test_spell_passes_with_underscore_function_call
 run_test_case "lint-magic fails imp with duplicate set -eu" test_imp_fails_with_duplicate_set_eu
 run_test_case "lint-magic passes imp with single set -eu" test_imp_passes_with_single_set_eu
 

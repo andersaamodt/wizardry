@@ -26,7 +26,7 @@ env-clear
 
 if [ "$#" -eq 0 ]; then
     if has ask-text; then
-        file_path=$(ask-text "Enter file path to copy to clipboard:")
+        file_path=$(ask_text "Enter file path to copy to clipboard:")
         if [ -z "$file_path" ]; then
             say 'No file path provided.'
             return 1

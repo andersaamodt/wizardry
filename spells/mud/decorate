@@ -87,7 +87,7 @@ fi
 # Get description if not already set
 if [ -z "$description" ]; then
         if has ask-text; then
-                description=$(ask-text "Enter description for this location:")
+                description=$(ask_text "Enter description for this location:")
         else
                 printf '%s' "Enter description: "
                 read -r description

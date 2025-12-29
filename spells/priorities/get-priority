@@ -42,7 +42,7 @@ if ! is file "$file"; then
 fi
 
 # Read and print the priority
-priority=$(read-magic "$file" priority 2>/dev/null || true)
+priority=$(read_magic "$file" priority 2>/dev/null || true)
 
 # Handle error messages or empty values
 case "$priority" in

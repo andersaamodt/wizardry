@@ -40,7 +40,7 @@ if ! is file "$file"; then
 fi
 
 # Read the context attribute from the file
-context=$(read-magic "$file" context 2>/dev/null || true)
+context=$(read_magic "$file" context 2>/dev/null || true)
 
 # Verify context was found
 case "$context" in

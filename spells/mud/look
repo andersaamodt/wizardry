@@ -77,7 +77,7 @@ if [ -z "$read_magic" ]; then
         elif has read-magic; then
                 read_magic=$(command -v read-magic)
         else
-                die "look: read-magic spell is missing."
+                die "look: read_magic spell is missing."
         return 1
         fi
 fi

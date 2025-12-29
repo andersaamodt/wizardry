@@ -48,7 +48,7 @@ display_priorities() {
   dir="${PWD}"
 
   # Get the current priorities of the directory
-  dir_priorities=$(read-magic "${dir}" priorities)
+  dir_priorities=$(read_magic "${dir}" priorities)
 
   # If there are no priorities, print an error message and exit
   if [ -z "${dir_priorities}" ] || [ "$dir_priorities" = "read-magic: attribute does not exist." ]; then
@@ -71,7 +71,7 @@ display_priorities() {
     # Check if the file exists
     if [ -n "${priority_file}" ]; then
       # Get priority of the file
-      file_priority=$(read-magic "${priority_file}" priority 2>/dev/null)
+      file_priority=$(read_magic "${priority_file}" priority 2>/dev/null)
       
       # If the file does not have a priority, set it to 0
       if [ -z "${file_priority}" ] || [ "$file_priority" = "read-magic: attribute does not exist." ]; then

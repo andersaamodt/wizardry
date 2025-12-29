@@ -106,8 +106,8 @@ if [ "${WIZARDRY_TEST_IN_BWRAP-0}" -ne 1 ] && [ "${WIZARDRY_TEST_NO_BWRAP-0}" -n
       
       # Check if we can install it
       if command -v pkg-install >/dev/null 2>&1; then
-        if command -v ask-yn >/dev/null 2>&1; then
-          if ask-yn "Install bubblewrap now?" yes; then
+        if command -v ask_yn >/dev/null 2>&1; then
+          if ask_yn "Install bubblewrap now?" yes; then
             printf 'Installing bubblewrap...\n' >&2
             if pkg-install bubblewrap 2>/dev/null || pkg-install bwrap 2>/dev/null; then
               printf 'Bubblewrap installed successfully. Re-running test-magic...\n' >&2
@@ -120,8 +120,8 @@ if [ "${WIZARDRY_TEST_IN_BWRAP-0}" -ne 1 ] && [ "${WIZARDRY_TEST_NO_BWRAP-0}" -n
       fi
       
       # Either install failed or user declined - ask to continue
-      if command -v ask-yn >/dev/null 2>&1; then
-        if ! ask-yn "Continue without sandbox?" no; then
+      if command -v ask_yn >/dev/null 2>&1; then
+        if ! ask_yn "Continue without sandbox?" no; then
           printf 'test-magic: aborting\n' >&2
           return 1
         fi

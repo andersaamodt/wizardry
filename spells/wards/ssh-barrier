@@ -32,7 +32,7 @@ env-clear
 sshd_config="${SSHD_CONFIG:-/etc/ssh/sshd_config}"
 
 # Confirm before proceeding
-if ! ask-yn "Do you wish to cast the SSH Standard Barrier spell?" no; then
+if ! ask_yn "Do you wish to cast the SSH Standard Barrier spell?" no; then
   say "Spell cancelled."
   return 0
 fi

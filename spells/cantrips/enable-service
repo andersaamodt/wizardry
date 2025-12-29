@@ -52,7 +52,7 @@ elif has ask-text; then
 elif [ -x "$script_dir/ask-text" ]; then
   ask_text_helper="$script_dir/ask-text"
 else
-  die "$script_name: ask-text spell not found."
+  die "$script_name: ask_text spell not found."
   return 1
 fi
 

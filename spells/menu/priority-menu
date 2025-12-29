@@ -46,7 +46,7 @@ if [ -z "$file" ]; then
 fi
 
 priority_menu_display_menu() {
-        checked_state=$(read-magic "${file}" checked)
+        checked_state=$(read_magic "${file}" checked)
         if [ "${checked_state}" = "read-magic: attribute does not exist." ]; then
           check_item="Check%echo 'Placeholder: Check command'"
         else

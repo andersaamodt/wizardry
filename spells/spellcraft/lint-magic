@@ -339,6 +339,31 @@ AWKSCRIPT
       issue_count=$((issue_count + 1))
     fi
     
+    # Check for hyphenated spell calls (not in usage/comments)
+    # Common spells that should be called with underscores
+    if [ "$is_imp_file" -eq 0 ]; then
+      hyphen_calls=""
+      for spell_name in ask-yn ask-text ask-number read-magic file-list validate-spells; do
+        # Look for hyphenated spell calls in actual code (not in comments or Usage:)
+        call_violations=$(awk -f "$awk_script" "$path" 2>/dev/null | \
+          grep -nE "\b${spell_name}\s+" | \
+          grep -v "Usage:" | \
+          grep -v "Examples:" | \
+          grep -v "cat <<" || true)
+        if [ -n "$call_violations" ]; then
+          hyphen_calls="${hyphen_calls}${call_violations}"$'\n'
+        fi
+      done
+      
+      if [ -n "$hyphen_calls" ]; then
+        first_line=$(printf '%s' "$hyphen_calls" | head -1 | cut -d: -f1)
+        call_msg="hyphenated spell call at line $first_line"
+        call_msg="$call_msg (use underscore: ask_yn, read_magic, etc.)"
+        issues=${issues:+$issues; }"$call_msg"
+        issue_count=$((issue_count + 1))
+      fi
+    fi
+    
     rm -f "$awk_script"
   fi
   

@@ -42,7 +42,7 @@ if ! is file "$file"; then
 fi
 
 # Get current upvotes count, default to 0 if not set
-current=$(read-magic "$file" upvotes 2>/dev/null || printf '0')
+current=$(read_magic "$file" upvotes 2>/dev/null || printf '0')
 
 # Handle case where read-magic returns an error message
 case "$current" in
