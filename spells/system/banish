@@ -291,16 +291,14 @@ banish_process_level() {
       fi
       printf '  %s✓%s Wizardry structure: Spells directory exists\n' "$_green" "$_reset"
       
-      # Determine how to call validate_spells (function or command)
-      _validate_cmd="validate_spells"
-      if ! command -v validate_spells >/dev/null 2>&1; then
-        # Not available as function, try as external command
-        if [ -x "${WIZARDRY_DIR}/spells/system/validate-spells" ]; then
-          _validate_cmd="${WIZARDRY_DIR}/spells/system/validate-spells"
-        else
-          printf '  %s✗%s Cannot find validate-spells (needed for validation)\n' "$_red" "$_reset"
-          return 1
-        fi
+      # Always use the validate-spells file directly instead of the function.
+      # Functions don't reliably work in command substitution subshells across different shells (especially zsh).
+      # This ensures consistent behavior on all platforms.
+      if [ -x "${WIZARDRY_DIR}/spells/system/validate-spells" ]; then
+        _validate_cmd="${WIZARDRY_DIR}/spells/system/validate-spells"
+      else
+        printf '  %s✗%s Cannot find validate-spells (needed for validation)\n' "$_red" "$_reset"
+        return 1
       fi
       
       # Validate spells (show detailed status)
