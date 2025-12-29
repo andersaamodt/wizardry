@@ -20,19 +20,6 @@ Arguments:
 USAGE
 }
 
-check_spell() {
-  label=$1
-  shift
-
-  if "$@" >/dev/null 2>&1; then
-    printf '%s: ready\n' "$label"
-    return 0
-  fi
-
-  printf 'Warning: %s check failed\n' "$label" >&2
-  return 1
-}
-
 # Demo a single level using spell-levels data
 demo_level() {
   level=$1
@@ -47,39 +34,44 @@ demo_level() {
   # Special case for level 0 - infrastructure checks
   if [ "$level" -eq 0 ]; then
     printf 'Checking POSIX environment and wizardry structure...\n'
-    check_spell "WIZARDRY_DIR" test -n "${WIZARDRY_DIR-}"
-    check_spell "invoke-wizardry" test -f "${WIZARDRY_DIR}/spells/.imps/sys/invoke-wizardry"
-    check_spell "spells directory" test -d "${WIZARDRY_DIR}/spells"
-    check_spell "imps directory" test -d "${WIZARDRY_DIR}/spells/.imps"
+    validate-spells --quiet "${WIZARDRY_DIR}/spells/.imps/sys/invoke-wizardry:dummy" 2>/dev/null && \
+      printf 'invoke-wizardry: ready\n' || printf 'Warning: invoke-wizardry check failed\n' >&2
+    [ -d "${WIZARDRY_DIR}/spells" ] && \
+      printf 'spells directory: ready\n' || printf 'Warning: spells directory check failed\n' >&2
+    [ -d "${WIZARDRY_DIR}/spells/.imps" ] && \
+      printf 'imps directory: ready\n' || printf 'Warning: imps directory check failed\n' >&2
   fi
   
   # Check spells for this level
   if [ -n "$spell_list" ]; then
-    for spell_info in $spell_list; do
-      # Parse spell:dir format
-      spell=$(printf '%s' "$spell_info" | cut -d: -f1)
-      dir=$(printf '%s' "$spell_info" | cut -d: -f2)
-      
-      # If no dir specified, assume cantrips
-      if [ "$dir" = "$spell" ]; then
-        dir="cantrips"
-      fi
-      
-      check_spell "$spell" test -f "${WIZARDRY_DIR}/spells/$dir/$spell"
+    validate-spells --quiet $spell_list 2>&1 | while IFS= read -r line; do
+      printf '%s\n' "$line" | sed 's/✓ Found spell://' | sed 's/^  *//' | sed 's/$/:ready/'
     done
+    
+    # Report missing spells if any
+    if ! validate-spells $spell_list >/dev/null 2>&1; then
+      missing=$(validate-spells --missing-only $spell_list)
+      printf 'Warning: missing spells: %s\n' "$missing" >&2
+    fi
   fi
   
   # Check imps for this level
   if [ -n "$imp_list" ]; then
-    for imp_path in $imp_list; do
-      imp_name=$(printf '%s' "$imp_path" | sed 's|.*/||')
-      check_spell "$imp_name (imp)" test -f "${WIZARDRY_DIR}/spells/.imps/$imp_path"
+    validate-spells --quiet --imps $imp_list 2>&1 | while IFS= read -r line; do
+      printf '%s\n' "$line" | sed 's/✓ Found imp://' | sed 's/^  *//' | sed 's/$/  (imp):ready/'
     done
+    
+    # Report missing imps if any
+    if ! validate-spells --imps $imp_list >/dev/null 2>&1; then
+      missing=$(validate-spells --imps --missing-only $imp_list)
+      printf 'Warning: missing imps: %s\n' "$missing" >&2
+    fi
   fi
   
   # Special checks for level 27 (arcana)
   if [ "$level" -eq 27 ]; then
-    check_spell "arcana directory" test -d "${WIZARDRY_DIR}/spells/.arcana"
+    [ -d "${WIZARDRY_DIR}/spells/.arcana" ] && \
+      printf 'arcana directory: ready\n' || printf 'Warning: arcana directory check failed\n' >&2
   fi
 }
 

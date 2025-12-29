@@ -68,6 +68,23 @@ esac
 
 set -eu
 
+# Add wizardry spells to PATH for validate-spells and other system spells
+# Detect WIZARDRY_DIR first if not set
+if [ -z "${WIZARDRY_DIR-}" ]; then
+  _script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || _script_dir=""
+  if [ -n "$_script_dir" ]; then
+    _wiz_root=$(CDPATH= cd -- "$_script_dir/../.." 2>/dev/null && pwd -P) || _wiz_root=""
+    if [ -n "$_wiz_root" ] && [ -d "$_wiz_root/spells" ]; then
+      WIZARDRY_DIR=$_wiz_root
+    fi
+  fi
+fi
+
+# Add spells/system to PATH so we can use validate-spells
+if [ -n "${WIZARDRY_DIR-}" ] && [ -d "${WIZARDRY_DIR}/spells/system" ]; then
+  PATH="${WIZARDRY_DIR}/spells/system:${PATH}"
+fi
+
 # Parse arguments
 target_level=1
 skip_tests=0
@@ -149,514 +166,167 @@ else
   fi
 fi
 
-# Generic spell checking function with consistent formatting
-# Usage: banish_check_spells "spell1:dir1 spell2:dir2 spell3" "default_dir"
-banish_check_spells() {
-  spell_list=$1
-  default_dir=${2:-cantrips}
-  missing=""
-  
-  for spell_info in $spell_list; do
-    case "$spell_info" in
-      *:*)
-        # Format: spell:dir
-        spell=$(printf '%s' "$spell_info" | cut -d: -f1)
-        dir=$(printf '%s' "$spell_info" | cut -d: -f2)
-        ;;
-      *)
-        # Plain spell name, use default directory
-        spell=$spell_info
-        dir=$default_dir
-        ;;
-    esac
-    
-    if [ ! -f "${WIZARDRY_DIR}/spells/$dir/$spell" ]; then
-      missing="${missing:+$missing }$spell"
-    else
-      # Output to stderr so it doesn't get captured in missing=$(...)
-      printf "  ✓ %s\n" "Found spell: $spell" >&2
-    fi
-  done
-  
-  # Return the missing list via stdout for caller to handle
-  printf '%s' "$missing"
-}
-
-# Generic level validation - validates spells and imps for a level
-banish_validate_level_spells() {
-  level=$1
-  
-  # Get spell list for this level
-  spell_list=$(get_level_spells "$level")
-  
-  if [ -n "$spell_list" ]; then
-    missing=$(banish_check_spells "$spell_list" "cantrips")
-    
-    if [ -n "$missing" ]; then
-      printf "Warning: %s\n" "Missing Level $level spells: $missing"
-      return 1
-    fi
-  fi
-  
-  # Get imp list for this level  
-  imp_list=$(get_level_imps "$level")
-  
-  if [ -n "$imp_list" ]; then
-    printf "  • %s\n" "Checking Level $level imps..."
-    missing_imps=""
-    for imp in $imp_list; do
-      if [ ! -f "${WIZARDRY_DIR}/spells/.imps/$imp" ]; then
-        missing_imps="${missing_imps:+$missing_imps }$imp"
-      else
-        printf "  ✓ %s\n" "Found imp: $imp" >&2
-      fi
-    done
-    
-    if [ -n "$missing_imps" ]; then
-      printf "Warning: %s\n" "Missing Level $level imps: $missing_imps"
-      return 1
-    fi
-  fi
-  
-  return 0
-}
-
-
-# Run level-specific checks and actions
-banish_level() {
+# Run level-specific checks and actions using case statement
+banish_process_level() {
   level=$1
   level_name=$(banish_level_name "$level")
   
   printf '\n=== Level %d: %s ===\n' "$level" "$level_name"
+  printf 'Checking Level %d: %s...\n' "$level" "$level_name"
   
-  # Levels 3-26 follow standard pattern: just validate spells
-  if [ "$level" -ge 3 ] && [ "$level" -le 26 ]; then
-    printf 'Checking Level %d: %s...\n' "$level" "$level_name"
-    banish_validate_level_spells "$level"
-    printf 'Level %d complete\n' "$level"
-    return $?
-  fi
-  
-  # Levels 0, 1, 2, and 27 have special handling
+  # Special handling per level
   case "$level" in
     0)
-      banish_level_0
-      ;;
-    1)
-      banish_level_1
-      ;;
-    2)
-      banish_level_2
-      ;;
-    27)
-      banish_level_27
-      ;;
-    *)
-      printf 'Warning: Level %d not yet implemented\n' "$level" >&2
-      ;;
-  esac
-}
-
-# Level 0: System Foundation (wizardry installation assumptions)
-banish_level_0() {
-  # Stage 1: Set up WIZARDRY_DIR first (needed for other checks)
-  printf '\nConfiguring WIZARDRY_DIR:\n'
-  
-  wizardry_not_installed=0
-  
-  if [ -n "${WIZARDRY_DIR-}" ]; then
-    # Already set in environment
-    printf "  ✓ %s\n" "Using existing: $WIZARDRY_DIR"
-  else
-    # Auto-detect
-    printf "  • %s\n" "Auto-detecting wizardry installation..."
-    
-    # Try to find wizardry by looking for this script's location
-    has_dirname=$(command -v dirname >/dev/null 2>&1 && echo 1 || echo 0)
-    has_cd=$(command -v cd >/dev/null 2>&1 && echo 1 || echo 0)
-    has_pwd=$(command -v pwd >/dev/null 2>&1 && echo 1 || echo 0)
-    if [ "$has_dirname" = "1" ] && [ "$has_cd" = "1" ] && [ "$has_pwd" = "1" ]; then
-      script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || true
-      if [ -n "$script_dir" ]; then
-        # We're in spells/system, so go up two levels
-        _potential_dir=$(CDPATH= cd -- "$script_dir/../.." 2>/dev/null && pwd -P) || true
-        if [ -n "$_potential_dir" ] && [ -d "$_potential_dir/spells" ]; then
-          WIZARDRY_DIR=$_potential_dir
-          printf "  ✓ %s\n" "Detected from script location: $WIZARDRY_DIR"
+      # Level 0: System Foundation
+      printf '\nConfiguring WIZARDRY_DIR:\n'
+      
+      wizardry_not_installed=0
+      
+      if [ -n "${WIZARDRY_DIR-}" ]; then
+        printf "  ✓ %s\n" "Using existing: $WIZARDRY_DIR"
+      else
+        printf "  • %s\n" "Auto-detecting wizardry installation..."
+        
+        has_dirname=$(command -v dirname >/dev/null 2>&1 && echo 1 || echo 0)
+        has_cd=$(command -v cd >/dev/null 2>&1 && echo 1 || echo 0)
+        has_pwd=$(command -v pwd >/dev/null 2>&1 && echo 1 || echo 0)
+        if [ "$has_dirname" = "1" ] && [ "$has_cd" = "1" ] && [ "$has_pwd" = "1" ]; then
+          script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || true
+          if [ -n "$script_dir" ]; then
+            _potential_dir=$(CDPATH= cd -- "$script_dir/../.." 2>/dev/null && pwd -P) || true
+            if [ -n "$_potential_dir" ] && [ -d "$_potential_dir/spells" ]; then
+              WIZARDRY_DIR=$_potential_dir
+              printf "  ✓ %s\n" "Detected from script location: $WIZARDRY_DIR"
+            fi
+          fi
+        fi
+        
+        if [ -z "${WIZARDRY_DIR-}" ]; then
+          if [ -n "${HOME-}" ] && [ -d "${HOME}/.wizardry/spells" ]; then
+            WIZARDRY_DIR="${HOME}/.wizardry"
+            printf "  ✓ %s\n" "Found standard location: $WIZARDRY_DIR"
+          else
+            wizardry_not_installed=1
+          fi
         fi
       fi
-    fi
-    
-    # Fallback to standard location
-    if [ -z "${WIZARDRY_DIR-}" ]; then
-      if [ -n "${HOME-}" ] && [ -d "${HOME}/.wizardry/spells" ]; then
-        WIZARDRY_DIR="${HOME}/.wizardry"
-        printf "  ✓ %s\n" "Found standard location: $WIZARDRY_DIR"
-      else
-        wizardry_not_installed=1
-      fi
-    fi
-  fi
-  
-  # Verify WIZARDRY_DIR structure (essential wizardry assumptions)
-  if [ -n "${WIZARDRY_DIR-}" ]; then
-    if [ ! -d "${WIZARDRY_DIR}/spells" ]; then
-      wizardry_not_installed=1
-    fi
-  fi
-  
-  # Special case: If wizardry is not installed, report assumptions and stop
-  if [ "$wizardry_not_installed" -eq 1 ]; then
-    printf "%s\n" ""
-    printf "%s\n" "Wizardry installation not found."
-    printf "%s\n" ""
-    printf "%s\n" "The following assumptions are not met:"
-    printf "%s\n" "  • WIZARDRY_DIR not set or directory not found"
-    printf "%s\n" "  • Wizardry spells directory not found"
-    printf "%s\n" "  • invoke-wizardry not available"
-    printf "%s\n" ""
-    printf "%s\n" "To install wizardry, run: ./install"
-    printf "%s\n" ""
-    return 1
-  fi
-  
-  # Wizardry is installed - continue with validation
-  if [ -n "${WIZARDRY_DIR-}" ]; then
-    # Check for critical wizardry directories
-    printf "  • %s\n" "Checking wizardry structure..."
-    for dir in spells spells/.imps spells/.imps/sys .tests; do
-      if [ -d "${WIZARDRY_DIR}/$dir" ]; then
-        printf "  ✓ %s\n" "Found: $dir/"
-      else
-        printf "Warning: %s\n" "Missing: $dir/"
-      fi
-    done
-    
-    # Export WIZARDRY_DIR for downstream tools
-    export WIZARDRY_DIR
-    printf "%s\n" "Environment prepared: WIZARDRY_DIR=$WIZARDRY_DIR"
-  fi
-  
-  # Stage 2: Detect OS and system information
-  printf '\nDetecting OS and system information:\n'
-  
-  # Detect operating system
-  if command -v uname >/dev/null 2>&1; then
-    os_kernel=$(uname -s 2>/dev/null || printf 'unknown')
-    printf "  ✓ %s\n" "Kernel: $os_kernel"
-    
-    # Try to detect distribution if available
-    if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/divination/detect-distro" ]; then
-      distro=$("${WIZARDRY_DIR}/spells/divination/detect-distro" 2>/dev/null || printf 'unknown')
-      printf "  ✓ %s\n" "Distribution: $distro"
-    elif [ -f /etc/os-release ]; then
-      distro=$(grep '^ID=' /etc/os-release 2>/dev/null | cut -d= -f2 | tr -d '"' || printf 'unknown')
-      printf "  ✓ %s\n" "Distribution: $distro"
-    fi
-  else
-    printf "Warning: %s\n" "uname not found - cannot detect OS"
-  fi
-  
-  # Stage 3: Check POSIX environment using detect-posix if available
-  printf '\nChecking POSIX toolchain:\n'
-  posix_check_failed=0
-  missing_recommended=''
-  
-  # Try to use detect-posix if available
-  if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/divination/detect-posix" ]; then
-    printf "  • %s\n" "Using detect-posix for environment checks"
-    "${WIZARDRY_DIR}/spells/divination/detect-posix" --verbose || posix_check_failed=1
-    
-    if [ "$posix_check_failed" -ne 0 ]; then
-      printf "Warning: %s\n" "detect-posix reported issues with POSIX environment"
-      printf "Warning: %s\n" "Some wizardry features may not work correctly"
-    fi
-  else
-    # Fallback: manual check of critical tools if detect-posix not available
-    printf "  • %s\n" "detect-posix not found, using fallback checks"
-    critical_tools="sh test printf"
-    missing_critical=''
-    
-    for tool in $critical_tools; do
-      if ! command -v "$tool" >/dev/null 2>&1; then
-        missing_critical="${missing_critical:+$missing_critical }$tool"
-      else
-        printf "  ✓ %s\n" "Found: $tool"
-      fi
-    done
-    
-    if [ -n "$missing_critical" ]; then
-      printf "Warning: %s\n" "Critical POSIX tools missing: $missing_critical"
-      printf "Warning: %s\n" "Cannot self-heal without basic shell utilities"
-      return 1
-    fi
-    
-    # Check recommended tools
-    recommended_tools="awk sed grep find mktemp dirname basename pwd cd curl wget tar"
-    for tool in $recommended_tools; do
-      if ! command -v "$tool" >/dev/null 2>&1; then
-        missing_recommended="${missing_recommended:+$missing_recommended }$tool"
-        printf "Warning: %s\n" "Recommended tool missing: $tool"
-      else
-        printf "  ✓ %s\n" "Found: $tool"
-      fi
-    done
-  fi
-  
-  # Stage 4: Verify invoke-wizardry and RC integration
-  if [ -n "${WIZARDRY_DIR-}" ]; then
-    printf '\nVerifying invoke-wizardry and shell integration:\n'
-    
-    # Check invoke-wizardry exists
-    if [ ! -f "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry" ]; then
-      printf "Warning: %s\n" "invoke-wizardry not found at $WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
-      printf "Warning: %s\n" "Run ./install to repair wizardry"
-      return 1
-    else
-      printf "  ✓ %s\n" "invoke-wizardry is available"
-    fi
-    
-    # Check if shell RC file exists and contains wizardry invocation
-    rc_file=""
-    if [ -n "${SHELL-}" ]; then
-      case "$(basename "$SHELL")" in
-        bash) rc_file="${HOME}/.bashrc" ;;
-        zsh) rc_file="${HOME}/.zshrc" ;;
-        *) rc_file="${HOME}/.profile" ;;
-      esac
-    else
-      rc_file="${HOME}/.profile"
-    fi
-    
-    if [ -f "$rc_file" ]; then
-      if grep -q "invoke-wizardry" "$rc_file" 2>/dev/null; then
-        printf "  ✓ %s\n" "Shell RC configured: $rc_file"
-      else
-        printf "Warning: %s\n" "Shell RC exists but wizardry not sourced: $rc_file"
-        printf "%s\n" "Run: source \"\$HOME/.wizardry/spells/.imps/sys/invoke-wizardry\""
-      fi
-    else
-      printf "Warning: %s\n" "Shell RC file not found: $rc_file"
-      printf "%s\n" "Wizardry may not be available in new shells"
-    fi
-  fi
-  
-  # Stage 5: Set baseline PATH if needed
-  printf '\nChecking PATH:\n'
-  baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
-  case ":${PATH-}:" in
-    *":/usr/bin:"*|*":/bin:"*)
-      printf "  ✓ %s\n" "PATH includes standard directories"
-      ;;
-    *)
-      printf "Warning: %s\n" "PATH missing standard directories, adding baseline"
-      PATH="${baseline_path}${PATH:+:}${PATH-}"
-      export PATH
-      ;;
-  esac
-  
-  # Stage 6: Check for package managers (system foundation)
-  printf '\nChecking package managers:\n'
-  found_pkg_mgr=0
-  for pkg_mgr in apt yum dnf pacman brew nix-env; do
-    if command -v "$pkg_mgr" >/dev/null 2>&1; then
-      printf "  ✓ %s\n" "Found package manager: $pkg_mgr"
-      found_pkg_mgr=1
-    fi
-  done
-  
-  if [ "$found_pkg_mgr" -eq 0 ]; then
-    printf "Warning: %s\n" "No known package manager found"
-    printf "Warning: %s\n" "Self-healing capabilities will be limited"
-  fi
-  
-  # Stage 7: Check and self-heal essential development tools
-  printf '\nChecking essential development tools:\n'
-  
-  # Check for git
-  if ! command -v git >/dev/null 2>&1; then
-    printf "Warning: %s\n" "git not found - required for wizardry development"
-    if [ "$skip_heal" -eq 0 ] && [ -x "${WIZARDRY_DIR}/spells/.arcana/core/install-git" ]; then
-      printf "%s\n" "Attempting to install git..."
-      "${WIZARDRY_DIR}/spells/.arcana/core/install-git" || printf "Warning: %s\n" "Failed to install git"
-      # Re-check
-      if command -v git >/dev/null 2>&1; then
-        printf "  ✓ %s\n" "git installed successfully"
-      fi
-    fi
-  else
-    printf "  ✓ %s\n" "git available"
-  fi
-  
-  # Stage 8: Check POSIX tools and attempt self-healing
-  # Report summary and attempt self-healing if enabled
-  if [ -n "$missing_recommended" ]; then
-    printf "Warning: %s\n" "Some recommended tools are missing: $missing_recommended"
-    printf "Warning: %s\n" "Wizardry may have reduced functionality"
-    
-    if [ "$skip_heal" -eq 0 ] && [ "$found_pkg_mgr" -eq 1 ]; then
-      printf "%s\n" "Attempting to install missing tools (this may require sudo)..."
-      # Whitelist of allowed POSIX tools to install (security: prevent command injection)
-      allowed_tools="awk sed grep find mktemp dirname basename pwd cd curl wget tar sh test printf cat sort"
       
-      # Try to install missing tools based on detected package manager
-      for pkg_mgr in apt yum dnf pacman brew; do
-        if command -v "$pkg_mgr" >/dev/null 2>&1; then
-          case "$pkg_mgr" in
-            apt)
-              for tool in $missing_recommended; do
-                # Validate tool is in whitelist
-                tool_allowed=0
-                for allowed in $allowed_tools; do
-                  if [ "$tool" = "$allowed" ]; then
-                    tool_allowed=1
-                    break
-                  fi
-                done
-                
-                if [ "$tool_allowed" -eq 1 ]; then
-                  printf "  • %s\n" "Installing $tool..."
-                  sudo apt-get install -y "$tool" >/dev/null 2>&1 || printf "Warning: %s\n" "Failed to install $tool"
-                else
-                  printf "Warning: %s\n" "Skipping $tool (not in allowed tools list)"
-                fi
-              done
-              break
-              ;;
-            yum|dnf)
-              for tool in $missing_recommended; do
-                # Validate tool is in whitelist
-                tool_allowed=0
-                for allowed in $allowed_tools; do
-                  if [ "$tool" = "$allowed" ]; then
-                    tool_allowed=1
-                    break
-                  fi
-                done
-                
-                if [ "$tool_allowed" -eq 1 ]; then
-                  printf "  • %s\n" "Installing $tool..."
-                  sudo "$pkg_mgr" install -y "$tool" >/dev/null 2>&1 || printf "Warning: %s\n" "Failed to install $tool"
-                else
-                  printf "Warning: %s\n" "Skipping $tool (not in allowed tools list)"
-                fi
-              done
-              break
-              ;;
-            pacman)
-              for tool in $missing_recommended; do
-                # Validate tool is in whitelist
-                tool_allowed=0
-                for allowed in $allowed_tools; do
-                  if [ "$tool" = "$allowed" ]; then
-                    tool_allowed=1
-                    break
-                  fi
-                done
-                
-                if [ "$tool_allowed" -eq 1 ]; then
-                  printf "  • %s\n" "Installing $tool..."
-                  sudo pacman -S --noconfirm "$tool" >/dev/null 2>&1 || printf "Warning: %s\n" "Failed to install $tool"
-                else
-                  printf "Warning: %s\n" "Skipping $tool (not in allowed tools list)"
-                fi
-              done
-              break
-              ;;
-            brew)
-              for tool in $missing_recommended; do
-                # Validate tool is in whitelist
-                tool_allowed=0
-                for allowed in $allowed_tools; do
-                  if [ "$tool" = "$allowed" ]; then
-                    tool_allowed=1
-                    break
-                  fi
-                done
-                
-                if [ "$tool_allowed" -eq 1 ]; then
-                  printf "  • %s\n" "Installing $tool..."
-                  brew install "$tool" >/dev/null 2>&1 || printf "Warning: %s\n" "Failed to install $tool"
-                else
-                  printf "Warning: %s\n" "Skipping $tool (not in allowed tools list)"
-                fi
-              done
-              break
-              ;;
-          esac
+      if [ "$wizardry_not_installed" -eq 1 ]; then
+        printf "Error: %s\n" "Wizardry not installed"
+        printf "Run ./install first\n"
+        return 1
+      fi
+      
+      export WIZARDRY_DIR
+      
+      # Check POSIX environment
+      printf '\nChecking POSIX foundation:\n'
+      for cmd in sh test printf cat; do
+        if command -v "$cmd" >/dev/null 2>&1; then
+          printf "  ✓ %s\n" "$cmd available"
+        else
+          printf "Error: %s\n" "$cmd not found (required for POSIX compliance)"
+          return 1
         fi
       done
-    else
-      printf "%s\n" "Install manually using your package manager if needed"
-    fi
-  fi
+      ;;
+      
+    1)
+      # Level 1: Wizardry Installation
+      if [ ! -d "${WIZARDRY_DIR}/spells" ]; then
+        printf "Warning: %s\n" "Wizardry not installed at $WIZARDRY_DIR"
+        return 1
+      fi
+      
+      # Validate using validate-spells
+      spell_list=$(get_level_spells 1)
+      if [ -n "$spell_list" ]; then
+        if ! validate-spells $spell_list 2>/dev/null; then
+          missing=$(validate-spells --missing-only $spell_list)
+          printf "Warning: Missing Level 1 spells: %s\n" "$missing"
+          return 1
+        fi
+      fi
+      
+      # Check imps
+      imp_list=$(get_level_imps 1)
+      if [ -n "$imp_list" ]; then
+        printf "  • Checking Level 1 imps...\n"
+        if ! validate-spells --imps $imp_list 2>/dev/null; then
+          missing=$(validate-spells --imps --missing-only $imp_list)
+          printf "Warning: Missing Level 1 imps: %s\n" "$missing"
+          return 1
+        fi
+      fi
+      ;;
+      
+    2)
+      # Level 2: Menu System
+      spell_list=$(get_level_spells 2)
+      if [ -n "$spell_list" ]; then
+        if ! validate-spells $spell_list 2>/dev/null; then
+          missing=$(validate-spells --missing-only $spell_list)
+          printf "Warning: Missing Level 2 spells: %s\n" "$missing"
+          return 1
+        fi
+      fi
+      
+      # Check if stty is available (required for menu terminal control)
+      if ! command -v stty >/dev/null 2>&1; then
+        printf "Warning: %s\n" "stty command not found - required for menu"
+        if [ "$skip_heal" -eq 0 ]; then
+          if [ -x "${WIZARDRY_DIR}/spells/.arcana/core/install-stty" ]; then
+            printf "%s\n" "Attempting to install stty..."
+            "${WIZARDRY_DIR}/spells/.arcana/core/install-stty" || printf "Warning: %s\n" "Failed to install stty"
+            if command -v stty >/dev/null 2>&1; then
+              printf "  ✓ %s\n" "stty installed successfully"
+            fi
+          else
+            printf "%s\n" "install-stty script not found - install stty manually"
+          fi
+        fi
+      else
+        printf "  ✓ %s\n" "stty available"
+      fi
+      ;;
+      
+    27)
+      # Level 27: Optional Arcana
+      if [ -d "${WIZARDRY_DIR}/spells/.arcana" ]; then
+        arcana_count=$(find "${WIZARDRY_DIR}/spells/.arcana" -type f 2>/dev/null | wc -l)
+        printf "  ✓ %s\n" "Found $arcana_count arcana spells/scripts"
+      else
+        printf "%s\n" "Arcana directory not found (optional)"
+      fi
+      ;;
+      
+    *)
+      # Levels 3-26: Standard validation pattern
+      spell_list=$(get_level_spells "$level")
+      if [ -n "$spell_list" ]; then
+        if ! validate-spells $spell_list 2>/dev/null; then
+          missing=$(validate-spells --missing-only $spell_list)
+          printf "Warning: Missing Level %d spells: %s\n" "$level" "$missing"
+          return 1
+        fi
+      fi
+      
+      imp_list=$(get_level_imps "$level")
+      if [ -n "$imp_list" ]; then
+        printf "  • Checking Level %d imps...\n" "$level"
+        if ! validate-spells --imps $imp_list 2>/dev/null; then
+          missing=$(validate-spells --imps --missing-only $imp_list)
+          printf "Warning: Missing Level %d imps: %s\n" "$level" "$missing"
+          return 1
+        fi
+      fi
+      ;;
+  esac
   
-  # Success
-  printf "%s\n" "Level 0 complete - system foundation validated"
+  printf 'Level %d complete\n' "$level"
   return 0
 }
 
-# Level 1: Wizardry Installation
-banish_level_1() {
-  printf "%s\n" "Checking Level 1: Wizardry Installation..."
-  
-  # Verify wizardry is installed
-  if [ ! -d "${WIZARDRY_DIR}/spells" ]; then
-    printf "Warning: %s\n" "Wizardry not installed at $WIZARDRY_DIR"
-    return 1
-  fi
-  
-  # Validate spells and imps using generic function
-  banish_validate_level_spells 1 || return 1
-  
-  printf "%s\n" "Level 1 complete"
-}
-
-# Level 2: Menu System
-banish_level_2() {
-  printf "%s\n" "Checking Level 2: Menu System..."
-  
-  # Validate spells using generic function
-  banish_validate_level_spells 2 || return 1
-  
-  # Check if stty is available (required for menu terminal control)
-  if ! command -v stty >/dev/null 2>&1; then
-    printf "Warning: %s\n" "stty command not found - required for menu"
-    if [ "$skip_heal" -eq 0 ]; then
-      if [ -x "${WIZARDRY_DIR}/spells/.arcana/core/install-stty" ]; then
-        printf "%s\n" "Attempting to install stty..."
-        "${WIZARDRY_DIR}/spells/.arcana/core/install-stty" || printf "Warning: %s\n" "Failed to install stty"
-        # Re-check after install
-        if command -v stty >/dev/null 2>&1; then
-          printf "  ✓ %s\n" "stty installed successfully"
-        fi
-      else
-        printf "%s\n" "install-stty script not found - install stty manually"
-      fi
-    fi
-  else
-    printf "  ✓ %s\n" "stty available"
-  fi
-  
-  printf "%s\n" "Level 2 complete"
-}
-
-# Levels 3-26: Standard validation pattern (now handled in banish_level dispatcher)
-
-# Level 27: Optional Arcana & Third-Party Integrations
-banish_level_27() {
-  printf "%s\n" "Checking Level 27: Optional Arcana & Third-Party Integrations..."
-  
-  # Level 27 is special - contains all spells in spells/.arcana/
-  if [ -d "${WIZARDRY_DIR}/spells/.arcana" ]; then
-    arcana_count=$(find "${WIZARDRY_DIR}/spells/.arcana" -type f 2>/dev/null | wc -l)
-    printf "  ✓ %s\n" "Found $arcana_count arcana spells/scripts"
-  else
-    printf "%s\n" "Arcana directory not found (optional)"
-  fi
-  
-  printf "%s\n" "Level 27 complete"
-}
 
 # Main execution: Run levels 0 through target_level (or only target_level if --only)
 if [ "$only_this_level" -eq 1 ]; then
@@ -673,7 +343,7 @@ else
 fi
 
 while [ "$current_level" -le "$target_level" ]; do
-  banish_level "$current_level" || {
+  banish_process_level "$current_level" || {
     exit_code=$?
     printf "Error: %s\n" "Level $current_level validation failed, cannot continue"
     return "$exit_code"

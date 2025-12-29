@@ -165,29 +165,6 @@ failed_levels=""
 # Test timeout
 test_timeout=${WIZARDRY_TEST_TIMEOUT:-180}
 
-# Helper: Map spell to test file
-# Usage: spell_to_test "spell:dir" or "spell"
-spell_to_test() {
-  spell_info=$1
-  case "$spell_info" in
-    *:*)
-      spell=$(printf '%s' "$spell_info" | cut -d: -f1)
-      dir=$(printf '%s' "$spell_info" | cut -d: -f2)
-      ;;
-    *)
-      spell=$spell_info
-      dir="cantrips"
-      ;;
-  esac
-  
-  # Construct test path
-  test_file="$test_dir/$dir/test-$spell.sh"
-  
-  if [ -f "$test_file" ]; then
-    printf '%s\n' "$test_file"
-  fi
-}
-
 # Helper: Run tests for a spell level
 test_level() {
   level=$1
@@ -213,9 +190,21 @@ test_level() {
   
   # Test each spell
   for spell_info in $spell_list; do
-    test_file=$(spell_to_test "$spell_info")
+    # Inline spell_to_test logic
+    case "$spell_info" in
+      *:*)
+        spell=$(printf '%s' "$spell_info" | cut -d: -f1)
+        dir=$(printf '%s' "$spell_info" | cut -d: -f2)
+        ;;
+      *)
+        spell=$spell_info
+        dir="cantrips"
+        ;;
+    esac
     
-    if [ -z "$test_file" ]; then
+    test_file="$test_dir/$dir/test-$spell.sh"
+    
+    if [ ! -f "$test_file" ]; then
       # No test for this spell - that's okay for some spells
       continue
     fi
