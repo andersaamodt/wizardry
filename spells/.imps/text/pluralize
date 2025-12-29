@@ -26,142 +26,162 @@ pluralize() {
     return 0
   fi
 
-  case "$_pluralize_word" in
-    child) printf '%s' children ;;
-    person) printf '%s' people ;;
-    man) printf '%s' men ;;
-    woman) printf '%s' women ;;
-    mouse) printf '%s' mice ;;
-    goose) printf '%s' geese ;;
-    tooth) printf '%s' teeth ;;
-    foot) printf '%s' feet ;;
-    louse) printf '%s' lice ;;
-    ox) printf '%s' oxen ;;
-    die) printf '%s' dice ;;
-    cactus) printf '%s' cacti ;;
-    focus) printf '%s' foci ;;
-    fungus) printf '%s' fungi ;;
-    nucleus) printf '%s' nuclei ;;
-    syllabus) printf '%s' syllabi ;;
-    analysis) printf '%s' analyses ;;
-    diagnosis) printf '%s' diagnoses ;;
-    synopsis) printf '%s' synopses ;;
-    thesis) printf '%s' theses ;;
-    crisis) printf '%s' crises ;;
-    phenomenon) printf '%s' phenomena ;;
-    criterion) printf '%s' criteria ;;
-    datum) printf '%s' data ;;
-    medium) printf '%s' media ;;
-    bacterium) printf '%s' bacteria ;;
-    curriculum) printf '%s' curricula ;;
-    memorandum) printf '%s' memoranda ;;
-    stadium) printf '%s' stadia ;;
-    addendum) printf '%s' addenda ;;
-    stratum) printf '%s' strata ;;
-    bureau) printf '%s' bureaux ;;
-    index) printf '%s' indices ;;
-    appendix) printf '%s' appendices ;;
-    matrix) printf '%s' matrices ;;
-    vertex) printf '%s' vertices ;;
-    vortex) printf '%s' vortices ;;
-    axis) printf '%s' axes ;;
-    basis) printf '%s' bases ;;
-    oasis) printf '%s' oases ;;
-    thesis) printf '%s' theses ;;
-    fungus) printf '%s' fungi ;;
-    radius) printf '%s' radii ;;
-    stimulus) printf '%s' stimuli ;;
-    alumnus) printf '%s' alumni ;;
-    alumna) printf '%s' alumnae ;;
-    vertebra) printf '%s' vertebrae ;;
-    formula) printf '%s' formulae ;;
-    antenna) printf '%s' antennae ;;
-    nebula) printf '%s' nebulae ;;
-    millennium) printf '%s' millennia ;;
-    genus) printf '%s' genera ;;
-    corpus) printf '%s' corpora ;;
-    opus) printf '%s' opera ;;
-    status) printf '%s' statuses ;;
-    bus) printf '%s' buses ;;
-    axis) printf '%s' axes ;;
-    alias) printf '%s' aliases ;;
-    embargo) printf '%s' embargoes ;;
-    hero) printf '%s' heroes ;;
-    potato) printf '%s' potatoes ;;
-    tomato) printf '%s' tomatoes ;;
-    echo) printf '%s' echoes ;;
-    torpedo) printf '%s' torpedoes ;;
-    veto) printf '%s' vetoes ;;
-    calf) printf '%s' calves ;;
-    leaf) printf '%s' leaves ;;
-    life) printf '%s' lives ;;
-    loaf) printf '%s' loaves ;;
-    self) printf '%s' selves ;;
-    elf) printf '%s' elves ;;
-    shelf) printf '%s' shelves ;;
-    wolf) printf '%s' wolves ;;
-    knife) printf '%s' knives ;;
-    wife) printf '%s' wives ;;
-    thief) printf '%s' thieves ;;
-    scarf) printf '%s' scarves ;;
-    hoof) printf '%s' hooves ;;
-    dwarf) printf '%s' dwarves ;;
-    wharf) printf '%s' wharves ;;
-    fish) printf '%s' fish ;;
-    sheep) printf '%s' sheep ;;
-    deer) printf '%s' deer ;;
-    series) printf '%s' series ;;
-    species) printf '%s' species ;;
-    aircraft) printf '%s' aircraft ;;
-    moose) printf '%s' moose ;;
-    salmon) printf '%s' salmon ;;
-    trout) printf '%s' trout ;;
-    bison) printf '%s' bison ;;
-    means) printf '%s' means ;;
-    news) printf '%s' news ;;
-    police) printf '%s' police ;;
-    cattle) printf '%s' cattle ;;
+  _pluralize_lower=$(printf '%s' "$_pluralize_word" | tr 'A-Z' 'a-z')
+  _pluralize_result=""
+
+  case "$_pluralize_lower" in
+    child) _pluralize_result=children ;;
+    person) _pluralize_result=people ;;
+    man) _pluralize_result=men ;;
+    woman) _pluralize_result=women ;;
+    mouse) _pluralize_result=mice ;;
+    goose) _pluralize_result=geese ;;
+    tooth) _pluralize_result=teeth ;;
+    foot) _pluralize_result=feet ;;
+    louse) _pluralize_result=lice ;;
+    ox) _pluralize_result=oxen ;;
+    die) _pluralize_result=dice ;;
+    cactus) _pluralize_result=cacti ;;
+    focus) _pluralize_result=foci ;;
+    fungus) _pluralize_result=fungi ;;
+    nucleus) _pluralize_result=nuclei ;;
+    syllabus) _pluralize_result=syllabi ;;
+    analysis) _pluralize_result=analyses ;;
+    diagnosis) _pluralize_result=diagnoses ;;
+    synopsis) _pluralize_result=synopses ;;
+    thesis) _pluralize_result=theses ;;
+    crisis) _pluralize_result=crises ;;
+    phenomenon) _pluralize_result=phenomena ;;
+    criterion) _pluralize_result=criteria ;;
+    datum) _pluralize_result=data ;;
+    medium) _pluralize_result=media ;;
+    bacterium) _pluralize_result=bacteria ;;
+    curriculum) _pluralize_result=curricula ;;
+    memorandum) _pluralize_result=memoranda ;;
+    stadium) _pluralize_result=stadia ;;
+    addendum) _pluralize_result=addenda ;;
+    stratum) _pluralize_result=strata ;;
+    bureau) _pluralize_result=bureaux ;;
+    index) _pluralize_result=indices ;;
+    appendix) _pluralize_result=appendices ;;
+    matrix) _pluralize_result=matrices ;;
+    vertex) _pluralize_result=vertices ;;
+    vortex) _pluralize_result=vortices ;;
+    axis) _pluralize_result=axes ;;
+    basis) _pluralize_result=bases ;;
+    oasis) _pluralize_result=oases ;;
+    radius) _pluralize_result=radii ;;
+    stimulus) _pluralize_result=stimuli ;;
+    alumnus) _pluralize_result=alumni ;;
+    alumna) _pluralize_result=alumnae ;;
+    vertebra) _pluralize_result=vertebrae ;;
+    formula) _pluralize_result=formulae ;;
+    antenna) _pluralize_result=antennae ;;
+    nebula) _pluralize_result=nebulae ;;
+    millennium) _pluralize_result=millennia ;;
+    genus) _pluralize_result=genera ;;
+    corpus) _pluralize_result=corpora ;;
+    opus) _pluralize_result=opera ;;
+    status) _pluralize_result=statuses ;;
+    bus) _pluralize_result=buses ;;
+    alias) _pluralize_result=aliases ;;
+    embargo) _pluralize_result=embargoes ;;
+    hero) _pluralize_result=heroes ;;
+    potato) _pluralize_result=potatoes ;;
+    tomato) _pluralize_result=tomatoes ;;
+    echo) _pluralize_result=echoes ;;
+    torpedo) _pluralize_result=torpedoes ;;
+    veto) _pluralize_result=vetoes ;;
+    calf) _pluralize_result=calves ;;
+    leaf) _pluralize_result=leaves ;;
+    life) _pluralize_result=lives ;;
+    loaf) _pluralize_result=loaves ;;
+    self) _pluralize_result=selves ;;
+    elf) _pluralize_result=elves ;;
+    shelf) _pluralize_result=shelves ;;
+    wolf) _pluralize_result=wolves ;;
+    knife) _pluralize_result=knives ;;
+    wife) _pluralize_result=wives ;;
+    thief) _pluralize_result=thieves ;;
+    scarf) _pluralize_result=scarves ;;
+    hoof) _pluralize_result=hooves ;;
+    dwarf) _pluralize_result=dwarves ;;
+    wharf) _pluralize_result=wharves ;;
+    fish) _pluralize_result=fish ;;
+    sheep) _pluralize_result=sheep ;;
+    deer) _pluralize_result=deer ;;
+    series) _pluralize_result=series ;;
+    species) _pluralize_result=species ;;
+    aircraft) _pluralize_result=aircraft ;;
+    moose) _pluralize_result=moose ;;
+    salmon) _pluralize_result=salmon ;;
+    trout) _pluralize_result=trout ;;
+    bison) _pluralize_result=bison ;;
+    means) _pluralize_result=means ;;
+    news) _pluralize_result=news ;;
+    police) _pluralize_result=police ;;
+    cattle) _pluralize_result=cattle ;;
     *man)
-      printf '%s' "${_pluralize_word%man}men"
+      _pluralize_result=${_pluralize_lower%man}men
       ;;
     *mouse)
-      printf '%s' "${_pluralize_word%mouse}mice"
+      _pluralize_result=${_pluralize_lower%mouse}mice
       ;;
     *goose)
-      printf '%s' "${_pluralize_word%goose}geese"
+      _pluralize_result=${_pluralize_lower%goose}geese
       ;;
     *tooth)
-      printf '%s' "${_pluralize_word%tooth}teeth"
+      _pluralize_result=${_pluralize_lower%tooth}teeth
       ;;
     *foot)
-      printf '%s' "${_pluralize_word%foot}feet"
+      _pluralize_result=${_pluralize_lower%foot}feet
       ;;
     *louse)
-      printf '%s' "${_pluralize_word%louse}lice"
+      _pluralize_result=${_pluralize_lower%louse}lice
       ;;
     *[sxz]|*ch|*sh)
-      printf '%s' "${_pluralize_word}es"
+      _pluralize_result=${_pluralize_lower}es
       ;;
     *[!aeiou]y)
-      printf '%s' "${_pluralize_word%y}ies"
+      _pluralize_result=${_pluralize_lower%y}ies
       ;;
     *fe)
-      printf '%s' "${_pluralize_word%fe}ves"
+      _pluralize_result=${_pluralize_lower%fe}ves
       ;;
     *f)
-      printf '%s' "${_pluralize_word%f}ves"
+      _pluralize_result=${_pluralize_lower%f}ves
       ;;
     *[!aeiou]o)
-      printf '%s' "${_pluralize_word}es"
+      _pluralize_result=${_pluralize_lower}es
       ;;
     *us)
-      printf '%s' "${_pluralize_word}es"
+      _pluralize_result=${_pluralize_lower}es
       ;;
     *is)
-      printf '%s' "${_pluralize_word%is}es"
+      _pluralize_result=${_pluralize_lower%is}es
       ;;
     *)
-      printf '%s' "${_pluralize_word}s"
+      _pluralize_result=${_pluralize_lower}s
+      ;;
+  esac
+
+  case "$_pluralize_word" in
+    *[A-Z]*[a-z]*)
+      _pluralize_rest=${_pluralize_word#?}
+      case "$_pluralize_rest" in
+        *[A-Z]*) printf '%s' "$_pluralize_result" ;;
+        *)
+          _pluralize_first=$(printf '%s' "$_pluralize_result" | cut -c1)
+          _pluralize_tail=$(printf '%s' "$_pluralize_result" | cut -c2-)
+          printf '%s%s' "$(printf '%s' "$_pluralize_first" | tr 'a-z' 'A-Z')" "$_pluralize_tail"
+          ;;
+      esac
+      ;;
+    *[A-Z]*)
+      printf '%s' "$(printf '%s' "$_pluralize_result" | tr 'a-z' 'A-Z')"
+      ;;
+    *)
+      printf '%s' "$_pluralize_result"
       ;;
   esac
 }
