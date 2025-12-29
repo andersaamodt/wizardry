@@ -384,10 +384,10 @@ banish_process_level() {
       if [ -n "$spell_list" ]; then
         if ! eval "validate_spells --quiet $spell_list" 2>/dev/null; then
           missing=$(eval "validate_spells --missing-only $spell_list" 2>/dev/null || true)
-          printf '  %s✗%s Menu spells: Missing: %s\n' "$_red" "$_reset" "$missing"
-          return 1
-        fi
-        printf '  Menu spells:\n'
+        printf '  %s✗%s Spells: Missing: %s\n' "$_red" "$_reset" "$missing"
+        return 1
+      fi
+      printf '  Spells:\n'
         spell_output=$(eval "validate_spells --show-status $spell_list" 2>&1) || true
         if [ -n "$spell_output" ]; then
           printf '%s\n' "$spell_output" | sed 's/^/    /'
