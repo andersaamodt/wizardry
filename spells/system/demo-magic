@@ -34,7 +34,7 @@ demo_level() {
   # Special case for level 0 - infrastructure checks
   if [ "$level" -eq 0 ]; then
     printf 'Checking POSIX environment and wizardry structure...\n'
-    validate-spells --quiet "${WIZARDRY_DIR}/spells/.imps/sys/invoke-wizardry:dummy" 2>/dev/null && \
+    [ -f "${WIZARDRY_DIR}/spells/.imps/sys/invoke-wizardry" ] && \
       printf 'invoke-wizardry: ready\n' || printf 'Warning: invoke-wizardry check failed\n' >&2
     [ -d "${WIZARDRY_DIR}/spells" ] && \
       printf 'spells directory: ready\n' || printf 'Warning: spells directory check failed\n' >&2
@@ -42,27 +42,29 @@ demo_level() {
       printf 'imps directory: ready\n' || printf 'Warning: imps directory check failed\n' >&2
   fi
   
-  # Check spells for this level
+  # Check spells for this level (note: spell_list is intentionally unquoted for word splitting)
   if [ -n "$spell_list" ]; then
-    validate-spells --quiet $spell_list 2>&1 | while IFS= read -r line; do
-      printf '%s\n' "$line" | sed 's/✓ Found spell://' | sed 's/^  *//' | sed 's/$/:ready/'
-    done
+    # shellcheck disable=SC2086
+    validate-spells --quiet $spell_list 2>&1 | sed 's/✓ Found spell://; s/^  *//; s/$/:ready/'
     
     # Report missing spells if any
+    # shellcheck disable=SC2086
     if ! validate-spells $spell_list >/dev/null 2>&1; then
+      # shellcheck disable=SC2086
       missing=$(validate-spells --missing-only $spell_list)
       printf 'Warning: missing spells: %s\n' "$missing" >&2
     fi
   fi
   
-  # Check imps for this level
+  # Check imps for this level (note: imp_list is intentionally unquoted for word splitting)
   if [ -n "$imp_list" ]; then
-    validate-spells --quiet --imps $imp_list 2>&1 | while IFS= read -r line; do
-      printf '%s\n' "$line" | sed 's/✓ Found imp://' | sed 's/^  *//' | sed 's/$/  (imp):ready/'
-    done
+    # shellcheck disable=SC2086
+    validate-spells --quiet --imps $imp_list 2>&1 | sed 's/✓ Found imp://; s/^  *//; s/$/  (imp):ready/'
     
     # Report missing imps if any
+    # shellcheck disable=SC2086
     if ! validate-spells --imps $imp_list >/dev/null 2>&1; then
+      # shellcheck disable=SC2086
       missing=$(validate-spells --imps --missing-only $imp_list)
       printf 'Warning: missing imps: %s\n' "$missing" >&2
     fi
