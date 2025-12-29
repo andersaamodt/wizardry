@@ -211,19 +211,8 @@ fi
 _esc=$(printf '\033')
 _green="${_esc}[32m"
 _red="${_esc}[31m"
+_blue="${_esc}[34m"
 _reset="${_esc}[0m"
-
-banish_validate_cmd() {
-  if command -v validate_spells >/dev/null 2>&1; then
-    printf '%s' 'validate_spells'
-    return 0
-  fi
-  if [ -x "${WIZARDRY_DIR}/spells/system/validate-spells" ]; then
-    printf '%s' "${WIZARDRY_DIR}/spells/system/validate-spells"
-    return 0
-  fi
-  return 1
-}
 
 # Run level-specific checks and actions using case statement
 banish_process_level() {
@@ -277,6 +266,40 @@ banish_process_level() {
       fi
       
       export WIZARDRY_DIR
+
+      # Check banish prerequisites (single item - combine on one line)
+      core_spells_missing=0
+      core_loaded=""
+      core_available=""
+      core_unavailable=""
+      for core_spell in banish validate-spells; do
+        core_func=$(printf '%s' "$core_spell" | tr '-' '_')
+        if command -v "$core_func" >/dev/null 2>&1; then
+          core_loaded="${core_loaded}${core_loaded:+ }${core_spell}"
+        elif [ -f "${WIZARDRY_DIR}/spells/system/${core_spell}" ]; then
+          core_available="${core_available}${core_available:+ }${core_spell}"
+          core_spells_missing=1
+        else
+          core_unavailable="${core_unavailable}${core_unavailable:+ }${core_spell}"
+          core_spells_missing=1
+        fi
+      done
+
+      if [ "$core_spells_missing" -eq 0 ]; then
+        printf '  %s✓%s Core spells: All loaded\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Core spells:\n' "$_red" "$_reset"
+        if [ -n "$core_loaded" ]; then
+          printf '    %s✓%s Loaded spells: %s\n' "$_green" "$_reset" "$core_loaded"
+        fi
+        if [ -n "$core_available" ]; then
+          printf '    %s●%s Available spells: %s\n' "$_blue" "$_reset" "$core_available"
+        fi
+        if [ -n "$core_unavailable" ]; then
+          printf '    %s✗%s Missing spells: %s\n' "$_red" "$_reset" "$core_unavailable"
+        fi
+        return 1
+      fi
       
       # Check POSIX commands (multiple items - check topic when all pass)
       posix_failed=0
@@ -314,19 +337,20 @@ banish_process_level() {
         return 1
       fi
       printf '  %s✓%s Wizardry structure: Spells directory exists\n' "$_green" "$_reset"
-      
-      # Use external validate-spells script (banish relies on command output capture)
-      if ! _validate_cmd_capture=$(banish_validate_cmd); then
-        printf '  %s✗%s Cannot find validate-spells (needed for validation)\n' "$_red" "$_reset"
+
+      # Check installer presence (single item - combine on one line)
+      if [ ! -f "${WIZARDRY_DIR}/install" ]; then
+        printf '  %s✗%s Installer: install script not found\n' "$_red" "$_reset"
         return 1
       fi
+      printf '  %s✓%s Installer: install script present\n' "$_green" "$_reset"
       
       # Validate spells (show detailed status)
       spell_list=$(get_level_spells 1)
       if [ -n "$spell_list" ]; then
         # Check for any missing spells first
         # Use eval for variable function calls in command substitution (see CODE_POLICY_FUNCTION_CALLS.md)
-        missing=$(eval "$_validate_cmd_capture --missing-only $spell_list" 2>/dev/null || true)
+        missing=$(eval "validate_spells --missing-only $spell_list" 2>/dev/null || true)
         if [ -n "$missing" ]; then
           printf '  %s✗%s Required spells: Missing: %s\n' "$_red" "$_reset" "$missing"
           return 1
@@ -334,7 +358,7 @@ banish_process_level() {
         
         # Show detailed status (loaded vs available)
         printf '  Required spells:\n'
-        spell_output=$(eval "$_validate_cmd_capture --show-status $spell_list" 2>&1) || true
+        spell_output=$(eval "validate_spells --show-status $spell_list" 2>&1) || true
         if [ -n "$spell_output" ]; then
           printf '%s\n' "$spell_output" | sed 's/^/    /'
         else
@@ -347,7 +371,7 @@ banish_process_level() {
       if [ -n "$imp_list" ]; then
         # Check for any missing imps first
         # Use eval for variable function calls in command substitution (see CODE_POLICY_FUNCTION_CALLS.md)
-        missing=$(eval "$_validate_cmd_capture --imps --missing-only $imp_list" 2>/dev/null || true)
+        missing=$(eval "validate_spells --imps --missing-only $imp_list" 2>/dev/null || true)
         if [ -n "$missing" ]; then
           printf '  %s✗%s Required imps: Missing: %s\n' "$_red" "$_reset" "$missing"
           return 1
@@ -355,7 +379,7 @@ banish_process_level() {
         
         # Show detailed status (loaded vs available)
         printf '  Required imps:\n'
-        imp_output=$(eval "$_validate_cmd_capture --imps --show-status $imp_list" 2>&1) || true
+        imp_output=$(eval "validate_spells --imps --show-status $imp_list" 2>&1) || true
         if [ -n "$imp_output" ]; then
           printf '%s\n' "$imp_output" | sed 's/^/    /'
         else
@@ -366,21 +390,6 @@ banish_process_level() {
       
     2)
       # Level 2: Menu System
-      
-      # Check spells (single item - combine on one line)
-      spell_list=$(get_level_spells 2)
-      if [ -n "$spell_list" ]; then
-        if ! _validate_cmd=$(banish_validate_cmd); then
-          printf '  %s✗%s Cannot find validate-spells (needed for validation)\n' "$_red" "$_reset"
-          return 1
-        fi
-        if ! eval "$_validate_cmd --quiet $spell_list" 2>/dev/null; then
-          missing=$(eval "$_validate_cmd --missing-only $spell_list" 2>/dev/null || true)
-          printf '  %s✗%s Menu spells: Missing: %s\n' "$_red" "$_reset" "$missing"
-          return 1
-        fi
-        printf '  %s✓%s Menu spells: All found\n' "$_green" "$_reset"
-      fi
       
       # Check stty (single item - combine on one line)
       if ! command -v stty >/dev/null 2>&1; then
@@ -404,6 +413,17 @@ banish_process_level() {
       else
         printf '  %s✓%s Terminal control: stty available\n' "$_green" "$_reset"
       fi
+
+      # Check spells (single item - combine on one line)
+      spell_list=$(get_level_spells 2)
+      if [ -n "$spell_list" ]; then
+        if ! eval "validate_spells --quiet $spell_list" 2>/dev/null; then
+          missing=$(eval "validate_spells --missing-only $spell_list" 2>/dev/null || true)
+          printf '  %s✗%s Menu spells: Missing: %s\n' "$_red" "$_reset" "$missing"
+          return 1
+        fi
+        printf '  %s✓%s Menu spells: All found\n' "$_green" "$_reset"
+      fi
       ;;
       
     27)
@@ -422,12 +442,8 @@ banish_process_level() {
       # Check spells (single item - combine on one line)
       spell_list=$(get_level_spells "$level")
       if [ -n "$spell_list" ]; then
-        if ! _validate_cmd=$(banish_validate_cmd); then
-          printf '  %s✗%s Cannot find validate-spells (needed for validation)\n' "$_red" "$_reset"
-          return 1
-        fi
-        if ! eval "$_validate_cmd --quiet $spell_list" 2>/dev/null; then
-          missing=$(eval "$_validate_cmd --missing-only $spell_list" 2>/dev/null || true)
+        if ! eval "validate_spells --quiet $spell_list" 2>/dev/null; then
+          missing=$(eval "validate_spells --missing-only $spell_list" 2>/dev/null || true)
           printf '  %s✗%s Spells: Missing: %s\n' "$_red" "$_reset" "$missing"
           return 1
         fi
@@ -437,12 +453,8 @@ banish_process_level() {
       # Check imps (single item - combine on one line)
       imp_list=$(get_level_imps "$level")
       if [ -n "$imp_list" ]; then
-        if ! _validate_cmd=$(banish_validate_cmd); then
-          printf '  %s✗%s Cannot find validate-spells (needed for validation)\n' "$_red" "$_reset"
-          return 1
-        fi
-        if ! eval "$_validate_cmd --quiet --imps $imp_list" 2>/dev/null; then
-          missing=$(eval "$_validate_cmd --imps --missing-only $imp_list" 2>/dev/null || true)
+        if ! eval "validate_spells --quiet --imps $imp_list" 2>/dev/null; then
+          missing=$(eval "validate_spells --imps --missing-only $imp_list" 2>/dev/null || true)
           printf '  %s✗%s Imps: Missing: %s\n' "$_red" "$_reset" "$missing"
           return 1
         fi
