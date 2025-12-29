@@ -107,12 +107,12 @@ if [ ! -x "$root_dir/spells/system/test-spell" ]; then
   die "test-magic: test-spell not found"
 fi
 
-# Source spell-levels to get access to get_level_spells and get_level_imps
+# Source spell-levels from sys imp to get access to get_level_spells and get_level_imps
 # These functions define which spells/imps are at each level
-if [ ! -f "$root_dir/spells/system/spell-levels" ]; then
-  die "test-magic: spell-levels not found"
+if [ ! -f "$root_dir/spells/.imps/sys/spell-levels" ]; then
+  die "test-magic: spell-levels imp not found"
 fi
-. "$root_dir/spells/system/spell-levels"
+. "$root_dir/spells/.imps/sys/spell-levels"
 
 # Initialize counters
 total_pass=0

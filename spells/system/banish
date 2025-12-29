@@ -154,18 +154,22 @@ banish_error() {
   printf 'Error: %s\n' "$*" >&2
 }
 
-# Source shared spell level definitions
+# Source shared spell level definitions from sys imp
 # This file is shared by banish, test-magic, and demo-magic
-_banish_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-if [ -f "$_banish_dir/spell-levels" ]; then
-  . "$_banish_dir/spell-levels"
-elif [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/system/spell-levels" ]; then
-  . "${WIZARDRY_DIR}/spells/system/spell-levels"
+if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/spell-levels" ]; then
+  . "${WIZARDRY_DIR}/spells/.imps/sys/spell-levels"
 else
-  # Fallback: define inline if spell-levels not found
-  get_level_spells() { printf '' ; }
-  get_level_imps() { printf '' ; }
-  banish_level_name() { printf 'Unknown' ; }
+  # Fallback: try to find from script location
+  _banish_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _wiz_root=$(CDPATH= cd -- "$_banish_dir/../.." && pwd -P)
+  if [ -f "$_wiz_root/spells/.imps/sys/spell-levels" ]; then
+    . "$_wiz_root/spells/.imps/sys/spell-levels"
+  else
+    # Final fallback: define inline if spell-levels not found
+    get_level_spells() { printf '' ; }
+    get_level_imps() { printf '' ; }
+    banish_level_name() { printf 'Unknown' ; }
+  fi
 fi
 
 # Generic spell checking function with consistent formatting
