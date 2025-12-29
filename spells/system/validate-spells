@@ -176,7 +176,13 @@ for spell_info in "$@"; do
         imp_name=$(printf '%s' "$spell" | sed 's|.*/||')
         
         # Append to category-specific loaded list
-        eval "category_loaded_${category}=\"\${category_loaded_${category}:-}\${category_loaded_${category}:+ }${imp_name}\""
+        # Use simpler eval to avoid nested parameter expansion issues
+        eval "_existing=\${category_loaded_${category}:-}"
+        if [ -n "$_existing" ]; then
+          eval "category_loaded_${category}=\"\${_existing} ${imp_name}\""
+        else
+          eval "category_loaded_${category}=\"${imp_name}\""
+        fi
       elif [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ]; then
         # For spells, show individually
         printf '\033[32m✓\033[0m Loaded spell: %s\n' "$spell"
@@ -191,7 +197,13 @@ for spell_info in "$@"; do
         imp_name=$(printf '%s' "$spell" | sed 's|.*/||')
         
         # Append to category-specific available list
-        eval "category_available_${category}=\"\${category_available_${category}:-}\${category_available_${category}:+ }${imp_name}\""
+        # Use simpler eval to avoid nested parameter expansion issues
+        eval "_existing=\${category_available_${category}:-}"
+        if [ -n "$_existing" ]; then
+          eval "category_available_${category}=\"\${_existing} ${imp_name}\""
+        else
+          eval "category_available_${category}=\"${imp_name}\""
+        fi
       elif [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ]; then
         # For spells, show individually
         printf '\033[34m●\033[0m Available spell: %s\n' "$spell"
