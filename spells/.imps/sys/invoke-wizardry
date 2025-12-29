@@ -114,9 +114,9 @@ invoke_wizardry() {
     return 1
   fi
 
-  # Pre-load all spells/imps through level 2
-  _iw_debug "Pre-loading spells and imps through level 2"
-  for _iw_level in 0 1 2; do
+  # Pre-load all spells/imps through level 1
+  _iw_debug "Pre-loading spells and imps through level 1"
+  for _iw_level in 0 1; do
     _iw_level_imps=$(get_level_imps "$_iw_level")
     for _imp_entry in $_iw_level_imps; do
       _imp_name=${_imp_entry##*/}
