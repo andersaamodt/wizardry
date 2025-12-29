@@ -250,9 +250,56 @@ banish_process_level() {
       
       export WIZARDRY_DIR
       
+      # Check PATH baseline
+      path_missing=""
+      case ":${PATH-}:" in
+        *":/bin:"*) : ;;
+        *) path_missing="${path_missing}${path_missing:+ }/bin" ;;
+      esac
+      case ":${PATH-}:" in
+        *":/usr/bin:"*) : ;;
+        *) path_missing="${path_missing}${path_missing:+ }/usr/bin" ;;
+      esac
+      if [ -z "$path_missing" ]; then
+        printf '  %s✓%s PATH baseline: /bin and /usr/bin\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s PATH baseline: Missing %s\n' "$_red" "$_reset" "$path_missing"
+        if [ "$skip_heal" -eq 0 ]; then
+          baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+          PATH="${baseline_path}${PATH:+:}${PATH-}"
+          export PATH
+          path_missing=""
+          case ":${PATH-}:" in
+            *":/bin:"*) : ;;
+            *) path_missing="${path_missing}${path_missing:+ }/bin" ;;
+          esac
+          case ":${PATH-}:" in
+            *":/usr/bin:"*) : ;;
+            *) path_missing="${path_missing}${path_missing:+ }/usr/bin" ;;
+          esac
+          if [ -z "$path_missing" ]; then
+            printf '    %s✓%s PATH baseline restored\n' "$_green" "$_reset"
+          else
+            printf '    %s✗%s PATH baseline still missing: %s\n' "$_red" "$_reset" "$path_missing"
+          fi
+        fi
+        if [ -n "$path_missing" ]; then
+          return 1
+        fi
+      fi
+
+      manage_system_command=""
+      if [ "$skip_heal" -eq 0 ]; then
+        if command -v manage-system-command >/dev/null 2>&1; then
+          manage_system_command="manage-system-command"
+        elif [ -x "${WIZARDRY_DIR}/spells/.arcana/core/manage-system-command" ]; then
+          manage_system_command="${WIZARDRY_DIR}/spells/.arcana/core/manage-system-command"
+        fi
+      fi
+
       # Check POSIX commands (multiple items - check topic when all pass)
       posix_failed=0
-      for cmd in sh test printf cat dirname cut; do
+      for cmd in sh test printf command dirname basename pwd cat grep find sort cut head tail tr wc awk sed xargs mktemp uname; do
         if ! command -v "$cmd" >/dev/null 2>&1; then
           posix_failed=1
           break
@@ -261,18 +308,71 @@ banish_process_level() {
       
       if [ "$posix_failed" -eq 0 ]; then
         printf '  %s✓%s POSIX foundation:\n' "$_green" "$_reset"
-        for cmd in sh test printf cat dirname cut; do
+        for cmd in sh test printf command dirname basename pwd cat grep find sort cut head tail tr wc awk sed xargs mktemp uname; do
           printf '    %s✓%s %s\n' "$_green" "$_reset" "$cmd"
         done
       else
         printf '  %s✗%s POSIX foundation:\n' "$_red" "$_reset"
-        for cmd in sh test printf cat dirname cut; do
+        for cmd in sh test printf command dirname basename pwd cat grep find sort cut head tail tr wc awk sed xargs mktemp uname; do
           if command -v "$cmd" >/dev/null 2>&1; then
             printf '    %s✓%s %s\n' "$_green" "$_reset" "$cmd"
           else
             printf '    %s✗%s %s not found\n' "$_red" "$_reset" "$cmd"
           fi
         done
+        return 1
+      fi
+
+      # Check download tools (curl or wget)
+      if command -v curl >/dev/null 2>&1 || command -v wget >/dev/null 2>&1; then
+        printf '  %s✓%s Download tools: curl or wget available\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Download tools: curl and wget not found\n' "$_red" "$_reset"
+        if [ -n "$manage_system_command" ]; then
+          printf '    Attempting to install curl...\n'
+          if "$manage_system_command" curl curl >/dev/null 2>&1; then
+            :
+          else
+            printf '    Attempting to install wget...\n'
+            "$manage_system_command" wget wget >/dev/null 2>&1 || :
+          fi
+        fi
+        if command -v curl >/dev/null 2>&1 || command -v wget >/dev/null 2>&1; then
+          printf '    %s✓%s Download tool ready\n' "$_green" "$_reset"
+        else
+          printf '    %s✗%s Download tools still missing\n' "$_red" "$_reset"
+          return 1
+        fi
+      fi
+
+      # Check tar
+      if command -v tar >/dev/null 2>&1; then
+        printf '  %s✓%s Archive tool: tar available\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Archive tool: tar not found\n' "$_red" "$_reset"
+        if [ -n "$manage_system_command" ]; then
+          printf '    Attempting to install tar...\n'
+          "$manage_system_command" tar tar >/dev/null 2>&1 || :
+        fi
+        if command -v tar >/dev/null 2>&1; then
+          printf '    %s✓%s tar installed\n' "$_green" "$_reset"
+        else
+          printf '    %s✗%s tar still missing\n' "$_red" "$_reset"
+          return 1
+        fi
+      fi
+
+      # Check package manager availability
+      package_managers=""
+      for pkg in apt-get dnf yum zypper pacman apk brew port nix-env pkgin; do
+        if command -v "$pkg" >/dev/null 2>&1; then
+          package_managers="${package_managers}${package_managers:+ }$pkg"
+        fi
+      done
+      if [ -n "$package_managers" ]; then
+        printf '  %s✓%s Package manager: %s\n' "$_green" "$_reset" "$package_managers"
+      else
+        printf '  %s✗%s Package manager: none detected\n' "$_red" "$_reset"
         return 1
       fi
       ;;
@@ -368,6 +468,114 @@ banish_process_level() {
         printf '  %s✓%s Terminal control: stty available\n' "$_green" "$_reset"
       fi
 
+      # Check tput (fathom-terminal dependency)
+      if ! command -v tput >/dev/null 2>&1; then
+        printf '  %s✗%s Terminal capabilities: tput not found\n' "$_red" "$_reset"
+        if [ "$skip_heal" -eq 0 ]; then
+          if [ -x "${WIZARDRY_DIR}/spells/.arcana/core/install-tput" ]; then
+            printf '    Installing tput...\n'
+            if "${WIZARDRY_DIR}/spells/.arcana/core/install-tput" 2>/dev/null; then
+              if command -v tput >/dev/null 2>&1; then
+                printf '    %s✓%s tput installed\n' "$_green" "$_reset"
+              else
+                printf '    %s✗%s Install failed\n' "$_red" "$_reset"
+              fi
+            else
+              printf '    %s✗%s Install failed\n' "$_red" "$_reset"
+            fi
+          else
+            printf '    Auto-install not available\n'
+          fi
+        fi
+      else
+        printf '  %s✓%s Terminal capabilities: tput available\n' "$_green" "$_reset"
+      fi
+
+      # Check dd (await-keypress dependency)
+      if ! command -v dd >/dev/null 2>&1; then
+        printf '  %s✗%s Input capture: dd not found\n' "$_red" "$_reset"
+        if [ "$skip_heal" -eq 0 ]; then
+          if [ -x "${WIZARDRY_DIR}/spells/.arcana/core/install-dd" ]; then
+            printf '    Installing dd...\n'
+            if "${WIZARDRY_DIR}/spells/.arcana/core/install-dd" 2>/dev/null; then
+              if command -v dd >/dev/null 2>&1; then
+                printf '    %s✓%s dd installed\n' "$_green" "$_reset"
+              else
+                printf '    %s✗%s Install failed\n' "$_red" "$_reset"
+              fi
+            else
+              printf '    %s✗%s Install failed\n' "$_red" "$_reset"
+            fi
+          else
+            printf '    Auto-install not available\n'
+          fi
+        fi
+      else
+        printf '  %s✓%s Input capture: dd available\n' "$_green" "$_reset"
+      fi
+
+      # Check terminal device access for menu
+      menu_tty=${AWAIT_KEYPRESS_DEVICE:-/dev/tty}
+      if [ ! -r "$menu_tty" ] || [ ! -w "$menu_tty" ]; then
+        printf '  %s✗%s Terminal access: %s not readable/writable\n' "$_red" "$_reset" "$menu_tty"
+        if [ "$skip_heal" -eq 0 ] && [ -n "${AWAIT_KEYPRESS_DEVICE-}" ]; then
+          menu_tty=/dev/tty
+          AWAIT_KEYPRESS_DEVICE=$menu_tty
+          export AWAIT_KEYPRESS_DEVICE
+          if [ -r "$menu_tty" ] && [ -w "$menu_tty" ]; then
+            printf '    %s✓%s Terminal access restored to /dev/tty\n' "$_green" "$_reset"
+          else
+            printf '    %s✗%s Terminal access still unavailable\n' "$_red" "$_reset"
+          fi
+        fi
+        if [ ! -r "$menu_tty" ] || [ ! -w "$menu_tty" ]; then
+          return 1
+        fi
+      else
+        printf '  %s✓%s Terminal access: %s\n' "$_green" "$_reset" "$menu_tty"
+      fi
+
+      # Check terminal type for ANSI cursor control
+      term_status=1
+      case "${TERM-}" in
+        ''|dumb|unknown) term_status=0 ;;
+        *) : ;;
+      esac
+      if [ "$term_status" -eq 1 ]; then
+        printf '  %s✓%s Terminal type: %s\n' "$_green" "$_reset" "${TERM-unknown}"
+      else
+        printf '  %s✗%s Terminal type: %s\n' "$_red" "$_reset" "${TERM-unknown}"
+        if [ "$skip_heal" -eq 0 ]; then
+          TERM="xterm-256color"
+          export TERM
+          term_status=1
+          case "${TERM-}" in
+            ''|dumb|unknown) term_status=0 ;;
+            *) : ;;
+          esac
+          if [ "$term_status" -eq 1 ]; then
+            printf '    %s✓%s Terminal type set to %s\n' "$_green" "$_reset" "$TERM"
+          else
+            printf '    %s✗%s Terminal type still minimal\n' "$_red" "$_reset"
+          fi
+        fi
+      fi
+      if [ "$term_status" -ne 1 ]; then
+        return 1
+      fi
+
+      # Check terminfo access (fathom-terminal expectation)
+      if command -v tput >/dev/null 2>&1; then
+        cols=$(tput cols 2>/dev/null || printf '')
+        lines=$(tput lines 2>/dev/null || printf '')
+        if [ -n "$cols" ] && [ -n "$lines" ]; then
+          printf '  %s✓%s Terminfo dimensions: %sx%s\n' "$_green" "$_reset" "$cols" "$lines"
+        else
+          printf '  %s✗%s Terminfo dimensions unavailable\n' "$_red" "$_reset"
+          return 1
+        fi
+      fi
+
       # Check spells
       spell_list=$(get_level_spells 2)
       if [ -n "$spell_list" ]; then
@@ -419,6 +627,320 @@ banish_process_level() {
         printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
       else
         printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      fi
+      ;;
+
+    3)
+      # Level 3: MUD Basics
+
+      # Check extended attributes helpers
+      xattr_helper=""
+      if command -v xattr >/dev/null 2>&1; then
+        xattr_helper="xattr"
+      elif command -v getfattr >/dev/null 2>&1 && command -v setfattr >/dev/null 2>&1; then
+        xattr_helper="getfattr/setfattr"
+      fi
+
+      if [ -n "$xattr_helper" ]; then
+        printf '  %s✓%s Extended attributes: %s available\n' "$_green" "$_reset" "$xattr_helper"
+      else
+        printf '  %s✗%s Extended attributes: no helper found\n' "$_red" "$_reset"
+        if [ "$skip_heal" -eq 0 ]; then
+          manage_system_command=""
+          if command -v manage-system-command >/dev/null 2>&1; then
+            manage_system_command="manage-system-command"
+          elif [ -x "${WIZARDRY_DIR}/spells/.arcana/core/manage-system-command" ]; then
+            manage_system_command="${WIZARDRY_DIR}/spells/.arcana/core/manage-system-command"
+          fi
+          if [ -n "$manage_system_command" ]; then
+            printf '    Attempting to install xattr tooling...\n'
+            "$manage_system_command" getfattr attr >/dev/null 2>&1 || :
+            "$manage_system_command" setfattr attr >/dev/null 2>&1 || :
+          fi
+        fi
+        if command -v xattr >/dev/null 2>&1 || { command -v getfattr >/dev/null 2>&1 && command -v setfattr >/dev/null 2>&1; }; then
+          printf '    %s✓%s Extended attributes helper ready\n' "$_green" "$_reset"
+        else
+          printf '    %s✗%s Extended attributes still unavailable\n' "$_red" "$_reset"
+          return 1
+        fi
+      fi
+      ;;
+
+    4)
+      # Level 4: Navigation
+
+      # Check marker directory creation
+      spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
+      markers_dir="$spell_home/.markers"
+      if [ -d "$markers_dir" ] && [ -w "$markers_dir" ]; then
+        printf '  %s✓%s Marker directory: %s\n' "$_green" "$_reset" "$markers_dir"
+      else
+        printf '  %s✗%s Marker directory: %s unavailable\n' "$_red" "$_reset" "$markers_dir"
+        if [ "$skip_heal" -eq 0 ]; then
+          if mkdir -p "$markers_dir" 2>/dev/null; then
+            printf '    %s✓%s Marker directory created\n' "$_green" "$_reset"
+          else
+            printf '    %s✗%s Marker directory creation failed\n' "$_red" "$_reset"
+          fi
+        fi
+        if [ ! -d "$markers_dir" ] || [ ! -w "$markers_dir" ]; then
+          return 1
+        fi
+      fi
+
+      # Check spellbook directory access
+      if [ -d "$spell_home" ] && [ -w "$spell_home" ]; then
+        printf '  %s✓%s Spellbook directory: %s\n' "$_green" "$_reset" "$spell_home"
+      else
+        printf '  %s✗%s Spellbook directory: %s unavailable\n' "$_red" "$_reset" "$spell_home"
+        if [ "$skip_heal" -eq 0 ]; then
+          if mkdir -p "$spell_home" 2>/dev/null; then
+            printf '    %s✓%s Spellbook directory created\n' "$_green" "$_reset"
+          else
+            printf '    %s✗%s Spellbook directory creation failed\n' "$_red" "$_reset"
+          fi
+        fi
+        if [ ! -d "$spell_home" ] || [ ! -w "$spell_home" ]; then
+          return 1
+        fi
+      fi
+      ;;
+
+    5)
+      # Level 5: Arcane File Operations
+
+      # Check file utilities
+      file_utils_ok=1
+      for cmd in cp mv rm find; do
+        if ! command -v "$cmd" >/dev/null 2>&1; then
+          file_utils_ok=0
+        fi
+      done
+
+      if [ "$file_utils_ok" -eq 1 ]; then
+        printf '  %s✓%s File utilities: cp mv rm find\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s File utilities: missing command\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check filesystem read/write
+      tmp_root=${TMPDIR:-/tmp}
+      tmp_check=$(mktemp "${tmp_root%/}/banish-rw.XXXXXX" 2>/dev/null || printf '')
+      if [ -n "$tmp_check" ]; then
+        if printf '%s\n' "banish" >"$tmp_check" 2>/dev/null && [ -s "$tmp_check" ]; then
+          rm -f "$tmp_check" 2>/dev/null || :
+          printf '  %s✓%s Filesystem read/write: %s\n' "$_green" "$_reset" "$tmp_root"
+        else
+          rm -f "$tmp_check" 2>/dev/null || :
+          printf '  %s✗%s Filesystem read/write: %s unavailable\n' "$_red" "$_reset" "$tmp_root"
+          return 1
+        fi
+      else
+        printf '  %s✗%s Filesystem read/write: temp file unavailable\n' "$_red" "$_reset"
+        return 1
+      fi
+      ;;
+
+    6)
+      # Level 6: Basic Cantrips
+
+      # Check interactive input device
+      input_tty=${AWAIT_KEYPRESS_DEVICE:-/dev/tty}
+      if [ -r "$input_tty" ] && [ -w "$input_tty" ]; then
+        printf '  %s✓%s Interactive input: %s\n' "$_green" "$_reset" "$input_tty"
+      else
+        printf '  %s✗%s Interactive input: %s unavailable\n' "$_red" "$_reset" "$input_tty"
+        if [ "$skip_heal" -eq 0 ] && [ -n "${AWAIT_KEYPRESS_DEVICE-}" ]; then
+          input_tty=/dev/tty
+          AWAIT_KEYPRESS_DEVICE=$input_tty
+          export AWAIT_KEYPRESS_DEVICE
+          if [ -r "$input_tty" ] && [ -w "$input_tty" ]; then
+            printf '    %s✓%s Interactive input restored to /dev/tty\n' "$_green" "$_reset"
+          else
+            printf '    %s✗%s Interactive input still unavailable\n' "$_red" "$_reset"
+          fi
+        fi
+        if [ ! -r "$input_tty" ] || [ ! -w "$input_tty" ]; then
+          return 1
+        fi
+      fi
+      ;;
+
+    9)
+      # Level 9: System Configuration
+
+      # Check configuration directory access
+      config_home=${WIZARDRY_CONFIG_DIR:-${HOME:-.}/.wizardry}
+      if [ -d "$config_home" ] && [ -w "$config_home" ]; then
+        printf '  %s✓%s Config directory: %s\n' "$_green" "$_reset" "$config_home"
+      else
+        printf '  %s✗%s Config directory: %s unavailable\n' "$_red" "$_reset" "$config_home"
+        if [ "$skip_heal" -eq 0 ]; then
+          if mkdir -p "$config_home" 2>/dev/null; then
+            printf '    %s✓%s Config directory created\n' "$_green" "$_reset"
+          else
+            printf '    %s✗%s Config directory creation failed\n' "$_red" "$_reset"
+          fi
+        fi
+        if [ ! -d "$config_home" ] || [ ! -w "$config_home" ]; then
+          return 1
+        fi
+      fi
+      ;;
+
+    10)
+      # Level 10: Testing Infrastructure
+
+      # Check tests directory
+      tests_root="${WIZARDRY_DIR}/.tests"
+      if [ -d "$tests_root" ]; then
+        printf '  %s✓%s Test suite: %s\n' "$_green" "$_reset" "$tests_root"
+      else
+        printf '  %s✗%s Test suite: %s missing\n' "$_red" "$_reset" "$tests_root"
+        return 1
+      fi
+
+      # Check bubblewrap for sandboxing
+      if command -v bwrap >/dev/null 2>&1; then
+        printf '  %s✓%s Sandbox tool: bwrap available\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Sandbox tool: bwrap not found\n' "$_red" "$_reset"
+        if [ "$skip_heal" -eq 0 ]; then
+          if [ -x "${WIZARDRY_DIR}/spells/.arcana/core/install-bwrap" ]; then
+            printf '    Installing bwrap...\n'
+            if "${WIZARDRY_DIR}/spells/.arcana/core/install-bwrap" 2>/dev/null; then
+              if command -v bwrap >/dev/null 2>&1; then
+                printf '    %s✓%s bwrap installed\n' "$_green" "$_reset"
+              else
+                printf '    %s✗%s Install failed\n' "$_red" "$_reset"
+              fi
+            else
+              printf '    %s✗%s Install failed\n' "$_red" "$_reset"
+            fi
+          else
+            printf '    Auto-install not available\n'
+          fi
+        fi
+        if ! command -v bwrap >/dev/null 2>&1; then
+          return 1
+        fi
+      fi
+      ;;
+
+    16)
+      # Level 16: SSH & Remote Access
+
+      # Check SSH availability
+      if command -v ssh >/dev/null 2>&1; then
+        printf '  %s✓%s SSH client: ssh available\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s SSH client: ssh not found\n' "$_red" "$_reset"
+        if [ "$skip_heal" -eq 0 ]; then
+          manage_system_command=""
+          if command -v manage-system-command >/dev/null 2>&1; then
+            manage_system_command="manage-system-command"
+          elif [ -x "${WIZARDRY_DIR}/spells/.arcana/core/manage-system-command" ]; then
+            manage_system_command="${WIZARDRY_DIR}/spells/.arcana/core/manage-system-command"
+          fi
+          if [ -n "$manage_system_command" ]; then
+            printf '    Attempting to install SSH...\n'
+            "$manage_system_command" ssh openssh >/dev/null 2>&1 || :
+          fi
+        fi
+        if ! command -v ssh >/dev/null 2>&1; then
+          return 1
+        fi
+      fi
+      ;;
+
+    19)
+      # Level 19: Extended Attributes
+
+      # Check extended attributes helpers
+      xattr_helper=""
+      if command -v xattr >/dev/null 2>&1; then
+        xattr_helper="xattr"
+      elif command -v getfattr >/dev/null 2>&1 && command -v setfattr >/dev/null 2>&1; then
+        xattr_helper="getfattr/setfattr"
+      fi
+
+      if [ -n "$xattr_helper" ]; then
+        printf '  %s✓%s Extended attributes: %s available\n' "$_green" "$_reset" "$xattr_helper"
+      else
+        printf '  %s✗%s Extended attributes: no helper found\n' "$_red" "$_reset"
+        if [ "$skip_heal" -eq 0 ]; then
+          manage_system_command=""
+          if command -v manage-system-command >/dev/null 2>&1; then
+            manage_system_command="manage-system-command"
+          elif [ -x "${WIZARDRY_DIR}/spells/.arcana/core/manage-system-command" ]; then
+            manage_system_command="${WIZARDRY_DIR}/spells/.arcana/core/manage-system-command"
+          fi
+          if [ -n "$manage_system_command" ]; then
+            printf '    Attempting to install xattr tooling...\n'
+            "$manage_system_command" getfattr attr >/dev/null 2>&1 || :
+            "$manage_system_command" setfattr attr >/dev/null 2>&1 || :
+          fi
+        fi
+        if command -v xattr >/dev/null 2>&1 || { command -v getfattr >/dev/null 2>&1 && command -v setfattr >/dev/null 2>&1; }; then
+          printf '    %s✓%s Extended attributes helper ready\n' "$_green" "$_reset"
+        else
+          printf '    %s✗%s Extended attributes still unavailable\n' "$_red" "$_reset"
+          return 1
+        fi
+      fi
+      ;;
+
+    21)
+      # Level 21: Spellcraft Development Tools
+
+      # Check checkbashisms for lint-magic
+      if command -v checkbashisms >/dev/null 2>&1; then
+        printf '  %s✓%s Shell lint: checkbashisms available\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Shell lint: checkbashisms not found\n' "$_red" "$_reset"
+        if [ "$skip_heal" -eq 0 ]; then
+          if [ -x "${WIZARDRY_DIR}/spells/.arcana/core/install-checkbashisms" ]; then
+            printf '    Installing checkbashisms...\n'
+            if "${WIZARDRY_DIR}/spells/.arcana/core/install-checkbashisms" 2>/dev/null; then
+              if command -v checkbashisms >/dev/null 2>&1; then
+                printf '    %s✓%s checkbashisms installed\n' "$_green" "$_reset"
+              else
+                printf '    %s✗%s Install failed\n' "$_red" "$_reset"
+              fi
+            else
+              printf '    %s✗%s Install failed\n' "$_red" "$_reset"
+            fi
+          else
+            printf '    Auto-install not available\n'
+          fi
+        fi
+        if ! command -v checkbashisms >/dev/null 2>&1; then
+          return 1
+        fi
+      fi
+      ;;
+
+    22)
+      # Level 22: Core Menu Infrastructure
+
+      # Check spellbook directory access
+      spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
+      if [ -d "$spell_home" ] && [ -w "$spell_home" ]; then
+        printf '  %s✓%s Spellbook directory: %s\n' "$_green" "$_reset" "$spell_home"
+      else
+        printf '  %s✗%s Spellbook directory: %s unavailable\n' "$_red" "$_reset" "$spell_home"
+        if [ "$skip_heal" -eq 0 ]; then
+          if mkdir -p "$spell_home" 2>/dev/null; then
+            printf '    %s✓%s Spellbook directory created\n' "$_green" "$_reset"
+          else
+            printf '    %s✗%s Spellbook directory creation failed\n' "$_red" "$_reset"
+          fi
+        fi
+        if [ ! -d "$spell_home" ] || [ ! -w "$spell_home" ]; then
+          return 1
+        fi
       fi
       ;;
       
