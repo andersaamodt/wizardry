@@ -291,26 +291,34 @@ banish_process_level() {
       fi
       printf '  %s✓%s Wizardry structure: Spells directory exists\n' "$_green" "$_reset"
       
-      # Validate spells (single item - combine on one line)
+      # Validate spells (show detailed status)
       spell_list=$(get_level_spells 1)
       if [ -n "$spell_list" ]; then
-        if ! validate_spells --quiet $spell_list 2>/dev/null; then
-          missing=$(validate_spells --missing-only $spell_list)
+        # Check for any missing spells first
+        missing=$(validate_spells --missing-only $spell_list 2>/dev/null || true)
+        if [ -n "$missing" ]; then
           printf '  %s✗%s Required spells: Missing: %s\n' "$_red" "$_reset" "$missing"
           return 1
         fi
-        printf '  %s✓%s Required spells: All found\n' "$_green" "$_reset"
+        
+        # Show detailed status (loaded vs available)
+        printf '  Required spells:\n'
+        validate_spells --show-status $spell_list 2>/dev/null | sed 's/^/    /'
       fi
       
-      # Validate imps (single item - combine on one line)
+      # Validate imps (show detailed status)
       imp_list=$(get_level_imps 1)
       if [ -n "$imp_list" ]; then
-        if ! validate_spells --quiet --imps $imp_list 2>/dev/null; then
-          missing=$(validate_spells --imps --missing-only $imp_list)
+        # Check for any missing imps first
+        missing=$(validate_spells --imps --missing-only $imp_list 2>/dev/null || true)
+        if [ -n "$missing" ]; then
           printf '  %s✗%s Required imps: Missing: %s\n' "$_red" "$_reset" "$missing"
           return 1
         fi
-        printf '  %s✓%s Required imps: All found\n' "$_green" "$_reset"
+        
+        # Show detailed status (loaded vs available)
+        printf '  Required imps:\n'
+        validate_spells --imps --show-status $imp_list 2>/dev/null | sed 's/^/    /'
       fi
       ;;
       
