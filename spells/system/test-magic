@@ -4,7 +4,7 @@
 # Responsibilities:
 # - Run tests organized by spell level (following banish structure)
 # - Auto-derive which tests to run from spell lists
-# - Report failures in same format as original test-magic
+# - Report failures in same format as banish output
 # - Support banish → test-magic → demo-magic triad
 
 # CRITICAL: Seed a baseline PATH BEFORE set -eu
@@ -17,30 +17,83 @@ case ":${PATH-}:" in
 esac
 
 test_magic_usage() {
-  cat <<USAGE
-Usage: test-magic [LEVEL] [--only] [--verbose]
+  cat <<'USAGE'
+Usage: test-magic [LEVEL] [OPTIONS]
 
 Execute behavior-driven shell tests organized by spell level.
 
 Arguments:
-  LEVEL        Test through level N (0-27), default is 27 (all levels)
-  --only       Test only the specified level, not 0 through N
-  --verbose    Show detailed test output
+  LEVEL                 Test through level N (0-27, default: 27)
+  all                   Test all available levels
+
+Options:
+  --only                Only test this specific level (don't run lower levels)
+  --verbose             Show per-test output
 
 Examples:
-  test-magic          # Test all levels (0-27)
-  test-magic 5        # Test levels 0-5
+  test-magic            # Test all levels (0-27)
+  test-magic 5          # Test levels 0-5
   test-magic 10 --only  # Test only level 10
 
 Environment variables:
   WIZARDRY_TEST_TIMEOUT    Timeout in seconds for each test (default: 180)
+  WIZARDRY_TEST_NO_BWRAP    Skip sandboxing with bubblewrap
 USAGE
 }
 
 test_magic() {
+case "${1-}" in
+--help|--usage|-h)
+  test_magic_usage
+  return 0
+  ;;
+esac
+
+# Use conditional strictness based on execution context
+case "$0" in
+  */test-magic)
+    set -eu
+    ;;
+  *)
+    set -u
+    ;;
+esac
+
+# Detect WIZARDRY_DIR if not already set
+if [ -z "${WIZARDRY_DIR-}" ]; then
+  case "$0" in
+    sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
+      if [ -n "${HOME-}" ] && [ -d "${HOME}/.wizardry/spells" ]; then
+        WIZARDRY_DIR="${HOME}/.wizardry"
+      fi
+      ;;
+    *)
+      _script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || _script_dir=""
+      if [ -n "$_script_dir" ]; then
+        _wiz_root=$(CDPATH= cd -- "$_script_dir/../.." 2>/dev/null && pwd -P) || _wiz_root=""
+        if [ -n "$_wiz_root" ] && [ -d "$_wiz_root/spells" ]; then
+          WIZARDRY_DIR="$_wiz_root"
+        fi
+      fi
+      ;;
+  esac
+fi
+
+if [ -z "${WIZARDRY_DIR-}" ]; then
+  printf 'test-magic: WIZARDRY_DIR not set and could not be detected\n' >&2
+  printf 'Run from wizardry installation or set WIZARDRY_DIR environment variable\n' >&2
+  return 1
+fi
+
+if [ ! -d "${WIZARDRY_DIR}/spells" ]; then
+  printf 'test-magic: invalid WIZARDRY_DIR: %s\n' "$WIZARDRY_DIR" >&2
+  return 1
+fi
+
+export WIZARDRY_DIR
+
 cmd_name=$(basename "$0")
-script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-root_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd -P)
+root_dir=$WIZARDRY_DIR
 test_dir="$root_dir/.tests"
 
 # Add wizardry spells and imps to PATH
@@ -54,15 +107,27 @@ fi
 
 # Parse arguments
 target_level=27
+max_level=27
 only_this_level=0
 verbose=0
+run_all=0
 
-while [ $# -gt 0 ]; do
+if [ "$#" -gt 0 ]; then
   case "$1" in
-    --help|--usage|-h)
-      test_magic_usage
-      return 0
+    all)
+      run_all=1
+      target_level=$max_level
+      shift
       ;;
+    [0-9]|[0-9][0-9])
+      target_level=$1
+      shift
+      ;;
+  esac
+fi
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
     --only)
       only_this_level=1
       shift
@@ -71,40 +136,55 @@ while [ $# -gt 0 ]; do
       verbose=1
       shift
       ;;
-    [0-9]|[0-9][0-9])
-      target_level=$1
+    --)
       shift
+      break
       ;;
-    *)
+    -* )
       printf 'test-magic: unknown option: %s\n' "$1" >&2
+      test_magic_usage >&2
       return 2
+      ;;
+    * )
+      case "$1" in
+        all)
+          run_all=1
+          target_level=$max_level
+          shift
+          ;;
+        [0-9]|[0-9][0-9])
+          target_level=$1
+          shift
+          ;;
+        * )
+          printf 'test-magic: unexpected argument: %s\n' "$1" >&2
+          test_magic_usage >&2
+          return 2
+          ;;
+      esac
       ;;
   esac
 done
 
-set -eu
-export PATH
-
 # Validate level range
-if [ "$target_level" -lt 0 ] || [ "$target_level" -gt 27 ]; then
-  die "test-magic: level must be 0-27"
+if [ "$target_level" -lt 0 ] || [ "$target_level" -gt "$max_level" ]; then
+  printf 'test-magic: level must be 0-%d\n' "$max_level" >&2
+  return 2
 fi
+
+export PATH
 
 # Sandbox with bwrap if not in GitHub Actions and not already sandboxed
 if [ "${WIZARDRY_TEST_IN_BWRAP-0}" -ne 1 ] && [ "${WIZARDRY_TEST_NO_BWRAP-0}" -ne 1 ]; then
-  # Skip bwrap in GitHub Actions (already isolated)
   if [ -z "${GITHUB_ACTIONS-}" ] || [ "${GITHUB_ACTIONS}" != "true" ]; then
     if command -v bwrap >/dev/null 2>&1; then
-      # Re-exec with bwrap sandbox
       exec bwrap --unshare-user --ro-bind / / --dev-bind /dev /dev --bind /proc /proc \
         --bind /tmp /tmp --setenv PATH "$PATH" --setenv WIZARDRY_TEST_IN_BWRAP 1 -- \
         "$0" "$@"
     else
-      # bwrap not available - offer to install
       printf 'test-magic: bubblewrap (bwrap) not found\n' >&2
       printf 'test-magic: Running tests in an isolated sandbox is recommended for safety.\n' >&2
-      
-      # Check if we can install it
+
       if command -v pkg-install >/dev/null 2>&1; then
         if command -v ask_yn >/dev/null 2>&1; then
           if ask_yn "Install bubblewrap now?" yes; then
@@ -118,8 +198,7 @@ if [ "${WIZARDRY_TEST_IN_BWRAP-0}" -ne 1 ] && [ "${WIZARDRY_TEST_NO_BWRAP-0}" -n
           fi
         fi
       fi
-      
-      # Either install failed or user declined - ask to continue
+
       if command -v ask_yn >/dev/null 2>&1; then
         if ! ask_yn "Continue without sandbox?" no; then
           printf 'test-magic: aborting\n' >&2
@@ -141,56 +220,74 @@ for required_cmd in sh find grep awk sed sort cat printf; do
 done
 
 if [ -n "$missing_commands" ]; then
-  die "test-magic: required commands not found: $missing_commands"
+  printf 'test-magic: required commands not found: %s\n' "$missing_commands" >&2
+  return 1
 fi
 
-# Check for test-spell
 if [ ! -x "$root_dir/spells/system/test-spell" ]; then
-  die "test-magic: test-spell not found"
+  printf 'test-magic: test-spell not found\n' >&2
+  return 1
 fi
 
-# Source spell-levels from sys imp to get access to get_level_spells and get_level_imps
-# These functions define which spells/imps are at each level
 if [ ! -f "$root_dir/spells/.imps/sys/spell-levels" ]; then
-  die "test-magic: spell-levels imp not found"
+  printf 'test-magic: spell-levels imp not found\n' >&2
+  return 1
 fi
+
 . "$root_dir/spells/.imps/sys/spell-levels"
+
+# Color codes (inline to avoid dependency)
+_esc=$(printf '\033')
+_green="${_esc}[32m"
+_red="${_esc}[31m"
+_reset="${_esc}[0m"
 
 # Initialize counters
 total_pass=0
 total_fail=0
+total_skip=0
 failed_tests=""
 failed_levels=""
 
-# Test timeout
 test_timeout=${WIZARDRY_TEST_TIMEOUT:-180}
 
-# Helper: Run tests for a spell level
+run_test_file() {
+  test_path=$1
+  if has timeout; then
+    if timeout "$test_timeout" "$root_dir/spells/system/test-spell" \
+      --skip-common "$test_path" </dev/null >/dev/null 2>&1; then
+      return 0
+    fi
+    return 1
+  fi
+
+  if "$root_dir/spells/system/test-spell" --skip-common "$test_path" \
+    </dev/null >/dev/null 2>&1; then
+    return 0
+  fi
+  return 1
+}
+
 test_level() {
   level=$1
   level_name=$(banish_level_name "$level")
-  
-  printf '\n=== Level %d: %s ===\n' "$level" "$level_name"
-  
-  # Get spell list for this level
+
+  printf '\nLevel %d: %s\n' "$level" "$level_name"
+
   spell_list=$(get_level_spells "$level")
-  
-  if [ -z "$spell_list" ]; then
-    printf '  No spells defined for Level %d\n' "$level"
-    return 0
-  fi
-  
-  # Get imp list for this level (if any)
   imp_list=$(get_level_imps "$level" 2>/dev/null || printf '')
-  
-  # Track level statistics
+
   level_pass=0
   level_fail=0
-  level_tests=""
-  
-  # Test each spell
+  level_skip=0
+  level_total=0
+
+  if [ -z "$spell_list" ] && [ -z "$imp_list" ]; then
+    printf '  %s✓%s No spells or imps to test.\n' "$_green" "$_reset"
+    return 0
+  fi
+
   for spell_info in $spell_list; do
-    # Inline spell_to_test logic
     case "$spell_info" in
       *:*)
         spell=$(printf '%s' "$spell_info" | cut -d: -f1)
@@ -201,156 +298,151 @@ test_level() {
         dir="cantrips"
         ;;
     esac
-    
+
     test_file="$test_dir/$dir/test-$spell.sh"
-    
     if [ ! -f "$test_file" ]; then
-      # No test for this spell - that's okay for some spells
+      level_skip=$((level_skip + 1))
+      if [ "$verbose" -eq 1 ]; then
+        printf '  - %s (no tests)\n' "$spell"
+      fi
       continue
     fi
-    
+
     test_name=$(basename "$test_file")
     test_path="${test_file#$root_dir/.tests/}"
-    
-    level_tests="${level_tests:+$level_tests }$test_name"
-    
-    # Run the test
+    level_total=$((level_total + 1))
+
     if [ "$verbose" -eq 1 ]; then
       printf '  Running %s...\n' "$test_name"
     fi
-    
-    # Use timeout if available
-    if has timeout; then
-      if timeout "$test_timeout" "$root_dir/spells/system/test-spell" \
-         --skip-common "$test_path" </dev/null >/dev/null 2>&1; then
-        test_result=0
-      else
-        test_result=1
-      fi
-    else
-      if "$root_dir/spells/system/test-spell" --skip-common "$test_path" \
-         </dev/null >/dev/null 2>&1; then
-        test_result=0
-      else
-        test_result=1
-      fi
-    fi
-    
-    if [ "$test_result" = "0" ]; then
+
+    if run_test_file "$test_path"; then
       level_pass=$((level_pass + 1))
-      if [ "$verbose" -eq 1 ]; then
-        printf '    ✓ PASS\n'
-      fi
+      printf '  %s✓%s %s\n' "$_green" "$_reset" "$test_name"
     else
       level_fail=$((level_fail + 1))
       failed_tests="${failed_tests:+$failed_tests }$test_name"
-      if [ "$verbose" -eq 1 ]; then
-        printf '    ✗ FAIL\n'
-      fi
+      printf '  %s✗%s %s\n' "$_red" "$_reset" "$test_name"
     fi
   done
-  
-  # Test imps if any
+
   for imp in $imp_list; do
-    # Imps are in .imps directory, need to find the family
-    # Format is typically family/imp-name
     test_file="$test_dir/.imps/$imp"
     test_file="${test_file%/*}/test-$(basename "$imp").sh"
-    
+
     if [ ! -f "$test_file" ]; then
+      level_skip=$((level_skip + 1))
+      if [ "$verbose" -eq 1 ]; then
+        printf '  - %s (no tests)\n' "$imp"
+      fi
       continue
     fi
-    
+
     test_name=$(basename "$test_file")
     test_path="${test_file#$root_dir/.tests/}"
-    
-    level_tests="${level_tests:+$level_tests }$test_name"
-    
+    level_total=$((level_total + 1))
+
     if [ "$verbose" -eq 1 ]; then
       printf '  Running %s...\n' "$test_name"
     fi
-    
-    # Use timeout if available
-    if has timeout; then
-      if timeout "$test_timeout" "$root_dir/spells/system/test-spell" \
-         --skip-common "$test_path" </dev/null >/dev/null 2>&1; then
-        test_result=0
-      else
-        test_result=1
-      fi
-    else
-      if "$root_dir/spells/system/test-spell" --skip-common "$test_path" \
-         </dev/null >/dev/null 2>&1; then
-        test_result=0
-      else
-        test_result=1
-      fi
-    fi
-    
-    if [ "$test_result" = "0" ]; then
+
+    if run_test_file "$test_path"; then
       level_pass=$((level_pass + 1))
-      if [ "$verbose" -eq 1 ]; then
-        printf '    ✓ PASS\n'
-      fi
+      printf '  %s✓%s %s\n' "$_green" "$_reset" "$test_name"
     else
       level_fail=$((level_fail + 1))
       failed_tests="${failed_tests:+$failed_tests }$test_name"
-      if [ "$verbose" -eq 1 ]; then
-        printf '    ✗ FAIL\n'
-      fi
+      printf '  %s✗%s %s\n' "$_red" "$_reset" "$test_name"
     fi
   done
-  
-  # Report level results
-  level_total=$((level_pass + level_fail))
+
   if [ "$level_total" -gt 0 ]; then
     if [ "$level_fail" -eq 0 ]; then
-      printf '  ✓ Level %d: %d/%d tests passed\n' "$level" "$level_pass" "$level_total"
+      printf '  %s✓%s Level %d: %d/%d tests passed' "$_green" "$_reset" \
+        "$level" "$level_pass" "$level_total"
     else
-      printf '  ✗ Level %d: %d/%d tests passed (%d failed)\n' "$level" "$level_pass" "$level_total" "$level_fail"
+      printf '  %s✗%s Level %d: %d/%d tests passed (%d failed)' "$_red" "$_reset" \
+        "$level" "$level_pass" "$level_total" "$level_fail"
       failed_levels="${failed_levels:+$failed_levels }$level"
     fi
-    
-    total_pass=$((total_pass + level_pass))
-    total_fail=$((total_fail + level_fail))
+    if [ "$level_skip" -gt 0 ]; then
+      printf ' (%d skipped)\n' "$level_skip"
+    else
+      printf '\n'
+    fi
   else
-    printf '  No tests found for Level %d\n' "$level"
+    if [ "$level_skip" -gt 0 ]; then
+      printf '  %s✓%s No tests found (%d skipped)\n' "$_green" "$_reset" "$level_skip"
+    else
+      printf '  %s✓%s No tests found\n' "$_green" "$_reset"
+    fi
   fi
+
+  total_pass=$((total_pass + level_pass))
+  total_fail=$((total_fail + level_fail))
+  total_skip=$((total_skip + level_skip))
+
+  return 0
 }
 
-# Main execution
 if [ "$only_this_level" -eq 1 ]; then
-  printf '=== Testing Wizardry Level %d ===\n' "$target_level"
-  test_level "$target_level"
+  printf '\nTesting Level %d only: %s\n' "$target_level" "$(banish_level_name "$target_level")"
 else
-  printf '=== Testing Wizardry Levels 0-%d ===\n' "$target_level"
-  level=0
-  while [ "$level" -le "$target_level" ]; do
-    test_level "$level"
-    level=$((level + 1))
-  done
+  printf '\nTesting through Level %d: %s\n' "$target_level" "$(banish_level_name "$target_level")"
 fi
 
-# Final summary
+if [ "$only_this_level" -eq 1 ]; then
+  current_level=$target_level
+else
+  current_level=0
+fi
+
+last_success_level=-1
+while [ "$current_level" -le "$target_level" ]; do
+  test_level "$current_level" || {
+    exit_code=$?
+    if [ "$last_success_level" -ge 0 ]; then
+      printf '\n%s✓%s Tested to Level %d\n' "$_green" "$_reset" "$last_success_level"
+    fi
+    printf '%s✗%s Testing failed at Level %d\n' "$_red" "$_reset" "$current_level"
+    return "$exit_code"
+  }
+  last_success_level=$current_level
+  if [ "$only_this_level" -eq 1 ]; then
+    break
+  fi
+  current_level=$((current_level + 1))
+done
+
 printf '\n=== Test Summary ===\n'
 total=$((total_pass + total_fail))
 if [ "$total" -gt 0 ]; then
-  printf 'Total: %d/%d tests passed\n' "$total_pass" "$total"
-  
+  printf 'Total: %d/%d tests passed' "$total_pass" "$total"
+  if [ "$total_skip" -gt 0 ]; then
+    printf ' (%d skipped)\n' "$total_skip"
+  else
+    printf '\n'
+  fi
+
   if [ "$total_fail" -gt 0 ]; then
     printf '\nFailed tests: %s\n' "$failed_tests"
     if [ -n "$failed_levels" ]; then
       printf 'Failed levels: %s\n' "$failed_levels"
     fi
+    printf '%s✗%s Some tests failed\n' "$_red" "$_reset"
     return 1
-  else
-    printf '\n✓ All tests passed!\n'
-    return 0
   fi
-else
-  printf 'No tests were run\n'
+
+  if [ "$run_all" -eq 1 ]; then
+    printf '\n%s✓%s Tested all (Level %d)\n' "$_green" "$_reset" "$last_success_level"
+  else
+    printf '\n%s✓%s All tests passed\n' "$_green" "$_reset"
+  fi
   return 0
 fi
+
+printf 'No tests were run\n'
+return 0
 }
 
 # Load castable imp for direct execution
