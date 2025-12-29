@@ -129,6 +129,92 @@ spell_loaded=""
 spell_available=""
 spell_unavailable=""
 
+validate_entry() {
+  entry_spell=$1
+  entry_path=$2
+  entry_status_override=$3
+
+  # Determine function name
+  if [ "$validate_imps" -eq 1 ]; then
+    # For imps, extract just the name part after the family/
+    # Keep hyphens as-is (imps use hyphenated names)
+    func_name=$(printf '%s' "$entry_spell" | sed 's|.*/||')
+  else
+    # For spells, use hyphenated name as-is
+    func_name=$(printf '%s' "$entry_spell" | sed 's|.*/||')
+  fi
+
+  # Check if loaded as function (try both hyphenated and underscored versions)
+  is_loaded=0
+  if [ -n "$entry_status_override" ]; then
+    if [ "$entry_status_override" = "L" ]; then
+      is_loaded=1
+    fi
+  else
+    for name_variant in "$func_name" "$(printf '%s' "$func_name" | tr '-' '_')"; do
+      if command -v "$name_variant" >/dev/null 2>&1; then
+        func_type=$(type "$name_variant" 2>/dev/null || true)
+        case "$func_type" in
+          *"function"*|*"shell function"*)
+            is_loaded=1
+            break
+            ;;
+        esac
+      fi
+    done
+  fi
+
+  if [ -f "$entry_path" ]; then
+    found_count=$((found_count + 1))
+
+    if [ "$is_loaded" -eq 1 ]; then
+      loaded_count=$((loaded_count + 1))
+
+      # For imps with --show-status, store result for later output
+      if [ "$validate_imps" -eq 1 ] && [ "$show_status" -eq 1 ]; then
+        imp_name=$(printf '%s' "$entry_spell" | sed 's|.*/||')
+        # Format: status|name (status: L=loaded, A=available)
+        imp_results="${imp_results}${imp_results:+
+}L|${imp_name}"
+      elif [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ]; then
+        # For spells, collect grouped output
+        spell_loaded="${spell_loaded}${spell_loaded:+ }${entry_spell}"
+      fi
+    else
+      available_count=$((available_count + 1))
+
+      # For imps with --show-status, store result for later output
+      if [ "$validate_imps" -eq 1 ] && [ "$show_status" -eq 1 ]; then
+        imp_name=$(printf '%s' "$entry_spell" | sed 's|.*/||')
+        # Format: status|name (status: L=loaded, A=available)
+        imp_results="${imp_results}${imp_results:+
+}A|${imp_name}"
+      elif [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ]; then
+        # For spells, collect grouped output
+        spell_available="${spell_available}${spell_available:+ }${entry_spell}"
+      fi
+    fi
+
+    if [ "$quiet" -eq 0 ] && [ "$show_status" -eq 0 ]; then
+      if [ "$validate_imps" -eq 1 ]; then
+        printf '✓ Found imp: %s\n' "$entry_spell"
+      else
+        printf '✓ Found spell: %s\n' "$entry_spell"
+      fi
+    fi
+  else
+    missing="${missing:+$missing }$entry_spell"
+    if [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ]; then
+      if [ "$validate_imps" -eq 1 ]; then
+        imp_name=$(printf '%s' "$entry_spell" | sed 's|.*/||')
+        imp_unavailable="${imp_unavailable}${imp_unavailable:+ }${imp_name}"
+      else
+        spell_unavailable="${spell_unavailable}${spell_unavailable:+ }${entry_spell}"
+      fi
+    fi
+  fi
+}
+
 for spell_info in "$@"; do
   status_override=""
   # Parse spell:dir format (or category:status:name for imps)
@@ -170,86 +256,22 @@ for spell_info in "$@"; do
   else
     spell_path="${WIZARDRY_DIR}/spells/$dir/$spell"
   fi
-  
-  # Determine function name
-  if [ "$validate_imps" -eq 1 ]; then
-    # For imps, extract just the name part after the family/
-    # Keep hyphens as-is (imps use hyphenated names)
-    func_name=$(printf '%s' "$spell" | sed 's|.*/||')
-  else
-    # For spells, use hyphenated name as-is
-    func_name=$(printf '%s' "$spell" | sed 's|.*/||')
-  fi
-  
-  # Check if loaded as function (try both hyphenated and underscored versions)
-  is_loaded=0
-  if [ -n "$status_override" ]; then
-    if [ "$status_override" = "L" ]; then
-      is_loaded=1
-    fi
-  else
-    for name_variant in "$func_name" "$(printf '%s' "$func_name" | tr '-' '_')"; do
-      if command -v "$name_variant" >/dev/null 2>&1; then
-        func_type=$(type "$name_variant" 2>/dev/null || true)
-        case "$func_type" in
-          *"function"*|*"shell function"*)
-            is_loaded=1
-            break
-            ;;
-        esac
-      fi
+
+  if [ "$validate_imps" -eq 1 ] && [ -d "$spell_path" ]; then
+    found_entry=0
+    for imp_file in "$spell_path"/*; do
+      [ -f "$imp_file" ] || continue
+      found_entry=1
+      entry_spell="${spell}/$(basename "$imp_file")"
+      validate_entry "$entry_spell" "$imp_file" ""
     done
+    if [ "$found_entry" -eq 0 ]; then
+      missing="${missing:+$missing }$spell"
+    fi
+    continue
   fi
-  
-  if [ -f "$spell_path" ]; then
-    found_count=$((found_count + 1))
-    
-    if [ "$is_loaded" -eq 1 ]; then
-      loaded_count=$((loaded_count + 1))
-      
-      # For imps with --show-status, store result for later output
-      if [ "$validate_imps" -eq 1 ] && [ "$show_status" -eq 1 ]; then
-        imp_name=$(printf '%s' "$spell" | sed 's|.*/||')
-        # Format: status|name (status: L=loaded, A=available)
-        imp_results="${imp_results}${imp_results:+
-}L|${imp_name}"
-      elif [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ]; then
-        # For spells, collect grouped output
-        spell_loaded="${spell_loaded}${spell_loaded:+ }${spell}"
-      fi
-    else
-      available_count=$((available_count + 1))
-      
-      # For imps with --show-status, store result for later output
-      if [ "$validate_imps" -eq 1 ] && [ "$show_status" -eq 1 ]; then
-        imp_name=$(printf '%s' "$spell" | sed 's|.*/||')
-        # Format: status|name (status: L=loaded, A=available)
-        imp_results="${imp_results}${imp_results:+
-}A|${imp_name}"
-      elif [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ]; then
-        # For spells, collect grouped output
-        spell_available="${spell_available}${spell_available:+ }${spell}"
-      fi
-    fi
-    
-    if [ "$quiet" -eq 0 ] && [ "$show_status" -eq 0 ]; then
-      if [ "$validate_imps" -eq 1 ]; then
-        printf '✓ Found imp: %s\n' "$spell"
-      else
-        printf '✓ Found spell: %s\n' "$spell"
-      fi
-    fi
-  else
-    missing="${missing:+$missing }$spell"
-    if [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ]; then
-      if [ "$validate_imps" -eq 1 ]; then
-        imp_name=$(printf '%s' "$spell" | sed 's|.*/||')
-        imp_unavailable="${imp_unavailable}${imp_unavailable:+ }${imp_name}"
-      else
-        spell_unavailable="${spell_unavailable}${spell_unavailable:+ }${spell}"
-      fi
-    fi
-  fi
+
+  validate_entry "$spell" "$spell_path" "$status_override"
 done
 
 # Output grouped results for spells with --show-status
