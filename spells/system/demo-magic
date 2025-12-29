@@ -91,12 +91,16 @@ case "${1-}" in
   ;;
 esac
 
+require-wizardry || return 1
+
 set -eu
+env-clear
 
 # Detect WIZARDRY_DIR if not set (for direct execution)
 if [ -z "${WIZARDRY_DIR-}" ]; then
   # Try to detect from script location
-  if command -v dirname >/dev/null 2>&1 && command -v cd >/dev/null 2>&1 && command -v pwd >/dev/null 2>&1; then
+  if command -v dirname >/dev/null 2>&1 && command -v cd >/dev/null 2>&1 \
+     && command -v pwd >/dev/null 2>&1; then
     _script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || _script_dir=""
     if [ -n "$_script_dir" ]; then
       _wiz_root=$(CDPATH= cd -- "$_script_dir/../.." 2>/dev/null && pwd -P) || _wiz_root=""
@@ -138,15 +142,46 @@ if [ "$#" -gt 0 ]; then
   esac
 fi
 
+# Sandbox with bwrap if not in GitHub Actions and not already sandboxed
 if [ "${WIZARDRY_DEMO_IN_BWRAP-0}" -ne 1 ] && [ "${WIZARDRY_DEMO_NO_BWRAP-0}" -ne 1 ]; then
-  if command -v bwrap >/dev/null 2>&1; then
-    bwrap --unshare-user-try --ro-bind / / --dev-bind /dev /dev --bind /proc /proc \
-      --bind /tmp /tmp --setenv PATH "$PATH" --setenv WIZARDRY_DEMO_IN_BWRAP 1 -- \
-      "$0" "$@"
-    return $?
+  # Skip bwrap in GitHub Actions (already isolated)
+  if [ -z "${GITHUB_ACTIONS-}" ] || [ "${GITHUB_ACTIONS}" != "true" ]; then
+    if command -v bwrap >/dev/null 2>&1; then
+      # Re-exec with bwrap sandbox
+      exec bwrap --unshare-user-try --ro-bind / / --dev-bind /dev /dev --bind /proc /proc \
+        --bind /tmp /tmp --setenv PATH "$PATH" --setenv WIZARDRY_DEMO_IN_BWRAP 1 -- \
+        "$0" "$@"
+    else
+      # bwrap not available - offer to install
+      printf 'demo-magic: bubblewrap (bwrap) not found\n' >&2
+      printf 'demo-magic: Running demos in an isolated sandbox is recommended for safety.\n' >&2
+      
+      # Check if we can install it
+      if command -v pkg-install >/dev/null 2>&1; then
+        if command -v ask-yn >/dev/null 2>&1; then
+          if ask-yn "Install bubblewrap now?" yes; then
+            printf 'Installing bubblewrap...\n' >&2
+            if pkg-install bubblewrap 2>/dev/null || pkg-install bwrap 2>/dev/null; then
+              printf 'Bubblewrap installed successfully. Re-running demo-magic...\n' >&2
+              exec "$0" "$@"
+            else
+              printf 'demo-magic: failed to install bubblewrap\n' >&2
+            fi
+          fi
+        fi
+      fi
+      
+      # Either install failed or user declined - ask to continue
+      if command -v ask-yn >/dev/null 2>&1; then
+        if ! ask-yn "Continue without sandbox?" no; then
+          printf 'demo-magic: aborting\n' >&2
+          return 1
+        fi
+      else
+        printf 'demo-magic: continuing without sandbox (set WIZARDRY_DEMO_NO_BWRAP=1 to skip this check)\n' >&2
+      fi
+    fi
   fi
-
-  printf 'Warning: bubblewrap unavailable, running without sandbox\n' >&2
 fi
 
 printf 'A circle of chalk flares into view.\n'

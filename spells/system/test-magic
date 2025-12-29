@@ -90,6 +90,48 @@ if [ "$target_level" -lt 0 ] || [ "$target_level" -gt 27 ]; then
   die "test-magic: level must be 0-27"
 fi
 
+# Sandbox with bwrap if not in GitHub Actions and not already sandboxed
+if [ "${WIZARDRY_TEST_IN_BWRAP-0}" -ne 1 ] && [ "${WIZARDRY_TEST_NO_BWRAP-0}" -ne 1 ]; then
+  # Skip bwrap in GitHub Actions (already isolated)
+  if [ -z "${GITHUB_ACTIONS-}" ] || [ "${GITHUB_ACTIONS}" != "true" ]; then
+    if command -v bwrap >/dev/null 2>&1; then
+      # Re-exec with bwrap sandbox
+      exec bwrap --unshare-user-try --ro-bind / / --dev-bind /dev /dev --bind /proc /proc \
+        --bind /tmp /tmp --setenv PATH "$PATH" --setenv WIZARDRY_TEST_IN_BWRAP 1 -- \
+        "$0" "$@"
+    else
+      # bwrap not available - offer to install
+      printf 'test-magic: bubblewrap (bwrap) not found\n' >&2
+      printf 'test-magic: Running tests in an isolated sandbox is recommended for safety.\n' >&2
+      
+      # Check if we can install it
+      if command -v pkg-install >/dev/null 2>&1; then
+        if command -v ask-yn >/dev/null 2>&1; then
+          if ask-yn "Install bubblewrap now?" yes; then
+            printf 'Installing bubblewrap...\n' >&2
+            if pkg-install bubblewrap 2>/dev/null || pkg-install bwrap 2>/dev/null; then
+              printf 'Bubblewrap installed successfully. Re-running test-magic...\n' >&2
+              exec "$0" "$@"
+            else
+              printf 'test-magic: failed to install bubblewrap\n' >&2
+            fi
+          fi
+        fi
+      fi
+      
+      # Either install failed or user declined - ask to continue
+      if command -v ask-yn >/dev/null 2>&1; then
+        if ! ask-yn "Continue without sandbox?" no; then
+          printf 'test-magic: aborting\n' >&2
+          return 1
+        fi
+      else
+        printf 'test-magic: continuing without sandbox (set WIZARDRY_TEST_NO_BWRAP=1 to skip this check)\n' >&2
+      fi
+    fi
+  fi
+fi
+
 # Pre-flight checks
 missing_commands=""
 for required_cmd in sh find grep awk sed sort cat printf; do
@@ -190,9 +232,19 @@ test_level() {
     
     # Use timeout if available
     if has timeout; then
-      test_result=$(timeout "$test_timeout" "$root_dir/spells/system/test-spell" --skip-common "$test_path" </dev/null >/dev/null 2>&1 && printf '0' || printf '1')
+      if timeout "$test_timeout" "$root_dir/spells/system/test-spell" \
+         --skip-common "$test_path" </dev/null >/dev/null 2>&1; then
+        test_result=0
+      else
+        test_result=1
+      fi
     else
-      test_result=$("$root_dir/spells/system/test-spell" --skip-common "$test_path" </dev/null >/dev/null 2>&1 && printf '0' || printf '1')
+      if "$root_dir/spells/system/test-spell" --skip-common "$test_path" \
+         </dev/null >/dev/null 2>&1; then
+        test_result=0
+      else
+        test_result=1
+      fi
     fi
     
     if [ "$test_result" = "0" ]; then
@@ -231,9 +283,19 @@ test_level() {
     
     # Use timeout if available
     if has timeout; then
-      test_result=$(timeout "$test_timeout" "$root_dir/spells/system/test-spell" --skip-common "$test_path" </dev/null >/dev/null 2>&1 && printf '0' || printf '1')
+      if timeout "$test_timeout" "$root_dir/spells/system/test-spell" \
+         --skip-common "$test_path" </dev/null >/dev/null 2>&1; then
+        test_result=0
+      else
+        test_result=1
+      fi
     else
-      test_result=$("$root_dir/spells/system/test-spell" --skip-common "$test_path" </dev/null >/dev/null 2>&1 && printf '0' || printf '1')
+      if "$root_dir/spells/system/test-spell" --skip-common "$test_path" \
+         </dev/null >/dev/null 2>&1; then
+        test_result=0
+      else
+        test_result=1
+      fi
     fi
     
     if [ "$test_result" = "0" ]; then
