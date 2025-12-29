@@ -1,0 +1,172 @@
+#!/bin/sh
+# pluralize WORD COUNT [PLURAL] - pluralize WORD based on COUNT.
+# If PLURAL is provided, it is used when COUNT != 1.
+# Otherwise, applies English pluralization rules with common irregulars.
+# Example: pluralize "spell" 1  # -> spell
+# Example: pluralize "spell" 2  # -> spells
+set -eu
+
+pluralize() {
+  if [ "$#" -lt 2 ]; then
+    printf '%s\n' "pluralize: WORD COUNT [PLURAL]" >&2
+    return 2
+  fi
+
+  _pluralize_word=$1
+  _pluralize_count=$2
+  _pluralize_plural=${3-}
+
+  if [ "$_pluralize_count" -eq 1 ]; then
+    printf '%s' "$_pluralize_word"
+    return 0
+  fi
+
+  if [ -n "$_pluralize_plural" ]; then
+    printf '%s' "$_pluralize_plural"
+    return 0
+  fi
+
+  case "$_pluralize_word" in
+    child) printf '%s' children ;;
+    person) printf '%s' people ;;
+    man) printf '%s' men ;;
+    woman) printf '%s' women ;;
+    mouse) printf '%s' mice ;;
+    goose) printf '%s' geese ;;
+    tooth) printf '%s' teeth ;;
+    foot) printf '%s' feet ;;
+    louse) printf '%s' lice ;;
+    ox) printf '%s' oxen ;;
+    die) printf '%s' dice ;;
+    cactus) printf '%s' cacti ;;
+    focus) printf '%s' foci ;;
+    fungus) printf '%s' fungi ;;
+    nucleus) printf '%s' nuclei ;;
+    syllabus) printf '%s' syllabi ;;
+    analysis) printf '%s' analyses ;;
+    diagnosis) printf '%s' diagnoses ;;
+    synopsis) printf '%s' synopses ;;
+    thesis) printf '%s' theses ;;
+    crisis) printf '%s' crises ;;
+    phenomenon) printf '%s' phenomena ;;
+    criterion) printf '%s' criteria ;;
+    datum) printf '%s' data ;;
+    medium) printf '%s' media ;;
+    bacterium) printf '%s' bacteria ;;
+    curriculum) printf '%s' curricula ;;
+    memorandum) printf '%s' memoranda ;;
+    stadium) printf '%s' stadia ;;
+    addendum) printf '%s' addenda ;;
+    stratum) printf '%s' strata ;;
+    bureau) printf '%s' bureaux ;;
+    index) printf '%s' indices ;;
+    appendix) printf '%s' appendices ;;
+    matrix) printf '%s' matrices ;;
+    vertex) printf '%s' vertices ;;
+    vortex) printf '%s' vortices ;;
+    axis) printf '%s' axes ;;
+    basis) printf '%s' bases ;;
+    oasis) printf '%s' oases ;;
+    thesis) printf '%s' theses ;;
+    fungus) printf '%s' fungi ;;
+    radius) printf '%s' radii ;;
+    stimulus) printf '%s' stimuli ;;
+    alumnus) printf '%s' alumni ;;
+    alumna) printf '%s' alumnae ;;
+    vertebra) printf '%s' vertebrae ;;
+    formula) printf '%s' formulae ;;
+    antenna) printf '%s' antennae ;;
+    nebula) printf '%s' nebulae ;;
+    millennium) printf '%s' millennia ;;
+    genus) printf '%s' genera ;;
+    corpus) printf '%s' corpora ;;
+    opus) printf '%s' opera ;;
+    status) printf '%s' statuses ;;
+    bus) printf '%s' buses ;;
+    axis) printf '%s' axes ;;
+    alias) printf '%s' aliases ;;
+    embargo) printf '%s' embargoes ;;
+    hero) printf '%s' heroes ;;
+    potato) printf '%s' potatoes ;;
+    tomato) printf '%s' tomatoes ;;
+    echo) printf '%s' echoes ;;
+    torpedo) printf '%s' torpedoes ;;
+    veto) printf '%s' vetoes ;;
+    calf) printf '%s' calves ;;
+    leaf) printf '%s' leaves ;;
+    life) printf '%s' lives ;;
+    loaf) printf '%s' loaves ;;
+    self) printf '%s' selves ;;
+    elf) printf '%s' elves ;;
+    shelf) printf '%s' shelves ;;
+    wolf) printf '%s' wolves ;;
+    knife) printf '%s' knives ;;
+    wife) printf '%s' wives ;;
+    thief) printf '%s' thieves ;;
+    scarf) printf '%s' scarves ;;
+    hoof) printf '%s' hooves ;;
+    dwarf) printf '%s' dwarves ;;
+    wharf) printf '%s' wharves ;;
+    fish) printf '%s' fish ;;
+    sheep) printf '%s' sheep ;;
+    deer) printf '%s' deer ;;
+    series) printf '%s' series ;;
+    species) printf '%s' species ;;
+    aircraft) printf '%s' aircraft ;;
+    moose) printf '%s' moose ;;
+    salmon) printf '%s' salmon ;;
+    trout) printf '%s' trout ;;
+    bison) printf '%s' bison ;;
+    means) printf '%s' means ;;
+    news) printf '%s' news ;;
+    police) printf '%s' police ;;
+    cattle) printf '%s' cattle ;;
+    *man)
+      printf '%s' "${_pluralize_word%man}men"
+      ;;
+    *mouse)
+      printf '%s' "${_pluralize_word%mouse}mice"
+      ;;
+    *goose)
+      printf '%s' "${_pluralize_word%goose}geese"
+      ;;
+    *tooth)
+      printf '%s' "${_pluralize_word%tooth}teeth"
+      ;;
+    *foot)
+      printf '%s' "${_pluralize_word%foot}feet"
+      ;;
+    *louse)
+      printf '%s' "${_pluralize_word%louse}lice"
+      ;;
+    *[sxz]|*ch|*sh)
+      printf '%s' "${_pluralize_word}es"
+      ;;
+    *[!aeiou]y)
+      printf '%s' "${_pluralize_word%y}ies"
+      ;;
+    *fe)
+      printf '%s' "${_pluralize_word%fe}ves"
+      ;;
+    *f)
+      printf '%s' "${_pluralize_word%f}ves"
+      ;;
+    *[!aeiou]o)
+      printf '%s' "${_pluralize_word}es"
+      ;;
+    *us)
+      printf '%s' "${_pluralize_word}es"
+      ;;
+    *is)
+      printf '%s' "${_pluralize_word%is}es"
+      ;;
+    *)
+      printf '%s' "${_pluralize_word}s"
+      ;;
+  esac
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */pluralize) pluralize "$@" ;;
+esac
