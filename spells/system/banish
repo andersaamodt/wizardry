@@ -804,8 +804,15 @@ banish_process_level() {
 
       # Check pocket-dimension sandboxing
       platform=$(uname -s 2>/dev/null || printf 'unknown')
+      pocket_cmd=""
       if command -v pocket-dimension >/dev/null 2>&1; then
-        if pocket-dimension --check >/dev/null 2>&1; then
+        pocket_cmd=$(command -v pocket-dimension)
+      elif [ -x "${WIZARDRY_DIR}/spells/system/pocket-dimension" ]; then
+        pocket_cmd="${WIZARDRY_DIR}/spells/system/pocket-dimension"
+      fi
+
+      if [ -n "$pocket_cmd" ]; then
+        if "$pocket_cmd" --check >/dev/null 2>&1; then
           printf '  %s✓%s Sandbox tool: pocket-dimension available\n' "$_green" "$_reset"
         else
           printf '  %s✗%s Sandbox tool: pocket-dimension unavailable\n' "$_red" "$_reset"
