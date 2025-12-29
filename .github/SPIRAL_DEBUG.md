@@ -41,7 +41,7 @@ These are the essential components that MUST work before we proceed:
 
 **Pre-loaded components**:
 - **Imps**: require, require-wizardry, castable, env-clear, temp-file, cleanup-file, has, die, warn, fail, say
-- **Spells**: menu, await-keypress, move-cursor, fathom-cursor, fathom-terminal, cursor-blink, colors
+- **Spells**: menu, await-keypress, move-cursor, fathom-cursor, fathom-terminal, cursor-blink, colors, banish
 
 **Hotloaded** (via command_not_found_handle):
 - All other spells and imps load on first use
