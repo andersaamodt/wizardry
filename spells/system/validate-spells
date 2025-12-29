@@ -208,7 +208,8 @@ for spell_info in "$@"; do
 done
 
 # Output grouped results for imps with --show-status
-if [ "$validate_imps" -eq 1 ] && [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ] && [ -n "$imp_results" ]; then
+if [ "$validate_imps" -eq 1 ] && [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ]; then
+  if [ -n "$imp_results" ]; then
   # Get all unique categories
   categories=""
   for result in $imp_results; do
@@ -268,6 +269,7 @@ if [ "$validate_imps" -eq 1 ] && [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ] 
       fi
     fi
   done
+  fi
 fi
 
 # Output results
