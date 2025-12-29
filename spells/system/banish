@@ -204,27 +204,22 @@ else
   if [ -f "$_wiz_root/spells/.imps/sys/spell-levels" ]; then
     . "$_wiz_root/spells/.imps/sys/spell-levels"
   else
-    # Final fallback: define inline if spell-levels not found
-    get_level_spells() { printf '' ; }
-    get_level_imps() { printf '' ; }
-    banish_level_name() { printf 'Unknown' ; }
+    printf '%s\n' "banish: spell-levels not found; run invoke-wizardry first" >&2
+    return 1
   fi
 fi
 
-banish_max_level() {
-  if [ -d "${WIZARDRY_DIR}/spells/.arcana" ]; then
-    for _arcana_entry in "${WIZARDRY_DIR}"/spells/.arcana/*; do
-      [ -e "$_arcana_entry" ] || continue
-      printf '%s' 27
-      return 0
-    done
-  fi
-  printf '%s' 26
-  return 0
-}
+max_level=26
+if [ -d "${WIZARDRY_DIR}/spells/.arcana" ]; then
+  for _arcana_entry in "${WIZARDRY_DIR}"/spells/.arcana/*; do
+    [ -e "$_arcana_entry" ] || continue
+    max_level=27
+    break
+  done
+fi
 
 if [ "$target_level_all" -eq 1 ]; then
-  target_level=$(banish_max_level)
+  target_level=$max_level
 fi
 
 # Validate level
@@ -579,7 +574,7 @@ while [ "$current_level" -le "$target_level" ]; do
 done
 
 # Final success message
-if [ "$target_level_all" -eq 1 ]; then
+if [ "$target_level" -eq "$max_level" ]; then
   printf '\n%s✓%s Banished all (Level %d)\n' "$_green" "$_reset" "$target_level"
 else
   printf '\n%s✓%s Banished to Level %d\n' "$_green" "$_reset" "$target_level"
