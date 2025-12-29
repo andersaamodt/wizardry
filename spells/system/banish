@@ -347,9 +347,9 @@ banish_process_level() {
           return 1
         fi
         
-        # Show detailed status (loaded vs available)
+        # Show detailed status (loaded vs available) in compact format
         printf '  Required imps:\n'
-        imp_output=$(eval "$_validate_cmd --imps --show-status $imp_list" 2>&1) || true
+        imp_output=$(eval "$_validate_cmd --imps --compact-status $imp_list" 2>&1) || true
         if [ -n "$imp_output" ]; then
           printf '%s\n' "$imp_output" | sed 's/^/    /'
         else

@@ -18,6 +18,7 @@ Options:
   --missing-only        Return list of missing spells on stdout
   --imps                Validate imps instead of spells
   --show-status         Show detailed status (loaded vs available)
+  --compact-status      Show compact single-line status with category:status:name format
 
 Examples:
   validate-spells ask-yn menu                    # Check cantrips
@@ -73,6 +74,7 @@ quiet=0
 missing_only=0
 validate_imps=0
 show_status=0
+compact_status=0
 default_dir="cantrips"
 
 while [ "$#" -gt 0 ]; do
@@ -92,6 +94,11 @@ while [ "$#" -gt 0 ]; do
       shift
       ;;
     --show-status)
+      show_status=1
+      shift
+      ;;
+    --compact-status)
+      compact_status=1
       show_status=1
       shift
       ;;
@@ -210,65 +217,120 @@ done
 # Output grouped results for imps with --show-status
 if [ "$validate_imps" -eq 1 ] && [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ]; then
   if [ -n "$imp_results" ]; then
-  # Get all unique categories
-  categories=""
-  for result in $imp_results; do
-    category=$(printf '%s' "$result" | cut -d: -f1)
-    # Add category to list if not already present
-    case " $categories " in
-      *" $category "*) ;;
-      *) categories="${categories:+$categories }$category" ;;
-    esac
-  done
   
-  # Output each category
-  for category in $categories; do
-    loaded_imps=""
-    available_imps=""
-    
-    # Collect imps for this category
+  # Compact format: one line per category with category:status:name prefixes
+  if [ "$compact_status" -eq 1 ]; then
+    # Get all unique categories
+    categories=""
     for result in $imp_results; do
-      result_category=$(printf '%s' "$result" | cut -d: -f1)
-      result_status=$(printf '%s' "$result" | cut -d: -f2)
-      result_name=$(printf '%s' "$result" | cut -d: -f3-)
+      category=$(printf '%s' "$result" | cut -d: -f1)
+      # Add category to list if not already present
+      case " $categories " in
+        *" $category "*) ;;
+        *) categories="${categories:+$categories }$category" ;;
+      esac
+    done
+    
+    # Output each category on one line
+    for category in $categories; do
+      output_line=""
+      first_imp=""
+      first_imp_status=""
+      has_loaded=0
       
-      if [ "$result_category" = "$category" ]; then
-        if [ "$result_status" = "L" ]; then
-          loaded_imps="${loaded_imps}${loaded_imps:+ }${result_name}"
-        else
-          available_imps="${available_imps}${available_imps:+ }${result_name}"
+      # Build output line: first imp without prefix, rest with category:status:name
+      for result in $imp_results; do
+        result_category=$(printf '%s' "$result" | cut -d: -f1)
+        result_status=$(printf '%s' "$result" | cut -d: -f2)
+        result_name=$(printf '%s' "$result" | cut -d: -f3-)
+        
+        if [ "$result_category" = "$category" ]; then
+          if [ -z "$first_imp" ]; then
+            # First imp: no prefix, just the name
+            first_imp="$result_name"
+            first_imp_status="$result_status"
+            output_line="$result_name"
+          else
+            # Subsequent imps: add with category:status:name format
+            output_line="$output_line ${result_category}:${result_status}:${result_name}"
+          fi
+          
+          if [ "$result_status" = "L" ]; then
+            has_loaded=1
+          fi
         fi
+      done
+      
+      # Output line with appropriate icon/label based on whether any are loaded
+      if [ "$has_loaded" -eq 1 ]; then
+        printf '\033[32m✓\033[0m Loaded %s imp: %s\n' "$category" "$output_line"
+      else
+        printf '\033[34m●\033[0m Available %s imp: %s\n' "$category" "$output_line"
       fi
     done
     
-    # Count and output loaded imps with proper pluralization
-    if [ -n "$loaded_imps" ]; then
-      loaded_count_cat=0
-      for imp in $loaded_imps; do
-        loaded_count_cat=$((loaded_count_cat + 1))
-      done
-      
-      if [ "$loaded_count_cat" -eq 1 ]; then
-        printf '\033[32m✓\033[0m Loaded %s imp: %s\n' "$category" "$loaded_imps"
-      else
-        printf '\033[32m✓\033[0m Loaded %s imps: %s\n' "$category" "$loaded_imps"
-      fi
-    fi
+  else
+    # Original format: separate lines per category
+    # Get all unique categories
+    categories=""
+    for result in $imp_results; do
+      category=$(printf '%s' "$result" | cut -d: -f1)
+      # Add category to list if not already present
+      case " $categories " in
+        *" $category "*) ;;
+        *) categories="${categories:+$categories }$category" ;;
+      esac
+    done
     
-    # Count and output available imps with proper pluralization
-    if [ -n "$available_imps" ]; then
-      available_count_cat=0
-      for imp in $available_imps; do
-        available_count_cat=$((available_count_cat + 1))
+    # Output each category
+    for category in $categories; do
+      loaded_imps=""
+      available_imps=""
+      
+      # Collect imps for this category
+      for result in $imp_results; do
+        result_category=$(printf '%s' "$result" | cut -d: -f1)
+        result_status=$(printf '%s' "$result" | cut -d: -f2)
+        result_name=$(printf '%s' "$result" | cut -d: -f3-)
+        
+        if [ "$result_category" = "$category" ]; then
+          if [ "$result_status" = "L" ]; then
+            loaded_imps="${loaded_imps}${loaded_imps:+ }${result_name}"
+          else
+            available_imps="${available_imps}${available_imps:+ }${result_name}"
+          fi
+        fi
       done
       
-      if [ "$available_count_cat" -eq 1 ]; then
-        printf '\033[34m●\033[0m Available %s imp: %s\n' "$category" "$available_imps"
-      else
-        printf '\033[34m●\033[0m Available %s imps: %s\n' "$category" "$available_imps"
+      # Count and output loaded imps with proper pluralization
+      if [ -n "$loaded_imps" ]; then
+        loaded_count_cat=0
+        for imp in $loaded_imps; do
+          loaded_count_cat=$((loaded_count_cat + 1))
+        done
+        
+        if [ "$loaded_count_cat" -eq 1 ]; then
+          printf '\033[32m✓\033[0m Loaded %s imp: %s\n' "$category" "$loaded_imps"
+        else
+          printf '\033[32m✓\033[0m Loaded %s imps: %s\n' "$category" "$loaded_imps"
+        fi
       fi
-    fi
-  done
+      
+      # Count and output available imps with proper pluralization
+      if [ -n "$available_imps" ]; then
+        available_count_cat=0
+        for imp in $available_imps; do
+          available_count_cat=$((available_count_cat + 1))
+        done
+        
+        if [ "$available_count_cat" -eq 1 ]; then
+          printf '\033[34m●\033[0m Available %s imp: %s\n' "$category" "$available_imps"
+        else
+          printf '\033[34m●\033[0m Available %s imps: %s\n' "$category" "$available_imps"
+        fi
+      fi
+    done
+  fi
   fi
 fi
 
