@@ -8,53 +8,21 @@ banish_usage() {
   cat <<'USAGE'
 Usage: banish [LEVEL] [OPTIONS]
 
-Validate wizardry at the specified spell level, checking assumptions, 
-self-healing issues, and running tests. Each level builds on previous levels.
-
-NOTE: Banish requires wizardry to be installed. Run ./install first.
-See .github/SPELL_LEVELS.md for complete level documentation.
+Validate wizardry readiness by level, including assumptions, self-healing, and tests.
 
 Arguments:
-  LEVEL                 Spell level to validate (0-27, default: 1)
-                        Level 0: POSIX & platform foundation
-                        Level 1: Wizardry installation
-                        Level 2: Menu system
-                        Level 3: MUD basics (cd-hook, look)
-                        Level 4: Navigation (jump-to-marker, mark-location)
-                        Level 5: Arcane file operations
-                        Level 6: Basic cantrips
-                        Level 7: Validation helpers
-                        Level 8: Advanced cantrips
-                        Level 9: System configuration
-                        Level 10: Testing infrastructure
-                        Level 11: System maintenance
-                        Level 12: Advanced system tools
-                        Level 13: Divination
-                        Level 14: Advanced MUD
-                        Level 15-20: Specialized domains (crypto, SSH, priorities, wards, enchant, PSI, spellcraft)
-                        Level 21-25: Menus (core, system, MUD, domain)
-                        Level 26: System services
-                        Level 27: Optional arcana & third-party integrations
+  LEVEL                 Validate through level N (0-27, default: 1)
+  all                   Validate all available levels
 
 Options:
   --no-heal             Skip self-healing (only report issues)
   --no-tests            Skip running tests (only check assumptions)
   --only                Only validate this specific level (don't run lower levels)
 
-Environment Variables:
-  WIZARDRY_DIR          Target wizardry installation directory
-
-Exit Codes:
-  0  Level is ready (all checks passed, tests passed)
-  1  Critical issues found (cannot continue)
-  2  Invalid usage
-
 Examples:
-  banish                    # Validate through level 1 (default - levels 0-1: POSIX + wizardry)
-  banish 0                  # Validate level 0 only (POSIX foundation)
-  banish 2                  # Validate through level 2 (levels 0-2: POSIX + wizardry + menu)
-  banish 4 --no-tests       # Validate through level 4, skip tests
-  banish 1 --no-heal        # Validate through level 1, only report issues
+  banish          # Validate through level 1 (default)
+  banish 4 --only # Validate only level 4
+  banish all      # Validate through the highest available level
 USAGE
 }
 
@@ -128,13 +96,20 @@ export WIZARDRY_DIR
 
 # Parse arguments
 target_level=1
+max_level=27
 skip_tests=0
 skip_heal=0
 only_this_level=0
+run_all=0
 
 # First, check if first arg is a number (the level)
 if [ "$#" -gt 0 ]; then
   case "$1" in
+    all)
+      run_all=1
+      target_level=$max_level
+      shift
+      ;;
     [0-9]|[0-9][0-9])
       target_level=$1
       shift
@@ -168,6 +143,11 @@ while [ "$#" -gt 0 ]; do
     *)
       # Check if it's a valid level number
       case "$1" in
+        all)
+          run_all=1
+          target_level=$max_level
+          shift
+          ;;
         [0-9]|[0-9][0-9])
           target_level=$1
           shift
@@ -183,8 +163,8 @@ while [ "$#" -gt 0 ]; do
 done
 
 # Validate level
-if [ "$target_level" -lt 0 ] || [ "$target_level" -gt 27 ]; then
-  printf 'Error: level must be 0-27, got: %s\n' "$target_level" >&2
+if [ "$target_level" -lt 0 ] || [ "$target_level" -gt "$max_level" ]; then
+  printf 'Error: level must be 0-%d, got: %s\n' "$max_level" "$target_level" >&2
   banish_usage >&2
   return 2
 fi
@@ -552,7 +532,11 @@ while [ "$current_level" -le "$target_level" ]; do
 done
 
 # Final success message
-printf '\n%s✓%s All validation checks passed\n' "$_green" "$_reset"
+if [ "$run_all" -eq 1 ]; then
+  printf '\n%s✓%s Banished all (Level %d)\n' "$_green" "$_reset" "$last_success_level"
+else
+  printf '\n%s✓%s All validation checks passed\n' "$_green" "$_reset"
+fi
 
 return 0
 }
