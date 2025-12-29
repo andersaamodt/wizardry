@@ -537,7 +537,7 @@ fi
 while [ "$current_level" -le "$target_level" ]; do
   banish_process_level "$current_level" || {
     exit_code=$?
-    printf '\n%s✗%s Validation failed at Level %d\n' "$_red" "$_reset" "$current_level"
+    printf '\n%s✗%s Banish failed at Level %d\n' "$_red" "$_reset" "$current_level"
     return "$exit_code"
   }
   if [ "$only_this_level" -eq 1 ]; then
