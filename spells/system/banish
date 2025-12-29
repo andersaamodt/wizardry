@@ -184,13 +184,13 @@ banish_process_level() {
     0)
       # Level 0: System Foundation
       
-      # Check WIZARDRY_DIR
-      printf '  Wizardry directory:\n'
+      # Check WIZARDRY_DIR (single item - combine on one line)
       wizardry_not_installed=0
       
       if [ -n "${WIZARDRY_DIR-}" ]; then
-        printf '    %s✓%s WIZARDRY_DIR is set\n' "$_green" "$_reset"
+        printf '  %s✓%s Wizardry directory: WIZARDRY_DIR is set\n' "$_green" "$_reset"
       else
+        printf '  Wizardry directory:\n'
         printf '    Checking for wizardry installation...\n'
         
         has_dirname=$(command -v dirname >/dev/null 2>&1 && echo 1 || echo 0)
@@ -225,19 +225,29 @@ banish_process_level() {
       
       export WIZARDRY_DIR
       
-      # Check POSIX commands
-      printf '  POSIX foundation:\n'
+      # Check POSIX commands (multiple items - check topic when all pass)
       posix_failed=0
       for cmd in sh test printf cat; do
-        if command -v "$cmd" >/dev/null 2>&1; then
-          printf '    %s✓%s %s\n' "$_green" "$_reset" "$cmd"
-        else
-          printf '    %s✗%s %s not found\n' "$_red" "$_reset" "$cmd"
+        if ! command -v "$cmd" >/dev/null 2>&1; then
           posix_failed=1
+          break
         fi
       done
       
-      if [ "$posix_failed" -eq 1 ]; then
+      if [ "$posix_failed" -eq 0 ]; then
+        printf '  %s✓%s POSIX foundation:\n' "$_green" "$_reset"
+        for cmd in sh test printf cat; do
+          printf '    %s✓%s %s\n' "$_green" "$_reset" "$cmd"
+        done
+      else
+        printf '  %s✗%s POSIX foundation:\n' "$_red" "$_reset"
+        for cmd in sh test printf cat; do
+          if command -v "$cmd" >/dev/null 2>&1; then
+            printf '    %s✓%s %s\n' "$_green" "$_reset" "$cmd"
+          else
+            printf '    %s✗%s %s not found\n' "$_red" "$_reset" "$cmd"
+          fi
+        done
         return 1
       fi
       ;;
@@ -245,58 +255,53 @@ banish_process_level() {
     1)
       # Level 1: Wizardry Installation
       
-      # Check wizardry structure
-      printf '  Wizardry structure:\n'
+      # Check wizardry structure (single item - combine on one line)
       if [ ! -d "${WIZARDRY_DIR}/spells" ]; then
-        printf '    %s✗%s Spells directory not found\n' "$_red" "$_reset"
+        printf '  %s✗%s Wizardry structure: Spells directory not found\n' "$_red" "$_reset"
         return 1
       fi
-      printf '    %s✓%s Spells directory exists\n' "$_green" "$_reset"
+      printf '  %s✓%s Wizardry structure: Spells directory exists\n' "$_green" "$_reset"
       
-      # Validate spells
+      # Validate spells (single item - combine on one line)
       spell_list=$(get_level_spells 1)
       if [ -n "$spell_list" ]; then
-        printf '  Required spells:\n'
         if ! validate-spells --quiet $spell_list 2>/dev/null; then
           missing=$(validate-spells --missing-only $spell_list)
-          printf '    %s✗%s Missing: %s\n' "$_red" "$_reset" "$missing"
+          printf '  %s✗%s Required spells: Missing: %s\n' "$_red" "$_reset" "$missing"
           return 1
         fi
-        printf '    %s✓%s All found\n' "$_green" "$_reset"
+        printf '  %s✓%s Required spells: All found\n' "$_green" "$_reset"
       fi
       
-      # Validate imps
+      # Validate imps (single item - combine on one line)
       imp_list=$(get_level_imps 1)
       if [ -n "$imp_list" ]; then
-        printf '  Required imps:\n'
         if ! validate-spells --quiet --imps $imp_list 2>/dev/null; then
           missing=$(validate-spells --imps --missing-only $imp_list)
-          printf '    %s✗%s Missing: %s\n' "$_red" "$_reset" "$missing"
+          printf '  %s✗%s Required imps: Missing: %s\n' "$_red" "$_reset" "$missing"
           return 1
         fi
-        printf '    %s✓%s All found\n' "$_green" "$_reset"
+        printf '  %s✓%s Required imps: All found\n' "$_green" "$_reset"
       fi
       ;;
       
     2)
       # Level 2: Menu System
       
-      # Check spells
+      # Check spells (single item - combine on one line)
       spell_list=$(get_level_spells 2)
       if [ -n "$spell_list" ]; then
-        printf '  Menu spells:\n'
         if ! validate-spells --quiet $spell_list 2>/dev/null; then
           missing=$(validate-spells --missing-only $spell_list)
-          printf '    %s✗%s Missing: %s\n' "$_red" "$_reset" "$missing"
+          printf '  %s✗%s Menu spells: Missing: %s\n' "$_red" "$_reset" "$missing"
           return 1
         fi
-        printf '    %s✓%s All found\n' "$_green" "$_reset"
+        printf '  %s✓%s Menu spells: All found\n' "$_green" "$_reset"
       fi
       
-      # Check stty
-      printf '  Terminal control:\n'
+      # Check stty (single item - combine on one line)
       if ! command -v stty >/dev/null 2>&1; then
-        printf '    %s✗%s stty not found\n' "$_red" "$_reset"
+        printf '  %s✗%s Terminal control: stty not found\n' "$_red" "$_reset"
         if [ "$skip_heal" -eq 0 ]; then
           if [ -x "${WIZARDRY_DIR}/spells/.arcana/core/install-stty" ]; then
             printf '    Installing stty...\n'
@@ -314,46 +319,43 @@ banish_process_level() {
           fi
         fi
       else
-        printf '    %s✓%s stty available\n' "$_green" "$_reset"
+        printf '  %s✓%s Terminal control: stty available\n' "$_green" "$_reset"
       fi
       ;;
       
     27)
-      # Level 27: Optional Arcana
-      printf '  Arcana (optional):\n'
+      # Level 27: Optional Arcana (single item - combine on one line)
       if [ -d "${WIZARDRY_DIR}/spells/.arcana" ]; then
         arcana_count=$(find "${WIZARDRY_DIR}/spells/.arcana" -type f 2>/dev/null | wc -l)
-        printf '    %s✓%s Found %d scripts\n' "$_green" "$_reset" "$arcana_count"
+        printf '  %s✓%s Arcana (optional): Found %d scripts\n' "$_green" "$_reset" "$arcana_count"
       else
-        printf '    Not installed (optional)\n'
+        printf '  Arcana (optional): Not installed\n'
       fi
       ;;
       
     *)
       # Levels 3-26: Standard validation pattern
       
-      # Check spells
+      # Check spells (single item - combine on one line)
       spell_list=$(get_level_spells "$level")
       if [ -n "$spell_list" ]; then
-        printf '  Spells:\n'
         if ! validate-spells --quiet $spell_list 2>/dev/null; then
           missing=$(validate-spells --missing-only $spell_list)
-          printf '    %s✗%s Missing: %s\n' "$_red" "$_reset" "$missing"
+          printf '  %s✗%s Spells: Missing: %s\n' "$_red" "$_reset" "$missing"
           return 1
         fi
-        printf '    %s✓%s All found\n' "$_green" "$_reset"
+        printf '  %s✓%s Spells: All found\n' "$_green" "$_reset"
       fi
       
-      # Check imps
+      # Check imps (single item - combine on one line)
       imp_list=$(get_level_imps "$level")
       if [ -n "$imp_list" ]; then
-        printf '  Imps:\n'
         if ! validate-spells --quiet --imps $imp_list 2>/dev/null; then
           missing=$(validate-spells --imps --missing-only $imp_list)
-          printf '    %s✗%s Missing: %s\n' "$_red" "$_reset" "$missing"
+          printf '  %s✗%s Imps: Missing: %s\n' "$_red" "$_reset" "$missing"
           return 1
         fi
-        printf '    %s✓%s All found\n' "$_green" "$_reset"
+        printf '  %s✓%s Imps: All found\n' "$_green" "$_reset"
       fi
       ;;
   esac
