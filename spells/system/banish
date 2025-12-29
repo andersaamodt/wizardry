@@ -552,7 +552,7 @@ while [ "$current_level" -le "$target_level" ]; do
 done
 
 # Final success message
-printf '\n%s✓%s All validation checks passed\n' "$_green" "$_reset"
+printf '\n%s✓%s Banished to Level %d\n' "$_green" "$_reset" "$target_level"
 
 return 0
 }
