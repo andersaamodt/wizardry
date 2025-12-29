@@ -2054,22 +2054,22 @@ test_bootstrap_sets_baseline_path() {
   return 0
 }
 
-# META: Sandbox unavailability must not fail tests
-test_sandbox_fallback_is_graceful() {
-  # Verify BWRAP_AVAILABLE flag exists and fallback logic is present
-  if [ -z "${BWRAP_AVAILABLE-}" ]; then
-    TEST_FAILURE_REASON="BWRAP_AVAILABLE flag not set by test-bootstrap"
+# META: Pocket dimension must be available outside GitHub Actions
+test_pocket_dimension_available() {
+  if [ "${GITHUB_ACTIONS-}" = "true" ]; then
+    return 0
+  fi
+
+  if ! command -v pocket-dimension >/dev/null 2>&1; then
+    TEST_FAILURE_REASON="pocket-dimension not found in PATH"
     return 1
   fi
-  
-  # If bwrap is not available, verify we have a reason
-  if [ "$BWRAP_AVAILABLE" -eq 0 ]; then
-    if [ -z "${BWRAP_REASON-}" ]; then
-      TEST_FAILURE_REASON="BWRAP_AVAILABLE=0 but no BWRAP_REASON set"
-      return 1
-    fi
+
+  if ! pocket-dimension --check >/dev/null 2>&1; then
+    TEST_FAILURE_REASON="pocket-dimension check failed"
+    return 1
   fi
-  
+
   return 0
 }
 
@@ -2198,7 +2198,7 @@ test_test_bootstrap_checks_environment() {
 
 # Run meta-tests
 run_test_case "META: baseline PATH before set -eu" test_bootstrap_sets_baseline_path
-run_test_case "META: sandbox fallback is graceful" test_sandbox_fallback_is_graceful
+run_test_case "META: pocket dimension is available" test_pocket_dimension_available
 run_test_case "META: test-magic uses stdbuf" test_test_magic_uses_stdbuf
 run_test_case "META: test framework supports failure reporting" test_test_bootstrap_provides_failure_reporting
 run_test_case "META: die imp uses return for word-of-binding" test_die_imp_uses_return_not_exit

@@ -37,7 +37,6 @@ Examples:
 
 Environment variables:
   WIZARDRY_TEST_TIMEOUT    Timeout in seconds for each test (default: 180)
-  WIZARDRY_TEST_NO_BWRAP    Skip sandboxing with bubblewrap
 USAGE
 }
 
@@ -174,39 +173,19 @@ fi
 
 export PATH
 
-# Sandbox with bwrap if not in GitHub Actions and not already sandboxed
-if [ "${WIZARDRY_TEST_IN_BWRAP-0}" -ne 1 ] && [ "${WIZARDRY_TEST_NO_BWRAP-0}" -ne 1 ]; then
-  if [ -z "${GITHUB_ACTIONS-}" ] || [ "${GITHUB_ACTIONS}" != "true" ]; then
-    if command -v bwrap >/dev/null 2>&1; then
-      exec bwrap --unshare-user --ro-bind / / --dev-bind /dev /dev --bind /proc /proc \
-        --bind /tmp /tmp --setenv PATH "$PATH" --setenv WIZARDRY_TEST_IN_BWRAP 1 -- \
-        "$0" "$@"
-    else
-      printf 'test-magic: bubblewrap (bwrap) not found\n' >&2
-      printf 'test-magic: Running tests in an isolated sandbox is recommended for safety.\n' >&2
-
-      if command -v pkg-install >/dev/null 2>&1; then
-        if command -v ask_yn >/dev/null 2>&1; then
-          if ask_yn "Install bubblewrap now?" yes; then
-            printf 'Installing bubblewrap...\n' >&2
-            if pkg-install bubblewrap 2>/dev/null || pkg-install bwrap 2>/dev/null; then
-              printf 'Bubblewrap installed successfully. Re-running test-magic...\n' >&2
-              exec "$0" "$@"
-            else
-              printf 'test-magic: failed to install bubblewrap\n' >&2
-            fi
-          fi
-        fi
-      fi
-
-      if command -v ask_yn >/dev/null 2>&1; then
-        if ! ask_yn "Continue without sandbox?" no; then
-          printf 'test-magic: aborting\n' >&2
-          return 1
-        fi
+# Run tests inside pocket-dimension unless in GitHub Actions (no isolation for speed)
+if [ "${GITHUB_ACTIONS-}" != "true" ]; then
+  if [ "${WIZARDRY_TEST_IN_POCKET-0}" -ne 1 ]; then
+    if command -v pocket-dimension >/dev/null 2>&1; then
+      if pocket-dimension --check >/dev/null 2>&1; then
+        exec pocket-dimension --network closed -- "$0" "$@"
       else
-        printf 'test-magic: continuing without sandbox (set WIZARDRY_TEST_NO_BWRAP=1 to skip this check)\n' >&2
+        printf 'test-magic: pocket-dimension unavailable\n' >&2
+        return 1
       fi
+    else
+      printf 'test-magic: pocket-dimension not found\n' >&2
+      return 1
     fi
   fi
 fi
