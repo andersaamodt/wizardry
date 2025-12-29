@@ -256,7 +256,7 @@ banish_process_level() {
       
       # Check POSIX commands (multiple items - check topic when all pass)
       posix_failed=0
-      for cmd in sh test printf cat; do
+      for cmd in sh test printf cat dirname cut; do
         if ! command -v "$cmd" >/dev/null 2>&1; then
           posix_failed=1
           break
@@ -265,12 +265,12 @@ banish_process_level() {
       
       if [ "$posix_failed" -eq 0 ]; then
         printf '  %s✓%s POSIX foundation:\n' "$_green" "$_reset"
-        for cmd in sh test printf cat; do
+        for cmd in sh test printf cat dirname cut; do
           printf '    %s✓%s %s\n' "$_green" "$_reset" "$cmd"
         done
       else
         printf '  %s✗%s POSIX foundation:\n' "$_red" "$_reset"
-        for cmd in sh test printf cat; do
+        for cmd in sh test printf cat dirname cut; do
           if command -v "$cmd" >/dev/null 2>&1; then
             printf '    %s✓%s %s\n' "$_green" "$_reset" "$cmd"
           else
