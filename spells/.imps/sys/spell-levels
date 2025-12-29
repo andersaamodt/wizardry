@@ -14,7 +14,7 @@ get_level_spells() {
     7) printf 'validate-number validate-path require-command' ;;
     8) printf 'ask-number memorize' ;;
     9) printf 'config:system logs:system package-managers:system' ;;
-    10) printf 'test-spell:system test-magic:system logging-example wizard-eyes' ;;
+    10) printf 'test-spell:system test-magic:system pocket-dimension:system logging-example wizard-eyes' ;;
     11) printf 'update-wizardry:system update-all:system kill-process:system' ;;
     12) printf 'demo-magic:system wizard-cast' ;;
     13) printf 'detect-rc-file:divination detect-magic:divination identify-room:divination' ;;
