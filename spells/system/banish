@@ -213,6 +213,22 @@ _green="${_esc}[32m"
 _red="${_esc}[31m"
 _reset="${_esc}[0m"
 
+_banish_seen_imps=""
+
+banish_new_imps() {
+  new_list=""
+  for imp in $1; do
+    case " ${_banish_seen_imps} " in
+      *" ${imp} "*) ;;
+      *)
+        new_list="${new_list}${new_list:+ }${imp}"
+        _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+        ;;
+    esac
+  done
+  printf '%s' "$new_list"
+}
+
 # Run level-specific checks and actions using case statement
 banish_process_level() {
   level=$1
@@ -333,6 +349,7 @@ banish_process_level() {
       
       # Validate imps (show detailed status)
       imp_list=$(get_level_imps 1)
+      imp_list=$(banish_new_imps "$imp_list")
       if [ -n "$imp_list" ]; then
         # Check for any missing imps first
         # Use eval for variable function calls in command substitution (see CODE_POLICY_FUNCTION_CALLS.md)
@@ -395,6 +412,24 @@ banish_process_level() {
           printf '    %s(no spell status available)%s\n' "$_red" "$_reset"
         fi
       fi
+
+      # Check imps (single item - combine on one line)
+      imp_list=$(get_level_imps 2)
+      imp_list=$(banish_new_imps "$imp_list")
+      if [ -n "$imp_list" ]; then
+        if ! eval "validate_spells --quiet --imps $imp_list" 2>/dev/null; then
+          missing=$(eval "validate_spells --imps --missing-only $imp_list" 2>/dev/null || true)
+          printf '  %s✗%s Imps: Missing: %s\n' "$_red" "$_reset" "$missing"
+          return 1
+        fi
+        printf '  Imps:\n'
+        imp_output=$(eval "validate_spells --imps --show-status $imp_list" 2>&1) || true
+        if [ -n "$imp_output" ]; then
+          printf '%s\n' "$imp_output" | sed 's/^/    /'
+        else
+          printf '    %s(no imp status available)%s\n' "$_red" "$_reset"
+        fi
+      fi
       ;;
       
     27)
@@ -423,13 +458,20 @@ banish_process_level() {
       
       # Check imps (single item - combine on one line)
       imp_list=$(get_level_imps "$level")
+      imp_list=$(banish_new_imps "$imp_list")
       if [ -n "$imp_list" ]; then
         if ! eval "validate_spells --quiet --imps $imp_list" 2>/dev/null; then
           missing=$(eval "validate_spells --imps --missing-only $imp_list" 2>/dev/null || true)
           printf '  %s✗%s Imps: Missing: %s\n' "$_red" "$_reset" "$missing"
           return 1
         fi
-        printf '  %s✓%s Imps: All found\n' "$_green" "$_reset"
+        printf '  Imps:\n'
+        imp_output=$(eval "validate_spells --imps --show-status $imp_list" 2>&1) || true
+        if [ -n "$imp_output" ]; then
+          printf '%s\n' "$imp_output" | sed 's/^/    /'
+        else
+          printf '    %s(no imp status available)%s\n' "$_red" "$_reset"
+        fi
       fi
       ;;
   esac
