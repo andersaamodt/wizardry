@@ -324,12 +324,11 @@ banish_process_level() {
           printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
           return 1
         fi
-        printf '  Spells:\n'
         spell_output=$(eval "validate_spells --show-status $spell_list" 2>&1) || true
         if [ -n "$spell_output" ]; then
-          printf '%s\n' "$spell_output" | sed 's/^/    /'
+          printf '%s\n' "$spell_output" | sed 's/^/  /'
         else
-          printf '    %s(no spell status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
         fi
       fi
 
@@ -354,12 +353,11 @@ banish_process_level() {
           printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
           return 1
         fi
-        printf '  Imps:\n'
         imp_output=$(eval "validate_spells --imps --show-status $imp_list" 2>&1) || true
         if [ -n "$imp_output" ]; then
-          printf '%s\n' "$imp_output" | sed 's/^/    /'
+          printf '%s\n' "$imp_output" | sed 's/^/  /'
         else
-          printf '    %s(no imp status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
         fi
       fi
       ;;
@@ -400,12 +398,11 @@ banish_process_level() {
           printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
           return 1
         fi
-        printf '  Spells:\n'
         spell_output=$(eval "validate_spells --show-status $spell_list" 2>&1) || true
         if [ -n "$spell_output" ]; then
-          printf '%s\n' "$spell_output" | sed 's/^/    /'
+          printf '%s\n' "$spell_output" | sed 's/^/  /'
         else
-          printf '    %s(no spell status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
         fi
       fi
 
@@ -432,19 +429,16 @@ banish_process_level() {
           printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
           return 1
         fi
-        printf '  Imps:\n'
         imp_output=$(eval "validate_spells --imps --show-status $imp_list" 2>&1) || true
         if [ -n "$imp_output" ]; then
-          printf '%s\n' "$imp_output" | sed 's/^/    /'
+          printf '%s\n' "$imp_output" | sed 's/^/  /'
         else
-          printf '    %s(no imp status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
         fi
       elif [ "$had_imps" -eq 1 ]; then
-        printf '  Imps:\n'
-        printf '    %s✓%s No new imps.\n' "$_green" "$_reset"
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
       else
-        printf '  Imps:\n'
-        printf '    %s✓%s No new imps.\n' "$_green" "$_reset"
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
       fi
       ;;
       
@@ -471,12 +465,11 @@ banish_process_level() {
           printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
           return 1
         fi
-        printf '  Spells:\n'
         spell_output=$(eval "validate_spells --show-status $spell_list" 2>&1) || true
         if [ -n "$spell_output" ]; then
-          printf '%s\n' "$spell_output" | sed 's/^/    /'
+          printf '%s\n' "$spell_output" | sed 's/^/  /'
         else
-          printf '    %s(no spell status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
         fi
       fi
 
@@ -503,19 +496,16 @@ banish_process_level() {
           printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
           return 1
         fi
-        printf '  Imps:\n'
         imp_output=$(eval "validate_spells --imps --show-status $imp_list" 2>&1) || true
         if [ -n "$imp_output" ]; then
-          printf '%s\n' "$imp_output" | sed 's/^/    /'
+          printf '%s\n' "$imp_output" | sed 's/^/  /'
         else
-          printf '    %s(no imp status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
         fi
       elif [ "$had_imps" -eq 1 ]; then
-        printf '  Imps:\n'
-        printf '    %s✓%s No new imps.\n' "$_green" "$_reset"
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
       else
-        printf '  Imps:\n'
-        printf '    %s✓%s No new imps.\n' "$_green" "$_reset"
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
       fi
       ;;
   esac
