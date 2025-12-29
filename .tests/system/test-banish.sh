@@ -205,5 +205,30 @@ run_test_case "banish --no-tests skips tests" test_no_tests_flag
 run_test_case "banish verbose shows levels" test_verbose_shows_level_info
 run_test_case "banish rejects invalid level" test_invalid_level
 
+# Test that banish is preloaded by invoke-wizardry
+test_banish_preloaded() {
+  tmpdir=$(make_tempdir)
+  
+  # Test in a bash subshell with invoke-wizardry
+  output=$(cd "$ROOT_DIR" && WIZARDRY_DIR="$ROOT_DIR" WIZARDRY_DEBUG=1 bash --norc --noprofile <<'EOFTEST'
+. spells/.imps/sys/invoke-wizardry 2>&1
+command -v banish >/dev/null && echo "banish_available"
+banish 2>&1 | head -5
+EOFTEST
+)
+  
+  # Check that banish was preloaded
+  printf '%s\n' "$output" | grep -q "Loading spell: banish" || return 1
+  printf '%s\n' "$output" | grep -q "banish_available" || return 1
+  # Should show banish function being called
+  printf '%s\n' "$output" | grep -q "\[banish\] Function called" || return 1
+  # Should NOT trigger command-not-found handler
+  ! printf '%s\n' "$output" | grep -q "\[handle-command-not-found\]" || return 1
+  
+  return 0
+}
+
+run_test_case "banish is preloaded by invoke-wizardry" test_banish_preloaded
+
 
 # Test via source-then-invoke pattern
