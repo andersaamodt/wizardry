@@ -218,56 +218,71 @@ done
 if [ "$validate_imps" -eq 1 ] && [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ]; then
   if [ -n "$imp_results" ]; then
   
-  # Compact format: one line per category with category:status:name prefixes
+  # Compact format: single line with all imps, category:status:name prefixes
   if [ "$compact_status" -eq 1 ]; then
-    # Get all unique categories
-    categories=""
+    # Find first imp (prefer loaded, fallback to available) to use as anchor
+    first_imp=""
+    first_category=""
+    first_status=""
+    has_any_loaded=0
+    
+    # First pass: find first loaded imp
     for result in $imp_results; do
-      category=$(printf '%s' "$result" | cut -d: -f1)
-      # Add category to list if not already present
-      case " $categories " in
-        *" $category "*) ;;
-        *) categories="${categories:+$categories }$category" ;;
-      esac
+      result_category=$(printf '%s' "$result" | cut -d: -f1)
+      result_status=$(printf '%s' "$result" | cut -d: -f2)
+      result_name=$(printf '%s' "$result" | cut -d: -f3-)
+      
+      if [ "$result_status" = "L" ]; then
+        has_any_loaded=1
+        if [ -z "$first_imp" ]; then
+          first_imp="$result_name"
+          first_category="$result_category"
+          first_status="$result_status"
+        fi
+      fi
     done
     
-    # Output each category on one line
-    for category in $categories; do
-      output_line=""
-      first_imp=""
-      first_imp_status=""
-      has_loaded=0
-      
-      # Build output line: first imp without prefix, rest with category:status:name
+    # If no loaded imps, use first available imp
+    if [ -z "$first_imp" ]; then
       for result in $imp_results; do
         result_category=$(printf '%s' "$result" | cut -d: -f1)
         result_status=$(printf '%s' "$result" | cut -d: -f2)
         result_name=$(printf '%s' "$result" | cut -d: -f3-)
         
-        if [ "$result_category" = "$category" ]; then
-          if [ -z "$first_imp" ]; then
-            # First imp: no prefix, just the name
-            first_imp="$result_name"
-            first_imp_status="$result_status"
-            output_line="$result_name"
-          else
-            # Subsequent imps: add with category:status:name format
-            output_line="$output_line ${result_category}:${result_status}:${result_name}"
-          fi
-          
-          if [ "$result_status" = "L" ]; then
-            has_loaded=1
-          fi
+        if [ -z "$first_imp" ]; then
+          first_imp="$result_name"
+          first_category="$result_category"
+          first_status="$result_status"
+          break
         fi
       done
+    fi
+    
+    # Build single output line
+    if [ -n "$first_imp" ]; then
+      output_line="$first_imp"
       
-      # Output line with appropriate icon/label based on whether any are loaded
-      if [ "$has_loaded" -eq 1 ]; then
-        printf '\033[32m✓\033[0m Loaded %s imp: %s\n' "$category" "$output_line"
+      # Add all other imps with category:status:name format
+      for result in $imp_results; do
+        result_category=$(printf '%s' "$result" | cut -d: -f1)
+        result_status=$(printf '%s' "$result" | cut -d: -f2)
+        result_name=$(printf '%s' "$result" | cut -d: -f3-)
+        
+        # Skip the first imp we already added
+        if [ "$result_name" = "$first_imp" ] && [ "$result_category" = "$first_category" ]; then
+          continue
+        fi
+        
+        output_line="$output_line ${result_category}:${result_status}:${result_name}"
+      done
+      
+      # Output single line with appropriate icon/label
+      if [ "$has_any_loaded" -eq 1 ]; then
+        printf '\033[32m✓\033[0m Loaded %s imp: %s\n' "$first_category" "$output_line"
       else
-        printf '\033[34m●\033[0m Available %s imp: %s\n' "$category" "$output_line"
+        printf '\033[34m●\033[0m Available %s imp: %s\n' "$first_category" "$output_line"
       fi
-    done
+    fi
     
   else
     # Original format: separate lines per category
