@@ -66,6 +66,11 @@ case "${1-}" in
   ;;
 esac
 
+# Debug: Log when banish is called
+if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+  printf '[banish] Function called\n' >&2
+fi
+
 set -eu
 
 # Add wizardry spells to PATH for validate-spells and other system spells

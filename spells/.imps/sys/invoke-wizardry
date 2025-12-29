@@ -135,7 +135,8 @@ invoke_wizardry() {
     fathom-terminal \
     require-command \
     cursor-blink \
-    colors; do
+    colors \
+    banish; do
     # Search for spell in all categories
     for _spell_dir in "$WIZARDRY_DIR"/spells/*; do
       [ -d "$_spell_dir" ] || continue
@@ -195,8 +196,16 @@ invoke_wizardry() {
   if eval '[ -n "${BASH_VERSION+x}" ]' 2>/dev/null; then
     # Bash-specific command_not_found_handle
     command_not_found_handle() {
+      # Debug: Log entry to handler
+      if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+        printf '[handle-command-not-found] Called with: %s\n' "$1" >&2
+      fi
+      
       # Prevent infinite recursion for the same command while allowing nested lookups.
       if [ -n "${_WIZARDRY_IN_CNF-}" ] && [ "${_WIZARDRY_IN_CNF}" = "$1" ]; then
+        if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+          printf '[handle-command-not-found] Recursion detected for: %s\n' "$1" >&2
+        fi
         printf '%s: command not found\n' "$1" >&2
         return 127
       fi
@@ -212,14 +221,23 @@ invoke_wizardry() {
           _WIZARDRY_WOB_LOADED=1
           export _WIZARDRY_WOB_LOADED
         fi
+        if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+          printf '[handle-command-not-found] Calling word_of_binding --run %s\n' "$1" >&2
+        fi
         if command -v word_of_binding >/dev/null 2>&1 \
           && word_of_binding --run "$@" 2>/dev/null; then
+          if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+            printf '[handle-command-not-found] word_of_binding succeeded for: %s\n' "$1" >&2
+          fi
           if [ -n "$_iw_prev_cnf" ]; then
             _WIZARDRY_IN_CNF="$_iw_prev_cnf"
           else
             unset _WIZARDRY_IN_CNF
           fi
           return 0
+        fi
+        if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+          printf '[handle-command-not-found] word_of_binding failed for: %s\n' "$1" >&2
         fi
       fi
       
@@ -228,6 +246,9 @@ invoke_wizardry() {
         _WIZARDRY_IN_CNF="$_iw_prev_cnf"
       else
         unset _WIZARDRY_IN_CNF
+      fi
+      if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+        printf '[handle-command-not-found] Command truly not found: %s\n' "$1" >&2
       fi
       printf '%s: command not found\n' "$1" >&2
       return 127
@@ -236,8 +257,16 @@ invoke_wizardry() {
   elif eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
     # Zsh-specific command_not_found_handler
     command_not_found_handler() {
+      # Debug: Log entry to handler
+      if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+        printf '[handle-command-not-found] Called with: %s\n' "$1" >&2
+      fi
+      
       # Prevent infinite recursion for the same command while allowing nested lookups.
       if [ -n "${_WIZARDRY_IN_CNF-}" ] && [ "${_WIZARDRY_IN_CNF}" = "$1" ]; then
+        if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+          printf '[handle-command-not-found] Recursion detected for: %s\n' "$1" >&2
+        fi
         printf '%s: command not found\n' "$1" >&2
         return 127
       fi
@@ -253,14 +282,23 @@ invoke_wizardry() {
           _WIZARDRY_WOB_LOADED=1
           export _WIZARDRY_WOB_LOADED
         fi
+        if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+          printf '[handle-command-not-found] Calling word_of_binding --run %s\n' "$1" >&2
+        fi
         if command -v word_of_binding >/dev/null 2>&1 \
           && word_of_binding --run "$@" 2>/dev/null; then
+          if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+            printf '[handle-command-not-found] word_of_binding succeeded for: %s\n' "$1" >&2
+          fi
           if [ -n "$_iw_prev_cnf" ]; then
             _WIZARDRY_IN_CNF="$_iw_prev_cnf"
           else
             unset _WIZARDRY_IN_CNF
           fi
           return 0
+        fi
+        if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+          printf '[handle-command-not-found] word_of_binding failed for: %s\n' "$1" >&2
         fi
       fi
       
@@ -269,6 +307,9 @@ invoke_wizardry() {
         _WIZARDRY_IN_CNF="$_iw_prev_cnf"
       else
         unset _WIZARDRY_IN_CNF
+      fi
+      if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+        printf '[handle-command-not-found] Command truly not found: %s\n' "$1" >&2
       fi
       printf '%s: command not found\n' "$1" >&2
       return 127
