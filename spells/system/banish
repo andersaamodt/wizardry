@@ -291,11 +291,23 @@ banish_process_level() {
       fi
       printf '  %s✓%s Wizardry structure: Spells directory exists\n' "$_green" "$_reset"
       
+      # Determine how to call validate_spells (function or command)
+      _validate_cmd="validate_spells"
+      if ! command -v validate_spells >/dev/null 2>&1; then
+        # Not available as function, try as external command
+        if [ -x "${WIZARDRY_DIR}/spells/system/validate-spells" ]; then
+          _validate_cmd="${WIZARDRY_DIR}/spells/system/validate-spells"
+        else
+          printf '  %s✗%s Cannot find validate-spells (needed for validation)\n' "$_red" "$_reset"
+          return 1
+        fi
+      fi
+      
       # Validate spells (show detailed status)
       spell_list=$(get_level_spells 1)
       if [ -n "$spell_list" ]; then
         # Check for any missing spells first
-        missing=$(validate_spells --missing-only $spell_list 2>/dev/null || true)
+        missing=$($_validate_cmd --missing-only $spell_list 2>/dev/null || true)
         if [ -n "$missing" ]; then
           printf '  %s✗%s Required spells: Missing: %s\n' "$_red" "$_reset" "$missing"
           return 1
@@ -303,14 +315,14 @@ banish_process_level() {
         
         # Show detailed status (loaded vs available)
         printf '  Required spells:\n'
-        validate_spells --show-status $spell_list 2>/dev/null | sed 's/^/    /'
+        $_validate_cmd --show-status $spell_list 2>/dev/null | sed 's/^/    /'
       fi
       
       # Validate imps (show detailed status)
       imp_list=$(get_level_imps 1)
       if [ -n "$imp_list" ]; then
         # Check for any missing imps first
-        missing=$(validate_spells --imps --missing-only $imp_list 2>/dev/null || true)
+        missing=$($_validate_cmd --imps --missing-only $imp_list 2>/dev/null || true)
         if [ -n "$missing" ]; then
           printf '  %s✗%s Required imps: Missing: %s\n' "$_red" "$_reset" "$missing"
           return 1
@@ -318,7 +330,7 @@ banish_process_level() {
         
         # Show detailed status (loaded vs available)
         printf '  Required imps:\n'
-        validate_spells --imps --show-status $imp_list 2>/dev/null | sed 's/^/    /'
+        $_validate_cmd --imps --show-status $imp_list 2>/dev/null | sed 's/^/    /'
       fi
       ;;
       

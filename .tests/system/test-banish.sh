@@ -230,5 +230,31 @@ EOFTEST
 
 run_test_case "banish is preloaded by invoke-wizardry" test_banish_preloaded
 
+# Test detailed status output
+test_banish_shows_detailed_status() {
+  tmpdir=$(make_tempdir)
+  install_dir="$tmpdir/wizardry"
+  
+  # Copy wizardry for realistic testing
+  copy_wizardry "$install_dir" || return 1
+  
+  # Run banish level 1 and check for detailed status
+  WIZARDRY_DIR="$install_dir" run_spell "spells/system/banish" 1
+  assert_success || return 1
+  
+  # Should show "Required imps:" header
+  assert_output_contains "Required imps:" || return 1
+  
+  # Should show either "Loaded imp:" or "Available imp:" for some imps
+  # (depending on what's preloaded, we should see at least one of each type)
+  if ! assert_output_contains "imp:" 2>/dev/null; then
+    return 1
+  fi
+  
+  return 0
+}
+
+run_test_case "banish shows detailed imp status" test_banish_shows_detailed_status
+
 
 # Test via source-then-invoke pattern
