@@ -121,17 +121,38 @@ available_count=0
 imp_results=""
 
 for spell_info in "$@"; do
-  # Parse spell:dir format
-  case "$spell_info" in
-    *:*)
-      spell=$(printf '%s' "$spell_info" | cut -d: -f1)
-      dir=$(printf '%s' "$spell_info" | cut -d: -f2)
-      ;;
-    *)
-      spell=$spell_info
-      dir=$default_dir
-      ;;
-  esac
+  status_override=""
+  # Parse spell:dir format (or category:status:name for imps)
+  if [ "$validate_imps" -eq 1 ]; then
+    case "$spell_info" in
+      *:*:*)
+        IFS=':' read -r category status name_rest <<EOF
+$spell_info
+EOF
+        case "$status" in
+          L|A) status_override=$status ;;
+          *) status_override="" ;;
+        esac
+        spell="${category}/${name_rest}"
+        dir=$default_dir
+        ;;
+      *)
+        spell=$spell_info
+        dir=$default_dir
+        ;;
+    esac
+  else
+    case "$spell_info" in
+      *:*)
+        spell=$(printf '%s' "$spell_info" | cut -d: -f1)
+        dir=$(printf '%s' "$spell_info" | cut -d: -f2)
+        ;;
+      *)
+        spell=$spell_info
+        dir=$default_dir
+        ;;
+    esac
+  fi
   
   # Check if spell/imp exists
   if [ "$validate_imps" -eq 1 ]; then
@@ -152,17 +173,23 @@ for spell_info in "$@"; do
   
   # Check if loaded as function (try both hyphenated and underscored versions)
   is_loaded=0
-  for name_variant in "$func_name" "$(printf '%s' "$func_name" | tr '-' '_')"; do
-    if command -v "$name_variant" >/dev/null 2>&1; then
-      func_type=$(type "$name_variant" 2>/dev/null || true)
-      case "$func_type" in
-        *"function"*|*"shell function"*)
-          is_loaded=1
-          break
-          ;;
-      esac
+  if [ -n "$status_override" ]; then
+    if [ "$status_override" = "L" ]; then
+      is_loaded=1
     fi
-  done
+  else
+    for name_variant in "$func_name" "$(printf '%s' "$func_name" | tr '-' '_')"; do
+      if command -v "$name_variant" >/dev/null 2>&1; then
+        func_type=$(type "$name_variant" 2>/dev/null || true)
+        case "$func_type" in
+          *"function"*|*"shell function"*)
+            is_loaded=1
+            break
+            ;;
+        esac
+      fi
+    done
+  fi
   
   if [ -f "$spell_path" ]; then
     found_count=$((found_count + 1))
