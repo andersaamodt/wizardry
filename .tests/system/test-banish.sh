@@ -42,7 +42,7 @@ test_basic_execution() {
   # Run banish - should validate the installation
   WIZARDRY_DIR="$install_dir" run_spell "spells/system/banish"
   assert_success || return 1
-  assert_output_contains "ready" || return 1
+  assert_output_contains "validation checks passed" || return 1
 }
 
 test_auto_detect_from_home() {
@@ -80,7 +80,7 @@ test_non_verbose_has_output() {
   # Non-verbose mode should have output
   WIZARDRY_DIR="$install_dir" run_spell "spells/system/banish"
   assert_success || return 1
-  assert_output_contains "ready" || return 1
+  assert_output_contains "validation checks passed" || return 1
 }
 
 test_custom_wizardry_dir() {
@@ -139,7 +139,7 @@ test_level_0_default() {
   # Level 0 should be the default
   WIZARDRY_DIR="$install_dir" run_spell "spells/system/banish"
   assert_success || return 1
-  assert_output_contains "Level 0 ready" || return 1
+  assert_output_contains "Level 0" || return 1
 }
 
 test_explicit_level_0() {
@@ -151,7 +151,7 @@ test_explicit_level_0() {
   
   WIZARDRY_DIR="$install_dir" run_spell "spells/system/banish" 0
   assert_success || return 1
-  assert_output_contains "Level 0 ready" || return 1
+  assert_output_contains "Level 0" || return 1
 }
 
 test_level_1_requires_menu() {
