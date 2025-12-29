@@ -1,0 +1,296 @@
+#!/bin/sh
+
+# Run a command inside an isolated "pocket dimension" environment.
+
+pocket_dimension_usage() {
+  cat <<'USAGE'
+Usage: pocket-dimension [OPTIONS] -- command [args...]
+
+Create a short-lived isolated environment and execute a command within it.
+
+Options:
+  --check                 Verify the pocket dimension can run on this host
+  --keep                  Preserve the pocket directory for inspection
+  --network MODE          Network mode: open|observe|closed (default: open)
+  --allow-read PATH       Allow read-only access to PATH (repeatable)
+  --allow-write PATH      Allow write access to PATH (repeatable)
+  --help, --usage, -h     Show this help message
+USAGE
+}
+
+pocket_dimension() {
+  case "${1-}" in
+    --help|--usage|-h)
+      pocket_dimension_usage
+      return 0
+      ;;
+  esac
+
+  set -eu
+
+  check_only=0
+  keep_pocket=0
+  network_mode="open"
+  allow_read_paths=""
+  allow_write_paths=""
+
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --check)
+        check_only=1
+        shift
+        ;;
+      --keep)
+        keep_pocket=1
+        shift
+        ;;
+      --network)
+        shift
+        if [ -z "${1-}" ]; then
+          printf '%s\n' "pocket-dimension: --network requires a mode" >&2
+          return 2
+        fi
+        network_mode=$1
+        shift
+        ;;
+      --allow-read)
+        shift
+        if [ -z "${1-}" ]; then
+          printf '%s\n' "pocket-dimension: --allow-read requires a path" >&2
+          return 2
+        fi
+        allow_read_paths="${allow_read_paths}${allow_read_paths:+\n}$1"
+        shift
+        ;;
+      --allow-write)
+        shift
+        if [ -z "${1-}" ]; then
+          printf '%s\n' "pocket-dimension: --allow-write requires a path" >&2
+          return 2
+        fi
+        allow_write_paths="${allow_write_paths}${allow_write_paths:+\n}$1"
+        shift
+        ;;
+      --)
+        shift
+        break
+        ;;
+      *)
+        break
+        ;;
+    esac
+  done
+
+  platform=$(uname -s 2>/dev/null || printf 'unknown')
+
+  case "$network_mode" in
+    open|observe|closed) : ;;
+    *)
+      printf '%s\n' "pocket-dimension: invalid network mode: $network_mode" >&2
+      return 2
+      ;;
+  esac
+
+  if [ "$check_only" -eq 1 ]; then
+    if [ "$platform" = "Linux" ]; then
+      if ! command -v bwrap >/dev/null 2>&1; then
+        printf '%s\n' "pocket-dimension: bwrap not found" >&2
+        return 1
+      fi
+      if ! bwrap --unshare-user-try --ro-bind / / /bin/true 2>/dev/null; then
+        printf '%s\n' "pocket-dimension: bwrap unusable" >&2
+        return 1
+      fi
+      return 0
+    fi
+
+    # macOS and other platforms: pocket dimension is emulated
+    return 0
+  fi
+
+  if [ "$#" -lt 1 ]; then
+    pocket_dimension_usage >&2
+    return 2
+  fi
+
+  if [ "$platform" = "Linux" ] && ! command -v bwrap >/dev/null 2>&1; then
+    printf '%s\n' "pocket-dimension: bwrap not found (required on Linux)" >&2
+    return 1
+  fi
+
+  pocket_root=$(mktemp -d "${TMPDIR:-/tmp}/wizardry-pocket.XXXXXX")
+  pocket_home="$pocket_root/home"
+  pocket_tmp="$pocket_root/tmp"
+  pocket_run="$pocket_root/run"
+  pocket_work="$pocket_root/work"
+  mkdir -p "$pocket_home" "$pocket_tmp" "$pocket_run" "$pocket_work"
+
+  workdir=$(pwd -P)
+  record_dir="$pocket_root/records"
+  mkdir -p "$record_dir"
+
+  snapshot_files() {
+    snapshot_target=$1
+    if command -v cksum >/dev/null 2>&1; then
+      find "$workdir" -type f -print | sort | while IFS= read -r file; do
+        cksum "$file"
+      done >"$snapshot_target"
+    else
+      find "$workdir" -type f -print | sort >"$snapshot_target"
+    fi
+  }
+
+  snapshot_files "$record_dir/before" 2>/dev/null || true
+
+  env_args=""
+  env_args="$env_args PATH=${PATH:-}"
+  env_args="$env_args HOME=$pocket_home"
+  env_args="$env_args TMPDIR=$pocket_tmp"
+  env_args="$env_args WIZARDRY_POCKET_DIR=$pocket_root"
+  env_args="$env_args WIZARDRY_POCKET_WORK=$workdir"
+  env_args="$env_args WIZARDRY_POCKET_NETWORK=$network_mode"
+  env_args="$env_args WIZARDRY_TEST_IN_POCKET=1"
+  [ -n "${TERM-}" ] && env_args="$env_args TERM=$TERM"
+  [ -n "${LANG-}" ] && env_args="$env_args LANG=$LANG"
+
+  status=0
+
+  if [ "$platform" = "Linux" ]; then
+    set -- \
+      --die-with-parent \
+      --unshare-user-try \
+      --clearenv \
+      --ro-bind / / \
+      --dev-bind /dev /dev \
+      --bind /proc /proc \
+      --bind "$pocket_tmp" /tmp \
+      --bind "$pocket_run" /run \
+      --bind "$pocket_home" "$pocket_home" \
+      --bind "$workdir" "$workdir" \
+      --chdir "$workdir" \
+      --setenv PATH "${PATH:-}" \
+      --setenv HOME "$pocket_home" \
+      --setenv TMPDIR "/tmp" \
+      --setenv WIZARDRY_POCKET_DIR "$pocket_root" \
+      --setenv WIZARDRY_POCKET_WORK "$workdir" \
+      --setenv WIZARDRY_POCKET_NETWORK "$network_mode" \
+      --setenv WIZARDRY_TEST_IN_POCKET 1 \
+      -- "$@"
+
+    if [ -n "${TERM-}" ]; then
+      set -- --setenv TERM "$TERM" "$@"
+    fi
+
+    if [ -n "${LANG-}" ]; then
+      set -- --setenv LANG "$LANG" "$@"
+    fi
+
+    if [ "$network_mode" = "closed" ]; then
+      set -- --unshare-net "$@"
+    fi
+
+    if [ -n "$allow_read_paths" ]; then
+      old_ifs=$IFS
+      IFS='
+'
+      for path in $allow_read_paths; do
+        [ -n "$path" ] || continue
+        if [ -e "$path" ]; then
+          set -- --ro-bind "$path" "$path" "$@"
+        fi
+      done
+      IFS=$old_ifs
+    fi
+
+    if [ -n "$allow_write_paths" ]; then
+      old_ifs=$IFS
+      IFS='
+'
+      for path in $allow_write_paths; do
+        [ -n "$path" ] || continue
+        if [ ! -e "$path" ]; then
+          mkdir -p "$path" 2>/dev/null || true
+        fi
+        if [ -e "$path" ]; then
+          set -- --bind "$path" "$path" "$@"
+        fi
+      done
+      IFS=$old_ifs
+    fi
+
+    if bwrap "$@"; then
+      status=0
+    else
+      status=$?
+    fi
+  else
+    sandbox_exec=""
+    if command -v sandbox-exec >/dev/null 2>&1; then
+      sandbox_exec=$(command -v sandbox-exec)
+    fi
+
+    if [ -n "$sandbox_exec" ]; then
+      sandbox_profile='(version 1) (allow default)'
+      if (cd "$workdir" && env -i $env_args "$sandbox_exec" -p "$sandbox_profile" "$@" ); then
+        status=0
+      else
+        status=$?
+      fi
+    else
+      if (cd "$workdir" && env -i $env_args "$@" ); then
+        status=0
+      else
+        status=$?
+      fi
+    fi
+  fi
+
+  snapshot_files "$record_dir/after" 2>/dev/null || true
+  if command -v diff >/dev/null 2>&1; then
+    diff -u "$record_dir/before" "$record_dir/after" >"$record_dir/mutations.diff" 2>/dev/null || true
+  fi
+
+  if [ -s "$record_dir/mutations.diff" ]; then
+    printf '%s\n' "pocket-dimension: filesystem mutations recorded at $record_dir/mutations.diff" >&2
+  fi
+
+  if [ "$keep_pocket" -eq 0 ]; then
+    rm -rf "$pocket_root"
+  fi
+
+  return "$status"
+}
+
+
+# Load castable imp for direct execution (AFTER all functions defined)
+# When executed directly: always source to ensure castable sees correct $0
+# When sourced (testing): use from PATH if available to avoid forks
+case "$0" in
+  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
+    # Being sourced - use from PATH if available
+    if ! command -v castable >/dev/null 2>&1; then
+      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
+      if [ -n "${WIZARDRY_DIR-}" ]; then
+        _i="$WIZARDRY_DIR/spells/.imps/sys"
+      elif [ -n "${ROOT_DIR-}" ]; then
+        _i="$ROOT_DIR/spells/.imps/sys"
+      else
+        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
+      fi
+      [ -f "$_i/castable" ] && . "$_i/castable"
+    fi
+    ;;
+  *)
+    # Being executed - always source to ensure correct $0 detection
+    if [ -n "${WIZARDRY_DIR-}" ]; then
+      _i="$WIZARDRY_DIR/spells/.imps/sys"
+    elif [ -n "${ROOT_DIR-}" ]; then
+      _i="$ROOT_DIR/spells/.imps/sys"
+    else
+      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
+    fi
+    [ -f "$_i/castable" ] && . "$_i/castable"
+    ;;
+ esac
+
+castable "$@"

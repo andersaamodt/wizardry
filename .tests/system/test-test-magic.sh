@@ -157,6 +157,15 @@ has_timeout_protection() {
   return 0
 }
 
+requires_pocket_dimension() {
+  grep -q "pocket-dimension" "$ROOT_DIR/spells/system/test-magic" || {
+    TEST_FAILURE_REASON="test-magic does not reference pocket-dimension"
+    return 1
+  }
+
+  return 0
+}
+
 # Test that failed subtests cause the parent test to fail
 failed_subtests_fail_parent_test() {
   tmpdir="$(make_tempdir)"
@@ -504,6 +513,7 @@ run_test_case "system/test-magic processes all tests without skipping" all_tests
 run_test_case "system/test-magic has no test rerun logic" no_test_reruns
 run_test_case "system/test-magic has pre-flight checks" has_preflight_checks
 run_test_case "system/test-magic has timeout protection" has_timeout_protection
+run_test_case "system/test-magic requires pocket-dimension" requires_pocket_dimension
 run_test_case "failed subtests cause parent test to fail" failed_subtests_fail_parent_test
 run_test_case "FAIL_DETAIL lines hidden from output" fail_detail_hidden_from_output
 run_test_case "test summary line visible in output" test_summary_line_visible
