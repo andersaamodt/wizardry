@@ -351,9 +351,7 @@ banish_process_level() {
       if [ -n "$imp_list" ]; then
         if ! eval "validate_spells --quiet --imps $imp_list" 2>/dev/null; then
           missing=$(eval "validate_spells --imps --missing-only $imp_list" 2>/dev/null || true)
-          missing_count=$("$_banish_count_words" "$missing")
-          label=$("$_banish_pluralize" "Imp" "$missing_count" "Imps")
-          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
+          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
           return 1
         fi
         printf '  Imps:\n'
@@ -431,9 +429,7 @@ banish_process_level() {
       if [ -n "$imp_list" ]; then
         if ! eval "validate_spells --quiet --imps $imp_list" 2>/dev/null; then
           missing=$(eval "validate_spells --imps --missing-only $imp_list" 2>/dev/null || true)
-          missing_count=$("$_banish_count_words" "$missing")
-          label=$("$_banish_pluralize" "Imp" "$missing_count" "Imps")
-          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
+          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
           return 1
         fi
         printf '  Imps:\n'
@@ -445,10 +441,10 @@ banish_process_level() {
         fi
       elif [ "$had_imps" -eq 1 ]; then
         printf '  Imps:\n'
-        printf '    (all listed earlier)\n'
+        printf '    %s✓%s No new imps.\n' "$_green" "$_reset"
       else
         printf '  Imps:\n'
-        printf '    (none)\n'
+        printf '    %s✓%s No new imps.\n' "$_green" "$_reset"
       fi
       ;;
       
@@ -504,9 +500,7 @@ banish_process_level() {
       if [ -n "$imp_list" ]; then
         if ! eval "validate_spells --quiet --imps $imp_list" 2>/dev/null; then
           missing=$(eval "validate_spells --imps --missing-only $imp_list" 2>/dev/null || true)
-          missing_count=$("$_banish_count_words" "$missing")
-          label=$("$_banish_pluralize" "Imp" "$missing_count" "Imps")
-          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
+          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
           return 1
         fi
         printf '  Imps:\n'
@@ -518,10 +512,10 @@ banish_process_level() {
         fi
       elif [ "$had_imps" -eq 1 ]; then
         printf '  Imps:\n'
-        printf '    (all listed earlier)\n'
+        printf '    %s✓%s No new imps.\n' "$_green" "$_reset"
       else
         printf '  Imps:\n'
-        printf '    (none)\n'
+        printf '    %s✓%s No new imps.\n' "$_green" "$_reset"
       fi
       ;;
   esac
