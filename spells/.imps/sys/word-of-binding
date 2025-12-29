@@ -181,7 +181,7 @@ function brace_delta(s, n, m) {
     if [ "$_wob_run" -ne 1 ]; then
       return 0
     fi
-    # Evoke (execute) the script directly in a subshell
+    # Cast (execute) the script directly in a subshell
     "$_wob_module" "$@"
   fi
 }

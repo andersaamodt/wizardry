@@ -5,7 +5,7 @@
 `word-of-binding` is the core dispatcher that loads and invokes wizardry spells on-demand. It implements two distinct loading strategies based on spell structure:
 
 1. **BIND**: For spells with functions (99% of spells)
-2. **EVOKE**: For functionless spells (legacy/rare)
+2. **CAST**: For functionless spells (legacy/rare)
 
 ## How It Works
 
@@ -20,7 +20,7 @@ true_name=$(echo "$spell_name" | sed 's/-/_/g')  # ask-yn → ask_yn
 if grep -qE "^[[:space:]]*${true_name}[[:space:]]*\(\)" "$spell_file"; then
   # Has function → BIND path
 else
-  # No function → EVOKE path
+  # No function → CAST path
 fi
 ```
 
@@ -64,7 +64,7 @@ word_of_binding ask-yn  # Extracts and evals ask_yn() function
 - No subprocess overhead after initial load
 - Enables shell features like tab completion
 
-### EVOKE Path (Functionless Spells)
+### CAST Path (Functionless Spells)
 
 **Used by**: 1 out of 116 spells (<1%)
 
@@ -94,7 +94,7 @@ word_of_binding legacy-spell  # Executes script directly
 1. User types unknown command (e.g., `banish`)
 2. Shell triggers `command_not_found_handler`
 3. Handler calls `word_of_binding --run banish`
-4. word-of-binding determines: BIND or EVOKE
+4. word-of-binding determines: BIND or CAST
 5. Spell executes
 6. Exit code determines success/failure
 
@@ -254,7 +254,7 @@ word_of_binding --run banish  # Loads AND runs banish
 
 - **Total spells**: 116
 - **Function-based (BIND)**: 115 (99.1%)
-- **Functionless (EVOKE)**: 1 (0.9%)
+- **Functionless (CAST)**: 1 (0.9%)
 - **Pre-loaded spells**: 8
 - **On-demand spells**: 108
 
