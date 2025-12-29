@@ -453,7 +453,13 @@ banish_process_level() {
           printf '  %s✗%s Spells: Missing: %s\n' "$_red" "$_reset" "$missing"
           return 1
         fi
-        printf '  %s✓%s Spells: All found\n' "$_green" "$_reset"
+        printf '  Spells:\n'
+        spell_output=$(eval "validate_spells --show-status $spell_list" 2>&1) || true
+        if [ -n "$spell_output" ]; then
+          printf '%s\n' "$spell_output" | sed 's/^/    /'
+        else
+          printf '    %s(no spell status available)%s\n' "$_red" "$_reset"
+        fi
       fi
       
       # Check imps (single item - combine on one line)
