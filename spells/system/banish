@@ -294,8 +294,8 @@ banish_process_level() {
       # Validate spells (single item - combine on one line)
       spell_list=$(get_level_spells 1)
       if [ -n "$spell_list" ]; then
-        if ! validate-spells --quiet $spell_list 2>/dev/null; then
-          missing=$(validate-spells --missing-only $spell_list)
+        if ! validate_spells --quiet $spell_list 2>/dev/null; then
+          missing=$(validate_spells --missing-only $spell_list)
           printf '  %s✗%s Required spells: Missing: %s\n' "$_red" "$_reset" "$missing"
           return 1
         fi
@@ -305,8 +305,8 @@ banish_process_level() {
       # Validate imps (single item - combine on one line)
       imp_list=$(get_level_imps 1)
       if [ -n "$imp_list" ]; then
-        if ! validate-spells --quiet --imps $imp_list 2>/dev/null; then
-          missing=$(validate-spells --imps --missing-only $imp_list)
+        if ! validate_spells --quiet --imps $imp_list 2>/dev/null; then
+          missing=$(validate_spells --imps --missing-only $imp_list)
           printf '  %s✗%s Required imps: Missing: %s\n' "$_red" "$_reset" "$missing"
           return 1
         fi
@@ -320,8 +320,8 @@ banish_process_level() {
       # Check spells (single item - combine on one line)
       spell_list=$(get_level_spells 2)
       if [ -n "$spell_list" ]; then
-        if ! validate-spells --quiet $spell_list 2>/dev/null; then
-          missing=$(validate-spells --missing-only $spell_list)
+        if ! validate_spells --quiet $spell_list 2>/dev/null; then
+          missing=$(validate_spells --missing-only $spell_list)
           printf '  %s✗%s Menu spells: Missing: %s\n' "$_red" "$_reset" "$missing"
           return 1
         fi
@@ -368,8 +368,8 @@ banish_process_level() {
       # Check spells (single item - combine on one line)
       spell_list=$(get_level_spells "$level")
       if [ -n "$spell_list" ]; then
-        if ! validate-spells --quiet $spell_list 2>/dev/null; then
-          missing=$(validate-spells --missing-only $spell_list)
+        if ! validate_spells --quiet $spell_list 2>/dev/null; then
+          missing=$(validate_spells --missing-only $spell_list)
           printf '  %s✗%s Spells: Missing: %s\n' "$_red" "$_reset" "$missing"
           return 1
         fi
@@ -379,8 +379,8 @@ banish_process_level() {
       # Check imps (single item - combine on one line)
       imp_list=$(get_level_imps "$level")
       if [ -n "$imp_list" ]; then
-        if ! validate-spells --quiet --imps $imp_list 2>/dev/null; then
-          missing=$(validate-spells --imps --missing-only $imp_list)
+        if ! validate_spells --quiet --imps $imp_list 2>/dev/null; then
+          missing=$(validate_spells --imps --missing-only $imp_list)
           printf '  %s✗%s Imps: Missing: %s\n' "$_red" "$_reset" "$missing"
           return 1
         fi

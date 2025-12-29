@@ -177,8 +177,10 @@ function brace_delta(s, n, m) {
       *-*)
         # Provide a hyphenated wrapper function when the shell permits it.
         # This avoids alias-based dispatch while keeping user-facing names.
-        if ! eval "${_wob_name}() { ${_wob_true_name} \"\$@\"; }" 2>/dev/null; then
-          :
+        # Note: Some shells (dash, strict POSIX sh) don't allow hyphens in
+        # function names. Test if the shell supports it before attempting.
+        if (eval "test-fn() { :; }" 2>/dev/null); then
+          eval "${_wob_name}() { ${_wob_true_name} \"\$@\"; }" 2>/dev/null || :
         fi
         ;;
     esac
