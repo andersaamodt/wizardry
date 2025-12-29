@@ -214,6 +214,8 @@ _red="${_esc}[31m"
 _reset="${_esc}[0m"
 
 _banish_seen_imps=""
+_banish_pluralize="${WIZARDRY_DIR}/spells/.imps/text/pluralize"
+_banish_count_words="${WIZARDRY_DIR}/spells/.imps/text/count-words"
 
 # Run level-specific checks and actions using case statement
 banish_process_level() {
@@ -317,10 +319,8 @@ banish_process_level() {
       if [ -n "$spell_list" ]; then
         if ! eval "validate_spells --quiet $spell_list" 2>/dev/null; then
           missing=$(eval "validate_spells --missing-only $spell_list" 2>/dev/null || true)
-          case "$missing" in
-            *" "*) label="Spells" ;;
-            *) label="Spell" ;;
-          esac
+          missing_count=$("$_banish_count_words" "$missing")
+          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
           printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
           return 1
         fi
@@ -351,10 +351,8 @@ banish_process_level() {
       if [ -n "$imp_list" ]; then
         if ! eval "validate_spells --quiet --imps $imp_list" 2>/dev/null; then
           missing=$(eval "validate_spells --imps --missing-only $imp_list" 2>/dev/null || true)
-          case "$missing" in
-            *" "*) label="Imps" ;;
-            *) label="Imp" ;;
-          esac
+          missing_count=$("$_banish_count_words" "$missing")
+          label=$("$_banish_pluralize" "Imp" "$missing_count" "Imps")
           printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
           return 1
         fi
@@ -399,10 +397,8 @@ banish_process_level() {
       if [ -n "$spell_list" ]; then
         if ! eval "validate_spells --quiet $spell_list" 2>/dev/null; then
           missing=$(eval "validate_spells --missing-only $spell_list" 2>/dev/null || true)
-          case "$missing" in
-            *" "*) label="Spells" ;;
-            *) label="Spell" ;;
-          esac
+          missing_count=$("$_banish_count_words" "$missing")
+          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
           printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
           return 1
         fi
@@ -435,10 +431,8 @@ banish_process_level() {
       if [ -n "$imp_list" ]; then
         if ! eval "validate_spells --quiet --imps $imp_list" 2>/dev/null; then
           missing=$(eval "validate_spells --imps --missing-only $imp_list" 2>/dev/null || true)
-          case "$missing" in
-            *" "*) label="Imps" ;;
-            *) label="Imp" ;;
-          esac
+          missing_count=$("$_banish_count_words" "$missing")
+          label=$("$_banish_pluralize" "Imp" "$missing_count" "Imps")
           printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
           return 1
         fi
@@ -476,10 +470,8 @@ banish_process_level() {
       if [ -n "$spell_list" ]; then
         if ! eval "validate_spells --quiet $spell_list" 2>/dev/null; then
           missing=$(eval "validate_spells --missing-only $spell_list" 2>/dev/null || true)
-          case "$missing" in
-            *" "*) label="Spells" ;;
-            *) label="Spell" ;;
-          esac
+          missing_count=$("$_banish_count_words" "$missing")
+          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
           printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
           return 1
         fi
@@ -512,10 +504,8 @@ banish_process_level() {
       if [ -n "$imp_list" ]; then
         if ! eval "validate_spells --quiet --imps $imp_list" 2>/dev/null; then
           missing=$(eval "validate_spells --imps --missing-only $imp_list" 2>/dev/null || true)
-          case "$missing" in
-            *" "*) label="Imps" ;;
-            *) label="Imp" ;;
-          esac
+          missing_count=$("$_banish_count_words" "$missing")
+          label=$("$_banish_pluralize" "Imp" "$missing_count" "Imps")
           printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
           return 1
         fi
