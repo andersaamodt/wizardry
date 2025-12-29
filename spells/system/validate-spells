@@ -116,8 +116,9 @@ found_count=0
 loaded_count=0
 available_count=0
 
-# For category grouping of imps, use simulated associative arrays with eval
-# Format: category_loaded_CATEGORY="imp1 imp2" and category_available_CATEGORY="imp3 imp4"
+# For imps with --show-status, we'll collect results for category-based output
+# Store results as space-separated lists instead of using eval-based dynamic variables
+imp_results=""
 
 for spell_info in "$@"; do
   # Parse spell:dir format
@@ -169,20 +170,12 @@ for spell_info in "$@"; do
     if [ "$is_loaded" -eq 1 ]; then
       loaded_count=$((loaded_count + 1))
       
-      # For imps with --show-status, collect by category
+      # For imps with --show-status, store result for later category-based output
       if [ "$validate_imps" -eq 1 ] && [ "$show_status" -eq 1 ]; then
-        # Extract category from spell path (e.g., sys/has -> sys)
         category=$(printf '%s' "$spell" | cut -d/ -f1)
         imp_name=$(printf '%s' "$spell" | sed 's|.*/||')
-        
-        # Append to category-specific loaded list
-        # Use simpler eval to avoid nested parameter expansion issues
-        eval "_existing=\${category_loaded_${category}:-}"
-        if [ -n "$_existing" ]; then
-          eval "category_loaded_${category}=\"\${_existing} ${imp_name}\""
-        else
-          eval "category_loaded_${category}=\"${imp_name}\""
-        fi
+        # Format: category:status:name (status: L=loaded, A=available)
+        imp_results="${imp_results}${imp_results:+ }${category}:L:${imp_name}"
       elif [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ]; then
         # For spells, show individually
         printf '\033[32m✓\033[0m Loaded spell: %s\n' "$spell"
@@ -190,20 +183,12 @@ for spell_info in "$@"; do
     else
       available_count=$((available_count + 1))
       
-      # For imps with --show-status, collect by category
+      # For imps with --show-status, store result for later category-based output
       if [ "$validate_imps" -eq 1 ] && [ "$show_status" -eq 1 ]; then
-        # Extract category from spell path (e.g., sys/has -> sys)
         category=$(printf '%s' "$spell" | cut -d/ -f1)
         imp_name=$(printf '%s' "$spell" | sed 's|.*/||')
-        
-        # Append to category-specific available list
-        # Use simpler eval to avoid nested parameter expansion issues
-        eval "_existing=\${category_available_${category}:-}"
-        if [ -n "$_existing" ]; then
-          eval "category_available_${category}=\"\${_existing} ${imp_name}\""
-        else
-          eval "category_available_${category}=\"${imp_name}\""
-        fi
+        # Format: category:status:name (status: L=loaded, A=available)
+        imp_results="${imp_results}${imp_results:+ }${category}:A:${imp_name}"
       elif [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ]; then
         # For spells, show individually
         printf '\033[34m●\033[0m Available spell: %s\n' "$spell"
@@ -224,20 +209,11 @@ done
 
 # Output grouped results for imps with --show-status
 if [ "$validate_imps" -eq 1 ] && [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ]; then
-  # Get all unique categories from the imp list
+  if [ -n "$imp_results" ]; then
+  # Get all unique categories
   categories=""
-  for spell_info in "$@"; do
-    case "$spell_info" in
-      *:*)
-        spell=$(printf '%s' "$spell_info" | cut -d: -f1)
-        ;;
-      *)
-        spell=$spell_info
-        ;;
-    esac
-    
-    category=$(printf '%s' "$spell" | cut -d/ -f1)
-    
+  for result in $imp_results; do
+    category=$(printf '%s' "$result" | cut -d: -f1)
     # Add category to list if not already present
     case " $categories " in
       *" $category "*) ;;
@@ -247,27 +223,31 @@ if [ "$validate_imps" -eq 1 ] && [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ];
   
   # Output each category
   for category in $categories; do
-    # Get loaded and available imps for this category
-    loaded_imps=$(eval "printf '%s' \"\${category_loaded_${category}:-}\"")
-    available_imps=$(eval "printf '%s' \"\${category_available_${category}:-}\"")
+    loaded_imps=""
+    available_imps=""
     
-    # Count imps for proper pluralization
-    loaded_count_cat=0
+    # Collect imps for this category
+    for result in $imp_results; do
+      result_category=$(printf '%s' "$result" | cut -d: -f1)
+      result_status=$(printf '%s' "$result" | cut -d: -f2)
+      result_name=$(printf '%s' "$result" | cut -d: -f3-)
+      
+      if [ "$result_category" = "$category" ]; then
+        if [ "$result_status" = "L" ]; then
+          loaded_imps="${loaded_imps}${loaded_imps:+ }${result_name}"
+        else
+          available_imps="${available_imps}${available_imps:+ }${result_name}"
+        fi
+      fi
+    done
+    
+    # Count and output loaded imps with proper pluralization
     if [ -n "$loaded_imps" ]; then
+      loaded_count_cat=0
       for imp in $loaded_imps; do
         loaded_count_cat=$((loaded_count_cat + 1))
       done
-    fi
-    
-    available_count_cat=0
-    if [ -n "$available_imps" ]; then
-      for imp in $available_imps; do
-        available_count_cat=$((available_count_cat + 1))
-      done
-    fi
-    
-    # Output loaded imps with proper pluralization
-    if [ -n "$loaded_imps" ]; then
+      
       if [ "$loaded_count_cat" -eq 1 ]; then
         printf '\033[32m✓\033[0m Loaded %s imp: %s\n' "$category" "$loaded_imps"
       else
@@ -275,8 +255,13 @@ if [ "$validate_imps" -eq 1 ] && [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ];
       fi
     fi
     
-    # Output available imps with proper pluralization
+    # Count and output available imps with proper pluralization
     if [ -n "$available_imps" ]; then
+      available_count_cat=0
+      for imp in $available_imps; do
+        available_count_cat=$((available_count_cat + 1))
+      done
+      
       if [ "$available_count_cat" -eq 1 ]; then
         printf '\033[34m●\033[0m Available %s imp: %s\n' "$category" "$available_imps"
       else
@@ -284,6 +269,7 @@ if [ "$validate_imps" -eq 1 ] && [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ];
       fi
     fi
   done
+  fi
 fi
 
 # Output results
