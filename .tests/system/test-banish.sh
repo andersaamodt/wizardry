@@ -245,11 +245,19 @@ test_banish_shows_detailed_status() {
   # Should show "Required imps:" header
   assert_output_contains "Required imps:" || return 1
   
-  # Should show either "Loaded imp:" or "Available imp:" for some imps
-  # (depending on what's preloaded, we should see at least one of each type)
-  if ! assert_output_contains "imp:" 2>/dev/null; then
+  # Should show category-grouped output (e.g., "sys imps:", "cond imps:")
+  # Check for multiple categories being displayed
+  if ! assert_output_contains "sys imp" 2>/dev/null; then
     return 1
   fi
+  if ! assert_output_contains "cond imp" 2>/dev/null; then
+    return 1
+  fi
+  
+  # Should show imps listed by name (without directory prefix)
+  # e.g., "has" instead of "cond/has"
+  assert_output_contains "has" || return 1
+  assert_output_contains "say" || return 1
   
   return 0
 }
@@ -272,8 +280,9 @@ test_function_call_in_subshell() {
   # Should detect all imps (not report them as missing)
   ! assert_output_contains "Required imps: Missing:" || return 1
   
-  # Should show imps as available
-  assert_output_contains "Available imp:" || return 1
+  # Should show imps as available (now grouped by category)
+  assert_output_contains "Available" || return 1
+  assert_output_contains "imp" || return 1
   
   return 0
 }
