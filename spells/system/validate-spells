@@ -116,22 +116,50 @@ found_count=0
 loaded_count=0
 available_count=0
 
-# For imps with --show-status, we'll collect results for category-based output
-# Store results as newline-separated "category|status|name" entries
+# For imps with --show-status, we'll collect results for grouped output
+# Store results as newline-separated "status|name" entries
 imp_results=""
+imp_unavailable=""
+
+# For spells with --show-status, collect grouped output
+spell_loaded=""
+spell_available=""
+spell_unavailable=""
 
 for spell_info in "$@"; do
-  # Parse spell:dir format
-  case "$spell_info" in
-    *:*)
-      spell=$(printf '%s' "$spell_info" | cut -d: -f1)
-      dir=$(printf '%s' "$spell_info" | cut -d: -f2)
-      ;;
-    *)
-      spell=$spell_info
-      dir=$default_dir
-      ;;
-  esac
+  status_override=""
+  # Parse spell:dir format (or category:status:name for imps)
+  if [ "$validate_imps" -eq 1 ]; then
+    case "$spell_info" in
+      *:*:*)
+        category=${spell_info%%:*}
+        rest=${spell_info#*:}
+        status=${rest%%:*}
+        name_rest=${rest#*:}
+        case "$status" in
+          L|A) status_override=$status ;;
+          *) status_override="" ;;
+        esac
+        spell="${category}/${name_rest}"
+        dir=$default_dir
+        ;;
+      *)
+        spell=$spell_info
+        dir=$default_dir
+        ;;
+    esac
+  else
+    case "$spell_info" in
+      *:*)
+        spell=$(printf '%s' "$spell_info" | cut -d: -f1)
+        dir=$(printf '%s' "$spell_info" | cut -d: -f2)
+        ;;
+      *)
+        spell=$spell_info
+        dir=$default_dir
+        ;;
+    esac
+  fi
   
   # Check if spell/imp exists
   if [ "$validate_imps" -eq 1 ]; then
@@ -152,17 +180,23 @@ for spell_info in "$@"; do
   
   # Check if loaded as function (try both hyphenated and underscored versions)
   is_loaded=0
-  for name_variant in "$func_name" "$(printf '%s' "$func_name" | tr '-' '_')"; do
-    if command -v "$name_variant" >/dev/null 2>&1; then
-      func_type=$(type "$name_variant" 2>/dev/null || true)
-      case "$func_type" in
-        *"function"*|*"shell function"*)
-          is_loaded=1
-          break
-          ;;
-      esac
+  if [ -n "$status_override" ]; then
+    if [ "$status_override" = "L" ]; then
+      is_loaded=1
     fi
-  done
+  else
+    for name_variant in "$func_name" "$(printf '%s' "$func_name" | tr '-' '_')"; do
+      if command -v "$name_variant" >/dev/null 2>&1; then
+        func_type=$(type "$name_variant" 2>/dev/null || true)
+        case "$func_type" in
+          *"function"*|*"shell function"*)
+            is_loaded=1
+            break
+            ;;
+        esac
+      fi
+    done
+  fi
   
   if [ -f "$spell_path" ]; then
     found_count=$((found_count + 1))
@@ -170,30 +204,28 @@ for spell_info in "$@"; do
     if [ "$is_loaded" -eq 1 ]; then
       loaded_count=$((loaded_count + 1))
       
-      # For imps with --show-status, store result for later category-based output
+      # For imps with --show-status, store result for later output
       if [ "$validate_imps" -eq 1 ] && [ "$show_status" -eq 1 ]; then
-        category=$(printf '%s' "$spell" | cut -d/ -f1)
         imp_name=$(printf '%s' "$spell" | sed 's|.*/||')
-        # Format: category|status|name (status: L=loaded, A=available)
+        # Format: status|name (status: L=loaded, A=available)
         imp_results="${imp_results}${imp_results:+
-}${category}|L|${imp_name}"
+}L|${imp_name}"
       elif [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ]; then
-        # For spells, show individually
-        printf '\033[32m✓\033[0m Loaded spell: %s\n' "$spell"
+        # For spells, collect grouped output
+        spell_loaded="${spell_loaded}${spell_loaded:+ }${spell}"
       fi
     else
       available_count=$((available_count + 1))
       
-      # For imps with --show-status, store result for later category-based output
+      # For imps with --show-status, store result for later output
       if [ "$validate_imps" -eq 1 ] && [ "$show_status" -eq 1 ]; then
-        category=$(printf '%s' "$spell" | cut -d/ -f1)
         imp_name=$(printf '%s' "$spell" | sed 's|.*/||')
-        # Format: category|status|name (status: L=loaded, A=available)
+        # Format: status|name (status: L=loaded, A=available)
         imp_results="${imp_results}${imp_results:+
-}${category}|A|${imp_name}"
+}A|${imp_name}"
       elif [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ]; then
-        # For spells, show individually
-        printf '\033[34m●\033[0m Available spell: %s\n' "$spell"
+        # For spells, collect grouped output
+        spell_available="${spell_available}${spell_available:+ }${spell}"
       fi
     fi
     
@@ -206,72 +238,108 @@ for spell_info in "$@"; do
     fi
   else
     missing="${missing:+$missing }$spell"
+    if [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ]; then
+      if [ "$validate_imps" -eq 1 ]; then
+        imp_name=$(printf '%s' "$spell" | sed 's|.*/||')
+        imp_unavailable="${imp_unavailable}${imp_unavailable:+ }${imp_name}"
+      else
+        spell_unavailable="${spell_unavailable}${spell_unavailable:+ }${spell}"
+      fi
+    fi
   fi
 done
 
+# Output grouped results for spells with --show-status
+if [ "$validate_imps" -eq 0 ] && [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ]; then
+  if [ -n "$spell_loaded" ]; then
+    spell_loaded_count=0
+    for spell in $spell_loaded; do
+      spell_loaded_count=$((spell_loaded_count + 1))
+    done
+    if [ "$spell_loaded_count" -eq 1 ]; then
+      printf '\033[32m✓\033[0m Loaded spell: %s\n' "$spell_loaded"
+    else
+      printf '\033[32m✓\033[0m Loaded spells: %s\n' "$spell_loaded"
+    fi
+  fi
+
+  if [ -n "$spell_available" ]; then
+    spell_available_count=0
+    for spell in $spell_available; do
+      spell_available_count=$((spell_available_count + 1))
+    done
+    if [ "$spell_available_count" -eq 1 ]; then
+      printf '\033[34m●\033[0m Available spell: %s\n' "$spell_available"
+    else
+      printf '\033[34m●\033[0m Available spells: %s\n' "$spell_available"
+    fi
+  fi
+
+  if [ -n "$spell_unavailable" ]; then
+    spell_unavailable_count=0
+    for spell in $spell_unavailable; do
+      spell_unavailable_count=$((spell_unavailable_count + 1))
+    done
+    if [ "$spell_unavailable_count" -eq 1 ]; then
+      printf '\033[31m✗\033[0m Unavailable spell: %s\n' "$spell_unavailable"
+    else
+      printf '\033[31m✗\033[0m Unavailable spells: %s\n' "$spell_unavailable"
+    fi
+  fi
+fi
+
 # Output grouped results for imps with --show-status
 if [ "$validate_imps" -eq 1 ] && [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ]; then
+  loaded_imps=""
+  available_imps=""
+
   if [ -n "$imp_results" ]; then
-  # Get all unique categories
-  categories=""
-  while IFS='|' read -r category _status _name; do
-    [ -z "$category" ] && continue
-    # Add category to list if not already present
-    case " $categories " in
-      *" $category "*) ;;
-      *) categories="${categories:+$categories }$category" ;;
-    esac
-  done <<EOF
-$imp_results
-EOF
-  
-  # Output each category
-  for category in $categories; do
-    loaded_imps=""
-    available_imps=""
-    
-    # Collect imps for this category
-    while IFS='|' read -r result_category result_status result_name; do
-      [ -z "$result_category" ] && continue
-      if [ "$result_category" = "$category" ]; then
-        if [ "$result_status" = "L" ]; then
-          loaded_imps="${loaded_imps}${loaded_imps:+ }${result_name}"
-        else
-          available_imps="${available_imps}${available_imps:+ }${result_name}"
-        fi
+    while IFS='|' read -r result_status result_name; do
+      [ -z "$result_status" ] && continue
+      if [ "$result_status" = "L" ]; then
+        loaded_imps="${loaded_imps}${loaded_imps:+ }${result_name}"
+      else
+        available_imps="${available_imps}${available_imps:+ }${result_name}"
       fi
     done <<EOF
 $imp_results
 EOF
-    
-    # Count and output loaded imps with proper pluralization
-    if [ -n "$loaded_imps" ]; then
-      loaded_count_cat=0
-      for imp in $loaded_imps; do
-        loaded_count_cat=$((loaded_count_cat + 1))
-      done
-      
-      if [ "$loaded_count_cat" -eq 1 ]; then
-        printf '\033[32m✓\033[0m Loaded %s imp: %s\n' "$category" "$loaded_imps"
-      else
-        printf '\033[32m✓\033[0m Loaded %s imps: %s\n' "$category" "$loaded_imps"
-      fi
+  fi
+
+  if [ -n "$loaded_imps" ]; then
+    loaded_count=0
+    for imp in $loaded_imps; do
+      loaded_count=$((loaded_count + 1))
+    done
+    if [ "$loaded_count" -eq 1 ]; then
+      printf '\033[32m✓\033[0m Loaded imp: %s\n' "$loaded_imps"
+    else
+      printf '\033[32m✓\033[0m Loaded imps: %s\n' "$loaded_imps"
     fi
-    
-    # Count and output available imps with proper pluralization
-    if [ -n "$available_imps" ]; then
-      available_count_cat=0
-      for imp in $available_imps; do
-        available_count_cat=$((available_count_cat + 1))
-      done
-      
-      if [ "$available_count_cat" -eq 1 ]; then
-        printf '\033[34m●\033[0m Available %s imp: %s\n' "$category" "$available_imps"
-      else
-        printf '\033[34m●\033[0m Available %s imps: %s\n' "$category" "$available_imps"
-      fi
+  fi
+
+  if [ -n "$available_imps" ]; then
+    available_count=0
+    for imp in $available_imps; do
+      available_count=$((available_count + 1))
+    done
+    if [ "$available_count" -eq 1 ]; then
+      printf '\033[34m●\033[0m Available imp: %s\n' "$available_imps"
+    else
+      printf '\033[34m●\033[0m Available imps: %s\n' "$available_imps"
     fi
-  done
+  fi
+
+  if [ -n "$imp_unavailable" ]; then
+    unavailable_count=0
+    for imp in $imp_unavailable; do
+      unavailable_count=$((unavailable_count + 1))
+    done
+    if [ "$unavailable_count" -eq 1 ]; then
+      printf '\033[31m✗\033[0m Unavailable imp: %s\n' "$imp_unavailable"
+    else
+      printf '\033[31m✗\033[0m Unavailable imps: %s\n' "$imp_unavailable"
+    fi
   fi
 fi
 
