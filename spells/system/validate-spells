@@ -352,9 +352,17 @@ fi
 
 if [ -n "$missing" ]; then
   if [ "$validate_imps" -eq 1 ]; then
-    printf 'Missing imps: %s\n' "$missing" >&2
+    case "$missing" in
+      *" "*) label="imps" ;;
+      *) label="imp" ;;
+    esac
+    printf 'Missing %s: %s\n' "$label" "$missing" >&2
   else
-    printf 'Missing spells: %s\n' "$missing" >&2
+    case "$missing" in
+      *" "*) label="spells" ;;
+      *) label="spell" ;;
+    esac
+    printf 'Missing %s: %s\n' "$label" "$missing" >&2
   fi
   return 1
 fi
