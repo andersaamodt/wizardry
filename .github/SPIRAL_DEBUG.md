@@ -40,8 +40,8 @@ These are the essential components that MUST work before we proceed:
 4. word-of-binding finds the spell/imp and either sources or executes it
 
 **Pre-loaded components**:
-- **Imps**: require, require-wizardry, castable, env-clear, temp-file, cleanup-file, has, die, warn, fail, say
-- **Spells**: menu, await-keypress, move-cursor, fathom-cursor, fathom-terminal, cursor-blink, colors, banish
+- **Imps**: all imps up through level 2 (from `spells/.imps/sys/spell-levels`)
+- **Spells**: all spells up through level 2 (from `spells/.imps/sys/spell-levels`)
 
 **Hotloaded** (via command_not_found_handle):
 - All other spells and imps load on first use
@@ -163,6 +163,11 @@ After all features work:
   - `bash -lc 'source spells/.imps/sys/invoke-wizardry; menu --help | head -n 3'` → usage text prints.
   - `bash -lc 'source spells/.imps/sys/invoke-wizardry; command -v word_of_binding'` → function available.
   - Note: full interactive menu run requires a TTY; not exercised in this container.
+
+### 2025-12-28: Preload all level 0-2 spells and imps
+
+- **Change**: `invoke-wizardry` now preloads every spell and imp defined through level 2 using `spells/.imps/sys/spell-levels`.
+- **Why**: keeps the preload set aligned with spell level definitions while still supporting the spiral debug minimal boot.
 
 ### 2025-12-28: Remove leading underscores from imp true-names
 

@@ -6,7 +6,7 @@
 
 banish_usage() {
   cat <<'USAGE'
-Usage: banish [LEVEL] [OPTIONS]
+Usage: banish [LEVEL|all] [OPTIONS]
 
 Validate wizardry at the specified spell level, checking assumptions, 
 self-healing issues, and running tests. Each level builds on previous levels.
@@ -15,7 +15,8 @@ NOTE: Banish requires wizardry to be installed. Run ./install first.
 See .github/SPELL_LEVELS.md for complete level documentation.
 
 Arguments:
-  LEVEL                 Spell level to validate (0-27, default: 1)
+  LEVEL                 Spell level to validate (0-27, default: 2)
+  all                   Validate through the highest available level
                         Level 0: POSIX & platform foundation
                         Level 1: Wizardry installation
                         Level 2: Menu system
@@ -50,9 +51,10 @@ Exit Codes:
   2  Invalid usage
 
 Examples:
-  banish                    # Validate through level 1 (default - levels 0-1: POSIX + wizardry)
+  banish                    # Validate through level 2 (default - levels 0-2: POSIX + wizardry + menu)
   banish 0                  # Validate level 0 only (POSIX foundation)
   banish 2                  # Validate through level 2 (levels 0-2: POSIX + wizardry + menu)
+  banish all                # Validate through the highest available level
   banish 4 --no-tests       # Validate through level 4, skip tests
   banish 1 --no-heal        # Validate through level 1, only report issues
 USAGE
@@ -127,16 +129,21 @@ fi
 export WIZARDRY_DIR
 
 # Parse arguments
-target_level=1
+target_level=2
+target_level_all=0
 skip_tests=0
 skip_heal=0
 only_this_level=0
 
-# First, check if first arg is a number (the level)
+# First, check if first arg is a number (the level) or "all"
 if [ "$#" -gt 0 ]; then
   case "$1" in
     [0-9]|[0-9][0-9])
       target_level=$1
+      shift
+      ;;
+    all)
+      target_level_all=1
       shift
       ;;
   esac
@@ -172,6 +179,10 @@ while [ "$#" -gt 0 ]; do
           target_level=$1
           shift
           ;;
+        all)
+          target_level_all=1
+          shift
+          ;;
         *)
           printf 'Error: unexpected argument: %s\n' "$1" >&2
           banish_usage >&2
@@ -181,13 +192,6 @@ while [ "$#" -gt 0 ]; do
       ;;
   esac
 done
-
-# Validate level
-if [ "$target_level" -lt 0 ] || [ "$target_level" -gt 27 ]; then
-  printf 'Error: level must be 0-27, got: %s\n' "$target_level" >&2
-  banish_usage >&2
-  return 2
-fi
 
 # Source shared spell level definitions from sys imp
 # This file is shared by banish, test-magic, and demo-magic
@@ -200,11 +204,29 @@ else
   if [ -f "$_wiz_root/spells/.imps/sys/spell-levels" ]; then
     . "$_wiz_root/spells/.imps/sys/spell-levels"
   else
-    # Final fallback: define inline if spell-levels not found
-    get_level_spells() { printf '' ; }
-    get_level_imps() { printf '' ; }
-    banish_level_name() { printf 'Unknown' ; }
+    printf '%s\n' "banish: spell-levels not found; run invoke-wizardry first" >&2
+    return 1
   fi
+fi
+
+max_level=26
+if [ -d "${WIZARDRY_DIR}/spells/.arcana" ]; then
+  for _arcana_entry in "${WIZARDRY_DIR}"/spells/.arcana/*; do
+    [ -e "$_arcana_entry" ] || continue
+    max_level=27
+    break
+  done
+fi
+
+if [ "$target_level_all" -eq 1 ]; then
+  target_level=$max_level
+fi
+
+# Validate level
+if [ "$target_level" -lt 0 ] || [ "$target_level" -gt 27 ]; then
+  printf 'Error: level must be 0-27, got: %s\n' "$target_level" >&2
+  banish_usage >&2
+  return 2
 fi
 
 # Color codes (inline to avoid dependency)
@@ -552,7 +574,11 @@ while [ "$current_level" -le "$target_level" ]; do
 done
 
 # Final success message
-printf '\n%s✓%s All validation checks passed\n' "$_green" "$_reset"
+if [ "$target_level" -eq "$max_level" ]; then
+  printf '\n%s✓%s Banished all (Level %d)\n' "$_green" "$_reset" "$target_level"
+else
+  printf '\n%s✓%s Banished to Level %d\n' "$_green" "$_reset" "$target_level"
+fi
 
 return 0
 }

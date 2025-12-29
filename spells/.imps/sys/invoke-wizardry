@@ -97,69 +97,49 @@ invoke_wizardry() {
     return 1
   fi
   
-  # Pre-load essential imps needed by menu
-  # These are from sys/, out/, fs/, cond/ families
-  _iw_debug "Pre-loading essential imps"
-  for _imp_name in \
-    require \
-    require-wizardry \
-    castable \
-    env-clear \
-    temp-file \
-    cleanup-file \
-    has \
-    die \
-    warn \
-    fail \
-    say; do
-    # Search for imp in all families
-    for _family_dir in "$WIZARDRY_DIR"/spells/.imps/*; do
-      [ -d "$_family_dir" ] || continue
-      _imp_file="$_family_dir/$_imp_name"
-      if [ -f "$_imp_file" ]; then
-        if command -v word_of_binding >/dev/null 2>&1; then
-          word_of_binding "$_imp_name" 2>/dev/null || :
-        fi
-        break
+  _iw_spell_levels="$WIZARDRY_DIR/spells/.imps/sys/spell-levels"
+  if [ -r "$_iw_spell_levels" ]; then
+    # shellcheck disable=SC1090
+    . "$_iw_spell_levels"
+  else
+    printf '%s\n' "invoke-wizardry: ERROR - spell-levels not found" >&2
+    return 1
+  fi
+  if ! command -v get_level_imps >/dev/null 2>&1; then
+    printf '%s\n' "invoke-wizardry: ERROR - get_level_imps unavailable" >&2
+    return 1
+  fi
+  if ! command -v get_level_spells >/dev/null 2>&1; then
+    printf '%s\n' "invoke-wizardry: ERROR - get_level_spells unavailable" >&2
+    return 1
+  fi
+
+  # Pre-load all spells/imps through level 2
+  _iw_debug "Pre-loading spells and imps through level 2"
+  for _iw_level in 0 1 2; do
+    _iw_level_imps=$(get_level_imps "$_iw_level")
+    for _imp_entry in $_iw_level_imps; do
+      _imp_name=${_imp_entry##*/}
+      if command -v word_of_binding >/dev/null 2>&1; then
+        word_of_binding "$_imp_name" 2>/dev/null || :
       fi
     done
-  done
-  
-  # Pre-load menu and its helper spell dependencies
-  _iw_debug "Pre-loading essential spells"
-  for _spell_name in \
-    menu \
-    await-keypress \
-    move-cursor \
-    fathom-cursor \
-    fathom-terminal \
-    require-command \
-    cursor-blink \
-    colors \
-    banish \
-    validate-spells; do
-    # Search for spell in all categories
-    for _spell_dir in "$WIZARDRY_DIR"/spells/*; do
-      [ -d "$_spell_dir" ] || continue
-      case "$_spell_dir" in */.imps|*/.arcana) continue ;; esac
-      _spell_file="$_spell_dir/$_spell_name"
-      if [ -f "$_spell_file" ]; then
-        _iw_debug "Loading spell: $_spell_name"
-        if command -v word_of_binding >/dev/null 2>&1 \
-          && word_of_binding "$_spell_name" 2>/dev/null; then
-          _iw_status="✓ Loaded"
-        else
-          _iw_status="✗ Failed"
-        fi
-        _iw_debug "  $_iw_status: $_spell_name"
-        break
+
+    _iw_level_spells=$(get_level_spells "$_iw_level")
+    for _spell_entry in $_iw_level_spells; do
+      case "$_spell_entry" in
+        *:*) _spell_name=${_spell_entry%%:*} ;;
+        *) _spell_name=$_spell_entry ;;
+      esac
+      if command -v word_of_binding >/dev/null 2>&1; then
+        word_of_binding "$_spell_name" 2>/dev/null || :
       fi
     done
   done
 
   _iw_menu_ok=0
   if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
-    if whence -v menu 2>/dev/null | grep -q 'shell function'; then
+    if whence -v menu 2>/dev/null | grep -q 'function'; then
       _iw_menu_ok=1
     fi
   elif command -v type >/dev/null 2>&1; then

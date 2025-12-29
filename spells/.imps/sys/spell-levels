@@ -5,7 +5,7 @@
 get_level_spells() {
   case "$1" in
     0) printf 'detect-posix:divination detect-distro:divination verify-posix:system' ;;
-    1) printf 'banish:system' ;;
+    1) printf 'banish:system validate-spells:system' ;;
     2) printf 'menu fathom-terminal fathom-cursor move-cursor await-keypress cursor-blink colors main-menu:menu' ;;
     3) printf 'check-cd-hook:mud look:mud' ;;
     4) printf 'jump-to-marker:translocation mark-location:translocation' ;;
