@@ -328,7 +328,12 @@ banish_process_level() {
         
         # Show detailed status (loaded vs available)
         printf '  Required spells:\n'
-        eval "$_validate_cmd --show-status $spell_list" 2>/dev/null | sed 's/^/    /'
+        spell_output=$(eval "$_validate_cmd --show-status $spell_list" 2>&1) || true
+        if [ -n "$spell_output" ]; then
+          printf '%s\n' "$spell_output" | sed 's/^/    /'
+        else
+          printf '    %s(no spell status available)%s\n' "$_red" "$_reset"
+        fi
       fi
       
       # Validate imps (show detailed status)
@@ -344,7 +349,12 @@ banish_process_level() {
         
         # Show detailed status (loaded vs available)
         printf '  Required imps:\n'
-        eval "$_validate_cmd --imps --show-status $imp_list" 2>/dev/null | sed 's/^/    /'
+        imp_output=$(eval "$_validate_cmd --imps --show-status $imp_list" 2>&1) || true
+        if [ -n "$imp_output" ]; then
+          printf '%s\n' "$imp_output" | sed 's/^/    /'
+        else
+          printf '    %s(no imp status available)%s\n' "$_red" "$_reset"
+        fi
       fi
       ;;
       
