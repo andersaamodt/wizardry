@@ -25,7 +25,19 @@ esac
 
 require-wizardry || return 1
 
-set -eu
+# Use conditional strictness based on execution context
+# See .github/CODE_POLICY_SET_EU.md for details
+case "$0" in
+  */fathom-terminal)
+    # Executed as script - use full strict mode
+    set -eu
+    ;;
+  *)
+    # Called as function (sourced) - only undefined variable protection
+    # This prevents interactive shell exit while maintaining safety
+    set -u
+    ;;
+esac
 env-clear
 
 # Resolve require-command location

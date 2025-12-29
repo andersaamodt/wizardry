@@ -40,7 +40,19 @@ case "${1-}" in
   ;;
 esac
 
-set -eu
+# Use conditional strictness based on execution context
+# See .github/CODE_POLICY_SET_EU.md for details
+case "$0" in
+  */validate-spells)
+    # Executed as script - use full strict mode
+    set -eu
+    ;;
+  *)
+    # Called as function (sourced) - only undefined variable protection
+    # This prevents interactive shell exit while maintaining safety
+    set -u
+    ;;
+esac
 
 # Validate WIZARDRY_DIR is set and valid
 # Don't use require-wizardry here because it may not be loaded yet
