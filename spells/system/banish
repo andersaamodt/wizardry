@@ -534,12 +534,17 @@ else
   current_level=0
 fi
 
+last_success_level=-1
 while [ "$current_level" -le "$target_level" ]; do
   banish_process_level "$current_level" || {
     exit_code=$?
-    printf '\n%s✗%s Banish failed at Level %d\n' "$_red" "$_reset" "$current_level"
+    if [ "$last_success_level" -ge 0 ]; then
+      printf '\n%s✓%s Level %d banish succeeded\n' "$_green" "$_reset" "$last_success_level"
+    fi
+    printf '%s✗%s Banish failed at Level %d\n' "$_red" "$_reset" "$current_level"
     return "$exit_code"
   }
+  last_success_level=$current_level
   if [ "$only_this_level" -eq 1 ]; then
     break
   fi
