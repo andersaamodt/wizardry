@@ -174,8 +174,8 @@ for spell_info in "$@"; do
       if [ "$validate_imps" -eq 1 ] && [ "$show_status" -eq 1 ]; then
         category=$(printf '%s' "$spell" | cut -d/ -f1)
         imp_name=$(printf '%s' "$spell" | sed 's|.*/||')
-        # Format: category:status:name (status: L=loaded, A=available)
-        imp_results="${imp_results}${imp_results:+ }${category}:L:${imp_name}"
+        # Format: category|status|name (status: L=loaded, A=available)
+        imp_results="${imp_results}${imp_results:+ }${category}|L|${imp_name}"
       elif [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ]; then
         # For spells, show individually
         printf '\033[32m✓\033[0m Loaded spell: %s\n' "$spell"
@@ -187,8 +187,8 @@ for spell_info in "$@"; do
       if [ "$validate_imps" -eq 1 ] && [ "$show_status" -eq 1 ]; then
         category=$(printf '%s' "$spell" | cut -d/ -f1)
         imp_name=$(printf '%s' "$spell" | sed 's|.*/||')
-        # Format: category:status:name (status: L=loaded, A=available)
-        imp_results="${imp_results}${imp_results:+ }${category}:A:${imp_name}"
+        # Format: category|status|name (status: L=loaded, A=available)
+        imp_results="${imp_results}${imp_results:+ }${category}|A|${imp_name}"
       elif [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ]; then
         # For spells, show individually
         printf '\033[34m●\033[0m Available spell: %s\n' "$spell"
@@ -213,7 +213,7 @@ if [ "$validate_imps" -eq 1 ] && [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ];
   # Get all unique categories
   categories=""
   for result in $imp_results; do
-    category=$(printf '%s' "$result" | cut -d: -f1)
+    category=$(printf '%s' "$result" | cut -d'|' -f1)
     # Add category to list if not already present
     case " $categories " in
       *" $category "*) ;;
@@ -228,9 +228,9 @@ if [ "$validate_imps" -eq 1 ] && [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ];
     
     # Collect imps for this category
     for result in $imp_results; do
-      result_category=$(printf '%s' "$result" | cut -d: -f1)
-      result_status=$(printf '%s' "$result" | cut -d: -f2)
-      result_name=$(printf '%s' "$result" | cut -d: -f3-)
+      result_category=$(printf '%s' "$result" | cut -d'|' -f1)
+      result_status=$(printf '%s' "$result" | cut -d'|' -f2)
+      result_name=$(printf '%s' "$result" | cut -d'|' -f3-)
       
       if [ "$result_category" = "$category" ]; then
         if [ "$result_status" = "L" ]; then
