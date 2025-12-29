@@ -47,7 +47,7 @@ script="$ROOT_DIR/spells/.imps/sys/require-wizardry"
 # Unset WIZARDRY_DIR to simulate environment without wizardry
 WIZARDRY_DIR="" WIZARDRY_TEST_HELPERS_ONLY="" PATH="$tmp:$tmp/imps" run_cmd sh "$script" </dev/null
 assert_failure || return 1
-assert_error_contains "wizardry is not installed" || return 1
+assert_error_contains "not available" || return 1
 }
 
 run_test_case "succeeds when wizardry installed" test_succeeds_when_installed

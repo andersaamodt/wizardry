@@ -39,9 +39,21 @@ case "${1-}" in
   ;;
 esac
 
-require-wizardry || return 1
-
 set -eu
+
+# Validate WIZARDRY_DIR is set and valid
+# Don't use require-wizardry here because it may not be loaded yet
+# (banish calls this before all imps are available)
+if [ -z "${WIZARDRY_DIR-}" ]; then
+  printf 'validate-spells: WIZARDRY_DIR not set\n' >&2
+  printf 'Run this from banish or set WIZARDRY_DIR explicitly\n' >&2
+  return 1
+fi
+
+if [ ! -d "${WIZARDRY_DIR}/spells" ]; then
+  printf 'validate-spells: invalid WIZARDRY_DIR: %s\n' "$WIZARDRY_DIR" >&2
+  return 1
+fi
 
 # Parse options
 quiet=0

@@ -1,8 +1,9 @@
 #!/bin/sh
-# require-wizardry - check if wizardry is installed, offer to install if not
-# Returns 0 if wizardry is installed
-# Returns 1 if wizardry is not installed and user declined/failed to install
+# require-wizardry - check if wizardry is set up and available
+# Returns 0 if wizardry is available (WIZARDRY_DIR set and valid)
+# Returns 1 if wizardry is not available
 # In test mode (WIZARDRY_TEST_HELPERS_ONLY=1), always returns 0
+# This is a simple early check - spells needing specific commands should use require-command
 set -eu
 
 require_wizardry() {
@@ -11,40 +12,16 @@ require_wizardry() {
     return 0
   fi
   
-  # Standard wizardry installation location
-  _rw_standard_invoke="${HOME-}/.wizardry/spells/.imps/sys/invoke-wizardry"
-  
-  # Check if wizardry is installed by checking for WIZARDRY_DIR environment variable
+  # Check if WIZARDRY_DIR is set and points to a valid wizardry installation
   # This is set by invoke-wizardry when sourced in shell startup
   if [ -n "${WIZARDRY_DIR-}" ] && [ -d "${WIZARDRY_DIR}/spells" ]; then
     return 0
   fi
   
-  # Fallback: check if invoke-wizardry exists in standard location
-  if [ -f "$_rw_standard_invoke" ]; then
-    return 0
-  fi
-  
-  # Wizardry not found - print error and offer to install
-  printf '%s\n' "Error: wizardry is not installed or not in PATH." >&2
-  printf '%s\n' "" >&2
-  
-  # Offer to install wizardry
-  if ask-install-wizardry; then
-    # Installation succeeded - verify it worked by checking for WIZARDRY_DIR or standard location
-    if [ -n "${WIZARDRY_DIR-}" ] && [ -d "${WIZARDRY_DIR}/spells" ]; then
-      return 0
-    elif [ -f "$_rw_standard_invoke" ]; then
-      return 0
-    else
-      printf '%s\n' "Installation completed but wizardry is still not available." >&2
-      printf '%s\n' "You may need to restart your shell or run: source ~/.bashrc" >&2
-      return 1
-    fi
-  else
-    # User declined or installation failed
-    return 1
-  fi
+  # Wizardry not available - fail elegantly
+  printf 'Error: wizardry not available (WIZARDRY_DIR not set)\n' >&2
+  printf 'Source invoke-wizardry in your shell startup or run ./install\n' >&2
+  return 1
 }
 
 # Self-execute when run directly (not sourced)

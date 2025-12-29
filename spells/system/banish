@@ -166,26 +166,32 @@ else
   fi
 fi
 
+# Color codes (inline to avoid dependency)
+_esc=$(printf '\033')
+_green="${_esc}[32m"
+_red="${_esc}[31m"
+_reset="${_esc}[0m"
+
 # Run level-specific checks and actions using case statement
 banish_process_level() {
   level=$1
   level_name=$(banish_level_name "$level")
   
-  printf '\n=== Level %d: %s ===\n' "$level" "$level_name"
-  printf 'Checking Level %d: %s...\n' "$level" "$level_name"
+  printf '\nLevel %d: %s\n' "$level" "$level_name"
   
   # Special handling per level
   case "$level" in
     0)
       # Level 0: System Foundation
-      printf '\nConfiguring WIZARDRY_DIR:\n'
       
+      # Check WIZARDRY_DIR (single item - combine on one line)
       wizardry_not_installed=0
       
       if [ -n "${WIZARDRY_DIR-}" ]; then
-        printf "  ✓ %s\n" "Using existing: $WIZARDRY_DIR"
+        printf '  %s✓%s Wizardry directory: WIZARDRY_DIR is set\n' "$_green" "$_reset"
       else
-        printf "  • %s\n" "Auto-detecting wizardry installation..."
+        printf '  Wizardry directory:\n'
+        printf '    Checking for wizardry installation...\n'
         
         has_dirname=$(command -v dirname >/dev/null 2>&1 && echo 1 || echo 0)
         has_cd=$(command -v cd >/dev/null 2>&1 && echo 1 || echo 0)
@@ -196,7 +202,7 @@ banish_process_level() {
             _potential_dir=$(CDPATH= cd -- "$script_dir/../.." 2>/dev/null && pwd -P) || true
             if [ -n "$_potential_dir" ] && [ -d "$_potential_dir/spells" ]; then
               WIZARDRY_DIR=$_potential_dir
-              printf "  ✓ %s\n" "Detected from script location: $WIZARDRY_DIR"
+              printf '    %s✓%s Detected from script location\n' "$_green" "$_reset"
             fi
           fi
         fi
@@ -204,135 +210,165 @@ banish_process_level() {
         if [ -z "${WIZARDRY_DIR-}" ]; then
           if [ -n "${HOME-}" ] && [ -d "${HOME}/.wizardry/spells" ]; then
             WIZARDRY_DIR="${HOME}/.wizardry"
-            printf "  ✓ %s\n" "Found standard location: $WIZARDRY_DIR"
+            printf '    %s✓%s Found at standard location\n' "$_green" "$_reset"
           else
             wizardry_not_installed=1
+            printf '    %s✗%s Not found\n' "$_red" "$_reset"
           fi
         fi
       fi
       
       if [ "$wizardry_not_installed" -eq 1 ]; then
-        printf "Error: %s\n" "Wizardry not installed"
-        printf "Run ./install first\n"
+        printf 'Error: Wizardry not installed - run ./install first\n'
         return 1
       fi
       
       export WIZARDRY_DIR
       
-      # Check POSIX environment
-      printf '\nChecking POSIX foundation:\n'
+      # Check POSIX commands (multiple items - check topic when all pass)
+      posix_failed=0
       for cmd in sh test printf cat; do
-        if command -v "$cmd" >/dev/null 2>&1; then
-          printf "  ✓ %s\n" "$cmd available"
-        else
-          printf "Error: %s\n" "$cmd not found (required for POSIX compliance)"
-          return 1
+        if ! command -v "$cmd" >/dev/null 2>&1; then
+          posix_failed=1
+          break
         fi
       done
+      
+      if [ "$posix_failed" -eq 0 ]; then
+        printf '  %s✓%s POSIX foundation:\n' "$_green" "$_reset"
+        for cmd in sh test printf cat; do
+          printf '    %s✓%s %s\n' "$_green" "$_reset" "$cmd"
+        done
+      else
+        printf '  %s✗%s POSIX foundation:\n' "$_red" "$_reset"
+        for cmd in sh test printf cat; do
+          if command -v "$cmd" >/dev/null 2>&1; then
+            printf '    %s✓%s %s\n' "$_green" "$_reset" "$cmd"
+          else
+            printf '    %s✗%s %s not found\n' "$_red" "$_reset" "$cmd"
+          fi
+        done
+        return 1
+      fi
       ;;
       
     1)
       # Level 1: Wizardry Installation
+      
+      # Check wizardry structure (single item - combine on one line)
       if [ ! -d "${WIZARDRY_DIR}/spells" ]; then
-        printf "Warning: %s\n" "Wizardry not installed at $WIZARDRY_DIR"
+        printf '  %s✗%s Wizardry structure: Spells directory not found\n' "$_red" "$_reset"
         return 1
       fi
+      printf '  %s✓%s Wizardry structure: Spells directory exists\n' "$_green" "$_reset"
       
-      # Validate using validate-spells
+      # Validate spells (single item - combine on one line)
       spell_list=$(get_level_spells 1)
       if [ -n "$spell_list" ]; then
-        if ! validate-spells $spell_list 2>/dev/null; then
+        if ! validate-spells --quiet $spell_list 2>/dev/null; then
           missing=$(validate-spells --missing-only $spell_list)
-          printf "Warning: Missing Level 1 spells: %s\n" "$missing"
+          printf '  %s✗%s Required spells: Missing: %s\n' "$_red" "$_reset" "$missing"
           return 1
         fi
+        printf '  %s✓%s Required spells: All found\n' "$_green" "$_reset"
       fi
       
-      # Check imps
+      # Validate imps (single item - combine on one line)
       imp_list=$(get_level_imps 1)
       if [ -n "$imp_list" ]; then
-        printf "  • Checking Level 1 imps...\n"
-        if ! validate-spells --imps $imp_list 2>/dev/null; then
+        if ! validate-spells --quiet --imps $imp_list 2>/dev/null; then
           missing=$(validate-spells --imps --missing-only $imp_list)
-          printf "Warning: Missing Level 1 imps: %s\n" "$missing"
+          printf '  %s✗%s Required imps: Missing: %s\n' "$_red" "$_reset" "$missing"
           return 1
         fi
+        printf '  %s✓%s Required imps: All found\n' "$_green" "$_reset"
       fi
       ;;
       
     2)
       # Level 2: Menu System
+      
+      # Check spells (single item - combine on one line)
       spell_list=$(get_level_spells 2)
       if [ -n "$spell_list" ]; then
-        if ! validate-spells $spell_list 2>/dev/null; then
+        if ! validate-spells --quiet $spell_list 2>/dev/null; then
           missing=$(validate-spells --missing-only $spell_list)
-          printf "Warning: Missing Level 2 spells: %s\n" "$missing"
+          printf '  %s✗%s Menu spells: Missing: %s\n' "$_red" "$_reset" "$missing"
           return 1
         fi
+        printf '  %s✓%s Menu spells: All found\n' "$_green" "$_reset"
       fi
       
-      # Check if stty is available (required for menu terminal control)
+      # Check stty (single item - combine on one line)
       if ! command -v stty >/dev/null 2>&1; then
-        printf "Warning: %s\n" "stty command not found - required for menu"
+        printf '  %s✗%s Terminal control: stty not found\n' "$_red" "$_reset"
         if [ "$skip_heal" -eq 0 ]; then
           if [ -x "${WIZARDRY_DIR}/spells/.arcana/core/install-stty" ]; then
-            printf "%s\n" "Attempting to install stty..."
-            "${WIZARDRY_DIR}/spells/.arcana/core/install-stty" || printf "Warning: %s\n" "Failed to install stty"
-            if command -v stty >/dev/null 2>&1; then
-              printf "  ✓ %s\n" "stty installed successfully"
+            printf '    Installing stty...\n'
+            if "${WIZARDRY_DIR}/spells/.arcana/core/install-stty" 2>/dev/null; then
+              if command -v stty >/dev/null 2>&1; then
+                printf '    %s✓%s stty installed\n' "$_green" "$_reset"
+              else
+                printf '    %s✗%s Install failed\n' "$_red" "$_reset"
+              fi
+            else
+              printf '    %s✗%s Install failed\n' "$_red" "$_reset"
             fi
           else
-            printf "%s\n" "install-stty script not found - install stty manually"
+            printf '    Cannot auto-install stty\n'
           fi
         fi
       else
-        printf "  ✓ %s\n" "stty available"
+        printf '  %s✓%s Terminal control: stty available\n' "$_green" "$_reset"
       fi
       ;;
       
     27)
-      # Level 27: Optional Arcana
+      # Level 27: Optional Arcana (single item - combine on one line)
       if [ -d "${WIZARDRY_DIR}/spells/.arcana" ]; then
         arcana_count=$(find "${WIZARDRY_DIR}/spells/.arcana" -type f 2>/dev/null | wc -l)
-        printf "  ✓ %s\n" "Found $arcana_count arcana spells/scripts"
+        printf '  %s✓%s Arcana (optional): Found %d scripts\n' "$_green" "$_reset" "$arcana_count"
       else
-        printf "%s\n" "Arcana directory not found (optional)"
+        printf '  Arcana (optional): Not installed\n'
       fi
       ;;
       
     *)
       # Levels 3-26: Standard validation pattern
+      
+      # Check spells (single item - combine on one line)
       spell_list=$(get_level_spells "$level")
       if [ -n "$spell_list" ]; then
-        if ! validate-spells $spell_list 2>/dev/null; then
+        if ! validate-spells --quiet $spell_list 2>/dev/null; then
           missing=$(validate-spells --missing-only $spell_list)
-          printf "Warning: Missing Level %d spells: %s\n" "$level" "$missing"
+          printf '  %s✗%s Spells: Missing: %s\n' "$_red" "$_reset" "$missing"
           return 1
         fi
+        printf '  %s✓%s Spells: All found\n' "$_green" "$_reset"
       fi
       
+      # Check imps (single item - combine on one line)
       imp_list=$(get_level_imps "$level")
       if [ -n "$imp_list" ]; then
-        printf "  • Checking Level %d imps...\n" "$level"
-        if ! validate-spells --imps $imp_list 2>/dev/null; then
+        if ! validate-spells --quiet --imps $imp_list 2>/dev/null; then
           missing=$(validate-spells --imps --missing-only $imp_list)
-          printf "Warning: Missing Level %d imps: %s\n" "$level" "$missing"
+          printf '  %s✗%s Imps: Missing: %s\n' "$_red" "$_reset" "$missing"
           return 1
         fi
+        printf '  %s✓%s Imps: All found\n' "$_green" "$_reset"
       fi
       ;;
   esac
   
-  printf 'Level %d complete\n' "$level"
   return 0
 }
 
 
 # Main execution: Run levels 0 through target_level (or only target_level if --only)
 if [ "$only_this_level" -eq 1 ]; then
-  printf '\n=== Validating Wizardry Level %d: %s (only) ===\n' "$target_level" "$(banish_level_name "$target_level")"
+  printf '\nValidating Level %d only: %s\n' "$target_level" "$(banish_level_name "$target_level")"
 else
-  printf '\n=== Validating Wizardry through Level %d: %s ===\n' "$target_level" "$(banish_level_name "$target_level")"
+  printf '\nValidating through Level %d: %s\n' "$target_level" "$(banish_level_name "$target_level")"
 fi
 
 # Run each level from 0 to target_level (or just target_level if --only)
@@ -345,7 +381,7 @@ fi
 while [ "$current_level" -le "$target_level" ]; do
   banish_process_level "$current_level" || {
     exit_code=$?
-    printf "Error: %s\n" "Level $current_level validation failed, cannot continue"
+    printf '\n%s✗%s Validation failed at Level %d\n' "$_red" "$_reset" "$current_level"
     return "$exit_code"
   }
   if [ "$only_this_level" -eq 1 ]; then
@@ -355,7 +391,7 @@ while [ "$current_level" -le "$target_level" ]; do
 done
 
 # Final success message
-printf '\n✓ Validation complete - Level %d ready\n' "$target_level"
+printf '\n%s✓%s All validation checks passed\n' "$_green" "$_reset"
 
 return 0
 }
@@ -363,15 +399,15 @@ return 0
 
 # Load castable imp for direct execution (AFTER all functions defined)
 # CRITICAL: banish is a bootstrap spell that may run before wizardry is installed
-# So we need to handle missing castable gracefully
+# Try to load castable but gracefully handle if it's not available
 case "$0" in
   sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
     # Being sourced - use from PATH if available
     if ! command -v castable >/dev/null 2>&1; then
       # Try to find and source castable
-      if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/castable" ]; then
+      if [ -n "${WIZARDRY_DIR-}" ]; then
         _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ] && [ -f "${ROOT_DIR}/spells/.imps/sys/castable" ]; then
+      elif [ -n "${ROOT_DIR-}" ]; then
         _i="$ROOT_DIR/spells/.imps/sys"
       else
         # Try to find wizardry relative to this script
@@ -388,9 +424,9 @@ case "$0" in
     ;;
   *)
     # Being executed - try to find and source castable
-    if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/castable" ]; then
+    if [ -n "${WIZARDRY_DIR-}" ]; then
       _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ] && [ -f "${ROOT_DIR}/spells/.imps/sys/castable" ]; then
+    elif [ -n "${ROOT_DIR-}" ]; then
       _i="$ROOT_DIR/spells/.imps/sys"
     else
       # Try to find wizardry relative to this script
@@ -406,11 +442,10 @@ case "$0" in
     ;;
 esac
 
-# Only call castable if it's available (either from PATH or just sourced)
+# Call castable if available, otherwise fall back to direct function call
+# This fallback allows banish to work as a bootstrap script before wizardry is installed
 if command -v castable >/dev/null 2>&1; then
   castable "$@"
 else
-  # Castable not available - call the function directly
-  # This happens when running as a bootstrap script before wizardry is installed
   banish "$@"
 fi
