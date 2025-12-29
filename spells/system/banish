@@ -802,28 +802,25 @@ banish_process_level() {
         return 1
       fi
 
-      # Check bubblewrap for sandboxing
-      if command -v bwrap >/dev/null 2>&1; then
-        printf '  %s✓%s Sandbox tool: bwrap available\n' "$_green" "$_reset"
-      else
-        printf '  %s✗%s Sandbox tool: bwrap not found\n' "$_red" "$_reset"
-        if [ "$skip_heal" -eq 0 ]; then
-          if [ -x "${WIZARDRY_DIR}/spells/.arcana/core/install-bwrap" ]; then
-            printf '    Installing bwrap...\n'
-            if "${WIZARDRY_DIR}/spells/.arcana/core/install-bwrap" 2>/dev/null; then
-              if command -v bwrap >/dev/null 2>&1; then
-                printf '    %s✓%s bwrap installed\n' "$_green" "$_reset"
-              else
-                printf '    %s✗%s Install failed\n' "$_red" "$_reset"
-              fi
-            else
-              printf '    %s✗%s Install failed\n' "$_red" "$_reset"
-            fi
-          else
-            printf '    Auto-install not available\n'
-          fi
+      # Check pocket-dimension sandboxing
+      platform=$(uname -s 2>/dev/null || printf 'unknown')
+      if command -v pocket-dimension >/dev/null 2>&1; then
+        if pocket-dimension --check >/dev/null 2>&1; then
+          printf '  %s✓%s Sandbox tool: pocket-dimension available\n' "$_green" "$_reset"
+        else
+          printf '  %s✗%s Sandbox tool: pocket-dimension unavailable\n' "$_red" "$_reset"
+          return 1
         fi
-        if ! command -v bwrap >/dev/null 2>&1; then
+      else
+        printf '  %s✗%s Sandbox tool: pocket-dimension not found\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      if [ "$platform" = "Darwin" ]; then
+        if command -v sandbox-exec >/dev/null 2>&1; then
+          printf '  %s✓%s Sandbox tool: sandbox-exec available (macOS)\n' "$_green" "$_reset"
+        else
+          printf '  %s✗%s Sandbox tool: sandbox-exec not found (macOS)\n' "$_red" "$_reset"
           return 1
         fi
       fi
