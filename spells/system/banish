@@ -211,7 +211,6 @@ fi
 _esc=$(printf '\033')
 _green="${_esc}[32m"
 _red="${_esc}[31m"
-_blue="${_esc}[34m"
 _reset="${_esc}[0m"
 
 # Run level-specific checks and actions using case statement
@@ -266,40 +265,6 @@ banish_process_level() {
       fi
       
       export WIZARDRY_DIR
-
-      # Check banish prerequisites (single item - combine on one line)
-      core_spells_missing=0
-      core_loaded=""
-      core_available=""
-      core_unavailable=""
-      for core_spell in banish validate-spells; do
-        core_func=$(printf '%s' "$core_spell" | tr '-' '_')
-        if command -v "$core_func" >/dev/null 2>&1; then
-          core_loaded="${core_loaded}${core_loaded:+ }${core_spell}"
-        elif [ -f "${WIZARDRY_DIR}/spells/system/${core_spell}" ]; then
-          core_available="${core_available}${core_available:+ }${core_spell}"
-          core_spells_missing=1
-        else
-          core_unavailable="${core_unavailable}${core_unavailable:+ }${core_spell}"
-          core_spells_missing=1
-        fi
-      done
-
-      if [ "$core_spells_missing" -eq 0 ]; then
-        printf '  %s✓%s Core spells: All loaded\n' "$_green" "$_reset"
-      else
-        printf '  %s✗%s Core spells:\n' "$_red" "$_reset"
-        if [ -n "$core_loaded" ]; then
-          printf '    %s✓%s Loaded spells: %s\n' "$_green" "$_reset" "$core_loaded"
-        fi
-        if [ -n "$core_available" ]; then
-          printf '    %s●%s Available spells: %s\n' "$_blue" "$_reset" "$core_available"
-        fi
-        if [ -n "$core_unavailable" ]; then
-          printf '    %s✗%s Missing spells: %s\n' "$_red" "$_reset" "$core_unavailable"
-        fi
-        return 1
-      fi
       
       # Check POSIX commands (multiple items - check topic when all pass)
       posix_failed=0
@@ -472,6 +437,12 @@ if [ "$only_this_level" -eq 1 ]; then
   printf '\nValidating Level %d only: %s\n' "$target_level" "$(banish_level_name "$target_level")"
 else
   printf '\nValidating through Level %d: %s\n' "$target_level" "$(banish_level_name "$target_level")"
+fi
+
+# Require core validator before level checks
+if ! command -v validate_spells >/dev/null 2>&1; then
+  printf '%s\n' "banish: validate-spells not loaded (run invoke-wizardry or reload wizardry)" >&2
+  return 1
 fi
 
 # Run each level from 0 to target_level (or just target_level if --only)
