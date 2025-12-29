@@ -38,6 +38,14 @@ get_level_spells() {
 get_level_imps() {
   case "$1" in
     1) printf 'sys/invoke-wizardry sys/require-wizardry sys/require sys/castable sys/env-clear sys/on-exit sys/clear-traps cond/has cond/there cond/is cond/empty cond/nonempty out/say out/warn out/die out/fail out/info out/step out/success out/debug fs/temp-file fs/temp-dir fs/cleanup-file fs/cleanup-dir input/tty-save input/tty-restore input/tty-raw input/read-line str/contains str/trim str/equals str/starts str/ends paths/here paths/parent paths/file-name paths/abs-path' ;;
+    2) printf 'menu/is-submenu menu/is-integer menu/category-title menu/exit-label' ;;
+    3) printf 'fs/xattr-helper-usable fs/xattr-list-keys fs/xattr-read-value' ;;
+    5) printf 'fs/backup menu/detect-trash text/read-file text/write-file text/lines text/each' ;;
+    6) printf 'input/select-input lex/parse lex/from lex/to' ;;
+    7) printf 'input/validate-command input/validate-name lex/and lex/or' ;;
+    9) printf 'fs/config-get fs/config-set fs/config-has fs/config-del' ;;
+    10) printf 'test/boot test/stub-cursor-blink test/stub-fathom-terminal test/stub-stty test/stub-await-keypress test/stub-fathom-cursor test/stub-move-cursor test/test-bootstrap sys/rc-add-line sys/rc-has-line sys/rc-remove-line' ;;
+    13) printf 'sys/os sys/term text/detect-indent-char text/detect-indent-width' ;;
     *) printf '' ;;
   esac
 }
