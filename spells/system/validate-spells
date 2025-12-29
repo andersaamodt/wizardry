@@ -176,7 +176,7 @@ for spell_info in "$@"; do
         imp_name=$(printf '%s' "$spell" | sed 's|.*/||')
         
         # Append to category-specific loaded list
-        eval "category_loaded_${category}=\"\${category_loaded_${category}-}\${category_loaded_${category}:+ }${imp_name}\""
+        eval "category_loaded_${category}=\"\${category_loaded_${category}:-}\${category_loaded_${category}:+ }${imp_name}\""
       elif [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ]; then
         # For spells, show individually
         printf '\033[32m✓\033[0m Loaded spell: %s\n' "$spell"
@@ -191,7 +191,7 @@ for spell_info in "$@"; do
         imp_name=$(printf '%s' "$spell" | sed 's|.*/||')
         
         # Append to category-specific available list
-        eval "category_available_${category}=\"\${category_available_${category}-}\${category_available_${category}:+ }${imp_name}\""
+        eval "category_available_${category}=\"\${category_available_${category}:-}\${category_available_${category}:+ }${imp_name}\""
       elif [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ]; then
         # For spells, show individually
         printf '\033[34m●\033[0m Available spell: %s\n' "$spell"
@@ -236,8 +236,8 @@ if [ "$validate_imps" -eq 1 ] && [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ];
   # Output each category
   for category in $categories; do
     # Get loaded and available imps for this category
-    loaded_imps=$(eval "printf '%s' \"\${category_loaded_${category}-}\"")
-    available_imps=$(eval "printf '%s' \"\${category_available_${category}-}\"")
+    loaded_imps=$(eval "printf '%s' \"\${category_loaded_${category}:-}\"")
+    available_imps=$(eval "printf '%s' \"\${category_available_${category}:-}\"")
     
     # Count imps for proper pluralization
     loaded_count_cat=0
