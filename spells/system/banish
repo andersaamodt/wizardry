@@ -71,7 +71,19 @@ if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
   printf '[banish] Function called\n' >&2
 fi
 
-set -eu
+# Use conditional strictness based on execution context
+# See .github/CODE_POLICY_SET_EU.md for details
+case "$0" in
+  */banish)
+    # Executed as script - use full strict mode
+    set -eu
+    ;;
+  *)
+    # Called as function (sourced) - only undefined variable protection
+    # This prevents interactive shell exit while maintaining safety
+    set -u
+    ;;
+esac
 
 # Detect WIZARDRY_DIR if not already set
 # When sourced by invoke-wizardry, WIZARDRY_DIR will already be set
@@ -307,7 +319,8 @@ banish_process_level() {
       spell_list=$(get_level_spells 1)
       if [ -n "$spell_list" ]; then
         # Check for any missing spells first
-        missing=$($_validate_cmd --missing-only $spell_list 2>/dev/null || true)
+        # Use eval for variable function calls in command substitution (see CODE_POLICY_FUNCTION_CALLS.md)
+        missing=$(eval "$_validate_cmd --missing-only $spell_list" 2>/dev/null || true)
         if [ -n "$missing" ]; then
           printf '  %s✗%s Required spells: Missing: %s\n' "$_red" "$_reset" "$missing"
           return 1
@@ -315,14 +328,15 @@ banish_process_level() {
         
         # Show detailed status (loaded vs available)
         printf '  Required spells:\n'
-        $_validate_cmd --show-status $spell_list 2>/dev/null | sed 's/^/    /'
+        eval "$_validate_cmd --show-status $spell_list" 2>/dev/null | sed 's/^/    /'
       fi
       
       # Validate imps (show detailed status)
       imp_list=$(get_level_imps 1)
       if [ -n "$imp_list" ]; then
         # Check for any missing imps first
-        missing=$($_validate_cmd --imps --missing-only $imp_list 2>/dev/null || true)
+        # Use eval for variable function calls in command substitution (see CODE_POLICY_FUNCTION_CALLS.md)
+        missing=$(eval "$_validate_cmd --imps --missing-only $imp_list" 2>/dev/null || true)
         if [ -n "$missing" ]; then
           printf '  %s✗%s Required imps: Missing: %s\n' "$_red" "$_reset" "$missing"
           return 1
@@ -330,7 +344,7 @@ banish_process_level() {
         
         # Show detailed status (loaded vs available)
         printf '  Required imps:\n'
-        $_validate_cmd --imps --show-status $imp_list 2>/dev/null | sed 's/^/    /'
+        eval "$_validate_cmd --imps --show-status $imp_list" 2>/dev/null | sed 's/^/    /'
       fi
       ;;
       
