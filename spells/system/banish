@@ -324,12 +324,11 @@ banish_process_level() {
           printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
           return 1
         fi
-        printf '  Spells:\n'
         spell_output=$(eval "validate_spells --show-status $spell_list" 2>&1) || true
         if [ -n "$spell_output" ]; then
-          printf '%s\n' "$spell_output" | sed 's/^/    /'
+          printf '%s\n' "$spell_output" | sed 's/^/  /'
         else
-          printf '    %s(no spell status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
         fi
       fi
 
@@ -351,17 +350,14 @@ banish_process_level() {
       if [ -n "$imp_list" ]; then
         if ! eval "validate_spells --quiet --imps $imp_list" 2>/dev/null; then
           missing=$(eval "validate_spells --imps --missing-only $imp_list" 2>/dev/null || true)
-          missing_count=$("$_banish_count_words" "$missing")
-          label=$("$_banish_pluralize" "Imp" "$missing_count" "Imps")
-          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
+          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
           return 1
         fi
-        printf '  Imps:\n'
         imp_output=$(eval "validate_spells --imps --show-status $imp_list" 2>&1) || true
         if [ -n "$imp_output" ]; then
-          printf '%s\n' "$imp_output" | sed 's/^/    /'
+          printf '%s\n' "$imp_output" | sed 's/^/  /'
         else
-          printf '    %s(no imp status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
         fi
       fi
       ;;
@@ -402,12 +398,11 @@ banish_process_level() {
           printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
           return 1
         fi
-        printf '  Spells:\n'
         spell_output=$(eval "validate_spells --show-status $spell_list" 2>&1) || true
         if [ -n "$spell_output" ]; then
-          printf '%s\n' "$spell_output" | sed 's/^/    /'
+          printf '%s\n' "$spell_output" | sed 's/^/  /'
         else
-          printf '    %s(no spell status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
         fi
       fi
 
@@ -431,24 +426,19 @@ banish_process_level() {
       if [ -n "$imp_list" ]; then
         if ! eval "validate_spells --quiet --imps $imp_list" 2>/dev/null; then
           missing=$(eval "validate_spells --imps --missing-only $imp_list" 2>/dev/null || true)
-          missing_count=$("$_banish_count_words" "$missing")
-          label=$("$_banish_pluralize" "Imp" "$missing_count" "Imps")
-          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
+          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
           return 1
         fi
-        printf '  Imps:\n'
         imp_output=$(eval "validate_spells --imps --show-status $imp_list" 2>&1) || true
         if [ -n "$imp_output" ]; then
-          printf '%s\n' "$imp_output" | sed 's/^/    /'
+          printf '%s\n' "$imp_output" | sed 's/^/  /'
         else
-          printf '    %s(no imp status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
         fi
       elif [ "$had_imps" -eq 1 ]; then
-        printf '  Imps:\n'
-        printf '    (all listed earlier)\n'
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
       else
-        printf '  Imps:\n'
-        printf '    (none)\n'
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
       fi
       ;;
       
@@ -475,12 +465,11 @@ banish_process_level() {
           printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
           return 1
         fi
-        printf '  Spells:\n'
         spell_output=$(eval "validate_spells --show-status $spell_list" 2>&1) || true
         if [ -n "$spell_output" ]; then
-          printf '%s\n' "$spell_output" | sed 's/^/    /'
+          printf '%s\n' "$spell_output" | sed 's/^/  /'
         else
-          printf '    %s(no spell status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
         fi
       fi
 
@@ -504,24 +493,19 @@ banish_process_level() {
       if [ -n "$imp_list" ]; then
         if ! eval "validate_spells --quiet --imps $imp_list" 2>/dev/null; then
           missing=$(eval "validate_spells --imps --missing-only $imp_list" 2>/dev/null || true)
-          missing_count=$("$_banish_count_words" "$missing")
-          label=$("$_banish_pluralize" "Imp" "$missing_count" "Imps")
-          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
+          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
           return 1
         fi
-        printf '  Imps:\n'
         imp_output=$(eval "validate_spells --imps --show-status $imp_list" 2>&1) || true
         if [ -n "$imp_output" ]; then
-          printf '%s\n' "$imp_output" | sed 's/^/    /'
+          printf '%s\n' "$imp_output" | sed 's/^/  /'
         else
-          printf '    %s(no imp status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
         fi
       elif [ "$had_imps" -eq 1 ]; then
-        printf '  Imps:\n'
-        printf '    (all listed earlier)\n'
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
       else
-        printf '  Imps:\n'
-        printf '    (none)\n'
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
       fi
       ;;
   esac
@@ -550,12 +534,17 @@ else
   current_level=0
 fi
 
+last_success_level=-1
 while [ "$current_level" -le "$target_level" ]; do
   banish_process_level "$current_level" || {
     exit_code=$?
-    printf '\n%s✗%s Validation failed at Level %d\n' "$_red" "$_reset" "$current_level"
+    if [ "$last_success_level" -ge 0 ]; then
+      printf '\n%s✓%s Banished to Level %d\n' "$_green" "$_reset" "$last_success_level"
+    fi
+    printf '%s✗%s Banish failed at Level %d\n' "$_red" "$_reset" "$current_level"
     return "$exit_code"
   }
+  last_success_level=$current_level
   if [ "$only_this_level" -eq 1 ]; then
     break
   fi

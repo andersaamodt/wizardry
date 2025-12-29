@@ -257,19 +257,28 @@ if [ "$validate_imps" -eq 0 ] && [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ];
   if [ -n "$spell_loaded" ]; then
     spell_loaded_count=$("$_vs_count_words" "$spell_loaded")
     label=$("$_vs_pluralize" "spell" "$spell_loaded_count" "spells")
-    printf '\033[32m✓\033[0m Loaded %s: %s\n' "$label" "$spell_loaded"
+    printf '\033[32m✓\033[0m Loaded %s\n' "$label"
+    printf '%s\n' "$spell_loaded" | tr ' ' '\n' | while IFS= read -r spell; do
+      [ -n "$spell" ] && printf '  \033[32m✓\033[0m %s\n' "$spell"
+    done
   fi
 
   if [ -n "$spell_available" ]; then
     spell_available_count=$("$_vs_count_words" "$spell_available")
     label=$("$_vs_pluralize" "spell" "$spell_available_count" "spells")
-    printf '\033[34m●\033[0m Available %s: %s\n' "$label" "$spell_available"
+    printf '\033[34m●\033[0m Available %s\n' "$label"
+    printf '%s\n' "$spell_available" | tr ' ' '\n' | while IFS= read -r spell; do
+      [ -n "$spell" ] && printf '  \033[34m●\033[0m %s\n' "$spell"
+    done
   fi
 
   if [ -n "$spell_unavailable" ]; then
     spell_unavailable_count=$("$_vs_count_words" "$spell_unavailable")
     label=$("$_vs_pluralize" "spell" "$spell_unavailable_count" "spells")
-    printf '\033[31m✗\033[0m Unavailable %s: %s\n' "$label" "$spell_unavailable"
+    printf '\033[31m✗\033[0m Missing %s\n' "$label"
+    printf '%s\n' "$spell_unavailable" | tr ' ' '\n' | while IFS= read -r spell; do
+      [ -n "$spell" ] && printf '  \033[31m✗\033[0m %s\n' "$spell"
+    done
   fi
 fi
 
