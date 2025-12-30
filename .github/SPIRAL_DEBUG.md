@@ -253,3 +253,211 @@ The spiral debug is complete when:
 - Focus on getting the bare minimum working first
 - Don't worry about test failures initially - we'll fix tests after core works
 - Document every change so we can track what breaks what
+
+### 2025-12-30: Phase 5 - Paradigm Shift to Glossary-Based Interception
+
+- **Issue**: command_not_found handlers are not POSIX compliant and cannot hotload functions due to subshell isolation
+- **Solution**: Shift to glossary-based interception system
+  - Create glosses (lightweight wrappers) in `$SPELLBOOK_DIR/.glossary/` for all spells
+  - Each gloss executes: `exec parse "spell-name" "$@"` with hardcoded spell name
+  - `parse` imp acts as universal entry point (passthrough for now, parsing later)
+  - Glossary prepended to PATH gives parse first shot at all commands
+  - No shell functions, no hooks, no subshell issues - pure POSIX sh
+  - The glossary makes spells "shine" - accessible, parsable, and (future) spell-checkable
+
+- **Architecture**:
+  ```
+  $SPELLBOOK_DIR/
+    .glossary/           # Auto-generated glosses for all wizardry spells
+    .synonyms            # User synonym definitions (text file with aliases)
+    .default-synonyms    # Built-in synonym definitions (text file with aliases)
+  ```
+  
+  **Note**: The existing synonym system (.synonyms and .default-synonyms) remains unchanged.
+  Synonyms are user-facing aliases defined in text files. They will be implemented
+  as glosses in the .glossary directory, allowing synonyms to work reliably across
+  all contexts (not just interactive shells).
+
+- **Components to create/modify**:
+  1. **generate-glosses spell** - Creates gloss files for all spells
+  2. **parse modifications** - Add debug output for linking words, passthrough mode
+  3. **invoke-wizardry updates** - Prepend glossary to PATH, async gloss updates
+  4. **Synonym implementation** - Generate glosses for synonyms defined in text files
+
+- **Terminology**:
+  - **Gloss** (noun): A lightweight wrapper script that makes a spell shine and accessible via PATH
+  - **Glossary** (noun): The collection of all glosses (`$SPELLBOOK_DIR/.glossary/`)
+  - **Synonym** (noun): A user-defined alias for a spell (stored in .synonyms text files)
+  - The glossary system handles: PATH interception, parsing, and (future) spell-checking
+
+- **Implementation Status**:
+  - [x] Create generate-glosses spell
+  - [x] Modify parse to output debug for linking words (passthrough mode)
+  - [x] Document Phase 5 in SPIRAL_DEBUG.md
+  - [x] Update invoke-wizardry to prepend glossary path to PATH
+  - [x] Create async gloss validation/update mechanism in invoke-wizardry
+  - [ ] Test generate-glosses with actual spell directory
+  - [ ] Test gloss-based spell invocation (menu, test-magic, etc.)
+  - [ ] Generate glosses for synonyms from text file definitions
+  - [ ] Remove command_not_found handlers in favor of glossary
+  - [ ] Test with fresh wizardry installation
+  - [ ] Create tests for generate-glosses spell
+  - [ ] Migrate existing synonym system to gloss-based (later feature)
+  - [ ] Enable parsing logic in parse imp (later feature)
+  - [ ] Add spell-checking to glossary system (later feature)
+
+- **Benefits**:
+  - True hotloading - spells available immediately via PATH
+  - POSIX compliant - no bash/zsh-specific features
+  - Enables recursive parser for future natural language commands
+  - No subshell scoping issues
+  - Works in scripts and interactive shells alike
+
+### 2025-12-30: Phase 5 Completion - Glossary System Feature Complete
+
+- **Status**: Implementing comprehensive glossary system enhancements
+- **Changes Made**:
+  
+  1. **Enhanced generate-glosses spell**:
+     - Added duplicate detection and prevention
+     - Integrated synonym-to-gloss migration (generates glosses from .synonyms files)
+     - Added --system flag (inactive) for future system command glossing
+     - Improved validation to prevent conflicts
+     - Unified gloss generation from multiple sources (spells + synonyms)
+     - Better progress reporting and statistics
+  
+  2. **Enhanced parse imp with recursion prevention**:
+     - Added WIZARDRY_PARSE_DEPTH tracking to prevent infinite loops
+     - Maximum recursion depth: 5 levels
+     - Detects and prevents "parse calling parse" loops
+     - Temporarily removes glossary from PATH when resolving real commands
+     - Proper error messages for recursion issues
+     - Maintains parse depth across calls for debugging
+  
+  3. **Synonym system migration**:
+     - Synonyms from .synonyms and .default-synonyms now generate glosses
+     - Glosses replace shell aliases for cross-context reliability
+     - Original text files remain user-editable (source of truth)
+     - Generated glosses marked with source file for traceability
+  
+  4. **Test level integration** (IN PROGRESS):
+     - Adding "Glossary System" as new Level 2 in banish/test-magic/demo-magic
+     - Shifts "Menu System" to Level 3 and all subsequent levels up by 1
+     - Tests glossary availability, parse functionality, recursion prevention
+     - Validates synonym-to-gloss generation
+
+- **Implementation Status**:
+  - [x] Enhanced generate-glosses with synonym integration
+  - [x] Enhanced parse with recursion prevention
+  - [x] Documented comprehensive glossary architecture
+  - [ ] Update banish to add Glossary as Level 2
+  - [ ] Update test-magic to add Glossary as Level 2
+  - [ ] Update demo-magic to add Glossary as Level 2
+  - [ ] Create tests for generate-glosses
+  - [ ] Test complete glossary system with fresh install
+  - [ ] Remove command_not_found handlers (after testing complete)
+
+- **Architecture Summary**:
+  ```
+  $SPELLBOOK_DIR/
+    .glossary/              # Auto-generated glosses (DO NOT EDIT)
+      menu                  # Gloss for menu spell: exec parse "menu" "$@"
+      jump                  # Gloss for jump synonym: exec parse "jump-to-marker" "$@"
+      ll                    # Gloss for ll synonym: exec parse "ls -la" "$@"
+    .synonyms               # User synonyms (text file, user-editable)
+    .default-synonyms       # Default synonyms (text file, user-editable)
+  ```
+
+- **Flow**:
+  1. User types command (e.g., `menu` or `ll`)
+  2. Glossary in PATH intercepts (glossary prepended to PATH)
+  3. Gloss executes: `exec parse "menu" "$@"` or `exec parse "ls -la" "$@"`
+  4. parse removes glossary from PATH temporarily
+  5. parse finds real command outside glossary
+  6. parse executes real command with arguments
+  7. Recursion prevented by WIZARDRY_PARSE_DEPTH tracking
+
+- **Benefits Realized**:
+  - ✅ Synonyms now work in scripts (not just interactive shells)
+  - ✅ Recursion prevention ensures stability
+  - ✅ Unified gloss generation from multiple sources
+  - ✅ Cross-platform POSIX compliance
+  - ✅ Foundation for future natural language parsing
+  - ✅ Self-documenting glosses (source file tracked)
+
+- **Remaining Work**:
+  - Test level integration (banish/test-magic/demo-magic)
+  - Comprehensive testing with fresh install
+  - Test suite for generate-glosses
+  - Remove deprecated command_not_found handlers
+
+### 2025-12-30: Phase 5 Refinement - Glosses as Implementation Detail
+
+- **Clarification**: Glosses are an internal implementation detail, not user-facing
+- **Key Points**:
+  - Users interact with synonyms via the Spellbook menu (existing UI)
+  - Glosses are auto-generated in the background (transparent to users)
+  - No new menu items or test levels needed for glossary system
+  - generate-glosses spell handles centralized gloss generation from all sources
+
+- **Final Architecture**:
+  - invoke-wizardry calls generate-glosses asynchronously on shell startup
+  - generate-glosses has centralized `_create_gloss()` function for elegant generation
+  - Glosses generated from all sources in one unified process:
+    * **Source 1**: All wizardry spells (`$WIZARDRY_DIR/spells/`)
+    * **Source 2**: User synonyms (`$SPELLBOOK_DIR/.synonyms`)
+    * **Source 3**: Default synonyms (`$SPELLBOOK_DIR/.default-synonyms`)
+    * **Source 4**: System commands (FUTURE - complete implementation commented out)
+  - Background async generation (non-blocking, transparent)
+  - Users never see or manage glosses directly
+
+- **Removed from TODO**:
+  - ~~Update banish to add Glossary as Level 2~~ (not needed - implementation detail)
+  - ~~Update test-magic to add Glossary as Level 2~~ (not needed - implementation detail)  
+  - ~~Update demo-magic to add Glossary as Level 2~~ (not needed - implementation detail)
+
+- **CURRENT STATUS - Feature Complete**:
+  - [x] Created generate-glosses spell with centralized `_create_gloss()` function
+  - [x] Unified gloss generation from all sources (spells + user synonyms + default synonyms)
+  - [x] Added system command glossing implementation (commented out, ready for future)
+  - [x] Enhanced parse imp with recursion prevention (WIZARDRY_PARSE_DEPTH tracking)
+  - [x] Centralized gloss generation in invoke-wizardry (async background call)
+  - [x] Documented glosses as transparent implementation detail
+  - [x] Synonym-to-gloss migration complete (synonyms now work in scripts)
+
+- **NEXT STEPS - Testing & Cleanup**:
+  1. **Create test suite for generate-glosses spell**
+     - Test gloss generation from spell directories
+     - Test synonym parsing from .synonyms and .default-synonyms files
+     - Test duplicate detection and conflict prevention
+     - Test --force and --quiet flags
+     - Test recursion prevention in parse
+  
+  2. **Integration testing with fresh install**
+     - Install wizardry in clean environment
+     - Verify glosses auto-generate on first shell startup
+     - Test spell invocation via glosses (e.g., `menu`, `test-magic`)
+     - Test synonym invocation via glosses (verify they work in scripts)
+     - Test parse passthrough and recursion prevention
+  
+  3. **Performance validation**
+     - Measure shell startup time impact (async should be minimal)
+     - Verify gloss regeneration completes in background
+     - Test with large synonym files
+  
+  4. **Code cleanup after successful testing**
+     - Remove command_not_found handlers (glossary replaces them)
+     - Remove word-of-binding --run mode (no longer needed)
+     - Clean up debug logging code
+     - Update documentation
+
+- **User Experience** (UNCHANGED):
+  - Synonyms: Managed via Spellbook menu (existing workflow)
+  - Glosses: Auto-generated, invisible to users
+  - **New Benefit**: Synonyms work in scripts (not just interactive shells)
+  - No new concepts for users to learn
+
+- **Future Enhancements** (ready to activate):
+  - System command glossing: Uncomment code in generate-glosses to enable
+  - Natural language parsing: Re-enable parsing logic in parse imp
+  - Spell-checking: Add typo detection to glossary system

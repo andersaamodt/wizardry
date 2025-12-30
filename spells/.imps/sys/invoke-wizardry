@@ -82,6 +82,49 @@ invoke_wizardry() {
   : "${SPELLBOOK_DIR:=${HOME-}/.spellbook}"
   export SPELLBOOK_DIR
 
+  # ============================================================================
+  # GLOSSARY-BASED INTERCEPTION SYSTEM (Phase 5)
+  # ============================================================================
+  # Glosses are auto-generated wrappers that make spells accessible via PATH.
+  # They enable POSIX-compliant, hotloadable invocation for:
+  # - All wizardry spells
+  # - User-defined synonyms (.synonyms file)
+  # - Default synonyms (.default-synonyms file)
+  #
+  # Each gloss is a minimal script: exec parse "spell-name" "$@"
+  # The parse imp handles command resolution and recursion prevention.
+  #
+  # Glosses are regenerated automatically in the background to stay in sync
+  # with spells and synonym definitions. This is transparent to users.
+  # ============================================================================
+  
+  _iw_glossary="$SPELLBOOK_DIR/.glossary"
+  
+  # Create glossary directory if missing
+  if [ ! -d "$_iw_glossary" ]; then
+    mkdir -p "$_iw_glossary" 2>/dev/null || :
+  fi
+  
+  # Prepend glossary to PATH (give parse first shot at all commands)
+  PATH="$_iw_glossary:$PATH"
+  export PATH
+  
+  _iw_debug "Glossary prepended to PATH: $_iw_glossary"
+  
+  # Centralized gloss generation: Automatically regenerate glosses for:
+  # 1. All wizardry spells (in $WIZARDRY_DIR/spells/)
+  # 2. Synonyms from $SPELLBOOK_DIR/.synonyms
+  # 3. Default synonyms from $SPELLBOOK_DIR/.default-synonyms
+  #
+  # This runs asynchronously in the background to avoid delaying shell startup.
+  # The generate-glosses spell handles unified generation from all sources.
+  if [ -x "$WIZARDRY_DIR/spells/system/generate-glosses" ]; then
+    {
+      # Run in background subshell - this is non-blocking
+      "$WIZARDRY_DIR/spells/system/generate-glosses" --quiet 2>/dev/null &
+    } 2>/dev/null
+    _iw_debug "Started async gloss regeneration (spells + synonyms)"
+  fi
   
   # SPIRAL DEBUG PHASE 1: Minimal pre-loading (menu + dependencies only)
   # Future: ALL wizardry spells will be pre-loaded, hotloading only for ~/.spellbook
@@ -225,20 +268,40 @@ invoke_wizardry() {
         if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
           printf '[handle-command-not-found] Calling word_of_binding --run %s\n' "$1" >&2
         fi
-        if command -v word_of_binding >/dev/null 2>&1 \
-          && word_of_binding --run "$@" 2>/dev/null; then
+        if command -v word_of_binding >/dev/null 2>&1; then
+          _cnf_exit=0
           if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-            printf '[handle-command-not-found] word_of_binding succeeded for: %s\n' "$1" >&2
+            # Debug mode: show errors to help diagnose issues
+            word_of_binding --run "$@" || _cnf_exit=$?
+            if [ "$_cnf_exit" -eq 0 ]; then
+              printf '[handle-command-not-found] word_of_binding succeeded for: %s\n' "$1" >&2
+            fi
+          else
+            # Normal mode: silence errors to avoid noise
+            word_of_binding --run "$@" 2>/dev/null || _cnf_exit=$?
           fi
+          
           if [ -n "$_iw_prev_cnf" ]; then
             _WIZARDRY_IN_CNF="$_iw_prev_cnf"
           else
             unset _WIZARDRY_IN_CNF
           fi
-          return 0
-        fi
-        if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-          printf '[handle-command-not-found] word_of_binding failed for: %s\n' "$1" >&2
+          
+          if [ "$_cnf_exit" -eq 0 ]; then
+            # Command executed successfully
+            return 0
+          elif [ "$_cnf_exit" -ne 127 ]; then
+            # Command was found and executed but returned non-zero
+            # This is not a "command not found" error
+            if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+              printf '[handle-command-not-found] Spell executed but returned %s\n' "$_cnf_exit" >&2
+            fi
+            return "$_cnf_exit"
+          fi
+          # Exit code 127 means command not found, fall through to error message
+          if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+            printf '[handle-command-not-found] word_of_binding could not find: %s\n' "$1" >&2
+          fi
         fi
       fi
       
@@ -286,20 +349,40 @@ invoke_wizardry() {
         if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
           printf '[handle-command-not-found] Calling word_of_binding --run %s\n' "$1" >&2
         fi
-        if command -v word_of_binding >/dev/null 2>&1 \
-          && word_of_binding --run "$@" 2>/dev/null; then
+        if command -v word_of_binding >/dev/null 2>&1; then
+          _cnf_exit=0
           if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-            printf '[handle-command-not-found] word_of_binding succeeded for: %s\n' "$1" >&2
+            # Debug mode: show errors to help diagnose issues
+            word_of_binding --run "$@" || _cnf_exit=$?
+            if [ "$_cnf_exit" -eq 0 ]; then
+              printf '[handle-command-not-found] word_of_binding succeeded for: %s\n' "$1" >&2
+            fi
+          else
+            # Normal mode: silence errors to avoid noise
+            word_of_binding --run "$@" 2>/dev/null || _cnf_exit=$?
           fi
+          
           if [ -n "$_iw_prev_cnf" ]; then
             _WIZARDRY_IN_CNF="$_iw_prev_cnf"
           else
             unset _WIZARDRY_IN_CNF
           fi
-          return 0
-        fi
-        if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-          printf '[handle-command-not-found] word_of_binding failed for: %s\n' "$1" >&2
+          
+          if [ "$_cnf_exit" -eq 0 ]; then
+            # Command executed successfully
+            return 0
+          elif [ "$_cnf_exit" -ne 127 ]; then
+            # Command was found and executed but returned non-zero
+            # This is not a "command not found" error
+            if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+              printf '[handle-command-not-found] Spell executed but returned %s\n' "$_cnf_exit" >&2
+            fi
+            return "$_cnf_exit"
+          fi
+          # Exit code 127 means command not found, fall through to error message
+          if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+            printf '[handle-command-not-found] word_of_binding could not find: %s\n' "$1" >&2
+          fi
         fi
       fi
       
