@@ -287,19 +287,61 @@ invoke_wizardry() {
       if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
         printf '[invoke-wizardry] DEBUG: generate_glosses function IS available, starting background job\n' >&2
       fi
-      # Run generate_glosses in background, output errors to terminal for debugging
-      if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-        # Debug: Check what's available in background job context
-        ( 
-          printf '[generate_glosses bg] DEBUG: Starting background job\n' >&2
-          printf '[generate_glosses bg] DEBUG: require_wizardry available: %s\n' "$(command -v require_wizardry 2>&1 || echo 'NO')" >&2
-          printf '[generate_glosses bg] DEBUG: env_or available: %s\n' "$(command -v env_or 2>&1 || echo 'NO')" >&2
-          printf '[generate_glosses bg] DEBUG: env_clear available: %s\n' "$(command -v env_clear 2>&1 || echo 'NO')" >&2
-          generate_glosses --quiet
-        ) &
-        _iw_debug "Gloss generation running in background (errors will appear on terminal)"
+      
+      # Detect if running in zsh (which doesn't inherit functions to background jobs)
+      # In zsh, we need to use a different approach: export function definitions
+      _iw_shell_type="unknown"
+      if [ -n "${ZSH_VERSION-}" ]; then
+        _iw_shell_type="zsh"
+      elif [ -n "${BASH_VERSION-}" ]; then
+        _iw_shell_type="bash"
+      fi
+      
+      # Run generate_glosses in background
+      if [ "$_iw_shell_type" = "zsh" ]; then
+        # ZSH: Export all preloaded functions to background job using zsh's functions syntax
+        # List all function names that need to be exported
+        _iw_export_funcs="generate_glosses require_wizardry env_or env_clear temp_file cleanup_file on_exit"
+        _iw_export_funcs="$_iw_export_funcs die warn fail say success info step debug has there is yes no empty nonempty"
+        _iw_export_funcs="$_iw_export_funcs cleanup_dir cleanup_file make_tempdir temp_file"
+        
+        if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+          # Debug mode: show function availability
+          (
+            printf '[generate_glosses bg] DEBUG: Starting background job (zsh mode)\n' >&2
+            # Re-eval all function definitions from current shell
+            for _func in $_iw_export_funcs; do
+              if command -v "$_func" >/dev/null 2>&1; then
+                # Use zsh's functions command to get function body and re-eval it
+                eval "$(functions "$_func" 2>/dev/null || echo '')"
+              fi
+            done
+            printf '[generate_glosses bg] DEBUG: After re-eval, require_wizardry available: %s\n' "$(command -v require_wizardry 2>&1 || echo 'NO')" >&2
+            printf '[generate_glosses bg] DEBUG: After re-eval, env_or available: %s\n' "$(command -v env_or 2>&1 || echo 'NO')" >&2
+            printf '[generate_glosses bg] DEBUG: After re-eval, env_clear available: %s\n' "$(command -v env_clear 2>&1 || echo 'NO')" >&2
+            generate_glosses --quiet
+          ) &
+          _iw_debug "Gloss generation running in background (errors will appear on terminal)"
+        else
+          # Normal mode: silent operation
+          (
+            # Re-eval all function definitions from current shell
+            for _func in $_iw_export_funcs; do
+              if command -v "$_func" >/dev/null 2>&1; then
+                eval "$(functions "$_func" 2>/dev/null || echo '')"
+              fi
+            done
+            generate_glosses --quiet
+          ) 2>/dev/null &
+        fi
       else
-        generate_glosses --quiet 2>/dev/null &
+        # BASH/SH: Functions are inherited, use simple background job
+        if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+          generate_glosses --quiet &
+          _iw_debug "Gloss generation running in background (errors will appear on terminal)"
+        else
+          generate_glosses --quiet 2>/dev/null &
+        fi
       fi
       _iw_debug "Started async gloss regeneration (spells + synonyms + imps + arcana)"
       # Show user-visible message about glossary startup
