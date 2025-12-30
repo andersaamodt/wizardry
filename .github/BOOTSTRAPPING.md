@@ -57,6 +57,13 @@ castable "$@"  # ← AFTER function definition
 - Function body gets strict mode protection
 - `return` (not `exit`) allows safe sourcing
 
+**Why env-clear?**
+- Clears environment variables that might interfere with spell execution
+- Preserves wizardry globals (WIZARDRY_DIR, SPELLBOOK_DIR, etc.)
+- Preserves system essentials (PATH, HOME, TERM, etc.)
+- Prevents environment variable pollution between spells
+- Must be sourced (`. env-clear`) AFTER `set -eu`
+
 ### Uncastable Spells (Source-only, like `colors`)
 
 ```sh
