@@ -1,0 +1,127 @@
+#!/bin/sh
+# parse CMD... - recursively parse and execute written imperatives
+# Scans for linking words (imps in lex/) and delegates to them.
+# Longer linking words take precedence (and-then before and or then).
+#
+# Current mode: PASSTHROUGH (parsing disabled for shim-based interception paradigm)
+# Linking word detection is logged when WIZARDRY_DEBUG=1 but not acted upon yet.
+
+parse() {
+  if [ $# -eq 0 ]; then
+    return 0
+  fi
+
+  _parse_lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _parse_debug="${WIZARDRY_DEBUG:-0}"
+
+  if [ $# -ge 2 ]; then
+    _parse_two_word="$1-$2"
+    if [ -x "$_parse_lex_dir/$_parse_two_word" ] && [ "$_parse_two_word" != "parse" ]; then
+      shift 2
+      "$_parse_lex_dir/$_parse_two_word" "" "" "$@"
+      return $?
+    fi
+  fi
+
+  _parse_first=$1
+  if [ -x "$_parse_lex_dir/$_parse_first" ] && [ "$_parse_first" != "parse" ]; then
+    shift
+    "$_parse_lex_dir/$_parse_first" "" "" "$@"
+    return $?
+  fi
+
+  _parse_cmd=$_parse_first
+  shift
+
+  if [ $# -eq 0 ]; then
+    # Check if command exists before executing to prevent infinite recursion
+    # when called from command_not_found_handle
+    if ! command -v "$_parse_cmd" >/dev/null 2>&1; then
+      printf '%s: command not found\n' "$_parse_cmd" >&2
+      return 127
+    fi
+    "$_parse_cmd"
+    return $?
+  fi
+
+  _parse_total=$#
+  _parse_i=1
+  for _parse_arg in "$@"; do
+    eval "_parse_arg_$_parse_i=\"\$_parse_arg\""
+    _parse_i=$((_parse_i + 1))
+  done
+
+  _parse_link_pos=0
+  _parse_link_len=0
+  _parse_link_word=''
+  _parse_i=1
+  while [ "$_parse_i" -le "$_parse_total" ]; do
+    if [ "$_parse_i" -lt "$_parse_total" ]; then
+      _parse_j=$((_parse_i + 1))
+      eval "_parse_w1=\"\$_parse_arg_$_parse_i\""
+      eval "_parse_w2=\"\$_parse_arg_$_parse_j\""
+      _parse_two_word="$_parse_w1-$_parse_w2"
+      if [ -x "$_parse_lex_dir/$_parse_two_word" ] && [ "$_parse_two_word" != "parse" ]; then
+        _parse_link_pos=$_parse_i
+        _parse_link_len=2
+        _parse_link_word=$_parse_two_word
+        break
+      fi
+    fi
+    
+    eval "_parse_w=\"\$_parse_arg_$_parse_i\""
+    if [ -x "$_parse_lex_dir/$_parse_w" ] && [ "$_parse_w" != "parse" ]; then
+      _parse_link_pos=$_parse_i
+      _parse_link_len=1
+      _parse_link_word=$_parse_w
+      break
+    fi
+    
+    _parse_i=$((_parse_i + 1))
+  done
+
+  if [ "$_parse_link_pos" -eq 0 ]; then
+    set --
+    _parse_i=1
+    while [ "$_parse_i" -le "$_parse_total" ]; do
+      eval "set -- \"\$@\" \"\$_parse_arg_$_parse_i\""
+      _parse_i=$((_parse_i + 1))
+    done
+    # Check if command exists before executing to prevent infinite recursion
+    # when called from command_not_found_handle
+    if ! command -v "$_parse_cmd" >/dev/null 2>&1; then
+      printf '%s: command not found\n' "$_parse_cmd" >&2
+      return 127
+    fi
+    "$_parse_cmd" "$@"
+    return $?
+  fi
+
+  _parse_cmd_args_end=$((_parse_link_pos - 1))
+  _parse_cmd_args=''
+  _parse_i=1
+  while [ "$_parse_i" -le "$_parse_cmd_args_end" ]; do
+    eval "_parse_a=\"\$_parse_arg_$_parse_i\""
+    if [ -z "$_parse_cmd_args" ]; then
+      _parse_cmd_args=$_parse_a
+    else
+      _parse_cmd_args="$_parse_cmd_args $_parse_a"
+    fi
+    _parse_i=$((_parse_i + 1))
+  done
+
+  _parse_remain_start=$((_parse_link_pos + _parse_link_len))
+
+  set --
+  _parse_i=$_parse_remain_start
+  while [ "$_parse_i" -le "$_parse_total" ]; do
+    eval "set -- \"\$@\" \"\$_parse_arg_$_parse_i\""
+    _parse_i=$((_parse_i + 1))
+  done
+
+  "$_parse_lex_dir/$_parse_link_word" "$_parse_cmd" "$_parse_cmd_args" "$@"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */parse) parse "$@" ;; esac

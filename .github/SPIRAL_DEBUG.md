@@ -253,3 +253,43 @@ The spiral debug is complete when:
 - Focus on getting the bare minimum working first
 - Don't worry about test failures initially - we'll fix tests after core works
 - Document every change so we can track what breaks what
+
+### 2025-12-30: Phase 5 - Paradigm Shift to Shim-Based Interception
+
+- **Issue**: command_not_found handlers are not POSIX compliant and cannot hotload functions due to subshell isolation
+- **Solution**: Shift to shim-based interception system
+  - Create shim wrappers in `$SPELLBOOK_DIR/.synonyms/` for all spells
+  - Each shim executes: `exec parse "spell-name" "$@"`
+  - `parse` imp acts as universal entry point (passthrough for now, parsing later)
+  - Shims prepended to PATH give parse first shot at all commands
+  - No shell functions, no hooks, no subshell issues - pure POSIX sh
+
+- **Architecture**:
+  ```
+  $SPELLBOOK_DIR/.synonyms/
+    spells/         # Auto-generated shims for all wizardry spells
+    custom/         # User-added synonym shims
+    default/        # Built-in synonym shims
+  ```
+
+- **Components to create/modify**:
+  1. **generate-shims spell** - Creates shim files for all spells
+  2. **parse modifications** - Add debug output for linking words (passthrough only for now)
+  3. **invoke-wizardry updates** - Prepend shim directories to PATH, async shim updates
+  4. **Synonym migration** - Convert existing alias-based synonyms to shims
+
+- **Implementation Status**:
+  - [ ] Create generate-shims spell
+  - [ ] Modify parse to output debug for linking words
+  - [ ] Update invoke-wizardry to prepend shim paths
+  - [ ] Create async shim update mechanism
+  - [ ] Migrate existing synonym system to shim-based
+  - [ ] Remove command_not_found handlers
+  - [ ] Test with fresh install
+
+- **Benefits**:
+  - True hotloading - spells available immediately via PATH
+  - POSIX compliant - no bash/zsh-specific features
+  - Enables recursive parser for future natural language commands
+  - No subshell scoping issues
+  - Works in scripts and interactive shells alike
