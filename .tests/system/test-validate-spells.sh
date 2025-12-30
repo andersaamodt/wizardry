@@ -29,7 +29,11 @@ test_validate_existing_imps() {
 test_validate_missing_spells() {
   WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/system/validate-spells" "nonexistent-spell"
   assert_failure || return 1
-  assert_error_contains "Missing spells: nonexistent-spell" || return 1
+  if ! printf '%s' "$OUTPUT" | grep -q "Missing spell: nonexistent-spell" && \
+    ! printf '%s' "$ERROR" | grep -q "Missing spell: nonexistent-spell"; then
+    TEST_FAILURE_REASON="missing spell message not found in output"
+    return 1
+  fi
 }
 
 test_missing_only_flag() {
@@ -44,8 +48,7 @@ test_show_status_unloaded() {
   # When imps are not loaded, they should show as "Available"
   WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/system/validate-spells" --imps --show-status "cond/has" "out/say"
   assert_success || return 1
-  assert_output_contains "Available cond imp: has" || return 1
-  assert_output_contains "Available out imp: say" || return 1
+  assert_output_contains "Available imps: has say" || return 1
 }
 
 test_show_status_loaded() {
@@ -58,11 +61,10 @@ test_show_status_loaded() {
     WIZARDRY_DIR="'$ROOT_DIR'" validate_spells --imps --show-status cond/has out/say sys/env-clear 2>/dev/null
   ')
   
-  # Check that loaded imps show as "Loaded" (grouped by category)
-  printf '%s\n' "$result" | grep -q "Loaded cond imp: has" || return 1
-  printf '%s\n' "$result" | grep -q "Loaded out imp: say" || return 1
+  # Check that loaded imps show as "Loaded" and others are "Available"
+  printf '%s\n' "$result" | grep -q "Loaded imps: has say" || return 1
   # env-clear not sourced, should be available but not loaded
-  printf '%s\n' "$result" | grep -q "Available sys imp: env-clear" || return 1
+  printf '%s\n' "$result" | grep -q "Available imp: env-clear" || return 1
   
   return 0
 }

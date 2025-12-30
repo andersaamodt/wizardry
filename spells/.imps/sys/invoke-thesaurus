@@ -4,8 +4,35 @@
 # Also initializes default synonyms if not already set up.
 
 # This script must be sourced, not executed
-if command -v uncastable >/dev/null 2>&1; then
-  uncastable
+if type uncastable >/dev/null 2>&1; then
+  case "$(type uncastable 2>/dev/null)" in
+    *function*)
+      if ! uncastable invoke-thesaurus "Usage: . invoke-thesaurus"; then
+        exit 1
+      fi
+      ;;
+    *)
+      _it_sourced=0
+      if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+        case "${ZSH_EVAL_CONTEXT-}" in
+          *:file) _it_sourced=1 ;;
+        esac
+      else
+        case "${0##*/}" in
+          invoke-thesaurus) _it_sourced=0 ;;
+          sh|dash|bash|zsh|ksh|mksh) _it_sourced=1 ;;
+          *) _it_sourced=1 ;;
+        esac
+      fi
+
+      if [ "$_it_sourced" -ne 1 ]; then
+        printf '%s\n' "invoke-thesaurus: must be sourced, not executed" >&2
+        printf '%s\n' "Usage: . invoke-thesaurus" >&2
+        exit 1
+      fi
+      unset _it_sourced
+      ;;
+  esac
 else
   _it_sourced=0
   if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then

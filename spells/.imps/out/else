@@ -3,11 +3,11 @@
 # Example: echo "" | else "fallback"
 set -eu
 
-else() {
+else_output() {
   _else_input=$(cat)
   if [ -n "$_else_input" ]; then printf '%s\n' "$_else_input"; else printf '%s\n' "$1"; fi
 }
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */else) else "$@" ;; esac
+  */else) else_output "$@" ;; esac

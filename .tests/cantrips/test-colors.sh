@@ -13,14 +13,20 @@ done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
+# Disable sandboxing for colors tests to avoid TTY-related hangs.
+BWRAP_AVAILABLE=0
+MACOS_SANDBOX_AVAILABLE=0
+
 test_colors_enable_palette_by_default() {
-  run_cmd env TERM=xterm sh -c ". \"$ROOT_DIR/spells/cantrips/colors\"; printf 'avail:%s red:%s\\n' \"\$WIZARDRY_COLORS_AVAILABLE\" \"\$RED\""
+  OUTPUT=$(TERM=xterm NO_COLOR= sh -c ". \"$ROOT_DIR/spells/cantrips/colors\"; printf 'avail:%s red:%s\\n' \"\$WIZARDRY_COLORS_AVAILABLE\" \"\$RED\"")
+  STATUS=$?
   assert_success && case "$OUTPUT" in avail:1\ red:*) : ;; *) TEST_FAILURE_REASON="expected colors to be available"; return 1 ;; esac
 }
 
 test_colors_disable_when_requested() {
   skip-if-compiled || return $?
-  run_cmd env TERM=xterm NO_COLOR=1 sh -c ". \"$ROOT_DIR/spells/cantrips/colors\"; printf 'avail:%s red:%s\\n' \"\$WIZARDRY_COLORS_AVAILABLE\" \"\$RED\""
+  OUTPUT=$(TERM=xterm NO_COLOR=1 sh -c ". \"$ROOT_DIR/spells/cantrips/colors\"; printf 'avail:%s red:%s\\n' \"\$WIZARDRY_COLORS_AVAILABLE\" \"\$RED\"")
+  STATUS=$?
   if ! assert_success; then return 1; fi
   case "$OUTPUT" in
     avail:0\ red:*) ;;
@@ -34,7 +40,8 @@ test_colors_disable_when_requested() {
 test_colors_printf_s_works() {
   # Test that color codes work with printf '%s' (not just printf '%b')
   # This was broken when colors used literal \033 strings
-  run_cmd env TERM=xterm sh -c ". \"$ROOT_DIR/spells/cantrips/colors\"; printf '%stest%s' \"\$GREEN\" \"\$RESET\" | cat -v"
+  OUTPUT=$(TERM=xterm NO_COLOR= sh -c ". \"$ROOT_DIR/spells/cantrips/colors\"; printf '%stest%s' \"\$GREEN\" \"\$RESET\" | cat -v")
+  STATUS=$?
   if ! assert_success; then return 1; fi
   # cat -v shows escape character as ^[ so we should see ^[[32m
   case "$OUTPUT" in
@@ -47,7 +54,8 @@ test_colors_printf_s_works() {
 test_colors_disable_for_dumb_terminal() {
   skip-if-compiled || return $?
   # Colors should be disabled for TERM=dumb which returns -1 from tput colors
-  run_cmd env TERM=dumb sh -c ". \"$ROOT_DIR/spells/cantrips/colors\"; printf 'avail:%s green:%s\\n' \"\$WIZARDRY_COLORS_AVAILABLE\" \"\$GREEN\""
+  OUTPUT=$(TERM=dumb NO_COLOR= sh -c ". \"$ROOT_DIR/spells/cantrips/colors\"; printf 'avail:%s green:%s\\n' \"\$WIZARDRY_COLORS_AVAILABLE\" \"\$GREEN\"")
+  STATUS=$?
   if ! assert_success; then return 1; fi
   case "$OUTPUT" in
     avail:0\ green:) : ;;
@@ -57,7 +65,8 @@ test_colors_disable_for_dumb_terminal() {
 
 test_theme_colors_defined_when_enabled() {
   # Theme colors should be defined when the palette is enabled
-  run_cmd env TERM=xterm sh -c ". \"$ROOT_DIR/spells/cantrips/colors\"; printf 'highlight:%s muted:%s custom:%s\\n' \"\$THEME_HIGHLIGHT\" \"\$THEME_MUTED\" \"\$THEME_CUSTOM\""
+  OUTPUT=$(TERM=xterm NO_COLOR= sh -c ". \"$ROOT_DIR/spells/cantrips/colors\"; printf 'highlight:%s muted:%s custom:%s\\n' \"\$THEME_HIGHLIGHT\" \"\$THEME_MUTED\" \"\$THEME_CUSTOM\"")
+  STATUS=$?
   if ! assert_success; then return 1; fi
   # Verify theme colors are non-empty (contain escape sequences)
   case "$OUTPUT" in
@@ -83,7 +92,8 @@ test_theme_colors_defined_when_enabled() {
 test_theme_colors_cleared_when_disabled() {
   skip-if-compiled || return $?
   # Theme colors should be empty when the palette is disabled
-  run_cmd env TERM=xterm NO_COLOR=1 sh -c ". \"$ROOT_DIR/spells/cantrips/colors\"; printf 'highlight:[%s] muted:[%s] custom:[%s]\\n' \"\$THEME_HIGHLIGHT\" \"\$THEME_MUTED\" \"\$THEME_CUSTOM\""
+  OUTPUT=$(TERM=xterm NO_COLOR=1 sh -c ". \"$ROOT_DIR/spells/cantrips/colors\"; printf 'highlight:[%s] muted:[%s] custom:[%s]\\n' \"\$THEME_HIGHLIGHT\" \"\$THEME_MUTED\" \"\$THEME_CUSTOM\"")
+  STATUS=$?
   if ! assert_success; then return 1; fi
   case "$OUTPUT" in
     *"highlight:[] muted:[] custom:[]"*)
@@ -98,7 +108,8 @@ test_theme_colors_cleared_when_disabled() {
 
 test_mud_colors_defined_when_enabled() {
   # MUD colors should be defined when the palette is enabled
-  run_cmd env TERM=xterm sh -c ". \"$ROOT_DIR/spells/cantrips/colors\"; printf 'location:%s item:%s handle:%s spell:%s monster:%s\\n' \"\$MUD_LOCATION\" \"\$MUD_ITEM\" \"\$MUD_HANDLE\" \"\$MUD_SPELL\" \"\$MUD_MONSTER\""
+  OUTPUT=$(TERM=xterm NO_COLOR= sh -c ". \"$ROOT_DIR/spells/cantrips/colors\"; printf 'location:%s item:%s handle:%s spell:%s monster:%s\\n' \"\$MUD_LOCATION\" \"\$MUD_ITEM\" \"\$MUD_HANDLE\" \"\$MUD_SPELL\" \"\$MUD_MONSTER\"")
+  STATUS=$?
   if ! assert_success; then return 1; fi
   # Verify MUD colors are non-empty
   case "$OUTPUT" in
@@ -124,7 +135,8 @@ test_mud_colors_defined_when_enabled() {
 test_mud_colors_cleared_when_disabled() {
   skip-if-compiled || return $?
   # MUD colors should be empty when the palette is disabled
-  run_cmd env TERM=xterm NO_COLOR=1 sh -c ". \"$ROOT_DIR/spells/cantrips/colors\"; printf 'location:[%s] item:[%s] handle:[%s] spell:[%s] monster:[%s]\\n' \"\$MUD_LOCATION\" \"\$MUD_ITEM\" \"\$MUD_HANDLE\" \"\$MUD_SPELL\" \"\$MUD_MONSTER\""
+  OUTPUT=$(TERM=xterm NO_COLOR=1 sh -c ". \"$ROOT_DIR/spells/cantrips/colors\"; printf 'location:[%s] item:[%s] handle:[%s] spell:[%s] monster:[%s]\\n' \"\$MUD_LOCATION\" \"\$MUD_ITEM\" \"\$MUD_HANDLE\" \"\$MUD_SPELL\" \"\$MUD_MONSTER\"")
+  STATUS=$?
   if ! assert_success; then return 1; fi
   case "$OUTPUT" in
     *"location:[] item:[] handle:[] spell:[] monster:[]"*)
