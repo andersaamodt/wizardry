@@ -82,6 +82,30 @@ invoke_wizardry() {
   : "${SPELLBOOK_DIR:=${HOME-}/.spellbook}"
   export SPELLBOOK_DIR
 
+  # Glossary-based interception: prepend glossary to PATH (Phase 5)
+  # This enables POSIX-compliant, hotloadable spell invocation
+  _iw_glossary="$SPELLBOOK_DIR/.glossary"
+  
+  # Create glossary directory if missing
+  if [ ! -d "$_iw_glossary" ]; then
+    mkdir -p "$_iw_glossary" 2>/dev/null || :
+  fi
+  
+  # Prepend glossary to PATH (give parse first shot at all commands)
+  PATH="$_iw_glossary:$PATH"
+  export PATH
+  
+  _iw_debug "Glossary prepended to PATH: $_iw_glossary"
+  
+  # Asynchronously regenerate glosses if needed (background, non-blocking)
+  # This ensures glosses stay in sync without hitting shell startup time
+  if [ -x "$WIZARDRY_DIR/spells/system/generate-glosses" ]; then
+    {
+      # Run in background subshell
+      "$WIZARDRY_DIR/spells/system/generate-glosses" --quiet 2>/dev/null &
+    } 2>/dev/null
+    _iw_debug "Started async gloss regeneration"
+  fi
   
   # SPIRAL DEBUG PHASE 1: Minimal pre-loading (menu + dependencies only)
   # Future: ALL wizardry spells will be pre-loaded, hotloading only for ~/.spellbook

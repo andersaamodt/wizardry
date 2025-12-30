@@ -294,15 +294,17 @@ The spiral debug is complete when:
   - [x] Create generate-glosses spell
   - [x] Modify parse to output debug for linking words (passthrough mode)
   - [x] Document Phase 5 in SPIRAL_DEBUG.md
-  - [ ] Update invoke-wizardry to prepend glossary path to PATH
-  - [ ] Create async gloss validation/update mechanism in invoke-wizardry
+  - [x] Update invoke-wizardry to prepend glossary path to PATH
+  - [x] Create async gloss validation/update mechanism in invoke-wizardry
+  - [ ] Test generate-glosses with actual spell directory
+  - [ ] Test gloss-based spell invocation (menu, test-magic, etc.)
   - [ ] Generate glosses for synonyms from text file definitions
   - [ ] Remove command_not_found handlers in favor of glossary
   - [ ] Test with fresh wizardry installation
   - [ ] Create tests for generate-glosses spell
-  - [ ] Migrate existing synonym system to gloss-based
-  - [ ] Remove command_not_found handlers
-  - [ ] Test with fresh install
+  - [ ] Migrate existing synonym system to gloss-based (later feature)
+  - [ ] Enable parsing logic in parse imp (later feature)
+  - [ ] Add spell-checking to glossary system (later feature)
 
 - **Benefits**:
   - True hotloading - spells available immediately via PATH

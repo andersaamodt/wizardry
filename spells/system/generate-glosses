@@ -22,10 +22,11 @@ Examples:
 USAGE
 }
 
+generate_glosses() {
 case "${1-}" in
 --help|--usage|-h)
   generate_glosses_usage
-  exit 0
+  return 0
   ;;
 esac
 
@@ -34,7 +35,6 @@ require-wizardry || return 1
 set -eu
 . env-clear
 
-generate_glosses() {
   # Parse arguments
   force=0
   quiet=0
@@ -127,7 +127,6 @@ GLOSS
   
   return 0
 }
-
 
 # Load castable imp for direct execution (AFTER all functions defined)
 # CRITICAL: Always source, never use from PATH
