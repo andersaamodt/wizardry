@@ -82,8 +82,22 @@ invoke_wizardry() {
   : "${SPELLBOOK_DIR:=${HOME-}/.spellbook}"
   export SPELLBOOK_DIR
 
-  # Glossary-based interception: prepend glossary to PATH (Phase 5)
-  # This enables POSIX-compliant, hotloadable spell invocation
+  # ============================================================================
+  # GLOSSARY-BASED INTERCEPTION SYSTEM (Phase 5)
+  # ============================================================================
+  # Glosses are auto-generated wrappers that make spells accessible via PATH.
+  # They enable POSIX-compliant, hotloadable invocation for:
+  # - All wizardry spells
+  # - User-defined synonyms (.synonyms file)
+  # - Default synonyms (.default-synonyms file)
+  #
+  # Each gloss is a minimal script: exec parse "spell-name" "$@"
+  # The parse imp handles command resolution and recursion prevention.
+  #
+  # Glosses are regenerated automatically in the background to stay in sync
+  # with spells and synonym definitions. This is transparent to users.
+  # ============================================================================
+  
   _iw_glossary="$SPELLBOOK_DIR/.glossary"
   
   # Create glossary directory if missing
@@ -97,14 +111,19 @@ invoke_wizardry() {
   
   _iw_debug "Glossary prepended to PATH: $_iw_glossary"
   
-  # Asynchronously regenerate glosses if needed (background, non-blocking)
-  # This ensures glosses stay in sync without hitting shell startup time
+  # Centralized gloss generation: Automatically regenerate glosses for:
+  # 1. All wizardry spells (in $WIZARDRY_DIR/spells/)
+  # 2. Synonyms from $SPELLBOOK_DIR/.synonyms
+  # 3. Default synonyms from $SPELLBOOK_DIR/.default-synonyms
+  #
+  # This runs asynchronously in the background to avoid delaying shell startup.
+  # The generate-glosses spell handles unified generation from all sources.
   if [ -x "$WIZARDRY_DIR/spells/system/generate-glosses" ]; then
     {
-      # Run in background subshell
+      # Run in background subshell - this is non-blocking
       "$WIZARDRY_DIR/spells/system/generate-glosses" --quiet 2>/dev/null &
     } 2>/dev/null
-    _iw_debug "Started async gloss regeneration"
+    _iw_debug "Started async gloss regeneration (spells + synonyms)"
   fi
   
   # SPIRAL DEBUG PHASE 1: Minimal pre-loading (menu + dependencies only)

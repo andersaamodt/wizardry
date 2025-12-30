@@ -390,3 +390,41 @@ The spiral debug is complete when:
   - Comprehensive testing with fresh install
   - Test suite for generate-glosses
   - Remove deprecated command_not_found handlers
+
+### 2025-12-30: Phase 5 Refinement - Glosses as Implementation Detail
+
+- **Clarification**: Glosses are an internal implementation detail, not user-facing
+- **Key Points**:
+  - Users interact with synonyms via the Spellbook menu (existing UI)
+  - Glosses are auto-generated in the background (transparent to users)
+  - No new menu items or test levels needed for glossary system
+  - invoke-wizardry handles centralized gloss generation elegantly
+
+- **Updated Architecture**:
+  - invoke-wizardry automatically regenerates glosses on shell startup
+  - Glosses generated from all sources in one place:
+    * All wizardry spells ($WIZARDRY_DIR/spells/)
+    * User synonyms ($SPELLBOOK_DIR/.synonyms)
+    * Default synonyms ($SPELLBOOK_DIR/.default-synonyms)
+  - Background async generation (non-blocking, transparent)
+  - Users never see or manage glosses directly
+
+- **Removed from TODO**:
+  - ~~Update banish to add Glossary as Level 2~~ (not needed - implementation detail)
+  - ~~Update test-magic to add Glossary as Level 2~~ (not needed - implementation detail)  
+  - ~~Update demo-magic to add Glossary as Level 2~~ (not needed - implementation detail)
+
+- **Updated Implementation Status**:
+  - [x] Enhanced generate-glosses with synonym integration
+  - [x] Enhanced parse with recursion prevention
+  - [x] Centralized gloss generation in invoke-wizardry
+  - [x] Documented glosses as implementation detail
+  - [ ] Create tests for generate-glosses spell
+  - [ ] Test complete glossary system with fresh install
+  - [ ] Remove command_not_found handlers (after testing complete)
+
+- **User Experience**:
+  - Synonyms: Managed via Spellbook menu (existing workflow)
+  - Glosses: Auto-generated, invisible to users
+  - Benefits: Synonyms work in scripts (not just interactive shells)
+  - No new concepts for users to learn
