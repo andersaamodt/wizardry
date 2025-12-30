@@ -157,11 +157,12 @@ set -eu
     find "$wizardry_dir/spells" -type f -executable 2>/dev/null > "$_spell_list"
     
     # Count files found
-    _spell_count=$(wc -l < "$_spell_list" | tr -d ' ')
+    _spell_count=$(wc -l < "$_spell_list")
     [ "$quiet" -eq 0 ] && debug "Found $_spell_count executable files in wizardry"
     
     while IFS= read -r spell_path; do
-      [ -n "$spell_path" ] || continue
+      # Skip empty paths or invalid files
+      [ -n "$spell_path" ] && [ -f "$spell_path" ] || continue
       spell_name=$(basename "$spell_path")
       
       # Skip invalid names
