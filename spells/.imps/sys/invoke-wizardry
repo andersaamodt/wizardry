@@ -225,17 +225,29 @@ invoke_wizardry() {
         if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
           printf '[handle-command-not-found] Calling word_of_binding --run %s\n' "$1" >&2
         fi
-        if command -v word_of_binding >/dev/null 2>&1 \
-          && word_of_binding --run "$@" 2>/dev/null; then
+        if command -v word_of_binding >/dev/null 2>&1; then
           if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-            printf '[handle-command-not-found] word_of_binding succeeded for: %s\n' "$1" >&2
-          fi
-          if [ -n "$_iw_prev_cnf" ]; then
-            _WIZARDRY_IN_CNF="$_iw_prev_cnf"
+            # Debug mode: show errors to help diagnose issues
+            if word_of_binding --run "$@"; then
+              printf '[handle-command-not-found] word_of_binding succeeded for: %s\n' "$1" >&2
+              if [ -n "$_iw_prev_cnf" ]; then
+                _WIZARDRY_IN_CNF="$_iw_prev_cnf"
+              else
+                unset _WIZARDRY_IN_CNF
+              fi
+              return 0
+            fi
           else
-            unset _WIZARDRY_IN_CNF
+            # Normal mode: silence errors to avoid noise
+            if word_of_binding --run "$@" 2>/dev/null; then
+              if [ -n "$_iw_prev_cnf" ]; then
+                _WIZARDRY_IN_CNF="$_iw_prev_cnf"
+              else
+                unset _WIZARDRY_IN_CNF
+              fi
+              return 0
+            fi
           fi
-          return 0
         fi
         if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
           printf '[handle-command-not-found] word_of_binding failed for: %s\n' "$1" >&2
@@ -286,17 +298,29 @@ invoke_wizardry() {
         if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
           printf '[handle-command-not-found] Calling word_of_binding --run %s\n' "$1" >&2
         fi
-        if command -v word_of_binding >/dev/null 2>&1 \
-          && word_of_binding --run "$@" 2>/dev/null; then
+        if command -v word_of_binding >/dev/null 2>&1; then
           if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-            printf '[handle-command-not-found] word_of_binding succeeded for: %s\n' "$1" >&2
-          fi
-          if [ -n "$_iw_prev_cnf" ]; then
-            _WIZARDRY_IN_CNF="$_iw_prev_cnf"
+            # Debug mode: show errors to help diagnose issues
+            if word_of_binding --run "$@"; then
+              printf '[handle-command-not-found] word_of_binding succeeded for: %s\n' "$1" >&2
+              if [ -n "$_iw_prev_cnf" ]; then
+                _WIZARDRY_IN_CNF="$_iw_prev_cnf"
+              else
+                unset _WIZARDRY_IN_CNF
+              fi
+              return 0
+            fi
           else
-            unset _WIZARDRY_IN_CNF
+            # Normal mode: silence errors to avoid noise
+            if word_of_binding --run "$@" 2>/dev/null; then
+              if [ -n "$_iw_prev_cnf" ]; then
+                _WIZARDRY_IN_CNF="$_iw_prev_cnf"
+              else
+                unset _WIZARDRY_IN_CNF
+              fi
+              return 0
+            fi
           fi
-          return 0
         fi
         if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
           printf '[handle-command-not-found] word_of_binding failed for: %s\n' "$1" >&2

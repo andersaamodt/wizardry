@@ -36,8 +36,10 @@ install_checkbashisms_run_installer() {
         cmd=$1
         shift
         if command -v sudo >/dev/null 2>&1; then
+                printf '  Trying: sudo %s %s\n' "$cmd" "$*" >&2
                 sudo "$cmd" "$@"
         else
+                printf '  Trying: %s %s\n' "$cmd" "$*" >&2
                 "$cmd" "$@"
         fi
 }
@@ -106,5 +108,20 @@ if try_install brew install devscripts; then
         fi
 fi
 
-printf '%s\n' "install-checkbashisms: unable to install checkbashisms automatically." >&2
+# Detect which package manager we have for better error message
+detected_pm=""
+for pm in brew apt-get dnf yum zypper pacman apk; do
+        if command -v "$pm" >/dev/null 2>&1; then
+                detected_pm=$pm
+                break
+        fi
+done
+
+if [ -n "$detected_pm" ]; then
+        printf '%s\n' "install-checkbashisms: installation failed using $detected_pm" >&2
+        printf '%s\n' "install-checkbashisms: you may need to install devscripts or checkbashisms manually" >&2
+else
+        printf '%s\n' "install-checkbashisms: no supported package manager found" >&2
+        printf '%s\n' "install-checkbashisms: please install checkbashisms manually" >&2
+fi
 exit 1
