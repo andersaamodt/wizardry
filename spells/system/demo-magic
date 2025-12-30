@@ -30,51 +30,261 @@ demo_level() {
   spell_list=$(get_level_spells "$level")
   imp_list=$(get_level_imps "$level")
   
-  printf 'Level %d: %s\n' "$level" "$level_name"
+  printf '\n'
+  printf '=== Level %d: %s ===\n' "$level" "$level_name"
+  printf '\n'
   
-  # Special case for level 0 - infrastructure checks
-  if [ "$level" -eq 0 ]; then
-    printf 'Checking POSIX environment and wizardry structure...\n'
-    [ -f "${WIZARDRY_DIR}/spells/.imps/sys/invoke-wizardry" ] && \
-      printf 'invoke-wizardry: ready\n' || printf 'Warning: invoke-wizardry check failed\n' >&2
-    [ -d "${WIZARDRY_DIR}/spells" ] && \
-      printf 'spells directory: ready\n' || printf 'Warning: spells directory check failed\n' >&2
-    [ -d "${WIZARDRY_DIR}/spells/.imps" ] && \
-      printf 'imps directory: ready\n' || printf 'Warning: imps directory check failed\n' >&2
-  fi
+  # Add level-specific narration and demonstrations
+  case "$level" in
+    0)
+      printf 'The wizard examines the foundation of reality itself...\n'
+      printf 'Verifying POSIX compliance and platform compatibility.\n'
+      printf '\n'
+      
+      # Check infrastructure
+      if [ -f "${WIZARDRY_DIR}/spells/.imps/sys/invoke-wizardry" ]; then
+        printf 'The invoke-wizardry ritual: discovered\n'
+      else
+        printf 'Warning: invoke-wizardry ritual not found\n' >&2
+      fi
+      
+      if [ -d "${WIZARDRY_DIR}/spells" ]; then
+        printf 'The spells grimoire: present\n'
+      else
+        printf 'Warning: spells grimoire missing\n' >&2
+      fi
+      
+      if [ -d "${WIZARDRY_DIR}/spells/.imps" ]; then
+        printf 'The imp summoning circles: inscribed\n'
+      else
+        printf 'Warning: imp summoning circles not found\n' >&2
+      fi
+      ;;
+      
+    1)
+      printf 'The wizard gathers the core components of wizardry...\n'
+      printf 'Installing the foundation: validation and banishment.\n'
+      printf '\n'
+      ;;
+      
+    2)
+      printf 'The wizard conjures the glossary system...\n'
+      printf 'Words of power take form and meaning.\n'
+      printf '\n'
+      ;;
+      
+    3)
+      printf 'The wizard weaves interactive menus from pure thought...\n'
+      printf 'Terminal manipulation becomes an art form.\n'
+      printf '\n'
+      ;;
+      
+    4)
+      printf 'The wizard enters the realm of MUD...\n'
+      printf 'Rooms and locations gain meaning through extended attributes.\n'
+      printf '\n'
+      ;;
+      
+    5)
+      printf 'The wizard learns the art of translocation...\n'
+      printf 'Marking and jumping between locations in the blink of an eye.\n'
+      printf '\n'
+      ;;
+      
+    6)
+      printf 'The wizard masters the arcane language of parsing...\n'
+      printf 'Command structures bend to the wizards will.\n'
+      printf '\n'
+      ;;
+      
+    7)
+      printf 'The wizard masters arcane file operations...\n'
+      printf 'Copying, trashing, and reading magical inscriptions.\n'
+      printf '\n'
+      ;;
+      
+    8)
+      printf 'The wizard learns basic cantrips...\n'
+      printf 'Asking questions, listing files, and simple transformations.\n'
+      printf '\n'
+      ;;
+      
+    9)
+      printf 'The wizard channels validation energies...\n'
+      printf 'Numbers, paths, and commands yield to verification.\n'
+      printf '\n'
+      ;;
+      
+    10)
+      printf 'The wizard advances in the cantrip arts...\n'
+      printf 'Asking for numbers and memorizing spells into the shell.\n'
+      printf '\n'
+      ;;
+      
+    11)
+      printf 'The wizard configures the system...\n'
+      printf 'Package management and system configuration take shape.\n'
+      printf '\n'
+      ;;
+      
+    12)
+      printf 'The wizard establishes the testing framework...\n'
+      printf 'Self-examination becomes possible.\n'
+      printf '\n'
+      ;;
+      
+    13)
+      printf 'The wizard learns system maintenance...\n'
+      printf 'Updating wizardry and managing processes.\n'
+      printf '\n'
+      ;;
+      
+    14)
+      printf 'The wizard demonstrates the demonstration itself...\n'
+      printf 'Recursion: a wizard demonstrating demonstration magic.\n'
+      printf '\n'
+      ;;
+      
+    15)
+      printf 'The wizard practices divination...\n'
+      printf 'Detecting shells, discovering magic, and identifying rooms.\n'
+      printf '\n'
+      ;;
+      
+    16)
+      printf 'The wizard enhances the MUD realm...\n'
+      printf 'Decoration and player selection capabilities emerge.\n'
+      printf '\n'
+      ;;
+      
+    17)
+      printf 'The wizard delves into cryptography...\n'
+      printf 'Hashing and hash verification become available.\n'
+      printf '\n'
+      ;;
+      
+    18)
+      printf 'The wizard opens portals to remote realms...\n'
+      printf 'SSH keys, portkeys, and remote access materialize.\n'
+      printf '\n'
+      ;;
+      
+    19)
+      printf 'The wizard manages task priorities...\n'
+      printf 'Getting, setting, and voting on priorities.\n'
+      printf '\n'
+      ;;
+      
+    20)
+      printf 'The wizard erects protective wards...\n'
+      printf 'SSH barriers defend against intrusion.\n'
+      printf '\n'
+      ;;
+      
+    21)
+      printf 'The wizard enchants files with extended attributes...\n'
+      printf 'Metadata becomes magical inscription.\n'
+      printf '\n'
+      ;;
+      
+    22)
+      printf 'The wizard develops psychic abilities (PSI)...\n'
+      printf 'Reading contacts and process information.\n'
+      printf '\n'
+      ;;
+      
+    23)
+      printf 'The wizard becomes a spellcrafter...\n'
+      printf 'Creating, editing, and managing new spells.\n'
+      printf '\n'
+      ;;
+      
+    24)
+      printf 'The wizard constructs core menu infrastructure...\n'
+      printf 'Spellbooks and casting interfaces take form.\n'
+      printf '\n'
+      ;;
+      
+    25)
+      printf 'The wizard builds system menus...\n'
+      printf 'Installation, configuration, and synonym management.\n'
+      printf '\n'
+      ;;
+      
+    26)
+      printf 'The wizard administers the MUD realm...\n'
+      printf 'Player management and MUD settings.\n'
+      printf '\n'
+      ;;
+      
+    27)
+      printf 'The wizard creates specialized menus...\n'
+      printf 'Network, services, shutdown, and user management.\n'
+      printf '\n'
+      ;;
+      
+    28)
+      printf 'The wizard masters system service management...\n'
+      printf 'Installing, starting, stopping, and managing services.\n'
+      printf '\n'
+      ;;
+      
+    29)
+      printf 'The wizard peers into the arcana...\n'
+      printf 'Third-party integrations and optional extensions.\n'
+      printf '\n'
+      
+      if [ -d "${WIZARDRY_DIR}/spells/.arcana" ]; then
+        printf 'The arcana vault: accessible\n'
+      else
+        printf 'The arcana vault: sealed (no third-party extensions installed)\n'
+      fi
+      ;;
+      
+    *)
+      printf 'The wizard channels level %d energies...\n' "$level"
+      printf '\n'
+      ;;
+  esac
   
   # Check spells for this level (note: spell_list is intentionally unquoted for word splitting)
   if [ -n "$spell_list" ]; then
+    printf 'Spells at this level:\n'
     # shellcheck disable=SC2086
-    validate_spells --quiet $spell_list 2>&1 | sed 's/✓ Found spell://; s/^  *//; s/$/:ready/'
+    validate_spells $spell_list 2>&1 | sed 's/✓ Found spell:/  The wizard casts/; s/^  *//; s/$/ ... ready/'
     
     # Report missing spells if any
     # shellcheck disable=SC2086
     if ! validate_spells $spell_list >/dev/null 2>&1; then
       # shellcheck disable=SC2086
       missing=$(validate_spells --missing-only $spell_list)
-      printf 'Warning: missing spells: %s\n' "$missing" >&2
+      printf '  Warning: missing spells: %s\n' "$missing" >&2
     fi
   fi
   
   # Check imps for this level (note: imp_list is intentionally unquoted for word splitting)
   if [ -n "$imp_list" ]; then
-    # shellcheck disable=SC2086
-    validate_spells --quiet --imps $imp_list 2>&1 | sed 's/✓ Found imp://; s/^  *//; s/$/  (imp):ready/'
+    # Count imps to provide context
+    imp_count=$(printf '%s' "$imp_list" | wc -w)
+    if [ "$imp_count" -gt 10 ]; then
+      printf '\n'
+      printf 'Imps summoned at this level: %d micro-helpers\n' "$imp_count"
+      printf '  (Core building blocks for spell construction)\n'
+      # Don't list individual imps when there are many - it's too verbose
+    else
+      printf '\n'
+      printf 'Imps summoned at this level:\n'
+      # shellcheck disable=SC2086
+      validate_spells --imps $imp_list 2>&1 | sed 's/✓ Found imp:/  Imp:/; s/^  *//; s/$/ ... bound/'
+    fi
     
     # Report missing imps if any
     # shellcheck disable=SC2086
     if ! validate_spells --imps $imp_list >/dev/null 2>&1; then
       # shellcheck disable=SC2086
       missing=$(validate_spells --imps --missing-only $imp_list)
-      printf 'Warning: missing imps: %s\n' "$missing" >&2
+      printf '  Warning: missing imps: %s\n' "$missing" >&2
     fi
-  fi
-  
-  # Special checks for level 29 (arcana)
-  if [ "$level" -eq 29 ]; then
-    [ -d "${WIZARDRY_DIR}/spells/.arcana" ] && \
-      printf 'arcana directory: ready\n' || printf 'Warning: arcana directory check failed\n' >&2
   fi
 }
 
@@ -195,23 +405,25 @@ if [ "${WIZARDRY_DEMO_IN_BWRAP-0}" -ne 1 ] && [ "${WIZARDRY_DEMO_NO_BWRAP-0}" -n
   fi
 fi
 
-printf 'A circle of chalk flares into view.\n'
-printf 'The wizardry demonstration begins.\n'
 printf '\n'
+printf '╔═══════════════════════════════════════════════════════════╗\n'
+printf '║         WIZARDRY DEMONSTRATION OF MAGICAL ARTS            ║\n'
+printf '╚═══════════════════════════════════════════════════════════╝\n'
+printf '\n'
+printf 'A circle of chalk flares into view.\n'
+printf 'The apprentice wizard prepares to demonstrate mastery.\n'
 
 # Run all levels from 0 to target level
 current_level=0
 while [ "$current_level" -le "$demo_level" ]; do
   demo_level "$current_level"
-  
-  if [ "$current_level" -lt "$demo_level" ]; then
-    printf '\n'
-  fi
-  
   current_level=$((current_level + 1))
 done
 
 printf '\n'
+printf '═══════════════════════════════════════════════════════════\n'
+printf '\n'
+printf 'The demonstration concludes.\n'
 printf 'The circle closes. Wizardry stands ready.\n'
 }
 
