@@ -176,18 +176,25 @@ invoke_wizardry() {
       _gloss_imp_path="${_gloss_imp_path}${_gloss_imp_path:+:}${_imp_family}"
     done
     
-    # Run in background with comprehensive PATH
-    # If WIZARDRY_DEBUG is set, log errors to help diagnose issues
+    # Run in background with comprehensive PATH and explicit environment
+    # Explicitly pass critical environment variables to ensure background job has them
+    # (macOS and some shells don't always inherit exports properly in background jobs)
     if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
       {
-        PATH="${_gloss_imp_path}:${PATH}" \
+        env \
+          WIZARDRY_DIR="$WIZARDRY_DIR" \
+          SPELLBOOK_DIR="$SPELLBOOK_DIR" \
+          PATH="${_gloss_imp_path}:${PATH}" \
           "$WIZARDRY_DIR/spells/system/generate-glosses" --quiet \
           2>"${SPELLBOOK_DIR}/.glossary-errors.log" &
       }
       _iw_debug "Gloss generation errors (if any) logged to ${SPELLBOOK_DIR}/.glossary-errors.log"
     else
       {
-        PATH="${_gloss_imp_path}:${PATH}" \
+        env \
+          WIZARDRY_DIR="$WIZARDRY_DIR" \
+          SPELLBOOK_DIR="$SPELLBOOK_DIR" \
+          PATH="${_gloss_imp_path}:${PATH}" \
           "$WIZARDRY_DIR/spells/system/generate-glosses" --quiet &
       } 2>/dev/null
     fi
