@@ -223,58 +223,41 @@ invoke_wizardry() {
           export _WIZARDRY_WOB_LOADED
         fi
         if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-          printf '[handle-command-not-found] Binding spell: %s\n' "$1" >&2
+          printf '[handle-command-not-found] Calling word_of_binding --run %s\n' "$1" >&2
         fi
         if command -v word_of_binding >/dev/null 2>&1; then
-          # First, bind the spell (load its function) without executing
           _cnf_exit=0
           if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
             # Debug mode: show errors to help diagnose issues
-            word_of_binding "$1" || _cnf_exit=$?
+            word_of_binding --run "$@" || _cnf_exit=$?
+            if [ "$_cnf_exit" -eq 0 ]; then
+              printf '[handle-command-not-found] word_of_binding succeeded for: %s\n' "$1" >&2
+            fi
           else
             # Normal mode: silence errors to avoid noise
-            word_of_binding "$1" 2>/dev/null || _cnf_exit=$?
+            word_of_binding --run "$@" 2>/dev/null || _cnf_exit=$?
           fi
           
-          if [ "$_cnf_exit" -eq 127 ]; then
-            # Spell not found
-            if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-              printf '[handle-command-not-found] word_of_binding could not find: %s\n' "$1" >&2
-            fi
-          elif [ "$_cnf_exit" -ne 0 ]; then
-            # Binding failed for some other reason
-            if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-              printf '[handle-command-not-found] Binding failed with exit code: %s\n' "$_cnf_exit" >&2
-            fi
+          if [ -n "$_iw_prev_cnf" ]; then
+            _WIZARDRY_IN_CNF="$_iw_prev_cnf"
           else
-            # Binding succeeded, now execute the spell
+            unset _WIZARDRY_IN_CNF
+          fi
+          
+          if [ "$_cnf_exit" -eq 0 ]; then
+            # Command executed successfully
+            return 0
+          elif [ "$_cnf_exit" -ne 127 ]; then
+            # Command was found and executed but returned non-zero
+            # This is not a "command not found" error
             if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-              printf '[handle-command-not-found] Executing spell: %s\n' "$1" >&2
+              printf '[handle-command-not-found] Spell executed but returned %s\n' "$_cnf_exit" >&2
             fi
-            
-            # Clear the recursion guard before executing, since we've successfully bound the spell
-            if [ -n "$_iw_prev_cnf" ]; then
-              _WIZARDRY_IN_CNF="$_iw_prev_cnf"
-            else
-              unset _WIZARDRY_IN_CNF
-            fi
-            
-            # Execute the bound function
-            _cnf_exit=0
-            "$@" || _cnf_exit=$?
-            
-            if [ "$_cnf_exit" -eq 0 ]; then
-              if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-                printf '[handle-command-not-found] Spell executed successfully\n' >&2
-              fi
-              return 0
-            else
-              # Spell executed but returned non-zero
-              if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-                printf '[handle-command-not-found] Spell executed but returned %s\n' "$_cnf_exit" >&2
-              fi
-              return "$_cnf_exit"
-            fi
+            return "$_cnf_exit"
+          fi
+          # Exit code 127 means command not found, fall through to error message
+          if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+            printf '[handle-command-not-found] word_of_binding could not find: %s\n' "$1" >&2
           fi
         fi
       fi
@@ -321,58 +304,41 @@ invoke_wizardry() {
           export _WIZARDRY_WOB_LOADED
         fi
         if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-          printf '[handle-command-not-found] Binding spell: %s\n' "$1" >&2
+          printf '[handle-command-not-found] Calling word_of_binding --run %s\n' "$1" >&2
         fi
         if command -v word_of_binding >/dev/null 2>&1; then
-          # First, bind the spell (load its function) without executing
           _cnf_exit=0
           if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
             # Debug mode: show errors to help diagnose issues
-            word_of_binding "$1" || _cnf_exit=$?
+            word_of_binding --run "$@" || _cnf_exit=$?
+            if [ "$_cnf_exit" -eq 0 ]; then
+              printf '[handle-command-not-found] word_of_binding succeeded for: %s\n' "$1" >&2
+            fi
           else
             # Normal mode: silence errors to avoid noise
-            word_of_binding "$1" 2>/dev/null || _cnf_exit=$?
+            word_of_binding --run "$@" 2>/dev/null || _cnf_exit=$?
           fi
           
-          if [ "$_cnf_exit" -eq 127 ]; then
-            # Spell not found
-            if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-              printf '[handle-command-not-found] word_of_binding could not find: %s\n' "$1" >&2
-            fi
-          elif [ "$_cnf_exit" -ne 0 ]; then
-            # Binding failed for some other reason
-            if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-              printf '[handle-command-not-found] Binding failed with exit code: %s\n' "$_cnf_exit" >&2
-            fi
+          if [ -n "$_iw_prev_cnf" ]; then
+            _WIZARDRY_IN_CNF="$_iw_prev_cnf"
           else
-            # Binding succeeded, now execute the spell
+            unset _WIZARDRY_IN_CNF
+          fi
+          
+          if [ "$_cnf_exit" -eq 0 ]; then
+            # Command executed successfully
+            return 0
+          elif [ "$_cnf_exit" -ne 127 ]; then
+            # Command was found and executed but returned non-zero
+            # This is not a "command not found" error
             if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-              printf '[handle-command-not-found] Executing spell: %s\n' "$1" >&2
+              printf '[handle-command-not-found] Spell executed but returned %s\n' "$_cnf_exit" >&2
             fi
-            
-            # Clear the recursion guard before executing, since we've successfully bound the spell
-            if [ -n "$_iw_prev_cnf" ]; then
-              _WIZARDRY_IN_CNF="$_iw_prev_cnf"
-            else
-              unset _WIZARDRY_IN_CNF
-            fi
-            
-            # Execute the bound function
-            _cnf_exit=0
-            "$@" || _cnf_exit=$?
-            
-            if [ "$_cnf_exit" -eq 0 ]; then
-              if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-                printf '[handle-command-not-found] Spell executed successfully\n' >&2
-              fi
-              return 0
-            else
-              # Spell executed but returned non-zero
-              if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-                printf '[handle-command-not-found] Spell executed but returned %s\n' "$_cnf_exit" >&2
-              fi
-              return "$_cnf_exit"
-            fi
+            return "$_cnf_exit"
+          fi
+          # Exit code 127 means command not found, fall through to error message
+          if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+            printf '[handle-command-not-found] word_of_binding could not find: %s\n' "$1" >&2
           fi
         fi
       fi
