@@ -111,21 +111,6 @@ invoke_wizardry() {
   
   _iw_debug "Glossary prepended to PATH: $_iw_glossary"
   
-  # Centralized gloss generation: Automatically regenerate glosses for:
-  # 1. All wizardry spells (in $WIZARDRY_DIR/spells/)
-  # 2. Synonyms from $SPELLBOOK_DIR/.synonyms
-  # 3. Default synonyms from $SPELLBOOK_DIR/.default-synonyms
-  #
-  # This runs asynchronously in the background to avoid delaying shell startup.
-  # The generate-glosses spell handles unified generation from all sources.
-  if [ -x "$WIZARDRY_DIR/spells/system/generate-glosses" ]; then
-    {
-      # Run in background subshell - this is non-blocking
-      "$WIZARDRY_DIR/spells/system/generate-glosses" --quiet 2>/dev/null &
-    } 2>/dev/null
-    _iw_debug "Started async gloss regeneration (spells + synonyms)"
-  fi
-  
   # SPIRAL DEBUG PHASE 1: Minimal pre-loading (menu + dependencies only)
   # Future: ALL wizardry spells will be pre-loaded, hotloading only for ~/.spellbook
   # Current: Pre-load menu essentials, hotload other wizardry spells temporarily
@@ -148,12 +133,14 @@ invoke_wizardry() {
     require-wizardry \
     castable \
     env-clear \
+    env-or \
     temp-file \
     cleanup-file \
     has \
     die \
     warn \
     fail \
+    info \
     say; do
     # Search for imp in all families
     for _family_dir in "$WIZARDRY_DIR"/spells/.imps/*; do
@@ -167,6 +154,27 @@ invoke_wizardry() {
       fi
     done
   done
+  
+  # Centralized gloss generation: Automatically regenerate glosses for:
+  # 1. All wizardry spells (in $WIZARDRY_DIR/spells/)
+  # 2. Synonyms from $SPELLBOOK_DIR/.synonyms
+  # 3. Default synonyms from $SPELLBOOK_DIR/.default-synonyms
+  #
+  # This runs synchronously now (very fast, minimal delay)
+  # The generate-glosses spell handles unified generation from all sources.
+  # Must run AFTER essential imps are loaded (needs require-wizardry, env-clear, env-or, etc.)
+  if [ -f "$WIZARDRY_DIR/spells/system/generate-glosses" ]; then
+    # Source and call as function - gives it access to all loaded imps
+    . "$WIZARDRY_DIR/spells/system/generate-glosses" 2>/dev/null || :
+    if command -v generate_glosses >/dev/null 2>&1; then
+      generate_glosses --quiet 2>/dev/null || :
+      _iw_debug "Glosses regenerated (spells + synonyms)"
+      # Show user-visible message about glossary
+      if command -v info >/dev/null 2>&1; then
+        info "Glossary initialized with all spells and synonyms"
+      fi
+    fi
+  fi
   
   # Pre-load menu and its helper spell dependencies
   _iw_debug "Pre-loading essential spells"
