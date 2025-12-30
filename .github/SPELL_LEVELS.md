@@ -14,15 +14,16 @@ The spiral organization starts from the most fundamental prerequisites (Level 0)
 The `banish` spell integrates assumption-checking, self-healing, and testing:
 
 ```bash
-banish           # Banish to level 1 (default) - validates levels 0-1 (POSIX + wizardry)
+banish           # Banish to level 3 (default) - validates levels 0-3 (POSIX + wizardry + glossary + menu)
 banish 0         # Banish to level 0 only - validate POSIX foundation
 banish 1         # Banish through levels 0-1 (POSIX + wizardry installed)
-banish 2         # Banish through levels 0-2 (POSIX + wizardry + menu ready)
+banish 2         # Banish through levels 0-2 (POSIX + wizardry + glossary system)
+banish 3         # Banish through levels 0-3 (POSIX + wizardry + glossary + menu ready)
 banish N         # Banish through levels 0-N (full system validated through level N)
 ```
 
 Each `banish N` command:
-1. Recursively runs previous levels (banish 2 → runs 0, 1, then 2)
+1. Recursively runs previous levels (banish 3 → runs 0, 1, 2, then 3)
 2. Checks assumptions for that level using corresponding check scripts
 3. Offers to self-heal broken assumptions (with user confirmation)
 4. Runs tests for spells at that level (automatically, no prompt)
@@ -75,12 +76,29 @@ None (bootstrap level)
 
 ---
 
-## Level 2: Menu System
+## Level 2: Glossary System
+
+**Purpose**: Spell glossary and command interception system for PATH-based spell accessibility.
+
+### Assumptions
+- [ ] Level 1 complete (banish, *noop)
+- [ ] SPELLBOOK_DIR can be created (*check-spellbook-dir, *create-spellbook-dir)
+- [ ] Glossary directory writable (*check-glossary-writable, *fix-glossary-permissions)
+
+### Spells
+* generate-glosses
+
+### Imps Introduced
+`lex/parse`
+
+---
+
+## Level 3: Menu System
 
 **Purpose**: Interactive menu system - primary user interface to wizardry.
 
 ### Assumptions
-- [ ] Level 1 complete (banish, *noop)
+- [ ] Level 27 complete (banish, *noop)
 - [ ] Terminal supports ANSI escape codes (*check-terminal-ansi, *disable-ansi-fallback)
 - [ ] TTY is readable/writable (*check-tty, *fix-tty-permissions)
 - [ ] `stty` command available (detect-posix, *install-stty)
@@ -100,29 +118,29 @@ None (bootstrap level)
 
 ---
 
-## Level 3: MUD Basics
+## Level 4: MUD Basics
 
 **Purpose**: Basic MUD integration - directory navigation awareness and CD hook management.
 
 ### Assumptions
-- [ ] Level 2 complete (banish, *noop)
+- [ ] Level 27 complete (banish, *noop)
 - [ ] Extended attributes supported or fallback available (*check-xattr-support, *install-xattr-tools)
 
 ### Spells
 * check-cd-hook
-* look (read-magic from Level 5)
+* look (read-magic from Level 6)
 
 ### Imps Introduced
 `fs/xattr-helper-usable`, `fs/xattr-list-keys`, `fs/xattr-read-value`
 
 ---
 
-## Level 4: Navigation
+## Level 5: Navigation
 
 **Purpose**: Bookmark-based navigation system for quick directory teleportation.
 
 ### Assumptions
-- [ ] Level 3 complete (banish, *noop)
+- [ ] Level 27 complete (banish, *noop)
 - [ ] Marker directory can be created (*check-marker-directory, *create-marker-directory)
 
 ### Spells
@@ -134,12 +152,12 @@ None
 
 ---
 
-## Level 5: Arcane File Operations
+## Level 6: Arcane File Operations
 
 **Purpose**: Core file and directory manipulation spells.
 
 ### Assumptions
-- [ ] Level 4 complete (banish, *noop)
+- [ ] Level 27 complete (banish, *noop)
 - [ ] File system is readable/writable (*check-filesystem-rw, *fix-filesystem-permissions)
 - [ ] Standard UNIX file utilities work (`cp`, `mv`, `rm`, `find`) (detect-posix, *install-file-utils)
 - [ ] Sufficient disk space (*check-disk-space, *warn-low-disk-space)
@@ -157,12 +175,12 @@ None
 
 ---
 
-## Level 6: Basic Cantrips
+## Level 7: Basic Cantrips
 
 **Purpose**: Simple interactive spells for user input and basic operations.
 
 ### Assumptions
-- [ ] Level 5 complete (banish, *noop)
+- [ ] Level 27 complete (banish, *noop)
 - [ ] Terminal supports interactive input (*check-tty-interactive, *enable-interactive-mode)
 - [ ] User can respond to prompts (*check-tty-interactive, *enable-interactive-mode)
 
@@ -180,12 +198,12 @@ None
 
 ---
 
-## Level 7: Validation Helpers
+## Level 8: Validation Helpers
 
 **Purpose**: Input validation and requirement checking.
 
 ### Assumptions
-- [ ] Level 6 complete (banish, *noop)
+- [ ] Level 27 complete (banish, *noop)
 
 ### Spells
 * validate-number
@@ -197,15 +215,15 @@ None
 
 ---
 
-## Level 8: Advanced Cantrips
+## Level 9: Advanced Cantrips
 
 **Purpose**: More complex user interaction spells that build on validation.
 
 ### Assumptions
-- [ ] Level 7 complete (banish, *noop)
+- [ ] Level 27 complete (banish, *noop)
 
 ### Spells
-* ask-number (ask from Level 6, validate-number from Level 7)
+* ask-number (ask from Level 7, validate-number from Level 8)
 * memorize
 
 ### Imps Introduced
@@ -213,12 +231,12 @@ None
 
 ---
 
-## Level 9: System Configuration
+## Level 10: System Configuration
 
 **Purpose**: System-level configuration management.
 
 ### Assumptions
-- [ ] Level 8 complete (banish, *noop)
+- [ ] Level 27 complete (banish, *noop)
 - [ ] Write access to config files (*check-config-writable, *create-config-directory)
 
 ### Spells
@@ -231,12 +249,12 @@ None
 
 ---
 
-## Level 10: Testing Infrastructure
+## Level 11: Testing Infrastructure
 
 **Purpose**: Test execution and validation framework.
 
 ### Assumptions
-- [ ] Level 9 complete (banish, *noop)
+- [ ] Level 27 complete (banish, *noop)
 - [ ] Test infrastructure available (*check-test-infrastructure, *setup-test-infrastructure)
 
 ### Spells
@@ -250,12 +268,12 @@ None
 
 ---
 
-## Level 11: System Maintenance
+## Level 12: System Maintenance
 
 **Purpose**: System updates and process management.
 
 ### Assumptions
-- [ ] Level 10 complete (banish, *noop)
+- [ ] Level 27 complete (banish, *noop)
 
 ### Spells
 * update-wizardry
@@ -267,12 +285,12 @@ None
 
 ---
 
-## Level 12: Advanced System Tools
+## Level 13: Advanced System Tools
 
 **Purpose**: Advanced system validation and demonstration.
 
 ### Assumptions
-- [ ] Level 11 complete (banish, *noop)
+- [ ] Level 27 complete (banish, *noop)
 
 ### Spells
 * demo-magic
@@ -284,17 +302,17 @@ None
 
 ---
 
-## Level 13: Divination
+## Level 14: Divination
 
 **Purpose**: Detection and analysis spells for system information.
 
 ### Assumptions
-- [ ] Level 12 complete (banish, *noop)
+- [ ] Level 27 complete (banish, *noop)
 - [ ] System information accessible (detect-posix, *install-sysinfo-tools)
 
 ### Spells
 * detect-rc-file
-* detect-magic (read-magic from Level 5)
+* detect-magic (read-magic from Level 6)
 * identify-room (detect-magic)
 
 ### Imps Introduced
@@ -302,16 +320,16 @@ None
 
 ---
 
-## Level 14: Advanced MUD Features
+## Level 15: Advanced MUD Features
 
-**Purpose**: Advanced MUD theme integration building on basic MUD (Level 3).
+**Purpose**: Advanced MUD theme integration building on basic MUD (Level 4).
 
 ### Assumptions
-- [ ] Level 13 complete (banish, *noop)
+- [ ] Level 27 complete (banish, *noop)
 - [ ] Extended attributes working (*check-xattr-support, *install-xattr-tools)
 
 ### Spells
-* decorate (look from Level 3, read-magic from Level 5)
+* decorate (look from Level 4, read-magic from Level 5)
 * select-player
 * check-command-not-found-hook
 
@@ -320,12 +338,12 @@ None
 
 ---
 
-## Level 15: Cryptography
+## Level 16: Cryptography
 
 **Purpose**: Cryptographic operations and hashing.
 
 ### Assumptions
-- [ ] Level 14 complete (banish, *noop)
+- [ ] Level 27 complete (banish, *noop)
 
 ### Spells
 * hash
@@ -337,12 +355,12 @@ None
 
 ---
 
-## Level 16: SSH & Remote Access
+## Level 17: SSH & Remote Access
 
 **Purpose**: SSH management and remote translocation.
 
 ### Assumptions
-- [ ] Level 15 complete (banish, *noop)
+- [ ] Level 27 complete (banish, *noop)
 - [ ] SSH available (detect-posix, *install-ssh)
 
 ### Spells
@@ -359,12 +377,12 @@ None
 
 ---
 
-## Level 17: Task Priorities
+## Level 18: Task Priorities
 
 **Purpose**: Task priority management.
 
 ### Assumptions
-- [ ] Level 16 complete (banish, *noop)
+- [ ] Level 27 complete (banish, *noop)
 
 ### Spells
 * get-priority
@@ -377,46 +395,46 @@ None
 
 ---
 
-## Level 18: Security Wards
+## Level 19: Security Wards
 
 **Purpose**: Security hardening and monitoring.
 
 ### Assumptions
-- [ ] Level 17 complete (banish, *noop)
+- [ ] Level 27 complete (banish, *noop)
 
 ### Spells
-* ssh-barrier (SSH spells from Level 16)
+* ssh-barrier (SSH spells from Level 17)
 
 ### Imps Introduced
 None
 
 ---
 
-## Level 19: Extended Attributes
+## Level 20: Extended Attributes
 
 **Purpose**: File attribute management and manipulation.
 
 ### Assumptions
-- [ ] Level 18 complete (banish, *noop)
+- [ ] Level 27 complete (banish, *noop)
 - [ ] Extended attributes working (*check-xattr-support, *install-xattr-tools)
 
 ### Spells
-* enchant (read-magic from Level 5)
-* disenchant (read-magic from Level 5)
-* enchantment-to-yaml (read-magic from Level 5)
-* yaml-to-enchantment (read-magic from Level 5)
+* enchant (read-magic from Level 6)
+* disenchant (read-magic from Level 6)
+* enchantment-to-yaml (read-magic from Level 6)
+* yaml-to-enchantment (read-magic from Level 6)
 
 ### Imps Introduced
 None
 
 ---
 
-## Level 20: Process & System Info (PSI)
+## Level 21: Process & System Info (PSI)
 
 **Purpose**: Process management and contact information.
 
 ### Assumptions
-- [ ] Level 19 complete (banish, *noop)
+- [ ] Level 27 complete (banish, *noop)
 
 ### Spells
 * list-contacts
@@ -427,12 +445,12 @@ None
 
 ---
 
-## Level 21: Spellcraft Development Tools
+## Level 22: Spellcraft Development Tools
 
 **Purpose**: Tools for spell development, linting, and management.
 
 ### Assumptions
-- [ ] Level 20 complete (banish, *noop)
+- [ ] Level 27 complete (banish, *noop)
 
 ### Spells
 * scribe-spell
@@ -455,91 +473,91 @@ None
 
 ---
 
-## Level 22: Core Menu Infrastructure
+## Level 23: Core Menu Infrastructure
 
 **Purpose**: Core menu system components that aggregate spells.
 
 ### Assumptions
-- [ ] Level 21 complete (banish, *noop)
+- [ ] Level 27 complete (banish, *noop)
 - [ ] Menu system from Level 2 works (menu, *fix-menu-system)
 
 ### Spells
 * spellbook-store
-* spellbook (menu from Level 2, read-magic from Level 5)
-* cast (menu from Level 2, spellbook)
-* spell-menu (menu from Level 2, spellbook)
+* spellbook (menu from Level 3, read-magic from Level 5)
+* cast (menu from Level 3, spellbook)
+* spell-menu (menu from Level 3, spellbook)
 
 ### Imps Introduced
 None
 
 ---
 
-## Level 23: System & Configuration Menus
+## Level 24: System ## Level 23: System & Config Configuration Menus
 
 **Purpose**: Menu interfaces for system configuration and management.
 
 ### Assumptions
-- [ ] Level 22 complete (banish, *noop)
+- [ ] Level 27 complete (banish, *noop)
 
 ### Spells
-* system-menu (menu from Level 2, config from Level 9)
-* install-menu (menu from Level 2)
-* synonym-menu (menu from Level 2, add-synonym/edit-synonym/delete-synonym from Level 21)
-* thesaurus (menu from Level 2)
+* system-menu (menu from Level 3, config from Level 9)
+* install-menu (menu from Level 3)
+* synonym-menu (menu from Level 3, add-synonym/edit-synonym/delete-synonym from Level 21)
+* thesaurus (menu from Level 3)
 
 ### Imps Introduced
 None
 
 ---
 
-## Level 24: MUD Administration Menus
+## Level 25: MUD Administration Menus
 
 **Purpose**: Menu interfaces for MUD features and administration.
 
 ### Assumptions
-- [ ] Level 23 complete (banish, *noop)
+- [ ] Level 27 complete (banish, *noop)
 
 ### Spells
-* mud (menu from Level 2)
-* mud-menu (menu from Level 2, look from Level 3, decorate from Level 14)
-* mud-settings (menu from Level 2, config from Level 9)
-* mud-admin-menu (menu from Level 2)
-* add-ssh-player (menu from Level 2)
-* new-player (menu from Level 2)
-* set-player (menu from Level 2)
+* mud (menu from Level 3)
+* mud-menu (menu from Level 3, look from Level 3, decorate from Level 14)
+* mud-settings (menu from Level 3, config from Level 9)
+* mud-admin-menu (menu from Level 3)
+* add-ssh-player (menu from Level 3)
+* new-player (menu from Level 3)
+* set-player (menu from Level 3)
 
 ### Imps Introduced
 None
 
 ---
 
-## Level 25: Domain-Specific Menus
+## Level 26: Domain-Specific Menus
 
 **Purpose**: Menu interfaces for specialized domains (network, services, priorities, etc.).
 
 ### Assumptions
-- [ ] Level 24 complete (banish, *noop)
+- [ ] Level 27 complete (banish, *noop)
 
 ### Spells
-* network-menu (menu from Level 2)
-* services-menu (menu from Level 2, service spells from Level 26)
-* shutdown-menu (menu from Level 2)
-* priority-menu (menu from Level 2, prioritize/get-priority from Level 17)
-* priorities (menu from Level 2, priority-menu)
-* users-menu (menu from Level 2)
-* profile-tests (menu from Level 2, test-magic from Level 10)
+* network-menu (menu from Level 3)
+* services-menu (menu from Level 3, service spells from Level 26)
+* shutdown-menu (menu from Level 3)
+* priority-menu (menu from Level 3, prioritize/get-priority from Level 17)
+* priorities (menu from Level 3, priority-menu)
+* users-menu (menu from Level 3)
+* profile-tests (menu from Level 3, test-magic from Level 10)
 
 ### Imps Introduced
 None
 
 ---
 
-## Level 26: System Service Management
+## Level 27: System Service Management
 
 **Purpose**: System service installation and management.
 
 ### Assumptions
-- [ ] Level 25 complete (banish, *noop)
+- [ ] Level 27 complete (banish, *noop)
 
 ### Spells
 * install-service-template
@@ -557,12 +575,12 @@ None
 
 ---
 
-## Level 27: Optional Arcana & Third-Party Integrations
+## Level 28: Optional Arcana & Third-Party Integrations
 
 **Purpose**: Optional third-party software integrations.
 
 ### Assumptions
-- [ ] Level 26 complete (banish, *noop)
+- [ ] Level 27 complete (banish, *noop)
 
 ### Spells
 All spells in `spells/.arcana/`
@@ -638,53 +656,56 @@ banish 0
 # Prepare wizardry installation
 banish 1
 
-# Prepare menu system
+# Prepare glossary system
 banish 2
 
-# MUD basics (just cd-hook and look)
+# Prepare menu system
 banish 3
 
-# Navigation (just jump-to-marker and mark-location)
+# MUD basics (just cd-hook and look)
 banish 4
 
-# Through arcane file operations
+# Navigation (just jump-to-marker and mark-location)
 banish 5
 
-# Through basic cantrips
+# Through arcane file operations
 banish 6
 
-# Through validation helpers
+# Through basic cantrips
 banish 7
 
-# Through advanced cantrips
+# Through validation helpers
 banish 8
 
-# Through system configuration
+# Through advanced cantrips
 banish 9
 
-# Through testing infrastructure
+# Through system configuration
 banish 10
 
-# Through system maintenance
+# Through testing infrastructure
 banish 11
 
+# Through system maintenance
+banish 12
+
 # Through all specialized domains
-banish 21
+banish 22
 
 # Through all menus
-banish 25
-
-# Through services
 banish 26
 
-# Full system validation (all levels including arcana)
+# Through services
 banish 27
 
+# Full system validation (all levels including arcana)
+banish 28
+
 # Verbose mode shows all checks and tests
-banish --verbose 2
+banish --verbose 3
 
 # Skip tests, just check assumptions
-banish --no-tests 3
+banish --no-tests 4
 
 # Skip self-healing prompts, just report
 banish --no-heal 1

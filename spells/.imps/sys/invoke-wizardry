@@ -125,58 +125,68 @@ invoke_wizardry() {
     return 1
   fi
   
-  # Pre-load imps by level (Levels 0-3: POSIX + Wizardry + Menu + MUD)
+  # Pre-load imps by level (Levels 0-3: POSIX + Wizardry + Glossary + Menu)
   # This provides all foundational imps needed for core wizardry functionality
+  # Uses spell-levels imp to stay in sync with level definitions
   _iw_debug "Pre-loading imps (levels 0-3)"
   
-  # Level 1: Wizardry Installation imps
-  for _imp_name in \
-    require require-wizardry castable env-clear on-exit clear-traps \
-    has there is empty nonempty \
-    say warn die fail info step success debug \
-    temp-file temp-dir cleanup-file cleanup-dir \
-    tty-save tty-restore tty-raw read-line \
-    contains trim equals starts ends \
-    here parent file-name abs-path env-or; do
-    for _family_dir in "$WIZARDRY_DIR"/spells/.imps/*; do
-      [ -d "$_family_dir" ] || continue
-      _imp_file="$_family_dir/$_imp_name"
-      if [ -f "$_imp_file" ]; then
-        if command -v word_of_binding >/dev/null 2>&1; then
-          word_of_binding "$_imp_name" 2>/dev/null || :
-        fi
-        break
+  # Source spell-levels to get level definitions
+  _spell_levels_imp="$WIZARDRY_DIR/spells/.imps/sys/spell-levels"
+  if [ -f "$_spell_levels_imp" ]; then
+    # shellcheck source=/dev/null
+    . "$_spell_levels_imp"
+    
+    # Load imps for levels 1, 2, and 3 (Level 0 has no imps)
+    for _level in 1 2 3; do
+      _level_imps=$(get_level_imps "$_level")
+      if [ -n "$_level_imps" ]; then
+        _iw_debug "Loading Level $_level imps: $(banish_level_name "$_level")"
+        for _imp_spec in $_level_imps; do
+          # Extract imp name (may include family/ prefix)
+          case "$_imp_spec" in
+            */*)
+              _imp_family=${_imp_spec%/*}
+              _imp_name=${_imp_spec##*/}
+              _imp_file="$WIZARDRY_DIR/spells/.imps/$_imp_spec"
+              ;;
+            *)
+              _imp_name=$_imp_spec
+              # Search for imp in all families
+              _imp_file=""
+              for _family_dir in "$WIZARDRY_DIR"/spells/.imps/*; do
+                [ -d "$_family_dir" ] || continue
+                if [ -f "$_family_dir/$_imp_name" ]; then
+                  _imp_file="$_family_dir/$_imp_name"
+                  break
+                fi
+              done
+              ;;
+          esac
+          
+          if [ -n "$_imp_file" ] && [ -f "$_imp_file" ]; then
+            if command -v word_of_binding >/dev/null 2>&1; then
+              word_of_binding "$_imp_name" 2>/dev/null || :
+            fi
+          fi
+        done
       fi
     done
-  done
-  
-  # Level 2: Menu System imps
-  for _imp_name in is-submenu is-integer category-title exit-label; do
-    for _family_dir in "$WIZARDRY_DIR"/spells/.imps/*; do
-      [ -d "$_family_dir" ] || continue
-      _imp_file="$_family_dir/$_imp_name"
-      if [ -f "$_imp_file" ]; then
-        if command -v word_of_binding >/dev/null 2>&1; then
-          word_of_binding "$_imp_name" 2>/dev/null || :
+  else
+    # Fallback if spell-levels not found - use minimal hardcoded list
+    _iw_debug "Warning: spell-levels imp not found, using minimal preload"
+    for _imp_name in require-wizardry castable env-clear has die warn fail info say temp-file cleanup-file; do
+      for _family_dir in "$WIZARDRY_DIR"/spells/.imps/*; do
+        [ -d "$_family_dir" ] || continue
+        _imp_file="$_family_dir/$_imp_name"
+        if [ -f "$_imp_file" ]; then
+          if command -v word_of_binding >/dev/null 2>&1; then
+            word_of_binding "$_imp_name" 2>/dev/null || :
+          fi
+          break
         fi
-        break
-      fi
+      done
     done
-  done
-  
-  # Level 3: MUD Basics imps
-  for _imp_name in xattr-helper-usable xattr-list-keys xattr-read-value; do
-    for _family_dir in "$WIZARDRY_DIR"/spells/.imps/*; do
-      [ -d "$_family_dir" ] || continue
-      _imp_file="$_family_dir/$_imp_name"
-      if [ -f "$_imp_file" ]; then
-        if command -v word_of_binding >/dev/null 2>&1; then
-          word_of_binding "$_imp_name" 2>/dev/null || :
-        fi
-        break
-      fi
-    done
-  done
+  fi
   
   # Centralized gloss generation: Automatically regenerate glosses for:
   # 1. All wizardry spells (in $WIZARDRY_DIR/spells/)
@@ -229,90 +239,68 @@ invoke_wizardry() {
     fi
   fi
   
-  # Pre-load spells by level (Levels 0-3: POSIX + Wizardry + Menu + MUD)
+  # Pre-load spells by level (Levels 0-3: POSIX + Wizardry + Glossary + Menu)
   # This provides all foundational spells needed for core wizardry functionality
+  # Uses spell-levels imp to stay in sync with level definitions
   _iw_debug "Pre-loading spells (levels 0-3)"
   
-  # Level 0: POSIX & Platform Foundation
-  for _spell_name in detect-posix detect-distro verify-posix; do
-    for _spell_dir in "$WIZARDRY_DIR"/spells/*; do
-      [ -d "$_spell_dir" ] || continue
-      case "$_spell_dir" in */.imps|*/.arcana) continue ;; esac
-      _spell_file="$_spell_dir/$_spell_name"
-      if [ -f "$_spell_file" ]; then
-        _iw_debug "Loading spell: $_spell_name"
-        if command -v word_of_binding >/dev/null 2>&1 \
-          && word_of_binding "$_spell_name" 2>/dev/null; then
-          _iw_status="✓ Loaded"
-        else
-          _iw_status="✗ Failed"
-        fi
-        _iw_debug "  $_iw_status: $_spell_name"
-        break
+  if [ -f "$_spell_levels_imp" ]; then
+    # Load spells for levels 0, 1, 2, and 3
+    for _level in 0 1 2 3; do
+      _level_spells=$(get_level_spells "$_level")
+      if [ -n "$_level_spells" ]; then
+        _iw_debug "Loading Level $_level spells: $(banish_level_name "$_level")"
+        for _spell_spec in $_level_spells; do
+          # Extract spell name (may include :category suffix)
+          _spell_name=${_spell_spec%%:*}
+          
+          # Skip special bootstrap spells
+          case "$_spell_name" in
+            install) continue ;;  # Bootstrap only, not preloaded
+          esac
+          
+          # Find and load the spell
+          for _spell_dir in "$WIZARDRY_DIR"/spells/*; do
+            [ -d "$_spell_dir" ] || continue
+            case "$_spell_dir" in */.imps|*/.arcana) continue ;; esac
+            _spell_file="$_spell_dir/$_spell_name"
+            if [ -f "$_spell_file" ]; then
+              _iw_debug "Loading spell: $_spell_name"
+              if command -v word_of_binding >/dev/null 2>&1 \
+                && word_of_binding "$_spell_name" 2>/dev/null; then
+                _iw_status="✓ Loaded"
+              else
+                _iw_status="✗ Failed"
+              fi
+              _iw_debug "  $_iw_status: $_spell_name"
+              break
+            fi
+          done
+        done
       fi
     done
-  done
-  
-  # Level 1: Wizardry Installation
-  for _spell_name in banish; do
-    for _spell_dir in "$WIZARDRY_DIR"/spells/*; do
-      [ -d "$_spell_dir" ] || continue
-      case "$_spell_dir" in */.imps|*/.arcana) continue ;; esac
-      _spell_file="$_spell_dir/$_spell_name"
-      if [ -f "$_spell_file" ]; then
-        _iw_debug "Loading spell: $_spell_name"
-        if command -v word_of_binding >/dev/null 2>&1 \
-          && word_of_binding "$_spell_name" 2>/dev/null; then
-          _iw_status="✓ Loaded"
-        else
-          _iw_status="✗ Failed"
+  else
+    _iw_debug "Warning: Cannot load spells from spell-levels imp, using minimal preload"
+    # Fallback to minimal essential spells
+    for _spell_name in banish menu; do
+      for _spell_dir in "$WIZARDRY_DIR"/spells/*; do
+        [ -d "$_spell_dir" ] || continue
+        case "$_spell_dir" in */.imps|*/.arcana) continue ;; esac
+        _spell_file="$_spell_dir/$_spell_name"
+        if [ -f "$_spell_file" ]; then
+          _iw_debug "Loading spell: $_spell_name"
+          if command -v word_of_binding >/dev/null 2>&1 \
+            && word_of_binding "$_spell_name" 2>/dev/null; then
+            _iw_status="✓ Loaded"
+          else
+            _iw_status="✗ Failed"
+          fi
+          _iw_debug "  $_iw_status: $_spell_name"
+          break
         fi
-        _iw_debug "  $_iw_status: $_spell_name"
-        break
-      fi
+      done
     done
-  done
-  
-  # Level 2: Menu System
-  for _spell_name in menu fathom-terminal fathom-cursor move-cursor \
-    await-keypress cursor-blink colors main-menu; do
-    for _spell_dir in "$WIZARDRY_DIR"/spells/*; do
-      [ -d "$_spell_dir" ] || continue
-      case "$_spell_dir" in */.imps|*/.arcana) continue ;; esac
-      _spell_file="$_spell_dir/$_spell_name"
-      if [ -f "$_spell_file" ]; then
-        _iw_debug "Loading spell: $_spell_name"
-        if command -v word_of_binding >/dev/null 2>&1 \
-          && word_of_binding "$_spell_name" 2>/dev/null; then
-          _iw_status="✓ Loaded"
-        else
-          _iw_status="✗ Failed"
-        fi
-        _iw_debug "  $_iw_status: $_spell_name"
-        break
-      fi
-    done
-  done
-  
-  # Level 3: MUD Basics
-  for _spell_name in check-cd-hook look; do
-    for _spell_dir in "$WIZARDRY_DIR"/spells/*; do
-      [ -d "$_spell_dir" ] || continue
-      case "$_spell_dir" in */.imps|*/.arcana) continue ;; esac
-      _spell_file="$_spell_dir/$_spell_name"
-      if [ -f "$_spell_file" ]; then
-        _iw_debug "Loading spell: $_spell_name"
-        if command -v word_of_binding >/dev/null 2>&1 \
-          && word_of_binding "$_spell_name" 2>/dev/null; then
-          _iw_status="✓ Loaded"
-        else
-          _iw_status="✗ Failed"
-        fi
-        _iw_debug "  $_iw_status: $_spell_name"
-        break
-      fi
-    done
-  done
+  fi
 
   _iw_menu_ok=0
   if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then

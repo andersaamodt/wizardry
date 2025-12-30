@@ -40,9 +40,9 @@ get_level_spells() {
 get_level_imps() {
   case "$1" in
     1) printf 'declare-globals sys/invoke-wizardry sys/invoke-wizardry-minimal-wob sys/invoke-thesaurus sys/require-wizardry sys/require sys/castable sys/word-of-binding sys/env-clear sys/env-or sys/on-exit sys/clear-traps sys/on sys/now sys/any sys/need sys/must sys/uncastable sys/where sys/autocast sys/ask-install-wizardry sys/clipboard-available sys/nix-shell-add sys/nix-shell-remove sys/nix-shell-status sys/nix-rebuild sys/spell-levels cond/has cond/there cond/is cond/empty cond/nonempty cond/no cond/in-range cond/lacks cond/newer cond/full cond/gone cond/is-path cond/in-ancestry cond/is-posint cond/yes cond/given cond/older out/say out/warn out/die out/fail out/info out/step out/success out/debug out/ok out/heading-section out/heading-separator out/heading-simple out/usage-error out/first-of out/else out/print-pass out/print-fail out/disable-palette out/quiet fs/temp-file fs/temp-dir fs/cleanup-file fs/cleanup-dir input/tty-save input/tty-restore input/tty-raw input/read-line str/contains str/trim str/equals str/starts str/ends str/lower str/upper str/seeks str/differs str/matches paths/here paths/parent paths/file-name paths/abs-path paths/make paths/path paths/tilde-path paths/strip-trailing-slashes paths/norm-path paths/script-dir paths/temp text/pluralize text/count-words' ;;
+    2) printf 'lex/parse' ;;
     3) printf 'menu/is-submenu menu/is-integer menu/category-title menu/exit-label menu/is-installable' ;;
     4) printf 'fs/xattr-helper-usable fs/xattr-list-keys fs/xattr-read-value' ;;
-    6) printf 'lex/parse' ;;
     7) printf 'fs/backup fs/clip-copy fs/clip-paste fs/ensure-parent-dir menu/detect-trash text/read-file text/write-file text/lines text/each text/append text/count-chars text/make-indent text/drop text/last text/take text/skip text/first text/pick text/field' ;;
     8) printf 'input/select-input lex/from lex/to lex/and-then lex/into lex/then lex/disambiguate' ;;
     9) printf 'input/validate-command input/validate-name lex/and lex/or' ;;
