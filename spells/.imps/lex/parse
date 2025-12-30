@@ -5,10 +5,20 @@
 #
 # Current mode: PASSTHROUGH (parsing disabled for glossary-based interception paradigm)
 # Linking word detection is logged when WIZARDRY_DEBUG=1 but not acted upon yet.
+#
+# RECURSION PREVENTION: Uses WIZARDRY_PARSE_DEPTH to prevent infinite loops
 
 parse() {
   if [ $# -eq 0 ]; then
     return 0
+  fi
+
+  # RECURSION PREVENTION: Track parse depth to prevent infinite loops
+  _parse_depth=${WIZARDRY_PARSE_DEPTH:-0}
+  if [ "$_parse_depth" -ge 5 ]; then
+    printf '[parse] ERROR: Maximum recursion depth (5) exceeded\n' >&2
+    printf '[parse] This suggests a circular gloss or parsing loop\n' >&2
+    return 1
   fi
 
   _parse_lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
@@ -23,7 +33,7 @@ parse() {
     if [ -x "$_parse_lex_dir/$_parse_two_word" ] && [ "$_parse_two_word" != "parse" ]; then
       [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Found linking words: %s\n' "$_parse_two_word" >&2
       # FUTURE: Enable parsing by uncommenting the line below
-      # shift 2; "$_parse_lex_dir/$_parse_two_word" "" "" "$@"; return $?
+      # shift 2; WIZARDRY_PARSE_DEPTH=$((_parse_depth + 1)) "$_parse_lex_dir/$_parse_two_word" "" "" "$@"; return $?
     fi
   fi
 
@@ -33,7 +43,7 @@ parse() {
     if [ -x "$_parse_lex_dir/$_parse_first" ] && [ "$_parse_first" != "parse" ]; then
       [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Found linking word: %s\n' "$_parse_first" >&2
       # FUTURE: Enable parsing by uncommenting the line below
-      # shift; "$_parse_lex_dir/$_parse_first" "" "" "$@"; return $?
+      # shift; WIZARDRY_PARSE_DEPTH=$((_parse_depth + 1)) "$_parse_lex_dir/$_parse_first" "" "" "$@"; return $?
     fi
   fi
 
@@ -41,23 +51,51 @@ parse() {
   _parse_cmd=${1-}
   shift
 
+  # CRITICAL RECURSION PREVENTION: If the command is "parse", we're in a loop
+  # This happens if a gloss calls parse which calls the gloss again
+  if [ "$_parse_cmd" = "parse" ]; then
+    printf '[parse] ERROR: Attempted to recursively call parse\n' >&2
+    printf '[parse] This suggests a malformed gloss or infinite loop\n' >&2
+    return 1
+  fi
+
+  # Increment parse depth for next level
+  export WIZARDRY_PARSE_DEPTH=$((_parse_depth + 1))
+
+  # Check if command exists before executing to prevent confusing errors
+  # We need to look OUTSIDE the glossary to find the real command
+  # Temporarily remove glossary from PATH
+  _gloss_dir="${SPELLBOOK_DIR:-${HOME}/.spellbook}/.glossary"
+  _old_path="$PATH"
+  PATH=$(printf '%s' "$PATH" | sed "s|$_gloss_dir:||g" | sed "s|:$_gloss_dir||g" | sed "s|^$_gloss_dir\$||")
+  
   if [ $# -eq 0 ]; then
-    # Check if command exists before executing to prevent infinite recursion
+    # Check if real command exists (not gloss)
     if ! command -v "$_parse_cmd" >/dev/null 2>&1; then
+      PATH="$_old_path"
+      export WIZARDRY_PARSE_DEPTH=$((_parse_depth))  # Reset depth
       printf '%s: command not found\n' "$_parse_cmd" >&2
       return 127
     fi
+    PATH="$_old_path"
     "$_parse_cmd"
-    return $?
+    _ret=$?
+    export WIZARDRY_PARSE_DEPTH=$((_parse_depth))  # Reset depth
+    return $_ret
   fi
 
   # Execute with arguments
   if ! command -v "$_parse_cmd" >/dev/null 2>&1; then
+    PATH="$_old_path"
+    export WIZARDRY_PARSE_DEPTH=$((_parse_depth))  # Reset depth
     printf '%s: command not found\n' "$_parse_cmd" >&2
     return 127
   fi
+  PATH="$_old_path"
   "$_parse_cmd" "$@"
-  return $?
+  _ret=$?
+  export WIZARDRY_PARSE_DEPTH=$((_parse_depth))  # Reset depth
+  return $_ret
 }
 
 # Self-execute when run directly (not sourced)

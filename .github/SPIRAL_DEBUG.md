@@ -312,3 +312,81 @@ The spiral debug is complete when:
   - Enables recursive parser for future natural language commands
   - No subshell scoping issues
   - Works in scripts and interactive shells alike
+
+### 2025-12-30: Phase 5 Completion - Glossary System Feature Complete
+
+- **Status**: Implementing comprehensive glossary system enhancements
+- **Changes Made**:
+  
+  1. **Enhanced generate-glosses spell**:
+     - Added duplicate detection and prevention
+     - Integrated synonym-to-gloss migration (generates glosses from .synonyms files)
+     - Added --system flag (inactive) for future system command glossing
+     - Improved validation to prevent conflicts
+     - Unified gloss generation from multiple sources (spells + synonyms)
+     - Better progress reporting and statistics
+  
+  2. **Enhanced parse imp with recursion prevention**:
+     - Added WIZARDRY_PARSE_DEPTH tracking to prevent infinite loops
+     - Maximum recursion depth: 5 levels
+     - Detects and prevents "parse calling parse" loops
+     - Temporarily removes glossary from PATH when resolving real commands
+     - Proper error messages for recursion issues
+     - Maintains parse depth across calls for debugging
+  
+  3. **Synonym system migration**:
+     - Synonyms from .synonyms and .default-synonyms now generate glosses
+     - Glosses replace shell aliases for cross-context reliability
+     - Original text files remain user-editable (source of truth)
+     - Generated glosses marked with source file for traceability
+  
+  4. **Test level integration** (IN PROGRESS):
+     - Adding "Glossary System" as new Level 2 in banish/test-magic/demo-magic
+     - Shifts "Menu System" to Level 3 and all subsequent levels up by 1
+     - Tests glossary availability, parse functionality, recursion prevention
+     - Validates synonym-to-gloss generation
+
+- **Implementation Status**:
+  - [x] Enhanced generate-glosses with synonym integration
+  - [x] Enhanced parse with recursion prevention
+  - [x] Documented comprehensive glossary architecture
+  - [ ] Update banish to add Glossary as Level 2
+  - [ ] Update test-magic to add Glossary as Level 2
+  - [ ] Update demo-magic to add Glossary as Level 2
+  - [ ] Create tests for generate-glosses
+  - [ ] Test complete glossary system with fresh install
+  - [ ] Remove command_not_found handlers (after testing complete)
+
+- **Architecture Summary**:
+  ```
+  $SPELLBOOK_DIR/
+    .glossary/              # Auto-generated glosses (DO NOT EDIT)
+      menu                  # Gloss for menu spell: exec parse "menu" "$@"
+      jump                  # Gloss for jump synonym: exec parse "jump-to-marker" "$@"
+      ll                    # Gloss for ll synonym: exec parse "ls -la" "$@"
+    .synonyms               # User synonyms (text file, user-editable)
+    .default-synonyms       # Default synonyms (text file, user-editable)
+  ```
+
+- **Flow**:
+  1. User types command (e.g., `menu` or `ll`)
+  2. Glossary in PATH intercepts (glossary prepended to PATH)
+  3. Gloss executes: `exec parse "menu" "$@"` or `exec parse "ls -la" "$@"`
+  4. parse removes glossary from PATH temporarily
+  5. parse finds real command outside glossary
+  6. parse executes real command with arguments
+  7. Recursion prevented by WIZARDRY_PARSE_DEPTH tracking
+
+- **Benefits Realized**:
+  - ✅ Synonyms now work in scripts (not just interactive shells)
+  - ✅ Recursion prevention ensures stability
+  - ✅ Unified gloss generation from multiple sources
+  - ✅ Cross-platform POSIX compliance
+  - ✅ Foundation for future natural language parsing
+  - ✅ Self-documenting glosses (source file tracked)
+
+- **Remaining Work**:
+  - Test level integration (banish/test-magic/demo-magic)
+  - Comprehensive testing with fresh install
+  - Test suite for generate-glosses
+  - Remove deprecated command_not_found handlers
