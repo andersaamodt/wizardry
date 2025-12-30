@@ -426,7 +426,13 @@ WRAPPER_EOF
     END { if (!NR) print 0 }
   ')
 
-  if [ "$compiled_mode" != "1" ]; then
+  # Check if test was skipped (SKIP message in output)
+  test_is_skipped=0
+  if printf '%s\n' "$cleaned_output" | grep -q "^SKIP:"; then
+    test_is_skipped=1
+  fi
+
+  if [ "$compiled_mode" != "1" ] && [ "$test_is_skipped" -eq 0 ]; then
     test_incomplete_reasons=""
     case "$test_path" in
       .imps/*|*/.imps/*)
