@@ -3,7 +3,7 @@
 # Scans for linking words (imps in lex/) and delegates to them.
 # Longer linking words take precedence (and-then before and or then).
 #
-# Current mode: PASSTHROUGH (parsing disabled for shim-based interception paradigm)
+# Current mode: PASSTHROUGH (parsing disabled for glossary-based interception paradigm)
 # Linking word detection is logged when WIZARDRY_DEBUG=1 but not acted upon yet.
 
 parse() {

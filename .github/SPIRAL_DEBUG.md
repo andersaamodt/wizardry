@@ -254,36 +254,53 @@ The spiral debug is complete when:
 - Don't worry about test failures initially - we'll fix tests after core works
 - Document every change so we can track what breaks what
 
-### 2025-12-30: Phase 5 - Paradigm Shift to Shim-Based Interception
+### 2025-12-30: Phase 5 - Paradigm Shift to Glossary-Based Interception
 
 - **Issue**: command_not_found handlers are not POSIX compliant and cannot hotload functions due to subshell isolation
-- **Solution**: Shift to shim-based interception system
-  - Create shim wrappers in `$SPELLBOOK_DIR/.synonyms/` for all spells
-  - Each shim executes: `exec parse "spell-name" "$@"`
+- **Solution**: Shift to glossary-based interception system
+  - Create glosses (lightweight wrappers) in `$SPELLBOOK_DIR/.glossary/` for all spells
+  - Each gloss executes: `exec parse "spell-name" "$@"` with hardcoded spell name
   - `parse` imp acts as universal entry point (passthrough for now, parsing later)
-  - Shims prepended to PATH give parse first shot at all commands
+  - Glossary prepended to PATH gives parse first shot at all commands
   - No shell functions, no hooks, no subshell issues - pure POSIX sh
+  - The glossary makes spells "shine" - accessible, parsable, and (future) spell-checkable
 
 - **Architecture**:
   ```
-  $SPELLBOOK_DIR/.synonyms/
-    spells/         # Auto-generated shims for all wizardry spells
-    custom/         # User-added synonym shims
-    default/        # Built-in synonym shims
+  $SPELLBOOK_DIR/
+    .glossary/           # Auto-generated glosses for all wizardry spells
+    .synonyms            # User synonym definitions (text file with aliases)
+    .default-synonyms    # Built-in synonym definitions (text file with aliases)
   ```
+  
+  **Note**: The existing synonym system (.synonyms and .default-synonyms) remains unchanged.
+  Synonyms are user-facing aliases defined in text files. They will be implemented
+  as glosses in the .glossary directory, allowing synonyms to work reliably across
+  all contexts (not just interactive shells).
 
 - **Components to create/modify**:
-  1. **generate-shims spell** - Creates shim files for all spells
-  2. **parse modifications** - Add debug output for linking words (passthrough only for now)
-  3. **invoke-wizardry updates** - Prepend shim directories to PATH, async shim updates
-  4. **Synonym migration** - Convert existing alias-based synonyms to shims
+  1. **generate-glosses spell** - Creates gloss files for all spells
+  2. **parse modifications** - Add debug output for linking words, passthrough mode
+  3. **invoke-wizardry updates** - Prepend glossary to PATH, async gloss updates
+  4. **Synonym implementation** - Generate glosses for synonyms defined in text files
+
+- **Terminology**:
+  - **Gloss** (noun): A lightweight wrapper script that makes a spell shine and accessible via PATH
+  - **Glossary** (noun): The collection of all glosses (`$SPELLBOOK_DIR/.glossary/`)
+  - **Synonym** (noun): A user-defined alias for a spell (stored in .synonyms text files)
+  - The glossary system handles: PATH interception, parsing, and (future) spell-checking
 
 - **Implementation Status**:
-  - [ ] Create generate-shims spell
-  - [ ] Modify parse to output debug for linking words
-  - [ ] Update invoke-wizardry to prepend shim paths
-  - [ ] Create async shim update mechanism
-  - [ ] Migrate existing synonym system to shim-based
+  - [x] Create generate-glosses spell
+  - [x] Modify parse to output debug for linking words (passthrough mode)
+  - [x] Document Phase 5 in SPIRAL_DEBUG.md
+  - [ ] Update invoke-wizardry to prepend glossary path to PATH
+  - [ ] Create async gloss validation/update mechanism in invoke-wizardry
+  - [ ] Generate glosses for synonyms from text file definitions
+  - [ ] Remove command_not_found handlers in favor of glossary
+  - [ ] Test with fresh wizardry installation
+  - [ ] Create tests for generate-glosses spell
+  - [ ] Migrate existing synonym system to gloss-based
   - [ ] Remove command_not_found handlers
   - [ ] Test with fresh install
 
