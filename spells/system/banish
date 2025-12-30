@@ -11,7 +11,7 @@ Usage: banish [LEVEL] [OPTIONS]
 Validate wizardry readiness by level, including assumptions, self-healing, and tests.
 
 Arguments:
-  LEVEL                 Validate through level N (0-27, default: 1)
+  LEVEL                 Validate through level N (0-29, default: 1)
   all                   Validate all available levels
 
 Options:
@@ -95,8 +95,8 @@ fi
 export WIZARDRY_DIR
 
 # Parse arguments
-target_level=1
-max_level=27
+target_level=3
+max_level=29
 skip_tests=0
 skip_heal=0
 only_this_level=0
@@ -443,7 +443,82 @@ banish_process_level() {
       ;;
       
     2)
-      # Level 2: Menu System
+      # Level 2: Glossary System
+      
+      # Check spellbook directory for glossary
+      spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
+      if [ -d "$spell_home" ] && [ -w "$spell_home" ]; then
+        printf '  %s✓%s Spellbook directory: %s\n' "$_green" "$_reset" "$spell_home"
+      else
+        printf '  %s✗%s Spellbook directory: %s unavailable\n' "$_red" "$_reset" "$spell_home"
+        if [ "$skip_heal" -eq 0 ]; then
+          if mkdir -p "$spell_home" 2>/dev/null; then
+            printf '    %s✓%s Spellbook directory created\n' "$_green" "$_reset"
+          else
+            printf '    %s✗%s Spellbook directory creation failed\n' "$_red" "$_reset"
+          fi
+        fi
+        if [ ! -d "$spell_home" ] || [ ! -w "$spell_home" ]; then
+          return 1
+        fi
+      fi
+      
+      # Check spells
+      spell_list=$(get_level_spells 2)
+      if [ -n "$spell_list" ]; then
+        if ! eval "validate_spells --quiet $spell_list" 2>/dev/null; then
+          missing=$(eval "validate_spells --missing-only $spell_list" 2>/dev/null || true)
+          missing_count=$("$_banish_count_words" "$missing")
+          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
+          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
+          return 1
+        fi
+        spell_output=$(eval "validate_spells --show-status $spell_list" 2>&1) || true
+        if [ -n "$spell_output" ]; then
+          printf '%s\n' "$spell_output" | sed 's/^/  /'
+        else
+          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
+        fi
+      fi
+
+      # Check imps
+      imp_list=$(get_level_imps 2)
+      had_imps=0
+      if [ -n "$imp_list" ]; then
+        had_imps=1
+        new_imp_list=""
+        for imp in $imp_list; do
+          case " ${_banish_seen_imps} " in
+            *" ${imp} "*) ;;
+            *)
+              new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
+              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+              ;;
+          esac
+        done
+        imp_list=$new_imp_list
+      fi
+      if [ -n "$imp_list" ]; then
+        if ! eval "validate_spells --quiet --imps $imp_list" 2>/dev/null; then
+          missing=$(eval "validate_spells --imps --missing-only $imp_list" 2>/dev/null || true)
+          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
+          return 1
+        fi
+        imp_output=$(eval "validate_spells --imps --show-status $imp_list" 2>&1) || true
+        if [ -n "$imp_output" ]; then
+          printf '%s\n' "$imp_output" | sed 's/^/  /'
+        else
+          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
+        fi
+      elif [ "$had_imps" -eq 1 ]; then
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      else
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      fi
+      ;;
+
+    3)
+      # Level 3: Menu System
       
       # Check stty (single item - combine on one line)
       if ! command -v stty >/dev/null 2>&1; then
@@ -577,7 +652,7 @@ banish_process_level() {
       fi
 
       # Check spells
-      spell_list=$(get_level_spells 2)
+      spell_list=$(get_level_spells 3)
       if [ -n "$spell_list" ]; then
         if ! eval "validate_spells --quiet $spell_list" 2>/dev/null; then
           missing=$(eval "validate_spells --missing-only $spell_list" 2>/dev/null || true)
@@ -595,7 +670,7 @@ banish_process_level() {
       fi
 
       # Check imps
-      imp_list=$(get_level_imps 2)
+      imp_list=$(get_level_imps 3)
       had_imps=0
       if [ -n "$imp_list" ]; then
         had_imps=1
@@ -667,8 +742,8 @@ banish_process_level() {
       fi
       ;;
 
-    4)
-      # Level 4: Navigation
+    5)
+      # Level 5: Navigation
 
       # Check marker directory creation
       spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
@@ -707,8 +782,8 @@ banish_process_level() {
       fi
       ;;
 
-    5)
-      # Level 5: Arcane File Operations
+    7)
+      # Level 7: Arcane File Operations
 
       # Check file utilities
       file_utils_ok=1
@@ -743,8 +818,8 @@ banish_process_level() {
       fi
       ;;
 
-    6)
-      # Level 6: Basic Cantrips
+    8)
+      # Level 8: Basic Cantrips
 
       # Check interactive input device
       input_tty=${AWAIT_KEYPRESS_DEVICE:-/dev/tty}
@@ -768,8 +843,8 @@ banish_process_level() {
       fi
       ;;
 
-    9)
-      # Level 9: System Configuration
+    11)
+      # Level 11: System Configuration
 
       # Check configuration directory access
       config_home=${WIZARDRY_CONFIG_DIR:-${HOME:-.}/.wizardry}
@@ -790,8 +865,8 @@ banish_process_level() {
       fi
       ;;
 
-    10)
-      # Level 10: Testing Infrastructure
+    12)
+      # Level 12: Testing Infrastructure
 
       # Check tests directory
       tests_root="${WIZARDRY_DIR}/.tests"
@@ -858,8 +933,8 @@ banish_process_level() {
       fi
       ;;
 
-    16)
-      # Level 16: SSH & Remote Access
+    18)
+      # Level 18: SSH & Remote Access
 
       # Check SSH availability
       if command -v ssh >/dev/null 2>&1; then
@@ -884,8 +959,8 @@ banish_process_level() {
       fi
       ;;
 
-    19)
-      # Level 19: Extended Attributes
+    21)
+      # Level 21: Extended Attributes
 
       # Check extended attributes helpers
       xattr_helper=""
@@ -921,8 +996,8 @@ banish_process_level() {
       fi
       ;;
 
-    21)
-      # Level 21: Spellcraft Development Tools
+    23)
+      # Level 23: Spellcraft Development Tools
 
       # Check checkbashisms for lint-magic
       if command -v checkbashisms >/dev/null 2>&1; then
@@ -951,8 +1026,8 @@ banish_process_level() {
       fi
       ;;
 
-    22)
-      # Level 22: Core Menu Infrastructure
+    24)
+      # Level 24: Core Menu Infrastructure
 
       # Check spellbook directory access
       spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
@@ -973,8 +1048,8 @@ banish_process_level() {
       fi
       ;;
       
-    27)
-      # Level 27: Optional Arcana (single item - combine on one line)
+    29)
+      # Level 29: Optional Arcana (single item - combine on one line)
       if [ -d "${WIZARDRY_DIR}/spells/.arcana" ]; then
         arcana_count=$(find "${WIZARDRY_DIR}/spells/.arcana" -type f 2>/dev/null | wc -l)
         printf '  %s✓%s Arcana (optional): Found %d scripts\n' "$_green" "$_reset" "$arcana_count"
@@ -984,7 +1059,7 @@ banish_process_level() {
       ;;
       
     *)
-      # Levels 3-26: Standard validation pattern
+      # Levels 4, 6-7, 9-10, 13-17, 19-20, 22, 25-28: Standard validation pattern
       
       # Check spells
       spell_list=$(get_level_spells "$level")
