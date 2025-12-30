@@ -877,57 +877,63 @@ banish_process_level() {
         return 1
       fi
 
-      # Check pocket-dimension sandboxing
-      platform=$(uname -s 2>/dev/null || printf 'unknown')
-      pocket_cmd=""
-      if command -v pocket-dimension >/dev/null 2>&1; then
-        pocket_cmd=$(command -v pocket-dimension)
-      elif [ -x "${WIZARDRY_DIR}/spells/system/pocket-dimension" ]; then
-        pocket_cmd="${WIZARDRY_DIR}/spells/system/pocket-dimension"
-      fi
+      # Skip pocket-dimension and bwrap checks in GitHub Actions
+      # (bwrap should only be used in local environments, not CI workflows)
+      if [ "${GITHUB_ACTIONS-}" = "true" ]; then
+        printf '  %s✓%s Sandbox tools: Skipped (GitHub Actions environment)\n' "$_green" "$_reset"
+      else
+        # Check pocket-dimension sandboxing
+        platform=$(uname -s 2>/dev/null || printf 'unknown')
+        pocket_cmd=""
+        if command -v pocket-dimension >/dev/null 2>&1; then
+          pocket_cmd=$(command -v pocket-dimension)
+        elif [ -x "${WIZARDRY_DIR}/spells/system/pocket-dimension" ]; then
+          pocket_cmd="${WIZARDRY_DIR}/spells/system/pocket-dimension"
+        fi
 
-      if [ -n "$pocket_cmd" ]; then
-        if "$pocket_cmd" --check >/dev/null 2>&1; then
-          printf '  %s✓%s Sandbox tool: pocket-dimension available\n' "$_green" "$_reset"
+        if [ -n "$pocket_cmd" ]; then
+          if "$pocket_cmd" --check >/dev/null 2>&1; then
+            printf '  %s✓%s Sandbox tool: pocket-dimension available\n' "$_green" "$_reset"
+          else
+            printf '  %s✗%s Sandbox tool: pocket-dimension unavailable\n' "$_red" "$_reset"
+            return 1
+          fi
         else
-          printf '  %s✗%s Sandbox tool: pocket-dimension unavailable\n' "$_red" "$_reset"
+          printf '  %s✗%s Sandbox tool: pocket-dimension not found\n' "$_red" "$_reset"
           return 1
         fi
-      else
-        printf '  %s✗%s Sandbox tool: pocket-dimension not found\n' "$_red" "$_reset"
-        return 1
-      fi
 
-      if [ "$platform" = "Darwin" ]; then
-        if command -v sandbox-exec >/dev/null 2>&1; then
-          printf '  %s✓%s Sandbox tool: sandbox-exec available (macOS)\n' "$_green" "$_reset"
+        if [ "$platform" = "Darwin" ]; then
+          if command -v sandbox-exec >/dev/null 2>&1; then
+            printf '  %s✓%s Sandbox tool: sandbox-exec available (macOS)\n' "$_green" "$_reset"
+          else
+            printf '  %s✗%s Sandbox tool: sandbox-exec not found (macOS)\n' "$_red" "$_reset"
+            return 1
+          fi
         else
-          printf '  %s✗%s Sandbox tool: sandbox-exec not found (macOS)\n' "$_red" "$_reset"
-          return 1
-        fi
-      else
-        if command -v bwrap >/dev/null 2>&1; then
-          printf '  %s✓%s Sandbox tool: bwrap available\n' "$_green" "$_reset"
-        else
-          printf '  %s✗%s Sandbox tool: bwrap not found\n' "$_red" "$_reset"
-          if [ "$skip_heal" -eq 0 ]; then
-            if [ -x "${WIZARDRY_DIR}/spells/.arcana/core/install-bwrap" ]; then
-              printf '    Installing bwrap...\n'
-              if "${WIZARDRY_DIR}/spells/.arcana/core/install-bwrap" 2>/dev/null; then
-                if command -v bwrap >/dev/null 2>&1; then
-                  printf '    %s✓%s bwrap installed\n' "$_green" "$_reset"
+          if command -v bwrap >/dev/null 2>&1; then
+            printf '  %s✓%s Sandbox tool: bwrap available\n' "$_green" "$_reset"
+          else
+            printf '  %s✗%s Sandbox tool: bwrap not found\n' "$_red" "$_reset"
+            if [ "$skip_heal" -eq 0 ]; then
+              if [ -x "${WIZARDRY_DIR}/spells/.arcana/core/install-bwrap" ]; then
+                printf '    Installing bwrap...\n'
+                if "${WIZARDRY_DIR}/spells/.arcana/core/install-bwrap" 2>/dev/null; then
+                  if command -v bwrap >/dev/null 2>&1; then
+                    printf '    %s✓%s bwrap installed\n' "$_green" "$_reset"
+                  else
+                    printf '    %s✗%s Install failed\n' "$_red" "$_reset"
+                  fi
                 else
                   printf '    %s✗%s Install failed\n' "$_red" "$_reset"
                 fi
               else
-                printf '    %s✗%s Install failed\n' "$_red" "$_reset"
+                printf '    Auto-install not available\n'
               fi
-            else
-              printf '    Auto-install not available\n'
             fi
-          fi
-          if ! command -v bwrap >/dev/null 2>&1; then
-            return 1
+            if ! command -v bwrap >/dev/null 2>&1; then
+              return 1
+            fi
           fi
         fi
       fi
@@ -1127,10 +1133,25 @@ else
   printf '\nValidating through Level %d: %s\n' "$target_level" "$(banish_level_name "$target_level")"
 fi
 
-# Require core validator before level checks
+# Load validate_spells function if not already available
 if ! command -v validate_spells >/dev/null 2>&1; then
-  printf '%s\n' "banish: validate-spells not loaded (run invoke-wizardry or reload wizardry)" >&2
-  return 1
+  # Try to source validate-spells from known locations
+  if [ -f "${WIZARDRY_DIR}/spells/system/validate-spells" ]; then
+    # Prevent castable from executing when sourced
+    _WIZARDRY_SOURCING_SPELL=1
+    # shellcheck source=/dev/null
+    . "${WIZARDRY_DIR}/spells/system/validate-spells"
+    unset _WIZARDRY_SOURCING_SPELL
+  else
+    printf '%s\n' "banish: validate-spells not found" >&2
+    return 1
+  fi
+  
+  # Verify it loaded successfully
+  if ! command -v validate_spells >/dev/null 2>&1; then
+    printf '%s\n' "banish: failed to load validate-spells" >&2
+    return 1
+  fi
 fi
 
 # Run each level from 0 to target_level (or just target_level if --only)

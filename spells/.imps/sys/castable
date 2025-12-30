@@ -9,6 +9,11 @@
 set -eu
 
 castable() {
+  # Skip execution if being sourced by another spell
+  if [ "${_WIZARDRY_SOURCING_SPELL-}" = "1" ]; then
+    return 0
+  fi
+  
   # First check if we're being sourced (not executed)
   # When sourced, $0 won't match the spell name
   _cast_name=${CASTABLE_NAME-}
