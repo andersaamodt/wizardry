@@ -162,6 +162,12 @@ set -eu
     _spell_count=$(wc -l < "$_spell_list")
     [ "$quiet" -eq 0 ] && debug "Found $_spell_count executable files in wizardry"
     
+    # Warn if no files found (likely a find compatibility issue)
+    if [ "$_spell_count" -eq 0 ]; then
+      warn "generate-glosses: no executable files found in $wizardry_dir/spells"
+      warn "generate-glosses: this may indicate a find compatibility issue or permission problem"
+    fi
+    
     while IFS= read -r spell_path; do
       # Skip empty paths or invalid files
       [ -n "$spell_path" ] && [ -f "$spell_path" ] || continue
@@ -291,6 +297,12 @@ set -eu
     info "  Generated/updated: $total_generated"
     info "  Skipped (current): $total_skipped"
     [ "$force" -eq 1 ] && info "  Mode: --force (regenerate all)"
+    
+    # Warn if very few glosses were created (likely indicates a problem)
+    if [ "$total_glosses" -lt 50 ]; then
+      warn "generate-glosses: only $total_glosses glosses created (expected 300+)"
+      warn "generate-glosses: check $SPELLBOOK_DIR/.glossary-errors.log for details"
+    fi
   fi
   
   return 0
