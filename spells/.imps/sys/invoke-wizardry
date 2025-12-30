@@ -309,22 +309,39 @@ invoke_wizardry() {
         # In zsh subshells, functions aren't inherited, so command -v returns false
         # We must capture the function bodies here while they're still available
         _iw_func_defs=""
+        _iw_captured_count=0
         for _func in $_iw_export_funcs; do
           if command -v "$_func" >/dev/null 2>&1; then
             # Capture function definition from parent shell
             _iw_func_def="$(functions "$_func" 2>/dev/null || echo '')"
             if [ -n "$_iw_func_def" ]; then
-              _iw_func_defs="${_iw_func_defs}${_iw_func_def}"$'\n'
+              # Append with actual newline (not ANSI-C quote which doesn't work in sh)
+              _iw_func_defs="${_iw_func_defs}${_iw_func_def}
+"
+              _iw_captured_count=$((_iw_captured_count + 1))
             fi
           fi
         done
         
         if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+          printf '[invoke-wizardry] DEBUG: Captured %d function definitions\n' "$_iw_captured_count" >&2
+          printf '[invoke-wizardry] DEBUG: Total size of _iw_func_defs: %d bytes\n' "${#_iw_func_defs}" >&2
+          printf '[invoke-wizardry] DEBUG: First 200 chars of _iw_func_defs: %s\n' "${_iw_func_defs:0:200}" >&2
+        fi
+        
+        if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
           # Debug mode: show function availability
           (
             printf '[generate_glosses bg] DEBUG: Starting background job (zsh mode)\n' >&2
+            printf '[generate_glosses bg] DEBUG: Received %d bytes of function definitions\n' "${#_iw_func_defs}" >&2
             # Re-eval all function definitions captured from parent shell
-            eval "$_iw_func_defs"
+            if [ -n "$_iw_func_defs" ]; then
+              printf '[generate_glosses bg] DEBUG: Evaling function definitions...\n' >&2
+              eval "$_iw_func_defs"
+              printf '[generate_glosses bg] DEBUG: Eval completed\n' >&2
+            else
+              printf '[generate_glosses bg] DEBUG: ERROR: No function definitions to eval!\n' >&2
+            fi
             printf '[generate_glosses bg] DEBUG: After re-eval, require_wizardry available: %s\n' "$(command -v require_wizardry 2>&1 || echo 'NO')" >&2
             printf '[generate_glosses bg] DEBUG: After re-eval, env_or available: %s\n' "$(command -v env_or 2>&1 || echo 'NO')" >&2
             printf '[generate_glosses bg] DEBUG: After re-eval, env_clear available: %s\n' "$(command -v env_clear 2>&1 || echo 'NO')" >&2
