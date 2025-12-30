@@ -64,7 +64,7 @@ Wizardry has two distinct phases: getting the files onto disk (bootstrap) and in
    * Regenerates glosses asynchronously so all spells (and synonyms) can be cast by name
 3. **Health check (post-install)** — Run `banish` after installation (or when troubleshooting) to validate and self-heal readiness by spell level. It enforces the same level ordering as the test suite and keeps the environment aligned with current wizardry.
 
-Quick flow: run `install` → start a new shell so `invoke-wizardry` runs → use `banish 1` (or higher) if you want a readiness check.
+Quick flow: run `install` → start a new shell so `invoke-wizardry` runs → optionally run `banish 1` (or higher) for a readiness check.
 
 ## Usage
 
