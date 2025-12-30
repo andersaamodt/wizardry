@@ -289,14 +289,10 @@ invoke_wizardry() {
       fi
       # Run generate_glosses in background, output errors to terminal for debugging
       if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-        {
-          generate_glosses --quiet &
-        }
+        generate_glosses --quiet &
         _iw_debug "Gloss generation running in background (errors will appear on terminal)"
       else
-        {
-          generate_glosses --quiet &
-        } 2>/dev/null
+        generate_glosses --quiet 2>/dev/null &
       fi
       _iw_debug "Started async gloss regeneration (spells + synonyms + imps + arcana)"
       # Show user-visible message about glossary startup
