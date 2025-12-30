@@ -168,27 +168,28 @@ else
     codes=$first_codes
 fi
 
-if [ "$skip_stty" -eq 0 ]; then
-    if [ "$had_buffer" -eq 0 ]; then
-        read_extra=1
-    else
-        set -- $codes
-        if [ "$#" -gt 0 ] && [ "$1" -eq 27 ]; then
-            if [ "$#" -eq 1 ]; then
+# Determine if we should read extra bytes for escape sequences
+# This logic should work regardless of skip_stty setting
+if [ "$had_buffer" -eq 0 ]; then
+    read_extra=1
+else
+    set -- $codes
+    if [ "$#" -gt 0 ] && [ "$1" -eq 27 ]; then
+        if [ "$#" -eq 1 ]; then
+            read_extra=1
+        elif [ "$2" -eq 91 ] || [ "$2" -eq 79 ]; then
+            if [ "$#" -eq 2 ]; then
                 read_extra=1
-            elif [ "$2" -eq 91 ] || [ "$2" -eq 79 ]; then
-                if [ "$#" -eq 2 ]; then
-                    read_extra=1
-                elif [ "$2" -eq 91 ] && [ "$3" -eq 51 ] && [ "$#" -eq 3 ]; then
-                    read_extra=1
-                fi
+            elif [ "$2" -eq 91 ] && [ "$3" -eq 51 ] && [ "$#" -eq 3 ]; then
+                read_extra=1
             fi
         fi
     fi
 fi
 
 # Allow escape sequences to provide additional bytes.
-if [ "$read_extra" -eq 1 ]; then
+# Only adjust terminal timing if stty is available (skip_stty=0)
+if [ "$read_extra" -eq 1 ] && [ "$skip_stty" -eq 0 ]; then
     if ! stty -icanon -echo min 0 time 1 <&3 2>/dev/null; then
         warn 'await-keypress: unable to update terminal timing'
         return 1
@@ -196,6 +197,7 @@ if [ "$read_extra" -eq 1 ]; then
 fi
 
 # Read any additional bytes from escape sequences
+# This works in both real terminal (with timing) and test mode (without timing)
 if [ "$read_extra" -eq 1 ]; then
     while :; do
         extra=$(dd bs=1 count=1 2>/dev/null <&3 | od -An -t u1 -v | tr -s '[:space:]' ' ')
