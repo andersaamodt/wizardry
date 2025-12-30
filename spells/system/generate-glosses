@@ -37,10 +37,10 @@ case "${1-}" in
   ;;
 esac
 
-require-wizardry || return 1
+require_wizardry || return 1
 
 set -eu
-. env-clear
+env_clear
 
   # Parse arguments
   force=0
@@ -61,9 +61,9 @@ set -eu
   done
   
   # Determine directories
-  spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+  spell_home=$(env_or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
   glossary_dir="$spell_home/.glossary"
-  wizardry_dir=$(env-or WIZARDRY_DIR "${HOME:-.}/.wizardry")
+  wizardry_dir=$(env_or WIZARDRY_DIR "${HOME:-.}/.wizardry")
   
   # Verify wizardry directory exists and is valid
   if [ ! -d "$wizardry_dir" ]; then
@@ -153,12 +153,20 @@ set -eu
     [ "$quiet" -eq 0 ] && debug "Scanning $wizardry_dir/spells for executable files..."
     
     # Use temp file to avoid subshell issues with pipeline
-    _spell_list=$(temp-file)
-    find "$wizardry_dir/spells" -type f -executable 2>/dev/null > "$_spell_list"
+    _spell_list=$(temp_file)
+    # Use -perm /111 instead of -executable for better cross-platform compatibility
+    # (BSD find on older macOS doesn't support -executable)
+    find "$wizardry_dir/spells" -type f -perm /111 2>/dev/null > "$_spell_list"
     
     # Count files found
     _spell_count=$(wc -l < "$_spell_list")
     [ "$quiet" -eq 0 ] && debug "Found $_spell_count executable files in wizardry"
+    
+    # Warn if no files found (likely a find compatibility issue)
+    if [ "$_spell_count" -eq 0 ]; then
+      warn "generate-glosses: no executable files found in $wizardry_dir/spells"
+      warn "generate-glosses: this may indicate a find compatibility issue or permission problem"
+    fi
     
     while IFS= read -r spell_path; do
       # Skip empty paths or invalid files
@@ -181,7 +189,7 @@ set -eu
       _create_gloss "$spell_name" "$spell_name" "$source_desc"
     done < "$_spell_list"
     
-    cleanup-file "$_spell_list"
+    cleanup_file "$_spell_list"
   else
     [ "$quiet" -eq 0 ] && warn "generate-glosses: spells directory not found: $wizardry_dir/spells"
   fi
@@ -279,7 +287,8 @@ set -eu
   # fi
   
   # Count total glosses in directory
-  total_glosses=$(find "$glossary_dir" -type f -executable 2>/dev/null | wc -l | tr -d ' ')
+  # Use -perm /111 for cross-platform compatibility (BSD find on older macOS)
+  total_glosses=$(find "$glossary_dir" -type f -perm /111 2>/dev/null | wc -l | tr -d ' ')
   
   # Report results
   if [ "$quiet" -eq 0 ]; then
@@ -288,6 +297,14 @@ set -eu
     info "  Generated/updated: $total_generated"
     info "  Skipped (current): $total_skipped"
     [ "$force" -eq 1 ] && info "  Mode: --force (regenerate all)"
+    
+    # Warn if very few glosses were created (likely indicates a problem)
+    # Expected: ~389 glosses (as of 2024), threshold set conservatively at 50
+    if [ "$total_glosses" -lt 50 ]; then
+      warn "generate-glosses: only $total_glosses glosses created (expected ~389)"
+      warn "generate-glosses: this likely indicates a find compatibility issue or permission problem"
+      warn "generate-glosses: check $SPELLBOOK_DIR/.glossary-errors.log for details"
+    fi
   fi
   
   return 0

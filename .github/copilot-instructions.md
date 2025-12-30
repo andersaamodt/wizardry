@@ -193,6 +193,30 @@ has git || fail "git required"
 | 4+ functions in spell | Split into spells or use imps |
 | `test_name.sh` | `test-name.sh` (hyphens!) |
 | Guess test results | Run tests, report actual counts |
+| `require-wizardry` in code | `require_wizardry` (underscore!) |
+| `. env-clear` | `env_clear` (call function!) |
+| Execute script in background | Call function in background |
+| Add imps to PATH | Preload with word_of_binding |
+| `run_spell` for modern spells | `run_sourced_spell` |
+
+## CRITICAL: Glossary and Function Architecture
+
+**READ THIS BEFORE WORKING ON SPELLS, IMPS, OR GLOSSES:**
+
+See `.github/instructions/glossary-and-function-architecture.instructions.md` for complete details.
+
+**Key rules:**
+1. **Spells use underscore function names:** `require_wizardry`, `env_or`, `temp_file`
+2. **Glosses provide hyphenated commands:** `require-wizardry`, `env-or`, `temp-file`  
+3. **Only glossary directory in PATH:** No imp/spell directories
+4. **Background jobs call functions:** `generate_glosses &`, not `./generate-glosses &`
+5. **Tests use sourced spells:** `run_sourced_spell spell-name` for modern spells
+
+**Common mistakes that cause "command not found" errors:**
+- Using hyphenated names in spell code (`require-wizardry` → `require_wizardry`)
+- Executing scripts in background instead of calling functions
+- Adding imp directories to PATH (violates architecture)
+- Using `run_spell` for spells that need preloaded functions
 
 ## Workflows
 

@@ -157,7 +157,16 @@ function brace_delta(s, n, m) {
     _wob_prev_loading_spells="${_WIZARDRY_LOADING_SPELLS-}"
     _WIZARDRY_LOADING_SPELLS=1
     export _WIZARDRY_LOADING_SPELLS
+    
+    if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+      printf '[word-of-binding] DEBUG: About to eval function body for %s\n' "$_wob_name" >&2
+      printf '[word-of-binding] DEBUG: Function body length: %d bytes\n' "${#_wob_body}" >&2
+    fi
+    
     if [ -n "$_wob_body" ] && ! eval "$_wob_body"; then
+      if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+        printf '[word-of-binding] DEBUG: FAILED to eval function body for %s\n' "$_wob_name" >&2
+      fi
       if [ -n "$_wob_prev_loading_spells" ]; then
         _WIZARDRY_LOADING_SPELLS="$_wob_prev_loading_spells"
         export _WIZARDRY_LOADING_SPELLS
@@ -167,6 +176,16 @@ function brace_delta(s, n, m) {
       printf '%s\n' "word-of-binding: failed to bind '$_wob_name'" >&2
       return 1
     fi
+    
+    if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+      printf '[word-of-binding] DEBUG: Successfully evaled function body for %s\n' "$_wob_name" >&2
+      if command -v "$_wob_true_name" >/dev/null 2>&1; then
+        printf '[word-of-binding] DEBUG: Function %s IS available after eval\n' "$_wob_true_name" >&2
+      else
+        printf '[word-of-binding] DEBUG: WARNING - Function %s NOT available after eval!\n' "$_wob_true_name" >&2
+      fi
+    fi
+    
     if [ -n "$_wob_prev_loading_spells" ]; then
       _WIZARDRY_LOADING_SPELLS="$_wob_prev_loading_spells"
       export _WIZARDRY_LOADING_SPELLS

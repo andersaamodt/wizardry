@@ -86,6 +86,20 @@ export WIZARDRY_IMPS_PATH
 WIZARDRY_DIR=$ROOT_DIR
 export WIZARDRY_DIR
 
+# Preload essential imps as functions (like invoke-wizardry does)
+# This makes underscore-named functions available for spells that use them
+# Source word-of-binding first
+if [ -f "$ROOT_DIR/spells/.imps/sys/word-of-binding" ]; then
+  # shellcheck source=/dev/null
+  . "$ROOT_DIR/spells/.imps/sys/word-of-binding"
+  
+  # Preload essential imps that spells commonly use
+  for _test_imp in require-wizardry env-clear env-or die warn fail info success debug temp-file cleanup-file say step; do
+    word_of_binding "$_test_imp" 2>/dev/null || :
+  done
+  unset _test_imp
+fi
+
 # Run banish to verify environment assumptions (if available)
 # This helps catch environment issues early in test runs
 # Skip if already running within banish (prevents recursion)
