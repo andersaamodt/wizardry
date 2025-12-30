@@ -287,11 +287,12 @@ invoke_wizardry() {
       if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
         printf '[invoke-wizardry] DEBUG: generate_glosses function IS available, starting background job\n' >&2
       fi
+      # Run generate_glosses in background, output errors to terminal for debugging
       if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
         {
-          generate_glosses --quiet 2>"${SPELLBOOK_DIR}/.glossary-errors.log" &
+          generate_glosses --quiet &
         }
-        _iw_debug "Gloss generation errors (if any) logged to ${SPELLBOOK_DIR}/.glossary-errors.log"
+        _iw_debug "Gloss generation running in background (errors will appear on terminal)"
       else
         {
           generate_glosses --quiet &
