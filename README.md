@@ -53,6 +53,19 @@ The portable build is automatically generated, and includes all spells that work
 
 **[Download latest nightly build](https://github.com/andersaamodt/wizardry/actions/workflows/compile.yml)** → Click the most recent successful run → Download artifact
 
+## Bootstrapping and initialization order
+
+Wizardry has two distinct phases: getting the files onto disk (bootstrap) and initializing them in each shell (invocation).
+
+1. **Bootstrap (pre-wizardry)** — Runs with no wizardry available. The only spells in this phase are `install`, `detect-distro`, `detect-posix`, and the helpers in `spells/install/core/`. They fetch or locate wizardry on disk. Although “banish” conceptually prepares the system, it depends on wizardry and therefore cannot run before this phase completes.
+2. **Invocation (per shell)** — Every new shell sources `spells/.imps/sys/invoke-wizardry` (installed into your shell rc file). Invocation:
+   * Detects `WIZARDRY_DIR`, establishes a baseline `PATH`, and defaults `SPELLBOOK_DIR`
+   * Prepends the glossary directory to `PATH`, loads `word-of-binding`, and preloads Level 1–3 imps so core spells are available immediately
+   * Regenerates glosses asynchronously so all spells (and synonyms) can be cast by name
+3. **Health check (post-install)** — Run `banish` after installation (or when troubleshooting) to validate and self-heal readiness by spell level. It enforces the same level ordering as the test suite and keeps the environment aligned with current wizardry.
+
+Quick flow: run `install` → start a new shell so `invoke-wizardry` runs → use `banish 1` (or higher) if you want a readiness check.
+
 ## Usage
 
 To use wizardry, simply type:
@@ -146,8 +159,8 @@ The arcana menu (`install-menu`) loads arcana automatically from files, so you c
 | ---- | ---------- |
 | **arcanum** (pl. **arcana**) | A grand working—a spell that installs and configures software across supported platforms, presented as a menu of functions. Also refers to the apps themselves. |
 | **aura** | The proto-meaning a spell name bears when evoked (future feature). |
-| **banish** | To reset to a known configuration in the execution environment via systematic assumption-checking. For example, spells begin with `env-clear` and `set -eu`. (future: full `banish` spell) |
-| **bootstrap spell** | A spell that can run before wizardry is fully installed. These self-contained scripts (namely `install`, `detect-distro`, and spells in `spells/install/core/`) don't rely on other wizardry spells. |
+| **banish** | Post-install validator that resets to a known configuration via systematic assumption-checking. It runs after wizardry is installed and enforces readiness by spell level. |
+| **bootstrap spell** | A spell that can run before wizardry is fully installed—`install`, `detect-distro`, and helpers in `spells/install/core/`. They fetch wizardry onto disk so invocation can proceed. |
 | **bound imp** | An *invoked* imp; sourced so its true-name function exists in the current shell and can be called without subprocess overhead. |
 | **cantrip** | A small utility spell for common tasks. |
 | `cast` | To execute a spell. Memorized spells appear in the `cast` menu for quick access. |
