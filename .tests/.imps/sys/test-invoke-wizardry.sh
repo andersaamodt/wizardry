@@ -258,14 +258,14 @@ test_recursion_guard() {
   fi
   
   # Check that the guard is checked at the start of the handler
-  if ! grep -q 'if.*_WIZARDRY_IN_CNF.*=.*1' "$ROOT_DIR/spells/.imps/sys/invoke-wizardry"; then
+  if ! grep -q '_WIZARDRY_IN_CNF.*= "$1"' "$ROOT_DIR/spells/.imps/sys/invoke-wizardry"; then
     TEST_FAILURE_REASON="Recursion guard check not found in command_not_found_handle"
     return 1
   fi
   
-  # Check that the guard is set to 1
-  if ! grep -q '_WIZARDRY_IN_CNF=1' "$ROOT_DIR/spells/.imps/sys/invoke-wizardry"; then
-    TEST_FAILURE_REASON="Recursion guard not set to 1"
+  # Check that the guard is set to the current command
+  if ! grep -q '_WIZARDRY_IN_CNF=$1' "$ROOT_DIR/spells/.imps/sys/invoke-wizardry"; then
+    TEST_FAILURE_REASON="Recursion guard not set to command name"
     return 1
   fi
   

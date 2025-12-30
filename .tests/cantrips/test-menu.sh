@@ -12,7 +12,8 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 menu_requires_all_helpers() {
-  PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:/bin:/usr/bin" run_cmd env PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:/bin:/usr/bin" "$ROOT_DIR/spells/cantrips/menu" "Menu" "Item%echo hi"
+  helper_path="$ROOT_DIR/spells/.imps/sys:/bin:/usr/bin"
+  PATH="$helper_path" run_cmd env PATH="$helper_path" "$ROOT_DIR/spells/cantrips/menu" "Menu" "Item%echo hi"
   assert_failure || return 1
   assert_error_contains "The menu spell needs 'fathom-cursor' to place the menu." || return 1
 }
@@ -50,7 +51,9 @@ run_test_case "menu reports missing controlling terminal" menu_reports_missing_t
 
 # Skip if /dev/tty is not functional (e.g., in CI environment)
 # Check if stty can actually read from /dev/tty, not just if file exists
-if ! stty -g </dev/tty >/dev/null 2>&1; then
+if [ "${WIZARDRY_TEST_IN_POCKET-0}" = "1" ]; then
+  test_skip "menu respects --start-selection (Issue #198)" "requires functional /dev/tty"
+elif ! stty -g </dev/tty >/dev/null 2>&1; then
   test_skip "menu respects --start-selection (Issue #198)" "requires functional /dev/tty"
 else
   # Test --start-selection argument - Issue #198
@@ -93,7 +96,9 @@ fi
 
 # Skip if /dev/tty is not functional (e.g., in CI environment)
 # Check if stty can actually read from /dev/tty, not just if file exists
-if ! stty -g </dev/tty >/dev/null 2>&1; then
+if [ "${WIZARDRY_TEST_IN_POCKET-0}" = "1" ]; then
+  test_skip "menu highlight strips ANSI codes from labels" "requires functional /dev/tty"
+elif ! stty -g </dev/tty >/dev/null 2>&1; then
   test_skip "menu highlight strips ANSI codes from labels" "requires functional /dev/tty"
 else
   # Test that highlighted items strip ANSI codes from labels
@@ -154,7 +159,9 @@ fi
 
 # Skip if /dev/tty is not functional (e.g., in CI environment)
 # Check if stty can actually read from /dev/tty, not just if file exists
-if ! stty -g </dev/tty >/dev/null 2>&1; then
+if [ "${WIZARDRY_TEST_IN_POCKET-0}" = "1" ]; then
+  test_skip "menu restores cursor on exit" "requires functional /dev/tty"
+elif ! stty -g </dev/tty >/dev/null 2>&1; then
   test_skip "menu restores cursor on exit" "requires functional /dev/tty"
 else
   # Test that cursor is restored when exiting menu

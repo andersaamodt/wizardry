@@ -135,7 +135,7 @@ case ${TERM-} in
                 try_disable_palette
                 ;;
         *)
-                if command -v tput >/dev/null 2>&1; then
+                if [ "${WIZARDRY_TEST_HELPERS_ONLY-}" != "1" ] && command -v tput >/dev/null 2>&1; then
                         colors=$(tput colors 2>/dev/null || printf '')
                         case ${colors:-} in
                                 ''|0|-*)
@@ -163,4 +163,11 @@ if ! command -v autocast >/dev/null 2>&1; then
   [ -f "$_i/autocast" ] && . "$_i/autocast"
 fi
 
-autocast colors
+if type autocast >/dev/null 2>&1; then
+  case "$(type autocast 2>/dev/null)" in
+    *function*) autocast colors ;;
+    *) colors "$@" ;;
+  esac
+else
+  colors "$@"
+fi
