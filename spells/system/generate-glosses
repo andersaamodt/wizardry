@@ -154,7 +154,9 @@ set -eu
     
     # Use temp file to avoid subshell issues with pipeline
     _spell_list=$(temp-file)
-    find "$wizardry_dir/spells" -type f -executable 2>/dev/null > "$_spell_list"
+    # Use -perm /111 instead of -executable for better cross-platform compatibility
+    # (BSD find on older macOS doesn't support -executable)
+    find "$wizardry_dir/spells" -type f -perm /111 2>/dev/null > "$_spell_list"
     
     # Count files found
     _spell_count=$(wc -l < "$_spell_list")
@@ -279,7 +281,8 @@ set -eu
   # fi
   
   # Count total glosses in directory
-  total_glosses=$(find "$glossary_dir" -type f -executable 2>/dev/null | wc -l | tr -d ' ')
+  # Use -perm /111 for cross-platform compatibility (BSD find on older macOS)
+  total_glosses=$(find "$glossary_dir" -type f -perm /111 2>/dev/null | wc -l | tr -d ' ')
   
   # Report results
   if [ "$quiet" -eq 0 ]; then
