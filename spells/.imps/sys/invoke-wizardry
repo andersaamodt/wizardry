@@ -166,14 +166,32 @@ invoke_wizardry() {
   # Must run AFTER essential imps are loaded (needs require-wizardry, env-clear, env-or, etc.)
   if [ -x "$WIZARDRY_DIR/spells/system/generate-glosses" ]; then
     # Run as executable in background with full wizardry environment
-    # Set up minimal PATH so the spell can find imps and other dependencies
-    {
-      # Ensure spell can find wizardry imps by adding them to PATH
-      _gloss_path="$WIZARDRY_DIR/spells/.imps/sys:$WIZARDRY_DIR/spells/.imps/out:$WIZARDRY_DIR/spells/.imps/cond:$WIZARDRY_DIR/spells/.imps/fs:$WIZARDRY_DIR/spells/.imps/str:$WIZARDRY_DIR/spells/.imps/paths:$WIZARDRY_DIR/spells/.imps/text:$PATH"
-      
-      # Run in background with proper environment
-      PATH="$_gloss_path" "$WIZARDRY_DIR/spells/system/generate-glosses" --quiet 2>/dev/null &
-    }
+    # Build comprehensive PATH including ALL imp families
+    _gloss_imp_path=""
+    for _imp_family in "$WIZARDRY_DIR"/spells/.imps/*; do
+      [ -d "$_imp_family" ] || continue
+      case "$_imp_family" in
+        */test) continue ;;  # Skip test imps
+      esac
+      _gloss_imp_path="${_gloss_imp_path}${_gloss_imp_path:+:}${_imp_family}"
+    done
+    
+    # Run in background with comprehensive PATH
+    # If WIZARDRY_DEBUG is set, log errors to help diagnose issues
+    if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+      {
+        PATH="${_gloss_imp_path}:${PATH}" \
+          "$WIZARDRY_DIR/spells/system/generate-glosses" --quiet \
+          2>"${SPELLBOOK_DIR}/.glossary-errors.log" &
+      }
+      _iw_debug "Gloss generation errors (if any) logged to ${SPELLBOOK_DIR}/.glossary-errors.log"
+    else
+      {
+        PATH="${_gloss_imp_path}:${PATH}" \
+          "$WIZARDRY_DIR/spells/system/generate-glosses" --quiet &
+      } 2>/dev/null
+    fi
+    
     _iw_debug "Started async gloss regeneration (spells + synonyms + imps + arcana)"
     # Show user-visible message about glossary startup
     if command -v info >/dev/null 2>&1; then
