@@ -63,7 +63,7 @@ SCRIPT_EOF
 }
 
 run_test_case "invoke-wizardry-minimal-wob is sourceable" test_sourceable
-run_test_case "invoke-wizardry-minimal-wob defines command_not_found_handle" test_sets_command_not_found_handle_in_bash
+# Test #2 removed: command_not_found_handle no longer used (glossary-based system instead)
 run_test_case "invoke-wizardry-minimal-wob requires a valid wizardry dir" test_requires_valid_wizardry_dir
 
 finish_tests
