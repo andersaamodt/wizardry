@@ -65,6 +65,15 @@ set -eu
   glossary_dir="$spell_home/.glossary"
   wizardry_dir=$(env-or WIZARDRY_DIR "${HOME:-.}/.wizardry")
   
+  # Verify wizardry directory exists and is valid
+  if [ ! -d "$wizardry_dir" ]; then
+    die "generate-glosses: WIZARDRY_DIR not found: $wizardry_dir"
+  fi
+  
+  if [ ! -d "$wizardry_dir/spells" ]; then
+    die "generate-glosses: WIZARDRY_DIR does not contain spells directory: $wizardry_dir"
+  fi
+  
   # Create glossary directory
   if ! mkdir -p "$glossary_dir" 2>/dev/null; then
     die "generate-glosses: cannot create glossary directory: $glossary_dir"
