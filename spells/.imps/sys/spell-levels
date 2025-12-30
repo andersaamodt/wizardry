@@ -10,46 +10,47 @@ get_level_spells() {
     3) printf 'menu fathom-terminal fathom-cursor move-cursor await-keypress cursor-blink colors main-menu:menu' ;;
     4) printf 'check-cd-hook:mud look:mud' ;;
     5) printf 'jump-to-marker:translocation mark-location:translocation' ;;
-    6) printf 'copy:arcane trash:arcane jump-trash:arcane forall:arcane read-magic:arcane file-list:arcane' ;;
-    7) printf 'ask ask-yn ask-text list-files max-length move up' ;;
-    8) printf 'validate-number validate-path require-command' ;;
-    9) printf 'ask-number memorize' ;;
-    10) printf 'config:system logs:system package-managers:system' ;;
-    11) printf 'test-spell:system test-magic:system pocket-dimension:system logging-example wizard-eyes' ;;
-    12) printf 'update-wizardry:system update-all:system kill-process:system' ;;
-    13) printf 'demo-magic:system wizard-cast' ;;
-    14) printf 'detect-rc-file:divination detect-magic:divination identify-room:divination' ;;
-    15) printf 'decorate:mud select-player:mud check-command-not-found-hook:mud' ;;
-    16) printf 'hash:crypto evoke-hash:crypto hashchant:crypto' ;;
-    17) printf 'validate-ssh-key enchant-portkey:translocation follow-portkey:translocation open-portal:translocation open-teletype:translocation reload-ssh restart-ssh' ;;
-    18) printf 'get-priority:priorities get-new-priority:priorities prioritize:priorities upvote:priorities' ;;
-    19) printf 'ssh-barrier:wards' ;;
-    20) printf 'enchant:enchant disenchant:enchant enchantment-to-yaml:enchant yaml-to-enchantment:enchant' ;;
-    21) printf 'list-contacts:psi read-contact:psi' ;;
-    22) printf 'scribe-spell:spellcraft lint-magic:spellcraft compile-spell:spellcraft learn:spellcraft forget:spellcraft erase-spell:spellcraft doppelganger:spellcraft add-synonym:spellcraft edit-synonym:spellcraft delete-synonym:spellcraft reset-default-synonyms:spellcraft bind-tome:spellcraft unbind-tome:spellcraft merge-yaml-text:spellcraft' ;;
-    23) printf 'spellbook-store spellbook:menu cast:menu spell-menu:menu' ;;
-    24) printf 'system-menu:menu install-menu:menu synonym-menu:menu thesaurus:menu' ;;
-    25) printf 'mud:menu mud-menu:menu mud-settings:menu mud-admin-menu:menu add-ssh-player:menu/mud-admin new-player:menu/mud-admin set-player:menu/mud-admin' ;;
-    26) printf 'network-menu:menu services-menu:menu shutdown-menu:menu priority-menu:menu priorities:menu users-menu:menu profile-tests:menu/system' ;;
-    27) printf 'install-service-template is-service-installed enable-service disable-service start-service stop-service restart-service service-status remove-service' ;;
-    28) printf '' ;; # Level 28 is special - arcana directory
+    6) printf '' ;; # Level 6: Parsing (no spells, only imps)
+    7) printf 'copy:arcane trash:arcane jump-trash:arcane forall:arcane read-magic:arcane file-list:arcane' ;;
+    8) printf 'ask ask-yn ask-text list-files max-length move up' ;;
+    9) printf 'validate-number validate-path require-command' ;;
+    10) printf 'ask-number memorize' ;;
+    11) printf 'config:system logs:system package-managers:system' ;;
+    12) printf 'test-spell:system test-magic:system pocket-dimension:system logging-example wizard-eyes' ;;
+    13) printf 'update-wizardry:system update-all:system kill-process:system' ;;
+    14) printf 'demo-magic:system wizard-cast' ;;
+    15) printf 'detect-rc-file:divination detect-magic:divination identify-room:divination' ;;
+    16) printf 'decorate:mud select-player:mud check-command-not-found-hook:mud' ;;
+    17) printf 'hash:crypto evoke-hash:crypto hashchant:crypto' ;;
+    18) printf 'validate-ssh-key enchant-portkey:translocation follow-portkey:translocation open-portal:translocation open-teletype:translocation reload-ssh restart-ssh' ;;
+    19) printf 'get-priority:priorities get-new-priority:priorities prioritize:priorities upvote:priorities' ;;
+    20) printf 'ssh-barrier:wards' ;;
+    21) printf 'enchant:enchant disenchant:enchant enchantment-to-yaml:enchant yaml-to-enchantment:enchant' ;;
+    22) printf 'list-contacts:psi read-contact:psi' ;;
+    23) printf 'scribe-spell:spellcraft lint-magic:spellcraft compile-spell:spellcraft learn:spellcraft forget:spellcraft erase-spell:spellcraft doppelganger:spellcraft add-synonym:spellcraft edit-synonym:spellcraft delete-synonym:spellcraft reset-default-synonyms:spellcraft bind-tome:spellcraft unbind-tome:spellcraft merge-yaml-text:spellcraft' ;;
+    24) printf 'spellbook-store spellbook:menu cast:menu spell-menu:menu' ;;
+    25) printf 'system-menu:menu install-menu:menu synonym-menu:menu thesaurus:menu' ;;
+    26) printf 'mud:menu mud-menu:menu mud-settings:menu mud-admin-menu:menu add-ssh-player:menu/mud-admin new-player:menu/mud-admin set-player:menu/mud-admin' ;;
+    27) printf 'network-menu:menu services-menu:menu shutdown-menu:menu priority-menu:menu priorities:menu users-menu:menu profile-tests:menu/system' ;;
+    28) printf 'install-service-template is-service-installed enable-service disable-service start-service stop-service restart-service service-status remove-service' ;;
+    29) printf '' ;; # Level 29 is special - arcana directory
     *) printf '' ;;
   esac
 }
 get_level_imps() {
   case "$1" in
     1) printf 'declare-globals sys/invoke-wizardry sys/invoke-wizardry-minimal-wob sys/invoke-thesaurus sys/require-wizardry sys/require sys/castable sys/word-of-binding sys/env-clear sys/env-or sys/on-exit sys/clear-traps sys/on sys/now sys/any sys/need sys/must sys/uncastable sys/where sys/autocast sys/ask-install-wizardry sys/clipboard-available sys/command-not-found-handler-zsh sys/nix-shell-add sys/nix-shell-remove sys/nix-shell-status sys/nix-rebuild sys/spell-levels cond/has cond/there cond/is cond/empty cond/nonempty cond/no cond/in-range cond/lacks cond/newer cond/full cond/gone cond/is-path cond/in-ancestry cond/is-posint cond/yes cond/given cond/older out/say out/warn out/die out/fail out/info out/step out/success out/debug out/ok out/heading-section out/heading-separator out/heading-simple out/usage-error out/first-of out/else out/print-pass out/print-fail out/disable-palette out/quiet fs/temp-file fs/temp-dir fs/cleanup-file fs/cleanup-dir input/tty-save input/tty-restore input/tty-raw input/read-line str/contains str/trim str/equals str/starts str/ends str/lower str/upper str/seeks str/differs str/matches paths/here paths/parent paths/file-name paths/abs-path paths/make paths/path paths/tilde-path paths/strip-trailing-slashes paths/norm-path paths/script-dir paths/temp text/pluralize text/count-words' ;;
-    2) printf 'lex/parse' ;;
     3) printf 'menu/is-submenu menu/is-integer menu/category-title menu/exit-label menu/is-installable' ;;
     4) printf 'fs/xattr-helper-usable fs/xattr-list-keys fs/xattr-read-value' ;;
-    6) printf 'fs/backup fs/clip-copy fs/clip-paste fs/ensure-parent-dir menu/detect-trash text/read-file text/write-file text/lines text/each text/append text/count-chars text/make-indent text/drop text/last text/take text/skip text/first text/pick text/field' ;;
-    7) printf 'input/select-input lex/from lex/to lex/and-then lex/into lex/then lex/disambiguate' ;;
-    8) printf 'input/validate-command input/validate-name lex/and lex/or' ;;
-    10) printf 'fs/config-get fs/config-set fs/config-has fs/config-del pkg/pkg-manager pkg/pkg-has pkg/pkg-install pkg/pkg-remove pkg/pkg-update pkg/pkg-upgrade' ;;
-    11) printf 'test/boot/assert-error-contains test/boot/assert-failure test/boot/assert-file-contains test/boot/assert-output-contains test/boot/assert-path-exists test/boot/assert-path-missing test/boot/assert-status test/boot/assert-success test/boot/find-repo-root test/boot/finish-tests test/boot/init-test-counters test/boot/link-tools test/boot/make-fixture test/boot/make-tempdir test/boot/provide-basic-tools test/boot/record-failure-detail test/boot/report-result test/boot/run-both-patterns test/boot/run-bwrap test/boot/run-cmd test/boot/run-macos-sandbox test/boot/run-sourced-spell test/boot/run-spell test/boot/run-spell-in-dir test/boot/run-test-case test/boot/skip-if-compiled test/boot/skip-if-uncompiled test/boot/stub-nix-env test/boot/stub-pacman test/boot/test-fail test/boot/test-heading test/boot/test-lack test/boot/test-pass test/boot/test-skip test/boot/test-summary test/boot/write-apt-stub test/boot/write-command-stub test/boot/write-pkgin-stub test/boot/write-sudo-stub test/stub-cursor-blink test/stub-fathom-terminal test/stub-stty test/stub-await-keypress test/stub-fathom-cursor test/stub-move-cursor test/test-bootstrap sys/rc-add-line sys/rc-has-line sys/rc-remove-line' ;;
-    12) printf 'fs/backup-nix-config' ;;
-    14) printf 'sys/os sys/term text/detect-indent-char text/detect-indent-width lang/possessive' ;;
-    19) printf 'fs/sed-inplace' ;;
+    6) printf 'lex/parse' ;;
+    7) printf 'fs/backup fs/clip-copy fs/clip-paste fs/ensure-parent-dir menu/detect-trash text/read-file text/write-file text/lines text/each text/append text/count-chars text/make-indent text/drop text/last text/take text/skip text/first text/pick text/field' ;;
+    8) printf 'input/select-input lex/from lex/to lex/and-then lex/into lex/then lex/disambiguate' ;;
+    9) printf 'input/validate-command input/validate-name lex/and lex/or' ;;
+    11) printf 'fs/config-get fs/config-set fs/config-has fs/config-del pkg/pkg-manager pkg/pkg-has pkg/pkg-install pkg/pkg-remove pkg/pkg-update pkg/pkg-upgrade' ;;
+    12) printf 'test/boot/assert-error-contains test/boot/assert-failure test/boot/assert-file-contains test/boot/assert-output-contains test/boot/assert-path-exists test/boot/assert-path-missing test/boot/assert-status test/boot/assert-success test/boot/find-repo-root test/boot/finish-tests test/boot/init-test-counters test/boot/link-tools test/boot/make-fixture test/boot/make-tempdir test/boot/provide-basic-tools test/boot/record-failure-detail test/boot/report-result test/boot/run-both-patterns test/boot/run-bwrap test/boot/run-cmd test/boot/run-macos-sandbox test/boot/run-sourced-spell test/boot/run-spell test/boot/run-spell-in-dir test/boot/run-test-case test/boot/skip-if-compiled test/boot/skip-if-uncompiled test/boot/stub-nix-env test/boot/stub-pacman test/boot/test-fail test/boot/test-heading test/boot/test-lack test/boot/test-pass test/boot/test-skip test/boot/test-summary test/boot/write-apt-stub test/boot/write-command-stub test/boot/write-pkgin-stub test/boot/write-sudo-stub test/stub-cursor-blink test/stub-fathom-terminal test/stub-stty test/stub-await-keypress test/stub-fathom-cursor test/stub-move-cursor test/test-bootstrap sys/rc-add-line sys/rc-has-line sys/rc-remove-line' ;;
+    13) printf 'fs/backup-nix-config' ;;
+    15) printf 'sys/os sys/term text/detect-indent-char text/detect-indent-width lang/possessive' ;;
+    20) printf 'fs/sed-inplace' ;;
     *) printf '' ;;
   esac
 }
@@ -61,29 +62,30 @@ banish_level_name() {
     3) printf 'Menu System' ;;
     4) printf 'MUD Basics' ;;
     5) printf 'Navigation' ;;
-    6) printf 'Arcane File Operations' ;;
-    7) printf 'Basic Cantrips' ;;
-    8) printf 'Validation Helpers' ;;
-    9) printf 'Advanced Cantrips' ;;
-    10) printf 'System Configuration' ;;
-    11) printf 'Testing Infrastructure' ;;
-    12) printf 'System Maintenance' ;;
-    13) printf 'Advanced System Tools' ;;
-    14) printf 'Divination' ;;
-    15) printf 'Advanced MUD Features' ;;
-    16) printf 'Cryptography' ;;
-    17) printf 'SSH & Remote Access' ;;
-    18) printf 'Task Priorities' ;;
-    19) printf 'Security Wards' ;;
-    20) printf 'Extended Attributes' ;;
-    21) printf 'Process & System Info (PSI)' ;;
-    22) printf 'Spellcraft Development Tools' ;;
-    23) printf 'Core Menu Infrastructure' ;;
-    24) printf 'System & Configuration Menus' ;;
-    25) printf 'MUD Administration Menus' ;;
-    26) printf 'Domain-Specific Menus' ;;
-    27) printf 'System Service Management' ;;
-    28) printf 'Optional Arcana & Third-Party Integrations' ;;
+    6) printf 'Parsing' ;;
+    7) printf 'Arcane File Operations' ;;
+    8) printf 'Basic Cantrips' ;;
+    9) printf 'Validation Helpers' ;;
+    10) printf 'Advanced Cantrips' ;;
+    11) printf 'System Configuration' ;;
+    12) printf 'Testing Infrastructure' ;;
+    13) printf 'System Maintenance' ;;
+    14) printf 'Advanced System Tools' ;;
+    15) printf 'Divination' ;;
+    16) printf 'Advanced MUD Features' ;;
+    17) printf 'Cryptography' ;;
+    18) printf 'SSH & Remote Access' ;;
+    19) printf 'Task Priorities' ;;
+    20) printf 'Security Wards' ;;
+    21) printf 'Extended Attributes' ;;
+    22) printf 'Process & System Info (PSI)' ;;
+    23) printf 'Spellcraft Development Tools' ;;
+    24) printf 'Core Menu Infrastructure' ;;
+    25) printf 'System & Configuration Menus' ;;
+    26) printf 'MUD Administration Menus' ;;
+    27) printf 'Domain-Specific Menus' ;;
+    28) printf 'System Service Management' ;;
+    29) printf 'Optional Arcana & Third-Party Integrations' ;;
     *) printf 'Unknown' ;;
   esac
 }
