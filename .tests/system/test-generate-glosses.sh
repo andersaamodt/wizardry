@@ -8,7 +8,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  run_spell "spells/system/generate-glosses" --help
+  run_sourced_spell generate-glosses --help
   assert_success || return 1
   assert_output_contains "Usage:" || return 1
   assert_output_contains "generate-glosses" || return 1
@@ -23,7 +23,7 @@ test_basic_execution() {
   mkdir -p "$spellbook_dir" || return 1
   
   # Run generate-glosses
-  SPELLBOOK_DIR="$spellbook_dir" WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/system/generate-glosses" --quiet
+  SPELLBOOK_DIR="$spellbook_dir" WIZARDRY_DIR="$ROOT_DIR" run_sourced_spell generate-glosses --quiet
   assert_success || return 1
   
   # Check that glossary directory was created
@@ -44,7 +44,7 @@ test_gloss_content() {
   mkdir -p "$spellbook_dir" || return 1
   
   # Run generate-glosses
-  SPELLBOOK_DIR="$spellbook_dir" WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/system/generate-glosses" --quiet
+  SPELLBOOK_DIR="$spellbook_dir" WIZARDRY_DIR="$ROOT_DIR" run_sourced_spell generate-glosses --quiet
   assert_success || return 1
   
   # Check that menu gloss exists and has correct content
@@ -65,11 +65,11 @@ test_force_regeneration() {
   mkdir -p "$spellbook_dir" || return 1
   
   # Generate glosses first time
-  SPELLBOOK_DIR="$spellbook_dir" WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/system/generate-glosses" --quiet
+  SPELLBOOK_DIR="$spellbook_dir" WIZARDRY_DIR="$ROOT_DIR" run_sourced_spell generate-glosses --quiet
   assert_success || return 1
   
   # Generate again with --force
-  SPELLBOOK_DIR="$spellbook_dir" WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/system/generate-glosses" --force --quiet
+  SPELLBOOK_DIR="$spellbook_dir" WIZARDRY_DIR="$ROOT_DIR" run_sourced_spell generate-glosses --force --quiet
   assert_success || return 1
 }
 
@@ -87,7 +87,7 @@ alias jump='jump-to-marker'
 EOF
   
   # Run generate-glosses
-  SPELLBOOK_DIR="$spellbook_dir" WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/system/generate-glosses" --quiet
+  SPELLBOOK_DIR="$spellbook_dir" WIZARDRY_DIR="$ROOT_DIR" run_sourced_spell generate-glosses --quiet
   assert_success || return 1
   
   # Check that synonym glosses were created
@@ -110,7 +110,7 @@ test_all_spell_categories() {
   mkdir -p "$spellbook_dir" || return 1
   
   # Run generate-glosses
-  SPELLBOOK_DIR="$spellbook_dir" WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/system/generate-glosses" --quiet
+  SPELLBOOK_DIR="$spellbook_dir" WIZARDRY_DIR="$ROOT_DIR" run_sourced_spell generate-glosses --quiet
   assert_success || return 1
   
   # Verify critical spell glosses exist from different categories

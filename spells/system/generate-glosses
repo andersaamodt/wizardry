@@ -37,35 +37,10 @@ case "${1-}" in
   ;;
 esac
 
-# Bootstrap: Load essential imps if not already in PATH
-# This allows generate-glosses to run as a background job without relying on PATH
-if ! command -v require-wizardry >/dev/null 2>&1; then
-  # Find WIZARDRY_DIR if not set
-  if [ -z "${WIZARDRY_DIR-}" ]; then
-    _gg_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-    WIZARDRY_DIR=$(cd "$_gg_script_dir/../.." && pwd -P)
-    export WIZARDRY_DIR
-  fi
-  
-  # Add all imp families to PATH for bootstrap
-  if [ -d "$WIZARDRY_DIR/spells/.imps" ]; then
-    _gg_imp_path=""
-    for _gg_imp_family in "$WIZARDRY_DIR"/spells/.imps/*; do
-      [ -d "$_gg_imp_family" ] || continue
-      case "$_gg_imp_family" in */test) continue ;; esac
-      _gg_imp_path="${_gg_imp_path}${_gg_imp_path:+:}${_gg_imp_family}"
-    done
-    if [ -n "$_gg_imp_path" ]; then
-      PATH="$_gg_imp_path:${PATH-}"
-      export PATH
-    fi
-  fi
-fi
-
-require-wizardry || return 1
+require_wizardry || return 1
 
 set -eu
-. env-clear
+env_clear
 
   # Parse arguments
   force=0
@@ -86,9 +61,9 @@ set -eu
   done
   
   # Determine directories
-  spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+  spell_home=$(env_or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
   glossary_dir="$spell_home/.glossary"
-  wizardry_dir=$(env-or WIZARDRY_DIR "${HOME:-.}/.wizardry")
+  wizardry_dir=$(env_or WIZARDRY_DIR "${HOME:-.}/.wizardry")
   
   # Verify wizardry directory exists and is valid
   if [ ! -d "$wizardry_dir" ]; then
@@ -178,7 +153,7 @@ set -eu
     [ "$quiet" -eq 0 ] && debug "Scanning $wizardry_dir/spells for executable files..."
     
     # Use temp file to avoid subshell issues with pipeline
-    _spell_list=$(temp-file)
+    _spell_list=$(temp_file)
     # Use -perm /111 instead of -executable for better cross-platform compatibility
     # (BSD find on older macOS doesn't support -executable)
     find "$wizardry_dir/spells" -type f -perm /111 2>/dev/null > "$_spell_list"
@@ -214,7 +189,7 @@ set -eu
       _create_gloss "$spell_name" "$spell_name" "$source_desc"
     done < "$_spell_list"
     
-    cleanup-file "$_spell_list"
+    cleanup_file "$_spell_list"
   else
     [ "$quiet" -eq 0 ] && warn "generate-glosses: spells directory not found: $wizardry_dir/spells"
   fi

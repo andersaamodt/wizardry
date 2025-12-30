@@ -196,35 +196,30 @@ invoke_wizardry() {
   # This runs asynchronously in the background to avoid delaying shell startup.
   # With 387+ glosses, async is essential for fast shell startup.
   # The generate-glosses spell handles unified generation from all sources.
-  # Must run AFTER essential imps are loaded (needs require-wizardry, env-clear, env-or, etc.)
+  # Must run AFTER essential imps and generate-glosses spell are loaded.
   # Skip gloss generation in test mode (tests don't need glosses)
-  if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ] && [ -x "$WIZARDRY_DIR/spells/system/generate-glosses" ]; then
-    # Run in background with explicit environment
-    # generate-glosses has internal bootstrap to find imps, so no need to set up PATH
-    # Explicitly pass critical environment variables to ensure background job has them
-    # (macOS and some shells don't always inherit exports properly in background jobs)
-    if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-      {
-        env \
-          WIZARDRY_DIR="$WIZARDRY_DIR" \
-          SPELLBOOK_DIR="$SPELLBOOK_DIR" \
-          "$WIZARDRY_DIR/spells/system/generate-glosses" --quiet \
-          2>"${SPELLBOOK_DIR}/.glossary-errors.log" &
-      }
-      _iw_debug "Gloss generation errors (if any) logged to ${SPELLBOOK_DIR}/.glossary-errors.log"
+  if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
+    # Call the preloaded generate_glosses function in background
+    # This allows it to access all the preloaded imp functions
+    # The function was already loaded by word_of_binding above
+    if command -v generate_glosses >/dev/null 2>&1; then
+      if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+        {
+          generate_glosses --quiet 2>"${SPELLBOOK_DIR}/.glossary-errors.log" &
+        }
+        _iw_debug "Gloss generation errors (if any) logged to ${SPELLBOOK_DIR}/.glossary-errors.log"
+      else
+        {
+          generate_glosses --quiet &
+        } 2>/dev/null
+      fi
+      _iw_debug "Started async gloss regeneration (spells + synonyms + imps + arcana)"
+      # Show user-visible message about glossary startup
+      if command -v info >/dev/null 2>&1; then
+        info "Glossary regenerating in background..."
+      fi
     else
-      {
-        env \
-          WIZARDRY_DIR="$WIZARDRY_DIR" \
-          SPELLBOOK_DIR="$SPELLBOOK_DIR" \
-          "$WIZARDRY_DIR/spells/system/generate-glosses" --quiet &
-      } 2>/dev/null
-    fi
-    
-    _iw_debug "Started async gloss regeneration (spells + synonyms + imps + arcana)"
-    # Show user-visible message about glossary startup
-    if command -v info >/dev/null 2>&1; then
-      info "Glossary regenerating in background..."
+      _iw_debug "Warning: generate_glosses function not available"
     fi
   fi
   
