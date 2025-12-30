@@ -37,6 +37,31 @@ case "${1-}" in
   ;;
 esac
 
+# Bootstrap: Load essential imps if not already in PATH
+# This allows generate-glosses to run as a background job without relying on PATH
+if ! command -v require-wizardry >/dev/null 2>&1; then
+  # Find WIZARDRY_DIR if not set
+  if [ -z "${WIZARDRY_DIR-}" ]; then
+    _gg_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+    WIZARDRY_DIR=$(cd "$_gg_script_dir/../.." && pwd -P)
+    export WIZARDRY_DIR
+  fi
+  
+  # Add all imp families to PATH for bootstrap
+  if [ -d "$WIZARDRY_DIR/spells/.imps" ]; then
+    _gg_imp_path=""
+    for _gg_imp_family in "$WIZARDRY_DIR"/spells/.imps/*; do
+      [ -d "$_gg_imp_family" ] || continue
+      case "$_gg_imp_family" in */test) continue ;; esac
+      _gg_imp_path="${_gg_imp_path}${_gg_imp_path:+:}${_gg_imp_family}"
+    done
+    if [ -n "$_gg_imp_path" ]; then
+      PATH="$_gg_imp_path:${PATH-}"
+      export PATH
+    fi
+  fi
+fi
+
 require-wizardry || return 1
 
 set -eu
