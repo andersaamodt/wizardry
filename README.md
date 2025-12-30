@@ -57,14 +57,17 @@ The portable build is automatically generated, and includes all spells that work
 
 Wizardry has two distinct phases: getting the files onto disk (bootstrap) and initializing them in each shell (invocation).
 
-1. **Bootstrap (pre-wizardry)** — Runs with no wizardry available. The only spells in this phase are `install`, `detect-distro`, `detect-posix`, and the helpers in `spells/install/core/`. They fetch or locate wizardry on disk. “Banish” conceptually prepares the system, but it depends on wizardry and therefore cannot run until after this phase completes.
+1. **Bootstrap (pre-wizardry)** — Runs with no wizardry available. The only spells in this phase are `install`, `detect-distro`, `detect-posix`, and the helpers in `spells/install/core/`. They fetch or locate wizardry on disk. The `banish` spell conceptually prepares the system, but it depends on wizardry and therefore cannot run until after this phase completes.
 2. **Invocation (per shell)** — Every new shell sources `spells/.imps/sys/invoke-wizardry` (installed into your shell rc file). Invocation:
    * Detects `WIZARDRY_DIR`, establishes a baseline `PATH`, and defaults `SPELLBOOK_DIR`
    * Prepends the glossary directory to `PATH`, loads `word-of-binding`, and preloads Level 1–3 imps so core spells are available immediately
    * Regenerates glosses asynchronously so all spells (and synonyms) can be cast by name
 3. **Health check (post-install)** — Run `banish` after installation (or when troubleshooting) to validate system readiness and self-heal by spell level. It enforces the same level ordering as the test suite and keeps the environment aligned with current wizardry.
 
-Quick flow: run `install` → start a new shell so `invoke-wizardry` runs → optionally run `banish 1` (or higher) for a readiness check.
+Quick flow:
+1. Run `install`
+2. Start a new shell so `invoke-wizardry` runs
+3. Optionally run `banish 1` (or higher) for a readiness check
 
 ## Usage
 
