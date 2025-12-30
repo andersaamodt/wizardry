@@ -311,15 +311,19 @@ invoke_wizardry() {
         _iw_func_defs=""
         _iw_captured_count=0
         for _func in $_iw_export_funcs; do
-          if command -v "$_func" >/dev/null 2>&1; then
-            # Capture function definition from parent shell
-            _iw_func_def="$(functions "$_func" 2>/dev/null || echo '')"
-            if [ -n "$_iw_func_def" ]; then
-              # Append with actual newline (not ANSI-C quote which doesn't work in sh)
-              _iw_func_defs="${_iw_func_defs}${_iw_func_def}
+          # Use zsh's functions command directly - it returns empty string if function doesn't exist
+          # Don't use command -v as it's unreliable for checking functions in zsh
+          _iw_func_def="$(functions "$_func" 2>/dev/null || echo '')"
+          if [ -n "$_iw_func_def" ]; then
+            # Append with actual newline (not ANSI-C quote which doesn't work in sh)
+            _iw_func_defs="${_iw_func_defs}${_iw_func_def}
 "
-              _iw_captured_count=$((_iw_captured_count + 1))
+            _iw_captured_count=$((_iw_captured_count + 1))
+            if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+              printf '[invoke-wizardry] DEBUG:   Captured function: %s (%d bytes)\n' "$_func" "${#_iw_func_def}" >&2
             fi
+          elif [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+            printf '[invoke-wizardry] DEBUG:   Function not found: %s\n' "$_func" >&2
           fi
         done
         
