@@ -169,18 +169,24 @@ else
 fi
 
 # Determine if we should read extra bytes for escape sequences
-# This logic should work regardless of skip_stty setting
+# When had_buffer=1, we only read extra if the buffer contains a partial escape
+# When had_buffer=0, we always read extra in case of escape sequences
 if [ "$had_buffer" -eq 0 ]; then
+    # Freshly read from terminal - always read extra bytes
     read_extra=1
 else
+    # From buffer - only read extra if it's a partial escape sequence
     set -- $codes
     if [ "$#" -gt 0 ] && [ "$1" -eq 27 ]; then
         if [ "$#" -eq 1 ]; then
+            # Just ESC - might be more coming
             read_extra=1
         elif [ "$2" -eq 91 ] || [ "$2" -eq 79 ]; then
             if [ "$#" -eq 2 ]; then
+                # ESC[ or ESC O - incomplete
                 read_extra=1
             elif [ "$2" -eq 91 ] && [ "$3" -eq 51 ] && [ "$#" -eq 3 ]; then
+                # ESC[3 - incomplete (delete key is ESC[3~)
                 read_extra=1
             fi
         fi
@@ -390,6 +396,7 @@ fi
 
 printf '%s\n' "$output"
 [ "${WIZARDRY_DEBUG_AWAIT:-0}" = "1" ] && printf '[await-keypress] Returning: %s\n' "$output" >&2
+return 0
 }
 
 
