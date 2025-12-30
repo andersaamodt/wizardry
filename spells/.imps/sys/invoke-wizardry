@@ -164,20 +164,20 @@ invoke_wizardry() {
   # With 387+ glosses, async is essential for fast shell startup.
   # The generate-glosses spell handles unified generation from all sources.
   # Must run AFTER essential imps are loaded (needs require-wizardry, env-clear, env-or, etc.)
-  if [ -f "$WIZARDRY_DIR/spells/system/generate-glosses" ]; then
-    # Source the spell to define the function
-    . "$WIZARDRY_DIR/spells/system/generate-glosses" 2>/dev/null || :
-    if command -v generate_glosses >/dev/null 2>&1; then
-      # Run in background - non-blocking for fast shell startup
-      # The subshell inherits all loaded functions (imps), so this works
-      (
-        generate_glosses --quiet 2>/dev/null || :
-      ) &
-      _iw_debug "Started async gloss regeneration (spells + synonyms + imps + arcana)"
-      # Show user-visible message about glossary startup
-      if command -v info >/dev/null 2>&1; then
-        info "Glossary regenerating in background..."
-      fi
+  if [ -x "$WIZARDRY_DIR/spells/system/generate-glosses" ]; then
+    # Run as executable in background with full wizardry environment
+    # Set up minimal PATH so the spell can find imps and other dependencies
+    {
+      # Ensure spell can find wizardry imps by adding them to PATH
+      _gloss_path="$WIZARDRY_DIR/spells/.imps/sys:$WIZARDRY_DIR/spells/.imps/out:$WIZARDRY_DIR/spells/.imps/cond:$WIZARDRY_DIR/spells/.imps/fs:$WIZARDRY_DIR/spells/.imps/str:$WIZARDRY_DIR/spells/.imps/paths:$WIZARDRY_DIR/spells/.imps/text:$PATH"
+      
+      # Run in background with proper environment
+      PATH="$_gloss_path" "$WIZARDRY_DIR/spells/system/generate-glosses" --quiet 2>/dev/null &
+    }
+    _iw_debug "Started async gloss regeneration (spells + synonyms + imps + arcana)"
+    # Show user-visible message about glossary startup
+    if command -v info >/dev/null 2>&1; then
+      info "Glossary regenerating in background..."
     fi
   fi
   
