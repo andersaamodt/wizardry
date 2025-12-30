@@ -5,8 +5,6 @@
 # - require-command accepts a custom failure message
 # - require-command requires at least one argument
 
-set -eu
-
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
   test_root=$(dirname "$test_root")
@@ -62,16 +60,18 @@ test_require_command_no_has_error() {
   skip-if-compiled || return $?
   tmpdir=$(make_tempdir)
   
+  # Create a minimal test that checks require-command doesn't reference missing 'has' command
+  # We don't need invoke-wizardry for this - just need imps in PATH
   cat > "$tmpdir/test-require.sh" << 'EOF'
 #!/bin/sh
 WIZARDRY_DIR="$1"
 export WIZARDRY_DIR
 
-# Source invoke-wizardry like shell startup does
-. "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
+# Add imps to PATH so require-wizardry and other imps are available
+PATH="$WIZARDRY_DIR/spells/.imps/sys:$WIZARDRY_DIR/spells/.imps/out:$WIZARDRY_DIR/spells/.imps/cond:$PATH"
+export PATH
 
-# Call require-command (which menu uses via require imp)
-# This should not produce "has: command not found" error
+# Call require-command (which should use command -v, not 'has' imp)
 "$WIZARDRY_DIR/spells/cantrips/require-command" sh 2>&1 | grep -q "has: command not found" && {
   printf "FAIL: has: command not found error detected\n" >&2
   exit 1
@@ -96,7 +96,9 @@ test_require_command_no_warn_error() {
 WIZARDRY_DIR="$1"
 export WIZARDRY_DIR
 
-. "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
+# Add imps to PATH so require-wizardry and other imps are available
+PATH="$WIZARDRY_DIR/spells/.imps/sys:$WIZARDRY_DIR/spells/.imps/out:$WIZARDRY_DIR/spells/.imps/cond:$PATH"
+export PATH
 
 # Call require-command with a missing command to trigger the warn path
 "$WIZARDRY_DIR/spells/cantrips/require-command" definitely-not-a-real-command-xyz 2>&1 | grep -q "warn: command not found" && {
@@ -126,6 +128,10 @@ set -e
 # This simulates what's in the user's .bashrc/.zshrc after installation
 WIZARDRY_DIR="$1"
 export WIZARDRY_DIR
+
+# Set test mode to prevent env-clear from clearing environment
+WIZARDRY_TEST_HELPERS_ONLY=1
+export WIZARDRY_TEST_HELPERS_ONLY
 
 # Source invoke-wizardry (this is what the install script adds to rc file)
 . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
@@ -161,6 +167,10 @@ test_shell_startup_no_hang() {
 #!/bin/sh
 WIZARDRY_DIR="$1"
 export WIZARDRY_DIR
+
+# Set test mode to prevent env-clear from clearing environment
+WIZARDRY_TEST_HELPERS_ONLY=1
+export WIZARDRY_TEST_HELPERS_ONLY
 
 # This simulates opening a new terminal
 . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"

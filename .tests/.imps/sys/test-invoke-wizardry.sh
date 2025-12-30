@@ -434,8 +434,8 @@ run_test_case "invoke-wizardry maintains permissive shell mode" test_maintains_p
 run_test_case "invoke-wizardry works when sourced from rc file" test_rc_file_sourcing
 run_test_case "invoke-wizardry works in non-bash shells via default path" test_default_path_in_unknown_shell
 # Test #7 removed: edge case (empty PATH) not realistic and difficult to test reliably
-run_test_case "command_not_found_handle returns 127 for unknown commands" test_returns_127_for_unknown_command
-run_test_case "command_not_found_handle has recursion guard" test_recursion_guard
+# Test #8 removed: command_not_found_handle no longer used (glossary-based system instead)
+# Test #9 removed: recursion guard for command_not_found_handle no longer needed
 # Test #10 removed: cd function no longer pre-loaded (MUD features install separately)
 run_test_case "menu is pre-loaded as function" test_menu_preloaded
 run_test_case "empty spellbook directory doesn't cause errors" test_empty_spellbook_directory

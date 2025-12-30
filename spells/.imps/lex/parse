@@ -77,9 +77,10 @@ parse() {
       printf '%s: command not found\n' "$_parse_cmd" >&2
       return 127
     fi
-    PATH="$_old_path"
+    # Execute with glossary still removed from PATH to prevent infinite loops
     "$_parse_cmd"
     _ret=$?
+    PATH="$_old_path"  # Restore PATH after execution
     export WIZARDRY_PARSE_DEPTH=$((_parse_depth))  # Reset depth
     return $_ret
   fi
@@ -91,9 +92,10 @@ parse() {
     printf '%s: command not found\n' "$_parse_cmd" >&2
     return 127
   fi
-  PATH="$_old_path"
+  # Execute with glossary still removed from PATH to prevent infinite loops
   "$_parse_cmd" "$@"
   _ret=$?
+  PATH="$_old_path"  # Restore PATH after execution
   export WIZARDRY_PARSE_DEPTH=$((_parse_depth))  # Reset depth
   return $_ret
 }
