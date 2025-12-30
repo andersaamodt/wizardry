@@ -10,48 +10,66 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  run_spell spells/system/demonstrate-wizardry --help
+  run_spell spells/system/demo-magic --help
   assert_success || return 1
-  assert_output_contains "Usage: demonstrate-wizardry" || return 1
+  assert_output_contains "Usage: demo-magic" || return 1
 }
 
-test_works_with_no_arguments() {
-  # Test that demonstrate-wizardry works when called without arguments
-  # This is different from the full output test as it just checks success
-  WIZARDRY_DEMO_NO_BWRAP=1 run_spell spells/system/demonstrate-wizardry
+test_level_0() {
+  WIZARDRY_DEMO_NO_BWRAP=1 run_spell spells/system/demo-magic 0
   assert_success || return 1
+  assert_output_contains "Level 0: POSIX & Platform Foundation" || return 1
+  assert_output_contains "The wizard examines the foundation" || return 1
+  assert_output_contains "The wizard casts detect-posix" || return 1
   assert_output_contains "Wizardry stands ready" || return 1
 }
 
-demonstration_output_matches() {
-  WIZARDRY_DEMO_NO_BWRAP=1 run_spell spells/system/demonstrate-wizardry
+test_level_1() {
+  WIZARDRY_DEMO_NO_BWRAP=1 run_spell spells/system/demo-magic 1
   assert_success || return 1
-
-  expected=$(cat <<'OUT'
-A circle of chalk flares into view.
-The wizardry demonstration begins.
-Validating core spells:
-menu: ready
-spellbook: ready
-cast: ready
-memorize: ready
-look: ready
-ask-yn: ready
-wizard-cast: ready
-test-magic: ready
-The circle closes. Wizardry stands ready.
-OUT
-)
-
-  if [ "${OUTPUT-}" != "$expected" ]; then
-    TEST_FAILURE_REASON="output did not match expected demonstration transcript"
-    return 1
-  fi
+  assert_output_contains "Level 1: Wizardry Installation" || return 1
+  assert_output_contains "The wizard casts validate-spells" || return 1
+  assert_output_contains "✓ Found spell: banish" || return 1
+  assert_output_contains "Core imps summoned" || return 1
 }
 
-run_test_case "demonstrate-wizardry shows help" test_help
-run_test_case "demonstrate-wizardry works with no arguments" test_works_with_no_arguments
-run_test_case "demonstrate-wizardry output matches expected transcript" demonstration_output_matches
+test_level_3() {
+  WIZARDRY_DEMO_NO_BWRAP=1 run_spell spells/system/demo-magic 3
+  assert_success || return 1
+  assert_output_contains "Level 3: Menu System" || return 1
+  assert_output_contains "The wizard casts fathom-terminal" || return 1
+  assert_output_contains "Terminal dimensions discovered" || return 1
+}
 
+test_level_7() {
+  WIZARDRY_DEMO_NO_BWRAP=1 run_spell spells/system/demo-magic 7
+  assert_success || return 1
+  assert_output_contains "Level 7: Arcane File Operations" || return 1
+  assert_output_contains "The wizard casts read-magic" || return 1
+}
 
-# Test via source-then-invoke pattern  
+test_level_8() {
+  WIZARDRY_DEMO_NO_BWRAP=1 run_spell spells/system/demo-magic 8
+  assert_success || return 1
+  assert_output_contains "Level 8: Basic Cantrips" || return 1
+  assert_output_contains "The wizard casts ask-yn" || return 1
+  assert_output_contains "Is this a demonstration?" || return 1
+}
+
+test_default_level() {
+  # Test that demo-magic works with no level argument (defaults to 1)
+  WIZARDRY_DEMO_NO_BWRAP=1 run_spell spells/system/demo-magic
+  assert_success || return 1
+  assert_output_contains "Level 0: POSIX & Platform Foundation" || return 1
+  assert_output_contains "Level 1: Wizardry Installation" || return 1
+}
+
+run_test_case "demo-magic shows help" test_help
+run_test_case "demo-magic level 0 demonstrates actual spells" test_level_0
+run_test_case "demo-magic level 1 runs validate-spells" test_level_1
+run_test_case "demo-magic level 3 runs fathom-terminal" test_level_3
+run_test_case "demo-magic level 7 runs read-magic" test_level_7
+run_test_case "demo-magic level 8 runs ask-yn" test_level_8
+run_test_case "demo-magic works with default level" test_default_level
+
+finish_tests
