@@ -12,10 +12,10 @@ Demonstrate wizardry features by running checks on spells and narrating results.
 Each level demonstrates spells validated by the corresponding banish level.
 
 Arguments:
-  LEVEL         Demonstration level (0-27, default: 1)
+  LEVEL         Demonstration level (0-28, default: 1)
                 Level 0: POSIX & platform foundation
                 Level 1: Wizardry installation
-                Level 2: Menu system
+                Level 2: Glossary system
                 Level 3+: Higher-level spells (see SPELL_LEVELS.md)
 USAGE
 }
@@ -70,8 +70,8 @@ demo_level() {
     fi
   fi
   
-  # Special checks for level 27 (arcana)
-  if [ "$level" -eq 27 ]; then
+  # Special checks for level 28 (arcana)
+  if [ "$level" -eq 28 ]; then
     [ -d "${WIZARDRY_DIR}/spells/.arcana" ] && \
       printf 'arcana directory: ready\n' || printf 'Warning: arcana directory check failed\n' >&2
   fi
