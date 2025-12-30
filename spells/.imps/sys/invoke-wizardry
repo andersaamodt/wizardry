@@ -188,41 +188,6 @@ invoke_wizardry() {
     done
   fi
   
-  # Centralized gloss generation: Automatically regenerate glosses for:
-  # 1. All wizardry spells (in $WIZARDRY_DIR/spells/)
-  # 2. Synonyms from $SPELLBOOK_DIR/.synonyms
-  # 3. Default synonyms from $SPELLBOOK_DIR/.default-synonyms
-  #
-  # This runs asynchronously in the background to avoid delaying shell startup.
-  # With 387+ glosses, async is essential for fast shell startup.
-  # The generate-glosses spell handles unified generation from all sources.
-  # Must run AFTER essential imps and generate-glosses spell are loaded.
-  # Skip gloss generation in test mode (tests don't need glosses)
-  if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
-    # Call the preloaded generate_glosses function in background
-    # This allows it to access all the preloaded imp functions
-    # The function was already loaded by word_of_binding above
-    if command -v generate_glosses >/dev/null 2>&1; then
-      if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-        {
-          generate_glosses --quiet 2>"${SPELLBOOK_DIR}/.glossary-errors.log" &
-        }
-        _iw_debug "Gloss generation errors (if any) logged to ${SPELLBOOK_DIR}/.glossary-errors.log"
-      else
-        {
-          generate_glosses --quiet &
-        } 2>/dev/null
-      fi
-      _iw_debug "Started async gloss regeneration (spells + synonyms + imps + arcana)"
-      # Show user-visible message about glossary startup
-      if command -v info >/dev/null 2>&1; then
-        info "Glossary regenerating in background..."
-      fi
-    else
-      _iw_debug "Warning: generate_glosses function not available"
-    fi
-  fi
-  
   # Pre-load spells by level (Levels 0-3: POSIX + Wizardry + Glossary + Menu)
   # This provides all foundational spells needed for core wizardry functionality
   # Uses spell-levels imp to stay in sync with level definitions
@@ -250,11 +215,26 @@ invoke_wizardry() {
             _spell_file="$_spell_dir/$_spell_name"
             if [ -f "$_spell_file" ]; then
               _iw_debug "Loading spell: $_spell_name"
+              if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+                printf '[invoke-wizardry] DEBUG: Before word_of_binding for %s\n' "$_spell_name" >&2
+              fi
               if command -v word_of_binding >/dev/null 2>&1 \
                 && word_of_binding "$_spell_name" 2>/dev/null; then
                 _iw_status="✓ Loaded"
+                if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+                  # Immediately check if function is available
+                  _spell_func_name=$(printf '%s' "$_spell_name" | tr '-' '_')
+                  if command -v "$_spell_func_name" >/dev/null 2>&1; then
+                    printf '[invoke-wizardry] DEBUG: Function %s IS available immediately after word_of_binding\n' "$_spell_func_name" >&2
+                  else
+                    printf '[invoke-wizardry] DEBUG: WARNING - Function %s NOT available immediately after word_of_binding!\n' "$_spell_func_name" >&2
+                  fi
+                fi
               else
                 _iw_status="✗ Failed"
+                if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+                  printf '[invoke-wizardry] DEBUG: word_of_binding FAILED for %s\n' "$_spell_name" >&2
+                fi
               fi
               _iw_debug "  $_iw_status: $_spell_name"
               break
@@ -284,6 +264,53 @@ invoke_wizardry() {
         fi
       done
     done
+  fi
+
+  # Centralized gloss generation: Automatically regenerate glosses for:
+  # 1. All wizardry spells (in $WIZARDRY_DIR/spells/)
+  # 2. Synonyms from $SPELLBOOK_DIR/.synonyms
+  # 3. Default synonyms from $SPELLBOOK_DIR/.default-synonyms
+  #
+  # This runs asynchronously in the background to avoid delaying shell startup.
+  # With 387+ glosses, async is essential for fast shell startup.
+  # The generate-glosses spell handles unified generation from all sources.
+  # Must run AFTER essential imps and generate-glosses spell are loaded.
+  # Skip gloss generation in test mode (tests don't need glosses)
+  if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
+    if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+      printf '[invoke-wizardry] DEBUG: About to check for generate_glosses function\n' >&2
+    fi
+    # Call the preloaded generate_glosses function in background
+    # This allows it to access all the preloaded imp functions
+    # The function was already loaded by word_of_binding above (in spell preloading)
+    if command -v generate_glosses >/dev/null 2>&1; then
+      if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+        printf '[invoke-wizardry] DEBUG: generate_glosses function IS available, starting background job\n' >&2
+      fi
+      if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+        {
+          generate_glosses --quiet 2>"${SPELLBOOK_DIR}/.glossary-errors.log" &
+        }
+        _iw_debug "Gloss generation errors (if any) logged to ${SPELLBOOK_DIR}/.glossary-errors.log"
+      else
+        {
+          generate_glosses --quiet &
+        } 2>/dev/null
+      fi
+      _iw_debug "Started async gloss regeneration (spells + synonyms + imps + arcana)"
+      # Show user-visible message about glossary startup
+      if command -v info >/dev/null 2>&1; then
+        info "Glossary regenerating in background..."
+      fi
+    else
+      if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+        printf '[invoke-wizardry] DEBUG: generate_glosses function NOT available!\n' >&2
+        printf '[invoke-wizardry] DEBUG: Checking what IS available:\n' >&2
+        printf '[invoke-wizardry] DEBUG: type generate_glosses: %s\n' "$(type generate_glosses 2>&1)" >&2
+        printf '[invoke-wizardry] DEBUG: command -v generate_glosses: %s\n' "$(command -v generate_glosses 2>&1)" >&2
+      fi
+      _iw_debug "Warning: generate_glosses function not available"
+    fi
   fi
 
   _iw_menu_ok=0
