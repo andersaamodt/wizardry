@@ -197,7 +197,8 @@ invoke_wizardry() {
   # With 387+ glosses, async is essential for fast shell startup.
   # The generate-glosses spell handles unified generation from all sources.
   # Must run AFTER essential imps are loaded (needs require-wizardry, env-clear, env-or, etc.)
-  if [ -x "$WIZARDRY_DIR/spells/system/generate-glosses" ]; then
+  # Skip gloss generation in test mode (tests don't need glosses)
+  if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ] && [ -x "$WIZARDRY_DIR/spells/system/generate-glosses" ]; then
     # Run as executable in background with full wizardry environment
     # Build comprehensive PATH including ALL imp families
     _gloss_imp_path=""
