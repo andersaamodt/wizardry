@@ -146,9 +146,8 @@ The arcana menu (`install-menu`) loads arcana automatically from files, so you c
 | ---- | ---------- |
 | **arcanum** (pl. **arcana**) | A grand working—a spell that installs and configures software across supported platforms, presented as a menu of functions. Also refers to the apps themselves. |
 | **aura** | The proto-meaning a spell name bears when evoked (future feature). |
-| **banish** | To validate wizardry readiness at different spell levels (0-29). Checks assumptions, self-heals issues, and confirms that wizardry is properly configured. See `.github/BOOTSTRAPPING.md` for the complete bootstrapping paradigm. |
-| **bootstrap script** | A script that runs **before** wizardry is fully installed and invoked. These self-contained scripts (e.g., `install`, `detect-distro`, `spells/install/core/*`) cannot assume wizardry is in PATH or that imps are available. Distinguished from **bootstrap spells** which run after wizardry is invoked. See `.github/BOOTSTRAPPING.md` for details. |
-| **bootstrap spell** | A spell that represents foundational functionality (Spell Levels 0-1) but requires wizardry to be installed and invoked. Distinguished from **bootstrap scripts** which run before wizardry is available. Examples: `banish`, `validate-spells`. See `.github/BOOTSTRAPPING.md` for details. |
+| **banish** | To reset to a known configuration in the execution environment via systematic assumption-checking. For example, spells begin with `env-clear` and `set -eu`. |
+| **bootstrap spell** | A spell that can run before wizardry is fully installed. These self-contained scripts (namely `install`, `detect-distro`, and spells in `spells/install/core/`) don't rely on other wizardry spells. |
 | **bound imp** | An *invoked* imp; sourced so its true-name function exists in the current shell and can be called without subprocess overhead. |
 | **cantrip** | A small utility spell for common tasks. |
 | `cast` | To execute a spell. Memorized spells appear in the `cast` menu for quick access. |
