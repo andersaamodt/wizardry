@@ -175,7 +175,6 @@ The arcana menu (`install-menu`) loads arcana automatically from files, so you c
 | **true name** | The internal underscore function-name defined by a bound imp (e.g., `_contains` for the `contains` imp). Same as incantation but for imps. |
 | **unbound imp** | A *cast* imp; executed in a subshell rather than sourced into the current shell. Must contain zero functions. |
 | **ward** | A protective spell for security or access control. |
-| **word-of-binding** | Invoke sall spells at startup so they will be available to cast; also hotloads spells found in the wild, making them immediately available to cast. |
 
 # **Ethos and Standards**
 
