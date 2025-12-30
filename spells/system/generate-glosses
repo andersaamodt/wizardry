@@ -141,12 +141,14 @@ GLOSS
   
   [ "$quiet" -eq 0 ] && info "Generating glosses from all sources..."
   
-  # Source 1: Wizardry spells
-  # Generate glosses for all user-facing spells (exclude imps and arcana)
+  # Source 1: Wizardry spells (including imps and arcana)
+  # Generate glosses for all wizardry files recursively
+  # This includes:
+  # - User-facing spells in spells/*/
+  # - Imps in spells/.imps/*/
+  # - Arcana in spells/.arcana/*/
   if [ -d "$wizardry_dir/spells" ]; then
-    find "$wizardry_dir/spells" -type f -executable \
-      -not -path "$wizardry_dir/spells/.imps/*" \
-      -not -path "$wizardry_dir/spells/.arcana/*" 2>/dev/null | \
+    find "$wizardry_dir/spells" -type f -executable 2>/dev/null | \
     while IFS= read -r spell_path; do
       spell_name=$(basename "$spell_path")
       
@@ -155,8 +157,15 @@ GLOSS
         ''|.*) continue ;;
       esac
       
-      # Create gloss for this spell
-      _create_gloss "$spell_name" "$spell_name" "wizardry spell"
+      # Determine the source description
+      case "$spell_path" in
+        */.imps/*) source_desc="wizardry imp" ;;
+        */.arcana/*) source_desc="wizardry arcana" ;;
+        *) source_desc="wizardry spell" ;;
+      esac
+      
+      # Create gloss for this spell/imp/arcana
+      _create_gloss "$spell_name" "$spell_name" "$source_desc"
     done
   fi
   
