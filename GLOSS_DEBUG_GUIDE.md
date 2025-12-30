@@ -31,23 +31,29 @@ The fixes in this PR should resolve the issue. After updating:
 
 ## What Was Fixed
 
-### 1. Subshell Issue
+### 1. Cross-Platform Compatibility (PRIMARY FIX)
+**Problem:** The `find -executable` flag is not available on older BSD find implementations on macOS. This caused the find command to fail, returning 0 spell files, which meant only synonym glosses were created.
+
+**Fix:** Now uses `find -perm /111` which is portable across BSD and GNU find implementations. This matches any file with at least one execute bit set.
+
+### 2. Better Error Diagnostics
+**Problem:** No visibility into what was happening during gloss generation, making it hard to debug failures.
+
+**Fix:** Added:
+- Debug logging showing how many files were found
+- Warning when no executable files found
+- Warning when very few glosses created (<50)
+- Error log file at `~/.spellbook/.glossary-errors.log`
+
+### 3. Subshell Issue
 **Problem:** The original code used `find | while read` which runs in a subshell, making errors harder to detect.
 
 **Fix:** Now uses a temp file to avoid subshell complexity.
 
-### 2. Fragile Gloss Creation  
-**Problem:** Used heredoc + sed to create gloss files, which could fail silently on different platforms (especially macOS vs Linux).
-
-**Fix:** Now uses printf to directly write gloss content - simpler and more reliable.
-
-### 3. Limited Error Reporting
-**Problem:** No visibility into what was happening during gloss generation.
-
-**Fix:** Added debug logging showing how many files were found and processed.
-
-### 4. No Directory Validation
+### 4. Directory Validation
 **Problem:** Didn't verify WIZARDRY_DIR was valid before attempting to scan it.
+
+**Fix:** Now validates that WIZARDRY_DIR exists and contains spells/.
 
 **Fix:** Now validates that WIZARDRY_DIR exists and contains spells/.
 
@@ -152,20 +158,30 @@ Should show: `~/.spellbook/.glossary` or `/Users/yourusername/.spellbook/.glossa
 4. Reload shell: `exec $SHELL`
 
 ### Issue: Only synonyms in glossary
-**Cause:** Spell processing failed silently (fixed in this PR).
+**Cause:** The `find -executable` flag is not available on older BSD find (macOS). This is now fixed.
 
 **Fix:**
-1. Update wizardry to get the fix
+1. Update wizardry to get the fix: `cd ~/.wizardry && git pull`
 2. Force regenerate: `generate-glosses --force`
-3. Check error log for details
+3. Check for warning messages about no files found
+4. Check error log: `cat ~/.spellbook/.glossary-errors.log`
 
-### Issue: Empty error log but still missing glosses
-**Cause:** WIZARDRY_DIR might be wrong or permissions issue.
+### Issue: Warning "no executable files found"
+**Cause:** Either WIZARDRY_DIR is wrong, or there's a find compatibility issue, or permission problem.
 
 **Fix:**
 1. Verify WIZARDRY_DIR: `ls $WIZARDRY_DIR/spells`
 2. Check permissions: `ls -la $WIZARDRY_DIR/spells`
 3. Verify spells are executable: `ls -la $WIZARDRY_DIR/spells/menu/main-menu`
+4. Try manual find: `find $WIZARDRY_DIR/spells -type f -perm /111 | head -5`
+
+### Issue: Warning "only X glosses created (expected 300+)"
+**Cause:** Spell files not found or not executable.
+
+**Fix:**
+1. Check how many spells exist: `find $WIZARDRY_DIR/spells -type f | wc -l`
+2. Check how many are executable: `find $WIZARDRY_DIR/spells -type f -perm /111 | wc -l`
+3. If counts differ, fix permissions: `chmod +x $WIZARDRY_DIR/spells/*/* 2>/dev/null`
 
 ## Expected Behavior
 
