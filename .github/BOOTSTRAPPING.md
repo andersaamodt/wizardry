@@ -1,128 +1,90 @@
 # Wizardry Bootstrapping - AI Agent Reference
 
-## Execution Order and Script Types
+## Core Concept: Execution Sequence
 
-### The Five Phases
+Wizardry has a specific execution order that determines which scripts can use wizardry features:
 
 ```
-Phase 0: POSIX Foundation     → detect-posix validates
-Phase 1: Download & Install   → ./install runs (self-contained)
-Phase 2: Shell Integration    → install modifies rc file
-Phase 3: Runtime Invocation   → invoke-wizardry sources at startup
-Phase 4: Validation          → banish validates spell levels
+1. install (self-contained)
+   ↓ downloads wizardry
+2. invoke-wizardry (sourced at shell startup)
+   ↓ loads imps and spells
+3. require-wizardry (checks if step 2 succeeded)
+   ↓ used by regular spells
+4. banish (validates spell levels)
 ```
 
-### Script Classification
-
-**Self-contained scripts** (Phases 0-2): Cannot use wizardry imps or spells
-- `install` - Downloads/installs wizardry
-- `spells/install/core/*` - Core prerequisite installers
-- `detect-posix`, `detect-distro`, `detect-rc-file` - Detection utilities
-
-**Wizardry-dependent spells** (Phases 3-4): Require wizardry invoked
-- `banish` - Validates spell levels
-- `validate-spells` - Checks spell/imp existence
-- All regular spells - Use `require-wizardry || return 1`
+**Key rule**: Scripts in steps 1-2 CANNOT use wizardry. Scripts in steps 3-4 CAN use wizardry.
 
 ---
 
-## Critical: set -eu Placement Rules
+## Critical Placement Rules
 
-### Castable Spells (Can be executed AND sourced)
+### 1. Castable Spells (99% of spells)
 
+**Correct sequence:**
 ```sh
 #!/bin/sh
 
 spell_name() {
-case "${1-}" in
---help|--usage|-h)
-  spell_name_usage
-  return 0  # ← RETURN (not exit) - allows sourcing
-  ;;
-esac
-
-require-wizardry || return 1  # ← RETURN - before set -eu
-
-set -eu  # ← INSIDE function
-env-clear
-
-# Main spell logic
+  case "${1-}" in --help) usage; return 0 ;; esac
+  
+  require-wizardry || return 1  # ← FIRST: check wizardry available
+  set -eu                        # ← SECOND: enable strict mode
+  env-clear                      # ← THIRD: clear environment
+  
+  # Spell logic here
 }
 
-castable "$@"  # ← AFTER function definition
+castable "$@"  # ← LAST: self-execute
 ```
 
-**Why set -eu inside the function?**
-- Castable loading code runs without strict mode (WIZARDRY_DIR may be unset)
-- Function body gets strict mode protection
-- `return` (not `exit`) allows safe sourcing
+**Why this order?**
+- `require-wizardry` before `set -eu`: Checks can fail gracefully with `|| return 1`
+- `set -eu` inside function: Castable loading runs in permissive mode (WIZARDRY_DIR may be unset)
+- `env-clear` after `set -eu`: Needs strict mode for safety
+- `castable` at end: Self-executes only when run directly (not sourced)
+- Use `return` (not `exit`): Allows safe sourcing without killing shell
 
-**Why env-clear?**
-- Clears environment variables that might interfere with spell execution
-- Preserves wizardry globals (WIZARDRY_DIR, SPELLBOOK_DIR, etc.)
-- Preserves system essentials (PATH, HOME, TERM, etc.)
-- Prevents environment variable pollution between spells
-- Must be sourced (`. env-clear`) AFTER `set -eu`
+### 2. Imps (Action)
 
-### Uncastable Spells (Source-only, like `colors`)
-
+**Correct sequence:**
 ```sh
 #!/bin/sh
-
-case "${1-}" in
---help) usage; exit 0 ;; esac  # ← Top-level exit OK
-
-uncastable  # ← BEFORE require-wizardry
-
-require-wizardry || exit 1  # ← Top-level exit OK
-
-spell_name() {
-case "${1-}" in
---help) usage; return 0 ;; esac  # ← Function return
-
-set -eu  # ← INSIDE function
-env-clear
-
-# Main spell logic
-}
-```
-
-### Imps (Action)
-
-```sh
-#!/bin/sh
-set -eu  # ← TOP of file (imps are simple)
+set -eu  # ← TOP of file (imps are simple, always strict)
 
 _imp_name() {
   # Implementation
 }
 
-case "$0" in
-  */imp-name) _imp_name "$@" ;; esac
+case "$0" in */imp-name) _imp_name "$@" ;; esac
 ```
 
-**ONE set -eu per imp!** Never duplicate before case statement.
+**Critical: ONE `set -eu` per file!** Never duplicate before case statement.
 
-### Imps (Conditional - return exit codes)
+### 3. Imps (Conditional - for if/while conditions)
 
+**Correct sequence:**
 ```sh
 #!/bin/sh
 # NO set -eu for conditional imps
 
 _imp_name() {
-  [ "$1" = "expected" ]  # Returns 0 or 1
+  [ "$1" = "expected" ]  # Returns 0/1 for flow control
 }
 
-case "$0" in
-  */imp-name) _imp_name "$@" ;; esac
+case "$0" in */imp-name) _imp_name "$@" ;; esac
 ```
 
-### Self-Contained Scripts (install, detect-*)
+**Why no `set -eu`?** These return exit codes for `if`/`&&`/`||` chains.
 
+### 4. Self-Contained Scripts (install, detect-*)
+
+**Correct sequence:**
 ```sh
 #!/bin/sh
 
-# Set baseline PATH BEFORE set -eu
+# PATH setup BEFORE set -eu (may use unset variables)
 baseline_path="/usr/local/bin:/usr/bin:/bin"
 case ":${PATH-}:" in
   *":/bin:"*) ;;
@@ -132,158 +94,204 @@ export PATH
 
 set -eu  # ← AFTER PATH setup
 
-# Self-contained logic (no wizardry imps)
+# Self-contained logic (NO wizardry imps/spells)
 ```
 
----
+### 5. Uncastable Spells (must be sourced, like `colors`)
 
-## Phase Details
+**Correct sequence:**
+```sh
+#!/bin/sh
 
-### Phase 0: POSIX Foundation
+case "${1-}" in --help) usage; exit 0 ;; esac  # ← Top-level exit OK
 
-**Spell Level 0** - POSIX + package manager available
+uncastable  # ← BEFORE require-wizardry
 
-### Phase 1: Download & Install
+require-wizardry || exit 1  # ← Top-level exit OK
 
-**Actions**: `./install` downloads wizardry to `~/.wizardry` (or custom path)
-
-**Spell Level 1 prerequisites** - Files on disk, not yet usable
-
-### Phase 2: Shell Integration
-
-**Actions**: `install` adds `. invoke-wizardry` to shell rc file, creates `~/.spellbook`
-
-**Spell Level 1 complete** - Ready for invocation in new shells
-
-### Phase 3: Runtime Invocation
-
-**Actions**: Shell sources `invoke-wizardry` → loads imps/spells → creates glosses
-
-**Spell Levels 2-3** - Glossary + Menu functional
-
-### Phase 4: Validation
-
-**Actions**: `banish N` validates levels 0 through N
-
-**Spell Levels 0-29** - Progressive validation
+spell_name() {
+  case "${1-}" in --help) usage; return 0 ;; esac  # ← Function return
+  
+  set -eu  # ← INSIDE function
+  env-clear
+  
+  # Main logic
+}
+```
 
 ---
 
 ## Component Relationships
 
-| Component | Type | Phase | Can Use Wizardry? |
-|-----------|------|-------|-------------------|
-| `install` | Self-contained script | 1-2 | No |
-| `detect-posix` | Self-contained script | 0 | No |
-| `invoke-wizardry` | Initialization script | 3 | No (loads it) |
-| `require-wizardry` | Imp | 3+ | Yes |
-| `banish` | Spell | 4 | Yes |
+| Component | Runs When | Can Use Wizardry? | Uses |
+|-----------|-----------|-------------------|------|
+| `install` | Phase 1-2 | ❌ No | Self-contained |
+| `detect-posix` | Phase 0 | ❌ No | Self-contained |
+| `invoke-wizardry` | Phase 3 (shell startup) | ❌ No (but loads wizardry) | Sources imps/spells |
+| `require-wizardry` | Inside spells (Phase 3+) | ✅ Yes (is wizardry) | Checks WIZARDRY_DIR |
+| `env-clear` | Inside spells (Phase 3+) | ✅ Yes (is wizardry) | Clears environment |
+| `banish` | Phase 4 (validation) | ✅ Yes | Validates spell levels |
+| Regular spells | Phase 3+ | ✅ Yes | require-wizardry, env-clear |
 
-**Mental model:**
-- `install` = downloads/installs (Phases 1-2)
-- `invoke-wizardry` = initializes (Phase 3)
-- `require-wizardry` = validates readiness (runtime check)
-- `banish` = validates spell levels (Phase 4)
+**Key insight:** `invoke-wizardry` is the dividing line. Scripts before it cannot use wizardry. Scripts after it can.
 
 ---
 
-## Common Patterns
+## Why env-clear?
 
-### Castable Spell Pattern
+**Purpose**: Prevents environment variable pollution between spells
 
-```sh
-#!/bin/sh
+**What it does:**
+- Clears all environment variables
+- Preserves wizardry globals (WIZARDRY_DIR, SPELLBOOK_DIR, etc.)
+- Preserves system essentials (PATH, HOME, TERM, etc.)
+- Preserves test infrastructure (WIZARDRY_TEST_HELPERS_ONLY, etc.)
 
-spell_name() {
-case "${1-}" in
---help) usage; return 0 ;; esac
+**Placement:** MUST be sourced AFTER `set -eu` inside spell function
 
-require-wizardry || return 1
+---
 
-set -eu
-env-clear
+## The Five Phases
 
-# Spell logic using wizardry features
-}
-
-castable "$@"
+```
+Phase 0: POSIX Foundation     → detect-posix validates
+Phase 1: Download & Install   → ./install runs (self-contained)
+Phase 2: Shell Integration    → install modifies rc file
+Phase 3: Runtime Invocation   → invoke-wizardry sources at startup
+Phase 4: Validation          → banish validates spell levels
 ```
 
-### Self-Contained Script Pattern
-
-```sh
-#!/bin/sh
-
-# PATH setup before set -eu
-baseline_path="/usr/local/bin:/usr/bin:/bin"
-case ":${PATH-}:" in
-  *":/bin:"*) ;;
-  *) PATH="${baseline_path}${PATH:+:}${PATH-}" ;;
-esac
-export PATH
-
-set -eu
-
-# Self-contained logic - no wizardry dependencies
-if ! command -v tar >/dev/null 2>&1; then
-  printf 'tar required\n' >&2
-  exit 1
-fi
-```
+**Phase 0-2:** Self-contained scripts (no wizardry)
+**Phase 3-4:** Wizardry-dependent scripts (use require-wizardry)
 
 ---
 
 ## Decision Tree
 
 ```
-Writing code that runs BEFORE wizardry installed?
-├─ Yes → Self-contained script (no imps, no spells)
-│         Examples: install, detect-posix, detect-distro
-│         Pattern: Check commands before use, inline logic
+Writing a script?
 │
-└─ No → Wizardry invoked (Phase 3+)?
-    ├─ Check readiness → require-wizardry || return 1
-    ├─ Validate levels → banish N
-    └─ Normal spell → Use castable pattern
+├─ Runs BEFORE invoke-wizardry (Phase 0-2)?
+│  ├─ Yes → Self-contained script
+│  │       - NO require-wizardry
+│  │       - NO env-clear
+│  │       - set -eu AFTER PATH setup
+│  │       - Examples: install, detect-posix, detect-distro
+│  │
+│  └─ No → Runs AFTER invoke-wizardry (Phase 3+)?
+│         └─ Yes → Regular spell
+│                  - require-wizardry || return 1
+│                  - set -eu INSIDE function
+│                  - env-clear AFTER set -eu
+│                  - castable "$@" at end
+│                  - Examples: copy, forall, menu
 ```
 
 ---
 
-## Environment Variables
+## Common Errors
 
-**Phase 1-2 (Install)**:
-- `WIZARDRY_INSTALL_DIR` - Override install location
-- `WIZARDRY_INSTALL_ASSUME_YES` - Non-interactive
+❌ **WRONG: exit instead of return**
+```sh
+spell_name() {
+  require-wizardry || exit 1  # Kills shell when sourced!
+}
+```
 
-**Phase 3+ (Runtime)**:
-- `WIZARDRY_DIR` - Set by invoke-wizardry (required)
-- `SPELLBOOK_DIR` - User spell directory
-- `WIZARDRY_DEBUG` - Enable diagnostics
-- `WIZARDRY_TEST_HELPERS_ONLY` - Test mode
-
----
-
-## Key Rules
-
-1. **Self-contained scripts cannot use wizardry** - No imps, no spells
-2. **Castable spells use `return`** - Not `exit` (safe for sourcing)
-3. **set -eu goes inside functions** - For castable spells
-4. **ONE set -eu per imp** - Never duplicate
-5. **Conditional imps have NO set -eu** - Return exit codes for flow control
-6. **require-wizardry checks, doesn't initialize** - Use `|| return 1`
+✅ **CORRECT: return for safe sourcing**
+```sh
+spell_name() {
+  require-wizardry || return 1  # Safe to source
+}
+```
 
 ---
 
-## Spell Levels vs Phases
+❌ **WRONG: set -eu before require-wizardry**
+```sh
+spell_name() {
+  set -eu
+  require-wizardry || return 1  # Can't use || with set -e
+}
+```
 
-**Spell levels (0-29)** define functional dependencies and capabilities.
-
-**Bootstrap phases (0-4)** define installation/initialization sequence.
-
-All spells install in Phase 1-2. Spell levels determine validation order in Phase 4 (banish).
+✅ **CORRECT: require-wizardry before set -eu**
+```sh
+spell_name() {
+  require-wizardry || return 1
+  set -eu
+}
+```
 
 ---
 
-## Testing
+❌ **WRONG: duplicate set -eu in imp**
+```sh
+#!/bin/sh
+set -eu
+_imp() { ... }
+set -eu  # DUPLICATE! Breaks invoke-wizardry
+case "$0" in */imp) _imp "$@" ;; esac
+```
 
-Tests use `WIZARDRY_TEST_HELPERS_ONLY=1` which makes `require-wizardry` always succeed and sets up PATH directly.
+✅ **CORRECT: ONE set -eu**
+```sh
+#!/bin/sh
+set -eu
+_imp() { ... }
+case "$0" in */imp) _imp "$@" ;; esac
+```
+
+---
+
+❌ **WRONG: env-clear before set -eu**
+```sh
+spell_name() {
+  env-clear  # Runs in permissive mode!
+  set -eu
+}
+```
+
+✅ **CORRECT: env-clear after set -eu**
+```sh
+spell_name() {
+  set -eu
+  env-clear  # Runs in strict mode
+}
+```
+
+---
+
+## Quick Reference
+
+**Castable spell template:**
+```sh
+#!/bin/sh
+spell_name() {
+  case "${1-}" in --help) usage; return 0 ;; esac
+  require-wizardry || return 1
+  set -eu
+  env-clear
+  # logic
+}
+castable "$@"
+```
+
+**Action imp template:**
+```sh
+#!/bin/sh
+set -eu
+_imp() { ... }
+case "$0" in */imp) _imp "$@" ;; esac
+```
+
+**Self-contained script template:**
+```sh
+#!/bin/sh
+# PATH setup
+baseline_path="/usr/local/bin:/usr/bin:/bin"
+case ":${PATH-}:" in *":/bin:"*) ;; *) PATH="$baseline_path:$PATH" ;; esac
+export PATH
+set -eu
+# logic
+```
