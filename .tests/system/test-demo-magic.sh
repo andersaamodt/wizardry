@@ -20,6 +20,7 @@ test_level_0() {
   assert_success || return 1
   assert_output_contains "Level 0: POSIX & Platform Foundation" || return 1
   assert_output_contains "The wizard examines the foundation" || return 1
+  assert_output_contains "The wizard casts detect-posix" || return 1
   assert_output_contains "Wizardry stands ready" || return 1
 }
 
@@ -27,25 +28,32 @@ test_level_1() {
   WIZARDRY_DEMO_NO_BWRAP=1 run_spell spells/system/demo-magic 1
   assert_success || return 1
   assert_output_contains "Level 1: Wizardry Installation" || return 1
-  assert_output_contains "The wizard casts banish ... ready" || return 1
-  assert_output_contains "The wizard casts validate-spells ... ready" || return 1
-  assert_output_contains "Wizardry stands ready" || return 1
+  assert_output_contains "The wizard casts validate-spells" || return 1
+  assert_output_contains "✓ Found spell: banish" || return 1
+  assert_output_contains "Core imps summoned" || return 1
 }
 
 test_level_3() {
   WIZARDRY_DEMO_NO_BWRAP=1 run_spell spells/system/demo-magic 3
   assert_success || return 1
   assert_output_contains "Level 3: Menu System" || return 1
-  assert_output_contains "The wizard weaves interactive menus" || return 1
-  assert_output_contains "The wizard casts menu ... ready" || return 1
+  assert_output_contains "The wizard casts fathom-terminal" || return 1
+  assert_output_contains "Terminal dimensions discovered" || return 1
 }
 
 test_level_7() {
   WIZARDRY_DEMO_NO_BWRAP=1 run_spell spells/system/demo-magic 7
   assert_success || return 1
   assert_output_contains "Level 7: Arcane File Operations" || return 1
-  assert_output_contains "The wizard casts copy ... ready" || return 1
-  assert_output_contains "The wizard casts read-magic ... ready" || return 1
+  assert_output_contains "The wizard casts read-magic" || return 1
+}
+
+test_level_8() {
+  WIZARDRY_DEMO_NO_BWRAP=1 run_spell spells/system/demo-magic 8
+  assert_success || return 1
+  assert_output_contains "Level 8: Basic Cantrips" || return 1
+  assert_output_contains "The wizard casts ask-yn" || return 1
+  assert_output_contains "Is this a demonstration?" || return 1
 }
 
 test_default_level() {
@@ -57,10 +65,11 @@ test_default_level() {
 }
 
 run_test_case "demo-magic shows help" test_help
-run_test_case "demo-magic level 0 works" test_level_0
-run_test_case "demo-magic level 1 works" test_level_1
-run_test_case "demo-magic level 3 works" test_level_3
-run_test_case "demo-magic level 7 works" test_level_7
+run_test_case "demo-magic level 0 demonstrates actual spells" test_level_0
+run_test_case "demo-magic level 1 runs validate-spells" test_level_1
+run_test_case "demo-magic level 3 runs fathom-terminal" test_level_3
+run_test_case "demo-magic level 7 runs read-magic" test_level_7
+run_test_case "demo-magic level 8 runs ask-yn" test_level_8
 run_test_case "demo-magic works with default level" test_default_level
 
 finish_tests
