@@ -154,20 +154,8 @@ env_clear
     
     # Use temp file to avoid subshell issues with pipeline
     _spell_list=$(temp_file)
-    # Cross-platform find for executable files
-    # Try -perm +111 (BSD/macOS), fallback to -perm /111 (GNU), then test -x as last resort
-    if find "$wizardry_dir/spells" -type f -perm +111 2>/dev/null | head -1 >/dev/null 2>&1; then
-      # BSD find (macOS) - uses +111
-      find "$wizardry_dir/spells" -type f -perm +111 2>/dev/null > "$_spell_list"
-    elif find "$wizardry_dir/spells" -type f -perm /111 2>/dev/null | head -1 >/dev/null 2>&1; then
-      # GNU find (Linux) - uses /111
-      find "$wizardry_dir/spells" -type f -perm /111 2>/dev/null > "$_spell_list"
-    else
-      # Fallback: find all files and test each one
-      find "$wizardry_dir/spells" -type f 2>/dev/null | while IFS= read -r f; do
-        [ -x "$f" ] && printf '%s\n' "$f"
-      done > "$_spell_list"
-    fi
+    # Use find-executable imp for cross-platform compatibility
+    find_executable "$wizardry_dir/spells" > "$_spell_list"
     
     # Count files found
     _spell_count=$(wc -l < "$_spell_list")
@@ -298,16 +286,8 @@ env_clear
   # fi
   
   # Count total glosses in directory
-  # Cross-platform find for executable files
-  # Try -perm +111 (BSD/macOS), fallback to -perm /111 (GNU), then count all files
-  if find "$glossary_dir" -type f -perm +111 2>/dev/null | head -1 >/dev/null 2>&1; then
-    total_glosses=$(find "$glossary_dir" -type f -perm +111 2>/dev/null | wc -l | tr -d ' ')
-  elif find "$glossary_dir" -type f -perm /111 2>/dev/null | head -1 >/dev/null 2>&1; then
-    total_glosses=$(find "$glossary_dir" -type f -perm /111 2>/dev/null | wc -l | tr -d ' ')
-  else
-    # Fallback: count files that are executable
-    total_glosses=$(find "$glossary_dir" -type f 2>/dev/null | while IFS= read -r f; do [ -x "$f" ] && printf '.\n'; done | wc -l | tr -d ' ')
-  fi
+  # Use find-executable imp for cross-platform compatibility
+  total_glosses=$(find_executable "$glossary_dir" | wc -l | tr -d ' ')
   
   # Report results
   if [ "$quiet" -eq 0 ]; then
