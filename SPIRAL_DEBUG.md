@@ -79,31 +79,55 @@ On macOS with zsh, `invoke-wizardry` fails to generate glosses for wizard spells
 - The function names in `$_iw_export_funcs` were correct (underscore versions)
 - The loop just wasn't iterating over them!
 
-### Solution (Final)
-Enable word splitting in zsh for the for loop:
+### Iteration 11: Missing Word Splitting in ALL Loops (Final Root Cause!)
+**Hypothesis:** The word splitting fix was only applied to the function capture loop (lines 338-364), but the SAME issue exists in the imp loading loop (lines 140-173) and spell loading loop (lines 198-245).
+
+**Discovery Process:**
+1. Debug output showed `generate_glosses` was captured, but imp functions were not
+2. This meant `generate_glosses` spell was loaded, but imps were NOT loaded
+3. The imp/spell loading loops ALSO iterate over space-separated strings from `get_level_imps()` and `get_level_spells()`
+4. Without word splitting, these loops only process the first item, skipping all others
+
+**Solution (Final - Simpler Approach):**
+Instead of wrapping each loop individually, enable `SH_WORD_SPLIT` once at the top of the `invoke_wizardry` function:
 
 ```sh
-# CRITICAL: In zsh, enable word splitting for the for loop
-# Zsh doesn't split on spaces by default (unlike sh/bash)
-if [ -n "${ZSH_VERSION-}" ]; then
-  setopt SH_WORD_SPLIT
-fi
-
-for _func in $_iw_export_funcs; do
-  # Now $_func will be each individual function name
-  _iw_func_def="$(functions "$_func" 2>/dev/null || echo '')"
-  if [ -n "$_iw_func_def" ]; then
-    # Append function definition
+invoke_wizardry() {
+  # CRITICAL: Enable word splitting in zsh for all for-loops in this function
+  # Save current state and restore before any return
+  _iw_saved_sh_word_split=""
+  if [ -n "${ZSH_VERSION-}" ]; then
+    if setopt | grep -q "^shwordsplit$"; then
+      _iw_saved_sh_word_split="yes"
+    else
+      _iw_saved_sh_word_split="no"
+    fi
+    setopt SH_WORD_SPLIT
   fi
-done
-
-# Restore zsh word splitting behavior to default
-if [ -n "${ZSH_VERSION-}" ]; then
-  unsetopt SH_WORD_SPLIT
-fi
+  
+  # Helper to restore state before returning
+  _iw_restore_and_return() {
+    _ret_code=${1:-0}
+    if [ -n "${ZSH_VERSION-}" ] && [ "$_iw_saved_sh_word_split" = "no" ]; then
+      unsetopt SH_WORD_SPLIT
+    fi
+    return "$_ret_code"
+  }
+  
+  # ... rest of function ...
+  # Replace all "return X" with "_iw_restore_and_return X"
+}
 ```
 
-This is the actual root cause - everything else was correct, but the loop wasn't iterating!
+**Benefits of This Approach:**
+- **Cleaner:** One setopt at top instead of multiple per loop
+- **Simpler:** All for-loops work automatically throughout the function  
+- **Safer:** Helper function ensures state is always restored before any return
+- **Minimal:** Only 28 net lines added vs 56 with per-loop wrapping approach
+
+**Result:** ✅ **FIXED** - All imps and spells now load correctly in zsh, glosses generate successfully
+
+**Commit:** 38a9582
 
 ## Architecture Insights
 
