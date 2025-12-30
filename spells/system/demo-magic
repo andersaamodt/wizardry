@@ -38,254 +38,175 @@ demo_level() {
   case "$level" in
     0)
       printf 'The wizard examines the foundation of reality itself...\n'
-      printf 'Verifying POSIX compliance and platform compatibility.\n'
       printf '\n'
+      
+      # Actually run detect-posix
+      if [ -f "${WIZARDRY_DIR}/spells/divination/detect-posix" ]; then
+        printf 'The wizard casts detect-posix...\n'
+        "${WIZARDRY_DIR}/spells/divination/detect-posix" 2>&1 | head -5
+        printf '\n'
+      fi
+      
+      # Run detect-distro
+      if [ -f "${WIZARDRY_DIR}/spells/divination/detect-distro" ]; then
+        printf 'The wizard casts detect-distro...\n'
+        printf 'Distribution: %s\n' "$("${WIZARDRY_DIR}/spells/divination/detect-distro")"
+        printf '\n'
+      fi
       
       # Check infrastructure
       if [ -f "${WIZARDRY_DIR}/spells/.imps/sys/invoke-wizardry" ]; then
-        printf 'The invoke-wizardry ritual: discovered\n'
-      else
-        printf 'Warning: invoke-wizardry ritual not found\n' >&2
+        printf 'The invoke-wizardry ritual: ready\n'
       fi
       
       if [ -d "${WIZARDRY_DIR}/spells" ]; then
-        printf 'The spells grimoire: present\n'
-      else
-        printf 'Warning: spells grimoire missing\n' >&2
+        spell_count=$(find "${WIZARDRY_DIR}/spells" -type f -executable 2>/dev/null | wc -l)
+        printf 'The spells grimoire: %d spells inscribed\n' "$spell_count"
       fi
       
       if [ -d "${WIZARDRY_DIR}/spells/.imps" ]; then
-        printf 'The imp summoning circles: inscribed\n'
-      else
-        printf 'Warning: imp summoning circles not found\n' >&2
+        imp_count=$(find "${WIZARDRY_DIR}/spells/.imps" -type f 2>/dev/null | wc -l)
+        printf 'The imp summoning circles: %d imps bound\n' "$imp_count"
       fi
       ;;
       
     1)
       printf 'The wizard gathers the core components of wizardry...\n'
-      printf 'Installing the foundation: validation and banishment.\n'
       printf '\n'
+      
+      # Demonstrate validate-spells
+      if [ -f "${WIZARDRY_DIR}/spells/system/validate-spells" ]; then
+        printf 'The wizard casts validate-spells on core infrastructure...\n'
+        "${WIZARDRY_DIR}/spells/system/validate-spells" banish:system validate-spells:system 2>&1 | head -3
+        printf '\n'
+      fi
+      
+      # Show core imps
+      printf 'Core imps summoned: %d foundational helpers\n' "$(printf '%s' "$imp_list" | wc -w)"
+      printf 'Including: has, there, is, say, warn, die, temp-file, and more...\n'
       ;;
       
     2)
       printf 'The wizard conjures the glossary system...\n'
-      printf 'Words of power take form and meaning.\n'
       printf '\n'
+      
+      if [ -f "${WIZARDRY_DIR}/spells/system/generate-glosses" ]; then
+        printf 'The wizard has the power to cast generate-glosses...\n'
+        printf '(Glossary generation extracts help text from all spells)\n'
+      fi
       ;;
       
     3)
       printf 'The wizard weaves interactive menus from pure thought...\n'
-      printf 'Terminal manipulation becomes an art form.\n'
       printf '\n'
+      
+      # Demonstrate fathom-terminal
+      if [ -f "${WIZARDRY_DIR}/spells/cantrips/fathom-terminal" ]; then
+        printf 'The wizard casts fathom-terminal...\n'
+        term_size=$("${WIZARDRY_DIR}/spells/cantrips/fathom-terminal")
+        printf 'Terminal dimensions discovered: %s\n' "$term_size"
+        printf '\n'
+      fi
+      
+      # List menu capabilities
+      printf 'Menu system capabilities unlocked:\n'
+      printf '  • Interactive menu navigation\n'
+      printf '  • Terminal size detection\n'
+      printf '  • Cursor positioning\n'
+      printf '  • Keypress detection\n'
+      printf '  • Color support\n'
       ;;
       
     4)
       printf 'The wizard enters the realm of MUD...\n'
-      printf 'Rooms and locations gain meaning through extended attributes.\n'
       printf '\n'
-      ;;
       
-    5)
-      printf 'The wizard learns the art of translocation...\n'
-      printf 'Marking and jumping between locations in the blink of an eye.\n'
-      printf '\n'
-      ;;
-      
-    6)
-      printf 'The wizard masters the arcane language of parsing...\n'
-      printf 'Command structures bend to the wizards will.\n'
-      printf '\n'
+      # Demonstrate look on current directory
+      if [ -f "${WIZARDRY_DIR}/spells/mud/look" ]; then
+        printf 'The wizard casts look on the current location...\n'
+        "${WIZARDRY_DIR}/spells/mud/look" . 2>&1 | head -10
+      fi
       ;;
       
     7)
       printf 'The wizard masters arcane file operations...\n'
-      printf 'Copying, trashing, and reading magical inscriptions.\n'
       printf '\n'
+      
+      # Demonstrate read-magic
+      if [ -f "${WIZARDRY_DIR}/spells/arcane/read-magic" ]; then
+        printf 'The wizard casts read-magic...\n'
+        printf '(Reads extended attributes from files)\n'
+        if [ -f "${WIZARDRY_DIR}/spells/arcane/read-magic" ]; then
+          printf 'Reading the read-magic spell itself:\n'
+          "${WIZARDRY_DIR}/spells/arcane/read-magic" "${WIZARDRY_DIR}/spells/arcane/read-magic" 2>&1 | head -5 || printf '  (No attributes set)\n'
+        fi
+        printf '\n'
+      fi
+      
+      printf 'File operations available:\n'
+      printf '  • copy - Copy files with optional extended attributes\n'
+      printf '  • trash - Move files to trash instead of deleting\n'
+      printf '  • read-magic - Read extended attributes\n'
+      printf '  • forall - Execute commands on multiple files\n'
       ;;
       
     8)
       printf 'The wizard learns basic cantrips...\n'
-      printf 'Asking questions, listing files, and simple transformations.\n'
       printf '\n'
-      ;;
       
-    9)
-      printf 'The wizard channels validation energies...\n'
-      printf 'Numbers, paths, and commands yield to verification.\n'
-      printf '\n'
-      ;;
-      
-    10)
-      printf 'The wizard advances in the cantrip arts...\n'
-      printf 'Asking for numbers and memorizing spells into the shell.\n'
-      printf '\n'
-      ;;
-      
-    11)
-      printf 'The wizard configures the system...\n'
-      printf 'Package management and system configuration take shape.\n'
-      printf '\n'
+      # Demonstrate ask-yn (with auto-response via pipe)
+      if [ -f "${WIZARDRY_DIR}/spells/cantrips/ask-yn" ]; then
+        printf 'The wizard casts ask-yn "Is this a demonstration?" yes\n'
+        printf 'y\n' | "${WIZARDRY_DIR}/spells/cantrips/ask-yn" "Is this a demonstration?" yes 2>&1 || true
+        printf '\n'
+      fi
       ;;
       
     12)
       printf 'The wizard establishes the testing framework...\n'
-      printf 'Self-examination becomes possible.\n'
       printf '\n'
-      ;;
       
-    13)
-      printf 'The wizard learns system maintenance...\n'
-      printf 'Updating wizardry and managing processes.\n'
-      printf '\n'
+      if [ -f "${WIZARDRY_DIR}/spells/system/test-magic" ]; then
+        printf 'The wizard has established test-magic...\n'
+        printf '(Testing framework enables spell validation)\n'
+        printf 'Tests available: %d test files\n' "$(find "${WIZARDRY_DIR}/.tests" -name "test-*.sh" 2>/dev/null | wc -l)"
+      fi
       ;;
       
     14)
       printf 'The wizard demonstrates the demonstration itself...\n'
-      printf 'Recursion: a wizard demonstrating demonstration magic.\n'
+      printf 'Recursion: demo-magic demonstrating demo-magic!\n'
       printf '\n'
-      ;;
-      
-    15)
-      printf 'The wizard practices divination...\n'
-      printf 'Detecting shells, discovering magic, and identifying rooms.\n'
-      printf '\n'
-      ;;
-      
-    16)
-      printf 'The wizard enhances the MUD realm...\n'
-      printf 'Decoration and player selection capabilities emerge.\n'
-      printf '\n'
-      ;;
-      
-    17)
-      printf 'The wizard delves into cryptography...\n'
-      printf 'Hashing and hash verification become available.\n'
-      printf '\n'
-      ;;
-      
-    18)
-      printf 'The wizard opens portals to remote realms...\n'
-      printf 'SSH keys, portkeys, and remote access materialize.\n'
-      printf '\n'
-      ;;
-      
-    19)
-      printf 'The wizard manages task priorities...\n'
-      printf 'Getting, setting, and voting on priorities.\n'
-      printf '\n'
-      ;;
-      
-    20)
-      printf 'The wizard erects protective wards...\n'
-      printf 'SSH barriers defend against intrusion.\n'
-      printf '\n'
-      ;;
-      
-    21)
-      printf 'The wizard enchants files with extended attributes...\n'
-      printf 'Metadata becomes magical inscription.\n'
-      printf '\n'
-      ;;
-      
-    22)
-      printf 'The wizard develops psychic abilities (PSI)...\n'
-      printf 'Reading contacts and process information.\n'
-      printf '\n'
-      ;;
-      
-    23)
-      printf 'The wizard becomes a spellcrafter...\n'
-      printf 'Creating, editing, and managing new spells.\n'
-      printf '\n'
-      ;;
-      
-    24)
-      printf 'The wizard constructs core menu infrastructure...\n'
-      printf 'Spellbooks and casting interfaces take form.\n'
-      printf '\n'
-      ;;
-      
-    25)
-      printf 'The wizard builds system menus...\n'
-      printf 'Installation, configuration, and synonym management.\n'
-      printf '\n'
-      ;;
-      
-    26)
-      printf 'The wizard administers the MUD realm...\n'
-      printf 'Player management and MUD settings.\n'
-      printf '\n'
-      ;;
-      
-    27)
-      printf 'The wizard creates specialized menus...\n'
-      printf 'Network, services, shutdown, and user management.\n'
-      printf '\n'
-      ;;
-      
-    28)
-      printf 'The wizard masters system service management...\n'
-      printf 'Installing, starting, stopping, and managing services.\n'
-      printf '\n'
-      ;;
-      
-    29)
-      printf 'The wizard peers into the arcana...\n'
-      printf 'Third-party integrations and optional extensions.\n'
-      printf '\n'
-      
-      if [ -d "${WIZARDRY_DIR}/spells/.arcana" ]; then
-        printf 'The arcana vault: accessible\n'
-      else
-        printf 'The arcana vault: sealed (no third-party extensions installed)\n'
-      fi
       ;;
       
     *)
+      # For other levels, show a summary
       printf 'The wizard channels level %d energies...\n' "$level"
       printf '\n'
+      
+      # Count and display spells
+      if [ -n "$spell_list" ]; then
+        spell_count=$(printf '%s' "$spell_list" | wc -w)
+        printf 'Spells at this level: %d\n' "$spell_count"
+        
+        # Show first few spells
+        first_spells=$(printf '%s' "$spell_list" | tr ' ' '\n' | head -5 | sed 's/:.*//; s/^/  • /')
+        printf '%s\n' "$first_spells"
+        
+        remaining=$((spell_count - 5))
+        if [ "$remaining" -gt 0 ]; then
+          printf '  ... and %d more\n' "$remaining"
+        fi
+        printf '\n'
+      fi
+      
+      # Count imps
+      if [ -n "$imp_list" ]; then
+        imp_count=$(printf '%s' "$imp_list" | wc -w)
+        printf 'Imps summoned: %d micro-helpers\n' "$imp_count"
+      fi
       ;;
   esac
-  
-  # Check spells for this level (note: spell_list is intentionally unquoted for word splitting)
-  if [ -n "$spell_list" ]; then
-    printf 'Spells at this level:\n'
-    # shellcheck disable=SC2086
-    validate_spells $spell_list 2>&1 | sed 's/✓ Found spell:/  The wizard casts/; s/^  *//; s/$/ ... ready/'
-    
-    # Report missing spells if any
-    # shellcheck disable=SC2086
-    if ! validate_spells $spell_list >/dev/null 2>&1; then
-      # shellcheck disable=SC2086
-      missing=$(validate_spells --missing-only $spell_list)
-      printf '  Warning: missing spells: %s\n' "$missing" >&2
-    fi
-  fi
-  
-  # Check imps for this level (note: imp_list is intentionally unquoted for word splitting)
-  if [ -n "$imp_list" ]; then
-    # Count imps to provide context
-    imp_count=$(printf '%s' "$imp_list" | wc -w)
-    if [ "$imp_count" -gt 10 ]; then
-      printf '\n'
-      printf 'Imps summoned at this level: %d micro-helpers\n' "$imp_count"
-      printf '  (Core building blocks for spell construction)\n'
-      # Don't list individual imps when there are many - it's too verbose
-    else
-      printf '\n'
-      printf 'Imps summoned at this level:\n'
-      # shellcheck disable=SC2086
-      validate_spells --imps $imp_list 2>&1 | sed 's/✓ Found imp:/  Imp:/; s/^  *//; s/$/ ... bound/'
-    fi
-    
-    # Report missing imps if any
-    # shellcheck disable=SC2086
-    if ! validate_spells --imps $imp_list >/dev/null 2>&1; then
-      # shellcheck disable=SC2086
-      missing=$(validate_spells --imps --missing-only $imp_list)
-      printf '  Warning: missing imps: %s\n' "$missing" >&2
-    fi
-  fi
 }
 
 demo_magic() {
@@ -318,6 +239,31 @@ if [ -z "${WIZARDRY_DIR-}" ]; then
     WIZARDRY_DIR="${HOME}/.wizardry"
     export WIZARDRY_DIR
   fi
+fi
+
+# Source env-clear after WIZARDRY_DIR is established
+if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/env-clear" ]; then
+  . "${WIZARDRY_DIR}/spells/.imps/sys/env-clear"
+fi
+
+# Add imps to PATH for spell demonstrations
+if [ -n "${WIZARDRY_DIR-}" ]; then
+  # Build imp path
+  _imp_path="${WIZARDRY_DIR}/spells/.imps/sys"
+  _imp_path="$_imp_path:${WIZARDRY_DIR}/spells/.imps/cond"
+  _imp_path="$_imp_path:${WIZARDRY_DIR}/spells/.imps/out"
+  _imp_path="$_imp_path:${WIZARDRY_DIR}/spells/.imps/fs"
+  _imp_path="$_imp_path:${WIZARDRY_DIR}/spells/.imps/str"
+  _imp_path="$_imp_path:${WIZARDRY_DIR}/spells/.imps/paths"
+  _imp_path="$_imp_path:${WIZARDRY_DIR}/spells/.imps/text"
+  _imp_path="$_imp_path:${WIZARDRY_DIR}/spells/.imps/input"
+  _imp_path="$_imp_path:${WIZARDRY_DIR}/spells/.imps/lex"
+  _imp_path="$_imp_path:${WIZARDRY_DIR}/spells/.imps/menu"
+  _imp_path="$_imp_path:${WIZARDRY_DIR}/spells/.imps/pkg"
+  _imp_path="$_imp_path:${WIZARDRY_DIR}/spells/.imps/test"
+  _imp_path="$_imp_path:${WIZARDRY_DIR}/spells/.imps/lang"
+  PATH="$_imp_path:$PATH"
+  export PATH
 fi
 
 # Source spell-levels from sys imp
