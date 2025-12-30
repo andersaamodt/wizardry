@@ -95,7 +95,7 @@ fi
 export WIZARDRY_DIR
 
 # Parse arguments
-target_level=1
+target_level=3
 max_level=29
 skip_tests=0
 skip_heal=0
