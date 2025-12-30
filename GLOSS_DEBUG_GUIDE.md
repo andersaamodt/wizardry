@@ -55,8 +55,6 @@ The fixes in this PR should resolve the issue. After updating:
 
 **Fix:** Now validates that WIZARDRY_DIR exists and contains spells/.
 
-**Fix:** Now validates that WIZARDRY_DIR exists and contains spells/.
-
 ## Debugging Steps
 
 If you're still seeing issues after the fix:

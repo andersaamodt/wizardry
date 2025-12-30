@@ -299,8 +299,10 @@ set -eu
     [ "$force" -eq 1 ] && info "  Mode: --force (regenerate all)"
     
     # Warn if very few glosses were created (likely indicates a problem)
+    # Expected: ~389 glosses (as of 2024), threshold set conservatively at 50
     if [ "$total_glosses" -lt 50 ]; then
-      warn "generate-glosses: only $total_glosses glosses created (expected 300+)"
+      warn "generate-glosses: only $total_glosses glosses created (expected ~389)"
+      warn "generate-glosses: this likely indicates a find compatibility issue or permission problem"
       warn "generate-glosses: check $SPELLBOOK_DIR/.glossary-errors.log for details"
     fi
   fi
