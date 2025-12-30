@@ -310,6 +310,13 @@ invoke_wizardry() {
         # We must capture the function bodies here while they're still available
         _iw_func_defs=""
         _iw_captured_count=0
+        
+        # CRITICAL: In zsh, enable word splitting for the for loop
+        # Zsh doesn't split on spaces by default (unlike sh/bash)
+        if [ -n "${ZSH_VERSION-}" ]; then
+          setopt SH_WORD_SPLIT
+        fi
+        
         for _func in $_iw_export_funcs; do
           # Use zsh's functions command directly - it returns empty string if function doesn't exist
           # Don't use command -v as it's unreliable for checking functions in zsh
@@ -326,6 +333,11 @@ invoke_wizardry() {
             printf '[invoke-wizardry] DEBUG:   Function not found: %s\n' "$_func" >&2
           fi
         done
+        
+        # Restore zsh word splitting behavior to default
+        if [ -n "${ZSH_VERSION-}" ]; then
+          unsetopt SH_WORD_SPLIT
+        fi
         
         if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
           printf '[invoke-wizardry] DEBUG: Captured %d function definitions\n' "$_iw_captured_count" >&2
