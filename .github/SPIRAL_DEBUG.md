@@ -398,14 +398,16 @@ The spiral debug is complete when:
   - Users interact with synonyms via the Spellbook menu (existing UI)
   - Glosses are auto-generated in the background (transparent to users)
   - No new menu items or test levels needed for glossary system
-  - invoke-wizardry handles centralized gloss generation elegantly
+  - generate-glosses spell handles centralized gloss generation from all sources
 
-- **Updated Architecture**:
-  - invoke-wizardry automatically regenerates glosses on shell startup
-  - Glosses generated from all sources in one place:
-    * All wizardry spells ($WIZARDRY_DIR/spells/)
-    * User synonyms ($SPELLBOOK_DIR/.synonyms)
-    * Default synonyms ($SPELLBOOK_DIR/.default-synonyms)
+- **Final Architecture**:
+  - invoke-wizardry calls generate-glosses asynchronously on shell startup
+  - generate-glosses has centralized `_create_gloss()` function for elegant generation
+  - Glosses generated from all sources in one unified process:
+    * **Source 1**: All wizardry spells (`$WIZARDRY_DIR/spells/`)
+    * **Source 2**: User synonyms (`$SPELLBOOK_DIR/.synonyms`)
+    * **Source 3**: Default synonyms (`$SPELLBOOK_DIR/.default-synonyms`)
+    * **Source 4**: System commands (FUTURE - complete implementation commented out)
   - Background async generation (non-blocking, transparent)
   - Users never see or manage glosses directly
 
@@ -414,17 +416,48 @@ The spiral debug is complete when:
   - ~~Update test-magic to add Glossary as Level 2~~ (not needed - implementation detail)  
   - ~~Update demo-magic to add Glossary as Level 2~~ (not needed - implementation detail)
 
-- **Updated Implementation Status**:
-  - [x] Enhanced generate-glosses with synonym integration
-  - [x] Enhanced parse with recursion prevention
-  - [x] Centralized gloss generation in invoke-wizardry
-  - [x] Documented glosses as implementation detail
-  - [ ] Create tests for generate-glosses spell
-  - [ ] Test complete glossary system with fresh install
-  - [ ] Remove command_not_found handlers (after testing complete)
+- **CURRENT STATUS - Feature Complete**:
+  - [x] Created generate-glosses spell with centralized `_create_gloss()` function
+  - [x] Unified gloss generation from all sources (spells + user synonyms + default synonyms)
+  - [x] Added system command glossing implementation (commented out, ready for future)
+  - [x] Enhanced parse imp with recursion prevention (WIZARDRY_PARSE_DEPTH tracking)
+  - [x] Centralized gloss generation in invoke-wizardry (async background call)
+  - [x] Documented glosses as transparent implementation detail
+  - [x] Synonym-to-gloss migration complete (synonyms now work in scripts)
 
-- **User Experience**:
+- **NEXT STEPS - Testing & Cleanup**:
+  1. **Create test suite for generate-glosses spell**
+     - Test gloss generation from spell directories
+     - Test synonym parsing from .synonyms and .default-synonyms files
+     - Test duplicate detection and conflict prevention
+     - Test --force and --quiet flags
+     - Test recursion prevention in parse
+  
+  2. **Integration testing with fresh install**
+     - Install wizardry in clean environment
+     - Verify glosses auto-generate on first shell startup
+     - Test spell invocation via glosses (e.g., `menu`, `test-magic`)
+     - Test synonym invocation via glosses (verify they work in scripts)
+     - Test parse passthrough and recursion prevention
+  
+  3. **Performance validation**
+     - Measure shell startup time impact (async should be minimal)
+     - Verify gloss regeneration completes in background
+     - Test with large synonym files
+  
+  4. **Code cleanup after successful testing**
+     - Remove command_not_found handlers (glossary replaces them)
+     - Remove word-of-binding --run mode (no longer needed)
+     - Clean up debug logging code
+     - Update documentation
+
+- **User Experience** (UNCHANGED):
   - Synonyms: Managed via Spellbook menu (existing workflow)
   - Glosses: Auto-generated, invisible to users
-  - Benefits: Synonyms work in scripts (not just interactive shells)
+  - **New Benefit**: Synonyms work in scripts (not just interactive shells)
   - No new concepts for users to learn
+
+- **Future Enhancements** (ready to activate):
+  - System command glossing: Uncomment code in generate-glosses to enable
+  - Natural language parsing: Re-enable parsing logic in parse imp
+  - Spell-checking: Add typo detection to glossary system
