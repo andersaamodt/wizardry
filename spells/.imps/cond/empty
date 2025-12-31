@@ -2,10 +2,6 @@
 # empty VALUE - test if string is empty or unset
 # Example: empty "$VAR" && echo "no value provided"
 
-empty() {
-  [ -z "$1" ]
-}
+# Note: No set -eu because this is a conditional imp (returns exit codes for flow control)
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */empty) empty "$@" ;; esac
+[ -z "$1" ]
