@@ -7,13 +7,18 @@
 
 ### Problem Statement
 
-The word-of-binding paradigm shift (~200 PRs ago) introduced complexity:
+**PR #410** introduced the word-of-binding paradigm (~200 PRs ago) with these changes:
 - Function preloading for performance
-- Glosses/shims for hyphenated commands
+- Glosses/shims for hyphenated commands  
+- invoke-wizardry for shell initialization
+- handle-command-not-found for auto-sourcing spells
 - But: executed commands run in subshells without preloaded functions!
 - Result: Negated the performance benefits
+- **Critical issue:** Menu spell stopped working after PR #410 and never worked again
 
-**Decision:** Return to the old, simple PATH-based paradigm while preserving good changes made since then.
+**Decision:** Return to the old, simple PATH-based paradigm (pre-PR #410) while preserving good changes made since then.
+
+**Reference:** See `WORD_OF_BINDING_RESTORATION.md` for complete historical context and restoration plan.
 
 ### What to Keep
 ✅ **KEEP:**
@@ -322,3 +327,28 @@ When this conversion is complete:
 - [ ] Tests pass completely
 - [ ] EXEMPTIONS.md reflects new function counts
 - [ ] Documentation is accurate and complete
+
+### Special Note: Menu Restoration
+
+User has requested special handling for the menu spell:
+- The menu spell worked before the word-of-binding paradigm was introduced (PR #410)
+- It has not worked correctly since that conversion
+- Need to restore menu and all its dependencies to pre-word-of-binding version
+- Keep any improvements/new imps that were added since then
+- The restoration should be from the same era as path-wizard (commit 8ff484c0) or earlier
+
+**Menu restoration strategy:**
+1. Find the exact commit where word-of-binding was introduced
+2. Get the menu spell from just before that commit
+3. Convert it to flat-file execution pattern (remove any function wrappers)
+4. Ensure all menu dependencies work with flat-file pattern
+5. Test thoroughly
+
+**invoke-wizardry changes:**
+- Instead of hardcoding PATHs in rc file, invoke-wizardry should call path-wizard
+- This allows flexible discovery of spell folders each time
+- RC file doesn't need updates when spell folders change
+- Use recursive algorithm to discover all spell folders
+
+**New imp needed:**
+- Create simple folder/file recursion imp for discovering spell directories
