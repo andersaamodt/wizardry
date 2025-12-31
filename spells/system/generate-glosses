@@ -180,6 +180,13 @@ env_clear
         ''|.*) continue ;;
       esac
       
+      # CRITICAL: Skip parse to prevent infinite recursion
+      # Parse is used by all glosses, so a parse gloss would create: exec parse "parse"
+      # This would recurse infinitely when the gloss is invoked
+      case "$spell_name" in
+        parse) continue ;;
+      esac
+      
       # Determine the source description
       case "$spell_path" in
         */.imps/*) source_desc="wizardry imp" ;;
