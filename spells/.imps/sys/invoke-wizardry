@@ -348,7 +348,7 @@ invoke_wizardry() {
         # List all function names that need to be exported
         _iw_export_funcs="generate_glosses require_wizardry env_or env_clear temp_file cleanup_file on_exit"
         _iw_export_funcs="$_iw_export_funcs die warn fail say success info step debug has there is yes no empty nonempty"
-        _iw_export_funcs="$_iw_export_funcs cleanup_dir make_tempdir"
+        _iw_export_funcs="$_iw_export_funcs cleanup_dir make_tempdir find_executable"
         
         # CRITICAL: Get function definitions in PARENT shell BEFORE entering subshell
         # In zsh subshells, functions aren't inherited, so command -v returns false
