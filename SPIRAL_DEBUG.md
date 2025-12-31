@@ -36,33 +36,33 @@ The word-of-binding paradigm shift (~200 PRs ago) introduced complexity:
 📝 **SIMPLIFY:**
 - Spells: unwrap functions, inline usage text
 - Imps: remove function wrappers, keep as simple scripts
-- PATH: add all spell/imp directories recursively via `path-wizard`
+- PATH: use original `path-wizard` for PATH management
 - Synonyms: generate aliases not glosses
 - Function count: most spells go from 2 functions → 0 functions
 
-### New Infrastructure: `path-wizard`
-✅ **Created:** `spells/system/path-wizard`
+### Restored Infrastructure: `path-wizard`
+✅ **Restored:** `spells/path-wizard` (original version from commit 8ff484c0)
 
-A utility that generates PATH additions for the flat-file paradigm:
-- Lists all spell directories (arcane/, cantrips/, etc.)
-- Lists all imp directories (.imps/out/, .imps/cond/, etc.)
-- Outputs shell commands to add them to PATH
-- Supports `--eval` for immediate use, `--rc` for rc files
-- Enables all spells/imps to be called by hyphenated names
+The original path-wizard utility that worked well before word-of-binding:
+- Simple add/remove interface: `path-wizard add <directory>`
+- Modifies `.bashrc` file directly
+- Works across all tested platforms
+- No complex generation or multi-mode operation
+- Direct PATH manipulation that users can understand
 
 **Usage:**
 ```sh
-# Add to current shell:
-eval "$(path-wizard --eval)"
+# Add a directory to PATH:
+path-wizard add /some/directory
 
-# Add to rc file:
-path-wizard --rc >> ~/.bashrc
+# Remove a directory from PATH:
+path-wizard remove /some/directory
 
-# Check current PATH:
-path-wizard --check
+# Add current directory:
+path-wizard add
 ```
 
-This restores the simple, working PATH-based approach that worked well before word-of-binding.
+This restores the proven, simple PATH management that worked well before the paradigm shift.
 
 ---
 
