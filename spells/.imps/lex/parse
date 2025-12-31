@@ -156,43 +156,55 @@ PARSE_HELP
     [ "$_parse_debug" = "1" ] && [ -n "$_spell_file" ] && printf '[parse] DEBUG: Found spell via find: %s\n' "$_spell_file" >&2
   fi
   
-  # If spell found, execute it with wizardry directories in PATH
+  # If spell found, load it via word-of-binding and call the function
+  # This matches the architecture: word-of-binding loads spells as functions
   if [ -n "$_spell_file" ] && [ -f "$_spell_file" ] && [ -x "$_spell_file" ]; then
-    [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Executing spell file: %s\n' "$_spell_file" >&2
+    [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Found spell file: %s\n' "$_spell_file" >&2
     
-    # Add wizardry spell directories to PATH so the spell can find imps and other spells
-    # This prevents the need for glosses while still allowing spells to call each other
-    # CRITICAL: Glossary remains removed to prevent recursion
-    _wizardry_paths="$_wizardry_dir/spells/.imps/sys"
-    _wizardry_paths="$_wizardry_paths:$_wizardry_dir/spells/.imps/out"
-    _wizardry_paths="$_wizardry_paths:$_wizardry_dir/spells/.imps/cond"
-    _wizardry_paths="$_wizardry_paths:$_wizardry_dir/spells/.imps/fs"
-    _wizardry_paths="$_wizardry_paths:$_wizardry_dir/spells/.imps/str"
-    _wizardry_paths="$_wizardry_paths:$_wizardry_dir/spells/.imps/text"
-    _wizardry_paths="$_wizardry_paths:$_wizardry_dir/spells/.imps/lex"
-    _wizardry_paths="$_wizardry_paths:$_wizardry_dir/spells/.imps/pkg"
-    _wizardry_paths="$_wizardry_paths:$_wizardry_dir/spells/.imps/input"
-    _wizardry_paths="$_wizardry_paths:$_wizardry_dir/spells/.imps/lang"
-    _wizardry_paths="$_wizardry_paths:$_wizardry_dir/spells/.imps/menu"
-    _wizardry_paths="$_wizardry_paths:$_wizardry_dir/spells/.imps/test"
-    _wizardry_paths="$_wizardry_paths:$_wizardry_dir/spells/cantrips"
-    _wizardry_paths="$_wizardry_paths:$_wizardry_dir/spells/menu"
-    _wizardry_paths="$_wizardry_paths:$_wizardry_dir/spells/arcane"
-    _wizardry_paths="$_wizardry_paths:$_wizardry_dir/spells/divination"
-    _wizardry_paths="$_wizardry_paths:$_wizardry_dir/spells/system"
-    _wizardry_paths="$_wizardry_paths:$_wizardry_dir/spells/spellcraft"
-    _wizardry_paths="$_wizardry_paths:$_wizardry_dir/spells/enchantment"
-    _wizardry_paths="$_wizardry_paths:$_wizardry_dir/spells/install"
-    PATH="$_wizardry_paths:$PATH"
+    # Convert command name to function name (hyphen to underscore)
+    _spell_func=$(printf '%s' "$_parse_cmd" | tr '-' '_')
     
-    [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Added wizardry directories to PATH for spell execution\n' >&2
-    
-    if [ $# -eq 0 ]; then
-      "$_spell_file"
-    else
-      "$_spell_file" "$@"
+    # Load word-of-binding if not already available
+    if ! command -v word_of_binding >/dev/null 2>&1; then
+      if [ -f "$_wizardry_dir/spells/.imps/sys/word-of-binding" ]; then
+        [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Loading word-of-binding\n' >&2
+        # shellcheck disable=SC1090,SC1091
+        . "$_wizardry_dir/spells/.imps/sys/word-of-binding"
+      fi
     fi
-    _ret=$?
+    
+    # Use word-of-binding to properly load the spell as a function
+    if command -v word_of_binding >/dev/null 2>&1; then
+      [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Loading spell via word_of_binding: %s\n' "$_parse_cmd" >&2
+      word_of_binding "$_parse_cmd" || {
+        [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: word_of_binding failed for %s\n' "$_parse_cmd" >&2
+        PATH="$_old_path"
+        export WIZARDRY_PARSE_DEPTH=$((_parse_depth))
+        return 1
+      }
+    else
+      [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: word_of_binding not available\n' >&2
+      PATH="$_old_path"
+      export WIZARDRY_PARSE_DEPTH=$((_parse_depth))
+      return 127
+    fi
+    
+    # Now the function should be loaded - call it
+    if command -v "$_spell_func" >/dev/null 2>&1; then
+      [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Calling spell function: %s\n' "$_spell_func" >&2
+      if [ $# -eq 0 ]; then
+        "$_spell_func"
+      else
+        "$_spell_func" "$@"
+      fi
+      _ret=$?
+    else
+      [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Function %s not found after word_of_binding\n' "$_spell_func" >&2
+      PATH="$_old_path"
+      export WIZARDRY_PARSE_DEPTH=$((_parse_depth))
+      return 127
+    fi
+    
     PATH="$_old_path"  # Restore PATH
     export WIZARDRY_PARSE_DEPTH=$((_parse_depth))  # Reset depth
     return $_ret
