@@ -36,9 +36,33 @@ The word-of-binding paradigm shift (~200 PRs ago) introduced complexity:
 📝 **SIMPLIFY:**
 - Spells: unwrap functions, inline usage text
 - Imps: remove function wrappers, keep as simple scripts
-- PATH: add all spell/imp directories recursively
+- PATH: add all spell/imp directories recursively via `path-wizard`
 - Synonyms: generate aliases not glosses
 - Function count: most spells go from 2 functions → 0 functions
+
+### New Infrastructure: `path-wizard`
+✅ **Created:** `spells/system/path-wizard`
+
+A utility that generates PATH additions for the flat-file paradigm:
+- Lists all spell directories (arcane/, cantrips/, etc.)
+- Lists all imp directories (.imps/out/, .imps/cond/, etc.)
+- Outputs shell commands to add them to PATH
+- Supports `--eval` for immediate use, `--rc` for rc files
+- Enables all spells/imps to be called by hyphenated names
+
+**Usage:**
+```sh
+# Add to current shell:
+eval "$(path-wizard --eval)"
+
+# Add to rc file:
+path-wizard --rc >> ~/.bashrc
+
+# Check current PATH:
+path-wizard --check
+```
+
+This restores the simple, working PATH-based approach that worked well before word-of-binding.
 
 ---
 
@@ -87,7 +111,12 @@ The word-of-binding paradigm shift (~200 PRs ago) introduced complexity:
 - [ ] Clean up spell-levels if unused
 
 ### Phase 7: PATH-Based Architecture
+- [x] **Created `path-wizard` utility** - Generates PATH setup for flat-file execution ✅
 - [ ] Update install script PATH setup
+- [ ] Add spell directories recursively
+- [ ] Add imp directories recursively
+- [ ] Remove glossary from PATH
+- [ ] Test that commands work
 - [ ] Add spell directories recursively
 - [ ] Add imp directories recursively
 - [ ] Remove glossary from PATH

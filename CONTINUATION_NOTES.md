@@ -36,6 +36,7 @@
 - Conversion pattern established
 - Core imps converted (out/, cond/)
 - Test spells converted
+- **`path-wizard` utility created** - Generates PATH setup for flat-file execution
 - All changes tested and working
 
 ### Converted Files (10 total):
@@ -47,6 +48,15 @@
 **Imps (8):**
 - `out/say`, `out/die`, `out/warn`, `out/fail`, `out/info` - Output helpers
 - `cond/has`, `cond/is`, `cond/there` - Conditional tests
+
+### New Infrastructure:
+
+**`spells/system/path-wizard`:**
+- Generates PATH additions for all spell and imp directories
+- Enables flat-file execution by hyphenated names
+- Three modes: `--eval` (immediate), `--rc` (persistent), `--check` (verify)
+- Replaces complex word-of-binding/glossary system with simple PATH
+- Working across all platforms
 
 ### Code Reduction Achieved:
 - **Spells:** 58% reduction (153 → 65 lines)
