@@ -4,9 +4,15 @@
 
 ### PR #410 - Word-of-Binding Introduction
 
-**IMPORTANT CAVEAT:** The git repository only goes back to commit 2ae3b2a (shallow clone), so we cannot independently verify that PR #410 exists or what it contains. The PR #410 reference comes solely from comments in the `install` script.
+**VERIFIED:** PR #410 "Merge pull request #410 from andersaamodt/copilot/refactor-spell-invocation-model" (commit 95678fb4) introduced the word-of-binding paradigm.
 
-According to comments in the `install` script, **PR #410** (unverified) introduced the word-of-binding paradigm with the following changes:
+**Confirmation via git history:**
+- Full git history retrieved via `git fetch --unshallow`
+- First introduction: commit 2725b353 "Add invocation/evocation model with word-of-binding and invoke-wizardry"
+- Merged in: PR #410 (commit 95678fb4) on Dec 5, 2025
+- Branch: copilot/refactor-spell-invocation-model
+
+**What PR #410 introduced:**
 
 1. **invoke-wizardry** - Sourced from rc file to dynamically set up PATH at shell startup
 2. **handle-command-not-found** - Auto-sources spells on first use
@@ -19,11 +25,30 @@ According to comments in the `install` script, **PR #410** (unverified) introduc
 - This negated the performance benefits while adding significant complexity
 - **The menu spell stopped working after this conversion and never worked again**
 
-### What Worked Before PR #410
+### What Worked Before PR #410 (commit 95678fb4~1 = c1adb9e5)
+
+**Pre-PR #410 state verified from git history:**
+
 - Simple PATH-based execution
 - All spells called by hyphenated names via PATH
-- Menu spell was fully functional
-- `path-wizard` utility for PATH management (commit 8ff484c0)
+- Menu spell was fully functional (549 lines)
+- `path-wizard` utility for PATH management (commit 8ff484c0 or earlier)
+
+**Menu spell (spells/cantrips/menu) - Pre-PR #410:**
+- 549 lines total
+- No function wrappers (direct execution)
+- Simple `show_usage()` function
+- Uses `require` for dependency checking
+- Directly sources `colors` from script_dir or PATH
+- No `require_wizardry`, `env_clear`, or `word_of_binding` calls
+- Working state confirmed
+
+**Main-menu spell (spells/menu/main-menu) - Pre-PR #410:**
+- Simple direct execution (no function wrapper)
+- Sources colors with `. "$(command -v colors)"`
+- Uses `require menu` for dependency
+- Clean while-true loop for menu display
+- Working state confirmed
 
 ## Restoration Strategy
 
