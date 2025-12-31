@@ -4,8 +4,8 @@
 # NEW PARADIGM: Function-based glosses
 # Instead of creating script files, this now generates shell function definitions
 # that are sourced into the current shell. This provides:
-#   - First-word glosses: env() for env-or, temp() for temp-file
-#   - Full hyphenated glosses: env-or() for env-or (when shell supports it)
+#   - First-word glosses: env() { parse "env" "$@"; } for space-separated invocation
+#   - Hyphenated aliases: alias env-or='env_or' for hyphenated invocation
 #   - Direct access to preloaded true-name functions: env_or()
 #
 # Glosses are generated for:
@@ -129,7 +129,8 @@ env_clear
   # ============================================================================
   
   # Generate first-word gloss function
-  # For "env-or", generates: env() { parse "$@"; }
+  # For "env-or", generates: env() { parse "env" "$@"; }
+  # This ensures parse receives the full command as user typed it
   _generate_first_word_gloss() {
     _cmd_name=$1
     _first_word=$(printf '%s' "$_cmd_name" | sed 's/-.*$//')
@@ -147,9 +148,9 @@ env_clear
     # Mark as generated
     printf '%s\n' "$_first_word()" >> "$_first_words_file"
     
-    # Emit function definition
+    # Emit function definition - CRITICAL: pass first word to parse
     _emit "# First-word gloss for commands starting with '$_first_word'"
-    _emit "${_first_word}() { parse \"\$@\"; }"
+    _emit "${_first_word}() { parse \"${_first_word}\" \"\$@\"; }"
     _emit ""
     
     total_first_word_glosses=$((total_first_word_glosses + 1))
