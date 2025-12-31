@@ -235,6 +235,12 @@ function brace_delta(s, n, m) {
   fi
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */word-of-binding) word_of_binding "$@" ;; esac
+# Load castable imp for self-execution (AFTER all functions defined)
+if true; then  # Always source castable, ensures consistency
+  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
+  [ -f "$_i/castable" ] && . "$_i/castable"
+fi
+
+castable "$@"

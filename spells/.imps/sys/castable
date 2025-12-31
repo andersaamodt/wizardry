@@ -6,16 +6,24 @@
 # Override detection with CASTABLE_NAME and/or CASTABLE_FUNC if needed.
 # Example: castable "$@"
 # Example: CASTABLE_FUNC=erase_spell castable "$@"
-set -eu
 
+castable() {
+  set -eu
+  
   # Skip execution if being sourced by word-of-binding during spell loading
   if [ "${_WIZARDRY_LOADING_SPELLS-}" = "1" ]; then
-    exit 0
+    return 0
   fi
   
   # Skip execution if being sourced by another spell (legacy check)
   if [ "${_WIZARDRY_SOURCING_SPELL-}" = "1" ]; then
-    exit 0
+    return 0
+  fi
+  
+  # Skip execution if being sourced by test-bootstrap
+  # This is indicated by WIZARDRY_TEST_HELPERS_ONLY
+  if [ "${WIZARDRY_TEST_HELPERS_ONLY-}" = "1" ]; then
+    return 0
   fi
   
   # First check if we're being sourced (not executed)
@@ -30,14 +38,14 @@ set -eu
   case "$0" in
     sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
       # Being sourced - don't execute, just return
-      exit 0
+      return 0
       ;;
     */"$_cast_name"|"$_cast_name")
       # Being executed directly - proceed with execution
       ;;
     *)
       # $0 doesn't match spell name - being sourced from another script
-      exit 0
+      return 0
       ;;
   esac
   
@@ -61,8 +69,13 @@ set -eu
   fi
   if [ -z "$_cast_func" ]; then
     printf '%s\n' "castable: unable to detect function name" >&2
-    exit 2
+    return 2
   fi
 
   # Call the spell function
   "$_cast_func" "$@"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */castable) castable "$@" ;; esac
