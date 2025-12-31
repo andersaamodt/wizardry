@@ -42,21 +42,14 @@ case "$0" in
 esac
 env_clear
 
-# Prefer preloaded imp functions (underscore form) when available.
+# Directly use preloaded imp functions (underscore form).
+# Menu is always run after invoke-wizardry, so these are guaranteed to be available.
 menu_temp_file() {
-        if command -v temp_file >/dev/null 2>&1; then
-                temp_file "$@"
-        else
-                temp-file "$@"
-        fi
+        temp_file "$@"
 }
 
 menu_cleanup_file() {
-        if command -v cleanup_file >/dev/null 2>&1; then
-                cleanup_file "$@"
-        else
-                cleanup-file "$@"
-        fi
+        cleanup_file "$@"
 }
 
 # Verify that all helper spells are ready before drawing the menu.
