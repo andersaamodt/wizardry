@@ -3,18 +3,12 @@
 # Example: possessive "James" -> "James'" | possessive "John" -> "John's"
 set -eu
 
-possessive() {
-  _pos_noun=${1-}
-  if [ -z "$_pos_noun" ]; then
-    return 1
-  fi
-  case $_pos_noun in
-    *"'"|*"'") printf '%s' "$_pos_noun" ;;
-    *[sS]) printf "%s'" "$_pos_noun" ;;
-    *) printf "%s's" "$_pos_noun" ;;
-  esac
-}
-
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */possessive) possessive "$@" ;; esac
+_pos_noun=${1-}
+if [ -z "$_pos_noun" ]; then
+  exit 1
+fi
+case $_pos_noun in
+  *"'"|*"'") printf '%s' "$_pos_noun" ;;
+  *[sS]) printf "%s'" "$_pos_noun" ;;
+  *) printf "%s's" "$_pos_noun" ;;
+esac
