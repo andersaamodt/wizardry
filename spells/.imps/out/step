@@ -4,13 +4,7 @@
 
 set -eu
 
-step() {
-  _step_level=${WIZARDRY_LOG_LEVEL:-0}
-  if [ "$_step_level" -ge 1 ]; then
-    printf '%s\n' "$*"
-  fi
-}
-
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */step) step "$@" ;; esac
+_step_level=${WIZARDRY_LOG_LEVEL:-0}
+if [ "$_step_level" -ge 1 ]; then
+  printf '%s\n' "$*"
+fi

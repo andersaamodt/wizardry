@@ -2,21 +2,17 @@
 # has COMMAND - test if command exists on PATH
 # Example: has git && git status
 
-has() {
-  _has_name=$1
-  if command -v "$_has_name" >/dev/null 2>&1; then
-    return 0
-  fi
-  case $_has_name in
-    *-*)
-      _has_alt=$(printf '%s' "$_has_name" | tr '-' '_')
-      command -v "$_has_alt" >/dev/null 2>&1
-      return $?
-      ;;
-  esac
-  return 1
-}
+# Note: No set -eu because this is a conditional imp (returns exit codes for flow control)
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */has) has "$@" ;; esac
+_has_name=$1
+if command -v "$_has_name" >/dev/null 2>&1; then
+  exit 0
+fi
+case $_has_name in
+  *-*)
+    _has_alt=$(printf '%s' "$_has_name" | tr '-' '_')
+    command -v "$_has_alt" >/dev/null 2>&1
+    exit $?
+    ;;
+esac
+exit 1

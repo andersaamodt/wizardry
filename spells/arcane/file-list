@@ -3,33 +3,27 @@
 # This spell creates a text file listing all filenames in a folder.
 # Use it to generate an index of files in a directory.
 
-file_list_usage() {
-cat <<'USAGE'
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
 Usage: file-list <folder>
 
 Create a text file named after the folder that lists all files inside it.
 USAGE
-}
-
-
-
-file_list() {
-case "${1-}" in
---help|--usage|-h)
-  file_list_usage
-  return 0
+  exit 0
   ;;
 esac
 
-require-wizardry || return 1
-
 set -eu
-env-clear
 
 # Check that a folder path was provided as an argument
 if [ "$#" -ne 1 ]; then
-  file_list_usage >&2
-  return 2
+  cat >&2 <<'USAGE'
+Usage: file-list <folder>
+
+Create a text file named after the folder that lists all files inside it.
+USAGE
+  exit 2
 fi
 
 # Create a text file with the same name as the folder
@@ -39,42 +33,7 @@ text_file="$folder_name.txt"
 # Read all the filenames in the folder and put them in the text file
 for filename in "$1"/*; do
   filename="${filename#./}"
-  say "$(basename "$filename")" >> "$text_file"
+  printf '%s\n' "$(basename "$filename")" >> "$text_file"
 done
 
-success "Text file created: $text_file"
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"
+printf 'Text file created: %s\n' "$text_file"

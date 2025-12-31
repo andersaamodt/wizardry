@@ -3,10 +3,4 @@
 # Example: echo "  hello  " | trim
 set -eu
 
-trim() {
-  sed 's/^[[:space:]]*//;s/[[:space:]]*$//'
-}
-
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */trim) trim "$@" ;; esac
+sed 's/^[[:space:]]*//;s/[[:space:]]*$//'

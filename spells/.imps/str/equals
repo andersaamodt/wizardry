@@ -3,10 +3,4 @@
 # Example: equals "$choice" "yes" && proceed
 set -eu
 
-equals() {
-  [ "$1" = "$2" ]
-}
-
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */equals) equals "$@" ;; esac
+[ "$1" = "$2" ]
