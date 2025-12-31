@@ -316,29 +316,9 @@ PARSE_HELP
     fi
   fi
 
-  # No multi-word spell found - check for command in PATH (excluding glossary)
-  _gloss_dir="${SPELLBOOK_DIR:-${HOME}/.spellbook}/.glossary"
-  _old_path="$PATH"
-  PATH=$(printf '%s' "$PATH" | sed "s|$_gloss_dir:||g" | sed "s|:$_gloss_dir||g" | sed "s|^$_gloss_dir\$||")
-  
-  # Check if command exists in PATH (outside glossary)
-  if command -v "$_parse_cmd" >/dev/null 2>&1; then
-    # Command found in PATH - execute it
-    [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Executing command from PATH: %s\n' "$_parse_cmd" >&2
-    if [ $# -eq 0 ]; then
-      "$_parse_cmd"
-    else
-      "$_parse_cmd" "$@"
-    fi
-    _ret=$?
-    PATH="$_old_path"  # Restore PATH
-    export WIZARDRY_PARSE_DEPTH=$((_parse_depth))  # Reset depth
-    exit $_ret
-  fi
-
-  # Not in PATH - check if it's a single-word wizardry spell
-  # (Multi-word spells were already checked earlier)
-  [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Command not in PATH, searching for single-word spell: %s\n' "$_parse_cmd" >&2
+  # Before falling through to PATH, check for single-word wizardry spell
+  # This prevents system commands from shadowing single-word wizardry spells
+  [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Checking for single-word wizardry spell: %s\n' "$_parse_cmd" >&2
   
   # Try to find single-word spell
   _spell_file=""
@@ -357,15 +337,12 @@ PARSE_HELP
     [ "$_parse_debug" = "1" ] && [ -n "$_spell_file" ] && printf '[parse] DEBUG: Found spell via find: %s\n' "$_spell_file" >&2
   fi
   
-  # If spell found, load it via word-of-binding and call the function
-  # This matches the architecture: word-of-binding loads spells as functions
+  # If single-word spell found, execute it
   if [ -n "$_spell_file" ] && [ -f "$_spell_file" ] && [ -x "$_spell_file" ]; then
     [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Found single-word spell file: %s\n' "$_spell_file" >&2
     
     # Get the base name of the spell file for word-of-binding
     _spell_name=$(basename "$_spell_file")
-    
-    # Convert command name to function name (hyphen to underscore)
     _spell_func=$(printf '%s' "$_spell_name" | tr '-' '_')
     
     # Load word-of-binding if not already available
@@ -382,33 +359,55 @@ PARSE_HELP
       [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Loading spell via word_of_binding: %s\n' "$_spell_name" >&2
       word_of_binding "$_spell_name" || {
         [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: word_of_binding failed for %s\n' "$_spell_name" >&2
-        PATH="$_old_path"
         export WIZARDRY_PARSE_DEPTH=$((_parse_depth))
         exit 1
       }
-    else
-      [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: word_of_binding not available\n' >&2
-      PATH="$_old_path"
-      export WIZARDRY_PARSE_DEPTH=$((_parse_depth))
-      exit 127
-    fi
-    
-    # Now the function should be loaded - call it
-    if command -v "$_spell_func" >/dev/null 2>&1; then
-      [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Calling spell function: %s\n' "$_spell_func" >&2
-      if [ $# -eq 0 ]; then
-        "$_spell_func"
+      
+      # Now the function should be loaded - call it
+      if command -v "$_spell_func" >/dev/null 2>&1; then
+        [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Calling spell function: %s\n' "$_spell_func" >&2
+        if [ $# -eq 0 ]; then
+          "$_spell_func"
+        else
+          "$_spell_func" "$@"
+        fi
+        _ret=$?
+        export WIZARDRY_PARSE_DEPTH=$((_parse_depth))
+        exit $_ret
       else
-        "$_spell_func" "$@"
+        [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Function %s not found after word_of_binding\n' "$_spell_func" >&2
+        export WIZARDRY_PARSE_DEPTH=$((_parse_depth))
+        exit 127
+      fi
+    else
+      # Fallback: word_of_binding not available, execute spell file directly
+      [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: word_of_binding not available, executing spell directly: %s\n' "$_spell_file" >&2
+      if [ $# -eq 0 ]; then
+        "$_spell_file"
+      else
+        "$_spell_file" "$@"
       fi
       _ret=$?
-    else
-      [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Function %s not found after word_of_binding\n' "$_spell_func" >&2
-      PATH="$_old_path"
       export WIZARDRY_PARSE_DEPTH=$((_parse_depth))
-      exit 127
+      exit $_ret
     fi
-    
+  fi
+
+  # No wizardry spell found - check for command in PATH (excluding glossary)
+  _gloss_dir="${SPELLBOOK_DIR:-${HOME}/.spellbook}/.glossary"
+  _old_path="$PATH"
+  PATH=$(printf '%s' "$PATH" | sed "s|$_gloss_dir:||g" | sed "s|:$_gloss_dir||g" | sed "s|^$_gloss_dir\$||")
+  
+  # Check if command exists in PATH (outside glossary)
+  if command -v "$_parse_cmd" >/dev/null 2>&1; then
+    # Command found in PATH - execute it
+    [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Executing command from PATH: %s\n' "$_parse_cmd" >&2
+    if [ $# -eq 0 ]; then
+      "$_parse_cmd"
+    else
+      "$_parse_cmd" "$@"
+    fi
+    _ret=$?
     PATH="$_old_path"  # Restore PATH
     export WIZARDRY_PARSE_DEPTH=$((_parse_depth))  # Reset depth
     exit $_ret
