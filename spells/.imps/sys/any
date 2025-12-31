@@ -3,16 +3,10 @@
 # Example: pkg=$(any apt-get brew pkgin) && $pkg install foo
 set -eu
 
-any() {
-  for _any_cmd in "$@"; do
-    if command -v "$_any_cmd" >/dev/null 2>&1; then
-      printf '%s' "$_any_cmd"
-      return 0
-    fi
-  done
-  return 1
-}
-
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */any) any "$@" ;; esac
+for _any_cmd in "$@"; do
+  if command -v "$_any_cmd" >/dev/null 2>&1; then
+    printf '%s' "$_any_cmd"
+    exit 0
+  fi
+done
+exit 1
