@@ -419,3 +419,49 @@ Conversion is complete when:
 - [ ] Menu system functional
 - [ ] EXEMPTIONS.md updated
 - [ ] Documentation complete
+
+## UPDATED: Even Simpler Spell Pattern - No show_usage() Function!
+
+**Simplified further - usage text inline at standard location:**
+
+```sh
+#!/bin/sh
+
+# Brief description of what spell does
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: spell-name [args]
+
+Description of spell behavior and arguments.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+# Main spell logic here
+```
+
+**Benefits:**
+- **0 functions** instead of 2 (was: show_usage + spell_name, now: neither!)
+- Usage text in standard location (right after opening comment, before set -eu)
+- Even simpler and more readable
+- Inline heredoc - no function call indirection
+- Can duplicate usage in error handling if needed (just repeat the heredoc)
+
+**Example with error handling:**
+```sh
+if [ "$#" -ne 1 ]; then
+  cat >&2 <<'USAGE'
+Usage: spell-name <arg>
+
+Description.
+USAGE
+  exit 2
+fi
+```
+
+**This is as simple as shell scripts can get!**

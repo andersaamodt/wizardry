@@ -4,24 +4,18 @@
 # Note: Returns original path unchanged if directory cannot be resolved.
 set -eu
 
-abs_path() {
-  _ap_loc=$1
-  if [ -d "$_ap_loc" ]; then
-    CDPATH= cd -- "$_ap_loc" 2>/dev/null && pwd -P | sed 's|///*|/|g'
-    return
-  fi
-  _ap_dir=${_ap_loc%/*}
-  _ap_base=${_ap_loc##*/}
-  if [ "$_ap_dir" = "$_ap_loc" ]; then
-    _ap_dir=.
-  fi
-  if CDPATH= cd -- "$_ap_dir" 2>/dev/null; then
-    printf '%s/%s\n' "$(pwd -P)" "$_ap_base" | sed 's|///*|/|g'
-    return
-  fi
-  printf '%s\n' "$_ap_loc"
-}
-
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */abs-path) abs_path "$@" ;; esac
+_ap_loc=$1
+if [ -d "$_ap_loc" ]; then
+  CDPATH= cd -- "$_ap_loc" 2>/dev/null && pwd -P | sed 's|///*|/|g'
+  exit
+fi
+_ap_dir=${_ap_loc%/*}
+_ap_base=${_ap_loc##*/}
+if [ "$_ap_dir" = "$_ap_loc" ]; then
+  _ap_dir=.
+fi
+if CDPATH= cd -- "$_ap_dir" 2>/dev/null; then
+  printf '%s/%s\n' "$(pwd -P)" "$_ap_base" | sed 's|///*|/|g'
+  exit
+fi
+printf '%s\n' "$_ap_loc"
