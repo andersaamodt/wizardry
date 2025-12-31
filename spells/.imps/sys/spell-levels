@@ -7,13 +7,13 @@ get_level_spells() {
     0) printf 'detect-posix:divination detect-distro:divination verify-posix:system' ;;
     1) printf 'banish:system validate-spells:system' ;;
     2) printf 'generate-glosses:system' ;;
-    3) printf 'menu fathom-terminal fathom-cursor move-cursor await-keypress cursor-blink colors main-menu:menu require-command' ;;
+    3) printf 'menu fathom-terminal fathom-cursor move-cursor await-keypress cursor-blink colors main-menu:menu' ;;
     4) printf 'check-cd-hook:mud look:mud' ;;
     5) printf 'jump-to-marker:translocation mark-location:translocation' ;;
     6) printf '' ;; # Level 6: Parsing (no spells, only imps)
     7) printf 'copy:arcane trash:arcane jump-trash:arcane forall:arcane read-magic:arcane file-list:arcane' ;;
     8) printf 'ask ask-yn ask-text list-files max-length move up' ;;
-    9) printf 'validate-number validate-path' ;;
+    9) printf 'validate-number validate-path require-command' ;;
     10) printf 'ask-number memorize' ;;
     11) printf 'config:system logs:system package-managers:system' ;;
     12) printf 'test-spell:system test-magic:system pocket-dimension:system logging-example wizard-eyes' ;;
