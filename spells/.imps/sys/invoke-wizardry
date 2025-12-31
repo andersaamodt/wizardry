@@ -398,7 +398,13 @@ invoke_wizardry() {
             printf '[generate_glosses bg] DEBUG: After re-eval, find_executable available: %s\n' "$(command -v find_executable 2>&1 || echo 'NO')" >&2
             printf '[generate_glosses bg] DEBUG: About to call generate_glosses --quiet\n' >&2
             generate_glosses --quiet
-            printf '[generate_glosses bg] DEBUG: generate_glosses completed with exit code: %d\n' "$?" >&2
+            _gg_exit=$?
+            printf '[generate_glosses bg] DEBUG: generate_glosses completed with exit code: %d\n' "$_gg_exit" >&2
+            if [ "$_gg_exit" -eq 0 ]; then
+              printf '[wizardry] Glossary generation complete\n' >&2
+            else
+              printf '[wizardry] WARNING: Glossary generation failed with exit code %d\n' "$_gg_exit" >&2
+            fi
           ) &
           _iw_debug "Gloss generation running in background (errors will appear on terminal)"
         else
@@ -407,6 +413,10 @@ invoke_wizardry() {
             # Re-eval all function definitions captured from parent shell
             eval "$_iw_func_defs"
             generate_glosses --quiet
+            _gg_exit=$?
+            if [ "$_gg_exit" -eq 0 ]; then
+              printf '[wizardry] Glossary generation complete\n' >&2
+            fi
           ) 2>/dev/null &
         fi
       else
