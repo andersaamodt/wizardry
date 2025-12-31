@@ -1,165 +1,271 @@
-# SPIRAL_DEBUG.md - Glossary Generation Debugging Spiral
+# SPIRAL_DEBUG.md - Paradigm Conversion Progress
 
-## Problem Statement
-On macOS with zsh, `invoke-wizardry` fails to generate glosses for wizard spells, resulting in commands like `menu` and `main-menu` not being available. Background job exits with code 1.
+## Current Task: Converting Back to Flat-File Execution
 
-## Root Cause Journey
+**Date Started:** 2025-12-31  
+**Status:** In Progress
 
-### Iteration 1: find -executable (BSD Incompatibility)
-**Hypothesis:** BSD find on macOS doesn't support `-executable` flag  
-**Change:** Replaced `find -executable` with `find -perm /111`  
-**Result:** ❌ Still failing - this wasn't the root cause  
-**Commit:** 43a4384
+### Problem Statement
 
-### Iteration 2: Hyphenated vs Underscore Function Names  
-**Hypothesis:** generate-glosses using hyphenated imp names that don't work as functions in POSIX sh  
-**Change:** Changed all imp calls from hyphenated (`require-wizardry`) to underscore (`require_wizardry`)  
-**Result:** ❌ Still failing - functions not available in background job  
-**Commits:** 8981d85, eead531
+The word-of-binding paradigm shift (~200 PRs ago) introduced complexity:
+- Function preloading for performance
+- Glosses/shims for hyphenated commands
+- But: executed commands run in subshells without preloaded functions!
+- Result: Negated the performance benefits
 
-### Iteration 3: PATH Inheritance
-**Hypothesis:** Background job not inheriting PATH with imp directories  
-**Change:** Added bootstrap code to generate-glosses to add imp dirs to PATH  
-**Result:** ❌ Violated architecture requirement (only glossary should be in PATH)  
-**Commit:** bade4fd (later reverted)
+**Decision:** Return to the old, simple PATH-based paradigm while preserving good changes made since then.
 
-### Iteration 4: Execution Order
-**Hypothesis:** Gloss generation starting before spells preloaded  
-**Change:** Moved gloss generation to run AFTER spell preloading  
-**Result:** ❌ Order was correct, not the issue  
-**Learning:** Added extensive debug logging
+### What to Keep
+✅ **KEEP:**
+- Banish paradigm and levels-based organization
+- Banish-style output for testing
+- New testing infrastructure improvements
+- Demo-magic improvements
+- Synonyms system (convert to aliases)
+- Parser (leave in passthrough mode)
 
-### Iteration 5: Curly Braces in Background Job
-**Hypothesis:** `{ command & }` preventing function inheritance in zsh  
-**Change:** Removed curly braces, just `command &`  
-**Result:** ❌ Still failing - zsh fundamentally doesn't inherit functions to background jobs  
-**Commit:** 0d22f76
+❌ **REMOVE:**
+- Self-execute pattern (castable/uncastable)
+- Function wrapping in spells and imps
+- word-of-binding infrastructure
+- invoke-wizardry preloading
+- generate-glosses system
+- Glossary directory system
 
-### Iteration 6: Zsh Function Inheritance (Root Cause #1 Found!)
-**Hypothesis:** Zsh doesn't inherit functions to background jobs (unlike bash/sh)  
-**Diagnostic:** Added function availability checks in background job  
-**Result:** ✅ Confirmed - all functions reported as "NO"  
-**Commits:** 092a33b (diagnostics), 18cab56 (attempted fix)
+### What Changes
+📝 **SIMPLIFY:**
+- Spells: unwrap functions, inline usage text
+- Imps: remove function wrappers, keep as simple scripts
+- PATH: add all spell/imp directories recursively
+- Synonyms: generate aliases not glosses
+- Function count: most spells go from 2 functions → 0 functions
 
-### Iteration 7: Capturing Functions in Subshell
-**Hypothesis:** `command -v` being called INSIDE subshell where functions don't exist  
-**Change:** Move function capture to PARENT shell before entering subshell  
-**Result:** ❌ Still captured 0 functions  
-**Commit:** 6523c3c
+---
 
-### Iteration 8: ANSI-C Quoting ($'\n') 
-**Hypothesis:** `$'\n'` bash-ism corrupting function definitions string in POSIX sh  
-**Change:** Use literal newlines instead of `$'\n'`  
-**Result:** ❌ Still captured 0 functions - string syntax wasn't the issue  
-**Commit:** 40bfd40
+## Conversion Progress Tracker
 
-### Iteration 9: command -v Unreliability in Zsh
-**Hypothesis:** `command -v` unreliable for detecting functions in zsh  
-**Change:** Call `functions` command directly without `command -v` check  
-**Result:** ❌ Still captured 0 functions  
-**Commit:** c6e6e6b
+### Phase 1: Understanding ✅ COMPLETE
+- [x] Explored repository structure
+- [x] Understood current paradigm (word-of-binding, glosses, castable)
+- [x] Identified what to keep vs remove
+- [x] Created comprehensive plan
 
-### Iteration 10: Zsh Word Splitting (Root Cause #2 Found!)
-**Hypothesis:** For loop not iterating - treating entire string as single item  
-**Diagnostic Output:**
-```
-[invoke-wizardry] DEBUG:   Function not found: generate_glosses require_wizardry env_or env_clear temp_file cleanup_file on_exit die warn fail say success info step debug has there is yes no empty nonempty cleanup_dir make_tempdir
-```
+### Phase 2: Documentation ✅ COMPLETE
+- [x] Updated SPIRAL_DEBUG.md with conversion plan
+- [x] Created conversion example documentation
+- [x] Counted files needing conversion:
+  - 189 spell files
+  - 201 imp files  
+  - 119 files with castable references
+  - 155 imps with self-execute pattern
 
-**Analysis:**
-1. **Problem:** The debug message shows ALL function names on ONE line in a single printf call
-2. **Meaning:** `$_func` is expanding to the entire space-separated list, NOT iterating one at a time
-3. **Root Cause:** Zsh doesn't perform word splitting in for loops by default (unlike bash/sh)
-4. **Zsh Behavior:** Without `SH_WORD_SPLIT` option, `for x in $var` treats `$var` as a single word even if it contains spaces
+### Phase 3: Remove Self-Execute Pattern
+- [ ] Count total files to modify
+- [ ] Remove castable/uncastable imps
+- [ ] Remove from all spells (~117 files)
+- [ ] Remove from all imps (~100+ files)
+- [ ] Verify basic execution still works
 
-**Key Learning:**
-- Bash/sh: `for x in $var` splits on IFS (spaces by default)
-- Zsh: `for x in $var` does NOT split unless `setopt SH_WORD_SPLIT` is set
-- This is a fundamental difference in how zsh handles parameter expansion
-- The function names in `$_iw_export_funcs` were correct (underscore versions)
-- The loop just wasn't iterating over them!
+### Phase 4: Unwrap Spell Functions
+- [ ] Create standard usage text format
+- [ ] Convert usage functions to inline text
+- [ ] Unwrap main spell logic
+- [ ] Test sample spells
+- [ ] Apply to all spells
 
-### Iteration 11: Missing Word Splitting in ALL Loops (Final Root Cause!)
-**Hypothesis:** The word splitting fix was only applied to the function capture loop (lines 338-364), but the SAME issue exists in the imp loading loop (lines 140-173) and spell loading loop (lines 198-245).
+### Phase 5: Unwrap Imp Functions
+- [ ] Remove function definitions
+- [ ] Convert to pure scripts
+- [ ] Update calls from source to execute
+- [ ] Test sample imps
 
-**Discovery Process:**
-1. Debug output showed `generate_glosses` was captured, but imp functions were not
-2. This meant `generate_glosses` spell was loaded, but imps were NOT loaded
-3. The imp/spell loading loops ALSO iterate over space-separated strings from `get_level_imps()` and `get_level_spells()`
-4. Without word splitting, these loops only process the first item, skipping all others
+### Phase 6: Remove Word-of-Binding
+- [ ] Remove invoke-wizardry
+- [ ] Remove word-of-binding imp
+- [ ] Remove generate-glosses
+- [ ] Remove glossary directory
+- [ ] Clean up spell-levels if unused
 
-**Solution (Final - Simpler Approach):**
-Instead of wrapping each loop individually, enable `SH_WORD_SPLIT` once at the top of the `invoke_wizardry` function:
+### Phase 7: PATH-Based Architecture
+- [ ] Update install script PATH setup
+- [ ] Add spell directories recursively
+- [ ] Add imp directories recursively
+- [ ] Remove glossary from PATH
+- [ ] Test that commands work
 
+### Phase 8: Synonyms to Aliases
+- [ ] Keep synonym files
+- [ ] Create alias generation logic
+- [ ] Update RC file setup
+- [ ] Test alias functionality
+
+### Phase 9: Keep Parser
+- [ ] Verify parse works standalone
+- [ ] Ensure passthrough mode
+- [ ] Update any references
+
+### Phase 10: Update Tests
+- [ ] Update test-bootstrap
+- [ ] Remove function loading
+- [ ] Add PATH setup
+- [ ] Fix test failures
+- [ ] Run full test suite
+
+### Phase 11: Update EXEMPTIONS.md
+- [ ] Recount functions per spell
+- [ ] Update function discipline section
+- [ ] Remove word-of-binding exemptions
+- [ ] Document remaining helper functions
+
+### Phase 12: Final Verification
+- [ ] Full test suite passes
+- [ ] Install script works
+- [ ] Menu functionality works
+- [ ] Documentation complete
+- [ ] Ready for review
+
+---
+
+## Implementation Notes
+
+## Implementation Strategy
+
+### Current Approach
+Due to the massive scale (390+ files), this conversion will be done in phases across multiple sessions.
+
+### Conversion Pattern Established
+
+**Example Converted: `spells/arcane/forall`**
+
+OLD (73 lines):
+- Had wrapper function `forall()`
+- Used `require-wizardry || return 1`
+- Used `env-clear`
+- Used `say` imp
+- Had complex castable loading (30 lines)
+- Used `return` for exits
+
+NEW (30 lines):
+- Direct execution (no wrapper)
+- Simple `show_usage()` function
+- Uses `printf` instead of `say`
+- Uses `exit` not `return`
+- No castable code
+- **58% reduction in lines!**
+
+### Key Conversion Steps Per Spell
+
+1. **Rename usage function:** `spell_name_usage()` → `show_usage()`
+2. **Move help handler:** Before `set -eu`, change `return 0` → `exit 0`
+3. **Remove wrapper:** Extract main logic from `spell_name()` function to top level
+4. **Remove dependencies:**
+   - Delete `require_wizardry || return 1`
+   - Delete `env_clear` or `env-clear`
+5. **Remove castable:** Delete entire castable loading block (~30 lines)
+6. **Change returns to exits:** All `return` → `exit` in main flow
+7. **Replace imp calls:** Where practical, replace with POSIX equivalents:
+   - `say "text"` → `printf '%s\n' "text"`
+   - `die "msg"` → `printf 'msg\n' >&2; exit 1`
+   - Keep complex imps that provide real value
+
+### Imp Conversion Pattern
+
+OLD:
 ```sh
-invoke_wizardry() {
-  # CRITICAL: Enable word splitting in zsh for all for-loops in this function
-  # Save current state and restore before any return
-  _iw_saved_sh_word_split=""
-  if [ -n "${ZSH_VERSION-}" ]; then
-    if setopt | grep -q "^shwordsplit$"; then
-      _iw_saved_sh_word_split="yes"
-    else
-      _iw_saved_sh_word_split="no"
-    fi
-    setopt SH_WORD_SPLIT
-  fi
-  
-  # Helper to restore state before returning
-  _iw_restore_and_return() {
-    _ret_code=${1:-0}
-    if [ -n "${ZSH_VERSION-}" ] && [ "$_iw_saved_sh_word_split" = "no" ]; then
-      unsetopt SH_WORD_SPLIT
-    fi
-    return "$_ret_code"
-  }
-  
-  # ... rest of function ...
-  # Replace all "return X" with "_iw_restore_and_return X"
+imp_name() {
+  # implementation
 }
+case "$0" in
+  */imp-name) imp_name "$@" ;; esac
 ```
 
-**Benefits of This Approach:**
-- **Cleaner:** One setopt at top instead of multiple per loop
-- **Simpler:** All for-loops work automatically throughout the function  
-- **Safer:** Helper function ensures state is always restored before any return
-- **Minimal:** Only 28 net lines added vs 56 with per-loop wrapping approach
+NEW:
+```sh
+# Just the implementation, no function wrapper
+# Direct execution
+```
 
-**Result:** ✅ **FIXED** - All imps and spells now load correctly in zsh, glosses generate successfully
+### Priority Order for Conversion
 
-**Commit:** 38a9582
+1. **Infrastructure First** (Phase 3-7):
+   - Remove castable/uncastable imps
+   - Update PATH setup in install script
+   - Remove invoke-wizardry, word-of-binding, generate-glosses
+   - Convert synonyms to aliases
 
-## Architecture Insights
+2. **Core Spells** (small batch):
+   - menu system spells
+   - System management spells
+   - Most commonly used utilities
 
-### Function Naming Convention
-1. **File names:** Use hyphens (`require-wizardry`, `env-clear`)
-2. **Function names:** Use underscores (`require_wizardry`, `env_clear`)
-3. **Glosses:** User-facing hyphenated commands that call `parse` which finds functions
-4. **word_of_binding:** Converts hyphenated names to underscores when loading
+3. **Imps by Category**:
+   - out/ - output helpers (say, die, warn, etc.)
+   - cond/ - conditionals (has, is, there, etc.)
+   - sys/ - system helpers
+   - Remaining families
 
-### Zsh Background Job Behavior
-- Zsh does NOT inherit shell functions to background jobs (fundamental difference from bash/sh)
-- Functions must be explicitly re-eval'd in the subshell using `functions` command to capture definitions
-- The `functions` builtin outputs the complete function definition including the function name
+4. **Remaining Spells** (bulk conversion):
+   - Can be done in batches of 10-20
+   - Test after each batch
+   - May span multiple PR sessions
 
-### Testing Gap
-- Tests run on bash/sh (where function inheritance works)
-- macOS-specific zsh behavior not caught by CI
-- Need platform-specific tests or zsh in CI environment
+### Files Converted So Far
+- [x] `spells/arcane/forall` - 73 lines → 30 lines (converted, tested)
+- [ ] 188 spells remaining
+- [ ] 201 imps remaining
 
-## Lessons Learned
+### Next Steps
+1. Start Phase 3: count files and remove castable pattern
+2. Test incrementally after each major change
+3. Keep tests passing throughout conversion
 
-1. **Debug Early:** Extensive debug logging identified issues quickly
-2. **Test Assumptions:** `command -v` behaves differently across shells
-3. **Name Conversions:** Always account for hyphen → underscore conversion  
-4. **Platform Differences:** Zsh has fundamentally different subprocess model than bash
-5. **CI Coverage:** Tests passing doesn't mean it works on all platforms
-6. **Read Architecture Docs:** The glossary/function architecture was well-documented but AI didn't fully internalize the naming convention
+### Challenges Anticipated
+- Large number of files to modify (~200+)
+- Must maintain backwards compatibility during transition
+- Tests may need significant updates
+- PATH setup must be correct for all platforms
 
-## Future Prevention
+### Key Files to Modify
+- All spells in `spells/*/` directories
+- All imps in `spells/.imps/*/` directories  
+- `install` script
+- `spells/.imps/sys/invoke-wizardry` (remove)
+- `spells/.imps/sys/word-of-binding` (remove)
+- `spells/.imps/sys/castable` (remove)
+- `spells/.imps/sys/uncastable` (remove)
+- `spells/system/generate-glosses` (remove)
+- Test infrastructure in `.tests/`
+- `.github/EXEMPTIONS.md`
 
-1. Add zsh to CI environment for cross-shell testing
-2. Document shell-specific behaviors more explicitly
-3. Test both execution patterns (direct + background job) for all spells
-4. Add warnings when functions expected but not found
-5. Consider simpler architecture (avoid relying on function inheritance)
+---
+
+## Historical Context (Old Paradigm Debug - ARCHIVED)
+
+<details>
+<summary>Click to expand old glossary generation debugging (no longer relevant)</summary>
+
+The previous paradigm attempted to preload spells as functions for performance. This section documents the debugging process that led to fixing zsh compatibility issues. This is now superseded by the return to flat-file execution.
+
+### Root Causes Found (Historical)
+1. **Zsh word splitting:** Required `setopt SH_WORD_SPLIT` 
+2. **Function inheritance:** Zsh doesn't pass functions to background jobs
+3. **Gloss generation:** Needed complex workarounds for function availability
+
+### Why We're Moving Away
+The complexity of maintaining function preloading (special handling for zsh, background jobs, gloss generation) outweighed the performance benefits, especially since executed commands don't inherit the preloaded functions anyway.
+
+</details>
+
+---
+
+## Completion Checklist
+
+When this conversion is complete:
+- [ ] All spells are flat files with inline code
+- [ ] All imps are simple executable scripts
+- [ ] PATH includes all spell and imp directories
+- [ ] Synonyms work as shell aliases
+- [ ] No word-of-binding infrastructure remains
+- [ ] Tests pass completely
+- [ ] EXEMPTIONS.md reflects new function counts
+- [ ] Documentation is accurate and complete
