@@ -6,24 +6,18 @@
 # Explicitly use permissive mode - this file is sourced into other scripts
 set +eu
 
-declare_globals() {
-  # Installation root directory path.
-  # Required for spells to locate resources relative to install location.
-  : "${WIZARDRY_DIR:=}"
+# Installation root directory path.
+# Required for spells to locate resources relative to install location.
+: "${WIZARDRY_DIR:=}"
 
-  # User's personal spellbook directory.
-  # Required for coordinating custom spell storage across multiple spells.
-  : "${SPELLBOOK_DIR:=}"
+# User's personal spellbook directory.
+# Required for coordinating custom spell storage across multiple spells.
+: "${SPELLBOOK_DIR:=}"
 
-  # MUD configuration directory.
-  # Required for MUD features to share room descriptions and settings.
-  : "${MUD_DIR:=}"
+# MUD configuration directory.
+# Required for MUD features to share room descriptions and settings.
+: "${MUD_DIR:=}"
 
-  # Logging verbosity level (0=quiet, 1=info, 2=debug).
-  # Required for consistent logging behavior across all spells.
-  : "${WIZARDRY_LOG_LEVEL:=0}"
-}
-
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */declare-globals) declare_globals "$@" ;; esac
+# Logging verbosity level (0=quiet, 1=info, 2=debug).
+# Required for consistent logging behavior across all spells.
+: "${WIZARDRY_LOG_LEVEL:=0}"

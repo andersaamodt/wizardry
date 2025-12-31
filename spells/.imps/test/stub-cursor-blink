@@ -4,15 +4,8 @@
 
 set -eu
 
-stub_cursor_blink() {
   case "${1-}" in
     on) printf '\033[?25h' ;;
     off) printf '\033[?25l' ;;
     *) exit 0 ;;
   esac
-}
-
-# Self-execute when run directly (not sourced)
-# Match both stub name and symlink name (tests create symlinks without stub- prefix)
-case "$0" in
-  */cursor-blink|*/stub-cursor-blink) stub_cursor_blink "$@" ;; esac

@@ -7,7 +7,6 @@
 
 set -eu
 
-stub_await_keypress_sequence() {
   # Get the sequence from environment, default to "enter"
   sequence="${AWAIT_KEYPRESS_SEQUENCE:-enter}"
   
@@ -43,9 +42,3 @@ stub_await_keypress_sequence() {
   
   # Return the key
   printf '%s\n' "$key"
-}
-
-# Self-execute when run directly (not sourced)
-# Match both stub name and symlink name (tests create symlinks without stub- prefix)
-case "$0" in
-  */await-keypress|*/stub-await-keypress-sequence) stub_await_keypress_sequence "$@" ;; esac

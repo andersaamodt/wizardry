@@ -6,13 +6,6 @@
 
 set -eu
 
-stub_await_keypress() {
   # Return "enter" to simulate user pressing enter key
   # This allows menu to select current item and exit
   printf 'enter\n'
-}
-
-# Self-execute when run directly (not sourced)
-# Match both stub name and symlink name (tests create symlinks without stub- prefix)
-case "$0" in
-  */await-keypress|*/stub-await-keypress) stub_await_keypress "$@" ;; esac

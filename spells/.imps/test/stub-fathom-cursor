@@ -5,15 +5,8 @@
 
 set -eu
 
-stub_fathom_cursor() {
   case ${1-} in
     -y) printf '1\n' ;;
     -x) printf '1\n' ;;
     *) printf '1 1\n' ;;
   esac
-}
-
-# Self-execute when run directly (not sourced)
-# Match both stub name and symlink name (tests create symlinks without stub- prefix)
-case "$0" in
-  */fathom-cursor|*/stub-fathom-cursor) stub_fathom_cursor "$@" ;; esac
