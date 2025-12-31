@@ -147,6 +147,10 @@ PARSE_HELP
   
   # If we found a multi-word match, call it with remaining args
   if [ -n "$_matched_func" ] && [ "$_matched_words" -gt 1 ]; then
+    # Build the command name for display (convert underscores back to hyphens)
+    _display_cmd=$(printf '%s' "$_matched_func" | tr '_' '-')
+    printf 'Casting %s\n' "$_display_cmd" >&2
+    
     # Shift off the matched words to get remaining args
     _shift_count=$((_matched_words - 1))  # -1 because first word was already shifted
     _i=0
@@ -177,6 +181,7 @@ PARSE_HELP
     case "$_type_output" in
       *function*)
         # Function exists - call it directly (no PATH manipulation needed)
+        printf 'Casting %s\n' "$_parse_cmd" >&2
         [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Calling preloaded function: %s\n' "$_func_name" >&2
         if [ $# -eq 0 ]; then
           "$_func_name"
@@ -255,6 +260,10 @@ PARSE_HELP
   if [ -n "$_spell_file" ] && [ "$_spell_matched_words" -gt 1 ]; then
     [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Found multi-word spell file: %s (matched %d words)\n' "$_spell_file" "$_spell_matched_words" >&2
     
+    # Get the base name of the spell file for display
+    _spell_name=$(basename "$_spell_file")
+    printf 'Casting %s\n' "$_spell_name" >&2
+    
     # Shift off the matched words to get remaining args
     _shift_count=$((_spell_matched_words - 1))  # -1 because first word was already shifted
     _i=0
@@ -264,8 +273,6 @@ PARSE_HELP
     done
     [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Shifted %d words, %d args remaining\n' "$_shift_count" "$#" >&2
     
-    # Get the base name of the spell file for word-of-binding
-    _spell_name=$(basename "$_spell_file")
     _spell_func=$(printf '%s' "$_spell_name" | tr '-' '_')
     
     # Load word-of-binding if not already available
@@ -341,8 +348,10 @@ PARSE_HELP
   if [ -n "$_spell_file" ] && [ -f "$_spell_file" ] && [ -x "$_spell_file" ]; then
     [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Found single-word spell file: %s\n' "$_spell_file" >&2
     
-    # Get the base name of the spell file for word-of-binding
+    # Get the base name of the spell file for display and word-of-binding
     _spell_name=$(basename "$_spell_file")
+    printf 'Casting %s\n' "$_spell_name" >&2
+    
     _spell_func=$(printf '%s' "$_spell_name" | tr '-' '_')
     
     # Load word-of-binding if not already available
@@ -401,6 +410,15 @@ PARSE_HELP
   # Check if command exists in PATH (outside glossary)
   if command -v "$_parse_cmd" >/dev/null 2>&1; then
     # Command found in PATH - execute it
+    # Build display name by reconstructing from all original args
+    # Since we already shifted the first word, prepend it back
+    if [ $# -eq 0 ]; then
+      _display_full="$_parse_cmd"
+    else
+      _display_full="$_parse_cmd $1"
+      # Show only first arg to keep message concise
+    fi
+    printf 'Casting %s\n' "$_display_full" >&2
     [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Executing command from PATH: %s\n' "$_parse_cmd" >&2
     if [ $# -eq 0 ]; then
       "$_parse_cmd"
