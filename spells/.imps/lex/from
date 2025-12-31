@@ -3,41 +3,35 @@
 # Receives: $1=command, $2=command_args, $3=source, $4+=remaining
 # Example: parse cp to /tmp from /etc/hosts
 
-from() {
-  _from_cmd=${1:-}
-  _from_cmd_args=${2:-}
-  shift 2 2>/dev/null || shift $#
+_from_cmd=${1:-}
+_from_cmd_args=${2:-}
+shift 2 2>/dev/null || shift $#
 
-  if [ $# -lt 1 ]; then
-    printf '%s: from requires a source\n' "from" >&2
-    return 1
-  fi
+if [ $# -lt 1 ]; then
+  printf '%s: from requires a source\n' "from" >&2
+  exit 1
+fi
 
-  _from_source=$1
-  shift
+_from_source=$1
+shift
 
-  if [ -z "$_from_cmd" ]; then
-    printf '%s: from requires a command before it\n' "from" >&2
-    return 1
-  fi
+if [ -z "$_from_cmd" ]; then
+  printf '%s: from requires a command before it\n' "from" >&2
+  exit 1
+fi
 
-  if [ -n "$_from_cmd_args" ]; then
-    _from_new_args="$_from_source $_from_cmd_args"
-  else
-    _from_new_args=$_from_source
-  fi
+if [ -n "$_from_cmd_args" ]; then
+  _from_new_args="$_from_source $_from_cmd_args"
+else
+  _from_new_args=$_from_source
+fi
 
-  if [ $# -eq 0 ]; then
-    # shellcheck disable=SC2086
-    "$_from_cmd" $_from_new_args
-    return $?
-  fi
-
-  _from_lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+if [ $# -eq 0 ]; then
   # shellcheck disable=SC2086
-  "$_from_lex_dir/parse" "$_from_cmd" $_from_new_args "$@"
-}
+  "$_from_cmd" $_from_new_args
+  exit $?
+fi
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */from) from "$@" ;; esac
+_from_lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+# shellcheck disable=SC2086
+"$_from_lex_dir/parse" "$_from_cmd" $_from_new_args "$@"

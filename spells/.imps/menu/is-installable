@@ -3,21 +3,15 @@
 # Returns 0 if the spell has an install() function, 1 otherwise
 # Example: is-installable my-spell && echo "has install"
 
-is_installable() {
-  if [ -z "${1-}" ]; then
-    return 1
-  fi
+if [ -z "${1-}" ]; then
+  exit 1
+fi
 
-  _ii_spell_cmd=$1
-  _ii_spell_path=$(command -v "$_ii_spell_cmd" 2>/dev/null) || _ii_spell_path=$_ii_spell_cmd
+_ii_spell_cmd=$1
+_ii_spell_path=$(command -v "$_ii_spell_cmd" 2>/dev/null) || _ii_spell_path=$_ii_spell_cmd
 
-  if [ ! -r "$_ii_spell_path" ]; then
-    return 1
-  fi
+if [ ! -r "$_ii_spell_path" ]; then
+  exit 1
+fi
 
-  grep -Eq '^[[:space:]]*install[[:space:]]*\(\)' "$_ii_spell_path" 2>/dev/null
-}
-
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */is-installable) is_installable "$@" ;; esac
+grep -Eq '^[[:space:]]*install[[:space:]]*\(\)' "$_ii_spell_path" 2>/dev/null
