@@ -2,10 +2,4 @@
 # lacks COMMAND - test if command is NOT available (opposite of has)
 # Example: lacks git && echo "please install git"
 
-lacks() {
-  ! command -v "$1" >/dev/null 2>&1
-}
-
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */lacks) lacks "$@" ;; esac
+! command -v "$1" >/dev/null 2>&1
