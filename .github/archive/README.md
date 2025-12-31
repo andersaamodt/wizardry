@@ -6,6 +6,7 @@ This directory contains historical debugging and investigation documentation tha
 
 **Debugging and Investigation Notes:**
 - `DEBUG_MENU_TESTING.md` - Menu testing debug notes
+- `DIAGNOSTIC_INSTRUCTIONS.md` - Mac hang diagnostic instructions
 - `MAC_DEBUGGING_GUIDE.md` - macOS-specific debugging guide
 - `INVESTIGATION_SUMMARY.md` - Investigation findings summary
 - `MAC_INSTALL_FIX_SUMMARY.md` - macOS installation fix documentation
