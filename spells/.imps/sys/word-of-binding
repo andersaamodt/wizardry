@@ -114,7 +114,7 @@ BEGIN {
 function brace_delta(s, n, m) {
   n = gsub(/{/, "{", s)
   m = gsub(/}/, "}", s)
-  exit n - m
+  return n - m
 } # awk: brace delta
 {
   if (!in_func) {
