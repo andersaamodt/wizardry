@@ -81,42 +81,141 @@ PARSE_HELP
   # Increment parse depth for next level
   export WIZARDRY_PARSE_DEPTH=$((_parse_depth + 1))
 
-  # Check if command exists before executing to prevent confusing errors
-  # We need to look OUTSIDE the glossary to find the real command
-  # Temporarily remove glossary from PATH
+  # STRATEGY: Find and execute the command in this priority order:
+  # 1. Preloaded function (convert hyphen to underscore: main-menu -> main_menu)
+  # 2. Command in PATH (with glossary removed to avoid recursion)
+  # 3. Wizardry spell file in WIZARDRY_DIR
+  # 4. Not found - error
+
+  # Check for preloaded function first (convert hyphens to underscores)
+  # Functions with hyphens don't work in POSIX sh, so we use underscores
+  _func_name=$(printf '%s' "$_parse_cmd" | tr '-' '_')
+  
+  # Check if function exists using type command (portable POSIX method)
+  # type outputs "X is a shell function" or similar for functions
+  if command -v "$_func_name" >/dev/null 2>&1; then
+    _type_output=$(type "$_func_name" 2>/dev/null || printf '')
+    case "$_type_output" in
+      *function*)
+        # Function exists - call it directly (no PATH manipulation needed)
+        [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Calling preloaded function: %s\n' "$_func_name" >&2
+        if [ $# -eq 0 ]; then
+          "$_func_name"
+        else
+          "$_func_name" "$@"
+        fi
+        _ret=$?
+        export WIZARDRY_PARSE_DEPTH=$((_parse_depth))  # Reset depth
+        return $_ret
+        ;;
+    esac
+  fi
+
+  # No preloaded function - check for command in PATH (excluding glossary)
   _gloss_dir="${SPELLBOOK_DIR:-${HOME}/.spellbook}/.glossary"
   _old_path="$PATH"
   PATH=$(printf '%s' "$PATH" | sed "s|$_gloss_dir:||g" | sed "s|:$_gloss_dir||g" | sed "s|^$_gloss_dir\$||")
   
-  if [ $# -eq 0 ]; then
-    # Check if real command exists (not gloss)
-    if ! command -v "$_parse_cmd" >/dev/null 2>&1; then
-      PATH="$_old_path"
-      export WIZARDRY_PARSE_DEPTH=$((_parse_depth))  # Reset depth
-      printf '%s: command not found\n' "$_parse_cmd" >&2
-      return 127
+  # Check if command exists in PATH (outside glossary)
+  if command -v "$_parse_cmd" >/dev/null 2>&1; then
+    # Command found in PATH - execute it
+    [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Executing command from PATH: %s\n' "$_parse_cmd" >&2
+    if [ $# -eq 0 ]; then
+      "$_parse_cmd"
+    else
+      "$_parse_cmd" "$@"
     fi
-    # Execute with glossary still removed from PATH to prevent infinite loops
-    "$_parse_cmd"
     _ret=$?
-    PATH="$_old_path"  # Restore PATH after execution
+    PATH="$_old_path"  # Restore PATH
     export WIZARDRY_PARSE_DEPTH=$((_parse_depth))  # Reset depth
     return $_ret
   fi
 
-  # Execute with arguments
-  if ! command -v "$_parse_cmd" >/dev/null 2>&1; then
-    PATH="$_old_path"
-    export WIZARDRY_PARSE_DEPTH=$((_parse_depth))  # Reset depth
-    printf '%s: command not found\n' "$_parse_cmd" >&2
-    return 127
+  # Not in PATH - check if it's a wizardry spell
+  [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Command not in PATH, searching WIZARDRY_DIR for spell: %s\n' "$_parse_cmd" >&2
+  _wizardry_dir="${WIZARDRY_DIR:-${HOME}/.wizardry}"
+  
+  # Search for spell in common locations
+  # Priority: 1) direct match, 2) search all spell directories
+  _spell_file=""
+  
+  # Try common spell directories first (fast path)
+  for _spell_dir in cantrips menu arcane divination system spellcraft enchantment; do
+    if [ -f "$_wizardry_dir/spells/$_spell_dir/$_parse_cmd" ] && [ -x "$_wizardry_dir/spells/$_spell_dir/$_parse_cmd" ]; then
+      _spell_file="$_wizardry_dir/spells/$_spell_dir/$_parse_cmd"
+      [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Found spell in %s: %s\n' "$_spell_dir" "$_spell_file" >&2
+      break
+    fi
+  done
+  
+  # If not found in common dirs, search all spell directories (slow path)
+  if [ -z "$_spell_file" ] && [ -d "$_wizardry_dir/spells" ]; then
+    [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Searching all spell directories...\n' >&2
+    # Use find to locate the spell (portable across platforms)
+    _spell_file=$(find "$_wizardry_dir/spells" -type f -name "$_parse_cmd" -print -quit 2>/dev/null)
+    [ "$_parse_debug" = "1" ] && [ -n "$_spell_file" ] && printf '[parse] DEBUG: Found spell via find: %s\n' "$_spell_file" >&2
   fi
-  # Execute with glossary still removed from PATH to prevent infinite loops
-  "$_parse_cmd" "$@"
-  _ret=$?
-  PATH="$_old_path"  # Restore PATH after execution
+  
+  # If spell found, load it via word-of-binding and call the function
+  # This matches the architecture: word-of-binding loads spells as functions
+  if [ -n "$_spell_file" ] && [ -f "$_spell_file" ] && [ -x "$_spell_file" ]; then
+    [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Found spell file: %s\n' "$_spell_file" >&2
+    
+    # Convert command name to function name (hyphen to underscore)
+    _spell_func=$(printf '%s' "$_parse_cmd" | tr '-' '_')
+    
+    # Load word-of-binding if not already available
+    if ! command -v word_of_binding >/dev/null 2>&1; then
+      if [ -f "$_wizardry_dir/spells/.imps/sys/word-of-binding" ]; then
+        [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Loading word-of-binding\n' >&2
+        # shellcheck disable=SC1090,SC1091
+        . "$_wizardry_dir/spells/.imps/sys/word-of-binding"
+      fi
+    fi
+    
+    # Use word-of-binding to properly load the spell as a function
+    if command -v word_of_binding >/dev/null 2>&1; then
+      [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Loading spell via word_of_binding: %s\n' "$_parse_cmd" >&2
+      word_of_binding "$_parse_cmd" || {
+        [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: word_of_binding failed for %s\n' "$_parse_cmd" >&2
+        PATH="$_old_path"
+        export WIZARDRY_PARSE_DEPTH=$((_parse_depth))
+        return 1
+      }
+    else
+      [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: word_of_binding not available\n' >&2
+      PATH="$_old_path"
+      export WIZARDRY_PARSE_DEPTH=$((_parse_depth))
+      return 127
+    fi
+    
+    # Now the function should be loaded - call it
+    if command -v "$_spell_func" >/dev/null 2>&1; then
+      [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Calling spell function: %s\n' "$_spell_func" >&2
+      if [ $# -eq 0 ]; then
+        "$_spell_func"
+      else
+        "$_spell_func" "$@"
+      fi
+      _ret=$?
+    else
+      [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Function %s not found after word_of_binding\n' "$_spell_func" >&2
+      PATH="$_old_path"
+      export WIZARDRY_PARSE_DEPTH=$((_parse_depth))
+      return 127
+    fi
+    
+    PATH="$_old_path"  # Restore PATH
+    export WIZARDRY_PARSE_DEPTH=$((_parse_depth))  # Reset depth
+    return $_ret
+  fi
+
+  # Command not found anywhere
+  PATH="$_old_path"
   export WIZARDRY_PARSE_DEPTH=$((_parse_depth))  # Reset depth
-  return $_ret
+  [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Command not found: %s\n' "$_parse_cmd" >&2
+  printf '%s: command not found\n' "$_parse_cmd" >&2
+  return 127
 }
 
 # Self-execute when run directly (not sourced)

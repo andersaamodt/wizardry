@@ -2,8 +2,6 @@
 
 # This spell displays the ao-mud main menu.
 
-require_wizardry || return 1
-
 main_menu_usage() {
         cat <<'USAGE' >&2
 Usage: main-menu
@@ -23,6 +21,8 @@ case "${1-}" in
   return 0
   ;;
 esac
+
+require_wizardry || return 1
 
 set -eu
 
