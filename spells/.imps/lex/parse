@@ -51,12 +51,31 @@ parse() {
   _parse_cmd=${1-}
   shift
 
-  # CRITICAL RECURSION PREVENTION: If the command is "parse", we're in a loop
-  # This happens if a gloss calls parse which calls the gloss again
+  # CRITICAL SELF-REFERENCE HANDLING: If called via gloss for parse itself
+  # This happens when: exec parse "parse" "$@"
+  # In this case, just show help or return success (parse is already loaded)
   if [ "$_parse_cmd" = "parse" ]; then
-    printf '[parse] ERROR: Attempted to recursively call parse\n' >&2
-    printf '[parse] This suggests a malformed gloss or infinite loop\n' >&2
-    return 1
+    # If called with --help, show help
+    case "${1-}" in
+      --help|--usage|-h)
+        cat <<'PARSE_HELP' >&2
+parse - Command execution engine for wizardry glosses
+
+The parse imp is automatically used by glosses and should not
+normally be called directly by users. It handles command resolution
+and recursion prevention for the glossary system.
+
+Usage (via glosses): Any wizardry command
+Usage (direct): parse <command> [args...]
+
+Note: parse is preloaded by invoke-wizardry and available as a function.
+PARSE_HELP
+        return 0
+        ;;
+    esac
+    # Self-reference when called via gloss - just return success
+    # The real parse function is already available
+    return 0
   fi
 
   # Increment parse depth for next level
