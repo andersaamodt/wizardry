@@ -166,6 +166,7 @@ function brace_delta(s, n, m) {
     if [ -n "$_wob_body" ] && ! eval "$_wob_body"; then
       if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
         printf '[word-of-binding] DEBUG: FAILED to eval function body for %s\n' "$_wob_name" >&2
+        printf '[word-of-binding] DEBUG: Error occurred during eval\n' >&2
       fi
       if [ -n "$_wob_prev_loading_spells" ]; then
         _WIZARDRY_LOADING_SPELLS="$_wob_prev_loading_spells"
