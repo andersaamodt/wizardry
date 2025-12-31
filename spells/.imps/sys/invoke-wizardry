@@ -395,7 +395,10 @@ invoke_wizardry() {
             printf '[generate_glosses bg] DEBUG: After re-eval, require_wizardry available: %s\n' "$(command -v require_wizardry 2>&1 || echo 'NO')" >&2
             printf '[generate_glosses bg] DEBUG: After re-eval, env_or available: %s\n' "$(command -v env_or 2>&1 || echo 'NO')" >&2
             printf '[generate_glosses bg] DEBUG: After re-eval, env_clear available: %s\n' "$(command -v env_clear 2>&1 || echo 'NO')" >&2
+            printf '[generate_glosses bg] DEBUG: After re-eval, find_executable available: %s\n' "$(command -v find_executable 2>&1 || echo 'NO')" >&2
+            printf '[generate_glosses bg] DEBUG: About to call generate_glosses --quiet\n' >&2
             generate_glosses --quiet
+            printf '[generate_glosses bg] DEBUG: generate_glosses completed with exit code: %d\n' "$?" >&2
           ) &
           _iw_debug "Gloss generation running in background (errors will appear on terminal)"
         else
