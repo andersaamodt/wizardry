@@ -172,9 +172,10 @@ env_clear
       [ -n "$spell_path" ] && [ -f "$spell_path" ] || continue
       spell_name=$(basename "$spell_path")
       
-      # Skip invalid names
+      # Skip invalid names and special cases
       case "$spell_name" in
         ''|.*) continue ;;
+        parse) continue ;;  # Never create gloss for parse (would create infinite loop)
       esac
       
       # Determine the source description
