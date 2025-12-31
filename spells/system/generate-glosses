@@ -157,8 +157,26 @@ env_clear
     
     # Use temp file to avoid subshell issues with pipeline
     _spell_list=$(temp_file)
+    
     # Use find-executable imp for cross-platform compatibility
-    find_executable "$wizardry_dir/spells" > "$_spell_list"
+    # Try function first (should be preloaded), fall back to direct execution
+    if command -v find_executable >/dev/null 2>&1; then
+      find_executable "$wizardry_dir/spells" > "$_spell_list"
+    else
+      # Fallback: execute find-executable imp directly
+      _find_exec_imp="$wizardry_dir/spells/.imps/fs/find-executable"
+      if [ -x "$_find_exec_imp" ]; then
+        "$_find_exec_imp" "$wizardry_dir/spells" > "$_spell_list"
+      else
+        # Last resort: use find directly (may have portability issues)
+        warn "generate-glosses: find-executable not available, using basic find"
+        find "$wizardry_dir/spells" -type f -perm /111 2>/dev/null > "$_spell_list" || \
+        find "$wizardry_dir/spells" -type f -perm +111 2>/dev/null > "$_spell_list" || \
+        find "$wizardry_dir/spells" -type f 2>/dev/null | while IFS= read -r f; do
+          [ -x "$f" ] && printf '%s\n' "$f"
+        done > "$_spell_list"
+      fi
+    fi
     
     # Count files found
     _spell_count=$(wc -l < "$_spell_list")
@@ -178,6 +196,13 @@ env_clear
       # Skip invalid names
       case "$spell_name" in
         ''|.*) continue ;;
+      esac
+      
+      # CRITICAL: Skip parse to prevent infinite recursion
+      # Parse is used by all glosses, so a parse gloss would create: exec parse "parse"
+      # This would recurse infinitely when the gloss is invoked
+      case "$spell_name" in
+        parse) continue ;;
       esac
       
       # Determine the source description
@@ -290,7 +315,19 @@ env_clear
   
   # Count total glosses in directory
   # Use find-executable imp for cross-platform compatibility
-  total_glosses=$(find_executable "$glossary_dir" | wc -l | tr -d ' ')
+  if command -v find_executable >/dev/null 2>&1; then
+    total_glosses=$(find_executable "$glossary_dir" | wc -l | tr -d ' ')
+  else
+    # Fallback: execute find-executable imp directly
+    _find_exec_imp="$wizardry_dir/spells/.imps/fs/find-executable"
+    if [ -x "$_find_exec_imp" ]; then
+      total_glosses=$("$_find_exec_imp" "$glossary_dir" | wc -l | tr -d ' ')
+    else
+      # Last resort: use find directly
+      total_glosses=$(find "$glossary_dir" -type f -perm /111 2>/dev/null | wc -l | tr -d ' ')
+      [ "$total_glosses" -eq 0 ] && total_glosses=$(find "$glossary_dir" -type f -perm +111 2>/dev/null | wc -l | tr -d ' ')
+    fi
+  fi
   
   # Report results
   if [ "$quiet" -eq 0 ]; then
