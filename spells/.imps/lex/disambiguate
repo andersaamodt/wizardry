@@ -3,9 +3,8 @@
 # When a command has multiple meanings, presents a menu to choose.
 # Saves choice in $SPELLBOOK_DIR/.disambiguations for future use.
 
-disambiguate() {
   if [ $# -eq 0 ]; then
-    return 0
+    exit 0
   fi
 
   _dis_cmd=$1
@@ -18,7 +17,7 @@ disambiguate() {
     _dis_saved_choice=$(cat "$_dis_disambig_dir/$_dis_cmd")
     if command -v "$_dis_saved_choice" >/dev/null 2>&1; then
       "$_dis_saved_choice" "$@"
-      return $?
+      exit $?
     fi
     rm -f "$_dis_disambig_dir/$_dis_cmd"
   fi
@@ -52,13 +51,13 @@ disambiguate() {
 
   if [ "$_dis_count" -eq 0 ]; then
     "$_dis_cmd" "$@"
-    return $?
+    exit $?
   fi
 
   if [ "$_dis_count" -eq 1 ]; then
     _dis_choice_path=$(printf '%s' "$_dis_candidates" | head -1 | cut -d: -f2)
     "$_dis_choice_path" "$@"
-    return $?
+    exit $?
   fi
 
   printf '%s\n' "Multiple commands match '$_dis_cmd':" >&2
@@ -80,12 +79,12 @@ disambiguate() {
 
   if ! printf '%s' "$_dis_choice" | grep -qE '^[0-9]+$'; then
     printf '%s\n' "Invalid choice." >&2
-    return 1
+    exit 1
   fi
 
   if [ "$_dis_choice" -lt 1 ] || [ "$_dis_choice" -gt "$_dis_count" ]; then
     printf '%s\n' "Choice out of range." >&2
-    return 1
+    exit 1
   fi
 
   _dis_chosen_path=$(printf '%s' "$_dis_candidates" | sed -n "${_dis_choice}p" | cut -d: -f2)
@@ -97,8 +96,3 @@ disambiguate() {
   fi
 
   "$_dis_chosen_path" "$@"
-}
-
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */disambiguate) disambiguate "$@" ;; esac
