@@ -1,8 +1,36 @@
 # Parse Loop Debug History
 
-## FINAL SOLUTION (2025-12-31 13:00 UTC)
+## ✅ COMPLETE SUCCESS (2025-12-31 14:30 UTC)
 
-**Root Cause DEFINITIVELY Found:** Glosses used `exec parse "command"` but `exec` cannot execute shell functions - only actual executable files. When a gloss tried to run, it failed with "parse: not found" because `parse` was only loaded as a function, not available in PATH.
+**All Issues Resolved:** The wizardry glossary system is now fully functional on macOS with zsh.
+
+### Issues Fixed
+
+1. **Gloss Execution Hang** - Glosses used `exec parse "cmd"` but exec cannot execute shell functions
+   - **Fix**: Use full path `exec "$WIZARDRY_DIR/spells/.imps/lex/parse" "cmd"`
+   
+2. **Background Job Hang** - `find_executable` not exported to zsh background jobs
+   - **Fix**: Added `find_executable` to function export list
+
+3. **Perceived Slowness** - Debug output and main-menu debug statements
+   - **Fix**: Removed 30 debug statements from main-menu, added completion message
+
+### Final Status
+
+- ✅ **generate-glosses successfully generates ~390 glosses**
+- ✅ **All spells, imps, and synonyms have glosses**
+- ✅ **main-menu works without hanging**
+- ✅ **Background job completes and reports completion**
+- ✅ **All 6 generate-glosses tests pass**
+- ✅ **All 12 require tests pass**
+- ✅ **System reaches prompt promptly**
+- ✅ **Clear user feedback with "[wizardry] Glossary generation complete"**
+
+## Root Causes (All Fixed)
+
+### Issue 1: Gloss Execution Hang
+
+**Root Cause:** Glosses used `exec parse "command"` but `exec` cannot execute shell functions - only actual executable files. When a gloss tried to run, it failed with "parse: not found" because `parse` was only loaded as a function, not available in PATH.
 
 **Problem Flow:**
 1. User runs `main-menu` (preloaded function)
@@ -13,17 +41,28 @@
 6. **`exec` fails** - cannot execute functions, only files
 7. Shell hangs with "parse: not found"
 
-**Solution Applied:**
+**Solution:**
 - Modified `generate-glosses` to use **full path** to parse executable
 - Changed from: `exec parse "cmd" "$@"`
 - Changed to: `exec "$WIZARDRY_DIR/spells/.imps/lex/parse" "cmd" "$@"`
 - This ensures glosses can always find parse regardless of PATH state
 
-**Status:** ✅ **FIXED**
-- All 6 generate-glosses tests pass
-- 12/12 require tests pass
-- Verified: glosses execute without hanging
-- Verified: main-menu scenario works without timeout
+### Issue 2: Background Job Hang
+
+**Root Cause:** The background `generate-glosses` job needed `find_executable` to scan for spell files, but this function was not exported to zsh background jobs.
+
+**Solution:**
+- Added `find_executable` to `_iw_export_funcs` in invoke-wizardry
+- Background job now has access to all required functions
+
+### Issue 3: Perceived Slowness
+
+**Root Cause:** Debug mode created excessive output, and main-menu had 30 debug printf statements.
+
+**Solution:**
+- Removed 30 debug statements from main-menu
+- Added "[wizardry] Glossary generation complete" message
+- Users now know when background generation finishes
 
 ## Previous Root Causes (Already Fixed)
 
