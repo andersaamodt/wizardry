@@ -107,33 +107,22 @@ invoke_wizardry() {
   export SPELLBOOK_DIR
 
   # ============================================================================
-  # GLOSSARY-BASED INTERCEPTION SYSTEM (Phase 5)
+  # FUNCTION-BASED GLOSS SYSTEM (New Paradigm)
   # ============================================================================
-  # Glosses are auto-generated wrappers that make spells accessible via PATH.
-  # They enable POSIX-compliant, hotloadable invocation for:
-  # - All wizardry spells
+  # Glosses are now shell functions and aliases, not script files.
+  # This provides:
+  # - First-word glosses: env() { parse "$@"; } for space-separated invocation
+  # - Hyphenated aliases: alias env-or='env_or' for hyphenated invocation
+  # - Direct access to preloaded true-name functions: env_or()
+  #
+  # Glosses are generated synchronously (must run in current shell to define functions)
+  # and cover:
+  # - All wizardry spells and imps
   # - User-defined synonyms (.synonyms file)
   # - Default synonyms (.default-synonyms file)
-  #
-  # Each gloss is a minimal script: exec parse "spell-name" "$@"
-  # The parse imp handles command resolution and recursion prevention.
-  #
-  # Glosses are regenerated automatically in the background to stay in sync
-  # with spells and synonym definitions. This is transparent to users.
   # ============================================================================
   
-  _iw_glossary="$SPELLBOOK_DIR/.glossary"
-  
-  # Create glossary directory if missing
-  if [ ! -d "$_iw_glossary" ]; then
-    mkdir -p "$_iw_glossary" 2>/dev/null || :
-  fi
-  
-  # Prepend glossary to PATH (give parse first shot at all commands)
-  PATH="$_iw_glossary:$PATH"
-  export PATH
-  
-  _iw_debug "Glossary prepended to PATH: $_iw_glossary"
+  _iw_debug "Loading function-based glosses..."
   
   # SPIRAL DEBUG PHASE 1: Minimal pre-loading (menu + dependencies only)
   # Future: ALL wizardry spells will be pre-loaded, hotloading only for ~/.spellbook
@@ -358,118 +347,34 @@ invoke_wizardry() {
   # With 387+ glosses, async is essential for fast shell startup.
   # The generate-glosses spell handles unified generation from all sources.
   # Must run AFTER essential imps and generate-glosses spell are loaded.
-  # Skip gloss generation in test mode (tests don't need glosses)
+  # Load gloss functions synchronously (must run in current shell)
+  # Functions and aliases must be defined in the current shell, not a subshell
+  # Skip in test mode (tests don't need glosses)
   if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
     if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
       printf '[invoke-wizardry] DEBUG: About to check for generate_glosses function\n' >&2
     fi
-    # Call the preloaded generate_glosses function in background
-    # This allows it to access all the preloaded imp functions
-    # The function was already loaded by word_of_binding above (in spell preloading)
+    
+    # Check if generate_glosses is available
     if command -v generate_glosses >/dev/null 2>&1; then
       if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-        printf '[invoke-wizardry] DEBUG: generate_glosses function IS available, starting background job\n' >&2
+        printf '[invoke-wizardry] DEBUG: generate_glosses function IS available, generating glosses\n' >&2
       fi
       
-      # Detect if running in zsh (which doesn't inherit functions to background jobs)
-      # In zsh, we need to use a different approach: export function definitions
-      _iw_shell_type="unknown"
-      if [ -n "${ZSH_VERSION-}" ]; then
-        _iw_shell_type="zsh"
-      elif [ -n "${BASH_VERSION-}" ]; then
-        _iw_shell_type="bash"
-      fi
+      _iw_debug "Generating gloss functions and aliases..."
       
-      # Run generate_glosses in background
-      if [ "$_iw_shell_type" = "zsh" ]; then
-        # ZSH: Export all preloaded functions to background job using zsh's functions syntax
-        # List all function names that need to be exported
-        _iw_export_funcs="generate_glosses require_wizardry env_or env_clear temp_file cleanup_file on_exit"
-        _iw_export_funcs="$_iw_export_funcs die warn fail say success info step debug has there is yes no empty nonempty"
-        _iw_export_funcs="$_iw_export_funcs cleanup_dir make_tempdir find_executable"
-        
-        # CRITICAL: Get function definitions in PARENT shell BEFORE entering subshell
-        # In zsh subshells, functions aren't inherited, so command -v returns false
-        # We must capture the function bodies here while they're still available
-        _iw_func_defs=""
-        _iw_captured_count=0
-        
-        for _func in $_iw_export_funcs; do
-          # Use zsh's functions command directly - it returns empty string if function doesn't exist
-          # Don't use command -v as it's unreliable for checking functions in zsh
-          _iw_func_def="$(functions "$_func" 2>/dev/null || echo '')"
-          if [ -n "$_iw_func_def" ]; then
-            # Append with actual newline (not ANSI-C quote which doesn't work in sh)
-            _iw_func_defs="${_iw_func_defs}${_iw_func_def}
-"
-            _iw_captured_count=$((_iw_captured_count + 1))
-            if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-              printf '[invoke-wizardry] DEBUG:   Captured function: %s (%d bytes)\n' "$_func" "${#_iw_func_def}" >&2
-            fi
-          elif [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-            printf '[invoke-wizardry] DEBUG:   Function not found: %s\n' "$_func" >&2
-          fi
-        done
-        
-        if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-          printf '[invoke-wizardry] DEBUG: Captured %d function definitions\n' "$_iw_captured_count" >&2
-          printf '[invoke-wizardry] DEBUG: Total size of _iw_func_defs: %d bytes\n' "${#_iw_func_defs}" >&2
-          printf '[invoke-wizardry] DEBUG: First 200 chars of _iw_func_defs: %s\n' "${_iw_func_defs:0:200}" >&2
-        fi
-        
-        if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-          # Debug mode: show function availability
-          (
-            printf '[generate_glosses bg] DEBUG: Starting background job (zsh mode)\n' >&2
-            printf '[generate_glosses bg] DEBUG: Received %d bytes of function definitions\n' "${#_iw_func_defs}" >&2
-            # Re-eval all function definitions captured from parent shell
-            if [ -n "$_iw_func_defs" ]; then
-              printf '[generate_glosses bg] DEBUG: Evaling function definitions...\n' >&2
-              eval "$_iw_func_defs"
-              printf '[generate_glosses bg] DEBUG: Eval completed\n' >&2
-            else
-              printf '[generate_glosses bg] DEBUG: ERROR: No function definitions to eval!\n' >&2
-            fi
-            printf '[generate_glosses bg] DEBUG: After re-eval, require_wizardry available: %s\n' "$(command -v require_wizardry 2>&1 || echo 'NO')" >&2
-            printf '[generate_glosses bg] DEBUG: After re-eval, env_or available: %s\n' "$(command -v env_or 2>&1 || echo 'NO')" >&2
-            printf '[generate_glosses bg] DEBUG: After re-eval, env_clear available: %s\n' "$(command -v env_clear 2>&1 || echo 'NO')" >&2
-            printf '[generate_glosses bg] DEBUG: After re-eval, find_executable available: %s\n' "$(command -v find_executable 2>&1 || echo 'NO')" >&2
-            printf '[generate_glosses bg] DEBUG: About to call generate_glosses --quiet\n' >&2
-            generate_glosses --quiet
-            _gg_exit=$?
-            printf '[generate_glosses bg] DEBUG: generate_glosses completed with exit code: %d\n' "$_gg_exit" >&2
-            if [ "$_gg_exit" -eq 0 ]; then
-              printf '[wizardry] Glossary generation complete\n' >&2
-            else
-              printf '[wizardry] WARNING: Glossary generation failed with exit code %d\n' "$_gg_exit" >&2
-            fi
-          ) &
-          _iw_debug "Gloss generation running in background (errors will appear on terminal)"
+      # Generate glosses and eval them into current shell
+      # This creates first-word gloss functions and hyphenated aliases
+      if _iw_gloss_output=$(generate_glosses --quiet 2>&1); then
+        if [ -n "$_iw_gloss_output" ]; then
+          # Eval the generated functions and aliases into current shell
+          eval "$_iw_gloss_output"
+          _iw_debug "Gloss functions and aliases loaded successfully"
         else
-          # Normal mode: silent operation
-          (
-            # Re-eval all function definitions captured from parent shell
-            eval "$_iw_func_defs"
-            generate_glosses --quiet
-            _gg_exit=$?
-            if [ "$_gg_exit" -eq 0 ]; then
-              printf '[wizardry] Glossary generation complete\n' >&2
-            fi
-          ) 2>/dev/null &
+          _iw_debug "Warning: generate_glosses produced no output"
         fi
       else
-        # BASH/SH: Functions are inherited, use simple background job
-        if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-          generate_glosses --quiet &
-          _iw_debug "Gloss generation running in background (errors will appear on terminal)"
-        else
-          generate_glosses --quiet 2>/dev/null &
-        fi
-      fi
-      _iw_debug "Started async gloss regeneration (spells + synonyms + imps + arcana)"
-      # Show user-visible message about glossary startup
-      if command -v info >/dev/null 2>&1; then
-        info "Glossary regenerating in background..."
+        _iw_debug "Warning: generate_glosses failed"
       fi
     else
       if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
