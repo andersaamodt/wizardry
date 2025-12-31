@@ -3,15 +3,9 @@
 # Example: path ./foo -> /current/dir/foo
 set -eu
 
-path() {
-  _p_path=$1
-  case "$_p_path" in
-    /*) : ;;
-    *) _p_path="$(pwd -P)/$_p_path" ;;
-  esac
-  printf '%s' "$_p_path" | sed 's|///*|/|g'
-}
-
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */path) path "$@" ;; esac
+_p_path=$1
+case "$_p_path" in
+  /*) : ;;
+  *) _p_path="$(pwd -P)/$_p_path" ;;
+esac
+printf '%s' "$_p_path" | sed 's|///*|/|g'
