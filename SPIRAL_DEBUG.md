@@ -7,16 +7,23 @@
 
 ### Problem Statement
 
-**PR #410** introduced the word-of-binding paradigm (~200 PRs ago) with these changes:
+**Word-of-binding paradigm introduction** (referenced in `install` script as "PR #410", but unverified due to shallow git clone):
+
+**CAVEAT:** Cannot independently verify PR #410 as the git history only goes back to commit 2ae3b2a. The PR #410 reference comes from comments in the install script. What matters for restoration is that we have:
+- A working pre-word-of-binding state (commit 8ff484c0 with path-wizard)
+- Knowledge that menu worked before word-of-binding
+- A clear path back to that simpler paradigm
+
+**The word-of-binding paradigm changes:**
 - Function preloading for performance
 - Glosses/shims for hyphenated commands  
 - invoke-wizardry for shell initialization
 - handle-command-not-found for auto-sourcing spells
 - But: executed commands run in subshells without preloaded functions!
 - Result: Negated the performance benefits
-- **Critical issue:** Menu spell stopped working after PR #410 and never worked again
+- **Critical issue:** Menu spell stopped working and never worked again
 
-**Decision:** Return to the old, simple PATH-based paradigm (pre-PR #410) while preserving good changes made since then.
+**Decision:** Return to the old, simple PATH-based paradigm (pre-word-of-binding) while preserving good changes made since then.
 
 **Reference:** See `WORD_OF_BINDING_RESTORATION.md` for complete historical context and restoration plan.
 

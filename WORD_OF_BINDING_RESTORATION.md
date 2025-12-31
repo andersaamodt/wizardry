@@ -3,7 +3,10 @@
 ## Historical Context
 
 ### PR #410 - Word-of-Binding Introduction
-According to comments in the `install` script, **PR #410** introduced the word-of-binding paradigm with the following changes:
+
+**IMPORTANT CAVEAT:** The git repository only goes back to commit 2ae3b2a (shallow clone), so we cannot independently verify that PR #410 exists or what it contains. The PR #410 reference comes solely from comments in the `install` script.
+
+According to comments in the `install` script, **PR #410** (unverified) introduced the word-of-binding paradigm with the following changes:
 
 1. **invoke-wizardry** - Sourced from rc file to dynamically set up PATH at shell startup
 2. **handle-command-not-found** - Auto-sources spells on first use
