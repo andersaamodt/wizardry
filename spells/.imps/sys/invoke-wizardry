@@ -188,8 +188,12 @@ invoke_wizardry() {
           esac
           
           if [ -n "$_imp_file" ] && [ -f "$_imp_file" ]; then
-            if command -v word_of_binding >/dev/null 2>&1; then
-              word_of_binding "$_imp_name" 2>/dev/null || :
+            # Skip if already loaded (optimization to avoid redundant awk/sed calls)
+            _imp_func=$(printf '%s' "$_imp_name" | tr '-' '_')
+            if ! command -v "$_imp_func" >/dev/null 2>&1; then
+              if command -v word_of_binding >/dev/null 2>&1; then
+                word_of_binding "$_imp_name" 2>/dev/null || :
+              fi
             fi
           fi
         done
@@ -249,6 +253,13 @@ invoke_wizardry() {
             case "$_spell_dir" in */.imps|*/.arcana) continue ;; esac
             _spell_file="$_spell_dir/$_spell_name"
             if [ -f "$_spell_file" ]; then
+              # Skip if already loaded (optimization)
+              _spell_func_name=$(printf '%s' "$_spell_name" | tr '-' '_')
+              if command -v "$_spell_func_name" >/dev/null 2>&1; then
+                _iw_debug "  ↻ Cached: $_spell_name"
+                break  # Exit spell directory search loop
+              fi
+              
               _iw_debug "Loading spell: $_spell_name"
               if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
                 printf '[invoke-wizardry] DEBUG: BEFORE word_of_binding call for %s\n' "$_spell_name" >&2
@@ -261,7 +272,6 @@ invoke_wizardry() {
                 if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
                   printf '[invoke-wizardry] DEBUG: AFTER word_of_binding call for %s (SUCCESS)\n' "$_spell_name" >&2
                   # Immediately check if function is available
-                  _spell_func_name=$(printf '%s' "$_spell_name" | tr '-' '_')
                   if command -v "$_spell_func_name" >/dev/null 2>&1; then
                     printf '[invoke-wizardry] DEBUG: Function %s IS available immediately after word_of_binding\n' "$_spell_func_name" >&2
                   else
