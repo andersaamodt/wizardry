@@ -156,9 +156,37 @@ PARSE_HELP
     [ "$_parse_debug" = "1" ] && [ -n "$_spell_file" ] && printf '[parse] DEBUG: Found spell via find: %s\n' "$_spell_file" >&2
   fi
   
-  # If spell found, execute it
+  # If spell found, execute it with wizardry directories in PATH
   if [ -n "$_spell_file" ] && [ -f "$_spell_file" ] && [ -x "$_spell_file" ]; then
     [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Executing spell file: %s\n' "$_spell_file" >&2
+    
+    # Add wizardry spell directories to PATH so the spell can find imps and other spells
+    # This prevents the need for glosses while still allowing spells to call each other
+    # CRITICAL: Glossary remains removed to prevent recursion
+    _wizardry_paths="$_wizardry_dir/spells/.imps/sys"
+    _wizardry_paths="$_wizardry_paths:$_wizardry_dir/spells/.imps/out"
+    _wizardry_paths="$_wizardry_paths:$_wizardry_dir/spells/.imps/cond"
+    _wizardry_paths="$_wizardry_paths:$_wizardry_dir/spells/.imps/fs"
+    _wizardry_paths="$_wizardry_paths:$_wizardry_dir/spells/.imps/str"
+    _wizardry_paths="$_wizardry_paths:$_wizardry_dir/spells/.imps/text"
+    _wizardry_paths="$_wizardry_paths:$_wizardry_dir/spells/.imps/lex"
+    _wizardry_paths="$_wizardry_paths:$_wizardry_dir/spells/.imps/pkg"
+    _wizardry_paths="$_wizardry_paths:$_wizardry_dir/spells/.imps/input"
+    _wizardry_paths="$_wizardry_paths:$_wizardry_dir/spells/.imps/lang"
+    _wizardry_paths="$_wizardry_paths:$_wizardry_dir/spells/.imps/menu"
+    _wizardry_paths="$_wizardry_paths:$_wizardry_dir/spells/.imps/test"
+    _wizardry_paths="$_wizardry_paths:$_wizardry_dir/spells/cantrips"
+    _wizardry_paths="$_wizardry_paths:$_wizardry_dir/spells/menu"
+    _wizardry_paths="$_wizardry_paths:$_wizardry_dir/spells/arcane"
+    _wizardry_paths="$_wizardry_paths:$_wizardry_dir/spells/divination"
+    _wizardry_paths="$_wizardry_paths:$_wizardry_dir/spells/system"
+    _wizardry_paths="$_wizardry_paths:$_wizardry_dir/spells/spellcraft"
+    _wizardry_paths="$_wizardry_paths:$_wizardry_dir/spells/enchantment"
+    _wizardry_paths="$_wizardry_paths:$_wizardry_dir/spells/install"
+    PATH="$_wizardry_paths:$PATH"
+    
+    [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Added wizardry directories to PATH for spell execution\n' >&2
+    
     if [ $# -eq 0 ]; then
       "$_spell_file"
     else

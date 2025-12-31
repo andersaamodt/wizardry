@@ -2,8 +2,6 @@
 
 # This spell displays the ao-mud main menu.
 
-require_wizardry || return 1
-
 main_menu_usage() {
         cat <<'USAGE' >&2
 Usage: main-menu
@@ -17,6 +15,8 @@ USAGE
 
 main_menu() {
 
+require-wizardry || return 1
+
 case "${1-}" in
 --help|--usage|-h)
   main_menu_usage
@@ -26,12 +26,12 @@ esac
 
 set -eu
 
-env_clear
+. env-clear
 
 # Load menu imps as functions to avoid parse loops
-word_of_binding "exit-label"
+word-of-binding "exit-label"
 
-word_of_binding "mud-config" 2>/dev/null || true
+word-of-binding "mud-config" 2>/dev/null || true
 
 
 # Load color palette (colors handles terminal capability detection internally).
@@ -53,9 +53,9 @@ fi
 
 # Check if MUD is enabled in config
 is_mud_enabled() {
-  # Check if mud_config exists and mud-enabled is set to 1
-  if command -v mud_config >/dev/null 2>&1; then
-    value=$(mud_config get mud-enabled 2>/dev/null) || return 1
+  # Check if mud-config exists and mud-enabled is set to 1
+  if command -v mud-config >/dev/null 2>&1; then
+    value=$(mud-config get mud-enabled 2>/dev/null) || return 1
     [ "$value" = "1" ]
   else
     return 1
@@ -68,7 +68,7 @@ main_menu_display_menu() {
   install="Arcana%install-menu"
   system="Computer%system-menu"
   
-  exit_label_text=$(exit_label)
+  exit_label_text=$(exit-label)
   
   exit_item="${exit_label_text}%kill -TERM \$PPID"
 
