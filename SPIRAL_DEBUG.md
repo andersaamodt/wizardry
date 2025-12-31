@@ -359,3 +359,27 @@ User has requested special handling for the menu spell:
 
 **New imp needed:**
 - Create simple folder/file recursion imp for discovering spell directories
+
+## castable/uncastable/autocast Pattern - Even Better in Flat-File Paradigm
+
+These guard imps become **more valuable and simpler** in the flat-file paradigm:
+
+### castable
+- **Purpose**: Allow spell to be executed OR sourced
+- **Usage**: `castable "$@"` at end of spell
+- **New paradigm benefit**: Simple PATH-based execution, no word-of-binding complexity
+- **Most spells use this**
+
+### uncastable  
+- **Purpose**: Enforce source-only (must modify calling environment)
+- **Usage**: `uncastable` near top of spell
+- **Use cases**: invoke-wizardry, environment setup that modifies parent shell
+- **New paradigm benefit**: Clear error message when executed instead of sourced
+
+### autocast
+- **Purpose**: Auto-execute when sourced, still allow direct execution
+- **Usage**: `autocast` at end of spell
+- **Use cases**: colors (sets color variables), move (sets directory functions)
+- **New paradigm benefit**: Works seamlessly via PATH, no function preloading needed
+
+**Why they're cooler now**: Without word-of-binding's complexity, these provide clean, understandable source/execute guards that just work via PATH. They're simple, self-contained, and do exactly what they say.

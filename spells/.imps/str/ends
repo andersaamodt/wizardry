@@ -3,13 +3,7 @@
 # Example: ends "$file" ".sh" && echo "shell script"
 set -eu
 
-ends() {
-  case "$1" in
-    *"$2") return 0 ;;
-    *) return 1 ;;
-  esac
-}
-
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */ends) ends "$@" ;; esac
+case "$1" in
+  *"$2") exit 0 ;;
+  *) exit 1 ;;
+esac
