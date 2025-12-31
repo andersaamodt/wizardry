@@ -4,34 +4,28 @@
 # Set SELECT_INPUT_MODE=stdin|tty|none to override source detection
 set -eu
 
-read_line() {
-  _rl_prompt=${1:-}
-  [ -n "$_rl_prompt" ] && printf '%s' "$_rl_prompt" >&2
+_rl_prompt=${1:-}
+[ -n "$_rl_prompt" ] && printf '%s' "$_rl_prompt" >&2
 
-  if command -v select-input >/dev/null 2>&1; then
-    _rl_src=$(select-input) || return 1
-  else
-    case ${SELECT_INPUT_MODE:-auto} in
-      stdin) _rl_src=stdin ;;
-      tty)   _rl_src=tty ;;
-      none)  return 1 ;;
-      *)
-        # Use /dev/fd/0 instead of /dev/stdin for cross-platform compatibility
-        if [ -t 0 ] || [ -p /dev/fd/0 ] || [ -s /dev/fd/0 ]; then _rl_src=stdin
-        elif [ -r /dev/tty ]; then _rl_src=tty
-        else return 1; fi ;;
-    esac
-  fi
-
-  case $_rl_src in
-    stdin) IFS= read -r _rl_line || _rl_line= ;;
-    tty)   IFS= read -r _rl_line </dev/tty || _rl_line= ;;
-    *)     return 1 ;;
+if command -v select-input >/dev/null 2>&1; then
+  _rl_src=$(select-input) || exit 1
+else
+  case ${SELECT_INPUT_MODE:-auto} in
+    stdin) _rl_src=stdin ;;
+    tty)   _rl_src=tty ;;
+    none)  exit 1 ;;
+    *)
+      # Use /dev/fd/0 instead of /dev/stdin for cross-platform compatibility
+      if [ -t 0 ] || [ -p /dev/fd/0 ] || [ -s /dev/fd/0 ]; then _rl_src=stdin
+      elif [ -r /dev/tty ]; then _rl_src=tty
+      else exit 1; fi ;;
   esac
+fi
 
-  printf '%s' "$_rl_line"
-}
+case $_rl_src in
+  stdin) IFS= read -r _rl_line || _rl_line= ;;
+  tty)   IFS= read -r _rl_line </dev/tty || _rl_line= ;;
+  *)     exit 1 ;;
+esac
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */read-line) read_line "$@" ;; esac
+printf '%s' "$_rl_line"
