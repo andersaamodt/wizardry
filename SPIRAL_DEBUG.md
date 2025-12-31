@@ -210,24 +210,33 @@ NEW:
    - May span multiple PR sessions
 
 ### Files Converted So Far
-**Spells:**
-- [x] `spells/arcane/forall` - 73 lines → 30 lines (converted, tested)
 
-**Imps:**
-- [x] `spells/.imps/out/say` - 13 lines → 5 lines (converted, tested)
-- [x] `spells/.imps/out/die` - 18 lines → 11 lines (converted, tested)
-- [x] `spells/.imps/out/warn` - 13 lines → 6 lines (converted, tested)
-- [x] `spells/.imps/out/fail` - 14 lines → 7 lines (converted, tested)
-- [x] `spells/.imps/cond/has` - 23 lines → 18 lines (converted, tested)
+**Spells (2 of 189):**
+- [x] `spells/arcane/forall` - 73 → 30 lines (-59%)
+- [x] `spells/arcane/file-list` - 80 → 35 lines (-56%)
 
-**Remaining:**
-- [ ] 188 spells
-- [ ] 196 imps
-- [x] `spells/.imps/cond/has` - 23 lines → 18 lines (converted, tested)
+**Imps (8 of 201):**
+- [x] `spells/.imps/out/say` - 13 → 5 lines (-62%)
+- [x] `spells/.imps/out/die` - 18 → 11 lines (-39%)
+- [x] `spells/.imps/out/warn` - 13 → 6 lines (-54%)
+- [x] `spells/.imps/out/fail` - 14 → 7 lines (-50%)
+- [x] `spells/.imps/out/info` - 17 → 9 lines (-47%)
+- [x] `spells/.imps/cond/has` - 23 → 18 lines (-22%)
+- [x] `spells/.imps/cond/is` - 30 → 26 lines (-13%)
+- [x] `spells/.imps/cond/there` - 12 → 7 lines (-42%)
 
-**Remaining:**
-- [ ] 188 spells
-- [ ] 196 imps
+**Totals:**
+- **Converted:** 10 of 390 files (2.6%)
+- **Remaining:** 187 spells, 193 imps
+- **Average code reduction:** ~45%
+
+**Line Count Savings:**
+- Spells: 153 → 65 lines (58% reduction, 88 lines saved)
+- Imps: 163 → 103 lines (37% reduction, 60 lines saved)
+- **Total saved:** 148 lines across 10 files
+- **Projected total savings:** ~5,800 lines when complete!
+
+---
 
 ### Next Steps
 1. Start Phase 3: count files and remove castable pattern
