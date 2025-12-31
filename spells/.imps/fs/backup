@@ -3,24 +3,18 @@
 # Example: backup /etc/ssh/sshd_config | backup myfile .orig
 set -eu
 
-backup() {
-  _bk_file=${1:-}
-  _bk_suffix=${2:-.bak}
+_bk_file=${1:-}
+_bk_suffix=${2:-.bak}
 
-  if [ -z "$_bk_file" ]; then
-    printf '%s\n' "backup: file path required" >&2
-    return 1
-  fi
+if [ -z "$_bk_file" ]; then
+  printf '%s\n' "backup: file path required" >&2
+  exit 1
+fi
 
-  if [ ! -f "$_bk_file" ]; then
-    printf '%s\n' "backup: not a file: $_bk_file" >&2
-    return 1
-  fi
+if [ ! -f "$_bk_file" ]; then
+  printf '%s\n' "backup: not a file: $_bk_file" >&2
+  exit 1
+fi
 
-  cp "$_bk_file" "${_bk_file}${_bk_suffix}" || return 1
-  printf '%s\n' "${_bk_file}${_bk_suffix}"
-}
-
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */backup) backup "$@" ;; esac
+cp "$_bk_file" "${_bk_file}${_bk_suffix}" || exit 1
+printf '%s\n' "${_bk_file}${_bk_suffix}"

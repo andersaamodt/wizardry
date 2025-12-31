@@ -4,35 +4,29 @@
 # Example: find-executable /path/to/dir
 set -eu
 
-find_executable() {
-  _fe_dir=${1:-.}
-  
-  # Validate directory exists
-  if [ ! -d "$_fe_dir" ]; then
-    printf 'find-executable: directory not found: %s\n' "$_fe_dir" >&2
-    return 1
-  fi
-  
-  # Try different find syntaxes in order of preference
-  # 1. Try -perm +111 (BSD/macOS syntax)
-  # 2. Try -perm /111 (GNU/Linux syntax)
-  # 3. Fallback to manual test with -x
-  
-  # Test which syntax works by checking if it produces any output
-  if find "$_fe_dir" -type f -perm +111 2>/dev/null | head -1 | grep -q .; then
-    # BSD find works (macOS)
-    find "$_fe_dir" -type f -perm +111 2>/dev/null
-  elif find "$_fe_dir" -type f -perm /111 2>/dev/null | head -1 | grep -q .; then
-    # GNU find works (Linux)
-    find "$_fe_dir" -type f -perm /111 2>/dev/null
-  else
-    # Fallback: find all files and test each one
-    find "$_fe_dir" -type f 2>/dev/null | while IFS= read -r f; do
-      [ -x "$f" ] && printf '%s\n' "$f"
-    done
-  fi
-}
+_fe_dir=${1:-.}
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */find-executable) find_executable "$@" ;; esac
+# Validate directory exists
+if [ ! -d "$_fe_dir" ]; then
+  printf 'find-executable: directory not found: %s\n' "$_fe_dir" >&2
+  exit 1
+fi
+
+# Try different find syntaxes in order of preference
+# 1. Try -perm +111 (BSD/macOS syntax)
+# 2. Try -perm /111 (GNU/Linux syntax)
+# 3. Fallback to manual test with -x
+
+# Test which syntax works by checking if it produces any output
+if find "$_fe_dir" -type f -perm +111 2>/dev/null | head -1 | grep -q .; then
+  # BSD find works (macOS)
+  find "$_fe_dir" -type f -perm +111 2>/dev/null
+elif find "$_fe_dir" -type f -perm /111 2>/dev/null | head -1 | grep -q .; then
+  # GNU find works (Linux)
+  find "$_fe_dir" -type f -perm /111 2>/dev/null
+else
+  # Fallback: find all files and test each one
+  find "$_fe_dir" -type f 2>/dev/null | while IFS= read -r f; do
+    [ -x "$f" ] && printf '%s\n' "$f"
+  done
+fi

@@ -1,16 +1,1 @@
-#!/bin/sh
-# count-chars [STRING] - count bytes in string or stdin
-# Note: counts bytes, not Unicode characters. Example: n=$(count-chars "hello")
-set -eu
 
-count_chars() {
-  if [ "$#" -ge 1 ]; then
-    printf '%s' "$1" | wc -c | tr -d ' '
-  else
-    wc -c | tr -d ' '
-  fi
-}
-
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */count-chars) count_chars "$@" ;; esac

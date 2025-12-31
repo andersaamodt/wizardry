@@ -6,25 +6,18 @@
 # This is a simple early check - spells needing specific commands should use require-command
 set -eu
 
-require_wizardry() {
   # In test mode, assume wizardry is available (tests set up their own PATH)
   if [ "${WIZARDRY_TEST_HELPERS_ONLY:-}" = "1" ]; then
-    return 0
+    exit 0
   fi
   
   # Check if WIZARDRY_DIR is set and points to a valid wizardry installation
   # This is set by invoke-wizardry when sourced in shell startup
   if [ -n "${WIZARDRY_DIR-}" ] && [ -d "${WIZARDRY_DIR}/spells" ]; then
-    return 0
+    exit 0
   fi
   
   # Wizardry not available - fail elegantly
   printf 'Error: wizardry not available (WIZARDRY_DIR not set)\n' >&2
   printf 'Source invoke-wizardry in your shell startup or run ./install\n' >&2
-  return 1
-}
-
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */require-wizardry) require_wizardry "$@" ;; esac
-
+  exit 1

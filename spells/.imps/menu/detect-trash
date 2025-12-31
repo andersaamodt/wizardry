@@ -3,24 +3,18 @@
 # Returns the correct trash directory path for the current OS.
 # Example: cd "$(detect-trash)"
 
-detect_trash() {
-  _dt_kernel=$(uname -s 2>/dev/null || printf 'unknown')
+_dt_kernel=$(uname -s 2>/dev/null || printf 'unknown')
 
-  case "$_dt_kernel" in
-    Darwin)
-      printf '%s/.Trash\n' "$HOME"
-      ;;
-    Linux)
-      _dt_xdg_data="${XDG_DATA_HOME:-$HOME/.local/share}"
-      printf '%s/Trash/files\n' "$_dt_xdg_data"
-      ;;
-    *)
-      printf '%s\n' "detect-trash: unsupported operating system: $_dt_kernel" >&2
-      return 1
-      ;;
-  esac
-}
-
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */detect-trash) detect_trash "$@" ;; esac
+case "$_dt_kernel" in
+  Darwin)
+    printf '%s/.Trash\n' "$HOME"
+    ;;
+  Linux)
+    _dt_xdg_data="${XDG_DATA_HOME:-$HOME/.local/share}"
+    printf '%s/Trash/files\n' "$_dt_xdg_data"
+    ;;
+  *)
+    printf '%s\n' "detect-trash: unsupported operating system: $_dt_kernel" >&2
+    exit 1
+    ;;
+esac

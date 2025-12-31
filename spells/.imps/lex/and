@@ -3,28 +3,22 @@
 # Receives: $1=command, $2=command_args, $3+=remaining args
 # Example: parse echo hello and echo world
 
-and() {
-  _and_cmd=${1:-}
-  _and_cmd_args=${2:-}
-  shift 2 2>/dev/null || shift $#
+_and_cmd=${1:-}
+_and_cmd_args=${2:-}
+shift 2 2>/dev/null || shift $#
 
-  if [ -n "$_and_cmd" ]; then
-    # shellcheck disable=SC2086
-    if "$_and_cmd" $_and_cmd_args; then
-      : # success
-    else
-      return $?
-    fi
+if [ -n "$_and_cmd" ]; then
+  # shellcheck disable=SC2086
+  if "$_and_cmd" $_and_cmd_args; then
+    : # success
+  else
+    exit $?
   fi
+fi
 
-  if [ $# -eq 0 ]; then
-    return 0
-  fi
+if [ $# -eq 0 ]; then
+  exit 0
+fi
 
-  _and_lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-  "$_and_lex_dir/parse" "$@"
-}
-
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */and) and "$@" ;; esac
+_and_lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+"$_and_lex_dir/parse" "$@"

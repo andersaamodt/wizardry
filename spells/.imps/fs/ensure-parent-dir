@@ -4,15 +4,9 @@
 
 set -eu
 
-ensure_parent_dir() {
-  _epd_file=${1-}
-  _epd_dir=${_epd_file%/*}
-  
-  if [ "$_epd_dir" != "$_epd_file" ] && [ ! -d "$_epd_dir" ]; then
-    mkdir -p "$_epd_dir"
-  fi
-}
+_epd_file=${1-}
+_epd_dir=${_epd_file%/*}
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */ensure-parent-dir) ensure_parent_dir "$@" ;; esac
+if [ "$_epd_dir" != "$_epd_file" ] && [ ! -d "$_epd_dir" ]; then
+  mkdir -p "$_epd_dir"
+fi

@@ -4,50 +4,44 @@
 
 set -eu
 
-config_del() {
-  _cd_file=${1:?config-del: file path required}
-  _cd_key=${2:?config-del: key required}
-  
-  # Validate key format
-  case "$_cd_key" in
-    *[!a-zA-Z0-9_-]*)
-      printf 'config-del: invalid key format (use alphanumeric, dash, underscore only)\n' >&2
-      return 1
-      ;;
-    "")
-      printf 'config-del: key cannot be empty\n' >&2
-      return 1
-      ;;
-  esac
-  
-  # File doesn't exist - nothing to delete
-  [ -f "$_cd_file" ] || return 0
-  
-  # Create temp file for atomic operation
-  # Ensure temp dir exists
-  _cd_tmpdir="${TMPDIR:-/tmp}"
-  if [ ! -d "$_cd_tmpdir" ]; then
-    _cd_dir=$(dirname "$_cd_file")
-    mkdir -p "$_cd_tmpdir" 2>/dev/null || _cd_tmpdir="${_cd_dir}"
-  fi
-  _cd_tmp=$(mktemp "$_cd_tmpdir/config-del.XXXXXX") || return 1
-  trap 'rm -f "$_cd_tmp"' EXIT HUP INT TERM
-  
-  # Copy all lines except the key we're deleting
-  awk -F= -v key="$_cd_key" '$1 != key' "$_cd_file" > "$_cd_tmp"
-  
-  # Atomic move
-  if ! mv "$_cd_tmp" "$_cd_file"; then
-    rm -f "$_cd_tmp"
-    trap - EXIT HUP INT TERM
-    printf 'config-del: failed to update %s\n' "$_cd_file" >&2
-    return 1
-  fi
-  
-  trap - EXIT HUP INT TERM
-  return 0
-}
+_cd_file=${1:?config-del: file path required}
+_cd_key=${2:?config-del: key required}
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */config-del) config_del "$@" ;; esac
+# Validate key format
+case "$_cd_key" in
+  *[!a-zA-Z0-9_-]*)
+    printf 'config-del: invalid key format (use alphanumeric, dash, underscore only)\n' >&2
+    exit 1
+    ;;
+  "")
+    printf 'config-del: key cannot be empty\n' >&2
+    exit 1
+    ;;
+esac
+
+# File doesn't exist - nothing to delete
+[ -f "$_cd_file" ] || exit 0
+
+# Create temp file for atomic operation
+# Ensure temp dir exists
+_cd_tmpdir="${TMPDIR:-/tmp}"
+if [ ! -d "$_cd_tmpdir" ]; then
+  _cd_dir=$(dirname "$_cd_file")
+  mkdir -p "$_cd_tmpdir" 2>/dev/null || _cd_tmpdir="${_cd_dir}"
+fi
+_cd_tmp=$(mktemp "$_cd_tmpdir/config-del.XXXXXX") || exit 1
+trap 'rm -f "$_cd_tmp"' EXIT HUP INT TERM
+
+# Copy all lines except the key we're deleting
+awk -F= -v key="$_cd_key" '$1 != key' "$_cd_file" > "$_cd_tmp"
+
+# Atomic move
+if ! mv "$_cd_tmp" "$_cd_file"; then
+  rm -f "$_cd_tmp"
+  trap - EXIT HUP INT TERM
+  printf 'config-del: failed to update %s\n' "$_cd_file" >&2
+  exit 1
+fi
+
+trap - EXIT HUP INT TERM
+exit 0

@@ -3,10 +3,4 @@
 # Example: skip 1 file.txt | process   # skip header
 set -eu
 
-skip() {
-  if [ "$#" -ge 2 ]; then tail -n +"$(($1 + 1))" "$2"; else tail -n +"$(($1 + 1))"; fi
-}
-
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */skip) skip "$@" ;; esac
+if [ "$#" -ge 2 ]; then tail -n +"$(($1 + 1))" "$2"; else tail -n +"$(($1 + 1))"; fi

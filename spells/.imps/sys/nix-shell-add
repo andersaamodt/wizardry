@@ -4,19 +4,18 @@
 # SHELL defaults to 'bash'; valid values: bash, zsh
 set -eu
 
-nix_shell_add() {
   _nsa_block_name=${1:-}
   _nsa_nix_file=${2:-}
   _nsa_shell_type=${3:-bash}
 
   if [ -z "$_nsa_block_name" ] || [ -z "$_nsa_nix_file" ]; then
     printf '%s\n' "nix-shell-add: NAME and FILE are required" >&2
-    return 1
+    exit 1
   fi
 
   case $_nsa_shell_type in
     bash|zsh) : ;;
-    *) printf '%s\n' "nix-shell-add: shell must be 'bash' or 'zsh'" >&2; return 1 ;;
+    *) printf '%s\n' "nix-shell-add: shell must be 'bash' or 'zsh'" >&2; exit 1 ;;
   esac
 
   _nsa_is_system_config=0
@@ -47,7 +46,7 @@ nix_shell_add() {
   fi
   
   if [ "$has_marker" = "yes" ]; then
-    return 0
+    exit 0
   fi
   _nsa_shell_code=""
   while IFS= read -r _nsa_line || [ -n "$_nsa_line" ]; do
@@ -57,7 +56,7 @@ $_nsa_line"; fi
   done
   if [ -z "$_nsa_shell_code" ]; then
     printf '%s\n' "nix-shell-add: no shell code provided on stdin" >&2
-    return 1
+    exit 1
   fi
   _nsa_escaped_code=$(printf '%s' "$_nsa_shell_code" | sed "s/''/'''/g; s/\\\${/''\${/g")
   _nsa_marked_code=$(printf '%s' "$_nsa_escaped_code" | sed "s/$/ $_nsa_marker/")
@@ -66,7 +65,7 @@ $_nsa_line"; fi
     [ "$_nsa_dir" != "$_nsa_nix_file" ] && [ ! -d "$_nsa_dir" ] && mkdir -p "$_nsa_dir"
     printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$_nsa_nix_file"
   fi
-  _nsa_tmp_file=$(mktemp "${TMPDIR:-/tmp}/nix-shell-add.XXXXXX") || return 1
+  _nsa_tmp_file=$(mktemp "${TMPDIR:-/tmp}/nix-shell-add.XXXXXX") || exit 1
   # Read file content inline
   if [ "$_nsa_needs_sudo" -eq 1 ]; then
     if command -v sudo >/dev/null 2>&1; then _nsa_content=$(sudo cat "$_nsa_nix_file")
@@ -75,7 +74,7 @@ $_nsa_line"; fi
   else _nsa_content=$(cat "$_nsa_nix_file"); fi
   
   if printf '%s\n' "$_nsa_content" | grep -q "$_nsa_nix_option[[:space:]]*="; then
-    _nsa_input_file=$(mktemp "${TMPDIR:-/tmp}/nix-shell-add-input.XXXXXX") || return 1
+    _nsa_input_file=$(mktemp "${TMPDIR:-/tmp}/nix-shell-add-input.XXXXXX") || exit 1
     printf '%s\n' "$_nsa_content" > "$_nsa_input_file"
     _nsa_in_block=0
     while IFS= read -r _nsa_line; do
@@ -102,7 +101,7 @@ $_nsa_line"; fi
     rm -f "$_nsa_input_file"
   else
     # Write the block to a temp file and use it with awk (macOS awk compatible)
-    _nsa_block_file=$(mktemp "${TMPDIR:-/tmp}/nix-shell-add-block.XXXXXX") || return 1
+    _nsa_block_file=$(mktemp "${TMPDIR:-/tmp}/nix-shell-add-block.XXXXXX") || exit 1
     printf '%s\n' "  $_nsa_nix_option = ''" > "$_nsa_block_file"
     printf '%s\n' "$_nsa_marked_code" >> "$_nsa_block_file"
     printf '%s\n' "  '';" >> "$_nsa_block_file"
@@ -125,9 +124,4 @@ $_nsa_line"; fi
     else cp "$_nsa_tmp_file" "$_nsa_nix_file"; fi
   else mv "$_nsa_tmp_file" "$_nsa_nix_file"; fi
   rm -f "$_nsa_tmp_file"
-  return 0
-}
-
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */nix-shell-add) nix_shell_add "$@" ;; esac
+  exit 0

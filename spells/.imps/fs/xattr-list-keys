@@ -4,53 +4,46 @@
 # Returns 0 if keys found, 1 if no attributes or all helpers failed
 set -eu
 
-xattr_list_keys() {
-  file=$1
-  
-  # Try xattr first (macOS)
-  if xattr-helper-usable xattr; then
-    if keys=$(xattr "$file" 2>/dev/null); then
-      if [ -n "$keys" ]; then
-        printf '%s\n' "$keys"
-        return 0
-      fi
-    fi
-  fi
-  
-  # Try attr (Linux)
-  if xattr-helper-usable attr; then
-    if keys=$(attr -l "$file" 2>/dev/null); then
-      # Parse attr -l output which may be in format:
-      # Attribute "key" has a value...
-      # or just: key
-      # Use simpler sed/awk to avoid GNU awk extensions
-      parsed=$(printf '%s\n' "$keys" | sed -n 's/^Attribute "\([^"]*\)".*/\1/p')
-      if [ -z "$parsed" ]; then
-        # Try plain format (just key names)
-        parsed=$(printf '%s\n' "$keys" | awk 'NF {print}')
-      fi
-      if [ -n "$parsed" ]; then
-        printf '%s\n' "$parsed"
-        return 0
-      fi
-    fi
-  fi
-  
-  # Try getfattr (Linux)
-  if xattr-helper-usable getfattr; then
-    if keys=$(getfattr -d "$file" 2>/dev/null); then
-      parsed=$(printf '%s' "$keys" | awk -F '=' '/^# / {next} {print $1}')
-      if [ -n "$parsed" ]; then
-        printf '%s' "$parsed"
-        return 0
-      fi
-    fi
-  fi
-  
-  return 1
-}
+file=$1
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */xattr-list-keys) xattr_list_keys "$@" ;;
-esac
+# Try xattr first (macOS)
+if xattr-helper-usable xattr; then
+  if keys=$(xattr "$file" 2>/dev/null); then
+    if [ -n "$keys" ]; then
+      printf '%s\n' "$keys"
+      exit 0
+    fi
+  fi
+fi
+
+# Try attr (Linux)
+if xattr-helper-usable attr; then
+  if keys=$(attr -l "$file" 2>/dev/null); then
+    # Parse attr -l output which may be in format:
+    # Attribute "key" has a value...
+    # or just: key
+    # Use simpler sed/awk to avoid GNU awk extensions
+    parsed=$(printf '%s\n' "$keys" | sed -n 's/^Attribute "\([^"]*\)".*/\1/p')
+    if [ -z "$parsed" ]; then
+      # Try plain format (just key names)
+      parsed=$(printf '%s\n' "$keys" | awk 'NF {print}')
+    fi
+    if [ -n "$parsed" ]; then
+      printf '%s\n' "$parsed"
+      exit 0
+    fi
+  fi
+fi
+
+# Try getfattr (Linux)
+if xattr-helper-usable getfattr; then
+  if keys=$(getfattr -d "$file" 2>/dev/null); then
+    parsed=$(printf '%s' "$keys" | awk -F '=' '/^# / {next} {print $1}')
+    if [ -n "$parsed" ]; then
+      printf '%s' "$parsed"
+      exit 0
+    fi
+  fi
+fi
+
+exit 1

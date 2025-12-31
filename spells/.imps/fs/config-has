@@ -4,29 +4,23 @@
 
 set -eu
 
-config_has() {
-  _ch_file=${1:?config-has: file path required}
-  _ch_key=${2:?config-has: key required}
-  
-  # Validate key format
-  case "$_ch_key" in
-    *[!a-zA-Z0-9_-]*)
-      printf 'config-has: invalid key format (use alphanumeric, dash, underscore only)\n' >&2
-      return 1
-      ;;
-    "")
-      printf 'config-has: key cannot be empty\n' >&2
-      return 1
-      ;;
-  esac
-  
-  # File doesn't exist - key doesn't exist
-  [ -f "$_ch_file" ] || return 1
-  
-  # Check if key exists using awk
-  awk -F= -v key="$_ch_key" '$1 == key { found=1; exit } END { exit !found }' "$_ch_file"
-}
+_ch_file=${1:?config-has: file path required}
+_ch_key=${2:?config-has: key required}
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */config-has) config_has "$@" ;; esac
+# Validate key format
+case "$_ch_key" in
+  *[!a-zA-Z0-9_-]*)
+    printf 'config-has: invalid key format (use alphanumeric, dash, underscore only)\n' >&2
+    exit 1
+    ;;
+  "")
+    printf 'config-has: key cannot be empty\n' >&2
+    exit 1
+    ;;
+esac
+
+# File doesn't exist - key doesn't exist
+[ -f "$_ch_file" ] || exit 1
+
+# Check if key exists using awk
+awk -F= -v key="$_ch_key" '$1 == key { found=1; exit } END { exit !found }' "$_ch_file"

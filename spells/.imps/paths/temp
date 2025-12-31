@@ -3,11 +3,5 @@
 # Example: f=$(temp myapp) && echo "content" > "$f"
 set -eu
 
-temp() {
-  _temp_prefix=${1:-wizardry}
-  mktemp "${TMPDIR:-/tmp}/${_temp_prefix}.XXXXXX"
-}
-
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */temp) temp "$@" ;; esac
+_temp_prefix=${1:-wizardry}
+mktemp "${TMPDIR:-/tmp}/${_temp_prefix}.XXXXXX"

@@ -3,10 +3,4 @@
 # Example: content=$(read-file config.txt)
 set -eu
 
-read_file() {
-  cat "$1"
-}
-
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */read-file) read_file "$@" ;; esac
+cat "$1"

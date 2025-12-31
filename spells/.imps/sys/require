@@ -4,46 +4,40 @@
 # Example: require menu "The menu command is needed"
 set -eu
 
-require() {
-  _req_tool=$1
-  shift
+_req_tool=$1
+shift
 
-  if [ -n "${REQUIRE_COMMAND-}" ]; then
-    _req_cmd=$REQUIRE_COMMAND
-  elif command -v require-command >/dev/null 2>&1; then
-    _req_cmd=require-command
-  elif command -v require_command >/dev/null 2>&1; then
-    _req_cmd=require_command
-  else
-    _req_cmd=""
-  fi
+if [ -n "${REQUIRE_COMMAND-}" ]; then
+  _req_cmd=$REQUIRE_COMMAND
+elif command -v require-command >/dev/null 2>&1; then
+  _req_cmd=require-command
+elif command -v require_command >/dev/null 2>&1; then
+  _req_cmd=require_command
+else
+  _req_cmd=""
+fi
 
-  if [ -n "$_req_cmd" ]; then
-    "$_req_cmd" "$_req_tool" "$@"
-    return $?
-  fi
+if [ -n "$_req_cmd" ]; then
+  "$_req_cmd" "$_req_tool" "$@"
+  exit $?
+fi
 
-  if command -v "$_req_tool" >/dev/null 2>&1; then
-    return 0
-  fi
-  case $_req_tool in
-    *-*)
-      _req_alt=$(printf '%s' "$_req_tool" | tr '-' '_')
-      if command -v "$_req_alt" >/dev/null 2>&1; then
-        return 0
-      fi
-      ;;
-  esac
+if command -v "$_req_tool" >/dev/null 2>&1; then
+  exit 0
+fi
+case $_req_tool in
+  *-*)
+    _req_alt=$(printf '%s' "$_req_tool" | tr '-' '_')
+    if command -v "$_req_alt" >/dev/null 2>&1; then
+      exit 0
+    fi
+    ;;
+esac
 
-  if [ "$#" -gt 0 ]; then
-    printf '%s\n' "$*" >&2
-  else
-    printf '%s\n' "require: missing required command '$_req_tool'" >&2
-  fi
-  printf '%s\n' "Visit 'install-menu' to review installation options." >&2
-  return 1
-}
-
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */require) require "$@" ;; esac
+if [ "$#" -gt 0 ]; then
+  printf '%s\n' "$*" >&2
+else
+  printf '%s\n' "require: missing required command '$_req_tool'" >&2
+fi
+printf '%s\n' "Visit 'install-menu' to review installation options." >&2
+exit 1

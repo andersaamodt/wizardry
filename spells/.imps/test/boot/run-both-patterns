@@ -4,7 +4,6 @@
 # Set WIZARDRY_TEST_BOTH_PATTERNS=1 to also test source-then-invoke pattern.
 # The castable/uncastable imps guarantee parity between patterns.
 
-run_both_patterns() {
   set -eu
   
   _desc=$1
@@ -49,9 +48,3 @@ run_both_patterns() {
     # Default: just run the test once (direct execution for castable, sourced for uncastable)
     run_test_case "$_desc" "$_func"
   fi
-}
-
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */run-both-patterns) run_both_patterns "$@" ;;
-esac

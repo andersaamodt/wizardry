@@ -8,15 +8,14 @@
 # Example: CASTABLE_FUNC=erase_spell castable "$@"
 set -eu
 
-castable() {
   # Skip execution if being sourced by word-of-binding during spell loading
   if [ "${_WIZARDRY_LOADING_SPELLS-}" = "1" ]; then
-    return 0
+    exit 0
   fi
   
   # Skip execution if being sourced by another spell (legacy check)
   if [ "${_WIZARDRY_SOURCING_SPELL-}" = "1" ]; then
-    return 0
+    exit 0
   fi
   
   # First check if we're being sourced (not executed)
@@ -31,14 +30,14 @@ castable() {
   case "$0" in
     sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
       # Being sourced - don't execute, just return
-      return 0
+      exit 0
       ;;
     */"$_cast_name"|"$_cast_name")
       # Being executed directly - proceed with execution
       ;;
     *)
       # $0 doesn't match spell name - being sourced from another script
-      return 0
+      exit 0
       ;;
   esac
   
@@ -62,9 +61,8 @@ castable() {
   fi
   if [ -z "$_cast_func" ]; then
     printf '%s\n' "castable: unable to detect function name" >&2
-    return 2
+    exit 2
   fi
 
   # Call the spell function
   "$_cast_func" "$@"
-}

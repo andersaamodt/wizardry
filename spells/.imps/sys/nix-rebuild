@@ -4,9 +4,8 @@
 # Set WIZARDRY_SKIP_NIX_REBUILD=1 to skip without error.
 set -eu
 
-nix_rebuild() {
   if [ "${WIZARDRY_SKIP_NIX_REBUILD-}" = "1" ]; then
-    return 0
+    exit 0
   fi
 
   _nr_rebuild_success=0
@@ -47,12 +46,7 @@ nix_rebuild() {
 
   if [ "$_nr_rebuild_success" -eq 0 ]; then
     printf '%s\n' "nix-rebuild: NixOS configuration could not be automatically rebuilt." >&2
-    return 1
+    exit 1
   fi
 
-  return 0
-}
-
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */nix-rebuild) nix_rebuild "$@" ;; esac
+  exit 0
