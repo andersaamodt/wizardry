@@ -210,9 +210,24 @@ NEW:
    - May span multiple PR sessions
 
 ### Files Converted So Far
+**Spells:**
 - [x] `spells/arcane/forall` - 73 lines → 30 lines (converted, tested)
-- [ ] 188 spells remaining
-- [ ] 201 imps remaining
+
+**Imps:**
+- [x] `spells/.imps/out/say` - 13 lines → 5 lines (converted, tested)
+- [x] `spells/.imps/out/die` - 18 lines → 11 lines (converted, tested)
+- [x] `spells/.imps/out/warn` - 13 lines → 6 lines (converted, tested)
+- [x] `spells/.imps/out/fail` - 14 lines → 7 lines (converted, tested)
+- [x] `spells/.imps/cond/has` - 23 lines → 18 lines (converted, tested)
+
+**Remaining:**
+- [ ] 188 spells
+- [ ] 196 imps
+- [x] `spells/.imps/cond/has` - 23 lines → 18 lines (converted, tested)
+
+**Remaining:**
+- [ ] 188 spells
+- [ ] 196 imps
 
 ### Next Steps
 1. Start Phase 3: count files and remove castable pattern
