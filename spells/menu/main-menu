@@ -26,6 +26,10 @@ esac
 set -eu
 env_clear
 
+# Load menu imps as functions to avoid parse loops
+word_of_binding "exit-label"
+word_of_binding "mud-config" 2>/dev/null || true
+
 # Load color palette (colors handles terminal capability detection internally).
 # When colors is preloaded as a function, call it directly; otherwise source the file.
 if has colors; then
@@ -44,9 +48,9 @@ fi
 
 # Check if MUD is enabled in config
 is_mud_enabled() {
-  # Check if mud-config exists and mud-enabled is set to 1
-  if has mud-config; then
-    value=$(mud-config get mud-enabled 2>/dev/null) || return 1
+  # Check if mud_config exists and mud-enabled is set to 1
+  if command -v mud_config >/dev/null 2>&1; then
+    value=$(mud_config get mud-enabled 2>/dev/null) || return 1
     [ "$value" = "1" ]
   else
     return 1
@@ -58,8 +62,8 @@ main_menu_display_menu() {
   spellbook="Spellbook%spellbook"
   install="Arcana%install-menu"
   system="Computer%system-menu"
-  exit_label=$(exit-label)
-  exit_item="${exit_label}%kill -TERM \$PPID"
+  exit_label_text=$(exit_label)
+  exit_item="${exit_label_text}%kill -TERM \$PPID"
 
   # Only show MUD menu if enabled in config
   if is_mud_enabled; then
