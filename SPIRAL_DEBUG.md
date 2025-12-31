@@ -46,32 +46,53 @@
 
 ### What Changes
 📝 **SIMPLIFY:**
-- Spells: unwrap functions, inline usage text
+- Spells: unwrap functions, inline usage text at standard location
 - Imps: remove function wrappers, keep as simple scripts
-- PATH: use original `path-wizard` for PATH management
+- PATH: use original `path-wizard` (renamed to `learn-spellbook`)
 - Synonyms: generate aliases not glosses
 - Function count: most spells go from 2 functions → 0 functions
 
-### Restored Infrastructure: `path-wizard`
-✅ **Restored:** `spells/path-wizard` (original version from commit 8ff484c0)
+### 💡 CRITICAL INSIGHT: Standard Element Order = Robust Help
 
-The original path-wizard utility that worked well before word-of-binding:
-- Simple add/remove interface: `path-wizard add <directory>`
-- Modifies `.bashrc` file directly
-- Works across all tested platforms
+**Standard order matters for a critical reason:**
+
+1. Shebang (`#!/bin/sh`)
+2. Opening comment (brief)
+3. **Usage block (inline heredoc - user-facing docs)**
+4. **`--help` handler (BEFORE `set -eu`!)**
+5. `set -eu` strict mode
+6. Main logic
+
+**Why `--help` before `set -eu`?**
+- ✅ Help works even if wizardry is NOT installed
+- ✅ Help works even if dependencies are MISSING
+- ✅ Help works even if something goes WRONG
+- ✅ Users can ALWAYS get help without errors
+
+This is a **huge robustness improvement** - users never get cryptic errors when trying to get help!
+
+### Restored Infrastructure: `learn-spellbook` (renamed from path-wizard)
+✅ **Restored:** `spells/learn-spellbook` (original version from pre-PR #410, enhanced)
+
+**Better naming:** "learn spellbooks to cast from them" fits the wizardry metaphor!
+
+The original path-wizard utility (now learn-spellbook) that worked well before word-of-binding:
+- Simple add/remove interface: `learn-spellbook add <directory>`
+- Modifies shell init files (`.bashrc`, `.bash_profile`, `.profile` fallback for NixOS)
+- Works across all tested platforms (Linux, macOS, NixOS, BSD)
 - No complex generation or multi-mode operation
 - Direct PATH manipulation that users can understand
 
 **Usage:**
 ```sh
-# Add a directory to PATH:
-path-wizard add /some/directory
+# Learn a spellbook (add directory to PATH):
+learn-spellbook add /some/directory
 
-# Remove a directory from PATH:
-path-wizard remove /some/directory
+# Unlearn a spellbook (remove from PATH):
+learn-spellbook remove /some/directory
 
-# Add current directory:
-path-wizard add
+# Learn current directory:
+learn-spellbook add
 ```
 
 This restores the proven, simple PATH management that worked well before the paradigm shift.

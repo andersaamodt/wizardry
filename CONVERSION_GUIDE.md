@@ -72,45 +72,70 @@ fi
 castable "$@"
 ```
 
-**AFTER (flat-file paradigm):**
+**AFTER (flat-file paradigm - UPDATED PATTERN WITH 0 FUNCTIONS):**
 ```sh
 #!/bin/sh
-# Description
 
-show_usage() {
-  cat <<'USAGE'
+# Brief opening comment (for code readers)
+
+# Usage block - ALWAYS at the top, BEFORE --help handler
+# This is user-facing documentation that expands on the opening comment
+cat <<'USAGE'
 Usage: spell-name [options]
-Description text.
-USAGE
-}
 
+Detailed description text with examples.
+USAGE
+
+# Help handler - BEFORE set -eu and require-wizardry
+# This ensures --help works even if wizardry not installed!
 case "${1-}" in
 --help|--usage|-h)
-  show_usage
+  cat <<'USAGE'
+Usage: spell-name [options]
+
+Detailed description text with examples.
+USAGE
   exit 0
   ;;
 esac
 
+# Strict mode - AFTER help handler
 set -eu
 
-# Main logic here (unwrapped, direct execution)
+# Main logic here (no wrappers, no functions!)
 ```
 
+#### Standard Element Order (CRITICAL):
+
+1. **Shebang** (`#!/bin/sh`)
+2. **Opening comment** (brief, for code readers)
+3. **Usage block** (detailed, user-facing docs - inline heredoc)
+4. **`--help` handler** (BEFORE `set -eu`)
+5. **`set -eu`** strict mode
+6. **Main logic** (direct execution, no wrappers)
+
+**Why this order matters:**
+- `--help` runs BEFORE `set -eu`, `require-wizardry`, etc.
+- Help works even if wizardry is not installed
+- Help works even if dependencies are missing
+- Help works even if something goes wrong
+- Users can ALWAYS get help without errors
+- Standard location = easy to find = testable via common test
+
 #### Key Changes:
-1. Rename `spell_name_usage()` → `show_usage()`
-2. Move help handler before `set -eu`
-3. Change `return 0` → `exit 0` in help handler
-4. Remove `spell_name()` wrapper function
-5. Remove `require_wizardry || return 1`
-6. Remove `env_clear` or `env-clear`
-7. Remove entire castable loading block
-8. Change all `return N` → `exit N` in main flow
-9. Simplify imp usage where possible:
-   - `say "text"` → `printf '%s\n' "text"`
-   - `die "error"` → `printf 'error\n' >&2; exit 1`
+1. **REMOVED** `spell_name_usage()` function (was 1 function)
+2. **REMOVED** `spell_name()` wrapper function (was 1 function)
+3. **ADDED** inline usage block at top (after opening comment)
+4. **Result:** 0 functions instead of 2!
+5. Move help handler before `set -eu` (CRITICAL for robustness)
+6. Change `return 0` → `exit 0` in help handler
+7. Remove `require_wizardry || return 1`
+8. Remove `env_clear` or `env-clear`
+9. Remove entire castable loading block (~30 lines)
+10. Change all `return N` → `exit N` in main flow
 
 #### Conversion Checklist Per Spell:
-- [ ] Rename usage function to `show_usage`
+- [ ] Remove usage function, add inline usage block at top
 - [ ] Move help handler before `set -eu`
 - [ ] Change help handler to use `exit` not `return`
 - [ ] Remove wrapper function
