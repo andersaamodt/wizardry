@@ -1,57 +1,95 @@
-# Wizardry Bootstrapping - AI Agent Reference
+# Wizardry Bootstrapping - AI Agent Quick Reference
 
-## Core Concept: Execution Sequence
-
-Wizardry has a specific execution order that determines which scripts can use wizardry features:
+## Execution Sequence (The Golden Rule)
 
 ```
-1. install (self-contained)
-   ↓ downloads wizardry
-2. invoke-wizardry (sourced at shell startup)
-   ↓ loads imps and spells
-3. require-wizardry (checks if step 2 succeeded)
-   ↓ used by regular spells
-4. banish (validates spell levels)
+install (self-contained) 
+  → invoke-wizardry (sources imps/spells) 
+    → Regular spells (can use wizardry)
 ```
 
-**Key rule**: Scripts in steps 1-2 CANNOT use wizardry. Scripts in steps 3-4 CAN use wizardry.
+**Scripts BEFORE invoke-wizardry:** Cannot use wizardry (self-contained)  
+**Scripts AFTER invoke-wizardry:** Can use wizardry (require_wizardry, env_clear, etc.)
 
 ---
 
-## Critical Placement Rules
+## CRITICAL: Function Naming (Parse Loop Prevention)
 
-### 1. Castable Spells (99% of spells)
+### Inside Code: Use UNDERSCORE Names
 
-**Correct sequence:**
+```sh
+# ✅ CORRECT - Direct function calls
+require_wizardry || return 1
+env_clear
+temp_file "name"
+cursor_blink on
+
+# ❌ WRONG - Goes through glosses → parse → LOOP
+require-wizardry  # Creates parse loop!
+env-clear         # Creates parse loop!
+temp-file "name"  # Creates parse loop!
+```
+
+**Why:** Hyphenated names execute as glosses (`exec parse "cmd" "$@"`). On macOS this creates visible "parse parse parse..." in terminal title and causes hangs.
+
+### When to Use Each
+
+| Context | Use | Why |
+|---------|-----|-----|
+| Inside spells/imps | `cursor_blink` (underscore) | Direct function call |
+| User terminal | `cursor-blink` (hyphenated via gloss) | User-facing command |
+| Help text | `cursor-blink` (hyphenated) | Describes user command |
+
+### Never Use Fallback Pattern
+
+```sh
+# ❌ WRONG - Fallback creates loops
+if command -v temp_file >/dev/null 2>&1; then
+  temp_file "$@"
+else
+  temp-file "$@"  # Goes through parse!
+fi
+
+# ✅ CORRECT - Direct call only
+temp_file "$@"  # Guaranteed by invoke-wizardry
+```
+
+---
+
+## Spell Templates
+
+### Castable Spell (99% of spells)
+
 ```sh
 #!/bin/sh
 
 spell_name() {
   case "${1-}" in --help) usage; return 0 ;; esac
+  require_wizardry || return 1  # Underscore!
+  set -eu
+  env_clear                      # Underscore!
   
-  require-wizardry || return 1  # ← FIRST: check wizardry available
-  set -eu                        # ← SECOND: enable strict mode
-  env-clear                      # ← THIRD: clear environment
-  
-  # Spell logic here
+  # All calls use underscores
+  temp_file "data"               # NOT temp-file
+  cursor_blink on                # NOT cursor-blink
 }
 
-castable "$@"  # ← LAST: self-execute
+castable "$@"
 ```
 
-**Why this order?**
-- `require-wizardry` before `set -eu`: Checks can fail gracefully with `|| return 1`
-- `set -eu` inside function: Castable loading runs in permissive mode (WIZARDRY_DIR may be unset)
-- `env-clear` after `set -eu`: Needs strict mode for safety
-- `castable` at end: Self-executes only when run directly (not sourced)
-- Use `return` (not `exit`): Allows safe sourcing without killing shell
+**Order matters:**
+1. Help handler (uses `return`)
+2. `require_wizardry` BEFORE `set -eu` (underscore name!)
+3. `set -eu` inside function
+4. `env_clear` AFTER `set -eu` (underscore name!)
+5. `castable` at end
+6. Use `return` (not `exit`) to allow sourcing
 
-### 2. Imps (Action)
+### Action Imp
 
-**Correct sequence:**
 ```sh
 #!/bin/sh
-set -eu  # ← TOP of file (imps are simple, always strict)
+set -eu  # At top of file
 
 _imp_name() {
   # Implementation
@@ -60,238 +98,83 @@ _imp_name() {
 case "$0" in */imp-name) _imp_name "$@" ;; esac
 ```
 
-**Critical: ONE `set -eu` per file!** Never duplicate before case statement.
+**ONE `set -eu` only!** Never duplicate before case statement.
 
-### 3. Imps (Conditional - for if/while conditions)
+### Conditional Imp
 
-**Correct sequence:**
 ```sh
 #!/bin/sh
-# NO set -eu for conditional imps
+# NO set -eu
 
 _imp_name() {
-  [ "$1" = "expected" ]  # Returns 0/1 for flow control
+  [ "$1" = "expected" ]  # Returns 0/1
 }
 
 case "$0" in */imp-name) _imp_name "$@" ;; esac
 ```
 
-**Why no `set -eu`?** These return exit codes for `if`/`&&`/`||` chains.
-
-### 4. Self-Contained Scripts (install, detect-*)
-
-**Correct sequence:**
-```sh
-#!/bin/sh
-
-# PATH setup BEFORE set -eu (may use unset variables)
-baseline_path="/usr/local/bin:/usr/bin:/bin"
-case ":${PATH-}:" in
-  *":/bin:"*) ;;
-  *) PATH="${baseline_path}${PATH:+:}${PATH-}" ;;
-esac
-export PATH
-
-set -eu  # ← AFTER PATH setup
-
-# Self-contained logic (NO wizardry imps/spells)
-```
-
-### 5. Uncastable Spells (must be sourced, like `colors`)
-
-**Correct sequence:**
-```sh
-#!/bin/sh
-
-case "${1-}" in --help) usage; exit 0 ;; esac  # ← Top-level exit OK
-
-uncastable  # ← BEFORE require-wizardry
-
-require-wizardry || exit 1  # ← Top-level exit OK
-
-spell_name() {
-  case "${1-}" in --help) usage; return 0 ;; esac  # ← Function return
-  
-  set -eu  # ← INSIDE function
-  env-clear
-  
-  # Main logic
-}
-```
+No strict mode for exit-code-based flow control.
 
 ---
 
 ## Component Relationships
 
-| Component | Runs When | Can Use Wizardry? | Uses |
-|-----------|-----------|-------------------|------|
-| `install` | Phase 1-2 | ❌ No | Self-contained |
-| `detect-posix` | Phase 0 | ❌ No | Self-contained |
-| `invoke-wizardry` | Phase 3 (shell startup) | ❌ No (but loads wizardry) | Sources imps/spells |
-| `require-wizardry` | Inside spells (Phase 3+) | ✅ Yes (is wizardry) | Checks WIZARDRY_DIR |
-| `env-clear` | Inside spells (Phase 3+) | ✅ Yes (is wizardry) | Clears environment |
-| `banish` | Phase 4 (validation) | ✅ Yes | Validates spell levels |
-| Regular spells | Phase 3+ | ✅ Yes | require-wizardry, env-clear |
-
-**Key insight:** `invoke-wizardry` is the dividing line. Scripts before it cannot use wizardry. Scripts after it can.
+| Component | Phase | Can Use Wizardry | Dependencies |
+|-----------|-------|------------------|--------------|
+| `install` | 1-2 | ❌ No | Self-contained |
+| `invoke-wizardry` | 3 | ❌ No | Loads wizardry |
+| `require-wizardry` | 3+ | ✅ Yes | Checks WIZARDRY_DIR |
+| `env-clear` | 3+ | ✅ Yes | Clears environment |
+| Regular spells | 3+ | ✅ Yes | require_wizardry, env_clear |
 
 ---
 
-## Why env-clear?
+## Common Mistakes
 
-**Purpose**: Prevents environment variable pollution between spells
-
-**What it does:**
-- Clears all environment variables
-- Preserves wizardry globals (WIZARDRY_DIR, SPELLBOOK_DIR, etc.)
-- Preserves system essentials (PATH, HOME, TERM, etc.)
-- Preserves test infrastructure (WIZARDRY_TEST_HELPERS_ONLY, etc.)
-
-**Placement:** MUST be sourced AFTER `set -eu` inside spell function
-
----
-
-## The Five Phases
-
-```
-Phase 0: POSIX Foundation     → detect-posix validates
-Phase 1: Download & Install   → ./install runs (self-contained)
-Phase 2: Shell Integration    → install modifies rc file
-Phase 3: Runtime Invocation   → invoke-wizardry sources at startup
-Phase 4: Validation          → banish validates spell levels
-```
-
-**Phase 0-2:** Self-contained scripts (no wizardry)
-**Phase 3-4:** Wizardry-dependent scripts (use require-wizardry)
+| Mistake | Fix |
+|---------|-----|
+| `require-wizardry` in spell | Use `require_wizardry` |
+| `env-clear` in spell | Use `env_clear` |
+| `temp-file` in spell | Use `temp_file` |
+| Duplicate `set -eu` in imp | ONE at top only |
+| `set -eu` before castable loading | Put inside function |
+| Fallback to hyphenated gloss | Never fallback |
+| `exit` in spell function | Use `return` |
 
 ---
 
-## Decision Tree
+## Castable Variable Bug
 
-```
-Writing a script?
-│
-├─ Runs BEFORE invoke-wizardry (Phase 0-2)?
-│  ├─ Yes → Self-contained script
-│  │       - NO require-wizardry
-│  │       - NO env-clear
-│  │       - set -eu AFTER PATH setup
-│  │       - Examples: install, detect-posix, detect-distro
-│  │
-│  └─ No → Runs AFTER invoke-wizardry (Phase 3+)?
-│         └─ Yes → Regular spell
-│                  - require-wizardry || return 1
-│                  - set -eu INSIDE function
-│                  - env-clear AFTER set -eu
-│                  - castable "$@" at end
-│                  - Examples: copy, forall, menu
+**Critical:** `word-of-binding` sets `_WIZARDRY_LOADING_SPELLS=1` when sourcing spells.
+
+`castable` MUST check this variable to skip execution during loading. If it checks the wrong variable, spell functions execute during sourcing → hyphenated commands called → parse loop.
+
+```sh
+# In castable imp:
+if [ -n "${_WIZARDRY_LOADING_SPELLS-}" ] || [ -n "${_WIZARDRY_SOURCING_SPELL-}" ]; then
+  return 0  # Skip execution, just load function
+fi
 ```
 
 ---
 
-## Common Errors
+## Parse Loop Debug Checklist
 
-❌ **WRONG: exit instead of return**
-```sh
-spell_name() {
-  require-wizardry || exit 1  # Kills shell when sourced!
-}
-```
-
-✅ **CORRECT: return for safe sourcing**
-```sh
-spell_name() {
-  require-wizardry || return 1  # Safe to source
-}
-```
-
----
-
-❌ **WRONG: set -eu before require-wizardry**
-```sh
-spell_name() {
-  set -eu
-  require-wizardry || return 1  # Can't use || with set -e
-}
-```
-
-✅ **CORRECT: require-wizardry before set -eu**
-```sh
-spell_name() {
-  require-wizardry || return 1
-  set -eu
-}
-```
-
----
-
-❌ **WRONG: duplicate set -eu in imp**
-```sh
-#!/bin/sh
-set -eu
-_imp() { ... }
-set -eu  # DUPLICATE! Breaks invoke-wizardry
-case "$0" in */imp) _imp "$@" ;; esac
-```
-
-✅ **CORRECT: ONE set -eu**
-```sh
-#!/bin/sh
-set -eu
-_imp() { ... }
-case "$0" in */imp) _imp "$@" ;; esac
-```
-
----
-
-❌ **WRONG: env-clear before set -eu**
-```sh
-spell_name() {
-  env-clear  # Runs in permissive mode!
-  set -eu
-}
-```
-
-✅ **CORRECT: env-clear after set -eu**
-```sh
-spell_name() {
-  set -eu
-  env-clear  # Runs in strict mode
-}
-```
+- [ ] All imp calls use underscores (`temp_file` not `temp-file`)
+- [ ] All spell calls use underscores (`cursor_blink` not `cursor-blink`)  
+- [ ] No fallback to hyphenated versions
+- [ ] `require_wizardry` (not `require-wizardry`)
+- [ ] `env_clear` (not `env-clear`)
+- [ ] castable checks `_WIZARDRY_LOADING_SPELLS`
+- [ ] No `exit` in spell functions (use `return`)
+- [ ] ONE `set -eu` per imp file
 
 ---
 
 ## Quick Reference
 
-**Castable spell template:**
-```sh
-#!/bin/sh
-spell_name() {
-  case "${1-}" in --help) usage; return 0 ;; esac
-  require-wizardry || return 1
-  set -eu
-  env-clear
-  # logic
-}
-castable "$@"
-```
+**Self-contained (no wizardry):** install, detect-posix, detect-distro  
+**Loads wizardry:** invoke-wizardry  
+**Uses wizardry:** All regular spells (MUST use underscore names internally)
 
-**Action imp template:**
-```sh
-#!/bin/sh
-set -eu
-_imp() { ... }
-case "$0" in */imp) _imp "$@" ;; esac
-```
-
-**Self-contained script template:**
-```sh
-#!/bin/sh
-# PATH setup
-baseline_path="/usr/local/bin:/usr/bin:/bin"
-case ":${PATH-}:" in *":/bin:"*) ;; *) PATH="$baseline_path:$PATH" ;; esac
-export PATH
-set -eu
-# logic
-```
+**Golden rule:** Underscore names inside code, hyphenated names for users.

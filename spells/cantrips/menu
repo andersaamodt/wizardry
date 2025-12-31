@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Present an interactive menu using only POSIX shell features. This variant
-# relies on existing cantrips (await-keypress, move-cursor, etc.) to handle the
+# relies on existing cantrips (await_keypress, move-cursor, etc.) to handle the
 # terminal work so it can remain portable across macOS, Debian, and NixOS.
 
 
@@ -25,7 +25,7 @@ case "${1-}" in
   ;;
 esac
 
-require-wizardry || return 1
+require_wizardry || return 1
 
 # Use conditional strictness based on execution context
 # See .github/CODE_POLICY_SET_EU.md for details
@@ -40,32 +40,25 @@ case "$0" in
     set -u
     ;;
 esac
-env-clear
+env_clear
 
-# Prefer preloaded imp functions (underscore form) when available.
+# Directly use preloaded imp functions (underscore form).
+# Menu is always run after invoke-wizardry, so these are guaranteed to be available.
 menu_temp_file() {
-        if command -v temp_file >/dev/null 2>&1; then
-                temp_file "$@"
-        else
-                temp-file "$@"
-        fi
+        temp_file "$@"
 }
 
 menu_cleanup_file() {
-        if command -v cleanup_file >/dev/null 2>&1; then
-                cleanup_file "$@"
-        else
-                cleanup-file "$@"
-        fi
+        cleanup_file "$@"
 }
 
 # Verify that all helper spells are ready before drawing the menu.
 # Uses the shared 'require' imp for dependency checking.
-require fathom-cursor "The menu spell needs 'fathom-cursor' to place the menu." || return 1
-require fathom-terminal "The menu spell needs 'fathom-terminal' to measure the screen." || return 1
-require move-cursor "The menu spell needs 'move-cursor' to reposition the cursor." || return 1
-require await-keypress "The menu spell needs 'await-keypress' to read input." || return 1
-require cursor-blink "The menu spell needs 'cursor-blink' to restore the cursor." || return 1
+require fathom_cursor "The menu spell needs 'fathom-cursor' to place the menu." || return 1
+require fathom_terminal "The menu spell needs 'fathom-terminal' to measure the screen." || return 1
+require move_cursor "The menu spell needs 'move-cursor' to reposition the cursor." || return 1
+require await_keypress "The menu spell needs 'await_keypress' to read input." || return 1
+require cursor_blink "The menu spell needs 'cursor-blink' to restore the cursor." || return 1
 require stty "The menu spell needs 'stty' to manage terminal modes." || return 1
 
 menu_tty=${AWAIT_KEYPRESS_DEVICE:-/dev/tty}
@@ -83,7 +76,7 @@ terminal_restored=0
 
 AWAIT_KEYPRESS_KEEP_RAW=1
 export AWAIT_KEYPRESS_KEEP_RAW
-await_keypress_buffer_file=$(menu_temp_file await-keypress-buffer) || return 1
+await_keypress_buffer_file=$(menu_temp_file await_keypress-buffer) || return 1
 AWAIT_KEYPRESS_BUFFER_FILE=$await_keypress_buffer_file
 export AWAIT_KEYPRESS_BUFFER_FILE
 
@@ -173,7 +166,7 @@ cleanup() {
                 terminal_restored=1
                 stty "$menu_saved_tty_state" <"$menu_tty" >/dev/null 2>&1 || :
         fi
-        cursor-blink on 2>/dev/null || :
+        cursor_blink on 2>/dev/null || :
         if [ -n "${await_keypress_buffer_file-}" ]; then
                 menu_cleanup_file "$await_keypress_buffer_file"
         fi
@@ -274,7 +267,7 @@ render_row() {
                 done
 
                 target_row=$((menu_row + row_index - 1))
-        if move-cursor "$menu_column" "$target_row"; then
+        if move_cursor "$menu_column" "$target_row"; then
                         printf '\033[K'
                         printf '%b  %s%s%b' "$THEME_DIVIDER" "$pad" "$line" "$RESET"
                         printf '\r'
@@ -297,7 +290,7 @@ render_row() {
         adjusted_width=$((max_name_length + ansi_extra))
 
         target_row=$((menu_row + row_index - 1))
-        if move-cursor "$menu_column" "$target_row"; then
+        if move_cursor "$menu_column" "$target_row"; then
                 printf '\033[K'
                 if [ "$highlight" -eq 1 ]; then
                         if [ "$max_command_length" -gt 0 ]; then
@@ -336,19 +329,19 @@ position_cursor_below_menu() {
                 below_row=$terminal_height
         fi
 
-        if ! move-cursor "$menu_column" "$below_row"; then
+        if ! move_cursor "$menu_column" "$below_row"; then
                 printf '\n'
         fi
 }
 
-cursor-blink off
+cursor_blink off
 
 if [ -n "$description" ]; then
         # Show the caller-provided heading so the menu has context for the user.
         printf '%b%s%b\n' "$THEME_HEADING" "$description" "$RESET"
 fi
 
-menu_row=$(fathom-cursor -y)
+menu_row=$(fathom_cursor -y)
 case "$menu_row" in
         ''|*[!0-9]*)
                 menu_row=1
@@ -363,7 +356,7 @@ esac
 # becomes the anchor for the first menu option so the items render directly
 # beneath the title.
 
-terminal_height=$(fathom-terminal --height)
+terminal_height=$(fathom_terminal --height)
 case "$terminal_height" in
         ''|*[!0-9]*)
                 terminal_height=0
@@ -434,7 +427,7 @@ do
                 pending_step=0
         fi
 
-        current_window_width=$(fathom-terminal --width)
+        current_window_width=$(fathom_terminal --width)
         case "$current_window_width" in
                 ''|*[!0-9]*)
                         current_window_width=0
@@ -455,7 +448,7 @@ do
                 last_window_width=$current_window_width
                 last_max_command_length=$current_max_command_length
 
-                if move-cursor "$menu_column" "$menu_row"; then
+                if move_cursor "$menu_column" "$menu_row"; then
                         printf '\033[J'
                 fi
 
@@ -488,8 +481,8 @@ do
         fi
 
         step=0
-        key=$(await-keypress)
-        [ "${WIZARDRY_DEBUG_MENU:-0}" = "1" ] && printf '[menu] await-keypress returned: "%s"\n' "$key" >&2
+        key=$(await_keypress)
+        [ "${WIZARDRY_DEBUG_MENU:-0}" = "1" ] && printf '[menu] await_keypress returned: "%s"\n' "$key" >&2
         case $key in
         ctrl-c)
                 cleanup
@@ -534,7 +527,7 @@ esac
                 pending_step=$step
         fi
 
-        # Avoid a tight loop if await-keypress returned empty.
+        # Avoid a tight loop if await_keypress returned empty.
         if [ -z "$key" ]; then
                 sleep 0.05
         fi

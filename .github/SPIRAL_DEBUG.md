@@ -1,463 +1,91 @@
-# Spiral Debug Process
-
-## Problem Statement
-
-Ever since switching to the invoke-wizardry / handle-command-not-found / word-of-binding paradigm, we haven't gotten invoke-wizardry working properly. Specifically, the 'menu' command doesn't work after install in a fresh terminal window.
-
-This document tracks the spiral debug process: commenting out code to strip down to a bare minimum core, getting that working, then gradually re-enabling features.
-
-## Core Components (Must Work)
-
-These are the essential components that MUST work before we proceed:
-
-1. **install** - The installation script
-2. **invoke-wizardry** - Shell initialization that sources spells/imps
-3. **handle-command-not-found** / **word-of-binding** - Fallback for commands not found
-4. **cd hook** - Directory change hook for MUD features
-5. **menu** - The interactive menu system
-
-## Debugging Phases
-
-### Phase 0: Initial State Assessment
-
-- **Date**: 2025-12-28
-- **Status**: Starting spiral debug
-- **Current Issues**:
-  - invoke-wizardry has extensive diagnostic output but may be hanging
-  - Tests are taking too long to complete (stopped after 30s)
-  - Menu may not be available after fresh install
-
-### Phase 1: Minimize invoke-wizardry to word-of-binding + minimal pre-loading
-
-**Goal**: Strip invoke-wizardry down to:
-1. Pre-load menu and its imp dependencies (for immediate availability)
-2. Set up command_not_found_handle with word-of-binding for hotloading everything else
-
-**The hybrid paradigm** (pre-load + hotload):
-1. **Pre-load**: menu spell + essential imps it needs (has, say, die, warn, require, etc.)
-2. **Hotload**: Everything else loads on-demand via word-of-binding
-3. command_not_found_handle calls word-of-binding when a command isn't found
-4. word-of-binding finds the spell/imp and either sources or executes it
-
-**Pre-loaded components**:
-- **Imps**: require, require-wizardry, castable, env-clear, temp-file, cleanup-file, has, die, warn, fail, say
-- **Spells**: menu, await-keypress, move-cursor, fathom-cursor, fathom-terminal, cursor-blink, colors, banish
-
-**Hotloaded** (via command_not_found_handle):
-- All other spells and imps load on first use
-
-**Changes made**:
-1. Removed 900+ lines of diagnostic output
-2. Removed full spell/imp pre-loading loops
-3. Added minimal pre-loading for menu + its dependencies
-4. Kept command_not_found_handle setup for hotloading
-5. Deferred: invoke-thesaurus, cd hook, user spell loading
-
-**Why this is better**:
-- Menu available immediately (pre-loaded)
-- Everything else loads on-demand (performant)
-- More UNIXy: on-demand loading via command-not-found hook
-- Simpler: ~250 lines vs 1000+ lines
-
-### Phase 2: Test Minimal Install
-
-**Goal**: Verify that a minimal install works and menu is accessible in a fresh shell.
-
-**Test Steps**:
-1. Run install script
-2. Open new shell (source the rc file)
-3. Try to run `menu` command
-4. Verify it works
-
-### Phase 3: Add Back Features Incrementally
-
-After Phase 2 works, add back one feature at a time:
-
-1. **First**: Re-enable full imp loading (all families)
-2. **Second**: Re-enable full spell loading
-3. **Third**: Re-enable invoke-thesaurus (synonyms)
-4. **Fourth**: Re-enable cd hook
-5. **Fifth**: Re-enable user spell loading
-
-Test after each addition to identify what breaks.
-
-### Phase 4: Optimize and Clean Up
-
-After all features work:
-1. Remove excessive diagnostic output
-2. Optimize loading performance
-3. Update tests to match new architecture
-4. Document the final working pattern
-
-## Changes Log
-
-### 2025-12-28: Initial Document Creation
-
-- Created this document to track the spiral debug process
-- Identified core components that must work
-- Outlined debugging phases
-
-### 2025-12-28: Phase 1 Implementation (Multiple Attempts)
-
-- **First attempt (WRONG)**: Created PATH-only approach - but this was the OLD paradigm we moved away from
-- **Second attempt (INCOMPLETE)**: Created hotload-only (no pre-loading) - but we need BOTH
-- **Final implementation (CORRECT)**: Hybrid approach with pre-load + hotload
-  - Pre-loads menu + essential imps (has, say, die, warn, require, castable, etc.)
-  - Sets up command_not_found_handle for hotloading everything else
-  - Uses AWK extraction + eval for pre-loading (same as original, just minimal set)
-- **Test results**: 
-  - ✅ invoke-wizardry sources successfully
-  - ✅ menu function pre-loaded and available
-  - ✅ Essential imps (has, say, die, warn) pre-loaded
-  - ✅ command_not_found_handle defined for hotloading
-  - ✅ menu --help works immediately
-- **Next**: User will manually test in real terminal before Phase 2
-
-### 2025-12-28: Fix menu colors loading when colors is preloaded
-
-- **Issue**: menu was calling `. colors` when `colors` was preloaded as a function, leading to `no such file or directory: colors` after a fresh install.
-- **Fix**: menu now sources the colors file when `command -v colors` returns a path, otherwise it invokes the already-loaded `colors` function.
-- **Next**: Re-test `menu` in a fresh terminal after install.
-
-### 2025-12-28: Hotload main-menu when menu has no entries
-
-- **Issue**: `menu` in a fresh shell returned "no menu entries provided" because `main-menu` was not preloaded and the `has` check never invoked word-of-binding.
-- **Fix**: when no entries are passed, `menu` now attempts to load and run `main-menu` via word-of-binding before erroring.
-- **Next**: Re-test `menu` in a fresh terminal after install.
-
-### 2025-12-28: Enforce menu preloading (no fallback)
-
-- **Issue**: `menu` could resolve to `word-of-binding` without arguments in a fresh shell when the preloaded menu function was missing, leading to "word-of-binding: command name required".
-- **Fix**: removed the fallback wrapper and now fail fast if the menu spell is not preloaded during invoke-wizardry.
-- **Next**: Re-test `menu` in a fresh terminal after install; if it fails, continue stripping down invoke-wizardry to find the preloading break.
-
-### 2025-12-28: Phase 1a - Strip confounders, verify menu binding explicitly
-
-- **Goal**: Prove whether `menu` is actually bound as a shell function after invoke-wizardry runs, without command-not-found interference.
-- **Changes**:
-  - Removed fallback menu sourcing (no workaround).
-  - Added debug logging of menu binding (`whence`/`type`) when `WIZARDRY_DEBUG=1`.
-  - Added `WIZARDRY_SPIRAL_MINIMAL=1` to skip command-not-found handlers so only preloading is tested.
-- **Local tests (container)**:
-  - `zsh -c 'source spells/.imps/sys/invoke-wizardry; whence -v menu; menu --help'` → menu is a function, help prints.
-  - `WIZARDRY_DEBUG=1 WIZARDRY_SPIRAL_MINIMAL=1 zsh -c 'source spells/.imps/sys/invoke-wizardry; whence -v menu; menu --help'` → menu bound and callable with CNF disabled.
-  - Diagnostic: `command_not_found_handler` always receives args; when calling `word_of_binding "$@"`, `word_of_binding` sees the command name. The error `word-of-binding: command name required` happens **before** CNF output, so it is not caused by CNF.
-- **Working hypothesis**:
-  - The observed `word-of-binding: command name required` implies that the `menu` *command* is directly invoking `word-of-binding` with no arguments. That only happens if `menu` resolves to an executable wrapper (or script) that calls `word-of-binding` without args, or if `menu` isn't bound as a function at all.
-  - Next step is to test in a fresh terminal:
-    1. Set `WIZARDRY_DEBUG=1 WIZARDRY_SPIRAL_MINIMAL=1` and open a new shell.
-    2. Run: `type menu` (bash) or `whence -v menu` (zsh) and record the output.
-    3. Run `menu --help` and confirm whether it uses the function or hits the error.
-    4. If it fails, capture: `command -v menu`, `alias menu`, and the output of `type menu`/`whence -v menu`.
-
-### 2025-12-28: Preload via word-of-binding bind-only
-
-- **Changes**:
-  - Switched `word-of-binding` to bind-only by default (no alias creation; no execution unless `--run` is used).
-  - Updated `invoke-wizardry` to source `word-of-binding` and preload menu + essential imps/spells using bind-only calls.
-  - Updated command-not-found handlers to call `word_of_binding --run` when executing missing commands.
-  - Updated `menu` to call `word_of_binding --run main-menu` when no entries are provided.
-  - Added a hard failure if `word-of-binding` cannot be sourced (preloading cannot proceed).
-- **Local tests (container, bash)**:
-  - `bash -lc 'source spells/.imps/sys/invoke-wizardry; type menu'` → menu is a function.
-  - `bash -lc 'source spells/.imps/sys/invoke-wizardry; menu --help | head -n 3'` → usage text prints.
-  - `bash -lc 'source spells/.imps/sys/invoke-wizardry; command -v word_of_binding'` → function available.
-  - Note: full interactive menu run requires a TTY; not exercised in this container.
-
-### 2025-12-28: Remove leading underscores from imp true-names
-
-- **Changes**:
-  - Renamed all imp true-names to drop the leading underscore (imps now match spells: `imp-name` → `imp_name()`).
-  - Updated `word-of-binding` to use the same true-name mapping for spells and imps.
-  - Updated `invoke-wizardry`, menu, and tests to use `word_of_binding` (no leading underscore) and the new imp function names.
-  - Hardened `has`/`require` to treat hyphenated command names as underscore function names when checking availability.
-
-### 2025-12-28: Fix menu navigation - preloaded spells cannot use $0
-
-- **Issue**: Menu was printing correctly but arrow keys did nothing and Enter just reprinted the menu.
-- **Root cause**: 
-  - When spells are preloaded as functions via `word_of_binding`, `$0` refers to the shell name (e.g., `zsh`), not the script path
-  - Several preloaded spells (`await-keypress`, `fathom-cursor`, `fathom-terminal`, `require-command`, `menu`) used `$0` for path resolution
-  - Path resolution failed, causing dependency lookups to fail
-  - `await-keypress` couldn't properly initialize, returned empty values to menu
-  - Menu loop continued with empty `$key`, slept 0.05s, and repeated (no navigation)
-- **Fix**:
-  - Changed all affected spells to use `command -v` for dependency resolution instead of `$0` path resolution
-  - Pattern matches what `require` imp already does successfully
-  - Works in both modes: direct execution and preloaded as function
-  - Delayed path computation in `require-command` until actually needed
-  - Optimized `menu` colors loading to avoid unnecessary `$0` usage when preloaded
-- **Files changed**:
-  - `spells/cantrips/await-keypress` - Fixed require-command resolution
-  - `spells/cantrips/fathom-cursor` - Fixed require-command resolution
-  - `spells/cantrips/fathom-terminal` - Fixed require-command resolution
-  - `spells/cantrips/menu` - Optimized colors loading
-  - `spells/cantrips/require-command` - Delayed $0 usage
-- **Testing**:
-  - Existing tests pass: `test-await-keypress.sh`, `test-fathom-cursor.sh`, `test-fathom-terminal.sh`
-  - invoke-wizardry successfully preloads all spells
-  - `menu --help` works correctly after preloading
-  - All dependency checks pass when preloaded
-- **Next**: User should test menu navigation in actual terminal to confirm arrow keys work
-
-### 2025-12-28: Add debug logging for menu navigation issue
-
-- **Issue**: Menu still not responding to arrow keys or Enter after previous fixes
-- **Changes**: Added debug logging to `await-keypress` and `menu` to diagnose what's happening
-- **Debug flags**:
-  - `WIZARDRY_DEBUG_AWAIT=1` - Shows await-keypress internal state
-  - `WIZARDRY_DEBUG_MENU=1` - Shows keys received by menu
-- **Testing instructions**:
-  ```bash
-  # In your terminal, set debug flags and run menu:
-  export WIZARDRY_DEBUG_AWAIT=1
-  export WIZARDRY_DEBUG_MENU=1
-  menu
-  
-  # Then try pressing:
-  # 1. Down arrow key
-  # 2. Up arrow key  
-  # 3. Enter key
-  
-  # Capture the debug output and share it
-  ```
-- **What to look for**:
-  - Does `await-keypress` show "Found require-command"?
-  - Does `await-keypress` show "dd check passed"?
-  - Does `await-keypress` show "Read codes: ..." when you press keys?
-  - What does `await-keypress` return for arrow keys? (should be "up" or "down")
-  - What does `await-keypress` return for Enter? (should be "enter")
-  - What does menu receive? Does it match what await-keypress returns?
-
-## Testing Strategy
-
-For each phase, we will:
-1. Make the code changes
-2. Test manually with a fresh install
-3. Verify the core functionality works
-4. Document results here
-5. Proceed to next phase only if current phase succeeds
-
-## Success Criteria
-
-The spiral debug is complete when:
-1. ✅ install completes without errors
-2. ✅ invoke-wizardry loads without hanging
-3. ✅ Opening a new terminal makes menu available
-4. ✅ menu command works correctly
-5. ✅ cd hook works (if enabled)
-6. ✅ word-of-binding can load spells on demand
-
-## Notes
-
-- Focus on getting the bare minimum working first
-- Don't worry about test failures initially - we'll fix tests after core works
-- Document every change so we can track what breaks what
-
-### 2025-12-30: Phase 5 - Paradigm Shift to Glossary-Based Interception
-
-- **Issue**: command_not_found handlers are not POSIX compliant and cannot hotload functions due to subshell isolation
-- **Solution**: Shift to glossary-based interception system
-  - Create glosses (lightweight wrappers) in `$SPELLBOOK_DIR/.glossary/` for all spells
-  - Each gloss executes: `exec parse "spell-name" "$@"` with hardcoded spell name
-  - `parse` imp acts as universal entry point (passthrough for now, parsing later)
-  - Glossary prepended to PATH gives parse first shot at all commands
-  - No shell functions, no hooks, no subshell issues - pure POSIX sh
-  - The glossary makes spells "shine" - accessible, parsable, and (future) spell-checkable
-
-- **Architecture**:
-  ```
-  $SPELLBOOK_DIR/
-    .glossary/           # Auto-generated glosses for all wizardry spells
-    .synonyms            # User synonym definitions (text file with aliases)
-    .default-synonyms    # Built-in synonym definitions (text file with aliases)
-  ```
-  
-  **Note**: The existing synonym system (.synonyms and .default-synonyms) remains unchanged.
-  Synonyms are user-facing aliases defined in text files. They will be implemented
-  as glosses in the .glossary directory, allowing synonyms to work reliably across
-  all contexts (not just interactive shells).
-
-- **Components to create/modify**:
-  1. **generate-glosses spell** - Creates gloss files for all spells
-  2. **parse modifications** - Add debug output for linking words, passthrough mode
-  3. **invoke-wizardry updates** - Prepend glossary to PATH, async gloss updates
-  4. **Synonym implementation** - Generate glosses for synonyms defined in text files
-
-- **Terminology**:
-  - **Gloss** (noun): A lightweight wrapper script that makes a spell shine and accessible via PATH
-  - **Glossary** (noun): The collection of all glosses (`$SPELLBOOK_DIR/.glossary/`)
-  - **Synonym** (noun): A user-defined alias for a spell (stored in .synonyms text files)
-  - The glossary system handles: PATH interception, parsing, and (future) spell-checking
-
-- **Implementation Status**:
-  - [x] Create generate-glosses spell
-  - [x] Modify parse to output debug for linking words (passthrough mode)
-  - [x] Document Phase 5 in SPIRAL_DEBUG.md
-  - [x] Update invoke-wizardry to prepend glossary path to PATH
-  - [x] Create async gloss validation/update mechanism in invoke-wizardry
-  - [ ] Test generate-glosses with actual spell directory
-  - [ ] Test gloss-based spell invocation (menu, test-magic, etc.)
-  - [ ] Generate glosses for synonyms from text file definitions
-  - [ ] Remove command_not_found handlers in favor of glossary
-  - [ ] Test with fresh wizardry installation
-  - [ ] Create tests for generate-glosses spell
-  - [ ] Migrate existing synonym system to gloss-based (later feature)
-  - [ ] Enable parsing logic in parse imp (later feature)
-  - [ ] Add spell-checking to glossary system (later feature)
-
-- **Benefits**:
-  - True hotloading - spells available immediately via PATH
-  - POSIX compliant - no bash/zsh-specific features
-  - Enables recursive parser for future natural language commands
-  - No subshell scoping issues
-  - Works in scripts and interactive shells alike
-
-### 2025-12-30: Phase 5 Completion - Glossary System Feature Complete
-
-- **Status**: Implementing comprehensive glossary system enhancements
-- **Changes Made**:
-  
-  1. **Enhanced generate-glosses spell**:
-     - Added duplicate detection and prevention
-     - Integrated synonym-to-gloss migration (generates glosses from .synonyms files)
-     - Added --system flag (inactive) for future system command glossing
-     - Improved validation to prevent conflicts
-     - Unified gloss generation from multiple sources (spells + synonyms)
-     - Better progress reporting and statistics
-  
-  2. **Enhanced parse imp with recursion prevention**:
-     - Added WIZARDRY_PARSE_DEPTH tracking to prevent infinite loops
-     - Maximum recursion depth: 5 levels
-     - Detects and prevents "parse calling parse" loops
-     - Temporarily removes glossary from PATH when resolving real commands
-     - Proper error messages for recursion issues
-     - Maintains parse depth across calls for debugging
-  
-  3. **Synonym system migration**:
-     - Synonyms from .synonyms and .default-synonyms now generate glosses
-     - Glosses replace shell aliases for cross-context reliability
-     - Original text files remain user-editable (source of truth)
-     - Generated glosses marked with source file for traceability
-  
-  4. **Test level integration** (IN PROGRESS):
-     - Adding "Glossary System" as new Level 2 in banish/test-magic/demo-magic
-     - Shifts "Menu System" to Level 3 and all subsequent levels up by 1
-     - Tests glossary availability, parse functionality, recursion prevention
-     - Validates synonym-to-gloss generation
-
-- **Implementation Status**:
-  - [x] Enhanced generate-glosses with synonym integration
-  - [x] Enhanced parse with recursion prevention
-  - [x] Documented comprehensive glossary architecture
-  - [ ] Update banish to add Glossary as Level 2
-  - [ ] Update test-magic to add Glossary as Level 2
-  - [ ] Update demo-magic to add Glossary as Level 2
-  - [ ] Create tests for generate-glosses
-  - [ ] Test complete glossary system with fresh install
-  - [ ] Remove command_not_found handlers (after testing complete)
-
-- **Architecture Summary**:
-  ```
-  $SPELLBOOK_DIR/
-    .glossary/              # Auto-generated glosses (DO NOT EDIT)
-      menu                  # Gloss for menu spell: exec parse "menu" "$@"
-      jump                  # Gloss for jump synonym: exec parse "jump-to-marker" "$@"
-      ll                    # Gloss for ll synonym: exec parse "ls -la" "$@"
-    .synonyms               # User synonyms (text file, user-editable)
-    .default-synonyms       # Default synonyms (text file, user-editable)
-  ```
-
-- **Flow**:
-  1. User types command (e.g., `menu` or `ll`)
-  2. Glossary in PATH intercepts (glossary prepended to PATH)
-  3. Gloss executes: `exec parse "menu" "$@"` or `exec parse "ls -la" "$@"`
-  4. parse removes glossary from PATH temporarily
-  5. parse finds real command outside glossary
-  6. parse executes real command with arguments
-  7. Recursion prevented by WIZARDRY_PARSE_DEPTH tracking
-
-- **Benefits Realized**:
-  - ✅ Synonyms now work in scripts (not just interactive shells)
-  - ✅ Recursion prevention ensures stability
-  - ✅ Unified gloss generation from multiple sources
-  - ✅ Cross-platform POSIX compliance
-  - ✅ Foundation for future natural language parsing
-  - ✅ Self-documenting glosses (source file tracked)
-
-- **Remaining Work**:
-  - Test level integration (banish/test-magic/demo-magic)
-  - Comprehensive testing with fresh install
-  - Test suite for generate-glosses
-  - Remove deprecated command_not_found handlers
-
-### 2025-12-30: Phase 5 Refinement - Glosses as Implementation Detail
-
-- **Clarification**: Glosses are an internal implementation detail, not user-facing
-- **Key Points**:
-  - Users interact with synonyms via the Spellbook menu (existing UI)
-  - Glosses are auto-generated in the background (transparent to users)
-  - No new menu items or test levels needed for glossary system
-  - generate-glosses spell handles centralized gloss generation from all sources
-
-- **Final Architecture**:
-  - invoke-wizardry calls generate-glosses asynchronously on shell startup
-  - generate-glosses has centralized `_create_gloss()` function for elegant generation
-  - Glosses generated from all sources in one unified process:
-    * **Source 1**: All wizardry spells (`$WIZARDRY_DIR/spells/`)
-    * **Source 2**: User synonyms (`$SPELLBOOK_DIR/.synonyms`)
-    * **Source 3**: Default synonyms (`$SPELLBOOK_DIR/.default-synonyms`)
-    * **Source 4**: System commands (FUTURE - complete implementation commented out)
-  - Background async generation (non-blocking, transparent)
-  - Users never see or manage glosses directly
-
-- **Removed from TODO**:
-  - ~~Update banish to add Glossary as Level 2~~ (not needed - implementation detail)
-  - ~~Update test-magic to add Glossary as Level 2~~ (not needed - implementation detail)  
-  - ~~Update demo-magic to add Glossary as Level 2~~ (not needed - implementation detail)
-
-- **CURRENT STATUS - Feature Complete**:
-  - [x] Created generate-glosses spell with centralized `_create_gloss()` function
-  - [x] Unified gloss generation from all sources (spells + user synonyms + default synonyms)
-  - [x] Added system command glossing implementation (commented out, ready for future)
-  - [x] Enhanced parse imp with recursion prevention (WIZARDRY_PARSE_DEPTH tracking)
-  - [x] Centralized gloss generation in invoke-wizardry (async background call)
-  - [x] Documented glosses as transparent implementation detail
-  - [x] Synonym-to-gloss migration complete (synonyms now work in scripts)
-
-- **NEXT STEPS - Testing & Cleanup**:
-  1. **Create test suite for generate-glosses spell**
-     - Test gloss generation from spell directories
-     - Test synonym parsing from .synonyms and .default-synonyms files
-     - Test duplicate detection and conflict prevention
-     - Test --force and --quiet flags
-     - Test recursion prevention in parse
-  
-  2. **Integration testing with fresh install**
-     - Install wizardry in clean environment
-     - Verify glosses auto-generate on first shell startup
-     - Test spell invocation via glosses (e.g., `menu`, `test-magic`)
-     - Test synonym invocation via glosses (verify they work in scripts)
-     - Test parse passthrough and recursion prevention
-  
-  3. **Performance validation**
-     - Measure shell startup time impact (async should be minimal)
-     - Verify gloss regeneration completes in background
-     - Test with large synonym files
-  
-  4. **Code cleanup after successful testing**
-     - Remove command_not_found handlers (glossary replaces them)
-     - Remove word-of-binding --run mode (no longer needed)
-     - Clean up debug logging code
-     - Update documentation
-
-- **User Experience** (UNCHANGED):
-  - Synonyms: Managed via Spellbook menu (existing workflow)
-  - Glosses: Auto-generated, invisible to users
-  - **New Benefit**: Synonyms work in scripts (not just interactive shells)
-  - No new concepts for users to learn
-
-- **Future Enhancements** (ready to activate):
-  - System command glossing: Uncomment code in generate-glosses to enable
-  - Natural language parsing: Re-enable parsing logic in parse imp
-  - Spell-checking: Add typo detection to glossary system
+# Parse Loop Debug History
+
+## Final Root Cause (2025-12-31)
+
+**Primary bug:** Zsh doesn't perform word splitting by default in for-loops. Fixed by enabling `SH_WORD_SPLIT`.
+
+**Secondary bug:** `castable` checked `_WIZARDRY_SOURCING_SPELL` but `word-of-binding` sets `_WIZARDRY_LOADING_SPELLS=1`. When loading level 3 spells (fathom-cursor, etc.), castable didn't skip execution, causing spell functions to run with hyphenated command calls → parse loop.
+
+**Solution:** 
+- Enable SH_WORD_SPLIT in invoke-wizardry for zsh
+- Fix castable to check `_WIZARDRY_LOADING_SPELLS`
+- Add comprehensive logging to track execution
+
+## Current Status
+
+### Working
+- ✅ Word splitting fixed (all imps/spells load correctly)
+- ✅ Castable variable check fixed
+- ✅ Invoke-wizardry completes level 0-3 loading
+- ✅ All function preloading succeeds
+- ✅ Logging shows exact execution flow
+
+### Still Hanging
+- ⏳ Background gloss generation process hangs
+- ⏳ Foreground shell completion may be affected
+- ⏳ Terminal title shows parse loop indicators
+
+### Next Steps
+1. Add logging to generate-glosses background process
+2. Investigate what triggers parse during background execution
+3. Verify env-clear doesn't interfere with background jobs
+4. Test with WIZARDRY_DEBUG_LEVEL on macOS
+
+## Debug Timeline
+
+### Dec 28-29: Initial Investigation
+- Discovered menu not working after fresh install
+- Tried hotloading, PATH-only approaches
+- Settled on hybrid preload + gloss system
+
+### Dec 30: Glossary System Implementation
+- Created generate-glosses spell
+- Implemented parse imp with recursion prevention
+- Added async background gloss generation
+- Found BSD/GNU find compatibility issues (fixed with find-executable imp)
+
+### Dec 31: Parse Loop Hunt
+- **08:00** - Loop occurring during level 3 spell loading
+- **09:00** - Added comprehensive logging to invoke-wizardry
+- **09:30** - Identified hang at "Loading spell: fathom-cursor" 
+- **10:00** - Discovered castable variable mismatch bug
+- **10:30** - Fixed castable to check _WIZARDRY_LOADING_SPELLS
+- **11:00** - Still hanging - foreground AND background processes
+- **Current** - Need to investigate background process behavior
+
+## Key Lessons
+
+1. **Variable names matter**: Mismatch between castable check and word-of-binding caused hours of debugging
+2. **Logging is essential**: Without detailed logging, would never have found the exact hang point
+3. **Test incrementally**: Each fix revealed another layer of the problem
+4. **Zsh differences**: Word splitting and shell-specific behaviors cause subtle bugs
+5. **Background processes**: Async operations complicate debugging (can't see stderr easily)
+
+## Architecture Notes
+
+### Function Loading
+- word-of-binding sources spell files with _WIZARDRY_LOADING_SPELLS=1
+- Spells end with `castable "$@"` 
+- Castable MUST check _WIZARDRY_LOADING_SPELLS to skip execution during load
+- If castable doesn't skip, spell function runs during sourcing → calls hyphenated commands → parse loop
+
+### Gloss System
+- Glossary prepended to PATH
+- Each gloss: `exec parse "spell-name" "$@"`
+- parse removes glossary from PATH, finds real command
+- Background generation must not trigger parse loops
+
+### Parse Loop Indicators
+- macOS terminal title shows "parse parse parse..."
+- Process hangs indefinitely
+- No error messages (just loops)
+- Only visible through process monitoring or terminal title
+
+## For Future AI Agents
+
+**When investigating parse loops:**
+1. Add logging at every step (function entry, command calls, returns)
+2. Check what variables word-of-binding/castable use
+3. Verify underscore vs hyphenated names in ALL function calls
+4. Look for background processes that might trigger loops
+5. Test with minimal configuration first

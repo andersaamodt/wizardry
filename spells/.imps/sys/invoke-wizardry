@@ -34,6 +34,30 @@ export _WIZARDRY_INVOKED
 _iw_debug "Starting wizardry initialization"
 
 invoke_wizardry() {
+  # CRITICAL: Enable word splitting in zsh for all for-loops in this function
+  # Zsh doesn't split on spaces by default (unlike sh/bash), which breaks iteration over
+  # space-separated lists like $_level_imps and $_level_spells
+  # Save the current state and restore it before any return
+  _iw_saved_sh_word_split=""
+  if [ -n "${ZSH_VERSION-}" ]; then
+    # Check if SH_WORD_SPLIT is currently set (returns 0 if set, 1 if not)
+    if setopt | grep -q "^shwordsplit$"; then
+      _iw_saved_sh_word_split="yes"
+    else
+      _iw_saved_sh_word_split="no"
+    fi
+    setopt SH_WORD_SPLIT
+  fi
+  
+  # Helper to restore zsh word splitting before returning
+  _iw_restore_and_return() {
+    _ret_code=${1:-0}
+    if [ -n "${ZSH_VERSION-}" ] && [ "$_iw_saved_sh_word_split" = "no" ]; then
+      unsetopt SH_WORD_SPLIT
+    fi
+    return "$_ret_code"
+  }
+  
   # Detect WIZARDRY_DIR
   if [ -z "${WIZARDRY_DIR-}" ]; then
     # Capture script path - in bash use BASH_SOURCE, in zsh use ${(%):-%x}
@@ -72,7 +96,7 @@ invoke_wizardry() {
   # Validate WIZARDRY_DIR
   if [ -z "${WIZARDRY_DIR-}" ] || [ ! -d "${WIZARDRY_DIR-}/spells" ]; then
     printf '%s\n' "invoke-wizardry: ERROR - WIZARDRY_DIR not found" >&2
-    return 1
+    _iw_restore_and_return 1
   fi
   
   _iw_debug "WIZARDRY_DIR=$WIZARDRY_DIR"
@@ -122,7 +146,7 @@ invoke_wizardry() {
   fi
   if ! command -v word_of_binding >/dev/null 2>&1; then
     printf '%s\n' "invoke-wizardry: ERROR - failed to load word-of-binding" >&2
-    return 1
+    _iw_restore_and_return 1
   fi
   
   # Pre-load imps by level (Levels 0-3: POSIX + Wizardry + Glossary + Menu)
@@ -196,10 +220,21 @@ invoke_wizardry() {
   if [ -f "$_spell_levels_imp" ]; then
     # Load spells for levels 0, 1, 2, and 3
     for _level in 0 1 2 3; do
+      if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+        printf '[invoke-wizardry] DEBUG: ========== STARTING LEVEL %d ==========\n' "$_level" >&2
+      fi
       _level_spells=$(get_level_spells "$_level")
       if [ -n "$_level_spells" ]; then
         _iw_debug "Loading Level $_level spells: $(banish_level_name "$_level")"
+        if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+          printf '[invoke-wizardry] DEBUG: Level %d spell list: %s\n' "$_level" "$_level_spells" >&2
+        fi
+        _spell_count=0
         for _spell_spec in $_level_spells; do
+          _spell_count=$((_spell_count + 1))
+          if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+            printf '[invoke-wizardry] DEBUG: Processing spell #%d in level %d: %s\n' "$_spell_count" "$_level" "$_spell_spec" >&2
+          fi
           # Extract spell name (may include :category suffix)
           _spell_name=${_spell_spec%%:*}
           
@@ -216,12 +251,15 @@ invoke_wizardry() {
             if [ -f "$_spell_file" ]; then
               _iw_debug "Loading spell: $_spell_name"
               if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-                printf '[invoke-wizardry] DEBUG: Before word_of_binding for %s\n' "$_spell_name" >&2
+                printf '[invoke-wizardry] DEBUG: BEFORE word_of_binding call for %s\n' "$_spell_name" >&2
+                printf '[invoke-wizardry] DEBUG:   Spell file: %s\n' "$_spell_file" >&2
+                printf '[invoke-wizardry] DEBUG:   Calling: word_of_binding "%s"\n' "$_spell_name" >&2
               fi
               if command -v word_of_binding >/dev/null 2>&1 \
                 && word_of_binding "$_spell_name" 2>/dev/null; then
                 _iw_status="✓ Loaded"
                 if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+                  printf '[invoke-wizardry] DEBUG: AFTER word_of_binding call for %s (SUCCESS)\n' "$_spell_name" >&2
                   # Immediately check if function is available
                   _spell_func_name=$(printf '%s' "$_spell_name" | tr '-' '_')
                   if command -v "$_spell_func_name" >/dev/null 2>&1; then
@@ -233,14 +271,21 @@ invoke_wizardry() {
               else
                 _iw_status="✗ Failed"
                 if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+                  printf '[invoke-wizardry] DEBUG: AFTER word_of_binding call for %s (FAILED)\n' "$_spell_name" >&2
                   printf '[invoke-wizardry] DEBUG: word_of_binding FAILED for %s\n' "$_spell_name" >&2
                 fi
               fi
               _iw_debug "  $_iw_status: $_spell_name"
+              if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+                printf '[invoke-wizardry] DEBUG: Completed processing spell: %s\n' "$_spell_name" >&2
+              fi
               break
             fi
           done
         done
+      fi
+      if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+        printf '[invoke-wizardry] DEBUG: ========== COMPLETED LEVEL %d ==========\n' "$_level" >&2
       fi
     done
   else
@@ -311,12 +356,6 @@ invoke_wizardry() {
         _iw_func_defs=""
         _iw_captured_count=0
         
-        # CRITICAL: In zsh, enable word splitting for the for loop
-        # Zsh doesn't split on spaces by default (unlike sh/bash)
-        if [ -n "${ZSH_VERSION-}" ]; then
-          setopt SH_WORD_SPLIT
-        fi
-        
         for _func in $_iw_export_funcs; do
           # Use zsh's functions command directly - it returns empty string if function doesn't exist
           # Don't use command -v as it's unreliable for checking functions in zsh
@@ -333,11 +372,6 @@ invoke_wizardry() {
             printf '[invoke-wizardry] DEBUG:   Function not found: %s\n' "$_func" >&2
           fi
         done
-        
-        # Restore zsh word splitting behavior to default
-        if [ -n "${ZSH_VERSION-}" ]; then
-          unsetopt SH_WORD_SPLIT
-        fi
         
         if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
           printf '[invoke-wizardry] DEBUG: Captured %d function definitions\n' "$_iw_captured_count" >&2
@@ -422,12 +456,12 @@ invoke_wizardry() {
 
   if [ "$_iw_menu_ok" -ne 1 ]; then
     printf '%s\n' "invoke-wizardry: ERROR - failed to load menu spell" >&2
-    return 1
+    _iw_restore_and_return 1
   fi
 
   # Wizardry initialization complete
   _iw_debug "Wizardry initialization complete"
-  return 0
+  _iw_restore_and_return 0
 }
 
 # Run the setup

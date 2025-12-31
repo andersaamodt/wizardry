@@ -9,7 +9,12 @@
 set -eu
 
 castable() {
-  # Skip execution if being sourced by another spell
+  # Skip execution if being sourced by word-of-binding during spell loading
+  if [ "${_WIZARDRY_LOADING_SPELLS-}" = "1" ]; then
+    return 0
+  fi
+  
+  # Skip execution if being sourced by another spell (legacy check)
   if [ "${_WIZARDRY_SOURCING_SPELL-}" = "1" ]; then
     return 0
   fi
