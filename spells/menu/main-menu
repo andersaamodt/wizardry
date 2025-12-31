@@ -16,7 +16,6 @@ USAGE
 
 
 main_menu() {
-printf '[main-menu] DEBUG: Entering main_menu function\n' >&2
 
 case "${1-}" in
 --help|--usage|-h)
@@ -25,85 +24,62 @@ case "${1-}" in
   ;;
 esac
 
-printf '[main-menu] DEBUG: About to call set -eu\n' >&2
 set -eu
 
-printf '[main-menu] DEBUG: About to call env_clear\n' >&2
 env_clear
 
-printf '[main-menu] DEBUG: About to load exit-label with word_of_binding\n' >&2
 # Load menu imps as functions to avoid parse loops
 word_of_binding "exit-label"
 
-printf '[main-menu] DEBUG: About to load mud-config with word_of_binding\n' >&2
 word_of_binding "mud-config" 2>/dev/null || true
 
-printf '[main-menu] DEBUG: Finished loading imps\n' >&2
 
 # Load color palette (colors handles terminal capability detection internally).
 # When colors is preloaded as a function, call it directly; otherwise source the file.
-printf '[main-menu] DEBUG: About to check for colors\n' >&2
 if has colors; then
-  printf '[main-menu] DEBUG: colors found, getting path\n' >&2
   colors_path=$(command -v colors 2>/dev/null || printf '')
   if [ -n "$colors_path" ] && [ -f "$colors_path" ]; then
-    printf '[main-menu] DEBUG: Sourcing colors from %s\n' "$colors_path" >&2
     # shellcheck disable=SC1090
     . "$colors_path"
   else
-    printf '[main-menu] DEBUG: Calling colors function\n' >&2
     colors
   fi
 fi
 
-printf '[main-menu] DEBUG: About to check for menu requirement\n' >&2
 if ! require menu "The main menu needs the 'menu' command to present options."; then
-  printf '[main-menu] DEBUG: menu requirement failed\n' >&2
   return 1
 fi
 
-printf '[main-menu] DEBUG: menu requirement satisfied\n' >&2
 
 # Check if MUD is enabled in config
 is_mud_enabled() {
-  printf '[main-menu] DEBUG: Entering is_mud_enabled\n' >&2
   # Check if mud_config exists and mud-enabled is set to 1
   if command -v mud_config >/dev/null 2>&1; then
-    printf '[main-menu] DEBUG: mud_config found, getting mud-enabled value\n' >&2
     value=$(mud_config get mud-enabled 2>/dev/null) || return 1
-    printf '[main-menu] DEBUG: mud-enabled value: %s\n' "$value" >&2
     [ "$value" = "1" ]
   else
-    printf '[main-menu] DEBUG: mud_config not found\n' >&2
     return 1
   fi
 }
 
 main_menu_display_menu() {
-  printf '[main-menu] DEBUG: Entering main_menu_display_menu\n' >&2
   cast="Cast%cast"
   spellbook="Spellbook%spellbook"
   install="Arcana%install-menu"
   system="Computer%system-menu"
   
-  printf '[main-menu] DEBUG: About to call exit_label function\n' >&2
   exit_label_text=$(exit_label)
-  printf '[main-menu] DEBUG: exit_label returned: %s\n' "$exit_label_text" >&2
   
   exit_item="${exit_label_text}%kill -TERM \$PPID"
 
   # Only show MUD menu if enabled in config
-  printf '[main-menu] DEBUG: About to check is_mud_enabled\n' >&2
   if is_mud_enabled; then
-    printf '[main-menu] DEBUG: MUD is enabled, adding mud menu item\n' >&2
     mud="MUD%mud"
     set -- "$cast" "$mud" "$spellbook" "$install" "$system" "$exit_item"
   else
-    printf '[main-menu] DEBUG: MUD is not enabled\n' >&2
     set -- "$cast" "$spellbook" "$install" "$system" "$exit_item"
   fi
   
-  printf '[main-menu] DEBUG: About to call menu function\n' >&2
   menu "Main Menu:" "$@"
 }
 
@@ -112,27 +88,21 @@ trap 'return 0' INT TERM
 
 first_run=1
 
-printf '[main-menu] DEBUG: About to enter main loop\n' >&2
 while true; do
-  printf '[main-menu] DEBUG: Loop iteration, first_run=%s\n' "$first_run" >&2
   if [ "$first_run" -eq 0 ]; then
     :
   else
     first_run=0
   fi
 
-  printf '[main-menu] DEBUG: About to call main_menu_display_menu\n' >&2
   main_menu_display_menu
   menu_status=$?
-  printf '[main-menu] DEBUG: main_menu_display_menu returned status: %s\n' "$menu_status" >&2
   
   # Exit code 130 means ESC was pressed - continue loop to redisplay menu
   # Any other exit code (including 0 for successful command execution) should exit
   if [ "$menu_status" -eq 130 ]; then
-    printf '[main-menu] DEBUG: ESC pressed, continuing loop\n' >&2
     continue
   else
-    printf '[main-menu] DEBUG: Exiting with status %s\n' "$menu_status" >&2
     return "$menu_status"
   fi
 done

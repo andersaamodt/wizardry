@@ -52,8 +52,9 @@ test_gloss_content() {
   [ -f "$menu_gloss" ] || return 1
   [ -x "$menu_gloss" ] || return 1
   
-  # Verify gloss contains exec parse command
-  grep -q 'exec parse "menu"' "$menu_gloss" || return 1
+  # Verify gloss contains parse command (full path or simple parse)
+  # After fix for parse loop hang, glosses use full path to parse
+  grep -q 'parse.*"menu"' "$menu_gloss" || return 1
 }
 
 test_force_regeneration() {
@@ -94,11 +95,11 @@ EOF
   [ -f "$glossary_dir/ll" ] || return 1
   [ -f "$glossary_dir/jump" ] || return 1
   
-  # Verify ll gloss has correct target
-  grep -q 'exec parse "ls -la"' "$glossary_dir/ll" || return 1
+  # Verify ll gloss has correct target (parse command with full path or simple)
+  grep -q 'parse.*"ls -la"' "$glossary_dir/ll" || return 1
   
   # Verify jump gloss has correct target
-  grep -q 'exec parse "jump-to-marker"' "$glossary_dir/jump" || return 1
+  grep -q 'parse.*"jump-to-marker"' "$glossary_dir/jump" || return 1
 }
 
 test_all_spell_categories() {

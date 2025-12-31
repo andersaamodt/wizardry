@@ -348,7 +348,7 @@ invoke_wizardry() {
         # List all function names that need to be exported
         _iw_export_funcs="generate_glosses require_wizardry env_or env_clear temp_file cleanup_file on_exit"
         _iw_export_funcs="$_iw_export_funcs die warn fail say success info step debug has there is yes no empty nonempty"
-        _iw_export_funcs="$_iw_export_funcs cleanup_dir make_tempdir"
+        _iw_export_funcs="$_iw_export_funcs cleanup_dir make_tempdir find_executable"
         
         # CRITICAL: Get function definitions in PARENT shell BEFORE entering subshell
         # In zsh subshells, functions aren't inherited, so command -v returns false
@@ -395,7 +395,16 @@ invoke_wizardry() {
             printf '[generate_glosses bg] DEBUG: After re-eval, require_wizardry available: %s\n' "$(command -v require_wizardry 2>&1 || echo 'NO')" >&2
             printf '[generate_glosses bg] DEBUG: After re-eval, env_or available: %s\n' "$(command -v env_or 2>&1 || echo 'NO')" >&2
             printf '[generate_glosses bg] DEBUG: After re-eval, env_clear available: %s\n' "$(command -v env_clear 2>&1 || echo 'NO')" >&2
+            printf '[generate_glosses bg] DEBUG: After re-eval, find_executable available: %s\n' "$(command -v find_executable 2>&1 || echo 'NO')" >&2
+            printf '[generate_glosses bg] DEBUG: About to call generate_glosses --quiet\n' >&2
             generate_glosses --quiet
+            _gg_exit=$?
+            printf '[generate_glosses bg] DEBUG: generate_glosses completed with exit code: %d\n' "$_gg_exit" >&2
+            if [ "$_gg_exit" -eq 0 ]; then
+              printf '[wizardry] Glossary generation complete\n' >&2
+            else
+              printf '[wizardry] WARNING: Glossary generation failed with exit code %d\n' "$_gg_exit" >&2
+            fi
           ) &
           _iw_debug "Gloss generation running in background (errors will appear on terminal)"
         else
@@ -404,6 +413,10 @@ invoke_wizardry() {
             # Re-eval all function definitions captured from parent shell
             eval "$_iw_func_defs"
             generate_glosses --quiet
+            _gg_exit=$?
+            if [ "$_gg_exit" -eq 0 ]; then
+              printf '[wizardry] Glossary generation complete\n' >&2
+            fi
           ) 2>/dev/null &
         fi
       else
