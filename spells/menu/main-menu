@@ -2,7 +2,7 @@
 
 # This spell displays the ao-mud main menu.
 
-require-wizardry || return 1
+require_wizardry || return 1
 
 main_menu_usage() {
         cat <<'USAGE' >&2
@@ -24,7 +24,7 @@ case "${1-}" in
 esac
 
 set -eu
-env-clear
+env_clear
 
 # Load color palette (colors handles terminal capability detection internally).
 # When colors is preloaded as a function, call it directly; otherwise source the file.
