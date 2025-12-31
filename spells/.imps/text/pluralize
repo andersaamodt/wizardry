@@ -5,11 +5,9 @@
 # Example: pluralize "spell" 1  # -> spell
 # Example: pluralize "spell" 2  # -> spells
 set -eu
-
-pluralize() {
   if [ "$#" -lt 2 ]; then
     printf '%s\n' "pluralize: WORD COUNT [PLURAL]" >&2
-    return 2
+    exit 2
   fi
 
   _pluralize_word=$1
@@ -18,12 +16,12 @@ pluralize() {
 
   if [ "$_pluralize_count" -eq 1 ]; then
     printf '%s' "$_pluralize_word"
-    return 0
+    exit 0
   fi
 
   if [ -n "$_pluralize_plural" ]; then
     printf '%s' "$_pluralize_plural"
-    return 0
+    exit 0
   fi
 
   _pluralize_lower=$(printf '%s' "$_pluralize_word" | tr 'A-Z' 'a-z')
@@ -184,9 +182,3 @@ pluralize() {
       printf '%s' "$_pluralize_result"
       ;;
   esac
-}
-
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */pluralize) pluralize "$@" ;;
-esac

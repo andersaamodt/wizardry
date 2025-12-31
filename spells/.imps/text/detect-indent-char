@@ -3,26 +3,20 @@
 # Outputs: "space", "tab", or "space" (default). Example: indent=$(detect-indent-char config.nix)
 set -eu
 
-detect_indent_char() {
-  _dic_file=${1-}
+_dic_file=${1-}
 
-  if [ -z "$_dic_file" ] || [ ! -f "$_dic_file" ]; then
-    printf 'space\n'
-    return 0
-  fi
+if [ -z "$_dic_file" ] || [ ! -f "$_dic_file" ]; then
+  printf 'space\n'
+  exit 0
+fi
 
-  _dic_tabs=0
-  _dic_spaces=0
-  _dic_tabs=$(grep -c '^	' "$_dic_file" 2>/dev/null) || _dic_tabs=0
-  _dic_spaces=$(grep -c '^  ' "$_dic_file" 2>/dev/null) || _dic_spaces=0
+_dic_tabs=0
+_dic_spaces=0
+_dic_tabs=$(grep -c '^	' "$_dic_file" 2>/dev/null) || _dic_tabs=0
+_dic_spaces=$(grep -c '^  ' "$_dic_file" 2>/dev/null) || _dic_spaces=0
 
-  if [ "$_dic_tabs" -gt "$_dic_spaces" ]; then
-    printf 'tab\n'
-  else
-    printf 'space\n'
-  fi
-}
-
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */detect-indent-char) detect_indent_char "$@" ;; esac
+if [ "$_dic_tabs" -gt "$_dic_spaces" ]; then
+  printf 'tab\n'
+else
+  printf 'space\n'
+fi
