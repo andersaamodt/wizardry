@@ -1,1 +1,22 @@
+#!/bin/sh
+# pick LINE_NUMBER FILE - select a specific line from a file
+# Example: pick 2 file.txt  # -> second line of file.txt
 
+set -eu
+
+pick() {
+  line_num=${1-}
+  file=${2-}
+  
+  if [ -z "$line_num" ] || [ -z "$file" ]; then
+    printf 'pick: LINE_NUMBER FILE required\n' >&2
+    return 2
+  fi
+  
+  # Use sed to extract the specific line
+  sed -n "${line_num}p" "$file"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */pick) pick "$@" ;; esac
