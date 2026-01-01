@@ -143,7 +143,7 @@ Only report test results you have personally verified by executing the test file
 
 **CRITICAL RULE: Test files MUST correspond to actual spells or imps.** The `.tests/` directory structure must exactly mirror the `spells/` directory structure.
 
-❌ **WRONG**: Creating `.tests/spellcraft/test-no-duplicate-set-eu.sh` when there's no `spells/spellcraft/no-duplicate-set-eu` spell  
+❌ **WRONG**: Creating `.tests/spellcraft/test-no-duplicate-set-eu.sh` when there's no `spells/spellcraft/no-duplicate-set-eu` spell
 ✅ **CORRECT**: Integrating validation checks into existing spells like `lint-magic`
 
 Test files mirror the `spells/` directory structure with `test-` prefix (all hyphens):
