@@ -4,6 +4,16 @@
 # Sources the module and calls its true-name function.
 # NOTE: Avoid changing shell options when sourced into an interactive shell.
 if [ "${WIZARDRY_SOURCE_WORD_OF_BINDING-}" != "1" ]; then
+  # Save current shell mode to restore it later
+  _wob_saved_errexit=0
+  _wob_saved_nounset=0
+  if set -o | grep -E "errexit.*on" >/dev/null 2>&1; then
+    _wob_saved_errexit=1
+  fi
+  if set -o | grep -E "nounset.*on" >/dev/null 2>&1; then
+    _wob_saved_nounset=1
+  fi
+  
   set -eu
 fi
 
@@ -234,6 +244,17 @@ function brace_delta(s, n, m) {
     "$_wob_module" "$@"
   fi
 }
+
+# Restore shell mode if we changed it
+if [ "${WIZARDRY_SOURCE_WORD_OF_BINDING-}" != "1" ]; then
+  if [ "${_wob_saved_errexit-0}" -eq 0 ]; then
+    set +e
+  fi
+  if [ "${_wob_saved_nounset-0}" -eq 0 ]; then
+    set +u
+  fi
+  unset _wob_saved_errexit _wob_saved_nounset 2>/dev/null || :
+fi
 
 # Self-execute when run directly (not sourced)
 case "$0" in
