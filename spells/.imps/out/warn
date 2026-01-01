@@ -3,4 +3,10 @@
 # Example: warn "Something unexpected happened"
 set -eu
 
-printf '%s\n' "$*" >&2
+warn() {
+  printf '%s\n' "$*" >&2
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */warn) warn "$@" ;; esac
