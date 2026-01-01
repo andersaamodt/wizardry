@@ -5,7 +5,7 @@
 
 # Check if the correct number of arguments was provided
 
-path_wizard() {
+learn_spellbook() {
   if [ "$#" -ne 1 ] && [ "$#" -ne 2 ]; then
     echo "Error: This spell requires one or two arguments: 'add' or 'remove' and an optional directory path."
     return 1
@@ -85,4 +85,4 @@ path_wizard() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */path-wizard) path_wizard "$@" ;; esac
+  */learn-spellbook) learn_spellbook "$@" ;; esac

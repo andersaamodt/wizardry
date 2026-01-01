@@ -48,123 +48,113 @@ spell_levels() {
       _imps=''
       ;;
     7)
-      _name='Parsing'
-      _spells=''
-      _imps=''
-      ;;
-    8)
       _name='Arcane File Operations'
       _spells='copy:arcane trash:arcane jump-trash:arcane forall:arcane read-magic:arcane file-list:arcane'
       _imps='fs/backup fs/clip-copy fs/clip-paste fs/ensure-parent-dir menu/detect-trash text/read-file text/write-file text/lines text/each text/append text/count-chars text/make-indent text/drop text/last text/take text/skip text/first text/pick text/field'
       ;;
-    9)
+    8)
       _name='Basic Cantrips'
       _spells='ask ask-yn ask-text list-files max-length move up'
       _imps='input/select-input lex/from lex/to lex/and-then lex/into lex/disambiguate'
       ;;
-    10)
+    9)
       _name='Validation Helpers'
       _spells='validate-number validate-path require-command'
       _imps='input/validate-command input/validate-name lex/and lex/or'
       ;;
-    11)
+    10)
       _name='Advanced Cantrips'
       _spells='ask-number memorize'
       _imps=''
       ;;
-    12)
+    11)
       _name='System Configuration'
-      _spells='config:system logs:system package-managers:system'
+      _spells='config:system logs:system package-managers:system learn-spellbook'
       _imps='fs/config-get fs/config-set fs/config-has fs/config-del pkg/pkg-manager pkg/pkg-has pkg/pkg-install pkg/pkg-remove pkg/pkg-update pkg/pkg-upgrade'
       ;;
-    13)
+    12)
       _name='Testing Infrastructure'
       _spells='test-spell:system test-magic:system pocket-dimension:system logging-example wizard-eyes'
       _imps='test/boot/assert-error-contains test/boot/assert-failure test/boot/assert-file-contains test/boot/assert-output-contains test/boot/assert-path-exists test/boot/assert-path-missing test/boot/assert-status test/boot/assert-success test/boot/find-repo-root test/boot/finish-tests test/boot/init-test-counters test/boot/link-tools test/boot/make-fixture test/boot/make-tempdir test/boot/provide-basic-tools test/boot/record-failure-detail test/boot/report-result test/boot/run-both-patterns test/boot/run-bwrap test/boot/run-cmd test/boot/run-macos-sandbox test/boot/run-sourced-spell test/boot/run-spell test/boot/run-spell-in-dir test/boot/run-test-case test/boot/skip-if-compiled test/boot/skip-if-uncompiled test/boot/stub-nix-env test/boot/stub-pacman test/boot/test-fail test/boot/test-heading test/boot/test-lack test/boot/test-pass test/boot/test-skip test/boot/test-summary test/boot/write-apt-stub test/boot/write-command-stub test/boot/write-pkgin-stub test/boot/write-sudo-stub test/stub-cursor-blink test/stub-fathom-terminal test/stub-stty test/stub-await-keypress test/stub-fathom-cursor test/stub-move-cursor test/test-bootstrap sys/rc-add-line sys/rc-has-line sys/rc-remove-line'
       ;;
-    14)
+    13)
       _name='System Maintenance'
       _spells='update-wizardry:system update-all:system kill-process:system'
       _imps='fs/backup-nix-config'
       ;;
-    15)
+    14)
       _name='Advanced System Tools'
       _spells='demo-magic:system wizard-cast'
       _imps=''
       ;;
-    16)
+    15)
       _name='Divination'
       _spells='detect-rc-file:divination detect-magic:divination identify-room:divination'
       _imps='sys/os sys/term text/detect-indent-char text/detect-indent-width lang/possessive'
       ;;
-    17)
+    16)
       _name='Advanced MUD Features'
       _spells='decorate:mud choose-player:mud'
       _imps=''
       ;;
-    18)
+    17)
       _name='Cryptography'
       _spells='hash:crypto evoke-hash:crypto hashchant:crypto'
       _imps=''
       ;;
-    19)
+    18)
       _name='SSH & Remote Access'
       _spells='validate-ssh-key enchant-portkey:translocation follow-portkey:translocation open-portal:translocation open-teletype:translocation reload-ssh restart-ssh'
       _imps=''
       ;;
-    20)
+    19)
       _name='Task Priorities'
       _spells='get-priority:priorities get-new-priority:priorities prioritize:priorities upvote:priorities'
       _imps=''
       ;;
-    21)
+    20)
       _name='Security Wards'
       _spells='ssh-barrier:wards'
       _imps='fs/sed-inplace'
       ;;
-    22)
+    21)
       _name='Extended Attributes'
       _spells='enchant:enchant disenchant:enchant enchantment-to-yaml:enchant yaml-to-enchantment:enchant'
       _imps=''
       ;;
-    23)
+    22)
       _name='Process & System Info (PSI)'
       _spells='list-contacts:psi read-contact:psi'
       _imps=''
       ;;
-    24)
+    23)
       _name='Spellcraft Development Tools'
       _spells='scribe-spell:spellcraft lint-magic:spellcraft compile-spell:spellcraft learn:spellcraft forget:spellcraft erase-spell:spellcraft doppelganger:spellcraft add-synonym:spellcraft edit-synonym:spellcraft delete-synonym:spellcraft reset-default-synonyms:spellcraft bind-tome:spellcraft unbind-tome:spellcraft merge-yaml-text:spellcraft'
       _imps=''
       ;;
-    25)
+    24)
       _name='Core Menu Infrastructure'
       _spells='spellbook-store spellbook:menu cast:menu spell-menu:menu'
       _imps=''
       ;;
-    26)
+    25)
       _name='System & Configuration Menus'
       _spells='system-menu:menu install-menu:menu synonym-menu:menu thesaurus:menu'
       _imps=''
       ;;
-    27)
+    26)
       _name='MUD Administration Menus'
       _spells='mud:menu mud-menu:menu mud-settings:menu mud-admin-menu:menu add-ssh-player:menu/mud-admin new-player:menu/mud-admin set-player:menu/mud-admin'
       _imps=''
       ;;
-    28)
+    27)
       _name='Domain-Specific Menus'
       _spells='network-menu:menu services-menu:menu shutdown-menu:menu priority-menu:menu priorities:menu users-menu:menu profile-tests:menu/system'
       _imps=''
       ;;
-    29)
+    28)
       _name='System Service Management'
       _spells='install-service-template is-service-installed enable-service disable-service start-service stop-service restart-service service-status remove-service'
-      _imps=''
-      ;;
-    30)
-      _name='Optional Arcana & Third-Party Integrations'
-      _spells=''
       _imps=''
       ;;
     *)
