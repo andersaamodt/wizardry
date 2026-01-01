@@ -13,9 +13,9 @@ get_all_spells_from_levels() {
   level=0
   while [ "$level" -le 27 ]; do
     # Source banish and call get_level_spells
-    cd "$ROOT_DIR" && ./spells/.wizardry/banish --help >/dev/null 2>&1
+    cd "$ROOT_DIR" && ./spells/system/banish --help >/dev/null 2>&1
     # Extract spell definitions by parsing the get_level_spells function
-    spells=$(sed -n "/^get_level_spells/,/^}/p" "$ROOT_DIR/spells/.wizardry/banish" | \
+    spells=$(sed -n "/^get_level_spells/,/^}/p" "$ROOT_DIR/spells/system/banish" | \
              sed -n "/$level) printf '/s/.*printf '//;s/' ;;//p")
     
     if [ -n "$spells" ]; then

@@ -77,7 +77,7 @@ demo_level() {
       # Demonstrate validate-spells
       if [ -f "${WIZARDRY_DIR}/spells/.wizardry/validate-spells" ]; then
         printf 'The wizard casts validate-spells on core infrastructure...\n'
-        "${WIZARDRY_DIR}/spells/.wizardry/validate-spells" banish:.wizardry validate-spells:.wizardry 2>&1 | head -3
+        "${WIZARDRY_DIR}/spells/.wizardry/validate-spells" banish:system validate-spells:.wizardry 2>&1 | head -3
         printf '\n'
       fi
       
@@ -397,7 +397,7 @@ demo_level() {
       # Demonstrate lint-magic
       if [ -f "${WIZARDRY_DIR}/spells/spellcraft/lint-magic" ]; then
         printf 'The wizard casts lint-magic on demo-magic itself...\n'
-        "${WIZARDRY_DIR}/spells/spellcraft/lint-magic" "${WIZARDRY_DIR}/spells/.wizardry/demo-magic" 2>&1 | head -3 || true
+        "${WIZARDRY_DIR}/spells/spellcraft/lint-magic" "${WIZARDRY_DIR}/spells/spellcraft/demo-magic" 2>&1 | head -3 || true
         printf '\n'
       fi
       

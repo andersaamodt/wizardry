@@ -2268,18 +2268,18 @@ test_platform_detection_available() {
 
 # META: banish spell exists and is the environment preparer
 test_banish_spell_exists_and_is_executable() {
-  if [ ! -f "$ROOT_DIR/spells/.wizardry/banish" ]; then
+  if [ ! -f "$ROOT_DIR/spells/system/banish" ]; then
     TEST_FAILURE_REASON="banish spell not found"
     return 1
   fi
   
-  if [ ! -x "$ROOT_DIR/spells/.wizardry/banish" ]; then
+  if [ ! -x "$ROOT_DIR/spells/system/banish" ]; then
     TEST_FAILURE_REASON="banish spell is not executable"
     return 1
   fi
   
   # Verify banish has usage that mentions environment preparation
-  if ! grep -qi "environment" "$ROOT_DIR/spells/.wizardry/banish"; then
+  if ! grep -qi "environment" "$ROOT_DIR/spells/system/banish"; then
     TEST_FAILURE_REASON="banish doesn't mention environment preparation"
     return 1
   fi

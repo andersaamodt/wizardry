@@ -19,7 +19,7 @@ spell_levels() {
       ;;
     1)
       _name='Banish & Validation Infrastructure'
-      _spells='banish:.wizardry validate-spells:.wizardry'
+      _spells='banish:system validate-spells:.wizardry'
       _imps='sys/spell-levels cond/has cond/there cond/is cond/empty cond/nonempty cond/no cond/within-range cond/lacks cond/newer cond/full cond/gone cond/is-path cond/has-ancestor cond/is-posint cond/yes cond/given cond/older out/say out/warn out/die out/fail out/info out/step out/success out/debug out/ok out/heading-section out/heading-separator out/heading-simple out/usage-error out/first-of out/or-else out/print-pass out/print-fail out/disable-palette out/quiet text/pluralize text/count-words'
       ;;
     2)
@@ -84,7 +84,7 @@ spell_levels() {
       ;;
     14)
       _name='Advanced System Tools'
-      _spells='demo-magic:.wizardry wizard-cast'
+      _spells='demo-magic:spellcraft wizard-cast'
       _imps=''
       ;;
     15)

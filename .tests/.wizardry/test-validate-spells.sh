@@ -14,7 +14,7 @@ test_help() {
 }
 
 test_validate_existing_spells() {
-  WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/.wizardry/validate-spells" "banish:.wizardry"
+  WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/.wizardry/validate-spells" "banish:system"
   assert_success || return 1
   assert_output_contains "Found spell: banish" || return 1
 }
@@ -70,7 +70,7 @@ test_show_status_loaded() {
 }
 
 test_quiet_flag() {
-  WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/.wizardry/validate-spells" --quiet "banish:.wizardry"
+  WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/.wizardry/validate-spells" --quiet "banish:system"
   assert_success || return 1
   # Quiet should suppress "Found spell" messages
   [ -z "$OUTPUT" ] || return 1

@@ -106,11 +106,11 @@ fi
 # Run banish to verify environment assumptions (if available)
 # This helps catch environment issues early in test runs
 # Skip if already running within banish (prevents recursion)
-if [ -f "$ROOT_DIR/spells/.wizardry/banish" ]; then
+if [ -f "$ROOT_DIR/spells/system/banish" ]; then
   # Use in-ancestry imp to detect if we're already inside banish
   if ! "$ROOT_DIR/spells/.imps/cond/in-ancestry" banish 2>/dev/null; then
     # Run banish silently (log level 0) - it will only output warnings/errors
-    if ! "$ROOT_DIR/spells/.wizardry/banish" </dev/null >/dev/null 2>&1; then
+    if ! "$ROOT_DIR/spells/system/banish" </dev/null >/dev/null 2>&1; then
       # banish failed - environment has issues, but proceed with warning
       printf 'WARNING: banish detected environment issues (tests may fail)\n' >&2
     fi
