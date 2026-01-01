@@ -19,13 +19,15 @@ set +eu
 
 # Prevent recursive sourcing
 if [ "${_WIZARDRY_INVOKED-}" = "1" ]; then
-  [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Already invoked, skipping" >&2
+  [ "${WIZARDRY_DEBUG-}" = "1" ] && \
+    printf '[invoke-wizardry] %s\n' "Already invoked, skipping" >&2
   return 0
 fi
 _WIZARDRY_INVOKED=1
 export _WIZARDRY_INVOKED
 
-_iw_debug "Starting wizardry initialization"
+[ "${WIZARDRY_DEBUG-}" = "1" ] && \
+  printf '[invoke-wizardry] %s\n' "Starting wizardry initialization" >&2
 
 invoke_wizardry() {
   # CRITICAL: Enable word splitting in zsh for all for-loops in this function
@@ -275,11 +277,13 @@ invoke_wizardry() {
               fi
               
               if [ "$_is_function" -eq 1 ]; then
-                _iw_debug "  ↻ Cached: $_spell_name"
+                [ "${WIZARDRY_DEBUG-}" = "1" ] && \
+                  printf '[invoke-wizardry] %s\n' "  ↻ Cached: $_spell_name" >&2
                 break  # Exit spell directory search loop
               fi
               
-              _iw_debug "Loading spell: $_spell_name"
+              [ "${WIZARDRY_DEBUG-}" = "1" ] && \
+                printf '[invoke-wizardry] %s\n' "Loading spell: $_spell_name" >&2
               if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
                 printf '[invoke-wizardry] DEBUG: BEFORE word_of_binding call for %s\n' "$_spell_name" >&2
                 printf '[invoke-wizardry] DEBUG:   Spell file: %s\n' "$_spell_file" >&2
@@ -304,7 +308,8 @@ invoke_wizardry() {
                   printf '[invoke-wizardry] DEBUG: word_of_binding FAILED for %s\n' "$_spell_name" >&2
                 fi
               fi
-              _iw_debug "  $_iw_status: $_spell_name"
+              [ "${WIZARDRY_DEBUG-}" = "1" ] && \
+                printf '[invoke-wizardry] %s\n' "  $_iw_status: $_spell_name" >&2
               if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
                 printf '[invoke-wizardry] DEBUG: Completed processing spell: %s\n' "$_spell_name" >&2
               fi
