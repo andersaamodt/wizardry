@@ -93,20 +93,33 @@ jobs:
             # Get job logs
             if gh api "/repos/${{ github.repository }}/actions/jobs/${job_id}/logs" > /tmp/log.txt 2>&1; then
               
-              # Show filtered failures first
-              if grep -i -E "(FAIL|ERROR|✗|❌)" /tmp/log.txt > /tmp/fail.txt 2>/dev/null; then
-                echo "--- Failure Lines ---"
-                head -200 /tmp/fail.txt
+              # Extract relevant failure text based on job type
+              if echo "$job_name" | grep -qi "unit test"; then
+                # For unit tests, extract the test summary
+                echo "--- Test Summary ---"
+                if grep -q "=== Test Summary ===" /tmp/log.txt; then
+                  sed -n '/=== Test Summary ===/,/^===/p' /tmp/log.txt | head -n -1
+                else
+                  # Fallback: show lines with test results
+                  grep -E "tests? passed|FAIL|Failed" /tmp/log.txt | tail -20
+                fi
                 echo ""
               else
-                echo "No specific failure patterns found."
-                echo ""
+                # For other workflows, extract error lines and context
+                if grep -q "##\[error\]" /tmp/log.txt; then
+                  echo "--- Errors ---"
+                  grep -B 3 -A 5 "##\[error\]" /tmp/log.txt | head -50
+                  echo ""
+                elif grep -qi "FAIL\|ERROR" /tmp/log.txt; then
+                  echo "--- Failure Details ---"
+                  grep -i -B 2 -A 3 "FAIL\|ERROR" /tmp/log.txt | head -50
+                  echo ""
+                else
+                  echo "--- Log Context (last 30 lines) ---"
+                  tail -30 /tmp/log.txt
+                  echo ""
+                fi
               fi
-              
-              # Show last 50 lines for context
-              echo "--- Log Context (last 50 lines) ---"
-              tail -50 /tmp/log.txt
-              echo ""
               
             else
               echo "⚠️ Failed to download logs for job: $job_name"
