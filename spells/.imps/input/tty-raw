@@ -3,4 +3,11 @@
 # Example: tty-raw && dd bs=1 count=1 2>/dev/null
 set -eu
 
-stty -icanon -echo min 1 time 0 2>/dev/null
+tty_raw() {
+
+  stty -icanon -echo min 1 time 0 2>/dev/null
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */tty-raw) tty_raw "$@" ;; esac

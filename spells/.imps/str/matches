@@ -3,4 +3,11 @@
 # Example: matches "^ID=nixos" /etc/os-release && echo "NixOS detected"
 set -eu
 
-grep -q -- "$1" "$2" 2>/dev/null
+matches() {
+
+  grep -q -- "$1" "$2" 2>/dev/null
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */matches) matches "$@" ;; esac

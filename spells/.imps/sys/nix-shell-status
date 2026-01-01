@@ -3,15 +3,22 @@
 # Example: nix-shell-status myspell home.nix && echo "installed"
 set -eu
 
-  _nss_block_name=${1:-}
-  _nss_nix_file=${2:-}
+nix_shell_status() {
 
-  if [ -z "$_nss_block_name" ] || [ -z "$_nss_nix_file" ]; then
-    printf '%s\n' "nix-shell-status: NAME and FILE are required" >&2
-    exit 1
-  fi
+    _nss_block_name=${1:-}
+    _nss_nix_file=${2:-}
 
-  _nss_marker="# wizardry: $_nss_block_name"
+    if [ -z "$_nss_block_name" ] || [ -z "$_nss_nix_file" ]; then
+      printf '%s\n' "nix-shell-status: NAME and FILE are required" >&2
+      return 1
+    fi
 
-  [ -f "$_nss_nix_file" ] && grep -Fq "$_nss_marker" "$_nss_nix_file" 2>/dev/null
-  exit $?
+    _nss_marker="# wizardry: $_nss_block_name"
+
+    [ -f "$_nss_nix_file" ] && grep -Fq "$_nss_marker" "$_nss_nix_file" 2>/dev/null
+    return $?
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */nix-shell-status) nix_shell_status "$@" ;; esac

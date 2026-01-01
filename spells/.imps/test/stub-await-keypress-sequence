@@ -7,38 +7,45 @@
 
 set -eu
 
-  # Get the sequence from environment, default to "enter"
-  sequence="${AWAIT_KEYPRESS_SEQUENCE:-enter}"
+stub_await_keypress_sequence() {
+
+    # Get the sequence from environment, default to "enter"
+    sequence="${AWAIT_KEYPRESS_SEQUENCE:-enter}"
   
-  # Get or create the sequence index file
-  index_file="${AWAIT_KEYPRESS_INDEX_FILE:-${TMPDIR:-/tmp}/await-keypress-sequence-index}"
+    # Get or create the sequence index file
+    index_file="${AWAIT_KEYPRESS_INDEX_FILE:-${TMPDIR:-/tmp}/await-keypress-sequence-index}"
   
-  # Read current index (default to 0)
-  if [ -f "$index_file" ]; then
-    index=$(cat "$index_file")
-  else
-    index=0
-  fi
+    # Read current index (default to 0)
+    if [ -f "$index_file" ]; then
+      index=$(cat "$index_file")
+    else
+      index=0
+    fi
   
-  # Convert sequence to array (space-separated)
-  set -- $sequence
-  total=$#
+    # Convert sequence to array (space-separated)
+    set -- $sequence
+    total=$#
   
-  # Calculate actual index (1-based for positional params)
-  actual_index=$((index + 1))
+    # Calculate actual index (1-based for positional params)
+    actual_index=$((index + 1))
   
-  # Wrap around if index exceeds sequence length
-  if [ "$actual_index" -gt "$total" ]; then
-    actual_index=1
-    index=0
-  fi
+    # Wrap around if index exceeds sequence length
+    if [ "$actual_index" -gt "$total" ]; then
+      actual_index=1
+      index=0
+    fi
   
-  # Get the key at current index
-  eval "key=\${$actual_index}"
+    # Get the key at current index
+    eval "key=\${$actual_index}"
   
-  # Increment and save index for next call
-  index=$((index + 1))
-  printf '%d' "$index" > "$index_file"
+    # Increment and save index for next call
+    index=$((index + 1))
+    printf '%d' "$index" > "$index_file"
   
-  # Return the key
-  printf '%s\n' "$key"
+    # Return the key
+    printf '%s\n' "$key"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */stub-await-keypress-sequence) stub_await_keypress_sequence "$@" ;; esac

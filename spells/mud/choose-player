@@ -1,13 +1,13 @@
 #!/bin/sh
 
-# This spell displays a menu to select and set the current MUD player.
+# This spell displays a menu to choose and set the current MUD player.
 # Use it to switch between player identities from available SSH keys.
 
 require-wizardry || return 1
 
-select_player_usage() {
+choose_player_usage() {
 cat <<'USAGE'
-Usage: select-player
+Usage: choose-player
 
 Display an interactive menu of player identities from ~/.ssh/*.pub and set MUD_PLAYER to the one you choose.
 USAGE
@@ -15,10 +15,10 @@ USAGE
 
 
 
-select_player() {
+choose_player() {
 case "${1-}" in
 --help|--usage|-h)
-  select_player_usage
+  choose_player_usage
   return 0
   ;;
 esac

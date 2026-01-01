@@ -4,4 +4,11 @@
 
 # Note: No set -eu because this is a conditional imp (returns exit codes for flow control)
 
-[ -n "$1" ]
+
+nonempty() {
+  [ -n "$1" ]
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */nonempty) nonempty "$@" ;; esac

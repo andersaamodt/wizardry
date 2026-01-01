@@ -1,5 +1,5 @@
 #!/bin/sh
-# Test coverage for select-player spell:
+# Test coverage for choose-player spell:
 # - Shows usage with --help
 # - Is POSIX compliant
 
@@ -13,28 +13,28 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  run_spell "spells/mud/select-player" --help
+  run_spell "spells/mud/choose-player" --help
   assert_success || return 1
-  assert_output_contains "Usage: select-player" || return 1
+  assert_output_contains "Usage: choose-player" || return 1
 }
 
 test_help_h_flag() {
-  run_spell "spells/mud/select-player" -h
+  run_spell "spells/mud/choose-player" -h
   assert_success || return 1
-  assert_output_contains "Usage: select-player" || return 1
+  assert_output_contains "Usage: choose-player" || return 1
 }
 
 test_has_strict_mode() {
   # Verify the spell uses strict mode
-  grep -q "set -eu" "$ROOT_DIR/spells/mud/select-player" || {
+  grep -q "set -eu" "$ROOT_DIR/spells/mud/choose-player" || {
     TEST_FAILURE_REASON="spell does not use strict mode"
     return 1
   }
 }
 
-run_test_case "select-player shows usage text" test_help
-run_test_case "select-player shows usage with -h" test_help_h_flag
-run_test_case "select-player uses strict mode" test_has_strict_mode
+run_test_case "choose-player shows usage text" test_help
+run_test_case "choose-player shows usage with -h" test_help_h_flag
+run_test_case "choose-player uses strict mode" test_has_strict_mode
 
 
 # Test via source-then-invoke pattern  

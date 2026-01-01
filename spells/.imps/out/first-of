@@ -3,7 +3,14 @@
 # Example: name=$(first-of "$NICK" "$USER")
 set -eu
 
-if [ -n "$1" ]; then printf '%s' "$1"
-elif [ -n "$2" ]; then printf '%s' "$2"
-else exit 1
-fi
+first_of() {
+
+  if [ -n "$1" ]; then printf '%s' "$1"
+  elif [ -n "$2" ]; then printf '%s' "$2"
+  else return 1
+  fi
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */first-of) first_of "$@" ;; esac

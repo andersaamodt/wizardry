@@ -3,4 +3,11 @@
 # Example: name=$(file-name /path/to/file.txt)  # outputs: file.txt
 set -eu
 
-printf '%s\n' "${1##*/}"
+file_name() {
+
+  printf '%s\n' "${1##*/}"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */file-name) file_name "$@" ;; esac

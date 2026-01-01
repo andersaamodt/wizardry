@@ -6,6 +6,13 @@
 
 set -eu
 
-  # Return "enter" to simulate user pressing enter key
-  # This allows menu to select current item and exit
-  printf 'enter\n'
+stub_await_keypress() {
+
+    # Return "enter" to simulate user pressing enter key
+    # This allows menu to select current item and exit
+    printf 'enter\n'
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */stub-await-keypress) stub_await_keypress "$@" ;; esac

@@ -2,4 +2,11 @@
 # gone PATH - test if path does NOT exist
 # Example: gone /etc/config && echo "not found"
 
-[ ! -e "$1" ]
+
+gone() {
+  [ ! -e "$1" ]
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */gone) gone "$@" ;; esac

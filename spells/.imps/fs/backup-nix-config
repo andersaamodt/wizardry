@@ -4,42 +4,49 @@
 # Example: backup-nix-config /etc/nixos/configuration.nix
 set -eu
 
-_bnc_file=${1:-}
+backup_nix_config() {
 
-if [ -z "$_bnc_file" ]; then
-  printf '%s\n' "backup-nix-config: file path required" >&2
-  exit 1
-fi
+  _bnc_file=${1:-}
 
-if [ ! -f "$_bnc_file" ]; then
-  exit 0
-fi
+  if [ -z "$_bnc_file" ]; then
+    printf '%s\n' "backup-nix-config: file path required" >&2
+    return 1
+  fi
 
-_bnc_timestamp=$(date +%Y%m%d%H%M%S 2>/dev/null || date +%s 2>/dev/null || printf 'pid%s' "$$")
-_bnc_backup="${_bnc_file}.wizardry.${_bnc_timestamp}"
+  if [ ! -f "$_bnc_file" ]; then
+    return 0
+  fi
 
-_bnc_needs_sudo=0
-case $_bnc_file in
-  /etc/*)
-    if [ ! -w "$_bnc_file" ] && [ ! -w "$(dirname "$_bnc_file")" ] 2>/dev/null; then
-      _bnc_needs_sudo=1
+  _bnc_timestamp=$(date +%Y%m%d%H%M%S 2>/dev/null || date +%s 2>/dev/null || printf 'pid%s' "$$")
+  _bnc_backup="${_bnc_file}.wizardry.${_bnc_timestamp}"
+
+  _bnc_needs_sudo=0
+  case $_bnc_file in
+    /etc/*)
+      if [ ! -w "$_bnc_file" ] && [ ! -w "$(dirname "$_bnc_file")" ] 2>/dev/null; then
+        _bnc_needs_sudo=1
+      fi
+      ;;
+  esac
+
+  if [ "$_bnc_needs_sudo" -eq 1 ]; then
+    if command -v sudo >/dev/null 2>&1; then
+      sudo cp "$_bnc_file" "$_bnc_backup"
+    elif command -v doas >/dev/null 2>&1; then
+      doas cp "$_bnc_file" "$_bnc_backup"
+    else
+      cp "$_bnc_file" "$_bnc_backup"
     fi
-    ;;
-esac
-
-if [ "$_bnc_needs_sudo" -eq 1 ]; then
-  if command -v sudo >/dev/null 2>&1; then
-    sudo cp "$_bnc_file" "$_bnc_backup"
-  elif command -v doas >/dev/null 2>&1; then
-    doas cp "$_bnc_file" "$_bnc_backup"
   else
     cp "$_bnc_file" "$_bnc_backup"
-  fi
-else
-  cp "$_bnc_file" "$_bnc_backup"
-fi || {
-  printf '%s\n' "backup-nix-config: unable to back up '$_bnc_file'" >&2
-  exit 1
+  fi || {
+    printf '%s\n' "backup-nix-config: unable to back up '$_bnc_file'" >&2
+    return 1
+  }
+
+  printf '%s\n' "Backed up '$_bnc_file' to '$_bnc_backup'" >&2
 }
 
-printf '%s\n' "Backed up '$_bnc_file' to '$_bnc_backup'" >&2
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */backup-nix-config) backup_nix_config "$@" ;; esac

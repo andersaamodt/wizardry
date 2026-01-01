@@ -6,43 +6,50 @@
 
 set -eu
 
-text=${1-}
-width=${2:-76}
-prefix=${3:-#}
+heading_separator() {
 
-# Calculate dash spacing
-text_len=${#text}
-prefix_len=${#prefix}
-# Total width - prefix - space - text - space
-dash_space=$((width - prefix_len - 1 - text_len - 1))
+  text=${1-}
+  width=${2:-76}
+  prefix=${3:-#}
 
-# Ensure minimum dash space
-if [ "$dash_space" -lt 8 ]; then
-  # Text too long, truncate it
-  max_text_len=$((width - prefix_len - 1 - 8 - 1))
-  if [ "$max_text_len" -lt 1 ]; then
-    max_text_len=1
-  fi
-  text=$(printf '%s' "$text" | cut -c1-"$max_text_len")
+  # Calculate dash spacing
   text_len=${#text}
+  prefix_len=${#prefix}
+  # Total width - prefix - space - text - space
   dash_space=$((width - prefix_len - 1 - text_len - 1))
-fi
 
-left_dashes=$((dash_space / 2))
-right_dashes=$((dash_space - left_dashes))
+  # Ensure minimum dash space
+  if [ "$dash_space" -lt 8 ]; then
+    # Text too long, truncate it
+    max_text_len=$((width - prefix_len - 1 - 8 - 1))
+    if [ "$max_text_len" -lt 1 ]; then
+      max_text_len=1
+    fi
+    text=$(printf '%s' "$text" | cut -c1-"$max_text_len")
+    text_len=${#text}
+    dash_space=$((width - prefix_len - 1 - text_len - 1))
+  fi
 
-# Build the separator line
-separator="$prefix "
-i=0
-while [ "$i" -lt "$left_dashes" ]; do
-  separator="${separator}-"
-  i=$((i + 1))
-done
-separator="${separator} ${text} "
-i=0
-while [ "$i" -lt "$right_dashes" ]; do
-  separator="${separator}-"
-  i=$((i + 1))
-done
+  left_dashes=$((dash_space / 2))
+  right_dashes=$((dash_space - left_dashes))
 
-printf '%s\n' "$separator"
+  # Build the separator line
+  separator="$prefix "
+  i=0
+  while [ "$i" -lt "$left_dashes" ]; do
+    separator="${separator}-"
+    i=$((i + 1))
+  done
+  separator="${separator} ${text} "
+  i=0
+  while [ "$i" -lt "$right_dashes" ]; do
+    separator="${separator}-"
+    i=$((i + 1))
+  done
+
+  printf '%s\n' "$separator"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */heading-separator) heading_separator "$@" ;; esac

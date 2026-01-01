@@ -4,7 +4,14 @@
 
 # Note: No set -eu because this is a conditional imp (returns exit codes for flow control)
 
-case "$1" in
-  y|Y|yes|YES|Yes|true|TRUE|True|1) exit 0 ;;
-  *) exit 1 ;;
-esac
+
+yes() {
+  case "$1" in
+    y|Y|yes|YES|Yes|true|TRUE|True|1) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */yes) yes "$@" ;; esac

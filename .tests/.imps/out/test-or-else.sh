@@ -12,13 +12,13 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_else_uses_default() {
-  run_cmd sh -c "printf '' | '$ROOT_DIR/spells/.imps/out/else' 'fallback'"
+  run_cmd sh -c "printf '' | '$ROOT_DIR/spells/.imps/out/or-else' 'fallback'"
   assert_success
   assert_output_contains "fallback"
 }
 
 test_else_passes_through() {
-  run_cmd sh -c "printf 'original' | '$ROOT_DIR/spells/.imps/out/else' 'fallback'"
+  run_cmd sh -c "printf 'original' | '$ROOT_DIR/spells/.imps/out/or-else' 'fallback'"
   assert_success
   assert_output_contains "original"
 }

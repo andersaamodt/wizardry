@@ -4,13 +4,20 @@
 
 set -eu
 
-text=${1-}
+print_pass() {
 
-# Use colors if supported
-if [ -t 1 ] && command -v tput >/dev/null 2>&1 && tput setaf 1 >/dev/null 2>&1; then
-  green=$(tput setaf 2 2>/dev/null || true)
-  reset=$(tput sgr0 2>/dev/null || true)
-  printf '%sPASS%s %s\n' "$green" "$reset" "$text"
-else
-  printf 'PASS %s\n' "$text"
-fi
+  text=${1-}
+
+  # Use colors if supported
+  if [ -t 1 ] && command -v tput >/dev/null 2>&1 && tput setaf 1 >/dev/null 2>&1; then
+    green=$(tput setaf 2 2>/dev/null || true)
+    reset=$(tput sgr0 2>/dev/null || true)
+    printf '%sPASS%s %s\n' "$green" "$reset" "$text"
+  else
+    printf 'PASS %s\n' "$text"
+  fi
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */print-pass) print_pass "$@" ;; esac

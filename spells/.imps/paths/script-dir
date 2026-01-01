@@ -5,37 +5,44 @@
 # Follows symlinks to return the actual filesystem location.
 set -eu
 
-_sd_script=${1:-$0}
+script_dir() {
 
-# Extract initial directory portion
-case "$_sd_script" in
-  */*) _sd_dir=${_sd_script%/*} ;;
-  *)   _sd_dir=. ;;
-esac
+  _sd_script=${1:-$0}
 
-# Handle symlinks: follow the link if it's a symlink
-# Use readlink if available; fall back to ls -l parsing
-if [ -L "$_sd_script" ]; then
-  if command -v readlink >/dev/null 2>&1; then
-    _sd_target=$(readlink "$_sd_script" 2>/dev/null) || _sd_target=''
-  else
-    # Fallback: parse ls -l output (format: "... -> target")
-    # shellcheck disable=SC2012
-    _sd_target=$(ls -l "$_sd_script" 2>/dev/null | sed 's/.*-> //' || true)
-  fi
+  # Extract initial directory portion
+  case "$_sd_script" in
+    */*) _sd_dir=${_sd_script%/*} ;;
+    *)   _sd_dir=. ;;
+  esac
+
+  # Handle symlinks: follow the link if it's a symlink
+  # Use readlink if available; fall back to ls -l parsing
+  if [ -L "$_sd_script" ]; then
+    if command -v readlink >/dev/null 2>&1; then
+      _sd_target=$(readlink "$_sd_script" 2>/dev/null) || _sd_target=''
+    else
+      # Fallback: parse ls -l output (format: "... -> target")
+      # shellcheck disable=SC2012
+      _sd_target=$(ls -l "$_sd_script" 2>/dev/null | sed 's/.*-> //' || true)
+    fi
   
-  if [ -n "$_sd_target" ]; then
-    case "$_sd_target" in
-      # Absolute path: extract directory
-      /*) _sd_dir=${_sd_target%/*} ;;
-      # Relative path with directory component: combine with current dir
-      */*) _sd_dir="$_sd_dir/${_sd_target%/*}" ;;
-      # Just a filename (no directory): keep current _sd_dir
-      *) : ;;
-    esac
+    if [ -n "$_sd_target" ]; then
+      case "$_sd_target" in
+        # Absolute path: extract directory
+        /*) _sd_dir=${_sd_target%/*} ;;
+        # Relative path with directory component: combine with current dir
+        */*) _sd_dir="$_sd_dir/${_sd_target%/*}" ;;
+        # Just a filename (no directory): keep current _sd_dir
+        *) : ;;
+      esac
+    fi
   fi
-fi
 
-# Convert to absolute path and normalize; return failure if cd fails
-# shellcheck disable=SC1007
-(CDPATH= cd -- "$_sd_dir" && pwd -P) | sed 's|///*|/|g'
+  # Convert to absolute path and normalize; return failure if cd fails
+  # shellcheck disable=SC1007
+  (CDPATH= cd -- "$_sd_dir" && pwd -P) | sed 's|///*|/|g'
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */script-dir) script_dir "$@" ;; esac

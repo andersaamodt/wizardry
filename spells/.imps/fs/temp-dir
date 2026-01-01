@@ -3,13 +3,20 @@
 # Example: tmpdir=$(temp-dir myapp) && trap 'cleanup-dir "$tmpdir"' EXIT
 set -eu
 
-_td_prefix=${1:-wizardry}
-# Prefer WIZARDRY_TMPDIR if set and exists, otherwise use TMPDIR or /tmp
-# This handles test environments where TMPDIR may point to sandbox dirs
-if [ -n "${WIZARDRY_TMPDIR-}" ] && [ -d "$WIZARDRY_TMPDIR" ]; then
-  mktemp -d "${WIZARDRY_TMPDIR}/${_td_prefix}.XXXXXX"
-elif [ -n "${TMPDIR-}" ] && [ -d "$TMPDIR" ]; then
-  mktemp -d "${TMPDIR}/${_td_prefix}.XXXXXX"
-else
-  mktemp -d "/tmp/${_td_prefix}.XXXXXX"
-fi
+temp_dir() {
+
+  _td_prefix=${1:-wizardry}
+  # Prefer WIZARDRY_TMPDIR if set and exists, otherwise use TMPDIR or /tmp
+  # This handles test environments where TMPDIR may point to sandbox dirs
+  if [ -n "${WIZARDRY_TMPDIR-}" ] && [ -d "$WIZARDRY_TMPDIR" ]; then
+    mktemp -d "${WIZARDRY_TMPDIR}/${_td_prefix}.XXXXXX"
+  elif [ -n "${TMPDIR-}" ] && [ -d "$TMPDIR" ]; then
+    mktemp -d "${TMPDIR}/${_td_prefix}.XXXXXX"
+  else
+    mktemp -d "/tmp/${_td_prefix}.XXXXXX"
+  fi
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */temp-dir) temp_dir "$@" ;; esac

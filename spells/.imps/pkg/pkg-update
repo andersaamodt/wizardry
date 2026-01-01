@@ -3,17 +3,24 @@
 # Example: pkg-update && pkg-install git
 set -eu
 
-_pu_pm=$(pkg-manager) || {
-  printf '%s\n' "pkg-update: no supported package manager" >&2
-  exit 1
+pkg_update() {
+
+  _pu_pm=$(pkg-manager) || {
+    printf '%s\n' "pkg-update: no supported package manager" >&2
+    return 1
+  }
+
+  case $_pu_pm in
+    apt)    sudo apt-get update ;;
+    dnf)    sudo dnf check-update || [ $? -eq 100 ] ;;
+    pacman) sudo pacman -Sy ;;
+    brew)   brew update ;;
+    nix)    nix-channel --update ;;
+    pkgin)  sudo pkgin update ;;
+    apk)    sudo apk update ;;
+  esac
 }
 
-case $_pu_pm in
-  apt)    sudo apt-get update ;;
-  dnf)    sudo dnf check-update || [ $? -eq 100 ] ;;
-  pacman) sudo pacman -Sy ;;
-  brew)   brew update ;;
-  nix)    nix-channel --update ;;
-  pkgin)  sudo pkgin update ;;
-  apk)    sudo apk update ;;
-esac
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */pkg-update) pkg_update "$@" ;; esac

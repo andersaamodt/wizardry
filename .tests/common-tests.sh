@@ -2025,6 +2025,116 @@ test_all_spells_respond_to_help() {
 run_test_case "all spells respond to --help flag" test_all_spells_respond_to_help
 
 # ==============================================================================
+# SPELL-LEVELS COVERAGE TESTS - Validate level organization
+# These tests ensure all spells/imps are categorized and no empty levels exist
+# ==============================================================================
+
+# --- Check: spell-levels has no empty levels ---
+# Every level must have either spells or imps (or both)
+# This prevents gaps in the level system
+test_spell_levels_no_empty_levels() {
+  # Source spell-levels to get the function
+  . "$ROOT_DIR/spells/.imps/sys/spell-levels"
+  
+  empty_levels=""
+  for level in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28; do
+    spells=$(spell_levels "$level" spells 2>/dev/null || echo "ERROR")
+    imps=$(spell_levels "$level" imps 2>/dev/null || echo "ERROR")
+    name=$(spell_levels "$level" name 2>/dev/null || echo "ERROR")
+    
+    if [ "$spells" = "ERROR" ]; then
+      empty_levels="${empty_levels}Level $level: ERROR getting data\n"
+    elif [ -z "$spells" ] && [ -z "$imps" ]; then
+      empty_levels="${empty_levels}Level $level ($name): EMPTY\n"
+    fi
+  done
+  
+  if [ -n "$empty_levels" ]; then
+    TEST_FAILURE_REASON="found empty levels: $(printf '%b' "$empty_levels" | tr '\n' ', ' | sed 's/, $//')"
+    return 1
+  fi
+  return 0
+}
+
+# --- Check: all spells are categorized in spell-levels ---
+# Every spell file must appear in at least one level
+# This prevents spells from being orphaned/forgotten
+test_all_spells_categorized_in_spell_levels() {
+  # Source spell-levels
+  . "$ROOT_DIR/spells/.imps/sys/spell-levels"
+  
+  # Get all spells from spell-levels (strip category suffix)
+  spells_in_levels=""
+  for level in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28; do
+    level_spells=$(spell_levels "$level" spells 2>/dev/null)
+    if [ -n "$level_spells" ]; then
+      spells_in_levels="$spells_in_levels $level_spells"
+    fi
+  done
+  
+  # Convert to sorted list of unique spell names (strip :category suffix)
+  spells_in_levels=$(printf '%s' "$spells_in_levels" | tr ' ' '\n' | sed 's/:.*$//' | grep -v '^$' | sort -u)
+  
+  # Get all actual spell files
+  actual_spells=$(find "$ROOT_DIR/spells" -type f ! -path '*/.*' ! -path '*/.imps/*' -exec basename {} \; | sort -u)
+  
+  # Find spells not in levels
+  uncategorized=""
+  for spell in $actual_spells; do
+    if ! printf '%s\n' "$spells_in_levels" | grep -q "^${spell}$"; then
+      uncategorized="${uncategorized}${spell}\n"
+    fi
+  done
+  
+  if [ -n "$uncategorized" ]; then
+    TEST_FAILURE_REASON="spells not categorized in spell-levels: $(printf '%b' "$uncategorized" | head -10 | tr '\n' ', ' | sed 's/, $//')"
+    return 1
+  fi
+  return 0
+}
+
+# --- Check: all imps are categorized in spell-levels ---
+# Every imp file must appear in at least one level
+# This prevents imps from being orphaned/forgotten
+test_all_imps_categorized_in_spell_levels() {
+  # Source spell-levels
+  . "$ROOT_DIR/spells/.imps/sys/spell-levels"
+  
+  # Get all imps from spell-levels (strip path prefix)
+  imps_in_levels=""
+  for level in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28; do
+    level_imps=$(spell_levels "$level" imps 2>/dev/null)
+    if [ -n "$level_imps" ]; then
+      imps_in_levels="$imps_in_levels $level_imps"
+    fi
+  done
+  
+  # Convert to sorted list of unique imp names (strip directory prefix)
+  imps_in_levels=$(printf '%s' "$imps_in_levels" | tr ' ' '\n' | sed 's|^.*/||' | grep -v '^$' | sort -u)
+  
+  # Get all actual imp files (excluding test imps and .gitkeep)
+  actual_imps=$(find "$ROOT_DIR/spells/.imps" -type f ! -path '*/test/*' ! -name '.gitkeep' -exec basename {} \; | sort -u)
+  
+  # Find imps not in levels
+  uncategorized=""
+  for imp in $actual_imps; do
+    if ! printf '%s\n' "$imps_in_levels" | grep -q "^${imp}$"; then
+      uncategorized="${uncategorized}${imp}\n"
+    fi
+  done
+  
+  if [ -n "$uncategorized" ]; then
+    TEST_FAILURE_REASON="imps not categorized in spell-levels: $(printf '%b' "$uncategorized" | head -10 | tr '\n' ', ' | sed 's/, $//')"
+    return 1
+  fi
+  return 0
+}
+
+run_test_case "spell-levels has no empty levels" test_spell_levels_no_empty_levels
+run_test_case "all spells are categorized in spell-levels" test_all_spells_categorized_in_spell_levels  
+run_test_case "all imps are categorized in spell-levels" test_all_imps_categorized_in_spell_levels
+
+# ==============================================================================
 # META-TESTS - Testing the testing system itself
 # These tests validate that the testing infrastructure is properly architected
 # ==============================================================================

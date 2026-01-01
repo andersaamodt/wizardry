@@ -4,22 +4,29 @@
 
 set -eu
 
-text=${1-}
-reason=${2-}
+print_fail() {
 
-# Use colors if supported
-if [ -t 1 ] && command -v tput >/dev/null 2>&1 && tput setaf 1 >/dev/null 2>&1; then
-  red=$(tput setaf 1 2>/dev/null || true)
-  reset=$(tput sgr0 2>/dev/null || true)
-  if [ -n "$reason" ]; then
-    printf '%sFAIL%s %s: %s\n' "$red" "$reset" "$text" "$reason"
+  text=${1-}
+  reason=${2-}
+
+  # Use colors if supported
+  if [ -t 1 ] && command -v tput >/dev/null 2>&1 && tput setaf 1 >/dev/null 2>&1; then
+    red=$(tput setaf 1 2>/dev/null || true)
+    reset=$(tput sgr0 2>/dev/null || true)
+    if [ -n "$reason" ]; then
+      printf '%sFAIL%s %s: %s\n' "$red" "$reset" "$text" "$reason"
+    else
+      printf '%sFAIL%s %s\n' "$red" "$reset" "$text"
+    fi
   else
-    printf '%sFAIL%s %s\n' "$red" "$reset" "$text"
+    if [ -n "$reason" ]; then
+      printf 'FAIL %s: %s\n' "$text" "$reason"
+    else
+      printf 'FAIL %s\n' "$text"
+    fi
   fi
-else
-  if [ -n "$reason" ]; then
-    printf 'FAIL %s: %s\n' "$text" "$reason"
-  else
-    printf 'FAIL %s\n' "$text"
-  fi
-fi
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */print-fail) print_fail "$@" ;; esac

@@ -1,0 +1,14 @@
+#!/bin/sh
+# or-else DEFAULT - output stdin if non-empty, else output default value
+# Example: echo "" | else "fallback"
+set -eu
+
+or_else() {
+
+  _or_else_input=$(cat)
+  if [ -n "$_or_else_input" ]; then printf '%s\n' "$_or_else_input"; else printf '%s\n' "$1"; fi
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */or-else) else "$@" ;; esac

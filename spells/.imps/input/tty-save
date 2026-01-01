@@ -3,7 +3,14 @@
 # Example: state=$(tty-save) && ... && tty-restore "$state"
 set -eu
 
-if ! stty -g 2>/dev/null; then
-  printf '%s\n' "tty-save: unable to read terminal settings" >&2
-  exit 1
-fi
+tty_save() {
+
+  if ! stty -g 2>/dev/null; then
+    printf '%s\n' "tty-save: unable to read terminal settings" >&2
+    return 1
+  fi
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */tty-save) tty_save "$@" ;; esac

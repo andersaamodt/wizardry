@@ -3,4 +3,11 @@
 # Always returns 1 (false) since submenu detection requires environment vars.
 # Example: if is-submenu; then exit_label="Back"; else exit_label="Exit"; fi
 
-exit 1
+
+is_submenu() {
+  return 1
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */is-submenu) is_submenu "$@" ;; esac

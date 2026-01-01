@@ -5,7 +5,14 @@
 
 set -eu
 
-  case ${1-} in
-    -g) printf 'saved-state\n' ;;
-    *) exit 0 ;;
-  esac
+stub_stty() {
+
+    case ${1-} in
+      -g) printf 'saved-state\n' ;;
+      *) return 0 ;;
+    esac
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */stub-stty) stub_stty "$@" ;; esac
