@@ -4,6 +4,59 @@ This directory contains GitHub Actions workflows for testing and building wizard
 
 ## Workflows
 
+### collect-failures.yml
+
+**Purpose**: Automatically collects test failure outputs and makes them visible to Copilot via job summaries and workflow logs.
+
+**Triggers**:
+- Runs after any monitored workflow completes (using `workflow_run` trigger)
+- Monitors: Unit tests, POSIX/linting, standalone spells, doppelganger, dual-pattern validation, demonstrate-wizardry, compile
+
+**How It Works**:
+
+1. **Workflow Logs** 📜 *Sequential output for easy review*
+   - Failure details output directly to workflow run logs
+   - Filtered failure lines (grep for FAIL/ERROR)
+   - Log context (last 50 lines) for each failed job
+   - Easily searchable and copyable
+
+2. **Job Summary** 📊 *Copilot can read this immediately*
+   - Uses `$GITHUB_STEP_SUMMARY` to display status
+   - Shows which workflow failed
+   - Links to detailed logs
+   - Visible in workflow run "Summary" tab
+
+**Features**:
+- ✅ No artifacts needed (logs are in workflow output)
+- ✅ Job summary visible to Copilot immediately
+- ✅ Sequential log output easy to search
+- ✅ PR comments for failed workflows (optional)
+- ✅ No repository commits
+
+**For Copilot Users**:
+When a workflow fails:
+1. Copilot can read the job summary
+2. Detailed logs are in the workflow run output
+3. Ask Copilot: *"What test failures do I need to fix?"*
+
+**For Humans**:
+1. Check job summary for quick overview
+2. Read workflow logs for detailed failure output
+3. Copy/paste relevant errors for debugging
+
+**Example Log Output**:
+```
+=== FAILED JOB: macOS unit tests ===
+
+--- Failure Lines ---
+FAIL test-menu: menu handles invalid selection
+FAIL test-copy: copy handles missing source
+ERROR: Test suite failed with 2/45 tests failing
+
+--- Log Context (last 50 lines) ---
+[... full context ...]
+```
+
 ### compile.yml
 
 **Purpose**: Creates a compiled, standalone version of wizardry as an artifact.
