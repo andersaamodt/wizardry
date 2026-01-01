@@ -1,1 +1,22 @@
+#!/bin/sh
+# count-chars TEXT - count characters in TEXT
+# Example: count-chars "hello"  # -> 5
 
+set -eu
+
+count_chars() {
+  # If argument provided, use it; otherwise read from stdin
+  if [ $# -gt 0 ]; then
+    text=${1-}
+  else
+    # Read from stdin
+    text=$(cat)
+  fi
+  
+  # Count characters
+  printf '%d\n' "${#text}"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */count-chars) count_chars "$@" ;; esac

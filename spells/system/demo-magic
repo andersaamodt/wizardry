@@ -638,17 +638,8 @@ demo_level() {
   fi
 }
 
-demo_magic() {
-case "${1-}" in
---help|--usage|-h)
-  demo_magic_usage
-  return 0
-  ;;
-esac
-
-set -eu
-
 # Detect WIZARDRY_DIR if not set (for direct execution)
+# This must be done BEFORE demo_magic function so castable loading can find it
 if [ -z "${WIZARDRY_DIR-}" ]; then
   # Try to detect from script location
   if command -v dirname >/dev/null 2>&1 && command -v cd >/dev/null 2>&1 \
@@ -669,6 +660,16 @@ if [ -z "${WIZARDRY_DIR-}" ]; then
     export WIZARDRY_DIR
   fi
 fi
+
+demo_magic() {
+case "${1-}" in
+--help|--usage|-h)
+  demo_magic_usage
+  return 0
+  ;;
+esac
+
+set -eu
 
 # Source env-clear after WIZARDRY_DIR is established
 if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/env-clear" ]; then

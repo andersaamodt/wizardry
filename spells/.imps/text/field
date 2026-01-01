@@ -1,1 +1,31 @@
+#!/bin/sh
+# field FIELD_NUMBER [DELIMITER] - extract a field from stdin
+# Example: printf 'a:b:c' | field 2 ':'  # -> b
+# Example: printf 'one two three' | field 2  # -> two (whitespace default)
 
+set -eu
+
+field() {
+  field_num=${1-}
+  delimiter=${2-}
+  
+  if [ -z "$field_num" ]; then
+    printf 'field: FIELD_NUMBER required\n' >&2
+    return 2
+  fi
+  
+  # Read from stdin
+  input=$(cat)
+  
+  if [ -n "$delimiter" ]; then
+    # Use cut with specified delimiter
+    printf '%s' "$input" | cut -d"$delimiter" -f"$field_num"
+  else
+    # Use awk for whitespace-delimited fields
+    printf '%s' "$input" | awk "{print \$$field_num}"
+  fi
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */field) field "$@" ;; esac

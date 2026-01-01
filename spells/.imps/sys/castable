@@ -10,23 +10,7 @@
 castable() {
   set -eu
   
-  # Skip execution if being sourced by word-of-binding during spell loading
-  if [ "${_WIZARDRY_LOADING_SPELLS-}" = "1" ]; then
-    return 0
-  fi
-  
-  # Skip execution if being sourced by another spell (legacy check)
-  if [ "${_WIZARDRY_SOURCING_SPELL-}" = "1" ]; then
-    return 0
-  fi
-  
-  # Skip execution if being sourced by test-bootstrap
-  # This is indicated by WIZARDRY_TEST_HELPERS_ONLY
-  if [ "${WIZARDRY_TEST_HELPERS_ONLY-}" = "1" ]; then
-    return 0
-  fi
-  
-  # First check if we're being sourced (not executed)
+  # First check if we're being executed or sourced
   # When sourced, $0 won't match the spell name
   _cast_name=${CASTABLE_NAME-}
   if [ -z "$_cast_name" ]; then
@@ -41,13 +25,25 @@ castable() {
       return 0
       ;;
     */"$_cast_name"|"$_cast_name")
-      # Being executed directly - proceed with execution
+      # Being executed directly - proceed with execution below
       ;;
     *)
       # $0 doesn't match spell name - being sourced from another script
       return 0
       ;;
   esac
+  
+  # If we're being executed (not sourced), check for special skip conditions
+  # These only apply when sourced, not when executed
+  # Skip execution if being sourced by word-of-binding during spell loading
+  if [ "${_WIZARDRY_LOADING_SPELLS-}" = "1" ]; then
+    return 0
+  fi
+  
+  # Skip execution if being sourced by another spell (legacy check)
+  if [ "${_WIZARDRY_SOURCING_SPELL-}" = "1" ]; then
+    return 0
+  fi
   
   # If we get here, we're being executed directly (not sourced)
   _cast_func=${CASTABLE_FUNC-}
