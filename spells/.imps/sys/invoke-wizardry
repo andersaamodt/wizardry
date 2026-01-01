@@ -151,8 +151,9 @@ invoke_wizardry() {
     
     # Load imps for levels 1, 2, 3, and 4 (Level 0 has no imps)
     for _level in 1 2 3 4; do
-      # Use eval-based spell_levels to get all level data
-      eval "$(spell_levels "$_level")"
+      # Use field-based spell_levels API (no globals)
+      level_name=$(spell_levels "$_level" name)
+      level_imps=$(spell_levels "$_level" imps)
       
       if [ -n "$level_imps" ]; then
         _iw_debug "Loading Level $_level imps: $level_name"
@@ -233,8 +234,9 @@ invoke_wizardry() {
         printf '[invoke-wizardry] DEBUG: ========== STARTING LEVEL %d ==========\n' "$_level" >&2
       fi
       
-      # Use eval-based spell_levels to get all level data
-      eval "$(spell_levels "$_level")"
+      # Use field-based spell_levels API (no globals)
+      level_name=$(spell_levels "$_level" name)
+      level_spells=$(spell_levels "$_level" spells)
       
       if [ -n "$level_spells" ]; then
         _iw_debug "Loading Level $_level spells: $level_name"

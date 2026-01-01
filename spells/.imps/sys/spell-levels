@@ -1,171 +1,188 @@
 #!/bin/sh
-# spell-levels LEVEL - output shell variable assignments for level data
-# Usage: eval "$(spell_levels 4)" to set level_name, level_spells, level_imps
-# Example:
-#   eval "$(spell_levels 4)"
-#   printf "Level: %s\n" "$level_name"
-#   printf "Spells: %s\n" "$level_spells"
-#   printf "Imps: %s\n" "$level_imps"
+# spell-levels LEVEL FIELD - output specific field for a level
+# Fields: name, spells, imps
+# Usage: 
+#   name=$(spell_levels 4 name)
+#   spells=$(spell_levels 4 spells)
+#   imps=$(spell_levels 4 imps)
 set -eu
 
 spell_levels() {
-  case "${1:-}" in
+  _level="${1:-}"
+  _field="${2:-all}"
+  
+  case "$_level" in
     0)
-      printf "level_name='POSIX & Platform Foundation'\n"
-      printf "level_spells='detect-posix:divination detect-distro:divination verify-posix:system'\n"
-      printf "level_imps=''\n"
+      _name='POSIX & Platform Foundation'
+      _spells='detect-posix:divination detect-distro:divination verify-posix:system'
+      _imps=''
       ;;
     1)
-      printf "level_name='Banish & Validation Infrastructure'\n"
-      printf "level_spells='banish:system validate-spells:system'\n"
-      printf "level_imps='sys/spell-levels cond/has cond/there cond/is cond/empty cond/nonempty cond/no cond/within-range cond/lacks cond/newer cond/full cond/gone cond/is-path cond/has-ancestor cond/is-posint cond/yes cond/given cond/older out/say out/warn out/die out/fail out/info out/step out/success out/debug out/ok out/heading-section out/heading-separator out/heading-simple out/usage-error out/first-of out/or-else out/print-pass out/print-fail out/disable-palette out/quiet text/pluralize text/count-words'\n"
+      _name='Banish & Validation Infrastructure'
+      _spells='banish:system validate-spells:system'
+      _imps='sys/spell-levels cond/has cond/there cond/is cond/empty cond/nonempty cond/no cond/within-range cond/lacks cond/newer cond/full cond/gone cond/is-path cond/has-ancestor cond/is-posint cond/yes cond/given cond/older out/say out/warn out/die out/fail out/info out/step out/success out/debug out/ok out/heading-section out/heading-separator out/heading-simple out/usage-error out/first-of out/or-else out/print-pass out/print-fail out/disable-palette out/quiet text/pluralize text/count-words'
       ;;
     2)
-      printf "level_name='Installation Infrastructure'\n"
-      printf "level_spells=''\n"
-      printf "level_imps='declare-globals sys/invoke-wizardry sys/invoke-wizardry-minimal-wob sys/invoke-thesaurus sys/require-wizardry sys/require sys/castable sys/word-of-binding sys/env-clear sys/env-or sys/on-exit sys/clear-traps sys/on sys/now sys/any sys/need sys/must sys/uncastable sys/where sys/autocast sys/ask-install-wizardry sys/clipboard-available sys/nix-shell-add sys/nix-shell-remove sys/nix-shell-status sys/nix-rebuild fs/temp-file fs/temp-dir fs/cleanup-file fs/cleanup-dir input/tty-save input/tty-restore input/tty-raw input/read-line str/contains str/trim str/equals str/starts str/ends str/lower str/upper str/seeks str/differs str/matches paths/here paths/parent paths/file-name paths/abs-path paths/make paths/path paths/tilde-path paths/strip-trailing-slashes paths/norm-path paths/script-dir paths/temp'\n"
+      _name='Installation Infrastructure'
+      _spells=''
+      _imps='declare-globals sys/invoke-wizardry sys/invoke-wizardry-minimal-wob sys/invoke-thesaurus sys/require-wizardry sys/require sys/castable sys/word-of-binding sys/env-clear sys/env-or sys/on-exit sys/clear-traps sys/on sys/now sys/any sys/need sys/must sys/uncastable sys/where sys/autocast sys/ask-install-wizardry sys/clipboard-available sys/nix-shell-add sys/nix-shell-remove sys/nix-shell-status sys/nix-rebuild fs/temp-file fs/temp-dir fs/cleanup-file fs/cleanup-dir input/tty-save input/tty-restore input/tty-raw input/read-line str/contains str/trim str/equals str/starts str/ends str/lower str/upper str/seeks str/differs str/matches paths/here paths/parent paths/file-name paths/abs-path paths/make paths/path paths/tilde-path paths/strip-trailing-slashes paths/norm-path paths/script-dir paths/temp'
       ;;
     3)
-      printf "level_name='Glossary System'\n"
-      printf "level_spells='generate-glosses:system'\n"
-      printf "level_imps='lex/parse fs/find-executable'\n"
+      _name='Glossary System'
+      _spells='generate-glosses:system'
+      _imps='lex/parse fs/find-executable'
       ;;
     4)
-      printf "level_name='Menu System'\n"
-      printf "level_spells='menu fathom-terminal fathom-cursor move-cursor await-keypress cursor-blink colors main-menu:menu'\n"
-      printf "level_imps='menu/is-submenu menu/is-integer menu/category-title menu/exit-label menu/is-installable'\n"
+      _name='Menu System'
+      _spells='menu fathom-terminal fathom-cursor move-cursor await-keypress cursor-blink colors main-menu:menu'
+      _imps='menu/is-submenu menu/is-integer menu/category-title menu/exit-label menu/is-installable'
       ;;
     5)
-      printf "level_name='MUD Basics'\n"
-      printf "level_spells='check-cd-hook:mud look:mud'\n"
-      printf "level_imps='fs/xattr-helper-usable fs/xattr-list-keys fs/xattr-read-value'\n"
+      _name='MUD Basics'
+      _spells='check-cd-hook:mud look:mud'
+      _imps='fs/xattr-helper-usable fs/xattr-list-keys fs/xattr-read-value'
       ;;
     6)
-      printf "level_name='Navigation'\n"
-      printf "level_spells='jump-to-marker:translocation mark-location:translocation'\n"
-      printf "level_imps=''\n"
+      _name='Navigation'
+      _spells='jump-to-marker:translocation mark-location:translocation'
+      _imps=''
       ;;
     7)
-      printf "level_name='Parsing'\n"
-      printf "level_spells=''\n"
-      printf "level_imps=''\n"
+      _name='Parsing'
+      _spells=''
+      _imps=''
       ;;
     8)
-      printf "level_name='Arcane File Operations'\n"
-      printf "level_spells='copy:arcane trash:arcane jump-trash:arcane forall:arcane read-magic:arcane file-list:arcane'\n"
-      printf "level_imps='fs/backup fs/clip-copy fs/clip-paste fs/ensure-parent-dir menu/detect-trash text/read-file text/write-file text/lines text/each text/append text/count-chars text/make-indent text/drop text/last text/take text/skip text/first text/pick text/field'\n"
+      _name='Arcane File Operations'
+      _spells='copy:arcane trash:arcane jump-trash:arcane forall:arcane read-magic:arcane file-list:arcane'
+      _imps='fs/backup fs/clip-copy fs/clip-paste fs/ensure-parent-dir menu/detect-trash text/read-file text/write-file text/lines text/each text/append text/count-chars text/make-indent text/drop text/last text/take text/skip text/first text/pick text/field'
       ;;
     9)
-      printf "level_name='Basic Cantrips'\n"
-      printf "level_spells='ask ask-yn ask-text list-files max-length move up'\n"
-      printf "level_imps='input/select-input lex/from lex/to lex/and-then lex/into lex/disambiguate'\n"
+      _name='Basic Cantrips'
+      _spells='ask ask-yn ask-text list-files max-length move up'
+      _imps='input/select-input lex/from lex/to lex/and-then lex/into lex/disambiguate'
       ;;
     10)
-      printf "level_name='Validation Helpers'\n"
-      printf "level_spells='validate-number validate-path require-command'\n"
-      printf "level_imps='input/validate-command input/validate-name lex/and lex/or'\n"
+      _name='Validation Helpers'
+      _spells='validate-number validate-path require-command'
+      _imps='input/validate-command input/validate-name lex/and lex/or'
       ;;
     11)
-      printf "level_name='Advanced Cantrips'\n"
-      printf "level_spells='ask-number memorize'\n"
-      printf "level_imps=''\n"
+      _name='Advanced Cantrips'
+      _spells='ask-number memorize'
+      _imps=''
       ;;
     12)
-      printf "level_name='System Configuration'\n"
-      printf "level_spells='config:system logs:system package-managers:system'\n"
-      printf "level_imps='fs/config-get fs/config-set fs/config-has fs/config-del pkg/pkg-manager pkg/pkg-has pkg/pkg-install pkg/pkg-remove pkg/pkg-update pkg/pkg-upgrade'\n"
+      _name='System Configuration'
+      _spells='config:system logs:system package-managers:system'
+      _imps='fs/config-get fs/config-set fs/config-has fs/config-del pkg/pkg-manager pkg/pkg-has pkg/pkg-install pkg/pkg-remove pkg/pkg-update pkg/pkg-upgrade'
       ;;
     13)
-      printf "level_name='Testing Infrastructure'\n"
-      printf "level_spells='test-spell:system test-magic:system pocket-dimension:system logging-example wizard-eyes'\n"
-      printf "level_imps='test/boot/assert-error-contains test/boot/assert-failure test/boot/assert-file-contains test/boot/assert-output-contains test/boot/assert-path-exists test/boot/assert-path-missing test/boot/assert-status test/boot/assert-success test/boot/find-repo-root test/boot/finish-tests test/boot/init-test-counters test/boot/link-tools test/boot/make-fixture test/boot/make-tempdir test/boot/provide-basic-tools test/boot/record-failure-detail test/boot/report-result test/boot/run-both-patterns test/boot/run-bwrap test/boot/run-cmd test/boot/run-macos-sandbox test/boot/run-sourced-spell test/boot/run-spell test/boot/run-spell-in-dir test/boot/run-test-case test/boot/skip-if-compiled test/boot/skip-if-uncompiled test/boot/stub-nix-env test/boot/stub-pacman test/boot/test-fail test/boot/test-heading test/boot/test-lack test/boot/test-pass test/boot/test-skip test/boot/test-summary test/boot/write-apt-stub test/boot/write-command-stub test/boot/write-pkgin-stub test/boot/write-sudo-stub test/stub-cursor-blink test/stub-fathom-terminal test/stub-stty test/stub-await-keypress test/stub-fathom-cursor test/stub-move-cursor test/test-bootstrap sys/rc-add-line sys/rc-has-line sys/rc-remove-line'\n"
+      _name='Testing Infrastructure'
+      _spells='test-spell:system test-magic:system pocket-dimension:system logging-example wizard-eyes'
+      _imps='test/boot/assert-error-contains test/boot/assert-failure test/boot/assert-file-contains test/boot/assert-output-contains test/boot/assert-path-exists test/boot/assert-path-missing test/boot/assert-status test/boot/assert-success test/boot/find-repo-root test/boot/finish-tests test/boot/init-test-counters test/boot/link-tools test/boot/make-fixture test/boot/make-tempdir test/boot/provide-basic-tools test/boot/record-failure-detail test/boot/report-result test/boot/run-both-patterns test/boot/run-bwrap test/boot/run-cmd test/boot/run-macos-sandbox test/boot/run-sourced-spell test/boot/run-spell test/boot/run-spell-in-dir test/boot/run-test-case test/boot/skip-if-compiled test/boot/skip-if-uncompiled test/boot/stub-nix-env test/boot/stub-pacman test/boot/test-fail test/boot/test-heading test/boot/test-lack test/boot/test-pass test/boot/test-skip test/boot/test-summary test/boot/write-apt-stub test/boot/write-command-stub test/boot/write-pkgin-stub test/boot/write-sudo-stub test/stub-cursor-blink test/stub-fathom-terminal test/stub-stty test/stub-await-keypress test/stub-fathom-cursor test/stub-move-cursor test/test-bootstrap sys/rc-add-line sys/rc-has-line sys/rc-remove-line'
       ;;
     14)
-      printf "level_name='System Maintenance'\n"
-      printf "level_spells='update-wizardry:system update-all:system kill-process:system'\n"
-      printf "level_imps='fs/backup-nix-config'\n"
+      _name='System Maintenance'
+      _spells='update-wizardry:system update-all:system kill-process:system'
+      _imps='fs/backup-nix-config'
       ;;
     15)
-      printf "level_name='Advanced System Tools'\n"
-      printf "level_spells='demo-magic:system wizard-cast'\n"
-      printf "level_imps=''\n"
+      _name='Advanced System Tools'
+      _spells='demo-magic:system wizard-cast'
+      _imps=''
       ;;
     16)
-      printf "level_name='Divination'\n"
-      printf "level_spells='detect-rc-file:divination detect-magic:divination identify-room:divination'\n"
-      printf "level_imps='sys/os sys/term text/detect-indent-char text/detect-indent-width lang/possessive'\n"
+      _name='Divination'
+      _spells='detect-rc-file:divination detect-magic:divination identify-room:divination'
+      _imps='sys/os sys/term text/detect-indent-char text/detect-indent-width lang/possessive'
       ;;
     17)
-      printf "level_name='Advanced MUD Features'\n"
-      printf "level_spells='decorate:mud choose-player:mud'\n"
-      printf "level_imps=''\n"
+      _name='Advanced MUD Features'
+      _spells='decorate:mud choose-player:mud'
+      _imps=''
       ;;
     18)
-      printf "level_name='Cryptography'\n"
-      printf "level_spells='hash:crypto evoke-hash:crypto hashchant:crypto'\n"
-      printf "level_imps=''\n"
+      _name='Cryptography'
+      _spells='hash:crypto evoke-hash:crypto hashchant:crypto'
+      _imps=''
       ;;
     19)
-      printf "level_name='SSH & Remote Access'\n"
-      printf "level_spells='validate-ssh-key enchant-portkey:translocation follow-portkey:translocation open-portal:translocation open-teletype:translocation reload-ssh restart-ssh'\n"
-      printf "level_imps=''\n"
+      _name='SSH & Remote Access'
+      _spells='validate-ssh-key enchant-portkey:translocation follow-portkey:translocation open-portal:translocation open-teletype:translocation reload-ssh restart-ssh'
+      _imps=''
       ;;
     20)
-      printf "level_name='Task Priorities'\n"
-      printf "level_spells='get-priority:priorities get-new-priority:priorities prioritize:priorities upvote:priorities'\n"
-      printf "level_imps=''\n"
+      _name='Task Priorities'
+      _spells='get-priority:priorities get-new-priority:priorities prioritize:priorities upvote:priorities'
+      _imps=''
       ;;
     21)
-      printf "level_name='Security Wards'\n"
-      printf "level_spells='ssh-barrier:wards'\n"
-      printf "level_imps='fs/sed-inplace'\n"
+      _name='Security Wards'
+      _spells='ssh-barrier:wards'
+      _imps='fs/sed-inplace'
       ;;
     22)
-      printf "level_name='Extended Attributes'\n"
-      printf "level_spells='enchant:enchant disenchant:enchant enchantment-to-yaml:enchant yaml-to-enchantment:enchant'\n"
-      printf "level_imps=''\n"
+      _name='Extended Attributes'
+      _spells='enchant:enchant disenchant:enchant enchantment-to-yaml:enchant yaml-to-enchantment:enchant'
+      _imps=''
       ;;
     23)
-      printf "level_name='Process & System Info (PSI)'\n"
-      printf "level_spells='list-contacts:psi read-contact:psi'\n"
-      printf "level_imps=''\n"
+      _name='Process & System Info (PSI)'
+      _spells='list-contacts:psi read-contact:psi'
+      _imps=''
       ;;
     24)
-      printf "level_name='Spellcraft Development Tools'\n"
-      printf "level_spells='scribe-spell:spellcraft lint-magic:spellcraft compile-spell:spellcraft learn:spellcraft forget:spellcraft erase-spell:spellcraft doppelganger:spellcraft add-synonym:spellcraft edit-synonym:spellcraft delete-synonym:spellcraft reset-default-synonyms:spellcraft bind-tome:spellcraft unbind-tome:spellcraft merge-yaml-text:spellcraft'\n"
-      printf "level_imps=''\n"
+      _name='Spellcraft Development Tools'
+      _spells='scribe-spell:spellcraft lint-magic:spellcraft compile-spell:spellcraft learn:spellcraft forget:spellcraft erase-spell:spellcraft doppelganger:spellcraft add-synonym:spellcraft edit-synonym:spellcraft delete-synonym:spellcraft reset-default-synonyms:spellcraft bind-tome:spellcraft unbind-tome:spellcraft merge-yaml-text:spellcraft'
+      _imps=''
       ;;
     25)
-      printf "level_name='Core Menu Infrastructure'\n"
-      printf "level_spells='spellbook-store spellbook:menu cast:menu spell-menu:menu'\n"
-      printf "level_imps=''\n"
+      _name='Core Menu Infrastructure'
+      _spells='spellbook-store spellbook:menu cast:menu spell-menu:menu'
+      _imps=''
       ;;
     26)
-      printf "level_name='System & Configuration Menus'\n"
-      printf "level_spells='system-menu:menu install-menu:menu synonym-menu:menu thesaurus:menu'\n"
-      printf "level_imps=''\n"
+      _name='System & Configuration Menus'
+      _spells='system-menu:menu install-menu:menu synonym-menu:menu thesaurus:menu'
+      _imps=''
       ;;
     27)
-      printf "level_name='MUD Administration Menus'\n"
-      printf "level_spells='mud:menu mud-menu:menu mud-settings:menu mud-admin-menu:menu add-ssh-player:menu/mud-admin new-player:menu/mud-admin set-player:menu/mud-admin'\n"
-      printf "level_imps=''\n"
+      _name='MUD Administration Menus'
+      _spells='mud:menu mud-menu:menu mud-settings:menu mud-admin-menu:menu add-ssh-player:menu/mud-admin new-player:menu/mud-admin set-player:menu/mud-admin'
+      _imps=''
       ;;
     28)
-      printf "level_name='Domain-Specific Menus'\n"
-      printf "level_spells='network-menu:menu services-menu:menu shutdown-menu:menu priority-menu:menu priorities:menu users-menu:menu profile-tests:menu/system'\n"
-      printf "level_imps=''\n"
+      _name='Domain-Specific Menus'
+      _spells='network-menu:menu services-menu:menu shutdown-menu:menu priority-menu:menu priorities:menu users-menu:menu profile-tests:menu/system'
+      _imps=''
       ;;
     29)
-      printf "level_name='System Service Management'\n"
-      printf "level_spells='install-service-template is-service-installed enable-service disable-service start-service stop-service restart-service service-status remove-service'\n"
-      printf "level_imps=''\n"
+      _name='System Service Management'
+      _spells='install-service-template is-service-installed enable-service disable-service start-service stop-service restart-service service-status remove-service'
+      _imps=''
       ;;
     30)
-      printf "level_name='Optional Arcana & Third-Party Integrations'\n"
-      printf "level_spells=''\n"
-      printf "level_imps=''\n"
+      _name='Optional Arcana & Third-Party Integrations'
+      _spells=''
+      _imps=''
       ;;
     *)
+      return 1
+      ;;
+  esac
+  
+  case "$_field" in
+    name) printf '%s\n' "$_name" ;;
+    spells) printf '%s\n' "$_spells" ;;
+    imps) printf '%s\n' "$_imps" ;;
+    all)
+      printf 'name=%s\n' "$_name"
+      printf 'spells=%s\n' "$_spells"
+      printf 'imps=%s\n' "$_imps"
+      ;;
+    *)
+      printf 'spell-levels: unknown field: %s\n' "$_field" >&2
       return 1
       ;;
   esac
