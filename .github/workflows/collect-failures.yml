@@ -67,13 +67,16 @@ jobs:
           # Function to extract test summary from logs
           extract_test_summary() {
             local logfile=$1
+            # First remove everything from "Error: Process exited" onward
+            local cleaned_log="/tmp/cleaned_$$.txt"
+            sed '/Error.*Process exited/,$d' "$logfile" > "$cleaned_log"
+            
             # Extract from "=== Test Summary ===" to the end or next section
-            # Stop at "Error: Process exited with error code" line
-            if grep -q "=== Test Summary ===" "$logfile"; then
-              sed -n '/=== Test Summary ===/,/^===/p' "$logfile" | \
-                sed '/Error: Process exited with error code/,$d' | \
-                head -n -1
+            if grep -q "=== Test Summary ===" "$cleaned_log"; then
+              sed -n '/=== Test Summary ===/,/^===/p' "$cleaned_log" | head -n -1
             fi
+            
+            rm -f "$cleaned_log"
           }
 
           # Function to extract failed step from logs
@@ -87,22 +90,23 @@ jobs:
               return
             fi
 
-            # For other workflows, find the failing step
-            # Stop at "Error: Process exited with error code" line
-            if grep -q "##\[error\]" "$logfile"; then
-              # Extract error lines and surrounding context, stop at process exit error
-              grep -B 5 -A 10 "##\[error\]" "$logfile" | \
-                sed '/Error: Process exited with error code/,$d' | \
-                head -100
-            elif grep -qi "FAIL\|ERROR" "$logfile"; then
-              # Extract failure lines, stop at process exit error
-              grep -i -B 3 -A 3 "FAIL\|ERROR" "$logfile" | \
-                sed '/Error: Process exited with error code/,$d' | \
-                head -100
+            # First remove everything from "Error: Process exited" onward from the entire log
+            local cleaned_log="/tmp/cleaned_$$.txt"
+            sed '/Error.*Process exited/,$d' "$logfile" > "$cleaned_log"
+
+            # For other workflows, find the failing step in cleaned log
+            if grep -q "##\[error\]" "$cleaned_log"; then
+              # Extract error lines and surrounding context
+              grep -B 5 -A 10 "##\[error\]" "$cleaned_log" | head -100
+            elif grep -qi "FAIL\|ERROR" "$cleaned_log"; then
+              # Extract failure lines
+              grep -i -B 3 -A 3 "FAIL\|ERROR" "$cleaned_log" | head -100
             else
-              # Last resort: show last part of log, stop at process exit error
-              tail -50 "$logfile" | sed '/Error: Process exited with error code/,$d'
+              # Last resort: show last part of cleaned log
+              tail -50 "$cleaned_log"
             fi
+            
+            rm -f "$cleaned_log"
           }
 
           # Function to process a completed workflow run
