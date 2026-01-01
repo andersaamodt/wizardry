@@ -6,41 +6,60 @@ This directory contains GitHub Actions workflows for testing and building wizard
 
 ### collect-failures.yml
 
-**Purpose**: Automatically collects failure outputs from all test workflows for easy monitoring and error reporting.
+**Purpose**: Automatically collects failure outputs from all test workflows into a single, continuously updated location that Copilot can read.
 
 **Triggers**:
 - Runs after any test workflow completes (using `workflow_run` trigger)
-- Monitors: Unit tests, POSIX/linting checks, compiled spell tests, doppelganger tests, dual-pattern validation, demonstrate-wizardry
+- Monitors: Unit tests, POSIX/linting checks, compiled spell tests, doppelganger tests, dual-pattern validation, demonstrate-wizardry, compile
 
 **Features**:
-- Automatically triggered when any monitored workflow completes
-- Collects detailed failure logs only from failed jobs
-- Filters logs to highlight errors and failures
-- Creates a centralized artifact with failure information
-- Updates incrementally as each workflow finishes
-- Includes README with usage instructions
-- Automatically cleans up old artifacts (keeps last 10 per workflow)
+- Creates individual markdown files for each workflow in `.github/workflow-failures/`
+- Updates files incrementally as each workflow completes
+- Maintains a combined `README.md` index showing all current failures
+- Commits files to repository (for main branch) so Copilot can read them
+- Also uploads as a single cumulative artifact `workflow-failures-combined`
+- Downloads previous artifact state to maintain cumulative history
+- Successful workflows clear their failure reports
+- Failed workflows add detailed failure information
 
-**Artifact Structure**:
-- `summary.txt` - Overview of workflow run (name, status, timing, failed job count)
-- `<job-name>_<job-id>.log` - Individual failed job logs with filtered failure output
-- `README.md` - Instructions for using the failure logs
+**How It Works**:
+1. When a workflow completes, this workflow triggers
+2. Downloads previous failure reports from artifact (if exists)
+3. Updates the markdown file for the completed workflow
+4. Regenerates the combined README index
+5. Uploads everything as a single `workflow-failures-combined` artifact
+6. Commits to repository (main branch only)
 
-**Usage**:
-When a workflow fails:
-1. Go to Actions → Collect test failures
-2. Find the run corresponding to the failed workflow
-3. Download the `failures-<workflow>-<timestamp>` artifact
-4. Extract and review `summary.txt` for overview
-5. Open individual job logs to see detailed failure output
-6. Copy failure information for bug reports or debugging
+**File Structure**:
+- `.github/workflow-failures/README.md` - Combined index of all workflow statuses
+- `.github/workflow-failures/<workflow-name>.md` - Individual workflow failure reports
+- Each report includes:
+  - Workflow status and metadata
+  - Failed job details
+  - Filtered failure output (collapsed)
+  - Full log context (last 100 lines, collapsed)
+
+**Usage for Copilot**:
+When debugging workflow failures in a PR:
+1. Download the `workflow-failures-combined` artifact from the latest "Collect test failures" run
+2. Extract and review `.github/workflow-failures/README.md` for overview
+3. Open individual workflow markdown files for detailed failure information
+4. Copilot can also read these files directly if they've been committed to main
+
+**Usage for Humans**:
+1. Go to Actions → Collect test failures → Latest run
+2. Download `workflow-failures-combined` artifact
+3. Extract and open `README.md` for status overview
+4. Click through to individual workflow reports for details
 
 **Benefits**:
-- Single place to monitor all test failures
-- Only contains failure output (not successful test noise)
-- Incremental updates as workflows complete
-- Easy to copy failure logs for reporting issues
-- Automatic cleanup prevents artifact storage bloat
+- ✅ Single artifact that updates cumulatively
+- ✅ Copilot-readable (committed markdown files on main branch)
+- ✅ Easy to download and review
+- ✅ Shows current state of all workflows
+- ✅ Only contains failures (successes clear previous failures)
+- ✅ Timestamped and includes commit information
+- ✅ Works for both PR and main branch workflows
 
 ### compile.yml
 

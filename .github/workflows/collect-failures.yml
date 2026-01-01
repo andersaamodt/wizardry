@@ -1,8 +1,8 @@
 name: Collect test failures
 
 # This workflow collects failure outputs from all test workflows and creates
-# a centralized artifact for easy monitoring and error reporting.
-# It updates incrementally as each workflow completes.
+# a centralized failure report that Copilot can read.
+# It updates a single file in the repository with all current failures.
 
 on:
   workflow_run:
@@ -18,240 +18,255 @@ on:
       - completed
 
 permissions:
-  contents: read
-  actions: read
+  contents: write  # Required to commit failure report
+  actions: read    # Required to read workflow information
 
 jobs:
   collect-failures:
     name: Collect workflow failures
     runs-on: ubuntu-latest
-    # Run even if the triggering workflow failed
-    if: always()
     
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
+          token: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Create output directory
+      - name: Create or update failure report directory
         run: |
-          mkdir -p /tmp/failure-logs
-          touch /tmp/failure-logs/.gitkeep
+          mkdir -p .github/workflow-failures
+      - name: Download previous failure reports
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: workflow-failures-combined
+          path: .github/workflow-failures/
       
       - name: Collect failure information
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          echo "=== Collecting failures from workflow: ${{ github.event.workflow_run.name }} ===" | tee /tmp/failure-logs/summary.txt
-          echo "Workflow: ${{ github.event.workflow_run.name }}" >> /tmp/failure-logs/summary.txt
-          echo "Run ID: ${{ github.event.workflow_run.id }}" >> /tmp/failure-logs/summary.txt
-          echo "Status: ${{ github.event.workflow_run.conclusion }}" >> /tmp/failure-logs/summary.txt
-          echo "Triggered by: ${{ github.event.workflow_run.event }}" >> /tmp/failure-logs/summary.txt
-          echo "Commit: ${{ github.event.workflow_run.head_sha }}" >> /tmp/failure-logs/summary.txt
-          echo "Branch: ${{ github.event.workflow_run.head_branch }}" >> /tmp/failure-logs/summary.txt
-          echo "Started: ${{ github.event.workflow_run.created_at }}" >> /tmp/failure-logs/summary.txt
-          echo "Completed: ${{ github.event.workflow_run.updated_at }}" >> /tmp/failure-logs/summary.txt
-          echo "" >> /tmp/failure-logs/summary.txt
+          WORKFLOW_NAME="${{ github.event.workflow_run.name }}"
+          WORKFLOW_ID="${{ github.event.workflow_run.id }}"
+          CONCLUSION="${{ github.event.workflow_run.conclusion }}"
+          COMMIT="${{ github.event.workflow_run.head_sha }}"
+          BRANCH="${{ github.event.workflow_run.head_branch }}"
           
-          # Only collect details if workflow failed
-          if [ "${{ github.event.workflow_run.conclusion }}" != "success" ]; then
-            echo "Workflow FAILED - collecting job logs..." | tee -a /tmp/failure-logs/summary.txt
-            
-            # Get jobs for this workflow run
-            gh api \
-              -H "Accept: application/vnd.github+json" \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              "/repos/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id }}/jobs" \
-              > /tmp/jobs.json
-            
-            # Extract job information
-            echo "" >> /tmp/failure-logs/summary.txt
-            echo "=== Failed Jobs ===" >> /tmp/failure-logs/summary.txt
-            
-            # Count total and failed jobs
-            total_jobs=$(jq '.jobs | length' /tmp/jobs.json)
-            failed_jobs=$(jq '[.jobs[] | select(.conclusion == "failure")] | length' /tmp/jobs.json)
-            
-            echo "Total jobs: $total_jobs" >> /tmp/failure-logs/summary.txt
-            echo "Failed jobs: $failed_jobs" >> /tmp/failure-logs/summary.txt
-            echo "" >> /tmp/failure-logs/summary.txt
-            
-            # Process each failed job
-            jq -r '.jobs[] | select(.conclusion == "failure") | "\(.id)|\(.name)"' /tmp/jobs.json | while IFS='|' read -r job_id job_name; do
-              echo "Processing failed job: $job_name (ID: $job_id)" | tee -a /tmp/failure-logs/summary.txt
-              
-              # Create safe filename from job name
-              safe_name=$(echo "$job_name" | sed 's/[^a-zA-Z0-9._-]/_/g')
-              log_file="/tmp/failure-logs/${safe_name}_${job_id}.log"
-              
-              # Get job logs
-              echo "=== Job: $job_name ===" > "$log_file"
-              echo "Job ID: $job_id" >> "$log_file"
-              echo "Status: failure" >> "$log_file"
-              echo "" >> "$log_file"
-              
-              # Download and filter logs to show only failures and errors
-              if gh api \
-                -H "Accept: application/vnd.github+json" \
-                -H "X-GitHub-Api-Version: 2022-11-28" \
-                "/repos/${{ github.repository }}/actions/jobs/${job_id}/logs" \
-                > /tmp/raw_log.txt 2>&1; then
-                
-                # Extract failure context (lines with FAIL, ERROR, or surrounding context)
-                echo "=== Failure Output ===" >> "$log_file"
-                
-                # Show lines containing failure keywords plus context
-                grep -i -E "(FAIL|ERROR|✗|❌|failed|error:)" /tmp/raw_log.txt \
-                  | head -500 >> "$log_file" 2>/dev/null || echo "No specific failure patterns found in logs" >> "$log_file"
-                
-                echo "" >> "$log_file"
-                echo "=== Full Log (last 200 lines) ===" >> "$log_file"
-                tail -200 /tmp/raw_log.txt >> "$log_file"
-                
-              else
-                echo "Failed to download logs for job $job_id" >> "$log_file"
-              fi
-              
-              rm -f /tmp/raw_log.txt
-            done
-            
-            echo "" >> /tmp/failure-logs/summary.txt
-            echo "Failure logs collected in individual job files" >> /tmp/failure-logs/summary.txt
-          else
-            echo "Workflow SUCCEEDED - no failures to collect" | tee -a /tmp/failure-logs/summary.txt
+          # Create safe filename from workflow name
+          SAFE_NAME=$(echo "$WORKFLOW_NAME" | sed 's/[^a-zA-Z0-9._-]/_/g')
+          REPORT_FILE=".github/workflow-failures/${SAFE_NAME}.md"
+          
+          echo "Collecting failures for: $WORKFLOW_NAME"
+          echo "Report file: $REPORT_FILE"
+          
+          # Start the report
+          {
+            echo "# ${WORKFLOW_NAME} - Failure Report"
+            echo ""
+            echo "**Status:** ${CONCLUSION}"
+            echo "**Run ID:** ${WORKFLOW_ID}"
+            echo "**Commit:** \`${COMMIT}\`"
+            echo "**Branch:** \`${BRANCH}\`"
+            echo "**Updated:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+            echo ""
+          } > "$REPORT_FILE"
+          
+          # If workflow succeeded, mark as such and exit
+          if [ "$CONCLUSION" = "success" ]; then
+            {
+              echo "## Status: ✅ All Jobs Passed"
+              echo ""
+              echo "No failures to report."
+            } >> "$REPORT_FILE"
+            echo "Workflow succeeded - clearing any previous failures"
+            exit 0
           fi
           
-          # Create a README for the artifact
-          cat > /tmp/failure-logs/README.md <<'EOF'
-# Workflow Failure Logs
-
-This artifact contains failure logs from GitHub Actions workflows.
-
-## Structure
-
-- `summary.txt` - Overview of the workflow run
-- `<job-name>_<job-id>.log` - Individual job failure logs
-
-## Usage
-
-1. Download this artifact from the Actions tab
-2. Extract the ZIP file
-3. Review `summary.txt` for an overview
-4. Open individual job log files to see detailed failure output
-
-## Notes
-
-- Only failed jobs have log files
-- Logs are filtered to show failures and errors first
-- Full log tail (last 200 lines) is included for context
-- This artifact is updated incrementally as workflows complete
-
-## Workflow Information
-
-Check `summary.txt` for:
-- Workflow name and run ID
-- Commit SHA and branch
-- Timestamp information
-- Job failure summary
-EOF
+          # Workflow failed - collect details
+          echo "Workflow FAILED - collecting job logs..."
+          echo "## Status: ❌ Workflow Failed" >> "$REPORT_FILE"
+          echo "" >> "$REPORT_FILE"
+          
+          # Get jobs for this workflow run
+          gh api \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "/repos/${{ github.repository }}/actions/runs/${WORKFLOW_ID}/jobs" \
+            > /tmp/jobs.json
+          
+          # Count jobs
+          total_jobs=$(jq '.jobs | length' /tmp/jobs.json)
+          failed_jobs=$(jq '[.jobs[] | select(.conclusion == "failure")] | length' /tmp/jobs.json)
+          
+          {
+            echo "**Total Jobs:** $total_jobs"
+            echo "**Failed Jobs:** $failed_jobs"
+            echo ""
+            echo "---"
+            echo ""
+          } >> "$REPORT_FILE"
+          
+          # Process each failed job
+          jq -r '.jobs[] | select(.conclusion == "failure") | "\(.id)|\(.name)"' /tmp/jobs.json | while IFS='|' read -r job_id job_name; do
+            echo "Processing failed job: $job_name"
+            
+            {
+              echo "## Failed Job: $job_name"
+              echo ""
+              echo "**Job ID:** $job_id"
+              echo ""
+            } >> "$REPORT_FILE"
+            
+            # Get job logs and extract failures
+            if gh api \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "/repos/${{ github.repository }}/actions/jobs/${job_id}/logs" \
+              > /tmp/raw_log.txt 2>&1; then
+              
+              # Extract failure lines (case-insensitive)
+              if grep -i -E "(FAIL|ERROR|✗|❌)" /tmp/raw_log.txt > /tmp/failures.txt 2>/dev/null; then
+                {
+                  echo "<details>"
+                  echo "<summary>Failure Output (click to expand)</summary>"
+                  echo ""
+                  echo '```'
+                  head -500 /tmp/failures.txt
+                  echo '```'
+                  echo ""
+                  echo "</details>"
+                  echo ""
+                } >> "$REPORT_FILE"
+              else
+                echo "No specific failure patterns found in logs." >> "$REPORT_FILE"
+                echo "" >> "$REPORT_FILE"
+              fi
+              
+              # Add last 100 lines of full log
+              {
+                echo "<details>"
+                echo "<summary>Full Log (last 100 lines)</summary>"
+                echo ""
+                echo '```'
+                tail -100 /tmp/raw_log.txt
+                echo '```'
+                echo ""
+                echo "</details>"
+                echo ""
+                echo "---"
+                echo ""
+              } >> "$REPORT_FILE"
+            else
+              echo "⚠️ Failed to download logs for this job." >> "$REPORT_FILE"
+              echo "" >> "$REPORT_FILE"
+            fi
+            
+            rm -f /tmp/raw_log.txt /tmp/failures.txt
+          done
+          
+          echo "Failure report created: $REPORT_FILE"
       
-      - name: Generate artifact name
-        id: artifact-name
+      - name: Create combined failure index
         run: |
-          # Use workflow run ID and timestamp for unique artifact name
-          TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
-          WORKFLOW_NAME=$(echo "${{ github.event.workflow_run.name }}" | sed 's/[^a-zA-Z0-9._-]/_/g')
-          echo "name=failures-${WORKFLOW_NAME}-${TIMESTAMP}" >> "$GITHUB_OUTPUT"
-          echo "prefix=failures-${WORKFLOW_NAME}" >> "$GITHUB_OUTPUT"
+          INDEX_FILE=".github/workflow-failures/README.md"
+          
+          {
+            echo "# Workflow Failure Reports"
+            echo ""
+            echo "This directory contains failure reports from GitHub Actions workflows."
+            echo "Each workflow has its own markdown file that is updated when the workflow completes."
+            echo ""
+            echo "**Last Updated:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+            echo ""
+            echo "---"
+            echo ""
+            echo "## Current Status"
+            echo ""
+          } > "$INDEX_FILE"
+          
+          # List all workflow reports
+          for report in .github/workflow-failures/*.md; do
+            [ "$report" = ".github/workflow-failures/README.md" ] && continue
+            [ -f "$report" ] || continue
+            
+            workflow_name=$(basename "$report" .md | sed 's/_/ /g')
+            
+            # Check if workflow failed or passed
+            if grep -q "✅ All Jobs Passed" "$report"; then
+              echo "- ✅ **$workflow_name** - All tests passing" >> "$INDEX_FILE"
+            elif grep -q "❌ Workflow Failed" "$report"; then
+              failed_count=$(grep "^\*\*Failed Jobs:\*\*" "$report" | sed 's/.*: //')
+              echo "- ❌ **$workflow_name** - $failed_count job(s) failing ([view report]($report))" >> "$INDEX_FILE"
+            else
+              echo "- ⚠️ **$workflow_name** - Status unknown" >> "$INDEX_FILE"
+            fi
+          done
+          
+          {
+            echo ""
+            echo "---"
+            echo ""
+            echo "## How to Use"
+            echo ""
+            echo "1. Check this README for current failure status"
+            echo "2. Click on failing workflow links to see detailed failure reports"
+            echo "3. Each report includes:"
+            echo "   - Failure output filtered for errors"
+            echo "   - Full log context (last 100 lines)"
+            echo "   - Timestamp and commit information"
+            echo ""
+            echo "## For Copilot"
+            echo ""
+            echo "When debugging workflow failures, check the individual workflow markdown files"
+            echo "in this directory. Each file contains the most recent failure information for"
+            echo "that specific workflow, making it easy to identify and fix issues."
+          } >> "$INDEX_FILE"
       
-      - name: Upload failure logs artifact
+      - name: Upload combined failure artifact
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: ${{ steps.artifact-name.outputs.name }}
-          path: /tmp/failure-logs/
+          name: workflow-failures-combined
+          path: .github/workflow-failures/
           retention-days: 30
           if-no-files-found: warn
+          overwrite: true
       
-      - name: Clean up old failure artifacts
-        if: always()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const keepCount = 10;  // Keep last 10 failure logs per workflow
-            const workflowPrefix = '${{ steps.artifact-name.outputs.prefix }}';
-            
-            console.log(`Cleaning up old failure artifacts for prefix: ${workflowPrefix}`);
-            console.log(`Keeping ${keepCount} most recent artifacts`);
-            
-            // Fetch all artifacts with pagination
-            let allArtifacts = [];
-            let page = 1;
-            const perPage = 100;
-            
-            while (true) {
-              const response = await github.rest.actions.listArtifactsForRepo({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                per_page: perPage,
-                page: page
-              });
-              
-              if (response.data.artifacts.length === 0) {
-                break;
-              }
-              
-              allArtifacts = allArtifacts.concat(response.data.artifacts);
-              
-              if (response.data.artifacts.length < perPage) {
-                break;
-              }
-              
-              page++;
-            }
-            
-            console.log(`Total artifacts found: ${allArtifacts.length}`);
-            
-            // Filter for this workflow's failure artifacts
-            const workflowArtifacts = allArtifacts
-              .filter(artifact => artifact.name.startsWith(workflowPrefix + '-'))
-              .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-            
-            console.log(`Found ${workflowArtifacts.length} artifacts for this workflow`);
-            
-            // Keep only the most recent N, delete the rest
-            const toDelete = workflowArtifacts.slice(keepCount);
-            
-            if (toDelete.length === 0) {
-              console.log('No old artifacts to delete');
-              return;
-            }
-            
-            console.log(`Deleting ${toDelete.length} old artifacts...`);
-            
-            for (const artifact of toDelete) {
-              console.log(`Deleting: ${artifact.name} (created ${artifact.created_at})`);
-              try {
-                await github.rest.actions.deleteArtifact({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  artifact_id: artifact.id
-                });
-                console.log(`  ✓ Deleted ${artifact.name}`);
-              } catch (error) {
-                console.log(`  ✗ Failed: ${error.message}`);
-              }
-            }
-            
-            console.log(`Cleanup complete. Kept ${Math.min(keepCount, workflowArtifacts.length)} artifacts`);
+      - name: Commit failure reports
+        if: github.event.workflow_run.head_branch == github.event.repository.default_branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          git add .github/workflow-failures/
+          
+          # Check if there are changes to commit
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          
+          git commit -m "Update workflow failure reports" \
+            -m "Workflow: ${{ github.event.workflow_run.name }}" \
+            -m "Status: ${{ github.event.workflow_run.conclusion }}" \
+            -m "Run ID: ${{ github.event.workflow_run.id }}" \
+            -m "[skip ci]"
+          
+          git push
       
-      - name: Summary output
+      - name: Summary
         if: always()
         run: |
           echo ""
           echo "======================================================================"
           echo " FAILURE COLLECTION SUMMARY"
           echo "======================================================================"
-          cat /tmp/failure-logs/summary.txt || echo "No summary available"
           echo ""
-          echo "Artifact uploaded: ${{ steps.artifact-name.outputs.name }}"
+          echo "Workflow: ${{ github.event.workflow_run.name }}"
+          echo "Status: ${{ github.event.workflow_run.conclusion }}"
+          echo ""
+          echo "Failure reports available in: .github/workflow-failures/"
+          echo "View combined status: .github/workflow-failures/README.md"
+          echo ""
           echo "======================================================================"
