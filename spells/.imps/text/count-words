@@ -5,7 +5,13 @@
 set -eu
 
 count_words() {
-  text=${1-}
+  # If argument provided, use it; otherwise read from stdin
+  if [ $# -gt 0 ]; then
+    text=${1-}
+  else
+    # Read from stdin
+    text=$(cat)
+  fi
   
   # Handle empty input
   if [ -z "$text" ]; then
