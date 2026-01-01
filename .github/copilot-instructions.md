@@ -65,6 +65,14 @@ A collection of POSIX shell scripts themed as magical spells for the terminal. T
    - Keep clean, readable, minimal spell files
    - Make surgical, minimal changes
 
+7. **Document lessons learned in `.github/LESSONS.md`**
+   - After EVERY bug fix or debugging session, add a one-sentence lesson to LESSONS.md
+   - Check LESSONS.md when creating new code or debugging
+   - If the lesson already exists, increment its counter (e.g., "(3)") instead of duplicating
+   - Don't duplicate lessons already documented in other AI-facing documentation
+   - Keep lessons extremely succinct (one sentence)
+   - When approaching 1000 lines, remove least-important or most-conquered lessons
+
 ## Core Principles (Must Follow)
 
 1. **Preserve the spec** — Don't edit `--help` usage text or spec comments without explicit instruction
@@ -265,6 +273,7 @@ See `.github/instructions/glossary-and-function-architecture.instructions.md` fo
 **Need logging/output?** → `.github/instructions/logging.instructions.md`  
 **Cross-platform issues?** → `.github/instructions/cross-platform.instructions.md`  
 **Proven patterns?** → `.github/instructions/best-practices.instructions.md`  
+**Lessons from debugging?** → `.github/LESSONS.md`  
 **Full style guide?** → `.AGENTS.md`  
 **Project philosophy?** → `README.md`
 
