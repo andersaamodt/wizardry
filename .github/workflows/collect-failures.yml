@@ -67,9 +67,9 @@ jobs:
           # Function to extract test summary from logs
           extract_test_summary() {
             local logfile=$1
-            # First remove everything from "Error: Process exited" onward
+            # First remove everything from "Process exited" or "Process completed" onward
             local cleaned_log="/tmp/cleaned_$$.txt"
-            sed '/Error.*Process exited/,$d' "$logfile" > "$cleaned_log"
+            sed '/Process \(exited\|completed\)/,$d' "$logfile" > "$cleaned_log"
             
             # Extract from "=== Test Summary ===" to the end or next section
             if grep -q "=== Test Summary ===" "$cleaned_log"; then
@@ -90,9 +90,9 @@ jobs:
               return
             fi
 
-            # First remove everything from "Error: Process exited" onward from the entire log
+            # First remove everything from "Process exited" or "Process completed" onward from the entire log
             local cleaned_log="/tmp/cleaned_$$.txt"
-            sed '/Error.*Process exited/,$d' "$logfile" > "$cleaned_log"
+            sed '/Process \(exited\|completed\)/,$d' "$logfile" > "$cleaned_log"
 
             # For other workflows, find the failing step in cleaned log
             if grep -q "##\[error\]" "$cleaned_log"; then
@@ -282,17 +282,22 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
       
       - name: Update PR description
-        if: steps.collect.outputs.has_failures == 'true'
+        if: always()
         uses: actions/github-script@v7
         env:
+          HAS_FAILURES: ${{ steps.collect.outputs.has_failures }}
           FAILURE_SUMMARY: ${{ steps.collect.outputs.failure_summary }}
         with:
           script: |
             const pr = '${{ github.event.pull_request.number }}';
-            const failureSummary = process.env.FAILURE_SUMMARY;
+            const hasFailures = process.env.HAS_FAILURES === 'true';
+            const failureSummary = process.env.FAILURE_SUMMARY || '';
             const runId = '${{ github.run_id }}';
             const date = new Date().toISOString().split('T')[0];
             const time = new Date().toISOString().split('T')[1].slice(0,8);
+            
+            console.log('Has failures:', hasFailures);
+            console.log('Failure summary length:', failureSummary.length);
             
             // Get current PR
             const { data: pullRequest } = await github.rest.pulls.get({
@@ -304,28 +309,50 @@ jobs:
             let currentBody = pullRequest.body || '';
             
             // Create failure section
-            const failureSection = [
-              '',
-              '---',
-              '',
-              '## 🔍 Latest Test Failures',
-              '',
-              '**Updated:** ' + date + ' ' + time + ' UTC',
-              '',
-              failureSummary,
-              '',
-              '💡 **View detailed logs:** Check the [workflow run logs](../../actions/runs/' + runId + ')',
-              '',
-              '<!-- test-failures-end -->'
-            ].join('\n');
+            let failureSection;
+            if (hasFailures && failureSummary) {
+              failureSection = [
+                '',
+                '---',
+                '',
+                '## 🔍 Latest Test Failures',
+                '',
+                '**Updated:** ' + date + ' ' + time + ' UTC',
+                '',
+                failureSummary,
+                '',
+                '💡 **View detailed logs:** Check the [workflow run logs](../../actions/runs/' + runId + ')',
+                '',
+                '<!-- test-failures-end -->'
+              ].join('\n');
+            } else {
+              failureSection = [
+                '',
+                '---',
+                '',
+                '## 🔍 Latest Test Failures',
+                '',
+                '**Updated:** ' + date + ' ' + time + ' UTC',
+                '',
+                '✅ All tests passing!',
+                '',
+                '<!-- test-failures-end -->'
+              ].join('\n');
+            }
             
             // Remove existing failure section if present
             const failureStart = currentBody.indexOf('## 🔍 Latest Test Failures');
             if (failureStart !== -1) {
               const failureEnd = currentBody.indexOf('<!-- test-failures-end -->');
               if (failureEnd !== -1) {
-                // Remove from start of section to end marker
-                const beforeSection = currentBody.substring(0, failureStart - 5); // -5 for the --- and newlines
+                // Remove from start of section to end marker (including preceding ---)
+                let startPos = failureStart;
+                // Look back for the --- separator
+                const dashesPos = currentBody.lastIndexOf('---', failureStart);
+                if (dashesPos !== -1 && dashesPos > failureStart - 20) {
+                  startPos = dashesPos;
+                }
+                const beforeSection = currentBody.substring(0, startPos);
                 const afterSection = currentBody.substring(failureEnd + 28); // +28 for <!-- test-failures-end -->
                 currentBody = beforeSection + afterSection;
               }
@@ -333,6 +360,8 @@ jobs:
             
             // Append new failure section
             const newBody = currentBody.trim() + failureSection;
+            
+            console.log('Updating PR body, new length:', newBody.length);
             
             // Update PR body
             await github.rest.pulls.update({
