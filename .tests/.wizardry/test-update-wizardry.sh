@@ -185,7 +185,7 @@ STUB
   unset WIZARDRY_DIR
   PATH="$stub_dir:$PATH" REQUIRE_COMMAND="$stub_dir/require-command" run_spell "spells/.wizardry/update-wizardry"
   assert_failure
-  assert_error_contains "Unable to determine the wizardry repository"
+  assert_error_contains "is not a git repository"
 }
 
 test_propagates_git_failure() {
