@@ -11,7 +11,7 @@ Usage: banish [LEVEL] [OPTIONS]
 Validate wizardry readiness by level, including assumptions, self-healing, and tests.
 
 Arguments:
-  LEVEL                 Validate through level N (0-29, default: 1)
+  LEVEL                 Validate through level N (0-30, default: 4)
   all                   Validate all available levels
 
 Options:
@@ -20,8 +20,8 @@ Options:
   --only                Only validate this specific level (don't run lower levels)
 
 Examples:
-  banish          # Validate through level 1 (default)
-  banish 4 --only # Validate only level 4
+  banish          # Validate through level 4 (default - menu system)
+  banish 5 --only # Validate only level 5
   banish all      # Validate through the highest available level
 USAGE
 }
@@ -95,8 +95,8 @@ fi
 export WIZARDRY_DIR
 
 # Parse arguments
-target_level=3
-max_level=29
+target_level=4
+max_level=30
 skip_tests=0
 skip_heal=0
 only_this_level=0
