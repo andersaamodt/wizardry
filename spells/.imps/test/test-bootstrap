@@ -90,8 +90,11 @@ export WIZARDRY_DIR
 # This makes underscore-named functions available for spells that use them
 # Source word-of-binding first
 if [ -f "$ROOT_DIR/spells/.imps/sys/word-of-binding" ]; then
+  # Set flag to source word-of-binding without running its self-execute block
+  WIZARDRY_SOURCE_WORD_OF_BINDING=1
   # shellcheck source=/dev/null
   . "$ROOT_DIR/spells/.imps/sys/word-of-binding"
+  unset WIZARDRY_SOURCE_WORD_OF_BINDING
   
   # Preload essential imps that spells commonly use
   for _test_imp in require-wizardry env-clear env-or die warn fail info success debug temp-file cleanup-file say step; do
