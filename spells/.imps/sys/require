@@ -34,6 +34,12 @@ require() {
         return 0
       fi
       ;;
+    *_*)
+      _req_alt=$(printf '%s' "$_req_tool" | tr '_' '-')
+      if command -v "$_req_alt" >/dev/null 2>&1; then
+        return 0
+      fi
+      ;;
   esac
 
   if [ "$#" -gt 0 ]; then

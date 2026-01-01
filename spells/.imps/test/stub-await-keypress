@@ -14,5 +14,6 @@ stub_await_keypress() {
 }
 
 # Self-execute when run directly (not sourced)
+# Match both stub name and unprefixed name (for symlinks)
 case "$0" in
-  */stub-await-keypress) stub_await_keypress "$@" ;; esac
+  */await-keypress|*/stub-await-keypress) stub_await_keypress "$@" ;; esac

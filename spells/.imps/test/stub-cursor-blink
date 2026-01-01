@@ -14,5 +14,6 @@ stub_cursor_blink() {
 }
 
 # Self-execute when run directly (not sourced)
+# Match both stub name and unprefixed name (for symlinks)
 case "$0" in
-  */stub-cursor-blink) stub_cursor_blink "$@" ;; esac
+  */cursor-blink|*/stub-cursor-blink) stub_cursor_blink "$@" ;; esac

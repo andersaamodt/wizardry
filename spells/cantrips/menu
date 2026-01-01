@@ -25,6 +25,21 @@ case "${1-}" in
   ;;
 esac
 
+# Bootstrap: Load essential functions if not already available
+# This allows menu to work when executed directly (tests) or when invoked (normal use)
+if ! command -v require_wizardry >/dev/null 2>&1; then
+  # Functions not preloaded - we're being executed directly
+  # Source word-of-binding to get the loading mechanism
+  _menu_wob="${WIZARDRY_DIR:-$HOME/.wizardry}/spells/.imps/sys/word-of-binding"
+  if [ -f "$_menu_wob" ]; then
+    WIZARDRY_SOURCE_WORD_OF_BINDING=1 . "$_menu_wob" 2>/dev/null || :
+    # Now load essential imps
+    for _imp in require-wizardry env-clear temp-file cleanup-file require has; do
+      word_of_binding "$_imp" 2>/dev/null || :
+    done
+  fi
+fi
+
 require_wizardry || return 1
 
 # Use conditional strictness based on execution context
@@ -42,14 +57,50 @@ case "$0" in
 esac
 env_clear
 
-# Directly use preloaded imp functions (underscore form).
-# Menu is always run after invoke-wizardry, so these are guaranteed to be available.
+# Wrapper functions for helper commands
+# Only define if the underlying command is available
+# This allows 'require' to properly detect missing dependencies
 menu_temp_file() {
-        temp_file "$@"
+        temp-file "$@"
 }
 
 menu_cleanup_file() {
-        cleanup_file "$@"
+        cleanup-file "$@"
+}
+
+if command -v fathom-cursor >/dev/null 2>&1; then
+        fathom_cursor() {
+                fathom-cursor "$@"
+        }
+fi
+
+if command -v fathom-terminal >/dev/null 2>&1; then
+        fathom_terminal() {
+                fathom-terminal "$@"
+        }
+fi
+
+if command -v move-cursor >/dev/null 2>&1; then
+        move_cursor() {
+                move-cursor "$@"
+        }
+fi
+
+if command -v await-keypress >/dev/null 2>&1; then
+        await_keypress() {
+                await-keypress "$@"
+        }
+fi
+
+if command -v cursor-blink >/dev/null 2>&1; then
+        cursor_blink() {
+                cursor-blink "$@"
+        }
+fi
+
+stty() {
+        # stty is a system command, always use it directly
+        command stty "$@"
 }
 
 # Verify that all helper spells are ready before drawing the menu.

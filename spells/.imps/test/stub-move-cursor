@@ -10,5 +10,6 @@ stub_move_cursor() {
 }
 
 # Self-execute when run directly (not sourced)
+# Match both stub name and unprefixed name (for symlinks)
 case "$0" in
-  */stub-move-cursor) stub_move_cursor "$@" ;; esac
+  */move-cursor|*/stub-move-cursor) stub_move_cursor "$@" ;; esac

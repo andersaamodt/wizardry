@@ -57,6 +57,12 @@ case "$command_name" in
             return 0
         fi
         ;;
+    *_*)
+        command_alt=$(printf '%s' "$command_name" | tr '_' '-')
+        if command -v "$command_alt" >/dev/null 2>&1; then
+            return 0
+        fi
+        ;;
 esac
 
 install_spell=""
