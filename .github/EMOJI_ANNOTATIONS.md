@@ -1,11 +1,30 @@
 # Emoji Annotations in AI-Facing Documentation
 
+## ⚠️ CRITICAL: Emojis Are Protected and Required
+
+**DO NOT REMOVE EMOJIS FROM AI-FACING DOCUMENTATION.** Emoji annotations are an integral part of the wizardry documentation system and serve multiple important functions for AI comprehension and pattern recognition.
+
 ## Purpose
-Emoji annotations serve as **marginalia**—intuitive, symbolic markers that seed emergent patterns. This is an experiment in non-verbal metadata and affective tagging.
+Emoji annotations serve as **marginalia**—intuitive, symbolic markers that seed emergent patterns. This is an experiment in non-verbal metadata and affective tagging that:
+
+1. **Aids AI pattern recognition** - Visual markers help AI identify critical sections
+2. **Provides affective context** - Emotional/priority signaling beyond text
+3. **Seeds emergent understanding** - Non-verbal metadata that AI can learn from
+4. **Supports the Emoji Observatory** - Ongoing research into AI comprehension patterns
 
 ## Scope
 **ONLY** `.github/` directory (`.github/*.md`, `.github/instructions/*.md`, `.github/archive/*.md`)  
 **NEVER** spells, tests, user-facing docs, or code files
+
+## ⚠️ PROTECTED STATUS
+
+Emojis in AI-facing documentation are **PROTECTED** and must not be removed during:
+- Documentation consolidation efforts
+- Style/formatting updates
+- "Optimization" or "cleaning" passes
+- Any other refactoring
+
+**Reason:** The Emoji Annotations system and Emoji Observatories are active research experiments tracking how symbolic metadata affects AI comprehension and behavior.
 
 ## Format
 Two spaces before emoji, at end of line. No spaces between multiple emojis.
