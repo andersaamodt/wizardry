@@ -198,5 +198,5 @@ set -eu
   # The spell set `-eu` before sourcing this file, so we restore that state
   set -eu
 
-  # Return 0 explicitly (some shells exit the exit code of the last unset)
-  exit 0
+  # Return 0 explicitly (some shells exit with the exit code of the last unset)
+  return 0
