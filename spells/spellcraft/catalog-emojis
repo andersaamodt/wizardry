@@ -1,0 +1,116 @@
+#!/bin/sh
+
+# Catalog emoji usage across AI-facing documentation (.github/ files).
+# Displays frequency table showing which emojis appear in which files.
+
+catalog_emojis_usage() {
+  cat <<'USAGE'
+Usage: catalog-emojis [--verbose]
+
+Scan .github/ directory for emoji annotations and display a frequency table
+showing each emoji, how many times it appears, and which files contain it.
+
+Options:
+  --verbose    Show detailed file paths and line counts per file
+  --help       Show this help message
+
+This spell reveals emergent patterns in emoji annotations across AI-facing
+documentation, helping identify symbolic clusters and semantic fields.
+USAGE
+}
+
+catalog_emojis() {
+case "${1-}" in
+--help|--usage|-h)
+  catalog_emojis_usage
+  return 0
+  ;;
+esac
+
+set -eu
+
+# Find repository root
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+repo_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd -P)
+github_dir="$repo_dir/.github"
+
+# Check if .github directory exists
+if [ ! -d "$github_dir" ]; then
+  printf 'catalog-emojis: .github directory not found\n' >&2
+  return 1
+fi
+
+verbose=0
+if [ "${1-}" = "--verbose" ]; then
+  verbose=1
+fi
+
+# Create temp files for processing
+tmpdir="${TMPDIR:-/tmp}"
+emoji_list="$tmpdir/catalog-emojis-list.$$"
+emoji_freq="$tmpdir/catalog-emojis-freq.$$"
+emoji_files="$tmpdir/catalog-emojis-files.$$"
+
+# Cleanup on exit
+trap 'rm -f "$emoji_list" "$emoji_freq" "$emoji_files"' EXIT HUP INT TERM
+
+# Extract all emojis from .github/ markdown files
+# Use grep -P with specific emoji Unicode ranges
+# Covers most common emoji blocks but avoids ASCII and markdown symbols
+# Use -h to suppress filenames in output
+find "$github_dir" -type f -name "*.md" -exec grep -ohP '[\x{1F300}-\x{1F9FF}\x{2600}-\x{26FF}\x{2700}-\x{27BF}\x{2300}-\x{23FF}\x{2B00}-\x{2BFF}\x{1F000}-\x{1F02F}\x{1F0A0}-\x{1F0FF}\x{1F100}-\x{1F64F}\x{1F680}-\x{1F6FF}\x{1F900}-\x{1F9FF}\x{1FA00}-\x{1FA6F}\x{1FA70}-\x{1FAFF}\x{FE00}-\x{FE0F}]+' {} + > "$emoji_list" 2>/dev/null || touch "$emoji_list"
+
+# If no emojis found, report and exit
+if [ ! -s "$emoji_list" ]; then
+  printf 'No emojis found in .github/ documentation.\n'
+  return 0
+fi
+
+# Count emoji frequency
+sort "$emoji_list" | uniq -c | sort -rn > "$emoji_freq"
+
+# Build file mapping for each emoji
+> "$emoji_files"
+while IFS= read -r line; do
+  count=$(printf '%s' "$line" | awk '{print $1}')
+  emoji=$(printf '%s' "$line" | awk '{print $2}')
+  
+  # Find files containing this emoji
+  files=$(find "$github_dir" -type f -name "*.md" -exec grep -l "$emoji" {} + 2>/dev/null | sed "s|^$repo_dir/||")
+  
+  if [ "$verbose" -eq 1 ]; then
+    # Verbose mode: show count per file
+    printf '%s\t%s\t%s\n' "$count" "$emoji" "FILES:" >> "$emoji_files"
+    for file in $files; do
+      file_count=$(grep -o "$emoji" "$repo_dir/$file" 2>/dev/null | wc -l | tr -d ' ')
+      printf '%s\t%s\t  %s (%s)\n' "" "" "$file" "$file_count" >> "$emoji_files"
+    done
+  else
+    # Compact mode: one line per emoji
+    file_list=$(printf '%s' "$files" | tr '\n' ', ' | sed 's/,$//' | sed 's/,/, /g')
+    printf '%s\t%s\t%s\n' "$count" "$emoji" "$file_list" >> "$emoji_files"
+  fi
+done < "$emoji_freq"
+
+# Display results
+printf '\n=== Emoji Frequency in .github/ Documentation ===\n\n'
+printf 'Total unique emojis: %s\n' "$(wc -l < "$emoji_freq" | tr -d ' ')"
+printf 'Total emoji instances: %s\n\n' "$(wc -l < "$emoji_list" | tr -d ' ')"
+
+if [ "$verbose" -eq 1 ]; then
+  printf '%-8s %-8s %s\n' 'COUNT' 'EMOJI' 'LOCATIONS'
+  printf '%s\n' '----------------------------------------'
+else
+  printf '%-8s %-8s %s\n' 'COUNT' 'EMOJI' 'FILES'
+  printf '%s\n' '----------------------------------------'
+fi
+
+# Display the catalog
+awk -F'\t' '{printf "%-8s %-8s %s\n", $1, $2, $3}' "$emoji_files"
+
+printf '\n'
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */catalog-emojis) catalog_emojis "$@" ;; esac
