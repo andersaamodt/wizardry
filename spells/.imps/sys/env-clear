@@ -58,6 +58,10 @@ env_clear() {
   _saved_menu_loop_limit="${MENU_LOOP_LIMIT:-}"
   _saved_require_command="${REQUIRE_COMMAND:-}"
   _saved_menu_log="${MENU_LOG:-}"
+  _saved_git_log="${GIT_LOG:-}"
+  _saved_require_log="${REQUIRE_LOG:-}"
+  _saved_mock_toplevel="${MOCK_TOPLEVEL:-}"
+  _saved_pull_status="${PULL_STATUS:-}"
   _saved_await_buffer_file="${AWAIT_KEYPRESS_BUFFER_FILE:-}"
 
   # Preserve bootstrap/installer variables
@@ -141,6 +145,10 @@ env_clear() {
   [ -n "$_saved_menu_loop_limit" ] && export MENU_LOOP_LIMIT="$_saved_menu_loop_limit"
   [ -n "$_saved_require_command" ] && export REQUIRE_COMMAND="$_saved_require_command"
   [ -n "$_saved_menu_log" ] && export MENU_LOG="$_saved_menu_log"
+  [ -n "$_saved_git_log" ] && export GIT_LOG="$_saved_git_log"
+  [ -n "$_saved_require_log" ] && export REQUIRE_LOG="$_saved_require_log"
+  [ -n "$_saved_mock_toplevel" ] && export MOCK_TOPLEVEL="$_saved_mock_toplevel"
+  [ -n "$_saved_pull_status" ] && export PULL_STATUS="$_saved_pull_status"
   [ -n "$_saved_await_buffer_file" ] && export AWAIT_KEYPRESS_BUFFER_FILE="$_saved_await_buffer_file"
 
   # Restore bootstrap variables
