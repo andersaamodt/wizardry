@@ -4,6 +4,44 @@ This directory contains GitHub Actions workflows for testing and building wizard
 
 ## Workflows
 
+### collect-failures.yml
+
+**Purpose**: Automatically collects failure outputs from all test workflows for easy monitoring and error reporting.
+
+**Triggers**:
+- Runs after any test workflow completes (using `workflow_run` trigger)
+- Monitors: Unit tests, POSIX/linting checks, compiled spell tests, doppelganger tests, dual-pattern validation, demonstrate-wizardry
+
+**Features**:
+- Automatically triggered when any monitored workflow completes
+- Collects detailed failure logs only from failed jobs
+- Filters logs to highlight errors and failures
+- Creates a centralized artifact with failure information
+- Updates incrementally as each workflow finishes
+- Includes README with usage instructions
+- Automatically cleans up old artifacts (keeps last 10 per workflow)
+
+**Artifact Structure**:
+- `summary.txt` - Overview of workflow run (name, status, timing, failed job count)
+- `<job-name>_<job-id>.log` - Individual failed job logs with filtered failure output
+- `README.md` - Instructions for using the failure logs
+
+**Usage**:
+When a workflow fails:
+1. Go to Actions → Collect test failures
+2. Find the run corresponding to the failed workflow
+3. Download the `failures-<workflow>-<timestamp>` artifact
+4. Extract and review `summary.txt` for overview
+5. Open individual job logs to see detailed failure output
+6. Copy failure information for bug reports or debugging
+
+**Benefits**:
+- Single place to monitor all test failures
+- Only contains failure output (not successful test noise)
+- Incremental updates as workflows complete
+- Easy to copy failure logs for reporting issues
+- Automatic cleanup prevents artifact storage bloat
+
 ### compile.yml
 
 **Purpose**: Creates a compiled, standalone version of wizardry as an artifact.

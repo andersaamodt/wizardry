@@ -1,0 +1,257 @@
+name: Collect test failures
+
+# This workflow collects failure outputs from all test workflows and creates
+# a centralized artifact for easy monitoring and error reporting.
+# It updates incrementally as each workflow completes.
+
+on:
+  workflow_run:
+    workflows:
+      - "Unit tests"
+      - "POSIX, linting, and style checks"
+      - "Test standalone compiled spells"
+      - "Test doppelganger compiled wizardry"
+      - "Dual-pattern validation"
+      - "Demonstrate wizardry"
+      - "Compile wizardry"
+    types:
+      - completed
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  collect-failures:
+    name: Collect workflow failures
+    runs-on: ubuntu-latest
+    # Run even if the triggering workflow failed
+    if: always()
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Create output directory
+        run: |
+          mkdir -p /tmp/failure-logs
+          touch /tmp/failure-logs/.gitkeep
+      
+      - name: Collect failure information
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "=== Collecting failures from workflow: ${{ github.event.workflow_run.name }} ===" | tee /tmp/failure-logs/summary.txt
+          echo "Workflow: ${{ github.event.workflow_run.name }}" >> /tmp/failure-logs/summary.txt
+          echo "Run ID: ${{ github.event.workflow_run.id }}" >> /tmp/failure-logs/summary.txt
+          echo "Status: ${{ github.event.workflow_run.conclusion }}" >> /tmp/failure-logs/summary.txt
+          echo "Triggered by: ${{ github.event.workflow_run.event }}" >> /tmp/failure-logs/summary.txt
+          echo "Commit: ${{ github.event.workflow_run.head_sha }}" >> /tmp/failure-logs/summary.txt
+          echo "Branch: ${{ github.event.workflow_run.head_branch }}" >> /tmp/failure-logs/summary.txt
+          echo "Started: ${{ github.event.workflow_run.created_at }}" >> /tmp/failure-logs/summary.txt
+          echo "Completed: ${{ github.event.workflow_run.updated_at }}" >> /tmp/failure-logs/summary.txt
+          echo "" >> /tmp/failure-logs/summary.txt
+          
+          # Only collect details if workflow failed
+          if [ "${{ github.event.workflow_run.conclusion }}" != "success" ]; then
+            echo "Workflow FAILED - collecting job logs..." | tee -a /tmp/failure-logs/summary.txt
+            
+            # Get jobs for this workflow run
+            gh api \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "/repos/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id }}/jobs" \
+              > /tmp/jobs.json
+            
+            # Extract job information
+            echo "" >> /tmp/failure-logs/summary.txt
+            echo "=== Failed Jobs ===" >> /tmp/failure-logs/summary.txt
+            
+            # Count total and failed jobs
+            total_jobs=$(jq '.jobs | length' /tmp/jobs.json)
+            failed_jobs=$(jq '[.jobs[] | select(.conclusion == "failure")] | length' /tmp/jobs.json)
+            
+            echo "Total jobs: $total_jobs" >> /tmp/failure-logs/summary.txt
+            echo "Failed jobs: $failed_jobs" >> /tmp/failure-logs/summary.txt
+            echo "" >> /tmp/failure-logs/summary.txt
+            
+            # Process each failed job
+            jq -r '.jobs[] | select(.conclusion == "failure") | "\(.id)|\(.name)"' /tmp/jobs.json | while IFS='|' read -r job_id job_name; do
+              echo "Processing failed job: $job_name (ID: $job_id)" | tee -a /tmp/failure-logs/summary.txt
+              
+              # Create safe filename from job name
+              safe_name=$(echo "$job_name" | sed 's/[^a-zA-Z0-9._-]/_/g')
+              log_file="/tmp/failure-logs/${safe_name}_${job_id}.log"
+              
+              # Get job logs
+              echo "=== Job: $job_name ===" > "$log_file"
+              echo "Job ID: $job_id" >> "$log_file"
+              echo "Status: failure" >> "$log_file"
+              echo "" >> "$log_file"
+              
+              # Download and filter logs to show only failures and errors
+              if gh api \
+                -H "Accept: application/vnd.github+json" \
+                -H "X-GitHub-Api-Version: 2022-11-28" \
+                "/repos/${{ github.repository }}/actions/jobs/${job_id}/logs" \
+                > /tmp/raw_log.txt 2>&1; then
+                
+                # Extract failure context (lines with FAIL, ERROR, or surrounding context)
+                echo "=== Failure Output ===" >> "$log_file"
+                
+                # Show lines containing failure keywords plus context
+                grep -i -E "(FAIL|ERROR|✗|❌|failed|error:)" /tmp/raw_log.txt \
+                  | head -500 >> "$log_file" 2>/dev/null || echo "No specific failure patterns found in logs" >> "$log_file"
+                
+                echo "" >> "$log_file"
+                echo "=== Full Log (last 200 lines) ===" >> "$log_file"
+                tail -200 /tmp/raw_log.txt >> "$log_file"
+                
+              else
+                echo "Failed to download logs for job $job_id" >> "$log_file"
+              fi
+              
+              rm -f /tmp/raw_log.txt
+            done
+            
+            echo "" >> /tmp/failure-logs/summary.txt
+            echo "Failure logs collected in individual job files" >> /tmp/failure-logs/summary.txt
+          else
+            echo "Workflow SUCCEEDED - no failures to collect" | tee -a /tmp/failure-logs/summary.txt
+          fi
+          
+          # Create a README for the artifact
+          cat > /tmp/failure-logs/README.md <<'EOF'
+# Workflow Failure Logs
+
+This artifact contains failure logs from GitHub Actions workflows.
+
+## Structure
+
+- `summary.txt` - Overview of the workflow run
+- `<job-name>_<job-id>.log` - Individual job failure logs
+
+## Usage
+
+1. Download this artifact from the Actions tab
+2. Extract the ZIP file
+3. Review `summary.txt` for an overview
+4. Open individual job log files to see detailed failure output
+
+## Notes
+
+- Only failed jobs have log files
+- Logs are filtered to show failures and errors first
+- Full log tail (last 200 lines) is included for context
+- This artifact is updated incrementally as workflows complete
+
+## Workflow Information
+
+Check `summary.txt` for:
+- Workflow name and run ID
+- Commit SHA and branch
+- Timestamp information
+- Job failure summary
+EOF
+      
+      - name: Generate artifact name
+        id: artifact-name
+        run: |
+          # Use workflow run ID and timestamp for unique artifact name
+          TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
+          WORKFLOW_NAME=$(echo "${{ github.event.workflow_run.name }}" | sed 's/[^a-zA-Z0-9._-]/_/g')
+          echo "name=failures-${WORKFLOW_NAME}-${TIMESTAMP}" >> "$GITHUB_OUTPUT"
+          echo "prefix=failures-${WORKFLOW_NAME}" >> "$GITHUB_OUTPUT"
+      
+      - name: Upload failure logs artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ steps.artifact-name.outputs.name }}
+          path: /tmp/failure-logs/
+          retention-days: 30
+          if-no-files-found: warn
+      
+      - name: Clean up old failure artifacts
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const keepCount = 10;  // Keep last 10 failure logs per workflow
+            const workflowPrefix = '${{ steps.artifact-name.outputs.prefix }}';
+            
+            console.log(`Cleaning up old failure artifacts for prefix: ${workflowPrefix}`);
+            console.log(`Keeping ${keepCount} most recent artifacts`);
+            
+            // Fetch all artifacts with pagination
+            let allArtifacts = [];
+            let page = 1;
+            const perPage = 100;
+            
+            while (true) {
+              const response = await github.rest.actions.listArtifactsForRepo({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                per_page: perPage,
+                page: page
+              });
+              
+              if (response.data.artifacts.length === 0) {
+                break;
+              }
+              
+              allArtifacts = allArtifacts.concat(response.data.artifacts);
+              
+              if (response.data.artifacts.length < perPage) {
+                break;
+              }
+              
+              page++;
+            }
+            
+            console.log(`Total artifacts found: ${allArtifacts.length}`);
+            
+            // Filter for this workflow's failure artifacts
+            const workflowArtifacts = allArtifacts
+              .filter(artifact => artifact.name.startsWith(workflowPrefix + '-'))
+              .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            
+            console.log(`Found ${workflowArtifacts.length} artifacts for this workflow`);
+            
+            // Keep only the most recent N, delete the rest
+            const toDelete = workflowArtifacts.slice(keepCount);
+            
+            if (toDelete.length === 0) {
+              console.log('No old artifacts to delete');
+              return;
+            }
+            
+            console.log(`Deleting ${toDelete.length} old artifacts...`);
+            
+            for (const artifact of toDelete) {
+              console.log(`Deleting: ${artifact.name} (created ${artifact.created_at})`);
+              try {
+                await github.rest.actions.deleteArtifact({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  artifact_id: artifact.id
+                });
+                console.log(`  ✓ Deleted ${artifact.name}`);
+              } catch (error) {
+                console.log(`  ✗ Failed: ${error.message}`);
+              }
+            }
+            
+            console.log(`Cleanup complete. Kept ${Math.min(keepCount, workflowArtifacts.length)} artifacts`);
+      
+      - name: Summary output
+        if: always()
+        run: |
+          echo ""
+          echo "======================================================================"
+          echo " FAILURE COLLECTION SUMMARY"
+          echo "======================================================================"
+          cat /tmp/failure-logs/summary.txt || echo "No summary available"
+          echo ""
+          echo "Artifact uploaded: ${{ steps.artifact-name.outputs.name }}"
+          echo "======================================================================"
