@@ -140,6 +140,48 @@ Look for:
 - Semantic fields (structural, affective, cautionary, etc.)
 - Unexpected associations
 
+## Emoji Observatory (Instructions)
+
+Maintain this section as a running aggregation of emoji usage across the project. Whenever emojis appear in documentation or code, update this section to reflect their frequency, co-occurrence, and distribution by file or context. Do not define meanings or enforce consistency; simply record patterns, notable clusters, shifts over time, and emergent regularities. Treat this as an observational ledger of how emoji usage evolves, not a glossary or standard.
+
+### Observation Log
+
+**2026-01-01: Initial Baseline**
+- Total unique emojis: 167
+- Total instances: 387
+- Files annotated: 18 (primarily `.github/` documentation)
+
+**High-frequency markers (>10 instances):**
+- ✅ (92×) - Correctness, approval patterns
+- ❌ (47×) - Incorrectness, forbidden patterns  
+- ✓ (14×) - Verification, checks
+- ⚠️ (9×) - Warnings, critical attention
+
+**Emerging semantic clusters:**
+- **Structural enforcement**: 🔒 (4×), ⚖️ (appearing with rules/compliance)
+- **Testing ecosystem**: 🧪 (3×), appearing with 🔒🔥 combinations
+- **Magical/thematic**: 🔮✨🌊 (mystical flow), 📜 (scrolls/spells), 👹 (imps)
+- **Tool/implementation**: 🔧🔨 (tools), 🐚 (shells), 🌍 (cross-platform)
+- **Affective warnings**: ⚠️🔥 (critical danger), 💀🖥️ (terminal hangs)
+
+**Notable co-occurrences:**
+- 🚫🔮 (3×) - "No guessing" on test results
+- ⚠️🔥 (2×) - Escalated warnings
+- 🧪🔒🔥 (1×) - Tests absolutely required
+- ⚔️❤️‍🩹 (1×) - Strict but self-healing
+- 🔮✨🌊 (1×) - Magical emergence
+
+**Distribution notes:**
+- copilot-instructions.md: 87 instances (highest density, core guidelines)
+- instructions/spells.instructions.md: 59 instances
+- instructions/imps.instructions.md: 57 instances  
+- CODE_POLICY_FUNCTION_CALLS.md: 48 instances
+
+**Patterns to watch:**
+- Will 🔒 continue to cluster with non-negotiable requirements?
+- Are multi-emoji sequences (3+) becoming semantic units?
+- Do different instruction types develop distinct emoji vocabularies?
+
 ## Status
 
 **Experimental**: This policy establishes emoji annotations as an ongoing experiment in non-verbal documentation metadata. Annotations should evolve organically as the documentation grows.
