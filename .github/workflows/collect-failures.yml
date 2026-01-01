@@ -30,6 +30,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Monitor workflows and collect failures
+        id: collect
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -47,6 +48,10 @@ jobs:
 
           # Track which workflows we've already reported (using file-based storage)
           mkdir -p /tmp/reported_runs
+          
+          # Initialize failure summary file for PR comment
+          failure_summary_file="/tmp/failure_summary.txt"
+          : > "$failure_summary_file"
 
           # Workflows to monitor
           workflows=(
@@ -63,8 +68,11 @@ jobs:
           extract_test_summary() {
             local logfile=$1
             # Extract from "=== Test Summary ===" to the end or next section
+            # Stop at "Error: Process exited with error code" line
             if grep -q "=== Test Summary ===" "$logfile"; then
-              sed -n '/=== Test Summary ===/,/^===/p' "$logfile" | head -n -1
+              sed -n '/=== Test Summary ===/,/^===/p' "$logfile" | \
+                sed '/Error: Process exited with error code/,$d' | \
+                head -n -1
             fi
           }
 
@@ -80,16 +88,20 @@ jobs:
             fi
 
             # For other workflows, find the failing step
-            # GitHub logs have timestamps, we want the section with errors
+            # Stop at "Error: Process exited with error code" line
             if grep -q "##\[error\]" "$logfile"; then
-              # Extract error lines and surrounding context
-              grep -B 5 -A 10 "##\[error\]" "$logfile" | head -100
+              # Extract error lines and surrounding context, stop at process exit error
+              grep -B 5 -A 10 "##\[error\]" "$logfile" | \
+                sed '/Error: Process exited with error code/,$d' | \
+                head -100
             elif grep -qi "FAIL\|ERROR" "$logfile"; then
-              # Extract failure lines
-              grep -i -B 3 -A 3 "FAIL\|ERROR" "$logfile" | head -100
+              # Extract failure lines, stop at process exit error
+              grep -i -B 3 -A 3 "FAIL\|ERROR" "$logfile" | \
+                sed '/Error: Process exited with error code/,$d' | \
+                head -100
             else
-              # Last resort: show last part of log
-              tail -50 "$logfile"
+              # Last resort: show last part of log, stop at process exit error
+              tail -50 "$logfile" | sed '/Error: Process exited with error code/,$d'
             fi
           }
 
@@ -135,6 +147,15 @@ jobs:
               /tmp/jobs_${run_id}.json)
             echo "Failed jobs: $failed_count"
             echo ""
+            
+            # Add to failure summary for PR comment
+            {
+              echo ""
+              echo "### ❌ $workflow_name"
+              echo ""
+              echo "**Failed jobs:** $failed_count"
+              echo ""
+            } >> "$failure_summary_file"
 
             # Process each failed job
             jq -r '.jobs[] | select(.conclusion == "failure") | "\(.id)|\(.name)"' \
@@ -146,8 +167,18 @@ jobs:
               if gh api "/repos/${{ github.repository }}/actions/jobs/${job_id}/logs" \
                 > /tmp/log_${job_id}.txt 2>&1; then
                 # Extract relevant failure text
-                extract_failed_step "/tmp/log_${job_id}.txt" "$job_name"
+                failure_text=$(extract_failed_step "/tmp/log_${job_id}.txt" "$job_name")
+                echo "$failure_text"
                 echo ""
+                
+                # Add to PR comment summary
+                {
+                  echo "**Job: $job_name**"
+                  echo '```'
+                  echo "$failure_text"
+                  echo '```'
+                  echo ""
+                } >> "$failure_summary_file"
               else
                 echo "⚠️ Could not download logs"
                 echo ""
@@ -217,6 +248,20 @@ jobs:
           echo "========================================================================"
           echo " WORKFLOW FAILURE COLLECTION - Complete"
           echo "========================================================================"
+          
+          # Set output for PR comment step
+          if [ -s "$failure_summary_file" ]; then
+            echo "has_failures=true" >> "$GITHUB_OUTPUT"
+            # Encode failure summary for output (escape newlines and quotes)
+            {
+              echo "failure_summary<<EOF"
+              cat "$failure_summary_file"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+          else
+            echo "has_failures=false" >> "$GITHUB_OUTPUT"
+            echo "failure_summary=" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Create summary
         if: always()
@@ -231,3 +276,54 @@ jobs:
             echo ""
             echo "See the workflow logs above for detailed failure information."
           } >> "$GITHUB_STEP_SUMMARY"
+      
+      - name: Post PR comment
+        if: steps.collect.outputs.has_failures == 'true'
+        uses: actions/github-script@v7
+        env:
+          FAILURE_SUMMARY: ${{ steps.collect.outputs.failure_summary }}
+        with:
+          script: |
+            const pr = '${{ github.event.pull_request.number }}';
+            const failureSummary = process.env.FAILURE_SUMMARY;
+            const runId = '${{ github.run_id }}';
+            const date = new Date().toISOString().split('T')[0];
+            const time = new Date().toISOString().split('T')[1].slice(0,8);
+            
+            const body = [
+              '<!-- workflow-failures-bot -->',
+              '## 🔍 Test Failure Collection',
+              '',
+              '**Updated:** ' + date + ' ' + time + ' UTC',
+              '',
+              failureSummary,
+              '',
+              '---',
+              '',
+              '💡 **View detailed logs:** Check the [workflow run logs](../../actions/runs/' + runId + ')',
+              '🤖 **Ask Copilot:** "What test failures do I need to fix?"'
+            ].join('\n');
+            
+            const {data: comments} = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr
+            });
+            
+            const existing = comments.find(c => c.body && c.body.includes('<!-- workflow-failures-bot -->'));
+            
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr,
+                body
+              });
+            }
