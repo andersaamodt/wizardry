@@ -230,7 +230,7 @@ The `install` script and scripts in `spells/install/core/` are bootstrap scripts
 printf '%s\n' "Processing files..."
 printf '%s\n' "Error: file not found" >&2
 
-# NEW  
+# NEW
 info "Processing files..."
 warn "spell-name: file not found"
 ```

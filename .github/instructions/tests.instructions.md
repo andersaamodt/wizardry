@@ -143,7 +143,7 @@ Only report test results you have personally verified by executing the test file
 
 **CRITICAL RULE: Test files MUST correspond to actual spells or imps.** The `.tests/` directory structure must exactly mirror the `spells/` directory structure.
 
-❌ **WRONG**: Creating `.tests/spellcraft/test-no-duplicate-set-eu.sh` when there's no `spells/spellcraft/no-duplicate-set-eu` spell  
+❌ **WRONG**: Creating `.tests/spellcraft/test-no-duplicate-set-eu.sh` when there's no `spells/spellcraft/no-duplicate-set-eu` spell
 ✅ **CORRECT**: Integrating validation checks into existing spells like `lint-magic`
 
 Test files mirror the `spells/` directory structure with `test-` prefix (all hyphens):
@@ -219,6 +219,26 @@ PATH="$stub_dir:$ROOT_DIR/spells/cantrips:$WIZARDRY_IMPS_PATH:...:$PATH" run_spe
 ```
 
 **Key principle**: Stub the bare minimum (terminal I/O), test real wizardry for everything else.
+
+## Dual-Pattern Testing
+
+**All castable spells should be tested both ways:**
+1. **Direct execution**: `./spells/category/spell --help`
+2. **Source-then-invoke**: Via `_run_sourced_spell spell --help`
+
+**Use `_run_both_patterns` wrapper:**
+```sh
+# Automatically tests both patterns
+_run_both_patterns "spell shows usage" test_spell_usage "spells/category/spell"
+```
+
+**Or use environment variable:**
+```sh
+export WIZARDRY_TEST_BOTH_PATTERNS=1  # Makes all tests dual-pattern
+./spells/system/test-magic
+```
+
+**Uncastable spells** (colors, move, jump-to-marker): Only test sourced pattern.
 
 ## Cross-Platform Testing
 

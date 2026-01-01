@@ -1,58 +1,58 @@
-# Imps Instructions  👹📖
+# Imps Instructions
 
 applyTo: "spells/.imps/**"
 
-## What Are Imps?  👹❓
+## What Are Imps?
 
-Imps are micro-helper scripts—the smallest semantic building blocks in wizardry. They live in `spells/.imps/` and abstract common shell patterns into readable, well-documented microscripts.  🧱✨
+Imps are micro-helper scripts—the smallest semantic building blocks in wizardry. They live in `spells/.imps/` and abstract common shell patterns into readable, well-documented microscripts.
 
-## Creating New Imps  🆕👹
+## Creating New Imps
 
-**CRITICAL**: When creating a new imp, you MUST also create a corresponding test file:  ⚠️🧪
-- Imp location: `spells/.imps/family/imp-name`  📂
-- Test location: `.tests/.imps/family/test_imp-name.sh`  🧪📂
+**CRITICAL**: When creating a new imp, you MUST also create a corresponding test file:
+- Imp location: `spells/.imps/family/imp-name`
+- Test location: `.tests/.imps/family/test_imp-name.sh`
 
-Test files are NOT optional. Every imp requires tests covering its behavior.  🔒
+Test files are NOT optional. Every imp requires tests covering its behavior.
 
-**After creating tests, you MUST run them and report actual results:**  📊🔍
+**After creating tests, you MUST run them and report actual results:**
 ```sh
 .tests/.imps/family/test_imp-name.sh
 ```
-Never claim tests pass without actually executing them. Report the actual pass/fail counts.  🚫🔮
+Never claim tests pass without actually executing them. Report the actual pass/fail counts.
 
-See `.github/instructions/tests.instructions.md` for test patterns.  📖
+See `.github/instructions/tests.instructions.md` for test patterns.
 
-## Imp Requirements  📋
+## Imp Requirements
 
-### Required Elements  ⚡
-- **Shebang**: `#!/bin/sh` (POSIX only)  🐚
-- **Opening comment**: Brief description of what it does  💭
+### Required Elements
+- **Shebang**: `#!/bin/sh` (POSIX only)
+- **Opening comment**: Brief description of what it does
 
-### Strict Mode (`set -eu`)  🔐⚠️
+### Strict Mode (`set -eu`)
 
-**⚠️ CRITICAL: Only ONE `set -eu` per imp file!**  ⚠️🔥
+**⚠️ CRITICAL: Only ONE `set -eu` per imp file!**
 
-**NEVER duplicate `set -eu`** before the case statement. This breaks invoke-wizardry and causes terminal hangs. See `.github/instructions/imp-set-eu.instructions.md` for full details.  💀🖥️
+**NEVER duplicate `set -eu`** before the case statement. This breaks invoke-wizardry and causes terminal hangs. See `.github/instructions/imp-set-eu.instructions.md` for full details.
 
-**Action imps** that perform actions (produce output, modify state) should have ONE `set -eu` at the top:  ⚡🔒
-- `fs/`, `out/`, `paths/`, `pkg/`, `str/`, `sys/`, `text/`, `input/`, `lang/` families  📂
+**Action imps** that perform actions (produce output, modify state) should have ONE `set -eu` at the top:
+- `fs/`, `out/`, `paths/`, `pkg/`, `str/`, `sys/`, `text/`, `input/`, `lang/` families
 
-**Conditional imps** that return exit codes for flow control should have NO `set -eu`:  ❓🚫
-- `cond/` family — `has`, `there`, `is`, `yes`, `no`, `empty`, `nonempty`, etc.  🔍
-- `lex/` family — parsing helpers that signal success/failure via exit code  📝
-- `menu/` family — menu helpers that return true/false  📋
+**Conditional imps** that return exit codes for flow control should have NO `set -eu`:
+- `cond/` family — `has`, `there`, `is`, `yes`, `no`, `empty`, `nonempty`, etc.
+- `lex/` family — parsing helpers that signal success/failure via exit code
+- `menu/` family — menu helpers that return true/false
 
-This exception exists because conditional imps are designed to be used in `if` statements and `&&`/`||` chains, where non-zero exit codes indicate false rather than error.  🔀
+This exception exists because conditional imps are designed to be used in `if` statements and `&&`/`||` chains, where non-zero exit codes indicate false rather than error.
 
-**Automated test:** `.tests/spellcraft/test-no-duplicate-set-eu.sh` enforces this rule in CI.  🤖✅
+**Automated test:** `.tests/spellcraft/test-no-duplicate-set-eu.sh` enforces this rule in CI.
 
-### Relaxed Rules (compared to spells)  ~💨
-- **No `--help` required**: The opening comment serves as the imp's spec  💭📜
-- **No `show_usage()` required**: Keep imps minimal  ✂️
+### Relaxed Rules (compared to spells)
+- **No `--help` required**: The opening comment serves as the imp's spec
+- **No `show_usage()` required**: Keep imps minimal
 
-## Imp Template  📋
+## Imp Template
 
-### Conditional Imp (returns exit code for flow control)  👹❓
+### Conditional Imp (returns exit code for flow control)
 ```sh
 #!/bin/sh
 # imp-name ARG - test if something is true
@@ -67,7 +67,7 @@ case "$0" in
   */imp-name) _imp_name "$@" ;; esac
 ```
 
-### Action Imp (performs action, uses strict mode)  👹⚡
+### Action Imp (performs action, uses strict mode)
 ```sh
 #!/bin/sh
 # imp-name ARG1 ARG2 - brief description of what it does
@@ -84,20 +84,20 @@ case "$0" in
   */imp-name) _imp_name "$@" ;; esac
 ```
 
-## Imp Qualities  💎
+## Imp Qualities
 
-- **Does exactly one thing**: Single responsibility  🎯
-- **No functions**: Keep flat and linear  📏~
-- **Self-documenting name**: Novices can understand without looking it up  💡📛
-- **Hyphenated names**: Use hyphens for multi-word names  🔗
-- **Space-separated arguments**: No `--flags`, just positional args  🚫🏴
-- **Cross-platform**: Abstract OS differences behind clean interface  🌍🔧
+- **Does exactly one thing**: Single responsibility
+- **No functions**: Keep flat and linear
+- **Self-documenting name**: Novices can understand without looking it up
+- **Hyphenated names**: Use hyphens for multi-word names
+- **Space-separated arguments**: No `--flags`, just positional args
+- **Cross-platform**: Abstract OS differences behind clean interface
 
-## Demon Families  👹🏠
+## Demon Families
 
-Imps are organized in folders ("demon families") by function:  📂🌳
-- `cond/` — Conditional tests (`has`, `there`, `is`, `yes`, `no`, etc.)  ❓✅
-- `str/` — String operations  🧵
+Imps are organized in folders ("demon families") by function:
+- `cond/` — Conditional tests (`has`, `there`, `is`, `yes`, `no`, etc.)
+- `str/` — String operations
 - `fs/` — Filesystem operations
 - `sys/` — System utilities
 - `input/` — User input handling
