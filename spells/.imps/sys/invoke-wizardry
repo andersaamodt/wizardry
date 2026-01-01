@@ -138,10 +138,10 @@ invoke_wizardry() {
     _iw_restore_and_return 1
   fi
   
-  # Pre-load imps by level (Levels 0-3: POSIX + Wizardry + Glossary + Menu)
+  # Pre-load imps by level (Levels 0-4: POSIX + Banish + Install + Glossary + Menu)
   # This provides all foundational imps needed for core wizardry functionality
   # Uses spell-levels imp to stay in sync with level definitions
-  _iw_debug "Pre-loading imps (levels 0-3)"
+  _iw_debug "Pre-loading imps (levels 0-4)"
   
   # Source spell-levels to get level definitions
   _spell_levels_imp="$WIZARDRY_DIR/spells/.imps/sys/spell-levels"
@@ -149,8 +149,8 @@ invoke_wizardry() {
     # shellcheck source=/dev/null
     . "$_spell_levels_imp"
     
-    # Load imps for levels 1, 2, and 3 (Level 0 has no imps)
-    for _level in 1 2 3; do
+    # Load imps for levels 1, 2, 3, and 4 (Level 0 has no imps)
+    for _level in 1 2 3 4; do
       _level_imps=$(get_level_imps "$_level")
       if [ -n "$_level_imps" ]; then
         _iw_debug "Loading Level $_level imps: $(banish_level_name "$_level")"
@@ -219,14 +219,14 @@ invoke_wizardry() {
     done
   fi
   
-  # Pre-load spells by level (Levels 0-3: POSIX + Wizardry + Glossary + Menu)
+  # Pre-load spells by level (Levels 0-4: POSIX + Banish + Install + Glossary + Menu)
   # This provides all foundational spells needed for core wizardry functionality
   # Uses spell-levels imp to stay in sync with level definitions
-  _iw_debug "Pre-loading spells (levels 0-3)"
+  _iw_debug "Pre-loading spells (levels 0-4)"
   
   if [ -f "$_spell_levels_imp" ]; then
-    # Load spells for levels 0, 1, 2, and 3
-    for _level in 0 1 2 3; do
+    # Load spells for levels 0, 1, 2, 3, and 4
+    for _level in 0 1 2 3 4; do
       if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
         printf '[invoke-wizardry] DEBUG: ========== STARTING LEVEL %d ==========\n' "$_level" >&2
       fi
