@@ -5,16 +5,23 @@
 # Conditional imp - no set -eu (returns exit codes for flow control)
 set +eu
 
-_rhl_marker=${1:-}
-_rhl_rc_file=${2:-}
+rc_has_line() {
 
-if [ -z "$_rhl_marker" ] || [ -z "$_rhl_rc_file" ]; then
-  exit 1
-fi
+  _rhl_marker=${1:-}
+  _rhl_rc_file=${2:-}
 
-if [ ! -f "$_rhl_rc_file" ]; then
-  exit 1
-fi
+  if [ -z "$_rhl_marker" ] || [ -z "$_rhl_rc_file" ]; then
+    return 1
+  fi
 
-_rhl_full_marker="# wizardry: $_rhl_marker"
-grep -qF "$_rhl_full_marker" "$_rhl_rc_file" 2>/dev/null
+  if [ ! -f "$_rhl_rc_file" ]; then
+    return 1
+  fi
+
+  _rhl_full_marker="# wizardry: $_rhl_marker"
+  grep -qF "$_rhl_full_marker" "$_rhl_rc_file" 2>/dev/null
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */rc-has-line) rc_has_line "$@" ;; esac

@@ -5,8 +5,15 @@
 
 set -eu
 
-  case ${1-} in
-    -y) printf '1\n' ;;
-    -x) printf '1\n' ;;
-    *) printf '1 1\n' ;;
-  esac
+stub_fathom_cursor() {
+
+    case ${1-} in
+      -y) printf '1\n' ;;
+      -x) printf '1\n' ;;
+      *) printf '1 1\n' ;;
+    esac
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */stub-fathom-cursor) stub_fathom_cursor "$@" ;; esac

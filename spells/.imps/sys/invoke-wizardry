@@ -151,9 +151,9 @@ invoke_wizardry() {
     
     # Load imps for levels 1, 2, 3, and 4 (Level 0 has no imps)
     for _level in 1 2 3 4; do
-      _level_imps=$(get_level_imps "$_level")
+      _level_imps=$(spell_levels imps "$_level")
       if [ -n "$_level_imps" ]; then
-        _iw_debug "Loading Level $_level imps: $(banish_level_name "$_level")"
+        _iw_debug "Loading Level $_level imps: $(spell_levels name "$_level")"
         for _imp_spec in $_level_imps; do
           # Extract imp name (may include family/ prefix)
           case "$_imp_spec" in
@@ -230,9 +230,9 @@ invoke_wizardry() {
       if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
         printf '[invoke-wizardry] DEBUG: ========== STARTING LEVEL %d ==========\n' "$_level" >&2
       fi
-      _level_spells=$(get_level_spells "$_level")
+      _level_spells=$(spell_levels spells "$_level")
       if [ -n "$_level_spells" ]; then
-        _iw_debug "Loading Level $_level spells: $(banish_level_name "$_level")"
+        _iw_debug "Loading Level $_level spells: $(spell_levels name "$_level")"
         if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
           printf '[invoke-wizardry] DEBUG: Level %d spell list: %s\n' "$_level" "$_level_spells" >&2
         fi

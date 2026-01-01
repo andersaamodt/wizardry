@@ -3,17 +3,24 @@
 # Example: pkg-update && pkg-upgrade
 set -eu
 
-_pug_pm=$(pkg-manager) || {
-  printf '%s\n' "pkg-upgrade: no supported package manager" >&2
-  exit 1
+pkg_upgrade() {
+
+  _pug_pm=$(pkg-manager) || {
+    printf '%s\n' "pkg-upgrade: no supported package manager" >&2
+    return 1
+  }
+
+  case $_pug_pm in
+    apt)    sudo apt-get -y upgrade ;;
+    dnf)    sudo dnf -y upgrade ;;
+    pacman) sudo pacman --noconfirm -Su ;;
+    brew)   brew upgrade ;;
+    nix)    nix-env -u ;;
+    pkgin)  sudo pkgin -y upgrade ;;
+    apk)    sudo apk upgrade ;;
+  esac
 }
 
-case $_pug_pm in
-  apt)    sudo apt-get -y upgrade ;;
-  dnf)    sudo dnf -y upgrade ;;
-  pacman) sudo pacman --noconfirm -Su ;;
-  brew)   brew upgrade ;;
-  nix)    nix-env -u ;;
-  pkgin)  sudo pkgin -y upgrade ;;
-  apk)    sudo apk upgrade ;;
-esac
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */pkg-upgrade) pkg_upgrade "$@" ;; esac

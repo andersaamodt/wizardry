@@ -5,75 +5,82 @@
 
 set -eu
 
-_cs_file=${1:?config-set: file path required}
-_cs_key=${2:?config-set: key required}
-_cs_value=${3-}  # Value can be empty
+config_set() {
 
-# Validate key is not empty
-if [ -z "$_cs_key" ]; then
-  printf 'config-set: key cannot be empty\n' >&2
-  exit 1
-fi
+  _cs_file=${1:?config-set: file path required}
+  _cs_key=${2:?config-set: key required}
+  _cs_value=${3-}  # Value can be empty
 
-# Validate key doesn't contain equals (check first for clearer error)
-case "$_cs_key" in
-  *=*)
-    printf 'config-set: key cannot contain =\n' >&2
-    exit 1
-    ;;
-esac
-
-# Validate key format (alphanumeric, dash, underscore only)
-case "$_cs_key" in
-  *[!a-zA-Z0-9_-]*)
-    printf 'config-set: invalid key format (use alphanumeric, dash, underscore only)\n' >&2
-    exit 1
-    ;;
-esac
-
-# Validate value doesn't contain newlines (would corrupt file)
-case "$_cs_value" in
-  *"
-"*)
-    printf 'config-set: value cannot contain newlines\n' >&2
-    exit 1
-    ;;
-esac
-
-# Ensure parent directory exists
-_cs_dir=$(dirname "$_cs_file")
-if [ ! -d "$_cs_dir" ]; then
-  if ! mkdir -p "$_cs_dir"; then
-    printf 'config-set: cannot create directory %s\n' "$_cs_dir" >&2
-    exit 1
+  # Validate key is not empty
+  if [ -z "$_cs_key" ]; then
+    printf 'config-set: key cannot be empty\n' >&2
+    return 1
   fi
-fi
 
-# Create temp file for atomic operation
-# Ensure temp dir exists
-_cs_tmpdir="${TMPDIR:-/tmp}"
-if [ ! -d "$_cs_tmpdir" ]; then
-  mkdir -p "$_cs_tmpdir" 2>/dev/null || _cs_tmpdir="${_cs_dir}"
-fi
-_cs_tmp=$(mktemp "$_cs_tmpdir/config-set.XXXXXX") || exit 1
-trap 'rm -f "$_cs_tmp"' EXIT HUP INT TERM
+  # Validate key doesn't contain equals (check first for clearer error)
+  case "$_cs_key" in
+    *=*)
+      printf 'config-set: key cannot contain =\n' >&2
+      return 1
+      ;;
+  esac
 
-# If file exists, copy all lines except the key we're updating
-if [ -f "$_cs_file" ]; then
-  # Use awk for safe parsing (no shell expansion)
-  awk -F= -v key="$_cs_key" '$1 != key' "$_cs_file" > "$_cs_tmp"
-fi
+  # Validate key format (alphanumeric, dash, underscore only)
+  case "$_cs_key" in
+    *[!a-zA-Z0-9_-]*)
+      printf 'config-set: invalid key format (use alphanumeric, dash, underscore only)\n' >&2
+      return 1
+      ;;
+  esac
 
-# Append the new key=value
-printf '%s=%s\n' "$_cs_key" "$_cs_value" >> "$_cs_tmp"
+  # Validate value doesn't contain newlines (would corrupt file)
+  case "$_cs_value" in
+    *"
+  "*)
+      printf 'config-set: value cannot contain newlines\n' >&2
+      return 1
+      ;;
+  esac
 
-# Atomic move (overwrites old file)
-if ! mv "$_cs_tmp" "$_cs_file"; then
-  rm -f "$_cs_tmp"
+  # Ensure parent directory exists
+  _cs_dir=$(dirname "$_cs_file")
+  if [ ! -d "$_cs_dir" ]; then
+    if ! mkdir -p "$_cs_dir"; then
+      printf 'config-set: cannot create directory %s\n' "$_cs_dir" >&2
+      return 1
+    fi
+  fi
+
+  # Create temp file for atomic operation
+  # Ensure temp dir exists
+  _cs_tmpdir="${TMPDIR:-/tmp}"
+  if [ ! -d "$_cs_tmpdir" ]; then
+    mkdir -p "$_cs_tmpdir" 2>/dev/null || _cs_tmpdir="${_cs_dir}"
+  fi
+  _cs_tmp=$(mktemp "$_cs_tmpdir/config-set.XXXXXX") || return 1
+  trap 'rm -f "$_cs_tmp"' EXIT HUP INT TERM
+
+  # If file exists, copy all lines except the key we're updating
+  if [ -f "$_cs_file" ]; then
+    # Use awk for safe parsing (no shell expansion)
+    awk -F= -v key="$_cs_key" '$1 != key' "$_cs_file" > "$_cs_tmp"
+  fi
+
+  # Append the new key=value
+  printf '%s=%s\n' "$_cs_key" "$_cs_value" >> "$_cs_tmp"
+
+  # Atomic move (overwrites old file)
+  if ! mv "$_cs_tmp" "$_cs_file"; then
+    rm -f "$_cs_tmp"
+    trap - EXIT HUP INT TERM
+    printf 'config-set: failed to update %s\n' "$_cs_file" >&2
+    return 1
+  fi
+
   trap - EXIT HUP INT TERM
-  printf 'config-set: failed to update %s\n' "$_cs_file" >&2
-  exit 1
-fi
+  return 0
+}
 
-trap - EXIT HUP INT TERM
-exit 0
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */config-set) config_set "$@" ;; esac

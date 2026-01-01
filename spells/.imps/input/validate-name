@@ -5,18 +5,25 @@
 
 set -eu
 
-_vn_name=${1-}
-_vn_context=${2:-name}
+validate_name() {
 
-case $_vn_name in
-  ''|*[!A-Za-z0-9._-]*)
-    printf '%s\n' "${_vn_context}s may contain only letters, digits, dots, underscores, and dashes (no spaces)." >&2
-    exit 1
-    ;;
-  -*)
-    printf '%s\n' "${_vn_context}s may not begin with a dash." >&2
-    exit 1
-    ;;
-esac
+  _vn_name=${1-}
+  _vn_context=${2:-name}
 
-exit 0
+  case $_vn_name in
+    ''|*[!A-Za-z0-9._-]*)
+      printf '%s\n' "${_vn_context}s may contain only letters, digits, dots, underscores, and dashes (no spaces)." >&2
+      return 1
+      ;;
+    -*)
+      printf '%s\n' "${_vn_context}s may not begin with a dash." >&2
+      return 1
+      ;;
+  esac
+
+  return 0
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */validate-name) validate_name "$@" ;; esac

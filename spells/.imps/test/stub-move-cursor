@@ -4,4 +4,11 @@
 
 set -eu
 
-  exit 0
+stub_move_cursor() {
+
+    return 0
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */stub-move-cursor) stub_move_cursor "$@" ;; esac
