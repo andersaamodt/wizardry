@@ -12,7 +12,7 @@ done
 test_finds_module_in_imps() {
   skip-if-compiled || return $?
   # The 'say' imp should be findable
-  run_spell "spells/.imps/sys/word-of-binding" say "hello world"
+  run_spell "spells/.imps/sys/word-of-binding" --run say "hello world"
   assert_success || return 1
   assert_output_contains "hello world" || return 1
 }
@@ -45,7 +45,7 @@ EOF
   chmod +x "$tmpdir/.spellbook/test-evoke-script"
   
   # Set SPELLBOOK_DIR to our temp location
-  SPELLBOOK_DIR="$tmpdir/.spellbook" run_spell "spells/.imps/sys/word-of-binding" test-evoke-script myarg
+  SPELLBOOK_DIR="$tmpdir/.spellbook" run_spell "spells/.imps/sys/word-of-binding" --run test-evoke-script myarg
   assert_success || return 1
   assert_output_contains "evoked: myarg" || return 1
 }
@@ -54,7 +54,7 @@ EOF
 test_handles_spells_without_underscore() {
   skip-if-compiled || return $?
   # The 'forall' spell defines forall() function (not _forall())
-  run_spell "spells/.imps/sys/word-of-binding" forall --help
+  run_spell "spells/.imps/sys/word-of-binding" --run forall --help
   assert_success || return 1
   assert_output_contains "Usage:" || return 1
 }
@@ -63,7 +63,7 @@ test_handles_spells_without_underscore() {
 test_handles_hyphenated_imp() {
   skip-if-compiled || return $?
   # The 'usage-error' imp defines usage_error() function
-  run_spell "spells/.imps/sys/word-of-binding" usage-error "test-spell" "test error"
+  run_spell "spells/.imps/sys/word-of-binding" --run usage-error "test-spell" "test error"
   assert_status 2 || return 1
   assert_error_contains "test-spell: test error" || return 1
 }
@@ -73,7 +73,7 @@ test_handles_hyphenated_spell() {
   skip-if-compiled || return $?
   # The 'read-magic' spell defines read_magic() function (not _read_magic())
   # Call with --help to avoid file requirements
-  run_spell "spells/.imps/sys/word-of-binding" read-magic --help
+  run_spell "spells/.imps/sys/word-of-binding" --run read-magic --help
   assert_success || return 1
   assert_output_contains "Usage:" || return 1
 }
