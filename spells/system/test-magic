@@ -779,7 +779,6 @@ while IFS= read -r test_file; do
     */test-parse-collision-detection.sh) continue ;;
     */test-parse-gloss-recursion.sh) continue ;;
     */test-parse-reconstruction.sh) continue ;;
-    */test-menu-arrow-keys.sh) continue ;;
   esac
 
   rel=${test_file#"$test_dir/"}

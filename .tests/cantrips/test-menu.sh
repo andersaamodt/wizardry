@@ -217,4 +217,169 @@ else
   run_test_case "menu restores cursor on exit" menu_restores_cursor_on_exit
 fi
 
+# Skip arrow key tests if /dev/tty is not functional (e.g., in CI environment)
+if [ "${WIZARDRY_TEST_IN_POCKET-0}" = "1" ]; then
+  test_skip "menu arrow key navigation" "requires functional /dev/tty"
+elif ! stty -g </dev/tty >/dev/null 2>&1; then
+  test_skip "menu arrow key navigation" "requires functional /dev/tty"
+else
+  # Test that menu responds to arrow up key
+  menu_arrow_up_navigation() {
+    tmpdir=$(make_tempdir)
+    
+    stub_dir="$tmpdir/stubs"
+    mkdir -p "$stub_dir"
+    
+    # Create a custom await-keypress that returns our sequence
+    cat > "$stub_dir/await-keypress" <<'STUB_EOF'
+#!/bin/sh
+# Custom await-keypress for testing - returns up, up, enter sequence
+index_file="${AWAIT_KEYPRESS_INDEX_FILE:-/tmp/menu-test-index}"
+if [ ! -f "$index_file" ]; then
+  printf '0' > "$index_file"
+fi
+index=$(cat "$index_file")
+
+# Sequence: up, up, enter (from item 3 -> 2 -> 1)
+case "$index" in
+  0) printf 'up\n'; printf '1' > "$index_file" ;;
+  1) printf 'up\n'; printf '2' > "$index_file" ;;
+  *) printf 'enter\n' ;;
+esac
+STUB_EOF
+    chmod +x "$stub_dir/await-keypress"
+    
+    # Link other stubs
+    for stub in fathom-cursor fathom-terminal move-cursor cursor-blink stty; do
+      ln -s "$ROOT_DIR/spells/.imps/test/stub-$stub" "$stub_dir/$stub"
+    done
+    
+    export AWAIT_KEYPRESS_INDEX_FILE="$tmpdir/key-index"
+    
+    # Run menu starting at item 3, navigate up twice to item 1
+    PATH="$stub_dir:$ROOT_DIR/spells/cantrips:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" run_cmd \
+      env AWAIT_KEYPRESS_INDEX_FILE="$tmpdir/key-index" \
+      "$ROOT_DIR/spells/cantrips/menu" --start-selection 3 "Navigation Test:" \
+      "First Item%printf first" \
+      "Second Item%printf second" \
+      "Third Item%printf third"
+    
+    assert_success || return 1
+    
+    # After pressing up twice from item 3, we should be at item 1
+    case "$OUTPUT" in
+      *first*)
+        return 0
+        ;;
+      *)
+        TEST_FAILURE_REASON="expected 'first' in output but got: $OUTPUT"
+        return 1
+        ;;
+    esac
+  }
+
+  # Test that menu responds to arrow down key
+  menu_arrow_down_navigation() {
+    tmpdir=$(make_tempdir)
+    
+    stub_dir="$tmpdir/stubs"
+    mkdir -p "$stub_dir"
+    
+    # Custom await-keypress: down, enter
+    cat > "$stub_dir/await-keypress" <<'STUB_EOF'
+#!/bin/sh
+index_file="${AWAIT_KEYPRESS_INDEX_FILE:-/tmp/menu-test-index}"
+if [ ! -f "$index_file" ]; then
+  printf '0' > "$index_file"
+fi
+index=$(cat "$index_file")
+
+case "$index" in
+  0) printf 'down\n'; printf '1' > "$index_file" ;;
+  *) printf 'enter\n' ;;
+esac
+STUB_EOF
+    chmod +x "$stub_dir/await-keypress"
+    
+    for stub in fathom-cursor fathom-terminal move-cursor cursor-blink stty; do
+      ln -s "$ROOT_DIR/spells/.imps/test/stub-$stub" "$stub_dir/$stub"
+    done
+    
+    export AWAIT_KEYPRESS_INDEX_FILE="$tmpdir/key-index"
+    
+    PATH="$stub_dir:$ROOT_DIR/spells/cantrips:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" run_cmd \
+      env AWAIT_KEYPRESS_INDEX_FILE="$tmpdir/key-index" \
+      "$ROOT_DIR/spells/cantrips/menu" --start-selection 1 "Navigation Test:" \
+      "First Item%printf first" \
+      "Second Item%printf second" \
+      "Third Item%printf third"
+    
+    assert_success || return 1
+    
+    # After pressing down once from item 1, we should be at item 2
+    case "$OUTPUT" in
+      *second*)
+        return 0
+        ;;
+      *)
+        TEST_FAILURE_REASON="expected 'second' in output but got: $OUTPUT"
+        return 1
+        ;;
+    esac
+  }
+
+  # Test wrapping: arrow up from first item wraps to last
+  menu_arrow_wrapping() {
+    tmpdir=$(make_tempdir)
+    
+    stub_dir="$tmpdir/stubs"
+    mkdir -p "$stub_dir"
+    
+    # Custom await-keypress: up (from item 1 should wrap to item 3), enter
+    cat > "$stub_dir/await-keypress" <<'STUB_EOF'
+#!/bin/sh
+index_file="${AWAIT_KEYPRESS_INDEX_FILE:-/tmp/menu-test-index}"
+if [ ! -f "$index_file" ]; then
+  printf '0' > "$index_file"
+fi
+index=$(cat "$index_file")
+
+case "$index" in
+  0) printf 'up\n'; printf '1' > "$index_file" ;;
+  *) printf 'enter\n' ;;
+esac
+STUB_EOF
+    chmod +x "$stub_dir/await-keypress"
+    
+    for stub in fathom-cursor fathom-terminal move-cursor cursor-blink stty; do
+      ln -s "$ROOT_DIR/spells/.imps/test/stub-$stub" "$stub_dir/$stub"
+    done
+    
+    export AWAIT_KEYPRESS_INDEX_FILE="$tmpdir/key-index"
+    
+    PATH="$stub_dir:$ROOT_DIR/spells/cantrips:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" run_cmd \
+      env AWAIT_KEYPRESS_INDEX_FILE="$tmpdir/key-index" \
+      "$ROOT_DIR/spells/cantrips/menu" --start-selection 1 "Navigation Test:" \
+      "First Item%printf first" \
+      "Second Item%printf second" \
+      "Third Item%printf third"
+    
+    assert_success || return 1
+    
+    case "$OUTPUT" in
+      *third*)
+        return 0
+        ;;
+      *)
+        TEST_FAILURE_REASON="expected 'third' in output (wrapping) but got: $OUTPUT"
+        return 1
+        ;;
+    esac
+  }
+
+  run_test_case "menu responds to arrow up keys" menu_arrow_up_navigation
+  run_test_case "menu responds to arrow down keys" menu_arrow_down_navigation
+  run_test_case "menu wraps around when navigating with arrows" menu_arrow_wrapping
+fi
+
 finish_tests
