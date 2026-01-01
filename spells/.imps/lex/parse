@@ -207,26 +207,22 @@ PARSE_HELP
     _spell_file=""
     _spell_matched_words=0
   
-    # Helper function to search for a spell file by name
-    _find_spell_file() {
-      _search_name=$1
-      for _spell_dir in cantrips menu arcane divination system spellcraft enchantment .imps .imps/*; do
-        if [ -f "$_wizardry_dir/spells/$_spell_dir/$_search_name" ] && [ -x "$_wizardry_dir/spells/$_spell_dir/$_search_name" ]; then
-          printf '%s' "$_wizardry_dir/spells/$_spell_dir/$_search_name"
-          return 0
-        fi
-      done
-      # Slow path: search all directories
-      if [ -d "$_wizardry_dir/spells" ]; then
-        find "$_wizardry_dir/spells" -type f -name "$_search_name" -print -quit 2>/dev/null
-      fi
-    }
-  
     # Try 4-word spell file combinations
     if [ $# -ge 3 ]; then
       _try_4word_spell=$(printf '%s-%s-%s-%s' "$_parse_cmd" "$1" "$2" "$3")
       [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Trying 4-word spell file: %s\n' "$_try_4word_spell" >&2
-      _found=$(_find_spell_file "$_try_4word_spell")
+      # Search for spell file (inline search logic)
+      _found=""
+      for _spell_dir in cantrips menu arcane divination system spellcraft enchantment .imps .imps/*; do
+        if [ -f "$_wizardry_dir/spells/$_spell_dir/$_try_4word_spell" ] && [ -x "$_wizardry_dir/spells/$_spell_dir/$_try_4word_spell" ]; then
+          _found="$_wizardry_dir/spells/$_spell_dir/$_try_4word_spell"
+          break
+        fi
+      done
+      # Slow path: search all directories
+      if [ -z "$_found" ] && [ -d "$_wizardry_dir/spells" ]; then
+        _found=$(find "$_wizardry_dir/spells" -type f -name "$_try_4word_spell" -print -quit 2>/dev/null)
+      fi
       if [ -n "$_found" ]; then
         _spell_file="$_found"
         _spell_matched_words=4
@@ -238,7 +234,18 @@ PARSE_HELP
     if [ -z "$_spell_file" ] && [ $# -ge 2 ]; then
       _try_3word_spell=$(printf '%s-%s-%s' "$_parse_cmd" "$1" "$2")
       [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Trying 3-word spell file: %s\n' "$_try_3word_spell" >&2
-      _found=$(_find_spell_file "$_try_3word_spell")
+      # Search for spell file (inline search logic)
+      _found=""
+      for _spell_dir in cantrips menu arcane divination system spellcraft enchantment .imps .imps/*; do
+        if [ -f "$_wizardry_dir/spells/$_spell_dir/$_try_3word_spell" ] && [ -x "$_wizardry_dir/spells/$_spell_dir/$_try_3word_spell" ]; then
+          _found="$_wizardry_dir/spells/$_spell_dir/$_try_3word_spell"
+          break
+        fi
+      done
+      # Slow path: search all directories
+      if [ -z "$_found" ] && [ -d "$_wizardry_dir/spells" ]; then
+        _found=$(find "$_wizardry_dir/spells" -type f -name "$_try_3word_spell" -print -quit 2>/dev/null)
+      fi
       if [ -n "$_found" ]; then
         _spell_file="$_found"
         _spell_matched_words=3
@@ -250,7 +257,18 @@ PARSE_HELP
     if [ -z "$_spell_file" ] && [ $# -ge 1 ]; then
       _try_2word_spell=$(printf '%s-%s' "$_parse_cmd" "$1")
       [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Trying 2-word spell file: %s\n' "$_try_2word_spell" >&2
-      _found=$(_find_spell_file "$_try_2word_spell")
+      # Search for spell file (inline search logic)
+      _found=""
+      for _spell_dir in cantrips menu arcane divination system spellcraft enchantment .imps .imps/*; do
+        if [ -f "$_wizardry_dir/spells/$_spell_dir/$_try_2word_spell" ] && [ -x "$_wizardry_dir/spells/$_spell_dir/$_try_2word_spell" ]; then
+          _found="$_wizardry_dir/spells/$_spell_dir/$_try_2word_spell"
+          break
+        fi
+      done
+      # Slow path: search all directories
+      if [ -z "$_found" ] && [ -d "$_wizardry_dir/spells" ]; then
+        _found=$(find "$_wizardry_dir/spells" -type f -name "$_try_2word_spell" -print -quit 2>/dev/null)
+      fi
       if [ -n "$_found" ]; then
         _spell_file="$_found"
         _spell_matched_words=2

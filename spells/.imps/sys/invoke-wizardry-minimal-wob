@@ -25,56 +25,49 @@ invoke_wizardry_minimal_wob() {
   _WIZARDRY_INVOKED=1
   export _WIZARDRY_INVOKED
 
-  invoke_wizardry() {
-    # Detect WIZARDRY_DIR
-    if [ -z "${WIZARDRY_DIR-}" ]; then
-      # Capture script path - in bash use BASH_SOURCE, in zsh use $0
-      _iw_script_path=""
-      if eval '[ -n "${BASH_VERSION-}" ]' 2>/dev/null; then
-        _iw_script_path=$(eval 'printf "%s" "${BASH_SOURCE[0]-}"')
-      elif [ -n "${ZSH_VERSION-}" ]; then
-        _iw_script_path="$0"
-      fi
-    
-      # Fallback to command -v
-      if [ -z "$_iw_script_path" ]; then
-        _iw_script_path=$(command -v invoke-wizardry 2>/dev/null | head -1) || :
-      fi
-    
-      # Fallback to default location
-      if [ -z "$_iw_script_path" ] && [ -n "${HOME-}" ]; then
-        _iw_script_path="$HOME/.wizardry/spells/.imps/sys/invoke-wizardry"
-      fi
-    
-      # Derive WIZARDRY_DIR from script path
-      if [ -n "$_iw_script_path" ] && [ -f "$_iw_script_path" ]; then
-        _iw_script_dir=$(CDPATH= cd -- "$(dirname "$_iw_script_path")" 2>/dev/null && pwd -P) || :
-        if [ -n "$_iw_script_dir" ]; then
-          WIZARDRY_DIR=$(CDPATH= cd -- "$_iw_script_dir/../../.." 2>/dev/null && pwd -P) || :
-        fi
-      fi
+  # Detect WIZARDRY_DIR
+  if [ -z "${WIZARDRY_DIR-}" ]; then
+    # Capture script path - in bash use BASH_SOURCE, in zsh use $0
+    _iw_script_path=""
+    if eval '[ -n "${BASH_VERSION-}" ]' 2>/dev/null; then
+      _iw_script_path=$(eval 'printf "%s" "${BASH_SOURCE[0]-}"')
+    elif [ -n "${ZSH_VERSION-}" ]; then
+      _iw_script_path="$0"
     fi
   
-    # Validate WIZARDRY_DIR
-    if [ -z "${WIZARDRY_DIR-}" ] || [ ! -d "${WIZARDRY_DIR-}/spells" ]; then
-      printf '%s\n' "invoke-wizardry: ERROR - WIZARDRY_DIR not found" >&2
-      return 1
+    # Fallback to command -v
+    if [ -z "$_iw_script_path" ]; then
+      _iw_script_path=$(command -v invoke-wizardry 2>/dev/null | head -1) || :
     fi
   
-    export WIZARDRY_DIR
+    # Fallback to default location
+    if [ -z "$_iw_script_path" ] && [ -n "${HOME-}" ]; then
+      _iw_script_path="$HOME/.wizardry/spells/.imps/sys/invoke-wizardry"
+    fi
   
-    # Set up SPELLBOOK_DIR
-    : "${SPELLBOOK_DIR:=${HOME-}/.spellbook}"
-    export SPELLBOOK_DIR
-  
-    # Wizardry initialization complete (minimal mode)
-    return 0
-  }
+    # Derive WIZARDRY_DIR from script path
+    if [ -n "$_iw_script_path" ] && [ -f "$_iw_script_path" ]; then
+      _iw_script_dir=$(CDPATH= cd -- "$(dirname "$_iw_script_path")" 2>/dev/null && pwd -P) || :
+      if [ -n "$_iw_script_dir" ]; then
+        WIZARDRY_DIR=$(CDPATH= cd -- "$_iw_script_dir/../../.." 2>/dev/null && pwd -P) || :
+      fi
+    fi
+  fi
 
-  # Run the setup
-  invoke_wizardry
-  _iw_status=$?
-  return $_iw_status
+  # Validate WIZARDRY_DIR
+  if [ -z "${WIZARDRY_DIR-}" ] || [ ! -d "${WIZARDRY_DIR-}/spells" ]; then
+    printf '%s\n' "invoke-wizardry: ERROR - WIZARDRY_DIR not found" >&2
+    return 1
+  fi
+
+  export WIZARDRY_DIR
+
+  # Set up SPELLBOOK_DIR
+  : "${SPELLBOOK_DIR:=${HOME-}/.spellbook}"
+  export SPELLBOOK_DIR
+
+  # Wizardry initialization complete (minimal mode)
+  return 0
 }
 
 # Execute when sourced to ensure validation happens
