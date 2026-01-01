@@ -3,7 +3,14 @@
 # Example: make dir ~/.config/myapp
 set -eu
 
-case "$1" in
-  dir) mkdir -p "$2" ;;
-  *) exit 1 ;;
-esac
+make() {
+
+  case "$1" in
+    dir) mkdir -p "$2" ;;
+    *) return 1 ;;
+  esac
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */make) make "$@" ;; esac

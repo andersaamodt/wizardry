@@ -2,5 +2,12 @@
 # in-range VALUE MIN MAX - test if integer value is within inclusive range
 # Example: in-range 5 1 10 && echo "valid"
 
-[ "$#" -eq 3 ] || exit 1
-[ "$1" -ge "$2" ] && [ "$1" -le "$3" ] 2>/dev/null
+
+in_range() {
+  [ "$#" -eq 3 ] || return 1
+  [ "$1" -ge "$2" ] && [ "$1" -le "$3" ] 2>/dev/null
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */in-range) in_range "$@" ;; esac

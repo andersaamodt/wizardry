@@ -4,7 +4,14 @@
 
 # Note: No set -eu because this is a conditional imp (returns exit codes for flow control)
 
-case "$1" in
-  n|N|no|NO|No|false|FALSE|False|0) exit 0 ;;
-  *) exit 1 ;;
-esac
+
+no() {
+  case "$1" in
+    n|N|no|NO|No|false|FALSE|False|0) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */no) no "$@" ;; esac

@@ -2,4 +2,11 @@
 # is-path VALUE - test if VALUE is provided (non-empty path argument)
 # Example: is-path "$input" && echo "path argument provided"
 
-[ -n "$1" ]
+
+is_path() {
+  [ -n "$1" ]
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */is-path) is_path "$@" ;; esac

@@ -2,16 +2,23 @@
 # is-integer VALUE - test if value is a valid integer (positive, negative, or zero)
 # Example: is-integer "42" && echo "valid"
 
-case "$1" in
-  '') exit 1 ;;
-  -) exit 1 ;;
-  -[0-9]) : ;;
-  -[0-9]*) : ;;
-  [0-9]*) : ;;
-  *) exit 1 ;;
-esac
-case "$1" in
-  -*) _ii_rest=${1#-}; case "$_ii_rest" in *[!0-9]*) exit 1 ;; esac ;;
-  *[!0-9]*) exit 1 ;;
-esac
-exit 0
+
+is_integer() {
+  case "$1" in
+    '') return 1 ;;
+    -) return 1 ;;
+    -[0-9]) : ;;
+    -[0-9]*) : ;;
+    [0-9]*) : ;;
+    *) return 1 ;;
+  esac
+  case "$1" in
+    -*) _ii_rest=${1#-}; case "$_ii_rest" in *[!0-9]*) return 1 ;; esac ;;
+    *[!0-9]*) return 1 ;;
+  esac
+  return 0
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */is-integer) is_integer "$@" ;; esac

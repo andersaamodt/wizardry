@@ -3,40 +3,47 @@
 # Example: nix-shell-remove myspell home.nix
 set -eu
 
-  _nsr_block_name=${1:-}
-  _nsr_nix_file=${2:-}
+nix_shell_remove() {
 
-  if [ -z "$_nsr_block_name" ] || [ -z "$_nsr_nix_file" ]; then
-    printf '%s\n' "nix-shell-remove: NAME and FILE are required" >&2
-    exit 1
-  fi
+    _nsr_block_name=${1:-}
+    _nsr_nix_file=${2:-}
 
-  _nsr_marker="# wizardry: $_nsr_block_name"
+    if [ -z "$_nsr_block_name" ] || [ -z "$_nsr_nix_file" ]; then
+      printf '%s\n' "nix-shell-remove: NAME and FILE are required" >&2
+      return 1
+    fi
 
-  _nsr_needs_sudo=0
-  if [ -f "$_nsr_nix_file" ] && [ ! -w "$_nsr_nix_file" ]; then
-    _nsr_needs_sudo=1
-  fi
+    _nsr_marker="# wizardry: $_nsr_block_name"
 
-  if [ ! -f "$_nsr_nix_file" ]; then
-    printf '%s\n' "nix-shell-remove: file not found: $_nsr_nix_file" >&2
-    exit 1
-  fi
-  if ! grep -Fq "$_nsr_marker" "$_nsr_nix_file" 2>/dev/null; then exit 0; fi
-  _nsr_tmp_file=$(mktemp "${TMPDIR:-/tmp}/nix-shell-remove.XXXXXX") || exit 1
-  if [ "$_nsr_needs_sudo" -eq 1 ]; then
-    if command -v sudo >/dev/null 2>&1; then sudo cat "$_nsr_nix_file"
-    elif command -v doas >/dev/null 2>&1; then doas cat "$_nsr_nix_file"
-    else cat "$_nsr_nix_file"; fi
-  else
-    cat "$_nsr_nix_file"
-  fi | grep -v -F "$_nsr_marker" > "$_nsr_tmp_file"
-  if [ "$_nsr_needs_sudo" -eq 1 ]; then
-    if command -v sudo >/dev/null 2>&1; then sudo cp "$_nsr_tmp_file" "$_nsr_nix_file"
-    elif command -v doas >/dev/null 2>&1; then doas cp "$_nsr_tmp_file" "$_nsr_nix_file"
-    else cp "$_nsr_tmp_file" "$_nsr_nix_file"; fi
-  else
-    mv "$_nsr_tmp_file" "$_nsr_nix_file"
-  fi
-  rm -f "$_nsr_tmp_file"
-  exit 0
+    _nsr_needs_sudo=0
+    if [ -f "$_nsr_nix_file" ] && [ ! -w "$_nsr_nix_file" ]; then
+      _nsr_needs_sudo=1
+    fi
+
+    if [ ! -f "$_nsr_nix_file" ]; then
+      printf '%s\n' "nix-shell-remove: file not found: $_nsr_nix_file" >&2
+      return 1
+    fi
+    if ! grep -Fq "$_nsr_marker" "$_nsr_nix_file" 2>/dev/null; then return 0; fi
+    _nsr_tmp_file=$(mktemp "${TMPDIR:-/tmp}/nix-shell-remove.XXXXXX") || return 1
+    if [ "$_nsr_needs_sudo" -eq 1 ]; then
+      if command -v sudo >/dev/null 2>&1; then sudo cat "$_nsr_nix_file"
+      elif command -v doas >/dev/null 2>&1; then doas cat "$_nsr_nix_file"
+      else cat "$_nsr_nix_file"; fi
+    else
+      cat "$_nsr_nix_file"
+    fi | grep -v -F "$_nsr_marker" > "$_nsr_tmp_file"
+    if [ "$_nsr_needs_sudo" -eq 1 ]; then
+      if command -v sudo >/dev/null 2>&1; then sudo cp "$_nsr_tmp_file" "$_nsr_nix_file"
+      elif command -v doas >/dev/null 2>&1; then doas cp "$_nsr_tmp_file" "$_nsr_nix_file"
+      else cp "$_nsr_tmp_file" "$_nsr_nix_file"; fi
+    else
+      mv "$_nsr_tmp_file" "$_nsr_nix_file"
+    fi
+    rm -f "$_nsr_tmp_file"
+    return 0
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */nix-shell-remove) nix_shell_remove "$@" ;; esac

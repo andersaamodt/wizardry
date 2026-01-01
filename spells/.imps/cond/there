@@ -4,4 +4,11 @@
 
 # Note: No set -eu because this is a conditional imp (returns exit codes for flow control)
 
-[ -e "$1" ]
+
+there() {
+  [ -e "$1" ]
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */there) there "$@" ;; esac

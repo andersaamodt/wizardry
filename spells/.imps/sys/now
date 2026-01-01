@@ -3,4 +3,11 @@
 # Examples: now | now %Y-%m-%d | now %H:%M:%S
 set -eu
 
-date "+${1:-%s}" 2>/dev/null || printf '%s' "$$"
+now() {
+
+  date "+${1:-%s}" 2>/dev/null || printf '%s' "$$"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */now) now "$@" ;; esac

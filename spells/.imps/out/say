@@ -3,4 +3,10 @@
 # Example: say "Hello world"
 set -eu
 
-printf '%s\n' "$*"
+say() {
+  printf '%s\n' "$*"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */say) say "$@" ;; esac

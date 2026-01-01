@@ -4,7 +4,13 @@
 
 set -eu
 
-_debug_level=${WIZARDRY_LOG_LEVEL:-0}
-if [ "$_debug_level" -ge 2 ]; then
-  printf 'DEBUG: %s\n' "$*" >&2
-fi
+debug() {
+  _debug_level=${WIZARDRY_LOG_LEVEL:-0}
+  if [ "$_debug_level" -ge 2 ]; then
+    printf 'DEBUG: %s\n' "$*" >&2
+  fi
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */debug) debug "$@" ;; esac

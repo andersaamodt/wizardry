@@ -3,4 +3,11 @@
 # Example: ok mkdir -p /tmp/test && echo "created"
 set -eu
 
-"$@" >/dev/null 2>&1
+ok() {
+
+  "$@" >/dev/null 2>&1
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */ok) ok "$@" ;; esac

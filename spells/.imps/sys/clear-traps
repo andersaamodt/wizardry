@@ -4,4 +4,11 @@
 
 set -eu
 
-trap - EXIT HUP INT TERM
+clear_traps() {
+
+  trap - EXIT HUP INT TERM
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */clear-traps) clear_traps "$@" ;; esac
