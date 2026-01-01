@@ -33,7 +33,7 @@ curl -fsSL https://raw.githubusercontent.com/andersaamodt/wizardry/main/install 
 
 After installation completes, follow the instructions shown to start using wizardry immediately, or simply open a new terminal window.
 
-The install script requires `tar` plus either `curl` or `wget` to be available.
+**Installation method**: The installer will use `git` to create a proper git repository if available (enabling easy updates via `update-wizardry`). If `git` is not available, it falls back to downloading a tarball. The install script requires either `git` or `tar` plus either `curl` or `wget`.
 
 ### Install with git
 
@@ -46,6 +46,18 @@ cd ~/.wizardry
 ```
 
 This downloads wizardry to the default install location, `~/.wizardry`. Follow the instructions shown after installation to start using wizardry.
+
+### Updating wizardry
+
+If wizardry was installed via git (either through the curl installer with git available, or via manual git clone), you can update it easily:
+
+```bash
+update-wizardry
+```
+
+This command runs `git pull` to fetch and apply the latest changes from the repository.
+
+**Note**: If wizardry was installed via tarball (when git wasn't available), `update-wizardry` will provide instructions on how to convert your installation to a git repository for easy updates.
 
 ### Portable build
 
