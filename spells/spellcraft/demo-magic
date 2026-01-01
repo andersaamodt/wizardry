@@ -75,9 +75,9 @@ demo_level() {
       printf '\n'
       
       # Demonstrate validate-spells
-      if [ -f "${WIZARDRY_DIR}/spells/system/validate-spells" ]; then
+      if [ -f "${WIZARDRY_DIR}/spells/.wizardry/validate-spells" ]; then
         printf 'The wizard casts validate-spells on core infrastructure...\n'
-        "${WIZARDRY_DIR}/spells/system/validate-spells" banish:system validate-spells:system 2>&1 | head -3
+        "${WIZARDRY_DIR}/spells/.wizardry/validate-spells" banish:system validate-spells:.wizardry 2>&1 | head -3
         printf '\n'
       fi
       
@@ -90,7 +90,7 @@ demo_level() {
       printf 'The wizard conjures the glossary system...\n'
       printf '\n'
       
-      if [ -f "${WIZARDRY_DIR}/spells/system/generate-glosses" ]; then
+      if [ -f "${WIZARDRY_DIR}/spells/.wizardry/generate-glosses" ]; then
         printf 'The wizard has the power to cast generate-glosses...\n'
         printf '(Glossary generation extracts help text from all spells)\n'
       fi
@@ -241,7 +241,7 @@ demo_level() {
       printf 'The wizard establishes the testing framework...\n'
       printf '\n'
       
-      if [ -f "${WIZARDRY_DIR}/spells/system/test-magic" ]; then
+      if [ -f "${WIZARDRY_DIR}/spells/.wizardry/test-magic" ]; then
         test_count=$(find "${WIZARDRY_DIR}/.tests" -name "test-*.sh" 2>/dev/null | wc -l)
         printf 'The wizard casts test-magic...\n'
         printf 'Testing infrastructure ready: %d test suites available\n' "$test_count"
@@ -397,7 +397,7 @@ demo_level() {
       # Demonstrate lint-magic
       if [ -f "${WIZARDRY_DIR}/spells/spellcraft/lint-magic" ]; then
         printf 'The wizard casts lint-magic on demo-magic itself...\n'
-        "${WIZARDRY_DIR}/spells/spellcraft/lint-magic" "${WIZARDRY_DIR}/spells/system/demo-magic" 2>&1 | head -3 || true
+        "${WIZARDRY_DIR}/spells/spellcraft/lint-magic" "${WIZARDRY_DIR}/spells/spellcraft/demo-magic" 2>&1 | head -3 || true
         printf '\n'
       fi
       
@@ -706,11 +706,11 @@ fi
 
 # Load validate_spells function if not already available
 if ! command -v validate_spells >/dev/null 2>&1; then
-  if [ -f "${WIZARDRY_DIR}/spells/system/validate-spells" ]; then
+  if [ -f "${WIZARDRY_DIR}/spells/.wizardry/validate-spells" ]; then
     # Prevent castable from executing when sourced
     _WIZARDRY_SOURCING_SPELL=1
     # shellcheck source=/dev/null
-    . "${WIZARDRY_DIR}/spells/system/validate-spells"
+    . "${WIZARDRY_DIR}/spells/.wizardry/validate-spells"
     unset _WIZARDRY_SOURCING_SPELL
   else
     printf 'demo-magic: validate-spells not found\n' >&2

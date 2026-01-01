@@ -23,7 +23,7 @@ make_stub_dir() {
 }
 
 test_help() {
-  run_spell "spells/system/update-wizardry" --help
+  run_spell "spells/.wizardry/update-wizardry" --help
   assert_success && assert_output_contains "Usage: update-wizardry"
 }
 
@@ -39,7 +39,7 @@ exit 1
 STUB
   chmod +x "$stub_dir/require-command"
 
-  REQUIRE_LOG="$require_log" REQUIRE_COMMAND="$stub_dir/require-command" run_spell "spells/system/update-wizardry"
+  REQUIRE_LOG="$require_log" REQUIRE_COMMAND="$stub_dir/require-command" run_spell "spells/.wizardry/update-wizardry"
   assert_failure && assert_error_contains "Update wizardry needs 'git'"
   assert_file_contains "$require_log" "git"
 }
@@ -69,7 +69,7 @@ STUB
   chmod +x "$stub_dir/require-command"
 
   PATH="$stub_dir:$PATH" REQUIRE_COMMAND="$stub_dir/require-command" GIT_LOG="$git_log" WIZARDRY_DIR="$wizard_dir" \
-    run_spell "spells/system/update-wizardry"
+    run_spell "spells/.wizardry/update-wizardry"
   assert_success
   assert_file_contains "$git_log" "-C $wizard_dir pull --ff-only"
 }
@@ -94,7 +94,7 @@ STUB
   missing_dir="$stub_dir/nowhere"
 
   PATH="$stub_dir:$PATH" REQUIRE_COMMAND="$stub_dir/require-command" GIT_LOG="$git_log" WIZARDRY_DIR="$missing_dir" \
-    run_spell "spells/system/update-wizardry"
+    run_spell "spells/.wizardry/update-wizardry"
   assert_failure
   assert_error_contains "does not exist or is not a directory"
   assert_path_missing "$git_log"
@@ -123,7 +123,7 @@ STUB
   chmod +x "$stub_dir/require-command"
 
   PATH="$stub_dir:$PATH" REQUIRE_COMMAND="$stub_dir/require-command" GIT_LOG="$git_log" WIZARDRY_DIR="$not_repo" \
-    run_spell "spells/system/update-wizardry"
+    run_spell "spells/.wizardry/update-wizardry"
   assert_failure
   assert_error_contains "is not a git repository"
   assert_file_contains "$git_log" "-C $not_repo rev-parse --is-inside-work-tree"
@@ -159,7 +159,7 @@ STUB
 
   unset WIZARDRY_DIR
   PATH="$stub_dir:$PATH" REQUIRE_COMMAND="$stub_dir/require-command" GIT_LOG="$git_log" MOCK_TOPLEVEL="$toplevel" \
-    run_spell "spells/system/update-wizardry"
+    run_spell "spells/.wizardry/update-wizardry"
   assert_success
   assert_output_contains "$toplevel"
   assert_file_contains "$git_log" "--show-toplevel"
@@ -183,7 +183,7 @@ STUB
   chmod +x "$stub_dir/require-command"
 
   unset WIZARDRY_DIR
-  PATH="$stub_dir:$PATH" REQUIRE_COMMAND="$stub_dir/require-command" run_spell "spells/system/update-wizardry"
+  PATH="$stub_dir:$PATH" REQUIRE_COMMAND="$stub_dir/require-command" run_spell "spells/.wizardry/update-wizardry"
   assert_failure
   assert_error_contains "Unable to determine the wizardry repository"
 }
@@ -214,7 +214,7 @@ STUB
 
   unset WIZARDRY_DIR
   PATH="$stub_dir:$PATH" REQUIRE_COMMAND="$stub_dir/require-command" GIT_LOG="$git_log" MOCK_TOPLEVEL="$toplevel" \
-    run_spell "spells/system/update-wizardry"
+    run_spell "spells/.wizardry/update-wizardry"
   assert_status 42
   assert_file_contains "$git_log" "-C $toplevel pull --ff-only"
 }

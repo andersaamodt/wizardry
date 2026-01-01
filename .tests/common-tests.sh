@@ -2185,7 +2185,7 @@ test_pocket_dimension_available() {
 
 # META: Test output must stream line-by-line
 test_test_magic_uses_stdbuf() {
-  test_magic_file="$ROOT_DIR/spells/system/test-magic"
+  test_magic_file="$ROOT_DIR/spells/.wizardry/test-magic"
   
   # Check if stdbuf is available and used
   if ! command -v stdbuf >/dev/null 2>&1; then

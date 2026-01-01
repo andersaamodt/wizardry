@@ -36,12 +36,12 @@ SCRIPT
 run_verify_posix() {
   targets=$1
   # shellcheck disable=SC2086
-  run_cmd "$ROOT_DIR/spells/system/verify-posix" $targets
+  run_cmd "$ROOT_DIR/spells/.wizardry/verify-posix" $targets
 }
 
 runs_quietly_across_all_spells() {
   prepare_checkbashisms_stub || return 1
-  run_cmd "$ROOT_DIR/spells/system/verify-posix"
+  run_cmd "$ROOT_DIR/spells/.wizardry/verify-posix"
   assert_success || return 1
   summary=$(printf '%s\n' "$OUTPUT" | tail -n 1)
   case $summary in
@@ -62,7 +62,7 @@ accepts_individual_targets() {
 echo ok
 SCRIPT
 
-  run_cmd "$ROOT_DIR/spells/system/verify-posix" "$rel_tmp"
+  run_cmd "$ROOT_DIR/spells/.wizardry/verify-posix" "$rel_tmp"
   assert_success || return 1
   echo "$OUTPUT" | grep "^PASS $rel_tmp$" >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected PASS line for target"; return 1; }
   summary=$(printf '%s\n' "$OUTPUT" | tail -n 1)
@@ -241,7 +241,7 @@ run_test_case "verify-posix reports missing targets" reports_missing_targets
 run_test_case "verify-posix flags bashisms and counts failures" flags_bashisms_and_counts_failures
 
 shows_help() {
-  run_spell spells/system/verify-posix --help
+  run_spell spells/.wizardry/verify-posix --help
   true
 }
 

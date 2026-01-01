@@ -189,10 +189,10 @@ if [ "${GITHUB_ACTIONS-}" != "true" ]; then
             ;;
           *)
             # Running as function - use WIZARDRY_DIR to find our path
-            if [ -f "$root_dir/spells/system/test-magic" ]; then
-              test_magic_path="$root_dir/spells/system/test-magic"
-            elif [ -f "${WIZARDRY_DIR}/spells/system/test-magic" ]; then
-              test_magic_path="${WIZARDRY_DIR}/spells/system/test-magic"
+            if [ -f "$root_dir/spells/.wizardry/test-magic" ]; then
+              test_magic_path="$root_dir/spells/.wizardry/test-magic"
+            elif [ -f "${WIZARDRY_DIR}/spells/.wizardry/test-magic" ]; then
+              test_magic_path="${WIZARDRY_DIR}/spells/.wizardry/test-magic"
             else
               # Fallback: try to find via PATH
               test_magic_path=$(command -v test-magic 2>/dev/null) || test_magic_path="$0"
@@ -224,7 +224,7 @@ if [ -n "$missing_commands" ]; then
   return 1
 fi
 
-if [ ! -x "$root_dir/spells/system/test-spell" ]; then
+if [ ! -x "$root_dir/spells/.wizardry/test-spell" ]; then
   printf 'test-magic: test-spell not found\n' >&2
   return 1
 fi
@@ -289,7 +289,7 @@ run_test_file() {
   cat > "$test_wrapper" << WRAPPER_EOF
 #!/bin/sh
 set +e
-${stdbuf_cmd:+$stdbuf_cmd }"$root_dir/spells/system/test-spell" --skip-common "$test_path" < /dev/null 2>&1
+${stdbuf_cmd:+$stdbuf_cmd }"$root_dir/spells/.wizardry/test-spell" --skip-common "$test_path" < /dev/null 2>&1
 exit_code=\$?
 printf '%s\n' "\$exit_code" > "$test_exit_file"
 WRAPPER_EOF
@@ -735,7 +735,7 @@ while IFS= read -r spell; do
   [ -n "$spell" ] || continue
   rel="$spell"
   case $rel in
-    spells/system/test-magic|spells/system/verify-posix)
+    spells/.wizardry/test-magic|spells/.wizardry/verify-posix)
       continue
       ;;
     *.service|*.gitkeep|*.gitignore)

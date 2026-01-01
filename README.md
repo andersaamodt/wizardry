@@ -95,6 +95,7 @@ The Spellbook is your personal grimoire for casting and organizing spells. Acces
 Spell categories:
 
 * custom commands
+* .wizardry — wizardry-internal spells (testing, validation, updates)
 * arcane
 * cantrips
 * crypto

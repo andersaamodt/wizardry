@@ -8,26 +8,26 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  run_spell "spells/system/validate-spells" --help
+  run_spell "spells/.wizardry/validate-spells" --help
   assert_success || return 1
   assert_output_contains "Usage:" || return 1
 }
 
 test_validate_existing_spells() {
-  WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/system/validate-spells" "banish:system"
+  WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/.wizardry/validate-spells" "banish:system"
   assert_success || return 1
   assert_output_contains "Found spell: banish" || return 1
 }
 
 test_validate_existing_imps() {
-  WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/system/validate-spells" --imps "cond/has" "out/say"
+  WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/.wizardry/validate-spells" --imps "cond/has" "out/say"
   assert_success || return 1
   assert_output_contains "Found imp: cond/has" || return 1
   assert_output_contains "Found imp: out/say" || return 1
 }
 
 test_validate_missing_spells() {
-  WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/system/validate-spells" "nonexistent-spell"
+  WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/.wizardry/validate-spells" "nonexistent-spell"
   assert_failure || return 1
   if ! printf '%s' "$OUTPUT" | grep -q "Missing spell: nonexistent-spell" && \
     ! printf '%s' "$ERROR" | grep -q "Missing spell: nonexistent-spell"; then
@@ -37,7 +37,7 @@ test_validate_missing_spells() {
 }
 
 test_missing_only_flag() {
-  WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/system/validate-spells" --missing-only "nonexistent-spell"
+  WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/.wizardry/validate-spells" --missing-only "nonexistent-spell"
   assert_failure || return 1
   assert_output_contains "nonexistent-spell" || return 1
   # Should not contain "Missing spells:" prefix with --missing-only
@@ -46,7 +46,7 @@ test_missing_only_flag() {
 
 test_show_status_unloaded() {
   # When imps are not loaded, they should show as "Available"
-  WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/system/validate-spells" --imps --show-status "cond/has" "out/say"
+  WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/.wizardry/validate-spells" --imps --show-status "cond/has" "out/say"
   assert_success || return 1
   assert_output_contains "Available imps: has say" || return 1
 }
@@ -57,7 +57,7 @@ test_show_status_loaded() {
   result=$(cd "$ROOT_DIR" && bash -c '
     . spells/.imps/cond/has
     . spells/.imps/out/say
-    . spells/system/validate-spells
+    . spells/.wizardry/validate-spells
     WIZARDRY_DIR="'$ROOT_DIR'" validate_spells --imps --show-status cond/has out/say sys/env-clear 2>/dev/null
   ')
   
@@ -70,7 +70,7 @@ test_show_status_loaded() {
 }
 
 test_quiet_flag() {
-  WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/system/validate-spells" --quiet "banish:system"
+  WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/.wizardry/validate-spells" --quiet "banish:system"
   assert_success || return 1
   # Quiet should suppress "Found spell" messages
   [ -z "$OUTPUT" ] || return 1
