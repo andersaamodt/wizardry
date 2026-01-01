@@ -34,13 +34,11 @@ config_set() {
   esac
 
   # Validate value doesn't contain newlines (would corrupt file)
-  case "$_cs_value" in
-    *"
-  "*)
+  # Use printf and wc to detect newlines (case statement can't match literal newline reliably)
+  if [ "$(printf '%s' "$_cs_value" | wc -l)" != "0" ]; then
       printf 'config-set: value cannot contain newlines\n' >&2
       return 1
-      ;;
-  esac
+  fi
 
   # Ensure parent directory exists
   _cs_dir=$(dirname "$_cs_file")

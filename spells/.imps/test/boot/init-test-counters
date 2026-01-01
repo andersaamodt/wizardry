@@ -1,6 +1,7 @@
 #!/bin/sh
 # init-test-counters - initialize global test result counters
 # Must be sourced to set the global counter variables.
+# Auto-executes when sourced to initialize counters immediately.
 set -eu
 
 init_test_counters() {
@@ -13,6 +14,6 @@ init_test_counters() {
   _fail_detail_indices=""
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */init-test-counters) init_test_counters "$@" ;; esac
+# Auto-execute when sourced OR when run directly
+# This ensures counters are initialized immediately upon sourcing
+init_test_counters "$@"
