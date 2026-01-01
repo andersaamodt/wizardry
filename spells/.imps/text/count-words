@@ -1,1 +1,25 @@
+#!/bin/sh
+# count-words TEXT - count space-separated words in TEXT
+# Example: count-words "hello world test"  # -> 3
 
+set -eu
+
+count_words() {
+  text=${1-}
+  
+  # Handle empty input
+  if [ -z "$text" ]; then
+    printf '0\n'
+    return 0
+  fi
+  
+  # Trim leading/trailing whitespace and count words
+  # Use set -- to split text into positional parameters
+  # shellcheck disable=SC2086
+  set -- $text
+  printf '%d\n' "$#"
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */count-words) count_words "$@" ;; esac
