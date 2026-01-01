@@ -12,17 +12,17 @@ done
 FAST_TEST_FOR_VALIDATION=".imps/test/boot/test-assert-success.sh"
 
 spell_is_executable() {
-  [ -x "$ROOT_DIR/spells/system/test-magic" ]
+  [ -x "$ROOT_DIR/spells/.wizardry/test-magic" ]
 }
 
 shows_help() {
-  run_spell spells/system/test-magic --help
+  run_spell spells/.wizardry/test-magic --help
   assert_success
   assert_output_contains "Usage:"
 }
 
 spell_has_content() {
-  [ -s "$ROOT_DIR/spells/system/test-magic" ]
+  [ -s "$ROOT_DIR/spells/.wizardry/test-magic" ]
 }
 
 # Regression test for file descriptor bug (issue #XXX)
@@ -43,7 +43,7 @@ all_tests_are_processed() {
   fi
   
   # Run test-magic on that one simple test
-  sh spells/system/test-magic --only "$FAST_TEST_FOR_VALIDATION" >"$tmpfile" 2>&1 || true
+  sh spells/.wizardry/test-magic --only "$FAST_TEST_FOR_VALIDATION" >"$tmpfile" 2>&1 || true
   
   # Extract the test heading (e.g., [1/1])
   last_heading=$(grep -E '^\[[0-9]+/[0-9]+\]' "$tmpfile" | tail -1 || true)
@@ -94,17 +94,17 @@ all_tests_are_processed() {
 # Verify that test reruns have been eliminated (refactoring requirement)
 no_test_reruns() {
   # The rerun logic should be completely removed
-  grep -q "rerunning" "$ROOT_DIR/spells/system/test-magic" && {
+  grep -q "rerunning" "$ROOT_DIR/spells/.wizardry/test-magic" && {
     TEST_FAILURE_REASON="rerun logic still present in test-magic"
     return 1
   }
   
-  grep -q "TEST_MAGIC_DEBUG_RERUN" "$ROOT_DIR/spells/system/test-magic" && {
+  grep -q "TEST_MAGIC_DEBUG_RERUN" "$ROOT_DIR/spells/.wizardry/test-magic" && {
     TEST_FAILURE_REASON="DEBUG_RERUN variable still present"
     return 1
   }
   
-  grep -q "very-verbose" "$ROOT_DIR/spells/system/test-magic" && {
+  grep -q "very-verbose" "$ROOT_DIR/spells/.wizardry/test-magic" && {
     TEST_FAILURE_REASON="--very-verbose flag still present"
     return 1
   }
@@ -115,17 +115,17 @@ no_test_reruns() {
 # Test that pre-flight checks exist
 has_preflight_checks() {
   # Verify the script checks for required commands
-  grep -q "Pre-flight checks" "$ROOT_DIR/spells/system/test-magic" || {
+  grep -q "Pre-flight checks" "$ROOT_DIR/spells/.wizardry/test-magic" || {
     TEST_FAILURE_REASON="Pre-flight checks comment not found"
     return 1
   }
   
-  grep -q "missing_commands" "$ROOT_DIR/spells/system/test-magic" || {
+  grep -q "missing_commands" "$ROOT_DIR/spells/.wizardry/test-magic" || {
     TEST_FAILURE_REASON="missing_commands variable not found"
     return 1
   }
   
-  grep -q "required commands not found" "$ROOT_DIR/spells/system/test-magic" || {
+  grep -q "required commands not found" "$ROOT_DIR/spells/.wizardry/test-magic" || {
     TEST_FAILURE_REASON="Error message for missing commands not found"
     return 1
   }
@@ -136,19 +136,19 @@ has_preflight_checks() {
 # Test that timeout protection exists
 has_timeout_protection() {
   # Verify timeout command check
-  grep -q "timeout_cmd" "$ROOT_DIR/spells/system/test-magic" || {
+  grep -q "timeout_cmd" "$ROOT_DIR/spells/.wizardry/test-magic" || {
     TEST_FAILURE_REASON="timeout_cmd variable not found"
     return 1
   }
   
   # Verify timeout is used for test execution
-  grep -q "WIZARDRY_TEST_TIMEOUT" "$ROOT_DIR/spells/system/test-magic" || {
+  grep -q "WIZARDRY_TEST_TIMEOUT" "$ROOT_DIR/spells/.wizardry/test-magic" || {
     TEST_FAILURE_REASON="WIZARDRY_TEST_TIMEOUT variable not found"
     return 1
   }
   
   # Verify timeout exit code handling (124 is timeout's exit code)
-  grep -q "124" "$ROOT_DIR/spells/system/test-magic" || {
+  grep -q "124" "$ROOT_DIR/spells/.wizardry/test-magic" || {
     TEST_FAILURE_REASON="Timeout exit code (124) handling not found"
     return 1
   }
@@ -157,7 +157,7 @@ has_timeout_protection() {
 }
 
 requires_pocket_dimension() {
-  grep -q "pocket-dimension" "$ROOT_DIR/spells/system/test-magic" || {
+  grep -q "pocket-dimension" "$ROOT_DIR/spells/.wizardry/test-magic" || {
     TEST_FAILURE_REASON="test-magic does not reference pocket-dimension"
     return 1
   }
@@ -200,7 +200,7 @@ EOF
   cd "$ROOT_DIR" || return 1
   
   # Run test-magic on the fixture
-  sh spells/system/test-magic --only "__temp_test_fixtures/test-with-failures.sh" >"$tmpfile" 2>&1 || true
+  sh spells/.wizardry/test-magic --only "__temp_test_fixtures/test-with-failures.sh" >"$tmpfile" 2>&1 || true
   
   # Clean up fixture
   rm -rf "$fixture_dir"
@@ -261,7 +261,7 @@ EOF
   cd "$ROOT_DIR" || return 1
   
   # Run test-magic on the fixture
-  sh spells/system/test-magic --only "__temp_test_fixtures/test-with-failures.sh" >"$tmpfile" 2>&1 || true
+  sh spells/.wizardry/test-magic --only "__temp_test_fixtures/test-with-failures.sh" >"$tmpfile" 2>&1 || true
   
   # Clean up fixture
   rm -rf "$fixture_dir"
@@ -309,7 +309,7 @@ EOF
   cd "$ROOT_DIR" || return 1
   
   # Run test-magic on the fixture
-  sh spells/system/test-magic --only "__temp_test_fixtures/test-all-pass.sh" >"$tmpfile" 2>&1 || true
+  sh spells/.wizardry/test-magic --only "__temp_test_fixtures/test-all-pass.sh" >"$tmpfile" 2>&1 || true
   
   # Clean up fixture
   rm -rf "$fixture_dir"
@@ -363,7 +363,7 @@ EOF
   cd "$ROOT_DIR" || return 1
   
   # Run test-magic on the fixture
-  sh spells/system/test-magic --only "__temp_test_fixtures/test-with-failures.sh" >"$tmpfile" 2>&1 || true
+  sh spells/.wizardry/test-magic --only "__temp_test_fixtures/test-with-failures.sh" >"$tmpfile" 2>&1 || true
   
   # Clean up fixture
   rm -rf "$fixture_dir"
@@ -418,7 +418,7 @@ EOF
   cd "$ROOT_DIR" || return 1
   
   # Run test-magic on the fixture
-  sh spells/system/test-magic --only "__temp_test_fixtures/test-with-failures.sh" >"$tmpfile" 2>&1 || true
+  sh spells/.wizardry/test-magic --only "__temp_test_fixtures/test-with-failures.sh" >"$tmpfile" 2>&1 || true
   
   # Clean up fixture
   rm -rf "$fixture_dir"
@@ -473,7 +473,7 @@ EOF
   
   # Run test-magic and verify stdbuf is applied inside wrapper
   # We verify this by checking that the wrapper script contains stdbuf
-  sh spells/system/test-magic --only "__temp_test_fixtures/test-streaming.sh" >"$tmpfile" 2>&1 || true
+  sh spells/.wizardry/test-magic --only "__temp_test_fixtures/test-streaming.sh" >"$tmpfile" 2>&1 || true
   
   # Clean up fixture
   rm -rf "$fixture_dir"
@@ -497,7 +497,7 @@ EOF
   
   # Verify that the wrapper applies stdbuf to the sh command
   # This is a white-box test to ensure the fix stays in place
-  if ! grep -q 'stdbuf.*sh.*"\$abs"' "$ROOT_DIR/spells/system/test-magic"; then
+  if ! grep -q 'stdbuf.*sh.*"\$abs"' "$ROOT_DIR/spells/.wizardry/test-magic"; then
     TEST_FAILURE_REASON="stdbuf not applied to sh command in wrapper (streaming optimization missing)"
     return 1
   fi

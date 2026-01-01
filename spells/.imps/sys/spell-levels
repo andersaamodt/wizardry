@@ -14,12 +14,12 @@ spell_levels() {
   case "$_level" in
     0)
       _name='POSIX & Platform Foundation'
-      _spells='detect-posix:divination detect-distro:divination verify-posix:system'
+      _spells='detect-posix:divination detect-distro:divination verify-posix:.wizardry'
       _imps=''
       ;;
     1)
       _name='Banish & Validation Infrastructure'
-      _spells='banish:system validate-spells:system'
+      _spells='banish:.wizardry validate-spells:.wizardry'
       _imps='sys/spell-levels cond/has cond/there cond/is cond/empty cond/nonempty cond/no cond/within-range cond/lacks cond/newer cond/full cond/gone cond/is-path cond/has-ancestor cond/is-posint cond/yes cond/given cond/older out/say out/warn out/die out/fail out/info out/step out/success out/debug out/ok out/heading-section out/heading-separator out/heading-simple out/usage-error out/first-of out/or-else out/print-pass out/print-fail out/disable-palette out/quiet text/pluralize text/count-words'
       ;;
     2)
@@ -29,7 +29,7 @@ spell_levels() {
       ;;
     3)
       _name='Glossary System'
-      _spells='generate-glosses:system'
+      _spells='generate-glosses:.wizardry'
       _imps='lex/parse fs/find-executable'
       ;;
     4)
@@ -74,17 +74,17 @@ spell_levels() {
       ;;
     12)
       _name='Testing Infrastructure'
-      _spells='test-spell:system test-magic:system pocket-dimension:system logging-example wizard-eyes'
+      _spells='test-spell:.wizardry test-magic:.wizardry pocket-dimension:system logging-example wizard-eyes'
       _imps='test/boot/assert-error-contains test/boot/assert-failure test/boot/assert-file-contains test/boot/assert-output-contains test/boot/assert-path-exists test/boot/assert-path-missing test/boot/assert-status test/boot/assert-success test/boot/find-repo-root test/boot/finish-tests test/boot/init-test-counters test/boot/link-tools test/boot/make-fixture test/boot/make-tempdir test/boot/provide-basic-tools test/boot/record-failure-detail test/boot/report-result test/boot/run-both-patterns test/boot/run-bwrap test/boot/run-cmd test/boot/run-macos-sandbox test/boot/run-sourced-spell test/boot/run-spell test/boot/run-spell-in-dir test/boot/run-test-case test/boot/skip-if-compiled test/boot/skip-if-uncompiled test/boot/stub-nix-env test/boot/stub-pacman test/boot/test-fail test/boot/test-heading test/boot/test-lack test/boot/test-pass test/boot/test-skip test/boot/test-summary test/boot/write-apt-stub test/boot/write-command-stub test/boot/write-pkgin-stub test/boot/write-sudo-stub test/stub-cursor-blink test/stub-fathom-terminal test/stub-stty test/stub-await-keypress test/stub-fathom-cursor test/stub-move-cursor test/test-bootstrap sys/rc-add-line sys/rc-has-line sys/rc-remove-line'
       ;;
     13)
       _name='System Maintenance'
-      _spells='update-wizardry:system update-all:system kill-process:system'
+      _spells='update-wizardry:.wizardry update-all:system kill-process:system'
       _imps='fs/backup-nix-config'
       ;;
     14)
       _name='Advanced System Tools'
-      _spells='demo-magic:system wizard-cast'
+      _spells='demo-magic:.wizardry wizard-cast'
       _imps=''
       ;;
     15)

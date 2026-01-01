@@ -774,9 +774,9 @@ else
   fi
 fi
 
-if [ -x "$repo_dir/spells/system/verify-posix" ] && has checkbashisms; then
+if [ -x "$repo_dir/spells/.wizardry/verify-posix" ] && has checkbashisms; then
   set -- $posix_targets
-  if posix_output=$("$repo_dir/spells/system/verify-posix" "$@" 2>&1); then
+  if posix_output=$("$repo_dir/spells/.wizardry/verify-posix" "$@" 2>&1); then
     posix_failures=0
   else
     posix_failures=1

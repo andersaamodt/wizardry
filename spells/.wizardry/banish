@@ -1136,11 +1136,11 @@ fi
 # Load validate_spells function if not already available
 if ! command -v validate_spells >/dev/null 2>&1; then
   # Try to source validate-spells from known locations
-  if [ -f "${WIZARDRY_DIR}/spells/system/validate-spells" ]; then
+  if [ -f "${WIZARDRY_DIR}/spells/.wizardry/validate-spells" ]; then
     # Prevent castable from executing when sourced
     _WIZARDRY_SOURCING_SPELL=1
     # shellcheck source=/dev/null
-    . "${WIZARDRY_DIR}/spells/system/validate-spells"
+    . "${WIZARDRY_DIR}/spells/.wizardry/validate-spells"
     unset _WIZARDRY_SOURCING_SPELL
   else
     printf '%s\n' "banish: validate-spells not found" >&2

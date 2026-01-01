@@ -10,13 +10,13 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  run_spell "spells/system/test-spell" --help
+  run_spell "spells/.wizardry/test-spell" --help
   assert_success && assert_output_contains "Usage:"
 }
 
 test_runs_full_test_with_common_by_default() {
   # Run a simple test fully - should include common tests by default
-  run_spell "spells/system/test-spell" "cantrips/test-ask-yn.sh"
+  run_spell "spells/.wizardry/test-spell" "cantrips/test-ask-yn.sh"
   assert_success
   assert_output_contains "tests passed"
   # Should also show common test results by default
@@ -25,7 +25,7 @@ test_runs_full_test_with_common_by_default() {
 
 test_skip_common_flag_skips_common_tests() {
   # --skip-common should run only the test file, not common tests
-  run_spell "spells/system/test-spell" "--skip-common" "cantrips/test-ask-yn.sh"
+  run_spell "spells/.wizardry/test-spell" "--skip-common" "cantrips/test-ask-yn.sh"
   assert_success
   assert_output_contains "tests passed"
   # Should NOT show common test results when --skip-common is used
@@ -37,7 +37,7 @@ test_skip_common_flag_skips_common_tests() {
 
 test_runs_single_subtest() {
   # Run just subtest #1 - should skip common tests when filtering subtests
-  run_spell "spells/system/test-spell" "cantrips/test-ask-yn.sh" "1"
+  run_spell "spells/.wizardry/test-spell" "cantrips/test-ask-yn.sh" "1"
   assert_success
   assert_output_contains "PASS #1"
   # Should show exactly 1/1 tests passed
@@ -46,7 +46,7 @@ test_runs_single_subtest() {
 
 test_runs_multiple_subtests() {
   # Run subtests #1 and #2
-  run_spell "spells/system/test-spell" "cantrips/test-ask-yn.sh" "1" "2"
+  run_spell "spells/.wizardry/test-spell" "cantrips/test-ask-yn.sh" "1" "2"
   assert_success
   assert_output_contains "PASS #1"
   assert_output_contains "PASS #2"
@@ -56,21 +56,21 @@ test_runs_multiple_subtests() {
 
 test_missing_test_file() {
   # Should fail when test file doesn't exist
-  run_spell "spells/system/test-spell" "nonexistent/test-fake.sh"
+  run_spell "spells/.wizardry/test-spell" "nonexistent/test-fake.sh"
   assert_failure
   assert_error_contains "not found"
 }
 
 test_requires_test_path() {
   # Should fail when no arguments provided
-  run_spell "spells/system/test-spell"
+  run_spell "spells/.wizardry/test-spell"
   assert_failure
   assert_error_contains "Usage:"
 }
 
 test_help_mentions_default_behavior() {
   # Help text should mention that common tests run by default
-  run_spell "spells/system/test-spell" "--help"
+  run_spell "spells/.wizardry/test-spell" "--help"
   assert_success
   assert_output_contains "By default"
   assert_output_contains "For AI"

@@ -10,13 +10,13 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  run_spell spells/system/demo-magic --help
+  run_spell spells/.wizardry/demo-magic --help
   assert_success || return 1
   assert_output_contains "Usage: demo-magic" || return 1
 }
 
 test_level_0() {
-  WIZARDRY_DEMO_NO_BWRAP=1 run_spell spells/system/demo-magic 0
+  WIZARDRY_DEMO_NO_BWRAP=1 run_spell spells/.wizardry/demo-magic 0
   assert_success || return 1
   assert_output_contains "Level 0: POSIX & Platform Foundation" || return 1
   assert_output_contains "The wizard examines the foundation" || return 1
@@ -25,7 +25,7 @@ test_level_0() {
 }
 
 test_level_1() {
-  WIZARDRY_DEMO_NO_BWRAP=1 run_spell spells/system/demo-magic 1
+  WIZARDRY_DEMO_NO_BWRAP=1 run_spell spells/.wizardry/demo-magic 1
   assert_success || return 1
   assert_output_contains "Level 1: Banish & Validation Infrastructure" || return 1
   assert_output_contains "The wizard casts validate-spells" || return 1
@@ -34,7 +34,7 @@ test_level_1() {
 }
 
 test_level_3() {
-  WIZARDRY_DEMO_NO_BWRAP=1 run_spell spells/system/demo-magic 3
+  WIZARDRY_DEMO_NO_BWRAP=1 run_spell spells/.wizardry/demo-magic 3
   assert_success || return 1
   assert_output_contains "Level 3: Glossary System" || return 1
   # Level 3 is now glossary system, not menu system
@@ -42,14 +42,14 @@ test_level_3() {
 }
 
 test_level_7() {
-  WIZARDRY_DEMO_NO_BWRAP=1 run_spell spells/system/demo-magic 7
+  WIZARDRY_DEMO_NO_BWRAP=1 run_spell spells/.wizardry/demo-magic 7
   assert_success || return 1
   assert_output_contains "Level 7: Arcane File Operations" || return 1
   assert_output_contains "The wizard casts read-magic" || return 1
 }
 
 test_level_8() {
-  WIZARDRY_DEMO_NO_BWRAP=1 run_spell spells/system/demo-magic 8
+  WIZARDRY_DEMO_NO_BWRAP=1 run_spell spells/.wizardry/demo-magic 8
   assert_success || return 1
   assert_output_contains "Level 8: Basic Cantrips" || return 1
   assert_output_contains "The wizard casts ask-yn" || return 1
@@ -58,7 +58,7 @@ test_level_8() {
 
 test_default_level() {
   # Test that demo-magic works with no level argument (defaults to 0 and 1)
-  WIZARDRY_DEMO_NO_BWRAP=1 run_spell spells/system/demo-magic
+  WIZARDRY_DEMO_NO_BWRAP=1 run_spell spells/.wizardry/demo-magic
   assert_success || return 1
   assert_output_contains "Level 0: POSIX & Platform Foundation" || return 1
   assert_output_contains "Level 1: Banish & Validation Infrastructure" || return 1
