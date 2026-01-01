@@ -3,11 +3,12 @@ name: Collect test failures
 # Collects failure outputs and makes them visible to Copilot via:
 # 1. Job summaries (visible in workflow run UI - Copilot can read)
 # 2. Workflow logs (sequential output for easy review)
-# 3. PR comments (visible immediately - Copilot should check these first when fixing bugs)
+# 3. Committed file (visible immediately - Copilot can read this directly)
 #
-# For AI agents: When a user asks you to fix test failures, ALWAYS check PR comments
-# from this workflow first. They contain extracted error text that appears immediately
-# after workflow completion. Look for comments with "🔍 Test Failure Collection" header.
+# For AI agents: When a user asks you to fix test failures, ALWAYS check the file
+# .github/test-failures/latest.md first. It contains extracted error text that is
+# committed immediately after workflow completion and is directly readable by AI agents.
+# This file is updated automatically on each test run.
 
 on:
   pull_request:
@@ -281,53 +282,36 @@ jobs:
             echo "See the workflow logs above for detailed failure information."
           } >> "$GITHUB_STEP_SUMMARY"
       
-      - name: Post PR comment
+      - name: Commit failures to repository
         if: steps.collect.outputs.has_failures == 'true'
-        uses: actions/github-script@v7
         env:
           FAILURE_SUMMARY: ${{ steps.collect.outputs.failure_summary }}
-        with:
-          script: |
-            const pr = '${{ github.event.pull_request.number }}';
-            const failureSummary = process.env.FAILURE_SUMMARY;
-            const runId = '${{ github.run_id }}';
-            const date = new Date().toISOString().split('T')[0];
-            const time = new Date().toISOString().split('T')[1].slice(0,8);
-            
-            const body = [
-              '<!-- workflow-failures-bot -->',
-              '## 🔍 Test Failure Collection',
-              '',
-              '**Updated:** ' + date + ' ' + time + ' UTC',
-              '',
-              failureSummary,
-              '',
-              '---',
-              '',
-              '💡 **View detailed logs:** Check the [workflow run logs](../../actions/runs/' + runId + ')',
-              '🤖 **Ask Copilot:** "What test failures do I need to fix?"'
-            ].join('\n');
-            
-            const {data: comments} = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: pr
-            });
-            
-            const existing = comments.find(c => c.body && c.body.includes('<!-- workflow-failures-bot -->'));
-            
-            if (existing) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existing.id,
-                body
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: pr,
-                body
-              });
-            }
+        run: |
+          # Create .github/test-failures directory if it doesn't exist
+          mkdir -p .github/test-failures
+          
+          # Write failures to a file with timestamp
+          {
+            echo "# 🔍 Test Failure Collection"
+            echo ""
+            echo "**Updated:** $(date -u '+%Y-%m-%d %H:%M:%S') UTC"
+            echo "**PR:** #${{ github.event.pull_request.number }}"
+            echo "**Commit:** ${{ github.event.pull_request.head.sha }}"
+            echo ""
+            echo "$FAILURE_SUMMARY"
+          } > .github/test-failures/latest.md
+          
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
+          # Add and commit the file
+          git add .github/test-failures/latest.md
+          
+          # Only commit if there are changes
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update test failures [skip ci]"
+            git push
+          fi
