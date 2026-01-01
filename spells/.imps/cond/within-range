@@ -1,0 +1,13 @@
+#!/bin/sh
+# within-range VALUE MIN MAX - test if integer value is within inclusive range
+# Example: within-range 5 1 10 && echo "valid"
+
+
+within_range() {
+  [ "$#" -eq 3 ] || return 1
+  [ "$1" -ge "$2" ] && [ "$1" -le "$3" ] 2>/dev/null
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */within-range) within_range "$@" ;; esac

@@ -1,10 +1,10 @@
 #!/bin/sh
-# in-ancestry COMMAND - test if command is running in process ancestry
-# Example: in-ancestry banish && echo "running inside banish"
-# Example: in-ancestry vim && echo "running inside vim"
+# has-ancestor COMMAND - test if command is running in process ancestry
+# Example: has-ancestor banish && echo "running inside banish"
+# Example: has-ancestor vim && echo "running inside vim"
 
 
-in_ancestry() {
+has_ancestor() {
   search_cmd=${1-}
 
   # Require command argument
@@ -40,4 +40,4 @@ in_ancestry() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */in-ancestry) in_ancestry "$@" ;; esac
+  */has-ancestor) has_ancestor "$@" ;; esac
