@@ -49,12 +49,15 @@ invoke_wizardry() {
     setopt SH_WORD_SPLIT
   fi
   
-  # Helper to restore zsh word splitting before returning
+  # Helper to restore zsh word splitting and shell mode before returning
   _iw_restore_and_return() {
     _ret_code=${1:-0}
     if [ -n "${ZSH_VERSION-}" ] && [ "$_iw_saved_sh_word_split" = "no" ]; then
       unsetopt SH_WORD_SPLIT
     fi
+    # CRITICAL: Restore permissive shell mode
+    # Various loaded spells/imps may have set -eu, we must restore permissive mode
+    set +eu
     return "$_ret_code"
   }
   
@@ -383,6 +386,11 @@ invoke_wizardry() {
       else
         _iw_debug "Warning: generate_glosses failed"
       fi
+      
+      # CRITICAL: Restore permissive mode after generate_glosses
+      # generate_glosses has set -eu which persists in the shell
+      # We must restore to permissive mode for compatibility with user shells
+      set +eu
     else
       if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
         printf '[invoke-wizardry] DEBUG: generate_glosses function NOT available!\n' >&2

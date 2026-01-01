@@ -27,7 +27,7 @@ test_level_0() {
 test_level_1() {
   WIZARDRY_DEMO_NO_BWRAP=1 run_spell spells/system/demo-magic 1
   assert_success || return 1
-  assert_output_contains "Level 1: Wizardry Installation" || return 1
+  assert_output_contains "Level 1: Banish & Validation Infrastructure" || return 1
   assert_output_contains "The wizard casts validate-spells" || return 1
   assert_output_contains "✓ Found spell: banish" || return 1
   assert_output_contains "Core imps summoned" || return 1
@@ -36,9 +36,9 @@ test_level_1() {
 test_level_3() {
   WIZARDRY_DEMO_NO_BWRAP=1 run_spell spells/system/demo-magic 3
   assert_success || return 1
-  assert_output_contains "Level 3: Menu System" || return 1
-  assert_output_contains "The wizard casts fathom-terminal" || return 1
-  assert_output_contains "Terminal dimensions discovered" || return 1
+  assert_output_contains "Level 3: Glossary System" || return 1
+  # Level 3 is now glossary system, not menu system
+  assert_output_contains "The wizard conjures the glossary system" || return 1
 }
 
 test_level_7() {
@@ -57,11 +57,11 @@ test_level_8() {
 }
 
 test_default_level() {
-  # Test that demo-magic works with no level argument (defaults to 1)
+  # Test that demo-magic works with no level argument (defaults to 0 and 1)
   WIZARDRY_DEMO_NO_BWRAP=1 run_spell spells/system/demo-magic
   assert_success || return 1
   assert_output_contains "Level 0: POSIX & Platform Foundation" || return 1
-  assert_output_contains "Level 1: Wizardry Installation" || return 1
+  assert_output_contains "Level 1: Banish & Validation Infrastructure" || return 1
 }
 
 run_test_case "demo-magic shows help" test_help

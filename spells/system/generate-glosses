@@ -140,6 +140,15 @@ env_clear
       return 0
     fi
     
+    # CRITICAL: Skip shell builtins to avoid overriding them
+    # This prevents errors like "Bad function name" when trying to define set(), test(), etc.
+    case "$_first_word" in
+      alias|bg|cd|command|false|fc|fg|getopts|hash|jobs|kill|newgrp|pwd|read|readonly|sh|test|times|trap|true|type|ulimit|umask|unalias|wait|break|case|continue|do|done|elif|else|esac|eval|exec|exit|export|fi|for|if|in|local|return|set|shift|then|unset|until|while)
+        [ "$quiet" -eq 0 ] && info "Skipping shell builtin: $_first_word" >&2
+        return 0
+        ;;
+    esac
+    
     # Check if already generated
     if grep -q "^$_first_word()" "$_first_words_file" 2>/dev/null; then
       return 0

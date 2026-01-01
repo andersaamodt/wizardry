@@ -37,7 +37,7 @@ config_get() {
       found=1
       exit
     }
-    END { return !found }
+    END { exit !found }
   ' "$_cg_file"
 }
 

@@ -178,6 +178,19 @@ spell_levels() {
   esac
 }
 
+# Helper functions for banish and test-magic compatibility
+banish_level_name() {
+  spell_levels "$1" name
+}
+
+get_level_spells() {
+  spell_levels "$1" spells
+}
+
+get_level_imps() {
+  spell_levels "$1" imps
+}
+
 # Self-execute when run directly (not sourced)
 case "$0" in
   */spell-levels) spell_levels "$@" ;; esac

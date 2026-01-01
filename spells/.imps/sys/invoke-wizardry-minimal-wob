@@ -77,6 +77,17 @@ invoke_wizardry_minimal_wob() {
   return $_iw_status
 }
 
+# Execute when sourced to ensure validation happens
+# Capture return status and propagate it
+if invoke_wizardry_minimal_wob; then
+  :  # Success, continue
+else
+  # Validation failed - we need to signal this to the sourcing shell
+  # In sh, return from a sourced script exits the sourcing, not the shell
+  # So we use return to exit the sourcing operation with an error
+  return $? 2>/dev/null || exit $?
+fi
+
 # Self-execute when run directly (not sourced)
 case "$0" in
   */invoke-wizardry-minimal-wob) invoke_wizardry_minimal_wob "$@" ;; esac

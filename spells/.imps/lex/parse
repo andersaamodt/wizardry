@@ -70,7 +70,7 @@ parse() {
   Usage (direct): parse <command> [args...]
 
   Note: parse is preloaded by invoke-wizardry and available as a function.
-  PARSE_HELP
+PARSE_HELP
           return 0
           ;;
       esac

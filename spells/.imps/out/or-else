@@ -11,4 +11,4 @@ or_else() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */or-else) else "$@" ;; esac
+  */or-else) or_else "$@" ;; esac

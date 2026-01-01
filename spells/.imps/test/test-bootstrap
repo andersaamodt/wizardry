@@ -214,3 +214,6 @@ for boot_imp in "$ROOT_DIR"/spells/.imps/test/boot/*; do
   # shellcheck source=/dev/null
   . "$boot_imp"
 done
+
+# Initialize test counters after sourcing boot imps
+init_test_counters

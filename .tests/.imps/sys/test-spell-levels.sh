@@ -42,8 +42,8 @@ test_level_imps_have_expected_entries() {
 . "$ROOT_DIR/spells/.imps/sys/spell-levels"
 imps=$(get_level_imps 1)
 case "$imps" in
-  *sys/invoke-wizardry-minimal-wob*) printf 'found invoke-wizardry-minimal-wob\n' ;;
-  *) printf 'missing invoke-wizardry-minimal-wob\n'; exit 1 ;;
+  *cond/has*) printf 'found has\n' ;;
+  *) printf 'missing has\n'; exit 1 ;;
 esac
 case "$imps" in
   *text/count-words*) printf 'found count-words\n' ;;
@@ -54,7 +54,7 @@ SCRIPT_EOF
 
   run_cmd env ROOT_DIR="$ROOT_DIR" sh "$tmpdir/test-level-imps.sh"
   assert_success
-  assert_output_contains "found invoke-wizardry-minimal-wob"
+  assert_output_contains "found has"
   assert_output_contains "found count-words"
 }
 

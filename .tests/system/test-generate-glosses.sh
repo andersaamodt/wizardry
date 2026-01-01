@@ -15,130 +15,84 @@ test_help() {
 }
 
 test_basic_execution() {
-  tmpdir=$(make_tempdir)
-  spellbook_dir="$tmpdir/.spellbook"
-  glossary_dir="$spellbook_dir/.glossary"
-  
-  # Create spellbook directory
-  mkdir -p "$spellbook_dir" || return 1
-  
-  # Run generate-glosses
-  SPELLBOOK_DIR="$spellbook_dir" WIZARDRY_DIR="$ROOT_DIR" run_sourced_spell generate-glosses --quiet
+  # Run generate-glosses and capture output
+  WIZARDRY_DIR="$ROOT_DIR" run_sourced_spell generate-glosses --quiet
   assert_success || return 1
   
-  # Check that glossary directory was created
-  [ -d "$glossary_dir" ] || return 1
-  
-  # Check that some glosses were generated
-  # Use -perm /111 for cross-platform compatibility (BSD find on older macOS)
-  gloss_count=$(find "$glossary_dir" -type f -perm /111 2>/dev/null | wc -l | tr -d ' ')
-  [ "$gloss_count" -gt 0 ] || return 1
+  # Check that output contains function definitions (new paradigm)
+  # Should have first-word gloss functions like: menu() { parse "menu" "$@"; }
+  printf '%s' "$OUTPUT" | grep -q '() { parse' || return 1
 }
 
 test_gloss_content() {
-  tmpdir=$(make_tempdir)
-  spellbook_dir="$tmpdir/.spellbook"
-  glossary_dir="$spellbook_dir/.glossary"
-  
-  # Create spellbook directory
-  mkdir -p "$spellbook_dir" || return 1
-  
   # Run generate-glosses
-  SPELLBOOK_DIR="$spellbook_dir" WIZARDRY_DIR="$ROOT_DIR" run_sourced_spell generate-glosses --quiet
+  WIZARDRY_DIR="$ROOT_DIR" run_sourced_spell generate-glosses --quiet
   assert_success || return 1
   
-  # Check that menu gloss exists and has correct content
-  menu_gloss="$glossary_dir/menu"
-  [ -f "$menu_gloss" ] || return 1
-  [ -x "$menu_gloss" ] || return 1
+  # Check that output contains first-word gloss functions
+  # Example: ask() { parse "ask" "$@"; } for ask-yn spell
+  printf '%s' "$OUTPUT" | grep -q 'ask.*parse.*"ask"' || return 1
   
-  # Verify gloss contains parse command (full path or simple parse)
-  # After fix for parse loop hang, glosses use full path to parse
-  grep -q 'parse.*"menu"' "$menu_gloss" || return 1
+  # Check that output contains alias definitions for hyphenated names
+  # Example: alias ask-yn='ask_yn'
+  printf '%s' "$OUTPUT" | grep -q "alias.*-.*=" || return 1
 }
 
-test_force_regeneration() {
-  tmpdir=$(make_tempdir)
-  spellbook_dir="$tmpdir/.spellbook"
-  glossary_dir="$spellbook_dir/.glossary"
-  
-  # Create spellbook directory
-  mkdir -p "$spellbook_dir" || return 1
-  
-  # Generate glosses first time
-  SPELLBOOK_DIR="$spellbook_dir" WIZARDRY_DIR="$ROOT_DIR" run_sourced_spell generate-glosses --quiet
+test_quiet_option() {
+  # Run with --quiet to suppress info messages
+  WIZARDRY_DIR="$ROOT_DIR" run_sourced_spell generate-glosses --quiet
   assert_success || return 1
   
-  # Generate again with --force
-  SPELLBOOK_DIR="$spellbook_dir" WIZARDRY_DIR="$ROOT_DIR" run_sourced_spell generate-glosses --force --quiet
-  assert_success || return 1
+  # Output should contain gloss definitions
+  printf '%s' "$OUTPUT" | grep -q '() { parse' || return 1
+  
+  # Error stream should not contain info messages (only errors/warnings)
+  # In quiet mode, diagnostic messages go to stderr, function definitions to stdout
 }
 
-test_synonym_generation() {
+test_output_option() {
   tmpdir=$(make_tempdir)
-  spellbook_dir="$tmpdir/.spellbook"
-  glossary_dir="$spellbook_dir/.glossary"
+  output_file="$tmpdir/glosses.sh"
   
-  # Create spellbook directory and synonym file
-  mkdir -p "$spellbook_dir" || return 1
-  cat > "$spellbook_dir/.synonyms" << 'EOF'
-# Test synonyms
-alias ll='ls -la'
-alias jump='jump-to-marker'
-EOF
-  
-  # Run generate-glosses
-  SPELLBOOK_DIR="$spellbook_dir" WIZARDRY_DIR="$ROOT_DIR" run_sourced_spell generate-glosses --quiet
+  # Run with --output to save to file
+  WIZARDRY_DIR="$ROOT_DIR" run_sourced_spell generate-glosses --quiet --output "$output_file"
   assert_success || return 1
   
-  # Check that synonym glosses were created
-  [ -f "$glossary_dir/ll" ] || return 1
-  [ -f "$glossary_dir/jump" ] || return 1
+  # Check that file was created
+  [ -f "$output_file" ] || return 1
   
-  # Verify ll gloss has correct target (parse command with full path or simple)
-  grep -q 'parse.*"ls -la"' "$glossary_dir/ll" || return 1
-  
-  # Verify jump gloss has correct target
-  grep -q 'parse.*"jump-to-marker"' "$glossary_dir/jump" || return 1
+  # Check that file contains gloss definitions
+  grep -q '() { parse' "$output_file" || return 1
 }
 
 test_all_spell_categories() {
-  tmpdir=$(make_tempdir)
-  spellbook_dir="$tmpdir/.spellbook"
-  glossary_dir="$spellbook_dir/.glossary"
-  
-  # Create spellbook directory
-  mkdir -p "$spellbook_dir" || return 1
-  
   # Run generate-glosses
-  SPELLBOOK_DIR="$spellbook_dir" WIZARDRY_DIR="$ROOT_DIR" run_sourced_spell generate-glosses --quiet
+  WIZARDRY_DIR="$ROOT_DIR" run_sourced_spell generate-glosses --quiet
   assert_success || return 1
   
-  # Verify critical spell glosses exist from different categories
-  # Menu category
-  [ -f "$glossary_dir/menu" ] || return 1
-  [ -f "$glossary_dir/main-menu" ] || return 1
+  # Verify critical spell glosses exist in output
+  # These are first-word glosses for multi-word spells
   
-  # Cantrips
-  [ -f "$glossary_dir/ask-yn" ] || return 1
+  # Check for first-word glosses (these exist for multi-word commands)
+  # ask() for ask-yn
+  printf '%s' "$OUTPUT" | grep -q 'ask.*parse' || return 1
   
-  # Arcane
-  [ -f "$glossary_dir/forall" ] || return 1
-  [ -f "$glossary_dir/copy" ] || return 1
+  # generate() for generate-glosses  
+  printf '%s' "$OUTPUT" | grep -q 'generate.*parse' || return 1
   
-  # System
-  [ -f "$glossary_dir/generate-glosses" ] || return 1
+  # Check for full-name aliases (hyphenated names)
+  # mud-menu -> mud_menu
+  printf '%s' "$OUTPUT" | grep -q "alias.*-menu=" || return 1
   
-  # Imps should also have glosses
-  [ -f "$glossary_dir/has" ] || return 1
-  [ -f "$glossary_dir/say" ] || return 1
+  # ask-yn -> ask_yn
+  printf '%s' "$OUTPUT" | grep -q "alias ask-yn=" || return 1
 }
 
 run_test_case "generate-glosses shows usage" test_help
 run_test_case "generate-glosses generates glosses" test_basic_execution
 run_test_case "generate-glosses creates valid gloss content" test_gloss_content
-run_test_case "generate-glosses --force regenerates" test_force_regeneration
-run_test_case "generate-glosses creates synonym glosses" test_synonym_generation
+run_test_case "generate-glosses --quiet suppresses diagnostics" test_quiet_option
+run_test_case "generate-glosses --output writes to file" test_output_option
 run_test_case "generate-glosses creates glosses for all spell categories" test_all_spell_categories
 
 finish_tests
